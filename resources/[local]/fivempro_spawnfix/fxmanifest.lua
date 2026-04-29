@@ -1,0 +1,16 @@
+fx_version 'cerulean'
+game 'gta5'
+lua54 'yes'
+
+name 'fivempro_spawnfix'
+author 'FIVEMPROJEKTAS'
+description 'Spawn/death safety normalization'
+version '1.0.0'
+
+client_scripts {
+    'client.lua'
+}
+
+server_scripts {
+    'server.lua'
+}

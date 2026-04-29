@@ -1,0 +1,32 @@
+# Runtime/cache
+cache/
+crashes/
+_cfx_server_data_tmp2/
+citizen/
+.replxx_history
+
+# FXServer binaries and runtime files in root
+*.dll
+*.exe
+*.key
+*.crt
+*.log
+components.json
+
+# Keep root docs/config tracked
+!README.md
+!server.cfg
+!fxmanifest.lua
+
+# Node and package caches inside resources
+**/node_modules/
+**/.yarn/
+**/yarn.lock
+**/package-lock.json
+
+# OS/editor
+.DS_Store
+Thumbs.db
+
+# Preserve existing ignore
+citizen/system_resources/

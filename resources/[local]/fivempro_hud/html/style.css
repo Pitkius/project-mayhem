@@ -1,0 +1,103 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: transparent;
+}
+
+.hud {
+    position: absolute;
+    left: 2.2vw;
+    bottom: 3.2vh;
+    width: 18vw;
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6vh;
+}
+
+.bar {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    align-items: center;
+    gap: 8px;
+}
+
+.label {
+    color: #f2f2f2;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+}
+
+.track {
+    width: 100%;
+    height: 15px;
+    border-radius: 10px;
+    background: rgba(24, 24, 28, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.money {
+    color: #9df7bf;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: right;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+}
+
+.fill {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.2s ease;
+}
+
+.health { background: linear-gradient(90deg, #db2d2d 0%, #ff6363 100%); }
+.armor { background: linear-gradient(90deg, #3f65ff 0%, #6ea2ff 100%); }
+.hunger { background: linear-gradient(90deg, #ff9800 0%, #ffc14d 100%); }
+.thirst { background: linear-gradient(90deg, #00bcd4 0%, #63d8e9 100%); }
+
+.hidden {
+    display: none;
+}
+
+.carhud {
+    position: absolute;
+    right: 2.2vw;
+    bottom: 3.2vh;
+    min-width: 190px;
+    display: grid;
+    gap: 6px;
+    background: rgba(15, 15, 20, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.carhud.hidden {
+    display: none;
+}
+
+.carline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #f2f2f2;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+}
+
+.carline strong {
+    color: #8de2ff;
+}
+
