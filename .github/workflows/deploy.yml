@@ -18,10 +18,15 @@ jobs:
         run: |
           set -e
           echo "[deploy] runner user: $(whoami)"
+          test -d /home/fivem/FIVEMPROJEKTAS
           test -d /home/fivem/server
-          cd /home/fivem/server
+          cd /home/fivem/FIVEMPROJEKTAS
           git fetch origin main
           git pull --ff-only origin main
+          sudo -n mkdir -p /home/fivem/server/resources /home/fivem/server/cfg
+          sudo -n rsync -a --delete /home/fivem/FIVEMPROJEKTAS/resources/ /home/fivem/server/resources/
+          sudo -n rsync -a --delete /home/fivem/FIVEMPROJEKTAS/cfg/ /home/fivem/server/cfg/
+          sudo -n cp /home/fivem/FIVEMPROJEKTAS/server.cfg /home/fivem/server/server.cfg
           sudo -n systemctl restart fivem-txadmin
           sudo -n systemctl is-active --quiet fivem-txadmin
           echo "[deploy] done"
