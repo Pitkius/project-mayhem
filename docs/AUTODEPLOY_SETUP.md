@@ -41,3 +41,4 @@ Optional:
 ```bash
 systemctl status fivem-txadmin --no-pager
 ```
+autodeploy test
