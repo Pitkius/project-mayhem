@@ -288,7 +288,6 @@ local function EnableTarget()
 				break
 			end
 
-			SetPauseMenuActive(false)
 			if Config.DisableControls then
 				DisableAllControlActions(0)
 			else

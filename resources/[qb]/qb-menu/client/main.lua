@@ -39,7 +39,7 @@ end
 local function closeMenu()
     sendData = nil
     headerShown = false
-    SetNuiFocus(false)
+    SetNuiFocus(false, false)
     SendNUIMessage({
         action = 'CLOSE_MENU'
     })
@@ -70,7 +70,7 @@ end)
 RegisterNUICallback('clickedButton', function(option, cb)
     if headerShown then headerShown = false end
     PlaySoundFrontend(-1, 'Highlight_Cancel', 'DLC_HEIST_PLANNING_BOARD_SOUNDS', 1)
-    SetNuiFocus(false)
+    SetNuiFocus(false, false)
     if sendData then
         local data = sendData[tonumber(option)]
         sendData = nil
@@ -102,7 +102,7 @@ end)
 RegisterNUICallback('closeMenu', function(_, cb)
     headerShown = false
     sendData = nil
-    SetNuiFocus(false)
+    SetNuiFocus(false, false)
     cb('ok')
     TriggerEvent("qb-menu:client:menuClosed")
 end)

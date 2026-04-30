@@ -129,12 +129,21 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
 
     local hasClip, currentClipAmmo = GetAmmoInClip(ped, weapon)
     local hasMaxClip, maxClipAmmo = GetMaxAmmoInClip(ped, weapon, true)
-    if not hasClip or not hasMaxClip then
-        QBCore.Functions.Notify('Cannot reload this weapon.', 'error')
-        return
+    local clipMissing = 0
+
+    if hasClip and hasMaxClip then
+        clipMissing = math.max(0, (tonumber(maxClipAmmo) or 0) - (tonumber(currentClipAmmo) or 0))
     end
 
-    local clipMissing = math.max(0, (tonumber(maxClipAmmo) or 0) - (tonumber(currentClipAmmo) or 0))
+    -- Fallback for weapons where clip natives are unreliable: allow loading up to remaining total ammo cap.
+    if clipMissing <= 0 then
+        local currentTotalAmmo = GetAmmoInPedWeapon(ped, weapon)
+        local hasMaxTotal, maxTotalAmmo = GetMaxAmmo(ped, weapon)
+        if hasMaxTotal then
+            clipMissing = math.max(0, (tonumber(maxTotalAmmo) or 0) - (tonumber(currentTotalAmmo) or 0))
+        end
+    end
+
     if clipMissing <= 0 then
         QBCore.Functions.Notify('Magazine is already full.', 'error')
         return
