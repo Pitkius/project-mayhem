@@ -1,4 +1,5 @@
 local spawnedPeds = {}
+local spawnedBlips = {}
 
 local function loadModel(model)
     local hash = type(model) == 'string' and joaat(model) or model
@@ -66,6 +67,17 @@ CreateThread(function()
     end
 
     for i = 1, #Config.FoodPeds do
+        local blip = AddBlipForCoord(Config.FoodPeds[i].coords.x, Config.FoodPeds[i].coords.y, Config.FoodPeds[i].coords.z)
+        SetBlipSprite(blip, 52) -- shopping cart
+        SetBlipDisplay(blip, 4)
+        SetBlipScale(blip, 0.75)
+        SetBlipColour(blip, 2)
+        SetBlipAsShortRange(blip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString('Maisto Parduotuve')
+        EndTextCommandSetBlipName(blip)
+        spawnedBlips[#spawnedBlips + 1] = blip
+
         local ped = spawnShopPed(Config.FoodPeds[i].model, Config.FoodPeds[i].coords)
         if ped then
             exports['qb-target']:AddTargetEntity(ped, {
@@ -88,6 +100,11 @@ AddEventHandler('onResourceStop', function(resourceName)
     for i = 1, #spawnedPeds do
         if DoesEntityExist(spawnedPeds[i]) then
             DeletePed(spawnedPeds[i])
+        end
+    end
+    for i = 1, #spawnedBlips do
+        if DoesBlipExist(spawnedBlips[i]) then
+            RemoveBlip(spawnedBlips[i])
         end
     end
 end)
