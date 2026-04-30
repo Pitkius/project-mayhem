@@ -150,8 +150,10 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     end
 
     local ammoItemName = AmmoItemByType[normalizedAmmoType] or (itemData and itemData.name)
-    local availableBullets = getTotalAmmoItems(ammoItemName)
-    if availableBullets <= 0 then
+    local ammoUnits = getTotalAmmoItems(ammoItemName)
+    local bulletsPerUnit = math.max(1, tonumber(amount) or 1)
+    local availableBullets = ammoUnits * bulletsPerUnit
+    if ammoUnits <= 0 or availableBullets <= 0 then
         QBCore.Functions.Notify('No ammo in inventory.', 'error')
         return
     end
@@ -160,6 +162,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     if bulletsToLoad <= 0 then
         return
     end
+    local unitsToRemove = math.max(1, math.ceil(bulletsToLoad / bulletsPerUnit))
 
     local function finishReload()
         weapon = GetSelectedPedWeapon(ped)
@@ -170,7 +173,6 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         end
 
         AddAmmoToPed(ped, weapon, bulletsToLoad)
-        TaskReloadWeapon(ped, false)
         local refreshedAmmo = GetAmmoInPedWeapon(ped, weapon)
         local payload = CurrentWeaponData
         if not payload or not payload.name then
@@ -179,7 +181,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         if payload and payload.name then
             TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', payload, refreshedAmmo)
         end
-        TriggerServerEvent('qb-weapons:server:removeWeaponAmmoItem', ammoItemName, bulletsToLoad)
+        TriggerServerEvent('qb-weapons:server:removeWeaponAmmoItem', ammoItemName, unitsToRemove)
         if ammoItemName and QBCore.Shared.Items[ammoItemName] then
             TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'remove')
         end
