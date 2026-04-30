@@ -77,3 +77,23 @@ RegisterNetEvent('fivempro_basics:client:openRegister', function()
     TriggerEvent('qb-clothes:client:CreateFirstCharacter')
 end)
 
+RegisterNetEvent('fivempro_basics:client:showCoords', function(targetServerId)
+    local targetPlayer = GetPlayerFromServerId(tonumber(targetServerId) or -1)
+    if targetPlayer == -1 then
+        QBCore.Functions.Notify('Nepavyko gauti zaidejo koordinates', 'error')
+        return
+    end
+
+    local ped = GetPlayerPed(targetPlayer)
+    if ped == 0 then
+        QBCore.Functions.Notify('Nepavyko gauti zaidejo ped', 'error')
+        return
+    end
+
+    local coords = GetEntityCoords(ped)
+    local heading = GetEntityHeading(ped)
+    local msg = ('x: %.2f, y: %.2f, z: %.2f, h: %.2f'):format(coords.x, coords.y, coords.z, heading)
+    print(('[fivempro_basics] /coords -> %s'):format(msg))
+    QBCore.Functions.Notify(msg, 'success', 9000)
+end)
+

@@ -80,11 +80,11 @@
                             <div class="inventory-label">
                                 <p>{{ otherInventoryLabel }}</p>
                             </div>
-                            <div class="current-weight">
+                            <div class="current-weight" v-if="!isShopInventory">
                                 <p>{{ (otherInventoryWeight / 1000).toFixed(1) }} / {{(otherInventoryMaxWeight / 1000).toFixed(1) }}</p>
                             </div>
                         </div>
-                        <div class="weight-bar">
+                        <div class="weight-bar" v-if="!isShopInventory">
                             <div class="weight-bar-fill" :style="{ width: Math.min((otherInventoryWeight / otherInventoryMaxWeight) * 100, 100) + '%' }" :class="otherWeightBarClass"></div>
                         </div>
                     </div>
@@ -94,7 +94,7 @@
                                 <div class="item-slot-img" v-if="getItemInSlot(slot, 'other')" v-tooltip.right-end="{content: generateTooltipContent(getItemInSlot(slot, 'other')), html: true}">
                                     <img :src="'images/' + getItemInSlot(slot, 'other').image" alt="" />
                                 </div>
-                                <div class="item-slot-amount" v-if="getItemInSlot(slot, 'other')">
+                                <div class="item-slot-amount" v-if="getItemInSlot(slot, 'other') && !isShopInventory">
                                     <p>x{{ getItemInSlot(slot, 'other').amount }}</p>
                                 </div>
                                 <div v-if="isShopInventory && getItemInSlot(slot, 'other')" class="item-price">

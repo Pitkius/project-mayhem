@@ -3,6 +3,12 @@
 local alcoholCount = 0
 local healing, parachuteEquipped = false, false
 local currVest, currVestTexture = nil, nil
+local DualNeedFoodBoost = {
+    sandwich = 12,
+}
+local DualNeedDrinkBoost = {
+    water_bottle = 8,
+}
 
 -- Functions
 RegisterNetEvent('QBCore:Client:UpdateObject', function()
@@ -160,7 +166,16 @@ RegisterNetEvent('consumables:client:Eat', function(itemName)
         rotation = vec3(30, 0.0, 0.0),
     }, {}, function() -- Done
         TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
-        TriggerServerEvent('consumables:server:addHunger', QBCore.Functions.GetPlayerData().metadata.hunger + Config.Consumables.eat[itemName])
+        local playerData = QBCore.Functions.GetPlayerData()
+        local metadata = playerData.metadata or {}
+        local hunger = tonumber(metadata.hunger) or 0
+        local thirst = tonumber(metadata.thirst) or 0
+        local hungerAdd = Config.Consumables.eat[itemName] or 0
+        local thirstAdd = DualNeedFoodBoost[itemName] or 0
+        TriggerServerEvent('consumables:server:addHunger', math.min(100, hunger + hungerAdd))
+        if thirstAdd > 0 then
+            TriggerServerEvent('consumables:server:addThirst', math.min(100, thirst + thirstAdd))
+        end
         TriggerServerEvent('hud:server:RelieveStress', math.random(2, 4))
     end)
 end)
@@ -182,7 +197,16 @@ RegisterNetEvent('consumables:client:Drink', function(itemName)
         rotation = vec3(0.0, 0.0, -40),
     }, {}, function() -- Done
         TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
-        TriggerServerEvent('consumables:server:addThirst', QBCore.Functions.GetPlayerData().metadata.thirst + Config.Consumables.drink[itemName])
+        local playerData = QBCore.Functions.GetPlayerData()
+        local metadata = playerData.metadata or {}
+        local thirst = tonumber(metadata.thirst) or 0
+        local hunger = tonumber(metadata.hunger) or 0
+        local thirstAdd = Config.Consumables.drink[itemName] or 0
+        local hungerAdd = DualNeedDrinkBoost[itemName] or 0
+        TriggerServerEvent('consumables:server:addThirst', math.min(100, thirst + thirstAdd))
+        if hungerAdd > 0 then
+            TriggerServerEvent('consumables:server:addHunger', math.min(100, hunger + hungerAdd))
+        end
     end)
 end)
 
