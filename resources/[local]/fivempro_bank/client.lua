@@ -141,6 +141,20 @@ RegisterCommand('bank', function()
 end, false)
 
 CreateThread(function()
+    for _, coords in ipairs(Config.BankLocations) do
+        local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
+        SetBlipSprite(blip, 108) -- Dollar sign icon.
+        SetBlipDisplay(blip, 4)
+        SetBlipScale(blip, 0.85)
+        SetBlipColour(blip, 2)
+        SetBlipAsShortRange(blip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString('Bankas')
+        EndTextCommandSetBlipName(blip)
+    end
+end)
+
+CreateThread(function()
     for i, coords in ipairs(Config.BankLocations) do
         exports['qb-target']:AddCircleZone(('fivempro_bank_%s'):format(i), coords, 1.2, {
             name = ('fivempro_bank_%s'):format(i),
