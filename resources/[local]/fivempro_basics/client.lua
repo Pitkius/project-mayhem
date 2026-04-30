@@ -29,15 +29,25 @@ local function reviveLocalPlayer()
     print('[fivempro_basics] Test revive ivykdytas.')
 end
 
-RegisterCommand('revive', function()
-    reviveLocalPlayer()
-end, false)
+local function healLocalPlayer()
+    local ped = PlayerPedId()
+    SetEntityHealth(ped, 200)
+    ClearPedBloodDamage(ped)
+end
 
 RegisterCommand('fprevive', function()
     reviveLocalPlayer()
 end, false)
 
 RegisterKeyMapping('fprevive', 'Fivempro test revive', 'keyboard', 'F6')
+
+RegisterNetEvent('fivempro_basics:client:adminRevive', function()
+    reviveLocalPlayer()
+end)
+
+RegisterNetEvent('fivempro_basics:client:adminHeal', function()
+    healLocalPlayer()
+end)
 
 RegisterNetEvent('fivempro_basics:client:openRegister', function()
     if GetResourceState('qb-clothing') ~= 'started' then

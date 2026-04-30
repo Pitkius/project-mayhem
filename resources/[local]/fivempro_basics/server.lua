@@ -16,3 +16,49 @@ QBCore.Commands.Add('register', 'Atidaryti veikejo kurimo langa (admin)', {}, fa
     TriggerClientEvent('fivempro_basics:client:openRegister', source)
 end, 'admin')
 
+local function setNeedsFull(player)
+    player.Functions.SetMetaData('hunger', 100)
+    player.Functions.SetMetaData('thirst', 100)
+    TriggerClientEvent('hud:client:UpdateNeeds', player.PlayerData.source, 100, 100)
+end
+
+local function resolveTarget(source, argValue)
+    if argValue then
+        local targetId = tonumber(argValue)
+        if not targetId then return nil end
+        return QBCore.Functions.GetPlayer(targetId)
+    end
+
+    return QBCore.Functions.GetPlayer(source)
+end
+
+QBCore.Commands.Add('revive', 'Admin revive su max maistu/vandeniu', {
+    { name = 'id', help = 'Server ID (optional)' }
+}, false, function(source, args)
+    local target = resolveTarget(source, args[1])
+    if not target then
+        TriggerClientEvent('QBCore:Notify', source, 'Zaidejas nerastas', 'error')
+        return
+    end
+
+    target.Functions.SetMetaData('isdead', false)
+    target.Functions.SetMetaData('inlaststand', false)
+    setNeedsFull(target)
+    TriggerClientEvent('fivempro_basics:client:adminRevive', target.PlayerData.source)
+    TriggerClientEvent('QBCore:Notify', target.PlayerData.source, 'Admin revive + needs atnaujinti', 'success')
+end, 'admin')
+
+QBCore.Commands.Add('heal', 'Admin heal su max maistu/vandeniu', {
+    { name = 'id', help = 'Server ID (optional)' }
+}, false, function(source, args)
+    local target = resolveTarget(source, args[1])
+    if not target then
+        TriggerClientEvent('QBCore:Notify', source, 'Zaidejas nerastas', 'error')
+        return
+    end
+
+    setNeedsFull(target)
+    TriggerClientEvent('fivempro_basics:client:adminHeal', target.PlayerData.source)
+    TriggerClientEvent('QBCore:Notify', target.PlayerData.source, 'Admin heal + needs atnaujinti', 'success')
+end, 'admin')
+

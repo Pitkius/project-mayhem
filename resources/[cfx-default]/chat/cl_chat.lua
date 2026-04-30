@@ -129,7 +129,7 @@ end)
 
 RegisterNUICallback('chatResult', function(data, cb)
   chatInputActive = false
-  SetNuiFocus(false)
+  SetNuiFocus(false, false)
 
   if not data.canceled then
     local id = PlayerId()
@@ -250,7 +250,7 @@ end
 
 Citizen.CreateThread(function()
   SetTextChatEnabled(false)
-  SetNuiFocus(false)
+  SetNuiFocus(false, false)
 
   local lastChatHideState = -1
   local origChatHideState = -1
@@ -271,10 +271,23 @@ Citizen.CreateThread(function()
 
     if chatInputActivating then
       if not IsControlPressed(0, isRDR and `INPUT_MP_TEXT_CHAT_ALL` or 245) then
-        SetNuiFocus(true)
+        -- Keep keyboard focus for chat input, but never steal cursor permanently.
+        SetNuiFocus(true, false)
 
         chatInputActivating = false
       end
+    end
+
+    -- Fail-safe: if pause menu key is pressed while chat is focused, release NUI focus.
+    if IsControlJustPressed(0, 200) and (chatInputActive or chatInputActivating) then
+      chatInputActive = false
+      chatInputActivating = false
+      SetNuiFocus(false, false)
+      SendNUIMessage({
+        type = 'ON_SCREEN_STATE_CHANGE',
+        hideState = chatHideState,
+        fromUserInteraction = false
+      })
     end
 
     if chatLoaded then

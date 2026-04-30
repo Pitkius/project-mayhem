@@ -282,6 +282,12 @@ local function EnableTarget()
 	SendNUIMessage({ response = 'openTarget' })
 	CreateThread(function()
 		repeat
+			-- Fail-safe: allow ESC to close target mode and restore pause/map controls.
+			if IsControlJustPressed(0, 200) then
+				DisableTarget(true)
+				break
+			end
+
 			SetPauseMenuActive(false)
 			if Config.DisableControls then
 				DisableAllControlActions(0)
