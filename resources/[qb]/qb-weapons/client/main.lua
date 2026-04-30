@@ -183,9 +183,8 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         end
         TriggerServerEvent('qb-weapons:server:removeWeaponAmmoItem', ammoItemName, unitsToRemove)
         if ammoItemName and QBCore.Shared.Items[ammoItemName] then
-            TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'remove')
+            TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'use', bulletsToLoad)
         end
-        QBCore.Functions.Notify(('Reloaded +%s'):format(bulletsToLoad), 'success')
     end
 
     -- Instant reload path to avoid stopping movement while reloading/changing magazine.

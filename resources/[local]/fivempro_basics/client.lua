@@ -7,6 +7,23 @@ end)
 CreateThread(function()
     while true do
         DisableControlAction(0, 37, true) -- INPUT_SELECT_WEAPON (TAB)
+        -- Keep pause/menu keys available even if another resource aggressively disables controls.
+        EnableControlAction(0, 199, true) -- INPUT_FRONTEND_PAUSE_ALTERNATE (P)
+        EnableControlAction(0, 200, true) -- INPUT_FRONTEND_PAUSE (ESC)
+        Wait(0)
+    end
+end)
+
+-- Global fail-safe: pressing ESC/P always releases stuck NUI focus and target mode.
+CreateThread(function()
+    while true do
+        if IsControlJustPressed(0, 199) or IsControlJustPressed(0, 200) then
+            SetNuiFocus(false, false)
+            SetNuiFocusKeepInput(false)
+            if GetResourceState('qb-target') == 'started' then
+                exports['qb-target']:DisableTarget(true)
+            end
+        end
         Wait(0)
     end
 end)

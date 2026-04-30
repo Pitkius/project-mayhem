@@ -188,6 +188,16 @@ RegisterNetEvent('qb-inventory:server:closeInventory', function(inventory)
     MySQL.prepare('INSERT INTO inventories (identifier, items) VALUES (?, ?) ON DUPLICATE KEY UPDATE items = ?', { inventory, json.encode(Inventories[inventory].items), json.encode(Inventories[inventory].items) })
 end)
 
+local AmmoUseItems = {
+    pistol_ammo = true,
+    rifle_ammo = true,
+    smg_ammo = true,
+    shotgun_ammo = true,
+    mg_ammo = true,
+    snp_ammo = true,
+    emp_ammo = true,
+}
+
 RegisterNetEvent('qb-inventory:server:useItem', function(item)
     local src = source
     local itemData = GetItemBySlot(src, item.slot)
@@ -250,7 +260,9 @@ RegisterNetEvent('qb-inventory:server:useItem', function(item)
         end
     else
         UseItem(itemData.name, src, itemData)
-        TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
+        if not AmmoUseItems[itemData.name] then
+            TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
+        end
     end
 end)
 
