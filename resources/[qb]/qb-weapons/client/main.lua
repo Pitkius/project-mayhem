@@ -162,8 +162,6 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     if bulletsToLoad <= 0 then
         return
     end
-    local unitsToRemove = math.max(1, math.ceil(bulletsToLoad / bulletsPerUnit))
-
     local function finishReload()
         weapon = GetSelectedPedWeapon(ped)
         local current = QBCore.Shared.Weapons[weapon]
@@ -172,8 +170,27 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             return QBCore.Functions.Notify(Lang:t('error.wrong_ammo'), 'error')
         end
 
-        AddAmmoToPed(ped, weapon, bulletsToLoad)
-        local refreshedAmmo = GetAmmoInPedWeapon(ped, weapon)
+        local hasClipNow, currentClipNow = GetAmmoInClip(ped, weapon)
+        local hasMaxClipNow, maxClipNow = GetMaxAmmoInClip(ped, weapon, true)
+        if not hasClipNow or not hasMaxClipNow then
+            return
+        end
+
+        local clipRoom = math.max(0, (tonumber(maxClipNow) or 0) - (tonumber(currentClipNow) or 0))
+        if clipRoom <= 0 then
+            return
+        end
+
+        local actualLoaded = math.min(clipRoom, bulletsToLoad)
+        if actualLoaded <= 0 then
+            return
+        end
+
+        local newClipAmmo = (tonumber(currentClipNow) or 0) + actualLoaded
+        SetAmmoInClip(ped, weapon, newClipAmmo)
+        SetPedAmmo(ped, weapon, newClipAmmo)
+        local refreshedAmmo = newClipAmmo
+        local unitsToRemove = math.max(1, math.ceil(actualLoaded / bulletsPerUnit))
         local payload = CurrentWeaponData
         if not payload or not payload.name then
             payload = resolveCurrentWeaponDataByName(current.name)
@@ -183,7 +200,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         end
         TriggerServerEvent('qb-weapons:server:removeWeaponAmmoItem', ammoItemName, unitsToRemove)
         if ammoItemName and QBCore.Shared.Items[ammoItemName] then
-            TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'use', bulletsToLoad)
+            TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'use', actualLoaded)
         end
     end
 
@@ -273,9 +290,9 @@ CreateThread(function()
                     local ammoType = selectedWeaponData.ammotype
                     local ammoItemName = AmmoItemByType[ammoType or '']
                     if ammoItemName and PlayerData and PlayerData.items then
-                        local totalAmmo = GetAmmoInPedWeapon(ped, weapon)
-                        local _, maxAmmo = GetMaxAmmo(ped, weapon)
-                        if totalAmmo < maxAmmo then
+                        local hasClip, currentClip = GetAmmoInClip(ped, weapon)
+                        local hasMaxClip, maxClip = GetMaxAmmoInClip(ped, weapon, true)
+                        if hasClip and hasMaxClip and (tonumber(currentClip) or 0) < (tonumber(maxClip) or 0) then
                             for _, item in pairs(PlayerData.items) do
                                 if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
                                     TriggerServerEvent('qb-inventory:server:useItem', { slot = item.slot })
@@ -299,7 +316,8 @@ CreateThread(function()
             local selectedWeaponData = QBCore.Shared.Weapons[weapon]
             if selectedWeaponData then
                 CurrentWeaponData = resolveCurrentWeaponDataByName(selectedWeaponData.name) or CurrentWeaponData
-                local ammo = GetAmmoInPedWeapon(ped, weapon)
+                local hasClip, clipAmmo = GetAmmoInClip(ped, weapon)
+                local ammo = hasClip and (tonumber(clipAmmo) or 0) or GetAmmoInPedWeapon(ped, weapon)
                 if CurrentWeaponData and CurrentWeaponData.name then
                     if lastSyncedWeapon ~= selectedWeaponData.name or lastSyncedAmmo ~= ammo then
                         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', CurrentWeaponData, tonumber(ammo))
