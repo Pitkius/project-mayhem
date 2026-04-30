@@ -21,11 +21,6 @@ local function spawnShopPed(model, coords)
     local hash = loadModel(model)
     if not hash then return nil end
     local spawnZ = coords.z
-    local foundGround, groundZ = GetGroundZFor_3dCoord(coords.x, coords.y, coords.z + 2.0, false)
-    if foundGround and math.abs(groundZ - coords.z) <= 2.0 then
-        spawnZ = groundZ
-    end
-
     local ped = CreatePed(0, hash, coords.x, coords.y, spawnZ, coords.w, false, false)
     RequestCollisionAtCoord(coords.x, coords.y, spawnZ)
     local timeout = GetGameTimer() + 2000

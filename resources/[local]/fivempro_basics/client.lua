@@ -1,3 +1,5 @@
+local QBCore = exports['qb-core']:GetCoreObject()
+
 CreateThread(function()
     Wait(1500)
     print("[fivempro_basics] Client script aktyvus.")
@@ -95,5 +97,59 @@ RegisterNetEvent('fivempro_basics:client:showCoords', function(targetServerId)
     local msg = ('x: %.2f, y: %.2f, z: %.2f, h: %.2f'):format(coords.x, coords.y, coords.z, heading)
     print(('[fivempro_basics] /coords -> %s'):format(msg))
     QBCore.Functions.Notify(msg, 'success', 9000)
+end)
+
+RegisterNetEvent('fivempro_basics:client:useSandwich', function(itemName)
+    QBCore.Functions.Progressbar('fivempro_eat_sandwich', 'Valgai...', 4500, false, true, {
+        disableMovement = false,
+        disableCarMovement = false,
+        disableMouse = false,
+        disableCombat = true
+    }, {
+        animDict = 'mp_player_inteat@burger',
+        anim = 'mp_player_int_eat_burger',
+        flags = 49
+    }, {
+        model = 'prop_cs_burger_01',
+        bone = 60309,
+        coords = vec3(0.0, 0.0, -0.02),
+        rotation = vec3(30.0, 0.0, 0.0)
+    }, {}, function()
+        TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
+        local meta = QBCore.Functions.GetPlayerData().metadata or {}
+        local hunger = math.min(100, (tonumber(meta.hunger) or 0) + 40)
+        local thirst = math.min(100, (tonumber(meta.thirst) or 0) + 10)
+        TriggerServerEvent('consumables:server:addHunger', hunger)
+        TriggerServerEvent('consumables:server:addThirst', thirst)
+    end, function()
+        QBCore.Functions.Notify('Atšaukta', 'error')
+    end)
+end)
+
+RegisterNetEvent('fivempro_basics:client:useWaterBottle', function(itemName)
+    QBCore.Functions.Progressbar('fivempro_drink_water', 'Geri vandeni...', 3500, false, true, {
+        disableMovement = false,
+        disableCarMovement = false,
+        disableMouse = false,
+        disableCombat = true
+    }, {
+        animDict = 'mp_player_intdrink',
+        anim = 'loop_bottle',
+        flags = 49
+    }, {
+        model = 'vw_prop_casino_water_bottle_01a',
+        bone = 60309,
+        coords = vec3(0.0, 0.0, -0.05),
+        rotation = vec3(0.0, 0.0, -40.0)
+    }, {}, function()
+        TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
+        local meta = QBCore.Functions.GetPlayerData().metadata or {}
+        local thirst = math.min(100, (tonumber(meta.thirst) or 0) + 45)
+        local hunger = math.min(100, (tonumber(meta.hunger) or 0) + 5)
+        TriggerServerEvent('consumables:server:addThirst', thirst)
+        TriggerServerEvent('consumables:server:addHunger', hunger)
+    end, function()
+        QBCore.Functions.Notify('Atšaukta', 'error')
+    end)
 end)
 

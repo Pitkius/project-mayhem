@@ -186,11 +186,17 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             return
         end
 
-        local newClipAmmo = (tonumber(currentClipNow) or 0) + actualLoaded
-        SetAmmoInClip(ped, weapon, newClipAmmo)
-        SetPedAmmo(ped, weapon, newClipAmmo)
-        local refreshedAmmo = newClipAmmo
-        local unitsToRemove = actualLoaded
+        local ammoBefore = GetAmmoInPedWeapon(ped, weapon)
+        AddAmmoToPed(ped, weapon, actualLoaded)
+        local ammoAfter = GetAmmoInPedWeapon(ped, weapon)
+        local reallyLoaded = math.max(0, (tonumber(ammoAfter) or 0) - (tonumber(ammoBefore) or 0))
+        if reallyLoaded <= 0 then
+            return
+        end
+
+        local hasClipAfter, clipAfter = GetAmmoInClip(ped, weapon)
+        local refreshedAmmo = hasClipAfter and (tonumber(clipAfter) or reallyLoaded) or reallyLoaded
+        local unitsToRemove = reallyLoaded
         local payload = CurrentWeaponData
         if not payload or not payload.name then
             payload = resolveCurrentWeaponDataByName(current.name)
@@ -200,7 +206,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         end
         TriggerServerEvent('qb-weapons:server:removeWeaponAmmoItem', ammoItemName, unitsToRemove)
         if ammoItemName and QBCore.Shared.Items[ammoItemName] then
-            TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'use', actualLoaded)
+            TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'use', reallyLoaded)
         end
     end
 
