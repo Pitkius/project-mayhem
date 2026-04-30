@@ -213,18 +213,22 @@ RegisterNetEvent('qb-weapons:server:removeWeaponAmmoItem', function(itemName, re
     removeAmount = tonumber(removeAmount) or 1
     if removeAmount < 1 then return end
     local remaining = removeAmount
-    for _, v in pairs(Player.PlayerData.items) do
+    for slot, v in pairs(Player.PlayerData.items) do
         if remaining <= 0 then break end
         if v and v.name == itemName and (tonumber(v.amount) or 0) > 0 then
             local slotAmount = tonumber(v.amount) or 0
             local take = math.min(slotAmount, remaining)
             if take > 0 then
-                local removed = exports['qb-inventory']:RemoveItem(src, itemName, take, v.slot, 'qb-weapons:server:removeWeaponAmmoItem')
+                local itemSlot = tonumber(v.slot) or tonumber(slot) or false
+                local removed = exports['qb-inventory']:RemoveItem(src, itemName, take, itemSlot, 'qb-weapons:server:removeWeaponAmmoItem')
                 if removed then
                     remaining = remaining - take
                 end
             end
         end
+    end
+    if remaining > 0 then
+        exports['qb-inventory']:RemoveItem(src, itemName, remaining, false, 'qb-weapons:server:removeWeaponAmmoItem:fallback')
     end
 end)
 

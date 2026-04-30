@@ -34,7 +34,6 @@ QBCore.Commands.Add('giveitem', 'Give An Item (Admin Only)', { { name = 'id', he
             end
 
             if AddItem(id, itemData['name'], amount, false, info, 'give item command') then
-                QBCore.Functions.Notify(source, Lang:t('notify.yhg') .. GetPlayerName(id) .. ' ' .. amount .. ' ' .. itemData['name'] .. '', 'success')
                 TriggerClientEvent('qb-inventory:client:ItemBox', id, itemData, 'add', amount)
                 if Player(id).state.inv_busy then TriggerClientEvent('qb-inventory:client:updateInventory', id) end
             else
