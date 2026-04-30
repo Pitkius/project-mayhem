@@ -12,21 +12,40 @@ concurrency:
 
 jobs:
   deploy:
+    timeout-minutes: 10
     runs-on: [self-hosted, Linux, X64]
     steps:
       - name: Deploy on VPS self-hosted runner
         run: |
-          set -e
+          set -euxo pipefail
+          REPO_DIR="/home/fivem/FIVEMPROJEKTAS"
+          SERVER_DIR="/home/fivem/server"
+
           echo "[deploy] runner user: $(whoami)"
-          test -d /home/fivem/FIVEMPROJEKTAS
-          test -d /home/fivem/server
-          cd /home/fivem/FIVEMPROJEKTAS
-          git fetch origin main
-          git pull --ff-only origin main
-          sudo -n mkdir -p /home/fivem/server/resources /home/fivem/server/cfg
-          sudo -n rsync -a --delete /home/fivem/FIVEMPROJEKTAS/resources/ /home/fivem/server/resources/
-          sudo -n rsync -a --delete /home/fivem/FIVEMPROJEKTAS/cfg/ /home/fivem/server/cfg/
-          sudo -n cp /home/fivem/FIVEMPROJEKTAS/server.cfg /home/fivem/server/server.cfg
+          test -d "$REPO_DIR"
+          test -d "$SERVER_DIR"
+
+          cd "$REPO_DIR"
+          git fetch --prune origin main
+          git checkout main
+          git reset --hard origin/main
+          git clean -fd
+
+          sudo -n mkdir -p "$SERVER_DIR/resources" "$SERVER_DIR/cfg"
+          sudo -n rsync -a --delete "$REPO_DIR/resources/" "$SERVER_DIR/resources/"
+          sudo -n rsync -a --delete --exclude '00_base.cfg' "$REPO_DIR/cfg/" "$SERVER_DIR/cfg/"
+          sudo -n cp "$REPO_DIR/server.cfg" "$SERVER_DIR/server.cfg"
+
+          # Keep runtime C++ libs discoverable for FXServer on Debian hosts.
+          sudo -n mkdir -p "$SERVER_DIR/alpine/lib"
+          if [ -f "$SERVER_DIR/alpine/usr/lib/libstdc++.so.6" ]; then
+            sudo -n ln -sf "$SERVER_DIR/alpine/usr/lib/libstdc++.so.6" "$SERVER_DIR/alpine/lib/libstdc++.so.6"
+          fi
+          if [ -f "$SERVER_DIR/alpine/usr/lib/libgcc_s.so.1" ]; then
+            sudo -n ln -sf "$SERVER_DIR/alpine/usr/lib/libgcc_s.so.1" "$SERVER_DIR/alpine/lib/libgcc_s.so.1"
+          fi
+
           sudo -n systemctl restart fivem-txadmin
+          sleep 3
           sudo -n systemctl is-active --quiet fivem-txadmin
           echo "[deploy] done"
