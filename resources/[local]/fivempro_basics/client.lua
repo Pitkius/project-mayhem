@@ -23,7 +23,7 @@ CreateThread(function()
             SetNuiFocus(false, false)
             SetNuiFocusKeepInput(false)
             if GetResourceState('qb-target') == 'started' then
-                exports['qb-target']:DisableTarget(true)
+                exports['qb-target']:DisableTarget(false)
             end
         end
         Wait(0)

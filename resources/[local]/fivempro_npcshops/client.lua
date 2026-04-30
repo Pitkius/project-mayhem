@@ -46,6 +46,18 @@ CreateThread(function()
     end
 
     for i = 1, #Config.BarberPeds do
+        local barberCoords = Config.BarberPeds[i].coords
+        local barberBlip = AddBlipForCoord(barberCoords.x, barberCoords.y, barberCoords.z)
+        SetBlipSprite(barberBlip, 71)
+        SetBlipDisplay(barberBlip, 4)
+        SetBlipScale(barberBlip, 0.75)
+        SetBlipColour(barberBlip, 0)
+        SetBlipAsShortRange(barberBlip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString('Kirpykla')
+        EndTextCommandSetBlipName(barberBlip)
+        spawnedBlips[#spawnedBlips + 1] = barberBlip
+
         local ped = spawnShopPed(Config.BarberPeds[i].model, Config.BarberPeds[i].coords)
         if ped then
             exports['qb-target']:AddTargetEntity(ped, {
@@ -63,6 +75,18 @@ CreateThread(function()
     end
 
     for i = 1, #Config.ClothingPeds do
+        local clothingCoords = Config.ClothingPeds[i].coords
+        local clothingBlip = AddBlipForCoord(clothingCoords.x, clothingCoords.y, clothingCoords.z)
+        SetBlipSprite(clothingBlip, 366)
+        SetBlipDisplay(clothingBlip, 4)
+        SetBlipScale(clothingBlip, 0.75)
+        SetBlipColour(clothingBlip, 47)
+        SetBlipAsShortRange(clothingBlip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString('Rubu Parduotuve')
+        EndTextCommandSetBlipName(clothingBlip)
+        spawnedBlips[#spawnedBlips + 1] = clothingBlip
+
         local ped = spawnShopPed(Config.ClothingPeds[i].model, Config.ClothingPeds[i].coords)
         if ped then
             exports['qb-target']:AddTargetEntity(ped, {

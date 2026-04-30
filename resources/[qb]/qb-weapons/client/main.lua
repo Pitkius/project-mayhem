@@ -170,15 +170,21 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             return QBCore.Functions.Notify(Lang:t('error.wrong_ammo'), 'error')
         end
 
+        local hadClipBefore, clipBefore = GetAmmoInClip(ped, weapon)
         local ammoBefore = GetAmmoInPedWeapon(ped, weapon)
         AddAmmoToPed(ped, weapon, bulletsToLoad)
-        local ammoAfter = GetAmmoInPedWeapon(ped, weapon)
-        local reallyLoaded = math.max(0, (tonumber(ammoAfter) or 0) - (tonumber(ammoBefore) or 0))
+        local hasClipAfter, clipAfter = GetAmmoInClip(ped, weapon)
+        local reallyLoaded = 0
+        if hadClipBefore and hasClipAfter then
+            reallyLoaded = math.max(0, (tonumber(clipAfter) or 0) - (tonumber(clipBefore) or 0))
+        else
+            local ammoAfter = GetAmmoInPedWeapon(ped, weapon)
+            reallyLoaded = math.max(0, (tonumber(ammoAfter) or 0) - (tonumber(ammoBefore) or 0))
+        end
         if reallyLoaded <= 0 then
             return
         end
 
-        local hasClipAfter, clipAfter = GetAmmoInClip(ped, weapon)
         local refreshedAmmo = hasClipAfter and (tonumber(clipAfter) or reallyLoaded) or reallyLoaded
         local unitsToRemove = reallyLoaded
         local payload = CurrentWeaponData
@@ -282,7 +288,18 @@ CreateThread(function()
                     if ammoItemName and PlayerData and PlayerData.items then
                         local hasClip, currentClip = GetAmmoInClip(ped, weapon)
                         local hasMaxClip, maxClip = GetMaxAmmoInClip(ped, weapon, true)
-                        if hasClip and hasMaxClip and (tonumber(currentClip) or 0) < (tonumber(maxClip) or 0) then
+                        local canReload = false
+                        if hasClip and hasMaxClip then
+                            canReload = (tonumber(currentClip) or 0) < (tonumber(maxClip) or 0)
+                        else
+                            local currentTotalAmmo = GetAmmoInPedWeapon(ped, weapon)
+                            local hasMaxTotal, maxTotalAmmo = GetMaxAmmo(ped, weapon)
+                            if hasMaxTotal then
+                                canReload = (tonumber(currentTotalAmmo) or 0) < (tonumber(maxTotalAmmo) or 0)
+                            end
+                        end
+
+                        if canReload then
                             for _, item in pairs(PlayerData.items) do
                                 if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
                                     TriggerServerEvent('qb-inventory:server:useItem', { slot = item.slot })
