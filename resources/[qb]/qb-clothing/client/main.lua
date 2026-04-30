@@ -1008,6 +1008,21 @@ RegisterNetEvent('qb-clothing:client:openMenu', function()
         {menu = "accessoires", label = Lang:t("menu.accessoires"), selected = false}
     })
 end)
+
+RegisterNetEvent('qb-clothing:client:openBarberOnly', function()
+    customCamLocation = nil
+    openMenu({
+        {menu = "hair", label = Lang:t("menu.hair"), selected = true},
+    })
+end)
+
+RegisterNetEvent('qb-clothing:client:openClothingOnly', function()
+    customCamLocation = nil
+    openMenu({
+        {menu = "clothing", label = Lang:t("menu.character"), selected = true},
+        {menu = "accessoires", label = Lang:t("menu.accessoires"), selected = false}
+    })
+end)
 RegisterNetEvent('qb-clothing:client:reloadOutfits', function(myOutfits)
     SendNUIMessage({
         action = "reloadMyOutfits",
