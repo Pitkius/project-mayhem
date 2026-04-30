@@ -6,7 +6,7 @@ QBConfig.UpdateInterval = 5                             -- how often to update p
 QBConfig.StatusInterval = 5000                          -- how often to check hunger/thirst status in milliseconds
 
 QBConfig.Money = {}
-QBConfig.Money.MoneyTypes = { cash = 500, bank = 5000, crypto = 0 } -- type = startamount - Add or remove money types for your server (for ex. blackmoney = 0), remember once added it will not be removed from the database!
+QBConfig.Money.MoneyTypes = { cash = 0, bank = 5000, crypto = 0 } -- Starter cash moved to physical cash_bundle item via StarterItems.
 QBConfig.Money.DontAllowMinus = { 'cash', 'crypto' }                -- Money that is not allowed going in minus
 QBConfig.Money.MinusLimit = -5000                                    -- The maximum amount you can be negative 
 QBConfig.Money.PayCheckTimeOut = 10                                 -- The time in minutes that it will give the paycheck

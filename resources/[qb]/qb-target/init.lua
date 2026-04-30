@@ -60,7 +60,7 @@ Config.OpenKey = 'LMENU' -- Left Alt
 Config.MenuControlKey = 238
 
 -- Whether to disable ALL controls or only specificed ones
-Config.DisableControls = true
+Config.DisableControls = false
 
 -------------------------------------------------------------------------------
 -- Target Configs

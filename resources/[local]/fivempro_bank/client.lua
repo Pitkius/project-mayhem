@@ -43,6 +43,40 @@ local function openBankMenu()
     end)
 end
 
+local function openAtmMenu()
+    QBCore.Functions.TriggerCallback('fivempro:bank:server:getSnapshot', function(snapshot)
+        if not snapshot then return end
+
+        local menu = {
+            {
+                header = 'Bankomatas',
+                isMenuHeader = true
+            },
+            {
+                header = ('Cash: $%s'):format(snapshot.cash),
+                txt = ('Bank: $%s'):format(snapshot.bank),
+                isMenuHeader = true
+            },
+            {
+                header = 'Inesti pinigus',
+                txt = 'Perkelti cash i banka',
+                params = { event = 'fivempro:bank:client:deposit' }
+            },
+            {
+                header = 'Issiimti pinigus',
+                txt = 'Perkelti is banko i cash',
+                params = { event = 'fivempro:bank:client:withdraw' }
+            },
+            {
+                header = 'Uzdaryti',
+                params = { event = 'qb-menu:closeMenu' }
+            }
+        }
+
+        exports['qb-menu']:openMenu(menu)
+    end)
+end
+
 RegisterNetEvent('fivempro:bank:client:deposit', function()
     local result = exports['qb-input']:ShowInput({
         header = 'Inesti i banka',
@@ -175,6 +209,22 @@ CreateThread(function()
             distance = 2.0
         })
     end
+end)
+
+CreateThread(function()
+    exports['qb-target']:AddTargetModel(Config.ATMModels, {
+        options = {
+            {
+                type = 'client',
+                icon = 'fas fa-money-bill-wave',
+                label = 'Naudoti bankomata',
+                action = function()
+                    openAtmMenu()
+                end
+            }
+        },
+        distance = 2.0
+    })
 end)
 
 CreateThread(function()

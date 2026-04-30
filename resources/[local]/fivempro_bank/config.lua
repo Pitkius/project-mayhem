@@ -5,3 +5,10 @@ Config.BankLocations = {
     vec3(-1212.980, -330.841, 37.787),
     vec3(-2962.582, 482.627, 15.703)
 }
+
+Config.ATMModels = {
+    'prop_atm_01',
+    'prop_atm_02',
+    'prop_atm_03',
+    'prop_fleeca_atm'
+}
