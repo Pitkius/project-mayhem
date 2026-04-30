@@ -170,24 +170,8 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             return QBCore.Functions.Notify(Lang:t('error.wrong_ammo'), 'error')
         end
 
-        local hasClipNow, currentClipNow = GetAmmoInClip(ped, weapon)
-        local hasMaxClipNow, maxClipNow = GetMaxAmmoInClip(ped, weapon, true)
-        if not hasClipNow or not hasMaxClipNow then
-            return
-        end
-
-        local clipRoom = math.max(0, (tonumber(maxClipNow) or 0) - (tonumber(currentClipNow) or 0))
-        if clipRoom <= 0 then
-            return
-        end
-
-        local actualLoaded = math.min(clipRoom, bulletsToLoad)
-        if actualLoaded <= 0 then
-            return
-        end
-
         local ammoBefore = GetAmmoInPedWeapon(ped, weapon)
-        AddAmmoToPed(ped, weapon, actualLoaded)
+        AddAmmoToPed(ped, weapon, bulletsToLoad)
         local ammoAfter = GetAmmoInPedWeapon(ped, weapon)
         local reallyLoaded = math.max(0, (tonumber(ammoAfter) or 0) - (tonumber(ammoBefore) or 0))
         if reallyLoaded <= 0 then

@@ -20,7 +20,7 @@ end
 local function spawnShopPed(model, coords)
     local hash = loadModel(model)
     if not hash then return nil end
-    local spawnZ = coords.z
+    local spawnZ = coords.z + 1.0
     local ped = CreatePed(0, hash, coords.x, coords.y, spawnZ, coords.w, false, false)
     RequestCollisionAtCoord(coords.x, coords.y, spawnZ)
     local timeout = GetGameTimer() + 2000
@@ -28,7 +28,11 @@ local function spawnShopPed(model, coords)
         Wait(0)
     end
 
-    SetEntityCoordsNoOffset(ped, coords.x, coords.y, spawnZ + 0.05, false, false, false)
+    PlaceEntityOnGroundProperly(ped)
+    local pedCoords = GetEntityCoords(ped)
+    if math.abs(pedCoords.z - coords.z) > 2.0 then
+        SetEntityCoordsNoOffset(ped, coords.x, coords.y, coords.z + 0.05, false, false, false)
+    end
     SetEntityHeading(ped, coords.w)
     SetModelAsNoLongerNeeded(hash)
     setupPed(ped)

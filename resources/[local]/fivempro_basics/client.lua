@@ -100,56 +100,40 @@ RegisterNetEvent('fivempro_basics:client:showCoords', function(targetServerId)
 end)
 
 RegisterNetEvent('fivempro_basics:client:useSandwich', function(itemName)
-    QBCore.Functions.Progressbar('fivempro_eat_sandwich', 'Valgai...', 4500, false, true, {
-        disableMovement = false,
-        disableCarMovement = false,
-        disableMouse = false,
-        disableCombat = true
-    }, {
-        animDict = 'mp_player_inteat@burger',
-        anim = 'mp_player_int_eat_burger',
-        flags = 49
-    }, {
-        model = 'prop_cs_burger_01',
-        bone = 60309,
-        coords = vec3(0.0, 0.0, -0.02),
-        rotation = vec3(30.0, 0.0, 0.0)
-    }, {}, function()
-        TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
-        local meta = QBCore.Functions.GetPlayerData().metadata or {}
-        local hunger = math.min(100, (tonumber(meta.hunger) or 0) + 40)
-        local thirst = math.min(100, (tonumber(meta.thirst) or 0) + 10)
-        TriggerServerEvent('consumables:server:addHunger', hunger)
-        TriggerServerEvent('consumables:server:addThirst', thirst)
-    end, function()
-        QBCore.Functions.Notify('Atšaukta', 'error')
-    end)
+    local ped = PlayerPedId()
+    RequestAnimDict('mp_player_inteat@burger')
+    while not HasAnimDictLoaded('mp_player_inteat@burger') do Wait(0) end
+    local prop = CreateObject(`prop_cs_burger_01`, 0.0, 0.0, 0.0, true, true, false)
+    AttachEntityToEntity(prop, ped, GetPedBoneIndex(ped, 60309), 0.0, 0.0, -0.02, 30.0, 0.0, 0.0, true, true, false, true, 1, true)
+    TaskPlayAnim(ped, 'mp_player_inteat@burger', 'mp_player_int_eat_burger', 8.0, -8.0, 4500, 49, 0, false, false, false)
+    Wait(4500)
+    ClearPedTasks(ped)
+    DeleteEntity(prop)
+
+    TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
+    local meta = QBCore.Functions.GetPlayerData().metadata or {}
+    local hunger = math.min(100, (tonumber(meta.hunger) or 0) + 40)
+    local thirst = math.min(100, (tonumber(meta.thirst) or 0) + 10)
+    TriggerServerEvent('consumables:server:addHunger', hunger)
+    TriggerServerEvent('consumables:server:addThirst', thirst)
 end)
 
 RegisterNetEvent('fivempro_basics:client:useWaterBottle', function(itemName)
-    QBCore.Functions.Progressbar('fivempro_drink_water', 'Geri vandeni...', 3500, false, true, {
-        disableMovement = false,
-        disableCarMovement = false,
-        disableMouse = false,
-        disableCombat = true
-    }, {
-        animDict = 'mp_player_intdrink',
-        anim = 'loop_bottle',
-        flags = 49
-    }, {
-        model = 'vw_prop_casino_water_bottle_01a',
-        bone = 60309,
-        coords = vec3(0.0, 0.0, -0.05),
-        rotation = vec3(0.0, 0.0, -40.0)
-    }, {}, function()
-        TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
-        local meta = QBCore.Functions.GetPlayerData().metadata or {}
-        local thirst = math.min(100, (tonumber(meta.thirst) or 0) + 45)
-        local hunger = math.min(100, (tonumber(meta.hunger) or 0) + 5)
-        TriggerServerEvent('consumables:server:addThirst', thirst)
-        TriggerServerEvent('consumables:server:addHunger', hunger)
-    end, function()
-        QBCore.Functions.Notify('Atšaukta', 'error')
-    end)
+    local ped = PlayerPedId()
+    RequestAnimDict('mp_player_intdrink')
+    while not HasAnimDictLoaded('mp_player_intdrink') do Wait(0) end
+    local prop = CreateObject(`vw_prop_casino_water_bottle_01a`, 0.0, 0.0, 0.0, true, true, false)
+    AttachEntityToEntity(prop, ped, GetPedBoneIndex(ped, 60309), 0.0, 0.0, -0.05, 0.0, 0.0, -40.0, true, true, false, true, 1, true)
+    TaskPlayAnim(ped, 'mp_player_intdrink', 'loop_bottle', 8.0, -8.0, 3500, 49, 0, false, false, false)
+    Wait(3500)
+    ClearPedTasks(ped)
+    DeleteEntity(prop)
+
+    TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
+    local meta = QBCore.Functions.GetPlayerData().metadata or {}
+    local thirst = math.min(100, (tonumber(meta.thirst) or 0) + 45)
+    local hunger = math.min(100, (tonumber(meta.hunger) or 0) + 5)
+    TriggerServerEvent('consumables:server:addThirst', thirst)
+    TriggerServerEvent('consumables:server:addHunger', hunger)
 end)
 
