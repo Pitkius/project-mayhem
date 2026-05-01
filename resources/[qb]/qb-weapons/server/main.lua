@@ -286,10 +286,19 @@ RegisterNetEvent('qb-weapons:server:requestQuickReload', function(ammoItemName, 
 
     if not selectedItem then return end
 
-    TriggerClientEvent('qb-weapons:client:AddAmmo', src, ammoConfig.ammoType, ammoConfig.amount, {
+    local totalAmmoItems = 0
+    for _, item in pairs(Player.PlayerData.items) do
+        if item and item.name == ammoItemName then
+            totalAmmoItems = totalAmmoItems + (tonumber(item.amount) or 0)
+        end
+    end
+    if totalAmmoItems <= 0 then return end
+
+    TriggerClientEvent('qb-weapons:client:AddAmmo', src, ammoConfig.ammoType, totalAmmoItems, {
         name = selectedItem.name,
         slot = selectedItem.slot,
-        amount = selectedItem.amount
+        amount = selectedItem.amount,
+        quickReload = true
     })
 end)
 

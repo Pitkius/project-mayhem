@@ -150,9 +150,13 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     end
 
     local ammoItemName = AmmoItemByType[normalizedAmmoType] or (itemData and itemData.name)
-    local ammoUnits = getTotalAmmoItems(ammoItemName)
     -- Ammo items are treated as bullet units (1 item = 1 bullet).
-    local availableBullets = ammoUnits
+    local availableBullets = 0
+    if itemData and itemData.quickReload then
+        availableBullets = math.max(0, tonumber(amount) or 0)
+    else
+        availableBullets = getTotalAmmoItems(ammoItemName)
+    end
     if availableBullets <= 0 then
         QBCore.Functions.Notify('No ammo in inventory.', 'error')
         return

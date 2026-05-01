@@ -40,6 +40,7 @@ CreateThread(function()
             SetNuiFocusKeepInput(false)
             TriggerEvent('qb-menu:client:closeMenu')
             TriggerEvent('qb-inventory:client:closeInv')
+            TriggerEvent('fivempro_dealership:client:forceCloseUi')
             if GetResourceState('qb-target') == 'started' then
                 exports['qb-target']:DisableTarget(false)
             end

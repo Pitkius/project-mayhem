@@ -31,9 +31,10 @@ local function openGarageMenu(garage)
 
         for _, v in ipairs(vehicles or {}) do
             local status = (tonumber(v.state) == 1) and 'Garaze' or 'Lauke'
+            local fuel = math.max(0, math.min(100, tonumber(v.fuel) or 0))
             menu[#menu + 1] = {
                 header = getVehicleDisplayName(v.model),
-                txt = string.format('%s | %s', v.plate, status),
+                txt = string.format('%s | %s | Kuras: %d%%', v.plate, status, fuel),
                 disabled = tonumber(v.state) ~= 1,
                 params = {
                     event = 'fivempro_garages:client:spawnVehicle',

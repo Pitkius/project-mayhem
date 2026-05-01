@@ -5,7 +5,7 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:getPlayerVehicles', fun
     if not Player then return cb({}) end
 
     local rows = MySQL.query.await([[
-        SELECT vehicle, plate, mods, state, garage
+        SELECT vehicle, plate, mods, state, garage, fuel
         FROM player_vehicles
         WHERE citizenid = ?
         ORDER BY state DESC, vehicle ASC
@@ -19,7 +19,8 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:getPlayerVehicles', fun
             plate = r.plate,
             state = tonumber(r.state) or 0,
             garage = r.garage,
-            mods = r.mods
+            mods = r.mods,
+            fuel = tonumber(r.fuel) or 0
         }
     end
 

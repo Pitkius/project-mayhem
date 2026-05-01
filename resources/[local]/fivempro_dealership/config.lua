@@ -5,9 +5,23 @@ Config.Dealership = {
     office = vector3(-31.97, -1114.07, 26.42),
     officeHeading = 71.20,
     spawn = vector4(-43.73, -1097.18, 26.42, 339.53),
+    preview = vector4(-47.25, -1094.42, 26.42, 295.0),
+    camera = vector4(-40.80, -1099.20, 28.10, 340.0),
     targetSize = vec3(1.2, 1.2, 1.8),
     targetDistance = 2.0,
     garage = 'pillboxgarage',
+}
+
+Config.PreviewColors = {
+    { label = 'Balta', idx = 111 },
+    { label = 'Juoda', idx = 0 },
+    { label = 'Pilka', idx = 4 },
+    { label = 'Raudona', idx = 27 },
+    { label = 'Melyna', idx = 64 },
+    { label = 'Geltona', idx = 88 },
+    { label = 'Zalia', idx = 55 },
+    { label = 'Oranzine', idx = 38 },
+    { label = 'Violetine', idx = 71 },
 }
 
 Config.CategoryLabels = {

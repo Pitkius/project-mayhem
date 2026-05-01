@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fivempro Dealership</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+    <div class="panel">
+      <div class="header">
+        <div class="title" id="title">Autosalonas</div>
+        <button id="closeBtn" class="close">X</button>
+      </div>
+      <div class="body">
+        <div class="sidebar">
+          <div class="sidebar-title">Kategorijos</div>
+          <div id="categories" class="categories"></div>
+        </div>
+        <div class="main">
+          <div class="vehicle-header">
+            <div id="selectedName" class="selected-name">-</div>
+            <div id="selectedPrice" class="selected-price">-</div>
+          </div>
+          <div class="stats">
+            <div>Max: <span id="statMax">0</span> km/h</div>
+            <div>0-100: <span id="stat0100">0.0</span> s</div>
+            <div>Stabdymas: <span id="statBraking">0</span>%</div>
+            <div>Sukibimas: <span id="statTraction">0</span>%</div>
+          </div>
+          <div class="controls">
+            <button id="rotateLeft">&lt; Pasukti</button>
+            <button id="rotateRight">Pasukti &gt;</button>
+            <button id="buyBtn" class="buy">Pirkti</button>
+          </div>
+          <div class="colors-title">Spalvos</div>
+          <div id="colors" class="colors"></div>
+        </div>
+      </div>
+      <div class="cars-wrap">
+        <div id="cars" class="cars"></div>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
