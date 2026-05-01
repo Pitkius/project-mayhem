@@ -1,13 +1,13 @@
 Config = Config or {}
 
 Config.BarberPeds = {
-    { model = 's_f_m_fembarber', coords = vector4(-815.66, -182.46, 36.57, 133.16) },
-    { model = 's_f_m_fembarber', coords = vector4(134.72, -1708.76, 28.29, 140.21) },
-    { model = 's_f_m_fembarber', coords = vector4(-1282.32, -1117.14, 5.99, 89.34) },
-    { model = 's_f_m_fembarber', coords = vector4(1931.31, 3728.95, 31.84, 206.36) },
-    { model = 's_f_m_fembarber', coords = vector4(1211.62, -472.93, 65.21, 347.14) },
-    { model = 's_f_m_fembarber', coords = vector4(-32.89, -152.34, 56.08, 245.52) },
-    { model = 's_f_m_fembarber', coords = vector4(-278.1, 6228.54, 30.7, 49.32) },
+    { model = 's_f_m_fembarber', coords = vector4(-815.66, -182.46, 36.57, 133.16), chair = vector4(-816.25, -184.15, 36.57, 298.0) },
+    { model = 's_f_m_fembarber', coords = vector4(134.72, -1708.76, 28.29, 140.21), chair = vector4(136.12, -1708.34, 28.29, 230.0) },
+    { model = 's_f_m_fembarber', coords = vector4(-1282.32, -1117.14, 5.99, 89.34), chair = vector4(-1281.16, -1116.62, 5.99, 180.0) },
+    { model = 's_f_m_fembarber', coords = vector4(1931.31, 3728.95, 31.84, 206.36), chair = vector4(1932.42, 3729.63, 31.84, 295.0) },
+    { model = 's_f_m_fembarber', coords = vector4(1211.62, -472.93, 65.21, 347.14), chair = vector4(1211.02, -474.14, 65.21, 165.0) },
+    { model = 's_f_m_fembarber', coords = vector4(-32.89, -152.34, 56.08, 245.52), chair = vector4(-31.96, -153.04, 56.08, 70.0) },
+    { model = 's_f_m_fembarber', coords = vector4(-278.1, 6228.54, 30.7, 49.32), chair = vector4(-277.04, 6228.1, 30.7, 225.0) },
 }
 
 Config.ClothingPeds = {

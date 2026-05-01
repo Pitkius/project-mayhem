@@ -174,6 +174,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         local hadMaxClipBefore, maxClipBefore = GetMaxAmmoInClip(ped, weapon, true)
         local ammoBefore = GetAmmoInPedWeapon(ped, weapon)
         AddAmmoToPed(ped, weapon, bulletsToLoad)
+        Wait(50)
         local hasClipAfter, clipAfter = GetAmmoInClip(ped, weapon)
         local ammoAfter = GetAmmoInPedWeapon(ped, weapon)
         local clipLoaded = 0
@@ -188,6 +189,11 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         end
 
         local reallyLoaded = clipLoaded > 0 and clipLoaded or totalLoaded
+        if reallyLoaded <= 0 then
+            -- Some weapons/natives return stale values immediately after AddAmmoToPed.
+            -- Fall back to the calculated expected load so inventory deduction stays in sync.
+            reallyLoaded = expectedMaxLoad
+        end
         reallyLoaded = math.min(reallyLoaded, expectedMaxLoad)
         if reallyLoaded <= 0 then
             return
