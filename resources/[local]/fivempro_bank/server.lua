@@ -58,11 +58,32 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
     syncCashWithInventory(player.PlayerData.source, player)
 end)
 
+local function syncMoneyFromInventory(src, player)
+    if not player then return end
+    local bundle = getCashBundleAmount(player)
+    local cash = math.max(0, math.floor(tonumber(player.PlayerData.money.cash) or 0))
+    if bundle ~= cash then
+        player.Functions.SetMoney('cash', bundle, 'fivempro-bank-sync-money-from-inventory')
+    end
+end
+
 CreateThread(function()
     Wait(3000)
     local players = QBCore.Functions.GetQBPlayers()
     for src, player in pairs(players) do
         syncCashWithInventory(src, player)
+    end
+end)
+
+-- Keep DB cash aligned with physical cash item (cash_bundle) in inventory.
+-- This fixes cases where players drop/split cash items and wallet cash must follow.
+CreateThread(function()
+    while true do
+        local players = QBCore.Functions.GetQBPlayers()
+        for src, player in pairs(players) do
+            syncMoneyFromInventory(src, player)
+        end
+        Wait(2500)
     end
 end)
 

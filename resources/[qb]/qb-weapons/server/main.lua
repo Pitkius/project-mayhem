@@ -252,6 +252,47 @@ RegisterNetEvent('qb-weapons:server:removeWeaponAmmoItem', function(itemName, re
     end
 end)
 
+RegisterNetEvent('qb-weapons:server:requestQuickReload', function(ammoItemName, weaponAmmoType, preferredSlot)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    ammoItemName = tostring(ammoItemName or ''):lower()
+    if ammoItemName == '' or not Config.AmmoTypes[ammoItemName] then return end
+
+    local ammoConfig = Config.AmmoTypes[ammoItemName]
+    if tostring(ammoConfig.ammoType or '') ~= tostring(weaponAmmoType or '') then
+        return
+    end
+
+    local selectedItem = nil
+    preferredSlot = tonumber(preferredSlot)
+    if preferredSlot and Player.PlayerData.items[preferredSlot] then
+        local slotItem = Player.PlayerData.items[preferredSlot]
+        if slotItem and slotItem.name == ammoItemName and (tonumber(slotItem.amount) or 0) > 0 then
+            selectedItem = slotItem
+        end
+    end
+
+    if not selectedItem then
+        for slot, item in pairs(Player.PlayerData.items) do
+            if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
+                selectedItem = item
+                selectedItem.slot = selectedItem.slot or slot
+                break
+            end
+        end
+    end
+
+    if not selectedItem then return end
+
+    TriggerClientEvent('qb-weapons:client:AddAmmo', src, ammoConfig.ammoType, ammoConfig.amount, {
+        name = selectedItem.name,
+        slot = selectedItem.slot,
+        amount = selectedItem.amount
+    })
+end)
+
 -- Commands
 
 QBCore.Commands.Add('repairweapon', 'Repair Weapon (God Only)', { { name = 'hp', help = Lang:t('info.hp_of_weapon') } }, true, function(source, args)

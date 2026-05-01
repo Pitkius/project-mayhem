@@ -36,7 +36,7 @@ local function openBankMenu()
             },
             {
                 header = 'Uzdaryti',
-                params = { event = 'qb-menu:closeMenu' }
+                params = { event = 'qb-menu:client:closeMenu' }
             }
         }
         exports['qb-menu']:openMenu(menu)
@@ -69,7 +69,7 @@ local function openAtmMenu()
             },
             {
                 header = 'Uzdaryti',
-                params = { event = 'qb-menu:closeMenu' }
+                params = { event = 'qb-menu:client:closeMenu' }
             }
         }
 

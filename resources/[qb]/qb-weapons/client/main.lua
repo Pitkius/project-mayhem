@@ -316,7 +316,7 @@ CreateThread(function()
                         if canReload then
                             for _, item in pairs(PlayerData.items) do
                                 if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
-                                    TriggerServerEvent('qb-inventory:server:useItem', { slot = item.slot })
+                                    TriggerServerEvent('qb-weapons:server:requestQuickReload', ammoItemName, ammoType, item.slot)
                                     break
                                 end
                             end

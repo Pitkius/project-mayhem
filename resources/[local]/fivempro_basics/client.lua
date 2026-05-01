@@ -17,12 +17,29 @@ CreateThread(function()
     end
 end)
 
+-- TAB shows qb-inventory hotbar (slots 1-5) while held.
+CreateThread(function()
+    local tabHotbarShown = false
+    while true do
+        if IsControlJustPressed(0, 37) then
+            ExecuteCommand('hotbar')
+            tabHotbarShown = true
+        elseif tabHotbarShown and IsControlJustReleased(0, 37) then
+            ExecuteCommand('hotbar')
+            tabHotbarShown = false
+        end
+        Wait(0)
+    end
+end)
+
 -- Global fail-safe: pressing ESC/P always releases stuck NUI focus and target mode.
 CreateThread(function()
     while true do
         if IsControlJustPressed(0, 199) or IsControlJustPressed(0, 200) then
             SetNuiFocus(false, false)
             SetNuiFocusKeepInput(false)
+            TriggerEvent('qb-menu:client:closeMenu')
+            TriggerEvent('qb-inventory:client:closeInv')
             if GetResourceState('qb-target') == 'started' then
                 exports['qb-target']:DisableTarget(false)
             end
