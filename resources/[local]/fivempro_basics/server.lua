@@ -62,16 +62,8 @@ QBCore.Commands.Add('heal', 'Admin heal su max maistu/vandeniu', {
     TriggerClientEvent('QBCore:Notify', target.PlayerData.source, 'Admin heal + needs atnaujinti', 'success')
 end, 'admin')
 
-QBCore.Commands.Add('coords', 'Parodyti zaidejo koordinates (admin)', {
-    { name = 'id', help = 'Server ID (optional)' }
-}, false, function(source, args)
-    local target = resolveTarget(source, args[1])
-    if not target then
-        TriggerClientEvent('QBCore:Notify', source, 'Zaidejas nerastas', 'error')
-        return
-    end
-
-    TriggerClientEvent('fivempro_basics:client:showCoords', source, target.PlayerData.source)
+QBCore.Commands.Add('coords', 'Ijungti/isjungti savo koordinates ekrano virsuje (admin)', {}, false, function(source)
+    TriggerClientEvent('fivempro_basics:client:toggleCoords', source)
 end, 'admin')
 
 QBCore.Functions.CreateUseableItem('sandwich', function(source, item)

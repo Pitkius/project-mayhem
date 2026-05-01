@@ -33,9 +33,24 @@ local function spawnShopPed(model, coords)
     if type(PlaceEntityOnGroundProperly) == 'function' then
         placedOnGround = PlaceEntityOnGroundProperly(ped) or false
     end
+    local targetZ = coords.z + 0.05
+    local groundFound, groundZ = GetGroundZFor_3dCoord(coords.x, coords.y, coords.z + 10.0, false)
+    if groundFound then
+        targetZ = groundZ + 0.05
+    else
+        for testZ = coords.z + 30.0, coords.z - 20.0, -2.0 do
+            local found, zAtPoint = GetGroundZFor_3dCoord(coords.x, coords.y, testZ, false)
+            if found then
+                targetZ = zAtPoint + 0.05
+                groundFound = true
+                break
+            end
+        end
+    end
+
     local pedCoords = GetEntityCoords(ped)
-    if (not placedOnGround) or math.abs(pedCoords.z - coords.z) > 2.0 then
-        SetEntityCoordsNoOffset(ped, coords.x, coords.y, coords.z + 0.05, false, false, false)
+    if (not placedOnGround) or (not groundFound) or math.abs(pedCoords.z - targetZ) > 1.5 then
+        SetEntityCoordsNoOffset(ped, coords.x, coords.y, targetZ, false, false, false)
     end
     SetEntityHeading(ped, coords.w)
     SetModelAsNoLongerNeeded(hash)

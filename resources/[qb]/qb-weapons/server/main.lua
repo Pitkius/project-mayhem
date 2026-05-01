@@ -206,16 +206,35 @@ RegisterNetEvent('qb-weapons:server:UpdateWeaponQuality', function(data, RepeatA
     Player.Functions.SetInventory(Player.PlayerData.items, true)
 end)
 
-RegisterNetEvent('qb-weapons:server:removeWeaponAmmoItem', function(itemName, removeAmount)
+RegisterNetEvent('qb-weapons:server:removeWeaponAmmoItem', function(itemName, removeAmount, preferredSlot)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player or type(itemName) ~= 'string' or itemName == '' then return end
     removeAmount = tonumber(removeAmount) or 1
     if removeAmount < 1 then return end
     local remaining = removeAmount
+
+    preferredSlot = tonumber(preferredSlot)
+    if preferredSlot and remaining > 0 then
+        local slotItem = Player.PlayerData.items[preferredSlot]
+        if slotItem and slotItem.name == itemName and (tonumber(slotItem.amount) or 0) > 0 then
+            local slotAmount = tonumber(slotItem.amount) or 0
+            local take = math.min(slotAmount, remaining)
+            if take > 0 then
+                local removed = exports['qb-inventory']:RemoveItem(src, itemName, take, preferredSlot, 'qb-weapons:server:removeWeaponAmmoItem:preferredSlot')
+                if removed then
+                    remaining = remaining - take
+                end
+            end
+        end
+    end
+
     for slot, v in pairs(Player.PlayerData.items) do
         if remaining <= 0 then break end
         if v and v.name == itemName and (tonumber(v.amount) or 0) > 0 then
+            if preferredSlot and (tonumber(v.slot) == preferredSlot or tonumber(slot) == preferredSlot) then
+                goto continue
+            end
             local slotAmount = tonumber(v.amount) or 0
             local take = math.min(slotAmount, remaining)
             if take > 0 then
@@ -226,6 +245,7 @@ RegisterNetEvent('qb-weapons:server:removeWeaponAmmoItem', function(itemName, re
                 end
             end
         end
+        ::continue::
     end
     if remaining > 0 then
         exports['qb-inventory']:RemoveItem(src, itemName, remaining, false, 'qb-weapons:server:removeWeaponAmmoItem:fallback')

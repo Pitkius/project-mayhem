@@ -1,4 +1,5 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+local coordsHudEnabled = false
 
 CreateThread(function()
     Wait(1500)
@@ -79,24 +80,38 @@ RegisterNetEvent('fivempro_basics:client:openRegister', function()
     TriggerEvent('qb-clothes:client:CreateFirstCharacter')
 end)
 
-RegisterNetEvent('fivempro_basics:client:showCoords', function(targetServerId)
-    local targetPlayer = GetPlayerFromServerId(tonumber(targetServerId) or -1)
-    if targetPlayer == -1 then
-        QBCore.Functions.Notify('Nepavyko gauti zaidejo koordinates', 'error')
-        return
+RegisterNetEvent('fivempro_basics:client:toggleCoords', function()
+    coordsHudEnabled = not coordsHudEnabled
+    if coordsHudEnabled then
+        QBCore.Functions.Notify('/coords ijungta', 'success')
+    else
+        QBCore.Functions.Notify('/coords isjungta', 'error')
     end
+end)
 
-    local ped = GetPlayerPed(targetPlayer)
-    if ped == 0 then
-        QBCore.Functions.Notify('Nepavyko gauti zaidejo ped', 'error')
-        return
+CreateThread(function()
+    while true do
+        if coordsHudEnabled then
+            local ped = PlayerPedId()
+            local coords = GetEntityCoords(ped)
+            local heading = GetEntityHeading(ped)
+            local text = ('COORDS  X: %.2f  Y: %.2f  Z: %.2f  H: %.2f'):format(coords.x, coords.y, coords.z, heading)
+
+            SetTextFont(4)
+            SetTextProportional(1)
+            SetTextScale(0.38, 0.38)
+            SetTextColour(255, 255, 255, 220)
+            SetTextCentre(true)
+            SetTextOutline()
+            BeginTextCommandDisplayText('STRING')
+            AddTextComponentSubstringPlayerName(text)
+            EndTextCommandDisplayText(0.5, 0.02)
+
+            Wait(0)
+        else
+            Wait(250)
+        end
     end
-
-    local coords = GetEntityCoords(ped)
-    local heading = GetEntityHeading(ped)
-    local msg = ('x: %.2f, y: %.2f, z: %.2f, h: %.2f'):format(coords.x, coords.y, coords.z, heading)
-    print(('[fivempro_basics] /coords -> %s'):format(msg))
-    QBCore.Functions.Notify(msg, 'success', 9000)
 end)
 
 RegisterNetEvent('fivempro_basics:client:useSandwich', function(itemName)
