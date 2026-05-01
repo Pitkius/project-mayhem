@@ -1,21 +1,69 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 QBCore.Functions.CreateUseableItem('cash_bundle', function(source, item)
+    TriggerClientEvent('QBCore:Notify', source, 'Cash yra automatiskai sinchronizuojamas su inventory. Naudoti nereikia.', 'primary')
+end)
+
+local function getCashBundleAmount(player)
+    if not player or not player.PlayerData or not player.PlayerData.items then return 0 end
+    local total = 0
+    for _, item in pairs(player.PlayerData.items) do
+        if item and item.name == 'cash_bundle' then
+            total = total + (tonumber(item.amount) or 0)
+        end
+    end
+    return total
+end
+
+local function removeCashBundleAmount(src, player, amount)
+    local remaining = tonumber(amount) or 0
+    if remaining <= 0 then return true end
+    for slot, item in pairs(player.PlayerData.items or {}) do
+        if remaining <= 0 then break end
+        if item and item.name == 'cash_bundle' and (tonumber(item.amount) or 0) > 0 then
+            local take = math.min(tonumber(item.amount) or 0, remaining)
+            local itemSlot = tonumber(item.slot) or tonumber(slot) or false
+            if take > 0 and exports['qb-inventory']:RemoveItem(src, 'cash_bundle', take, itemSlot, 'fivempro-bank-sync-cash-bundle') then
+                remaining = remaining - take
+            end
+        end
+    end
+    return remaining <= 0
+end
+
+local function syncCashWithInventory(src, player)
+    if not player then return end
+    local cash = math.max(0, math.floor(tonumber(player.PlayerData.money.cash) or 0))
+    local bundle = getCashBundleAmount(player)
+    if bundle == cash then return end
+
+    if bundle < cash then
+        local addAmount = cash - bundle
+        exports['qb-inventory']:AddItem(src, 'cash_bundle', addAmount, false, false, 'fivempro-bank-sync-cash-add')
+    else
+        local removeAmount = bundle - cash
+        removeCashBundleAmount(src, player, removeAmount)
+    end
+end
+
+AddEventHandler('QBCore:Server:OnMoneyChange', function(source, moneytype)
+    if moneytype ~= 'cash' then return end
     local player = QBCore.Functions.GetPlayer(source)
     if not player then return end
+    syncCashWithInventory(source, player)
+end)
 
-    local amount = tonumber(item and item.amount) or 0
-    if amount <= 0 then
-        TriggerClientEvent('QBCore:Notify', source, 'Netinkamas pinigu paketas.', 'error')
-        return
+AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
+    if not player then return end
+    syncCashWithInventory(player.PlayerData.source, player)
+end)
+
+CreateThread(function()
+    Wait(3000)
+    local players = QBCore.Functions.GetQBPlayers()
+    for src, player in pairs(players) do
+        syncCashWithInventory(src, player)
     end
-
-    local removed = exports['qb-inventory']:RemoveItem(source, 'cash_bundle', amount, item.slot, 'fivempro-bank-open-cash-bundle')
-    if not removed then return end
-
-    player.Functions.AddMoney('cash', amount, 'fivempro-bank-open-cash-bundle')
-    TriggerClientEvent('qb-inventory:client:ItemBox', source, QBCore.Shared.Items.cash_bundle, 'remove')
-    TriggerClientEvent('QBCore:Notify', source, ('Issikeitei grynus: $%s'):format(amount), 'success')
 end)
 
 local function addHistory(citizenid, txType, amount, balanceAfter, targetCitizenid)
@@ -77,16 +125,9 @@ RegisterNetEvent('fivempro:bank:server:withdraw', function(amount)
     end
 
     player.Functions.RemoveMoney('bank', amount, 'fivempro-bank-withdraw')
-    local added = exports['qb-inventory']:AddItem(src, 'cash_bundle', amount, false, false, 'fivempro-bank-withdraw')
-    if not added then
-        -- Fail-safe rollback if inventory is full.
-        player.Functions.AddMoney('bank', amount, 'fivempro-bank-withdraw-rollback')
-        TriggerClientEvent('QBCore:Notify', src, 'Inventory pilnas, pinigu paketo ideti nepavyko.', 'error')
-        return
-    end
-    TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items.cash_bundle, 'add')
+    player.Functions.AddMoney('cash', amount, 'fivempro-bank-withdraw')
     addHistory(player.PlayerData.citizenid, 'WITHDRAW', amount, player.PlayerData.money.bank, nil)
-    TriggerClientEvent('QBCore:Notify', src, ('Issiimtas pinigu paketas uz $%s.'):format(amount), 'success')
+    TriggerClientEvent('QBCore:Notify', src, ('Issiimta grynais: $%s.'):format(amount), 'success')
 end)
 
 RegisterNetEvent('fivempro:bank:server:transfer', function(targetId, amount)
