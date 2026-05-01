@@ -1,5 +1,6 @@
 local spawnedPeds = {}
 local spawnedBlips = {}
+local pendingTargets = {}
 
 local function loadModel(model)
     local hash = type(model) == 'string' and joaat(model) or model
@@ -28,9 +29,12 @@ local function spawnShopPed(model, coords)
         Wait(0)
     end
 
-    PlaceEntityOnGroundProperly(ped)
+    local placedOnGround = false
+    if type(PlaceEntityOnGroundProperly) == 'function' then
+        placedOnGround = PlaceEntityOnGroundProperly(ped) or false
+    end
     local pedCoords = GetEntityCoords(ped)
-    if math.abs(pedCoords.z - coords.z) > 2.0 then
+    if (not placedOnGround) or math.abs(pedCoords.z - coords.z) > 2.0 then
         SetEntityCoordsNoOffset(ped, coords.x, coords.y, coords.z + 0.05, false, false, false)
     end
     SetEntityHeading(ped, coords.w)
@@ -40,11 +44,27 @@ local function spawnShopPed(model, coords)
     return ped
 end
 
-CreateThread(function()
-    while GetResourceState('qb-target') ~= 'started' do
-        Wait(200)
-    end
+local function queueTarget(ped, data)
+    if not ped or not DoesEntityExist(ped) then return end
+    pendingTargets[#pendingTargets + 1] = { ped = ped, data = data }
+end
 
+CreateThread(function()
+    while true do
+        if GetResourceState('qb-target') == 'started' then
+            for i = #pendingTargets, 1, -1 do
+                local entry = pendingTargets[i]
+                if entry and DoesEntityExist(entry.ped) then
+                    exports['qb-target']:AddTargetEntity(entry.ped, entry.data)
+                end
+                table.remove(pendingTargets, i)
+            end
+        end
+        Wait(500)
+    end
+end)
+
+CreateThread(function()
     for i = 1, #Config.BarberPeds do
         local barberCoords = Config.BarberPeds[i].coords
         local barberBlip = AddBlipForCoord(barberCoords.x, barberCoords.y, barberCoords.z)
@@ -60,7 +80,7 @@ CreateThread(function()
 
         local ped = spawnShopPed(Config.BarberPeds[i].model, Config.BarberPeds[i].coords)
         if ped then
-            exports['qb-target']:AddTargetEntity(ped, {
+            queueTarget(ped, {
                 options = {
                     {
                         type = 'client',
@@ -89,7 +109,7 @@ CreateThread(function()
 
         local ped = spawnShopPed(Config.ClothingPeds[i].model, Config.ClothingPeds[i].coords)
         if ped then
-            exports['qb-target']:AddTargetEntity(ped, {
+            queueTarget(ped, {
                 options = {
                     {
                         type = 'client',
@@ -117,7 +137,7 @@ CreateThread(function()
 
         local ped = spawnShopPed(Config.FoodPeds[i].model, Config.FoodPeds[i].coords)
         if ped then
-            exports['qb-target']:AddTargetEntity(ped, {
+            queueTarget(ped, {
                 options = {
                     {
                         type = 'server',

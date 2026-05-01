@@ -171,16 +171,24 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         end
 
         local hadClipBefore, clipBefore = GetAmmoInClip(ped, weapon)
+        local hadMaxClipBefore, maxClipBefore = GetMaxAmmoInClip(ped, weapon, true)
         local ammoBefore = GetAmmoInPedWeapon(ped, weapon)
         AddAmmoToPed(ped, weapon, bulletsToLoad)
         local hasClipAfter, clipAfter = GetAmmoInClip(ped, weapon)
-        local reallyLoaded = 0
+        local ammoAfter = GetAmmoInPedWeapon(ped, weapon)
+        local clipLoaded = 0
         if hadClipBefore and hasClipAfter then
-            reallyLoaded = math.max(0, (tonumber(clipAfter) or 0) - (tonumber(clipBefore) or 0))
-        else
-            local ammoAfter = GetAmmoInPedWeapon(ped, weapon)
-            reallyLoaded = math.max(0, (tonumber(ammoAfter) or 0) - (tonumber(ammoBefore) or 0))
+            clipLoaded = math.max(0, (tonumber(clipAfter) or 0) - (tonumber(clipBefore) or 0))
         end
+        local totalLoaded = math.max(0, (tonumber(ammoAfter) or 0) - (tonumber(ammoBefore) or 0))
+
+        local expectedMaxLoad = bulletsToLoad
+        if hadClipBefore and hadMaxClipBefore then
+            expectedMaxLoad = math.min(bulletsToLoad, math.max(0, (tonumber(maxClipBefore) or 0) - (tonumber(clipBefore) or 0)))
+        end
+
+        local reallyLoaded = clipLoaded > 0 and clipLoaded or totalLoaded
+        reallyLoaded = math.min(reallyLoaded, expectedMaxLoad)
         if reallyLoaded <= 0 then
             return
         end

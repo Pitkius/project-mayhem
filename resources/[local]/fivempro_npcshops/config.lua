@@ -5,13 +5,26 @@ Config.BarberPeds = {
     { model = 's_f_m_fembarber', coords = vector4(134.72, -1708.76, 28.29, 140.21) },
     { model = 's_f_m_fembarber', coords = vector4(-1282.32, -1117.14, 5.99, 89.34) },
     { model = 's_f_m_fembarber', coords = vector4(1931.31, 3728.95, 31.84, 206.36) },
+    { model = 's_f_m_fembarber', coords = vector4(1211.62, -472.93, 65.21, 347.14) },
+    { model = 's_f_m_fembarber', coords = vector4(-32.89, -152.34, 56.08, 245.52) },
+    { model = 's_f_m_fembarber', coords = vector4(-278.1, 6228.54, 30.7, 49.32) },
 }
 
 Config.ClothingPeds = {
-    { model = 's_f_y_shop_mid', coords = vector4(1694.41, 4822.95, 41.06, 98.27) },
-    { model = 's_f_y_shop_mid', coords = vector4(-709.94, -151.36, 36.42, 118.59) },
-    { model = 's_f_y_shop_mid', coords = vector4(74.92, -1392.57, 28.38, 267.53) },
-    { model = 's_f_y_shop_mid', coords = vector4(-1193.58, -767.08, 16.32, 215.22) },
+    { model = 's_f_y_shop_mid', coords = vector4(72.25, -1399.1, 28.38, 267.95) },
+    { model = 's_f_y_shop_mid', coords = vector4(-703.82, -152.15, 36.42, 117.63) },
+    { model = 's_f_y_shop_mid', coords = vector4(-167.84, -298.48, 38.73, 249.14) },
+    { model = 's_f_y_shop_mid', coords = vector4(428.66, -800.11, 28.49, 91.54) },
+    { model = 's_f_y_shop_mid', coords = vector4(-829.41, -1073.71, 10.33, 295.1) },
+    { model = 's_f_y_shop_mid', coords = vector4(-1448.63, -238.25, 48.82, 50.63) },
+    { model = 's_f_y_shop_mid', coords = vector4(11.63, 6514.22, 30.88, 40.21) },
+    { model = 's_f_y_shop_mid', coords = vector4(122.98, -220.88, 53.56, 334.24) },
+    { model = 's_f_y_shop_mid', coords = vector4(1695.31, 4823.0, 41.06, 99.17) },
+    { model = 's_f_y_shop_mid', coords = vector4(618.09, 2759.62, 41.09, 183.85) },
+    { model = 's_f_y_shop_mid', coords = vector4(1190.55, 2712.72, 37.22, 181.58) },
+    { model = 's_f_y_shop_mid', coords = vector4(-1193.81, -767.42, 16.32, 216.73) },
+    { model = 's_f_y_shop_mid', coords = vector4(-3172.42, 1048.11, 19.86, 332.12) },
+    { model = 's_f_y_shop_mid', coords = vector4(-1108.69, 2708.62, 18.11, 222.92) },
 }
 
 Config.FoodPeds = {
