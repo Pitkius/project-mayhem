@@ -13,7 +13,7 @@ html, body {
   inset: 0;
   width: 100vw;
   height: 100vh;
-  padding: 10px 14px 14px;
+  padding: 0;
   --fp-edge: rgba(72, 200, 170, 0.26);
   --fp-edge-soft: rgba(72, 200, 170, 0.16);
 }
@@ -28,7 +28,7 @@ html, body {
 
 .panel-chrome {
   border: 1px solid var(--fp-edge);
-  border-radius: 14px;
+  border-radius: 0;
   overflow: hidden;
   color: #e8f4f0;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 12px 48px rgba(0, 0, 0, 0.35);

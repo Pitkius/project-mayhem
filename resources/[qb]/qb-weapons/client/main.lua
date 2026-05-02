@@ -5,6 +5,7 @@ local CurrentWeaponData, CanShoot, MultiplierAmount, currentWeapon = {}, true, 0
 local lastAutoReloadAt = 0
 local lastSyncedWeapon = nil
 local lastSyncedAmmo = nil
+local lastAmmoSyncAt = 0
 
 local AmmoItemByType = {
     AMMO_PISTOL = 'pistol_ammo',
@@ -343,10 +344,15 @@ CreateThread(function()
                 CurrentWeaponData = resolveCurrentWeaponDataByName(selectedWeaponData.name) or CurrentWeaponData
                 local ammo = GetAmmoInPedWeapon(ped, weapon)
                 if CurrentWeaponData and CurrentWeaponData.name then
-                    if lastSyncedWeapon ~= selectedWeaponData.name or lastSyncedAmmo ~= ammo then
+                    local now = GetGameTimer()
+                    local ammoChanged = (lastSyncedWeapon ~= selectedWeaponData.name) or (lastSyncedAmmo ~= ammo)
+                    local likelyCombatAction = IsPedShooting(ped) or (now - lastAutoReloadAt) <= 1800
+                    local periodicFallback = (now - lastAmmoSyncAt) >= 2500
+                    if ammoChanged and (likelyCombatAction or periodicFallback) then
                         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', CurrentWeaponData, tonumber(ammo))
                         lastSyncedWeapon = selectedWeaponData.name
                         lastSyncedAmmo = ammo
+                        lastAmmoSyncAt = now
                     end
                 end
                 if MultiplierAmount > 0 and CurrentWeaponData and CurrentWeaponData.name then
@@ -357,8 +363,9 @@ CreateThread(function()
         else
             lastSyncedWeapon = nil
             lastSyncedAmmo = nil
+            lastAmmoSyncAt = 0
         end
-        Wait(200)
+        Wait(250)
     end
 end)
 

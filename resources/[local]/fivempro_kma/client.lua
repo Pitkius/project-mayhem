@@ -148,6 +148,51 @@ local function spawnKmaPreviewVehicle(model, plate)
     end)
 end
 
+local function isSpawnClear(spawn)
+    local pool = GetGamePool('CVehicle')
+    local spawnPos = vector3(spawn.x, spawn.y, spawn.z)
+    for i = 1, #pool do
+        local veh = pool[i]
+        if DoesEntityExist(veh) and #(GetEntityCoords(veh) - spawnPos) < 3.0 then
+            return false
+        end
+    end
+    return true
+end
+
+local function spawnReleasedVehicle(result)
+    if not result or not result.model or not activeLocation then return end
+    local spawn = activeLocation.spawn or activeLocation.preview
+    if not spawn then return end
+
+    if not isSpawnClear(spawn) then
+        return QBCore.Functions.Notify('KMA spawn vieta uzimta, patrauk transporta priemone', 'error')
+    end
+
+    local modelHash = joaat(result.model)
+    RequestModel(modelHash)
+    while not HasModelLoaded(modelHash) do Wait(0) end
+
+    local veh = CreateVehicle(modelHash, spawn.x, spawn.y, spawn.z, spawn.w, true, false)
+    if not veh or veh == 0 then
+        SetModelAsNoLongerNeeded(modelHash)
+        return QBCore.Functions.Notify('Nepavyko spawninti masinos', 'error')
+    end
+
+    SetEntityAsMissionEntity(veh, true, true)
+    SetVehicleNumberPlateText(veh, result.plate or '')
+    if result.mods and result.mods ~= '' then
+        local ok, mods = pcall(json.decode, result.mods)
+        if ok and mods and QBCore.Functions.SetVehicleProperties then
+            QBCore.Functions.SetVehicleProperties(veh, mods)
+        end
+    end
+
+    SetModelAsNoLongerNeeded(modelHash)
+    TriggerEvent('vehiclekeys:client:SetOwner', result.plate)
+    TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
+end
+
 local function buildKmaRows(vehicles)
     local rows = {}
     for _, v in ipairs(vehicles or {}) do
@@ -267,10 +312,20 @@ RegisterNUICallback('reclaim', function(data, cb)
             cb('ok')
             return
         end
-        QBCore.Functions.Notify(result.message or 'Masina grazinta i garaza', 'success')
+        spawnReleasedVehicle(result)
+        QBCore.Functions.Notify(result.message or 'Masina atsiimta is KMA', 'success')
         closeKmaUi()
         cb('ok')
     end, plate, activeLocation.id)
+end)
+
+CreateThread(function()
+    while true do
+        if uiOpen and (IsControlJustPressed(0, 199) or IsControlJustPressed(0, 200)) then
+            closeKmaUi()
+        end
+        Wait(0)
+    end
 end)
 
 CreateThread(function()

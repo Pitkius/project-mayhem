@@ -17,8 +17,8 @@ QBCore.Functions.CreateCallback('fivempro_kma:server:getVehicles', function(sour
     local rows = MySQL.query.await([[
         SELECT vehicle, plate, mods, state, garage, fuel
         FROM player_vehicles
-        WHERE citizenid = ? AND state = 0
-        ORDER BY vehicle ASC
+        WHERE citizenid = ? AND state IN (0, 2)
+        ORDER BY state DESC, vehicle ASC
     ]], { Player.PlayerData.citizenid })
 
     local vehicles = {}
@@ -57,7 +57,8 @@ QBCore.Functions.CreateCallback('fivempro_kma:server:reclaim', function(source, 
         return cb({ ok = false, message = 'Masina nerasta' })
     end
 
-    if tonumber(row.state) ~= 0 then
+    local state = tonumber(row.state) or 0
+    if state ~= 0 and state ~= 2 then
         return cb({ ok = false, message = 'Si masina jau garaze arba neatitinka KMA' })
     end
 
@@ -70,10 +71,11 @@ QBCore.Functions.CreateCallback('fivempro_kma:server:reclaim', function(source, 
         return cb({ ok = false, message = ('Nepakanka pinigu (%s)'):format(fee) })
     end
 
+    -- Release from impound and prepare immediate spawn.
     MySQL.update.await([[
         UPDATE player_vehicles
-        SET state = 1, garage = ?
-        WHERE citizenid = ? AND plate = ? AND state = 0
+        SET state = 0, garage = ?
+        WHERE citizenid = ? AND plate = ? AND state IN (0, 2)
     ]], { garageId, Player.PlayerData.citizenid, plate })
 
     local verify = MySQL.single.await([[
@@ -82,10 +84,16 @@ QBCore.Functions.CreateCallback('fivempro_kma:server:reclaim', function(source, 
         LIMIT 1
     ]], { Player.PlayerData.citizenid, plate })
 
-    if not verify or tonumber(verify.state) ~= 1 or tostring(verify.garage or '') ~= garageId then
+    if not verify or tonumber(verify.state) ~= 0 or tostring(verify.garage or '') ~= garageId then
         Player.Functions.AddMoney(paidWith, fee, 'fivempro-kma-refund')
         return cb({ ok = false, message = 'Nepavyko atnaujinti masinos (bandyk dar karta)' })
     end
 
-    cb({ ok = true, message = ('Sumoketa $%s - masina perkelta i garaza "%s".'):format(fee, garageId) })
+    cb({
+        ok = true,
+        model = row.vehicle,
+        plate = row.plate,
+        mods = row.mods,
+        message = ('Sumoketa $%s - masina paruosta atsiemimui.'):format(fee)
+    })
 end)
