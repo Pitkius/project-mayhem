@@ -10,7 +10,7 @@ const stat0100El = document.getElementById('stat0100');
 const statBrakingEl = document.getElementById('statBraking');
 const statTractionEl = document.getElementById('statTraction');
 const statusLineEl = document.getElementById('statusLine');
-const takeOutBtn = document.getElementById('takeOutBtn');
+const reclaimBtn = document.getElementById('reclaimBtn');
 
 let state = {
   payload: null,
@@ -25,6 +25,10 @@ function post(action, data = {}) {
   });
 }
 
+function fmtMoney(n) {
+  return `$${Number(n || 0).toLocaleString('en-US')}`;
+}
+
 function setStatusClass(el, kind) {
   el.classList.remove('ok', 'warn');
   if (kind === 'ok') el.classList.add('ok');
@@ -33,6 +37,7 @@ function setStatusClass(el, kind) {
 
 function applySelectedToDom() {
   const v = state.selected;
+  const fee = state.payload?.fee ?? 5000;
   if (!v) {
     selectedNameEl.textContent = '-';
     selectedFuelEl.textContent = '-';
@@ -43,7 +48,7 @@ function applySelectedToDom() {
     statTractionEl.textContent = '0';
     statusLineEl.textContent = '-';
     setStatusClass(statusLineEl, null);
-    takeOutBtn.disabled = true;
+    reclaimBtn.disabled = true;
     return;
   }
 
@@ -55,8 +60,9 @@ function applySelectedToDom() {
   statBrakingEl.textContent = v.stats?.braking ?? 0;
   statTractionEl.textContent = v.stats?.traction ?? 0;
   statusLineEl.textContent = v.statusLabel || '-';
-  setStatusClass(statusLineEl, v.canTakeOut ? 'ok' : 'warn');
-  takeOutBtn.disabled = !v.canTakeOut;
+  setStatusClass(statusLineEl, 'warn');
+  reclaimBtn.disabled = !v.canReclaim;
+  reclaimBtn.textContent = `Atgauti už ${fmtMoney(fee)}`;
 
   post('selectVehicle', { plate: v.plate, model: v.model });
 }
@@ -74,7 +80,7 @@ function renderVehicleList() {
   if (list.length === 0) {
     const p = document.createElement('div');
     p.className = 'empty-msg';
-    p.textContent = 'Neturi registruotu automobiliu.';
+    p.textContent = 'Nėra mašinų KMA (visos garaže arba sąrašas tuščias).';
     vehicleListEl.appendChild(p);
     return;
   }
@@ -93,8 +99,7 @@ function renderCars() {
   const list = state.payload?.vehicles || [];
   list.forEach((veh) => {
     const card = document.createElement('div');
-    const disabled = !veh.canTakeOut;
-    card.className = `car-card ${state.selected?.plate === veh.plate ? 'active' : ''}${disabled ? ' disabled' : ''}`;
+    card.className = `car-card ${state.selected?.plate === veh.plate ? 'active' : ''}`;
     card.onclick = () => setSelected(veh);
 
     const img = document.createElement('img');
@@ -118,7 +123,7 @@ function renderCars() {
 
 function openUI(payload) {
   state.payload = payload;
-  titleEl.textContent = payload?.title || 'Garažas';
+  titleEl.textContent = payload?.title || 'KMA';
   const list = payload?.vehicles || [];
   state.selected = list[0] || null;
   renderVehicleList();
@@ -135,9 +140,9 @@ function closeUI() {
 document.getElementById('closeBtn').onclick = () => post('close');
 document.getElementById('rotateLeft').onclick = () => post('rotatePreview', { dir: -1 });
 document.getElementById('rotateRight').onclick = () => post('rotatePreview', { dir: 1 });
-takeOutBtn.onclick = () => {
-  if (state.selected?.canTakeOut && state.selected.plate) {
-    post('takeOut', { plate: state.selected.plate });
+reclaimBtn.onclick = () => {
+  if (state.selected?.canReclaim && state.selected.plate) {
+    post('reclaim', { plate: state.selected.plate });
   }
 };
 

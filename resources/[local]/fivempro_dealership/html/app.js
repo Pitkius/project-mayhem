@@ -132,11 +132,17 @@ document.getElementById('buyBtn').onclick = () => {
   }
 };
 
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    post('close');
-  }
-});
+window.addEventListener(
+  'keydown',
+  (e) => {
+    if (e.key === 'Escape' || e.code === 'Escape' || e.code === 'KeyP') {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      post('close');
+    }
+  },
+  true
+);
 
 window.addEventListener('message', (event) => {
   const data = event.data || {};

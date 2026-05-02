@@ -42,6 +42,7 @@ CreateThread(function()
             TriggerEvent('qb-inventory:client:closeInv')
             TriggerEvent('fivempro_dealership:client:forceCloseUi')
             TriggerEvent('fivempro_garages:client:forceCloseUi')
+            TriggerEvent('fivempro_kma:client:forceCloseUi')
             if GetResourceState('qb-target') == 'started' then
                 exports['qb-target']:DisableTarget(false)
             end

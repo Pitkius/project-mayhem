@@ -109,6 +109,10 @@ local function spawnPreviewVehicle(model)
         Wait(0)
         if gen ~= previewSpawnGen then return end
 
+        local spawn = Config.Dealership.preview
+        SetFocusPosAndVel(spawn.x, spawn.y, spawn.z, 0.0, 0.0, 0.0)
+        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+
         local hash = joaat(model)
         RequestModel(hash)
         local timeout = 0
@@ -120,7 +124,6 @@ local function spawnPreviewVehicle(model)
         end
         if gen ~= previewSpawnGen then return end
 
-        local spawn = Config.Dealership.preview
         local veh = CreateVehicle(hash, spawn.x, spawn.y, spawn.z, spawn.w, false, false)
         if gen ~= previewSpawnGen then
             if veh and veh ~= 0 then forceDeleteVehicleEntity(veh) end
@@ -134,7 +137,6 @@ local function spawnPreviewVehicle(model)
 
         previewVehicle = veh
         SetEntityAsMissionEntity(previewVehicle, true, true)
-        SetVehicleOnGroundProperly(previewVehicle)
         SetVehicleDirtLevel(previewVehicle, 0.0)
         SetVehicleColours(previewVehicle, currentColorIdx, currentColorIdx)
         SetVehicleExtraColours(previewVehicle, 0, 0)
@@ -142,6 +144,14 @@ local function spawnPreviewVehicle(model)
         SetVehicleUndriveable(previewVehicle, true)
         FreezeEntityPosition(previewVehicle, true)
         SetModelAsNoLongerNeeded(hash)
+
+        local cWait = 0
+        while not HasCollisionLoadedAroundEntity(previewVehicle) and cWait < 120 do
+            RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+            Wait(0)
+            cWait = cWait + 1
+        end
+        SetVehicleOnGroundProperly(previewVehicle)
 
         ensurePreviewCam()
         PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.2, true)
@@ -185,11 +195,13 @@ end
 
 local function closeDealershipUi()
     if not uiOpen then return end
+    previewSpawnGen = previewSpawnGen + 1
     uiOpen = false
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
     safeDeletePreviewVehicle()
     destroyPreviewCam()
+    ClearFocus()
 end
 
 RegisterNetEvent('fivempro_dealership:client:forceCloseUi', function()

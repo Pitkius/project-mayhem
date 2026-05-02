@@ -120,6 +120,9 @@ local function spawnGaragePreviewVehicle(model, plate)
         Wait(0)
         if gen ~= previewSpawnGen then return end
 
+        SetFocusPosAndVel(spawn.x, spawn.y, spawn.z, 0.0, 0.0, 0.0)
+        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+
         local hash = joaat(model)
         RequestModel(hash)
         local timeout = 0
@@ -144,7 +147,6 @@ local function spawnGaragePreviewVehicle(model, plate)
 
         previewVehicle = veh
         SetEntityAsMissionEntity(previewVehicle, true, true)
-        SetVehicleOnGroundProperly(previewVehicle)
         SetVehicleDirtLevel(previewVehicle, 0.0)
         SetVehicleEngineOn(previewVehicle, false, true, true)
         SetVehicleUndriveable(previewVehicle, true)
@@ -164,6 +166,15 @@ local function spawnGaragePreviewVehicle(model, plate)
         end
 
         SetModelAsNoLongerNeeded(hash)
+
+        local cWait = 0
+        while not HasCollisionLoadedAroundEntity(previewVehicle) and cWait < 120 do
+            RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+            Wait(0)
+            cWait = cWait + 1
+        end
+        SetVehicleOnGroundProperly(previewVehicle)
+
         ensureGaragePreviewCam(spawn)
         if previewCam and DoesCamExist(previewCam) then
             PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.25, true)
@@ -205,11 +216,13 @@ end
 
 local function closeGarageUi()
     if not uiOpen then return end
+    previewSpawnGen = previewSpawnGen + 1
     uiOpen = false
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
     safeDeletePreviewVehicle()
     destroyPreviewCam()
+    ClearFocus()
     activeGarage = nil
     garagePreviewMods = {}
     garagePreviewFuel = {}

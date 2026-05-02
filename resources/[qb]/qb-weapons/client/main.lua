@@ -94,7 +94,9 @@ RegisterNetEvent('qb-weapons:client:SetCurrentWeapon', function(data, bool)
     else
         CurrentWeaponData = {}
     end
-    CanShoot = bool
+    -- Tik aiškus `false` blokuoja šaudymą (sugęstas ginklas). `nil` = gali šaudyti.
+    -- Tai ne liečia šovinių naudojimo / R perkrovimo / priedų – tik LMB šūvių logiką.
+    CanShoot = bool ~= false
 end)
 
 RegisterNetEvent('qb-weapons:client:SetWeaponQuality', function(amount)
@@ -225,6 +227,12 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
 end)
 
 RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
+    local info = weaponData and weaponData.info
+    if not info or info.quality == nil then
+        shootbool = true
+    elseif shootbool == nil then
+        shootbool = tonumber(info.quality) > 0
+    end
     local ped = PlayerPedId()
     local weaponName = tostring(weaponData.name)
     local weaponHash = joaat(weaponData.name)
