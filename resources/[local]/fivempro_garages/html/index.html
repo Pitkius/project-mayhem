@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="lt">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fivempro Dealership</title>
+  <title>Fivempro Garages</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -13,36 +13,35 @@
   <div id="app" class="hidden">
     <div class="panel">
       <div class="header">
-        <div class="title" id="title">Autosalonas</div>
-        <button id="closeBtn" class="close">X</button>
+        <div class="title" id="title">Garažas</div>
+        <button type="button" id="closeBtn" class="close">X</button>
       </div>
       <div class="body">
         <div class="sidebar">
-          <div class="sidebar-title">Kategorijos</div>
-          <div id="categories" class="categories"></div>
+          <div class="sidebar-title">Tavo automobiliai</div>
+          <div id="vehicleList" class="vehicle-list"></div>
         </div>
-        <!-- Permatomas plotas: už jo matosi žaidimo kamera ir peržiūros auto -->
         <div class="preview-viewport" aria-hidden="true">
           <div class="preview-viewport-hint">Peržiūra</div>
         </div>
         <div class="main-column">
           <div class="vehicle-header">
             <div id="selectedName" class="selected-name">-</div>
-            <div id="selectedPrice" class="selected-price">-</div>
+            <div id="selectedFuel" class="selected-fuel">-</div>
           </div>
+          <div id="selectedPlate" class="selected-plate">-</div>
           <div class="stats">
             <div>Max: <span id="statMax">0</span> km/h</div>
             <div>0-100: <span id="stat0100">0.0</span> s</div>
             <div>Stabdymas: <span id="statBraking">0</span>%</div>
             <div>Sukibimas: <span id="statTraction">0</span>%</div>
           </div>
+          <div id="statusLine" class="status-line">-</div>
           <div class="controls">
-            <button id="rotateLeft">&lt; Pasukti</button>
-            <button id="rotateRight">Pasukti &gt;</button>
-            <button id="buyBtn" class="buy">Pirkti</button>
+            <button type="button" id="rotateLeft">&lt; Pasukti</button>
+            <button type="button" id="rotateRight">Pasukti &gt;</button>
+            <button type="button" id="takeOutBtn" class="buy">Ištraukti</button>
           </div>
-          <div class="colors-title">Spalvos</div>
-          <div id="colors" class="colors"></div>
         </div>
       </div>
       <div class="cars-wrap">
