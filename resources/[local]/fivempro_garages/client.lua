@@ -284,6 +284,10 @@ local function doGarageVehicleSpawn(data)
     end, data.plate, data.garageId)
 end
 
+RegisterNetEvent('fivempro_garages:client:forceCloseUi', function()
+    closeGarageUi()
+end)
+
 RegisterNetEvent('fivempro_garages:client:openGarage', function(data)
     if not data or not data.garageId then return end
     for _, garage in ipairs(Config.Garages) do

@@ -261,7 +261,7 @@ RegisterNetEvent('qb-weapons:server:requestQuickReload', function(ammoItemName, 
     if ammoItemName == '' or not Config.AmmoTypes[ammoItemName] then return end
 
     local ammoConfig = Config.AmmoTypes[ammoItemName]
-    if tostring(ammoConfig.ammoType or '') ~= tostring(weaponAmmoType or '') then
+    if string.upper(tostring(ammoConfig.ammoType or '')) ~= string.upper(tostring(weaponAmmoType or '')) then
         return
     end
 
@@ -271,6 +271,7 @@ RegisterNetEvent('qb-weapons:server:requestQuickReload', function(ammoItemName, 
         local slotItem = Player.PlayerData.items[preferredSlot]
         if slotItem and slotItem.name == ammoItemName and (tonumber(slotItem.amount) or 0) > 0 then
             selectedItem = slotItem
+            selectedItem.slot = tonumber(selectedItem.slot) or preferredSlot
         end
     end
 
@@ -278,7 +279,7 @@ RegisterNetEvent('qb-weapons:server:requestQuickReload', function(ammoItemName, 
         for slot, item in pairs(Player.PlayerData.items) do
             if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
                 selectedItem = item
-                selectedItem.slot = selectedItem.slot or slot
+                selectedItem.slot = tonumber(selectedItem.slot) or tonumber(slot)
                 break
             end
         end
@@ -296,7 +297,7 @@ RegisterNetEvent('qb-weapons:server:requestQuickReload', function(ammoItemName, 
 
     TriggerClientEvent('qb-weapons:client:AddAmmo', src, ammoConfig.ammoType, totalAmmoItems, {
         name = selectedItem.name,
-        slot = selectedItem.slot,
+        slot = tonumber(selectedItem.slot),
         amount = selectedItem.amount,
         quickReload = true
     })

@@ -11,8 +11,8 @@ local AmmoItemByType = {
     AMMO_SMG = 'smg_ammo',
     AMMO_RIFLE = 'rifle_ammo',
     AMMO_SHOTGUN = 'shotgun_ammo',
-    AMMO_MG = 'smg_ammo',
-    AMMO_SNIPER = 'snp_ammo'
+    AMMO_MG = 'mg_ammo',
+    AMMO_SNIPER = 'snp_ammo',
 }
 
 -- Handlers
@@ -117,8 +117,9 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         return
     end
 
-    local normalizedAmmoType = tostring(ammoType):upper()
-    if selectedWeaponData.ammotype ~= normalizedAmmoType then
+    local normalizedAmmoType = tostring(ammoType or ''):upper()
+    local weaponAmmoNorm = tostring(selectedWeaponData.ammotype or ''):upper()
+    if weaponAmmoNorm ~= normalizedAmmoType then
         QBCore.Functions.Notify(Lang:t('error.wrong_ammo'), 'error')
         return
     end
@@ -170,7 +171,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         weapon = GetSelectedPedWeapon(ped)
         local current = QBCore.Shared.Weapons[weapon]
 
-        if not current or current.ammotype ~= normalizedAmmoType then
+        if not current or tostring(current.ammotype or ''):upper() ~= normalizedAmmoType then
             return QBCore.Functions.Notify(Lang:t('error.wrong_ammo'), 'error')
         end
 
@@ -212,7 +213,8 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         if payload and payload.name then
             TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', payload, refreshedAmmo)
         end
-        TriggerServerEvent('qb-weapons:server:removeWeaponAmmoItem', ammoItemName, unitsToRemove, itemData and itemData.slot)
+        local ammoInvSlot = itemData and tonumber(itemData.slot)
+        TriggerServerEvent('qb-weapons:server:removeWeaponAmmoItem', ammoItemName, unitsToRemove, ammoInvSlot)
         if ammoItemName and QBCore.Shared.Items[ammoItemName] then
             TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'use', reallyLoaded)
         end
@@ -292,7 +294,10 @@ end)
 
 CreateThread(function()
     while true do
-        if IsControlJustPressed(0, 45) then -- R key
+        -- R = INPUT_RELOAD (45). Kiti resursai gali išjungti valdiklį — vis tiek leidžiame ir tikriname „disabled“ būseną.
+        EnableControlAction(0, 45, true)
+        local reloadPressed = IsControlJustPressed(0, 45) or IsDisabledControlJustPressed(0, 45)
+        if reloadPressed then
             local now = GetGameTimer()
             if now - lastAutoReloadAt > 500 then
                 lastAutoReloadAt = now
@@ -301,8 +306,8 @@ CreateThread(function()
                 local weapon = GetSelectedPedWeapon(ped)
                 local selectedWeaponData = QBCore.Shared.Weapons[weapon]
                 if selectedWeaponData and selectedWeaponData.name ~= 'weapon_unarmed' then
-                    local ammoType = selectedWeaponData.ammotype
-                    local ammoItemName = AmmoItemByType[ammoType or '']
+                    local ammoType = tostring(selectedWeaponData.ammotype or ''):upper()
+                    local ammoItemName = AmmoItemByType[ammoType]
                     if ammoItemName and PlayerData and PlayerData.items then
                         local hasClip, currentClip = GetAmmoInClip(ped, weapon)
                         local hasMaxClip, maxClip = GetMaxAmmoInClip(ped, weapon, true)
@@ -317,10 +322,22 @@ CreateThread(function()
                             end
                         end
 
+                        -- Jei ginklas „tuščias“, bet native sako pilna – vis tiek bandome krauti iš inventoriaus.
+                        if not canReload and ammoItemName then
+                            local totalPed = GetAmmoInPedWeapon(ped, weapon)
+                            if (tonumber(totalPed) or 0) <= 0 then
+                                local invCount = getTotalAmmoItems(ammoItemName)
+                                if invCount > 0 then
+                                    canReload = true
+                                end
+                            end
+                        end
+
                         if canReload then
                             for _, item in pairs(PlayerData.items) do
                                 if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
-                                    TriggerServerEvent('qb-weapons:server:requestQuickReload', ammoItemName, ammoType, item.slot)
+                                    local invSlot = tonumber(item.slot)
+                                    TriggerServerEvent('qb-weapons:server:requestQuickReload', ammoItemName, ammoType, invSlot)
                                     break
                                 end
                             end
