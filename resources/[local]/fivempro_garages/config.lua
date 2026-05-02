@@ -1,7 +1,7 @@
 Config = Config or {}
 
 -- Žemėlapyje vienas bendras garažų blipas (qb-target zonos lieka kiekviename garaže).
-Config.UseSingleGarageMapBlip = true
+Config.UseSingleGarageMapBlip = false
 Config.GarageMapBlipLabel = 'Garažai'
 -- Jei nil – blipas ties pirmo sąrašo garažo koordinatėmis (miesto centras).
 Config.GarageMapBlipCoords = nil
@@ -16,6 +16,7 @@ Config.Garages = {
     { id = 'mirrorpark', label = 'Mirror Park Garage', coords = vector3(1036.4, -763.8, 57.99), heading = 225.0, spawn = vector4(1047.8, -778.9, 58.02, 90.0) },
     { id = 'rancho', label = 'Rancho Garage', coords = vector3(367.2, -2037.1, 21.7), heading = 320.0, spawn = vector4(378.6, -2041.3, 21.56, 51.0) },
     { id = 'sandy', label = 'Sandy Shores Garage', coords = vector3(1737.7, 3710.2, 34.14), heading = 22.0, spawn = vector4(1722.9, 3713.9, 34.2, 20.0) },
+    { id = 'grapeseed', label = 'Grapeseed Garage', coords = vector3(1718.7, 4933.2, 42.08), heading = 146.0, spawn = vector4(1718.7, 4933.2, 42.08, 146.0) },
     { id = 'paleto', label = 'Paleto Garage', coords = vector3(110.8, 6617.4, 31.89), heading = 224.0, spawn = vector4(128.6, 6621.6, 31.78, 225.0) },
     { id = 'zancudo', label = 'Route 68 Garage', coords = vector3(-2553.8, 2334.5, 33.06), heading = 92.0, spawn = vector4(-2545.9, 2331.4, 33.06, 92.0) },
     { id = 'chumash', label = 'Chumash Garage', coords = vector3(-3142.3, 1128.7, 20.86), heading = 339.0, spawn = vector4(-3134.8, 1112.9, 20.85, 339.0) },
@@ -24,3 +25,12 @@ Config.Garages = {
 }
 
 Config.TargetDistance = 2.2
+
+-- Žemės apskritimas + [E] — matosi priartėjus; spawn = parkuoti, coords = atidaryti garažą
+Config.EnableGroundMarkers = true
+Config.MarkerDrawDistance = 32.0
+Config.MarkerOpenRadius = 2.5
+Config.MarkerParkRadius = 6.5
+Config.MarkerParkMaxSpeedKmh = 12.0
+Config.MarkerSpawnScale = { x = 4.2, y = 4.2, z = 0.32 }
+Config.MarkerDeskScale = { x = 2.2, y = 2.2, z = 0.22 }

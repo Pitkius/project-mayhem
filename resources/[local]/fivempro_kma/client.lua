@@ -4,6 +4,7 @@ local uiOpen = false
 local previewVehicle = nil
 local previewCam = nil
 local previewSpawnGen = 0
+local activeLocation = nil
 local kmaPreviewMods = {}
 local kmaPreviewFuel = {}
 
@@ -49,11 +50,6 @@ local function forceDeleteVehicleEntity(veh)
     if DoesEntityExist(veh) then
         DeleteEntity(veh)
     end
-    local waitLeft = 20
-    while DoesEntityExist(veh) and waitLeft > 0 do
-        Wait(0)
-        waitLeft = waitLeft - 1
-    end
 end
 
 local function safeDeletePreviewVehicle()
@@ -63,27 +59,13 @@ local function safeDeletePreviewVehicle()
     previewVehicle = nil
 end
 
-local function clearVehiclesNearKmaSpawn(radius)
-    local spawn = Config.Kma.preview
-    if not spawn then return end
-    local center = vector3(spawn.x, spawn.y, spawn.z)
-    local playerPed = PlayerPedId()
-    local playerVeh = GetVehiclePedIsIn(playerPed, false)
-    for _, veh in ipairs(GetGamePool('CVehicle')) do
-        if veh and veh ~= 0 and DoesEntityExist(veh) and veh ~= playerVeh then
-            if #(GetEntityCoords(veh) - center) <= radius then
-                forceDeleteVehicleEntity(veh)
-            end
-        end
-    end
-end
-
 local function ensureKmaPreviewCam(spawn)
     if not spawn then return end
     if previewCam and DoesCamExist(previewCam) then
         SetCamActive(previewCam, true)
         return
     end
+
     local rad = math.rad(spawn.w + 0.0)
     local dist = 7.2
     local cx = spawn.x - math.sin(rad) * dist
@@ -105,16 +87,14 @@ local function destroyPreviewCam()
 end
 
 local function spawnKmaPreviewVehicle(model, plate)
-    if not model or model == '' then return end
-    local spawn = Config.Kma.preview
-    if not spawn then return end
+    if not model or model == '' or not activeLocation or not activeLocation.preview then return end
+    local spawn = activeLocation.preview
 
     previewSpawnGen = previewSpawnGen + 1
     local gen = previewSpawnGen
 
     CreateThread(function()
         safeDeletePreviewVehicle()
-        clearVehiclesNearKmaSpawn(4.0)
         Wait(0)
         if gen ~= previewSpawnGen then return end
 
@@ -137,7 +117,6 @@ local function spawnKmaPreviewVehicle(model, plate)
             if veh and veh ~= 0 then forceDeleteVehicleEntity(veh) end
             return
         end
-
         if not veh or veh == 0 then
             SetModelAsNoLongerNeeded(hash)
             return
@@ -164,19 +143,8 @@ local function spawnKmaPreviewVehicle(model, plate)
         end
 
         SetModelAsNoLongerNeeded(hash)
-
-        local cWait = 0
-        while not HasCollisionLoadedAroundEntity(previewVehicle) and cWait < 120 do
-            RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
-            Wait(0)
-            cWait = cWait + 1
-        end
-        SetVehicleOnGroundProperly(previewVehicle)
-
         ensureKmaPreviewCam(spawn)
-        if previewCam and DoesCamExist(previewCam) then
-            PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.25, true)
-        end
+        PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.25, true)
     end)
 end
 
@@ -215,13 +183,12 @@ local function closeKmaUi()
     ClearFocus()
     kmaPreviewMods = {}
     kmaPreviewFuel = {}
+    activeLocation = nil
 end
 
-RegisterNetEvent('fivempro_kma:client:forceCloseUi', function()
-    closeKmaUi()
-end)
-
-local function openKmaUi()
+local function openKmaUi(location)
+    if not location then return end
+    activeLocation = location
     QBCore.Functions.TriggerCallback('fivempro_kma:server:getVehicles', function(vehicles)
         kmaPreviewMods = {}
         kmaPreviewFuel = {}
@@ -236,13 +203,33 @@ local function openKmaUi()
         SendNUIMessage({
             action = 'open',
             payload = {
-                title = Config.Kma.label,
+                title = location.label or 'KMA',
                 fee = Config.Kma.fee,
+                locationId = location.id,
                 vehicles = rows,
             },
         })
     end)
 end
+
+RegisterNetEvent('fivempro_kma:client:forceCloseUi', function()
+    closeKmaUi()
+end)
+
+RegisterNetEvent('fivempro_kma:client:openUi', function(data)
+    local wantedId = data and data.locationId
+    local selected = nil
+    for _, loc in ipairs((Config.Kma and Config.Kma.locations) or {}) do
+        if loc.id == wantedId then
+            selected = loc
+            break
+        end
+    end
+    if not selected then
+        selected = ((Config.Kma and Config.Kma.locations) or {})[1]
+    end
+    openKmaUi(selected)
+end)
 
 RegisterNUICallback('close', function(_, cb)
     closeKmaUi()
@@ -263,16 +250,13 @@ RegisterNUICallback('rotatePreview', function(data, cb)
     if previewVehicle and DoesEntityExist(previewVehicle) and dir ~= 0 then
         local h = GetEntityHeading(previewVehicle)
         SetEntityHeading(previewVehicle, h + (dir * 8.0))
-        if previewCam and DoesCamExist(previewCam) and Config.Kma.preview then
-            PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.25, true)
-        end
     end
     cb('ok')
 end)
 
 RegisterNUICallback('reclaim', function(data, cb)
     local plate = data and data.plate
-    if not plate or plate == '' then
+    if not plate or plate == '' or not activeLocation then
         cb('ok')
         return
     end
@@ -283,24 +267,10 @@ RegisterNUICallback('reclaim', function(data, cb)
             cb('ok')
             return
         end
-
-        QBCore.Functions.Notify(result.message or 'Mašina grąžinta į garažą', 'success')
+        QBCore.Functions.Notify(result.message or 'Masina grazinta i garaza', 'success')
         closeKmaUi()
         cb('ok')
-    end, plate)
-end)
-
-CreateThread(function()
-    local cfg = Config.Kma
-    local blip = AddBlipForCoord(cfg.coords.x, cfg.coords.y, cfg.coords.z)
-    SetBlipSprite(blip, cfg.blipSprite or 225)
-    SetBlipDisplay(blip, 4)
-    SetBlipScale(blip, cfg.blipScale or 0.9)
-    SetBlipColour(blip, cfg.blipColor or 1)
-    SetBlipAsShortRange(blip, true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString(cfg.blipLabel or 'KMA')
-    EndTextCommandSetBlipName(blip)
+    end, plate, activeLocation.id)
 end)
 
 CreateThread(function()
@@ -308,29 +278,35 @@ CreateThread(function()
         Wait(300)
     end
 
-    local cfg = Config.Kma
-    local pos = cfg.coords
-    local size = cfg.targetSize or vec3(2.2, 2.2, 2.2)
+    for _, loc in ipairs((Config.Kma and Config.Kma.locations) or {}) do
+        local blip = AddBlipForCoord(loc.coords.x, loc.coords.y, loc.coords.z)
+        SetBlipSprite(blip, Config.Kma.blipSprite or 225)
+        SetBlipDisplay(blip, 4)
+        SetBlipScale(blip, Config.Kma.blipScale or 0.9)
+        SetBlipColour(blip, Config.Kma.blipColor or 1)
+        SetBlipAsShortRange(blip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString(loc.label or Config.Kma.blipLabel or 'KMA')
+        EndTextCommandSetBlipName(blip)
 
-    exports['qb-target']:AddBoxZone('fivempro_kma_desk', pos, size.x, size.y, {
-        name = 'fivempro_kma_desk',
-        heading = cfg.heading or 0.0,
-        debugPoly = false,
-        minZ = pos.z - 1.0,
-        maxZ = pos.z + 2.0,
-    }, {
-        options = {
-            {
-                type = 'client',
-                event = 'fivempro_kma:client:openUi',
-                icon = 'fas fa-car-burst',
-                label = 'KMA — atgauti mašiną',
+        local size = Config.Kma.targetSize or vec3(2.2, 2.2, 2.2)
+        exports['qb-target']:AddBoxZone(('fivempro_kma_%s'):format(loc.id), loc.coords, size.x, size.y, {
+            name = ('fivempro_kma_%s'):format(loc.id),
+            heading = loc.heading or 0.0,
+            debugPoly = false,
+            minZ = loc.coords.z - 1.0,
+            maxZ = loc.coords.z + 2.0,
+        }, {
+            options = {
+                {
+                    type = 'client',
+                    event = 'fivempro_kma:client:openUi',
+                    icon = 'fas fa-car-burst',
+                    label = 'KMA - atgauti masina',
+                    locationId = loc.id
+                },
             },
-        },
-        distance = cfg.targetDistance or 2.5,
-    })
-end)
-
-RegisterNetEvent('fivempro_kma:client:openUi', function()
-    openKmaUi()
+            distance = Config.Kma.targetDistance or 2.5,
+        })
+    end
 end)

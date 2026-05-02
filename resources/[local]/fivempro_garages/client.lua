@@ -412,6 +412,86 @@ local function createGarageMapBlips()
     end
 end
 
+local function drawFlatCylinderMarker(pos, scaleX, scaleY, scaleZ, r, g, b, a)
+    DrawMarker(
+        27,
+        pos.x, pos.y, pos.z + 0.02,
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0,
+        scaleX, scaleY, scaleZ,
+        r, g, b, a,
+        false, false, 2, false, nil, nil, false
+    )
+end
+
+local lastGarageInteractMs = 0
+
+CreateThread(function()
+    while true do
+        if not Config.EnableGroundMarkers then
+            Wait(1000)
+        else
+            local sleep = 400
+            local ped = PlayerPedId()
+            local pcoords = GetEntityCoords(ped)
+            local drawD = Config.MarkerDrawDistance or 32.0
+            local openR = Config.MarkerOpenRadius or 2.5
+            local parkR = Config.MarkerParkRadius or 6.5
+            local maxSpd = Config.MarkerParkMaxSpeedKmh or 12.0
+            local ss = Config.MarkerSpawnScale or { x = 4.2, y = 4.2, z = 0.32 }
+            local ds = Config.MarkerDeskScale or { x = 2.2, y = 2.2, z = 0.22 }
+
+            for _, garage in ipairs(Config.Garages or {}) do
+                local spawn = garage.spawn
+                local desk = garage.coords
+                if spawn and desk then
+                    local sp = vector3(spawn.x, spawn.y, spawn.z)
+                    local dp = vector3(desk.x, desk.y, desk.z)
+                    local dSpawn = #(pcoords - sp)
+                    local dDesk = #(pcoords - dp)
+
+                    if dSpawn < drawD or dDesk < drawD then
+                        sleep = 0
+                    end
+
+                    if dSpawn < drawD then
+                        drawFlatCylinderMarker(sp, ss.x, ss.y, ss.z, 48, 200, 160, 105)
+                    end
+                    if dDesk < drawD then
+                        drawFlatCylinderMarker(dp, ds.x, ds.y, ds.z, 72, 160, 220, 95)
+                    end
+
+                    if not uiOpen and not IsNuiFocused() then
+                        EnableControlAction(0, 38, true)
+
+                        if IsPedInAnyVehicle(ped, false) and dSpawn < parkR then
+                            local veh = GetVehiclePedIsIn(ped, false)
+                            if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
+                                local kmh = GetEntitySpeed(veh) * 3.6
+                                if kmh <= maxSpd then
+                                    QBCore.Functions.DrawText3D(sp.x, sp.y, sp.z + 0.55, '[E] Pastatyti mašiną į garažą')
+                                    if IsControlJustPressed(0, 38) and (GetGameTimer() - lastGarageInteractMs) > 450 then
+                                        lastGarageInteractMs = GetGameTimer()
+                                        TriggerEvent('fivempro_garages:client:parkVehicle', { garageId = garage.id })
+                                    end
+                                end
+                            end
+                        elseif not IsPedInAnyVehicle(ped, false) and dDesk < openR then
+                            QBCore.Functions.DrawText3D(dp.x, dp.y, dp.z + 0.95, '[E] Atidaryti garažą')
+                            if IsControlJustPressed(0, 38) and (GetGameTimer() - lastGarageInteractMs) > 450 then
+                                lastGarageInteractMs = GetGameTimer()
+                                TriggerEvent('fivempro_garages:client:openGarage', { garageId = garage.id })
+                            end
+                        end
+                    end
+                end
+            end
+
+            Wait(sleep)
+        end
+    end
+end)
+
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do
         Wait(300)

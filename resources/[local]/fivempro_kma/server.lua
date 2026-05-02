@@ -1,5 +1,15 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local function getKmaLocationById(locationId)
+    local id = tostring(locationId or '')
+    for _, loc in ipairs((Config.Kma and Config.Kma.locations) or {}) do
+        if loc.id == id then
+            return loc
+        end
+    end
+    return ((Config.Kma and Config.Kma.locations) or {})[1]
+end
+
 QBCore.Functions.CreateCallback('fivempro_kma:server:getVehicles', function(source, cb)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then return cb({}) end
@@ -27,13 +37,14 @@ QBCore.Functions.CreateCallback('fivempro_kma:server:getVehicles', function(sour
     cb(vehicles)
 end)
 
-QBCore.Functions.CreateCallback('fivempro_kma:server:reclaim', function(source, cb, plate)
+QBCore.Functions.CreateCallback('fivempro_kma:server:reclaim', function(source, cb, plate, locationId)
     local Player = QBCore.Functions.GetPlayer(source)
-    if not Player then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    if not Player then return cb({ ok = false, message = 'Zaidėjas nerastas' }) end
 
     plate = tostring(plate or ''):upper()
     local fee = tonumber(Config.Kma.fee) or 5000
-    local garageId = tostring(Config.Kma.defaultGarage or 'pillboxgarage')
+    local location = getKmaLocationById(locationId)
+    local garageId = tostring((location and location.defaultGarage) or 'pillboxgarage')
 
     local row = MySQL.single.await([[
         SELECT vehicle, plate, state
@@ -43,11 +54,11 @@ QBCore.Functions.CreateCallback('fivempro_kma:server:reclaim', function(source, 
     ]], { Player.PlayerData.citizenid, plate })
 
     if not row then
-        return cb({ ok = false, message = 'Mašina nerasta' })
+        return cb({ ok = false, message = 'Masina nerasta' })
     end
 
     if tonumber(row.state) ~= 0 then
-        return cb({ ok = false, message = 'Ši mašina jau garaže arba neatitinka KMA' })
+        return cb({ ok = false, message = 'Si masina jau garaze arba neatitinka KMA' })
     end
 
     local paidWith = nil
@@ -56,7 +67,7 @@ QBCore.Functions.CreateCallback('fivempro_kma:server:reclaim', function(source, 
     elseif Player.Functions.RemoveMoney('bank', fee, 'fivempro-kma-reclaim') then
         paidWith = 'bank'
     else
-        return cb({ ok = false, message = ('Nepakanka pinigų (%s)'):format(fee) })
+        return cb({ ok = false, message = ('Nepakanka pinigu (%s)'):format(fee) })
     end
 
     MySQL.update.await([[
@@ -73,8 +84,8 @@ QBCore.Functions.CreateCallback('fivempro_kma:server:reclaim', function(source, 
 
     if not verify or tonumber(verify.state) ~= 1 or tostring(verify.garage or '') ~= garageId then
         Player.Functions.AddMoney(paidWith, fee, 'fivempro-kma-refund')
-        return cb({ ok = false, message = 'Nepavyko atnaujinti mašinos (bandyk dar kartą)' })
+        return cb({ ok = false, message = 'Nepavyko atnaujinti masinos (bandyk dar karta)' })
     end
 
-    cb({ ok = true, message = ('Sumokėta $%s — mašina perkelta į garažą „%s“.'):format(fee, garageId) })
+    cb({ ok = true, message = ('Sumoketa $%s - masina perkelta i garaza "%s".'):format(fee, garageId) })
 end)

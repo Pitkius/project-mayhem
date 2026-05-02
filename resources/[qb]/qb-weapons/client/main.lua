@@ -206,7 +206,8 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             return
         end
 
-        local refreshedAmmo = hasClipAfter and (tonumber(clipAfter) or reallyLoaded) or reallyLoaded
+        -- Keep weapon metadata synced with total ammo, not just current clip.
+        local refreshedAmmo = GetAmmoInPedWeapon(ped, weapon)
         local unitsToRemove = reallyLoaded
         local payload = CurrentWeaponData
         if not payload or not payload.name then
@@ -317,37 +318,11 @@ CreateThread(function()
                     local ammoType = tostring(selectedWeaponData.ammotype or ''):upper()
                     local ammoItemName = AmmoItemByType[ammoType]
                     if ammoItemName and PlayerData and PlayerData.items then
-                        local hasClip, currentClip = GetAmmoInClip(ped, weapon)
-                        local hasMaxClip, maxClip = GetMaxAmmoInClip(ped, weapon, true)
-                        local canReload = false
-                        if hasClip and hasMaxClip then
-                            canReload = (tonumber(currentClip) or 0) < (tonumber(maxClip) or 0)
-                        else
-                            local currentTotalAmmo = GetAmmoInPedWeapon(ped, weapon)
-                            local hasMaxTotal, maxTotalAmmo = GetMaxAmmo(ped, weapon)
-                            if hasMaxTotal then
-                                canReload = (tonumber(currentTotalAmmo) or 0) < (tonumber(maxTotalAmmo) or 0)
-                            end
-                        end
-
-                        -- Jei ginklas „tuščias“, bet native sako pilna – vis tiek bandome krauti iš inventoriaus.
-                        if not canReload and ammoItemName then
-                            local totalPed = GetAmmoInPedWeapon(ped, weapon)
-                            if (tonumber(totalPed) or 0) <= 0 then
-                                local invCount = getTotalAmmoItems(ammoItemName)
-                                if invCount > 0 then
-                                    canReload = true
-                                end
-                            end
-                        end
-
-                        if canReload then
-                            for _, item in pairs(PlayerData.items) do
-                                if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
-                                    local invSlot = tonumber(item.slot)
-                                    TriggerServerEvent('qb-weapons:server:requestQuickReload', ammoItemName, ammoType, invSlot)
-                                    break
-                                end
+                        for _, item in pairs(PlayerData.items) do
+                            if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
+                                local invSlot = tonumber(item.slot)
+                                TriggerServerEvent('qb-weapons:server:requestQuickReload', ammoItemName, ammoType, invSlot)
+                                break
                             end
                         end
                     end
@@ -366,8 +341,7 @@ CreateThread(function()
             local selectedWeaponData = QBCore.Shared.Weapons[weapon]
             if selectedWeaponData then
                 CurrentWeaponData = resolveCurrentWeaponDataByName(selectedWeaponData.name) or CurrentWeaponData
-                local hasClip, clipAmmo = GetAmmoInClip(ped, weapon)
-                local ammo = hasClip and (tonumber(clipAmmo) or 0) or GetAmmoInPedWeapon(ped, weapon)
+                local ammo = GetAmmoInPedWeapon(ped, weapon)
                 if CurrentWeaponData and CurrentWeaponData.name then
                     if lastSyncedWeapon ~= selectedWeaponData.name or lastSyncedAmmo ~= ammo then
                         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', CurrentWeaponData, tonumber(ammo))

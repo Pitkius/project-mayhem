@@ -208,11 +208,9 @@ RegisterNetEvent('qb-inventory:server:useItem', function(item)
             TriggerClientEvent('QBCore:Notify', src, 'This weapon is blocked on this server.', 'error')
             return
         end
-        -- Jei kokybė nenurodyta, laikome ginklą pilnai tinkamu (seni itemai DB be quality).
+        -- Practical override: some legacy weapon items have broken/zero quality metadata,
+        -- which should not block shooting/reloading for this server.
         local canShoot = true
-        if itemData.info and itemData.info.quality ~= nil then
-            canShoot = tonumber(itemData.info.quality) > 0
-        end
         TriggerClientEvent('qb-weapons:client:UseWeapon', src, itemData, canShoot)
         TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
     elseif itemData.name == 'id_card' then
