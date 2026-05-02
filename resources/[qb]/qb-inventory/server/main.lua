@@ -208,15 +208,20 @@ RegisterNetEvent('qb-inventory:server:useItem', function(item)
             TriggerClientEvent('QBCore:Notify', src, 'This weapon is blocked on this server.', 'error')
             return
         end
-        TriggerClientEvent('qb-weapons:client:UseWeapon', src, itemData, itemData.info.quality and itemData.info.quality > 0)
+        TriggerClientEvent('qb-weapons:client:UseWeapon', src, itemData, itemData.info and itemData.info.quality and itemData.info.quality > 0)
         TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
     elseif itemData.name == 'id_card' then
+        if not itemData.info then
+            TriggerClientEvent('QBCore:Notify', src, 'ID card is missing metadata.', 'error')
+            return
+        end
         UseItem(itemData.name, src, itemData)
-        TriggerClientEvent('qb-inventory:client:ItemBox', source, itemInfo, 'use')
+        TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
+        local info = itemData.info
         local playerPed = GetPlayerPed(src)
         local playerCoords = GetEntityCoords(playerPed)
         local players = QBCore.Functions.GetPlayers()
-        local gender = item.info.gender == 0 and 'Male' or 'Female'
+        local gender = info.gender == 0 and 'Male' or 'Female'
         for _, v in pairs(players) do
             local targetPed = GetPlayerPed(v)
             local dist = #(playerCoords - GetEntityCoords(targetPed))
@@ -225,19 +230,24 @@ RegisterNetEvent('qb-inventory:server:useItem', function(item)
                     template = '<div class="chat-message advert" style="background: linear-gradient(to right, rgba(5, 5, 5, 0.6), #74807c); display: flex;"><div style="margin-right: 10px;"><i class="far fa-id-card" style="height: 100%;"></i><strong> {0}</strong><br> <strong>Civ ID:</strong> {1} <br><strong>First Name:</strong> {2} <br><strong>Last Name:</strong> {3} <br><strong>Birthdate:</strong> {4} <br><strong>Gender:</strong> {5} <br><strong>Nationality:</strong> {6}</div></div>',
                     args = {
                         'ID Card',
-                        item.info.citizenid,
-                        item.info.firstname,
-                        item.info.lastname,
-                        item.info.birthdate,
+                        info.citizenid,
+                        info.firstname,
+                        info.lastname,
+                        info.birthdate,
                         gender,
-                        item.info.nationality
+                        info.nationality
                     }
                 })
             end
         end
     elseif itemData.name == 'driver_license' then
+        if not itemData.info then
+            TriggerClientEvent('QBCore:Notify', src, 'Driver license is missing metadata.', 'error')
+            return
+        end
         UseItem(itemData.name, src, itemData)
         TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
+        local info = itemData.info
         local playerPed = GetPlayerPed(src)
         local playerCoords = GetEntityCoords(playerPed)
         local players = QBCore.Functions.GetPlayers()
@@ -249,10 +259,10 @@ RegisterNetEvent('qb-inventory:server:useItem', function(item)
                     template = '<div class="chat-message advert" style="background: linear-gradient(to right, rgba(5, 5, 5, 0.6), #657175); display: flex;"><div style="margin-right: 10px;"><i class="far fa-id-card" style="height: 100%;"></i><strong> {0}</strong><br> <strong>First Name:</strong> {1} <br><strong>Last Name:</strong> {2} <br><strong>Birth Date:</strong> {3} <br><strong>Licenses:</strong> {4}</div></div>',
                     args = {
                         'Drivers License',
-                        item.info.firstname,
-                        item.info.lastname,
-                        item.info.birthdate,
-                        item.info.type
+                        info.firstname,
+                        info.lastname,
+                        info.birthdate,
+                        info.type
                     }
                 }
                 )

@@ -7,14 +7,55 @@ local DEALERSHIP_BLIP_SCALE = 0.85
 local uiOpen = false
 local previewVehicle = nil
 local previewCam = nil
+local previewSpawnGen = 0
 local currentColorIdx = (Config.PreviewColors and Config.PreviewColors[1] and Config.PreviewColors[1].idx) or 111
 local selectedModel = nil
 
+local function forceDeleteVehicleEntity(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    SetEntityAsMissionEntity(veh, true, true)
+    local tries = 0
+    while not NetworkHasControlOfEntity(veh) and tries < 40 do
+        NetworkRequestControlOfEntity(veh)
+        Wait(0)
+        tries = tries + 1
+    end
+    SetVehicleAsNoLongerNeeded(veh)
+    DeleteVehicle(veh)
+    if DoesEntityExist(veh) then
+        DeleteEntity(veh)
+    end
+    local waitLeft = 20
+    while DoesEntityExist(veh) and waitLeft > 0 do
+        Wait(0)
+        waitLeft = waitLeft - 1
+    end
+end
+
 local function safeDeletePreviewVehicle()
-    if previewVehicle and DoesEntityExist(previewVehicle) then
-        DeleteEntity(previewVehicle)
+    if previewVehicle and previewVehicle ~= 0 then
+        forceDeleteVehicleEntity(previewVehicle)
     end
     previewVehicle = nil
+end
+
+--- Pašalina visus auto prie preview taško (kai lieka „užstrigę“ po nepavykusio Delete).
+local function clearVehiclesNearPreviewSpawn(radius)
+    local spawn = Config.Dealership.preview
+    if not spawn then return end
+    local center = vector3(spawn.x, spawn.y, spawn.z)
+    local playerPed = PlayerPedId()
+    local playerVeh = GetVehiclePedIsIn(playerPed, false)
+    for _, veh in ipairs(GetGamePool('CVehicle')) do
+        if veh and veh ~= 0 and DoesEntityExist(veh) then
+            if veh ~= playerVeh then
+                local c = GetEntityCoords(veh)
+                if #(c - center) <= radius then
+                    forceDeleteVehicleEntity(veh)
+                end
+            end
+        end
+    end
 end
 
 local function getVehicleStats(model)
@@ -59,30 +100,52 @@ end
 
 local function spawnPreviewVehicle(model)
     if not model or model == '' then return end
-    safeDeletePreviewVehicle()
+    previewSpawnGen = previewSpawnGen + 1
+    local gen = previewSpawnGen
 
-    local hash = joaat(model)
-    RequestModel(hash)
-    while not HasModelLoaded(hash) do
+    CreateThread(function()
+        safeDeletePreviewVehicle()
+        clearVehiclesNearPreviewSpawn(4.0)
         Wait(0)
-    end
+        if gen ~= previewSpawnGen then return end
 
-    local spawn = Config.Dealership.preview
-    previewVehicle = CreateVehicle(hash, spawn.x, spawn.y, spawn.z, spawn.w, false, false)
-    if not previewVehicle or previewVehicle == 0 then return end
+        local hash = joaat(model)
+        RequestModel(hash)
+        local timeout = 0
+        while not HasModelLoaded(hash) do
+            Wait(0)
+            timeout = timeout + 1
+            if gen ~= previewSpawnGen then return end
+            if timeout > 8000 then return end
+        end
+        if gen ~= previewSpawnGen then return end
 
-    SetEntityAsMissionEntity(previewVehicle, true, true)
-    SetVehicleOnGroundProperly(previewVehicle)
-    SetVehicleDirtLevel(previewVehicle, 0.0)
-    SetVehicleColours(previewVehicle, currentColorIdx, currentColorIdx)
-    SetVehicleExtraColours(previewVehicle, 0, 0)
-    SetVehicleEngineOn(previewVehicle, false, true, true)
-    SetVehicleUndriveable(previewVehicle, true)
-    FreezeEntityPosition(previewVehicle, true)
-    SetModelAsNoLongerNeeded(hash)
+        local spawn = Config.Dealership.preview
+        local veh = CreateVehicle(hash, spawn.x, spawn.y, spawn.z, spawn.w, false, false)
+        if gen ~= previewSpawnGen then
+            if veh and veh ~= 0 then forceDeleteVehicleEntity(veh) end
+            return
+        end
 
-    ensurePreviewCam()
-    PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.2, true)
+        if not veh or veh == 0 then
+            SetModelAsNoLongerNeeded(hash)
+            return
+        end
+
+        previewVehicle = veh
+        SetEntityAsMissionEntity(previewVehicle, true, true)
+        SetVehicleOnGroundProperly(previewVehicle)
+        SetVehicleDirtLevel(previewVehicle, 0.0)
+        SetVehicleColours(previewVehicle, currentColorIdx, currentColorIdx)
+        SetVehicleExtraColours(previewVehicle, 0, 0)
+        SetVehicleEngineOn(previewVehicle, false, true, true)
+        SetVehicleUndriveable(previewVehicle, true)
+        FreezeEntityPosition(previewVehicle, true)
+        SetModelAsNoLongerNeeded(hash)
+
+        ensurePreviewCam()
+        PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.2, true)
+    end)
 end
 
 local function buildUiPayload()
@@ -145,9 +208,7 @@ local function openDealershipUi()
     uiOpen = true
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'open', payload = payload })
-
-    selectedModel = payload.vehicles[1].model
-    spawnPreviewVehicle(selectedModel)
+    -- Preview spawną inicijuoja NUI (`selectVehicle`), kad nebūtų dvigubo spawn atidaryme.
 end
 
 local function buySelectedVehicle(model)
