@@ -1,6 +1,18 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local mdtOpen = false
 
+local function isPdJobName(name)
+    if not name then return false end
+    if name == Config.JobName then return true end
+    if Config.AcceptLegacyPoliceJob and name == 'police' then return true end
+    return false
+end
+
+local function isPdOnDutyClient()
+    local P = QBCore.Functions.GetPlayerData()
+    return P and P.job and isPdJobName(P.job.name) and P.job.onduty
+end
+
 local function closeMdt()
     if not mdtOpen then return end
     mdtOpen = false
@@ -54,7 +66,7 @@ end
 
 RegisterCommand('mdt', function()
     local Player = QBCore.Functions.GetPlayerData()
-    if not Player or Player.job.name ~= Config.JobName or not Player.job.onduty then
+    if not Player or not isPdJobName(Player.job.name) or not Player.job.onduty then
         return QBCore.Functions.Notify('Tu ne policininkas arba ne tarnyboje.', 'error')
     end
     openMdt()
@@ -106,19 +118,14 @@ end)
 
 RegisterNetEvent('fivempro_ltpd:client:openMdtAtStation', function()
     local Player = QBCore.Functions.GetPlayerData()
-    if not Player or Player.job.name ~= Config.JobName or not Player.job.onduty then
+    if not Player or not isPdJobName(Player.job.name) or not Player.job.onduty then
         return QBCore.Functions.Notify('MDT – tik policijai tarnyboje.', 'error')
     end
     openMdt()
 end)
 
-local function isLtpdClient()
-    local P = QBCore.Functions.GetPlayerData()
-    return P and P.job and P.job.name == Config.JobName and P.job.onduty
-end
-
 RegisterNetEvent('fivempro_ltpd:client:tryOpenArmory', function(data)
-    if not isLtpdClient() then
+    if not isPdOnDutyClient() then
         return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
     end
     local stationId = data and data.stationId
@@ -126,41 +133,50 @@ RegisterNetEvent('fivempro_ltpd:client:tryOpenArmory', function(data)
     TriggerServerEvent('fivempro_ltpd:server:openArmory', stationId)
 end)
 
-RegisterNetEvent('fivempro_ltpd:client:openGarageMenu', function(data)
-    if not isLtpdClient() then
+--- PD asmeninis garažas (tas pats UI kaip fivempro_garages; mašinos perkamos PD salone)
+RegisterNetEvent('fivempro_ltpd:client:openPdGarage', function(data)
+    if not isPdOnDutyClient() then
         return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
     end
     local stationId = data and data.stationId
-    if not stationId or not Config.FleetVehicles or not next(Config.FleetVehicles) then return end
-    local stLabel = 'PD transportas'
+    if not stationId then return end
+    local gid = nil
     for _, s in ipairs(Config.Stations or {}) do
         if s.id == stationId then
-            stLabel = s.label or stLabel
+            gid = s.pdGarageId
             break
         end
     end
-    local menu = {
-        { header = stLabel, isMenuHeader = true },
-    }
-    for _, v in ipairs(Config.FleetVehicles) do
-        menu[#menu + 1] = {
-            header = v.label,
-            txt = v.model,
-            params = {
-                event = 'fivempro_ltpd:client:requestSpawnFleet',
-                args = { stationId = stationId, model = v.model },
-            },
-        }
+    if not gid then
+        return QBCore.Functions.Notify('PD garažas nekonfigūruotas.', 'error')
     end
-    if GetResourceState('qb-menu') == 'started' then
-        TriggerEvent('qb-menu:client:openMenu', menu, false, true)
-    else
-        QBCore.Functions.Notify('Įdiek qb-menu garažo meniu.', 'error')
+    TriggerEvent('fivempro_garages:client:openGarage', { garageId = gid })
+end)
+
+RegisterNetEvent('fivempro_ltpd:client:goPoliceDealership', function(data)
+    if not isPdOnDutyClient() then
+        return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
     end
+    local stationId = data and data.stationId
+    if not stationId then return end
+    if GetResourceState('fivempro_dealership') ~= 'started' then
+        return QBCore.Functions.Notify('fivempro_dealership neįjungtas.', 'error')
+    end
+    TriggerEvent('fivempro_dealership:client:openPoliceDealership', stationId)
+end)
+
+RegisterNetEvent('fivempro_ltpd:client:tryOpenStash', function(data)
+    if not isPdOnDutyClient() then
+        return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
+    end
+    local stationId = data and data.stationId
+    local stashIndex = data and data.stashIndex
+    if not stationId or stashIndex == nil then return end
+    TriggerServerEvent('fivempro_ltpd:server:openPoliceStash', stationId, stashIndex)
 end)
 
 RegisterNetEvent('fivempro_ltpd:client:requestSpawnFleet', function(args)
-    if not isLtpdClient() then return end
+    if not isPdOnDutyClient() then return end
     local model = args and args.model
     local stationId = args and args.stationId
     if not model or not stationId then return end
@@ -168,7 +184,7 @@ RegisterNetEvent('fivempro_ltpd:client:requestSpawnFleet', function(args)
 end)
 
 RegisterNetEvent('fivempro_ltpd:client:openHeliGarageMenu', function(data)
-    if not isLtpdClient() then
+    if not isPdOnDutyClient() then
         return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
     end
     local stationId = data and data.stationId
@@ -201,7 +217,7 @@ RegisterNetEvent('fivempro_ltpd:client:openHeliGarageMenu', function(data)
 end)
 
 RegisterNetEvent('fivempro_ltpd:client:requestSpawnHeli', function(args)
-    if not isLtpdClient() then return end
+    if not isPdOnDutyClient() then return end
     local model = args and args.model
     local stationId = args and args.stationId
     if not model or not stationId then return end
@@ -246,6 +262,14 @@ CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do
         Wait(300)
     end
+    local function canInteractBoss()
+        local P = QBCore.Functions.GetPlayerData()
+        if not P or not P.job or not isPdJobName(P.job.name) or not P.job.onduty then
+            return false
+        end
+        if P.job.isboss then return true end
+        return (P.job.grade and P.job.grade.level or 0) >= (Config.Permissions.boss_menu or 8)
+    end
     for _, st in ipairs(Config.Stations or {}) do
         if st.mdt then
             exports['qb-target']:AddCircleZone(('ltpd_mdt_%s'):format(st.id), st.coords, 0.55, {
@@ -259,14 +283,16 @@ CreateThread(function()
                         event = 'fivempro_ltpd:client:openMdtAtStation',
                         icon = 'fas fa-tablet-screen-button',
                         label = 'MDT planšetė',
-                        job = { ltpd = 0 },
+                        canInteract = function()
+                            return isPdOnDutyClient()
+                        end,
                     },
                 },
                 distance = Config.TargetDistance,
             })
         end
         if st.armory and st.armory.coords then
-            exports['qb-target']:AddCircleZone(('ltpd_armory_%s'):format(st.id), st.armory.coords, 0.45, {
+            exports['qb-target']:AddCircleZone(('ltpd_armory_%s'):format(st.id), st.armory.coords, 0.75, {
                 name = ('ltpd_armory_%s'):format(st.id),
                 debugPoly = false,
                 useZ = true,
@@ -278,10 +304,37 @@ CreateThread(function()
                         icon = 'fas fa-box-open',
                         label = 'Ginklinė',
                         stationId = st.id,
-                        job = { ltpd = 0 },
+                        canInteract = function()
+                            return isPdOnDutyClient()
+                        end,
                     },
                 },
                 distance = Config.TargetDistance,
+            })
+        end
+        if st.policeDealership and st.policeDealership.coords then
+            local pos = st.policeDealership.coords
+            local hd = st.policeDealership.heading or 0.0
+            exports['qb-target']:AddBoxZone(('ltpd_pdshop_%s'):format(st.id), pos, 1.4, 1.4, {
+                name = ('ltpd_pdshop_%s'):format(st.id),
+                heading = hd,
+                debugPoly = false,
+                minZ = pos.z - 1.0,
+                maxZ = pos.z + 1.8,
+            }, {
+                options = {
+                    {
+                        type = 'client',
+                        event = 'fivempro_ltpd:client:goPoliceDealership',
+                        icon = 'fas fa-car-side',
+                        label = 'Policijos transporto pirkimas',
+                        stationId = st.id,
+                        canInteract = function()
+                            return isPdOnDutyClient()
+                        end,
+                    },
+                },
+                distance = 2.5,
             })
         end
         if st.garage and st.garage.coords then
@@ -293,15 +346,41 @@ CreateThread(function()
                 options = {
                     {
                         type = 'client',
-                        event = 'fivempro_ltpd:client:openGarageMenu',
-                        icon = 'fas fa-car',
-                        label = 'Tarnybinis transportas',
+                        event = 'fivempro_ltpd:client:openPdGarage',
+                        icon = 'fas fa-warehouse',
+                        label = 'Policijos garažas',
                         stationId = st.id,
-                        job = { ltpd = 0 },
+                        canInteract = function()
+                            return isPdOnDutyClient()
+                        end,
                     },
                 },
                 distance = Config.TargetDistance + 0.5,
             })
+        end
+        for stashIdx, stash in ipairs(st.stashes or {}) do
+            if stash.coords then
+                exports['qb-target']:AddCircleZone(('ltpd_stash_%s_%s'):format(st.id, stashIdx), stash.coords, 0.5, {
+                    name = ('ltpd_stash_%s_%s'):format(st.id, stashIdx),
+                    debugPoly = false,
+                    useZ = true,
+                }, {
+                    options = {
+                        {
+                            type = 'client',
+                            event = 'fivempro_ltpd:client:tryOpenStash',
+                            icon = 'fas fa-dolly',
+                            label = stash.label or ('Sandėlis #' .. tostring(stashIdx)),
+                            stationId = st.id,
+                            stashIndex = stashIdx,
+                            canInteract = function()
+                                return isPdOnDutyClient()
+                            end,
+                        },
+                    },
+                    distance = Config.TargetDistance,
+                })
+            end
         end
         if st.management and st.management.coords then
             exports['qb-target']:AddCircleZone(('ltpd_mgmt_%s'):format(st.id), st.management.coords, 0.5, {
@@ -315,7 +394,7 @@ CreateThread(function()
                         event = 'fivempro_ltpd:client:bossOpenMenu',
                         icon = 'fas fa-user-tie',
                         label = 'PD vadovybė (įdarb./rangai/tarnyba)',
-                        job = { ltpd = 8 },
+                        canInteract = canInteractBoss,
                     },
                 },
                 distance = Config.TargetDistance + 0.5,
@@ -334,7 +413,9 @@ CreateThread(function()
                         icon = 'fas fa-helicopter',
                         label = 'PD sraigtasparniai (helipadas)',
                         stationId = st.id,
-                        job = { ltpd = 0 },
+                        canInteract = function()
+                            return isPdOnDutyClient()
+                        end,
                     },
                 },
                 distance = Config.TargetDistance + 2.0,

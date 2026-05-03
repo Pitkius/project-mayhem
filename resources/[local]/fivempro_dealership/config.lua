@@ -91,3 +91,49 @@ Config.PriceOverrides = {
     jackal = 48000, oracle = 52000, oracle2 = 58000, zion = 50000, zion2 = 55000,
 }
 
+--- Policijos salonas – tas pats NUI kaip Simion; mašinos įrašomos į `pd_*` garažą pagal stotį.
+Config.PoliceDealership = {
+    label = 'Policijos transporto skyrius',
+    targetSize = vec3(1.4, 1.4, 2.0),
+    targetDistance = 2.5,
+    --- Kokį `garage` įrašyti į DB pagal fivempro_ltpd stoties id
+    garageByStation = {
+        ls_main = 'pd_ls_main',
+        sandy = 'pd_sandy',
+        paleto = 'pd_paleto',
+    },
+    --- Peržiūra / spawn po pirkimo pagal stotį (fivempro_ltpd Config.Stations.id)
+    stations = {
+        ls_main = {
+            spawn = vector4(441.64, -1013.14, 28.62, 175.52),
+            preview = vector4(445.5, -1011.2, 28.62, 265.0),
+            camera = vector4(449.0, -1011.5, 30.15, 265.0),
+        },
+        sandy = {
+            spawn = vector4(1869.5, 3695.2, 33.53, 210.0),
+            preview = vector4(1872.0, 3693.5, 33.53, 120.0),
+            camera = vector4(1875.2, 3694.5, 35.0, 120.0),
+        },
+        paleto = {
+            spawn = vector4(-459.2, 6016.3, 31.49, 45.0),
+            preview = vector4(-456.5, 6015.0, 31.49, 225.0),
+            camera = vector4(-453.5, 6015.5, 33.2, 225.0),
+        },
+    },
+    PoliceCategoryLabels = {
+        patrol = 'Patrulis',
+        interceptor = 'Interceptor',
+        spec = 'Specialus',
+        air = 'Oro tarnyba',
+    },
+    vehicles = {
+        { model = 'police', name = 'Police Cruiser', brand = 'Vapid', category = 'patrol', price = 18000 },
+        { model = 'police2', name = 'Police Buffalo', brand = 'Bravado', category = 'patrol', price = 22000 },
+        { model = 'police3', name = 'Interceptor', brand = 'Vapid', category = 'interceptor', price = 26000 },
+        { model = 'policeb', name = 'Police Bike', brand = 'Western', category = 'patrol', price = 12000 },
+        { model = 'sheriff', name = 'Sheriff Cruiser', brand = 'Declasse', category = 'patrol', price = 16000 },
+        { model = 'sheriff2', name = 'Sheriff SUV', brand = 'Declasse', category = 'patrol', price = 20000 },
+        { model = 'riot', name = 'Riot', brand = 'Brute', category = 'spec', price = 45000 },
+    },
+}
+

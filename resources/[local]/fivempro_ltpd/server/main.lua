@@ -64,11 +64,18 @@ local function getGrade(src)
     return tonumber(Player.PlayerData.job.grade.level) or 0
 end
 
+local function jobIsPd(j)
+    if not j or not j.name then return false end
+    if j.name == Config.JobName then return true end
+    if Config.AcceptLegacyPoliceJob and j.name == 'police' then return true end
+    return false
+end
+
 local function isLtpdOnDuty(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return false end
     local j = Player.PlayerData.job
-    return j and j.name == Config.JobName and j.onduty == true
+    return jobIsPd(j) and j.onduty == true
 end
 
 local function hasPerm(src, key)
@@ -344,6 +351,29 @@ local function fleetModelAllowed(modelName)
     return false
 end
 
+RegisterNetEvent('fivempro_ltpd:server:openPoliceStash', function(stationId, stashIndex)
+    local src = source
+    if GetResourceState('qb-inventory') ~= 'started' then return end
+    if not hasPerm(src, 'armory') then return end
+    stationId = tostring(stationId or '')
+    stashIndex = tonumber(stashIndex)
+    if not stashIndex or stashIndex < 1 then return end
+    local st = getStationById(stationId)
+    if not st or not st.stashes then return end
+    local entry = st.stashes[stashIndex]
+    if not entry or not entry.coords or not entry.stashId then return end
+    if getGrade(src) < (tonumber(entry.minGrade) or 0) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per žemas rangas šiam sandėliui.', 'error')
+    end
+    local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
+    if not officerNearCoords(src, entry.coords, maxD) then return end
+    exports['qb-inventory']:OpenInventory(src, entry.stashId, {
+        maxweight = entry.maxweight or 2000000,
+        slots = entry.slots or 60,
+        label = entry.label or 'PD sandėlis',
+    })
+end)
+
 RegisterNetEvent('fivempro_ltpd:server:openArmory', function(stationId)
     local src = source
     if GetResourceState('qb-inventory') ~= 'started' then return end
@@ -492,7 +522,7 @@ RegisterNetEvent('fivempro_ltpd:server:bossFire', function(targetId)
     if not T then
         return TriggerClientEvent('QBCore:Notify', src, 'Žaidėjas neprisijungęs.', 'error')
     end
-    if T.PlayerData.job.name ~= Config.JobName then
+    if not jobIsPd(T.PlayerData.job) then
         return TriggerClientEvent('QBCore:Notify', src, 'Šis žaidėjas ne PD.', 'error')
     end
     local tg = tonumber(T.PlayerData.job.grade.level) or 0
@@ -515,7 +545,7 @@ RegisterNetEvent('fivempro_ltpd:server:bossSetGrade', function(targetId, grade)
     if not T then
         return TriggerClientEvent('QBCore:Notify', src, 'Žaidėjas neprisijungęs.', 'error')
     end
-    if T.PlayerData.job.name ~= Config.JobName then
+    if not jobIsPd(T.PlayerData.job) then
         return TriggerClientEvent('QBCore:Notify', src, 'Žaidėjas ne PD.', 'error')
     end
     local tg = tonumber(T.PlayerData.job.grade.level) or 0

@@ -69,6 +69,13 @@ RegisterCommand('fivempro_closeUiEsc', function()
 end, false)
 RegisterKeyMapping('fivempro_closeUiEsc', 'Uždaryti atvirus meniu (NUI)', 'keyboard', 'ESCAPE')
 
+RegisterCommand('fivempro_closeUiKeyP', function()
+    if type(IsNuiFocused) == 'function' and IsNuiFocused() then
+        fivemproForceCloseAllUi()
+    end
+end, false)
+RegisterKeyMapping('fivempro_closeUiKeyP', 'Uždaryti atvirus meniu (P)', 'keyboard', 'P')
+
 -- Global fail-safe: ESC/P — valdikliai (kai pasiekiami) + atsarginis kelias.
 CreateThread(function()
     while true do

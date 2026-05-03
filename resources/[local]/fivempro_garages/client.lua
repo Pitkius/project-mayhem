@@ -1,4 +1,17 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+
+local function isPoliceOfficerOnDuty()
+    local P = QBCore.Functions.GetPlayerData()
+    if not P or not P.job or not P.job.onduty then return false end
+    local n = P.job.name
+    return n == 'ltpd' or n == 'police'
+end
+
+local function canUseGarageEntry(garage)
+    if not garage or not garage.policeOnly then return true end
+    return isPoliceOfficerOnDuty()
+end
+
 local GARAGE_SPRITE = 357
 local GARAGE_COLOR = 3
 local GARAGE_SCALE = 0.75
@@ -322,6 +335,9 @@ RegisterNetEvent('fivempro_garages:client:openGarage', function(data)
     if not data or not data.garageId then return end
     for _, garage in ipairs(Config.Garages) do
         if garage.id == data.garageId then
+            if not canUseGarageEntry(garage) then
+                return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
+            end
             return openGarageUi(garage)
         end
     end
@@ -332,6 +348,13 @@ RegisterNetEvent('fivempro_garages:client:spawnVehicle', function(data)
 end)
 
 RegisterNetEvent('fivempro_garages:client:parkVehicle', function(data)
+    if data and data.garageId then
+        for _, g in ipairs(Config.Garages or {}) do
+            if g.id == data.garageId and not canUseGarageEntry(g) then
+                return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
+            end
+        end
+    end
     local ped = PlayerPedId()
     if not IsPedInAnyVehicle(ped, false) then
         return QBCore.Functions.Notify('Tu nesi mašinoje', 'error')
@@ -444,18 +467,20 @@ local function createGarageMapBlips()
     end
 
     for _, garage in ipairs(Config.Garages) do
-        local blip = AddBlipForCoord(garage.coords.x, garage.coords.y, garage.coords.z)
-        SetBlipSprite(blip, GARAGE_SPRITE)
-        SetBlipDisplay(blip, 4)
-        SetBlipScale(blip, GARAGE_SCALE)
-        SetBlipColour(blip, GARAGE_COLOR)
-        SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(garage.label)
-        EndTextCommandSetBlipName(blip)
-        local cat = Config.GarageMapBlipCategory
-        if cat and cat > 0 then
-            SetBlipCategory(blip, cat)
+        if not garage.hideBlip then
+            local blip = AddBlipForCoord(garage.coords.x, garage.coords.y, garage.coords.z)
+            SetBlipSprite(blip, GARAGE_SPRITE)
+            SetBlipDisplay(blip, 4)
+            SetBlipScale(blip, GARAGE_SCALE)
+            SetBlipColour(blip, GARAGE_COLOR)
+            SetBlipAsShortRange(blip, true)
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentString(garage.label)
+            EndTextCommandSetBlipName(blip)
+            local cat = Config.GarageMapBlipCategory
+            if cat and cat > 0 then
+                SetBlipCategory(blip, cat)
+            end
         end
     end
 end

@@ -282,8 +282,13 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
             ammo = 4000
         end
 
-        GiveWeaponToPed(ped, weaponHash, ammo, false, false)
-        SetPedAmmo(ped, weaponHash, ammo)
+        GiveWeaponToPed(ped, weaponHash, 0, false, false)
+        local hasMax, maxAmmoCap = GetMaxAmmo(ped, weaponHash)
+        local requested = tonumber(ammo) or 0
+        if hasMax and maxAmmoCap and maxAmmoCap > 0 then
+            requested = math.min(requested, maxAmmoCap)
+        end
+        SetPedAmmo(ped, weaponHash, requested)
         SetCurrentPedWeapon(ped, weaponHash, true)
         clearPedWeaponInfiniteAmmo(ped, weaponHash)
 
@@ -296,6 +301,9 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
         if weaponInfo.tint then
             SetPedWeaponTintIndex(ped, weaponHash, weaponInfo.tint)
         end
+
+        local syncedAmmo = GetAmmoInPedWeapon(ped, weaponHash)
+        TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', weaponData, syncedAmmo)
 
         currentWeapon = weaponName
     end
@@ -371,6 +379,11 @@ CreateThread(function()
             if selectedWeaponData then
                 CurrentWeaponData = resolveCurrentWeaponDataByName(selectedWeaponData.name) or CurrentWeaponData
                 local ammo = GetAmmoInPedWeapon(ped, weapon)
+                local hasMaxTotal, maxTotalAmmo = GetMaxAmmo(ped, weapon)
+                if hasMaxTotal and maxTotalAmmo and maxTotalAmmo > 0 and ammo > maxTotalAmmo then
+                    SetPedAmmo(ped, weapon, maxTotalAmmo)
+                    ammo = maxTotalAmmo
+                end
                 if CurrentWeaponData and CurrentWeaponData.name then
                     -- Tik kai ped kulkų sk. pasikeičia (šūvis / perkrova) ar keičiasi ginklas — atnaujinam ginklo item info.ammo serveryje.
                     local now = GetGameTimer()

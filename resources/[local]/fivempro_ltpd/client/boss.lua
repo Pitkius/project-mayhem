@@ -1,8 +1,15 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local function isPdJobName(name)
+    if not name then return false end
+    if name == Config.JobName then return true end
+    if Config.AcceptLegacyPoliceJob and name == 'police' then return true end
+    return false
+end
+
 local function canOpenBoss()
     local P = QBCore.Functions.GetPlayerData()
-    if not P or not P.job or P.job.name ~= Config.JobName or not P.job.onduty then
+    if not P or not P.job or not isPdJobName(P.job.name) or not P.job.onduty then
         return false
     end
     if P.job.isboss then return true end
@@ -47,7 +54,7 @@ local function openBossMenu()
             },
         },
     }
-    exports['qb-menu']:openMenu(menu, false, true)
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end
 
 RegisterNetEvent('fivempro_ltpd:client:bossOpenMenu', function()
@@ -99,7 +106,8 @@ RegisterNetEvent('fivempro_ltpd:client:bossGradeInput', function()
 end)
 
 RegisterNetEvent('fivempro_ltpd:client:bossToggleDuty', function()
-    if not QBCore.Functions.GetPlayerData() or QBCore.Functions.GetPlayerData().job.name ~= Config.JobName then
+    local j = QBCore.Functions.GetPlayerData() and QBCore.Functions.GetPlayerData().job
+    if not j or not isPdJobName(j.name) then
         return
     end
     TriggerServerEvent('QBCore:ToggleDuty')
