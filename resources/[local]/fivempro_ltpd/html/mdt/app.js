@@ -46,6 +46,13 @@ window.addEventListener('message', (e) => {
 
 btnClose.onclick = () => nuiPost('close', {});
 
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    nuiPost('close', {});
+  }
+});
+
 document.querySelectorAll('.tab').forEach((t) => {
   t.onclick = () => {
     document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));

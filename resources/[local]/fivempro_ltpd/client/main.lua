@@ -167,6 +167,47 @@ RegisterNetEvent('fivempro_ltpd:client:requestSpawnFleet', function(args)
     TriggerServerEvent('fivempro_ltpd:server:spawnFleet', stationId, model)
 end)
 
+RegisterNetEvent('fivempro_ltpd:client:openHeliGarageMenu', function(data)
+    if not isLtpdClient() then
+        return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
+    end
+    local stationId = data and data.stationId
+    if not stationId or not Config.FleetHelicopters or not next(Config.FleetHelicopters) then return end
+    local stLabel = 'PD oro tarnyba'
+    for _, s in ipairs(Config.Stations or {}) do
+        if s.id == stationId then
+            stLabel = (s.label or '') .. ' – sraigtasparniai'
+            break
+        end
+    end
+    local menu = {
+        { header = stLabel, isMenuHeader = true },
+    }
+    for _, v in ipairs(Config.FleetHelicopters) do
+        menu[#menu + 1] = {
+            header = v.label,
+            txt = v.model,
+            params = {
+                event = 'fivempro_ltpd:client:requestSpawnHeli',
+                args = { stationId = stationId, model = v.model },
+            },
+        }
+    end
+    if GetResourceState('qb-menu') == 'started' then
+        TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+    else
+        QBCore.Functions.Notify('Reikia qb-menu.', 'error')
+    end
+end)
+
+RegisterNetEvent('fivempro_ltpd:client:requestSpawnHeli', function(args)
+    if not isLtpdClient() then return end
+    local model = args and args.model
+    local stationId = args and args.stationId
+    if not model or not stationId then return end
+    TriggerServerEvent('fivempro_ltpd:server:spawnFleetHeli', stationId, model)
+end)
+
 RegisterNetEvent('fivempro_ltpd:client:fleetVehicleReady', function(plate)
     if not plate or plate == '' then return end
     TriggerEvent('vehiclekeys:client:SetOwner', plate)
@@ -185,6 +226,18 @@ CreateThread(function()
             BeginTextCommandSetBlipName('STRING')
             AddTextComponentSubstringPlayerName(st.label or 'Policija')
             EndTextCommandSetBlipName(b)
+        end
+        if Config.ShowHelipadBlip and st.heliGarage and st.heliGarage.coords then
+            local h = st.heliGarage.coords
+            local bh = AddBlipForCoord(h.x, h.y, h.z)
+            SetBlipSprite(bh, Config.HelipadBlipSprite or 43)
+            SetBlipDisplay(bh, 4)
+            SetBlipScale(bh, Config.HelipadBlipScale or 0.9)
+            SetBlipColour(bh, Config.BlipColour or 38)
+            SetBlipAsShortRange(bh, true)
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentSubstringPlayerName((st.label or 'PD') .. ' – helipadas')
+            EndTextCommandSetBlipName(bh)
         end
     end
 end)
@@ -266,6 +319,25 @@ CreateThread(function()
                     },
                 },
                 distance = Config.TargetDistance + 0.5,
+            })
+        end
+        if st.heliGarage and st.heliGarage.coords then
+            exports['qb-target']:AddCircleZone(('ltpd_heli_%s'):format(st.id), st.heliGarage.coords, 1.2, {
+                name = ('ltpd_heli_%s'):format(st.id),
+                debugPoly = false,
+                useZ = true,
+            }, {
+                options = {
+                    {
+                        type = 'client',
+                        event = 'fivempro_ltpd:client:openHeliGarageMenu',
+                        icon = 'fas fa-helicopter',
+                        label = 'PD sraigtasparniai (helipadas)',
+                        stationId = st.id,
+                        job = { ltpd = 0 },
+                    },
+                },
+                distance = Config.TargetDistance + 2.0,
             })
         end
     end

@@ -390,6 +390,47 @@ RegisterNetEvent('fivempro_ltpd:server:spawnFleet', function(stationId, modelNam
     TriggerClientEvent('QBCore:Notify', src, 'Transportas paruoštas.', 'success')
 end)
 
+local function fleetHeliModelAllowed(modelName)
+    modelName = tostring(modelName or ''):lower()
+    for _, v in ipairs(Config.FleetHelicopters or {}) do
+        if v.model and tostring(v.model):lower() == modelName then return true end
+    end
+    return false
+end
+
+RegisterNetEvent('fivempro_ltpd:server:spawnFleetHeli', function(stationId, modelName)
+    local src = source
+    if not hasPerm(src, 'garage') then return end
+    stationId = tostring(stationId or '')
+    modelName = tostring(modelName or ''):lower()
+    if not fleetHeliModelAllowed(modelName) then return end
+    local st = getStationById(stationId)
+    if not st or not st.heliGarage or not st.heliGarage.spawn then
+        return TriggerClientEvent('QBCore:Notify', src, 'Helipadas nekonfigūruotas.', 'error')
+    end
+    local sp = st.heliGarage.spawn
+    local checkVec = vector3(sp.x, sp.y, sp.z)
+    local maxD = (tonumber(Config.ArmoryGarageDistance) or 22.0) + 10.0
+    if not officerNearCoords(src, checkVec, maxD) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo helipado.', 'error')
+    end
+    local hash = joaat(modelName)
+    local veh = QBCore.Functions.SpawnVehicle(src, hash, sp, true)
+    if not veh or veh == 0 then
+        veh = QBCore.Functions.CreateVehicle(src, hash, 'heli', sp, true)
+    end
+    if not veh or veh == 0 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko sukurti sraigtasparnio.', 'error')
+    end
+    local plateRaw = ('PD%s'):format(math.random(1000, 9999))
+    SetVehicleNumberPlateText(veh, plateRaw)
+    local plate = QBCore.Shared.Trim(GetVehicleNumberPlateText(veh))
+    if plate == nil or plate == '' then plate = plateRaw end
+    SetVehicleEngineOn(veh, true, true, false)
+    TriggerClientEvent('fivempro_ltpd:client:fleetVehicleReady', src, plate)
+    TriggerClientEvent('QBCore:Notify', src, 'Sraigtasparnis paruoštas.', 'success')
+end)
+
 local function canBossAction(src)
     if not isLtpdOnDuty(src) then return false end
     local P = QBCore.Functions.GetPlayer(src)

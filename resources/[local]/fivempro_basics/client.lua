@@ -10,9 +10,12 @@ end)
 CreateThread(function()
     while true do
         DisableControlAction(0, 37, true) -- INPUT_SELECT_WEAPON (TAB)
-        -- Keep pause/menu keys available even if another resource aggressively disables controls.
-        EnableControlAction(0, 199, true) -- INPUT_FRONTEND_PAUSE_ALTERNATE (P)
-        EnableControlAction(0, 200, true) -- INPUT_FRONTEND_PAUSE (ESC)
+        -- Pause/menu klavišai visose grupėse (kai kurie scriptai naudoja grupę 1/2).
+        for cg = 0, 2 do
+            EnableControlAction(cg, 199, true) -- P
+            EnableControlAction(cg, 200, true) -- ESC
+            EnableControlAction(cg, 202, true) -- FRONTEND_CANCEL (dalis UI)
+        end
         Wait(0)
     end
 end)
@@ -32,28 +35,54 @@ CreateThread(function()
     end
 end)
 
--- Global fail-safe: ESC/P — pirmiau uždarom UI resursus (kameros/fokusas), tada nuimam fokusą.
+local function fivemproForceCloseAllUi()
+    TriggerEvent('fivempro_dealership:client:forceCloseUi')
+    TriggerEvent('fivempro_garages:client:forceCloseUi')
+    TriggerEvent('fivempro_kma:client:forceCloseUi')
+    TriggerEvent('fivempro_ltpd:client:forceCloseMdt')
+    TriggerEvent('qb-menu:client:closeMenu')
+    if GetResourceState('qb-menu') == 'started' then
+        pcall(function()
+            exports['qb-menu']:closeMenu()
+        end)
+    end
+    TriggerEvent('qb-inventory:client:closeInv')
+    pcall(function()
+        if GetResourceState('ox_lib') == 'started' and exports.ox_lib and exports.ox_lib.hideContext then
+            exports.ox_lib:hideContext()
+        end
+    end)
+    SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
+    if GetResourceState('qb-target') == 'started' then
+        exports['qb-target']:DisableTarget(false)
+    end
+end
+
+RegisterNetEvent('fivempro_basics:client:globalEscClose', fivemproForceCloseAllUi)
+
+--- Kai atidarytas bet koks NUI, ESC dažnai neateina į žaidimo valdiklius – šis mapping uždaro UI.
+RegisterCommand('fivempro_closeUiEsc', function()
+    if type(IsNuiFocused) == 'function' and IsNuiFocused() then
+        fivemproForceCloseAllUi()
+    end
+end, false)
+RegisterKeyMapping('fivempro_closeUiEsc', 'Uždaryti atvirus meniu (NUI)', 'keyboard', 'ESCAPE')
+
+-- Global fail-safe: ESC/P — valdikliai (kai pasiekiami) + atsarginis kelias.
 CreateThread(function()
     while true do
-        local p = IsControlJustPressed(0, 199) or IsDisabledControlJustPressed(0, 199)
-        local esc = IsControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 200)
-        if p or esc then
-            TriggerEvent('fivempro_dealership:client:forceCloseUi')
-            TriggerEvent('fivempro_garages:client:forceCloseUi')
-            TriggerEvent('fivempro_kma:client:forceCloseUi')
-            TriggerEvent('fivempro_ltpd:client:forceCloseMdt')
-            TriggerEvent('qb-menu:client:closeMenu')
-            if GetResourceState('qb-menu') == 'started' then
-                pcall(function()
-                    exports['qb-menu']:closeMenu()
-                end)
+        local pressed = false
+        for cg = 0, 2 do
+            if IsControlJustPressed(cg, 199) or IsDisabledControlJustPressed(cg, 199)
+                or IsControlJustPressed(cg, 200) or IsDisabledControlJustPressed(cg, 200)
+                or IsControlJustPressed(cg, 202) or IsDisabledControlJustPressed(cg, 202) then
+                pressed = true
+                break
             end
-            TriggerEvent('qb-inventory:client:closeInv')
-            SetNuiFocus(false, false)
-            SetNuiFocusKeepInput(false)
-            if GetResourceState('qb-target') == 'started' then
-                exports['qb-target']:DisableTarget(false)
-            end
+        end
+        if pressed and type(IsNuiFocused) == 'function' and IsNuiFocused() then
+            fivemproForceCloseAllUi()
         end
         Wait(0)
     end

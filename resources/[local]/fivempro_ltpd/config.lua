@@ -50,6 +50,10 @@ Config.ShowStationBlips = true
 Config.BlipSprite = 60
 Config.BlipColour = 38
 Config.BlipScale = 0.85
+--- Stogo helipado blipas (PD sraigtasparnis)
+Config.ShowHelipadBlip = true
+Config.HelipadBlipSprite = 43
+Config.HelipadBlipScale = 0.9
 
 --- Tarnybinis transportas (modeliai turi būti whitelist – žr. server spawnFleet)
 Config.FleetVehicles = {
@@ -60,6 +64,12 @@ Config.FleetVehicles = {
     { model = 'sheriff', label = 'Sheriff Cruiser' },
     { model = 'sheriff2', label = 'Sheriff SUV' },
     { model = 'riot', label = 'Riot' },
+}
+
+--- Sraigtasparniai (stogas / helipadas) – spawn ant `heliGarage.spawn`
+Config.FleetHelicopters = {
+    { model = 'polmav', label = 'Police Maverick' },
+    { model = 'buzzard2', label = 'Buzzard (tarnybinis)' },
 }
 
 --[[
@@ -88,6 +98,11 @@ Config.Stations = {
         management = {
             coords = vector3(447.17, -973.33, 30.69),
             heading = 184.59,
+        },
+        --- Stogas: helipadas + sraigtasparnio „garažas“ (keisk Z pagal MLO)
+        heliGarage = {
+            coords = vector3(449.32, -981.38, 43.69),
+            spawn = vector4(449.32, -981.38, 44.05, 90.0),
         },
     },
     {
