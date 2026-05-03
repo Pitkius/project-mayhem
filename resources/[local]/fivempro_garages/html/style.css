@@ -1,16 +1,16 @@
-html {
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   background: transparent;
 }
 
 * {
   box-sizing: border-box;
   font-family: "DM Sans", system-ui, -apple-system, sans-serif;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  background: transparent;
 }
 
 .hidden {
@@ -24,34 +24,37 @@ body {
   inset: 0;
   width: 100vw;
   height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
   padding: 0;
+  margin: 0;
   overflow: hidden;
+}
+
+.panel,
+.panel-chrome {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel {
   position: relative;
   flex: 1;
-  width: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  background: transparent;
+  background: rgba(6, 10, 16, 0.97);
   color: #e8f4f0;
 }
 
 .panel-chrome {
   flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--fp-edge);
+  border: none;
   border-radius: 0;
   overflow: hidden;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.35),
-    0 12px 48px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
 }
 
 .header {
@@ -175,11 +178,13 @@ body {
   min-width: 0;
   min-height: 0;
   position: relative;
-  margin: 10px 8px;
+  margin: 0;
   background: transparent;
   cursor: default;
-  border-radius: 12px;
-  border: 1px solid var(--fp-edge);
+  border-radius: 0;
+  border: none;
+  border-left: 1px solid var(--fp-edge);
+  border-right: 1px solid var(--fp-edge);
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.25),
     inset 0 0 72px rgba(0, 0, 0, 0.42);

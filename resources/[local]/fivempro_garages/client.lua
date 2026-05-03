@@ -377,6 +377,17 @@ RegisterNUICallback('takeOut', function(data, cb)
     cb('ok')
 end)
 
+-- ESC/P: su SetNuiFocus(true, true) žaidimo valdikliai neateina į NUI — reikia šio sriegio.
+-- Tai ne blipų logika; keičiant blipus palik šitą gabalą, kitaip ESC/P nebeuždarys meniu.
+CreateThread(function()
+    while true do
+        if uiOpen and (IsControlJustPressed(0, 199) or IsControlJustPressed(0, 200)) then
+            closeGarageUi()
+        end
+        Wait(0)
+    end
+end)
+
 local function createGarageMapBlips()
     if Config.UseSingleGarageMapBlip then
         local ref = Config.Garages[1]

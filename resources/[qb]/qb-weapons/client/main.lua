@@ -16,6 +16,13 @@ local AmmoItemByType = {
     AMMO_SNIPER = 'snp_ammo',
 }
 
+--- Kai kurie resursai ar būsenos palieka begalinę apkabą — tada šūviai nenaudoja kulkų.
+local function clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then return end
+    SetPedInfiniteAmmoClip(ped, false)
+    SetPedInfiniteAmmo(ped, false, weaponHash)
+end
+
 -- Handlers
 
 local function resolveCurrentWeaponDataByName(weaponName)
@@ -183,6 +190,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         local ammoBefore = GetAmmoInPedWeapon(ped, weapon)
         AddAmmoToPed(ped, weapon, bulletsToLoad)
         Wait(50)
+        clearPedWeaponInfiniteAmmo(ped, weapon)
         local hasClipAfter, clipAfter = GetAmmoInClip(ped, weapon)
         local ammoAfter = GetAmmoInPedWeapon(ped, weapon)
         local clipLoaded = 0
@@ -272,6 +280,7 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
         GiveWeaponToPed(ped, weaponHash, ammo, false, false)
         SetPedAmmo(ped, weaponHash, ammo)
         SetCurrentPedWeapon(ped, weaponHash, true)
+        clearPedWeaponInfiniteAmmo(ped, weaponHash)
 
         if weaponInfo.attachments then
             for _, attachment in pairs(weaponInfo.attachments) do

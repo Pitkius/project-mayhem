@@ -319,6 +319,8 @@ RegisterNUICallback('reclaim', function(data, cb)
     end, plate, activeLocation.id)
 end)
 
+-- P (199) / ESC (200): NUI fokusas suvalgo įprastą keydown — uždarymui reikia šio client sriegio.
+-- Tai ne susije su blipais ar zona; blipus keičiant nenaikink šio ciklo.
 CreateThread(function()
     while true do
         if uiOpen and (IsControlJustPressed(0, 199) or IsControlJustPressed(0, 200)) then
