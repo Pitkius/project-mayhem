@@ -1,5 +1,9 @@
 Config = Config or {}
 
+--- Pause žemėlapio legenda: tas pats skaičius visiems garažų blipams = viena grupė (kaip vienas „tipas“).
+--- 0 = nekeisti. Kiti variantai – eksperimentuok pagal savo kliento versiją.
+Config.GarageMapBlipCategory = 134
+
 -- Žemėlapyje vienas bendras garažų blipas (qb-target zonos lieka kiekviename garaže).
 Config.UseSingleGarageMapBlip = false
 Config.GarageMapBlipLabel = 'Garažai'

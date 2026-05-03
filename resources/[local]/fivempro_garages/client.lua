@@ -11,6 +11,19 @@ local activeGarage = nil
 local garagePreviewMods = {}
 local garagePreviewFuel = {}
 
+--- Peržiūros metu „diena“ + aiškiau matosi mašina (weathersync / naktis kitaip užtemdo vaizdą).
+local function previewPushDaylight()
+    pcall(function()
+        NetworkOverrideClockTime(12, 0, 0)
+    end)
+end
+
+local function previewPopDaylight()
+    pcall(function()
+        NetworkClearClockTimeOverride()
+    end)
+end
+
 local function getVehicleDisplayName(model)
     local shared = QBCore.Shared.Vehicles[model]
     if shared and shared.name then
@@ -174,11 +187,13 @@ local function spawnGaragePreviewVehicle(model, plate)
             cWait = cWait + 1
         end
         SetVehicleOnGroundProperly(previewVehicle)
+        SetVehicleLights(previewVehicle, true)
 
         ensureGaragePreviewCam(spawn)
         if previewCam and DoesCamExist(previewCam) then
             PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.25, true)
         end
+        previewPushDaylight()
     end)
 end
 
@@ -223,6 +238,7 @@ local function closeGarageUi()
     safeDeletePreviewVehicle()
     destroyPreviewCam()
     ClearFocus()
+    previewPopDaylight()
     activeGarage = nil
     garagePreviewMods = {}
     garagePreviewFuel = {}
@@ -240,6 +256,7 @@ local function openGarageUi(garage)
         local rows = buildGarageRows(vehicles, garage.id)
         activeGarage = garage
         uiOpen = true
+        previewPushDaylight()
         SetNuiFocus(true, true)
         SendNUIMessage({
             action = 'open',
@@ -388,6 +405,18 @@ CreateThread(function()
     end
 end)
 
+-- Kol UI atidarytas, palaikom dienos laiką (qb-weathersync gali perrašyti laiką).
+CreateThread(function()
+    while true do
+        if uiOpen then
+            previewPushDaylight()
+            Wait(4000)
+        else
+            Wait(800)
+        end
+    end
+end)
+
 local function createGarageMapBlips()
     if Config.UseSingleGarageMapBlip then
         local ref = Config.Garages[1]
@@ -407,6 +436,10 @@ local function createGarageMapBlips()
         BeginTextCommandSetBlipName('STRING')
         AddTextComponentString(Config.GarageMapBlipLabel or 'Garažai')
         EndTextCommandSetBlipName(blip)
+        local cat = Config.GarageMapBlipCategory
+        if cat and cat > 0 then
+            SetBlipCategory(blip, cat)
+        end
         return
     end
 
@@ -420,6 +453,10 @@ local function createGarageMapBlips()
         BeginTextCommandSetBlipName('STRING')
         AddTextComponentString(garage.label)
         EndTextCommandSetBlipName(blip)
+        local cat = Config.GarageMapBlipCategory
+        if cat and cat > 0 then
+            SetBlipCategory(blip, cat)
+        end
     end
 end
 

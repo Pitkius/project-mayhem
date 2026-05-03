@@ -8,6 +8,18 @@ local activeLocation = nil
 local kmaPreviewMods = {}
 local kmaPreviewFuel = {}
 
+local function previewPushDaylight()
+    pcall(function()
+        NetworkOverrideClockTime(12, 0, 0)
+    end)
+end
+
+local function previewPopDaylight()
+    pcall(function()
+        NetworkClearClockTimeOverride()
+    end)
+end
+
 local function getVehicleDisplayName(model)
     local shared = QBCore.Shared.Vehicles[model]
     if shared and shared.name then
@@ -143,8 +155,19 @@ local function spawnKmaPreviewVehicle(model, plate)
         end
 
         SetModelAsNoLongerNeeded(hash)
+
+        local cWait = 0
+        while not HasCollisionLoadedAroundEntity(previewVehicle) and cWait < 120 do
+            RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+            Wait(0)
+            cWait = cWait + 1
+        end
+        SetVehicleOnGroundProperly(previewVehicle)
+        SetVehicleLights(previewVehicle, true)
+
         ensureKmaPreviewCam(spawn)
         PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.25, true)
+        previewPushDaylight()
     end)
 end
 
@@ -226,6 +249,7 @@ local function closeKmaUi()
     safeDeletePreviewVehicle()
     destroyPreviewCam()
     ClearFocus()
+    previewPopDaylight()
     kmaPreviewMods = {}
     kmaPreviewFuel = {}
     activeLocation = nil
@@ -244,6 +268,7 @@ local function openKmaUi(location)
 
         local rows = buildKmaRows(vehicles)
         uiOpen = true
+        previewPushDaylight()
         SetNuiFocus(true, true)
         SendNUIMessage({
             action = 'open',
@@ -331,6 +356,17 @@ CreateThread(function()
 end)
 
 CreateThread(function()
+    while true do
+        if uiOpen then
+            previewPushDaylight()
+            Wait(4000)
+        else
+            Wait(800)
+        end
+    end
+end)
+
+CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do
         Wait(300)
     end
@@ -345,6 +381,10 @@ CreateThread(function()
         BeginTextCommandSetBlipName('STRING')
         AddTextComponentString(loc.label or Config.Kma.blipLabel or 'KMA')
         EndTextCommandSetBlipName(blip)
+        local cat = Config.Kma.mapBlipCategory
+        if cat and cat > 0 then
+            SetBlipCategory(blip, cat)
+        end
 
         local size = Config.Kma.targetSize or vec3(2.2, 2.2, 2.2)
         exports['qb-target']:AddBoxZone(('fivempro_kma_%s'):format(loc.id), loc.coords, size.x, size.y, {

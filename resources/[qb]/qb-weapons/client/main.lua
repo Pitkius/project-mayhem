@@ -353,11 +353,12 @@ CreateThread(function()
                 CurrentWeaponData = resolveCurrentWeaponDataByName(selectedWeaponData.name) or CurrentWeaponData
                 local ammo = GetAmmoInPedWeapon(ped, weapon)
                 if CurrentWeaponData and CurrentWeaponData.name then
+                    -- Tik kai ped kulkų sk. pasikeičia (šūvis / perkrova) ar keičiasi ginklas — atnaujinam ginklo item info.ammo serveryje.
                     local now = GetGameTimer()
-                    local ammoChanged = (lastSyncedWeapon ~= selectedWeaponData.name) or (lastSyncedAmmo ~= ammo)
-                    local likelyCombatAction = IsPedShooting(ped) or (now - lastAutoReloadAt) <= 1800
-                    local periodicFallback = (now - lastAmmoSyncAt) >= 2500
-                    if ammoChanged and (likelyCombatAction or periodicFallback) then
+                    local weaponSwitched = lastSyncedWeapon ~= selectedWeaponData.name
+                    local ammoDelta = lastSyncedAmmo ~= ammo
+                    local rareResync = (now - lastAmmoSyncAt) >= 120000
+                    if weaponSwitched or ammoDelta or rareResync then
                         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', CurrentWeaponData, tonumber(ammo))
                         lastSyncedWeapon = selectedWeaponData.name
                         lastSyncedAmmo = ammo
@@ -374,7 +375,22 @@ CreateThread(function()
             lastSyncedAmmo = nil
             lastAmmoSyncAt = 0
         end
-        Wait(250)
+        Wait(120)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        if LocalPlayer.state.isLoggedIn then
+            local ped = PlayerPedId()
+            if IsPedArmed(ped, 6) then
+                local w = GetSelectedPedWeapon(ped)
+                if w and w ~= 0 and w ~= `WEAPON_UNARMED` then
+                    clearPedWeaponInfiniteAmmo(ped, w)
+                end
+            end
+        end
+        Wait(2200)
     end
 end)
 

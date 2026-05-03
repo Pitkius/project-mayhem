@@ -4,6 +4,9 @@ Config.Kma = {
     fee = 5000,
     targetSize = vec3(2.2, 2.2, 2.2),
     targetDistance = 2.5,
+    --- Žemėlapio legendoje grupė (tas pats skaičius visiems KMA taškams), pvz. kaip parduotuvės blipai.
+    --- 0 = FiveM numatyta kategorija; pakeisk jei nori kitą grupę pause žemėlapyje.
+    mapBlipCategory = 135,
     blipSprite = 225,
     blipColor = 1,
     blipScale = 0.9,

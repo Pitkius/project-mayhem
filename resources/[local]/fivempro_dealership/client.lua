@@ -11,6 +11,18 @@ local previewSpawnGen = 0
 local currentColorIdx = (Config.PreviewColors and Config.PreviewColors[1] and Config.PreviewColors[1].idx) or 111
 local selectedModel = nil
 
+local function previewPushDaylight()
+    pcall(function()
+        NetworkOverrideClockTime(12, 0, 0)
+    end)
+end
+
+local function previewPopDaylight()
+    pcall(function()
+        NetworkClearClockTimeOverride()
+    end)
+end
+
 local function forceDeleteVehicleEntity(veh)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     SetEntityAsMissionEntity(veh, true, true)
@@ -152,9 +164,11 @@ local function spawnPreviewVehicle(model)
             cWait = cWait + 1
         end
         SetVehicleOnGroundProperly(previewVehicle)
+        SetVehicleLights(previewVehicle, true)
 
         ensurePreviewCam()
         PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.2, true)
+        previewPushDaylight()
     end)
 end
 
@@ -202,6 +216,7 @@ local function closeDealershipUi()
     safeDeletePreviewVehicle()
     destroyPreviewCam()
     ClearFocus()
+    previewPopDaylight()
 end
 
 RegisterNetEvent('fivempro_dealership:client:forceCloseUi', function()
@@ -218,6 +233,7 @@ local function openDealershipUi()
     end
 
     uiOpen = true
+    previewPushDaylight()
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'open', payload = payload })
     -- Preview spawną inicijuoja NUI (`selectVehicle`), kad nebūtų dvigubo spawn atidaryme.
@@ -289,6 +305,17 @@ RegisterNUICallback('buyVehicle', function(data, cb)
     local model = (data and data.model) or selectedModel
     buySelectedVehicle(model)
     cb('ok')
+end)
+
+CreateThread(function()
+    while true do
+        if uiOpen then
+            previewPushDaylight()
+            Wait(4000)
+        else
+            Wait(800)
+        end
+    end
 end)
 
 CreateThread(function()
