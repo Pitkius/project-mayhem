@@ -1,6 +1,6 @@
 Config = {}
 
-Config.JobName = 'fivempro_ambulance'
+Config.JobName = 'ambulance'
 Config.TargetDistance = 3.2
 
 --- Pagrindinė vieta (bez MLO – lauke) – persidėta kartu su garažo tašku

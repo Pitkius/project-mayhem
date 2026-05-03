@@ -32,13 +32,13 @@ end
 local function isMechanicJobPlayer(Player)
     if not Player or not Player.PlayerData.job then return false end
     local j = Player.PlayerData.job
-    return j.name == 'fivempro_mechanic' and j.onduty
+    return j.name == 'mechanic' and j.onduty
 end
 
 local function isEmsJobPlayer(Player)
     if not Player or not Player.PlayerData.job then return false end
     local j = Player.PlayerData.job
-    return j.name == 'fivempro_ambulance' and j.onduty
+    return j.name == 'ambulance' and j.onduty
 end
 
 local function isMechanicVehicleModel(modelName)

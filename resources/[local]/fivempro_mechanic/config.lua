@@ -1,6 +1,6 @@
 Config = {}
 
-Config.JobName = 'fivempro_mechanic'
+Config.JobName = 'mechanic'
 Config.TargetDistance = 3.2
 
 --- Blipas ir tarnybos taškas – prie garažo (6 nuotrauka)

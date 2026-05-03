@@ -115,3 +115,40 @@ RegisterNetEvent('fivempro_mechanic:server:bossSetGrade', function(targetId, gra
     T.Functions.SetJob(Config.JobName, grade)
     TriggerClientEvent('QBCore:Notify', src, 'Rangas pakeistas.', 'success')
 end)
+
+local function nearRepairBay(src, bayIdx)
+    bayIdx = tonumber(bayIdx)
+    if not bayIdx or not Config.RepairBays or not Config.RepairBays[bayIdx] then
+        return false
+    end
+    local bay = Config.RepairBays[bayIdx]
+    local radius = math.max(tonumber(bay.length) or 6.0, tonumber(bay.width) or 6.0) * 0.55 + 14.0
+    return nearCoords(src, bay.coords, radius)
+end
+
+RegisterNetEvent('fivempro_mechanic:server:saveBayVehicleTune', function(bayIdx, props)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    local j = Player.PlayerData.job
+    if j.name ~= Config.JobName or not j.onduty then
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik mechanikams tarnyboje.', 'error')
+    end
+    if not nearRepairBay(src, bayIdx) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo remonto zonos.', 'error')
+    end
+    if type(props) ~= 'table' then return end
+    local plate = props.plate and tostring(props.plate):upper():gsub('%s+', '')
+    if not plate or plate == '' then
+        return TriggerClientEvent('QBCore:Notify', src, 'Nėra numerių.', 'error')
+    end
+    local row = MySQL.single.await('SELECT plate FROM player_vehicles WHERE plate = ? LIMIT 1', { plate })
+    if not row then
+        return TriggerClientEvent('QBCore:Notify', src, 'Šis transportas neregistruotas sistemoje.', 'error')
+    end
+    MySQL.update.await('UPDATE player_vehicles SET mods = ? WHERE plate = ?', {
+        json.encode(props),
+        plate,
+    })
+    TriggerClientEvent('QBCore:Notify', src, 'Modifikacijos išsaugotos duomenų bazėje.', 'success')
+end)

@@ -94,26 +94,6 @@ RegisterNetEvent('fivempro_mechanic:client:applyOutfit', function(data)
     QBCore.Functions.Notify(outfit.label or 'Apranga uždėta.', 'success')
 end)
 
-RegisterNetEvent('fivempro_mechanic:client:quickRepairHere', function()
-    if not isMechanicOnDuty() then
-        return QBCore.Functions.Notify('Tik mechanikams tarnyboje.', 'error')
-    end
-    local ped = PlayerPedId()
-    local veh = GetVehiclePedIsIn(ped, false)
-    if veh == 0 then
-        return QBCore.Functions.Notify('Įsėk į vairuotojo vietą.', 'error')
-    end
-    if GetPedInVehicleSeat(veh, -1) ~= ped then
-        return QBCore.Functions.Notify('Turi būti vairuotojas.', 'error')
-    end
-    SetVehicleEngineHealth(veh, 1000.0)
-    SetVehicleBodyHealth(veh, 1000.0)
-    SetVehiclePetrolTankHealth(veh, 1000.0)
-    SetVehicleFixed(veh)
-    SetVehicleDeformationFixed(veh)
-    QBCore.Functions.Notify('Transportas apžiūrėtas (lokali apžiūra).', 'success')
-end)
-
 CreateThread(function()
     local b = Config.Base
     local bl = Config.Blip
@@ -265,9 +245,10 @@ CreateThread(function()
             options = {
                 {
                     type = 'client',
-                    event = 'fivempro_mechanic:client:quickRepairHere',
+                    event = 'fivempro_mechanic:client:openBayWorkshop',
                     icon = 'fas fa-wrench',
-                    label = ('Remonto vieta #%s – apžiūra'):format(i),
+                    label = ('Dirbtuvės #%s (remontas / tuningas)'):format(i),
+                    bayIndex = i,
                     canInteract = function()
                         return isMechanicOnDuty()
                     end,

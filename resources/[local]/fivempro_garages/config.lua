@@ -30,7 +30,7 @@ Config.Garages = {
     { id = 'pd_ls_main', label = 'Policijos garažas', coords = vector3(441.64, -1013.14, 28.62), heading = 175.52, spawn = vector4(441.64, -1013.14, 28.62, 175.52), policeOnly = true, hideBlip = true },
     { id = 'pd_sandy', label = 'Policijos garažas (Sandy)', coords = vector3(1869.5, 3695.2, 33.53), heading = 210.0, spawn = vector4(1869.5, 3695.2, 33.53, 210.0), policeOnly = true, hideBlip = true },
     { id = 'pd_paleto', label = 'Policijos garažas (Paleto)', coords = vector3(-459.2, 6016.3, 31.49), heading = 45.0, spawn = vector4(-459.2, 6016.3, 31.49, 45.0), policeOnly = true, hideBlip = true },
-    --- Mechanikas / EMS (fivempro_mechanic, fivempro_ambulance) – tik qb-target iš darbo resursų
+    --- Mechanikas / EMS (job: mechanic, ambulance) – tik qb-target iš darbo resursų
     { id = 'mech_ls', label = 'Mechanikų garažas', coords = vector3(-350.41, -117.01, 38.95), heading = 246.37, spawn = vector4(-347.5, -119.2, 38.95, 246.37), mechanicOnly = true, hideBlip = true },
     { id = 'ems_ls', label = 'Greitosios pagalbos garažas', coords = vector3(-460.42, -324.28, 34.50), heading = 91.30, spawn = vector4(-464.42, -324.37, 34.50, 91.30), emsOnly = true, hideBlip = true },
 }

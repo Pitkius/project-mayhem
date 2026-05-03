@@ -138,7 +138,7 @@ Config.PoliceDealership = {
     },
 }
 
---- Mechanikų tarnybinis transportas (fivempro_mechanic darbas)
+--- Mechanikų tarnybinis transportas (job: mechanic)
 Config.MechanicDealership = {
     label = 'Mechanikų transporto skyrius',
     garageByStation = {
@@ -164,7 +164,7 @@ Config.MechanicDealership = {
     },
 }
 
---- Greitosios pagalbos transportas (fivempro_ambulance)
+--- Greitosios pagalbos transportas (job: ambulance)
 Config.EmsDealership = {
     label = 'Greitosios pagalbos transportas',
     garageByStation = {

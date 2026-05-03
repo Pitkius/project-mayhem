@@ -10,13 +10,13 @@ end
 local function isMechanicOnDuty()
     local P = QBCore.Functions.GetPlayerData()
     if not P or not P.job or not P.job.onduty then return false end
-    return P.job.name == 'fivempro_mechanic'
+    return P.job.name == 'mechanic'
 end
 
 local function isEmsOnDuty()
     local P = QBCore.Functions.GetPlayerData()
     if not P or not P.job or not P.job.onduty then return false end
-    return P.job.name == 'fivempro_ambulance'
+    return P.job.name == 'ambulance'
 end
 
 local function canUseGarageEntry(garage)
@@ -49,11 +49,14 @@ local function previewApplyShowroomVisuals()
         SetWeatherTypeNow('EXTRASUNNY')
         SetWeatherTypeNowPersist('EXTRASUNNY')
         SetRainLevel(0.0)
-        SetArtificialLightsState(true)
     end)
     pcall(function()
         SetBlackout(false)
         ClearTimecycleModifier()
+        SetTimecycleModifierStrength(0.0)
+    end)
+    pcall(function()
+        ClearExtraTimecycleModifier()
     end)
 end
 
@@ -154,7 +157,7 @@ local function ensureGaragePreviewCam(spawn)
     local dist = 7.2
     local cx = spawn.x - math.sin(rad) * dist
     local cy = spawn.y - math.cos(rad) * dist
-    local cz = spawn.z + 1.28
+    local cz = spawn.z + 2.05
     previewCam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
     SetCamCoord(previewCam, cx, cy, cz)
     PointCamAtCoord(previewCam, spawn.x, spawn.y, spawn.z + 0.42, true)
@@ -499,9 +502,10 @@ CreateThread(function()
     while true do
         if uiOpen and previewVehicle and previewVehicle ~= 0 and DoesEntityExist(previewVehicle) then
             local c = GetEntityCoords(previewVehicle)
-            DrawSpotLight(c.x + 3.2, c.y + 2.8, c.z + 6.5, -0.2, -0.18, -1.0, 255, 250, 230, 48.0, 32.0, 0.0, 36.0, 1.12)
-            DrawSpotLight(c.x - 2.6, c.y - 2.2, c.z + 5.8, 0.22, 0.2, -1.0, 230, 245, 255, 40.0, 26.0, 0.0, 28.0, 0.95)
-            DrawLightWithRange(c.x, c.y, c.z + 1.05, 255, 250, 235, 18.0, 24.0)
+            DrawSpotLight(c.x + 4.0, c.y + 3.2, c.z + 7.2, -0.2, -0.18, -1.0, 255, 252, 245, 52.0, 42.0, 0.0, 42.0, 1.65)
+            DrawSpotLight(c.x - 3.2, c.y - 2.8, c.z + 6.5, 0.22, 0.2, -1.0, 245, 248, 255, 46.0, 38.0, 0.0, 36.0, 1.45)
+            DrawSpotLight(c.x, c.y + 5.5, c.z + 8.0, 0.05, -0.95, -0.25, 255, 255, 255, 38.0, 48.0, 0.0, 32.0, 1.2)
+            DrawLightWithRange(c.x, c.y, c.z + 1.15, 255, 250, 235, 28.0, 42.0)
             Wait(0)
         else
             Wait(400)
