@@ -104,6 +104,91 @@ CreateThread(function()
     end
 end)
 
+RegisterNetEvent('fivempro_ltpd:client:openMdtAtStation', function()
+    local Player = QBCore.Functions.GetPlayerData()
+    if not Player or Player.job.name ~= Config.JobName or not Player.job.onduty then
+        return QBCore.Functions.Notify('MDT – tik policijai tarnyboje.', 'error')
+    end
+    openMdt()
+end)
+
+local function isLtpdClient()
+    local P = QBCore.Functions.GetPlayerData()
+    return P and P.job and P.job.name == Config.JobName and P.job.onduty
+end
+
+RegisterNetEvent('fivempro_ltpd:client:tryOpenArmory', function(data)
+    if not isLtpdClient() then
+        return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
+    end
+    local stationId = data and data.stationId
+    if not stationId then return end
+    TriggerServerEvent('fivempro_ltpd:server:openArmory', stationId)
+end)
+
+RegisterNetEvent('fivempro_ltpd:client:openGarageMenu', function(data)
+    if not isLtpdClient() then
+        return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
+    end
+    local stationId = data and data.stationId
+    if not stationId or not Config.FleetVehicles or not next(Config.FleetVehicles) then return end
+    local stLabel = 'PD transportas'
+    for _, s in ipairs(Config.Stations or {}) do
+        if s.id == stationId then
+            stLabel = s.label or stLabel
+            break
+        end
+    end
+    local menu = {
+        { header = stLabel, isMenuHeader = true },
+    }
+    for _, v in ipairs(Config.FleetVehicles) do
+        menu[#menu + 1] = {
+            header = v.label,
+            txt = v.model,
+            params = {
+                event = 'fivempro_ltpd:client:requestSpawnFleet',
+                args = { stationId = stationId, model = v.model },
+            },
+        }
+    end
+    if GetResourceState('qb-menu') == 'started' then
+        TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+    else
+        QBCore.Functions.Notify('Įdiek qb-menu garažo meniu.', 'error')
+    end
+end)
+
+RegisterNetEvent('fivempro_ltpd:client:requestSpawnFleet', function(args)
+    if not isLtpdClient() then return end
+    local model = args and args.model
+    local stationId = args and args.stationId
+    if not model or not stationId then return end
+    TriggerServerEvent('fivempro_ltpd:server:spawnFleet', stationId, model)
+end)
+
+RegisterNetEvent('fivempro_ltpd:client:fleetVehicleReady', function(plate)
+    if not plate or plate == '' then return end
+    TriggerEvent('vehiclekeys:client:SetOwner', plate)
+end)
+
+CreateThread(function()
+    if not Config.ShowStationBlips then return end
+    for _, st in ipairs(Config.Stations or {}) do
+        if st.coords then
+            local b = AddBlipForCoord(st.coords.x, st.coords.y, st.coords.z)
+            SetBlipSprite(b, Config.BlipSprite or 60)
+            SetBlipDisplay(b, 4)
+            SetBlipScale(b, Config.BlipScale or 0.85)
+            SetBlipColour(b, Config.BlipColour or 38)
+            SetBlipAsShortRange(b, true)
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentSubstringPlayerName(st.label or 'Policija')
+            EndTextCommandSetBlipName(b)
+        end
+    end
+end)
+
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do
         Wait(300)
@@ -121,19 +206,49 @@ CreateThread(function()
                         event = 'fivempro_ltpd:client:openMdtAtStation',
                         icon = 'fas fa-tablet-screen-button',
                         label = 'MDT planšetė',
-                        station = st.id,
+                        job = { ltpd = 0 },
                     },
                 },
                 distance = Config.TargetDistance,
             })
         end
+        if st.armory and st.armory.coords then
+            exports['qb-target']:AddCircleZone(('ltpd_armory_%s'):format(st.id), st.armory.coords, 0.45, {
+                name = ('ltpd_armory_%s'):format(st.id),
+                debugPoly = false,
+                useZ = true,
+            }, {
+                options = {
+                    {
+                        type = 'client',
+                        event = 'fivempro_ltpd:client:tryOpenArmory',
+                        icon = 'fas fa-box-open',
+                        label = 'Ginklinė',
+                        stationId = st.id,
+                        job = { ltpd = 0 },
+                    },
+                },
+                distance = Config.TargetDistance,
+            })
+        end
+        if st.garage and st.garage.coords then
+            exports['qb-target']:AddCircleZone(('ltpd_garage_%s'):format(st.id), st.garage.coords, 0.65, {
+                name = ('ltpd_garage_%s'):format(st.id),
+                debugPoly = false,
+                useZ = true,
+            }, {
+                options = {
+                    {
+                        type = 'client',
+                        event = 'fivempro_ltpd:client:openGarageMenu',
+                        icon = 'fas fa-car',
+                        label = 'Tarnybinis transportas',
+                        stationId = st.id,
+                        job = { ltpd = 0 },
+                    },
+                },
+                distance = Config.TargetDistance + 0.5,
+            })
+        end
     end
-end)
-
-RegisterNetEvent('fivempro_ltpd:client:openMdtAtStation', function()
-    local Player = QBCore.Functions.GetPlayerData()
-    if not Player or Player.job.name ~= Config.JobName or not Player.job.onduty then
-        return QBCore.Functions.Notify('MDT – tik policijai tarnyboje.', 'error')
-    end
-    openMdt()
 end)

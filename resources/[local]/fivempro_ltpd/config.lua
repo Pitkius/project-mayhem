@@ -27,6 +27,8 @@ Config.Permissions = {
     search_inventory = 1,
     traffic_radar = 1, -- rezervas / ateities integracija
     division_admin = 8,
+    armory = 0, -- bendra policijos ginklinė (stash)
+    garage = 0, -- PD tarnybinio transporto išėmimas
 }
 
 --- Baudų šablonai (kodas rodomas MDT)
@@ -38,7 +40,30 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- Policijos postai (keisk pagal savo MLO – čia pagrindinės LS / Sandy / Paleto vietos)
+--- Maks. atstumas iki ginklinės / PD garažo taško (patikra serveryje)
+Config.ArmoryGarageDistance = 22.0
+
+--- Blipai žemėlapyje (komisariatai)
+Config.ShowStationBlips = true
+Config.BlipSprite = 60
+Config.BlipColour = 38
+Config.BlipScale = 0.85
+
+--- Tarnybinis transportas (modeliai turi būti whitelist – žr. server spawnFleet)
+Config.FleetVehicles = {
+    { model = 'police', label = 'Cruiser' },
+    { model = 'police2', label = 'Buffalo' },
+    { model = 'police3', label = 'Interceptor' },
+    { model = 'policeb', label = 'Motociklas' },
+    { model = 'sheriff', label = 'Sheriff Cruiser' },
+    { model = 'sheriff2', label = 'Sheriff SUV' },
+    { model = 'riot', label = 'Riot' },
+}
+
+--[[
+  Postai: MDT + (pasirinktinai) ginklinė ir PD garažas.
+  Koordinates patikrink su savo MLO – ypač armory.coords ir garage.spawn.
+]]
 Config.Stations = {
     {
         id = 'ls_main',
@@ -47,6 +72,17 @@ Config.Stations = {
         heading = 90.0,
         mdt = true,
         duty = true,
+        armory = {
+            coords = vector3(461.45, -981.21, 30.69),
+            stashId = 'ltpd_armory_ls',
+            label = 'Policijos ginklinė',
+            maxweight = 5000000,
+            slots = 90,
+        },
+        garage = {
+            coords = vector3(459.85, -1014.55, 28.26),
+            spawn = vector4(459.85, -1014.55, 28.26, 271.29),
+        },
     },
     {
         id = 'sandy',
@@ -55,6 +91,17 @@ Config.Stations = {
         heading = 210.0,
         mdt = true,
         duty = true,
+        armory = {
+            coords = vector3(1849.12, 3690.04, 34.27),
+            stashId = 'ltpd_armory_sandy',
+            label = 'Policijos ginklinė (Sandy)',
+            maxweight = 4000000,
+            slots = 70,
+        },
+        garage = {
+            coords = vector3(1869.5, 3695.2, 33.53),
+            spawn = vector4(1869.5, 3695.2, 33.53, 210.0),
+        },
     },
     {
         id = 'paleto',
@@ -63,6 +110,17 @@ Config.Stations = {
         heading = 45.0,
         mdt = true,
         duty = true,
+        armory = {
+            coords = vector3(-449.38, 6014.12, 31.72),
+            stashId = 'ltpd_armory_paleto',
+            label = 'Policijos ginklinė (Paleto)',
+            maxweight = 4000000,
+            slots = 70,
+        },
+        garage = {
+            coords = vector3(-459.2, 6016.3, 31.49),
+            spawn = vector4(-459.2, 6016.3, 31.49, 45.0),
+        },
     },
 }
 

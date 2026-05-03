@@ -321,6 +321,75 @@ RegisterNetEvent('fivempro_ltpd:server:trySearchInventory', function(targetId)
     exports['qb-inventory']:OpenInventoryById(src, targetId)
 end)
 
+local function getStationById(id)
+    id = tostring(id or '')
+    for _, st in ipairs(Config.Stations or {}) do
+        if st.id == id then return st end
+    end
+    return nil
+end
+
+local function officerNearCoords(src, coordsVec3, maxDist)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local p = GetEntityCoords(ped)
+    return #(p - coordsVec3) <= maxDist
+end
+
+local function fleetModelAllowed(modelName)
+    modelName = tostring(modelName or ''):lower()
+    for _, v in ipairs(Config.FleetVehicles or {}) do
+        if v.model and tostring(v.model):lower() == modelName then return true end
+    end
+    return false
+end
+
+RegisterNetEvent('fivempro_ltpd:server:openArmory', function(stationId)
+    local src = source
+    if GetResourceState('qb-inventory') ~= 'started' then return end
+    if not hasPerm(src, 'armory') then return end
+    stationId = tostring(stationId or '')
+    local st = getStationById(stationId)
+    if not st or not st.armory or not st.armory.coords or not st.armory.stashId then return end
+    local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
+    if not officerNearCoords(src, st.armory.coords, maxD) then return end
+    exports['qb-inventory']:OpenInventory(src, st.armory.stashId, {
+        maxweight = st.armory.maxweight or 4000000,
+        slots = st.armory.slots or 80,
+        label = st.armory.label or 'Policijos ginklinė',
+    })
+end)
+
+RegisterNetEvent('fivempro_ltpd:server:spawnFleet', function(stationId, modelName)
+    local src = source
+    if not hasPerm(src, 'garage') then return end
+    stationId = tostring(stationId or '')
+    modelName = tostring(modelName or ''):lower()
+    if not fleetModelAllowed(modelName) then return end
+    local st = getStationById(stationId)
+    if not st or not st.garage or not st.garage.spawn then return end
+    local sp = st.garage.spawn
+    local checkVec = vector3(sp.x, sp.y, sp.z)
+    local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
+    if not officerNearCoords(src, checkVec, maxD + 6.0) then
+        TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo PD transporto vietos.', 'error')
+        return
+    end
+    local hash = joaat(modelName)
+    local veh = QBCore.Functions.SpawnVehicle(src, hash, sp, true)
+    if not veh or veh == 0 then
+        TriggerClientEvent('QBCore:Notify', src, 'Nepavyko sukurti transporto.', 'error')
+        return
+    end
+    local plateRaw = ('PD%s'):format(math.random(1000, 9999))
+    SetVehicleNumberPlateText(veh, plateRaw)
+    local plate = QBCore.Shared.Trim(GetVehicleNumberPlateText(veh))
+    if plate == nil or plate == '' then plate = plateRaw end
+    SetVehicleEngineOn(veh, true, true, false)
+    TriggerClientEvent('fivempro_ltpd:client:fleetVehicleReady', src, plate)
+    TriggerClientEvent('QBCore:Notify', src, 'Transportas paruoštas.', 'success')
+end)
+
 exports('IsLtpdOnDuty', function(src)
     return isLtpdOnDuty(src)
 end)

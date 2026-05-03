@@ -311,6 +311,20 @@ CreateThread(function()
     SetWeaponsNoAutoswap(true)
 end)
 
+--- Kai kurie resursai vėl įjungia begalinę apkabą – blokuoja tikrą kulkų mažėjimą.
+CreateThread(function()
+    while true do
+        Wait(75)
+        local ped = PlayerPedId()
+        if IsPedArmed(ped, 7) then
+            local w = GetSelectedPedWeapon(ped)
+            if w and w ~= 0 and w ~= `WEAPON_UNARMED` then
+                clearPedWeaponInfiniteAmmo(ped, w)
+            end
+        end
+    end
+end)
+
 CreateThread(function()
     while true do
         -- R = INPUT_RELOAD (45). Kiti resursai gali išjungti valdiklį — vis tiek leidžiame ir tikriname „disabled“ būseną.
@@ -375,7 +389,7 @@ CreateThread(function()
             lastSyncedAmmo = nil
             lastAmmoSyncAt = 0
         end
-        Wait(200)
+        Wait(100)
     end
 end)
 

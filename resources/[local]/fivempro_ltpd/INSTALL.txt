@@ -14,12 +14,12 @@ fivempro_ltpd – Lietuvos policija (MDT, rangai)
 5) Komandos:
    /mdt – MDT planšetė (tik job ltpd + onduty).
 
-6) qb-target zonos: LS / Sandy / Paleto stotyse – „MDT planšetė“.
+6) qb-target zonos prie stočių: „MDT planšetė“, „Ginklinė“ (bendras stash per qb-inventory), „Tarnybinis transportas“ (qb-menu sąrašas + serverio spawn). PD blipai žemėlapyje: Config.ShowStationBlips.
 
-7) Padaliniai: INSERT į ltpd_profiles (division = patrol|traffic|criminal|aras|admin) arba bus INSERT IGNORE patrol atidarius MDT.
+7) Padaliniai: INSERT į ltpd_profiles (division = patrol|traffic|criminal|aras|admin) arba INSERT IGNORE patrol atidarius MDT.
 
-8) Papildomai (nebūtina šiam release): rankos antrankiai – TriggerServerEvent iš savo target meniu į fivempro_ltpd:server:cuffPlayer su target server id.
+8) Papildomai: antrankiai – TriggerServerEvent į fivempro_ltpd:server:cuffPlayer.
 
-9) MLO koordinates keisk resources/[local]/fivempro_ltpd/config.lua → Config.Stations.
+9) Koordinates (MDT, ginklinė, garažas / spawn): resources/[local]/fivempro_ltpd/config.lua → Config.Stations (patikrink su savo MRPD MLO).
 
 Pastaba: Senasis job `police` lieka atskiras – naujas pilnas integracija yra `ltpd`.

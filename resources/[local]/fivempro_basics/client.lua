@@ -43,6 +43,11 @@ CreateThread(function()
             TriggerEvent('fivempro_kma:client:forceCloseUi')
             TriggerEvent('fivempro_ltpd:client:forceCloseMdt')
             TriggerEvent('qb-menu:client:closeMenu')
+            if GetResourceState('qb-menu') == 'started' then
+                pcall(function()
+                    exports['qb-menu']:closeMenu()
+                end)
+            end
             TriggerEvent('qb-inventory:client:closeInv')
             SetNuiFocus(false, false)
             SetNuiFocusKeepInput(false)

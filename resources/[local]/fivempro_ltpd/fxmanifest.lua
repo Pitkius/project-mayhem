@@ -29,3 +29,4 @@ files {
 }
 
 dependency 'qb-core'
+-- qb-menu (garažo meniu), qb-inventory (ginklinė / stash), qb-target (zonos)
