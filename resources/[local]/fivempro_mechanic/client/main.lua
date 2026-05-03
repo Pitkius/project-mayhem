@@ -134,12 +134,12 @@ CreateThread(function()
     end
 
     local gh = Config.GarageHub
-    exports['qb-target']:AddBoxZone('fivempro_mech_hub', gh.coords, 2.8, 2.8, {
+    exports['qb-target']:AddBoxZone('fivempro_mech_hub', gh.coords, 3.6, 3.6, {
         name = 'fivempro_mech_hub',
         heading = gh.heading,
         debugPoly = false,
-        minZ = gh.coords.z - 1.45,
-        maxZ = gh.coords.z + 2.85,
+        minZ = gh.coords.z - 1.55,
+        maxZ = gh.coords.z + 3.0,
     }, {
         options = {
             {
@@ -161,16 +161,16 @@ CreateThread(function()
                 end,
             },
         },
-        distance = Config.TargetDistance + 0.8,
+        distance = Config.TargetDistance + 1.0,
     })
 
     local st = Config.Stash
-    exports['qb-target']:AddBoxZone('fivempro_mech_stash', st.coords, 1.3, 1.3, {
+    exports['qb-target']:AddBoxZone('fivempro_mech_stash', st.coords, 1.75, 1.75, {
         name = 'fivempro_mech_stash',
-        heading = Config.Base.w,
+        heading = st.heading or Config.Base.w,
         debugPoly = false,
-        minZ = st.coords.z - 1.0,
-        maxZ = st.coords.z + 2.0,
+        minZ = st.coords.z - 1.15,
+        maxZ = st.coords.z + 2.35,
     }, {
         options = {
             {
@@ -183,16 +183,16 @@ CreateThread(function()
                 end,
             },
         },
-        distance = Config.TargetDistance,
+        distance = Config.TargetDistance + 0.35,
     })
 
     local lk = Config.Locker
-    exports['qb-target']:AddBoxZone('fivempro_mech_locker', lk.coords, 1.25, 1.25, {
+    exports['qb-target']:AddBoxZone('fivempro_mech_locker', lk.coords, 1.65, 1.65, {
         name = 'fivempro_mech_locker',
         heading = lk.heading,
         debugPoly = false,
-        minZ = lk.coords.z - 1.0,
-        maxZ = lk.coords.z + 2.1,
+        minZ = lk.coords.z - 1.15,
+        maxZ = lk.coords.z + 2.35,
     }, {
         options = {
             {
@@ -205,16 +205,16 @@ CreateThread(function()
                 end,
             },
         },
-        distance = Config.TargetDistance,
+        distance = Config.TargetDistance + 0.35,
     })
 
     local mg = Config.Management.coords
-    exports['qb-target']:AddBoxZone('fivempro_mech_mgmt', mg, 1.5, 1.5, {
+    exports['qb-target']:AddBoxZone('fivempro_mech_mgmt', mg, 1.95, 1.95, {
         name = 'fivempro_mech_mgmt',
         heading = Config.Management.heading,
         debugPoly = false,
-        minZ = mg.z - 1.1,
-        maxZ = mg.z + 2.2,
+        minZ = mg.z - 1.25,
+        maxZ = mg.z + 2.55,
     }, {
         options = {
             {
@@ -230,15 +230,15 @@ CreateThread(function()
                 end,
             },
         },
-        distance = 3.0,
+        distance = 3.4,
     })
 
-    exports['qb-target']:AddBoxZone('fivempro_mech_duty', vector3(Config.Base.x, Config.Base.y, Config.Base.z), 1.4, 1.4, {
+    exports['qb-target']:AddBoxZone('fivempro_mech_duty', vector3(Config.Base.x, Config.Base.y, Config.Base.z), 1.85, 1.85, {
         name = 'fivempro_mech_duty',
         heading = Config.Base.w,
         debugPoly = false,
-        minZ = Config.Base.z - 1.0,
-        maxZ = Config.Base.z + 2.2,
+        minZ = Config.Base.z - 1.15,
+        maxZ = Config.Base.z + 2.45,
     }, {
         options = {
             {
@@ -251,7 +251,7 @@ CreateThread(function()
                 end,
             },
         },
-        distance = Config.TargetDistance + 0.5,
+        distance = Config.TargetDistance + 0.65,
     })
 
     for i, bay in ipairs(Config.RepairBays or {}) do
@@ -259,8 +259,8 @@ CreateThread(function()
             name = ('fivempro_mech_bay_%s'):format(i),
             heading = bay.heading,
             debugPoly = false,
-            minZ = bay.coords.z - 1.2,
-            maxZ = bay.coords.z + 3.2,
+            minZ = bay.coords.z - 1.35,
+            maxZ = bay.coords.z + 3.5,
         }, {
             options = {
                 {
@@ -273,7 +273,7 @@ CreateThread(function()
                     end,
                 },
             },
-            distance = 12.0,
+            distance = 14.0,
         })
     end
 end)

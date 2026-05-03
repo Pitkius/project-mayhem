@@ -1,10 +1,10 @@
 Config = {}
 
 Config.JobName = 'fivempro_ambulance'
-Config.TargetDistance = 2.8
+Config.TargetDistance = 3.2
 
---- Pagrindinė vieta (bez MLO – lauke)
-Config.Base = vector4(-447.51, -340.87, 34.50, 259.81)
+--- Pagrindinė vieta (bez MLO – lauke) – persidėta kartu su garažo tašku
+Config.Base = vector4(-458.6, -327.15, 34.50, 91.30)
 
 Config.Blip = {
     sprite = 61,
@@ -14,7 +14,7 @@ Config.Blip = {
 }
 
 Config.Stash = {
-    coords = vector3(-449.2, -342.4, 34.50),
+    coords = vector3(-462.9, -326.4, 34.50),
     stashId = 'fivempro_ems_ls',
     label = 'EMS sandėlis',
     maxweight = 4000000,
@@ -22,25 +22,26 @@ Config.Stash = {
 }
 
 Config.Management = {
-    coords = vector3(-445.2, -339.1, 34.50),
-    heading = 259.81,
+    coords = vector3(-454.85, -323.35, 34.50),
+    heading = 91.30,
 }
 
 Config.Locker = {
-    coords = vector3(-448.0, -338.2, 34.50),
-    heading = 259.81,
+    coords = vector3(-457.45, -321.05, 34.50),
+    heading = 91.30,
 }
 
+--- Garažas + salonas (qb-target) – koordinatės pagal žaidėjo nuotrauką
 Config.GarageHub = {
-    coords = vector3(-448.1, -341.05, 34.52),
-    heading = 259.81,
+    coords = vector3(-460.42, -324.28, 34.50),
+    heading = 91.30,
 }
 
---- „Priėmimo“ vietos – lauke prie įėjimo (greitos pagalbos zonos RP)
+--- „Priėmimo“ vietos – išskaidyta plačiau nuo bazės
 Config.RepairBays = {
-    { coords = vector3(-451.2, -342.8, 34.50), length = 4.5, width = 6.0, heading = 259.81 },
-    { coords = vector3(-453.5, -344.8, 34.50), length = 4.5, width = 6.0, heading = 259.81 },
-    { coords = vector3(-455.8, -346.8, 34.50), length = 4.5, width = 6.0, heading = 259.81 },
+    { coords = vector3(-464.2, -329.1, 34.50), length = 5.8, width = 7.5, heading = 91.30 },
+    { coords = vector3(-467.5, -325.4, 34.50), length = 5.8, width = 7.5, heading = 91.30 },
+    { coords = vector3(-451.8, -328.0, 34.50), length = 5.8, width = 7.5, heading = 91.30 },
 }
 
 Config.Permissions = {

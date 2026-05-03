@@ -284,8 +284,18 @@ end)
 
 CreateThread(function()
     while true do
-        if uiOpen and (IsControlJustPressed(0, 199) or IsDisabledControlJustPressed(0, 199) or IsControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 200)) then
-            closeDealershipUi()
+        if uiOpen then
+            local esc = false
+            for cg = 0, 2 do
+                if IsControlJustPressed(cg, 199) or IsDisabledControlJustPressed(cg, 199)
+                    or IsControlJustPressed(cg, 200) or IsDisabledControlJustPressed(cg, 200) then
+                    esc = true
+                    break
+                end
+            end
+            if esc then
+                closeDealershipUi()
+            end
         end
         Wait(0)
     end

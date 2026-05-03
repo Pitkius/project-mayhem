@@ -146,9 +146,9 @@ Config.MechanicDealership = {
     },
     stations = {
         mech_ls = {
-            spawn = vector4(-333.2, -132.15, 39.02, 244.49),
-            preview = vector4(-336.75, -133.55, 39.02, 244.49),
-            camera = vector4(-341.1, -131.2, 40.65, 244.49),
+            spawn = vector4(-347.5, -119.2, 38.95, 246.37),
+            preview = vector4(-349.1, -118.05, 38.95, 246.37),
+            camera = vector4(-352.0, -115.2, 40.35, 246.37),
         },
     },
     MechanicCategoryLabels = {
@@ -172,9 +172,9 @@ Config.EmsDealership = {
     },
     stations = {
         ems_ls = {
-            spawn = vector4(-445.2, -338.9, 34.52, 259.81),
-            preview = vector4(-442.8, -339.55, 34.52, 259.81),
-            camera = vector4(-438.9, -338.2, 36.05, 259.81),
+            spawn = vector4(-464.42, -324.37, 34.50, 91.30),
+            preview = vector4(-462.1, -324.35, 34.50, 91.30),
+            camera = vector4(-458.4, -323.2, 36.05, 91.30),
         },
     },
     EmsCategoryLabels = {

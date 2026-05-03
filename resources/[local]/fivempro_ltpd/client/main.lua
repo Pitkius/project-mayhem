@@ -273,12 +273,12 @@ CreateThread(function()
     for _, st in ipairs(Config.Stations or {}) do
         if st.mdt then
             local mc = st.coords
-            exports['qb-target']:AddBoxZone(('ltpd_mdt_%s'):format(st.id), mc, 1.05, 1.05, {
+            exports['qb-target']:AddBoxZone(('ltpd_mdt_%s'):format(st.id), mc, 1.35, 1.35, {
                 name = ('ltpd_mdt_%s'):format(st.id),
                 heading = st.heading or 0.0,
                 debugPoly = false,
-                minZ = mc.z - 1.05,
-                maxZ = mc.z + 2.35,
+                minZ = mc.z - 1.15,
+                maxZ = mc.z + 2.45,
             }, {
                 options = {
                     {
@@ -295,7 +295,7 @@ CreateThread(function()
             })
         end
         if st.armory and st.armory.coords then
-            exports['qb-target']:AddCircleZone(('ltpd_armory_%s'):format(st.id), st.armory.coords, 1.15, {
+            exports['qb-target']:AddCircleZone(('ltpd_armory_%s'):format(st.id), st.armory.coords, 1.35, {
                 name = ('ltpd_armory_%s'):format(st.id),
                 debugPoly = false,
                 useZ = true,
@@ -344,12 +344,12 @@ CreateThread(function()
                     end,
                 }
             end
-            exports['qb-target']:AddBoxZone(('ltpd_garagehub_%s'):format(st.id), gcoords, 2.8, 2.8, {
+            exports['qb-target']:AddBoxZone(('ltpd_garagehub_%s'):format(st.id), gcoords, 3.6, 3.6, {
                 name = ('ltpd_garagehub_%s'):format(st.id),
                 heading = hubHeading,
                 debugPoly = false,
-                minZ = gcoords.z - 1.45,
-                maxZ = gcoords.z + 2.85,
+                minZ = gcoords.z - 1.55,
+                maxZ = gcoords.z + 3.0,
             }, {
                 options = hubOpts,
                 distance = Config.TargetDistance + 1.2,
@@ -357,12 +357,12 @@ CreateThread(function()
         elseif hasPdShop and st.policeDealership and st.policeDealership.coords then
             local pos = st.policeDealership.coords
             local hd = st.policeDealership.heading or 0.0
-            exports['qb-target']:AddBoxZone(('ltpd_pdshop_%s'):format(st.id), pos, 1.4, 1.4, {
+            exports['qb-target']:AddBoxZone(('ltpd_pdshop_%s'):format(st.id), pos, 1.75, 1.75, {
                 name = ('ltpd_pdshop_%s'):format(st.id),
                 heading = hd,
                 debugPoly = false,
-                minZ = pos.z - 1.0,
-                maxZ = pos.z + 1.8,
+                minZ = pos.z - 1.1,
+                maxZ = pos.z + 2.0,
             }, {
                 options = {
                     {
@@ -381,7 +381,7 @@ CreateThread(function()
         end
         for stashIdx, stash in ipairs(st.stashes or {}) do
             if stash.coords then
-                exports['qb-target']:AddCircleZone(('ltpd_stash_%s_%s'):format(st.id, stashIdx), stash.coords, 0.7, {
+                exports['qb-target']:AddCircleZone(('ltpd_stash_%s_%s'):format(st.id, stashIdx), stash.coords, 0.95, {
                     name = ('ltpd_stash_%s_%s'):format(st.id, stashIdx),
                     debugPoly = false,
                     useZ = true,
@@ -406,12 +406,12 @@ CreateThread(function()
         if st.management and st.management.coords then
             local mg = st.management.coords
             local mh = st.management.heading or st.heading or 0.0
-            exports['qb-target']:AddBoxZone(('ltpd_mgmt_%s'):format(st.id), mg, 1.6, 1.6, {
+            exports['qb-target']:AddBoxZone(('ltpd_mgmt_%s'):format(st.id), mg, 1.95, 1.95, {
                 name = ('ltpd_mgmt_%s'):format(st.id),
                 heading = mh,
                 debugPoly = false,
-                minZ = mg.z - 1.1,
-                maxZ = mg.z + 2.3,
+                minZ = mg.z - 1.2,
+                maxZ = mg.z + 2.45,
             }, {
                 options = {
                     {
@@ -428,12 +428,12 @@ CreateThread(function()
         if st.locker and st.locker.coords then
             local lc = st.locker.coords
             local lh = st.locker.heading or st.heading or 0.0
-            exports['qb-target']:AddBoxZone(('ltpd_locker_%s'):format(st.id), lc, 1.35, 1.35, {
+            exports['qb-target']:AddBoxZone(('ltpd_locker_%s'):format(st.id), lc, 1.65, 1.65, {
                 name = ('ltpd_locker_%s'):format(st.id),
                 heading = lh,
                 debugPoly = false,
-                minZ = lc.z - 1.0,
-                maxZ = lc.z + 2.15,
+                minZ = lc.z - 1.1,
+                maxZ = lc.z + 2.35,
             }, {
                 options = {
                     {
@@ -450,7 +450,7 @@ CreateThread(function()
             })
         end
         if st.heliGarage and st.heliGarage.coords then
-            exports['qb-target']:AddCircleZone(('ltpd_heli_%s'):format(st.id), st.heliGarage.coords, 1.2, {
+            exports['qb-target']:AddCircleZone(('ltpd_heli_%s'):format(st.id), st.heliGarage.coords, 1.45, {
                 name = ('ltpd_heli_%s'):format(st.id),
                 debugPoly = false,
                 useZ = true,

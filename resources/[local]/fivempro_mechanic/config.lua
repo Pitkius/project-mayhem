@@ -1,10 +1,10 @@
 Config = {}
 
 Config.JobName = 'fivempro_mechanic'
-Config.TargetDistance = 2.8
+Config.TargetDistance = 3.2
 
---- Pagrindinė bazės vieta (centras / blip)
-Config.Base = vector4(-338.82, -136.68, 39.01, 244.49)
+--- Blipas ir tarnybos taškas – prie garažo (6 nuotrauka)
+Config.Base = vector4(-350.41, -117.01, 38.95, 246.37)
 
 Config.Blip = {
     sprite = 446,
@@ -13,35 +13,38 @@ Config.Blip = {
     label = 'Mechanikų dirbtuvės',
 }
 
+--- Sandėlis / įrankiai (5 nuotrauka)
 Config.Stash = {
-    coords = vector3(-337.45, -135.05, 39.01),
+    coords = vector3(-319.45, -132.02, 38.98),
+    heading = 260.38,
     stashId = 'fivempro_mechanic_ls',
     label = 'Mechanikų sandėlis',
     maxweight = 4000000,
     slots = 80,
 }
 
+--- Vadovybės meniu (4 nuotrauka)
 Config.Management = {
-    coords = vector3(-336.75, -139.05, 39.01),
-    heading = 244.49,
+    coords = vector3(-323.52, -129.54, 39.01),
+    heading = 335.34,
 }
 
+--- Persirengimas / rūbinė (1 nuotrauka)
 Config.Locker = {
-    coords = vector3(-334.95, -137.55, 39.01),
-    heading = 244.49,
+    coords = vector3(-345.48, -122.90, 39.01),
+    heading = 66.30,
 }
 
---- Vienas taškas: garažas + tarnybinio transporto pirkimas (fivempro_garages / fivempro_dealership)
+--- Garažas + tarnybinio transporto pirkimas (6 nuotrauka)
 Config.GarageHub = {
-    coords = vector3(-339.05, -136.85, 39.02),
-    heading = 244.49,
+    coords = vector3(-350.41, -117.01, 38.95),
+    heading = 246.37,
 }
 
---- Žaidėjas atveda mašiną į zoną ir paleidžia „greitą“ apžiūrą (iki pilnos integracijos su remonto skriptu)
+--- Remonto vietos (2 ir 3 nuotraukos)
 Config.RepairBays = {
-    { coords = vector3(-335.85, -139.55, 39.02), length = 5.2, width = 6.8, heading = 244.49 },
-    { coords = vector3(-332.55, -141.95, 39.02), length = 5.2, width = 6.8, heading = 244.49 },
-    { coords = vector3(-329.35, -144.35, 39.02), length = 5.2, width = 6.8, heading = 244.49 },
+    { coords = vector3(-340.89, -128.34, 39.01), length = 5.2, width = 6.8, heading = 161.82 },
+    { coords = vector3(-330.82, -131.43, 39.01), length = 5.2, width = 6.8, heading = 156.15 },
 }
 
 Config.Permissions = {

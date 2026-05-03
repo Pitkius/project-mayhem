@@ -409,7 +409,11 @@ local function EnableTarget()
 					if Config.DrawSprite then
 						local testCentre = type(zone.center) == 'vector2' and vector3(zone.center.x, zone.center.y, zone.maxZ) or zone.center
 						if #(coords - testCentre) < (zone.targetoptions.drawDistance or Config.DrawDistance) then
-							listSprite[k] = zone
+							if HasAnyValidTargetOption(zone.targetoptions.options, entity, distance) then
+								listSprite[k] = zone
+							else
+								listSprite[k] = nil
+							end
 						else
 							listSprite[k] = nil
 						end

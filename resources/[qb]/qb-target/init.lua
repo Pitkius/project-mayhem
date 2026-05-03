@@ -225,3 +225,14 @@ function CheckOptions(data, entity, distance)
 	if data.canInteract and not data.canInteract(entity, distance, data) then return false end
 	return true
 end
+
+--- Naudojama qb-target kliente: taikinuko taškas tik jei bent viena zona opcija galioja šiam žaidėjui (pvz. darbas).
+function HasAnyValidTargetOption(datatable, entity, distance)
+	if not datatable then return false end
+	for _, data in pairs(datatable) do
+		if CheckOptions(data, entity, distance) then
+			return true
+		end
+	end
+	return false
+end
