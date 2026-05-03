@@ -1,0 +1,25 @@
+fivempro_ltpd – Lietuvos policija (MDT, rangai)
+==============================================
+
+1) DB lentelės sukuriamos paleidus resursą (oxmysql). Rankiniu importui: resources/[local]/fivempro_ltpd/sql/ltpd.sql
+
+2) cfg/30_custom.cfg jau turi: ensure fivempro_ltpd (po qb-core / oxmysql).
+
+3) qb-core/shared/jobs.lua pridėtas darbas `ltpd` su 11 rangų (Kursantas … Policijos vadas).
+
+4) Žaidėjams duok darbą `ltpd`:
+   - qb-management / boss menu, arba
+   - SQL: atnaujink players.job JSON (name=ltpd, grade.level=0–10).
+
+5) Komandos:
+   /mdt – MDT planšetė (tik job ltpd + onduty).
+
+6) qb-target zonos: LS / Sandy / Paleto stotyse – „MDT planšetė“.
+
+7) Padaliniai: INSERT į ltpd_profiles (division = patrol|traffic|criminal|aras|admin) arba bus INSERT IGNORE patrol atidarius MDT.
+
+8) Papildomai (nebūtina šiam release): rankos antrankiai – TriggerServerEvent iš savo target meniu į fivempro_ltpd:server:cuffPlayer su target server id.
+
+9) MLO koordinates keisk resources/[local]/fivempro_ltpd/config.lua → Config.Stations.
+
+Pastaba: Senasis job `police` lieka atskiras – naujas pilnas integracija yra `ltpd`.

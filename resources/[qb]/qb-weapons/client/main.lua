@@ -375,22 +375,7 @@ CreateThread(function()
             lastSyncedAmmo = nil
             lastAmmoSyncAt = 0
         end
-        Wait(120)
-    end
-end)
-
-CreateThread(function()
-    while true do
-        if LocalPlayer.state.isLoggedIn then
-            local ped = PlayerPedId()
-            if IsPedArmed(ped, 6) then
-                local w = GetSelectedPedWeapon(ped)
-                if w and w ~= 0 and w ~= `WEAPON_UNARMED` then
-                    clearPedWeaponInfiniteAmmo(ped, w)
-                end
-            end
-        end
-        Wait(2200)
+        Wait(200)
     end
 end)
 

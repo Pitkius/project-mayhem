@@ -348,7 +348,7 @@ end)
 -- Tai ne susije su blipais ar zona; blipus keičiant nenaikink šio ciklo.
 CreateThread(function()
     while true do
-        if uiOpen and (IsControlJustPressed(0, 199) or IsControlJustPressed(0, 200)) then
+        if uiOpen and (IsControlJustPressed(0, 199) or IsDisabledControlJustPressed(0, 199) or IsControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 200)) then
             closeKmaUi()
         end
         Wait(0)

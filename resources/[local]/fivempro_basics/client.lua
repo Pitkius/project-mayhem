@@ -32,17 +32,20 @@ CreateThread(function()
     end
 end)
 
--- Global fail-safe: pressing ESC/P always releases stuck NUI focus and target mode.
+-- Global fail-safe: ESC/P — pirmiau uždarom UI resursus (kameros/fokusas), tada nuimam fokusą.
 CreateThread(function()
     while true do
-        if IsControlJustPressed(0, 199) or IsControlJustPressed(0, 200) then
-            SetNuiFocus(false, false)
-            SetNuiFocusKeepInput(false)
-            TriggerEvent('qb-menu:client:closeMenu')
-            TriggerEvent('qb-inventory:client:closeInv')
+        local p = IsControlJustPressed(0, 199) or IsDisabledControlJustPressed(0, 199)
+        local esc = IsControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 200)
+        if p or esc then
             TriggerEvent('fivempro_dealership:client:forceCloseUi')
             TriggerEvent('fivempro_garages:client:forceCloseUi')
             TriggerEvent('fivempro_kma:client:forceCloseUi')
+            TriggerEvent('fivempro_ltpd:client:forceCloseMdt')
+            TriggerEvent('qb-menu:client:closeMenu')
+            TriggerEvent('qb-inventory:client:closeInv')
+            SetNuiFocus(false, false)
+            SetNuiFocusKeepInput(false)
             if GetResourceState('qb-target') == 'started' then
                 exports['qb-target']:DisableTarget(false)
             end

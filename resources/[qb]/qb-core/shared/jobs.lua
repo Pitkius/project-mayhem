@@ -25,6 +25,26 @@ QBShared.Jobs = {
 			['4'] = { name = 'Chief', isboss = true, payment = 150 },
 		},
 	},
+
+	ltpd = {
+		label = 'Lietuvos policija',
+		type = 'leo',
+		defaultDuty = true,
+		offDutyPay = false,
+		grades = {
+			['0'] = { name = 'Kursantas', payment = 80 },
+			['1'] = { name = 'Jaunesnysis pareigūnas', payment = 95 },
+			['2'] = { name = 'Patrulis', payment = 110 },
+			['3'] = { name = 'Vyresnysis patrulis', payment = 125 },
+			['4'] = { name = 'Seržantas', payment = 140 },
+			['5'] = { name = 'Vyresnysis seržantas', payment = 155 },
+			['6'] = { name = 'Inspektorius', payment = 175 },
+			['7'] = { name = 'Vyresnysis inspektorius', payment = 195 },
+			['8'] = { name = 'Komisaras', payment = 220 },
+			['9'] = { name = 'Vyresnysis komisaras', payment = 245 },
+			['10'] = { name = 'Policijos vadas', isboss = true, payment = 280 },
+		},
+	},
 	ambulance = {
 		label = 'EMS',
 		type = 'ems',

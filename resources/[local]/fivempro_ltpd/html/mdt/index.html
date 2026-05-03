@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LTPD MDT</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+    <header class="top">
+      <div class="brand">LTPD <span>MDT</span></div>
+      <button type="button" id="btnClose" class="btn danger">Uždaryti (ESC)</button>
+    </header>
+    <nav class="tabs">
+      <button type="button" data-tab="person" class="tab active">Asmuo</button>
+      <button type="button" data-tab="veh" class="tab">Transportas</button>
+      <button type="button" data-tab="fine" class="tab" id="tabFine">Bauda</button>
+      <button type="button" data-tab="want" class="tab" id="tabWant">Paieška</button>
+    </nav>
+    <main>
+      <section id="panel-person" class="panel">
+        <div class="row">
+          <input type="text" id="qPerson" placeholder="Vardas, pavardė arba citizenid…" />
+          <button type="button" id="goPerson" class="btn">Ieškoti</button>
+        </div>
+        <div id="personResults" class="results"></div>
+      </section>
+      <section id="panel-veh" class="panel hidden">
+        <div class="row">
+          <input type="text" id="qPlate" placeholder="Numeriai…" />
+          <button type="button" id="goVeh" class="btn">Ieškoti</button>
+        </div>
+        <div id="vehResults" class="results"></div>
+      </section>
+      <section id="panel-fine" class="panel hidden">
+        <div class="grid2">
+          <label>citizenid <input type="text" id="fineCid" /></label>
+          <label>Suma € <input type="number" id="fineAmt" /></label>
+        </div>
+        <label>Priežastis
+          <select id="finePreset"></select>
+        </label>
+        <label>Pastaba <input type="text" id="fineLabel" /></label>
+        <button type="button" id="goFine" class="btn primary">Išrašyti baudą</button>
+      </section>
+      <section id="panel-want" class="panel hidden">
+        <div class="grid2">
+          <label>citizenid <input type="text" id="wantCid" /></label>
+          <label>Lygis (0–5) <input type="number" id="wantLvl" min="0" max="5" value="0" /></label>
+        </div>
+        <label>Priežastis <input type="text" id="wantReason" /></label>
+        <button type="button" id="goWant" class="btn primary">Nustatyti paieškomumą</button>
+      </section>
+    </main>
+    <footer class="hint">Server-side tikrinimas • RB AC • Fivempro LTPD</footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

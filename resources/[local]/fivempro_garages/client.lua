@@ -398,7 +398,7 @@ end)
 -- Tai ne blipų logika; keičiant blipus palik šitą gabalą, kitaip ESC/P nebeuždarys meniu.
 CreateThread(function()
     while true do
-        if uiOpen and (IsControlJustPressed(0, 199) or IsControlJustPressed(0, 200)) then
+        if uiOpen and (IsControlJustPressed(0, 199) or IsDisabledControlJustPressed(0, 199) or IsControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 200)) then
             closeGarageUi()
         end
         Wait(0)

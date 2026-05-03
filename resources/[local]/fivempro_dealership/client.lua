@@ -223,6 +223,15 @@ RegisterNetEvent('fivempro_dealership:client:forceCloseUi', function()
     closeDealershipUi()
 end)
 
+CreateThread(function()
+    while true do
+        if uiOpen and (IsControlJustPressed(0, 199) or IsDisabledControlJustPressed(0, 199) or IsControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 200)) then
+            closeDealershipUi()
+        end
+        Wait(0)
+    end
+end)
+
 local function openDealershipUi()
     if not catalog then
         return QBCore.Functions.Notify('Salono duomenys dar kraunami, pabandyk dar karta.', 'error')
