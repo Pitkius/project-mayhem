@@ -250,5 +250,23 @@ CreateThread(function()
                 distance = Config.TargetDistance + 0.5,
             })
         end
+        if st.management and st.management.coords then
+            exports['qb-target']:AddCircleZone(('ltpd_mgmt_%s'):format(st.id), st.management.coords, 0.5, {
+                name = ('ltpd_mgmt_%s'):format(st.id),
+                debugPoly = false,
+                useZ = true,
+            }, {
+                options = {
+                    {
+                        type = 'client',
+                        event = 'fivempro_ltpd:client:bossOpenMenu',
+                        icon = 'fas fa-user-tie',
+                        label = 'PD vadovybė (įdarb./rangai/tarnyba)',
+                        job = { ltpd = 8 },
+                    },
+                },
+                distance = Config.TargetDistance + 0.5,
+            })
+        end
     end
 end)

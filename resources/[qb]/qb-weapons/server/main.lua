@@ -208,47 +208,51 @@ end)
 
 RegisterNetEvent('qb-weapons:server:removeWeaponAmmoItem', function(itemName, removeAmount, preferredSlot)
     local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player or type(itemName) ~= 'string' or itemName == '' then return end
-    removeAmount = tonumber(removeAmount) or 1
+    itemName = type(itemName) == 'string' and itemName:lower() or ''
+    if itemName == '' then return end
+    removeAmount = tonumber(removeAmount) or 0
     if removeAmount < 1 then return end
+
     local remaining = removeAmount
-
     preferredSlot = tonumber(preferredSlot)
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    -- qb-inventory: slotas saugomas ant item.slot, ne būtinai kaip lentelės indeksas – ieškome pagal slot lauką.
     if preferredSlot and remaining > 0 then
-        local slotItem = Player.PlayerData.items[preferredSlot]
-        if slotItem and slotItem.name == itemName and (tonumber(slotItem.amount) or 0) > 0 then
-            local slotAmount = tonumber(slotItem.amount) or 0
-            local take = math.min(slotAmount, remaining)
-            if take > 0 then
-                local removed = exports['qb-inventory']:RemoveItem(src, itemName, take, preferredSlot, 'qb-weapons:server:removeWeaponAmmoItem:preferredSlot')
-                if removed then
-                    remaining = remaining - take
+        for _, it in pairs(Player.PlayerData.items) do
+            if it and it.name == itemName and tonumber(it.slot) == preferredSlot and (tonumber(it.amount) or 0) > 0 then
+                local take = math.min(tonumber(it.amount) or 0, remaining)
+                if take > 0 then
+                    if exports['qb-inventory']:RemoveItem(src, itemName, take, preferredSlot, 'qb-weapons:ammo-pref') then
+                        remaining = remaining - take
+                    end
                 end
+                break
             end
         end
     end
 
-    for slot, v in pairs(Player.PlayerData.items) do
+    Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    for _, it in pairs(Player.PlayerData.items) do
         if remaining <= 0 then break end
-        if v and v.name == itemName and (tonumber(v.amount) or 0) > 0 then
-            if preferredSlot and (tonumber(v.slot) == preferredSlot or tonumber(slot) == preferredSlot) then
-                goto continue
-            end
-            local slotAmount = tonumber(v.amount) or 0
-            local take = math.min(slotAmount, remaining)
-            if take > 0 then
-                local itemSlot = tonumber(v.slot) or tonumber(slot) or false
-                local removed = exports['qb-inventory']:RemoveItem(src, itemName, take, itemSlot, 'qb-weapons:server:removeWeaponAmmoItem')
-                if removed then
-                    remaining = remaining - take
-                end
+        if it and it.name == itemName and (tonumber(it.amount) or 0) > 0 then
+            local sn = tonumber(it.slot)
+            if preferredSlot and sn == preferredSlot then goto ammo_continue end
+            local take = math.min(tonumber(it.amount) or 0, remaining)
+            if take > 0 and exports['qb-inventory']:RemoveItem(src, itemName, take, sn, 'qb-weapons:ammo-scan') then
+                remaining = remaining - take
             end
         end
-        ::continue::
+        ::ammo_continue::
     end
-    if remaining > 0 then
-        exports['qb-inventory']:RemoveItem(src, itemName, remaining, false, 'qb-weapons:server:removeWeaponAmmoItem:fallback')
+
+    Player = QBCore.Functions.GetPlayer(src)
+    if remaining > 0 and Player then
+        exports['qb-inventory']:RemoveItem(src, itemName, remaining, false, 'qb-weapons:ammo-fallback')
     end
 end)
 

@@ -217,7 +217,12 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
 
         -- Keep weapon metadata synced with total ammo, not just current clip.
         local refreshedAmmo = GetAmmoInPedWeapon(ped, weapon)
+        -- Jei natives meluoja (reallyLoaded=0), vis tiek nurašom užsukto apkabos kulkas iš inventoriaus.
         local unitsToRemove = reallyLoaded
+        if unitsToRemove < 1 and bulletsToLoad > 0 then
+            unitsToRemove = math.min(bulletsToLoad, availableBullets)
+        end
+        unitsToRemove = math.min(unitsToRemove, bulletsToLoad, availableBullets)
         local payload = CurrentWeaponData
         if not payload or not payload.name then
             payload = resolveCurrentWeaponDataByName(current.name)
@@ -228,7 +233,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         local ammoInvSlot = itemData and tonumber(itemData.slot)
         TriggerServerEvent('qb-weapons:server:removeWeaponAmmoItem', ammoItemName, unitsToRemove, ammoInvSlot)
         if ammoItemName and QBCore.Shared.Items[ammoItemName] then
-            TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'use', reallyLoaded)
+            TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'use', unitsToRemove)
         end
     end
 

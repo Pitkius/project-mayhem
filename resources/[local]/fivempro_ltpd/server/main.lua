@@ -390,6 +390,105 @@ RegisterNetEvent('fivempro_ltpd:server:spawnFleet', function(stationId, modelNam
     TriggerClientEvent('QBCore:Notify', src, 'Transportas paruoštas.', 'success')
 end)
 
+local function canBossAction(src)
+    if not isLtpdOnDuty(src) then return false end
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P then return false end
+    if P.PlayerData.job.isboss then return true end
+    return getGrade(src) >= (Config.Permissions.boss_menu or 8)
+end
+
+local function nearAnyManagement(src)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local c = GetEntityCoords(ped)
+    local r = tonumber(Config.ManagementRadius) or 12.0
+    for _, st in ipairs(Config.Stations or {}) do
+        if st.management and st.management.coords then
+            if #(c - st.management.coords) <= r then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+--- Vadovas gali keisti tik žemesnio rango pareigūnus (isboss – viską).
+local function bossOutranks(bossSrc, targetGrade)
+    local B = QBCore.Functions.GetPlayer(bossSrc)
+    if not B then return false end
+    if B.PlayerData.job.isboss then return true end
+    local bg = getGrade(bossSrc)
+    return bg > (tonumber(targetGrade) or 0)
+end
+
+RegisterNetEvent('fivempro_ltpd:server:bossHire', function(targetId, grade)
+    local src = source
+    if not canBossAction(src) or not nearAnyManagement(src) then return end
+    targetId = tonumber(targetId)
+    grade = tonumber(grade)
+    if not targetId or targetId < 1 then return end
+    if grade == nil or grade < 0 or grade > 10 then return end
+    if not bossOutranks(src, grade) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Negali skirti aukštesnio ar lygaus rango už save.', 'error')
+    end
+    local T = QBCore.Functions.GetPlayer(targetId)
+    if not T then
+        return TriggerClientEvent('QBCore:Notify', src, 'Žaidėjas neprisijungęs.', 'error')
+    end
+    T.Functions.SetJob(Config.JobName, grade)
+    T.Functions.SetJobDuty(true)
+    TriggerClientEvent('QBCore:Notify', src, ('Įdarbinta (ID %s), rangas %s'):format(targetId, grade), 'success')
+    TriggerClientEvent('QBCore:Notify', targetId, ('Priimta į policiją. Rangas: %s'):format(grade), 'success')
+end)
+
+RegisterNetEvent('fivempro_ltpd:server:bossFire', function(targetId)
+    local src = source
+    if not canBossAction(src) or not nearAnyManagement(src) then return end
+    targetId = tonumber(targetId)
+    if not targetId or targetId < 1 then return end
+    local T = QBCore.Functions.GetPlayer(targetId)
+    if not T then
+        return TriggerClientEvent('QBCore:Notify', src, 'Žaidėjas neprisijungęs.', 'error')
+    end
+    if T.PlayerData.job.name ~= Config.JobName then
+        return TriggerClientEvent('QBCore:Notify', src, 'Šis žaidėjas ne PD.', 'error')
+    end
+    local tg = tonumber(T.PlayerData.job.grade.level) or 0
+    if not bossOutranks(src, tg) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Negali atleisti aukštesnio ar lygaus rango.', 'error')
+    end
+    T.Functions.SetJob('unemployed', 0)
+    TriggerClientEvent('QBCore:Notify', src, ('Atleistas žaidėjas ID %s'):format(targetId), 'success')
+    TriggerClientEvent('QBCore:Notify', targetId, 'Atleistas iš policijos.', 'error')
+end)
+
+RegisterNetEvent('fivempro_ltpd:server:bossSetGrade', function(targetId, grade)
+    local src = source
+    if not canBossAction(src) or not nearAnyManagement(src) then return end
+    targetId = tonumber(targetId)
+    grade = tonumber(grade)
+    if not targetId or targetId < 1 then return end
+    if grade == nil or grade < 0 or grade > 10 then return end
+    local T = QBCore.Functions.GetPlayer(targetId)
+    if not T then
+        return TriggerClientEvent('QBCore:Notify', src, 'Žaidėjas neprisijungęs.', 'error')
+    end
+    if T.PlayerData.job.name ~= Config.JobName then
+        return TriggerClientEvent('QBCore:Notify', src, 'Žaidėjas ne PD.', 'error')
+    end
+    local tg = tonumber(T.PlayerData.job.grade.level) or 0
+    if not bossOutranks(src, tg) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Negali keisti aukštesnio ar lygaus rango.', 'error')
+    end
+    if not bossOutranks(src, grade) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Negali skirti šio rango (per aukštas).', 'error')
+    end
+    T.Functions.SetJob(Config.JobName, grade)
+    TriggerClientEvent('QBCore:Notify', src, ('Rangas pakeistas (ID %s → %s)'):format(targetId, grade), 'success')
+    TriggerClientEvent('QBCore:Notify', targetId, ('Tavo naujas rangas: %s'):format(grade), 'primary')
+end)
+
 exports('IsLtpdOnDuty', function(src)
     return isLtpdOnDuty(src)
 end)

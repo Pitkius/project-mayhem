@@ -29,6 +29,7 @@ Config.Permissions = {
     division_admin = 8,
     armory = 0, -- bendra policijos ginklinė (stash)
     garage = 0, -- PD tarnybinio transporto išėmimas
+    boss_menu = 8, -- Įdarb./atleisti/rangas (nuo Komisaras; isboss irgi leidžia)
 }
 
 --- Baudų šablonai (kodas rodomas MDT)
@@ -40,8 +41,9 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- Maks. atstumas iki ginklinės / PD garažo taško (patikra serveryje)
+--- Maks. atstumas iki ginklinės / PD garažo / vadovybės (patikra serveryje)
 Config.ArmoryGarageDistance = 22.0
+Config.ManagementRadius = 12.0
 
 --- Blipai žemėlapyje (komisariatai)
 Config.ShowStationBlips = true
@@ -73,15 +75,19 @@ Config.Stations = {
         mdt = true,
         duty = true,
         armory = {
-            coords = vector3(461.45, -981.21, 30.69),
+            coords = vector3(450.85, -993.26, 30.69),
             stashId = 'ltpd_armory_ls',
-            label = 'Policijos ginklinė',
+            label = 'Policijos ginklinė (rūbinė)',
             maxweight = 5000000,
             slots = 90,
         },
         garage = {
-            coords = vector3(459.85, -1014.55, 28.26),
-            spawn = vector4(459.85, -1014.55, 28.26, 271.29),
+            coords = vector3(441.64, -1013.14, 28.62),
+            spawn = vector4(441.64, -1013.14, 28.62, 175.52),
+        },
+        management = {
+            coords = vector3(447.17, -973.33, 30.69),
+            heading = 184.59,
         },
     },
     {
