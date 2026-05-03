@@ -5,7 +5,6 @@ local function isMechanicOnDuty()
     return P and P.job and P.job.name == Config.JobName and P.job.onduty
 end
 
---- Transportas remonto zonoje (artimiausias centre).
 local function getVehicleInBay(bay)
     if not bay or not bay.coords then return 0 end
     local c = bay.coords
@@ -34,18 +33,33 @@ local function doQuickRepair(veh)
     QBCore.Functions.Notify('Transportas suremontuotas.', 'success')
 end
 
-local MOD_GROUPS = {
+local function ensureModKit(veh)
+    if veh == 0 then return end
+    SetVehicleModKit(veh, 0)
+end
+
+--- Kėbulo kategorijos (LSC stilius)
+local BODY_MODS = {
     { id = 0, label = 'Spoileriai' },
     { id = 1, label = 'Priekinis buferis' },
     { id = 2, label = 'Galinis buferis' },
     { id = 3, label = 'Šonai (sijonai)' },
     { id = 4, label = 'Išmetimas' },
+    { id = 5, label = 'Rėmas / kėbulas' },
+    { id = 6, label = 'Grotelės' },
     { id = 7, label = 'Gaubtas' },
+    { id = 8, label = 'Sparnai (priek.)' },
+    { id = 9, label = 'Sparnai (gal.)' },
     { id = 10, label = 'Stogas' },
+}
+
+--- Variklis / važiuoklė (patobulinimai)
+local PERF_MODS = {
     { id = 11, label = 'Variklis' },
     { id = 12, label = 'Stabdžiai' },
     { id = 13, label = 'Pavarų dėžė' },
     { id = 15, label = 'Pakaba' },
+    { id = 16, label = 'Šarvai' },
 }
 
 local COLOR_PRESETS = {
@@ -59,46 +73,140 @@ local COLOR_PRESETS = {
     { label = 'Oranžinė', pri = 38, sec = 38 },
 }
 
-local function ensureModKit(veh)
-    if veh == 0 then return end
-    SetVehicleModKit(veh, 0)
-end
-
-local function cycleMod(veh, modType)
+--- Visi GTA variantai sąraše — paspaudus iškart matai ant mašinos (kaip LSC pasirinkimas).
+local function openModVariantMenu(veh, modType, categoryLabel, bayIndex)
     ensureModKit(veh)
     local n = GetNumVehicleMods(veh, modType)
-    if n <= 0 then
-        return QBCore.Functions.Notify('Šiai mašinai nėra variantų.', 'error')
-    end
-    local cur = GetVehicleMod(veh, modType)
-    local nxt
-    if cur == -1 then
-        nxt = 0
-    elseif cur < n - 1 then
-        nxt = cur + 1
-    else
-        nxt = -1
-    end
-    SetVehicleMod(veh, modType, nxt, false)
-    QBCore.Functions.Notify(('Detalė #%s: variantas %s.'):format(modType, tostring(nxt)), 'success')
-end
+    local menu = {
+        {
+            header = categoryLabel,
+            txt = 'Pasirink dalį — iškart rodoma ant transporto. qb-menu neturi hover.',
+            isMenuHeader = true,
+        },
+    }
 
-local function openModCategoryMenu(veh, title, bayIndex)
-    local menu = { { header = title, isMenuHeader = true } }
-    for _, g in ipairs(MOD_GROUPS) do
+    if n <= 0 then
         menu[#menu + 1] = {
-            header = g.label,
-            txt = 'Kitas variantas (po kelių paspaudimų – gamyklinis)',
+            header = 'Nėra variantų',
+            txt = 'Šiai mašinai ši kategorija netinka.',
             params = {
                 isAction = true,
                 event = function()
-                    cycleMod(veh, g.id)
+                    TriggerEvent('fivempro_mechanic:client:openBodyWorkshop', { bayIndex = bayIndex })
+                end,
+            },
+        }
+        TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+        return
+    end
+
+    menu[#menu + 1] = {
+        header = 'Gamyklinis (nuimti)',
+        txt = 'Standartinė dalis',
+        params = {
+            isAction = true,
+            event = function()
+                SetVehicleMod(veh, modType, -1, false)
+                QBCore.Functions.Notify('Gamyklinis variantas.', 'primary')
+            end,
+        },
+    }
+
+    for i = 0, n - 1 do
+        local idx = i
+        menu[#menu + 1] = {
+            header = ('%s — variantas %s / %s'):format(categoryLabel, idx + 1, n),
+            txt = 'Pritaikyti ir peržiūrėti',
+            params = {
+                isAction = true,
+                event = function()
+                    SetVehicleMod(veh, modType, idx, false)
+                    QBCore.Functions.Notify(('Įdiegta: %s #%s'):format(categoryLabel, idx + 1), 'success')
+                end,
+            },
+        }
+    end
+
+    menu[#menu + 1] = {
+        header = 'Atgal',
+        params = {
+            isAction = true,
+            event = function()
+                TriggerEvent('fivempro_mechanic:client:openBodyWorkshop', { bayIndex = bayIndex })
+            end,
+        },
+    }
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end
+
+local function openTurboMenu(veh, bayIndex)
+    local menu = {
+        { header = 'Turbo', txt = 'Įjungti ar išjungti', isMenuHeader = true },
+        {
+            header = 'Perjungti turbo',
+            txt = 'Įdėtas / nuimtas',
+            params = {
+                isAction = true,
+                event = function()
+                    ensureModKit(veh)
+                    local on = IsToggleModOn(veh, 18)
+                    ToggleVehicleMod(veh, 18, not on)
+                    QBCore.Functions.Notify(on and 'Turbo nuimtas.' or 'Turbo įdiegtas.', 'success')
+                end,
+            },
+        },
+        {
+            header = 'Atgal',
+            params = {
+                isAction = true,
+                event = function()
+                    TriggerEvent('fivempro_mechanic:client:openPerformanceWorkshop', { bayIndex = bayIndex })
+                end,
+            },
+        },
+    }
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end
+
+RegisterNetEvent('fivempro_mechanic:client:openPerformanceWorkshop', function(data)
+    local bayIndex = data and tonumber(data.bayIndex)
+    local bay = bayIndex and Config.RepairBays and Config.RepairBays[bayIndex]
+    if not bay then return end
+    local veh = getVehicleInBay(bay)
+    if veh == 0 then return QBCore.Functions.Notify('Remonto zonoje nėra transporto.', 'error') end
+
+    local menu = {
+        {
+            header = 'Patobulinimai',
+            txt = 'Variklis, stabdžiai, pavarų dėžė, pakaba, šarvai, turbo',
+            isMenuHeader = true,
+        },
+    }
+    for _, g in ipairs(PERF_MODS) do
+        local mid = g.id
+        menu[#menu + 1] = {
+            header = g.label,
+            txt = 'Atidaryti visus variantus',
+            params = {
+                isAction = true,
+                event = function()
+                    openModVariantMenu(veh, mid, g.label, bayIndex)
                 end,
             },
         }
     end
     menu[#menu + 1] = {
-        header = 'Atgal',
+        header = 'Turbo (įjungti / išjungti)',
+        txt = 'Atskiras įrengimas',
+        params = {
+            isAction = true,
+            event = function()
+                openTurboMenu(veh, bayIndex)
+            end,
+        },
+    }
+    menu[#menu + 1] = {
+        header = 'Atgal į dirbtuves',
         params = {
             isAction = true,
             event = function()
@@ -107,10 +215,49 @@ local function openModCategoryMenu(veh, title, bayIndex)
         },
     }
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
-end
+end)
+
+RegisterNetEvent('fivempro_mechanic:client:openBodyWorkshop', function(data)
+    local bayIndex = data and tonumber(data.bayIndex)
+    local bay = bayIndex and Config.RepairBays and Config.RepairBays[bayIndex]
+    if not bay then return end
+    local veh = getVehicleInBay(bay)
+    if veh == 0 then return QBCore.Functions.Notify('Remonto zonoje nėra transporto.', 'error') end
+
+    local menu = {
+        {
+            header = 'Kėbulo detalės',
+            txt = 'Pasirink kategoriją — tada konkretų spoilerį/buferį ir t. t.',
+            isMenuHeader = true,
+        },
+    }
+    for _, g in ipairs(BODY_MODS) do
+        local mid = g.id
+        menu[#menu + 1] = {
+            header = g.label,
+            txt = 'Rodyti visus variantus šiai daliai',
+            params = {
+                isAction = true,
+                event = function()
+                    openModVariantMenu(veh, mid, g.label, bayIndex)
+                end,
+            },
+        }
+    end
+    menu[#menu + 1] = {
+        header = 'Atgal į dirbtuves',
+        params = {
+            isAction = true,
+            event = function()
+                TriggerEvent('fivempro_mechanic:client:openBayWorkshop', { bayIndex = bayIndex })
+            end,
+        },
+    }
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end)
 
 local function openColorMenu(veh, bayIndex)
-    local menu = { { header = 'Spalvos (preset)', isMenuHeader = true } }
+    local menu = { { header = 'Dažymas', txt = 'Pagrindinė / antrinė spalva', isMenuHeader = true } }
     for _, c in ipairs(COLOR_PRESETS) do
         menu[#menu + 1] = {
             header = c.label,
@@ -120,7 +267,7 @@ local function openColorMenu(veh, bayIndex)
                     SetVehicleColours(veh, c.pri, c.sec)
                     local pearlescent, wh = GetVehicleExtraColours(veh)
                     SetVehicleExtraColours(veh, pearlescent, wh)
-                    QBCore.Functions.Notify('Spalvos pritaikytos (išsaugok pagrindiniame meniu).', 'primary')
+                    QBCore.Functions.Notify('Spalvos pritaikytos.', 'primary')
                 end,
             },
         }
@@ -169,9 +316,13 @@ RegisterNetEvent('fivempro_mechanic:client:openBayWorkshop', function(data)
     end
 
     local menu = {
-        { header = ('Dirbtuvės #%s — %s'):format(bayIndex, plate), isMenuHeader = true },
         {
-            header = 'Greitas pilnas remontas',
+            header = ('Los Santos Customs — %s'):format(plate),
+            txt = 'Pasirink skyrių',
+            isMenuHeader = true,
+        },
+        {
+            header = 'Remontas',
             txt = 'Korpusas, variklis, deformacija',
             params = {
                 isAction = true,
@@ -181,8 +332,8 @@ RegisterNetEvent('fivempro_mechanic:client:openBayWorkshop', function(data)
             },
         },
         {
-            header = 'Spalvos (presetai)',
-            txt = 'Pagrindinė / antrinė',
+            header = 'Dažymas',
+            txt = 'Spalvų presetai',
             params = {
                 isAction = true,
                 event = function()
@@ -191,18 +342,28 @@ RegisterNetEvent('fivempro_mechanic:client:openBayWorkshop', function(data)
             },
         },
         {
-            header = 'Kėbulo ir mechanikos detalės',
-            txt = 'Modifikacijos pagal kategoriją',
+            header = 'Patobulinimai',
+            txt = 'Variklis, stabdžiai, pavarų dėžė, pakaba, šarvai, turbo',
             params = {
                 isAction = true,
                 event = function()
-                    openModCategoryMenu(veh, ('Detalės — %s'):format(plate), bayIndex)
+                    TriggerEvent('fivempro_mechanic:client:openPerformanceWorkshop', { bayIndex = bayIndex })
                 end,
             },
         },
         {
-            header = 'Išsaugoti į DB (savininko mašina)',
-            txt = 'Įrašo mods į player_vehicles',
+            header = 'Kėbulo detalės',
+            txt = 'Spoileriai, buferiai, gaubtas…',
+            params = {
+                isAction = true,
+                event = function()
+                    TriggerEvent('fivempro_mechanic:client:openBodyWorkshop', { bayIndex = bayIndex })
+                end,
+            },
+        },
+        {
+            header = 'Išsaugoti modifikacijas (DB)',
+            txt = 'player_vehicles — savininko mašina',
             params = {
                 isAction = true,
                 event = function()
