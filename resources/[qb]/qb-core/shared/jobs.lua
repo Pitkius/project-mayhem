@@ -159,4 +159,32 @@ QBShared.Jobs = {
 			['4'] = { name = 'Manager', isboss = true, payment = 150 },
 		},
 	},
+	fivempro_mechanic = {
+		label = 'LS mechanikai',
+		type = 'mechanic',
+		defaultDuty = true,
+		offDutyPay = false,
+		grades = {
+			['0'] = { name = 'Praktikantas', payment = 55 },
+			['1'] = { name = 'Mechanikas', payment = 75 },
+			['2'] = { name = 'Vyresnysis mechanikas', payment = 95 },
+			['3'] = { name = 'Meistras', payment = 115 },
+			['4'] = { name = 'Vyr. meistras', payment = 135 },
+			['5'] = { name = 'Dirbtuvių vadovas', isboss = true, payment = 165 },
+		},
+	},
+	fivempro_ambulance = {
+		label = 'Greitoji pagalba',
+		type = 'ems',
+		defaultDuty = true,
+		offDutyPay = false,
+		grades = {
+			['0'] = { name = 'Stažuotojas', payment = 55 },
+			['1'] = { name = 'Felčeris', payment = 75 },
+			['2'] = { name = 'Sanitaras', payment = 95 },
+			['3'] = { name = 'Paramedikas', payment = 115 },
+			['4'] = { name = 'Gydytojas', payment = 135 },
+			['5'] = { name = 'Vyriausiasis gydytojas', isboss = true, payment = 165 },
+		},
+	},
 }

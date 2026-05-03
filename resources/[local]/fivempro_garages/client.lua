@@ -7,9 +7,24 @@ local function isPoliceOfficerOnDuty()
     return n == 'ltpd' or n == 'police'
 end
 
+local function isMechanicOnDuty()
+    local P = QBCore.Functions.GetPlayerData()
+    if not P or not P.job or not P.job.onduty then return false end
+    return P.job.name == 'fivempro_mechanic'
+end
+
+local function isEmsOnDuty()
+    local P = QBCore.Functions.GetPlayerData()
+    if not P or not P.job or not P.job.onduty then return false end
+    return P.job.name == 'fivempro_ambulance'
+end
+
 local function canUseGarageEntry(garage)
-    if not garage or not garage.policeOnly then return true end
-    return isPoliceOfficerOnDuty()
+    if not garage then return true end
+    if garage.policeOnly then return isPoliceOfficerOnDuty() end
+    if garage.mechanicOnly then return isMechanicOnDuty() end
+    if garage.emsOnly then return isEmsOnDuty() end
+    return true
 end
 
 local GARAGE_SPRITE = 357
@@ -34,7 +49,7 @@ local function previewApplyShowroomVisuals()
         SetWeatherTypeNow('EXTRASUNNY')
         SetWeatherTypeNowPersist('EXTRASUNNY')
         SetRainLevel(0.0)
-        SetArtificialLightsState(false)
+        SetArtificialLightsState(true)
     end)
     pcall(function()
         SetBlackout(false)
@@ -222,6 +237,14 @@ local function spawnGaragePreviewVehicle(model, plate)
         end
         SetVehicleOnGroundProperly(previewVehicle)
         SetVehicleLights(previewVehicle, 2)
+
+        local lateral = tonumber(activeGarage.previewLateralM) or 0.0
+        if lateral ~= 0.0 and spawn then
+            local r = math.rad(spawn.w + 0.0)
+            local ox = math.cos(r + math.pi * 0.5) * lateral
+            local oy = math.sin(r + math.pi * 0.5) * lateral
+            SetEntityCoords(previewVehicle, spawn.x + ox, spawn.y + oy, spawn.z, false, false, false, false)
+        end
 
         ensureGaragePreviewCam(spawn)
         if previewCam and DoesCamExist(previewCam) then
@@ -551,8 +574,8 @@ CreateThread(function()
             local ds = Config.MarkerDeskScale or { x = 2.2, y = 2.2, z = 0.22 }
 
             for _, garage in ipairs(Config.Garages or {}) do
-                -- PD garažai: tik fivempro_ltpd qb-target (Alt), be dubliuojančių žemės [E] žymeklių.
-                if not garage.policeOnly then
+                -- PD / mechanikas / EMS: tik qb-target iš darbo resursų, be žemės [E].
+                if not garage.policeOnly and not garage.mechanicOnly and not garage.emsOnly then
                     local spawn = garage.spawn
                     local desk = garage.coords
                     if spawn and desk then
@@ -612,7 +635,7 @@ CreateThread(function()
     createGarageMapBlips()
 
     for _, garage in ipairs(Config.Garages) do
-        if not garage.policeOnly then
+        if not garage.policeOnly and not garage.mechanicOnly and not garage.emsOnly then
             exports['qb-target']:AddBoxZone(('fivempro_garage_%s'):format(garage.id), garage.coords, 2.4, 2.4, {
                 name = ('fivempro_garage_%s'):format(garage.id),
                 heading = garage.heading,

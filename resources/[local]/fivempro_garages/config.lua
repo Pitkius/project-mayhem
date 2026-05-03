@@ -11,7 +11,7 @@ Config.GarageMapBlipLabel = 'Garažai'
 Config.GarageMapBlipCoords = nil
 
 Config.Garages = {
-    { id = 'pillboxgarage', label = 'Pillbox Garage', coords = vector3(215.8, -809.2, 30.73), heading = 157.0, spawn = vector4(223.1, -804.2, 30.55, 248.0) },
+    { id = 'pillboxgarage', label = 'Pillbox Garage', coords = vector3(215.8, -809.2, 30.73), heading = 157.0, spawn = vector4(223.1, -804.2, 30.55, 248.0), previewLateralM = -0.85 },
     { id = 'legionsquare', label = 'Legion Garage', coords = vector3(-342.1, -874.7, 31.32), heading = 351.0, spawn = vector4(-334.9, -890.9, 31.07, 168.0) },
     { id = 'delperro', label = 'Del Perro Garage', coords = vector3(-1183.1, -1511.1, 4.36), heading = 126.0, spawn = vector4(-1188.4, -1498.3, 4.37, 124.0) },
     { id = 'vespucci', label = 'Vespucci Garage', coords = vector3(-1159.4, -739.2, 19.88), heading = 311.0, spawn = vector4(-1144.8, -745.6, 19.63, 312.0) },
@@ -30,6 +30,9 @@ Config.Garages = {
     { id = 'pd_ls_main', label = 'Policijos garažas', coords = vector3(441.64, -1013.14, 28.62), heading = 175.52, spawn = vector4(441.64, -1013.14, 28.62, 175.52), policeOnly = true, hideBlip = true },
     { id = 'pd_sandy', label = 'Policijos garažas (Sandy)', coords = vector3(1869.5, 3695.2, 33.53), heading = 210.0, spawn = vector4(1869.5, 3695.2, 33.53, 210.0), policeOnly = true, hideBlip = true },
     { id = 'pd_paleto', label = 'Policijos garažas (Paleto)', coords = vector3(-459.2, 6016.3, 31.49), heading = 45.0, spawn = vector4(-459.2, 6016.3, 31.49, 45.0), policeOnly = true, hideBlip = true },
+    --- Mechanikas / EMS (fivempro_mechanic, fivempro_ambulance) – tik qb-target iš darbo resursų
+    { id = 'mech_ls', label = 'Mechanikų garažas', coords = vector3(-339.05, -136.85, 39.02), heading = 244.49, spawn = vector4(-333.2, -132.15, 39.02, 244.49), mechanicOnly = true, hideBlip = true },
+    { id = 'ems_ls', label = 'Greitosios pagalbos garažas', coords = vector3(-448.1, -341.05, 34.52), heading = 259.81, spawn = vector4(-445.2, -338.9, 34.52, 259.81), emsOnly = true, hideBlip = true },
 }
 
 --- Tik šie modeliai rodomi / priimami PD garažuose (`pd_*`).
@@ -39,6 +42,14 @@ Config.PoliceVehicleModels = {
     riot = true, fbi = true, fbi2 = true, pranger = true,
     policeold1 = true, policeold2 = true,
     polmav = true, buzzard2 = true,
+}
+
+Config.MechanicVehicleModels = {
+    flatbed = true, towtruck = true, towtruck2 = true, minivan = true, sadler = true,
+}
+
+Config.EmsVehicleModels = {
+    ambulance = true, granger = true,
 }
 
 Config.TargetDistance = 2.2

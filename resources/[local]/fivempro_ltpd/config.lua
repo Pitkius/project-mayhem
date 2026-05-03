@@ -215,5 +215,33 @@ Config.Stations = {
     },
 }
 
+--- Tarnybinė PD apranga (ne asmeniniai qb-clothing išsaugoti outfitai). Drawable pagal mp freemode – keisk pagal savo MLO / odę.
+Config.DutyOutfits = {
+    {
+        label = 'Uniforma 1 (marškiniai, be liemenės)',
+        description = 'Patrulio bazinė apranga',
+        minGrade = 0,
+        armour = 0,
+        male = { [4] = 35, [6] = 25, [8] = 58, [11] = 55, [9] = 0 },
+        female = { [4] = 34, [6] = 25, [8] = 35, [11] = 48, [9] = 0 },
+    },
+    {
+        label = 'Uniforma 2 + policijos liemenė',
+        description = 'Lengva balistinė',
+        minGrade = 0,
+        armour = 50,
+        male = { [4] = 35, [6] = 25, [8] = 58, [11] = 55, [9] = 2 },
+        female = { [4] = 34, [6] = 25, [8] = 35, [11] = 48, [9] = 2 },
+    },
+    {
+        label = 'Uniforma 3 (stipresnė liemenė)',
+        description = 'Nuo 2 rango',
+        minGrade = 2,
+        armour = 100,
+        male = { [4] = 35, [6] = 25, [8] = 58, [11] = 55, [9] = 4 },
+        female = { [4] = 34, [6] = 25, [8] = 35, [11] = 48, [9] = 4 },
+    },
+}
+
 Config.TargetDistance = 2.5
 Config.MaxFineAmount = 50000

@@ -106,8 +106,9 @@ Config.PoliceDealership = {
     stations = {
         ls_main = {
             spawn = vector4(441.64, -1013.14, 28.62, 175.52),
-            preview = vector4(445.5, -1011.2, 28.62, 265.0),
-            camera = vector4(449.0, -1011.5, 30.15, 265.0),
+            --- Mašina šiek tiek į kairę kad nesikirstų su dešiniu UI
+            preview = vector4(443.25, -1011.15, 28.62, 265.0),
+            camera = vector4(446.45, -1011.45, 30.15, 265.0),
         },
         sandy = {
             spawn = vector4(1869.5, 3695.2, 33.53, 210.0),
@@ -134,6 +135,55 @@ Config.PoliceDealership = {
         { model = 'sheriff', name = 'Sheriff Cruiser', brand = 'Declasse', category = 'patrol', price = 16000 },
         { model = 'sheriff2', name = 'Sheriff SUV', brand = 'Declasse', category = 'patrol', price = 20000 },
         { model = 'riot', name = 'Riot', brand = 'Brute', category = 'spec', price = 45000 },
+    },
+}
+
+--- Mechanikų tarnybinis transportas (fivempro_mechanic darbas)
+Config.MechanicDealership = {
+    label = 'Mechanikų transporto skyrius',
+    garageByStation = {
+        mech_ls = 'mech_ls',
+    },
+    stations = {
+        mech_ls = {
+            spawn = vector4(-333.2, -132.15, 39.02, 244.49),
+            preview = vector4(-336.75, -133.55, 39.02, 244.49),
+            camera = vector4(-341.1, -131.2, 40.65, 244.49),
+        },
+    },
+    MechanicCategoryLabels = {
+        tow = 'Tralas / transportas',
+        utility = 'Paslaugos',
+    },
+    vehicles = {
+        { model = 'flatbed', name = 'Flatbed', brand = 'MTL', category = 'tow', price = 32000 },
+        { model = 'towtruck', name = 'Tow Truck', brand = 'Vapid', category = 'tow', price = 28000 },
+        { model = 'towtruck2', name = 'Tow Truck (did.)', brand = 'Vapid', category = 'tow', price = 32000 },
+        { model = 'minivan', name = 'Minivan (įrankiai)', brand = 'Vapid', category = 'utility', price = 12000 },
+        { model = 'sadler', name = 'Sadler', brand = 'Vapid', category = 'utility', price = 15000 },
+    },
+}
+
+--- Greitosios pagalbos transportas (fivempro_ambulance)
+Config.EmsDealership = {
+    label = 'Greitosios pagalbos transportas',
+    garageByStation = {
+        ems_ls = 'ems_ls',
+    },
+    stations = {
+        ems_ls = {
+            spawn = vector4(-445.2, -338.9, 34.52, 259.81),
+            preview = vector4(-442.8, -339.55, 34.52, 259.81),
+            camera = vector4(-438.9, -338.2, 36.05, 259.81),
+        },
+    },
+    EmsCategoryLabels = {
+        ems = 'Greitoji',
+        support = 'Pagalbinis',
+    },
+    vehicles = {
+        { model = 'ambulance', name = 'Greitosios pagalbos auto', brand = 'Brute', category = 'ems', price = 18000 },
+        { model = 'granger', name = 'Visureigis', brand = 'Declasse', category = 'support', price = 22000 },
     },
 }
 

@@ -438,9 +438,9 @@ CreateThread(function()
                 options = {
                     {
                         type = 'client',
-                        event = 'qb-clothing:client:openOutfitMenu',
+                        event = 'fivempro_ltpd:client:openDutyLockerMenu',
                         icon = 'fas fa-shirt',
-                        label = 'Rūbinė (drabužiai / outfitai)',
+                        label = 'Rūbinė (tarnybinė apranga)',
                         canInteract = function()
                             return isPdOnDutyClient()
                         end,
@@ -471,4 +471,70 @@ CreateThread(function()
             })
         end
     end
+end)
+
+local function applyDutyOutfitTable(ped, tbl)
+    if not ped or not tbl then return end
+    for comp, val in pairs(tbl) do
+        local c = tonumber(comp)
+        if c ~= nil then
+            local draw, tex = 0, 0
+            if type(val) == 'table' then
+                draw = tonumber(val[1]) or 0
+                tex = tonumber(val[2]) or 0
+            else
+                draw = tonumber(val) or 0
+            end
+            SetPedComponentVariation(ped, c, draw, tex, 0)
+        end
+    end
+end
+
+RegisterNetEvent('fivempro_ltpd:client:openDutyLockerMenu', function()
+    if not isPdOnDutyClient() then
+        return QBCore.Functions.Notify('Rūbinė – tik policijai tarnyboje.', 'error')
+    end
+    if GetResourceState('qb-menu') ~= 'started' then
+        return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
+    end
+    local P = QBCore.Functions.GetPlayerData()
+    local grade = (P.job and P.job.grade and P.job.grade.level) or 0
+    local menu = {
+        { header = 'Tarnybinė apranga', isMenuHeader = true },
+    }
+    for idx, outfit in ipairs(Config.DutyOutfits or {}) do
+        if grade >= (tonumber(outfit.minGrade) or 0) then
+            menu[#menu + 1] = {
+                header = outfit.label,
+                txt = outfit.description or '',
+                params = {
+                    event = 'fivempro_ltpd:client:applyDutyOutfit',
+                    args = { index = idx },
+                },
+            }
+        end
+    end
+    if #menu < 2 then
+        return QBCore.Functions.Notify('Nėra prieinamų aprangų.', 'error')
+    end
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end)
+
+RegisterNetEvent('fivempro_ltpd:client:applyDutyOutfit', function(data)
+    if not isPdOnDutyClient() then return end
+    local idx = tonumber(data and data.index)
+    local outfit = idx and Config.DutyOutfits and Config.DutyOutfits[idx]
+    if not outfit then return end
+    local ped = PlayerPedId()
+    local male = GetEntityModel(ped) == `mp_m_freemode_01`
+    local tbl = male and outfit.male or outfit.female
+    if not tbl then return end
+    applyDutyOutfitTable(ped, tbl)
+    local arm = tonumber(outfit.armour)
+    if arm and arm > 0 then
+        SetPedArmour(ped, math.min(100, arm))
+    else
+        SetPedArmour(ped, 0)
+    end
+    QBCore.Functions.Notify(outfit.label or 'Apranga uždėta.', 'success')
 end)

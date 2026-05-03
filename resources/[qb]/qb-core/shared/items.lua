@@ -209,13 +209,13 @@ QBShared.Items = {
     -- ITEMS
 
     -- Ammo ITEMS
-    pistol_ammo                  = { name = 'pistol_ammo', label = 'Pistol ammo', weight = 10, type = 'item', image = 'pistol_ammo.png', unique = false, useable = true, shouldClose = true, description = 'Ammo for Pistols' },
-    rifle_ammo                   = { name = 'rifle_ammo', label = 'Rifle ammo', weight = 10, type = 'item', image = 'rifle_ammo.png', unique = false, useable = true, shouldClose = true, description = 'Ammo for Rifles' },
-    smg_ammo                     = { name = 'smg_ammo', label = 'SMG ammo', weight = 10, type = 'item', image = 'smg_ammo.png', unique = false, useable = true, shouldClose = true, description = 'Ammo for Sub Machine Guns' },
-    shotgun_ammo                 = { name = 'shotgun_ammo', label = 'Shotgun ammo', weight = 10, type = 'item', image = 'shotgun_ammo.png', unique = false, useable = true, shouldClose = true, description = 'Ammo for Shotguns' },
-    mg_ammo                      = { name = 'mg_ammo', label = 'MG ammo', weight = 1000, type = 'item', image = 'mg_ammo.png', unique = false, useable = true, shouldClose = true, description = 'Ammo for Machine Guns' },
-    snp_ammo                     = { name = 'snp_ammo', label = 'Sniper ammo', weight = 1000, type = 'item', image = 'rifle_ammo.png', unique = false, useable = true, shouldClose = true, description = 'Ammo for Sniper Rifles' },
-    emp_ammo                     = { name = 'emp_ammo', label = 'EMP Ammo', weight = 200, type = 'item', image = 'emp_ammo.png', unique = false, useable = true, shouldClose = true, description = 'Ammo for EMP Launcher' },
+    pistol_ammo                  = { name = 'pistol_ammo', label = 'Pistol ammo', weight = 10, type = 'item', image = 'pistol_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Pistols' },
+    rifle_ammo                   = { name = 'rifle_ammo', label = 'Rifle ammo', weight = 10, type = 'item', image = 'rifle_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Rifles' },
+    smg_ammo                     = { name = 'smg_ammo', label = 'SMG ammo', weight = 10, type = 'item', image = 'smg_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Sub Machine Guns' },
+    shotgun_ammo                 = { name = 'shotgun_ammo', label = 'Shotgun ammo', weight = 10, type = 'item', image = 'shotgun_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Shotguns' },
+    mg_ammo                      = { name = 'mg_ammo', label = 'MG ammo', weight = 1000, type = 'item', image = 'mg_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Machine Guns' },
+    snp_ammo                     = { name = 'snp_ammo', label = 'Sniper ammo', weight = 1000, type = 'item', image = 'rifle_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Sniper Rifles' },
+    emp_ammo                     = { name = 'emp_ammo', label = 'EMP Ammo', weight = 200, type = 'item', image = 'emp_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for EMP Launcher' },
 
     -- Card ITEMS
     id_card                      = { name = 'id_card', label = 'ID Card', weight = 0, type = 'item', image = 'id_card.png', unique = true, useable = true, shouldClose = false, description = 'A card containing all your information to identify yourself' },

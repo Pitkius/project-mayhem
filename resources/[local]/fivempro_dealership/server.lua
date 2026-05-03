@@ -153,12 +153,72 @@ QBCore.Functions.CreateCallback('fivempro_dealership:server:getPoliceCatalog', f
     cb(buildPoliceCatalog())
 end)
 
+local function buildMechanicCatalog()
+    local md = Config.MechanicDealership
+    if not md or not md.vehicles then
+        return { dealership = { label = 'Mechanikas' }, categories = {}, vehicles = {} }
+    end
+    local categories = {}
+    local labels = md.MechanicCategoryLabels or {}
+    for _, v in ipairs(md.vehicles) do
+        local cat = v.category or 'tow'
+        if not categories[cat] then
+            categories[cat] = labels[cat] or cat
+        end
+    end
+    return {
+        dealership = { label = md.label or 'Mechanikas' },
+        categories = categories,
+        vehicles = md.vehicles,
+    }
+end
+
+QBCore.Functions.CreateCallback('fivempro_dealership:server:getMechanicCatalog', function(_, cb)
+    cb(buildMechanicCatalog())
+end)
+
+local function buildEmsCatalog()
+    local ed = Config.EmsDealership
+    if not ed or not ed.vehicles then
+        return { dealership = { label = 'EMS' }, categories = {}, vehicles = {} }
+    end
+    local categories = {}
+    local labels = ed.EmsCategoryLabels or {}
+    for _, v in ipairs(ed.vehicles) do
+        local cat = v.category or 'ems'
+        if not categories[cat] then
+            categories[cat] = labels[cat] or cat
+        end
+    end
+    return {
+        dealership = { label = ed.label or 'EMS' },
+        categories = categories,
+        vehicles = ed.vehicles,
+    }
+end
+
+QBCore.Functions.CreateCallback('fivempro_dealership:server:getEmsCatalog', function(_, cb)
+    cb(buildEmsCatalog())
+end)
+
 local function isPoliceJobPlayer(Player)
     if not Player or not Player.PlayerData.job then return false end
     local j = Player.PlayerData.job
     if not j.onduty then return false end
     local n = j.name
     return n == 'ltpd' or n == 'police'
+end
+
+local function isMechanicJobPlayer(Player)
+    if not Player or not Player.PlayerData.job then return false end
+    local j = Player.PlayerData.job
+    return j.name == 'fivempro_mechanic' and j.onduty
+end
+
+local function isEmsJobPlayer(Player)
+    if not Player or not Player.PlayerData.job then return false end
+    local j = Player.PlayerData.job
+    return j.name == 'fivempro_ambulance' and j.onduty
 end
 
 QBCore.Functions.CreateCallback('fivempro_dealership:server:buyPoliceVehicle', function(source, cb, model, stationId)
@@ -236,6 +296,90 @@ QBCore.Functions.CreateCallback('fivempro_dealership:server:buyPoliceVehicle', f
         model = model,
         spawn = stSpawn.spawn,
     })
+end)
+
+local function buyFleetJobVehicle(Player, cb, model, stationId, cfg, jobCheckFn, errJob)
+    if not Player then return cb({ ok = false, message = 'Player not found' }) end
+    if not jobCheckFn(Player) then
+        return cb({ ok = false, message = errJob })
+    end
+
+    model = string.lower(tostring(model or ''))
+    stationId = tostring(stationId or '')
+    local garageId = cfg.garageByStation and cfg.garageByStation[stationId]
+    local stSpawn = cfg.stations and cfg.stations[stationId]
+    if not garageId or not stSpawn then
+        return cb({ ok = false, message = 'Nežinoma bazė.' })
+    end
+
+    local selectedVehicle = nil
+    for _, v in ipairs(cfg.vehicles or {}) do
+        if v.model and string.lower(tostring(v.model)) == model then
+            selectedVehicle = v
+            break
+        end
+    end
+    if not selectedVehicle then
+        return cb({ ok = false, message = 'Modelis nerastas kataloge.' })
+    end
+
+    local price = tonumber(selectedVehicle.price) or 0
+    local paid = false
+    if price > 0 then
+        if Player.PlayerData.money.bank >= price then
+            paid = Player.Functions.RemoveMoney('bank', price, 'fivempro-job-dealership-buy')
+        elseif Player.PlayerData.money.cash >= price then
+            paid = Player.Functions.RemoveMoney('cash', price, 'fivempro-job-dealership-buy')
+        end
+        if not paid then
+            return cb({ ok = false, message = 'Nepakanka pinigų.' })
+        end
+    else
+        paid = true
+    end
+
+    local plate = getUniquePlate()
+    local hash = joaat(model)
+    local props = {
+        model = hash,
+        plate = plate
+    }
+
+    MySQL.insert.await([[
+        INSERT INTO player_vehicles
+        (license, citizenid, vehicle, hash, mods, plate, garage, state, fuel, engine, body, depotprice)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ]], {
+        Player.PlayerData.license,
+        Player.PlayerData.citizenid,
+        model,
+        tostring(hash),
+        json.encode(props),
+        plate,
+        garageId,
+        0,
+        100,
+        1000,
+        1000,
+        0
+    })
+
+    cb({
+        ok = true,
+        plate = plate,
+        model = model,
+        spawn = stSpawn.spawn,
+    })
+end
+
+QBCore.Functions.CreateCallback('fivempro_dealership:server:buyMechanicVehicle', function(source, cb, model, stationId)
+    local Player = QBCore.Functions.GetPlayer(source)
+    buyFleetJobVehicle(Player, cb, model, stationId or 'mech_ls', Config.MechanicDealership, isMechanicJobPlayer, 'Tik mechanikams tarnyboje.')
+end)
+
+QBCore.Functions.CreateCallback('fivempro_dealership:server:buyEmsVehicle', function(source, cb, model, stationId)
+    local Player = QBCore.Functions.GetPlayer(source)
+    buyFleetJobVehicle(Player, cb, model, stationId or 'ems_ls', Config.EmsDealership, isEmsJobPlayer, 'Tik EMS tarnyboje.')
 end)
 
 QBCore.Functions.CreateCallback('fivempro_dealership:server:buyVehicle', function(source, cb, model)

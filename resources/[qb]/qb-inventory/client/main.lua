@@ -304,28 +304,43 @@ RegisterCommand('toggleHotbar', function()
     ExecuteCommand('hotbar')
 end, false)
 
+local function findPlayerItemBySlot(slotNum)
+    if not PlayerData or not PlayerData.items then return nil end
+    slotNum = tonumber(slotNum)
+    if not slotNum then return nil end
+    local direct = PlayerData.items[slotNum]
+    if direct then return direct end
+    for _, v in pairs(PlayerData.items) do
+        if v and tonumber(v.slot) == slotNum then
+            return v
+        end
+    end
+    return nil
+end
+
 for i = 1, 5 do
     RegisterCommand('slot_' .. i, function()
         if not PlayerData or not PlayerData.items then return end
-
-        local itemData = PlayerData.items[i]
-        if not itemData and PlayerData and PlayerData.items then
-            for _, v in pairs(PlayerData.items) do
-                if v and tonumber(v.slot) == i then
-                    itemData = v
-                    break
-                end
-            end
-        end
+        local itemData = findPlayerItemBySlot(i)
         if not itemData then return end
         if itemData.type == "weapon" then
             if HoldingDrop then
                 return QBCore.Functions.Notify("Your already holding a bag, Go Drop it!", "error", 5500)
             end
         end
-        TriggerServerEvent('qb-inventory:server:useItem', { slot = i })
+        local useSlot = tonumber(itemData.slot) or i
+        TriggerServerEvent('qb-inventory:server:useItem', { slot = useSlot })
     end, false)
-    RegisterKeyMapping('slot_' .. i, Lang:t('inf_mapping.use_item') .. i, 'keyboard', i)
+    RegisterKeyMapping('slot_' .. i, Lang:t('inf_mapping.use_item') .. i, 'keyboard', tostring(i))
+end
+
+-- Atsarginiai klavišai (skaičių blokas), jei viršutinė eilutė konfliktuoja su kitu resursu.
+local numpadKeys = { 'NUMPAD1', 'NUMPAD2', 'NUMPAD3', 'NUMPAD4', 'NUMPAD5' }
+for i = 1, 5 do
+    RegisterCommand('invslotpad_' .. i, function()
+        ExecuteCommand('slot_' .. i)
+    end, false)
+    RegisterKeyMapping('invslotpad_' .. i, Lang:t('inf_mapping.use_item') .. ' Num ' .. i, 'keyboard', numpadKeys[i])
 end
 
 RegisterKeyMapping('openInv', Lang:t('inf_mapping.opn_inv'), 'keyboard', Config.Keybinds.Open)
