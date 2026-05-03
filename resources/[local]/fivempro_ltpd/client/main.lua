@@ -172,7 +172,7 @@ RegisterNetEvent('fivempro_ltpd:client:tryOpenStash', function(data)
     local stationId = data and data.stationId
     local stashIndex = data and data.stashIndex
     if not stationId or stashIndex == nil then return end
-    TriggerServerEvent('fivempro_ltpd:server:openPoliceStash', stationId, stashIndex)
+    TriggerServerEvent('fivempro_ltpd:server:openPoliceStash', stationId, tonumber(stashIndex))
 end)
 
 RegisterNetEvent('fivempro_ltpd:client:requestSpawnFleet', function(args)
@@ -292,7 +292,7 @@ CreateThread(function()
             })
         end
         if st.armory and st.armory.coords then
-            exports['qb-target']:AddCircleZone(('ltpd_armory_%s'):format(st.id), st.armory.coords, 0.75, {
+            exports['qb-target']:AddCircleZone(('ltpd_armory_%s'):format(st.id), st.armory.coords, 1.15, {
                 name = ('ltpd_armory_%s'):format(st.id),
                 debugPoly = false,
                 useZ = true,
@@ -360,7 +360,7 @@ CreateThread(function()
         end
         for stashIdx, stash in ipairs(st.stashes or {}) do
             if stash.coords then
-                exports['qb-target']:AddCircleZone(('ltpd_stash_%s_%s'):format(st.id, stashIdx), stash.coords, 0.5, {
+                exports['qb-target']:AddCircleZone(('ltpd_stash_%s_%s'):format(st.id, stashIdx), stash.coords, 0.7, {
                     name = ('ltpd_stash_%s_%s'):format(st.id, stashIdx),
                     debugPoly = false,
                     useZ = true,

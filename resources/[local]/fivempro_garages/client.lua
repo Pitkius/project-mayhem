@@ -24,14 +24,31 @@ local activeGarage = nil
 local garagePreviewMods = {}
 local garagePreviewFuel = {}
 
---- Peržiūros metu „diena“ + aiškiau matosi mašina (weathersync / naktis kitaip užtemdo vaizdą).
-local function previewPushDaylight()
+--- qb-weathersync nuolat perrašo laiką/orą – be DisableSync peržiūra lieka naktinė ir beveik juoda.
+local function previewApplyShowroomVisuals()
     pcall(function()
         NetworkOverrideClockTime(12, 0, 0)
+        ClearOverrideWeather()
+        ClearWeatherTypePersist()
+        SetWeatherTypePersist('EXTRASUNNY')
+        SetWeatherTypeNow('EXTRASUNNY')
+        SetWeatherTypeNowPersist('EXTRASUNNY')
+        SetRainLevel(0.0)
+        SetArtificialLightsState(false)
     end)
 end
 
-local function previewPopDaylight()
+local function previewBeginShowroom()
+    if GetResourceState('qb-weathersync') == 'started' then
+        TriggerEvent('qb-weathersync:client:DisableSync')
+    end
+    previewApplyShowroomVisuals()
+end
+
+local function previewEndShowroom()
+    if GetResourceState('qb-weathersync') == 'started' then
+        TriggerEvent('qb-weathersync:client:EnableSync')
+    end
     pcall(function()
         NetworkClearClockTimeOverride()
     end)
@@ -200,13 +217,13 @@ local function spawnGaragePreviewVehicle(model, plate)
             cWait = cWait + 1
         end
         SetVehicleOnGroundProperly(previewVehicle)
-        SetVehicleLights(previewVehicle, true)
+        SetVehicleLights(previewVehicle, 2)
 
         ensureGaragePreviewCam(spawn)
         if previewCam and DoesCamExist(previewCam) then
             PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.25, true)
         end
-        previewPushDaylight()
+        previewApplyShowroomVisuals()
     end)
 end
 
@@ -251,7 +268,7 @@ local function closeGarageUi()
     safeDeletePreviewVehicle()
     destroyPreviewCam()
     ClearFocus()
-    previewPopDaylight()
+    previewEndShowroom()
     activeGarage = nil
     garagePreviewMods = {}
     garagePreviewFuel = {}
@@ -269,7 +286,7 @@ local function openGarageUi(garage)
         local rows = buildGarageRows(vehicles, garage.id)
         activeGarage = garage
         uiOpen = true
-        previewPushDaylight()
+        previewBeginShowroom()
         SetNuiFocus(true, true)
         SendNUIMessage({
             action = 'open',
@@ -428,14 +445,27 @@ CreateThread(function()
     end
 end)
 
--- Kol UI atidarytas, palaikom dienos laiką (qb-weathersync gali perrašyti laiką).
+-- Kol UI atidarytas, palaikom šviesų „salono“ režimą (atsarginis kelias jei kitas resursas perrašytų).
 CreateThread(function()
     while true do
         if uiOpen then
-            previewPushDaylight()
-            Wait(4000)
+            previewApplyShowroomVisuals()
+            Wait(400)
         else
             Wait(800)
+        end
+    end
+end)
+
+--- Papildomas projektinis šviestuvas į mašiną – kai žemėlapis vis tiek labai tamsus.
+CreateThread(function()
+    while true do
+        if uiOpen and previewVehicle and previewVehicle ~= 0 and DoesEntityExist(previewVehicle) then
+            local c = GetEntityCoords(previewVehicle)
+            DrawSpotLight(c.x + 3.2, c.y + 2.8, c.z + 6.5, -0.2, -0.18, -1.0, 255, 250, 230, 42.0, 28.0, 0.0, 32.0, 1.05)
+            Wait(0)
+        else
+            Wait(400)
         end
     end
 end)
@@ -515,45 +545,48 @@ CreateThread(function()
             local ds = Config.MarkerDeskScale or { x = 2.2, y = 2.2, z = 0.22 }
 
             for _, garage in ipairs(Config.Garages or {}) do
-                local spawn = garage.spawn
-                local desk = garage.coords
-                if spawn and desk then
-                    local sp = vector3(spawn.x, spawn.y, spawn.z)
-                    local dp = vector3(desk.x, desk.y, desk.z)
-                    local dSpawn = #(pcoords - sp)
-                    local dDesk = #(pcoords - dp)
+                local skipPdMarker = garage.policeOnly and not isPoliceOfficerOnDuty()
+                if not skipPdMarker then
+                    local spawn = garage.spawn
+                    local desk = garage.coords
+                    if spawn and desk then
+                        local sp = vector3(spawn.x, spawn.y, spawn.z)
+                        local dp = vector3(desk.x, desk.y, desk.z)
+                        local dSpawn = #(pcoords - sp)
+                        local dDesk = #(pcoords - dp)
 
-                    if dSpawn < drawD or dDesk < drawD then
-                        sleep = 0
-                    end
+                        if dSpawn < drawD or dDesk < drawD then
+                            sleep = 0
+                        end
 
-                    if dSpawn < drawD then
-                        drawFlatCylinderMarker(sp, ss.x, ss.y, ss.z, 48, 200, 160, 105)
-                    end
-                    if dDesk < drawD then
-                        drawFlatCylinderMarker(dp, ds.x, ds.y, ds.z, 72, 160, 220, 95)
-                    end
+                        if dSpawn < drawD then
+                            drawFlatCylinderMarker(sp, ss.x, ss.y, ss.z, 48, 200, 160, 105)
+                        end
+                        if dDesk < drawD then
+                            drawFlatCylinderMarker(dp, ds.x, ds.y, ds.z, 72, 160, 220, 95)
+                        end
 
-                    if not uiOpen and not IsNuiFocused() then
-                        EnableControlAction(0, 38, true)
+                        if not uiOpen and not IsNuiFocused() then
+                            EnableControlAction(0, 38, true)
 
-                        if IsPedInAnyVehicle(ped, false) and dSpawn < parkR then
-                            local veh = GetVehiclePedIsIn(ped, false)
-                            if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
-                                local kmh = GetEntitySpeed(veh) * 3.6
-                                if kmh <= maxSpd then
-                                    QBCore.Functions.DrawText3D(sp.x, sp.y, sp.z + 0.55, '[E] Pastatyti mašiną į garažą')
-                                    if IsControlJustPressed(0, 38) and (GetGameTimer() - lastGarageInteractMs) > 450 then
-                                        lastGarageInteractMs = GetGameTimer()
-                                        TriggerEvent('fivempro_garages:client:parkVehicle', { garageId = garage.id })
+                            if IsPedInAnyVehicle(ped, false) and dSpawn < parkR then
+                                local veh = GetVehiclePedIsIn(ped, false)
+                                if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
+                                    local kmh = GetEntitySpeed(veh) * 3.6
+                                    if kmh <= maxSpd then
+                                        QBCore.Functions.DrawText3D(sp.x, sp.y, sp.z + 0.55, '[E] Pastatyti mašiną į garažą')
+                                        if IsControlJustPressed(0, 38) and (GetGameTimer() - lastGarageInteractMs) > 450 then
+                                            lastGarageInteractMs = GetGameTimer()
+                                            TriggerEvent('fivempro_garages:client:parkVehicle', { garageId = garage.id })
+                                        end
                                     end
                                 end
-                            end
-                        elseif not IsPedInAnyVehicle(ped, false) and dDesk < openR then
-                            QBCore.Functions.DrawText3D(dp.x, dp.y, dp.z + 0.95, '[E] Atidaryti garažą')
-                            if IsControlJustPressed(0, 38) and (GetGameTimer() - lastGarageInteractMs) > 450 then
-                                lastGarageInteractMs = GetGameTimer()
-                                TriggerEvent('fivempro_garages:client:openGarage', { garageId = garage.id })
+                            elseif not IsPedInAnyVehicle(ped, false) and dDesk < openR then
+                                QBCore.Functions.DrawText3D(dp.x, dp.y, dp.z + 0.95, '[E] Atidaryti garažą')
+                                if IsControlJustPressed(0, 38) and (GetGameTimer() - lastGarageInteractMs) > 450 then
+                                    lastGarageInteractMs = GetGameTimer()
+                                    TriggerEvent('fivempro_garages:client:openGarage', { garageId = garage.id })
+                                end
                             end
                         end
                     end
@@ -573,31 +606,33 @@ CreateThread(function()
     createGarageMapBlips()
 
     for _, garage in ipairs(Config.Garages) do
-        exports['qb-target']:AddBoxZone(('fivempro_garage_%s'):format(garage.id), garage.coords, 2.4, 2.4, {
-            name = ('fivempro_garage_%s'):format(garage.id),
-            heading = garage.heading,
-            debugPoly = false,
-            minZ = garage.coords.z - 1.0,
-            maxZ = garage.coords.z + 2.0,
-        }, {
-            options = {
-                {
-                    type = 'client',
-                    event = 'fivempro_garages:client:openGarage',
-                    icon = 'fas fa-warehouse',
-                    label = 'Atidaryti garažą',
-                    garageId = garage.id
+        if not garage.policeOnly then
+            exports['qb-target']:AddBoxZone(('fivempro_garage_%s'):format(garage.id), garage.coords, 2.4, 2.4, {
+                name = ('fivempro_garage_%s'):format(garage.id),
+                heading = garage.heading,
+                debugPoly = false,
+                minZ = garage.coords.z - 1.0,
+                maxZ = garage.coords.z + 2.0,
+            }, {
+                options = {
+                    {
+                        type = 'client',
+                        event = 'fivempro_garages:client:openGarage',
+                        icon = 'fas fa-warehouse',
+                        label = 'Atidaryti garažą',
+                        garageId = garage.id
+                    },
+                    {
+                        type = 'client',
+                        event = 'fivempro_garages:client:parkVehicle',
+                        icon = 'fas fa-square-parking',
+                        label = 'Pastatyti mašiną',
+                        garageId = garage.id
+                    },
                 },
-                {
-                    type = 'client',
-                    event = 'fivempro_garages:client:parkVehicle',
-                    icon = 'fas fa-square-parking',
-                    label = 'Pastatyti mašiną',
-                    garageId = garage.id
-                },
-            },
-            distance = Config.TargetDistance
-        })
+                distance = Config.TargetDistance
+            })
+        end
     end
 end)
 

@@ -14,13 +14,30 @@ local policeCatalog = nil
 local uiPoliceMode = false
 local activePoliceStationId = 'ls_main'
 
-local function previewPushDaylight()
+local function previewApplyShowroomVisuals()
     pcall(function()
         NetworkOverrideClockTime(12, 0, 0)
+        ClearOverrideWeather()
+        ClearWeatherTypePersist()
+        SetWeatherTypePersist('EXTRASUNNY')
+        SetWeatherTypeNow('EXTRASUNNY')
+        SetWeatherTypeNowPersist('EXTRASUNNY')
+        SetRainLevel(0.0)
+        SetArtificialLightsState(false)
     end)
 end
 
-local function previewPopDaylight()
+local function previewBeginShowroom()
+    if GetResourceState('qb-weathersync') == 'started' then
+        TriggerEvent('qb-weathersync:client:DisableSync')
+    end
+    previewApplyShowroomVisuals()
+end
+
+local function previewEndShowroom()
+    if GetResourceState('qb-weathersync') == 'started' then
+        TriggerEvent('qb-weathersync:client:EnableSync')
+    end
     pcall(function()
         NetworkClearClockTimeOverride()
     end)
@@ -189,11 +206,11 @@ local function spawnPreviewVehicle(model)
             cWait = cWait + 1
         end
         SetVehicleOnGroundProperly(previewVehicle)
-        SetVehicleLights(previewVehicle, true)
+        SetVehicleLights(previewVehicle, 2)
 
         ensurePreviewCam()
         PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.2, true)
-        previewPushDaylight()
+        previewApplyShowroomVisuals()
     end)
 end
 
@@ -244,7 +261,7 @@ local function closeDealershipUi()
     safeDeletePreviewVehicle()
     destroyPreviewCam()
     ClearFocus()
-    previewPopDaylight()
+    previewEndShowroom()
 end
 
 RegisterNetEvent('fivempro_dealership:client:forceCloseUi', function()
@@ -271,7 +288,7 @@ local function openDealershipUi()
     end
 
     uiOpen = true
-    previewPushDaylight()
+    previewBeginShowroom()
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'open', payload = payload })
     -- Preview spawną inicijuoja NUI (`selectVehicle`), kad nebūtų dvigubo spawn atidaryme.
@@ -291,7 +308,7 @@ local function openPoliceDealershipUi(stationId)
             return QBCore.Functions.Notify('PD katalogas tuščias.', 'error')
         end
         uiOpen = true
-        previewPushDaylight()
+        previewBeginShowroom()
         SetNuiFocus(true, true)
         SendNUIMessage({ action = 'open', payload = payload })
     end)
@@ -396,10 +413,22 @@ end)
 CreateThread(function()
     while true do
         if uiOpen then
-            previewPushDaylight()
-            Wait(4000)
+            previewApplyShowroomVisuals()
+            Wait(400)
         else
             Wait(800)
+        end
+    end
+end)
+
+CreateThread(function()
+    while true do
+        if uiOpen and previewVehicle and previewVehicle ~= 0 and DoesEntityExist(previewVehicle) then
+            local c = GetEntityCoords(previewVehicle)
+            DrawSpotLight(c.x + 3.2, c.y + 2.8, c.z + 6.5, -0.2, -0.18, -1.0, 255, 250, 230, 42.0, 28.0, 0.0, 32.0, 1.05)
+            Wait(0)
+        else
+            Wait(400)
         end
     end
 end)

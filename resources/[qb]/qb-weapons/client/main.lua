@@ -142,17 +142,13 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     local hasMaxClip, maxClipAmmo = GetMaxAmmoInClip(ped, weapon, true)
     local clipMissing = 0
 
-    if hasClip and hasMaxClip then
-        clipMissing = math.max(0, (tonumber(maxClipAmmo) or 0) - (tonumber(currentClipAmmo) or 0))
-    end
-
-    -- Fallback for weapons where clip natives are unreliable: allow loading up to remaining total ammo cap.
-    if clipMissing <= 0 then
-        local currentTotalAmmo = GetAmmoInPedWeapon(ped, weapon)
-        local hasMaxTotal, maxTotalAmmo = GetMaxAmmo(ped, weapon)
-        if hasMaxTotal then
-            clipMissing = math.max(0, (tonumber(maxTotalAmmo) or 0) - (tonumber(currentTotalAmmo) or 0))
+    -- Tik vienos apkabos užpildymas (GTA max apkaba). Nenaudojam GetMaxAmmo – tai būna ~250 ir „užpildo“ 100 vienu R.
+    if hasMaxClip and maxClipAmmo and (tonumber(maxClipAmmo) or 0) > 0 then
+        local cur = 0
+        if hasClip and currentClipAmmo ~= nil then
+            cur = tonumber(currentClipAmmo) or 0
         end
+        clipMissing = math.max(0, (tonumber(maxClipAmmo) or 0) - cur)
     end
 
     if clipMissing <= 0 then
@@ -174,6 +170,9 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     end
 
     local bulletsToLoad = math.min(clipMissing, availableBullets)
+    if hasMaxClip and maxClipAmmo and maxClipAmmo > 0 then
+        bulletsToLoad = math.min(bulletsToLoad, tonumber(maxClipAmmo) or bulletsToLoad)
+    end
     if bulletsToLoad <= 0 then
         return
     end

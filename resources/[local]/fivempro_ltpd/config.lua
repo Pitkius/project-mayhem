@@ -43,9 +43,10 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- Maks. atstumas iki ginklinės / PD garažo / vadovybės (patikra serveryje)
-Config.ArmoryGarageDistance = 22.0
-Config.ManagementRadius = 12.0
+--- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)
+Config.ArmoryGarageDistance = 38.0
+--- Vadovybės meniu serverio patikra – priartėk prie „management“ taško
+Config.ManagementRadius = 18.0
 
 --- Blipai žemėlapyje (komisariatai)
 Config.ShowStationBlips = true
@@ -104,10 +105,10 @@ Config.Stations = {
             coords = vector3(441.64, -1013.14, 28.62),
             spawn = vector4(441.64, -1013.14, 28.62, 175.52),
         },
-        --- Trys sandėliai: visi PD / nuo 3 rango / nuo 8 rango
+        --- Trys sandėliai (prie ginklinės / rūbinės eilės – patikrink MLO)
         stashes = {
             {
-                coords = vector3(451.2, -994.1, 30.69),
+                coords = vector3(449.55, -993.45, 30.69),
                 stashId = 'ltpd_stash_public_ls',
                 label = 'PD sandėlis (bendras)',
                 minGrade = 0,
@@ -115,7 +116,7 @@ Config.Stations = {
                 slots = 60,
             },
             {
-                coords = vector3(452.4, -994.1, 30.69),
+                coords = vector3(449.55, -992.35, 30.69),
                 stashId = 'ltpd_stash_grade3_ls',
                 label = 'PD sandėlis (nuo 3 rango)',
                 minGrade = 3,
@@ -123,7 +124,7 @@ Config.Stations = {
                 slots = 70,
             },
             {
-                coords = vector3(453.6, -994.1, 30.69),
+                coords = vector3(449.55, -991.25, 30.69),
                 stashId = 'ltpd_stash_grade8_ls',
                 label = 'PD sandėlis (nuo 8 rango)',
                 minGrade = 8,

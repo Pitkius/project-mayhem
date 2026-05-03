@@ -353,8 +353,15 @@ end
 
 RegisterNetEvent('fivempro_ltpd:server:openPoliceStash', function(stationId, stashIndex)
     local src = source
-    if GetResourceState('qb-inventory') ~= 'started' then return end
-    if not hasPerm(src, 'armory') then return end
+    if GetResourceState('qb-inventory') ~= 'started' then
+        return TriggerClientEvent('QBCore:Notify', src, 'qb-inventory neįjungtas.', 'error')
+    end
+    if Player(src).state.inv_busy then
+        return TriggerClientEvent('QBCore:Notify', src, 'Uždaryk inventorių ir bandyk dar kartą.', 'error')
+    end
+    if not hasPerm(src, 'armory') then
+        return TriggerClientEvent('QBCore:Notify', src, 'Prieinama tik policijai tarnyboje.', 'error')
+    end
     stationId = tostring(stationId or '')
     stashIndex = tonumber(stashIndex)
     if not stashIndex or stashIndex < 1 then return end
@@ -366,7 +373,9 @@ RegisterNetEvent('fivempro_ltpd:server:openPoliceStash', function(stationId, sta
         return TriggerClientEvent('QBCore:Notify', src, 'Per žemas rangas šiam sandėliui.', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
-    if not officerNearCoords(src, entry.coords, maxD) then return end
+    if not officerNearCoords(src, entry.coords, maxD) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo sandėlio.', 'error')
+    end
     exports['qb-inventory']:OpenInventory(src, entry.stashId, {
         maxweight = entry.maxweight or 2000000,
         slots = entry.slots or 60,
@@ -376,13 +385,22 @@ end)
 
 RegisterNetEvent('fivempro_ltpd:server:openArmory', function(stationId)
     local src = source
-    if GetResourceState('qb-inventory') ~= 'started' then return end
-    if not hasPerm(src, 'armory') then return end
+    if GetResourceState('qb-inventory') ~= 'started' then
+        return TriggerClientEvent('QBCore:Notify', src, 'qb-inventory neįjungtas.', 'error')
+    end
+    if Player(src).state.inv_busy then
+        return TriggerClientEvent('QBCore:Notify', src, 'Uždaryk inventorių ir bandyk dar kartą.', 'error')
+    end
+    if not hasPerm(src, 'armory') then
+        return TriggerClientEvent('QBCore:Notify', src, 'Prieinama tik policijai tarnyboje.', 'error')
+    end
     stationId = tostring(stationId or '')
     local st = getStationById(stationId)
     if not st or not st.armory or not st.armory.coords or not st.armory.stashId then return end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
-    if not officerNearCoords(src, st.armory.coords, maxD) then return end
+    if not officerNearCoords(src, st.armory.coords, maxD) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo ginklinės (rūbinės). Priartėk arba patikrink koordinates.', 'error')
+    end
     exports['qb-inventory']:OpenInventory(src, st.armory.stashId, {
         maxweight = st.armory.maxweight or 4000000,
         slots = st.armory.slots or 80,
@@ -495,7 +513,12 @@ end
 
 RegisterNetEvent('fivempro_ltpd:server:bossHire', function(targetId, grade)
     local src = source
-    if not canBossAction(src) or not nearAnyManagement(src) then return end
+    if not canBossAction(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Vadovybė: neturi teisės arba ne tarnyboje.', 'error')
+    end
+    if not nearAnyManagement(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo vadovybės punkto.', 'error')
+    end
     targetId = tonumber(targetId)
     grade = tonumber(grade)
     if not targetId or targetId < 1 then return end
@@ -515,7 +538,12 @@ end)
 
 RegisterNetEvent('fivempro_ltpd:server:bossFire', function(targetId)
     local src = source
-    if not canBossAction(src) or not nearAnyManagement(src) then return end
+    if not canBossAction(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Vadovybė: neturi teisės arba ne tarnyboje.', 'error')
+    end
+    if not nearAnyManagement(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo vadovybės punkto.', 'error')
+    end
     targetId = tonumber(targetId)
     if not targetId or targetId < 1 then return end
     local T = QBCore.Functions.GetPlayer(targetId)
@@ -536,7 +564,12 @@ end)
 
 RegisterNetEvent('fivempro_ltpd:server:bossSetGrade', function(targetId, grade)
     local src = source
-    if not canBossAction(src) or not nearAnyManagement(src) then return end
+    if not canBossAction(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Vadovybė: neturi teisės arba ne tarnyboje.', 'error')
+    end
+    if not nearAnyManagement(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo vadovybės punkto.', 'error')
+    end
     targetId = tonumber(targetId)
     grade = tonumber(grade)
     if not targetId or targetId < 1 then return end

@@ -32,6 +32,15 @@ Config.Garages = {
     { id = 'pd_paleto', label = 'Policijos garažas (Paleto)', coords = vector3(-459.2, 6016.3, 31.49), heading = 45.0, spawn = vector4(-459.2, 6016.3, 31.49, 45.0), policeOnly = true, hideBlip = true },
 }
 
+--- Tik šie modeliai rodomi / priimami PD garažuose (`pd_*`).
+Config.PoliceVehicleModels = {
+    police = true, police2 = true, police3 = true, police4 = true, police5 = true,
+    policeb = true, policet = true, sheriff = true, sheriff2 = true,
+    riot = true, fbi = true, fbi2 = true, pranger = true,
+    policeold1 = true, policeold2 = true,
+    polmav = true, buzzard2 = true,
+}
+
 Config.TargetDistance = 2.2
 
 -- Žemės apskritimas + [E] — matosi priartėjus; spawn = parkuoti, coords = atidaryti garažą
