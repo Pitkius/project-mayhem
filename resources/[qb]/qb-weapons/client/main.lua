@@ -16,6 +16,17 @@ local AmmoItemByType = {
     AMMO_SNIPER = 'snp_ammo',
 }
 
+--- Kai GetMaxAmmoInClip grąžina 0 – apkabos dydis pagal tipą (viena apkaba į kulkas).
+local DefaultClipByAmmoType = {
+    AMMO_PISTOL = 12,
+    AMMO_SMG = 30,
+    AMMO_RIFLE = 30,
+    AMMO_SHOTGUN = 8,
+    AMMO_MG = 50,
+    AMMO_SNIPER = 10,
+    AMMO_EMPLAUNCHER = 10,
+}
+
 --- Kai kurie resursai ar būsenos palieka begalinę apkabą — tada šūviai nenaudoja kulkų.
 local function clearPedWeaponInfiniteAmmo(ped, weaponHash)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then return end
@@ -140,16 +151,19 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
 
     local hasClip, currentClipAmmo = GetAmmoInClip(ped, weapon)
     local hasMaxClip, maxClipAmmo = GetMaxAmmoInClip(ped, weapon, true)
-    local clipMissing = 0
 
-    -- Tik vienos apkabos užpildymas (GTA max apkaba). Nenaudojam GetMaxAmmo – tai būna ~250 ir „užpildo“ 100 vienu R.
+    local maxC = 0
     if hasMaxClip and maxClipAmmo and (tonumber(maxClipAmmo) or 0) > 0 then
-        local cur = 0
-        if hasClip and currentClipAmmo ~= nil then
-            cur = tonumber(currentClipAmmo) or 0
-        end
-        clipMissing = math.max(0, (tonumber(maxClipAmmo) or 0) - cur)
+        maxC = tonumber(maxClipAmmo) or 0
+    else
+        maxC = DefaultClipByAmmoType[normalizedAmmoType] or 30
     end
+    local curInClip = 0
+    if hasClip and currentClipAmmo ~= nil then
+        curInClip = tonumber(currentClipAmmo) or 0
+    end
+    -- Tik vienos apkabos užpildymas (GTA max apkaba arba fallback). Nenaudojam GetMaxAmmo – tai būna ~250 visam rezervuarui.
+    local clipMissing = math.max(0, maxC - curInClip)
 
     if clipMissing <= 0 then
         QBCore.Functions.Notify('Magazine is already full.', 'error')
@@ -170,8 +184,8 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     end
 
     local bulletsToLoad = math.min(clipMissing, availableBullets)
-    if hasMaxClip and maxClipAmmo and maxClipAmmo > 0 then
-        bulletsToLoad = math.min(bulletsToLoad, tonumber(maxClipAmmo) or bulletsToLoad)
+    if maxC > 0 then
+        bulletsToLoad = math.min(bulletsToLoad, maxC)
     end
     if bulletsToLoad <= 0 then
         return
@@ -199,8 +213,10 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         local totalLoaded = math.max(0, (tonumber(ammoAfter) or 0) - (tonumber(ammoBefore) or 0))
 
         local expectedMaxLoad = bulletsToLoad
-        if hadClipBefore and hadMaxClipBefore then
+        if hadClipBefore and hadMaxClipBefore and (tonumber(maxClipBefore) or 0) > 0 then
             expectedMaxLoad = math.min(bulletsToLoad, math.max(0, (tonumber(maxClipBefore) or 0) - (tonumber(clipBefore) or 0)))
+        elseif maxC and maxC > 0 and hadClipBefore then
+            expectedMaxLoad = math.min(bulletsToLoad, math.max(0, maxC - (tonumber(clipBefore) or 0)))
         end
 
         local reallyLoaded = clipLoaded > 0 and clipLoaded or totalLoaded

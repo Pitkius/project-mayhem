@@ -268,14 +268,17 @@ CreateThread(function()
             return false
         end
         if P.job.isboss then return true end
-        return (P.job.grade and P.job.grade.level or 0) >= (Config.Permissions.boss_menu or 8)
+        return (P.job.grade and P.job.grade.level or 0) >= (Config.Permissions.boss_menu or 7)
     end
     for _, st in ipairs(Config.Stations or {}) do
         if st.mdt then
-            exports['qb-target']:AddCircleZone(('ltpd_mdt_%s'):format(st.id), st.coords, 0.55, {
+            local mc = st.coords
+            exports['qb-target']:AddBoxZone(('ltpd_mdt_%s'):format(st.id), mc, 1.05, 1.05, {
                 name = ('ltpd_mdt_%s'):format(st.id),
+                heading = st.heading or 0.0,
                 debugPoly = false,
-                useZ = true,
+                minZ = mc.z - 1.05,
+                maxZ = mc.z + 2.35,
             }, {
                 options = {
                     {
@@ -288,7 +291,7 @@ CreateThread(function()
                         end,
                     },
                 },
-                distance = Config.TargetDistance,
+                distance = Config.TargetDistance + 0.4,
             })
         end
         if st.armory and st.armory.coords then
@@ -312,7 +315,46 @@ CreateThread(function()
                 distance = Config.TargetDistance,
             })
         end
-        if st.policeDealership and st.policeDealership.coords then
+        local gcoords = st.garage and st.garage.coords
+        local hasPdShop = st.policeDealership ~= nil
+        if gcoords then
+            local spawn = st.garage.spawn
+            local hubHeading = (spawn and tonumber(spawn.w)) or tonumber(st.policeDealership and st.policeDealership.heading) or st.heading or 0.0
+            local hubOpts = {
+                {
+                    type = 'client',
+                    event = 'fivempro_ltpd:client:openPdGarage',
+                    icon = 'fas fa-warehouse',
+                    label = 'Policijos garažas',
+                    stationId = st.id,
+                    canInteract = function()
+                        return isPdOnDutyClient()
+                    end,
+                },
+            }
+            if hasPdShop then
+                hubOpts[#hubOpts + 1] = {
+                    type = 'client',
+                    event = 'fivempro_ltpd:client:goPoliceDealership',
+                    icon = 'fas fa-car-side',
+                    label = 'Policijos transporto pirkimas',
+                    stationId = st.id,
+                    canInteract = function()
+                        return isPdOnDutyClient()
+                    end,
+                }
+            end
+            exports['qb-target']:AddBoxZone(('ltpd_garagehub_%s'):format(st.id), gcoords, 2.8, 2.8, {
+                name = ('ltpd_garagehub_%s'):format(st.id),
+                heading = hubHeading,
+                debugPoly = false,
+                minZ = gcoords.z - 1.45,
+                maxZ = gcoords.z + 2.85,
+            }, {
+                options = hubOpts,
+                distance = Config.TargetDistance + 1.2,
+            })
+        elseif hasPdShop and st.policeDealership and st.policeDealership.coords then
             local pos = st.policeDealership.coords
             local hd = st.policeDealership.heading or 0.0
             exports['qb-target']:AddBoxZone(('ltpd_pdshop_%s'):format(st.id), pos, 1.4, 1.4, {
@@ -335,27 +377,6 @@ CreateThread(function()
                     },
                 },
                 distance = 2.5,
-            })
-        end
-        if st.garage and st.garage.coords then
-            exports['qb-target']:AddCircleZone(('ltpd_garage_%s'):format(st.id), st.garage.coords, 0.65, {
-                name = ('ltpd_garage_%s'):format(st.id),
-                debugPoly = false,
-                useZ = true,
-            }, {
-                options = {
-                    {
-                        type = 'client',
-                        event = 'fivempro_ltpd:client:openPdGarage',
-                        icon = 'fas fa-warehouse',
-                        label = 'Policijos garažas',
-                        stationId = st.id,
-                        canInteract = function()
-                            return isPdOnDutyClient()
-                        end,
-                    },
-                },
-                distance = Config.TargetDistance + 0.5,
             })
         end
         for stashIdx, stash in ipairs(st.stashes or {}) do
@@ -383,10 +404,14 @@ CreateThread(function()
             end
         end
         if st.management and st.management.coords then
-            exports['qb-target']:AddCircleZone(('ltpd_mgmt_%s'):format(st.id), st.management.coords, 0.5, {
+            local mg = st.management.coords
+            local mh = st.management.heading or st.heading or 0.0
+            exports['qb-target']:AddBoxZone(('ltpd_mgmt_%s'):format(st.id), mg, 1.6, 1.6, {
                 name = ('ltpd_mgmt_%s'):format(st.id),
+                heading = mh,
                 debugPoly = false,
-                useZ = true,
+                minZ = mg.z - 1.1,
+                maxZ = mg.z + 2.3,
             }, {
                 options = {
                     {
@@ -397,7 +422,31 @@ CreateThread(function()
                         canInteract = canInteractBoss,
                     },
                 },
-                distance = Config.TargetDistance + 0.5,
+                distance = 3.2,
+            })
+        end
+        if st.locker and st.locker.coords then
+            local lc = st.locker.coords
+            local lh = st.locker.heading or st.heading or 0.0
+            exports['qb-target']:AddBoxZone(('ltpd_locker_%s'):format(st.id), lc, 1.35, 1.35, {
+                name = ('ltpd_locker_%s'):format(st.id),
+                heading = lh,
+                debugPoly = false,
+                minZ = lc.z - 1.0,
+                maxZ = lc.z + 2.15,
+            }, {
+                options = {
+                    {
+                        type = 'client',
+                        event = 'qb-clothing:client:openOutfitMenu',
+                        icon = 'fas fa-shirt',
+                        label = 'Rūbinė (drabužiai / outfitai)',
+                        canInteract = function()
+                            return isPdOnDutyClient()
+                        end,
+                    },
+                },
+                distance = Config.TargetDistance + 0.6,
             })
         end
         if st.heliGarage and st.heliGarage.coords then

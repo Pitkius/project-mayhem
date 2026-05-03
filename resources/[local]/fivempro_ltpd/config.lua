@@ -31,7 +31,7 @@ Config.Permissions = {
     division_admin = 8,
     armory = 0, -- bendra policijos ginklinė (stash)
     garage = 0, -- PD tarnybinio transporto išėmimas
-    boss_menu = 8, -- Įdarb./atleisti/rangas (nuo Komisaras; isboss irgi leidžia)
+    boss_menu = 7, -- Įdarb./atleisti/rangas (isboss arba ≥ šis grade – qb-core rangų sutapimas)
 }
 
 --- Baudų šablonai (kodas rodomas MDT)
@@ -96,14 +96,19 @@ Config.Stations = {
         },
         --- PD asmeninis garažas (fivempro_garages id – mašinos perkamos salone)
         pdGarageId = 'pd_ls_main',
-        --- Policijos salonas (fivempro_dealership) – tas pats UI kaip autosalonas
+        --- Policijos salonas (fivempro_dealership) – sujungta su garažu: vienas qb-target „garažo“ taške
         policeDealership = {
-            coords = vector3(459.25, -1008.02, 28.26),
-            heading = 268.0,
+            coords = vector3(441.64, -1013.14, 28.62),
+            heading = 175.52,
         },
         garage = {
             coords = vector3(441.64, -1013.14, 28.62),
             spawn = vector4(441.64, -1013.14, 28.62, 175.52),
+        },
+        --- Rūbinė (qb-clothing outfit meniu) – patikrink su savo MLO (persirengimo zona)
+        locker = {
+            coords = vector3(461.85, -998.35, 30.69),
+            heading = 90.0,
         },
         --- Trys sandėliai (prie ginklinės / rūbinės eilės – patikrink MLO)
         stashes = {
@@ -158,12 +163,16 @@ Config.Stations = {
         },
         pdGarageId = 'pd_sandy',
         policeDealership = {
-            coords = vector3(1855.5, 3688.2, 34.27),
+            coords = vector3(1869.5, 3695.2, 33.53),
             heading = 210.0,
         },
         garage = {
             coords = vector3(1869.5, 3695.2, 33.53),
             spawn = vector4(1869.5, 3695.2, 33.53, 210.0),
+        },
+        locker = {
+            coords = vector3(1851.2, 3689.1, 34.27),
+            heading = 210.0,
         },
         stashes = {
             { coords = vector3(1850.5, 3691.5, 34.27), stashId = 'ltpd_stash_public_sandy', label = 'PD sandėlis (bendras)', minGrade = 0, maxweight = 2000000, slots = 60 },
@@ -187,12 +196,16 @@ Config.Stations = {
         },
         pdGarageId = 'pd_paleto',
         policeDealership = {
-            coords = vector3(-451.0, 6010.5, 31.72),
+            coords = vector3(-459.2, 6016.3, 31.49),
             heading = 45.0,
         },
         garage = {
             coords = vector3(-459.2, 6016.3, 31.49),
             spawn = vector4(-459.2, 6016.3, 31.49, 45.0),
+        },
+        locker = {
+            coords = vector3(-448.9, 6013.2, 31.72),
+            heading = 45.0,
         },
         stashes = {
             { coords = vector3(-450.5, 6015.2, 31.72), stashId = 'ltpd_stash_public_paleto', label = 'PD sandėlis (bendras)', minGrade = 0, maxweight = 2000000, slots = 60 },

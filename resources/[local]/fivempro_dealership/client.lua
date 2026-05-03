@@ -25,6 +25,10 @@ local function previewApplyShowroomVisuals()
         SetRainLevel(0.0)
         SetArtificialLightsState(false)
     end)
+    pcall(function()
+        SetBlackout(false)
+        ClearTimecycleModifier()
+    end)
 end
 
 local function previewBeginShowroom()
@@ -414,7 +418,7 @@ CreateThread(function()
     while true do
         if uiOpen then
             previewApplyShowroomVisuals()
-            Wait(400)
+            Wait(120)
         else
             Wait(800)
         end
@@ -425,7 +429,9 @@ CreateThread(function()
     while true do
         if uiOpen and previewVehicle and previewVehicle ~= 0 and DoesEntityExist(previewVehicle) then
             local c = GetEntityCoords(previewVehicle)
-            DrawSpotLight(c.x + 3.2, c.y + 2.8, c.z + 6.5, -0.2, -0.18, -1.0, 255, 250, 230, 42.0, 28.0, 0.0, 32.0, 1.05)
+            DrawSpotLight(c.x + 3.2, c.y + 2.8, c.z + 6.5, -0.2, -0.18, -1.0, 255, 250, 230, 48.0, 32.0, 0.0, 36.0, 1.12)
+            DrawSpotLight(c.x - 2.6, c.y - 2.2, c.z + 5.8, 0.22, 0.2, -1.0, 230, 245, 255, 40.0, 26.0, 0.0, 28.0, 0.95)
+            DrawLightWithRange(c.x, c.y, c.z + 1.05, 255, 250, 235, 18.0, 24.0)
             Wait(0)
         else
             Wait(400)

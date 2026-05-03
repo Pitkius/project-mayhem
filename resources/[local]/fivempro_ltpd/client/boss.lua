@@ -13,7 +13,7 @@ local function canOpenBoss()
         return false
     end
     if P.job.isboss then return true end
-    return (P.job.grade and P.job.grade.level or 0) >= (Config.Permissions.boss_menu or 8)
+    return (P.job.grade and P.job.grade.level or 0) >= (Config.Permissions.boss_menu or 7)
 end
 
 local function openBossMenu()

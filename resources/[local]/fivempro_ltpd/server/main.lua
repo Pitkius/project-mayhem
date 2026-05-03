@@ -484,7 +484,7 @@ local function canBossAction(src)
     local P = QBCore.Functions.GetPlayer(src)
     if not P then return false end
     if P.PlayerData.job.isboss then return true end
-    return getGrade(src) >= (Config.Permissions.boss_menu or 8)
+    return getGrade(src) >= (Config.Permissions.boss_menu or 7)
 end
 
 local function nearAnyManagement(src)
