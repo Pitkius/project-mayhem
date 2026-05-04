@@ -15,6 +15,11 @@ local function isEmsGarageId(garageId)
     return garageId:sub(1, 4) == 'ems_'
 end
 
+local function isTaxiGarageId(garageId)
+    garageId = tostring(garageId or '')
+    return garageId:sub(1, 5) == 'taxi_'
+end
+
 local function isPoliceJobPlayer(Player)
     if not Player or not Player.PlayerData.job then return false end
     local j = Player.PlayerData.job
@@ -41,6 +46,12 @@ local function isEmsJobPlayer(Player)
     return j.name == 'ambulance' and j.onduty
 end
 
+local function isTaxiJobPlayer(Player)
+    if not Player or not Player.PlayerData.job then return false end
+    local j = Player.PlayerData.job
+    return j.name == 'taxi' and j.onduty
+end
+
 local function isMechanicVehicleModel(modelName)
     modelName = tostring(modelName or ''):lower()
     local t = Config.MechanicVehicleModels or {}
@@ -53,6 +64,12 @@ local function isEmsVehicleModel(modelName)
     return t[modelName] == true
 end
 
+local function isTaxiVehicleModel(modelName)
+    modelName = tostring(modelName or ''):lower()
+    local t = Config.TaxiVehicleModels or {}
+    return t[modelName] == true
+end
+
 QBCore.Functions.CreateCallback('fivempro_garages:server:getPlayerVehicles', function(source, cb, garageId)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then return cb({}) end
@@ -61,6 +78,7 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:getPlayerVehicles', fun
     local pdGarage = isPdGarageId(garageId)
     local mechGarage = isMechanicGarageId(garageId)
     local emsgGarage = isEmsGarageId(garageId)
+    local taxiGarage = isTaxiGarageId(garageId)
     if pdGarage and not isPoliceJobPlayer(Player) then
         return cb({})
     end
@@ -68,6 +86,9 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:getPlayerVehicles', fun
         return cb({})
     end
     if emsgGarage and not isEmsJobPlayer(Player) then
+        return cb({})
+    end
+    if taxiGarage and not isTaxiJobPlayer(Player) then
         return cb({})
     end
 
@@ -89,6 +110,8 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:getPlayerVehicles', fun
             include = isMechanicVehicleModel(modelLower) and tostring(r.garage or '') == garageId
         elseif emsgGarage then
             include = isEmsVehicleModel(modelLower) and tostring(r.garage or '') == garageId
+        elseif taxiGarage then
+            include = isTaxiVehicleModel(modelLower) and tostring(r.garage or '') == garageId
         end
         if include then
             vehicles[#vehicles + 1] = {
@@ -118,6 +141,9 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:spawnVehicle', function
     end
     if isEmsGarageId(garageId) and not isEmsJobPlayer(Player) then
         return cb({ ok = false, message = 'Tik EMS tarnyboje.' })
+    end
+    if isTaxiGarageId(garageId) and not isTaxiJobPlayer(Player) then
+        return cb({ ok = false, message = 'Tik taksi tarnyboje.' })
     end
 
     plate = tostring(plate or ''):upper()
@@ -149,6 +175,13 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:spawnVehicle', function
     elseif isEmsGarageId(garageId) then
         if not isEmsVehicleModel(row.vehicle) then
             return cb({ ok = false, message = 'Tai ne EMS transportas.' })
+        end
+        if tostring(row.garage or '') ~= garageId then
+            return cb({ ok = false, message = 'Masina saugoma kitame garaže.' })
+        end
+    elseif isTaxiGarageId(garageId) then
+        if not isTaxiVehicleModel(row.vehicle) then
+            return cb({ ok = false, message = 'Tai ne taksi transportas.' })
         end
         if tostring(row.garage or '') ~= garageId then
             return cb({ ok = false, message = 'Masina saugoma kitame garaže.' })
@@ -190,6 +223,10 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:parkVehicle', function(
         if not isEmsJobPlayer(Player) then
             return cb({ ok = false, message = 'Tik EMS tarnyboje.' })
         end
+    elseif isTaxiGarageId(garageId) then
+        if not isTaxiJobPlayer(Player) then
+            return cb({ ok = false, message = 'Tik taksi tarnyboje.' })
+        end
     end
 
     plate = tostring(plate or ''):upper()
@@ -209,6 +246,9 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:parkVehicle', function(
     end
     if isEmsGarageId(garageId) and not isEmsVehicleModel(rowPark.vehicle) then
         return cb({ ok = false, message = 'Į šį garažą tik EMS transportas.' })
+    end
+    if isTaxiGarageId(garageId) and not isTaxiVehicleModel(rowPark.vehicle) then
+        return cb({ ok = false, message = 'Į šį garažą tik taksi transportas.' })
     end
 
     MySQL.update.await([[

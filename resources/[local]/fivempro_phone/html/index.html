@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fivempro Phone</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="phone" class="hidden">
+    <div class="topbar">
+      <span id="meNumber">000000</span>
+      <span id="callState"></span>
+      <button id="btnClose">X</button>
+    </div>
+
+    <div class="tabs">
+      <button data-tab="home" class="tab active">Home</button>
+      <button data-tab="emergency" class="tab">Skubus</button>
+      <button data-tab="calls" class="tab">Skambučiai</button>
+      <button data-tab="messages" class="tab">Žinutės</button>
+      <button data-tab="contacts" class="tab">Kontaktai</button>
+      <button data-tab="ads" class="tab">Skelbimai</button>
+      <button data-tab="insta" class="tab">Insta</button>
+    </div>
+
+    <div id="content">
+      <section id="tab-home" class="panel">
+        <h3>Telefonas</h3>
+        <p>MVP versija: skambučiai, žinutės, kontaktai, skelbimai ir social feed.</p>
+        <p class="small">Skubūs: skirtukas „Skubus“ – iškvietimas policijai / medikams / taksi su tašku žemėlapyje.</p>
+      </section>
+
+      <section id="tab-emergency" class="panel hidden">
+        <h3>Skubūs numeriai</h3>
+        <p class="small">Skambutis praneš visiems tam tikros tarnybos darbuotojams (duty) ir parodys vietą žemėlapyje.</p>
+        <div class="row">
+          <button id="btnEmergPolice" class="wide">Policija</button>
+        </div>
+        <div class="row">
+          <button id="btnEmergEms" class="wide">Medikai</button>
+        </div>
+        <div class="row">
+          <button id="btnEmergTaxi" class="wide">Taksi</button>
+        </div>
+      </section>
+
+      <section id="tab-calls" class="panel hidden">
+        <h3>Skambučiai</h3>
+        <div class="row">
+          <input id="callNumber" placeholder="Numeris..." />
+          <button id="btnCall">Skambinti</button>
+          <button id="btnHangup">Baigti</button>
+        </div>
+        <div id="incomingWrap" class="hidden card">
+          <div id="incomingText"></div>
+          <div class="row">
+            <button id="btnAcceptCall">Atsiliepti</button>
+            <button id="btnRejectCall">Atmesti</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-messages" class="panel hidden">
+        <h3>Žinutės</h3>
+        <div class="row">
+          <input id="msgNumber" placeholder="Numeris..." />
+          <button id="btnLoadConv">Atidaryti pokalbį</button>
+        </div>
+        <div id="conversation" class="list"></div>
+        <div class="row">
+          <input id="msgBody" placeholder="Žinutė..." />
+          <button id="btnSendMsg">Siųsti</button>
+        </div>
+      </section>
+
+      <section id="tab-contacts" class="panel hidden">
+        <h3>Kontaktai</h3>
+        <div class="row">
+          <input id="contactName" placeholder="Vardas..." />
+          <input id="contactNumber" placeholder="Numeris..." />
+          <button id="btnSaveContact">Išsaugoti</button>
+        </div>
+        <div id="contactsList" class="list"></div>
+      </section>
+
+      <section id="tab-ads" class="panel hidden">
+        <h3>Skelbimai</h3>
+        <div class="row">
+          <input id="adBody" placeholder="Skelbimo tekstas..." />
+          <button id="btnPostAd">Publikuoti</button>
+        </div>
+        <div id="adsList" class="list"></div>
+      </section>
+
+      <section id="tab-insta" class="panel hidden">
+        <h3>Insta</h3>
+        <div class="row">
+          <input id="postCaption" placeholder="Aprašymas..." />
+        </div>
+        <div class="row">
+          <input id="postImageUrl" placeholder="Image URL (nebūtina)..." />
+          <button id="btnPostInsta">Kelti</button>
+        </div>
+        <div id="postsList" class="list"></div>
+      </section>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

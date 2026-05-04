@@ -11,7 +11,7 @@ local previewSpawnGen = 0
 local currentColorIdx = (Config.PreviewColors and Config.PreviewColors[1] and Config.PreviewColors[1].idx) or 111
 local selectedModel = nil
 local fleetCatalog = nil
---- false arba 'police' / 'mechanic' / 'ems'
+--- false arba 'police' / 'mechanic' / 'ems' / 'taxi'
 local uiFleetMode = false
 local activeFleetStationId = 'ls_main'
 
@@ -81,6 +81,7 @@ local function getFleetSubConfig()
     if uiFleetMode == 'police' then return Config.PoliceDealership end
     if uiFleetMode == 'mechanic' then return Config.MechanicDealership end
     if uiFleetMode == 'ems' then return Config.EmsDealership end
+    if uiFleetMode == 'taxi' then return Config.TaxiDealership end
     return nil
 end
 
@@ -329,7 +330,9 @@ local function openFleetDealershipUi(mode, stationId, catalogCbName)
         local payload = buildUiPayload()
         if not payload or not payload.vehicles or #payload.vehicles == 0 then
             uiFleetMode = false
-            local msg = mode == 'police' and 'PD katalogas tuščias.' or (mode == 'mechanic' and 'Mechanikų katalogas tuščias.' or 'EMS katalogas tuščias.')
+            local msg = mode == 'police' and 'PD katalogas tuščias.'
+                or (mode == 'mechanic' and 'Mechanikų katalogas tuščias.'
+                or (mode == 'taxi' and 'Taksi katalogas tuščias.' or 'EMS katalogas tuščias.'))
             return QBCore.Functions.Notify(msg, 'error')
         end
         uiOpen = true
@@ -353,6 +356,10 @@ end)
 
 RegisterNetEvent('fivempro_dealership:client:openEmsDealership', function(stationId)
     openFleetDealershipUi('ems', stationId or 'ems_ls', 'fivempro_dealership:server:getEmsCatalog')
+end)
+
+RegisterNetEvent('fivempro_dealership:client:openTaxiDealership', function(stationId)
+    openFleetDealershipUi('taxi', stationId or 'taxi_ls', 'fivempro_dealership:server:getTaxiCatalog')
 end)
 
 local function buySelectedVehicle(model)
@@ -423,6 +430,30 @@ local function buySelectedVehicle(model)
                 TriggerEvent('vehiclekeys:client:SetOwner', result.plate)
                 TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
                 QBCore.Functions.Notify(('EMS transportas. Numeriai: %s'):format(result.plate), 'success')
+            else
+                QBCore.Functions.Notify('Įrašyta į garažą, bet spawn nepavyko.', 'primary')
+            end
+        end, model, activeFleetStationId)
+        return
+    end
+    if uiFleetMode == 'taxi' then
+        QBCore.Functions.TriggerCallback('fivempro_dealership:server:buyTaxiVehicle', function(result)
+            if not result or not result.ok then
+                return QBCore.Functions.Notify((result and result.message) or 'Pirkimas nepavyko', 'error')
+            end
+            closeDealershipUi()
+            local spawn = result.spawn or {}
+            local modelHash = joaat(result.model)
+            RequestModel(modelHash)
+            while not HasModelLoaded(modelHash) do Wait(0) end
+            local veh = CreateVehicle(modelHash, spawn.x or 0.0, spawn.y or 0.0, spawn.z or 0.0, spawn.w or 0.0, true, false)
+            if veh and veh ~= 0 then
+                SetVehicleNumberPlateText(veh, result.plate)
+                SetVehicleEngineOn(veh, true, true, false)
+                SetEntityAsMissionEntity(veh, true, true)
+                TriggerEvent('vehiclekeys:client:SetOwner', result.plate)
+                TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
+                QBCore.Functions.Notify(('Taksi transportas. Numeriai: %s'):format(result.plate), 'success')
             else
                 QBCore.Functions.Notify('Įrašyta į garažą, bet spawn nepavyko.', 'primary')
             end

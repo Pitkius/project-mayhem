@@ -72,15 +72,13 @@ QBShared.Jobs = {
 		},
 	},
 	taxi = {
-		label = 'Taxi',
+		label = 'Taksi',
 		defaultDuty = true,
 		offDutyPay = false,
 		grades = {
-			['0'] = { name = 'Recruit', payment = 50 },
-			['1'] = { name = 'Driver', payment = 75 },
-			['2'] = { name = 'Event Driver', payment = 100 },
-			['3'] = { name = 'Sales', payment = 125 },
-			['4'] = { name = 'Manager', isboss = true, payment = 150 },
+			['0'] = { name = 'Naujokas', payment = 70 },
+			['1'] = { name = 'Patyręs', payment = 95 },
+			['2'] = { name = 'Bosas', isboss = true, payment = 140 },
 		},
 	},
 	cardealer = {

@@ -19,11 +19,18 @@ local function isEmsOnDuty()
     return P.job.name == 'ambulance'
 end
 
+local function isTaxiOnDuty()
+    local P = QBCore.Functions.GetPlayerData()
+    if not P or not P.job or not P.job.onduty then return false end
+    return P.job.name == 'taxi'
+end
+
 local function canUseGarageEntry(garage)
     if not garage then return true end
     if garage.policeOnly then return isPoliceOfficerOnDuty() end
     if garage.mechanicOnly then return isMechanicOnDuty() end
     if garage.emsOnly then return isEmsOnDuty() end
+    if garage.taxiOnly then return isTaxiOnDuty() end
     return true
 end
 
@@ -383,7 +390,7 @@ RegisterNetEvent('fivempro_garages:client:openGarage', function(data)
     for _, garage in ipairs(Config.Garages) do
         if garage.id == data.garageId then
             if not canUseGarageEntry(garage) then
-                return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
+                return QBCore.Functions.Notify('Tik tarnybiniam darbui ir būnant duty.', 'error')
             end
             return openGarageUi(garage)
         end
@@ -398,7 +405,7 @@ RegisterNetEvent('fivempro_garages:client:parkVehicle', function(data)
     if data and data.garageId then
         for _, g in ipairs(Config.Garages or {}) do
             if g.id == data.garageId and not canUseGarageEntry(g) then
-                return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
+                return QBCore.Functions.Notify('Tik tarnybiniam darbui ir būnant duty.', 'error')
             end
         end
     end
@@ -588,8 +595,8 @@ CreateThread(function()
             local ds = Config.MarkerDeskScale or { x = 2.2, y = 2.2, z = 0.22 }
 
             for _, garage in ipairs(Config.Garages or {}) do
-                -- PD / mechanikas / EMS: tik qb-target iš darbo resursų, be žemės [E].
-                if not garage.policeOnly and not garage.mechanicOnly and not garage.emsOnly then
+                -- Darbo garažai: tik qb-target iš darbo resursų, be žemės [E].
+                if not garage.policeOnly and not garage.mechanicOnly and not garage.emsOnly and not garage.taxiOnly then
                     local spawn = garage.spawn
                     local desk = garage.coords
                     if spawn and desk then
@@ -649,7 +656,7 @@ CreateThread(function()
     createGarageMapBlips()
 
     for _, garage in ipairs(Config.Garages) do
-        if not garage.policeOnly and not garage.mechanicOnly and not garage.emsOnly then
+        if not garage.policeOnly and not garage.mechanicOnly and not garage.emsOnly and not garage.taxiOnly then
             exports['qb-target']:AddBoxZone(('fivempro_garage_%s'):format(garage.id), garage.coords, 2.4, 2.4, {
                 name = ('fivempro_garage_%s'):format(garage.id),
                 heading = garage.heading,

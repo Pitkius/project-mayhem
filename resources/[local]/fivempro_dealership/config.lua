@@ -187,3 +187,24 @@ Config.EmsDealership = {
     },
 }
 
+Config.TaxiDealership = {
+    label = 'Taksi transporto skyrius',
+    garageByStation = {
+        taxi_ls = 'taxi_ls',
+    },
+    stations = {
+        taxi_ls = {
+            spawn = vector4(908.42, -168.95, 74.12, 146.0),
+            preview = vector4(905.55, -166.85, 74.12, 236.0),
+            camera = vector4(901.95, -164.95, 75.55, 236.0),
+        },
+    },
+    TaxiCategoryLabels = {
+        taxi = 'Taksi parkas',
+    },
+    vehicles = {
+        { model = 'taxi', name = 'Downtown Cab', brand = 'Vapid', category = 'taxi', price = 12000 },
+        { model = 'cabby', name = 'Cabby', brand = 'Declasse', category = 'taxi', price = 14000 },
+    },
+}
+

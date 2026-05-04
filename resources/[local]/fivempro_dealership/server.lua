@@ -221,6 +221,36 @@ local function isEmsJobPlayer(Player)
     return j.name == 'ambulance' and j.onduty
 end
 
+local function isTaxiJobPlayer(Player)
+    if not Player or not Player.PlayerData.job then return false end
+    local j = Player.PlayerData.job
+    return j.name == 'taxi' and j.onduty
+end
+
+local function buildTaxiCatalog()
+    local td = Config.TaxiDealership
+    if not td or not td.vehicles then
+        return { dealership = { label = 'Taxi' }, categories = {}, vehicles = {} }
+    end
+    local categories = {}
+    local labels = td.TaxiCategoryLabels or {}
+    for _, v in ipairs(td.vehicles) do
+        local cat = v.category or 'taxi'
+        if not categories[cat] then
+            categories[cat] = labels[cat] or cat
+        end
+    end
+    return {
+        dealership = { label = td.label or 'Taxi' },
+        categories = categories,
+        vehicles = td.vehicles,
+    }
+end
+
+QBCore.Functions.CreateCallback('fivempro_dealership:server:getTaxiCatalog', function(_, cb)
+    cb(buildTaxiCatalog())
+end)
+
 QBCore.Functions.CreateCallback('fivempro_dealership:server:buyPoliceVehicle', function(source, cb, model, stationId)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
@@ -380,6 +410,11 @@ end)
 QBCore.Functions.CreateCallback('fivempro_dealership:server:buyEmsVehicle', function(source, cb, model, stationId)
     local Player = QBCore.Functions.GetPlayer(source)
     buyFleetJobVehicle(Player, cb, model, stationId or 'ems_ls', Config.EmsDealership, isEmsJobPlayer, 'Tik EMS tarnyboje.')
+end)
+
+QBCore.Functions.CreateCallback('fivempro_dealership:server:buyTaxiVehicle', function(source, cb, model, stationId)
+    local Player = QBCore.Functions.GetPlayer(source)
+    buyFleetJobVehicle(Player, cb, model, stationId or 'taxi_ls', Config.TaxiDealership, isTaxiJobPlayer, 'Tik taksi tarnyboje.')
 end)
 
 QBCore.Functions.CreateCallback('fivempro_dealership:server:buyVehicle', function(source, cb, model)
