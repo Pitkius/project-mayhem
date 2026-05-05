@@ -1,5 +1,8 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local mechanicUiOpen = false
+local mechanicUiVeh = nil
+
 local function isMechanicOnDuty()
     local P = QBCore.Functions.GetPlayerData()
     return P and P.job and P.job.name == Config.JobName and P.job.onduty
@@ -330,6 +333,9 @@ RegisterNetEvent('fivempro_mechanic:client:openPerformanceWorkshop', function(da
     local veh = getVehicleInBay(bay)
     if veh == 0 then return QBCore.Functions.Notify('Remonto zonoje nėra transporto.', 'error') end
 
+    mechanicUiOpen = true
+    mechanicUiVeh = veh
+
     local menu = {
         {
             header = 'Patobulinimai',
@@ -380,6 +386,9 @@ RegisterNetEvent('fivempro_mechanic:client:openBodyWorkshop', function(data)
     if not bay then return end
     local veh = getVehicleInBay(bay)
     if veh == 0 then return QBCore.Functions.Notify('Remonto zonoje nėra transporto.', 'error') end
+
+    mechanicUiOpen = true
+    mechanicUiVeh = veh
 
     local menu = {
         {
@@ -437,6 +446,9 @@ RegisterNetEvent('fivempro_mechanic:client:openBayWorkshop', function(data)
         return QBCore.Functions.Notify('Nerasta valstybinė numeracija.', 'error')
     end
 
+    mechanicUiOpen = true
+    mechanicUiVeh = veh
+
     local function saveTune()
         local bayNow = bayIndex and Config.RepairBays and Config.RepairBays[bayIndex]
         local vNow = bayNow and getVehicleInBay(bayNow) or 0
@@ -477,7 +489,7 @@ RegisterNetEvent('fivempro_mechanic:client:openBayWorkshop', function(data)
         },
         {
             header = 'Dažymas',
-            txt = 'GTA kategorijos (Classic, Metallic…), tada spalvos indeksas',
+            txt = 'Dažymas – pakeisk transporto priemonės spalvą',
             params = {
                 isAction = true,
                 event = function()
@@ -517,17 +529,34 @@ RegisterNetEvent('fivempro_mechanic:client:openBayWorkshop', function(data)
                 end,
             },
         },
-        {
-            header = 'Uždaryti dirbtuves (be DB įrašo)',
-            txt = 'Tik uždaro meniu; vizualūs pakeitimai lieka iki atnaujinimo / respawno.',
-            params = {
-                isAction = true,
-                event = function()
-                    TriggerEvent('qb-menu:client:closeMenu')
-                    QBCore.Functions.Notify('Dirbtuvių meniu uždaryta. Nepamirškite išsaugoti, jei darbas baigtas.', 'primary')
-                end,
-            },
-        },
     }
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end)
+
+AddEventHandler('qb-menu:client:menuClosed', function()
+    mechanicUiOpen = false
+    mechanicUiVeh = nil
+end)
+
+CreateThread(function()
+    while true do
+        if mechanicUiOpen and mechanicUiVeh and DoesEntityExist(mechanicUiVeh) then
+            local ped = PlayerPedId()
+            if IsPedInAnyVehicle(ped, false) then
+                mechanicUiVeh = GetVehiclePedIsIn(ped, false)
+            end
+            local veh = mechanicUiVeh
+            if DoesEntityExist(veh) then
+                local rotSpeed = 0.9
+                if IsControlPressed(0, 34) or IsControlPressed(0, 174) then
+                    SetEntityHeading(veh, GetEntityHeading(veh) + rotSpeed)
+                elseif IsControlPressed(0, 35) or IsControlPressed(0, 175) then
+                    SetEntityHeading(veh, GetEntityHeading(veh) - rotSpeed)
+                end
+            end
+            Wait(0)
+        else
+            Wait(400)
+        end
+    end
 end)

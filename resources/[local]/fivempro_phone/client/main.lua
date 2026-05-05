@@ -2,6 +2,21 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local phoneOpen = false
 
+local function playPhonePullOutAnim()
+    local ped = PlayerPedId()
+    if not DoesEntityExist(ped) then return end
+    local dict = 'cellphone@'
+    local anim = 'cellphone_text_in'
+    RequestAnimDict(dict)
+    local tries = 0
+    while not HasAnimDictLoaded(dict) and tries < 80 do
+        Wait(0)
+        tries = tries + 1
+    end
+    if not HasAnimDictLoaded(dict) then return end
+    TaskPlayAnim(ped, dict, anim, 8.0, -8.0, 1200, 49, 0.0, false, false, false)
+end
+
 local function sendUi(action, payload)
     SendNUIMessage({
         action = action,
@@ -34,6 +49,7 @@ local function showPhone(opts)
         return
     end
     phoneOpen = true
+    playPhonePullOutAnim()
     SetNuiFocus(true, true)
     sendUi('open')
     fetchPhoneData(function(data)

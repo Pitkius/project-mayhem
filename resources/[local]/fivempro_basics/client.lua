@@ -61,6 +61,73 @@ end
 
 RegisterNetEvent('fivempro_basics:client:globalEscClose', fivemproForceCloseAllUi)
 
+local blockedWeaponVehicles = {
+    rhino = true,
+    khanjali = true,
+    insurgent = true,
+    insurgent2 = true,
+    insurgent3 = true,
+    apc = true,
+    scarab = true,
+    scarab2 = true,
+    scarab3 = true,
+    halftrack = true,
+    technical = true,
+    technical2 = true,
+    technical3 = true,
+    nightshark = true,
+    barrage = true,
+    menacer = true,
+    oppressor = true,
+    oppressor2 = true,
+    deluxo = true,
+    ruiner2 = true,
+    ruiner3 = true,
+}
+
+-- Natūralus GTA heal: kai HP nukrenta iki 50% ar mažiau, sustabdom automatinį atsistatymą.
+CreateThread(function()
+    local rechargeBlocked = false
+    while true do
+        local ped = PlayerPedId()
+        if ped and ped ~= 0 and DoesEntityExist(ped) then
+            local hp = GetEntityHealth(ped)
+            local maxHp = GetEntityMaxHealth(ped)
+            local threshold = math.floor(maxHp * 0.5 + 0.5)
+            local shouldBlock = hp <= threshold
+            if shouldBlock ~= rechargeBlocked then
+                rechargeBlocked = shouldBlock
+                SetPlayerHealthRechargeMultiplier(PlayerId(), rechargeBlocked and 0.0 or 1.0)
+            end
+        end
+        Wait(350)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        local ped = PlayerPedId()
+        if IsPedInAnyVehicle(ped, false) then
+            local veh = GetVehiclePedIsIn(ped, false)
+            if veh and veh ~= 0 then
+                local model = GetEntityModel(veh)
+                local name = string.lower(GetDisplayNameFromVehicleModel(model) or '')
+                if blockedWeaponVehicles[name] then
+                    DisableControlAction(0, 24, true)
+                    DisableControlAction(0, 69, true)
+                    DisableControlAction(0, 70, true)
+                    DisableControlAction(0, 92, true)
+                    DisableControlAction(0, 114, true)
+                    DisableControlAction(0, 331, true)
+                end
+            end
+            Wait(0)
+        else
+            Wait(400)
+        end
+    end
+end)
+
 -- Nenaudojam globalių ESC/P keymappingų, nes jie gali konfliktuoti su native Pause/Map.
 -- Uždarom UI tik per valdiklių aptikimą žemiau (kai NUI tikrai aktyvus).
 

@@ -29,6 +29,64 @@ local function resolveCategory(model, baseCategory)
     return baseCategory or 'other'
 end
 
+local function isModelBlockedForCivilianShop(model, baseCategory)
+    model = string.lower(model or '')
+    local cat = tostring(baseCategory or '')
+
+    if cat == 'military' or cat == 'trains' then
+        return true
+    end
+
+    local blockedExact = {
+        rhino = true,
+        khanjali = true,
+        insurgent = true,
+        insurgent2 = true,
+        insurgent3 = true,
+        apc = true,
+        scarab = true,
+        scarab2 = true,
+        scarab3 = true,
+        halftrack = true,
+        nightshark = true,
+        barrage = true,
+        menacer = true,
+        oppressor = true,
+        oppressor2 = true,
+        deluxo = true,
+        ruiner2 = true,
+        ruiner3 = true,
+        tank = true,
+        wastelander = true,
+        technical = true,
+        technical2 = true,
+        technical3 = true,
+    }
+
+    if blockedExact[model] then
+        return true
+    end
+
+    local lower = model
+    if lower:find('armored', 1, true) or lower:find('armour', 1, true) then
+        return true
+    end
+    if lower:find('weapon', 1, true) or lower:find('gun', 1, true) then
+        return true
+    end
+    if lower:find('widebody', 1, true) or lower:find('wb', 1, true) then
+        return true
+    end
+    if lower:find('carbon', 1, true) then
+        return true
+    end
+    if lower:find('rocket', 1, true) or lower:find('jet', 1, true) then
+        return true
+    end
+
+    return false
+end
+
 local function buildCatalog()
     local categories = {}
     local vehicles = {}
@@ -38,16 +96,17 @@ local function buildCatalog()
             if shops.pdm or shops.luxury then
                 local model = string.lower(veh.model)
                 local category = resolveCategory(model, veh.category)
-                local price = resolvePrice(model, veh.price)
-
-                categories[category] = Config.CategoryLabels[category] or category
-                vehicles[#vehicles + 1] = {
-                    model = model,
-                    name = veh.name or model,
-                    brand = veh.brand or 'Unknown',
-                    category = category,
-                    price = price
-                }
+                if not isModelBlockedForCivilianShop(model, veh.category) then
+                    local price = resolvePrice(model, veh.price)
+                    categories[category] = Config.CategoryLabels[category] or category
+                    vehicles[#vehicles + 1] = {
+                        model = model,
+                        name = veh.name or model,
+                        brand = veh.brand or 'Unknown',
+                        category = category,
+                        price = price
+                    }
+                end
             end
         end
     end
