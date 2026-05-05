@@ -61,20 +61,8 @@ end
 
 RegisterNetEvent('fivempro_basics:client:globalEscClose', fivemproForceCloseAllUi)
 
---- Kai atidarytas bet koks NUI, ESC dažnai neateina į žaidimo valdiklius – šis mapping uždaro UI.
-RegisterCommand('fivempro_closeUiEsc', function()
-    if type(IsNuiFocused) == 'function' and IsNuiFocused() then
-        fivemproForceCloseAllUi()
-    end
-end, false)
-RegisterKeyMapping('fivempro_closeUiEsc', 'Uždaryti atvirus meniu (NUI)', 'keyboard', 'ESCAPE')
-
-RegisterCommand('fivempro_closeUiKeyP', function()
-    if type(IsNuiFocused) == 'function' and IsNuiFocused() then
-        fivemproForceCloseAllUi()
-    end
-end, false)
-RegisterKeyMapping('fivempro_closeUiKeyP', 'Uždaryti atvirus meniu (P)', 'keyboard', 'P')
+-- Nenaudojam globalių ESC/P keymappingų, nes jie gali konfliktuoti su native Pause/Map.
+-- Uždarom UI tik per valdiklių aptikimą žemiau (kai NUI tikrai aktyvus).
 
 -- Global fail-safe: ESC/P — valdikliai (kai pasiekiami) + atsarginis kelias.
 CreateThread(function()
