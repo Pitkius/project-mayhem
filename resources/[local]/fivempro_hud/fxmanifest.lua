@@ -3,7 +3,7 @@ game 'gta5'
 
 name 'fivempro_hud'
 author 'FIVEMPROJEKTAS'
-description 'Simple QBCore HUD (health, hunger, thirst, armor)'
+description 'Minimal QBCore HUD (core survival + vehicle essentials)'
 version '1.0.0'
 
 ui_page 'html/index.html'

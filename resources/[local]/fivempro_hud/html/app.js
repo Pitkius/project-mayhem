@@ -3,10 +3,7 @@ const armorRow = document.getElementById("armor-row");
 const carHud = document.getElementById("carhud");
 const speedText = document.getElementById("speed");
 const fuelText = document.getElementById("fuel");
-const engineText = document.getElementById("engine");
 const seatbeltText = document.getElementById("seatbelt");
-const cashText = document.getElementById("cash");
-const bankText = document.getElementById("bank");
 
 const bars = {
   health: document.getElementById("health"),
@@ -35,9 +32,6 @@ window.addEventListener("message", (event) => {
   carHud.classList.toggle("hidden", !data.inVehicle || !data.show);
   speedText.textContent = `${data.speed ?? 0}`;
   fuelText.textContent = `${data.fuel ?? 0}%`;
-  engineText.textContent = `${data.engine ?? 0}%`;
   seatbeltText.textContent = data.seatbelt ? "ON" : "OFF";
-  cashText.textContent = `$${Number(data.cash ?? 0).toLocaleString()}`;
-  bankText.textContent = `$${Number(data.bank ?? 0).toLocaleString()}`;
 });
 

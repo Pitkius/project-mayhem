@@ -15,24 +15,14 @@ local function getNeeds()
     return clamp(hunger, 0, 100), clamp(thirst, 0, 100)
 end
 
-local function getMoney()
-    local latest = QBCore.Functions.GetPlayerData()
-    if latest and latest.money then
-        PlayerData = latest
-    end
-    local money = PlayerData.money or {}
-    return tonumber(money.cash) or 0, tonumber(money.bank) or 0
-end
-
 local function pushHud()
     local ped = PlayerPedId()
     local health = clamp(GetEntityHealth(ped) - 100, 0, 100)
     local armor = clamp(GetPedArmour(ped), 0, 100)
     local hunger, thirst = getNeeds()
-    local cash, bank = getMoney()
     local show = not IsPauseMenuActive()
     local inVehicle = IsPedInAnyVehicle(ped, false)
-    local speed, fuel, engine = 0, 0, 0
+    local speed, fuel = 0, 0
 
     if inVehicle then
         local veh = GetVehiclePedIsIn(ped, false)
@@ -41,7 +31,6 @@ local function pushHud()
         else
             speed = clamp(math.floor(GetEntitySpeed(veh) * 3.6 + 0.5), 0, 450)
             fuel = clamp(math.floor(GetVehicleFuelLevel(veh) + 0.5), 0, 100)
-            engine = clamp(math.floor((GetVehicleEngineHealth(veh) / 10.0) + 0.5), 0, 100)
         end
     else
         seatbeltOn = false
@@ -55,12 +44,9 @@ local function pushHud()
         showArmor = armor > 0,
         hunger = hunger,
         thirst = thirst,
-        cash = cash,
-        bank = bank,
         inVehicle = inVehicle,
         speed = speed,
         fuel = fuel,
-        engine = engine,
         seatbelt = seatbeltOn
     })
 end
