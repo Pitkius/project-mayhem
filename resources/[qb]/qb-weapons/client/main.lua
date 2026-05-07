@@ -140,6 +140,9 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
 
     local normalizedAmmoType = tostring(ammoType or ''):upper()
     local weaponAmmoNorm = tostring(selectedWeaponData.ammotype or ''):upper()
+    if weaponAmmoNorm == '' and selectedWeaponData.name and selectedWeaponData.name:find('assaultrifle', 1, true) then
+        weaponAmmoNorm = 'AMMO_RIFLE'
+    end
     if weaponAmmoNorm ~= normalizedAmmoType then
         QBCore.Functions.Notify(Lang:t('error.wrong_ammo'), 'error')
         return
@@ -433,6 +436,7 @@ CreateThread(function()
             if CurrentWeaponData and next(CurrentWeaponData) then
                 if IsPedShooting(ped) or IsControlJustPressed(0, 24) then
                     local weapon = GetSelectedPedWeapon(ped)
+                    clearPedWeaponInfiniteAmmo(ped, weapon)
                     if CanShoot then
                         if weapon and weapon ~= 0 and QBCore.Shared.Weapons[weapon] then
                             QBCore.Functions.TriggerCallback('prison:server:checkThrowable', function(result)

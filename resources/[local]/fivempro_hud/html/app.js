@@ -4,6 +4,7 @@ const carHud = document.getElementById("carhud");
 const speedText = document.getElementById("speed");
 const fuelText = document.getElementById("fuel");
 const seatbeltText = document.getElementById("seatbelt");
+const body = document.body;
 
 const bars = {
   health: document.getElementById("health"),
@@ -17,10 +18,22 @@ function setBar(name, value) {
   bars[name].style.width = `${clamped}%`;
 }
 
+function applyPreset(preset) {
+  const p = Math.max(1, Math.min(3, Number(preset) || 1));
+  body.classList.remove("preset-1", "preset-2", "preset-3");
+  body.classList.add(`preset-${p}`);
+}
+
 window.addEventListener("message", (event) => {
   const data = event.data;
-  if (!data || data.action !== "update") return;
+  if (!data) return;
+  if (data.action === "preset") {
+    applyPreset(data.hudPreset);
+    return;
+  }
+  if (data.action !== "update") return;
 
+  applyPreset(data.hudPreset);
   hud.style.display = data.show ? "flex" : "none";
   armorRow.classList.toggle("hidden", !data.showArmor);
 

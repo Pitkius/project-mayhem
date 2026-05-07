@@ -1,6 +1,8 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local PlayerData = {}
 local seatbeltOn = false
+local hudPreset = 1
+local HUD_PRESET_COUNT = 3
 
 local function clamp(value, minValue, maxValue)
     if value < minValue then return minValue end
@@ -39,6 +41,7 @@ local function pushHud()
     SendNUIMessage({
         action = 'update',
         show = show,
+        hudPreset = hudPreset,
         health = health,
         armor = armor,
         showArmor = armor > 0,
@@ -49,6 +52,24 @@ local function pushHud()
         fuel = fuel,
         seatbelt = seatbeltOn
     })
+end
+
+local function saveHudPreset()
+    SetResourceKvpInt('fivempro_hud:preset', hudPreset)
+end
+
+local function setHudPreset(newPreset)
+    local p = tonumber(newPreset) or 1
+    p = math.floor(p)
+    if p < 1 then p = HUD_PRESET_COUNT end
+    if p > HUD_PRESET_COUNT then p = 1 end
+    hudPreset = p
+    saveHudPreset()
+    SendNUIMessage({
+        action = 'preset',
+        hudPreset = hudPreset
+    })
+    QBCore.Functions.Notify(('HUD stilius: %s/%s'):format(hudPreset, HUD_PRESET_COUNT), 'primary')
 end
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
@@ -71,9 +92,35 @@ end, false)
 
 RegisterKeyMapping('fivempro_seatbelt', 'Toggle seatbelt', 'keyboard', 'B')
 
+RegisterCommand('hud', function(_, args)
+    local arg = args and args[1] and tostring(args[1]) or ''
+    if arg == '+' then
+        setHudPreset(hudPreset + 1)
+        return
+    end
+    if arg == '-' then
+        setHudPreset(hudPreset - 1)
+        return
+    end
+    local asNum = tonumber(arg)
+    if asNum then
+        setHudPreset(asNum)
+        return
+    end
+    QBCore.Functions.Notify('Naudok: /hud + , /hud - , /hud 1-3', 'primary')
+end, false)
+
 CreateThread(function()
     Wait(1000)
     PlayerData = QBCore.Functions.GetPlayerData()
+    hudPreset = GetResourceKvpInt('fivempro_hud:preset')
+    if hudPreset < 1 or hudPreset > HUD_PRESET_COUNT then
+        hudPreset = 1
+    end
+    SendNUIMessage({
+        action = 'preset',
+        hudPreset = hudPreset
+    })
 
     while true do
         pushHud()
