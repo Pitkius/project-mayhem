@@ -83,7 +83,46 @@ local blockedWeaponVehicles = {
     deluxo = true,
     ruiner2 = true,
     ruiner3 = true,
+    lazer = true,
+    hydra = true,
+    savage = true,
+    hunter = true,
+    akula = true,
+    valkyrie = true,
+    valkyrie2 = true,
+    annihilator = true,
+    annihilator2 = true,
+    strikeforce = true,
+    rogue = true,
+    molotok = true,
+    pyro = true,
+    starling = true,
+    volatol = true,
+    bombushka = true,
+    nokota = true,
+    buzzard = true,
+    buzzard2 = true,
 }
+
+local function isVehicleWeaponBlocked(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return false end
+    local model = GetEntityModel(veh)
+    local name = string.lower(GetDisplayNameFromVehicleModel(model) or '')
+    if blockedWeaponVehicles[name] then
+        return true
+    end
+    local class = GetVehicleClass(veh)
+    if class == 19 then -- military
+        return true
+    end
+    local patterns = { 'weapon', 'armed', 'turret', 'cannon', 'rocket', 'missile', 'gun' }
+    for _, p in ipairs(patterns) do
+        if name:find(p, 1, true) then
+            return true
+        end
+    end
+    return false
+end
 
 -- Natūralus GTA heal: kai HP nukrenta iki 50% ar mažiau, sustabdom automatinį atsistatymą.
 CreateThread(function()
@@ -110,14 +149,20 @@ CreateThread(function()
         if IsPedInAnyVehicle(ped, false) then
             local veh = GetVehiclePedIsIn(ped, false)
             if veh and veh ~= 0 then
-                local model = GetEntityModel(veh)
-                local name = string.lower(GetDisplayNameFromVehicleModel(model) or '')
-                if blockedWeaponVehicles[name] then
+                if isVehicleWeaponBlocked(veh) then
+                    DisablePlayerFiring(PlayerId(), true)
                     DisableControlAction(0, 24, true)
+                    DisableControlAction(0, 25, true)
+                    DisableControlAction(0, 68, true)
                     DisableControlAction(0, 69, true)
                     DisableControlAction(0, 70, true)
+                    DisableControlAction(0, 91, true)
                     DisableControlAction(0, 92, true)
                     DisableControlAction(0, 114, true)
+                    DisableControlAction(0, 257, true)
+                    DisableControlAction(0, 263, true)
+                    DisableControlAction(0, 264, true)
+                    DisableControlAction(0, 330, true)
                     DisableControlAction(0, 331, true)
                 end
             end

@@ -45,7 +45,7 @@ body {
 .panel {
   position: relative;
   flex: 1;
-  background: rgba(6, 10, 16, 0.97);
+  background: transparent;
   color: #e8f4f0;
 }
 

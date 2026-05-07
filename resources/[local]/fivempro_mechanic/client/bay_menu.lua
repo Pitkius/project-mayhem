@@ -72,6 +72,17 @@ local function applyUniformPaint(veh, paintType, colorIndex)
     SetVehicleExtraColours(veh, pearl, wheelCol)
 end
 
+local WINDOW_TINTS = {
+    { idx = -1, label = 'Gamyklinis (be tamsinimo)' },
+    { idx = 0, label = 'None / Skaidrus' },
+    { idx = 1, label = 'Pure Black' },
+    { idx = 2, label = 'Dark Smoke' },
+    { idx = 3, label = 'Light Smoke' },
+    { idx = 4, label = 'Stock' },
+    { idx = 5, label = 'Limo' },
+    { idx = 6, label = 'Green' },
+}
+
 local openPaintCategoryMenu
 
 --- 2 žingsnis: galutinė spalva (indeksas tame GTA tipe)
@@ -326,6 +337,48 @@ local function openTurboMenu(veh, bayIndex)
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end
 
+local function openWindowTintMenu(veh, bayIndex)
+    local menu = {
+        {
+            header = 'Langų tamsinimas',
+            txt = 'Pasirink tamsinimo lygį transporto priemonei',
+            isMenuHeader = true,
+        },
+    }
+    for _, tint in ipairs(WINDOW_TINTS) do
+        local t = tint.idx
+        menu[#menu + 1] = {
+            header = tint.label,
+            txt = ('Tint ID: %s'):format(t),
+            params = {
+                isAction = true,
+                event = function()
+                    local b = bayIndex
+                    SetVehicleWindowTint(veh, t)
+                    QBCore.Functions.Notify(('Langų tamsinimas: %s'):format(tint.label), 'success')
+                    scheduleReopen(function()
+                        local bay = b and Config.RepairBays and Config.RepairBays[b]
+                        local v = bay and getVehicleInBay(bay) or 0
+                        if v ~= 0 then openWindowTintMenu(v, b) end
+                    end)
+                end,
+            },
+        }
+    end
+    menu[#menu + 1] = {
+        header = 'Atgal į dirbtuves',
+        params = {
+            isAction = true,
+            event = function()
+                scheduleReopen(function()
+                    TriggerEvent('fivempro_mechanic:client:openBayWorkshop', { bayIndex = bayIndex })
+                end)
+            end,
+        },
+    }
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end
+
 RegisterNetEvent('fivempro_mechanic:client:openPerformanceWorkshop', function(data)
     local bayIndex = data and tonumber(data.bayIndex)
     local bay = bayIndex and Config.RepairBays and Config.RepairBays[bayIndex]
@@ -508,6 +561,16 @@ RegisterNetEvent('fivempro_mechanic:client:openBayWorkshop', function(data)
             },
         },
         {
+            header = 'Langų tamsinimas',
+            txt = 'Užtamsink arba nuimk langų tint',
+            params = {
+                isAction = true,
+                event = function()
+                    openWindowTintMenu(veh, bayIndex)
+                end,
+            },
+        },
+        {
             header = 'Kėbulo detalės',
             txt = 'Spoileriai, buferiai, gaubtas…',
             params = {
@@ -548,9 +611,11 @@ CreateThread(function()
             local veh = mechanicUiVeh
             if DoesEntityExist(veh) then
                 local rotSpeed = 0.9
-                if IsControlPressed(0, 34) or IsControlPressed(0, 174) then
+                if IsControlPressed(0, 34) or IsDisabledControlPressed(0, 34)
+                    or IsControlPressed(0, 174) or IsDisabledControlPressed(0, 174) then
                     SetEntityHeading(veh, GetEntityHeading(veh) + rotSpeed)
-                elseif IsControlPressed(0, 35) or IsControlPressed(0, 175) then
+                elseif IsControlPressed(0, 35) or IsDisabledControlPressed(0, 35)
+                    or IsControlPressed(0, 175) or IsDisabledControlPressed(0, 175) then
                     SetEntityHeading(veh, GetEntityHeading(veh) - rotSpeed)
                 end
             end
