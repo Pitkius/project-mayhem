@@ -228,3 +228,4 @@ document.getElementById("btnRejectCall").addEventListener("click", async () => {
 document.getElementById("btnEmergPolice").addEventListener("click", () => nui("emergencyCall", { service: "police" }));
 document.getElementById("btnEmergEms").addEventListener("click", () => nui("emergencyCall", { service: "ems" }));
 document.getElementById("btnEmergTaxi").addEventListener("click", () => nui("emergencyCall", { service: "taxi" }));
+document.getElementById("btnEmergMechanic").addEventListener("click", () => nui("emergencyCall", { service: "mechanic" }));

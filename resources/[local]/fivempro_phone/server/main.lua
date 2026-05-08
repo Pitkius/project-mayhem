@@ -143,6 +143,7 @@ local function dispatchEmergency(src, service)
         police = ('Policija: %s skambina (%s)'):format(callerName, phone),
         ems = ('Greitoji: %s skambina (%s)'):format(callerName, phone),
         taxi = ('Taksi: %s skambina (%s)'):format(callerName, phone),
+        mechanic = ('Mechanikas: %s prašo pagalbos (%s)'):format(callerName, phone),
     }
     local title = labels[service] or 'Skubus skambutis'
 
@@ -157,6 +158,8 @@ local function dispatchEmergency(src, service)
                 match = jn == (cfg.ambulanceJob or 'ambulance')
             elseif service == 'taxi' then
                 match = jn == (cfg.taxiJob or 'taxi')
+            elseif service == 'mechanic' then
+                match = jn == (cfg.mechanicJob or 'mechanic')
             end
             if match then
                 count = count + 1
@@ -172,6 +175,16 @@ local function dispatchEmergency(src, service)
                 })
             end
         end
+    end
+
+    if GetResourceState('fivempro_dispatch') == 'started' then
+        exports['fivempro_dispatch']:CreateDispatchCall(
+            service == 'taxi' and 'mechanic' or service,
+            'civilian_help',
+            { x = c.x, y = c.y, z = c.z },
+            title,
+            src
+        )
     end
 
     if count == 0 then
@@ -475,7 +488,7 @@ end)
 
 RegisterNetEvent('fivempro_phone:server:emergencyCall', function(service)
     service = tostring(service or ''):lower()
-    if service ~= 'police' and service ~= 'ems' and service ~= 'taxi' then return end
+    if service ~= 'police' and service ~= 'ems' and service ~= 'taxi' and service ~= 'mechanic' then return end
     dispatchEmergency(source, service)
 end)
 

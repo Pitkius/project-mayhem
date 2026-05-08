@@ -22,6 +22,7 @@ Config.Phone = {
 Config.Emergency = {
     policeJobs = { 'ltpd', 'police' },
     ambulanceJob = 'ambulance',
+    mechanicJob = 'mechanic',
     taxiJob = 'taxi',
     blipDurationMs = 120000,
     blipSprite = 161,

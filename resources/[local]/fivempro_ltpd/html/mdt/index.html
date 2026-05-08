@@ -17,6 +17,9 @@
       <button type="button" data-tab="veh" class="tab">Transportas</button>
       <button type="button" data-tab="fine" class="tab" id="tabFine">Bauda</button>
       <button type="button" data-tab="want" class="tab" id="tabWant">Paieška</button>
+      <button type="button" data-tab="calls" class="tab">Iškvietimai</button>
+      <button type="button" data-tab="crews" class="tab">Ekipažai</button>
+      <button type="button" data-tab="units" class="tab">Žemėlapis</button>
     </nav>
     <main>
       <section id="panel-person" class="panel">
@@ -51,6 +54,25 @@
         </div>
         <label>Priežastis <input type="text" id="wantReason" /></label>
         <button type="button" id="goWant" class="btn primary">Nustatyti paieškomumą</button>
+      </section>
+      <section id="panel-calls" class="panel hidden">
+        <div class="row">
+          <button type="button" id="refreshDispatch" class="btn">Atnaujinti</button>
+        </div>
+        <div id="dispatchCalls" class="results"></div>
+      </section>
+      <section id="panel-crews" class="panel hidden">
+        <div class="row">
+          <input type="text" id="crewCallsign" placeholder="Šaukinys pvz. LIMA67" />
+          <button type="button" id="btnSetCallsign" class="btn">Nustatyti šaukinį</button>
+          <button type="button" id="btnCreateCrew" class="btn">Kurti ekipažą</button>
+          <button type="button" id="btnLeaveCrew" class="btn">Išeiti</button>
+          <button type="button" id="btnPanic" class="btn danger">PANIC</button>
+        </div>
+        <div id="dispatchCrews" class="results"></div>
+      </section>
+      <section id="panel-units" class="panel hidden">
+        <div id="dispatchUnits" class="results"></div>
       </section>
     </main>
     <footer class="hint">Server-side tikrinimas • RB AC • Fivempro LTPD</footer>

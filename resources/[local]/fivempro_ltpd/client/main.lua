@@ -107,6 +107,33 @@ RegisterNUICallback('addArrest', function(data, cb)
     end, data and data.citizenid, data and data.notes)
 end)
 
+RegisterNUICallback('dispatchSnapshot', function(_, cb)
+    QBCore.Functions.TriggerCallback('fivempro_dispatch:server:getSnapshot', function(result)
+        cb(result or { ok = false, calls = {}, crews = {}, units = {} })
+    end, 'police')
+end)
+
+RegisterNUICallback('dispatchAction', function(data, cb)
+    if data and data.callId and data.action then
+        TriggerServerEvent('fivempro_dispatch:server:updateCallStatus', data.callId, data.action)
+    end
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('crewAction', function(data, cb)
+    local action = tostring(data and data.action or '')
+    if action == 'create' then
+        TriggerServerEvent('fivempro_dispatch:server:createCrew', tostring(data.callsign or ''))
+    elseif action == 'leave' then
+        TriggerServerEvent('fivempro_dispatch:server:leaveCrew')
+    elseif action == 'setCallsign' then
+        TriggerServerEvent('fivempro_dispatch:server:setCallsign', tostring(data.callsign or ''))
+    elseif action == 'panic' then
+        TriggerServerEvent('fivempro_dispatch:server:panic')
+    end
+    cb({ ok = true })
+end)
+
 CreateThread(function()
     while true do
         if mdtOpen and (IsControlJustPressed(0, 199) or IsDisabledControlJustPressed(0, 199) or IsControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 200)) then

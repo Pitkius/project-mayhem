@@ -1,5 +1,6 @@
 const app = document.getElementById('app');
 const btnClose = document.getElementById('btnClose');
+let dispatchPoll = null;
 
 function resourceName() {
   try {
@@ -40,8 +41,12 @@ window.addEventListener('message', (e) => {
       document.getElementById('fineLabel').value = opt.dataset.label || '';
     };
     if (sel.options.length) sel.onchange();
+    startDispatchPoll();
   }
-  if (d.action === 'close') app.classList.add('hidden');
+  if (d.action === 'close') {
+    app.classList.add('hidden');
+    stopDispatchPoll();
+  }
 });
 
 btnClose.onclick = () => nuiPost('close', {});
@@ -141,6 +146,111 @@ document.getElementById('goWant').onclick = () => {
     reason: document.getElementById('wantReason').value.trim(),
   });
 };
+
+function stopDispatchPoll() {
+  if (dispatchPoll) {
+    clearInterval(dispatchPoll);
+    dispatchPoll = null;
+  }
+}
+
+function startDispatchPoll() {
+  stopDispatchPoll();
+  refreshDispatch();
+  dispatchPoll = setInterval(refreshDispatch, 2000);
+}
+
+function countObj(obj) {
+  if (!obj || typeof obj !== 'object') return 0;
+  return Object.keys(obj).length;
+}
+
+function callActions(callId) {
+  return `
+    <div class="row">
+      <button class="btn js-dispatch" data-action="accept" data-callid="${escapeHtml(callId)}">Priimti</button>
+      <button class="btn js-dispatch" data-action="enroute" data-callid="${escapeHtml(callId)}">Vykstu</button>
+      <button class="btn js-dispatch" data-action="done" data-callid="${escapeHtml(callId)}">Baigta</button>
+      <button class="btn js-dispatch" data-action="reject" data-callid="${escapeHtml(callId)}">Atmesti</button>
+    </div>
+  `;
+}
+
+function renderDispatch(res) {
+  const callsEl = document.getElementById('dispatchCalls');
+  const crewsEl = document.getElementById('dispatchCrews');
+  const unitsEl = document.getElementById('dispatchUnits');
+  callsEl.innerHTML = '';
+  crewsEl.innerHTML = '';
+  unitsEl.innerHTML = '';
+
+  const calls = (res && res.calls) || [];
+  const crews = (res && res.crews) || [];
+  const units = (res && res.units) || [];
+
+  if (!calls.length) {
+    callsEl.innerHTML = '<div class="muted">Aktyvių iškvietimų nėra.</div>';
+  } else {
+    calls.forEach((c) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <h4>[${escapeHtml(c.id)}] ${escapeHtml(c.callTypeLabel || c.callType || 'Kitas')}</h4>
+        <div>Statusas: <strong>${escapeHtml(c.statusLabel || c.status || 'N/A')}</strong></div>
+        <div>Lokacija: ${Number(c.x || 0).toFixed(1)}, ${Number(c.y || 0).toFixed(1)}</div>
+        <div>Laikas: ${escapeHtml(c.createdAt || '')}</div>
+        <div>Vyksta: ${countObj(c.enrouteBy)} | Priėmė: ${countObj(c.acceptedBy)}</div>
+        ${callActions(c.id)}
+      `;
+      callsEl.appendChild(card);
+    });
+  }
+
+  if (!crews.length) {
+    crewsEl.innerHTML = '<div class="muted">Aktyvių ekipažų nėra.</div>';
+  } else {
+    crews.forEach((c) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const members = (c.members || []).map((m) => `${escapeHtml(m.name)} ${m.callsign ? `[${escapeHtml(m.callsign)}]` : ''}`).join(', ');
+      card.innerHTML = `
+        <h4>Ekipažas #${escapeHtml(String(c.crewNumber || 'N/A'))} ${c.callsign ? '[' + escapeHtml(c.callsign) + ']' : ''}</h4>
+        <div>Statusas: ${escapeHtml(c.status || 'active')} | Priskirtas: ${escapeHtml(c.assignedCallId || '-')}</div>
+        <div>Nariai: ${members || '-'}</div>
+      `;
+      crewsEl.appendChild(card);
+    });
+  }
+
+  if (!units.length) {
+    unitsEl.innerHTML = '<div class="muted">Pamainoje vienetų nėra.</div>';
+  } else {
+    units.forEach((u) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <h4>${u.callsign ? '[' + escapeHtml(u.callsign) + ']' : ''} ${escapeHtml(u.name || 'Pareigūnas')}</h4>
+        <div>Koord: ${Number(u.x || 0).toFixed(1)}, ${Number(u.y || 0).toFixed(1)}</div>
+        <div>Ekipažas: ${escapeHtml(u.crewId || '-')}</div>
+      `;
+      unitsEl.appendChild(card);
+    });
+  }
+
+  document.querySelectorAll('.js-dispatch').forEach((btn) => {
+    btn.onclick = () => nuiPost('dispatchAction', { callId: btn.dataset.callid, action: btn.dataset.action }).then(() => refreshDispatch());
+  });
+}
+
+function refreshDispatch() {
+  return nuiPost('dispatchSnapshot', {}).then((res) => renderDispatch(res || { calls: [], crews: [], units: [] }));
+}
+
+document.getElementById('refreshDispatch').onclick = () => refreshDispatch();
+document.getElementById('btnCreateCrew').onclick = () => nuiPost('crewAction', { action: 'create', callsign: document.getElementById('crewCallsign').value.trim() }).then(refreshDispatch);
+document.getElementById('btnLeaveCrew').onclick = () => nuiPost('crewAction', { action: 'leave' }).then(refreshDispatch);
+document.getElementById('btnSetCallsign').onclick = () => nuiPost('crewAction', { action: 'setCallsign', callsign: document.getElementById('crewCallsign').value.trim() }).then(refreshDispatch);
+document.getElementById('btnPanic').onclick = () => nuiPost('crewAction', { action: 'panic' }).then(refreshDispatch);
 
 function escapeHtml(s) {
   const d = document.createElement('div');
