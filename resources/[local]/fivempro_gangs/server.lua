@@ -45,6 +45,14 @@ local function getTurfs()
     for _, r in ipairs(rows) do
         local cfg = Config.Turfs and Config.Turfs[r.turf_id]
         r.turf_label = cfg and cfg.label or r.turf_id
+        if cfg and cfg.center then
+            r.center_x = tonumber(cfg.center.x) or 0.0
+            r.center_y = tonumber(cfg.center.y) or 0.0
+            r.center_z = tonumber(cfg.center.z) or 0.0
+            r.radius = tonumber(cfg.radius) or 180.0
+        else
+            r.center_x, r.center_y, r.center_z, r.radius = 0.0, 0.0, 0.0, 150.0
+        end
     end
     return rows
 end

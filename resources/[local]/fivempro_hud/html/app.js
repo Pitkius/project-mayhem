@@ -1,4 +1,6 @@
-const hud = document.getElementById("hud");
+const hudRoot = document.getElementById("hudRoot");
+const hudBars = document.getElementById("hudBars");
+const hudRings = document.getElementById("hudRings");
 const rows = {
   health: document.getElementById("row-health"),
   armor: document.getElementById("row-armor"),
@@ -6,12 +8,30 @@ const rows = {
   hunger: document.getElementById("row-hunger"),
   thirst: document.getElementById("row-thirst"),
 };
+const ringWraps = {
+  health: document.getElementById("ring-wrap-health"),
+  armor: document.getElementById("ring-wrap-armor"),
+  stamina: document.getElementById("ring-wrap-stamina"),
+  hunger: document.getElementById("ring-wrap-hunger"),
+  thirst: document.getElementById("ring-wrap-thirst"),
+};
+const ringTexts = {
+  health: document.getElementById("ring-pct-health"),
+  armor: document.getElementById("ring-pct-armor"),
+  stamina: document.getElementById("ring-pct-stamina"),
+  hunger: document.getElementById("ring-pct-hunger"),
+  thirst: document.getElementById("ring-pct-thirst"),
+};
 const carHud = document.getElementById("carhud");
 const speedText = document.getElementById("speed");
 const fuelText = document.getElementById("fuel");
 const seatbeltText = document.getElementById("seatbelt");
 const body = document.body;
 const hudMenu = document.getElementById("hudMenu");
+
+const MAIN_STATS = ["health", "armor", "stamina", "hunger", "thirst"];
+const RING_R = 15;
+const RING_LEN = 2 * Math.PI * RING_R;
 
 const menu = {
   preset: document.getElementById("menuPreset"),
@@ -39,8 +59,22 @@ const bars = {
   thirst: document.getElementById("thirst"),
 };
 
+const ringProgress = {};
+MAIN_STATS.forEach((k) => {
+  ringProgress[k] = document.getElementById(`ring-progress-${k}`);
+});
+
+(function initRings() {
+  MAIN_STATS.forEach((k) => {
+    const el = ringProgress[k];
+    if (!el) return;
+    el.style.strokeDasharray = String(RING_LEN);
+    el.style.strokeDashoffset = String(RING_LEN);
+  });
+})();
+
 let currentSettings = {
-  style: "square",
+  style: "dots",
   color: "violet",
   alpha: 0.55,
   show: {
@@ -71,14 +105,46 @@ function nuiPost(endpoint, data) {
   }).then((r) => r.json());
 }
 
+function mainStatsVisible() {
+  const s = currentSettings.show || {};
+  return MAIN_STATS.some((k) => s[k] === true);
+}
+
 function setBar(name, value) {
   const clamped = Math.max(0, Math.min(100, Number(value) || 0));
-  bars[name].style.width = `${clamped}%`;
+  if (bars[name]) bars[name].style.width = `${clamped}%`;
+  const ring = ringProgress[name];
+  if (ring) {
+    ring.style.strokeDashoffset = String(RING_LEN * (1 - clamped / 100));
+  }
+  const pctEl = ringTexts[name];
+  if (pctEl) {
+    pctEl.textContent = String(Math.round(clamped));
+  }
 }
 
 function applyVisualStyle(style) {
+  const normalized = style || "dots";
   body.classList.remove("shape-line", "shape-square", "shape-dots");
-  body.classList.add(`shape-${style || "square"}`);
+  body.classList.add(`shape-${normalized}`);
+
+  const isRings = normalized === "dots";
+  hudBars.classList.toggle("hidden", isRings);
+  hudRings.classList.toggle("hidden", !isRings);
+}
+
+function syncRows() {
+  const s = currentSettings.show || {};
+  MAIN_STATS.forEach((k) => {
+    const on = s[k] === true;
+    if (rows[k]) rows[k].classList.toggle("hidden", !on);
+    if (ringWraps[k]) ringWraps[k].classList.toggle("hidden", !on);
+  });
+}
+
+function updateHudVisibility(gameShowHud) {
+  const show = !!gameShowHud && mainStatsVisible();
+  hudRoot.style.display = show ? "flex" : "none";
 }
 
 function applyThemeData(data) {
@@ -95,14 +161,6 @@ function applyThemeData(data) {
   }
   document.documentElement.style.setProperty("--panel-alpha", String(currentSettings.alpha || 0.55));
   applyVisualStyle(currentSettings.style);
-}
-
-function syncRows() {
-  rows.health.classList.toggle("hidden", !currentSettings.show.health);
-  rows.armor.classList.toggle("hidden", !currentSettings.show.armor);
-  rows.stamina.classList.toggle("hidden", !currentSettings.show.stamina);
-  rows.hunger.classList.toggle("hidden", !currentSettings.show.hunger);
-  rows.thirst.classList.toggle("hidden", !currentSettings.show.thirst);
 }
 
 function getMenuState() {
@@ -128,7 +186,7 @@ function fillMenuFromPreset(idx) {
   const p = menuPresets[idx] || currentSettings;
   if (!p) return;
   menu.preset.value = String(idx);
-  menu.style.value = p.style || "square";
+  menu.style.value = p.style || "dots";
   menu.color.value = p.color || "violet";
   menu.alpha.value = String(p.alpha || 0.55);
   const show = p.show || {};
@@ -148,6 +206,10 @@ window.addEventListener("message", (event) => {
 
   if (data.action === "theme") {
     applyThemeData(data);
+    if (typeof data.preset === "number") {
+      body.classList.remove("preset-1", "preset-2", "preset-3");
+      body.classList.add(`preset-${data.preset}`);
+    }
     syncRows();
     return;
   }
@@ -168,10 +230,16 @@ window.addEventListener("message", (event) => {
   if (data.action !== "update") return;
 
   if (data.settings) {
-    currentSettings = { ...currentSettings, ...data.settings, show: { ...currentSettings.show, ...(data.settings.show || {}) } };
+    currentSettings = {
+      ...currentSettings,
+      ...data.settings,
+      show: { ...currentSettings.show, ...(data.settings.show || {}) },
+    };
     syncRows();
+    applyVisualStyle(currentSettings.style);
   }
-  hud.style.display = data.show ? "flex" : "none";
+
+  updateHudVisibility(data.show);
 
   setBar("health", data.health);
   setBar("armor", data.armor);
@@ -179,7 +247,10 @@ window.addEventListener("message", (event) => {
   setBar("hunger", data.hunger);
   setBar("thirst", data.thirst);
 
-  const showCarHud = !!data.inVehicle && !!data.show && (currentSettings.show.speed || currentSettings.show.fuel || currentSettings.show.seatbelt);
+  const showCarHud =
+    !!data.inVehicle &&
+    !!data.show &&
+    (currentSettings.show.speed || currentSettings.show.fuel || currentSettings.show.seatbelt);
   carHud.classList.toggle("hidden", !showCarHud);
   speedText.parentElement.classList.toggle("hidden", !currentSettings.show.speed);
   fuelText.parentElement.classList.toggle("hidden", !currentSettings.show.fuel);
@@ -199,6 +270,7 @@ menu.btnApplyPreset.addEventListener("click", () => {
     if (p) {
       currentSettings = { ...currentSettings, ...p, show: { ...currentSettings.show, ...(p.show || {}) } };
       syncRows();
+      applyVisualStyle(currentSettings.style);
     }
   });
 });
@@ -208,6 +280,7 @@ menu.btnSavePreset.addEventListener("click", () => {
   menuPresets[payload.preset] = payload;
   currentSettings = { ...currentSettings, ...payload, show: { ...currentSettings.show, ...payload.show } };
   syncRows();
+  applyVisualStyle(currentSettings.style);
   nuiPost("hud:savePreset", payload);
 });
 

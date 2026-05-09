@@ -7,28 +7,89 @@
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div id="hud" class="hud">
-        <div id="row-health" class="bar">
-            <div class="label">HP</div>
-            <div class="track"><div id="health" class="fill health"></div></div>
+    <div id="hudRoot" class="hud-root">
+        <div id="hudBars" class="hud-bars">
+            <div id="row-health" class="bar">
+                <div class="label">HP</div>
+                <div class="track"><div id="health" class="fill health"></div></div>
+            </div>
+            <div id="row-armor" class="bar hidden">
+                <div class="label">AR</div>
+                <div class="track"><div id="armor" class="fill armor"></div></div>
+            </div>
+            <div id="row-stamina" class="bar hidden">
+                <div class="label">STA</div>
+                <div class="track"><div id="stamina" class="fill stamina"></div></div>
+            </div>
+            <div id="row-hunger" class="bar">
+                <div class="label">FOOD</div>
+                <div class="track"><div id="hunger" class="fill hunger"></div></div>
+            </div>
+            <div id="row-thirst" class="bar">
+                <div class="label">WATER</div>
+                <div class="track"><div id="thirst" class="fill thirst"></div></div>
+            </div>
         </div>
-        <div id="row-armor" class="bar hidden">
-            <div class="label">AR</div>
-            <div class="track"><div id="armor" class="fill armor"></div></div>
-        </div>
-        <div id="row-stamina" class="bar hidden">
-            <div class="label">STA</div>
-            <div class="track"><div id="stamina" class="fill stamina"></div></div>
-        </div>
-        <div id="row-hunger" class="bar">
-            <div class="label">FOOD</div>
-            <div class="track"><div id="hunger" class="fill hunger"></div></div>
-        </div>
-        <div id="row-thirst" class="bar">
-            <div class="label">WATER</div>
-            <div class="track"><div id="thirst" class="fill thirst"></div></div>
+
+        <div id="hudRings" class="hud-rings hidden" aria-hidden="true">
+            <div id="ring-wrap-health" class="ring-item">
+                <div class="ring-graphic">
+                    <svg viewBox="0 0 40 40" class="ring-svg" aria-hidden="true">
+                        <circle class="ring-track" cx="20" cy="20" r="15" fill="none" />
+                        <circle class="ring-progress" id="ring-progress-health" cx="20" cy="20" r="15" fill="none"
+                            stroke-linecap="round" transform="rotate(-90 20 20)" />
+                    </svg>
+                    <span class="ring-letter">H</span>
+                </div>
+                <span id="ring-pct-health" class="ring-pct">100</span>
+            </div>
+            <div id="ring-wrap-armor" class="ring-item hidden">
+                <div class="ring-graphic">
+                    <svg viewBox="0 0 40 40" class="ring-svg" aria-hidden="true">
+                        <circle class="ring-track" cx="20" cy="20" r="15" fill="none" />
+                        <circle class="ring-progress" id="ring-progress-armor" cx="20" cy="20" r="15" fill="none"
+                            stroke-linecap="round" transform="rotate(-90 20 20)" />
+                    </svg>
+                    <span class="ring-letter">A</span>
+                </div>
+                <span id="ring-pct-armor" class="ring-pct">0</span>
+            </div>
+            <div id="ring-wrap-stamina" class="ring-item hidden">
+                <div class="ring-graphic">
+                    <svg viewBox="0 0 40 40" class="ring-svg" aria-hidden="true">
+                        <circle class="ring-track" cx="20" cy="20" r="15" fill="none" />
+                        <circle class="ring-progress" id="ring-progress-stamina" cx="20" cy="20" r="15" fill="none"
+                            stroke-linecap="round" transform="rotate(-90 20 20)" />
+                    </svg>
+                    <span class="ring-letter">S</span>
+                </div>
+                <span id="ring-pct-stamina" class="ring-pct">100</span>
+            </div>
+            <div id="ring-wrap-hunger" class="ring-item">
+                <div class="ring-graphic">
+                    <svg viewBox="0 0 40 40" class="ring-svg" aria-hidden="true">
+                        <circle class="ring-track" cx="20" cy="20" r="15" fill="none" />
+                        <circle class="ring-progress" id="ring-progress-hunger" cx="20" cy="20" r="15" fill="none"
+                            stroke-linecap="round" transform="rotate(-90 20 20)" />
+                    </svg>
+                    <span class="ring-letter">F</span>
+                </div>
+                <span id="ring-pct-hunger" class="ring-pct">100</span>
+            </div>
+            <div id="ring-wrap-thirst" class="ring-item">
+                <div class="ring-graphic">
+                    <svg viewBox="0 0 40 40" class="ring-svg" aria-hidden="true">
+                        <circle class="ring-track" cx="20" cy="20" r="15" fill="none" />
+                        <circle class="ring-progress" id="ring-progress-thirst" cx="20" cy="20" r="15" fill="none"
+                            stroke-linecap="round" transform="rotate(-90 20 20)" />
+                    </svg>
+                    <span class="ring-letter">W</span>
+                </div>
+                <span id="ring-pct-thirst" class="ring-pct">100</span>
+            </div>
         </div>
     </div>
+
     <div id="carhud" class="carhud hidden">
         <div class="carline"><span>KM/H</span><strong id="speed">0</strong></div>
         <div class="carline"><span>FUEL</span><strong id="fuel">0%</strong></div>
@@ -46,7 +107,7 @@
                         <option value="3">Preset 3</option>
                     </select>
                 </label>
-                <button id="btnApplyPreset" class="btn">Užkrauti preset</button>
+                <button type="button" id="btnApplyPreset" class="btn">Užkrauti preset</button>
             </div>
 
             <div class="row">
@@ -82,15 +143,14 @@
                 <label><input type="checkbox" id="optSeatbelt" /> Diržas</label>
             </div>
 
-            <div class="row">
-                <button id="btnSavePreset" class="btn btn-primary">Išsaugoti į preset</button>
-                <button id="btnCloseMenu" class="btn btn-danger">Uždaryti</button>
+            <div class="row actions">
+                <button type="button" id="btnSavePreset" class="btn btn-primary">Išsaugoti į preset</button>
+                <button type="button" id="btnCloseMenu" class="btn btn-ghost">Uždaryti</button>
             </div>
-            <p class="hint">Komandos: /hud atidaro meniu, /hud 1-3 perjungia presetą.</p>
+            <p class="hint">Komandos: /hud atidaro meniu, /hud 1-3 perjungia presetą. Jei visi rodikliai išjungti, statuso HUD nerodomas.</p>
         </div>
     </div>
 
     <script src="app.js"></script>
 </body>
 </html>
-

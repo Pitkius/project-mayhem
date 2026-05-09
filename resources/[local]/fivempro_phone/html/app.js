@@ -183,6 +183,14 @@ window.addEventListener("message", async (e) => {
 });
 
 document.getElementById("btnClose").addEventListener("click", () => nui("close"));
+
+window.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const phone = document.getElementById("phone");
+  if (!phone || phone.classList.contains("hidden")) return;
+  e.preventDefault();
+  nui("close");
+});
 document.getElementById("openStore").addEventListener("click", openAppStore);
 document.querySelectorAll("[data-back-home]").forEach((b) => b.addEventListener("click", openHome));
 document.getElementById("btnCreateAccount").addEventListener("click", async () => {

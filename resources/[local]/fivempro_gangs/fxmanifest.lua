@@ -12,6 +12,12 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/asset/gtav_satellite.jpg',
+    'html/vendor/leaflet.css',
+    'html/vendor/leaflet.js',
+    'html/vendor/images/marker-icon.png',
+    'html/vendor/images/marker-icon-2x.png',
+    'html/vendor/images/marker-shadow.png',
 }
 
 shared_scripts {

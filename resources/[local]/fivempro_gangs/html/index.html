@@ -1,44 +1,71 @@
 <!doctype html>
-<html lang="en">
+<html lang="lt">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gang Tablet</title>
+  <title>Gang Tablet — Turfs</title>
+  <link rel="stylesheet" href="vendor/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="tablet" class="tablet hidden">
-    <header>
-      <h2>Gang Tablet</h2>
-      <div class="row">
-        <button id="btnRefresh">Refresh</button>
-        <button id="btnClose" class="danger">Close</button>
-      </div>
-    </header>
-    <main>
-      <section id="registerPanel" class="card hidden">
-        <h3>Gang Registration</h3>
-        <div class="grid">
-          <label>Name <input id="gangName" type="text" maxlength="42" /></label>
-          <label>Type <select id="gangType"></select></label>
-          <label>Primary Color <select id="primaryColor"></select></label>
-          <label>Secondary Color <select id="secondaryColor"></select></label>
+    <div class="tablet-bezel">
+      <header class="tablet-head">
+        <div class="head-brand">
+          <span class="brand-dot"></span>
+          <h2>Gaujų territorijos</h2>
         </div>
-        <div id="colorWarn" class="warn hidden">Selected primary color is already used.</div>
-        <button id="btnCreate" class="primary">Create Gang</button>
-      </section>
+        <div class="head-actions row">
+          <button type="button" id="btnRefresh" class="btn btn-ghost">Atnaujinti</button>
+          <button type="button" id="btnClose" class="btn btn-close">✕</button>
+        </div>
+      </header>
 
-      <section id="gangPanel" class="card hidden">
-        <h3 id="gangTitle"></h3>
-        <div id="gangMeta" class="muted"></div>
-      </section>
+      <div class="tablet-body">
+        <aside class="side-rail">
+          <section id="registerPanel" class="rail-card hidden">
+            <h3>Nauja gauja</h3>
+            <div class="grid tight">
+              <label>Pavadinimas <input id="gangName" type="text" maxlength="42" placeholder="Pvz. Grove" /></label>
+              <label>Tipas <select id="gangType"></select></label>
+              <label>Spalva <select id="primaryColor"></select></label>
+              <label>Papild. <select id="secondaryColor"></select></label>
+            </div>
+            <div id="colorWarn" class="warn hidden"></div>
+            <button type="button" id="btnCreate" class="btn btn-primary wide">Sukurti gaują</button>
+          </section>
 
-      <section class="card">
-        <h3>Turf Map</h3>
-        <div id="turfList" class="turf-list"></div>
-      </section>
-    </main>
+          <section id="gangPanel" class="rail-card hidden">
+            <h3 id="gangTitle">—</h3>
+            <div id="gangMeta" class="muted small"></div>
+          </section>
+
+          <section class="rail-card hints">
+            <p class="small muted"><strong>Užtemdyk</strong> teritoriją — spustelėjimas ant žiedo nustato GPS tašką centre.</p>
+          </section>
+        </aside>
+
+        <div class="map-column">
+          <div id="mapStage" class="map-stage">
+            <div class="map-zoom-bar">
+              <button type="button" id="zoomIn" class="zoom-btn" title="Priartinti">+</button>
+              <button type="button" id="zoomOut" class="zoom-btn" title="Nutolinti">−</button>
+            </div>
+
+            <div id="mapViewport" class="map-viewport">
+              <div id="leafletMap" class="leaflet-map"></div>
+            </div>
+
+            <div id="mapTooltip" class="map-tooltip hidden"></div>
+          </div>
+
+          <button type="button" id="tabletHomeBtn" class="tablet-home-dot" aria-label="Centras" title="Atstatyti vaizdą"></button>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <script src="vendor/leaflet.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

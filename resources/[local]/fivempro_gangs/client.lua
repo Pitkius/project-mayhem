@@ -101,6 +101,7 @@ RegisterNetEvent('fivempro_gangs:client:openTablet', function()
                 palette = res.palette or {},
                 colorUsage = res.colorUsage or {},
                 turfs = res.turfs or {},
+                tabletMap = Config.TabletMap or {},
             }
         })
     end)

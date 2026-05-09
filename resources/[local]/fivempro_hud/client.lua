@@ -22,7 +22,7 @@ local function deepCopy(tbl)
 end
 
 local DEFAULT_PRESET = {
-    style = 'square',
+    style = 'dots',
     color = 'violet',
     alpha = 0.55,
     show = {
@@ -279,6 +279,24 @@ CreateThread(function()
         HideHudComponentThisFrame(19)
         HideHudComponentThisFrame(20)
         HideHudComponentThisFrame(22)
+        Wait(0)
+    end
+end)
+
+-- Sveikatos / šarvų juostos po minimap scaleform — tipas 3 = paslėpti juostas, pats radaras lieka.
+CreateThread(function()
+    local minimap = RequestScaleformMovie("minimap")
+    while not HasScaleformMovieLoaded(minimap) do
+        Wait(0)
+    end
+    SetRadarBigmapEnabled(true, false)
+    Wait(0)
+    SetRadarBigmapEnabled(false, false)
+
+    while true do
+        BeginScaleformMovieMethod(minimap, "SETUP_HEALTH_ARMOUR")
+        ScaleformMovieMethodAddParamInt(3)
+        EndScaleformMovieMethod()
         Wait(0)
     end
 end)
