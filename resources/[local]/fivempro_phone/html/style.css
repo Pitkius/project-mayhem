@@ -1,131 +1,62 @@
-* {
-  box-sizing: border-box;
-  font-family: Arial, sans-serif;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  width: 100vw;
-  height: 100vh;
-  background: transparent;
-}
+* { box-sizing: border-box; font-family: "Segoe UI", Arial, sans-serif; }
+body { margin: 0; width: 100vw; height: 100vh; background: transparent; }
 
 #phone {
   position: absolute;
-  right: 3vw;
-  bottom: 4vh;
+  right: 2.5vw;
+  bottom: 3vh;
   width: 390px;
-  height: 740px;
-  background: #0f1115;
-  color: #f0f0f0;
-  border: 2px solid #1e2430;
-  border-radius: 18px;
+  height: 760px;
+  border-radius: 42px;
+  border: 4px solid rgba(167, 139, 250, 0.45);
+  background: linear-gradient(180deg, #12101f 0%, #1e1b34 42%, #2d2760 72%, rgba(167, 139, 250, 0.35) 100%);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), 0 0 40px rgba(167, 139, 250, 0.12);
   overflow: hidden;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.55);
+  color: #e5e7eb;
 }
 
-.hidden {
-  display: none !important;
-}
+.hidden { display: none !important; }
+.small { font-size: 12px; opacity: 0.84; }
 
-.topbar {
-  height: 46px;
+.statusbar, .titlebar {
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 10px;
-  background: #171b22;
-  border-bottom: 1px solid #252c38;
+  padding: 0 14px;
+  background: rgba(15, 23, 42, 0.55);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.2);
 }
 
-#btnClose {
-  background: #2f3745;
-  border: 0;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 8px;
-  cursor: pointer;
+.screen { padding: 12px; height: calc(100% - 42px); overflow: auto; }
+input, button { border-radius: 12px; border: 0; padding: 10px; margin-bottom: 8px; }
+input { width: 100%; background: rgba(255, 255, 255, 0.9); color: #111; }
+button { background: rgba(167, 139, 250, 0.22); color: #e5e7eb; border: 1px solid rgba(196, 181, 253, 0.35); cursor: pointer; }
+
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
 }
 
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 8px;
-  background: #12161d;
-  border-bottom: 1px solid #252c38;
+.app-icon {
+  background: rgba(15, 23, 42, 0.45);
+  border-radius: 16px;
+  padding: 10px 6px;
+  text-align: center;
+  border: 1px solid rgba(167, 139, 250, 0.28);
 }
 
-.tab {
-  background: #222937;
-  color: #fff;
-  border: 0;
-  padding: 6px 9px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 12px;
-}
+.app-emoji { font-size: 24px; display: block; }
+.app-label { font-size: 11px; margin-top: 5px; }
 
-.tab.active {
-  background: #3b6ef5;
-}
-
-#content {
-  height: calc(100% - 98px);
-  overflow: auto;
+.list { display: flex; flex-direction: column; gap: 8px; }
+.card {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 14px;
   padding: 10px;
 }
 
-.panel h3 {
-  margin: 0 0 8px 0;
-}
-
-.row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-input {
-  flex: 1;
-  background: #1a1f28;
-  border: 1px solid #2d3747;
-  color: #fff;
-  border-radius: 8px;
-  padding: 8px 10px;
-}
-
-button {
-  background: #2f5de0;
-  color: #fff;
-  border: 0;
-  border-radius: 8px;
-  padding: 8px 10px;
-  cursor: pointer;
-}
-
-button.wide {
-  flex: 1 1 100%;
-  width: 100%;
-}
-
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 420px;
-  overflow: auto;
-}
-
-.card {
-  background: #171d27;
-  border: 1px solid #2c3647;
-  border-radius: 10px;
-  padding: 8px;
-}
-
-.small {
-  font-size: 12px;
-  color: #b8c1cf;
-}
+.row { display: flex; gap: 8px; margin-bottom: 8px; }

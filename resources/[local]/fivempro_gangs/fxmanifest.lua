@@ -6,6 +6,14 @@ name 'fivempro_gangs'
 description 'Gang tablet, turf and drug selling system'
 version '1.0.0'
 
+ui_page 'html/index.html'
+
+files {
+    'html/index.html',
+    'html/style.css',
+    'html/app.js',
+}
+
 shared_scripts {
     'config.lua',
 }

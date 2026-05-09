@@ -1,9 +1,140 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local coordsHudEnabled = false
+local slungProps = {}
+
+local LongWeaponModels = {
+    weapon_assaultrifle = 'w_ar_assaultrifle',
+    weapon_assaultrifle_mk2 = 'w_ar_assaultrifle',
+    weapon_carbinerifle = 'w_ar_carbinerifle',
+    weapon_carbinerifle_mk2 = 'w_ar_carbinerifle',
+    weapon_advancedrifle = 'w_ar_advancedrifle',
+    weapon_specialcarbine = 'w_ar_specialcarbine',
+    weapon_specialcarbine_mk2 = 'w_ar_specialcarbine',
+    weapon_bullpuprifle = 'w_ar_bullpuprifle',
+    weapon_bullpuprifle_mk2 = 'w_ar_bullpuprifle',
+    weapon_compactrifle = 'w_ar_assaultrifle_smg',
+    weapon_militaryrifle = 'w_ar_bullpuprifle',
+    weapon_heavyrifle = 'w_ar_specialcarbine',
+    weapon_mg = 'w_mg_mg',
+    weapon_combatmg = 'w_mg_combatmg',
+    weapon_combatmg_mk2 = 'w_mg_combatmg',
+    weapon_gusenberg = 'w_sb_gusenberg',
+    weapon_pumpshotgun = 'w_sg_pumpshotgun',
+    weapon_pumpshotgun_mk2 = 'w_sg_pumpshotgun',
+    weapon_sawnoffshotgun = 'w_sg_sawnoff',
+    weapon_assaultshotgun = 'w_sg_assaultshotgun',
+    weapon_bullpupshotgun = 'w_sg_bullpupshotgun',
+    weapon_heavyshotgun = 'w_sg_heavyshotgun',
+    weapon_combatshotgun = 'w_sg_pumpshotgun',
+    weapon_sniperrifle = 'w_sr_sniperrifle',
+    weapon_heavysniper = 'w_sr_heavysniper',
+    weapon_heavysniper_mk2 = 'w_sr_heavysniper',
+    weapon_marksmanrifle = 'w_sr_marksmanrifle',
+    weapon_marksmanrifle_mk2 = 'w_sr_marksmanrifle',
+}
+
+local function hasBackpackOnPed(ped)
+    -- Component 5 is bags/parachutes for freemode peds.
+    local drawable = GetPedDrawableVariation(ped, 5)
+    return drawable and drawable > 0
+end
+
+local function clearSlungProps()
+    for _, ent in pairs(slungProps) do
+        if ent and DoesEntityExist(ent) then
+            DeleteEntity(ent)
+        end
+    end
+    slungProps = {}
+end
+
+local function attachWeaponModelToBack(slotIndex, modelName)
+    local ped = PlayerPedId()
+    local model = joaat(modelName)
+    RequestModel(model)
+    local timeout = GetGameTimer() + 5000
+    while not HasModelLoaded(model) and GetGameTimer() < timeout do
+        Wait(0)
+    end
+    if not HasModelLoaded(model) then return end
+    local obj = CreateObject(model, 0.0, 0.0, 0.0, true, true, false)
+    SetEntityCollision(obj, false, false)
+    local bone = GetPedBoneIndex(ped, 24816)
+    if slotIndex == 1 then
+        AttachEntityToEntity(obj, ped, bone, -0.17, -0.15, 0.02, 0.0, 150.0, 0.0, true, true, false, true, 2, true)
+    else
+        AttachEntityToEntity(obj, ped, bone, 0.17, -0.15, 0.02, 0.0, 150.0, 0.0, true, true, false, true, 2, true)
+    end
+    slungProps[slotIndex] = obj
+end
+
+local function refreshSlungWeapons()
+    clearSlungProps()
+    local ped = PlayerPedId()
+    local pData = QBCore.Functions.GetPlayerData()
+    local items = pData and pData.items or {}
+    if not items then return end
+
+    local currentWeaponHash = GetSelectedPedWeapon(ped)
+    local currentWeaponData = QBCore.Shared.Weapons[currentWeaponHash]
+    local equippedName = currentWeaponData and currentWeaponData.name or nil
+
+    local carryModels = {}
+    for _, item in pairs(items) do
+        if item and item.type == 'weapon' and item.name ~= equippedName then
+            local mdl = LongWeaponModels[item.name]
+            if mdl then
+                carryModels[#carryModels + 1] = mdl
+            end
+        end
+        if #carryModels >= 2 then break end
+    end
+
+    for idx, mdl in ipairs(carryModels) do
+        attachWeaponModelToBack(idx, mdl)
+    end
+end
 
 CreateThread(function()
     Wait(1500)
     print("[fivempro_basics] Client script aktyvus.")
+end)
+
+CreateThread(function()
+    while true do
+        local ped = PlayerPedId()
+        if ped and ped ~= 0 then
+            LocalPlayer.state:set('hasBackpack', hasBackpackOnPed(ped), true)
+        end
+        Wait(2000)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        if LocalPlayer.state.isLoggedIn then
+            refreshSlungWeapons()
+            Wait(1200)
+        else
+            clearSlungProps()
+            Wait(2000)
+        end
+    end
+end)
+
+AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
+    Wait(1000)
+    refreshSlungWeapons()
+end)
+
+RegisterNetEvent('QBCore:Player:SetPlayerData', function()
+    Wait(250)
+    refreshSlungWeapons()
+end)
+
+AddEventHandler('onResourceStop', function(resName)
+    if resName ~= GetCurrentResourceName() then return end
+    clearSlungProps()
 end)
 
 -- Disable GTA default weapon wheel (TAB) so inventory/hotbar flow is consistent.

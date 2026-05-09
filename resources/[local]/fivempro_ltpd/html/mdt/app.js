@@ -1,6 +1,7 @@
 const app = document.getElementById('app');
 const btnClose = document.getElementById('btnClose');
 let dispatchPoll = null;
+const MAP_BOUNDS = { minX: -4500, maxX: 4500, minY: -4500, maxY: 9000 };
 
 function resourceName() {
   try {
@@ -176,6 +177,38 @@ function callActions(callId) {
   `;
 }
 
+function worldToMap(x, y) {
+  const px = ((Number(x || 0) - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * 100;
+  const py = (1 - ((Number(y || 0) - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY))) * 100;
+  return {
+    x: Math.max(1, Math.min(99, px)),
+    y: Math.max(1, Math.min(99, py)),
+  };
+}
+
+function renderDispatchMap(calls, units) {
+  const mapEl = document.getElementById('dispatchMap');
+  mapEl.innerHTML = '';
+  units.forEach((u) => {
+    const p = worldToMap(u.x, u.y);
+    const d = document.createElement('div');
+    d.className = 'map-dot unit';
+    d.style.left = `${p.x}%`;
+    d.style.top = `${p.y}%`;
+    d.textContent = `${u.callsign ? `[${u.callsign}] ` : ''}${u.name || 'Unit'}`;
+    mapEl.appendChild(d);
+  });
+  calls.forEach((c) => {
+    const p = worldToMap(c.x, c.y);
+    const d = document.createElement('div');
+    d.className = `map-dot call ${c.panic ? 'panic' : ''}`.trim();
+    d.style.left = `${p.x}%`;
+    d.style.top = `${p.y}%`;
+    d.textContent = `${c.id} ${c.callTypeLabel || c.callType || 'Call'}`;
+    mapEl.appendChild(d);
+  });
+}
+
 function renderDispatch(res) {
   const callsEl = document.getElementById('dispatchCalls');
   const crewsEl = document.getElementById('dispatchCrews');
@@ -200,6 +233,7 @@ function renderDispatch(res) {
         <div>Lokacija: ${Number(c.x || 0).toFixed(1)}, ${Number(c.y || 0).toFixed(1)}</div>
         <div>Laikas: ${escapeHtml(c.createdAt || '')}</div>
         <div>Vyksta: ${countObj(c.enrouteBy)} | Priėmė: ${countObj(c.acceptedBy)}</div>
+        ${c.panic ? `<div class="row"><button class="btn danger js-panic-off" data-callid="${escapeHtml(c.id)}">Išjungti PANIC</button></div>` : ''}
         ${callActions(c.id)}
       `;
       callsEl.appendChild(card);
@@ -215,6 +249,7 @@ function renderDispatch(res) {
       const members = (c.members || []).map((m) => `${escapeHtml(m.name)} ${m.callsign ? `[${escapeHtml(m.callsign)}]` : ''}`).join(', ');
       card.innerHTML = `
         <h4>Ekipažas #${escapeHtml(String(c.crewNumber || 'N/A'))} ${c.callsign ? '[' + escapeHtml(c.callsign) + ']' : ''}</h4>
+        <div>ID: <strong>${escapeHtml(c.crewId || '-')}</strong> | Vadas: ${escapeHtml(String(c.leader || '-'))}</div>
         <div>Statusas: ${escapeHtml(c.status || 'active')} | Priskirtas: ${escapeHtml(c.assignedCallId || '-')}</div>
         <div>Nariai: ${members || '-'}</div>
       `;
@@ -236,9 +271,13 @@ function renderDispatch(res) {
       unitsEl.appendChild(card);
     });
   }
+  renderDispatchMap(calls, units);
 
   document.querySelectorAll('.js-dispatch').forEach((btn) => {
     btn.onclick = () => nuiPost('dispatchAction', { callId: btn.dataset.callid, action: btn.dataset.action }).then(() => refreshDispatch());
+  });
+  document.querySelectorAll('.js-panic-off').forEach((btn) => {
+    btn.onclick = () => nuiPost('crewAction', { action: 'panicOff', callId: btn.dataset.callid }).then(() => refreshDispatch());
   });
 }
 
@@ -247,7 +286,15 @@ function refreshDispatch() {
 }
 
 document.getElementById('refreshDispatch').onclick = () => refreshDispatch();
+document.getElementById('refreshDispatchMap').onclick = () => refreshDispatch();
 document.getElementById('btnCreateCrew').onclick = () => nuiPost('crewAction', { action: 'create', callsign: document.getElementById('crewCallsign').value.trim() }).then(refreshDispatch);
+document.getElementById('btnJoinCrew').onclick = () => nuiPost('crewAction', { action: 'join', crewId: document.getElementById('crewIdInput').value.trim() }).then(refreshDispatch);
+document.getElementById('btnAddCrewMember').onclick = () => nuiPost('crewAction', {
+  action: 'addMember',
+  crewId: document.getElementById('crewIdInput').value.trim(),
+  targetId: Number(document.getElementById('crewMemberId').value),
+}).then(refreshDispatch);
+document.getElementById('btnDeleteCrew').onclick = () => nuiPost('crewAction', { action: 'delete', crewId: document.getElementById('crewIdInput').value.trim() }).then(refreshDispatch);
 document.getElementById('btnLeaveCrew').onclick = () => nuiPost('crewAction', { action: 'leave' }).then(refreshDispatch);
 document.getElementById('btnSetCallsign').onclick = () => nuiPost('crewAction', { action: 'setCallsign', callsign: document.getElementById('crewCallsign').value.trim() }).then(refreshDispatch);
 document.getElementById('btnPanic').onclick = () => nuiPost('crewAction', { action: 'panic' }).then(refreshDispatch);

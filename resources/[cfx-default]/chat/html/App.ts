@@ -47,13 +47,13 @@ enum ChatHideStates {
 const defaultMode: Mode = {
   name: 'all',
   displayName: 'All',
-  color: '#fff'
+  color: '#c4b5fd'
 };
 
 const globalMode: Mode = {
   name: '_global',
   displayName: 'All',
-  color: '#fff',
+  color: '#a78bfa',
   isGlobal: true,
   hidden: true
 };

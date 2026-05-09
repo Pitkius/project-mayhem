@@ -190,8 +190,11 @@ end)
 
 local AmmoUseItems = {
     pistol_ammo = true,
+    pistolammo = true,
     rifle_ammo = true,
+    rifleammo = true,
     smg_ammo = true,
+    smgammo = true,
     shotgun_ammo = true,
     mg_ammo = true,
     snp_ammo = true,

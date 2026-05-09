@@ -16,6 +16,7 @@ shared_scripts {
 client_scripts {
     'client/main.lua',
     'client/boss.lua',
+    'client/emergency_kit.lua',
 }
 
 server_scripts {

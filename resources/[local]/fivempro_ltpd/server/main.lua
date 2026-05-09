@@ -600,3 +600,124 @@ end)
 exports('HasLtpdPermission', function(src, key)
     return hasPerm(src, key)
 end)
+
+--- PD sirenos įranga: entity statebags (networked vehicles)
+local function normalizeEmergencyMode(mode)
+    mode = tostring(mode or 'off'):gsub('^%s+', ''):gsub('%s+$', ''):lower()
+    return mode
+end
+
+local function pedVehicleSeatIsDriver(src)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return nil end
+    local veh = GetVehiclePedIsIn(ped, false)
+    if not veh or veh == 0 then return nil end
+    if GetPedInVehicleSeat(veh, -1) ~= ped then return nil end
+    return ped, veh
+end
+
+local function vehicleNearPlayer(src, veh, maxDist)
+    local pd = GetPlayerPed(src)
+    if not pd or pd == 0 or not veh or veh == 0 then return false end
+    maxDist = tonumber(maxDist) or 28.0
+    local p = GetEntityCoords(pd)
+    local v = GetEntityCoords(veh)
+    return #(p - v) <= maxDist
+end
+
+local function isEmergencyFleetModel(entity)
+    if not entity or entity == 0 then return false end
+    local hash = GetEntityModel(entity)
+    if IsThisModelEmergencyVehicle(hash) then return true end
+    local classId = GetVehicleClass(entity)
+    if classId == 18 then return true end --- Emergency
+    if Config.FleetVehicles then
+        for _, v in ipairs(Config.FleetVehicles) do
+            if v and v.model and joaat(v.model) == hash then
+                return true
+            end
+        end
+    end
+    if Config.FleetHelicopters then
+        for _, v in ipairs(Config.FleetHelicopters) do
+            if v and v.model and joaat(v.model) == hash then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local LtPdEmergencyModes = { off = true, lights = true, sound = true, full = true }
+
+RegisterNetEvent('fivempro_ltpd:server:setPdEmergencyMode', function(mode)
+    local src = source
+    if not hasPerm(src, 'pd_siren_controller') then
+        return TriggerClientEvent('QBCore:Notify', src, 'Neturi teisės sirenos meniu.', 'error')
+    end
+    mode = normalizeEmergencyMode(type(mode) == 'string' and mode or 'off')
+    if not LtPdEmergencyModes[mode] then mode = 'off' end
+    local     _, veh = pedVehicleSeatIsDriver(src)
+    if not veh then
+        return TriggerClientEvent('QBCore:Notify', src, 'Turi būti vairuotoju transporte.', 'error')
+    end
+    if NetworkGetNetworkIdFromEntity(veh) == 0 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Mašina turi būti tinkamai sinchronizuota (išimk iš garažo / naujas spawn).', 'error')
+    end
+    if not vehicleNearPlayer(src, veh, Config.EmergencyVehicle and Config.EmergencyVehicle.validateDistance) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo transporto.', 'error')
+    end
+    if mode ~= 'off' and not isEmergencyFleetModel(veh) then
+        if Entity(veh).state.ltPdKit ~= true then
+            return TriggerClientEvent(
+                'QBCore:Notify',
+                src,
+                'Ant civilinės TP pirmiausiai uždėk laikinas sirenas („/pdiranga“ įmontuoti).',
+                'error'
+            )
+        end
+    end
+    Entity(veh).state:set('ltPdSirenMode', mode, true)
+    TriggerClientEvent('QBCore:Notify', src, ('Šviesos / sirena: %s'):format(mode), 'primary')
+end)
+
+RegisterNetEvent('fivempro_ltpd:server:setPdEmergencyKit', function(equip)
+    local src = source
+    if not hasPerm(src, 'pd_emergency_kit') then
+        return TriggerClientEvent('QBCore:Notify', src, 'Neturi teisės laikinai montuoti įrangą.', 'error')
+    end
+    local _, veh = pedVehicleSeatIsDriver(src)
+    if not veh then
+        return TriggerClientEvent('QBCore:Notify', src, 'Turi būti vairuotoju transporte.', 'error')
+    end
+    if not vehicleNearPlayer(src, veh, Config.EmergencyVehicle and Config.EmergencyVehicle.validateDistance) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo transporto.', 'error')
+    end
+    if NetworkGetNetworkIdFromEntity(veh) == 0 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Mašina turi būti tinkamai sinchronizuota (išimk iš garažo / naujas spawn).', 'error')
+    end
+    if isEmergencyFleetModel(veh) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Ši mašina jau turi tarnybinę įrangą (ne civilinė).', 'error')
+    end
+    equip = equip == true
+    Entity(veh).state:set('ltPdKit', equip, true)
+    if equip then
+        TriggerClientEvent('QBCore:Notify', src, 'Įdėtos laikinos sirenos ir žibintai ant šio TP – nuimi per tą patį meniu.', 'success')
+    else
+        Entity(veh).state:set('ltPdSirenMode', 'off', true)
+        TriggerClientEvent('QBCore:Notify', src, 'Laikina įranga nuimta.', 'primary')
+    end
+end)
+
+RegisterNetEvent('fivempro_ltpd:server:clearPdEmergencyOnExit', function(netId)
+    local src = source
+    netId = tonumber(netId)
+    if not netId then return end
+    if not isLtpdOnDuty(src) then return end
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if not veh or veh == 0 then return end
+    if not vehicleNearPlayer(src, veh, (Config.EmergencyVehicle and Config.EmergencyVehicle.validateDistance or 28.0) + 10.0) then
+        return
+    end
+    Entity(veh).state:set('ltPdSirenMode', 'off', true)
+end)

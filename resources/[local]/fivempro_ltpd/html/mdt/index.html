@@ -64,15 +64,26 @@
       <section id="panel-crews" class="panel hidden">
         <div class="row">
           <input type="text" id="crewCallsign" placeholder="Šaukinys pvz. LIMA67" />
+          <input type="text" id="crewIdInput" placeholder="Ekipažo ID (CRW-...)" />
+          <input type="number" id="crewMemberId" placeholder="Nario server ID" />
           <button type="button" id="btnSetCallsign" class="btn">Nustatyti šaukinį</button>
           <button type="button" id="btnCreateCrew" class="btn">Kurti ekipažą</button>
+          <button type="button" id="btnJoinCrew" class="btn">Prisijungti</button>
+          <button type="button" id="btnAddCrewMember" class="btn">Pridėti narį</button>
+          <button type="button" id="btnDeleteCrew" class="btn danger">Trinti ekipažą</button>
           <button type="button" id="btnLeaveCrew" class="btn">Išeiti</button>
           <button type="button" id="btnPanic" class="btn danger">PANIC</button>
         </div>
         <div id="dispatchCrews" class="results"></div>
       </section>
       <section id="panel-units" class="panel hidden">
-        <div id="dispatchUnits" class="results"></div>
+        <div class="row">
+          <button type="button" id="refreshDispatchMap" class="btn">Atnaujinti map</button>
+        </div>
+        <div class="tactical-wrap">
+          <div id="dispatchMap" class="dispatch-map"></div>
+          <div id="dispatchUnits" class="results side-list"></div>
+        </div>
       </section>
     </main>
     <footer class="hint">Server-side tikrinimas • RB AC • Fivempro LTPD</footer>

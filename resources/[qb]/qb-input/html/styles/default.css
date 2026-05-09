@@ -1,32 +1,32 @@
 @import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&display=swap");
 
 :root {
-    /* Dark Theme Colors (from styleguide.css) */
-    --md-primary: #f44336;
-    --md-on-primary: #ffffff;
-    --md-primary-container: #ffdad6;
-    --md-on-primary-container: #410002;
-    --md-secondary: #d32f2f;
-    --md-on-secondary: #ffffff;
-    --md-secondary-container: #ffdad5;
-    --md-on-secondary-container: #410001;
-    --md-tertiary: #ff8a65;
+    /* FIVEMPRO violet (match fivempro_hud default) */
+    --md-primary: #a78bfa;
+    --md-on-primary: #1c1533;
+    --md-primary-container: #3b2f5f;
+    --md-on-primary-container: #e9ddff;
+    --md-secondary: #c4b5fd;
+    --md-on-secondary: #1e1533;
+    --md-secondary-container: #4a4467;
+    --md-on-secondary-container: #ede9ff;
+    --md-tertiary: #818cf8;
     --md-on-tertiary: #ffffff;
-    --md-tertiary-container: #ffdacc;
-    --md-on-tertiary-container: #410002;
-    --md-surface: #1c1b1f;
-    --md-on-surface: #e6e1e5;
-    --md-surface-container-lowest: #0f0d13;
-    --md-surface-container-low: #1d1b20;
-    --md-surface-container: #211f26;
-    --md-surface-container-high: #2b2930;
-    --md-surface-container-highest: #36343b;
+    --md-tertiary-container: #312e81;
+    --md-on-tertiary-container: #e0e7ff;
+    --md-surface: #141625;
+    --md-on-surface: #e5e7eb;
+    --md-surface-container-lowest: #0c0e18;
+    --md-surface-container-low: #131b2e;
+    --md-surface-container: #1a2235;
+    --md-surface-container-high: #232c40;
+    --md-surface-container-highest: #2c3448;
     --md-error: #b3261e;
     --md-on-error: #ffffff;
     --md-error-container: #93000a;
     --md-on-error-container: #ffdad5;
-    --md-outline: #79747e;
-    --md-outline-variant: #49454f;
+    --md-outline: #6b6580;
+    --md-outline-variant: #3d3a4f;
     --md-inverse-surface: #e6e1e5;
     --md-inverse-on-surface: #1c1b1f;
     --md-scrim: rgba(0, 0, 0, 0.6);

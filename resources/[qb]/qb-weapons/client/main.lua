@@ -8,13 +8,24 @@ local lastSyncedAmmo = nil
 local lastAmmoSyncAt = 0
 
 local AmmoItemByType = {
-    AMMO_PISTOL = 'pistol_ammo',
-    AMMO_SMG = 'smg_ammo',
-    AMMO_RIFLE = 'rifle_ammo',
-    AMMO_SHOTGUN = 'shotgun_ammo',
-    AMMO_MG = 'mg_ammo',
-    AMMO_SNIPER = 'snp_ammo',
+    AMMO_PISTOL = { 'pistol_ammo', 'pistolammo' },
+    AMMO_SMG = { 'smg_ammo', 'smgammo' },
+    AMMO_RIFLE = { 'rifle_ammo', 'rifleammo' },
+    AMMO_SHOTGUN = { 'shotgun_ammo' },
+    AMMO_MG = { 'mg_ammo' },
+    AMMO_SNIPER = { 'snp_ammo' },
 }
+
+local function pickAmmoItemForType(ammoType)
+    local list = AmmoItemByType[tostring(ammoType or ''):upper()]
+    if type(list) ~= 'table' then return nil end
+    for _, itemName in ipairs(list) do
+        if getTotalAmmoItems(itemName) > 0 then
+            return itemName
+        end
+    end
+    return list[1]
+end
 
 --- Kai GetMaxAmmoInClip grąžina 0 – apkabos dydis pagal tipą (viena apkaba į kulkas).
 local DefaultClipByAmmoType = {
@@ -173,7 +184,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         return
     end
 
-    local ammoItemName = AmmoItemByType[normalizedAmmoType] or (itemData and itemData.name)
+    local ammoItemName = pickAmmoItemForType(normalizedAmmoType) or (itemData and itemData.name)
     -- Ammo items are treated as bullet units (1 item = 1 bullet).
     local availableBullets = 0
     if itemData and itemData.quickReload then
@@ -371,7 +382,7 @@ CreateThread(function()
                 local selectedWeaponData = QBCore.Shared.Weapons[weapon]
                 if selectedWeaponData and selectedWeaponData.name ~= 'weapon_unarmed' then
                     local ammoType = tostring(selectedWeaponData.ammotype or ''):upper()
-                    local ammoItemName = AmmoItemByType[ammoType]
+                    local ammoItemName = pickAmmoItemForType(ammoType)
                     if ammoItemName and PlayerData and PlayerData.items then
                         for _, item in pairs(PlayerData.items) do
                             if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then

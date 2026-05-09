@@ -8,19 +8,23 @@
 </head>
 <body>
     <div id="hud" class="hud">
-        <div class="bar">
+        <div id="row-health" class="bar">
             <div class="label">HP</div>
             <div class="track"><div id="health" class="fill health"></div></div>
         </div>
-        <div id="armor-row" class="bar hidden">
+        <div id="row-armor" class="bar hidden">
             <div class="label">AR</div>
             <div class="track"><div id="armor" class="fill armor"></div></div>
         </div>
-        <div class="bar">
+        <div id="row-stamina" class="bar hidden">
+            <div class="label">STA</div>
+            <div class="track"><div id="stamina" class="fill stamina"></div></div>
+        </div>
+        <div id="row-hunger" class="bar">
             <div class="label">FOOD</div>
             <div class="track"><div id="hunger" class="fill hunger"></div></div>
         </div>
-        <div class="bar">
+        <div id="row-thirst" class="bar">
             <div class="label">WATER</div>
             <div class="track"><div id="thirst" class="fill thirst"></div></div>
         </div>
@@ -29,6 +33,61 @@
         <div class="carline"><span>KM/H</span><strong id="speed">0</strong></div>
         <div class="carline"><span>FUEL</span><strong id="fuel">0%</strong></div>
         <div class="carline"><span>BELT</span><strong id="seatbelt">OFF</strong></div>
+    </div>
+
+    <div id="hudMenu" class="hudmenu hidden">
+        <div class="hudmenu-card">
+            <h2>HUD Nustatymai</h2>
+            <div class="row">
+                <label>Preset
+                    <select id="menuPreset">
+                        <option value="1">Preset 1</option>
+                        <option value="2">Preset 2</option>
+                        <option value="3">Preset 3</option>
+                    </select>
+                </label>
+                <button id="btnApplyPreset" class="btn">Užkrauti preset</button>
+            </div>
+
+            <div class="row">
+                <label>Stilius
+                    <select id="menuStyle">
+                        <option value="line">Linijos</option>
+                        <option value="square">Kvadratai</option>
+                        <option value="dots">Rutuliukai</option>
+                    </select>
+                </label>
+                <label>Spalva
+                    <select id="menuColor">
+                        <option value="violet">Violetinė</option>
+                        <option value="cyan">Žydra</option>
+                        <option value="red">Raudona</option>
+                        <option value="green">Žalia</option>
+                        <option value="amber">Gintarinė</option>
+                    </select>
+                </label>
+                <label>Skaidrumas
+                    <input type="range" id="menuAlpha" min="0.2" max="1" step="0.05" value="0.55" />
+                </label>
+            </div>
+
+            <div class="toggles">
+                <label><input type="checkbox" id="optHealth" checked /> Gyvybė</label>
+                <label><input type="checkbox" id="optArmor" /> Šarvai</label>
+                <label><input type="checkbox" id="optStamina" /> Stamina</label>
+                <label><input type="checkbox" id="optHunger" checked /> Maistas</label>
+                <label><input type="checkbox" id="optThirst" checked /> Troškulys</label>
+                <label><input type="checkbox" id="optSpeed" /> Greitis</label>
+                <label><input type="checkbox" id="optFuel" /> Kuras</label>
+                <label><input type="checkbox" id="optSeatbelt" /> Diržas</label>
+            </div>
+
+            <div class="row">
+                <button id="btnSavePreset" class="btn btn-primary">Išsaugoti į preset</button>
+                <button id="btnCloseMenu" class="btn btn-danger">Uždaryti</button>
+            </div>
+            <p class="hint">Komandos: /hud atidaro meniu, /hud 1-3 perjungia presetą.</p>
+        </div>
     </div>
 
     <script src="app.js"></script>

@@ -1,23 +1,32 @@
+/* FIVEMPRO – vienoda violetinė tema (pagal fivempro_hud default „violet“) */
+:root {
+  --fp-accent: #a78bfa;
+  --fp-accent-soft: #c4b5fd;
+  --fp-accent-glow: rgba(167, 139, 250, 0.45);
+  --fp-panel: rgba(15, 23, 42, 0.82);
+  --fp-panel-2: rgba(30, 27, 52, 0.94);
+  --fp-muted: #94a3b8;
+  --fp-text: #e5e7eb;
+}
+
 .color-0{color: #ffffff;}
 .color-1{color: #ff4444;}
 .color-2{color: #99cc00;}
 .color-3{color: #ffbb33;}
-.color-4{color: #0099cc;}
-.color-5{color: #33b5e5;}
-.color-6{color: #aa66cc;}
+.color-4{color: #818cf8;}
+.color-5{color: #a78bfa;}
+.color-6{color: #c4b5fd;}
 .color-8{color: #cc0000;}
-.color-9{color: #cc0068;}
+.color-9{color: #ec4899;}
 
 .gameColor-w{color: #ffffff;}
 .gameColor-r{color: #ff4444;}
 .gameColor-g{color: #99cc00;}
 .gameColor-y{color: #ffbb33;}
-.gameColor-b{color: #33b5e5;}
-
-/* todo: more game colors */
+.gameColor-b{color: #a78bfa;}
 
 * {
-  font-family: 'Lato', sans-serif;
+  font-family: 'Segoe UI', 'Lato', sans-serif;
   margin: 0;
   padding: 0;
 }
@@ -31,10 +40,10 @@ em {
 }
 
 #app {
-  font-family: 'Lato', Helvetica, Arial, sans-serif;
+  font-family: 'Segoe UI', 'Lato', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: white;
+  color: var(--fp-text);
 }
 
 .chat-window {
@@ -44,10 +53,12 @@ em {
   width: 38%;
   height: 22%;
   max-width: 1000px;
-  background-color: rgba(52, 73, 94, 0.7);
+  background-color: transparent;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  border-radius: 10px;
+  box-shadow: 0 0 26px rgba(167, 139, 250, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   -webkit-animation-duration: 2s;
 }
-
 
 .chat-messages {
   position: relative;
@@ -76,19 +87,20 @@ em {
   display: flex;
   align-items: stretch;
   width: 100%;
-  background-color: rgba(44, 62, 80, 1.0);
+  background-color: var(--fp-panel-2);
+  border: 1px solid rgba(167, 139, 250, 0.22);
+  border-radius: 8px;
 }
 
 .chat-hide-state {
   text-transform: uppercase;
   margin-left: 0.05vw;
   font-size: 1.65vh;
+  color: var(--fp-accent-soft);
 }
 
 .prefix {
   font-size: 1.8vh;
-  /*position: absolute;
-  top: 0%;*/
   height: 100%;
   vertical-align: middle;
   line-height: calc(1vh + 1vh + 1.85vh);
@@ -105,7 +117,7 @@ textarea {
   box-sizing: content-box;
   padding: 1vh;
   padding-left: 0.5vh;
-  color: white;
+  color: var(--fp-text);
   border-width: 0;
   height: 3.15%;
   overflow: hidden;
@@ -134,17 +146,20 @@ textarea:focus, input:focus {
   padding-left: 1.4%;
   font-size: 1.65vh;
   box-sizing: border-box;
-  color: white;
-  background-color: rgba(44, 62, 80, 1.0);
+  color: var(--fp-text);
+  background-color: var(--fp-panel-2);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  border-radius: 0 0 8px 8px;
   width: 100%;
 }
 
 .help {
-  color: #b0bbbd;
+  color: var(--fp-muted);
 }
 
 .disabled {
-  color: #b0bbbd;
+  color: var(--fp-muted);
+  opacity: 0.65;
 }
 
 .suggestion {

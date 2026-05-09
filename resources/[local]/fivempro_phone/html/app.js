@@ -1,20 +1,24 @@
 const resourceName = typeof GetParentResourceName === "function" ? GetParentResourceName() : "fivempro_phone";
-
+const screens = ["accountSetup", "homeScreen", "appStoreScreen", "appScreen"];
+const APP_TEMPLATE = {
+  emergency: "renderEmergencyApp",
+  calls: "renderCallsApp",
+  messages: "renderMessagesApp",
+  contacts: "renderContactsApp",
+  ads: "renderAdsApp",
+  insta: "renderSocialApp",
+};
 const state = {
   me: { number: "000000", name: "Player" },
+  account: { hasAccount: false, username: "" },
+  appStore: { availableApps: [] },
   contacts: [],
   messagePreview: [],
   ads: [],
   posts: [],
-  activeConvNumber: "",
   activeCallId: null,
+  activeConvNumber: "",
 };
-
-const phone = document.getElementById("phone");
-const callState = document.getElementById("callState");
-const meNumber = document.getElementById("meNumber");
-const incomingWrap = document.getElementById("incomingWrap");
-const incomingText = document.getElementById("incomingText");
 
 function nui(event, data = {}) {
   return fetch(`https://${resourceName}/${event}`, {
@@ -25,207 +29,167 @@ function nui(event, data = {}) {
 }
 
 function esc(str) {
-  return String(str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function formatTime(ts) {
-  if (!ts) return "";
-  const d = new Date(ts);
-  if (Number.isNaN(d.getTime())) return String(ts);
-  return d.toLocaleString();
+function showScreen(id) {
+  screens.forEach((s) => document.getElementById(s).classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
 }
 
-function setTab(name) {
-  document.querySelectorAll(".tab").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.tab === name);
+function openHome() {
+  if (!state.account?.hasAccount) {
+    showScreen("accountSetup");
+  } else {
+    showScreen("homeScreen");
+    renderHomeApps();
+  }
+}
+
+function hydrate(payload = {}) {
+  state.me = payload.me || state.me;
+  state.account = payload.account || state.account;
+  state.appStore = payload.appStore || state.appStore;
+  state.contacts = payload.contacts || [];
+  state.messagePreview = payload.messagePreview || [];
+  state.ads = payload.ads || [];
+  state.posts = payload.posts || [];
+  document.getElementById("meNumber").textContent = `Nr: ${state.me.number}`;
+  document.getElementById("profileName").textContent = state.account.username || state.me.name || "Player";
+  openHome();
+}
+
+function renderHomeApps() {
+  const grid = document.getElementById("appGrid");
+  const installed = (state.appStore.availableApps || []).filter((a) => a.installed || a.default);
+  grid.innerHTML = installed
+    .map((app) => `<button class="app-icon" data-open-app="${esc(app.id)}"><span class="app-emoji">${esc(app.icon)}</span><span class="app-label">${esc(app.label)}</span></button>`)
+    .join("");
+  grid.querySelectorAll("[data-open-app]").forEach((btn) => {
+    btn.addEventListener("click", () => openApp(btn.dataset.openApp));
   });
-  document.querySelectorAll(".panel").forEach((p) => p.classList.add("hidden"));
-  const el = document.getElementById(`tab-${name}`);
-  if (el) el.classList.remove("hidden");
 }
 
-function renderContacts() {
-  const el = document.getElementById("contactsList");
-  el.innerHTML = state.contacts
-    .map((c) => `<div class="card"><b>${esc(c.display_name)}</b><div class="small">${esc(c.contact_number)}</div></div>`)
+function renderAppStore() {
+  const list = document.getElementById("storeList");
+  list.innerHTML = (state.appStore.availableApps || [])
+    .map((app) => `<div class="card"><b>${esc(app.icon)} ${esc(app.label)}</b><div class="small">${esc(app.id)}</div><button data-install-app="${esc(app.id)}">${app.installed || app.default ? "Installed" : "Install"}</button></div>`)
     .join("");
-}
-
-function renderAds() {
-  const el = document.getElementById("adsList");
-  el.innerHTML = state.ads
-    .map((a) => `<div class="card"><b>${esc(a.author_name)}</b> <span class="small">(${esc(a.phone_number)})</span><div>${esc(a.body)}</div><div class="small">${esc(formatTime(a.created_at))}</div></div>`)
-    .join("");
-}
-
-function renderPosts() {
-  const el = document.getElementById("postsList");
-  el.innerHTML = state.posts
-    .map((p) => {
-      const img = p.image_url ? `<div><img src="${esc(p.image_url)}" style="max-width:100%;border-radius:8px;" /></div>` : "";
-      return `<div class="card">
-        <b>${esc(p.author_name)}</b>
-        <div>${esc(p.caption)}</div>
-        ${img}
-        <div class="row">
-          <span class="small">❤ ${Number(p.likes || 0)}</span>
-          <button data-like="${Number(p.id)}">Like</button>
-        </div>
-      </div>`;
-    })
-    .join("");
-  el.querySelectorAll("button[data-like]").forEach((btn) => {
+  list.querySelectorAll("[data-install-app]").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      await nui("likePost", { postId: Number(btn.dataset.like) });
-      await refresh();
+      const appId = btn.dataset.installApp;
+      await nui("installApp", { appId });
+      const fresh = await nui("refresh");
+      hydrate(fresh || {});
+      showScreen("appStoreScreen");
+      renderAppStore();
     });
   });
 }
 
-function renderMessagePreview() {
-  const box = document.getElementById("conversation");
-  const n = state.activeConvNumber;
-  if (!n) {
-    box.innerHTML = '<div class="small">Įvesk numerį ir spausk "Atidaryti pokalbį".</div>';
+function openAppStore() {
+  showScreen("appStoreScreen");
+  renderAppStore();
+}
+
+function openApp(appId) {
+  showScreen("appScreen");
+  document.getElementById("appTitle").textContent = appId.toUpperCase();
+  const content = document.getElementById("appContent");
+  const fn = APP_TEMPLATE[appId];
+  if (!fn || typeof window[fn] !== "function") {
+    content.innerHTML = `<div class="card">Programėlė dar ruošiama.</div>`;
     return;
   }
-  const filtered = state.messagePreview
-    .filter((m) => String(m.from_number) === n || String(m.to_number) === n)
-    .sort((a, b) => Number(a.id) - Number(b.id));
-  box.innerHTML = filtered
-    .map((m) => {
-      const mine = String(m.from_number) === String(state.me.number);
-      return `<div class="card">
-        <div><b>${mine ? "Tu" : esc(m.from_number)}</b></div>
-        <div>${esc(m.body)}</div>
-        <div class="small">${esc(formatTime(m.created_at))}</div>
-      </div>`;
-    })
-    .join("");
+  window[fn](content);
 }
 
-function hydrate(data) {
-  state.me = data.me || state.me;
-  state.contacts = data.contacts || [];
-  state.messagePreview = data.messagePreview || [];
-  state.ads = data.ads || [];
-  state.posts = data.posts || [];
-  meNumber.textContent = `Nr: ${state.me.number}`;
-  renderContacts();
-  renderAds();
-  renderPosts();
-  renderMessagePreview();
-}
+window.renderEmergencyApp = (content) => {
+  content.innerHTML = `<div class="card"><b>Skubus iškvietimas</b><div class="row"><button data-emerg="police">Policija</button><button data-emerg="ems">EMS</button></div><div class="row"><button data-emerg="taxi">Taxi</button><button data-emerg="mechanic">Mechanic</button></div></div>`;
+  content.querySelectorAll("[data-emerg]").forEach((btn) => btn.addEventListener("click", () => nui("emergencyCall", { service: btn.dataset.emerg })));
+};
 
-async function refresh() {
-  const data = await nui("refresh");
-  hydrate(data || {});
-}
+window.renderCallsApp = (content) => {
+  content.innerHTML = `<div class="card"><div class="row"><input id="callNumber" placeholder="Numeris" /><button id="btnCall">Skambinti</button></div><button id="btnHangup">Baigti skambutį</button></div>`;
+  document.getElementById("btnCall").addEventListener("click", () => nui("startCall", { number: (document.getElementById("callNumber").value || "").replace(/\D+/g, "") }));
+  document.getElementById("btnHangup").addEventListener("click", () => state.activeCallId && nui("endCall", { callId: state.activeCallId }));
+};
 
-window.addEventListener("message", (e) => {
+window.renderMessagesApp = (content) => {
+  const n = state.activeConvNumber || "";
+  const rows = state.messagePreview.filter((m) => !n || String(m.from_number) === n || String(m.to_number) === n);
+  content.innerHTML = `<div class="card"><div class="row"><input id="msgNumber" value="${esc(n)}" placeholder="Numeris" /><button id="btnLoadConv">Open</button></div><div id="conversationList">${rows.map((m) => `<div>${esc(m.from_number)}: ${esc(m.body)}</div>`).join("")}</div><div class="row"><input id="msgBody" placeholder="Žinutė" /><button id="btnSendMsg">Siųsti</button></div></div>`;
+  document.getElementById("btnLoadConv").addEventListener("click", () => { state.activeConvNumber = (document.getElementById("msgNumber").value || "").replace(/\D+/g, ""); openApp("messages"); });
+  document.getElementById("btnSendMsg").addEventListener("click", async () => {
+    const number = (document.getElementById("msgNumber").value || "").replace(/\D+/g, "");
+    const body = document.getElementById("msgBody").value || "";
+    if (!number || !body) return;
+    await nui("sendMessage", { number, body });
+    hydrate(await nui("refresh"));
+    openApp("messages");
+  });
+};
+
+window.renderContactsApp = (content) => {
+  content.innerHTML = `<div class="card"><div class="row"><input id="contactName" placeholder="Vardas" /><input id="contactNumber" placeholder="Nr" /></div><button id="btnSaveContact">Išsaugoti</button></div>${state.contacts.map((c) => `<div class="card">${esc(c.display_name)} (${esc(c.contact_number)})</div>`).join("")}`;
+  document.getElementById("btnSaveContact").addEventListener("click", async () => {
+    await nui("saveContact", { name: document.getElementById("contactName").value, number: document.getElementById("contactNumber").value });
+    hydrate(await nui("refresh"));
+    openApp("contacts");
+  });
+};
+
+window.renderAdsApp = (content) => {
+  content.innerHTML = `<div class="card"><div class="row"><input id="adBody" placeholder="Skelbimas" /><button id="btnPostAd">Kelti</button></div></div>${state.ads.map((a) => `<div class="card"><b>${esc(a.author_name)}</b><div>${esc(a.body)}</div></div>`).join("")}`;
+  document.getElementById("btnPostAd").addEventListener("click", async () => {
+    await nui("createAd", { body: document.getElementById("adBody").value });
+    hydrate(await nui("refresh"));
+    openApp("ads");
+  });
+};
+
+window.renderSocialApp = (content) => {
+  content.innerHTML = `<div class="card"><input id="postCaption" placeholder="Caption" /><input id="postImageUrl" placeholder="Image URL" /><button id="btnPostInsta">Kelti</button></div>${state.posts.map((p) => `<div class="card"><b>${esc(p.author_name)}</b><div>${esc(p.caption)}</div><button data-like="${Number(p.id)}">Like ${Number(p.likes || 0)}</button></div>`).join("")}`;
+  document.getElementById("btnPostInsta").addEventListener("click", async () => {
+    await nui("createPost", { caption: document.getElementById("postCaption").value, imageUrl: document.getElementById("postImageUrl").value });
+    hydrate(await nui("refresh"));
+    openApp("insta");
+  });
+  content.querySelectorAll("[data-like]").forEach((b) => b.addEventListener("click", async () => {
+    await nui("likePost", { postId: Number(b.dataset.like) });
+    hydrate(await nui("refresh"));
+    openApp("insta");
+  }));
+};
+
+window.addEventListener("message", async (e) => {
   const { action, payload } = e.data || {};
   if (action === "open") {
-    phone.classList.remove("hidden");
-    setTab("home");
+    document.getElementById("phone").classList.remove("hidden");
+    openHome();
   } else if (action === "close") {
-    phone.classList.add("hidden");
+    document.getElementById("phone").classList.add("hidden");
   } else if (action === "hydrate") {
     hydrate(payload || {});
   } else if (action === "newMessageNotify") {
-    refresh();
+    hydrate(await nui("refresh"));
   } else if (action === "incomingCall") {
-    incomingWrap.classList.remove("hidden");
     state.activeCallId = payload?.id || null;
-    incomingText.textContent = `Gaunamas skambutis iš ${payload?.fromNumber || "Nežinomas"}`;
+    document.getElementById("callState").textContent = `Incoming: ${payload?.fromNumber || "Unknown"}`;
   } else if (action === "callState") {
-    const st = payload?.status || "";
-    if (st === "connected") {
-      callState.textContent = "Skambutis sujungtas";
-    } else if (st === "ringing") {
-      callState.textContent = "Skambinama...";
-    } else if (st === "rejected") {
-      callState.textContent = "Skambutis atmestas";
-      state.activeCallId = null;
-      incomingWrap.classList.add("hidden");
-    } else if (st === "ended") {
-      callState.textContent = "Skambutis baigtas";
-      state.activeCallId = null;
-      incomingWrap.classList.add("hidden");
-    }
+    state.activeCallId = payload?.id || null;
+    document.getElementById("callState").textContent = payload?.status || "";
   }
 });
 
 document.getElementById("btnClose").addEventListener("click", () => nui("close"));
-document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => setTab(b.dataset.tab)));
-
-document.getElementById("btnSaveContact").addEventListener("click", async () => {
-  const name = document.getElementById("contactName").value;
-  const number = document.getElementById("contactNumber").value;
-  await nui("saveContact", { name, number });
-  document.getElementById("contactName").value = "";
-  document.getElementById("contactNumber").value = "";
-  await refresh();
+document.getElementById("openStore").addEventListener("click", openAppStore);
+document.querySelectorAll("[data-back-home]").forEach((b) => b.addEventListener("click", openHome));
+document.getElementById("btnCreateAccount").addEventListener("click", async () => {
+  const res = await nui("createAccount", {
+    username: document.getElementById("setupUsername").value,
+    password: document.getElementById("setupPassword").value,
+  });
+  document.getElementById("setupState").textContent = res?.ok ? "Paskyra sukurta." : (res?.message || "Klaida");
+  hydrate(await nui("refresh"));
 });
-
-document.getElementById("btnLoadConv").addEventListener("click", async () => {
-  state.activeConvNumber = document.getElementById("msgNumber").value.replace(/\D+/g, "");
-  renderMessagePreview();
-});
-
-document.getElementById("btnSendMsg").addEventListener("click", async () => {
-  const number = (document.getElementById("msgNumber").value || "").replace(/\D+/g, "");
-  const body = document.getElementById("msgBody").value;
-  if (!number || !body) return;
-  await nui("sendMessage", { number, body });
-  document.getElementById("msgBody").value = "";
-  state.activeConvNumber = number;
-  await refresh();
-});
-
-document.getElementById("btnPostAd").addEventListener("click", async () => {
-  const body = document.getElementById("adBody").value;
-  if (!body) return;
-  await nui("createAd", { body });
-  document.getElementById("adBody").value = "";
-  await refresh();
-});
-
-document.getElementById("btnPostInsta").addEventListener("click", async () => {
-  const caption = document.getElementById("postCaption").value;
-  const imageUrl = document.getElementById("postImageUrl").value;
-  await nui("createPost", { caption, imageUrl });
-  document.getElementById("postCaption").value = "";
-  document.getElementById("postImageUrl").value = "";
-  await refresh();
-});
-
-document.getElementById("btnCall").addEventListener("click", async () => {
-  const number = (document.getElementById("callNumber").value || "").replace(/\D+/g, "");
-  if (!number) return;
-  await nui("startCall", { number });
-});
-
-document.getElementById("btnHangup").addEventListener("click", async () => {
-  if (!state.activeCallId) return;
-  await nui("endCall", { callId: state.activeCallId });
-});
-
-document.getElementById("btnAcceptCall").addEventListener("click", async () => {
-  if (!state.activeCallId) return;
-  await nui("respondCall", { callId: state.activeCallId, accept: true });
-  incomingWrap.classList.add("hidden");
-});
-
-document.getElementById("btnRejectCall").addEventListener("click", async () => {
-  if (!state.activeCallId) return;
-  await nui("respondCall", { callId: state.activeCallId, accept: false });
-  incomingWrap.classList.add("hidden");
-});
-
-document.getElementById("btnEmergPolice").addEventListener("click", () => nui("emergencyCall", { service: "police" }));
-document.getElementById("btnEmergEms").addEventListener("click", () => nui("emergencyCall", { service: "ems" }));
-document.getElementById("btnEmergTaxi").addEventListener("click", () => nui("emergencyCall", { service: "taxi" }));
-document.getElementById("btnEmergMechanic").addEventListener("click", () => nui("emergencyCall", { service: "mechanic" }));

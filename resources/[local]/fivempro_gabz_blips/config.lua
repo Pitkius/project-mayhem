@@ -5,7 +5,7 @@ Config.DefaultScale = 0.75
 
 Config.Blips = {
     { resource = 'cfx-gabz-mrpd', label = 'MLO: Mission Row PD', coords = vec3(441.2, -982.0, 30.7), sprite = 60, color = 38 },
-    { resource = 'cfx-gabz-davispd', label = 'MLO: Davis PD', coords = vec3(360.1, -1592.2, 29.3), sprite = 60, color = 38 },
+    { resources = { 'cfx-gabz-davispd', 'gabz_davispd', 'gabz_davis_pd' }, label = 'MLO: Davis PD', coords = vec3(369.42, -1594.46, 29.29), sprite = 60, color = 38 },
     { resource = 'cfx-gabz-sandypd', label = 'MLO: Sandy PD', coords = vec3(1853.2, 3689.5, 34.3), sprite = 60, color = 38 },
     { resource = 'cfx-gabz-paletopd', label = 'MLO: Paleto PD', coords = vec3(-438.6, 6021.9, 31.5), sprite = 60, color = 38 },
     { resource = 'cfx-gabz-parkranger', label = 'MLO: Park Ranger', coords = vec3(387.8, 792.4, 187.7), sprite = 60, color = 25 },
@@ -18,9 +18,9 @@ Config.Blips = {
     { resource = 'cfx-gabz-tuners', label = 'MLO: Tuner Shop', coords = vec3(154.5, -3014.8, 7.0), sprite = 72, color = 5 },
     { resource = 'cfx-gabz-ottos', label = 'MLO: Otto\'s Auto', coords = vec3(823.1, -813.4, 26.3), sprite = 72, color = 46 },
     { resource = 'cfx-gabz-harmony', label = 'MLO: Harmony Repair', coords = vec3(1183.1, 2638.3, 38.4), sprite = 72, color = 46 },
-    { resource = 'cfx-gabz-carmeet', label = 'MLO: Car Meet', coords = vec3(974.8, -3002.6, -39.6), sprite = 380, color = 46 },
+    { resources = { 'cfx-gabz-carmeet', 'gabz_carmeet', 'gabz_lscarmeet' }, label = 'MLO: Car Meet', coords = vec3(968.77, -3005.94, 5.90), sprite = 380, color = 46 },
     { resource = 'cfx-gabz-bowling', label = 'MLO: Bowling', coords = vec3(760.1, -777.7, 26.4), sprite = 103, color = 17 },
-    { resource = 'cfx-gabz-records', label = 'MLO: Record Studio', coords = vec3(487.5, -74.0, 77.6), sprite = 136, color = 27 },
-    { resource = 'cfx-gabz-hub', label = 'MLO: Hub', coords = vec3(-1175.9, -891.5, 13.8), sprite = 280, color = 0 },
+    { resources = { 'cfx-gabz-records', 'gabz_recordstudio', 'gabz_studio' }, label = 'MLO: Record Studio', coords = vec3(483.54, -89.06, 63.16), sprite = 136, color = 27 },
+    { resources = { 'cfx-gabz-hub', 'gabz_hub', 'cfx-gabz-bennys' }, label = 'MLO: Hub', coords = vec3(-205.84, -1310.73, 31.30), sprite = 280, color = 0 },
 }
 

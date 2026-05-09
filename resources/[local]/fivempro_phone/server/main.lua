@@ -59,6 +59,23 @@ local function ensurePhoneUser(citizenid, fullname)
     return phone, profile
 end
 
+local function ensurePhoneAccount(citizenid, fullname)
+    local row = MySQL.single.await('SELECT username FROM fivempro_phone_accounts WHERE citizenid = ? LIMIT 1', { citizenid })
+    if row then
+        return true, tostring(row.username or fullname or 'Player')
+    end
+    return false, nil
+end
+
+local function getInstalledApps(citizenid)
+    local rows = MySQL.query.await('SELECT app_id FROM fivempro_phone_installed_apps WHERE citizenid = ?', { citizenid }) or {}
+    local set = {}
+    for _, r in ipairs(rows) do
+        set[tostring(r.app_id)] = true
+    end
+    return set
+end
+
 local function getFullName(player)
     if not player then return 'Player' end
     local c = player.PlayerData.charinfo or {}
@@ -229,11 +246,32 @@ local function getInitialDataFor(src)
         LIMIT 120
     ]]) or {}
 
+    local hasAccount, username = ensurePhoneAccount(citizenid, fullname)
+    local installed = getInstalledApps(citizenid)
+    local availableApps = {}
+    for _, app in ipairs((Config.Phone and Config.Phone.AppStoreApps) or {}) do
+        availableApps[#availableApps + 1] = {
+            id = tostring(app.id or ''),
+            label = tostring(app.label or app.id or ''),
+            icon = tostring(app.icon or '⬜'),
+            installed = installed[tostring(app.id or '')] == true,
+            default = app.default == true,
+        }
+    end
+
     return {
         ok = true,
         me = {
             number = myNumber,
             name = profile,
+        },
+        account = {
+            hasAccount = hasAccount,
+            username = username or '',
+        },
+        appStore = {
+            availableApps = availableApps,
+            installed = installed,
         },
         contacts = contacts,
         messagePreview = msgs,
@@ -376,6 +414,59 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:likePost', function(sourc
     local postId = tonumber(data and data.postId)
     if not postId then return cb({ ok = false }) end
     MySQL.update.await('UPDATE fivempro_phone_posts SET likes = likes + 1 WHERE id = ?', { postId })
+    cb({ ok = true })
+    TriggerClientEvent('fivempro_phone:client:refreshData', source)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:createAccount', function(source, cb, data)
+    local citizenid, P = getCitizen(source)
+    if not citizenid or not P then return cb({ ok = false, message = 'Player not found' }) end
+    local fullname = getFullName(P)
+    ensurePhoneUser(citizenid, fullname)
+
+    local username = clampStr(data and data.username or '', 24)
+    local pass = clampStr(data and data.password or '', 64)
+    if username == '' or pass == '' then
+        return cb({ ok = false, message = 'Užpildyk username ir slaptažodį.' })
+    end
+    local exists = MySQL.single.await('SELECT id FROM fivempro_phone_accounts WHERE citizenid = ? LIMIT 1', { citizenid })
+    if exists then
+        return cb({ ok = false, message = 'Paskyra jau sukurta.' })
+    end
+    local usernameTaken = MySQL.single.await('SELECT id FROM fivempro_phone_accounts WHERE username = ? LIMIT 1', { username })
+    if usernameTaken then
+        return cb({ ok = false, message = 'Username jau užimtas.' })
+    end
+    MySQL.insert.await('INSERT INTO fivempro_phone_accounts (citizenid, username, passhash) VALUES (?, ?, ?)', {
+        citizenid, username, pass
+    })
+    for _, app in ipairs((Config.Phone and Config.Phone.AppStoreApps) or {}) do
+        if app.default == true then
+            MySQL.insert.await('INSERT IGNORE INTO fivempro_phone_installed_apps (citizenid, app_id) VALUES (?, ?)', {
+                citizenid, tostring(app.id)
+            })
+        end
+    end
+    cb({ ok = true })
+    TriggerClientEvent('fivempro_phone:client:refreshData', source)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:installApp', function(source, cb, data)
+    local citizenid = getCitizen(source)
+    if not citizenid then return cb({ ok = false }) end
+    local appId = tostring(data and data.appId or '')
+    if appId == '' then return cb({ ok = false, message = 'Blogas appId' }) end
+    local allowed = false
+    for _, app in ipairs((Config.Phone and Config.Phone.AppStoreApps) or {}) do
+        if tostring(app.id) == appId then
+            allowed = true
+            break
+        end
+    end
+    if not allowed then return cb({ ok = false, message = 'Programėlė neegzistuoja.' }) end
+    MySQL.insert.await('INSERT IGNORE INTO fivempro_phone_installed_apps (citizenid, app_id) VALUES (?, ?)', {
+        citizenid, appId
+    })
     cb({ ok = true })
     TriggerClientEvent('fivempro_phone:client:refreshData', source)
 end)
@@ -638,6 +729,26 @@ CreateThread(function()
           `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (`id`),
           KEY `idx_created` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
+    MySQL.query([[
+        CREATE TABLE IF NOT EXISTS `fivempro_phone_accounts` (
+          `id` int NOT NULL AUTO_INCREMENT,
+          `citizenid` varchar(60) NOT NULL,
+          `username` varchar(32) NOT NULL,
+          `passhash` varchar(128) NOT NULL,
+          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uniq_phone_accounts_cid` (`citizenid`),
+          UNIQUE KEY `uniq_phone_accounts_username` (`username`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
+    MySQL.query([[
+        CREATE TABLE IF NOT EXISTS `fivempro_phone_installed_apps` (
+          `citizenid` varchar(60) NOT NULL,
+          `app_id` varchar(40) NOT NULL,
+          `installed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`citizenid`,`app_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
 end)

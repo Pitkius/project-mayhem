@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gang Tablet</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="tablet" class="tablet hidden">
+    <header>
+      <h2>Gang Tablet</h2>
+      <div class="row">
+        <button id="btnRefresh">Refresh</button>
+        <button id="btnClose" class="danger">Close</button>
+      </div>
+    </header>
+    <main>
+      <section id="registerPanel" class="card hidden">
+        <h3>Gang Registration</h3>
+        <div class="grid">
+          <label>Name <input id="gangName" type="text" maxlength="42" /></label>
+          <label>Type <select id="gangType"></select></label>
+          <label>Primary Color <select id="primaryColor"></select></label>
+          <label>Secondary Color <select id="secondaryColor"></select></label>
+        </div>
+        <div id="colorWarn" class="warn hidden">Selected primary color is already used.</div>
+        <button id="btnCreate" class="primary">Create Gang</button>
+      </section>
+
+      <section id="gangPanel" class="card hidden">
+        <h3 id="gangTitle"></h3>
+        <div id="gangMeta" class="muted"></div>
+      </section>
+
+      <section class="card">
+        <h3>Turf Map</h3>
+        <div id="turfList" class="turf-list"></div>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

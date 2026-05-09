@@ -11,8 +11,11 @@ Config.DurabilityBlockedWeapons = {
 
 Config.AmmoTypes = {
     pistol_ammo = { ammoType = 'AMMO_PISTOL', amount = 30 },
+    pistolammo = { ammoType = 'AMMO_PISTOL', amount = 30 },
     rifle_ammo = { ammoType = 'AMMO_RIFLE', amount = 30 },
+    rifleammo = { ammoType = 'AMMO_RIFLE', amount = 30 },
     smg_ammo = { ammoType = 'AMMO_SMG', amount = 30 },
+    smgammo = { ammoType = 'AMMO_SMG', amount = 30 },
     shotgun_ammo = { ammoType = 'AMMO_SHOTGUN', amount = 10 },
     mg_ammo = { ammoType = 'AMMO_MG', amount = 30 },
     snp_ammo = { ammoType = 'AMMO_SNIPER', amount = 10 },

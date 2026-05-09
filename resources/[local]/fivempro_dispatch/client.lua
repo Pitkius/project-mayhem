@@ -3,6 +3,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local currentService = nil
 local serviceState = { calls = {}, crews = {}, units = {} }
 local blips = {}
+local panicBlips = {}
 
 local function myService()
     local p = QBCore.Functions.GetPlayerData()
@@ -79,9 +80,26 @@ RegisterNetEvent('fivempro_dispatch:client:panic', function(data)
     BeginTextCommandSetBlipName('STRING')
     AddTextComponentSubstringPlayerName('PANIC ALERT')
     EndTextCommandSetBlipName(b)
+    if data and data.callId then
+        panicBlips[tostring(data.callId)] = b
+    end
     SetTimeout(120000, function()
         if DoesBlipExist(b) then RemoveBlip(b) end
+        if data and data.callId then
+            panicBlips[tostring(data.callId)] = nil
+        end
     end)
+end)
+
+RegisterNetEvent('fivempro_dispatch:client:panicClear', function(data)
+    local callId = tostring(data and data.callId or '')
+    if callId == '' then return end
+    local b = panicBlips[callId]
+    if b and DoesBlipExist(b) then
+        RemoveBlip(b)
+    end
+    panicBlips[callId] = nil
+    QBCore.Functions.Notify('PANIC išjungtas.', 'primary')
 end)
 
 RegisterCommand('panic', function()

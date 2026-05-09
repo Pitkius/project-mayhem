@@ -124,12 +124,20 @@ RegisterNUICallback('crewAction', function(data, cb)
     local action = tostring(data and data.action or '')
     if action == 'create' then
         TriggerServerEvent('fivempro_dispatch:server:createCrew', tostring(data.callsign or ''))
+    elseif action == 'join' then
+        TriggerServerEvent('fivempro_dispatch:server:joinCrew', tostring(data.crewId or ''))
+    elseif action == 'addMember' then
+        TriggerServerEvent('fivempro_dispatch:server:addToCrew', tostring(data.crewId or ''), tonumber(data.targetId))
+    elseif action == 'delete' then
+        TriggerServerEvent('fivempro_dispatch:server:deleteCrew', tostring(data.crewId or ''))
     elseif action == 'leave' then
         TriggerServerEvent('fivempro_dispatch:server:leaveCrew')
     elseif action == 'setCallsign' then
         TriggerServerEvent('fivempro_dispatch:server:setCallsign', tostring(data.callsign or ''))
     elseif action == 'panic' then
         TriggerServerEvent('fivempro_dispatch:server:panic')
+    elseif action == 'panicOff' and data.callId then
+        TriggerServerEvent('fivempro_dispatch:server:updateCallStatus', tostring(data.callId), 'panic_off')
     end
     cb({ ok = true })
 end)

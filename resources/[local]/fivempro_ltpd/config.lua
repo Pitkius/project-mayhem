@@ -32,6 +32,20 @@ Config.Permissions = {
     armory = 0, -- bendra policijos ginklinė (stash)
     garage = 0, -- PD tarnybinio transporto išėmimas
     boss_menu = 7, -- Įdarb./atleisti/rangas (isboss arba ≥ šis grade – qb-core rangų sutapimas)
+    --- PD sirenos / laikina įranga ant civilinės mašinos
+    pd_siren_controller = 0,
+    pd_emergency_kit = 0,
+}
+
+--- Šviesų ir sirenos valdymas (masinoje): režimas per entity statebag (sinchr. visiems žaidėjams)
+Config.EmergencyVehicle = {
+    --- qb-menu komandos
+    sirenMenuCommand = 'pdsirenai',
+    kitMenuCommand = 'pdiranga',
+    --- kai išlipi iš vairuotojo vietos – išjungti sirenos režimą ir garsą
+    resetModeWhenLeaveDriverSeat = true,
+    --- nuo transporto centro atstumas (m), kuriuo serveris priima veiksmus
+    validateDistance = 28.0,
 }
 
 --- Baudų šablonai (kodas rodomas MDT)

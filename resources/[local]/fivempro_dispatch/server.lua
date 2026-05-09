@@ -97,6 +97,7 @@ local function crewsForService(service)
                 crewNumber = crew.crewNumber,
                 callsign = crew.callsign or '',
                 status = crew.status or 'active',
+                leader = crew.leader,
                 assignedCallId = crew.assignedCallId,
                 members = members,
             }
@@ -214,6 +215,7 @@ RegisterNetEvent('fivempro_dispatch:server:createCrew', function(callsign)
         callsign = tostring(callsign or ''),
         status = 'active',
         members = { src },
+        leader = src,
         assignedCallId = nil,
     }
     PlayerCrew[src] = crewId
@@ -233,6 +235,43 @@ RegisterNetEvent('fivempro_dispatch:server:joinCrew', function(crewId)
     pushServiceUpdate(service)
 end)
 
+RegisterNetEvent('fivempro_dispatch:server:addToCrew', function(crewId, targetSrc)
+    local src = source
+    local service = playerService(src)
+    local crew = crewId and Crews[crewId]
+    targetSrc = tonumber(targetSrc)
+    if not service or not crew or crew.service ~= service or not targetSrc then return end
+    if crew.leader ~= src then
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik ekipažo vadas gali pridėti narį.', 'error')
+    end
+    if PlayerCrew[targetSrc] then
+        return TriggerClientEvent('QBCore:Notify', src, 'Žaidėjas jau kitame ekipaže.', 'error')
+    end
+    if not isServiceMember(targetSrc, service) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Žaidėjas ne šios tarnybos duty metu.', 'error')
+    end
+    crew.members[#crew.members + 1] = targetSrc
+    PlayerCrew[targetSrc] = crewId
+    logEvent(service, 'crew_member_added', src, { crewId = crewId, target = targetSrc })
+    pushServiceUpdate(service)
+end)
+
+RegisterNetEvent('fivempro_dispatch:server:deleteCrew', function(crewId)
+    local src = source
+    local service = playerService(src)
+    local crew = crewId and Crews[crewId]
+    if not service or not crew or crew.service ~= service then return end
+    if crew.leader ~= src then
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik ekipažo vadas gali ištrinti ekipažą.', 'error')
+    end
+    for _, memberSrc in ipairs(crew.members or {}) do
+        PlayerCrew[memberSrc] = nil
+    end
+    Crews[crewId] = nil
+    logEvent(service, 'crew_deleted', src, { crewId = crewId })
+    pushServiceUpdate(service)
+end)
+
 RegisterNetEvent('fivempro_dispatch:server:leaveCrew', function()
     local src = source
     local crewId = PlayerCrew[src]
@@ -247,6 +286,8 @@ RegisterNetEvent('fivempro_dispatch:server:leaveCrew', function()
         crew.members = nextMembers
         if #crew.members == 0 then
             Crews[crewId] = nil
+        elseif crew.leader == src then
+            crew.leader = crew.members[1]
         end
     end
     PlayerCrew[src] = nil
@@ -288,6 +329,14 @@ RegisterNetEvent('fivempro_dispatch:server:updateCallStatus', function(callId, a
     elseif action == 'done' then
         c.status = 'done'
         c.statusLabel = (Config.CallStatus and Config.CallStatus.done) or 'Baigta'
+    elseif action == 'panic_off' and c.panic then
+        c.status = 'done'
+        c.statusLabel = 'PANIC IŠJUNGTAS'
+        for _, id in ipairs(QBCore.Functions.GetPlayers() or {}) do
+            if isServiceMember(id, 'police') then
+                TriggerClientEvent('fivempro_dispatch:client:panicClear', id, { callId = c.id })
+            end
+        end
     end
     local crewId = PlayerCrew[src]
     if crewId and Crews[crewId] then

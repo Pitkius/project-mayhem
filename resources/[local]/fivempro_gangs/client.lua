@@ -1,5 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local vendorPed = nil
+local tabletOpen = false
+local tabletProp = nil
 
 local function getCurrentTurfId()
     local ped = PlayerPedId()
@@ -12,6 +14,36 @@ local function getCurrentTurfId()
         end
     end
     return nil, nil
+end
+
+local function stopTabletAnim()
+    local ped = PlayerPedId()
+    ClearPedTasks(ped)
+    if tabletProp and DoesEntityExist(tabletProp) then
+        DeleteEntity(tabletProp)
+    end
+    tabletProp = nil
+end
+
+local function playTabletAnim()
+    local ped = PlayerPedId()
+    local dict = 'amb@world_human_seat_wall_tablet@female@base'
+    RequestAnimDict(dict)
+    while not HasAnimDictLoaded(dict) do Wait(0) end
+    TaskPlayAnim(ped, dict, 'base', 8.0, -8.0, -1, 49, 0, false, false, false)
+    local model = joaat('prop_cs_tablet')
+    RequestModel(model)
+    while not HasModelLoaded(model) do Wait(0) end
+    tabletProp = CreateObject(model, 1.0, 1.0, 1.0, true, true, false)
+    AttachEntityToEntity(tabletProp, ped, GetPedBoneIndex(ped, 60309), 0.03, 0.002, 0.0, 10.0, 160.0, 0.0, true, true, false, true, 1, true)
+end
+
+local function closeTabletUi()
+    if not tabletOpen then return end
+    tabletOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
+    stopTabletAnim()
 end
 
 local function openAdminMenu()
@@ -53,140 +85,24 @@ local function openAdminMenu()
 end
 
 RegisterNetEvent('fivempro_gangs:client:openTablet', function()
+    if tabletOpen then return end
     QBCore.Functions.TriggerCallback('fivempro_gangs:server:getTabletState', function(res)
         if not res or not res.ok then return end
-        local menu = {
-            { header = 'Gang Tablet', txt = 'Gaujos valdymas ir turf sistema', isMenuHeader = true },
-        }
-
-        if not res.hasGang then
-            menu[#menu + 1] = {
-                header = 'Registruoti gaują',
-                txt = 'Sukurk naują gaują (pavadinimas, tipas, spalva)',
-                params = {
-                    isAction = true,
-                    event = function()
-                        local input = exports['qb-input']:ShowInput({
-                            header = 'Gaujos registracija',
-                            submitText = 'Registruoti',
-                            inputs = {
-                                { text = 'Pavadinimas', name = 'name', type = 'text', isRequired = true },
-                                { text = 'Tipas (street/biker/cartel/mafia/racing)', name = 'gangType', type = 'text', isRequired = true },
-                                { text = 'Spalva HEX (#00FFAA)', name = 'colorHex', type = 'text', default = '#FFFFFF' },
-                            },
-                        })
-                        if not input then return end
-                        TriggerServerEvent('fivempro_gangs:server:createGang', input)
-                    end,
-                },
+        tabletOpen = true
+        playTabletAnim()
+        SetNuiFocus(true, true)
+        SendNUIMessage({
+            action = 'open',
+            payload = {
+                hasGang = res.hasGang,
+                gang = res.gang or nil,
+                members = res.members or {},
+                gangTypes = res.gangTypes or {},
+                palette = res.palette or {},
+                colorUsage = res.colorUsage or {},
+                turfs = res.turfs or {},
             }
-        else
-            menu[#menu + 1] = { header = ('%s [%s]'):format(res.gang.name, Config.Ranks[tonumber(res.gang.rank) or 0] or 'Narys'), isMenuHeader = true }
-            menu[#menu + 1] = {
-                header = 'Pakviesti narį',
-                txt = 'Pakvietimas pagal server ID',
-                params = {
-                    isAction = true,
-                    event = function()
-                        local input = exports['qb-input']:ShowInput({
-                            header = 'Pakviesti narį',
-                            submitText = 'Pakviesti',
-                            inputs = {
-                                { text = 'Server ID', name = 'targetId', type = 'number', isRequired = true },
-                            },
-                        })
-                        if not input then return end
-                        TriggerServerEvent('fivempro_gangs:server:inviteMember', tonumber(input.targetId))
-                    end,
-                },
-            }
-            menu[#menu + 1] = {
-                header = 'Narių sąrašas / rangai',
-                txt = ('Narių: %s'):format(#(res.members or {})),
-                params = {
-                    isAction = true,
-                    event = function()
-                        local mm = { { header = 'Gang nariai', isMenuHeader = true } }
-                        for _, m in ipairs(res.members or {}) do
-                            mm[#mm + 1] = {
-                                header = ('%s (%s)'):format(m.name, Config.Ranks[tonumber(m.rank) or 0] or ('Rank ' .. tostring(m.rank))),
-                                txt = m.citizenid,
-                                params = {
-                                    isAction = true,
-                                    event = function()
-                                        local input = exports['qb-input']:ShowInput({
-                                            header = m.name,
-                                            submitText = 'Pritaikyti',
-                                            inputs = {
-                                                { text = 'Naujas rangas (0-4)', name = 'rank', type = 'number' },
-                                                { text = 'Kick? (yes/no)', name = 'kick', type = 'text' },
-                                            },
-                                        })
-                                        if not input then return end
-                                        if tostring(input.kick or ''):lower() == 'yes' then
-                                            TriggerServerEvent('fivempro_gangs:server:kickMember', m.citizenid)
-                                            return
-                                        end
-                                        if input.rank and input.rank ~= '' then
-                                            TriggerServerEvent('fivempro_gangs:server:setMemberRank', m.citizenid, tonumber(input.rank) or 0)
-                                        end
-                                    end,
-                                },
-                            }
-                        end
-                        TriggerEvent('qb-menu:client:openMenu', mm, false, true)
-                    end,
-                },
-            }
-            menu[#menu + 1] = {
-                header = 'Vykdyti turf veiklą',
-                txt = 'Task: drug / smuggle / theft / extortion / racing',
-                params = {
-                    isAction = true,
-                    event = function()
-                        local turfId, turf = getCurrentTurfId()
-                        if not turfId then return QBCore.Functions.Notify('Nesi jokio turf zonoje.', 'error') end
-                        local input = exports['qb-input']:ShowInput({
-                            header = ('Turf veikla: %s'):format(turf.label or turfId),
-                            submitText = 'Vykdyti',
-                            inputs = {
-                                { text = 'Task tipas', name = 'taskType', type = 'text', default = 'drug', isRequired = true },
-                            },
-                        })
-                        if not input then return end
-                        TriggerServerEvent('fivempro_gangs:server:completeTask', turfId, input.taskType)
-                    end,
-                },
-            }
-        end
-
-        menu[#menu + 1] = {
-            header = 'Turf žemėlapis',
-            txt = 'Parodo owner/progresą ir padeda waypoint',
-            params = {
-                isAction = true,
-                event = function()
-                    local tm = { { header = 'Turf statusas', isMenuHeader = true } }
-                    local idx = {}
-                    for _, t in ipairs(res.turfs or {}) do idx[t.turf_id] = t end
-                    for turfId, turfCfg in pairs(Config.Turfs or {}) do
-                        local d = idx[turfId] or {}
-                        tm[#tm + 1] = {
-                            header = ('%s (%s)'):format(turfCfg.label or turfId, d.owner_name or 'Niekas'),
-                            txt = ('Progress: %s | Heat: %s | Sales: %s'):format(d.progress or 0, d.heat or 0, d.sales_count or 0),
-                            params = {
-                                isAction = true,
-                                event = function()
-                                    SetNewWaypoint(turfCfg.center.x + 0.0, turfCfg.center.y + 0.0)
-                                end,
-                            },
-                        }
-                    end
-                    TriggerEvent('qb-menu:client:openMenu', tm, false, true)
-                end,
-            },
-        }
-        TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+        })
     end)
 end)
 
@@ -236,6 +152,46 @@ end, false)
 RegisterCommand('gangadmin', function()
     openAdminMenu()
 end, false)
+
+RegisterCommand('gangtablet', function()
+    TriggerEvent('fivempro_gangs:client:openTablet')
+end, false)
+
+RegisterNUICallback('gangs:close', function(_, cb)
+    closeTabletUi()
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('gangs:createGang', function(data, cb)
+    if not data or not data.name or not data.gangType then
+        cb({ ok = false })
+        return
+    end
+    TriggerServerEvent('fivempro_gangs:server:createGang', {
+        name = data.name,
+        gangType = data.gangType,
+        colorHex = data.colorHex,
+        secondaryColorHex = data.secondaryColorHex,
+    })
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('gangs:refresh', function(_, cb)
+    QBCore.Functions.TriggerCallback('fivempro_gangs:server:getTabletState', function(res)
+        cb(res or { ok = false })
+    end)
+end)
+
+RegisterNUICallback('gangs:setWaypoint', function(data, cb)
+    local turfId = tostring(data and data.turfId or '')
+    local turf = turfId ~= '' and Config.Turfs[turfId] or nil
+    if turf and turf.center then
+        SetNewWaypoint(turf.center.x + 0.0, turf.center.y + 0.0)
+        cb({ ok = true })
+        return
+    end
+    cb({ ok = false })
+end)
 
 local function openVendorMenu()
     local price = tonumber(Config.TabletVendor and Config.TabletVendor.tabletPrice) or 5000
@@ -310,5 +266,14 @@ CreateThread(function()
                 end
             end
         end
+    end
+end)
+
+CreateThread(function()
+    while true do
+        if tabletOpen and (IsControlJustPressed(0, 322) or IsControlJustPressed(0, 200)) then
+            closeTabletUi()
+        end
+        Wait(0)
     end
 end)

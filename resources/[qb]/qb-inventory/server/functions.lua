@@ -48,6 +48,41 @@ local function SetupShopItems(shopItems)
     return items
 end
 
+local BulkyItemsNoPocket = {
+    -- Long guns
+    weapon_assaultrifle = true,
+    weapon_assaultrifle_mk2 = true,
+    weapon_carbinerifle = true,
+    weapon_carbinerifle_mk2 = true,
+    weapon_advancedrifle = true,
+    weapon_specialcarbine = true,
+    weapon_specialcarbine_mk2 = true,
+    weapon_bullpuprifle = true,
+    weapon_bullpuprifle_mk2 = true,
+    weapon_compactrifle = true,
+    weapon_militaryrifle = true,
+    weapon_heavyrifle = true,
+    weapon_mg = true,
+    weapon_combatmg = true,
+    weapon_combatmg_mk2 = true,
+    weapon_gusenberg = true,
+    weapon_pumpshotgun = true,
+    weapon_pumpshotgun_mk2 = true,
+    weapon_sawnoffshotgun = true,
+    weapon_assaultshotgun = true,
+    weapon_bullpupshotgun = true,
+    weapon_heavyshotgun = true,
+    weapon_combatshotgun = true,
+    weapon_sniperrifle = true,
+    weapon_heavysniper = true,
+    weapon_heavysniper_mk2 = true,
+    weapon_marksmanrifle = true,
+    weapon_marksmanrifle_mk2 = true,
+    -- Other bulky gear
+    mining_pickaxe = true,
+    veh_toolbox = true,
+}
+
 -- Exported Functions
 
 function LoadInventory(source, citizenid)
@@ -709,6 +744,12 @@ function AddItem(identifier, item, amount, slot, info, reason)
     local player = QBCore.Functions.GetPlayer(identifier)
 
     if player then
+        local hasBackpack = Player(identifier) and Player(identifier).state and Player(identifier).state.hasBackpack == true
+        local itemKey = tostring(item):lower()
+        if BulkyItemsNoPocket[itemKey] and not hasBackpack then
+            TriggerClientEvent('QBCore:Notify', identifier, 'Šiam daiktui reikia kuprinės / tinkamo rūbo (bag component).', 'error')
+            return false
+        end
         inventory = player.PlayerData.items
         inventoryWeight = Config.MaxWeight
         inventorySlots = Config.MaxSlots

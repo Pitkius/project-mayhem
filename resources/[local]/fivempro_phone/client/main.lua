@@ -1,6 +1,30 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local phoneOpen = false
+local phoneProp = nil
+
+local function ensurePhoneProp()
+    local ped = PlayerPedId()
+    local model = joaat('prop_npc_phone_02')
+    RequestModel(model)
+    local tries = 0
+    while not HasModelLoaded(model) and tries < 80 do
+        Wait(0)
+        tries = tries + 1
+    end
+    if not HasModelLoaded(model) then return end
+    local coords = GetEntityCoords(ped)
+    phoneProp = CreateObject(model, coords.x, coords.y, coords.z + 0.2, true, true, false)
+    AttachEntityToEntity(phoneProp, ped, GetPedBoneIndex(ped, 57005), 0.12, 0.02, -0.02, 90.0, 120.0, 0.0, true, true, false, true, 1, true)
+    SetModelAsNoLongerNeeded(model)
+end
+
+local function clearPhoneProp()
+    if phoneProp and DoesEntityExist(phoneProp) then
+        DeleteEntity(phoneProp)
+    end
+    phoneProp = nil
+end
 
 local function playPhonePullOutAnim()
     local ped = PlayerPedId()
@@ -15,6 +39,7 @@ local function playPhonePullOutAnim()
     end
     if not HasAnimDictLoaded(dict) then return end
     TaskPlayAnim(ped, dict, anim, 8.0, -8.0, 1200, 49, 0.0, false, false, false)
+    ensurePhoneProp()
 end
 
 local function sendUi(action, payload)
@@ -29,6 +54,8 @@ local function closePhone()
     phoneOpen = false
     SetNuiFocus(false, false)
     sendUi('close')
+    clearPhoneProp()
+    ClearPedTasks(PlayerPedId())
 end
 
 local function fetchPhoneData(cb)
@@ -185,6 +212,18 @@ end)
 RegisterNUICallback('emergencyCall', function(data, cb)
     TriggerServerEvent('fivempro_phone:server:emergencyCall', data and data.service or '')
     cb({ ok = true })
+end)
+
+RegisterNUICallback('createAccount', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:createAccount', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
+RegisterNUICallback('installApp', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:installApp', function(res)
+        cb(res or { ok = false })
+    end, data or {})
 end)
 
 RegisterNetEvent('fivempro_phone:client:serviceDispatch', function(data)

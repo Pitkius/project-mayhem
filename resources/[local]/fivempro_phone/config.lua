@@ -16,6 +16,14 @@ Config.Phone = {
     maxAdLength = 260,
     maxPostCaptionLength = 260,
     maxImageUrlLength = 500,
+    AppStoreApps = {
+        { id = 'emergency', label = 'Emergency', icon = '🚨', default = true },
+        { id = 'calls', label = 'Phone', icon = '📞', default = true },
+        { id = 'messages', label = 'Messages', icon = '💬', default = true },
+        { id = 'contacts', label = 'Contacts', icon = '👤', default = true },
+        { id = 'ads', label = 'Market', icon = '🛒', default = true },
+        { id = 'insta', label = 'Social', icon = '📸', default = true },
+    }
 }
 
 --- Skubūs skambučiai (telefonas → dispatch visiems tam tikro job žaidėjams tarnyboje)

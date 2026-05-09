@@ -13,7 +13,7 @@ local function getPlayerGang(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return nil end
     return MySQL.single.await([[
-        SELECT gm.gang_id, gm.rank, g.name, g.gang_type, g.color_hex, g.reputation, g.heat
+        SELECT gm.gang_id, gm.rank, g.name, g.gang_type, g.color_hex, g.secondary_color_hex, g.reputation, g.heat
         FROM fivempro_gang_members gm
         JOIN fivempro_gangs g ON g.id = gm.gang_id
         WHERE gm.citizenid = ?
@@ -35,14 +35,21 @@ local function getGangMembers(gangId)
 end
 
 local function getTurfs()
-    return MySQL.query.await([[
-        SELECT turf_id, owner_gang_id, owner_name, progress, heat, sales_count, total_profit
-        FROM fivempro_gang_turfs
+    local rows = MySQL.query.await([[
+        SELECT t.turf_id, t.owner_gang_id, t.owner_name, t.progress, t.heat, t.sales_count, t.total_profit,
+               g.color_hex AS owner_color_hex, g.secondary_color_hex AS owner_secondary_color_hex
+        FROM fivempro_gang_turfs t
+        LEFT JOIN fivempro_gangs g ON g.id = t.owner_gang_id
         ORDER BY turf_id ASC
     ]]) or {}
+    for _, r in ipairs(rows) do
+        local cfg = Config.Turfs and Config.Turfs[r.turf_id]
+        r.turf_label = cfg and cfg.label or r.turf_id
+    end
+    return rows
 end
 
-local function createGang(src, name, gangType, colorHex)
+local function createGang(src, name, gangType, colorHex, secondaryColorHex)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return false, 'Nerastas žaidėjas.' end
     if getPlayerGang(src) then return false, 'Jau priklausai gaujai.' end
@@ -50,12 +57,13 @@ local function createGang(src, name, gangType, colorHex)
     if name == '' then return false, 'Neteisingas pavadinimas.' end
     if not Config.GangTypes[tostring(gangType)] then return false, 'Neteisingas tipas.' end
     colorHex = tostring(colorHex or '#FFFFFF'):upper()
+    secondaryColorHex = tostring(secondaryColorHex or '#FFFFFF'):upper()
 
     local exists = MySQL.single.await('SELECT id FROM fivempro_gangs WHERE name = ? LIMIT 1', { name })
     if exists then return false, 'Toks pavadinimas jau naudojamas.' end
 
-    local gangId = MySQL.insert.await('INSERT INTO fivempro_gangs (name, gang_type, color_hex, owner_citizenid) VALUES (?, ?, ?, ?)', {
-        name, gangType, colorHex, Player.PlayerData.citizenid
+    local gangId = MySQL.insert.await('INSERT INTO fivempro_gangs (name, gang_type, color_hex, secondary_color_hex, owner_citizenid) VALUES (?, ?, ?, ?, ?)', {
+        name, gangType, colorHex, secondaryColorHex, Player.PlayerData.citizenid
     })
     if not gangId then return false, 'Nepavyko sukurti gaujos.' end
 
@@ -67,6 +75,15 @@ local function createGang(src, name, gangType, colorHex)
     return true, gangId
 end
 
+local function getColorUsage()
+    local rows = MySQL.query.await('SELECT color_hex, COUNT(*) AS used_count FROM fivempro_gangs GROUP BY color_hex') or {}
+    local out = {}
+    for _, r in ipairs(rows) do
+        out[tostring(r.color_hex or ''):upper()] = tonumber(r.used_count) or 0
+    end
+    return out
+end
+
 QBCore.Functions.CreateUseableItem(Config.TabletItem, function(source)
     TriggerClientEvent('fivempro_gangs:client:openTablet', source)
 end)
@@ -74,7 +91,14 @@ end)
 QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function(src, cb)
     local gang = getPlayerGang(src)
     if not gang then
-        return cb({ ok = true, hasGang = false, gangTypes = Config.GangTypes, turfs = getTurfs() })
+        return cb({
+            ok = true,
+            hasGang = false,
+            gangTypes = Config.GangTypes,
+            palette = Config.ColorPalette or {},
+            colorUsage = getColorUsage(),
+            turfs = getTurfs()
+        })
     end
     cb({
         ok = true,
@@ -83,12 +107,14 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
         members = getGangMembers(gang.gang_id),
         turfs = getTurfs(),
         gangTypes = Config.GangTypes,
+        palette = Config.ColorPalette or {},
+        colorUsage = getColorUsage(),
     })
 end)
 
 RegisterNetEvent('fivempro_gangs:server:createGang', function(data)
     local src = source
-    local ok, result = createGang(src, data and data.name, data and data.gangType, data and data.colorHex)
+    local ok, result = createGang(src, data and data.name, data and data.gangType, data and data.colorHex, data and data.secondaryColorHex)
     if not ok then
         return TriggerClientEvent('QBCore:Notify', src, tostring(result), 'error')
     end
@@ -261,6 +287,7 @@ MySQL.ready(function()
             `name` VARCHAR(64) NOT NULL,
             `gang_type` VARCHAR(32) NOT NULL,
             `color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF',
+            `secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF',
             `owner_citizenid` VARCHAR(64) NULL,
             `reputation` INT NOT NULL DEFAULT 0,
             `heat` INT NOT NULL DEFAULT 0,
@@ -269,6 +296,7 @@ MySQL.ready(function()
             UNIQUE KEY `ux_fivempro_gangs_name` (`name`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
+    MySQL.query.await('ALTER TABLE `fivempro_gangs` ADD COLUMN IF NOT EXISTS `secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT \'#FFFFFF\' AFTER `color_hex`;')
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_gang_members` (
             `gang_id` INT NOT NULL,

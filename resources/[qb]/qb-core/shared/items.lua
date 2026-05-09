@@ -210,8 +210,11 @@ QBShared.Items = {
 
     -- Ammo ITEMS
     pistol_ammo                  = { name = 'pistol_ammo', label = 'Pistol ammo', weight = 10, type = 'item', image = 'pistol_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Pistols' },
+    pistolammo                   = { name = 'pistolammo', label = 'Pistol ammo (legacy)', weight = 10, type = 'item', image = 'pistol_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Legacy ammo alias for pistols' },
     rifle_ammo                   = { name = 'rifle_ammo', label = 'Rifle ammo', weight = 10, type = 'item', image = 'rifle_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Rifles' },
+    rifleammo                    = { name = 'rifleammo', label = 'Rifle ammo (legacy)', weight = 10, type = 'item', image = 'rifle_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Legacy ammo alias for rifles' },
     smg_ammo                     = { name = 'smg_ammo', label = 'SMG ammo', weight = 10, type = 'item', image = 'smg_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Sub Machine Guns' },
+    smgammo                      = { name = 'smgammo', label = 'SMG ammo (legacy)', weight = 10, type = 'item', image = 'smg_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Legacy ammo alias for SMG' },
     shotgun_ammo                 = { name = 'shotgun_ammo', label = 'Shotgun ammo', weight = 10, type = 'item', image = 'shotgun_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Shotguns' },
     mg_ammo                      = { name = 'mg_ammo', label = 'MG ammo', weight = 1000, type = 'item', image = 'mg_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Machine Guns' },
     snp_ammo                     = { name = 'snp_ammo', label = 'Sniper ammo', weight = 1000, type = 'item', image = 'rifle_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Ammo for Sniper Rifles' },
@@ -335,7 +338,7 @@ QBShared.Items = {
     walkstick                    = { name = 'walkstick', label = 'Walking Stick', weight = 1000, type = 'item', image = 'walkstick.png', unique = false, useable = true, shouldClose = true, description = 'Walking stick for ya\'ll grannies out there.. HAHA' },
 
     -- Communication
-    phone                        = { name = 'phone', label = 'Phone', weight = 700, type = 'item', image = 'phone.png', unique = true, useable = true, shouldClose = true, description = 'Neat phone ya got there' },
+    phone                        = { name = 'phone', label = 'iPhone', weight = 700, type = 'item', image = 'iphone.png', unique = true, useable = true, shouldClose = true, description = 'Premium smartphone' },
     radio                        = { name = 'radio', label = 'Radio', weight = 2000, type = 'item', image = 'radio.png', unique = true, useable = true, shouldClose = true, description = 'You can communicate with this through a signal' },
     iphone                       = { name = 'iphone', label = 'iPhone', weight = 1000, type = 'item', image = 'iphone.png', unique = false, useable = false, shouldClose = true, description = 'Very expensive phone' },
     samsungphone                 = { name = 'samsungphone', label = 'Samsung S10', weight = 1000, type = 'item', image = 'samsungphone.png', unique = false, useable = false, shouldClose = true, description = 'Very expensive phone' },
