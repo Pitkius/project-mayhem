@@ -1,7 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local function ensureTables()
-    MySQL.query([[CREATE TABLE IF NOT EXISTS `ltpd_profiles` (
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `ltpd_profiles` (
         `citizenid` varchar(50) NOT NULL,
         `division` varchar(32) NOT NULL DEFAULT 'patrol',
         `badge` varchar(16) DEFAULT NULL,
@@ -10,7 +10,7 @@ local function ensureTables()
         KEY `division` (`division`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 
-    MySQL.query([[CREATE TABLE IF NOT EXISTS `ltpd_fines` (
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `ltpd_fines` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `citizenid` varchar(50) NOT NULL,
         `officer_citizenid` varchar(50) NOT NULL,
@@ -23,7 +23,7 @@ local function ensureTables()
         KEY `officer` (`officer_citizenid`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 
-    MySQL.query([[CREATE TABLE IF NOT EXISTS `ltpd_wanted` (
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `ltpd_wanted` (
         `citizenid` varchar(50) NOT NULL,
         `level` tinyint(4) NOT NULL DEFAULT 0,
         `reason` varchar(512) DEFAULT NULL,
@@ -32,7 +32,7 @@ local function ensureTables()
         PRIMARY KEY (`citizenid`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 
-    MySQL.query([[CREATE TABLE IF NOT EXISTS `ltpd_wanted_history` (
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `ltpd_wanted_history` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `citizenid` varchar(50) NOT NULL,
         `level` tinyint(4) NOT NULL,
@@ -43,7 +43,7 @@ local function ensureTables()
         KEY `citizenid` (`citizenid`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 
-    MySQL.query([[CREATE TABLE IF NOT EXISTS `ltpd_arrests` (
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `ltpd_arrests` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `citizenid` varchar(50) NOT NULL,
         `officer_citizenid` varchar(50) NOT NULL,
@@ -253,7 +253,7 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:issueFine', function(src, 
         TriggerClientEvent('QBCore:Notify', Target.PlayerData.source, ('Bauda %s €: %s'):format(amount, label), 'error')
     end
 
-    MySQL.insert(
+    MySQL.insert.await(
         'INSERT INTO ltpd_fines (citizenid, officer_citizenid, amount, reason_code, reason_label) VALUES (?, ?, ?, ?, ?)',
         { tid, Officer.PlayerData.citizenid, amount, code, label }
     )
@@ -279,7 +279,7 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:setWanted', function(src, 
         { tid, level, reason, Officer.PlayerData.citizenid }
     )
 
-    MySQL.insert(
+    MySQL.insert.await(
         'INSERT INTO ltpd_wanted_history (citizenid, level, officer_citizenid, note) VALUES (?, ?, ?, ?)',
         { tid, level, Officer.PlayerData.citizenid, reason }
     )
@@ -297,7 +297,7 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:addArrestNote', function(s
     notes = tostring(notes or ''):sub(1, 2000)
     local Officer = QBCore.Functions.GetPlayer(src)
     if not Officer or not citizenid then return cb({ ok = false }) end
-    MySQL.insert(
+    MySQL.insert.await(
         'INSERT INTO ltpd_arrests (citizenid, officer_citizenid, notes) VALUES (?, ?, ?)',
         { citizenid, Officer.PlayerData.citizenid, notes }
     )

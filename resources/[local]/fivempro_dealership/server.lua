@@ -161,7 +161,7 @@ local function getUniquePlate()
 end
 
 CreateThread(function()
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `player_vehicles` (
           `id` int(11) NOT NULL AUTO_INCREMENT,
           `license` varchar(50) DEFAULT NULL,

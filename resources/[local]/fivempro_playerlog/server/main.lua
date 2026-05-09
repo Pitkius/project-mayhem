@@ -68,28 +68,30 @@ function InsertPlayerActivityLog(row)
         end
     end
     local maxLen = Config.MaxMessageLength or 60000
-    MySQL.insert(
-        [[INSERT INTO fivempro_player_logs (
-            display_name, steam_hex, license, discord, citizenid, char_firstname, char_lastname, server_id,
-            category, action, color, message, meta, invoking_resource
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]],
-        {
-            row.display_name,
-            row.steam_hex,
-            row.license,
-            row.discord,
-            row.citizenid,
-            row.char_firstname,
-            row.char_lastname,
-            row.server_id,
-            row.category,
-            row.action,
-            row.color,
-            safeTruncate(row.message or '', maxLen),
-            metaJson,
-            row.invoking_resource,
-        }
-    )
+    CreateThread(function()
+        MySQL.insert.await(
+            [[INSERT INTO fivempro_player_logs (
+                display_name, steam_hex, license, discord, citizenid, char_firstname, char_lastname, server_id,
+                category, action, color, message, meta, invoking_resource
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]],
+            {
+                row.display_name,
+                row.steam_hex,
+                row.license,
+                row.discord,
+                row.citizenid,
+                row.char_firstname,
+                row.char_lastname,
+                row.server_id,
+                row.category,
+                row.action,
+                row.color,
+                safeTruncate(row.message or '', maxLen),
+                metaJson,
+                row.invoking_resource,
+            }
+        )
+    end)
 end
 
 exports('InsertPlayerActivityLog', InsertPlayerActivityLog)
@@ -112,7 +114,7 @@ end
 exports('LogPlayer', logFromSource)
 
 local function ensureTable()
-    MySQL.query([[CREATE TABLE IF NOT EXISTS `fivempro_player_logs` (
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `fivempro_player_logs` (
         `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
         `created_at` datetime NOT NULL DEFAULT current_timestamp(),
         `display_name` varchar(128) DEFAULT NULL,

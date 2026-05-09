@@ -1,10 +1,27 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+MySQL.ready(function()
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `fivempro_dispatch_logs` (
+        `id` BIGINT NOT NULL AUTO_INCREMENT,
+        `service` VARCHAR(32) NOT NULL,
+        `event_type` VARCHAR(64) NOT NULL,
+        `actor_source` INT NULL,
+        `actor_citizenid` VARCHAR(64) NULL,
+        `payload` LONGTEXT NULL,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_service` (`service`),
+        KEY `idx_event_type` (`event_type`),
+        KEY `idx_created_at` (`created_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
+end)
+
 local Calls = {}
 local CallSeq = 0
 local Crews = {}
 local PlayerCrew = {}
 local Callsigns = {}
+local lastPlainCallAt = {} --- @type table<number, number> src -> ms
 
 local function citizenIdOf(src)
     local p = QBCore.Functions.GetPlayer(src)
@@ -13,10 +30,12 @@ end
 
 local function logEvent(service, eventType, src, payload)
     if GetResourceState('oxmysql') ~= 'started' then return end
-    MySQL.insert(
-        'INSERT INTO fivempro_dispatch_logs (service, event_type, actor_source, actor_citizenid, payload) VALUES (?, ?, ?, ?, ?)',
-        { tostring(service or 'unknown'), tostring(eventType or 'event'), tonumber(src) or nil, citizenIdOf(src), json.encode(payload or {}) }
-    )
+    CreateThread(function()
+        MySQL.insert.await(
+            'INSERT INTO fivempro_dispatch_logs (service, event_type, actor_source, actor_citizenid, payload) VALUES (?, ?, ?, ?, ?)',
+            { tostring(service or 'unknown'), tostring(eventType or 'event'), tonumber(src) or nil, citizenIdOf(src), json.encode(payload or {}) }
+        )
+    end)
 end
 
 local function nowMs()
@@ -381,6 +400,16 @@ end)
 RegisterNetEvent('fivempro_dispatch:server:createServiceCall', function(service, callType, text, coords)
     local src = source
     if not Config.Services[service] then return end
+
+    --- Panikai eina per `panic` įvykį, ne čia — antras nuo antro spam filtras
+    local cd = tonumber(Config.CreateCallCooldownMs) or 4000
+    if cd > 0 then
+        local now = GetGameTimer()
+        local last = lastPlainCallAt[src] or 0
+        if now - last < cd then return end
+        lastPlainCallAt[src] = now
+    end
+
     local ped = GetPlayerPed(src)
     local p = coords
     if not p and ped and ped ~= 0 then
@@ -402,6 +431,7 @@ end)
 
 AddEventHandler('playerDropped', function()
     local src = source
+    lastPlainCallAt[src] = nil
     local crewId = PlayerCrew[src]
     if crewId and Crews[crewId] then
         local service = Crews[crewId].service

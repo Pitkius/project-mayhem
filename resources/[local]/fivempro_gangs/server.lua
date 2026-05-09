@@ -1,5 +1,20 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+--- Ar žaidėjo pedas yra nurodyto turf Config.Turfs zonoje (serverio koordinatės)
+local function playerInTurfServer(src, turfId)
+    turfId = tostring(turfId or '')
+    local cfg = Config.Turfs and Config.Turfs[turfId]
+    if not cfg or not cfg.center then return false end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local p = GetEntityCoords(ped)
+    local c = cfg.center
+    local r = tonumber(cfg.radius) or 180.0
+    local px, py, pz = p.x + 0.0, p.y + 0.0, p.z + 0.0
+    local cx, cy, cz = c.x + 0.0, c.y + 0.0, c.z + 0.0
+    return math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy) + (pz - cz) * (pz - cz)) <= r + 5.0
+end
+
 local function hasGangAdminPermission(src)
     for _, perm in ipairs(Config.AdminPermissions or {}) do
         if QBCore.Functions.HasPermission(src, perm) then
@@ -190,6 +205,7 @@ end)
 
 RegisterNetEvent('fivempro_gangs:server:completeTask', function(turfId, taskType)
     local src = source
+    if not playerInTurfServer(src, turfId) then return end
     local gang = getPlayerGang(src)
     if not gang then return end
     local reward = (Config.TaskReputation and Config.TaskReputation[tostring(taskType or '')]) or 0
@@ -223,6 +239,26 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:tryDrugSale', function(sr
     local turf = MySQL.single.await('SELECT owner_gang_id, heat, sales_count, total_profit FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { tostring(turfId) })
     if not turf or tonumber(turf.owner_gang_id) ~= tonumber(gang.gang_id) then
         return cb({ ok = false, reason = 'Šis turf nepriklauso tavo gaujai.' })
+    end
+
+    if not playerInTurfServer(src, turfId) then
+        return cb({ ok = false, reason = 'Turi būti tame turf teritorijoje.' })
+    end
+
+    local netId = tonumber(npcNetId) or 0
+    if netId > 0 then
+        local npcEnt = NetworkGetEntityFromNetworkId(netId)
+        if npcEnt ~= 0 and DoesEntityExist(npcEnt) then
+            local opp = GetEntityCoords(GetPlayerPed(src))
+            local onp = GetEntityCoords(npcEnt)
+            local maxPed = (tonumber(Config.DrugSell.maxDistanceToPed) or 3.0) + 1.25
+            if #(opp - onp) > maxPed then
+                return cb({ ok = false, reason = 'NPC per toli nuo tavęs.' })
+            end
+            if IsPedAPlayer(npcEnt) then
+                return cb({ ok = false, reason = 'Netinkamas tikslas.' })
+            end
+        end
     end
 
     local Player = QBCore.Functions.GetPlayer(src)
@@ -304,7 +340,18 @@ MySQL.ready(function()
             UNIQUE KEY `ux_fivempro_gangs_name` (`name`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query.await('ALTER TABLE `fivempro_gangs` ADD COLUMN IF NOT EXISTS `secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT \'#FFFFFF\' AFTER `color_hex`;')
+    -- MySQL 8 nepalaiko ADD COLUMN IF NOT EXISTS; naujiems DB kolumną jau sukuria CREATE TABLE aukščiau.
+    local hasSecondary = MySQL.scalar.await([[
+        SELECT COUNT(*) FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'fivempro_gangs'
+          AND column_name = 'secondary_color_hex'
+    ]])
+    if (tonumber(hasSecondary) or 0) == 0 then
+        MySQL.query.await(
+            [[ALTER TABLE `fivempro_gangs` ADD COLUMN `secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF' AFTER `color_hex`]]
+        )
+    end
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_gang_members` (
             `gang_id` INT NOT NULL,

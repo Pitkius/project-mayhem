@@ -77,7 +77,7 @@ local function startPumping(pump)
                 break
             end
             lastPayResult = { ok = false }
-            TriggerServerEvent('fivempro_fuel:server:payTick', pricePerL)
+            TriggerServerEvent('fivempro_fuel:server:payTick')
             local waitMs = GetGameTimer() + 700
             while GetGameTimer() < waitMs and pumping do
                 Wait(0)

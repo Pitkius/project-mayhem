@@ -1,5 +1,19 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+MySQL.ready(function()
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `bank_transactions` (
+        `id` INT NOT NULL AUTO_INCREMENT,
+        `citizenid` VARCHAR(50) NOT NULL,
+        `tx_type` VARCHAR(32) NOT NULL,
+        `amount` INT NOT NULL DEFAULT 0,
+        `balance_after` INT NOT NULL DEFAULT 0,
+        `target_citizenid` VARCHAR(50) DEFAULT NULL,
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_bank_tx_citizenid` (`citizenid`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
+end)
+
 QBCore.Functions.CreateUseableItem('cash_bundle', function(source, item)
     TriggerClientEvent('QBCore:Notify', source, 'Cash yra automatiskai sinchronizuojamas su inventory. Naudoti nereikia.', 'primary')
 end)
@@ -88,7 +102,7 @@ CreateThread(function()
 end)
 
 local function addHistory(citizenid, txType, amount, balanceAfter, targetCitizenid)
-    MySQL.insert('INSERT INTO bank_transactions (citizenid, tx_type, amount, balance_after, target_citizenid) VALUES (?, ?, ?, ?, ?)', {
+    MySQL.insert.await('INSERT INTO bank_transactions (citizenid, tx_type, amount, balance_after, target_citizenid) VALUES (?, ?, ?, ?, ?)', {
         citizenid,
         txType,
         amount,
@@ -122,7 +136,7 @@ end)
 RegisterNetEvent('fivempro:bank:server:deposit', function(amount)
     local src = source
     local player = QBCore.Functions.GetPlayer(src)
-    amount = tonumber(amount) or 0
+    amount = math.floor(math.max(0, tonumber(amount) or 0))
     if not player or amount <= 0 then return end
     if player.PlayerData.money.cash < amount then
         TriggerClientEvent('QBCore:Notify', src, 'Nepakanka cash.', 'error')
@@ -138,7 +152,7 @@ end)
 RegisterNetEvent('fivempro:bank:server:withdraw', function(amount)
     local src = source
     local player = QBCore.Functions.GetPlayer(src)
-    amount = tonumber(amount) or 0
+    amount = math.floor(math.max(0, tonumber(amount) or 0))
     if not player or amount <= 0 then return end
     if player.PlayerData.money.bank < amount then
         TriggerClientEvent('QBCore:Notify', src, 'Nepakanka lesu banke.', 'error')
@@ -154,11 +168,16 @@ end)
 RegisterNetEvent('fivempro:bank:server:transfer', function(targetId, amount)
     local src = source
     local player = QBCore.Functions.GetPlayer(src)
-    local target = QBCore.Functions.GetPlayer(tonumber(targetId))
-    amount = tonumber(amount) or 0
+    local tid = tonumber(targetId)
+    local target = tid and QBCore.Functions.GetPlayer(tid)
+    amount = math.floor(math.max(0, tonumber(amount) or 0))
 
     if not player or not target or amount <= 0 then
         TriggerClientEvent('QBCore:Notify', src, 'Neteisingi pervedimo duomenys.', 'error')
+        return
+    end
+    if player.PlayerData.source == target.PlayerData.source then
+        TriggerClientEvent('QBCore:Notify', src, 'Negalima pervesti sau.', 'error')
         return
     end
     if player.PlayerData.money.bank < amount then

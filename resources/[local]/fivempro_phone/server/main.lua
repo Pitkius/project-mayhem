@@ -668,7 +668,7 @@ end)
 
 CreateThread(function()
     math.randomseed(os.time())
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_users` (
           `id` int NOT NULL AUTO_INCREMENT,
           `citizenid` varchar(60) NOT NULL,
@@ -680,7 +680,7 @@ CreateThread(function()
           UNIQUE KEY `uniq_phone` (`phone_number`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_contacts` (
           `id` int NOT NULL AUTO_INCREMENT,
           `owner_citizenid` varchar(60) NOT NULL,
@@ -691,7 +691,7 @@ CreateThread(function()
           KEY `idx_owner` (`owner_citizenid`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_messages` (
           `id` int NOT NULL AUTO_INCREMENT,
           `from_citizenid` varchar(60) NOT NULL,
@@ -706,7 +706,7 @@ CreateThread(function()
           KEY `idx_pair` (`from_number`,`to_number`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_ads` (
           `id` int NOT NULL AUTO_INCREMENT,
           `citizenid` varchar(60) NOT NULL,
@@ -718,7 +718,7 @@ CreateThread(function()
           KEY `idx_created` (`created_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_posts` (
           `id` int NOT NULL AUTO_INCREMENT,
           `citizenid` varchar(60) NOT NULL,
@@ -731,7 +731,7 @@ CreateThread(function()
           KEY `idx_created` (`created_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_accounts` (
           `id` int NOT NULL AUTO_INCREMENT,
           `citizenid` varchar(60) NOT NULL,
@@ -743,7 +743,7 @@ CreateThread(function()
           UNIQUE KEY `uniq_phone_accounts_username` (`username`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_installed_apps` (
           `citizenid` varchar(60) NOT NULL,
           `app_id` varchar(40) NOT NULL,
