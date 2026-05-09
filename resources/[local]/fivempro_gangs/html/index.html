@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gang Tablet — Turfs</title>
+  <title>Gaujų planšetė</title>
   <link rel="stylesheet" href="vendor/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -13,7 +13,7 @@
       <header class="tablet-head">
         <div class="head-brand">
           <span class="brand-dot"></span>
-          <h2>Gaujų territorijos</h2>
+          <h2>Gaujų planšetė</h2>
         </div>
         <div class="head-actions row">
           <button type="button" id="btnRefresh" class="btn btn-ghost">Atnaujinti</button>
@@ -21,46 +21,64 @@
         </div>
       </header>
 
+      <nav class="tablet-tabs" role="tablist">
+        <button type="button" class="tab-btn" data-tab="register" role="tab">Registracija</button>
+        <button type="button" class="tab-btn" data-tab="gang" role="tab">Gauja</button>
+        <button type="button" class="tab-btn" data-tab="map" role="tab">Žemėlapis</button>
+      </nav>
+
       <div class="tablet-body">
-        <aside class="side-rail">
-          <section id="registerPanel" class="rail-card hidden">
+        <section id="tabPanelRegister" class="tab-panel hidden" role="tabpanel">
+          <div class="rail-card">
             <h3>Nauja gauja</h3>
             <div class="grid tight">
               <label>Pavadinimas <input id="gangName" type="text" maxlength="42" placeholder="Pvz. Grove" /></label>
               <label>Tipas <select id="gangType"></select></label>
-              <label>Spalva <select id="primaryColor"></select></label>
-              <label>Papild. <select id="secondaryColor"></select></label>
+              <div class="color-field">
+                <span class="color-field-label">Spalva</span>
+                <select id="primaryColor" class="color-select-native" aria-hidden="true" tabindex="-1"></select>
+                <div id="primarySwatches" class="color-swatches" role="group" aria-label="Pagrindinė spalva"></div>
+              </div>
+              <div class="color-field">
+                <span class="color-field-label">Papild.</span>
+                <select id="secondaryColor" class="color-select-native" aria-hidden="true" tabindex="-1"></select>
+                <div id="secondarySwatches" class="color-swatches" role="group" aria-label="Papildoma spalva"></div>
+              </div>
             </div>
             <div id="colorWarn" class="warn hidden"></div>
             <button type="button" id="btnCreate" class="btn btn-primary wide">Sukurti gaują</button>
-          </section>
+          </div>
+          <div class="rail-card hints">
+            <p class="small muted">Užpildyk formą ir sukurk gaują. Turfų žemėlapį rasi skiltyje <strong>Žemėlapis</strong>.</p>
+          </div>
+        </section>
 
-          <section id="gangPanel" class="rail-card hidden">
+        <section id="tabPanelGang" class="tab-panel hidden" role="tabpanel">
+          <div id="gangPanelEmpty" class="rail-card hidden">
+            <p class="small muted">Dar nepriklausai gaujai — pirmiausia skiltyje <strong>Registracija</strong> sukurk gaują.</p>
+          </div>
+          <div id="gangPanelContent" class="rail-card hidden">
             <h3 id="gangTitle">—</h3>
             <div id="gangMeta" class="muted small"></div>
-          </section>
+          </div>
+          <div class="rail-card hints">
+            <p class="small muted"><strong>Žemėlapyje</strong> spustelėjimas ant teritorijos nustato GPS tašką centre.</p>
+          </div>
+        </section>
 
-          <section class="rail-card hints">
-            <p class="small muted"><strong>Užtemdyk</strong> teritoriją — spustelėjimas ant žiedo nustato GPS tašką centre.</p>
-          </section>
-        </aside>
-
-        <div class="map-column">
+        <section id="tabPanelMap" class="tab-panel hidden" role="tabpanel">
           <div id="mapStage" class="map-stage">
             <div class="map-zoom-bar">
               <button type="button" id="zoomIn" class="zoom-btn" title="Priartinti">+</button>
               <button type="button" id="zoomOut" class="zoom-btn" title="Nutolinti">−</button>
             </div>
-
             <div id="mapViewport" class="map-viewport">
               <div id="leafletMap" class="leaflet-map"></div>
             </div>
-
             <div id="mapTooltip" class="map-tooltip hidden"></div>
           </div>
-
           <button type="button" id="tabletHomeBtn" class="tablet-home-dot" aria-label="Centras" title="Atstatyti vaizdą"></button>
-        </div>
+        </section>
       </div>
     </div>
   </div>

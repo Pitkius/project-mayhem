@@ -1,18 +1,28 @@
 const tablet = document.getElementById("tablet");
-const registerPanel = document.getElementById("registerPanel");
-const gangPanel = document.getElementById("gangPanel");
 const gangTitle = document.getElementById("gangTitle");
 const gangMeta = document.getElementById("gangMeta");
+const gangPanelEmpty = document.getElementById("gangPanelEmpty");
+const gangPanelContent = document.getElementById("gangPanelContent");
 const gangName = document.getElementById("gangName");
 const gangType = document.getElementById("gangType");
 const primaryColor = document.getElementById("primaryColor");
 const secondaryColor = document.getElementById("secondaryColor");
 const colorWarn = document.getElementById("colorWarn");
 const mapTooltip = document.getElementById("mapTooltip");
+const primarySwatches = document.getElementById("primarySwatches");
+const secondarySwatches = document.getElementById("secondarySwatches");
+
+const tabPanels = {
+  register: document.getElementById("tabPanelRegister"),
+  gang: document.getElementById("tabPanelGang"),
+  map: document.getElementById("tabPanelMap"),
+};
 
 let lastState = null;
 let turfMap = null;
 let mapCfg = null;
+/** @type {'register' | 'gang' | 'map'} */
+let activeTab = "register";
 
 function resourceName() {
   try {
@@ -35,8 +45,19 @@ function safe(s) {
   return d.innerHTML;
 }
 
+/** FiveM NUI: statiniai failai iš `files` — absoliutus https://resursas/html/kelias */
+function nuiImageUrl(pathFromHtml) {
+  const raw = String(pathFromHtml || "").trim();
+  if (!raw || /^https?:\/\//i.test(raw)) return raw;
+  const res = resourceName();
+  const p = raw.replace(/^\/+/, "");
+  if (p.startsWith("html/")) return `https://${res}/${p}`;
+  return `https://${res}/html/${p}`;
+}
+
 function normalizeMapConfig(payload) {
   const t = payload.tabletMap || {};
+  const file = t.imageFile || "asset/gtav_satellite.jpg";
   return {
     minX: Number(t.gameMin?.x ?? -4000),
     minY: Number(t.gameMin?.y ?? -4000),
@@ -44,7 +65,7 @@ function normalizeMapConfig(payload) {
     maxY: Number(t.gameMax?.y ?? 8000),
     imgW: Number(t.imageWidth) || 1066,
     imgH: Number(t.imageHeight) || 861,
-    imageUrl: String(t.imageFile || "asset/gtav_satellite.jpg"),
+    imageUrl: nuiImageUrl(file),
   };
 }
 
@@ -85,6 +106,14 @@ function resetMapView() {
   turfMap.resetHome();
 }
 
+function scheduleMapInvalidate() {
+  [0, 50, 150, 350].forEach((ms) => {
+    setTimeout(() => {
+      if (turfMap) turfMap.invalidateSize();
+    }, ms);
+  });
+}
+
 function renderTurfsOnMap(state) {
   destroyTurfMap();
   if (typeof L === "undefined") return;
@@ -99,15 +128,15 @@ function renderTurfsOnMap(state) {
 
   turfMap = L.map("leafletMap", {
     crs: L.CRS.Simple,
-    minZoom: -2,
+    minZoom: -3,
     maxZoom: 6,
     zoomControl: false,
     attributionControl: false,
-    preferCanvas: true,
+    preferCanvas: false,
+    worldCopyJump: false,
   });
 
-  L.imageOverlay(mapCfg.imageUrl, bounds).addTo(turfMap);
-  turfMap.setMaxBounds(bounds);
+  L.imageOverlay(mapCfg.imageUrl, bounds, { interactive: true, className: "gangs-satellite-img" }).addTo(turfMap);
 
   const group = L.layerGroup().addTo(turfMap);
   const turfs = state.turfs || [];
@@ -161,21 +190,75 @@ function renderTurfsOnMap(state) {
     circle.on("mouseout", () => mapTooltip.classList.add("hidden"));
   });
 
-  turfMap.fitBounds(bounds);
+  turfMap.fitBounds(bounds, { padding: [4, 4], animate: false });
 
   turfMap.resetHome = () => {
     if (latLngs.length === 0) {
-      turfMap.fitBounds(bounds, { animate: true, padding: [8, 8] });
+      turfMap.fitBounds(bounds, { animate: true, padding: [20, 20] });
       return;
     }
     const b = L.latLngBounds(latLngs);
-    turfMap.fitBounds(b.pad(0.15), { animate: true, padding: [12, 12] });
+    turfMap.fitBounds(b.pad(0.2), { animate: true, padding: [24, 24] });
   };
 
   turfMap.whenReady(() => {
-    requestAnimationFrame(() => turfMap && turfMap.invalidateSize());
-    setTimeout(() => turfMap && turfMap.invalidateSize(), 80);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        scheduleMapInvalidate();
+      });
+    });
   });
+}
+
+/** Leaflet kuriamas tik kai skydelis jau matomas (ne 0×0 dėžutė). */
+function scheduleRenderMap(state) {
+  destroyTurfMap();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!lastState || activeTab !== "map") return;
+      renderTurfsOnMap(state || lastState);
+      scheduleMapInvalidate();
+    });
+  });
+}
+
+function hexKey(hex) {
+  return String(hex || "").trim().toUpperCase();
+}
+
+function syncSwatchSelection(selectEl, containerEl) {
+  if (!containerEl) return;
+  const cur = hexKey(selectEl.value);
+  containerEl.querySelectorAll(".color-swatch").forEach((b) => {
+    b.classList.toggle("active", hexKey(b.dataset.hex) === cur);
+  });
+}
+
+/** Vizualūs kvadratėliai; `<select>` lieka logikai (value / create). */
+function renderColorSwatches(selectEl, containerEl, palette, usage) {
+  if (!containerEl || !selectEl) return;
+  containerEl.innerHTML = "";
+  const opts = palette || [];
+  opts.forEach((hex) => {
+    const used = Number((usage || {})[String(hex).toUpperCase()] || 0);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "color-swatch";
+    if (used > 0) btn.classList.add("is-used");
+    btn.style.backgroundColor = hex;
+    btn.dataset.hex = hex;
+    btn.title = used > 0 ? `${hex} — jau naudojama` : String(hex);
+    btn.addEventListener("click", () => {
+      selectEl.value = hex;
+      syncSwatchSelection(selectEl, containerEl);
+      selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    containerEl.appendChild(btn);
+  });
+
+  const valid = opts.some((h) => hexKey(h) === hexKey(selectEl.value));
+  if (!valid && opts.length) selectEl.value = opts[0];
+  syncSwatchSelection(selectEl, containerEl);
 }
 
 function renderPalette(palette, usage) {
@@ -193,6 +276,8 @@ function renderPalette(palette, usage) {
     o2.textContent = txt;
     secondaryColor.appendChild(o2);
   });
+  renderColorSwatches(primaryColor, primarySwatches, palette, usage);
+  renderColorSwatches(secondaryColor, secondarySwatches, palette, usage);
 }
 
 function mergeTabletMap(res) {
@@ -201,9 +286,45 @@ function mergeTabletMap(res) {
   return res;
 }
 
+function updateGangTabContent(state) {
+  if (state.hasGang) {
+    gangPanelEmpty.classList.add("hidden");
+    gangPanelContent.classList.remove("hidden");
+    gangTitle.textContent = `${state.gang.name} (${state.gang.gang_type})`;
+    gangMeta.textContent = `Rep: ${state.gang.reputation || 0} · Heat: ${state.gang.heat || 0} · ${state.gang.color_hex || "-"} / ${state.gang.secondary_color_hex || "-"}`;
+  } else {
+    gangPanelContent.classList.add("hidden");
+    gangPanelEmpty.classList.remove("hidden");
+  }
+}
+
+function activateTab(tab) {
+  if (tab === "gang" && !lastState?.hasGang) tab = "register";
+  activeTab = tab;
+
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === tab);
+  });
+
+  Object.entries(tabPanels).forEach(([k, el]) => {
+    el.classList.toggle("hidden", k !== tab);
+  });
+
+  if (tab === "map") {
+    scheduleRenderMap(lastState);
+  } else {
+    destroyTurfMap();
+  }
+}
+
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+});
+
 function render(state) {
   lastState = state;
   tablet.classList.remove("hidden");
+
   gangType.innerHTML = "";
   Object.entries(state.gangTypes || {}).forEach(([k, v]) => {
     const o = document.createElement("option");
@@ -212,16 +333,11 @@ function render(state) {
     gangType.appendChild(o);
   });
   renderPalette(state.palette || [], state.colorUsage || {});
-  renderTurfsOnMap(state);
-  if (!state.hasGang) {
-    registerPanel.classList.remove("hidden");
-    gangPanel.classList.add("hidden");
-  } else {
-    registerPanel.classList.add("hidden");
-    gangPanel.classList.remove("hidden");
-    gangTitle.textContent = `${state.gang.name} (${state.gang.gang_type})`;
-    gangMeta.textContent = `Rep: ${state.gang.reputation || 0} · Heat: ${state.gang.heat || 0} · ${state.gang.color_hex || "-"} / ${state.gang.secondary_color_hex || "-"}`;
-  }
+  updateGangTabContent(state);
+
+  if (activeTab === "gang" && !state.hasGang) activeTab = "register";
+
+  activateTab(activeTab);
 }
 
 function refreshWarn() {
@@ -236,10 +352,15 @@ primaryColor.addEventListener("change", refreshWarn);
 window.addEventListener("message", (e) => {
   const d = e.data;
   if (!d || !d.action) return;
-  if (d.action === "open") render(d.payload || {});
+  if (d.action === "open") {
+    const payload = d.payload || {};
+    activeTab = payload.hasGang ? "map" : "register";
+    render(payload);
+  }
   if (d.action === "close") {
     destroyTurfMap();
     tablet.classList.add("hidden");
+    activeTab = "register";
   }
 });
 
@@ -260,7 +381,10 @@ document.getElementById("btnCreate").onclick = () => {
   post("gangs:createGang", payload).then(() =>
     post("gangs:refresh", {}).then((res) => {
       mergeTabletMap(res);
-      if (res && res.ok) render(res);
+      if (res && res.ok) {
+        activeTab = "gang";
+        render(res);
+      }
     }),
   );
 };

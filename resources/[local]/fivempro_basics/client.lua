@@ -255,22 +255,15 @@ local function isVehicleWeaponBlocked(veh)
     return false
 end
 
--- Natūralus GTA heal: kai HP nukrenta iki 50% ar mažiau, sustabdom automatinį atsistatymą.
+-- GTA `SetPlayerHealthRechargeMultiplier`: jei > 0, žaidėjas palaipsniui atsigauna (dažnai matoma kaip „gydymas“ po ~50 % HUD).
+-- Anksčiau išjungdavom tik kai entity HP <= 50 % max — tada dar vis HP > 100 (pvz. 150 = 50 HUD) vis tiek leisdavo regen. Išjungiam visada (RP).
 CreateThread(function()
-    local rechargeBlocked = false
     while true do
         local ped = PlayerPedId()
         if ped and ped ~= 0 and DoesEntityExist(ped) then
-            local hp = GetEntityHealth(ped)
-            local maxHp = GetEntityMaxHealth(ped)
-            local threshold = math.floor(maxHp * 0.5 + 0.5)
-            local shouldBlock = hp <= threshold
-            if shouldBlock ~= rechargeBlocked then
-                rechargeBlocked = shouldBlock
-                SetPlayerHealthRechargeMultiplier(PlayerId(), rechargeBlocked and 0.0 or 1.0)
-            end
+            SetPlayerHealthRechargeMultiplier(PlayerId(), 0.0)
         end
-        Wait(350)
+        Wait(400)
     end
 end)
 

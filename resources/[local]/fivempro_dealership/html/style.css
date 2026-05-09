@@ -18,8 +18,10 @@ body {
 }
 
 #app {
-  --fp-edge: rgba(72, 200, 170, 0.26);
-  --fp-edge-soft: rgba(72, 200, 170, 0.16);
+  --fp-accent: #a78bfa;
+  --fp-accent-soft: #c4b5fd;
+  --fp-edge: rgba(167, 139, 250, 0.28);
+  --fp-edge-soft: rgba(167, 139, 250, 0.16);
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -38,7 +40,7 @@ body {
   display: flex;
   flex-direction: column;
   background: transparent;
-  color: #e8f4f0;
+  color: #e5e7eb;
 }
 
 .panel-chrome {
@@ -74,8 +76,8 @@ body {
   font-size: 1.15rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #f2fffb;
-  text-shadow: 0 1px 12px rgba(80, 220, 180, 0.25);
+  color: #f5f3ff;
+  text-shadow: 0 1px 14px rgba(167, 139, 250, 0.35);
 }
 
 .close {
@@ -151,7 +153,7 @@ body {
   font-size: 0.65rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(200, 240, 230, 0.35);
+  color: rgba(196, 181, 253, 0.4);
   pointer-events: none;
 }
 
@@ -177,7 +179,7 @@ body {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #7ec4b8;
+  color: var(--fp-accent-soft);
   margin-bottom: 12px;
 }
 
@@ -190,9 +192,9 @@ body {
 .cat-btn {
   width: 100%;
   text-align: left;
-  border: 1px solid rgba(72, 200, 170, 0.2);
+  border: 1px solid rgba(167, 139, 250, 0.22);
   background: rgba(255, 255, 255, 0.035);
-  color: #d8ebe7;
+  color: #e2e8f0;
   padding: 10px 12px;
   border-radius: 10px;
   cursor: pointer;
@@ -202,17 +204,17 @@ body {
 
 .cat-btn:hover {
   background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(100, 220, 190, 0.35);
+  border-color: rgba(196, 181, 253, 0.4);
 }
 
 .cat-btn.active {
   background: linear-gradient(
     135deg,
-    rgba(40, 160, 120, 0.35) 0%,
-    rgba(30, 120, 100, 0.45) 100%
+    rgba(139, 92, 246, 0.38) 0%,
+    rgba(91, 33, 182, 0.42) 100%
   );
-  border-color: rgba(100, 240, 200, 0.55);
-  box-shadow: 0 0 20px rgba(60, 200, 160, 0.15);
+  border-color: rgba(196, 181, 253, 0.55);
+  box-shadow: 0 0 22px rgba(167, 139, 250, 0.22);
   color: #fff;
 }
 
@@ -232,10 +234,10 @@ body {
 
 .selected-price {
   font-size: clamp(1.1rem, 2vw, 1.5rem);
-  color: #5df0ca;
+  color: var(--fp-accent-soft);
   font-weight: 700;
   white-space: nowrap;
-  text-shadow: 0 0 24px rgba(93, 240, 202, 0.35);
+  text-shadow: 0 0 22px rgba(167, 139, 250, 0.45);
 }
 
 .stats {
@@ -246,15 +248,15 @@ body {
 
 .stats > div {
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(72, 200, 170, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.14);
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 0.82rem;
-  color: #a8cfc6;
+  color: #94a3b8;
 }
 
 .stats span {
-  color: #e2f7f2;
+  color: #f1f5f9;
   font-weight: 600;
 }
 
@@ -265,9 +267,9 @@ body {
 }
 
 .controls button {
-  border: 1px solid rgba(72, 200, 170, 0.28);
+  border: 1px solid rgba(167, 139, 250, 0.3);
   background: rgba(255, 255, 255, 0.06);
-  color: #e9f7f4;
+  color: #e2e8f0;
   padding: 10px 16px;
   border-radius: 10px;
   cursor: pointer;
@@ -278,7 +280,7 @@ body {
 
 .controls button:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(100, 220, 190, 0.45);
+  border-color: rgba(196, 181, 253, 0.5);
 }
 
 .controls button:active {
@@ -300,7 +302,7 @@ body {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #7ec4b8;
+  color: var(--fp-accent-soft);
   margin-top: 4px;
 }
 
@@ -325,9 +327,9 @@ body {
 }
 
 .color-dot.active {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--fp-accent-soft);
   outline-offset: 2px;
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 18px rgba(167, 139, 250, 0.45);
 }
 
 .cars-wrap {
@@ -364,7 +366,7 @@ body {
 }
 
 .cars::-webkit-scrollbar-thumb {
-  background: rgba(72, 200, 170, 0.35);
+  background: rgba(167, 139, 250, 0.4);
   border-radius: 4px;
 }
 
@@ -392,18 +394,18 @@ body {
 }
 
 .car-card:hover {
-  border-color: rgba(100, 220, 190, 0.55);
+  border-color: rgba(196, 181, 253, 0.55);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 8px 28px rgba(0, 0, 0, 0.35);
 }
 
 .car-card.active {
-  border-color: rgba(100, 240, 200, 0.9);
+  border-color: rgba(196, 181, 253, 0.95);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 1px rgba(100, 240, 200, 0.35),
-    0 10px 32px rgba(40, 160, 120, 0.22);
+    0 0 0 1px rgba(167, 139, 250, 0.45),
+    0 10px 32px rgba(109, 40, 217, 0.28);
 }
 
 .car-img {
@@ -430,7 +432,7 @@ body {
 }
 
 .car-price {
-  color: #5df0ca;
+  color: var(--fp-accent-soft);
   font-weight: 700;
   margin-top: 4px;
   font-size: 0.9rem;

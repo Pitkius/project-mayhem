@@ -47,9 +47,16 @@ end
 
 -- Handlers
 
+--- QB dažnai atnaujina inventorių per `UpdatePlayerDataField` — visada skaitom iš core, ne iš pasenusios `PlayerData` kopijos.
+local function getItemsFromCore()
+    local pd = QBCore.Functions.GetPlayerData()
+    return pd and pd.items or nil
+end
+
 local function resolveCurrentWeaponDataByName(weaponName)
-    if not PlayerData or not PlayerData.items then return nil end
-    for _, item in pairs(PlayerData.items) do
+    local items = getItemsFromCore()
+    if not items then return nil end
+    for _, item in pairs(items) do
         if item and item.type == 'weapon' and item.name == weaponName then
             return item
         end
@@ -58,9 +65,11 @@ local function resolveCurrentWeaponDataByName(weaponName)
 end
 
 local function getTotalAmmoItems(itemName)
-    if not itemName or not PlayerData or not PlayerData.items then return 0 end
+    if not itemName then return 0 end
+    local items = getItemsFromCore()
+    if not items then return 0 end
     local total = 0
-    for _, item in pairs(PlayerData.items) do
+    for _, item in pairs(items) do
         if item and item.name == itemName then
             total = total + (tonumber(item.amount) or 0)
         end
@@ -86,7 +95,11 @@ RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
 end)
 
 RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
-    PlayerData = val
+    PlayerData = val or QBCore.Functions.GetPlayerData() or {}
+end)
+
+RegisterNetEvent('QBCore:Player:UpdatePlayerDataField', function(_, _)
+    PlayerData = QBCore.Functions.GetPlayerData() or {}
 end)
 
 -- Functions
@@ -476,13 +489,14 @@ CreateThread(function()
             local inRange = false
             local ped = PlayerPedId()
             local pos = GetEntityCoords(ped)
+            local myCitizenId = (QBCore.Functions.GetPlayerData() or {}).citizenid
             for k, data in pairs(Config.WeaponRepairPoints) do
                 local distance = #(pos - data.coords)
                 if distance < 10 then
                     inRange = true
                     if distance < 1 then
                         if data.IsRepairing then
-                            if data.RepairingData.CitizenId ~= PlayerData.citizenid then
+                            if data.RepairingData.CitizenId ~= myCitizenId then
                                 DrawText3Ds(data.coords.x, data.coords.y, data.coords.z, Lang:t('info.repairshop_not_usable'))
                             else
                                 if not data.RepairingData.Ready then
@@ -505,7 +519,7 @@ CreateThread(function()
                                         end, k, CurrentWeaponData)
                                     end
                                 else
-                                    if data.RepairingData.CitizenId ~= PlayerData.citizenid then
+                                    if data.RepairingData.CitizenId ~= myCitizenId then
                                         DrawText3Ds(data.coords.x, data.coords.y, data.coords.z, Lang:t('info.repairshop_not_usable'))
                                     else
                                         DrawText3Ds(data.coords.x, data.coords.y, data.coords.z, Lang:t('info.take_weapon_back'))
@@ -517,7 +531,7 @@ CreateThread(function()
                             else
                                 if data.RepairingData.CitizenId == nil then
                                     DrawText3Ds(data.coords.x, data.coords.y, data.coords.z, Lang:t('error.no_weapon_in_hand'))
-                                elseif data.RepairingData.CitizenId == PlayerData.citizenid then
+                                elseif data.RepairingData.CitizenId == myCitizenId then
                                     DrawText3Ds(data.coords.x, data.coords.y, data.coords.z, Lang:t('info.take_weapon_back'))
                                     if IsControlJustPressed(0, 38) then
                                         TriggerServerEvent('qb-weapons:server:TakeBackWeapon', k, data)

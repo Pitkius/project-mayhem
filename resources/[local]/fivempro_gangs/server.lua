@@ -120,7 +120,8 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
             gangTypes = Config.GangTypes,
             palette = Config.ColorPalette or {},
             colorUsage = getColorUsage(),
-            turfs = getTurfs()
+            turfs = getTurfs(),
+            tabletMap = Config.TabletMap or {},
         })
     end
     cb({
@@ -132,6 +133,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
         gangTypes = Config.GangTypes,
         palette = Config.ColorPalette or {},
         colorUsage = getColorUsage(),
+        tabletMap = Config.TabletMap or {},
     })
 end)
 

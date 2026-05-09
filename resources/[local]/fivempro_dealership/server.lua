@@ -14,12 +14,48 @@ local function normalizeShopValue(shop)
     return {}
 end
 
-local function resolvePrice(model, defaultPrice)
+local CIVILIAN_CORE_BLOCKED = {
+    rhino = true, khanjali = true, insurgent = true, insurgent2 = true, insurgent3 = true,
+    apc = true, scarab = true, scarab2 = true, scarab3 = true, halftrack = true,
+    nightshark = true, barrage = true, menacer = true, oppressor = true, oppressor2 = true,
+    deluxo = true, ruiner2 = true, ruiner3 = true, tank = true, wastelander = true,
+    technical = true, technical2 = true, technical3 = true,
+}
+
+local function civilianCategoryAllowed(cat)
+    local t = Config.CivilianShopAllowedCategories
+    if not t or not next(t) then return true end
+    return t[cat] == true
+end
+
+local function mergeCivilianBlocked()
+    local blocked = {}
+    for k, v in pairs(CIVILIAN_CORE_BLOCKED) do
+        blocked[k] = v
+    end
+    for k, v in pairs(Config.CivilianShopExtraBlockedModels or {}) do
+        if v then blocked[k] = true end
+    end
+    return blocked
+end
+
+local function resolvePrice(model, defaultPrice, category)
+    local price
     local override = Config.PriceOverrides[model]
     if override and override > 0 then
-        return override
+        price = override
+    else
+        price = math.max(1, tonumber(defaultPrice) or 1)
     end
-    return math.max(1, tonumber(defaultPrice) or 1)
+    local bands = Config.CivilianPriceBands
+    if bands then
+        local cat = category or 'other'
+        local b = bands[cat] or bands._default
+        if b and b.min and b.max then
+            price = math.max(tonumber(b.min) or 0, math.min(tonumber(b.max) or price, price))
+        end
+    end
+    return price
 end
 
 local function resolveCategory(model, baseCategory)
@@ -29,41 +65,32 @@ local function resolveCategory(model, baseCategory)
     return baseCategory or 'other'
 end
 
+local civilianBlockedMerged = nil
+
+local function getCivilianBlocked()
+    if not civilianBlockedMerged then
+        civilianBlockedMerged = mergeCivilianBlocked()
+    end
+    return civilianBlockedMerged
+end
+
+--- Perkrovus resursą – atnaujinti sujungtą blokų lentelę.
+local function refreshCivilianBlocked()
+    civilianBlockedMerged = mergeCivilianBlocked()
+end
+
 local function isModelBlockedForCivilianShop(model, baseCategory)
     model = string.lower(model or '')
     local cat = tostring(baseCategory or '')
 
+    if not civilianCategoryAllowed(cat) then
+        return true
+    end
     if cat == 'military' or cat == 'trains' then
         return true
     end
 
-    local blockedExact = {
-        rhino = true,
-        khanjali = true,
-        insurgent = true,
-        insurgent2 = true,
-        insurgent3 = true,
-        apc = true,
-        scarab = true,
-        scarab2 = true,
-        scarab3 = true,
-        halftrack = true,
-        nightshark = true,
-        barrage = true,
-        menacer = true,
-        oppressor = true,
-        oppressor2 = true,
-        deluxo = true,
-        ruiner2 = true,
-        ruiner3 = true,
-        tank = true,
-        wastelander = true,
-        technical = true,
-        technical2 = true,
-        technical3 = true,
-    }
-
-    if blockedExact[model] then
+    if getCivilianBlocked()[model] then
         return true
     end
 
@@ -74,13 +101,7 @@ local function isModelBlockedForCivilianShop(model, baseCategory)
     if lower:find('weapon', 1, true) or lower:find('gun', 1, true) then
         return true
     end
-    if lower:find('widebody', 1, true) or lower:find('wb', 1, true) then
-        return true
-    end
-    if lower:find('carbon', 1, true) then
-        return true
-    end
-    if lower:find('rocket', 1, true) or lower:find('jet', 1, true) then
+    if lower:find('widebody', 1, true) then
         return true
     end
 
@@ -88,6 +109,7 @@ local function isModelBlockedForCivilianShop(model, baseCategory)
 end
 
 local function buildCatalog()
+    refreshCivilianBlocked()
     local categories = {}
     local vehicles = {}
     for _, veh in pairs(QBCore.Shared.Vehicles) do
@@ -97,7 +119,7 @@ local function buildCatalog()
                 local model = string.lower(veh.model)
                 local category = resolveCategory(model, veh.category)
                 if not isModelBlockedForCivilianShop(model, veh.category) then
-                    local price = resolvePrice(model, veh.price)
+                    local price = resolvePrice(model, veh.price, category)
                     categories[category] = Config.CategoryLabels[category] or category
                     vehicles[#vehicles + 1] = {
                         model = model,

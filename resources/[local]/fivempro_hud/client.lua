@@ -45,10 +45,14 @@ local function clamp(value, minValue, maxValue)
     return value
 end
 
+--- QB dažnai atnaujina `metadata` per `QBCore:Player:UpdatePlayerDataField`, ne per pilną `SetPlayerData` — todėl visada skaitom iš `GetPlayerData()`.
 local function getNeeds()
-    local metadata = PlayerData.metadata or {}
-    local hunger = metadata.hunger or 100
-    local thirst = metadata.thirst or 100
+    local pd = QBCore.Functions.GetPlayerData() or {}
+    local metadata = pd.metadata or {}
+    local hunger = tonumber(metadata.hunger)
+    local thirst = tonumber(metadata.thirst)
+    if hunger == nil then hunger = 100 end
+    if thirst == nil then thirst = 100 end
     return clamp(hunger, 0, 100), clamp(thirst, 0, 100)
 end
 
@@ -172,12 +176,26 @@ local function closeHudMenu()
     SendNUIMessage({ action = 'closeMenu' })
 end
 
+local function syncPlayerDataFromCore()
+    PlayerData = QBCore.Functions.GetPlayerData() or {}
+end
+
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    PlayerData = QBCore.Functions.GetPlayerData()
+    syncPlayerDataFromCore()
 end)
 
 RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
-    PlayerData = val
+    PlayerData = val or QBCore.Functions.GetPlayerData() or {}
+end)
+
+RegisterNetEvent('QBCore:Player:UpdatePlayerDataField', function(_, _)
+    syncPlayerDataFromCore()
+end)
+
+--- QB / consumables / fivempro_basics siunčia po `hunger`/`thirst` pakeitimo (nebūtina klausytis argumentų – imam iš `GetPlayerData`).
+RegisterNetEvent('hud:client:UpdateNeeds', function()
+    syncPlayerDataFromCore()
+    pushHud()
 end)
 
 RegisterCommand('fivempro_seatbelt', function()

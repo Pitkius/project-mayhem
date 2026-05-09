@@ -19,6 +19,14 @@ local function requestAnim(dict)
     return HasAnimDictLoaded(dict)
 end
 
+--- Turi būti virš `ensurePhoneProp` — Lua lokalių „forward“ nėra; kitaip `clearPhoneProp` tampa global ir nil.
+local function clearPhoneProp()
+    if phoneProp and DoesEntityExist(phoneProp) then
+        DeleteEntity(phoneProp)
+    end
+    phoneProp = nil
+end
+
 local function ensurePhoneProp()
     local ped = PlayerPedId()
     local model = joaat('prop_npc_phone_02')
@@ -34,13 +42,6 @@ local function ensurePhoneProp()
     phoneProp = CreateObject(model, coords.x, coords.y, coords.z + 0.2, true, true, false)
     AttachEntityToEntity(phoneProp, ped, GetPedBoneIndex(ped, 57005), 0.12, 0.02, -0.02, 90.0, 120.0, 0.0, true, true, false, true, 1, true)
     SetModelAsNoLongerNeeded(model)
-end
-
-local function clearPhoneProp()
-    if phoneProp and DoesEntityExist(phoneProp) then
-        DeleteEntity(phoneProp)
-    end
-    phoneProp = nil
 end
 
 local function sendUi(action, payload)

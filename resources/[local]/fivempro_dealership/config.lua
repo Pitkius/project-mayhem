@@ -89,6 +89,74 @@ Config.PriceOverrides = {
     -- Coupes
     cogcabrio = 45000, exemplar = 60000, f620 = 55000, felon = 50000, felon2 = 65000,
     jackal = 48000, oracle = 52000, oracle2 = 58000, zion = 50000, zion2 = 55000,
+    asbo = 12000, club = 9000, weevil = 10000, boor = 22000,
+}
+
+--- Civilinis Simion: tik šios QB `category` reikšmės (likusios – nerodomos).
+Config.CivilianShopAllowedCategories = {
+    compacts = true,
+    sedans = true,
+    suvs = true,
+    wagons = true,
+    coupes = true,
+    muscle = true,
+    sportsclassics = true,
+    sports = true,
+    super = true,
+    motorcycles = true,
+    offroad = true,
+    utility = true,
+    vans = true,
+    cycles = true,
+}
+
+--- Po `PriceOverrides` ir QB kainos – ribos pagal kategoriją (RP ekonomika).
+Config.CivilianPriceBands = {
+    compacts = { min = 5000, max = 25000 },
+    cycles = { min = 500, max = 15000 },
+    sedans = { min = 15000, max = 60000 },
+    wagons = { min = 12000, max = 55000 },
+    coupes = { min = 18000, max = 90000 },
+    suvs = { min = 35000, max = 120000 },
+    sports = { min = 80000, max = 350000 },
+    sportsclassics = { min = 25000, max = 280000 },
+    super = { min = 500000, max = 2000000 },
+    muscle = { min = 12000, max = 220000 },
+    offroad = { min = 15000, max = 150000 },
+    utility = { min = 20000, max = 90000 },
+    vans = { min = 20000, max = 90000 },
+    motorcycles = { min = 10000, max = 120000 },
+    _default = { min = 5000, max = 2500000 },
+}
+
+--- Papildomas blokas civiliniam katalogui (šarvai / ginklai / arena / aiškūs dubliatai).
+Config.CivilianShopExtraBlockedModels = {
+    kuruma2 = true, voltic2 = true, caracara2 = true, tampa3 = true,
+    vigilante = true, scramjet = true, toreador = true, stromberg = true,
+    dune3 = true, dune4 = true, dune5 = true,
+    deathbike = true, deathbike2 = true, deathbike3 = true,
+    baller2 = true, baller3 = true, baller4 = true, baller5 = true, baller6 = true, baller7 = true,
+    blista2 = true, blista3 = true, kanjo = true, kanjosj = true,
+    brioso3 = true,
+    issi4 = true, issi5 = true, issi6 = true, issi7 = true,
+    buffalo2 = true, buffalo4 = true, buffalo5 = true,
+    dominator2 = true, dominator3 = true, dominator4 = true, dominator7 = true, dominator8 = true, dominator9 = true,
+    schafter4 = true,
+    sultan2 = true, sultan3 = true, sultanrs = true,
+    comet3 = true, comet4 = true, comet5 = true, comet6 = true, comet7 = true,
+    jester2 = true, jester4 = true,
+    elegy = true,
+    futo2 = true,
+    glendale2 = true, primo2 = true, dilettante2 = true,
+    dukes2 = true,
+    patriot2 = true, patriot3 = true,
+    jb7002 = true,
+    impaler2 = true, impaler3 = true, impaler4 = true, impaler5 = true, impaler6 = true,
+    imperator = true, imperator2 = true, imperator3 = true,
+    gauntlet2 = true, gauntlet3 = true, gauntlet4 = true, gauntlet5 = true,
+    weevil2 = true,
+    tulip2 = true, vigero2 = true, vigero3 = true,
+    deity = true, jubilee = true, asterope2 = true,
 }
 
 --- Policijos salonas – tas pats NUI kaip Simion; mašinos įrašomos į `pd_*` garažą pagal stotį.
