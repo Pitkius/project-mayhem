@@ -81,11 +81,21 @@ MAIN_STATS.forEach((k) => {
 
 const carSpeedDigits = document.getElementById("carSpeedDigits");
 const carRpmArc = document.getElementById("carRpmArc");
-const carFuelTrack = document.getElementById("carFuelTrack");
-const carFuelFill = document.getElementById("carFuelFill");
-const carIconBelt = document.getElementById("carIconBelt");
+const carFuelArc = document.getElementById("carFuelArc");
+const carHpFill = document.getElementById("carHpFill");
+const carHpPct = document.getElementById("carHpPct");
+const carStaFill = document.getElementById("carStaFill");
+const carStaPct = document.getElementById("carStaPct");
+const carIcoEngine = document.getElementById("carIcoEngine");
+const carIcoDoors = document.getElementById("carIcoDoors");
+const carIcoLights = document.getElementById("carIcoLights");
+const carIcoBelt = document.getElementById("carIcoBelt");
 const carhudClassic = document.getElementById("carhudClassic");
 const vehiclePanel = document.getElementById("vehiclePanel");
+const vehicleListMenu = document.getElementById("vehicleListMenu");
+const vlmHeader = document.getElementById("vlmHeader");
+const vlmSub = document.getElementById("vlmSub");
+const vlmRows = document.getElementById("vlmRows");
 const vpClock = document.getElementById("vpClock");
 const vpWeather = document.getElementById("vpWeather");
 const vpStreet = document.getElementById("vpStreet");
@@ -95,7 +105,8 @@ const vpFuelFill = document.getElementById("vpFuelFill");
 const vpHazardToggle = document.getElementById("vpHazardToggle");
 const vpBtnClose = document.getElementById("vpBtnClose");
 
-const CAR_RPM_ARC_LEN = 245;
+const CAR_RPM_ARC_LEN = (270 / 360) * 2 * Math.PI * 50;
+const CAR_FUEL_ARC_LEN = (270 / 360) * 2 * Math.PI * 58;
 
 (function initRings() {
   MAIN_STATS.forEach((k) => {
@@ -106,10 +117,15 @@ const CAR_RPM_ARC_LEN = 245;
   });
 })();
 
-(function initCarRpm() {
-  if (!carRpmArc) return;
-  carRpmArc.style.strokeDasharray = `${CAR_RPM_ARC_LEN} 400`;
-  carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN);
+(function initCarArcs() {
+  if (carRpmArc) {
+    carRpmArc.style.strokeDasharray = `${CAR_RPM_ARC_LEN} 400`;
+    carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN);
+  }
+  if (carFuelArc) {
+    carFuelArc.style.strokeDasharray = `${CAR_FUEL_ARC_LEN} 400`;
+    carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN);
+  }
 })();
 
 let currentSettings = {
@@ -286,6 +302,39 @@ window.addEventListener("message", (event) => {
     return;
   }
 
+  if (data.action === "vehicleList") {
+    if (!vehicleListMenu) return;
+    if (!data.open) {
+      vehicleListMenu.classList.add("hidden");
+      return;
+    }
+    vehicleListMenu.classList.remove("hidden");
+    if (vlmHeader) vlmHeader.textContent = data.title || "—";
+    if (vlmSub) vlmSub.textContent = data.subtitle || "";
+    if (vlmRows) {
+      vlmRows.innerHTML = "";
+      (data.rows || []).forEach((row) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "vlm-row";
+        btn.textContent = row.label || "";
+        btn.addEventListener("click", () => {
+          if (row.id === "close") {
+            nuiPost("vehicleList:action", { action: "close" });
+            return;
+          }
+          nuiPost("vehicleList:action", {
+            action: row.id,
+            doorIndex: row.doorIndex,
+            label: row.label,
+          });
+        });
+        vlmRows.appendChild(btn);
+      });
+    }
+    return;
+  }
+
   if (data.action === "vehiclePanel") {
     if (!vehiclePanel) return;
     if (!data.open) {
@@ -373,19 +422,36 @@ window.addEventListener("message", (event) => {
     const rpm = Math.max(0, Math.min(100, Number(data.rpm) || 0));
     carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN * (1 - rpm / 100));
   }
-  if (carFuelTrack) carFuelTrack.classList.toggle("hidden", !currentSettings.show.fuel);
-  if (carFuelFill) {
+  if (carFuelArc) {
     const fl = Math.max(0, Math.min(100, Number(data.fuel) || 0));
-    carFuelFill.style.height = `${fl}%`;
+    carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - fl / 100));
+    carFuelArc.classList.toggle("hidden", !currentSettings.show.fuel);
   }
-  if (carIconBelt) {
-    carIconBelt.classList.toggle("belt-off", !data.seatbelt);
-    carIconBelt.classList.toggle("hidden", !currentSettings.show.seatbelt);
+  const hp = Math.max(0, Math.min(100, Number(data.health) || 0));
+  if (carHpFill) carHpFill.style.height = `${hp}%`;
+  if (carHpPct) carHpPct.textContent = String(Math.round(hp));
+  const st = Math.max(0, Math.min(100, Number(data.stamina) || 0));
+  if (carStaFill) carStaFill.style.height = `${st}%`;
+  if (carStaPct) carStaPct.textContent = String(Math.round(st));
+
+  if (carIcoEngine) {
+    carIcoEngine.classList.toggle("state-on", !!data.engineOn);
+    carIcoEngine.classList.toggle("state-warn", Number(data.engineHealth) < 500);
   }
-  const engIco = document.getElementById("carIconEngine");
-  if (engIco) engIco.classList.toggle("hidden", !showCarHud);
+  if (carIcoDoors) {
+    carIcoDoors.classList.toggle("state-on", !!data.doorsLocked);
+  }
+  if (carIcoLights) {
+    carIcoLights.classList.toggle("state-on", !!data.lightsOn);
+  }
+  if (carIcoBelt) {
+    carIcoBelt.classList.toggle("belt-off", !data.seatbelt);
+    carIcoBelt.classList.toggle("hidden", !currentSettings.show.seatbelt);
+  }
   const carGaugeWrap = document.querySelector(".car-gauge-wrap");
-  if (carGaugeWrap) carGaugeWrap.classList.toggle("hidden", !currentSettings.show.speed);
+  if (carGaugeWrap) {
+    carGaugeWrap.classList.toggle("hidden", !currentSettings.show.speed && !currentSettings.show.fuel);
+  }
 });
 
 menu.preset.addEventListener("change", () => {
@@ -442,6 +508,10 @@ if (vpHazardToggle) {
   });
 }
 
+document.querySelector(".vlm-backdrop")?.addEventListener("click", () => {
+  nuiPost("vehicleList:action", { action: "close" });
+});
+
 window.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
   if (!hudMenu.classList.contains("hidden")) {
@@ -452,5 +522,10 @@ window.addEventListener("keydown", (e) => {
   if (vehiclePanel && !vehiclePanel.classList.contains("hidden")) {
     e.preventDefault();
     nuiPost("vehiclePanel:action", { action: "close" });
+    return;
+  }
+  if (vehicleListMenu && !vehicleListMenu.classList.contains("hidden")) {
+    e.preventDefault();
+    nuiPost("vehicleList:action", { action: "close" });
   }
 });

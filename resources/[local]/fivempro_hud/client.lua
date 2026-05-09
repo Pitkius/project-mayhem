@@ -27,6 +27,12 @@ local VEHICLE_PANEL_ACCENT = '#c5ff3d'
 
 local vehiclePanelOpen = false
 local interiorLightByNetId = {}
+local listMenuOpen = false
+local listMenuVeh = 0
+local lockStateByPlate = {}
+local engineStartBusy = false
+local displayStamina = 100.0
+local hazardEnabled = false
 
 local function deepCopy(tbl)
     local out = {}
@@ -45,7 +51,7 @@ local DEFAULT_PRESET = {
         hunger = true,
         thirst = true,
         armor = false,
-        stamina = false,
+        stamina = true,
         speed = false,
         fuel = false,
         seatbelt = false
@@ -134,6 +140,10 @@ local function pushHud()
     local rpmPct = 0
     local engineTemp = 0
     local veh = 0
+    local engineOn = false
+    local doorsLocked = true
+    local lightsOn = false
+    local engineHealth = 1000.0
     if inVehicle then
         veh = GetVehiclePedIsIn(ped, false)
         if veh == 0 then
@@ -144,14 +154,34 @@ local function pushHud()
             local rpm = GetVehicleCurrentRpm(veh)
             rpmPct = clamp(math.floor((rpm or 0.0) * 100.0 + 0.5), 0, 100)
             local eh = GetVehicleEngineHealth(veh) or 1000.0
+            engineHealth = eh
             engineTemp = clamp(math.floor((eh / 1000.0) * 42.0 + 58.0 + 0.5), 55, 115)
+            engineOn = GetIsVehicleEngineRunning(veh)
+            local st = GetVehicleDoorLockStatus(veh)
+            doorsLocked = st == 2 or st == 3 or st == 4
+            local _, lo = GetVehicleLightsState(veh)
+            lightsOn = lo == true or lo == 1
         end
     else
         seatbeltOn = false
         if hazardEnabled then
             hazardEnabled = false
         end
+        if listMenuOpen then
+            listMenuOpen = false
+            listMenuVeh = 0
+            if not hudMenuOpen and not vehiclePanelOpen then
+                SetNuiFocus(false, false)
+            end
+            SendNUIMessage({ action = 'vehicleList', open = false })
+        end
     end
+
+    local rawStam = GetPlayerSprintStaminaRemaining(PlayerId())
+    if type(rawStam) ~= 'number' then rawStam = 100.0 end
+    rawStam = clamp(rawStam, 0.0, 100.0)
+    displayStamina = displayStamina + (rawStam - displayStamina) * 0.14
+    local staminaSmooth = clamp(math.floor(displayStamina + 0.5), 0, 100)
 
     local s = currentSettings()
     SendNUIMessage({
@@ -160,7 +190,7 @@ local function pushHud()
         hudPreset = hudPreset,
         health = health,
         armor = armor,
-        stamina = clamp(math.floor(GetPlayerSprintStaminaRemaining(PlayerId()) + 0.5), 0, 100),
+        stamina = staminaSmooth,
         hunger = hunger,
         thirst = thirst,
         inVehicle = inVehicle,
@@ -169,6 +199,10 @@ local function pushHud()
         seatbelt = seatbeltOn,
         rpm = rpmPct,
         engineTemp = engineTemp,
+        engineOn = engineOn,
+        doorsLocked = doorsLocked,
+        lightsOn = lightsOn,
+        engineHealth = engineHealth,
         settings = s
     })
 end
@@ -189,6 +223,11 @@ local function setHudPreset(newPreset)
 end
 
 local function openHudMenu()
+    if listMenuOpen then
+        listMenuOpen = false
+        listMenuVeh = 0
+        SendNUIMessage({ action = 'vehicleList', open = false })
+    end
     hudMenuOpen = true
     SetNuiFocus(true, true)
     local payload = {
@@ -202,6 +241,9 @@ end
 
 local function closeHudMenu()
     hudMenuOpen = false
+    listMenuOpen = false
+    listMenuVeh = 0
+    SendNUIMessage({ action = 'vehicleList', open = false })
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'closeMenu' })
 end
@@ -293,8 +335,6 @@ RegisterNUICallback('hud:savePreset', function(data, cb)
     cb({ ok = true })
 end)
 
-local hazardEnabled = false
-
 local function clearHazardLights(veh)
     if veh and veh ~= 0 and DoesEntityExist(veh) then
         SetVehicleIndicatorLights(veh, 0, false)
@@ -305,7 +345,7 @@ end
 local function closeVehiclePanel()
     if not vehiclePanelOpen then return end
     vehiclePanelOpen = false
-    if not hudMenuOpen then
+    if not hudMenuOpen and not listMenuOpen then
         SetNuiFocus(false, false)
     end
     SendNUIMessage({ action = 'vehiclePanel', open = false })
@@ -393,6 +433,11 @@ local function openVehiclePanel()
         QBCore.Functions.Notify('Transporto panelė: turi būti automobilyje.', 'error')
         return
     end
+    if listMenuOpen then
+        listMenuOpen = false
+        listMenuVeh = 0
+        SendNUIMessage({ action = 'vehicleList', open = false })
+    end
     vehiclePanelOpen = true
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'vehiclePanel', open = true })
@@ -478,6 +523,172 @@ RegisterNUICallback('vehiclePanel:action', function(data, cb)
     cb({ ok = true })
 end)
 
+local function plateOfV(veh)
+    return (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
+end
+
+local function isVehicleLocked(veh)
+    local p = plateOfV(veh)
+    if p ~= '' and lockStateByPlate[p] ~= nil then
+        return lockStateByPlate[p]
+    end
+    local st = GetVehicleDoorLockStatus(veh)
+    return st == 2 or st == 4
+end
+
+local function setVehicleLocked(veh, locked)
+    local p = plateOfV(veh)
+    if p ~= '' then lockStateByPlate[p] = locked and true or false end
+    SetVehicleDoorsLocked(veh, locked and 2 or 1)
+    SetVehicleDoorsLockedForAllPlayers(veh, locked and true or false)
+    SetVehicleAlarm(veh, false)
+    SetVehicleAlarmTimeLeft(veh, 0)
+end
+
+local function toggleVehicleLockMenu(veh)
+    local nextLocked = not isVehicleLocked(veh)
+    setVehicleLocked(veh, nextLocked)
+    QBCore.Functions.Notify(nextLocked and 'Transportas užrakintas.' or 'Transportas atrakintas.', 'primary')
+end
+
+local function toggleVehicleDoorMenu(veh, doorIdx, label)
+    local ratio = GetVehicleDoorAngleRatio(veh, doorIdx)
+    if ratio > 0.05 then
+        SetVehicleDoorShut(veh, doorIdx, false)
+        QBCore.Functions.Notify(label .. ' uždaryta.', 'primary')
+    else
+        SetVehicleDoorOpen(veh, doorIdx, false, false)
+        QBCore.Functions.Notify(label .. ' atidaryta.', 'primary')
+    end
+end
+
+local function tryToggleEngineMenu(veh)
+    if engineStartBusy then return end
+    local on = GetIsVehicleEngineRunning(veh)
+    if on then
+        SetVehicleEngineOn(veh, false, true, true)
+        QBCore.Functions.Notify('Variklis išjungtas.', 'primary')
+        return
+    end
+
+    local hp = GetVehicleEngineHealth(veh)
+    local delay = 350
+    if hp < 700.0 then
+        delay = delay + math.floor((700.0 - hp) * 2.2)
+    end
+    delay = math.min(delay, 3500)
+    local failChance = 0.0
+    if hp < 800.0 then
+        failChance = math.min(0.85, (800.0 - hp) / 1000.0)
+    end
+
+    engineStartBusy = true
+    QBCore.Functions.Notify('Bandoma užvesti...', 'primary')
+    SetTimeout(delay, function()
+        engineStartBusy = false
+        if math.random() < failChance then
+            SetVehicleEngineOn(veh, false, true, true)
+            QBCore.Functions.Notify('Variklis neužsivedė. Pabandyk dar kartą.', 'error')
+            return
+        end
+        SetVehicleEngineOn(veh, true, false, true)
+        QBCore.Functions.Notify('Variklis užvestas.', 'success')
+    end)
+end
+
+local function closeVehicleListMenu()
+    if not listMenuOpen then return end
+    listMenuOpen = false
+    listMenuVeh = 0
+    if not hudMenuOpen and not vehiclePanelOpen then
+        SetNuiFocus(false, false)
+    end
+    SendNUIMessage({ action = 'vehicleList', open = false })
+end
+
+local function openVehicleQuickMenu(veh)
+    if veh == 0 or not DoesEntityExist(veh) then return false end
+    if GetPedInVehicleSeat(veh, -1) ~= PlayerPedId() then return false end
+    if vehiclePanelOpen then
+        vehiclePanelOpen = false
+        SendNUIMessage({ action = 'vehiclePanel', open = false })
+    end
+
+    local doors = 4
+    if type(GetNumberOfVehicleDoors) == 'function' then
+        local ok, n = pcall(GetNumberOfVehicleDoors, veh)
+        if ok and tonumber(n) then doors = tonumber(n) end
+    end
+    local plate = QBCore.Functions.GetPlate(veh) or 'N/A'
+    local model = string.upper(GetDisplayNameFromVehicleModel(GetEntityModel(veh)) or 'AUTO')
+    local title = ('%s [%s]'):format(model, plate)
+    local sub = ('Durų skaičius: %s'):format(doors)
+
+    local rows = {
+        { id = 'lock', label = 'Užrakinti / atrakinti' },
+        { id = 'engine', label = 'Variklis ON/OFF' },
+        { id = 'door', doorIndex = 4, label = 'Kapotas' },
+        { id = 'door', doorIndex = 5, label = 'Bagažinė' },
+    }
+    local maxDoor = math.max(1, math.min(4, doors))
+    for i = 0, maxDoor - 1 do
+        rows[#rows + 1] = { id = 'door', doorIndex = i, label = ('Durys #%s'):format(i + 1) }
+    end
+    rows[#rows + 1] = { id = 'close', label = 'Uždaryti' }
+
+    listMenuVeh = veh
+    listMenuOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'vehicleList',
+        open = true,
+        title = title,
+        subtitle = sub,
+        rows = rows,
+    })
+    return true
+end
+
+exports('OpenVehicleQuickMenu', openVehicleQuickMenu)
+
+RegisterNUICallback('vehicleList:action', function(data, cb)
+    local action = data and data.action or ''
+    if action == 'close' then
+        closeVehicleListMenu()
+        cb({ ok = true })
+        return
+    end
+
+    local ped = PlayerPedId()
+    if not IsPedInAnyVehicle(ped, false) then
+        closeVehicleListMenu()
+        cb({ ok = false })
+        return
+    end
+    local veh = GetVehiclePedIsIn(ped, false)
+    if veh == 0 or veh ~= listMenuVeh or not listMenuOpen then
+        closeVehicleListMenu()
+        cb({ ok = false })
+        return
+    end
+
+    if action == 'lock' then
+        toggleVehicleLockMenu(veh)
+    elseif action == 'engine' then
+        tryToggleEngineMenu(veh)
+    elseif action == 'door' then
+        local idx = tonumber(data.doorIndex)
+        if idx == nil or idx < 0 or idx > 5 then
+            cb({ ok = false })
+            return
+        end
+        local label = tostring(data and data.label or ('Durys #' .. tostring(idx + 1)))
+        toggleVehicleDoorMenu(veh, idx, label)
+    end
+
+    cb({ ok = true })
+end)
+
 CreateThread(function()
     local blink = false
     while true do
@@ -524,6 +735,8 @@ CreateThread(function()
             closeHudMenu()
         elseif vehiclePanelOpen and (IsControlJustPressed(0, 200) or IsControlJustPressed(0, 322)) then
             closeVehiclePanel()
+        elseif listMenuOpen and (IsControlJustPressed(0, 200) or IsControlJustPressed(0, 322)) then
+            closeVehicleListMenu()
         end
         Wait(0)
     end

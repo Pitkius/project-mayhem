@@ -13,5 +13,6 @@ client_scripts {
 dependencies {
     'qb-core',
     'qb-menu',
+    'fivempro_hud',
 }
 

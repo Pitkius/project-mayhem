@@ -18,3 +18,7 @@ client_scripts {
     'client.lua'
 }
 
+exports {
+    'OpenVehicleQuickMenu'
+}
+

@@ -17,6 +17,7 @@ client_scripts {
     'client/main.lua',
     'client/boss.lua',
     'client/emergency_kit.lua',
+    'client/pd_doors.lua',
 }
 
 server_scripts {

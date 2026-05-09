@@ -35,6 +35,8 @@ Config.Permissions = {
     --- PD sirenos / laikina įranga ant civilinės mašinos
     pd_siren_controller = 0,
     pd_emergency_kit = 0,
+    --- PD išorinių / vidinių durų ir vartų užraktas (E) – tik tarnyboje
+    pd_doors = 0,
 }
 
 --- Šviesų ir sirenos valdymas (masinoje): režimas per entity statebag (sinchr. visiems žaidėjams)
@@ -259,3 +261,109 @@ Config.DutyOutfits = {
 
 Config.TargetDistance = 2.5
 Config.MaxFineAmount = 50000
+
+--- PD durys / vartai (Gabz MRPD LS + automatinis Sandy / Paleto MLO skenavimas)
+Config.PdDoorToggleReach = 4.2
+Config.PdDoorGroups = {
+    {
+        id = 'ls_mrpd_reception',
+        label = 'Priimamojo įėjimas',
+        interact = vector3(434.81, -981.93, 30.89),
+        interactDist = 2.5,
+        defaultLocked = true,
+        doors = {
+            { model = 'gabz_mrpd_reception_entrancedoor', coords = vector3(434.7, -983.0, 30.8) },
+            { model = 'gabz_mrpd_reception_entrancedoor', coords = vector3(434.7, -980.7, 30.8) },
+        },
+    },
+    {
+        id = 'ls_mrpd_side',
+        label = 'Šoninis įėjimas',
+        interact = vector3(441.9, -998.7, 30.8),
+        interactDist = 2.5,
+        defaultLocked = true,
+        doors = {
+            { model = 'gabz_mrpd_reception_entrancedoor', coords = vector3(440.7, -998.7, 30.8) },
+            { model = 'gabz_mrpd_reception_entrancedoor', coords = vector3(443.0, -998.7, 30.8) },
+        },
+    },
+    {
+        id = 'ls_mrpd_back',
+        label = 'Galinis įėjimas',
+        interact = vector3(468.6, -1014.4, 26.4),
+        interactDist = 2.5,
+        defaultLocked = true,
+        doors = {
+            { model = 'gabz_mrpd_door_03', coords = vector3(469.7, -1014.4, 26.4) },
+            { model = 'gabz_mrpd_door_03', coords = vector3(467.3, -1014.4, 26.4) },
+        },
+    },
+    {
+        id = 'ls_mrpd_back_gate',
+        label = 'Galiniai vartai (aikštelė)',
+        interact = vector3(488.8, -1020.2, 30.0),
+        interactDist = 14.0,
+        defaultLocked = true,
+        doors = {
+            { model = 'hei_prop_station_gate', coords = vector3(488.8, -1017.2, 27.1) },
+        },
+    },
+    {
+        id = 'ls_mrpd_front_gate',
+        label = 'Priekiniai vartai',
+        interact = vector3(419.9, -1021.04, 30.5),
+        interactDist = 18.0,
+        defaultLocked = true,
+        doors = {
+            { model = 'prop_facgate_07b', coords = vector3(419.99, -1025.0, 28.99) },
+        },
+    },
+    {
+        id = 'ls_mrpd_garage_park',
+        label = 'Garažo įėjimas (parkavimas)',
+        interact = vector3(464.1, -997.5, 26.3),
+        interactDist = 2.0,
+        defaultLocked = true,
+        doors = {
+            { model = 'gabz_mrpd_room13_parkingdoor', coords = vector3(464.1, -997.5, 26.3) },
+        },
+    },
+}
+
+--- Automatinis durų radimas (objektai žemėlapyje pagal modelį ir dėžę) – Gabz Sandy / Paleto MLO
+Config.PdDoorDynamics = {
+    {
+        stationId = 'sandy',
+        label = 'PD durys (Sandy)',
+        bounds = { min = vector3(1835.0, 3655.0, 28.0), max = vector3(1895.0, 3715.0, 40.0) },
+        models = {
+            'hedwig_sheriff_door01',
+            'hedwig_sheriff_door02',
+            'hedwig_sheriff_door03',
+            'hedwig_sheriff_door04',
+            'hedwig_sheriff_door05',
+            'hedwig_sheriff_door06',
+            'hedwig_sheriff_garage_gardoor',
+            'hedwig_sheriif_garage_door',
+        },
+        pairDist = 2.35,
+        interactDist = 2.5,
+    },
+    {
+        stationId = 'paleto',
+        label = 'PD durys (Paleto)',
+        bounds = { min = vector3(-470.0, 5975.0, 24.0), max = vector3(-395.0, 6055.0, 38.0) },
+        models = {
+            'gabz_paletopd_doors01',
+            'gabz_paletopd_doors02',
+            'gabz_paletopd_doors03',
+            'gabz_paletopd_doors04',
+            'gabz_paletopd_doors05',
+            'gabz_paletopd_doors06',
+            'gabz_paletopd_glassdoorway',
+            'gabz_paletopd_glassdoorway_cells',
+        },
+        pairDist = 2.35,
+        interactDist = 2.5,
+    },
+}

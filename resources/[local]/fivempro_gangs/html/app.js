@@ -134,13 +134,16 @@ function renderTurfsOnMap(state) {
     attributionControl: false,
     preferCanvas: false,
     worldCopyJump: false,
+    dragging: true,
+    scrollWheelZoom: true,
+    doubleClickZoom: true,
+    boxZoom: false,
   });
 
   L.imageOverlay(mapCfg.imageUrl, bounds, { interactive: true, className: "gangs-satellite-img" }).addTo(turfMap);
 
   const group = L.layerGroup().addTo(turfMap);
   const turfs = state.turfs || [];
-  const latLngs = [];
 
   turfs.forEach((t) => {
     const x = Number(t.center_x);
@@ -150,31 +153,34 @@ function renderTurfsOnMap(state) {
 
     const center = gameToLatLng(x, y, mapCfg);
     const rad = gameRadiusToMap(r, mapCfg);
-    latLngs.push(center);
 
     const hasOwner = !!(t.owner_name && String(t.owner_name).trim());
     const col = String(t.owner_color_hex || "").trim();
-    const fill = hasOwner && col ? hexToRgba(col, 0.35) : "rgba(167, 139, 250, 0.12)";
-    const stroke = hasOwner && col ? hexToRgba(col, 0.8) : "rgba(196, 181, 253, 0.45)";
-
-    const circle = L.circle(center, {
-      radius: rad,
-      color: stroke,
-      weight: 2,
-      fillColor: fill,
-      fillOpacity: 1,
-    }).addTo(group);
+    const fillBase = hasOwner && col ? hexToRgba(col, 0.55) : "rgba(167, 139, 250, 0.35)";
+    const stroke = hasOwner && col ? hexToRgba(col, 0.95) : "rgba(196, 181, 253, 0.55)";
 
     const label = t.turf_label || t.turf_id;
     const owner = t.owner_name || "Laisva";
-    const prog = Number(t.progress || 0);
+    const prog = Math.max(0, Math.min(100, Number(t.progress || 0)));
+    const side = Math.max(26, Math.min(96, rad * 1.85));
+    const html = `<div class="turf-sq-marker" style="width:${side}px;height:${side}px;border-color:${stroke}">
+      <div class="turf-sq-marker-fill" style="height:${prog}%;background:${fillBase}"></div>
+      <span class="turf-sq-marker-ico" aria-hidden="true">▣</span>
+    </div>`;
+    const icon = L.divIcon({
+      className: "turf-sq-marker-wrap",
+      html,
+      iconSize: [side, side],
+      iconAnchor: [side / 2, side / 2],
+    });
+    const marker = L.marker(center, { icon, interactive: true }).addTo(group);
 
-    circle.on("click", (e) => {
+    marker.on("click", (e) => {
       L.DomEvent.stopPropagation(e);
       post("gangs:setWaypoint", { turfId: t.turf_id });
     });
 
-    circle.on("mousemove", (e) => {
+    marker.on("mousemove", (e) => {
       mapTooltip.classList.remove("hidden");
       mapTooltip.innerHTML = `<strong>${safe(label)}</strong>${safe(owner)} · ${prog}% užimta`;
       const stage = document.getElementById("mapStage");
@@ -187,18 +193,13 @@ function renderTurfsOnMap(state) {
       mapTooltip.style.left = `${Math.max(8, left)}px`;
       mapTooltip.style.top = `${Math.max(8, top)}px`;
     });
-    circle.on("mouseout", () => mapTooltip.classList.add("hidden"));
+    marker.on("mouseout", () => mapTooltip.classList.add("hidden"));
   });
 
-  turfMap.fitBounds(bounds, { padding: [4, 4], animate: false });
+  turfMap.fitBounds(bounds, { padding: [12, 12], animate: false, maxZoom: 0 });
 
   turfMap.resetHome = () => {
-    if (latLngs.length === 0) {
-      turfMap.fitBounds(bounds, { animate: true, padding: [20, 20] });
-      return;
-    }
-    const b = L.latLngBounds(latLngs);
-    turfMap.fitBounds(b.pad(0.2), { animate: true, padding: [24, 24] });
+    turfMap.fitBounds(bounds, { animate: true, padding: [24, 24], maxZoom: 0 });
   };
 
   turfMap.whenReady(() => {

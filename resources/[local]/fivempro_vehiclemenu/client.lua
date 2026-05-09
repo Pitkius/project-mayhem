@@ -96,6 +96,12 @@ end
 
 local function openVehicleMenu(veh)
     if veh == 0 or not DoesEntityExist(veh) then return end
+    if GetResourceState('fivempro_hud') == 'started' then
+        local ok, opened = pcall(function()
+            return exports['fivempro_hud']:OpenVehicleQuickMenu(veh)
+        end)
+        if ok and opened then return end
+    end
     local doors = 4
     if type(GetNumberOfVehicleDoors) == 'function' then
         local ok, n = pcall(GetNumberOfVehicleDoors, veh)

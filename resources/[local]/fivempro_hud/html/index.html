@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+    <div id="hudBrCluster" class="hud-br-cluster">
     <div id="hudRoot" class="hud-root">
         <div id="hudBars" class="hud-bars">
             <div id="row-health" class="bar">
@@ -130,29 +131,51 @@
 
     <div id="carhud" class="carhud carhud-sport hidden">
         <div class="car-sport-inner">
-            <div id="carFuelTrack" class="car-fuel-track hidden">
-                <div id="carFuelFill" class="car-fuel-fill"></div>
-                <span class="car-fuel-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33a2.5 2.5 0 002.5 2.5c.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5a2.5 2.5 0 005 0V9c0-.69-.28-1.32-.73-1.77zM12 10H6V5h6v5zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg></span>
+            <div class="car-mini-vitals">
+                <div class="car-mv" title="Gyvybės">
+                    <div id="carHpFill" class="car-mv-fill"></div>
+                    <span class="car-mv-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.733 5.733 0 0112 5.052 5.733 5.733 0 016.313 3 5.34 5.34 0 002.25 8.25c0 3.925 2.438 7.111 4.739 9.256a25.175 25.175 0 004.236 3.175l.022.012.007.003.005.002h.005a.75.75 0 00.556 0l.005-.002z"/></svg></span>
+                    <span id="carHpPct" class="car-mv-pct">100</span>
+                </div>
+                <div class="car-mv car-mv-stamina" title="Stamina">
+                    <div id="carStaFill" class="car-mv-fill"></div>
+                    <span class="car-mv-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg></span>
+                    <span id="carStaPct" class="car-mv-pct">100</span>
+                </div>
             </div>
             <div class="car-gauge-wrap">
                 <svg class="car-rpm-svg" viewBox="0 0 120 120" aria-hidden="true">
-                    <circle class="car-rpm-track" cx="60" cy="60" r="52" fill="none" />
-                    <circle id="carRpmArc" class="car-rpm-arc" cx="60" cy="60" r="52" fill="none" transform="rotate(135 60 60)" />
+                    <circle class="car-fuel-ring-track" cx="60" cy="60" r="58" fill="none" transform="rotate(135 60 60)" />
+                    <circle id="carFuelArc" class="car-fuel-ring-arc" cx="60" cy="60" r="58" fill="none" transform="rotate(135 60 60)" />
+                    <circle class="car-rpm-track" cx="60" cy="60" r="50" fill="none" transform="rotate(135 60 60)" />
+                    <circle id="carRpmArc" class="car-rpm-arc" cx="60" cy="60" r="50" fill="none" transform="rotate(135 60 60)" />
                 </svg>
                 <div class="car-speed-stack">
                     <span id="carSpeedDigits" class="car-speed-digits">000</span>
                     <span class="car-kmh">KM/H</span>
                 </div>
-            </div>
-            <div class="car-icon-row">
-                <span id="carIconBelt" class="car-ico car-ico-belt" title="Diržas" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2C8 2 5 5 5 9v6c0 3.31 2.69 6 6 6s6-2.69 6-6V9c0-4-3-7-5-7zm-1 14v-4h2v4h-2zm0-6V9h2v1h-2z"/></svg></span>
-                <span id="carIconEngine" class="car-ico car-ico-engine" title="Variklis" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M7 4v2H5v6h2v6h2v-2h2v2h8V8h-5V6H9V4H7zm2 4h6v8H9V8zm-4 2h2v4H5v-4z"/></svg></span>
+                <div class="car-sub-icons">
+                    <span id="carIcoEngine" class="car-sub-ico" title="Variklis"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M7 4v2H5v6h2v6h2v-2h2v2h8V8h-5V6H9V4H7zm2 4h6v8H9V8zm-4 2h2v4H5v-4z"/></svg></span>
+                    <span id="carIcoDoors" class="car-sub-ico" title="Durys"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm0 16H5V5h14v14zM7 7h10v2H7V7zm0 4h10v2H7v-2zm0 4h7v2H7v-2z"/></svg></span>
+                    <span id="carIcoLights" class="car-sub-ico" title="Šviesos"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg></span>
+                    <span id="carIcoBelt" class="car-sub-ico car-sub-belt" title="Diržas"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 2C8 2 5 5 5 9v6c0 3.31 2.69 6 6 6s6-2.69 6-6V9c0-4-3-7-5-7zm-1 14v-4h2v4h-2zm0-6V9h2v1h-2z"/></svg></span>
+                </div>
             </div>
         </div>
         <div id="carhudClassic" class="carhud-classic hidden">
             <div class="carline"><span>KM/H</span><strong id="speed">0</strong></div>
             <div class="carline"><span>FUEL</span><strong id="fuel">0%</strong></div>
             <div class="carline"><span>BELT</span><strong id="seatbelt">OFF</strong></div>
+        </div>
+    </div>
+    </div>
+
+    <div id="vehicleListMenu" class="vehicle-list-menu hidden">
+        <div class="vlm-backdrop"></div>
+        <div class="vlm-panel">
+            <div id="vlmHeader" class="vlm-header">—</div>
+            <div id="vlmSub" class="vlm-sub">—</div>
+            <div id="vlmRows" class="vlm-rows"></div>
         </div>
     </div>
 

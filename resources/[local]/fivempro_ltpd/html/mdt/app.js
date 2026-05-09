@@ -186,9 +186,67 @@ function worldToMap(x, y) {
   };
 }
 
+let dispatchMapPan = { x: 0, y: 0, scale: 1 };
+let dispatchMapInteractBound = false;
+
+function applyDispatchMapTransform() {
+  const inner = document.getElementById('dispatchMapInner');
+  if (!inner) return;
+  inner.style.transform = `translate(${dispatchMapPan.x}px, ${dispatchMapPan.y}px) scale(${dispatchMapPan.scale})`;
+}
+
+function bindDispatchMapInteract() {
+  if (dispatchMapInteractBound) return;
+  const root = document.getElementById('dispatchMap');
+  const inner = document.getElementById('dispatchMapInner');
+  if (!root || !inner) return;
+  dispatchMapInteractBound = true;
+
+  root.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.08 : 0.08;
+      dispatchMapPan.scale = Math.max(0.55, Math.min(2.4, dispatchMapPan.scale + delta));
+      applyDispatchMapTransform();
+    },
+    { passive: false },
+  );
+
+  let drag = false;
+  let lx = 0;
+  let ly = 0;
+  root.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    drag = true;
+    lx = e.clientX;
+    ly = e.clientY;
+    root.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mouseup', () => {
+    if (!drag) return;
+    drag = false;
+    root.style.cursor = 'grab';
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!drag) return;
+    dispatchMapPan.x += e.clientX - lx;
+    dispatchMapPan.y += e.clientY - ly;
+    lx = e.clientX;
+    ly = e.clientY;
+    applyDispatchMapTransform();
+  });
+}
+
 function renderDispatchMap(calls, units) {
   const mapEl = document.getElementById('dispatchMap');
-  mapEl.innerHTML = '';
+  const inner = document.getElementById('dispatchMapInner');
+  const host = inner || mapEl;
+  if (!host) return;
+  host.innerHTML = '';
+  dispatchMapPan = { x: 0, y: 0, scale: 1 };
+  applyDispatchMapTransform();
+  bindDispatchMapInteract();
   units.forEach((u) => {
     const p = worldToMap(u.x, u.y);
     const d = document.createElement('div');
@@ -196,7 +254,7 @@ function renderDispatchMap(calls, units) {
     d.style.left = `${p.x}%`;
     d.style.top = `${p.y}%`;
     d.textContent = `${u.callsign ? `[${u.callsign}] ` : ''}${u.name || 'Unit'}`;
-    mapEl.appendChild(d);
+    host.appendChild(d);
   });
   calls.forEach((c) => {
     const p = worldToMap(c.x, c.y);
@@ -205,7 +263,7 @@ function renderDispatchMap(calls, units) {
     d.style.left = `${p.x}%`;
     d.style.top = `${p.y}%`;
     d.textContent = `${c.id} ${c.callTypeLabel || c.callType || 'Call'}`;
-    mapEl.appendChild(d);
+    host.appendChild(d);
   });
 }
 

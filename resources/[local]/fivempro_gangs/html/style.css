@@ -394,6 +394,44 @@ select.color-select-native {
   filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.15));
 }
 
+.turf-sq-marker-wrap {
+  background: transparent !important;
+  border: none !important;
+}
+
+.turf-sq-marker {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border-width: 2px;
+  border-style: solid;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 6px 18px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  background: rgba(8, 10, 18, 0.55);
+}
+
+.turf-sq-marker-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  transition: height 0.2s ease;
+  opacity: 0.88;
+}
+
+.turf-sq-marker-ico {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+}
+
 .turf-bubble {
   position: absolute;
   border-radius: 50%;

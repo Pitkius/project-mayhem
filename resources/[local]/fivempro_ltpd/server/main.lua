@@ -721,3 +721,141 @@ RegisterNetEvent('fivempro_ltpd:server:clearPdEmergencyOnExit', function(netId)
     end
     Entity(veh).state:set('ltPdSirenMode', 'off', true)
 end)
+
+--- PD durų / vartų būsenos (sinchronas visiems klientams)
+local LtpdPdDoorLocked = {}
+local LtpdPdDoorMeta = {}
+
+local function vecInBoundsPdDoor(v, minV, maxV)
+    return v.x >= minV.x and v.x <= maxV.x and v.y >= minV.y and v.y <= maxV.y and v.z >= minV.z and v.z <= maxV.z
+end
+
+local function dynDoorCfgForStation(stationId)
+    for _, d in ipairs(Config.PdDoorDynamics or {}) do
+        if d.stationId == stationId then return d end
+    end
+end
+
+local function dynDoorModelWhitelist(dyn)
+    local t = {}
+    for _, n in ipairs(dyn.models or {}) do
+        t[joaat(n)] = true
+    end
+    return t
+end
+
+local function initManualPdDoors()
+    for _, g in ipairs(Config.PdDoorGroups or {}) do
+        local slabs = {}
+        for _, d in ipairs(g.doors or {}) do
+            slabs[#slabs + 1] = d.coords
+        end
+        local interact = g.interact
+        if not interact and #slabs > 0 then
+            interact = vector3(0.0, 0.0, 0.0)
+            for _, c in ipairs(slabs) do
+                interact = interact + c
+            end
+            interact = interact / #slabs
+        end
+        LtpdPdDoorMeta[g.id] = {
+            slabs = slabs,
+            interact = interact,
+            interactDist = g.interactDist or 2.5,
+        }
+        if LtpdPdDoorLocked[g.id] == nil then
+            LtpdPdDoorLocked[g.id] = g.defaultLocked ~= false
+        end
+    end
+end
+
+AddEventHandler('onResourceStart', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    initManualPdDoors()
+end)
+
+RegisterNetEvent('fivempro_ltpd:server:requestPdDoorsSync', function()
+    TriggerClientEvent('fivempro_ltpd:client:syncPdDoors', source, LtpdPdDoorLocked)
+end)
+
+local LtpdPdDoorRegCount = {}
+
+RegisterNetEvent('fivempro_ltpd:server:registerPdDynDoorGroup', function(groupId, stationId, cx, cy, cz, interactDist, regSlabs)
+    local src = source
+    LtpdPdDoorRegCount[src] = (LtpdPdDoorRegCount[src] or 0) + 1
+    if LtpdPdDoorRegCount[src] > 160 then return end
+    if type(groupId) ~= 'string' or type(stationId) ~= 'string' or type(regSlabs) ~= 'table' then return end
+    if groupId:sub(1, 4) ~= 'dyn_' then return end
+    if #regSlabs < 1 or #regSlabs > 4 then return end
+    local dyn = dynDoorCfgForStation(stationId)
+    if not dyn then return end
+    local whitelist = dynDoorModelWhitelist(dyn)
+    local slabs = {}
+    for _, s in ipairs(regSlabs) do
+        local mh = tonumber(s.model)
+        if not mh or not whitelist[mh] then return end
+        local x, y, z = tonumber(s.x), tonumber(s.y), tonumber(s.z)
+        if not x or not y or not z then return end
+        local c = vector3(x, y, z)
+        if not vecInBoundsPdDoor(c, dyn.bounds.min, dyn.bounds.max) then return end
+        slabs[#slabs + 1] = c
+    end
+    if LtpdPdDoorMeta[groupId] then return end
+    LtpdPdDoorMeta[groupId] = {
+        slabs = slabs,
+        interact = vector3(tonumber(cx) or 0.0, tonumber(cy) or 0.0, tonumber(cz) or 0.0),
+        interactDist = tonumber(interactDist) or 2.5,
+    }
+    if LtpdPdDoorLocked[groupId] == nil then
+        LtpdPdDoorLocked[groupId] = true
+    end
+end)
+
+local LtpdPdDoorToggleCooldown = {}
+
+AddEventHandler('playerDropped', function()
+    local src = source
+    LtpdPdDoorRegCount[src] = nil
+    LtpdPdDoorToggleCooldown[src] = nil
+end)
+
+RegisterNetEvent('fivempro_ltpd:server:togglePdDoorGroup', function(groupId)
+    local src = source
+    if type(groupId) ~= 'string' then return end
+    if not hasPerm(src, 'pd_doors') then
+        return TriggerClientEvent('QBCore:Notify', src, 'Neturi teisės arba ne tarnyboje.', 'error')
+    end
+    local meta = LtpdPdDoorMeta[groupId]
+    if not meta then return end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return end
+    local pc = GetEntityCoords(ped)
+    local reach = (Config.PdDoorToggleReach or 4.2) + 0.05
+    local ok = false
+    for _, c in ipairs(meta.slabs) do
+        if #(pc - c) <= reach then
+            ok = true
+            break
+        end
+    end
+    if not ok and meta.interact then
+        if #(pc - meta.interact) <= (meta.interactDist or 2.5) + 1.45 then
+            ok = true
+        end
+    end
+    if not ok then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo durų.', 'error')
+    end
+    local now = GetGameTimer()
+    if (LtpdPdDoorToggleCooldown[src] or 0) > now then return end
+    LtpdPdDoorToggleCooldown[src] = now + 650
+    local cur = LtpdPdDoorLocked[groupId] ~= false
+    LtpdPdDoorLocked[groupId] = not cur
+    TriggerClientEvent('fivempro_ltpd:client:setPdDoorState', -1, groupId, LtpdPdDoorLocked[groupId])
+    TriggerClientEvent(
+        'QBCore:Notify',
+        src,
+        LtpdPdDoorLocked[groupId] and 'Durys užrakintos.' or 'Durys atrakintos.',
+        'primary'
+    )
+end)
