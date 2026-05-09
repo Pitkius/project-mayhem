@@ -126,6 +126,100 @@ local function nearRepairBay(src, bayIdx)
     return nearCoords(src, bay.coords, radius)
 end
 
+local function hasItemCount(Player, item, amount)
+    local it = Player.Functions.GetItemByName(item)
+    return (it and it.amount or 0) >= (tonumber(amount) or 0)
+end
+
+local function removeItemCount(Player, item, amount)
+    return Player.Functions.RemoveItem(item, tonumber(amount) or 0)
+end
+
+local PerfKitByModType = {
+    [11] = 'engine_kit',
+    [12] = 'brakes_kit',
+    [13] = 'transmission_kit',
+    [15] = 'suspension_kit',
+    [16] = 'armor_kit',
+}
+
+QBCore.Functions.CreateCallback('fivempro_mechanic:server:canInstallUpgrade', function(src, cb, modType, targetLevel, bayIdx)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false, reason = 'Nerastas žaidėjas.' }) end
+    local j = Player.PlayerData.job
+    if j.name ~= Config.JobName or not j.onduty then
+        return cb({ ok = false, reason = 'Tik mechanikams tarnyboje.' })
+    end
+    if not nearRepairBay(src, bayIdx) then
+        return cb({ ok = false, reason = 'Per toli nuo remonto zonos.' })
+    end
+
+    local item = nil
+    if tonumber(modType) == 18 then
+        item = 'turbo_kit'
+    else
+        item = PerfKitByModType[tonumber(modType)]
+    end
+    if not item then
+        return cb({ ok = true })
+    end
+
+    targetLevel = tonumber(targetLevel) or -1
+    if targetLevel < 0 then
+        return cb({ ok = true })
+    end
+
+    if not hasItemCount(Player, item, 1) then
+        return cb({ ok = false, reason = ('Reikia detalės: %s'):format(item), requiredItem = item })
+    end
+    cb({ ok = true, requiredItem = item })
+end)
+
+RegisterNetEvent('fivempro_mechanic:server:consumeUpgradeItem', function(itemName)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    local j = Player.PlayerData.job
+    if j.name ~= Config.JobName or not j.onduty then return end
+    itemName = tostring(itemName or '')
+    if itemName == '' then return end
+    if hasItemCount(Player, itemName, 1) then
+        removeItemCount(Player, itemName, 1)
+    end
+end)
+
+RegisterNetEvent('fivempro_mechanic:server:craftTuningPart', function(recipeKey, amount)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    local j = Player.PlayerData.job
+    if j.name ~= Config.JobName or not j.onduty then
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik mechanikams tarnyboje.', 'error')
+    end
+    local recipe = Config.TuningRecipes and Config.TuningRecipes[tostring(recipeKey or '')]
+    if not recipe then return end
+    amount = math.max(1, math.min(10, tonumber(amount) or 1))
+
+    for item, need in pairs(recipe.materials or {}) do
+        local totalNeed = (tonumber(need) or 0) * amount
+        if totalNeed > 0 and not hasItemCount(Player, item, totalNeed) then
+            return TriggerClientEvent('QBCore:Notify', src, ('Trūksta medžiagų: %s x%s'):format(item, totalNeed), 'error')
+        end
+    end
+
+    for item, need in pairs(recipe.materials or {}) do
+        local totalNeed = (tonumber(need) or 0) * amount
+        if totalNeed > 0 then
+            removeItemCount(Player, item, totalNeed)
+        end
+    end
+
+    local outCount = (tonumber(recipe.count) or 1) * amount
+    Player.Functions.AddItem(recipe.output, outCount)
+    TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[recipe.output], 'add', outCount)
+    TriggerClientEvent('QBCore:Notify', src, ('Pagaminta: %s x%s'):format(recipe.label or recipe.output, outCount), 'success')
+end)
+
 RegisterNetEvent('fivempro_mechanic:server:saveBayVehicleTune', function(bayIdx, props)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)

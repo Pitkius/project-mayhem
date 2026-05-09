@@ -37,6 +37,23 @@ RegisterNetEvent('fivempro_ambulance:client:openStash', function()
     TriggerServerEvent('fivempro_ambulance:server:openStash')
 end)
 
+RegisterCommand('emsmdt', function()
+    if not isEmsOnDuty() then
+        return QBCore.Functions.Notify('Tik EMS tarnyboje.', 'error')
+    end
+    ExecuteCommand('servicemdt')
+end, false)
+
+RegisterCommand('emscall', function(_, args)
+    if not isEmsOnDuty() then
+        return QBCore.Functions.Notify('Tik EMS tarnyboje.', 'error')
+    end
+    local callType = tostring(args and args[1] or 'civilian_help')
+    local text = table.concat(args or {}, ' ', 2)
+    TriggerServerEvent('fivempro_dispatch:server:createServiceCall', 'ems', callType, text ~= '' and text or 'EMS vidinis iškvietimas')
+    QBCore.Functions.Notify('EMS iškvietimas sukurtas MDT sistemoje.', 'success')
+end, false)
+
 local function applyOutfitTable(ped, tbl)
     if not ped or not tbl then return end
     for comp, val in pairs(tbl) do

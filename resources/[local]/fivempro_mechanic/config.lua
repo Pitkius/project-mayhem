@@ -51,6 +51,49 @@ Config.Permissions = {
     boss_menu = 4,
 }
 
+Config.CraftingStations = {
+    { coords = vector3(-325.52, -136.11, 39.01), heading = 159.0, length = 1.8, width = 1.8, label = 'Tuningo dalių staklės' },
+}
+
+Config.TuningRecipes = {
+    engine_kit = {
+        label = 'Variklio rinkinys',
+        output = 'engine_kit',
+        count = 1,
+        materials = { iron = 25, steel = 18, aluminum = 15, copper = 12, rubber = 8, glass = 2 },
+    },
+    brakes_kit = {
+        label = 'Stabdžių rinkinys',
+        output = 'brakes_kit',
+        count = 1,
+        materials = { iron = 14, steel = 18, aluminum = 10, copper = 5, rubber = 15, glass = 2 },
+    },
+    transmission_kit = {
+        label = 'Pavarų dėžės rinkinys',
+        output = 'transmission_kit',
+        count = 1,
+        materials = { iron = 20, steel = 20, aluminum = 14, copper = 8, rubber = 8, glass = 1 },
+    },
+    suspension_kit = {
+        label = 'Pakabos rinkinys',
+        output = 'suspension_kit',
+        count = 1,
+        materials = { iron = 15, steel = 14, aluminum = 10, copper = 3, rubber = 18, glass = 0 },
+    },
+    armor_kit = {
+        label = 'Šarvų rinkinys',
+        output = 'armor_kit',
+        count = 1,
+        materials = { iron = 30, steel = 28, aluminum = 12, copper = 4, rubber = 10, glass = 0 },
+    },
+    turbo_kit = {
+        label = 'Turbo rinkinys',
+        output = 'turbo_kit',
+        count = 1,
+        materials = { iron = 15, steel = 16, aluminum = 14, copper = 16, rubber = 7, glass = 2 },
+    },
+}
+
 --- Tarnybinė apranga (komponentai mp freemode – keisk pagal odę)
 Config.DutyOutfits = {
     {

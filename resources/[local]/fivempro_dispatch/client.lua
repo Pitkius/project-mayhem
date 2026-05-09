@@ -112,9 +112,51 @@ RegisterCommand('servicemdt', function()
                 params = {
                     isAction = true,
                     event = function()
-                        TriggerServerEvent('fivempro_dispatch:server:updateCallStatus', c.id, 'enroute')
-                        SetNewWaypoint((c.x or 0.0) + 0.0, (c.y or 0.0) + 0.0)
-                        QBCore.Functions.Notify('Pažymėta: vykstu.', 'success')
+                        local callMenu = {
+                            { header = ('Iškvietimas %s'):format(c.id), isMenuHeader = true },
+                            {
+                                header = 'Priimti',
+                                params = {
+                                    isAction = true,
+                                    event = function()
+                                        TriggerServerEvent('fivempro_dispatch:server:updateCallStatus', c.id, 'accept')
+                                        QBCore.Functions.Notify('Iškvietimas priimtas.', 'success')
+                                    end,
+                                },
+                            },
+                            {
+                                header = 'Vykstu',
+                                params = {
+                                    isAction = true,
+                                    event = function()
+                                        TriggerServerEvent('fivempro_dispatch:server:updateCallStatus', c.id, 'enroute')
+                                        SetNewWaypoint((c.x or 0.0) + 0.0, (c.y or 0.0) + 0.0)
+                                        QBCore.Functions.Notify('Pažymėta: vykstu.', 'success')
+                                    end,
+                                },
+                            },
+                            {
+                                header = 'Baigta',
+                                params = {
+                                    isAction = true,
+                                    event = function()
+                                        TriggerServerEvent('fivempro_dispatch:server:updateCallStatus', c.id, 'done')
+                                        QBCore.Functions.Notify('Iškvietimas užbaigtas.', 'success')
+                                    end,
+                                },
+                            },
+                            {
+                                header = 'Atmesti',
+                                params = {
+                                    isAction = true,
+                                    event = function()
+                                        TriggerServerEvent('fivempro_dispatch:server:updateCallStatus', c.id, 'reject')
+                                        QBCore.Functions.Notify('Iškvietimas atmestas.', 'error')
+                                    end,
+                                },
+                            },
+                        }
+                        TriggerEvent('qb-menu:client:openMenu', callMenu, false, true)
                     end,
                 },
             }
@@ -141,6 +183,17 @@ RegisterCommand('servicemdt', function()
         }
         TriggerEvent('qb-menu:client:openMenu', menu, false, true)
     end, service)
+end, false)
+
+RegisterCommand('servicecall', function(_, args)
+    local service = myService()
+    if not service then
+        return QBCore.Functions.Notify('Tik tarnyboms duty metu.', 'error')
+    end
+    local callType = tostring(args and args[1] or 'custom')
+    local text = table.concat(args or {}, ' ', 2)
+    TriggerServerEvent('fivempro_dispatch:server:createServiceCall', service, callType, text ~= '' and text or 'Tarnybinis iškvietimas')
+    QBCore.Functions.Notify('Iškvietimas sukurtas MDT sistemoje.', 'success')
 end, false)
 
 RegisterCommand('callsign', function(_, args)

@@ -273,13 +273,21 @@ local function openModVariantMenu(veh, modType, categoryLabel, bayIndex, returnT
                     local m = modType
                     local lab = categoryLabel
                     local rt = returnTo
-                    SetVehicleMod(veh, modType, idx, false)
-                    QBCore.Functions.Notify(('Įdiegta: %s #%s'):format(categoryLabel, idx + 1), 'success')
-                    scheduleReopen(function()
-                        local bay = b and Config.RepairBays and Config.RepairBays[b]
-                        local v = bay and getVehicleInBay(bay) or 0
-                        if v ~= 0 then openModVariantMenu(v, m, lab, b, rt) end
-                    end)
+                    QBCore.Functions.TriggerCallback('fivempro_mechanic:server:canInstallUpgrade', function(res)
+                        if not res or not res.ok then
+                            return QBCore.Functions.Notify((res and res.reason) or 'Negalima įdiegti detalės.', 'error')
+                        end
+                        SetVehicleMod(veh, modType, idx, false)
+                        if res.requiredItem then
+                            TriggerServerEvent('fivempro_mechanic:server:consumeUpgradeItem', res.requiredItem)
+                        end
+                        QBCore.Functions.Notify(('Įdiegta: %s #%s'):format(categoryLabel, idx + 1), 'success')
+                        scheduleReopen(function()
+                            local bay = b and Config.RepairBays and Config.RepairBays[b]
+                            local v = bay and getVehicleInBay(bay) or 0
+                            if v ~= 0 then openModVariantMenu(v, m, lab, b, rt) end
+                        end)
+                    end, modType, idx, bayIndex)
                 end,
             },
         }
@@ -312,13 +320,32 @@ local function openTurboMenu(veh, bayIndex)
                     local b = bayIndex
                     ensureModKit(veh)
                     local on = IsToggleModOn(veh, 18)
-                    ToggleVehicleMod(veh, 18, not on)
-                    QBCore.Functions.Notify(on and 'Turbo nuimtas.' or 'Turbo įdiegtas.', 'success')
-                    scheduleReopen(function()
-                        local bay = b and Config.RepairBays and Config.RepairBays[b]
-                        local v = bay and getVehicleInBay(bay) or 0
-                        if v ~= 0 then openTurboMenu(v, b) end
-                    end)
+                    local nextState = not on
+                    if nextState then
+                        QBCore.Functions.TriggerCallback('fivempro_mechanic:server:canInstallUpgrade', function(res)
+                            if not res or not res.ok then
+                                return QBCore.Functions.Notify((res and res.reason) or 'Negalima įdiegti turbo.', 'error')
+                            end
+                            ToggleVehicleMod(veh, 18, true)
+                            if res.requiredItem then
+                                TriggerServerEvent('fivempro_mechanic:server:consumeUpgradeItem', res.requiredItem)
+                            end
+                            QBCore.Functions.Notify('Turbo įdiegtas.', 'success')
+                            scheduleReopen(function()
+                                local bay = b and Config.RepairBays and Config.RepairBays[b]
+                                local v = bay and getVehicleInBay(bay) or 0
+                                if v ~= 0 then openTurboMenu(v, b) end
+                            end)
+                        end, 18, 0, bayIndex)
+                    else
+                        ToggleVehicleMod(veh, 18, false)
+                        QBCore.Functions.Notify('Turbo nuimtas.', 'primary')
+                        scheduleReopen(function()
+                            local bay = b and Config.RepairBays and Config.RepairBays[b]
+                            local v = bay and getVehicleInBay(bay) or 0
+                            if v ~= 0 then openTurboMenu(v, b) end
+                        end)
+                    end
                 end,
             },
         },

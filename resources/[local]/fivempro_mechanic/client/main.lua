@@ -37,6 +37,57 @@ RegisterNetEvent('fivempro_mechanic:client:openStash', function()
     TriggerServerEvent('fivempro_mechanic:server:openStash')
 end)
 
+RegisterCommand('mechmdt', function()
+    if not isMechanicOnDuty() then
+        return QBCore.Functions.Notify('Tik mechanikams tarnyboje.', 'error')
+    end
+    ExecuteCommand('servicemdt')
+end, false)
+
+RegisterCommand('mechcall', function(_, args)
+    if not isMechanicOnDuty() then
+        return QBCore.Functions.Notify('Tik mechanikams tarnyboje.', 'error')
+    end
+    local callType = tostring(args and args[1] or 'civilian_help')
+    local text = table.concat(args or {}, ' ', 2)
+    TriggerServerEvent('fivempro_dispatch:server:createServiceCall', 'mechanic', callType, text ~= '' and text or 'Mechanikų vidinis iškvietimas')
+    QBCore.Functions.Notify('Mechanikų iškvietimas sukurtas MDT sistemoje.', 'success')
+end, false)
+
+RegisterNetEvent('fivempro_mechanic:client:openCraftMenu', function()
+    if not isMechanicOnDuty() then
+        return QBCore.Functions.Notify('Tik mechanikams tarnyboje.', 'error')
+    end
+    local menu = {
+        { header = 'Tuningo detalių gamyba', txt = 'Gamyba naudoja žaliavas iš inventoriaus', isMenuHeader = true },
+    }
+    for key, recipe in pairs(Config.TuningRecipes or {}) do
+        local req = {}
+        for item, cnt in pairs(recipe.materials or {}) do
+            req[#req + 1] = ('%s x%s'):format(item, cnt)
+        end
+        menu[#menu + 1] = {
+            header = recipe.label or key,
+            txt = table.concat(req, ' | '),
+            params = {
+                isAction = true,
+                event = function()
+                    local input = exports['qb-input']:ShowInput({
+                        header = recipe.label or key,
+                        submitText = 'Gaminti',
+                        inputs = {
+                            { text = 'Kiekis (1-10)', name = 'amount', type = 'number', isRequired = true },
+                        },
+                    })
+                    if not input or not input.amount then return end
+                    TriggerServerEvent('fivempro_mechanic:server:craftTuningPart', key, tonumber(input.amount) or 1)
+                end,
+            },
+        }
+    end
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end)
+
 local function applyOutfitTable(ped, tbl)
     if not ped or not tbl then return end
     for comp, val in pairs(tbl) do
@@ -255,6 +306,29 @@ CreateThread(function()
                 },
             },
             distance = 14.0,
+        })
+    end
+
+    for i, st in ipairs(Config.CraftingStations or {}) do
+        exports['qb-target']:AddBoxZone(('fivempro_mech_craft_%s'):format(i), st.coords, st.length or 1.8, st.width or 1.8, {
+            name = ('fivempro_mech_craft_%s'):format(i),
+            heading = st.heading or 0.0,
+            debugPoly = false,
+            minZ = st.coords.z - 1.1,
+            maxZ = st.coords.z + 2.2,
+        }, {
+            options = {
+                {
+                    type = 'client',
+                    event = 'fivempro_mechanic:client:openCraftMenu',
+                    icon = 'fas fa-industry',
+                    label = st.label or 'Tuningo dalių staklės',
+                    canInteract = function()
+                        return isMechanicOnDuty()
+                    end,
+                },
+            },
+            distance = 2.5,
         })
     end
 end)
