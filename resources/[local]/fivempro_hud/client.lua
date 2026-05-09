@@ -13,6 +13,21 @@ local COLOR_THEMES = {
     amber = { fill = '#fbbf24', glow = 'rgba(251,191,36,0.5)' },
 }
 
+--- Kvadratinių vitalų spalvos pagal temą (NUI `--tile-*`).
+local TILE_COLORS = {
+    violet = { health = '#f43f5e', armor = '#a78bfa', hunger = '#fb923c', thirst = '#38bdf8', stamina = '#e879f9' },
+    cyan = { health = '#fb7185', armor = '#22d3ee', hunger = '#fdba74', thirst = '#67e8f9', stamina = '#a5f3fc' },
+    red = { health = '#fca5a5', armor = '#c084fc', hunger = '#fdba74', thirst = '#7dd3fc', stamina = '#f9a8d4' },
+    green = { health = '#f87171', armor = '#86efac', hunger = '#fcd34d', thirst = '#6ee7b7', stamina = '#bbf7d0' },
+    amber = { health = '#ef4444', armor = '#d8b4fe', hunger = '#fbbf24', thirst = '#38bdf8', stamina = '#fbcfe8' },
+}
+
+--- Transporto valdymo panelė (NUI) – atskiras akcentas kaip ref. nuotraukoje.
+local VEHICLE_PANEL_ACCENT = '#c5ff3d'
+
+local vehiclePanelOpen = false
+local interiorLightByNetId = {}
+
 local function deepCopy(tbl)
     local out = {}
     for k, v in pairs(tbl) do
@@ -92,6 +107,7 @@ end
 local function sendHudTheme()
     local s = currentSettings()
     local c = COLOR_THEMES[s.color] or COLOR_THEMES.violet
+    local tiles = TILE_COLORS[s.color] or TILE_COLORS.violet
     SendNUIMessage({
         action = 'theme',
         preset = hudPreset,
@@ -101,6 +117,8 @@ local function sendHudTheme()
         fillColor = c.fill,
         glowColor = c.glow,
         show = s.show,
+        tileColors = tiles,
+        vehicleUiAccent = VEHICLE_PANEL_ACCENT,
     })
 end
 
@@ -113,16 +131,26 @@ local function pushHud()
     local inVehicle = IsPedInAnyVehicle(ped, false)
     local speed, fuel = 0, 0
 
+    local rpmPct = 0
+    local engineTemp = 0
+    local veh = 0
     if inVehicle then
-        local veh = GetVehiclePedIsIn(ped, false)
+        veh = GetVehiclePedIsIn(ped, false)
         if veh == 0 then
             inVehicle = false
         else
             speed = clamp(math.floor(GetEntitySpeed(veh) * 3.6 + 0.5), 0, 450)
             fuel = clamp(math.floor(GetVehicleFuelLevel(veh) + 0.5), 0, 100)
+            local rpm = GetVehicleCurrentRpm(veh)
+            rpmPct = clamp(math.floor((rpm or 0.0) * 100.0 + 0.5), 0, 100)
+            local eh = GetVehicleEngineHealth(veh) or 1000.0
+            engineTemp = clamp(math.floor((eh / 1000.0) * 42.0 + 58.0 + 0.5), 55, 115)
         end
     else
         seatbeltOn = false
+        if hazardEnabled then
+            hazardEnabled = false
+        end
     end
 
     local s = currentSettings()
@@ -139,6 +167,8 @@ local function pushHud()
         speed = speed,
         fuel = fuel,
         seatbelt = seatbeltOn,
+        rpm = rpmPct,
+        engineTemp = engineTemp,
         settings = s
     })
 end
@@ -263,6 +293,215 @@ RegisterNUICallback('hud:savePreset', function(data, cb)
     cb({ ok = true })
 end)
 
+local hazardEnabled = false
+
+local function clearHazardLights(veh)
+    if veh and veh ~= 0 and DoesEntityExist(veh) then
+        SetVehicleIndicatorLights(veh, 0, false)
+        SetVehicleIndicatorLights(veh, 1, false)
+    end
+end
+
+local function closeVehiclePanel()
+    if not vehiclePanelOpen then return end
+    vehiclePanelOpen = false
+    if not hudMenuOpen then
+        SetNuiFocus(false, false)
+    end
+    SendNUIMessage({ action = 'vehiclePanel', open = false })
+end
+
+local function vehicleWeatherLabel()
+    local rain = 0.0
+    if GetRainLevel then rain = GetRainLevel() end
+    if rain > 0.12 then return 'RAIN' end
+    return 'CLEAR'
+end
+
+local function pushVehiclePanelState()
+    if not vehiclePanelOpen then return end
+    local ped = PlayerPedId()
+    if not IsPedInAnyVehicle(ped, false) then
+        closeVehiclePanel()
+        return
+    end
+    local veh = GetVehiclePedIsIn(ped, false)
+    if veh == 0 then
+        closeVehiclePanel()
+        return
+    end
+
+    local lockSt = GetVehicleDoorLockStatus(veh)
+    local locked = lockSt == 2 or lockSt == 3 or lockSt == 4
+
+    local doorList = {}
+    for i = 0, 5 do
+        local r = GetVehicleDoorAngleRatio(veh, i) or 0.0
+        doorList[#doorList + 1] = { idx = i, open = r > 0.12 }
+    end
+
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    local interiorOn = interiorLightByNetId[netId] == true
+
+    local engineOn = GetIsVehicleEngineRunning(veh)
+    local eh = GetVehicleEngineHealth(veh) or 1000.0
+    local engineTemp = clamp(math.floor((eh / 1000.0) * 42.0 + 58.0 + 0.5), 55, 115)
+
+    local lightsOn = false
+    local highBeams = false
+    local _, lo, hi = GetVehicleLightsState(veh)
+    lightsOn = lo == true or lo == 1
+    highBeams = hi == true or hi == 1
+
+    local cx, cy, cz = table.unpack(GetEntityCoords(veh))
+    local sh1 = GetStreetNameAtCoord(cx, cy, cz)
+    local streetName = GetStreetNameFromHashKey(sh1 or 0)
+
+    local waypointM = nil
+    local bl = GetFirstBlipInfoId(8)
+    if bl ~= 0 and DoesBlipExist(bl) then
+        local bc = GetBlipInfoIdCoord(bl)
+        if bc then
+            waypointM = math.floor(#(vector3(cx, cy, cz) - vector3(bc.x, bc.y, bc.z)) + 0.5)
+        end
+    end
+
+    local fuel = clamp(math.floor(GetVehicleFuelLevel(veh) + 0.5), 0, 100)
+
+    SendNUIMessage({
+        action = 'vehiclePanel',
+        open = true,
+        locked = locked,
+        doors = doorList,
+        engineOn = engineOn,
+        weather = vehicleWeatherLabel(),
+        street = streetName,
+        waypointM = waypointM,
+        engineTemp = engineTemp,
+        hazard = hazardEnabled,
+        interiorLight = interiorOn,
+        headlightsOn = lightsOn,
+        highBeams = highBeams,
+        fuel = fuel,
+        timeStr = ('%02d:%02d'):format(GetClockHours(), GetClockMinutes()),
+    })
+end
+
+local function openVehiclePanel()
+    local ped = PlayerPedId()
+    if not IsPedInAnyVehicle(ped, false) then
+        QBCore.Functions.Notify('Transporto panelė: turi būti automobilyje.', 'error')
+        return
+    end
+    vehiclePanelOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = 'vehiclePanel', open = true })
+    pushVehiclePanelState()
+end
+
+local function toggleVehiclePanel()
+    if vehiclePanelOpen then
+        closeVehiclePanel()
+    else
+        openVehiclePanel()
+    end
+end
+
+RegisterCommand('fivempro_vehicle_hud', function()
+    toggleVehiclePanel()
+end, false)
+
+RegisterKeyMapping('fivempro_vehicle_hud', 'Fivempro: transporto valdymo panelė', 'keyboard', 'U')
+
+RegisterNUICallback('vehiclePanel:action', function(data, cb)
+    local ped = PlayerPedId()
+    if not IsPedInAnyVehicle(ped, false) then
+        cb({ ok = false })
+        return
+    end
+    local veh = GetVehiclePedIsIn(ped, false)
+    if veh == 0 then
+        cb({ ok = false })
+        return
+    end
+
+    local action = data and data.action or ''
+    if action == 'close' then
+        closeVehiclePanel()
+    elseif action == 'lock' then
+        local st = GetVehicleDoorLockStatus(veh)
+        if st == 2 or st == 3 or st == 4 then
+            SetVehicleDoorsLocked(veh, 1)
+        else
+            SetVehicleDoorsLocked(veh, 2)
+        end
+    elseif action == 'engine' then
+        local running = GetIsVehicleEngineRunning(veh)
+        SetVehicleEngineOn(veh, not running, false, true)
+    elseif action == 'lights' then
+        local _, lo = GetVehicleLightsState(veh)
+        local on = lo == true or lo == 1
+        if on then
+            SetVehicleLights(veh, 1)
+        else
+            SetVehicleLights(veh, 2)
+        end
+    elseif action == 'interior' then
+        local nid = NetworkGetNetworkIdFromEntity(veh)
+        local on = interiorLightByNetId[nid] == true
+        interiorLightByNetId[nid] = not on
+        pcall(SetVehicleInteriorlight, veh, not on)
+    elseif action == 'hazard' then
+        hazardEnabled = not hazardEnabled
+        if not hazardEnabled then
+            clearHazardLights(veh)
+        end
+    elseif action == 'door' then
+        local idx = tonumber(data.doorIndex)
+        if idx == nil or idx < 0 or idx > 5 then
+            cb({ ok = false })
+            return
+        end
+        local r = GetVehicleDoorAngleRatio(veh, idx) or 0.0
+        if r > 0.12 then
+            SetVehicleDoorShut(veh, idx, false)
+        else
+            SetVehicleDoorOpen(veh, idx, false, false)
+        end
+    elseif action == 'seat' then
+        TaskShuffleToNextVehicleSeat(ped)
+    end
+
+    if vehiclePanelOpen then
+        pushVehiclePanelState()
+    end
+    cb({ ok = true })
+end)
+
+CreateThread(function()
+    local blink = false
+    while true do
+        Wait(420)
+        if hazardEnabled and IsPedInAnyVehicle(PlayerPedId(), false) then
+            local v = GetVehiclePedIsIn(PlayerPedId(), false)
+            if v ~= 0 then
+                blink = not blink
+                SetVehicleIndicatorLights(v, 0, blink)
+                SetVehicleIndicatorLights(v, 1, blink)
+            end
+        end
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(vehiclePanelOpen and 160 or 650)
+        if vehiclePanelOpen then
+            pushVehiclePanelState()
+        end
+    end
+end)
+
 CreateThread(function()
     Wait(1000)
     PlayerData = QBCore.Functions.GetPlayerData()
@@ -283,6 +522,8 @@ CreateThread(function()
     while true do
         if hudMenuOpen and (IsControlJustPressed(0, 200) or IsControlJustPressed(0, 322)) then
             closeHudMenu()
+        elseif vehiclePanelOpen and (IsControlJustPressed(0, 200) or IsControlJustPressed(0, 322)) then
+            closeVehiclePanel()
         end
         Wait(0)
     end

@@ -88,12 +88,133 @@
                 <span id="ring-pct-thirst" class="ring-pct">100</span>
             </div>
         </div>
+
+        <div id="hudTiles" class="hud-tiles hidden" aria-hidden="true">
+            <div id="tile-wrap-health" class="tile-item">
+                <div class="tile-box">
+                    <div id="tile-fill-health" class="tile-fill"></div>
+                    <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="tile-icon-svg"><path fill="currentColor" d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.733 5.733 0 0112 5.052 5.733 5.733 0 016.313 3 5.34 5.34 0 002.25 8.25c0 3.925 2.438 7.111 4.739 9.256a25.175 25.175 0 004.236 3.175l.022.012.007.003.005.002h.005a.75.75 0 00.556 0l.005-.002z"/></svg></span>
+                </div>
+                <span id="tile-pct-health" class="tile-pct">100</span>
+            </div>
+            <div id="tile-wrap-armor" class="tile-item hidden">
+                <div class="tile-box">
+                    <div id="tile-fill-armor" class="tile-fill"></div>
+                    <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="tile-icon-svg"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l6 2.67v4.47c0 4.52-3.1 8.73-6 9.81-2.9-1.08-6-5.29-6-9.81V5.85l6-2.67z"/></svg></span>
+                </div>
+                <span id="tile-pct-armor" class="tile-pct">0</span>
+            </div>
+            <div id="tile-wrap-stamina" class="tile-item hidden">
+                <div class="tile-box">
+                    <div id="tile-fill-stamina" class="tile-fill"></div>
+                    <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="tile-icon-svg"><path fill="currentColor" d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg></span>
+                </div>
+                <span id="tile-pct-stamina" class="tile-pct">100</span>
+            </div>
+            <div id="tile-wrap-hunger" class="tile-item">
+                <div class="tile-box">
+                    <div id="tile-fill-hunger" class="tile-fill"></div>
+                    <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="tile-icon-svg"><path fill="currentColor" d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg></span>
+                </div>
+                <span id="tile-pct-hunger" class="tile-pct">100</span>
+            </div>
+            <div id="tile-wrap-thirst" class="tile-item">
+                <div class="tile-box">
+                    <div id="tile-fill-thirst" class="tile-fill"></div>
+                    <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="tile-icon-svg"><path fill="currentColor" d="M12 22c4.97 0 9-4.03 9-9 0-4.97-4.5-10-9-13-4.5 3-9 8.03-9 13 0 4.97 4.03 9 9 9zm-4.5-9c.83 1.67 2.17 2.5 4.5 2.5s3.67-.83 4.5-2.5c.83-1.67 1.5-4.17 1.5-6.5 0-2.5-1-5-4-8-3 3-4 5.5-4 8 0 2.33.67 4.83 1.5 6.5z"/></svg></span>
+                </div>
+                <span id="tile-pct-thirst" class="tile-pct">100</span>
+            </div>
+        </div>
     </div>
 
-    <div id="carhud" class="carhud hidden">
-        <div class="carline"><span>KM/H</span><strong id="speed">0</strong></div>
-        <div class="carline"><span>FUEL</span><strong id="fuel">0%</strong></div>
-        <div class="carline"><span>BELT</span><strong id="seatbelt">OFF</strong></div>
+    <div id="carhud" class="carhud carhud-sport hidden">
+        <div class="car-sport-inner">
+            <div id="carFuelTrack" class="car-fuel-track hidden">
+                <div id="carFuelFill" class="car-fuel-fill"></div>
+                <span class="car-fuel-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33a2.5 2.5 0 002.5 2.5c.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5a2.5 2.5 0 005 0V9c0-.69-.28-1.32-.73-1.77zM12 10H6V5h6v5zm6 0c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg></span>
+            </div>
+            <div class="car-gauge-wrap">
+                <svg class="car-rpm-svg" viewBox="0 0 120 120" aria-hidden="true">
+                    <circle class="car-rpm-track" cx="60" cy="60" r="52" fill="none" />
+                    <circle id="carRpmArc" class="car-rpm-arc" cx="60" cy="60" r="52" fill="none" transform="rotate(135 60 60)" />
+                </svg>
+                <div class="car-speed-stack">
+                    <span id="carSpeedDigits" class="car-speed-digits">000</span>
+                    <span class="car-kmh">KM/H</span>
+                </div>
+            </div>
+            <div class="car-icon-row">
+                <span id="carIconBelt" class="car-ico car-ico-belt" title="Diržas" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2C8 2 5 5 5 9v6c0 3.31 2.69 6 6 6s6-2.69 6-6V9c0-4-3-7-5-7zm-1 14v-4h2v4h-2zm0-6V9h2v1h-2z"/></svg></span>
+                <span id="carIconEngine" class="car-ico car-ico-engine" title="Variklis" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M7 4v2H5v6h2v6h2v-2h2v2h8V8h-5V6H9V4H7zm2 4h6v8H9V8zm-4 2h2v4H5v-4z"/></svg></span>
+            </div>
+        </div>
+        <div id="carhudClassic" class="carhud-classic hidden">
+            <div class="carline"><span>KM/H</span><strong id="speed">0</strong></div>
+            <div class="carline"><span>FUEL</span><strong id="fuel">0%</strong></div>
+            <div class="carline"><span>BELT</span><strong id="seatbelt">OFF</strong></div>
+        </div>
+    </div>
+
+    <div id="vehiclePanel" class="vehicle-panel hidden">
+        <div class="vp-shell">
+            <aside class="vp-rail">
+                <div id="vpClock" class="vp-clock">00:00</div>
+                <div class="vp-rail-icons">
+                    <span class="vp-rail-ico muted" title="Transportas">🚗</span>
+                    <span class="vp-rail-ico muted" title="Muzika">♪</span>
+                    <span class="vp-rail-ico muted" title="Šarvai">🛡</span>
+                </div>
+                <button type="button" class="vp-rail-power" id="vpBtnClose" title="Uždaryti">⏻</button>
+            </aside>
+            <div class="vp-main">
+                <div class="vp-top">
+                    <div class="vp-weather"><span id="vpWeather">CLEAR</span></div>
+                    <div class="vp-car-zone">
+                        <div class="vp-car-silhouette" aria-hidden="true"></div>
+                        <button type="button" class="vp-door vp-door-0" data-door="0" title="Durys FL">🔒</button>
+                        <button type="button" class="vp-door vp-door-1" data-door="1" title="Durys FR">🔒</button>
+                        <button type="button" class="vp-door vp-door-2" data-door="2" title="Durys RL">🔒</button>
+                        <button type="button" class="vp-door vp-door-3" data-door="3" title="Durys RR">🔒</button>
+                        <button type="button" class="vp-door vp-door-4" data-door="4" title="Kapotas">🔒</button>
+                        <button type="button" class="vp-door vp-door-5" data-door="5" title="Bagažinė">🔒</button>
+                    </div>
+                    <div class="vp-fuel-bar">
+                        <div id="vpFuelFill" class="vp-fuel-fill"></div>
+                    </div>
+                </div>
+                <div class="vp-actions">
+                    <button type="button" class="vp-act" data-act="lock"><span class="vp-act-ico">🔐</span><span>Rakinimas</span></button>
+                    <button type="button" class="vp-act" data-act="seat"><span class="vp-act-ico">💺</span><span>Sėdynė</span></button>
+                    <button type="button" class="vp-act" data-act="engine"><span class="vp-act-ico">⚙</span><span>Variklis</span></button>
+                    <button type="button" class="vp-act" data-act="interior"><span class="vp-act-ico">☀</span><span>Salonas</span></button>
+                    <button type="button" class="vp-act" data-act="lights"><span class="vp-act-ico">💡</span><span>Šviesos</span></button>
+                </div>
+                <div class="vp-bottom">
+                    <div class="vp-panel">
+                        <span class="vp-panel-ico">📍</span>
+                        <div>
+                            <div id="vpStreet" class="vp-panel-title">—</div>
+                            <div id="vpWaypoint" class="vp-panel-sub">—</div>
+                        </div>
+                    </div>
+                    <div class="vp-panel">
+                        <span class="vp-panel-ico">🌡</span>
+                        <div>
+                            <div class="vp-panel-title">Variklis</div>
+                            <div id="vpEngineTemp" class="vp-panel-sub">—</div>
+                        </div>
+                    </div>
+                    <div class="vp-panel vp-panel-hazard">
+                        <span class="vp-panel-ico vp-hazard-ico">◆</span>
+                        <div class="vp-hazard-row">
+                            <span>Avariniai</span>
+                            <button type="button" class="vp-toggle" id="vpHazardToggle" aria-pressed="false"><span class="vp-toggle-knob"></span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="hudMenu" class="hudmenu hidden">
@@ -114,8 +235,9 @@
                 <label>Stilius
                     <select id="menuStyle">
                         <option value="line">Linijos</option>
-                        <option value="square">Kvadratai</option>
+                        <option value="square">Kvadratai (juostos)</option>
                         <option value="dots">Rutuliukai</option>
+                        <option value="tiles">Kvadratai (vitalai)</option>
                     </select>
                 </label>
                 <label>Spalva
@@ -147,7 +269,7 @@
                 <button type="button" id="btnSavePreset" class="btn btn-primary">Išsaugoti į preset</button>
                 <button type="button" id="btnCloseMenu" class="btn btn-ghost">Uždaryti</button>
             </div>
-            <p class="hint">Komandos: /hud atidaro meniu, /hud 1-3 perjungia presetą. Jei visi rodikliai išjungti, statuso HUD nerodomas.</p>
+            <p class="hint">Komandos: /hud atidaro meniu, /hud 1-3 perjungia presetą. Transporto valdymo panelė: klavišas U. Jei visi rodikliai išjungti, statuso HUD nerodomas.</p>
         </div>
     </div>
 

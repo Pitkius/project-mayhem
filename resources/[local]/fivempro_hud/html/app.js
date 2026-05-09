@@ -1,6 +1,7 @@
 const hudRoot = document.getElementById("hudRoot");
 const hudBars = document.getElementById("hudBars");
 const hudRings = document.getElementById("hudRings");
+const hudTiles = document.getElementById("hudTiles");
 const rows = {
   health: document.getElementById("row-health"),
   armor: document.getElementById("row-armor"),
@@ -64,6 +65,38 @@ MAIN_STATS.forEach((k) => {
   ringProgress[k] = document.getElementById(`ring-progress-${k}`);
 });
 
+const tileWraps = {
+  health: document.getElementById("tile-wrap-health"),
+  armor: document.getElementById("tile-wrap-armor"),
+  stamina: document.getElementById("tile-wrap-stamina"),
+  hunger: document.getElementById("tile-wrap-hunger"),
+  thirst: document.getElementById("tile-wrap-thirst"),
+};
+const tileFills = {};
+const tileTexts = {};
+MAIN_STATS.forEach((k) => {
+  tileFills[k] = document.getElementById(`tile-fill-${k}`);
+  tileTexts[k] = document.getElementById(`tile-pct-${k}`);
+});
+
+const carSpeedDigits = document.getElementById("carSpeedDigits");
+const carRpmArc = document.getElementById("carRpmArc");
+const carFuelTrack = document.getElementById("carFuelTrack");
+const carFuelFill = document.getElementById("carFuelFill");
+const carIconBelt = document.getElementById("carIconBelt");
+const carhudClassic = document.getElementById("carhudClassic");
+const vehiclePanel = document.getElementById("vehiclePanel");
+const vpClock = document.getElementById("vpClock");
+const vpWeather = document.getElementById("vpWeather");
+const vpStreet = document.getElementById("vpStreet");
+const vpWaypoint = document.getElementById("vpWaypoint");
+const vpEngineTemp = document.getElementById("vpEngineTemp");
+const vpFuelFill = document.getElementById("vpFuelFill");
+const vpHazardToggle = document.getElementById("vpHazardToggle");
+const vpBtnClose = document.getElementById("vpBtnClose");
+
+const CAR_RPM_ARC_LEN = 245;
+
 (function initRings() {
   MAIN_STATS.forEach((k) => {
     const el = ringProgress[k];
@@ -71,6 +104,12 @@ MAIN_STATS.forEach((k) => {
     el.style.strokeDasharray = String(RING_LEN);
     el.style.strokeDashoffset = String(RING_LEN);
   });
+})();
+
+(function initCarRpm() {
+  if (!carRpmArc) return;
+  carRpmArc.style.strokeDasharray = `${CAR_RPM_ARC_LEN} 400`;
+  carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN);
 })();
 
 let currentSettings = {
@@ -121,16 +160,24 @@ function setBar(name, value) {
   if (pctEl) {
     pctEl.textContent = String(Math.round(clamped));
   }
+  const tf = tileFills[name];
+  if (tf) tf.style.height = `${clamped}%`;
+  const tt = tileTexts[name];
+  if (tt) tt.textContent = String(Math.round(clamped));
 }
 
 function applyVisualStyle(style) {
-  const normalized = style || "dots";
-  body.classList.remove("shape-line", "shape-square", "shape-dots");
+  const allowed = ["line", "square", "dots", "tiles"];
+  const normalized = allowed.includes(style) ? style : "dots";
+  body.classList.remove("shape-line", "shape-square", "shape-dots", "shape-tiles");
   body.classList.add(`shape-${normalized}`);
 
   const isRings = normalized === "dots";
-  hudBars.classList.toggle("hidden", isRings);
+  const isTiles = normalized === "tiles";
+  const useBars = normalized === "line" || normalized === "square";
+  hudBars.classList.toggle("hidden", !useBars);
   hudRings.classList.toggle("hidden", !isRings);
+  if (hudTiles) hudTiles.classList.toggle("hidden", !isTiles);
 }
 
 function syncRows() {
@@ -139,6 +186,7 @@ function syncRows() {
     const on = s[k] === true;
     if (rows[k]) rows[k].classList.toggle("hidden", !on);
     if (ringWraps[k]) ringWraps[k].classList.toggle("hidden", !on);
+    if (tileWraps[k]) tileWraps[k].classList.toggle("hidden", !on);
   });
 }
 
@@ -158,6 +206,17 @@ function applyThemeData(data) {
   }
   if (data.glowColor) {
     document.documentElement.style.setProperty("--accent-glow", data.glowColor);
+  }
+  if (data.tileColors && typeof data.tileColors === "object") {
+    const tc = data.tileColors;
+    if (tc.health) document.documentElement.style.setProperty("--tile-health", tc.health);
+    if (tc.armor) document.documentElement.style.setProperty("--tile-armor", tc.armor);
+    if (tc.hunger) document.documentElement.style.setProperty("--tile-hunger", tc.hunger);
+    if (tc.thirst) document.documentElement.style.setProperty("--tile-thirst", tc.thirst);
+    if (tc.stamina) document.documentElement.style.setProperty("--tile-stamina", tc.stamina);
+  }
+  if (data.vehicleUiAccent) {
+    document.documentElement.style.setProperty("--vehicle-accent", data.vehicleUiAccent);
   }
   document.documentElement.style.setProperty("--panel-alpha", String(currentSettings.alpha || 0.55));
   applyVisualStyle(currentSettings.style);
@@ -227,6 +286,46 @@ window.addEventListener("message", (event) => {
     return;
   }
 
+  if (data.action === "vehiclePanel") {
+    if (!vehiclePanel) return;
+    if (!data.open) {
+      vehiclePanel.classList.add("hidden");
+      return;
+    }
+    vehiclePanel.classList.remove("hidden");
+    if (vpClock && data.timeStr) vpClock.textContent = data.timeStr;
+    if (vpWeather && data.weather) vpWeather.textContent = `ORAS ${data.weather}`;
+    if (vpStreet) vpStreet.textContent = data.street || "—";
+    if (vpWaypoint) {
+      const m = data.waypointM;
+      vpWaypoint.textContent = m != null && m !== "" ? `${m} m` : "—";
+    }
+    if (vpEngineTemp) vpEngineTemp.textContent = data.engineTemp != null ? `${data.engineTemp}°` : "—";
+    if (vpFuelFill) vpFuelFill.style.height = `${Math.max(0, Math.min(100, Number(data.fuel) || 0))}%`;
+    if (vpHazardToggle) {
+      vpHazardToggle.classList.toggle("on", !!data.hazard);
+      vpHazardToggle.setAttribute("aria-pressed", data.hazard ? "true" : "false");
+    }
+    document.querySelectorAll(".vp-act").forEach((btn) => {
+      const act = btn.getAttribute("data-act");
+      btn.classList.remove("vp-act-on");
+      if (act === "engine" && data.engineOn) btn.classList.add("vp-act-on");
+      if (act === "lights" && data.headlightsOn) btn.classList.add("vp-act-on");
+      if (act === "interior" && data.interiorLight) btn.classList.add("vp-act-on");
+      if (act === "lock" && data.locked) btn.classList.add("vp-act-on");
+    });
+    if (Array.isArray(data.doors)) {
+      data.doors.forEach((d) => {
+        const el = document.querySelector(`.vp-door[data-door="${d.idx}"]`);
+        if (!el) return;
+        el.classList.toggle("state-open", !!d.open);
+        el.classList.toggle("state-unlocked", !data.locked);
+        el.textContent = d.open ? "▢" : data.locked ? "●" : "○";
+      });
+    }
+    return;
+  }
+
   if (data.action !== "update") return;
 
   if (data.settings) {
@@ -252,12 +351,41 @@ window.addEventListener("message", (event) => {
     !!data.show &&
     (currentSettings.show.speed || currentSettings.show.fuel || currentSettings.show.seatbelt);
   carHud.classList.toggle("hidden", !showCarHud);
-  speedText.parentElement.classList.toggle("hidden", !currentSettings.show.speed);
-  fuelText.parentElement.classList.toggle("hidden", !currentSettings.show.fuel);
-  seatbeltText.parentElement.classList.toggle("hidden", !currentSettings.show.seatbelt);
-  speedText.textContent = `${data.speed ?? 0}`;
-  fuelText.textContent = `${data.fuel ?? 0}%`;
-  seatbeltText.textContent = data.seatbelt ? "ON" : "OFF";
+  if (carhudClassic) carhudClassic.classList.add("hidden");
+  if (speedText && speedText.parentElement) {
+    speedText.parentElement.classList.toggle("hidden", !currentSettings.show.speed);
+  }
+  if (fuelText && fuelText.parentElement) {
+    fuelText.parentElement.classList.toggle("hidden", !currentSettings.show.fuel);
+  }
+  if (seatbeltText && seatbeltText.parentElement) {
+    seatbeltText.parentElement.classList.toggle("hidden", !currentSettings.show.seatbelt);
+  }
+  if (speedText) speedText.textContent = `${data.speed ?? 0}`;
+  if (fuelText) fuelText.textContent = `${data.fuel ?? 0}%`;
+  if (seatbeltText) seatbeltText.textContent = data.seatbelt ? "ON" : "OFF";
+
+  if (carSpeedDigits) {
+    const sp = Math.max(0, Math.min(999, Number(data.speed) || 0));
+    carSpeedDigits.textContent = String(sp).padStart(3, "0");
+  }
+  if (carRpmArc) {
+    const rpm = Math.max(0, Math.min(100, Number(data.rpm) || 0));
+    carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN * (1 - rpm / 100));
+  }
+  if (carFuelTrack) carFuelTrack.classList.toggle("hidden", !currentSettings.show.fuel);
+  if (carFuelFill) {
+    const fl = Math.max(0, Math.min(100, Number(data.fuel) || 0));
+    carFuelFill.style.height = `${fl}%`;
+  }
+  if (carIconBelt) {
+    carIconBelt.classList.toggle("belt-off", !data.seatbelt);
+    carIconBelt.classList.toggle("hidden", !currentSettings.show.seatbelt);
+  }
+  const engIco = document.getElementById("carIconEngine");
+  if (engIco) engIco.classList.toggle("hidden", !showCarHud);
+  const carGaugeWrap = document.querySelector(".car-gauge-wrap");
+  if (carGaugeWrap) carGaugeWrap.classList.toggle("hidden", !currentSettings.show.speed);
 });
 
 menu.preset.addEventListener("change", () => {
@@ -288,9 +416,41 @@ menu.btnCloseMenu.addEventListener("click", () => {
   nuiPost("hud:close", {});
 });
 
+if (vpBtnClose) {
+  vpBtnClose.addEventListener("click", () => {
+    nuiPost("vehiclePanel:action", { action: "close" });
+  });
+}
+
+document.querySelectorAll(".vp-act").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const act = btn.getAttribute("data-act");
+    if (act) nuiPost("vehiclePanel:action", { action: act });
+  });
+});
+
+document.querySelectorAll(".vp-door").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const d = btn.getAttribute("data-door");
+    nuiPost("vehiclePanel:action", { action: "door", doorIndex: Number(d) });
+  });
+});
+
+if (vpHazardToggle) {
+  vpHazardToggle.addEventListener("click", () => {
+    nuiPost("vehiclePanel:action", { action: "hazard" });
+  });
+}
+
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !hudMenu.classList.contains("hidden")) {
+  if (e.key !== "Escape") return;
+  if (!hudMenu.classList.contains("hidden")) {
     e.preventDefault();
     nuiPost("hud:close", {});
+    return;
+  }
+  if (vehiclePanel && !vehiclePanel.classList.contains("hidden")) {
+    e.preventDefault();
+    nuiPost("vehiclePanel:action", { action: "close" });
   }
 });
