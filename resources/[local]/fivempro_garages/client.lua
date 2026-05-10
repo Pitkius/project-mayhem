@@ -107,10 +107,6 @@ local function getVehicleStats(model)
     }
 end
 
-local function getImageUrl(model)
-    return ('https://docs.fivem.net/vehicles/%s.webp'):format(model)
-end
-
 local function forceDeleteVehicleEntity(veh)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     SetEntityAsMissionEntity(veh, true, true)
@@ -283,7 +279,6 @@ local function buildGarageRows(vehicles, garageId)
             state = state,
             statusLabel = statusLabel,
             canTakeOut = canTake,
-            image = getImageUrl(v.model),
             stats = {
                 maxKmh = math.floor(st.maxKmh + 0.5),
                 zeroToHundred = math.floor(st.zeroToHundred * 10 + 0.5) / 10,

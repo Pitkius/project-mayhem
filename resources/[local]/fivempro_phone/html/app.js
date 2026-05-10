@@ -46,6 +46,24 @@ function openHome() {
   }
 }
 
+function hideCallOverlay() {
+  const ov = document.getElementById("callOverlay");
+  if (!ov) return;
+  ov.classList.add("hidden");
+  ov.setAttribute("aria-hidden", "true");
+}
+
+function showIncomingCallOverlay(payload = {}) {
+  const ov = document.getElementById("callOverlay");
+  if (!ov) return;
+  const num = payload?.fromNumber || "Nežinomas nr.";
+  const nm = (payload?.fromName || "").trim();
+  document.getElementById("callOverlaySub").textContent = num;
+  document.getElementById("callOverlayTitle").textContent = nm ? `Skambina · ${nm}` : "Įeinantis skambutis";
+  ov.classList.remove("hidden");
+  ov.setAttribute("aria-hidden", "false");
+}
+
 function hydrate(payload = {}) {
   state.me = payload.me || state.me;
   state.account = payload.account || state.account;
@@ -166,8 +184,10 @@ window.addEventListener("message", async (e) => {
   const { action, payload } = e.data || {};
   if (action === "open") {
     document.getElementById("phone").classList.remove("hidden");
+    hideCallOverlay();
     openHome();
   } else if (action === "close") {
+    hideCallOverlay();
     document.getElementById("phone").classList.add("hidden");
   } else if (action === "hydrate") {
     hydrate(payload || {});
@@ -175,14 +195,35 @@ window.addEventListener("message", async (e) => {
     hydrate(await nui("refresh"));
   } else if (action === "incomingCall") {
     state.activeCallId = payload?.id || null;
-    document.getElementById("callState").textContent = `Incoming: ${payload?.fromNumber || "Unknown"}`;
+    const line = payload?.fromNumber ? `Įeinantis: ${payload.fromNumber}` : "Įeinantis skambutis";
+    document.getElementById("callState").textContent = line;
+    showIncomingCallOverlay(payload || {});
   } else if (action === "callState") {
     state.activeCallId = payload?.id || null;
-    document.getElementById("callState").textContent = payload?.status || "";
+    const st = payload?.status || "";
+    document.getElementById("callState").textContent = st;
+    if (/(ended|rejected|busy|failed)/i.test(st)) {
+      hideCallOverlay();
+    }
   }
 });
 
-document.getElementById("btnClose").addEventListener("click", () => nui("close"));
+document.getElementById("btnClose").addEventListener("click", () => {
+  hideCallOverlay();
+  nui("close");
+});
+
+document.getElementById("callReject").addEventListener("click", () => {
+  const id = state.activeCallId;
+  hideCallOverlay();
+  if (id) nui("respondCall", { callId: id, accept: false });
+});
+
+document.getElementById("callAccept").addEventListener("click", () => {
+  const id = state.activeCallId;
+  hideCallOverlay();
+  if (id) nui("respondCall", { callId: id, accept: true });
+});
 
 window.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;

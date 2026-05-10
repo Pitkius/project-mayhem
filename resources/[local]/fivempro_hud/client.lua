@@ -113,6 +113,46 @@ local function currentSettings()
     return presetSettings[hudPreset] or DEFAULT_PRESET
 end
 
+--- qb-smallresources turi tikrą diržą; kitaip – vietinis `fivempro_seatbelt`.
+local function seatbeltDisplayActive()
+    if GetResourceState('qb-smallresources') == 'started' then
+        local ok, r = pcall(function()
+            return exports['qb-smallresources']:HasSeatbeltOn()
+        end)
+        if ok and r then return true end
+        if ok and r == false then return false end
+    end
+    return seatbeltOn
+end
+
+AddEventHandler('seatbelt:client:ToggleSeatbelt', function(state)
+    seatbeltOn = state == true
+end)
+
+CreateThread(function()
+    while true do
+        Wait(180)
+        local ped = PlayerPedId()
+        if not IsPedInAnyVehicle(ped, false) then
+            Wait(500)
+            goto belt_wait_cont
+        end
+        local veh = GetVehiclePedIsIn(ped, false)
+        if veh ~= 0 then
+            local cls = GetVehicleClass(veh)
+            local exempt = cls == 8 or cls == 13 or cls == 14 --- dviračiai / valtys etc.
+            if exempt then
+                SetPedCanFlyThroughWindscreen(ped, false)
+            else
+                local belt = seatbeltDisplayActive()
+                --- Su diržu – neproti pro priekį (mažiau smūgio žalos be išmetimo iš QB logikos).
+                SetPedCanFlyThroughWindscreen(ped, not belt)
+            end
+        end
+        ::belt_wait_cont::
+    end
+end)
+
 local function sendHudTheme()
     local s = currentSettings()
     local c = COLOR_THEMES[s.color] or COLOR_THEMES.violet
@@ -199,7 +239,7 @@ local function pushHud()
         inVehicle = inVehicle,
         speed = speed,
         fuel = fuel,
-        seatbelt = seatbeltOn,
+        seatbelt = seatbeltDisplayActive(),
         rpm = rpmPct,
         engineTemp = engineTemp,
         engineOn = engineOn,
@@ -274,6 +314,10 @@ RegisterNetEvent('hud:client:UpdateNeeds', function()
 end)
 
 RegisterCommand('fivempro_seatbelt', function()
+    if GetResourceState('qb-smallresources') == 'started' then
+        ExecuteCommand('toggleseatbelt')
+        return
+    end
     local ped = PlayerPedId()
     if not IsPedInAnyVehicle(ped, false) then return end
     seatbeltOn = not seatbeltOn
@@ -282,8 +326,6 @@ RegisterCommand('fivempro_seatbelt', function()
     AddTextComponentSubstringPlayerName(msg)
     EndTextCommandThefeedPostTicker(false, false)
 end, false)
-
-RegisterKeyMapping('fivempro_seatbelt', 'Toggle seatbelt', 'keyboard', 'B')
 
 RegisterCommand('hud', function(_, args)
     local arg = args and args[1] and tostring(args[1]) or ''

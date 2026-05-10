@@ -68,6 +68,35 @@ function setSelected(vehicle) {
   renderCars();
 }
 
+function vehicleImageCandidates(model) {
+  const m = String(model || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^[\s\S]*\//g, '')
+    .replace(/\s+/g, '');
+  const slug = /^[a-z0-9_]+$/.test(m) ? m : 'default';
+  const resName = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'fivempro_garages';
+  const base = `nui://${resName}/html/assets/vehicles`;
+  const docSlug = /^[a-z0-9_]+$/.test(slug) ? slug : 'sultan';
+  return [`${base}/${slug}.png`, `${base}/${slug}.webp`, `${base}/default.webp`, `${base}/default.png`, `https://docs.fivem.net/vehicles/${docSlug}.webp`];
+}
+
+function bindVehicleThumbnail(imgEl, model) {
+  const urls = vehicleImageCandidates(model);
+  let attempt = 0;
+  imgEl.style.opacity = '1';
+  imgEl.onerror = () => {
+    attempt += 1;
+    if (attempt < urls.length) {
+      imgEl.src = urls[attempt];
+      return;
+    }
+    imgEl.onerror = null;
+    imgEl.style.opacity = '0.75';
+  };
+  imgEl.src = urls[0];
+}
+
 function renderVehicleList() {
   vehicleListEl.innerHTML = '';
   const list = state.payload?.vehicles || [];
@@ -99,12 +128,8 @@ function renderCars() {
 
     const img = document.createElement('img');
     img.className = 'car-img';
-    img.src = veh.image;
-    img.alt = veh.model;
-    img.onerror = () => {
-      img.src =
-        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="480" height="180"><rect width="100%" height="100%" fill="%2320262b"/><text x="50%" y="50%" fill="%23b3c1c8" font-family="Arial" font-size="20" dominant-baseline="middle" text-anchor="middle">No Image</text></svg>';
-    };
+    img.alt = veh.model || '';
+    bindVehicleThumbnail(img, veh.model);
     card.appendChild(img);
 
     const info = document.createElement('div');

@@ -3,12 +3,20 @@ Config = Config or {}
 Config.ReloadTime = math.random(4000, 6000)
 
 --[[
-  Recoil: client/recoil.lua kelia tik kamerą aukštyn (vertikaliai).
-  RecoilMultiplier – visiems sąrašo ginklams bendras stiprinimas.
-  RecoilShakeAmplitude – GTA ginklo „drebulė“ iš metaduomenų (0.0 = be jos).
+  Recoil: client/recoil.lua kelia kamerą + šoninį išsisklaidymą.
+  RecoilMultiplier – bendras vertikalus stiprinimas.
+  RecoilBaseScale – papildomas daugiklis bazinėms reikšmėms (recoils lentelė).
+  RecoilShakeAmplitude – GTA ginklo drebulė (0 = be native drebulės; ~1.0+ aiškiai juntama).
+  RecoilHorizontalSpread – atsitiktinis krypties „išsisklaidymas“ (0–1, ~0.4–0.5 RP).
+  RecoilPitchVariance – papildomas vertikalus jitter kiekvienam šūviui.
 ]]
-Config.RecoilMultiplier = 4.0
-Config.RecoilShakeAmplitude = 0.0
+Config.RecoilMultiplier = 6.75
+Config.RecoilBaseScale = 1.28
+Config.RecoilShakeAmplitude = 1.22
+Config.RecoilHorizontalSpread = 0.48
+Config.RecoilPitchVariance = 0.11
+--- Jei ginklas recoils lentelėje turi 0 arba beveik 0 – vis tiek šiek tiek spyris (ne „lazeris“).
+Config.RecoilMinimumBase = 0.22
 
 Config.DurabilityBlockedWeapons = {
     'weapon_stungun',

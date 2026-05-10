@@ -16,6 +16,30 @@ local doorGroups = {} ---@type LtpdDoorGroupRuntime[]
 local doorLocked = {} ---@type table<string, boolean>
 local dynStationDone = {} ---@type table<string, boolean>
 
+--- Kad dinaminis skeneris nedubliuotų durų, kurias valdome iš `PdDoorGroups`.
+local manualPdSlabSkip = {}
+
+local function rebuildManualPdSlabSkip()
+    manualPdSlabSkip = {}
+    for _, def in ipairs(Config.PdDoorGroups or {}) do
+        for _, d in ipairs(def.doors or {}) do
+            manualPdSlabSkip[#manualPdSlabSkip + 1] = {
+                m = joaat(d.model),
+                c = d.coords,
+            }
+        end
+    end
+end
+
+local function isManualPdDoorSlab(modelHash, coords)
+    for _, e in ipairs(manualPdSlabSkip) do
+        if e.m == modelHash and #(coords - e.c) < 1.25 then
+            return true
+        end
+    end
+    return false
+end
+
 --- GTA saugos spynos sprites (`mpsafecracking`): lock_closed / lock_open
 local PD_LOCK_TX = 'mpsafecracking'
 
@@ -192,6 +216,7 @@ local function buildManualGroups()
             doorLocked[def.id] = def.defaultLocked ~= false
         end
     end
+    rebuildManualPdSlabSkip()
 end
 
 local function scanDynamicForStation(dyn)
@@ -207,7 +232,7 @@ local function scanDynamicForStation(dyn)
             local m = GetEntityModel(ent)
             if whitelist[m] then
                 local c = GetEntityCoords(ent)
-                if vecInBounds(c, minV, maxV) then
+                if vecInBounds(c, minV, maxV) and not isManualPdDoorSlab(m, c) then
                     found[#found + 1] = { modelHash = m, coords = c }
                 end
             end

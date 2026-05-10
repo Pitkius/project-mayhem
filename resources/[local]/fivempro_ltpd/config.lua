@@ -381,10 +381,36 @@ Config.PdDoorDynamics = {
         pairDist = 4.35,
         interactDist = 2.85,
     },
-    --- Vanilla / ne-Gabz LS MRPD: tik Rockstar durų propai — ne dubliuoja `PdDoorGroups` Gabz įrašų
+    --- Gabz MRPD LS: visos papildomos vidaus / tarnybinės durys ir vartai (nebendrinama su manual `PdDoorGroups` lokacijomis).
+    {
+        stationId = 'ls_mrpd_gabz',
+        label = 'PD durys (LS Gabz – auto)',
+        bounds = {
+            min = vector3(395.0, -1060.0, -14.0),
+            max = vector3(522.0, -910.0, 72.0),
+        },
+        models = {
+            'gabz_mrpd_reception_entrancedoor',
+            'gabz_mrpd_door_03',
+            'gabz_mrpd_room13_parkingdoor',
+            'gabz_mrpd_cells_door',
+            'hei_prop_station_door_lr',
+            'hei_prop_station_door_sl',
+            'hei_prop_station_door_ra',
+            'hei_prop_station_door_rb',
+            'hei_prop_station_door_lc',
+            'hei_prop_station_door_rc',
+            'prop_facgate_07b',
+            'hei_prop_station_gate',
+        },
+        pairDist = 4.15,
+        interactDist = 2.95,
+        interactOffset = vector3(0.0, 0.0, 0.88),
+    },
+    --- Vanilla / ne-Gabz LS MRPD: tik Rockstar durų propai
     {
         stationId = 'ls_mrpd_dyn',
-        label = 'PD durys (LS – auto, vanilla durys)',
+        label = 'PD durys (LS – auto, vanilla)',
         bounds = {
             min = vector3(400.0, -1045.0, 23.5),
             max = vector3(505.0, -928.0, 58.0),

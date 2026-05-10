@@ -112,9 +112,15 @@ local lastRecoilAt = 0
 local function applyVerticalRecoil(ped, weap)
     if not ped or ped == 0 then return end
     local base = recoils[weap]
+    if base == nil then return end
+    --- Tik ginklai su 0 bazė (pvz. combatshotgun meta) – ne „lazeris“.
+    if base <= 0.0 then
+        base = Config.RecoilMinimumBase or 0.18
+    end
     local mult = Config.RecoilMultiplier or 1.0
-    local amount = base and base * mult or nil
-    if not amount or amount <= 0.0 then return end
+    local scale = Config.RecoilBaseScale or 1.0
+    local amount = base * mult * scale
+    if amount <= 0.0 then return end
 
     local tv = 0.0
     if GetFollowPedCamViewMode() ~= 4 then
@@ -131,6 +137,19 @@ local function applyVerticalRecoil(ped, weap)
             SetGameplayCamRelativePitch(p + 0.75, 1.35)
             tv += 0.75
         until tv >= amount
+    end
+
+    --- Šoninis išsisklaidymas + nedidelis vertikalus jitter (tikrina „lazerinių“ AR/SMG).
+    local hAmp = Config.RecoilHorizontalSpread or 0.4
+    local hKick = (math.random() * 2.0 - 1.0) * amount * hAmp
+    local curH = GetGameplayCamRelativeHeading()
+    SetGameplayCamRelativeHeading(curH + hKick)
+
+    local vJit = Config.RecoilPitchVariance or 0.08
+    if vJit > 0.0 then
+        local pj = (math.random() * 2.0 - 1.0) * amount * vJit
+        local cp = GetGameplayCamRelativePitch()
+        SetGameplayCamRelativePitch(cp + pj, 0.18)
     end
 end
 

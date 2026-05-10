@@ -4,10 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fivempro Phone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="phone" class="hidden">
+    <div id="callOverlay" class="call-overlay hidden" aria-hidden="true">
+      <div class="call-sheet glass">
+        <div class="call-avatar" aria-hidden="true">📶</div>
+        <div id="callOverlayTitle" class="call-title">Įeinantis skambutis</div>
+        <div id="callOverlaySub" class="call-sub">—</div>
+        <div class="call-actions">
+          <button type="button" class="call-btn reject" id="callReject">Atmesti</button>
+          <button type="button" class="call-btn accept" id="callAccept">Atsiliepti</button>
+        </div>
+      </div>
+    </div>
     <div class="statusbar">
       <span id="timeText">09:41</span>
       <span id="meNumber">Nr: 000000</span>

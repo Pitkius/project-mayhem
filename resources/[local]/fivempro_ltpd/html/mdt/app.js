@@ -67,6 +67,11 @@ document.querySelectorAll('.tab').forEach((t) => {
     const id = 'panel-' + t.dataset.tab;
     const pan = document.getElementById(id);
     if (pan) pan.classList.remove('hidden');
+    if (t.dataset.tab === 'units') {
+      dispatchMapPan = { x: 0, y: 0, scale: 1 };
+      applyDispatchMapTransform();
+      refreshDispatch();
+    }
   };
 });
 
@@ -192,8 +197,8 @@ function worldToMap(x, y) {
   const px = ((Number(x || 0) - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * 100;
   const py = (1 - ((Number(y || 0) - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY))) * 100;
   return {
-    x: Math.max(1, Math.min(99, px)),
-    y: Math.max(1, Math.min(99, py)),
+    x: Math.max(0.2, Math.min(99.8, px)),
+    y: Math.max(0.2, Math.min(99.8, py)),
   };
 }
 

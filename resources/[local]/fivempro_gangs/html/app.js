@@ -168,6 +168,7 @@ function renderTurfsOnMap(state) {
     const owner = t.owner_name || "Laisva";
     const prog = Math.max(0, Math.min(100, Number(t.progress || 0)));
     const status = String(t.status || (hasOwner ? "užimtas" : "neužimtas"));
+    const disputed = /ginč|ginčij/i.test(status);
 
     const fillHex = col && /^#[0-9A-Fa-f]{6}$/.test(col) ? col : "#a78bfa";
     const turfBounds = L.latLngBounds(
@@ -177,10 +178,11 @@ function renderTurfsOnMap(state) {
 
     const turfPatch = L.rectangle(turfBounds, {
       stroke: true,
-      weight: 1,
-      color: hasOwner ? hexToRgba(fillHex, 0.72) : "rgba(148,163,184,0.55)",
+      weight: disputed ? 2.25 : 1,
+      color: disputed ? "rgba(250,204,21,0.9)" : hasOwner ? hexToRgba(fillHex, 0.72) : "rgba(148,163,184,0.55)",
       fillColor: hasOwner ? fillHex : "#334155",
       fillOpacity: hasOwner ? 0.42 : 0.18,
+      dashArray: disputed ? "6 8" : null,
       interactive: true,
       bubblingMouseEvents: false,
     }).addTo(group);
