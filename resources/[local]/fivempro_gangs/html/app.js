@@ -52,7 +52,7 @@ function nuiImageUrl(pathFromHtml) {
   const res = resourceName();
   let p = raw.replace(/^\/+/, "");
   if (!p.startsWith("html/")) p = `html/${p}`;
-  return `https://${res}/${p}`;
+  return `nui://${res}/${p}`;
 }
 
 function normalizeMapConfig(payload) {
@@ -159,6 +159,7 @@ function renderTurfsOnMap(state) {
     const label = t.turf_label || t.turf_id;
     const owner = t.owner_name || "Laisva";
     const prog = Math.max(0, Math.min(100, Number(t.progress || 0)));
+    const status = String(t.status || (hasOwner ? "užimtas" : "neužimtas"));
 
     const fillHex = col && /^#[0-9A-Fa-f]{6}$/.test(col) ? col : "#a78bfa";
     const turfBounds = L.latLngBounds(
@@ -167,11 +168,11 @@ function renderTurfsOnMap(state) {
     );
 
     const turfPatch = L.rectangle(turfBounds, {
-      stroke: hasOwner,
-      weight: hasOwner ? 1 : 0,
-      color: hasOwner ? hexToRgba(fillHex, 0.72) : "transparent",
-      fillColor: fillHex,
-      fillOpacity: hasOwner ? 0.42 : 0.0,
+      stroke: true,
+      weight: 1,
+      color: hasOwner ? hexToRgba(fillHex, 0.72) : "rgba(148,163,184,0.55)",
+      fillColor: hasOwner ? fillHex : "#334155",
+      fillOpacity: hasOwner ? 0.42 : 0.18,
       interactive: true,
       bubblingMouseEvents: false,
     }).addTo(group);
@@ -184,8 +185,8 @@ function renderTurfsOnMap(state) {
     turfPatch.on("mousemove", (e) => {
       mapTooltip.classList.remove("hidden");
       mapTooltip.innerHTML = hasOwner
-        ? `<strong>${safe(label)}</strong><br/>${safe(owner)} · ${prog}% užimta`
-        : `<strong>${safe(label)}</strong><br/>Laisva · ${prog}% užimta`;
+        ? `<strong>${safe(label)}</strong><br/>${safe(owner)} · ${safe(status)} · ${prog}%`
+        : `<strong>${safe(label)}</strong><br/>Laisva · ${safe(status)} · ${prog}%`;
       const stage = document.getElementById("mapStage");
       if (!stage) return;
       const rect = stage.getBoundingClientRect();
@@ -291,14 +292,25 @@ function mergeTabletMap(res) {
 }
 
 function updateGangTabContent(state) {
+  const memberListEl = document.getElementById("gangMemberList");
   if (state.hasGang) {
     gangPanelEmpty.classList.add("hidden");
     gangPanelContent.classList.remove("hidden");
     gangTitle.textContent = `${state.gang.name} (${state.gang.gang_type})`;
     gangMeta.textContent = `Rep: ${state.gang.reputation || 0} · Heat: ${state.gang.heat || 0} · ${state.gang.color_hex || "-"} / ${state.gang.secondary_color_hex || "-"}`;
+    const rows = state.members || [];
+    memberListEl.innerHTML = rows.length
+      ? rows
+          .map(
+            (m) =>
+              `<div class="gang-member-row"><span>${safe(m.name || "Narys")}</span><span>${safe(m.citizenid || "-")}</span><strong>R${safe(m.rank || 0)}</strong></div>`,
+          )
+          .join("")
+      : `<div class="gang-member-row"><span>Narių nėra</span><span>-</span><strong>-</strong></div>`;
   } else {
     gangPanelContent.classList.add("hidden");
     gangPanelEmpty.classList.remove("hidden");
+    memberListEl.innerHTML = "";
   }
 }
 
@@ -400,6 +412,24 @@ document.getElementById("zoomOut").onclick = () => {
   if (turfMap) turfMap.zoomOut(0.35);
 };
 document.getElementById("tabletHomeBtn").onclick = () => resetMapView();
+document.getElementById("btnInviteMember").onclick = () => {
+  post("gangs:inviteMember", { targetId: Number(document.getElementById("memberTargetId").value) || 0 }).then(() => {
+    post("gangs:refresh", {}).then((res) => res && res.ok && render(mergeTabletMap(res)));
+  });
+};
+document.getElementById("btnSetRank").onclick = () => {
+  post("gangs:setMemberRank", {
+    citizenid: document.getElementById("memberCitizenId").value.trim(),
+    rank: Number(document.getElementById("memberRank").value) || 0,
+  }).then(() => {
+    post("gangs:refresh", {}).then((res) => res && res.ok && render(mergeTabletMap(res)));
+  });
+};
+document.getElementById("btnKickMember").onclick = () => {
+  post("gangs:kickMember", { citizenid: document.getElementById("memberCitizenId").value.trim() }).then(() => {
+    post("gangs:refresh", {}).then((res) => res && res.ok && render(mergeTabletMap(res)));
+  });
+};
 
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !tablet.classList.contains("hidden")) {

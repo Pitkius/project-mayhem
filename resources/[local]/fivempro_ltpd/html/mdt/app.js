@@ -171,10 +171,21 @@ function callActions(callId) {
     <div class="row">
       <button class="btn js-dispatch" data-action="accept" data-callid="${escapeHtml(callId)}">Priimti</button>
       <button class="btn js-dispatch" data-action="enroute" data-callid="${escapeHtml(callId)}">Vykstu</button>
+      <button class="btn js-dispatch" data-action="arrived" data-callid="${escapeHtml(callId)}">Atvykau</button>
       <button class="btn js-dispatch" data-action="done" data-callid="${escapeHtml(callId)}">Baigta</button>
       <button class="btn js-dispatch" data-action="reject" data-callid="${escapeHtml(callId)}">Atmesti</button>
     </div>
   `;
+}
+
+function resolveUnitNames(idMap, units) {
+  const out = [];
+  const list = units || [];
+  Object.keys(idMap || {}).forEach((sid) => {
+    const unit = list.find((u) => String(u.source) === String(sid));
+    out.push(unit ? `${unit.callsign ? `[${unit.callsign}] ` : ''}${unit.name || `ID ${sid}`}` : `ID ${sid}`);
+  });
+  return out.length ? out.join(', ') : '-';
 }
 
 function worldToMap(x, y) {
@@ -303,7 +314,9 @@ function renderDispatch(res) {
         <div>Statusas: <strong>${escapeHtml(c.statusLabel || c.status || 'N/A')}</strong></div>
         <div>Lokacija: ${Number(c.x || 0).toFixed(1)}, ${Number(c.y || 0).toFixed(1)}</div>
         <div>Laikas: ${escapeHtml(c.createdAt || '')}</div>
-        <div>Vyksta: ${countObj(c.enrouteBy)} | Priėmė: ${countObj(c.acceptedBy)}</div>
+        <div>Priėmė: ${resolveUnitNames(c.acceptedBy, units)}</div>
+        <div>Vyksta: ${resolveUnitNames(c.enrouteBy, units)}</div>
+        <div>Atvyko: ${resolveUnitNames(c.arrivedBy, units)}</div>
         ${c.panic ? `<div class="row"><button class="btn danger js-panic-off" data-callid="${escapeHtml(c.id)}">Išjungti PANIC</button></div>` : ''}
         ${callActions(c.id)}
       `;

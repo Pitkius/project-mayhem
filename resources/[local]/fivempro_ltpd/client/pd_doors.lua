@@ -28,10 +28,37 @@ CreateThread(function()
 end)
 
 local function drawPdDoorLock(worldX, worldY, worldZ, locked)
+    -- Papildomas markeris prie durų — aiškiau matosi priešužrakinimo tašką net jei sprite vėluoja
+    local mr, mg, mb = locked and 147 or 100, locked and 110 or 200, locked and 250 or 155
+    DrawMarker(
+        28,
+        worldX,
+        worldY,
+        worldZ + 0.92,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.26,
+        0.26,
+        0.32,
+        mr,
+        mg,
+        mb,
+        148,
+        false,
+        false,
+        2,
+        nil,
+        nil,
+        false
+    )
     RequestStreamedTextureDict(PD_LOCK_TX, false)
     if not HasStreamedTextureDictLoaded(PD_LOCK_TX) then return end
     SetDrawOrigin(worldX, worldY, worldZ + 0.24, 0)
-    DrawSprite(PD_LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, 0.038, 0.066, 0.0, 235, 232, 255, 235)
+    DrawSprite(PD_LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, 0.044, 0.078, 0.0, 235, 232, 255, 245)
     ClearDrawOrigin()
 end
 

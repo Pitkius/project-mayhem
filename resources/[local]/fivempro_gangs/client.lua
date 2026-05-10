@@ -194,6 +194,37 @@ RegisterNUICallback('gangs:setWaypoint', function(data, cb)
     cb({ ok = false })
 end)
 
+RegisterNUICallback('gangs:inviteMember', function(data, cb)
+    local targetId = tonumber(data and data.targetId)
+    if not targetId or targetId < 1 then
+        cb({ ok = false })
+        return
+    end
+    TriggerServerEvent('fivempro_gangs:server:inviteMember', targetId)
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('gangs:setMemberRank', function(data, cb)
+    local citizenid = tostring(data and data.citizenid or '')
+    local rank = tonumber(data and data.rank)
+    if citizenid == '' or not rank then
+        cb({ ok = false })
+        return
+    end
+    TriggerServerEvent('fivempro_gangs:server:setMemberRank', citizenid, rank)
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('gangs:kickMember', function(data, cb)
+    local citizenid = tostring(data and data.citizenid or '')
+    if citizenid == '' then
+        cb({ ok = false })
+        return
+    end
+    TriggerServerEvent('fivempro_gangs:server:kickMember', citizenid)
+    cb({ ok = true })
+end)
+
 local function openVendorMenu()
     local price = tonumber(Config.TabletVendor and Config.TabletVendor.tabletPrice) or 5000
     local menu = {

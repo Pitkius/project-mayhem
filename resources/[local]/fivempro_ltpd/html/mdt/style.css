@@ -162,6 +162,7 @@ input, select {
   background-image:
     linear-gradient(rgba(88, 82, 118, 0.22) 1px, transparent 1px),
     linear-gradient(90deg, rgba(88, 82, 118, 0.22) 1px, transparent 1px),
+    url("nui://fivempro_gangs/html/asset/gtav_satellite.jpg"),
     url("https://fivempro_gangs/html/asset/gtav_satellite.jpg");
   background-size: 32px 32px, 32px 32px, cover;
   background-position: 0 0, 0 0, center;

@@ -35,6 +35,7 @@ Config.CallStatus = {
     pending = 'Laukia',
     accepted = 'Priimtas',
     enroute = 'Vykstu',
+    arrived = 'Atvykta',
     rejected = 'Atmestas',
     done = 'Baigta',
 }

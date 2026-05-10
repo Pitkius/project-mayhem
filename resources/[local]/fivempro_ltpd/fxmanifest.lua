@@ -32,5 +32,8 @@ files {
     'html/mdt/asset/gtav_satellite.jpg',
 }
 
-dependency 'qb-core'
+dependencies {
+    'qb-core',
+    'fivempro_dispatch',
+}
 -- qb-menu (garažo meniu), qb-inventory (ginklinė / stash), qb-target (zonos)

@@ -16,7 +16,7 @@ time, mark, audio, video {
 	border: 0;
 	font-size: 100%;
     vertical-align: baseline;
-	font-family: 'Poppins', sans-serif;
+	font-family: 'Poppins', 'Noto Sans', 'Segoe UI', system-ui, sans-serif;
 	overflow: hidden;
 	font-weight:900;
 }

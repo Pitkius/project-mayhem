@@ -744,12 +744,6 @@ function AddItem(identifier, item, amount, slot, info, reason)
     local player = QBCore.Functions.GetPlayer(identifier)
 
     if player then
-        local hasBackpack = Player(identifier) and Player(identifier).state and Player(identifier).state.hasBackpack == true
-        local itemKey = tostring(item):lower()
-        if BulkyItemsNoPocket[itemKey] and not hasBackpack then
-            TriggerClientEvent('QBCore:Notify', identifier, 'Šiam daiktui reikia kuprinės / tinkamo rūbo (bag component).', 'error')
-            return false
-        end
         inventory = player.PlayerData.items
         inventoryWeight = Config.MaxWeight
         inventorySlots = Config.MaxSlots

@@ -41,6 +41,12 @@ local function isGangBoss(src)
     return g and (tonumber(g.rank) or 0) >= 4, g
 end
 
+local function canManageMembers(src)
+    local g = getPlayerGang(src)
+    local rank = g and (tonumber(g.rank) or 0) or -1
+    return rank >= 3, g
+end
+
 local function getGangById(gangId)
     return MySQL.single.await('SELECT * FROM fivempro_gangs WHERE id = ? LIMIT 1', { tonumber(gangId) })
 end
@@ -67,6 +73,11 @@ local function getTurfs()
             r.radius = tonumber(cfg.radius) or 180.0
         else
             r.center_x, r.center_y, r.center_z, r.radius = 0.0, 0.0, 0.0, 150.0
+        end
+        if tonumber(r.owner_gang_id) and tonumber(r.owner_gang_id) > 0 then
+            r.status = (tonumber(r.progress) or 0) > 80 and 'ginčijamas' or 'užimtas'
+        else
+            r.status = 'neužimtas'
         end
     end
     return rows
@@ -168,8 +179,8 @@ end)
 
 RegisterNetEvent('fivempro_gangs:server:inviteMember', function(targetId)
     local src = source
-    local isBoss, gang = isGangBoss(src)
-    if not isBoss then return TriggerClientEvent('QBCore:Notify', src, 'Reikia boss rango.', 'error') end
+    local canManage, gang = canManageMembers(src)
+    if not canManage then return TriggerClientEvent('QBCore:Notify', src, 'Reikia aukštesnio rango (3+).', 'error') end
     targetId = tonumber(targetId)
     local Target = targetId and QBCore.Functions.GetPlayer(targetId)
     if not Target then return TriggerClientEvent('QBCore:Notify', src, 'Žaidėjas neprisijungęs.', 'error') end
@@ -186,9 +197,17 @@ end)
 
 RegisterNetEvent('fivempro_gangs:server:setMemberRank', function(citizenid, rank)
     local src = source
-    local isBoss, gang = isGangBoss(src)
-    if not isBoss then return TriggerClientEvent('QBCore:Notify', src, 'Reikia boss rango.', 'error') end
+    local canManage, gang = canManageMembers(src)
+    if not canManage then return TriggerClientEvent('QBCore:Notify', src, 'Reikia aukštesnio rango (3+).', 'error') end
+    if tostring(citizenid or '') == '' then return end
+    local me = QBCore.Functions.GetPlayer(src)
+    if me and tostring(citizenid) == tostring(me.PlayerData.citizenid) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Savo rango keisti negalima per šį veiksmą.', 'error')
+    end
     rank = math.max(0, math.min(4, tonumber(rank) or 0))
+    if rank >= 3 and not isGangBoss(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik boss gali suteikti 3+ rangą.', 'error')
+    end
     MySQL.update.await('UPDATE fivempro_gang_members SET rank = ? WHERE gang_id = ? AND citizenid = ?', {
         rank, gang.gang_id, tostring(citizenid or '')
     })
@@ -197,8 +216,12 @@ end)
 
 RegisterNetEvent('fivempro_gangs:server:kickMember', function(citizenid)
     local src = source
-    local isBoss, gang = isGangBoss(src)
-    if not isBoss then return TriggerClientEvent('QBCore:Notify', src, 'Reikia boss rango.', 'error') end
+    local canManage, gang = canManageMembers(src)
+    if not canManage then return TriggerClientEvent('QBCore:Notify', src, 'Reikia aukštesnio rango (3+).', 'error') end
+    local me = QBCore.Functions.GetPlayer(src)
+    if me and tostring(citizenid) == tostring(me.PlayerData.citizenid) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Savęs išmesti negalima.', 'error')
+    end
     MySQL.update.await('DELETE FROM fivempro_gang_members WHERE gang_id = ? AND citizenid = ? AND rank < 4', {
         gang.gang_id, tostring(citizenid or '')
     })

@@ -60,6 +60,21 @@
           <div id="gangPanelContent" class="rail-card hidden">
             <h3 id="gangTitle">—</h3>
             <div id="gangMeta" class="muted small"></div>
+            <div class="gang-manage-grid">
+              <label>Nario server ID
+                <input id="memberTargetId" type="number" min="1" placeholder="Pvz. 12" />
+              </label>
+              <button type="button" id="btnInviteMember" class="btn btn-ghost">Pakviesti narį</button>
+              <label>Nario citizenid
+                <input id="memberCitizenId" type="text" placeholder="Pvz. ABC12345" />
+              </label>
+              <label>Naujas rangas (0-4)
+                <input id="memberRank" type="number" min="0" max="4" value="1" />
+              </label>
+              <button type="button" id="btnSetRank" class="btn btn-ghost">Keisti rangą</button>
+              <button type="button" id="btnKickMember" class="btn btn-ghost">Išmesti narį</button>
+            </div>
+            <div id="gangMemberList" class="gang-member-list"></div>
           </div>
           <div class="rail-card hints">
             <p class="small muted"><strong>Žemėlapyje</strong> spustelėjimas ant teritorijos nustato GPS tašką centre.</p>

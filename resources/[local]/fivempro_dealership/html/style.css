@@ -4,7 +4,7 @@ html {
 
 * {
   box-sizing: border-box;
-  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  font-family: "DM Sans", "Noto Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 body {

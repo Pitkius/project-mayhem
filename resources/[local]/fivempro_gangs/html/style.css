@@ -305,6 +305,36 @@ select.color-select-native {
   color: #f9a8d4;
 }
 
+.gang-manage-grid {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gang-member-list {
+  margin-top: 10px;
+  max-height: 180px;
+  overflow: auto;
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  border-radius: 10px;
+  background: rgba(8, 10, 16, 0.7);
+}
+
+.gang-member-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
+  font-size: 12px;
+}
+
+.gang-member-row:last-child {
+  border-bottom: none;
+}
+
 .map-stage {
   flex: 1;
   min-height: min(62vh, 560px);

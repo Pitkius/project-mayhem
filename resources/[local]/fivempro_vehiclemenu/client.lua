@@ -3,6 +3,10 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local lockStateByPlate = {}
 local engineStartBusy = false
 local lastEngineHealth = {}
+--- Pikas greitis (KM/H) tarp smūgių — smūgio kadrui greitis dažnai jau kritęs.
+local peakSpeedKmhByNet = {}
+local lastBodyHealthByNet = {}
+local STALL_AFTER_IMPACT_SPEED = 120.0
 
 local function plateOf(veh)
     return (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
@@ -163,14 +167,34 @@ CreateThread(function()
             local veh = GetVehiclePedIsIn(ped, false)
             if veh and veh ~= 0 and DoesEntityExist(veh) and GetPedInVehicleSeat(veh, -1) == ped then
                 local netId = VehToNet(veh)
+                local spdNow = GetEntitySpeed(veh) * 3.6
+                local peak = peakSpeedKmhByNet[netId] or 0.0
+                if spdNow >= STALL_AFTER_IMPACT_SPEED then
+                    peakSpeedKmhByNet[netId] = math.max(peak, spdNow)
+                elseif spdNow < 45.0 then
+                    -- Mažinant „seną“ freeway piką, kad parkuojantis smūgis nebeskaitytų kaip 120+
+                    peakSpeedKmhByNet[netId] = math.min(peak, math.max(spdNow, peak * 0.97))
+                else
+                    peakSpeedKmhByNet[netId] = peak
+                end
+
                 local hp = GetVehicleEngineHealth(veh)
                 local prev = lastEngineHealth[netId] or hp
 
-                -- Stiprus smūgis: variklis užgęsta
-                if (prev - hp) > 35.0 then
+                local bodyNow = GetVehicleBodyHealth(veh)
+                local prevBody = lastBodyHealthByNet[netId] or bodyNow
+
+                local engineHit = (prev - hp) > 35.0
+                local bodyHit = (prevBody - bodyNow) > 18.0
+
+                --- Smūgis + ≥120 KM/H („pikas“ per važiavimą): variklis užgesta — tiesiog smūgio kadrą greitis jau nukritęs
+                if (engineHit or bodyHit) and (peakSpeedKmhByNet[netId] or 0.0) >= STALL_AFTER_IMPACT_SPEED then
                     SetVehicleEngineOn(veh, false, true, true)
-                    QBCore.Functions.Notify('Po stipraus smūgio variklis užgeso.', 'error')
+                    QBCore.Functions.Notify(('Dėl smūgio važiuojant %d+ KM/H variklis užgeso.'):format(math.floor(STALL_AFTER_IMPACT_SPEED)), 'error')
+                    peakSpeedKmhByNet[netId] = spdNow
                 end
+
+                lastBodyHealthByNet[netId] = bodyNow
 
                 -- Greitesnė degradacija esant blogai būklei
                 if hp < 750.0 then

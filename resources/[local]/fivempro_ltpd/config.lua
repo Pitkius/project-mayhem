@@ -365,10 +365,30 @@ Config.PdDoorDynamics = {
             'hedwig_sheriff_door05',
             'hedwig_sheriff_door06',
             'hedwig_sheriff_garage_gardoor',
+            -- Kai kuriuose paketuose būna typo pavadinime; laikom abu
             'hedwig_sheriif_garage_door',
+            'hedwig_sheriff_garage_door',
         },
         pairDist = 4.35,
         interactDist = 2.85,
+    },
+    --- Vanilla / ne-Gabz LS MRPD: tik Rockstar durų propai — ne dubliuoja `PdDoorGroups` Gabz įrašų
+    {
+        stationId = 'ls_mrpd_dyn',
+        label = 'PD durys (LS – auto, vanilla durys)',
+        bounds = {
+            min = vector3(400.0, -1045.0, 23.5),
+            max = vector3(505.0, -928.0, 58.0),
+        },
+        models = {
+            'v_ilev_ph_gendoor004',
+            'v_ilev_ph_gendoor003',
+            'v_ilev_ph_gendoor002',
+            'hei_prop_station_gate',
+        },
+        pairDist = 2.95,
+        interactDist = 2.85,
+        interactOffset = vector3(0.0, 0.0, 0.92),
     },
     {
         stationId = 'paleto',

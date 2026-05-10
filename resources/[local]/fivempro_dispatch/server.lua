@@ -194,6 +194,7 @@ local function createCall(service, callType, coords, text, createdBy)
         createdBy = createdBy,
         acceptedBy = {},
         enrouteBy = {},
+        arrivedBy = {},
     }
     Calls[id] = c
     logEvent(service, 'call_created', createdBy, c)
@@ -342,6 +343,10 @@ RegisterNetEvent('fivempro_dispatch:server:updateCallStatus', function(callId, a
         c.enrouteBy[tostring(src)] = true
         c.status = 'enroute'
         c.statusLabel = (Config.CallStatus and Config.CallStatus.enroute) or 'Vykstu'
+    elseif action == 'arrived' then
+        c.arrivedBy[tostring(src)] = true
+        c.status = 'arrived'
+        c.statusLabel = (Config.CallStatus and Config.CallStatus.arrived) or 'Atvykta'
     elseif action == 'reject' then
         c.status = 'rejected'
         c.statusLabel = (Config.CallStatus and Config.CallStatus.rejected) or 'Atmestas'
@@ -363,6 +368,16 @@ RegisterNetEvent('fivempro_dispatch:server:updateCallStatus', function(callId, a
     end
     logEvent(service, 'call_status', src, { callId = c.id, action = action, status = c.status })
     pushServiceUpdate(service)
+end)
+
+CreateThread(function()
+    local refreshMs = math.max(500, tonumber(Config.BlipRefreshMs) or 1500)
+    while true do
+        for service, _ in pairs(Config.Services or {}) do
+            pushServiceUpdate(service)
+        end
+        Wait(refreshMs)
+    end
 end)
 
 RegisterNetEvent('fivempro_dispatch:server:panic', function()
