@@ -107,35 +107,55 @@ local recoils = {
     [`weapon_rayminigun`] = 0.3,
 }
 
+local lastRecoilAt = 0
+
+local function applyVerticalRecoil(ped, weap)
+    if not ped or ped == 0 then return end
+    local base = recoils[weap]
+    local mult = Config.RecoilMultiplier or 1.0
+    local amount = base and base * mult or nil
+    if not amount or amount <= 0.0 then return end
+
+    local tv = 0.0
+    if GetFollowPedCamViewMode() ~= 4 then
+        repeat
+            Wait(0)
+            local p = GetGameplayCamRelativePitch()
+            SetGameplayCamRelativePitch(p + 0.14, 0.24)
+            tv += 0.14
+        until tv >= amount
+    else
+        repeat
+            Wait(0)
+            local p = GetGameplayCamRelativePitch()
+            SetGameplayCamRelativePitch(p + 0.75, 1.35)
+            tv += 0.75
+        until tv >= amount
+    end
+end
+
 AddEventHandler('CEventGunShot', function(entities, eventEntity, args)
     local ped = PlayerPedId()
     if eventEntity ~= ped then return end
     if IsPedDoingDriveby(ped) then return end
     local _, weap = GetCurrentPedWeapon(ped, false)
-    local base = recoils[weap]
-    local mult = Config.RecoilMultiplier or 1.0
-    local amount = base and base * mult or nil
-    if amount and amount > 0.0 then
-        local tv = 0
-        if GetFollowPedCamViewMode() ~= 4 then
-            repeat
-                Wait(0)
-                local p = GetGameplayCamRelativePitch()
-                SetGameplayCamRelativePitch(p + 0.1, 0.2)
-                tv += 0.1
-            until tv >= amount
+    applyVerticalRecoil(ped, weap)
+end)
+
+-- Fallback, nes CEventGunShot kai kuriuose builduose suveikia ne kiekvienam šūviui.
+CreateThread(function()
+    while true do
+        local ped = PlayerPedId()
+        if IsPedShooting(ped) and not IsPedDoingDriveby(ped) then
+            local now = GetGameTimer()
+            if now - lastRecoilAt > 80 then
+                local _, weap = GetCurrentPedWeapon(ped, false)
+                applyVerticalRecoil(ped, weap)
+                lastRecoilAt = now
+            end
+            Wait(0)
         else
-            repeat
-                Wait(0)
-                local p = GetGameplayCamRelativePitch()
-                if amount > 0.1 then
-                    SetGameplayCamRelativePitch(p + 0.6, 1.2)
-                    tv += 0.6
-                else
-                    SetGameplayCamRelativePitch(p + 0.016, 0.333)
-                    tv += 0.1
-                end
-            until tv >= amount
+            Wait(5)
         end
     end
 end)

@@ -1,5 +1,3 @@
-local QBCore = exports['qb-core']:GetCoreObject()
-
 local debugPed = nil
 
 local function sandboxCfg()
@@ -34,52 +32,27 @@ local function spawnDebugVendor()
         options = {
             {
                 type = 'client',
-                event = 'fivempro_mechanic:client:debugOpenSupplyMenu',
+                event = 'fivempro_mechanic:client:debugOpenSupplyShop',
                 icon = 'fas fa-brush',
-                label = ('Žaliavų TEST rinkinys ($%s)'):format(tonumber(cfg.bundlePrice) or 1),
+                label = 'Žaliavų test shop',
             },
             {
                 type = 'client',
-                event = 'fivempro_mechanic:client:debugOpenPickaxeMenu',
+                event = 'fivempro_mechanic:client:debugOpenPickaxeShop',
                 icon = 'fas fa-stream',
-                label = 'Kirtiklių parduotuvė (DEBUG)',
+                label = 'Kirtiklių test shop',
             },
         },
         distance = 2.85,
     })
 end
 
-RegisterNetEvent('fivempro_mechanic:client:debugOpenSupplyMenu', function()
-    TriggerServerEvent('fivempro_mechanic:server:debugBuySupplyBundle')
+RegisterNetEvent('fivempro_mechanic:client:debugOpenSupplyShop', function()
+    TriggerServerEvent('fivempro_mechanic:server:debugOpenSupplyShop')
 end)
 
-RegisterNetEvent('fivempro_mechanic:client:debugOpenPickaxeMenu', function()
-    local tiers = Config.DebugPickaxeOffers or {}
-    if not tiers[1] then
-        return QBCore.Functions.Notify('Nėra kirtikių sąrašo.', 'error')
-    end
-    local menu = {
-        {
-            header = 'Šachtininko kioskėls (DEBUG)',
-            txt = 'Kuo aukštensnis lygis, tuo brangiau. Laikinai testavimui.',
-            isMenuHeader = true,
-        },
-    }
-
-    for i, row in ipairs(tiers) do
-        menu[#menu + 1] = {
-            header = ('%s — $%s'):format(row.label or row.item, tonumber(row.price) or 0),
-            txt = row.item or '',
-            params = {
-                isAction = true,
-                event = function()
-                    TriggerServerEvent('fivempro_mechanic:server:debugBuyPickaxe', i)
-                end,
-            },
-        }
-    end
-
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+RegisterNetEvent('fivempro_mechanic:client:debugOpenPickaxeShop', function()
+    TriggerServerEvent('fivempro_mechanic:server:debugOpenPickaxeShop')
 end)
 
 CreateThread(function()

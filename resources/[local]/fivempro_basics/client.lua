@@ -3,6 +3,14 @@ local coordsHudEnabled = false
 local slungProps = {}
 
 local LongWeaponModels = {
+    weapon_pistol = 'w_pi_pistol',
+    weapon_pistol_mk2 = 'w_pi_pistolmk2',
+    weapon_combatpistol = 'w_pi_combatpistol',
+    weapon_appistol = 'w_pi_appistol',
+    weapon_pistol50 = 'w_pi_pistol50',
+    weapon_heavypistol = 'w_pi_heavypistol',
+    weapon_snspistol = 'w_pi_sns_pistol',
+    weapon_vintagepistol = 'w_pi_vintage_pistol',
     weapon_assaultrifle = 'w_ar_assaultrifle',
     weapon_assaultrifle_mk2 = 'w_ar_assaultrifle',
     weapon_carbinerifle = 'w_ar_carbinerifle',
@@ -73,8 +81,11 @@ local function attachWeaponModelToBack(slotIndex, modelName)
     local bone = GetPedBoneIndex(ped, 24816)
     if slotIndex == 1 then
         AttachEntityToEntity(obj, ped, bone, -0.17, -0.15, 0.02, 0.0, 150.0, 0.0, true, true, false, true, 2, true)
-    else
+    elseif slotIndex == 2 then
         AttachEntityToEntity(obj, ped, bone, 0.17, -0.15, 0.02, 0.0, 150.0, 0.0, true, true, false, true, 2, true)
+    else
+        local hipBone = GetPedBoneIndex(ped, 11816)
+        AttachEntityToEntity(obj, ped, hipBone, 0.10, 0.02, 0.0, 75.0, 20.0, 170.0, true, true, false, true, 2, true)
     end
     slungProps[slotIndex] = obj
 end
@@ -103,7 +114,7 @@ local function refreshSlungWeapons()
                 carryModels[#carryModels + 1] = mdl
             end
         end
-        if #carryModels >= 2 then break end
+        if #carryModels >= 3 then break end
     end
 
     for idx, mdl in ipairs(carryModels) do

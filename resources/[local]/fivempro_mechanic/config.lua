@@ -145,3 +145,13 @@ Config.DebugPickaxeOffers = {
     { item = 'mining_pickaxe_tier4', label = 'Kirtiklis IV — pramoninis', price = 6200 },
     { item = 'mining_pickaxe_tier5', label = 'Kirtiklis V — elitas', price = 14500 },
 }
+
+Config.DebugSandboxSupplyShop = {
+    name = 'fivempro_mech_debug_supplies',
+    label = 'Sandbox: zaliavu test shop',
+}
+
+Config.DebugSandboxPickaxeShop = {
+    name = 'fivempro_mech_debug_pickaxes',
+    label = 'Sandbox: kirtikliu test shop',
+}

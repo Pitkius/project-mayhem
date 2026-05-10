@@ -2,7 +2,16 @@ local handsUp = false
 
 RegisterCommand(Config.HandsUp.command, function()
     local ped = PlayerPedId()
-    if exports['qb-policejob']:IsHandcuffed() then return end
+    local isCuffed = false
+    if GetResourceState('qb-policejob') == 'started' then
+        local ok, val = pcall(function()
+            return exports['qb-policejob']:IsHandcuffed()
+        end)
+        if ok and val then
+            isCuffed = true
+        end
+    end
+    if isCuffed then return end
     if LocalPlayer.state.ltpdCuffed then return end
     if IsPedInAnyVehicle(ped, false) then return end
     if IsEntityDead(ped) or IsPedDeadOrDying(ped, true) then return end

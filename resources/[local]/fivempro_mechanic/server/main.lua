@@ -257,66 +257,79 @@ local function nearSandboxVendor(src)
     return #(p - vector3(c.x, c.y, c.z)) <= 22.0
 end
 
-local function takeSandboxMoney(Player, amount, reason)
-    amount = tonumber(amount) or 0
-    if amount <= 0 then return true end
-    if Player.Functions.RemoveMoney('cash', amount, reason) then return true end
-    return Player.Functions.RemoveMoney('bank', amount, reason)
+local function buildDebugSupplyShopItems()
+    local out = {}
+    for i, row in ipairs(Config.DebugSandboxBundleItems or {}) do
+        if row and row.item and QBCore.Shared.Items[row.item] then
+            out[#out + 1] = {
+                name = row.item,
+                amount = 99999,
+                price = math.max(1, tonumber(row.price) or 1),
+                slot = i,
+            }
+        end
+    end
+    return out
 end
 
-RegisterNetEvent('fivempro_mechanic:server:debugBuySupplyBundle', function()
-    local src = source
-    local cfg = Config.DebugSandboxVendor or {}
-    if cfg.enabled ~= true then return end
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
-    if not nearSandboxVendor(src) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo sandbox pardavėjo.', 'error')
-    end
-    local price = tonumber(cfg.bundlePrice) or 1
-    local rows = Config.DebugSandboxBundleItems or {}
-    if takeSandboxMoney(Player, price, 'mech-debug-supplies') then
-        local added = 0
-        for _, row in ipairs(rows) do
-            local nm = row.item
-            local amt = tonumber(row.amount) or 0
-            if nm and amt > 0 and QBCore.Shared.Items[nm] then
-                if Player.Functions.AddItem(nm, amt) then
-                    added = added + 1
-                    TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[nm], 'add', amt)
-                end
-            end
+local function buildDebugPickaxeShopItems()
+    local out = {}
+    for i, row in ipairs(Config.DebugPickaxeOffers or {}) do
+        if row and row.item and QBCore.Shared.Items[row.item] then
+            out[#out + 1] = {
+                name = row.item,
+                amount = 99999,
+                price = math.max(1, tonumber(row.price) or 1),
+                slot = i,
+            }
         end
-        TriggerClientEvent('QBCore:Notify', src, ('Gauta paketinių stackų: %s (test).'):format(added), 'success')
-    else
-        TriggerClientEvent('QBCore:Notify', src, ('Reikia $%s piniginėje/banke.'):format(price), 'error')
     end
+    return out
+end
+
+local function registerDebugShops()
+    if GetResourceState('qb-inventory') ~= 'started' then return end
+    local supply = Config.DebugSandboxSupplyShop or {}
+    local pickaxe = Config.DebugSandboxPickaxeShop or {}
+    exports['qb-inventory']:CreateShop({
+        name = supply.name or 'fivempro_mech_debug_supplies',
+        label = supply.label or 'Sandbox: zaliavu test shop',
+        slots = math.max(1, #(Config.DebugSandboxBundleItems or {})),
+        items = buildDebugSupplyShopItems(),
+    })
+    exports['qb-inventory']:CreateShop({
+        name = pickaxe.name or 'fivempro_mech_debug_pickaxes',
+        label = pickaxe.label or 'Sandbox: kirtikliu test shop',
+        slots = math.max(1, #(Config.DebugPickaxeOffers or {})),
+        items = buildDebugPickaxeShopItems(),
+    })
+end
+
+CreateThread(function()
+    Wait(700)
+    registerDebugShops()
 end)
 
-RegisterNetEvent('fivempro_mechanic:server:debugBuyPickaxe', function(idx)
+RegisterNetEvent('fivempro_mechanic:server:debugOpenSupplyShop', function()
     local src = source
     local cfg = Config.DebugSandboxVendor or {}
     if cfg.enabled ~= true then return end
-    idx = tonumber(idx)
-    local offer = idx and Config.DebugPickaxeOffers and Config.DebugPickaxeOffers[idx]
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not offer or not Player then return end
     if not nearSandboxVendor(src) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo sandbox pardavėjo.', 'error')
     end
-    local item = offer.item
-    local price = tonumber(offer.price) or 0
-    if not item or not QBCore.Shared.Items[item] then
-        return TriggerClientEvent('QBCore:Notify', src, 'Item nekonfigūruotas.', 'error')
+    registerDebugShops()
+    local supply = Config.DebugSandboxSupplyShop or {}
+    exports['qb-inventory']:OpenShop(src, supply.name or 'fivempro_mech_debug_supplies')
+end)
+
+RegisterNetEvent('fivempro_mechanic:server:debugOpenPickaxeShop', function()
+    local src = source
+    local cfg = Config.DebugSandboxVendor or {}
+    if cfg.enabled ~= true then return end
+    if not nearSandboxVendor(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo sandbox pardavėjo.', 'error')
     end
-    if not takeSandboxMoney(Player, price, 'mech-debug-pickaxe') then
-        return TriggerClientEvent('QBCore:Notify', src, ('Reikia $%s.'):format(price), 'error')
-    end
-    if Player.Functions.AddItem(item, 1) then
-        TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[item], 'add', 1)
-        TriggerClientEvent('QBCore:Notify', src, ('Nusipirkai: %s'):format(QBCore.Shared.Items[item].label or item), 'success')
-    else
-        Player.Functions.AddMoney('cash', price, 'mech-debug-pickaxe-refund')
-        TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
-    end
+    registerDebugShops()
+    local pickaxe = Config.DebugSandboxPickaxeShop or {}
+    exports['qb-inventory']:OpenShop(src, pickaxe.name or 'fivempro_mech_debug_pickaxes')
 end)

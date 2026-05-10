@@ -38,7 +38,7 @@
                                     <p>{{ slot }}</p>
                                 </div>
                                 <div class="item-slot-img" v-if="getItemInSlot(slot, 'player')" v-tooltip.right-end="{content: generateTooltipContent(getItemInSlot(slot, 'player')), html: true}">
-                                    <img :src="'images/' + getItemInSlot(slot, 'player').image" alt="" />
+                                    <img :src="'images/' + getItemInSlot(slot, 'player').image" :class="{ 'icon-no-bg': isNoBgItem(getItemInSlot(slot, 'player')) }" alt="" />
                                 </div>
                                 <div class="item-slot-amount" v-if="getItemInSlot(slot, 'player')">
                                     <p>x{{ getItemInSlot(slot, 'player').amount }}</p>
@@ -92,7 +92,7 @@
                         <div class="item-grid">
                             <div v-for="slot in otherInventorySlots" :key="slot" class="item-slot" :data-slot="slot" @mousedown="event => handleMouseDown(event, slot, 'other')" @dragover.prevent>
                                 <div class="item-slot-img" v-if="getItemInSlot(slot, 'other')" v-tooltip.right-end="{content: generateTooltipContent(getItemInSlot(slot, 'other')), html: true}">
-                                    <img :src="'images/' + getItemInSlot(slot, 'other').image" alt="" />
+                                    <img :src="'images/' + getItemInSlot(slot, 'other').image" :class="{ 'icon-no-bg': isNoBgItem(getItemInSlot(slot, 'other')) }" alt="" />
                                 </div>
                                 <div class="item-slot-amount" v-if="getItemInSlot(slot, 'other') && !isShopInventory">
                                     <p>x{{ getItemInSlot(slot, 'other').amount }}</p>
@@ -128,7 +128,7 @@
                             <p>{{ slot }}</p>
                         </div>
                         <div class="item-slot-img" v-if="getHotbarItemInSlot(slot)">
-                            <img :src="'images/' + getHotbarItemInSlot(slot).image" alt="" />
+                            <img :src="'images/' + getHotbarItemInSlot(slot).image" :class="{ 'icon-no-bg': isNoBgItem(getHotbarItemInSlot(slot)) }" alt="" />
                         </div>
                         <div class="item-slot-amount" v-if="getHotbarItemInSlot(slot)">
                             <p>x{{ getHotbarItemInSlot(slot).amount }}</p>
@@ -172,7 +172,7 @@
                 <div class="required-item">
                     <div v-for="(item, index) in requiredItems" :key="index" class="item-slot">
                         <div class="item-slot-img">
-                            <img :src="'images/' + item.image" alt="" />
+                        <img :src="'images/' + item.image" :class="{ 'icon-no-bg': isNoBgItem(item) }" alt="" />
                         </div>
                         <div class="item-slot-label">
                             <p>{{ item.label }}</p>
@@ -188,7 +188,7 @@
             </div>
             <div v-if="draggedItem" class="item-slot" :class="{ 'dragged-item': draggedItem }" :style="{ top: dragY + 'px', left: dragX + 'px' }">
                 <div class="item-slot-img">
-                    <img :src="'images/' + draggedItem.image" alt="" />
+                    <img :src="'images/' + draggedItem.image" :class="{ 'icon-no-bg': isNoBgItem(draggedItem) }" alt="" />
                 </div>
                 <div class="item-slot-amount">
                     <p>x{{ draggedItem.amount }}</p>

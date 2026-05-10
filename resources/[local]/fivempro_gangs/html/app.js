@@ -161,23 +161,27 @@ function renderTurfsOnMap(state) {
     const prog = Math.max(0, Math.min(100, Number(t.progress || 0)));
 
     const fillHex = col && /^#[0-9A-Fa-f]{6}$/.test(col) ? col : "#a78bfa";
-    const circle = L.circle(center, {
-      radius: rad,
-      stroke: !hasOwner,
-      weight: !hasOwner ? 1 : 0,
-      color: "rgba(148, 163, 184, 0.5)",
-      fillColor: hasOwner ? fillHex : "#1e293b",
-      fillOpacity: hasOwner ? 0.38 : 0.1,
+    const turfBounds = L.latLngBounds(
+      L.latLng(center.lat - rad, center.lng - rad),
+      L.latLng(center.lat + rad, center.lng + rad),
+    );
+
+    const turfPatch = L.rectangle(turfBounds, {
+      stroke: hasOwner,
+      weight: hasOwner ? 1 : 0,
+      color: hasOwner ? hexToRgba(fillHex, 0.72) : "transparent",
+      fillColor: fillHex,
+      fillOpacity: hasOwner ? 0.42 : 0.0,
       interactive: true,
       bubblingMouseEvents: false,
     }).addTo(group);
 
-    circle.on("click", (e) => {
+    turfPatch.on("click", (e) => {
       L.DomEvent.stopPropagation(e);
       post("gangs:setWaypoint", { turfId: t.turf_id });
     });
 
-    circle.on("mousemove", (e) => {
+    turfPatch.on("mousemove", (e) => {
       mapTooltip.classList.remove("hidden");
       mapTooltip.innerHTML = hasOwner
         ? `<strong>${safe(label)}</strong><br/>${safe(owner)} · ${prog}% užimta`
@@ -192,7 +196,7 @@ function renderTurfsOnMap(state) {
       mapTooltip.style.left = `${Math.max(8, left)}px`;
       mapTooltip.style.top = `${Math.max(8, top)}px`;
     });
-    circle.on("mouseout", () => mapTooltip.classList.add("hidden"));
+    turfPatch.on("mouseout", () => mapTooltip.classList.add("hidden"));
   });
 
   turfMap.fitBounds(bounds, { padding: [4, 4], animate: false });

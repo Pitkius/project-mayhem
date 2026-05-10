@@ -7,7 +7,7 @@ Config.ReloadTime = math.random(4000, 6000)
   RecoilMultiplier – visiems sąrašo ginklams bendras stiprinimas.
   RecoilShakeAmplitude – GTA ginklo „drebulė“ iš metaduomenų (0.0 = be jos).
 ]]
-Config.RecoilMultiplier = 2.0
+Config.RecoilMultiplier = 4.0
 Config.RecoilShakeAmplitude = 0.0
 
 Config.DurabilityBlockedWeapons = {

@@ -51,6 +51,45 @@ const InventoryContainer = Vue.createApp({
         },
     },
     methods: {
+        isNoBgItem(item) {
+            if (!item || !item.name) return false;
+            const noBg = new Set([
+                "mining_pickaxe",
+                "mining_pickaxe_tier2",
+                "mining_pickaxe_tier3",
+                "mining_pickaxe_tier4",
+                "mining_pickaxe_tier5",
+                "stone_raw",
+                "coal_raw",
+                "gravel_raw",
+                "iron_ore_raw",
+                "copper_ore_raw",
+                "aluminum_ore_raw",
+                "silver_ore_raw",
+                "gold_ore_raw",
+                "diamond_raw",
+                "emerald_raw",
+                "ruby_raw",
+                "sapphire_raw",
+                "mystery_ore_raw",
+                "artifact_raw",
+                "stone",
+                "coal",
+                "gravel",
+                "iron_ore",
+                "copper_ore",
+                "aluminum_ore",
+                "silver_ore",
+                "gold_ore",
+                "diamond",
+                "emerald",
+                "ruby",
+                "sapphire",
+                "mystery_ore",
+                "artifact",
+            ]);
+            return noBg.has(String(item.name).toLowerCase());
+        },
         getInitialState() {
             return {
                 // Config Options

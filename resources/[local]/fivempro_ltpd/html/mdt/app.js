@@ -242,8 +242,6 @@ function renderDispatchMap(calls, units) {
   const markers = document.getElementById('dispatchMapMarkers');
   if (!markers) return;
   markers.innerHTML = '';
-  dispatchMapPan = { x: 0, y: 0, scale: 1 };
-  applyDispatchMapTransform();
   bindDispatchMapInteract();
   units.forEach((u) => {
     const p = worldToMap(u.x, u.y);
@@ -359,7 +357,11 @@ function refreshDispatch() {
 }
 
 document.getElementById('refreshDispatch').onclick = () => refreshDispatch();
-document.getElementById('refreshDispatchMap').onclick = () => refreshDispatch();
+document.getElementById('refreshDispatchMap').onclick = () => {
+  dispatchMapPan = { x: 0, y: 0, scale: 1 };
+  applyDispatchMapTransform();
+  refreshDispatch();
+};
 document.getElementById('btnCreateCrew').onclick = () => nuiPost('crewAction', { action: 'create', callsign: document.getElementById('crewCallsign').value.trim() }).then(refreshDispatch);
 document.getElementById('btnJoinCrew').onclick = () => nuiPost('crewAction', { action: 'join', crewId: document.getElementById('crewIdInput').value.trim() }).then(refreshDispatch);
 document.getElementById('btnAddCrewMember').onclick = () => nuiPost('crewAction', {

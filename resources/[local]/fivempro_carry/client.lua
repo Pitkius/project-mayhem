@@ -21,6 +21,20 @@ local function loadDict(animDict)
 end
 
 local function getClosestPlayerServerId(radius)
+    local ok, closestPlayer = pcall(function()
+        return QBCore.Functions.GetClosestPlayer()
+    end)
+    if ok and closestPlayer and closestPlayer ~= -1 then
+        local targetPed = GetPlayerPed(closestPlayer)
+        if targetPed and targetPed ~= 0 then
+            local myPed = PlayerPedId()
+            local d = #(GetEntityCoords(targetPed) - GetEntityCoords(myPed))
+            if d <= radius then
+                return GetPlayerServerId(closestPlayer)
+            end
+        end
+    end
+
     local players = GetActivePlayers()
     local myPed = PlayerPedId()
     local myCoords = GetEntityCoords(myPed)

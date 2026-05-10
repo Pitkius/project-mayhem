@@ -30,8 +30,8 @@ end)
 local function drawPdDoorLock(worldX, worldY, worldZ, locked)
     RequestStreamedTextureDict(PD_LOCK_TX, false)
     if not HasStreamedTextureDictLoaded(PD_LOCK_TX) then return end
-    SetDrawOrigin(worldX, worldY, worldZ + 0.36, 0)
-    DrawSprite(PD_LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, 0.055, 0.095, 0.0, 235, 232, 255, 238)
+    SetDrawOrigin(worldX, worldY, worldZ + 0.24, 0)
+    DrawSprite(PD_LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, 0.038, 0.066, 0.0, 235, 232, 255, 235)
     ClearDrawOrigin()
 end
 
@@ -287,8 +287,16 @@ CreateThread(function()
                 waitMs = 0
                 if isPdOnDutyClient() then
                     local locked = doorLocked[g.id] ~= false
-                    drawPdDoorLock(g.interact.x, g.interact.y, g.interact.z, locked)
-                    QBCore.Functions.DrawText3D(g.interact.x, g.interact.y, g.interact.z + 0.05, '[E]')
+                    local iconPos = g.interact
+                    local best = 99999.0
+                    for _, slab in ipairs(g.slabs or {}) do
+                        local sd = #(pcoords - slab.coords)
+                        if sd < best then
+                            best = sd
+                            iconPos = slab.coords
+                        end
+                    end
+                    drawPdDoorLock(iconPos.x, iconPos.y, iconPos.z, locked)
                     if IsControlJustPressed(0, 38) then
                         local now = GetGameTimer()
                         if now - lastToggle > 650 then
