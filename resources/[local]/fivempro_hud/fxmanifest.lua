@@ -19,6 +19,7 @@ client_scripts {
 }
 
 exports {
-    'OpenVehicleQuickMenu'
+    'OpenVehicleQuickMenu',
+    'ToggleVehicleControlPanel',
 }
 

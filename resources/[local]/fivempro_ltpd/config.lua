@@ -267,7 +267,7 @@ Config.PdDoorToggleReach = 4.2
 Config.PdDoorGroups = {
     {
         id = 'ls_mrpd_reception',
-        label = 'Priimamojo įėjimas',
+        label = 'Reception entrance',
         interact = vector3(434.81, -981.93, 30.89),
         interactDist = 2.5,
         defaultLocked = true,
@@ -278,7 +278,7 @@ Config.PdDoorGroups = {
     },
     {
         id = 'ls_mrpd_side',
-        label = 'Šoninis įėjimas',
+        label = 'Side entrance',
         interact = vector3(441.9, -998.7, 30.8),
         interactDist = 2.5,
         defaultLocked = true,
@@ -289,7 +289,7 @@ Config.PdDoorGroups = {
     },
     {
         id = 'ls_mrpd_back',
-        label = 'Galinis įėjimas',
+        label = 'Rear entrance',
         interact = vector3(468.6, -1014.4, 26.4),
         interactDist = 2.5,
         defaultLocked = true,
@@ -300,7 +300,7 @@ Config.PdDoorGroups = {
     },
     {
         id = 'ls_mrpd_back_gate',
-        label = 'Galiniai vartai (aikštelė)',
+        label = 'Rear yard gate',
         interact = vector3(488.8, -1020.2, 30.0),
         interactDist = 14.0,
         defaultLocked = true,
@@ -310,7 +310,7 @@ Config.PdDoorGroups = {
     },
     {
         id = 'ls_mrpd_front_gate',
-        label = 'Priekiniai vartai',
+        label = 'Front gate',
         interact = vector3(419.9, -1021.04, 30.5),
         interactDist = 18.0,
         defaultLocked = true,
@@ -320,12 +320,33 @@ Config.PdDoorGroups = {
     },
     {
         id = 'ls_mrpd_garage_park',
-        label = 'Garažo įėjimas (parkavimas)',
+        label = 'Garage (parking)',
         interact = vector3(464.1, -997.5, 26.3),
         interactDist = 2.0,
         defaultLocked = true,
         doors = {
             { model = 'gabz_mrpd_room13_parkingdoor', coords = vector3(464.1, -997.5, 26.3) },
+        },
+    },
+    {
+        id = 'ss_pd_front_manual',
+        label = 'Sandy PD main doors',
+        interact = vector3(1859.75, 3689.12, 33.99),
+        interactDist = 2.9,
+        defaultLocked = true,
+        doors = {
+            { model = 'hedwig_sheriff_door01', coords = vector3(1860.32, 3689.71, 33.986) },
+            { model = 'hedwig_sheriff_door01', coords = vector3(1859.18, 3688.52, 33.986) },
+        },
+    },
+    {
+        id = 'ss_pd_garage_manual',
+        label = 'Sandy PD garage door',
+        interact = vector3(1854.92, 3701.15, 33.73),
+        interactDist = 3.8,
+        defaultLocked = true,
+        doors = {
+            { model = 'hedwig_sheriff_garage_gardoor', coords = vector3(1854.92, 3701.15, 33.73) },
         },
     },
 }
@@ -335,7 +356,7 @@ Config.PdDoorDynamics = {
     {
         stationId = 'sandy',
         label = 'PD durys (Sandy)',
-        bounds = { min = vector3(1835.0, 3655.0, 28.0), max = vector3(1895.0, 3715.0, 40.0) },
+        bounds = { min = vector3(1775.0, 3585.0, 18.0), max = vector3(1935.0, 3785.0, 75.0) },
         models = {
             'hedwig_sheriff_door01',
             'hedwig_sheriff_door02',
@@ -346,8 +367,8 @@ Config.PdDoorDynamics = {
             'hedwig_sheriff_garage_gardoor',
             'hedwig_sheriif_garage_door',
         },
-        pairDist = 2.35,
-        interactDist = 2.5,
+        pairDist = 4.35,
+        interactDist = 2.85,
     },
     {
         stationId = 'paleto',

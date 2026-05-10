@@ -82,10 +82,12 @@ MAIN_STATS.forEach((k) => {
 const carSpeedDigits = document.getElementById("carSpeedDigits");
 const carRpmArc = document.getElementById("carRpmArc");
 const carFuelArc = document.getElementById("carFuelArc");
-const carHpFill = document.getElementById("carHpFill");
-const carHpPct = document.getElementById("carHpPct");
-const carStaFill = document.getElementById("carStaFill");
-const carStaPct = document.getElementById("carStaPct");
+const carMotorFill = document.getElementById("carMotorFill");
+const carMotorPct = document.getElementById("carMotorPct");
+const carMvMotor = document.getElementById("carMvMotor");
+const carFuelMiniFill = document.getElementById("carFuelMiniFill");
+const carFuelMiniPct = document.getElementById("carFuelMiniPct");
+const carMvFuelMini = document.getElementById("carMvFuelMini");
 const carIcoEngine = document.getElementById("carIcoEngine");
 const carIcoDoors = document.getElementById("carIcoDoors");
 const carIcoLights = document.getElementById("carIcoLights");
@@ -441,12 +443,20 @@ window.addEventListener("message", (event) => {
     carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - fl / 100));
     carFuelArc.classList.toggle("hidden", !currentSettings.show.fuel);
   }
-  const hp = Math.max(0, Math.min(100, Number(data.health) || 0));
-  if (carHpFill) carHpFill.style.height = `${hp}%`;
-  if (carHpPct) carHpPct.textContent = String(Math.round(hp));
-  const st = Math.max(0, Math.min(100, Number(data.stamina) || 0));
-  if (carStaFill) carStaFill.style.height = `${st}%`;
-  if (carStaPct) carStaPct.textContent = String(Math.round(st));
+  const eh = Number(data.engineHealth);
+  const motorPctHud = Number.isFinite(eh) ? Math.max(0, Math.min(100, Math.round(eh / 10))) : 0;
+  if (carMotorFill) carMotorFill.style.height = `${motorPctHud}%`;
+  if (carMotorPct) carMotorPct.textContent = String(motorPctHud);
+  if (carMvMotor) {
+    carMvMotor.classList.toggle("state-warn", motorPctHud < 40);
+  }
+
+  const fuelMini = Math.max(0, Math.min(100, Number(data.fuel) || 0));
+  if (carFuelMiniFill) carFuelMiniFill.style.height = `${fuelMini}%`;
+  if (carFuelMiniPct) carFuelMiniPct.textContent = String(Math.round(fuelMini));
+  if (carMvFuelMini) {
+    carMvFuelMini.classList.toggle("state-warn", fuelMini < 18);
+  }
 
   if (carIcoEngine) {
     carIcoEngine.classList.toggle("state-on", !!data.engineOn);
@@ -454,6 +464,7 @@ window.addEventListener("message", (event) => {
   }
   if (carIcoDoors) {
     carIcoDoors.classList.toggle("state-on", !!data.doorsLocked);
+    carIcoDoors.classList.toggle("state-warn", !data.doorsLocked);
   }
   if (carIcoLights) {
     carIcoLights.classList.toggle("state-on", !!data.lightsOn);

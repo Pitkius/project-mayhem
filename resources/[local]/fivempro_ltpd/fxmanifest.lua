@@ -29,6 +29,7 @@ files {
     'html/mdt/index.html',
     'html/mdt/app.js',
     'html/mdt/style.css',
+    'html/mdt/asset/gtav_satellite.jpg',
 }
 
 dependency 'qb-core'

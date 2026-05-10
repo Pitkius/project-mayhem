@@ -45,14 +45,14 @@ function safe(s) {
   return d.innerHTML;
 }
 
-/** FiveM NUI: Leaflet geriausiai krauna žemėlapį per `nui://res/kelias` */
+/** FiveM NUI: Leaflet ImageOverlay patikimiau krauna per `https://res/kelias` (ne `nui://`). */
 function nuiImageUrl(pathFromHtml) {
   const raw = String(pathFromHtml || "").trim();
   if (!raw || /^https?:\/\//i.test(raw)) return raw;
   const res = resourceName();
   let p = raw.replace(/^\/+/, "");
   if (!p.startsWith("html/")) p = `html/${p}`;
-  return `nui://${res}/${p}`;
+  return `https://${res}/${p}`;
 }
 
 function normalizeMapConfig(payload) {
@@ -160,15 +160,14 @@ function renderTurfsOnMap(state) {
     const owner = t.owner_name || "Laisva";
     const prog = Math.max(0, Math.min(100, Number(t.progress || 0)));
 
-    /* Laukti išvardinti kvadratai nematomi – rodom tik užpildytą zoną, kai yra savininkas */
-    if (!hasOwner) return;
-
     const fillHex = col && /^#[0-9A-Fa-f]{6}$/.test(col) ? col : "#a78bfa";
     const circle = L.circle(center, {
       radius: rad,
-      stroke: false,
-      fillColor: fillHex,
-      fillOpacity: 0.38,
+      stroke: !hasOwner,
+      weight: !hasOwner ? 1 : 0,
+      color: "rgba(148, 163, 184, 0.5)",
+      fillColor: hasOwner ? fillHex : "#1e293b",
+      fillOpacity: hasOwner ? 0.38 : 0.1,
       interactive: true,
       bubblingMouseEvents: false,
     }).addTo(group);
@@ -180,7 +179,9 @@ function renderTurfsOnMap(state) {
 
     circle.on("mousemove", (e) => {
       mapTooltip.classList.remove("hidden");
-      mapTooltip.innerHTML = `<strong>${safe(label)}</strong><br/>${safe(owner)} · ${prog}% užimta`;
+      mapTooltip.innerHTML = hasOwner
+        ? `<strong>${safe(label)}</strong><br/>${safe(owner)} · ${prog}% užimta`
+        : `<strong>${safe(label)}</strong><br/>Laisva · ${prog}% užimta`;
       const stage = document.getElementById("mapStage");
       if (!stage) return;
       const rect = stage.getBoundingClientRect();

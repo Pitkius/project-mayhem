@@ -82,7 +82,14 @@
         </div>
         <div class="tactical-wrap">
           <div id="dispatchMap" class="dispatch-map">
-            <div id="dispatchMapInner" class="dispatch-map-inner"></div>
+            <div id="dispatchMapTransform" class="dispatch-map-transform">
+              <div id="dispatchMapInner" class="dispatch-map-inner" aria-hidden="true"></div>
+              <div id="dispatchMapMarkers" class="dispatch-map-markers"></div>
+            </div>
+            <div class="dispatch-map-zoom" aria-hidden="true">
+              <button type="button" class="dispatch-zoom-btn" id="dispatchZoomIn" title="Priartinti">+</button>
+              <button type="button" class="dispatch-zoom-btn" id="dispatchZoomOut" title="Nutolinti">−</button>
+            </div>
           </div>
           <div id="dispatchUnits" class="results side-list"></div>
         </div>

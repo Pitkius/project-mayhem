@@ -2,6 +2,22 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local mineCooldown = {}
 
+local PICKAXE_ITEMS = {
+    'mining_pickaxe',
+    'mining_pickaxe_tier2',
+    'mining_pickaxe_tier3',
+    'mining_pickaxe_tier4',
+    'mining_pickaxe_tier5',
+}
+
+local function playerHasMiningPickaxe(src)
+    if not src then return false end
+    for _, n in ipairs(PICKAXE_ITEMS) do
+        if QBCore.Functions.HasItem(src, n, 1) then return true end
+    end
+    return false
+end
+
 local function nearMiningSite(src, siteIdx)
     siteIdx = tonumber(siteIdx)
     if not siteIdx or not Config.MiningSites[siteIdx] then return false end
@@ -53,7 +69,7 @@ RegisterNetEvent('fivempro_mining:server:mineAttempt', function(siteIdx)
     end
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
-    if not QBCore.Functions.HasItem(src, 'mining_pickaxe', 1) then
+    if not playerHasMiningPickaxe(src) then
         return TriggerClientEvent('QBCore:Notify', src, 'Reikia kirtiklio inventoriuje.', 'error')
     end
 
@@ -151,6 +167,8 @@ RegisterNetEvent('fivempro_mining:server:sellAll', function()
     end
 end)
 
-QBCore.Functions.CreateUseableItem('mining_pickaxe', function(source, _)
-    TriggerClientEvent('QBCore:Notify', source, 'Eik į karjerą (žemėlapyje „Karjeras — kasimas“) ir naudok qb-target.', 'primary', 6500)
-end)
+for _, pickName in ipairs(PICKAXE_ITEMS) do
+    QBCore.Functions.CreateUseableItem(pickName, function(source, _)
+        TriggerClientEvent('QBCore:Notify', source, 'Eik į karjerą (žemėlapyje „Karjeras — kasimas“) ir naudok qb-target.', 'primary', 6500)
+    end)
+end

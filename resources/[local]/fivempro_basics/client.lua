@@ -31,6 +31,17 @@ local LongWeaponModels = {
     weapon_heavysniper_mk2 = 'w_sr_heavysniper',
     weapon_marksmanrifle = 'w_sr_marksmanrifle',
     weapon_marksmanrifle_mk2 = 'w_sr_marksmanrifle',
+
+    -- SMG (stambūs ne rankoj – rodomi tik be kuprinės, kaip karabinai)
+    weapon_microsmg = 'w_sb_microsmg',
+    weapon_smg = 'w_sb_smg',
+    weapon_smg_mk2 = 'w_sb_smgmk2',
+    weapon_assaultsmg = 'w_sb_assaultsmg',
+    weapon_combatpdw = 'w_sb_pdw',
+    weapon_machinepistol = 'w_sb_compactsmg',
+    weapon_minismg = 'w_sb_minismg',
+    weapon_raycarbine = 'w_ar_srifle',
+    weapon_tecpistol = 'w_pi_pistolsmg_m31',
 }
 
 local function hasBackpackOnPed(ped)
@@ -71,6 +82,11 @@ end
 local function refreshSlungWeapons()
     clearSlungProps()
     local ped = PlayerPedId()
+    -- Kuprinė „paslepia“ ilgus ginklus – jie lieka inventoriuje ir naudojami, tik nebededami ant nugaros.
+    if hasBackpackOnPed(ped) then
+        return
+    end
+
     local pData = QBCore.Functions.GetPlayerData()
     local items = pData and pData.items or {}
     if not items then return end

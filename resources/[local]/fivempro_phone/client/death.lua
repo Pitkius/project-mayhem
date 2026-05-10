@@ -120,4 +120,4 @@ RegisterCommand('fivempro_phone_medic', function()
     TriggerServerEvent('fivempro_phone:server:medicRequestFromDead')
 end, false)
 
-RegisterKeyMapping('fivempro_phone_medic', 'Iškviesti medikus (kai miręs)', 'keyboard', 'M')
+RegisterKeyMapping('fivempro_phone_medic', 'Iškviesti medikus (kai miręs)', 'keyboard', 'J')

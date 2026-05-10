@@ -15,6 +15,7 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 .top {
   display: flex;
@@ -44,8 +45,15 @@ html, body {
   background: rgba(167, 139, 250, 0.22);
   border-color: rgba(196, 181, 253, 0.45);
 }
-main { flex: 1; overflow: auto; padding: 12px 16px; }
+main { flex: 1; min-height: 0; overflow: auto; padding: 12px 16px; }
 .panel.hidden { display: none; }
+
+#panel-units {
+  display: flex;
+  flex-direction: column;
+  min-height: min(72vh, 640px);
+  flex: 1;
+}
 .row, .grid2 {
   display: flex;
   gap: 8px;
@@ -83,11 +91,21 @@ input, select {
 .muted { color: #94a3b8; font-size: 12px; }
 .tactical-wrap {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
   gap: 10px;
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
 }
+
+#panel-units .tactical-wrap {
+  flex: 1;
+  min-height: min(72vh, 640px);
+}
+
 .dispatch-map {
-  min-height: 430px;
+  min-height: 0;
+  height: 100%;
   border-radius: 8px;
   border: 1px solid rgba(167, 139, 250, 0.18);
   position: relative;
@@ -97,23 +115,64 @@ input, select {
   background: rgba(10, 12, 22, 0.6);
 }
 
+.dispatch-map-zoom {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.dispatch-zoom-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(196, 181, 253, 0.45);
+  background: rgba(15, 23, 42, 0.88);
+  color: #e5e7eb;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dispatch-zoom-btn:hover {
+  background: rgba(167, 139, 250, 0.28);
+}
+
+.dispatch-map-transform {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+  will-change: transform;
+}
+
 .dispatch-map-inner {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 140%;
-  height: 140%;
-  margin-left: -70%;
-  margin-top: -70%;
+  width: 220%;
+  height: 220%;
+  margin-left: -110%;
+  margin-top: -110%;
   background-image:
     linear-gradient(rgba(88, 82, 118, 0.22) 1px, transparent 1px),
     linear-gradient(90deg, rgba(88, 82, 118, 0.22) 1px, transparent 1px),
-    url("https://forum-cfx-re.akamaized.net/original/4X/3/c/e/3ce9267172bd7bc499c051cb2430eccba633ac92.jpeg");
-  background-size: 32px 32px, 32px 32px, contain;
+    url("./asset/gtav_satellite.jpg");
+  background-size: 32px 32px, 32px 32px, cover;
   background-position: 0 0, 0 0, center;
   background-repeat: repeat, repeat, no-repeat;
-  transform-origin: center center;
-  will-change: transform;
+  pointer-events: none;
+}
+
+.dispatch-map-markers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 .map-dot {
   position: absolute;
@@ -140,7 +199,9 @@ input, select {
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.9);
 }
 .side-list {
-  max-height: 430px;
+  max-height: none;
+  height: 100%;
+  min-height: 0;
   overflow: auto;
 }
 .hint {

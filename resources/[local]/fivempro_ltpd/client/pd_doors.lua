@@ -16,6 +16,25 @@ local doorGroups = {} ---@type LtpdDoorGroupRuntime[]
 local doorLocked = {} ---@type table<string, boolean>
 local dynStationDone = {} ---@type table<string, boolean>
 
+--- GTA saugos spynos sprites (`mpsafecracking`): lock_closed / lock_open
+local PD_LOCK_TX = 'mpsafecracking'
+
+CreateThread(function()
+    RequestStreamedTextureDict(PD_LOCK_TX, false)
+    while true do
+        if HasStreamedTextureDictLoaded(PD_LOCK_TX) then break end
+        Wait(50)
+    end
+end)
+
+local function drawPdDoorLock(worldX, worldY, worldZ, locked)
+    RequestStreamedTextureDict(PD_LOCK_TX, false)
+    if not HasStreamedTextureDictLoaded(PD_LOCK_TX) then return end
+    SetDrawOrigin(worldX, worldY, worldZ + 0.36, 0)
+    DrawSprite(PD_LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, 0.055, 0.095, 0.0, 235, 232, 255, 238)
+    ClearDrawOrigin()
+end
+
 local function isPdJobName(name)
     if not name then return false end
     if name == Config.JobName then return true end
@@ -268,8 +287,8 @@ CreateThread(function()
                 waitMs = 0
                 if isPdOnDutyClient() then
                     local locked = doorLocked[g.id] ~= false
-                    local hint = locked and ('[E] %s – atrakinti'):format(g.label) or ('[E] %s – užrakinti'):format(g.label)
-                    QBCore.Functions.DrawText3D(g.interact.x, g.interact.y, g.interact.z + 0.12, hint)
+                    drawPdDoorLock(g.interact.x, g.interact.y, g.interact.z, locked)
+                    QBCore.Functions.DrawText3D(g.interact.x, g.interact.y, g.interact.z + 0.05, '[E]')
                     if IsControlJustPressed(0, 38) then
                         local now = GetGameTimer()
                         if now - lastToggle > 650 then

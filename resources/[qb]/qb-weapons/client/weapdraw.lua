@@ -117,9 +117,26 @@ local function loadAnimDict(dict)
     end
 end
 
+--- QB inventoriuje dažnai `weapon_smg`; animacijų sąraše – `WEAPON_SMG`.
+local function joaatQbWeaponFromUpper(upper)
+    if type(upper) ~= 'string' then return nil end
+    local rest = upper:match('^WEAPON_(.+)$')
+    if rest then return joaat(('weapon_' .. rest):lower()) end
+    return nil
+end
+
+local function hashesMatchListedWeapon(candidateHash, listEntry)
+    if not candidateHash or candidateHash == 0 then return false end
+    local a = joaat(listEntry)
+    if candidateHash == a then return true end
+    local b = joaatQbWeaponFromUpper(listEntry)
+    if b and candidateHash == b then return true end
+    return false
+end
+
 local function checkWeapon(newWeap)
     for i = 1, #weapons do
-        if joaat(weapons[i]) == newWeap then
+        if hashesMatchListedWeapon(newWeap, weapons[i]) then
             return true
         end
     end
@@ -128,7 +145,7 @@ end
 
 local function isWeaponHolsterable(weap)
     for i = 1, #Config.WeapDraw.weapons do
-        if joaat(Config.WeapDraw.weapons[i]) == weap then
+        if hashesMatchListedWeapon(weap, Config.WeapDraw.weapons[i]) then
             return true
         end
     end

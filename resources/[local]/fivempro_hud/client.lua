@@ -679,6 +679,8 @@ local function openVehicleQuickMenu(veh)
 end
 
 exports('OpenVehicleQuickMenu', openVehicleQuickMenu)
+--- M klavišui: ta pati valdymo panelė kaip „U“ (vp-ios), ne šoninis quick list.
+exports('ToggleVehicleControlPanel', toggleVehiclePanel)
 
 RegisterNUICallback('vehicleList:action', function(data, cb)
     local action = data and data.action or ''

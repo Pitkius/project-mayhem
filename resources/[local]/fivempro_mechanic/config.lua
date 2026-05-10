@@ -109,3 +109,39 @@ Config.DutyOutfits = {
         female = { [4] = 39, [6] = 24, [8] = 36, [11] = 50, [9] = 0 },
     },
 }
+
+--- Laikinas testavimo NPC: $1 rinkinys (žaliavos) + brangesnių kirtiklių meniu.
+Config.DebugSandboxVendor = {
+    enabled = true,
+    pedModel = `s_m_y_construct_02`,
+    coords = vector4(-334.94, -127.18, 39.02, 158.0),
+    scenario = 'WORLD_HUMAN_CLIPBOARD',
+    bundlePrice = 1,
+}
+
+--- item -> kiek (stack vienam pirkiniui — testams)
+Config.DebugSandboxBundleItems = {
+    { item = 'stone_raw', amount = 20 }, { item = 'stone', amount = 20 },
+    { item = 'coal_raw', amount = 20 }, { item = 'coal', amount = 20 },
+    { item = 'gravel_raw', amount = 20 }, { item = 'gravel', amount = 20 },
+    { item = 'iron_ore_raw', amount = 20 }, { item = 'iron_ore', amount = 20 },
+    { item = 'copper_ore_raw', amount = 20 }, { item = 'copper_ore', amount = 20 },
+    { item = 'aluminum_ore_raw', amount = 20 }, { item = 'aluminum_ore', amount = 20 },
+    { item = 'silver_ore_raw', amount = 10 }, { item = 'silver_ore', amount = 10 },
+    { item = 'gold_ore_raw', amount = 10 }, { item = 'gold_ore', amount = 10 },
+    { item = 'diamond_raw', amount = 3 }, { item = 'diamond', amount = 3 },
+    { item = 'emerald_raw', amount = 3 }, { item = 'emerald', amount = 3 },
+    { item = 'ruby_raw', amount = 3 }, { item = 'ruby', amount = 3 },
+    { item = 'sapphire_raw', amount = 3 }, { item = 'sapphire', amount = 3 },
+    { item = 'mystery_ore_raw', amount = 5 }, { item = 'mystery_ore', amount = 5 },
+    { item = 'artifact_raw', amount = 5 }, { item = 'artifact', amount = 5 },
+    { item = 'steel', amount = 25 }, { item = 'rubber', amount = 25 }, { item = 'glass', amount = 25 },
+}
+
+Config.DebugPickaxeOffers = {
+    { item = 'mining_pickaxe', label = 'Kirtiklis I — pradinis', price = 320 },
+    { item = 'mining_pickaxe_tier2', label = 'Kirtiklis II — patikimesnis', price = 980 },
+    { item = 'mining_pickaxe_tier3', label = 'Kirtiklis III — darbo klase', price = 2650 },
+    { item = 'mining_pickaxe_tier4', label = 'Kirtiklis IV — pramoninis', price = 6200 },
+    { item = 'mining_pickaxe_tier5', label = 'Kirtiklis V — elitas', price = 14500 },
+}

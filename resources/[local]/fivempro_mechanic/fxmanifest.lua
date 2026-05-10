@@ -14,6 +14,7 @@ client_scripts {
     'client/main.lua',
     'client/bay_menu.lua',
     'client/boss.lua',
+    'client/vendor_debug.lua',
 }
 
 server_scripts {

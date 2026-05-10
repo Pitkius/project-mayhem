@@ -2,6 +2,14 @@ Config = Config or {}
 
 Config.ReloadTime = math.random(4000, 6000)
 
+--[[
+  Recoil: client/recoil.lua kelia tik kamerą aukštyn (vertikaliai).
+  RecoilMultiplier – visiems sąrašo ginklams bendras stiprinimas.
+  RecoilShakeAmplitude – GTA ginklo „drebulė“ iš metaduomenų (0.0 = be jos).
+]]
+Config.RecoilMultiplier = 2.0
+Config.RecoilShakeAmplitude = 0.0
+
 Config.DurabilityBlockedWeapons = {
     'weapon_stungun',
     'weapon_nightstick',
@@ -47,7 +55,14 @@ Config.WeapDraw = {
         'WEAPON_REVOLVER',
         'WEAPON_SNSPISTOL',
         'WEAPON_HEAVYPISTOL',
-        'WEAPON_VINTAGEPISTOL'
+        'WEAPON_VINTAGEPISTOL',
+        'WEAPON_MICROSMG',
+        'WEAPON_SMG',
+        'WEAPON_SMG_MK2',
+        'WEAPON_ASSAULTSMG',
+        'WEAPON_MINISMG',
+        'WEAPON_MACHINEPISTOL',
+        'WEAPON_COMBATPDW',
     }
 }
 

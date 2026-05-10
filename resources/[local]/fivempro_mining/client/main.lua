@@ -1,6 +1,15 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local sellPed = nil
 
+local function playerHasMiningPickaxe()
+    if QBCore.Functions.HasItem('mining_pickaxe', 1) then return true end
+    if QBCore.Functions.HasItem('mining_pickaxe_tier2', 1) then return true end
+    if QBCore.Functions.HasItem('mining_pickaxe_tier3', 1) then return true end
+    if QBCore.Functions.HasItem('mining_pickaxe_tier4', 1) then return true end
+    if QBCore.Functions.HasItem('mining_pickaxe_tier5', 1) then return true end
+    return false
+end
+
 local function loadModel(hash)
     RequestModel(hash)
     while not HasModelLoaded(hash) do Wait(10) end
@@ -71,7 +80,7 @@ end
 RegisterNetEvent('fivempro_mining:client:startMining', function(data)
     local siteIdx = data and tonumber(data.siteIndex)
     if not siteIdx then return end
-    if not QBCore.Functions.HasItem('mining_pickaxe', 1) then
+    if not playerHasMiningPickaxe() then
         return QBCore.Functions.Notify('Reikia kirtiklio.', 'error')
     end
 
@@ -149,7 +158,7 @@ CreateThread(function()
                     label = site.label or 'Skaldyti / kasti',
                     siteIndex = i,
                     canInteract = function()
-                        return QBCore.Functions.HasItem('mining_pickaxe', 1)
+                        return playerHasMiningPickaxe()
                     end,
                 },
             },

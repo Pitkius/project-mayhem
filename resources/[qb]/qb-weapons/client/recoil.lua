@@ -1,3 +1,24 @@
+--- Sumažina žaidimo ginklo recoil drebulę; vertikalų kilimą valdo apačios CEventGunShot blokas + Config.RecoilMultiplier.
+CreateThread(function()
+    while true do
+        local scale = Config.RecoilShakeAmplitude
+        if scale == nil then
+            Wait(500)
+        else
+            local ped = PlayerPedId()
+            local _, weapon = GetCurrentPedWeapon(ped, true)
+            if weapon ~= joaat('WEAPON_UNARMED') then
+                pcall(function()
+                    SetWeaponRecoilShakeAmplitude(weapon, scale)
+                end)
+                Wait(0)
+            else
+                Wait(200)
+            end
+        end
+    end
+end)
+
 local recoils = {
     -- Handguns
     [`weapon_pistol`] = 0.3,
@@ -91,7 +112,10 @@ AddEventHandler('CEventGunShot', function(entities, eventEntity, args)
     if eventEntity ~= ped then return end
     if IsPedDoingDriveby(ped) then return end
     local _, weap = GetCurrentPedWeapon(ped, false)
-    if recoils[weap] and recoils[weap] ~= 0 then
+    local base = recoils[weap]
+    local mult = Config.RecoilMultiplier or 1.0
+    local amount = base and base * mult or nil
+    if amount and amount > 0.0 then
         local tv = 0
         if GetFollowPedCamViewMode() ~= 4 then
             repeat
@@ -99,19 +123,19 @@ AddEventHandler('CEventGunShot', function(entities, eventEntity, args)
                 local p = GetGameplayCamRelativePitch()
                 SetGameplayCamRelativePitch(p + 0.1, 0.2)
                 tv += 0.1
-            until tv >= recoils[weap]
+            until tv >= amount
         else
             repeat
                 Wait(0)
                 local p = GetGameplayCamRelativePitch()
-                if recoils[weap] > 0.1 then
+                if amount > 0.1 then
                     SetGameplayCamRelativePitch(p + 0.6, 1.2)
                     tv += 0.6
                 else
                     SetGameplayCamRelativePitch(p + 0.016, 0.333)
                     tv += 0.1
                 end
-            until tv >= recoils[weap]
+            until tv >= amount
         end
     end
 end)

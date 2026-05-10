@@ -137,6 +137,12 @@ RegisterCommand('fivempro_vehiclemenu', function()
         if GetPedInVehicleSeat(veh, -1) ~= ped then
             return QBCore.Functions.Notify('Turi būti vairuotojo vietoje.', 'error')
         end
+        if GetResourceState('fivempro_hud') == 'started' then
+            local ok = pcall(function()
+                exports['fivempro_hud']:ToggleVehicleControlPanel()
+            end)
+            if ok then return end
+        end
         openVehicleMenu(veh)
         return
     end

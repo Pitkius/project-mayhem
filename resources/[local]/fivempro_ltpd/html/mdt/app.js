@@ -190,24 +190,24 @@ let dispatchMapPan = { x: 0, y: 0, scale: 1 };
 let dispatchMapInteractBound = false;
 
 function applyDispatchMapTransform() {
-  const inner = document.getElementById('dispatchMapInner');
-  if (!inner) return;
-  inner.style.transform = `translate(${dispatchMapPan.x}px, ${dispatchMapPan.y}px) scale(${dispatchMapPan.scale})`;
+  const layer = document.getElementById('dispatchMapTransform');
+  if (!layer) return;
+  layer.style.transform = `translate(${dispatchMapPan.x}px, ${dispatchMapPan.y}px) scale(${dispatchMapPan.scale})`;
 }
 
 function bindDispatchMapInteract() {
   if (dispatchMapInteractBound) return;
   const root = document.getElementById('dispatchMap');
-  const inner = document.getElementById('dispatchMapInner');
-  if (!root || !inner) return;
+  const layer = document.getElementById('dispatchMapTransform');
+  if (!root || !layer) return;
   dispatchMapInteractBound = true;
 
   root.addEventListener(
     'wheel',
     (e) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.08 : 0.08;
-      dispatchMapPan.scale = Math.max(0.55, Math.min(2.4, dispatchMapPan.scale + delta));
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      dispatchMapPan.scale = Math.max(0.45, Math.min(3.2, dispatchMapPan.scale + delta));
       applyDispatchMapTransform();
     },
     { passive: false },
@@ -239,11 +239,9 @@ function bindDispatchMapInteract() {
 }
 
 function renderDispatchMap(calls, units) {
-  const mapEl = document.getElementById('dispatchMap');
-  const inner = document.getElementById('dispatchMapInner');
-  const host = inner || mapEl;
-  if (!host) return;
-  host.innerHTML = '';
+  const markers = document.getElementById('dispatchMapMarkers');
+  if (!markers) return;
+  markers.innerHTML = '';
   dispatchMapPan = { x: 0, y: 0, scale: 1 };
   applyDispatchMapTransform();
   bindDispatchMapInteract();
@@ -254,7 +252,7 @@ function renderDispatchMap(calls, units) {
     d.style.left = `${p.x}%`;
     d.style.top = `${p.y}%`;
     d.textContent = `${u.callsign ? `[${u.callsign}] ` : ''}${u.name || 'Unit'}`;
-    host.appendChild(d);
+    markers.appendChild(d);
   });
   calls.forEach((c) => {
     const p = worldToMap(c.x, c.y);
@@ -263,9 +261,26 @@ function renderDispatchMap(calls, units) {
     d.style.left = `${p.x}%`;
     d.style.top = `${p.y}%`;
     d.textContent = `${c.id} ${c.callTypeLabel || c.callType || 'Call'}`;
-    host.appendChild(d);
+    markers.appendChild(d);
   });
 }
+
+(function bindDispatchMapZoomButtons() {
+  const zIn = document.getElementById('dispatchZoomIn');
+  const zOut = document.getElementById('dispatchZoomOut');
+  if (zIn) {
+    zIn.addEventListener('click', () => {
+      dispatchMapPan.scale = Math.min(3.2, dispatchMapPan.scale + 0.15);
+      applyDispatchMapTransform();
+    });
+  }
+  if (zOut) {
+    zOut.addEventListener('click', () => {
+      dispatchMapPan.scale = Math.max(0.45, dispatchMapPan.scale - 0.15);
+      applyDispatchMapTransform();
+    });
+  }
+})();
 
 function renderDispatch(res) {
   const callsEl = document.getElementById('dispatchCalls');

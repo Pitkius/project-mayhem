@@ -68,6 +68,96 @@ local function getItemsFromCore()
     return pd and pd.items or nil
 end
 
+local holsterApplyPending = false
+
+local function isThrowableInventoryWeaponName(name)
+    if not name then return true end
+    local n = tostring(name):lower()
+    if n == 'weapon_unarmed' then return true end
+    local throwEventBlock = {
+        weapon_stickybomb = true,
+        weapon_pipebomb = true,
+        weapon_smokegrenade = true,
+        weapon_flare = true,
+        weapon_proxmine = true,
+        weapon_ball = true,
+        weapon_molotov = true,
+        weapon_grenade = true,
+        weapon_bzgas = true,
+        weapon_snowball = true,
+    }
+    if throwEventBlock[n] then return true end
+    for _, t in ipairs(Config.Throwables or {}) do
+        local key = tostring(t):lower()
+        if n == ('weapon_' .. key) or n == key then return true end
+    end
+    return false
+end
+
+--- Visi inventoriaus ginklai ant pedo (paslėpti), išskyrus dabar pasirinktą — kad matytųsi ant nugaros/kojų.
+function applyHolsteredWeaponsFromInventory()
+    if not LocalPlayer.state.isLoggedIn then return end
+    if currentWeapon and isThrowableInventoryWeaponName(currentWeapon) then return end
+    local ped = PlayerPedId()
+    RemoveAllPedWeapons(ped, true)
+
+    local items = getItemsFromCore()
+    if not items then
+        SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
+        return
+    end
+
+    local shownHash = nil
+    if currentWeapon then
+        shownHash = joaat(currentWeapon)
+    end
+
+    for _, item in pairs(items) do
+        if not item or item.type ~= 'weapon' or (tonumber(item.amount) or 0) <= 0 then goto continue end
+        local name = tostring(item.name or '')
+        if isThrowableInventoryWeaponName(name) then goto continue end
+
+        local h = joaat(name)
+        local ammo = tonumber(item.info and item.info.ammo) or 0
+        if name == 'weapon_petrolcan' or name == 'weapon_fireextinguisher' then
+            ammo = 4000
+        end
+
+        local hidden = not shownHash or h ~= shownHash
+
+        GiveWeaponToPed(ped, h, ammo, hidden, false)
+        SetPedAmmo(ped, h, ammo)
+
+        local weaponInfo = item.info or {}
+        if weaponInfo.attachments then
+            for _, attachment in pairs(weaponInfo.attachments) do
+                GiveWeaponComponentToPed(ped, h, joaat(attachment.component))
+            end
+        end
+        if weaponInfo.tint then
+            SetPedWeaponTintIndex(ped, h, weaponInfo.tint)
+        end
+
+        ::continue::
+    end
+
+    if shownHash and shownHash ~= 0 and shownHash ~= `WEAPON_UNARMED` then
+        SetCurrentPedWeapon(ped, shownHash, true)
+        clearPedWeaponInfiniteAmmo(ped, shownHash)
+    else
+        SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
+    end
+end
+
+local function scheduleHolsteredWeaponVisuals()
+    if holsterApplyPending then return end
+    holsterApplyPending = true
+    SetTimeout(200, function()
+        holsterApplyPending = false
+        applyHolsteredWeaponsFromInventory()
+    end)
+end
+
 local function resolveCurrentWeaponDataByName(weaponName)
     local items = getItemsFromCore()
     if not items then return nil end
@@ -87,6 +177,9 @@ AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
             Config.WeaponRepairPoints[k].RepairingData = data.RepairingData
         end
     end)
+    SetTimeout(2600, function()
+        scheduleHolsteredWeaponVisuals()
+    end)
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
@@ -100,8 +193,13 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
     PlayerData = val or QBCore.Functions.GetPlayerData() or {}
 end)
 
-RegisterNetEvent('QBCore:Player:UpdatePlayerDataField', function(_, _)
+RegisterNetEvent('QBCore:Player:UpdatePlayerDataField', function(field, _)
     PlayerData = QBCore.Functions.GetPlayerData() or {}
+    if field == 'items' then
+        if not (currentWeapon and isThrowableInventoryWeaponName(currentWeapon)) then
+            scheduleHolsteredWeaponVisuals()
+        end
+    end
 end)
 
 -- Functions
@@ -298,10 +396,9 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
     local weaponInfo = weaponData.info or {}
     if currentWeapon == weaponName then
         TriggerEvent('qb-weapons:client:DrawWeapon', nil)
-        SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
-        RemoveAllPedWeapons(ped, true)
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', nil, shootbool)
         currentWeapon = nil
+        applyHolsteredWeaponsFromInventory()
     elseif weaponName == 'weapon_stickybomb' or weaponName == 'weapon_pipebomb' or weaponName == 'weapon_smokegrenade' or weaponName == 'weapon_flare' or weaponName == 'weapon_proxmine' or weaponName == 'weapon_ball' or weaponName == 'weapon_molotov' or weaponName == 'weapon_grenade' or weaponName == 'weapon_bzgas' then
         TriggerEvent('qb-weapons:client:DrawWeapon', weaponName)
         GiveWeaponToPed(ped, weaponHash, 1, false, false)
@@ -320,46 +417,21 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
     else
         TriggerEvent('qb-weapons:client:DrawWeapon', weaponName)
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', weaponData, shootbool)
-        local ammo = tonumber(weaponInfo.ammo) or 0
-
-        if weaponName == 'weapon_petrolcan' or weaponName == 'weapon_fireextinguisher' then
-            ammo = 4000
-        end
-
-        GiveWeaponToPed(ped, weaponHash, 0, false, false)
-        local hasMax, maxAmmoCap = GetMaxAmmo(ped, weaponHash)
-        local requested = tonumber(ammo) or 0
-        if hasMax and maxAmmoCap and maxAmmoCap > 0 then
-            requested = math.min(requested, maxAmmoCap)
-        end
-        SetPedAmmo(ped, weaponHash, requested)
-        SetCurrentPedWeapon(ped, weaponHash, true)
-        clearPedWeaponInfiniteAmmo(ped, weaponHash)
-
-        if weaponInfo.attachments then
-            for _, attachment in pairs(weaponInfo.attachments) do
-                GiveWeaponComponentToPed(ped, weaponHash, joaat(attachment.component))
-            end
-        end
-
-        if weaponInfo.tint then
-            SetPedWeaponTintIndex(ped, weaponHash, weaponInfo.tint)
-        end
-
+        currentWeapon = weaponName
+        applyHolsteredWeaponsFromInventory()
+        weaponHash = joaat(weaponData.name)
         local syncedAmmo = GetAmmoInPedWeapon(ped, weaponHash)
         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', weaponData, syncedAmmo)
-
-        currentWeapon = weaponName
     end
 end)
 
 RegisterNetEvent('qb-weapons:client:CheckWeapon', function(weaponName)
-    if currentWeapon ~= weaponName:lower() then return end
-    local ped = PlayerPedId()
+    local wname = weaponName and tostring(weaponName):lower()
+    if not wname or currentWeapon ~= wname then return end
     TriggerEvent('qb-weapons:ResetHolster')
-    SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
-    RemoveAllPedWeapons(ped, true)
+    TriggerEvent('qb-weapons:client:SetCurrentWeapon', nil, CanShoot)
     currentWeapon = nil
+    applyHolsteredWeaponsFromInventory()
 end)
 
 -- Threads
