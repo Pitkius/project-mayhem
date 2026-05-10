@@ -45,14 +45,14 @@ function safe(s) {
   return d.innerHTML;
 }
 
-/** FiveM NUI: statiniai failai iš `files` — absoliutus https://resursas/html/kelias */
+/** FiveM NUI: Leaflet geriausiai krauna žemėlapį per `nui://res/kelias` */
 function nuiImageUrl(pathFromHtml) {
   const raw = String(pathFromHtml || "").trim();
   if (!raw || /^https?:\/\//i.test(raw)) return raw;
   const res = resourceName();
-  const p = raw.replace(/^\/+/, "");
-  if (p.startsWith("html/")) return `https://${res}/${p}`;
-  return `https://${res}/html/${p}`;
+  let p = raw.replace(/^\/+/, "");
+  if (!p.startsWith("html/")) p = `html/${p}`;
+  return `nui://${res}/${p}`;
 }
 
 function normalizeMapConfig(payload) {
@@ -156,33 +156,31 @@ function renderTurfsOnMap(state) {
 
     const hasOwner = !!(t.owner_name && String(t.owner_name).trim());
     const col = String(t.owner_color_hex || "").trim();
-    const fillBase = hasOwner && col ? hexToRgba(col, 0.55) : "rgba(167, 139, 250, 0.35)";
-    const stroke = hasOwner && col ? hexToRgba(col, 0.95) : "rgba(196, 181, 253, 0.55)";
-
     const label = t.turf_label || t.turf_id;
     const owner = t.owner_name || "Laisva";
     const prog = Math.max(0, Math.min(100, Number(t.progress || 0)));
-    const side = Math.max(26, Math.min(96, rad * 1.85));
-    const html = `<div class="turf-sq-marker" style="width:${side}px;height:${side}px;border-color:${stroke}">
-      <div class="turf-sq-marker-fill" style="height:${prog}%;background:${fillBase}"></div>
-      <span class="turf-sq-marker-ico" aria-hidden="true">▣</span>
-    </div>`;
-    const icon = L.divIcon({
-      className: "turf-sq-marker-wrap",
-      html,
-      iconSize: [side, side],
-      iconAnchor: [side / 2, side / 2],
-    });
-    const marker = L.marker(center, { icon, interactive: true }).addTo(group);
 
-    marker.on("click", (e) => {
+    /* Laukti išvardinti kvadratai nematomi – rodom tik užpildytą zoną, kai yra savininkas */
+    if (!hasOwner) return;
+
+    const fillHex = col && /^#[0-9A-Fa-f]{6}$/.test(col) ? col : "#a78bfa";
+    const circle = L.circle(center, {
+      radius: rad,
+      stroke: false,
+      fillColor: fillHex,
+      fillOpacity: 0.38,
+      interactive: true,
+      bubblingMouseEvents: false,
+    }).addTo(group);
+
+    circle.on("click", (e) => {
       L.DomEvent.stopPropagation(e);
       post("gangs:setWaypoint", { turfId: t.turf_id });
     });
 
-    marker.on("mousemove", (e) => {
+    circle.on("mousemove", (e) => {
       mapTooltip.classList.remove("hidden");
-      mapTooltip.innerHTML = `<strong>${safe(label)}</strong>${safe(owner)} · ${prog}% užimta`;
+      mapTooltip.innerHTML = `<strong>${safe(label)}</strong><br/>${safe(owner)} · ${prog}% užimta`;
       const stage = document.getElementById("mapStage");
       if (!stage) return;
       const rect = stage.getBoundingClientRect();
@@ -193,13 +191,13 @@ function renderTurfsOnMap(state) {
       mapTooltip.style.left = `${Math.max(8, left)}px`;
       mapTooltip.style.top = `${Math.max(8, top)}px`;
     });
-    marker.on("mouseout", () => mapTooltip.classList.add("hidden"));
+    circle.on("mouseout", () => mapTooltip.classList.add("hidden"));
   });
 
-  turfMap.fitBounds(bounds, { padding: [12, 12], animate: false, maxZoom: 0 });
+  turfMap.fitBounds(bounds, { padding: [4, 4], animate: false });
 
   turfMap.resetHome = () => {
-    turfMap.fitBounds(bounds, { animate: true, padding: [24, 24], maxZoom: 0 });
+    turfMap.fitBounds(bounds, { animate: true, padding: [16, 16] });
   };
 
   turfMap.whenReady(() => {

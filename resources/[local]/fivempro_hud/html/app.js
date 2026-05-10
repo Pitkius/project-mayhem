@@ -100,8 +100,12 @@ const vpClock = document.getElementById("vpClock");
 const vpWeather = document.getElementById("vpWeather");
 const vpStreet = document.getElementById("vpStreet");
 const vpWaypoint = document.getElementById("vpWaypoint");
-const vpEngineTemp = document.getElementById("vpEngineTemp");
-const vpFuelFill = document.getElementById("vpFuelFill");
+const vpFuelHFill = document.getElementById("vpFuelHFill");
+const vpMotorHFill = document.getElementById("vpMotorHFill");
+const vpFuelPct = document.getElementById("vpFuelPct");
+const vpMotorPct = document.getElementById("vpMotorPct");
+const vpVehicleName = document.getElementById("vpVehicleName");
+const vpPlateLine = document.getElementById("vpPlateLine");
 const vpHazardToggle = document.getElementById("vpHazardToggle");
 const vpBtnClose = document.getElementById("vpBtnClose");
 
@@ -129,13 +133,13 @@ const CAR_FUEL_ARC_LEN = (270 / 360) * 2 * Math.PI * 58;
 })();
 
 let currentSettings = {
-  style: "dots",
+  style: "tiles",
   color: "violet",
   alpha: 0.55,
   show: {
     health: true,
-    armor: false,
-    stamina: false,
+    armor: true,
+    stamina: true,
     hunger: true,
     thirst: true,
     speed: false,
@@ -343,25 +347,32 @@ window.addEventListener("message", (event) => {
     }
     vehiclePanel.classList.remove("hidden");
     if (vpClock && data.timeStr) vpClock.textContent = data.timeStr;
-    if (vpWeather && data.weather) vpWeather.textContent = `ORAS ${data.weather}`;
+    if (vpWeather && data.weather) vpWeather.textContent = String(data.weather).toUpperCase();
     if (vpStreet) vpStreet.textContent = data.street || "—";
     if (vpWaypoint) {
       const m = data.waypointM;
       vpWaypoint.textContent = m != null && m !== "" ? `${m} m` : "—";
     }
-    if (vpEngineTemp) vpEngineTemp.textContent = data.engineTemp != null ? `${data.engineTemp}°` : "—";
-    if (vpFuelFill) vpFuelFill.style.height = `${Math.max(0, Math.min(100, Number(data.fuel) || 0))}%`;
+    const fuelN = Math.max(0, Math.min(100, Number(data.fuel) || 0));
+    if (vpFuelHFill) vpFuelHFill.style.width = `${fuelN}%`;
+    if (vpFuelPct) vpFuelPct.textContent = String(Math.round(fuelN));
+    const motorN = Math.max(0, Math.min(100, Number(data.motorPct) != null ? data.motorPct : 100));
+    if (vpMotorHFill) vpMotorHFill.style.width = `${motorN}%`;
+    if (vpMotorPct) vpMotorPct.textContent = String(Math.round(motorN));
+    if (vpVehicleName) vpVehicleName.textContent = data.vehicleName || "—";
+    if (vpPlateLine) vpPlateLine.textContent = data.plate || "—";
     if (vpHazardToggle) {
       vpHazardToggle.classList.toggle("on", !!data.hazard);
       vpHazardToggle.setAttribute("aria-pressed", data.hazard ? "true" : "false");
     }
-    document.querySelectorAll(".vp-act").forEach((btn) => {
+    document.querySelectorAll(".vp-ios-q").forEach((btn) => {
       const act = btn.getAttribute("data-act");
-      btn.classList.remove("vp-act-on");
-      if (act === "engine" && data.engineOn) btn.classList.add("vp-act-on");
-      if (act === "lights" && data.headlightsOn) btn.classList.add("vp-act-on");
-      if (act === "interior" && data.interiorLight) btn.classList.add("vp-act-on");
-      if (act === "lock" && data.locked) btn.classList.add("vp-act-on");
+      btn.classList.remove("on");
+      if (act === "lock" && data.locked) btn.classList.add("on");
+      if (act === "interior" && data.interiorLight) btn.classList.add("on");
+    });
+    document.querySelectorAll(".vp-ios-power").forEach((btn) => {
+      btn.classList.toggle("on", !!data.engineOn);
     });
     if (Array.isArray(data.doors)) {
       data.doors.forEach((d) => {
@@ -369,7 +380,10 @@ window.addEventListener("message", (event) => {
         if (!el) return;
         el.classList.toggle("state-open", !!d.open);
         el.classList.toggle("state-unlocked", !data.locked);
-        el.textContent = d.open ? "▢" : data.locked ? "●" : "○";
+        let lab = "Door";
+        if (d.idx === 4) lab = "Hood";
+        else if (d.idx === 5) lab = "Baggage";
+        el.textContent = d.open ? `${lab} *` : lab;
       });
     }
     return;
@@ -488,10 +502,15 @@ if (vpBtnClose) {
   });
 }
 
-document.querySelectorAll(".vp-act").forEach((btn) => {
+document.querySelectorAll(".vp-ios-q, .vp-ios-power").forEach((btn) => {
   btn.addEventListener("click", () => {
     const act = btn.getAttribute("data-act");
-    if (act) nuiPost("vehiclePanel:action", { action: act });
+    if (!act) return;
+    if (act === "doorFlip") {
+      nuiPost("vehiclePanel:action", { action: "door", doorIndex: 0 });
+      return;
+    }
+    nuiPost("vehiclePanel:action", { action: act });
   });
 });
 
@@ -499,6 +518,13 @@ document.querySelectorAll(".vp-door").forEach((btn) => {
   btn.addEventListener("click", () => {
     const d = btn.getAttribute("data-door");
     nuiPost("vehiclePanel:action", { action: "door", doorIndex: Number(d) });
+  });
+});
+
+document.querySelectorAll(".vp-win").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const w = btn.getAttribute("data-window");
+    nuiPost("vehiclePanel:action", { action: "window", windowIndex: Number(w) });
   });
 });
 

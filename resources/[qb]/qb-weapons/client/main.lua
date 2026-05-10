@@ -16,6 +16,21 @@ local AmmoItemByType = {
     AMMO_SNIPER = { 'snp_ammo' },
 }
 
+--- QB dažnai atnaujina inventorių — skaitom iš core (pickAmmoItemForType naudoja prieš pilną PlayerData snapshot).
+local function getTotalAmmoItems(itemName)
+    if not itemName then return 0 end
+    local pd = QBCore.Functions.GetPlayerData()
+    local items = pd and pd.items or nil
+    if not items then return 0 end
+    local total = 0
+    for _, item in pairs(items) do
+        if item and item.name == itemName then
+            total = total + (tonumber(item.amount) or 0)
+        end
+    end
+    return total
+end
+
 local function pickAmmoItemForType(ammoType)
     local list = AmmoItemByType[tostring(ammoType or ''):upper()]
     if type(list) ~= 'table' then return nil end
@@ -62,19 +77,6 @@ local function resolveCurrentWeaponDataByName(weaponName)
         end
     end
     return nil
-end
-
-local function getTotalAmmoItems(itemName)
-    if not itemName then return 0 end
-    local items = getItemsFromCore()
-    if not items then return 0 end
-    local total = 0
-    for _, item in pairs(items) do
-        if item and item.name == itemName then
-            total = total + (tonumber(item.amount) or 0)
-        end
-    end
-    return total
 end
 
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()

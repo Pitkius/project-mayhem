@@ -22,8 +22,8 @@ local TILE_COLORS = {
     amber = { health = '#ef4444', armor = '#d8b4fe', hunger = '#fbbf24', thirst = '#38bdf8', stamina = '#fbcfe8' },
 }
 
---- Transporto valdymo panelė (NUI) – atskiras akcentas kaip ref. nuotraukoje.
-local VEHICLE_PANEL_ACCENT = '#c5ff3d'
+--- Transporto valdymo panelė (NUI) – iOS stiliaus violetinis akcentas.
+local VEHICLE_PANEL_ACCENT = '#a78bfa'
 
 local vehiclePanelOpen = false
 local interiorLightByNetId = {}
@@ -33,6 +33,8 @@ local lockStateByPlate = {}
 local engineStartBusy = false
 local displayStamina = 100.0
 local hazardEnabled = false
+--- Langų būsena transporto panelei (RollDown / RollUp)
+local vehicleWindowDown = {}
 
 local function deepCopy(tbl)
     local out = {}
@@ -43,15 +45,16 @@ local function deepCopy(tbl)
 end
 
 local DEFAULT_PRESET = {
-    style = 'dots',
+    --- Vertikalūs kvadratai (refs. nuotr.) – kairėje virš mini-map
+    style = 'tiles',
     color = 'violet',
     alpha = 0.55,
     show = {
         health = true,
+        armor = true,
+        stamina = true,
         hunger = true,
         thirst = true,
-        armor = false,
-        stamina = true,
         speed = false,
         fuel = false,
         seatbelt = false
@@ -407,6 +410,12 @@ local function pushVehiclePanelState()
     end
 
     local fuel = clamp(math.floor(GetVehicleFuelLevel(veh) + 0.5), 0, 100)
+    local vehModel = GetEntityModel(veh)
+    local dispHash = GetDisplayNameFromVehicleModel(vehModel)
+    local vehLabel = dispHash and dispHash ~= '' and GetLabelText(dispHash) or 'Vehicle'
+    if vehLabel == 'NULL' or vehLabel == '' then vehLabel = 'Vehicle' end
+    local plate = (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
+    local motorPct = clamp(math.floor((eh / 1000.0) * 100.0 + 0.5), 0, 100)
 
     SendNUIMessage({
         action = 'vehiclePanel',
@@ -423,6 +432,9 @@ local function pushVehiclePanelState()
         headlightsOn = lightsOn,
         highBeams = highBeams,
         fuel = fuel,
+        motorPct = motorPct,
+        vehicleName = vehLabel,
+        plate = plate,
         timeStr = ('%02d:%02d'):format(GetClockHours(), GetClockMinutes()),
     })
 end
@@ -513,8 +525,25 @@ RegisterNUICallback('vehiclePanel:action', function(data, cb)
         else
             SetVehicleDoorOpen(veh, idx, false, false)
         end
+    elseif action == 'window' then
+        local win = tonumber(data.windowIndex)
+        if win == nil or win < 0 or win > 7 then
+            cb({ ok = false })
+            return
+        end
+        local nid = NetworkGetNetworkIdFromEntity(veh)
+        local key = ('%s:%s'):format(nid, win)
+        local down = vehicleWindowDown[key] == true
+        vehicleWindowDown[key] = not down
+        if vehicleWindowDown[key] then
+            pcall(RollDownWindow, veh, win)
+        else
+            pcall(RollUpWindow, veh, win)
+        end
     elseif action == 'seat' then
         TaskShuffleToNextVehicleSeat(ped)
+    elseif action == 'keys' then
+        QBCore.Functions.Notify('Raktai: naudok savo serverio raktų sistemą (QB vehiclekeys ir pan.).', 'primary', 4500)
     end
 
     if vehiclePanelOpen then

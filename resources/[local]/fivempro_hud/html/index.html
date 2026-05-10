@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div id="hudBrCluster" class="hud-br-cluster">
+    <div id="hudBlCluster" class="hud-bl-cluster">
     <div id="hudRoot" class="hud-root">
         <div id="hudBars" class="hud-bars">
             <div id="row-health" class="bar">
@@ -98,14 +98,14 @@
                 </div>
                 <span id="tile-pct-health" class="tile-pct">100</span>
             </div>
-            <div id="tile-wrap-armor" class="tile-item hidden">
+            <div id="tile-wrap-armor" class="tile-item">
                 <div class="tile-box">
                     <div id="tile-fill-armor" class="tile-fill"></div>
                     <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="tile-icon-svg"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l6 2.67v4.47c0 4.52-3.1 8.73-6 9.81-2.9-1.08-6-5.29-6-9.81V5.85l6-2.67z"/></svg></span>
                 </div>
                 <span id="tile-pct-armor" class="tile-pct">0</span>
             </div>
-            <div id="tile-wrap-stamina" class="tile-item hidden">
+            <div id="tile-wrap-stamina" class="tile-item">
                 <div class="tile-box">
                     <div id="tile-fill-stamina" class="tile-fill"></div>
                     <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="tile-icon-svg"><path fill="currentColor" d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg></span>
@@ -128,7 +128,9 @@
             </div>
         </div>
     </div>
+    </div>
 
+    <div id="hudBrCluster" class="hud-br-cluster">
     <div id="carhud" class="carhud carhud-sport hidden">
         <div class="car-sport-inner">
             <div class="car-mini-vitals">
@@ -180,60 +182,81 @@
     </div>
 
     <div id="vehiclePanel" class="vehicle-panel hidden">
-        <div class="vp-shell">
-            <aside class="vp-rail">
-                <div id="vpClock" class="vp-clock">00:00</div>
-                <div class="vp-rail-icons">
-                    <span class="vp-rail-ico muted" title="Transportas">🚗</span>
-                    <span class="vp-rail-ico muted" title="Muzika">♪</span>
-                    <span class="vp-rail-ico muted" title="Šarvai">🛡</span>
-                </div>
-                <button type="button" class="vp-rail-power" id="vpBtnClose" title="Uždaryti">⏻</button>
-            </aside>
-            <div class="vp-main">
-                <div class="vp-top">
-                    <div class="vp-weather"><span id="vpWeather">CLEAR</span></div>
-                    <div class="vp-car-zone">
-                        <div class="vp-car-silhouette" aria-hidden="true"></div>
-                        <button type="button" class="vp-door vp-door-0" data-door="0" title="Durys FL">🔒</button>
-                        <button type="button" class="vp-door vp-door-1" data-door="1" title="Durys FR">🔒</button>
-                        <button type="button" class="vp-door vp-door-2" data-door="2" title="Durys RL">🔒</button>
-                        <button type="button" class="vp-door vp-door-3" data-door="3" title="Durys RR">🔒</button>
-                        <button type="button" class="vp-door vp-door-4" data-door="4" title="Kapotas">🔒</button>
-                        <button type="button" class="vp-door vp-door-5" data-door="5" title="Bagažinė">🔒</button>
-                    </div>
-                    <div class="vp-fuel-bar">
-                        <div id="vpFuelFill" class="vp-fuel-fill"></div>
-                    </div>
-                </div>
-                <div class="vp-actions">
-                    <button type="button" class="vp-act" data-act="lock"><span class="vp-act-ico">🔐</span><span>Rakinimas</span></button>
-                    <button type="button" class="vp-act" data-act="seat"><span class="vp-act-ico">💺</span><span>Sėdynė</span></button>
-                    <button type="button" class="vp-act" data-act="engine"><span class="vp-act-ico">⚙</span><span>Variklis</span></button>
-                    <button type="button" class="vp-act" data-act="interior"><span class="vp-act-ico">☀</span><span>Salonas</span></button>
-                    <button type="button" class="vp-act" data-act="lights"><span class="vp-act-ico">💡</span><span>Šviesos</span></button>
-                </div>
-                <div class="vp-bottom">
-                    <div class="vp-panel">
-                        <span class="vp-panel-ico">📍</span>
+        <div class="vp-ios-backdrop"></div>
+        <div class="vp-ios-shell">
+            <button type="button" class="vp-ios-close" id="vpBtnClose" title="Uždaryti">×</button>
+            <div class="vp-ios-head">
+                <span id="vpClock" class="vp-ios-time">00:00</span>
+                <span id="vpWeather" class="vp-ios-weather">CLEAR</span>
+            </div>
+            <div class="vp-ios-body">
+                <div class="vp-ios-col vp-ios-left">
+                    <div class="vp-ios-card">
+                        <span class="vp-ios-card-ico" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 17a2 2 0 002 2h10a2 2 0 002-2v-5H5v5z"/><path d="M16 5l1 2h3v4h-2M8 5L7 7H4v4h2"/><path d="M7 7h10"/></svg>
+                        </span>
                         <div>
-                            <div id="vpStreet" class="vp-panel-title">—</div>
-                            <div id="vpWaypoint" class="vp-panel-sub">—</div>
+                            <div class="vp-ios-card-label">Car</div>
+                            <div id="vpVehicleName" class="vp-ios-card-val">—</div>
                         </div>
                     </div>
-                    <div class="vp-panel">
-                        <span class="vp-panel-ico">🌡</span>
+                    <div class="vp-ios-card">
+                        <span class="vp-ios-card-ico" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
+                        </span>
                         <div>
-                            <div class="vp-panel-title">Variklis</div>
-                            <div id="vpEngineTemp" class="vp-panel-sub">—</div>
+                            <div class="vp-ios-card-label">Plate</div>
+                            <div id="vpPlateLine" class="vp-ios-card-val">—</div>
                         </div>
                     </div>
-                    <div class="vp-panel vp-panel-hazard">
-                        <span class="vp-panel-ico vp-hazard-ico">◆</span>
-                        <div class="vp-hazard-row">
-                            <span>Avariniai</span>
-                            <button type="button" class="vp-toggle" id="vpHazardToggle" aria-pressed="false"><span class="vp-toggle-knob"></span></button>
+                    <div class="vp-ios-meter">
+                        <span class="vp-ios-meter-ico" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10l2-6h12l2 6"/><path d="M6 10v8a2 2 0 002 2h8a2 2 0 002-2v-8"/><path d="M10 14h4"/></svg>
+                        </span>
+                        <span class="vp-ios-meter-label">Fuel</span>
+                        <div class="vp-ios-bar"><div id="vpFuelHFill" class="vp-ios-bar-fill"></div></div>
+                        <span id="vpFuelPct" class="vp-ios-meter-pct">0</span>
+                    </div>
+                    <div class="vp-ios-meter">
+                        <span class="vp-ios-meter-ico" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v4M8 7h8l-1 12H9L8 7z"/><path d="M10 14h4"/></svg>
+                        </span>
+                        <span class="vp-ios-meter-label">Motor</span>
+                        <div class="vp-ios-bar"><div id="vpMotorHFill" class="vp-ios-bar-fill vp-ios-bar-fill-alt"></div></div>
+                        <span id="vpMotorPct" class="vp-ios-meter-pct">100</span>
+                    </div>
+                    <div class="vp-ios-quick">
+                        <button type="button" class="vp-ios-q" data-act="doorFlip" title="Priekinės durys"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 4h12v16H6z"/><path d="M9 8h6"/></svg></span>Door</button>
+                        <button type="button" class="vp-ios-q" data-act="interior"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12h2M18 12h2"/></svg></span>Interior</button>
+                        <button type="button" class="vp-ios-q" data-act="lock"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="10" width="12" height="10" rx="1"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></span>Lock</button>
+                        <button type="button" class="vp-ios-q" data-act="keys"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="12" r="3"/><path d="M11 12h9v3h-3v3"/></svg></span>Keys</button>
+                        <button type="button" class="vp-ios-power" data-act="engine" title="Variklis"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg></button>
+                    </div>
+                    <div class="vp-ios-meta">
+                        <div><span class="vp-ios-meta-k">Gatvė</span><span id="vpStreet" class="vp-ios-meta-v">—</span></div>
+                        <div><span class="vp-ios-meta-k">Taškas</span><span id="vpWaypoint" class="vp-ios-meta-v">—</span></div>
+                        <div class="vp-ios-hazard-row"><span>Avariniai</span><button type="button" class="vp-ios-switch" id="vpHazardToggle"><span class="vp-ios-switch-knob"></span></button></div>
+                    </div>
+                </div>
+                <div class="vp-ios-col vp-ios-right">
+                    <div class="vp-ios-car-wrap">
+                        <button type="button" class="vp-door vp-ios-door vp-door-4" data-door="4">Hood</button>
+                        <button type="button" class="vp-door vp-ios-door vp-door-5" data-door="5">Baggage</button>
+                        <div class="vp-ios-car-svg" aria-hidden="true">
+                            <svg viewBox="0 0 120 220" width="100" height="185" fill="none">
+                                <rect x="38" y="12" width="44" height="196" rx="16" fill="rgba(255,255,255,0.92)" stroke="rgba(0,0,0,0.15)" stroke-width="2"/>
+                                <rect x="48" y="32" width="10" height="14" rx="2" fill="#222"/><rect x="62" y="32" width="10" height="14" rx="2" fill="#222"/>
+                                <rect x="48" y="168" width="10" height="14" rx="2" fill="#222"/><rect x="62" y="168" width="10" height="14" rx="2" fill="#222"/>
+                            </svg>
                         </div>
+                        <button type="button" class="vp-door vp-ios-door vp-door-0" data-door="0">Door</button>
+                        <button type="button" class="vp-door vp-ios-door vp-door-1" data-door="1">Door</button>
+                        <button type="button" class="vp-door vp-ios-door vp-door-2" data-door="2">Door</button>
+                        <button type="button" class="vp-door vp-ios-door vp-door-3" data-door="3">Door</button>
+                        <button type="button" class="vp-win" data-window="0">W</button>
+                        <button type="button" class="vp-win" data-window="1">W</button>
+                        <button type="button" class="vp-win" data-window="2">W</button>
+                        <button type="button" class="vp-win" data-window="3">W</button>
                     </div>
                 </div>
             </div>

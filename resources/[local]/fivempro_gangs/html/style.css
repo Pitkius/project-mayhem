@@ -307,9 +307,17 @@ select.color-select-native {
 
 .map-stage {
   flex: 1;
-  min-height: 0;
+  min-height: min(62vh, 560px);
   position: relative;
   background: var(--map-bg);
+}
+
+.leaflet-container .leaflet-image-layer img,
+.gangs-satellite-img {
+  max-width: none !important;
+  width: 100% !important;
+  height: auto !important;
+  image-rendering: auto;
 }
 
 .map-zoom-bar {
