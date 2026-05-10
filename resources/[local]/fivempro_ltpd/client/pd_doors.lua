@@ -98,6 +98,39 @@ local function groupIdExists(id)
     return false
 end
 
+local function findDoorGroupById(id)
+    for _, g in ipairs(doorGroups) do
+        if g.id == id then return g end
+    end
+    return nil
+end
+
+local function buildPdDoorProximityZones()
+    local zones = {}
+    for _, g in ipairs(doorGroups) do
+        if g.interact then
+            zones[#zones + 1] = { groupId = g.id, pos = g.interact, maxd = g.interactDist or 2.5 }
+        end
+    end
+    for _, ex in ipairs(Config.PdDoorInteractExtras or {}) do
+        if ex.groupId and ex.interact then
+            zones[#zones + 1] = { groupId = ex.groupId, pos = ex.interact, maxd = ex.interactDist or 2.5 }
+        end
+    end
+    return zones
+end
+
+local function pdDoorZoneIdleWaitMs(zones, pcoords)
+    local wm = 650
+    for _, z in ipairs(zones) do
+        if #(pcoords - z.pos) < z.maxd + 14.0 then
+            wm = 120
+            break
+        end
+    end
+    return wm
+end
+
 local function ensureDoorInSystem(dh, modelHash, x, y, z)
     local ok, reg = pcall(function()
         return IsDoorRegisteredWithSystem(dh)
@@ -298,36 +331,52 @@ end)
 local lastToggle = 0
 CreateThread(function()
     while true do
-        local waitMs = 650
         local ped = PlayerPedId()
         local pcoords = GetEntityCoords(ped)
-        local nearAny = false
+        local zones = buildPdDoorProximityZones()
+        local waitMs = pdDoorZoneIdleWaitMs(zones, pcoords)
 
-        for _, g in ipairs(doorGroups) do
-            local dist = #(pcoords - g.interact)
-            local maxd = g.interactDist or 2.5
-            if dist < maxd + 12.0 then
-                waitMs = 120
+        local bestByGroup = {}
+        local closestHit = nil
+
+        for _, z in ipairs(zones) do
+            local d = #(pcoords - z.pos)
+            if d <= z.maxd then
+                local prev = bestByGroup[z.groupId]
+                if not prev or d < prev.d then
+                    bestByGroup[z.groupId] = { d = d, z = z }
+                end
+                if not closestHit or d < closestHit.d then
+                    closestHit = { gid = z.groupId, d = d, z = z }
+                end
             end
-            if dist < maxd then
-                nearAny = true
-                waitMs = 0
-                if isPdOnDutyClient() then
-                    local locked = doorLocked[g.id] ~= false
-                    local iconPos = g.interact
-                    local best = 99999.0
-                    for _, slab in ipairs(g.slabs or {}) do
-                        local sd = #(pcoords - slab.coords)
-                        if sd < best then
-                            best = sd
-                            iconPos = slab.coords
+        end
+
+        if next(bestByGroup) then
+            waitMs = 0
+            if isPdOnDutyClient() then
+                for gid, hit in pairs(bestByGroup) do
+                    local g = findDoorGroupById(gid)
+                    if g then
+                        local locked = doorLocked[g.id] ~= false
+                        local iconPos = hit.z.pos
+                        local best = 99999.0
+                        for _, slab in ipairs(g.slabs or {}) do
+                            local sd = #(pcoords - slab.coords)
+                            if sd < best then
+                                best = sd
+                                iconPos = slab.coords
+                            end
                         end
+                        drawPdDoorLock(iconPos.x, iconPos.y, iconPos.z, locked)
                     end
-                    drawPdDoorLock(iconPos.x, iconPos.y, iconPos.z, locked)
-                    if IsControlJustPressed(0, 38) then
-                        local now = GetGameTimer()
-                        if now - lastToggle > 650 then
-                            lastToggle = now
+                end
+                if closestHit and IsControlJustPressed(0, 38) then
+                    local now = GetGameTimer()
+                    if now - lastToggle > 650 then
+                        lastToggle = now
+                        local g = findDoorGroupById(closestHit.gid)
+                        if g then
                             TriggerServerEvent('fivempro_ltpd:server:togglePdDoorGroup', g.id)
                         end
                     end
@@ -335,11 +384,7 @@ CreateThread(function()
             end
         end
 
-        if nearAny then
-            Wait(waitMs)
-        else
-            Wait(waitMs)
-        end
+        Wait(waitMs)
     end
 end)
 

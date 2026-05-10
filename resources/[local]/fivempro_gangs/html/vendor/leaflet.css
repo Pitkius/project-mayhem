@@ -356,13 +356,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	border-radius: 5px;
 	}
 .leaflet-control-layers-toggle {
-	background-image: url(images/layers.png);
 	width: 36px;
 	height: 36px;
+	background-image: linear-gradient(rgba(0, 0, 0, 0.06), transparent);
+	background-size: auto;
+	border-radius: 4px;
 	}
 .leaflet-retina .leaflet-control-layers-toggle {
-	background-image: url(images/layers-2x.png);
-	background-size: 26px 26px;
+	background-size: auto;
 	}
 .leaflet-touch .leaflet-control-layers-toggle {
 	width: 44px;
@@ -403,8 +404,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	}
 
 /* Default icon URLs */
-.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
-	background-image: url(images/marker-icon.png);
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default — NUI: kelias kraunamas iš app.js */
+	background-image: none;
 	}
 
 

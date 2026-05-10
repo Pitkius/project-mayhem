@@ -351,6 +351,15 @@ Config.PdDoorGroups = {
     },
 }
 
+--- Papildomi E taškai toms pačioms `PdDoorGroups` (be dubliavimo slabų) – Gabz MRPD.
+Config.PdDoorInteractExtras = {
+    { groupId = 'ls_mrpd_side', interact = vector3(441.28, -986.51, 30.71), interactDist = 3.2 },
+    { groupId = 'ls_mrpd_reception', interact = vector3(441.39, -977.68, 30.79), interactDist = 3.2 },
+    { groupId = 'ls_mrpd_reception', interact = vector3(457.03, -971.67, 30.71), interactDist = 3.2 },
+    { groupId = 'ls_mrpd_front_gate', interact = vector3(409.83, -1020.23, 29.36), interactDist = 4.25 },
+    { groupId = 'ls_mrpd_front_gate', interact = vector3(410.09, -1028.45, 29.40), interactDist = 4.25 },
+}
+
 --- Automatinis durų radimas (objektai žemėlapyje pagal modelį ir dėžę) – Gabz Sandy / Paleto MLO
 Config.PdDoorDynamics = {
     {

@@ -14,7 +14,7 @@ body {
   margin: 0;
   background: transparent;
   color: var(--fp-text);
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: "Noto Sans", "Segoe UI", system-ui, sans-serif;
 }
 
 .hidden { display: none !important; }
@@ -342,11 +342,13 @@ select.color-select-native {
   background: var(--map-bg);
 }
 
+/*
+ Leaflet pats nustato imageOverlay matmenis – `width:100%!important` sulaužo CRS.Simple
+ ir žemėlapis lieka mažu „gabaliuku“ / neteisingai sugula su turfais.
+*/
 .leaflet-container .leaflet-image-layer img,
 .gangs-satellite-img {
   max-width: none !important;
-  width: 100% !important;
-  height: auto !important;
   image-rendering: auto;
 }
 
@@ -426,6 +428,7 @@ select.color-select-native {
     radial-gradient(ellipse at 50% 42%, rgba(91, 33, 182, 0.14), transparent 62%);
   background-size: 44px 44px, 44px 44px, auto;
   mix-blend-mode: screen;
+  opacity: 0.45;
 }
 
 .leaflet-overlay-pane path {

@@ -744,7 +744,22 @@ local function dynDoorModelWhitelist(dyn)
     return t
 end
 
+local function pdDoorInteractAnchorsByGroup()
+    local m = {}
+    for _, row in ipairs(Config.PdDoorInteractExtras or {}) do
+        local gid = row.groupId
+        local c = row.interact
+        if gid and c then
+            m[gid] = m[gid] or {}
+            local t = m[gid]
+            t[#t + 1] = { coords = c, interactDist = row.interactDist or 2.5 }
+        end
+    end
+    return m
+end
+
 local function initManualPdDoors()
+    local anchors = pdDoorInteractAnchorsByGroup()
     for _, g in ipairs(Config.PdDoorGroups or {}) do
         local slabs = {}
         for _, d in ipairs(g.doors or {}) do
@@ -762,6 +777,7 @@ local function initManualPdDoors()
             slabs = slabs,
             interact = interact,
             interactDist = g.interactDist or 2.5,
+            interactAnchors = anchors[g.id] or {},
         }
         if LtpdPdDoorLocked[g.id] == nil then
             LtpdPdDoorLocked[g.id] = g.defaultLocked ~= false
@@ -805,6 +821,7 @@ RegisterNetEvent('fivempro_ltpd:server:registerPdDynDoorGroup', function(groupId
         slabs = slabs,
         interact = vector3(tonumber(cx) or 0.0, tonumber(cy) or 0.0, tonumber(cz) or 0.0),
         interactDist = tonumber(interactDist) or 2.5,
+        interactAnchors = {},
     }
     if LtpdPdDoorLocked[groupId] == nil then
         LtpdPdDoorLocked[groupId] = true
@@ -841,6 +858,15 @@ RegisterNetEvent('fivempro_ltpd:server:togglePdDoorGroup', function(groupId)
     if not ok and meta.interact then
         if #(pc - meta.interact) <= (meta.interactDist or 2.5) + 1.45 then
             ok = true
+        end
+    end
+    if not ok and type(meta.interactAnchors) == 'table' then
+        for _, anch in ipairs(meta.interactAnchors) do
+            local ac = anch.coords
+            if ac and #(pc - ac) <= (anch.interactDist or 2.5) + 1.45 then
+                ok = true
+                break
+            end
         end
     end
     if not ok then

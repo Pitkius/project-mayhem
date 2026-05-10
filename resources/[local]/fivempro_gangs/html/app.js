@@ -118,6 +118,14 @@ function renderTurfsOnMap(state) {
   destroyTurfMap();
   if (typeof L === "undefined") return;
 
+  if (L.Icon && L.Icon.Default) {
+    L.Icon.Default.mergeOptions({
+      iconUrl: nuiImageUrl("html/vendor/images/marker-icon.png"),
+      iconRetinaUrl: nuiImageUrl("html/vendor/images/marker-icon-2x.png"),
+      shadowUrl: nuiImageUrl("html/vendor/images/marker-shadow.png"),
+    });
+  }
+
   mapCfg = normalizeMapConfig(state);
   const bounds = [
     [0, 0],

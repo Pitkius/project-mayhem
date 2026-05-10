@@ -54,7 +54,14 @@ end
 local function vehicleSupportsNativeEmergency(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     local hash = GetEntityModel(vehicle)
-    if IsThisModelEmergencyVehicle(hash) then return true end
+    -- Kai kuriuose artefaktuose native neeksportuotas – nekrentam į nil call.
+    for _, name in ipairs({ 'IsThisModelEmergencyVehicle', 'IsThisModelAnEmergencyVehicle' }) do
+        local fn = rawget(_G, name)
+        if type(fn) == 'function' then
+            local ok, r = pcall(fn, hash)
+            if ok and r then return true end
+        end
+    end
     if GetVehicleClass(vehicle) == 18 then return true end
     return modelIsFleet(hash)
 end
