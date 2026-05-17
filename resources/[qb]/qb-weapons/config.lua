@@ -10,13 +10,13 @@ Config.ReloadTime = math.random(4000, 6000)
   RecoilHorizontalSpread – atsitiktinis krypties „išsisklaidymas“ (0–1, ~0.4–0.5 RP).
   RecoilPitchVariance – papildomas vertikalus jitter kiekvienam šūviui.
 ]]
-Config.RecoilMultiplier = 6.75
-Config.RecoilBaseScale = 1.28
-Config.RecoilShakeAmplitude = 1.22
+Config.RecoilMultiplier = 6.1
+Config.RecoilBaseScale = 1.16
+Config.RecoilShakeAmplitude = 1.14
 Config.RecoilHorizontalSpread = 0.48
-Config.RecoilPitchVariance = 0.11
+Config.RecoilPitchVariance = 0.095
 --- Jei ginklas recoils lentelėje turi 0 arba beveik 0 – vis tiek šiek tiek spyris (ne „lazeris“).
-Config.RecoilMinimumBase = 0.22
+Config.RecoilMinimumBase = 0.20
 
 Config.DurabilityBlockedWeapons = {
     'weapon_stungun',

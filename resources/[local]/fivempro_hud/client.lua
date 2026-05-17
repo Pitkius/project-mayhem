@@ -221,9 +221,13 @@ local function pushHud()
     end
 
     local rawStam = GetPlayerSprintStaminaRemaining(PlayerId())
-    if type(rawStam) ~= 'number' then rawStam = 100.0 end
+    if type(rawStam) ~= 'number' then rawStam = 0.0 end
+    if rawStam >= 0.0 and rawStam <= 1.0 then
+        rawStam = rawStam * 100.0
+    end
     rawStam = clamp(rawStam, 0.0, 100.0)
-    displayStamina = displayStamina + (rawStam - displayStamina) * 0.14
+    local staminaRemaining = 100.0 - rawStam
+    displayStamina = displayStamina + (staminaRemaining - displayStamina) * 0.14
     local staminaSmooth = clamp(math.floor(displayStamina + 0.5), 0, 100)
 
     local s = currentSettings()

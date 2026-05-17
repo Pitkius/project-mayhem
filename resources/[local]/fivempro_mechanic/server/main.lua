@@ -143,6 +143,28 @@ local PerfKitByModType = {
     [16] = 'armor_kit',
 }
 
+local function requiredUpgradeItem(modType, targetLevel)
+    modType = tonumber(modType)
+    targetLevel = tonumber(targetLevel)
+    if targetLevel == nil or targetLevel < 0 then return nil end
+
+    local tiered = Config.TuningUpgradeItems and Config.TuningUpgradeItems[modType]
+    if tiered then
+        if tiered.item then return tiered.item end
+        if tiered.prefix and tiered.maxLevel then
+            local lvl = targetLevel + 1
+            if lvl >= 1 and lvl <= tiered.maxLevel then
+                return ('%s_%d'):format(tiered.prefix, lvl)
+            end
+        end
+    end
+
+    local legacy = PerfKitByModType[modType]
+    if legacy and targetLevel >= 0 then return legacy end
+    if modType == 18 and targetLevel >= 0 then return 'turbo_kit' end
+    return nil
+end
+
 QBCore.Functions.CreateCallback('fivempro_mechanic:server:canInstallUpgrade', function(src, cb, modType, targetLevel, bayIdx)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return cb({ ok = false, reason = 'Nerastas žaidėjas.' }) end
@@ -154,18 +176,13 @@ QBCore.Functions.CreateCallback('fivempro_mechanic:server:canInstallUpgrade', fu
         return cb({ ok = false, reason = 'Per toli nuo remonto zonos.' })
     end
 
-    local item = nil
-    if tonumber(modType) == 18 then
-        item = 'turbo_kit'
-    else
-        item = PerfKitByModType[tonumber(modType)]
-    end
-    if not item then
+    targetLevel = tonumber(targetLevel) or -1
+    if targetLevel < 0 then
         return cb({ ok = true })
     end
 
-    targetLevel = tonumber(targetLevel) or -1
-    if targetLevel < 0 then
+    local item = requiredUpgradeItem(modType, targetLevel)
+    if not item then
         return cb({ ok = true })
     end
 

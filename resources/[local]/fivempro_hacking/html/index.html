@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hack OS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="tablet" class="panel hidden">
+    <header class="head">
+      <h1>Hack<span>OS</span></h1>
+      <button type="button" id="btnClose" class="btn">×</button>
+    </header>
+    <nav class="tabs">
+      <button type="button" data-tab="sys" class="tab active">System</button>
+      <button type="button" data-tab="storage" class="tab">Storage</button>
+      <button type="button" data-tab="exploits" class="tab">Exploits</button>
+      <button type="button" data-tab="network" class="tab">Network</button>
+    </nav>
+    <main>
+      <section id="tab-sys" class="tab-panel">
+        <div id="sysInfo" class="card"></div>
+      </section>
+      <section id="tab-storage" class="tab-panel hidden">
+        <p class="muted">Įdiek OS ar exploit iš flashdrive (inventory slot nr.).</p>
+        <label>Flashdrive slot <input type="number" id="driveSlot" min="1" max="50" value="1" /></label>
+        <button type="button" id="btnInstall" class="btn primary">Install payload</button>
+        <div id="storageInfo" class="card"></div>
+      </section>
+      <section id="tab-exploits" class="tab-panel hidden">
+        <div id="exploitList" class="list"></div>
+      </section>
+      <section id="tab-network" class="tab-panel hidden">
+        <div id="tierList" class="list"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="hack" class="panel hack hidden">
+    <div class="hack-head">INTRUSION <span id="hackTimer">0.0s</span></div>
+    <p id="hackHint" class="muted">Spausk langelius teisinga tvarka</p>
+    <div id="hackGrid" class="hack-grid"></div>
+    <button type="button" id="hackCancel" class="btn danger">Abort</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

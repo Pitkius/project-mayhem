@@ -2,6 +2,9 @@ const app = document.getElementById('app');
 const btnClose = document.getElementById('btnClose');
 let dispatchPoll = null;
 const MAP_BOUNDS = { minX: -4500, maxX: 4500, minY: -4500, maxY: 9000 };
+const MAP_IMG_W = 1066;
+const MAP_IMG_H = 861;
+const MAP_SAT_URL = 'nui://fivempro_ltpd/html/mdt/asset/gtav_satellite.jpg';
 
 function resourceName() {
   try {
@@ -26,6 +29,10 @@ window.addEventListener('message', (e) => {
     const perms = (d.data && d.data.permissions) || {};
     document.getElementById('tabFine').style.display = perms.fine ? '' : 'none';
     document.getElementById('tabWant').style.display = perms.wanted ? '' : 'none';
+    const tabArrests = document.getElementById('tabArrests');
+    if (tabArrests) tabArrests.style.display = perms.arrest ? '' : 'none';
+    document.getElementById('tabCctv').style.display = perms.cctv ? '' : 'none';
+    document.getElementById('tabBodycam').style.display = perms.bodycam ? '' : 'none';
     const sel = document.getElementById('finePreset');
     sel.innerHTML = '';
     (d.data.presets || []).forEach((p) => {
@@ -47,6 +54,18 @@ window.addEventListener('message', (e) => {
   if (d.action === 'close') {
     app.classList.add('hidden');
     stopDispatchPoll();
+    stopSurveillanceUi();
+  }
+  if (d.action === 'cctvOverlay') {
+    setSurveillanceOverlay(d.active, d.label || 'CCTV LIVE', d.audio ? 'Garsas įjungtas' : 'Be garso');
+    document.getElementById('cctvLiveHint').classList.toggle('hidden', !d.active);
+    if (d.active && d.label) {
+      document.getElementById('cctvStatus').textContent = d.label;
+    }
+  }
+  if (d.action === 'bodycamOverlay') {
+    setSurveillanceOverlay(d.active, 'BODYCAM LIVE', d.targetId ? `ID ${d.targetId}` : '');
+    document.getElementById('bodycamLiveHint').classList.toggle('hidden', !d.active);
   }
 });
 
@@ -69,8 +88,17 @@ document.querySelectorAll('.tab').forEach((t) => {
     if (pan) pan.classList.remove('hidden');
     if (t.dataset.tab === 'units') {
       dispatchMapPan = { x: 0, y: 0, scale: 1 };
+      ensureDispatchMapDom();
+      layoutDispatchMapCanvas();
       applyDispatchMapTransform();
       refreshDispatch();
+    }
+    if (t.dataset.tab === 'cctv') refreshCctvList();
+    if (t.dataset.tab === 'bodycam') refreshBodycamList();
+    if (t.dataset.tab !== 'cctv' && t.dataset.tab !== 'bodycam') {
+      nuiPost('cctvStop', {});
+      nuiPost('bodycamStop', {});
+      stopSurveillanceUi();
     }
   };
 });
@@ -153,6 +181,54 @@ document.getElementById('goWant').onclick = () => {
   });
 };
 
+function renderArrestHistory(res) {
+  const el = document.getElementById('arrestResults');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!res || !res.ok || !res.rows || !res.rows.length) {
+    el.innerHTML = '<div class="muted">Areštų istorijos nėra.</div>';
+    return;
+  }
+  res.rows.forEach((a) => {
+    const c = document.createElement('div');
+    c.className = 'card';
+    c.innerHTML = `<h4>${escapeHtml(a.created_at || '')}</h4>
+      <div><strong>Priežastis:</strong> ${escapeHtml(a.reason || '—')}</div>
+      <div><strong>Bausmė:</strong> ${escapeHtml(a.sentence || '—')}</div>
+      <div class="muted">Pareigūnas: ${escapeHtml(a.officer_name || a.officer_citizenid || '—')}</div>
+      ${a.detail_notes ? `<div>${escapeHtml(a.detail_notes)}</div>` : ''}`;
+    el.appendChild(c);
+  });
+}
+
+const arrestLoad = document.getElementById('arrestLoad');
+if (arrestLoad) {
+  arrestLoad.onclick = () => {
+    const cid = document.getElementById('arrestCid').value.trim();
+    if (!cid) return;
+    nuiPost('getArrestHistory', { citizenid: cid }).then(renderArrestHistory);
+  };
+}
+
+const arrestSave = document.getElementById('arrestSave');
+if (arrestSave) {
+  arrestSave.onclick = () => {
+    const citizenid = document.getElementById('arrestCid').value.trim();
+    if (!citizenid) return;
+    nuiPost('addArrest', {
+      citizenid,
+      reason: document.getElementById('arrestReason').value.trim(),
+      sentence: document.getElementById('arrestSentence').value.trim(),
+      notes: document.getElementById('arrestNotes').value.trim(),
+    }).then((res) => {
+      if (res && res.ok) {
+        document.getElementById('arrestNotes').value = '';
+        nuiPost('getArrestHistory', { citizenid }).then(renderArrestHistory);
+      }
+    });
+  };
+}
+
 function stopDispatchPoll() {
   if (dispatchPoll) {
     clearInterval(dispatchPoll);
@@ -205,10 +281,62 @@ function worldToMap(x, y) {
 let dispatchMapPan = { x: 0, y: 0, scale: 1 };
 let dispatchMapInteractBound = false;
 
+function ensureDispatchMapDom() {
+  const transform = document.getElementById('dispatchMapTransform');
+  if (!transform || document.getElementById('dispatchMapCanvas')) return;
+
+  let markers = document.getElementById('dispatchMapMarkers');
+  const inner = document.getElementById('dispatchMapInner');
+  const canvas = document.createElement('d' + 'iv');
+  canvas.id = 'dispatchMapCanvas';
+  canvas.className = 'dispatch-map-canvas';
+
+  const img = document.createElement('img');
+  img.id = 'dispatchMapImg';
+  img.className = 'dispatch-map-img';
+  img.src = MAP_SAT_URL;
+  img.alt = '';
+  img.draggable = false;
+
+  if (inner) {
+    inner.remove();
+  }
+  if (!markers) {
+    markers = document.createElement('d' + 'iv');
+    markers.id = 'dispatchMapMarkers';
+    markers.className = 'dispatch-map-markers';
+  } else {
+    markers.remove();
+  }
+
+  canvas.appendChild(img);
+  canvas.appendChild(markers);
+  transform.appendChild(canvas);
+}
+
+function layoutDispatchMapCanvas() {
+  const root = document.getElementById('dispatchMap');
+  const canvas = document.getElementById('dispatchMapCanvas');
+  const img = document.getElementById('dispatchMapImg');
+  if (!root || !canvas || !img) return;
+
+  const cw = Math.max(1, root.clientWidth);
+  const ch = Math.max(1, root.clientHeight);
+  const cover = Math.max(cw / MAP_IMG_W, ch / MAP_IMG_H);
+  const pad = 2.25;
+  const w = MAP_IMG_W * cover * pad;
+  const h = MAP_IMG_H * cover * pad;
+  canvas.style.width = `${w}px`;
+  canvas.style.height = `${h}px`;
+  img.style.width = '100%';
+  img.style.height = '100%';
+  img.style.objectFit = 'fill';
+}
+
 function applyDispatchMapTransform() {
   const layer = document.getElementById('dispatchMapTransform');
   if (!layer) return;
-  layer.style.transform = `translate(${dispatchMapPan.x}px, ${dispatchMapPan.y}px) scale(${dispatchMapPan.scale})`;
+  layer.style.transform = `translate(calc(-50% + ${dispatchMapPan.x}px), calc(-50% + ${dispatchMapPan.y}px)) scale(${dispatchMapPan.scale})`;
 }
 
 function bindDispatchMapInteract() {
@@ -255,6 +383,8 @@ function bindDispatchMapInteract() {
 }
 
 function renderDispatchMap(calls, units) {
+  ensureDispatchMapDom();
+  layoutDispatchMapCanvas();
   const markers = document.getElementById('dispatchMapMarkers');
   if (!markers) return;
   markers.innerHTML = '';
@@ -377,9 +507,17 @@ function refreshDispatch() {
 document.getElementById('refreshDispatch').onclick = () => refreshDispatch();
 document.getElementById('refreshDispatchMap').onclick = () => {
   dispatchMapPan = { x: 0, y: 0, scale: 1 };
+  ensureDispatchMapDom();
+  layoutDispatchMapCanvas();
   applyDispatchMapTransform();
   refreshDispatch();
 };
+
+window.addEventListener('resize', () => {
+  if (!document.getElementById('panel-units')?.classList.contains('hidden')) {
+    layoutDispatchMapCanvas();
+  }
+});
 document.getElementById('btnCreateCrew').onclick = () => nuiPost('crewAction', { action: 'create', callsign: document.getElementById('crewCallsign').value.trim() }).then(refreshDispatch);
 document.getElementById('btnJoinCrew').onclick = () => nuiPost('crewAction', { action: 'join', crewId: document.getElementById('crewIdInput').value.trim() }).then(refreshDispatch);
 document.getElementById('btnAddCrewMember').onclick = () => nuiPost('crewAction', {
@@ -391,6 +529,139 @@ document.getElementById('btnDeleteCrew').onclick = () => nuiPost('crewAction', {
 document.getElementById('btnLeaveCrew').onclick = () => nuiPost('crewAction', { action: 'leave' }).then(refreshDispatch);
 document.getElementById('btnSetCallsign').onclick = () => nuiPost('crewAction', { action: 'setCallsign', callsign: document.getElementById('crewCallsign').value.trim() }).then(refreshDispatch);
 document.getElementById('btnPanic').onclick = () => nuiPost('crewAction', { action: 'panic' }).then(refreshDispatch);
+
+let cctvCameras = [];
+let selectedCctvId = null;
+let selectedBodycamId = null;
+
+function setSurveillanceOverlay(active, label, meta) {
+  const ov = document.getElementById('survOverlay');
+  document.body.classList.toggle('mdt-surveillance-live', !!active);
+  if (!ov) return;
+  ov.classList.toggle('hidden', !active);
+  document.getElementById('survOverlayLabel').textContent = label || 'LIVE';
+  document.getElementById('survOverlayMeta').textContent = meta || '';
+}
+
+function stopSurveillanceUi() {
+  setSurveillanceOverlay(false);
+  document.getElementById('cctvLiveHint')?.classList.add('hidden');
+  document.getElementById('bodycamLiveHint')?.classList.add('hidden');
+}
+
+function renderCctvList() {
+  const el = document.getElementById('cctvList');
+  const q = (document.getElementById('cctvSearch').value || '').trim().toLowerCase();
+  const zone = document.getElementById('cctvFilter').value;
+  el.innerHTML = '';
+  const rows = cctvCameras.filter((c) => {
+    if (zone && c.zone !== zone) return false;
+    if (q && !(c.label || '').toLowerCase().includes(q) && !(c.id || '').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if (!rows.length) {
+    el.innerHTML = '<div class="muted">Kamerų nerasta.</div>';
+    return;
+  }
+  rows.forEach((c) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'card surv-card' + (selectedCctvId === c.id ? ' selected' : '');
+    const st = c.online ? '<span class="badge ok">ONLINE</span>' : '<span class="badge off">OFFLINE</span>';
+    card.innerHTML = `<h4>${escapeHtml(c.label)}</h4><div class="muted">${escapeHtml(c.zoneLabel || c.zone)} • ${st}${c.audio ? ' • audio' : ''}</div>`;
+    card.onclick = () => {
+      selectedCctvId = c.id;
+      document.getElementById('cctvStatus').textContent = c.label + (c.online ? '' : ' (OFFLINE)');
+      renderCctvList();
+    };
+    el.appendChild(card);
+  });
+}
+
+function refreshCctvList() {
+  return nuiPost('cctvList', {}).then((res) => {
+    if (!res || !res.ok) return;
+    cctvCameras = res.cameras || [];
+    const sel = document.getElementById('cctvFilter');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Visos kategorijos</option>';
+    const cats = res.categories || {};
+    Object.keys(cats).forEach((k) => {
+      const o = document.createElement('option');
+      o.value = k;
+      o.textContent = cats[k] || k;
+      sel.appendChild(o);
+    });
+    sel.value = cur;
+    sel.onchange = renderCctvList;
+    document.getElementById('cctvSearch').oninput = renderCctvList;
+    renderCctvList();
+  });
+}
+
+document.getElementById('cctvRefresh').onclick = () => refreshCctvList();
+document.getElementById('cctvWatchBtn').onclick = () => {
+  if (!selectedCctvId) return;
+  const audio = document.getElementById('cctvAudio').checked;
+  nuiPost('cctvWatch', { camId: selectedCctvId }).then((res) => {
+    if (!res || !res.ok) {
+      document.getElementById('cctvStatus').textContent = (res && res.msg) || 'Nepavyko';
+      stopSurveillanceUi();
+      return;
+    }
+    nuiPost('cctvToggleAudio', { enabled: audio });
+  });
+};
+document.getElementById('cctvStopBtn').onclick = () => {
+  nuiPost('cctvStop', {}).then(() => stopSurveillanceUi());
+};
+document.getElementById('cctvAudio').onchange = (e) => {
+  nuiPost('cctvToggleAudio', { enabled: e.target.checked });
+};
+
+function renderBodycamList() {
+  const el = document.getElementById('bodycamList');
+  el.innerHTML = '';
+  return nuiPost('bodycamList', {}).then((res) => {
+    const feeds = (res && res.feeds) || [];
+    if (!feeds.length) {
+      el.innerHTML = '<div class="muted">Nėra aktyvių bodycam.</div>';
+      return;
+    }
+    feeds.forEach((f) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'card surv-card' + (selectedBodycamId === f.serverId ? ' selected' : '');
+      const crew = f.crew ? ` • ${escapeHtml(String(f.crew))}` : '';
+      const batt = f.battery != null ? ` • ${f.battery}%` : '';
+      card.innerHTML = `<h4>${escapeHtml(f.name)}</h4><div class="muted">ID ${f.serverId}${f.callsign ? ' • ' + escapeHtml(f.callsign) : ''}${crew}${batt}</div><span class="badge ok">LIVE</span>`;
+      card.onclick = () => {
+        selectedBodycamId = f.serverId;
+        document.getElementById('bodycamStatus').textContent = `${f.name} (ID ${f.serverId})`;
+        renderBodycamList();
+      };
+      el.appendChild(card);
+    });
+  });
+}
+
+function refreshBodycamList() {
+  return renderBodycamList();
+}
+
+document.getElementById('bodycamRefresh').onclick = () => refreshBodycamList();
+document.getElementById('bodycamWatchBtn').onclick = () => {
+  if (!selectedBodycamId) return;
+  nuiPost('bodycamWatch', { targetId: selectedBodycamId }).then((res) => {
+    if (!res || !res.ok) {
+      document.getElementById('bodycamStatus').textContent = (res && res.msg) || 'Nepavyko';
+      stopSurveillanceUi();
+    }
+  });
+};
+document.getElementById('bodycamStopBtn').onclick = () => {
+  nuiPost('bodycamStop', {}).then(() => stopSurveillanceUi());
+};
 
 function escapeHtml(s) {
   const d = document.createElement('div');

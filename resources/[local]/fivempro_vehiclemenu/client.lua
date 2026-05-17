@@ -190,7 +190,7 @@ CreateThread(function()
                 --- Smūgis + ≥120 KM/H („pikas“ per važiavimą): variklis užgesta — tiesiog smūgio kadrą greitis jau nukritęs
                 if (engineHit or bodyHit) and (peakSpeedKmhByNet[netId] or 0.0) >= STALL_AFTER_IMPACT_SPEED then
                     SetVehicleEngineOn(veh, false, true, true)
-                    QBCore.Functions.Notify(('Dėl smūgio važiuojant %d+ KM/H variklis užgeso.'):format(math.floor(STALL_AFTER_IMPACT_SPEED)), 'error')
+                    QBCore.Functions.Notify('Variklis užgeso.', 'error')
                     peakSpeedKmhByNet[netId] = spdNow
                 end
 

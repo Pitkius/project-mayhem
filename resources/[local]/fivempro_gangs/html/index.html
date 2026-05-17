@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="vendor/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -28,6 +27,7 @@
         <button type="button" class="tab-btn" data-tab="register" role="tab">Registracija</button>
         <button type="button" class="tab-btn" data-tab="gang" role="tab">Gauja</button>
         <button type="button" class="tab-btn" data-tab="map" role="tab">Žemėlapis</button>
+        <button type="button" class="tab-btn" data-tab="missions" role="tab" id="tabMissions">Misijos</button>
       </nav>
 
       <div class="tablet-body">
@@ -84,14 +84,34 @@
           </div>
         </section>
 
+        <section id="tabPanelMissions" class="tab-panel hidden" role="tabpanel">
+          <div class="rail-card">
+            <h3>Turf užėmimas</h3>
+            <p class="small muted">Užpildyk progresą iki <strong id="claimThresholdLbl">100</strong>% per misijas. Savo turfe — <code>/gangsell</code>.</p>
+            <div class="grid tight">
+              <label>Turf
+                <select id="missionTurfSelect"></select>
+              </label>
+              <label>Misija
+                <select id="missionTypeSelect"></select>
+              </label>
+            </div>
+            <button type="button" id="btnStartMission" class="btn btn-primary wide">Pradėti misiją</button>
+            <p class="small muted">Komandos: <code>/gangmission [tipas]</code>, <code>/gangmissiondrop</code></p>
+          </div>
+        </section>
+
         <section id="tabPanelMap" class="tab-panel hidden" role="tabpanel">
           <div id="mapStage" class="map-stage">
             <div class="map-zoom-bar">
               <button type="button" id="zoomIn" class="zoom-btn" title="Priartinti">+</button>
               <button type="button" id="zoomOut" class="zoom-btn" title="Nutolinti">−</button>
             </div>
-            <div id="mapViewport" class="map-viewport">
-              <div id="leafletMap" class="leaflet-map"></div>
+            <div id="gangsMap" class="gangs-map">
+              <div id="gangsMapTransform" class="gangs-map-transform">
+                <div id="gangsMapInner" class="gangs-map-inner" aria-hidden="true"></div>
+                <div id="gangsMapMarkers" class="gangs-map-markers"></div>
+              </div>
             </div>
             <div id="mapTooltip" class="map-tooltip hidden"></div>
           </div>
@@ -101,7 +121,6 @@
     </div>
   </div>
 
-  <script src="vendor/leaflet.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

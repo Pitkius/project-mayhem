@@ -46,13 +46,6 @@ Config.Turfs = {
 }
 
 Config.TurfClaimThreshold = 100
-Config.TaskReputation = {
-    drug = 8,
-    smuggle = 10,
-    theft = 7,
-    extortion = 9,
-    racing = 6,
-}
 
 Config.DrugSellItems = {
     { item = 'weed_skunk', label = 'Skunk', base = 110 },

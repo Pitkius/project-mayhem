@@ -55,7 +55,36 @@ Config.CraftingStations = {
     { coords = vector3(-325.52, -136.11, 39.01), heading = 159.0, length = 1.8, width = 1.8, label = 'Tuningo dalių staklės' },
 }
 
+--- GTA mod lygis (0-based) -> item engine_upgrade_1 .. engine_upgrade_4
+Config.TuningUpgradeItems = {
+    [11] = { prefix = 'engine_upgrade', maxLevel = 4 },
+    [12] = { prefix = 'brakes_upgrade', maxLevel = 3 },
+    [13] = { prefix = 'transmission_upgrade', maxLevel = 3 },
+    [15] = { prefix = 'suspension_upgrade', maxLevel = 4 },
+    [16] = { prefix = 'armor_upgrade', maxLevel = 5 },
+    [18] = { item = 'turbo_kit' },
+}
+
 Config.TuningRecipes = {
+    engine_upgrade_1 = { label = 'Variklis I', output = 'engine_upgrade_1', count = 1, materials = { iron = 12, steel = 8, aluminum = 6, copper = 4, rubber = 2, glass = 1 } },
+    engine_upgrade_2 = { label = 'Variklis II', output = 'engine_upgrade_2', count = 1, materials = { iron = 18, steel = 12, aluminum = 10, copper = 6, rubber = 4, glass = 1 } },
+    engine_upgrade_3 = { label = 'Variklis III', output = 'engine_upgrade_3', count = 1, materials = { iron = 22, steel = 16, aluminum = 14, copper = 10, rubber = 6, glass = 2 } },
+    engine_upgrade_4 = { label = 'Variklis IV', output = 'engine_upgrade_4', count = 1, materials = { iron = 28, steel = 20, aluminum = 18, copper = 12, rubber = 8, glass = 2 } },
+    brakes_upgrade_1 = { label = 'Stabdžiai I', output = 'brakes_upgrade_1', count = 1, materials = { iron = 8, steel = 10, aluminum = 5, copper = 3, rubber = 10, glass = 1 } },
+    brakes_upgrade_2 = { label = 'Stabdžiai II', output = 'brakes_upgrade_2', count = 1, materials = { iron = 12, steel = 14, aluminum = 8, copper = 4, rubber = 14, glass = 1 } },
+    brakes_upgrade_3 = { label = 'Stabdžiai III', output = 'brakes_upgrade_3', count = 1, materials = { iron = 16, steel = 18, aluminum = 10, copper = 5, rubber = 18, glass = 2 } },
+    transmission_upgrade_1 = { label = 'Pavaros I', output = 'transmission_upgrade_1', count = 1, materials = { iron = 10, steel = 12, aluminum = 8, copper = 5, rubber = 4, glass = 0 } },
+    transmission_upgrade_2 = { label = 'Pavaros II', output = 'transmission_upgrade_2', count = 1, materials = { iron = 16, steel = 16, aluminum = 12, copper = 7, rubber = 6, glass = 1 } },
+    transmission_upgrade_3 = { label = 'Pavaros III', output = 'transmission_upgrade_3', count = 1, materials = { iron = 22, steel = 20, aluminum = 14, copper = 9, rubber = 8, glass = 1 } },
+    suspension_upgrade_1 = { label = 'Pakaba I', output = 'suspension_upgrade_1', count = 1, materials = { iron = 8, steel = 7, aluminum = 5, copper = 2, rubber = 12, glass = 0 } },
+    suspension_upgrade_2 = { label = 'Pakaba II', output = 'suspension_upgrade_2', count = 1, materials = { iron = 12, steel = 10, aluminum = 8, copper = 3, rubber = 16, glass = 0 } },
+    suspension_upgrade_3 = { label = 'Pakaba III', output = 'suspension_upgrade_3', count = 1, materials = { iron = 15, steel = 12, aluminum = 10, copper = 3, rubber = 18, glass = 0 } },
+    suspension_upgrade_4 = { label = 'Pakaba IV', output = 'suspension_upgrade_4', count = 1, materials = { iron = 18, steel = 14, aluminum = 12, copper = 4, rubber = 20, glass = 0 } },
+    armor_upgrade_1 = { label = 'Šarvai I', output = 'armor_upgrade_1', count = 1, materials = { iron = 15, steel = 14, aluminum = 6, copper = 2, rubber = 4, glass = 0 } },
+    armor_upgrade_2 = { label = 'Šarvai II', output = 'armor_upgrade_2', count = 1, materials = { iron = 20, steel = 18, aluminum = 8, copper = 3, rubber = 6, glass = 0 } },
+    armor_upgrade_3 = { label = 'Šarvai III', output = 'armor_upgrade_3', count = 1, materials = { iron = 25, steel = 22, aluminum = 10, copper = 4, rubber = 8, glass = 0 } },
+    armor_upgrade_4 = { label = 'Šarvai IV', output = 'armor_upgrade_4', count = 1, materials = { iron = 28, steel = 26, aluminum = 12, copper = 4, rubber = 10, glass = 0 } },
+    armor_upgrade_5 = { label = 'Šarvai V', output = 'armor_upgrade_5', count = 1, materials = { iron = 32, steel = 30, aluminum = 14, copper = 5, rubber = 12, glass = 0 } },
     engine_kit = {
         label = 'Variklio rinkinys',
         output = 'engine_kit',

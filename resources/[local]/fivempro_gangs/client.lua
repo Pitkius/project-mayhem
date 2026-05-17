@@ -80,6 +80,50 @@ local function openAdminMenu()
                 },
             }
         end
+        for _, t in ipairs(res.turfs or {}) do
+            menu[#menu + 1] = {
+                header = ('Turf: %s'):format(t.turf_label or t.turf_id),
+                txt = ('Owner: %s | Progress: %s%%'):format(t.owner_name or 'Laisva', t.progress or 0),
+                params = {
+                    isAction = true,
+                    event = function()
+                        local tid = t.turf_id
+                        local sub = {
+                            { header = ('Turf admin: %s'):format(tid), isMenuHeader = true },
+                            {
+                                header = 'Reset turf',
+                                params = { isAction = true, event = function()
+                                    TriggerServerEvent('fivempro_gangs:server:adminResetTurf', tid)
+                                end },
+                            },
+                            {
+                                header = 'Set progress (0-100)',
+                                params = { isAction = true, event = function()
+                                    local inp = exports['qb-input']:ShowInput({
+                                        header = 'Progress',
+                                        submitText = 'OK',
+                                        inputs = { { text = 'Progress', name = 'p', type = 'number', default = '0' } },
+                                    })
+                                    if inp then TriggerServerEvent('fivempro_gangs:server:adminSetTurfProgress', tid, tonumber(inp.p) or 0) end
+                                end },
+                            },
+                            {
+                                header = 'Set owner gang ID (0=free)',
+                                params = { isAction = true, event = function()
+                                    local inp = exports['qb-input']:ShowInput({
+                                        header = 'Gang ID',
+                                        submitText = 'OK',
+                                        inputs = { { text = 'gang_id', name = 'g', type = 'number', default = '0' } },
+                                    })
+                                    if inp then TriggerServerEvent('fivempro_gangs:server:adminSetTurfOwner', tid, tonumber(inp.g) or 0) end
+                                end },
+                            },
+                        }
+                        TriggerEvent('qb-menu:client:openMenu', sub, false, true)
+                    end,
+                },
+            }
+        end
         TriggerEvent('qb-menu:client:openMenu', menu, false, true)
     end)
 end
@@ -212,6 +256,18 @@ RegisterNUICallback('gangs:setMemberRank', function(data, cb)
         return
     end
     TriggerServerEvent('fivempro_gangs:server:setMemberRank', citizenid, rank)
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('gangs:startMission', function(data, cb)
+    local turfId = tostring(data and data.turfId or '')
+    local missionType = tostring(data and data.missionType or '')
+    if turfId == '' or missionType == '' then
+        cb({ ok = false })
+        return
+    end
+    TriggerEvent('fivempro_gangs:client:startMission', turfId, missionType)
+    closeTabletUi()
     cb({ ok = true })
 end)
 

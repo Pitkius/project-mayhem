@@ -23,6 +23,7 @@ Config.Services = {
 
 Config.CallTypes = {
     robbery = 'Apiplėšimas',
+    atm = 'Bankomatas',
     theft = 'Vagystė',
     shooting = 'Šaudymas',
     fight = 'Muštynės',
@@ -32,7 +33,7 @@ Config.CallTypes = {
 }
 
 Config.CallStatus = {
-    pending = 'Laukia',
+    pending = 'Laukia',w
     accepted = 'Priimtas',
     enroute = 'Vykstu',
     arrived = 'Atvykta',

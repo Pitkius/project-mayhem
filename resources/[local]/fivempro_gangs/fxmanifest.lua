@@ -22,15 +22,24 @@ files {
 
 shared_scripts {
     'config.lua',
+    'config_missions.lua',
 }
 
 client_scripts {
     'client.lua',
+    'client_missions.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server.lua',
+    'server_missions.lua',
+}
+
+exports {
+    'ApplyGangTurfTask',
+    'OnHackSuccess',
+    'OnHackFailed',
 }
 
 dependencies {

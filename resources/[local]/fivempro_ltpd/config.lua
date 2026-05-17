@@ -37,6 +37,9 @@ Config.Permissions = {
     pd_emergency_kit = 0,
     --- PD išorinių / vidinių durų ir vartų užraktas (E) – tik tarnyboje
     pd_doors = 0,
+    mdt_cctv = 0,
+    mdt_bodycam = 0,
+    bodycam_wear = 0,
 }
 
 --- Šviesų ir sirenos valdymas (masinoje): režimas per entity statebag (sinchr. visiems žaidėjams)
@@ -309,13 +312,36 @@ Config.PdDoorGroups = {
         },
     },
     {
-        id = 'ls_mrpd_front_gate',
-        label = 'Front gate',
-        interact = vector3(419.9, -1021.04, 30.5),
-        interactDist = 18.0,
+        id = 'ls_mrpd_front_entry',
+        label = 'Priekinis vartai ir borteliai',
+        interact = vector3(413.5, -1024.0, 29.35),
+        interactDist = 8.0,
         defaultLocked = true,
         doors = {
             { model = 'prop_facgate_07b', coords = vector3(419.99, -1025.0, 28.99) },
+        },
+        entityScan = {
+            center = vector3(411.0, -1024.5, 29.35),
+            radius = 20.0,
+            models = {
+                'prop_barrier_wat_03b',
+                'prop_barrier_wat_04c',
+                'prop_bollard_01',
+                'prop_bollard_02',
+                'prop_mp_barrier_01',
+                'prop_barrier_work05',
+                'prop_barrier_work06',
+            },
+        },
+    },
+    {
+        id = 'ls_mrpd_garage_roll',
+        label = 'Garažo vartai (šonas)',
+        interact = vector3(431.45, -1001.15, 26.75),
+        interactDist = 4.0,
+        defaultLocked = true,
+        doors = {
+            { model = 'gabz_mrpd_room13_parkingdoor', coords = vector3(431.45, -1001.15, 26.75) },
         },
     },
     {
@@ -356,8 +382,8 @@ Config.PdDoorInteractExtras = {
     { groupId = 'ls_mrpd_side', interact = vector3(441.28, -986.51, 30.71), interactDist = 3.2 },
     { groupId = 'ls_mrpd_reception', interact = vector3(441.39, -977.68, 30.79), interactDist = 3.2 },
     { groupId = 'ls_mrpd_reception', interact = vector3(457.03, -971.67, 30.71), interactDist = 3.2 },
-    { groupId = 'ls_mrpd_front_gate', interact = vector3(409.83, -1020.23, 29.36), interactDist = 4.25 },
-    { groupId = 'ls_mrpd_front_gate', interact = vector3(410.09, -1028.45, 29.40), interactDist = 4.25 },
+    { groupId = 'ls_mrpd_front_entry', interact = vector3(419.6, -1025.1, 29.35), interactDist = 5.5 },
+    { groupId = 'ls_mrpd_back_gate', interact = vector3(488.8, -1017.2, 27.1), interactDist = 6.0 },
 }
 
 --- Automatinis durų radimas (objektai žemėlapyje pagal modelį ir dėžę) – Gabz Sandy / Paleto MLO

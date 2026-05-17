@@ -16,6 +16,7 @@ end
 local function closeMdt()
     if not mdtOpen then return end
     mdtOpen = false
+    TriggerEvent('fivempro_ltpd:client:surveillanceStopAll')
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
 end
@@ -104,7 +105,13 @@ end)
 RegisterNUICallback('addArrest', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_ltpd:server:addArrestNote', function(result)
         cb(result or { ok = false })
-    end, data and data.citizenid, data and data.notes)
+    end, data and data.citizenid, data and data.notes, data and data.reason, data and data.sentence)
+end)
+
+RegisterNUICallback('getArrestHistory', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_ltpd:server:getArrestHistory', function(result)
+        cb(result or { ok = false, rows = {} })
+    end, data and data.citizenid)
 end)
 
 RegisterNUICallback('dispatchSnapshot', function(_, cb)

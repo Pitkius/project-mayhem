@@ -150,6 +150,8 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:mdtContext', function(src,
             fine = hasPerm(src, 'mdt_fine'),
             wanted = hasPerm(src, 'mdt_wanted'),
             arrest = hasPerm(src, 'mdt_arrest_record'),
+            cctv = hasPerm(src, 'mdt_cctv'),
+            bodycam = hasPerm(src, 'mdt_bodycam'),
         },
     })
 end)
@@ -292,16 +294,54 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:setWanted', function(src, 
     cb({ ok = true })
 end)
 
-QBCore.Functions.CreateCallback('fivempro_ltpd:server:addArrestNote', function(src, cb, citizenid, notes)
+QBCore.Functions.CreateCallback('fivempro_ltpd:server:addArrestNote', function(src, cb, citizenid, notes, reason, sentence)
     if not hasPerm(src, 'mdt_arrest_record') then return cb({ ok = false }) end
-    notes = tostring(notes or ''):sub(1, 2000)
     local Officer = QBCore.Functions.GetPlayer(src)
     if not Officer or not citizenid then return cb({ ok = false }) end
+    citizenid = tostring(citizenid):sub(1, 50)
+    local payload = {
+        reason = tostring(reason or ''):sub(1, 256),
+        sentence = tostring(sentence or ''):sub(1, 256),
+        notes = tostring(notes or ''):sub(1, 1500),
+        officer_name = ((Officer.PlayerData.charinfo.firstname or '') .. ' ' .. (Officer.PlayerData.charinfo.lastname or '')):gsub('^%s+', ''):gsub('%s+$', ''),
+        at = os.date('!%Y-%m-%dT%H:%M:%SZ'),
+    }
     MySQL.insert.await(
         'INSERT INTO ltpd_arrests (citizenid, officer_citizenid, notes) VALUES (?, ?, ?)',
-        { citizenid, Officer.PlayerData.citizenid, notes }
+        { citizenid, Officer.PlayerData.citizenid, json.encode(payload) }
     )
     cb({ ok = true })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_ltpd:server:getArrestHistory', function(src, cb, citizenid)
+    if not hasPerm(src, 'mdt_arrest_record') then return cb({ ok = false }) end
+    citizenid = tostring(citizenid or ''):sub(1, 50)
+    if citizenid == '' then return cb({ ok = true, rows = {} }) end
+    local rows = MySQL.query.await([[
+        SELECT a.id, a.citizenid, a.officer_citizenid, a.notes, a.created_at,
+               p.charinfo AS officer_charinfo
+        FROM ltpd_arrests a
+        LEFT JOIN players p ON p.citizenid = a.officer_citizenid
+        WHERE a.citizenid = ?
+        ORDER BY a.id DESC
+        LIMIT 50
+    ]], { citizenid }) or {}
+    for _, r in ipairs(rows) do
+        local parsed = {}
+        local ok, dec = pcall(json.decode, r.notes or '{}')
+        if ok and type(dec) == 'table' then parsed = dec end
+        r.reason = parsed.reason or ''
+        r.sentence = parsed.sentence or ''
+        r.detail_notes = parsed.notes or (not ok and tostring(r.notes or '') or '')
+        r.officer_name = parsed.officer_name or ''
+        if r.officer_name == '' and r.officer_charinfo then
+            local ch = json.decode(r.officer_charinfo or '{}') or {}
+            r.officer_name = ((ch.firstname or '') .. ' ' .. (ch.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
+        end
+        r.officer_charinfo = nil
+        r.notes = nil
+    end
+    cb({ ok = true, rows = rows })
 end)
 
 RegisterNetEvent('fivempro_ltpd:server:cuffPlayer', function(targetId)

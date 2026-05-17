@@ -23,6 +23,9 @@
       <button type="button" data-tab="calls" class="tab">Iškvietimai</button>
       <button type="button" data-tab="crews" class="tab">Ekipažai</button>
       <button type="button" data-tab="units" class="tab">Žemėlapis</button>
+      <button type="button" data-tab="arrests" class="tab" id="tabArrests">Areštai</button>
+      <button type="button" data-tab="cctv" class="tab" id="tabCctv">CCTV</button>
+      <button type="button" data-tab="bodycam" class="tab" id="tabBodycam">Bodycam</button>
     </nav>
     <main>
       <section id="panel-person" class="panel">
@@ -97,7 +100,59 @@
           <div id="dispatchUnits" class="results side-list"></div>
         </div>
       </section>
+      <section id="panel-arrests" class="panel hidden">
+        <div class="row">
+          <input type="text" id="arrestCid" placeholder="Citizenid…" />
+          <button type="button" id="arrestLoad" class="btn">Istorija</button>
+        </div>
+        <div class="grid tight">
+          <label>Priežastis <input type="text" id="arrestReason" maxlength="256" placeholder="Pvz. ginklo laikymas" /></label>
+          <label>Bausmė <input type="text" id="arrestSentence" maxlength="256" placeholder="Pvz. 15 min LSPD / $500" /></label>
+          <label>Pastabos <textarea id="arrestNotes" rows="3" maxlength="1500" placeholder="Papildoma informacija…"></textarea></label>
+        </div>
+        <button type="button" id="arrestSave" class="btn primary">Sukurti arešto įrašą</button>
+        <div id="arrestResults" class="results"></div>
+      </section>
+      <section id="panel-cctv" class="panel hidden">
+        <div class="surv-toolbar row">
+          <select id="cctvFilter" class="surv-select">
+            <option value="">Visos kategorijos</option>
+          </select>
+          <input type="text" id="cctvSearch" placeholder="Ieškoti kameros…" />
+          <button type="button" id="cctvRefresh" class="btn">Atnaujinti</button>
+          <button type="button" id="cctvWatchBtn" class="btn primary">Stebėti LIVE</button>
+          <button type="button" id="cctvStopBtn" class="btn danger">Stabdyti</button>
+          <label class="surv-audio-toggle"><input type="checkbox" id="cctvAudio" checked /> Garsas</label>
+        </div>
+        <div class="surv-split">
+          <div id="cctvList" class="surv-list results"></div>
+          <div class="surv-preview">
+            <div id="cctvStatus" class="surv-status muted">Pasirink kamerą iš sąrašo</div>
+            <div id="cctvLiveHint" class="surv-live-hint hidden">LIVE • Vaizdas rodomas žaidime • ESC stabdo</div>
+          </div>
+        </div>
+      </section>
+      <section id="panel-bodycam" class="panel hidden">
+        <div class="surv-toolbar row">
+          <button type="button" id="bodycamRefresh" class="btn">Atnaujinti</button>
+          <button type="button" id="bodycamWatchBtn" class="btn primary">Žiūrėti LIVE</button>
+          <button type="button" id="bodycamStopBtn" class="btn danger">Stabdyti</button>
+        </div>
+        <div class="surv-split">
+          <div id="bodycamList" class="surv-list results"></div>
+          <div class="surv-preview">
+            <div id="bodycamStatus" class="surv-status muted">Pasirink pareigūno bodycam</div>
+            <div id="bodycamLiveHint" class="surv-live-hint hidden">LIVE bodycam • Vaizdas žaidime</div>
+          </div>
+        </div>
+      </section>
     </main>
+    <div id="survOverlay" class="surv-overlay hidden" aria-hidden="true">
+      <div class="surv-overlay-bar">
+        <span id="survOverlayLabel">LIVE</span>
+        <span id="survOverlayMeta"></span>
+      </div>
+    </div>
     <footer class="hint">Server-side tikrinimas • RB AC • Fivempro LTPD</footer>
   </div>
   <script src="app.js"></script>

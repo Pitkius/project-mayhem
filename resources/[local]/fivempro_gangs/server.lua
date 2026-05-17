@@ -122,8 +122,28 @@ QBCore.Functions.CreateUseableItem(Config.TabletItem, function(source)
     TriggerClientEvent('fivempro_gangs:client:openTablet', source)
 end)
 
+local function getMissionCatalog(gangType)
+    local out = {}
+    for key, m in pairs(Config.MissionTypes or {}) do
+        local allowed = true
+        if m.gangs and gangType then
+            allowed = m.gangs[tostring(gangType)] == true
+        end
+        if allowed then
+            out[#out + 1] = {
+                id = key,
+                label = m.label or key,
+                progress = m.progress or (Config.TaskReputation and Config.TaskReputation[key]) or 0,
+            }
+        end
+    end
+    table.sort(out, function(a, b) return a.label < b.label end)
+    return out
+end
+
 QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function(src, cb)
     local gang = getPlayerGang(src)
+    local claimThreshold = tonumber(Config.TurfCapture and Config.TurfCapture.claimThreshold) or tonumber(Config.TurfClaimThreshold) or 100
     if not gang then
         return cb({
             ok = true,
@@ -133,6 +153,8 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
             colorUsage = getColorUsage(),
             turfs = getTurfs(),
             tabletMap = Config.TabletMap or {},
+            claimThreshold = claimThreshold,
+            missions = {},
         })
     end
     cb({
@@ -145,6 +167,8 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
         palette = Config.ColorPalette or {},
         colorUsage = getColorUsage(),
         tabletMap = Config.TabletMap or {},
+        claimThreshold = claimThreshold,
+        missions = getMissionCatalog(gang.gang_type),
     })
 end)
 
@@ -226,35 +250,6 @@ RegisterNetEvent('fivempro_gangs:server:kickMember', function(citizenid)
         gang.gang_id, tostring(citizenid or '')
     })
     TriggerClientEvent('QBCore:Notify', src, 'Narys pašalintas.', 'success')
-end)
-
-RegisterNetEvent('fivempro_gangs:server:completeTask', function(turfId, taskType)
-    local src = source
-    if not playerInTurfServer(src, turfId) then return end
-    local gang = getPlayerGang(src)
-    if not gang then return end
-    local reward = (Config.TaskReputation and Config.TaskReputation[tostring(taskType or '')]) or 0
-    if reward <= 0 then return end
-
-    local turf = MySQL.single.await('SELECT turf_id, owner_gang_id, progress FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { tostring(turfId) })
-    if not turf then return end
-    local progress = (tonumber(turf.progress) or 0) + reward
-    local ownerGangId = turf.owner_gang_id
-    local ownerName = nil
-
-    if progress >= (tonumber(Config.TurfClaimThreshold) or 100) then
-        ownerGangId = gang.gang_id
-        ownerName = gang.name
-        progress = 0
-    end
-
-    MySQL.update.await([[
-        UPDATE fivempro_gang_turfs
-        SET progress = ?, owner_gang_id = ?, owner_name = ?
-        WHERE turf_id = ?
-    ]], { progress, ownerGangId, ownerName, tostring(turfId) })
-    MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + ? WHERE id = ?', { math.floor(reward / 2), gang.gang_id })
-    TriggerClientEvent('QBCore:Notify', src, 'Turf progresas atnaujintas.', 'success')
 end)
 
 QBCore.Functions.CreateCallback('fivempro_gangs:server:tryDrugSale', function(src, cb, turfId, npcNetId)

@@ -11,10 +11,13 @@ ui_page 'html/mdt/index.html'
 
 shared_scripts {
     'config.lua',
+    'config_surveillance.lua',
 }
 
 client_scripts {
     'client/main.lua',
+    'client/cctv.lua',
+    'client/bodycam.lua',
     'client/boss.lua',
     'client/emergency_kit.lua',
     'client/pd_doors.lua',
@@ -23,6 +26,7 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
+    'server/surveillance.lua',
 }
 
 files {

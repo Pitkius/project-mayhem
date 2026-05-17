@@ -16,11 +16,19 @@ const tabPanels = {
   register: document.getElementById("tabPanelRegister"),
   gang: document.getElementById("tabPanelGang"),
   map: document.getElementById("tabPanelMap"),
+  missions: document.getElementById("tabPanelMissions"),
 };
+const missionTurfSelect = document.getElementById("missionTurfSelect");
+const missionTypeSelect = document.getElementById("missionTypeSelect");
+const claimThresholdLbl = document.getElementById("claimThresholdLbl");
+const tabMissions = document.getElementById("tabMissions");
 
 let lastState = null;
-let turfMap = null;
 let mapCfg = null;
+const GANG_MAP_IMG_W = 1066;
+const GANG_MAP_IMG_H = 861;
+let gangsMapPan = { x: 0, y: 0, scale: 1 };
+let gangsMapInteractBound = false;
 /** @type {'register' | 'gang' | 'map'} */
 let activeTab = "register";
 
@@ -45,10 +53,10 @@ function safe(s) {
   return d.innerHTML;
 }
 
-/** FiveM NUI: Leaflet ImageOverlay patikimiau krauna per `https://res/kelias` (ne `nui://`). */
+/** FiveM NUI: pilnas žemėlapio JPG per `nui://` (CSS background, kaip LTPD MDT). */
 function nuiImageUrl(pathFromHtml) {
   const raw = String(pathFromHtml || "").trim();
-  if (!raw || /^https?:\/\//i.test(raw)) return raw;
+  if (!raw || /^https?:\/\//i.test(raw) || /^nui:\/\//i.test(raw)) return raw;
   const res = resourceName();
   let p = raw.replace(/^\/+/, "");
   if (!p.startsWith("html/")) p = `html/${p}`;
@@ -69,17 +77,23 @@ function normalizeMapConfig(payload) {
   };
 }
 
-function gameToLatLng(gx, gy, cfg) {
-  const lng = ((gx - cfg.minX) / (cfg.maxX - cfg.minX)) * cfg.imgW;
-  const lat = ((gy - cfg.minY) / (cfg.maxY - cfg.minY)) * cfg.imgH;
-  return L.latLng(lat, lng);
+function gameToMapPercent(gx, gy, cfg) {
+  const px = ((Number(gx) - cfg.minX) / (cfg.maxX - cfg.minX)) * 100;
+  const py = (1 - (Number(gy) - cfg.minY) / (cfg.maxY - cfg.minY)) * 100;
+  return {
+    x: Math.max(0.5, Math.min(99.5, px)),
+    y: Math.max(0.5, Math.min(99.5, py)),
+  };
 }
 
-function gameRadiusToMap(r, cfg) {
+function gameRadiusToPercent(r, cfg) {
   const rr = Number(r) || 150;
-  const rx = (rr / (cfg.maxX - cfg.minX)) * cfg.imgW;
-  const ry = (rr / (cfg.maxY - cfg.minY)) * cfg.imgH;
-  return Math.max(8, (rx + ry) / 2);
+  const w = ((rr * 2) / (cfg.maxX - cfg.minX)) * 100;
+  const h = ((rr * 2) / (cfg.maxY - cfg.minY)) * 100;
+  return {
+    w: Math.max(2.5, Math.min(42, w)),
+    h: Math.max(2.5, Math.min(42, h)),
+  };
 }
 
 function hexToRgba(hex, alpha) {
@@ -93,74 +107,136 @@ function hexToRgba(hex, alpha) {
 }
 
 function destroyTurfMap() {
-  if (turfMap) {
-    turfMap.remove();
-    turfMap = null;
-  }
+  const markers = document.getElementById("gangsMapMarkers");
+  const inner = document.getElementById("gangsMapInner");
+  if (markers) markers.innerHTML = "";
+  if (inner) inner.style.backgroundImage = "";
   mapCfg = null;
+  gangsMapPan = { x: 0, y: 0, scale: 1 };
+  applyGangsMapTransform();
   mapTooltip.classList.add("hidden");
 }
 
-function resetMapView() {
-  if (!turfMap || typeof turfMap.resetHome !== "function") return;
-  turfMap.resetHome();
+function ensureGangsMapDom(imageUrl) {
+  const transform = document.getElementById("gangsMapTransform");
+  if (!transform || document.getElementById("gangsMapCanvas")) return;
+
+  let markers = document.getElementById("gangsMapMarkers");
+  const inner = document.getElementById("gangsMapInner");
+  const canvas = document.createElement("d" + "iv");
+  canvas.id = "gangsMapCanvas";
+  canvas.className = "gangs-map-canvas";
+
+  const img = document.createElement("img");
+  img.id = "gangsMapImg";
+  img.className = "gangs-map-img";
+  img.src = imageUrl || "";
+  img.alt = "";
+  img.draggable = false;
+
+  if (inner) inner.remove();
+  if (!markers) {
+    markers = document.createElement("d" + "iv");
+    markers.id = "gangsMapMarkers";
+    markers.className = "gangs-map-markers";
+  } else {
+    markers.remove();
+  }
+
+  canvas.appendChild(img);
+  canvas.appendChild(markers);
+  transform.appendChild(canvas);
 }
 
-function scheduleMapInvalidate() {
-  [0, 50, 150, 350].forEach((ms) => {
-    setTimeout(() => {
-      if (turfMap) turfMap.invalidateSize();
-    }, ms);
+function layoutGangsMapCanvas() {
+  const root = document.getElementById("gangsMap");
+  const canvas = document.getElementById("gangsMapCanvas");
+  const img = document.getElementById("gangsMapImg");
+  if (!root || !canvas || !img) return;
+
+  const cw = Math.max(1, root.clientWidth);
+  const ch = Math.max(1, root.clientHeight);
+  const cover = Math.max(cw / GANG_MAP_IMG_W, ch / GANG_MAP_IMG_H);
+  const pad = 2.25;
+  canvas.style.width = `${GANG_MAP_IMG_W * cover * pad}px`;
+  canvas.style.height = `${GANG_MAP_IMG_H * cover * pad}px`;
+  img.style.width = "100%";
+  img.style.height = "100%";
+  img.style.objectFit = "fill";
+}
+
+function applyGangsMapTransform() {
+  const layer = document.getElementById("gangsMapTransform");
+  if (!layer) return;
+  layer.style.transform = `translate(calc(-50% + ${gangsMapPan.x}px), calc(-50% + ${gangsMapPan.y}px)) scale(${gangsMapPan.scale})`;
+}
+
+function bindGangsMapInteract() {
+  if (gangsMapInteractBound) return;
+  const root = document.getElementById("gangsMap");
+  if (!root) return;
+  gangsMapInteractBound = true;
+
+  root.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.12 : 0.12;
+      gangsMapPan.scale = Math.max(0.45, Math.min(3.4, gangsMapPan.scale + delta));
+      applyGangsMapTransform();
+    },
+    { passive: false },
+  );
+
+  let drag = false;
+  let lx = 0;
+  let ly = 0;
+  root.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    drag = true;
+    lx = e.clientX;
+    ly = e.clientY;
+    root.style.cursor = "grabbing";
   });
+  window.addEventListener("mouseup", () => {
+    if (!drag) return;
+    drag = false;
+    if (root) root.style.cursor = "grab";
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!drag) return;
+    gangsMapPan.x += e.clientX - lx;
+    gangsMapPan.y += e.clientY - ly;
+    lx = e.clientX;
+    ly = e.clientY;
+    applyGangsMapTransform();
+  });
+}
+
+function resetMapView() {
+  gangsMapPan = { x: 0, y: 0, scale: 1 };
+  applyGangsMapTransform();
 }
 
 function renderTurfsOnMap(state) {
-  destroyTurfMap();
-  if (typeof L === "undefined") return;
-
-  if (L.Icon && L.Icon.Default) {
-    L.Icon.Default.mergeOptions({
-      iconUrl: nuiImageUrl("html/vendor/images/marker-icon.png"),
-      iconRetinaUrl: nuiImageUrl("html/vendor/images/marker-icon-2x.png"),
-      shadowUrl: nuiImageUrl("html/vendor/images/marker-shadow.png"),
-    });
-  }
-
   mapCfg = normalizeMapConfig(state);
-  const bounds = [
-    [0, 0],
-    [mapCfg.imgH, mapCfg.imgW],
-  ];
-  const el = document.getElementById("leafletMap");
-  if (!el) return;
+  ensureGangsMapDom(mapCfg.imageUrl);
+  layoutGangsMapCanvas();
 
-  turfMap = L.map("leafletMap", {
-    crs: L.CRS.Simple,
-    minZoom: -3,
-    maxZoom: 6,
-    zoomControl: false,
-    attributionControl: false,
-    preferCanvas: false,
-    worldCopyJump: false,
-    dragging: true,
-    scrollWheelZoom: true,
-    doubleClickZoom: true,
-    boxZoom: false,
-  });
+  const markers = document.getElementById("gangsMapMarkers");
+  if (!markers) return;
 
-  L.imageOverlay(mapCfg.imageUrl, bounds, { interactive: true, className: "gangs-satellite-img" }).addTo(turfMap);
+  markers.innerHTML = "";
+  bindGangsMapInteract();
 
-  const group = L.layerGroup().addTo(turfMap);
-  const turfs = state.turfs || [];
-
-  turfs.forEach((t) => {
+  (state.turfs || []).forEach((t) => {
     const x = Number(t.center_x);
     const y = Number(t.center_y);
     const r = Number(t.radius) || 150;
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
 
-    const center = gameToLatLng(x, y, mapCfg);
-    const rad = gameRadiusToMap(r, mapCfg);
+    const center = gameToMapPercent(x, y, mapCfg);
+    const size = gameRadiusToPercent(r, mapCfg);
 
     const hasOwner = !!(t.owner_name && String(t.owner_name).trim());
     const col = String(t.owner_color_hex || "").trim();
@@ -169,70 +245,53 @@ function renderTurfsOnMap(state) {
     const prog = Math.max(0, Math.min(100, Number(t.progress || 0)));
     const status = String(t.status || (hasOwner ? "užimtas" : "neužimtas"));
     const disputed = /ginč|ginčij/i.test(status);
-
     const fillHex = col && /^#[0-9A-Fa-f]{6}$/.test(col) ? col : "#a78bfa";
-    const turfBounds = L.latLngBounds(
-      L.latLng(center.lat - rad, center.lng - rad),
-      L.latLng(center.lat + rad, center.lng + rad),
-    );
 
-    const turfPatch = L.rectangle(turfBounds, {
-      stroke: true,
-      weight: disputed ? 2.25 : 1,
-      color: disputed ? "rgba(250,204,21,0.9)" : hasOwner ? hexToRgba(fillHex, 0.72) : "rgba(148,163,184,0.55)",
-      fillColor: hasOwner ? fillHex : "#334155",
-      fillOpacity: hasOwner ? 0.42 : 0.18,
-      dashArray: disputed ? "6 8" : null,
-      interactive: true,
-      bubblingMouseEvents: false,
-    }).addTo(group);
+    const zone = document.createElement("button");
+    zone.type = "button";
+    zone.className = "turf-zone" + (disputed ? " is-disputed" : "") + (hasOwner ? "" : " is-free");
+    zone.style.left = `${center.x}%`;
+    zone.style.top = `${center.y}%`;
+    zone.style.width = `${size.w}%`;
+    zone.style.height = `${size.h}%`;
+    zone.style.borderColor = disputed ? "rgba(250,204,21,0.9)" : hasOwner ? hexToRgba(fillHex, 0.72) : "rgba(148,163,184,0.55)";
+    zone.style.backgroundColor = hasOwner ? hexToRgba(fillHex, 0.38) : "rgba(51, 65, 85, 0.28)";
 
-    turfPatch.on("click", (e) => {
-      L.DomEvent.stopPropagation(e);
+    zone.addEventListener("click", (e) => {
+      e.stopPropagation();
       post("gangs:setWaypoint", { turfId: t.turf_id });
     });
-
-    turfPatch.on("mousemove", (e) => {
+    zone.addEventListener("mousemove", (e) => {
       mapTooltip.classList.remove("hidden");
+      const thresh = Number(lastState?.claimThreshold || 100);
       mapTooltip.innerHTML = hasOwner
-        ? `<strong>${safe(label)}</strong><br/>${safe(owner)} · ${safe(status)} · ${prog}%`
-        : `<strong>${safe(label)}</strong><br/>Laisva · ${safe(status)} · ${prog}%`;
+        ? `<strong>${safe(label)}</strong><br/>${safe(owner)} · ${safe(status)}<br/>Užėmimas: ${prog}/${thresh}`
+        : `<strong>${safe(label)}</strong><br/>Laisva · ${safe(status)}<br/>Užėmimas: ${prog}/${thresh}`;
       const stage = document.getElementById("mapStage");
       if (!stage) return;
       const rect = stage.getBoundingClientRect();
-      let left = e.originalEvent.clientX - rect.left + 14;
-      let top = e.originalEvent.clientY - rect.top + 14;
+      let left = e.clientX - rect.left + 14;
+      let top = e.clientY - rect.top + 14;
       if (left + 220 > rect.width) left = rect.width - 230;
       if (top + 56 > rect.height) top = rect.height - 64;
       mapTooltip.style.left = `${Math.max(8, left)}px`;
       mapTooltip.style.top = `${Math.max(8, top)}px`;
     });
-    turfPatch.on("mouseout", () => mapTooltip.classList.add("hidden"));
+    zone.addEventListener("mouseleave", () => mapTooltip.classList.add("hidden"));
+
+    markers.appendChild(zone);
   });
 
-  turfMap.fitBounds(bounds, { padding: [4, 4], animate: false });
-
-  turfMap.resetHome = () => {
-    turfMap.fitBounds(bounds, { animate: true, padding: [16, 16] });
-  };
-
-  turfMap.whenReady(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        scheduleMapInvalidate();
-      });
-    });
-  });
+  resetMapView();
 }
 
-/** Leaflet kuriamas tik kai skydelis jau matomas (ne 0×0 dėžutė). */
+/** Žemėlapis kuriamas tik kai skiltis matoma (pilnas panel plotis / aukštis). */
 function scheduleRenderMap(state) {
   destroyTurfMap();
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       if (!lastState || activeTab !== "map") return;
       renderTurfsOnMap(state || lastState);
-      scheduleMapInvalidate();
     });
   });
 }
@@ -301,6 +360,30 @@ function mergeTabletMap(res) {
   return res;
 }
 
+function renderMissionsTab(state) {
+  if (!missionTurfSelect || !missionTypeSelect) return;
+  const myGangId = state.hasGang && state.gang ? Number(state.gang.gang_id) : 0;
+  missionTurfSelect.innerHTML = "";
+  (state.turfs || []).forEach((t) => {
+    const ownerId = Number(t.owner_gang_id || 0);
+    if (ownerId === myGangId) return;
+    const o = document.createElement("option");
+    o.value = t.turf_id;
+    const prog = Number(t.progress || 0);
+    o.textContent = `${t.turf_label || t.turf_id} (${prog}%)`;
+    missionTurfSelect.appendChild(o);
+  });
+  missionTypeSelect.innerHTML = "";
+  (state.missions || []).forEach((m) => {
+    const o = document.createElement("option");
+    o.value = m.id;
+    o.textContent = `${m.label} (+${m.progress})`;
+    missionTypeSelect.appendChild(o);
+  });
+  if (claimThresholdLbl) claimThresholdLbl.textContent = String(state.claimThreshold || 100);
+  if (tabMissions) tabMissions.style.display = state.hasGang ? "" : "none";
+}
+
 function updateGangTabContent(state) {
   const memberListEl = document.getElementById("gangMemberList");
   if (state.hasGang) {
@@ -360,8 +443,10 @@ function render(state) {
   });
   renderPalette(state.palette || [], state.colorUsage || {});
   updateGangTabContent(state);
+  renderMissionsTab(state);
 
   if (activeTab === "gang" && !state.hasGang) activeTab = "register";
+  if (activeTab === "missions" && !state.hasGang) activeTab = "register";
 
   activateTab(activeTab);
 }
@@ -416,10 +501,12 @@ document.getElementById("btnCreate").onclick = () => {
 };
 
 document.getElementById("zoomIn").onclick = () => {
-  if (turfMap) turfMap.zoomIn(0.35);
+  gangsMapPan.scale = Math.min(3.4, gangsMapPan.scale + 0.15);
+  applyGangsMapTransform();
 };
 document.getElementById("zoomOut").onclick = () => {
-  if (turfMap) turfMap.zoomOut(0.35);
+  gangsMapPan.scale = Math.max(0.45, gangsMapPan.scale - 0.15);
+  applyGangsMapTransform();
 };
 document.getElementById("tabletHomeBtn").onclick = () => resetMapView();
 document.getElementById("btnInviteMember").onclick = () => {
@@ -440,6 +527,16 @@ document.getElementById("btnKickMember").onclick = () => {
     post("gangs:refresh", {}).then((res) => res && res.ok && render(mergeTabletMap(res)));
   });
 };
+
+const btnStartMission = document.getElementById("btnStartMission");
+if (btnStartMission) {
+  btnStartMission.onclick = () => {
+    const turfId = missionTurfSelect?.value;
+    const missionType = missionTypeSelect?.value;
+    if (!turfId || !missionType) return;
+    post("gangs:startMission", { turfId, missionType });
+  };
+}
 
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !tablet.classList.contains("hidden")) {

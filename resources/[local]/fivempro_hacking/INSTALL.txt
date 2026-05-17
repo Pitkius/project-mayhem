@@ -1,0 +1,22 @@
+fivempro_hacking – OS / tablet / ATM robbery
+============================================
+
+1) cfg/30_custom.cfg: ensure fivempro_hacking (po fivempro_dispatch, fivempro_ltpd).
+
+2) qb-core items: basic_tablet, advanced_tablet, military_tablet, flashdrives, tow_chain (+ drill jau yra).
+
+3) Black market NPC: Config.BlackMarket.coords (default ~707,-967).
+
+4) Tablet: naudok item → įdiek OS/exploit per Storage tab (flashdrive inventory slot).
+
+5) ATM robbery (starter):
+   - Reikia: basic_tablet + BasicOS (flashdrive) + drill + tow_chain
+   - qb-target ant ATM: Hack → Gręžti → Grandinė → Tempk ~50m mašina → Drop-off → Hack laužimui
+
+6) Exports kitiems robbery:
+   exports['fivempro_hacking']:CanAccessRobbery(src, 'bank_fleeca')
+   exports['fivempro_hacking']:StartHack(tierId, coords, callback) -- client export
+
+7) CCTV išjungimas sėkmingam hack: exploit cam_spoof arba fivempro_ltpd TamperCctvRadius.
+
+8) Progresija: Config.RobberyTiers + Config.OperatingSystems – store/bank/casino paruošta ateities skriptams.

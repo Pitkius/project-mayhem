@@ -1445,9 +1445,14 @@ body.preset-3 {
 .vp-ios-car-svg {
     position: absolute;
     left: 50%;
-    top: 52%;
+    top: 51%;
     transform: translate(-50%, -50%);
     pointer-events: none;
+}
+
+.vp-car-topdown {
+    display: block;
+    filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.38));
 }
 
 .vp-ios-door.vp-door {
@@ -1484,26 +1489,26 @@ body.preset-3 {
 }
 
 .vp-door-0.vp-ios-door {
-    left: 10px;
-    top: 38%;
+    left: 8px;
+    top: 36%;
     transform: translateY(-50%);
 }
 
 .vp-door-1.vp-ios-door {
-    right: 10px;
-    top: 38%;
+    right: 8px;
+    top: 36%;
     transform: translateY(-50%);
 }
 
 .vp-door-2.vp-ios-door {
-    left: 10px;
-    top: 62%;
+    left: 8px;
+    top: 64%;
     transform: translateY(-50%);
 }
 
 .vp-door-3.vp-ios-door {
-    right: 10px;
-    top: 62%;
+    right: 8px;
+    top: 64%;
     transform: translateY(-50%);
 }
 
@@ -1526,25 +1531,25 @@ body.preset-3 {
 }
 
 .vp-win[data-window="0"] {
-    left: 48px;
-    top: 34%;
+    left: 52px;
+    top: 36%;
     transform: translateY(-50%);
 }
 
 .vp-win[data-window="1"] {
-    right: 48px;
-    top: 34%;
+    right: 52px;
+    top: 36%;
     transform: translateY(-50%);
 }
 
 .vp-win[data-window="2"] {
-    left: 48px;
-    top: 58%;
+    left: 52px;
+    top: 64%;
     transform: translateY(-50%);
 }
 
 .vp-win[data-window="3"] {
-    right: 48px;
-    top: 58%;
+    right: 52px;
+    top: 64%;
     transform: translateY(-50%);
 }

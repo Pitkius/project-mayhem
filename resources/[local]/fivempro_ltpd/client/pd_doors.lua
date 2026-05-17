@@ -11,6 +11,8 @@ local QBCore = exports['qb-core']:GetCoreObject()
 --- @field interact vector3
 --- @field interactDist number
 --- @field slabs LtpdDoorSlab[]
+--- @field entities number[]
+--- @field entityScanDef table|nil
 
 local doorGroups = {} ---@type LtpdDoorGroupRuntime[]
 local doorLocked = {} ---@type table<string, boolean>
@@ -177,6 +179,38 @@ local function registerDynSlab(modelHash, x, y, z)
     return { doorHash = dh, modelHash = modelHash, coords = vector3(x, y, z) }
 end
 
+local function applyEntityGroupLocked(entities, locked)
+    for _, ent in ipairs(entities or {}) do
+        if ent and ent ~= 0 and DoesEntityExist(ent) then
+            FreezeEntityPosition(ent, locked)
+            SetEntityCollision(ent, not locked, not locked)
+        end
+    end
+end
+
+local function scanEntitiesForDef(entityScan)
+    if not entityScan or not entityScan.center then return {} end
+    local center = entityScan.center
+    local radius = entityScan.radius or 12.0
+    local models = {}
+    for _, name in ipairs(entityScan.models or {}) do
+        models[joaat(name)] = true
+    end
+    local out = {}
+    for _, ent in ipairs(GetGamePool('CObject')) do
+        if DoesEntityExist(ent) then
+            local m = GetEntityModel(ent)
+            if models[m] then
+                local c = GetEntityCoords(ent)
+                if #(c - center) <= radius then
+                    out[#out + 1] = ent
+                end
+            end
+        end
+    end
+    return out
+end
+
 local function applyGroupLocked(id, locked)
     for _, g in ipairs(doorGroups) do
         if g.id == id then
@@ -184,6 +218,7 @@ local function applyGroupLocked(id, locked)
             for _, slab in ipairs(g.slabs) do
                 DoorSystemSetDoorState(slab.doorHash, state, false, false)
             end
+            applyEntityGroupLocked(g.entities, locked)
             return
         end
     end
@@ -205,12 +240,15 @@ local function buildManualGroups()
             end
             interact = c / #slabs
         end
+        local entities = scanEntitiesForDef(def.entityScan)
         doorGroups[#doorGroups + 1] = {
             id = def.id,
             label = def.label or 'PD durys',
             interact = interact,
             interactDist = def.interactDist or 2.5,
             slabs = slabs,
+            entities = entities,
+            entityScanDef = def.entityScan,
         }
         if doorLocked[def.id] == nil then
             doorLocked[def.id] = def.defaultLocked ~= false
@@ -308,6 +346,17 @@ end)
 
 CreateThread(function()
     while true do
+        Wait(4500)
+        for _, g in ipairs(doorGroups) do
+            if g.entityScanDef then
+                g.entities = scanEntitiesForDef(g.entityScanDef)
+            end
+        end
+    end
+end)
+
+CreateThread(function()
+    while true do
         Wait(2200)
         local ped = PlayerPedId()
         local pc = GetEntityCoords(ped)
@@ -393,7 +442,19 @@ CreateThread(function()
                                 iconPos = slab.coords
                             end
                         end
-                        drawPdDoorLock(iconPos.x, iconPos.y, iconPos.z, locked)
+                        for _, ent in ipairs(g.entities or {}) do
+                            if ent and ent ~= 0 and DoesEntityExist(ent) then
+                                local ec = GetEntityCoords(ent)
+                                local sd = #(pcoords - ec)
+                                if sd < best then
+                                    best = sd
+                                    iconPos = ec
+                                end
+                            end
+                        end
+                        if best < (g.interactDist or 2.5) + 6.0 then
+                            drawPdDoorLock(iconPos.x, iconPos.y, iconPos.z + 0.35, locked)
+                        end
                     end
                 end
                 if closestHit and IsControlJustPressed(0, 38) then

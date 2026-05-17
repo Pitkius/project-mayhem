@@ -262,13 +262,41 @@
                         <button type="button" class="vp-door vp-ios-door vp-door-4" data-door="4">Hood</button>
                         <button type="button" class="vp-door vp-ios-door vp-door-5" data-door="5">Baggage</button>
                         <div class="vp-ios-car-svg" aria-hidden="true">
-                            <svg viewBox="0 0 120 220" width="100" height="185" fill="none">
-                                <path d="M60 10c9 0 15 4 18 12l9 26v120l-9 26c-3 8-9 12-18 12s-15-4-18-12l-9-26V48l9-26c3-8 9-12 18-12z" fill="rgba(246,246,250,0.96)" stroke="rgba(0,0,0,0.2)" stroke-width="2"/>
-                                <path d="M49 40c0-6 5-11 11-11s11 5 11 11v22H49V40zM49 180h22v-23H49v23z" fill="rgba(195,210,230,0.82)"/>
-                                <path d="M44 70h32v58H44z" fill="rgba(255,255,255,0.2)"/>
-                                <rect x="46" y="82" width="8" height="28" rx="3" fill="#1f2937"/><rect x="66" y="82" width="8" height="28" rx="3" fill="#1f2937"/>
-                                <circle cx="50" cy="152" r="4" fill="#111827"/><circle cx="70" cy="152" r="4" fill="#111827"/>
-                                <rect x="42" y="98" width="4" height="30" rx="2" fill="#0f172a"/><rect x="74" y="98" width="4" height="30" rx="2" fill="#0f172a"/>
+                            <svg class="vp-car-topdown" viewBox="0 0 120 220" width="108" height="198" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="vpCarBody" x1="60" y1="4" x2="60" y2="212" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#f8fafc"/>
+                                        <stop offset="50%" stop-color="#eef2f7"/>
+                                        <stop offset="100%" stop-color="#e2e8f0"/>
+                                    </linearGradient>
+                                    <linearGradient id="vpCarGlass" x1="60" y1="28" x2="60" y2="188" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#94a3b8" stop-opacity="0.5"/>
+                                        <stop offset="100%" stop-color="#64748b" stop-opacity="0.68"/>
+                                    </linearGradient>
+                                </defs>
+                                <ellipse cx="27" cy="54" rx="12" ry="15" fill="#0b1220" opacity="0.9"/>
+                                <ellipse cx="93" cy="54" rx="12" ry="15" fill="#0b1220" opacity="0.9"/>
+                                <ellipse cx="27" cy="166" rx="12" ry="15" fill="#0b1220" opacity="0.9"/>
+                                <ellipse cx="93" cy="166" rx="12" ry="15" fill="#0b1220" opacity="0.9"/>
+                                <ellipse cx="27" cy="54" rx="6.5" ry="8.5" fill="#1e293b"/>
+                                <ellipse cx="93" cy="54" rx="6.5" ry="8.5" fill="#1e293b"/>
+                                <ellipse cx="27" cy="166" rx="6.5" ry="8.5" fill="#1e293b"/>
+                                <ellipse cx="93" cy="166" rx="6.5" ry="8.5" fill="#1e293b"/>
+                                <path d="M60 5C72 6 81 13 85 22L87 36Q95 50 95 58Q95 66 88 70L87 132Q95 148 95 162Q93 182 77 196L60 206L43 196Q27 182 25 162Q25 148 33 132L33 70Q25 66 25 58Q25 50 33 36L35 22C39 13 48 6 60 5Z" fill="url(#vpCarBody)" stroke="rgba(15,23,42,0.38)" stroke-width="1.5" stroke-linejoin="round"/>
+                                <path d="M47 16h26l3 9c1.2 3.6 1.8 7 1.8 10.8v7.4c0 3-.8 5.8-2.2 8.2L72 58H48l-2.4-4c-1.4-2.4-2.2-5.2-2.2-8.2v-7.4c0-3.8.6-7.2 1.8-10.8L47 16z" fill="url(#vpCarGlass)" stroke="rgba(30,41,59,0.32)" stroke-width="0.9"/>
+                                <path d="M49 162h22l2.4 4.6c1.4 2.4 2.2 5.2 2.2 8.6v6.2c0 3.2-.8 6-2.2 8.4L71 202H49l-2.4-4.4c-1.4-2.4-2.2-5.2-2.2-8.4v-6.2c0-3.4.8-6.2 2.2-8.6L49 162z" fill="url(#vpCarGlass)" stroke="rgba(30,41,59,0.32)" stroke-width="0.9"/>
+                                <path d="M42 66h36v88H42z" fill="rgba(255,255,255,0.12)" stroke="rgba(15,23,42,0.08)" stroke-width="0.8"/>
+                                <path d="M60 66v88" stroke="rgba(15,23,42,0.24)" stroke-width="1.1" stroke-linecap="round"/>
+                                <path d="M42 100h36M42 124h36" stroke="rgba(15,23,42,0.13)" stroke-width="0.85"/>
+                                <rect x="45" y="84" width="8" height="32" rx="2.5" fill="#111827" opacity="0.9"/>
+                                <rect x="67" y="84" width="8" height="32" rx="2.5" fill="#111827" opacity="0.9"/>
+                                <rect x="48" y="136" width="5" height="20" rx="2" fill="#0f172a" opacity="0.78"/>
+                                <rect x="67" y="136" width="5" height="20" rx="2" fill="#0f172a" opacity="0.78"/>
+                                <ellipse cx="23" cy="76" rx="3.4" ry="5.2" fill="#cbd5e1" stroke="rgba(15,23,42,0.28)" stroke-width="0.75"/>
+                                <ellipse cx="97" cy="76" rx="3.4" ry="5.2" fill="#cbd5e1" stroke="rgba(15,23,42,0.28)" stroke-width="0.75"/>
+                                <ellipse cx="23" cy="144" rx="3.4" ry="5.2" fill="#cbd5e1" stroke="rgba(15,23,42,0.28)" stroke-width="0.75"/>
+                                <ellipse cx="97" cy="144" rx="3.4" ry="5.2" fill="#cbd5e1" stroke="rgba(15,23,42,0.28)" stroke-width="0.75"/>
+                                <path d="M60 22v12M53 28h14" stroke="rgba(15,23,42,0.22)" stroke-width="0.95" stroke-linecap="round"/>
                             </svg>
                         </div>
                         <button type="button" class="vp-door vp-ios-door vp-door-0" data-door="0">Door</button>

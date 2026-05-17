@@ -348,16 +348,6 @@ select.color-select-native {
   background: var(--map-bg);
 }
 
-/*
- Leaflet pats nustato imageOverlay matmenis – `width:100%!important` sulaužo CRS.Simple
- ir žemėlapis lieka mažu „gabaliuku“ / neteisingai sugula su turfais.
-*/
-.leaflet-container .leaflet-image-layer img,
-.gangs-satellite-img {
-  max-width: none !important;
-  image-rendering: auto;
-}
-
 .map-zoom-bar {
   position: absolute;
   left: 10px;
@@ -391,55 +381,82 @@ select.color-select-native {
   color: var(--fp-text);
 }
 
-.map-viewport {
+.gangs-map {
   position: absolute;
   inset: 0;
   overflow: hidden;
   cursor: grab;
   touch-action: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.leaflet-map {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  min-height: min(64vh, 560px);
-  border-radius: 0;
-  overflow: hidden;
   background: #07090d;
   z-index: 1;
 }
 
-.gangs-satellite-img {
-  image-rendering: auto;
+.gangs-map-transform {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+  will-change: transform;
 }
 
-.leaflet-container {
-  font-family: inherit;
-  background: #07090d;
+.gangs-map-canvas {
+  position: relative;
+  flex-shrink: 0;
 }
 
-.leaflet-container::after {
-  content: "";
+.gangs-map-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.gangs-map-inner {
+  display: none;
+}
+
+.gangs-map-markers {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 700;
-  background:
-    linear-gradient(rgba(167, 139, 250, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(167, 139, 250, 0.05) 1px, transparent 1px),
-    radial-gradient(ellipse at 50% 42%, rgba(91, 33, 182, 0.14), transparent 62%);
-  background-size: 44px 44px, 44px 44px, auto;
-  mix-blend-mode: screen;
-  opacity: 0.45;
+  z-index: 2;
 }
 
-.leaflet-overlay-pane path {
-  filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.15));
+.turf-zone {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  box-sizing: border-box;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.turf-zone.is-disputed {
+  border-style: dashed;
+  border-width: 2px;
+}
+
+.turf-zone:hover {
+  filter: brightness(1.1);
+  z-index: 3;
+  box-shadow:
+    0 0 0 2px rgba(196, 181, 253, 0.45),
+    0 6px 20px rgba(167, 139, 250, 0.2);
+}
+
+.turf-zone:focus-visible {
+  outline: 2px solid rgba(196, 181, 253, 0.8);
+  outline-offset: 2px;
 }
 
 .turf-sq-marker-wrap {
