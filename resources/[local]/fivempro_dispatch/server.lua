@@ -1,5 +1,10 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+if type(Config) ~= 'table' then
+    print('^1[fivempro_dispatch] Config is nil — config.lua failed to load^0')
+    Config = {}
+end
+
 MySQL.ready(function()
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS `fivempro_dispatch_logs` (
         `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -370,16 +375,6 @@ RegisterNetEvent('fivempro_dispatch:server:updateCallStatus', function(callId, a
     pushServiceUpdate(service)
 end)
 
-CreateThread(function()
-    local refreshMs = math.max(500, tonumber(Config.BlipRefreshMs) or 1500)
-    while true do
-        for service, _ in pairs(Config.Services or {}) do
-            pushServiceUpdate(service)
-        end
-        Wait(refreshMs)
-    end
-end)
-
 RegisterNetEvent('fivempro_dispatch:server:panic', function()
     local src = source
     local service = playerService(src)
@@ -414,10 +409,11 @@ end)
 
 RegisterNetEvent('fivempro_dispatch:server:createServiceCall', function(service, callType, text, coords)
     local src = source
-    if not Config.Services[service] then return end
+    local cfg = Config or {}
+    if not cfg.Services or not cfg.Services[service] then return end
 
     --- Panikai eina per `panic` įvykį, ne čia — antras nuo antro spam filtras
-    local cd = tonumber(Config.CreateCallCooldownMs) or 4000
+    local cd = tonumber(cfg.CreateCallCooldownMs) or 4000
     if cd > 0 then
         local now = GetGameTimer()
         local last = lastPlainCallAt[src] or 0
@@ -436,11 +432,13 @@ RegisterNetEvent('fivempro_dispatch:server:createServiceCall', function(service,
 end)
 
 CreateThread(function()
+    local cfg = Config or {}
+    local refreshMs = math.max(500, tonumber(cfg.BlipRefreshMs) or 1500)
     while true do
-        for service, _ in pairs(Config.Services or {}) do
+        for service, _ in pairs(cfg.Services or {}) do
             pushServiceUpdate(service)
         end
-        Wait(tonumber(Config.BlipRefreshMs) or 1500)
+        Wait(refreshMs)
     end
 end)
 

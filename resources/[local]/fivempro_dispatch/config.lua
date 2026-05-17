@@ -33,7 +33,7 @@ Config.CallTypes = {
 }
 
 Config.CallStatus = {
-    pending = 'Laukia',w
+    pending = 'Laukia',
     accepted = 'Priimtas',
     enroute = 'Vykstu',
     arrived = 'Atvykta',
