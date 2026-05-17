@@ -4,13 +4,23 @@ lua54 'yes'
 
 name 'fivempro_spawnfix'
 author 'FIVEMPROJEKTAS'
-description 'Spawn/death safety normalization'
-version '1.0.0'
+description 'Direct spawn at last disconnect — no multichar / spawn picker'
+version '2.0.0'
+
+shared_scripts {
+    'config.lua',
+}
 
 client_scripts {
-    'client.lua'
+    'client.lua',
 }
 
 server_scripts {
-    'server.lua'
+    '@oxmysql/lib/MySQL.lua',
+    'server.lua',
+}
+
+dependencies {
+    'qb-core',
+    'oxmysql',
 }
