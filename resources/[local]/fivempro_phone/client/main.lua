@@ -316,6 +316,31 @@ RegisterNUICallback('installApp', function(data, cb)
     end, data or {})
 end)
 
+RegisterNUICallback('launchApp', function(data, cb)
+    local appId = data and data.appId
+    closePhone()
+    Wait(150)
+    if appId == 'mdt' then
+        ExecuteCommand('mdt')
+    elseif appId == 'gangs' then
+        TriggerEvent('fivempro_gangs:client:openTablet')
+    elseif appId == 'dispatch' then
+        ExecuteCommand('mdt')
+    else
+        QBCore.Functions.Notify('Programėlė nepalaikoma.', 'error')
+    end
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('openCamera', function(_, cb)
+    closePhone()
+    Wait(100)
+    CreateMobilePhone(0)
+    CellCamActivate(true, true)
+    QBCore.Functions.Notify('Kamera — ESC uždaryti.', 'primary')
+    cb({ ok = true })
+end)
+
 RegisterNetEvent('fivempro_phone:client:serviceDispatch', function(data)
     if not data or not data.x then return end
     local service = tostring(data.service or '')

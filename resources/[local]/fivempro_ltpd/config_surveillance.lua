@@ -6,6 +6,7 @@ Config.Surveillance.BodycamItem = 'police_bodycam'
 --- CCTV per MDT: leidžiama su mdt_cctv. Fizinis terminalas – tik prie stoties.
 Config.Surveillance.CctvWatchStations = {
     { coords = vector3(441.2, -981.0, 31.25), radius = 55.0, label = 'MRPD' },
+    { coords = vector3(379.5, -1591.5, 30.5), radius = 48.0, label = 'Davis PD' },
     { coords = vector3(1852.5, 3688.0, 34.75), radius = 40.0, label = 'Sandy PD' },
     { coords = vector3(-447.5, 6012.0, 32.75), radius = 40.0, label = 'Paleto PD' },
 }

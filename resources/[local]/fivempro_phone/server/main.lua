@@ -259,11 +259,22 @@ local function getInitialDataFor(src)
         }
     end
 
+    local cash = 0
+    local bank = 0
+    if P and P.PlayerData and P.PlayerData.money then
+        cash = tonumber(P.PlayerData.money.cash) or 0
+        bank = tonumber(P.PlayerData.money.bank) or 0
+    end
+
     return {
         ok = true,
         me = {
             number = myNumber,
             name = profile,
+        },
+        money = {
+            cash = cash,
+            bank = bank,
         },
         account = {
             hasAccount = hasAccount,

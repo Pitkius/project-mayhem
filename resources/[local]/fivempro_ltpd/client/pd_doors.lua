@@ -56,33 +56,6 @@ CreateThread(function()
 end)
 
 local function drawPdDoorLock(worldX, worldY, worldZ, locked)
-    -- Papildomas markeris prie durų — aiškiau matosi priešužrakinimo tašką net jei sprite vėluoja
-    local mr, mg, mb = locked and 147 or 100, locked and 110 or 200, locked and 250 or 155
-    DrawMarker(
-        28,
-        worldX,
-        worldY,
-        worldZ + 0.92,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.26,
-        0.26,
-        0.32,
-        mr,
-        mg,
-        mb,
-        148,
-        false,
-        false,
-        2,
-        nil,
-        nil,
-        false
-    )
     RequestStreamedTextureDict(PD_LOCK_TX, false)
     if not HasStreamedTextureDictLoaded(PD_LOCK_TX) then return end
     SetDrawOrigin(worldX, worldY, worldZ + 0.24, 0)
@@ -214,26 +187,53 @@ local function applyGarageSlabDoorSystem(slab, locked)
     end
 end
 
+local function entityDoorHash(ent)
+    return joaat(('ltpd_gd_%s'):format(ent))
+end
+
+local function applyGarageEntityDoor(ent, locked)
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return end
+    local model = GetEntityModel(ent)
+    local c = GetEntityCoords(ent)
+    local dh = entityDoorHash(ent)
+    ensureDoorInSystem(dh, model, c.x, c.y, c.z)
+    if locked then
+        DoorSystemSetDoorState(dh, 1, false, true)
+        pcall(function() DoorSystemSetOpenRatio(dh, 0.0, true, true) end)
+        pcall(function() DoorSystemSetAutomaticDistance(dh, 0.0, false, false) end)
+        pcall(function() DoorSystemSetHoldOpen(dh, false) end)
+    else
+        DoorSystemSetDoorState(dh, 0, false, true)
+        pcall(function() DoorSystemSetOpenRatio(dh, 1.0, true, true) end)
+        pcall(function() DoorSystemSetAutomaticDistance(dh, 28.0, false, false) end)
+    end
+end
+
 local function applyGarageRollLocked(slabs, entities, locked)
+    local seen = {}
     for _, slab in ipairs(slabs or {}) do
         applyGarageSlabDoorSystem(slab, locked)
-        local ent = findClosestObject(slab.modelHash, slab.coords, 6.0)
+        local ent = findClosestObject(slab.modelHash, slab.coords, 8.0)
         if ent ~= 0 then
+            seen[ent] = true
+            applyGarageEntityDoor(ent, locked)
             if locked then
-                if slab.heading then
-                    SetEntityHeading(ent, slab.heading + 0.0)
-                end
+                if slab.heading then SetEntityHeading(ent, slab.heading + 0.0) end
                 SetEntityCoords(ent, slab.coords.x, slab.coords.y, slab.coords.z, false, false, false, false)
                 FreezeEntityPosition(ent, true)
                 SetEntityDynamic(ent, false)
+                SetEntityInvincible(ent, true)
             else
                 FreezeEntityPosition(ent, false)
                 SetEntityDynamic(ent, true)
+                SetEntityInvincible(ent, false)
             end
         end
     end
     for _, ent in ipairs(entities or {}) do
-        if ent and ent ~= 0 and DoesEntityExist(ent) then
+        if ent and ent ~= 0 and DoesEntityExist(ent) and not seen[ent] then
+            seen[ent] = true
+            applyGarageEntityDoor(ent, locked)
             if locked then
                 FreezeEntityPosition(ent, true)
                 SetEntityDynamic(ent, false)
@@ -427,6 +427,27 @@ CreateThread(function()
         for _, g in ipairs(doorGroups) do
             if g.entityScanDef then
                 g.entities = scanEntitiesForDef(g.entityScanDef)
+            end
+        end
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(1800)
+        local pc = GetEntityCoords(PlayerPedId())
+        for _, g in ipairs(doorGroups) do
+            if g.doorType == 'garage_roll' and doorLocked[g.id] ~= false then
+                local near = false
+                for _, slab in ipairs(g.slabs or {}) do
+                    if #(pc - slab.coords) < 95.0 then
+                        near = true
+                        break
+                    end
+                end
+                if near then
+                    applyGarageRollLocked(g.slabs, g.entities, true)
+                end
             end
         end
     end

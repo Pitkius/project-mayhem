@@ -167,6 +167,7 @@ Config.PoliceDealership = {
     --- Kokį `garage` įrašyti į DB pagal fivempro_ltpd stoties id
     garageByStation = {
         ls_main = 'pd_ls_main',
+        davis = 'pd_davis',
         sandy = 'pd_sandy',
         paleto = 'pd_paleto',
     },

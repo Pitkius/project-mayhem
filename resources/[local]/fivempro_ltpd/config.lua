@@ -167,6 +167,43 @@ Config.Stations = {
         },
     },
     {
+        id = 'davis',
+        label = 'Davis PD (Gabz)',
+        coords = vector3(379.39, -1591.37, 29.76),
+        heading = 320.0,
+        mdt = true,
+        duty = true,
+        armory = {
+            coords = vector3(374.04, -1608.08, 29.29),
+            stashId = 'ltpd_armory_davis',
+            label = 'Policijos ginklinė (Davis)',
+            maxweight = 5000000,
+            slots = 90,
+        },
+        pdGarageId = 'pd_davis',
+        policeDealership = {
+            coords = vector3(397.85, -1607.09, 29.29),
+            heading = 230.0,
+        },
+        garage = {
+            coords = vector3(397.85, -1607.09, 29.29),
+            spawn = vector4(397.85, -1607.09, 29.29, 230.0),
+        },
+        locker = {
+            coords = vector3(365.13, -1598.32, 25.45),
+            heading = 320.0,
+        },
+        stashes = {
+            { coords = vector3(373.2, -1606.5, 29.29), stashId = 'ltpd_stash_public_davis', label = 'PD sandėlis (bendras)', minGrade = 0, maxweight = 2000000, slots = 60 },
+            { coords = vector3(373.2, -1605.4, 29.29), stashId = 'ltpd_stash_grade3_davis', label = 'PD sandėlis (nuo 3 rango)', minGrade = 3, maxweight = 2500000, slots = 70 },
+            { coords = vector3(373.2, -1604.3, 29.29), stashId = 'ltpd_stash_grade8_davis', label = 'PD sandėlis (nuo 8 rango)', minGrade = 8, maxweight = 3000000, slots = 80 },
+        },
+        management = {
+            coords = vector3(383.12, -1597.28, 34.73),
+            heading = 230.0,
+        },
+    },
+    {
         id = 'sandy',
         label = 'Sandy Shores',
         coords = vector3(1853.2, 3686.5, 34.27),
@@ -468,6 +505,20 @@ Config.PdDoorDynamics = {
         pairDist = 2.95,
         interactDist = 2.85,
         interactOffset = vector3(0.0, 0.0, 0.92),
+    },
+    {
+        stationId = 'davis',
+        label = 'PD durys (Davis Gabz)',
+        bounds = { min = vector3(348.0, -1628.0, 20.0), max = vector3(412.0, -1562.0, 48.0) },
+        models = {
+            'gabz_davispd_maindoor_left',
+            'gabz_davispd_maindoor_right',
+            'gabz_davispd_singledoor_03',
+            'gabz_davispd_fancegate',
+        },
+        pairDist = 3.85,
+        interactDist = 2.85,
+        interactOffset = vector3(0.0, 0.0, 0.88),
     },
     {
         stationId = 'paleto',

@@ -28,6 +28,7 @@ Config.Garages = {
     { id = 'casino', label = 'Casino Garage', coords = vector3(895.0, -1.7, 78.76), heading = 328.0, spawn = vector4(909.1, -6.9, 78.76, 147.0) },
     --- Policijos garažai (tik ltpd/police + tarnyba) – tas pats UI kaip kiti garažai
     { id = 'pd_ls_main', label = 'Policijos garažas', coords = vector3(441.64, -1013.14, 28.62), heading = 175.52, spawn = vector4(441.64, -1013.14, 28.62, 175.52), policeOnly = true, hideBlip = true },
+    { id = 'pd_davis', label = 'Policijos garažas (Davis)', coords = vector3(397.85, -1607.09, 29.29), heading = 230.0, spawn = vector4(397.85, -1607.09, 29.29, 230.0), policeOnly = true, hideBlip = true },
     { id = 'pd_sandy', label = 'Policijos garažas (Sandy)', coords = vector3(1869.5, 3695.2, 33.53), heading = 210.0, spawn = vector4(1869.5, 3695.2, 33.53, 210.0), policeOnly = true, hideBlip = true },
     { id = 'pd_paleto', label = 'Policijos garažas (Paleto)', coords = vector3(-459.2, 6016.3, 31.49), heading = 45.0, spawn = vector4(-459.2, 6016.3, 31.49, 45.0), policeOnly = true, hideBlip = true },
     --- Mechanikas / EMS (job: mechanic, ambulance) – tik qb-target iš darbo resursų

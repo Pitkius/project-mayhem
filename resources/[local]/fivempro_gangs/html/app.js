@@ -151,11 +151,27 @@ function layoutGangsMapCanvas() {
 
   const cw = Math.max(320, root.clientWidth || 0);
   const ch = Math.max(240, root.clientHeight || 0);
-  const fit = Math.min(cw / GANG_MAP_IMG_W, ch / GANG_MAP_IMG_H);
-  const panPad = 1.65;
-  const px = Math.max(fit * panPad, 0.35);
-  surface.style.width = `${Math.round(GANG_MAP_IMG_W * px)}px`;
-  surface.style.height = `${Math.round(GANG_MAP_IMG_H * px)}px`;
+  const contain = Math.min(cw / GANG_MAP_IMG_W, ch / GANG_MAP_IMG_H);
+  surface.style.width = `${Math.round(GANG_MAP_IMG_W * contain)}px`;
+  surface.style.height = `${Math.round(GANG_MAP_IMG_H * contain)}px`;
+}
+
+function clampGangsMapPan() {
+  const root = document.getElementById("gangsMap");
+  const surface = document.getElementById("gangsMapSurface");
+  if (!root || !surface || gangsMapPan.scale <= 1.02) {
+    gangsMapPan.x = 0;
+    gangsMapPan.y = 0;
+    return;
+  }
+  const cw = root.clientWidth;
+  const ch = root.clientHeight;
+  const sw = surface.offsetWidth * gangsMapPan.scale;
+  const sh = surface.offsetHeight * gangsMapPan.scale;
+  const maxX = Math.max(0, (sw - cw) / 2);
+  const maxY = Math.max(0, (sh - ch) / 2);
+  gangsMapPan.x = Math.max(-maxX, Math.min(maxX, gangsMapPan.x));
+  gangsMapPan.y = Math.max(-maxY, Math.min(maxY, gangsMapPan.y));
 }
 
 function fitGangsMapInView() {
@@ -163,11 +179,7 @@ function fitGangsMapInView() {
   const surface = document.getElementById("gangsMapSurface");
   if (!root || !surface) return;
   layoutGangsMapCanvas();
-  const cw = Math.max(1, root.clientWidth);
-  const ch = Math.max(1, root.clientHeight);
-  const sw = surface.offsetWidth || GANG_MAP_IMG_W;
-  const sh = surface.offsetHeight || GANG_MAP_IMG_H;
-  gangsMapPan.scale = Math.min(1, cw / sw, ch / sh);
+  gangsMapPan.scale = 1;
   gangsMapPan.x = 0;
   gangsMapPan.y = 0;
   applyGangsMapTransform();
@@ -178,8 +190,7 @@ function watchGangsMapResize() {
   if (!root || gangsMapResizeObs) return;
   gangsMapResizeObs = new ResizeObserver(() => {
     if (activeTab !== "map") return;
-    layoutGangsMapCanvas();
-    applyGangsMapTransform();
+    fitGangsMapInView();
   });
   gangsMapResizeObs.observe(root);
 }
@@ -201,7 +212,8 @@ function bindGangsMapInteract() {
     (e) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.12 : 0.12;
-      gangsMapPan.scale = Math.max(0.45, Math.min(3.4, gangsMapPan.scale + delta));
+      gangsMapPan.scale = Math.max(1, Math.min(4, gangsMapPan.scale + delta));
+      clampGangsMapPan();
       applyGangsMapTransform();
     },
     { passive: false },
@@ -228,6 +240,7 @@ function bindGangsMapInteract() {
     gangsMapPan.y += e.clientY - ly;
     lx = e.clientX;
     ly = e.clientY;
+    clampGangsMapPan();
     applyGangsMapTransform();
   });
 }

@@ -21,31 +21,46 @@ local interiors = {
             { name = 'davispd_room16_lockers_es', enable = true },
             { name = 'davispd_room17_showerleft_es', enable = true },
             { name = 'davispd_room18_showerright_es', enable = true },
-        }
+        },
     },
 }
 
-CreateThread(function()
-    for _, interior in ipairs(interiors) do
-        if not interior.ipl or not interior.coords or not interior.entitySets then
-            print('^5[GABZ]^7 ^1Error while loading interior.^7')
-            return
-        end
-        RequestIpl(interior.ipl)
-        local interiorID = GetInteriorAtCoords(interior.coords.x, interior.coords.y, interior.coords.z)
-        if IsValidInterior(interiorID) then
-            for __, entitySet in ipairs(interior.entitySets) do
-                if entitySet.enable then
-                    EnableInteriorProp(interiorID, entitySet.name)
-                    if entitySet.color then
-                        SetInteriorPropColor(interiorID, entitySet.name, entitySet.color)
-                    end
-                else
-                    DisableInteriorProp(interiorID, entitySet.name)
-                end
+local function applyInterior(interior)
+    if not interior.ipl or not interior.coords or not interior.entitySets then
+        return false
+    end
+    RequestIpl(interior.ipl)
+    local interiorID = GetInteriorAtCoords(interior.coords.x, interior.coords.y, interior.coords.z)
+    if not interiorID or interiorID == 0 or not IsValidInterior(interiorID) then
+        return false
+    end
+    for _, entitySet in ipairs(interior.entitySets) do
+        if entitySet.enable then
+            EnableInteriorProp(interiorID, entitySet.name)
+            if entitySet.color then
+                SetInteriorPropColor(interiorID, entitySet.name, entitySet.color)
             end
-            RefreshInterior(interiorID)
+        else
+            DisableInteriorProp(interiorID, entitySet.name)
         end
     end
-    print("^5[GABZ]^7 Interiors datas loaded.")
+    RefreshInterior(interiorID)
+    return true
+end
+
+CreateThread(function()
+    for _, interior in ipairs(interiors) do
+        local ok = false
+        for _ = 1, 40 do
+            if applyInterior(interior) then
+                ok = true
+                break
+            end
+            Wait(500)
+        end
+        if not ok then
+            print('^5[GABZ]^7 ^1Davis PD interior entity sets failed to load (check cfx-gabz-davispd / stream).^7')
+        end
+    end
+    print('^5[GABZ]^7 Interiors datas loaded.')
 end)

@@ -64,7 +64,8 @@ window.addEventListener('message', (e) => {
     setMdtDocked(true, true);
   }
   if (d.action === 'cctvOverlay') {
-    setSurveillanceOverlay(d.active, d.label || 'CCTV LIVE', d.audio ? 'Garsas įjungtas' : 'Be garso');
+    const meta = [d.camId ? `ID ${d.camId}` : '', d.audio ? 'Garsas' : 'Be garso'].filter(Boolean).join(' • ');
+    setSurveillanceOverlay(d.active, d.label || 'CCTV LIVE', meta, d);
     document.getElementById('cctvLiveHint').classList.toggle('hidden', !d.active);
     if (d.active && d.label) {
       document.getElementById('cctvStatus').textContent = d.label;
@@ -325,11 +326,27 @@ function layoutDispatchMapCanvas() {
 
   const cw = Math.max(320, root.clientWidth || 0);
   const ch = Math.max(240, root.clientHeight || 0);
-  const fit = Math.min(cw / MAP_IMG_W, ch / MAP_IMG_H);
-  const panPad = 1.65;
-  const px = Math.max(fit * panPad, 0.35);
-  surface.style.width = `${Math.round(MAP_IMG_W * px)}px`;
-  surface.style.height = `${Math.round(MAP_IMG_H * px)}px`;
+  const contain = Math.min(cw / MAP_IMG_W, ch / MAP_IMG_H);
+  surface.style.width = `${Math.round(MAP_IMG_W * contain)}px`;
+  surface.style.height = `${Math.round(MAP_IMG_H * contain)}px`;
+}
+
+function clampDispatchMapPan() {
+  const root = document.getElementById('dispatchMap');
+  const surface = document.getElementById('dispatchMapSurface');
+  if (!root || !surface || dispatchMapPan.scale <= 1.02) {
+    dispatchMapPan.x = 0;
+    dispatchMapPan.y = 0;
+    return;
+  }
+  const cw = root.clientWidth;
+  const ch = root.clientHeight;
+  const sw = surface.offsetWidth * dispatchMapPan.scale;
+  const sh = surface.offsetHeight * dispatchMapPan.scale;
+  const maxX = Math.max(0, (sw - cw) / 2);
+  const maxY = Math.max(0, (sh - ch) / 2);
+  dispatchMapPan.x = Math.max(-maxX, Math.min(maxX, dispatchMapPan.x));
+  dispatchMapPan.y = Math.max(-maxY, Math.min(maxY, dispatchMapPan.y));
 }
 
 function fitDispatchMapInView() {
@@ -337,11 +354,7 @@ function fitDispatchMapInView() {
   const surface = document.getElementById('dispatchMapSurface');
   if (!root || !surface) return;
   layoutDispatchMapCanvas();
-  const cw = Math.max(1, root.clientWidth);
-  const ch = Math.max(1, root.clientHeight);
-  const sw = surface.offsetWidth || MAP_IMG_W;
-  const sh = surface.offsetHeight || MAP_IMG_H;
-  dispatchMapPan.scale = Math.min(1, cw / sw, ch / sh);
+  dispatchMapPan.scale = 1;
   dispatchMapPan.x = 0;
   dispatchMapPan.y = 0;
   applyDispatchMapTransform();
@@ -352,8 +365,7 @@ function watchDispatchMapResize() {
   if (!root || dispatchMapResizeObs) return;
   dispatchMapResizeObs = new ResizeObserver(() => {
     if (document.getElementById('panel-units')?.classList.contains('hidden')) return;
-    layoutDispatchMapCanvas();
-    applyDispatchMapTransform();
+    fitDispatchMapInView();
   });
   dispatchMapResizeObs.observe(root);
 }
@@ -376,7 +388,8 @@ function bindDispatchMapInteract() {
     (e) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      dispatchMapPan.scale = Math.max(0.45, Math.min(3.2, dispatchMapPan.scale + delta));
+      dispatchMapPan.scale = Math.max(1, Math.min(4, dispatchMapPan.scale + delta));
+      clampDispatchMapPan();
       applyDispatchMapTransform();
     },
     { passive: false },
@@ -403,6 +416,7 @@ function bindDispatchMapInteract() {
     dispatchMapPan.y += e.clientY - ly;
     lx = e.clientX;
     ly = e.clientY;
+    clampDispatchMapPan();
     applyDispatchMapTransform();
   });
 }
@@ -614,18 +628,43 @@ document.getElementById('btnPanic').onclick = () => nuiPost('crewAction', { acti
 let cctvCameras = [];
 let selectedCctvId = null;
 let selectedBodycamId = null;
+let cctvHudTimer = null;
 
-function setSurveillanceOverlay(active, label, meta) {
+function setSurveillanceOverlay(active, label, meta, cctvData) {
   const ov = document.getElementById('survOverlay');
   document.body.classList.toggle('mdt-surveillance-live', !!active);
   if (!ov) return;
   ov.classList.toggle('hidden', !active);
   document.getElementById('survOverlayLabel').textContent = label || 'LIVE';
   document.getElementById('survOverlayMeta').textContent = meta || '';
+  const rec = document.getElementById('survRec');
+  if (rec) rec.classList.toggle('on', !!(active && cctvData && cctvData.rec));
+  const hudId = document.getElementById('cctvHudId');
+  if (hudId) hudId.textContent = cctvData && cctvData.camId ? `CAM ${cctvData.camId}` : 'CAM —';
+  if (cctvHudTimer) {
+    clearInterval(cctvHudTimer);
+    cctvHudTimer = null;
+  }
+  if (active) {
+    const tick = () => {
+      const el = document.getElementById('cctvHudTime');
+      if (el) {
+        el.textContent = new Date().toLocaleTimeString('lt-LT', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+      }
+    };
+    tick();
+    cctvHudTimer = setInterval(tick, 1000);
+  }
 }
 
 function stopSurveillanceUi() {
   setSurveillanceOverlay(false);
+  nuiPost('cctvStop', {});
+  nuiPost('bodycamStop', {});
   document.getElementById('cctvLiveHint')?.classList.add('hidden');
   document.getElementById('bodycamLiveHint')?.classList.add('hidden');
 }

@@ -17,12 +17,19 @@ Config.Phone = {
     maxPostCaptionLength = 260,
     maxImageUrlLength = 500,
     AppStoreApps = {
-        { id = 'emergency', label = 'Emergency', icon = '🚨', default = true },
-        { id = 'calls', label = 'Phone', icon = '📞', default = true },
-        { id = 'messages', label = 'Messages', icon = '💬', default = true },
-        { id = 'contacts', label = 'Contacts', icon = '👤', default = true },
-        { id = 'ads', label = 'Market', icon = '🛒', default = true },
-        { id = 'insta', label = 'Social', icon = '📸', default = true },
+        { id = 'calls', label = 'Skambučiai', icon = '📞', default = true },
+        { id = 'messages', label = 'Žinutės', icon = '💬', default = true },
+        { id = 'contacts', label = 'Kontaktai', icon = '👤', default = true },
+        { id = 'mdt', label = 'MDT', icon = '🚔', default = true },
+        { id = 'gangs', label = 'Gaujos', icon = '🏴', default = true },
+        { id = 'bank', label = 'Bankas', icon = '🏦', default = true },
+        { id = 'dispatch', label = 'Dispatch', icon = '📡', default = true },
+        { id = 'emergency', label = '112', icon = '🚨', default = true },
+        { id = 'settings', label = 'Nustatymai', icon = '⚙️', default = true },
+        { id = 'camera', label = 'Kamera', icon = '📷', default = true },
+        { id = 'notes', label = 'Užrašai', icon = '📝', default = true },
+        { id = 'ads', label = 'Market', icon = '🛒', default = false },
+        { id = 'insta', label = 'Social', icon = '📸', default = false },
     }
 }
 

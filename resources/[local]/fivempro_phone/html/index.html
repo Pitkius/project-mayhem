@@ -1,66 +1,90 @@
 <!doctype html>
-<html lang="en">
+<html lang="lt">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fivempro Phone</title>
+  <title>Phone</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="phone" class="hidden">
-    <div id="callOverlay" class="call-overlay hidden" aria-hidden="true">
-      <div class="call-sheet glass">
-        <div class="call-avatar" aria-hidden="true">📶</div>
-        <div id="callOverlayTitle" class="call-title">Įeinantis skambutis</div>
-        <div id="callOverlaySub" class="call-sub">—</div>
-        <div class="call-actions">
-          <button type="button" class="call-btn reject" id="callReject">Atmesti</button>
-          <button type="button" class="call-btn accept" id="callAccept">Atsiliepti</button>
+    <div class="device">
+      <div class="device-wallpaper" id="deviceWallpaper"></div>
+      <div class="device-glass"></div>
+
+      <div class="statusbar ios-bar">
+        <span id="statusTime">09:41</span>
+        <span class="status-icons" aria-hidden="true">
+          <span class="sig"></span><span class="wifi"></span><span class="bat"></span>
+        </span>
+      </div>
+
+      <div id="callOverlay" class="call-overlay hidden" aria-hidden="true">
+        <div class="call-sheet glass">
+          <div class="call-avatar" aria-hidden="true">📶</div>
+          <div id="callOverlayTitle" class="call-title">Įeinantis skambutis</div>
+          <div id="callOverlaySub" class="call-sub">—</div>
+          <div class="call-actions">
+            <button type="button" class="call-btn reject" id="callReject">Atmesti</button>
+            <button type="button" class="call-btn accept" id="callAccept">Atsiliepti</button>
+          </div>
         </div>
       </div>
+
+      <section id="lockScreen" class="screen lock-screen">
+        <div class="lock-time" id="lockTime">09:41</div>
+        <div class="lock-date" id="lockDate">Antradienis, gegužės 19</div>
+        <div class="lock-notifs" id="lockNotifs"></div>
+        <div class="lock-hint">Braukite aukštyn atrakinti</div>
+        <div class="lock-slider" id="lockSlider" aria-label="Atrakinti">
+          <span class="lock-chevron">⌃</span>
+        </div>
+      </section>
+
+      <section id="accountSetup" class="screen hidden setup-screen glass-panel">
+        <h2>Sveiki</h2>
+        <p class="muted">Pirmas paleidimas — susikurkite telefono paskyrą.</p>
+        <input id="setupUsername" placeholder="Vartotojo vardas" maxlength="24" />
+        <input id="setupPassword" type="password" placeholder="Slaptažodis" maxlength="32" />
+        <button id="btnCreateAccount" class="ios-btn primary">Sukurti paskyrą</button>
+        <div id="setupState" class="muted small"></div>
+      </section>
+
+      <section id="homeScreen" class="screen hidden home-screen">
+        <div class="home-header">
+          <span id="profileName" class="home-greeting">Sveiki</span>
+        </div>
+        <div class="home-pages-wrap">
+          <div class="home-pages" id="homePages"></div>
+        </div>
+        <div class="page-dots" id="pageDots"></div>
+        <div class="dock glass" id="dockBar"></div>
+        <div id="callState" class="call-state muted small"></div>
+      </section>
+
+      <section id="appStoreScreen" class="screen hidden app-screen-layer">
+        <header class="app-nav glass">
+          <button type="button" data-back-home="1" class="nav-back">‹</button>
+          <span>App Store</span>
+          <span class="nav-spacer"></span>
+        </header>
+        <div id="storeList" class="scroll-body list"></div>
+      </section>
+
+      <section id="appScreen" class="screen hidden app-screen-layer">
+        <header class="app-nav glass">
+          <button type="button" data-back-home="1" class="nav-back">‹</button>
+          <span id="appTitle">Programėlė</span>
+          <button type="button" id="openStore" class="nav-link">Store</button>
+        </header>
+        <div id="appContent" class="scroll-body"></div>
+      </section>
+
+      <button type="button" class="home-indicator" id="homeBar" aria-label="Pradžia"></button>
     </div>
-    <div class="statusbar">
-      <span id="timeText">09:41</span>
-      <span id="meNumber">Nr: 000000</span>
-      <button id="btnClose">X</button>
-    </div>
-
-    <section id="accountSetup" class="screen hidden">
-      <h2>Welcome</h2>
-      <p class="small">Pirmas paleidimas: susikurk telefono paskyrą.</p>
-      <input id="setupUsername" placeholder="Username" maxlength="24" />
-      <input id="setupPassword" type="password" placeholder="Slaptažodis" maxlength="32" />
-      <button id="btnCreateAccount">Sukurti paskyrą</button>
-      <div id="setupState" class="small"></div>
-    </section>
-
-    <section id="homeScreen" class="screen hidden">
-      <div class="titlebar">
-        <span id="profileName">Player</span>
-        <button id="openStore">App Store</button>
-      </div>
-      <div id="appGrid" class="app-grid"></div>
-      <div id="callState" class="small"></div>
-    </section>
-
-    <section id="appStoreScreen" class="screen hidden">
-      <div class="titlebar">
-        <span>App Store</span>
-        <button data-back-home="1">Back</button>
-      </div>
-      <div id="storeList" class="list"></div>
-    </section>
-
-    <section id="appScreen" class="screen hidden">
-      <div class="titlebar">
-        <span id="appTitle">App</span>
-        <button data-back-home="1">Home</button>
-      </div>
-      <div id="appContent"></div>
-    </section>
   </div>
 
   <script src="app.js"></script>
