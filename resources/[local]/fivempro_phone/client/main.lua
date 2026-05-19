@@ -114,9 +114,62 @@ local function runPhonePutAwayAnim()
     ClearPedSecondaryTask(ped)
 end
 
+local phoneCameraActive = false
+
+local function stopPhoneCamera()
+    if not phoneCameraActive then return end
+    phoneCameraActive = false
+    pcall(function()
+        CellCamActivate(false, false)
+    end)
+    pcall(function()
+        DestroyMobilePhone()
+    end)
+    local ped = PlayerPedId()
+    if ped and ped ~= 0 then
+        FreezeEntityPosition(ped, false)
+        SetEntityCollision(ped, true, true)
+        SetPlayerControl(PlayerId(), true, 0)
+        ClearPedTasks(ped)
+    end
+    RenderScriptCams(false, false, 0, true, true)
+end
+
+local function startPhoneCamera()
+    stopPhoneCamera()
+    phoneCameraActive = true
+    CreateMobilePhone(1)
+    CellCamActivate(true, true)
+    QBCore.Functions.Notify('Kamera — ESC / Backspace uždaryti.', 'primary', 5000)
+
+    CreateThread(function()
+        while phoneCameraActive do
+            Wait(0)
+            DisableControlAction(0, 24, true)
+            DisableControlAction(0, 25, true)
+            DisableControlAction(0, 37, true)
+            DisableControlAction(0, 44, true)
+            DisableControlAction(0, 140, true)
+            DisableControlAction(0, 141, true)
+            DisableControlAction(0, 142, true)
+
+            if IsControlJustPressed(0, 177)
+                or IsControlJustPressed(0, 200)
+                or IsControlJustPressed(0, 202)
+                or IsControlJustPressed(0, 322)
+            then
+                stopPhoneCamera()
+                QBCore.Functions.Notify('Kamera uždaryta.', 'primary')
+                break
+            end
+        end
+    end)
+end
+
 local function closePhone()
     if phonePhase == 'idle' or phonePhase == 'closing' then return end
 
+    stopPhoneCamera()
     phonePhase = 'closing'
     SetNuiFocus(false, false)
     sendUi('close')
@@ -316,29 +369,39 @@ RegisterNUICallback('installApp', function(data, cb)
     end, data or {})
 end)
 
-RegisterNUICallback('launchApp', function(data, cb)
-    local appId = data and data.appId
+RegisterNUICallback('openCamera', function(_, cb)
     closePhone()
-    Wait(150)
-    if appId == 'mdt' then
-        ExecuteCommand('mdt')
-    elseif appId == 'gangs' then
-        TriggerEvent('fivempro_gangs:client:openTablet')
-    elseif appId == 'dispatch' then
-        ExecuteCommand('mdt')
-    else
-        QBCore.Functions.Notify('Programėlė nepalaikoma.', 'error')
-    end
+    Wait(200)
+    startPhoneCamera()
     cb({ ok = true })
 end)
 
-RegisterNUICallback('openCamera', function(_, cb)
-    closePhone()
-    Wait(100)
-    CreateMobilePhone(0)
-    CellCamActivate(true, true)
-    QBCore.Functions.Notify('Kamera — ESC uždaryti.', 'primary')
+RegisterNUICallback('closeCamera', function(_, cb)
+    stopPhoneCamera()
     cb({ ok = true })
+end)
+
+RegisterNUICallback('getWeather', function(_, cb)
+    local rain = 0.0
+    if GetRainLevel then rain = GetRainLevel() end
+    local label = rain > 0.15 and 'Lietinga, ~18°C' or 'Giedra, ~24°C'
+    cb({ ok = true, label = label })
+end)
+
+RegisterNUICallback('shopHint', function(_, cb)
+    QBCore.Functions.Notify('Ieškokite parduotuvių žemėlapyje (24/7, Ammu-Nation ir kt.).', 'primary', 6000)
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('radioStation', function(data, cb)
+    local station = data and data.station or ''
+    QBCore.Functions.Notify(('Radijas: %s (RP stotis).'):format(station), 'primary')
+    cb({ ok = true })
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    stopPhoneCamera()
 end)
 
 RegisterNetEvent('fivempro_phone:client:serviceDispatch', function(data)

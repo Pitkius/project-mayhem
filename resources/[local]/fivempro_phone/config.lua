@@ -16,20 +16,23 @@ Config.Phone = {
     maxAdLength = 260,
     maxPostCaptionLength = 260,
     maxImageUrlLength = 500,
+    --- default = įdiegiama su paskyra ir rodoma pagrindiniame ekrane
+    --- default = false → tik per App Store
     AppStoreApps = {
-        { id = 'calls', label = 'Skambučiai', icon = '📞', default = true },
-        { id = 'messages', label = 'Žinutės', icon = '💬', default = true },
-        { id = 'contacts', label = 'Kontaktai', icon = '👤', default = true },
-        { id = 'mdt', label = 'MDT', icon = '🚔', default = true },
-        { id = 'gangs', label = 'Gaujos', icon = '🏴', default = true },
-        { id = 'bank', label = 'Bankas', icon = '🏦', default = true },
-        { id = 'dispatch', label = 'Dispatch', icon = '📡', default = true },
-        { id = 'emergency', label = '112', icon = '🚨', default = true },
-        { id = 'settings', label = 'Nustatymai', icon = '⚙️', default = true },
-        { id = 'camera', label = 'Kamera', icon = '📷', default = true },
-        { id = 'notes', label = 'Užrašai', icon = '📝', default = true },
-        { id = 'ads', label = 'Market', icon = '🛒', default = false },
-        { id = 'insta', label = 'Social', icon = '📸', default = false },
+        { id = 'calls', label = 'Skambučiai', icon = 'calls', default = true },
+        { id = 'messages', label = 'Žinutės', icon = 'messages', default = true },
+        { id = 'contacts', label = 'Kontaktai', icon = 'contacts', default = true },
+        { id = 'settings', label = 'Nustatymai', icon = 'settings', default = true },
+        { id = 'camera', label = 'Kamera', icon = 'camera', default = true },
+        { id = 'notes', label = 'Užrašai', icon = 'notes', default = true },
+        { id = 'emergency', label = '112', icon = 'emergency', default = true },
+        { id = 'appstore', label = 'App Store', icon = 'appstore', default = true },
+        { id = 'ads', label = 'Skelbimai', icon = 'ads', default = false, description = 'Skelbimų lenta ir pardavimai' },
+        { id = 'insta', label = 'LifeGram', icon = 'insta', default = false, description = 'Socialinis tinklas su nuotraukomis' },
+        { id = 'bank', label = 'Bankas', icon = 'bank', default = false, description = 'Sąskaitos ir balansas' },
+        { id = 'shop', label = 'Marketplace', icon = 'shop', default = false, description = 'Parduotuvės ir prekės mieste' },
+        { id = 'weather', label = 'Orai', icon = 'weather', default = false, description = 'Orų prognozė Los Santos' },
+        { id = 'radio', label = 'Radijas', icon = 'radio', default = false, description = 'Miesto radijo stotys' },
     }
 }
 

@@ -12,8 +12,10 @@ const APP_TEMPLATE = {
   settings: "renderSettingsApp",
   camera: "renderCameraApp",
   notes: "renderNotesApp",
+  shop: "renderShopApp",
+  weather: "renderWeatherApp",
+  radio: "renderRadioApp",
 };
-const EXTERNAL_APPS = new Set(["mdt", "gangs", "dispatch"]);
 const DOCK_APPS = ["calls", "messages", "contacts", "settings"];
 const APPS_PER_PAGE = 16;
 
@@ -45,6 +47,29 @@ function nui(event, data = {}) {
 
 function esc(str) {
   return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function iconAssetName(icon) {
+  const raw = String(icon || "").trim();
+  if (!raw || /[\u{1F300}-\u{1FAFF}]/u.test(raw)) return "appstore";
+  return raw.replace(/\.svg$/i, "");
+}
+
+function iconUrl(icon) {
+  const name = iconAssetName(icon);
+  return `assets/icons/${name}.svg`;
+}
+
+function iconHtml(icon, className = "app-icon-wrap") {
+  const name = iconAssetName(icon);
+  return `<span class="${className}"><img src="${iconUrl(name)}" alt="" loading="lazy" onerror="this.src='assets/icons/appstore.svg'" /></span>`;
+}
+
+function setLockUiState(locked) {
+  const dev = document.querySelector(".device");
+  if (!dev) return;
+  dev.classList.toggle("screen-locked", !!locked);
+  dev.classList.toggle("screen-unlocked", !locked);
 }
 
 function showScreen(id) {
@@ -94,53 +119,69 @@ function pushLockNotif(title, body) {
 
 function unlockPhone() {
   state.unlocked = true;
+  setLockUiState(false);
   openHome();
 }
 
 function bindLockSwipe() {
-  const slider = document.getElementById("lockSlider");
-  if (!slider || slider.dataset.bound) return;
-  slider.dataset.bound = "1";
+  const zone = document.getElementById("lockUnlockZone");
+  const bar = document.getElementById("lockBar");
+  if (!zone || zone.dataset.bound) return;
+  zone.dataset.bound = "1";
   let startY = 0;
   let dragging = false;
+
+  const applyDrag = () => {
+    if (bar) bar.style.transform = `translateY(${lockDragY}px)`;
+    zone.style.opacity = String(Math.min(1, 0.55 + Math.abs(lockDragY) / 120));
+  };
 
   const onEnd = () => {
     if (!dragging) return;
     dragging = false;
-    if (lockDragY < -72) unlockPhone();
+    if (lockDragY < -56) unlockPhone();
     lockDragY = 0;
-    slider.style.transform = "";
+    if (bar) bar.style.transform = "";
+    zone.style.opacity = "";
   };
 
-  slider.addEventListener("mousedown", (e) => {
+  const onStart = (clientY) => {
+    if (state.unlocked) return;
     dragging = true;
-    startY = e.clientY;
+    startY = clientY;
     lockDragY = 0;
+  };
+
+  zone.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    onStart(e.clientY);
   });
   window.addEventListener("mousemove", (e) => {
     if (!dragging) return;
     lockDragY = e.clientY - startY;
     if (lockDragY > 0) lockDragY = 0;
-    slider.style.transform = `translateY(${lockDragY}px)`;
+    applyDrag();
   });
   window.addEventListener("mouseup", onEnd);
 
-  slider.addEventListener("touchstart", (e) => {
-    dragging = true;
-    startY = e.touches[0].clientY;
-    lockDragY = 0;
+  zone.addEventListener("touchstart", (e) => {
+    onStart(e.touches[0].clientY);
   }, { passive: true });
-  slider.addEventListener("touchmove", (e) => {
+  zone.addEventListener("touchmove", (e) => {
     if (!dragging) return;
     lockDragY = e.touches[0].clientY - startY;
     if (lockDragY > 0) lockDragY = 0;
-    slider.style.transform = `translateY(${lockDragY}px)`;
+    applyDrag();
   }, { passive: true });
-  slider.addEventListener("touchend", onEnd);
+  zone.addEventListener("touchend", onEnd);
 }
 
 function installedApps() {
   return (state.appStore.availableApps || []).filter((a) => a.installed || a.default);
+}
+
+function storeApps() {
+  return (state.appStore.availableApps || []).filter((a) => a.default !== true);
 }
 
 function renderHomeApps() {
@@ -189,7 +230,7 @@ function makeAppTile(app) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "app-tile";
-  btn.innerHTML = `<span class="app-icon-wrap">${esc(app.icon)}</span><span class="app-label">${esc(app.label)}</span>`;
+  btn.innerHTML = `${iconHtml(app.icon)}<span class="app-label">${esc(app.label)}</span>`;
   btn.addEventListener("click", () => openApp(app.id));
   return btn;
 }
@@ -213,13 +254,16 @@ function bindHomeSwipe(pagesEl, pageCount) {
 function openHome() {
   if (!state.account?.hasAccount) {
     showScreen("accountSetup");
+    setLockUiState(false);
     return;
   }
   if (!state.unlocked) {
+    setLockUiState(true);
     showScreen("lockScreen");
     renderLockNotifs();
     return;
   }
+  setLockUiState(false);
   showScreen("homeScreen");
   renderHomeApps();
 }
@@ -273,6 +317,7 @@ async function respondToCall(accept) {
     state.unlocked = true;
     openHome();
   } else {
+    setLockUiState(true);
     showScreen("lockScreen");
   }
 }
@@ -296,13 +341,24 @@ function hydrate(payload = {}) {
 
 function renderAppStore() {
   const list = document.getElementById("storeList");
-  list.innerHTML = (state.appStore.availableApps || [])
-    .map(
-      (app) =>
-        `<div class="card"><b>${esc(app.icon)} ${esc(app.label)}</b><div class="small muted">${esc(app.id)}</div><button data-install-app="${esc(app.id)}">${app.installed || app.default ? "Įdiegta" : "Įdiegti"}</button></div>`,
-    )
-    .join("");
-  list.querySelectorAll("[data-install-app]").forEach((btn) => {
+  const rows = storeApps();
+  list.innerHTML = rows.length
+    ? rows
+        .map((app) => {
+          const done = app.installed || app.default;
+          const desc = app.description || "Papildoma programėlė";
+          return `<div class="card store-row">
+          ${iconHtml(app.icon, "store-app-icon")}
+          <div class="store-row-info">
+            <b>${esc(app.label)}</b>
+            <div class="small muted">${esc(desc)}</div>
+          </div>
+          <button type="button" data-install-app="${esc(app.id)}" ${done ? "disabled" : ""}>${done ? "Įdiegta" : "Gauti"}</button>
+        </div>`;
+        })
+        .join("")
+    : `<div class="card muted">Visos papildomos programėlės jau įdiegtos.</div>`;
+  list.querySelectorAll("[data-install-app]:not([disabled])").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await nui("installApp", { appId: btn.dataset.installApp });
       hydrate(await nui("refresh"));
@@ -318,8 +374,8 @@ function openAppStore() {
 }
 
 async function openApp(appId) {
-  if (EXTERNAL_APPS.has(appId)) {
-    await nui("launchApp", { appId });
+  if (appId === "appstore") {
+    openAppStore();
     return;
   }
   showScreen("appScreen");
@@ -437,8 +493,34 @@ window.renderSettingsApp = (content) => {
 };
 
 window.renderCameraApp = (content) => {
-  content.innerHTML = `<div class="card"><p>Kamera naudoja žaidimo foto režimą.</p><button id="btnCam" class="ios-btn primary">Atidaryti kamerą</button></div>`;
+  content.innerHTML = `<div class="card"><p>Foto režimas. Uždaryti: <b>ESC</b> arba <b>Backspace</b>.</p><button id="btnCam" class="ios-btn primary">Atidaryti kamerą</button><button id="btnCamClose" class="ios-btn" type="button">Uždaryti kamerą</button></div>`;
   document.getElementById("btnCam").addEventListener("click", () => nui("openCamera", {}));
+  document.getElementById("btnCamClose").addEventListener("click", () => nui("closeCamera", {}));
+};
+
+window.renderShopApp = (content) => {
+  content.innerHTML = `<div class="card"><b>Marketplace</b><p class="muted small">Apsipirkite miesto NPC parduotuvėse.</p><button id="btnShopHint" class="ios-btn primary">Patikrinti parduotuves</button></div>`;
+  document.getElementById("btnShopHint").addEventListener("click", () => nui("shopHint", {}));
+};
+
+window.renderWeatherApp = (content) => {
+  content.innerHTML = `<div class="card"><b>Orai Los Santos</b><p id="weatherText" class="muted">Kraunama…</p></div>`;
+  nui("getWeather", {}).then((res) => {
+    const el = document.getElementById("weatherText");
+    if (el) el.textContent = res?.label || "Giedra, ~24°C";
+  });
+};
+
+window.renderRadioApp = (content) => {
+  const stations = [
+    { id: "pop", label: "Los Santos Pop" },
+    { id: "rock", label: "Rock Nation" },
+    { id: "news", label: "Weazel News" },
+  ];
+  content.innerHTML = `<div class="card"><b>Radijas</b><p class="muted small">Pasirinkite stotį.</p>${stations.map((s) => `<button type="button" class="ios-btn" data-radio="${s.id}" style="width:100%;margin-top:8px">${esc(s.label)}</button>`).join("")}</div>`;
+  content.querySelectorAll("[data-radio]").forEach((btn) =>
+    btn.addEventListener("click", () => nui("radioStation", { station: btn.dataset.radio })),
+  );
 };
 
 window.renderNotesApp = (content) => {
@@ -453,6 +535,7 @@ window.addEventListener("message", async (e) => {
   const { action, payload } = e.data || {};
   if (action === "open") {
     state.unlocked = false;
+    setLockUiState(true);
     document.getElementById("phone").classList.remove("hidden");
     tickClock();
     showScreen("lockScreen");
@@ -462,6 +545,7 @@ window.addEventListener("message", async (e) => {
     state.activeCallId = null;
     document.getElementById("phone").classList.add("hidden");
     state.unlocked = false;
+    setLockUiState(true);
   } else if (action === "hydrate") {
     hydrate(payload || {});
   } else if (action === "newMessageNotify") {
@@ -520,3 +604,4 @@ setInterval(tickClock, 15000);
 tickClock();
 bindLockSwipe();
 applyWallpaper();
+setLockUiState(true);

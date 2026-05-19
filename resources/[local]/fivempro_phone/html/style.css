@@ -141,32 +141,53 @@ body {
   font-size: 0.82rem;
 }
 
-.lock-hint {
+.lock-unlock-zone {
   position: absolute;
-  bottom: 88px;
-  font-size: 0.78rem;
-  color: rgba(245, 245, 247, 0.55);
-}
-
-.lock-slider {
-  position: absolute;
-  bottom: 28px;
-  width: 120px;
-  height: 5px;
-  border-radius: 99px;
-  background: rgba(255, 255, 255, 0.35);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 14px;
   cursor: grab;
   touch-action: none;
+  z-index: 12;
+}
+
+.lock-hint {
+  font-size: 0.78rem;
+  color: rgba(245, 245, 247, 0.55);
+  margin-bottom: 8px;
+  pointer-events: none;
 }
 
 .lock-chevron {
-  position: absolute;
-  top: -28px;
-  left: 50%;
-  transform: translateX(-50%);
   font-size: 1.1rem;
   opacity: 0.7;
+  margin-bottom: 10px;
   animation: bounce-chevron 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.lock-bar {
+  width: 120px;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.55);
+  transition: transform 0.12s ease, opacity 0.12s ease;
+  pointer-events: none;
+}
+
+.device.screen-locked .home-indicator {
+  display: none;
+}
+
+.device.screen-unlocked .lock-unlock-zone {
+  pointer-events: none;
+  opacity: 0;
 }
 
 @keyframes bounce-chevron {
@@ -228,10 +249,42 @@ body {
   border-radius: 14px;
   display: grid;
   place-items: center;
-  font-size: 28px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  background: rgba(28, 28, 30, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.app-icon-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.store-app-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.store-app-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.store-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.store-row-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .app-label {
@@ -416,7 +469,7 @@ input, textarea {
   pointer-events: none !important;
 }
 
-.device.phone-call-active .lock-slider {
+.device.phone-call-active .lock-unlock-zone {
   display: none;
 }
 

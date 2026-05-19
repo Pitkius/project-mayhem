@@ -272,7 +272,8 @@ local function getInitialDataFor(src)
         availableApps[#availableApps + 1] = {
             id = tostring(app.id or ''),
             label = tostring(app.label or app.id or ''),
-            icon = tostring(app.icon or '⬜'),
+            icon = tostring(app.icon or 'appstore'),
+            description = tostring(app.description or ''),
             installed = installed[tostring(app.id or '')] == true,
             default = app.default == true,
         }

@@ -12,6 +12,7 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/assets/icons/*.svg',
 }
 
 shared_scripts {
