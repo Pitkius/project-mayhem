@@ -211,6 +211,25 @@ local function dispatchEmergency(src, service)
     end
 end
 
+local function getPendingIncomingCallFor(src)
+    for _, call in pairs(ActiveCalls) do
+        if call.calleeSrc == src and not call.accepted then
+            local fromName = ''
+            local caller = getPlayer(call.callerSrc)
+            if caller and caller.PlayerData and caller.PlayerData.charinfo then
+                local c = caller.PlayerData.charinfo
+                fromName = trim(('%s %s'):format(c.firstname or '', c.lastname or ''))
+            end
+            return {
+                id = call.id,
+                fromNumber = call.fromNumber,
+                fromName = fromName,
+            }
+        end
+    end
+    return nil
+end
+
 local function getInitialDataFor(src)
     local citizenid, P = getCitizen(src)
     if not citizenid then return nil end
@@ -288,6 +307,7 @@ local function getInitialDataFor(src)
         messagePreview = msgs,
         ads = ads,
         posts = posts,
+        pendingIncomingCall = getPendingIncomingCallFor(src),
     }
 end
 

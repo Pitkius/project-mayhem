@@ -460,13 +460,17 @@ local function pushVehiclePanelState()
     local dispHash = GetDisplayNameFromVehicleModel(vehModel)
     local vehLabel = dispHash and dispHash ~= '' and GetLabelText(dispHash) or 'Vehicle'
     if vehLabel == 'NULL' or vehLabel == '' then vehLabel = 'Vehicle' end
+    local modelSpawn = dispHash and string.lower(dispHash) or 'default'
     local plate = (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
     local motorPct = clamp(math.floor((eh / 1000.0) * 100.0 + 0.5), 0, 100)
+    local hasKeys = playerHasVehicleKeys(veh)
 
     SendNUIMessage({
         action = 'vehiclePanel',
         open = true,
         locked = locked,
+        modelSpawn = modelSpawn,
+        hasKeys = hasKeys,
         doors = doorList,
         engineOn = engineOn,
         weather = vehicleWeatherLabel(),
@@ -489,6 +493,12 @@ local function openVehiclePanel()
     local ped = PlayerPedId()
     if not IsPedInAnyVehicle(ped, false) then
         QBCore.Functions.Notify('Transporto panelė: turi būti automobilyje.', 'error')
+        return
+    end
+    local veh = GetVehiclePedIsIn(ped, false)
+    if veh == 0 then return end
+    if GetPedInVehicleSeat(veh, -1) ~= ped then
+        QBCore.Functions.Notify('Turi būti vairuotojo vietoje.', 'error')
         return
     end
     if listMenuOpen then
@@ -527,20 +537,24 @@ RegisterNUICallback('vehiclePanel:action', function(data, cb)
         cb({ ok = false })
         return
     end
+    if GetPedInVehicleSeat(veh, -1) ~= ped then
+        QBCore.Functions.Notify('Turi būti vairuotojo vietoje.', 'error')
+        cb({ ok = false })
+        return
+    end
 
     local action = data and data.action or ''
     if action == 'close' then
         closeVehiclePanel()
     elseif action == 'lock' then
-        local st = GetVehicleDoorLockStatus(veh)
-        if st == 2 or st == 3 or st == 4 then
-            SetVehicleDoorsLocked(veh, 1)
-        else
-            SetVehicleDoorsLocked(veh, 2)
-        end
+        toggleVehicleLockMenu(veh)
     elseif action == 'engine' then
-        local running = GetIsVehicleEngineRunning(veh)
-        SetVehicleEngineOn(veh, not running, false, true)
+        if not playerHasVehicleKeys(veh) then
+            QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
+            cb({ ok = false })
+            return
+        end
+        tryToggleEngineMenu(veh)
     elseif action == 'lights' then
         local _, lo = GetVehicleLightsState(veh)
         local on = lo == true or lo == 1
@@ -560,6 +574,11 @@ RegisterNUICallback('vehiclePanel:action', function(data, cb)
             clearHazardLights(veh)
         end
     elseif action == 'door' then
+        if not playerHasVehicleKeys(veh) then
+            QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
+            cb({ ok = false })
+            return
+        end
         local idx = tonumber(data.doorIndex)
         if idx == nil or idx < 0 or idx > 5 then
             cb({ ok = false })
@@ -620,9 +639,43 @@ local function setVehicleLocked(veh, locked)
     SetVehicleAlarmTimeLeft(veh, 0)
 end
 
+local function syncVehicleLockToServer(veh, locked)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    if netId and netId > 0 then
+        TriggerServerEvent('fivempro_hud:server:setVehicleLock', netId, locked == true)
+    end
+end
+
+RegisterNetEvent('fivempro_hud:client:syncVehicleLock', function(netId, locked)
+    netId = tonumber(netId)
+    if not netId then return end
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if veh and veh ~= 0 and DoesEntityExist(veh) then
+        setVehicleLocked(veh, locked == true)
+    end
+end)
+
+local function playerHasVehicleKeys(veh)
+    if not veh or veh == 0 then return false end
+    local plate = QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh)
+    if GetResourceState('qb-vehiclekeys') == 'started' then
+        local ok, has = pcall(function()
+            return exports['qb-vehiclekeys']:HasKeys(plate)
+        end)
+        if ok then return has == true end
+    end
+    return true
+end
+
 local function toggleVehicleLockMenu(veh)
+    if not playerHasVehicleKeys(veh) then
+        QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
+        return
+    end
     local nextLocked = not isVehicleLocked(veh)
     setVehicleLocked(veh, nextLocked)
+    syncVehicleLockToServer(veh, nextLocked)
     QBCore.Functions.Notify(nextLocked and 'Transportas užrakintas.' or 'Transportas atrakintas.', 'primary')
 end
 

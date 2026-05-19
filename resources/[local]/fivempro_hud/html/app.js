@@ -107,6 +107,24 @@ const vpMotorHFill = document.getElementById("vpMotorHFill");
 const vpFuelPct = document.getElementById("vpFuelPct");
 const vpMotorPct = document.getElementById("vpMotorPct");
 const vpVehicleName = document.getElementById("vpVehicleName");
+const vpVehicleImage = document.getElementById("vpVehicleImage");
+
+function setVehiclePreviewImage(modelSpawn) {
+  if (!vpVehicleImage) return;
+  const safe = String(modelSpawn || "default")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "");
+  const name = safe || "default";
+  vpVehicleImage.onerror = () => {
+    vpVehicleImage.onerror = null;
+    vpVehicleImage.src = "assets/vehicles/default.svg";
+  };
+  if (name === "default") {
+    vpVehicleImage.src = "assets/vehicles/default.svg";
+    return;
+  }
+  vpVehicleImage.src = `assets/vehicles/${name}.png`;
+}
 const vpPlateLine = document.getElementById("vpPlateLine");
 const vpHazardToggle = document.getElementById("vpHazardToggle");
 const vpBtnClose = document.getElementById("vpBtnClose");
@@ -363,6 +381,18 @@ window.addEventListener("message", (event) => {
     if (vpMotorPct) vpMotorPct.textContent = String(Math.round(motorN));
     if (vpVehicleName) vpVehicleName.textContent = data.vehicleName || "—";
     if (vpPlateLine) vpPlateLine.textContent = data.plate || "—";
+    setVehiclePreviewImage(data.modelSpawn);
+    if (data.hasKeys === false) {
+      document.querySelectorAll(".vp-ios-q, .vp-ios-power, .vp-door, .vp-win").forEach((el) => {
+        el.classList.add("vp-disabled");
+        el.setAttribute("disabled", "disabled");
+      });
+    } else {
+      document.querySelectorAll(".vp-ios-q, .vp-ios-power, .vp-door, .vp-win").forEach((el) => {
+        el.classList.remove("vp-disabled");
+        el.removeAttribute("disabled");
+      });
+    }
     if (vpHazardToggle) {
       vpHazardToggle.classList.toggle("on", !!data.hazard);
       vpHazardToggle.setAttribute("aria-pressed", data.hazard ? "true" : "false");

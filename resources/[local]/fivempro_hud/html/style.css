@@ -1433,6 +1433,37 @@ body.preset-3 {
     left: 25px;
 }
 
+.vp-ios-car-svg--hidden {
+    display: none !important;
+}
+
+.vp-ios-q.vp-disabled,
+.vp-ios-power.vp-disabled,
+.vp-door.vp-disabled,
+.vp-win.vp-disabled {
+    opacity: 0.38;
+    pointer-events: none;
+}
+
+.vp-vehicle-preview {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    min-height: 150px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.vp-vehicle-image {
+    width: min(240px, 92%);
+    height: 140px;
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45));
+}
+
 .vp-ios-car-wrap {
     position: relative;
     width: 100%;

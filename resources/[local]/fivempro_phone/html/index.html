@@ -22,18 +22,6 @@
         </span>
       </div>
 
-      <div id="callOverlay" class="call-overlay hidden" aria-hidden="true">
-        <div class="call-sheet glass">
-          <div class="call-avatar" aria-hidden="true">📶</div>
-          <div id="callOverlayTitle" class="call-title">Įeinantis skambutis</div>
-          <div id="callOverlaySub" class="call-sub">—</div>
-          <div class="call-actions">
-            <button type="button" class="call-btn reject" id="callReject">Atmesti</button>
-            <button type="button" class="call-btn accept" id="callAccept">Atsiliepti</button>
-          </div>
-        </div>
-      </div>
-
       <section id="lockScreen" class="screen lock-screen">
         <div class="lock-time" id="lockTime">09:41</div>
         <div class="lock-date" id="lockDate">Antradienis, gegužės 19</div>
@@ -82,6 +70,18 @@
         </header>
         <div id="appContent" class="scroll-body"></div>
       </section>
+
+      <div id="callOverlay" class="call-overlay hidden" aria-hidden="true">
+        <div class="call-sheet">
+          <div class="call-avatar" aria-hidden="true">📶</div>
+          <div id="callOverlayTitle" class="call-title">Įeinantis skambutis</div>
+          <div id="callOverlaySub" class="call-sub">—</div>
+          <div class="call-actions">
+            <button type="button" class="call-btn reject" id="callReject">Atmesti</button>
+            <button type="button" class="call-btn accept" id="callAccept">Atsiliepti</button>
+          </div>
+        </div>
+      </div>
 
       <button type="button" class="home-indicator" id="homeBar" aria-label="Pradžia"></button>
     </div>

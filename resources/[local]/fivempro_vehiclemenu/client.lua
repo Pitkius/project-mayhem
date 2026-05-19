@@ -31,10 +31,27 @@ local function setLocked(veh, locked)
 end
 
 local function toggleLock(veh)
+    if GetResourceState('fivempro_hud') == 'started' then
+        local netId = NetworkGetNetworkIdFromEntity(veh)
+        local nextLocked = not isLocked(veh)
+        setLocked(veh, nextLocked)
+        TriggerServerEvent('fivempro_hud:server:setVehicleLock', netId, nextLocked)
+        QBCore.Functions.Notify(nextLocked and 'Transportas užrakintas.' or 'Transportas atrakintas.', 'primary')
+        return
+    end
     local nextLocked = not isLocked(veh)
     setLocked(veh, nextLocked)
     QBCore.Functions.Notify(nextLocked and 'Transportas užrakintas.' or 'Transportas atrakintas.', 'primary')
 end
+
+RegisterNetEvent('fivempro_hud:client:syncVehicleLock', function(netId, locked)
+    netId = tonumber(netId)
+    if not netId then return end
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if veh and veh ~= 0 and DoesEntityExist(veh) then
+        setLocked(veh, locked == true)
+    end
+end)
 
 local function nearestVehicle(maxDist)
     local ped = PlayerPedId()

@@ -11,11 +11,17 @@ ui_page 'html/index.html'
 files {
     'html/index.html',
     'html/style.css',
-    'html/app.js'
+    'html/app.js',
+    'html/assets/vehicles/default.svg',
+    'html/assets/vehicles/*.png',
 }
 
 client_scripts {
-    'client.lua'
+    'client.lua',
+}
+
+server_scripts {
+    'server.lua',
 }
 
 exports {

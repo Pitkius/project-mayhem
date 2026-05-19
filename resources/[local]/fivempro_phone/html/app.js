@@ -224,11 +224,16 @@ function openHome() {
   renderHomeApps();
 }
 
+function setCallUiActive(active) {
+  document.querySelector(".device")?.classList.toggle("phone-call-active", !!active);
+}
+
 function hideCallOverlay() {
   const ov = document.getElementById("callOverlay");
   if (!ov) return;
   ov.classList.add("hidden");
   ov.setAttribute("aria-hidden", "true");
+  setCallUiActive(false);
 }
 
 function showIncomingCallOverlay(payload = {}) {
@@ -240,6 +245,36 @@ function showIncomingCallOverlay(payload = {}) {
   document.getElementById("callOverlayTitle").textContent = nm ? `Skambina · ${nm}` : "Įeinantis skambutis";
   ov.classList.remove("hidden");
   ov.setAttribute("aria-hidden", "false");
+  setCallUiActive(true);
+}
+
+function syncPendingIncomingCall(payload) {
+  const pending = payload?.pendingIncomingCall;
+  if (pending && pending.id) {
+    state.activeCallId = pending.id;
+    showIncomingCallOverlay(pending);
+    return;
+  }
+  if (!state.activeCallId) {
+    hideCallOverlay();
+  }
+}
+
+async function respondToCall(accept) {
+  const id = state.activeCallId;
+  hideCallOverlay();
+  state.activeCallId = null;
+  if (!id) {
+    openHome();
+    return;
+  }
+  await nui("respondCall", { callId: id, accept: !!accept });
+  if (accept) {
+    state.unlocked = true;
+    openHome();
+  } else {
+    showScreen("lockScreen");
+  }
 }
 
 function hydrate(payload = {}) {
@@ -255,7 +290,8 @@ function hydrate(payload = {}) {
   const pn = document.getElementById("profileName");
   if (pn) pn.textContent = `Sveiki, ${name}`;
   applyWallpaper();
-  openHome();
+  syncPendingIncomingCall(payload);
+  if (!state.activeCallId) openHome();
 }
 
 function renderAppStore() {
@@ -418,12 +454,12 @@ window.addEventListener("message", async (e) => {
   if (action === "open") {
     state.unlocked = false;
     document.getElementById("phone").classList.remove("hidden");
-    hideCallOverlay();
     tickClock();
     showScreen("lockScreen");
     renderLockNotifs();
   } else if (action === "close") {
     hideCallOverlay();
+    state.activeCallId = null;
     document.getElementById("phone").classList.add("hidden");
     state.unlocked = false;
   } else if (action === "hydrate") {
@@ -437,24 +473,30 @@ window.addEventListener("message", async (e) => {
     pushLockNotif("Skambutis", payload?.fromNumber || "Nežinomas");
     showIncomingCallOverlay(payload || {});
   } else if (action === "callState") {
-    state.activeCallId = payload?.id || null;
     const st = payload?.status || "";
     const cs = document.getElementById("callState");
     if (cs) cs.textContent = st;
-    if (/(ended|rejected|busy|failed)/i.test(st)) hideCallOverlay();
+    if (/(ended|rejected|busy|failed)/i.test(st)) {
+      state.activeCallId = null;
+      hideCallOverlay();
+      if (!state.unlocked) showScreen("lockScreen");
+      else openHome();
+    } else if (payload?.id) {
+      state.activeCallId = payload.id;
+    }
   }
 });
 
 document.getElementById("homeBar").addEventListener("click", openHome);
-document.getElementById("callReject").addEventListener("click", () => {
-  const id = state.activeCallId;
-  hideCallOverlay();
-  if (id) nui("respondCall", { callId: id, accept: false });
+document.getElementById("callReject").addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  respondToCall(false);
 });
-document.getElementById("callAccept").addEventListener("click", () => {
-  const id = state.activeCallId;
-  hideCallOverlay();
-  if (id) nui("respondCall", { callId: id, accept: true });
+document.getElementById("callAccept").addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  respondToCall(true);
 });
 window.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
