@@ -200,8 +200,13 @@ local function pushHud()
             engineHealth = eh
             engineTemp = clamp(math.floor((eh / 1000.0) * 42.0 + 58.0 + 0.5), 55, 115)
             engineOn = GetIsVehicleEngineRunning(veh)
-            local st = GetVehicleDoorLockStatus(veh)
-            doorsLocked = st == 2 or st == 3 or st == 4
+            local p = (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
+            if p ~= '' and lockStateByPlate[p] ~= nil then
+                doorsLocked = lockStateByPlate[p]
+            else
+                local st = GetVehicleDoorLockStatus(veh)
+                doorsLocked = st == 2 or st == 3 or st == 4
+            end
             local _, lo = GetVehicleLightsState(veh)
             lightsOn = lo == true or lo == 1
         end
@@ -420,8 +425,7 @@ local function pushVehiclePanelState()
         return
     end
 
-    local lockSt = GetVehicleDoorLockStatus(veh)
-    local locked = lockSt == 2 or lockSt == 3 or lockSt == 4
+    local locked = isVehicleLocked(veh)
 
     local doorList = {}
     for i = 0, 5 do
@@ -556,6 +560,11 @@ RegisterNUICallback('vehiclePanel:action', function(data, cb)
         end
         tryToggleEngineMenu(veh)
     elseif action == 'lights' then
+        if not playerHasVehicleKeys(veh) then
+            QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
+            cb({ ok = false })
+            return
+        end
         local _, lo = GetVehicleLightsState(veh)
         local on = lo == true or lo == 1
         if on then
@@ -569,6 +578,11 @@ RegisterNUICallback('vehiclePanel:action', function(data, cb)
         interiorLightByNetId[nid] = not on
         pcall(SetVehicleInteriorlight, veh, not on)
     elseif action == 'hazard' then
+        if not playerHasVehicleKeys(veh) then
+            QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
+            cb({ ok = false })
+            return
+        end
         hazardEnabled = not hazardEnabled
         if not hazardEnabled then
             clearHazardLights(veh)
@@ -585,12 +599,22 @@ RegisterNUICallback('vehiclePanel:action', function(data, cb)
             return
         end
         local r = GetVehicleDoorAngleRatio(veh, idx) or 0.0
-        if r > 0.12 then
-            SetVehicleDoorShut(veh, idx, false)
-        else
+        local open = r <= 0.12
+        if open then
             SetVehicleDoorOpen(veh, idx, false, false)
+        else
+            SetVehicleDoorShut(veh, idx, false)
+        end
+        local netId = NetworkGetNetworkIdFromEntity(veh)
+        if netId and netId > 0 then
+            TriggerServerEvent('fivempro_hud:server:setVehicleDoor', netId, idx, open)
         end
     elseif action == 'window' then
+        if not playerHasVehicleKeys(veh) then
+            QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
+            cb({ ok = false })
+            return
+        end
         local win = tonumber(data.windowIndex)
         if win == nil or win < 0 or win > 7 then
             cb({ ok = false })
@@ -646,6 +670,19 @@ local function syncVehicleLockToServer(veh, locked)
         TriggerServerEvent('fivempro_hud:server:setVehicleLock', netId, locked == true)
     end
 end
+
+RegisterNetEvent('fivempro_hud:client:syncVehicleDoor', function(netId, doorIndex, open)
+    netId = tonumber(netId)
+    doorIndex = tonumber(doorIndex)
+    if not netId or doorIndex == nil then return end
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    if open then
+        SetVehicleDoorOpen(veh, doorIndex, false, false)
+    else
+        SetVehicleDoorShut(veh, doorIndex, false)
+    end
+end)
 
 RegisterNetEvent('fivempro_hud:client:syncVehicleLock', function(netId, locked)
     netId = tonumber(netId)

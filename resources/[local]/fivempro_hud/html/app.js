@@ -115,15 +115,21 @@ function setVehiclePreviewImage(modelSpawn) {
     .toLowerCase()
     .replace(/[^a-z0-9_]/g, "");
   const name = safe || "default";
+  const fallbacks = [
+    `assets/vehicles/${name}.png`,
+    "assets/vehicles/default.png",
+    "assets/vehicles/default.svg",
+  ];
+  let step = 0;
   vpVehicleImage.onerror = () => {
+    step += 1;
+    if (step < fallbacks.length) {
+      vpVehicleImage.src = fallbacks[step];
+      return;
+    }
     vpVehicleImage.onerror = null;
-    vpVehicleImage.src = "assets/vehicles/default.svg";
   };
-  if (name === "default") {
-    vpVehicleImage.src = "assets/vehicles/default.svg";
-    return;
-  }
-  vpVehicleImage.src = `assets/vehicles/${name}.png`;
+  vpVehicleImage.src = fallbacks[0];
 }
 const vpPlateLine = document.getElementById("vpPlateLine");
 const vpHazardToggle = document.getElementById("vpHazardToggle");
@@ -382,6 +388,16 @@ window.addEventListener("message", (event) => {
     if (vpVehicleName) vpVehicleName.textContent = data.vehicleName || "—";
     if (vpPlateLine) vpPlateLine.textContent = data.plate || "—";
     setVehiclePreviewImage(data.modelSpawn);
+    const vpLockStatus = document.getElementById("vpLockStatus");
+    const vpEngineStatus = document.getElementById("vpEngineStatus");
+    if (vpLockStatus) {
+      vpLockStatus.textContent = data.locked ? "Užrakinta" : "Atrakinta";
+      vpLockStatus.classList.toggle("is-on", !!data.locked);
+    }
+    if (vpEngineStatus) {
+      vpEngineStatus.textContent = data.engineOn ? "Veikia" : "Išjungtas";
+      vpEngineStatus.classList.toggle("is-on", !!data.engineOn);
+    }
     if (data.hasKeys === false) {
       document.querySelectorAll(".vp-ios-q, .vp-ios-power, .vp-door, .vp-win").forEach((el) => {
         el.classList.add("vp-disabled");
@@ -401,6 +417,7 @@ window.addEventListener("message", (event) => {
       const act = btn.getAttribute("data-act");
       btn.classList.remove("on");
       if (act === "lock" && data.locked) btn.classList.add("on");
+      if (act === "lights" && data.headlightsOn) btn.classList.add("on");
       if (act === "interior" && data.interiorLight) btn.classList.add("on");
     });
     document.querySelectorAll(".vp-ios-power").forEach((btn) => {
@@ -412,10 +429,9 @@ window.addEventListener("message", (event) => {
         if (!el) return;
         el.classList.toggle("state-open", !!d.open);
         el.classList.toggle("state-unlocked", !data.locked);
-        let lab = "Door";
-        if (d.idx === 4) lab = "Hood";
-        else if (d.idx === 5) lab = "Baggage";
-        el.textContent = d.open ? `${lab} *` : lab;
+        const labels = ["Vair.", "Keleiv.", "G. kairė", "G. dešinė", "Kapotas", "Bagažinė"];
+        let lab = labels[d.idx] || "Durys";
+        el.textContent = d.open ? `${lab} ●` : lab;
       });
     }
     return;
@@ -441,71 +457,72 @@ window.addEventListener("message", (event) => {
   setBar("hunger", data.hunger);
   setBar("thirst", data.thirst);
 
-  const showCarHud =
-    !!data.inVehicle &&
-    !!data.show &&
-    (currentSettings.show.speed || currentSettings.show.fuel || currentSettings.show.seatbelt);
+  const showCarHud = !!data.inVehicle && !!data.show;
   carHud.classList.toggle("hidden", !showCarHud);
   if (carhudClassic) carhudClassic.classList.add("hidden");
-  if (speedText && speedText.parentElement) {
-    speedText.parentElement.classList.toggle("hidden", !currentSettings.show.speed);
-  }
-  if (fuelText && fuelText.parentElement) {
-    fuelText.parentElement.classList.toggle("hidden", !currentSettings.show.fuel);
-  }
-  if (seatbeltText && seatbeltText.parentElement) {
-    seatbeltText.parentElement.classList.toggle("hidden", !currentSettings.show.seatbelt);
-  }
-  if (speedText) speedText.textContent = `${data.speed ?? 0}`;
-  if (fuelText) fuelText.textContent = `${data.fuel ?? 0}%`;
+
+  const sp = Math.max(0, Math.min(999, Number(data.speed) || 0));
+  const fuelN = Math.max(0, Math.min(100, Number(data.fuel) || 0));
+  const eh = Number(data.engineHealth);
+  const motorPctHud = Number.isFinite(eh) ? Math.max(0, Math.min(100, Math.round(eh / 10))) : 0;
+
+  if (speedText) speedText.textContent = String(sp);
+  if (fuelText) fuelText.textContent = `${Math.round(fuelN)}%`;
   if (seatbeltText) seatbeltText.textContent = data.seatbelt ? "ON" : "OFF";
 
   if (carSpeedDigits) {
-    const sp = Math.max(0, Math.min(999, Number(data.speed) || 0));
-    carSpeedDigits.textContent = String(sp).padStart(3, "0");
+    carSpeedDigits.textContent = String(sp);
   }
+  const carFuelPctLbl = document.getElementById("carFuelPctLbl");
+  const carMotorPctLbl = document.getElementById("carMotorPctLbl");
+  if (carFuelPctLbl) carFuelPctLbl.textContent = `${Math.round(fuelN)}%`;
+  if (carMotorPctLbl) carMotorPctLbl.textContent = `${motorPctHud}%`;
+  if (carMotorPct) carMotorPct.textContent = String(motorPctHud);
+  if (carFuelMiniPct) carFuelMiniPct.textContent = String(Math.round(fuelN));
   if (carRpmArc) {
     const rpm = Math.max(0, Math.min(100, Number(data.rpm) || 0));
     carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN * (1 - rpm / 100));
   }
   if (carFuelArc) {
-    const fl = Math.max(0, Math.min(100, Number(data.fuel) || 0));
-    carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - fl / 100));
-    carFuelArc.classList.toggle("hidden", !currentSettings.show.fuel);
+    carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - fuelN / 100));
   }
-  const eh = Number(data.engineHealth);
-  const motorPctHud = Number.isFinite(eh) ? Math.max(0, Math.min(100, Math.round(eh / 10))) : 0;
   if (carMotorFill) carMotorFill.style.height = `${motorPctHud}%`;
-  if (carMotorPct) carMotorPct.textContent = String(motorPctHud);
   if (carMvMotor) {
     carMvMotor.classList.toggle("state-warn", motorPctHud < 40);
   }
 
-  const fuelMini = Math.max(0, Math.min(100, Number(data.fuel) || 0));
-  if (carFuelMiniFill) carFuelMiniFill.style.height = `${fuelMini}%`;
-  if (carFuelMiniPct) carFuelMiniPct.textContent = String(Math.round(fuelMini));
+  if (carFuelMiniFill) carFuelMiniFill.style.height = `${fuelN}%`;
   if (carMvFuelMini) {
-    carMvFuelMini.classList.toggle("state-warn", fuelMini < 18);
+    carMvFuelMini.classList.toggle("state-warn", fuelN < 18);
   }
 
-  if (carIcoEngine) {
-    carIcoEngine.classList.toggle("state-on", !!data.engineOn);
-    carIcoEngine.classList.toggle("state-warn", Number(data.engineHealth) < 500);
+  const statFuel = document.getElementById("carStatFuel");
+  const statEngine = document.getElementById("carStatEngine");
+  if (statFuel) statFuel.classList.toggle("state-warn", fuelN < 18);
+  if (statEngine) statEngine.classList.toggle("state-warn", motorPctHud < 40);
+
+  const engineEl = carIcoEngine || document.getElementById("carIcoEngine");
+  const doorsEl = carIcoDoors || document.getElementById("carIcoDoors");
+  const lightsEl = carIcoLights || document.getElementById("carIcoLights");
+  const beltEl = carIcoBelt || document.getElementById("carIcoBelt");
+
+  if (engineEl) {
+    engineEl.classList.toggle("state-on", !!data.engineOn);
+    engineEl.classList.toggle("state-off", !data.engineOn);
+    engineEl.classList.toggle("state-warn", motorPctHud < 40);
   }
-  if (carIcoDoors) {
-    carIcoDoors.classList.toggle("state-on", !!data.doorsLocked);
-    carIcoDoors.classList.toggle("state-warn", !data.doorsLocked);
+  if (doorsEl) {
+    doorsEl.classList.toggle("state-on", !!data.doorsLocked);
+    doorsEl.classList.toggle("state-off", !data.doorsLocked);
   }
-  if (carIcoLights) {
-    carIcoLights.classList.toggle("state-on", !!data.lightsOn);
+  if (lightsEl) {
+    lightsEl.classList.toggle("state-on", !!data.lightsOn);
+    lightsEl.classList.toggle("state-off", !data.lightsOn);
   }
-  if (carIcoBelt) {
-    carIcoBelt.classList.toggle("belt-off", !data.seatbelt);
-    carIcoBelt.classList.toggle("hidden", !currentSettings.show.seatbelt);
-  }
-  const carGaugeWrap = document.querySelector(".car-gauge-wrap");
-  if (carGaugeWrap) {
-    carGaugeWrap.classList.toggle("hidden", !currentSettings.show.speed && !currentSettings.show.fuel);
+  if (beltEl) {
+    beltEl.classList.toggle("state-on", !!data.seatbelt);
+    beltEl.classList.toggle("state-off", !data.seatbelt);
+    beltEl.classList.toggle("state-warn", !data.seatbelt);
   }
 });
 

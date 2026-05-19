@@ -134,8 +134,8 @@
     </div>
 
     <div id="hudBrCluster" class="hud-br-cluster">
-    <div id="carhud" class="carhud carhud-sport hidden">
-        <div class="car-sport-inner">
+    <div id="carhud" class="carhud carhud-modern hidden" aria-live="polite">
+        <div class="carhud-panel">
             <div class="car-mini-vitals">
                 <div id="carMvMotor" class="car-mv car-mv-motor" title="Variklio būklė">
                     <div id="carMotorFill" class="car-mv-fill"></div>
@@ -164,8 +164,8 @@
                     <circle id="carRpmArc" class="car-rpm-arc" cx="60" cy="60" r="50" fill="none" transform="rotate(135 60 60)" />
                 </svg>
                 <div class="car-speed-stack">
-                    <span id="carSpeedDigits" class="car-speed-digits">000</span>
-                    <span class="car-kmh">KM/H</span>
+                    <span id="carSpeedDigits" class="car-speed-digits carhud-speed-val">0</span>
+                    <span class="car-kmh carhud-speed-unit">km/h</span>
                 </div>
                 <div class="car-sub-icons">
                     <span id="carIcoEngine" class="car-sub-ico" title="Variklis (įjungtas)">
@@ -208,6 +208,10 @@
                 <span id="vpClock" class="vp-ios-time">00:00</span>
                 <span id="vpWeather" class="vp-ios-weather">CLEAR</span>
             </div>
+            <div class="vp-status-row">
+                <span id="vpLockStatus" class="vp-status-chip">—</span>
+                <span id="vpEngineStatus" class="vp-status-chip">—</span>
+            </div>
             <div class="vp-ios-body">
                 <div class="vp-ios-col vp-ios-left">
                     <div class="vp-ios-card">
@@ -215,7 +219,7 @@
                             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 17a2 2 0 002 2h10a2 2 0 002-2v-5H5v5z"/><path d="M16 5l1 2h3v4h-2M8 5L7 7H4v4h2"/><path d="M7 7h10"/></svg>
                         </span>
                         <div>
-                            <div class="vp-ios-card-label">Car</div>
+                            <div class="vp-ios-card-label">Automobilis</div>
                             <div id="vpVehicleName" class="vp-ios-card-val">—</div>
                         </div>
                     </div>
@@ -224,7 +228,7 @@
                             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
                         </span>
                         <div>
-                            <div class="vp-ios-card-label">Plate</div>
+                            <div class="vp-ios-card-label">Numeriai</div>
                             <div id="vpPlateLine" class="vp-ios-card-val">—</div>
                         </div>
                     </div>
@@ -232,7 +236,7 @@
                         <span class="vp-ios-meter-ico" aria-hidden="true">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10l2-6h12l2 6"/><path d="M6 10v8a2 2 0 002 2h8a2 2 0 002-2v-8"/><path d="M10 14h4"/></svg>
                         </span>
-                        <span class="vp-ios-meter-label">Fuel</span>
+                        <span class="vp-ios-meter-label">Kuras</span>
                         <div class="vp-ios-bar"><div id="vpFuelHFill" class="vp-ios-bar-fill"></div></div>
                         <span id="vpFuelPct" class="vp-ios-meter-pct">0</span>
                     </div>
@@ -240,16 +244,16 @@
                         <span class="vp-ios-meter-ico" aria-hidden="true">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v4M8 7h8l-1 12H9L8 7z"/><path d="M10 14h4"/></svg>
                         </span>
-                        <span class="vp-ios-meter-label">Motor</span>
+                        <span class="vp-ios-meter-label">Variklis</span>
                         <div class="vp-ios-bar"><div id="vpMotorHFill" class="vp-ios-bar-fill vp-ios-bar-fill-alt"></div></div>
                         <span id="vpMotorPct" class="vp-ios-meter-pct">100</span>
                     </div>
                     <div class="vp-ios-quick">
-                        <button type="button" class="vp-ios-q" data-act="doorFlip" title="Priekinės durys"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 4h12v16H6z"/><path d="M9 8h6"/></svg></span>Door</button>
-                        <button type="button" class="vp-ios-q" data-act="interior"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12h2M18 12h2"/></svg></span>Interior</button>
-                        <button type="button" class="vp-ios-q" data-act="lock"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="10" width="12" height="10" rx="1"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></span>Lock</button>
-                        <button type="button" class="vp-ios-q" data-act="keys"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="12" r="3"/><path d="M11 12h9v3h-3v3"/></svg></span>Keys</button>
-                        <button type="button" class="vp-ios-power" data-act="engine" title="Variklis"><svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg></button>
+                        <button type="button" class="vp-ios-q" data-act="lock" title="Užraktas"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="6" y="10" width="12" height="10" rx="1"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></span>Užraktas</button>
+                        <button type="button" class="vp-ios-q" data-act="engine" title="Variklis"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg></span>Variklis</button>
+                        <button type="button" class="vp-ios-q" data-act="lights" title="Šviesos"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 6h6v2H9V6zm0 4h6v2H9v-2zm8-8l4 3-4 3V6zm0 6l4 3-4 3v-6z"/></svg></span>Šviesos</button>
+                        <button type="button" class="vp-ios-q" data-act="doorFlip" title="Priekinės durys"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 4h12v16H6z"/><path d="M9 8h6"/></svg></span>Durys</button>
+                        <button type="button" class="vp-ios-q" data-act="interior" title="Salonas"><span class="vp-ios-q-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12h2M18 12h2"/></svg></span>Salonas</button>
                     </div>
                     <div class="vp-ios-meta">
                         <div><span class="vp-ios-meta-k">Gatvė</span><span id="vpStreet" class="vp-ios-meta-v">—</span></div>
@@ -259,8 +263,8 @@
                 </div>
                 <div class="vp-ios-col vp-ios-right">
                     <div class="vp-ios-car-wrap">
-                        <button type="button" class="vp-door vp-ios-door vp-door-4" data-door="4">Hood</button>
-                        <button type="button" class="vp-door vp-ios-door vp-door-5" data-door="5">Baggage</button>
+                        <button type="button" class="vp-door vp-ios-door vp-door-4" data-door="4">Kapotas</button>
+                        <button type="button" class="vp-door vp-ios-door vp-door-5" data-door="5">Bagažinė</button>
                         <div class="vp-vehicle-preview">
                             <img id="vpVehicleImage" class="vp-vehicle-image" src="assets/vehicles/default.svg" alt="" />
                         </div>
@@ -302,10 +306,10 @@
                                 <path d="M60 22v12M53 28h14" stroke="rgba(15,23,42,0.22)" stroke-width="0.95" stroke-linecap="round"/>
                             </svg>
                         </div>
-                        <button type="button" class="vp-door vp-ios-door vp-door-0" data-door="0">Door</button>
-                        <button type="button" class="vp-door vp-ios-door vp-door-1" data-door="1">Door</button>
-                        <button type="button" class="vp-door vp-ios-door vp-door-2" data-door="2">Door</button>
-                        <button type="button" class="vp-door vp-ios-door vp-door-3" data-door="3">Door</button>
+                        <button type="button" class="vp-door vp-ios-door vp-door-0" data-door="0">Vair.</button>
+                        <button type="button" class="vp-door vp-ios-door vp-door-1" data-door="1">Keleiv.</button>
+                        <button type="button" class="vp-door vp-ios-door vp-door-2" data-door="2">G. kairė</button>
+                        <button type="button" class="vp-door vp-ios-door vp-door-3" data-door="3">G. dešinė</button>
                         <button type="button" class="vp-win" data-window="0">W</button>
                         <button type="button" class="vp-win" data-window="1">W</button>
                         <button type="button" class="vp-win" data-window="2">W</button>
