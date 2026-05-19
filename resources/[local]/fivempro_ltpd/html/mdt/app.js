@@ -57,6 +57,7 @@ window.addEventListener('message', (e) => {
     app.classList.add('hidden');
     mdtDocked = false;
     app.classList.remove('is-docked');
+    dispatchMapLayoutReady = false;
     stopDispatchPoll();
     stopSurveillanceUi();
   }
@@ -99,7 +100,14 @@ document.querySelectorAll('.tab').forEach((t) => {
       watchDispatchMapResize();
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          fitDispatchMapInView();
+          layoutDispatchMapCanvas();
+          if (!dispatchMapLayoutReady) {
+            dispatchMapLayoutReady = true;
+            fitDispatchMapInView();
+          } else {
+            clampDispatchMapPan();
+            applyDispatchMapTransform();
+          }
           refreshDispatch();
         });
       });
@@ -292,6 +300,7 @@ function worldToMap(x, y) {
 let dispatchMapPan = { x: 0, y: 0, scale: 1 };
 let dispatchMapInteractBound = false;
 let dispatchMapResizeObs = null;
+let dispatchMapLayoutReady = false;
 let mdtDocked = false;
 let mdtDragBound = false;
 
@@ -365,7 +374,9 @@ function watchDispatchMapResize() {
   if (!root || dispatchMapResizeObs) return;
   dispatchMapResizeObs = new ResizeObserver(() => {
     if (document.getElementById('panel-units')?.classList.contains('hidden')) return;
-    fitDispatchMapInView();
+    layoutDispatchMapCanvas();
+    clampDispatchMapPan();
+    applyDispatchMapTransform();
   });
   dispatchMapResizeObs.observe(root);
 }
@@ -429,7 +440,13 @@ function renderDispatchMap(calls, units) {
   if (!markers) return;
   markers.innerHTML = '';
   bindDispatchMapInteract();
-  requestAnimationFrame(() => fitDispatchMapInView());
+  if (!dispatchMapLayoutReady) {
+    dispatchMapLayoutReady = true;
+    requestAnimationFrame(() => fitDispatchMapInView());
+  } else {
+    clampDispatchMapPan();
+    applyDispatchMapTransform();
+  }
   units.forEach((u) => {
     const p = worldToMap(u.x, u.y);
     const d = document.createElement('div');
@@ -572,7 +589,11 @@ function setMdtDocked(docked, skipPost) {
     app.style.bottom = '';
   }
   if (!document.getElementById('panel-units')?.classList.contains('hidden')) {
-    requestAnimationFrame(() => fitDispatchMapInView());
+    requestAnimationFrame(() => {
+      layoutDispatchMapCanvas();
+      clampDispatchMapPan();
+      applyDispatchMapTransform();
+    });
   }
 }
 

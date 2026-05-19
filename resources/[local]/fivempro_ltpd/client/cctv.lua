@@ -45,6 +45,7 @@ function StopLtpdCctvView()
         camId = '',
         rec = false,
     })
+    TriggerEvent('fivempro_ltpd:client:mdtCctvFocus', true)
 end
 
 local function applyCctvLook()
@@ -99,7 +100,9 @@ local function startCctvView(cam)
     cctvAudio = cam.audio == true
 
     SetTimecycleModifier('scanline_cam_cheap')
-    SetTimecycleModifierStrength(0.45)
+    SetTimecycleModifierStrength(0.62)
+
+    TriggerEvent('fivempro_ltpd:client:mdtCctvFocus', false)
 
     if cctvAudio then
         SetFocusPosAndVel(cctvBase.pos.x, cctvBase.pos.y, cctvBase.pos.z, 0.0, 0.0, 0.0)
@@ -176,6 +179,10 @@ CreateThread(function()
 
             if cctvAudio and cctvFocus then
                 SetFocusPosAndVel(cctvBase.pos.x, cctvBase.pos.y, cctvBase.pos.z, 0.0, 0.0, 0.0)
+            end
+
+            if IsDisabledControlJustPressed(0, 322) or IsDisabledControlJustPressed(0, 177) then
+                StopLtpdCctvView()
             end
             Wait(0)
         else

@@ -4,9 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LTPD MDT</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -150,23 +147,24 @@
         </div>
       </section>
     </main>
-    <div id="survOverlay" class="surv-overlay hidden" aria-hidden="true">
-      <div class="cctv-crt" aria-hidden="true">
-        <div class="cctv-scanlines"></div>
-        <div class="cctv-vignette"></div>
-        <div class="cctv-noise"></div>
-      </div>
-      <div class="surv-overlay-bar">
-        <span id="survOverlayLabel">LIVE</span>
-        <span id="survOverlayMeta"></span>
-        <span id="survRec" class="surv-rec on">● REC</span>
-      </div>
-      <div class="cctv-hud">
-        <span id="cctvHudTime">00:00:00</span>
-        <span id="cctvHudId">CAM —</span>
-      </div>
-    </div>
     <footer class="hint">Server-side tikrinimas • RB AC • Fivempro LTPD</footer>
+  </div>
+  <div id="survOverlay" class="surv-overlay hidden" aria-hidden="true">
+    <div class="cctv-crt" aria-hidden="true">
+      <div class="cctv-scanlines"></div>
+      <div class="cctv-vignette"></div>
+      <div class="cctv-noise"></div>
+    </div>
+    <div class="surv-overlay-bar">
+      <span id="survOverlayLabel">LIVE</span>
+      <span id="survOverlayMeta"></span>
+      <span id="survRec" class="surv-rec on">● REC</span>
+    </div>
+    <div class="cctv-hud">
+      <span id="cctvHudTime">00:00:00</span>
+      <span id="cctvHudId">CAM —</span>
+    </div>
+    <p class="cctv-hint">ESC — stabdyti • pelė — pasukti</p>
   </div>
   <script src="app.js"></script>
 </body>

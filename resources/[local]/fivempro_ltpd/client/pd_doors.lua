@@ -166,7 +166,7 @@ local function applyGarageSlabDoorSystem(slab, locked)
     local dh = slab.doorHash
     local force = true
     if locked then
-        DoorSystemSetDoorState(dh, 1, false, force)
+        DoorSystemSetDoorState(dh, 4, false, force)
         pcall(function()
             DoorSystemSetOpenRatio(dh, 0.0, true, true)
         end)
@@ -588,5 +588,35 @@ CreateThread(function()
             local locked = doorLocked[g.id] ~= false
             applyGroupLocked(g.id, locked)
         end
+    end
+end)
+
+--- Užrakinti garažo vartai: priverstinai laikomi uždaryti (fizika / kiti scriptai).
+CreateThread(function()
+    while true do
+        local ped = PlayerPedId()
+        local pc = GetEntityCoords(ped)
+        local anyNear = false
+        for _, g in ipairs(doorGroups) do
+            if g.doorType == 'garage_roll' and doorLocked[g.id] ~= false then
+                local near = false
+                if g.interact and #(pc - g.interact) < 90.0 then
+                    near = true
+                end
+                if not near then
+                    for _, slab in ipairs(g.slabs or {}) do
+                        if #(pc - slab.coords) < 90.0 then
+                            near = true
+                            break
+                        end
+                    end
+                end
+                if near then
+                    anyNear = true
+                    applyGarageRollLocked(g.slabs, g.entities, true)
+                end
+            end
+        end
+        Wait(anyNear and 0 or 400)
     end
 end)

@@ -73,6 +73,14 @@ RegisterCommand('mdt', function()
     openMdt()
 end, false)
 
+RegisterNetEvent('fivempro_ltpd:client:mdtCctvFocus', function(restoreMdt)
+    if restoreMdt and mdtOpen then
+        SetNuiFocus(true, true)
+    else
+        SetNuiFocus(false, false)
+    end
+end)
+
 RegisterNUICallback('close', function(_, cb)
     closeMdt()
     cb('ok')

@@ -142,11 +142,11 @@ CreateThread(function()
             local cls = GetVehicleClass(veh)
             local exempt = cls == 8 or cls == 13 or cls == 14 --- dviračiai / valtys etc.
             if exempt then
-                SetPedCanFlyThroughWindscreen(ped, false)
+                SetPedConfigFlag(ped, 32, true)
             else
                 local belt = seatbeltDisplayActive()
-                --- Su diržu – neproti pro priekį (mažiau smūgio žalos be išmetimo iš QB logikos).
-                SetPedCanFlyThroughWindscreen(ped, not belt)
+                --- CPED 32: true = negali išlėkti pro stiklą (diržas užsegtas).
+                SetPedConfigFlag(ped, 32, belt == true)
             end
         end
         ::belt_wait_cont::
@@ -412,6 +412,93 @@ local function vehicleWeatherLabel()
     return 'CLEAR'
 end
 
+local function plateOfV(veh)
+    return (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
+end
+
+local function isVehicleLocked(veh)
+    local p = plateOfV(veh)
+    if p ~= '' and lockStateByPlate[p] ~= nil then
+        return lockStateByPlate[p]
+    end
+    local st = GetVehicleDoorLockStatus(veh)
+    return st == 2 or st == 4
+end
+
+local function setVehicleLocked(veh, locked)
+    local p = plateOfV(veh)
+    if p ~= '' then lockStateByPlate[p] = locked and true or false end
+    SetVehicleDoorsLocked(veh, locked and 2 or 1)
+    SetVehicleDoorsLockedForAllPlayers(veh, locked and true or false)
+    SetVehicleAlarm(veh, false)
+    SetVehicleAlarmTimeLeft(veh, 0)
+end
+
+local function syncVehicleLockToServer(veh, locked)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    if netId and netId > 0 then
+        TriggerServerEvent('fivempro_hud:server:setVehicleLock', netId, locked == true)
+    end
+end
+
+local function playerHasVehicleKeys(veh)
+    if not veh or veh == 0 then return false end
+    local plate = QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh)
+    if GetResourceState('qb-vehiclekeys') == 'started' then
+        local ok, has = pcall(function()
+            return exports['qb-vehiclekeys']:HasKeys(plate)
+        end)
+        if ok then return has == true end
+    end
+    return true
+end
+
+local function toggleVehicleLockMenu(veh)
+    if not playerHasVehicleKeys(veh) then
+        QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
+        return
+    end
+    local nextLocked = not isVehicleLocked(veh)
+    setVehicleLocked(veh, nextLocked)
+    syncVehicleLockToServer(veh, nextLocked)
+    QBCore.Functions.Notify(nextLocked and 'Transportas užrakintas.' or 'Transportas atrakintas.', 'primary')
+end
+
+local function tryToggleEngineMenu(veh)
+    if engineStartBusy then return end
+    local on = GetIsVehicleEngineRunning(veh)
+    if on then
+        SetVehicleEngineOn(veh, false, true, true)
+        QBCore.Functions.Notify('Variklis išjungtas.', 'primary')
+        return
+    end
+
+    local hp = GetVehicleEngineHealth(veh)
+    local delay = 350
+    if hp < 700.0 then
+        delay = delay + math.floor((700.0 - hp) * 2.2)
+    end
+    delay = math.min(delay, 3500)
+    local failChance = 0.0
+    if hp < 800.0 then
+        failChance = math.min(0.85, (800.0 - hp) / 1000.0)
+    end
+
+    engineStartBusy = true
+    QBCore.Functions.Notify('Bandoma užvesti...', 'primary')
+    SetTimeout(delay, function()
+        engineStartBusy = false
+        if math.random() < failChance then
+            SetVehicleEngineOn(veh, false, true, true)
+            QBCore.Functions.Notify('Variklis neužsivedė. Pabandyk dar kartą.', 'error')
+            return
+        end
+        SetVehicleEngineOn(veh, true, false, true)
+        QBCore.Functions.Notify('Variklis užvestas.', 'success')
+    end)
+end
+
 local function pushVehiclePanelState()
     if not vehiclePanelOpen then return end
     local ped = PlayerPedId()
@@ -641,36 +728,6 @@ RegisterNUICallback('vehiclePanel:action', function(data, cb)
     cb({ ok = true })
 end)
 
-local function plateOfV(veh)
-    return (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
-end
-
-local function isVehicleLocked(veh)
-    local p = plateOfV(veh)
-    if p ~= '' and lockStateByPlate[p] ~= nil then
-        return lockStateByPlate[p]
-    end
-    local st = GetVehicleDoorLockStatus(veh)
-    return st == 2 or st == 4
-end
-
-local function setVehicleLocked(veh, locked)
-    local p = plateOfV(veh)
-    if p ~= '' then lockStateByPlate[p] = locked and true or false end
-    SetVehicleDoorsLocked(veh, locked and 2 or 1)
-    SetVehicleDoorsLockedForAllPlayers(veh, locked and true or false)
-    SetVehicleAlarm(veh, false)
-    SetVehicleAlarmTimeLeft(veh, 0)
-end
-
-local function syncVehicleLockToServer(veh, locked)
-    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
-    local netId = NetworkGetNetworkIdFromEntity(veh)
-    if netId and netId > 0 then
-        TriggerServerEvent('fivempro_hud:server:setVehicleLock', netId, locked == true)
-    end
-end
-
 RegisterNetEvent('fivempro_hud:client:syncVehicleDoor', function(netId, doorIndex, open)
     netId = tonumber(netId)
     doorIndex = tonumber(doorIndex)
@@ -693,29 +750,6 @@ RegisterNetEvent('fivempro_hud:client:syncVehicleLock', function(netId, locked)
     end
 end)
 
-local function playerHasVehicleKeys(veh)
-    if not veh or veh == 0 then return false end
-    local plate = QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh)
-    if GetResourceState('qb-vehiclekeys') == 'started' then
-        local ok, has = pcall(function()
-            return exports['qb-vehiclekeys']:HasKeys(plate)
-        end)
-        if ok then return has == true end
-    end
-    return true
-end
-
-local function toggleVehicleLockMenu(veh)
-    if not playerHasVehicleKeys(veh) then
-        QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
-        return
-    end
-    local nextLocked = not isVehicleLocked(veh)
-    setVehicleLocked(veh, nextLocked)
-    syncVehicleLockToServer(veh, nextLocked)
-    QBCore.Functions.Notify(nextLocked and 'Transportas užrakintas.' or 'Transportas atrakintas.', 'primary')
-end
-
 local function toggleVehicleDoorMenu(veh, doorIdx, label)
     local ratio = GetVehicleDoorAngleRatio(veh, doorIdx)
     if ratio > 0.05 then
@@ -725,40 +759,6 @@ local function toggleVehicleDoorMenu(veh, doorIdx, label)
         SetVehicleDoorOpen(veh, doorIdx, false, false)
         QBCore.Functions.Notify(label .. ' atidaryta.', 'primary')
     end
-end
-
-local function tryToggleEngineMenu(veh)
-    if engineStartBusy then return end
-    local on = GetIsVehicleEngineRunning(veh)
-    if on then
-        SetVehicleEngineOn(veh, false, true, true)
-        QBCore.Functions.Notify('Variklis išjungtas.', 'primary')
-        return
-    end
-
-    local hp = GetVehicleEngineHealth(veh)
-    local delay = 350
-    if hp < 700.0 then
-        delay = delay + math.floor((700.0 - hp) * 2.2)
-    end
-    delay = math.min(delay, 3500)
-    local failChance = 0.0
-    if hp < 800.0 then
-        failChance = math.min(0.85, (800.0 - hp) / 1000.0)
-    end
-
-    engineStartBusy = true
-    QBCore.Functions.Notify('Bandoma užvesti...', 'primary')
-    SetTimeout(delay, function()
-        engineStartBusy = false
-        if math.random() < failChance then
-            SetVehicleEngineOn(veh, false, true, true)
-            QBCore.Functions.Notify('Variklis neužsivedė. Pabandyk dar kartą.', 'error')
-            return
-        end
-        SetVehicleEngineOn(veh, true, false, true)
-        QBCore.Functions.Notify('Variklis užvestas.', 'success')
-    end)
 end
 
 local function closeVehicleListMenu()

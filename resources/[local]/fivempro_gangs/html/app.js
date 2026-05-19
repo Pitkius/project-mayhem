@@ -28,6 +28,7 @@ let mapCfg = null;
 const GANG_MAP_IMG_W = 1066;
 const GANG_MAP_IMG_H = 861;
 let gangsMapPan = { x: 0, y: 0, scale: 1 };
+let gangsMapLayoutReady = false;
 let gangsMapInteractBound = false;
 let gangsMapResizeObs = null;
 let tabletDocked = false;
@@ -115,6 +116,7 @@ function destroyTurfMap() {
   if (surface) surface.remove();
   mapCfg = null;
   gangsMapPan = { x: 0, y: 0, scale: 1 };
+  gangsMapLayoutReady = false;
   applyGangsMapTransform();
   mapTooltip.classList.add("hidden");
 }
@@ -190,7 +192,9 @@ function watchGangsMapResize() {
   if (!root || gangsMapResizeObs) return;
   gangsMapResizeObs = new ResizeObserver(() => {
     if (activeTab !== "map") return;
-    fitGangsMapInView();
+    layoutGangsMapCanvas();
+    clampGangsMapPan();
+    applyGangsMapTransform();
   });
   gangsMapResizeObs.observe(root);
 }
@@ -260,7 +264,13 @@ function renderTurfsOnMap(state) {
 
   markers.innerHTML = "";
   bindGangsMapInteract();
-  requestAnimationFrame(() => fitGangsMapInView());
+  if (!gangsMapLayoutReady) {
+    gangsMapLayoutReady = true;
+    requestAnimationFrame(() => fitGangsMapInView());
+  } else {
+    clampGangsMapPan();
+    applyGangsMapTransform();
+  }
 
   (state.turfs || []).forEach((t) => {
     const x = Number(t.center_x);
@@ -529,7 +539,16 @@ function setTabletDocked(docked, skipPost) {
     tabletBezel.style.bottom = "";
   }
   if (activeTab === "map") {
-    requestAnimationFrame(() => fitGangsMapInView());
+    requestAnimationFrame(() => {
+      layoutGangsMapCanvas();
+      if (!gangsMapLayoutReady) {
+        gangsMapLayoutReady = true;
+        fitGangsMapInView();
+      } else {
+        clampGangsMapPan();
+        applyGangsMapTransform();
+      }
+    });
   }
 }
 

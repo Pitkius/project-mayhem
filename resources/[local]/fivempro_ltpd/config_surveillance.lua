@@ -41,7 +41,7 @@ Config.Surveillance.CctvCategories = {
 ]]
 Config.Surveillance.CctvCameras = {
     -- Bankai (Fleeca)
-    { id = 'fleeca_legion', label = 'Fleeca – Legion Square', zone = 'bank', coords = vector3(151.35, -1042.45, 29.85), lookAt = vector3(145.2, -1036.0, 29.35), fov = 52.0, audio = true },
+    { id = 'fleeca_legion', label = 'Fleeca – Legion Square', zone = 'bank', coords = vector3(153.2, -1046.8, 32.25), lookAt = vector3(147.0, -1037.5, 29.35), fov = 50.0, audio = true },
     { id = 'fleeca_alta', label = 'Fleeca – Alta', zone = 'bank', coords = vector3(315.85, -276.25, 54.65), lookAt = vector3(309.5, -280.5, 54.15), fov = 52.0, audio = true },
     { id = 'fleeca_hawick', label = 'Fleeca – Hawick', zone = 'bank', coords = vector3(-351.0, -51.25, 49.5), lookAt = vector3(-356.5, -48.0, 49.0), fov = 52.0, audio = true },
     { id = 'fleeca_ocean', label = 'Fleeca – Great Ocean', zone = 'bank', coords = vector3(-2958.5, 485.0, 16.1), lookAt = vector3(-2962.0, 478.0, 15.7), fov = 52.0, audio = true },
@@ -52,11 +52,11 @@ Config.Surveillance.CctvCameras = {
     -- Juvelyrika / kazino
     { id = 'vangelico_front', label = 'Vangelico – vitrina', zone = 'jewelry', coords = vector3(-622.5, -232.0, 38.55), lookAt = vector3(-628.0, -229.5, 38.05), fov = 50.0, audio = true },
     { id = 'vangelico_vault', label = 'Vangelico – salė', zone = 'jewelry', coords = vector3(-629.0, -238.5, 38.55), lookAt = vector3(-624.0, -232.0, 38.0), fov = 55.0, audio = true },
-    { id = 'casino_main', label = 'Diamond Casino – pagrindinė salė', zone = 'casino', coords = vector3(920.5, 47.5, 81.5), lookAt = vector3(928.0, 52.0, 80.9), fov = 58.0, audio = true },
+    { id = 'casino_main', label = 'Diamond Casino – pagrindinė salė', zone = 'casino', coords = vector3(917.0, 43.5, 84.2), lookAt = vector3(928.0, 52.0, 80.9), fov = 55.0, audio = true },
     { id = 'casino_garage', label = 'Diamond Casino – garažas', zone = 'casino', coords = vector3(936.0, 0.5, 78.25), lookAt = vector3(940.0, 8.0, 77.8), fov = 55.0, audio = true },
 
     -- Policija
-    { id = 'mrpd_lobby', label = 'MRPD – vestibiulis', zone = 'police', coords = vector3(441.2, -981.0, 31.25), lookAt = vector3(435.0, -975.0, 30.7), fov = 55.0, audio = true },
+    { id = 'mrpd_lobby', label = 'MRPD – vestibiulis', zone = 'police', coords = vector3(438.5, -985.8, 33.85), lookAt = vector3(435.0, -975.0, 30.7), fov = 52.0, audio = true },
     { id = 'mrpd_parking', label = 'MRPD – parkavimas', zone = 'police', coords = vector3(458.5, -1003.0, 28.75), lookAt = vector3(452.0, -998.0, 28.2), fov = 58.0, audio = true },
     { id = 'mrpd_roof', label = 'MRPD – stogas', zone = 'police', coords = vector3(463.0, -984.0, 44.5), lookAt = vector3(455.0, -978.0, 43.5), fov = 60.0, audio = false },
     { id = 'sandy_pd', label = 'Sandy Shores PD', zone = 'police', coords = vector3(1852.5, 3688.0, 34.75), lookAt = vector3(1846.0, 3692.0, 34.2), fov = 55.0, audio = true },
@@ -64,7 +64,7 @@ Config.Surveillance.CctvCameras = {
 
     -- Parduotuvės (24/7 / LTD)
     { id = '247_grove', label = '24/7 – Grove St', zone = 'store', coords = vector3(-50.5, -1754.5, 29.85), lookAt = vector3(-47.0, -1758.0, 29.4), fov = 54.0, audio = true },
-    { id = '247_innocence', label = '24/7 – Innocence Blvd', zone = 'store', coords = vector3(29.5, -1344.5, 29.9), lookAt = vector3(26.0, -1340.0, 29.45), fov = 54.0, audio = true },
+    { id = '247_innocence', label = '24/7 – Innocence Blvd', zone = 'store', coords = vector3(31.8, -1348.2, 31.65), lookAt = vector3(26.0, -1340.0, 29.45), fov = 52.0, audio = true },
     { id = '247_mirror', label = '24/7 – Mirror Park', zone = 'store', coords = vector3(1160.5, -314.5, 69.55), lookAt = vector3(1156.0, -318.0, 69.1), fov = 54.0, audio = true },
     { id = '247_sandy', label = '24/7 – Sandy Shores', zone = 'store', coords = vector3(1963.5, 3746.0, 32.7), lookAt = vector3(1959.0, 3742.0, 32.25), fov = 54.0, audio = true },
     { id = 'ltd_grove', label = 'LTD – Davis', zone = 'store', coords = vector3(-43.5, -1748.0, 29.85), lookAt = vector3(-48.0, -1752.0, 29.4), fov = 52.0, audio = true },
