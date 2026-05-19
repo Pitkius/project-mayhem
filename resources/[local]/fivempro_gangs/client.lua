@@ -135,6 +135,7 @@ RegisterNetEvent('fivempro_gangs:client:openTablet', function()
         tabletOpen = true
         playTabletAnim()
         SetNuiFocus(true, true)
+        SendNUIMessage({ action = 'undock' })
         SendNUIMessage({
             action = 'open',
             payload = {
@@ -267,7 +268,23 @@ RegisterNUICallback('gangs:startMission', function(data, cb)
         return
     end
     TriggerEvent('fivempro_gangs:client:startMission', turfId, missionType)
-    closeTabletUi()
+    SetNuiFocus(false, false)
+    stopTabletAnim()
+    SendNUIMessage({ action = 'dock' })
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('gangs:setDocked', function(data, cb)
+    local docked = data and data.docked == true
+    if docked then
+        SetNuiFocus(false, false)
+        stopTabletAnim()
+        SendNUIMessage({ action = 'dock' })
+    elseif tabletOpen then
+        playTabletAnim()
+        SetNuiFocus(true, true)
+        SendNUIMessage({ action = 'undock' })
+    end
     cb({ ok = true })
 end)
 

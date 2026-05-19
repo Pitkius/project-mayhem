@@ -26,6 +26,8 @@ window.addEventListener('message', (e) => {
   if (!d || !d.action) return;
   if (d.action === 'open') {
     app.classList.remove('hidden');
+    mdtDocked = false;
+    app.classList.remove('is-docked');
     const perms = (d.data && d.data.permissions) || {};
     document.getElementById('tabFine').style.display = perms.fine ? '' : 'none';
     document.getElementById('tabWant').style.display = perms.wanted ? '' : 'none';
@@ -53,8 +55,13 @@ window.addEventListener('message', (e) => {
   }
   if (d.action === 'close') {
     app.classList.add('hidden');
+    mdtDocked = false;
+    app.classList.remove('is-docked');
     stopDispatchPoll();
     stopSurveillanceUi();
+  }
+  if (d.action === 'dock') {
+    setMdtDocked(true, true);
   }
   if (d.action === 'cctvOverlay') {
     setSurveillanceOverlay(d.active, d.label || 'CCTV LIVE', d.audio ? 'Garsas įjungtas' : 'Be garso');
@@ -87,11 +94,14 @@ document.querySelectorAll('.tab').forEach((t) => {
     const pan = document.getElementById(id);
     if (pan) pan.classList.remove('hidden');
     if (t.dataset.tab === 'units') {
-      dispatchMapPan = { x: 0, y: 0, scale: 1 };
       ensureDispatchMapDom();
-      layoutDispatchMapCanvas();
-      applyDispatchMapTransform();
-      refreshDispatch();
+      watchDispatchMapResize();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          fitDispatchMapInView();
+          refreshDispatch();
+        });
+      });
     }
     if (t.dataset.tab === 'cctv') refreshCctvList();
     if (t.dataset.tab === 'bodycam') refreshBodycamList();
@@ -280,57 +290,72 @@ function worldToMap(x, y) {
 
 let dispatchMapPan = { x: 0, y: 0, scale: 1 };
 let dispatchMapInteractBound = false;
+let dispatchMapResizeObs = null;
+let mdtDocked = false;
+let mdtDragBound = false;
 
 function ensureDispatchMapDom() {
   const transform = document.getElementById('dispatchMapTransform');
-  if (!transform || document.getElementById('dispatchMapCanvas')) return;
+  if (!transform || document.getElementById('dispatchMapSurface')) return;
 
   let markers = document.getElementById('dispatchMapMarkers');
   const inner = document.getElementById('dispatchMapInner');
-  const canvas = document.createElement('d' + 'iv');
-  canvas.id = 'dispatchMapCanvas';
-  canvas.className = 'dispatch-map-canvas';
+  const surface = document.createElement('div');
+  surface.id = 'dispatchMapSurface';
+  surface.className = 'dispatch-map-surface';
+  surface.style.backgroundImage = `url("${MAP_SAT_URL}")`;
 
-  const img = document.createElement('img');
-  img.id = 'dispatchMapImg';
-  img.className = 'dispatch-map-img';
-  img.src = MAP_SAT_URL;
-  img.alt = '';
-  img.draggable = false;
-
-  if (inner) {
-    inner.remove();
-  }
+  if (inner) inner.remove();
   if (!markers) {
-    markers = document.createElement('d' + 'iv');
+    markers = document.createElement('div');
     markers.id = 'dispatchMapMarkers';
     markers.className = 'dispatch-map-markers';
   } else {
     markers.remove();
   }
 
-  canvas.appendChild(img);
-  canvas.appendChild(markers);
-  transform.appendChild(canvas);
+  surface.appendChild(markers);
+  transform.appendChild(surface);
 }
 
 function layoutDispatchMapCanvas() {
   const root = document.getElementById('dispatchMap');
-  const canvas = document.getElementById('dispatchMapCanvas');
-  const img = document.getElementById('dispatchMapImg');
-  if (!root || !canvas || !img) return;
+  const surface = document.getElementById('dispatchMapSurface');
+  if (!root || !surface) return;
 
+  const cw = Math.max(320, root.clientWidth || 0);
+  const ch = Math.max(240, root.clientHeight || 0);
+  const fit = Math.min(cw / MAP_IMG_W, ch / MAP_IMG_H);
+  const panPad = 1.65;
+  const px = Math.max(fit * panPad, 0.35);
+  surface.style.width = `${Math.round(MAP_IMG_W * px)}px`;
+  surface.style.height = `${Math.round(MAP_IMG_H * px)}px`;
+}
+
+function fitDispatchMapInView() {
+  const root = document.getElementById('dispatchMap');
+  const surface = document.getElementById('dispatchMapSurface');
+  if (!root || !surface) return;
+  layoutDispatchMapCanvas();
   const cw = Math.max(1, root.clientWidth);
   const ch = Math.max(1, root.clientHeight);
-  const cover = Math.max(cw / MAP_IMG_W, ch / MAP_IMG_H);
-  const pad = 2.25;
-  const w = MAP_IMG_W * cover * pad;
-  const h = MAP_IMG_H * cover * pad;
-  canvas.style.width = `${w}px`;
-  canvas.style.height = `${h}px`;
-  img.style.width = '100%';
-  img.style.height = '100%';
-  img.style.objectFit = 'fill';
+  const sw = surface.offsetWidth || MAP_IMG_W;
+  const sh = surface.offsetHeight || MAP_IMG_H;
+  dispatchMapPan.scale = Math.min(1, cw / sw, ch / sh);
+  dispatchMapPan.x = 0;
+  dispatchMapPan.y = 0;
+  applyDispatchMapTransform();
+}
+
+function watchDispatchMapResize() {
+  const root = document.getElementById('dispatchMap');
+  if (!root || dispatchMapResizeObs) return;
+  dispatchMapResizeObs = new ResizeObserver(() => {
+    if (document.getElementById('panel-units')?.classList.contains('hidden')) return;
+    layoutDispatchMapCanvas();
+    applyDispatchMapTransform();
+  });
+  dispatchMapResizeObs.observe(root);
 }
 
 function applyDispatchMapTransform() {
@@ -384,11 +409,13 @@ function bindDispatchMapInteract() {
 
 function renderDispatchMap(calls, units) {
   ensureDispatchMapDom();
+  watchDispatchMapResize();
   layoutDispatchMapCanvas();
   const markers = document.getElementById('dispatchMapMarkers');
   if (!markers) return;
   markers.innerHTML = '';
   bindDispatchMapInteract();
+  requestAnimationFrame(() => fitDispatchMapInView());
   units.forEach((u) => {
     const p = worldToMap(u.x, u.y);
     const d = document.createElement('div');
@@ -506,18 +533,72 @@ function refreshDispatch() {
 
 document.getElementById('refreshDispatch').onclick = () => refreshDispatch();
 document.getElementById('refreshDispatchMap').onclick = () => {
-  dispatchMapPan = { x: 0, y: 0, scale: 1 };
   ensureDispatchMapDom();
-  layoutDispatchMapCanvas();
-  applyDispatchMapTransform();
+  fitDispatchMapInView();
   refreshDispatch();
 };
 
 window.addEventListener('resize', () => {
   if (!document.getElementById('panel-units')?.classList.contains('hidden')) {
     layoutDispatchMapCanvas();
+    applyDispatchMapTransform();
   }
 });
+
+function setMdtDocked(docked, skipPost) {
+  mdtDocked = !!docked;
+  app.classList.toggle('is-docked', mdtDocked);
+  const btn = document.getElementById('btnDock');
+  if (btn) btn.textContent = mdtDocked ? '⊞ Visas' : '⊟ Kampas';
+  if (!skipPost) nuiPost('mdtSetDocked', { docked: mdtDocked });
+  if (!mdtDocked) {
+    app.style.left = '';
+    app.style.top = '';
+    app.style.right = '';
+    app.style.bottom = '';
+  }
+  if (!document.getElementById('panel-units')?.classList.contains('hidden')) {
+    requestAnimationFrame(() => fitDispatchMapInView());
+  }
+}
+
+function bindMdtDrag() {
+  if (mdtDragBound) return;
+  mdtDragBound = true;
+  const head = document.querySelector('.top');
+  if (!head) return;
+  let drag = false;
+  let sx = 0;
+  let sy = 0;
+  let sl = 0;
+  let st = 0;
+  head.addEventListener('mousedown', (e) => {
+    if (!mdtDocked || e.target.closest('button')) return;
+    drag = true;
+    const r = app.getBoundingClientRect();
+    sx = e.clientX;
+    sy = e.clientY;
+    sl = r.left;
+    st = r.top;
+    e.preventDefault();
+  });
+  window.addEventListener('mouseup', () => {
+    drag = false;
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!drag || !mdtDocked) return;
+    app.style.left = `${sl + e.clientX - sx}px`;
+    app.style.top = `${st + e.clientY - sy}px`;
+    app.style.right = 'auto';
+    app.style.bottom = 'auto';
+  });
+}
+
+const btnDock = document.getElementById('btnDock');
+if (btnDock) {
+  btnDock.onclick = () => setMdtDocked(!mdtDocked);
+}
+bindMdtDrag();
 document.getElementById('btnCreateCrew').onclick = () => nuiPost('crewAction', { action: 'create', callsign: document.getElementById('crewCallsign').value.trim() }).then(refreshDispatch);
 document.getElementById('btnJoinCrew').onclick = () => nuiPost('crewAction', { action: 'join', crewId: document.getElementById('crewIdInput').value.trim() }).then(refreshDispatch);
 document.getElementById('btnAddCrewMember').onclick = () => nuiPost('crewAction', {

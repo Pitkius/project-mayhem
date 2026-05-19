@@ -78,6 +78,18 @@ RegisterNUICallback('close', function(_, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('mdtSetDocked', function(data, cb)
+    local docked = data and data.docked == true
+    if docked then
+        SetNuiFocus(false, false)
+    else
+        if mdtOpen then
+            SetNuiFocus(true, true)
+        end
+    end
+    cb('ok')
+end)
+
 RegisterNUICallback('searchPerson', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_ltpd:server:searchPerson', function(result)
         cb(result or { ok = false })

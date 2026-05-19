@@ -29,6 +29,10 @@ const GANG_MAP_IMG_W = 1066;
 const GANG_MAP_IMG_H = 861;
 let gangsMapPan = { x: 0, y: 0, scale: 1 };
 let gangsMapInteractBound = false;
+let gangsMapResizeObs = null;
+let tabletDocked = false;
+let tabletDragBound = false;
+const tabletBezel = document.querySelector(".tablet-bezel");
 /** @type {'register' | 'gang' | 'map'} */
 let activeTab = "register";
 
@@ -107,10 +111,8 @@ function hexToRgba(hex, alpha) {
 }
 
 function destroyTurfMap() {
-  const markers = document.getElementById("gangsMapMarkers");
-  const inner = document.getElementById("gangsMapInner");
-  if (markers) markers.innerHTML = "";
-  if (inner) inner.style.backgroundImage = "";
+  const surface = document.getElementById("gangsMapSurface");
+  if (surface) surface.remove();
   mapCfg = null;
   gangsMapPan = { x: 0, y: 0, scale: 1 };
   applyGangsMapTransform();
@@ -119,50 +121,67 @@ function destroyTurfMap() {
 
 function ensureGangsMapDom(imageUrl) {
   const transform = document.getElementById("gangsMapTransform");
-  if (!transform || document.getElementById("gangsMapCanvas")) return;
+  if (!transform || document.getElementById("gangsMapSurface")) return;
 
   let markers = document.getElementById("gangsMapMarkers");
   const inner = document.getElementById("gangsMapInner");
-  const canvas = document.createElement("d" + "iv");
-  canvas.id = "gangsMapCanvas";
-  canvas.className = "gangs-map-canvas";
-
-  const img = document.createElement("img");
-  img.id = "gangsMapImg";
-  img.className = "gangs-map-img";
-  img.src = imageUrl || "";
-  img.alt = "";
-  img.draggable = false;
+  const surface = document.createElement("div");
+  surface.id = "gangsMapSurface";
+  surface.className = "gangs-map-surface";
+  const url = imageUrl || (mapCfg && mapCfg.imageUrl) || "";
+  if (url) surface.style.backgroundImage = `url("${url}")`;
 
   if (inner) inner.remove();
   if (!markers) {
-    markers = document.createElement("d" + "iv");
+    markers = document.createElement("div");
     markers.id = "gangsMapMarkers";
     markers.className = "gangs-map-markers";
   } else {
     markers.remove();
   }
 
-  canvas.appendChild(img);
-  canvas.appendChild(markers);
-  transform.appendChild(canvas);
+  surface.appendChild(markers);
+  transform.appendChild(surface);
 }
 
 function layoutGangsMapCanvas() {
   const root = document.getElementById("gangsMap");
-  const canvas = document.getElementById("gangsMapCanvas");
-  const img = document.getElementById("gangsMapImg");
-  if (!root || !canvas || !img) return;
+  const surface = document.getElementById("gangsMapSurface");
+  if (!root || !surface) return;
 
+  const cw = Math.max(320, root.clientWidth || 0);
+  const ch = Math.max(240, root.clientHeight || 0);
+  const fit = Math.min(cw / GANG_MAP_IMG_W, ch / GANG_MAP_IMG_H);
+  const panPad = 1.65;
+  const px = Math.max(fit * panPad, 0.35);
+  surface.style.width = `${Math.round(GANG_MAP_IMG_W * px)}px`;
+  surface.style.height = `${Math.round(GANG_MAP_IMG_H * px)}px`;
+}
+
+function fitGangsMapInView() {
+  const root = document.getElementById("gangsMap");
+  const surface = document.getElementById("gangsMapSurface");
+  if (!root || !surface) return;
+  layoutGangsMapCanvas();
   const cw = Math.max(1, root.clientWidth);
   const ch = Math.max(1, root.clientHeight);
-  const cover = Math.max(cw / GANG_MAP_IMG_W, ch / GANG_MAP_IMG_H);
-  const pad = 2.25;
-  canvas.style.width = `${GANG_MAP_IMG_W * cover * pad}px`;
-  canvas.style.height = `${GANG_MAP_IMG_H * cover * pad}px`;
-  img.style.width = "100%";
-  img.style.height = "100%";
-  img.style.objectFit = "fill";
+  const sw = surface.offsetWidth || GANG_MAP_IMG_W;
+  const sh = surface.offsetHeight || GANG_MAP_IMG_H;
+  gangsMapPan.scale = Math.min(1, cw / sw, ch / sh);
+  gangsMapPan.x = 0;
+  gangsMapPan.y = 0;
+  applyGangsMapTransform();
+}
+
+function watchGangsMapResize() {
+  const root = document.getElementById("gangsMap");
+  if (!root || gangsMapResizeObs) return;
+  gangsMapResizeObs = new ResizeObserver(() => {
+    if (activeTab !== "map") return;
+    layoutGangsMapCanvas();
+    applyGangsMapTransform();
+  });
+  gangsMapResizeObs.observe(root);
 }
 
 function applyGangsMapTransform() {
@@ -214,13 +233,13 @@ function bindGangsMapInteract() {
 }
 
 function resetMapView() {
-  gangsMapPan = { x: 0, y: 0, scale: 1 };
-  applyGangsMapTransform();
+  fitGangsMapInView();
 }
 
 function renderTurfsOnMap(state) {
   mapCfg = normalizeMapConfig(state);
   ensureGangsMapDom(mapCfg.imageUrl);
+  watchGangsMapResize();
   layoutGangsMapCanvas();
 
   const markers = document.getElementById("gangsMapMarkers");
@@ -228,6 +247,7 @@ function renderTurfsOnMap(state) {
 
   markers.innerHTML = "";
   bindGangsMapInteract();
+  requestAnimationFrame(() => fitGangsMapInView());
 
   (state.turfs || []).forEach((t) => {
     const x = Number(t.center_x);
@@ -259,7 +279,9 @@ function renderTurfsOnMap(state) {
 
     zone.addEventListener("click", (e) => {
       e.stopPropagation();
-      post("gangs:setWaypoint", { turfId: t.turf_id });
+      post("gangs:setWaypoint", { turfId: t.turf_id }).then(() => {
+        setTabletDocked(true);
+      });
     });
     zone.addEventListener("mousemove", (e) => {
       mapTooltip.classList.remove("hidden");
@@ -282,7 +304,6 @@ function renderTurfsOnMap(state) {
     markers.appendChild(zone);
   });
 
-  resetMapView();
 }
 
 /** Žemėlapis kuriamas tik kai skiltis matoma (pilnas panel plotis / aukštis). */
@@ -466,7 +487,14 @@ window.addEventListener("message", (e) => {
   if (d.action === "open") {
     const payload = d.payload || {};
     activeTab = payload.hasGang ? "map" : "register";
+    setTabletDocked(false, true);
     render(payload);
+  }
+  if (d.action === "dock") {
+    setTabletDocked(true, true);
+  }
+  if (d.action === "undock") {
+    setTabletDocked(false, true);
   }
   if (d.action === "close") {
     destroyTurfMap();
@@ -474,6 +502,61 @@ window.addEventListener("message", (e) => {
     activeTab = "register";
   }
 });
+
+function setTabletDocked(docked, skipPost) {
+  tabletDocked = !!docked;
+  tablet.classList.toggle("is-docked", tabletDocked);
+  const btn = document.getElementById("btnDock");
+  if (btn) btn.textContent = tabletDocked ? "⊞ Visas" : "⊟ Kampas";
+  if (!skipPost) post("gangs:setDocked", { docked: tabletDocked });
+  if (!tabletDocked && tabletBezel) {
+    tabletBezel.style.left = "";
+    tabletBezel.style.top = "";
+    tabletBezel.style.right = "";
+    tabletBezel.style.bottom = "";
+  }
+  if (activeTab === "map") {
+    requestAnimationFrame(() => fitGangsMapInView());
+  }
+}
+
+function bindTabletDrag() {
+  if (tabletDragBound) return;
+  tabletDragBound = true;
+  const head = document.querySelector(".tablet-head");
+  if (!head || !tabletBezel) return;
+  let drag = false;
+  let sx = 0;
+  let sy = 0;
+  let sl = 0;
+  let st = 0;
+  head.addEventListener("mousedown", (e) => {
+    if (!tabletDocked || e.target.closest("button")) return;
+    drag = true;
+    const r = tabletBezel.getBoundingClientRect();
+    sx = e.clientX;
+    sy = e.clientY;
+    sl = r.left;
+    st = r.top;
+    e.preventDefault();
+  });
+  window.addEventListener("mouseup", () => {
+    drag = false;
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!drag || !tabletDocked) return;
+    tabletBezel.style.left = `${sl + e.clientX - sx}px`;
+    tabletBezel.style.top = `${st + e.clientY - sy}px`;
+    tabletBezel.style.right = "auto";
+    tabletBezel.style.bottom = "auto";
+  });
+}
+
+const btnDockGang = document.getElementById("btnDock");
+if (btnDockGang) {
+  btnDockGang.onclick = () => setTabletDocked(!tabletDocked);
+}
+bindTabletDrag();
 
 document.getElementById("btnClose").onclick = () => post("gangs:close", {});
 document.getElementById("btnRefresh").onclick = () =>

@@ -4,10 +4,12 @@ local QBCore = exports['qb-core']:GetCoreObject()
 --- @field doorHash number
 --- @field modelHash number
 --- @field coords vector3
+--- @field heading number|nil
 
 --- @class LtpdDoorGroupRuntime
 --- @field id string
 --- @field label string
+--- @field doorType string|nil
 --- @field interact vector3
 --- @field interactDist number
 --- @field slabs LtpdDoorSlab[]
@@ -166,11 +168,81 @@ local function ensureDoorInSystem(dh, modelHash, x, y, z)
     end
 end
 
-local function registerSlab(groupId, slabIndex, modelName, coords)
+local function registerSlab(groupId, slabIndex, modelName, coords, heading)
     local modelHash = type(modelName) == 'string' and joaat(modelName) or modelName
     local dh = slabScriptHash(groupId, slabIndex)
     ensureDoorInSystem(dh, modelHash, coords.x, coords.y, coords.z)
-    return { doorHash = dh, modelHash = modelHash, coords = coords }
+    return { doorHash = dh, modelHash = modelHash, coords = coords, heading = heading }
+end
+
+local function findClosestObject(modelHash, coords, radius)
+    local best, bestD = 0, (radius or 5.0) + 1.0
+    for _, ent in ipairs(GetGamePool('CObject')) do
+        if DoesEntityExist(ent) and GetEntityModel(ent) == modelHash then
+            local d = #(GetEntityCoords(ent) - coords)
+            if d <= (radius or 5.0) and d < bestD then
+                bestD = d
+                best = ent
+            end
+        end
+    end
+    return best
+end
+
+local function applyGarageSlabDoorSystem(slab, locked)
+    local dh = slab.doorHash
+    local force = true
+    if locked then
+        DoorSystemSetDoorState(dh, 1, false, force)
+        pcall(function()
+            DoorSystemSetOpenRatio(dh, 0.0, true, true)
+        end)
+        pcall(function()
+            DoorSystemSetAutomaticDistance(dh, 0.0, false, false)
+        end)
+        pcall(function()
+            DoorSystemSetHoldOpen(dh, false)
+        end)
+    else
+        DoorSystemSetDoorState(dh, 0, false, force)
+        pcall(function()
+            DoorSystemSetOpenRatio(dh, 1.0, true, true)
+        end)
+        pcall(function()
+            DoorSystemSetAutomaticDistance(dh, 30.0, false, false)
+        end)
+    end
+end
+
+local function applyGarageRollLocked(slabs, entities, locked)
+    for _, slab in ipairs(slabs or {}) do
+        applyGarageSlabDoorSystem(slab, locked)
+        local ent = findClosestObject(slab.modelHash, slab.coords, 6.0)
+        if ent ~= 0 then
+            if locked then
+                if slab.heading then
+                    SetEntityHeading(ent, slab.heading + 0.0)
+                end
+                SetEntityCoords(ent, slab.coords.x, slab.coords.y, slab.coords.z, false, false, false, false)
+                FreezeEntityPosition(ent, true)
+                SetEntityDynamic(ent, false)
+            else
+                FreezeEntityPosition(ent, false)
+                SetEntityDynamic(ent, true)
+            end
+        end
+    end
+    for _, ent in ipairs(entities or {}) do
+        if ent and ent ~= 0 and DoesEntityExist(ent) then
+            if locked then
+                FreezeEntityPosition(ent, true)
+                SetEntityDynamic(ent, false)
+            else
+                FreezeEntityPosition(ent, false)
+                SetEntityDynamic(ent, true)
+            end
+        end
+    end
 end
 
 local function registerDynSlab(modelHash, x, y, z)
@@ -214,9 +286,13 @@ end
 local function applyGroupLocked(id, locked)
     for _, g in ipairs(doorGroups) do
         if g.id == id then
+            if g.doorType == 'garage_roll' then
+                applyGarageRollLocked(g.slabs, g.entities, locked)
+                return
+            end
             local state = locked and 1 or 0
             for _, slab in ipairs(g.slabs) do
-                DoorSystemSetDoorState(slab.doorHash, state, false, false)
+                DoorSystemSetDoorState(slab.doorHash, state, false, true)
             end
             applyEntityGroupLocked(g.entities, locked)
             return
@@ -230,7 +306,7 @@ local function buildManualGroups()
         for i, d in ipairs(def.doors or {}) do
             local coords = d.coords
             local model = d.model
-            slabs[#slabs + 1] = registerSlab(def.id, i, model, coords)
+            slabs[#slabs + 1] = registerSlab(def.id, i, model, coords, d.heading)
         end
         local interact = def.interact
         if not interact and #slabs > 0 then
@@ -244,6 +320,7 @@ local function buildManualGroups()
         doorGroups[#doorGroups + 1] = {
             id = def.id,
             label = def.label or 'PD durys',
+            doorType = def.doorType,
             interact = interact,
             interactDist = def.interactDist or 2.5,
             slabs = slabs,
@@ -476,7 +553,16 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(450)
+        local ped = PlayerPedId()
+        local pc = GetEntityCoords(ped)
+        local nearGarage = false
+        for _, g in ipairs(doorGroups) do
+            if g.doorType == 'garage_roll' and g.interact and #(pc - g.interact) < 55.0 then
+                nearGarage = true
+                break
+            end
+        end
+        Wait(nearGarage and 120 or 450)
         for _, g in ipairs(doorGroups) do
             local locked = doorLocked[g.id] ~= false
             applyGroupLocked(g.id, locked)

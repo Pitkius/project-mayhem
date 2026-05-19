@@ -337,21 +337,33 @@ Config.PdDoorGroups = {
     {
         id = 'ls_mrpd_garage_roll',
         label = 'Garažo vartai (šonas)',
+        doorType = 'garage_roll',
         interact = vector3(431.45, -1001.15, 26.75),
         interactDist = 4.0,
         defaultLocked = true,
         doors = {
-            { model = 'gabz_mrpd_room13_parkingdoor', coords = vector3(431.45, -1001.15, 26.75) },
+            { model = 'gabz_mrpd_room13_parkingdoor', coords = vector3(431.45, -1001.15, 26.75), heading = 178.0 },
+        },
+        entityScan = {
+            center = vector3(431.45, -1001.15, 26.75),
+            radius = 10.0,
+            models = { 'gabz_mrpd_room13_parkingdoor' },
         },
     },
     {
         id = 'ls_mrpd_garage_park',
         label = 'Garage (parking)',
+        doorType = 'garage_roll',
         interact = vector3(464.1, -997.5, 26.3),
         interactDist = 2.0,
         defaultLocked = true,
         doors = {
-            { model = 'gabz_mrpd_room13_parkingdoor', coords = vector3(464.1, -997.5, 26.3) },
+            { model = 'gabz_mrpd_room13_parkingdoor', coords = vector3(464.1, -997.5, 26.3), heading = 88.0 },
+        },
+        entityScan = {
+            center = vector3(464.1, -997.5, 26.3),
+            radius = 10.0,
+            models = { 'gabz_mrpd_room13_parkingdoor' },
         },
     },
     {
@@ -368,11 +380,17 @@ Config.PdDoorGroups = {
     {
         id = 'ss_pd_garage_manual',
         label = 'Sandy PD garage door',
+        doorType = 'garage_roll',
         interact = vector3(1854.92, 3701.15, 33.73),
         interactDist = 3.8,
         defaultLocked = true,
         doors = {
-            { model = 'hedwig_sheriff_garage_gardoor', coords = vector3(1854.92, 3701.15, 33.73) },
+            { model = 'hedwig_sheriff_garage_gardoor', coords = vector3(1854.92, 3701.15, 33.73), heading = 0.0 },
+        },
+        entityScan = {
+            center = vector3(1854.92, 3701.15, 33.73),
+            radius = 12.0,
+            models = { 'hedwig_sheriff_garage_gardoor', 'hedwig_sheriff_garage_door', 'hedwig_sheriif_garage_door' },
         },
     },
 }
@@ -418,7 +436,7 @@ Config.PdDoorDynamics = {
         models = {
             'gabz_mrpd_reception_entrancedoor',
             'gabz_mrpd_door_03',
-            'gabz_mrpd_room13_parkingdoor',
+            --- parkingdoor valdoma per `PdDoorGroups` (garage_roll) – ne auto-scan
             'gabz_mrpd_cells_door',
             'hei_prop_station_door_lr',
             'hei_prop_station_door_sl',
