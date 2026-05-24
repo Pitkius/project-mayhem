@@ -23,3 +23,5 @@ Musketas: server weaponDamageEvent atšaukia žalą žaidėjams, parblokš (ragd
 Items: qb-core/shared/items.lua (fishing_license, hunting_license, …)
 
 Koordinačių koregavimas: config.lua (RangerStation, FishingZones, HuntingZones)
+
+SQL: NEREIKIA — licencijos ir laimikiai tik inventoriuje. Žr. docs/SQL_AND_DEPLOY_CHECKLIST.txt

@@ -67,6 +67,7 @@ RegisterNetEvent('fivempro_hacking:server:atmDrillDone', function(coords)
     if not Player.Functions.GetItemByName(Config.DrillItem or 'drill') then
         return TriggerClientEvent('QBCore:Notify', src, 'Reikia gręžtuvo (drill).', 'error')
     end
+    Player.Functions.RemoveItem(Config.DrillItem or 'drill', 1)
     TriggerClientEvent('fivempro_hacking:client:atmDrillOk', src, coords)
 end)
 

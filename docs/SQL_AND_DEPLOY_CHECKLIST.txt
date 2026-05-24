@@ -1,0 +1,64 @@
+FIVEMPRO — SQL ir deploy checklist (po didelio update)
+========================================================
+
+=== AR REIKIA NAUJO SQL ŠIAM UPDATE? ===
+
+DAIKTAI (inventorius + metadata) — SQL NEREIKIA:
+  - fivempro_hacking (tablet OS/exploits → item.info)
+  - fivempro_outdoors (licencijos → item.info su citizenid)
+  - fivempro_npcshops, fivempro_mining, maistas, šarvai
+  - Visi nauji itemai — tik qb-core/shared/items.lua + restart qb-core
+
+ATM / APIPLĖŠIMAI cooldown — SQL NEREIKIA (dabartinė versija):
+  - Cooldown'ai laikomi SERVER RAM (PlayerCd, LocationCd)
+  - Po serverio restart cooldown išsivalo — tai žinoma riba
+
+=== SQL FAILAI (importuok vieną kartą arba paleisk resursą su MySQL.ready) ===
+
+Privalomi (jei dar nebuvo):
+  [ ] resources/[qb]/qb-core/qbcore.sql
+  [ ] resources/[qb]/qb-inventory/qb-inventory.sql (+ migrate.sql jei sena DB)
+  [ ] resources/[qb]/qb-clothing/qb-clothing.sql
+  [ ] resources/[qb]/qb-apartments/qb-apartments.sql
+
+Fivempro (auto-kuria paleidus resursą ARBA rankiniu .sql):
+  [ ] fivempro_bank/fivempro_bank.sql
+  [ ] fivempro_dispatch/fivempro_dispatch.sql
+  [ ] fivempro_gangs/fivempro_gangs.sql
+  [ ] fivempro_ltpd/sql/ltpd.sql
+  [ ] fivempro_playerlog/fivempro_playerlog.sql
+  [ ] fivempro_phone — lenteles kuria server/main.lua MySQL.ready
+
+NEREIKIA SQL:
+  [ ] fivempro_hacking
+  [ ] fivempro_outdoors
+  [ ] fivempro_mining
+  [ ] fivempro_npcshops
+  [ ] fivempro_hud / fivempro_vehiclemenu
+
+=== CFG ENSURE (30_custom.cfg) ===
+
+  [x] fivempro_hacking
+  [x] fivempro_outdoors
+  [x] fivempro_mining
+  [x] fivempro_npcshops
+  [ ] ensure [mlo] — būtina outdoors ranger stočiai (cfx-gabz-parkranger)
+
+=== PRIKLAUSOMYBĖS ===
+
+  qb-core, qb-inventory, qb-target, qb-menu, oxmysql
+  fivempro_dispatch (heist alertai)
+  fivempro_gangs (optional — rep po hack)
+  fivempro_ltpd (optional — CCTV tamper exploit)
+
+=== PRODUCTION PRIEŠ PALEIDIMĄ ===
+
+  [ ] Config.DebugHeistVendor.enabled = false (fivempro_hacking/config.lua)
+  [ ] Patikrinti ranger NPC koordinates MLO interjere (fivempro_outdoors/config.lua)
+  [ ] Live test: ATM, 24/7, Fleeca, outdoors licencija + žvejyba
+
+=== ŽINOMOS RIBOS (ne bug'ai, bet svarbu žinoti) ===
+
+  - Heist cooldown nepersistenina DB
+  - Outdoors gyvūnai — client-side spawn (ne DB)
+  - Placeholder inventoriaus ikonos (burger.png kopijos) — galima pakeisti vėliau

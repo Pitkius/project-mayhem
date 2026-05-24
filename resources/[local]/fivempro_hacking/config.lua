@@ -175,7 +175,7 @@ Config.DrillItem = 'drill'
 
 --- Test vieta (kaip mechanikų sandbox): blip + NPC + $1 parduotuvė visiems heist/hacking itemams.
 Config.DebugHeistVendor = {
-    enabled = true,
+    enabled = false,
     pedModel = `s_m_y_dealer_01`,
     coords = vector4(-328.15, -133.62, 39.02, 252.0),
     scenario = 'WORLD_HUMAN_STAND_MOBILE',

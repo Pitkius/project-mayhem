@@ -20,7 +20,7 @@ fivempro_hacking – OS / tablet / visi apiplėšimai
 3) Vietos: qb-target zona prie koordinačių (config_robberies.lua).
    Tablet Network skiltis rodo fazės ir vietų skaičių.
 
-4) TEST pardavėjas: ~ -328, -134 (DebugHeistVendor — $1 itemai)
+4) TEST pardavėjas: ~ -328, -134 (DebugHeistVendor — $1 itemai; production: enabled = false)
 
 5) Black market: 707, -967 (normalios kainos + OS payload ant USB)
 
