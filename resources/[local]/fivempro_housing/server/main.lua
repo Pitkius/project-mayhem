@@ -54,17 +54,13 @@ local function buildCatalogFor(src)
         local owner = Ownership[prop.id]
         local interiors = {}
         for _, key in ipairs(prop.allowedInteriors or {}) do
-            local intr = Config.Interiors[key]
-            if intr then
-                interiors[#interiors + 1] = {
-                    key = key,
-                    label = intr.label,
-                    description = intr.description,
-                    price = FPMHousing.CalculatePrice(prop, key),
-                }
-            end
+            local entry = FPMHousing.InteriorCatalogEntry(key, prop)
+            if entry then interiors[#interiors + 1] = entry end
         end
-        table.sort(interiors, function(a, b) return a.price < b.price end)
+        table.sort(interiors, function(a, b)
+            if (a.tier or 0) ~= (b.tier or 0) then return (a.tier or 0) < (b.tier or 0) end
+            return a.price < b.price
+        end)
         local minPrice = interiors[1] and interiors[1].price or Config.BasePrice
         list[#list + 1] = {
             id = prop.id,
@@ -75,6 +71,9 @@ local function buildCatalogFor(src)
             door = { x = prop.door.x, y = prop.door.y, z = prop.door.z },
             owned = owner ~= nil,
             ownedByMe = owner and owner.citizenid == citizenid or false,
+            ownedInteriorKey = owner and owner.interior_key or nil,
+            ownedInteriorLabel = owner and Config.Interiors[owner.interior_key] and Config.Interiors[owner.interior_key].label or nil,
+            ownedQualityLabel = owner and Config.Interiors[owner.interior_key] and Config.Interiors[owner.interior_key].qualityLabel or nil,
             ownerName = nil,
             locked = owner and owner.locked or false,
             interiors = interiors,
@@ -233,11 +232,12 @@ RegisterNetEvent('fivempro_housing:server:openStash', function(propertyId)
         return TriggerClientEvent('QBCore:Notify', src, 'Tik savininkas gali naudoti sandėliuką.', 'error')
     end
     local prop = FPMHousing.GetProperty(propertyId)
+    local stashCfg = FPMHousing.GetInteriorStash(owner.interior_key)
     local stashId = ('property_%s'):format(propertyId)
     exports['qb-inventory']:OpenInventory(src, stashId, {
         label = prop and prop.label or 'Namai',
-        maxweight = Config.Stash.maxweight,
-        slots = Config.Stash.slots,
+        maxweight = stashCfg.maxweight,
+        slots = stashCfg.slots,
     })
 end)
 

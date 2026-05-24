@@ -160,6 +160,26 @@ RegisterNUICallback('cctvStop', function(_, cb)
     cb({ ok = true })
 end)
 
+RegisterNUICallback('cctvSwitch', function(data, cb)
+    local camId = data and data.camId
+    if not camId then
+        cb({ ok = false })
+        return
+    end
+    QBCore.Functions.TriggerCallback('fivempro_ltpd:server:cctvWatch', function(res)
+        if res and res.ok then
+            local fullCam = nil
+            for _, c in ipairs(Config.Surveillance.CctvCameras or {}) do
+                if c.id == camId then fullCam = c break end
+            end
+            startCctvView(fullCam or res.cam)
+        else
+            StopLtpdCctvView()
+        end
+        cb(res or { ok = false })
+    end, camId)
+end)
+
 RegisterNUICallback('cctvToggleAudio', function(data, cb)
     if not cctvActive or not cctvCam or not cctvBase then
         cb({ ok = false })

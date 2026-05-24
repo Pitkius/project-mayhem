@@ -38,7 +38,7 @@ Config.Phone = {
 
 --- Skubūs skambučiai (telefonas → dispatch visiems tam tikro job žaidėjams tarnyboje)
 Config.Emergency = {
-    policeJobs = { 'ltpd', 'police' },
+    policeJobs = { 'police' },
     ambulanceJob = 'ambulance',
     mechanicJob = 'mechanic',
     taxiJob = 'taxi',

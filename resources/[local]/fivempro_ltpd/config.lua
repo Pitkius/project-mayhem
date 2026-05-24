@@ -1,9 +1,7 @@
 Config = {}
 
---- Darbo pavadinimas turi sutapti su `qb-core/shared/jobs.lua` įrašu `ltpd`.
-Config.JobName = 'ltpd'
---- Jei true, qb-target ir serveris priima ir seną `police` darbą (kol migruoji į ltpd).
-Config.AcceptLegacyPoliceJob = true
+--- Darbo pavadinimas turi sutapti su `qb-core/shared/jobs.lua` įrašu `police`.
+Config.JobName = 'police'
 
 --[[
   Padaliniai – saugoma DB `ltpd_profiles.division`.

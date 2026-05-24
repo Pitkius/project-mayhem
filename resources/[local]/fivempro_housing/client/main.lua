@@ -93,48 +93,6 @@ local function openWardrobe()
     TriggerEvent('qb-clothing:client:openOutfitMenu')
 end
 
-RegisterNetEvent('fivempro_housing:client:syncOwnership', function(data)
-    Ownership = data or {}
-    registerDoorTargets()
-end)
-
-RegisterNetEvent('fivempro_housing:client:openAgency', function(payload)
-    SetNuiFocus(true, true)
-    SendNUIMessage({ action = 'open', data = payload })
-end)
-
-RegisterNetEvent('fivempro_housing:client:enterInterior', function(data)
-    enterInterior(data)
-end)
-
-RegisterNUICallback('close', function(_, cb)
-    SetNuiFocus(false, false)
-    cb('ok')
-end)
-
-RegisterNUICallback('purchase', function(body, cb)
-    QBCore.Functions.TriggerCallback('fivempro_housing:server:purchase', function(result)
-        if result and result.ok then
-            QBCore.Functions.Notify(result.msg, 'success')
-            if result.catalog then
-                SendNUIMessage({ action = 'refresh', data = { properties = result.catalog } })
-            end
-        else
-            QBCore.Functions.Notify(result and result.msg or 'Pirkimas nepavyko.', 'error')
-        end
-        cb(result or { ok = false })
-    end, body.propertyId, body.interiorKey)
-end)
-
-RegisterNUICallback('setWaypoint', function(body, cb)
-    local prop = FPMHousing.GetProperty(body.propertyId)
-    if prop then
-        SetNewWaypoint(prop.door.x, prop.door.y)
-        QBCore.Functions.Notify('GPS nustatytas į objektą.', 'primary')
-    end
-    cb('ok')
-end)
-
 local function registerDoorTargets()
     for _, z in ipairs(doorZones) do
         if z then exports['qb-target']:RemoveZone(z) end
@@ -178,6 +136,48 @@ local function registerDoorTargets()
         doorZones[#doorZones + 1] = zoneName
     end
 end
+
+RegisterNetEvent('fivempro_housing:client:syncOwnership', function(data)
+    Ownership = data or {}
+    registerDoorTargets()
+end)
+
+RegisterNetEvent('fivempro_housing:client:openAgency', function(payload)
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = 'open', data = payload })
+end)
+
+RegisterNetEvent('fivempro_housing:client:enterInterior', function(data)
+    enterInterior(data)
+end)
+
+RegisterNUICallback('close', function(_, cb)
+    SetNuiFocus(false, false)
+    cb('ok')
+end)
+
+RegisterNUICallback('purchase', function(body, cb)
+    QBCore.Functions.TriggerCallback('fivempro_housing:server:purchase', function(result)
+        if result and result.ok then
+            QBCore.Functions.Notify(result.msg, 'success')
+            if result.catalog then
+                SendNUIMessage({ action = 'refresh', data = { properties = result.catalog } })
+            end
+        else
+            QBCore.Functions.Notify(result and result.msg or 'Pirkimas nepavyko.', 'error')
+        end
+        cb(result or { ok = false })
+    end, body.propertyId, body.interiorKey)
+end)
+
+RegisterNUICallback('setWaypoint', function(body, cb)
+    local prop = FPMHousing.GetProperty(body.propertyId)
+    if prop then
+        SetNewWaypoint(prop.door.x, prop.door.y)
+        QBCore.Functions.Notify('GPS nustatytas į objektą.', 'primary')
+    end
+    cb('ok')
+end)
 
 RegisterNetEvent('fivempro_housing:client:doorEnter', function(data)
     local propertyId = data and data.propertyId
@@ -277,7 +277,7 @@ CreateThread(function()
                     end
                 end
 
-                if interior.wardrobe and #(pCoords - interior.wardrobe) < 1.5 then
+                if interior.hasWardrobe == true and interior.wardrobe and #(pCoords - interior.wardrobe) < 1.5 then
                     DrawText3D(interior.wardrobe.x, interior.wardrobe.y, interior.wardrobe.z + 0.25, '[E] Drabužinė')
                     if IsControlJustReleased(0, 38) then
                         openWardrobe()

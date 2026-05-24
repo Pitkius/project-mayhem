@@ -10,7 +10,6 @@ local function isPdOnDuty()
     if not P or not P.job then return false end
     local n = P.job.name
     if n == Config.JobName then return P.job.onduty end
-    if Config.AcceptLegacyPoliceJob and n == 'police' then return P.job.onduty end
     return false
 end
 

@@ -144,9 +144,29 @@ h1 { font-size: 26px; font-weight: 700; margin-top: 4px; }
 }
 .interior-opt:hover { border-color: #6d28d9; }
 .interior-opt.selected { border-color: #a78bfa; background: rgba(167, 139, 250, 0.1); }
+.interior-opt .name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .interior-opt .name { font-weight: 600; }
-.interior-opt .desc { font-size: 11px; color: #9ca3af; margin-top: 2px; }
-.interior-opt .price { font-weight: 700; color: #a7f3d0; }
+.interior-opt .desc { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+.interior-opt .perks { font-size: 10px; color: #6b7280; margin-top: 4px; }
+.interior-opt .price { font-weight: 700; color: #a7f3d0; white-space: nowrap; }
+.buy-hint { font-size: 12px; color: #c4b5fd; margin-bottom: 8px; line-height: 1.4; }
+.quality-pill {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.q-low { background: rgba(107, 114, 128, 0.35); color: #d1d5db; }
+.q-mid { background: rgba(59, 130, 246, 0.25); color: #93c5fd; }
+.q-good { background: rgba(167, 139, 250, 0.28); color: #ddd6fe; }
+.q-luxury { background: rgba(251, 191, 36, 0.22); color: #fcd34d; }
 
 .actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
 .btn {

@@ -589,7 +589,16 @@ body.preset-3 {
     height: 26px;
     object-fit: contain;
     display: block;
-    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.75));
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
+}
+
+.hud-ico-img.hud-ico-tint-fuel {
+    filter: brightness(0) saturate(100%) invert(72%) sepia(30%) saturate(1600%) hue-rotate(352deg) brightness(1.08);
+}
+
+.hud-ico-img.hud-ico-tint-engine {
+    filter: brightness(0) saturate(100%) invert(78%) sepia(24%) saturate(950%) hue-rotate(186deg) brightness(1.06);
 }
 
 .hud-ico-img.hud-ico-sub {
@@ -608,17 +617,19 @@ body.preset-3 {
 }
 
 .car-sub-ico.state-off .hud-ico-img {
-    opacity: 0.42;
-    filter: grayscale(0.85) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+    opacity: 0.38;
+    filter: brightness(0) invert(1);
 }
 
 .car-sub-ico.state-on .hud-ico-img {
     opacity: 1;
+    filter: brightness(0) invert(1);
 }
 
 .car-sub-ico.state-warn .hud-ico-img,
 .car-sub-belt.belt-off .hud-ico-img {
-    filter: saturate(1.2) drop-shadow(0 0 6px rgba(251, 113, 133, 0.55));
+    opacity: 1;
+    filter: brightness(0) saturate(100%) invert(72%) sepia(35%) saturate(1200%) hue-rotate(318deg) brightness(1.05);
 }
 
 .car-mv-pct {

@@ -12,9 +12,10 @@ Config.MaxOwnedPerPlayer = 2
 Config.PaymentAccount = 'bank'
 Config.Furnished = false
 
+--- Numatyta (jei interjeras neturi savo stashCapacity)
 Config.Stash = {
-    maxweight = 250000,
-    slots = 40,
+    maxweight = 200000,
+    slots = 32,
 }
 
 --- Dynasty 8 MLO (mlo_pack_3) — agentūra
@@ -42,30 +43,41 @@ Config.Districts = {
     downtown = { label = 'Downtown / Legion', mult = 1.55 },
 }
 
---- Neįrengti interjerai (standartinės GTA buto koordinatės + routing bucket)
+--- Neįrengti interjerai — kuo brangesnis pasirinkimas, tuo geresnis vidus (erdvė, sandėlis, patogumai)
 Config.Interiors = {
     economy = {
-        label = 'Ekonominis butas',
-        description = 'Mažas, paprastas planas — neįrengtas.',
+        label = 'Ekonominis',
+        qualityLabel = 'Prastas',
+        tier = 1,
+        description = 'Mažas butas, senas remontas. Mažas sandėliukas, be drabužinės.',
         priceMult = 1.0,
+        hasWardrobe = false,
+        stashCapacity = { maxweight = 100000, slots = 20 },
         enter = vector4(266.17, -1007.52, -101.01, 0.0),
         exitOffset = vector3(1.42, -2.35, 0.0),
         stash = vector3(265.89, -999.42, -99.01),
-        wardrobe = vector3(259.76, -1003.95, -99.01),
     },
     standard = {
-        label = 'Standartinis butas',
-        description = 'Vidutinis butas su atskira zona — neįrengtas.',
+        label = 'Standartinis',
+        qualityLabel = 'Vidutinis',
+        tier = 2,
+        description = 'Normalus butas. Vidutinis sandėlis ir drabužinė.',
         priceMult = 1.18,
+        hasWardrobe = true,
+        stashCapacity = { maxweight = 200000, slots = 32 },
         enter = vector4(346.55, -1012.83, -99.20, 0.0),
         exitOffset = vector3(1.35, -2.42, 0.0),
         stash = vector3(351.29, -998.84, -99.20),
         wardrobe = vector3(350.62, -993.71, -99.20),
     },
     premium = {
-        label = 'Premium apartamentai',
-        description = 'Erdvesni apartamentai — neįrengti.',
+        label = 'Premium',
+        qualityLabel = 'Geras',
+        tier = 3,
+        description = 'Erdvesni apartamentai, didesnis sandėlis, atskira drabužinė.',
         priceMult = 1.42,
+        hasWardrobe = true,
+        stashCapacity = { maxweight = 320000, slots = 48 },
         enter = vector4(-786.87, 315.76, 217.64, 0.0),
         exitOffset = vector3(-0.8, -2.1, 0.0),
         stash = vector3(-796.11, 327.75, 217.04),
@@ -73,8 +85,12 @@ Config.Interiors = {
     },
     luxury = {
         label = 'Prabangus loftas',
-        description = 'Aukščiausios klasės interjeras — neįrengtas.',
+        qualityLabel = 'Prabangus',
+        tier = 4,
+        description = 'Didžiausias interjeras, didžiausias sandėlis, pilna drabužinė.',
         priceMult = 1.75,
+        hasWardrobe = true,
+        stashCapacity = { maxweight = 480000, slots = 64 },
         enter = vector4(-174.28, 497.65, 137.67, 190.0),
         exitOffset = vector3(0.0, -2.0, 0.0),
         stash = vector3(-169.88, 491.82, 130.04),

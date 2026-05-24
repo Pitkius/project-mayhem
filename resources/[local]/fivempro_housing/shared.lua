@@ -18,6 +18,38 @@ function FPMHousing.GetInterior(key)
     return Config.Interiors[key]
 end
 
+function FPMHousing.GetInteriorStash(interiorKey)
+    local intr = Config.Interiors[interiorKey]
+    local cap = intr and intr.stashCapacity
+    if cap then
+        return {
+            maxweight = cap.maxweight or Config.Stash.maxweight,
+            slots = cap.slots or Config.Stash.slots,
+        }
+    end
+    return {
+        maxweight = Config.Stash.maxweight,
+        slots = Config.Stash.slots,
+    }
+end
+
+function FPMHousing.InteriorCatalogEntry(interiorKey, property)
+    local intr = Config.Interiors[interiorKey]
+    if not intr then return nil end
+    local stash = FPMHousing.GetInteriorStash(interiorKey)
+    return {
+        key = interiorKey,
+        label = intr.label,
+        qualityLabel = intr.qualityLabel or '—',
+        tier = intr.tier or 1,
+        description = intr.description,
+        price = FPMHousing.CalculatePrice(property, interiorKey),
+        hasWardrobe = intr.hasWardrobe ~= false,
+        stashSlots = stash.slots,
+        stashWeight = stash.maxweight,
+    }
+end
+
 --- Kaina: nuo Config.BasePrice (200k) + rajonas + interjeras + arčiau centro = brangiau
 function FPMHousing.CalculatePrice(property, interiorKey)
     if not property or not interiorKey then return Config.BasePrice end

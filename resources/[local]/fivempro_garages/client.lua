@@ -4,7 +4,7 @@ local function isPoliceOfficerOnDuty()
     local P = QBCore.Functions.GetPlayerData()
     if not P or not P.job or not P.job.onduty then return false end
     local n = P.job.name
-    return n == 'ltpd' or n == 'police'
+    return n == 'police'
 end
 
 local function isMechanicOnDuty()

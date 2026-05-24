@@ -54,8 +54,35 @@ local function ensureTables()
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 end
 
+local function migrateLtpdJobToPolice()
+    local rows = MySQL.query.await("SELECT citizenid, job FROM players WHERE job LIKE '%\"name\":\"ltpd\"%'", {}) or {}
+    local migrated = 0
+    for _, row in ipairs(rows) do
+        local ok, job = pcall(json.decode, row.job)
+        if ok and job and job.name == 'ltpd' then
+            job.name = 'police'
+            if job.label == 'Lietuvos policija' or job.label == 'ltpd' then
+                job.label = 'Lietuvos policija'
+            end
+            MySQL.update.await('UPDATE players SET job = ? WHERE citizenid = ?', { json.encode(job), row.citizenid })
+            migrated = migrated + 1
+        end
+    end
+    if migrated > 0 then
+        print(('[^2fivempro_ltpd^7] Migrated %s player job records: ltpd → police'):format(migrated))
+    end
+end
+
 MySQL.ready(function()
     ensureTables()
+    migrateLtpdJobToPolice()
+end)
+
+AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
+    local job = Player.PlayerData.job
+    if job and job.name == 'ltpd' then
+        Player.Functions.SetJob('police', tonumber(job.grade and job.grade.level) or 0)
+    end
 end)
 
 local function getGrade(src)
@@ -65,10 +92,7 @@ local function getGrade(src)
 end
 
 local function jobIsPd(j)
-    if not j or not j.name then return false end
-    if j.name == Config.JobName then return true end
-    if Config.AcceptLegacyPoliceJob and j.name == 'police' then return true end
-    return false
+    return j and j.name == Config.JobName
 end
 
 local function isLtpdOnDuty(src)

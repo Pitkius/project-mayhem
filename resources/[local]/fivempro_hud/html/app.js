@@ -133,9 +133,9 @@ function setVehiclePreviewImage(modelSpawn, spawnModel, vehicleClass) {
   const spawn = safe(spawnModel);
   const classKey = VEHICLE_CLASS_IMAGES[Number(vehicleClass)] || "class_sedan";
   const candidates = [
+    `assets/vehicles/${classKey}.png`,
     spawn ? `assets/vehicles/${spawn}.png` : null,
     display !== spawn ? `assets/vehicles/${display}.png` : null,
-    `assets/vehicles/${classKey}.png`,
     "assets/vehicles/vehicle-topdown.png",
     "assets/vehicles/default.svg",
   ].filter(Boolean);

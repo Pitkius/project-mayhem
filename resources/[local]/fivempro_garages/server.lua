@@ -25,7 +25,7 @@ local function isPoliceJobPlayer(Player)
     local j = Player.PlayerData.job
     if not j.onduty then return false end
     local n = j.name
-    return n == 'ltpd' or n == 'police'
+    return n == 'police'
 end
 
 local function isPoliceVehicleModel(modelName)

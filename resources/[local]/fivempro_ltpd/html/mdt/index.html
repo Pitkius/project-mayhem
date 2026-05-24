@@ -118,16 +118,20 @@
           <select id="cctvFilter" class="surv-select">
             <option value="">Visos kategorijos</option>
           </select>
-          <input type="text" id="cctvSearch" placeholder="Ieškoti kameros…" />
+          <input type="text" id="cctvSearch" placeholder="Ieškoti vietos…" />
           <button type="button" id="cctvRefresh" class="btn">Atnaujinti</button>
+          <button type="button" id="cctvBackBtn" class="btn hidden">← Vietos</button>
+          <button type="button" id="cctvPrevCam" class="btn hidden">‹ Kamera</button>
+          <button type="button" id="cctvNextCam" class="btn hidden">Kamera ›</button>
           <button type="button" id="cctvWatchBtn" class="btn primary">Stebėti LIVE</button>
           <button type="button" id="cctvStopBtn" class="btn danger">Stabdyti</button>
           <label class="surv-audio-toggle"><input type="checkbox" id="cctvAudio" checked /> Garsas</label>
         </div>
+        <div id="cctvBreadcrumb" class="cctv-breadcrumb muted">Pasirink stebėjimo vietą</div>
         <div class="surv-split">
           <div id="cctvList" class="surv-list results"></div>
           <div class="surv-preview">
-            <div id="cctvStatus" class="surv-status muted">Pasirink kamerą iš sąrašo</div>
+            <div id="cctvStatus" class="surv-status muted">Pasirink vietą (pvz. Fleeca bankas)</div>
             <div id="cctvLiveHint" class="surv-live-hint hidden">LIVE • Vaizdas rodomas žaidime • ESC stabdo</div>
           </div>
         </div>

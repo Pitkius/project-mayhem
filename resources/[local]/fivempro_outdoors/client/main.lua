@@ -115,7 +115,6 @@ RegisterNetEvent('fivempro_outdoors:client:showLicenseQuestion', function()
         menu[#menu + 1] = {
             header = ans,
             params = {
-                isAction = true,
                 event = 'fivempro_outdoors:client:licensePick',
                 args = { chosen = ai },
             },
@@ -126,8 +125,9 @@ end)
 
 RegisterNetEvent('fivempro_outdoors:client:licensePick', function(data)
     if not testState then return end
+    local chosen = type(data) == 'table' and data.chosen or nil
     local q = testState.questions[testState.index]
-    if data.chosen == q.correct then testState.score = testState.score + 1 end
+    if chosen == q.correct then testState.score = testState.score + 1 end
     testState.index = testState.index + 1
     if testState.index > #testState.questions then
         TriggerServerEvent('fivempro_outdoors:server:submitLicenseTest', testState.testType, testState.score, #testState.questions)

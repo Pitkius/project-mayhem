@@ -26,6 +26,20 @@ function fmt(n) {
   return `$${Number(n || 0).toLocaleString('en-US')}`;
 }
 
+function qualityClass(tier) {
+  const t = Number(tier) || 1;
+  if (t >= 4) return 'q-luxury';
+  if (t >= 3) return 'q-good';
+  if (t >= 2) return 'q-mid';
+  return 'q-low';
+}
+
+function interiorPerks(intr) {
+  const parts = [`Sandėlis: ${intr.stashSlots || '?'} slot. / ${Math.round((intr.stashWeight || 0) / 1000)} kg`];
+  parts.push(intr.hasWardrobe ? 'Drabužinė: taip' : 'Drabužinė: ne');
+  return parts.join(' · ');
+}
+
 function getSelectedProperty() {
   return state.properties.find((p) => p.id === state.selectedId);
 }
@@ -94,10 +108,16 @@ function renderDetail() {
   }
 
   if (p.ownedByMe) {
+    const ownedIntr = (p.interiors || []).find((i) => i.key === p.ownedInteriorKey);
+    const q = p.ownedQualityLabel
+      ? `<span class="quality-pill ${qualityClass(ownedIntr && ownedIntr.tier)}">${p.ownedQualityLabel}</span>`
+      : '';
+    const insideNote = ownedIntr && ownedIntr.hasWardrobe ? 'įėjimas, sandėliukas, drabužinė' : 'įėjimas, sandėliukas (be drabužinės)';
     detailPanel.innerHTML = `
       <h2>${p.label}</h2>
-      <p class="sub">${p.districtLabel} — jūsų nuosavybė</p>
-      <p class="price-total">Naudokite duris žemėlapyje: įeiti, sandėliukas, drabužinė.</p>
+      <p class="sub">${p.districtLabel} — jūsų nuosavybė ${q}</p>
+      <p class="sub">Interjeras: <strong>${p.ownedInteriorLabel || '—'}</strong></p>
+      <p class="price-total">Eikite prie durų žemėlapyje — ${insideNote}.</p>
       <div class="actions">
         <button class="btn btn-ghost" id="wpBtn">GPS į objektą</button>
       </div>
@@ -118,11 +138,16 @@ function renderDetail() {
   let interiorHtml = '<div class="interior-list">';
   interiors.forEach((intr) => {
     const sel = state.selectedInterior === intr.key ? ' selected' : '';
+    const qCls = qualityClass(intr.tier);
     interiorHtml += `
       <div class="interior-opt${sel}" data-key="${intr.key}">
         <div>
-          <div class="name">${intr.label}</div>
+          <div class="name-row">
+            <span class="name">${intr.label}</span>
+            <span class="quality-pill ${qCls}">${intr.qualityLabel || '—'}</span>
+          </div>
           <div class="desc">${intr.description || ''}</div>
+          <div class="perks">${interiorPerks(intr)}</div>
         </div>
         <div class="price">${fmt(intr.price)}</div>
       </div>
@@ -135,8 +160,9 @@ function renderDetail() {
 
   detailPanel.innerHTML = `
     <h2>${p.label}</h2>
-    <p class="sub">${p.districtLabel} · Neįrengtas · Unikalus objektas</p>
-    <p>Pasirinkite interjerą (kaina priklauso nuo rajono ir atstumo iki centro):</p>
+    <p class="sub">${p.districtLabel} · Unikalus objektas</p>
+    <p class="buy-hint">Kuo prastesnis interjeras — tuo mažesnis butas ir mažiau patogumų. Kuo brangesnis — geresnis vidus ir sandėlis.</p>
+    <p>Pasirinkite interjero lygį:</p>
     ${interiorHtml}
     <div class="price-total">Suma: ${fmt(total)}</div>
     <div class="actions">
@@ -168,7 +194,7 @@ function openUI(data) {
   agencyTitle.textContent = data.agencyLabel || 'Dynasty 8';
   hintText.textContent = data.furnished
     ? 'Įrengti objektai.'
-    : 'Neįrengti objektai. Vienas pirkėjas — vienas objektas serveryje. Max ' + state.maxOwned + ' objektai / žaidėjas.';
+    : 'Pigus interjeras = prastesnis butas (mažas sandėlis, be spintos). Brangus = geresnis. Max ' + state.maxOwned + ' obj. / žaidėjas.';
   state.selectedId = null;
   state.selectedInterior = null;
   renderDistrictFilter();

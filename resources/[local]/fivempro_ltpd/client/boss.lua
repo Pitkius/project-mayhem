@@ -1,10 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local function isPdJobName(name)
-    if not name then return false end
-    if name == Config.JobName then return true end
-    if Config.AcceptLegacyPoliceJob and name == 'police' then return true end
-    return false
+    return name == Config.JobName
 end
 
 local function canOpenBoss()

@@ -86,24 +86,102 @@ local function stopBodycam(src, reason)
     TriggerClientEvent('fivempro_ltpd:client:bodycamState', src, false, reason or 'off')
 end
 
+local function cctvSiteId(cam)
+    if cam.siteId then return cam.siteId end
+    if cam.bankId then return cam.bankId end
+    local id = tostring(cam.id or '')
+    local sites = Config.Surveillance.CctvSites or {}
+    local bestId, bestLen = id, 0
+    for siteId, _ in pairs(sites) do
+        if id == siteId or id:sub(1, #siteId + 1) == siteId .. '_' then
+            if #siteId > bestLen then
+                bestId, bestLen = siteId, #siteId
+            end
+        end
+    end
+    return bestId
+end
+
+local function cctvSiteLabel(siteId, cameras)
+    local cfg = Config.Surveillance.CctvSites and Config.Surveillance.CctvSites[siteId]
+    if cfg and cfg.label then return cfg.label end
+    if cameras and cameras[1] and cameras[1].label then return cameras[1].label end
+    return siteId
+end
+
+local function cctvSiteZone(siteId, cameras)
+    local cfg = Config.Surveillance.CctvSites and Config.Surveillance.CctvSites[siteId]
+    if cfg and cfg.zone then return cfg.zone end
+    if cameras and cameras[1] and cameras[1].zone then return cameras[1].zone end
+    return 'other'
+end
+
+local function buildCctvCameraRow(c)
+    local coords = resolveCamCoords(c)
+    if not coords then return nil end
+    local online = isCctvOnline(c.id)
+    return {
+        id = c.id,
+        label = c.label,
+        zone = c.zone,
+        siteId = cctvSiteId(c),
+        zoneLabel = (Config.Surveillance.CctvCategories or {})[c.zone] or c.zone,
+        online = online,
+        audio = c.audio == true,
+        hasProp = c.propCoords ~= nil or c.propModel ~= nil,
+        coords = { x = coords.x, y = coords.y, z = coords.z },
+    }
+end
+
 local function buildCctvList()
     local rows = {}
     for _, c in ipairs(Config.Surveillance.CctvCameras or {}) do
-        local coords = resolveCamCoords(c)
-        if coords then
-            local online = isCctvOnline(c.id)
-            rows[#rows + 1] = {
-                id = c.id,
-                label = c.label,
-                zone = c.zone,
-                zoneLabel = (Config.Surveillance.CctvCategories or {})[c.zone] or c.zone,
-                online = online,
-                audio = c.audio == true,
-                coords = { x = coords.x, y = coords.y, z = coords.z },
-            }
-        end
+        local row = buildCctvCameraRow(c)
+        if row then rows[#rows + 1] = row end
     end
     return rows
+end
+
+local function buildCctvSites()
+    local grouped = {} ---@type table<string, table[]>
+    for _, c in ipairs(Config.Surveillance.CctvCameras or {}) do
+        local row = buildCctvCameraRow(c)
+        if row then
+            local sid = row.siteId
+            grouped[sid] = grouped[sid] or {}
+            grouped[sid][#grouped[sid] + 1] = row
+        end
+    end
+
+    local sites = {}
+    for siteId, cameras in pairs(grouped) do
+        table.sort(cameras, function(a, b) return (a.label or a.id) < (b.label or b.id) end)
+        local zone = cctvSiteZone(siteId, cameras)
+        local onlineCount = 0
+        for i = 1, #cameras do
+            if cameras[i].online then onlineCount = onlineCount + 1 end
+        end
+        local cx, cy, cz = 0.0, 0.0, 0.0
+        for i = 1, #cameras do
+            cx = cx + (cameras[i].coords.x or 0.0)
+            cy = cy + (cameras[i].coords.y or 0.0)
+            cz = cz + (cameras[i].coords.z or 0.0)
+        end
+        local n = math.max(1, #cameras)
+        sites[#sites + 1] = {
+            id = siteId,
+            label = cctvSiteLabel(siteId, cameras),
+            zone = zone,
+            zoneLabel = (Config.Surveillance.CctvCategories or {})[zone] or zone,
+            cameraCount = #cameras,
+            onlineCount = onlineCount,
+            allOnline = onlineCount == #cameras,
+            coords = { x = cx / n, y = cy / n, z = cz / n },
+            cameras = cameras,
+        }
+    end
+    table.sort(sites, function(a, b) return (a.label or a.id) < (b.label or b.id) end)
+    return sites
 end
 
 local function nearCctvStation(src)
@@ -143,7 +221,12 @@ end
 
 QBCore.Functions.CreateCallback('fivempro_ltpd:server:cctvList', function(src, cb)
     if not hasPerm(src, 'mdt_cctv') then return cb({ ok = false }) end
-    cb({ ok = true, cameras = buildCctvList(), categories = Config.Surveillance.CctvCategories or {} })
+    cb({
+        ok = true,
+        sites = buildCctvSites(),
+        cameras = buildCctvList(),
+        categories = Config.Surveillance.CctvCategories or {},
+    })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_ltpd:server:cctvWatch', function(src, cb, camId)
