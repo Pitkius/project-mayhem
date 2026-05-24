@@ -48,4 +48,10 @@ Config.Blips = {
     { resources = { 'cfx-gabz-records', 'gabz_recordstudio', 'gabz_studio' }, label = 'MLO: Record Studio', coords = vec3(478.999, -108.676, 63.155), sprite = 136, color = 27 },
     --- Gabz Hub / Downtown supermod įėjimas prie bennų
     { resources = { 'cfx-gabz-hub', 'gabz_hub', 'cfx-gabz-bennys' }, label = 'MLO: Hub', coords = vec3(-237.19, -1327.39, 31.30), sprite = 280, color = 0 },
+
+    -- [mlo_pack_3] iš Downloads
+    { resource = 'c-hunting_shop', label = 'MLO: Hunting Shop', coords = vec3(-676.83, 5836.93, 17.33), sprite = 141, color = 25 },
+    { resource = 'dynasty8', label = 'MLO: Dynasty 8', coords = vec3(-694.03, 273.51, 82.90), sprite = 374, color = 2 },
+    { resource = 'druglabs', label = 'MLO: Drug Labs', coords = vec3(1096.0, -3194.0, -38.0), sprite = 499, color = 1 },
+    { resource = 'sc_secret_drug', label = 'MLO: Secret Meth Lab', coords = vec3(2526.0, 2586.0, 38.0), sprite = 499, color = 6 },
 }
