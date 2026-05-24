@@ -29,6 +29,9 @@ Fivempro (auto-kuria paleidus resursą ARBA rankiniu .sql):
   [ ] fivempro_playerlog/fivempro_playerlog.sql
   [ ] fivempro_phone — lenteles kuria server/main.lua MySQL.ready
 
+Fivempro housing:
+  [ ] fivempro_housing/fivempro_housing.sql (arba auto CREATE paleidus resursą)
+
 NEREIKIA SQL:
   [ ] fivempro_hacking
   [ ] fivempro_outdoors
@@ -42,6 +45,7 @@ NEREIKIA SQL:
   [x] fivempro_outdoors
   [x] fivempro_mining
   [x] fivempro_npcshops
+  [x] fivempro_housing
   [ ] ensure [mlo] — būtina outdoors ranger stočiai (cfx-gabz-parkranger)
 
 === PRIKLAUSOMYBĖS ===
