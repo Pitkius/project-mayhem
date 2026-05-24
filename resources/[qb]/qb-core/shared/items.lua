@@ -229,29 +229,15 @@ QBShared.Items = {
     security_card_01             = { name = 'security_card_01', label = 'Security Card A', weight = 0, type = 'item', image = 'security_card_01.png', unique = false, useable = true, shouldClose = true, description = 'A security card... I wonder what it goes to' },
     security_card_02             = { name = 'security_card_02', label = 'Security Card B', weight = 0, type = 'item', image = 'security_card_02.png', unique = false, useable = true, shouldClose = true, description = 'A security card... I wonder what it goes to' },
 
-    -- Eat ITEMS
-    tosti                        = { name = 'tosti', label = 'Grilled Cheese Sandwich', weight = 200, type = 'item', image = 'tosti.png', unique = false, useable = true, shouldClose = true, description = 'Nice to eat' },
-    twerks_candy                 = { name = 'twerks_candy', label = 'Twerks', weight = 100, type = 'item', image = 'twerks_candy.png', unique = false, useable = true, shouldClose = true, description = 'Some delicious candy :O' },
-    snikkel_candy                = { name = 'snikkel_candy', label = 'Snikkel', weight = 100, type = 'item', image = 'snikkel_candy.png', unique = false, useable = true, shouldClose = true, description = 'Some delicious candy :O' },
-    sandwich                     = { name = 'sandwich', label = 'Sandwich', weight = 200, type = 'item', image = 'sandwich.png', unique = false, useable = true, shouldClose = true, description = 'Nice bread for your stomach' },
+    -- Eat ITEMS (vienas pagrindinis maistas + užkandžiai)
     burger                       = { name = 'burger', label = 'Mėsainis', weight = 220, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Sultingas mėsainis' },
-    hotdog                       = { name = 'hotdog', label = 'Dešrainis', weight = 180, type = 'item', image = 'hotdog.png', unique = false, useable = true, shouldClose = true, description = 'Greitas užkandis' },
-    pizza_slice                  = { name = 'pizza_slice', label = 'Pizza', weight = 200, type = 'item', image = 'pizza_slice.png', unique = false, useable = true, shouldClose = true, description = 'Pizza gabalėlis' },
-    tacos                        = { name = 'tacos', label = 'Tacos', weight = 180, type = 'item', image = 'tacos.png', unique = false, useable = true, shouldClose = true, description = 'Aštri mexikietiška užkanda' },
-    donut                        = { name = 'donut', label = 'Spurgutė', weight = 80, type = 'item', image = 'donut.png', unique = false, useable = true, shouldClose = true, description = 'Saldus desertas' },
-    chocolate                    = { name = 'chocolate', label = 'Šokoladas', weight = 90, type = 'item', image = 'chocolate.png', unique = false, useable = true, shouldClose = true, description = 'Saldus šokoladas' },
+    twerks_candy                 = { name = 'twerks_candy', label = 'Saldainiai', weight = 100, type = 'item', image = 'twerks_candy.png', unique = false, useable = true, shouldClose = true, description = 'Saldainių pakelis' },
     chips                        = { name = 'chips', label = 'Čipsai', weight = 70, type = 'item', image = 'chips.png', unique = false, useable = true, shouldClose = true, description = 'Traškūs čipsai' },
-    apple                        = { name = 'apple', label = 'Obuolys', weight = 60, type = 'item', image = 'apple.png', unique = false, useable = true, shouldClose = true, description = 'Sveikas obuolys' },
-    banana                       = { name = 'banana', label = 'Bananas', weight = 60, type = 'item', image = 'banana.png', unique = false, useable = true, shouldClose = true, description = 'Sultingas bananas' },
 
-    -- Drink ITEMS
-    water_bottle                 = { name = 'water_bottle', label = 'Bottle of Water', weight = 500, type = 'item', image = 'water_bottle.png', unique = false, useable = true, shouldClose = true, description = 'For all the thirsty out there' },
-    coffee                       = { name = 'coffee', label = 'Coffee', weight = 200, type = 'item', image = 'coffee.png', unique = false, useable = true, shouldClose = true, description = 'Pump 4 Caffeine' },
-    kurkakola                    = { name = 'kurkakola', label = 'Cola', weight = 500, type = 'item', image = 'cola.png', unique = false, useable = true, shouldClose = true, description = 'For all the thirsty out there' },
-    icetea                       = { name = 'icetea', label = 'Led arbata', weight = 450, type = 'item', image = 'icetea.png', unique = false, useable = true, shouldClose = true, description = 'Atgaivinanti led arbata' },
-    energy_drink                 = { name = 'energy_drink', label = 'Energetinis', weight = 350, type = 'item', image = 'energy_drink.png', unique = false, useable = true, shouldClose = true, description = 'Energijos boost' },
-    orange_juice                 = { name = 'orange_juice', label = 'Apelsinų sultys', weight = 400, type = 'item', image = 'orange_juice.png', unique = false, useable = true, shouldClose = true, description = 'Gaivios apelsinų sultys' },
-    milk                         = { name = 'milk', label = 'Pienas', weight = 450, type = 'item', image = 'milk.png', unique = false, useable = true, shouldClose = true, description = 'Šaltas pienas' },
+    -- Drink ITEMS (vanduo + gazuotas gėrimas + kava)
+    water_bottle                 = { name = 'water_bottle', label = 'Vanduo', weight = 500, type = 'item', image = 'water_bottle.png', unique = false, useable = true, shouldClose = true, description = 'Buteliukas vandens' },
+    kurkakola                    = { name = 'kurkakola', label = 'Kola', weight = 500, type = 'item', image = 'cola.png', unique = false, useable = true, shouldClose = true, description = 'Gazuotas gėrimas' },
+    coffee                       = { name = 'coffee', label = 'Kava', weight = 200, type = 'item', image = 'coffee.png', unique = false, useable = true, shouldClose = true, description = 'Karšta kava' },
 
     -- Alcohol
     beer                         = { name = 'beer', label = 'Beer', weight = 500, type = 'item', image = 'beer.png', unique = false, useable = true, shouldClose = true, description = 'Nothing like a good cold beer!' },

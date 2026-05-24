@@ -84,13 +84,3 @@ QBCore.Commands.Add('addmoney', 'Admin: prideti pinigu sau (cash/bank)', {
     TriggerClientEvent('QBCore:Notify', source, ('Prideta $%s i %s'):format(amount, moneyType), 'success')
 end, 'admin')
 
-QBCore.Functions.CreateUseableItem('sandwich', function(source, item)
-    if not exports['qb-inventory']:RemoveItem(source, item.name, 1, item.slot, 'fivempro_basics:sandwich') then return end
-    TriggerClientEvent('fivempro_basics:client:useSandwich', source, item.name)
-end)
-
-QBCore.Functions.CreateUseableItem('water_bottle', function(source, item)
-    if not exports['qb-inventory']:RemoveItem(source, item.name, 1, item.slot, 'fivempro_basics:water_bottle') then return end
-    TriggerClientEvent('fivempro_basics:client:useWaterBottle', source, item.name)
-end)
-

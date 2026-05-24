@@ -6,7 +6,7 @@ local currVest, currVestTexture = nil, nil
 local currVestComponent = 9
 local lastEquippedVestItem = nil
 local DualNeedFoodBoost = {
-    sandwich = 12,
+    burger = 10,
 }
 local DualNeedDrinkBoost = {
     water_bottle = 8,

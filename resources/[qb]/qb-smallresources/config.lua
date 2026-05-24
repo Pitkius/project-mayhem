@@ -149,29 +149,15 @@ Config.ArmorVests = {
 }
 
 Config.Consumables = {
-    eat = { -- default food items
-        ['sandwich'] = math.random(35, 54),
-        ['tosti'] = math.random(40, 50),
-        ['twerks_candy'] = math.random(35, 54),
-        ['snikkel_candy'] = math.random(40, 50),
+    eat = {
         ['burger'] = math.random(42, 58),
-        ['hotdog'] = math.random(38, 52),
-        ['pizza_slice'] = math.random(40, 55),
-        ['tacos'] = math.random(38, 52),
-        ['donut'] = math.random(28, 42),
-        ['chocolate'] = math.random(25, 40),
+        ['twerks_candy'] = math.random(28, 42),
         ['chips'] = math.random(22, 38),
-        ['apple'] = math.random(18, 32),
-        ['banana'] = math.random(18, 32),
     },
-    drink = { -- default drink items
+    drink = {
         ['water_bottle'] = math.random(35, 54),
         ['kurkakola'] = math.random(35, 54),
         ['coffee'] = math.random(40, 50),
-        ['icetea'] = math.random(35, 50),
-        ['energy_drink'] = math.random(30, 45),
-        ['orange_juice'] = math.random(35, 50),
-        ['milk'] = math.random(28, 42),
     },
     alcohol = { -- default alcohol items
         ['whiskey'] = math.random(20, 30),
