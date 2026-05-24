@@ -1,0 +1,25 @@
+fivempro_outdoors — žvejyba ir medžioklė (freelance)
+=====================================================
+
+1. cfg/30_custom.cfg jau turi: ensure fivempro_outdoors
+2. Restart: ensure fivempro_outdoors (arba serveris)
+3. Reikia: qb-core, qb-target, qb-menu, qb-inventory, Gabz Park Ranger MLO
+
+Vieta: Gamtos apsauga (Gabz Park Ranger) — blip žemėlapyje.
+
+Eiga:
+- NPC „Licencijos testas“ — žvejybos ar medžioklės testas ($250, 3/4 teisingi)
+- Licencija — unikalus daiktas su citizenid (rodoma kaip vairuotojo pažymėjimas)
+- „Gamtos parduotuvė“ — reikmenys tik su atitinkama licencija:
+  - Žvejyba: meškerė, masalas
+  - Medžioklė: medžioklinis šratinis (weapon_musket, neletalus žaidėjams), peilis, šratinė amunicija
+- Žvejyba: žvejybos zonose (blip) — naudok meškerę inventoriuje, minigame SPACE
+- Medžioklė: laukų zonose (blip) — gyvūnai spawn, nušauk, target „Skersti“ su peiliu (minigame)
+- Skerdykla ranger stotyje — apdorok žalią mėsą/žuvį (minigame)
+- Supirkimas — parduok laimikį gamtosininkams
+
+Musketas: server weaponDamageEvent atšaukia žalą žaidėjams, parblokš (ragdoll).
+
+Items: qb-core/shared/items.lua (fishing_license, hunting_license, …)
+
+Koordinačių koregavimas: config.lua (RangerStation, FishingZones, HuntingZones)

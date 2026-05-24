@@ -3,6 +3,8 @@
 local alcoholCount = 0
 local healing, parachuteEquipped = false, false
 local currVest, currVestTexture = nil, nil
+local currVestComponent = 9
+local lastEquippedVestItem = nil
 local DualNeedFoodBoost = {
     sandwich = 12,
 }
@@ -454,51 +456,52 @@ RegisterNetEvent('consumables:client:ResetParachute', function()
     end
 end)
 
-RegisterNetEvent('consumables:client:UseArmor', function()
-    if GetPedArmour(PlayerPedId()) >= 75 then
-        QBCore.Functions.Notify(Lang:t('consumables.armor_full'), 'error')
+local function applyVestDrawable(ped, PlayerData, vestCfg)
+    if not vestCfg or not vestCfg.vest or Config.Disable.vestDrawable then return end
+    local gender = PlayerData.charinfo and PlayerData.charinfo.gender or 0
+    local v = (gender == 0 and vestCfg.vest.male) or vestCfg.vest.female
+    if not v then return end
+    currVestComponent = v.component or 9
+    currVest = GetPedDrawableVariation(ped, currVestComponent)
+    currVestTexture = GetPedTextureVariation(ped, currVestComponent)
+    SetPedComponentVariation(ped, currVestComponent, v.drawable, v.texture, v.palette or 2)
+end
+
+RegisterNetEvent('consumables:client:UseArmorVest', function(itemName)
+    local vestCfg = Config.ArmorVests and Config.ArmorVests[itemName]
+    if not vestCfg then return end
+
+    local ped = PlayerPedId()
+    local currentArmor = GetPedArmour(ped)
+    if currentArmor >= vestCfg.armor then
+        QBCore.Functions.Notify(('Jau turi %s ar aukštesnę apsaugą.'):format(vestCfg.armor), 'error')
         return
     end
-    QBCore.Functions.Progressbar('use_armor', Lang:t('consumables.armor_progress'), 5000, false, true, {
+
+    local PlayerData = QBCore.Functions.GetPlayerData()
+    if vestCfg.job and (not PlayerData.job or PlayerData.job.name ~= vestCfg.job) then
+        QBCore.Functions.Notify('Ši liemenė skirta tik tarnautojams.', 'error')
+        return
+    end
+
+    QBCore.Functions.Progressbar(('use_armor_%s'):format(itemName), vestCfg.progress or 'Užsidedama liemenė...', vestCfg.duration or 5000, false, true, {
         disableMovement = false,
         disableCarMovement = false,
         disableMouse = false,
         disableCombat = true,
-    }, {}, {}, {}, function() -- Done
-        TriggerServerEvent('consumables:server:useArmor')
+    }, {}, {}, {}, function()
+        applyVestDrawable(ped, PlayerData, vestCfg)
+        lastEquippedVestItem = itemName
+        TriggerServerEvent('consumables:server:useArmorVest', itemName)
     end)
 end)
 
+RegisterNetEvent('consumables:client:UseArmor', function()
+    TriggerEvent('consumables:client:UseArmorVest', 'armor')
+end)
+
 RegisterNetEvent('consumables:client:UseHeavyArmor', function()
-    if GetPedArmour(PlayerPedId()) == 100 then
-        QBCore.Functions.Notify(Lang:t('consumables.armor_full'), 'error')
-        return
-    end
-    local ped = PlayerPedId()
-    local PlayerData = QBCore.Functions.GetPlayerData()
-    QBCore.Functions.Progressbar('use_heavyarmor', Lang:t('consumables.heavy_armor_progress'), 5000, false, true, {
-        disableMovement = false,
-        disableCarMovement = false,
-        disableMouse = false,
-        disableCombat = true,
-    }, {}, {}, {}, function() -- Done
-        if not Config.Disable.vestDrawable then
-            if PlayerData.charinfo.gender == 0 then
-                currVest = GetPedDrawableVariation(ped, 9)
-                currVestTexture = GetPedTextureVariation(ped, 9)
-                if GetPedDrawableVariation(ped, 9) == 7 then
-                    SetPedComponentVariation(ped, 9, 19, GetPedTextureVariation(ped, 9), 2)
-                else
-                    SetPedComponentVariation(ped, 9, 5, 2, 2)
-                end
-            else
-                currVest = GetPedDrawableVariation(ped, 30)
-                currVestTexture = GetPedTextureVariation(ped, 30)
-                SetPedComponentVariation(ped, 9, 30, 0, 2)
-            end
-        end
-        TriggerServerEvent('consumables:server:useHeavyArmor')
-    end)
+    TriggerEvent('consumables:client:UseArmorVest', 'heavyarmor')
 end)
 
 RegisterNetEvent('consumables:client:ResetArmor', function()
@@ -510,10 +513,15 @@ RegisterNetEvent('consumables:client:ResetArmor', function()
             disableMouse = false,
             disableCombat = true,
         }, {}, {}, {}, function() -- Done
-            SetPedComponentVariation(ped, 9, currVest, currVestTexture, 2)
+            SetPedComponentVariation(ped, currVestComponent or 9, currVest, currVestTexture, 2)
             SetPedArmour(ped, 0)
-            TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items['heavyarmor'], 'add')
-            TriggerServerEvent('consumables:server:resetArmor')
+            local returnItem = lastEquippedVestItem or 'heavyarmor'
+            if QBCore.Shared.Items[returnItem] then
+                TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[returnItem], 'add')
+            end
+            TriggerServerEvent('consumables:server:resetArmor', returnItem)
+            lastEquippedVestItem = nil
+            currVest, currVestTexture = nil, nil
         end)
     else
         QBCore.Functions.Notify(Lang:t('consumables.armor_empty'), 'error')

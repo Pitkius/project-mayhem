@@ -55,7 +55,30 @@ local function spawnDebugVendor()
                 type = 'client',
                 event = 'fivempro_hacking:client:debugOpenHeistShop',
                 icon = 'fas fa-mask',
-                label = 'Heist įrankiai ($1)',
+                label = 'Heist įrankiai ($1) — shop',
+            },
+            {
+                icon = 'fas fa-shopping-basket',
+                label = 'Heist įrankiai ($1) — meniu',
+                action = function()
+                    local rows = { { header = 'TEST heist itemai ($1)', isMenuHeader = true } }
+                    for _, e in ipairs(Config.DebugHeistShopItems or {}) do
+                        local it = QBCore.Shared.Items[e.item]
+                        if it then
+                            rows[#rows + 1] = {
+                                header = ('%s — $%s'):format(it.label, e.price or 1),
+                                txt = ('Svoris: %sg • %s'):format(it.weight or 0, e.item),
+                                params = {
+                                    isAction = true,
+                                    event = function()
+                                        TriggerServerEvent('fivempro_hacking:server:debugBuyHeistItem', e.item)
+                                    end,
+                                },
+                            }
+                        end
+                    end
+                    TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+                end,
             },
             {
                 icon = 'fas fa-usb-drive',

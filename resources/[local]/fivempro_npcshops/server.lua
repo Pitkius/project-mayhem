@@ -1,24 +1,32 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-CreateThread(function()
+local function registerShop(cfg)
+    if not cfg or not cfg.name or not cfg.items then return end
     exports['qb-inventory']:CreateShop({
-        name = Config.FoodShop.name,
-        label = Config.FoodShop.label,
-        slots = #Config.FoodShop.items,
-        items = Config.FoodShop.items
+        name = cfg.name,
+        label = cfg.label,
+        slots = #cfg.items,
+        items = cfg.items
     })
+end
+
+CreateThread(function()
+    registerShop(Config.FoodShop)
+    registerShop(Config.PharmacyShop)
 end)
 
 RegisterNetEvent('fivempro_npcshops:server:openFoodShop', function()
     local src = source
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
-    -- Re-register on every open so stock effectively stays infinite.
-    exports['qb-inventory']:CreateShop({
-        name = Config.FoodShop.name,
-        label = Config.FoodShop.label,
-        slots = #Config.FoodShop.items,
-        items = Config.FoodShop.items
-    })
+    registerShop(Config.FoodShop)
     exports['qb-inventory']:OpenShop(src, Config.FoodShop.name)
+end)
+
+RegisterNetEvent('fivempro_npcshops:server:openPharmacyShop', function()
+    local src = source
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+    registerShop(Config.PharmacyShop)
+    exports['qb-inventory']:OpenShop(src, Config.PharmacyShop.name)
 end)

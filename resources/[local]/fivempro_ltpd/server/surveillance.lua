@@ -19,6 +19,31 @@ local function camById(camId)
     return nil
 end
 
+local function resolveCamCoords(cam)
+    if not cam then return nil end
+    if cam.coords then return cam.coords end
+    if cam.propCoords then
+        local c = cam.propCoords
+        return vector3(c.x, c.y, c.z)
+    end
+    return nil
+end
+
+local function resolveCamLookAt(cam, coords)
+    if cam.lookAt then return cam.lookAt end
+    if cam.propCoords and coords then
+        local c = cam.propCoords
+        local h = math.rad(tonumber(c.w or c.heading) or 0.0)
+        local dist = tonumber(cam.lookDistance) or 12.0
+        return vector3(
+            coords.x - math.sin(h) * dist,
+            coords.y + math.cos(h) * dist,
+            coords.z
+        )
+    end
+    return coords
+end
+
 local function isCctvOnline(camId)
     local untilTs = CctvOffline[camId]
     if not untilTs then return true end
@@ -64,16 +89,19 @@ end
 local function buildCctvList()
     local rows = {}
     for _, c in ipairs(Config.Surveillance.CctvCameras or {}) do
-        local online = isCctvOnline(c.id)
-        rows[#rows + 1] = {
-            id = c.id,
-            label = c.label,
-            zone = c.zone,
-            zoneLabel = (Config.Surveillance.CctvCategories or {})[c.zone] or c.zone,
-            online = online,
-            audio = c.audio == true,
-            coords = { x = c.coords.x, y = c.coords.y, z = c.coords.z },
-        }
+        local coords = resolveCamCoords(c)
+        if coords then
+            local online = isCctvOnline(c.id)
+            rows[#rows + 1] = {
+                id = c.id,
+                label = c.label,
+                zone = c.zone,
+                zoneLabel = (Config.Surveillance.CctvCategories or {})[c.zone] or c.zone,
+                online = online,
+                audio = c.audio == true,
+                coords = { x = coords.x, y = coords.y, z = coords.z },
+            }
+        end
     end
     return rows
 end
@@ -127,13 +155,17 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:cctvWatch', function(src, 
     local cam = camById(camId)
     if not cam then return cb({ ok = false, msg = 'Kamera nerasta.' }) end
     if not isCctvOnline(camId) then return cb({ ok = false, msg = 'Kamera OFFLINE (sugadinta).' }) end
+    local coords = resolveCamCoords(cam)
+    if not coords then return cb({ ok = false, msg = 'Kamera neteisingai sukonfigūruota.' }) end
+    local lookAt = resolveCamLookAt(cam, coords)
     cb({
         ok = true,
+        camId = cam.id,
         cam = {
             id = cam.id,
             label = cam.label,
-            coords = { x = cam.coords.x, y = cam.coords.y, z = cam.coords.z },
-            lookAt = { x = cam.lookAt.x, y = cam.lookAt.y, z = cam.lookAt.z },
+            coords = { x = coords.x, y = coords.y, z = coords.z },
+            lookAt = { x = lookAt.x, y = lookAt.y, z = lookAt.z },
             fov = cam.fov or 55.0,
             audio = cam.audio == true,
         },
@@ -314,11 +346,14 @@ exports('TamperCctvRadius', function(coords, radius, seconds)
     seconds = tonumber(seconds) or 180
     local n = 0
     for _, c in ipairs(Config.Surveillance.CctvCameras or {}) do
-        local dist = #(vector3(cx, cy, cz) - c.coords)
+        local cc = resolveCamCoords(c)
+        if not cc then goto continue end
+        local dist = #(vector3(cx, cy, cz) - cc)
         if dist <= radius then
             tamperCam(c.id, seconds)
             n = n + 1
         end
+        ::continue::
     end
     return n
 end)

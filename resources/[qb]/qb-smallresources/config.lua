@@ -93,17 +93,85 @@ Config.Disable = {
 
 Config.RelieveWeedStress = math.random(15, 20) -- stress relief amount (100 max)
 
+--- Šarvų liemenės (GTA 5 tier: 25 / 50 / 75 / 100). armor ir heavyarmor palikti suderinamumui.
+Config.ArmorVests = {
+    armor_light = {
+        armor = 25,
+        label = 'Lengva šarvų liemenė',
+        progress = 'Užsidedama lengva liemenė...',
+        duration = 3500,
+        vest = {
+            male = { component = 9, drawable = 1, texture = 0 },
+            female = { component = 9, drawable = 1, texture = 0 },
+        },
+    },
+    armor_standard = {
+        armor = 50,
+        label = 'Standartinė šarvų liemenė',
+        progress = 'Užsidedama standartinė liemenė...',
+        duration = 4500,
+        vest = {
+            male = { component = 9, drawable = 4, texture = 0 },
+            female = { component = 9, drawable = 4, texture = 0 },
+        },
+    },
+    armor = {
+        armor = 75,
+        label = 'Sunki šarvų liemenė',
+        progress = 'Užsidedama sunki liemenė...',
+        duration = 5000,
+        vest = {
+            male = { component = 9, drawable = 5, texture = 2 },
+            female = { component = 9, drawable = 5, texture = 2 },
+        },
+    },
+    heavyarmor = {
+        armor = 100,
+        label = 'Super sunki liemenė',
+        progress = 'Užsidedama balistinė liemenė...',
+        duration = 6000,
+        vest = {
+            male = { component = 9, drawable = 19, texture = 0 },
+            female = { component = 9, drawable = 19, texture = 0 },
+        },
+    },
+    armor_police = {
+        armor = 100,
+        label = 'Policijos taktinė liemenė',
+        progress = 'Užsidedama tarnybinė liemenė...',
+        duration = 5500,
+        job = 'police',
+        vest = {
+            male = { component = 9, drawable = 15, texture = 0 },
+            female = { component = 9, drawable = 17, texture = 0 },
+        },
+    },
+}
+
 Config.Consumables = {
     eat = { -- default food items
         ['sandwich'] = math.random(35, 54),
         ['tosti'] = math.random(40, 50),
         ['twerks_candy'] = math.random(35, 54),
-        ['snikkel_candy'] = math.random(40, 50)
+        ['snikkel_candy'] = math.random(40, 50),
+        ['burger'] = math.random(42, 58),
+        ['hotdog'] = math.random(38, 52),
+        ['pizza_slice'] = math.random(40, 55),
+        ['tacos'] = math.random(38, 52),
+        ['donut'] = math.random(28, 42),
+        ['chocolate'] = math.random(25, 40),
+        ['chips'] = math.random(22, 38),
+        ['apple'] = math.random(18, 32),
+        ['banana'] = math.random(18, 32),
     },
     drink = { -- default drink items
         ['water_bottle'] = math.random(35, 54),
         ['kurkakola'] = math.random(35, 54),
-        ['coffee'] = math.random(40, 50)
+        ['coffee'] = math.random(40, 50),
+        ['icetea'] = math.random(35, 50),
+        ['energy_drink'] = math.random(30, 45),
+        ['orange_juice'] = math.random(35, 50),
+        ['milk'] = math.random(28, 42),
     },
     alcohol = { -- default alcohol items
         ['whiskey'] = math.random(20, 30),

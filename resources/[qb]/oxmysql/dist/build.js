@@ -17848,9 +17848,7 @@ var require_connection = __commonJS({
               );
             }
             if (val === void 0) {
-              throw new TypeError(
-                "Bind parameters must not contain undefined. To pass SQL NULL specify JS null"
-              );
+              val = null;
             }
             if (typeof val === "function") {
               throw new TypeError(

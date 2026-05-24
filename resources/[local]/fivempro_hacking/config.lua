@@ -164,6 +164,9 @@ Config.BlackMarket = {
         { item = 'encrypted_flashdrive', price = 1400, payload = { payload_type = 'exploit', payload_id = 'cam_spoof' } },
         { item = 'tow_chain', price = 350, payload = nil },
         { item = 'drill', price = 500, payload = nil },
+        { item = 'thermite', price = 2200, payload = nil },
+        { item = 'security_card_01', price = 4500, payload = nil },
+        { item = 'security_card_02', price = 6500, payload = nil },
     },
 }
 

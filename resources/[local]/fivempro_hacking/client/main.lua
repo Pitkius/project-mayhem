@@ -50,6 +50,7 @@ function StartHackMinigame(tierId, coords, onDone)
             return
         end
         hackCb = onDone
+        exports['fivempro_hacking']:PlayRobberyAnim((Config.RobberyAnims or {}).hack)
         SetNuiFocus(true, true)
         SendNUIMessage({ action = 'hackOpen', profile = res.profile, tierId = tierId })
     end, tierId)
@@ -59,6 +60,7 @@ RegisterNUICallback('hackResult', function(data, cb)
     local success = data and data.success == true
     local tierId = data and data.tierId
     local coords = GetEntityCoords(PlayerPedId())
+    exports['fivempro_hacking']:StopRobberyAnim()
     TriggerServerEvent('fivempro_hacking:server:hackFinished', tierId, success, { x = coords.x, y = coords.y, z = coords.z })
     closeHack()
     if hackCb then
@@ -71,6 +73,7 @@ end)
 
 RegisterNUICallback('hackCancel', function(_, cb)
     closeHack()
+    exports['fivempro_hacking']:StopRobberyAnim()
     if hackCb then
         local fn = hackCb
         hackCb = nil

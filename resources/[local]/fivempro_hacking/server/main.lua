@@ -131,6 +131,16 @@ QBCore.Functions.CreateCallback('fivempro_hacking:server:getTabletData', functio
         osCatalog = Config.OperatingSystems,
         exploitCatalog = Config.Exploits,
         robberyTiers = Config.RobberyTiers,
+        robberyFlows = Config.Robberies and Config.Robberies.Flow or {},
+        robberyLocCounts = (function()
+            local out = {}
+            if Config.Robberies and Config.Robberies.Locations then
+                for tierId, list in pairs(Config.Robberies.Locations) do
+                    out[tierId] = #list
+                end
+            end
+            return out
+        end)(),
     })
 end)
 
@@ -189,29 +199,41 @@ RegisterNetEvent('fivempro_hacking:server:hackFinished', function(tierId, succes
     local ok, reason, ctx = canAccessRobbery(src, tierId)
     if not ok then return end
     local c = type(coords) == 'table' and vector3(coords.x or 0, coords.y or 0, coords.z or 0) or GetEntityCoords(GetPlayerPed(src))
+    local alertText = {
+        atm = 'Bankomato / ATM įtartina veikla',
+        store = '24/7 kasos įsilaužimas',
+        bank_fleeca = 'Fleeca banko signalizacija',
+        bank_main = 'Pacific banko signalizacija',
+        casino = 'Kazino serverio įsilaužimas',
+        vault = 'Federal vault signalizacija',
+    }
     if success then
         local delay = 0
         if ctx and hasExploit(ctx, 'signal_jammer') then
             delay = (Config.Exploits.signal_jammer.delayDispatchSec or 60)
         end
         applyCctvTamper(src, c, ctx)
-        if GetResourceState('fivempro_gangs') == 'started' then
-            pcall(function()
-                exports['fivempro_gangs']:OnHackSuccess(src, tierId, { x = c.x, y = c.y, z = c.z })
-            end)
+        if tierId == 'atm' then
+            if GetResourceState('fivempro_gangs') == 'started' then
+                pcall(function()
+                    exports['fivempro_gangs']:OnHackSuccess(src, tierId, { x = c.x, y = c.y, z = c.z })
+                end)
+            end
+            TriggerClientEvent('fivempro_hacking:client:hackSuccess', src, tierId, c, ctx)
         end
-        TriggerClientEvent('fivempro_hacking:client:hackSuccess', src, tierId, c, ctx)
     else
-        policeAlert(c, 'atm', 'Bankomato / ATM įtartina veikla', 0)
+        policeAlert(c, tierId == 'atm' and 'atm' or 'robbery', alertText[tierId] or 'Apiplėšimas', 0)
         if GetResourceState('fivempro_ltpd') == 'started' then
             exports['fivempro_ltpd']:TamperCctvRadius(c, 25.0, 30)
         end
-        if GetResourceState('fivempro_gangs') == 'started' then
-            pcall(function()
-                exports['fivempro_gangs']:OnHackFailed(src, tierId, { x = c.x, y = c.y, z = c.z })
-            end)
+        if tierId == 'atm' then
+            if GetResourceState('fivempro_gangs') == 'started' then
+                pcall(function()
+                    exports['fivempro_gangs']:OnHackFailed(src, tierId, { x = c.x, y = c.y, z = c.z })
+                end)
+            end
+            TriggerClientEvent('fivempro_hacking:client:hackFailed', src, tierId)
         end
-        TriggerClientEvent('fivempro_hacking:client:hackFailed', src, tierId)
     end
 end)
 

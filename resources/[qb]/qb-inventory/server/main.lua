@@ -274,6 +274,34 @@ RegisterNetEvent('qb-inventory:server:useItem', function(item)
                 )
             end
         end
+    elseif itemData.name == 'fishing_license' or itemData.name == 'hunting_license' then
+        if not itemData.info then
+            TriggerClientEvent('QBCore:Notify', src, 'Licencijoje trūksta duomenų.', 'error')
+            return
+        end
+        UseItem(itemData.name, src, itemData)
+        TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
+        local info = itemData.info
+        local title = itemData.name == 'fishing_license' and 'Žvejybos licencija' or 'Medžioklės licencija'
+        local playerPed = GetPlayerPed(src)
+        local playerCoords = GetEntityCoords(playerPed)
+        local players = QBCore.Functions.GetPlayers()
+        for _, v in pairs(players) do
+            local targetPed = GetPlayerPed(v)
+            local dist = #(playerCoords - GetEntityCoords(targetPed))
+            if dist < 3.0 then
+                TriggerClientEvent('chat:addMessage', v, {
+                    template = '<div class="chat-message advert" style="background: linear-gradient(to right, rgba(5, 5, 5, 0.6), #657175); display: flex;"><div style="margin-right: 10px;"><i class="far fa-id-card" style="height: 100%;"></i><strong> {0}</strong><br> <strong>Vardas:</strong> {1} <br><strong>Pavardė:</strong> {2} <br><strong>Gimimo data:</strong> {3} <br><strong>ID:</strong> {4}</div></div>',
+                    args = {
+                        title,
+                        info.firstname,
+                        info.lastname,
+                        info.birthdate,
+                        info.citizenid,
+                    }
+                })
+            end
+        end
     else
         UseItem(itemData.name, src, itemData)
         if not AmmoUseItems[itemData.name] then
@@ -406,8 +434,15 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
         return
     end
 
-    if not CanAddItem(source, itemInfo.name, amount) then
-        TriggerClientEvent('QBCore:Notify', source, 'Cannot hold item', 'error')
+    local canAdd, reason = CanAddItem(source, itemInfo.name, amount)
+    if not canAdd then
+        local msg = 'Negali laikyti daikto.'
+        if reason == 'weight' then
+            msg = 'Per sunku inventoriui — išmesk daiktų arba sumažink svorį.'
+        elseif reason == 'slots' then
+            msg = 'Inventorius pilnas — reikia laisvo sloto.'
+        end
+        TriggerClientEvent('QBCore:Notify', source, msg, 'error')
         cb(false)
         return
     end

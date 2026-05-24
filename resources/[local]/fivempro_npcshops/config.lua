@@ -1,63 +1,86 @@
 Config = Config or {}
 
+--- Kirpyklos (tikslūs koordinačiai)
 Config.BarberPeds = {
-    { model = 's_f_m_fembarber', coords = vector4(-815.66, -182.46, 36.57, 133.16), chair = vector4(-816.25, -184.15, 36.57, 298.0) },
-    { model = 's_f_m_fembarber', coords = vector4(134.72, -1708.76, 28.29, 140.21), chair = vector4(136.12, -1708.34, 28.29, 230.0) },
-    { model = 's_f_m_fembarber', coords = vector4(-1282.32, -1117.14, 5.99, 89.34), chair = vector4(-1281.16, -1116.62, 5.99, 180.0) },
-    { model = 's_f_m_fembarber', coords = vector4(1931.31, 3728.95, 31.84, 206.36), chair = vector4(1932.42, 3729.63, 31.84, 295.0) },
-    { model = 's_f_m_fembarber', coords = vector4(1211.62, -472.93, 65.21, 347.14), chair = vector4(1211.02, -474.14, 65.21, 165.0) },
-    { model = 's_f_m_fembarber', coords = vector4(-32.89, -152.34, 56.08, 245.52), chair = vector4(-31.96, -153.04, 56.08, 70.0) },
-    { model = 's_f_m_fembarber', coords = vector4(-278.1, 6228.54, 30.7, 49.32), chair = vector4(-277.04, 6228.1, 30.7, 225.0) },
+    { model = 's_f_m_fembarber', coords = vector4(-814.22, -183.70, 36.57, 116.91), chair = vector4(-815.10, -184.85, 36.57, 296.0) },
+    { model = 's_f_m_fembarber', coords = vector4(-1283.99, -1117.31, 6.99, 89.25),  chair = vector4(-1282.80, -1116.50, 6.99, 180.0) },
+    { model = 's_f_m_fembarber', coords = vector4(134.91, -1708.13, 28.29, 140.11), chair = vector4(136.20, -1708.40, 28.29, 230.0) },
+    { model = 's_f_m_fembarber', coords = vector4(1211.04, -472.82, 65.20, 72.94),  chair = vector4(1211.00, -474.20, 65.20, 165.0) },
+    { model = 's_f_m_fembarber', coords = vector4(1932.83, 3729.73, 31.84, 212.61), chair = vector4(1933.90, 3730.50, 31.84, 295.0) },
+    { model = 's_f_m_fembarber', coords = vector4(-278.10, 6228.54, 30.70, 49.32),  chair = vector4(-277.00, 6228.10, 30.70, 225.0) },
 }
 
+--- Rūbų parduotuvės
 Config.ClothingPeds = {
-    { model = 's_f_y_shop_mid', coords = vector4(72.25, -1399.1, 28.38, 267.95) },
-    { model = 's_f_y_shop_mid', coords = vector4(-703.82, -152.15, 36.42, 117.63) },
-    { model = 's_f_y_shop_mid', coords = vector4(-167.84, -298.48, 38.73, 249.14) },
-    { model = 's_f_y_shop_mid', coords = vector4(428.66, -800.11, 28.49, 91.54) },
-    { model = 's_f_y_shop_mid', coords = vector4(-829.41, -1073.71, 10.33, 295.1) },
-    { model = 's_f_y_shop_mid', coords = vector4(-1448.63, -238.25, 48.82, 50.63) },
-    { model = 's_f_y_shop_mid', coords = vector4(11.63, 6514.22, 30.88, 40.21) },
-    { model = 's_f_y_shop_mid', coords = vector4(122.98, -220.88, 53.56, 334.24) },
-    { model = 's_f_y_shop_mid', coords = vector4(1695.31, 4823.0, 41.06, 99.17) },
-    { model = 's_f_y_shop_mid', coords = vector4(618.09, 2759.62, 41.09, 183.85) },
-    { model = 's_f_y_shop_mid', coords = vector4(1190.55, 2712.72, 37.22, 181.58) },
-    { model = 's_f_y_shop_mid', coords = vector4(-1193.81, -767.42, 16.32, 216.73) },
-    { model = 's_f_y_shop_mid', coords = vector4(-3172.42, 1048.11, 19.86, 332.12) },
-    { model = 's_f_y_shop_mid', coords = vector4(-1108.69, 2708.62, 18.11, 222.92) },
+    { model = 's_f_y_shop_mid', coords = vector4(72.25, -1399.10, 28.38, 266.35) },
+    { model = 's_f_y_shop_mid', coords = vector4(-708.71, -152.13, 36.41, 122.44) },
+    { model = 's_f_y_shop_mid', coords = vector4(-165.15, -302.49, 38.73, 251.24) },
+    { model = 's_f_y_shop_mid', coords = vector4(6.04, 6511.46, 30.88, 42.85) },
 }
 
+--- 24/7 parduotuvės
 Config.FoodPeds = {
-    { model = 'mp_m_shopkeep_01', coords = vector4(24.24, -1346.63, 28.5, 267.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-47.32, -1758.68, 28.42, 49.26) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(372.86, 327.13, 102.57, 255.87) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-706.04, -914.44, 18.22, 85.28) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(2557.18, 380.63, 107.62, 356.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-3039.27, 584.22, 6.91, 16.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-3242.23, 999.98, 11.83, 355.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(549.21, 2670.36, 41.16, 95.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(1960.08, 3739.93, 31.34, 292.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(2677.24, 3279.62, 54.24, 332.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(1728.98, 6415.33, 34.04, 243.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-1819.38, 793.52, 137.08, 128.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(1164.87, -322.74, 68.21, 96.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(1134.2, -982.91, 45.42, 276.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(1697.53, 4923.42, 41.06, 326.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-1221.93, -908.37, 11.33, 35.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-1486.23, -377.98, 39.16, 134.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-2966.38, 390.06, 14.04, 84.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-1820.69, -1185.43, 13.02, 159.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(1392.68, 3605.25, 33.98, 200.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-1393.6, -606.34, 29.32, 121.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(1165.36, 2710.82, 37.16, 180.0) },
-    { model = 'mp_m_shopkeep_01', coords = vector4(-110.94, 6269.65, 30.63, 224.0) },
+    { model = 'mp_m_shopkeep_01', coords = vector4(24.47, -1346.62, 28.50, 271.66) },
+    { model = 'mp_m_shopkeep_01', coords = vector4(-3039.54, 584.38, 6.91, 17.27) },
+    { model = 'mp_m_shopkeep_01', coords = vector4(-3242.97, 1000.01, 11.83, 357.57) },
+    { model = 'mp_m_shopkeep_01', coords = vector4(1728.07, 6415.63, 34.04, 242.95) },
+    { model = 'mp_m_shopkeep_01', coords = vector4(1959.82, 3740.48, 31.34, 301.57) },
+    { model = 'mp_m_shopkeep_01', coords = vector4(549.13, 2670.85, 41.16, 99.39) },
+    { model = 'mp_m_shopkeep_01', coords = vector4(1165.28, -323.87, 68.20, 100.15) },
+    { model = 'mp_m_shopkeep_01', coords = vector4(373.87, 325.89, 102.56, 257.43) },
+}
+
+--- Tatuiruotės (kūno modifikacijos per qb-clothing)
+Config.TattooPeds = {
+    { model = 'u_m_y_tattoo_01', coords = vector4(-1153.67, -1425.68, 3.95, 130.0) },
+    { model = 'u_m_y_tattoo_01', coords = vector4(1864.65, 3747.48, 32.03, 30.0) },
+    { model = 'u_m_y_tattoo_01', coords = vector4(-293.71, 6200.04, 30.49, 230.0) },
+    { model = 'u_m_y_tattoo_01', coords = vector4(-3170.07, 1075.05, 19.83, 250.0) },
+}
+
+--- Vaistinė (Pillbox ir papildomai Paleto)
+Config.PharmacyPeds = {
+    { model = 's_m_m_doctor_01', coords = vector4(307.18, -595.35, 42.28, 68.42) },
+    { model = 's_m_m_doctor_01', coords = vector4(-172.88, 6381.02, 30.48, 230.0) },
 }
 
 Config.FoodShop = {
     name = 'fivempro-food',
-    label = 'Maisto Parduotuve',
+    label = '24/7 Parduotuvė',
     items = {
-        { name = 'sandwich', amount = 500, price = 15, slot = 1 },
-        { name = 'water_bottle', amount = 500, price = 10, slot = 2 },
+        { name = 'sandwich',      amount = 500, price = 15, slot = 1 },
+        { name = 'tosti',         amount = 500, price = 12, slot = 2 },
+        { name = 'burger',        amount = 500, price = 18, slot = 3 },
+        { name = 'hotdog',        amount = 500, price = 14, slot = 4 },
+        { name = 'pizza_slice',   amount = 500, price = 16, slot = 5 },
+        { name = 'tacos',         amount = 500, price = 15, slot = 6 },
+        { name = 'donut',         amount = 500, price = 8,  slot = 7 },
+        { name = 'twerks_candy',  amount = 500, price = 6,  slot = 8 },
+        { name = 'snikkel_candy', amount = 500, price = 6,  slot = 9 },
+        { name = 'chocolate',     amount = 500, price = 7,  slot = 10 },
+        { name = 'chips',         amount = 500, price = 5,  slot = 11 },
+        { name = 'apple',         amount = 500, price = 4,  slot = 12 },
+        { name = 'banana',        amount = 500, price = 4,  slot = 13 },
+        { name = 'water_bottle',  amount = 500, price = 10, slot = 14 },
+        { name = 'kurkakola',     amount = 500, price = 8,  slot = 15 },
+        { name = 'coffee',        amount = 500, price = 9,  slot = 16 },
+        { name = 'icetea',        amount = 500, price = 8,  slot = 17 },
+        { name = 'energy_drink',  amount = 500, price = 12, slot = 18 },
+        { name = 'orange_juice',  amount = 500, price = 9,  slot = 19 },
+        { name = 'milk',          amount = 500, price = 7,  slot = 20 },
+    }
+}
+
+Config.PharmacyShop = {
+    name = 'fivempro-pharmacy',
+    label = 'Vaistinė',
+    items = {
+        { name = 'bandage',    amount = 200, price = 25, slot = 1 },
+        { name = 'painkillers', amount = 200, price = 18, slot = 2 },
+        { name = 'firstaid',   amount = 100, price = 85, slot = 3 },
+        { name = 'ifaks',      amount = 100, price = 120, slot = 4 },
+        { name = 'armor_light', amount = 50, price = 350, slot = 5 },
+        { name = 'armor_standard', amount = 50, price = 750, slot = 6 },
+        { name = 'armor', amount = 30, price = 1200, slot = 7 },
     }
 }

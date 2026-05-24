@@ -67,13 +67,16 @@ end)
 
 ----------- / Tools
 
-QBCore.Functions.CreateUseableItem('armor', function(source)
-    TriggerClientEvent('consumables:client:UseArmor', source)
-end)
+local function registerArmorVests()
+    if not Config.ArmorVests then return end
+    for itemName, _ in pairs(Config.ArmorVests) do
+        QBCore.Functions.CreateUseableItem(itemName, function(source)
+            TriggerClientEvent('consumables:client:UseArmorVest', source, itemName)
+        end)
+    end
+end
 
-QBCore.Functions.CreateUseableItem('heavyarmor', function(source)
-    TriggerClientEvent('consumables:client:UseHeavyArmor', source)
-end)
+registerArmorVests()
 
 QBCore.Commands.Add('resetarmor', 'Resets Vest (Police Only)', {}, false, function(source)
     local Player = QBCore.Functions.GetPlayer(source)
@@ -124,28 +127,31 @@ RegisterNetEvent('consumables:server:AddParachute', function()
     exports['qb-inventory']:AddItem(source, 'parachute', 1, false, false, 'consumables:server:AddParachute')
 end)
 
-RegisterNetEvent('consumables:server:resetArmor', function()
+RegisterNetEvent('consumables:server:resetArmor', function(itemName)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then return end
-    exports['qb-inventory']:AddItem(source, 'heavyarmor', 1, false, false, 'consumables:server:resetArmor')
+    local returnItem = itemName
+    if not returnItem or not Config.ArmorVests or not Config.ArmorVests[returnItem] then
+        returnItem = 'heavyarmor'
+    end
+    exports['qb-inventory']:AddItem(source, returnItem, 1, false, false, 'consumables:server:resetArmor')
+    Player.Functions.SetMetaData('armor', 0)
 end)
 
-RegisterNetEvent('consumables:server:useHeavyArmor', function()
-    local Player = QBCore.Functions.GetPlayer(source)
+RegisterNetEvent('consumables:server:useArmorVest', function(itemName)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
-    if not exports['qb-inventory']:RemoveItem(source, 'heavyarmor', 1, false, 'consumables:server:useHeavyArmor') then return end
-    TriggerClientEvent('qb-inventory:client:ItemBox', source, QBCore.Shared.Items['heavyarmor'], 'remove')
-    TriggerClientEvent('hospital:server:SetArmor', source, 100)
-    SetPedArmour(GetPlayerPed(source), 100)
-end)
-
-RegisterNetEvent('consumables:server:useArmor', function()
-    local Player = QBCore.Functions.GetPlayer(source)
-    if not Player then return end
-    if not exports['qb-inventory']:RemoveItem(source, 'armor', 1, false, 'consumables:server:useArmor') then return end
-    TriggerClientEvent('qb-inventory:client:ItemBox', source, QBCore.Shared.Items['armor'], 'remove')
-    TriggerClientEvent('hospital:server:SetArmor', source, 75)
-    SetPedArmour(GetPlayerPed(source), 75)
+    local vestCfg = Config.ArmorVests and Config.ArmorVests[itemName]
+    if not vestCfg then return end
+    if vestCfg.job and Player.PlayerData.job.name ~= vestCfg.job then
+        TriggerClientEvent('QBCore:Notify', src, 'Ši liemenė skirta tik tarnautojams.', 'error')
+        return
+    end
+    if not exports['qb-inventory']:RemoveItem(src, itemName, 1, false, ('consumables:server:useArmorVest:%s'):format(itemName)) then return end
+    TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[itemName], 'remove')
+    Player.Functions.SetMetaData('armor', vestCfg.armor)
+    SetPedArmour(GetPlayerPed(src), vestCfg.armor)
 end)
 
 RegisterNetEvent('consumables:server:useMeth', function()

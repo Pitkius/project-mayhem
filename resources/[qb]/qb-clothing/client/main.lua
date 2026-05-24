@@ -1023,6 +1023,13 @@ RegisterNetEvent('qb-clothing:client:openClothingOnly', function()
         {menu = "accessoires", label = Lang:t("menu.accessoires"), selected = false}
     })
 end)
+
+RegisterNetEvent('qb-clothing:client:openTattooOnly', function()
+    customCamLocation = nil
+    openMenu({
+        {menu = "character", label = Lang:t("menu.features"), selected = true},
+    })
+end)
 RegisterNetEvent('qb-clothing:client:reloadOutfits', function(myOutfits)
     SendNUIMessage({
         action = "reloadMyOutfits",

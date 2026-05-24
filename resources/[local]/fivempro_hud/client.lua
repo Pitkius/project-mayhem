@@ -552,6 +552,16 @@ local function pushVehiclePanelState()
     local vehLabel = dispHash and dispHash ~= '' and GetLabelText(dispHash) or 'Vehicle'
     if vehLabel == 'NULL' or vehLabel == '' then vehLabel = 'Vehicle' end
     local modelSpawn = dispHash and string.lower(dispHash) or 'default'
+    local spawnModel = modelSpawn
+    if QBCore.Shared and QBCore.Shared.Vehicles then
+        for _, v in pairs(QBCore.Shared.Vehicles) do
+            if v.model and joaat(v.model) == vehModel then
+                spawnModel = string.lower(v.model)
+                break
+            end
+        end
+    end
+    local vehicleClass = GetVehicleClass(veh)
     local plate = (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
     local motorPct = clamp(math.floor((eh / 1000.0) * 100.0 + 0.5), 0, 100)
     local hasKeys = playerHasVehicleKeys(veh)
@@ -561,6 +571,8 @@ local function pushVehiclePanelState()
         open = true,
         locked = locked,
         modelSpawn = modelSpawn,
+        spawnModel = spawnModel,
+        vehicleClass = vehicleClass,
         hasKeys = hasKeys,
         doors = doorList,
         engineOn = engineOn,

@@ -1,0 +1,87 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: transparent;
+    overflow: hidden;
+}
+.hidden { display: none !important; }
+#wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+}
+.panel {
+    width: 420px;
+    padding: 24px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #1a2f1a, #0f1a12);
+    border: 1px solid rgba(120, 200, 120, 0.35);
+    color: #e8f5e8;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+h2 { font-size: 1.25rem; margin-bottom: 8px; color: #a8e6a8; }
+#hint { font-size: 0.9rem; opacity: 0.85; margin-bottom: 18px; }
+.sub { text-align: center; margin-top: 12px; font-size: 0.85rem; opacity: 0.75; }
+.track {
+    position: relative;
+    height: 28px;
+    border-radius: 999px;
+    background: #2a3d2a;
+    overflow: hidden;
+    border: 1px solid #4a6b4a;
+}
+.zone {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 18%;
+    left: 40%;
+    background: rgba(80, 200, 90, 0.55);
+    border-radius: 999px;
+}
+.needle {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: 32px;
+    background: #fff;
+    border-radius: 2px;
+    left: 0;
+    box-shadow: 0 0 8px rgba(255,255,255,0.8);
+}
+.seq {
+    font-size: 2rem;
+    letter-spacing: 0.35em;
+    text-align: center;
+    padding: 16px;
+    background: #243524;
+    border-radius: 10px;
+    min-height: 64px;
+}
+.progress {
+    margin-top: 14px;
+    height: 8px;
+    background: #2a3d2a;
+    border-radius: 999px;
+    overflow: hidden;
+}
+#butcherBar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4caf50, #81c784);
+    transition: width 0.15s;
+}
+#cancelBtn {
+    margin-top: 18px;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    color: #ccc;
+    cursor: pointer;
+}
+#cancelBtn:hover { background: rgba(255,255,255,0.14); }

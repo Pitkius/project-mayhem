@@ -4,7 +4,16 @@ let dispatchPoll = null;
 const MAP_BOUNDS = { minX: -4000, maxX: 4500, minY: -4000, maxY: 8000 };
 const MAP_IMG_W = 1066;
 const MAP_IMG_H = 861;
-const MAP_SAT_URL = 'nui://fivempro_ltpd/html/mdt/asset/gtav_satellite.jpg';
+function nuiImageUrl(pathFromHtml) {
+  const raw = String(pathFromHtml || '').trim();
+  if (!raw || /^https?:\/\//i.test(raw) || /^nui:\/\//i.test(raw)) return raw;
+  const res = resourceName();
+  let p = raw.replace(/^\/+/, '');
+  if (!p.startsWith('html/')) p = `html/${p}`;
+  return `nui://${res}/${p}`;
+}
+
+const MAP_SAT_URL = nuiImageUrl('mdt/asset/gtav_satellite.jpg');
 const MAP_MIN_SCALE = 0.45;
 const MAP_MAX_SCALE = 4.0;
 const MAP_FIT_PAD = 0.98;
@@ -103,6 +112,10 @@ document.querySelectorAll('.tab').forEach((t) => {
       watchDispatchMapResize();
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
+          const root = document.getElementById('dispatchMap');
+          if (root && root.clientHeight < 80) {
+            dispatchMapLayoutReady = false;
+          }
           layoutDispatchMapCanvas();
           if (!dispatchMapLayoutReady) {
             dispatchMapLayoutReady = true;
@@ -382,7 +395,8 @@ function fitDispatchMapInView() {
   const sw = Math.max(1, surface.offsetWidth);
   const sh = Math.max(1, surface.offsetHeight);
   const fitScale = Math.min(cw / sw, ch / sh) * MAP_FIT_PAD;
-  dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, fitScale));
+  const panScale = Math.max(1.05, fitScale);
+  dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, panScale));
   dispatchMapPan.x = 0;
   dispatchMapPan.y = 0;
   applyDispatchMapTransform();
@@ -452,6 +466,7 @@ function bindDispatchMapInteract() {
 }
 
 function renderDispatchMap(calls, units) {
+  if (document.getElementById('panel-units')?.classList.contains('hidden')) return;
   ensureDispatchMapDom();
   watchDispatchMapResize();
   layoutDispatchMapCanvas();

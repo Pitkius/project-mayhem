@@ -579,10 +579,46 @@ body.preset-3 {
     inset: 0;
     display: grid;
     place-items: center;
-    color: #fff;
     z-index: 3;
     isolation: isolate;
     pointer-events: none;
+}
+
+.hud-ico-img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.75));
+}
+
+.hud-ico-img.hud-ico-sub {
+    width: 22px;
+    height: 22px;
+}
+
+.hud-ico-img.hud-ico-meter {
+    width: 20px;
+    height: 20px;
+}
+
+.hud-ico-img.hud-ico-q {
+    width: 20px;
+    height: 20px;
+}
+
+.car-sub-ico.state-off .hud-ico-img {
+    opacity: 0.42;
+    filter: grayscale(0.85) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+
+.car-sub-ico.state-on .hud-ico-img {
+    opacity: 1;
+}
+
+.car-sub-ico.state-warn .hud-ico-img,
+.car-sub-belt.belt-off .hud-ico-img {
+    filter: saturate(1.2) drop-shadow(0 0 6px rgba(251, 113, 133, 0.55));
 }
 
 .car-mv-pct {
@@ -1249,9 +1285,15 @@ body.preset-3 {
 }
 
 .vp-ios-card-ico {
-    color: #fff;
-    opacity: 0.9;
+    opacity: 0.95;
     flex-shrink: 0;
+    display: grid;
+    place-items: center;
+}
+
+.vp-ios-card-ico .hud-ico-img {
+    width: 24px;
+    height: 24px;
 }
 
 .vp-ios-card-label {
@@ -1445,11 +1487,36 @@ body.preset-3 {
     pointer-events: none;
 }
 
-.vp-vehicle-preview {
+.vp-ios-car-wrap {
     position: relative;
-    z-index: 2;
     width: 100%;
-    min-height: 150px;
+    height: 340px;
+    border-radius: 22px;
+    background:
+        radial-gradient(ellipse 70% 45% at 50% 88%, rgba(167, 139, 250, 0.18) 0%, transparent 70%),
+        linear-gradient(180deg, rgba(48, 44, 68, 0.92) 0%, rgba(18, 16, 28, 0.96) 100%);
+    border: 1px solid rgba(167, 139, 250, 0.22);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 32px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+
+.vp-ios-car-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    border-radius: 16px;
+    border: 1px dashed rgba(167, 139, 250, 0.12);
+    pointer-events: none;
+}
+
+.vp-vehicle-preview {
+    position: absolute;
+    left: 50%;
+    bottom: 18%;
+    transform: translateX(-50%);
+    z-index: 2;
+    width: 72%;
+    min-height: 180px;
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -1457,28 +1524,31 @@ body.preset-3 {
 }
 
 .vp-vehicle-image {
-    width: min(240px, 92%);
-    height: 140px;
+    width: 100%;
+    max-width: 220px;
+    height: 170px;
     object-fit: contain;
     object-position: center bottom;
-    filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45));
+    opacity: 0.55;
+    transform: scale(0.96);
+    filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.5));
+    transition: opacity 0.25s ease, transform 0.25s ease, filter 0.25s ease;
 }
 
-.vp-ios-car-wrap {
-    position: relative;
-    width: 100%;
-    height: 320px;
-    border-radius: 20px;
-    background: linear-gradient(180deg, rgba(40, 38, 56, 0.75) 0%, rgba(22, 20, 34, 0.85) 100%);
-    border: 1px solid rgba(167, 139, 250, 0.14);
+.vp-vehicle-image.vp-vehicle-loaded {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 16px 32px rgba(167, 139, 250, 0.25)) drop-shadow(0 8px 20px rgba(0, 0, 0, 0.45));
 }
 
 .vp-ios-car-svg {
     position: absolute;
     left: 50%;
-    top: 51%;
+    top: 52%;
     transform: translate(-50%, -50%);
     pointer-events: none;
+    z-index: 1;
+    opacity: 0.88;
 }
 
 .vp-car-topdown {
@@ -1714,12 +1784,4 @@ body.preset-3 {
 .vp-ios-shell {
     border-radius: 22px;
     overflow: hidden;
-}
-
-.vp-vehicle-image {
-    object-fit: contain;
-    object-position: center;
-    max-height: 100%;
-    width: 100%;
-    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.35));
 }

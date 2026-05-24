@@ -141,8 +141,13 @@ end)
 
 RegisterNUICallback('cctvWatch', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_ltpd:server:cctvWatch', function(res)
-        if res and res.ok and res.cam then
-            startCctvView(res.cam)
+        if res and res.ok then
+            local camId = tostring((data and data.camId) or (res.cam and res.cam.id) or '')
+            local fullCam = nil
+            for _, c in ipairs(Config.Surveillance.CctvCameras or {}) do
+                if c.id == camId then fullCam = c break end
+            end
+            startCctvView(fullCam or res.cam)
         else
             StopLtpdCctvView()
         end

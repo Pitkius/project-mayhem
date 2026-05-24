@@ -3,7 +3,7 @@ game 'gta5'
 
 name 'fivempro_npcshops'
 author 'FIVEMPRO'
-description 'NPC barber, food, and clothing shops'
+description 'NPC barber, 24/7, clothing, tattoo, pharmacy shops'
 lua54 'yes'
 
 shared_scripts {

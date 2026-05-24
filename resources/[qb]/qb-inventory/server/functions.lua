@@ -24,7 +24,7 @@ local function SetupShopItems(shopItems)
     local items = {}
     local slot = 1
     if shopItems and next(shopItems) then
-        for _, item in pairs(shopItems) do
+        for _, item in ipairs(shopItems) do
             local itemInfo = QBCore.Shared.Items[item.name:lower()]
             if itemInfo then
                 items[slot] = {

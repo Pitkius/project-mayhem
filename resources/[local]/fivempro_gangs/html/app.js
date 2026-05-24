@@ -202,7 +202,8 @@ function fitGangsMapInView() {
   const sw = Math.max(1, surface.offsetWidth);
   const sh = Math.max(1, surface.offsetHeight);
   const fitScale = Math.min(cw / sw, ch / sh) * GANG_MAP_FIT_PAD;
-  gangsMapPan.scale = Math.max(GANG_MAP_MIN_SCALE, Math.min(GANG_MAP_MAX_SCALE, fitScale));
+  const panScale = Math.max(1.05, fitScale);
+  gangsMapPan.scale = Math.max(GANG_MAP_MIN_SCALE, Math.min(GANG_MAP_MAX_SCALE, panScale));
   gangsMapPan.x = 0;
   gangsMapPan.y = 0;
   applyGangsMapTransform();
@@ -336,6 +337,23 @@ function paintTurfMarkers(state) {
     markers.appendChild(zone);
   });
 
+}
+
+function renderTurfsOnMap(state) {
+  if (!state) return;
+  mapCfg = normalizeMapConfig({ tabletMap: state.tabletMap || {} });
+  ensureGangsMapDom(mapCfg.imageUrl);
+  watchGangsMapResize();
+  layoutGangsMapCanvas();
+  bindGangsMapInteract();
+  paintTurfMarkers(state);
+  if (!gangsMapLayoutReady) {
+    gangsMapLayoutReady = true;
+    requestAnimationFrame(() => fitGangsMapInView());
+  } else {
+    clampGangsMapPan();
+    applyGangsMapTransform();
+  }
 }
 
 /** Žemėlapis kuriamas tik kai skiltis matoma (pilnas panel plotis / aukštis). */

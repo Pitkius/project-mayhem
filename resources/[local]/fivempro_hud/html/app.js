@@ -109,27 +109,50 @@ const vpMotorPct = document.getElementById("vpMotorPct");
 const vpVehicleName = document.getElementById("vpVehicleName");
 const vpVehicleImage = document.getElementById("vpVehicleImage");
 
-function setVehiclePreviewImage(modelSpawn) {
+const VEHICLE_CLASS_IMAGES = {
+  0: "class_compact",
+  1: "class_sedan",
+  2: "class_suv",
+  3: "class_coupe",
+  4: "class_muscle",
+  5: "class_sports",
+  6: "class_sports",
+  7: "class_super",
+  8: "class_motorcycle",
+  9: "class_offroad",
+  12: "class_van",
+};
+
+function setVehiclePreviewImage(modelSpawn, spawnModel, vehicleClass) {
   if (!vpVehicleImage) return;
-  const safe = String(modelSpawn || "default")
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, "");
-  const name = safe || "default";
-  const fallbacks = [
-    `assets/vehicles/${name}.png`,
-    "assets/vehicles/default.png",
+  const safe = (v) =>
+    String(v || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "");
+  const display = safe(modelSpawn) || "default";
+  const spawn = safe(spawnModel);
+  const classKey = VEHICLE_CLASS_IMAGES[Number(vehicleClass)] || "class_sedan";
+  const candidates = [
+    spawn ? `assets/vehicles/${spawn}.png` : null,
+    display !== spawn ? `assets/vehicles/${display}.png` : null,
+    `assets/vehicles/${classKey}.png`,
+    "assets/vehicles/vehicle-topdown.png",
     "assets/vehicles/default.svg",
-  ];
+  ].filter(Boolean);
   let step = 0;
+  vpVehicleImage.classList.remove("vp-vehicle-loaded");
   vpVehicleImage.onerror = () => {
     step += 1;
-    if (step < fallbacks.length) {
-      vpVehicleImage.src = fallbacks[step];
+    if (step < candidates.length) {
+      vpVehicleImage.src = candidates[step];
       return;
     }
     vpVehicleImage.onerror = null;
   };
-  vpVehicleImage.src = fallbacks[0];
+  vpVehicleImage.onload = () => {
+    vpVehicleImage.classList.add("vp-vehicle-loaded");
+  };
+  vpVehicleImage.src = candidates[0];
 }
 const vpPlateLine = document.getElementById("vpPlateLine");
 const vpHazardToggle = document.getElementById("vpHazardToggle");
@@ -387,7 +410,7 @@ window.addEventListener("message", (event) => {
     if (vpMotorPct) vpMotorPct.textContent = String(Math.round(motorN));
     if (vpVehicleName) vpVehicleName.textContent = data.vehicleName || "—";
     if (vpPlateLine) vpPlateLine.textContent = data.plate || "—";
-    setVehiclePreviewImage(data.modelSpawn);
+    setVehiclePreviewImage(data.modelSpawn, data.spawnModel, data.vehicleClass);
     const vpLockStatus = document.getElementById("vpLockStatus");
     const vpEngineStatus = document.getElementById("vpEngineStatus");
     if (vpLockStatus) {

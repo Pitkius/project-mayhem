@@ -105,22 +105,34 @@ end
 
 local function doDrill()
     if not session or session.phase ~= 'hacked' then return end
-    QBCore.Functions.Progressbar('atm_drill', 'Gręžiamas bankomatas…', Config.Atm.DrillTimeMs or 18000, false, true, {
-        disableMovement = true, disableCarMovement = true, disableCombat = true,
-    }, { animDict = 'anim@heists@fleeca_bank@drilling', anim = 'drill_straight_idle', flags = 1 }, {}, {}, function()
+    local mg = (Config.RobberyMinigames or {}).atm_drill
+    local anim = (Config.RobberyAnims or {}).drill
+    local ok = exports['fivempro_hacking']:RunPhysicalMinigame(mg.mode, {
+        label = mg.label,
+        anim = anim,
+        data = mg.data or {},
+    })
+    if ok then
         TriggerServerEvent('fivempro_hacking:server:atmDrillDone', session.coords)
-    end, function()
-        QBCore.Functions.Notify('Atšaukta.', 'error')
-    end)
+    else
+        QBCore.Functions.Notify('Gręžimas nepavyko.', 'error')
+    end
 end
 
 local function doChain()
     if not session or session.phase ~= 'drilled' then return end
-    QBCore.Functions.Progressbar('atm_chain', 'Pritvirtinama grandinė…', 8000, false, true, {
-        disableMovement = true, disableCombat = true,
-    }, { animDict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@', anim = 'machinic_loop_mechandplayer', flags = 1 }, {}, {}, function()
+    local mg = (Config.RobberyMinigames or {}).chain
+    local anim = (Config.RobberyAnims or {}).chain
+    local ok = exports['fivempro_hacking']:RunPhysicalMinigame(mg.mode, {
+        label = mg.label,
+        anim = anim,
+        data = mg.data or {},
+    })
+    if ok then
         TriggerServerEvent('fivempro_hacking:server:atmChainDone', session.coords)
-    end, function() end)
+    else
+        QBCore.Functions.Notify('Grandinės tvirtinimas nepavyko.', 'error')
+    end
 end
 
 local function tryPullComplete()

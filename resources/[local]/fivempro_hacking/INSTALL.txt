@@ -1,22 +1,34 @@
-fivempro_hacking – OS / tablet / ATM robbery
-============================================
+fivempro_hacking – OS / tablet / visi apiplėšimai
 
-1) cfg/30_custom.cfg: ensure fivempro_hacking (po fivempro_dispatch, fivempro_ltpd).
+1) ensure fivempro_hacking (po qb-core, qb-inventory, qb-target, fivempro_dispatch)
 
-2) qb-core items: basic_tablet, advanced_tablet, military_tablet, flashdrives, tow_chain (+ drill jau yra).
+2) Aplėšimų tier'ai (visi implementuoti):
+   • hack          — sekos minigame + animacija (laptop)
+   • card          — rodyklių minigame + kortelės animacija
+   • thermite      — hold SPACE minigame + termito animacija
+   • drill         — timing minigame + gręžtuvo animacija/prop
+   • loot          — mash SPACE minigame + grab animacija
+   • ATM drill     — timing (4 raundai) + gręžimas
+   • ATM chain     — rodyklių minigame + mechaniko animacija
+   • ATM crack     — hack minigame + animacija
+   • store        — 24/7 kasa (BlackOS + basic tablet)
+   • bank_fleeca  — Fleeca (GhostOS + advanced tablet + drill)
+   • bank_main    — Pacific (CipherOS + kortelė A + termite + drill)
+   • casino       — Kazino serverinė (CipherOS + military tablet)
+   • vault        — Federal vault (FederalOS + kortelė B + termite + drill)
 
-3) Black market NPC: Config.BlackMarket.coords (default ~707,-967).
+3) Vietos: qb-target zona prie koordinačių (config_robberies.lua).
+   Tablet Network skiltis rodo fazės ir vietų skaičių.
 
-4) Tablet: naudok item → įdiek OS/exploit per Storage tab (flashdrive inventory slot).
+4) TEST pardavėjas: ~ -328, -134 (DebugHeistVendor — $1 itemai)
 
-5) ATM robbery (starter):
-   - Reikia: basic_tablet + BasicOS (flashdrive) + drill + tow_chain
-   - qb-target ant ATM: Hack → Gręžti → Grandinė → Tempk ~50m mašina → Drop-off → Hack laužimui
+5) Black market: 707, -967 (normalios kainos + OS payload ant USB)
 
-6) Exports kitiems robbery:
-   exports['fivempro_hacking']:CanAccessRobbery(src, 'bank_fleeca')
-   exports['fivempro_hacking']:StartHack(tierId, coords, callback) -- client export
+6) Tipinis startas:
+   a) basic_tablet + BasicOS (flashdrive)
+   b) Eik prie ATM ar 24/7 kasos → qb-target
+   c) Atlik hack minigame → fazės (drill/termite/kortelė pagal tier)
 
-7) CCTV išjungimas sėkmingam hack: exploit cam_spoof arba fivempro_ltpd TamperCctvRadius.
-
-8) Progresija: Config.RobberyTiers + Config.OperatingSystems – store/bank/casino paruošta ateities skriptams.
+7) Restart po config pakeitimų:
+   ensure qb-core
+   ensure fivempro_hacking

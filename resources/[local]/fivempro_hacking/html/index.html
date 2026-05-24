@@ -44,6 +44,28 @@
     <button type="button" id="hackCancel" class="btn danger">Abort</button>
   </div>
 
+
+  <div id="physical" class="panel physical hidden">
+    <div class="physical-head" id="physicalTitle">Veiksmas</div>
+    <p id="physicalHint" class="muted"></p>
+    <div id="physicalTiming" class="mg hidden">
+      <div class="mg-track"><div class="mg-zone" id="mgZone"></div><div class="mg-needle" id="mgNeedle"></div></div>
+      <p class="mg-sub">SPACE — fiksuoti (<span id="mgRound">1</span>/<span id="mgRounds">3</span>)</p>
+    </div>
+    <div id="physicalSequence" class="mg hidden">
+      <div class="mg-seq" id="mgSeq">-</div>
+      <p class="mg-sub">Rodykles</p>
+    </div>
+    <div id="physicalHold" class="mg hidden">
+      <div class="mg-track"><div class="mg-zone" id="mgHoldZone"></div><div class="mg-fill" id="mgHoldFill"></div></div>
+      <p class="mg-sub">Laikyk SPACE</p>
+    </div>
+    <div id="physicalMash" class="mg hidden">
+      <div class="mg-mash-bar"><div id="mgMashFill"></div></div>
+      <p class="mg-sub">Spam SPACE (<span id="mgMashCount">0</span>/<span id="mgMashTarget">18</span>)</p>
+    </div>
+    <button type="button" id="physicalCancel" class="btn danger">Atšaukti</button>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

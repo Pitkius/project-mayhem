@@ -162,7 +162,7 @@ CreateThread(function()
         SetBlipColour(clothingBlip, 47)
         SetBlipAsShortRange(clothingBlip, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString('Rubu Parduotuve')
+        AddTextComponentString('Rūbų parduotuvė')
         EndTextCommandSetBlipName(clothingBlip)
         spawnedBlips[#spawnedBlips + 1] = clothingBlip
 
@@ -174,7 +174,7 @@ CreateThread(function()
                         type = 'client',
                         event = 'qb-clothing:client:openClothingOnly',
                         icon = 'fas fa-shirt',
-                        label = 'Rubu Parduotuve',
+                        label = 'Rūbų parduotuvė',
                     }
                 },
                 distance = 2.0
@@ -190,7 +190,7 @@ CreateThread(function()
         SetBlipColour(blip, 2)
         SetBlipAsShortRange(blip, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString('Maisto Parduotuve')
+        AddTextComponentString('24/7')
         EndTextCommandSetBlipName(blip)
         spawnedBlips[#spawnedBlips + 1] = blip
 
@@ -201,8 +201,66 @@ CreateThread(function()
                     {
                         type = 'server',
                         event = 'fivempro_npcshops:server:openFoodShop',
-                        icon = 'fas fa-burger',
-                        label = 'Nusipirkti maisto',
+                        icon = 'fas fa-basket-shopping',
+                        label = '24/7 parduotuvė',
+                    }
+                },
+                distance = 2.0
+            })
+        end
+    end
+
+    for i = 1, #(Config.TattooPeds or {}) do
+        local tattooCoords = Config.TattooPeds[i].coords
+        local tattooBlip = AddBlipForCoord(tattooCoords.x, tattooCoords.y, tattooCoords.z)
+        SetBlipSprite(tattooBlip, 75)
+        SetBlipDisplay(tattooBlip, 4)
+        SetBlipScale(tattooBlip, 0.75)
+        SetBlipColour(tattooBlip, 1)
+        SetBlipAsShortRange(tattooBlip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString('Tatuiruotės')
+        EndTextCommandSetBlipName(tattooBlip)
+        spawnedBlips[#spawnedBlips + 1] = tattooBlip
+
+        local ped = spawnShopPed(Config.TattooPeds[i].model, Config.TattooPeds[i].coords)
+        if ped then
+            queueTarget(ped, {
+                options = {
+                    {
+                        type = 'client',
+                        event = 'qb-clothing:client:openTattooOnly',
+                        icon = 'fas fa-pen-nib',
+                        label = 'Tatuiruotės',
+                    }
+                },
+                distance = 2.0
+            })
+        end
+    end
+
+    for i = 1, #(Config.PharmacyPeds or {}) do
+        local pharmacyCoords = Config.PharmacyPeds[i].coords
+        local pharmacyBlip = AddBlipForCoord(pharmacyCoords.x, pharmacyCoords.y, pharmacyCoords.z)
+        SetBlipSprite(pharmacyBlip, 51)
+        SetBlipDisplay(pharmacyBlip, 4)
+        SetBlipScale(pharmacyBlip, 0.75)
+        SetBlipColour(pharmacyBlip, 2)
+        SetBlipAsShortRange(pharmacyBlip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString('Vaistinė')
+        EndTextCommandSetBlipName(pharmacyBlip)
+        spawnedBlips[#spawnedBlips + 1] = pharmacyBlip
+
+        local ped = spawnShopPed(Config.PharmacyPeds[i].model, Config.PharmacyPeds[i].coords)
+        if ped then
+            queueTarget(ped, {
+                options = {
+                    {
+                        type = 'server',
+                        event = 'fivempro_npcshops:server:openPharmacyShop',
+                        icon = 'fas fa-briefcase-medical',
+                        label = 'Vaistinė',
                     }
                 },
                 distance = 2.0
