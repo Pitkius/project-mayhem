@@ -83,7 +83,7 @@ local function addRateProgress(src, amount)
     playerCooldown[src] = now
 end
 
-function ApplyGangTurfTask(src, turfId, taskType, opts)
+function AddTurfInfluence(src, turfId, taskType, opts)
     opts = opts or {}
     local gang = getPlayerGang(src)
     if not gang then return false, 'Nepriklausai gaujai.' end
@@ -91,17 +91,17 @@ function ApplyGangTurfTask(src, turfId, taskType, opts)
         return false, 'Turi būti turf zonoje.'
     end
 
-    local reward = tonumber(opts.progress) or (Config.TaskReputation and Config.TaskReputation[tostring(taskType or '')]) or 0
+    local reward = tonumber(opts.amount) or tonumber(opts.progress) or (Config.TurfInfluence and Config.TurfInfluence[taskType]) or 0
     if reward <= 0 then return false, 'Nežinoma užduotis.' end
 
     local okRate, rateMsg = checkRateLimit(src)
     if not okRate and not opts.skipCooldown then return false, rateMsg end
 
-    local turf = MySQL.single.await('SELECT turf_id, owner_gang_id, owner_name, progress, heat FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { tostring(turfId) })
+    local turf = MySQL.single.await('SELECT turf_id, owner_gang_id, owner_name, progress, influence, heat FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { tostring(turfId) })
     if not turf then return false, 'Turf nerastas.' end
 
-    if not canCaptureTurf(gang, turf) then
-        return false, 'Šis turf jau priklauso tavo gaujai — naudok /gangsell.'
+    if not canCaptureTurf(gang, turf) and not opts.allowOwnTurf then
+        return false, 'Šis turf jau priklauso tavo gaujai.'
     end
 
     local cap = Config.TurfCapture or {}
@@ -111,28 +111,28 @@ function ApplyGangTurfTask(src, turfId, taskType, opts)
         return false, 'Šis turf neseniai bandytas — palauk cooldown.'
     end
 
-    local progress = (tonumber(turf.progress) or 0) + reward
+    local influence = (tonumber(turf.influence) or tonumber(turf.progress) or 0) + reward
     local ownerGangId = turf.owner_gang_id
     local ownerName = turf.owner_name
     local threshold = tonumber(cap.claimThreshold) or tonumber(Config.TurfClaimThreshold) or 100
     local claimed = false
 
-    if progress >= threshold then
+    if influence >= threshold then
         ownerGangId = gang.gang_id
         ownerName = gang.name
-        progress = 0
+        influence = threshold
         claimed = true
         turfCooldown[tKey] = now + (cap.turfCooldownSec or 300)
     end
 
-    local heatAdd = tonumber(opts.heatAdd) or 0
+    local heatAdd = tonumber(opts.heatAdd) or math.floor(reward / 4)
     local newHeat = math.min(100, (tonumber(turf.heat) or 0) + heatAdd)
 
     MySQL.update.await([[
         UPDATE fivempro_gang_turfs
-        SET progress = ?, owner_gang_id = ?, owner_name = ?, heat = ?
+        SET influence = ?, progress = ?, owner_gang_id = ?, owner_name = ?, heat = ?
         WHERE turf_id = ?
-    ]], { progress, ownerGangId, ownerName, newHeat, tostring(turfId) })
+    ]], { influence, influence, ownerGangId, ownerName, newHeat, tostring(turfId) })
 
     MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + ?, heat = LEAST(100, heat + ?) WHERE id = ?', {
         math.max(1, math.floor(reward / 2)),
@@ -142,15 +142,59 @@ function ApplyGangTurfTask(src, turfId, taskType, opts)
 
     if not opts.skipCooldown then addRateProgress(src, reward) end
 
-    local msg = claimed and ('Turf %s užimtas!'):format(tostring(turfId)) or ('Turf progresas +%s (%s/%s)'):format(reward, progress, threshold)
+    local msg = claimed and ('Turf %s kontroliuojamas!'):format(tostring(turfId)) or ('Turf įtaka +%s (%s/%s)'):format(reward, influence, threshold)
     TriggerClientEvent('QBCore:Notify', src, msg, claimed and 'success' or 'primary')
-    TriggerClientEvent('fivempro_gangs:client:turfProgressUpdated', src, turfId, progress, threshold, claimed)
-    print(('[fivempro_gangs] turf task %s gang=%s turf=%s +%s claimed=%s'):format(taskType, gang.gang_id, turfId, reward, tostring(claimed)))
-    return true, msg, { progress = progress, claimed = claimed }
+    TriggerClientEvent('fivempro_gangs:client:turfInfluenceUpdated', src, turfId, influence, threshold, claimed)
+    print(('[fivempro_gangs] turf influence %s gang=%s turf=%s +%s claimed=%s'):format(taskType, gang.gang_id, turfId, reward, tostring(claimed)))
+    return true, msg, { influence = influence, claimed = claimed }
 end
 
+function ApplyGangTurfTask(src, turfId, taskType, opts)
+    opts = opts or {}
+    opts.amount = opts.amount or opts.progress
+    return AddTurfInfluence(src, turfId, taskType, opts)
+end
+
+function CompleteGangMission(src, missionType, opts)
+    opts = opts or {}
+    local gang = getPlayerGang(src)
+    if not gang then return false, 'Nepriklausai gaujai.' end
+    local mCfg = Config.MissionTypes and Config.MissionTypes[missionType]
+    if not mCfg then return false, 'Nežinoma misija.' end
+
+    local okRate, rateMsg = checkRateLimit(src)
+    if not okRate and not opts.skipCooldown then return false, rateMsg end
+
+    local rep = tonumber(mCfg.reputationReward) or tonumber(mCfg.progress) or (Config.TaskReputation and Config.TaskReputation[missionType]) or 8
+    local money = tonumber(mCfg.moneyReward) or 0
+    MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + ?, heat = LEAST(100, heat + ?) WHERE id = ?', {
+        rep, math.max(1, math.floor(rep / 8)), gang.gang_id,
+    })
+    local Player = QBCore.Functions.GetPlayer(src)
+    if Player and money > 0 then
+        Player.Functions.AddMoney('cash', money, 'gang-mission')
+    end
+
+    local inf = tonumber(mCfg.influenceReward) or 0
+    if inf > 0 and opts.turfId then
+        AddTurfInfluence(src, opts.turfId, missionType, { amount = inf, skipTurfCheck = opts.skipTurfCheck == true, skipCooldown = true })
+    end
+
+    if not opts.skipCooldown then addRateProgress(src, rep) end
+    TriggerClientEvent('QBCore:Notify', src, ('Misija baigta · Rep +%s'):format(rep), 'success')
+    return true, 'ok'
+end
+
+RegisterNetEvent('fivempro_gangs:internal:addInfluence', function(src, turfId, taskType, amount, skipTurfCheck, skipCooldown)
+    AddTurfInfluence(src, turfId, taskType, {
+        amount = amount,
+        skipTurfCheck = skipTurfCheck == true,
+        skipCooldown = skipCooldown == true,
+    })
+end)
+
 RegisterNetEvent('fivempro_gangs:server:completeTask', function(turfId, taskType)
-    ApplyGangTurfTask(source, turfId, taskType)
+    AddTurfInfluence(source, turfId, taskType, { amount = Config.TurfInfluence and Config.TurfInfluence.graffiti or 5 })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_gangs:server:startMission', function(src, cb, turfId, missionType)
@@ -165,13 +209,24 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:startMission', function(s
 
     turfId = tostring(turfId or '')
     if turfId == '' or not Config.Turfs[turfId] then
-        return cb({ ok = false, reason = 'Netinkamas turf.' })
+        local ped = GetPlayerPed(src)
+        if ped and ped ~= 0 then
+            local p = GetEntityCoords(ped)
+            for id, turf in pairs(Config.Turfs or {}) do
+                if #(p - vector3(turf.center.x, turf.center.y, turf.center.z)) <= (turf.radius or 180.0) then
+                    turfId = id
+                    break
+                end
+            end
+        end
+    end
+    if turfId == '' or not Config.Turfs[turfId] then
+        return cb({ ok = false, reason = 'Pasirink turf arba stovėk zonoje.' })
     end
 
-    local turf = MySQL.single.await('SELECT owner_gang_id, progress FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { turfId })
-    if not turf then return cb({ ok = false, reason = 'Turf nerastas.' }) end
-    if not canCaptureTurf(gang, turf) then
-        return cb({ ok = false, reason = 'Negalima užimti savo turf.' })
+    local turf = MySQL.single.await('SELECT owner_gang_id FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { turfId })
+    if turfId ~= '' and not Config.Turfs[turfId] then
+        return cb({ ok = false, reason = 'Netinkamas turf.' })
     end
 
     local okRate, rateMsg = checkRateLimit(src)
@@ -236,8 +291,10 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:finishMissionStep', funct
                 return cb({ ok = false, reason = 'Reikia transporto.' })
             end
         end
-        local progress = mCfg.progress or (Config.TaskReputation[act.missionType] or 8)
-        local ok, reason = ApplyGangTurfTask(src, act.turfId, act.missionType, { progress = progress, skipTurfCheck = mCfg.dropInTurf ~= true })
+        local ok, reason = CompleteGangMission(src, act.missionType, {
+            turfId = act.turfId,
+            skipTurfCheck = mCfg.dropInTurf ~= true,
+        })
         activeMissions[src] = nil
         pendingHackMission[src] = nil
         return cb({ ok = ok, reason = reason, done = true })
@@ -253,6 +310,8 @@ RegisterNetEvent('fivempro_gangs:server:cancelMission', function()
 end)
 
 exports('ApplyGangTurfTask', ApplyGangTurfTask)
+exports('AddTurfInfluence', AddTurfInfluence)
+exports('CompleteGangMission', CompleteGangMission)
 
 exports('OnHackSuccess', function(src, tierId, coords)
     local gang = getPlayerGang(src)
@@ -261,8 +320,8 @@ exports('OnHackSuccess', function(src, tierId, coords)
     MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + ? WHERE id = ?', { rep, gang.gang_id })
 
     local pending = pendingHackMission[src]
-    if pending and pending.turfId then
-        ApplyGangTurfTask(src, pending.turfId, 'hacking', { progress = Config.MissionTypes.hacking and Config.MissionTypes.hacking.progress or 12 })
+    if pending then
+        CompleteGangMission(src, 'hacking', { turfId = pending.turfId, skipTurfCheck = true })
         pendingHackMission[src] = nil
         activeMissions[src] = nil
     end
@@ -324,6 +383,43 @@ RegisterNetEvent('fivempro_gangs:server:adminSetTurfProgress', function(turfId, 
     if not hasGangAdminPermission(src) then return end
     MySQL.update.await('UPDATE fivempro_gang_turfs SET progress = ? WHERE turf_id = ?', { math.max(0, math.min(100, tonumber(progress) or 0)), tostring(turfId) })
     TriggerClientEvent('QBCore:Notify', src, 'Turf progresas nustatytas.', 'success')
+end)
+
+RegisterNetEvent('fivempro_gangs:server:placeGraffiti', function(turfId)
+    local src = source
+    local gang = getPlayerGang(src)
+    if not gang then return end
+    local cfg = Config.Graffiti or {}
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    if Player.Functions.GetItemByName(cfg.item or 'spray_can') == nil then
+        return TriggerClientEvent('QBCore:Notify', src, 'Reikia spray_can.', 'error')
+    end
+    if not playerInTurfServer(src, turfId) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Turi būti turf zonoje.', 'error')
+    end
+    Player.Functions.RemoveItem(cfg.item or 'spray_can', 1)
+    local gain = tonumber(cfg.influenceGain) or (Config.TurfInfluence and Config.TurfInfluence.graffiti) or 6
+    AddTurfInfluence(src, turfId, 'graffiti', { amount = gain, allowOwnTurf = true })
+    if math.random(1, 100) <= (cfg.policeAlertChance or 18) then
+        local ped = GetPlayerPed(src)
+        local c = GetEntityCoords(ped)
+        if GetResourceState('fivempro_dispatch') == 'started' then
+            pcall(function()
+                exports['fivempro_dispatch']:CreateCall({
+                    callType = 'graffiti',
+                    callTypeLabel = 'Graffiti / vandalizmas',
+                    x = c.x, y = c.y, z = c.z,
+                    priority = 1,
+                })
+            end)
+        end
+    end
+end)
+
+RegisterNetEvent('fivempro_gangs:server:requestTabletRefresh', function()
+    local src = source
+    TriggerClientEvent('fivempro_gangs:client:refreshTablet', src)
 end)
 
 AddEventHandler('playerDropped', function()

@@ -16,6 +16,7 @@ shared_scripts {
 
 client_scripts {
     'client/main.lua',
+    'client/cctv_props.lua',
     'client/cctv.lua',
     'client/bodycam.lua',
     'client/boss.lua',

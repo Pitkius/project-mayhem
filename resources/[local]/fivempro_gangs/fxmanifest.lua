@@ -28,6 +28,7 @@ shared_scripts {
 client_scripts {
     'client.lua',
     'client_missions.lua',
+    'client_graffiti.lua',
 }
 
 server_scripts {
@@ -38,6 +39,8 @@ server_scripts {
 
 exports {
     'ApplyGangTurfTask',
+    'AddTurfInfluence',
+    'CompleteGangMission',
     'OnHackSuccess',
     'OnHackFailed',
 }

@@ -47,6 +47,24 @@ Config.Turfs = {
 
 Config.TurfClaimThreshold = 100
 
+--- Turf įtaka (atskira nuo misijų progresijos)
+Config.TurfInfluence = {
+    claimThreshold = 100,
+    graffiti = 6,
+    drugSaleInfluence = 2,
+    presencePerMinute = 1,
+}
+
+--- Graffiti turf įtakai
+Config.Graffiti = {
+    item = 'spray_can',
+    cleanerItem = 'graffiti_cleaner',
+    cooldownSec = 120,
+    influenceGain = 6,
+    policeAlertChance = 18,
+    durationMs = 4500,
+}
+
 Config.DrugSellItems = {
     { item = 'weed_skunk', label = 'Skunk', base = 110 },
     { item = 'weed_og-kush', label = 'OG Kush', base = 130 },

@@ -84,10 +84,11 @@
 
         <section id="tabPanelMissions" class="tab-panel hidden" role="tabpanel">
           <div class="rail-card">
-            <h3>Turf užėmimas</h3>
-            <p class="small muted">Užpildyk progresą iki <strong id="claimThresholdLbl">100</strong>% per misijas. Savo turfe — <code>/gangsell</code>.</p>
+            <h3>Gaujos misijos</h3>
+            <p class="small muted">Misijos duoda <strong>reputaciją</strong> ir pinigus — <em>neužima turf</em>. Turf įtaka: graffiti, <code>/gangsell</code>, veikla rajone.</p>
+            <div id="gangMissionStats" class="gang-mission-stats muted small"></div>
             <div class="grid tight">
-              <label>Turf
+              <label>Pristatymo turf (jei reikia)
                 <select id="missionTurfSelect"></select>
               </label>
               <label>Misija
@@ -95,7 +96,7 @@
               </label>
             </div>
             <button type="button" id="btnStartMission" class="btn btn-primary wide">Pradėti misiją</button>
-            <p class="small muted">Komandos: <code>/gangmission [tipas]</code>, <code>/gangmissiondrop</code></p>
+            <p class="small muted">Komandos: <code>/gangmission [tipas]</code>, <code>/gangmissiondrop</code> · Įtaka iki užėmimo: <strong id="claimThresholdLbl">100</strong>%</p>
           </div>
         </section>
 

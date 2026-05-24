@@ -430,7 +430,7 @@ select.color-select-native {
   flex-shrink: 0;
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: 100% 100%;
+  background-size: contain;
 }
 
 .gangs-map-inner {

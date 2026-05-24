@@ -169,3 +169,58 @@ Config.BlackMarket = {
 
 Config.ChainItem = 'tow_chain'
 Config.DrillItem = 'drill'
+
+--- Test vieta (kaip mechanikų sandbox): blip + NPC + $1 parduotuvė visiems heist/hacking itemams.
+Config.DebugHeistVendor = {
+    enabled = true,
+    pedModel = `s_m_y_dealer_01`,
+    coords = vector4(-328.15, -133.62, 39.02, 252.0),
+    scenario = 'WORLD_HUMAN_STAND_MOBILE',
+    Blip = {
+        sprite = 478,
+        colour = 1,
+        scale = 0.88,
+        label = 'TEST: Heist įrankiai',
+    },
+}
+
+--- qb-inventory shop (vienas item = vienas slotas)
+Config.DebugHeistShopItems = {
+    { item = 'basic_tablet', price = 1 },
+    { item = 'advanced_tablet', price = 1 },
+    { item = 'military_tablet', price = 1 },
+    { item = 'basic_flashdrive', price = 1 },
+    { item = 'encrypted_flashdrive', price = 1 },
+    { item = 'military_flashdrive', price = 1 },
+    { item = 'drill', price = 1 },
+    { item = 'tow_chain', price = 1 },
+    { item = 'thermite', price = 1 },
+    { item = 'trojan_usb', price = 1 },
+    { item = 'electronickit', price = 1 },
+    { item = 'gatecrack', price = 1 },
+    { item = 'lockpick', price = 1 },
+    { item = 'advancedlockpick', price = 1 },
+    { item = 'screwdriverset', price = 1 },
+    { item = 'security_card_01', price = 1 },
+    { item = 'security_card_02', price = 1 },
+    { item = 'goldbar', price = 1 },
+    { item = 'markedbills', price = 1 },
+}
+
+Config.DebugHeistShop = {
+    name = 'fivempro_hack_debug_heist',
+    label = 'TEST: Heist įrankiai ($1)',
+}
+
+--- Flashdrive su OS/exploit payload ($1) — tas pats principas kaip BlackMarket, tik test kainos.
+Config.DebugHeistFlashOffers = {
+    { item = 'basic_flashdrive', price = 1, payload = { payload_type = 'os', payload_id = 'basicos' } },
+    { item = 'encrypted_flashdrive', price = 1, payload = { payload_type = 'os', payload_id = 'blackos' } },
+    { item = 'encrypted_flashdrive', price = 1, payload = { payload_type = 'os', payload_id = 'ghostos' } },
+    { item = 'military_flashdrive', price = 1, payload = { payload_type = 'os', payload_id = 'cipheros' } },
+    { item = 'military_flashdrive', price = 1, payload = { payload_type = 'os', payload_id = 'federalos' } },
+    { item = 'basic_flashdrive', price = 1, payload = { payload_type = 'exploit', payload_id = 'signal_jammer' } },
+    { item = 'basic_flashdrive', price = 1, payload = { payload_type = 'exploit', payload_id = 'atm_bypass' } },
+    { item = 'encrypted_flashdrive', price = 1, payload = { payload_type = 'exploit', payload_id = 'dye_sniffer' } },
+    { item = 'encrypted_flashdrive', price = 1, payload = { payload_type = 'exploit', payload_id = 'cam_spoof' } },
+}

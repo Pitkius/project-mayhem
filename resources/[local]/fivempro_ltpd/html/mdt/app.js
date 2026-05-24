@@ -1,10 +1,13 @@
 const app = document.getElementById('app');
 const btnClose = document.getElementById('btnClose');
 let dispatchPoll = null;
-const MAP_BOUNDS = { minX: -4500, maxX: 4500, minY: -4500, maxY: 9000 };
+const MAP_BOUNDS = { minX: -4000, maxX: 4500, minY: -4000, maxY: 8000 };
 const MAP_IMG_W = 1066;
 const MAP_IMG_H = 861;
 const MAP_SAT_URL = 'nui://fivempro_ltpd/html/mdt/asset/gtav_satellite.jpg';
+const MAP_MIN_SCALE = 0.45;
+const MAP_MAX_SCALE = 4.0;
+const MAP_FIT_PAD = 0.98;
 
 function resourceName() {
   try {
@@ -335,23 +338,34 @@ function layoutDispatchMapCanvas() {
 
   const cw = Math.max(320, root.clientWidth || 0);
   const ch = Math.max(240, root.clientHeight || 0);
-  const contain = Math.min(cw / MAP_IMG_W, ch / MAP_IMG_H);
-  surface.style.width = `${Math.round(MAP_IMG_W * contain)}px`;
-  surface.style.height = `${Math.round(MAP_IMG_H * contain)}px`;
+  const imgAspect = MAP_IMG_W / MAP_IMG_H;
+  const boxAspect = cw / ch;
+  let w;
+  let h;
+  if (boxAspect > imgAspect) {
+    h = ch;
+    w = h * imgAspect;
+  } else {
+    w = cw;
+    h = w / imgAspect;
+  }
+  surface.style.width = `${Math.round(w)}px`;
+  surface.style.height = `${Math.round(h)}px`;
 }
 
 function clampDispatchMapPan() {
   const root = document.getElementById('dispatchMap');
   const surface = document.getElementById('dispatchMapSurface');
-  if (!root || !surface || dispatchMapPan.scale <= 1.02) {
-    dispatchMapPan.x = 0;
-    dispatchMapPan.y = 0;
-    return;
-  }
+  if (!root || !surface) return;
   const cw = root.clientWidth;
   const ch = root.clientHeight;
   const sw = surface.offsetWidth * dispatchMapPan.scale;
   const sh = surface.offsetHeight * dispatchMapPan.scale;
+  if (sw <= cw + 1 && sh <= ch + 1) {
+    dispatchMapPan.x = 0;
+    dispatchMapPan.y = 0;
+    return;
+  }
   const maxX = Math.max(0, (sw - cw) / 2);
   const maxY = Math.max(0, (sh - ch) / 2);
   dispatchMapPan.x = Math.max(-maxX, Math.min(maxX, dispatchMapPan.x));
@@ -363,7 +377,12 @@ function fitDispatchMapInView() {
   const surface = document.getElementById('dispatchMapSurface');
   if (!root || !surface) return;
   layoutDispatchMapCanvas();
-  dispatchMapPan.scale = 1;
+  const cw = Math.max(1, root.clientWidth || 1);
+  const ch = Math.max(1, root.clientHeight || 1);
+  const sw = Math.max(1, surface.offsetWidth);
+  const sh = Math.max(1, surface.offsetHeight);
+  const fitScale = Math.min(cw / sw, ch / sh) * MAP_FIT_PAD;
+  dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, fitScale));
   dispatchMapPan.x = 0;
   dispatchMapPan.y = 0;
   applyDispatchMapTransform();
@@ -399,7 +418,7 @@ function bindDispatchMapInteract() {
     (e) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      dispatchMapPan.scale = Math.max(1, Math.min(4, dispatchMapPan.scale + delta));
+      dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, dispatchMapPan.scale + delta));
       clampDispatchMapPan();
       applyDispatchMapTransform();
     },
@@ -472,13 +491,15 @@ function renderDispatchMap(calls, units) {
   const zOut = document.getElementById('dispatchZoomOut');
   if (zIn) {
     zIn.addEventListener('click', () => {
-      dispatchMapPan.scale = Math.min(3.2, dispatchMapPan.scale + 0.15);
+      dispatchMapPan.scale = Math.min(MAP_MAX_SCALE, dispatchMapPan.scale + 0.15);
+      clampDispatchMapPan();
       applyDispatchMapTransform();
     });
   }
   if (zOut) {
     zOut.addEventListener('click', () => {
-      dispatchMapPan.scale = Math.max(0.45, dispatchMapPan.scale - 0.15);
+      dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, dispatchMapPan.scale - 0.15);
+      clampDispatchMapPan();
       applyDispatchMapTransform();
     });
   }

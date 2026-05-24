@@ -40,14 +40,16 @@ Config.Surveillance.CctvCategories = {
   Apiplėšimai: exports['fivempro_ltpd']:TamperCctv(camId, seconds) arba TamperCctvRadius(coords, radius, seconds)
 ]]
 Config.Surveillance.CctvCameras = {
-    -- Bankai (Fleeca)
-    { id = 'fleeca_legion', label = 'Fleeca – Legion Square', zone = 'bank', coords = vector3(153.2, -1046.8, 32.25), lookAt = vector3(147.0, -1037.5, 29.35), fov = 50.0, audio = true },
-    { id = 'fleeca_alta', label = 'Fleeca – Alta', zone = 'bank', coords = vector3(315.85, -276.25, 54.65), lookAt = vector3(309.5, -280.5, 54.15), fov = 52.0, audio = true },
-    { id = 'fleeca_hawick', label = 'Fleeca – Hawick', zone = 'bank', coords = vector3(-351.0, -51.25, 49.5), lookAt = vector3(-356.5, -48.0, 49.0), fov = 52.0, audio = true },
-    { id = 'fleeca_ocean', label = 'Fleeca – Great Ocean', zone = 'bank', coords = vector3(-2958.5, 485.0, 16.1), lookAt = vector3(-2962.0, 478.0, 15.7), fov = 52.0, audio = true },
-    { id = 'fleeca_paleto', label = 'Fleeca – Paleto Bay', zone = 'bank', coords = vector3(-109.5, 6464.5, 31.95), lookAt = vector3(-105.0, 6470.0, 31.6), fov = 52.0, audio = true },
-    { id = 'fleeca_route68', label = 'Fleeca – Route 68', zone = 'bank', coords = vector3(1178.0, 2707.5, 38.55), lookAt = vector3(1172.0, 2712.0, 38.1), fov = 52.0, audio = true },
-    { id = 'pacific_entrance', label = 'Pacific Standard – įėjimas', zone = 'bank', coords = vector3(257.5, 220.0, 106.75), lookAt = vector3(252.0, 228.0, 106.3), fov = 48.0, audio = true },
+    -- Bankai (Fleeca / Pacific) — pozicija iš CCTV prop
+    { id = 'fleeca_legion', label = 'Fleeca – Legion (kasos)', zone = 'bank', bankId = 'fleeca_legion', propModel = `prop_cctv_cam_01a`, propCoords = vector4(149.12, -1041.85, 29.37, 340.0), lookDistance = 13.0, pitchOffset = -16.0, yawMax = 48.0, pitchMax = 16.0, fov = 48.0, audio = true, spawnProp = true },
+    { id = 'fleeca_legion_vault', label = 'Fleeca – Legion (seifas)', zone = 'bank', bankId = 'fleeca_legion', propModel = `prop_cctv_cam_02a`, propCoords = vector4(145.85, -1044.55, 29.37, 250.0), lookDistance = 11.0, pitchOffset = -20.0, yawMax = 42.0, pitchMax = 14.0, fov = 46.0, audio = true, spawnProp = true },
+    { id = 'fleeca_alta', label = 'Fleeca – Alta (kasos)', zone = 'bank', bankId = 'fleeca_alta', propModel = `prop_cctv_cam_01b`, propCoords = vector4(313.45, -279.15, 54.16, 340.0), lookDistance = 13.0, pitchOffset = -16.0, yawMax = 48.0, pitchMax = 16.0, fov = 50.0, audio = true, spawnProp = true },
+    { id = 'fleeca_hawick', label = 'Fleeca – Hawick (kasos)', zone = 'bank', bankId = 'fleeca_hawick', propModel = `prop_cctv_cam_01a`, propCoords = vector4(-353.35, -53.85, 49.04, 250.0), lookDistance = 12.0, pitchOffset = -16.0, yawMax = 45.0, pitchMax = 15.0, fov = 50.0, audio = true, spawnProp = true },
+    { id = 'fleeca_ocean', label = 'Fleeca – Great Ocean', zone = 'bank', bankId = 'fleeca_ocean', propModel = `prop_cctv_cam_03a`, propCoords = vector4(-2960.85, 483.25, 15.70, 85.0), lookDistance = 12.0, pitchOffset = -16.0, yawMax = 45.0, pitchMax = 15.0, fov = 50.0, audio = true, spawnProp = true },
+    { id = 'fleeca_paleto', label = 'Fleeca – Paleto Bay', zone = 'bank', bankId = 'fleeca_paleto', propModel = `prop_cctv_cam_01a`, propCoords = vector4(-111.85, 6462.35, 31.63, 45.0), lookDistance = 12.0, pitchOffset = -16.0, yawMax = 45.0, pitchMax = 15.0, fov = 50.0, audio = true, spawnProp = true },
+    { id = 'fleeca_route68', label = 'Fleeca – Route 68', zone = 'bank', bankId = 'fleeca_route68', propModel = `prop_cctv_cam_02a`, propCoords = vector4(1176.45, 2705.85, 38.09, 180.0), lookDistance = 12.0, pitchOffset = -16.0, yawMax = 45.0, pitchMax = 15.0, fov = 50.0, audio = true, spawnProp = true },
+    { id = 'pacific_entrance', label = 'Pacific – įėjimas', zone = 'bank', bankId = 'pacific', propModel = `prop_cctv_cam_04a`, propCoords = vector4(255.85, 218.45, 106.29, 160.0), lookDistance = 16.0, pitchOffset = -14.0, yawMax = 50.0, pitchMax = 18.0, fov = 46.0, audio = true, spawnProp = true },
+    { id = 'pacific_lobby', label = 'Pacific – lobby', zone = 'bank', bankId = 'pacific', propModel = `prop_cctv_cam_03a`, propCoords = vector4(247.35, 223.85, 106.29, 70.0), lookDistance = 18.0, pitchOffset = -18.0, yawMax = 52.0, pitchMax = 18.0, fov = 44.0, audio = true, spawnProp = true },
 
     -- Juvelyrika / kazino
     { id = 'vangelico_front', label = 'Vangelico – vitrina', zone = 'jewelry', coords = vector3(-622.5, -232.0, 38.55), lookAt = vector3(-628.0, -229.5, 38.05), fov = 50.0, audio = true },

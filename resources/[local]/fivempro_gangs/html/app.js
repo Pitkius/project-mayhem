@@ -27,6 +27,9 @@ let lastState = null;
 let mapCfg = null;
 const GANG_MAP_IMG_W = 1066;
 const GANG_MAP_IMG_H = 861;
+const GANG_MAP_MIN_SCALE = 0.45;
+const GANG_MAP_MAX_SCALE = 4.0;
+const GANG_MAP_FIT_PAD = 0.98;
 let gangsMapPan = { x: 0, y: 0, scale: 1 };
 let gangsMapLayoutReady = false;
 let gangsMapInteractBound = false;
@@ -153,23 +156,36 @@ function layoutGangsMapCanvas() {
 
   const cw = Math.max(320, root.clientWidth || 0);
   const ch = Math.max(240, root.clientHeight || 0);
-  const contain = Math.min(cw / GANG_MAP_IMG_W, ch / GANG_MAP_IMG_H);
-  surface.style.width = `${Math.round(GANG_MAP_IMG_W * contain)}px`;
-  surface.style.height = `${Math.round(GANG_MAP_IMG_H * contain)}px`;
+  const imgW = (mapCfg && mapCfg.imgW) || GANG_MAP_IMG_W;
+  const imgH = (mapCfg && mapCfg.imgH) || GANG_MAP_IMG_H;
+  const imgAspect = imgW / imgH;
+  const boxAspect = cw / ch;
+  let w;
+  let h;
+  if (boxAspect > imgAspect) {
+    h = ch;
+    w = h * imgAspect;
+  } else {
+    w = cw;
+    h = w / imgAspect;
+  }
+  surface.style.width = `${Math.round(w)}px`;
+  surface.style.height = `${Math.round(h)}px`;
 }
 
 function clampGangsMapPan() {
   const root = document.getElementById("gangsMap");
   const surface = document.getElementById("gangsMapSurface");
-  if (!root || !surface || gangsMapPan.scale <= 1.02) {
-    gangsMapPan.x = 0;
-    gangsMapPan.y = 0;
-    return;
-  }
+  if (!root || !surface) return;
   const cw = root.clientWidth;
   const ch = root.clientHeight;
   const sw = surface.offsetWidth * gangsMapPan.scale;
   const sh = surface.offsetHeight * gangsMapPan.scale;
+  if (sw <= cw + 1 && sh <= ch + 1) {
+    gangsMapPan.x = 0;
+    gangsMapPan.y = 0;
+    return;
+  }
   const maxX = Math.max(0, (sw - cw) / 2);
   const maxY = Math.max(0, (sh - ch) / 2);
   gangsMapPan.x = Math.max(-maxX, Math.min(maxX, gangsMapPan.x));
@@ -181,7 +197,12 @@ function fitGangsMapInView() {
   const surface = document.getElementById("gangsMapSurface");
   if (!root || !surface) return;
   layoutGangsMapCanvas();
-  gangsMapPan.scale = 1;
+  const cw = Math.max(1, root.clientWidth || 1);
+  const ch = Math.max(1, root.clientHeight || 1);
+  const sw = Math.max(1, surface.offsetWidth);
+  const sh = Math.max(1, surface.offsetHeight);
+  const fitScale = Math.min(cw / sw, ch / sh) * GANG_MAP_FIT_PAD;
+  gangsMapPan.scale = Math.max(GANG_MAP_MIN_SCALE, Math.min(GANG_MAP_MAX_SCALE, fitScale));
   gangsMapPan.x = 0;
   gangsMapPan.y = 0;
   applyGangsMapTransform();
@@ -216,7 +237,7 @@ function bindGangsMapInteract() {
     (e) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.12 : 0.12;
-      gangsMapPan.scale = Math.max(1, Math.min(4, gangsMapPan.scale + delta));
+      gangsMapPan.scale = Math.max(GANG_MAP_MIN_SCALE, Math.min(GANG_MAP_MAX_SCALE, gangsMapPan.scale + delta));
       clampGangsMapPan();
       applyGangsMapTransform();
     },
@@ -253,24 +274,11 @@ function resetMapView() {
   fitGangsMapInView();
 }
 
-function renderTurfsOnMap(state) {
-  mapCfg = normalizeMapConfig(state);
-  ensureGangsMapDom(mapCfg.imageUrl);
-  watchGangsMapResize();
-  layoutGangsMapCanvas();
-
+function paintTurfMarkers(state) {
   const markers = document.getElementById("gangsMapMarkers");
-  if (!markers) return;
-
+  if (!markers || !mapCfg) return;
   markers.innerHTML = "";
-  bindGangsMapInteract();
-  if (!gangsMapLayoutReady) {
-    gangsMapLayoutReady = true;
-    requestAnimationFrame(() => fitGangsMapInView());
-  } else {
-    clampGangsMapPan();
-    applyGangsMapTransform();
-  }
+  const thresh = Number(state?.claimThreshold || 100);
 
   (state.turfs || []).forEach((t) => {
     const x = Number(t.center_x);
@@ -285,8 +293,10 @@ function renderTurfsOnMap(state) {
     const col = String(t.owner_color_hex || "").trim();
     const label = t.turf_label || t.turf_id;
     const owner = t.owner_name || "Laisva";
-    const prog = Math.max(0, Math.min(100, Number(t.progress || 0)));
+    const inf = Math.max(0, Math.min(100, Number(t.influence ?? t.progress || 0)));
+    const prog = inf;
     const status = String(t.status || (hasOwner ? "užimtas" : "neužimtas"));
+    const heat = Number(t.heat || 0);
     const disputed = /ginč|ginčij/i.test(status);
     const fillHex = col && /^#[0-9A-Fa-f]{6}$/.test(col) ? col : "#a78bfa";
 
@@ -308,10 +318,9 @@ function renderTurfsOnMap(state) {
     });
     zone.addEventListener("mousemove", (e) => {
       mapTooltip.classList.remove("hidden");
-      const thresh = Number(lastState?.claimThreshold || 100);
       mapTooltip.innerHTML = hasOwner
-        ? `<strong>${safe(label)}</strong><br/>${safe(owner)} · ${safe(status)}<br/>Užėmimas: ${prog}/${thresh}`
-        : `<strong>${safe(label)}</strong><br/>Laisva · ${safe(status)}<br/>Užėmimas: ${prog}/${thresh}`;
+        ? `<strong>${safe(label)}</strong><br/>${safe(owner)} · ${safe(status)}<br/>Įtaka: ${inf}% · Heat: ${heat}`
+        : `<strong>${safe(label)}</strong><br/>Laisva · ${safe(status)}<br/>Įtaka: ${inf}/${thresh} · Heat: ${heat}`;
       const stage = document.getElementById("mapStage");
       if (!stage) return;
       const rect = stage.getBoundingClientRect();
@@ -406,25 +415,31 @@ function mergeTabletMap(res) {
 
 function renderMissionsTab(state) {
   if (!missionTurfSelect || !missionTypeSelect) return;
-  const myGangId = state.hasGang && state.gang ? Number(state.gang.gang_id) : 0;
   missionTurfSelect.innerHTML = "";
+  const optAny = document.createElement("option");
+  optAny.value = "";
+  optAny.textContent = "— dabartinė zona / nereikia —";
+  missionTurfSelect.appendChild(optAny);
   (state.turfs || []).forEach((t) => {
-    const ownerId = Number(t.owner_gang_id || 0);
-    if (ownerId === myGangId) return;
     const o = document.createElement("option");
     o.value = t.turf_id;
-    const prog = Number(t.progress || 0);
-    o.textContent = `${t.turf_label || t.turf_id} (${prog}%)`;
+    const inf = Number(t.influence ?? t.progress || 0);
+    o.textContent = `${t.turf_label || t.turf_id} (įtaka ${inf}%)`;
     missionTurfSelect.appendChild(o);
   });
   missionTypeSelect.innerHTML = "";
   (state.missions || []).forEach((m) => {
     const o = document.createElement("option");
     o.value = m.id;
-    o.textContent = `${m.label} (+${m.progress})`;
+    const rep = Number(m.reputationReward || m.progress || 0);
+    o.textContent = `${m.label} (Rep +${rep})`;
     missionTypeSelect.appendChild(o);
   });
   if (claimThresholdLbl) claimThresholdLbl.textContent = String(state.claimThreshold || 100);
+  const stats = document.getElementById("gangMissionStats");
+  if (stats && state.gang) {
+    stats.textContent = `Rep: ${state.gang.reputation || 0} · Heat: ${state.gang.heat || 0} · Tipas: ${state.gang.gang_type || "—"}`;
+  }
   if (tabMissions) tabMissions.style.display = state.hasGang ? "" : "none";
 }
 
@@ -616,11 +631,13 @@ document.getElementById("btnCreate").onclick = () => {
 };
 
 document.getElementById("zoomIn").onclick = () => {
-  gangsMapPan.scale = Math.min(3.4, gangsMapPan.scale + 0.15);
+  gangsMapPan.scale = Math.min(GANG_MAP_MAX_SCALE, gangsMapPan.scale + 0.15);
+  clampGangsMapPan();
   applyGangsMapTransform();
 };
 document.getElementById("zoomOut").onclick = () => {
-  gangsMapPan.scale = Math.max(0.45, gangsMapPan.scale - 0.15);
+  gangsMapPan.scale = Math.max(GANG_MAP_MIN_SCALE, gangsMapPan.scale - 0.15);
+  clampGangsMapPan();
   applyGangsMapTransform();
 };
 document.getElementById("tabletHomeBtn").onclick = () => resetMapView();

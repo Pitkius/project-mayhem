@@ -10,8 +10,6 @@ local cctvYaw = 0.0
 local cctvPitch = 0.0
 
 local CFG = {
-    yawMax = 60.0,
-    pitchMax = 20.0,
     rotateSpeed = 1.35,
 }
 
@@ -78,11 +76,23 @@ local function startCctvView(cam)
     local session = cctvSession + 1
     cctvSession = session
 
-    local c = cam.coords
-    local l = cam.lookAt
+    local pos, look, yawMax, pitchMax = ResolveCctvCameraView(cam)
+    if not pos or not look then
+        local c = cam.coords
+        local l = cam.lookAt
+        if c and l then
+            pos = vector3(c.x, c.y, c.z)
+            look = vector3(l.x, l.y, l.z)
+        end
+    end
+    if not pos or not look then return end
+
+    CFG.yawMax = tonumber(yawMax) or 60.0
+    CFG.pitchMax = tonumber(pitchMax) or 20.0
+
     cctvBase = {
-        pos = vector3(c.x, c.y, c.z),
-        look = vector3(l.x, l.y, l.z),
+        pos = pos,
+        look = look,
         fov = cam.fov or 52.0,
         label = cam.label or 'CCTV',
         id = cam.id or '—',

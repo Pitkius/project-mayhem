@@ -146,7 +146,31 @@ RegisterNetEvent('fivempro_gangs:client:openTablet', function()
                 palette = res.palette or {},
                 colorUsage = res.colorUsage or {},
                 turfs = res.turfs or {},
-                tabletMap = Config.TabletMap or {},
+                tabletMap = res.tabletMap or Config.TabletMap or {},
+                missions = res.missions or {},
+                claimThreshold = res.claimThreshold or 100,
+            }
+        })
+    end)
+end)
+
+RegisterNetEvent('fivempro_gangs:client:refreshTablet', function()
+    if not tabletOpen then return end
+    QBCore.Functions.TriggerCallback('fivempro_gangs:server:getTabletState', function(res)
+        if not res or not res.ok then return end
+        SendNUIMessage({
+            action = 'open',
+            payload = {
+                hasGang = res.hasGang,
+                gang = res.gang or nil,
+                members = res.members or {},
+                gangTypes = res.gangTypes or {},
+                palette = res.palette or {},
+                colorUsage = res.colorUsage or {},
+                turfs = res.turfs or {},
+                tabletMap = res.tabletMap or Config.TabletMap or {},
+                missions = res.missions or {},
+                claimThreshold = res.claimThreshold or 100,
             }
         })
     end)

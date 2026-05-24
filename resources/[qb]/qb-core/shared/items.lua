@@ -304,6 +304,8 @@ QBShared.Items = {
     basic_flashdrive             = { name = 'basic_flashdrive', label = 'Basic Flashdrive', weight = 80, type = 'item', image = 'usb_device.png', unique = true, useable = true, shouldClose = true, description = 'Stores OS or exploit payloads' },
     encrypted_flashdrive         = { name = 'encrypted_flashdrive', label = 'Encrypted Flashdrive', weight = 100, type = 'item', image = 'usb_device.png', unique = true, useable = true, shouldClose = true, description = 'Encrypted payload storage' },
     military_flashdrive          = { name = 'military_flashdrive', label = 'Military Flashdrive', weight = 120, type = 'item', image = 'usb_device.png', unique = true, useable = true, shouldClose = true, description = 'High-capacity military flashdrive' },
+    spray_can                    = { name = 'spray_can', label = 'Spray Can', weight = 350, type = 'item', image = 'spraycan.png', unique = false, useable = true, shouldClose = true, description = 'Gang turf graffiti tag' },
+    graffiti_cleaner             = { name = 'graffiti_cleaner', label = 'Graffiti Cleaner', weight = 500, type = 'item', image = 'cleaningkit.png', unique = false, useable = false, shouldClose = true, description = 'Removes rival gang graffiti' },
 
     -- Vehicle Tools
     nitrous                      = { name = 'nitrous', label = 'Nitrous', weight = 1000, type = 'item', image = 'nitrous.png', unique = false, useable = true, shouldClose = true, description = 'Speed up, gas pedal! :D' },

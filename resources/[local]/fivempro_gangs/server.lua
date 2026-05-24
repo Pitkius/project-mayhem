@@ -57,7 +57,7 @@ end
 
 local function getTurfs()
     local rows = MySQL.query.await([[
-        SELECT t.turf_id, t.owner_gang_id, t.owner_name, t.progress, t.heat, t.sales_count, t.total_profit,
+        SELECT t.turf_id, t.owner_gang_id, t.owner_name, t.progress, t.influence, t.heat, t.sales_count, t.total_profit,
                g.color_hex AS owner_color_hex, g.secondary_color_hex AS owner_secondary_color_hex
         FROM fivempro_gang_turfs t
         LEFT JOIN fivempro_gangs g ON g.id = t.owner_gang_id
@@ -74,10 +74,15 @@ local function getTurfs()
         else
             r.center_x, r.center_y, r.center_z, r.radius = 0.0, 0.0, 0.0, 150.0
         end
-        if tonumber(r.owner_gang_id) and tonumber(r.owner_gang_id) > 0 then
-            r.status = (tonumber(r.progress) or 0) > 80 and 'ginčijamas' or 'užimtas'
+        local inf = tonumber(r.influence)
+        if inf == nil then inf = tonumber(r.progress) or 0 end
+        r.influence = inf
+        r.progress = inf
+        local ownerId = tonumber(r.owner_gang_id) or 0
+        if ownerId > 0 then
+            r.status = inf >= 75 and 'kontroliuojamas' or (inf >= 25 and 'užimtas' or 'ginčijamas')
         else
-            r.status = 'neužimtas'
+            r.status = inf > 0 and 'ginčijamas' or 'neužimtas'
         end
     end
     return rows
@@ -122,6 +127,10 @@ QBCore.Functions.CreateUseableItem(Config.TabletItem, function(source)
     TriggerClientEvent('fivempro_gangs:client:openTablet', source)
 end)
 
+QBCore.Functions.CreateUseableItem((Config.Graffiti and Config.Graffiti.item) or 'spray_can', function(source)
+    TriggerClientEvent('fivempro_gangs:client:useSprayCan', source)
+end)
+
 local function getMissionCatalog(gangType)
     local out = {}
     for key, m in pairs(Config.MissionTypes or {}) do
@@ -133,7 +142,8 @@ local function getMissionCatalog(gangType)
             out[#out + 1] = {
                 id = key,
                 label = m.label or key,
-                progress = m.progress or (Config.TaskReputation and Config.TaskReputation[key]) or 0,
+                reputationReward = tonumber(m.reputationReward) or tonumber(m.progress) or (Config.TaskReputation and Config.TaskReputation[key]) or 0,
+                influenceReward = tonumber(m.influenceReward) or 0,
             }
         end
     end
@@ -307,6 +317,11 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:tryDrugSale', function(sr
         heat, salesCount, totalProfit, tostring(turfId)
     })
     MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + 1, heat = LEAST(100, heat + 1) WHERE id = ?', { gang.gang_id })
+
+    local infGain = tonumber(Config.TurfInfluence and Config.TurfInfluence.drugSaleInfluence) or 2
+    if infGain > 0 then
+        TriggerEvent('fivempro_gangs:internal:addInfluence', src, turfId, 'drug_sale', infGain, true, true)
+    end
     MySQL.insert.await('INSERT INTO fivempro_gang_sales_logs (gang_id, turf_id, item_name, amount, profit) VALUES (?, ?, ?, ?, ?)', {
         gang.gang_id, tostring(turfId), chosen.item, 1, price
     })
@@ -371,6 +386,16 @@ MySQL.ready(function()
         MySQL.query.await(
             [[ALTER TABLE `fivempro_gangs` ADD COLUMN `secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF' AFTER `color_hex`]]
         )
+    end
+    local hasInfluence = MySQL.scalar.await([[
+        SELECT COUNT(*) FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'fivempro_gang_turfs'
+          AND column_name = 'influence'
+    ]])
+    if (tonumber(hasInfluence) or 0) == 0 then
+        MySQL.query.await([[ALTER TABLE `fivempro_gang_turfs` ADD COLUMN `influence` INT NOT NULL DEFAULT 0 AFTER `progress`]])
+        MySQL.query.await([[UPDATE `fivempro_gang_turfs` SET `influence` = `progress`]])
     end
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_gang_members` (
