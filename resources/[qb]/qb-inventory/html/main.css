@@ -176,8 +176,7 @@ div {
 .item-slot-img img {
     width: 75%;
     height: auto;
-    filter: brightness(0) invert(1);
-    opacity: 0.9;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
 }
 
 .item-slot-key {
