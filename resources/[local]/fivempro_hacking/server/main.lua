@@ -39,6 +39,52 @@ local function hasExploit(info, exploitId)
     return false
 end
 
+local function payloadLabel(payloadType, payloadId)
+    if not payloadType or not payloadId then return nil end
+    if payloadType == 'os' then
+        local o = Config.OperatingSystems[payloadId]
+        return o and o.label or payloadId
+    end
+    if payloadType == 'exploit' then
+        local e = Config.Exploits[payloadId]
+        return e and e.label or payloadId
+    end
+    return payloadId
+end
+
+local function buildFlashInfo(payload)
+    if not payload or not payload.payload_type or not payload.payload_id then return nil end
+    local label = payloadLabel(payload.payload_type, payload.payload_id)
+    return {
+        payload_type = payload.payload_type,
+        payload_id = payload.payload_id,
+        payload_label = label,
+    }
+end
+
+local function listFlashDrives(Player)
+    local drives = {}
+    for _, item in pairs(Player.PlayerData.items or {}) do
+        if item and Config.Flashdrives[item.name] then
+            local info = metaInfo(item)
+            local ready = info.payload_type and info.payload_id
+            drives[#drives + 1] = {
+                slot = item.slot,
+                name = item.name,
+                itemLabel = Config.Flashdrives[item.name].label or item.label,
+                payload_type = info.payload_type,
+                payload_id = info.payload_id,
+                payloadLabel = info.payload_label or payloadLabel(info.payload_type, info.payload_id),
+                ready = ready and true or false,
+            }
+        end
+    end
+    table.sort(drives, function(a, b)
+        return (a.slot or 0) < (b.slot or 0)
+    end)
+    return drives
+end
+
 local function canAccessRobbery(src, tierId)
     local tier = Config.RobberyTiers[tierId]
     if not tier then return false, 'Nežinomas robbery tipas.' end
@@ -141,6 +187,7 @@ QBCore.Functions.CreateCallback('fivempro_hacking:server:getTabletData', functio
             end
             return out
         end)(),
+        flashDrives = listFlashDrives(Player),
     })
 end)
 
@@ -155,7 +202,10 @@ QBCore.Functions.CreateCallback('fivempro_hacking:server:installFromDrive', func
     end
     local dInfo = metaInfo(drive)
     if not dInfo.payload_type or not dInfo.payload_id then
-        return cb({ ok = false, msg = 'Flashdrive tuščias arba neparuoštas.' })
+        return cb({
+            ok = false,
+            msg = 'Flashdrive tuščias — nusipirk su OS/exploit (meniu „Flashdrive OS / exploit“, ne tuščią iš shop).',
+        })
     end
     local tCfg = tabletCfg(tName)
     local tabInfo = metaInfo(item)
@@ -184,7 +234,12 @@ QBCore.Functions.CreateCallback('fivempro_hacking:server:installFromDrive', func
     end
     saveTabletMeta(src, item, tabInfo)
     Player.Functions.RemoveItem(drive.name, 1, drive.slot)
-    cb({ ok = true, installed_os = tabInfo.installed_os, exploits = tabInfo.exploits })
+    cb({
+        ok = true,
+        installed_os = tabInfo.installed_os,
+        exploits = tabInfo.exploits,
+        flashDrives = listFlashDrives(Player),
+    })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_hacking:server:prepareHack', function(src, cb, tierId)
@@ -244,8 +299,16 @@ for name in pairs(Config.Tablets) do
 end
 
 for name in pairs(Config.Flashdrives) do
-    QBCore.Functions.CreateUseableItem(name, function(source)
-        TriggerClientEvent('fivempro_hacking:client:openTablet', source, { flashTab = true })
+    QBCore.Functions.CreateUseableItem(name, function(source, item)
+        local Player = QBCore.Functions.GetPlayer(source)
+        if not Player then return end
+        if not getTabletItem(Player) then
+            return TriggerClientEvent('QBCore:Notify', source, 'Reikia hacking planšetės inventoriuje.', 'error')
+        end
+        TriggerClientEvent('fivempro_hacking:client:openTablet', source, {
+            flashTab = true,
+            driveSlot = item and item.slot,
+        })
     end)
 end
 
@@ -259,13 +322,7 @@ RegisterNetEvent('fivempro_hacking:server:buyBlackMarket', function(index)
     if Player.PlayerData.money.cash < price then
         return TriggerClientEvent('QBCore:Notify', src, 'Nepakanka grynais.', 'error')
     end
-    local info = nil
-    if entry.payload then
-        info = {
-            payload_type = entry.payload.payload_type,
-            payload_id = entry.payload.payload_id,
-        }
-    end
+    local info = buildFlashInfo(entry.payload)
     if not Player.Functions.RemoveMoney('cash', price, 'blackmarket-hack') then return end
     Player.Functions.AddItem(entry.item, 1, false, info)
     TriggerClientEvent('QBCore:Notify', src, 'Nupirkta.', 'success')

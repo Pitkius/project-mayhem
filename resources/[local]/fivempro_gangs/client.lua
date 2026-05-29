@@ -132,7 +132,7 @@ RegisterNetEvent('fivempro_gangs:client:openTablet', function()
     if tabletOpen then return end
     QBCore.Functions.TriggerCallback('fivempro_gangs:server:getTabletState', function(res)
         if not res or not res.ok then
-            QBCore.Functions.Notify('Nepavyko atidaryti planšetės.', 'error')
+            QBCore.Functions.Notify((res and res.msg) or 'Nepavyko atidaryti planšetės.', 'error')
             return
         end
         tabletOpen = true

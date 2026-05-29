@@ -25,8 +25,8 @@ fivempro_hacking – OS / tablet / visi apiplėšimai
 5) Black market: 707, -967 (normalios kainos + OS payload ant USB)
 
 6) Tipinis startas:
-   a) basic_tablet + BasicOS (flashdrive)
-   b) Eik prie ATM ar 24/7 kasos → qb-target
+   a) basic_tablet + flashdrive SU PAYLOAD (test NPC → „Flashdrive OS / exploit“, ne tuščias iš shop)
+   b) Naudok flashdrive arba planšetę → Storage → Install payload
    c) Atlik hack minigame → fazės (drill/termite/kortelė pagal tier)
 
 7) Restart po config pakeitimų:

@@ -3,6 +3,8 @@ const hackPanel = document.getElementById("hack");
 const hackGrid = document.getElementById("hackGrid");
 const hackTimer = document.getElementById("hackTimer");
 let tabletData = null;
+let selectedDriveSlot = null;
+let highlightDriveSlot = null;
 let hackState = null;
 let hackInterval = null;
 
@@ -30,6 +32,9 @@ window.addEventListener("message", (e) => {
     hackPanel.classList.add("hidden");
     renderTablet();
     if (d.flashTab) setTab("storage");
+    highlightDriveSlot = d.driveSlot ? Number(d.driveSlot) : null;
+    if (highlightDriveSlot) selectedDriveSlot = highlightDriveSlot;
+    renderDriveList();
   }
   if (d.action === "close") {
     tablet.classList.add("hidden");
@@ -41,8 +46,10 @@ window.addEventListener("message", (e) => {
     if (tabletData) {
       tabletData.installed_os = d.data.installed_os;
       tabletData.exploits = d.data.exploits;
+      if (d.data.flashDrives) tabletData.flashDrives = d.data.flashDrives;
     }
     renderTablet();
+    renderDriveList();
   }
   if (d.action === "hackOpen") {
     tablet.classList.add("hidden");
@@ -68,6 +75,7 @@ function setTab(id) {
   document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
   const el = document.getElementById("tab-" + id);
   if (el) el.classList.remove("hidden");
+  if (id === "storage") renderDriveList();
 }
 
 function renderTablet() {
@@ -93,7 +101,9 @@ function renderTablet() {
     tabletData.exploitSlots +
     "</div>";
   document.getElementById("storageInfo").innerHTML =
-    '<div class="muted">Idiek flashdrive su payload (black market).</div>';
+    '<div class="muted">1) Nusipirk flashdrive <strong>su payload</strong> (test NPC → „Flashdrive OS / exploit“).</div>' +
+    '<div class="muted">2) Turėk planšetę inventoriuje.</div>' +
+    '<div class="muted">3) Naudok flashdrive arba planšetę → Storage → Install.</div>';
   const exEl = document.getElementById("exploitList");
   exEl.innerHTML = "";
   (tabletData.exploits || []).forEach((id) => {
@@ -126,10 +136,50 @@ function renderTablet() {
   });
 }
 
-document.getElementById("btnInstall").onclick = () => {
-  const slot = Number(document.getElementById("driveSlot").value);
-  post("installDrive", { slot });
-};
+function renderDriveList() {
+  const listEl = document.getElementById("driveList");
+  if (!listEl || !tabletData) return;
+  listEl.innerHTML = "";
+  const drives = tabletData.flashDrives || [];
+  if (!drives.length) {
+    listEl.innerHTML =
+      '<div class="card muted">Flashdrive nerastas. Nusipirk su OS/exploit — ne tuščią iš shop.</div>';
+    return;
+  }
+  drives.forEach((d) => {
+    const div = document.createElement("div");
+    const ready = d.ready === true;
+    const selected = selectedDriveSlot === d.slot;
+    const highlight = highlightDriveSlot === d.slot;
+    div.className =
+      "card drive-row" + (ready ? "" : " empty") + (selected ? " selected" : "") + (highlight ? " highlight" : "");
+    const payloadText = ready
+      ? (d.payload_type === "os" ? "OS: " : "Exploit: ") + (d.payloadLabel || d.payload_id)
+      : "Tuščias — be payload";
+    div.innerHTML =
+      "<div><strong>Slot " +
+      d.slot +
+      "</strong> · " +
+      (d.itemLabel || d.name) +
+      '</div><div class="muted">' +
+      payloadText +
+      "</div>";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn primary drive-install";
+    btn.textContent = ready ? "Install payload" : "Tuščias";
+    btn.disabled = !ready;
+    btn.onclick = () => installFromSlot(d.slot);
+    div.appendChild(btn);
+    listEl.appendChild(div);
+  });
+}
+
+async function installFromSlot(slot) {
+  selectedDriveSlot = slot;
+  renderDriveList();
+  await post("installDrive", { slot });
+}
 
 function stopHackTimer() {
   if (hackInterval) clearInterval(hackInterval);

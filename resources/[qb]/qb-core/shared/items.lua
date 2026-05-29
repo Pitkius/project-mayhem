@@ -231,7 +231,7 @@ QBShared.Items = {
     security_card_02             = { name = 'security_card_02', label = 'Security Card B', weight = 0, type = 'item', image = 'security_card_02.png', unique = false, useable = true, shouldClose = true, description = 'A security card... I wonder what it goes to' },
 
     -- Eat ITEMS (vienas pagrindinis maistas + užkandžiai)
-    burger                       = { name = 'burger', label = 'Mėsainis', weight = 220, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Sultingas mėsainis' },
+    burger                       = { name = 'burger', label = 'Sumuštinis', weight = 220, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Skrudintas sumuštinis' },
     twerks_candy                 = { name = 'twerks_candy', label = 'Saldainiai', weight = 100, type = 'item', image = 'twerks_candy.png', unique = false, useable = true, shouldClose = true, description = 'Saldainių pakelis' },
     chips                        = { name = 'chips', label = 'Čipsai', weight = 70, type = 'item', image = 'chips.png', unique = false, useable = true, shouldClose = true, description = 'Traškūs čipsai' },
 

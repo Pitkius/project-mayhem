@@ -10,7 +10,7 @@ Config.Services = {
     ems = {
         jobs = { 'ambulance' },
         label = 'Medikai',
-        color = 1,  image.png
+        color = 1,
         panicSound = false,
     },
     mechanic = {
@@ -22,7 +22,7 @@ Config.Services = {
 }
 
 Config.CallTypes = {
-    robbery = 'Apiplėšimas',image.png
+    robbery = 'Apiplėšimas',
     atm = 'Bankomatas',
     theft = 'Vagystė',
     shooting = 'Šaudymas',

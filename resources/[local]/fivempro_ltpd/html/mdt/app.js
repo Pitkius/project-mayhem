@@ -386,8 +386,7 @@ function fitDispatchMapInView() {
   const sw = Math.max(1, surface.offsetWidth);
   const sh = Math.max(1, surface.offsetHeight);
   const fitScale = Math.min(cw / sw, ch / sh) * MAP_FIT_PAD;
-  const panScale = Math.max(1.05, fitScale);
-  dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, panScale));
+  dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, fitScale));
   dispatchMapPan.x = 0;
   dispatchMapPan.y = 0;
   applyDispatchMapTransform();

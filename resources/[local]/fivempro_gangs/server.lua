@@ -115,21 +115,16 @@ local function createGang(src, name, gangType, colorHex, secondaryColorHex)
 end
 
 local function getColorUsage()
-    local rows = MySQL.query.await('SELECT color_hex, COUNT(*) AS used_count FROM fivempro_gangs GROUP BY color_hex') or {}
+    local ok, rows = pcall(function()
+        return MySQL.query.await('SELECT color_hex, COUNT(*) AS used_count FROM fivempro_gangs GROUP BY color_hex') or {}
+    end)
+    if not ok or not rows then return {} end
     local out = {}
     for _, r in ipairs(rows) do
         out[tostring(r.color_hex or ''):upper()] = tonumber(r.used_count) or 0
     end
     return out
 end
-
-QBCore.Functions.CreateUseableItem(Config.TabletItem, function(source)
-    TriggerClientEvent('fivempro_gangs:client:openTablet', source)
-end)
-
-QBCore.Functions.CreateUseableItem((Config.Graffiti and Config.Graffiti.item) or 'spray_can', function(source)
-    TriggerClientEvent('fivempro_gangs:client:useSprayCan', source)
-end)
 
 local function getMissionCatalog(gangType)
     local out = {}
@@ -152,34 +147,41 @@ local function getMissionCatalog(gangType)
 end
 
 QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function(src, cb)
-    local gang = getPlayerGang(src)
-    local claimThreshold = tonumber(Config.TurfCapture and Config.TurfCapture.claimThreshold) or tonumber(Config.TurfClaimThreshold) or 100
-    if not gang then
-        return cb({
+    local ok, err = pcall(function()
+        local gang = getPlayerGang(src)
+        local claimThreshold = tonumber(Config.TurfCapture and Config.TurfCapture.claimThreshold) or tonumber(Config.TurfClaimThreshold) or 100
+        if not gang then
+            cb({
+                ok = true,
+                hasGang = false,
+                gangTypes = Config.GangTypes,
+                palette = Config.ColorPalette or {},
+                colorUsage = getColorUsage(),
+                turfs = getTurfs(),
+                tabletMap = Config.TabletMap or {},
+                claimThreshold = claimThreshold,
+                missions = {},
+            })
+            return
+        end
+        cb({
             ok = true,
-            hasGang = false,
+            hasGang = true,
+            gang = gang,
+            members = getGangMembers(gang.gang_id),
+            turfs = getTurfs(),
             gangTypes = Config.GangTypes,
             palette = Config.ColorPalette or {},
             colorUsage = getColorUsage(),
-            turfs = getTurfs(),
             tabletMap = Config.TabletMap or {},
             claimThreshold = claimThreshold,
-            missions = {},
+            missions = getMissionCatalog(gang.gang_type),
         })
+    end)
+    if not ok then
+        print(('[fivempro_gangs] getTabletState klaida: %s'):format(tostring(err)))
+        cb({ ok = false, msg = 'Planšetės duomenų klaida.' })
     end
-    cb({
-        ok = true,
-        hasGang = true,
-        gang = gang,
-        members = getGangMembers(gang.gang_id),
-        turfs = getTurfs(),
-        gangTypes = Config.GangTypes,
-        palette = Config.ColorPalette or {},
-        colorUsage = getColorUsage(),
-        tabletMap = Config.TabletMap or {},
-        claimThreshold = claimThreshold,
-        missions = getMissionCatalog(gang.gang_type),
-    })
 end)
 
 RegisterNetEvent('fivempro_gangs:server:createGang', function(data)
@@ -387,16 +389,6 @@ MySQL.ready(function()
             [[ALTER TABLE `fivempro_gangs` ADD COLUMN `secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF' AFTER `color_hex`]]
         )
     end
-    local hasInfluence = MySQL.scalar.await([[
-        SELECT COUNT(*) FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-          AND table_name = 'fivempro_gang_turfs'
-          AND column_name = 'influence'
-    ]])
-    if (tonumber(hasInfluence) or 0) == 0 then
-        MySQL.query.await([[ALTER TABLE `fivempro_gang_turfs` ADD COLUMN `influence` INT NOT NULL DEFAULT 0 AFTER `progress`]])
-        MySQL.query.await([[UPDATE `fivempro_gang_turfs` SET `influence` = `progress`]])
-    end
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_gang_members` (
             `gang_id` INT NOT NULL,
@@ -420,6 +412,16 @@ MySQL.ready(function()
             PRIMARY KEY (`turf_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
+    local hasInfluence = MySQL.scalar.await([[
+        SELECT COUNT(*) FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'fivempro_gang_turfs'
+          AND column_name = 'influence'
+    ]])
+    if (tonumber(hasInfluence) or 0) == 0 then
+        MySQL.query.await([[ALTER TABLE `fivempro_gang_turfs` ADD COLUMN `influence` INT NOT NULL DEFAULT 0 AFTER `progress`]])
+        MySQL.query.await([[UPDATE `fivempro_gang_turfs` SET `influence` = `progress`]])
+    end
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_gang_sales_logs` (
             `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -437,4 +439,14 @@ MySQL.ready(function()
     for turfId, _ in pairs(Config.Turfs or {}) do
         MySQL.insert.await('INSERT IGNORE INTO fivempro_gang_turfs (turf_id) VALUES (?)', { turfId })
     end
+
+    QBCore.Functions.CreateUseableItem(Config.TabletItem, function(source)
+        TriggerClientEvent('fivempro_gangs:client:openTablet', source)
+    end)
+
+    QBCore.Functions.CreateUseableItem((Config.Graffiti and Config.Graffiti.item) or 'spray_can', function(source)
+        TriggerClientEvent('fivempro_gangs:client:useSprayCan', source)
+    end)
+
+    print('[^2fivempro_gangs^7] DB paruošta, gang planšetė registruota.')
 end)

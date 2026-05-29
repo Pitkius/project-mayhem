@@ -21,7 +21,7 @@ RegisterNetEvent('fivempro_hacking:client:openTablet', function(opts)
         end
         tabletOpen = true
         SetNuiFocus(true, true)
-        SendNUIMessage({ action = 'openTablet', data = data, flashTab = opts and opts.flashTab })
+        SendNUIMessage({ action = 'openTablet', data = data, flashTab = opts and opts.flashTab, driveSlot = opts and opts.driveSlot })
     end)
 end)
 

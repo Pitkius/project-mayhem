@@ -143,6 +143,11 @@ RegisterNetEvent('fivempro_hacking:server:debugBuyFlashOffer', function(index)
             payload_type = entry.payload.payload_type,
             payload_id = entry.payload.payload_id,
         }
+        if entry.payload.payload_type == 'os' and Config.OperatingSystems[entry.payload.payload_id] then
+            info.payload_label = Config.OperatingSystems[entry.payload.payload_id].label
+        elseif entry.payload.payload_type == 'exploit' and Config.Exploits[entry.payload.payload_id] then
+            info.payload_label = Config.Exploits[entry.payload.payload_id].label
+        end
     end
 
     local ok, msg = tryGiveItem(src, entry.item, 1, info)
