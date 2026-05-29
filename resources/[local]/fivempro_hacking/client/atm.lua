@@ -81,9 +81,23 @@ local function findNearestAttachVehicle(pcoords, maxDist)
 end
 
 local function drawChainRope(fromPos, toPos)
-    local col = Config.Atm.ChainRopeColor or { r = 180, g = 180, b = 190, a = 220 }
-    DrawLine(fromPos.x, fromPos.y, fromPos.z, toPos.x, toPos.y, toPos.z, col.r, col.g, col.b, col.a)
-    DrawMarker(28, toPos.x, toPos.y, toPos.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.18, 0.18, 0.18, col.r, col.g, col.b, 160, false, false, 2, false, false, false, false)
+    local col = Config.Atm.ChainRopeColor or { r = 120, g = 118, b = 125, a = 230 }
+    local segments = 14
+    local sag = Config.Atm.ChainRopeSag or 0.45
+    local prev = fromPos
+    for i = 1, segments do
+        local t = i / segments
+        local x = fromPos.x + (toPos.x - fromPos.x) * t
+        local y = fromPos.y + (toPos.y - fromPos.y) * t
+        local z = fromPos.z + (toPos.z - fromPos.z) * t - math.sin(t * math.pi) * sag
+        local pt = vector3(x, y, z)
+        DrawLine(prev.x, prev.y, prev.z, pt.x, pt.y, pt.z, col.r, col.g, col.b, col.a)
+        DrawLine(prev.x + 0.03, prev.y, prev.z, pt.x + 0.03, pt.y, pt.z, col.r - 15, col.g - 15, col.b - 15, col.a - 30)
+        DrawLine(prev.x - 0.03, prev.y, prev.z, pt.x - 0.03, pt.y, pt.z, col.r - 15, col.g - 15, col.b - 15, col.a - 30)
+        prev = pt
+    end
+    DrawMarker(28, toPos.x, toPos.y, toPos.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.14, 0.14, 0.14, 200, 180, 80, 180, false, false, 2, false, false, false, false)
+    DrawMarker(28, fromPos.x, fromPos.y, fromPos.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.12, 0.12, 0.12, 200, 180, 80, 160, false, false, 2, false, false, false, false)
 end
 
 RegisterNetEvent('fivempro_hacking:client:hackSuccess', function(tierId, coords, ctx)

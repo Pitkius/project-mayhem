@@ -55,7 +55,17 @@ local function runHackPhase()
             return
         end
         TriggerServerEvent('fivempro_hacking:server:robberyPhaseDone', session.tierId, session.locId, 'hack')
-    end)
+    end, session.locId)
+end
+
+local function playBankDoorOpen(coords)
+    QBCore.Functions.Notify('Banko durys atrakintos — gręžk seifo vartus.', 'success')
+    PlaySoundFromCoord(-1, 'Vault_Unlock', coords.x, coords.y, coords.z, 'dlc_heist_fleeca_bank_door_sounds', false, 0, false)
+end
+
+local function playVaultGateOpen(coords)
+    QBCore.Functions.Notify('Seifo vartai atidaryti — grabink pinigus.', 'success')
+    PlaySoundFromCoord(-1, 'Drill_Pin_Break', coords.x, coords.y, coords.z, 'DLC_HEIST_FLEECA_BANK_DRILLING_SOUNDS', false, 0, false)
 end
 
 local function runPhase(phase)
@@ -102,6 +112,12 @@ end
 
 RegisterNetEvent('fivempro_hacking:client:robberyNextPhase', function(tierId, locId, completedPhase)
     if not session or session.tierId ~= tierId or session.locId ~= locId then return end
+    local bankTiers = { bank_fleeca = true, bank_main = true, vault = true }
+    if completedPhase == 'hack' and bankTiers[tierId] then
+        playBankDoorOpen(session.coords)
+    elseif completedPhase == 'drill' and bankTiers[tierId] then
+        playVaultGateOpen(session.coords)
+    end
     local nxt = nextPhase(completedPhase)
     if not nxt then
         resetSession()

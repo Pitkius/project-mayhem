@@ -1,12 +1,36 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local tabletOpen = false
 local hackCb = nil
+local tabletProp = nil
+
+local function stopTabletAnim()
+    local ped = PlayerPedId()
+    ClearPedSecondaryTask(ped)
+    if tabletProp and DoesEntityExist(tabletProp) then
+        DeleteEntity(tabletProp)
+    end
+    tabletProp = nil
+end
+
+local function playTabletAnim()
+    local ped = PlayerPedId()
+    local dict = 'amb@world_human_seat_wall_tablet@female@base'
+    RequestAnimDict(dict)
+    while not HasAnimDictLoaded(dict) do Wait(0) end
+    TaskPlayAnim(ped, dict, 'base', 8.0, -8.0, -1, 49, 0, false, false, false)
+    local model = joaat('prop_cs_tablet')
+    RequestModel(model)
+    while not HasModelLoaded(model) do Wait(0) end
+    tabletProp = CreateObject(model, 1.0, 1.0, 1.0, true, true, false)
+    AttachEntityToEntity(tabletProp, ped, GetPedBoneIndex(ped, 60309), 0.03, 0.002, 0.0, 10.0, 160.0, 0.0, true, true, false, true, 1, true)
+end
 
 local function closeTablet()
     if not tabletOpen then return end
     tabletOpen = false
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
+    stopTabletAnim()
 end
 
 local function closeHack()
@@ -20,6 +44,7 @@ RegisterNetEvent('fivempro_hacking:client:openTablet', function(opts)
             return QBCore.Functions.Notify((data and data.msg) or 'Neturi hacking tablet.', 'error')
         end
         tabletOpen = true
+        playTabletAnim()
         SetNuiFocus(true, true)
         SendNUIMessage({ action = 'openTablet', data = data, flashTab = opts and opts.flashTab, driveSlot = opts and opts.driveSlot })
     end)
@@ -42,7 +67,7 @@ RegisterNUICallback('installDrive', function(data, cb)
     end, data and data.slot)
 end)
 
-function StartHackMinigame(tierId, coords, onDone)
+function StartHackMinigame(tierId, coords, onDone, locId)
     QBCore.Functions.TriggerCallback('fivempro_hacking:server:prepareHack', function(res)
         if not res or not res.ok then
             QBCore.Functions.Notify((res and res.msg) or 'Negali pradėti hack.', 'error')
@@ -53,7 +78,7 @@ function StartHackMinigame(tierId, coords, onDone)
         exports['fivempro_hacking']:PlayRobberyAnim((Config.RobberyAnims or {}).hack)
         SetNuiFocus(true, true)
         SendNUIMessage({ action = 'hackOpen', profile = res.profile, tierId = tierId })
-    end, tierId)
+    end, tierId, locId)
 end
 
 RegisterNUICallback('hackResult', function(data, cb)
@@ -83,6 +108,20 @@ RegisterNUICallback('hackCancel', function(_, cb)
 end)
 
 exports('StartHack', StartHackMinigame)
+
+CreateThread(function()
+    while true do
+        if tabletOpen and IsControlJustPressed(0, 322) then
+            closeTablet()
+        end
+        Wait(tabletOpen and 0 or 500)
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    stopTabletAnim()
+end)
 
 CreateThread(function()
     local bm = Config.BlackMarket

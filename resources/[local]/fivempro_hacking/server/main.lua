@@ -10,11 +10,20 @@ local function tabletCfg(itemName)
 end
 
 local function getTabletItem(Player)
+    local bestItem, bestName, bestRank = nil, nil, 0
+    local order = { basic_tablet = 1, advanced_tablet = 2, military_tablet = 3 }
     for name in pairs(Config.Tablets) do
         local it = Player.Functions.GetItemByName(name)
-        if it then return it, name end
+        if it then
+            local rank = order[name] or 0
+            if rank >= bestRank then
+                bestRank = rank
+                bestItem = it
+                bestName = name
+            end
+        end
     end
-    return nil, nil
+    return bestItem, bestName
 end
 
 local function metaInfo(item)
@@ -102,7 +111,10 @@ local function canAccessRobbery(src, tierId)
   local minTab = tier.minTablet
     local tabOrder = { basic_tablet = 1, advanced_tablet = 2, military_tablet = 3 }
     if (tabOrder[tName] or 0) < (tabOrder[minTab] or 99) then
-        return false, ('Reikia tablet: %s'):format(Config.Tablets[minTab].label)
+        return false, ('Reikia %s (turi %s). Įdiek CipherOS per flashdrive jei Pacific.'):format(
+            Config.Tablets[minTab].label,
+            Config.Tablets[tName].label
+        )
     end
     local osDef = Config.OperatingSystems[info.installed_os]
     local allowed = false
@@ -118,16 +130,25 @@ local function canAccessRobbery(src, tierId)
     }
 end
 
-local function buildHackProfile(tierId, ctx)
+local function buildHackProfile(tierId, ctx, locId)
     local tier = Config.RobberyTiers[tierId]
-    local base = Config.HackProfiles[tier.hackProfile] or { steps = 5, timeMs = 12000, grid = 4 }
+    local profileKey = tier.hackProfile
+    if locId and Config.Robberies and Config.Robberies.Locations and Config.Robberies.Locations[tierId] then
+        for _, loc in ipairs(Config.Robberies.Locations[tierId]) do
+            if loc.id == locId and loc.hackProfile then
+                profileKey = loc.hackProfile
+                break
+            end
+        end
+    end
+    local base = Config.HackProfiles[profileKey] or { steps = 5, timeMs = 12000, grid = 4 }
     local profile = {
         mode = base.mode or 'sequence',
         steps = base.steps,
         timeMs = base.timeMs,
         grid = base.grid,
         flashMs = base.flashMs or 380,
-        profileId = tier.hackProfile,
+        profileId = profileKey,
     }
     if ctx and ctx.exploits then
         for _, exId in ipairs(ctx.exploits) do
@@ -244,10 +265,10 @@ QBCore.Functions.CreateCallback('fivempro_hacking:server:installFromDrive', func
     })
 end)
 
-QBCore.Functions.CreateCallback('fivempro_hacking:server:prepareHack', function(src, cb, tierId)
+QBCore.Functions.CreateCallback('fivempro_hacking:server:prepareHack', function(src, cb, tierId, locId)
     local ok, reason, ctx = canAccessRobbery(src, tierId)
     if not ok then return cb({ ok = false, msg = reason }) end
-    local profile = buildHackProfile(tierId, ctx)
+    local profile = buildHackProfile(tierId, ctx, locId)
     cb({ ok = true, profile = profile, ctx = ctx })
 end)
 
@@ -271,6 +292,7 @@ RegisterNetEvent('fivempro_hacking:server:hackFinished', function(tierId, succes
         end
         applyCctvTamper(src, c, ctx)
         if tierId == 'atm' then
+            policeAlert(c, 'atm', alertText.atm, delay)
             if GetResourceState('fivempro_gangs') == 'started' then
                 pcall(function()
                     exports['fivempro_gangs']:OnHackSuccess(src, tierId, { x = c.x, y = c.y, z = c.z })

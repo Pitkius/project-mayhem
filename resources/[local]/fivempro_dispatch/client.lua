@@ -64,8 +64,33 @@ end
 
 RegisterNetEvent('fivempro_dispatch:client:update', function(payload)
     if not payload or payload.service ~= currentService then return end
+    local oldIds = {}
+    for _, c in ipairs(serviceState.calls or {}) do
+        oldIds[c.id] = true
+    end
     serviceState = payload
     syncUnitBlips()
+    for _, c in ipairs(payload.calls or {}) do
+        if not oldIds[c.id] then
+            QBCore.Functions.Notify(
+                ('[%s] %s — %s'):format(c.id, c.callTypeLabel or c.callType or 'Iškvietimas', c.text or ''),
+                'error',
+                10000
+            )
+            PlaySoundFrontend(-1, 'CONFIRM_BEEP', 'HUD_MINI_GAME_SOUNDSET', true)
+            local b = AddBlipForCoord((c.x or 0.0) + 0.0, (c.y or 0.0) + 0.0, (c.z or 0.0) + 0.0)
+            SetBlipSprite(b, 161)
+            SetBlipColour(b, 1)
+            SetBlipScale(b, 1.0)
+            SetBlipAsShortRange(b, false)
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentSubstringPlayerName(c.callTypeLabel or 'Dispatch')
+            EndTextCommandSetBlipName(b)
+            SetTimeout(90000, function()
+                if DoesBlipExist(b) then RemoveBlip(b) end
+            end)
+        end
+    end
 end)
 
 RegisterNetEvent('fivempro_dispatch:client:panic', function(data)

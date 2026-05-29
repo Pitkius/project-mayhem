@@ -104,7 +104,17 @@ Config.RobberyAnims = Config.RobberyAnims or {
         flags = 49,
         prop = { model = 'prop_tool_drill', bone = 57005, pos = vector3(0.14, 0.0, -0.01), rot = vector3(90.0, -90.0, 180.0) },
     },
-    loot = { dict = 'anim@heists@ornate_bank@grab_cash', name = 'grab', flags = 49 },
+    loot = {
+        dict = 'anim@heists@ornate_bank@grab_cash',
+        name = 'grab',
+        flags = 1,
+        prop = {
+            model = 'hei_p_m_bag_var22_arm_s',
+            bone = 57005,
+            pos = vector3(0.0, 0.0, -0.16),
+            rot = vector3(250.0, -30.0, 0.0),
+        },
+    },
     chain = { dict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@', name = 'machinic_loop_mechandplayer', flags = 49 },
     crack = { dict = 'anim@heists@ornate_bank@hack', name = 'hack_loop', flags = 49 },
 }
@@ -113,7 +123,7 @@ Config.RobberyMinigames = Config.RobberyMinigames or {
     card = { mode = 'sequence', label = 'Perbrauk kortelę — rodyklės', data = { length = 4 } },
     thermite = { mode = 'hold', label = 'Laikyk SPACE termito zonoje', data = { holdMs = 2800 } },
     drill = { mode = 'timing', label = 'Gręžimas — SPACE žalioje zonoje', data = { rounds = 3 } },
-    loot = { mode = 'mash', label = 'Grabink greitai — spam SPACE', data = { target = 18, timeMs = 9000 } },
+    loot = { mode = 'mash', label = 'Grabink pinigus — spam SPACE (GTA Online)', data = { target = 22, timeMs = 9000 } },
     chain = { mode = 'sequence', label = 'Pritvirtink grandinę — rodyklės', data = { length = 5 } },
     atm_drill = { mode = 'timing', label = 'Gręžiamas bankomatas', data = { rounds = 4 } },
 }

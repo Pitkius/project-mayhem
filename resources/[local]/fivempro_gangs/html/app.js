@@ -294,7 +294,7 @@ function paintTurfMarkers(state) {
     const col = String(t.owner_color_hex || "").trim();
     const label = t.turf_label || t.turf_id;
     const owner = t.owner_name || "Laisva";
-    const inf = Math.max(0, Math.min(100, Number(t.influence ?? t.progress || 0)));
+    const inf = Math.max(0, Math.min(100, Number(t.influence ?? t.progress ?? 0)));
     const prog = inf;
     const status = String(t.status || (hasOwner ? "užimtas" : "neužimtas"));
     const heat = Number(t.heat || 0);
@@ -441,7 +441,7 @@ function renderMissionsTab(state) {
   (state.turfs || []).forEach((t) => {
     const o = document.createElement("option");
     o.value = t.turf_id;
-    const inf = Number(t.influence ?? t.progress || 0);
+    const inf = Number(t.influence ?? t.progress ?? 0);
     o.textContent = `${t.turf_label || t.turf_id} (įtaka ${inf}%)`;
     missionTurfSelect.appendChild(o);
   });
