@@ -9,7 +9,7 @@ local function nearCoords(src, coords, maxDist)
     return d <= maxDist
 end
 
-RegisterNetEvent('fivempro_ambulance:server:openStash', function()
+RegisterNetEvent('fivempro_ambulance:server:openStash', function(stationId)
     local src = source
     if GetResourceState('qb-inventory') ~= 'started' then
         return TriggerClientEvent('QBCore:Notify', src, 'qb-inventory neįjungtas.', 'error')
@@ -20,14 +20,20 @@ RegisterNetEvent('fivempro_ambulance:server:openStash', function()
     if j.name ~= Config.JobName or not j.onduty then
         return TriggerClientEvent('QBCore:Notify', src, 'Tik EMS tarnyboje.', 'error')
     end
-    local st = Config.Stash
-    if not nearCoords(src, st.coords, 22.0) then
+    stationId = tostring(stationId or '')
+    local st = nil
+    for _, row in ipairs(Config.Stations or {}) do
+        if row.id == stationId then st = row break end
+    end
+    st = st or Config.Stations[1]
+    if not st or not st.stash then return end
+    if not nearCoords(src, st.stash.coords, 22.0) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo sandėlio.', 'error')
     end
-    exports['qb-inventory']:OpenInventory(src, st.stashId, {
-        maxweight = st.maxweight,
-        slots = st.slots,
-        label = st.label,
+    exports['qb-inventory']:OpenInventory(src, st.stash.stashId, {
+        maxweight = st.stash.maxweight,
+        slots = st.stash.slots,
+        label = st.stash.label,
     })
 end)
 
@@ -47,7 +53,12 @@ local function canBoss(src)
 end
 
 local function nearManagement(src)
-    return nearCoords(src, Config.Management.coords, 18.0)
+    for _, st in ipairs(Config.Stations or {}) do
+        if st.management and st.management.coords and nearCoords(src, st.management.coords, 18.0) then
+            return true
+        end
+    end
+    return false
 end
 
 local function bossOutranks(bossSrc, targetGrade)

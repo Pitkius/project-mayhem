@@ -57,7 +57,7 @@ Config.HospitalWake = {
     holdGMs = 2800,
     --- Kelios ligoninės – serveris pasirenka artimiausią pagal žaidėjo poziciją skambinant G
     locations = {
-        vector4(-458.6, -327.15, 34.50, 91.30), -- fivempro_ambulance LS zona
+        vector4(309.52, -595.29, 43.28, 71.0), -- Pillbox EMS (fivempro_ambulance)
         vector4(298.65, -584.47, 43.26, 70.0), -- Pillbox
         vector4(1839.6, 3672.9, 34.28, 210.0), -- Sandy Shores
         vector4(-247.76, 6331.39, 32.43, 45.0), -- Paleto

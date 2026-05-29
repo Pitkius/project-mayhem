@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 
 name 'fivempro_ambulance'
-description 'Greitosios pagalbos bazė (LS ligoninės laukas)'
+description 'Greitosios pagalbos postai (Pillbox / Sandy / Paleto MLO)'
 version '1.0.0'
 
 shared_scripts {

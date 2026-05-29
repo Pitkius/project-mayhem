@@ -8,13 +8,16 @@ lua54 'yes'
 
 shared_scripts {
     '@qb-core/shared/locale.lua',
-    'config.lua'
+    'config.lua',
+    'config_jobshops.lua',
 }
 
 client_scripts {
-    'client.lua'
+    'client.lua',
+    'client_jobshops.lua',
 }
 
 server_scripts {
-    'server.lua'
+    'server.lua',
+    'server_jobshops.lua',
 }

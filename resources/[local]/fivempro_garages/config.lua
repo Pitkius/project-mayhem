@@ -33,7 +33,9 @@ Config.Garages = {
     { id = 'pd_paleto', label = 'Policijos garažas (Paleto)', coords = vector3(-459.2, 6016.3, 31.49), heading = 45.0, spawn = vector4(-459.2, 6016.3, 31.49, 45.0), policeOnly = true, hideBlip = true },
     --- Mechanikas / EMS (job: mechanic, ambulance) – tik qb-target iš darbo resursų
     { id = 'mech_ls', label = 'Mechanikų garažas', coords = vector3(-350.41, -117.01, 38.95), heading = 246.37, spawn = vector4(-347.5, -119.2, 38.95, 246.37), mechanicOnly = true, hideBlip = true },
-    { id = 'ems_ls', label = 'Greitosios pagalbos garažas', coords = vector3(-460.42, -324.28, 34.50), heading = 91.30, spawn = vector4(-464.42, -324.37, 34.50, 91.30), emsOnly = true, hideBlip = true },
+    { id = 'ems_ls', label = 'Greitosios pagalbos garažas (Pillbox)', coords = vector3(339.32, -584.32, 28.80), heading = 70.0, spawn = vector4(331.58, -543.68, 28.74, 340.0), emsOnly = true, hideBlip = true },
+    { id = 'ems_sandy', label = 'EMS garažas (Sandy)', coords = vector3(1843.5, 3663.8, 33.85), heading = 210.0, spawn = vector4(1843.5, 3663.8, 33.85, 210.0), emsOnly = true, hideBlip = true },
+    { id = 'ems_paleto', label = 'EMS garažas (Paleto)', coords = vector3(-254.0, 6347.0, 32.50), heading = 135.0, spawn = vector4(-254.0, 6347.0, 32.50, 135.0), emsOnly = true, hideBlip = true },
     { id = 'taxi_ls', label = 'Taksi garažas', coords = vector3(902.12, -172.41, 74.08), heading = 56.0, spawn = vector4(908.42, -168.95, 74.12, 146.0), taxiOnly = true, hideBlip = true },
 }
 

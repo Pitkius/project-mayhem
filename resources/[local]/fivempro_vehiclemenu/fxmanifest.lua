@@ -10,6 +10,10 @@ client_scripts {
     'client.lua',
 }
 
+server_scripts {
+    'server.lua',
+}
+
 dependencies {
     'qb-core',
     'qb-menu',

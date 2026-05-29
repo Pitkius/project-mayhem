@@ -19,6 +19,11 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local doorGroups = {} ---@type LtpdDoorGroupRuntime[]
 local doorLocked = {} ---@type table<string, boolean>
 local dynStationDone = {} ---@type table<string, boolean>
+local entitySnapshots = {} ---@type table<number, { coords: vector3, heading: number }>
+
+--- Rakto ikonos dydis (DrawSprite – ~2.5× mažesnis nei anksčiau)
+local LOCK_ICON_W = 0.016
+local LOCK_ICON_H = 0.028
 
 --- Kad dinaminis skeneris nedubliuotų durų, kurias valdome iš `PdDoorGroups`.
 local manualPdSlabSkip = {}
@@ -58,9 +63,31 @@ end)
 local function drawPdDoorLock(worldX, worldY, worldZ, locked)
     RequestStreamedTextureDict(PD_LOCK_TX, false)
     if not HasStreamedTextureDictLoaded(PD_LOCK_TX) then return end
-    SetDrawOrigin(worldX, worldY, worldZ + 0.24, 0)
-    DrawSprite(PD_LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, 0.044, 0.078, 0.0, 235, 232, 255, 245)
+    SetDrawOrigin(worldX, worldY, worldZ, 0)
+    DrawSprite(PD_LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, LOCK_ICON_W, LOCK_ICON_H, 0.0, 235, 232, 255, 230)
     ClearDrawOrigin()
+end
+
+local function rememberEntitySnapshot(ent)
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return end
+    if entitySnapshots[ent] then return end
+    entitySnapshots[ent] = {
+        coords = GetEntityCoords(ent),
+        heading = GetEntityHeading(ent),
+    }
+end
+
+local function snapEntityToSnapshot(ent)
+    local snap = entitySnapshots[ent]
+    if not snap or not DoesEntityExist(ent) then return end
+    SetEntityCoords(ent, snap.coords.x, snap.coords.y, snap.coords.z, false, false, false, false)
+    SetEntityHeading(ent, snap.heading)
+end
+
+local function iconZOffset(doorType, isEntity)
+    if doorType == 'garage_roll' then return isEntity and 0.38 or 0.42 end
+    if isEntity then return 0.68 end
+    return 1.02
 end
 
 local function isPdJobName(name)
@@ -145,6 +172,43 @@ local function registerSlab(groupId, slabIndex, modelName, coords, heading)
     return { doorHash = dh, modelHash = modelHash, coords = coords, heading = heading }
 end
 
+local function alignSlabToWorld(slab)
+    local ent = findClosestObject(slab.modelHash, slab.coords, 4.0)
+    if ent == 0 then return end
+    rememberEntitySnapshot(ent)
+    slab.coords = GetEntityCoords(ent)
+    if not slab.heading then
+        slab.heading = GetEntityHeading(ent)
+    end
+    ensureDoorInSystem(slab.doorHash, slab.modelHash, slab.coords.x, slab.coords.y, slab.coords.z)
+end
+
+local function snapSlabEntity(slab)
+    local ent = findClosestObject(slab.modelHash, slab.coords, 3.5)
+    if ent == 0 then return end
+    rememberEntitySnapshot(ent)
+    if slab.heading then
+        SetEntityHeading(ent, slab.heading + 0.0)
+    end
+    SetEntityCoords(ent, slab.coords.x, slab.coords.y, slab.coords.z, false, false, false, false)
+end
+
+local function applyStandardSlabLocked(slab, locked)
+    local dh = slab.doorHash
+    local force = true
+    if locked then
+        DoorSystemSetDoorState(dh, 4, false, force)
+        pcall(function() DoorSystemSetOpenRatio(dh, 0.0, true, true) end)
+        pcall(function() DoorSystemSetHoldOpen(dh, false) end)
+        pcall(function() DoorSystemSetAutomaticDistance(dh, 0.0, false, false) end)
+        snapSlabEntity(slab)
+    else
+        DoorSystemSetDoorState(dh, 0, false, force)
+        pcall(function() DoorSystemSetOpenRatio(dh, 1.0, false, false) end)
+        pcall(function() DoorSystemSetAutomaticDistance(dh, 30.0, false, false) end)
+    end
+end
+
 local function findClosestObject(modelHash, coords, radius)
     local best, bestD = 0, (radius or 5.0) + 1.0
     for _, ent in ipairs(GetGamePool('CObject')) do
@@ -157,6 +221,33 @@ local function findClosestObject(modelHash, coords, radius)
         end
     end
     return best
+end
+
+local function getSlabIconPos(slab, doorType)
+    local ent = findClosestObject(slab.modelHash, slab.coords, 3.5)
+    if ent ~= 0 then
+        local ec = GetEntityCoords(ent)
+        return vector3(ec.x, ec.y, ec.z + iconZOffset(doorType, false))
+    end
+    return vector3(slab.coords.x, slab.coords.y, slab.coords.z + iconZOffset(doorType, false))
+end
+
+local function drawGroupLockIcons(g, pcoords, locked)
+    local maxDist = (g.interactDist or 2.5) + 5.5
+    for _, slab in ipairs(g.slabs or {}) do
+        if #(pcoords - slab.coords) <= maxDist then
+            local pos = getSlabIconPos(slab, g.doorType)
+            drawPdDoorLock(pos.x, pos.y, pos.z, locked)
+        end
+    end
+    for _, ent in ipairs(g.entities or {}) do
+        if ent and ent ~= 0 and DoesEntityExist(ent) then
+            local ec = GetEntityCoords(ent)
+            if #(pcoords - ec) <= maxDist then
+                drawPdDoorLock(ec.x, ec.y, ec.z + iconZOffset(g.doorType, true), locked)
+            end
+        end
+    end
 end
 
 local function applyGarageSlabDoorSystem(slab, locked)
@@ -251,8 +342,15 @@ end
 local function applyEntityGroupLocked(entities, locked)
     for _, ent in ipairs(entities or {}) do
         if ent and ent ~= 0 and DoesEntityExist(ent) then
-            FreezeEntityPosition(ent, locked)
-            SetEntityCollision(ent, not locked, not locked)
+            rememberEntitySnapshot(ent)
+            if locked then
+                snapEntityToSnapshot(ent)
+                FreezeEntityPosition(ent, true)
+                SetEntityCollision(ent, not locked, not locked)
+            else
+                FreezeEntityPosition(ent, false)
+                SetEntityCollision(ent, true, true)
+            end
         end
     end
 end
@@ -287,9 +385,8 @@ local function applyGroupLocked(id, locked)
                 applyGarageRollLocked(g.slabs, g.entities, locked)
                 return
             end
-            local state = locked and 1 or 0
             for _, slab in ipairs(g.slabs) do
-                DoorSystemSetDoorState(slab.doorHash, state, false, true)
+                applyStandardSlabLocked(slab, locked)
             end
             applyEntityGroupLocked(g.entities, locked)
             return
@@ -303,7 +400,9 @@ local function buildManualGroups()
         for i, d in ipairs(def.doors or {}) do
             local coords = d.coords
             local model = d.model
-            slabs[#slabs + 1] = registerSlab(def.id, i, model, coords, d.heading)
+            local slab = registerSlab(def.id, i, model, coords, d.heading)
+            alignSlabToWorld(slab)
+            slabs[#slabs + 1] = slab
         end
         local interact = def.interact
         if not interact and #slabs > 0 then
@@ -314,6 +413,9 @@ local function buildManualGroups()
             interact = c / #slabs
         end
         local entities = scanEntitiesForDef(def.entityScan)
+        for _, ent in ipairs(entities) do
+            rememberEntitySnapshot(ent)
+        end
         doorGroups[#doorGroups + 1] = {
             id = def.id,
             label = def.label or 'PD durys',
@@ -388,7 +490,9 @@ local function scanDynamicForStation(dyn)
         local groupId = ('dyn_%s_%x_%d_%d_%d'):format(dyn.stationId, cluster[1].modelHash, qx, qy, qz)
         local slabs = {}
         for si, s in ipairs(cluster) do
-            slabs[si] = registerDynSlab(s.modelHash, s.coords.x, s.coords.y, s.coords.z)
+            local slab = registerDynSlab(s.modelHash, s.coords.x, s.coords.y, s.coords.z)
+            alignSlabToWorld(slab)
+            slabs[si] = slab
         end
         if not groupIdExists(groupId) then
             doorGroups[#doorGroups + 1] = {
@@ -424,6 +528,9 @@ CreateThread(function()
         for _, g in ipairs(doorGroups) do
             if g.entityScanDef then
                 g.entities = scanEntitiesForDef(g.entityScanDef)
+                for _, ent in ipairs(g.entities) do
+                    rememberEntitySnapshot(ent)
+                end
             end
         end
     end
@@ -528,28 +635,7 @@ CreateThread(function()
                     local g = findDoorGroupById(gid)
                     if g then
                         local locked = doorLocked[g.id] ~= false
-                        local iconPos = hit.z.pos
-                        local best = 99999.0
-                        for _, slab in ipairs(g.slabs or {}) do
-                            local sd = #(pcoords - slab.coords)
-                            if sd < best then
-                                best = sd
-                                iconPos = slab.coords
-                            end
-                        end
-                        for _, ent in ipairs(g.entities or {}) do
-                            if ent and ent ~= 0 and DoesEntityExist(ent) then
-                                local ec = GetEntityCoords(ent)
-                                local sd = #(pcoords - ec)
-                                if sd < best then
-                                    best = sd
-                                    iconPos = ec
-                                end
-                            end
-                        end
-                        if best < (g.interactDist or 2.5) + 6.0 then
-                            drawPdDoorLock(iconPos.x, iconPos.y, iconPos.z + 0.35, locked)
-                        end
+                        drawGroupLockIcons(g, pcoords, locked)
                     end
                 end
                 if closestHit and IsControlJustPressed(0, 38) then

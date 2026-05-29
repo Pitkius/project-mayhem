@@ -179,6 +179,11 @@ Config.PoliceDealership = {
             preview = vector4(443.25, -1011.15, 28.62, 265.0),
             camera = vector4(446.45, -1011.45, 30.15, 265.0),
         },
+        davis = {
+            spawn = vector4(397.85, -1607.09, 29.29, 230.0),
+            preview = vector4(400.2, -1605.5, 29.29, 140.0),
+            camera = vector4(403.5, -1604.0, 31.0, 140.0),
+        },
         sandy = {
             spawn = vector4(1869.5, 3695.2, 33.53, 210.0),
             preview = vector4(1872.0, 3693.5, 33.53, 120.0),
@@ -238,12 +243,24 @@ Config.EmsDealership = {
     label = 'Greitosios pagalbos transportas',
     garageByStation = {
         ems_ls = 'ems_ls',
+        ems_sandy = 'ems_sandy',
+        ems_paleto = 'ems_paleto',
     },
     stations = {
         ems_ls = {
-            spawn = vector4(-464.42, -324.37, 34.50, 91.30),
-            preview = vector4(-462.1, -324.35, 34.50, 91.30),
-            camera = vector4(-458.4, -323.2, 36.05, 91.30),
+            spawn = vector4(331.58, -543.68, 28.74, 340.0),
+            preview = vector4(334.5, -546.0, 28.74, 340.0),
+            camera = vector4(338.0, -548.5, 30.4, 340.0),
+        },
+        ems_sandy = {
+            spawn = vector4(1843.5, 3663.8, 33.85, 210.0),
+            preview = vector4(1846.0, 3661.5, 33.85, 120.0),
+            camera = vector4(1849.5, 3662.0, 35.4, 120.0),
+        },
+        ems_paleto = {
+            spawn = vector4(-254.0, 6347.0, 32.50, 135.0),
+            preview = vector4(-251.5, 6344.5, 32.50, 225.0),
+            camera = vector4(-248.0, 6345.0, 34.1, 225.0),
         },
     },
     EmsCategoryLabels = {

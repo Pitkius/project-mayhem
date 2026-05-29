@@ -230,3 +230,20 @@ CreateThread(function()
     end
 end)
 
+RegisterNetEvent('fivempro_vehiclemenu:client:grantKeysNearest', function()
+    local ped = PlayerPedId()
+    local veh = GetVehiclePedIsIn(ped, false)
+    if veh == 0 or not DoesEntityExist(veh) then
+        veh = nearestVehicle(6.0)
+    end
+    if veh == 0 or not DoesEntityExist(veh) then
+        return QBCore.Functions.Notify('Nėra transporto šalia.', 'error')
+    end
+    local plate = plateOf(veh)
+    if plate == '' then
+        return QBCore.Functions.Notify('Nepavyko nuskaityti numerių.', 'error')
+    end
+    TriggerEvent('vehiclekeys:client:SetOwner', plate)
+    QBCore.Functions.Notify(('Gavote raktus: %s'):format(plate), 'success')
+end)
+
