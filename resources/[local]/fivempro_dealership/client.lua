@@ -222,6 +222,18 @@ local function spawnPreviewVehicle(model)
         SetVehicleOnGroundProperly(previewVehicle)
         SetVehicleLights(previewVehicle, 2)
 
+        if uiFleetMode then
+            local sc = getFleetStationPreviewCfg()
+            local lateral = sc and tonumber(sc.previewLateralM) or 0.0
+            if lateral ~= 0.0 then
+                local h = math.rad((spawn.w or 0.0) + 0.0)
+                local ox = -math.sin(h) * lateral
+                local oy = math.cos(h) * lateral
+                SetEntityCoords(previewVehicle, spawn.x + ox, spawn.y + oy, spawn.z, false, false, false, false)
+                SetVehicleOnGroundProperly(previewVehicle)
+            end
+        end
+
         ensurePreviewCam()
         PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.2, true)
         previewApplyShowroomVisuals()

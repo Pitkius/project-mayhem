@@ -1,3 +1,5 @@
+# DEPRECATED for HUD: car HUD naudoja SVG (fivempro_hud/html/index.html).
+# Inventoriaus PNG – naudok AI generuotas ikonas, ne šį scriptą.
 Add-Type -AssemblyName System.Drawing
 
 $root = Split-Path -Parent $PSScriptRoot

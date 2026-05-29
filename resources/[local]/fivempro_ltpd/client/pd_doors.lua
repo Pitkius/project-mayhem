@@ -165,6 +165,20 @@ local function ensureDoorInSystem(dh, modelHash, x, y, z)
     end
 end
 
+local function findClosestObject(modelHash, coords, radius)
+    local best, bestD = 0, (radius or 5.0) + 1.0
+    for _, ent in ipairs(GetGamePool('CObject')) do
+        if DoesEntityExist(ent) and GetEntityModel(ent) == modelHash then
+            local d = #(GetEntityCoords(ent) - coords)
+            if d <= (radius or 5.0) and d < bestD then
+                bestD = d
+                best = ent
+            end
+        end
+    end
+    return best
+end
+
 local function registerSlab(groupId, slabIndex, modelName, coords, heading)
     local modelHash = type(modelName) == 'string' and joaat(modelName) or modelName
     local dh = slabScriptHash(groupId, slabIndex)
@@ -207,20 +221,6 @@ local function applyStandardSlabLocked(slab, locked)
         pcall(function() DoorSystemSetOpenRatio(dh, 1.0, false, false) end)
         pcall(function() DoorSystemSetAutomaticDistance(dh, 30.0, false, false) end)
     end
-end
-
-local function findClosestObject(modelHash, coords, radius)
-    local best, bestD = 0, (radius or 5.0) + 1.0
-    for _, ent in ipairs(GetGamePool('CObject')) do
-        if DoesEntityExist(ent) and GetEntityModel(ent) == modelHash then
-            local d = #(GetEntityCoords(ent) - coords)
-            if d <= (radius or 5.0) and d < bestD then
-                bestD = d
-                best = ent
-            end
-        end
-    end
-    return best
 end
 
 local function getSlabIconPos(slab, doorType)

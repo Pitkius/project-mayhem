@@ -175,14 +175,16 @@ Config.PoliceDealership = {
     stations = {
         ls_main = {
             spawn = vector4(441.64, -1013.14, 28.62, 175.52),
-            --- Mašina šiek tiek į kairę kad nesikirstų su dešiniu UI
-            preview = vector4(443.25, -1011.15, 28.62, 265.0),
-            camera = vector4(446.45, -1011.45, 30.15, 265.0),
+            --- Šoninis spawnas — ne ant stulpo / ne prie UI
+            preview = vector4(437.85, -1018.35, 28.62, 90.0),
+            previewLateralM = 0.0,
+            camera = vector4(441.2, -1018.5, 30.05, 90.0),
         },
         davis = {
             spawn = vector4(397.85, -1607.09, 29.29, 230.0),
-            preview = vector4(400.2, -1605.5, 29.29, 140.0),
-            camera = vector4(403.5, -1604.0, 31.0, 140.0),
+            preview = vector4(392.4, -1609.85, 29.29, 50.0),
+            previewLateralM = 0.0,
+            camera = vector4(395.8, -1608.2, 30.85, 50.0),
         },
         sandy = {
             spawn = vector4(1869.5, 3695.2, 33.53, 210.0),

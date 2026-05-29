@@ -39,12 +39,20 @@ local function playTabletAnim()
 end
 
 local function closeTabletUi()
-    if not tabletOpen then return end
     tabletOpen = false
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
     stopTabletAnim()
 end
+
+CreateThread(function()
+    while true do
+        if tabletOpen and IsControlJustPressed(0, 322) then
+            closeTabletUi()
+        end
+        Wait(tabletOpen and 0 or 500)
+    end
+end)
 
 local function openAdminMenu()
     QBCore.Functions.TriggerCallback('fivempro_gangs:server:getAdminSnapshot', function(res)
@@ -129,7 +137,9 @@ local function openAdminMenu()
 end
 
 RegisterNetEvent('fivempro_gangs:client:openTablet', function()
-    if tabletOpen then return end
+    if tabletOpen then
+        closeTabletUi()
+    end
     QBCore.Functions.TriggerCallback('fivempro_gangs:server:getTabletState', function(res)
         if not res or not res.ok then
             QBCore.Functions.Notify((res and res.msg) or 'Nepavyko atidaryti planšetės.', 'error')
@@ -138,7 +148,7 @@ RegisterNetEvent('fivempro_gangs:client:openTablet', function()
         tabletOpen = true
         playTabletAnim()
         SetNuiFocus(true, true)
-        SendNUIMessage({ action = 'undock' })
+        SetNuiFocusKeepInput(false)
         SendNUIMessage({
             action = 'open',
             payload = {
@@ -152,7 +162,7 @@ RegisterNetEvent('fivempro_gangs:client:openTablet', function()
                 tabletMap = res.tabletMap or Config.TabletMap or {},
                 missions = res.missions or {},
                 claimThreshold = res.claimThreshold or 100,
-            }
+            },
         })
     end)
 end)

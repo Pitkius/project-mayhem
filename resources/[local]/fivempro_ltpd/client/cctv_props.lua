@@ -94,9 +94,16 @@ function ResolveCctvCameraView(cam)
             local ec = GetEntityCoords(ent)
             local eh = GetEntityHeading(ent)
             pos = vector3(ec.x, ec.y, ec.z + zOff)
-            local fwd = headingForward(eh)
-            local pitchRad = math.rad(pitchOff)
-            look = pos + fwd * lookDist + vector3(0.0, 0.0, math.tan(pitchRad) * lookDist)
+            if cam.lookAt then
+                look = vector3(cam.lookAt.x, cam.lookAt.y, cam.lookAt.z)
+            else
+                local fwd = headingForward(eh)
+                local pitchRad = math.rad(pitchOff)
+                look = pos + fwd * lookDist + vector3(0.0, 0.0, math.tan(pitchRad) * lookDist)
+            end
+        elseif cam.lookAt then
+            pos = vector3(c.x, c.y, c.z + zOff)
+            look = vector3(cam.lookAt.x, cam.lookAt.y, cam.lookAt.z)
         else
             pos = vector3(c.x, c.y, c.z + zOff)
             local fwd = headingForward(c.w or c.heading or 0.0)
@@ -107,10 +114,6 @@ function ResolveCctvCameraView(cam)
         look = vector3(cam.lookAt.x, cam.lookAt.y, cam.lookAt.z)
     else
         return nil, nil, yawMax, pitchMax
-    end
-
-    if cam.lookAt and not cam.propCoords then
-        look = vector3(cam.lookAt.x, cam.lookAt.y, cam.lookAt.z)
     end
 
     return pos, look, yawMax, pitchMax

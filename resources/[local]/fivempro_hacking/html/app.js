@@ -190,27 +190,40 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function flashSequence(sequence) {
-  for (const idx of sequence) {
-    const cell = hackGrid.querySelector('[data-idx="' + idx + '"]');
-    if (cell) cell.classList.add("active");
-    await sleep(380);
-    if (cell) cell.classList.remove("active");
-    await sleep(180);
-  }
-}
-
-async function startHack(profile, tierId) {
-  stopHackTimer();
-  const steps = profile.steps || 5;
-  const gridN = profile.grid || 4;
-  const totalMs = profile.timeMs || 12000;
-  const cells = gridN * gridN;
+function buildHackSequence(steps, cells) {
   const sequence = [];
   while (sequence.length < steps) {
     const n = Math.floor(Math.random() * cells);
     if (sequence.length === 0 || sequence[sequence.length - 1] !== n) sequence.push(n);
   }
+  return sequence;
+}
+
+async function flashSequence(sequence, flashMs) {
+  const onMs = flashMs || 380;
+  const offMs = Math.max(120, Math.floor(onMs * 0.45));
+  for (const idx of sequence) {
+    const cell = hackGrid.querySelector('[data-idx="' + idx + '"]');
+    if (cell) cell.classList.add("active");
+    await sleep(onMs);
+    if (cell) cell.classList.remove("active");
+    await sleep(offMs);
+  }
+}
+
+async function flashPairs(pairs, flashMs) {
+  const onMs = flashMs || 340;
+  for (const pair of pairs) {
+    const cells = pair.map((idx) => hackGrid.querySelector('[data-idx="' + idx + '"]')).filter(Boolean);
+    cells.forEach((c) => c.classList.add("active"));
+    await sleep(onMs);
+    cells.forEach((c) => c.classList.remove("active"));
+    await sleep(200);
+  }
+}
+
+function buildHackGrid(gridN) {
+  const cells = gridN * gridN;
   hackGrid.style.gridTemplateColumns = "repeat(" + gridN + ", 1fr)";
   hackGrid.innerHTML = "";
   for (let i = 0; i < cells; i++) {
@@ -222,10 +235,10 @@ async function startHack(profile, tierId) {
     b.onclick = () => onCell(i);
     hackGrid.appendChild(b);
   }
-  document.getElementById("hackHint").textContent = "Stebėk seką…";
-  await flashSequence(sequence);
-  document.getElementById("hackHint").textContent = "Pakartok seką";
-  hackState = { sequence, idx: 0, tierId, failed: false, deadline: Date.now() + totalMs };
+  return cells;
+}
+
+function beginHackInput(hackState, totalMs) {
   document.querySelectorAll(".hack-cell").forEach((c) => {
     c.disabled = false;
   });
@@ -237,10 +250,123 @@ async function startHack(profile, tierId) {
   }, 50);
 }
 
+async function startHack(profile, tierId) {
+  stopHackTimer();
+  const mode = profile.mode || "sequence";
+  const steps = profile.steps || 5;
+  const gridN = profile.grid || 4;
+  const totalMs = profile.timeMs || 12000;
+  const flashMs = profile.flashMs || 380;
+  const cells = buildHackGrid(gridN);
+  const sequence = buildHackSequence(steps, cells);
+  const hintEl = document.getElementById("hackHint");
+
+  if (mode === "reverse") {
+    hintEl.textContent = "Stebėk seką (atbuline tvarka)…";
+    await flashSequence(sequence, flashMs);
+    hintEl.textContent = "Spausk langelius ATGALINE tvarka";
+    hackState = {
+      mode,
+      sequence: sequence.slice().reverse(),
+      idx: 0,
+      tierId,
+      failed: false,
+      deadline: Date.now() + totalMs,
+    };
+    beginHackInput(hackState, totalMs);
+    return;
+  }
+
+  if (mode === "pairs") {
+    const pairs = [];
+    const seqCopy = sequence.slice();
+    while (seqCopy.length >= 2) {
+      pairs.push([seqCopy.shift(), seqCopy.shift()]);
+    }
+    if (seqCopy.length) pairs.push([seqCopy[0], seqCopy[0]]);
+    hintEl.textContent = "Stebėk poras…";
+    await flashPairs(pairs, flashMs);
+    hintEl.textContent = "Spausk poras ta pačia tvarka";
+    hackState = {
+      mode,
+      pairs,
+      pairIdx: 0,
+      pairStep: 0,
+      tierId,
+      failed: false,
+      deadline: Date.now() + totalMs,
+    };
+    beginHackInput(hackState, totalMs);
+    return;
+  }
+
+  if (mode === "code") {
+    const code = sequence.map((i) => (i % 10) + 1);
+    hintEl.textContent = "Kodas: " + code.join(" - ");
+    await sleep(1400 + code.length * 320);
+    hintEl.textContent = "Įvesk skaičius ta tvarka (langeliai 1–" + Math.min(10, cells) + ")";
+    hackState = {
+      mode,
+      code,
+      idx: 0,
+      tierId,
+      failed: false,
+      deadline: Date.now() + totalMs,
+    };
+    beginHackInput(hackState, totalMs);
+    return;
+  }
+
+  hintEl.textContent = "Stebėk seką…";
+  await flashSequence(sequence, flashMs);
+  hintEl.textContent = "Pakartok seką";
+  hackState = {
+    mode: "sequence",
+    sequence,
+    idx: 0,
+    tierId,
+    failed: false,
+    deadline: Date.now() + totalMs,
+  };
+  beginHackInput(hackState, totalMs);
+}
+
 function onCell(i) {
   if (!hackState || hackState.failed) return;
-  const expected = hackState.sequence[hackState.idx];
   const cell = hackGrid.querySelector('[data-idx="' + i + '"]');
+
+  if (hackState.mode === "pairs") {
+    const pair = hackState.pairs[hackState.pairIdx];
+    if (!pair) return finishHack(true);
+    const expected = pair[hackState.pairStep];
+    if (i !== expected) {
+      if (cell) cell.classList.add("fail");
+      return finishHack(false);
+    }
+    if (cell) cell.classList.add("done");
+    hackState.pairStep++;
+    if (hackState.pairStep >= pair.length) {
+      hackState.pairIdx++;
+      hackState.pairStep = 0;
+    }
+    if (hackState.pairIdx >= hackState.pairs.length) return finishHack(true);
+    return;
+  }
+
+  if (hackState.mode === "code") {
+    const digit = (i % 10) + 1;
+    const expected = hackState.code[hackState.idx];
+    if (digit !== expected) {
+      if (cell) cell.classList.add("fail");
+      return finishHack(false);
+    }
+    if (cell) cell.classList.add("done");
+    hackState.idx++;
+    if (hackState.idx >= hackState.code.length) return finishHack(true);
+    return;
+  }
+
+  const expected = hackState.sequence[hackState.idx];
   if (i !== expected) {
     if (cell) cell.classList.add("fail");
     return finishHack(false);

@@ -510,6 +510,10 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
 function render(state) {
   lastState = state;
   tablet.classList.remove("hidden");
+  if (!gangType || !primaryColor) {
+    console.error("[fivempro_gangs] Trūksta UI elementų");
+    return;
+  }
 
   gangType.innerHTML = "";
   Object.entries(state.gangTypes || {}).forEach(([k, v]) => {
@@ -542,9 +546,15 @@ window.addEventListener("message", (e) => {
   if (!d || !d.action) return;
   if (d.action === "open") {
     const payload = d.payload || {};
-    activeTab = payload.hasGang ? "map" : "register";
+    activeTab = payload.hasGang ? "gang" : "register";
     setTabletDocked(false, true);
-    render(payload);
+    try {
+      render(payload);
+    } catch (err) {
+      console.error("[fivempro_gangs] render klaida:", err);
+      tablet.classList.remove("hidden");
+      activateTab("register");
+    }
   }
   if (d.action === "dock") {
     setTabletDocked(true, true);

@@ -3,6 +3,8 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local session = nil
 local atmProp = nil
 local dropBlip = nil
+local chainAnchor = nil ---@type vector3|nil
+local chainVehicle = nil
 
 local function clearDropBlip()
     if dropBlip and DoesBlipExist(dropBlip) then RemoveBlip(dropBlip) end
@@ -14,12 +16,18 @@ local function clearAtmProp()
     atmProp = nil
 end
 
+local function clearChainVisual()
+    chainAnchor = nil
+    chainVehicle = nil
+end
+
 local function resetSession()
     if session and session.coords then
         TriggerServerEvent('fivempro_hacking:server:atmRelease', session.coords)
     end
     clearAtmProp()
     clearDropBlip()
+    clearChainVisual()
     session = nil
 end
 
@@ -28,6 +36,54 @@ local function vehicleAllowed(veh)
     local cls = GetVehicleClass(veh)
     if Config.Atm.AllowedVehicleClasses[cls] == false then return false end
     return true
+end
+
+local function getAtmAnchorPos()
+    if session and session.entity and session.entity ~= 0 and DoesEntityExist(session.entity) then
+        local c = GetEntityCoords(session.entity)
+        return vector3(c.x, c.y, c.z + 0.55)
+    end
+    if session and session.coords then
+        return vector3(session.coords.x, session.coords.y, session.coords.z + 0.55)
+    end
+    return nil
+end
+
+local function getVehicleRearPos(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return nil end
+    local bones = { 'boot', 'bumper_r', 'chassis', 'bodyshell' }
+    for _, name in ipairs(bones) do
+        local idx = GetEntityBoneIndexByName(veh, name)
+        if idx ~= -1 then
+            return GetWorldPositionOfEntityBone(veh, idx)
+        end
+    end
+    local c = GetEntityCoords(veh)
+    local fwd = GetEntityForwardVector(veh)
+    return vector3(c.x - fwd.x * 2.35, c.y - fwd.y * 2.35, c.z + 0.35)
+end
+
+local function findNearestAttachVehicle(pcoords, maxDist)
+    local best, bestD = 0, maxDist + 1.0
+    for _, veh in ipairs(GetGamePool('CVehicle')) do
+        if DoesEntityExist(veh) and vehicleAllowed(veh) then
+            local rear = getVehicleRearPos(veh)
+            if rear then
+                local d = #(pcoords - rear)
+                if d <= maxDist and d < bestD then
+                    bestD = d
+                    best = veh
+                end
+            end
+        end
+    end
+    return best
+end
+
+local function drawChainRope(fromPos, toPos)
+    local col = Config.Atm.ChainRopeColor or { r = 180, g = 180, b = 190, a = 220 }
+    DrawLine(fromPos.x, fromPos.y, fromPos.z, toPos.x, toPos.y, toPos.z, col.r, col.g, col.b, col.a)
+    DrawMarker(28, toPos.x, toPos.y, toPos.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.18, 0.18, 0.18, col.r, col.g, col.b, 160, false, false, 2, false, false, false, false)
 end
 
 RegisterNetEvent('fivempro_hacking:client:hackSuccess', function(tierId, coords, ctx)
@@ -44,12 +100,14 @@ end)
 RegisterNetEvent('fivempro_hacking:client:atmDrillOk', function(coords)
     if not session then return end
     session.phase = 'drilled'
-    QBCore.Functions.Notify('Pritvirtink grandinę (tow_chain).', 'primary')
+    chainAnchor = getAtmAnchorPos()
+    QBCore.Functions.Notify('Prieik prie automobilio galo ir spausk ALT (grandinė).', 'primary')
 end)
 
 RegisterNetEvent('fivempro_hacking:client:atmChainOk', function(coords)
     if not session then return end
     session.phase = 'chained'
+    clearChainVisual()
     QBCore.Functions.Notify('Sėsk į stiprią mašiną ir tempk ATM (vairuok ~50m).', 'primary')
     spawnPulledAtm()
 end)
@@ -58,6 +116,7 @@ RegisterNetEvent('fivempro_hacking:client:atmGoCrack', function(dropIndex)
     if not session then return end
     session.phase = 'crack'
     session.dropIndex = dropIndex
+    clearChainVisual()
     local drop = Config.Atm.Dropoffs[dropIndex]
     if drop then
         clearDropBlip()
@@ -83,10 +142,24 @@ function spawnPulledAtm()
     local model = joaat(Config.Atm.AttachedModel or 'prop_atm_01')
     RequestModel(model)
     while not HasModelLoaded(model) do Wait(10) end
-    local vc = GetEntityCoords(veh)
-    atmProp = CreateObject(model, vc.x, vc.y, vc.z - 1.0, true, true, false)
-    AttachEntityToEntity(atmProp, veh, GetEntityBoneIndexByName(veh, 'boot'), 0.0, -1.8, 0.4, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+    local rear = getVehicleRearPos(veh)
+    if not rear then return end
+    atmProp = CreateObject(model, rear.x, rear.y, rear.z - 0.35, true, true, false)
+    AttachEntityToEntity(atmProp, veh, GetEntityBoneIndexByName(veh, 'boot'), 0.0, -1.85, 0.35, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
     session.pullStart = GetEntityCoords(veh)
+end
+
+local function tryAttachChain()
+    if not session or session.phase ~= 'drilled' then return end
+    local ped = PlayerPedId()
+    local pcoords = GetEntityCoords(ped)
+    local maxD = Config.Atm.ChainAttachMaxDist or 4.2
+    local veh = findNearestAttachVehicle(pcoords, maxD)
+    if veh == 0 then
+        return QBCore.Functions.Notify('Per arti automobilio galo — reikia grandinės (tow_chain).', 'error')
+    end
+    chainVehicle = veh
+    TriggerServerEvent('fivempro_hacking:server:atmChainDone', session.coords)
 end
 
 local function startAtmSession(entity)
@@ -119,22 +192,6 @@ local function doDrill()
     end
 end
 
-local function doChain()
-    if not session or session.phase ~= 'drilled' then return end
-    local mg = (Config.RobberyMinigames or {}).chain
-    local anim = (Config.RobberyAnims or {}).chain
-    local ok = exports['fivempro_hacking']:RunPhysicalMinigame(mg.mode, {
-        label = mg.label,
-        anim = anim,
-        data = mg.data or {},
-    })
-    if ok then
-        TriggerServerEvent('fivempro_hacking:server:atmChainDone', session.coords)
-    else
-        QBCore.Functions.Notify('Grandinės tvirtinimas nepavyko.', 'error')
-    end
-end
-
 local function tryPullComplete()
     if not session or session.phase ~= 'chained' or not session.pullStart then return end
     local ped = PlayerPedId()
@@ -161,6 +218,36 @@ CreateThread(function()
             Wait(500)
         else
             Wait(1200)
+        end
+    end
+end)
+
+CreateThread(function()
+    local attachKey = Config.Atm.ChainAttachControl or 19
+    while true do
+        if session and session.phase == 'drilled' then
+            local ped = PlayerPedId()
+            local pcoords = GetEntityCoords(ped)
+            local anchor = chainAnchor or getAtmAnchorPos()
+            local maxD = Config.Atm.ChainAttachMaxDist or 4.2
+            local veh = findNearestAttachVehicle(pcoords, maxD)
+            local rear = veh ~= 0 and getVehicleRearPos(veh) or nil
+
+            if anchor and rear then
+                drawChainRope(anchor, rear)
+                BeginTextCommandDisplayHelp('STRING')
+                AddTextComponentSubstringPlayerName('~INPUT_CHARACTER_WHEEL~ (ALT) — prikabinti grandinę prie automobilio')
+                EndTextCommandDisplayHelp(0, false, true, -1)
+            elseif anchor then
+                drawChainRope(anchor, pcoords + vector3(0.0, 0.0, 0.4))
+            end
+
+            if IsControlJustPressed(0, attachKey) then
+                tryAttachChain()
+            end
+            Wait(0)
+        else
+            Wait(400)
         end
     end
 end)
@@ -199,12 +286,6 @@ CreateThread(function()
                 label = 'Gręžti ATM',
                 canInteract = function() return session and session.phase == 'hacked' end,
                 action = function() doDrill() end,
-            },
-            {
-                icon = 'fas fa-link',
-                label = 'Pritvirtinti grandinę',
-                canInteract = function() return session and session.phase == 'drilled' end,
-                action = function() doChain() end,
             },
         },
         distance = 1.8,

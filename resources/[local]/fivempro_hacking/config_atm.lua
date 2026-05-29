@@ -13,6 +13,11 @@ Config.Atm.PullMinDistance = 45.0
 Config.Atm.PullMaxSpeedKmh = 12.0
 Config.Atm.AttachedModel = 'prop_atm_01'
 
+--- Grandinė: linija nuo bankomato, ALT prie automobilio galo
+Config.Atm.ChainAttachControl = 19
+Config.Atm.ChainAttachMaxDist = 4.2
+Config.Atm.ChainRopeColor = { r = 180, g = 180, b = 190, a = 220 }
+
 --- Laužimas saugioje vietoje
 Config.Atm.CrackSteps = 4
 Config.Atm.CrackTimeMs = 16000

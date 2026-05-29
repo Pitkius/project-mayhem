@@ -122,9 +122,11 @@ local function buildHackProfile(tierId, ctx)
     local tier = Config.RobberyTiers[tierId]
     local base = Config.HackProfiles[tier.hackProfile] or { steps = 5, timeMs = 12000, grid = 4 }
     local profile = {
+        mode = base.mode or 'sequence',
         steps = base.steps,
         timeMs = base.timeMs,
         grid = base.grid,
+        flashMs = base.flashMs or 380,
         profileId = tier.hackProfile,
     }
     if ctx and ctx.exploits then

@@ -135,14 +135,14 @@ Config.RobberyTiers = {
     },
 }
 
---- Hack profiliai (NUI minigame)
+--- Hack profiliai (NUI minigame) — kiekvienas tier skirtingas `mode`
 Config.HackProfiles = {
-    atm_security = { steps = 5, timeMs = 14000, grid = 4 },
-    store_register = { steps = 6, timeMs = 12000, grid = 4 },
-    fleeca_vault = { steps = 7, timeMs = 11000, grid = 5 },
-    pacific_vault = { steps = 8, timeMs = 10000, grid = 5 },
-    casino_network = { steps = 9, timeMs = 9500, grid = 5 },
-    federal_core = { steps = 10, timeMs = 9000, grid = 6 },
+    atm_security = { mode = 'sequence', steps = 5, timeMs = 14000, grid = 4, flashMs = 400 },
+    store_register = { mode = 'reverse', steps = 5, timeMs = 13000, grid = 4, flashMs = 380 },
+    fleeca_vault = { mode = 'sequence', steps = 5, timeMs = 15000, grid = 4, flashMs = 460 },
+    pacific_vault = { mode = 'pairs', steps = 6, timeMs = 12000, grid = 5, flashMs = 340 },
+    casino_network = { mode = 'sequence', steps = 6, timeMs = 11000, grid = 5, flashMs = 340 },
+    federal_core = { mode = 'code', steps = 7, timeMs = 10000, grid = 5, flashMs = 320 },
 }
 
 --- Black market (qb-target)

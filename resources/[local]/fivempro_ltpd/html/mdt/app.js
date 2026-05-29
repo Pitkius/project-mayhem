@@ -14,9 +14,9 @@ function nuiImageUrl(pathFromHtml) {
 }
 
 const MAP_SAT_URL = nuiImageUrl('mdt/asset/gtav_satellite.jpg');
-const MAP_MIN_SCALE = 0.45;
+const MAP_MIN_SCALE = 0.85;
 const MAP_MAX_SCALE = 4.0;
-const MAP_FIT_PAD = 0.98;
+const MAP_FIT_PAD = 1.0;
 
 function resourceName() {
   try {
@@ -321,6 +321,12 @@ function ensureDispatchMapDom() {
   const surface = document.createElement('div');
   surface.id = 'dispatchMapSurface';
   surface.className = 'dispatch-map-surface';
+  if (MAP_SAT_URL) {
+    surface.style.backgroundImage = `url("${MAP_SAT_URL}")`;
+    surface.style.backgroundSize = '100% 100%';
+    surface.style.backgroundRepeat = 'no-repeat';
+    surface.style.backgroundPosition = 'center center';
+  }
 
   if (inner) inner.remove();
   if (!markers) {
@@ -386,7 +392,7 @@ function fitDispatchMapInView() {
   const sw = Math.max(1, surface.offsetWidth);
   const sh = Math.max(1, surface.offsetHeight);
   const fitScale = Math.min(cw / sw, ch / sh) * MAP_FIT_PAD;
-  dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, fitScale));
+  dispatchMapPan.scale = Math.max(1.0, Math.min(MAP_MAX_SCALE, fitScale));
   dispatchMapPan.x = 0;
   dispatchMapPan.y = 0;
   applyDispatchMapTransform();

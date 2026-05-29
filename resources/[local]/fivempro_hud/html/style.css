@@ -584,50 +584,71 @@ body.preset-3 {
     pointer-events: none;
 }
 
-.hud-ico-img {
+.hud-ico-img,
+.hud-ico-svg {
     width: 26px;
     height: 26px;
+    flex-shrink: 0;
     object-fit: contain;
     display: block;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65));
     opacity: 0.95;
 }
 
-.hud-ico-img.hud-ico-tint-fuel {
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65)) saturate(1.15) hue-rotate(-8deg);
+.hud-ico-svg {
+    fill: currentColor;
+    color: #e8eaef;
 }
 
-.hud-ico-img.hud-ico-tint-engine {
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65)) saturate(1.1) hue-rotate(8deg);
+.hud-ico-img.hud-ico-tint-fuel,
+.hud-ico-svg.hud-ico-tint-fuel {
+    color: #fde68a;
 }
 
-.hud-ico-img.hud-ico-sub {
+.hud-ico-img.hud-ico-tint-engine,
+.hud-ico-svg.hud-ico-tint-engine {
+    color: #c4b5fd;
+}
+
+.hud-ico-svg.hud-ico-tint-belt {
+    color: #fca5a5;
+}
+
+.hud-ico-img.hud-ico-sub,
+.hud-ico-svg.hud-ico-sub {
     width: 22px;
     height: 22px;
 }
 
-.hud-ico-img.hud-ico-meter {
+.hud-ico-img.hud-ico-meter,
+.hud-ico-svg.hud-ico-meter {
     width: 20px;
     height: 20px;
 }
 
-.hud-ico-img.hud-ico-q {
+.hud-ico-img.hud-ico-q,
+.hud-ico-svg.hud-ico-q {
     width: 20px;
     height: 20px;
 }
 
-.car-sub-ico.state-off .hud-ico-img {
+.car-sub-ico.state-off .hud-ico-img,
+.car-sub-ico.state-off .hud-ico-svg {
     opacity: 0.32;
 }
 
-.car-sub-ico.state-on .hud-ico-img {
+.car-sub-ico.state-on .hud-ico-img,
+.car-sub-ico.state-on .hud-ico-svg {
     opacity: 1;
 }
 
 .car-sub-ico.state-warn .hud-ico-img,
-.car-sub-belt.belt-off .hud-ico-img {
+.car-sub-ico.state-warn .hud-ico-svg,
+.car-sub-belt.belt-off .hud-ico-img,
+.car-sub-belt.belt-off .hud-ico-svg {
+    color: #fb7185;
     opacity: 1;
-    filter: drop-shadow(0 0 5px rgba(251, 113, 133, 0.55)) saturate(1.25) hue-rotate(-18deg);
+    filter: drop-shadow(0 0 5px rgba(251, 113, 133, 0.55));
 }
 
 .car-mv-pct {
@@ -1300,7 +1321,8 @@ body.preset-3 {
     place-items: center;
 }
 
-.vp-ios-card-ico .hud-ico-img {
+.vp-ios-card-ico .hud-ico-img,
+.vp-ios-card-ico .hud-ico-svg {
     width: 24px;
     height: 24px;
 }
