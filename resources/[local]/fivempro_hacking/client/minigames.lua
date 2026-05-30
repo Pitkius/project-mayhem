@@ -122,10 +122,10 @@ Config.RobberyAnims = Config.RobberyAnims or {
 Config.RobberyMinigames = Config.RobberyMinigames or {
     card = { mode = 'sequence', label = 'Perbrauk kortelę — rodyklės', data = { length = 4 } },
     thermite = { mode = 'hold', label = 'Laikyk SPACE termito zonoje', data = { holdMs = 2800 } },
-    drill = { mode = 'timing', label = 'Gręžimas — SPACE žalioje zonoje', data = { rounds = 3 } },
+    drill = { mode = 'drill', label = 'Seifo gręžimas — kontroliuok gylį ir karštį', data = { depthTarget = 100 } },
     loot = { mode = 'mash', label = 'Grabink pinigus — spam SPACE (GTA Online)', data = { target = 22, timeMs = 9000 } },
     chain = { mode = 'sequence', label = 'Pritvirtink grandinę — rodyklės', data = { length = 5 } },
-    atm_drill = { mode = 'timing', label = 'Gręžiamas bankomatas', data = { rounds = 4 } },
+    atm_drill = { mode = 'drill', label = 'ATM gręžimas', data = { depthTarget = 100 } },
 }
 
 exports('RunPhysicalMinigame', RunPhysicalMinigame)

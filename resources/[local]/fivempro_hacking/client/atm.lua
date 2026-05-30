@@ -123,7 +123,9 @@ RegisterNetEvent('fivempro_hacking:client:atmChainOk', function(coords)
     session.phase = 'chained'
     clearChainVisual()
     QBCore.Functions.Notify('Sėsk į stiprią mašiną ir tempk ATM (vairuok ~50m).', 'primary')
-    spawnPulledAtm()
+    if not spawnPulledAtm() then
+        session.pendingAtmSpawn = true
+    end
 end)
 
 RegisterNetEvent('fivempro_hacking:client:atmGoCrack', function(dropIndex)
@@ -148,19 +150,39 @@ RegisterNetEvent('fivempro_hacking:client:atmFinished', function()
     resetSession()
 end)
 
+local function getVehicleAttachBone(veh)
+    if not veh or veh == 0 then return -1, nil end
+    local bones = { 'boot', 'bumper_r', 'chassis', 'bodyshell' }
+    for _, name in ipairs(bones) do
+        local idx = GetEntityBoneIndexByName(veh, name)
+        if idx ~= -1 then return idx, name end
+    end
+    return -1, nil
+end
+
 function spawnPulledAtm()
     clearAtmProp()
     local ped = PlayerPedId()
-    local veh = GetVehiclePedIsIn(ped, false)
-    if veh == 0 then return end
+    local veh = chainVehicle
+    if (not veh or veh == 0 or not DoesEntityExist(veh)) and session then
+        veh = session.chainVehicle
+    end
+    if (not veh or veh == 0) then
+        veh = GetVehiclePedIsIn(ped, false)
+    end
+    if veh == 0 or not DoesEntityExist(veh) then return false end
     local model = joaat(Config.Atm.AttachedModel or 'prop_atm_01')
     RequestModel(model)
     while not HasModelLoaded(model) do Wait(10) end
     local rear = getVehicleRearPos(veh)
-    if not rear then return end
+    if not rear then return false end
+    local boneIdx, boneName = getVehicleAttachBone(veh)
+    if boneIdx == -1 then boneIdx = 0 end
     atmProp = CreateObject(model, rear.x, rear.y, rear.z - 0.35, true, true, false)
-    AttachEntityToEntity(atmProp, veh, GetEntityBoneIndexByName(veh, 'boot'), 0.0, -1.85, 0.35, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+    AttachEntityToEntity(atmProp, veh, boneIdx, 0.0, -1.85, 0.35, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+    session.chainVehicle = veh
     session.pullStart = GetEntityCoords(veh)
+    return true
 end
 
 local function tryAttachChain()
@@ -170,9 +192,25 @@ local function tryAttachChain()
     local maxD = Config.Atm.ChainAttachMaxDist or 4.2
     local veh = findNearestAttachVehicle(pcoords, maxD)
     if veh == 0 then
-        return QBCore.Functions.Notify('Per arti automobilio galo — reikia grandinės (tow_chain).', 'error')
+        return QBCore.Functions.Notify('Nėra tinkamo automobilio šalia galo — priartėk su SUV/pickup.', 'error')
+    end
+    local rear = getVehicleRearPos(veh)
+    if not rear or #(pcoords - rear) > maxD then
+        return QBCore.Functions.Notify('Eik arčiau automobilio galinės dalies.', 'error')
     end
     chainVehicle = veh
+    session.chainVehicle = veh
+
+    local mg = (Config.RobberyMinigames or {}).chain
+    local anim = (Config.RobberyAnims or {}).chain
+    local ok = exports['fivempro_hacking']:RunPhysicalMinigame(mg.mode, {
+        label = mg.label,
+        anim = anim,
+        data = mg.data or {},
+    })
+    if not ok then
+        return QBCore.Functions.Notify('Grandinės tvirtinimas atšauktas.', 'error')
+    end
     TriggerServerEvent('fivempro_hacking:server:atmChainDone', session.coords)
 end
 
@@ -224,6 +262,25 @@ local function startCrackHack()
         TriggerServerEvent('fivempro_hacking:server:atmCrackResult', ok, not ok, session.dropIndex)
     end)
 end
+
+CreateThread(function()
+    while true do
+        if session and session.phase == 'chained' and session.pendingAtmSpawn then
+            local ped = PlayerPedId()
+            local veh = GetVehiclePedIsIn(ped, false)
+            if veh ~= 0 and vehicleAllowed(veh) then
+                session.chainVehicle = veh
+                if spawnPulledAtm() then
+                    session.pendingAtmSpawn = nil
+                    QBCore.Functions.Notify('ATM prikabintas prie automobilio — tempk!', 'success')
+                end
+            end
+            Wait(500)
+        else
+            Wait(800)
+        end
+    end
+end)
 
 CreateThread(function()
     while true do

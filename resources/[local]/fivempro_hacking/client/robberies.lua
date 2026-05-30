@@ -3,6 +3,9 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local session = nil
 
 local function resetSession()
+    if session and exports['fivempro_hacking']:IsCasinoHeist(session.tierId) then
+        exports['fivempro_hacking']:CleanupCasinoHeist()
+    end
     if session then
         TriggerServerEvent('fivempro_hacking:server:robberyRelease', session.tierId, session.locId)
     end
@@ -13,19 +16,10 @@ local function flowFor(tierId)
     return (Config.Robberies.Flow or {})[tierId] or {}
 end
 
-local function phaseIndex(phase)
+local function nextPhase()
     if not session then return nil end
-    for i, p in ipairs(session.flow) do
-        if p == phase then return i end
-    end
-    return nil
-end
-
-local function nextPhase(afterPhase)
-    if not session then return nil end
-    local idx = phaseIndex(afterPhase)
-    if not idx then return nil end
-    return session.flow[idx + 1]
+    session.flowIndex = (session.flowIndex or 1) + 1
+    return session.flow[session.flowIndex]
 end
 
 local function failRobbery(msg)
@@ -44,6 +38,12 @@ local function runPhysicalPhase(phase)
         data = mg.data or {},
     })
     return ok
+end
+
+local function bumpCasinoLootIndex()
+    if not session or not exports['fivempro_hacking']:IsCasinoHeist(session.tierId) then return nil end
+    session.casinoLootIndex = (session.casinoLootIndex or 0) + 1
+    return session.casinoLootIndex
 end
 
 local function runHackPhase()
@@ -76,8 +76,29 @@ local function runPhase(phase)
         return runHackPhase()
     end
 
+    local isCasino = exports['fivempro_hacking']:IsCasinoHeist(session.tierId)
+    local lootIdx = nil
+
+    if isCasino and phase ~= 'hack' then
+        lootIdx = (phase == 'loot') and bumpCasinoLootIndex() or nil
+        if not exports['fivempro_hacking']:WaitAtCasinoPhase(phase, lootIdx) then
+            return failRobbery('Nepavyko pasiekti tikslo.')
+        end
+        local def = exports['fivempro_hacking']:GetCasinoPhaseDef(phase, lootIdx)
+        if def and def.coords then
+            session.coords = def.coords
+        end
+    end
+
     if phase == 'card' or phase == 'thermite' or phase == 'drill' or phase == 'loot' then
-        local ok = runPhysicalPhase(phase)
+        local ok
+        if isCasino and phase == 'loot' then
+            ok = exports['fivempro_hacking']:RunCasinoTrolleyLoot(session.coords, lootIdx or 1)
+        elseif isCasino then
+            ok = exports['fivempro_hacking']:RunCasinoPhysical(phase)
+        else
+            ok = runPhysicalPhase(phase)
+        end
         if not session then return end
         if ok then
             TriggerServerEvent('fivempro_hacking:server:robberyPhaseDone', session.tierId, session.locId, phase)
@@ -102,11 +123,16 @@ local function startRobbery(tierId, loc)
             label = loc.label,
             coords = loc.coords,
             flow = res.flow or flowFor(tierId),
+            flowIndex = 1,
             phase = nil,
+            casinoLootIndex = 0,
         }
         TriggerServerEvent('fivempro_hacking:server:robberyClaim', tierId, loc.id)
         QBCore.Functions.Notify(('Pradedamas: %s'):format(loc.label), 'primary')
-        runPhase(session.flow[1])
+        if exports['fivempro_hacking']:IsCasinoHeist(tierId) then
+            exports['fivempro_hacking']:CasinoHeistIntro()
+        end
+        runPhase(session.flow[session.flowIndex])
     end, tierId, loc.id)
 end
 
@@ -117,8 +143,11 @@ RegisterNetEvent('fivempro_hacking:client:robberyNextPhase', function(tierId, lo
         playBankDoorOpen(session.coords)
     elseif completedPhase == 'drill' and bankTiers[tierId] then
         playVaultGateOpen(session.coords)
+    elseif exports['fivempro_hacking']:IsCasinoHeist(tierId) then
+        local lootIdx = (completedPhase == 'loot') and session.casinoLootIndex or nil
+        exports['fivempro_hacking']:OnCasinoPhaseComplete(completedPhase, lootIdx, session.coords)
     end
-    local nxt = nextPhase(completedPhase)
+    local nxt = nextPhase()
     if not nxt then
         resetSession()
         return
@@ -138,9 +167,15 @@ local tierLabels = {
     store = 'Apiplėšti kasą',
     bank_fleeca = 'Fleeca vault hack',
     bank_main = 'Pacific vault',
-    casino = 'Kazino hack',
+    casino = 'Diamond Casino Heist',
     vault = 'Federal vault',
 }
+
+function IsRobberySessionActive()
+    return session ~= nil
+end
+
+exports('IsRobberySessionActive', IsRobberySessionActive)
 
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do Wait(500) end

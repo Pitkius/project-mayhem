@@ -174,6 +174,7 @@ RegisterNetEvent('fivempro_gangs:client:refreshTablet', function()
         SendNUIMessage({
             action = 'open',
             payload = {
+                keepTab = true,
                 hasGang = res.hasGang,
                 gang = res.gang or nil,
                 members = res.members or {},

@@ -132,7 +132,7 @@ RegisterNUICallback('getArrestHistory', function(data, cb)
 end)
 
 RegisterNUICallback('dispatchSnapshot', function(_, cb)
-    QBCore.Functions.TriggerCallback('fivempro_dispatch:server:getSnapshot', function(result)
+    QBCore.Functions.TriggerCallback('fivempro_dispatch:server:getMdtSnapshot', function(result)
         cb(result or { ok = false, calls = {}, crews = {}, units = {} })
     end, 'police')
 end)

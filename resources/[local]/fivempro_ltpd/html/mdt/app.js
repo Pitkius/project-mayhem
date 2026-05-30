@@ -63,6 +63,13 @@ window.addEventListener('message', (e) => {
       document.getElementById('fineLabel').value = opt.dataset.label || '';
     };
     if (sel.options.length) sel.onchange();
+    ensureDispatchMapDom();
+    watchDispatchMapResize();
+    requestAnimationFrame(() => {
+      layoutDispatchMapCanvas();
+      fitDispatchMapInView();
+      dispatchMapLayoutReady = true;
+    });
     startDispatchPoll();
   }
   if (d.action === 'close') {
@@ -392,7 +399,7 @@ function fitDispatchMapInView() {
   const sw = Math.max(1, surface.offsetWidth);
   const sh = Math.max(1, surface.offsetHeight);
   const fitScale = Math.min(cw / sw, ch / sh) * MAP_FIT_PAD;
-  dispatchMapPan.scale = Math.min(MAP_MAX_SCALE, Math.min(1, fitScale));
+  dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, Math.min(1, fitScale)));
   dispatchMapPan.x = 0;
   dispatchMapPan.y = 0;
   applyDispatchMapTransform();
@@ -462,7 +469,6 @@ function bindDispatchMapInteract() {
 }
 
 function renderDispatchMap(calls, units) {
-  if (document.getElementById('panel-units')?.classList.contains('hidden')) return;
   ensureDispatchMapDom();
   watchDispatchMapResize();
   layoutDispatchMapCanvas();
@@ -470,13 +476,17 @@ function renderDispatchMap(calls, units) {
   if (!markers) return;
   markers.innerHTML = '';
   bindDispatchMapInteract();
-  if (!dispatchMapLayoutReady) {
-    dispatchMapLayoutReady = true;
-    requestAnimationFrame(() => fitDispatchMapInView());
+  const panelVisible = !document.getElementById('panel-units')?.classList.contains('hidden');
+  if (!dispatchMapLayoutReady || !panelVisible) {
+    if (panelVisible) {
+      dispatchMapLayoutReady = true;
+      requestAnimationFrame(() => fitDispatchMapInView());
+    }
   } else {
     clampDispatchMapPan();
     applyDispatchMapTransform();
   }
+  if (!panelVisible) return;
   units.forEach((u) => {
     const p = worldToMap(u.x, u.y);
     const d = document.createElement('div');
@@ -524,7 +534,11 @@ function renderDispatch(res) {
   crewsEl.innerHTML = '';
   unitsEl.innerHTML = '';
 
-  const calls = (res && res.calls) || [];
+  if (res && res.readOnly) {
+    callsEl.innerHTML = '<div class="muted">Off duty — žemėlapis rodomas. Eik on duty, kad matytum vienetus ir valdytum dispatch.</div>';
+  }
+
+  const calls = (res && res.ok !== false && res.calls) || (res && res.calls) || [];
   const crews = (res && res.crews) || [];
   const units = (res && res.units) || [];
 

@@ -10,7 +10,7 @@
   <div id="tablet" class="panel hidden">
     <header class="head">
       <h1>Hack<span>OS</span></h1>
-      <button type="button" id="btnClose" class="btn">√ó</button>
+      <button type="button" id="btnClose" class="btn">◊</button>
     </header>
     <nav class="tabs">
       <button type="button" data-tab="sys" class="tab active">System</button>
@@ -23,7 +23,7 @@
         <div id="sysInfo" class="card"></div>
       </section>
       <section id="tab-storage" class="tab-panel hidden">
-        <p class="muted">Pasirink flashdrive su payload ir ?diek OS ar exploit ? planöet?.</p>
+        <p class="muted">Pasirink flashdrive su payload ir ?diek OS ar exploit ? planùet?.</p>
         <div id="driveList" class="list"></div>
         <div id="storageInfo" class="card"></div>
       </section>
@@ -40,6 +40,10 @@
     <div class="hack-head">INTRUSION <span id="hackTimer">0.0s</span></div>
     <p id="hackHint" class="muted">Spausk langelius teisinga tvarka</p>
     <div id="hackGrid" class="hack-grid"></div>
+    <div id="hackWire" class="hack-wire hidden">
+      <svg id="hackWireSvg" class="hack-wire-svg" viewBox="0 0 100 100"></svg>
+      <div id="hackWireNodes" class="hack-wire-nodes"></div>
+    </div>
     <button type="button" id="hackCancel" class="btn danger">Abort</button>
   </div>
 
@@ -49,7 +53,7 @@
     <p id="physicalHint" class="muted"></p>
     <div id="physicalTiming" class="mg hidden">
       <div class="mg-track"><div class="mg-zone" id="mgZone"></div><div class="mg-needle" id="mgNeedle"></div></div>
-      <p class="mg-sub">SPACE ó fiksuoti (<span id="mgRound">1</span>/<span id="mgRounds">3</span>)</p>
+      <p class="mg-sub">SPACE ù fiksuoti (<span id="mgRound">1</span>/<span id="mgRounds">3</span>)</p>
     </div>
     <div id="physicalSequence" class="mg hidden">
       <div class="mg-seq" id="mgSeq">-</div>
@@ -63,7 +67,28 @@
       <div class="mg-mash-bar"><div id="mgMashFill"></div></div>
       <p class="mg-sub">Spam SPACE (<span id="mgMashCount">0</span>/<span id="mgMashTarget">18</span>)</p>
     </div>
-    <button type="button" id="physicalCancel" class="btn danger">Atöaukti</button>
+    <div id="physicalDrill" class="mg hidden">
+      <div class="drill-scene">
+        <div class="drill-vault">
+          <div id="drillDepthFill" class="drill-depth-fill"></div>
+          <div id="drillBit" class="drill-bit"></div>
+        </div>
+      </div>
+      <div class="drill-meters">
+        <div class="drill-meter">
+          <span>Gylis</span>
+          <div class="drill-bar"><div id="drillDepthBar" class="drill-bar-fill"></div></div>
+          <strong id="drillDepthPct">0%</strong>
+        </div>
+        <div class="drill-meter">
+          <span>Karötis</span>
+          <div class="drill-bar drill-bar-heat"><div id="drillHeatBar" class="drill-bar-fill drill-bar-fill-heat"></div></div>
+          <strong id="drillHeatPct">0%</strong>
+        </div>
+      </div>
+      <p class="mg-sub">Laikyk SPACE ó gr?ûk. Atleisk prieö perkaitim? (&gt;90%).</p>
+    </div>
+    <button type="button" id="physicalCancel" class="btn danger">Atùaukti</button>
   </div>
   <script src="app.js"></script>
 </body>

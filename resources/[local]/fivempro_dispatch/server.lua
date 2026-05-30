@@ -224,6 +224,22 @@ QBCore.Functions.CreateCallback('fivempro_dispatch:server:getSnapshot', function
     })
 end)
 
+--- MDT žemėlapis: policijos darbuotojams net ir ne on-duty (tik peržiūra)
+QBCore.Functions.CreateCallback('fivempro_dispatch:server:getMdtSnapshot', function(src, cb, service)
+    service = service or 'police'
+    if jobName(src) ~= 'police' then
+        return cb({ ok = false, msg = 'Ne policijos darbuotojas.' })
+    end
+    cb({
+        ok = true,
+        readOnly = not isServiceMember(src, service),
+        service = service,
+        calls = callsForService(service),
+        crews = crewsForService(service),
+        units = unitBlipsForService(service),
+    })
+end)
+
 RegisterNetEvent('fivempro_dispatch:server:createCrew', function(callsign)
     local src = source
     local service = playerService(src)

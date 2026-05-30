@@ -24,7 +24,7 @@ const SLIDES = [
     desc: 'Salonai, garazai, KMA — tavo mašina, tavo kelias.',
   },
   {
-    image: 'assets/slide_ems.png',
+    image: 'assets/slide_ems.jpg',
     tag: 'EMS',
     title: 'GYVYBĖS IŠGELBĖJIMAS',
     desc: 'Greita medicinos pagalba visame Los Santos.',

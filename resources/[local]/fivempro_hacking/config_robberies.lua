@@ -22,7 +22,7 @@ Config.Robberies.ItemNeeds = {
     store = {},
     bank_fleeca = { drill = 'drill' },
     bank_main = { drill = 'drill' },
-    casino = {},
+    casino = { thermite = 'thermite', drill = 'drill' },
     vault = { card = 'security_card_02', thermite = 'thermite', drill = 'drill' },
 }
 
@@ -43,9 +43,10 @@ Config.Robberies.Loot = {
         goldbar = { chance = 0.45, min = 1, max = 3 },
     },
     casino = {
-        cash = { min = 12000, max = 22000 },
-        casinochips = { min = 15, max = 40 },
-        markedbills = { min = 2, max = 5, worth = 550 },
+        cash = { min = 18000, max = 32000 },
+        casinochips = { min = 25, max = 55 },
+        markedbills = { min = 4, max = 9, worth = 600 },
+        goldbar = { chance = 0.4, min = 1, max = 2 },
     },
     vault = {
         cash = { min = 45000, max = 75000 },
@@ -59,7 +60,7 @@ Config.Robberies.Flow = {
     store = { 'hack', 'loot' },
     bank_fleeca = { 'hack', 'drill', 'loot' },
     bank_main = { 'hack', 'drill', 'loot' },
-    casino = { 'hack', 'loot' },
+    casino = { 'hack', 'thermite', 'drill', 'loot', 'loot', 'loot' },
     vault = { 'card', 'hack', 'thermite', 'drill', 'loot' },
 }
 
@@ -83,7 +84,7 @@ Config.Robberies.Locations = {
         { id = 'pacific_main', label = 'Pacific Standard', coords = vector3(253.25, 228.45, 101.68), radius = 2.0, hackProfile = 'pacific_vault' },
     },
     casino = {
-        { id = 'casino_main', label = 'Diamond Casino — serverinė', coords = vector3(930.45, 46.35, 81.10), radius = 2.0, hackProfile = 'casino_network' },
+        { id = 'casino_main', label = 'Diamond Casino Heist — apsaugos tinklas', coords = vector3(930.45, 46.35, 81.10), radius = 2.0, hackProfile = 'casino_fingerprint' },
     },
     vault = {
         { id = 'vault_federal', label = 'Federal Vault', coords = vector3(257.10, 221.45, 106.28), radius = 2.0, hackProfile = 'federal_core' },
@@ -96,4 +97,24 @@ Config.Robberies.Timings = {
     thermite = 12000,
     drill = 20000,
     loot = 9000,
+}
+
+--- Diamond Casino Heist (GTA Online DLC) — koordinatės kiekvienai fazei
+Config.Robberies.CasinoHeist = {
+    lootSteps = 3,
+    phaseWaitMs = 180000,
+    startNotify = 'Diamond Casino Heist — Silent & Sneaky. Įsilauž į apsaugos tinklą.',
+    transitionNotify = {
+        afterHack = 'Tinklas išjungtas. Eik prie sandėlio vartų — termitas.',
+        afterThermite = 'Vartai atidaryti. Eik į seifą — gręžk užraktą.',
+        afterDrill = 'Seifas atviras. Grabink visus pinigų vežimėlius.',
+    },
+    phases = {
+        hack = { coords = vector3(930.45, 46.35, 81.10), radius = 2.0, label = '1/6 — Serverinė: įsilaužimas į tinklą' },
+        thermite = { coords = vector3(936.98, 28.17, 81.11), radius = 1.8, label = '2/6 — Sandėlio vartai: termitas' },
+        drill = { coords = vector3(967.57, 15.54, 81.11), radius = 1.8, label = '3/6 — Seifas: gręžimas' },
+        loot_1 = { coords = vector3(988.45, 31.22, 81.11), radius = 1.6, heading = 58.0, label = '4/6 — Pinigų vežimėlis (A)' },
+        loot_2 = { coords = vector3(993.12, 36.88, 81.11), radius = 1.6, heading = 145.0, label = '5/6 — Pinigų vežimėlis (B)' },
+        loot_3 = { coords = vector3(998.20, 29.50, 81.11), radius = 1.6, heading = 240.0, label = '6/6 — Pinigų vežimėlis (C)' },
+    },
 }

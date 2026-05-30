@@ -357,10 +357,15 @@ function renderTurfsOnMap(state) {
 
 /** Žemėlapis kuriamas tik kai skiltis matoma (pilnas panel plotis / aukštis). */
 function scheduleRenderMap(state) {
-  destroyTurfMap();
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       if (!lastState || activeTab !== "map") return;
+      const root = document.getElementById("gangsMap");
+      if (!root || root.clientHeight < 48) {
+        setTimeout(() => scheduleRenderMap(state), 100);
+        return;
+      }
+      gangsMapLayoutReady = false;
       renderTurfsOnMap(state || lastState);
     });
   });
@@ -545,7 +550,13 @@ window.addEventListener("message", (e) => {
   if (!d || !d.action) return;
   if (d.action === "open") {
     const payload = d.payload || {};
-    activeTab = payload.hasGang ? "gang" : "register";
+    if (payload.keepTab && activeTab) {
+      /* paliekame esamą skiltį (pvz. žemėlapis po refresh) */
+    } else if (payload.initialTab) {
+      activeTab = payload.initialTab;
+    } else {
+      activeTab = payload.hasGang ? "gang" : "register";
+    }
     setTabletDocked(false, true);
     try {
       render(payload);

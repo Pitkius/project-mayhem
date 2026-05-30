@@ -88,10 +88,6 @@ const carMvMotor = document.getElementById("carMvMotor");
 const carFuelMiniFill = document.getElementById("carFuelMiniFill");
 const carFuelMiniPct = document.getElementById("carFuelMiniPct");
 const carMvFuelMini = document.getElementById("carMvFuelMini");
-const carIcoEngine = document.getElementById("carIcoEngine");
-const carIcoDoors = document.getElementById("carIcoDoors");
-const carIcoLights = document.getElementById("carIcoLights");
-const carIcoBelt = document.getElementById("carIcoBelt");
 const carhudClassic = document.getElementById("carhudClassic");
 const vehiclePanel = document.getElementById("vehiclePanel");
 const vehicleListMenu = document.getElementById("vehicleListMenu");
@@ -123,39 +119,13 @@ const VEHICLE_CLASS_IMAGES = {
   12: "class_van",
 };
 
-function setVehiclePreviewImage(modelSpawn, spawnModel, vehicleClass) {
-  if (!vpVehicleImage) return;
-  const safe = (v) =>
-    String(v || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9_]/g, "");
-  const display = safe(modelSpawn) || "default";
-  const spawn = safe(spawnModel);
-  const classKey = VEHICLE_CLASS_IMAGES[Number(vehicleClass)] || "class_sedan";
-  const candidates = [
-    spawn ? `assets/vehicles/${spawn}.png` : null,
-    display !== spawn ? `assets/vehicles/${display}.png` : null,
-    `assets/vehicles/${classKey}.png`,
-    "assets/vehicles/vehicle-topdown.png",
-    "assets/vehicles/default.svg",
-  ].filter(Boolean);
+function setVehiclePreviewImage(_modelSpawn, _spawnModel, _vehicleClass) {
   const carSvg = document.querySelector(".vp-ios-car-svg");
   if (carSvg) carSvg.classList.remove("vp-ios-car-svg--hidden");
-  let step = 0;
-  vpVehicleImage.classList.remove("vp-vehicle-loaded");
-  vpVehicleImage.onerror = () => {
-    step += 1;
-    if (step < candidates.length) {
-      vpVehicleImage.src = candidates[step];
-      return;
-    }
-    vpVehicleImage.onerror = null;
-  };
-  vpVehicleImage.onload = () => {
-    vpVehicleImage.classList.add("vp-vehicle-loaded");
-    document.querySelector(".vp-ios-car-svg")?.classList.add("vp-ios-car-svg--hidden");
-  };
-  vpVehicleImage.src = candidates[0];
+  if (vpVehicleImage) {
+    vpVehicleImage.classList.remove("vp-vehicle-loaded");
+    vpVehicleImage.style.display = "none";
+  }
 }
 const vpPlateLine = document.getElementById("vpPlateLine");
 const vpHazardToggle = document.getElementById("vpHazardToggle");
@@ -526,33 +496,6 @@ window.addEventListener("message", (event) => {
   const statEngine = document.getElementById("carStatEngine");
   if (statFuel) statFuel.classList.toggle("state-warn", fuelN < 18);
   if (statEngine) statEngine.classList.toggle("state-warn", motorPctHud < 40);
-
-  const engineEl = carIcoEngine || document.getElementById("carIcoEngine");
-  const doorsEl = carIcoDoors || document.getElementById("carIcoDoors");
-  const lightsEl = carIcoLights || document.getElementById("carIcoLights");
-  const beltEl = carIcoBelt || document.getElementById("carIcoBelt");
-
-  if (engineEl) {
-    engineEl.classList.toggle("state-on", !!data.engineOn);
-    engineEl.classList.toggle("state-off", !data.engineOn);
-    engineEl.classList.toggle("state-warn", motorPctHud < 40);
-  }
-  if (doorsEl) {
-    doorsEl.classList.toggle("state-on", !!data.doorsLocked);
-    doorsEl.classList.toggle("state-off", !data.doorsLocked);
-    const doorUse = doorsEl.querySelector("use");
-    if (doorUse) doorUse.setAttribute("href", data.doorsLocked ? "#hud-ico-lock" : "#hud-ico-car-lock");
-    doorsEl.title = data.doorsLocked ? "Užrakinta" : "Atrakinta";
-  }
-  if (lightsEl) {
-    lightsEl.classList.toggle("state-on", !!data.lightsOn);
-    lightsEl.classList.toggle("state-off", !data.lightsOn);
-  }
-  if (beltEl) {
-    beltEl.classList.toggle("state-on", !!data.seatbelt);
-    beltEl.classList.toggle("state-off", !data.seatbelt);
-    beltEl.classList.toggle("state-warn", !data.seatbelt);
-  }
 });
 
 menu.preset.addEventListener("change", () => {

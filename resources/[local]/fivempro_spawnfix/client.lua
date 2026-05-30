@@ -2,8 +2,15 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local loginRequested = false
 
 local function shutdownLoadingScreens()
-    ShutdownLoadingScreen()
-    ShutdownLoadingScreenNui()
+    if GetResourceState('fivempro_loadscreen') == 'started' then
+        TriggerEvent('fivempro_loadscreen:client:close')
+        pcall(function()
+            exports['fivempro_loadscreen']:CloseLoadscreen()
+        end)
+    else
+        ShutdownLoadingScreen()
+        ShutdownLoadingScreenNui()
+    end
 end
 
 local function resolveSpawnCoords(position)
@@ -45,7 +52,6 @@ end
 local function requestLogin()
     if loginRequested then return end
     loginRequested = true
-    shutdownLoadingScreens()
     DoScreenFadeOut(0)
     TriggerServerEvent('fivempro_spawnfix:server:requestLogin')
 end
@@ -82,6 +88,8 @@ RegisterNetEvent('fivempro_spawnfix:client:spawn', function()
     applySavedVitals()
     TriggerEvent('qb-weathersync:client:EnableSync')
     DoScreenFadeIn(500)
+    Wait(600)
+    shutdownLoadingScreens()
 end)
 
 CreateThread(function()

@@ -2,7 +2,10 @@
 -- New method for checking if logged in across all scripts (optional)
 -- if LocalPlayer.state['isLoggedIn'] then
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    ShutdownLoadingScreenNui()
+    -- Loadscreen uždaro fivempro_loadscreen po spawn (spawnfix), ne čia per anksti
+    if GetResourceState('fivempro_loadscreen') ~= 'started' then
+        ShutdownLoadingScreenNui()
+    end
     LocalPlayer.state:set('isLoggedIn', true, false)
     if not QBCore.Config.Server.PVP then return end
     SetCanAttackFriendly(PlayerPedId(), true, false)
