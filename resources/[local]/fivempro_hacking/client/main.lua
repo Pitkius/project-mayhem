@@ -76,6 +76,7 @@ function StartHackMinigame(tierId, coords, onDone, locId)
         end
         hackCb = onDone
         exports['fivempro_hacking']:PlayRobberyAnim((Config.RobberyAnims or {}).hack)
+        PlaySoundFrontend(-1, 'Background', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS', true)
         SetNuiFocus(true, true)
         SendNUIMessage({ action = 'hackOpen', profile = res.profile, tierId = tierId })
     end, tierId, locId)

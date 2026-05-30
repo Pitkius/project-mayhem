@@ -62,8 +62,8 @@ local function giveLootSlice(src, tierId, step, total, finalSlice)
     if loot.markedbills then
         local count = scaleAmount(loot.markedbills.min, loot.markedbills.max, step, total)
         local worth = loot.markedbills.worth or 400
-        for _ = 1, count do
-            Player.Functions.AddItem('markedbills', 1, false, { worth = worth })
+        if count > 0 then
+            Player.Functions.AddItem('markedbills', count, false, { worth = worth })
         end
     end
     if loot.casinochips then
@@ -134,6 +134,26 @@ QBCore.Functions.CreateCallback('fivempro_hacking:server:robberyCanStart', funct
         return cb({ ok = false, msg = 'Kažkas jau apiplėšinėja šią vietą.' })
     end
     cb({ ok = true, flow = (Config.Robberies.Flow or {})[tierId] or {} })
+end)
+
+local function hasRobberyItems(Player, tierId)
+    local needs = (Config.Robberies.ItemNeeds or {})[tierId] or {}
+    for _, itemName in pairs(needs) do
+        if type(itemName) == 'string' and itemName ~= '' then
+            if not Player.Functions.GetItemByName(itemName) then
+                return false
+            end
+        end
+    end
+    return true
+end
+
+QBCore.Functions.CreateCallback('fivempro_hacking:server:robberyCanInteract', function(src, cb, tierId)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb(false) end
+    local ok = exports['fivempro_hacking']:CanAccessRobbery(src, tierId)
+    if not ok then return cb(false) end
+    cb(hasRobberyItems(Player, tierId))
 end)
 
 RegisterNetEvent('fivempro_hacking:server:robberyClaim', function(tierId, locId)

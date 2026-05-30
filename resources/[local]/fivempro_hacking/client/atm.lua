@@ -6,6 +6,12 @@ local dropBlip = nil
 local chainAnchor = nil ---@type vector3|nil
 local chainVehicle = nil
 
+local function hasHackTablet()
+    return QBCore.Functions.HasItem('basic_tablet', 1)
+        or QBCore.Functions.HasItem('advanced_tablet', 1)
+        or QBCore.Functions.HasItem('military_tablet', 1)
+end
+
 local function clearDropBlip()
     if dropBlip and DoesBlipExist(dropBlip) then RemoveBlip(dropBlip) end
     dropBlip = nil
@@ -349,13 +355,19 @@ CreateThread(function()
             {
                 icon = 'fas fa-laptop-code',
                 label = 'ATM hack',
-                canInteract = function() return not session end,
+                canInteract = function()
+                    if session then return false end
+                    return hasHackTablet()
+                end,
                 action = function(entity) startAtmSession(entity) end,
             },
             {
                 icon = 'fas fa-screwdriver',
                 label = 'Gręžti ATM',
-                canInteract = function() return session and session.phase == 'hacked' end,
+                canInteract = function()
+                    if not session or session.phase ~= 'hacked' then return false end
+                    return QBCore.Functions.HasItem(Config.DrillItem or 'drill', 1)
+                end,
                 action = function() doDrill() end,
             },
         },

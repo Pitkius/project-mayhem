@@ -152,7 +152,7 @@ Config.HackProfiles = {
     fleeca_route68 = { mode = 'wire', steps = 6, timeMs = 13500, flashMs = 400 },
     pacific_vault = { mode = 'wire', steps = 7, timeMs = 13000, flashMs = 380 },
     casino_network = { mode = 'sequence', steps = 6, timeMs = 11000, grid = 5, flashMs = 340 },
-    casino_fingerprint = { mode = 'pairs', steps = 6, timeMs = 14000, grid = 5, flashMs = 420 },
+    casino_fingerprint = { mode = 'trace', steps = 5, timeMs = 18000, traceSpeed = 0.0042, traceWidth = 0.09 },
     federal_core = { mode = 'code', steps = 7, timeMs = 10000, grid = 5, flashMs = 320 },
 }
 

@@ -112,8 +112,8 @@ RegisterNetEvent('fivempro_hacking:server:atmCrackResult', function(success, wro
     end
 
     Player.Functions.AddMoney('cash', cash, 'atm-robbery')
-    for _ = 1, bills do
-        Player.Functions.AddItem('markedbills', 1, false, { worth = worth })
+    if bills > 0 then
+        Player.Functions.AddItem('markedbills', bills, false, { worth = worth })
     end
     if math.random() < 0.12 then
         Player.Functions.AddItem('rolex', 1)

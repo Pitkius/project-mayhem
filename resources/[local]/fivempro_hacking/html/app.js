@@ -4,12 +4,16 @@ const hackGrid = document.getElementById("hackGrid");
 const hackWire = document.getElementById("hackWire");
 const hackWireSvg = document.getElementById("hackWireSvg");
 const hackWireNodes = document.getElementById("hackWireNodes");
+const hackTrace = document.getElementById("hackTrace");
+const hackTraceCanvas = document.getElementById("hackTraceCanvas");
 const hackTimer = document.getElementById("hackTimer");
 let tabletData = null;
 let selectedDriveSlot = null;
 let highlightDriveSlot = null;
 let hackState = null;
 let hackInterval = null;
+let hackGameInterval = null;
+let onTraceKey = null;
 
 function res() {
   try {
@@ -187,6 +191,12 @@ async function installFromSlot(slot) {
 function stopHackTimer() {
   if (hackInterval) clearInterval(hackInterval);
   hackInterval = null;
+  if (hackGameInterval) clearInterval(hackGameInterval);
+  hackGameInterval = null;
+  if (onTraceKey) {
+    window.removeEventListener("keydown", onTraceKey);
+    onTraceKey = null;
+  }
 }
 
 function sleep(ms) {
@@ -329,6 +339,96 @@ async function startWireHack(profile, tierId) {
   beginHackInput(hackState, totalMs);
 }
 
+function buildTracePath(steps) {
+  const pts = [];
+  const w = 360;
+  const h = 220;
+  let x = 30;
+  let y = h / 2;
+  for (let i = 0; i < steps * 8; i++) {
+    x += (w - 60) / (steps * 8);
+    y = h / 2 + Math.sin(i * 0.55) * (38 + Math.random() * 22);
+    pts.push({ x, y });
+  }
+  return pts;
+}
+
+function drawTracePath(ctx, pts, progress, width) {
+  if (!ctx || !pts.length) return;
+  ctx.clearRect(0, 0, 360, 220);
+  ctx.strokeStyle = "rgba(34, 211, 238, 0.18)";
+  ctx.lineWidth = 18 + (width || 0.1) * 80;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(34, 211, 238, 0.35)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(34, 197, 94, 0.9)";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  const end = Math.min(pts.length - 1, Math.floor(progress * (pts.length - 1)));
+  for (let i = 1; i <= end; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+}
+
+function startTraceHack(profile, tierId) {
+  const steps = profile.steps || 5;
+  const totalMs = profile.timeMs || 16000;
+  const speed = profile.traceSpeed || 0.004;
+  const width = profile.traceWidth || 0.1;
+  const hintEl = document.getElementById("hackHint");
+  const ctx = hackTraceCanvas?.getContext("2d");
+  const path = buildTracePath(steps);
+  hintEl.textContent = "Sek signalą — A/D koreguok, laikykis linijos";
+  hackState = {
+    mode: "trace",
+    path,
+    progress: 0,
+    offset: 0,
+    speed,
+    width,
+    tierId,
+    failed: false,
+    deadline: Date.now() + totalMs,
+  };
+  drawTracePath(ctx, path, 0, width);
+  beginHackInput(hackState, totalMs);
+  onTraceKey = (e) => {
+    if (!hackState || hackState.mode !== "trace") return;
+    if (e.code === "KeyA" || e.code === "ArrowLeft") {
+      e.preventDefault();
+      hackState.offset -= 0.014;
+    }
+    if (e.code === "KeyD" || e.code === "ArrowRight") {
+      e.preventDefault();
+      hackState.offset += 0.014;
+    }
+    hackState.offset = Math.max(-0.28, Math.min(0.28, hackState.offset));
+  };
+  window.addEventListener("keydown", onTraceKey);
+  hackGameInterval = setInterval(() => {
+    if (!hackState || hackState.mode !== "trace") return;
+    hackState.progress = Math.min(1, hackState.progress + hackState.speed);
+    hackState.offset += (Math.random() - 0.5) * 0.006;
+    drawTracePath(ctx, hackState.path, hackState.progress, hackState.width);
+    const idx = Math.min(hackState.path.length - 1, Math.floor(hackState.progress * (hackState.path.length - 1)));
+    const target = hackState.path[idx];
+    const dot = document.getElementById("hackTraceDot");
+    if (target && dot) {
+      dot.style.left = target.x + hackState.offset * 42 + "px";
+      dot.style.top = target.y + "px";
+    }
+    if (Math.abs(hackState.offset) > hackState.width) return finishHack(false);
+    if (hackState.progress >= 1) finishHack(true);
+  }, 40);
+}
+
 function buildHackGrid(gridN) {
   const cells = gridN * gridN;
   hackGrid.style.gridTemplateColumns = "repeat(" + gridN + ", 1fr)";
@@ -369,10 +469,18 @@ async function startHack(profile, tierId) {
   if (mode === "wire") {
     hackGrid?.classList.add("hidden");
     hackWire?.classList.remove("hidden");
+    hackTrace?.classList.add("hidden");
     return startWireHack(profile, tierId);
+  }
+  if (mode === "trace") {
+    hackGrid?.classList.add("hidden");
+    hackWire?.classList.add("hidden");
+    hackTrace?.classList.remove("hidden");
+    return startTraceHack(profile, tierId);
   }
   hackGrid?.classList.remove("hidden");
   hackWire?.classList.add("hidden");
+  hackTrace?.classList.add("hidden");
 
   const cells = buildHackGrid(gridN);
   const sequence = buildHackSequence(steps, cells);
@@ -509,12 +617,17 @@ const physicalSequence = document.getElementById("physicalSequence");
 const physicalHold = document.getElementById("physicalHold");
 const physicalMash = document.getElementById("physicalMash");
 const physicalDrill = document.getElementById("physicalDrill");
-const drillDepthFill = document.getElementById("drillDepthFill");
-const drillDepthBar = document.getElementById("drillDepthBar");
-const drillHeatBar = document.getElementById("drillHeatBar");
-const drillDepthPct = document.getElementById("drillDepthPct");
-const drillHeatPct = document.getElementById("drillHeatPct");
-const drillBit = document.getElementById("drillBit");
+const drillStageDots = document.getElementById("drillStageDots");
+const drillGreenZone = document.getElementById("drillGreenZone");
+const drillNeedle = document.getElementById("drillNeedle");
+const drillTempVal = document.getElementById("drillTempVal");
+const drillPressVal = document.getElementById("drillPressVal");
+const drillHealthVal = document.getElementById("drillHealthVal");
+const drillDepthVal = document.getElementById("drillDepthVal");
+const drillTempBar = document.getElementById("drillTempBar");
+const drillPressBar = document.getElementById("drillPressBar");
+const drillHealthBar = document.getElementById("drillHealthBar");
+const drillDepthBarPro = document.getElementById("drillDepthBarPro");
 const mgZone = document.getElementById("mgZone");
 const mgNeedle = document.getElementById("mgNeedle");
 const mgRound = document.getElementById("mgRound");
@@ -551,6 +664,7 @@ function finishPhysical(success) {
   const mode = physicalState.mode;
   stopPhysicalLoop();
   physicalState = null;
+  physicalPanel.classList.remove("physical-drill-fs");
   physicalPanel.classList.add("hidden");
   post("physicalResult", { success, mode });
 }
@@ -558,7 +672,12 @@ function finishPhysical(success) {
 function onPhysicalKeyUp(e) {
   if (!physicalState) return;
   if (physicalState.mode === "hold" && e.code === "Space") physicalState.holding = false;
-  if (physicalState.mode === "drill" && e.code === "Space") physicalState.holding = false;
+  if (physicalState.mode === "drill" && physicalState.keys) {
+    if (e.code === "KeyW") physicalState.keys.w = false;
+    if (e.code === "KeyS") physicalState.keys.s = false;
+    if (e.code === "KeyA") physicalState.keys.a = false;
+    if (e.code === "KeyD") physicalState.keys.d = false;
+  }
 }
 
 function onPhysicalKey(e) {
@@ -610,49 +729,107 @@ function onPhysicalKey(e) {
     if (physicalState.count >= physicalState.target) finishPhysical(true);
   }
 
-  if (physicalState.mode === "drill" && e.code === "Space") {
-    e.preventDefault();
-    physicalState.holding = true;
+  if (physicalState.mode === "drill") {
+    if (e.code === "KeyW" || e.code === "KeyS" || e.code === "KeyA" || e.code === "KeyD") {
+      e.preventDefault();
+      if (e.code === "KeyW") physicalState.keys.w = true;
+      if (e.code === "KeyS") physicalState.keys.s = true;
+      if (e.code === "KeyA") physicalState.keys.a = true;
+      if (e.code === "KeyD") physicalState.keys.d = true;
+    }
+  }
+}
+
+function renderDrillStageDots(stage, total) {
+  if (!drillStageDots) return;
+  drillStageDots.innerHTML = "";
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement("span");
+    dot.className = "drill-dot" + (i < stage ? " done" : i === stage ? " active" : "");
+    drillStageDots.appendChild(dot);
+  }
+}
+
+function updateDrillUI(st) {
+  if (!st) return;
+  const temp = Math.round(st.temp);
+  const press = Math.round(st.pressure);
+  const health = Math.round(st.health);
+  const depth = Math.round(st.depth);
+  if (drillTempVal) drillTempVal.textContent = temp + "°C";
+  if (drillPressVal) drillPressVal.textContent = press + "%";
+  if (drillHealthVal) drillHealthVal.textContent = health + "%";
+  if (drillDepthVal) drillDepthVal.textContent = depth + "%";
+  if (drillTempBar) drillTempBar.style.width = temp + "%";
+  if (drillPressBar) drillPressBar.style.width = press + "%";
+  if (drillHealthBar) drillHealthBar.style.width = health + "%";
+  if (drillDepthBarPro) drillDepthBarPro.style.width = depth + "%";
+  if (drillNeedle) drillNeedle.style.left = st.align * 100 + "%";
+  if (drillGreenZone) {
+    drillGreenZone.style.width = st.greenW * 100 + "%";
+    drillGreenZone.style.left = (st.greenCenter - st.greenW / 2) * 100 + "%";
   }
 }
 
 function startDrill(data) {
   hidePhysicalPanels();
+  physicalPanel.classList.add("physical-drill-fs");
+  physicalTitle.textContent = "DRILLING";
+  physicalHint.textContent = "";
   physicalDrill.classList.remove("hidden");
+  const stages = data.stages || 5;
   const target = data.depthTarget || 100;
-  if (drillDepthFill) drillDepthFill.style.height = "0%";
-  if (drillDepthBar) drillDepthBar.style.width = "0%";
-  if (drillHeatBar) drillHeatBar.style.width = "0%";
-  if (drillDepthPct) drillDepthPct.textContent = "0%";
-  if (drillHeatPct) drillHeatPct.textContent = "0%";
-  if (drillBit) drillBit.style.transform = "translateY(0)";
+  const greenW = 0.16 + Math.random() * 0.06;
+  const greenCenter = 0.25 + Math.random() * 0.5;
+  renderDrillStageDots(0, stages);
   physicalState = {
     mode: "drill",
     depth: 0,
-    heat: 0,
-    holding: false,
+    temp: 28,
+    pressure: 48,
+    health: 100,
+    power: 48,
+    align: 0.5,
+    greenCenter,
+    greenW,
+    keys: { w: false, s: false, a: false, d: false },
+    stage: 0,
+    stages,
     target,
-    deadline: Date.now() + (data.timeMs || 45000),
+    deadline: Date.now() + (data.timeMs || 55000),
   };
+  updateDrillUI(physicalState);
   physicalTimer = setInterval(() => {
     if (!physicalState || physicalState.mode !== "drill") return;
-    if (Date.now() > physicalState.deadline) return finishPhysical(false);
-    if (physicalState.holding) {
-      physicalState.depth = Math.min(physicalState.target, physicalState.depth + 0.55);
-      physicalState.heat = Math.min(100, physicalState.heat + 1.35);
+    const st = physicalState;
+    if (Date.now() > st.deadline) return finishPhysical(false);
+    if (st.keys.w) st.power = Math.min(100, st.power + 1.8);
+    if (st.keys.s) st.power = Math.max(0, st.power - 2.2);
+    if (st.keys.a) st.align = Math.max(0.02, st.align - 0.028);
+    if (st.keys.d) st.align = Math.min(0.98, st.align + 0.028);
+    st.align += (Math.random() - 0.5) * 0.008;
+    st.pressure = Math.max(0, Math.min(100, st.pressure + (st.power - 52) * 0.04));
+    const inGreen = Math.abs(st.align - st.greenCenter) <= st.greenW / 2;
+    const goodPress = st.pressure >= 38 && st.pressure <= 72;
+    if (inGreen && goodPress) {
+      st.depth = Math.min(st.target, st.depth + 0.38 + st.power * 0.004);
+      st.temp = Math.max(20, st.temp - 0.35);
     } else {
-      physicalState.heat = Math.max(0, physicalState.heat - 0.85);
+      st.temp = Math.min(100, st.temp + (inGreen ? 0.45 : 1.15));
+      if (!inGreen) st.health = Math.max(0, st.health - 0.55);
     }
-    if (physicalState.heat >= 100) return finishPhysical(false);
-    const dp = Math.round(physicalState.depth);
-    const hp = Math.round(physicalState.heat);
-    if (drillDepthFill) drillDepthFill.style.height = dp + "%";
-    if (drillDepthBar) drillDepthBar.style.width = dp + "%";
-    if (drillHeatBar) drillHeatBar.style.width = hp + "%";
-    if (drillDepthPct) drillDepthPct.textContent = dp + "%";
-    if (drillHeatPct) drillHeatPct.textContent = hp + "%";
-    if (drillBit) drillBit.style.transform = "translateY(" + Math.min(72, dp * 0.72) + "px)";
-    if (physicalState.depth >= physicalState.target) finishPhysical(true);
+    if (st.power > 78) st.temp = Math.min(100, st.temp + 0.65);
+    if (st.temp > 88) st.health = Math.max(0, st.health - 0.35);
+    if (st.temp >= 100 || st.health <= 0) return finishPhysical(false);
+    const stageSize = st.target / st.stages;
+    if (st.depth >= stageSize * (st.stage + 1) && st.stage < st.stages - 1) {
+      st.stage += 1;
+      st.greenCenter = 0.2 + Math.random() * 0.6;
+      st.greenW = 0.14 + Math.random() * 0.05;
+      renderDrillStageDots(st.stage, st.stages);
+    }
+    updateDrillUI(st);
+    if (st.depth >= st.target) finishPhysical(true);
   }, 50);
   window.addEventListener("keydown", onPhysicalKey);
   window.addEventListener("keyup", onPhysicalKeyUp);
@@ -750,10 +927,14 @@ function openPhysical(d) {
   tablet.classList.add("hidden");
   hackPanel.classList.add("hidden");
   physicalPanel.classList.remove("hidden");
+  if (d.mode === "drill") {
+    startDrill(d.data || {});
+    return;
+  }
+  physicalPanel.classList.remove("physical-drill-fs");
   physicalTitle.textContent = d.label || "Veiksmas";
   physicalHint.textContent = d.label || "";
   if (d.mode === "timing") startTiming(d.data || {});
-  else if (d.mode === "drill") startDrill(d.data || {});
   else if (d.mode === "sequence") startSequence(d.data || {});
   else if (d.mode === "hold") startHold(d.data || {});
   else if (d.mode === "mash") startMash(d.data || {});
@@ -768,6 +949,7 @@ window.addEventListener("message", (e) => {
 document.getElementById("physicalCancel").onclick = () => {
   stopPhysicalLoop();
   physicalState = null;
+  physicalPanel.classList.remove("physical-drill-fs");
   physicalPanel.classList.add("hidden");
   post("physicalCancel", {});
 };

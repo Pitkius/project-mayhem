@@ -10,7 +10,7 @@
   <div id="tablet" class="panel hidden">
     <header class="head">
       <h1>Hack<span>OS</span></h1>
-      <button type="button" id="btnClose" class="btn">◊</button>
+      <button type="button" id="btnClose" class="btn">ù</button>
     </header>
     <nav class="tabs">
       <button type="button" data-tab="sys" class="tab active">System</button>
@@ -44,6 +44,10 @@
       <svg id="hackWireSvg" class="hack-wire-svg" viewBox="0 0 100 100"></svg>
       <div id="hackWireNodes" class="hack-wire-nodes"></div>
     </div>
+    <div id="hackTrace" class="hack-trace hidden">
+      <canvas id="hackTraceCanvas" width="360" height="220"></canvas>
+      <div id="hackTraceDot" class="hack-trace-dot"></div>
+    </div>
     <button type="button" id="hackCancel" class="btn danger">Abort</button>
   </div>
 
@@ -67,26 +71,52 @@
       <div class="mg-mash-bar"><div id="mgMashFill"></div></div>
       <p class="mg-sub">Spam SPACE (<span id="mgMashCount">0</span>/<span id="mgMashTarget">18</span>)</p>
     </div>
-    <div id="physicalDrill" class="mg hidden">
-      <div class="drill-scene">
-        <div class="drill-vault">
-          <div id="drillDepthFill" class="drill-depth-fill"></div>
-          <div id="drillBit" class="drill-bit"></div>
-        </div>
+    <div id="physicalDrill" class="mg drill-pro hidden">
+      <div class="drill-pro-grid">
+        <aside class="drill-pro-left">
+          <div class="drill-pro-box">
+            <p><strong>W / S</strong> ó gr?ûimo galia</p>
+            <p><strong>A / D</strong> ó kryptis (laikyk ûaliame)</p>
+            <p>Steb?k temperat?r? ir sl?g?.</p>
+          </div>
+          <ul class="drill-status">
+            <li>SIGNAL: <span class="ok">CONNECTED</span></li>
+            <li>ALARM: <span class="ok">DISABLED</span></li>
+            <li>CAMERAS: <span class="warn">OFFLINE</span></li>
+          </ul>
+        </aside>
+        <main class="drill-pro-center">
+          <div class="drill-stage-label">DRILLING</div>
+          <div id="drillStageDots" class="drill-stage-dots"></div>
+          <div class="drill-reticle">
+            <div id="drillGreenZone" class="drill-green-zone"></div>
+            <div id="drillNeedle" class="drill-needle"></div>
+          </div>
+          <p class="drill-tip">Laikyk gr?ûtuv? ûalioje zonoje</p>
+        </main>
+        <aside class="drill-pro-right">
+          <div class="drill-stat">
+            <span>TEMPERATURE</span>
+            <strong id="drillTempVal">0∞C</strong>
+            <div class="drill-stat-bar heat"><div id="drillTempBar"></div></div>
+          </div>
+          <div class="drill-stat">
+            <span>PRESSURE</span>
+            <strong id="drillPressVal">0%</strong>
+            <div class="drill-stat-bar press"><div id="drillPressBar"></div></div>
+          </div>
+          <div class="drill-stat">
+            <span>DRILL HEALTH</span>
+            <strong id="drillHealthVal">100%</strong>
+            <div class="drill-stat-bar health"><div id="drillHealthBar"></div></div>
+          </div>
+          <div class="drill-stat">
+            <span>DEPTH</span>
+            <strong id="drillDepthVal">0%</strong>
+            <div class="drill-stat-bar depth"><div id="drillDepthBarPro"></div></div>
+          </div>
+        </aside>
       </div>
-      <div class="drill-meters">
-        <div class="drill-meter">
-          <span>Gylis</span>
-          <div class="drill-bar"><div id="drillDepthBar" class="drill-bar-fill"></div></div>
-          <strong id="drillDepthPct">0%</strong>
-        </div>
-        <div class="drill-meter">
-          <span>Karötis</span>
-          <div class="drill-bar drill-bar-heat"><div id="drillHeatBar" class="drill-bar-fill drill-bar-fill-heat"></div></div>
-          <strong id="drillHeatPct">0%</strong>
-        </div>
-      </div>
-      <p class="mg-sub">Laikyk SPACE ó gr?ûk. Atleisk prieö perkaitim? (&gt;90%).</p>
     </div>
     <button type="button" id="physicalCancel" class="btn danger">Atùaukti</button>
   </div>

@@ -64,6 +64,16 @@ Config.Robberies.Flow = {
     vault = { 'card', 'hack', 'thermite', 'drill', 'loot' },
 }
 
+--- Seifo durys pagal lokacijos id (model + coords)
+Config.Robberies.BankVaultDoors = {
+    fleeca_legion = { model = 'v_ilev_gb_vauldr', coords = vector3(148.03, -1044.36, 29.51), heading = 160.0, openDelta = -90.0 },
+    fleeca_greatocean = { model = 'v_ilev_gb_vauldr', coords = vector3(-2958.54, 482.06, 15.84), heading = 267.0, openDelta = -90.0 },
+    fleeca_hawick = { model = 'v_ilev_gb_vauldr', coords = vector3(-352.736, -53.572, 49.18), heading = 161.0, openDelta = -90.0 },
+    fleeca_delperro = { model = 'v_ilev_gb_vauldr', coords = vector3(-1210.85, -336.68, 37.98), heading = 207.0, openDelta = -90.0 },
+    fleeca_route68 = { model = 'v_ilev_gb_vauldr', coords = vector3(1174.48, 2712.72, 38.19), heading = 0.0, openDelta = -90.0 },
+    pacific_main = { model = 'v_ilev_bk_vaultdoor', coords = vector3(255.23, 223.98, 102.39), heading = 160.0, openDelta = -90.0 },
+}
+
 Config.Robberies.Locations = {
     store = {
         { id = '247_strawberry', label = '24/7 Strawberry', coords = vector3(28.5, -1345.2, 29.5), radius = 1.6, hackProfile = 'store_register' },

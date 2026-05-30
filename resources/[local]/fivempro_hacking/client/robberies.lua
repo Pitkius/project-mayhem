@@ -46,10 +46,24 @@ local function bumpCasinoLootIndex()
     return session.casinoLootIndex
 end
 
+local function playHackSound(name)
+    PlaySoundFrontend(-1, name or 'Pin_Good', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS', true)
+end
+
+local function playDrillSound(name)
+    PlaySoundFrontend(-1, name or 'Drill', 'DLC_HEIST_FLEECA_BANK_DRILLING_SOUNDS', true)
+end
+
 local function runHackPhase()
     if not session then return end
+    playHackSound('Background')
     exports['fivempro_hacking']:StartHack(session.tierId, session.coords, function(ok)
         if not session then return end
+        if ok then
+            playHackSound('Hack_Success')
+        else
+            playHackSound('Hack_Failed')
+        end
         if not ok then
             failRobbery('Hack nepavyko.')
             return
@@ -61,11 +75,17 @@ end
 local function playBankDoorOpen(coords)
     QBCore.Functions.Notify('Banko durys atrakintos — gręžk seifo vartus.', 'success')
     PlaySoundFromCoord(-1, 'Vault_Unlock', coords.x, coords.y, coords.z, 'dlc_heist_fleeca_bank_door_sounds', false, 0, false)
+    if session and session.locId then
+        exports['fivempro_hacking']:OpenBankVaultAfterHack(session.locId, coords)
+    end
 end
 
 local function playVaultGateOpen(coords)
     QBCore.Functions.Notify('Seifo vartai atidaryti — grabink pinigus.', 'success')
     PlaySoundFromCoord(-1, 'Drill_Pin_Break', coords.x, coords.y, coords.z, 'DLC_HEIST_FLEECA_BANK_DRILLING_SOUNDS', false, 0, false)
+    if session and session.locId then
+        exports['fivempro_hacking']:OpenBankVaultAfterDrill(session.locId, coords)
+    end
 end
 
 local function runPhase(phase)
@@ -177,6 +197,20 @@ end
 
 exports('IsRobberySessionActive', IsRobberySessionActive)
 
+local robberyInteract = {}
+
+CreateThread(function()
+    while true do
+        Wait(3000)
+        local locations = Config.Robberies and Config.Robberies.Locations or {}
+        for tierId in pairs(locations) do
+            QBCore.Functions.TriggerCallback('fivempro_hacking:server:robberyCanInteract', function(ok)
+                robberyInteract[tierId] = ok == true
+            end, tierId)
+        end
+    end
+end)
+
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do Wait(500) end
     local locations = Config.Robberies and Config.Robberies.Locations or {}
@@ -193,7 +227,7 @@ CreateThread(function()
                         icon = 'fas fa-mask',
                         label = tierLabels[tierId] or ('Apiplėšimas: ' .. tierId),
                         canInteract = function()
-                            return not session
+                            return not session and robberyInteract[tierId] == true
                         end,
                         action = function()
                             startRobbery(tierId, loc)

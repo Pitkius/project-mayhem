@@ -133,7 +133,7 @@ function RunCasinoPhysical(phase)
         mg = { mode = mg.mode, label = 'Termitas — laikyk SPACE (Casino Heist)', data = data }
     elseif phase == 'drill' then
         data.depthTarget = 100
-        mg = { mode = 'drill', label = 'Seifo gręžimas — kontroliuok gylį ir karštį', data = data }
+        mg = { mode = 'drill', label = 'Seifo gręžimas — W/S galia, A/D kryptis', data = data }
     end
 
     return exports['fivempro_hacking']:RunPhysicalMinigame(mg.mode, {

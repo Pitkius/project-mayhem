@@ -934,18 +934,21 @@ CreateThread(function()
     end
 end)
 
--- Sveikatos / šarvų juostos po minimap scaleform — tipas 3 = paslėpti juostas, pats radaras lieka.
+-- Vanilla minimap (MDT / gaujų žemėlapiai lieka atskirai NUI — ne radar bigmap)
 CreateThread(function()
-    local minimap = RequestScaleformMovie("minimap")
+    DisplayRadar(true)
+    SetRadarBigmapEnabled(false, false)
+
+    local minimap = RequestScaleformMovie('minimap')
     while not HasScaleformMovieLoaded(minimap) do
         Wait(0)
     end
-    SetRadarBigmapEnabled(true, false)
-    Wait(0)
-    SetRadarBigmapEnabled(false, false)
 
     while true do
-        BeginScaleformMovieMethod(minimap, "SETUP_HEALTH_ARMOUR")
+        if IsBigmapActive() or IsBigmapFull() then
+            SetRadarBigmapEnabled(false, false)
+        end
+        BeginScaleformMovieMethod(minimap, 'SETUP_HEALTH_ARMOUR')
         ScaleformMovieMethodAddParamInt(3)
         EndScaleformMovieMethod()
         Wait(0)
