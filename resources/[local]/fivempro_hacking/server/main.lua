@@ -9,21 +9,39 @@ local function tabletCfg(itemName)
     return Config.Tablets[itemName]
 end
 
-local function getTabletItem(Player)
-    local bestItem, bestName, bestRank = nil, nil, 0
-    local order = { basic_tablet = 1, advanced_tablet = 2, military_tablet = 3 }
+local function getTabletItem(Player, tierId)
+    local tabOrder = { basic_tablet = 1, advanced_tablet = 2, military_tablet = 3 }
+    local minRank = 0
+    if tierId and Config.RobberyTiers[tierId] then
+        minRank = tabOrder[Config.RobberyTiers[tierId].minTablet] or 0
+    end
+    local candidates = {}
     for name in pairs(Config.Tablets) do
         local it = Player.Functions.GetItemByName(name)
         if it then
-            local rank = order[name] or 0
-            if rank >= bestRank then
-                bestRank = rank
-                bestItem = it
-                bestName = name
+            local rank = tabOrder[name] or 0
+            if rank >= minRank then
+                candidates[#candidates + 1] = {
+                    item = it,
+                    name = name,
+                    rank = rank,
+                    hasOs = metaInfo(it).installed_os and true or false,
+                }
             end
         end
     end
-    return bestItem, bestName
+    table.sort(candidates, function(a, b)
+        if a.hasOs ~= b.hasOs then return a.hasOs end
+        return a.rank > b.rank
+    end)
+    if candidates[1] then
+        return candidates[1].item, candidates[1].name
+    end
+    for name in pairs(Config.Tablets) do
+        local it = Player.Functions.GetItemByName(name)
+        if it then return it, name end
+    end
+    return nil, nil
 end
 
 local function metaInfo(item)
@@ -99,7 +117,7 @@ local function canAccessRobbery(src, tierId)
     if not tier then return false, 'Nežinomas robbery tipas.' end
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return false, 'Žaidėjas nerastas.' end
-    local item, tName = getTabletItem(Player)
+    local item, tName = getTabletItem(Player, tierId)
     if not item then return false, 'Reikia hacking tablet.' end
     local tCfg = tabletCfg(tName)
     if not tCfg then return false, 'Netinkamas tablet.' end
@@ -111,7 +129,7 @@ local function canAccessRobbery(src, tierId)
   local minTab = tier.minTablet
     local tabOrder = { basic_tablet = 1, advanced_tablet = 2, military_tablet = 3 }
     if (tabOrder[tName] or 0) < (tabOrder[minTab] or 99) then
-        return false, ('Reikia %s (turi %s). Įdiek CipherOS per flashdrive jei Pacific.'):format(
+        return false, ('Reikia %s (turi %s). Įdiek CipherOS į tinkamą tablet.'):format(
             Config.Tablets[minTab].label,
             Config.Tablets[tName].label
         )
@@ -185,7 +203,7 @@ end
 QBCore.Functions.CreateCallback('fivempro_hacking:server:getTabletData', function(src, cb)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return cb(nil) end
-    local item, tName = getTabletItem(Player)
+    local item, tName = getTabletItem(Player, tierId)
     if not item then return cb({ ok = false, msg = 'Neturi tablet.' }) end
     local info = metaInfo(item)
     local tCfg = tabletCfg(tName)
@@ -217,7 +235,7 @@ end)
 QBCore.Functions.CreateCallback('fivempro_hacking:server:installFromDrive', function(src, cb, slot)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return cb({ ok = false }) end
-    local item, tName = getTabletItem(Player)
+    local item, tName = getTabletItem(Player, tierId)
     if not item then return cb({ ok = false, msg = 'Reikia tablet.' }) end
     local drive = Player.Functions.GetItemBySlot(tonumber(slot))
     if not drive or not Config.Flashdrives[drive.name] then

@@ -64,12 +64,15 @@ end
 
 RegisterNetEvent('fivempro_dispatch:client:update', function(payload)
     if not payload or payload.service ~= currentService then return end
+    local hadSync = serviceState._synced == true
     local oldIds = {}
     for _, c in ipairs(serviceState.calls or {}) do
         oldIds[c.id] = true
     end
     serviceState = payload
+    serviceState._synced = true
     syncUnitBlips()
+    if not hadSync then return end
     for _, c in ipairs(payload.calls or {}) do
         if not oldIds[c.id] then
             QBCore.Functions.Notify(
@@ -258,6 +261,7 @@ CreateThread(function()
                 QBCore.Functions.TriggerCallback('fivempro_dispatch:server:getSnapshot', function(res)
                     if res and res.ok and currentService == s then
                         serviceState = res
+                        serviceState._synced = true
                         syncUnitBlips()
                     end
                 end, currentService)
