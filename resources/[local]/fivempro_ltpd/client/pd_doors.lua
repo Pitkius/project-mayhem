@@ -281,19 +281,53 @@ end
 
 local function applyGarageEntityDoor(ent, locked)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return end
+    rememberEntitySnapshot(ent)
     local model = GetEntityModel(ent)
     local c = GetEntityCoords(ent)
     local dh = entityDoorHash(ent)
     ensureDoorInSystem(dh, model, c.x, c.y, c.z)
     if locked then
-        DoorSystemSetDoorState(dh, 1, false, true)
+        DoorSystemSetDoorState(dh, 4, false, true)
         pcall(function() DoorSystemSetOpenRatio(dh, 0.0, true, true) end)
         pcall(function() DoorSystemSetAutomaticDistance(dh, 0.0, false, false) end)
         pcall(function() DoorSystemSetHoldOpen(dh, false) end)
+        snapEntityToSnapshot(ent)
+        FreezeEntityPosition(ent, true)
+        SetEntityDynamic(ent, false)
     else
         DoorSystemSetDoorState(dh, 0, false, true)
         pcall(function() DoorSystemSetOpenRatio(dh, 1.0, true, true) end)
         pcall(function() DoorSystemSetAutomaticDistance(dh, 28.0, false, false) end)
+        FreezeEntityPosition(ent, false)
+        SetEntityDynamic(ent, true)
+    end
+end
+
+local function applyBarrierEntity(ent, locked)
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return end
+    rememberEntitySnapshot(ent)
+    if locked then
+        snapEntityToSnapshot(ent)
+        FreezeEntityPosition(ent, true)
+        SetEntityDynamic(ent, false)
+        SetEntityInvincible(ent, true)
+        SetEntityCanBeDamaged(ent, false)
+    else
+        FreezeEntityPosition(ent, false)
+        SetEntityDynamic(ent, true)
+        SetEntityInvincible(ent, false)
+        SetEntityCanBeDamaged(ent, true)
+    end
+end
+
+local function applyBarrierGroupLocked(slabs, entities, locked)
+    for _, slab in ipairs(slabs or {}) do
+        applyStandardSlabLocked(slab, locked)
+        local ent = findClosestObject(slab.modelHash, slab.coords, 4.0)
+        if ent ~= 0 then applyBarrierEntity(ent, locked) end
+    end
+    for _, ent in ipairs(entities or {}) do
+        applyBarrierEntity(ent, locked)
     end
 end
 
@@ -385,6 +419,10 @@ local function applyGroupLocked(id, locked)
                 applyGarageRollLocked(g.slabs, g.entities, locked)
                 return
             end
+            if g.doorType == 'barrier' then
+                applyBarrierGroupLocked(g.slabs, g.entities, locked)
+                return
+            end
             for _, slab in ipairs(g.slabs) do
                 applyStandardSlabLocked(slab, locked)
             end
@@ -402,6 +440,10 @@ local function buildManualGroups()
             local model = d.model
             local slab = registerSlab(def.id, i, model, coords, d.heading)
             alignSlabToWorld(slab)
+            if d.heading then
+                slab.heading = d.heading + 0.0
+                snapSlabEntity(slab)
+            end
             slabs[#slabs + 1] = slab
         end
         local interact = def.interact
@@ -681,7 +723,21 @@ CreateThread(function()
         local pc = GetEntityCoords(ped)
         local anyNear = false
         for _, g in ipairs(doorGroups) do
-            if g.doorType == 'garage_roll' and doorLocked[g.id] ~= false then
+            if g.doorType == 'barrier' and doorLocked[g.id] ~= false then
+                local near = g.interact and #(pc - g.interact) < 55.0
+                if not near then
+                    for _, slab in ipairs(g.slabs or {}) do
+                        if #(pc - slab.coords) < 55.0 then
+                            near = true
+                            break
+                        end
+                    end
+                end
+                if near then
+                    anyNear = true
+                    applyBarrierGroupLocked(g.slabs, g.entities, true)
+                end
+            elseif g.doorType == 'garage_roll' and doorLocked[g.id] ~= false then
                 local near = false
                 if g.interact and #(pc - g.interact) < 90.0 then
                     near = true

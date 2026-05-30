@@ -348,25 +348,34 @@ Config.PdDoorGroups = {
     },
     {
         id = 'ls_mrpd_front_entry',
-        label = 'Priekinis vartai ir borteliai',
-        interact = vector3(413.5, -1024.0, 29.35),
-        interactDist = 8.0,
+        label = 'Priekinis vartai',
+        interact = vector3(419.99, -1025.0, 29.35),
+        interactDist = 6.0,
         defaultLocked = true,
         doors = {
-            { model = 'prop_facgate_07b', coords = vector3(419.99, -1025.0, 28.99) },
+            { model = 'prop_facgate_07b', coords = vector3(419.99, -1025.0, 28.99), heading = 270.0 },
         },
-        entityScan = {
-            center = vector3(411.0, -1024.5, 29.35),
-            radius = 20.0,
-            models = {
-                'prop_barrier_wat_03b',
-                'prop_barrier_wat_04c',
-                'prop_bollard_01',
-                'prop_bollard_02',
-                'prop_mp_barrier_01',
-                'prop_barrier_work05',
-                'prop_barrier_work06',
-            },
+    },
+    {
+        id = 'ls_mrpd_barrier_a',
+        label = 'MRPD barjeras (įėjimas)',
+        doorType = 'barrier',
+        interact = vector3(410.0, -1020.14, 29.36),
+        interactDist = 4.5,
+        defaultLocked = true,
+        doors = {
+            { model = 'prop_barrier_work06', coords = vector3(410.0, -1020.14, 29.36), heading = 91.62 },
+        },
+    },
+    {
+        id = 'ls_mrpd_barrier_b',
+        label = 'MRPD barjeras (parkas)',
+        doorType = 'barrier',
+        interact = vector3(409.87, -1028.39, 29.39),
+        interactDist = 4.5,
+        defaultLocked = true,
+        doors = {
+            { model = 'prop_barrier_work06', coords = vector3(409.87, -1028.39, 29.39), heading = 271.24 },
         },
     },
     {

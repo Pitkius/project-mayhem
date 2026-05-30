@@ -133,12 +133,14 @@ function setVehiclePreviewImage(modelSpawn, spawnModel, vehicleClass) {
   const spawn = safe(spawnModel);
   const classKey = VEHICLE_CLASS_IMAGES[Number(vehicleClass)] || "class_sedan";
   const candidates = [
-    `assets/vehicles/${classKey}.png`,
     spawn ? `assets/vehicles/${spawn}.png` : null,
     display !== spawn ? `assets/vehicles/${display}.png` : null,
+    `assets/vehicles/${classKey}.png`,
     "assets/vehicles/vehicle-topdown.png",
     "assets/vehicles/default.svg",
   ].filter(Boolean);
+  const carSvg = document.querySelector(".vp-ios-car-svg");
+  if (carSvg) carSvg.classList.remove("vp-ios-car-svg--hidden");
   let step = 0;
   vpVehicleImage.classList.remove("vp-vehicle-loaded");
   vpVehicleImage.onerror = () => {
@@ -151,6 +153,7 @@ function setVehiclePreviewImage(modelSpawn, spawnModel, vehicleClass) {
   };
   vpVehicleImage.onload = () => {
     vpVehicleImage.classList.add("vp-vehicle-loaded");
+    document.querySelector(".vp-ios-car-svg")?.classList.add("vp-ios-car-svg--hidden");
   };
   vpVehicleImage.src = candidates[0];
 }
@@ -537,6 +540,9 @@ window.addEventListener("message", (event) => {
   if (doorsEl) {
     doorsEl.classList.toggle("state-on", !!data.doorsLocked);
     doorsEl.classList.toggle("state-off", !data.doorsLocked);
+    const doorUse = doorsEl.querySelector("use");
+    if (doorUse) doorUse.setAttribute("href", data.doorsLocked ? "#hud-ico-lock" : "#hud-ico-car-lock");
+    doorsEl.title = data.doorsLocked ? "Užrakinta" : "Atrakinta";
   }
   if (lightsEl) {
     lightsEl.classList.toggle("state-on", !!data.lightsOn);

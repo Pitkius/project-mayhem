@@ -57,21 +57,21 @@ Config.Surveillance.CctvCategories = {
 ]]
 Config.Surveillance.CctvCameras = {
     -- Bankai (Fleeca / Pacific) — pozicija iš CCTV prop
-    { id = 'fleeca_legion', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_legion', siteId = 'fleeca_legion', propModel = `prop_cctv_cam_01a`, propCoords = vector4(149.12, -1041.85, 29.37, 340.0), lookDistance = 13.0, pitchOffset = -16.0, yawMax = 48.0, pitchMax = 16.0, fov = 48.0, audio = true, spawnProp = true },
-    { id = 'fleeca_legion_vault', label = 'Seifas', zone = 'bank', bankId = 'fleeca_legion', siteId = 'fleeca_legion', propModel = `prop_cctv_cam_02a`, propCoords = vector4(145.85, -1044.55, 29.37, 250.0), lookDistance = 11.0, pitchOffset = -20.0, yawMax = 42.0, pitchMax = 14.0, fov = 46.0, audio = true, spawnProp = true },
-    { id = 'fleeca_alta', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_alta', siteId = 'fleeca_alta', propModel = `prop_cctv_cam_01b`, propCoords = vector4(313.45, -279.15, 54.16, 340.0), lookDistance = 13.0, pitchOffset = -16.0, yawMax = 48.0, pitchMax = 16.0, fov = 50.0, audio = true, spawnProp = true },
-    { id = 'fleeca_hawick', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_hawick', siteId = 'fleeca_hawick', propModel = `prop_cctv_cam_01a`, propCoords = vector4(-353.35, -53.85, 49.04, 250.0), lookDistance = 12.0, pitchOffset = -16.0, yawMax = 45.0, pitchMax = 15.0, fov = 50.0, audio = true, spawnProp = true },
-    { id = 'fleeca_ocean', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_ocean', siteId = 'fleeca_ocean', propModel = `prop_cctv_cam_03a`, propCoords = vector4(-2960.85, 483.25, 15.70, 85.0), lookDistance = 12.0, pitchOffset = -16.0, yawMax = 45.0, pitchMax = 15.0, fov = 50.0, audio = true, spawnProp = true },
-    { id = 'fleeca_paleto', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_paleto', siteId = 'fleeca_paleto', propModel = `prop_cctv_cam_01a`, propCoords = vector4(-111.85, 6462.35, 31.63, 45.0), lookDistance = 12.0, pitchOffset = -16.0, yawMax = 45.0, pitchMax = 15.0, fov = 50.0, audio = true, spawnProp = true },
-    { id = 'fleeca_route68', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_route68', siteId = 'fleeca_route68', propModel = `prop_cctv_cam_02a`, propCoords = vector4(1176.45, 2705.85, 38.09, 180.0), lookDistance = 12.0, pitchOffset = -16.0, yawMax = 45.0, pitchMax = 15.0, fov = 50.0, audio = true, spawnProp = true },
-    { id = 'pacific_entrance', label = 'Įėjimas', zone = 'bank', bankId = 'pacific', siteId = 'pacific', propModel = `prop_cctv_cam_04a`, propCoords = vector4(255.85, 218.45, 106.29, 160.0), lookDistance = 16.0, pitchOffset = -14.0, yawMax = 50.0, pitchMax = 18.0, fov = 46.0, audio = true, spawnProp = true },
-    { id = 'pacific_lobby', label = 'Lobby', zone = 'bank', bankId = 'pacific', siteId = 'pacific', propModel = `prop_cctv_cam_03a`, propCoords = vector4(247.35, 223.85, 106.29, 70.0), lookDistance = 18.0, pitchOffset = -18.0, yawMax = 52.0, pitchMax = 18.0, fov = 44.0, audio = true, spawnProp = true },
+    { id = 'fleeca_legion', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_legion', siteId = 'fleeca_legion', coords = vector3(149.12, -1041.85, 31.2), lookAt = vector3(147.05, -1046.05, 29.37), fov = 48.0, audio = true, spawnProp = false },
+    { id = 'fleeca_legion_vault', label = 'Seifas', zone = 'bank', bankId = 'fleeca_legion', siteId = 'fleeca_legion', coords = vector3(145.85, -1044.55, 31.0), lookAt = vector3(147.05, -1046.05, 29.37), fov = 46.0, audio = true, spawnProp = false },
+    { id = 'fleeca_alta', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_alta', siteId = 'fleeca_alta', coords = vector3(313.45, -279.15, 55.5), lookAt = vector3(311.0, -283.0, 54.16), fov = 50.0, audio = true, spawnProp = false },
+    { id = 'fleeca_hawick', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_hawick', siteId = 'fleeca_hawick', coords = vector3(-353.35, -53.85, 50.5), lookAt = vector3(-353.55, -55.45, 49.04), fov = 50.0, audio = true, spawnProp = false },
+    { id = 'fleeca_ocean', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_ocean', siteId = 'fleeca_ocean', coords = vector3(-2960.85, 483.25, 17.0), lookAt = vector3(-2957.85, 481.35, 15.70), fov = 50.0, audio = true, spawnProp = false },
+    { id = 'fleeca_paleto', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_paleto', siteId = 'fleeca_paleto', coords = vector3(-111.85, 6462.35, 33.0), lookAt = vector3(-109.5, 6464.0, 31.63), fov = 50.0, audio = true, spawnProp = false },
+    { id = 'fleeca_route68', label = 'Kasos zona', zone = 'bank', bankId = 'fleeca_route68', siteId = 'fleeca_route68', coords = vector3(1176.45, 2705.85, 39.5), lookAt = vector3(1175.65, 2712.90, 38.09), fov = 50.0, audio = true, spawnProp = false },
+    { id = 'pacific_entrance', label = 'Įėjimas', zone = 'bank', bankId = 'pacific', siteId = 'pacific', coords = vector3(255.85, 218.45, 107.5), lookAt = vector3(253.25, 228.45, 101.68), fov = 46.0, audio = true, spawnProp = false },
+    { id = 'pacific_lobby', label = 'Lobby', zone = 'bank', bankId = 'pacific', siteId = 'pacific', coords = vector3(247.35, 223.85, 107.5), lookAt = vector3(253.25, 228.45, 101.68), fov = 44.0, audio = true, spawnProp = false },
 
     -- Juvelyrika / kazino
-    { id = 'vangelico_front', label = 'Vitrina', zone = 'jewelry', siteId = 'vangelico', propModel = `prop_cctv_cam_01a`, propCoords = vector4(-622.5, -232.0, 38.55, 210.0), lookDistance = 11.0, pitchOffset = -16.0, yawMax = 48.0, pitchMax = 16.0, fov = 50.0, audio = true, spawnProp = true },
-    { id = 'vangelico_vault', label = 'Salė', zone = 'jewelry', siteId = 'vangelico', propModel = `prop_cctv_cam_02a`, propCoords = vector4(-629.0, -238.5, 38.55, 45.0), lookDistance = 12.0, pitchOffset = -18.0, yawMax = 50.0, pitchMax = 16.0, fov = 55.0, audio = true, spawnProp = true },
-    { id = 'casino_main', label = 'Pagrindinė salė', zone = 'casino', siteId = 'casino', propModel = `prop_cctv_cam_03a`, propCoords = vector4(917.0, 43.5, 84.2, 320.0), lookDistance = 14.0, pitchOffset = -14.0, yawMax = 52.0, pitchMax = 18.0, fov = 55.0, audio = true, spawnProp = true },
-    { id = 'casino_garage', label = 'Garažas', zone = 'casino', siteId = 'casino', propModel = `prop_cctv_cam_04a`, propCoords = vector4(936.0, 0.5, 78.25, 300.0), lookDistance = 12.0, pitchOffset = -16.0, yawMax = 48.0, pitchMax = 16.0, fov = 55.0, audio = true, spawnProp = true },
+    { id = 'vangelico_front', label = 'Vitrina', zone = 'jewelry', siteId = 'vangelico', coords = vector3(-622.5, -232.0, 39.5), lookAt = vector3(-624.5, -232.5, 38.55), fov = 50.0, audio = true, spawnProp = false },
+    { id = 'vangelico_vault', label = 'Salė', zone = 'jewelry', siteId = 'vangelico', coords = vector3(-629.0, -238.5, 39.5), lookAt = vector3(-631.0, -239.0, 38.55), fov = 55.0, audio = true, spawnProp = false },
+    { id = 'casino_main', label = 'Pagrindinė salė', zone = 'casino', siteId = 'casino', coords = vector3(917.0, 43.5, 85.5), lookAt = vector3(930.45, 46.35, 81.10), fov = 55.0, audio = true, spawnProp = false },
+    { id = 'casino_garage', label = 'Garažas', zone = 'casino', siteId = 'casino', coords = vector3(936.0, 0.5, 79.5), lookAt = vector3(930.45, 46.35, 81.10), fov = 55.0, audio = true, spawnProp = false },
 
     -- Policija
     { id = 'mrpd_lobby', label = 'Vestibiulis', zone = 'police', siteId = 'mrpd', propModel = `prop_cctv_cam_01a`, propCoords = vector4(438.5, -985.8, 33.85, 200.0), lookAt = vector3(441.2, -981.5, 30.2), lookDistance = 14.0, pitchOffset = -18.0, yawMax = 50.0, pitchMax = 16.0, fov = 52.0, audio = true, spawnProp = false, propSearchRadius = 22.0 },
@@ -81,37 +81,37 @@ Config.Surveillance.CctvCameras = {
     { id = 'paleto_pd', label = 'Paleto Bay PD', zone = 'police', coords = vector3(-447.5, 6012.0, 32.75), lookAt = vector3(-441.0, 6016.0, 32.2), fov = 55.0, audio = true },
 
     -- Parduotuvės (24/7 / LTD)
-    { id = '247_grove', label = '24/7 – Grove St', zone = 'store', coords = vector3(-50.5, -1754.5, 29.85), lookAt = vector3(-47.0, -1758.0, 29.4), fov = 54.0, audio = true },
-    { id = '247_innocence', label = '24/7 – Innocence Blvd', zone = 'store', coords = vector3(31.8, -1348.2, 31.65), lookAt = vector3(26.0, -1340.0, 29.45), fov = 52.0, audio = true },
-    { id = '247_mirror', label = '24/7 – Mirror Park', zone = 'store', coords = vector3(1160.5, -314.5, 69.55), lookAt = vector3(1156.0, -318.0, 69.1), fov = 54.0, audio = true },
-    { id = '247_sandy', label = '24/7 – Sandy Shores', zone = 'store', coords = vector3(1963.5, 3746.0, 32.7), lookAt = vector3(1959.0, 3742.0, 32.25), fov = 54.0, audio = true },
-    { id = 'ltd_grove', label = 'LTD – Davis', zone = 'store', coords = vector3(-43.5, -1748.0, 29.85), lookAt = vector3(-48.0, -1752.0, 29.4), fov = 52.0, audio = true },
-    { id = 'ltd_rockford', label = 'LTD – Rockford Hills', zone = 'store', coords = vector3(-1828.5, 800.0, 138.65), lookAt = vector3(-1824.0, 796.0, 138.2), fov = 52.0, audio = true },
+    { id = '247_grove', label = '24/7 – Grove St', zone = 'store', coords = vector3(-48.2, -1757.8, 30.4), lookAt = vector3(-47.0, -1758.0, 29.4), fov = 54.0, audio = true, spawnProp = false },
+    { id = '247_innocence', label = '24/7 – Innocence Blvd', zone = 'store', coords = vector3(27.5, -1342.5, 31.2), lookAt = vector3(26.0, -1340.0, 29.45), fov = 52.0, audio = true, spawnProp = false },
+    { id = '247_mirror', label = '24/7 – Mirror Park', zone = 'store', coords = vector3(1158.0, -316.5, 70.0), lookAt = vector3(1156.0, -318.0, 69.1), fov = 54.0, audio = true, spawnProp = false },
+    { id = '247_sandy', label = '24/7 – Sandy Shores', zone = 'store', coords = vector3(1960.5, 3744.0, 33.2), lookAt = vector3(1959.0, 3742.0, 32.25), fov = 54.0, audio = true, spawnProp = false },
+    { id = 'ltd_grove', label = 'LTD – Davis', zone = 'store', coords = vector3(-46.0, -1750.5, 30.2), lookAt = vector3(-48.0, -1752.0, 29.4), fov = 52.0, audio = true, spawnProp = false },
+    { id = 'ltd_rockford', label = 'LTD – Rockford Hills', zone = 'store', coords = vector3(-1826.0, 798.5, 139.0), lookAt = vector3(-1824.0, 796.0, 138.2), fov = 52.0, audio = true, spawnProp = false },
 
     -- Degalinės
-    { id = 'gas_legion', label = 'Degalinė – Legion', zone = 'gas', coords = vector3(289.5, -1266.5, 29.85), lookAt = vector3(285.0, -1262.0, 29.4), fov = 56.0, audio = true },
-    { id = 'gas_innocence', label = 'Degalinė – Strawberry', zone = 'gas', coords = vector3(265.0, -1261.0, 29.75), lookAt = vector3(260.0, -1256.0, 29.3), fov = 56.0, audio = true },
-    { id = 'gas_paleto', label = 'Degalinė – Paleto', zone = 'gas', coords = vector3(170.0, 6638.0, 31.95), lookAt = vector3(165.0, 6642.0, 31.5), fov = 56.0, audio = true },
-    { id = 'gas_route68', label = 'Degalinė – Route 68', zone = 'gas', coords = vector3(1039.5, 2671.0, 39.95), lookAt = vector3(1035.0, 2666.0, 39.5), fov = 56.0, audio = true },
-    { id = 'gas_greatocean', label = 'Degalinė – Great Ocean', zone = 'gas', coords = vector3(-2555.0, 2316.5, 33.55), lookAt = vector3(-2550.0, 2320.0, 33.1), fov = 56.0, audio = true },
+    { id = 'gas_legion', label = 'Degalinė – Legion', zone = 'gas', coords = vector3(287.0, -1264.0, 30.2), lookAt = vector3(285.0, -1262.0, 29.4), fov = 56.0, audio = true, spawnProp = false },
+    { id = 'gas_innocence', label = 'Degalinė – Strawberry', zone = 'gas', coords = vector3(263.0, -1259.0, 30.1), lookAt = vector3(260.0, -1256.0, 29.3), fov = 56.0, audio = true, spawnProp = false },
+    { id = 'gas_paleto', label = 'Degalinė – Paleto', zone = 'gas', coords = vector3(168.5, 6636.5, 32.3), lookAt = vector3(165.0, 6642.0, 31.5), fov = 56.0, audio = true, spawnProp = false },
+    { id = 'gas_route68', label = 'Degalinė – Route 68', zone = 'gas', coords = vector3(1037.5, 2669.0, 40.2), lookAt = vector3(1035.0, 2666.0, 39.5), fov = 56.0, audio = true, spawnProp = false },
+    { id = 'gas_greatocean', label = 'Degalinė – Great Ocean', zone = 'gas', coords = vector3(-2553.0, 2318.5, 34.0), lookAt = vector3(-2550.0, 2320.0, 33.1), fov = 56.0, audio = true, spawnProp = false },
 
     -- Miesto centrai
-    { id = 'legion_square', label = 'Legion Square', zone = 'city', coords = vector3(215.5, -920.0, 31.25), lookAt = vector3(210.0, -915.0, 30.7), fov = 62.0, audio = true },
-    { id = 'pillbox_front', label = 'Pillbox – priekis', zone = 'city', coords = vector3(311.5, -592.0, 44.75), lookAt = vector3(306.0, -588.0, 44.2), fov = 58.0, audio = true },
-    { id = 'cityhall', label = 'City Hall', zone = 'city', coords = vector3(-544.5, -204.0, 38.65), lookAt = vector3(-539.0, -200.0, 38.2), fov = 58.0, audio = true },
-    { id = 'maze_bank_plaza', label = 'Maze Bank – plaza', zone = 'city', coords = vector3(-75.5, -818.5, 326.5), lookAt = vector3(-70.0, -812.0, 326.0), fov = 55.0, audio = false },
+    { id = 'legion_square', label = 'Legion Square', zone = 'city', coords = vector3(213.0, -918.0, 31.8), lookAt = vector3(210.0, -915.0, 30.7), fov = 62.0, audio = true, spawnProp = false },
+    { id = 'pillbox_front', label = 'Pillbox – priekis', zone = 'city', coords = vector3(309.0, -590.0, 45.2), lookAt = vector3(306.0, -588.0, 44.2), fov = 58.0, audio = true, spawnProp = false },
+    { id = 'cityhall', label = 'City Hall', zone = 'city', coords = vector3(-542.0, -202.0, 39.1), lookAt = vector3(-539.0, -200.0, 38.2), fov = 58.0, audio = true, spawnProp = false },
+    { id = 'maze_bank_plaza', label = 'Maze Bank – plaza', zone = 'city', coords = vector3(-73.5, -816.5, 327.0), lookAt = vector3(-70.0, -812.0, 326.0), fov = 55.0, audio = false, spawnProp = false },
 
     -- Sankryžos
-    { id = 'int_airport', label = 'Sankryža – LSIA prieiga', zone = 'traffic', coords = vector3(-1034.5, -2733.0, 14.25), lookAt = vector3(-1028.0, -2728.0, 13.8), fov = 60.0, audio = true },
-    { id = 'int_delperro', label = 'Sankryža – Del Perro', zone = 'traffic', coords = vector3(-1512.5, -652.0, 29.55), lookAt = vector3(-1506.0, -648.0, 29.1), fov = 60.0, audio = true },
-    { id = 'int_vinewood', label = 'Sankryža – Vinewood Blvd', zone = 'traffic', coords = vector3(293.5, 180.0, 104.75), lookAt = vector3(288.0, 185.0, 104.2), fov = 60.0, audio = true },
-    { id = 'int_strawberry', label = 'Sankryža – Strawberry Ave', zone = 'traffic', coords = vector3(240.5, -1370.0, 30.95), lookAt = vector3(235.0, -1365.0, 30.5), fov = 60.0, audio = true },
-    { id = 'int_palomino', label = 'Sankryža – Palomino Fwy', zone = 'traffic', coords = vector3(2558.5, 380.5, 108.95), lookAt = vector3(2553.0, 385.0, 108.5), fov = 60.0, audio = true },
+    { id = 'int_airport', label = 'Sankryža – LSIA prieiga', zone = 'traffic', coords = vector3(-1032.0, -2731.0, 14.7), lookAt = vector3(-1028.0, -2728.0, 13.8), fov = 60.0, audio = true, spawnProp = false },
+    { id = 'int_delperro', label = 'Sankryža – Del Perro', zone = 'traffic', coords = vector3(-1510.0, -650.0, 30.0), lookAt = vector3(-1506.0, -648.0, 29.1), fov = 60.0, audio = true, spawnProp = false },
+    { id = 'int_vinewood', label = 'Sankryža – Vinewood Blvd', zone = 'traffic', coords = vector3(291.5, 182.0, 105.2), lookAt = vector3(288.0, 185.0, 104.2), fov = 60.0, audio = true, spawnProp = false },
+    { id = 'int_strawberry', label = 'Sankryža – Strawberry Ave', zone = 'traffic', coords = vector3(238.5, -1368.0, 31.4), lookAt = vector3(235.0, -1365.0, 30.5), fov = 60.0, audio = true, spawnProp = false },
+    { id = 'int_palomino', label = 'Sankryža – Palomino Fwy', zone = 'traffic', coords = vector3(2556.5, 382.5, 109.4), lookAt = vector3(2553.0, 385.0, 108.5), fov = 60.0, audio = true, spawnProp = false },
 
     -- Kita RP
-    { id = 'docs_warehouse', label = 'Docks – sandėliai', zone = 'other', coords = vector3(892.5, -3222.0, 6.45), lookAt = vector3(887.0, -3216.0, 5.95), fov = 58.0, audio = true },
-    { id = 'docs_main', label = 'Docks – pagrindinis kelias', zone = 'other', coords = vector3(797.5, -2988.0, 6.45), lookAt = vector3(792.0, -2982.0, 5.95), fov = 58.0, audio = true },
-    { id = 'sandy_airfield', label = 'Sandy – aerodromas', zone = 'other', coords = vector3(1747.5, 3273.0, 41.55), lookAt = vector3(1742.0, 3278.0, 41.1), fov = 62.0, audio = true },
-    { id = 'grapeseed_main', label = 'Grapeseed – centras', zone = 'other', coords = vector3(1700.5, 4933.0, 42.45), lookAt = vector3(1695.0, 4938.0, 42.0), fov = 58.0, audio = true },
-    { id = 'humane_labs', label = 'Humane Labs – vartai', zone = 'other', coords = vector3(3628.5, 3752.0, 29.15), lookAt = vector3(3623.0, 3757.0, 28.7), fov = 55.0, audio = false },
+    { id = 'docs_warehouse', label = 'Docks – sandėliai', zone = 'other', coords = vector3(890.5, -3220.0, 6.9), lookAt = vector3(887.0, -3216.0, 5.95), fov = 58.0, audio = true, spawnProp = false },
+    { id = 'docs_main', label = 'Docks – pagrindinis kelias', zone = 'other', coords = vector3(795.5, -2986.0, 6.9), lookAt = vector3(792.0, -2982.0, 5.95), fov = 58.0, audio = true, spawnProp = false },
+    { id = 'sandy_airfield', label = 'Sandy – aerodromas', zone = 'other', coords = vector3(1745.5, 3275.0, 42.0), lookAt = vector3(1742.0, 3278.0, 41.1), fov = 62.0, audio = true, spawnProp = false },
+    { id = 'grapeseed_main', label = 'Grapeseed – centras', zone = 'other', coords = vector3(1698.5, 4935.0, 42.9), lookAt = vector3(1695.0, 4938.0, 42.0), fov = 58.0, audio = true, spawnProp = false },
+    { id = 'humane_labs', label = 'Humane Labs – vartai', zone = 'other', coords = vector3(3626.5, 3754.0, 29.6), lookAt = vector3(3623.0, 3757.0, 28.7), fov = 55.0, audio = false, spawnProp = false },
 }

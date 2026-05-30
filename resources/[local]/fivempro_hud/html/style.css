@@ -1556,8 +1556,8 @@ body.preset-3 {
 
 .vp-vehicle-image {
     width: 100%;
-    max-width: 220px;
-    height: 170px;
+    max-width: 280px;
+    height: 200px;
     object-fit: contain;
     object-position: center bottom;
     opacity: 0.55;

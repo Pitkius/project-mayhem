@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FIVEMPRO — Kraunama</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="slides" class="slides" aria-hidden="true"></div>
+  <div class="vignette"></div>
+  <div class="scanlines"></div>
+
+  <header class="top-bar">
+    <div class="brand">
+      <span class="brand-sub">FIVEMPRO</span>
+      <span class="brand-main">LOS SANTOS</span>
+    </div>
+    <div class="session">
+      <span id="statusText">Jungiamasi...</span>
+    </div>
+  </header>
+
+  <aside class="character-panel">
+    <div class="panel-tag" id="slideTag">GATVĖS GYVENIMAS</div>
+    <h1 class="panel-title" id="slideTitle">Pasiruošk miestui</h1>
+    <p class="panel-desc" id="slideDesc">Kraunamos sistemos ir pasaulio duomenys.</p>
+    <div class="panel-dots" id="slideDots"></div>
+  </aside>
+
+  <footer class="bottom-bar">
+    <div class="tips">
+      <span class="tips-label">Patarimas</span>
+      <p id="tipText">Laikykis taisyklių — geriau RP nei grindinimas.</p>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="progressPct">0%</span>
+        <span id="progressDetail">Inicializuojama...</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

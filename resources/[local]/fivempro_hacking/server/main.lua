@@ -9,6 +9,14 @@ local function tabletCfg(itemName)
     return Config.Tablets[itemName]
 end
 
+local function metaInfo(item)
+    if not item then return {} end
+    local info = item.info or item.metadata or {}
+    if type(info) ~= 'table' then info = {} end
+    if not info.exploits or type(info.exploits) ~= 'table' then info.exploits = {} end
+    return info
+end
+
 local function getTabletItem(Player, tierId)
     local tabOrder = { basic_tablet = 1, advanced_tablet = 2, military_tablet = 3 }
     local minRank = 0
@@ -42,14 +50,6 @@ local function getTabletItem(Player, tierId)
         if it then return it, name end
     end
     return nil, nil
-end
-
-local function metaInfo(item)
-    if not item then return {} end
-    local info = item.info or item.metadata or {}
-    if type(info) ~= 'table' then info = {} end
-    if not info.exploits or type(info.exploits) ~= 'table' then info.exploits = {} end
-    return info
 end
 
 local function saveTabletMeta(src, item, info)

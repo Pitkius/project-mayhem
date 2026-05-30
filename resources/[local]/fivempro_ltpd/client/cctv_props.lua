@@ -36,7 +36,7 @@ local function ensureCamPropBinding(cam)
     cam.pitchOffset = cam.pitchOffset or -16.0
     cam.yawMax = cam.yawMax or 48.0
     cam.pitchMax = cam.pitchMax or 16.0
-    if cam.spawnProp == nil then cam.spawnProp = true end
+    if cam.spawnProp == nil then cam.spawnProp = false end
 end
 
 local function findWorldProp(model, coords, radius)
@@ -131,6 +131,28 @@ CreateThread(function()
                 spawnPropForCam(cam)
             else
                 spawnedProps[cam.id] = ent
+            end
+        end
+    end
+end)
+
+--- Pašalinti senus script spawnintus CCTV propus parduotuvėse (nebespawninam).
+CreateThread(function()
+    Wait(8000)
+    for _, ent in pairs(spawnedProps) do
+        if ent and DoesEntityExist(ent) then
+            DeleteEntity(ent)
+        end
+    end
+    spawnedProps = {}
+    for _, cam in ipairs(Config.Surveillance.CctvCameras or {}) do
+        if cam.spawnProp ~= true and cam.coords then
+            local c = cam.coords
+            for model, _ in pairs(propModels) do
+                local ent = findWorldProp(model, c, 8.0)
+                if ent ~= 0 and IsEntityAMissionEntity(ent) then
+                    DeleteEntity(ent)
+                end
             end
         end
     end

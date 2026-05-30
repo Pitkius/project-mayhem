@@ -1,0 +1,178 @@
+const SLIDES = [
+  {
+    image: 'assets/slide_police.jpg',
+    tag: 'LTPD',
+    title: 'TARNYBA GATVĖSE',
+    desc: 'Patruliuok, reaguok į dispatch ir saugok miestą.',
+  },
+  {
+    image: 'assets/slide_heist.jpg',
+    tag: 'HEIST',
+    title: 'PLANUOK OPERACIJĄ',
+    desc: 'Tablet, OS, hack — bankai, ATM ir kazino laukia.',
+  },
+  {
+    image: 'assets/slide_gangs.jpg',
+    tag: 'GAUJOS',
+    title: 'TERITORIJOS',
+    desc: 'Užimk turf, vykdyk misijas, augink reputaciją.',
+  },
+  {
+    image: 'assets/slide_racing.jpg',
+    tag: 'TRANSPORTAS',
+    title: 'GREITIS IR STILIUS',
+    desc: 'Salonai, garazai, KMA — tavo mašina, tavo kelias.',
+  },
+  {
+    image: 'assets/slide_ems.png',
+    tag: 'EMS',
+    title: 'GYVYBĖS IŠGELBĖJIMAS',
+    desc: 'Greita medicinos pagalba visame Los Santos.',
+  },
+  {
+    image: 'assets/slide_mining.jpg',
+    tag: 'DARBAS',
+    title: 'KARJERA MIESTE',
+    desc: 'Kasykla, mechanikai, taksi — legalūs pinigai.',
+  },
+  {
+    image: 'assets/slide_casino.jpg',
+    tag: 'KAZINO',
+    title: 'AZARTAS',
+    desc: 'Diamond Casino — dideli laimėjimai ar dideli rizika.',
+  },
+  {
+    image: 'assets/slide_mechanic.jpg',
+    tag: 'MECHANIKAI',
+    title: 'PO RATAS',
+    desc: 'Remontas, tuningas ir patikimi meistrai.',
+  },
+];
+
+const TIPS = [
+  'Laikykis taisyklių — geriau RP nei grindinimas.',
+  'Naudok /report problemoms, ne OOC šauksmus.',
+  'PD: būk on duty, kad gautum dispatch iškvietimus.',
+  'Heist: įdiek OS į tablet prieš bandant Pacific.',
+  'ATM: reikia tow_chain ir stiprios mašinos tempimui.',
+  'Gaujos: užimk turf per įtaką ir misijas.',
+  'Mechanikai ir EMS — legalūs keliai užsidirbti.',
+  'Naktį miestas pavojingesnis — planuok maršrutą.',
+  'Inventorius: tablet ir flashdrive saugok atskirai.',
+  'Kazino — laimė kartais, bet bankas visada laimi.',
+];
+
+const slidesEl = document.getElementById('slides');
+const slideTag = document.getElementById('slideTag');
+const slideTitle = document.getElementById('slideTitle');
+const slideDesc = document.getElementById('slideDesc');
+const slideDots = document.getElementById('slideDots');
+const tipText = document.getElementById('tipText');
+const progressFill = document.getElementById('progressFill');
+const progressPct = document.getElementById('progressPct');
+const progressDetail = document.getElementById('progressDetail');
+const statusText = document.getElementById('statusText');
+
+let slideIndex = 0;
+let progress = 0;
+
+function buildSlides() {
+  SLIDES.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'slide' + (i === 0 ? ' is-active' : '');
+    div.style.backgroundImage = `url('${s.image}')`;
+    slidesEl.appendChild(div);
+
+    const dot = document.createElement('span');
+    if (i === 0) dot.classList.add('is-active');
+    slideDots.appendChild(dot);
+  });
+}
+
+function setSlide(i) {
+  const slides = slidesEl.querySelectorAll('.slide');
+  const dots = slideDots.querySelectorAll('span');
+  slides.forEach((el, idx) => el.classList.toggle('is-active', idx === i));
+  dots.forEach((el, idx) => el.classList.toggle('is-active', idx === i));
+
+  const s = SLIDES[i];
+  slideTag.textContent = s.tag;
+  slideTitle.textContent = s.title;
+  slideDesc.textContent = s.desc;
+}
+
+function rotateSlides() {
+  slideIndex = (slideIndex + 1) % SLIDES.length;
+  setSlide(slideIndex);
+}
+
+function rotateTips() {
+  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
+  tipText.style.opacity = '0';
+  setTimeout(() => {
+    tipText.textContent = tip;
+    tipText.style.opacity = '1';
+  }, 280);
+}
+
+function setProgress(fraction, detail) {
+  progress = Math.max(progress, Math.min(1, fraction || 0));
+  const pct = Math.round(progress * 100);
+  progressFill.style.width = `${pct}%`;
+  progressPct.textContent = `${pct}%`;
+  if (detail) progressDetail.textContent = detail;
+  if (pct >= 100) statusText.textContent = 'Beveik baigta...';
+  else if (pct > 60) statusText.textContent = 'Kraunami resursai...';
+  else if (pct > 20) statusText.textContent = 'Jungiamasi prie serverio...';
+}
+
+const handlers = {
+  loadProgress(data) {
+    setProgress(data.loadFraction, 'Kraunama...');
+  },
+  onLogLine(data) {
+    if (data && data.message) {
+      const msg = String(data.message).trim();
+      if (msg.length > 3 && msg.length < 80) {
+        progressDetail.textContent = msg;
+      }
+    }
+  },
+  startInitFunctionOrder(data) {
+    setProgress(0.05, `Ruošiama: ${data.type || 'sistema'}...`);
+  },
+  initFunctionInvoking(data) {
+    setProgress(progress + 0.02, data.name || 'Inicializuojama...');
+  },
+  startDataFileEntries(data) {
+    setProgress(0.15, `Failai: ${data.count || '...'}`);
+  },
+  performMapLoadFunction() {
+    setProgress(Math.max(progress, 0.35), 'Kraunamas žemėlapis...');
+  },
+  endInitFunction() {
+    setProgress(Math.max(progress, 0.5), 'Baigiama inicializacija...');
+  },
+};
+
+window.addEventListener('message', (e) => {
+  const fn = handlers[e.data && e.data.eventName];
+  if (fn) fn(e.data);
+});
+
+buildSlides();
+setProgress(0, 'Inicializuojama...');
+setInterval(rotateSlides, 6500);
+setInterval(rotateTips, 9000);
+rotateTips();
+
+// Fallback progress jei FiveM eventai vėluoja
+let fake = 0;
+const fakeTimer = setInterval(() => {
+  if (progress >= 0.92) {
+    clearInterval(fakeTimer);
+    return;
+  }
+  fake += 0.004 + Math.random() * 0.006;
+  setProgress(fake, progressDetail.textContent);
+}, 400);
