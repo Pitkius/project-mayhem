@@ -62,6 +62,13 @@ const TIPS = [
   'Kazino — laimė kartais, bet bankas visada laimi.',
 ];
 
+const MUSIC = {
+  enabled: true,
+  volume: 0.28,
+  track: 'assets/gta_theme.mp3',
+  label: 'GTA V — Los Santos',
+};
+
 const slidesEl = document.getElementById('slides');
 const slideTag = document.getElementById('slideTag');
 const slideTitle = document.getElementById('slideTitle');
@@ -176,3 +183,50 @@ const fakeTimer = setInterval(() => {
   fake += 0.004 + Math.random() * 0.006;
   setProgress(fake, progressDetail.textContent);
 }, 400);
+
+function initLoadscreenMusic() {
+  const audio = document.getElementById('themeAudio');
+  const toggle = document.getElementById('musicToggle');
+  const volume = document.getElementById('musicVolume');
+  const label = document.getElementById('musicLabel');
+  if (!audio || !toggle || !volume) return;
+
+  let muted = false;
+  let hasFile = false;
+
+  if (label) label.textContent = MUSIC.label || 'GTA V — Los Santos';
+  volume.value = String(Math.round((MUSIC.volume || 0.28) * 100));
+  audio.volume = MUSIC.volume || 0.28;
+
+  if (MUSIC.enabled && MUSIC.track) {
+    audio.src = MUSIC.track;
+    audio.load();
+    audio.play().then(() => {
+      hasFile = true;
+    }).catch(() => {
+      hasFile = false;
+    });
+  }
+
+  const syncUi = () => {
+    toggle.classList.toggle('is-muted', muted);
+    toggle.textContent = muted ? '🔇' : '♪';
+    audio.muted = muted;
+  };
+
+  toggle.addEventListener('click', () => {
+    muted = !muted;
+    syncUi();
+    if (!muted && hasFile) audio.play().catch(() => {});
+  });
+
+  volume.addEventListener('input', () => {
+    audio.volume = Number(volume.value) / 100;
+    if (audio.volume > 0) muted = false;
+    syncUi();
+  });
+
+  syncUi();
+}
+
+initLoadscreenMusic();

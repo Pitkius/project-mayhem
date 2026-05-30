@@ -14,8 +14,8 @@ function nuiImageUrl(pathFromHtml) {
 }
 
 const MAP_SAT_URL = nuiImageUrl('mdt/asset/gtav_satellite.jpg');
-const MAP_MIN_SCALE = 0.85;
-const MAP_MAX_SCALE = 4.0;
+const MAP_MIN_SCALE = 0.35;
+const MAP_MAX_SCALE = 5.0;
 const MAP_FIT_PAD = 1.0;
 
 function resourceName() {
@@ -89,6 +89,9 @@ window.addEventListener('message', (e) => {
     document.getElementById('cctvLiveHint').classList.toggle('hidden', !d.active);
     if (d.active && d.label) {
       document.getElementById('cctvStatus').textContent = d.label;
+    }
+    if (!d.active) {
+      onSurveillanceEnded();
     }
   }
   if (d.action === 'bodycamOverlay') {
@@ -399,7 +402,7 @@ function fitDispatchMapInView() {
   const sw = Math.max(1, surface.offsetWidth);
   const sh = Math.max(1, surface.offsetHeight);
   const fitScale = Math.min(cw / sw, ch / sh) * MAP_FIT_PAD;
-  dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, Math.min(1, fitScale)));
+  dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, fitScale));
   dispatchMapPan.x = 0;
   dispatchMapPan.y = 0;
   applyDispatchMapTransform();
@@ -701,10 +704,20 @@ let selectedCctvId = null;
 let cctvLiveActive = false;
 let selectedBodycamId = null;
 let cctvHudTimer = null;
+let mdtTabBeforeSurveillance = null;
+
+function activateMdtTab(tabId) {
+  if (!tabId) return;
+  const tab = document.querySelector(`.tab[data-tab="${tabId}"]`);
+  if (tab) tab.click();
+}
 
 function setSurveillanceOverlay(active, label, meta, cctvData) {
   const ov = document.getElementById('survOverlay');
   document.body.classList.toggle('mdt-surveillance-live', !!active);
+  if (active && !mdtTabBeforeSurveillance) {
+    mdtTabBeforeSurveillance = document.querySelector('.tab.active')?.dataset.tab || 'cctv';
+  }
   if (!ov) return;
   ov.classList.toggle('hidden', !active);
   document.getElementById('survOverlayLabel').textContent = label || 'LIVE';
@@ -733,14 +746,27 @@ function setSurveillanceOverlay(active, label, meta, cctvData) {
   }
 }
 
-function stopSurveillanceUi() {
+function onSurveillanceEnded(restoreTab) {
   setSurveillanceOverlay(false);
-  nuiPost('cctvStop', {});
-  nuiPost('bodycamStop', {});
   cctvLiveActive = false;
   document.getElementById('cctvLiveHint')?.classList.add('hidden');
   document.getElementById('bodycamLiveHint')?.classList.add('hidden');
   updateCctvNavButtons();
+  if (restoreTab !== false) {
+    const tab = mdtTabBeforeSurveillance || 'cctv';
+    mdtTabBeforeSurveillance = null;
+    activateMdtTab(tab);
+  }
+}
+
+function stopSurveillanceUi(restoreTab) {
+  if (!cctvLiveActive && !document.body.classList.contains('mdt-surveillance-live')) {
+    onSurveillanceEnded(restoreTab);
+    return;
+  }
+  nuiPost('cctvStop', {});
+  nuiPost('bodycamStop', {});
+  onSurveillanceEnded(restoreTab);
 }
 
 function getSelectedCctvSite() {

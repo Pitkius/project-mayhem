@@ -2,9 +2,8 @@
 local spawned = {}
 
 local function loadModel(model)
-    local hash = type(model) == 'string' and joaat(model) or model
-    if not IsModelInCdimage(hash) then return nil end
-    return hash
+    if not model then return nil end
+    return type(model) == 'string' and joaat(model) or model
 end
 
 local function spawnEntry(entry)

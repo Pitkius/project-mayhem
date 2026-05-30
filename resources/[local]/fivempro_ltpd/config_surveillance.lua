@@ -70,8 +70,8 @@ Config.Surveillance.CctvCameras = {
     -- Juvelyrika / kazino
     { id = 'vangelico_front', label = 'Vitrina', zone = 'jewelry', siteId = 'vangelico', coords = vector3(-622.5, -232.0, 39.5), lookAt = vector3(-624.5, -232.5, 38.55), fov = 50.0, audio = true, spawnProp = false },
     { id = 'vangelico_vault', label = 'Salė', zone = 'jewelry', siteId = 'vangelico', coords = vector3(-629.0, -238.5, 39.5), lookAt = vector3(-631.0, -239.0, 38.55), fov = 55.0, audio = true, spawnProp = false },
-    { id = 'casino_main', label = 'Pagrindinė salė', zone = 'casino', siteId = 'casino', coords = vector3(917.0, 43.5, 85.5), lookAt = vector3(930.45, 46.35, 81.10), fov = 55.0, audio = true, spawnProp = false },
-    { id = 'casino_garage', label = 'Garažas', zone = 'casino', siteId = 'casino', coords = vector3(936.0, 0.5, 79.5), lookAt = vector3(930.45, 46.35, 81.10), fov = 55.0, audio = true, spawnProp = false },
+    { id = 'casino_main', label = 'Aptarnavimo įėjimas', zone = 'casino', siteId = 'casino', coords = vector3(924.77, 46.85, 81.11), lookAt = vector3(936.52, 55.08, 81.11), fov = 55.0, audio = true, spawnProp = false },
+    { id = 'casino_service', label = 'Sandėlio zona', zone = 'casino', siteId = 'casino', coords = vector3(936.52, 55.08, 81.11), lookAt = vector3(948.32, 33.44, 81.11), fov = 55.0, audio = true, spawnProp = false },
 
     -- Policija
     { id = 'mrpd_lobby', label = 'Vestibiulis', zone = 'police', siteId = 'mrpd', propModel = `prop_cctv_cam_01a`, propCoords = vector4(438.5, -985.8, 33.85, 200.0), lookAt = vector3(441.2, -981.5, 30.2), lookDistance = 14.0, pitchOffset = -18.0, yawMax = 50.0, pitchMax = 16.0, fov = 52.0, audio = true, spawnProp = false, propSearchRadius = 22.0 },

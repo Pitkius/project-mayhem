@@ -27,8 +27,8 @@ let lastState = null;
 let mapCfg = null;
 const GANG_MAP_IMG_W = 1066;
 const GANG_MAP_IMG_H = 861;
-const GANG_MAP_MIN_SCALE = 0.45;
-const GANG_MAP_MAX_SCALE = 4.0;
+const GANG_MAP_MIN_SCALE = 0.35;
+const GANG_MAP_MAX_SCALE = 5.0;
 const GANG_MAP_FIT_PAD = 0.98;
 let gangsMapPan = { x: 0, y: 0, scale: 1 };
 let gangsMapLayoutReady = false;
@@ -202,7 +202,7 @@ function fitGangsMapInView() {
   const sw = Math.max(1, surface.offsetWidth);
   const sh = Math.max(1, surface.offsetHeight);
   const fitScale = Math.min(cw / sw, ch / sh) * GANG_MAP_FIT_PAD;
-  gangsMapPan.scale = Math.max(GANG_MAP_MIN_SCALE, Math.min(GANG_MAP_MAX_SCALE, Math.min(1, fitScale)));
+  gangsMapPan.scale = Math.max(GANG_MAP_MIN_SCALE, Math.min(GANG_MAP_MAX_SCALE, fitScale));
   gangsMapPan.x = 0;
   gangsMapPan.y = 0;
   applyGangsMapTransform();
@@ -308,7 +308,12 @@ function paintTurfMarkers(state) {
     zone.style.width = `${size.w}%`;
     zone.style.height = `${size.h}%`;
     zone.style.borderColor = disputed ? "rgba(250,204,21,0.9)" : hasOwner ? hexToRgba(fillHex, 0.72) : "rgba(148,163,184,0.55)";
-    zone.style.backgroundColor = hasOwner ? hexToRgba(fillHex, 0.38) : "rgba(51, 65, 85, 0.28)";
+    zone.style.backgroundColor = hasOwner ? hexToRgba(fillHex, 0.42) : "rgba(51, 65, 85, 0.35)";
+
+    const tag = document.createElement("span");
+    tag.className = "turf-zone-label" + (hasOwner ? " owned" : "");
+    tag.textContent = hasOwner ? `${label} · ${owner}` : label;
+    zone.appendChild(tag);
 
     zone.addEventListener("click", (e) => {
       e.stopPropagation();

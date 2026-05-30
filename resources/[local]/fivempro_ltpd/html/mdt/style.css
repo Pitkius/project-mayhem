@@ -336,7 +336,21 @@ input, select {
   letter-spacing: 0.08em;
 }
 body.mdt-surveillance-live #app {
-  display: none !important;
+  display: flex !important;
+  position: fixed;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(440px, 36vw);
+  max-height: 88vh;
+  z-index: 10001;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.55);
+}
+body.mdt-surveillance-live #panel-cctv {
+  display: block !important;
+}
+body.mdt-surveillance-live .tab:not([data-tab="cctv"]) {
+  opacity: 0.55;
 }
 body.mdt-surveillance-live #survOverlay {
   z-index: 10000;

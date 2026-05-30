@@ -19,6 +19,7 @@ client_scripts {
     'client/main.lua',
     'client/minigames.lua',
     'client/bank_doors.lua',
+    'client/heist_doors.lua',
     'client/casino_heist.lua',
     'client/atm.lua',
     'client/robberies.lua',

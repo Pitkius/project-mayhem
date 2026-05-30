@@ -3,6 +3,9 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local session = nil
 
 local function resetSession()
+    if session and session.locId then
+        exports['fivempro_hacking']:ReleaseHeistDoors(session.locId)
+    end
     if session and exports['fivempro_hacking']:IsCasinoHeist(session.tierId) then
         exports['fivempro_hacking']:CleanupCasinoHeist()
     end
@@ -148,6 +151,7 @@ local function startRobbery(tierId, loc)
             casinoLootIndex = 0,
         }
         TriggerServerEvent('fivempro_hacking:server:robberyClaim', tierId, loc.id)
+        exports['fivempro_hacking']:LockHeistDoors(loc.id)
         QBCore.Functions.Notify(('Pradedamas: %s'):format(loc.label), 'primary')
         if exports['fivempro_hacking']:IsCasinoHeist(tierId) then
             exports['fivempro_hacking']:CasinoHeistIntro()
@@ -158,6 +162,7 @@ end
 
 RegisterNetEvent('fivempro_hacking:client:robberyNextPhase', function(tierId, locId, completedPhase)
     if not session or session.tierId ~= tierId or session.locId ~= locId then return end
+    exports['fivempro_hacking']:UnlockHeistDoorsForPhase(locId, completedPhase)
     local bankTiers = { bank_fleeca = true, bank_main = true, vault = true }
     if completedPhase == 'hack' and bankTiers[tierId] then
         playBankDoorOpen(session.coords)

@@ -482,6 +482,30 @@ select.color-select-native {
   outline-offset: 2px;
 }
 
+.turf-zone-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 92%;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.72);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.turf-zone-label.owned {
+  color: #fef3c7;
+}
+
 .turf-sq-marker-wrap {
   background: transparent !important;
   border: none !important;

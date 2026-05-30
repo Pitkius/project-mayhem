@@ -5,16 +5,19 @@ lua54 'yes'
 name 'fivempro_loadscreen'
 author 'FIVEMPROJEKTAS'
 description 'GTA-style loading screen with rotating scenes'
-version '1.0.1'
+version '1.0.2'
 
 loadscreen 'html/index.html'
 loadscreen_manual_shutdown 'yes'
+
+shared_script 'config.lua'
 
 files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
     'html/assets/*.jpg',
+    'html/assets/*.mp3',
 }
 
 client_script 'client/main.lua'

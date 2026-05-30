@@ -760,7 +760,11 @@ function updateDrillUI(st) {
   if (drillPressVal) drillPressVal.textContent = press + "%";
   if (drillHealthVal) drillHealthVal.textContent = health + "%";
   if (drillDepthVal) drillDepthVal.textContent = depth + "%";
-  if (drillTempBar) drillTempBar.style.width = temp + "%";
+  if (drillTempBar) {
+    drillTempBar.style.width = temp + "%";
+    drillTempBar.parentElement?.classList.toggle("warn", temp > 75);
+    drillTempBar.parentElement?.classList.toggle("danger", temp > 90);
+  }
   if (drillPressBar) drillPressBar.style.width = press + "%";
   if (drillHealthBar) drillHealthBar.style.width = health + "%";
   if (drillDepthBarPro) drillDepthBarPro.style.width = depth + "%";
@@ -803,23 +807,30 @@ function startDrill(data) {
     if (!physicalState || physicalState.mode !== "drill") return;
     const st = physicalState;
     if (Date.now() > st.deadline) return finishPhysical(false);
-    if (st.keys.w) st.power = Math.min(100, st.power + 1.8);
-    if (st.keys.s) st.power = Math.max(0, st.power - 2.2);
-    if (st.keys.a) st.align = Math.max(0.02, st.align - 0.028);
-    if (st.keys.d) st.align = Math.min(0.98, st.align + 0.028);
-    st.align += (Math.random() - 0.5) * 0.008;
-    st.pressure = Math.max(0, Math.min(100, st.pressure + (st.power - 52) * 0.04));
-    const inGreen = Math.abs(st.align - st.greenCenter) <= st.greenW / 2;
-    const goodPress = st.pressure >= 38 && st.pressure <= 72;
-    if (inGreen && goodPress) {
-      st.depth = Math.min(st.target, st.depth + 0.38 + st.power * 0.004);
-      st.temp = Math.max(20, st.temp - 0.35);
-    } else {
-      st.temp = Math.min(100, st.temp + (inGreen ? 0.45 : 1.15));
-      if (!inGreen) st.health = Math.max(0, st.health - 0.55);
+    const drilling = st.keys.w;
+    if (st.keys.w) st.power = Math.min(100, st.power + 1.6);
+    if (st.keys.s) {
+      st.power = Math.max(0, st.power - 2.4);
+      st.temp = Math.max(18, st.temp - 1.05);
     }
-    if (st.power > 78) st.temp = Math.min(100, st.temp + 0.65);
-    if (st.temp > 88) st.health = Math.max(0, st.health - 0.35);
+    if (!st.keys.w && !st.keys.s) st.power = Math.max(35, st.power - 0.35);
+    if (st.keys.a) st.align = Math.max(0.02, st.align - 0.032);
+    if (st.keys.d) st.align = Math.min(0.98, st.align + 0.032);
+    if (drilling) st.align += (Math.random() - 0.5) * 0.004;
+    st.pressure = Math.max(0, Math.min(100, st.pressure + (st.power - 50) * 0.035));
+    const inGreen = Math.abs(st.align - st.greenCenter) <= st.greenW / 2;
+    const goodPress = st.pressure >= 36 && st.pressure <= 74;
+    if (drilling && inGreen && goodPress) {
+      st.depth = Math.min(st.target, st.depth + 0.42 + st.power * 0.0035);
+      st.temp = Math.max(18, st.temp - 0.55);
+    } else if (drilling) {
+      st.temp = Math.min(100, st.temp + (inGreen ? 0.35 : 0.85));
+      if (!inGreen) st.health = Math.max(0, st.health - 0.45);
+    } else {
+      st.temp = Math.max(18, st.temp - 0.65);
+    }
+    if (drilling && st.power > 82) st.temp = Math.min(100, st.temp + 0.35);
+    if (st.temp > 90) st.health = Math.max(0, st.health - 0.28);
     if (st.temp >= 100 || st.health <= 0) return finishPhysical(false);
     const stageSize = st.target / st.stages;
     if (st.depth >= stageSize * (st.stage + 1) && st.stage < st.stages - 1) {

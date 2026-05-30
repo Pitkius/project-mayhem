@@ -322,7 +322,9 @@ input { margin-left: 8px; padding: 6px; width: 64px; }
   width: 0%;
   transition: width 0.05s linear;
 }
-.drill-stat-bar.heat > div { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+.drill-stat-bar.heat > div { background: linear-gradient(90deg, #22c55e, #f59e0b, #ef4444); }
+.drill-stat-bar.heat.warn > div { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+.drill-stat-bar.heat.danger > div { background: linear-gradient(90deg, #ef4444, #b91c1c); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
 .drill-stat-bar.press > div { background: linear-gradient(90deg, #22c55e, #86efac); }
 .drill-stat-bar.health > div { background: linear-gradient(90deg, #22c55e, #4ade80); }
 .drill-stat-bar.depth > div { background: linear-gradient(90deg, #38bdf8, #22d3ee); }
