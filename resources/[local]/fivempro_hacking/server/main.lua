@@ -229,6 +229,11 @@ QBCore.Functions.CreateCallback('fivempro_hacking:server:getTabletData', functio
             return out
         end)(),
         flashDrives = listFlashDrives(Player),
+        networkTargets = Config.NetworkTargets or {},
+        targetMeta = Config.TabletTargetMeta or {},
+        tabletFiles = Config.TabletFiles or {},
+        tabletContracts = Config.TabletContracts or {},
+        marketItems = Config.BlackMarket and Config.BlackMarket.items or {},
     })
 end)
 

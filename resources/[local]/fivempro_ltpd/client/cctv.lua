@@ -134,8 +134,17 @@ RegisterNetEvent('fivempro_ltpd:client:surveillanceStopAll', function()
 end)
 
 RegisterNUICallback('cctvList', function(_, cb)
+    local done = false
+    local function reply(res)
+        if done then return end
+        done = true
+        cb(res or { ok = false, cameras = {}, sites = {} })
+    end
+    SetTimeout(12000, function()
+        reply({ ok = false, msg = 'CCTV sąrašo timeout' })
+    end)
     QBCore.Functions.TriggerCallback('fivempro_ltpd:server:cctvList', function(res)
-        cb(res or { ok = false, cameras = {} })
+        reply(res)
     end)
 end)
 

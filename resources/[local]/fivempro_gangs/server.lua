@@ -1,18 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
---- Ar žaidėjo pedas yra nurodyto turf Config.Turfs zonoje (serverio koordinatės)
 local function playerInTurfServer(src, turfId)
-    turfId = tostring(turfId or '')
-    local cfg = Config.Turfs and Config.Turfs[turfId]
-    if not cfg or not cfg.center then return false end
-    local ped = GetPlayerPed(src)
-    if not ped or ped == 0 then return false end
-    local p = GetEntityCoords(ped)
-    local c = cfg.center
-    local r = tonumber(cfg.radius) or 180.0
-    local px, py, pz = p.x + 0.0, p.y + 0.0, p.z + 0.0
-    local cx, cy, cz = c.x + 0.0, c.y + 0.0, c.z + 0.0
-    return math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy) + (pz - cz) * (pz - cz)) <= r + 5.0
+    return Config.PlayerInTurfCell and Config.PlayerInTurfCell(src, turfId) or false
 end
 
 local function hasGangAdminPermission(src)
@@ -78,10 +67,10 @@ local function getActiveTurfWars()
     ]]) or {}
     local out = {}
     for _, r in ipairs(rows) do
-        local cfg = Config.Turfs and Config.Turfs[r.turf_id]
+        local cfg = Config.GetTurfCell and Config.GetTurfCell(r.turf_id) or (Config.Turfs and Config.Turfs[r.turf_id])
         out[#out + 1] = {
             turfId = r.turf_id,
-            label = cfg and cfg.label or r.turf_id,
+            label = cfg and (cfg.district or cfg.label) or r.turf_id,
             owner = r.owner_name or '—',
             influence = tonumber(r.influence) or 0,
             heat = tonumber(r.heat) or 0,
@@ -101,10 +90,10 @@ local function getRecentGangActivities(limit)
     ]], { limit }) or {}
     local out = {}
     for _, r in ipairs(rows) do
-        local cfg = Config.Turfs and Config.Turfs[r.turf_id]
+        local cfg = Config.GetTurfCell and Config.GetTurfCell(r.turf_id) or (Config.Turfs and Config.Turfs[r.turf_id])
         out[#out + 1] = {
             turfId = r.turf_id,
-            label = cfg and cfg.label or r.turf_id,
+            label = cfg and (cfg.district or cfg.label) or r.turf_id,
             gangName = r.gang_name,
             colorHex = r.color_hex,
             profit = tonumber(r.profit) or 0,
@@ -114,37 +103,82 @@ local function getRecentGangActivities(limit)
     return out
 end
 
+local function enrichTurfRow(r)
+    local cfg = Config.GetTurfCell and Config.GetTurfCell(r.turf_id) or (Config.Turfs and Config.Turfs[r.turf_id])
+    r.turf_label = cfg and cfg.label or r.turf_id
+    r.district = cfg and cfg.district or r.turf_label
+    r.cell_num = cfg and cfg.cell_num or 0
+    if cfg and cfg.center then
+        r.center_x = tonumber(cfg.center.x) or 0.0
+        r.center_y = tonumber(cfg.center.y) or 0.0
+        r.center_z = tonumber(cfg.center.z) or 0.0
+        r.radius = tonumber(cfg.radius) or 90.0
+        r.min_x = tonumber(cfg.minX)
+        r.min_y = tonumber(cfg.minY)
+        r.max_x = tonumber(cfg.maxX)
+        r.max_y = tonumber(cfg.maxY)
+    else
+        r.center_x, r.center_y, r.center_z, r.radius = 0.0, 0.0, 0.0, 90.0
+    end
+    local inf = tonumber(r.influence)
+    if inf == nil then inf = tonumber(r.progress) or 0 end
+    r.influence = inf
+    r.progress = inf
+    r.graffiti_pct = math.min(100, math.floor(inf / 5))
+    local ownerId = tonumber(r.owner_gang_id) or 0
+    if ownerId > 0 then
+        r.status = inf >= 75 and 'kontroliuojamas' or (inf >= 25 and 'užimtas' or 'ginčijamas')
+        r.is_war = inf > 0 and inf < 100
+    else
+        r.status = inf > 0 and 'ginčijamas' or 'neužimtas'
+        r.is_war = inf > 0
+    end
+    r.owner_display = (r.owner_name and r.owner_name ~= '') and r.owner_name or 'Neutralu'
+    r.map_color = Config.FactionColorForOwner and Config.FactionColorForOwner(r.owner_display, r.owner_color_hex) or (r.owner_color_hex or '#64748B')
+    r.active_members = tonumber(r.active_members) or 0
+    return r
+end
+
+local function countPlayersPerTurf()
+    local counts = {}
+    for _, playerId in ipairs(GetPlayers()) do
+        local src = tonumber(playerId)
+        if not src then goto continue end
+        local ped = GetPlayerPed(src)
+        if not ped or ped == 0 then goto continue end
+        local p = GetEntityCoords(ped)
+        local tid = Config.FindTurfAt and Config.FindTurfAt(p.x, p.y)
+        if tid then
+            counts[tid] = (counts[tid] or 0) + 1
+        end
+        ::continue::
+    end
+    return counts
+end
+
 local function getTurfs()
-    local rows = MySQL.query.await([[
+    local activeCounts = countPlayersPerTurf()
+    local dbRows = MySQL.query.await([[
         SELECT t.turf_id, t.owner_gang_id, t.owner_name, t.progress, t.influence, t.heat, t.sales_count, t.total_profit,
                g.color_hex AS owner_color_hex, g.secondary_color_hex AS owner_secondary_color_hex
         FROM fivempro_gang_turfs t
         LEFT JOIN fivempro_gangs g ON g.id = t.owner_gang_id
-        ORDER BY turf_id ASC
     ]]) or {}
-    for _, r in ipairs(rows) do
-        local cfg = Config.Turfs and Config.Turfs[r.turf_id]
-        r.turf_label = cfg and cfg.label or r.turf_id
-        if cfg and cfg.center then
-            r.center_x = tonumber(cfg.center.x) or 0.0
-            r.center_y = tonumber(cfg.center.y) or 0.0
-            r.center_z = tonumber(cfg.center.z) or 0.0
-            r.radius = tonumber(cfg.radius) or 180.0
-        else
-            r.center_x, r.center_y, r.center_z, r.radius = 0.0, 0.0, 0.0, 150.0
-        end
-        local inf = tonumber(r.influence)
-        if inf == nil then inf = tonumber(r.progress) or 0 end
-        r.influence = inf
-        r.progress = inf
-        local ownerId = tonumber(r.owner_gang_id) or 0
-        if ownerId > 0 then
-            r.status = inf >= 75 and 'kontroliuojamas' or (inf >= 25 and 'užimtas' or 'ginčijamas')
-        else
-            r.status = inf > 0 and 'ginčijamas' or 'neužimtas'
-        end
+    local dbMap = {}
+    for _, r in ipairs(dbRows) do
+        dbMap[r.turf_id] = r
     end
-    return rows
+    local out = {}
+    for turfId, _ in pairs(Config.TurfCells or Config.Turfs or {}) do
+        local r = dbMap[turfId] or { turf_id = turfId }
+        r.active_members = activeCounts[turfId] or 0
+        enrichTurfRow(r)
+        out[#out + 1] = r
+    end
+    table.sort(out, function(a, b)
+        return (tonumber(a.cell_num) or 0) < (tonumber(b.cell_num) or 0)
+    end)
+    return out
 end
 
 local function createGang(src, name, gangType, colorHex, secondaryColorHex)
@@ -218,7 +252,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
                 colorUsage = getColorUsage(),
                 turfs = getTurfs(),
                 tabletMap = Config.TabletMap or {},
-                mapGrid = Config.MapGrid or { cols = 28, rows = 20 },
+                factionColors = Config.FactionColors or {},
                 topGangs = getTopGangs(5),
                 activeWars = getActiveTurfWars(),
                 recentActivities = getRecentGangActivities(6),
@@ -237,7 +271,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
             palette = Config.ColorPalette or {},
             colorUsage = getColorUsage(),
             tabletMap = Config.TabletMap or {},
-            mapGrid = Config.MapGrid or { cols = 28, rows = 20 },
+            factionColors = Config.FactionColors or {},
             topGangs = getTopGangs(5),
             activeWars = getActiveTurfWars(),
             recentActivities = getRecentGangActivities(6),
@@ -503,7 +537,7 @@ MySQL.ready(function()
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
 
-    for turfId, _ in pairs(Config.Turfs or {}) do
+    for turfId, _ in pairs(Config.TurfCells or Config.Turfs or {}) do
         MySQL.insert.await('INSERT IGNORE INTO fivempro_gang_turfs (turf_id) VALUES (?)', { turfId })
     end
 

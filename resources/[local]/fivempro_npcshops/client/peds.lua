@@ -6,14 +6,6 @@ local configured = {}
 local barberPedByIndex = {}
 local pendingTargets = {}
 local pendingJobTargets = {}
-local inBarberFlow = false
-
-AddEventHandler('qb-clothing:client:onMenuClose', function()
-    if inBarberFlow then
-        inBarberFlow = false
-        ClearPedTasks(PlayerPedId())
-    end
-end)
 
 local function queueTarget(ped, data, jobQueue)
     if not ped or not DoesEntityExist(ped) then return end
@@ -207,30 +199,13 @@ CreateThread(function()
     end
 end)
 
---- Barber animacijai reikia ped reference
 RegisterNetEvent('fivempro_npcshops:client:openBarberWithAnim', function(data)
     local idx = data and tonumber(data.shopIndex)
     local cfg = idx and Config.BarberPeds[idx] or nil
-    if not cfg then
-        return TriggerEvent('qb-clothing:client:openBarberOnly')
+    local barberPed = idx and barberPedByIndex[idx] or nil
+    if BarberSession and BarberSession.Start then
+        return BarberSession.Start(cfg, barberPed)
     end
-
-    local ped = PlayerPedId()
-    local chair = cfg.chair or cfg.coords
-    inBarberFlow = true
-
-    ClearPedTasksImmediately(ped)
-    SetEntityCoordsNoOffset(ped, chair.x, chair.y, chair.z, false, false, false)
-    SetEntityHeading(ped, chair.w)
-    TaskStartScenarioAtPosition(ped, 'PROP_HUMAN_SEAT_CHAIR_MP_PLAYER', chair.x, chair.y, chair.z - 1.0, chair.w, 0, true, true)
-
-    local barberPed = barberPedByIndex[idx]
-    if barberPed and DoesEntityExist(barberPed) then
-        loadAnimDict('misshair_shop@hair_dressers')
-        TaskPlayAnim(barberPed, 'misshair_shop@hair_dressers', 'keeper_hair_cut_a', 8.0, -8.0, 3000, 1, 0.0, false, false, false)
-    end
-
-    Wait(1100)
     TriggerEvent('qb-clothing:client:openBarberOnly')
 end)
 

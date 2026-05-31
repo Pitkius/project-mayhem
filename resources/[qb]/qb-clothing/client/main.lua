@@ -435,7 +435,8 @@ end
 local function disableCam()
     RenderScriptCams(false, true, 250, 1, 0)
     DestroyCam(cam, false)
-
+    ClearFocus()
+    customCamLocation = nil
     FreezeEntityPosition(PlayerPedId(), false)
 end
 local function ChangeVariation(data)
@@ -1009,11 +1010,15 @@ RegisterNetEvent('qb-clothing:client:openMenu', function()
     })
 end)
 
-RegisterNetEvent('qb-clothing:client:openBarberOnly', function()
+RegisterNetEvent('qb-clothing:client:openBarberOnly', function(camLoc)
+  if camLoc and camLoc.x and camLoc.y and camLoc.z then
+    customCamLocation = camLoc
+  else
     customCamLocation = nil
-    openMenu({
-        {menu = "hair", label = Lang:t("menu.hair"), selected = true},
-    })
+  end
+  openMenu({
+    {menu = "hair", label = Lang:t("menu.hair"), selected = true},
+  })
 end)
 
 RegisterNetEvent('qb-clothing:client:openClothingOnly', function()

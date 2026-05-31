@@ -1,13 +1,14 @@
 Config = Config or {}
 
 --- Kirpyklos — vanilla qb-clothing zonos + kasininkės pozicija
+--- chair = kliento kėdės vieta (Z turi sutapti su interjeru; barber.lua ieško artimiausio chair prop)
 Config.BarberPeds = {
-    { model = 's_f_m_fembarber', coords = vector4(-814.22, -183.70, 37.57, 116.91), chair = vector4(-815.10, -184.85, 36.57, 296.0) },
-    { model = 's_f_m_fembarber', coords = vector4(-1282.61, -1116.82, 6.99, 89.25),  chair = vector4(-1282.80, -1116.50, 6.99, 180.0) },
-    { model = 's_f_m_fembarber', coords = vector4(136.78, -1708.40, 28.29, 140.11), chair = vector4(136.20, -1708.40, 28.29, 230.0) },
-    { model = 's_f_m_fembarber', coords = vector4(1212.80, -472.90, 65.20, 72.94),  chair = vector4(1211.00, -474.20, 65.20, 165.0) },
-    { model = 's_f_m_fembarber', coords = vector4(1931.50, 3729.70, 31.84, 212.61), chair = vector4(1933.90, 3730.50, 31.84, 295.0) },
-    { model = 's_f_m_fembarber', coords = vector4(-278.10, 6228.54, 30.70, 49.32),  chair = vector4(-277.00, 6228.10, 30.70, 225.0) },
+    { model = 's_f_m_fembarber', coords = vector4(-814.22, -183.70, 37.57, 116.91), chair = vector4(-815.05, -184.50, 37.57, 296.0) },
+    { model = 's_f_m_fembarber', coords = vector4(-1282.61, -1116.82, 6.99, 89.25),  chair = vector4(-1282.75, -1116.45, 6.99, 180.0) },
+    { model = 's_f_m_fembarber', coords = vector4(136.78, -1708.40, 28.29, 140.11), chair = vector4(136.35, -1708.55, 28.29, 230.0) },
+    { model = 's_f_m_fembarber', coords = vector4(1212.80, -472.90, 65.20, 72.94),  chair = vector4(1211.15, -474.25, 65.20, 165.0) },
+    { model = 's_f_m_fembarber', coords = vector4(1931.50, 3729.70, 31.84, 212.61), chair = vector4(1933.85, 3730.45, 31.84, 295.0) },
+    { model = 's_f_m_fembarber', coords = vector4(-278.10, 6228.54, 30.70, 49.32),  chair = vector4(-277.05, 6228.05, 30.70, 225.0) },
 }
 
 --- Rūbų parduotuvės — prie kasos (qb-clothing vanilla zonos)

@@ -184,6 +184,71 @@ Config.BlackMarket = {
 Config.ChainItem = 'tow_chain'
 Config.DrillItem = 'drill'
 
+--- HackOS planšetės NETWORK vaizdas (UI)
+Config.NetworkTargets = {
+    { id = 'bank_fleeca', label = 'Fleeca Bank', security = 1, status = 'Online', tierId = 'bank_fleeca' },
+    { id = 'bank_main', label = 'Pacific Bank', security = 5, status = 'Protected', tierId = 'bank_main' },
+    { id = 'atm', label = 'ATM Network', security = 1, status = 'Online', tierId = 'atm' },
+    { id = 'casino', label = 'Casino Network', security = 4, status = 'Protected', tierId = 'casino' },
+    { id = 'vault', label = 'Humane Labs', security = 5, status = 'Locked', tierId = 'vault' },
+    { id = 'store', label = 'Ammu Warehouse', security = 3, status = 'Online', tierId = 'store' },
+    { id = 'cctv', label = 'CCTV Grid', security = 2, status = 'Online', tierId = 'store' },
+    { id = 'traffic', label = 'Traffic Cameras', security = 1, status = 'Online', tierId = 'atm' },
+}
+
+Config.TabletTargetMeta = {
+    bank_fleeca = {
+        encryption = 'AES-128',
+        firewall = 'Active',
+        rewards = { 'Cash', 'Bank Data', 'Security Codes' },
+        requirements = 'GhostOS',
+    },
+    bank_main = {
+        encryption = 'AES-256 + HSM',
+        firewall = 'Military Grade',
+        rewards = { 'Cash', 'Gold Bars', 'Federal Data' },
+        requirements = 'CipherOS',
+    },
+    atm = {
+        encryption = 'DES Legacy',
+        firewall = 'Weak',
+        rewards = { 'Cash', 'Card Skim Data' },
+        requirements = 'BasicOS',
+    },
+    casino = {
+        encryption = 'RSA-4096',
+        firewall = 'Active',
+        rewards = { 'Chips', 'Vault Codes', 'VIP Data' },
+        requirements = 'CipherOS',
+    },
+    vault = {
+        encryption = 'Quantum Seal',
+        firewall = 'Federal',
+        rewards = { 'Prototype Data', 'Bio Samples' },
+        requirements = 'FederalOS',
+    },
+    store = {
+        encryption = 'TLS 1.2',
+        firewall = 'Standard',
+        rewards = { 'Register Cash', 'Inventory Logs' },
+        requirements = 'BlackOS',
+    },
+}
+
+Config.TabletFiles = {
+    { id = 'bank_codes', label = 'Bank Codes', locked = false },
+    { id = 'police_evidence', label = 'Police Evidence', locked = true },
+    { id = 'encrypted_files', label = 'Encrypted Files', locked = true },
+    { id = 'casino_data', label = 'Casino Data', locked = true },
+    { id = 'blueprints', label = 'Blueprints', locked = true },
+}
+
+Config.TabletContracts = {
+    { id = 'atm_hack', label = 'Hack ATM', reward = 2500, tierId = 'atm' },
+    { id = 'cctv_off', label = 'Disable CCTV', reward = 5000, tierId = 'store' },
+    { id = 'corp_data', label = 'Steal Corporate Data', reward = 12000, tierId = 'bank_main' },
+}
+
 --- Test vieta (kaip mechanikų sandbox): blip + NPC + $1 parduotuvė visiems heist/hacking itemams.
 Config.DebugHeistVendor = {
     enabled = true,

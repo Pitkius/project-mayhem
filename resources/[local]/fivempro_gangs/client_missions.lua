@@ -23,15 +23,9 @@ local function setMissionBlip(coords, label)
 end
 
 local function getCurrentTurfId()
-    local ped = PlayerPedId()
-    local p = GetEntityCoords(ped)
-    for turfId, turf in pairs(Config.Turfs or {}) do
-        local c = turf.center
-        if #(p - vector3(c.x, c.y, c.z)) <= (turf.radius or 150.0) then
-            return turfId
-        end
-    end
-    return nil
+    local p = GetEntityCoords(PlayerPedId())
+    local id = Config.FindTurfAt(p.x, p.y)
+    return id
 end
 
 local function runProgress(ms, label)

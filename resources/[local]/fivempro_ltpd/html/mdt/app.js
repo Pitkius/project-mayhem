@@ -2,6 +2,10 @@ const app = document.getElementById('app');
 const btnClose = document.getElementById('btnClose');
 let dispatchPoll = null;
 let dispatchReadOnly = false;
+let mdtSessionActive = false;
+let mdtSurveillanceLive = false;
+let mdtFetchFailStreak = 0;
+const MDT_FETCH_FAIL_MAX = 4;
 let dispatchMapFitScale = 1;
 const MAP_MAX_SCALE = 5.0;
 const MAP_FIT_PAD = 1.0;
@@ -71,8 +75,23 @@ function resourceName() {
   return 'fivempro_ltpd';
 }
 
-function nuiPost(endpoint, data) {
-  if (app.classList.contains('hidden')) return Promise.resolve(null);
+function mdtLocalClose() {
+  mdtSessionActive = false;
+  mdtSurveillanceLive = false;
+  mdtFetchFailStreak = 0;
+  app.classList.add('hidden');
+  mdtDocked = false;
+  app.classList.remove('is-docked');
+  dispatchMapLayoutReady = false;
+  stopDispatchPoll();
+  stopSurveillanceUi(false);
+}
+
+function nuiPost(endpoint, data, opts) {
+  const force = opts && opts.force === true;
+  if (!force && (!mdtSessionActive || app.classList.contains('hidden'))) {
+    return Promise.resolve(null);
+  }
   return fetch(`https://${resourceName()}/${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json; charset=UTF-8' },
@@ -82,16 +101,38 @@ function nuiPost(endpoint, data) {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();
     })
+    .then((json) => {
+      mdtFetchFailStreak = 0;
+      return json;
+    })
     .catch((err) => {
-      console.warn('[mdt] nuiPost', endpoint, err);
+      mdtFetchFailStreak += 1;
+      if (mdtFetchFailStreak === 1 || mdtFetchFailStreak >= MDT_FETCH_FAIL_MAX) {
+        console.warn('[mdt] nuiPost', endpoint, err);
+      }
+      if (mdtFetchFailStreak >= MDT_FETCH_FAIL_MAX) {
+        stopDispatchPoll();
+      }
       return null;
     });
+}
+
+function mdtEnsureConnected() {
+  return nuiPost('mdtPing', {}).then((res) => {
+    if (!res || res.ok !== true || res.mdtOpen !== true) {
+      mdtSessionActive = false;
+      return false;
+    }
+    return true;
+  });
 }
 
 window.addEventListener('message', (e) => {
   const d = e.data;
   if (!d || !d.action) return;
   if (d.action === 'open') {
+    mdtSessionActive = true;
+    mdtFetchFailStreak = 0;
     app.classList.remove('hidden');
     mdtDocked = false;
     app.classList.remove('is-docked');
@@ -128,20 +169,19 @@ window.addEventListener('message', (e) => {
         dispatchMapLayoutReady = true;
       });
     });
-    startDispatchPoll();
+    mdtEnsureConnected().then((ok) => {
+      if (ok) startDispatchPoll();
+    });
   }
   if (d.action === 'close') {
-    app.classList.add('hidden');
-    mdtDocked = false;
-    app.classList.remove('is-docked');
-    dispatchMapLayoutReady = false;
-    stopDispatchPoll();
-    stopSurveillanceUi();
+    mdtLocalClose();
   }
   if (d.action === 'dock') {
     setMdtDocked(true, true);
   }
   if (d.action === 'cctvOverlay') {
+    mdtSurveillanceLive = d.active === true;
+    if (mdtSurveillanceLive) stopDispatchPoll();
     const meta = [d.camId ? `ID ${d.camId}` : '', d.audio ? 'Garsas' : 'Be garso'].filter(Boolean).join(' • ');
     setSurveillanceOverlay(d.active, d.label || 'CCTV LIVE', meta, d);
     document.getElementById('cctvLiveHint').classList.toggle('hidden', !d.active);
@@ -150,20 +190,32 @@ window.addEventListener('message', (e) => {
     }
     if (!d.active) {
       onSurveillanceEnded();
+      if (mdtSessionActive) startDispatchPoll();
     }
   }
   if (d.action === 'bodycamOverlay') {
+    mdtSurveillanceLive = d.active === true;
+    if (mdtSurveillanceLive) stopDispatchPoll();
     setSurveillanceOverlay(d.active, 'BODYCAM LIVE', d.targetId ? `ID ${d.targetId}` : '');
     document.getElementById('bodycamLiveHint').classList.toggle('hidden', !d.active);
+    if (!d.active && mdtSessionActive) startDispatchPoll();
   }
 });
 
-btnClose.onclick = () => nuiPost('close', {});
+btnClose.onclick = () => {
+  mdtLocalClose();
+  nuiPost('close', {}, { force: true });
+};
 
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
+  if (e.key === 'Escape' && mdtSessionActive) {
     e.preventDefault();
-    nuiPost('close', {});
+    if (mdtSurveillanceLive || document.body.classList.contains('mdt-surveillance-live')) {
+      stopSurveillanceUi();
+      return;
+    }
+    mdtLocalClose();
+    nuiPost('close', {}, { force: true });
   }
 });
 
@@ -333,9 +385,13 @@ function stopDispatchPoll() {
 }
 
 function startDispatchPoll() {
+  if (!mdtSessionActive || mdtSurveillanceLive || app.classList.contains('hidden')) return;
   stopDispatchPoll();
   refreshDispatch();
-  dispatchPoll = setInterval(refreshDispatch, 2000);
+  dispatchPoll = setInterval(() => {
+    if (!mdtSessionActive || mdtSurveillanceLive) return;
+    refreshDispatch();
+  }, 2000);
 }
 
 function countObj(obj) {
@@ -709,6 +765,7 @@ function renderDispatch(res) {
 }
 
 function refreshDispatch() {
+  if (!mdtSessionActive || mdtSurveillanceLive) return Promise.resolve(null);
   return nuiPost('dispatchSnapshot', {}).then((res) => {
     if (!res) return null;
     renderDispatch(res);
@@ -870,6 +927,7 @@ function setSurveillanceOverlay(active, label, meta, cctvData) {
 function onSurveillanceEnded(restoreTab) {
   setSurveillanceOverlay(false);
   cctvLiveActive = false;
+  mdtSurveillanceLive = false;
   document.getElementById('cctvLiveHint')?.classList.add('hidden');
   document.getElementById('bodycamLiveHint')?.classList.add('hidden');
   updateCctvNavButtons();
@@ -885,8 +943,8 @@ function stopSurveillanceUi(restoreTab) {
     onSurveillanceEnded(restoreTab);
     return;
   }
-  nuiPost('cctvStop', {});
-  nuiPost('bodycamStop', {});
+  nuiPost('cctvStop', {}, { force: true });
+  nuiPost('bodycamStop', {}, { force: true });
   onSurveillanceEnded(restoreTab);
 }
 
@@ -1068,6 +1126,7 @@ function renderCctvPanel() {
 }
 
 function refreshCctvList() {
+  if (!mdtSessionActive) return Promise.resolve(null);
   return nuiPost('cctvList', {}).then((res) => {
     const listEl = document.getElementById('cctvList');
     if (!res || !res.ok) {

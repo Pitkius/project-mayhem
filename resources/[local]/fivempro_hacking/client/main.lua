@@ -55,6 +55,27 @@ RegisterNUICallback('close', function(_, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('networkAction', function(data, cb)
+    local tierId = data and data.tierId
+    local action = data and data.action
+    if action == 'breach' then
+        closeTablet()
+        local label = (Config.RobberyTiers[tierId] and Config.RobberyTiers[tierId].label) or tierId or 'taikinio'
+        QBCore.Functions.Notify(('Artėk prie „%s“ ir naudok target zoną (Pradėti įsilaužimą).'):format(label), 'primary', 8000)
+    elseif action == 'backdoor' then
+        QBCore.Functions.Notify('Backdoor modulis dar neaktyvuotas šiame taikinyje.', 'error')
+    end
+    cb('ok')
+end)
+
+RegisterNUICallback('marketBuy', function(data, cb)
+    local idx = tonumber(data and data.index)
+    if idx then
+        TriggerServerEvent('fivempro_hacking:server:buyBlackMarket', idx)
+    end
+    cb('ok')
+end)
+
 RegisterNUICallback('installDrive', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_hacking:server:installFromDrive', function(res)
         cb(res or { ok = false })

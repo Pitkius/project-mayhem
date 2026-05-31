@@ -23,6 +23,7 @@ files {
 
 shared_scripts {
     'config.lua',
+    'config_turf_cells.lua',
     'config_missions.lua',
 }
 

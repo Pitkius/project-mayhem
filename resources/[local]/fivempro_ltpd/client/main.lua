@@ -48,6 +48,15 @@ CreateThread(function()
     end
 end)
 
+--- NUI fetch veikia tik kai hasFocus=true (FiveM). Be cursor žaidėjas gali naudoti CCTV valdymus.
+local function setMdtNuiFocus(cursor)
+    if not mdtOpen then
+        SetNuiFocus(false, false)
+        return
+    end
+    SetNuiFocus(true, cursor == true)
+end
+
 local function openMdt()
     QBCore.Functions.TriggerCallback('fivempro_ltpd:server:canOpenMdt', function(can)
         if not can then
@@ -56,7 +65,7 @@ local function openMdt()
         QBCore.Functions.TriggerCallback('fivempro_ltpd:server:mdtContext', function(ctx)
             if not ctx then return end
             mdtOpen = true
-            SetNuiFocus(true, true)
+            setMdtNuiFocus(true)
             SendNUIMessage({ action = 'open', data = ctx })
         end)
     end)
@@ -71,28 +80,32 @@ RegisterCommand('mdt', function()
 end, false)
 
 RegisterNetEvent('fivempro_ltpd:client:mdtCctvFocus', function(restoreMdt)
-    if restoreMdt and mdtOpen then
-        SetNuiFocus(true, true)
-    else
+    if not mdtOpen then
         SetNuiFocus(false, false)
+        return
     end
+    if restoreMdt then
+        setMdtNuiFocus(true)
+    else
+        setMdtNuiFocus(false)
+    end
+end)
+
+RegisterNUICallback('mdtPing', function(_, cb)
+    cb({ ok = true, mdtOpen = mdtOpen == true })
 end)
 
 RegisterNUICallback('close', function(_, cb)
     closeMdt()
-    cb('ok')
+    cb({ ok = true })
 end)
 
 RegisterNUICallback('mdtSetDocked', function(data, cb)
     local docked = data and data.docked == true
-    if docked then
-        SetNuiFocus(false, false)
-    else
-        if mdtOpen then
-            SetNuiFocus(true, true)
-        end
+    if mdtOpen then
+        setMdtNuiFocus(not docked)
     end
-    cb('ok')
+    cb({ ok = true })
 end)
 
 RegisterNUICallback('searchPerson', function(data, cb)
@@ -137,8 +150,27 @@ local function isDispatchWritable()
 end
 
 RegisterNUICallback('dispatchSnapshot', function(_, cb)
+    if GetResourceState('fivempro_dispatch') ~= 'started' then
+        return cb({
+            ok = true,
+            readOnly = true,
+            calls = {},
+            crews = {},
+            units = {},
+            msg = 'fivempro_dispatch neįkeltas',
+        })
+    end
+    local done = false
+    local function reply(payload)
+        if done then return end
+        done = true
+        cb(payload or { ok = false, calls = {}, crews = {}, units = {} })
+    end
+    SetTimeout(12000, function()
+        reply({ ok = false, msg = 'Dispatch timeout', calls = {}, crews = {}, units = {} })
+    end)
     QBCore.Functions.TriggerCallback('fivempro_dispatch:server:getMdtSnapshot', function(result)
-        cb(result or { ok = false, calls = {}, crews = {}, units = {} })
+        reply(result or { ok = false, calls = {}, crews = {}, units = {} })
     end, 'police')
 end)
 

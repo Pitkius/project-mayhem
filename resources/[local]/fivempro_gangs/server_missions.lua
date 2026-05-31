@@ -7,15 +7,7 @@ local activeMissions = {}
 local pendingHackMission = {}
 
 local function playerInTurfServer(src, turfId)
-    turfId = tostring(turfId or '')
-    local cfg = Config.Turfs and Config.Turfs[turfId]
-    if not cfg or not cfg.center then return false end
-    local ped = GetPlayerPed(src)
-    if not ped or ped == 0 then return false end
-    local p = GetEntityCoords(ped)
-    local c = cfg.center
-    local r = tonumber(cfg.radius) or 180.0
-    return #(p - vector3(c.x, c.y, c.z)) <= r + 5.0
+    return Config.PlayerInTurfCell and Config.PlayerInTurfCell(src, turfId) or false
 end
 
 local function getPlayerGang(src)
@@ -208,26 +200,18 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:startMission', function(s
     end
 
     turfId = tostring(turfId or '')
-    if turfId == '' or not Config.Turfs[turfId] then
+    if turfId == '' or not Config.GetTurfCell(turfId) then
         local ped = GetPlayerPed(src)
         if ped and ped ~= 0 then
             local p = GetEntityCoords(ped)
-            for id, turf in pairs(Config.Turfs or {}) do
-                if #(p - vector3(turf.center.x, turf.center.y, turf.center.z)) <= (turf.radius or 180.0) then
-                    turfId = id
-                    break
-                end
-            end
+            turfId = Config.FindTurfAt(p.x, p.y) or ''
         end
     end
-    if turfId == '' or not Config.Turfs[turfId] then
+    if turfId == '' or not Config.GetTurfCell(turfId) then
         return cb({ ok = false, reason = 'Pasirink turf arba stovėk zonoje.' })
     end
 
     local turf = MySQL.single.await('SELECT owner_gang_id FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { turfId })
-    if turfId ~= '' and not Config.Turfs[turfId] then
-        return cb({ ok = false, reason = 'Netinkamas turf.' })
-    end
 
     local okRate, rateMsg = checkRateLimit(src)
     if not okRate then return cb({ ok = false, reason = rateMsg }) end
@@ -237,7 +221,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:startMission', function(s
     end
 
     local token = ('%s-%s-%s'):format(src, turfId, os.time())
-    local turfCfg = Config.Turfs[turfId]
+    local turfCfg = Config.GetTurfCell(turfId)
     local center = turfCfg.center
     local pickup = mCfg.pickupOffset and vector3(center.x + mCfg.pickupOffset.x, center.y + mCfg.pickupOffset.y, center.z + (mCfg.pickupOffset.z or 0.0)) or center
 
@@ -337,12 +321,7 @@ exports('OnHackFailed', function(src, tierId, coords)
     local ped = GetPlayerPed(src)
     if ped and ped ~= 0 then
         local p = GetEntityCoords(ped)
-        for id, turf in pairs(Config.Turfs or {}) do
-            if #(p - vector3(turf.center.x, turf.center.y, turf.center.z)) <= (turf.radius or 180.0) then
-                turfId = id
-                break
-            end
-        end
+        turfId = Config.FindTurfAt(p.x, p.y)
     end
     if turfId then
         local turf = MySQL.single.await('SELECT heat FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { turfId })

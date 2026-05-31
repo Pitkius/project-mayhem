@@ -1,13 +1,27 @@
-/** Gang Network žemėlapis — Leaflet + vektorinis turf tinklelis (aiškus zoom). */
+/** Gang Turf žemėlapis — Leaflet, permatomas overlay, pan/zoom, maži turfai. */
 window.GangMap = (function () {
+  const NEUTRAL_COLOR = "#64748B";
+
+  const OP = {
+    neutral: { fill: 0.08, stroke: 0.12, weight: 0.35 },
+    owned: { fill: 0.24, stroke: 0.28, weight: 0.4 },
+    contested: { fill: 0.3, stroke: 0.4, weight: 0.55 },
+    hover: { fill: 0.4, stroke: 0.7, weight: 0.85 },
+    selected: { fill: 0.35, stroke: 0.85, weight: 1.15 },
+  };
+
   let leafletMap = null;
-  let gridLayer = null;
+  let turfLayer = null;
   let imageLayer = null;
   let mapCfg = null;
-  let gridCfg = { cols: 28, rows: 20 };
   let lastState = null;
   let selectedTurf = null;
-  let selectedCellId = null;
+  let hoveredId = null;
+  let tooltipEl = null;
+  let turfById = {};
+  let layerById = {};
+  let mapEventsBound = false;
+  let baseFitZoom = 0;
 
   function resourceName() {
     try {
@@ -39,45 +53,155 @@ window.GangMap = (function () {
     };
   }
 
-  function turfAtGame(gx, gy, turfs) {
-    let inZone = null;
-    let inDist = Infinity;
-    let nearest = null;
-    let nearDist = Infinity;
-    for (const t of turfs || []) {
-      const dx = gx - Number(t.center_x);
-      const dy = gy - Number(t.center_y);
-      const d = Math.sqrt(dx * dx + dy * dy);
-      const r = Number(t.radius) || 150;
-      if (d <= r && d < inDist) {
-        inZone = t;
-        inDist = d;
-      }
-      if (d < nearDist) {
-        nearest = t;
-        nearDist = d;
-      }
-    }
-    return inZone || nearest;
+  function gameToMap(gx, gy, cfg) {
+    const x = ((gx - cfg.minX) / (cfg.maxX - cfg.minX)) * cfg.imgW;
+    const y = cfg.imgH - ((gy - cfg.minY) / (cfg.maxY - cfg.minY)) * cfg.imgH;
+    return { x, y };
   }
 
-  function cellGameCenter(col, row, cfg, grid) {
-    const cols = grid.cols;
-    const rows = grid.rows;
-    const gx = cfg.minX + ((col + 0.5) / cols) * (cfg.maxX - cfg.minX);
-    const gy = cfg.minY + ((rows - row - 0.5) / rows) * (cfg.maxY - cfg.minY);
-    return { gx, gy };
+  function gameBoundsToLeaflet(turf, cfg) {
+    const minX = Number(turf.min_x);
+    const minY = Number(turf.min_y);
+    const maxX = Number(turf.max_x);
+    const maxY = Number(turf.max_y);
+    if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+      const cx = Number(turf.center_x) || 0;
+      const cy = Number(turf.center_y) || 0;
+      const r = Number(turf.radius) || 80;
+      const p1 = gameToMap(cx - r, cy - r, cfg);
+      const p2 = gameToMap(cx + r, cy + r, cfg);
+      return [
+        [p1.y, p1.x],
+        [p2.y, p2.x],
+      ];
+    }
+    const sw = gameToMap(minX, minY, cfg);
+    const ne = gameToMap(maxX, maxY, cfg);
+    return [
+      [sw.y, sw.x],
+      [ne.y, ne.x],
+    ];
+  }
+
+  function turfBaseKind(turf) {
+    const ownerId = Number(turf.owner_gang_id) || 0;
+    if (turf.is_war) return "contested";
+    if (ownerId > 0) return "owned";
+    return "neutral";
+  }
+
+  function turfFillColor(turf) {
+    return turf.map_color || NEUTRAL_COLOR;
+  }
+
+  function turfStrokeColor(turf, mode) {
+    if (mode === "selected") return "#fbbf24";
+    if (mode === "hover") return "#f8fafc";
+    if (turf.is_war) return "#f87171";
+    if (turfBaseKind(turf) === "owned") return turfFillColor(turf);
+    return "#64748b";
+  }
+
+  function layerVisualMode(turfId) {
+    if (selectedTurf && selectedTurf.turf_id === turfId) return "selected";
+    if (hoveredId === turfId) return "hover";
+    return "base";
+  }
+
+  function buildLayerStyle(turf, mode) {
+    const kind = turfBaseKind(turf);
+    const baseOp = OP[kind] || OP.neutral;
+    const fillColor = turfFillColor(turf);
+    let fillOpacity = baseOp.fill;
+    let strokeOpacity = baseOp.stroke;
+    let weight = baseOp.weight;
+
+    if (mode === "hover") {
+      fillOpacity = OP.hover.fill;
+      strokeOpacity = OP.hover.stroke;
+      weight = OP.hover.weight;
+    } else if (mode === "selected") {
+      fillOpacity = OP.selected.fill;
+      strokeOpacity = OP.selected.stroke;
+      weight = OP.selected.weight;
+    }
+
+    return {
+      color: turfStrokeColor(turf, mode),
+      weight,
+      opacity: strokeOpacity,
+      fillColor,
+      fillOpacity,
+      dashArray: mode === "base" && turf.is_war ? "3 4" : null,
+      className:
+        mode === "base" && turf.is_war
+          ? "turf-cell-war"
+          : mode === "selected"
+            ? "turf-cell-selected"
+            : "",
+    };
+  }
+
+  function applyLayerStyle(turfId) {
+    const layer = layerById[turfId];
+    const turf = turfById[turfId];
+    if (!layer || !turf) return;
+    layer.setStyle(buildLayerStyle(turf, layerVisualMode(turfId)));
+  }
+
+  function refreshAllLayerStyles() {
+    Object.keys(layerById).forEach((id) => applyLayerStyle(id));
   }
 
   function destroy() {
+    hideTooltip();
     if (leafletMap) {
       leafletMap.remove();
       leafletMap = null;
     }
-    gridLayer = null;
+    turfLayer = null;
     imageLayer = null;
     selectedTurf = null;
-    selectedCellId = null;
+    hoveredId = null;
+    turfById = {};
+    layerById = {};
+    mapEventsBound = false;
+  }
+
+  function ensureTooltip() {
+    if (tooltipEl) return tooltipEl;
+    tooltipEl = document.createElement("div");
+    tooltipEl.className = "turf-map-tooltip";
+    tooltipEl.setAttribute("role", "tooltip");
+    document.body.appendChild(tooltipEl);
+    return tooltipEl;
+  }
+
+  function hideTooltip() {
+    if (tooltipEl) tooltipEl.classList.remove("is-visible");
+  }
+
+  function showTooltip(turf, cellNum, clientX, clientY) {
+    const el = ensureTooltip();
+    const owner = turf.owner_display || turf.owner_name || "Neutralu";
+    const inf = Math.max(0, Math.min(100, Number(turf.influence ?? turf.progress ?? 0)));
+    const heat = Number(turf.heat || 0);
+    const graffiti = turf.graffiti_pct != null ? turf.graffiti_pct : Math.min(100, Math.floor(inf / 5));
+    const sales = Number(turf.sales_count || 0);
+    const members = Number(turf.active_members || 0);
+    el.innerHTML = `
+      <strong>TURF #${cellNum || turf.cell_num || "—"}</strong>
+      <span class="tt-line"><em>Rajonas</em> ${turf.district || turf.turf_label || "—"}</span>
+      <span class="tt-line"><em>Savininkas</em> <b style="color:${turf.map_color || NEUTRAL_COLOR}">${owner}</b></span>
+      <span class="tt-line"><em>Kontrolė</em> ${inf}%</span>
+      <span class="tt-line"><em>Heat</em> ${heat}%</span>
+      <span class="tt-line"><em>Grafiti</em> ${graffiti}%</span>
+      <span class="tt-line"><em>Nark. pardavimai</em> ${sales}</span>
+      <span class="tt-line"><em>Aktyvūs nariai</em> ${members}</span>
+    `;
+    el.style.left = `${clientX + 14}px`;
+    el.style.top = `${clientY + 14}px`;
+    el.classList.add("is-visible");
   }
 
   function renderSidePanels(state) {
@@ -102,17 +226,9 @@ window.GangMap = (function () {
 
     const legend = document.getElementById("gangLegend");
     if (legend) {
-      const seen = {};
-      const items = [];
-      (state.turfs || []).forEach((t) => {
-        const owner = t.owner_name && String(t.owner_name).trim();
-        if (!owner || seen[owner]) return;
-        seen[owner] = true;
-        const col = t.owner_color_hex || "#94a3b8";
-        items.push(`<li><span class="dot" style="background:${col}"></span>${owner}</li>`);
-      });
-      items.push(`<li><span class="dot dot-free"></span>Neužimta / ginčas</li>`);
-      legend.innerHTML = items.join("");
+      legend.innerHTML = (state.factionColors || [])
+        .map((f) => `<li><span class="dot" style="background:${f.color}"></span>${f.label}</li>`)
+        .join("");
     }
 
     const topList = document.getElementById("topGangsList");
@@ -140,104 +256,133 @@ window.GangMap = (function () {
     }
   }
 
-  function renderTurfInfo(turf, cellId) {
+  function renderTurfInfo(turf) {
     const title = document.getElementById("turfInfoTitle");
     const body = document.getElementById("turfInfoBody");
+    const btnGps = document.getElementById("btnTurfRoute");
     if (!title || !body) return;
     if (!turf) {
       title.textContent = "TURF —";
       body.innerHTML = "<p class='muted small'>Pasirink teritoriją žemėlapyje.</p>";
+      if (btnGps) btnGps.disabled = true;
       return;
     }
-    const label = turf.turf_label || turf.turf_id;
-    const owner = turf.owner_name || "Laisva";
+    const cellNum = turf.cell_num || turf.turf_id;
+    const owner = turf.owner_display || turf.owner_name || "Neutralu";
     const inf = Math.max(0, Math.min(100, Number(turf.influence ?? turf.progress ?? 0)));
     const heat = Number(turf.heat || 0);
+    const graffiti = turf.graffiti_pct != null ? turf.graffiti_pct : Math.min(100, Math.floor(inf / 5));
     const sales = Number(turf.sales_count || 0);
-    const graffiti = Math.min(20, Math.floor(inf / 5));
-    const drugActive = heat > 20 || sales > 0;
-    title.textContent = `TURF #${cellId || "—"}`;
-    title.style.color = turf.owner_color_hex || "#e5e7eb";
+    const war = turf.is_war ? "Taip" : "Nėra";
+    title.textContent = `TURF #${cellNum}`;
+    title.style.color = turf.map_color || "#e5e7eb";
     body.innerHTML = `
-      <div class="turf-row"><span>Rajonas</span><strong>${label}</strong></div>
-      <div class="turf-row"><span>Savininkas</span><strong style="color:${turf.owner_color_hex || "#94a3b8"}">${owner}</strong></div>
-      <div class="turf-row"><span>Kontrolė</span><strong>${inf}%</strong><div class="bar"><i style="width:${inf}%;background:${turf.owner_color_hex || "#a78bfa"}"></i></div></div>
+      <div class="turf-row"><span>Rajonas</span><strong>${turf.district || turf.turf_label || "—"}</strong></div>
+      <div class="turf-row"><span>Savininkas</span><strong style="color:${turf.map_color || NEUTRAL_COLOR}">${owner}</strong></div>
+      <div class="turf-row"><span>Kontrolė</span><strong>${inf}%</strong><div class="bar"><i style="width:${inf}%;background:${turf.map_color || "#a78bfa"}"></i></div></div>
+      <div class="turf-row"><span>Grafiti</span><strong>${graffiti}%</strong></div>
+      <div class="turf-row"><span>Narkotikų veikla</span><strong>${sales}</strong></div>
       <div class="turf-row"><span>Heat</span><strong>${heat}%</strong><div class="bar bar-heat"><i style="width:${heat}%"></i></div></div>
-      <div class="turf-row"><span>Pardavimai</span><strong>${sales}</strong></div>
-      <div class="turf-row"><span>Nark. prekyba</span><strong class="${drugActive ? "ok" : ""}">${drugActive ? "Aktyvi" : "Neaktyvi"}</strong></div>
-      <div class="turf-row"><span>Grafiti</span><strong>${graffiti}/20</strong></div>
+      <div class="turf-row"><span>Aktyvūs konfliktai</span><strong class="${turf.is_war ? "warn-txt" : ""}">${war}</strong></div>
     `;
+    if (btnGps) {
+      btnGps.disabled = false;
+      btnGps.dataset.turfId = turf.turf_id;
+    }
   }
 
-  function selectTurf(turf, cellId) {
+  function selectTurf(turf) {
     selectedTurf = turf;
-    selectedCellId = cellId;
-    renderTurfInfo(turf, cellId);
-    if (gridLayer) {
-      gridLayer.eachLayer((layer) => {
-        if (!layer._turfId) return;
-        const on = turf && layer._turfId === turf.turf_id;
-        layer.setStyle({
-          weight: on ? 2.4 : 0.65,
-          color: on ? "#fbbf24" : "rgba(15,23,42,0.55)",
-        });
-      });
+    renderTurfInfo(turf);
+    refreshAllLayerStyles();
+    if (turf && layerById[turf.turf_id]?.bringToFront) {
+      layerById[turf.turf_id].bringToFront();
     }
   }
 
-  function buildGrid(state) {
+  function buildTurfs(state) {
     if (!leafletMap || !mapCfg) return;
-    if (gridLayer) {
-      leafletMap.removeLayer(gridLayer);
-      gridLayer = null;
+    if (turfLayer) {
+      leafletMap.removeLayer(turfLayer);
+      turfLayer = null;
     }
-    gridLayer = L.layerGroup().addTo(leafletMap);
+    turfLayer = L.layerGroup().addTo(leafletMap);
+    turfById = {};
+    layerById = {};
     const cfg = mapCfg;
-    const grid = gridCfg;
-    const cols = grid.cols;
-    const rows = grid.rows;
-    const cellW = cfg.imgW / cols;
-    const cellH = cfg.imgH / rows;
-    let cellIndex = 0;
 
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        cellIndex += 1;
-        const { gx, gy } = cellGameCenter(col, row, cfg, grid);
-        const turf = turfAtGame(gx, gy, state.turfs);
-        const hasOwner = !!(turf && turf.owner_name);
-        const fill = hasOwner && turf.owner_color_hex ? turf.owner_color_hex : "#334155";
-        const y1 = row * cellH;
-        const x1 = col * cellW;
-        const bounds = [
-          [y1, x1],
-          [y1 + cellH, x1 + cellW],
-        ];
-        const rect = L.rectangle(bounds, {
-          color: "rgba(15,23,42,0.55)",
-          weight: 0.65,
-          fillColor: fill,
-          fillOpacity: hasOwner ? 0.58 : 0.22,
-          interactive: true,
-        });
-        rect._turfId = turf ? turf.turf_id : null;
-        rect._cellId = cellIndex;
-        rect._turfData = turf;
-        rect.on("click", () => {
-          selectTurf(turf, cellIndex);
-          if (turf && window.GangMapPost) {
-            window.GangMapPost("gangs:setWaypoint", { turfId: turf.turf_id });
-          }
-        });
-        rect.addTo(gridLayer);
-      }
+    (state.turfs || []).forEach((turf) => {
+      if (turf.min_x == null && turf.center_x == null) return;
+      const bounds = gameBoundsToLeaflet(turf, cfg);
+      const cellNum = turf.cell_num || turf.turf_id;
+      turfById[turf.turf_id] = turf;
+
+      const rect = L.rectangle(bounds, buildLayerStyle(turf, "base"));
+      rect._turfId = turf.turf_id;
+      rect._turfData = turf;
+      layerById[turf.turf_id] = rect;
+
+      rect.on("mouseover", (e) => {
+        hoveredId = turf.turf_id;
+        const ev = e.originalEvent;
+        showTooltip(turf, cellNum, ev.clientX, ev.clientY);
+        applyLayerStyle(turf.turf_id);
+      });
+      rect.on("mousemove", (e) => {
+        const ev = e.originalEvent;
+        showTooltip(turf, cellNum, ev.clientX, ev.clientY);
+      });
+      rect.on("mouseout", () => {
+        hideTooltip();
+        if (hoveredId === turf.turf_id) hoveredId = null;
+        applyLayerStyle(turf.turf_id);
+      });
+      rect.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        selectTurf(turf);
+      });
+
+      rect.addTo(turfLayer);
+    });
+
+    if (selectedTurf) {
+      const updated = turfById[selectedTurf.turf_id];
+      selectTurf(updated || null);
     }
+  }
+
+  function bindMapEvents() {
+    if (mapEventsBound || !leafletMap) return;
+    mapEventsBound = true;
+    leafletMap.on("movestart zoomstart", hideTooltip);
+    leafletMap.on("click", () => {
+      hideTooltip();
+      hoveredId = null;
+      refreshAllLayerStyles();
+    });
+  }
+
+  function mapBoundsLatLng() {
+    return L.latLngBounds([
+      [0, 0],
+      [mapCfg.imgH, mapCfg.imgW],
+    ]);
+  }
+
+  function fitMapFill(padding) {
+    if (!leafletMap || !mapCfg) return;
+    const bounds = mapBoundsLatLng();
+    const pad = padding != null ? padding : 6;
+    leafletMap.fitBounds(bounds, { padding: [pad, pad], animate: false });
+    baseFitZoom = leafletMap.getZoom();
+    leafletMap.setMinZoom(baseFitZoom - 0.5);
+    leafletMap.setMaxZoom(baseFitZoom + 5);
+    leafletMap.setMaxBounds(bounds.pad(0.02));
   }
 
   function ensureMap(state) {
     lastState = state;
     mapCfg = normalizeMapConfig(state);
-    gridCfg = state.mapGrid || { cols: 28, rows: 20 };
     renderSidePanels(state);
 
     const el = document.getElementById("gangsLeafletMap");
@@ -246,55 +391,84 @@ window.GangMap = (function () {
     if (!leafletMap) {
       leafletMap = L.map(el, {
         crs: L.CRS.Simple,
-        minZoom: -2,
-        maxZoom: 4,
-        zoomSnap: 0.25,
+        minZoom: -3,
+        maxZoom: 8,
+        zoomSnap: 0.15,
+        zoomDelta: 0.35,
+        wheelPxPerZoomLevel: 70,
         zoomControl: false,
         attributionControl: false,
         preferCanvas: true,
+        dragging: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        boxZoom: true,
+        inertia: true,
+        inertiaDeceleration: 3000,
+        easeLinearity: 0.2,
       });
+      bindMapEvents();
     }
 
     const bounds = [
       [0, 0],
       [mapCfg.imgH, mapCfg.imgW],
     ];
-    if (imageLayer) {
-      leafletMap.removeLayer(imageLayer);
-    }
-    imageLayer = L.imageOverlay(mapCfg.imageUrl, bounds, {
-      interactive: false,
-    }).addTo(leafletMap);
-    buildGrid(state);
-    leafletMap.fitBounds(bounds, { padding: [4, 4] });
-    const first = (state.turfs || [])[0];
-    if (first) selectTurf(first, 1);
-    else selectTurf(null, null);
+    if (imageLayer) leafletMap.removeLayer(imageLayer);
+    imageLayer = L.imageOverlay(mapCfg.imageUrl, bounds, { interactive: false }).addTo(leafletMap);
+    buildTurfs(state);
 
-    setTimeout(() => leafletMap && leafletMap.invalidateSize(), 80);
+    requestAnimationFrame(() => {
+      invalidate();
+      fitMapFill(8);
+      if (!selectedTurf) selectTurf(null);
+    });
+    setTimeout(() => {
+      invalidate();
+      fitMapFill(8);
+    }, 120);
+    setTimeout(() => {
+      invalidate();
+      fitMapFill(8);
+    }, 320);
   }
 
   function zoomIn() {
-    if (leafletMap) leafletMap.zoomIn(0.35);
+    if (leafletMap) leafletMap.zoomIn(0.45);
   }
 
   function zoomOut() {
-    if (leafletMap) leafletMap.zoomOut(0.35);
+    if (leafletMap) leafletMap.zoomOut(0.45);
   }
 
   function resetView() {
-    if (!leafletMap || !mapCfg) return;
-    leafletMap.fitBounds(
-      [
-        [0, 0],
-        [mapCfg.imgH, mapCfg.imgW],
-      ],
-      { padding: [4, 4] },
-    );
+    fitMapFill(8);
+  }
+
+  function toggleFullscreen(on) {
+    const panel = document.getElementById("tabPanelMap");
+    const bezel = document.querySelector(".tablet-bezel");
+    if (!panel) return;
+    const enable =
+      on === true || (on !== false && !panel.classList.contains("map-fullscreen"));
+    panel.classList.toggle("map-fullscreen", enable);
+    if (bezel) bezel.classList.toggle("tablet-map-fullscreen", enable);
+    setTimeout(() => {
+      invalidate();
+      fitMapFill(enable ? 4 : 8);
+    }, 80);
+    setTimeout(() => {
+      invalidate();
+      fitMapFill(enable ? 4 : 8);
+    }, 280);
   }
 
   function invalidate() {
-    if (leafletMap) leafletMap.invalidateSize();
+    if (leafletMap) leafletMap.invalidateSize({ animate: false });
+  }
+
+  function getSelectedTurf() {
+    return selectedTurf;
   }
 
   return {
@@ -303,7 +477,8 @@ window.GangMap = (function () {
     zoomIn,
     zoomOut,
     resetView,
+    toggleFullscreen,
     invalidate,
-    getSelectedTurf: () => selectedTurf,
+    getSelectedTurf,
   };
 })();

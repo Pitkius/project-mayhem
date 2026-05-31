@@ -4,16 +4,8 @@ local tabletOpen = false
 local tabletProp = nil
 
 local function getCurrentTurfId()
-    local ped = PlayerPedId()
-    local p = GetEntityCoords(ped)
-    for turfId, turf in pairs(Config.Turfs or {}) do
-        local c = turf.center
-        local d = #(p - vector3(c.x, c.y, c.z))
-        if d <= (turf.radius or 150.0) then
-            return turfId, turf
-        end
-    end
-    return nil, nil
+    local p = GetEntityCoords(PlayerPedId())
+    return Config.FindTurfAt(p.x, p.y)
 end
 
 local function stopTabletAnim()
@@ -160,7 +152,7 @@ RegisterNetEvent('fivempro_gangs:client:openTablet', function()
                 colorUsage = res.colorUsage or {},
                 turfs = res.turfs or {},
                 tabletMap = res.tabletMap or Config.TabletMap or {},
-                mapGrid = res.mapGrid or Config.MapGrid or {},
+                factionColors = res.factionColors or Config.FactionColors or {},
                 topGangs = res.topGangs or {},
                 activeWars = res.activeWars or {},
                 recentActivities = res.recentActivities or {},
@@ -187,7 +179,7 @@ RegisterNetEvent('fivempro_gangs:client:refreshTablet', function()
                 colorUsage = res.colorUsage or {},
                 turfs = res.turfs or {},
                 tabletMap = res.tabletMap or Config.TabletMap or {},
-                mapGrid = res.mapGrid or Config.MapGrid or {},
+                factionColors = res.factionColors or Config.FactionColors or {},
                 topGangs = res.topGangs or {},
                 activeWars = res.activeWars or {},
                 recentActivities = res.recentActivities or {},
@@ -276,7 +268,7 @@ end)
 
 RegisterNUICallback('gangs:setWaypoint', function(data, cb)
     local turfId = tostring(data and data.turfId or '')
-    local turf = turfId ~= '' and Config.Turfs[turfId] or nil
+    local turf = Config.GetTurfCell and Config.GetTurfCell(turfId) or (Config.Turfs and Config.Turfs[turfId])
     if turf and turf.center then
         SetNewWaypoint(turf.center.x + 0.0, turf.center.y + 0.0)
         cb({ ok = true })

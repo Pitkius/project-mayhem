@@ -6,7 +6,7 @@ body { background: transparent; overflow: hidden; }
   position: fixed;
   inset: 12px;
   background: rgba(8, 12, 20, 0.94);
-  border: 1px solid rgba(34, 211, 238, 0.35);
+  border: 1px solid rgba(168, 85, 247, 0.35);
   border-radius: 12px;
   color: #e2e8f0;
   display: flex;
@@ -69,7 +69,7 @@ input { margin-left: 8px; padding: 6px; width: 64px; }
   transform: translate(-50%, -50%);
   padding: 16px;
 }
-.hack-head { font-weight: 800; letter-spacing: 0.1em; margin-bottom: 8px; color: #22d3ee; }
+.hack-head { font-weight: 800; letter-spacing: 0.1em; margin-bottom: 8px; color: #c084fc; }
 .hack-grid {
   display: grid;
   gap: 8px;
@@ -188,7 +188,7 @@ input { margin-left: 8px; padding: 6px; width: 64px; }
   margin: 12px auto 16px;
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(34, 211, 238, 0.35);
+  border: 1px solid rgba(168, 85, 247, 0.35);
   overflow: hidden;
 }
 #hackTraceCanvas { display: block; width: 100%; height: 100%; }

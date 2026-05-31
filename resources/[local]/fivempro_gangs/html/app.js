@@ -133,7 +133,7 @@ function renderPalette(palette, usage) {
 function mergeTabletMap(res) {
   if (!res || !res.ok) return res;
   if (!res.tabletMap && lastState && lastState.tabletMap) res.tabletMap = lastState.tabletMap;
-  if (!res.mapGrid && lastState && lastState.mapGrid) res.mapGrid = lastState.mapGrid;
+  if (!res.factionColors && lastState && lastState.factionColors) res.factionColors = lastState.factionColors;
   return res;
 }
 
@@ -148,7 +148,7 @@ function renderMissionsTab(state) {
     const o = document.createElement("option");
     o.value = t.turf_id;
     const inf = Number(t.influence ?? t.progress ?? 0);
-    o.textContent = `${t.turf_label || t.turf_id} (įtaka ${inf}%)`;
+    o.textContent = `#${t.cell_num || t.turf_id} · ${t.district || t.turf_label || t.turf_id} (${inf}%)`;
     missionTurfSelect.appendChild(o);
   });
   missionTypeSelect.innerHTML = "";
@@ -206,7 +206,14 @@ function activateTab(tab) {
   });
 
   const bezel = document.querySelector(".tablet-bezel");
-  if (bezel) bezel.classList.toggle("tablet-map-mode", tab === "map");
+  if (bezel) {
+    bezel.classList.toggle("tablet-map-mode", tab === "map");
+    if (tab !== "map") bezel.classList.remove("tablet-map-fullscreen");
+  }
+  const mapPanel = document.getElementById("tabPanelMap");
+  if (mapPanel && tab !== "map") {
+    mapPanel.classList.remove("map-fullscreen", "footer-visible");
+  }
 
   if (tab === "map") {
     scheduleRenderMap(lastState);
@@ -370,6 +377,19 @@ document.getElementById("btnCreate").onclick = () => {
 document.getElementById("zoomIn").onclick = () => window.GangMap && GangMap.zoomIn();
 document.getElementById("zoomOut").onclick = () => window.GangMap && GangMap.zoomOut();
 document.getElementById("tabletHomeBtn").onclick = () => window.GangMap && GangMap.resetView();
+const btnMapFullscreen = document.getElementById("btnMapFullscreen");
+if (btnMapFullscreen) {
+  btnMapFullscreen.onclick = () => window.GangMap && GangMap.toggleFullscreen();
+}
+const btnMapFooter = document.getElementById("btnMapFooter");
+const mapPanelEl = document.getElementById("tabPanelMap");
+if (btnMapFooter && mapPanelEl) {
+  btnMapFooter.onclick = () => {
+    mapPanelEl.classList.toggle("footer-visible");
+    btnMapFooter.textContent = mapPanelEl.classList.contains("footer-visible") ? "▥" : "▤";
+    if (window.GangMap) GangMap.invalidate();
+  };
+}
 const btnTurfRoute = document.getElementById("btnTurfRoute");
 if (btnTurfRoute) {
   btnTurfRoute.onclick = () => {

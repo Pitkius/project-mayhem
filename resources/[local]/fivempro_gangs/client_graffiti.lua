@@ -2,14 +2,8 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local lastSpray = 0
 
 local function getCurrentTurfId()
-    local ped = PlayerPedId()
-    local p = GetEntityCoords(ped)
-    for id, turf in pairs(Config.Turfs or {}) do
-        if #(p - vector3(turf.center.x, turf.center.y, turf.center.z)) <= (turf.radius or 180.0) then
-            return id
-        end
-    end
-    return nil
+    local p = GetEntityCoords(PlayerPedId())
+    return Config.FindTurfAt(p.x, p.y)
 end
 
 local function trySprayGraffiti()
