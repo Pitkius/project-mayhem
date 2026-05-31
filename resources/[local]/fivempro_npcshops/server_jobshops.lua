@@ -102,6 +102,12 @@ RegisterNetEvent('fivempro_npcshops:server:validateJobNpc', function(jobName, st
             return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik EMS darbuotojams.')
         end
     end
+    if jobName == 'police' and role == 'duty' then
+        local P = QBCore.Functions.GetPlayer(src)
+        if not P or P.PlayerData.job.name ~= 'police' then
+            return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik policijos darbuotojams.')
+        end
+    end
     if jobName == 'ranger' and role == 'duty' then
         local P = QBCore.Functions.GetPlayer(src)
         if not P or P.PlayerData.job.name ~= 'ranger' then
@@ -112,6 +118,18 @@ RegisterNetEvent('fivempro_npcshops:server:validateJobNpc', function(jobName, st
         local P = QBCore.Functions.GetPlayer(src)
         if not P or P.PlayerData.job.name ~= 'ranger' then
             return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik gamtosaugininkams.')
+        end
+    end
+    if role == 'locker' and jobName == 'ambulance' then
+        local P = QBCore.Functions.GetPlayer(src)
+        if not P or P.PlayerData.job.name ~= 'ambulance' then
+            return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik EMS darbuotojams.')
+        end
+    end
+    if role == 'locker' and jobName == 'police' then
+        local P = QBCore.Functions.GetPlayer(src)
+        if not P or P.PlayerData.job.name ~= 'police' then
+            return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik policijos darbuotojams.')
         end
     end
     if not nearNpc(src, entry.coords) then

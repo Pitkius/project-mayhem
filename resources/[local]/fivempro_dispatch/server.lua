@@ -132,6 +132,27 @@ local function crewsForService(service)
     return out
 end
 
+local function unitStatusFor(src, service)
+    local sid = tostring(src)
+    for _, c in pairs(Calls) do
+        if c.service == service and c.status ~= 'done' and c.status ~= 'rejected' then
+            if c.panic and tonumber(c.createdBy) == src then
+                return 'PANIC', true
+            end
+            if c.arrivedBy and c.arrivedBy[sid] then
+                return (Config.CallStatus and Config.CallStatus.arrived) or 'Atvykta', false
+            end
+            if c.enrouteBy and c.enrouteBy[sid] then
+                return (Config.CallStatus and Config.CallStatus.enroute) or 'Vykstu', false
+            end
+            if c.acceptedBy and c.acceptedBy[sid] then
+                return (Config.CallStatus and Config.CallStatus.accepted) or 'Priimta', false
+            end
+        end
+    end
+    return 'Patruliuoja', false
+end
+
 local function unitBlipsForService(service)
     local units = {}
     for _, src in ipairs(QBCore.Functions.GetPlayers() or {}) do
@@ -139,6 +160,10 @@ local function unitBlipsForService(service)
             local ped = GetPlayerPed(src)
             if ped and ped ~= 0 then
                 local p = GetEntityCoords(ped)
+                local crewId = PlayerCrew[src]
+                local crew = crewId and Crews[crewId] or nil
+                local statusLabel, panicFromCall = unitStatusFor(src, service)
+                local speedKmh = math.floor((GetEntitySpeed(ped) or 0.0) * 3.6 + 0.5)
                 units[#units + 1] = {
                     source = src,
                     name = getName(src),
@@ -148,7 +173,12 @@ local function unitBlipsForService(service)
                     z = p.z,
                     heading = GetEntityHeading(ped),
                     inVeh = IsPedInAnyVehicle(ped, false) and true or false,
-                    crewId = PlayerCrew[src],
+                    crewId = crewId,
+                    isCrewLeader = crew and crew.leader == src or false,
+                    speedKmh = speedKmh,
+                    statusLabel = statusLabel,
+                    panic = panicFromCall,
+                    gpsActive = true,
                 }
             end
         end
@@ -236,6 +266,7 @@ QBCore.Functions.CreateCallback('fivempro_dispatch:server:getMdtSnapshot', funct
         ok = true,
         readOnly = not isServiceMember(src, service),
         service = service,
+        selfSource = src,
         calls = callsForService(service),
         crews = crewsForService(service),
         units = unitBlipsForService(service),

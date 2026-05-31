@@ -28,6 +28,8 @@
         <button type="button" class="tab-btn" data-tab="gang" role="tab">Gauja</button>
         <button type="button" class="tab-btn" data-tab="map" role="tab">Žemėlapis</button>
         <button type="button" class="tab-btn" data-tab="missions" role="tab" id="tabMissions">Misijos</button>
+        <button type="button" class="tab-btn" data-tab="top" role="tab">Top gaujos</button>
+        <button type="button" class="tab-btn" data-tab="wars" role="tab">Karai</button>
       </nav>
 
       <div class="tablet-body">
@@ -102,55 +104,69 @@
           </div>
         </section>
 
+        <section id="tabPanelTop" class="tab-panel hidden" role="tabpanel">
+          <div class="rail-card glass-panel">
+            <h3>Top gaujos</h3>
+            <p class="small muted">Geriausios gaujos pagal turf skaičių ir reputaciją.</p>
+            <ol id="topGangsListFull" class="top-gangs-full"></ol>
+          </div>
+        </section>
+
+        <section id="tabPanelWars" class="tab-panel hidden" role="tabpanel">
+          <div class="rail-card glass-panel">
+            <h3>Aktyvūs turf karai</h3>
+            <ul id="activeWarsListFull" class="wars-list-full"></ul>
+          </div>
+          <div class="rail-card glass-panel">
+            <h3>Naujausios veiklos</h3>
+            <ul id="recentActsListFull" class="activity-list-full"></ul>
+          </div>
+        </section>
+
         <section id="tabPanelMap" class="tab-panel hidden gang-network" role="tabpanel">
-          <aside class="network-rail network-rail-left">
-            <div class="network-brand">
-              <span class="network-brand-tag">GANG NETWORK</span>
-              <h3 id="networkGangName">—</h3>
+          <div class="map-top-bar">
+            <div class="gang-stat-hero" id="gangStatHero">
+              <div class="gang-stat-logo" id="gangStatLogo"></div>
+              <div class="gang-stat-copy">
+                <span class="gang-stat-label">Gauja</span>
+                <h3 id="networkGangName">—</h3>
+              </div>
+              <div class="stat-cards" id="networkStats"></div>
             </div>
-            <ul class="network-stats" id="networkStats"></ul>
-            <nav class="network-nav">
-              <button type="button" class="network-nav-btn is-active" data-nav="map">Turf žemėlapis</button>
-              <button type="button" class="network-nav-btn" data-nav="gang">Gauja</button>
-              <button type="button" class="network-nav-btn" data-nav="missions">Misijos</button>
-            </nav>
-          </aside>
-          <main class="network-map-core">
-            <div class="network-map-toolbar">
-              <button type="button" id="zoomIn" class="zoom-btn" title="Priartinti">+</button>
-              <button type="button" id="zoomOut" class="zoom-btn" title="Nutolinti">−</button>
-              <button type="button" id="tabletHomeBtn" class="zoom-btn" title="Visas žemėlapis">⌖</button>
-              <button type="button" id="btnMapFullscreen" class="zoom-btn zoom-btn-wide" title="Viso ekrano žemėlapis">⛶</button>
-              <button type="button" id="btnMapFooter" class="zoom-btn zoom-btn-wide" title="Rodyti statistiką">▤</button>
-            </div>
-            <p class="map-hint">Tempk · ratukas zoom · paspausk turf</p>
-            <div id="gangsLeafletMap" class="gangs-leaflet-map"></div>
-          </main>
-          <aside class="network-rail network-rail-right">
-            <div class="network-card">
-              <h4>Spalvos</h4>
-              <ul id="gangLegend" class="gang-legend"></ul>
-            </div>
-            <div class="network-card turf-info-card">
-              <h4 id="turfInfoTitle">TURF —</h4>
-              <dl id="turfInfoBody" class="turf-info-dl"></dl>
-              <button type="button" id="btnTurfRoute" class="btn btn-primary wide" disabled>Nustatyti GPS</button>
-            </div>
-          </aside>
-          <footer class="network-footer is-collapsed" id="networkFooter">
-            <div class="network-card network-card-compact">
-              <h4>Top gaujos</h4>
-              <ol id="topGangsList" class="network-list"></ol>
-            </div>
-            <div class="network-card network-card-compact">
-              <h4>Aktyvūs turf karai</h4>
-              <ul id="activeWarsList" class="network-list"></ul>
-            </div>
-            <div class="network-card network-card-compact">
-              <h4>Naujausios veiklos</h4>
-              <ul id="recentActsList" class="network-list"></ul>
-            </div>
-          </footer>
+            <button type="button" class="wars-banner" id="warsBanner" aria-expanded="false">
+              <span class="wars-banner-icon">⚔</span>
+              <span class="wars-banner-text" id="warsBannerText">Aktyvūs turf karai: 0</span>
+              <span class="wars-banner-chevron">▾</span>
+            </button>
+            <div class="wars-popover hidden" id="warsPopover" role="dialog"></div>
+          </div>
+
+          <div class="map-workspace">
+            <main class="network-map-core">
+              <div class="network-map-toolbar">
+                <button type="button" id="zoomIn" class="zoom-btn" title="Priartinti">+</button>
+                <button type="button" id="zoomOut" class="zoom-btn" title="Nutolinti">−</button>
+                <button type="button" id="tabletHomeBtn" class="zoom-btn" title="Visas vaizdas">⌖</button>
+                <button type="button" id="btnFitTurfs" class="zoom-btn zoom-btn-wide" title="Visi turfai">⊞</button>
+                <button type="button" id="btnMapReset" class="zoom-btn zoom-btn-wide" title="Atstatyti">↺</button>
+              </div>
+              <p class="map-hint">Tempk · ratukas · dvigubas paspaudimas · pasirink turf</p>
+              <div id="gangsLeafletMap" class="gangs-leaflet-map"></div>
+            </main>
+
+            <aside class="network-sidebar">
+              <div class="sidebar-card turf-info-card glass-panel">
+                <h4 id="turfInfoTitle">TURF —</h4>
+                <div id="turfInfoBody" class="turf-info-dl"></div>
+                <button type="button" id="btnTurfRoute" class="btn btn-primary wide" disabled>Nustatyti GPS</button>
+              </div>
+              <div class="sidebar-card glass-panel">
+                <h4>Legenda</h4>
+                <ul id="gangLegend" class="gang-legend-state"></ul>
+                <div id="gangColorStrip" class="gang-color-strip" aria-label="Teritorijų spalvos"></div>
+              </div>
+            </aside>
+          </div>
         </section>
       </div>
     </div>

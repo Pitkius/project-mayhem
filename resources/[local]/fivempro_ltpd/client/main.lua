@@ -209,6 +209,16 @@ RegisterNUICallback('crewAction', function(data, cb)
     cb({ ok = true })
 end)
 
+RegisterNUICallback('mdtSetRoute', function(data, cb)
+    local x = tonumber(data and data.x)
+    local y = tonumber(data and data.y)
+    if x and y then
+        SetNewWaypoint(x + 0.0, y + 0.0)
+        QBCore.Functions.Notify('Maršrutas nustatytas GPS.', 'success')
+    end
+    cb({ ok = true })
+end)
+
 CreateThread(function()
     while true do
         if mdtOpen and (IsControlJustPressed(0, 199) or IsDisabledControlJustPressed(0, 199) or IsControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 200)) then
@@ -396,27 +406,6 @@ CreateThread(function()
                 distance = Config.TargetDistance + 0.4,
             })
         end
-        if st.armory and st.armory.coords then
-            exports['qb-target']:AddCircleZone(('ltpd_armory_%s'):format(st.id), st.armory.coords, 1.35, {
-                name = ('ltpd_armory_%s'):format(st.id),
-                debugPoly = false,
-                useZ = true,
-            }, {
-                options = {
-                    {
-                        type = 'client',
-                        event = 'fivempro_ltpd:client:tryOpenArmory',
-                        icon = 'fas fa-box-open',
-                        label = 'Ginklinė',
-                        stationId = st.id,
-                        canInteract = function()
-                            return isPdOnDutyClient()
-                        end,
-                    },
-                },
-                distance = Config.TargetDistance,
-            })
-        end
         if st.management and st.management.coords then
             local mg = st.management.coords
             local mh = st.management.heading or st.heading or 0.0
@@ -437,30 +426,6 @@ CreateThread(function()
                     },
                 },
                 distance = 3.2,
-            })
-        end
-        if st.locker and st.locker.coords then
-            local lc = st.locker.coords
-            local lh = st.locker.heading or st.heading or 0.0
-            exports['qb-target']:AddBoxZone(('ltpd_locker_%s'):format(st.id), lc, 1.65, 1.65, {
-                name = ('ltpd_locker_%s'):format(st.id),
-                heading = lh,
-                debugPoly = false,
-                minZ = lc.z - 1.1,
-                maxZ = lc.z + 2.35,
-            }, {
-                options = {
-                    {
-                        type = 'client',
-                        event = 'fivempro_ltpd:client:openDutyLockerMenu',
-                        icon = 'fas fa-shirt',
-                        label = 'Rūbinė (tarnybinė apranga)',
-                        canInteract = function()
-                            return isPdOnDutyClient()
-                        end,
-                    },
-                },
-                distance = Config.TargetDistance + 0.6,
             })
         end
         if st.heliGarage and st.heliGarage.coords then
@@ -504,6 +469,14 @@ local function applyDutyOutfitTable(ped, tbl)
     end
 end
 
+RegisterNetEvent('fivempro_ltpd:client:toggleDuty', function()
+    local P = QBCore.Functions.GetPlayerData()
+    if not P or not P.job or not isPdJobName(P.job.name) then
+        return QBCore.Functions.Notify('Tik policijos darbuotojams.', 'error')
+    end
+    TriggerServerEvent('QBCore:ToggleDuty')
+end)
+
 RegisterNetEvent('fivempro_ltpd:client:openDutyLockerMenu', function()
     if not isPdOnDutyClient() then
         return QBCore.Functions.Notify('Rūbinė – tik policijai tarnyboje.', 'error')
@@ -529,8 +502,8 @@ RegisterNetEvent('fivempro_ltpd:client:openDutyLockerMenu', function()
         end
     end
     menu[#menu + 1] = {
-        header = 'Civilio drabužiai',
-        txt = 'Grąžina tavo išsaugotą asmeninę aprangą',
+        header = 'Baigti tarnybą',
+        txt = 'Uždeda tavo išsaugotą civilio aprangą (duty lieka aktyvus — baigti pamainą tik prie tarnybos NPC)',
         params = {
             event = 'fivempro_ltpd:client:applyCivilianOutfit',
         },
@@ -571,16 +544,29 @@ RegisterNetEvent('fivempro_ltpd:client:applyCivilianOutfit', function()
         TriggerServerEvent('qb-clothing:loadPlayerSkin')
     end
     SetPedArmour(PlayerPedId(), 0)
-    QBCore.Functions.Notify('Civilio drabužiai uždėti.', 'success')
+    QBCore.Functions.Notify('Civilio apranga uždėta. Duty lieka aktyvus — pamainą baigti prie tarnybos NPC.', 'success')
 end)
 
---- Papildomi PD sandėliai (2–3 rango) — tiesioginė prieiga per markerį
+--- Ginklinė + papildomi sandėliai — 3D markeriai
 CreateThread(function()
     while GetResourceState('fivempro_npcshops') ~= 'started' do
         Wait(200)
     end
     local addMarker = exports['fivempro_npcshops'].AddJobGroundMarker
     for _, st in ipairs(Config.Stations or {}) do
+        if st.armory and st.armory.coords then
+            local stationId = st.id
+            addMarker({
+                coords = st.armory.coords,
+                kind = 'armory',
+                label = st.armory.label or 'Ginklinė',
+                scale = { x = 0.52, y = 0.52, z = 0.52 },
+                canUse = isPdOnDutyClient,
+                onPress = function()
+                    TriggerEvent('fivempro_ltpd:client:tryOpenArmory', { stationId = stationId })
+                end,
+            })
+        end
         for stashIdx, stash in ipairs(st.stashes or {}) do
             if stashIdx > 1 and stash.coords then
                 local stationId = st.id
@@ -589,6 +575,7 @@ CreateThread(function()
                     coords = stash.coords,
                     kind = 'stash',
                     label = stash.label or ('Sandėlis #' .. tostring(stashIdx)),
+                    scale = { x = 0.32, y = 0.32, z = 0.32 },
                     canUse = isPdOnDutyClient,
                     onPress = function()
                         TriggerEvent('fivempro_ltpd:client:tryOpenStash', { stationId = stationId, stashIndex = index })

@@ -109,7 +109,26 @@ RegisterNetEvent('fivempro_ambulance:client:openLocker', function(_data)
     if #menu < 2 then
         return QBCore.Functions.Notify('Nėra aprangų.', 'error')
     end
+    menu[#menu + 1] = {
+        header = 'Baigti tarnybą',
+        txt = 'Civilio apranga (duty lieka — pamainą baigti prie registratūros NPC)',
+        params = { event = 'fivempro_ambulance:client:applyCivilianOutfit' },
+    }
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end)
+
+RegisterNetEvent('fivempro_ambulance:client:applyCivilianOutfit', function()
+    if not isEmsOnDuty() then return end
+    local ped = PlayerPedId()
+    local health = GetEntityHealth(ped)
+    if GetResourceState('qb-clothing') == 'started' then
+        exports['qb-clothing']:reloadSkin(health)
+    else
+        TriggerServerEvent('qb-clothes:loadPlayerSkin')
+        TriggerServerEvent('qb-clothing:loadPlayerSkin')
+    end
+    SetPedArmour(ped, 0)
+    QBCore.Functions.Notify('Civilio apranga uždėta. Duty lieka aktyvus.', 'success')
 end)
 
 RegisterNetEvent('fivempro_ambulance:client:applyOutfit', function(data)
@@ -160,30 +179,6 @@ CreateThread(function()
 
     for _, st in ipairs(Config.Stations or {}) do
         local sid = st.id
-
-        if st.locker and st.locker.coords then
-            local lk = st.locker
-            exports['qb-target']:AddBoxZone(('fivempro_ems_locker_%s'):format(sid), lk.coords, 1.65, 1.65, {
-                name = ('fivempro_ems_locker_%s'):format(sid),
-                heading = lk.heading or 0.0,
-                debugPoly = false,
-                minZ = lk.coords.z - 1.15,
-                maxZ = lk.coords.z + 2.35,
-            }, {
-                options = {
-                    {
-                        type = 'client',
-                        event = 'fivempro_ambulance:client:openLocker',
-                        icon = 'fas fa-shirt',
-                        label = 'Rūbinė (darbo apranga)',
-                        canInteract = function()
-                            return isEmsOnDuty()
-                        end,
-                    },
-                },
-                distance = Config.TargetDistance + 0.35,
-            })
-        end
 
         if st.management and st.management.coords then
             local mg = st.management.coords

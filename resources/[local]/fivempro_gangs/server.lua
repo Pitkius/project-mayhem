@@ -76,21 +76,25 @@ end
 
 local function getActiveTurfWars()
     local rows = MySQL.query.await([[
-        SELECT turf_id, owner_name, influence, heat
-        FROM fivempro_gang_turfs
-        WHERE owner_gang_id IS NOT NULL AND influence > 0 AND influence < 100
-        ORDER BY influence ASC
-        LIMIT 6
+        SELECT t.turf_id, t.owner_name, t.influence, t.heat, g.color_hex
+        FROM fivempro_gang_turfs t
+        LEFT JOIN fivempro_gangs g ON g.id = t.owner_gang_id
+        WHERE t.owner_gang_id IS NOT NULL AND t.influence > 0 AND t.influence < 100
+        ORDER BY t.influence ASC
+        LIMIT 12
     ]]) or {}
     local out = {}
     for _, r in ipairs(rows) do
         local cfg = Config.GetTurfCell and Config.GetTurfCell(r.turf_id) or (Config.Turfs and Config.Turfs[r.turf_id])
         out[#out + 1] = {
             turfId = r.turf_id,
+            cell_num = cfg and cfg.cell_num or 0,
             label = cfg and (cfg.district or cfg.label) or r.turf_id,
             owner = r.owner_name or '—',
             influence = tonumber(r.influence) or 0,
             heat = tonumber(r.heat) or 0,
+            color_hex = r.color_hex or '#f87171',
+            timeLabel = (tonumber(r.heat) or 0) > 50 and 'Karštas' or 'Aktyvus',
         }
     end
     return out
@@ -142,6 +146,8 @@ local function enrichTurfRow(r)
     r.influence = inf
     r.progress = inf
     r.graffiti_pct = math.min(100, math.floor(inf / 5))
+    r.graffiti_max = 20
+    r.graffiti_count = math.min(r.graffiti_max, math.floor(inf / 5))
     local ownerId = tonumber(r.owner_gang_id) or 0
     if ownerId > 0 then
         r.status = inf >= 75 and 'kontroliuojamas' or (inf >= 25 and 'užimtas' or 'ginčijamas')

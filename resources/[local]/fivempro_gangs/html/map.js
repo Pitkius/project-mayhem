@@ -1,13 +1,13 @@
-/** Gang Turf žemėlapis — Leaflet, permatomas overlay, pan/zoom, maži turfai. */
+/** Gang Turf žemėlapis — premium territory overlay (Leaflet). */
 window.GangMap = (function () {
   const NEUTRAL_COLOR = "#64748B";
 
   const OP = {
-    neutral: { fill: 0.08, stroke: 0.12, weight: 0.35 },
-    owned: { fill: 0.24, stroke: 0.28, weight: 0.4 },
-    contested: { fill: 0.3, stroke: 0.4, weight: 0.55 },
-    hover: { fill: 0.4, stroke: 0.7, weight: 0.85 },
-    selected: { fill: 0.35, stroke: 0.85, weight: 1.15 },
+    neutral: { fill: 0.18, stroke: 0.14, weight: 0.45 },
+    owned: { fill: 0.22, stroke: 0.16, weight: 0.5 },
+    contested: { fill: 0.24, stroke: 0.2, weight: 0.55 },
+    hover: { fill: 0.5, stroke: 0.45, weight: 0.75 },
+    selected: { fill: 0.7, stroke: 0.55, weight: 0.9 },
   };
 
   let leafletMap = null;
@@ -22,6 +22,7 @@ window.GangMap = (function () {
   let layerById = {};
   let mapEventsBound = false;
   let baseFitZoom = 0;
+  let turfBoundsLatLng = null;
 
   function resourceName() {
     try {
@@ -41,7 +42,7 @@ window.GangMap = (function () {
 
   function normalizeMapConfig(payload) {
     const t = (payload && payload.tabletMap) || payload || {};
-    const file = t.imageFile || 'asset/gtav_satellite.jpg';
+    const file = t.imageFile || "asset/gtav_satellite.jpg";
     return {
       minX: Number(t.gameMin?.x ?? -4000),
       minY: Number(t.gameMin?.y ?? -4000),
@@ -117,11 +118,11 @@ window.GangMap = (function () {
   }
 
   function turfStrokeColor(turf, mode) {
-    if (mode === "selected") return "#fbbf24";
-    if (mode === "hover") return "#f8fafc";
-    if (turf.is_war) return "#f87171";
+    if (mode === "selected") return "rgba(196, 181, 253, 0.85)";
+    if (mode === "hover") return "rgba(248, 250, 252, 0.75)";
+    if (turf.is_war) return "rgba(248, 113, 113, 0.65)";
     if (turfBaseKind(turf) === "owned") return turfFillColor(turf);
-    return "#64748b";
+    return "rgba(100, 116, 139, 0.55)";
   }
 
   function layerVisualMode(turfId) {
@@ -154,7 +155,7 @@ window.GangMap = (function () {
       opacity: strokeOpacity,
       fillColor,
       fillOpacity,
-      dashArray: mode === "base" && turf.is_war ? "3 4" : null,
+      dashArray: mode === "base" && turf.is_war ? "4 5" : null,
       className:
         mode === "base" && turf.is_war
           ? "turf-cell-war"
@@ -188,6 +189,7 @@ window.GangMap = (function () {
     turfById = {};
     layerById = {};
     mapEventsBound = false;
+    turfBoundsLatLng = null;
   }
 
   function ensureTooltip() {
@@ -205,19 +207,14 @@ window.GangMap = (function () {
 
   function showTooltip(turf, cellNum, clientX, clientY) {
     const el = ensureTooltip();
-    const owner = turf.owner_display || turf.owner_name || "Neutralu";
     const inf = Math.max(0, Math.min(100, Number(turf.influence ?? turf.progress ?? 0)));
-    const graffiti = turf.graffiti_pct != null ? turf.graffiti_pct : Math.min(100, Math.floor(inf / 5));
-    const sales = Number(turf.sales_count || 0);
-    const members = Number(turf.active_members || 0);
+    const graffitiCount = Number(turf.graffiti_count ?? Math.floor(inf / 5));
+    const graffitiMax = Number(turf.graffiti_max ?? 20);
     el.innerHTML = `
       <strong>TURF #${cellNum || turf.cell_num || "—"}</strong>
       <span class="tt-line"><em>Rajonas</em> ${turf.district || turf.turf_label || "—"}</span>
-      <span class="tt-line"><em>Savininkas</em> <b style="color:${turf.map_color || NEUTRAL_COLOR}">${owner}</b></span>
       <span class="tt-line"><em>Kontrolė</em> ${inf}%</span>
-      <span class="tt-line"><em>Grafiti</em> ${graffiti}%</span>
-      <span class="tt-line"><em>Nark. pardavimai</em> ${sales}</span>
-      <span class="tt-line"><em>Aktyvūs nariai</em> ${members}</span>
+      <span class="tt-line"><em>Grafiti</em> ${graffitiCount}/${graffitiMax}</span>
     `;
     el.style.left = `${clientX + 14}px`;
     el.style.top = `${clientY + 14}px`;
@@ -227,59 +224,102 @@ window.GangMap = (function () {
   function renderSidePanels(state) {
     const gang = state.gang || {};
     const nameEl = document.getElementById("networkGangName");
+    const logoEl = document.getElementById("gangStatLogo");
     const statsEl = document.getElementById("networkStats");
-    if (nameEl) nameEl.textContent = state.hasGang ? gang.name || "Gauja" : "Nepriklausai gaujai";
+    const gangColor = gang.color_hex || "#a78bfa";
+
+    if (nameEl) nameEl.textContent = state.hasGang ? (gang.name || "Gauja").toUpperCase() : "NEPRIKLAUSAI";
+    if (logoEl) {
+      logoEl.style.background = `linear-gradient(135deg, ${gangColor}, ${gang.secondary_color_hex || gangColor})`;
+      logoEl.style.boxShadow = `0 0 24px ${gangColor}55`;
+    }
 
     const gid = Number(gang.gang_id || gang.id || 0);
     const owned = (state.turfs || []).filter((t) => gid > 0 && Number(t.owner_gang_id) === gid).length;
     const members = (state.members || []).length;
+    const rep = Number(gang.reputation || 0);
+
     if (statsEl) {
       statsEl.innerHTML = state.hasGang
         ? `
-        <li><span>Reputacija</span><strong>${Number(gang.reputation || 0).toLocaleString()}</strong></li>
-        <li><span>Turtai</span><strong>${owned}</strong></li>
-        <li><span>Nariai</span><strong>${members}</strong></li>
+        <div class="stat-card"><span class="stat-k">Nariai</span><strong class="stat-v">${members}</strong></div>
+        <div class="stat-card"><span class="stat-k">Turfai</span><strong class="stat-v">${owned}</strong></div>
+        <div class="stat-card stat-card-accent"><span class="stat-k">Reputacija</span><strong class="stat-v">${rep.toLocaleString()}</strong></div>
       `
-        : `<li class="muted">Sukurk gaują skiltyje Registracija</li>`;
+        : `<p class="muted small">Sukurk gaują skiltyje Registracija</p>`;
     }
 
     const legend = document.getElementById("gangLegend");
     if (legend) {
+      legend.innerHTML = `
+        <li><span class="legend-swatch legend-neutral"></span><span>Neutrali</span></li>
+        <li><span class="legend-swatch legend-owned"></span><span>Užimta</span></li>
+        <li><span class="legend-swatch legend-conflict"></span><span>Konfliktas</span></li>
+      `;
+    }
+
+    const strip = document.getElementById("gangColorStrip");
+    if (strip) {
       const colors = state.gangColors || [];
-      const swatches = colors
+      strip.innerHTML = colors
         .map((g) => {
           const hex = g.color_hex || g.color || "#64748B";
-          return `<li class="legend-swatch-only" title="${hex}"><span class="dot" style="background:${hex}"></span></li>`;
+          return `<span class="color-chip" style="background:${hex}" title="${hex}"></span>`;
         })
         .join("");
-      legend.innerHTML =
-        swatches +
-        `<li class="legend-swatch-only legend-neutral" title="Neutralu"><span class="dot dot-free"></span></li>`;
     }
 
-    const topList = document.getElementById("topGangsList");
-    if (topList) {
-      topList.innerHTML = (state.topGangs || [])
-        .map(
-          (g, i) =>
-            `<li><span class="rank">#${i + 1}</span> <span style="color:${g.color_hex || "#fff"}">${g.name}</span> <em>${g.turf_count || 0} turf.</em></li>`,
-        )
-        .join("") || "<li class='muted'>—</li>";
-    }
+    const warsCount = (state.activeWars || []).length;
+    const bannerText = document.getElementById("warsBannerText");
+    if (bannerText) bannerText.textContent = `Aktyvūs turf karai: ${warsCount}`;
+    const banner = document.getElementById("warsBanner");
+    if (banner) banner.classList.toggle("has-wars", warsCount > 0);
+  }
 
-    const wars = document.getElementById("activeWarsList");
-    if (wars) {
-      wars.innerHTML = (state.activeWars || [])
-        .map((w) => `<li><strong>${w.label}</strong> · ${w.owner} (${w.influence}%)</li>`)
-        .join("") || "<li class='muted'>Šiuo metu ramu</li>";
+  function renderWarsPopover(state) {
+    const pop = document.getElementById("warsPopover");
+    if (!pop) return;
+    const wars = state.activeWars || [];
+    if (!wars.length) {
+      pop.innerHTML = `<p class="muted small">Konfliktų nėra</p>`;
+      return;
     }
+    pop.innerHTML = wars
+      .map(
+        (w) =>
+          `<button type="button" class="war-pop-item" data-turf="${w.turfId || ""}">
+            <span class="war-pop-dot" style="background:${w.color_hex || "#f87171"}"></span>
+            <span class="war-pop-id">#${w.turfId || w.cell_num || "—"}</span>
+            <span class="war-pop-meta">${w.label || "—"} · ${w.influence || 0}%</span>
+            <span class="war-pop-time">${w.timeLabel || "Aktyvus"}</span>
+          </button>`,
+      )
+      .join("");
 
-    const acts = document.getElementById("recentActsList");
-    if (acts) {
-      acts.innerHTML = (state.recentActivities || [])
-        .map((a) => `<li><span style="color:${a.colorHex || "#a78bfa"}">${a.gangName}</span> · ${a.label} (+$${a.profit})</li>`)
-        .join("") || "<li class='muted'>Veiklų nėra</li>";
-    }
+    pop.querySelectorAll(".war-pop-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tid = btn.dataset.turf;
+        const turf = turfById[tid] || (state.turfs || []).find((t) => String(t.turf_id) === String(tid));
+        if (turf) {
+          selectTurf(turf);
+          focusTurf(turf);
+        }
+        pop.classList.add("hidden");
+      });
+    });
+  }
+
+  function graffitiLabel(turf) {
+    const count = Number(turf.graffiti_count ?? Math.floor(Number(turf.influence ?? 0) / 5));
+    const max = Number(turf.graffiti_max ?? 20);
+    return `${count}/${max}`;
+  }
+
+  function drugActivityLabel(turf) {
+    const sales = Number(turf.sales_count || 0);
+    const members = Number(turf.active_members || 0);
+    if (sales > 0 || members > 0) return "Aktyvi";
+    return "Rami";
   }
 
   function renderTurfInfo(turf) {
@@ -296,18 +336,16 @@ window.GangMap = (function () {
     const cellNum = turf.cell_num || turf.turf_id;
     const owner = turf.owner_display || turf.owner_name || "Neutralu";
     const inf = Math.max(0, Math.min(100, Number(turf.influence ?? turf.progress ?? 0)));
-    const graffiti = turf.graffiti_pct != null ? turf.graffiti_pct : Math.min(100, Math.floor(inf / 5));
-    const sales = Number(turf.sales_count || 0);
-    const war = turf.is_war ? "Taip" : "Nėra";
+    const war = turf.is_war ? "Taip" : "Ne";
     title.textContent = `TURF #${cellNum}`;
-    title.style.color = turf.map_color || "#e5e7eb";
+    title.style.color = turf.map_color || "#c4b5fd";
     body.innerHTML = `
       <div class="turf-row"><span>Rajonas</span><strong>${turf.district || turf.turf_label || "—"}</strong></div>
       <div class="turf-row"><span>Savininkas</span><strong style="color:${turf.map_color || NEUTRAL_COLOR}">${owner}</strong></div>
       <div class="turf-row"><span>Kontrolė</span><strong>${inf}%</strong><div class="bar"><i style="width:${inf}%;background:${turf.map_color || "#a78bfa"}"></i></div></div>
-      <div class="turf-row"><span>Grafiti</span><strong>${graffiti}%</strong></div>
-      <div class="turf-row"><span>Narkotikų veikla</span><strong>${sales}</strong></div>
-      <div class="turf-row"><span>Aktyvūs konfliktai</span><strong class="${turf.is_war ? "warn-txt" : ""}">${war}</strong></div>
+      <div class="turf-row"><span>Grafiti</span><strong>${graffitiLabel(turf)}</strong></div>
+      <div class="turf-row"><span>Narkotikų veikla</span><strong>${drugActivityLabel(turf)}</strong></div>
+      <div class="turf-row"><span>Konfliktas</span><strong class="${turf.is_war ? "warn-txt" : "ok"}">${war}</strong></div>
     `;
     if (btnGps) {
       btnGps.disabled = false;
@@ -324,6 +362,12 @@ window.GangMap = (function () {
     }
   }
 
+  function focusTurf(turf) {
+    if (!leafletMap || !mapCfg || !turf) return;
+    const bounds = gameBoundsToLeaflet(turf, mapCfg, 0.08);
+    leafletMap.fitBounds(bounds, { padding: [40, 40], animate: true, maxZoom: baseFitZoom + 4 });
+  }
+
   function buildTurfs(state) {
     if (!leafletMap || !mapCfg) return;
     if (turfLayer) {
@@ -334,12 +378,14 @@ window.GangMap = (function () {
     turfById = {};
     layerById = {};
     const cfg = mapCfg;
+    const allBounds = [];
 
     const turfs = (state.turfs || []).slice().sort((a, b) => turfArea(b) - turfArea(a));
 
     turfs.forEach((turf) => {
       if (turf.min_x == null && turf.center_x == null) return;
-      const bounds = gameBoundsToLeaflet(turf, cfg, 0.02);
+      const bounds = gameBoundsToLeaflet(turf, cfg, 0.01);
+      allBounds.push(bounds);
       const cellNum = turf.cell_num || turf.turf_id;
       turfById[turf.turf_id] = turf;
 
@@ -377,6 +423,10 @@ window.GangMap = (function () {
 
       rect.addTo(turfLayer);
     });
+
+    if (allBounds.length) {
+      turfBoundsLatLng = L.latLngBounds(allBounds);
+    }
 
     if (selectedTurf) {
       const updated = turfById[selectedTurf.turf_id];
@@ -421,9 +471,14 @@ window.GangMap = (function () {
     }
     leafletMap.panInsideBounds(bounds, { animate: false });
     baseFitZoom = leafletMap.getZoom();
-    leafletMap.setMinZoom(Math.max(-2, baseFitZoom - 1.25));
-    leafletMap.setMaxZoom(baseFitZoom + 7);
+    leafletMap.setMinZoom(Math.max(-2, baseFitZoom - 1.5));
+    leafletMap.setMaxZoom(baseFitZoom + 8);
     leafletMap.setMaxBounds(bounds.pad(0.02));
+  }
+
+  function fitAllTurfs() {
+    if (!leafletMap || !turfBoundsLatLng) return fitMapFill(8);
+    leafletMap.fitBounds(turfBoundsLatLng, { padding: [24, 24], animate: true });
   }
 
   function ensureMap(state) {
@@ -439,19 +494,19 @@ window.GangMap = (function () {
         crs: L.CRS.Simple,
         minZoom: -3,
         maxZoom: 8,
-        zoomSnap: 0.15,
+        zoomSnap: 0.12,
         zoomDelta: 0.35,
-        wheelPxPerZoomLevel: 70,
+        wheelPxPerZoomLevel: 55,
         zoomControl: false,
         attributionControl: false,
-        preferCanvas: false,
+        preferCanvas: true,
         dragging: true,
         scrollWheelZoom: true,
         doubleClickZoom: true,
-        boxZoom: true,
+        boxZoom: false,
         inertia: true,
-        inertiaDeceleration: 3000,
-        easeLinearity: 0.2,
+        inertiaDeceleration: 3200,
+        easeLinearity: 0.18,
       });
       bindMapEvents();
     }
@@ -461,21 +516,21 @@ window.GangMap = (function () {
       [mapCfg.imgH, mapCfg.imgW],
     ];
     if (imageLayer) leafletMap.removeLayer(imageLayer);
-    imageLayer = L.imageOverlay(mapCfg.imageUrl, bounds, { interactive: false }).addTo(leafletMap);
+    imageLayer = L.imageOverlay(mapCfg.imageUrl, bounds, { interactive: false, opacity: 0.92 }).addTo(leafletMap);
     buildTurfs(state);
 
     requestAnimationFrame(() => {
       invalidate();
-      fitMapFill(0);
+      fitMapFill(4);
       if (!selectedTurf) selectTurf(null);
     });
     setTimeout(() => {
       invalidate();
-      fitMapFill(0);
+      fitMapFill(4);
     }, 120);
     setTimeout(() => {
       invalidate();
-      fitMapFill(0);
+      fitMapFill(4);
     }, 320);
   }
 
@@ -488,25 +543,7 @@ window.GangMap = (function () {
   }
 
   function resetView() {
-    fitMapFill(0);
-  }
-
-  function toggleFullscreen(on) {
-    const panel = document.getElementById("tabPanelMap");
-    const bezel = document.querySelector(".tablet-bezel");
-    if (!panel) return;
-    const enable =
-      on === true || (on !== false && !panel.classList.contains("map-fullscreen"));
-    panel.classList.toggle("map-fullscreen", enable);
-    if (bezel) bezel.classList.toggle("tablet-map-fullscreen", enable);
-    setTimeout(() => {
-      invalidate();
-      fitMapFill(0);
-    }, 80);
-    setTimeout(() => {
-      invalidate();
-      fitMapFill(0);
-    }, 280);
+    fitMapFill(4);
   }
 
   function invalidate() {
@@ -519,11 +556,13 @@ window.GangMap = (function () {
 
   return {
     open: ensureMap,
+    renderPanels: renderSidePanels,
+    renderWarsPopover,
     destroy,
     zoomIn,
     zoomOut,
     resetView,
-    toggleFullscreen,
+    fitAllTurfs,
     invalidate,
     getSelectedTurf,
   };

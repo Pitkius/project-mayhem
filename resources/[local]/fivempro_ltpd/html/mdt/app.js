@@ -6,18 +6,16 @@ let mdtSessionActive = false;
 let mdtSurveillanceLive = false;
 let mdtFetchFailStreak = 0;
 const MDT_FETCH_FAIL_MAX = 4;
-let dispatchMapFitScale = 1;
-const MAP_MAX_SCALE = 5.0;
-const MAP_FIT_PAD = 1.0;
-const MAP_ZOOM_STEP = 0.12;
+let lastDispatchPayload = null;
+let selectedMapTarget = null;
 
 const mapMeta = {
   minX: -4000,
   maxX: 4500,
   minY: -4000,
   maxY: 6625,
-  imgW: 1024,
-  imgH: 1280,
+  imgW: 2048,
+  imgH: 2560,
   imageUrl: '',
   loaded: false,
 };
@@ -35,9 +33,6 @@ function applyMapConfig(cfg) {
   }
 }
 
-function mapMinScale() {
-  return Math.max(0.35, dispatchMapFitScale * 0.92);
-}
 function nuiImageUrl(pathFromHtml) {
   const raw = String(pathFromHtml || '').trim();
   if (!raw || /^https?:\/\//i.test(raw) || /^nui:\/\//i.test(raw)) return raw;
@@ -47,7 +42,7 @@ function nuiImageUrl(pathFromHtml) {
   return `nui://${res}/${p}`;
 }
 
-const MAP_SAT_URL = nuiImageUrl('mdt/asset/gtav_satellite.jpg');
+const MAP_SAT_URL = nuiImageUrl('mdt/asset/gtav_satellite_2048.png');
 mapMeta.imageUrl = MAP_SAT_URL;
 
 function preloadMapImage(url) {
@@ -82,7 +77,6 @@ function mdtLocalClose() {
   app.classList.add('hidden');
   mdtDocked = false;
   app.classList.remove('is-docked');
-  dispatchMapLayoutReady = false;
   stopDispatchPoll();
   stopSurveillanceUi(false);
 }
@@ -160,15 +154,11 @@ window.addEventListener('message', (e) => {
     };
     if (sel.options.length) sel.onchange();
     applyMapConfig(d.data && d.data.map);
-    ensureDispatchMapDom();
-    watchDispatchMapResize();
-    preloadMapImage(mapMeta.imageUrl).then(() => {
-      requestAnimationFrame(() => {
-        layoutDispatchMapCanvas();
-        fitDispatchMapInView();
-        dispatchMapLayoutReady = true;
-      });
-    });
+    if (window.MdtMap) {
+      MdtMap.ensureMap(d.data && d.data.map);
+      MdtMap.setOnSelect(onMapBlipSelect);
+    }
+    preloadMapImage(mapMeta.imageUrl);
     mdtEnsureConnected().then((ok) => {
       if (ok) startDispatchPoll();
     });
@@ -231,16 +221,12 @@ document.querySelectorAll('.tab').forEach((t) => {
     const pan = document.getElementById(id);
     if (pan) pan.classList.remove('hidden');
     if (t.dataset.tab === 'units') {
-      ensureDispatchMapDom();
-      watchDispatchMapResize();
-      dispatchMapLayoutReady = false;
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          layoutDispatchMapCanvas();
-          fitDispatchMapInView();
-          dispatchMapLayoutReady = true;
-          refreshDispatch();
-        });
+        if (window.MdtMap) {
+          MdtMap.invalidate();
+          MdtMap.resetView();
+        }
+        refreshDispatch();
       });
     }
     if (t.dataset.tab === 'calls' || t.dataset.tab === 'crews') refreshDispatch();
@@ -394,7 +380,7 @@ function startDispatchPoll() {
   dispatchPoll = setInterval(() => {
     if (!mdtSessionActive || mdtSurveillanceLive) return;
     refreshDispatch();
-  }, 2000);
+  }, 1000);
 }
 
 function countObj(obj) {
@@ -424,237 +410,131 @@ function resolveUnitNames(idMap, units) {
   return out.length ? out.join(', ') : '-';
 }
 
-function worldToMap(x, y) {
-  const px = ((Number(x || 0) - mapMeta.minX) / (mapMeta.maxX - mapMeta.minX)) * 100;
-  const py = (1 - ((Number(y || 0) - mapMeta.minY) / (mapMeta.maxY - mapMeta.minY))) * 100;
-  return {
-    x: Math.max(0.2, Math.min(99.8, px)),
-    y: Math.max(0.2, Math.min(99.8, py)),
-  };
-}
-
-let dispatchMapPan = { x: 0, y: 0, scale: 1 };
-let dispatchMapInteractBound = false;
-let dispatchMapResizeObs = null;
-let dispatchMapLayoutReady = false;
 let mdtDocked = false;
 let mdtDragBound = false;
 
-function ensureDispatchMapDom() {
-  const transform = document.getElementById('dispatchMapTransform');
-  if (!transform || document.getElementById('dispatchMapSurface')) return;
-
-  let markers = document.getElementById('dispatchMapMarkers');
-  const inner = document.getElementById('dispatchMapInner');
-  const surface = document.createElement('div');
-  surface.id = 'dispatchMapSurface';
-  surface.className = 'dispatch-map-surface';
-  const mapUrl = mapMeta.imageUrl || MAP_SAT_URL;
-  if (mapUrl) {
-    surface.style.backgroundImage = `url("${mapUrl}")`;
-    surface.style.backgroundSize = '100% 100%';
-    surface.style.backgroundRepeat = 'no-repeat';
-    surface.style.backgroundPosition = 'center center';
-  }
-
-  if (inner) inner.remove();
-  if (!markers) {
-    markers = document.createElement('div');
-    markers.id = 'dispatchMapMarkers';
-    markers.className = 'dispatch-map-markers';
-  } else {
-    markers.remove();
-  }
-
-  surface.appendChild(markers);
-  transform.appendChild(surface);
+function statusPillClass(label, panic) {
+  if (panic) return 'panic';
+  const s = String(label || '').toLowerCase();
+  if (s.includes('atvyk') || s.includes('arrived')) return 'arrived';
+  if (s.includes('vyk') || s.includes('enroute') || s.includes('priority')) return 'enroute';
+  return 'patrol';
 }
 
-function layoutDispatchMapCanvas() {
-  const root = document.getElementById('dispatchMap');
-  const surface = document.getElementById('dispatchMapSurface');
-  if (!root || !surface) return;
-
-  const cw = Math.max(320, root.clientWidth || 0);
-  const ch = Math.max(240, root.clientHeight || 0);
-  const imgAspect = mapMeta.imgW / mapMeta.imgH;
-  const boxAspect = cw / ch;
-  let w;
-  let h;
-  if (boxAspect > imgAspect) {
-    h = ch;
-    w = h * imgAspect;
-  } else {
-    w = cw;
-    h = w / imgAspect;
-  }
-  surface.style.width = `${Math.round(w)}px`;
-  surface.style.height = `${Math.round(h)}px`;
-}
-
-function clampDispatchMapPan() {
-  const root = document.getElementById('dispatchMap');
-  const surface = document.getElementById('dispatchMapSurface');
-  if (!root || !surface) return;
-  const cw = root.clientWidth;
-  const ch = root.clientHeight;
-  const sw = surface.offsetWidth * dispatchMapPan.scale;
-  const sh = surface.offsetHeight * dispatchMapPan.scale;
-  if (sw <= cw + 1 && sh <= ch + 1) {
-    dispatchMapPan.x = 0;
-    dispatchMapPan.y = 0;
+function renderMapDetail(kind, data) {
+  const el = document.getElementById('dispatchMapDetail');
+  if (!el) return;
+  selectedMapTarget = data ? { kind, data } : null;
+  if (!data) {
+    el.innerHTML = '<div class="gps-detail-empty muted">Pasirink blipą žemėlapyje arba užvesk pelę dėl informacijos.</div>';
     return;
   }
-  const maxX = Math.max(0, (sw - cw) / 2);
-  const maxY = Math.max(0, (sh - ch) / 2);
-  dispatchMapPan.x = Math.max(-maxX, Math.min(maxX, dispatchMapPan.x));
-  dispatchMapPan.y = Math.max(-maxY, Math.min(maxY, dispatchMapPan.y));
-}
-
-function fitDispatchMapInView() {
-  const root = document.getElementById('dispatchMap');
-  const surface = document.getElementById('dispatchMapSurface');
-  if (!root || !surface) return;
-  layoutDispatchMapCanvas();
-  const cw = Math.max(1, root.clientWidth || 1);
-  const ch = Math.max(1, root.clientHeight || 1);
-  const sw = Math.max(1, surface.offsetWidth);
-  const sh = Math.max(1, surface.offsetHeight);
-  const fitScale = Math.min(cw / sw, ch / sh) * MAP_FIT_PAD;
-  dispatchMapFitScale = Math.max(0.35, fitScale);
-  dispatchMapPan.scale = dispatchMapFitScale;
-  dispatchMapPan.x = 0;
-  dispatchMapPan.y = 0;
-  applyDispatchMapTransform();
-}
-
-function watchDispatchMapResize() {
-  const root = document.getElementById('dispatchMap');
-  if (!root || dispatchMapResizeObs) return;
-  dispatchMapResizeObs = new ResizeObserver(() => {
-    if (document.getElementById('panel-units')?.classList.contains('hidden')) return;
-    layoutDispatchMapCanvas();
-    clampDispatchMapPan();
-    applyDispatchMapTransform();
-  });
-  dispatchMapResizeObs.observe(root);
-}
-
-function applyDispatchMapTransform() {
-  const layer = document.getElementById('dispatchMapTransform');
-  if (!layer) return;
-  layer.style.transform = `translate(calc(-50% + ${dispatchMapPan.x}px), calc(-50% + ${dispatchMapPan.y}px)) scale(${dispatchMapPan.scale})`;
-}
-
-function bindDispatchMapInteract() {
-  if (dispatchMapInteractBound) return;
-  const root = document.getElementById('dispatchMap');
-  const layer = document.getElementById('dispatchMapTransform');
-  if (!root || !layer) return;
-  dispatchMapInteractBound = true;
-
-  root.addEventListener(
-    'wheel',
-    (e) => {
-      e.preventDefault();
-      const rect = root.getBoundingClientRect();
-      const cx = e.clientX - (rect.left + rect.width / 2);
-      const cy = e.clientY - (rect.top + rect.height / 2);
-      const delta = e.deltaY > 0 ? -MAP_ZOOM_STEP : MAP_ZOOM_STEP;
-      const oldScale = dispatchMapPan.scale;
-      const newScale = Math.max(mapMinScale(), Math.min(MAP_MAX_SCALE, oldScale + delta));
-      if (newScale !== oldScale) {
-        const ratio = newScale / oldScale;
-        dispatchMapPan.x = cx + (dispatchMapPan.x - cx) * ratio;
-        dispatchMapPan.y = cy + (dispatchMapPan.y - cy) * ratio;
-        dispatchMapPan.scale = newScale;
-      }
-      clampDispatchMapPan();
-      applyDispatchMapTransform();
-    },
-    { passive: false },
-  );
-
-  let drag = false;
-  let lx = 0;
-  let ly = 0;
-  root.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    drag = true;
-    lx = e.clientX;
-    ly = e.clientY;
-    root.style.cursor = 'grabbing';
-  });
-  window.addEventListener('mouseup', () => {
-    if (!drag) return;
-    drag = false;
-    root.style.cursor = 'grab';
-  });
-  window.addEventListener('mousemove', (e) => {
-    if (!drag) return;
-    dispatchMapPan.x += e.clientX - lx;
-    dispatchMapPan.y += e.clientY - ly;
-    lx = e.clientX;
-    ly = e.clientY;
-    clampDispatchMapPan();
-    applyDispatchMapTransform();
-  });
-}
-
-function renderDispatchMap(calls, units) {
-  ensureDispatchMapDom();
-  watchDispatchMapResize();
-  layoutDispatchMapCanvas();
-  const markers = document.getElementById('dispatchMapMarkers');
-  if (!markers) return;
-  markers.innerHTML = '';
-  bindDispatchMapInteract();
-  const panelVisible = !document.getElementById('panel-units')?.classList.contains('hidden');
-  if (!dispatchMapLayoutReady || !panelVisible) {
-    if (panelVisible) {
-      dispatchMapLayoutReady = true;
-      requestAnimationFrame(() => fitDispatchMapInView());
+  if (kind === 'unit') {
+    const badge = data.callsign || String(data.source || '—');
+    const pill = statusPillClass(data.statusLabel, data.panic);
+    el.innerHTML = `
+      <div class="gps-detail-card">
+        <h3>Pareigūnas</h3>
+        <div class="gps-detail-row"><span>Pareigūnas</span><strong>${escapeHtml(data.name || '—')}</strong></div>
+        <div class="gps-detail-row"><span>Ženklelis</span><strong>${escapeHtml(badge)}</strong></div>
+        <div class="gps-detail-row"><span>Ekipažas</span><strong>${escapeHtml(data.crewLabel || '—')}</strong></div>
+        <div class="gps-detail-row"><span>Statusas</span><strong><span class="gps-status-pill ${pill}">${escapeHtml(data.statusLabel || 'Patruliuoja')}</span></strong></div>
+        <div class="gps-detail-row"><span>Greitis</span><strong>${Number(data.speedKmh || 0)} km/h</strong></div>
+        <div class="gps-detail-row"><span>GPS</span><strong>${data.gpsActive !== false ? 'aktyvus' : 'neaktyvus'}</strong></div>
+        <div class="gps-detail-row"><span>Koordinatės</span><strong>${Number(data.x || 0).toFixed(1)} ${Number(data.y || 0).toFixed(1)} ${Number(data.z || 0).toFixed(1)}</strong></div>
+        <div class="gps-detail-actions">
+          <button type="button" class="btn primary" id="gpsSetRouteBtn">Nustatyti maršrutą</button>
+        </div>
+      </div>
+    `;
+    const btn = document.getElementById('gpsSetRouteBtn');
+    if (btn) {
+      btn.onclick = () => nuiPost('mdtSetRoute', { x: data.x, y: data.y });
     }
-  } else {
-    clampDispatchMapPan();
-    applyDispatchMapTransform();
+    return;
   }
-  if (!panelVisible) return;
-  units.forEach((u) => {
-    const p = worldToMap(u.x, u.y);
-    const d = document.createElement('div');
-    d.className = 'map-dot unit';
-    d.style.left = `${p.x}%`;
-    d.style.top = `${p.y}%`;
-    d.textContent = `${u.callsign ? `[${u.callsign}] ` : ''}${u.name || 'Unit'}`;
-    markers.appendChild(d);
-  });
-  calls.forEach((c) => {
-    const p = worldToMap(c.x, c.y);
-    const d = document.createElement('div');
-    d.className = `map-dot call ${c.panic ? 'panic' : ''}`.trim();
-    d.style.left = `${p.x}%`;
-    d.style.top = `${p.y}%`;
-    d.textContent = `${c.id} ${c.callTypeLabel || c.callType || 'Call'}`;
-    markers.appendChild(d);
-  });
+  const pill = statusPillClass(data.statusLabel, data.panic);
+  el.innerHTML = `
+    <div class="gps-detail-card">
+      <h3>Iškvietimas</h3>
+      <div class="gps-detail-row"><span>ID</span><strong>${escapeHtml(data.id || '—')}</strong></div>
+      <div class="gps-detail-row"><span>Tipas</span><strong>${escapeHtml(data.callTypeLabel || data.callType || '—')}</strong></div>
+      <div class="gps-detail-row"><span>Statusas</span><strong><span class="gps-status-pill ${pill}">${escapeHtml(data.statusLabel || data.status || '—')}</span></strong></div>
+      <div class="gps-detail-row"><span>Koordinatės</span><strong>${Number(data.x || 0).toFixed(1)} ${Number(data.y || 0).toFixed(1)} ${Number(data.z || 0).toFixed(1)}</strong></div>
+      <div class="gps-detail-actions">
+        <button type="button" class="btn primary" id="gpsSetRouteBtn">Nustatyti maršrutą</button>
+      </div>
+    </div>
+  `;
+  const btn = document.getElementById('gpsSetRouteBtn');
+  if (btn) {
+    btn.onclick = () => nuiPost('mdtSetRoute', { x: data.x, y: data.y });
+  }
 }
 
-(function bindDispatchMapZoomButtons() {
+function onMapBlipSelect(kind, data) {
+  if (kind === 'unit' && data && lastDispatchPayload) {
+    renderMapDetail(kind, enrichUnitForPanel(data, lastDispatchPayload.crews));
+    return;
+  }
+  renderMapDetail(kind, data);
+}
+
+function enrichUnitForPanel(u, crews) {
+  const crew = (crews || []).find((c) => c.crewId === u.crewId);
+  const crewLabel = crew
+    ? (crew.callsign ? crew.callsign : `Ekipažas #${crew.crewNumber || '—'}`)
+    : '—';
+  return { ...u, crewLabel };
+}
+
+function renderDispatchMap(payload) {
+  if (!window.MdtMap) return;
+  const panelVisible = !document.getElementById('panel-units')?.classList.contains('hidden');
+  if (!panelVisible) return;
+  MdtMap.update(payload || {});
+  if (selectedMapTarget?.data) {
+    const crews = payload.crews || [];
+    if (selectedMapTarget.kind === 'unit') {
+      const fresh = (payload.units || []).find((x) => String(x.source) === String(selectedMapTarget.data.source));
+      if (fresh) renderMapDetail('unit', enrichUnitForPanel(fresh, crews));
+    } else {
+      const fresh = (payload.calls || []).find((x) => String(x.id) === String(selectedMapTarget.data.id));
+      if (fresh) renderMapDetail('call', fresh);
+    }
+  }
+}
+
+(function bindGpsToolbar() {
   const zIn = document.getElementById('dispatchZoomIn');
   const zOut = document.getElementById('dispatchZoomOut');
-  if (zIn) {
-    zIn.addEventListener('click', () => {
-      dispatchMapPan.scale = Math.min(MAP_MAX_SCALE, dispatchMapPan.scale + MAP_ZOOM_STEP);
-      clampDispatchMapPan();
-      applyDispatchMapTransform();
+  const reset = document.getElementById('gpsResetView');
+  const centerSelf = document.getElementById('gpsCenterSelf');
+  const centerCall = document.getElementById('gpsCenterCall');
+  const refresh = document.getElementById('refreshDispatchMap');
+  if (zIn) zIn.addEventListener('click', () => window.MdtMap && MdtMap.zoomIn());
+  if (zOut) zOut.addEventListener('click', () => window.MdtMap && MdtMap.zoomOut());
+  if (reset) reset.addEventListener('click', () => window.MdtMap && MdtMap.resetView());
+  if (centerSelf) {
+    centerSelf.addEventListener('click', () => {
+      if (window.MdtMap && !MdtMap.centerOnPlayer()) {
+        const note = document.getElementById('dispatchMapDetail');
+        if (note) note.innerHTML = '<div class="gps-detail-empty muted">Tavo pozicija žemėlapyje nerasta (reikia būti on duty).</div>';
+      }
     });
   }
-  if (zOut) {
-    zOut.addEventListener('click', () => {
-      dispatchMapPan.scale = Math.max(mapMinScale(), dispatchMapPan.scale - MAP_ZOOM_STEP);
-      clampDispatchMapPan();
-      applyDispatchMapTransform();
+  if (centerCall) {
+    centerCall.addEventListener('click', () => {
+      if (window.MdtMap && !MdtMap.centerOnActiveCall()) {
+        const note = document.getElementById('dispatchMapDetail');
+        if (note) note.innerHTML = '<div class="gps-detail-empty muted">Aktyvių iškvietimų nėra.</div>';
+      }
+    });
+  }
+  if (refresh) {
+    refresh.addEventListener('click', () => {
+      if (window.MdtMap) MdtMap.resetView();
+      refreshDispatch();
     });
   }
 })();
@@ -675,14 +555,13 @@ function renderDispatch(res) {
   setDispatchControlsEnabled(!dispatchReadOnly);
   const callsEl = document.getElementById('dispatchCalls');
   const crewsEl = document.getElementById('dispatchCrews');
-  const unitsEl = document.getElementById('dispatchUnits');
   callsEl.innerHTML = '';
   crewsEl.innerHTML = '';
-  unitsEl.innerHTML = '';
 
   if (res && res.ok === false && res.msg) {
     callsEl.innerHTML = `<div class="muted">${escapeHtml(res.msg)}</div>`;
-    renderDispatchMap([], []);
+    lastDispatchPayload = res;
+    renderDispatchMap(res);
     return;
   }
 
@@ -737,21 +616,8 @@ function renderDispatch(res) {
     });
   }
 
-  if (!units.length) {
-    unitsEl.innerHTML = '<div class="muted">Pamainoje vienetų nėra.</div>';
-  } else {
-    units.forEach((u) => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <h4>${u.callsign ? '[' + escapeHtml(u.callsign) + ']' : ''} ${escapeHtml(u.name || 'Pareigūnas')}</h4>
-        <div>Koord: ${Number(u.x || 0).toFixed(1)}, ${Number(u.y || 0).toFixed(1)}</div>
-        <div>Ekipažas: ${escapeHtml(u.crewId || '-')}</div>
-      `;
-      unitsEl.appendChild(card);
-    });
-  }
-  renderDispatchMap(calls, units);
+  lastDispatchPayload = res;
+  renderDispatchMap(res);
 
   document.querySelectorAll('.js-dispatch').forEach((btn) => {
     btn.onclick = () => nuiPost('dispatchAction', { callId: btn.dataset.callid, action: btn.dataset.action }).then((r) => {
@@ -777,16 +643,10 @@ function refreshDispatch() {
 }
 
 document.getElementById('refreshDispatch').onclick = () => refreshDispatch();
-document.getElementById('refreshDispatchMap').onclick = () => {
-  ensureDispatchMapDom();
-  fitDispatchMapInView();
-  refreshDispatch();
-};
 
 window.addEventListener('resize', () => {
-  if (!document.getElementById('panel-units')?.classList.contains('hidden')) {
-    layoutDispatchMapCanvas();
-    applyDispatchMapTransform();
+  if (!document.getElementById('panel-units')?.classList.contains('hidden') && window.MdtMap) {
+    MdtMap.invalidate();
   }
 });
 
@@ -802,12 +662,8 @@ function setMdtDocked(docked, skipPost) {
     app.style.right = '';
     app.style.bottom = '';
   }
-  if (!document.getElementById('panel-units')?.classList.contains('hidden')) {
-    requestAnimationFrame(() => {
-      layoutDispatchMapCanvas();
-      clampDispatchMapPan();
-      applyDispatchMapTransform();
-    });
+  if (!document.getElementById('panel-units')?.classList.contains('hidden') && window.MdtMap) {
+    requestAnimationFrame(() => MdtMap.invalidate());
   }
 }
 

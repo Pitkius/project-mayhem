@@ -20,3 +20,8 @@ dependencies {
     'fivempro_hud',
 }
 
+exports {
+    'IsEngineStartBlocked',
+    'GetEngineStartBlockSecondsLeft',
+}
+

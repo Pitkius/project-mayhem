@@ -60,13 +60,13 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT dispatch žemėlapis — pilnas San Andreas (koord. atitinka gtav_satellite.jpg)
+--- MDT dispatch žemėlapis — pilnas San Andreas (koord. atitinka gtav_satellite_2048.png)
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
-    imageFile = 'mdt/asset/gtav_satellite.jpg',
-    imageWidth = 1024,
-    imageHeight = 1280,
+    imageFile = 'mdt/asset/gtav_satellite_2048.png',
+    imageWidth = 2048,
+    imageHeight = 2560,
 }
 
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)
@@ -357,28 +357,18 @@ Config.PdDoorGroups = {
     },
     {
         id = 'ls_mrpd_front_entry',
-        label = 'Priekinis vartai',
-        interact = vector3(419.99, -1025.0, 29.35),
-        interactDist = 6.0,
+        label = 'Priekinis kiemas (vartai + borteliai)',
+        doorType = 'yard_gate',
+        interact = vector3(416.2, -1024.0, 29.85),
+        interactDist = 5.5,
         defaultLocked = true,
         doors = {
             { model = 'prop_facgate_07b', coords = vector3(419.99, -1025.0, 28.99), heading = 270.0 },
         },
-    },
-    {
-        id = 'ls_mrpd_bollards',
-        label = 'MRPD kiemo borteliai',
-        doorType = 'bollard',
-        interact = vector3(410.5, -1024.2, 29.35),
-        interactDist = 6.5,
-        defaultLocked = true,
-        doors = {
-            { model = 'gabz_mrpd_bollards1', coords = vector3(410.5, -1024.2, 29.35) },
-        },
         entityScan = {
-            center = vector3(410.5, -1024.2, 29.35),
-            radius = 10.0,
-            models = { 'gabz_mrpd_bollards1', 'gabz_mrpd_bollards2', 'gabz_mrpd_bollards_base' },
+            center = vector3(416.2, -1024.0, 29.35),
+            radius = 14.0,
+            models = { 'prop_facgate_07b', 'gabz_mrpd_bollards1', 'gabz_mrpd_bollards2' },
         },
     },
     {
@@ -479,7 +469,6 @@ Config.PdDoorInteractExtras = {
     { groupId = 'ls_mrpd_side', interact = vector3(441.28, -986.51, 30.71), interactDist = 3.2 },
     { groupId = 'ls_mrpd_reception', interact = vector3(441.39, -977.68, 30.79), interactDist = 3.2 },
     { groupId = 'ls_mrpd_reception', interact = vector3(457.03, -971.67, 30.71), interactDist = 3.2 },
-    { groupId = 'ls_mrpd_front_entry', interact = vector3(419.6, -1025.1, 29.35), interactDist = 5.5 },
     { groupId = 'ls_mrpd_back_gate', interact = vector3(488.8, -1017.2, 27.1), interactDist = 6.0 },
 }
 

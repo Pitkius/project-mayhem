@@ -6,7 +6,36 @@ local lastEngineHealth = {}
 --- Pikas greitis (KM/H) tarp smūgių — smūgio kadrui greitis dažnai jau kritęs.
 local peakSpeedKmhByNet = {}
 local lastBodyHealthByNet = {}
+local engineStartBlockedUntil = {}
 local STALL_AFTER_IMPACT_SPEED = 120.0
+--- Po avarijos: +1,5 s už kiekvienus 100 km/h (100 → 1,5 s, 200 → 3 s).
+local CRASH_RESTART_MS_PER_100KMH = 1500
+
+local function crashRestartDelayMs(speedKmh)
+    speedKmh = math.max(0.0, tonumber(speedKmh) or 0.0)
+    return math.floor((speedKmh / 100.0) * CRASH_RESTART_MS_PER_100KMH)
+end
+
+local function isEngineStartBlocked(netId)
+    local untilTs = engineStartBlockedUntil[netId]
+    if not untilTs then return false end
+    if GetGameTimer() >= untilTs then
+        engineStartBlockedUntil[netId] = nil
+        return false
+    end
+    return true
+end
+
+local function remainingBlockMs(netId)
+    local untilTs = engineStartBlockedUntil[netId]
+    if not untilTs then return 0 end
+    local rem = untilTs - GetGameTimer()
+    if rem <= 0 then
+        engineStartBlockedUntil[netId] = nil
+        return 0
+    end
+    return rem
+end
 
 local function plateOf(veh)
     return (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
@@ -87,6 +116,13 @@ local function tryToggleEngine(veh)
     if on then
         SetVehicleEngineOn(veh, false, true, true)
         QBCore.Functions.Notify('Variklis išjungtas.', 'primary')
+        return
+    end
+
+    local netId = VehToNet(veh)
+    local blockMs = remainingBlockMs(netId)
+    if blockMs > 0 then
+        QBCore.Functions.Notify(('Per greitai po avarijos. Palaukite dar %.1fs.'):format(blockMs / 1000.0), 'error')
         return
     end
 
@@ -204,11 +240,21 @@ CreateThread(function()
                 local engineHit = (prev - hp) > 35.0
                 local bodyHit = (prevBody - bodyNow) > 18.0
 
-                --- Smūgis + ≥120 KM/H („pikas“ per važiavimą): variklis užgesta — tiesiog smūgio kadrą greitis jau nukritęs
-                if (engineHit or bodyHit) and (peakSpeedKmhByNet[netId] or 0.0) >= STALL_AFTER_IMPACT_SPEED then
+                --- Smūgis + ≥120 KM/H („pikas“ per važiavimą): variklis užgesta — be auto-užvedimo, su cooldown pagal greitį
+                local crashPeak = peakSpeedKmhByNet[netId] or 0.0
+                if (engineHit or bodyHit) and crashPeak >= STALL_AFTER_IMPACT_SPEED then
                     SetVehicleEngineOn(veh, false, true, true)
-                    QBCore.Functions.Notify('Variklis užgeso.', 'error')
+                    local delayMs = crashRestartDelayMs(crashPeak)
+                    engineStartBlockedUntil[netId] = GetGameTimer() + delayMs
+                    QBCore.Functions.Notify(
+                        ('Variklis užgeso. Užvesti galėsite po %.1fs.'):format(delayMs / 1000.0),
+                        'error'
+                    )
                     peakSpeedKmhByNet[netId] = spdNow
+                end
+
+                if isEngineStartBlocked(netId) and GetIsVehicleEngineRunning(veh) then
+                    SetVehicleEngineOn(veh, false, true, true)
                 end
 
                 lastBodyHealthByNet[netId] = bodyNow
@@ -228,6 +274,16 @@ CreateThread(function()
             Wait(500)
         end
     end
+end)
+
+exports('IsEngineStartBlocked', function(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return false end
+    return isEngineStartBlocked(VehToNet(veh))
+end)
+
+exports('GetEngineStartBlockSecondsLeft', function(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return 0.0 end
+    return remainingBlockMs(VehToNet(veh)) / 1000.0
 end)
 
 RegisterNetEvent('fivempro_vehiclemenu:client:grantKeysNearest', function()

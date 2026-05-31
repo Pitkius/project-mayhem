@@ -50,24 +50,28 @@ Config.RangerSupplyShop = {
 --- role: supply | garage | locker | stash | duty | boss
 Config.JobStationNpcs = {
     --- LS MRPD (Gabz)
+    { job = 'police', stationId = 'ls_main', role = 'duty', model = 's_m_y_cop_01', coords = vector4(441.84, -982.05, 30.69, 90.0), label = 'PD tarnyba (pradėti / baigti)' },
     { job = 'police', stationId = 'ls_main', role = 'supply', model = 's_m_y_cop_01', coords = vector4(451.2, -993.4, 30.69, 270.0), label = 'PD inventorius' },
     { job = 'police', stationId = 'ls_main', role = 'garage', model = 's_m_y_cop_01', coords = vector4(441.64, -1013.14, 28.62, 175.52), label = 'PD garažas / transportas' },
     { job = 'police', stationId = 'ls_main', role = 'locker', model = 's_f_y_cop_01', coords = vector4(461.85, -998.35, 30.69, 90.0), label = 'PD rūbinė' },
     { job = 'police', stationId = 'ls_main', role = 'stash', model = 's_m_y_cop_01', coords = vector4(449.55, -993.45, 30.69, 270.0), label = 'PD sandėlis' },
 
     --- Davis PD (Gabz)
+    { job = 'police', stationId = 'davis', role = 'duty', model = 's_m_y_cop_01', coords = vector4(379.39, -1591.37, 29.76, 320.0), label = 'PD tarnyba (pradėti / baigti)' },
     { job = 'police', stationId = 'davis', role = 'supply', model = 's_m_y_cop_01', coords = vector4(374.04, -1608.08, 29.29, 320.0), label = 'PD inventorius' },
     { job = 'police', stationId = 'davis', role = 'garage', model = 's_m_y_cop_01', coords = vector4(397.85, -1607.09, 29.29, 230.0), label = 'PD garažas / transportas' },
     { job = 'police', stationId = 'davis', role = 'locker', model = 's_f_y_cop_01', coords = vector4(365.13, -1598.32, 25.45, 320.0), label = 'PD rūbinė' },
     { job = 'police', stationId = 'davis', role = 'stash', model = 's_m_y_cop_01', coords = vector4(373.2, -1606.5, 29.29, 320.0), label = 'PD sandėlis' },
 
     --- Sandy PD
+    { job = 'police', stationId = 'sandy', role = 'duty', model = 's_m_y_sheriff_01', coords = vector4(1853.2, 3689.5, 34.27, 210.0), label = 'PD tarnyba (pradėti / baigti)' },
     { job = 'police', stationId = 'sandy', role = 'supply', model = 's_m_y_sheriff_01', coords = vector4(1849.12, 3690.04, 34.27, 210.0), label = 'PD inventorius' },
     { job = 'police', stationId = 'sandy', role = 'garage', model = 's_m_y_sheriff_01', coords = vector4(1869.5, 3695.2, 33.53, 210.0), label = 'PD garažas / transportas' },
     { job = 'police', stationId = 'sandy', role = 'locker', model = 's_f_y_sheriff_01', coords = vector4(1851.2, 3689.1, 34.27, 210.0), label = 'PD rūbinė' },
     { job = 'police', stationId = 'sandy', role = 'stash', model = 's_m_y_sheriff_01', coords = vector4(1850.5, 3691.5, 34.27, 210.0), label = 'PD sandėlis' },
 
     --- Paleto PD
+    { job = 'police', stationId = 'paleto', role = 'duty', model = 's_m_y_sheriff_01', coords = vector4(-448.26, 6012.36, 31.72, 45.0), label = 'PD tarnyba (pradėti / baigti)' },
     { job = 'police', stationId = 'paleto', role = 'supply', model = 's_m_y_sheriff_01', coords = vector4(-449.38, 6014.12, 31.72, 45.0), label = 'PD inventorius' },
     { job = 'police', stationId = 'paleto', role = 'garage', model = 's_m_y_sheriff_01', coords = vector4(-459.2, 6016.3, 31.49, 45.0), label = 'PD garažas / transportas' },
     { job = 'police', stationId = 'paleto', role = 'locker', model = 's_f_y_sheriff_01', coords = vector4(-448.9, 6013.2, 31.72, 45.0), label = 'PD rūbinė' },
@@ -105,9 +109,14 @@ Config.JobStationNpcs = {
 
 Config.JobNpcReach = 4.5
 
---- Garažų / sandėlių 3D markeriai (role garage | stash — be NPC)
+--- Garažų / sandėlių / rūbinių 3D markeriai (role garage | stash | locker — be NPC)
 Config.JobMarkerDrawDistance = 28.0
 Config.JobMarkerUseRadius = 2.2
+Config.JobMarkerStashUseRadius = 1.35
+Config.JobMarkerLockerUseRadius = 1.6
+Config.JobMarkerTypes = { garage = 27, stash = 2, locker = 2, armory = 2 }
 Config.JobMarkerScale = { x = 2.4, y = 2.4, z = 0.24 }
 Config.JobMarkerGarageScale = { x = 3.2, y = 3.2, z = 0.28 }
-Config.JobMarkerStashScale = { x = 2.0, y = 2.0, z = 0.22 }
+Config.JobMarkerStashScale = { x = 0.32, y = 0.32, z = 0.32 }
+Config.JobMarkerLockerScale = { x = 0.48, y = 0.48, z = 0.48 }
+Config.JobMarkerArmoryScale = { x = 0.52, y = 0.52, z = 0.52 }

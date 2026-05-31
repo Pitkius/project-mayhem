@@ -48,7 +48,7 @@ function NpcRegistry.collect()
     })
 
     for i, row in ipairs(Config.JobStationNpcs or {}) do
-        if row.role ~= 'garage' and row.role ~= 'stash' then
+        if row.role ~= 'garage' and row.role ~= 'stash' and row.role ~= 'locker' then
             entries[#entries + 1] = {
                 category = 'job',
                 index = i,

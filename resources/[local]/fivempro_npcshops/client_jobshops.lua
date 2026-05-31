@@ -100,7 +100,9 @@ RegisterNetEvent('fivempro_npcshops:client:jobNpcApproved', function(jobName, st
             TriggerEvent('fivempro_ranger:client:bossOpenMenu')
         end
     elseif role == 'duty' then
-        if jobName == 'ambulance' then
+        if jobName == 'police' then
+            TriggerEvent('fivempro_ltpd:client:toggleDuty')
+        elseif jobName == 'ambulance' then
             TriggerEvent('fivempro_ambulance:client:toggleDuty')
         elseif jobName == 'ranger' then
             TriggerEvent('fivempro_ranger:client:toggleDuty')

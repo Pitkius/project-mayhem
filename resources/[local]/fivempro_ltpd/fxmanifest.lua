@@ -35,8 +35,12 @@ server_scripts {
 files {
     'html/mdt/index.html',
     'html/mdt/app.js',
+    'html/mdt/mdt_map.js',
     'html/mdt/style.css',
+    'html/mdt/vendor/leaflet.js',
+    'html/mdt/vendor/leaflet.css',
     'html/mdt/asset/gtav_satellite.jpg',
+    'html/mdt/asset/gtav_satellite_2048.png',
 }
 
 dependencies {

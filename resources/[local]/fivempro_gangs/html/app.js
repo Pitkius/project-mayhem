@@ -16,6 +16,8 @@ const tabPanels = {
   gang: document.getElementById("tabPanelGang"),
   map: document.getElementById("tabPanelMap"),
   missions: document.getElementById("tabPanelMissions"),
+  top: document.getElementById("tabPanelTop"),
+  wars: document.getElementById("tabPanelWars"),
 };
 const missionTurfSelect = document.getElementById("missionTurfSelect");
 const missionTypeSelect = document.getElementById("missionTypeSelect");
@@ -26,7 +28,7 @@ let lastState = null;
 let tabletDocked = false;
 let tabletDragBound = false;
 const tabletBezel = document.querySelector(".tablet-bezel");
-/** @type {'register' | 'gang' | 'map'} */
+/** @type {'register' | 'gang' | 'map' | 'missions' | 'top' | 'wars'} */
 let activeTab = "register";
 
 function resourceName() {
@@ -84,7 +86,6 @@ function syncSwatchSelection(selectEl, containerEl) {
   });
 }
 
-/** Vizualūs kvadratėliai; `<select>` lieka logikai (value / create). */
 function renderColorSwatches(selectEl, containerEl, palette, usage) {
   if (!containerEl || !selectEl) return;
   containerEl.innerHTML = "";
@@ -165,6 +166,51 @@ function renderMissionsTab(state) {
     stats.textContent = `Rep: ${state.gang.reputation || 0} · Tipas: ${state.gang.gang_type || "—"}`;
   }
   if (tabMissions) tabMissions.style.display = state.hasGang ? "" : "none";
+  document.querySelectorAll('.tab-btn[data-tab="top"], .tab-btn[data-tab="wars"]').forEach((btn) => {
+    btn.style.display = state.hasGang ? "" : "none";
+  });
+}
+
+function renderTopAndWarsTabs(state) {
+  const topFull = document.getElementById("topGangsListFull");
+  if (topFull) {
+    topFull.innerHTML = (state.topGangs || [])
+      .map(
+        (g, i) =>
+          `<li class="top-gang-row">
+            <span class="top-rank">#${i + 1}</span>
+            <span class="top-dot" style="background:${g.color_hex || "#64748b"}"></span>
+            <span class="top-name">${safe(g.name)}</span>
+            <span class="top-meta">${g.turf_count || 0} turf · ${Number(g.reputation || 0).toLocaleString()} rep</span>
+          </li>`,
+      )
+      .join("") || "<li class='muted'>Duomenų nėra</li>";
+  }
+
+  const warsFull = document.getElementById("activeWarsListFull");
+  if (warsFull) {
+    warsFull.innerHTML = (state.activeWars || [])
+      .map(
+        (w) =>
+          `<li class="war-row">
+            <span class="war-dot" style="background:${w.color_hex || "#f87171"}"></span>
+            <strong>Turf #${safe(w.turfId || w.cell_num || "—")}</strong>
+            <span>${safe(w.label)} · ${safe(w.influence)}%</span>
+            <em>${safe(w.timeLabel || "Aktyvus")}</em>
+          </li>`,
+      )
+      .join("") || "<li class='muted'>Šiuo metu ramu</li>";
+  }
+
+  const actsFull = document.getElementById("recentActsListFull");
+  if (actsFull) {
+    actsFull.innerHTML = (state.recentActivities || [])
+      .map(
+        (a) =>
+          `<li><span class="act-dot" style="background:${a.colorHex || "#a78bfa"}"></span> ${safe(a.gangName || "—")} · ${safe(a.label || a.turfId)} <em>+$${a.profit}</em></li>`,
+      )
+      .join("") || "<li class='muted'>Veiklų nėra</li>";
+  }
 }
 
 function updateGangTabContent(state) {
@@ -192,26 +238,19 @@ function updateGangTabContent(state) {
 
 function activateTab(tab) {
   if (tab === "gang" && !lastState?.hasGang) tab = "register";
+  if ((tab === "missions" || tab === "top" || tab === "wars") && !lastState?.hasGang) tab = "register";
   activeTab = tab;
 
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === tab);
   });
-  document.querySelectorAll(".network-nav-btn").forEach((btn) => {
-    btn.classList.toggle("is-active", btn.dataset.nav === tab);
-  });
 
   Object.entries(tabPanels).forEach(([k, el]) => {
-    el.classList.toggle("hidden", k !== tab);
+    if (el) el.classList.toggle("hidden", k !== tab);
   });
 
-  const mapPanel = document.getElementById("tabPanelMap");
-  if (mapPanel && tab !== "map") {
-    mapPanel.classList.remove("map-fullscreen", "footer-visible");
-    document.querySelector(".tablet-bezel")?.classList.remove("tablet-map-fullscreen", "tablet-map-mode");
-  }
-
-  document.querySelector(".tablet-bezel")?.classList.toggle("tablet-map-mode", tab === "map");
+  const warsPopover = document.getElementById("warsPopover");
+  if (warsPopover) warsPopover.classList.add("hidden");
 
   if (tab === "map") {
     scheduleRenderMap(lastState);
@@ -242,6 +281,11 @@ function render(state) {
   renderPalette(state.palette || [], state.colorUsage || {});
   updateGangTabContent(state);
   renderMissionsTab(state);
+  renderTopAndWarsTabs(state);
+
+  if (window.GangMap && activeTab === "map") {
+    GangMap.renderPanels(state);
+  }
 
   if (activeTab === "gang" && !state.hasGang) activeTab = "register";
   if (activeTab === "missions" && !state.hasGang) activeTab = "register";
@@ -264,7 +308,7 @@ window.addEventListener("message", (e) => {
   if (d.action === "open") {
     const payload = d.payload || {};
     if (payload.keepTab && activeTab) {
-      /* paliekame esamą skiltį (pvz. žemėlapis po refresh) */
+      /* paliekame esamą skiltį */
     } else if (payload.initialTab) {
       activeTab = payload.initialTab;
     } else {
@@ -375,19 +419,31 @@ document.getElementById("btnCreate").onclick = () => {
 document.getElementById("zoomIn").onclick = () => window.GangMap && GangMap.zoomIn();
 document.getElementById("zoomOut").onclick = () => window.GangMap && GangMap.zoomOut();
 document.getElementById("tabletHomeBtn").onclick = () => window.GangMap && GangMap.resetView();
-const btnMapFullscreen = document.getElementById("btnMapFullscreen");
-if (btnMapFullscreen) {
-  btnMapFullscreen.onclick = () => window.GangMap && GangMap.toggleFullscreen();
+document.getElementById("btnFitTurfs")?.addEventListener("click", () => window.GangMap && GangMap.fitAllTurfs());
+document.getElementById("btnMapReset")?.addEventListener("click", () => window.GangMap && GangMap.resetView());
+
+const warsBanner = document.getElementById("warsBanner");
+const warsPopover = document.getElementById("warsPopover");
+if (warsBanner && warsPopover) {
+  warsBanner.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const opening = warsPopover.classList.contains("hidden");
+    if (opening) {
+      warsPopover.classList.remove("hidden");
+      warsBanner.setAttribute("aria-expanded", "true");
+      if (lastState && window.GangMap) GangMap.renderWarsPopover(lastState);
+    } else {
+      warsPopover.classList.add("hidden");
+      warsBanner.setAttribute("aria-expanded", "false");
+    }
+  });
+  document.addEventListener("click", () => {
+    warsPopover.classList.add("hidden");
+    warsBanner.setAttribute("aria-expanded", "false");
+  });
+  warsPopover.addEventListener("click", (e) => e.stopPropagation());
 }
-const btnMapFooter = document.getElementById("btnMapFooter");
-const mapPanelEl = document.getElementById("tabPanelMap");
-if (btnMapFooter && mapPanelEl) {
-  btnMapFooter.onclick = () => {
-    mapPanelEl.classList.toggle("footer-visible");
-    btnMapFooter.textContent = mapPanelEl.classList.contains("footer-visible") ? "▥" : "▤";
-    if (window.GangMap) GangMap.invalidate();
-  };
-}
+
 const btnTurfRoute = document.getElementById("btnTurfRoute");
 if (btnTurfRoute) {
   btnTurfRoute.onclick = () => {
@@ -396,12 +452,7 @@ if (btnTurfRoute) {
     post("gangs:setWaypoint", { turfId: t.turf_id }).then(() => setTabletDocked(true));
   };
 }
-document.querySelectorAll(".network-nav-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const nav = btn.dataset.nav;
-    if (nav) activateTab(nav);
-  });
-});
+
 document.getElementById("btnInviteMember").onclick = () => {
   post("gangs:inviteMember", { targetId: Number(document.getElementById("memberTargetId").value) || 0 }).then(() => {
     post("gangs:refresh", {}).then((res) => res && res.ok && render(mergeTabletMap(res)));

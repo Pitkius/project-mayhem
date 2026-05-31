@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LTPD MDT</title>
   <link rel="stylesheet" href="nui://fivempro_fonts/html/lietuva.css" />
+  <link rel="stylesheet" href="vendor/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -84,20 +85,30 @@
         <div id="dispatchCrews" class="results"></div>
       </section>
       <section id="panel-units" class="panel hidden">
-        <div class="row">
-          <button type="button" id="refreshDispatchMap" class="btn">Atnaujinti map</button>
-        </div>
-        <div class="tactical-wrap">
-          <div id="dispatchMap" class="dispatch-map">
-            <div id="dispatchMapTransform" class="dispatch-map-transform">
-              <div id="dispatchMapMarkers" class="dispatch-map-markers"></div>
+        <div class="gps-layout">
+          <div class="gps-map-wrap">
+            <div id="mdtLeafletMap" class="gps-map"></div>
+            <div class="gps-map-toolbar">
+              <button type="button" class="gps-tool-btn" id="dispatchZoomIn" title="Priartinti">+</button>
+              <button type="button" class="gps-tool-btn" id="dispatchZoomOut" title="Nutolinti">−</button>
+              <button type="button" class="gps-tool-btn" id="gpsResetView" title="Atstatyti vaizdą">⟲</button>
+              <button type="button" class="gps-tool-btn" id="gpsCenterSelf" title="Centruoti ant manęs">◎</button>
+              <button type="button" class="gps-tool-btn" id="gpsCenterCall" title="Centruoti ant iškvietimo">⚠</button>
+              <button type="button" class="gps-tool-btn gps-tool-refresh" id="refreshDispatchMap" title="Atnaujinti">↻</button>
             </div>
-            <div class="dispatch-map-zoom" aria-hidden="true">
-              <button type="button" class="dispatch-zoom-btn" id="dispatchZoomIn" title="Priartinti">+</button>
-              <button type="button" class="dispatch-zoom-btn" id="dispatchZoomOut" title="Nutolinti">−</button>
+            <div class="gps-map-legend">
+              <span class="leg-item"><i class="leg-dot officer"></i> Pareigūnas</span>
+              <span class="leg-item"><i class="leg-dot leader"></i> Ekipažo vadovas</span>
+              <span class="leg-item"><i class="leg-dot dispatch"></i> Iškvietimas</span>
+              <span class="leg-item"><i class="leg-dot arrived"></i> Atvykta</span>
+              <span class="leg-item"><i class="leg-dot panic"></i> PANIC</span>
             </div>
           </div>
-          <div id="dispatchUnits" class="results side-list"></div>
+          <aside id="dispatchMapSidebar" class="gps-sidebar">
+            <div id="dispatchMapDetail" class="gps-detail">
+              <div class="gps-detail-empty muted">Pasirink blipą žemėlapyje arba užvesk pelę dėl informacijos.</div>
+            </div>
+          </aside>
         </div>
       </section>
       <section id="panel-arrests" class="panel hidden">
@@ -170,6 +181,8 @@
     </div>
     <p class="cctv-hint">ESC — stabdyti • pelė — pasukti</p>
   </div>
+  <script src="vendor/leaflet.js"></script>
+  <script src="mdt_map.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

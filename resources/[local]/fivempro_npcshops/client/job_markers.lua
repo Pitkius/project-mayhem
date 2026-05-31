@@ -6,25 +6,52 @@ local lastInteractMs = 0
 
 local COLORS = {
     garage = { 72, 160, 220, 115 },
-    stash = { 255, 180, 72, 115 },
+    stash = { 255, 180, 72, 140 },
+    locker = { 167, 139, 250, 150 },
+    armory = { 239, 68, 68, 150 },
+}
+
+local DEFAULT_MARKER_TYPES = {
+    garage = 27,
+    stash = 2,
+    locker = 2,
+    armory = 2,
 }
 
 local function isMarkerRole(role)
-    return role == 'garage' or role == 'stash'
+    return role == 'garage' or role == 'stash' or role == 'locker'
 end
 
-local function drawFlatMarker(pos, kind, scale)
+local function markerTypeFor(kind)
+    local cfg = Config.JobMarkerTypes
+    if cfg and cfg[kind] then return cfg[kind] end
+    return DEFAULT_MARKER_TYPES[kind] or 27
+end
+
+local function drawJobMarker(pos, kind, scale)
     local c = COLORS[kind] or COLORS.stash
     local sc = scale or Config.JobMarkerScale or { x = 2.4, y = 2.4, z = 0.24 }
+    local mType = markerTypeFor(kind)
+    local zOff = mType == 27 and 0.02 or 0.06
     DrawMarker(
-        27,
-        pos.x, pos.y, pos.z + 0.02,
+        mType,
+        pos.x, pos.y, pos.z + zOff,
         0.0, 0.0, 0.0,
         0.0, 0.0, 0.0,
         sc.x, sc.y, sc.z,
         c[1], c[2], c[3], c[4],
         false, false, 2, false, nil, nil, false
     )
+end
+
+local function useRadiusFor(kind)
+    if kind == 'stash' then
+        return Config.JobMarkerStashUseRadius or 1.35
+    end
+    if kind == 'locker' or kind == 'armory' then
+        return Config.JobMarkerLockerUseRadius or 1.6
+    end
+    return Config.JobMarkerUseRadius or 2.2
 end
 
 local function registerZone(data)
@@ -53,7 +80,9 @@ for _, entry in ipairs(Config.JobStationNpcs or {}) do
             coords = entry.coords,
             kind = entry.role,
             label = entry.label,
-            scale = entry.role == 'garage' and (Config.JobMarkerGarageScale or Config.JobMarkerScale) or Config.JobMarkerStashScale,
+            scale = entry.role == 'garage' and (Config.JobMarkerGarageScale or Config.JobMarkerScale)
+                or entry.role == 'locker' and (Config.JobMarkerLockerScale or Config.JobMarkerScale)
+                or Config.JobMarkerStashScale,
             onPress = function()
                 TriggerServerEvent('fivempro_npcshops:server:validateJobNpc', captured.job, captured.stationId, captured.role)
             end,
@@ -63,8 +92,6 @@ end
 
 CreateThread(function()
     local drawD = Config.JobMarkerDrawDistance or 28.0
-    local useR = Config.JobMarkerUseRadius or 2.2
-
     while true do
         local sleep = 500
         local ped = PlayerPedId()
@@ -73,9 +100,10 @@ CreateThread(function()
         if not IsNuiFocused() then
             for _, zone in ipairs(zones) do
                 local dist = #(pcoords - zone.coords)
+                local useR = useRadiusFor(zone.kind)
                 if dist < drawD then
                     sleep = 0
-                    drawFlatMarker(zone.coords, zone.kind, zone.scale)
+                    drawJobMarker(zone.coords, zone.kind, zone.scale)
                     if dist < useR then
                         local canUse = true
                         if zone.canUse then
@@ -83,7 +111,8 @@ CreateThread(function()
                         end
                         if canUse then
                             EnableControlAction(0, 38, true)
-                            QBCore.Functions.DrawText3D(zone.coords.x, zone.coords.y, zone.coords.z + 0.85, ('[E] %s'):format(zone.label))
+                            local hintZ = zone.kind == 'stash' and 0.55 or 0.75
+                            QBCore.Functions.DrawText3D(zone.coords.x, zone.coords.y, zone.coords.z + hintZ, ('[E] %s'):format(zone.label))
                             if IsControlJustPressed(0, 38) and (GetGameTimer() - lastInteractMs) > 450 then
                                 lastInteractMs = GetGameTimer()
                                 if zone.onPress then zone.onPress() end

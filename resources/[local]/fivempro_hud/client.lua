@@ -465,12 +465,27 @@ local function toggleVehicleLockMenu(veh)
     QBCore.Functions.Notify(nextLocked and 'Transportas užrakintas.' or 'Transportas atrakintas.', 'primary')
 end
 
+local function getEngineStartBlockSecondsLeft(veh)
+    if GetResourceState('fivempro_vehiclemenu') ~= 'started' then return 0.0 end
+    local ok, sec = pcall(function()
+        return exports['fivempro_vehiclemenu']:GetEngineStartBlockSecondsLeft(veh)
+    end)
+    if ok and tonumber(sec) then return tonumber(sec) end
+    return 0.0
+end
+
 local function tryToggleEngineMenu(veh)
     if engineStartBusy then return end
     local on = GetIsVehicleEngineRunning(veh)
     if on then
         SetVehicleEngineOn(veh, false, true, true)
         QBCore.Functions.Notify('Variklis išjungtas.', 'primary')
+        return
+    end
+
+    local blockSec = getEngineStartBlockSecondsLeft(veh)
+    if blockSec > 0 then
+        QBCore.Functions.Notify(('Per greitai po avarijos. Palaukite dar %.1fs.'):format(blockSec), 'error')
         return
     end
 

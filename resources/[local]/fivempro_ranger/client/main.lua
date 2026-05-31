@@ -30,6 +30,9 @@ RegisterNetEvent('fivempro_ranger:client:openLocker', function()
     if not P or not P.job or P.job.name ~= Config.JobName then
         return QBCore.Functions.Notify('Ne gamtosaugininkas.', 'error')
     end
+    if not P.job.onduty then
+        return QBCore.Functions.Notify('Rūbinė – tik tarnyboje. Pamainą pradėk prie tarnybos NPC.', 'error')
+    end
     local menu = {
         { header = 'Gamtos apsaugos rūbinė', isMenuHeader = true },
         {
@@ -37,14 +40,29 @@ RegisterNetEvent('fivempro_ranger:client:openLocker', function()
             params = { event = 'fivempro_ranger:client:wearUniform' },
         },
         {
-            header = P.job.onduty and 'Baigti tarnybą' or 'Pradėti tarnybą',
-            params = { event = 'fivempro_ranger:client:toggleDuty' },
+            header = 'Baigti tarnybą',
+            txt = 'Civilio apranga (duty lieka — pamainą baigti prie tarnybos NPC)',
+            params = { event = 'fivempro_ranger:client:applyCivilianOutfit' },
         },
     }
     if GetResourceState('qb-menu') ~= 'started' then
         return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
     end
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end)
+
+RegisterNetEvent('fivempro_ranger:client:applyCivilianOutfit', function()
+    if not isRangerOnDuty() then return end
+    local ped = PlayerPedId()
+    local health = GetEntityHealth(ped)
+    if GetResourceState('qb-clothing') == 'started' then
+        exports['qb-clothing']:reloadSkin(health)
+    else
+        TriggerServerEvent('qb-clothes:loadPlayerSkin')
+        TriggerServerEvent('qb-clothing:loadPlayerSkin')
+    end
+    SetPedArmour(ped, 0)
+    QBCore.Functions.Notify('Civilio apranga uždėta. Duty lieka aktyvus.', 'success')
 end)
 
 RegisterNetEvent('fivempro_ranger:client:wearUniform', function()
