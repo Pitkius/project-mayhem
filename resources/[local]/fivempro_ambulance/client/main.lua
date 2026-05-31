@@ -161,65 +161,6 @@ CreateThread(function()
     for _, st in ipairs(Config.Stations or {}) do
         local sid = st.id
 
-        if st.garageHub and st.garageHub.coords then
-            local gh = st.garageHub
-            exports['qb-target']:AddBoxZone(('fivempro_ems_hub_%s'):format(sid), gh.coords, 3.6, 3.6, {
-                name = ('fivempro_ems_hub_%s'):format(sid),
-                heading = gh.heading or 0.0,
-                debugPoly = false,
-                minZ = gh.coords.z - 1.55,
-                maxZ = gh.coords.z + 3.0,
-            }, {
-                options = {
-                    {
-                        type = 'client',
-                        event = 'fivempro_ambulance:client:openGarageFleet',
-                        icon = 'fas fa-warehouse',
-                        label = 'EMS garažas',
-                        stationId = sid,
-                        canInteract = function()
-                            return isEmsOnDuty()
-                        end,
-                    },
-                    {
-                        type = 'client',
-                        event = 'fivempro_ambulance:client:openDealershipFleet',
-                        icon = 'fas fa-truck-medical',
-                        label = 'EMS transporto pirkimas',
-                        stationId = sid,
-                        canInteract = function()
-                            return isEmsOnDuty()
-                        end,
-                    },
-                },
-                distance = Config.TargetDistance + 1.0,
-            })
-        end
-
-        if st.stash and st.stash.coords then
-            exports['qb-target']:AddBoxZone(('fivempro_ems_stash_%s'):format(sid), st.stash.coords, 1.75, 1.75, {
-                name = ('fivempro_ems_stash_%s'):format(sid),
-                heading = st.heading or 0.0,
-                debugPoly = false,
-                minZ = st.stash.coords.z - 1.15,
-                maxZ = st.stash.coords.z + 2.35,
-            }, {
-                options = {
-                    {
-                        type = 'client',
-                        event = 'fivempro_ambulance:client:openStash',
-                        icon = 'fas fa-kit-medical',
-                        label = 'EMS sandėlis',
-                        stationId = sid,
-                        canInteract = function()
-                            return isEmsOnDuty()
-                        end,
-                    },
-                },
-                distance = Config.TargetDistance + 0.35,
-            })
-        end
-
         if st.locker and st.locker.coords then
             local lk = st.locker
             exports['qb-target']:AddBoxZone(('fivempro_ems_locker_%s'):format(sid), lk.coords, 1.65, 1.65, {

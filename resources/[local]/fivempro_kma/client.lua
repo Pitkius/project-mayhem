@@ -389,7 +389,7 @@ CreateThread(function()
         SetBlipColour(blip, Config.Kma.blipColor or 1)
         SetBlipAsShortRange(blip, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(loc.label or Config.Kma.blipLabel or 'KMA')
+        AddTextComponentSubstringPlayerName(loc.label or Config.Kma.blipLabel or 'KMA')
         EndTextCommandSetBlipName(blip)
         local cat = Config.Kma.mapBlipCategory
         if cat and cat > 0 then

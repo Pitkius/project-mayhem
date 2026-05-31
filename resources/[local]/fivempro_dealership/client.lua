@@ -611,7 +611,7 @@ CreateThread(function()
     SetBlipColour(blip, DEALERSHIP_BLIP_COLOR)
     SetBlipAsShortRange(blip, true)
     BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString(Config.Dealership.label)
+    AddTextComponentSubstringPlayerName(Config.Dealership.label)
     EndTextCommandSetBlipName(blip)
 
     local size = Config.Dealership.targetSize

@@ -47,9 +47,22 @@ function NpcRegistry.collect()
         blip = { sprite = 51, color = 2, label = 'Vaistinė', scale = 0.75 },
     })
 
-    push(entries, 'job', Config.JobStationNpcs, {
-        blip = nil,
-    })
+    for i, row in ipairs(Config.JobStationNpcs or {}) do
+        if row.role ~= 'garage' and row.role ~= 'stash' then
+            entries[#entries + 1] = {
+                category = 'job',
+                index = i,
+                model = row.model,
+                coords = row.coords,
+                scenario = row.scenario,
+                blip = row.blip,
+                job = row.job,
+                stationId = row.stationId,
+                role = row.role,
+                label = row.label,
+            }
+        end
+    end
 
     return entries
 end

@@ -30,7 +30,7 @@ local function createBlip()
     SetBlipColour(blip, cfg.colour or 3)
     SetBlipAsShortRange(blip, true)
     BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString(cfg.label or 'Vairavimo mokykla')
+    AddTextComponentSubstringPlayerName(cfg.label or 'Vairavimo mokykla')
     EndTextCommandSetBlipName(blip)
 end
 
@@ -110,7 +110,7 @@ local function updateCheckpointBlip()
     SetBlipRoute(blip, true)
     SetBlipRouteColour(blip, 5)
     BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString(('Egzaminas — taškas %s/%s'):format(idx, #Config.RouteCheckpoints))
+    AddTextComponentSubstringPlayerName(('Egzaminas — taškas %s/%s'):format(idx, #Config.RouteCheckpoints))
     EndTextCommandSetBlipName(blip)
     practicalState.blip = blip
 end

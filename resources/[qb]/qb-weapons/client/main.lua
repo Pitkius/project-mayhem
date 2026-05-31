@@ -12,6 +12,7 @@ local AmmoItemByType = {
     AMMO_SMG = { 'smg_ammo', 'smgammo' },
     AMMO_RIFLE = { 'rifle_ammo', 'rifleammo' },
     AMMO_SHOTGUN = { 'shotgun_ammo' },
+    AMMO_MUSKET = { 'hunting_ammo' },
     AMMO_MG = { 'mg_ammo' },
     AMMO_SNIPER = { 'snp_ammo' },
 }
@@ -48,6 +49,7 @@ local DefaultClipByAmmoType = {
     AMMO_SMG = 30,
     AMMO_RIFLE = 30,
     AMMO_SHOTGUN = 8,
+    AMMO_MUSKET = 1,
     AMMO_MG = 50,
     AMMO_SNIPER = 10,
     AMMO_EMPLAUNCHER = 10,

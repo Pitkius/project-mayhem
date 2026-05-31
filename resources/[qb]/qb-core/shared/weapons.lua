@@ -66,7 +66,7 @@ QBShared.Weapons = {
 	[`weapon_sawnoffshotgun`]        = { name = 'weapon_sawnoffshotgun', label = 'Sawn-off Shotgun', weapontype = 'Shotgun', ammotype = 'AMMO_SHOTGUN', damagereason = 'Devastated / Pulverized / Shotgunned' },
 	[`weapon_assaultshotgun`]        = { name = 'weapon_assaultshotgun', label = 'Assault Shotgun', weapontype = 'Shotgun', ammotype = 'AMMO_SHOTGUN', damagereason = 'Devastated / Pulverized / Shotgunned' },
 	[`weapon_bullpupshotgun`]        = { name = 'weapon_bullpupshotgun', label = 'Bullpup Shotgun', weapontype = 'Shotgun', ammotype = 'AMMO_SHOTGUN', damagereason = 'Devastated / Pulverized / Shotgunned' },
-	[`weapon_musket`]                = { name = 'weapon_musket', label = 'Musket', weapontype = 'Shotgun', ammotype = 'AMMO_SHOTGUN', damagereason = 'Devastated / Pulverized / Shotgunned' },
+	[`weapon_musket`]                = { name = 'weapon_musket', label = 'Musket', weapontype = 'Shotgun', ammotype = 'AMMO_MUSKET', damagereason = 'Devastated / Pulverized / Shotgunned' },
 	[`weapon_heavyshotgun`]          = { name = 'weapon_heavyshotgun', label = 'Heavy Shotgun', weapontype = 'Shotgun', ammotype = 'AMMO_SHOTGUN', damagereason = 'Devastated / Pulverized / Shotgunned' },
 	[`weapon_dbshotgun`]             = { name = 'weapon_dbshotgun', label = 'Double-barrel Shotgun', weapontype = 'Shotgun', ammotype = 'AMMO_SHOTGUN', damagereason = 'Devastated / Pulverized / Shotgunned' },
 	[`weapon_autoshotgun`]           = { name = 'weapon_autoshotgun', label = 'Auto Shotgun', weapontype = 'Shotgun', ammotype = 'AMMO_SHOTGUN', damagereason = 'Devastated / Pulverized / Shotgunned' },

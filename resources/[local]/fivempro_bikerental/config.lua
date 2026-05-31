@@ -109,10 +109,4 @@ Config.Locations = {
         coords = vector4(367.50, -2037.80, 21.70, 320.0),
         spawn = vector4(370.20, -2040.10, 21.70, 320.0),
     },
-    {
-        id = 'paletobay_pier',
-        label = 'Paleto krantas',
-        coords = vector4(-1592.50, 5196.80, 4.36, 30.0),
-        spawn = vector4(-1589.80, 5194.50, 4.36, 30.0),
-    },
 }

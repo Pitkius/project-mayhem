@@ -208,8 +208,10 @@ function activateTab(tab) {
   const mapPanel = document.getElementById("tabPanelMap");
   if (mapPanel && tab !== "map") {
     mapPanel.classList.remove("map-fullscreen", "footer-visible");
-    document.querySelector(".tablet-bezel")?.classList.remove("tablet-map-fullscreen");
+    document.querySelector(".tablet-bezel")?.classList.remove("tablet-map-fullscreen", "tablet-map-mode");
   }
+
+  document.querySelector(".tablet-bezel")?.classList.toggle("tablet-map-mode", tab === "map");
 
   if (tab === "map") {
     scheduleRenderMap(lastState);

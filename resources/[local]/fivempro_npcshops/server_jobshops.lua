@@ -53,7 +53,7 @@ RegisterNetEvent('fivempro_npcshops:server:openJobSupply', function(jobName, sta
     end
     local entry = findNpcEntry(jobName, stationId, 'supply')
     if not entry or not nearNpc(src, entry.coords) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo NPC.', 'error')
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo taško.', 'error')
     end
     local shop
     if jobName == 'police' then
@@ -78,7 +78,11 @@ RegisterNetEvent('fivempro_npcshops:server:validateJobNpc', function(jobName, st
         return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'NPC nerastas.')
     end
     if role ~= 'duty' and role ~= 'boss' and role ~= 'locker' and not playerJobOk(src, jobName) then
-        return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik tarnyboje.')
+        local msg = 'Tik tarnyboje.'
+        if jobName == 'ranger' then
+            msg = 'Pirmiausia pradėkite tarnybą (Tarnyba NPC arba rūbinė).'
+        end
+        return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, msg)
     end
     if role == 'boss' then
         local P = QBCore.Functions.GetPlayer(src)
@@ -98,6 +102,12 @@ RegisterNetEvent('fivempro_npcshops:server:validateJobNpc', function(jobName, st
             return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik EMS darbuotojams.')
         end
     end
+    if jobName == 'ranger' and role == 'duty' then
+        local P = QBCore.Functions.GetPlayer(src)
+        if not P or P.PlayerData.job.name ~= 'ranger' then
+            return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik gamtosaugininkams.')
+        end
+    end
     if role == 'locker' and jobName == 'ranger' then
         local P = QBCore.Functions.GetPlayer(src)
         if not P or P.PlayerData.job.name ~= 'ranger' then
@@ -105,7 +115,7 @@ RegisterNetEvent('fivempro_npcshops:server:validateJobNpc', function(jobName, st
         end
     end
     if not nearNpc(src, entry.coords) then
-        return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Per toli nuo NPC.')
+        return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Per toli nuo taško.')
     end
     TriggerClientEvent('fivempro_npcshops:client:jobNpcApproved', src, jobName, stationId, role)
 end)

@@ -16,6 +16,7 @@ shared_scripts {
 client_scripts {
     'client/barber.lua',
     'client/peds.lua',
+    'client/job_markers.lua',
     'client_jobshops.lua',
 }
 

@@ -188,56 +188,42 @@ CreateThread(function()
 end)
 
 CreateThread(function()
+    while GetResourceState('fivempro_npcshops') ~= 'started' do
+        Wait(200)
+    end
+    local addMarker = exports['fivempro_npcshops'].AddJobGroundMarker
+    local gh = Config.GarageHub
+    addMarker({
+        coords = gh.coords,
+        kind = 'garage',
+        label = 'Taksi garažas / transportas',
+        scale = { x = 3.2, y = 3.2, z = 0.28 },
+        canUse = isTaxiOnDuty,
+        onPress = function()
+            if GetResourceState('qb-menu') ~= 'started' then return end
+            TriggerEvent('qb-menu:client:openMenu', {
+                { header = 'Taksi transportas', isMenuHeader = true },
+                { header = 'Garažas', params = { event = 'fivempro_taxi:client:openGarageFleet' } },
+                { header = 'Taksi mašinų pirkimas', params = { event = 'fivempro_taxi:client:openDealershipFleet' } },
+            }, false, true)
+        end,
+    })
+    local st = Config.Stash
+    addMarker({
+        coords = st.coords,
+        kind = 'stash',
+        label = st.label or 'Taksi sandėlis',
+        canUse = isTaxiOnDuty,
+        onPress = function()
+            TriggerEvent('fivempro_taxi:client:openStash')
+        end,
+    })
+end)
+
+CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do
         Wait(300)
     end
-
-    local gh = Config.GarageHub
-    exports['qb-target']:AddBoxZone('fivempro_taxi_hub', gh.coords, 3.6, 3.6, {
-        name = 'fivempro_taxi_hub',
-        heading = gh.heading,
-        debugPoly = false,
-        minZ = gh.coords.z - 1.55,
-        maxZ = gh.coords.z + 3.0,
-    }, {
-        options = {
-            {
-                type = 'client',
-                event = 'fivempro_taxi:client:openGarageFleet',
-                icon = 'fas fa-warehouse',
-                label = 'Taksi garažas',
-                canInteract = function() return isTaxiOnDuty() end,
-            },
-            {
-                type = 'client',
-                event = 'fivempro_taxi:client:openDealershipFleet',
-                icon = 'fas fa-car-side',
-                label = 'Taksi mašinų pirkimas',
-                canInteract = function() return isTaxiOnDuty() end,
-            },
-        },
-        distance = Config.TargetDistance + 1.0,
-    })
-
-    local st = Config.Stash
-    exports['qb-target']:AddBoxZone('fivempro_taxi_stash', st.coords, 1.75, 1.75, {
-        name = 'fivempro_taxi_stash',
-        heading = st.heading or Config.Base.w,
-        debugPoly = false,
-        minZ = st.coords.z - 1.15,
-        maxZ = st.coords.z + 2.35,
-    }, {
-        options = {
-            {
-                type = 'client',
-                event = 'fivempro_taxi:client:openStash',
-                icon = 'fas fa-box',
-                label = 'Taksi sandėlis',
-                canInteract = function() return isTaxiOnDuty() end,
-            },
-        },
-        distance = Config.TargetDistance + 0.35,
-    })
 
     local lk = Config.Locker
     exports['qb-target']:AddBoxZone('fivempro_taxi_locker', lk.coords, 1.65, 1.65, {

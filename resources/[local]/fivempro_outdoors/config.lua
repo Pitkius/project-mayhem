@@ -58,7 +58,7 @@ Config.HuntingShop = {
     items = {
         { name = 'weapon_musket', amount = 50, price = 2800, slot = 1 },
         { name = 'hunting_knife', amount = 500, price = 350, slot = 2 },
-        { name = 'shotgun_ammo', amount = 500, price = 45, slot = 3 },
+        { name = 'hunting_ammo', amount = 500, price = 45, slot = 3 },
     },
 }
 

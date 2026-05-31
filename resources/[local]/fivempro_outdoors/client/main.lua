@@ -238,7 +238,7 @@ CreateThread(function()
     SetBlipScale(blip, b.scale)
     SetBlipAsShortRange(blip, true)
     BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString(b.label)
+    AddTextComponentSubstringPlayerName(b.label)
     EndTextCommandSetBlipName(blip)
 
     if shopLoc and shopLoc.blip then
@@ -249,7 +249,7 @@ CreateThread(function()
         SetBlipScale(shopBlip, sb.scale)
         SetBlipAsShortRange(shopBlip, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(sb.label)
+        AddTextComponentSubstringPlayerName(sb.label)
         EndTextCommandSetBlipName(shopBlip)
     end
 
@@ -261,7 +261,7 @@ CreateThread(function()
         SetBlipScale(bl, fb.scale)
         SetBlipAsShortRange(bl, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(z.label or fb.label)
+        AddTextComponentSubstringPlayerName(z.label or fb.label)
         EndTextCommandSetBlipName(bl)
     end
 
@@ -273,7 +273,7 @@ CreateThread(function()
         SetBlipScale(bl, hb.scale)
         SetBlipAsShortRange(bl, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(z.label or hb.label)
+        AddTextComponentSubstringPlayerName(z.label or hb.label)
         EndTextCommandSetBlipName(bl)
     end
 

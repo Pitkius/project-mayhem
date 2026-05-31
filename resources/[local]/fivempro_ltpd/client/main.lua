@@ -417,94 +417,6 @@ CreateThread(function()
                 distance = Config.TargetDistance,
             })
         end
-        local gcoords = st.garage and st.garage.coords
-        local hasPdShop = st.policeDealership ~= nil
-        if gcoords then
-            local spawn = st.garage.spawn
-            local hubHeading = (spawn and tonumber(spawn.w)) or tonumber(st.policeDealership and st.policeDealership.heading) or st.heading or 0.0
-            local hubOpts = {
-                {
-                    type = 'client',
-                    event = 'fivempro_ltpd:client:openPdGarage',
-                    icon = 'fas fa-warehouse',
-                    label = 'Policijos garažas',
-                    stationId = st.id,
-                    canInteract = function()
-                        return isPdOnDutyClient()
-                    end,
-                },
-            }
-            if hasPdShop then
-                hubOpts[#hubOpts + 1] = {
-                    type = 'client',
-                    event = 'fivempro_ltpd:client:goPoliceDealership',
-                    icon = 'fas fa-car-side',
-                    label = 'Policijos transporto pirkimas',
-                    stationId = st.id,
-                    canInteract = function()
-                        return isPdOnDutyClient()
-                    end,
-                }
-            end
-            exports['qb-target']:AddBoxZone(('ltpd_garagehub_%s'):format(st.id), gcoords, 3.6, 3.6, {
-                name = ('ltpd_garagehub_%s'):format(st.id),
-                heading = hubHeading,
-                debugPoly = false,
-                minZ = gcoords.z - 1.55,
-                maxZ = gcoords.z + 3.0,
-            }, {
-                options = hubOpts,
-                distance = Config.TargetDistance + 1.2,
-            })
-        elseif hasPdShop and st.policeDealership and st.policeDealership.coords then
-            local pos = st.policeDealership.coords
-            local hd = st.policeDealership.heading or 0.0
-            exports['qb-target']:AddBoxZone(('ltpd_pdshop_%s'):format(st.id), pos, 1.75, 1.75, {
-                name = ('ltpd_pdshop_%s'):format(st.id),
-                heading = hd,
-                debugPoly = false,
-                minZ = pos.z - 1.1,
-                maxZ = pos.z + 2.0,
-            }, {
-                options = {
-                    {
-                        type = 'client',
-                        event = 'fivempro_ltpd:client:goPoliceDealership',
-                        icon = 'fas fa-car-side',
-                        label = 'Policijos transporto pirkimas',
-                        stationId = st.id,
-                        canInteract = function()
-                            return isPdOnDutyClient()
-                        end,
-                    },
-                },
-                distance = 2.5,
-            })
-        end
-        for stashIdx, stash in ipairs(st.stashes or {}) do
-            if stash.coords then
-                exports['qb-target']:AddCircleZone(('ltpd_stash_%s_%s'):format(st.id, stashIdx), stash.coords, 0.95, {
-                    name = ('ltpd_stash_%s_%s'):format(st.id, stashIdx),
-                    debugPoly = false,
-                    useZ = true,
-                }, {
-                    options = {
-                        {
-                            type = 'client',
-                            event = 'fivempro_ltpd:client:tryOpenStash',
-                            icon = 'fas fa-dolly',
-                            label = stash.label or ('Sandėlis #' .. tostring(stashIdx)),
-                            stationId = st.id,
-                            stashIndex = stashIdx,
-                            canInteract = function()
-                                return isPdOnDutyClient()
-                            end,
-                        },
-                    },
-                    distance = Config.TargetDistance,
-                })
-            end
-        end
         if st.management and st.management.coords then
             local mg = st.management.coords
             local mh = st.management.heading or st.heading or 0.0
@@ -616,6 +528,13 @@ RegisterNetEvent('fivempro_ltpd:client:openDutyLockerMenu', function()
             }
         end
     end
+    menu[#menu + 1] = {
+        header = 'Civilio drabužiai',
+        txt = 'Grąžina tavo išsaugotą asmeninę aprangą',
+        params = {
+            event = 'fivempro_ltpd:client:applyCivilianOutfit',
+        },
+    }
     if #menu < 2 then
         return QBCore.Functions.Notify('Nėra prieinamų aprangų.', 'error')
     end
@@ -639,4 +558,43 @@ RegisterNetEvent('fivempro_ltpd:client:applyDutyOutfit', function(data)
         SetPedArmour(ped, 0)
     end
     QBCore.Functions.Notify(outfit.label or 'Apranga uždėta.', 'success')
+end)
+
+RegisterNetEvent('fivempro_ltpd:client:applyCivilianOutfit', function()
+    if not isPdOnDutyClient() then return end
+    local ped = PlayerPedId()
+    local health = GetEntityHealth(ped)
+    if GetResourceState('qb-clothing') == 'started' then
+        exports['qb-clothing']:reloadSkin(health)
+    else
+        TriggerServerEvent('qb-clothes:loadPlayerSkin')
+        TriggerServerEvent('qb-clothing:loadPlayerSkin')
+    end
+    SetPedArmour(PlayerPedId(), 0)
+    QBCore.Functions.Notify('Civilio drabužiai uždėti.', 'success')
+end)
+
+--- Papildomi PD sandėliai (2–3 rango) — tiesioginė prieiga per markerį
+CreateThread(function()
+    while GetResourceState('fivempro_npcshops') ~= 'started' do
+        Wait(200)
+    end
+    local addMarker = exports['fivempro_npcshops'].AddJobGroundMarker
+    for _, st in ipairs(Config.Stations or {}) do
+        for stashIdx, stash in ipairs(st.stashes or {}) do
+            if stashIdx > 1 and stash.coords then
+                local stationId = st.id
+                local index = stashIdx
+                addMarker({
+                    coords = stash.coords,
+                    kind = 'stash',
+                    label = stash.label or ('Sandėlis #' .. tostring(stashIdx)),
+                    canUse = isPdOnDutyClient,
+                    onPress = function()
+                        TriggerEvent('fivempro_ltpd:client:tryOpenStash', { stationId = stationId, stashIndex = index })
+                    end,
+                })
+            end
+        end
+    end
 end)

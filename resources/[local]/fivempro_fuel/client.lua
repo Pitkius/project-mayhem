@@ -17,7 +17,7 @@ local function createFuelBlips()
         SetBlipDisplay(blip, 4)
         SetBlipAsShortRange(blip, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(Config.BlipLabel or 'Degalinė')
+        AddTextComponentSubstringPlayerName(Config.BlipLabel or 'Degalinė')
         EndTextCommandSetBlipName(blip)
     end
 end

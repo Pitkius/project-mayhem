@@ -113,7 +113,7 @@ CreateThread(function()
         SetBlipScale(blip, blipCfg.scale or 0.75)
         SetBlipAsShortRange(blip, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(blipCfg.label or 'Dviračių nuoma')
+        AddTextComponentSubstringPlayerName(blipCfg.label or 'Dviračių nuoma')
         EndTextCommandSetBlipName(blip)
     end
 end)

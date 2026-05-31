@@ -3,6 +3,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local spawnedBlips = {}
 local configured = {}
+local jobBoxZones = {}
 local barberPedByIndex = {}
 local pendingTargets = {}
 local pendingJobTargets = {}
@@ -22,7 +23,7 @@ local function createBlip(coords, blipCfg)
     SetBlipColour(blip, blipCfg.color or 0)
     SetBlipAsShortRange(blip, true)
     BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString(blipCfg.label or 'Parduotuvė')
+    AddTextComponentSubstringPlayerName(blipCfg.label or 'Parduotuvė')
     EndTextCommandSetBlipName(blip)
     spawnedBlips[#spawnedBlips + 1] = blip
 end
@@ -39,6 +40,10 @@ local function setupPedEntity(ent, meta)
     if meta.scenario then
         TaskStartScenarioInPlace(ent, meta.scenario, 0, true)
     end
+end
+
+local function isJobMarkerRole(role)
+    return role == 'garage' or role == 'stash'
 end
 
 local function buildTargetOptions(meta)
@@ -105,6 +110,9 @@ local function buildTargetOptions(meta)
             distance = 2.0,
         }, false
     elseif meta.category == 'job' then
+        if isJobMarkerRole(meta.role) then
+            return nil, false
+        end
         local icon = 'fas fa-user'
         if meta.role == 'supply' then icon = 'fas fa-box-open'
         elseif meta.role == 'garage' then icon = 'fas fa-car'
@@ -130,8 +138,53 @@ local function buildTargetOptions(meta)
     return nil, false
 end
 
+local function jobNpcIcon(role)
+    if role == 'supply' then return 'fas fa-box-open'
+    elseif role == 'garage' then return 'fas fa-car'
+    elseif role == 'locker' then return 'fas fa-shirt'
+    elseif role == 'stash' then return 'fas fa-warehouse'
+    elseif role == 'duty' then return 'fas fa-id-badge'
+    elseif role == 'boss' then return 'fas fa-user-tie'
+    end
+    return 'fas fa-user'
+end
+
+local function addJobBoxZone(meta)
+    if not meta or not meta.job or not meta.role or not meta.coords then return end
+    if isJobMarkerRole(meta.role) then return end
+    local c = meta.coords
+    local zoneName = ('jobnpc_%s_%s_%s'):format(meta.job, meta.stationId or 'main', meta.role)
+    if jobBoxZones[zoneName] then return end
+    jobBoxZones[zoneName] = true
+
+    local captured = {
+        job = meta.job,
+        stationId = meta.stationId,
+        role = meta.role,
+    }
+
+    exports['qb-target']:AddBoxZone(zoneName, vector3(c.x + 0.0, c.y + 0.0, c.z + 0.0), 1.5, 1.5, {
+        name = zoneName,
+        heading = c.w or 0.0,
+        minZ = c.z - 1.25,
+        maxZ = c.z + 1.6,
+        debugPoly = false,
+    }, {
+        options = {
+            {
+                icon = jobNpcIcon(meta.role),
+                label = meta.label or 'Tarnyba',
+                action = function()
+                    TriggerServerEvent('fivempro_npcshops:server:validateJobNpc', captured.job, captured.stationId, captured.role)
+                end,
+            },
+        },
+        distance = Config.JobNpcReach or 4.5,
+    })
+end
+
 local function configureShopPed(ent, meta, key)
-    key = key or ent
+    key = ent
     if configured[key] then return end
     configured[key] = true
 
@@ -143,6 +196,9 @@ local function configureShopPed(ent, meta, key)
     local targetData, isJob = buildTargetOptions(meta)
     if targetData then
         queueTarget(ent, targetData, isJob)
+    end
+    if meta.category == 'job' and not isJobMarkerRole(meta.role) then
+        addJobBoxZone(meta)
     end
 
     if meta.blip and meta.coords then
@@ -165,6 +221,23 @@ AddStateBagChangeHandler('npcShopMeta', nil, function(bagName, _, value)
 end)
 
 --- Jau egzistuojantys serverio NPC (state bag handler ne visada suveikia prisijungus vėliau)
+CreateThread(function()
+    Wait(3000)
+    while GetResourceState('qb-target') ~= 'started' do Wait(250) end
+    for _, entry in ipairs(Config.JobStationNpcs or {}) do
+        if not isJobMarkerRole(entry.role) then
+            addJobBoxZone({
+                category = 'job',
+                job = entry.job,
+                stationId = entry.stationId,
+                role = entry.role,
+                label = entry.label,
+                coords = entry.coords,
+            })
+        end
+    end
+end)
+
 CreateThread(function()
     Wait(5000)
     while GetResourceState('qb-target') ~= 'started' do Wait(250) end

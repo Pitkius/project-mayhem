@@ -232,7 +232,7 @@ CreateThread(function()
         SetBlipScale(agencyBlip, agency.blip.scale or 0.85)
         SetBlipAsShortRange(agencyBlip, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(agency.label or 'Dynasty 8')
+        AddTextComponentSubstringPlayerName(agency.label or 'Dynasty 8')
         EndTextCommandSetBlipName(agencyBlip)
     end
 

@@ -183,7 +183,7 @@ CreateThread(function()
         SetBlipColour(blip, 2)
         SetBlipAsShortRange(blip, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString('Bankas')
+        AddTextComponentSubstringPlayerName('Bankas')
         EndTextCommandSetBlipName(blip)
     end
 end)

@@ -78,23 +78,24 @@ Config.JobStationNpcs = {
     { job = 'ambulance', stationId = 'ems_ls', role = 'supply', model = 's_m_m_doctor_01', coords = vector4(306.36, -601.55, 43.28, 250.0), label = 'EMS inventorius' },
     { job = 'ambulance', stationId = 'ems_ls', role = 'garage', model = 's_m_m_paramedic_01', coords = vector4(339.32, -584.32, 28.80, 70.0), label = 'EMS garažas / transportas' },
     { job = 'ambulance', stationId = 'ems_ls', role = 'locker', model = 's_f_y_scrubs_01', coords = vector4(298.62, -598.41, 43.28, 250.0), label = 'EMS rūbinė' },
-    { job = 'ambulance', stationId = 'ems_ls', role = 'stash', model = 's_m_m_doctor_01', coords = vector4(304.8, -600.2, 43.28, 250.0), label = 'EMS sandėlis' },
+    { job = 'ambulance', stationId = 'ems_ls', role = 'stash', model = 's_m_m_doctor_01', coords = vector4(306.36, -601.55, 43.28, 250.0), label = 'EMS sandėlis' },
 
     --- EMS Sandy
     { job = 'ambulance', stationId = 'ems_sandy', role = 'duty', model = 's_m_m_doctor_01', coords = vector4(1839.6, 3672.9, 34.28, 30.0), label = 'EMS registratūra / tarnyba' },
     { job = 'ambulance', stationId = 'ems_sandy', role = 'supply', model = 's_m_m_doctor_01', coords = vector4(1837.2, 3674.5, 34.28, 210.0), label = 'EMS inventorius' },
     { job = 'ambulance', stationId = 'ems_sandy', role = 'garage', model = 's_m_m_paramedic_01', coords = vector4(1843.5, 3663.8, 33.85, 210.0), label = 'EMS garažas / transportas' },
     { job = 'ambulance', stationId = 'ems_sandy', role = 'locker', model = 's_f_y_scrubs_01', coords = vector4(1841.0, 3671.0, 34.28, 210.0), label = 'EMS rūbinė' },
-    { job = 'ambulance', stationId = 'ems_sandy', role = 'stash', model = 's_m_m_doctor_01', coords = vector4(1836.0, 3673.5, 34.28, 210.0), label = 'EMS sandėlis' },
+    { job = 'ambulance', stationId = 'ems_sandy', role = 'stash', model = 's_m_m_doctor_01', coords = vector4(1837.2, 3674.5, 34.28, 210.0), label = 'EMS sandėlis' },
 
     --- EMS Paleto
     { job = 'ambulance', stationId = 'ems_paleto', role = 'duty', model = 's_m_m_doctor_01', coords = vector4(-247.76, 6331.39, 32.43, 135.0), label = 'EMS registratūra / tarnyba' },
     { job = 'ambulance', stationId = 'ems_paleto', role = 'supply', model = 's_m_m_doctor_01', coords = vector4(-249.5, 6333.0, 32.43, 315.0), label = 'EMS inventorius' },
     { job = 'ambulance', stationId = 'ems_paleto', role = 'garage', model = 's_m_m_paramedic_01', coords = vector4(-254.0, 6347.0, 32.50, 135.0), label = 'EMS garažas / transportas' },
     { job = 'ambulance', stationId = 'ems_paleto', role = 'locker', model = 's_f_y_scrubs_01', coords = vector4(-246.0, 6329.5, 32.43, 315.0), label = 'EMS rūbinė' },
-    { job = 'ambulance', stationId = 'ems_paleto', role = 'stash', model = 's_m_m_doctor_01', coords = vector4(-248.5, 6332.5, 32.43, 315.0), label = 'EMS sandėlis' },
+    { job = 'ambulance', stationId = 'ems_paleto', role = 'stash', model = 's_m_m_doctor_01', coords = vector4(-249.5, 6333.0, 32.43, 315.0), label = 'EMS sandėlis' },
 
     --- Gamtos apsauga (Gabz Park Ranger)
+    { job = 'ranger', stationId = 'ranger_main', role = 'duty', model = 's_m_y_ranger_01', coords = vector4(380.50, 796.80, 190.49, 180.0), label = 'Tarnyba — pradėti / baigti' },
     { job = 'ranger', stationId = 'ranger_main', role = 'boss', model = 's_m_y_ranger_01', coords = vector4(386.72, 798.67, 190.49, 187.29), label = 'Gamtos apsaugos vadovybė' },
     { job = 'ranger', stationId = 'ranger_main', role = 'locker', model = 's_m_y_ranger_01', coords = vector4(387.64, 799.81, 187.46, 176.41), label = 'Gamtos apsaugos rūbinė' },
     { job = 'ranger', stationId = 'ranger_main', role = 'garage', model = 's_m_y_ranger_01', coords = vector4(371.33, 791.31, 187.47, 261.00), label = 'Gamtos apsaugos garažas / salonas' },
@@ -102,4 +103,11 @@ Config.JobStationNpcs = {
     { job = 'ranger', stationId = 'ranger_main', role = 'supply', model = 's_m_y_ranger_01', coords = vector4(383.23, 794.67, 190.49, 88.84), label = 'Gamtos apsaugos inventorius' },
 }
 
-Config.JobNpcReach = 3.5
+Config.JobNpcReach = 4.5
+
+--- Garažų / sandėlių 3D markeriai (role garage | stash — be NPC)
+Config.JobMarkerDrawDistance = 28.0
+Config.JobMarkerUseRadius = 2.2
+Config.JobMarkerScale = { x = 2.4, y = 2.4, z = 0.24 }
+Config.JobMarkerGarageScale = { x = 3.2, y = 3.2, z = 0.28 }
+Config.JobMarkerStashScale = { x = 2.0, y = 2.0, z = 0.22 }

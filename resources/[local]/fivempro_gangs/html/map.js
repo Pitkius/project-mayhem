@@ -41,14 +41,14 @@ window.GangMap = (function () {
 
   function normalizeMapConfig(payload) {
     const t = (payload && payload.tabletMap) || payload || {};
-    const file = t.imageFile || "asset/gtav_satellite_2048.png";
+    const file = t.imageFile || 'asset/gtav_satellite.jpg';
     return {
       minX: Number(t.gameMin?.x ?? -4000),
       minY: Number(t.gameMin?.y ?? -4000),
       maxX: Number(t.gameMax?.x ?? 4500),
       maxY: Number(t.gameMax?.y ?? 6625),
-      imgW: Number(t.imageWidth) || 2048,
-      imgH: Number(t.imageHeight) || 2048,
+      imgW: Number(t.imageWidth) || 1024,
+      imgH: Number(t.imageHeight) || 1280,
       imageUrl: nuiImageUrl(file),
     };
   }
@@ -339,7 +339,7 @@ window.GangMap = (function () {
 
     turfs.forEach((turf) => {
       if (turf.min_x == null && turf.center_x == null) return;
-      const bounds = gameBoundsToLeaflet(turf, cfg, 0.08);
+      const bounds = gameBoundsToLeaflet(turf, cfg, 0.02);
       const cellNum = turf.cell_num || turf.turf_id;
       turfById[turf.turf_id] = turf;
 
@@ -405,9 +405,9 @@ window.GangMap = (function () {
   function fitMapFill(padding) {
     if (!leafletMap || !mapCfg) return;
     const bounds = mapBoundsLatLng();
-    const pad = padding != null ? padding : 2;
+    const pad = padding != null ? padding : 0;
     leafletMap.fitBounds(bounds, { padding: [pad, pad], animate: false });
-    const z = leafletMap.getZoom();
+
     const size = leafletMap.getSize();
     const nw = leafletMap.latLngToContainerPoint(bounds.getNorthWest());
     const se = leafletMap.latLngToContainerPoint(bounds.getSouthEast());
@@ -415,14 +415,15 @@ window.GangMap = (function () {
     const bh = Math.abs(se.y - nw.y);
     if (bw > 1 && bh > 1 && size.x > 0 && size.y > 0) {
       const cover = Math.max(size.x / bw, size.y / bh);
-      if (cover > 1.06) {
-        leafletMap.setZoom(Math.min(z + Math.log2(cover * 0.98), z + 3.5));
+      if (cover > 1.01) {
+        leafletMap.setZoom(Math.min(leafletMap.getZoom() + Math.log2(cover * 1.04), leafletMap.getZoom() + 4));
       }
     }
+    leafletMap.panInsideBounds(bounds, { animate: false });
     baseFitZoom = leafletMap.getZoom();
-    leafletMap.setMinZoom(Math.max(-2, baseFitZoom - 0.75));
-    leafletMap.setMaxZoom(baseFitZoom + 6);
-    leafletMap.setMaxBounds(bounds.pad(0.03));
+    leafletMap.setMinZoom(Math.max(-2, baseFitZoom - 1.25));
+    leafletMap.setMaxZoom(baseFitZoom + 7);
+    leafletMap.setMaxBounds(bounds.pad(0.02));
   }
 
   function ensureMap(state) {
@@ -465,16 +466,16 @@ window.GangMap = (function () {
 
     requestAnimationFrame(() => {
       invalidate();
-      fitMapFill(8);
+      fitMapFill(0);
       if (!selectedTurf) selectTurf(null);
     });
     setTimeout(() => {
       invalidate();
-      fitMapFill(8);
+      fitMapFill(0);
     }, 120);
     setTimeout(() => {
       invalidate();
-      fitMapFill(8);
+      fitMapFill(0);
     }, 320);
   }
 
@@ -487,7 +488,7 @@ window.GangMap = (function () {
   }
 
   function resetView() {
-    fitMapFill(8);
+    fitMapFill(0);
   }
 
   function toggleFullscreen(on) {
@@ -500,11 +501,11 @@ window.GangMap = (function () {
     if (bezel) bezel.classList.toggle("tablet-map-fullscreen", enable);
     setTimeout(() => {
       invalidate();
-      fitMapFill(enable ? 4 : 8);
+      fitMapFill(0);
     }, 80);
     setTimeout(() => {
       invalidate();
-      fitMapFill(enable ? 4 : 8);
+      fitMapFill(0);
     }, 280);
   }
 

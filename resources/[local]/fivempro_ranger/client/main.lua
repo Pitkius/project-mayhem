@@ -41,7 +41,10 @@ RegisterNetEvent('fivempro_ranger:client:openLocker', function()
             params = { event = 'fivempro_ranger:client:toggleDuty' },
         },
     }
-    exports['qb-menu']:openMenu(menu)
+    if GetResourceState('qb-menu') ~= 'started' then
+        return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
+    end
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end)
 
 RegisterNetEvent('fivempro_ranger:client:wearUniform', function()
@@ -108,7 +111,7 @@ local function openFineMenu(targetId)
             end,
         },
     }
-    exports['qb-menu']:openMenu(menu)
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end
 
 CreateThread(function()

@@ -1641,7 +1641,7 @@ Citizen.CreateThread(function()
             SetBlipScale (clothingShop, 0.7)
             SetBlipAsShortRange(clothingShop, true)
             BeginTextCommandSetBlipName("STRING")
-            AddTextComponentString(Lang:t("store.clothing"))
+            AddTextComponentSubstringPlayerName(Lang:t("store.clothing"))
             EndTextCommandSetBlipName(clothingShop)
         end
 
@@ -1652,7 +1652,7 @@ Citizen.CreateThread(function()
             SetBlipScale (barberShop, 0.7)
             SetBlipAsShortRange(barberShop, true)
             BeginTextCommandSetBlipName("STRING")
-            AddTextComponentString(Lang:t("store.barber"))
+            AddTextComponentSubstringPlayerName(Lang:t("store.barber"))
             EndTextCommandSetBlipName(barberShop)
         end
 
@@ -1663,7 +1663,7 @@ Citizen.CreateThread(function()
             SetBlipScale  (surgeonShop, 0.7)
             SetBlipAsShortRange(surgeonShop, true)
             BeginTextCommandSetBlipName("STRING")
-            AddTextComponentString(Lang:t("store.surgeon"))
+            AddTextComponentSubstringPlayerName(Lang:t("store.surgeon"))
             EndTextCommandSetBlipName(surgeonShop)
         end
     end

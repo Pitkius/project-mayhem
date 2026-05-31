@@ -198,7 +198,7 @@ CreateThread(function()
         SetBlipScale(b, blip.scale or 0.75)
         SetBlipAsShortRange(b, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(blip.label or 'Strip Club')
+        AddTextComponentSubstringPlayerName(blip.label or 'Strip Club')
         EndTextCommandSetBlipName(b)
     end
 

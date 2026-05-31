@@ -539,7 +539,7 @@ local function createGarageMapBlips()
         SetBlipColour(blip, GARAGE_COLOR)
         SetBlipAsShortRange(blip, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(Config.GarageMapBlipLabel or 'Garažai')
+        AddTextComponentSubstringPlayerName(Config.GarageMapBlipLabel or 'Garažai')
         EndTextCommandSetBlipName(blip)
         local cat = Config.GarageMapBlipCategory
         if cat and cat > 0 then
@@ -557,7 +557,7 @@ local function createGarageMapBlips()
             SetBlipColour(blip, GARAGE_COLOR)
             SetBlipAsShortRange(blip, true)
             BeginTextCommandSetBlipName('STRING')
-            AddTextComponentString(garage.label)
+            AddTextComponentSubstringPlayerName(garage.label)
             EndTextCommandSetBlipName(blip)
             local cat = Config.GarageMapBlipCategory
             if cat and cat > 0 then
