@@ -12,6 +12,7 @@ ui_page 'html/mdt/index.html'
 shared_scripts {
     'config.lua',
     'config_surveillance.lua',
+    'config_ems_doors.lua',
 }
 
 client_scripts {

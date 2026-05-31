@@ -1,9 +1,39 @@
 const app = document.getElementById('app');
 const btnClose = document.getElementById('btnClose');
 let dispatchPoll = null;
-const MAP_BOUNDS = { minX: -4000, maxX: 4500, minY: -4000, maxY: 8000 };
-const MAP_IMG_W = 1066;
-const MAP_IMG_H = 861;
+let dispatchReadOnly = false;
+let dispatchMapFitScale = 1;
+const MAP_MAX_SCALE = 5.0;
+const MAP_FIT_PAD = 1.0;
+const MAP_ZOOM_STEP = 0.12;
+
+const mapMeta = {
+  minX: -4000,
+  maxX: 4500,
+  minY: -4000,
+  maxY: 6625,
+  imgW: 1024,
+  imgH: 1280,
+  imageUrl: '',
+  loaded: false,
+};
+
+function applyMapConfig(cfg) {
+  if (!cfg || typeof cfg !== 'object') return;
+  mapMeta.minX = Number(cfg.gameMin?.x ?? mapMeta.minX);
+  mapMeta.minY = Number(cfg.gameMin?.y ?? mapMeta.minY);
+  mapMeta.maxX = Number(cfg.gameMax?.x ?? mapMeta.maxX);
+  mapMeta.maxY = Number(cfg.gameMax?.y ?? mapMeta.maxY);
+  mapMeta.imgW = Number(cfg.imageWidth) || mapMeta.imgW;
+  mapMeta.imgH = Number(cfg.imageHeight) || mapMeta.imgH;
+  if (cfg.imageFile) {
+    mapMeta.imageUrl = nuiImageUrl(cfg.imageFile);
+  }
+}
+
+function mapMinScale() {
+  return Math.max(0.35, dispatchMapFitScale * 0.92);
+}
 function nuiImageUrl(pathFromHtml) {
   const raw = String(pathFromHtml || '').trim();
   if (!raw || /^https?:\/\//i.test(raw) || /^nui:\/\//i.test(raw)) return raw;
@@ -14,9 +44,25 @@ function nuiImageUrl(pathFromHtml) {
 }
 
 const MAP_SAT_URL = nuiImageUrl('mdt/asset/gtav_satellite.jpg');
-const MAP_MIN_SCALE = 0.35;
-const MAP_MAX_SCALE = 5.0;
-const MAP_FIT_PAD = 1.0;
+mapMeta.imageUrl = MAP_SAT_URL;
+
+function preloadMapImage(url) {
+  const src = url || mapMeta.imageUrl || MAP_SAT_URL;
+  if (!src) return Promise.resolve();
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        mapMeta.imgW = img.naturalWidth;
+        mapMeta.imgH = img.naturalHeight;
+      }
+      mapMeta.loaded = true;
+      resolve();
+    };
+    img.onerror = () => resolve();
+    img.src = src;
+  });
+}
 
 function resourceName() {
   try {
@@ -63,12 +109,15 @@ window.addEventListener('message', (e) => {
       document.getElementById('fineLabel').value = opt.dataset.label || '';
     };
     if (sel.options.length) sel.onchange();
+    applyMapConfig(d.data && d.data.map);
     ensureDispatchMapDom();
     watchDispatchMapResize();
-    requestAnimationFrame(() => {
-      layoutDispatchMapCanvas();
-      fitDispatchMapInView();
-      dispatchMapLayoutReady = true;
+    preloadMapImage(mapMeta.imageUrl).then(() => {
+      requestAnimationFrame(() => {
+        layoutDispatchMapCanvas();
+        fitDispatchMapInView();
+        dispatchMapLayoutReady = true;
+      });
     });
     startDispatchPoll();
   }
@@ -130,6 +179,7 @@ document.querySelectorAll('.tab').forEach((t) => {
         });
       });
     }
+    if (t.dataset.tab === 'calls' || t.dataset.tab === 'crews') refreshDispatch();
     if (t.dataset.tab === 'cctv') refreshCctvList();
     if (t.dataset.tab === 'bodycam') refreshBodycamList();
     if (t.dataset.tab !== 'cctv' && t.dataset.tab !== 'bodycam') {
@@ -307,8 +357,8 @@ function resolveUnitNames(idMap, units) {
 }
 
 function worldToMap(x, y) {
-  const px = ((Number(x || 0) - MAP_BOUNDS.minX) / (MAP_BOUNDS.maxX - MAP_BOUNDS.minX)) * 100;
-  const py = (1 - ((Number(y || 0) - MAP_BOUNDS.minY) / (MAP_BOUNDS.maxY - MAP_BOUNDS.minY))) * 100;
+  const px = ((Number(x || 0) - mapMeta.minX) / (mapMeta.maxX - mapMeta.minX)) * 100;
+  const py = (1 - ((Number(y || 0) - mapMeta.minY) / (mapMeta.maxY - mapMeta.minY))) * 100;
   return {
     x: Math.max(0.2, Math.min(99.8, px)),
     y: Math.max(0.2, Math.min(99.8, py)),
@@ -331,8 +381,9 @@ function ensureDispatchMapDom() {
   const surface = document.createElement('div');
   surface.id = 'dispatchMapSurface';
   surface.className = 'dispatch-map-surface';
-  if (MAP_SAT_URL) {
-    surface.style.backgroundImage = `url("${MAP_SAT_URL}")`;
+  const mapUrl = mapMeta.imageUrl || MAP_SAT_URL;
+  if (mapUrl) {
+    surface.style.backgroundImage = `url("${mapUrl}")`;
     surface.style.backgroundSize = '100% 100%';
     surface.style.backgroundRepeat = 'no-repeat';
     surface.style.backgroundPosition = 'center center';
@@ -358,7 +409,7 @@ function layoutDispatchMapCanvas() {
 
   const cw = Math.max(320, root.clientWidth || 0);
   const ch = Math.max(240, root.clientHeight || 0);
-  const imgAspect = MAP_IMG_W / MAP_IMG_H;
+  const imgAspect = mapMeta.imgW / mapMeta.imgH;
   const boxAspect = cw / ch;
   let w;
   let h;
@@ -402,7 +453,8 @@ function fitDispatchMapInView() {
   const sw = Math.max(1, surface.offsetWidth);
   const sh = Math.max(1, surface.offsetHeight);
   const fitScale = Math.min(cw / sw, ch / sh) * MAP_FIT_PAD;
-  dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, fitScale));
+  dispatchMapFitScale = Math.max(0.35, fitScale);
+  dispatchMapPan.scale = dispatchMapFitScale;
   dispatchMapPan.x = 0;
   dispatchMapPan.y = 0;
   applyDispatchMapTransform();
@@ -437,8 +489,18 @@ function bindDispatchMapInteract() {
     'wheel',
     (e) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, dispatchMapPan.scale + delta));
+      const rect = root.getBoundingClientRect();
+      const cx = e.clientX - (rect.left + rect.width / 2);
+      const cy = e.clientY - (rect.top + rect.height / 2);
+      const delta = e.deltaY > 0 ? -MAP_ZOOM_STEP : MAP_ZOOM_STEP;
+      const oldScale = dispatchMapPan.scale;
+      const newScale = Math.max(mapMinScale(), Math.min(MAP_MAX_SCALE, oldScale + delta));
+      if (newScale !== oldScale) {
+        const ratio = newScale / oldScale;
+        dispatchMapPan.x = cx + (dispatchMapPan.x - cx) * ratio;
+        dispatchMapPan.y = cy + (dispatchMapPan.y - cy) * ratio;
+        dispatchMapPan.scale = newScale;
+      }
       clampDispatchMapPan();
       applyDispatchMapTransform();
     },
@@ -515,21 +577,34 @@ function renderDispatchMap(calls, units) {
   const zOut = document.getElementById('dispatchZoomOut');
   if (zIn) {
     zIn.addEventListener('click', () => {
-      dispatchMapPan.scale = Math.min(MAP_MAX_SCALE, dispatchMapPan.scale + 0.15);
+      dispatchMapPan.scale = Math.min(MAP_MAX_SCALE, dispatchMapPan.scale + MAP_ZOOM_STEP);
       clampDispatchMapPan();
       applyDispatchMapTransform();
     });
   }
   if (zOut) {
     zOut.addEventListener('click', () => {
-      dispatchMapPan.scale = Math.max(MAP_MIN_SCALE, dispatchMapPan.scale - 0.15);
+      dispatchMapPan.scale = Math.max(mapMinScale(), dispatchMapPan.scale - MAP_ZOOM_STEP);
       clampDispatchMapPan();
       applyDispatchMapTransform();
     });
   }
 })();
 
+function setDispatchControlsEnabled(enabled) {
+  const ids = [
+    'btnCreateCrew', 'btnJoinCrew', 'btnAddCrewMember', 'btnDeleteCrew',
+    'btnLeaveCrew', 'btnSetCallsign', 'btnPanic', 'refreshDispatch',
+  ];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !enabled;
+  });
+}
+
 function renderDispatch(res) {
+  dispatchReadOnly = !!(res && res.readOnly);
+  setDispatchControlsEnabled(!dispatchReadOnly);
   const callsEl = document.getElementById('dispatchCalls');
   const crewsEl = document.getElementById('dispatchCrews');
   const unitsEl = document.getElementById('dispatchUnits');
@@ -537,8 +612,17 @@ function renderDispatch(res) {
   crewsEl.innerHTML = '';
   unitsEl.innerHTML = '';
 
+  if (res && res.ok === false && res.msg) {
+    callsEl.innerHTML = `<div class="muted">${escapeHtml(res.msg)}</div>`;
+    renderDispatchMap([], []);
+    return;
+  }
+
   if (res && res.readOnly) {
-    callsEl.innerHTML = '<div class="muted">Off duty — žemėlapis rodomas. Eik on duty, kad matytum vienetus ir valdytum dispatch.</div>';
+    const note = document.createElement('div');
+    note.className = 'muted';
+    note.textContent = 'Off duty — žemėlapis ir iškvietimai rodomi. Eik on duty, kad matytum vienetus ir valdytum dispatch.';
+    callsEl.appendChild(note);
   }
 
   const calls = (res && res.ok !== false && res.calls) || (res && res.calls) || [];
@@ -546,7 +630,9 @@ function renderDispatch(res) {
   const units = (res && res.units) || [];
 
   if (!calls.length) {
-    callsEl.innerHTML = '<div class="muted">Aktyvių iškvietimų nėra.</div>';
+    if (!callsEl.children.length) {
+      callsEl.innerHTML = '<div class="muted">Aktyvių iškvietimų nėra.</div>';
+    }
   } else {
     calls.forEach((c) => {
       const card = document.createElement('div');
@@ -559,8 +645,8 @@ function renderDispatch(res) {
         <div>Priėmė: ${resolveUnitNames(c.acceptedBy, units)}</div>
         <div>Vyksta: ${resolveUnitNames(c.enrouteBy, units)}</div>
         <div>Atvyko: ${resolveUnitNames(c.arrivedBy, units)}</div>
-        ${c.panic ? `<div class="row"><button class="btn danger js-panic-off" data-callid="${escapeHtml(c.id)}">Išjungti PANIC</button></div>` : ''}
-        ${callActions(c.id)}
+        ${c.panic && !dispatchReadOnly ? `<div class="row"><button class="btn danger js-panic-off" data-callid="${escapeHtml(c.id)}">Išjungti PANIC</button></div>` : ''}
+        ${dispatchReadOnly ? '' : callActions(c.id)}
       `;
       callsEl.appendChild(card);
     });
@@ -600,10 +686,16 @@ function renderDispatch(res) {
   renderDispatchMap(calls, units);
 
   document.querySelectorAll('.js-dispatch').forEach((btn) => {
-    btn.onclick = () => nuiPost('dispatchAction', { callId: btn.dataset.callid, action: btn.dataset.action }).then(() => refreshDispatch());
+    btn.onclick = () => nuiPost('dispatchAction', { callId: btn.dataset.callid, action: btn.dataset.action }).then((r) => {
+      if (r && r.ok === false) return;
+      refreshDispatch();
+    });
   });
   document.querySelectorAll('.js-panic-off').forEach((btn) => {
-    btn.onclick = () => nuiPost('crewAction', { action: 'panicOff', callId: btn.dataset.callid }).then(() => refreshDispatch());
+    btn.onclick = () => nuiPost('crewAction', { action: 'panicOff', callId: btn.dataset.callid }).then((r) => {
+      if (r && r.ok === false) return;
+      refreshDispatch();
+    });
   });
 }
 
@@ -683,17 +775,33 @@ if (btnDock) {
   btnDock.onclick = () => setMdtDocked(!mdtDocked);
 }
 bindMdtDrag();
-document.getElementById('btnCreateCrew').onclick = () => nuiPost('crewAction', { action: 'create', callsign: document.getElementById('crewCallsign').value.trim() }).then(refreshDispatch);
-document.getElementById('btnJoinCrew').onclick = () => nuiPost('crewAction', { action: 'join', crewId: document.getElementById('crewIdInput').value.trim() }).then(refreshDispatch);
-document.getElementById('btnAddCrewMember').onclick = () => nuiPost('crewAction', {
+function crewActionPost(payload) {
+  return nuiPost('crewAction', payload).then((r) => {
+    if (r && r.ok === false) {
+      const el = document.getElementById('dispatchCrews');
+      if (el && r.msg) {
+        const note = document.createElement('div');
+        note.className = 'muted';
+        note.textContent = r.msg;
+        el.prepend(note);
+      }
+      return r;
+    }
+    return refreshDispatch();
+  });
+}
+
+document.getElementById('btnCreateCrew').onclick = () => crewActionPost({ action: 'create', callsign: document.getElementById('crewCallsign').value.trim() });
+document.getElementById('btnJoinCrew').onclick = () => crewActionPost({ action: 'join', crewId: document.getElementById('crewIdInput').value.trim() });
+document.getElementById('btnAddCrewMember').onclick = () => crewActionPost({
   action: 'addMember',
   crewId: document.getElementById('crewIdInput').value.trim(),
   targetId: Number(document.getElementById('crewMemberId').value),
-}).then(refreshDispatch);
-document.getElementById('btnDeleteCrew').onclick = () => nuiPost('crewAction', { action: 'delete', crewId: document.getElementById('crewIdInput').value.trim() }).then(refreshDispatch);
-document.getElementById('btnLeaveCrew').onclick = () => nuiPost('crewAction', { action: 'leave' }).then(refreshDispatch);
-document.getElementById('btnSetCallsign').onclick = () => nuiPost('crewAction', { action: 'setCallsign', callsign: document.getElementById('crewCallsign').value.trim() }).then(refreshDispatch);
-document.getElementById('btnPanic').onclick = () => nuiPost('crewAction', { action: 'panic' }).then(refreshDispatch);
+});
+document.getElementById('btnDeleteCrew').onclick = () => crewActionPost({ action: 'delete', crewId: document.getElementById('crewIdInput').value.trim() });
+document.getElementById('btnLeaveCrew').onclick = () => crewActionPost({ action: 'leave' });
+document.getElementById('btnSetCallsign').onclick = () => crewActionPost({ action: 'setCallsign', callsign: document.getElementById('crewCallsign').value.trim() });
+document.getElementById('btnPanic').onclick = () => crewActionPost({ action: 'panic' });
 
 let cctvSites = [];
 let cctvCameras = [];

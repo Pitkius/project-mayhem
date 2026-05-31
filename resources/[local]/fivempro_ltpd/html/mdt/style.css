@@ -81,7 +81,10 @@ input, select {
   cursor: pointer;
 }
 .btn.primary { background: rgba(124, 96, 214, 0.55); }
-.btn.danger { background: rgba(200, 60, 60, 0.55); border-color: rgba(255, 120, 120, 0.5); }
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .results { font-size: 13px; line-height: 1.45; }
 .card {
   margin-bottom: 10px;

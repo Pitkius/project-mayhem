@@ -47,8 +47,11 @@ Config.Emergency = {
     blipScale = 1.0,
     --- Minimalus laikas tarp skambučių į tą pačią tarnybą (sek.)
     callCooldownSec = 45,
-    --- M mygtukas – medikų iškvietimas (sek.)
+    --- G mygtukas – medikų iškvietimas mirus (kaip visiems žaidėjams)
     medicRequestCooldownSec = 90,
+    medicRequestKey = 'G',
+    --- Miręs policijos darbuotojas iškviečiant medikus automatiškai siunčia PANIC (fivempro_dispatch)
+    policePanicOnMedicRequest = true,
 }
 
 --- Po mirties: po N sek. galima laikyti G ir atsikelti ARTIMIAUSIOJE ligoninėje (iš sąrašo)

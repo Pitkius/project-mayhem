@@ -25,8 +25,8 @@ const tabMissions = document.getElementById("tabMissions");
 
 let lastState = null;
 let mapCfg = null;
-const GANG_MAP_IMG_W = 1066;
-const GANG_MAP_IMG_H = 861;
+const GANG_MAP_IMG_W = 1024;
+const GANG_MAP_IMG_H = 1280;
 const GANG_MAP_MIN_SCALE = 0.35;
 const GANG_MAP_MAX_SCALE = 5.0;
 const GANG_MAP_FIT_PAD = 0.98;
@@ -78,9 +78,9 @@ function normalizeMapConfig(payload) {
     minX: Number(t.gameMin?.x ?? -4000),
     minY: Number(t.gameMin?.y ?? -4000),
     maxX: Number(t.gameMax?.x ?? 4500),
-    maxY: Number(t.gameMax?.y ?? 8000),
-    imgW: Number(t.imageWidth) || 1066,
-    imgH: Number(t.imageHeight) || 861,
+    maxY: Number(t.gameMax?.y ?? 6625),
+    imgW: Number(t.imageWidth) || 1024,
+    imgH: Number(t.imageHeight) || 1280,
     imageUrl: nuiImageUrl(file),
   };
 }

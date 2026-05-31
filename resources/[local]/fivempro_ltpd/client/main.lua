@@ -131,6 +131,11 @@ RegisterNUICallback('getArrestHistory', function(data, cb)
     end, data and data.citizenid)
 end)
 
+local function isDispatchWritable()
+    local P = QBCore.Functions.GetPlayerData()
+    return P and P.job and isPdJobName(P.job.name) and P.job.onduty == true
+end
+
 RegisterNUICallback('dispatchSnapshot', function(_, cb)
     QBCore.Functions.TriggerCallback('fivempro_dispatch:server:getMdtSnapshot', function(result)
         cb(result or { ok = false, calls = {}, crews = {}, units = {} })
@@ -138,6 +143,9 @@ RegisterNUICallback('dispatchSnapshot', function(_, cb)
 end)
 
 RegisterNUICallback('dispatchAction', function(data, cb)
+    if not isDispatchWritable() then
+        return cb({ ok = false, msg = 'Tik pamainoje galima valdyti dispatch.' })
+    end
     if data and data.callId and data.action then
         TriggerServerEvent('fivempro_dispatch:server:updateCallStatus', data.callId, data.action)
     end
@@ -145,6 +153,9 @@ RegisterNUICallback('dispatchAction', function(data, cb)
 end)
 
 RegisterNUICallback('crewAction', function(data, cb)
+    if not isDispatchWritable() then
+        return cb({ ok = false, msg = 'Tik pamainoje galima valdyti ekipažus.' })
+    end
     local action = tostring(data and data.action or '')
     if action == 'create' then
         TriggerServerEvent('fivempro_dispatch:server:createCrew', tostring(data.callsign or ''))

@@ -27,6 +27,7 @@ end
 
 function StopLtpdBodycamView()
     destroyBodycamView()
+    TriggerEvent('fivempro_ltpd:client:mdtCctvFocus', true)
 end
 
 local function playBodycamAnim(on)
@@ -87,12 +88,13 @@ RegisterNUICallback('bodycamWatch', function(data, cb)
         destroyBodycamView()
         bodycamViewTarget = res.targetId
         SendNUIMessage({ action = 'bodycamOverlay', active = true, targetId = res.targetId })
+        TriggerEvent('fivempro_ltpd:client:mdtCctvFocus', false)
         cb(res)
     end, data and data.targetId)
 end)
 
 RegisterNUICallback('bodycamStop', function(_, cb)
-    destroyBodycamView()
+    StopLtpdBodycamView()
     cb({ ok = true })
 end)
 
@@ -106,11 +108,11 @@ CreateThread(function()
         if bodycamViewTarget then
             local target = GetPlayerFromServerId(bodycamViewTarget)
             if target == -1 then
-                destroyBodycamView()
+                StopLtpdBodycamView()
             else
                 local tPed = GetPlayerPed(target)
                 if not tPed or tPed == 0 or not DoesEntityExist(tPed) then
-                    destroyBodycamView()
+                    StopLtpdBodycamView()
                 else
                     local bone = GetPedBoneIndex(tPed, 31086)
                     local pos = GetPedBoneCoords(tPed, bone, 0.12, 0.18, 0.02)
@@ -131,7 +133,12 @@ CreateThread(function()
                 end
             end
             DisableAllControlActions(0)
+            EnableControlAction(0, 1, true)
+            EnableControlAction(0, 2, true)
             EnableControlAction(0, 200, true)
+            if IsDisabledControlJustPressed(0, 322) or IsDisabledControlJustPressed(0, 177) then
+                StopLtpdBodycamView()
+            end
             Wait(0)
         else
             Wait(350)

@@ -27,6 +27,7 @@ local Crews = {}
 local PlayerCrew = {}
 local Callsigns = {}
 local lastPlainCallAt = {} --- @type table<number, number> src -> ms
+local lastPanicAt = {} --- @type table<number, number> src -> ms
 
 local function citizenIdOf(src)
     local p = QBCore.Functions.GetPlayer(src)
@@ -227,7 +228,8 @@ end)
 --- MDT žemėlapis: policijos darbuotojams net ir ne on-duty (tik peržiūra)
 QBCore.Functions.CreateCallback('fivempro_dispatch:server:getMdtSnapshot', function(src, cb, service)
     service = service or 'police'
-    if jobName(src) ~= 'police' then
+    local jn = jobName(src)
+    if serviceForJob(jn) ~= service then
         return cb({ ok = false, msg = 'Ne policijos darbuotojas.' })
     end
     cb({
@@ -343,8 +345,13 @@ RegisterNetEvent('fivempro_dispatch:server:setCallsign', function(callsign)
     callsign = tostring(callsign or ''):upper():gsub('[^A-Z0-9]', ''):sub(1, 12)
     Callsigns[src] = callsign
     local crewId = PlayerCrew[src]
-    if crewId and Crews[crewId] and callsign ~= '' then
-        Crews[crewId].callsign = callsign
+    if crewId and Crews[crewId] then
+        if Crews[crewId].leader ~= src then
+            return TriggerClientEvent('QBCore:Notify', src, 'Tik ekipažo vadas gali keisti bendrą šaukinį.', 'error')
+        end
+        if callsign ~= '' then
+            Crews[crewId].callsign = callsign
+        end
     end
     logEvent(service, 'callsign_set', src, { callsign = callsign })
     pushServiceUpdate(service)
@@ -391,12 +398,22 @@ RegisterNetEvent('fivempro_dispatch:server:updateCallStatus', function(callId, a
     pushServiceUpdate(service)
 end)
 
-RegisterNetEvent('fivempro_dispatch:server:panic', function()
-    local src = source
-    local service = playerService(src)
-    if service ~= 'police' then return end
+local function isPoliceJob(src)
+    return serviceForJob(jobName(src)) == 'police'
+end
+
+local function triggerOfficerPanic(src)
+    if not isPoliceJob(src) then return false end
+    local cfg = Config or {}
+    local cd = math.max(0, tonumber(cfg.PanicCooldownMs) or 12000)
+    if cd > 0 then
+        local now = nowMs()
+        local last = lastPanicAt[src] or 0
+        if now - last < cd then return false end
+        lastPanicAt[src] = now
+    end
     local ped = GetPlayerPed(src)
-    if not ped or ped == 0 then return end
+    if not ped or ped == 0 then return false end
     local p = GetEntityCoords(ped)
     local crewId = PlayerCrew[src]
     local crew = crewId and Crews[crewId] or nil
@@ -419,6 +436,20 @@ RegisterNetEvent('fivempro_dispatch:server:panic', function()
                 x = p.x, y = p.y, z = p.z,
                 time = c.createdAt,
             })
+        end
+    end
+    return true
+end
+
+exports('TriggerOfficerPanic', triggerOfficerPanic)
+
+RegisterNetEvent('fivempro_dispatch:server:panic', function()
+    local src = source
+    if triggerOfficerPanic(src) then
+        TriggerClientEvent('QBCore:Notify', src, 'PANIC išsiųstas visiems pamainoje esantiems pareigūnams.', 'error')
+    else
+        if not isPoliceJob(src) then
+            TriggerClientEvent('QBCore:Notify', src, 'PANIC – tik policijos darbuotojams.', 'error')
         end
     end
 end)
@@ -461,18 +492,24 @@ end)
 AddEventHandler('playerDropped', function()
     local src = source
     lastPlainCallAt[src] = nil
+    lastPanicAt[src] = nil
     local crewId = PlayerCrew[src]
+    local service = nil
     if crewId and Crews[crewId] then
-        local service = Crews[crewId].service
+        service = Crews[crewId].service
         local members = {}
         for _, id in ipairs(Crews[crewId].members or {}) do
             if id ~= src then members[#members + 1] = id end
         end
         Crews[crewId].members = members
-        if #members == 0 then Crews[crewId] = nil end
-        PlayerCrew[src] = nil
-        if service then pushServiceUpdate(service) end
+        if #members == 0 then
+            Crews[crewId] = nil
+        elseif Crews[crewId].leader == src then
+            Crews[crewId].leader = members[1]
+        end
     end
+    PlayerCrew[src] = nil
+    if service then pushServiceUpdate(service) end
     Callsigns[src] = nil
 end)
 

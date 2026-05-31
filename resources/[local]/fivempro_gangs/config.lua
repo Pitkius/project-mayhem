@@ -85,9 +85,9 @@ Config.AdminPermissions = { 'admin', 'god' }
 --- Turf tablet: Leaflet + satellite image (html/asset). Game units ≈ meters; Y increases north.
 Config.TabletMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
-    gameMax = { x = 4500.0, y = 8000.0 },
-    imageWidth = 1066,
-    imageHeight = 861,
+    gameMax = { x = 4500.0, y = 6625.0 },
+    imageWidth = 1024,
+    imageHeight = 1280,
     imageFile = 'asset/gtav_satellite.jpg',
 }
 

@@ -671,6 +671,21 @@ RegisterNetEvent('fivempro_phone:server:medicRequestFromDead', function()
         phone = ensurePhoneUser(Player.PlayerData.citizenid, callerName)
     end
 
+    local emCfg = Config.Emergency or {}
+    if emCfg.policePanicOnMedicRequest ~= false and Player and Player.PlayerData and Player.PlayerData.job then
+        local jn = Player.PlayerData.job.name
+        local isPd = false
+        for _, j in ipairs(emCfg.policeJobs or { 'police' }) do
+            if jn == j then isPd = true break end
+        end
+        if isPd and GetResourceState('fivempro_dispatch') == 'started' then
+            local ok = exports['fivempro_dispatch']:TriggerOfficerPanic(src)
+            if ok then
+                TriggerClientEvent('QBCore:Notify', src, 'PANIC signalas išsiųstas policijai.', 'error')
+            end
+        end
+    end
+
     local cfg = Config.Emergency or {}
     local count = 0
     for _, P in pairs(QBCore.Functions.GetQBPlayers()) do

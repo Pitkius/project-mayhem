@@ -167,6 +167,7 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:mdtContext', function(src,
     })
     cb({
         presets = Config.FinePresets,
+        map = Config.MdtMap,
         division = getDivisionForCitizenid(P.PlayerData.citizenid),
         grade = getGrade(src),
         permissions = {
@@ -798,6 +799,30 @@ local function dynDoorCfgForStation(stationId)
     for _, d in ipairs(Config.PdDoorDynamics or {}) do
         if d.stationId == stationId then return d end
     end
+    for _, d in ipairs(Config.EmsDoorDynamics or {}) do
+        if d.stationId == stationId then return d end
+    end
+end
+
+local function doorGroupService(groupId)
+    if type(groupId) ~= 'string' then return 'police' end
+    if groupId:sub(1, 8) == 'dyn_ems_' then return 'ems' end
+    for _, g in ipairs(Config.EmsDoorGroups or {}) do
+        if g.id == groupId then return 'ems' end
+    end
+    return 'police'
+end
+
+local function canUseServiceDoors(src, groupId)
+    local svc = doorGroupService(groupId)
+    if svc == 'ems' then
+        local Player = QBCore.Functions.GetPlayer(src)
+        if not Player then return false end
+        local j = Player.PlayerData.job
+        if not j or j.onduty ~= true then return false end
+        return j.name == (Config.EmsDoorJob or 'ambulance')
+    end
+    return hasPerm(src, 'pd_doors')
 end
 
 local function dynDoorModelWhitelist(dyn)
@@ -824,29 +849,33 @@ end
 
 local function initManualPdDoors()
     local anchors = pdDoorInteractAnchorsByGroup()
-    for _, g in ipairs(Config.PdDoorGroups or {}) do
-        local slabs = {}
-        for _, d in ipairs(g.doors or {}) do
-            slabs[#slabs + 1] = d.coords
-        end
-        local interact = g.interact
-        if not interact and #slabs > 0 then
-            interact = vector3(0.0, 0.0, 0.0)
-            for _, c in ipairs(slabs) do
-                interact = interact + c
+    local function registerGroupList(list)
+        for _, g in ipairs(list or {}) do
+            local slabs = {}
+            for _, d in ipairs(g.doors or {}) do
+                slabs[#slabs + 1] = d.coords
             end
-            interact = interact / #slabs
-        end
-        LtpdPdDoorMeta[g.id] = {
-            slabs = slabs,
-            interact = interact,
-            interactDist = g.interactDist or 2.5,
-            interactAnchors = anchors[g.id] or {},
-        }
-        if LtpdPdDoorLocked[g.id] == nil then
-            LtpdPdDoorLocked[g.id] = g.defaultLocked ~= false
+            local interact = g.interact
+            if not interact and #slabs > 0 then
+                interact = vector3(0.0, 0.0, 0.0)
+                for _, c in ipairs(slabs) do
+                    interact = interact + c
+                end
+                interact = interact / #slabs
+            end
+            LtpdPdDoorMeta[g.id] = {
+                slabs = slabs,
+                interact = interact,
+                interactDist = g.interactDist or 2.5,
+                interactAnchors = anchors[g.id] or {},
+            }
+            if LtpdPdDoorLocked[g.id] == nil then
+                LtpdPdDoorLocked[g.id] = g.defaultLocked ~= false
+            end
         end
     end
+    registerGroupList(Config.PdDoorGroups)
+    registerGroupList(Config.EmsDoorGroups)
 end
 
 AddEventHandler('onResourceStart', function(res)
@@ -903,7 +932,7 @@ end)
 RegisterNetEvent('fivempro_ltpd:server:togglePdDoorGroup', function(groupId)
     local src = source
     if type(groupId) ~= 'string' then return end
-    if not hasPerm(src, 'pd_doors') then
+    if not canUseServiceDoors(src, groupId) then
         return TriggerClientEvent('QBCore:Notify', src, 'Neturi teisės arba ne tarnyboje.', 'error')
     end
     local meta = LtpdPdDoorMeta[groupId]

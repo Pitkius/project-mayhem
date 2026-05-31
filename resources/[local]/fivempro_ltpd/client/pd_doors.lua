@@ -38,6 +38,14 @@ local function rebuildManualPdSlabSkip()
             }
         end
     end
+    for _, def in ipairs(Config.EmsDoorGroups or {}) do
+        for _, d in ipairs(def.doors or {}) do
+            manualPdSlabSkip[#manualPdSlabSkip + 1] = {
+                m = joaat(d.model),
+                c = d.coords,
+            }
+        end
+    end
 end
 
 local function isManualPdDoorSlab(modelHash, coords)
@@ -94,9 +102,55 @@ local function isPdJobName(name)
     return name == Config.JobName
 end
 
-local function isPdOnDutyClient()
+local function inferDoorTypeFromModelName(name)
+    if not name or name == '' then return nil end
+    local n = name:lower()
+    if n:find('barrier', 1, true) or n:find('prop_barrier', 1, true) then return 'barrier' end
+    if n:find('parkingdoor', 1, true) or n:find('gardoor', 1, true) or n:find('garage_door', 1, true) or n:find('garagedoor', 1, true) then
+        return 'garage_roll'
+    end
+    if n:find('gate', 1, true) or n:find('fence', 1, true) or n:find('fancegate', 1, true) or n:find('facgate', 1, true) then
+        return 'barrier'
+    end
+    return nil
+end
+
+local function allDoorDynamics()
+    local out = {}
+    for _, d in ipairs(Config.PdDoorDynamics or {}) do
+        out[#out + 1] = d
+    end
+    for _, d in ipairs(Config.EmsDoorDynamics or {}) do
+        out[#out + 1] = d
+    end
+    return out
+end
+
+local function isEmsJobName(name)
+    return name == (Config.EmsDoorJob or 'ambulance')
+end
+
+local function doorGroupService(groupId)
+    if type(groupId) ~= 'string' then return 'police' end
+    if groupId:sub(1, 8) == 'dyn_ems_' then return 'ems' end
+    for _, def in ipairs(Config.EmsDoorGroups or {}) do
+        if def.id == groupId then return 'ems' end
+    end
+    return 'police'
+end
+
+local function canUseDoorGroupClient(groupId)
     local P = QBCore.Functions.GetPlayerData()
-    return P and P.job and isPdJobName(P.job.name) and P.job.onduty
+    if not P or not P.job or not P.job.onduty then return false end
+    local svc = doorGroupService(groupId)
+    if svc == 'ems' then return isEmsJobName(P.job.name) end
+    return isPdJobName(P.job.name)
+end
+
+local function canUseServiceDoorsClient()
+    local P = QBCore.Functions.GetPlayerData()
+    if not P or not P.job or not P.job.onduty then return false end
+    return isPdJobName(P.job.name) or isEmsJobName(P.job.name)
 end
 
 local function quantKey(x, y, z)
@@ -432,45 +486,52 @@ local function applyGroupLocked(id, locked)
     end
 end
 
+local function buildManualGroupDef(def)
+    local slabs = {}
+    for i, d in ipairs(def.doors or {}) do
+        local coords = d.coords
+        local model = d.model
+        local slab = registerSlab(def.id, i, model, coords, d.heading)
+        alignSlabToWorld(slab)
+        if d.heading then
+            slab.heading = d.heading + 0.0
+            snapSlabEntity(slab)
+        end
+        slabs[#slabs + 1] = slab
+    end
+    local interact = def.interact
+    if not interact and #slabs > 0 then
+        local c = vector3(0, 0, 0)
+        for _, s in ipairs(slabs) do
+            c = c + s.coords
+        end
+        interact = c / #slabs
+    end
+    local entities = scanEntitiesForDef(def.entityScan)
+    for _, ent in ipairs(entities) do
+        rememberEntitySnapshot(ent)
+    end
+    doorGroups[#doorGroups + 1] = {
+        id = def.id,
+        label = def.label or 'Durys',
+        doorType = def.doorType,
+        interact = interact,
+        interactDist = def.interactDist or 2.5,
+        slabs = slabs,
+        entities = entities,
+        entityScanDef = def.entityScan,
+    }
+    if doorLocked[def.id] == nil then
+        doorLocked[def.id] = def.defaultLocked ~= false
+    end
+end
+
 local function buildManualGroups()
     for _, def in ipairs(Config.PdDoorGroups or {}) do
-        local slabs = {}
-        for i, d in ipairs(def.doors or {}) do
-            local coords = d.coords
-            local model = d.model
-            local slab = registerSlab(def.id, i, model, coords, d.heading)
-            alignSlabToWorld(slab)
-            if d.heading then
-                slab.heading = d.heading + 0.0
-                snapSlabEntity(slab)
-            end
-            slabs[#slabs + 1] = slab
-        end
-        local interact = def.interact
-        if not interact and #slabs > 0 then
-            local c = vector3(0, 0, 0)
-            for _, s in ipairs(slabs) do
-                c = c + s.coords
-            end
-            interact = c / #slabs
-        end
-        local entities = scanEntitiesForDef(def.entityScan)
-        for _, ent in ipairs(entities) do
-            rememberEntitySnapshot(ent)
-        end
-        doorGroups[#doorGroups + 1] = {
-            id = def.id,
-            label = def.label or 'PD durys',
-            doorType = def.doorType,
-            interact = interact,
-            interactDist = def.interactDist or 2.5,
-            slabs = slabs,
-            entities = entities,
-            entityScanDef = def.entityScan,
-        }
-        if doorLocked[def.id] == nil then
-            doorLocked[def.id] = def.defaultLocked ~= false
-        end
+        buildManualGroupDef(def)
+    end
+    for _, def in ipairs(Config.EmsDoorGroups or {}) do
+        buildManualGroupDef(def)
     end
     rebuildManualPdSlabSkip()
 end
@@ -528,21 +589,33 @@ local function scanDynamicForStation(dyn)
             c = c + s.coords
         end
         c = c / #cluster
+        local modelName = whitelist[cluster[1].modelHash]
+        local doorType = dyn.doorType or inferDoorTypeFromModelName(modelName)
         local qx, qy, qz = quantKey(c.x, c.y, c.z)
         local groupId = ('dyn_%s_%x_%d_%d_%d'):format(dyn.stationId, cluster[1].modelHash, qx, qy, qz)
         local slabs = {}
+        local entities = {}
         for si, s in ipairs(cluster) do
             local slab = registerDynSlab(s.modelHash, s.coords.x, s.coords.y, s.coords.z)
             alignSlabToWorld(slab)
             slabs[si] = slab
+            if doorType == 'barrier' or doorType == 'garage_roll' then
+                local ent = findClosestObject(s.modelHash, s.coords, 5.0)
+                if ent ~= 0 then
+                    entities[#entities + 1] = ent
+                    rememberEntitySnapshot(ent)
+                end
+            end
         end
         if not groupIdExists(groupId) then
             doorGroups[#doorGroups + 1] = {
                 id = groupId,
-                label = dyn.label or 'PD durys',
+                label = dyn.label or 'Durys',
+                doorType = doorType,
                 interact = c + (dyn.interactOffset or vector3(0, 0, 0)),
                 interactDist = dyn.interactDist or 2.5,
                 slabs = slabs,
+                entities = entities,
             }
             local regSlabs = {}
             for _, s in ipairs(cluster) do
@@ -604,7 +677,7 @@ CreateThread(function()
         Wait(2200)
         local ped = PlayerPedId()
         local pc = GetEntityCoords(ped)
-        for _, dyn in ipairs(Config.PdDoorDynamics or {}) do
+        for _, dyn in ipairs(allDoorDynamics()) do
             if not dynStationDone[dyn.stationId] then
                 local c = (dyn.bounds.min + dyn.bounds.max) * 0.5
                 if #(pc - c) < 145.0 then
@@ -672,15 +745,17 @@ CreateThread(function()
 
         if next(bestByGroup) then
             waitMs = 0
-            if isPdOnDutyClient() then
+            if canUseServiceDoorsClient() then
                 for gid, hit in pairs(bestByGroup) do
-                    local g = findDoorGroupById(gid)
-                    if g then
-                        local locked = doorLocked[g.id] ~= false
-                        drawGroupLockIcons(g, pcoords, locked)
+                    if canUseDoorGroupClient(gid) then
+                        local g = findDoorGroupById(gid)
+                        if g then
+                            local locked = doorLocked[g.id] ~= false
+                            drawGroupLockIcons(g, pcoords, locked)
+                        end
                     end
                 end
-                if closestHit and IsControlJustPressed(0, 38) then
+                if closestHit and canUseDoorGroupClient(closestHit.gid) and IsControlJustPressed(0, 38) then
                     local now = GetGameTimer()
                     if now - lastToggle > 650 then
                         lastToggle = now

@@ -130,12 +130,30 @@ RegisterNetEvent('fivempro_dispatch:client:panicClear', function(data)
     QBCore.Functions.Notify('PANIC išjungtas.', 'primary')
 end)
 
+local function isPoliceJobClient()
+    local p = QBCore.Functions.GetPlayerData()
+    if not p or not p.job then return false end
+    local jn = p.job.name
+    local jobs = (Config.Services and Config.Services.police and Config.Services.police.jobs) or { 'police' }
+    for _, j in ipairs(jobs) do
+        if j == jn then return true end
+    end
+    return false
+end
+
 RegisterCommand('panic', function()
-    if myService() ~= 'police' then
-        return QBCore.Functions.Notify('Tik policijai tarnyboje.', 'error')
+    if not isPoliceJobClient() then
+        return QBCore.Functions.Notify('PANIC – tik policijos darbuotojams.', 'error')
     end
     TriggerServerEvent('fivempro_dispatch:server:panic')
 end, false)
+
+RegisterKeyMapping(
+    (Config.PanicCommand or 'panic'),
+    (Config.PanicKeyLabel or 'PANIC (policija)'),
+    'keyboard',
+    (Config.PanicKey or 'F9')
+)
 
 RegisterCommand('servicemdt', function()
     local service = myService()

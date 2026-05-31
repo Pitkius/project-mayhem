@@ -46,3 +46,11 @@ Config.BlipRefreshMs = 1500
 --- Civiliniai/teisėti iškvietimai iš telefono / skriptų: anti-spam (ms vienam žaidėjui)
 Config.CreateCallCooldownMs = 4000
 
+--- PANIC mygtukas (policija, duty). Keisti galima FiveM Settings → Key Bindings → FiveM
+Config.PanicCommand = 'panic'
+Config.PanicKey = 'F9'
+Config.PanicKeyLabel = 'PANIC (policija)'
+Config.PanicCooldownMs = 12000
+--- Miręs pareigūnas iškviečiant medikus (M) taip pat siunčia PANIC
+Config.PanicOnDeadMedicRequest = true
+

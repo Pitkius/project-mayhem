@@ -60,6 +60,15 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
+--- MDT dispatch žemėlapis — pilnas San Andreas (koord. atitinka gtav_satellite.jpg)
+Config.MdtMap = {
+    gameMin = { x = -4000.0, y = -4000.0 },
+    gameMax = { x = 4500.0, y = 6625.0 },
+    imageFile = 'mdt/asset/gtav_satellite.jpg',
+    imageWidth = 1024,
+    imageHeight = 1280,
+}
+
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)
 Config.ArmoryGarageDistance = 38.0
 --- Vadovybės meniu serverio patikra – priartėk prie „management“ taško
@@ -437,6 +446,38 @@ Config.PdDoorGroups = {
             models = { 'hedwig_sheriff_garage_gardoor', 'hedwig_sheriff_garage_door', 'hedwig_sheriif_garage_door' },
         },
     },
+    {
+        id = 'davis_pd_fence_gate',
+        label = 'Davis PD kiemo vartai',
+        doorType = 'barrier',
+        interact = vector3(397.85, -1607.09, 29.29),
+        interactDist = 5.5,
+        defaultLocked = true,
+        doors = {
+            { model = 'gabz_davispd_fancegate', coords = vector3(397.2, -1606.5, 29.35) },
+        },
+        entityScan = {
+            center = vector3(397.2, -1606.5, 29.35),
+            radius = 12.0,
+            models = { 'gabz_davispd_fancegate' },
+        },
+    },
+    {
+        id = 'paleto_pd_yard_gate',
+        label = 'Paleto PD kiemo vartai',
+        doorType = 'barrier',
+        interact = vector3(-459.2, 6016.3, 31.49),
+        interactDist = 5.5,
+        defaultLocked = true,
+        doors = {
+            { model = 'gabz_paletopd_gate_fence', coords = vector3(-453.5, 6025.0, 31.35) },
+        },
+        entityScan = {
+            center = vector3(-453.5, 6025.0, 31.35),
+            radius = 14.0,
+            models = { 'gabz_paletopd_gate_fence', 'gabz_paletopd_gate_fence_01' },
+        },
+    },
 }
 
 --- Papildomi E taškai toms pačioms `PdDoorGroups` (be dubliavimo slabų) – Gabz MRPD.
@@ -520,8 +561,11 @@ Config.PdDoorDynamics = {
         models = {
             'gabz_davispd_maindoor_left',
             'gabz_davispd_maindoor_right',
+            'gabz_davispd_singledoor_01',
+            'gabz_davispd_singledoor_02',
             'gabz_davispd_singledoor_03',
             'gabz_davispd_fancegate',
+            'gabz_davispd_cell_door',
         },
         pairDist = 3.85,
         interactDist = 2.85,
@@ -540,6 +584,9 @@ Config.PdDoorDynamics = {
             'gabz_paletopd_doors06',
             'gabz_paletopd_glassdoorway',
             'gabz_paletopd_glassdoorway_cells',
+            'gabz_paletopd_gate_fence',
+            'gabz_paletopd_gate_fence_01',
+            'gabz_paletopd_cells_gate',
         },
         pairDist = 2.35,
         interactDist = 2.5,

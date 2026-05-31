@@ -78,7 +78,7 @@ CreateThread(function()
     end
 end)
 
---- Ekrano instrukcijos: M visada; G – po laukimo
+--- Ekrano instrukcijos: G – medikai; po laukimo laikyk G – ligoninė
 CreateThread(function()
     local needSec = (Config.HospitalWake and Config.HospitalWake.waitAfterDeathSec) or 900
     local needHold = (Config.HospitalWake and Config.HospitalWake.holdGMs) or 2800.0
@@ -86,11 +86,11 @@ CreateThread(function()
     while true do
         if wasDown and downSinceMs and not IsPauseMenuActive() and not (IsNuiFocused and IsNuiFocused()) then
             local elapsedMs = GetGameTimer() - downSinceMs
-            drawLine(0.70, 'SPAUSK M – iškviesti medikus (EMS pamatys tavo vietą žemėlapyje)', 120, 220, 255)
+            drawLine(0.70, 'SPAUSK G – iškviesti medikus (EMS pamatys tavo vietą žemėlapyje)', 120, 220, 255)
             if elapsedMs >= needSec * 1000 then
                 drawLine(
                     0.76,
-                    ('Laikyk G ~%ss – prisikelti ARTIMIAUSIOJE ligoninėje'):format(holdSec),
+                    ('Arba laikyk G ~%ss – prisikelti ARTIMIAUSIOJE ligoninėje'):format(holdSec),
                     180, 255,
                     180
                 )
@@ -100,7 +100,7 @@ CreateThread(function()
                 local ss = leftSec % 60
                 drawLine(
                     0.76,
-                    ('Liko %d:%.2d – tada laikyk G ir prisikelsi artimiausioje ligoninėje'):format(mm, ss),
+                    ('Liko %d:%.2d – tada G (laikyk) = artimiausia ligoninė'):format(mm, ss),
                     255,
                     220,
                     160
@@ -120,4 +120,9 @@ RegisterCommand('fivempro_phone_medic', function()
     TriggerServerEvent('fivempro_phone:server:medicRequestFromDead')
 end, false)
 
-RegisterKeyMapping('fivempro_phone_medic', 'Iškviesti medikus (kai miręs)', 'keyboard', 'J')
+RegisterKeyMapping(
+    'fivempro_phone_medic',
+    'Iškviesti medikus (kai miręs)',
+    'keyboard',
+    (Config.Emergency and Config.Emergency.medicRequestKey) or 'G'
+)
