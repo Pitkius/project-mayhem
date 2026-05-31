@@ -91,6 +91,12 @@ Config.TabletMap = {
     imageFile = 'asset/gtav_satellite.jpg',
 }
 
+--- Turf žemėlapio tinklelis (mažos teritorijos, kaip Gang Network UI)
+Config.MapGrid = {
+    cols = 28,
+    rows = 20,
+}
+
 Config.TabletVendor = {
     model = 'g_m_y_lost_01',
     coords = vector4(-267.24, -959.34, 31.22, 205.0),

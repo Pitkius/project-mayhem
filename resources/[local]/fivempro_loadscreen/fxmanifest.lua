@@ -8,6 +8,7 @@ description 'GTA-style loading screen with rotating scenes'
 version '1.0.2'
 
 loadscreen 'html/index.html'
+loadscreen_cursor 'yes'
 loadscreen_manual_shutdown 'yes'
 
 shared_script 'config.lua'

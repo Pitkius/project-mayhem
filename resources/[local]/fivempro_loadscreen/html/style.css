@@ -17,12 +17,14 @@ body {
   font-family: 'Oswald', 'Segoe UI', sans-serif;
   color: #f4f4f5;
   user-select: none;
+  cursor: default;
 }
 
 .slides {
   position: fixed;
   inset: 0;
   z-index: 0;
+  pointer-events: none;
 }
 
 .slide {
@@ -243,6 +245,7 @@ body {
   right: 24px;
   bottom: 24px;
   z-index: 20;
+  pointer-events: auto;
   display: flex;
   align-items: center;
   gap: 10px;

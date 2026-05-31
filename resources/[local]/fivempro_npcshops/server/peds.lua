@@ -25,8 +25,7 @@ local function spawnEntry(entry)
     SetEntityCoords(ped, x, y, z - 1.0, false, false, false)
     SetEntityHeading(ped, h)
     FreezeEntityPosition(ped, true)
-    SetEntityInvincible(ped, true)
-    SetBlockingOfNonTemporaryEvents(ped, true)
+    -- Invincible / blocking / scenario: client/peds.lua (setupPedEntity) — tik kliente
 
     local meta = {
         category = entry.category,

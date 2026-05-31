@@ -12,6 +12,7 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/map.js',
     'html/asset/gtav_satellite.jpg',
     'html/vendor/leaflet.css',
     'html/vendor/leaflet.js',

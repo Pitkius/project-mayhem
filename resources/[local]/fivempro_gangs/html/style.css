@@ -615,6 +615,246 @@ select.color-select-native {
   margin-bottom: 2px;
 }
 
+/* —— Gang Network žemėlapis —— */
+.tablet-bezel.tablet-map-mode {
+  width: min(1180px, 98vw);
+  height: min(720px, 92vh);
+}
+
+.tab-panel.gang-network {
+  display: grid;
+  grid-template-columns: 200px 1fr 220px;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "left map right"
+    "foot foot foot";
+  gap: 8px;
+  padding: 8px;
+  overflow: hidden;
+  background: rgba(6, 8, 12, 0.92);
+}
+
+.network-rail-left {
+  grid-area: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.network-map-core {
+  grid-area: map;
+  position: relative;
+  min-height: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  background: var(--map-bg);
+}
+
+.network-rail-right {
+  grid-area: right;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.network-footer {
+  grid-area: foot;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.network-brand-tag {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: #22c55e;
+  font-weight: 700;
+}
+
+.network-brand h3 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  color: #f4f4f5;
+}
+
+.network-stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.network-stats li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(167, 139, 250, 0.12);
+}
+
+.network-stats strong {
+  color: var(--fp-accent-soft);
+}
+
+.network-nav {
+  display: grid;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.network-nav-btn {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  background: rgba(20, 24, 36, 0.85);
+  color: var(--fp-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.network-nav-btn.is-active {
+  color: #14101f;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.network-map-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 500;
+  display: flex;
+  gap: 6px;
+}
+
+.gangs-leaflet-map {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  background: var(--map-bg);
+}
+
+.gangs-leaflet-map .leaflet-container {
+  background: var(--map-bg);
+  font-family: inherit;
+}
+
+.network-card {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.network-card h4 {
+  margin: 0 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fp-muted);
+}
+
+.network-card-compact {
+  min-height: 88px;
+}
+
+.gang-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.gang-legend .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.gang-legend .dot-free {
+  background: #475569;
+}
+
+.turf-info-card h4 {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.turf-info-dl {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.turf-row {
+  display: grid;
+  gap: 2px;
+  font-size: 11px;
+}
+
+.turf-row span {
+  color: var(--fp-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.turf-row .bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.turf-row .bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.turf-row .bar-heat i {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.turf-row .ok {
+  color: #22c55e;
+}
+
+.network-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  display: grid;
+  gap: 4px;
+}
+
+.network-list .rank {
+  color: var(--fp-accent-soft);
+  font-weight: 700;
+}
+
+.network-list em {
+  color: var(--fp-muted);
+  font-style: normal;
+}
+
 @media (max-width: 720px) {
   .tablet-tabs {
     flex-wrap: wrap;

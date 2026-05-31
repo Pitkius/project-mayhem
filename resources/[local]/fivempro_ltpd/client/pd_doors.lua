@@ -93,6 +93,7 @@ local function snapEntityToSnapshot(ent)
 end
 
 local function iconZOffset(doorType, isEntity)
+    if doorType == 'bollard' then return isEntity and 0.55 or 0.62 end
     if doorType == 'garage_roll' then return isEntity and 0.38 or 0.42 end
     if isEntity then return 0.68 end
     return 1.02
@@ -105,6 +106,7 @@ end
 local function inferDoorTypeFromModelName(name)
     if not name or name == '' then return nil end
     local n = name:lower()
+    if n:find('bollard', 1, true) then return 'bollard' end
     if n:find('barrier', 1, true) or n:find('prop_barrier', 1, true) then return 'barrier' end
     if n:find('parkingdoor', 1, true) or n:find('gardoor', 1, true) or n:find('garage_door', 1, true) or n:find('garagedoor', 1, true) then
         return 'garage_roll'
@@ -357,6 +359,8 @@ local function applyGarageEntityDoor(ent, locked)
     end
 end
 
+local BOLLARD_RAISE_Z = 0.42
+
 local function applyBarrierEntity(ent, locked)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return end
     rememberEntitySnapshot(ent)
@@ -374,14 +378,44 @@ local function applyBarrierEntity(ent, locked)
     end
 end
 
-local function applyBarrierGroupLocked(slabs, entities, locked)
-    for _, slab in ipairs(slabs or {}) do
-        applyStandardSlabLocked(slab, locked)
-        local ent = findClosestObject(slab.modelHash, slab.coords, 4.0)
-        if ent ~= 0 then applyBarrierEntity(ent, locked) end
+local function applyBollardEntity(ent, locked)
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return end
+    rememberEntitySnapshot(ent)
+    local snap = entitySnapshots[ent]
+    if not snap then return end
+    if locked then
+        SetEntityCoords(ent, snap.coords.x, snap.coords.y, snap.coords.z + BOLLARD_RAISE_Z, false, false, false, false)
+        SetEntityHeading(ent, snap.heading)
+        FreezeEntityPosition(ent, true)
+        SetEntityDynamic(ent, false)
+        SetEntityInvincible(ent, true)
+        SetEntityCollision(ent, true, true)
+    else
+        SetEntityCoords(ent, snap.coords.x, snap.coords.y, snap.coords.z, false, false, false, false)
+        SetEntityHeading(ent, snap.heading)
+        FreezeEntityPosition(ent, false)
+        SetEntityDynamic(ent, true)
+        SetEntityInvincible(ent, false)
     end
+end
+
+local function applyBarrierGroupLocked(slabs, entities, locked)
     for _, ent in ipairs(entities or {}) do
         applyBarrierEntity(ent, locked)
+    end
+    for _, slab in ipairs(slabs or {}) do
+        local ent = findClosestObject(slab.modelHash, slab.coords, 6.0)
+        if ent ~= 0 then applyBarrierEntity(ent, locked) end
+    end
+end
+
+local function applyBollardGroupLocked(slabs, entities, locked)
+    for _, ent in ipairs(entities or {}) do
+        applyBollardEntity(ent, locked)
+    end
+    for _, slab in ipairs(slabs or {}) do
+        local ent = findClosestObject(slab.modelHash, slab.coords, 8.0)
+        if ent ~= 0 then applyBollardEntity(ent, locked) end
     end
 end
 
@@ -471,6 +505,10 @@ local function applyGroupLocked(id, locked)
         if g.id == id then
             if g.doorType == 'garage_roll' then
                 applyGarageRollLocked(g.slabs, g.entities, locked)
+                return
+            end
+            if g.doorType == 'bollard' then
+                applyBollardGroupLocked(g.slabs, g.entities, locked)
                 return
             end
             if g.doorType == 'barrier' then
@@ -599,7 +637,7 @@ local function scanDynamicForStation(dyn)
             local slab = registerDynSlab(s.modelHash, s.coords.x, s.coords.y, s.coords.z)
             alignSlabToWorld(slab)
             slabs[si] = slab
-            if doorType == 'barrier' or doorType == 'garage_roll' then
+            if doorType == 'barrier' or doorType == 'bollard' or doorType == 'garage_roll' then
                 local ent = findClosestObject(s.modelHash, s.coords, 5.0)
                 if ent ~= 0 then
                     entities[#entities + 1] = ent
@@ -798,7 +836,7 @@ CreateThread(function()
         local pc = GetEntityCoords(ped)
         local anyNear = false
         for _, g in ipairs(doorGroups) do
-            if g.doorType == 'barrier' and doorLocked[g.id] ~= false then
+            if (g.doorType == 'barrier' or g.doorType == 'bollard') and doorLocked[g.id] ~= false then
                 local near = g.interact and #(pc - g.interact) < 55.0
                 if not near then
                     for _, slab in ipairs(g.slabs or {}) do
@@ -810,7 +848,11 @@ CreateThread(function()
                 end
                 if near then
                     anyNear = true
-                    applyBarrierGroupLocked(g.slabs, g.entities, true)
+                    if g.doorType == 'bollard' then
+                        applyBollardGroupLocked(g.slabs, g.entities, true)
+                    else
+                        applyBarrierGroupLocked(g.slabs, g.entities, true)
+                    end
                 end
             elseif g.doorType == 'garage_roll' and doorLocked[g.id] ~= false then
                 local near = false

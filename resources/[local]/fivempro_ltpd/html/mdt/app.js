@@ -72,11 +72,20 @@ function resourceName() {
 }
 
 function nuiPost(endpoint, data) {
+  if (app.classList.contains('hidden')) return Promise.resolve(null);
   return fetch(`https://${resourceName()}/${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json; charset=UTF-8' },
     body: JSON.stringify(data || {}),
-  }).then((r) => r.json());
+  })
+    .then((r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    })
+    .catch((err) => {
+      console.warn('[mdt] nuiPost', endpoint, err);
+      return null;
+    });
 }
 
 window.addEventListener('message', (e) => {
@@ -700,7 +709,11 @@ function renderDispatch(res) {
 }
 
 function refreshDispatch() {
-  return nuiPost('dispatchSnapshot', {}).then((res) => renderDispatch(res || { calls: [], crews: [], units: [] }));
+  return nuiPost('dispatchSnapshot', {}).then((res) => {
+    if (!res) return null;
+    renderDispatch(res);
+    return res;
+  });
 }
 
 document.getElementById('refreshDispatch').onclick = () => refreshDispatch();

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gaujų planšetė</title>
+  <link rel="stylesheet" href="vendor/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -100,26 +101,59 @@
           </div>
         </section>
 
-        <section id="tabPanelMap" class="tab-panel hidden" role="tabpanel">
-          <div id="mapStage" class="map-stage">
-            <div class="map-zoom-bar">
+        <section id="tabPanelMap" class="tab-panel hidden gang-network" role="tabpanel">
+          <aside class="network-rail network-rail-left">
+            <div class="network-brand">
+              <span class="network-brand-tag">GANG NETWORK</span>
+              <h3 id="networkGangName">—</h3>
+            </div>
+            <ul class="network-stats" id="networkStats"></ul>
+            <nav class="network-nav">
+              <button type="button" class="network-nav-btn is-active" data-nav="map">Turf žemėlapis</button>
+              <button type="button" class="network-nav-btn" data-nav="gang">Gauja</button>
+              <button type="button" class="network-nav-btn" data-nav="missions">Misijos</button>
+            </nav>
+          </aside>
+          <main class="network-map-core">
+            <div class="network-map-toolbar">
               <button type="button" id="zoomIn" class="zoom-btn" title="Priartinti">+</button>
               <button type="button" id="zoomOut" class="zoom-btn" title="Nutolinti">−</button>
+              <button type="button" id="tabletHomeBtn" class="zoom-btn" title="Centras">⌖</button>
             </div>
-            <div id="gangsMap" class="gangs-map">
-              <div id="gangsMapTransform" class="gangs-map-transform">
-                <div id="gangsMapInner" class="gangs-map-inner" aria-hidden="true"></div>
-                <div id="gangsMapMarkers" class="gangs-map-markers"></div>
-              </div>
+            <div id="gangsLeafletMap" class="gangs-leaflet-map"></div>
+          </main>
+          <aside class="network-rail network-rail-right">
+            <div class="network-card">
+              <h4>Gaujos</h4>
+              <ul id="gangLegend" class="gang-legend"></ul>
             </div>
-            <div id="mapTooltip" class="map-tooltip hidden"></div>
-          </div>
-          <button type="button" id="tabletHomeBtn" class="tablet-home-dot" aria-label="Centras" title="Atstatyti vaizdą"></button>
+            <div class="network-card turf-info-card">
+              <h4 id="turfInfoTitle">TURF —</h4>
+              <dl id="turfInfoBody" class="turf-info-dl"></dl>
+              <button type="button" id="btnTurfRoute" class="btn btn-primary wide">Rodyti maršrutą</button>
+            </div>
+          </aside>
+          <footer class="network-footer">
+            <div class="network-card network-card-compact">
+              <h4>Top gaujos</h4>
+              <ol id="topGangsList" class="network-list"></ol>
+            </div>
+            <div class="network-card network-card-compact">
+              <h4>Aktyvūs turf karai</h4>
+              <ul id="activeWarsList" class="network-list"></ul>
+            </div>
+            <div class="network-card network-card-compact">
+              <h4>Naujausios veiklos</h4>
+              <ul id="recentActsList" class="network-list"></ul>
+            </div>
+          </footer>
         </section>
       </div>
     </div>
   </div>
 
+  <script src="vendor/leaflet.js"></script>
+  <script src="map.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

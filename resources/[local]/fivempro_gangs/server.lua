@@ -55,6 +55,65 @@ local function getGangMembers(gangId)
     return MySQL.query.await('SELECT citizenid, name, rank FROM fivempro_gang_members WHERE gang_id = ? ORDER BY rank DESC, name ASC', { tonumber(gangId) }) or {}
 end
 
+local function getTopGangs(limit)
+    limit = tonumber(limit) or 5
+    return MySQL.query.await([[
+        SELECT g.id, g.name, g.color_hex, g.reputation,
+               COUNT(t.turf_id) AS turf_count
+        FROM fivempro_gangs g
+        LEFT JOIN fivempro_gang_turfs t ON t.owner_gang_id = g.id
+        GROUP BY g.id, g.name, g.color_hex, g.reputation
+        ORDER BY turf_count DESC, g.reputation DESC
+        LIMIT ?
+    ]], { limit }) or {}
+end
+
+local function getActiveTurfWars()
+    local rows = MySQL.query.await([[
+        SELECT turf_id, owner_name, influence, heat
+        FROM fivempro_gang_turfs
+        WHERE owner_gang_id IS NOT NULL AND influence > 0 AND influence < 100
+        ORDER BY influence ASC
+        LIMIT 6
+    ]]) or {}
+    local out = {}
+    for _, r in ipairs(rows) do
+        local cfg = Config.Turfs and Config.Turfs[r.turf_id]
+        out[#out + 1] = {
+            turfId = r.turf_id,
+            label = cfg and cfg.label or r.turf_id,
+            owner = r.owner_name or '—',
+            influence = tonumber(r.influence) or 0,
+            heat = tonumber(r.heat) or 0,
+        }
+    end
+    return out
+end
+
+local function getRecentGangActivities(limit)
+    limit = tonumber(limit) or 6
+    local rows = MySQL.query.await([[
+        SELECT l.turf_id, l.profit, l.created_at, g.name AS gang_name, g.color_hex
+        FROM fivempro_gang_sales_logs l
+        JOIN fivempro_gangs g ON g.id = l.gang_id
+        ORDER BY l.created_at DESC
+        LIMIT ?
+    ]], { limit }) or {}
+    local out = {}
+    for _, r in ipairs(rows) do
+        local cfg = Config.Turfs and Config.Turfs[r.turf_id]
+        out[#out + 1] = {
+            turfId = r.turf_id,
+            label = cfg and cfg.label or r.turf_id,
+            gangName = r.gang_name,
+            colorHex = r.color_hex,
+            profit = tonumber(r.profit) or 0,
+            createdAt = r.created_at,
+        }
+    end
+    return out
+end
+
 local function getTurfs()
     local rows = MySQL.query.await([[
         SELECT t.turf_id, t.owner_gang_id, t.owner_name, t.progress, t.influence, t.heat, t.sales_count, t.total_profit,
@@ -159,6 +218,10 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
                 colorUsage = getColorUsage(),
                 turfs = getTurfs(),
                 tabletMap = Config.TabletMap or {},
+                mapGrid = Config.MapGrid or { cols = 28, rows = 20 },
+                topGangs = getTopGangs(5),
+                activeWars = getActiveTurfWars(),
+                recentActivities = getRecentGangActivities(6),
                 claimThreshold = claimThreshold,
                 missions = {},
             })
@@ -174,6 +237,10 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
             palette = Config.ColorPalette or {},
             colorUsage = getColorUsage(),
             tabletMap = Config.TabletMap or {},
+            mapGrid = Config.MapGrid or { cols = 28, rows = 20 },
+            topGangs = getTopGangs(5),
+            activeWars = getActiveTurfWars(),
+            recentActivities = getRecentGangActivities(6),
             claimThreshold = claimThreshold,
             missions = getMissionCatalog(gang.gang_type),
         })
