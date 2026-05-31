@@ -152,6 +152,17 @@ local function startPracticalLoop()
 
             drawCheckpointMarker()
 
+            local limit = getSpeedLimit()
+            SetTextFont(4)
+            SetTextScale(0.38, 0.38)
+            SetTextColour(255, 255, 255, 215)
+            SetTextOutline()
+            SetTextEntry('STRING')
+            AddTextComponentString(('Egzaminas | Taškas %s/%s | Limitas %d km/h | Klaidos %s/%s'):format(
+                practicalState.checkpoint, #Config.RouteCheckpoints, limit,
+                practicalState.errors, Config.PracticalMaxErrors))
+            DrawText(0.015, 0.88)
+
             local cp = Config.RouteCheckpoints[practicalState.checkpoint]
             if cp then
                 local pos = GetEntityCoords(ped)
@@ -256,6 +267,11 @@ RegisterNetEvent('fivempro_drivingschool:client:openMenu', function()
             local cat = Config.Categories[key]
             if cat then
                 local owned = status[cat.licenceKey] == true
+                if cat.licenceKeys then
+                    for _, lk in ipairs(cat.licenceKeys) do
+                        if status[lk] == true then owned = true break end
+                    end
+                end
                 menu[#menu + 1] = {
                     header = ('%s %s'):format(cat.icon or '', cat.label),
                     txt = owned and 'Jau turite licenciją' or ('Egzaminas: $%s | Teorija 80%% + praktika'):format(cat.examPrice),
@@ -270,6 +286,15 @@ RegisterNetEvent('fivempro_drivingschool:client:openMenu', function()
 
         exports['qb-menu']:openMenu(menu)
     end)
+end)
+
+RegisterNetEvent('fivempro_drivingschool:client:showLicense', function(info)
+    info = info or {}
+    notify(('%s | %s %s'):format(
+        info.type or 'Vairuotojo pažymėjimas',
+        info.firstname or '',
+        info.lastname or ''
+    ), 'primary')
 end)
 
 RegisterNetEvent('fivempro_drivingschool:client:confirmExam', function(data)

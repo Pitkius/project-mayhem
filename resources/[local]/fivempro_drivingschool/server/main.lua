@@ -30,10 +30,21 @@ local function shuffleQuestion(q)
     return { q = q.q, answers = answers, correct = newCorrect }
 end
 
-local function hasLicence(Player, key)
-    if not Player then return false end
+local function hasLicenceKey(Player, key)
+    if not Player or not key then return false end
     local licences = Player.PlayerData.metadata and Player.PlayerData.metadata.licences or {}
     return licences[key] == true
+end
+
+local function hasCategoryLicence(Player, cat)
+    if not Player or not cat then return false end
+    if cat.licenceKeys then
+        for _, key in ipairs(cat.licenceKeys) do
+            if hasLicenceKey(Player, key) then return true end
+        end
+        return false
+    end
+    return hasLicenceKey(Player, cat.licenceKey)
 end
 
 local function setLicence(Player, key, value)
@@ -42,13 +53,19 @@ local function setLicence(Player, key, value)
     Player.Functions.SetMetaData('licences', licences)
 end
 
-local function issueDriverItem(src, Player, cat)
-    if cat.licenceKey ~= 'driver' then return end
-    local items = Player.Functions.GetItemsByName('driver_license')
-    for _, it in pairs(items or {}) do
-        local info = it.info or {}
-        if info.citizenid == Player.PlayerData.citizenid then return end
+local function chargePlayer(Player, price, reason)
+    price = tonumber(price) or 0
+    if price <= 0 then return true end
+    if Player.PlayerData.money.cash >= price then
+        return Player.Functions.RemoveMoney('cash', price, reason)
     end
+    if Player.PlayerData.money.bank >= price then
+        return Player.Functions.RemoveMoney('bank', price, reason)
+    end
+    return false
+end
+
+local function issueDriverItem(src, Player, cat)
     local charinfo = Player.PlayerData.charinfo or {}
     local info = {
         citizenid = Player.PlayerData.citizenid,
@@ -56,6 +73,7 @@ local function issueDriverItem(src, Player, cat)
         lastname = charinfo.lastname or '',
         birthdate = charinfo.birthdate or '',
         type = cat.licenceLabel,
+        category = cat.id,
     }
     if Player.Functions.AddItem('driver_license', 1, false, info) then
         TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items['driver_license'], 'add')
@@ -65,8 +83,7 @@ end
 QBCore.Functions.CreateCallback('fivempro_drivingschool:server:getLicenceStatus', function(source, cb)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then cb({}) return end
-    local licences = Player.PlayerData.metadata.licences or {}
-    cb(licences)
+    cb(Player.PlayerData.metadata.licences or {})
 end)
 
 QBCore.Functions.CreateCallback('fivempro_drivingschool:server:startTheory', function(source, cb, category)
@@ -77,7 +94,7 @@ QBCore.Functions.CreateCallback('fivempro_drivingschool:server:startTheory', fun
     local cat = Config.Categories[category]
     if not cat then cb(false, nil, 'Nežinoma kategorija.') return end
 
-    if hasLicence(Player, cat.licenceKey) then
+    if hasCategoryLicence(Player, cat) then
         cb(false, nil, 'Jau turite šią licenciją.')
         return
     end
@@ -88,7 +105,7 @@ QBCore.Functions.CreateCallback('fivempro_drivingschool:server:startTheory', fun
     end
 
     local price = tonumber(cat.examPrice) or 0
-    if price > 0 and Player.PlayerData.money.cash < price then
+    if price > 0 and Player.PlayerData.money.cash < price and Player.PlayerData.money.bank < price then
         cb(false, nil, ('Reikia $%s egzaminui.'):format(price))
         return
     end
@@ -99,7 +116,7 @@ QBCore.Functions.CreateCallback('fivempro_drivingschool:server:startTheory', fun
         return
     end
 
-    if price > 0 and not Player.Functions.RemoveMoney('cash', price, 'driving-school-exam') then
+    if price > 0 and not chargePlayer(Player, price, 'driving-school-exam') then
         cb(false, nil, 'Nepavyko apmokėti.')
         return
     end
@@ -182,24 +199,25 @@ RegisterNetEvent('fivempro_drivingschool:server:practicalResult', function(categ
     local cat = Config.Categories[category]
     if not Player or not cat then return end
 
-    if hasLicence(Player, cat.licenceKey) then
+    if hasCategoryLicence(Player, cat) then
         TriggerClientEvent('QBCore:Notify', src, 'Jau turite licenciją.', 'error')
         return
     end
 
     setLicence(Player, cat.licenceKey, true)
+    if cat.id == 'b' then
+        setLicence(Player, 'driver_b', true)
+    end
     issueDriverItem(src, Player, cat)
     TriggerClientEvent('QBCore:Notify', src, cat.licenceLabel .. ' suteikta!', 'success')
+end)
+
+QBCore.Functions.CreateUseableItem('driver_license', function(source, item)
+    TriggerClientEvent('fivempro_drivingschool:client:showLicense', source, item.info)
 end)
 
 AddEventHandler('playerDropped', function()
     local src = source
     theorySessions[src] = nil
     pendingPractical[src] = nil
-end)
-
-AddEventHandler('onResourceStop', function(res)
-    if res ~= GetCurrentResourceName() then return end
-    theorySessions = {}
-    pendingPractical = {}
 end)

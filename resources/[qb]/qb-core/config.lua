@@ -84,7 +84,10 @@ QBConfig.Player.PlayerDefaults = {
             date = nil
         },
         licences = {
-            driver = true,
+            driver = false,
+            driver_a = false,
+            driver_b = false,
+            driver_c = false,
             business = false,
             weapon = false
         },
