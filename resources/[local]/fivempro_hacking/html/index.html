@@ -11,6 +11,21 @@
   <link rel="stylesheet" href="hackos.css" />
 </head>
 <body>
+  <svg xmlns="http://www.w3.org/2000/svg" class="ho-sprite-defs" aria-hidden="true">
+    <symbol id="ho-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="ho-os" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 20h8M12 18v2"/><path d="M7 9h4M7 12h2"/></symbol>
+    <symbol id="ho-signal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M2 20h2M6 16h2M10 12h2M14 8h2M18 4h2"/></symbol>
+    <symbol id="ho-storage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v4c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 10v4c0 1.7 3.6 3 8 3s8-1.3 8-3v-4"/></symbol>
+    <symbol id="ho-slots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></symbol>
+    <symbol id="ho-system" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/></symbol>
+    <symbol id="ho-network" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><circle cx="5" cy="7" r="2"/><circle cx="19" cy="7" r="2"/><circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><path d="M7 8l3 3M17 8l-3 3M7 16l3-3M17 16l-3-3"/></symbol>
+    <symbol id="ho-targets" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="ho-exploits" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="ho-files" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></symbol>
+    <symbol id="ho-market" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h15l-1.5 9h-12L6 6z"/><path d="M6 6L5 3H2"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol>
+    <symbol id="ho-contracts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol>
+    <symbol id="ho-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></symbol>
+  </svg>
   <div id="tablet" class="hackos hidden">
     <div class="hackos-glow hackos-glow-a"></div>
     <div class="hackos-glow hackos-glow-b"></div>
@@ -26,25 +41,24 @@
           </div>
         </div>
         <div class="hackos-stats">
-          <div class="stat-pill"><span class="ico" aria-hidden="true">?</span><span class="lbl">OS</span><strong id="statOs">?</strong></div>
-          <div class="stat-pill"><span class="ico" aria-hidden="true">?</span><span class="lbl">Battery</span><strong id="statBattery">87%</strong></div>
-          <div class="stat-pill"><span class="ico" aria-hidden="true">?</span><span class="lbl">Signal</span><strong id="statSignal">Strong</strong></div>
-          <div class="stat-pill"><span class="ico" aria-hidden="true">?</span><span class="lbl">Storage</span><strong id="statStorage">0 / 12</strong></div>
-          <div class="stat-pill"><span class="ico" aria-hidden="true">?</span><span class="lbl">Exploit Slots</span><strong id="statExploits">0 / 3</strong></div>
+          <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-os"/></svg><span class="lbl">OS</span><strong id="statOs">?</strong></div>
+          <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-signal"/></svg><span class="lbl">Signal</span><strong id="statSignal">Strong</strong></div>
+          <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-storage"/></svg><span class="lbl">Storage</span><strong id="statStorage">0 / 12</strong></div>
+          <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-slots"/></svg><span class="lbl">Exploit Slots</span><strong id="statExploits">0 / 3</strong></div>
         </div>
-        <button type="button" id="btnClose" class="hackos-close" title="U¾daryti">?</button>
+        <button type="button" id="btnClose" class="hackos-close" title="U?daryti"><svg class="ho-ico" aria-hidden="true"><use href="#ho-close"/></svg></button>
       </header>
 
       <div class="hackos-body">
         <nav class="hackos-nav" id="hackosNav">
-          <button type="button" class="nav-item" data-view="system"><span class="nav-ico"></span><span>System</span></button>
-          <button type="button" class="nav-item active" data-view="network"><span class="nav-ico"></span><span>Network</span></button>
-          <button type="button" class="nav-item" data-view="targets"><span class="nav-ico"></span><span>Targets</span></button>
-          <button type="button" class="nav-item" data-view="exploits"><span class="nav-ico"></span><span>Exploits</span></button>
-          <button type="button" class="nav-item" data-view="files"><span class="nav-ico"></span><span>Files</span></button>
-          <button type="button" class="nav-item" data-view="market"><span class="nav-ico"></span><span>Market</span></button>
-          <button type="button" class="nav-item" data-view="contracts"><span class="nav-ico"></span><span>Contracts</span></button>
-          <button type="button" class="nav-item" data-view="settings"><span class="nav-ico"></span><span>Settings</span></button>
+          <button type="button" class="nav-item" data-view="system"><svg class="nav-ico" aria-hidden="true"><use href="#ho-system"/></svg><span>System</span></button>
+          <button type="button" class="nav-item active" data-view="network"><svg class="nav-ico" aria-hidden="true"><use href="#ho-network"/></svg><span>Network</span></button>
+          <button type="button" class="nav-item" data-view="targets"><svg class="nav-ico" aria-hidden="true"><use href="#ho-targets"/></svg><span>Targets</span></button>
+          <button type="button" class="nav-item" data-view="exploits"><svg class="nav-ico" aria-hidden="true"><use href="#ho-exploits"/></svg><span>Exploits</span></button>
+          <button type="button" class="nav-item" data-view="files"><svg class="nav-ico" aria-hidden="true"><use href="#ho-files"/></svg><span>Files</span></button>
+          <button type="button" class="nav-item" data-view="market"><svg class="nav-ico" aria-hidden="true"><use href="#ho-market"/></svg><span>Market</span></button>
+          <button type="button" class="nav-item" data-view="contracts"><svg class="nav-ico" aria-hidden="true"><use href="#ho-contracts"/></svg><span>Contracts</span></button>
+          <button type="button" class="nav-item" data-view="settings"><svg class="nav-ico" aria-hidden="true"><use href="#ho-settings"/></svg><span>Settings</span></button>
         </nav>
 
         <main class="hackos-main">
@@ -54,7 +68,7 @@
               <article class="glass-card" id="systemCard"></article>
               <article class="glass-card">
                 <h3>Flashdrive</h3>
-                <p class="muted small">?diek OS ar exploit i¹ payload disko.</p>
+                <p class="muted small">?diek OS ar exploit i? payload disko.</p>
                 <div id="driveList" class="drive-list"></div>
               </article>
             </div>
@@ -110,7 +124,7 @@
           </div>
           <div class="aside-head">
             <h2 id="targetTitle">TARGET</h2>
-            <button type="button" class="aside-close" id="targetClose">?</button>
+            <button type="button" class="aside-close" id="targetClose" title="U?daryti"><svg class="ho-ico" aria-hidden="true"><use href="#ho-close"/></svg></button>
           </div>
           <dl class="target-dl" id="targetDetails"></dl>
           <div class="target-actions">
@@ -162,9 +176,9 @@
       <div class="drill-pro-grid">
         <aside class="drill-pro-left">
           <div class="drill-pro-box">
-            <p><strong>W / S</strong> ? gr±¾imo galia</p>
-            <p><strong>A / D</strong> ? kryptis (laikyk ¾aliame)</p>
-            <p>Steb?k temperat?r± ir sl?g?.</p>
+            <p><strong>W / S</strong> ? gr??imo galia</p>
+            <p><strong>A / D</strong> ? kryptis (laikyk ?aliame)</p>
+            <p>Steb?k temperat?r? ir sl?g?.</p>
           </div>
           <ul class="drill-status">
             <li>SIGNAL: <span class="ok">CONNECTED</span></li>
@@ -179,12 +193,12 @@
             <div id="drillGreenZone" class="drill-green-zone"></div>
             <div id="drillNeedle" class="drill-needle"></div>
           </div>
-          <p class="drill-tip">Laikyk gr±¾tuv± ¾alioje zonoje</p>
+          <p class="drill-tip">Laikyk gr??tuv? ?alioje zonoje</p>
         </main>
         <aside class="drill-pro-right">
           <div class="drill-stat">
             <span>TEMPERATURE</span>
-            <strong id="drillTempVal">0°C</strong>
+            <strong id="drillTempVal">0?C</strong>
             <div class="drill-stat-bar heat"><div id="drillTempBar"></div></div>
           </div>
           <div class="drill-stat">
@@ -205,7 +219,7 @@
         </aside>
       </div>
     </div>
-    <button type="button" id="physicalCancel" class="btn danger">At¹aukti</button>
+    <button type="button" id="physicalCancel" class="btn danger">At?aukti</button>
   </div>
 
   <script src="tablet-ui.js"></script>

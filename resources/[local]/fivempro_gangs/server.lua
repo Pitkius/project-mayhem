@@ -44,6 +44,23 @@ local function getGangMembers(gangId)
     return MySQL.query.await('SELECT citizenid, name, rank FROM fivempro_gang_members WHERE gang_id = ? ORDER BY rank DESC, name ASC', { tonumber(gangId) }) or {}
 end
 
+local function getGangColorLegend()
+    local rows = MySQL.query.await('SELECT color_hex, secondary_color_hex FROM fivempro_gangs ORDER BY id ASC') or {}
+    local seen, out = {}, {}
+    local function add(hex)
+        if not hex or hex == '' or hex == '#FFFFFF' or hex == '#ffffff' then return end
+        local key = string.upper(tostring(hex))
+        if seen[key] then return end
+        seen[key] = true
+        out[#out + 1] = { color_hex = hex }
+    end
+    for _, r in ipairs(rows) do
+        add(r.color_hex)
+        add(r.secondary_color_hex)
+    end
+    return out
+end
+
 local function getTopGangs(limit)
     limit = tonumber(limit) or 5
     return MySQL.query.await([[
@@ -134,7 +151,12 @@ local function enrichTurfRow(r)
         r.is_war = inf > 0
     end
     r.owner_display = (r.owner_name and r.owner_name ~= '') and r.owner_name or 'Neutralu'
-    r.map_color = Config.FactionColorForOwner and Config.FactionColorForOwner(r.owner_display, r.owner_color_hex) or (r.owner_color_hex or '#64748B')
+    local ownerHex = r.owner_color_hex
+    if ownerHex and ownerHex ~= '' and ownerHex ~= '#FFFFFF' and ownerHex ~= '#ffffff' then
+        r.map_color = ownerHex
+    else
+        r.map_color = Config.FactionColorForOwner and Config.FactionColorForOwner(r.owner_display, ownerHex) or '#64748B'
+    end
     r.active_members = tonumber(r.active_members) or 0
     return r
 end
@@ -252,7 +274,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
                 colorUsage = getColorUsage(),
                 turfs = getTurfs(),
                 tabletMap = Config.TabletMap or {},
-                factionColors = Config.FactionColors or {},
+                gangColors = getGangColorLegend(),
                 topGangs = getTopGangs(5),
                 activeWars = getActiveTurfWars(),
                 recentActivities = getRecentGangActivities(6),
@@ -271,7 +293,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
             palette = Config.ColorPalette or {},
             colorUsage = getColorUsage(),
             tabletMap = Config.TabletMap or {},
-            factionColors = Config.FactionColors or {},
+            gangColors = getGangColorLegend(),
             topGangs = getTopGangs(5),
             activeWars = getActiveTurfWars(),
             recentActivities = getRecentGangActivities(6),
@@ -369,7 +391,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:tryDrugSale', function(sr
     local gang = getPlayerGang(src)
     if not gang then return cb({ ok = false, reason = 'Nepriklausai gaujai.' }) end
 
-    local turf = MySQL.single.await('SELECT owner_gang_id, heat, sales_count, total_profit FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { tostring(turfId) })
+    local turf = MySQL.single.await('SELECT owner_gang_id, sales_count, total_profit FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { tostring(turfId) })
     if not turf or tonumber(turf.owner_gang_id) ~= tonumber(gang.gang_id) then
         return cb({ ok = false, reason = 'Šis turf nepriklauso tavo gaujai.' })
     end
@@ -413,13 +435,12 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:tryDrugSale', function(sr
     local price = math.floor((chosen.base or 100) * (1.0 + ((tonumber(gang.reputation) or 0) * (Config.DrugSell.reputationPriceFactor or 0.005))))
     Player.Functions.AddMoney('cash', price, 'gang-turf-sale')
 
-    local heat = math.min(Config.DrugSell.maxHeat or 100, (tonumber(turf.heat) or 0) + math.random(2, 7))
     local salesCount = (tonumber(turf.sales_count) or 0) + 1
     local totalProfit = (tonumber(turf.total_profit) or 0) + price
-    MySQL.update.await('UPDATE fivempro_gang_turfs SET heat = ?, sales_count = ?, total_profit = ? WHERE turf_id = ?', {
-        heat, salesCount, totalProfit, tostring(turfId)
+    MySQL.update.await('UPDATE fivempro_gang_turfs SET sales_count = ?, total_profit = ? WHERE turf_id = ?', {
+        salesCount, totalProfit, tostring(turfId)
     })
-    MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + 1, heat = LEAST(100, heat + 1) WHERE id = ?', { gang.gang_id })
+    MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + 1 WHERE id = ?', { gang.gang_id })
 
     local infGain = tonumber(Config.TurfInfluence and Config.TurfInfluence.drugSaleInfluence) or 2
     if infGain > 0 then
@@ -429,7 +450,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:tryDrugSale', function(sr
         gang.gang_id, tostring(turfId), chosen.item, 1, price
     })
 
-    local alertChance = (Config.DrugSell.policeAlertBase or 12) + math.floor(heat * (Config.DrugSell.policeAlertHeatFactor or 0.35))
+    local alertChance = (Config.DrugSell.policeAlertBase or 14) + math.min(18, math.floor(salesCount / 3))
     local alertPolice = math.random(1, 100) <= alertChance
     cb({ ok = true, item = chosen.item, price = price, alertPolice = alertPolice })
 end)
@@ -441,11 +462,11 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getAdminSnapshot', functi
     cb({ ok = true, gangs = gangs, turfs = turfs })
 end)
 
-RegisterNetEvent('fivempro_gangs:server:adminSetGangStats', function(gangId, reputation, heat)
+RegisterNetEvent('fivempro_gangs:server:adminSetGangStats', function(gangId, reputation)
     local src = source
     if not hasGangAdminPermission(src) then return end
-    MySQL.update.await('UPDATE fivempro_gangs SET reputation = ?, heat = ? WHERE id = ?', {
-        tonumber(reputation) or 0, tonumber(heat) or 0, tonumber(gangId)
+    MySQL.update.await('UPDATE fivempro_gangs SET reputation = ? WHERE id = ?', {
+        tonumber(reputation) or 0, tonumber(gangId)
     })
     TriggerClientEvent('QBCore:Notify', src, 'Gaujos statistika atnaujinta.', 'success')
 end)

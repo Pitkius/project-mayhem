@@ -1,0 +1,71 @@
+#fp-lt-keyboard {
+    position: fixed;
+    left: 50%;
+    bottom: 2.5vh;
+    transform: translateX(-50%);
+    z-index: 999999;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px 12px;
+    background: rgba(12, 14, 24, 0.94);
+    border: 1px solid rgba(167, 139, 250, 0.35);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    font-family: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
+    user-select: none;
+    max-width: min(92vw, 720px);
+}
+
+#fp-lt-keyboard.is-open {
+    display: flex;
+}
+
+#fp-lt-keyboard .fp-lt-row {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: nowrap;
+}
+
+#fp-lt-keyboard .fp-lt-key {
+    min-width: 34px;
+    height: 38px;
+    padding: 0 8px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(35, 44, 64, 0.95);
+    color: #e5e7eb;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1;
+}
+
+#fp-lt-keyboard .fp-lt-key:hover {
+    background: #a78bfa;
+    color: #1c1533;
+}
+
+#fp-lt-keyboard .fp-lt-key.fp-lt-wide {
+    min-width: 72px;
+}
+
+#fp-lt-keyboard .fp-lt-key.fp-lt-space {
+    min-width: 180px;
+    flex: 1;
+}
+
+#fp-lt-keyboard .fp-lt-key.fp-lt-special {
+    background: rgba(59, 47, 95, 0.95);
+    color: #c4b5fd;
+}
+
+#fp-lt-keyboard .fp-lt-label {
+    text-align: center;
+    font-size: 11px;
+    color: rgba(229, 231, 235, 0.55);
+    margin-bottom: 2px;
+    letter-spacing: 0.04em;
+}

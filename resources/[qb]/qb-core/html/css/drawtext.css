@@ -1,6 +1,6 @@
 :root {
     /* Typography */
-    --font-primary: "Exo 2", sans-serif;
+    --font-primary: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
     --font-weight-regular: 400;
     --font-weight-medium: 500;
     --font-weight-bold: 700;

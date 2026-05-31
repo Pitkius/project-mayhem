@@ -133,7 +133,7 @@ function renderPalette(palette, usage) {
 function mergeTabletMap(res) {
   if (!res || !res.ok) return res;
   if (!res.tabletMap && lastState && lastState.tabletMap) res.tabletMap = lastState.tabletMap;
-  if (!res.factionColors && lastState && lastState.factionColors) res.factionColors = lastState.factionColors;
+  if (!res.gangColors && lastState && lastState.gangColors) res.gangColors = lastState.gangColors;
   return res;
 }
 
@@ -162,7 +162,7 @@ function renderMissionsTab(state) {
   if (claimThresholdLbl) claimThresholdLbl.textContent = String(state.claimThreshold || 100);
   const stats = document.getElementById("gangMissionStats");
   if (stats && state.gang) {
-    stats.textContent = `Rep: ${state.gang.reputation || 0} · Heat: ${state.gang.heat || 0} · Tipas: ${state.gang.gang_type || "—"}`;
+    stats.textContent = `Rep: ${state.gang.reputation || 0} · Tipas: ${state.gang.gang_type || "—"}`;
   }
   if (tabMissions) tabMissions.style.display = state.hasGang ? "" : "none";
 }
@@ -173,7 +173,7 @@ function updateGangTabContent(state) {
     gangPanelEmpty.classList.add("hidden");
     gangPanelContent.classList.remove("hidden");
     gangTitle.textContent = `${state.gang.name} (${state.gang.gang_type})`;
-    gangMeta.textContent = `Rep: ${state.gang.reputation || 0} · Heat: ${state.gang.heat || 0} · ${state.gang.color_hex || "-"} / ${state.gang.secondary_color_hex || "-"}`;
+    gangMeta.textContent = `Rep: ${state.gang.reputation || 0} · ${state.gang.color_hex || "-"} / ${state.gang.secondary_color_hex || "-"}`;
     const rows = state.members || [];
     memberListEl.innerHTML = rows.length
       ? rows
@@ -205,14 +205,10 @@ function activateTab(tab) {
     el.classList.toggle("hidden", k !== tab);
   });
 
-  const bezel = document.querySelector(".tablet-bezel");
-  if (bezel) {
-    bezel.classList.toggle("tablet-map-mode", tab === "map");
-    if (tab !== "map") bezel.classList.remove("tablet-map-fullscreen");
-  }
   const mapPanel = document.getElementById("tabPanelMap");
   if (mapPanel && tab !== "map") {
     mapPanel.classList.remove("map-fullscreen", "footer-visible");
+    document.querySelector(".tablet-bezel")?.classList.remove("tablet-map-fullscreen");
   }
 
   if (tab === "map") {

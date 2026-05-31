@@ -14,6 +14,7 @@ files {
     'html/app.js',
     'html/map.js',
     'html/asset/gtav_satellite.jpg',
+    'html/asset/gtav_satellite_2048.png',
     'html/vendor/leaflet.css',
     'html/vendor/leaflet.js',
     'html/vendor/images/marker-icon.png',

@@ -802,13 +802,20 @@ local function dynDoorCfgForStation(stationId)
     for _, d in ipairs(Config.EmsDoorDynamics or {}) do
         if d.stationId == stationId then return d end
     end
+    for _, d in ipairs(Config.RangerDoorDynamics or {}) do
+        if d.stationId == stationId then return d end
+    end
 end
 
 local function doorGroupService(groupId)
     if type(groupId) ~= 'string' then return 'police' end
     if groupId:sub(1, 8) == 'dyn_ems_' then return 'ems' end
+    if groupId:sub(1, 11) == 'dyn_ranger_' then return 'ranger' end
     for _, g in ipairs(Config.EmsDoorGroups or {}) do
         if g.id == groupId then return 'ems' end
+    end
+    for _, g in ipairs(Config.RangerDoorGroups or {}) do
+        if g.id == groupId then return 'ranger' end
     end
     return 'police'
 end
@@ -821,6 +828,13 @@ local function canUseServiceDoors(src, groupId)
         local j = Player.PlayerData.job
         if not j or j.onduty ~= true then return false end
         return j.name == (Config.EmsDoorJob or 'ambulance')
+    end
+    if svc == 'ranger' then
+        local Player = QBCore.Functions.GetPlayer(src)
+        if not Player then return false end
+        local j = Player.PlayerData.job
+        if not j or j.onduty ~= true then return false end
+        return j.name == (Config.RangerDoorJob or 'ranger')
     end
     return hasPerm(src, 'pd_doors')
 end
@@ -876,6 +890,7 @@ local function initManualPdDoors()
     end
     registerGroupList(Config.PdDoorGroups)
     registerGroupList(Config.EmsDoorGroups)
+    registerGroupList(Config.RangerDoorGroups)
 end
 
 AddEventHandler('onResourceStart', function(res)

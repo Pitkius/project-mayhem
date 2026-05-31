@@ -46,6 +46,14 @@ local function rebuildManualPdSlabSkip()
             }
         end
     end
+    for _, def in ipairs(Config.RangerDoorGroups or {}) do
+        for _, d in ipairs(def.doors or {}) do
+            manualPdSlabSkip[#manualPdSlabSkip + 1] = {
+                m = joaat(d.model),
+                c = d.coords,
+            }
+        end
+    end
 end
 
 local function isManualPdDoorSlab(modelHash, coords)
@@ -125,6 +133,9 @@ local function allDoorDynamics()
     for _, d in ipairs(Config.EmsDoorDynamics or {}) do
         out[#out + 1] = d
     end
+    for _, d in ipairs(Config.RangerDoorDynamics or {}) do
+        out[#out + 1] = d
+    end
     return out
 end
 
@@ -132,11 +143,19 @@ local function isEmsJobName(name)
     return name == (Config.EmsDoorJob or 'ambulance')
 end
 
+local function isRangerJobName(name)
+    return name == (Config.RangerDoorJob or 'ranger')
+end
+
 local function doorGroupService(groupId)
     if type(groupId) ~= 'string' then return 'police' end
     if groupId:sub(1, 8) == 'dyn_ems_' then return 'ems' end
+    if groupId:sub(1, 11) == 'dyn_ranger_' then return 'ranger' end
     for _, def in ipairs(Config.EmsDoorGroups or {}) do
         if def.id == groupId then return 'ems' end
+    end
+    for _, def in ipairs(Config.RangerDoorGroups or {}) do
+        if def.id == groupId then return 'ranger' end
     end
     return 'police'
 end
@@ -146,13 +165,14 @@ local function canUseDoorGroupClient(groupId)
     if not P or not P.job or not P.job.onduty then return false end
     local svc = doorGroupService(groupId)
     if svc == 'ems' then return isEmsJobName(P.job.name) end
+    if svc == 'ranger' then return isRangerJobName(P.job.name) end
     return isPdJobName(P.job.name)
 end
 
 local function canUseServiceDoorsClient()
     local P = QBCore.Functions.GetPlayerData()
     if not P or not P.job or not P.job.onduty then return false end
-    return isPdJobName(P.job.name) or isEmsJobName(P.job.name)
+    return isPdJobName(P.job.name) or isEmsJobName(P.job.name) or isRangerJobName(P.job.name)
 end
 
 local function quantKey(x, y, z)
@@ -569,6 +589,9 @@ local function buildManualGroups()
         buildManualGroupDef(def)
     end
     for _, def in ipairs(Config.EmsDoorGroups or {}) do
+        buildManualGroupDef(def)
+    end
+    for _, def in ipairs(Config.RangerDoorGroups or {}) do
         buildManualGroupDef(def)
     end
     rebuildManualPdSlabSkip()

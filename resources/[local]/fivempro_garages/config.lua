@@ -37,6 +37,7 @@ Config.Garages = {
     { id = 'ems_sandy', label = 'EMS garažas (Sandy)', coords = vector3(1843.5, 3663.8, 33.85), heading = 210.0, spawn = vector4(1843.5, 3663.8, 33.85, 210.0), emsOnly = true, hideBlip = true },
     { id = 'ems_paleto', label = 'EMS garažas (Paleto)', coords = vector3(-254.0, 6347.0, 32.50), heading = 135.0, spawn = vector4(-254.0, 6347.0, 32.50, 135.0), emsOnly = true, hideBlip = true },
     { id = 'taxi_ls', label = 'Taksi garažas', coords = vector3(902.12, -172.41, 74.08), heading = 56.0, spawn = vector4(908.42, -168.95, 74.12, 146.0), taxiOnly = true, hideBlip = true },
+    { id = 'ranger_main', label = 'Gamtos apsaugos garažas', coords = vector3(371.33, 791.31, 187.47), heading = 261.0, spawn = vector4(371.33, 791.31, 187.47, 261.0), rangerOnly = true, hideBlip = true },
 }
 
 --- Tik šie modeliai rodomi / priimami PD garažuose (`pd_*`).
@@ -59,6 +60,14 @@ Config.EmsVehicleModels = {
 Config.TaxiVehicleModels = {
     taxi = true,
     cabby = true,
+}
+
+Config.RangerVehicleModels = {
+    pranger = true,
+    ripley = true,
+    blazer = true,
+    granger = true,
+    maverick = true,
 }
 
 Config.TargetDistance = 2.2

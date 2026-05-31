@@ -117,18 +117,14 @@ function AddTurfInfluence(src, turfId, taskType, opts)
         turfCooldown[tKey] = now + (cap.turfCooldownSec or 300)
     end
 
-    local heatAdd = tonumber(opts.heatAdd) or math.floor(reward / 4)
-    local newHeat = math.min(100, (tonumber(turf.heat) or 0) + heatAdd)
-
     MySQL.update.await([[
         UPDATE fivempro_gang_turfs
-        SET influence = ?, progress = ?, owner_gang_id = ?, owner_name = ?, heat = ?
+        SET influence = ?, progress = ?, owner_gang_id = ?, owner_name = ?
         WHERE turf_id = ?
-    ]], { influence, influence, ownerGangId, ownerName, newHeat, tostring(turfId) })
+    ]], { influence, influence, ownerGangId, ownerName, tostring(turfId) })
 
-    MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + ?, heat = LEAST(100, heat + ?) WHERE id = ?', {
+    MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + ? WHERE id = ?', {
         math.max(1, math.floor(reward / 2)),
-        math.floor(reward / 10),
         gang.gang_id,
     })
 
@@ -159,8 +155,8 @@ function CompleteGangMission(src, missionType, opts)
 
     local rep = tonumber(mCfg.reputationReward) or tonumber(mCfg.progress) or (Config.TaskReputation and Config.TaskReputation[missionType]) or 8
     local money = tonumber(mCfg.moneyReward) or 0
-    MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + ?, heat = LEAST(100, heat + ?) WHERE id = ?', {
-        rep, math.max(1, math.floor(rep / 8)), gang.gang_id,
+    MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + ? WHERE id = ?', {
+        rep, gang.gang_id,
     })
     local Player = QBCore.Functions.GetPlayer(src)
     if Player and money > 0 then
@@ -314,21 +310,6 @@ end)
 exports('OnHackFailed', function(src, tierId, coords)
     local gang = getPlayerGang(src)
     if not gang then return end
-    local heat = Config.HackFailHeat or 5
-    MySQL.update.await('UPDATE fivempro_gangs SET heat = LEAST(100, heat + ?) WHERE id = ?', { heat, gang.gang_id })
-
-    local turfId = nil
-    local ped = GetPlayerPed(src)
-    if ped and ped ~= 0 then
-        local p = GetEntityCoords(ped)
-        turfId = Config.FindTurfAt(p.x, p.y)
-    end
-    if turfId then
-        local turf = MySQL.single.await('SELECT heat FROM fivempro_gang_turfs WHERE turf_id = ? LIMIT 1', { turfId })
-        if turf and canCaptureTurf(gang, turf) then
-            MySQL.update.await('UPDATE fivempro_gang_turfs SET heat = LEAST(100, heat + ?) WHERE turf_id = ?', { heat * 2, turfId })
-        end
-    end
     pendingHackMission[src] = nil
     activeMissions[src] = nil
 end)

@@ -13,6 +13,7 @@ shared_scripts {
     'config.lua',
     'config_surveillance.lua',
     'config_ems_doors.lua',
+    'config_ranger_doors.lua',
 }
 
 client_scripts {

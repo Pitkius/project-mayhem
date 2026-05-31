@@ -82,6 +82,7 @@ local function getFleetSubConfig()
     if uiFleetMode == 'mechanic' then return Config.MechanicDealership end
     if uiFleetMode == 'ems' then return Config.EmsDealership end
     if uiFleetMode == 'taxi' then return Config.TaxiDealership end
+    if uiFleetMode == 'ranger' then return Config.RangerDealership end
     return nil
 end
 
@@ -374,6 +375,10 @@ RegisterNetEvent('fivempro_dealership:client:openTaxiDealership', function(stati
     openFleetDealershipUi('taxi', stationId or 'taxi_ls', 'fivempro_dealership:server:getTaxiCatalog')
 end)
 
+RegisterNetEvent('fivempro_dealership:client:openRangerDealership', function(stationId)
+    openFleetDealershipUi('ranger', stationId or 'ranger_main', 'fivempro_dealership:server:getRangerCatalog')
+end)
+
 local function buySelectedVehicle(model)
     if not model or model == '' then return end
     if uiFleetMode == 'police' then
@@ -466,6 +471,30 @@ local function buySelectedVehicle(model)
                 TriggerEvent('vehiclekeys:client:SetOwner', result.plate)
                 TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
                 QBCore.Functions.Notify(('Taksi transportas. Numeriai: %s'):format(result.plate), 'success')
+            else
+                QBCore.Functions.Notify('Įrašyta į garažą, bet spawn nepavyko.', 'primary')
+            end
+        end, model, activeFleetStationId)
+        return
+    end
+    if uiFleetMode == 'ranger' then
+        QBCore.Functions.TriggerCallback('fivempro_dealership:server:buyRangerVehicle', function(result)
+            if not result or not result.ok then
+                return QBCore.Functions.Notify((result and result.message) or 'Pirkimas nepavyko', 'error')
+            end
+            closeDealershipUi()
+            local spawn = result.spawn or {}
+            local modelHash = joaat(result.model)
+            RequestModel(modelHash)
+            while not HasModelLoaded(modelHash) do Wait(0) end
+            local veh = CreateVehicle(modelHash, spawn.x or 0.0, spawn.y or 0.0, spawn.z or 0.0, spawn.w or 0.0, true, false)
+            if veh and veh ~= 0 then
+                SetVehicleNumberPlateText(veh, result.plate)
+                SetVehicleEngineOn(veh, true, true, false)
+                SetEntityAsMissionEntity(veh, true, true)
+                TriggerEvent('vehiclekeys:client:SetOwner', result.plate)
+                TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
+                QBCore.Functions.Notify(('Gamtos apsaugos transportas. Numeriai: %s'):format(result.plate), 'success')
             else
                 QBCore.Functions.Notify('Įrašyta į garažą, bet spawn nepavyko.', 'primary')
             end

@@ -41,14 +41,14 @@ window.GangMap = (function () {
 
   function normalizeMapConfig(payload) {
     const t = (payload && payload.tabletMap) || payload || {};
-    const file = t.imageFile || "asset/gtav_satellite.jpg";
+    const file = t.imageFile || "asset/gtav_satellite_2048.png";
     return {
       minX: Number(t.gameMin?.x ?? -4000),
       minY: Number(t.gameMin?.y ?? -4000),
       maxX: Number(t.gameMax?.x ?? 4500),
       maxY: Number(t.gameMax?.y ?? 6625),
-      imgW: Number(t.imageWidth) || 1024,
-      imgH: Number(t.imageHeight) || 1280,
+      imgW: Number(t.imageWidth) || 2048,
+      imgH: Number(t.imageHeight) || 2048,
       imageUrl: nuiImageUrl(file),
     };
   }
@@ -59,11 +59,11 @@ window.GangMap = (function () {
     return { x, y };
   }
 
-  function gameBoundsToLeaflet(turf, cfg) {
-    const minX = Number(turf.min_x);
-    const minY = Number(turf.min_y);
-    const maxX = Number(turf.max_x);
-    const maxY = Number(turf.max_y);
+  function gameBoundsToLeaflet(turf, cfg, padRatio) {
+    let minX = Number(turf.min_x);
+    let minY = Number(turf.min_y);
+    let maxX = Number(turf.max_x);
+    let maxY = Number(turf.max_y);
     if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
       const cx = Number(turf.center_x) || 0;
       const cy = Number(turf.center_y) || 0;
@@ -75,12 +75,34 @@ window.GangMap = (function () {
         [p2.y, p2.x],
       ];
     }
+    if (padRatio && padRatio > 0) {
+      const w = maxX - minX;
+      const h = maxY - minY;
+      const px = w * padRatio;
+      const py = h * padRatio;
+      minX -= px;
+      minY -= py;
+      maxX += px;
+      maxY += py;
+    }
     const sw = gameToMap(minX, minY, cfg);
     const ne = gameToMap(maxX, maxY, cfg);
     return [
       [sw.y, sw.x],
       [ne.y, ne.x],
     ];
+  }
+
+  function turfArea(turf) {
+    const minX = Number(turf.min_x);
+    const minY = Number(turf.min_y);
+    const maxX = Number(turf.max_x);
+    const maxY = Number(turf.max_y);
+    if (!Number.isFinite(minX)) {
+      const r = Number(turf.radius) || 80;
+      return r * r * 4;
+    }
+    return Math.max(1, (maxX - minX) * (maxY - minY));
   }
 
   function turfBaseKind(turf) {
@@ -185,7 +207,6 @@ window.GangMap = (function () {
     const el = ensureTooltip();
     const owner = turf.owner_display || turf.owner_name || "Neutralu";
     const inf = Math.max(0, Math.min(100, Number(turf.influence ?? turf.progress ?? 0)));
-    const heat = Number(turf.heat || 0);
     const graffiti = turf.graffiti_pct != null ? turf.graffiti_pct : Math.min(100, Math.floor(inf / 5));
     const sales = Number(turf.sales_count || 0);
     const members = Number(turf.active_members || 0);
@@ -194,7 +215,6 @@ window.GangMap = (function () {
       <span class="tt-line"><em>Rajonas</em> ${turf.district || turf.turf_label || "—"}</span>
       <span class="tt-line"><em>Savininkas</em> <b style="color:${turf.map_color || NEUTRAL_COLOR}">${owner}</b></span>
       <span class="tt-line"><em>Kontrolė</em> ${inf}%</span>
-      <span class="tt-line"><em>Heat</em> ${heat}%</span>
       <span class="tt-line"><em>Grafiti</em> ${graffiti}%</span>
       <span class="tt-line"><em>Nark. pardavimai</em> ${sales}</span>
       <span class="tt-line"><em>Aktyvūs nariai</em> ${members}</span>
@@ -217,18 +237,24 @@ window.GangMap = (function () {
       statsEl.innerHTML = state.hasGang
         ? `
         <li><span>Reputacija</span><strong>${Number(gang.reputation || 0).toLocaleString()}</strong></li>
-        <li><span>Turfai</span><strong>${owned}</strong></li>
+        <li><span>Turtai</span><strong>${owned}</strong></li>
         <li><span>Nariai</span><strong>${members}</strong></li>
-        <li><span>Heat</span><strong>${Number(gang.heat || 0)}%</strong></li>
       `
         : `<li class="muted">Sukurk gaują skiltyje Registracija</li>`;
     }
 
     const legend = document.getElementById("gangLegend");
     if (legend) {
-      legend.innerHTML = (state.factionColors || [])
-        .map((f) => `<li><span class="dot" style="background:${f.color}"></span>${f.label}</li>`)
+      const colors = state.gangColors || [];
+      const swatches = colors
+        .map((g) => {
+          const hex = g.color_hex || g.color || "#64748B";
+          return `<li class="legend-swatch-only" title="${hex}"><span class="dot" style="background:${hex}"></span></li>`;
+        })
         .join("");
+      legend.innerHTML =
+        swatches +
+        `<li class="legend-swatch-only legend-neutral" title="Neutralu"><span class="dot dot-free"></span></li>`;
     }
 
     const topList = document.getElementById("topGangsList");
@@ -270,7 +296,6 @@ window.GangMap = (function () {
     const cellNum = turf.cell_num || turf.turf_id;
     const owner = turf.owner_display || turf.owner_name || "Neutralu";
     const inf = Math.max(0, Math.min(100, Number(turf.influence ?? turf.progress ?? 0)));
-    const heat = Number(turf.heat || 0);
     const graffiti = turf.graffiti_pct != null ? turf.graffiti_pct : Math.min(100, Math.floor(inf / 5));
     const sales = Number(turf.sales_count || 0);
     const war = turf.is_war ? "Taip" : "Nėra";
@@ -282,7 +307,6 @@ window.GangMap = (function () {
       <div class="turf-row"><span>Kontrolė</span><strong>${inf}%</strong><div class="bar"><i style="width:${inf}%;background:${turf.map_color || "#a78bfa"}"></i></div></div>
       <div class="turf-row"><span>Grafiti</span><strong>${graffiti}%</strong></div>
       <div class="turf-row"><span>Narkotikų veikla</span><strong>${sales}</strong></div>
-      <div class="turf-row"><span>Heat</span><strong>${heat}%</strong><div class="bar bar-heat"><i style="width:${heat}%"></i></div></div>
       <div class="turf-row"><span>Aktyvūs konfliktai</span><strong class="${turf.is_war ? "warn-txt" : ""}">${war}</strong></div>
     `;
     if (btnGps) {
@@ -311,13 +335,19 @@ window.GangMap = (function () {
     layerById = {};
     const cfg = mapCfg;
 
-    (state.turfs || []).forEach((turf) => {
+    const turfs = (state.turfs || []).slice().sort((a, b) => turfArea(b) - turfArea(a));
+
+    turfs.forEach((turf) => {
       if (turf.min_x == null && turf.center_x == null) return;
-      const bounds = gameBoundsToLeaflet(turf, cfg);
+      const bounds = gameBoundsToLeaflet(turf, cfg, 0.08);
       const cellNum = turf.cell_num || turf.turf_id;
       turfById[turf.turf_id] = turf;
 
-      const rect = L.rectangle(bounds, buildLayerStyle(turf, "base"));
+      const rect = L.rectangle(bounds, {
+        ...buildLayerStyle(turf, "base"),
+        interactive: true,
+        bubblingMouseEvents: false,
+      });
       rect._turfId = turf.turf_id;
       rect._turfData = turf;
       layerById[turf.turf_id] = rect;
@@ -340,6 +370,9 @@ window.GangMap = (function () {
       rect.on("click", (e) => {
         L.DomEvent.stopPropagation(e);
         selectTurf(turf);
+      });
+      rect.on("mousedown", (e) => {
+        L.DomEvent.stopPropagation(e);
       });
 
       rect.addTo(turfLayer);
@@ -372,12 +405,24 @@ window.GangMap = (function () {
   function fitMapFill(padding) {
     if (!leafletMap || !mapCfg) return;
     const bounds = mapBoundsLatLng();
-    const pad = padding != null ? padding : 6;
+    const pad = padding != null ? padding : 2;
     leafletMap.fitBounds(bounds, { padding: [pad, pad], animate: false });
+    const z = leafletMap.getZoom();
+    const size = leafletMap.getSize();
+    const nw = leafletMap.latLngToContainerPoint(bounds.getNorthWest());
+    const se = leafletMap.latLngToContainerPoint(bounds.getSouthEast());
+    const bw = Math.abs(se.x - nw.x);
+    const bh = Math.abs(se.y - nw.y);
+    if (bw > 1 && bh > 1 && size.x > 0 && size.y > 0) {
+      const cover = Math.max(size.x / bw, size.y / bh);
+      if (cover > 1.06) {
+        leafletMap.setZoom(Math.min(z + Math.log2(cover * 0.98), z + 3.5));
+      }
+    }
     baseFitZoom = leafletMap.getZoom();
-    leafletMap.setMinZoom(baseFitZoom - 0.5);
-    leafletMap.setMaxZoom(baseFitZoom + 5);
-    leafletMap.setMaxBounds(bounds.pad(0.02));
+    leafletMap.setMinZoom(Math.max(-2, baseFitZoom - 0.75));
+    leafletMap.setMaxZoom(baseFitZoom + 6);
+    leafletMap.setMaxBounds(bounds.pad(0.03));
   }
 
   function ensureMap(state) {
@@ -398,7 +443,7 @@ window.GangMap = (function () {
         wheelPxPerZoomLevel: 70,
         zoomControl: false,
         attributionControl: false,
-        preferCanvas: true,
+        preferCanvas: false,
         dragging: true,
         scrollWheelZoom: true,
         doubleClickZoom: true,

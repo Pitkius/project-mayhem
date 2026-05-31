@@ -25,12 +25,19 @@ local function isTaxiOnDuty()
     return P.job.name == 'taxi'
 end
 
+local function isRangerOnDuty()
+    local P = QBCore.Functions.GetPlayerData()
+    if not P or not P.job or not P.job.onduty then return false end
+    return P.job.name == 'ranger'
+end
+
 local function canUseGarageEntry(garage)
     if not garage then return true end
     if garage.policeOnly then return isPoliceOfficerOnDuty() end
     if garage.mechanicOnly then return isMechanicOnDuty() end
     if garage.emsOnly then return isEmsOnDuty() end
     if garage.taxiOnly then return isTaxiOnDuty() end
+    if garage.rangerOnly then return isRangerOnDuty() end
     return true
 end
 
@@ -591,7 +598,7 @@ CreateThread(function()
 
             for _, garage in ipairs(Config.Garages or {}) do
                 -- Darbo garažai: tik qb-target iš darbo resursų, be žemės [E].
-                if not garage.policeOnly and not garage.mechanicOnly and not garage.emsOnly and not garage.taxiOnly then
+                if not garage.policeOnly and not garage.mechanicOnly and not garage.emsOnly and not garage.taxiOnly and not garage.rangerOnly then
                     local spawn = garage.spawn
                     local desk = garage.coords
                     if spawn and desk then
@@ -651,7 +658,7 @@ CreateThread(function()
     createGarageMapBlips()
 
     for _, garage in ipairs(Config.Garages) do
-        if not garage.policeOnly and not garage.mechanicOnly and not garage.emsOnly and not garage.taxiOnly then
+        if not garage.policeOnly and not garage.mechanicOnly and not garage.emsOnly and not garage.taxiOnly and not garage.rangerOnly then
             exports['qb-target']:AddBoxZone(('fivempro_garage_%s'):format(garage.id), garage.coords, 2.4, 2.4, {
                 name = ('fivempro_garage_%s'):format(garage.id),
                 heading = garage.heading,

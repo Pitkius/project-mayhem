@@ -19,9 +19,9 @@ local function loadModel(model)
     return HasModelLoaded(model)
 end
 
-local function spawnStationPed(key, coords, scenario)
+local function spawnStationPed(key, coords, model, scenario)
     if spawnedPeds[key] and DoesEntityExist(spawnedPeds[key]) then return end
-    local m = Config.RangerStation.pedModel
+    local m = model or Config.RangerStation.pedModel
     if not loadModel(m) then return end
     local ped = CreatePed(0, m, coords.x, coords.y, coords.z - 1.0, coords.w, false, false)
     SetEntityInvincible(ped, true)
@@ -218,42 +218,19 @@ RegisterNetEvent('fivempro_outdoors:client:sellOne', function(data)
     TriggerServerEvent('fivempro_outdoors:server:sellItem', data.item, 1)
 end)
 
---- Gamtos parduotuvė
-local function openNatureShop(category)
-    QBCore.Functions.TriggerCallback('fivempro_outdoors:server:hasLicense', function(has)
-        if not has then
-            notify('Pirmiausia gaukite licenciją ir išlaikykite testą.', 'error')
-            return
-        end
-        local shop = Config.NatureShop[category]
-        if not shop then return end
-        local menu = {
-            { header = category == 'fishing' and 'Žvejybos reikmenys' or 'Medžioklės reikmenys', isMenuHeader = true },
-        }
-        for i, entry in ipairs(shop.items) do
-            local it = QBCore.Shared.Items[entry.item]
-            local label = entry.label or (it and it.label) or entry.item
-            menu[#menu + 1] = {
-                header = label .. ' — $' .. entry.price,
-                txt = 'Kiekis: ' .. (entry.amount or 1),
-                params = {
-                    isAction = true,
-                    event = 'fivempro_outdoors:client:buyNature',
-                    args = { category = category, index = i },
-                },
-            }
-        end
-        exports['qb-menu']:openMenu(menu)
-    end, Config.NatureShop[category].license)
+--- Gamtos parduotuvė (qb-inventory UI)
+local function openFishingSupplyShop()
+    TriggerServerEvent('fivempro_outdoors:server:openFishingShop')
 end
 
-RegisterNetEvent('fivempro_outdoors:client:buyNature', function(data)
-    TriggerServerEvent('fivempro_outdoors:server:buyNatureItem', data.category, data.index)
-end)
+local function openHuntingSupplyShop()
+    TriggerServerEvent('fivempro_outdoors:server:openHuntingShop')
+end
 
 --- Target / NPC setup
 CreateThread(function()
     local st = Config.RangerStation
+    local shopLoc = Config.NatureShopLocation
     local b = Config.Blips.ranger
     local blip = AddBlipForCoord(st.coords.x, st.coords.y, st.coords.z)
     SetBlipSprite(blip, b.sprite)
@@ -263,6 +240,18 @@ CreateThread(function()
     BeginTextCommandSetBlipName('STRING')
     AddTextComponentString(b.label)
     EndTextCommandSetBlipName(blip)
+
+    if shopLoc and shopLoc.blip then
+        local sb = shopLoc.blip
+        local shopBlip = AddBlipForCoord(shopLoc.coords.x, shopLoc.coords.y, shopLoc.coords.z)
+        SetBlipSprite(shopBlip, sb.sprite)
+        SetBlipColour(shopBlip, sb.colour)
+        SetBlipScale(shopBlip, sb.scale)
+        SetBlipAsShortRange(shopBlip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString(sb.label)
+        EndTextCommandSetBlipName(shopBlip)
+    end
 
     for _, z in ipairs(Config.FishingZones) do
         local fb = Config.Blips.fishing
@@ -292,9 +281,11 @@ CreateThread(function()
         local ped = PlayerPedId()
         local pcoords = GetEntityCoords(ped)
         if #(pcoords - vector3(st.coords.x, st.coords.y, st.coords.z)) < 80.0 then
-            spawnStationPed('license', st.licenseNpc, 'WORLD_HUMAN_CLIPBOARD')
-            spawnStationPed('shop', st.shopNpc, 'WORLD_HUMAN_STAND_IMPATIENT')
-            spawnStationPed('buyer', st.buyerNpc, 'WORLD_HUMAN_STAND_IMPATIENT')
+            spawnStationPed('license', st.licenseNpc, st.pedModel, 'WORLD_HUMAN_CLIPBOARD')
+            spawnStationPed('buyer', st.buyerNpc, st.pedModel, 'WORLD_HUMAN_STAND_IMPATIENT')
+        end
+        if shopLoc and #(pcoords - vector3(shopLoc.coords.x, shopLoc.coords.y, shopLoc.coords.z)) < 80.0 then
+            spawnStationPed('shop', shopLoc.coords, shopLoc.pedModel, 'WORLD_HUMAN_STAND_FISHING')
         end
         Wait(2000)
     end
@@ -303,6 +294,7 @@ end)
 CreateThread(function()
     Wait(1500)
     local st = Config.RangerStation
+    local shopLoc = Config.NatureShopLocation
 
     exports['qb-target']:AddBoxZone('outdoors_license', vector3(st.licenseNpc.x, st.licenseNpc.y, st.licenseNpc.z), 1.2, 1.2, {
         name = 'outdoors_license', heading = st.licenseNpc.w, minZ = st.licenseNpc.z - 1, maxZ = st.licenseNpc.z + 1.5, debugPoly = false,
@@ -322,14 +314,14 @@ CreateThread(function()
         distance = 2.0,
     })
 
-    exports['qb-target']:AddBoxZone('outdoors_shop_fish', vector3(st.shopNpc.x - 0.5, st.shopNpc.y, st.shopNpc.z), 1.5, 1.0, {
-        name = 'outdoors_shop_fish', heading = st.shopNpc.w, minZ = st.shopNpc.z - 1, maxZ = st.shopNpc.z + 1.5, debugPoly = false,
+    exports['qb-target']:AddBoxZone('outdoors_shop_fish', vector3(shopLoc.coords.x, shopLoc.coords.y, shopLoc.coords.z), 1.6, 1.6, {
+        name = 'outdoors_shop_fish', heading = shopLoc.coords.w, minZ = shopLoc.coords.z - 1, maxZ = shopLoc.coords.z + 1.5, debugPoly = false,
     }, {
         options = {
-            { icon = 'fas fa-fish', label = 'Žvejybos reikmenys', action = function() openNatureShop('fishing') end },
-            { icon = 'fas fa-crosshairs', label = 'Medžioklės reikmenys', action = function() openNatureShop('hunting') end },
+            { icon = 'fas fa-fish', label = 'Žvejybos reikmenys', action = openFishingSupplyShop },
+            { icon = 'fas fa-crosshairs', label = 'Medžioklės reikmenys', action = openHuntingSupplyShop },
         },
-        distance = 2.0,
+        distance = 2.5,
     })
 
     exports['qb-target']:AddBoxZone('outdoors_buyer', vector3(st.buyerNpc.x, st.buyerNpc.y, st.buyerNpc.z), 1.2, 1.2, {

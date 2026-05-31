@@ -2,7 +2,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local function registerJobShops()
     if GetResourceState('qb-inventory') ~= 'started' then return end
-    for _, cfg in ipairs({ Config.PoliceSupplyShop, Config.EmsSupplyShop }) do
+    for _, cfg in ipairs({ Config.PoliceSupplyShop, Config.EmsSupplyShop, Config.RangerSupplyShop }) do
         if cfg and cfg.name and cfg.items then
             exports['qb-inventory']:CreateShop({
                 name = cfg.name,
@@ -55,7 +55,14 @@ RegisterNetEvent('fivempro_npcshops:server:openJobSupply', function(jobName, sta
     if not entry or not nearNpc(src, entry.coords) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo NPC.', 'error')
     end
-    local shop = jobName == 'police' and Config.PoliceSupplyShop or Config.EmsSupplyShop
+    local shop
+    if jobName == 'police' then
+        shop = Config.PoliceSupplyShop
+    elseif jobName == 'ambulance' then
+        shop = Config.EmsSupplyShop
+    elseif jobName == 'ranger' then
+        shop = Config.RangerSupplyShop
+    end
     if not shop then return end
     registerJobShops()
     exports['qb-inventory']:OpenShop(src, shop.name)
@@ -70,13 +77,31 @@ RegisterNetEvent('fivempro_npcshops:server:validateJobNpc', function(jobName, st
     if not entry then
         return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'NPC nerastas.')
     end
-    if role ~= 'duty' and not playerJobOk(src, jobName) then
+    if role ~= 'duty' and role ~= 'boss' and role ~= 'locker' and not playerJobOk(src, jobName) then
         return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik tarnyboje.')
+    end
+    if role == 'boss' then
+        local P = QBCore.Functions.GetPlayer(src)
+        if not P or P.PlayerData.job.name ~= jobName then
+            return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik gamtosaugininkams.')
+        end
+        if not P.PlayerData.job.isboss and (tonumber(P.PlayerData.job.grade.level) or 0) < 3 then
+            return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik vadovui.')
+        end
+        if not P.PlayerData.job.onduty then
+            return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik tarnyboje.')
+        end
     end
     if jobName == 'ambulance' and role == 'duty' then
         local P = QBCore.Functions.GetPlayer(src)
         if not P or P.PlayerData.job.name ~= 'ambulance' then
             return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik EMS darbuotojams.')
+        end
+    end
+    if role == 'locker' and jobName == 'ranger' then
+        local P = QBCore.Functions.GetPlayer(src)
+        if not P or P.PlayerData.job.name ~= 'ranger' then
+            return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik gamtosaugininkams.')
         end
     end
     if not nearNpc(src, entry.coords) then

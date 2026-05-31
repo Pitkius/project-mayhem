@@ -1,0 +1,41 @@
+/* Noto Sans — pilnas lietuviškų raidžių (ą č ę ė į š ų ū ž) palaikymas, be Google CDN */
+@font-face {
+    font-family: "Noto Sans LT";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("nui://fivempro_fonts/html/fonts/NotoSans-Regular.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Noto Sans LT";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("nui://fivempro_fonts/html/fonts/NotoSans-Medium.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "Noto Sans LT";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("nui://fivempro_fonts/html/fonts/NotoSans-Bold.ttf") format("truetype");
+}
+
+:root {
+    --font-lt: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
+}
+
+html,
+body,
+* {
+    font-family: var(--font-lt);
+}
+
+input,
+textarea,
+button,
+select {
+    font-family: var(--font-lt);
+}

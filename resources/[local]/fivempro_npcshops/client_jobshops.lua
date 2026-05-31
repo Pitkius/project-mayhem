@@ -29,6 +29,20 @@ local function openGarageMenu(jobName, stationId)
             },
         }
         TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+    elseif jobName == 'ranger' then
+        if GetResourceState('qb-menu') ~= 'started' then return end
+        local menu = {
+            { header = 'Gamtos apsaugos transportas', isMenuHeader = true },
+            {
+                header = 'Garažas',
+                params = { event = 'fivempro_ranger:client:openGarage', args = { stationId = stationId } },
+            },
+            {
+                header = 'Transporto pirkimas',
+                params = { event = 'fivempro_ranger:client:openDealershipFleet', args = { stationId = stationId } },
+            },
+        }
+        TriggerEvent('qb-menu:client:openMenu', menu, false, true)
     end
 end
 
@@ -57,6 +71,8 @@ local function openStashMenu(jobName, stationId)
         TriggerEvent('qb-menu:client:openMenu', menu, false, true)
     elseif jobName == 'ambulance' then
         TriggerEvent('fivempro_ambulance:client:openStash', { stationId = stationId })
+    elseif jobName == 'ranger' then
+        TriggerEvent('fivempro_ranger:client:openPersonalStash')
     end
 end
 
@@ -72,14 +88,22 @@ RegisterNetEvent('fivempro_npcshops:client:jobNpcApproved', function(jobName, st
     elseif role == 'locker' then
         if jobName == 'police' then
             TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu')
+        elseif jobName == 'ranger' then
+            TriggerEvent('fivempro_ranger:client:openLocker')
         else
             TriggerEvent('fivempro_ambulance:client:openLocker', { stationId = stationId })
         end
     elseif role == 'stash' then
         openStashMenu(jobName, stationId)
+    elseif role == 'boss' then
+        if jobName == 'ranger' then
+            TriggerEvent('fivempro_ranger:client:bossOpenMenu')
+        end
     elseif role == 'duty' then
         if jobName == 'ambulance' then
             TriggerEvent('fivempro_ambulance:client:toggleDuty')
+        elseif jobName == 'ranger' then
+            TriggerEvent('fivempro_ranger:client:toggleDuty')
         end
     end
 end)

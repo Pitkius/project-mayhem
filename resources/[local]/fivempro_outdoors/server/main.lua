@@ -59,6 +59,54 @@ QBCore.Functions.CreateCallback('fivempro_outdoors:server:canTakeLicenseTest', f
     cb(true)
 end)
 
+local function registerNatureShops()
+    if GetResourceState('qb-inventory') ~= 'started' then return end
+    for _, cfg in ipairs({ Config.FishingShop, Config.HuntingShop }) do
+        if cfg and cfg.name and cfg.items then
+            exports['qb-inventory']:CreateShop({
+                name = cfg.name,
+                label = cfg.label,
+                slots = #cfg.items,
+                items = cfg.items,
+            })
+        end
+    end
+end
+
+CreateThread(function()
+    Wait(1000)
+    registerNatureShops()
+end)
+
+local function nearNatureShop(src)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local p = GetEntityCoords(ped)
+    local c = Config.NatureShopLocation.coords
+    return #(p - vector3(c.x, c.y, c.z)) <= 5.0
+end
+
+local function openLicensedShop(src, shopCfg)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    if not nearNatureShop(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo parduotuvės.', 'error')
+    end
+    if not hasLicense(Player, shopCfg.license) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Reikia licencijos — testą rasite Gamtos apsaugos stotyje.', 'error')
+    end
+    registerNatureShops()
+    exports['qb-inventory']:OpenShop(src, shopCfg.name)
+end
+
+RegisterNetEvent('fivempro_outdoors:server:openFishingShop', function()
+    openLicensedShop(source, Config.FishingShop)
+end)
+
+RegisterNetEvent('fivempro_outdoors:server:openHuntingShop', function()
+    openLicensedShop(source, Config.HuntingShop)
+end)
+
 RegisterNetEvent('fivempro_outdoors:server:submitLicenseTest', function(testType, score, total)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
@@ -77,32 +125,6 @@ RegisterNetEvent('fivempro_outdoors:server:submitLicenseTest', function(testType
     elseif testType == 'hunting' then
         issueLicense(src, 'hunting_license', 'Medžioklės licencija')
     end
-end)
-
-RegisterNetEvent('fivempro_outdoors:server:buyNatureItem', function(category, index)
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
-    local shop = Config.NatureShop[category]
-    if not shop then return end
-    if not hasLicense(Player, shop.license) then
-        TriggerClientEvent('QBCore:Notify', src, 'Reikia licencijos.', 'error')
-        return
-    end
-    local entry = shop.items[index]
-    if not entry then return end
-    local price = entry.price * (entry.amount or 1)
-    if Player.PlayerData.money.cash < price then
-        TriggerClientEvent('QBCore:Notify', src, 'Nepakanka pinigų.', 'error')
-        return
-    end
-    if not Player.Functions.AddItem(entry.item, entry.amount or 1) then
-        TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
-        return
-    end
-    Player.Functions.RemoveMoney('cash', price, 'nature-shop')
-    TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[entry.item], 'add')
-    TriggerClientEvent('QBCore:Notify', src, 'Nupirkta.', 'success')
 end)
 
 RegisterNetEvent('fivempro_outdoors:server:sellItem', function(itemName, amount)

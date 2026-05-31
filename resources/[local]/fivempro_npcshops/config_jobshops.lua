@@ -28,8 +28,26 @@ Config.EmsSupplyShop = {
     },
 }
 
+Config.RangerSupplyShop = {
+    name = 'fivempro_ranger_supply',
+    label = 'Gamtos apsaugos inventorius',
+    items = {
+        { name = 'radio', amount = 999, price = 0, slot = 1 },
+        { name = 'handcuffs', amount = 999, price = 0, slot = 2 },
+        { name = 'armor', amount = 999, price = 0, slot = 3 },
+        { name = 'bandage', amount = 999, price = 0, slot = 4 },
+        { name = 'weapon_stungun', amount = 50, price = 0, slot = 5 },
+        { name = 'weapon_nightstick', amount = 50, price = 0, slot = 6 },
+        { name = 'weapon_flashlight', amount = 50, price = 0, slot = 7 },
+        { name = 'weapon_pistol', amount = 25, price = 0, slot = 8 },
+        { name = 'pistol_ammo', amount = 999, price = 0, slot = 9 },
+        { name = 'binoculars', amount = 999, price = 0, slot = 10 },
+        { name = 'vehicle_key_copy', amount = 999, price = 0, slot = 11 },
+    },
+}
+
 --- NPC taškai prie PD / EMS MLO (supply, garažas, rūbinė, sandėlis)
---- role: supply | garage | locker | stash | duty (EMS/PD)
+--- role: supply | garage | locker | stash | duty | boss
 Config.JobStationNpcs = {
     --- LS MRPD (Gabz)
     { job = 'police', stationId = 'ls_main', role = 'supply', model = 's_m_y_cop_01', coords = vector4(451.2, -993.4, 30.69, 270.0), label = 'PD inventorius' },
@@ -75,6 +93,13 @@ Config.JobStationNpcs = {
     { job = 'ambulance', stationId = 'ems_paleto', role = 'garage', model = 's_m_m_paramedic_01', coords = vector4(-254.0, 6347.0, 32.50, 135.0), label = 'EMS garažas / transportas' },
     { job = 'ambulance', stationId = 'ems_paleto', role = 'locker', model = 's_f_y_scrubs_01', coords = vector4(-246.0, 6329.5, 32.43, 315.0), label = 'EMS rūbinė' },
     { job = 'ambulance', stationId = 'ems_paleto', role = 'stash', model = 's_m_m_doctor_01', coords = vector4(-248.5, 6332.5, 32.43, 315.0), label = 'EMS sandėlis' },
+
+    --- Gamtos apsauga (Gabz Park Ranger)
+    { job = 'ranger', stationId = 'ranger_main', role = 'boss', model = 's_m_y_ranger_01', coords = vector4(386.72, 798.67, 190.49, 187.29), label = 'Gamtos apsaugos vadovybė' },
+    { job = 'ranger', stationId = 'ranger_main', role = 'locker', model = 's_m_y_ranger_01', coords = vector4(387.64, 799.81, 187.46, 176.41), label = 'Gamtos apsaugos rūbinė' },
+    { job = 'ranger', stationId = 'ranger_main', role = 'garage', model = 's_m_y_ranger_01', coords = vector4(371.33, 791.31, 187.47, 261.00), label = 'Gamtos apsaugos garažas / salonas' },
+    { job = 'ranger', stationId = 'ranger_main', role = 'stash', model = 's_m_y_ranger_01', coords = vector4(385.39, 799.86, 190.49, 0.17), label = 'Gamtosaugininko daiktadėžė' },
+    { job = 'ranger', stationId = 'ranger_main', role = 'supply', model = 's_m_y_ranger_01', coords = vector4(383.23, 794.67, 190.49, 88.84), label = 'Gamtos apsaugos inventorius' },
 }
 
 Config.JobNpcReach = 3.5

@@ -1,13 +1,19 @@
 Config = {}
 
---- Gabz Park Ranger (gamtosininkai)
+--- Gabz Park Ranger — licencijos, supirkimas, gamtosaugininkų darbas
 Config.RangerStation = {
-    coords = vector4(387.32, 790.15, 187.69, 4.77),
-    licenseNpc = vector4(385.10, 792.40, 187.69, 185.0),
-    shopNpc = vector4(390.50, 788.20, 187.69, 90.0),
-    buyerNpc = vector4(383.80, 786.50, 187.69, 270.0),
-    butcherCoords = vector4(388.90, 784.60, 187.69, 0.0),
+    coords = vector4(379.04, 797.66, 190.49, 180.17),
+    licenseNpc = vector4(379.04, 797.66, 190.49, 180.17),
+    buyerNpc = vector4(376.20, 795.10, 190.49, 90.0),
+    butcherCoords = vector4(381.40, 792.30, 190.49, 180.0),
     pedModel = `s_m_y_ranger_01`,
+}
+
+--- Žvejybos / medžioklės reikmenų parduotuvė (Paleto krantas)
+Config.NatureShopLocation = {
+    coords = vector4(-1593.11, 5197.29, 4.36, 27.18),
+    pedModel = `s_m_m_fisherman_01`,
+    blip = { sprite = 68, colour = 38, scale = 0.85, label = 'Žvejybos ir medžioklės reikmenys' },
 }
 
 Config.Blips = {
@@ -34,22 +40,25 @@ Config.HuntingTestQuestions = {
     { q = 'Ar galima medžioti be licencijos?', answers = { 'Taip', 'Ne', 'Tik su automobiliu' }, correct = 2 },
 }
 
---- Gamtos parduotuvė (reikia atitinkamos licencijos)
-Config.NatureShop = {
-    fishing = {
-        license = 'fishing_license',
-        items = {
-            { item = 'fishingrod', price = 120, amount = 1 },
-            { item = 'fishbait', price = 15, amount = 5 },
-        },
+--- qb-inventory parduotuvės (reikia licencijos atidarymui)
+Config.FishingShop = {
+    name = 'fivempro-fishing-supply',
+    label = 'Žvejybos reikmenys',
+    license = 'fishing_license',
+    items = {
+        { name = 'fishingrod', amount = 500, price = 120, slot = 1 },
+        { name = 'fishbait', amount = 500, price = 15, slot = 2 },
     },
-    hunting = {
-        license = 'hunting_license',
-        items = {
-            { item = 'weapon_musket', price = 2800, amount = 1, label = 'Medžioklinis šratinis (neletalus)' },
-            { item = 'hunting_knife', price = 350, amount = 1 },
-            { item = 'shotgun_ammo', price = 45, amount = 10 },
-        },
+}
+
+Config.HuntingShop = {
+    name = 'fivempro-hunting-supply',
+    label = 'Medžioklės reikmenys',
+    license = 'hunting_license',
+    items = {
+        { name = 'weapon_musket', amount = 50, price = 2800, slot = 1 },
+        { name = 'hunting_knife', amount = 500, price = 350, slot = 2 },
+        { name = 'shotgun_ammo', amount = 500, price = 45, slot = 3 },
     },
 }
 
@@ -77,6 +86,7 @@ Config.ButcherMap = {
 
 --- Žvejybos zonos (prie vandens)
 Config.FishingZones = {
+    { coords = vector3(-1593.0, 5197.0, 4.36), radius = 90.0, label = 'Paleto krantas' },
     { coords = vector3(1304.5, 4225.2, 33.9), radius = 85.0, label = 'Alamo Sea' },
     { coords = vector3(-1849.0, -1250.0, 8.6), radius = 70.0, label = 'Paleto įlanka' },
     { coords = vector3(713.0, 4092.0, 30.7), radius = 60.0, label = 'Sandy Shores ežeras' },

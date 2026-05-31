@@ -308,6 +308,12 @@ local function isTaxiJobPlayer(Player)
     return j.name == 'taxi' and j.onduty
 end
 
+local function isRangerJobPlayer(Player)
+    if not Player or not Player.PlayerData.job then return false end
+    local j = Player.PlayerData.job
+    return j.name == 'ranger' and j.onduty
+end
+
 local function buildTaxiCatalog()
     local td = Config.TaxiDealership
     if not td or not td.vehicles then
@@ -330,6 +336,30 @@ end
 
 QBCore.Functions.CreateCallback('fivempro_dealership:server:getTaxiCatalog', function(_, cb)
     cb(buildTaxiCatalog())
+end)
+
+local function buildRangerCatalog()
+    local rd = Config.RangerDealership
+    if not rd or not rd.vehicles then
+        return { dealership = { label = 'Gamtos apsauga' }, categories = {}, vehicles = {} }
+    end
+    local categories = {}
+    local labels = rd.RangerCategoryLabels or {}
+    for _, v in ipairs(rd.vehicles) do
+        local cat = v.category or 'patrol'
+        if not categories[cat] then
+            categories[cat] = labels[cat] or cat
+        end
+    end
+    return {
+        dealership = { label = rd.label or 'Gamtos apsauga' },
+        categories = categories,
+        vehicles = rd.vehicles,
+    }
+end
+
+QBCore.Functions.CreateCallback('fivempro_dealership:server:getRangerCatalog', function(_, cb)
+    cb(buildRangerCatalog())
 end)
 
 QBCore.Functions.CreateCallback('fivempro_dealership:server:buyPoliceVehicle', function(source, cb, model, stationId)
@@ -496,6 +526,11 @@ end)
 QBCore.Functions.CreateCallback('fivempro_dealership:server:buyTaxiVehicle', function(source, cb, model, stationId)
     local Player = QBCore.Functions.GetPlayer(source)
     buyFleetJobVehicle(Player, cb, model, stationId or 'taxi_ls', Config.TaxiDealership, isTaxiJobPlayer, 'Tik taksi tarnyboje.')
+end)
+
+QBCore.Functions.CreateCallback('fivempro_dealership:server:buyRangerVehicle', function(source, cb, model, stationId)
+    local Player = QBCore.Functions.GetPlayer(source)
+    buyFleetJobVehicle(Player, cb, model, stationId or 'ranger_main', Config.RangerDealership, isRangerJobPlayer, 'Tik gamtosaugininkams tarnyboje.')
 end)
 
 QBCore.Functions.CreateCallback('fivempro_dealership:server:buyVehicle', function(source, cb, model)

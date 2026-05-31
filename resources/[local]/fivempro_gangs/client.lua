@@ -57,7 +57,7 @@ local function openAdminMenu()
         for _, g in ipairs(res.gangs or {}) do
             menu[#menu + 1] = {
                 header = ('#%s %s (%s)'):format(g.id, g.name, g.gang_type),
-                txt = ('Rep: %s | Heat: %s | Color: %s'):format(g.reputation or 0, g.heat or 0, g.color_hex or '#FFFFFF'),
+                txt = ('Rep: %s | Color: %s'):format(g.reputation or 0, g.color_hex or '#FFFFFF'),
                 params = {
                     isAction = true,
                     event = function()
@@ -66,7 +66,6 @@ local function openAdminMenu()
                             submitText = 'Saugoti',
                             inputs = {
                                 { text = 'Reputation', name = 'reputation', type = 'number', default = tostring(g.reputation or 0) },
-                                { text = 'Heat', name = 'heat', type = 'number', default = tostring(g.heat or 0) },
                                 { text = 'DELETE (yes/no)', name = 'delete', type = 'text' },
                             },
                         })
@@ -75,7 +74,7 @@ local function openAdminMenu()
                             TriggerServerEvent('fivempro_gangs:server:adminDeleteGang', g.id)
                             return
                         end
-                        TriggerServerEvent('fivempro_gangs:server:adminSetGangStats', g.id, tonumber(input.reputation) or 0, tonumber(input.heat) or 0)
+                        TriggerServerEvent('fivempro_gangs:server:adminSetGangStats', g.id, tonumber(input.reputation) or 0)
                     end,
                 },
             }
@@ -152,7 +151,7 @@ RegisterNetEvent('fivempro_gangs:client:openTablet', function()
                 colorUsage = res.colorUsage or {},
                 turfs = res.turfs or {},
                 tabletMap = res.tabletMap or Config.TabletMap or {},
-                factionColors = res.factionColors or Config.FactionColors or {},
+                gangColors = res.gangColors or {},
                 topGangs = res.topGangs or {},
                 activeWars = res.activeWars or {},
                 recentActivities = res.recentActivities or {},
@@ -179,7 +178,7 @@ RegisterNetEvent('fivempro_gangs:client:refreshTablet', function()
                 colorUsage = res.colorUsage or {},
                 turfs = res.turfs or {},
                 tabletMap = res.tabletMap or Config.TabletMap or {},
-                factionColors = res.factionColors or Config.FactionColors or {},
+                gangColors = res.gangColors or {},
                 topGangs = res.topGangs or {},
                 activeWars = res.activeWars or {},
                 recentActivities = res.recentActivities or {},

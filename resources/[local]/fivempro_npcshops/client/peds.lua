@@ -111,6 +111,7 @@ local function buildTargetOptions(meta)
         elseif meta.role == 'locker' then icon = 'fas fa-shirt'
         elseif meta.role == 'stash' then icon = 'fas fa-warehouse'
         elseif meta.role == 'duty' then icon = 'fas fa-id-badge'
+        elseif meta.role == 'boss' then icon = 'fas fa-user-tie'
         end
         local captured = meta
         return {

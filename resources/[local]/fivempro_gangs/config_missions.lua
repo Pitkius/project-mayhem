@@ -110,4 +110,3 @@ Config.HackGangRep = {
     store = 2,
 }
 
-Config.HackFailHeat = 5

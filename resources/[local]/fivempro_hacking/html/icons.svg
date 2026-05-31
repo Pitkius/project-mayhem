@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="ho-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <path d="M6 6l12 12M18 6L6 18"/>
+  </symbol>
+  <symbol id="ho-os" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="4" width="18" height="14" rx="2"/>
+    <path d="M8 20h8M12 18v2"/>
+    <path d="M7 9h4M7 12h2"/>
+  </symbol>
+  <symbol id="ho-signal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+    <path d="M2 20h2M6 16h2M10 12h2M14 8h2M18 4h2"/>
+  </symbol>
+  <symbol id="ho-storage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="12" cy="6" rx="8" ry="3"/>
+    <path d="M4 6v4c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/>
+    <path d="M4 10v4c0 1.7 3.6 3 8 3s8-1.3 8-3v-4"/>
+  </symbol>
+  <symbol id="ho-slots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/>
+  </symbol>
+  <symbol id="ho-system" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="4" width="16" height="16" rx="2"/>
+    <rect x="9" y="9" width="6" height="6" rx="1"/>
+  </symbol>
+  <symbol id="ho-network" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+    <circle cx="12" cy="12" r="2"/>
+    <circle cx="5" cy="7" r="2"/>
+    <circle cx="19" cy="7" r="2"/>
+    <circle cx="5" cy="17" r="2"/>
+    <circle cx="19" cy="17" r="2"/>
+    <path d="M7 8l3 3M17 8l-3 3M7 16l3-3M17 16l-3-3"/>
+  </symbol>
+  <symbol id="ho-targets" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+    <circle cx="12" cy="12" r="8"/>
+    <circle cx="12" cy="12" r="4"/>
+    <circle cx="12" cy="12" r="1" fill="currentColor"/>
+  </symbol>
+  <symbol id="ho-exploits" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/>
+    <circle cx="12" cy="12" r="3"/>
+  </symbol>
+  <symbol id="ho-files" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <path d="M14 2v6h6"/>
+    <path d="M8 13h8M8 17h5"/>
+  </symbol>
+  <symbol id="ho-market" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 6h15l-1.5 9h-12L6 6z"/>
+    <path d="M6 6L5 3H2"/>
+    <circle cx="9" cy="20" r="1"/>
+    <circle cx="18" cy="20" r="1"/>
+  </symbol>
+  <symbol id="ho-contracts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 11l3 3L22 4"/>
+    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+  </symbol>
+  <symbol id="ho-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>
+  </symbol>
+</svg>

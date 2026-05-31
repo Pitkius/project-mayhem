@@ -146,9 +146,41 @@
   font-weight: 700;
   letter-spacing: 0.04em;
 }
-.stat-pill .ico { opacity: 0.7; font-size: 0.65rem; }
+.ho-sprite-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ho-ico,
+.nav-item .nav-ico {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: block;
+  color: var(--ho-violet-bright);
+  opacity: 0.9;
+}
+
+.stat-pill .ho-ico {
+  width: 16px;
+  height: 16px;
+}
+
+.nav-item .nav-ico {
+  opacity: 0.85;
+}
+
+.nav-item.active .nav-ico {
+  color: #1a0a28;
+  opacity: 1;
+}
 
 .hackos-close {
+  display: grid;
+  place-items: center;
   width: 38px;
   height: 38px;
   border-radius: 10px;
@@ -156,8 +188,14 @@
   background: rgba(244, 114, 182, 0.08);
   color: #fecdd3;
   cursor: pointer;
-  font-size: 1rem;
+  padding: 0;
   transition: transform 0.15s, background 0.15s;
+}
+
+.hackos-close .ho-ico {
+  width: 18px;
+  height: 18px;
+  color: inherit;
 }
 .hackos-close:hover {
   transform: scale(1.05);
@@ -200,16 +238,6 @@
   transition: all 0.2s ease;
   text-align: left;
 }
-.nav-item .nav-ico {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  opacity: 0.75;
-  background: currentColor;
-  mask-size: contain;
-  mask-repeat: no-repeat;
-  mask-position: center;
-}
 .nav-item:hover {
   color: var(--ho-text);
   background: var(--ho-violet-dim);
@@ -221,15 +249,6 @@
   border-color: rgba(255, 255, 255, 0.2);
   box-shadow: 0 0 20px rgba(168, 85, 247, 0.35);
 }
-.nav-item[data-view="system"] .nav-ico { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='4' y='4' width='16' height='16' rx='2'/%3E%3Cpath d='M9 9h6v6H9z'/%3E%3C/svg%3E"); }
-.nav-item[data-view="network"] .nav-ico { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 2v4M12 18v4M2 12h4M18 12h4'/%3E%3C/svg%3E"); }
-.nav-item[data-view="targets"] .nav-ico { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3C/svg%3E"); }
-.nav-item[data-view="exploits"] .nav-ico { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M13 2L3 14h8l-1 8 10-12h-8l1-8z'/%3E%3C/svg%3E"); }
-.nav-item[data-view="files"] .nav-ico { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3C/svg%3E"); }
-.nav-item[data-view="market"] .nav-ico { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M6 6h15l-1.5 9h-12z'/%3E%3Ccircle cx='9' cy='20' r='1'/%3E%3Ccircle cx='18' cy='20' r='1'/%3E%3C/svg%3E"); }
-.nav-item[data-view="contracts"] .nav-ico { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M9 11l3 3L22 4'/%3E%3Cpath d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/%3E%3C/svg%3E"); }
-.nav-item[data-view="settings"] .nav-ico { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4'/%3E%3C/svg%3E"); }
-
 .hackos-main {
   min-width: 0;
   min-height: 0;
@@ -502,11 +521,25 @@
   line-height: 1.3;
 }
 .aside-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   border: none;
+  border-radius: 8px;
   background: transparent;
   color: var(--ho-muted);
   cursor: pointer;
-  font-size: 1rem;
+  transition: color 0.15s, background 0.15s;
+}
+.aside-close:hover {
+  color: var(--ho-violet-bright);
+  background: var(--ho-violet-dim);
+}
+.aside-close .ho-ico {
+  width: 16px;
+  height: 16px;
 }
 .target-dl {
   display: flex;

@@ -45,6 +45,18 @@ QBShared.Jobs = {
 			['5'] = { name = 'Vyriausiasis gydytojas', isboss = true, payment = 165 },
 		},
 	},
+	ranger = {
+		label = 'Gamtos apsauga',
+		type = 'leo',
+		defaultDuty = true,
+		offDutyPay = false,
+		grades = {
+			['0'] = { name = 'Stažuotojas', payment = 65 },
+			['1'] = { name = 'Gamtosaugininkas', payment = 85 },
+			['2'] = { name = 'Vyresnysis gamtosaugininkas', payment = 105 },
+			['3'] = { name = 'Vyriausiasis inspektorius', isboss = true, payment = 130 },
+		},
+	},
 	realestate = {
 		label = 'Real Estate',
 		defaultDuty = true,

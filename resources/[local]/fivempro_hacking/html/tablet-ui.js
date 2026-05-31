@@ -35,7 +35,6 @@ window.TabletUI = (function () {
     const used = (data.exploits || []).length + (os ? 1 : 0);
     $("statStorage").textContent = `${used} / ${data.storage || 12}`;
     $("statExploits").textContent = `${(data.exploits || []).length} / ${data.exploitSlots || 3}`;
-    $("statBattery").textContent = `${82 + Math.floor(Math.random() * 8)}%`;
   }
 
   function renderSystem() {

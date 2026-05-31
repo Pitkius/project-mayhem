@@ -296,3 +296,28 @@ Config.TaxiDealership = {
     },
 }
 
+Config.RangerDealership = {
+    label = 'Gamtos apsaugos transportas',
+    garageByStation = {
+        ranger_main = 'ranger_main',
+    },
+    stations = {
+        ranger_main = {
+            spawn = vector4(371.33, 791.31, 187.47, 261.0),
+            preview = vector4(368.5, 789.0, 187.47, 261.0),
+            camera = vector4(375.5, 794.0, 189.2, 261.0),
+        },
+    },
+    RangerCategoryLabels = {
+        patrol = 'Patrulis',
+        offroad = 'Visureigiai / specialūs',
+    },
+    vehicles = {
+        { model = 'pranger', name = 'Park Ranger', brand = 'Declasse', category = 'patrol', price = 0 },
+        { model = 'granger', name = 'Granger', brand = 'Declasse', category = 'patrol', price = 12000 },
+        { model = 'blazer', name = 'Blazer', brand = 'Nagasaki', category = 'offroad', price = 8000 },
+        { model = 'ripley', name = 'Ripley (technika)', brand = 'HVY', category = 'offroad', price = 15000 },
+        { model = 'maverick', name = 'Maverick (sraigtasparnis)', brand = 'Buckingham', category = 'offroad', price = 45000 },
+    },
+}
+

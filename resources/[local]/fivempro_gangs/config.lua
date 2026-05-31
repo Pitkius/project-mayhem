@@ -55,10 +55,8 @@ Config.DrugSellItems = {
 
 Config.DrugSell = {
     maxDistanceToPed = 3.0,
-    policeAlertBase = 12,
-    policeAlertHeatFactor = 0.35,
+    policeAlertBase = 14,
     reputationPriceFactor = 0.006,
-    maxHeat = 100,
 }
 
 Config.AdminPermissions = { 'admin', 'god' }
@@ -67,9 +65,9 @@ Config.AdminPermissions = { 'admin', 'god' }
 Config.TabletMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
-    imageWidth = 1024,
-    imageHeight = 1280,
-    imageFile = 'asset/gtav_satellite.jpg',
+    imageWidth = 2048,
+    imageHeight = 2048,
+    imageFile = 'asset/gtav_satellite_2048.png',
 }
 
 --- Žemėlapio projekcija (Leaflet) — turi sutapti su gtav_satellite.jpg

@@ -36,6 +36,7 @@ server_scripts {
 
 files {
     'html/index.html',
+    'html/icons.svg',
     'html/style.css',
     'html/hackos.css',
     'html/tablet-ui.js',

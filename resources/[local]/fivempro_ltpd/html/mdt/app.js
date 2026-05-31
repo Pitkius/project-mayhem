@@ -189,7 +189,7 @@ window.addEventListener('message', (e) => {
       document.getElementById('cctvStatus').textContent = d.label;
     }
     if (!d.active) {
-      onSurveillanceEnded();
+      onSurveillanceEnded(false);
       if (mdtSessionActive) startDispatchPoll();
     }
   }
@@ -198,7 +198,10 @@ window.addEventListener('message', (e) => {
     if (mdtSurveillanceLive) stopDispatchPoll();
     setSurveillanceOverlay(d.active, 'BODYCAM LIVE', d.targetId ? `ID ${d.targetId}` : '');
     document.getElementById('bodycamLiveHint').classList.toggle('hidden', !d.active);
-    if (!d.active && mdtSessionActive) startDispatchPoll();
+    if (!d.active) {
+      onSurveillanceEnded(false);
+      if (mdtSessionActive) startDispatchPoll();
+    }
   }
 });
 
@@ -244,9 +247,9 @@ document.querySelectorAll('.tab').forEach((t) => {
     if (t.dataset.tab === 'cctv') refreshCctvList();
     if (t.dataset.tab === 'bodycam') refreshBodycamList();
     if (t.dataset.tab !== 'cctv' && t.dataset.tab !== 'bodycam') {
-      nuiPost('cctvStop', {});
-      nuiPost('bodycamStop', {});
-      stopSurveillanceUi();
+      if (cctvLiveActive || mdtSurveillanceLive || document.body.classList.contains('mdt-surveillance-live')) {
+        stopSurveillanceUi(false);
+      }
     }
   };
 });
@@ -939,10 +942,11 @@ function onSurveillanceEnded(restoreTab) {
 }
 
 function stopSurveillanceUi(restoreTab) {
-  if (!cctvLiveActive && !document.body.classList.contains('mdt-surveillance-live')) {
-    onSurveillanceEnded(restoreTab);
-    return;
-  }
+  const live =
+    cctvLiveActive ||
+    mdtSurveillanceLive ||
+    document.body.classList.contains('mdt-surveillance-live');
+  if (!live) return;
   nuiPost('cctvStop', {}, { force: true });
   nuiPost('bodycamStop', {}, { force: true });
   onSurveillanceEnded(restoreTab);
