@@ -1,6 +1,6 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Noto Sans LT', 'Segoe UI', system-ui, sans-serif;
   background: transparent;
   color: #e8e6f0;
   user-select: none;

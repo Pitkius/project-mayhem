@@ -85,7 +85,7 @@ video {
     font-size: 100%;
     font: inherit;
     vertical-align: baseline;
-    font-family: "Poppins", "Noto Sans", "Segoe UI", system-ui, sans-serif;
+    font-family: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
     overflow: hidden !important;
 }
 /* HTML5 display-role reset for older browsers */

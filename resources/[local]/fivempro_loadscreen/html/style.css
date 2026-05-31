@@ -118,7 +118,7 @@ body {
 }
 
 .brand-main {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Noto Sans LT', 'Segoe UI', sans-serif;
   font-size: clamp(42px, 5.5vw, 72px);
   letter-spacing: 0.08em;
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.8);
