@@ -35,6 +35,84 @@ local displayStamina = 100.0
 local hazardEnabled = false
 --- Langų būsena transporto panelei (RollDown / RollUp)
 local vehicleWindowDown = {}
+--- Rida pagal numerius (metrai, client-side)
+local vehicleMileageByPlate = {}
+local mileageTrackVeh = 0
+local mileageTrackPos = nil
+
+local VEHICLE_CLASS_LT = {
+    [0] = 'Kompaktinis',
+    [1] = 'Sedanas',
+    [2] = 'SUV',
+    [3] = 'Kupė',
+    [4] = 'Muscle',
+    [5] = 'Sportinis',
+    [6] = 'Sportinis',
+    [7] = 'Super',
+    [8] = 'Motociklas',
+    [9] = 'Visureigis',
+    [10] = 'Industrinis',
+    [11] = 'Utility',
+    [12] = 'Furgonas',
+    [13] = 'Dviratis',
+    [14] = 'Laivas',
+    [15] = 'Helikopteris',
+    [16] = 'Lėktuvas',
+    [17] = 'Paslaugų',
+    [18] = 'Emergency',
+    [19] = 'Karinis',
+    [20] = 'Komercinis',
+    [21] = 'Traukinys',
+}
+
+local function vehicleClassLabel(classId)
+    return VEHICLE_CLASS_LT[tonumber(classId)] or 'Transportas'
+end
+
+local function getVehicleGearDisplay(veh)
+    if veh == 0 or not DoesEntityExist(veh) then return 'N' end
+    if not GetIsVehicleEngineRunning(veh) then return 'P' end
+    local speed = GetEntitySpeed(veh)
+    local gear = GetVehicleCurrentGear(veh) or 0
+    if speed < 0.8 then return 'N' end
+    if gear == 0 then return 'R' end
+    if gear == 1 then return 'D1' end
+    if gear == 2 then return 'D2' end
+    if gear >= 3 then return 'D' .. tostring(math.min(gear, 3)) end
+    return 'D'
+end
+
+local function trackVehicleMileage(veh, plate)
+    if veh == 0 or not plate or plate == '' then return end
+    local pos = GetEntityCoords(veh)
+    if mileageTrackVeh == veh and mileageTrackPos then
+        local dist = #(pos - mileageTrackPos)
+        if dist > 0.4 and dist < 400.0 then
+            vehicleMileageByPlate[plate] = (vehicleMileageByPlate[plate] or 0.0) + dist
+        end
+    end
+    mileageTrackVeh = veh
+    mileageTrackPos = pos
+end
+
+local function getPlateMileageKm(plate)
+    if not plate or plate == '' then return 0 end
+    return math.floor((vehicleMileageByPlate[plate] or 0.0) / 1000.0 + 0.5)
+end
+
+local function toggleVehicleDoor(veh, idx)
+    local r = GetVehicleDoorAngleRatio(veh, idx) or 0.0
+    local open = r <= 0.12
+    if open then
+        SetVehicleDoorOpen(veh, idx, false, false)
+    else
+        SetVehicleDoorShut(veh, idx, false)
+    end
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    if netId and netId > 0 then
+        TriggerServerEvent('fivempro_hud:server:setVehicleDoor', netId, idx, open)
+    end
+end
 
 local function deepCopy(tbl)
     local out = {}
@@ -187,6 +265,9 @@ local function pushHud()
     local doorsLocked = true
     local lightsOn = false
     local engineHealth = 1000.0
+    local gearLabel = 'N'
+    local handbrake = false
+    local indicators = 0
     if inVehicle then
         veh = GetVehiclePedIsIn(ped, false)
         if veh == 0 then
@@ -200,7 +281,11 @@ local function pushHud()
             engineHealth = eh
             engineTemp = clamp(math.floor((eh / 1000.0) * 42.0 + 58.0 + 0.5), 55, 115)
             engineOn = GetIsVehicleEngineRunning(veh)
+            gearLabel = getVehicleGearDisplay(veh)
+            handbrake = GetVehicleHandbrake(veh) == true or GetVehicleHandbrake(veh) == 1
+            indicators = GetVehicleIndicatorLights(veh) or 0
             local p = (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
+            trackVehicleMileage(veh, p)
             if p ~= '' and lockStateByPlate[p] ~= nil then
                 doorsLocked = lockStateByPlate[p]
             else
@@ -212,6 +297,8 @@ local function pushHud()
         end
     else
         seatbeltOn = false
+        mileageTrackVeh = 0
+        mileageTrackPos = nil
         if hazardEnabled then
             hazardEnabled = false
         end
@@ -255,6 +342,9 @@ local function pushHud()
         doorsLocked = doorsLocked,
         lightsOn = lightsOn,
         engineHealth = engineHealth,
+        gear = gearLabel,
+        handbrake = handbrake,
+        indicators = indicators,
         settings = s
     })
 end
@@ -579,7 +669,17 @@ local function pushVehiclePanelState()
     local vehicleClass = GetVehicleClass(veh)
     local plate = (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
     local motorPct = clamp(math.floor((eh / 1000.0) * 100.0 + 0.5), 0, 100)
+    local bh = GetVehicleBodyHealth(veh) or 1000.0
+    local bodyPct = clamp(math.floor((bh / 1000.0) * 100.0 + 0.5), 0, 100)
+    local mileageKm = getPlateMileageKm(plate)
     local hasKeys = playerHasVehicleKeys(veh)
+
+    local windowList = {}
+    local nid = NetworkGetNetworkIdFromEntity(veh)
+    for i = 0, 3 do
+        local key = ('%s:%s'):format(nid, i)
+        windowList[#windowList + 1] = { idx = i, open = vehicleWindowDown[key] == true }
+    end
 
     SendNUIMessage({
         action = 'vehiclePanel',
@@ -588,8 +688,10 @@ local function pushVehiclePanelState()
         modelSpawn = modelSpawn,
         spawnModel = spawnModel,
         vehicleClass = vehicleClass,
+        vehicleClassLabel = vehicleClassLabel(vehicleClass),
         hasKeys = hasKeys,
         doors = doorList,
+        windows = windowList,
         engineOn = engineOn,
         weather = vehicleWeatherLabel(),
         street = streetName,
@@ -601,6 +703,8 @@ local function pushVehiclePanelState()
         highBeams = highBeams,
         fuel = fuel,
         motorPct = motorPct,
+        bodyPct = bodyPct,
+        mileageKm = mileageKm,
         vehicleName = vehLabel,
         plate = plate,
         timeStr = ('%02d:%02d'):format(GetClockHours(), GetClockMinutes()),
@@ -712,17 +816,25 @@ RegisterNUICallback('vehiclePanel:action', function(data, cb)
             cb({ ok = false })
             return
         end
-        local r = GetVehicleDoorAngleRatio(veh, idx) or 0.0
-        local open = r <= 0.12
-        if open then
-            SetVehicleDoorOpen(veh, idx, false, false)
-        else
-            SetVehicleDoorShut(veh, idx, false)
+        toggleVehicleDoor(veh, idx)
+    elseif action == 'hood' then
+        if not playerHasVehicleKeys(veh) then
+            QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
+            cb({ ok = false })
+            return
         end
-        local netId = NetworkGetNetworkIdFromEntity(veh)
-        if netId and netId > 0 then
-            TriggerServerEvent('fivempro_hud:server:setVehicleDoor', netId, idx, open)
+        toggleVehicleDoor(veh, 4)
+    elseif action == 'trunk' then
+        if not playerHasVehicleKeys(veh) then
+            QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
+            cb({ ok = false })
+            return
         end
+        toggleVehicleDoor(veh, 5)
+    elseif action == 'gps' then
+        local cx, cy, cz = table.unpack(GetEntityCoords(veh))
+        SetNewWaypoint(cx + 0.0, cy + 0.0)
+        QBCore.Functions.Notify('GPS taškas nustatytas prie transporto.', 'success')
     elseif action == 'window' then
         if not playerHasVehicleKeys(veh) then
             QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')

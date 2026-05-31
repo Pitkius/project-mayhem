@@ -15,6 +15,8 @@ local QBCore = exports['qb-core']:GetCoreObject()
 --- @field slabs LtpdDoorSlab[]
 --- @field entities number[]
 --- @field entityScanDef table|nil
+--- @field bollardRaiseZ number|nil
+--- @field gateOpenHeadingDelta number|nil
 
 local doorGroups = {} ---@type LtpdDoorGroupRuntime[]
 local doorLocked = {} ---@type table<string, boolean>
@@ -333,26 +335,88 @@ local function applyStandardSlabLocked(slab, locked)
     end
 end
 
-local BOLLARD_RAISE_Z = 0.42
+local DEFAULT_BOLLARD_RAISE_Z = 0.38
 
 local BOLLARD_MODEL_HASHES = {
     [joaat('gabz_mrpd_bollards1')] = true,
     [joaat('gabz_mrpd_bollards2')] = true,
 }
 
+local FACGATE_MODEL_HASH = joaat('prop_facgate_07b')
+
 local function isBollardModel(modelHash)
     return BOLLARD_MODEL_HASHES[modelHash] == true
 end
 
-local function rememberBollardSnapshot(ent)
+local function isFacGateModel(modelHash)
+    return modelHash == FACGATE_MODEL_HASH
+end
+
+local function bollardRaiseForGroup(group)
+    if group and group.bollardRaiseZ then
+        return group.bollardRaiseZ + 0.0
+    end
+    return DEFAULT_BOLLARD_RAISE_Z
+end
+
+local function rememberBollardSnapshot(ent, assumeRaised, raiseZ, groundZHint)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return end
-    if entitySnapshots[ent] and entitySnapshots[ent].restZ then return end
+    raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
     local c = GetEntityCoords(ent)
+    local snap = entitySnapshots[ent]
+    if snap and snap.restZ then
+        -- Visada naudojam žemiausią matytą Z kaip „nuleistą“ poziciją (MLO kartais spawnina per aukštai).
+        if c.z < snap.restZ then
+            snap.restZ = c.z
+            snap.coords = vector3(c.x, c.y, c.z)
+        end
+        return
+    end
+    local restZ = c.z
+    if assumeRaised then
+        restZ = c.z - raiseZ
+    elseif groundZHint and c.z > groundZHint + 0.15 then
+        restZ = c.z - raiseZ
+    end
     entitySnapshots[ent] = {
-        coords = c,
+        coords = vector3(c.x, c.y, restZ),
         heading = GetEntityHeading(ent),
-        restZ = c.z,
+        restZ = restZ,
     }
+end
+
+local function applyBollardEntity(ent, locked, raiseZ)
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return end
+    raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
+    rememberBollardSnapshot(ent, locked, raiseZ)
+    local snap = entitySnapshots[ent]
+    if not snap or not snap.restZ then return end
+    local targetZ = locked and (snap.restZ + raiseZ) or snap.restZ
+    SetEntityCoords(ent, snap.coords.x, snap.coords.y, targetZ, false, false, false, false)
+    SetEntityHeading(ent, snap.heading)
+    FreezeEntityPosition(ent, true)
+    SetEntityDynamic(ent, false)
+    SetEntityInvincible(ent, true)
+    SetEntityCanBeDamaged(ent, false)
+    SetEntityCollision(ent, true, true)
+end
+
+local function applyFacGateEntity(ent, locked, slab, openDelta)
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return end
+    if not slab then
+        applyBarrierEntity(ent, locked, nil)
+        return
+    end
+    openDelta = openDelta or 82.0
+    local closedHeading = (slab.heading or GetEntityHeading(ent)) + 0.0
+    local heading = locked and closedHeading or ((closedHeading + openDelta) % 360.0)
+    SetEntityCoords(ent, slab.coords.x, slab.coords.y, slab.coords.z, false, false, false, false)
+    SetEntityHeading(ent, heading)
+    FreezeEntityPosition(ent, true)
+    SetEntityDynamic(ent, false)
+    SetEntityInvincible(ent, true)
+    SetEntityCanBeDamaged(ent, false)
+    SetEntityCollision(ent, true, true)
 end
 
 local function drawGroupLockIcons(g, pcoords, locked)
@@ -446,32 +510,11 @@ local function applyBarrierEntity(ent, locked, slab)
     end
 end
 
-local function applyBollardEntity(ent, locked)
-    if not ent or ent == 0 or not DoesEntityExist(ent) then return end
-    rememberBollardSnapshot(ent)
-    local snap = entitySnapshots[ent]
-    if not snap or not snap.restZ then return end
-    local restZ = snap.restZ
-    if locked then
-        SetEntityCoords(ent, snap.coords.x, snap.coords.y, restZ + BOLLARD_RAISE_Z, false, false, false, false)
-        SetEntityHeading(ent, snap.heading)
-        FreezeEntityPosition(ent, true)
-        SetEntityDynamic(ent, false)
-        SetEntityInvincible(ent, true)
-        SetEntityCollision(ent, true, true)
-    else
-        SetEntityCoords(ent, snap.coords.x, snap.coords.y, restZ, false, false, false, false)
-        SetEntityHeading(ent, snap.heading)
-        FreezeEntityPosition(ent, false)
-        SetEntityDynamic(ent, true)
-        SetEntityInvincible(ent, false)
-    end
-end
-
-local function applyBarrierGroupLocked(slabs, entities, locked)
+local function applyBarrierGroupLocked(slabs, entities, locked, raiseZ)
+    raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
     for _, ent in ipairs(entities or {}) do
         if isBollardModel(GetEntityModel(ent)) then
-            applyBollardEntity(ent, locked)
+            applyBollardEntity(ent, locked, raiseZ)
         else
             applyBarrierEntity(ent, locked, nil)
         end
@@ -482,14 +525,21 @@ local function applyBarrierGroupLocked(slabs, entities, locked)
     end
 end
 
-local function applyYardGateGroupLocked(slabs, entities, locked)
+local function applyYardGateGroupLocked(group, locked)
+    local slabs = group.slabs
+    local entities = group.entities
     local gateSlab = slabs and slabs[1] or nil
+    local raiseZ = bollardRaiseForGroup(group)
+    local openDelta = group.gateOpenHeadingDelta or 82.0
     local seen = {}
     for _, ent in ipairs(entities or {}) do
         if ent and ent ~= 0 and DoesEntityExist(ent) then
             seen[ent] = true
-            if isBollardModel(GetEntityModel(ent)) then
-                applyBollardEntity(ent, locked)
+            local model = GetEntityModel(ent)
+            if isBollardModel(model) then
+                applyBollardEntity(ent, locked, raiseZ)
+            elseif isFacGateModel(model) then
+                applyFacGateEntity(ent, locked, gateSlab, openDelta)
             else
                 applyBarrierEntity(ent, locked, gateSlab)
             end
@@ -498,18 +548,25 @@ local function applyYardGateGroupLocked(slabs, entities, locked)
     for _, slab in ipairs(slabs or {}) do
         local ent = findClosestObject(slab.modelHash, slab.coords, 8.0)
         if ent ~= 0 and not seen[ent] then
-            applyBarrierEntity(ent, locked, slab)
+            if isFacGateModel(slab.modelHash) then
+                applyFacGateEntity(ent, locked, slab, openDelta)
+            elseif isBollardModel(slab.modelHash) then
+                applyBollardEntity(ent, locked, raiseZ)
+            else
+                applyBarrierEntity(ent, locked, slab)
+            end
         end
     end
 end
 
-local function applyBollardGroupLocked(slabs, entities, locked)
+local function applyBollardGroupLocked(slabs, entities, locked, raiseZ)
+    raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
     for _, ent in ipairs(entities or {}) do
-        applyBollardEntity(ent, locked)
+        applyBollardEntity(ent, locked, raiseZ)
     end
     for _, slab in ipairs(slabs or {}) do
         local ent = findClosestObject(slab.modelHash, slab.coords, 8.0)
-        if ent ~= 0 then applyBollardEntity(ent, locked) end
+        if ent ~= 0 then applyBollardEntity(ent, locked, raiseZ) end
     end
 end
 
@@ -587,15 +644,15 @@ local function applyGroupLocked(id, locked)
                 return
             end
             if g.doorType == 'bollard' then
-                applyBollardGroupLocked(g.slabs, g.entities, locked)
+                applyBollardGroupLocked(g.slabs, g.entities, locked, bollardRaiseForGroup(g))
                 return
             end
             if g.doorType == 'yard_gate' then
-                applyYardGateGroupLocked(g.slabs, g.entities, locked)
+                applyYardGateGroupLocked(g, locked)
                 return
             end
             if g.doorType == 'barrier' then
-                applyBarrierGroupLocked(g.slabs, g.entities, locked)
+                applyBarrierGroupLocked(g.slabs, g.entities, locked, bollardRaiseForGroup(g))
                 return
             end
             for _, slab in ipairs(g.slabs) do
@@ -635,6 +692,7 @@ local function buildManualGroupDef(def)
         interact = c / #slabs
     end
     local entities = scanEntitiesForDef(def.entityScan)
+    local groundZHint = (#slabs > 0 and slabs[1].coords.z) or nil
     for _, ent in ipairs(entities) do
         if def.doorType == 'garage_roll' then
             local ec = GetEntityCoords(ent)
@@ -652,8 +710,9 @@ local function buildManualGroupDef(def)
                 rememberEntitySnapshot(ent)
             end
         elseif def.doorType == 'yard_gate' then
+            local raiseZ = def.bollardRaiseZ or DEFAULT_BOLLARD_RAISE_Z
             if isBollardModel(GetEntityModel(ent)) then
-                rememberBollardSnapshot(ent)
+                rememberBollardSnapshot(ent, def.defaultLocked ~= false, raiseZ, groundZHint)
             else
                 rememberEntitySnapshot(ent)
             end
@@ -670,6 +729,8 @@ local function buildManualGroupDef(def)
         slabs = slabs,
         entities = entities,
         entityScanDef = def.entityScan,
+        bollardRaiseZ = def.bollardRaiseZ,
+        gateOpenHeadingDelta = def.gateOpenHeadingDelta,
     }
     if doorLocked[def.id] == nil then
         doorLocked[def.id] = def.defaultLocked ~= false
@@ -811,16 +872,16 @@ CreateThread(function()
                         applyGarageRollLocked(g.slabs, g.entities, true)
                     end
                 elseif g.doorType == 'yard_gate' then
+                    local raiseZ = bollardRaiseForGroup(g)
+                    local groundZHint = (g.slabs and g.slabs[1] and g.slabs[1].coords.z) or nil
                     for _, ent in ipairs(g.entities) do
                         if isBollardModel(GetEntityModel(ent)) then
-                            rememberBollardSnapshot(ent)
+                            rememberBollardSnapshot(ent, isGroupLocked(g.id), raiseZ, groundZHint)
                         else
                             rememberEntitySnapshot(ent)
                         end
                     end
-                    if isGroupLocked(g.id) then
-                        applyYardGateGroupLocked(g.slabs, g.entities, true)
-                    end
+                    applyYardGateGroupLocked(g, isGroupLocked(g.id))
                 else
                     for _, ent in ipairs(g.entities) do
                         rememberEntitySnapshot(ent)
@@ -964,7 +1025,21 @@ CreateThread(function()
         local pc = GetEntityCoords(ped)
         local anyNear = false
         for _, g in ipairs(doorGroups) do
-            if (g.doorType == 'barrier' or g.doorType == 'bollard' or g.doorType == 'yard_gate') and isGroupLocked(g.id) then
+            if g.doorType == 'yard_gate' then
+                local near = g.interact and #(pc - g.interact) < 55.0
+                if not near then
+                    for _, slab in ipairs(g.slabs or {}) do
+                        if #(pc - slab.coords) < 55.0 then
+                            near = true
+                            break
+                        end
+                    end
+                end
+                if near then
+                    anyNear = true
+                    applyYardGateGroupLocked(g, isGroupLocked(g.id))
+                end
+            elseif (g.doorType == 'barrier' or g.doorType == 'bollard') and isGroupLocked(g.id) then
                 local near = g.interact and #(pc - g.interact) < 55.0
                 if not near then
                     for _, slab in ipairs(g.slabs or {}) do
@@ -977,11 +1052,9 @@ CreateThread(function()
                 if near then
                     anyNear = true
                     if g.doorType == 'bollard' then
-                        applyBollardGroupLocked(g.slabs, g.entities, true)
-                    elseif g.doorType == 'yard_gate' then
-                        applyYardGateGroupLocked(g.slabs, g.entities, true)
+                        applyBollardGroupLocked(g.slabs, g.entities, true, bollardRaiseForGroup(g))
                     else
-                        applyBarrierGroupLocked(g.slabs, g.entities, true)
+                        applyBarrierGroupLocked(g.slabs, g.entities, true, bollardRaiseForGroup(g))
                     end
                 end
             elseif g.doorType == 'garage_roll' and isGroupLocked(g.id) then

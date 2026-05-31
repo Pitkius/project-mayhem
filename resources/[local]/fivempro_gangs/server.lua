@@ -64,11 +64,11 @@ end
 local function getTopGangs(limit)
     limit = tonumber(limit) or 5
     return MySQL.query.await([[
-        SELECT g.id, g.name, g.color_hex, g.reputation,
+        SELECT g.id, g.name, g.color_hex, g.secondary_color_hex, g.reputation,
                COUNT(t.turf_id) AS turf_count
         FROM fivempro_gangs g
         LEFT JOIN fivempro_gang_turfs t ON t.owner_gang_id = g.id
-        GROUP BY g.id, g.name, g.color_hex, g.reputation
+        GROUP BY g.id, g.name, g.color_hex, g.secondary_color_hex, g.reputation
         ORDER BY turf_count DESC, g.reputation DESC
         LIMIT ?
     ]], { limit }) or {}

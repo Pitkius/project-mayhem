@@ -24,7 +24,7 @@ Config.Ranks = {
     [4] = 'Boss',
 }
 
---- Turf langeliai: config_turf_cells.lua (~120+ mažų zonų)
+--- Turf langeliai: config_turf_cells.lua (~350+ mažų zonų)
 
 Config.TurfClaimThreshold = 100
 
@@ -61,10 +61,12 @@ Config.DrugSell = {
 
 Config.AdminPermissions = { 'admin', 'god' }
 
---- Turf tablet: Leaflet + satellite (turi sutapti su MDT gtav_satellite.jpg proporcijomis)
+--- Turf tablet: Leaflet + satellite (koord. = gtav_satellite.jpg kampai)
 Config.TabletMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
+    offsetX = 0.0,
+    offsetY = 0.0,
     imageWidth = 1024,
     imageHeight = 1280,
     imageFile = 'asset/gtav_satellite.jpg',

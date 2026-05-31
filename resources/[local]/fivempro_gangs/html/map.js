@@ -48,18 +48,15 @@ window.GangMap = (function () {
       minY: Number(t.gameMin?.y ?? -4000),
       maxX: Number(t.gameMax?.x ?? 4500),
       maxY: Number(t.gameMax?.y ?? 6625),
+      offsetX: Number(t.offsetX) || 0,
+      offsetY: Number(t.offsetY) || 0,
       imgW: Number(t.imageWidth) || 1024,
       imgH: Number(t.imageHeight) || 1280,
       imageUrl: nuiImageUrl(file),
     };
   }
 
-  function gameToMap(gx, gy, cfg) {
-    const x = ((gx - cfg.minX) / (cfg.maxX - cfg.minX)) * cfg.imgW;
-    const y = cfg.imgH - ((gy - cfg.minY) / (cfg.maxY - cfg.minY)) * cfg.imgH;
-    return { x, y };
-  }
-
+  /** GTA bounding box → Leaflet [[minY,minX],[maxY,maxX]] */
   function gameBoundsToLeaflet(turf, cfg, padRatio) {
     let minX = Number(turf.min_x);
     let minY = Number(turf.min_y);
@@ -69,12 +66,10 @@ window.GangMap = (function () {
       const cx = Number(turf.center_x) || 0;
       const cy = Number(turf.center_y) || 0;
       const r = Number(turf.radius) || 80;
-      const p1 = gameToMap(cx - r, cy - r, cfg);
-      const p2 = gameToMap(cx + r, cy + r, cfg);
-      return [
-        [p1.y, p1.x],
-        [p2.y, p2.x],
-      ];
+      minX = cx - r;
+      minY = cy - r;
+      maxX = cx + r;
+      maxY = cy + r;
     }
     if (padRatio && padRatio > 0) {
       const w = maxX - minX;
@@ -86,11 +81,11 @@ window.GangMap = (function () {
       maxX += px;
       maxY += py;
     }
-    const sw = gameToMap(minX, minY, cfg);
-    const ne = gameToMap(maxX, maxY, cfg);
+    const ox = cfg.offsetX || 0;
+    const oy = cfg.offsetY || 0;
     return [
-      [sw.y, sw.x],
-      [ne.y, ne.x],
+      [minY + oy, minX + ox],
+      [maxY + oy, maxX + ox],
     ];
   }
 
@@ -446,9 +441,10 @@ window.GangMap = (function () {
   }
 
   function mapBoundsLatLng() {
+    if (!mapCfg) return null;
     return L.latLngBounds([
-      [0, 0],
-      [mapCfg.imgH, mapCfg.imgW],
+      [mapCfg.minY, mapCfg.minX],
+      [mapCfg.maxY, mapCfg.maxX],
     ]);
   }
 
@@ -512,8 +508,8 @@ window.GangMap = (function () {
     }
 
     const bounds = [
-      [0, 0],
-      [mapCfg.imgH, mapCfg.imgW],
+      [mapCfg.minY, mapCfg.minX],
+      [mapCfg.maxY, mapCfg.maxX],
     ];
     if (imageLayer) leafletMap.removeLayer(imageLayer);
     imageLayer = L.imageOverlay(mapCfg.imageUrl, bounds, { interactive: false, opacity: 0.92 }).addTo(leafletMap);

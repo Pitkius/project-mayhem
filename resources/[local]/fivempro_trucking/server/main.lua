@@ -1,0 +1,538 @@
+local QBCore = exports['qb-core']:GetCoreObject()
+
+local activeDeliveries = {}
+local contractPool = {}
+local poolGeneratedAt = 0
+
+local function decodeLicenses(raw)
+    if not raw or raw == '' then return {} end
+    local ok, data = pcall(json.decode, raw)
+    if ok and type(data) == 'table' then return data end
+    return {}
+end
+
+local function encodeLicenses(tbl)
+    return json.encode(tbl or {})
+end
+
+local function ensureTables()
+    MySQL.query([[
+        CREATE TABLE IF NOT EXISTS `fivempro_trucker_profiles` (
+            `citizenid` varchar(50) NOT NULL,
+            `registered` tinyint(1) NOT NULL DEFAULT 0,
+            `level` int NOT NULL DEFAULT 1,
+            `xp` int NOT NULL DEFAULT 0,
+            `reputation` int NOT NULL DEFAULT 0,
+            `total_deliveries` int NOT NULL DEFAULT 0,
+            `total_earned` bigint NOT NULL DEFAULT 0,
+            `licenses` longtext DEFAULT NULL,
+            `company_id` int DEFAULT NULL,
+            `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`citizenid`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
+    MySQL.query([[
+        CREATE TABLE IF NOT EXISTS `fivempro_trucker_companies` (
+            `id` int NOT NULL AUTO_INCREMENT,
+            `owner_citizenid` varchar(50) NOT NULL,
+            `name` varchar(64) NOT NULL,
+            `logo` varchar(32) DEFAULT 'default',
+            `balance` bigint NOT NULL DEFAULT 0,
+            `reputation` int NOT NULL DEFAULT 0,
+            `total_deliveries` int NOT NULL DEFAULT 0,
+            `total_revenue` bigint NOT NULL DEFAULT 0,
+            `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uniq_company_name` (`name`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
+    MySQL.query([[
+        CREATE TABLE IF NOT EXISTS `fivempro_trucker_company_members` (
+            `company_id` int NOT NULL,
+            `citizenid` varchar(50) NOT NULL,
+            `role` varchar(16) NOT NULL DEFAULT 'driver',
+            `salary` int NOT NULL DEFAULT 0,
+            `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`company_id`, `citizenid`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
+    MySQL.query([[
+        CREATE TABLE IF NOT EXISTS `fivempro_trucker_fleet` (
+            `id` int NOT NULL AUTO_INCREMENT,
+            `company_id` int NOT NULL,
+            `model` varchar(32) NOT NULL,
+            `label` varchar(64) NOT NULL,
+            `plate` varchar(12) NOT NULL,
+            `condition_pct` int NOT NULL DEFAULT 100,
+            `fuel_pct` int NOT NULL DEFAULT 100,
+            `status` varchar(16) NOT NULL DEFAULT 'garage',
+            PRIMARY KEY (`id`),
+            KEY `idx_fleet_company` (`company_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
+    MySQL.query([[
+        CREATE TABLE IF NOT EXISTS `fivempro_trucker_delivery_log` (
+            `id` int NOT NULL AUTO_INCREMENT,
+            `citizenid` varchar(50) NOT NULL,
+            `company_id` int DEFAULT NULL,
+            `cargo_type` varchar(32) NOT NULL,
+            `pickup_hub` varchar(32) NOT NULL,
+            `delivery_hub` varchar(32) NOT NULL,
+            `pay` int NOT NULL DEFAULT 0,
+            `condition_pct` int NOT NULL DEFAULT 100,
+            `on_time` tinyint(1) NOT NULL DEFAULT 1,
+            `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_delivery_citizen` (`citizenid`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
+end
+
+MySQL.ready(ensureTables)
+
+local function getProfileRow(citizenid)
+    return MySQL.single.await('SELECT * FROM fivempro_trucker_profiles WHERE citizenid = ? LIMIT 1', { citizenid })
+end
+
+local function buildProfile(row)
+    if not row then
+        return {
+            registered = false,
+            level = 1,
+            xp = 0,
+            reputation = 0,
+            stars = 1,
+            total_deliveries = 0,
+            total_earned = 0,
+            licenses = {},
+            company_id = nil,
+            xpNext = TruckingShared.XpForNextLevel(1),
+        }
+    end
+    local licenses = decodeLicenses(row.licenses)
+    local level = TruckingShared.LevelFromXp(row.xp or 0)
+    if level >= (Config.Unlocks.heavy_truck_license or 5) then
+        licenses.heavy_truck = true
+    end
+    return {
+        registered = row.registered == 1,
+        level = level,
+        xp = row.xp or 0,
+        reputation = row.reputation or 0,
+        stars = TruckingShared.ReputationStars(row.reputation or 0),
+        total_deliveries = row.total_deliveries or 0,
+        total_earned = row.total_earned or 0,
+        licenses = licenses,
+        company_id = row.company_id,
+        xpNext = TruckingShared.XpForNextLevel(level),
+    }
+end
+
+local function ensureProfile(citizenid)
+    local row = getProfileRow(citizenid)
+    if row then return row end
+    MySQL.insert.await('INSERT INTO fivempro_trucker_profiles (citizenid) VALUES (?)', { citizenid })
+    return getProfileRow(citizenid)
+end
+
+local function saveProfile(citizenid, fields)
+    local sets, vals = {}, {}
+    for k, v in pairs(fields or {}) do
+        sets[#sets + 1] = ('`%s` = ?'):format(k)
+        vals[#vals + 1] = v
+    end
+    if #sets == 0 then return end
+    vals[#vals + 1] = citizenid
+    MySQL.update.await(('UPDATE fivempro_trucker_profiles SET %s WHERE citizenid = ?'):format(table.concat(sets, ', ')), vals)
+end
+
+local function getCompany(companyId)
+    if not companyId then return nil end
+    return MySQL.single.await('SELECT * FROM fivempro_trucker_companies WHERE id = ? LIMIT 1', { companyId })
+end
+
+local function getFleet(companyId)
+    if not companyId then return {} end
+    return MySQL.query.await('SELECT * FROM fivempro_trucker_fleet WHERE company_id = ? ORDER BY id ASC', { companyId }) or {}
+end
+
+local function getCompanyMembers(companyId)
+    if not companyId then return {} end
+    return MySQL.query.await('SELECT * FROM fivempro_trucker_company_members WHERE company_id = ? ORDER BY role DESC', { companyId }) or {}
+end
+
+local function hubList()
+    local out = {}
+    for id, hub in pairs(Config.Hubs or {}) do
+        out[#out + 1] = {
+            id = id,
+            label = hub.label,
+            region = hub.region,
+            coords = { x = hub.coords.x, y = hub.coords.y, z = hub.coords.z },
+        }
+    end
+    table.sort(out, function(a, b) return a.label < b.label end)
+    return out
+end
+
+local function randomCargoForProfile(profile)
+    local options = {}
+    for id, cargo in pairs(Config.CargoTypes or {}) do
+        if TruckingShared.PlayerCanAccessCargo(profile, id) then
+            options[#options + 1] = id
+        end
+    end
+    if #options == 0 then return 'food' end
+    return options[math.random(#options)]
+end
+
+local function calcContractPay(cargoId, distanceKm)
+    local cargo = TruckingShared.Cargo(cargoId) or {}
+    local pay = (Config.Pay.base or 180) + distanceKm * (Config.Pay.perKm or 42)
+    pay = math.floor(pay * (cargo.payMult or 1.0) + 0.5)
+    if cargo.illegal then
+        pay = math.floor(pay * (Config.IllegalPayMultiplier or 2.5) + 0.5)
+    end
+    return pay
+end
+
+local function generateContract(profile, seed)
+    math.randomseed(seed or (os.time() + math.random(99999)))
+    local hubIds = {}
+    for id in pairs(Config.Hubs or {}) do hubIds[#hubIds + 1] = id end
+    if #hubIds < 2 then return nil end
+    local pickupId = hubIds[math.random(#hubIds)]
+    local deliveryId = hubIds[math.random(#hubIds)]
+    local guard = 0
+    while deliveryId == pickupId and guard < 20 do
+        deliveryId = hubIds[math.random(#hubIds)]
+        guard = guard + 1
+    end
+    local pickup = TruckingShared.Hub(pickupId)
+    local delivery = TruckingShared.Hub(deliveryId)
+    if not pickup or not delivery then return nil end
+    local cargoId = randomCargoForProfile(profile)
+    local cargo = TruckingShared.Cargo(cargoId) or {}
+    local distanceKm = TruckingShared.DistanceKm(pickup.coords, delivery.coords)
+    distanceKm = math.floor(distanceKm * 10) / 10
+    local timeMin = math.max(12, math.floor(distanceKm * 1.35 + 8))
+    local pay = calcContractPay(cargoId, distanceKm)
+    return {
+        id = ('c_%s_%s_%s'):format(pickupId, deliveryId, cargoId),
+        cargoId = cargoId,
+        cargoLabel = cargo.label or cargoId,
+        category = cargo.category or 'standard',
+        risk = cargo.risk or 'low',
+        illegal = cargo.illegal == true,
+        pickupId = pickupId,
+        pickupLabel = pickup.label,
+        deliveryId = deliveryId,
+        deliveryLabel = delivery.label,
+        distanceKm = distanceKm,
+        timeLimitMin = timeMin,
+        pay = pay,
+        minLevel = cargo.minLevel or 1,
+        minReputation = cargo.minReputation or 1,
+        pickup = { x = pickup.coords.x, y = pickup.coords.y, z = pickup.coords.z },
+        delivery = { x = delivery.coords.x, y = delivery.coords.y, z = delivery.coords.z },
+    }
+end
+
+local function refreshContractPool()
+    contractPool = {}
+    poolGeneratedAt = os.time()
+    for i = 1, 14 do
+        local pseudoProfile = { level = 20, reputation = 999, licenses = { heavy_truck = true } }
+        local c = generateContract(pseudoProfile, os.time() + i * 7919)
+        if c then
+            c.id = ('pool_%s'):format(i)
+            contractPool[#contractPool + 1] = c
+        end
+    end
+end
+
+refreshContractPool()
+
+CreateThread(function()
+    while true do
+        Wait((Config.ContractRefreshSec or 300) * 1000)
+        refreshContractPool()
+    end
+end)
+
+local function contractsForPlayer(profile)
+    local out = {}
+    for _, c in ipairs(contractPool) do
+        if (profile.level or 1) >= (c.minLevel or 1)
+            and TruckingShared.ReputationStars(profile.reputation or 0) >= (c.minReputation or 1) then
+            out[#out + 1] = c
+        end
+    end
+    table.sort(out, function(a, b) return a.pay > b.pay end)
+    return out
+end
+
+local function getLeaderboard()
+    return MySQL.query.await([[
+        SELECT c.id, c.name, c.balance, c.reputation, c.total_deliveries, c.total_revenue,
+               (SELECT COUNT(*) FROM fivempro_trucker_company_members m WHERE m.company_id = c.id) AS members
+        FROM fivempro_trucker_companies c
+        ORDER BY c.total_revenue DESC, c.total_deliveries DESC
+        LIMIT 10
+    ]]) or {}
+end
+
+local function buildDashboard(src)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return nil end
+    local citizenid = Player.PlayerData.citizenid
+    local row = ensureProfile(citizenid)
+    local profile = buildProfile(row)
+    local company = profile.company_id and getCompany(profile.company_id) or nil
+    local charinfo = Player.PlayerData.charinfo or {}
+    local name = ('%s %s'):format(charinfo.firstname or 'Vairuotojas', charinfo.lastname or '')
+    return {
+        profile = profile,
+        playerName = name,
+        contracts = contractsForPlayer(profile),
+        hubs = hubList(),
+        company = company and {
+            id = company.id,
+            name = company.name,
+            balance = company.balance or 0,
+            reputation = company.reputation or 0,
+            total_deliveries = company.total_deliveries or 0,
+            total_revenue = company.total_revenue or 0,
+            isOwner = company.owner_citizenid == citizenid,
+        } or nil,
+        fleet = company and getFleet(company.id) or {},
+        members = company and getCompanyMembers(company.id) or {},
+        leaderboard = getLeaderboard(),
+        fleetShop = Config.FleetShop or {},
+        vehicles = Config.Vehicles or {},
+        activeDelivery = activeDeliveries[src],
+        companyCreateCost = Config.CompanyCreateCost or 50000,
+        companyMinLevel = Config.CompanyMinLevel or 5,
+        map = Config.Map,
+        serverTime = os.time(),
+    }
+end
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:getDashboard', function(src, cb)
+    cb(buildDashboard(src))
+end)
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:register', function(src, cb)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false, reason = 'Žaidėjas nerastas.' }) end
+    local citizenid = Player.PlayerData.citizenid
+    local row = ensureProfile(citizenid)
+    if row.registered == 1 then
+        return cb({ ok = false, reason = 'Jau registruotas.' })
+    end
+    local cost = Config.RegisterCost or 0
+    if cost > 0 and Player.PlayerData.money.bank < cost then
+        return cb({ ok = false, reason = 'Nepakanka pinigų.' })
+    end
+    if cost > 0 then Player.Functions.RemoveMoney('bank', cost, 'trucker-register') end
+    saveProfile(citizenid, { registered = 1 })
+    cb({ ok = true, dashboard = buildDashboard(src) })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:createCompany', function(src, cb, companyName)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false, reason = 'Klaida.' }) end
+    companyName = tostring(companyName or ''):gsub('^%s+', ''):gsub('%s+$', '')
+    if #companyName < 3 or #companyName > 48 then
+        return cb({ ok = false, reason = 'Pavadinimas 3–48 simbolių.' })
+    end
+    local citizenid = Player.PlayerData.citizenid
+    local row = ensureProfile(citizenid)
+    local profile = buildProfile(row)
+    if not profile.registered then return cb({ ok = false, reason = 'Pirmiausia registruokis.' }) end
+    if profile.level < (Config.CompanyMinLevel or 5) then
+        return cb({ ok = false, reason = ('Reikia %d lygio.'):format(Config.CompanyMinLevel or 5) })
+    end
+    if profile.company_id then return cb({ ok = false, reason = 'Jau priklausai įmonei.' }) end
+    local cost = Config.CompanyCreateCost or 50000
+    if Player.PlayerData.money.bank < cost then
+        return cb({ ok = false, reason = 'Reikia $' .. cost })
+    end
+    local exists = MySQL.scalar.await('SELECT id FROM fivempro_trucker_companies WHERE name = ? LIMIT 1', { companyName })
+    if exists then return cb({ ok = false, reason = 'Toks pavadinimas užimtas.' }) end
+    Player.Functions.RemoveMoney('bank', cost, 'trucker-company-create')
+    local companyId = MySQL.insert.await(
+        'INSERT INTO fivempro_trucker_companies (owner_citizenid, name) VALUES (?, ?)',
+        { citizenid, companyName }
+    )
+    MySQL.insert.await(
+        'INSERT INTO fivempro_trucker_company_members (company_id, citizenid, role) VALUES (?, ?, ?)',
+        { companyId, citizenid, 'owner' }
+    )
+    saveProfile(citizenid, { company_id = companyId })
+    cb({ ok = true, dashboard = buildDashboard(src) })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:acceptContract', function(src, cb, contractId)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false }) end
+    if activeDeliveries[src] then return cb({ ok = false, reason = 'Jau vykdomas kontraktas.' }) end
+    local citizenid = Player.PlayerData.citizenid
+    local row = ensureProfile(citizenid)
+    local profile = buildProfile(row)
+    if not profile.registered then return cb({ ok = false, reason = 'Registruokis kaip vairuotojas.' }) end
+    local contract
+    for _, c in ipairs(contractPool) do
+        if c.id == contractId then contract = c break end
+    end
+    if not contract then return cb({ ok = false, reason = 'Kontraktas nebegalioja.' }) end
+    if not TruckingShared.PlayerCanAccessCargo(profile, contract.cargoId) then
+        return cb({ ok = false, reason = 'Per žemas lygis ar reputacija.' })
+    end
+    local deadline = os.time() + (contract.timeLimitMin * 60)
+    activeDeliveries[src] = {
+        contract = contract,
+        phase = 'pickup',
+        condition = 100,
+        deadline = deadline,
+        startedAt = os.time(),
+        loaded = false,
+    }
+    TriggerClientEvent('fivempro_trucking:client:startDelivery', src, activeDeliveries[src])
+    cb({ ok = true, delivery = activeDeliveries[src] })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:loadCargo', function(src, cb)
+    local d = activeDeliveries[src]
+    if not d or d.phase ~= 'pickup' then return cb({ ok = false }) end
+    d.loaded = true
+    d.phase = 'delivery'
+    cb({ ok = true, delivery = d })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:completeDelivery', function(src, cb, conditionPct)
+    local Player = QBCore.Functions.GetPlayer(src)
+    local d = activeDeliveries[src]
+    if not Player or not d or d.phase ~= 'delivery' or not d.loaded then
+        return cb({ ok = false, reason = 'Nėra aktyvaus pristatymo.' })
+    end
+    conditionPct = TruckingShared.Clamp(conditionPct or d.condition or 100, 0, 100)
+    local contract = d.contract
+    local secondsLeft = d.deadline - os.time()
+    local totalSeconds = (contract.timeLimitMin or 20) * 60
+    local timeMult = TruckingShared.TimePayMultiplier(secondsLeft, totalSeconds)
+    local condMult = TruckingShared.ConditionPayMultiplier(conditionPct)
+    local pay = math.floor((contract.pay or 0) * timeMult * condMult + 0.5)
+    local citizenid = Player.PlayerData.citizenid
+    local row = ensureProfile(citizenid)
+    local profile = buildProfile(row)
+    local company = profile.company_id and getCompany(profile.company_id) or nil
+    if company then
+        pay = math.floor(pay * (1.0 + (Config.Pay.companyBonus or 0.18)) + 0.5)
+        MySQL.update.await(
+            'UPDATE fivempro_trucker_companies SET balance = balance + ?, total_revenue = total_revenue + ?, total_deliveries = total_deliveries + 1 WHERE id = ?',
+            { pay, pay, company.id }
+        )
+    end
+    Player.Functions.AddMoney('bank', pay, 'trucker-delivery')
+    local xpGain = math.random(Config.XpPerDelivery.min or 35, Config.XpPerDelivery.max or 120)
+    local cargo = TruckingShared.Cargo(contract.cargoId) or {}
+    xpGain = math.floor(xpGain * (cargo.xpMult or 1.0) + 0.5)
+    local repGain = math.random(Config.RepPerDelivery.min or 4, Config.RepPerDelivery.max or 18)
+    local newXp = (row.xp or 0) + xpGain
+    local newRep = (row.reputation or 0) + repGain
+    local newLevel = TruckingShared.LevelFromXp(newXp)
+    local licenses = decodeLicenses(row.licenses)
+    if newLevel >= (Config.Unlocks.heavy_truck_license or 5) then
+        licenses.heavy_truck = true
+    end
+    saveProfile(citizenid, {
+        xp = newXp,
+        reputation = newRep,
+        level = newLevel,
+        total_deliveries = (row.total_deliveries or 0) + 1,
+        total_earned = (row.total_earned or 0) + pay,
+        licenses = encodeLicenses(licenses),
+    })
+    MySQL.insert.await([[
+        INSERT INTO fivempro_trucker_delivery_log
+        (citizenid, company_id, cargo_type, pickup_hub, delivery_hub, pay, condition_pct, on_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ]], {
+        citizenid,
+        profile.company_id,
+        contract.cargoId,
+        contract.pickupId,
+        contract.deliveryId,
+        pay,
+        conditionPct,
+        timeMult >= 1.0 and 1 or 0,
+    })
+    activeDeliveries[src] = nil
+    TriggerClientEvent('fivempro_trucking:client:clearDelivery', src)
+    cb({
+        ok = true,
+        pay = pay,
+        xpGain = xpGain,
+        repGain = repGain,
+        timeMult = timeMult,
+        condMult = condMult,
+        dashboard = buildDashboard(src),
+    })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:cancelDelivery', function(src, cb)
+    activeDeliveries[src] = nil
+    TriggerClientEvent('fivempro_trucking:client:clearDelivery', src)
+    cb({ ok = true })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:buyFleetVehicle', function(src, cb, model)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false }) end
+    local citizenid = Player.PlayerData.citizenid
+    local row = ensureProfile(citizenid)
+    local profile = buildProfile(row)
+    if not profile.company_id then return cb({ ok = false, reason = 'Reikia įmonės.' }) end
+    local company = getCompany(profile.company_id)
+    if not company or company.owner_citizenid ~= citizenid then
+        return cb({ ok = false, reason = 'Tik savininkas.' })
+    end
+    model = string.lower(tostring(model or ''))
+    local vehCfg = TruckingShared.Vehicle(model)
+    if not vehCfg then return cb({ ok = false, reason = 'Nežinomas modelis.' }) end
+    local shopPrice
+    for _, item in ipairs(Config.FleetShop or {}) do
+        if item.model == model then shopPrice = item.price break end
+    end
+    if not shopPrice then return cb({ ok = false, reason = 'Neparduodama.' }) end
+    if (company.balance or 0) < shopPrice then return cb({ ok = false, reason = 'Nepakanka įmonės balanso.' }) end
+    local plate = ('TN%s'):format(math.random(100, 999))
+    MySQL.update.await('UPDATE fivempro_trucker_companies SET balance = balance - ? WHERE id = ?', { shopPrice, company.id })
+    MySQL.insert.await(
+        'INSERT INTO fivempro_trucker_fleet (company_id, model, label, plate) VALUES (?, ?, ?, ?)',
+        { company.id, model, vehCfg.label or model, plate }
+    )
+    cb({ ok = true, dashboard = buildDashboard(src) })
+end)
+
+RegisterNetEvent('fivempro_trucking:server:updateCondition', function(conditionPct)
+    local src = source
+    if activeDeliveries[src] then
+        activeDeliveries[src].condition = TruckingShared.Clamp(conditionPct, 0, 100)
+    end
+end)
+
+AddEventHandler('playerDropped', function()
+    activeDeliveries[source] = nil
+end)
+
+exports('GetTruckerProfile', function(src)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return nil end
+    return buildProfile(ensureProfile(Player.PlayerData.citizenid))
+end)
+
+exports('OpenTruckNet', function(src)
+    TriggerClientEvent('fivempro_trucking:client:openUI', src, 'full')
+end)

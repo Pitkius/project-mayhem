@@ -80,14 +80,15 @@ MAIN_STATS.forEach((k) => {
 });
 
 const carSpeedDigits = document.getElementById("carSpeedDigits");
+const carGear = document.getElementById("carGear");
 const carRpmArc = document.getElementById("carRpmArc");
 const carFuelArc = document.getElementById("carFuelArc");
-const carMotorFill = document.getElementById("carMotorFill");
-const carMotorPct = document.getElementById("carMotorPct");
-const carMvMotor = document.getElementById("carMvMotor");
-const carFuelMiniFill = document.getElementById("carFuelMiniFill");
-const carFuelMiniPct = document.getElementById("carFuelMiniPct");
-const carMvFuelMini = document.getElementById("carMvFuelMini");
+const chStatTurnL = document.getElementById("chStatTurnL");
+const chStatTurnR = document.getElementById("chStatTurnR");
+const chStatBelt = document.getElementById("chStatBelt");
+const chStatHandbrake = document.getElementById("chStatHandbrake");
+const chStatLock = document.getElementById("chStatLock");
+const chStatLights = document.getElementById("chStatLights");
 const carhudClassic = document.getElementById("carhudClassic");
 const vehiclePanel = document.getElementById("vehiclePanel");
 const vehicleListMenu = document.getElementById("vehicleListMenu");
@@ -119,13 +120,45 @@ const VEHICLE_CLASS_IMAGES = {
   12: "class_van",
 };
 
-function setVehiclePreviewImage(_modelSpawn, _spawnModel, _vehicleClass) {
-  const carSvg = document.querySelector(".vp-ios-car-svg");
-  if (carSvg) carSvg.classList.remove("vp-ios-car-svg--hidden");
-  if (vpVehicleImage) {
-    vpVehicleImage.classList.remove("vp-vehicle-loaded");
-    vpVehicleImage.style.display = "none";
-  }
+function setChStat(el, mode) {
+  if (!el) return;
+  el.classList.remove("state-on", "state-off", "state-warn", "state-blink");
+  if (mode) el.classList.add(mode);
+}
+
+function setVehiclePreviewImage(modelSpawn, spawnModel, vehicleClass) {
+  if (!vpVehicleImage) return;
+  const candidates = [];
+  const add = (name) => {
+    if (!name) return;
+    const n = String(name).toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (n && !candidates.includes(`assets/vehicles/${n}.png`)) {
+      candidates.push(`assets/vehicles/${n}.png`);
+    }
+  };
+  add(spawnModel);
+  add(modelSpawn);
+  const cls = VEHICLE_CLASS_IMAGES[Number(vehicleClass)] || "class_sedan";
+  candidates.push(`assets/vehicles/${cls}.png`);
+  candidates.push("assets/vehicles/vehicle-topdown.png");
+
+  let idx = 0;
+  const tryNext = () => {
+    if (idx >= candidates.length) {
+      vpVehicleImage.classList.remove("vp-vehicle-loaded");
+      vpVehicleImage.style.display = "none";
+      return;
+    }
+    const src = candidates[idx++];
+    vpVehicleImage.onload = () => {
+      vpVehicleImage.style.display = "block";
+      vpVehicleImage.classList.add("vp-vehicle-loaded");
+    };
+    vpVehicleImage.onerror = () => tryNext();
+    vpVehicleImage.src = src;
+  };
+  vpVehicleImage.classList.remove("vp-vehicle-loaded");
+  tryNext();
 }
 const vpPlateLine = document.getElementById("vpPlateLine");
 const vpHazardToggle = document.getElementById("vpHazardToggle");
@@ -377,10 +410,22 @@ window.addEventListener("message", (event) => {
     }
     const fuelN = Math.max(0, Math.min(100, Number(data.fuel) || 0));
     if (vpFuelHFill) vpFuelHFill.style.width = `${fuelN}%`;
-    if (vpFuelPct) vpFuelPct.textContent = String(Math.round(fuelN));
+    if (vpFuelPct) vpFuelPct.textContent = `${Math.round(fuelN)}%`;
     const motorN = Math.max(0, Math.min(100, Number(data.motorPct) != null ? data.motorPct : 100));
     if (vpMotorHFill) vpMotorHFill.style.width = `${motorN}%`;
-    if (vpMotorPct) vpMotorPct.textContent = String(Math.round(motorN));
+    if (vpMotorPct) vpMotorPct.textContent = `${Math.round(motorN)}%`;
+    const bodyN = Math.max(0, Math.min(100, Number(data.bodyPct) != null ? data.bodyPct : 100));
+    const vpBodyHFill = document.getElementById("vpBodyHFill");
+    const vpBodyPct = document.getElementById("vpBodyPct");
+    if (vpBodyHFill) vpBodyHFill.style.width = `${bodyN}%`;
+    if (vpBodyPct) vpBodyPct.textContent = `${Math.round(bodyN)}%`;
+    const vpMileage = document.getElementById("vpMileage");
+    if (vpMileage) {
+      const km = Number(data.mileageKm);
+      vpMileage.textContent = Number.isFinite(km) ? `${Math.round(km)} km` : "—";
+    }
+    const vpVehicleClass = document.getElementById("vpVehicleClass");
+    if (vpVehicleClass) vpVehicleClass.textContent = data.vehicleClassLabel || "—";
     if (vpVehicleName) vpVehicleName.textContent = data.vehicleName || "—";
     if (vpPlateLine) vpPlateLine.textContent = data.plate || "—";
     setVehiclePreviewImage(data.modelSpawn, data.spawnModel, data.vehicleClass);
@@ -395,12 +440,12 @@ window.addEventListener("message", (event) => {
       vpEngineStatus.classList.toggle("is-on", !!data.engineOn);
     }
     if (data.hasKeys === false) {
-      document.querySelectorAll(".vp-ios-q, .vp-ios-power, .vp-door, .vp-win").forEach((el) => {
+      document.querySelectorAll(".vp-ios-q, .vp-ctrl, .vp-door, .vp-hot, .vp-win").forEach((el) => {
         el.classList.add("vp-disabled");
         el.setAttribute("disabled", "disabled");
       });
     } else {
-      document.querySelectorAll(".vp-ios-q, .vp-ios-power, .vp-door, .vp-win").forEach((el) => {
+      document.querySelectorAll(".vp-ios-q, .vp-ctrl, .vp-door, .vp-hot, .vp-win").forEach((el) => {
         el.classList.remove("vp-disabled");
         el.removeAttribute("disabled");
       });
@@ -409,15 +454,13 @@ window.addEventListener("message", (event) => {
       vpHazardToggle.classList.toggle("on", !!data.hazard);
       vpHazardToggle.setAttribute("aria-pressed", data.hazard ? "true" : "false");
     }
-    document.querySelectorAll(".vp-ios-q").forEach((btn) => {
+    document.querySelectorAll(".vp-ios-q, .vp-ctrl").forEach((btn) => {
       const act = btn.getAttribute("data-act");
       btn.classList.remove("on");
       if (act === "lock" && data.locked) btn.classList.add("on");
       if (act === "lights" && data.headlightsOn) btn.classList.add("on");
       if (act === "interior" && data.interiorLight) btn.classList.add("on");
-    });
-    document.querySelectorAll(".vp-ios-power").forEach((btn) => {
-      btn.classList.toggle("on", !!data.engineOn);
+      if (act === "engine" && data.engineOn) btn.classList.add("on");
     });
     if (Array.isArray(data.doors)) {
       data.doors.forEach((d) => {
@@ -425,9 +468,13 @@ window.addEventListener("message", (event) => {
         if (!el) return;
         el.classList.toggle("state-open", !!d.open);
         el.classList.toggle("state-unlocked", !data.locked);
-        const labels = ["Vair.", "Keleiv.", "G. kairė", "G. dešinė", "Kapotas", "Bagažinė"];
-        let lab = labels[d.idx] || "Durys";
-        el.textContent = d.open ? `${lab} ●` : lab;
+      });
+    }
+    if (Array.isArray(data.windows)) {
+      data.windows.forEach((w) => {
+        const el = document.querySelector(`.vp-win[data-window="${w.idx}"]`);
+        if (!el) return;
+        el.classList.toggle("state-open", !!w.open);
       });
     }
     return;
@@ -469,12 +516,13 @@ window.addEventListener("message", (event) => {
   if (carSpeedDigits) {
     carSpeedDigits.textContent = String(sp);
   }
+  if (carGear && data.gear) {
+    carGear.textContent = String(data.gear);
+  }
   const carFuelPctLbl = document.getElementById("carFuelPctLbl");
   const carMotorPctLbl = document.getElementById("carMotorPctLbl");
   if (carFuelPctLbl) carFuelPctLbl.textContent = `${Math.round(fuelN)}%`;
   if (carMotorPctLbl) carMotorPctLbl.textContent = `${motorPctHud}%`;
-  if (carMotorPct) carMotorPct.textContent = String(motorPctHud);
-  if (carFuelMiniPct) carFuelMiniPct.textContent = String(Math.round(fuelN));
   if (carRpmArc) {
     const rpm = Math.max(0, Math.min(100, Number(data.rpm) || 0));
     carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN * (1 - rpm / 100));
@@ -482,15 +530,15 @@ window.addEventListener("message", (event) => {
   if (carFuelArc) {
     carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - fuelN / 100));
   }
-  if (carMotorFill) carMotorFill.style.height = `${motorPctHud}%`;
-  if (carMvMotor) {
-    carMvMotor.classList.toggle("state-warn", motorPctHud < 40);
-  }
 
-  if (carFuelMiniFill) carFuelMiniFill.style.height = `${fuelN}%`;
-  if (carMvFuelMini) {
-    carMvFuelMini.classList.toggle("state-warn", fuelN < 18);
-  }
+  const beltOn = !!data.seatbelt;
+  setChStat(chStatBelt, beltOn ? "state-on" : "state-warn");
+  setChStat(chStatHandbrake, data.handbrake ? "state-on" : "state-off");
+  setChStat(chStatLock, data.doorsLocked ? "state-on" : "state-off");
+  setChStat(chStatLights, data.lightsOn ? "state-on" : "state-off");
+  const ind = Number(data.indicators) || 0;
+  setChStat(chStatTurnL, ind === 1 || ind === 3 ? "state-blink" : "state-off");
+  setChStat(chStatTurnR, ind === 2 || ind === 3 ? "state-blink" : "state-off");
 
   const statFuel = document.getElementById("carStatFuel");
   const statEngine = document.getElementById("carStatEngine");
@@ -532,7 +580,7 @@ if (vpBtnClose) {
   });
 }
 
-document.querySelectorAll(".vp-ios-q, .vp-ios-power").forEach((btn) => {
+document.querySelectorAll(".vp-ios-q, .vp-ctrl").forEach((btn) => {
   btn.addEventListener("click", () => {
     const act = btn.getAttribute("data-act");
     if (!act) return;
@@ -544,7 +592,7 @@ document.querySelectorAll(".vp-ios-q, .vp-ios-power").forEach((btn) => {
   });
 });
 
-document.querySelectorAll(".vp-door").forEach((btn) => {
+document.querySelectorAll(".vp-door, .vp-hot.vp-door").forEach((btn) => {
   btn.addEventListener("click", () => {
     const d = btn.getAttribute("data-door");
     nuiPost("vehiclePanel:action", { action: "door", doorIndex: Number(d) });

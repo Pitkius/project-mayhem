@@ -1,0 +1,200 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Noto Sans LT", "Segoe UI", sans-serif;
+  background: transparent;
+  overflow: hidden;
+}
+.hidden { display: none !important; }
+
+.app {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  background: rgba(8, 8, 12, 0.55);
+  backdrop-filter: blur(8px);
+  color: #f4f4f5;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, rgba(18, 16, 28, 0.98) 0%, rgba(10, 10, 16, 0.98) 100%);
+  border-right: 1px solid rgba(167, 139, 250, 0.15);
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.brand { display: flex; gap: 10px; align-items: center; }
+.brand-ico { font-size: 28px; filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.4)); }
+.brand-title { font-weight: 900; letter-spacing: 0.12em; font-size: 13px; color: #fafafa; }
+.brand-sub { font-size: 10px; letter-spacing: 0.2em; color: #a78bfa; font-weight: 700; }
+
+.profile-card {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+}
+.profile-name { font-weight: 800; font-size: 15px; }
+.profile-rank { font-size: 11px; color: #fb923c; font-weight: 700; margin: 4px 0 10px; }
+.xp-bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.xp-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #7c3aed, #fb923c); transition: width 0.3s; }
+.xp-label { font-size: 10px; color: #a1a1aa; margin-top: 6px; }
+.stars { color: #a78bfa; letter-spacing: 2px; margin-top: 8px; font-size: 14px; }
+.company-pill {
+  margin-top: 8px; font-size: 10px; font-weight: 700;
+  padding: 4px 8px; border-radius: 999px;
+  background: rgba(124, 58, 237, 0.2); color: #ddd6fe;
+}
+
+.nav { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.nav-btn {
+  text-align: left; padding: 10px 12px; border-radius: 12px;
+  border: 1px solid transparent; background: transparent;
+  color: #d4d4d8; font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.nav-btn:hover { background: rgba(167, 139, 250, 0.08); color: #fff; }
+.nav-btn.active {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.35), rgba(251, 146, 60, 0.12));
+  border-color: rgba(167, 139, 250, 0.35);
+  color: #fff;
+}
+
+.logout-btn {
+  margin-top: auto; padding: 10px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+  color: #fca5a5; font-weight: 700; cursor: pointer;
+}
+
+.main {
+  padding: 20px 24px;
+  overflow: auto;
+  background: linear-gradient(135deg, rgba(22, 20, 32, 0.96), rgba(14, 14, 20, 0.98));
+}
+
+.topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+.topbar h1 { font-size: 1.35rem; letter-spacing: 0.06em; }
+.muted { color: #71717a; font-size: 12px; margin-top: 4px; }
+.clock { font-variant-numeric: tabular-nums; font-weight: 700; color: #a1a1aa; margin-right: 14px; }
+.balance { color: #4ade80; font-weight: 800; }
+
+.market-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.map-panel, .detail-panel, .list-panel {
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(167, 139, 250, 0.14);
+  padding: 16px;
+  backdrop-filter: blur(12px);
+}
+
+.map-head { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #a1a1aa; margin-bottom: 10px; }
+.route-map {
+  height: 280px; border-radius: 14px;
+  background:
+    radial-gradient(circle at 30% 70%, rgba(124, 58, 237, 0.15), transparent 55%),
+    radial-gradient(circle at 70% 30%, rgba(251, 146, 60, 0.1), transparent 50%),
+    linear-gradient(180deg, #1a1824, #0f0e14);
+  position: relative; overflow: hidden;
+}
+.route-map svg { width: 100%; height: 100%; }
+
+.map-legend {
+  display: flex; gap: 14px; margin-top: 10px; font-size: 10px; color: #a1a1aa;
+}
+.map-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.map-legend .pickup { background: #fff; }
+.map-legend .delivery { background: #a78bfa; }
+.map-legend .line { display: inline-block; width: 16px; height: 2px; background: #fb923c; margin-right: 4px; vertical-align: middle; }
+
+.detail-panel h3 { font-size: 11px; letter-spacing: 0.1em; color: #a1a1aa; margin-bottom: 12px; }
+.contract-detail { min-height: 220px; font-size: 13px; line-height: 1.6; }
+.contract-detail.empty { color: #71717a; display: grid; place-items: center; }
+.detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.detail-row strong { color: #fb923c; }
+.risk-low { color: #4ade80; }
+.risk-medium { color: #fbbf24; }
+.risk-high, .risk-extreme { color: #f87171; }
+
+.btn-primary {
+  width: 100%; margin-top: 14px; padding: 14px;
+  border: none; border-radius: 14px; cursor: pointer;
+  font-weight: 900; letter-spacing: 0.08em;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa 55%, #fb923c);
+  color: #fff; box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.btn-primary:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.list-panel h3 { font-size: 12px; margin-bottom: 10px; letter-spacing: 0.06em; }
+.contract-list { display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow: auto; }
+.contract-list.wide { max-height: none; }
+.contract-item {
+  display: grid; grid-template-columns: 1fr auto; gap: 8px;
+  padding: 12px 14px; border-radius: 14px; cursor: pointer;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+  transition: border-color 0.12s, background 0.12s;
+}
+.contract-item:hover, .contract-item.selected {
+  border-color: rgba(167, 139, 250, 0.45);
+  background: rgba(124, 58, 237, 0.12);
+}
+.contract-item .pay { color: #4ade80; font-weight: 900; font-size: 15px; }
+.contract-item .meta { font-size: 11px; color: #a1a1aa; margin-top: 4px; }
+.tag { display: inline-block; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 999px; margin-right: 4px; }
+.tag-illegal { background: rgba(248,113,113,0.2); color: #fca5a5; }
+
+.fleet-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;
+}
+.fleet-card {
+  padding: 14px; border-radius: 16px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+}
+.fleet-card h4 { margin-bottom: 8px; }
+.bar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); margin: 6px 0; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: linear-gradient(90deg, #7c3aed, #fb923c); }
+
+.company-panel, .stats-grid, .leaderboard { display: grid; gap: 12px; }
+.stat-card, .lb-row, .company-card {
+  padding: 16px; border-radius: 16px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(167,139,250,0.12);
+}
+.company-form { display: flex; gap: 8px; margin-top: 10px; }
+.company-form input {
+  flex: 1; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.25); color: #fff;
+}
+.btn-secondary {
+  padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(167,139,250,0.35);
+  background: rgba(124,58,237,0.2); color: #fff; font-weight: 700; cursor: pointer;
+}
+
+.register-overlay {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); z-index: 20;
+}
+.register-card {
+  width: min(420px, 90%); padding: 28px; border-radius: 20px;
+  background: rgba(24, 22, 36, 0.98); border: 1px solid rgba(167,139,250,0.25);
+  text-align: center;
+}
+.register-card h2 { margin-bottom: 10px; }
+.register-card p { color: #a1a1aa; font-size: 13px; margin-bottom: 18px; line-height: 1.5; }
+
+.tab { display: none; }
+.tab.active { display: block; }
+
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .market-grid { grid-template-columns: 1fr; }
+}

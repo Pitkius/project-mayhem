@@ -30,7 +30,7 @@ body {
     --tile-hunger: #fb923c;
     --tile-thirst: #38bdf8;
     --tile-stamina: #e879f9;
-    --vehicle-accent: #c5ff3d;
+    --vehicle-accent: #a78bfa;
 }
 
 .hud-bl-cluster {
@@ -1820,4 +1820,486 @@ body.preset-3 {
 .vp-ios-shell {
     border-radius: 22px;
     overflow: hidden;
+}
+
+/* —— Premium Car HUD —— */
+.carhud-premium {
+    background: transparent !important;
+    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.35));
+}
+
+.ch-shell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px 12px;
+    border-radius: 20px;
+    background: rgba(18, 16, 28, 0.28);
+    border: 1px solid rgba(167, 139, 250, 0.22);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 0 24px rgba(124, 58, 237, 0.12);
+}
+
+.ch-status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.ch-stat {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(148, 163, 184, 0.55);
+    transition: color 0.22s ease, background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
+}
+
+.ch-stat .hud-ico-svg {
+    width: 18px;
+    height: 18px;
+}
+
+.ch-stat.state-on {
+    color: #ddd6fe;
+    background: rgba(167, 139, 250, 0.2);
+    border-color: rgba(167, 139, 250, 0.5);
+    box-shadow: 0 0 14px rgba(167, 139, 250, 0.35);
+}
+
+.ch-stat.state-off {
+    opacity: 0.38;
+}
+
+.ch-stat.state-warn {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.14);
+    border-color: rgba(251, 191, 36, 0.45);
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.28);
+    opacity: 1;
+}
+
+.ch-stat.state-blink {
+    animation: ch-blink 0.55s ease-in-out infinite alternate;
+}
+
+@keyframes ch-blink {
+    from { opacity: 0.35; box-shadow: none; }
+    to { opacity: 1; box-shadow: 0 0 16px rgba(167, 139, 250, 0.45); }
+}
+
+.ch-gauge-wrap {
+    position: relative;
+    width: 168px;
+    height: 168px;
+}
+
+.ch-rpm-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.25));
+}
+
+.ch-fuel-track {
+    stroke: rgba(255, 255, 255, 0.07);
+    stroke-width: 4.5;
+    stroke-dasharray: 273 400;
+    stroke-linecap: round;
+}
+
+.ch-fuel-arc {
+    stroke: rgba(196, 181, 253, 0.92);
+    stroke-width: 4.5;
+    stroke-linecap: round;
+    stroke-dasharray: 273 400;
+    stroke-dashoffset: 273;
+    transition: stroke-dashoffset 0.2s ease;
+    fill: none;
+}
+
+.ch-rpm-track {
+    stroke: rgba(255, 255, 255, 0.09);
+    stroke-width: 5;
+    stroke-dasharray: 236 400;
+    stroke-linecap: round;
+}
+
+.ch-rpm-arc {
+    stroke: var(--accent-fill);
+    stroke-width: 5.5;
+    stroke-linecap: round;
+    stroke-dasharray: 236 400;
+    stroke-dashoffset: 236;
+    transition: stroke-dashoffset 0.12s ease;
+    fill: none;
+}
+
+.ch-turbo-arc {
+    stroke: rgba(56, 189, 248, 0.85);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 207 400;
+    stroke-dashoffset: 207;
+    fill: none;
+}
+
+.ch-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.ch-gear {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: rgba(167, 139, 250, 0.95);
+    margin-bottom: 2px;
+    text-transform: uppercase;
+}
+
+.ch-speed {
+    font-size: clamp(1.85rem, 3.6vw, 2.5rem);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+    color: #f8fafc;
+    line-height: 1;
+    text-shadow: 0 0 20px rgba(167, 139, 250, 0.25);
+}
+
+.ch-unit {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: rgba(196, 181, 253, 0.85);
+    margin-top: 2px;
+}
+
+.ch-vitals-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.ch-vital {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ch-vital .hud-ico-svg {
+    width: 16px;
+    height: 16px;
+}
+
+.ch-vital-val {
+    font-size: 0.72rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: #e2e8f0;
+}
+
+.ch-vital.state-warn {
+    border-color: rgba(251, 191, 36, 0.5);
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
+}
+
+.ch-vital.state-warn .ch-vital-val {
+    color: #fde68a;
+}
+
+/* —— Premium M Menu —— */
+.vp-premium .vp-ios-shell {
+    width: min(920px, 96vw);
+    padding: 18px 22px 20px;
+    border-radius: 24px;
+    overflow: visible;
+}
+
+.vp-head-block {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding-right: 44px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(167, 139, 250, 0.14);
+    padding-bottom: 14px;
+}
+
+.vp-head-k {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8e8e93;
+}
+
+.vp-head-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #f5f5f7;
+    margin: 2px 0 6px;
+    letter-spacing: -0.02em;
+}
+
+.vp-head-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+}
+
+.vp-head-class {
+    font-weight: 800;
+    color: #c4b5fd;
+}
+
+.vp-head-plate {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: #f2f2f7;
+    letter-spacing: 0.06em;
+}
+
+.vp-head-sep {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.vp-head-status {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.vp-head-status .vp-status-row {
+    padding: 8px 0 0;
+    justify-content: flex-end;
+}
+
+.vp-block-title {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #98989d;
+    margin-bottom: 12px;
+}
+
+.vp-vitals-block {
+    margin-bottom: 16px;
+}
+
+.vp-ios-bar-fill-body {
+    background: linear-gradient(90deg, #6366f1 0%, #a5b4fc 100%);
+}
+
+.vp-mileage-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 4px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 4px;
+}
+
+.vp-mileage-val {
+    font-size: 13px;
+    font-weight: 800;
+    color: #e5e5ea;
+    font-variant-numeric: tabular-nums;
+}
+
+.vp-premium .vp-ios-car-wrap {
+    min-height: 420px;
+}
+
+.vp-premium .vp-vehicle-preview {
+    position: absolute;
+    inset: 8% 10% 12%;
+    transform: none;
+    width: auto;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+}
+
+.vp-premium .vp-vehicle-image {
+    max-width: 340px;
+    height: 280px;
+    opacity: 0.92;
+    transform: scale(1);
+}
+
+.vp-hot {
+    position: absolute;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 10px;
+    min-width: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(24, 22, 36, 0.72);
+    backdrop-filter: blur(8px);
+    color: #94a3b8;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: transform 0.14s ease, border-color 0.14s ease, color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+}
+
+.vp-hot:hover {
+    transform: scale(1.06);
+    border-color: rgba(167, 139, 250, 0.45);
+    color: #e9d5ff;
+}
+
+.vp-hot.state-open {
+    color: #ddd6fe;
+    background: rgba(124, 58, 237, 0.28);
+    border-color: rgba(167, 139, 250, 0.65);
+    box-shadow: 0 0 18px rgba(124, 58, 237, 0.35);
+}
+
+.vp-hot.state-unlocked {
+    color: #cbd5e1;
+}
+
+.vp-hot-hood {
+    top: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.vp-hot-hood:hover {
+    transform: translateX(-50%) scale(1.06);
+}
+
+.vp-hot-trunk {
+    bottom: 4%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.vp-hot-trunk:hover {
+    transform: translateX(-50%) scale(1.06);
+}
+
+.vp-hot-fl { left: 8%; top: 28%; }
+.vp-hot-fr { right: 8%; top: 28%; }
+.vp-hot-rl { left: 8%; top: 58%; }
+.vp-hot-rr { right: 8%; top: 58%; }
+
+.vp-win {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0;
+    border-radius: 50%;
+    place-content: center;
+}
+
+.vp-win-0 { left: 22%; top: 34%; }
+.vp-win-1 { right: 22%; top: 34%; }
+.vp-win-2 { left: 22%; top: 64%; }
+.vp-win-3 { right: 22%; top: 64%; }
+
+.vp-win.state-open {
+    color: #c4b5fd;
+    background: rgba(167, 139, 250, 0.22);
+}
+
+.vp-hot-lbl {
+    font-size: 8px;
+    opacity: 0.85;
+}
+
+.vp-controls-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(167, 139, 250, 0.14);
+}
+
+@media (min-width: 640px) {
+    .vp-controls-bar {
+        grid-template-columns: repeat(8, 1fr);
+    }
+}
+
+.vp-ctrl {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 6px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(36, 34, 52, 0.88);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.vp-ctrl:hover {
+    transform: translateY(-2px);
+    border-color: rgba(167, 139, 250, 0.4);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.18);
+}
+
+.vp-ctrl:active {
+    transform: translateY(0) scale(0.96);
+}
+
+.vp-ctrl.on {
+    border-color: rgba(167, 139, 250, 0.65);
+    background: rgba(167, 139, 250, 0.16);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.22);
+}
+
+.vp-ctrl-ico {
+    display: grid;
+    place-items: center;
+}
+
+.vp-ctrl-lbl {
+    opacity: 0.92;
+}
+
+.vp-hot.vp-disabled,
+.vp-ctrl.vp-disabled {
+    opacity: 0.35;
+    pointer-events: none;
 }

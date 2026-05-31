@@ -15,6 +15,7 @@ const APP_TEMPLATE = {
   shop: "renderShopApp",
   weather: "renderWeatherApp",
   radio: "renderRadioApp",
+  cargonet: "renderCargoNetApp",
 };
 const DOCK_APPS = ["calls", "messages", "contacts", "settings"];
 const APPS_PER_PAGE = 16;
@@ -521,6 +522,11 @@ window.renderRadioApp = (content) => {
   content.querySelectorAll("[data-radio]").forEach((btn) =>
     btn.addEventListener("click", () => nui("radioStation", { station: btn.dataset.radio })),
   );
+};
+
+window.renderCargoNetApp = (content) => {
+  content.innerHTML = `<div class="card"><b>CargoNet</b><p class="muted small">Krovinių birža ir logistikos kontraktai.</p><button id="btnOpenCargoNet" class="ios-btn primary">Atidaryti TruckNet</button></div>`;
+  document.getElementById("btnOpenCargoNet").addEventListener("click", () => nui("openCargoNet", {}));
 };
 
 window.renderNotesApp = (content) => {

@@ -43,22 +43,21 @@ window.MdtMap = (function () {
       minY: Number(t.gameMin?.y ?? -4000),
       maxX: Number(t.gameMax?.x ?? 4500),
       maxY: Number(t.gameMax?.y ?? 6625),
+      offsetX: Number(t.offsetX) || 0,
+      offsetY: Number(t.offsetY) || 0,
       imgW: Number(t.imageWidth) || 2048,
       imgH: Number(t.imageHeight) || 2560,
       imageUrl: nuiImageUrl(file),
     };
   }
 
+  /** GTA koordinatės → Leaflet [lat, lng] (CRS.Simple: lat=Y, lng=X). */
   function gameToLatLng(gx, gy, cfg) {
-    const x = ((Number(gx) - cfg.minX) / (cfg.maxX - cfg.minX)) * cfg.imgW;
-    const y = cfg.imgH - ((Number(gy) - cfg.minY) / (cfg.maxY - cfg.minY)) * cfg.imgH;
-    return [y, x];
+    return [Number(gy) + cfg.offsetY, Number(gx) + cfg.offsetX];
   }
 
   function latLngToGame(lat, lng, cfg) {
-    const gy = cfg.minY + ((cfg.imgH - lat) / cfg.imgH) * (cfg.maxY - cfg.minY);
-    const gx = cfg.minX + (lng / cfg.imgW) * (cfg.maxX - cfg.minX);
-    return { x: gx, y: gy };
+    return { x: Number(lng) - cfg.offsetX, y: Number(lat) - cfg.offsetY };
   }
 
   function escapeHtml(s) {
@@ -283,10 +282,10 @@ window.MdtMap = (function () {
     const el = document.getElementById('mdtLeafletMap');
     if (!el || typeof L === 'undefined') return;
 
-    mapBounds = [
-      [0, 0],
-      [mapCfg.imgH, mapCfg.imgW],
-    ];
+    mapBounds = L.latLngBounds(
+      [mapCfg.minY, mapCfg.minX],
+      [mapCfg.maxY, mapCfg.maxX]
+    );
 
     if (!leafletMap) {
       leafletMap = L.map(el, {

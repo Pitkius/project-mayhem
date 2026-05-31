@@ -29,24 +29,7 @@ local function getCurrentTurfId()
 end
 
 local function runProgress(ms, label)
-    local done = false
-    local cancelled = false
-    QBCore.Functions.Progressbar('gang_mission', label or 'Vykdoma…', ms, false, true, {
-        disableMovement = true,
-        disableCarMovement = true,
-        disableCombat = true,
-    }, {}, {}, {}, function()
-        done = true
-    end, function()
-        cancelled = true
-    end)
-    local deadline = GetGameTimer() + ms + 800
-    while GetGameTimer() < deadline do
-        if cancelled then return false end
-        if done then return true end
-        Wait(50)
-    end
-    return done
+    return GangRunProgressSync('gang_mission', label, ms)
 end
 
 local function finishStep(token, step)

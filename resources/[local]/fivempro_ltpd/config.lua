@@ -60,10 +60,12 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT dispatch žemėlapis — pilnas San Andreas (koord. atitinka gtav_satellite_2048.png)
+--- MDT dispatch žemėlapis — pilnas San Andreas (koord. = gtav_satellite_2048.png kampai)
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
+    offsetX = 0.0,
+    offsetY = 0.0,
     imageFile = 'mdt/asset/gtav_satellite_2048.png',
     imageWidth = 2048,
     imageHeight = 2560,
@@ -362,6 +364,8 @@ Config.PdDoorGroups = {
         interact = vector3(416.2, -1024.0, 29.85),
         interactDist = 5.5,
         defaultLocked = true,
+        bollardRaiseZ = 0.38,
+        gateOpenHeadingDelta = 82.0,
         doors = {
             { model = 'prop_facgate_07b', coords = vector3(419.99, -1025.0, 28.99), heading = 270.0 },
         },

@@ -1,4 +1,4 @@
---- Maži turf langeliai per visą GTA 5 žemėlapį (~120). Kiekvienas = kelios gatvės.
+--- Maži turf langeliai per visą GTA 5 žemėlapį (~350+). Kiekvienas = kelios gatvės.
 local TurfCells = {}
 local turfIndex = 0
 
@@ -60,6 +60,48 @@ addBlock('Harmony', 520.0, 2580.0, 2, 2, 115.0, 110.0, 42.0)
 addBlock('Grapeseed', 2280.0, 4780.0, 2, 3, 125.0, 120.0, 48.0)
 addBlock('Paleto Bay', -280.0, 6180.0, 3, 3, 130.0, 125.0, 32.0)
 addBlock('Chumash', -3280.0, 980.0, 2, 2, 120.0, 115.0, 12.0)
+
+-- Papildomi LS rajonai (smulkus tinklelis)
+addBlock('Vespucci', -1280.0, -1380.0, 4, 4, 72.0, 68.0, 8.0)
+addBlock('Vespucci Canals', -1180.0, -1180.0, 3, 3, 70.0, 66.0, 6.0)
+addBlock('Pillbox Hill', -280.0, -680.0, 3, 3, 78.0, 74.0, 38.0)
+addBlock('Alta', 280.0, -520.0, 3, 3, 76.0, 72.0, 42.0)
+addBlock('Burton', -520.0, -380.0, 3, 3, 74.0, 70.0, 38.0)
+addBlock('Hawick', 180.0, -280.0, 3, 3, 72.0, 68.0, 45.0)
+addBlock('Richman', -1680.0, 120.0, 3, 3, 88.0, 84.0, 55.0)
+addBlock('West Vinewood', 120.0, 220.0, 4, 3, 82.0, 78.0, 62.0)
+addBlock('East Vinewood', 680.0, 280.0, 3, 3, 86.0, 82.0, 68.0)
+addBlock('Vinewood Hills', 420.0, 680.0, 4, 4, 90.0, 86.0, 95.0)
+addBlock('LS Airport', -1380.0, -2280.0, 4, 3, 95.0, 90.0, 14.0)
+addBlock('LSIA Terminal', -1080.0, -2680.0, 3, 2, 100.0, 95.0, 14.0)
+addBlock('Maze Bank', 120.0, -820.0, 2, 2, 80.0, 76.0, 32.0)
+addBlock('Legion Square', 180.0, -920.0, 2, 2, 78.0, 74.0, 30.0)
+addBlock('Pillbox South', -180.0, -920.0, 3, 2, 76.0, 72.0, 32.0)
+addBlock('La Mesa East', 980.0, -1180.0, 3, 3, 88.0, 84.0, 32.0)
+addBlock('Murrieta Heights', 1280.0, -1580.0, 3, 3, 92.0, 88.0, 38.0)
+addBlock('Cypress North', 680.0, -2380.0, 3, 2, 98.0, 92.0, 28.0)
+addBlock('Banning', -280.0, -2280.0, 3, 2, 95.0, 90.0, 12.0)
+addBlock('Elysian Island', 280.0, -3180.0, 3, 2, 105.0, 98.0, 8.0)
+
+-- Blaine County / dykuma (daugiau zonų)
+addBlock('Grand Senora', 680.0, 1880.0, 4, 4, 115.0, 110.0, 45.0)
+addBlock('Route 68', 520.0, 2680.0, 3, 3, 118.0, 112.0, 42.0)
+addBlock('Alamo Sea West', 680.0, 3680.0, 3, 2, 120.0, 115.0, 35.0)
+addBlock('Alamo Sea East', 1380.0, 3680.0, 3, 2, 120.0, 115.0, 35.0)
+addBlock('Sandy North', 1680.0, 3980.0, 3, 2, 115.0, 110.0, 38.0)
+addBlock('Sandy South', 1380.0, 3180.0, 3, 3, 112.0, 108.0, 35.0)
+addBlock('Harmony East', 880.0, 2480.0, 3, 2, 110.0, 105.0, 42.0)
+addBlock('Stab City', 120.0, 3580.0, 2, 2, 105.0, 100.0, 32.0)
+addBlock('Grapeseed South', 1980.0, 4280.0, 2, 2, 120.0, 115.0, 45.0)
+addBlock('Mount Chiliad Foothills', 420.0, 5280.0, 3, 2, 125.0, 120.0, 55.0)
+addBlock('Paleto Forest', -680.0, 5480.0, 3, 2, 125.0, 120.0, 48.0)
+addBlock('Paleto South', -480.0, 5780.0, 2, 2, 120.0, 115.0, 35.0)
+addBlock('Procopio Beach', -680.0, 6480.0, 2, 2, 115.0, 110.0, 12.0)
+addBlock('Great Ocean Hwy', -2480.0, 2280.0, 3, 3, 120.0, 115.0, 25.0)
+addBlock('Banham Canyon', -2980.0, 480.0, 2, 2, 115.0, 110.0, 18.0)
+addBlock('Tongva Hills', -2280.0, 1280.0, 2, 3, 110.0, 105.0, 35.0)
+addBlock('Zancudo Approach', -2580.0, 2880.0, 2, 2, 115.0, 110.0, 32.0)
+addBlock('Fort Zancudo Edge', -2180.0, 3280.0, 2, 2, 110.0, 105.0, 28.0)
 
 Config.TurfCells = TurfCells
 --- Senasis Config.Turfs API — naudoja tuos pačius mažus langelius

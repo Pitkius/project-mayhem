@@ -399,6 +399,15 @@ RegisterNUICallback('radioStation', function(data, cb)
     cb({ ok = true })
 end)
 
+RegisterNUICallback('openCargoNet', function(_, cb)
+    if GetResourceState('fivempro_trucking') == 'started' then
+        exports['fivempro_trucking']:OpenTruckNet('phone')
+    else
+        QBCore.Functions.Notify('CargoNet šiuo metu nepasiekiama.', 'error')
+    end
+    cb({ ok = true })
+end)
+
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     stopPhoneCamera()

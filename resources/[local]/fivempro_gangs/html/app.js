@@ -179,8 +179,8 @@ function renderTopAndWarsTabs(state) {
         (g, i) =>
           `<li class="top-gang-row">
             <span class="top-rank">#${i + 1}</span>
-            <span class="top-dot" style="background:${g.color_hex || "#64748b"}"></span>
-            <span class="top-name">${safe(g.name)}</span>
+            <span class="top-color-swatch" style="background:linear-gradient(135deg, ${g.color_hex || "#64748b"}, ${g.secondary_color_hex || g.color_hex || "#64748b"})"></span>
+            <span class="top-color-code">${safe((g.color_hex || "#64748B").toUpperCase())}</span>
             <span class="top-meta">${g.turf_count || 0} turf · ${Number(g.reputation || 0).toLocaleString()} rep</span>
           </li>`,
       )

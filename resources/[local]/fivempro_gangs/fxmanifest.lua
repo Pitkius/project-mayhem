@@ -29,6 +29,7 @@ shared_scripts {
 }
 
 client_scripts {
+    'client_progress.lua',
     'client.lua',
     'client_missions.lua',
     'client_graffiti.lua',

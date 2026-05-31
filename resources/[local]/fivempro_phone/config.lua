@@ -33,6 +33,7 @@ Config.Phone = {
         { id = 'shop', label = 'Marketplace', icon = 'shop', default = false, description = 'Parduotuvės ir prekės mieste' },
         { id = 'weather', label = 'Orai', icon = 'weather', default = false, description = 'Orų prognozė Los Santos' },
         { id = 'radio', label = 'Radijas', icon = 'radio', default = false, description = 'Miesto radijo stotys' },
+        { id = 'cargonet', label = 'CargoNet', icon = 'shop', default = false, description = 'Krovinių birža ir logistikos kontraktai' },
     }
 }
 
