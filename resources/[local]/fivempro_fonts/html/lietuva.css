@@ -56,7 +56,7 @@ div {
     font-family: inherit;
 }
 
-/* Font Awesome / ikonos — neperrašyti Noto (kritiška inventoriui, qb-target) */
+/* Font Awesome / ikonos — neperrašyti Noto (kritiška inventoriui, qb-target, Quasar notify) */
 i,
 .fa,
 .fas,
@@ -67,6 +67,7 @@ i,
 .fa-solid,
 .fa-regular,
 .fa-brands,
+.q-icon,
 [class^="fa-"],
 [class*=" fa-"] {
     font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", var(--font-emoji) !important;

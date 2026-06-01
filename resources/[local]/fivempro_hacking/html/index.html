@@ -35,45 +35,45 @@
           </div>
           <div>
             <h1>Hack<span>OS</span></h1>
-            <p class="hackos-sub" id="tabletSubtitle">Military Tablet</p>
+            <p class="hackos-sub" id="tabletSubtitle">Karinis planšetinis kompiuteris</p>
           </div>
         </div>
         <div class="hackos-stats">
           <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-os"/></svg><span class="lbl">OS</span><strong id="statOs">?</strong></div>
-          <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-signal"/></svg><span class="lbl">Signal</span><strong id="statSignal">Strong</strong></div>
-          <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-storage"/></svg><span class="lbl">Storage</span><strong id="statStorage">0 / 12</strong></div>
-          <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-slots"/></svg><span class="lbl">Exploit Slots</span><strong id="statExploits">0 / 3</strong></div>
+          <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-signal"/></svg><span class="lbl">Signalas</span><strong id="statSignal">Stiprus</strong></div>
+          <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-storage"/></svg><span class="lbl">Saugykla</span><strong id="statStorage">0 / 12</strong></div>
+          <div class="stat-pill"><svg class="ho-ico" aria-hidden="true"><use href="#ho-slots"/></svg><span class="lbl">Exploit vietos</span><strong id="statExploits">0 / 3</strong></div>
         </div>
         <button type="button" id="btnClose" class="hackos-close" title="U?daryti"><svg class="ho-ico" aria-hidden="true"><use href="#ho-close"/></svg></button>
       </header>
 
       <div class="hackos-body">
         <nav class="hackos-nav" id="hackosNav">
-          <button type="button" class="nav-item" data-view="system"><svg class="nav-ico" aria-hidden="true"><use href="#ho-system"/></svg><span>System</span></button>
-          <button type="button" class="nav-item active" data-view="network"><svg class="nav-ico" aria-hidden="true"><use href="#ho-network"/></svg><span>Network</span></button>
-          <button type="button" class="nav-item" data-view="targets"><svg class="nav-ico" aria-hidden="true"><use href="#ho-targets"/></svg><span>Targets</span></button>
-          <button type="button" class="nav-item" data-view="exploits"><svg class="nav-ico" aria-hidden="true"><use href="#ho-exploits"/></svg><span>Exploits</span></button>
-          <button type="button" class="nav-item" data-view="files"><svg class="nav-ico" aria-hidden="true"><use href="#ho-files"/></svg><span>Files</span></button>
-          <button type="button" class="nav-item" data-view="market"><svg class="nav-ico" aria-hidden="true"><use href="#ho-market"/></svg><span>Market</span></button>
-          <button type="button" class="nav-item" data-view="contracts"><svg class="nav-ico" aria-hidden="true"><use href="#ho-contracts"/></svg><span>Contracts</span></button>
-          <button type="button" class="nav-item" data-view="settings"><svg class="nav-ico" aria-hidden="true"><use href="#ho-settings"/></svg><span>Settings</span></button>
+          <button type="button" class="nav-item" data-view="system"><svg class="nav-ico" aria-hidden="true"><use href="#ho-system"/></svg><span>Sistema</span></button>
+          <button type="button" class="nav-item active" data-view="network"><svg class="nav-ico" aria-hidden="true"><use href="#ho-network"/></svg><span>Tinklas</span></button>
+          <button type="button" class="nav-item" data-view="targets"><svg class="nav-ico" aria-hidden="true"><use href="#ho-targets"/></svg><span>Taikiniai</span></button>
+          <button type="button" class="nav-item" data-view="exploits"><svg class="nav-ico" aria-hidden="true"><use href="#ho-exploits"/></svg><span>Exploitai</span></button>
+          <button type="button" class="nav-item" data-view="files"><svg class="nav-ico" aria-hidden="true"><use href="#ho-files"/></svg><span>Failai</span></button>
+          <button type="button" class="nav-item" data-view="market"><svg class="nav-ico" aria-hidden="true"><use href="#ho-market"/></svg><span>Rinka</span></button>
+          <button type="button" class="nav-item" data-view="contracts"><svg class="nav-ico" aria-hidden="true"><use href="#ho-contracts"/></svg><span>Sutartys</span></button>
+          <button type="button" class="nav-item" data-view="settings"><svg class="nav-ico" aria-hidden="true"><use href="#ho-settings"/></svg><span>Nustatymai</span></button>
         </nav>
 
         <main class="hackos-main">
           <section id="view-system" class="hackos-view hidden">
-            <div class="view-head"><h2>System</h2><p class="muted">?renginio b?sena ir saugykla</p></div>
+            <div class="view-head"><h2>Sistema</h2><p class="muted">Įrenginio būsena ir saugykla</p></div>
             <div class="glass-grid">
               <article class="glass-card" id="systemCard"></article>
               <article class="glass-card">
-                <h3>Flashdrive</h3>
-                <p class="muted small">?diek OS ar exploit i? payload disko.</p>
+                <h3>Flash diskas</h3>
+                <p class="muted small">Įdiek OS ar exploit iš payload disko.</p>
                 <div id="driveList" class="drive-list"></div>
               </article>
             </div>
           </section>
 
           <section id="view-network" class="hackos-view">
-            <div class="view-head"><h2>Network</h2><p class="muted">Aktyv?s mazgai Los Santos tinkle</p></div>
+            <div class="view-head"><h2>Tinklas</h2><p class="muted">Aktyvūs mazgai Los Santos tinkle</p></div>
             <div class="network-layout">
               <div class="network-graph glass-card" id="networkGraph" aria-hidden="true"></div>
               <div id="networkList" class="target-list"></div>
@@ -81,32 +81,32 @@
           </section>
 
           <section id="view-targets" class="hackos-view hidden">
-            <div class="view-head"><h2>Targets</h2><p class="muted">Visi taikiniai pagal tier</p></div>
+            <div class="view-head"><h2>Taikiniai</h2><p class="muted">Visi taikiniai pagal lygį</p></div>
             <div id="targetsList" class="target-list"></div>
           </section>
 
           <section id="view-exploits" class="hackos-view hidden">
-            <div class="view-head"><h2>Exploits</h2><p class="muted">?diegti moduliai</p></div>
+            <div class="view-head"><h2>Exploitai</h2><p class="muted">Įdiegti moduliai</p></div>
             <div id="exploitList" class="exploit-grid"></div>
           </section>
 
           <section id="view-files" class="hackos-view hidden">
-            <div class="view-head"><h2>Files</h2><p class="muted">Surinkta intel</p></div>
+            <div class="view-head"><h2>Failai</h2><p class="muted">Surinkta žvalgybinė informacija</p></div>
             <div id="filesList" class="file-grid"></div>
           </section>
 
           <section id="view-market" class="hackos-view hidden">
-            <div class="view-head"><h2>Black Market</h2><p class="muted">Pirkti OS, exploit, ?rankius</p></div>
+            <div class="view-head"><h2>Juodoji rinka</h2><p class="muted">Pirkti OS, exploit, įrankius</p></div>
             <div id="marketList" class="market-grid"></div>
           </section>
 
           <section id="view-contracts" class="hackos-view hidden">
-            <div class="view-head"><h2>Contracts</h2><p class="muted">Hacker darbai</p></div>
+            <div class="view-head"><h2>Sutartys</h2><p class="muted">Hakerio darbai</p></div>
             <div id="contractsList" class="contract-list"></div>
           </section>
 
           <section id="view-settings" class="hackos-view hidden">
-            <div class="view-head"><h2>Settings</h2><p class="muted">Sistemos nustatymai</p></div>
+            <div class="view-head"><h2>Nustatymai</h2><p class="muted">Sistemos nustatymai</p></div>
             <article class="glass-card settings-card">
               <label class="toggle-row"><input type="checkbox" id="setGlow" checked /> Neon glow efektai</label>
               <label class="toggle-row"><input type="checkbox" id="setSound" checked /> UI garsai (vizual?s impulsai)</label>
@@ -118,18 +118,18 @@
         <aside id="targetPanel" class="hackos-aside hidden">
           <div class="scan-overlay hidden" id="scanOverlay">
             <div class="scan-line"></div>
-            <span>SCANNING?</span>
+            <span>SKENUOJAMA…</span>
           </div>
           <div class="aside-head">
-            <h2 id="targetTitle">TARGET</h2>
+            <h2 id="targetTitle">TAIKINYS</h2>
             <button type="button" class="aside-close" id="targetClose" title="U?daryti"><svg class="ho-ico" aria-hidden="true"><use href="#ho-close"/></svg></button>
           </div>
           <dl class="target-dl" id="targetDetails"></dl>
           <div class="target-actions">
-            <button type="button" class="cyber-btn" data-act="scan">SCAN</button>
-            <button type="button" class="cyber-btn primary" data-act="breach">BREACH</button>
+            <button type="button" class="cyber-btn" data-act="scan">SKENUOTI</button>
+            <button type="button" class="cyber-btn primary" data-act="breach">ĮSILAUŽTI</button>
             <button type="button" class="cyber-btn" data-act="backdoor">BACKDOOR</button>
-            <button type="button" class="cyber-btn ghost" data-act="exit">EXIT</button>
+            <button type="button" class="cyber-btn ghost" data-act="exit">IŠEITI</button>
           </div>
         </aside>
       </div>
@@ -137,7 +137,7 @@
   </div>
 
   <div id="hack" class="panel hack hidden">
-    <div class="hack-head">INTRUSION <span id="hackTimer">0.0s</span></div>
+    <div class="hack-head">ĮSILAUŽIMAS <span id="hackTimer">0.0s</span></div>
     <p id="hackHint" class="muted">Spausk langelius teisinga tvarka</p>
     <div id="hackGrid" class="hack-grid"></div>
     <div id="hackWire" class="hack-wire hidden">
@@ -148,7 +148,7 @@
       <canvas id="hackTraceCanvas" width="360" height="220"></canvas>
       <div id="hackTraceDot" class="hack-trace-dot"></div>
     </div>
-    <button type="button" id="hackCancel" class="btn danger">Abort</button>
+    <button type="button" id="hackCancel" class="btn danger">Nutraukti</button>
   </div>
 
   <div id="physical" class="panel physical hidden">

@@ -12,6 +12,7 @@ window.MdtMap = (function () {
   let lastFrame = 0;
   let animEnabled = false;
   let selfSource = null;
+  let localPlayerPos = null;
   let lastCalls = [];
   let onSelectCb = null;
 
@@ -34,13 +35,14 @@ window.MdtMap = (function () {
     return Core.normalizeMapConfig(cfg, resourceName(), 'mdt/asset/gtav_satellite_2048.png');
   }
 
-  /** GTA koordinatės → Leaflet [lat, lng] (CRS.Simple: lat=Y, lng=X). */
   function gameToLatLng(gx, gy, cfg) {
-    return [Number(gy) + cfg.offsetY, Number(gx) + cfg.offsetX];
+    if (Core && Core.gameToLatLng) return Core.gameToLatLng(gx, gy, cfg);
+    return [Number(gy) + (cfg.offsetY || 0), Number(gx) + (cfg.offsetX || 0)];
   }
 
   function latLngToGame(lat, lng, cfg) {
-    return { x: Number(lng) - cfg.offsetX, y: Number(lat) - cfg.offsetY };
+    if (Core && Core.latLngToGame) return Core.latLngToGame(lat, lng, cfg);
+    return { x: Number(lng) - (cfg.offsetX || 0), y: Number(lat) - (cfg.offsetY || 0) };
   }
 
   function escapeHtml(s) {
@@ -323,9 +325,69 @@ window.MdtMap = (function () {
     });
   }
 
+  function applyLocalPlayerToUnits(units) {
+    if (!selfSource || !localPlayerPos) return units;
+    const sid = Number(selfSource);
+    let found = false;
+    const merged = (units || []).map((u) => {
+      if (Number(u.source) !== sid) return u;
+      found = true;
+      return {
+        ...u,
+        x: localPlayerPos.x,
+        y: localPlayerPos.y,
+        z: localPlayerPos.z != null ? localPlayerPos.z : u.z,
+        heading: localPlayerPos.heading != null ? localPlayerPos.heading : u.heading,
+      };
+    });
+    if (!found) {
+      merged.push({
+        source: sid,
+        name: 'Tu',
+        callsign: '',
+        x: localPlayerPos.x,
+        y: localPlayerPos.y,
+        z: localPlayerPos.z,
+        heading: localPlayerPos.heading || 0,
+        statusLabel: 'Patruliuoja',
+        crewLabel: '—',
+        gpsActive: true,
+        inVeh: false,
+        panic: false,
+        isCrewLeader: false,
+      });
+    }
+    return merged;
+  }
+
+  function setLocalPlayerPos(pos) {
+    if (!pos || pos.x == null || pos.y == null) return;
+    localPlayerPos = {
+      x: Number(pos.x),
+      y: Number(pos.y),
+      z: pos.z != null ? Number(pos.z) : 0,
+      heading: pos.heading != null ? Number(pos.heading) : 0,
+    };
+    if (!leafletMap || !mapCfg || selfSource == null) return;
+    const key = `u:${selfSource}`;
+    const existing = unitState[key];
+    if (existing && existing.data) {
+      upsertUnit(
+        {
+          ...existing.data,
+          x: localPlayerPos.x,
+          y: localPlayerPos.y,
+          z: localPlayerPos.z,
+          heading: localPlayerPos.heading,
+        },
+        mapCfg,
+      );
+    }
+  }
+
   function update(payload) {
     if (!leafletMap || !mapCfg) return;
-    const units = enrichUnits(payload.units, payload.crews);
+    const units = applyLocalPlayerToUnits(enrichUnits(payload.units, payload.crews));
     const calls = activeCalls(payload.calls);
     lastCalls = calls;
     if (payload.selfSource != null) selfSource = payload.selfSource;
@@ -426,6 +488,7 @@ window.MdtMap = (function () {
     setOnSelect,
     selectByKey,
     setAnimEnabled,
+    setLocalPlayerPos,
     destroy,
     gameToLatLng: (x, y) => gameToLatLng(x, y, mapCfg),
   };

@@ -205,6 +205,26 @@ local function isDispatchWritable()
     return P and P.job and isPdJobName(P.job.name) and P.job.onduty == true
 end
 
+--- Tiksli savo pozicija MDT žemėlapiui (kliento GetEntityCoords, ne serverio)
+CreateThread(function()
+    while true do
+        if mdtOpen then
+            local ped = PlayerPedId()
+            local c = GetEntityCoords(ped)
+            SendNUIMessage({
+                action = 'mdtPlayerPos',
+                x = c.x,
+                y = c.y,
+                z = c.z,
+                heading = GetEntityHeading(ped),
+            })
+            Wait(350)
+        else
+            Wait(750)
+        end
+    end
+end)
+
 --- Gyvas GPS / dispatch atnaujinimas į MDT (iš fivempro_dispatch push kas ~1.5s)
 RegisterNetEvent('fivempro_dispatch:client:update', function(payload)
     if not mdtOpen or not payload or payload.service ~= 'police' then return end

@@ -139,7 +139,8 @@ RegisterCommand('panic', function()
     if not isPoliceJobClient() then
         return QBCore.Functions.Notify('PANIC – tik policijos darbuotojams.', 'error')
     end
-    TriggerServerEvent('fivempro_dispatch:server:panic')
+    local c = GetEntityCoords(PlayerPedId())
+    TriggerServerEvent('fivempro_dispatch:server:panic', { x = c.x, y = c.y, z = c.z })
 end, false)
 
 RegisterKeyMapping(
@@ -250,7 +251,14 @@ RegisterCommand('servicecall', function(_, args)
     end
     local callType = tostring(args and args[1] or 'custom')
     local text = table.concat(args or {}, ' ', 2)
-    TriggerServerEvent('fivempro_dispatch:server:createServiceCall', service, callType, text ~= '' and text or 'Tarnybinis iškvietimas')
+    local c = GetEntityCoords(PlayerPedId())
+    TriggerServerEvent(
+        'fivempro_dispatch:server:createServiceCall',
+        service,
+        callType,
+        text ~= '' and text or 'Tarnybinis iškvietimas',
+        { x = c.x, y = c.y, z = c.z }
+    )
     QBCore.Functions.Notify('Iškvietimas sukurtas MDT sistemoje.', 'success')
 end, false)
 
@@ -261,6 +269,29 @@ RegisterCommand('callsign', function(_, args)
     end
     TriggerServerEvent('fivempro_dispatch:server:setCallsign', cs)
 end, false)
+
+--- Kliento GPS → state bag (tiksliau nei serverio GetEntityCoords kai kuriems hostams)
+CreateThread(function()
+    while true do
+        local s = myService()
+        if s then
+            local ped = PlayerPedId()
+            local c = GetEntityCoords(ped)
+            LocalPlayer.state:set('dispatchGps', {
+                x = c.x,
+                y = c.y,
+                z = c.z,
+                heading = GetEntityHeading(ped),
+            }, true)
+            Wait(900)
+        else
+            if LocalPlayer.state.dispatchGps then
+                LocalPlayer.state:set('dispatchGps', nil, true)
+            end
+            Wait(1400)
+        end
+    end
+end)
 
 CreateThread(function()
     while true do

@@ -353,7 +353,12 @@ RegisterNUICallback('endCall', function(data, cb)
 end)
 
 RegisterNUICallback('emergencyCall', function(data, cb)
-    TriggerServerEvent('fivempro_phone:server:emergencyCall', data and data.service or '')
+    local c = GetEntityCoords(PlayerPedId())
+    TriggerServerEvent('fivempro_phone:server:emergencyCall', data and data.service or '', {
+        x = c.x,
+        y = c.y,
+        z = c.z,
+    })
     cb({ ok = true })
 end)
 

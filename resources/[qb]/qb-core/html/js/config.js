@@ -2,7 +2,7 @@ export let NOTIFY_CONFIG = null;
 
 const defaultConfig = {
     NotificationStyling: {
-        group: true,
+        group: false,
         position: "top-right",
         progress: true,
     },
@@ -17,7 +17,7 @@ const defaultConfig = {
         },
         error: {
             classes: "error",
-            icon: "fas fa-triangle-exclamation",
+            icon: "fas fa-circle-exclamation",
         },
         police: {
             classes: "police",

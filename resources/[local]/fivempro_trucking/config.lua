@@ -57,7 +57,7 @@ Config.Map = {
     minY = -4000.0,
     maxX = 4500.0,
     maxY = 6625.0,
-    imageFile = 'asset/gtav_satellite.jpg',
+    imageFile = 'asset/gtav_satellite_2048.png',
 }
 
 Config.RegistrationTerminals = {

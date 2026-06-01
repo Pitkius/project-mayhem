@@ -137,7 +137,7 @@ local function pickNearestHospital(pos)
     return best
 end
 
-local function dispatchEmergency(src, service)
+local function dispatchEmergency(src, service, clientCoords)
     service = tostring(service or ''):lower()
     local cfg = Config.Emergency or {}
     local now = os.time()
@@ -148,9 +148,14 @@ local function dispatchEmergency(src, service)
     end
     LastEmergencyCall[src][service] = now
 
-    local ped = GetPlayerPed(src)
-    if not ped or ped == 0 then return end
-    local c = GetEntityCoords(ped)
+    local c
+    if type(clientCoords) == 'table' and clientCoords.x ~= nil and clientCoords.y ~= nil then
+        c = vector3(clientCoords.x + 0.0, clientCoords.y + 0.0, (clientCoords.z or 0.0) + 0.0)
+    else
+        local ped = GetPlayerPed(src)
+        if not ped or ped == 0 then return end
+        c = GetEntityCoords(ped)
+    end
     local Player = getPlayer(src)
     if not Player then return end
     local callerName = getFullName(Player)
@@ -609,10 +614,10 @@ AddEventHandler('playerDropped', function()
     LastMedicRequest[src] = nil
 end)
 
-RegisterNetEvent('fivempro_phone:server:emergencyCall', function(service)
+RegisterNetEvent('fivempro_phone:server:emergencyCall', function(service, clientCoords)
     service = tostring(service or ''):lower()
     if service ~= 'police' and service ~= 'ems' and service ~= 'taxi' and service ~= 'mechanic' then return end
-    dispatchEmergency(source, service)
+    dispatchEmergency(source, service, clientCoords)
 end)
 
 RegisterNetEvent('fivempro_phone:server:reportDeath', function()

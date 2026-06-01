@@ -280,20 +280,20 @@ QBCore.Commands.Add('ooc', Lang:t('command.ooc.help'), {}, false, function(sourc
             TriggerClientEvent('chat:addMessage', v, {
                 color = QBCore.Config.Commands.OOCColor,
                 multiline = true,
-                args = { 'OOC | ' .. GetPlayerName(source), message }
+                args = { 'OOC · ' .. GetPlayerName(source), message }
             })
         elseif #(playerCoords - GetEntityCoords(GetPlayerPed(v))) < 20.0 then
             TriggerClientEvent('chat:addMessage', v, {
                 color = QBCore.Config.Commands.OOCColor,
                 multiline = true,
-                args = { 'OOC | ' .. GetPlayerName(source), message }
+                args = { 'OOC · ' .. GetPlayerName(source), message }
             })
         elseif QBCore.Functions.HasPermission(v, 'admin') then
             if QBCore.Functions.IsOptin(v) then
                 TriggerClientEvent('chat:addMessage', v, {
                     color = QBCore.Config.Commands.OOCColor,
                     multiline = true,
-                    args = { 'Proximity OOC | ' .. GetPlayerName(source), message }
+                    args = { 'OOC (artimas) · ' .. GetPlayerName(source), message }
                 })
                 TriggerEvent('qb-log:server:CreateLog', 'ooc', 'OOC', 'white', '**' .. GetPlayerName(source) .. '** (CitizenID: ' .. Player.PlayerData.citizenid .. ' | ID: ' .. source .. ') **Message:** ' .. message, false)
             end

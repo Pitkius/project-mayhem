@@ -164,6 +164,9 @@ window.addEventListener('message', (e) => {
       if (ok) startDispatchPoll();
     });
   }
+  if (d.action === 'mdtPlayerPos' && window.MdtMap && d.x != null && d.y != null) {
+    MdtMap.setLocalPlayerPos(d);
+  }
   if (d.action === 'dispatchLive') {
     if (!mdtSessionActive || mdtSurveillanceLive || !d.data) return;
     const base = lastDispatchPayload && typeof lastDispatchPayload === 'object' ? lastDispatchPayload : { ok: true };
@@ -610,7 +613,7 @@ function renderDispatchMap(payload) {
     centerSelf.addEventListener('click', () => {
       if (window.MdtMap && !MdtMap.centerOnPlayer()) {
         const note = document.getElementById('dispatchMapDetail');
-        if (note) note.innerHTML = '<div class="gps-detail-empty muted">Tavo pozicija žemėlapyje nerasta (reikia būti on duty).</div>';
+        if (note) note.innerHTML = '<div class="gps-detail-empty muted">Tavo pozicija žemėlapyje nerasta — palauk GPS sinchronizacijos.</div>';
       }
     });
   }

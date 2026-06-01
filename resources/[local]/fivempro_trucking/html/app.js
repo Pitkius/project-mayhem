@@ -42,32 +42,47 @@ function normCoord(x, y, map) {
   const maxX = map.maxX ?? 4500;
   const minY = map.minY ?? -4000;
   const maxY = map.maxY ?? 6625;
+  const rangeX = maxX - minX || 1;
+  const rangeY = maxY - minY || 1;
   return {
-    px: ((x - minX) / (maxX - minX)) * 100,
-    py: (1 - (y - minY) / (maxY - minY)) * 100,
+    px: Math.max(2, Math.min(98, ((Number(x) - minX) / rangeX) * 100)),
+    py: Math.max(2, Math.min(98, (1 - (Number(y) - minY) / rangeY) * 100)),
   };
+}
+
+function mapImageUrl(map) {
+  const raw = String(map?.imageFile || "asset/gtav_satellite_2048.png").trim();
+  const res = resourceName();
+  let p = raw.replace(/^\/+/, "");
+  if (!p.startsWith("html/")) p = `html/${p}`;
+  return `nui://${res}/${p}`;
 }
 
 function renderRouteMap(contract) {
   const el = document.getElementById("routeMap");
-  if (!contract || !el) {
-    if (el) el.innerHTML = "";
+  if (!el) return;
+  if (!contract) {
+    el.innerHTML = '<div class="route-map-empty">Pasirinkite kontraktą</div>';
     return;
   }
   const map = state.data?.map || {};
+  const bg = mapImageUrl(map);
   const a = normCoord(contract.pickup.x, contract.pickup.y, map);
   const b = normCoord(contract.delivery.x, contract.delivery.y, map);
+  const uid = `rg${Date.now() % 100000}`;
   el.innerHTML = `
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+    <div class="route-map-bg" style="background-image:url('${bg}')"></div>
+    <div class="route-map-vignette"></div>
+    <svg class="route-map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       <defs>
-        <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="${uid}" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#a78bfa"/>
           <stop offset="100%" stop-color="#fb923c"/>
         </linearGradient>
       </defs>
-      <line x1="${a.px}" y1="${a.py}" x2="${b.px}" y2="${b.py}" stroke="url(#routeGrad)" stroke-width="1.2" stroke-linecap="round"/>
-      <circle cx="${a.px}" cy="${a.py}" r="2.2" fill="#fff" stroke="#0f0e14" stroke-width="0.4"/>
-      <circle cx="${b.px}" cy="${b.py}" r="2.4" fill="#a78bfa" stroke="#fff" stroke-width="0.35"/>
+      <line x1="${a.px}" y1="${a.py}" x2="${b.px}" y2="${b.py}" stroke="url(#${uid})" stroke-width="1.4" stroke-linecap="round" opacity="0.95"/>
+      <circle cx="${a.px}" cy="${a.py}" r="2.4" fill="#fff" stroke="#0f0e14" stroke-width="0.45"/>
+      <circle cx="${b.px}" cy="${b.py}" r="2.6" fill="#a78bfa" stroke="#fff" stroke-width="0.4"/>
     </svg>`;
 }
 
@@ -148,8 +163,14 @@ function renderProfile() {
 
 function renderContracts() {
   const list = state.data?.contracts || [];
-  contractList.innerHTML = list.map((c) => renderContractItem(c, state.selected?.id === c.id)).join("");
-  exchangeList.innerHTML = list.map((c) => renderContractItem(c, false)).join("");
+  const emptyMsg =
+    '<div class="contract-empty">Šiuo metu kontraktų nėra — palaukite atnaujinimo arba pakelkite lygį.</div>';
+  contractList.innerHTML = list.length
+    ? list.map((c) => renderContractItem(c, state.selected?.id === c.id)).join("")
+    : emptyMsg;
+  exchangeList.innerHTML = list.length
+    ? list.map((c) => renderContractItem(c, false)).join("")
+    : emptyMsg;
   bindContractClicks(contractList);
   bindContractClicks(exchangeList);
   if (state.selected) selectContract(state.selected);

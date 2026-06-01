@@ -2,12 +2,16 @@ const hudRoot = document.getElementById("hudRoot");
 const hudBars = document.getElementById("hudBars");
 const hudRings = document.getElementById("hudRings");
 const hudTiles = document.getElementById("hudTiles");
+const hudFrame = document.getElementById("hudFrame");
+const hudBlCluster = document.getElementById("hudBlCluster");
 const rows = {
   health: document.getElementById("row-health"),
   armor: document.getElementById("row-armor"),
   stamina: document.getElementById("row-stamina"),
   hunger: document.getElementById("row-hunger"),
   thirst: document.getElementById("row-thirst"),
+  stress: document.getElementById("row-stress"),
+  voice: document.getElementById("row-voice"),
 };
 const ringWraps = {
   health: document.getElementById("ring-wrap-health"),
@@ -15,6 +19,8 @@ const ringWraps = {
   stamina: document.getElementById("ring-wrap-stamina"),
   hunger: document.getElementById("ring-wrap-hunger"),
   thirst: document.getElementById("ring-wrap-thirst"),
+  stress: document.getElementById("ring-wrap-stress"),
+  voice: document.getElementById("ring-wrap-voice"),
 };
 const ringTexts = {
   health: document.getElementById("ring-pct-health"),
@@ -22,6 +28,8 @@ const ringTexts = {
   stamina: document.getElementById("ring-pct-stamina"),
   hunger: document.getElementById("ring-pct-hunger"),
   thirst: document.getElementById("ring-pct-thirst"),
+  stress: document.getElementById("ring-pct-stress"),
+  voice: document.getElementById("ring-pct-voice"),
 };
 const carHud = document.getElementById("carhud");
 const speedText = document.getElementById("speed");
@@ -30,7 +38,7 @@ const seatbeltText = document.getElementById("seatbelt");
 const body = document.body;
 const hudMenu = document.getElementById("hudMenu");
 
-const MAIN_STATS = ["health", "armor", "stamina", "hunger", "thirst"];
+const MAIN_STATS = ["health", "armor", "stamina", "hunger", "thirst", "stress", "voice"];
 const RING_R = 15;
 const RING_LEN = 2 * Math.PI * RING_R;
 
@@ -44,6 +52,8 @@ const menu = {
   stamina: document.getElementById("optStamina"),
   hunger: document.getElementById("optHunger"),
   thirst: document.getElementById("optThirst"),
+  stress: document.getElementById("optStress"),
+  voice: document.getElementById("optVoice"),
   speed: document.getElementById("optSpeed"),
   fuel: document.getElementById("optFuel"),
   seatbelt: document.getElementById("optSeatbelt"),
@@ -58,6 +68,8 @@ const bars = {
   stamina: document.getElementById("stamina"),
   hunger: document.getElementById("hunger"),
   thirst: document.getElementById("thirst"),
+  stress: document.getElementById("stress"),
+  voice: document.getElementById("voice"),
 };
 
 const ringProgress = {};
@@ -71,7 +83,24 @@ const tileWraps = {
   stamina: document.getElementById("tile-wrap-stamina"),
   hunger: document.getElementById("tile-wrap-hunger"),
   thirst: document.getElementById("tile-wrap-thirst"),
+  stress: document.getElementById("tile-wrap-stress"),
+  voice: document.getElementById("tile-wrap-voice"),
 };
+const hfWraps = {
+  health: document.getElementById("hf-wrap-health"),
+  armor: document.getElementById("hf-wrap-armor"),
+  stamina: document.getElementById("hf-wrap-stamina"),
+  hunger: document.getElementById("hf-wrap-hunger"),
+  thirst: document.getElementById("hf-wrap-thirst"),
+  stress: document.getElementById("hf-wrap-stress"),
+  voice: document.getElementById("hf-wrap-voice"),
+};
+const hfFills = {};
+const hfVals = {};
+MAIN_STATS.forEach((k) => {
+  hfFills[k] = document.getElementById(`hf-fill-${k}`);
+  hfVals[k] = document.getElementById(`hf-val-${k}`);
+});
 const tileFills = {};
 const tileTexts = {};
 MAIN_STATS.forEach((k) => {
@@ -145,15 +174,17 @@ const CAR_FUEL_ARC_LEN = (270 / 360) * 2 * Math.PI * 58;
 })();
 
 let currentSettings = {
-  style: "tiles",
+  style: "frame",
   color: "violet",
-  alpha: 0.55,
+  alpha: 0.58,
   show: {
     health: true,
     armor: true,
-    stamina: true,
+    stamina: false,
     hunger: true,
     thirst: true,
+    stress: true,
+    voice: true,
     speed: false,
     fuel: false,
     seatbelt: false,
@@ -181,7 +212,8 @@ function mainStatsVisible() {
   return MAIN_STATS.some((k) => s[k] === true);
 }
 
-function setBar(name, value) {
+function setBar(name, value, opts) {
+  const o = opts || {};
   const clamped = Math.max(0, Math.min(100, Number(value) || 0));
   if (bars[name]) bars[name].style.width = `${clamped}%`;
   const ring = ringProgress[name];
@@ -196,20 +228,38 @@ function setBar(name, value) {
   if (tf) tf.style.height = `${clamped}%`;
   const tt = tileTexts[name];
   if (tt) tt.textContent = String(Math.round(clamped));
+  const hf = hfFills[name];
+  if (hf) hf.style.height = `${clamped}%`;
+  const hv = hfVals[name];
+  if (hv) {
+    if (name === "voice" && o.voiceTalking) {
+      hv.textContent = "Kalba";
+    } else if (name === "voice") {
+      hv.textContent = clamped >= 80 ? "Tol." : clamped >= 55 ? "Vid." : "Art.";
+    } else {
+      hv.textContent = String(Math.round(clamped));
+    }
+  }
+  if (hfWraps[name]) {
+    hfWraps[name].classList.toggle("is-talking", name === "voice" && !!o.voiceTalking);
+  }
 }
 
 function applyVisualStyle(style) {
-  const allowed = ["line", "square", "dots", "tiles"];
-  const normalized = allowed.includes(style) ? style : "dots";
-  body.classList.remove("shape-line", "shape-square", "shape-dots", "shape-tiles");
+  const allowed = ["line", "square", "dots", "tiles", "frame"];
+  const normalized = allowed.includes(style) ? style : "frame";
+  body.classList.remove("shape-line", "shape-square", "shape-dots", "shape-tiles", "shape-frame");
   body.classList.add(`shape-${normalized}`);
 
   const isRings = normalized === "dots";
   const isTiles = normalized === "tiles";
+  const isFrame = normalized === "frame";
   const useBars = normalized === "line" || normalized === "square";
   hudBars.classList.toggle("hidden", !useBars);
   hudRings.classList.toggle("hidden", !isRings);
   if (hudTiles) hudTiles.classList.toggle("hidden", !isTiles);
+  if (hudFrame) hudFrame.classList.toggle("hidden", !isFrame);
+  if (hudBlCluster) hudBlCluster.classList.toggle("hf-shell-active", isFrame);
 }
 
 function syncRows() {
@@ -219,6 +269,7 @@ function syncRows() {
     if (rows[k]) rows[k].classList.toggle("hidden", !on);
     if (ringWraps[k]) ringWraps[k].classList.toggle("hidden", !on);
     if (tileWraps[k]) tileWraps[k].classList.toggle("hidden", !on);
+    if (hfWraps[k]) hfWraps[k].classList.toggle("hidden", !on);
   });
 }
 
@@ -246,6 +297,8 @@ function applyThemeData(data) {
     if (tc.hunger) document.documentElement.style.setProperty("--tile-hunger", tc.hunger);
     if (tc.thirst) document.documentElement.style.setProperty("--tile-thirst", tc.thirst);
     if (tc.stamina) document.documentElement.style.setProperty("--tile-stamina", tc.stamina);
+    if (tc.stress) document.documentElement.style.setProperty("--tile-stress", tc.stress);
+    if (tc.voice) document.documentElement.style.setProperty("--tile-voice", tc.voice);
   }
   if (data.vehicleUiAccent) {
     document.documentElement.style.setProperty("--vehicle-accent", data.vehicleUiAccent);
@@ -266,6 +319,8 @@ function getMenuState() {
       stamina: menu.stamina.checked,
       hunger: menu.hunger.checked,
       thirst: menu.thirst.checked,
+      stress: menu.stress ? menu.stress.checked : true,
+      voice: menu.voice ? menu.voice.checked : true,
       speed: menu.speed.checked,
       fuel: menu.fuel.checked,
       seatbelt: menu.seatbelt.checked,
@@ -286,6 +341,8 @@ function fillMenuFromPreset(idx) {
   menu.stamina.checked = show.stamina === true;
   menu.hunger.checked = show.hunger !== false;
   menu.thirst.checked = show.thirst !== false;
+  if (menu.stress) menu.stress.checked = show.stress !== false;
+  if (menu.voice) menu.voice.checked = show.voice !== false;
   menu.speed.checked = show.speed === true;
   menu.fuel.checked = show.fuel === true;
   menu.seatbelt.checked = show.seatbelt === true;
@@ -443,11 +500,14 @@ window.addEventListener("message", (event) => {
 
   updateHudVisibility(data.show);
 
+  const voiceOpts = { voiceTalking: !!data.voiceTalking };
   setBar("health", data.health);
   setBar("armor", data.armor);
   setBar("stamina", data.stamina);
   setBar("hunger", data.hunger);
   setBar("thirst", data.thirst);
+  setBar("stress", data.stress);
+  setBar("voice", data.voice, voiceOpts);
 
   const showCarHud = !!data.inVehicle && !!data.show;
   carHud.classList.toggle("hidden", !showCarHud);
@@ -460,7 +520,7 @@ window.addEventListener("message", (event) => {
 
   if (speedText) speedText.textContent = String(sp);
   if (fuelText) fuelText.textContent = `${Math.round(fuelN)}%`;
-  if (seatbeltText) seatbeltText.textContent = data.seatbelt ? "ON" : "OFF";
+  if (seatbeltText) seatbeltText.textContent = data.seatbelt ? "Įj." : "Išj.";
 
   if (carSpeedDigits) {
     carSpeedDigits.textContent = String(sp);

@@ -124,9 +124,9 @@ QBConfig.Commands.OOCColor = { 255, 151, 133 }          -- RGB color code for th
 QBConfig.Notify = {}
 
 QBConfig.Notify.NotificationStyling = {
-    group = false,      -- Allow notifications to stack with a badge instead of repeating
-    position = 'right', -- top-left | top-right | bottom-left | bottom-right | top | bottom | left | right | center
-    progress = true     -- Display Progress Bar
+    group = false,         -- false = kiekvienas pranešimas atskirai (be „NOTIFICATIONS“ antraštės)
+    position = 'top-right',
+    progress = true,
 }
 
 -- These are how you define different notification variants
@@ -135,26 +135,26 @@ QBConfig.Notify.NotificationStyling = {
 QBConfig.Notify.VariantDefinitions = {
     success = {
         classes = 'success',
-        icon = 'check_circle'
+        icon = 'fas fa-circle-check',
     },
     primary = {
         classes = 'primary',
-        icon = 'notifications'
+        icon = 'fas fa-circle-info',
     },
     warning = {
         classes = 'warning',
-        icon = 'warning'
+        icon = 'fas fa-triangle-exclamation',
     },
     error = {
         classes = 'error',
-        icon = 'error'
+        icon = 'fas fa-circle-exclamation',
     },
     police = {
         classes = 'police',
-        icon = 'local_police'
+        icon = 'fas fa-shield-halved',
     },
     ambulance = {
         classes = 'ambulance',
-        icon = 'fas fa-ambulance'
-    }
+        icon = 'fas fa-truck-medical',
+    },
 }

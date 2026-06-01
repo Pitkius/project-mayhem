@@ -26,7 +26,7 @@ function post(action, data = {}) {
 }
 
 function fmtMoney(n) {
-  return `$${Number(n || 0).toLocaleString('en-US')}`;
+  return `$${Number(n || 0).toLocaleString('lt-LT')}`;
 }
 
 function setStatusClass(el, kind) {

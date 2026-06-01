@@ -46,13 +46,13 @@ enum ChatHideStates {
 
 const defaultMode: Mode = {
   name: 'all',
-  displayName: 'All',
+  displayName: 'Visi',
   color: '#c4b5fd'
 };
 
 const globalMode: Mode = {
   name: '_global',
-  displayName: 'All',
+  displayName: 'Visi',
   color: '#a78bfa',
   isGlobal: true,
   hidden: true
@@ -172,11 +172,11 @@ export default Vue.extend({
       // TODO: localization
       switch (this.hideState) {
         case ChatHideStates.AlwaysShow:
-          return 'Visible';
+          return 'Matoma';
         case ChatHideStates.AlwaysHide:
-          return 'Hidden';
+          return 'Paslėpta';
         case ChatHideStates.ShowWhenActive:
-          return 'When active';
+          return 'Rodyti aktyvų';
       }
     }
   },

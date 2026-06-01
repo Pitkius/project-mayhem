@@ -23,7 +23,7 @@ function post(action, data = {}) {
 }
 
 function fmt(n) {
-  return `$${Number(n || 0).toLocaleString('en-US')}`;
+  return `$${Number(n || 0).toLocaleString('lt-LT')}`;
 }
 
 function qualityClass(tier) {

@@ -15,11 +15,11 @@ local COLOR_THEMES = {
 
 --- Kvadratinių vitalų spalvos pagal temą (NUI `--tile-*`).
 local TILE_COLORS = {
-    violet = { health = '#f43f5e', armor = '#a78bfa', hunger = '#fb923c', thirst = '#38bdf8', stamina = '#e879f9' },
-    cyan = { health = '#fb7185', armor = '#22d3ee', hunger = '#fdba74', thirst = '#67e8f9', stamina = '#a5f3fc' },
-    red = { health = '#fca5a5', armor = '#c084fc', hunger = '#fdba74', thirst = '#7dd3fc', stamina = '#f9a8d4' },
-    green = { health = '#f87171', armor = '#86efac', hunger = '#fcd34d', thirst = '#6ee7b7', stamina = '#bbf7d0' },
-    amber = { health = '#ef4444', armor = '#d8b4fe', hunger = '#fbbf24', thirst = '#38bdf8', stamina = '#fbcfe8' },
+    violet = { health = '#f43f5e', armor = '#a78bfa', hunger = '#fb923c', thirst = '#38bdf8', stamina = '#e879f9', stress = '#f472b6', voice = '#c4b5fd' },
+    cyan = { health = '#fb7185', armor = '#22d3ee', hunger = '#fdba74', thirst = '#67e8f9', stamina = '#a5f3fc', stress = '#f9a8d4', voice = '#a5f3fc' },
+    red = { health = '#fca5a5', armor = '#c084fc', hunger = '#fdba74', thirst = '#7dd3fc', stamina = '#f9a8d4', stress = '#fb7185', voice = '#e9d5ff' },
+    green = { health = '#f87171', armor = '#86efac', hunger = '#fcd34d', thirst = '#6ee7b7', stamina = '#bbf7d0', stress = '#fda4af', voice = '#d9f99d' },
+    amber = { health = '#ef4444', armor = '#d8b4fe', hunger = '#fbbf24', thirst = '#38bdf8', stamina = '#fbcfe8', stress = '#f472b6', voice = '#fde68a' },
 }
 
 --- Transporto valdymo panelė (NUI) – iOS stiliaus violetinis akcentas.
@@ -45,21 +45,21 @@ local VEHICLE_CLASS_LT = {
     [1] = 'Sedanas',
     [2] = 'SUV',
     [3] = 'Kupė',
-    [4] = 'Muscle',
+    [4] = 'Muscle automobilis',
     [5] = 'Sportinis',
     [6] = 'Sportinis',
     [7] = 'Super',
     [8] = 'Motociklas',
     [9] = 'Visureigis',
     [10] = 'Industrinis',
-    [11] = 'Utility',
+    [11] = 'Paslaugų transportas',
     [12] = 'Furgonas',
     [13] = 'Dviratis',
     [14] = 'Laivas',
     [15] = 'Helikopteris',
     [16] = 'Lėktuvas',
     [17] = 'Paslaugų',
-    [18] = 'Emergency',
+    [18] = 'Skubios pagalbos',
     [19] = 'Karinis',
     [20] = 'Komercinis',
     [21] = 'Traukinys',
@@ -123,16 +123,18 @@ local function deepCopy(tbl)
 end
 
 local DEFAULT_PRESET = {
-    --- Vertikalūs kvadratai (refs. nuotr.) – kairėje virš mini-map
-    style = 'tiles',
+    --- Vientisas rėmas aplink minimap (violetinė tema)
+    style = 'frame',
     color = 'violet',
-    alpha = 0.55,
+    alpha = 0.58,
     show = {
         health = true,
         armor = true,
-        stamina = true,
+        stamina = false,
         hunger = true,
         thirst = true,
+        stress = true,
+        voice = true,
         speed = false,
         fuel = false,
         seatbelt = false
@@ -179,6 +181,34 @@ local function getNeeds()
     if hunger == nil then hunger = 100 end
     if thirst == nil then thirst = 100 end
     return clamp(hunger, 0, 100), clamp(thirst, 0, 100)
+end
+
+local function getStress()
+    local pd = QBCore.Functions.GetPlayerData() or {}
+    local metadata = pd.metadata or {}
+    local stress = tonumber(metadata.stress)
+    if stress == nil then stress = 0 end
+    return clamp(stress, 0, 100)
+end
+
+local function getVoiceHud()
+    local talking = NetworkIsPlayerTalking(PlayerId())
+    local level = 35
+    if talking then
+        level = 100
+    elseif GetResourceState('pma-voice') == 'started' then
+        local ok, prox = pcall(function()
+            return LocalPlayer.state.proximity
+        end)
+        if ok and type(prox) == 'table' and prox.index then
+            local idx = tonumber(prox.index) or 2
+            if idx == 1 then level = 45
+            elseif idx == 2 then level = 62
+            elseif idx >= 3 then level = 88
+            end
+        end
+    end
+    return talking, clamp(level, 0, 100)
 end
 
 local function loadPresetSettings()
@@ -277,6 +307,8 @@ local function pushHud()
     local health = clamp(GetEntityHealth(ped) - 100, 0, 100)
     local armor = clamp(GetPedArmour(ped), 0, 100)
     local hunger, thirst = getNeeds()
+    local stress = getStress()
+    local voiceTalking, voiceLevel = getVoiceHud()
     local show = not IsPauseMenuActive()
     local inVehicle = IsPedInAnyVehicle(ped, false)
     local speed, fuel = 0, 0
@@ -354,6 +386,9 @@ local function pushHud()
         stamina = staminaSmooth,
         hunger = hunger,
         thirst = thirst,
+        stress = stress,
+        voice = voiceLevel,
+        voiceTalking = voiceTalking,
         inVehicle = inVehicle,
         speed = speed,
         fuel = fuel,
@@ -442,7 +477,7 @@ RegisterCommand('fivempro_seatbelt', function()
     local ped = PlayerPedId()
     if not IsPedInAnyVehicle(ped, false) then return end
     seatbeltOn = not seatbeltOn
-    local msg = seatbeltOn and 'Dirzas: ijungtas' or 'Dirzas: isjungtas'
+    local msg = seatbeltOn and 'Diržas: įjungtas' or 'Diržas: išjungtas'
     BeginTextCommandThefeedPost('STRING')
     AddTextComponentSubstringPlayerName(msg)
     EndTextCommandThefeedPostTicker(false, false)

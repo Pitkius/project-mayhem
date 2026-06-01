@@ -266,12 +266,36 @@ CreateThread(function()
     end
 end)
 
+local function contractKey(c)
+    return ('%s|%s|%s'):format(c.pickupId or '', c.deliveryId or '', c.cargoId or '')
+end
+
 local function contractsForPlayer(profile)
     local out = {}
+    local seen = {}
     for _, c in ipairs(contractPool) do
         if (profile.level or 1) >= (c.minLevel or 1)
             and TruckingShared.ReputationStars(profile.reputation or 0) >= (c.minReputation or 1) then
-            out[#out + 1] = c
+            local key = contractKey(c)
+            if not seen[key] then
+                seen[key] = true
+                out[#out + 1] = c
+            end
+        end
+    end
+    local target = 10
+    local seed = os.time() + (profile.level or 1) * 997
+    local guard = 0
+    while #out < target and guard < 48 do
+        guard = guard + 1
+        local c = generateContract(profile, seed + guard * 1337)
+        if c then
+            c.id = ('live_%s_%s'):format(guard, c.id)
+            local key = contractKey(c)
+            if not seen[key] then
+                seen[key] = true
+                out[#out + 1] = c
+            end
         end
     end
     table.sort(out, function(a, b) return a.pay > b.pay end)

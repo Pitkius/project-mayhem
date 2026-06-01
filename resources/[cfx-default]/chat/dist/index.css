@@ -64,10 +64,10 @@ em {
 .chat-messages {
   position: relative;
   height: 95%;
-  font-size: 1.72vh;
+  font-size: 1.68vh;
   font-weight: 450;
-  letter-spacing: 0.01em;
-  line-height: 1.35;
+  letter-spacing: 0.015em;
+  line-height: 1.42;
   margin: 0;
   padding: 10px 12px;
   padding-bottom: 4px;
@@ -151,8 +151,28 @@ textarea::placeholder {
 }
 
 .msg {
-  margin-bottom: 0.35%;
-  padding-right: 4px;
+  margin-bottom: 0.42%;
+  padding: 4px 8px 5px 10px;
+  padding-right: 6px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.42);
+  border-left: 3px solid rgba(167, 139, 250, 0.45);
+}
+
+.msg-author {
+  font-weight: 700;
+  color: var(--fp-accent-soft);
+  letter-spacing: 0.02em;
+}
+
+.msg-sep {
+  color: rgba(148, 163, 184, 0.75);
+  margin: 0 0.15em;
+}
+
+.msg-body {
+  color: var(--fp-text);
+  word-break: break-word;
 }
 
 .multiline {

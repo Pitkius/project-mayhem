@@ -64,14 +64,20 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT žemėlapis — pilna sala, HD satelitas (2048 PNG)
+--- MDT žemėlapis — pilna sala, HD satelitas (2048 PNG, kraštai = gameMin/gameMax)
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
+    --- Žaidėjo koord. → žemėlapis (jei blipai pastoviai pastumti — koreguok offset / scale)
+    coordMin = { x = -4000.0, y = -4000.0 },
+    coordMax = { x = 4500.0, y = 6625.0 },
     viewMin = { x = -4000.0, y = -4000.0 },
     viewMax = { x = 4500.0, y = 6625.0 },
     offsetX = 0.0,
     offsetY = 0.0,
+    scaleX = 1.0,
+    scaleY = 1.0,
+    flipY = false,
     imageFile = 'mdt/asset/gtav_satellite_2048.png',
     imageWidth = 2048,
     imageHeight = 2560,

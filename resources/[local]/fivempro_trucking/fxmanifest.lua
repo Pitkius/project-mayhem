@@ -12,6 +12,7 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/asset/gtav_satellite_2048.png',
 }
 
 shared_scripts {

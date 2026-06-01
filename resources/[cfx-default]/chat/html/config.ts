@@ -2,8 +2,8 @@ export default {
   defaultTemplateId: 'default', //This is the default template for 2 args1
   defaultAltTemplateId: 'defaultAlt', //This one for 1 arg
   templates: { //You can add static templates here
-    'default': '<b>{0}</b>: {1}',
-    'defaultAlt': '{0}',
+    'default': '<span class="msg-author">{0}</span><span class="msg-sep">:</span> <span class="msg-body">{1}</span>',
+    'defaultAlt': '<span class="msg-body">{0}</span>',
     'print': '<pre>{0}</pre>',
     'example:important': '<h1>^2{0}</h1>'
   },

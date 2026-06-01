@@ -599,11 +599,18 @@ end
 ---@param permission string
 ---@return boolean
 function QBCore.Functions.HasPermission(source, permission)
+    local function allowed(perm)
+        if not perm or perm == '' then return false end
+        if IsPlayerAceAllowed(source, perm) then return true end
+        if not perm:find('^qbcore%.') and IsPlayerAceAllowed(source, 'qbcore.' .. perm) then return true end
+        return false
+    end
+
     if type(permission) == 'string' then
-        if IsPlayerAceAllowed(source, permission) then return true end
+        return allowed(permission)
     elseif type(permission) == 'table' then
         for _, permLevel in pairs(permission) do
-            if IsPlayerAceAllowed(source, permLevel) then return true end
+            if allowed(permLevel) then return true end
         end
     end
 

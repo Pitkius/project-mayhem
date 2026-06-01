@@ -20,27 +20,81 @@ window.GtavMapCore = (function () {
     return `nui://${res}/${p}`;
   }
 
+  function num(v, fallback) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
   function normalizeMapConfig(cfg, resourceName, defaultImageFile) {
     const t = cfg || {};
-    const minX = Number(t.gameMin?.x ?? ISLAND.gameMin.x);
-    const minY = Number(t.gameMin?.y ?? ISLAND.gameMin.y);
-    const maxX = Number(t.gameMax?.x ?? ISLAND.gameMax.x);
-    const maxY = Number(t.gameMax?.y ?? ISLAND.gameMax.y);
+    const minX = num(t.gameMin?.x, ISLAND.gameMin.x);
+    const minY = num(t.gameMin?.y, ISLAND.gameMin.y);
+    const maxX = num(t.gameMax?.x, ISLAND.gameMax.x);
+    const maxY = num(t.gameMax?.y, ISLAND.gameMax.y);
+    const coordMinX = num(t.coordMin?.x, minX);
+    const coordMinY = num(t.coordMin?.y, minY);
+    const coordMaxX = num(t.coordMax?.x, maxX);
+    const coordMaxY = num(t.coordMax?.y, maxY);
     const file = t.imageFile || defaultImageFile || "mdt/asset/gtav_satellite_2048.png";
     return {
       minX,
       minY,
       maxX,
       maxY,
-      viewMinX: Number(t.viewMin?.x ?? ISLAND.viewMin.x),
-      viewMinY: Number(t.viewMin?.y ?? ISLAND.viewMin.y),
-      viewMaxX: Number(t.viewMax?.x ?? ISLAND.viewMax.x),
-      viewMaxY: Number(t.viewMax?.y ?? ISLAND.viewMax.y),
-      offsetX: Number(t.offsetX) || 0,
-      offsetY: Number(t.offsetY) || 0,
-      imgW: Number(t.imageWidth) || ISLAND.imageWidth,
-      imgH: Number(t.imageHeight) || ISLAND.imageHeight,
+      coordMinX,
+      coordMinY,
+      coordMaxX,
+      coordMaxY,
+      viewMinX: num(t.viewMin?.x, ISLAND.viewMin.x),
+      viewMinY: num(t.viewMin?.y, ISLAND.viewMin.y),
+      viewMaxX: num(t.viewMax?.x, ISLAND.viewMax.x),
+      viewMaxY: num(t.viewMax?.y, ISLAND.viewMax.y),
+      offsetX: num(t.offsetX, 0),
+      offsetY: num(t.offsetY, 0),
+      scaleX: num(t.scaleX, 1),
+      scaleY: num(t.scaleY, 1),
+      flipY: t.flipY === true,
+      imgW: num(t.imageWidth, ISLAND.imageWidth),
+      imgH: num(t.imageHeight, ISLAND.imageHeight),
       imageUrl: nuiImageUrl(file, resourceName),
+    };
+  }
+
+  /** GTA (x,y) → Leaflet [lat, lng] pagal žemėlapio ribas ir kalibraciją. */
+  function gameToLatLng(gx, gy, cfg) {
+    if (!cfg) return [Number(gy) || 0, Number(gx) || 0];
+    const x = Number(gx);
+    const y = Number(gy);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return [cfg.minY, cfg.minX];
+
+    const rangeX = cfg.coordMaxX - cfg.coordMinX || 1;
+    const rangeY = cfg.coordMaxY - cfg.coordMinY || 1;
+    const mapRangeX = cfg.maxX - cfg.minX || 1;
+    const mapRangeY = cfg.maxY - cfg.minY || 1;
+
+    let tX = (x - cfg.coordMinX) / rangeX;
+    let tY = (y - cfg.coordMinY) / rangeY;
+    tX = Math.max(0, Math.min(1, tX));
+    tY = Math.max(0, Math.min(1, tY));
+    if (cfg.flipY) tY = 1 - tY;
+
+    const lng = cfg.minX + tX * mapRangeX * (cfg.scaleX || 1) + (cfg.offsetX || 0);
+    const lat = cfg.minY + tY * mapRangeY * (cfg.scaleY || 1) + (cfg.offsetY || 0);
+    return [lat, lng];
+  }
+
+  function latLngToGame(lat, lng, cfg) {
+    if (!cfg) return { x: Number(lng) || 0, y: Number(lat) || 0 };
+    const mapRangeX = cfg.maxX - cfg.minX || 1;
+    const mapRangeY = cfg.maxY - cfg.minY || 1;
+    let tX = (Number(lng) - (cfg.offsetX || 0) - cfg.minX) / (mapRangeX * (cfg.scaleX || 1));
+    let tY = (Number(lat) - (cfg.offsetY || 0) - cfg.minY) / (mapRangeY * (cfg.scaleY || 1));
+    tX = Math.max(0, Math.min(1, tX));
+    tY = Math.max(0, Math.min(1, tY));
+    if (cfg.flipY) tY = 1 - tY;
+    return {
+      x: cfg.coordMinX + tX * (cfg.coordMaxX - cfg.coordMinX),
+      y: cfg.coordMinY + tY * (cfg.coordMaxY - cfg.coordMinY),
     };
   }
 
@@ -137,6 +191,8 @@ window.GtavMapCore = (function () {
     ISLAND,
     nuiImageUrl,
     normalizeMapConfig,
+    gameToLatLng,
+    latLngToGame,
     gameBoundsLatLng,
     viewBoundsLatLng,
     createLeafletOptions,

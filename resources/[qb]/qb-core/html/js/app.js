@@ -3,6 +3,38 @@ import { determineStyleFromVariant, fetchNotifyConfig, NOTIFY_CONFIG } from "./c
 const { useQuasar } = Quasar;
 const { onMounted, onUnmounted } = Vue;
 
+/** Seni Material Icons pavadinimai iš config — map į FA (jei config dar neatnaujintas). */
+const LEGACY_ICON_MAP = {
+    check_circle: "fas fa-circle-check",
+    notifications: "fas fa-circle-info",
+    warning: "fas fa-triangle-exclamation",
+    error: "fas fa-circle-exclamation",
+    local_police: "fas fa-shield-halved",
+};
+
+function normalizeNotifyIcon(icon) {
+    if (!icon || typeof icon !== "string") return undefined;
+    if (icon.includes("fa-")) return icon;
+    return LEGACY_ICON_MAP[icon] || undefined;
+}
+
+function notifyPosition() {
+    const p = NOTIFY_CONFIG?.NotificationStyling?.position;
+    const allowed = new Set([
+        "top-left",
+        "top-right",
+        "bottom-left",
+        "bottom-right",
+        "top",
+        "bottom",
+        "left",
+        "right",
+        "center",
+    ]);
+    if (p && allowed.has(p)) return p;
+    return "top-right";
+}
+
 const fetchNui = async (evName, data) => {
     const resourceName = window.GetParentResourceName();
 
@@ -32,6 +64,7 @@ const app = Vue.createApp({
             if (dataIcon) {
                 icon = dataIcon;
             }
+            icon = normalizeNotifyIcon(icon);
 
             if (!NOTIFY_CONFIG) {
                 console.error("The notification config did not load properly, trying again for next time");
@@ -51,7 +84,14 @@ const app = Vue.createApp({
                 icon,
             });
         };
-        onMounted(() => {
+        onMounted(async () => {
+            await fetchNotifyConfig();
+            const styling = NOTIFY_CONFIG?.NotificationStyling || {};
+            $q.notify.setDefaults({
+                group: styling.group === true,
+                position: notifyPosition(),
+                progress: styling.progress !== false,
+            });
             window.addEventListener("message", showNotif);
         });
         onUnmounted(() => {

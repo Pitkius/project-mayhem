@@ -100,14 +100,24 @@ local function callsForService(service)
     return out
 end
 
+local function playerGpsPos(src)
+    local bag = Player(src).state.dispatchGps
+    if type(bag) == 'table' and bag.x ~= nil and bag.y ~= nil then
+        return vector3(bag.x + 0.0, bag.y + 0.0, (bag.z or 0.0) + 0.0), tonumber(bag.heading) or 0.0
+    end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return nil, 0.0 end
+    local p = GetEntityCoords(ped)
+    return p, GetEntityHeading(ped)
+end
+
 local function crewsForService(service)
     local out = {}
     for crewId, crew in pairs(Crews) do
         if crew and crew.service == service then
             local members = {}
             for _, src in ipairs(crew.members or {}) do
-                local ped = GetPlayerPed(src)
-                local pos = ped and ped ~= 0 and GetEntityCoords(ped) or nil
+                local pos = playerGpsPos(src)
                 members[#members + 1] = {
                     source = src,
                     name = getName(src),
@@ -157,13 +167,13 @@ local function unitBlipsForService(service)
     local units = {}
     for _, src in ipairs(QBCore.Functions.GetPlayers() or {}) do
         if isServiceMember(src, service) then
-            local ped = GetPlayerPed(src)
-            if ped and ped ~= 0 then
-                local p = GetEntityCoords(ped)
+            local p, heading = playerGpsPos(src)
+            if p then
                 local crewId = PlayerCrew[src]
                 local crew = crewId and Crews[crewId] or nil
                 local statusLabel, panicFromCall = unitStatusFor(src, service)
-                local speedKmh = math.floor((GetEntitySpeed(ped) or 0.0) * 3.6 + 0.5)
+                local ped = GetPlayerPed(src)
+                local speedKmh = math.floor(((ped and ped ~= 0 and GetEntitySpeed(ped)) or 0.0) * 3.6 + 0.5)
                 units[#units + 1] = {
                     source = src,
                     name = getName(src),
@@ -171,8 +181,11 @@ local function unitBlipsForService(service)
                     x = p.x,
                     y = p.y,
                     z = p.z,
-                    heading = GetEntityHeading(ped),
-                    inVeh = IsPedInAnyVehicle(ped, false) and true or false,
+                    heading = heading,
+                    inVeh = (function()
+                        local ped = GetPlayerPed(src)
+                        return ped and ped ~= 0 and IsPedInAnyVehicle(ped, false)
+                    end)(),
                     crewId = crewId,
                     isCrewLeader = crew and crew.leader == src or false,
                     speedKmh = speedKmh,
@@ -433,7 +446,7 @@ local function isPoliceJob(src)
     return serviceForJob(jobName(src)) == 'police'
 end
 
-local function triggerOfficerPanic(src)
+local function triggerOfficerPanic(src, clientPos)
     if not isPoliceJob(src) then return false end
     local cfg = Config or {}
     local cd = math.max(0, tonumber(cfg.PanicCooldownMs) or 12000)
@@ -443,9 +456,14 @@ local function triggerOfficerPanic(src)
         if now - last < cd then return false end
         lastPanicAt[src] = now
     end
-    local ped = GetPlayerPed(src)
-    if not ped or ped == 0 then return false end
-    local p = GetEntityCoords(ped)
+    local p
+    if type(clientPos) == 'table' and clientPos.x ~= nil and clientPos.y ~= nil then
+        p = vector3(clientPos.x + 0.0, clientPos.y + 0.0, (clientPos.z or 0.0) + 0.0)
+    else
+        local ped = GetPlayerPed(src)
+        if not ped or ped == 0 then return false end
+        p = GetEntityCoords(ped)
+    end
     local crewId = PlayerCrew[src]
     local crew = crewId and Crews[crewId] or nil
     local callsign = Callsigns[src] or (crew and crew.callsign) or ''
@@ -474,9 +492,9 @@ end
 
 exports('TriggerOfficerPanic', triggerOfficerPanic)
 
-RegisterNetEvent('fivempro_dispatch:server:panic', function()
+RegisterNetEvent('fivempro_dispatch:server:panic', function(clientPos)
     local src = source
-    if triggerOfficerPanic(src) then
+    if triggerOfficerPanic(src, clientPos) then
         TriggerClientEvent('QBCore:Notify', src, 'PANIC išsiųstas visiems pamainoje esantiems pareigūnams.', 'error')
     else
         if not isPoliceJob(src) then

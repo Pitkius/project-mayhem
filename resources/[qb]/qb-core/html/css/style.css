@@ -46,7 +46,10 @@
     --md-radius-medium: 8px;
 }
 
-* {
+#q-app,
+#q-app .q-notification__message,
+#q-app .q-notification__caption,
+#drawtext-container {
     font-family: var(--font-primary);
     font-weight: var(--font-weight-regular);
 }
