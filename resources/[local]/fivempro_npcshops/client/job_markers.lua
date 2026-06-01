@@ -32,7 +32,8 @@ local function drawJobMarker(pos, kind, scale)
     local c = COLORS[kind] or COLORS.stash
     local sc = scale or Config.JobMarkerScale or { x = 2.4, y = 2.4, z = 0.24 }
     local mType = markerTypeFor(kind)
-    local zOff = mType == 27 and 0.02 or 0.06
+    local isCarSymbol = mType == 36
+    local zOff = isCarSymbol and 0.35 or (mType == 27 and 0.02 or 0.06)
     DrawMarker(
         mType,
         pos.x, pos.y, pos.z + zOff,
@@ -40,7 +41,7 @@ local function drawJobMarker(pos, kind, scale)
         0.0, 0.0, 0.0,
         sc.x, sc.y, sc.z,
         c[1], c[2], c[3], c[4],
-        false, false, 2, false, nil, nil, false
+        false, false, 2, isCarSymbol, nil, nil, false
     )
 end
 

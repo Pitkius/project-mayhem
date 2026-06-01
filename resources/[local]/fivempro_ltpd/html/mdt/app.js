@@ -157,12 +157,25 @@ window.addEventListener('message', (e) => {
     if (window.MdtMap) {
       MdtMap.ensureMap(d.data && d.data.map);
       MdtMap.setOnSelect(onMapBlipSelect);
-      if (MdtMap.setAnimEnabled) MdtMap.setAnimEnabled(false);
+      if (MdtMap.setAnimEnabled) MdtMap.setAnimEnabled(true);
     }
     preloadMapImage(mapMeta.imageUrl);
     mdtEnsureConnected().then((ok) => {
       if (ok) startDispatchPoll();
     });
+  }
+  if (d.action === 'dispatchLive') {
+    if (!mdtSessionActive || mdtSurveillanceLive || !d.data) return;
+    const base = lastDispatchPayload && typeof lastDispatchPayload === 'object' ? lastDispatchPayload : { ok: true };
+    const res = {
+      ...base,
+      ok: base.ok !== false,
+      units: d.data.units || [],
+      calls: d.data.calls || [],
+      crews: d.data.crews || [],
+      selfSource: d.data.selfSource != null ? d.data.selfSource : base.selfSource,
+    };
+    renderDispatch(res);
   }
   if (d.action === 'close') {
     mdtLocalClose();
@@ -458,7 +471,7 @@ function startDispatchPoll() {
   dispatchPoll = setInterval(() => {
     if (!mdtSessionActive || mdtSurveillanceLive) return;
     refreshDispatch();
-  }, 2200);
+  }, 1000);
 }
 
 function countObj(obj) {

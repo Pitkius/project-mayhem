@@ -165,6 +165,12 @@ window.MdtMap = (function () {
     });
   }
 
+  function applyMarkerPosition(s) {
+    s.curLat = s.tgtLat;
+    s.curLng = s.tgtLng;
+    if (s.marker) s.marker.setLatLng([s.curLat, s.curLng]);
+  }
+
   function upsertUnit(u, cfg) {
     const key = unitKey(u);
     const [lat, lng] = gameToLatLng(u.x, u.y, cfg);
@@ -192,6 +198,7 @@ window.MdtMap = (function () {
     s.data = { ...u };
     s.marker.setIcon(makeDivIcon(unitBlipClass(u), u.heading));
     s.marker.setZIndexOffset(u.panic ? 900 : u.isCrewLeader ? 600 : 400);
+    if (!animEnabled) applyMarkerPosition(s);
   }
 
   function upsertCall(c, cfg) {
@@ -221,6 +228,7 @@ window.MdtMap = (function () {
     s.data = { ...c };
     s.marker.setIcon(makeDivIcon(callBlipClass(c), 0));
     s.marker.setZIndexOffset(c.panic ? 950 : 500);
+    if (!animEnabled) applyMarkerPosition(s);
   }
 
   function lerp(a, b, t) {

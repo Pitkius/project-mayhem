@@ -205,6 +205,21 @@ local function isDispatchWritable()
     return P and P.job and isPdJobName(P.job.name) and P.job.onduty == true
 end
 
+--- Gyvas GPS / dispatch atnaujinimas į MDT (iš fivempro_dispatch push kas ~1.5s)
+RegisterNetEvent('fivempro_dispatch:client:update', function(payload)
+    if not mdtOpen or not payload or payload.service ~= 'police' then return end
+    SendNUIMessage({
+        action = 'dispatchLive',
+        data = {
+            units = payload.units or {},
+            calls = payload.calls or {},
+            crews = payload.crews or {},
+            selfSource = GetPlayerServerId(PlayerId()),
+            ts = payload.ts,
+        },
+    })
+end)
+
 RegisterNUICallback('dispatchSnapshot', function(_, cb)
     if GetResourceState('fivempro_dispatch') ~= 'started' then
         return cb({
@@ -638,6 +653,19 @@ CreateThread(function()
                     end,
                 })
             end
+        end
+        if st.locker2 and st.locker2.coords then
+            local stationId = st.id
+            addMarker({
+                coords = st.locker2.coords,
+                kind = 'locker',
+                label = 'PD rūbinė',
+                scale = { x = 0.48, y = 0.48, z = 0.48 },
+                canUse = isPdOnDutyClient,
+                onPress = function()
+                    TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu')
+                end,
+            })
         end
     end
 end)

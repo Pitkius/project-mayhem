@@ -7,3 +7,5 @@ lua54 "yes"
 this_is_a_map "yes"
 
 dependencies {"cfx-gabz-mapdata", "cfx-gabz-pdprops"}
+
+client_script {"gabz_davispd_entitysets.lua"}

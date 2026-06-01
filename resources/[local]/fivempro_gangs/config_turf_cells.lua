@@ -1,4 +1,4 @@
---- Turf zonos: ~40 RP rajonų (Los Santos + Sandy Shores + Harmony + Paleto Bay).
+--- Turf zonos: RP rajonai (Los Santos + Sandy Shores + Harmony; be Paleto).
 --- Ne generinis tinklelis — tik vietos kur vyksta gaujų RP.
 local TurfCells = {}
 
@@ -67,10 +67,8 @@ addTurf(31, 'turf_031', 'Sandy Shores',        'Sandy Shores',       1680.0,   3
 addTurf(32, 'turf_032', 'Sandy Shores North',  'Sandy Shores',       1480.0,   3880.0, 1980.0,   4380.0)
 addTurf(33, 'turf_033', 'Harmony',             'Harmony',             380.0,   2480.0,  880.0,   2980.0)
 addTurf(34, 'turf_034', 'Grapeseed',           'Grapeseed',          2280.0,   4480.0, 2780.0,   4980.0)
-addTurf(35, 'turf_035', 'Paleto Bay',          'Paleto Bay',         -480.0,   6080.0,   80.0,   6580.0)
-addTurf(36, 'turf_036', 'Paleto Forest',       'Paleto Bay',         -280.0,   5580.0,  220.0,   6080.0)
 
--- Papildomos LS detalės (užpildo ~40)
+-- Papildomos LS detalės
 addTurf(37, 'turf_037', 'Davis South',         'Davis',              -280.0,   -2080.0,  120.0,  -1780.0)
 addTurf(38, 'turf_038', 'Rancho Docks',        'Rancho',              280.0,   -2480.0,  680.0,  -2080.0)
 addTurf(39, 'turf_039', 'Cypress Warehouses',  'Cypress Flats',       480.0,   -2480.0,  880.0,  -2080.0)

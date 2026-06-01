@@ -87,9 +87,11 @@ RegisterNetEvent('fivempro_npcshops:server:validateJobNpc', function(jobName, st
     if role == 'boss' then
         local P = QBCore.Functions.GetPlayer(src)
         if not P or P.PlayerData.job.name ~= jobName then
-            return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik gamtosaugininkams.')
+            local msg = jobName == 'police' and 'Tik policijos darbuotojams.' or 'Tik gamtosaugininkams.'
+            return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, msg)
         end
-        if not P.PlayerData.job.isboss and (tonumber(P.PlayerData.job.grade.level) or 0) < 3 then
+        local minBoss = jobName == 'police' and 7 or 3
+        if not P.PlayerData.job.isboss and (tonumber(P.PlayerData.job.grade.level) or 0) < minBoss then
             return TriggerClientEvent('fivempro_npcshops:client:jobNpcDenied', src, 'Tik vadovui.')
         end
         if not P.PlayerData.job.onduty then

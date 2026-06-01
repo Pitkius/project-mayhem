@@ -122,32 +122,36 @@ Config.Stations = {
         mdt = true,
         duty = true,
         armory = {
-            coords = vector3(450.85, -993.26, 30.69),
+            coords = vector3(486.5664, -995.1992, 30.6791),
             stashId = 'ltpd_armory_ls',
-            label = 'Policijos ginklinė (rūbinė)',
+            label = 'ARO sandėlis (ginklinė)',
             maxweight = 5000000,
             slots = 90,
         },
         --- PD asmeninis garažas (fivempro_garages id – mašinos perkamos salone)
         pdGarageId = 'pd_ls_main',
-        --- Policijos salonas (fivempro_dealership) – sujungta su garažu: vienas qb-target „garažo“ taške
+        --- Policijos salonas (fivempro_dealership) – sujungta su garažu
         policeDealership = {
-            coords = vector3(441.64, -1013.14, 28.62),
-            heading = 175.52,
+            coords = vector3(460.1003, -986.7195, 25.6998),
+            heading = 269.0115,
         },
         garage = {
-            coords = vector3(441.64, -1013.14, 28.62),
-            spawn = vector4(441.64, -1013.14, 28.62, 175.52),
+            coords = vector3(460.1003, -986.7195, 25.6998),
+            spawn = vector4(460.1003, -986.7195, 25.6998, 269.0115),
         },
-        --- Rūbinė (qb-clothing outfit meniu) – patikrink su savo MLO (persirengimo zona)
+        --- Rūbinė 1 (palikta)
         locker = {
             coords = vector3(461.85, -998.35, 30.69),
             heading = 90.0,
         },
-        --- Trys sandėliai (prie ginklinės / rūbinės eilės – patikrink MLO)
+        --- Rūbinė 2
+        locker2 = {
+            coords = vector3(460.1924, -998.6480, 30.6849),
+            heading = 0.3915,
+        },
         stashes = {
             {
-                coords = vector3(449.55, -993.45, 30.69),
+                coords = vector3(480.5729, -995.2401, 30.6896),
                 stashId = 'ltpd_stash_public_ls',
                 label = 'PD sandėlis (bendras)',
                 minGrade = 0,
@@ -155,25 +159,33 @@ Config.Stations = {
                 slots = 60,
             },
             {
-                coords = vector3(449.55, -992.35, 30.69),
+                coords = vector3(482.4943, -995.2571, 30.6896),
                 stashId = 'ltpd_stash_grade3_ls',
-                label = 'PD sandėlis (nuo 3 rango)',
+                label = 'PD sandėlis (aukštesnio rango)',
                 minGrade = 3,
                 maxweight = 2500000,
                 slots = 70,
             },
             {
-                coords = vector3(449.55, -991.25, 30.69),
+                coords = vector3(485.3315, -995.2804, 30.6896),
                 stashId = 'ltpd_stash_grade8_ls',
-                label = 'PD sandėlis (nuo 8 rango)',
+                label = 'PD sandėlis (vadovų)',
                 minGrade = 8,
                 maxweight = 3000000,
                 slots = 80,
             },
+            {
+                coords = vector3(463.1892, -988.8655, 30.6897),
+                stashId = 'ltpd_stash_boss_ls',
+                label = 'PD sandėlis (bosas / pavaduotojas)',
+                minGrade = 7,
+                maxweight = 3500000,
+                slots = 90,
+            },
         },
         management = {
-            coords = vector3(447.17, -973.33, 30.69),
-            heading = 184.59,
+            coords = vector3(463.1892, -988.8655, 30.6897),
+            heading = 263.6569,
         },
         --- Stogas: helipadas + sraigtasparnio „garažas“ (keisk Z pagal MLO)
         heliGarage = {
@@ -197,12 +209,12 @@ Config.Stations = {
         },
         pdGarageId = 'pd_davis',
         policeDealership = {
-            coords = vector3(397.85, -1607.09, 29.29),
-            heading = 230.0,
+            coords = vector3(383.0487, -1616.0627, 29.2921),
+            heading = 52.1940,
         },
         garage = {
-            coords = vector3(397.85, -1607.09, 29.29),
-            spawn = vector4(397.85, -1607.09, 29.29, 230.0),
+            coords = vector3(383.0487, -1616.0627, 29.2921),
+            spawn = vector4(383.0487, -1616.0627, 29.2921, 52.1940),
         },
         locker = {
             coords = vector3(365.13, -1598.32, 25.45),

@@ -60,11 +60,15 @@ local function openStashMenu(jobName, stationId)
                 params = { event = 'fivempro_ltpd:client:tryOpenStash', args = { stationId = stationId, stashIndex = 2 } },
             },
             {
-                header = 'Sandėlis (nuo 8 rango)',
+                header = 'Sandėlis (vadovų)',
                 params = { event = 'fivempro_ltpd:client:tryOpenStash', args = { stationId = stationId, stashIndex = 3 } },
             },
             {
-                header = 'Ginklinė (stash)',
+                header = 'Sandėlis (bosas / pavaduotojas)',
+                params = { event = 'fivempro_ltpd:client:tryOpenStash', args = { stationId = stationId, stashIndex = 4 } },
+            },
+            {
+                header = 'ARO sandėlis (ginklinė)',
                 params = { event = 'fivempro_ltpd:client:tryOpenArmory', args = { stationId = stationId } },
             },
         }
@@ -98,6 +102,8 @@ RegisterNetEvent('fivempro_npcshops:client:jobNpcApproved', function(jobName, st
     elseif role == 'boss' then
         if jobName == 'ranger' then
             TriggerEvent('fivempro_ranger:client:bossOpenMenu')
+        elseif jobName == 'police' then
+            TriggerEvent('fivempro_ltpd:client:bossOpenMenu')
         end
     elseif role == 'duty' then
         if jobName == 'police' then

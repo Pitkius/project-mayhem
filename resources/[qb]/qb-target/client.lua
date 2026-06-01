@@ -101,8 +101,16 @@ local function DrawTarget()
 end
 
 local function RaycastCamera(flag, playerCoords)
-	if not playerPed then playerPed = PlayerPedId() end
-	if not playerCoords then playerCoords = GetEntityCoords(playerPed) end
+	if not playerPed or playerPed == 0 or not DoesEntityExist(playerPed) then
+		playerPed = PlayerPedId()
+	end
+	if not playerCoords then
+		if playerPed and playerPed ~= 0 and DoesEntityExist(playerPed) then
+			playerCoords = GetEntityCoords(playerPed)
+		else
+			playerCoords = vector3(0.0, 0.0, 0.0)
+		end
+	end
 
 	local rayPos, rayDir = ScreenPositionToCameraRay()
 	local destination = rayPos + 16 * rayDir
@@ -1218,8 +1226,9 @@ RegisterNUICallback('selectTarget', function(option, cb)
 	table_wipe(sendData)
 	CreateThread(function()
 		Wait(0)
-		if data.entity ~= nil and DoesEntityExist(data.entity) then
-			data.coords = GetEntityCoords(data.entity)
+		if data.entity ~= nil and data.entity ~= 0 and DoesEntityExist(data.entity) then
+			local ok, coords = pcall(GetEntityCoords, data.entity)
+			if ok and coords then data.coords = coords end
 		end
 		if data.action then
 			data.action(data.entity)
