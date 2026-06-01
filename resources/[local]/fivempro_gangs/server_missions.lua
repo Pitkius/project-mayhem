@@ -22,13 +22,6 @@ local function getPlayerGang(src)
     ]], { Player.PlayerData.citizenid })
 end
 
-local function hasGangAdminPermission(src)
-    for _, perm in ipairs(Config.AdminPermissions or {}) do
-        if QBCore.Functions.HasPermission(src, perm) then return true end
-    end
-    return false
-end
-
 local function missionAllowed(gangType, missionKey)
     local m = Config.MissionTypes and Config.MissionTypes[missionKey]
     if not m then return false end
@@ -316,7 +309,7 @@ end)
 
 RegisterNetEvent('fivempro_gangs:server:adminResetTurf', function(turfId)
     local src = source
-    if not hasGangAdminPermission(src) then return end
+    if not HasGangAdminPermission(src) then return end
     turfId = tostring(turfId or '')
     MySQL.update.await('UPDATE fivempro_gang_turfs SET owner_gang_id = NULL, owner_name = NULL, progress = 0, heat = 0 WHERE turf_id = ?', { turfId })
     TriggerClientEvent('QBCore:Notify', src, ('Turf %s reset.'):format(turfId), 'success')
@@ -324,7 +317,7 @@ end)
 
 RegisterNetEvent('fivempro_gangs:server:adminSetTurfOwner', function(turfId, gangId)
     local src = source
-    if not hasGangAdminPermission(src) then return end
+    if not HasGangAdminPermission(src) then return end
     turfId = tostring(turfId or '')
     gangId = tonumber(gangId)
     local ownerName = nil
@@ -340,7 +333,7 @@ end)
 
 RegisterNetEvent('fivempro_gangs:server:adminSetTurfProgress', function(turfId, progress)
     local src = source
-    if not hasGangAdminPermission(src) then return end
+    if not HasGangAdminPermission(src) then return end
     MySQL.update.await('UPDATE fivempro_gang_turfs SET progress = ? WHERE turf_id = ?', { math.max(0, math.min(100, tonumber(progress) or 0)), tostring(turfId) })
     TriggerClientEvent('QBCore:Notify', src, 'Turf progresas nustatytas.', 'success')
 end)

@@ -60,11 +60,16 @@ Config.DrugSell = {
 }
 
 Config.AdminPermissions = { 'admin', 'god' }
+--- txAdmin / cfg group.admin (add_ace group.admin command allow) — ne QBCore /addpermission
+Config.AdminAceFallbacks = { 'command', 'group.admin' }
 
---- Turf tablet: Leaflet + satellite (koord. = gtav_satellite.jpg kampai)
+--- Turf tablet: Leaflet + palydovinis žemėlapis (lengvas JPG, LS vaizdas)
+--- Geresnė kokybė: įkelk 2048 PNG kaip gtav_satellite_2048.png ir pakeisk imageFile (didesnis NUI apkrovimas).
 Config.TabletMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
+    viewMin = { x = -1750.0, y = -2050.0 },
+    viewMax = { x = 1580.0, y = 480.0 },
     offsetX = 0.0,
     offsetY = 0.0,
     imageWidth = 1024,

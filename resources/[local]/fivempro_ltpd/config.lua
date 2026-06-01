@@ -16,12 +16,16 @@ Config.Divisions = {
 }
 
 --- Minimalus grade (0 = Kursantas) veiksmui
+--- F7 – surinktų pirštų atspaudų žurnalas (tarnybos metu)
+Config.FingerprintJournalKey = 'F7'
+
 Config.Permissions = {
     mdt_open = 0,
     mdt_search_basic = 0,
     mdt_search_full = 3, -- pinigai, transportas, išsamiau
     mdt_fine = 1,
     mdt_wanted = 2,
+    mdt_fingerprint = 1,
     mdt_arrest_record = 2,
     cuff = 1,
     search_inventory = 1,
@@ -60,15 +64,18 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT dispatch žemėlapis — pilnas San Andreas (koord. = gtav_satellite_2048.png kampai)
+--- MDT žemėlapis — JPG (mažiau lag), pradinis vaizdas tik Los Santos
+--- HD: naudok gtav_satellite_2048.png (sunkesnis failas)
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
+    viewMin = { x = -1750.0, y = -2050.0 },
+    viewMax = { x = 1580.0, y = 480.0 },
     offsetX = 0.0,
     offsetY = 0.0,
-    imageFile = 'mdt/asset/gtav_satellite_2048.png',
-    imageWidth = 2048,
-    imageHeight = 2560,
+    imageFile = 'mdt/asset/gtav_satellite.jpg',
+    imageWidth = 1024,
+    imageHeight = 1280,
 }
 
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)
@@ -605,4 +612,17 @@ Config.PdDoorDynamics = {
         pairDist = 2.35,
         interactDist = 2.5,
     },
+}
+
+--- MDT asmens paieška — licencijų rodymas (sutampa su fivempro_licenses / drivingschool)
+Config.MdtLicenses = {
+    DrivingCategories = {
+        { key = 'driver_a', letter = 'A', label = 'Motociklai' },
+        { key = 'driver_b', letter = 'B', label = 'Lengvieji automobiliai', altKeys = { 'driver' } },
+        { key = 'driver_c', letter = 'C', label = 'Sunkvežimiai' },
+    },
+    DrivingItems = { 'driving_license', 'driver_license' },
+    IdItem = 'id_card',
+    FishingItem = 'fishing_license',
+    HuntingItem = 'hunting_license',
 }

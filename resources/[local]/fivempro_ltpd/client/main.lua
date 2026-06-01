@@ -136,6 +136,58 @@ RegisterNUICallback('setWanted', function(data, cb)
     end, data)
 end)
 
+RegisterNUICallback('collectFingerprint', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_ltpd:server:collectFingerprint', function(result)
+        if result and result.message then
+            QBCore.Functions.Notify(result.message, result.ok and 'success' or 'error')
+        end
+        cb(result or { ok = false })
+    end, data and data.citizenid)
+end)
+
+local function openFingerprintJournal()
+    if not isPdOnDutyClient() then
+        return QBCore.Functions.Notify('Tik tarnybos metu.', 'error')
+    end
+    if GetResourceState('qb-menu') ~= 'started' then
+        return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
+    end
+    QBCore.Functions.TriggerCallback('fivempro_ltpd:server:getMyFingerprints', function(res)
+        if not res or not res.ok then
+            return QBCore.Functions.Notify((res and res.message) or 'Nepavyko užkrauti.', 'error')
+        end
+        local menu = {
+            { header = 'Surinkti atspaudai', isMenuHeader = true },
+        }
+        local rows = res.rows or {}
+        if #rows == 0 then
+            menu[#menu + 1] = { header = 'Tuščia', txt = 'MDT → Asmuo → „Įrašyti atspaudus“', isMenuHeader = true }
+        else
+            for _, r in ipairs(rows) do
+                menu[#menu + 1] = {
+                    header = r.name or r.citizenid,
+                    txt = ('ID: %s | Atspaudas: %s'):format(r.citizenid or '—', r.fingerprint or '—'),
+                    isMenuHeader = true,
+                }
+            end
+        end
+        menu[#menu + 1] = {
+            header = 'Uždaryti',
+            params = {
+                isAction = true,
+                event = function()
+                    exports['qb-menu']:closeMenu()
+                end,
+            },
+        }
+        exports['qb-menu']:openMenu(menu)
+    end)
+end
+
+RegisterCommand('+ltpdFingerprintJournal', openFingerprintJournal, false)
+RegisterCommand('-ltpdFingerprintJournal', function() end, false)
+RegisterKeyMapping('+ltpdFingerprintJournal', 'LTPD: surinkti pirštų atspaudai', 'keyboard', Config.FingerprintJournalKey or 'F7')
+
 RegisterNUICallback('addArrest', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_ltpd:server:addArrestNote', function(result)
         cb(result or { ok = false })

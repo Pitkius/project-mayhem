@@ -491,6 +491,35 @@ input, select {
 }
 .badge.ok { background: rgba(34, 197, 94, 0.25); color: #86efac; }
 .badge.off { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
+
+.license-block {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.license-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.license-list li {
+  margin-bottom: 4px;
+}
+
+.card-actions {
+  margin-top: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.want-status {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.want-status.ok { color: #86efac; }
+.want-status.err { color: #fca5a5; }
 .surv-audio-toggle {
   display: flex;
   align-items: center;

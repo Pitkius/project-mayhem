@@ -52,6 +52,175 @@ local function ensureTables()
         PRIMARY KEY (`id`),
         KEY `citizenid` (`citizenid`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
+
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `ltpd_fingerprints` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `officer_citizenid` varchar(50) NOT NULL,
+        `subject_citizenid` varchar(50) NOT NULL,
+        `subject_name` varchar(128) NOT NULL DEFAULT '',
+        `fingerprint` varchar(64) NOT NULL,
+        `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `officer_subject` (`officer_citizenid`, `subject_citizenid`),
+        KEY `officer` (`officer_citizenid`),
+        KEY `fingerprint` (`fingerprint`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
+end
+
+local function decodeCharinfo(raw)
+    if not raw or raw == '' then return {} end
+    local ok, data = pcall(json.decode, raw)
+    if ok and type(data) == 'table' then return data end
+    return {}
+end
+
+local function personDisplayName(charinfo)
+    charinfo = charinfo or {}
+    return ((charinfo.firstname or '') .. ' ' .. (charinfo.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
+end
+
+local function decodeMetadata(raw)
+    if not raw or raw == '' then return {} end
+    local ok, data = pcall(json.decode, raw)
+    if ok and type(data) == 'table' then return data end
+    return {}
+end
+
+local function fingerprintFromRow(row)
+    if not row then return nil end
+    local meta = decodeMetadata(row.metadata)
+    local fp = meta.fingerprint
+    if fp and fp ~= '' then return tostring(fp) end
+    return nil
+end
+
+local function parsePlayerInventory(raw)
+    if not raw or raw == '' then return {} end
+    local ok, data = pcall(json.decode, raw)
+    if ok and type(data) == 'table' then return data end
+    return {}
+end
+
+local function itemBelongsToCitizen(info, citizenid)
+    if not info or not info.citizenid or info.citizenid == '' then return true end
+    return info.citizenid == citizenid
+end
+
+local function inventoryHasItem(inv, itemNames, citizenid)
+    if type(inv) ~= 'table' then return false end
+    local names = type(itemNames) == 'table' and itemNames or { itemNames }
+    for _, item in pairs(inv) do
+        if type(item) == 'table' and item.name then
+            for _, want in ipairs(names) do
+                if item.name == want and itemBelongsToCitizen(item.info, citizenid) then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+local function playerHasItem(Player, itemNames, citizenid)
+    if not Player then return false end
+    local names = type(itemNames) == 'table' and itemNames or { itemNames }
+    for _, name in ipairs(names) do
+        local items = Player.Functions.GetItemsByName(name)
+        for _, it in pairs(items or {}) do
+            if itemBelongsToCitizen(it.info, citizenid) then return true end
+        end
+    end
+    return false
+end
+
+local function licenceCategoryActive(licences, cat)
+    licences = licences or {}
+    if licences[cat.key] == true then return true end
+    if cat.altKeys then
+        for _, k in ipairs(cat.altKeys) do
+            if licences[k] == true then return true end
+        end
+    end
+    return false
+end
+
+local function isLicenseExpiryValid(expiryStr)
+    if not expiryStr or expiryStr == '' then return true end
+    local y, m, d = tostring(expiryStr):match('^(%d%d%d%d)%-(%d%d)%-(%d%d)')
+    if not y then return true end
+    local exp = os.time({
+        year = tonumber(y),
+        month = tonumber(m),
+        day = tonumber(d),
+        hour = 23,
+        min = 59,
+        sec = 59,
+    })
+    return os.time() <= exp
+end
+
+local function buildPersonLicenses(citizenid, meta, inv, onlinePlayer)
+    meta = meta or {}
+    local cfg = Config.MdtLicenses or {}
+    local licences = meta.licences or {}
+    local out = {}
+
+    local hasId = meta.id_issued ~= nil or meta.idcard_issued ~= nil
+    if onlinePlayer then
+        hasId = hasId or playerHasItem(onlinePlayer, cfg.IdItem or 'id_card', citizenid)
+    else
+        hasId = hasId or inventoryHasItem(inv, cfg.IdItem or 'id_card', citizenid)
+    end
+    out[#out + 1] = { id = 'id', label = 'Tapatybės kortelė', active = hasId }
+
+    local drivingLetters = {}
+    for _, cat in ipairs(cfg.DrivingCategories or {}) do
+        if licenceCategoryActive(licences, cat) then
+            drivingLetters[#drivingLetters + 1] = cat.letter
+        end
+    end
+    local hasDriving = #drivingLetters > 0
+    if onlinePlayer then
+        hasDriving = hasDriving or playerHasItem(onlinePlayer, cfg.DrivingItems, citizenid)
+    else
+        hasDriving = hasDriving or inventoryHasItem(inv, cfg.DrivingItems, citizenid)
+    end
+    local drivingDetail = #drivingLetters > 0 and ('Kategorijos: ' .. table.concat(drivingLetters, ', ')) or nil
+    out[#out + 1] = {
+        id = 'driving',
+        label = 'Vairuotojo pažymėjimas',
+        active = hasDriving,
+        detail = drivingDetail,
+        expiry = meta.driver_license_expiry,
+    }
+
+    local function outdoorsActive(expiryKey, issuedKey, itemName)
+        local hasMeta = (meta[expiryKey] and meta[expiryKey] ~= '') or (meta[issuedKey] and meta[issuedKey] ~= '')
+        if hasMeta and not isLicenseExpiryValid(meta[expiryKey]) then return false, meta[expiryKey] end
+        if hasMeta then return true, meta[expiryKey] end
+        if onlinePlayer then
+            return playerHasItem(onlinePlayer, itemName, citizenid), nil
+        end
+        return inventoryHasItem(inv, itemName, citizenid), nil
+    end
+
+    local fishActive, fishExp = outdoorsActive('fishing_license_expiry', 'fishing_license_issued', cfg.FishingItem or 'fishing_license')
+    out[#out + 1] = {
+        id = 'fishing',
+        label = 'Žvejybos licencija',
+        active = fishActive,
+        expiry = fishExp or meta.fishing_license_expiry,
+    }
+
+    local huntActive, huntExp = outdoorsActive('hunting_license_expiry', 'hunting_license_issued', cfg.HuntingItem or 'hunting_license')
+    out[#out + 1] = {
+        id = 'hunting',
+        label = 'Medžioklės licencija',
+        active = huntActive,
+        expiry = huntExp or meta.hunting_license_expiry,
+    }
+
+    return out
 end
 
 local function migrateLtpdJobToPolice()
@@ -174,6 +343,7 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:mdtContext', function(src,
             fullSearch = mdtFullAccess(src),
             fine = hasPerm(src, 'mdt_fine'),
             wanted = hasPerm(src, 'mdt_wanted'),
+            fingerprint = hasPerm(src, 'mdt_fingerprint'),
             arrest = hasPerm(src, 'mdt_arrest_record'),
             cctv = hasPerm(src, 'mdt_cctv'),
             bodycam = hasPerm(src, 'mdt_bodycam'),
@@ -183,21 +353,33 @@ end)
 
 QBCore.Functions.CreateCallback('fivempro_ltpd:server:searchPerson', function(src, cb, query)
     if not hasPerm(src, 'mdt_search_basic') then return cb({ ok = false, message = 'Nėra teisės' }) end
-    query = tostring(query or ''):gsub('%%', ''):sub(1, 64)
+    query = tostring(query or ''):gsub('%%', ''):gsub('%s+', ' '):match('^%s*(.-)%s*$') or ''
     if #query < 2 then return cb({ ok = true, rows = {} }) end
 
     local ok, err = pcall(function()
-    local like = '%' .. query:lower() .. '%'
+    local qLower = query:lower()
+    local like = '%' .. qLower .. '%'
     local parts = {}
-    for w in query:lower():gmatch('%S+') do
+    for w in qLower:gmatch('%S+') do
         parts[#parts + 1] = w
     end
 
-    local rows
+    local rows = {}
+    local seen = {}
+
+    local function addRows(list)
+        for _, r in ipairs(list or {}) do
+            if r.citizenid and not seen[r.citizenid] then
+                seen[r.citizenid] = true
+                rows[#rows + 1] = r
+            end
+        end
+    end
+
     if #parts >= 2 then
         local p1, p2 = '%' .. parts[1] .. '%', '%' .. parts[2] .. '%'
-        rows = MySQL.query.await([[
-            SELECT citizenid, charinfo, money, metadata
+        addRows(MySQL.query.await([[
+            SELECT citizenid, charinfo, money, metadata, inventory
             FROM players
             WHERE (
                 (LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname'))) LIKE ?
@@ -207,31 +389,47 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:searchPerson', function(sr
             )
             OR LOWER(citizenid) LIKE ?
             LIMIT 25
-        ]], { p1, p2, p2, p1, like }) or {}
-    else
-        rows = MySQL.query.await([[
-            SELECT citizenid, charinfo, money, metadata
-            FROM players
-            WHERE LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname'))) LIKE ?
-               OR LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname'))) LIKE ?
-               OR LOWER(CONCAT(
-                    COALESCE(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname')), ''),
-                    ' ',
-                    COALESCE(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname')), '')
-               )) LIKE ?
-               OR LOWER(charinfo) LIKE ?
-               OR LOWER(citizenid) LIKE ?
-            LIMIT 25
-        ]], { like, like, like, like, like }) or {}
+        ]], { p1, p2, p2, p1, like }))
+    end
+
+    addRows(MySQL.query.await([[
+        SELECT citizenid, charinfo, money, metadata, inventory
+        FROM players
+        WHERE LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname'))) LIKE ?
+           OR LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname'))) LIKE ?
+           OR LOWER(CONCAT(
+                COALESCE(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname')), ''),
+                ' ',
+                COALESCE(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname')), '')
+           )) LIKE ?
+           OR LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.phone'))) LIKE ?
+           OR LOWER(charinfo) LIKE ?
+           OR LOWER(citizenid) LIKE ?
+           OR LOWER(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.fingerprint'))) LIKE ?
+        LIMIT 30
+    ]], { like, like, like, like, like, like, like }))
+
+    if #rows == 0 then
+        addRows(MySQL.query.await(
+            'SELECT citizenid, charinfo, money, metadata, inventory FROM players WHERE LOWER(citizenid) = ? LIMIT 1',
+            { qLower }
+        ))
+    end
+
+    if #rows > 25 then
+        local trimmed = {}
+        for i = 1, 25 do trimmed[i] = rows[i] end
+        rows = trimmed
     end
 
     local full = mdtFullAccess(src)
     for _, r in ipairs(rows) do
-        local charinfo = json.decode(r.charinfo or '{}') or {}
-        r.name = (charinfo.firstname or '') .. ' ' .. (charinfo.lastname or '')
+        local charinfo = decodeCharinfo(r.charinfo)
+        r.name = personDisplayName(charinfo)
         r.citizenid = r.citizenid
+        r.fingerprint = fingerprintFromRow(r)
         local onlineP = QBCore.Functions.GetPlayerByCitizenId(r.citizenid)
-        r.player_id = onlineP and onlineP.PlayerData.source or nil
+        r.online = onlineP ~= nil
         local money = json.decode(r.money or '{}') or {}
         if full then
             r.cash = tonumber(money.cash) or 0
@@ -243,6 +441,12 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:searchPerson', function(sr
         local wanted = MySQL.single.await('SELECT level, reason FROM ltpd_wanted WHERE citizenid = ?', { r.citizenid })
         r.wanted_level = wanted and tonumber(wanted.level) or 0
         r.wanted_reason = wanted and wanted.reason or ''
+        local meta = decodeMetadata(r.metadata)
+        if onlineP then
+            meta = onlineP.PlayerData.metadata or meta
+        end
+        local inv = onlineP and (onlineP.PlayerData.items or {}) or parsePlayerInventory(r.inventory)
+        r.licenses = buildPersonLicenses(r.citizenid, meta, inv, onlineP)
         if full then
             local veh = MySQL.query.await(
                 'SELECT plate, vehicle, state FROM player_vehicles WHERE citizenid = ? LIMIT 15',
@@ -261,6 +465,7 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:searchPerson', function(sr
         r.charinfo = nil
         r.money = nil
         r.metadata = nil
+        r.inventory = nil
     end
 
     cb({ ok = true, rows = rows, full = full })
@@ -325,15 +530,63 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:issueFine', function(src, 
     cb({ ok = true })
 end)
 
-QBCore.Functions.CreateCallback('fivempro_ltpd:server:setWanted', function(src, cb, data)
-    if not hasPerm(src, 'mdt_wanted') then return cb({ ok = false }) end
-    local tid = data and data.citizenid
-    local level = math.floor(tonumber(data and data.level) or 0)
-    local reason = tostring(data and data.reason or ''):sub(1, 500)
-    if not tid or level < 0 or level > 5 then return cb({ ok = false }) end
+QBCore.Functions.CreateCallback('fivempro_ltpd:server:collectFingerprint', function(src, cb, citizenid)
+    if not hasPerm(src, 'mdt_fingerprint') then return cb({ ok = false, message = 'Nėra teisės.' }) end
+    citizenid = tostring(citizenid or ''):sub(1, 50)
+    if citizenid == '' then return cb({ ok = false, message = 'Nenurodytas citizenid.' }) end
 
     local Officer = QBCore.Functions.GetPlayer(src)
-    if not Officer then return cb({ ok = false }) end
+    if not Officer then return cb({ ok = false, message = 'Klaida.' }) end
+
+    local row = MySQL.single.await('SELECT citizenid, charinfo, metadata FROM players WHERE citizenid = ? LIMIT 1', { citizenid })
+    if not row then return cb({ ok = false, message = 'Asmuo nerastas DB.' }) end
+
+    local fp = fingerprintFromRow(row)
+    if not fp then return cb({ ok = false, message = 'Šiam asmeniui nėra pirštų atspaudų DB.' }) end
+
+    local charinfo = decodeCharinfo(row.charinfo)
+    local name = personDisplayName(charinfo)
+    if name == '' then name = citizenid end
+
+    MySQL.query.await([[
+        INSERT INTO ltpd_fingerprints (officer_citizenid, subject_citizenid, subject_name, fingerprint)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE subject_name = VALUES(subject_name), fingerprint = VALUES(fingerprint), created_at = CURRENT_TIMESTAMP
+    ]], { Officer.PlayerData.citizenid, citizenid, name, fp })
+
+    cb({ ok = true, message = ('Atspaudai įrašyti: %s'):format(name), fingerprint = fp })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_ltpd:server:getMyFingerprints', function(src, cb)
+    if not isLtpdOnDuty(src) then return cb({ ok = false, message = 'Tik tarnybos metu.' }) end
+    local Officer = QBCore.Functions.GetPlayer(src)
+    if not Officer then return cb({ ok = false, rows = {} }) end
+
+    local rows = MySQL.query.await([[
+        SELECT subject_citizenid AS citizenid, subject_name AS name, fingerprint, created_at
+        FROM ltpd_fingerprints
+        WHERE officer_citizenid = ?
+        ORDER BY created_at DESC
+        LIMIT 50
+    ]], { Officer.PlayerData.citizenid }) or {}
+
+    cb({ ok = true, rows = rows })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_ltpd:server:setWanted', function(src, cb, data)
+    if not hasPerm(src, 'mdt_wanted') then return cb({ ok = false, message = 'Nėra teisės nustatyti paieškomumo.' }) end
+    local tid = data and data.citizenid
+    tid = tid and tostring(tid):match('^%s*(.-)%s*$') or ''
+    local level = math.floor(tonumber(data and data.level) or 0)
+    local reason = tostring(data and data.reason or ''):sub(1, 500)
+    if tid == '' then return cb({ ok = false, message = 'Įvesk citizenid.' }) end
+    if level < 0 or level > 5 then return cb({ ok = false, message = 'Lygis turi būti 0–5.' }) end
+
+    local exists = MySQL.scalar.await('SELECT citizenid FROM players WHERE citizenid = ? LIMIT 1', { tid })
+    if not exists then return cb({ ok = false, message = 'Citizenid nerastas.' }) end
+
+    local Officer = QBCore.Functions.GetPlayer(src)
+    if not Officer then return cb({ ok = false, message = 'Klaida.' }) end
 
     MySQL.query.await(
         [[INSERT INTO ltpd_wanted (citizenid, level, reason, updated_by)
@@ -352,7 +605,8 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:setWanted', function(src, 
         TriggerClientEvent('QBCore:Notify', T.PlayerData.source, ('Paieškomumas: %s'):format(level), 'primary')
     end
 
-    cb({ ok = true })
+    TriggerClientEvent('QBCore:Notify', src, ('Paieškomumas %s nustatytas (lygis %s).'):format(tid, level), 'success')
+    cb({ ok = true, message = 'Paieškomumas išsaugotas.' })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_ltpd:server:addArrestNote', function(src, cb, citizenid, notes, reason, sentence)

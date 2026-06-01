@@ -43,17 +43,33 @@ window.GangMap = (function () {
   function normalizeMapConfig(payload) {
     const t = (payload && payload.tabletMap) || payload || {};
     const file = t.imageFile || "asset/gtav_satellite.jpg";
+    const minX = Number(t.gameMin?.x ?? -4000);
+    const minY = Number(t.gameMin?.y ?? -4000);
+    const maxX = Number(t.gameMax?.x ?? 4500);
+    const maxY = Number(t.gameMax?.y ?? 6625);
     return {
-      minX: Number(t.gameMin?.x ?? -4000),
-      minY: Number(t.gameMin?.y ?? -4000),
-      maxX: Number(t.gameMax?.x ?? 4500),
-      maxY: Number(t.gameMax?.y ?? 6625),
+      minX,
+      minY,
+      maxX,
+      maxY,
+      viewMinX: Number(t.viewMin?.x ?? minX),
+      viewMinY: Number(t.viewMin?.y ?? minY),
+      viewMaxX: Number(t.viewMax?.x ?? maxX),
+      viewMaxY: Number(t.viewMax?.y ?? maxY),
       offsetX: Number(t.offsetX) || 0,
       offsetY: Number(t.offsetY) || 0,
       imgW: Number(t.imageWidth) || 1024,
       imgH: Number(t.imageHeight) || 1280,
       imageUrl: nuiImageUrl(file),
     };
+  }
+
+  function viewBoundsLatLng(cfg) {
+    if (!cfg) return null;
+    return L.latLngBounds(
+      [cfg.viewMinY + cfg.offsetY, cfg.viewMinX + cfg.offsetX],
+      [cfg.viewMaxY + cfg.offsetY, cfg.viewMaxX + cfg.offsetX]
+    );
   }
 
   /** GTA bounding box → Leaflet [[minY,minX],[maxY,maxX]] */
@@ -360,7 +376,7 @@ window.GangMap = (function () {
   function focusTurf(turf) {
     if (!leafletMap || !mapCfg || !turf) return;
     const bounds = gameBoundsToLeaflet(turf, mapCfg, 0.08);
-    leafletMap.fitBounds(bounds, { padding: [40, 40], animate: true, maxZoom: baseFitZoom + 4 });
+    leafletMap.fitBounds(bounds, { padding: [36, 36], animate: true, maxZoom: baseFitZoom + 1.5 });
   }
 
   function buildTurfs(state) {
@@ -450,26 +466,15 @@ window.GangMap = (function () {
 
   function fitMapFill(padding) {
     if (!leafletMap || !mapCfg) return;
-    const bounds = mapBoundsLatLng();
-    const pad = padding != null ? padding : 0;
-    leafletMap.fitBounds(bounds, { padding: [pad, pad], animate: false });
-
-    const size = leafletMap.getSize();
-    const nw = leafletMap.latLngToContainerPoint(bounds.getNorthWest());
-    const se = leafletMap.latLngToContainerPoint(bounds.getSouthEast());
-    const bw = Math.abs(se.x - nw.x);
-    const bh = Math.abs(se.y - nw.y);
-    if (bw > 1 && bh > 1 && size.x > 0 && size.y > 0) {
-      const cover = Math.max(size.x / bw, size.y / bh);
-      if (cover > 1.01) {
-        leafletMap.setZoom(Math.min(leafletMap.getZoom() + Math.log2(cover * 1.04), leafletMap.getZoom() + 4));
-      }
-    }
+    const bounds = viewBoundsLatLng(mapCfg) || mapBoundsLatLng();
+    const pad = padding != null ? padding : 8;
+    leafletMap.fitBounds(bounds, { padding: [pad, pad], animate: false, maxZoom: 1 });
     leafletMap.panInsideBounds(bounds, { animate: false });
     baseFitZoom = leafletMap.getZoom();
-    leafletMap.setMinZoom(Math.max(-2, baseFitZoom - 1.5));
-    leafletMap.setMaxZoom(baseFitZoom + 8);
-    leafletMap.setMaxBounds(bounds.pad(0.02));
+    leafletMap.setMinZoom(Math.max(-1, baseFitZoom - 0.75));
+    leafletMap.setMaxZoom(baseFitZoom + 2.5);
+    const full = mapBoundsLatLng();
+    if (full) leafletMap.setMaxBounds(full.pad(0.03));
   }
 
   function fitAllTurfs() {

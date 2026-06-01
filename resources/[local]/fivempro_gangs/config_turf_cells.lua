@@ -1,25 +1,60 @@
---- Turf langeliai tik Los Santos miesto rajonuose (gaujų zonos).
---- Nėra: oro uostų, uostų, pramonės prie jūros, Blaine County, kalvų už miesto.
+--- Turf tinklelis: tolygūs kvadratai per Los Santos (be uostų, oro uosto, kalvų).
 local TurfCells = {}
 local turfIndex = 0
 
---- Stačiakampiai, kur negalima turf (centroidas viduje = praleidžiama)
+local CELL_W = 98.0
+local CELL_H = 98.0
+local GRID_MIN_X = -1680.0
+local GRID_MIN_Y = -1980.0
+local GRID_MAX_X = 1560.0
+local GRID_MAX_Y = 460.0
+
 local ExcludedZones = {
-    { minX = -1950.0, maxX = -380.0,  minY = -3250.0, maxY = -1500.0 }, -- LSIA + aplinkkeliai
-    { minX = -750.0,  maxX = 1350.0,  minY = -3450.0, maxY = -2420.0 }, -- Uostas, Terminal, Elysian
-    { minX = 520.0,   maxX = 1750.0,  minY = -2720.0, maxY = -2280.0 }, -- Cypress / pramonė prie vandens
-    { minX = -420.0,  maxX = 1520.0,  minY = 520.0,   maxY = 1500.0 },  -- Vinewood Hills / kalnai
-    { minX = -3200.0, maxX = -1550.0, minY = -250.0,  maxY = 2200.0 },  -- Chumash, Tongva, Banham
-    { minX = -2800.0, maxX = 5000.0,  minY = 1650.0,  maxY = 8000.0 },  -- Už LS (dykuma, Sandy, Paleto…)
-    { minX = 1550.0,  maxX = 5000.0,  minY = -1200.0, maxY = 8000.0 },  -- Rytai už miesto (Zancudo, dykuma)
+    { minX = -1950.0, maxX = -380.0,  minY = -3250.0, maxY = -1500.0 },
+    { minX = -750.0,  maxX = 1350.0,  minY = -3450.0, maxY = -2420.0 },
+    { minX = 520.0,   maxX = 1750.0,  minY = -2720.0, maxY = -2280.0 },
+    { minX = -420.0,  maxX = 1520.0,  minY = 520.0,   maxY = 1500.0 },
+    { minX = -3200.0, maxX = -1550.0, minY = -250.0,  maxY = 2200.0 },
+    { minX = -2800.0, maxX = 5000.0,  minY = 1650.0,  maxY = 8000.0 },
+    { minX = 1550.0,  maxX = 5000.0,  minY = -1200.0, maxY = 8000.0 },
 }
 
---- Miesto ribos (turf centroidas turi būti viduje)
-local AllowedCity = {
-    minX = -1750.0,
-    maxX = 1580.0,
-    minY = -2050.0,
-    maxY = 480.0,
+Config.TurfExcludedZones = ExcludedZones
+Config.TurfAllowedCity = {
+    minX = GRID_MIN_X,
+    maxX = GRID_MAX_X,
+    minY = GRID_MIN_Y,
+    maxY = GRID_MAX_Y,
+}
+
+local DistrictCenters = {
+    { name = 'Grove Street', x = 95.0, y = -1930.0 },
+    { name = 'Davis', x = -150.0, y = -1750.0 },
+    { name = 'Strawberry', x = 250.0, y = -1500.0 },
+    { name = 'Rancho', x = 450.0, y = -2050.0 },
+    { name = 'Chamberlain Hills', x = -200.0, y = -1650.0 },
+    { name = 'Mission Row', x = 450.0, y = -1000.0 },
+    { name = 'Textile City', x = 500.0, y = -850.0 },
+    { name = 'Downtown LS', x = 200.0, y = -950.0 },
+    { name = 'Mirror Park', x = 1100.0, y = -550.0 },
+    { name = 'Murrieta Heights', x = 1350.0, y = -1550.0 },
+    { name = 'Little Seoul', x = -750.0, y = -950.0 },
+    { name = 'Del Perro', x = -1450.0, y = -700.0 },
+    { name = 'Vinewood', x = 350.0, y = 150.0 },
+    { name = 'Rockford Hills', x = -650.0, y = -100.0 },
+    { name = 'La Mesa', x = 850.0, y = -1250.0 },
+    { name = 'Vespucci', x = -1150.0, y = -1250.0 },
+    { name = 'Vespucci Canals', x = -1050.0, y = -1100.0 },
+    { name = 'Pillbox Hill', x = -200.0, y = -650.0 },
+    { name = 'Alta', x = 350.0, y = -500.0 },
+    { name = 'Burton', x = -450.0, y = -350.0 },
+    { name = 'Hawick', x = 250.0, y = -300.0 },
+    { name = 'Richman', x = -1500.0, y = 200.0 },
+    { name = 'West Vinewood', x = 200.0, y = 300.0 },
+    { name = 'East Vinewood', x = 750.0, y = 350.0 },
+    { name = 'Legion Square', x = 200.0, y = -900.0 },
+    { name = 'Maze Bank', x = 150.0, y = -800.0 },
+    { name = 'Pillbox South', x = -180.0, y = -920.0 },
 }
 
 local function cellCenterInExcluded(cx, cy)
@@ -31,83 +66,58 @@ local function cellCenterInExcluded(cx, cy)
     return false
 end
 
-local function cellAllowed(minX, minY, maxX, maxY)
-    local cx = (minX + maxX) * 0.5
-    local cy = (minY + maxY) * 0.5
-    if cx < AllowedCity.minX or cx > AllowedCity.maxX then return false end
-    if cy < AllowedCity.minY or cy > AllowedCity.maxY then return false end
-    if cellCenterInExcluded(cx, cy) then return false end
-    return true
+local function districtFor(cx, cy)
+    local bestName = 'Los Santos'
+    local bestDist = math.huge
+    for _, d in ipairs(DistrictCenters) do
+        local dx = cx - d.x
+        local dy = cy - d.y
+        local dist = dx * dx + dy * dy
+        if dist < bestDist then
+            bestDist = dist
+            bestName = d.name
+        end
+    end
+    return bestName
 end
 
-local function addBlock(district, anchorX, anchorY, cols, rows, cellW, cellH, baseZ)
-    baseZ = baseZ or 30.0
-    for row = 0, rows - 1 do
-        for col = 0, cols - 1 do
-            local minX = anchorX + col * cellW
-            local minY = anchorY + row * cellH
-            local maxX = minX + cellW
-            local maxY = minY + cellH
-            if cellAllowed(minX, minY, maxX, maxY) then
-                turfIndex = turfIndex + 1
-                local id = ('turf_%03d'):format(turfIndex)
-                TurfCells[id] = {
-                    label = district,
-                    district = district,
-                    minX = minX,
-                    minY = minY,
-                    maxX = maxX,
-                    maxY = maxY,
-                    center = vector3(minX + cellW * 0.5, minY + cellH * 0.5, baseZ),
-                    radius = math.sqrt(cellW * cellW + cellH * cellH) * 0.5,
-                    cell_num = turfIndex,
-                }
-            end
+for minX = GRID_MIN_X, GRID_MAX_X - CELL_W, CELL_W do
+    for minY = GRID_MIN_Y, GRID_MAX_Y - CELL_H, CELL_H do
+        local maxX = minX + CELL_W
+        local maxY = minY + CELL_H
+        local cx = minX + CELL_W * 0.5
+        local cy = minY + CELL_H * 0.5
+        if not cellCenterInExcluded(cx, cy) then
+            turfIndex = turfIndex + 1
+            local id = ('turf_%03d'):format(turfIndex)
+            local district = districtFor(cx, cy)
+            TurfCells[id] = {
+                label = district,
+                district = district,
+                minX = minX,
+                minY = minY,
+                maxX = maxX,
+                maxY = maxY,
+                center = vector3(cx, cy, 30.0),
+                radius = math.sqrt(CELL_W * CELL_W + CELL_H * CELL_H) * 0.5,
+                cell_num = turfIndex,
+                grid_col = math.floor((minX - GRID_MIN_X) / CELL_W) + 1,
+                grid_row = math.floor((minY - GRID_MIN_Y) / CELL_H) + 1,
+            }
         end
     end
 end
 
--- Pietų LS (gaujų rajonai)
-addBlock('Grove Street', 40.0, -2020.0, 3, 4, 78.0, 72.0, 25.0)
-addBlock('Davis', -180.0, -1820.0, 5, 5, 82.0, 78.0, 28.0)
-addBlock('Strawberry', 180.0, -1580.0, 4, 4, 80.0, 76.0, 30.0)
-addBlock('Rancho', 260.0, -2100.0, 4, 4, 82.0, 78.0, 28.0)
-addBlock('Chamberlain Hills', -280.0, -1700.0, 3, 4, 80.0, 76.0, 32.0)
-
--- Centras / Rytai
-addBlock('Mission Row', 380.0, -1040.0, 3, 3, 88.0, 84.0, 30.0)
-addBlock('Textile City', 360.0, -880.0, 3, 3, 86.0, 82.0, 30.0)
-addBlock('Downtown LS', 80.0, -980.0, 4, 3, 95.0, 90.0, 35.0)
-addBlock('Mirror Park', 1020.0, -580.0, 3, 4, 88.0, 84.0, 55.0)
-addBlock('El Burro Heights', 1480.0, -2180.0, 2, 2, 105.0, 100.0, 45.0)
-addBlock('Murrieta Heights', 1280.0, -1580.0, 3, 3, 92.0, 88.0, 38.0)
-
--- Vakarai / centras
-addBlock('Little Seoul', -820.0, -980.0, 3, 3, 90.0, 86.0, 28.0)
-addBlock('Del Perro', -1580.0, -640.0, 3, 3, 92.0, 88.0, 32.0)
-addBlock('Vinewood', 280.0, 80.0, 3, 3, 100.0, 95.0, 70.0)
-addBlock('Rockford Hills', -780.0, -180.0, 2, 3, 95.0, 90.0, 45.0)
-addBlock('La Mesa', 720.0, -1280.0, 3, 2, 92.0, 88.0, 30.0)
-addBlock('La Mesa East', 980.0, -1180.0, 3, 3, 88.0, 84.0, 32.0)
-
--- Miesto rajonai (be pakrantės uosto)
-addBlock('Vespucci', -1280.0, -1380.0, 4, 4, 72.0, 68.0, 8.0)
-addBlock('Vespucci Canals', -1180.0, -1180.0, 3, 3, 70.0, 66.0, 6.0)
-addBlock('Pillbox Hill', -280.0, -680.0, 3, 3, 78.0, 74.0, 38.0)
-addBlock('Alta', 280.0, -520.0, 3, 3, 76.0, 72.0, 42.0)
-addBlock('Burton', -520.0, -380.0, 3, 3, 74.0, 70.0, 38.0)
-addBlock('Hawick', 180.0, -280.0, 3, 3, 72.0, 68.0, 45.0)
-addBlock('Richman', -1680.0, 120.0, 3, 3, 88.0, 84.0, 55.0)
-addBlock('West Vinewood', 120.0, 220.0, 4, 3, 82.0, 78.0, 62.0)
-addBlock('East Vinewood', 680.0, 280.0, 3, 3, 86.0, 82.0, 68.0)
-addBlock('Maze Bank', 120.0, -820.0, 2, 2, 80.0, 76.0, 32.0)
-addBlock('Legion Square', 180.0, -920.0, 2, 2, 78.0, 74.0, 30.0)
-addBlock('Pillbox South', -180.0, -920.0, 3, 2, 76.0, 72.0, 32.0)
-
 Config.TurfCells = TurfCells
 Config.Turfs = TurfCells
-Config.TurfExcludedZones = ExcludedZones
-Config.TurfAllowedCity = AllowedCity
+Config.TurfGrid = {
+    cellW = CELL_W,
+    cellH = CELL_H,
+    minX = GRID_MIN_X,
+    minY = GRID_MIN_Y,
+    maxX = GRID_MAX_X,
+    maxY = GRID_MAX_Y,
+}
 
 --- Fiksuotos gaujų spalvos legendai (jei DB spalva nepriskirta)
 Config.FactionColors = {

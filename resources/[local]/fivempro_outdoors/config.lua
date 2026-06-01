@@ -45,9 +45,10 @@ Config.FishingShop = {
     name = 'fivempro-fishing-supply',
     label = 'Žvejybos reikmenys',
     license = 'fishing_license',
+    --- slot = tas pats 5×8 tinklelis kaip žaidėjo inventory (1–5 pirmoji eilė)
     items = {
-        { name = 'fishingrod', amount = 500, price = 120 },
-        { name = 'fishbait', amount = 500, price = 15 },
+        { name = 'fishingrod', amount = 500, price = 120, slot = 1 },
+        { name = 'fishbait', amount = 500, price = 15, slot = 2 },
     },
 }
 
@@ -55,11 +56,10 @@ Config.HuntingShop = {
     name = 'fivempro-hunting-supply',
     label = 'Medžioklės reikmenys',
     license = 'hunting_license',
-    --- Eilė: šautuvas → peilis → kulkos (shop-stacked UI, viena po kito)
     items = {
-        { name = 'weapon_musket', amount = 50, price = 2800 },
-        { name = 'hunting_knife', amount = 500, price = 350 },
-        { name = 'hunting_ammo', amount = 500, price = 45 },
+        { name = 'weapon_musket', amount = 50, price = 2800, slot = 1 },
+        { name = 'hunting_knife', amount = 500, price = 350, slot = 2 },
+        { name = 'hunting_ammo', amount = 500, price = 45, slot = 3 },
     },
 }
 

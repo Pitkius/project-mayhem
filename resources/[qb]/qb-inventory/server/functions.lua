@@ -22,11 +22,11 @@ end
 
 local function SetupShopItems(shopItems)
     local items = {}
-    local slot = 1
     if shopItems and next(shopItems) then
-        for _, item in ipairs(shopItems) do
+        for index, item in ipairs(shopItems) do
             local itemInfo = QBCore.Shared.Items[item.name:lower()]
             if itemInfo then
+                local slot = tonumber(item.slot) or index
                 items[slot] = {
                     name = itemInfo['name'],
                     amount = tonumber(item.amount),
@@ -41,7 +41,6 @@ local function SetupShopItems(shopItems)
                     image = itemInfo['image'],
                     slot = slot,
                 }
-                slot = slot + 1
             end
         end
     end
@@ -599,7 +598,7 @@ function CreateShop(shopData)
             name = shopData.name,
             label = shopData.label,
             coords = shopData.coords,
-            slots = #shopData.items,
+            slots = Config.MaxSlots,
             items = SetupShopItems(shopData.items)
         }
     else
@@ -611,7 +610,7 @@ function CreateShop(shopData)
                         name = shopName,
                         label = data.label,
                         coords = data.coords,
-                        slots = #data.items,
+                        slots = Config.MaxSlots,
                         items = SetupShopItems(data.items)
                     }
                 else
@@ -644,7 +643,7 @@ function OpenShop(source, name)
         name = 'shop-' .. RegisteredShops[name].name,
         label = RegisteredShops[name].label,
         maxweight = 5000000,
-        slots = #RegisteredShops[name].items,
+        slots = RegisteredShops[name].slots or Config.MaxSlots,
         inventory = RegisteredShops[name].items
     }
     TriggerClientEvent('qb-inventory:client:openInventory', source, Player.PlayerData.items, formattedInventory)

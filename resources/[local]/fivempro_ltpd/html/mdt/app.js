@@ -157,6 +157,7 @@ window.addEventListener('message', (e) => {
     if (window.MdtMap) {
       MdtMap.ensureMap(d.data && d.data.map);
       MdtMap.setOnSelect(onMapBlipSelect);
+      if (MdtMap.setAnimEnabled) MdtMap.setAnimEnabled(false);
     }
     preloadMapImage(mapMeta.imageUrl);
     mdtEnsureConnected().then((ok) => {
@@ -220,6 +221,9 @@ document.querySelectorAll('.tab').forEach((t) => {
     const id = 'panel-' + t.dataset.tab;
     const pan = document.getElementById(id);
     if (pan) pan.classList.remove('hidden');
+    if (window.MdtMap && window.MdtMap.setAnimEnabled) {
+      window.MdtMap.setAnimEnabled(t.dataset.tab === 'units');
+    }
     if (t.dataset.tab === 'units') {
       requestAnimationFrame(() => {
         if (window.MdtMap) {
@@ -276,12 +280,34 @@ function renderPerson(res) {
     c.className = 'card';
     let html = `<h4>${escapeHtml(r.name || '')}</h4>`;
     html += `<div class="muted">citizenid: ${escapeHtml(r.citizenid)}`;
-    if (r.player_id != null) html += ` • server ID: ${escapeHtml(String(r.player_id))}`;
-    html += `</div>`;
+    if (r.online) html += ' • <span class="badge ok">Prisijungęs</span>';
+    html += '</div>';
+    if (r.fingerprint) {
+      html += `<div class="muted">Atspaudas: ${escapeHtml(r.fingerprint)}</div>`;
+    }
     if (res.full && r.cash != null) {
       html += `<div>Grynieji: ${r.cash} € | Bankas: ${r.bank} €</div>`;
     }
-    html += `<div>Paieškomumas: <strong>${r.wanted_level}</strong> ${escapeHtml(r.wanted_reason || '')}</div>`;
+    const wl = Number(r.wanted_level) || 0;
+    html += `<div>Paieškomumas: <strong>${wl}</strong>${wl > 0 ? ' — ' : ' '}${escapeHtml(r.wanted_reason || (wl > 0 ? '' : '(nėra)'))}</div>`;
+    if (r.licenses && r.licenses.length) {
+      html += '<div class="license-block"><div class="muted">Licencijos ir dokumentai</div><ul class="license-list">';
+      r.licenses.forEach((lic) => {
+        const badge = lic.active ? '<span class="badge ok">Taip</span>' : '<span class="badge off">Ne</span>';
+        let line = `<li>${escapeHtml(lic.label)} ${badge}`;
+        if (lic.active && lic.detail) {
+          line += ` <span class="muted">(${escapeHtml(lic.detail)})</span>`;
+        }
+        if (lic.active && lic.expiry) {
+          line += ` <span class="muted">galioja iki ${escapeHtml(lic.expiry)}</span>`;
+        }
+        line += '</li>';
+        html += line;
+      });
+      html += '</ul></div>';
+    }
+    html += `<div class="row card-actions"><button type="button" class="btn js-fill-want" data-cid="${escapeHtml(r.citizenid)}">→ Paieška</button>`;
+    html += `<button type="button" class="btn js-collect-fp" data-cid="${escapeHtml(r.citizenid)}">Įrašyti atspaudus</button></div>`;
     if (res.full && r.vehicles && r.vehicles.length) {
       html += '<div class="muted">Transportas:</div><ul>';
       r.vehicles.forEach((v) => {
@@ -297,6 +323,21 @@ function renderPerson(res) {
       html += '</ul>';
     }
     c.innerHTML = html;
+    const wantBtn = c.querySelector('.js-fill-want');
+    if (wantBtn) {
+      wantBtn.onclick = () => {
+        document.getElementById('wantCid').value = wantBtn.dataset.cid || '';
+        document.querySelector('.tab[data-tab="want"]')?.click();
+      };
+    }
+    const fpBtn = c.querySelector('.js-collect-fp');
+    if (fpBtn) {
+      fpBtn.onclick = () => {
+        nuiPost('collectFingerprint', { citizenid: fpBtn.dataset.cid }, { force: true }).then((res) => {
+          if (res && res.ok) runPersonSearch();
+        });
+      };
+    }
     el.appendChild(c);
   });
 }
@@ -334,10 +375,26 @@ document.getElementById('goFine').onclick = () => {
 };
 
 document.getElementById('goWant').onclick = () => {
+  const status = document.getElementById('wantStatus');
+  const cid = document.getElementById('wantCid').value.trim();
+  if (!cid) {
+    if (status) status.textContent = 'Įvesk citizenid.';
+    return;
+  }
+  if (status) status.textContent = 'Saugoma…';
   nuiPost('setWanted', {
-    citizenid: document.getElementById('wantCid').value.trim(),
+    citizenid: cid,
     level: Number(document.getElementById('wantLvl').value),
     reason: document.getElementById('wantReason').value.trim(),
+  }, { force: true }).then((res) => {
+    if (!status) return;
+    if (res && res.ok) {
+      status.textContent = res.message || 'Paieškomumas išsaugotas.';
+      status.className = 'want-status ok';
+    } else {
+      status.textContent = (res && res.message) || 'Nepavyko išsaugoti.';
+      status.className = 'want-status err';
+    }
   });
 };
 
@@ -403,7 +460,7 @@ function startDispatchPoll() {
   dispatchPoll = setInterval(() => {
     if (!mdtSessionActive || mdtSurveillanceLive) return;
     refreshDispatch();
-  }, 1000);
+  }, 2200);
 }
 
 function countObj(obj) {
@@ -428,7 +485,7 @@ function resolveUnitNames(idMap, units) {
   const list = units || [];
   Object.keys(idMap || {}).forEach((sid) => {
     const unit = list.find((u) => String(u.source) === String(sid));
-    out.push(unit ? `${unit.callsign ? `[${unit.callsign}] ` : ''}${unit.name || `ID ${sid}`}` : `ID ${sid}`);
+    out.push(unit ? `${unit.callsign ? `[${unit.callsign}] ` : ''}${unit.name || 'Pareigūnas'}` : 'Pareigūnas');
   });
   return out.length ? out.join(', ') : '-';
 }
@@ -453,7 +510,7 @@ function renderMapDetail(kind, data) {
     return;
   }
   if (kind === 'unit') {
-    const badge = data.callsign || String(data.source || '—');
+    const badge = data.callsign || (data.name ? String(data.name).split(' ')[0] : '—');
     const pill = statusPillClass(data.statusLabel, data.panic);
     el.innerHTML = `
       <div class="gps-detail-card">
@@ -1070,10 +1127,11 @@ function renderBodycamList() {
       card.className = 'card surv-card' + (selectedBodycamId === f.serverId ? ' selected' : '');
       const crew = f.crew ? ` • ${escapeHtml(String(f.crew))}` : '';
       const batt = f.battery != null ? ` • ${f.battery}%` : '';
-      card.innerHTML = `<h4>${escapeHtml(f.name)}</h4><div class="muted">ID ${f.serverId}${f.callsign ? ' • ' + escapeHtml(f.callsign) : ''}${crew}${batt}</div><span class="badge ok">LIVE</span>`;
+      const tag = f.callsign ? escapeHtml(f.callsign) : escapeHtml(f.name || 'Pareigūnas');
+      card.innerHTML = `<h4>${escapeHtml(f.name)}</h4><div class="muted">${tag}${crew}${batt}</div><span class="badge ok">LIVE</span>`;
       card.onclick = () => {
         selectedBodycamId = f.serverId;
-        document.getElementById('bodycamStatus').textContent = `${f.name} (ID ${f.serverId})`;
+        document.getElementById('bodycamStatus').textContent = `${f.name}${f.callsign ? ' • ' + f.callsign : ''}`;
         renderBodycamList();
       };
       el.appendChild(card);

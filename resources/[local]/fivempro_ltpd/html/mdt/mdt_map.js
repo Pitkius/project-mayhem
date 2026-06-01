@@ -1,6 +1,6 @@
 /** LTPD MDT GPS žemėlapis — Leaflet + smooth blip tracking */
 window.MdtMap = (function () {
-  const LERP_SPEED = 11;
+  const LERP_SPEED = 7;
   const CALL_ACTIVE = new Set(['pending', 'accepted', 'enroute', 'arrived']);
 
   let leafletMap = null;
@@ -10,6 +10,7 @@ window.MdtMap = (function () {
   let mapBounds = null;
   let animFrame = null;
   let lastFrame = 0;
+  let animEnabled = false;
   let selfSource = null;
   let lastCalls = [];
   let onSelectCb = null;
@@ -37,18 +38,34 @@ window.MdtMap = (function () {
 
   function normalizeMapConfig(cfg) {
     const t = cfg || {};
-    const file = t.imageFile || 'mdt/asset/gtav_satellite_2048.png';
+    const file = t.imageFile || 'mdt/asset/gtav_satellite.jpg';
+    const minX = Number(t.gameMin?.x ?? -4000);
+    const minY = Number(t.gameMin?.y ?? -4000);
+    const maxX = Number(t.gameMax?.x ?? 4500);
+    const maxY = Number(t.gameMax?.y ?? 6625);
     return {
-      minX: Number(t.gameMin?.x ?? -4000),
-      minY: Number(t.gameMin?.y ?? -4000),
-      maxX: Number(t.gameMax?.x ?? 4500),
-      maxY: Number(t.gameMax?.y ?? 6625),
+      minX,
+      minY,
+      maxX,
+      maxY,
+      viewMinX: Number(t.viewMin?.x ?? minX),
+      viewMinY: Number(t.viewMin?.y ?? minY),
+      viewMaxX: Number(t.viewMax?.x ?? maxX),
+      viewMaxY: Number(t.viewMax?.y ?? maxY),
       offsetX: Number(t.offsetX) || 0,
       offsetY: Number(t.offsetY) || 0,
-      imgW: Number(t.imageWidth) || 2048,
-      imgH: Number(t.imageHeight) || 2560,
+      imgW: Number(t.imageWidth) || 1024,
+      imgH: Number(t.imageHeight) || 1280,
       imageUrl: nuiImageUrl(file),
     };
+  }
+
+  function viewBoundsLatLng(cfg) {
+    if (!cfg) return null;
+    return L.latLngBounds(
+      [cfg.viewMinY + cfg.offsetY, cfg.viewMinX + cfg.offsetX],
+      [cfg.viewMaxY + cfg.offsetY, cfg.viewMaxX + cfg.offsetX]
+    );
   }
 
   /** GTA koordinatės → Leaflet [lat, lng] (CRS.Simple: lat=Y, lng=X). */
@@ -245,9 +262,13 @@ window.MdtMap = (function () {
   }
 
   function startAnimLoop() {
-    if (animFrame) return;
+    if (animFrame || !animEnabled) return;
     lastFrame = performance.now();
     const tick = (now) => {
+      if (!animEnabled) {
+        animFrame = null;
+        return;
+      }
       const dt = Math.min(0.12, (now - lastFrame) / 1000);
       lastFrame = now;
       const alpha = 1 - Math.exp(-dt * LERP_SPEED);
@@ -267,14 +288,21 @@ window.MdtMap = (function () {
     animFrame = null;
   }
 
+  function setAnimEnabled(on) {
+    animEnabled = on === true;
+    if (animEnabled) startAnimLoop();
+    else stopAnimLoop();
+  }
+
   function fitMapFill(pad) {
-    if (!leafletMap || !mapBounds) return;
-    leafletMap.fitBounds(mapBounds, { padding: [pad || 8, pad || 8], animate: false });
-    leafletMap.panInsideBounds(mapBounds, { animate: false });
+    if (!leafletMap || !mapCfg) return;
+    const vb = viewBoundsLatLng(mapCfg) || mapBounds;
+    leafletMap.fitBounds(vb, { padding: [pad || 10, pad || 10], animate: false, maxZoom: 2 });
+    leafletMap.panInsideBounds(vb, { animate: false });
     baseFitZoom = leafletMap.getZoom();
-    leafletMap.setMinZoom(Math.max(-2, baseFitZoom - 1.5));
-    leafletMap.setMaxZoom(baseFitZoom + 7);
-    leafletMap.setMaxBounds(mapBounds.pad(0.02));
+    leafletMap.setMinZoom(Math.max(-1, baseFitZoom - 0.75));
+    leafletMap.setMaxZoom(baseFitZoom + 2.25);
+    leafletMap.setMaxBounds((mapBounds || vb).pad(0.04));
   }
 
   function ensureMap(cfg) {
@@ -290,20 +318,22 @@ window.MdtMap = (function () {
     if (!leafletMap) {
       leafletMap = L.map(el, {
         crs: L.CRS.Simple,
-        minZoom: -3,
-        maxZoom: 8,
-        zoomSnap: 0.15,
-        zoomDelta: 0.4,
-        wheelPxPerZoomLevel: 50,
+        minZoom: -2,
+        maxZoom: 4,
+        zoomSnap: 0.2,
+        zoomDelta: 0.35,
+        wheelPxPerZoomLevel: 90,
         zoomControl: false,
         attributionControl: false,
-        preferCanvas: false,
+        preferCanvas: true,
         dragging: true,
         scrollWheelZoom: true,
         doubleClickZoom: true,
         boxZoom: false,
-        inertia: true,
-        inertiaDeceleration: 3000,
+        inertia: false,
+        fadeAnimation: false,
+        zoomAnimation: false,
+        markerZoomAnimation: false,
       });
     }
 
@@ -316,13 +346,12 @@ window.MdtMap = (function () {
 
     requestAnimationFrame(() => {
       invalidate();
-      fitMapFill(6);
+      fitMapFill(10);
     });
     setTimeout(() => {
       invalidate();
-      fitMapFill(6);
+      fitMapFill(10);
     }, 150);
-    startAnimLoop();
   }
 
   function invalidate() {
@@ -426,6 +455,7 @@ window.MdtMap = (function () {
   }
 
   function destroy() {
+    animEnabled = false;
     stopAnimLoop();
     hideTooltip();
     Object.values(unitState).forEach((s) => leafletMap?.removeLayer(s.marker));
@@ -451,6 +481,7 @@ window.MdtMap = (function () {
     centerOnActiveCall,
     setOnSelect,
     selectByKey,
+    setAnimEnabled,
     destroy,
     gameToLatLng: (x, y) => gameToLatLng(x, y, mapCfg),
   };

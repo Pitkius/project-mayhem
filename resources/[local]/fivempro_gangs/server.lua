@@ -4,15 +4,6 @@ local function playerInTurfServer(src, turfId)
     return Config.PlayerInTurfCell and Config.PlayerInTurfCell(src, turfId) or false
 end
 
-local function hasGangAdminPermission(src)
-    for _, perm in ipairs(Config.AdminPermissions or {}) do
-        if QBCore.Functions.HasPermission(src, perm) then
-            return true
-        end
-    end
-    return false
-end
-
 local function getPlayerGang(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return nil end
@@ -462,7 +453,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:tryDrugSale', function(sr
 end)
 
 QBCore.Functions.CreateCallback('fivempro_gangs:server:getAdminSnapshot', function(src, cb)
-    if not hasGangAdminPermission(src) then return cb({ ok = false }) end
+    if not HasGangAdminPermission(src) then return cb({ ok = false }) end
     local gangs = MySQL.query.await('SELECT id, name, gang_type, color_hex, reputation, heat, created_at FROM fivempro_gangs ORDER BY id ASC') or {}
     local turfs = getTurfs()
     cb({ ok = true, gangs = gangs, turfs = turfs })
@@ -470,7 +461,7 @@ end)
 
 RegisterNetEvent('fivempro_gangs:server:adminSetGangStats', function(gangId, reputation)
     local src = source
-    if not hasGangAdminPermission(src) then return end
+    if not HasGangAdminPermission(src) then return end
     MySQL.update.await('UPDATE fivempro_gangs SET reputation = ? WHERE id = ?', {
         tonumber(reputation) or 0, tonumber(gangId)
     })
@@ -479,7 +470,7 @@ end)
 
 RegisterNetEvent('fivempro_gangs:server:adminDeleteGang', function(gangId)
     local src = source
-    if not hasGangAdminPermission(src) then return end
+    if not HasGangAdminPermission(src) then return end
     gangId = tonumber(gangId)
     if not gangId then return end
     MySQL.update.await('DELETE FROM fivempro_gang_members WHERE gang_id = ?', { gangId })
