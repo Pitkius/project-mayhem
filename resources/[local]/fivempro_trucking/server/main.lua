@@ -16,7 +16,7 @@ local function encodeLicenses(tbl)
 end
 
 local function ensureTables()
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_trucker_profiles` (
             `citizenid` varchar(50) NOT NULL,
             `registered` tinyint(1) NOT NULL DEFAULT 0,
@@ -31,7 +31,7 @@ local function ensureTables()
             PRIMARY KEY (`citizenid`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_trucker_companies` (
             `id` int NOT NULL AUTO_INCREMENT,
             `owner_citizenid` varchar(50) NOT NULL,
@@ -46,7 +46,7 @@ local function ensureTables()
             UNIQUE KEY `uniq_company_name` (`name`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_trucker_company_members` (
             `company_id` int NOT NULL,
             `citizenid` varchar(50) NOT NULL,
@@ -56,7 +56,7 @@ local function ensureTables()
             PRIMARY KEY (`company_id`, `citizenid`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_trucker_fleet` (
             `id` int NOT NULL AUTO_INCREMENT,
             `company_id` int NOT NULL,
@@ -70,7 +70,7 @@ local function ensureTables()
             KEY `idx_fleet_company` (`company_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.query([[
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_trucker_delivery_log` (
             `id` int NOT NULL AUTO_INCREMENT,
             `citizenid` varchar(50) NOT NULL,
@@ -88,7 +88,13 @@ local function ensureTables()
     ]])
 end
 
-MySQL.ready(ensureTables)
+MySQL.ready(function()
+    ensureTables()
+end)
+
+local function isRegisteredDb(val)
+    return val == 1 or val == true or val == '1'
+end
 
 local function getProfileRow(citizenid)
     return MySQL.single.await('SELECT * FROM fivempro_trucker_profiles WHERE citizenid = ? LIMIT 1', { citizenid })
@@ -115,7 +121,7 @@ local function buildProfile(row)
         licenses.heavy_truck = true
     end
     return {
-        registered = row.registered == 1,
+        registered = isRegisteredDb(row.registered),
         level = level,
         xp = row.xp or 0,
         reputation = row.reputation or 0,
@@ -323,22 +329,36 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:getDashboard', functio
 end)
 
 QBCore.Functions.CreateCallback('fivempro_trucking:server:register', function(src, cb)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then
+        return cb({ ok = false, reason = 'Žaidėjas nerastas.' })
+    end
+
     local ok, err = pcall(function()
-        local Player = QBCore.Functions.GetPlayer(src)
-        if not Player then return cb({ ok = false, reason = 'Žaidėjas nerastas.' }) end
         local citizenid = Player.PlayerData.citizenid
         local row = ensureProfile(citizenid)
-        if row.registered == 1 then
+        if isRegisteredDb(row.registered) then
+            local dashboard = buildDashboard(src)
+            if dashboard then
+                return cb({ ok = true, dashboard = dashboard, alreadyRegistered = true })
+            end
             return cb({ ok = false, reason = 'Jau registruotas.' })
         end
-        local cost = Config.RegisterCost or 0
+        local cost = tonumber(Config.RegisterCost) or 0
         if cost > 0 and Player.PlayerData.money.bank < cost then
-            return cb({ ok = false, reason = 'Nepakanka pinigų.' })
+            return cb({ ok = false, reason = ('Reikia $%s banke.'):format(cost) })
         end
-        if cost > 0 then Player.Functions.RemoveMoney('bank', cost, 'trucker-register') end
+        if cost > 0 and not Player.Functions.RemoveMoney('bank', cost, 'trucker-register') then
+            return cb({ ok = false, reason = 'Nepavyko nuskaičiuoti pinigų.' })
+        end
         saveProfile(citizenid, { registered = 1 })
-        cb({ ok = true, dashboard = buildDashboard(src) })
+        local dashboard = buildDashboard(src)
+        if not dashboard then
+            return cb({ ok = false, reason = 'Registracija išsaugota, bet panelės duomenų klaida.' })
+        end
+        cb({ ok = true, dashboard = dashboard })
     end)
+
     if not ok then
         print(('[fivempro_trucking] register error: %s'):format(tostring(err)))
         cb({ ok = false, reason = 'Serverio klaida (DB). Paleisk fivempro_trucking.sql arba restart resursą.' })

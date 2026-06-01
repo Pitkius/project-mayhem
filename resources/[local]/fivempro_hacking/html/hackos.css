@@ -59,15 +59,12 @@
   height: min(720px, 92vh);
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
-  border: 1px solid var(--ho-border);
-  background: linear-gradient(145deg, rgba(14, 10, 24, 0.94), rgba(8, 6, 14, 0.98));
-  box-shadow:
-    0 0 0 1px rgba(192, 132, 252, 0.08),
-    0 24px 80px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  overflow: hidden;
-  backdrop-filter: blur(18px);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  backdrop-filter: none;
 }
 
 .hackos-topbar {

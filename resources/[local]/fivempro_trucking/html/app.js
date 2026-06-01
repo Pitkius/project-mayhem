@@ -141,7 +141,9 @@ function renderProfile() {
     pill.classList.add("hidden");
     document.getElementById("companyBalance").classList.add("hidden");
   }
-  registerOverlay.classList.toggle("hidden", !!p.registered);
+  const isReg = p.registered === true || p.registered === 1 || p.registered === "1";
+  registerOverlay.classList.toggle("hidden", isReg);
+  if (isReg) setRegisterStatus("");
 }
 
 function renderContracts() {
@@ -274,15 +276,31 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
 });
 
 document.getElementById("btnClose").addEventListener("click", () => nui("trucking:close"));
+function setRegisterStatus(msg, type) {
+  const el = document.getElementById("registerStatus");
+  if (!el) return;
+  if (!msg) {
+    el.classList.add("hidden");
+    el.textContent = "";
+    return;
+  }
+  el.textContent = msg;
+  el.className = "register-status " + (type || "");
+}
+
 document.getElementById("btnRegister").addEventListener("click", async () => {
   const btn = document.getElementById("btnRegister");
   btn.disabled = true;
+  setRegisterStatus("Registruojama…", "");
   const res = await nui("trucking:register");
   btn.disabled = false;
   if (res?.ok && res.dashboard) {
     state.data = res.dashboard;
     renderAll();
+    setRegisterStatus("");
+    return;
   }
+  setRegisterStatus(res?.reason || "Registracija nepavyko. Bandyk dar kartą.", "err");
 });
 btnAccept.addEventListener("click", async () => {
   if (!state.selected) return;

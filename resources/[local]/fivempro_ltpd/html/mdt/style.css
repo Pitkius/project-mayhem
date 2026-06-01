@@ -129,7 +129,8 @@ input, select {
   font-family: inherit;
 }
 
-.gps-map .mdt-sat-layer {
+.gps-map .mdt-sat-layer,
+.gps-map .gtav-sat-layer {
   image-rendering: auto;
 }
 

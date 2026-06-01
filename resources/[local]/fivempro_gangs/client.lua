@@ -1,6 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local vendorPed = nil
 local tabletOpen = false
+local adminOpen = false
 local tabletProp = nil
 
 local function getCurrentTurfId()
@@ -37,93 +38,43 @@ local function closeTabletUi()
     stopTabletAnim()
 end
 
+local function closeAdminUi()
+    adminOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'adminClose' })
+end
+
 CreateThread(function()
     while true do
-        if tabletOpen and IsControlJustPressed(0, 322) then
-            closeTabletUi()
+        if (tabletOpen or adminOpen) and IsControlJustPressed(0, 322) then
+            if adminOpen then
+                closeAdminUi()
+            else
+                closeTabletUi()
+            end
         end
-        Wait(tabletOpen and 0 or 500)
+        Wait((tabletOpen or adminOpen) and 0 or 500)
     end
 end)
 
 local function openAdminMenu()
+    if tabletOpen then
+        closeTabletUi()
+    end
     QBCore.Functions.TriggerCallback('fivempro_gangs:server:getAdminSnapshot', function(res)
         if not res or not res.ok then
             return QBCore.Functions.Notify('Nėra teisių.', 'error')
         end
-        local menu = {
-            { header = 'Gang Admin Panel', txt = 'Valdyk gaujas ir teritorijas', isMenuHeader = true },
-        }
-        for _, g in ipairs(res.gangs or {}) do
-            menu[#menu + 1] = {
-                header = ('#%s %s (%s)'):format(g.id, g.name, g.gang_type),
-                txt = ('Rep: %s | Color: %s'):format(g.reputation or 0, g.color_hex or '#FFFFFF'),
-                params = {
-                    isAction = true,
-                    event = function()
-                        local input = exports['qb-input']:ShowInput({
-                            header = ('Admin: %s'):format(g.name),
-                            submitText = 'Saugoti',
-                            inputs = {
-                                { text = 'Reputation', name = 'reputation', type = 'number', default = tostring(g.reputation or 0) },
-                                { text = 'DELETE (yes/no)', name = 'delete', type = 'text' },
-                            },
-                        })
-                        if not input then return end
-                        if tostring(input.delete or ''):lower() == 'yes' then
-                            TriggerServerEvent('fivempro_gangs:server:adminDeleteGang', g.id)
-                            return
-                        end
-                        TriggerServerEvent('fivempro_gangs:server:adminSetGangStats', g.id, tonumber(input.reputation) or 0)
-                    end,
-                },
-            }
-        end
-        for _, t in ipairs(res.turfs or {}) do
-            menu[#menu + 1] = {
-                header = ('Turf: %s'):format(t.turf_label or t.turf_id),
-                txt = ('Owner: %s | Progress: %s%%'):format(t.owner_name or 'Laisva', t.progress or 0),
-                params = {
-                    isAction = true,
-                    event = function()
-                        local tid = t.turf_id
-                        local sub = {
-                            { header = ('Turf admin: %s'):format(tid), isMenuHeader = true },
-                            {
-                                header = 'Reset turf',
-                                params = { isAction = true, event = function()
-                                    TriggerServerEvent('fivempro_gangs:server:adminResetTurf', tid)
-                                end },
-                            },
-                            {
-                                header = 'Set progress (0-100)',
-                                params = { isAction = true, event = function()
-                                    local inp = exports['qb-input']:ShowInput({
-                                        header = 'Progress',
-                                        submitText = 'OK',
-                                        inputs = { { text = 'Progress', name = 'p', type = 'number', default = '0' } },
-                                    })
-                                    if inp then TriggerServerEvent('fivempro_gangs:server:adminSetTurfProgress', tid, tonumber(inp.p) or 0) end
-                                end },
-                            },
-                            {
-                                header = 'Set owner gang ID (0=free)',
-                                params = { isAction = true, event = function()
-                                    local inp = exports['qb-input']:ShowInput({
-                                        header = 'Gang ID',
-                                        submitText = 'OK',
-                                        inputs = { { text = 'gang_id', name = 'g', type = 'number', default = '0' } },
-                                    })
-                                    if inp then TriggerServerEvent('fivempro_gangs:server:adminSetTurfOwner', tid, tonumber(inp.g) or 0) end
-                                end },
-                            },
-                        }
-                        TriggerEvent('qb-menu:client:openMenu', sub, false, true)
-                    end,
-                },
-            }
-        end
-        TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+        adminOpen = true
+        SetNuiFocus(true, true)
+        SetNuiFocusKeepInput(false)
+        SendNUIMessage({ action = 'adminOpen', payload = res })
+    end)
+end
+
+local function refreshAdminSnapshot(cb)
+    QBCore.Functions.TriggerCallback('fivempro_gangs:server:getAdminSnapshot', function(res)
+        if cb then cb(res) end
     end)
 end
 
@@ -243,6 +194,62 @@ end, false)
 RegisterNUICallback('gangs:close', function(_, cb)
     closeTabletUi()
     cb({ ok = true })
+end)
+
+RegisterNUICallback('gangs:adminClose', function(_, cb)
+    closeAdminUi()
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('gangs:adminRefresh', function(_, cb)
+    refreshAdminSnapshot(function(res)
+        cb(res or { ok = false })
+    end)
+end)
+
+RegisterNUICallback('gangs:adminSaveGang', function(data, cb)
+    if not data or not data.gangId then
+        cb({ ok = false })
+        return
+    end
+    TriggerServerEvent('fivempro_gangs:server:adminSetGangStats', data.gangId, tonumber(data.reputation), tonumber(data.heat))
+    SetTimeout(150, function()
+        refreshAdminSnapshot(cb)
+    end)
+end)
+
+RegisterNUICallback('gangs:adminDeleteGang', function(data, cb)
+    if not data or not data.gangId then
+        cb({ ok = false })
+        return
+    end
+    TriggerServerEvent('fivempro_gangs:server:adminDeleteGang', data.gangId)
+    SetTimeout(150, function()
+        refreshAdminSnapshot(cb)
+    end)
+end)
+
+RegisterNUICallback('gangs:adminSaveTurf', function(data, cb)
+    if not data or not data.turfId then
+        cb({ ok = false })
+        return
+    end
+    TriggerServerEvent('fivempro_gangs:server:adminSetTurfOwner', data.turfId, tonumber(data.ownerGangId) or 0)
+    TriggerServerEvent('fivempro_gangs:server:adminSetTurfProgress', data.turfId, tonumber(data.progress) or 0)
+    SetTimeout(150, function()
+        refreshAdminSnapshot(cb)
+    end)
+end)
+
+RegisterNUICallback('gangs:adminResetTurf', function(data, cb)
+    if not data or not data.turfId then
+        cb({ ok = false })
+        return
+    end
+    TriggerServerEvent('fivempro_gangs:server:adminResetTurf', data.turfId)
+    SetTimeout(150, function()
+        refreshAdminSnapshot(cb)
+    end)
 end)
 
 RegisterNUICallback('gangs:createGang', function(data, cb)

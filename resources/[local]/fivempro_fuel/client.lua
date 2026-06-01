@@ -3,6 +3,89 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local pumping = false
 local currentPump = nil
 local lastPayResult = { ok = false }
+local lastEmptyNotify = 0
+
+local function clampFuel(v)
+    return math.max(0.0, math.min(100.0, tonumber(v) or 0.0))
+end
+
+function GetFuel(veh)
+    veh = veh or (IsPedInAnyVehicle(PlayerPedId(), false) and GetVehiclePedIsIn(PlayerPedId(), false) or 0)
+    if not veh or veh == 0 then return 0.0 end
+    return clampFuel(GetVehicleFuelLevel(veh))
+end
+
+function SetFuel(veh, amount)
+    if not veh or veh == 0 then return end
+    SetVehicleFuelLevel(veh, clampFuel(amount))
+end
+
+exports('GetFuel', GetFuel)
+exports('SetFuel', SetFuel)
+
+local function classMultiplier(veh)
+    local class = GetVehicleClass(veh)
+    local mult = Config.ClassMultiplier and Config.ClassMultiplier[class]
+    if mult == nil then mult = 1.0 end
+    return mult
+end
+
+local function applyConsumption(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    if not GetIsVehicleEngineRunning(veh) then return end
+
+    local classMult = classMultiplier(veh)
+    if classMult <= 0.0 then return end
+
+    local speedKmh = GetEntitySpeed(veh) * 3.6
+    local base = tonumber(Config.ConsumptionBase) or 0.028
+    local perKmh = tonumber(Config.ConsumptionPerKmh) or 0.0011
+    local use = (base + math.max(0.0, speedKmh) * perKmh) * classMult
+
+    local fuel = GetVehicleFuelLevel(veh)
+    local newFuel = fuel - use
+    if newFuel < 0.0 then newFuel = 0.0 end
+    SetVehicleFuelLevel(veh, newFuel)
+
+    if Config.ShutEngineOnEmpty and newFuel <= 0.5 then
+        SetVehicleEngineOn(veh, false, true, true)
+        local now = GetGameTimer()
+        if GetPedInVehicleSeat(veh, -1) == PlayerPedId()
+            and (now - lastEmptyNotify) > (Config.EmptyNotifyCooldownMs or 12000) then
+            lastEmptyNotify = now
+            QBCore.Functions.Notify('Baigėsi kuras.', 'error')
+        end
+    end
+end
+
+if Config.DisableGtaFuelConsumption ~= false then
+    CreateThread(function()
+        Wait(500)
+        if SetFuelConsumptionRateMultiplier then
+            SetFuelConsumptionRateMultiplier(0.0)
+        end
+    end)
+end
+
+if Config.EnableConsumption ~= false then
+    CreateThread(function()
+        local tick = math.max(400, tonumber(Config.ConsumptionTickMs) or 1000)
+        while true do
+            local ped = PlayerPedId()
+            if IsPedInAnyVehicle(ped, false) then
+                local veh = GetVehiclePedIsIn(ped, false)
+                if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped and not pumping then
+                    applyConsumption(veh)
+                    Wait(tick)
+                else
+                    Wait(tick)
+                end
+            else
+                Wait(1500)
+            end
+        end
+    end)
+end
 
 RegisterNetEvent('fivempro_fuel:client:payResult', function(res)
     lastPayResult = res or { ok = false }

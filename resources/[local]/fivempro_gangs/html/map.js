@@ -3,11 +3,11 @@ window.GangMap = (function () {
   const NEUTRAL_COLOR = "#64748B";
 
   const OP = {
-    neutral: { fill: 0.18, stroke: 0.14, weight: 0.45 },
-    owned: { fill: 0.22, stroke: 0.16, weight: 0.5 },
-    contested: { fill: 0.24, stroke: 0.2, weight: 0.55 },
-    hover: { fill: 0.5, stroke: 0.45, weight: 0.75 },
-    selected: { fill: 0.7, stroke: 0.55, weight: 0.9 },
+    neutral: { fill: 0.12, stroke: 0.1, weight: 0.35 },
+    owned: { fill: 0.24, stroke: 0.18, weight: 0.4 },
+    contested: { fill: 0.28, stroke: 0.22, weight: 0.45 },
+    hover: { fill: 0.16, stroke: 0.32, weight: 0.5 },
+    selected: { fill: 0.28, stroke: 0.55, weight: 0.65 },
   };
 
   let leafletMap = null;
@@ -24,6 +24,8 @@ window.GangMap = (function () {
   let baseFitZoom = 0;
   let turfBoundsLatLng = null;
 
+  const Core = window.GtavMapCore;
+
   function resourceName() {
     try {
       if (typeof GetParentResourceName === "function") return GetParentResourceName();
@@ -31,45 +33,10 @@ window.GangMap = (function () {
     return "fivempro_gangs";
   }
 
-  function nuiImageUrl(pathFromHtml) {
-    const raw = String(pathFromHtml || "").trim();
-    if (!raw || /^https?:\/\//i.test(raw) || /^nui:\/\//i.test(raw)) return raw;
-    const res = resourceName();
-    let p = raw.replace(/^\/+/, "");
-    if (!p.startsWith("html/")) p = `html/${p}`;
-    return `nui://${res}/${p}`;
-  }
-
   function normalizeMapConfig(payload) {
     const t = (payload && payload.tabletMap) || payload || {};
-    const file = t.imageFile || "asset/gtav_satellite.jpg";
-    const minX = Number(t.gameMin?.x ?? -4000);
-    const minY = Number(t.gameMin?.y ?? -4000);
-    const maxX = Number(t.gameMax?.x ?? 4500);
-    const maxY = Number(t.gameMax?.y ?? 6625);
-    return {
-      minX,
-      minY,
-      maxX,
-      maxY,
-      viewMinX: Number(t.viewMin?.x ?? minX),
-      viewMinY: Number(t.viewMin?.y ?? minY),
-      viewMaxX: Number(t.viewMax?.x ?? maxX),
-      viewMaxY: Number(t.viewMax?.y ?? maxY),
-      offsetX: Number(t.offsetX) || 0,
-      offsetY: Number(t.offsetY) || 0,
-      imgW: Number(t.imageWidth) || 1024,
-      imgH: Number(t.imageHeight) || 1280,
-      imageUrl: nuiImageUrl(file),
-    };
-  }
-
-  function viewBoundsLatLng(cfg) {
-    if (!cfg) return null;
-    return L.latLngBounds(
-      [cfg.viewMinY + cfg.offsetY, cfg.viewMinX + cfg.offsetX],
-      [cfg.viewMaxY + cfg.offsetY, cfg.viewMaxX + cfg.offsetX]
-    );
+    if (!Core) return t;
+    return Core.normalizeMapConfig(t, resourceName(), "asset/gtav_satellite_2048.png");
   }
 
   /** GTA bounding box → Leaflet [[minY,minX],[maxY,maxX]] */
@@ -129,8 +96,8 @@ window.GangMap = (function () {
   }
 
   function turfStrokeColor(turf, mode) {
-    if (mode === "selected") return "rgba(196, 181, 253, 0.85)";
-    if (mode === "hover") return "rgba(248, 250, 252, 0.75)";
+    if (mode === "selected") return "rgba(167, 139, 250, 0.9)";
+    if (mode === "hover") return "rgba(196, 181, 253, 0.55)";
     if (turf.is_war) return "rgba(248, 113, 113, 0.65)";
     if (turfBaseKind(turf) === "owned") return turfFillColor(turf);
     return "rgba(100, 116, 139, 0.55)";
@@ -391,11 +358,11 @@ window.GangMap = (function () {
     const cfg = mapCfg;
     const allBounds = [];
 
-    const turfs = (state.turfs || []).slice().sort((a, b) => turfArea(b) - turfArea(a));
+    const turfs = (state.turfs || []).slice().sort((a, b) => turfArea(a) - turfArea(b));
 
     turfs.forEach((turf) => {
       if (turf.min_x == null && turf.center_x == null) return;
-      const bounds = gameBoundsToLeaflet(turf, cfg, 0.01);
+      const bounds = gameBoundsToLeaflet(turf, cfg, 0);
       allBounds.push(bounds);
       const cellNum = turf.cell_num || turf.turf_id;
       turfById[turf.turf_id] = turf;
@@ -456,25 +423,10 @@ window.GangMap = (function () {
     });
   }
 
-  function mapBoundsLatLng() {
-    if (!mapCfg) return null;
-    return L.latLngBounds([
-      [mapCfg.minY, mapCfg.minX],
-      [mapCfg.maxY, mapCfg.maxX],
-    ]);
-  }
-
   function fitMapFill(padding) {
-    if (!leafletMap || !mapCfg) return;
-    const bounds = viewBoundsLatLng(mapCfg) || mapBoundsLatLng();
-    const pad = padding != null ? padding : 8;
-    leafletMap.fitBounds(bounds, { padding: [pad, pad], animate: false, maxZoom: 1 });
-    leafletMap.panInsideBounds(bounds, { animate: false });
-    baseFitZoom = leafletMap.getZoom();
-    leafletMap.setMinZoom(Math.max(-1, baseFitZoom - 0.75));
-    leafletMap.setMaxZoom(baseFitZoom + 2.5);
-    const full = mapBoundsLatLng();
-    if (full) leafletMap.setMaxBounds(full.pad(0.03));
+    if (!leafletMap || !mapCfg || !Core) return;
+    const r = Core.fitIslandView(leafletMap, mapCfg, { padding: padding != null ? padding : 12, maxZoom: 3 });
+    baseFitZoom = r.baseFitZoom;
   }
 
   function fitAllTurfs() {
@@ -488,51 +440,23 @@ window.GangMap = (function () {
     renderSidePanels(state);
 
     const el = document.getElementById("gangsLeafletMap");
-    if (!el || typeof L === "undefined") return;
+    if (!el || typeof L === "undefined" || !Core) return;
 
     if (!leafletMap) {
-      leafletMap = L.map(el, {
-        crs: L.CRS.Simple,
-        minZoom: -3,
-        maxZoom: 8,
-        zoomSnap: 0.12,
-        zoomDelta: 0.35,
-        wheelPxPerZoomLevel: 55,
-        zoomControl: false,
-        attributionControl: false,
-        preferCanvas: true,
-        dragging: true,
-        scrollWheelZoom: true,
-        doubleClickZoom: true,
-        boxZoom: false,
-        inertia: true,
-        inertiaDeceleration: 3200,
-        easeLinearity: 0.18,
-      });
+      leafletMap = L.map(el, Core.createLeafletOptions());
       bindMapEvents();
     }
 
-    const bounds = [
-      [mapCfg.minY, mapCfg.minX],
-      [mapCfg.maxY, mapCfg.maxX],
-    ];
     if (imageLayer) leafletMap.removeLayer(imageLayer);
-    imageLayer = L.imageOverlay(mapCfg.imageUrl, bounds, { interactive: false, opacity: 0.92 }).addTo(leafletMap);
+    imageLayer = Core.addSatelliteLayer(leafletMap, mapCfg, "gtav-sat-layer");
     buildTurfs(state);
 
+    if (Core) Core.scheduleInvalidate(leafletMap, [0, 120, 320]);
     requestAnimationFrame(() => {
-      invalidate();
-      fitMapFill(4);
+      fitMapFill(12);
       if (!selectedTurf) selectTurf(null);
     });
-    setTimeout(() => {
-      invalidate();
-      fitMapFill(4);
-    }, 120);
-    setTimeout(() => {
-      invalidate();
-      fitMapFill(4);
-    }, 320);
+    setTimeout(() => fitMapFill(12), 150);
   }
 
   function zoomIn() {

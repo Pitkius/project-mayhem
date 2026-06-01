@@ -1892,6 +1892,17 @@ body.preset-3 {
     animation: ch-blink 0.55s ease-in-out infinite alternate;
 }
 
+.ch-stat-lights.state-on {
+    color: #fef9c3;
+    background: rgba(250, 204, 21, 0.22);
+    border-color: rgba(253, 224, 71, 0.65);
+    box-shadow: 0 0 18px rgba(253, 224, 71, 0.55), 0 0 32px rgba(250, 204, 21, 0.2);
+}
+
+.ch-stat-lights.state-on .hud-ico-svg {
+    filter: drop-shadow(0 0 4px rgba(255, 255, 200, 0.9));
+}
+
 @keyframes ch-blink {
     from { opacity: 0.35; box-shadow: none; }
     to { opacity: 1; box-shadow: 0 0 16px rgba(167, 139, 250, 0.45); }
@@ -2242,17 +2253,11 @@ body.preset-3 {
 
 .vp-controls-bar {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 10px;
     margin-top: 16px;
     padding-top: 16px;
     border-top: 1px solid rgba(167, 139, 250, 0.14);
-}
-
-@media (min-width: 640px) {
-    .vp-controls-bar {
-        grid-template-columns: repeat(8, 1fr);
-    }
 }
 
 .vp-ctrl {
@@ -2302,4 +2307,153 @@ body.preset-3 {
 .vp-ctrl.vp-disabled {
     opacity: 0.35;
     pointer-events: none;
+}
+
+/* —— M Menu: interaktyvi automobilio schema (vienas siluetas visiems) —— */
+.vp-schema-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 420px;
+    height: 100%;
+    padding: 12px 8px 8px;
+}
+
+.vp-schema-hint {
+    margin: 0 0 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.vp-schema-stage {
+    position: relative;
+    width: min(280px, 88%);
+    aspect-ratio: 200 / 360;
+    margin: 0 auto;
+}
+
+.vp-schema-car {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 28px rgba(124, 58, 237, 0.22)) drop-shadow(0 12px 32px rgba(0, 0, 0, 0.45));
+    pointer-events: none;
+    user-select: none;
+}
+
+.vp-schema-car.vp-schema-loaded {
+    opacity: 1;
+}
+
+.vp-spot {
+    position: absolute;
+    z-index: 5;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: transform 0.16s ease;
+}
+
+.vp-spot-dot {
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: rgba(30, 28, 42, 0.92);
+    border: 2px solid rgba(148, 163, 184, 0.45);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.vp-spot .hud-ico-svg {
+    position: relative;
+    z-index: 1;
+    width: 22px;
+    height: 22px;
+    color: #94a3b8;
+    transition: color 0.16s ease, filter 0.16s ease;
+}
+
+.vp-spot:hover {
+    transform: scale(1.1);
+}
+
+.vp-spot:hover .vp-spot-dot {
+    border-color: rgba(196, 181, 253, 0.75);
+    background: rgba(49, 46, 72, 0.95);
+    box-shadow: 0 0 16px rgba(167, 139, 250, 0.28);
+}
+
+.vp-spot:hover .hud-ico-svg {
+    color: #e9d5ff;
+}
+
+.vp-spot.state-open .vp-spot-dot {
+    border-color: rgba(167, 139, 250, 0.85);
+    background: rgba(124, 58, 237, 0.35);
+    box-shadow: 0 0 22px rgba(124, 58, 237, 0.55), 0 0 40px rgba(167, 139, 250, 0.2);
+}
+
+.vp-spot.state-open .hud-ico-svg {
+    color: #ddd6fe;
+    filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.8));
+}
+
+.vp-spot-hood {
+    top: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.vp-spot-hood:hover {
+    transform: translateX(-50%) scale(1.1);
+}
+
+.vp-spot-trunk {
+    bottom: 2%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.vp-spot-trunk:hover {
+    transform: translateX(-50%) scale(1.1);
+}
+
+.vp-spot-fl {
+    left: -4%;
+    top: 30%;
+}
+
+.vp-spot-fr {
+    right: -4%;
+    top: 30%;
+}
+
+.vp-spot-rl {
+    left: -4%;
+    top: 58%;
+}
+
+.vp-spot-rr {
+    right: -4%;
+    top: 58%;
+}
+
+.vp-spot.vp-disabled {
+    opacity: 0.32;
+    pointer-events: none;
+}
+
+.vp-premium .vp-schema-wrap {
+    min-height: 440px;
 }

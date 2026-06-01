@@ -916,9 +916,10 @@ select.color-select-native {
   cursor: grab;
 }
 
-.gangs-leaflet-map .leaflet-pane.leaflet-overlay-pane img {
+.gangs-leaflet-map .leaflet-pane.leaflet-overlay-pane img,
+.gangs-leaflet-map .gtav-sat-layer {
   image-rendering: auto;
-  filter: saturate(0.88) brightness(0.82) contrast(1.05);
+  filter: saturate(0.95) brightness(0.9) contrast(1.04);
 }
 
 .gangs-leaflet-map .leaflet-container.leaflet-dragging {
@@ -934,12 +935,12 @@ select.color-select-native {
 }
 
 .gangs-leaflet-map .leaflet-interactive.turf-cell-selected {
-  filter: drop-shadow(0 0 8px rgba(196, 181, 253, 0.55));
+  filter: drop-shadow(0 0 10px rgba(167, 139, 250, 0.65));
 }
 
 @keyframes turf-war-pulse {
-  0%, 100% { fill-opacity: 0.22; stroke-opacity: 0.28; }
-  50% { fill-opacity: 0.3; stroke-opacity: 0.38; }
+  0%, 100% { fill-opacity: 0.24; stroke-opacity: 0.3; }
+  50% { fill-opacity: 0.32; stroke-opacity: 0.4; }
 }
 
 .gang-legend-state {

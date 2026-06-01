@@ -1,5 +1,41 @@
 Config = {}
 
+--- Kuro mažėjimas važiuojant (HUD skaito tą patį GetVehicleFuelLevel).
+Config.EnableConsumption = true
+Config.ConsumptionTickMs = 1000
+--- Bazinis suvartojimas % per tick (variklis įjungtas, stovint).
+Config.ConsumptionBase = 0.028
+--- Papildomas % per tick kiekvienam km/h.
+Config.ConsumptionPerKmh = 0.0011
+--- Klasės daugiklis (GetVehicleClass).
+Config.ClassMultiplier = {
+    [0] = 0.85,  -- Compacts
+    [1] = 0.95,  -- Sedans
+    [2] = 1.05,  -- SUVs
+    [3] = 1.0,   -- Coupes
+    [4] = 1.15,  -- Muscle
+    [5] = 1.2,   -- Sports Classics
+    [6] = 1.25,  -- Sports
+    [7] = 1.1,   -- Super
+    [8] = 0.9,   -- Motorcycles
+    [9] = 1.2,   -- Off-road
+    [10] = 1.35, -- Industrial
+    [11] = 1.3,  -- Utility
+    [12] = 1.4,  -- Vans
+    [13] = 0.0,  -- Cycles
+    [14] = 1.5,  -- Boats
+    [15] = 1.6,  -- Helicopters
+    [16] = 1.5,  -- Planes
+    [17] = 1.2,  -- Service
+    [18] = 1.25, -- Emergency
+    [19] = 1.35, -- Military
+    [20] = 1.4,  -- Commercial
+    [21] = 1.5,  -- Trains
+}
+Config.DisableGtaFuelConsumption = true
+Config.ShutEngineOnEmpty = true
+Config.EmptyNotifyCooldownMs = 12000
+
 Config.BlipSprite = 361
 Config.BlipColor = 2
 Config.BlipScale = 0.75

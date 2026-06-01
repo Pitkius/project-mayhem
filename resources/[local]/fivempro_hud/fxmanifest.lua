@@ -14,6 +14,7 @@ files {
     'html/app.js',
     'html/assets/icons/*.png',
     'html/assets/vehicles/default.svg',
+    'html/assets/vehicles/car-schema-topdown.svg',
     'html/assets/vehicles/vehicle-topdown.png',
     'html/assets/vehicles/*.png',
 }

@@ -453,17 +453,26 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:tryDrugSale', function(sr
 end)
 
 QBCore.Functions.CreateCallback('fivempro_gangs:server:getAdminSnapshot', function(src, cb)
-    if not HasGangAdminPermission(src) then return cb({ ok = false }) end
-    local gangs = MySQL.query.await('SELECT id, name, gang_type, color_hex, reputation, heat, created_at FROM fivempro_gangs ORDER BY id ASC') or {}
+    if not HasGangAdminPermission(src) then return cb({ ok = false, message = 'Nėra teisių.' }) end
+    local gangs = MySQL.query.await([[
+        SELECT g.id, g.name, g.gang_type, g.color_hex, g.reputation, g.heat, g.created_at,
+            (SELECT COUNT(*) FROM fivempro_gang_members m WHERE m.gang_id = g.id) AS member_count
+        FROM fivempro_gangs g
+        ORDER BY g.id ASC
+    ]]) or {}
     local turfs = getTurfs()
     cb({ ok = true, gangs = gangs, turfs = turfs })
 end)
 
-RegisterNetEvent('fivempro_gangs:server:adminSetGangStats', function(gangId, reputation)
+RegisterNetEvent('fivempro_gangs:server:adminSetGangStats', function(gangId, reputation, heat)
     local src = source
     if not HasGangAdminPermission(src) then return end
-    MySQL.update.await('UPDATE fivempro_gangs SET reputation = ? WHERE id = ?', {
-        tonumber(reputation) or 0, tonumber(gangId)
+    gangId = tonumber(gangId)
+    if not gangId then return end
+    MySQL.update.await('UPDATE fivempro_gangs SET reputation = ?, heat = ? WHERE id = ?', {
+        tonumber(reputation) or 0,
+        tonumber(heat) or 0,
+        gangId,
     })
     TriggerClientEvent('QBCore:Notify', src, 'Gaujos statistika atnaujinta.', 'success')
 end)

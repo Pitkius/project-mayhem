@@ -11,7 +11,10 @@ ui_page 'html/index.html'
 files {
     'html/index.html',
     'html/style.css',
+    'html/admin.css',
     'html/app.js',
+    'html/admin.js',
+    'html/gtav_map_core.js',
     'html/map.js',
     'html/asset/gtav_satellite.jpg',
     'html/asset/gtav_satellite_2048.png',

@@ -64,10 +64,6 @@ local function closeUI()
     SendNUIMessage({ action = 'close' })
 end
 
-RegisterNetEvent('fivempro_trucking:client:openUI', function(mode)
-    openUI(mode or 'full')
-end)
-
 RegisterNetEvent('fivempro_trucking:client:startDelivery', function(state)
     deliveryState = state
     if state and state.contract then
@@ -94,7 +90,11 @@ end)
 RegisterNUICallback('trucking:register', function(_, cb)
     QBCore.Functions.TriggerCallback('fivempro_trucking:server:register', function(res)
         if res and res.ok then
-            QBCore.Functions.Notify('Registracija sėkminga! TruckNet Level 1.', 'success')
+            if res.alreadyRegistered then
+                QBCore.Functions.Notify('Jau esi registruotas — atidaroma panelė.', 'primary')
+            else
+                QBCore.Functions.Notify('Registracija sėkminga! TruckNet Level 1.', 'success')
+            end
         elseif res and res.reason then
             QBCore.Functions.Notify(res.reason, 'error')
         else

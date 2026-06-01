@@ -35,6 +35,7 @@ server_scripts {
 files {
     'html/mdt/index.html',
     'html/mdt/app.js',
+    'html/mdt/gtav_map_core.js',
     'html/mdt/mdt_map.js',
     'html/mdt/style.css',
     'html/mdt/vendor/leaflet.js',

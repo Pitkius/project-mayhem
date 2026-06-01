@@ -24,7 +24,7 @@ Config.Ranks = {
     [4] = 'Boss',
 }
 
---- Turf langeliai: config_turf_cells.lua (tik LS miesto rajonai)
+--- Turf zonos: config_turf_cells.lua (~40 RP rajonų, ne tinklelis)
 
 Config.TurfClaimThreshold = 100
 
@@ -63,18 +63,17 @@ Config.AdminPermissions = { 'admin', 'god' }
 --- txAdmin / cfg group.admin (add_ace group.admin command allow) — ne QBCore /addpermission
 Config.AdminAceFallbacks = { 'command', 'group.admin' }
 
---- Turf tablet: Leaflet + palydovinis žemėlapis (lengvas JPG, LS vaizdas)
---- Geresnė kokybė: įkelk 2048 PNG kaip gtav_satellite_2048.png ir pakeisk imageFile (didesnis NUI apkrovimas).
+--- Turf tablet: Leaflet + HD satelitas (pilna GTA sala, tas pats kaip MDT)
 Config.TabletMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
-    viewMin = { x = -1750.0, y = -2050.0 },
-    viewMax = { x = 1580.0, y = 480.0 },
+    viewMin = { x = -4000.0, y = -4000.0 },
+    viewMax = { x = 4500.0, y = 6625.0 },
     offsetX = 0.0,
     offsetY = 0.0,
-    imageWidth = 1024,
-    imageHeight = 1280,
-    imageFile = 'asset/gtav_satellite.jpg',
+    imageWidth = 2048,
+    imageHeight = 2560,
+    imageFile = 'asset/gtav_satellite_2048.png',
 }
 
 --- Žemėlapio projekcija (Leaflet) — turi sutapti su gtav_satellite.jpg

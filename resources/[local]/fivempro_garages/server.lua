@@ -231,11 +231,22 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:spawnVehicle', function
         plate
     })
 
+    local fuelPct = tonumber(row.fuel)
+    if fuelPct == nil and row.mods and row.mods ~= '' then
+        local ok, mods = pcall(json.decode, row.mods)
+        if ok and mods and mods.fuelLevel ~= nil then
+            fuelPct = tonumber(mods.fuelLevel)
+        end
+    end
+    if fuelPct == nil then fuelPct = 100 end
+    fuelPct = math.floor(math.max(0, math.min(100, fuelPct)) + 0.5)
+
     cb({
         ok = true,
         model = row.vehicle,
         plate = row.plate,
-        mods = row.mods
+        mods = row.mods,
+        fuel = fuelPct,
     })
 end)
 
@@ -291,12 +302,18 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:parkVehicle', function(
         return cb({ ok = false, message = 'Į šį garažą tik gamtos apsaugos transportas.' })
     end
 
+    local fuelPct = 100
+    if props and props.fuelLevel ~= nil then
+        fuelPct = math.floor(math.max(0, math.min(100, tonumber(props.fuelLevel) or 100)) + 0.5)
+    end
+
     MySQL.update.await([[
         UPDATE player_vehicles
-        SET mods = ?, state = 1, garage = ?
+        SET mods = ?, fuel = ?, state = 1, garage = ?
         WHERE citizenid = ? AND plate = ?
     ]], {
         json.encode(props or {}),
+        fuelPct,
         garageId,
         Player.PlayerData.citizenid,
         plate

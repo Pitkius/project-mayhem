@@ -321,12 +321,16 @@ RegisterNetEvent('fivempro_gangs:server:adminSetTurfOwner', function(turfId, gan
     turfId = tostring(turfId or '')
     gangId = tonumber(gangId)
     local ownerName = nil
+    local ownerId = nil
     if gangId and gangId > 0 then
         local g = MySQL.single.await('SELECT name FROM fivempro_gangs WHERE id = ? LIMIT 1', { gangId })
-        ownerName = g and g.name or nil
+        if g then
+            ownerName = g.name
+            ownerId = gangId
+        end
     end
     MySQL.update.await('UPDATE fivempro_gang_turfs SET owner_gang_id = ?, owner_name = ?, progress = 0 WHERE turf_id = ?', {
-        gangId, ownerName, turfId
+        ownerId, ownerName, turfId
     })
     TriggerClientEvent('QBCore:Notify', src, 'Turf savininkas pakeistas.', 'success')
 end)

@@ -377,6 +377,13 @@ local function doGarageVehicleSpawn(data)
                 QBCore.Functions.SetVehicleProperties(veh, mods)
             end
         end
+        if result.fuel ~= nil and SetVehicleFuelLevel then
+            SetVehicleFuelLevel(veh, math.max(0.0, math.min(100.0, tonumber(result.fuel) + 0.0)))
+        elseif GetResourceState('fivempro_fuel') == 'started' then
+            pcall(function()
+                exports['fivempro_fuel']:SetFuel(veh, GetVehicleFuelLevel(veh))
+            end)
+        end
         TriggerEvent('vehiclekeys:client:SetOwner', result.plate)
         TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
         QBCore.Functions.Notify('Mašina ištraukta', 'success')

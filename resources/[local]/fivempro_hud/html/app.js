@@ -106,59 +106,16 @@ const vpMotorPct = document.getElementById("vpMotorPct");
 const vpVehicleName = document.getElementById("vpVehicleName");
 const vpVehicleImage = document.getElementById("vpVehicleImage");
 
-const VEHICLE_CLASS_IMAGES = {
-  0: "class_compact",
-  1: "class_sedan",
-  2: "class_suv",
-  3: "class_coupe",
-  4: "class_muscle",
-  5: "class_sports",
-  6: "class_sports",
-  7: "class_super",
-  8: "class_motorcycle",
-  9: "class_offroad",
-  12: "class_van",
-};
-
 function setChStat(el, mode) {
   if (!el) return;
   el.classList.remove("state-on", "state-off", "state-warn", "state-blink");
   if (mode) el.classList.add(mode);
 }
 
-function setVehiclePreviewImage(modelSpawn, spawnModel, vehicleClass) {
+function setVehicleSchemaImage() {
   if (!vpVehicleImage) return;
-  const candidates = [];
-  const add = (name) => {
-    if (!name) return;
-    const n = String(name).toLowerCase().replace(/[^a-z0-9_]/g, "");
-    if (n && !candidates.includes(`assets/vehicles/${n}.png`)) {
-      candidates.push(`assets/vehicles/${n}.png`);
-    }
-  };
-  add(spawnModel);
-  add(modelSpawn);
-  const cls = VEHICLE_CLASS_IMAGES[Number(vehicleClass)] || "class_sedan";
-  candidates.push(`assets/vehicles/${cls}.png`);
-  candidates.push("assets/vehicles/vehicle-topdown.png");
-
-  let idx = 0;
-  const tryNext = () => {
-    if (idx >= candidates.length) {
-      vpVehicleImage.classList.remove("vp-vehicle-loaded");
-      vpVehicleImage.style.display = "none";
-      return;
-    }
-    const src = candidates[idx++];
-    vpVehicleImage.onload = () => {
-      vpVehicleImage.style.display = "block";
-      vpVehicleImage.classList.add("vp-vehicle-loaded");
-    };
-    vpVehicleImage.onerror = () => tryNext();
-    vpVehicleImage.src = src;
-  };
-  vpVehicleImage.classList.remove("vp-vehicle-loaded");
-  tryNext();
+  vpVehicleImage.src = "assets/vehicles/car-schema-topdown.svg";
+  vpVehicleImage.classList.add("vp-schema-loaded");
 }
 const vpPlateLine = document.getElementById("vpPlateLine");
 const vpHazardToggle = document.getElementById("vpHazardToggle");
@@ -428,7 +385,7 @@ window.addEventListener("message", (event) => {
     if (vpVehicleClass) vpVehicleClass.textContent = data.vehicleClassLabel || "—";
     if (vpVehicleName) vpVehicleName.textContent = data.vehicleName || "—";
     if (vpPlateLine) vpPlateLine.textContent = data.plate || "—";
-    setVehiclePreviewImage(data.modelSpawn, data.spawnModel, data.vehicleClass);
+    setVehicleSchemaImage();
     const vpLockStatus = document.getElementById("vpLockStatus");
     const vpEngineStatus = document.getElementById("vpEngineStatus");
     if (vpLockStatus) {
@@ -440,12 +397,12 @@ window.addEventListener("message", (event) => {
       vpEngineStatus.classList.toggle("is-on", !!data.engineOn);
     }
     if (data.hasKeys === false) {
-      document.querySelectorAll(".vp-ios-q, .vp-ctrl, .vp-door, .vp-hot, .vp-win").forEach((el) => {
+      document.querySelectorAll(".vp-ios-q, .vp-ctrl, .vp-spot.vp-door").forEach((el) => {
         el.classList.add("vp-disabled");
         el.setAttribute("disabled", "disabled");
       });
     } else {
-      document.querySelectorAll(".vp-ios-q, .vp-ctrl, .vp-door, .vp-hot, .vp-win").forEach((el) => {
+      document.querySelectorAll(".vp-ios-q, .vp-ctrl, .vp-spot.vp-door").forEach((el) => {
         el.classList.remove("vp-disabled");
         el.removeAttribute("disabled");
       });
@@ -464,17 +421,9 @@ window.addEventListener("message", (event) => {
     });
     if (Array.isArray(data.doors)) {
       data.doors.forEach((d) => {
-        const el = document.querySelector(`.vp-door[data-door="${d.idx}"]`);
+        const el = document.querySelector(`.vp-spot.vp-door[data-door="${d.idx}"]`);
         if (!el) return;
         el.classList.toggle("state-open", !!d.open);
-        el.classList.toggle("state-unlocked", !data.locked);
-      });
-    }
-    if (Array.isArray(data.windows)) {
-      data.windows.forEach((w) => {
-        const el = document.querySelector(`.vp-win[data-window="${w.idx}"]`);
-        if (!el) return;
-        el.classList.toggle("state-open", !!w.open);
       });
     }
     return;
@@ -582,27 +531,19 @@ if (vpBtnClose) {
 
 document.querySelectorAll(".vp-ios-q, .vp-ctrl").forEach((btn) => {
   btn.addEventListener("click", () => {
+    if (btn.classList.contains("vp-disabled")) return;
     const act = btn.getAttribute("data-act");
-    if (!act) return;
-    if (act === "doorFlip") {
-      nuiPost("vehiclePanel:action", { action: "door", doorIndex: 0 });
-      return;
-    }
+    if (!act || act === "hood" || act === "trunk" || act === "doorFlip") return;
     nuiPost("vehiclePanel:action", { action: act });
   });
 });
 
-document.querySelectorAll(".vp-door, .vp-hot.vp-door").forEach((btn) => {
+document.querySelectorAll(".vp-spot.vp-door").forEach((btn) => {
   btn.addEventListener("click", () => {
+    if (btn.classList.contains("vp-disabled")) return;
     const d = btn.getAttribute("data-door");
+    if (d == null || d === "") return;
     nuiPost("vehiclePanel:action", { action: "door", doorIndex: Number(d) });
-  });
-});
-
-document.querySelectorAll(".vp-win").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const w = btn.getAttribute("data-window");
-    nuiPost("vehiclePanel:action", { action: "window", windowIndex: Number(w) });
   });
 });
 

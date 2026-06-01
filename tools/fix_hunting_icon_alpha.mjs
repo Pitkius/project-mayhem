@@ -6,7 +6,8 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const imagesDir = path.join(__dirname, '..', 'resources', '[qb]', 'qb-inventory', 'html', 'images');
 const TARGET = 256;
-const NAMES = ['hunting_knife', 'hunting_ammo', 'weapon_musket'];
+/** Inventory item PNGs: remove black/white matte, pad to 256×256 */
+const NAMES = ['hunting_knife', 'hunting_ammo', 'weapon_musket', 'fishingrod', 'fishbait'];
 
 function dist(a, b) {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);

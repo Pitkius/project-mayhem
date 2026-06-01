@@ -122,7 +122,7 @@ local function tryToggleEngine(veh)
     local netId = VehToNet(veh)
     local blockMs = remainingBlockMs(netId)
     if blockMs > 0 then
-        QBCore.Functions.Notify(('Per greitai po avarijos. Palaukite dar %.1fs.'):format(blockMs / 1000.0), 'error')
+        QBCore.Functions.Notify('Variklis užgeso.', 'error')
         return
     end
 
@@ -246,10 +246,7 @@ CreateThread(function()
                     SetVehicleEngineOn(veh, false, true, true)
                     local delayMs = crashRestartDelayMs(crashPeak)
                     engineStartBlockedUntil[netId] = GetGameTimer() + delayMs
-                    QBCore.Functions.Notify(
-                        ('Variklis užgeso. Užvesti galėsite po %.1fs.'):format(delayMs / 1000.0),
-                        'error'
-                    )
+                    QBCore.Functions.Notify('Variklis užgeso.', 'error')
                     peakSpeedKmhByNet[netId] = spdNow
                 end
 

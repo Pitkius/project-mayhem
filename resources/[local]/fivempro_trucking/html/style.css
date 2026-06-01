@@ -189,6 +189,15 @@ body {
 }
 .register-card h2 { margin-bottom: 10px; }
 .register-card p { color: #a1a1aa; font-size: 13px; margin-bottom: 18px; line-height: 1.5; }
+.register-status {
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.register-status.ok { color: #86efac; }
+.register-status.err { color: #fca5a5; }
+.register-status.hidden { display: none; }
 
 .tab { display: none; }
 .tab.active { display: block; }

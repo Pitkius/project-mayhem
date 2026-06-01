@@ -76,7 +76,132 @@ end
 
 local function personDisplayName(charinfo)
     charinfo = charinfo or {}
-    return ((charinfo.firstname or '') .. ' ' .. (charinfo.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
+    local first = charinfo.firstname or charinfo.firstName or ''
+    local last = charinfo.lastname or charinfo.lastName or ''
+    return (first .. ' ' .. last):gsub('^%s+', ''):gsub('%s+$', '')
+end
+
+local LT_FOLD = {
+    ['ą'] = 'a', ['č'] = 'c', ['ę'] = 'e', ['ė'] = 'e', ['į'] = 'i',
+    ['š'] = 's', ['ų'] = 'u', ['ū'] = 'u', ['ž'] = 'z',
+}
+
+local function foldSearchText(s)
+    s = tostring(s or ''):lower()
+    for from, to in pairs(LT_FOLD) do
+        s = s:gsub(from, to)
+    end
+    return s
+end
+
+local function splitSearchWords(query)
+    local q = foldSearchText(query):gsub('%%', ''):gsub('%s+', ' '):match('^%s*(.-)%s*$') or ''
+    local parts = {}
+    for w in q:gmatch('%S+') do
+        parts[#parts + 1] = w
+    end
+    return q, parts
+end
+
+local function charinfoSearchFields(charinfo)
+    charinfo = charinfo or {}
+    local fn = foldSearchText(charinfo.firstname or charinfo.firstName or '')
+    local ln = foldSearchText(charinfo.lastname or charinfo.lastName or '')
+    local full = (fn .. ' ' .. ln):gsub('%s+', ' '):match('^%s*(.-)%s*$') or ''
+    return fn, ln, full
+end
+
+local function personMatchesSearch(charinfo, parts, qFold)
+    local fn, ln, full = charinfoSearchFields(charinfo)
+    local phone = foldSearchText(charinfo.phone or '')
+    if qFold ~= '' and full:find(qFold, 1, true) then return true end
+    if phone ~= '' and qFold ~= '' and phone:find(qFold, 1, true) then return true end
+    if #parts >= 2 then
+        local a, b = parts[1], parts[2]
+        if fn:find(a, 1, true) and ln:find(b, 1, true) then return true end
+        if fn:find(b, 1, true) and ln:find(a, 1, true) then return true end
+        if full:find(a .. ' ' .. b, 1, true) then return true end
+        if full:find(b .. ' ' .. a, 1, true) then return true end
+        return false
+    end
+    if #parts == 1 then
+        local w = parts[1]
+        return fn:find(w, 1, true) or ln:find(w, 1, true) or full:find(w, 1, true)
+    end
+    return false
+end
+
+local function searchPersonDbRows(query)
+    local qFold, parts = splitSearchWords(query)
+    if #qFold < 2 then return {} end
+
+    local seen = {}
+    local candidates = {}
+
+    local function addList(list)
+        for _, r in ipairs(list or {}) do
+            if r.citizenid and not seen[r.citizenid] then
+                seen[r.citizenid] = true
+                candidates[#candidates + 1] = r
+            end
+        end
+    end
+
+    local likeCid = '%' .. qFold .. '%'
+    addList(MySQL.query.await([[
+        SELECT citizenid, charinfo, money, metadata
+        FROM players
+        WHERE LOWER(citizenid) LIKE ?
+        LIMIT 25
+    ]], { likeCid }))
+
+    if #parts >= 2 then
+        local jsonPattern = '%' .. table.concat(parts, '%') .. '%'
+        addList(MySQL.query.await([[
+            SELECT citizenid, charinfo, money, metadata
+            FROM players
+            WHERE LOWER(charinfo) LIKE ?
+            LIMIT 40
+        ]], { jsonPattern }))
+    end
+
+    for _, w in ipairs(parts) do
+        local like = '%' .. w .. '%'
+        addList(MySQL.query.await([[
+            SELECT citizenid, charinfo, money, metadata
+            FROM players
+            WHERE LOWER(charinfo) LIKE ?
+               OR LOWER(citizenid) LIKE ?
+            LIMIT 40
+        ]], { like, like }))
+    end
+
+    local metaLike = '%' .. qFold .. '%'
+    addList(MySQL.query.await([[
+        SELECT citizenid, charinfo, money, metadata
+        FROM players
+        WHERE LOWER(metadata) LIKE ?
+        LIMIT 15
+    ]], { metaLike }))
+
+    local rows = {}
+    for _, r in ipairs(candidates) do
+        local charinfo = decodeCharinfo(r.charinfo)
+        local matched = personMatchesSearch(charinfo, parts, qFold)
+        if not matched and qFold ~= '' then
+            local meta = decodeMetadata(r.metadata)
+            local fp = foldSearchText(meta.fingerprint or '')
+            if fp ~= '' and fp:find(qFold, 1, true) then
+                matched = true
+            end
+        end
+        if matched then
+            rows[#rows + 1] = r
+        end
+        if #rows >= 25 then break end
+    end
+
+    return rows
 end
 
 local function decodeMetadata(raw)
@@ -98,6 +223,15 @@ local function parsePlayerInventory(raw)
     if not raw or raw == '' then return {} end
     local ok, data = pcall(json.decode, raw)
     if ok and type(data) == 'table' then return data end
+    return {}
+end
+
+local function fetchPlayerInventory(citizenid, onlineP)
+    if onlineP then return onlineP.PlayerData.items or {} end
+    local ok, raw = pcall(function()
+        return MySQL.scalar.await('SELECT inventory FROM players WHERE citizenid = ? LIMIT 1', { citizenid })
+    end)
+    if ok and raw then return parsePlayerInventory(raw) end
     return {}
 end
 
@@ -357,118 +491,50 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:searchPerson', function(sr
     if #query < 2 then return cb({ ok = true, rows = {} }) end
 
     local ok, err = pcall(function()
-    local qLower = query:lower()
-    local like = '%' .. qLower .. '%'
-    local parts = {}
-    for w in qLower:gmatch('%S+') do
-        parts[#parts + 1] = w
-    end
+        local rows = searchPersonDbRows(query)
+        local full = mdtFullAccess(src)
 
-    local rows = {}
-    local seen = {}
-
-    local function addRows(list)
-        for _, r in ipairs(list or {}) do
-            if r.citizenid and not seen[r.citizenid] then
-                seen[r.citizenid] = true
-                rows[#rows + 1] = r
+        for _, r in ipairs(rows) do
+            local charinfo = decodeCharinfo(r.charinfo)
+            r.name = personDisplayName(charinfo)
+            r.fingerprint = fingerprintFromRow(r)
+            local onlineP = QBCore.Functions.GetPlayerByCitizenId(r.citizenid)
+            local money = json.decode(r.money or '{}') or {}
+            if full then
+                r.cash = tonumber(money.cash) or 0
+                r.bank = tonumber(money.bank) or 0
+            else
+                r.cash = nil
+                r.bank = nil
             end
+            local wanted = MySQL.single.await('SELECT level, reason FROM ltpd_wanted WHERE citizenid = ?', { r.citizenid })
+            r.wanted_level = wanted and tonumber(wanted.level) or 0
+            r.wanted_reason = wanted and wanted.reason or ''
+            local meta = decodeMetadata(r.metadata)
+            if onlineP then
+                meta = onlineP.PlayerData.metadata or meta
+            end
+            local inv = fetchPlayerInventory(r.citizenid, onlineP)
+            r.licenses = buildPersonLicenses(r.citizenid, meta, inv, onlineP)
+            if full then
+                r.vehicles = MySQL.query.await(
+                    'SELECT plate, vehicle, state FROM player_vehicles WHERE citizenid = ? LIMIT 15',
+                    { r.citizenid }
+                ) or {}
+                r.fines = MySQL.query.await(
+                    'SELECT amount, reason_label, created_at FROM ltpd_fines WHERE citizenid = ? ORDER BY id DESC LIMIT 10',
+                    { r.citizenid }
+                ) or {}
+            else
+                r.vehicles = nil
+                r.fines = nil
+            end
+            r.charinfo = nil
+            r.money = nil
+            r.metadata = nil
         end
-    end
 
-    if #parts >= 2 then
-        local p1, p2 = '%' .. parts[1] .. '%', '%' .. parts[2] .. '%'
-        addRows(MySQL.query.await([[
-            SELECT citizenid, charinfo, money, metadata, inventory
-            FROM players
-            WHERE (
-                (LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname'))) LIKE ?
-                 AND LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname'))) LIKE ?)
-                OR (LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname'))) LIKE ?
-                    AND LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname'))) LIKE ?)
-            )
-            OR LOWER(citizenid) LIKE ?
-            LIMIT 25
-        ]], { p1, p2, p2, p1, like }))
-    end
-
-    addRows(MySQL.query.await([[
-        SELECT citizenid, charinfo, money, metadata, inventory
-        FROM players
-        WHERE LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname'))) LIKE ?
-           OR LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname'))) LIKE ?
-           OR LOWER(CONCAT(
-                COALESCE(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname')), ''),
-                ' ',
-                COALESCE(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname')), '')
-           )) LIKE ?
-           OR LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.phone'))) LIKE ?
-           OR LOWER(charinfo) LIKE ?
-           OR LOWER(citizenid) LIKE ?
-           OR LOWER(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.fingerprint'))) LIKE ?
-        LIMIT 30
-    ]], { like, like, like, like, like, like, like }))
-
-    if #rows == 0 then
-        addRows(MySQL.query.await(
-            'SELECT citizenid, charinfo, money, metadata, inventory FROM players WHERE LOWER(citizenid) = ? LIMIT 1',
-            { qLower }
-        ))
-    end
-
-    if #rows > 25 then
-        local trimmed = {}
-        for i = 1, 25 do trimmed[i] = rows[i] end
-        rows = trimmed
-    end
-
-    local full = mdtFullAccess(src)
-    for _, r in ipairs(rows) do
-        local charinfo = decodeCharinfo(r.charinfo)
-        r.name = personDisplayName(charinfo)
-        r.citizenid = r.citizenid
-        r.fingerprint = fingerprintFromRow(r)
-        local onlineP = QBCore.Functions.GetPlayerByCitizenId(r.citizenid)
-        r.online = onlineP ~= nil
-        local money = json.decode(r.money or '{}') or {}
-        if full then
-            r.cash = tonumber(money.cash) or 0
-            r.bank = tonumber(money.bank) or 0
-        else
-            r.cash = nil
-            r.bank = nil
-        end
-        local wanted = MySQL.single.await('SELECT level, reason FROM ltpd_wanted WHERE citizenid = ?', { r.citizenid })
-        r.wanted_level = wanted and tonumber(wanted.level) or 0
-        r.wanted_reason = wanted and wanted.reason or ''
-        local meta = decodeMetadata(r.metadata)
-        if onlineP then
-            meta = onlineP.PlayerData.metadata or meta
-        end
-        local inv = onlineP and (onlineP.PlayerData.items or {}) or parsePlayerInventory(r.inventory)
-        r.licenses = buildPersonLicenses(r.citizenid, meta, inv, onlineP)
-        if full then
-            local veh = MySQL.query.await(
-                'SELECT plate, vehicle, state FROM player_vehicles WHERE citizenid = ? LIMIT 15',
-                { r.citizenid }
-            ) or {}
-            r.vehicles = veh
-            local fines = MySQL.query.await(
-                'SELECT amount, reason_label, created_at FROM ltpd_fines WHERE citizenid = ? ORDER BY id DESC LIMIT 10',
-                { r.citizenid }
-            ) or {}
-            r.fines = fines
-        else
-            r.vehicles = nil
-            r.fines = nil
-        end
-        r.charinfo = nil
-        r.money = nil
-        r.metadata = nil
-        r.inventory = nil
-    end
-
-    cb({ ok = true, rows = rows, full = full })
+        cb({ ok = true, rows = rows, full = full })
     end)
 
     if not ok then

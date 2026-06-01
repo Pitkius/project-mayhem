@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="nui://fivempro_fonts/html/lietuva.css" />
   <link rel="stylesheet" href="vendor/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
   <div id="tablet" class="tablet hidden">
@@ -172,8 +173,48 @@
     </div>
   </div>
 
+  <div id="gangAdmin" class="gang-admin hidden" aria-hidden="true">
+    <div class="gang-admin-shell">
+      <header class="ga-head">
+        <div class="ga-brand">
+          <div class="ga-brand-icon" aria-hidden="true">⚙</div>
+          <div>
+            <h1>Gang Admin</h1>
+            <p>Gaujos ir teritorijų valdymas</p>
+          </div>
+        </div>
+        <div class="ga-head-actions">
+          <button type="button" class="ga-btn ga-btn-ghost" id="gaBtnRefresh">Atnaujinti</button>
+          <button type="button" class="ga-btn-close" id="gaBtnClose" title="Uždaryti (ESC)">✕</button>
+        </div>
+      </header>
+      <nav class="ga-tabs" role="tablist">
+        <button type="button" class="ga-tab active" data-ga-tab="gangs" role="tab">Gaujos</button>
+        <button type="button" class="ga-tab" data-ga-tab="turfs" role="tab">Teritorijos</button>
+      </nav>
+      <div class="ga-body">
+        <aside class="ga-list-pane">
+          <div class="ga-search-wrap">
+            <input type="search" class="ga-search" id="gaSearch" placeholder="Ieškoti gaujos…" autocomplete="off" />
+          </div>
+          <div class="ga-list-meta" id="gaListMeta">—</div>
+          <div class="ga-list" id="gaList"></div>
+        </aside>
+        <main class="ga-detail" id="gaDetail">
+          <div class="ga-empty-detail">
+            <strong>Pasirink elementą</strong>
+            Redaguok gaują ar teritoriją iš sąrašo kairėje.
+          </div>
+        </main>
+      </div>
+    </div>
+    <div id="gaToast" class="ga-toast" role="status"></div>
+  </div>
+
   <script src="vendor/leaflet.js"></script>
+  <script src="gtav_map_core.js"></script>
   <script src="map.js"></script>
   <script src="app.js"></script>
+  <script src="admin.js"></script>
 </body>
 </html>

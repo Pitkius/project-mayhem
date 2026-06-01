@@ -20,6 +20,8 @@ window.MdtMap = (function () {
   let tooltipEl = null;
   let selectedKey = null;
 
+  const Core = window.GtavMapCore;
+
   function resourceName() {
     try {
       if (typeof GetParentResourceName === 'function') return GetParentResourceName();
@@ -27,45 +29,9 @@ window.MdtMap = (function () {
     return 'fivempro_ltpd';
   }
 
-  function nuiImageUrl(pathFromHtml) {
-    const raw = String(pathFromHtml || '').trim();
-    if (!raw || /^https?:\/\//i.test(raw) || /^nui:\/\//i.test(raw)) return raw;
-    const res = resourceName();
-    let p = raw.replace(/^\/+/, '');
-    if (!p.startsWith('html/')) p = `html/${p}`;
-    return `nui://${res}/${p}`;
-  }
-
   function normalizeMapConfig(cfg) {
-    const t = cfg || {};
-    const file = t.imageFile || 'mdt/asset/gtav_satellite.jpg';
-    const minX = Number(t.gameMin?.x ?? -4000);
-    const minY = Number(t.gameMin?.y ?? -4000);
-    const maxX = Number(t.gameMax?.x ?? 4500);
-    const maxY = Number(t.gameMax?.y ?? 6625);
-    return {
-      minX,
-      minY,
-      maxX,
-      maxY,
-      viewMinX: Number(t.viewMin?.x ?? minX),
-      viewMinY: Number(t.viewMin?.y ?? minY),
-      viewMaxX: Number(t.viewMax?.x ?? maxX),
-      viewMaxY: Number(t.viewMax?.y ?? maxY),
-      offsetX: Number(t.offsetX) || 0,
-      offsetY: Number(t.offsetY) || 0,
-      imgW: Number(t.imageWidth) || 1024,
-      imgH: Number(t.imageHeight) || 1280,
-      imageUrl: nuiImageUrl(file),
-    };
-  }
-
-  function viewBoundsLatLng(cfg) {
-    if (!cfg) return null;
-    return L.latLngBounds(
-      [cfg.viewMinY + cfg.offsetY, cfg.viewMinX + cfg.offsetX],
-      [cfg.viewMaxY + cfg.offsetY, cfg.viewMaxX + cfg.offsetX]
-    );
+    if (!Core) return cfg || {};
+    return Core.normalizeMapConfig(cfg, resourceName(), 'mdt/asset/gtav_satellite_2048.png');
   }
 
   /** GTA koordinatės → Leaflet [lat, lng] (CRS.Simple: lat=Y, lng=X). */
@@ -295,63 +261,33 @@ window.MdtMap = (function () {
   }
 
   function fitMapFill(pad) {
-    if (!leafletMap || !mapCfg) return;
-    const vb = viewBoundsLatLng(mapCfg) || mapBounds;
-    leafletMap.fitBounds(vb, { padding: [pad || 10, pad || 10], animate: false, maxZoom: 2 });
-    leafletMap.panInsideBounds(vb, { animate: false });
-    baseFitZoom = leafletMap.getZoom();
-    leafletMap.setMinZoom(Math.max(-1, baseFitZoom - 0.75));
-    leafletMap.setMaxZoom(baseFitZoom + 2.25);
-    leafletMap.setMaxBounds((mapBounds || vb).pad(0.04));
+    if (!leafletMap || !mapCfg || !Core) return;
+    const r = Core.fitIslandView(leafletMap, mapCfg, { padding: pad || 12, maxZoom: 3 });
+    baseFitZoom = r.baseFitZoom;
+    mapBounds = Core.gameBoundsLatLng(mapCfg);
   }
 
   function ensureMap(cfg) {
     mapCfg = normalizeMapConfig(cfg);
     const el = document.getElementById('mdtLeafletMap');
-    if (!el || typeof L === 'undefined') return;
+    if (!el || typeof L === 'undefined' || !Core) return;
 
-    mapBounds = L.latLngBounds(
-      [mapCfg.minY, mapCfg.minX],
-      [mapCfg.maxY, mapCfg.maxX]
-    );
+    mapBounds = Core.gameBoundsLatLng(mapCfg);
 
     if (!leafletMap) {
-      leafletMap = L.map(el, {
-        crs: L.CRS.Simple,
-        minZoom: -2,
-        maxZoom: 4,
-        zoomSnap: 0.2,
-        zoomDelta: 0.35,
-        wheelPxPerZoomLevel: 90,
-        zoomControl: false,
-        attributionControl: false,
-        preferCanvas: true,
-        dragging: true,
-        scrollWheelZoom: true,
-        doubleClickZoom: true,
-        boxZoom: false,
-        inertia: false,
-        fadeAnimation: false,
-        zoomAnimation: false,
-        markerZoomAnimation: false,
+      leafletMap = L.map(el, Core.createLeafletOptions());
+      leafletMap.on('moveend', () => {
+        const vb = Core.viewBoundsLatLng(mapCfg) || mapBounds;
+        if (vb) leafletMap.panInsideBounds(vb, { animate: false });
       });
     }
 
     if (imageLayer) leafletMap.removeLayer(imageLayer);
-    imageLayer = L.imageOverlay(mapCfg.imageUrl, mapBounds, {
-      interactive: false,
-      opacity: 1,
-      className: 'mdt-sat-layer',
-    }).addTo(leafletMap);
+    imageLayer = Core.addSatelliteLayer(leafletMap, mapCfg, 'mdt-sat-layer');
 
-    requestAnimationFrame(() => {
-      invalidate();
-      fitMapFill(10);
-    });
-    setTimeout(() => {
-      invalidate();
-      fitMapFill(10);
-    }, 150);
+    Core.scheduleInvalidate(leafletMap, [0, 120, 320]);
+    requestAnimationFrame(() => fitMapFill(12));
+    setTimeout(() => fitMapFill(12), 150);
   }
 
   function invalidate() {

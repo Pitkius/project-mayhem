@@ -141,10 +141,33 @@ local DEFAULT_PRESET = {
 
 local presetSettings = {}
 
+--- GetVehicleLightsState grąžina: lightState (0/1/2), lightsOn, highbeamsOn — neimti antro return kaip lightsOn be pirmo.
+local function areVehicleExteriorLightsOn(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return false end
+    local lightState, lightsOn, highbeamsOn = GetVehicleLightsState(veh)
+    if lightsOn == true or lightsOn == 1 then return true end
+    if highbeamsOn == true or highbeamsOn == 1 then return true end
+    local st = tonumber(lightState)
+    return st ~= nil and st > 0
+end
+
 local function clamp(value, minValue, maxValue)
     if value < minValue then return minValue end
     if value > maxValue then return maxValue end
     return value
+end
+
+local function getVehicleFuelPercent(veh)
+    if not veh or veh == 0 then return 0 end
+    if GetResourceState('fivempro_fuel') == 'started' then
+        local ok, fuel = pcall(function()
+            return exports['fivempro_fuel']:GetFuel(veh)
+        end)
+        if ok and fuel ~= nil then
+            return clamp(math.floor(fuel + 0.5), 0, 100)
+        end
+    end
+    return clamp(math.floor(GetVehicleFuelLevel(veh) + 0.5), 0, 100)
 end
 
 --- QB dažnai atnaujina `metadata` per `QBCore:Player:UpdatePlayerDataField`, ne per pilną `SetPlayerData` — todėl visada skaitom iš `GetPlayerData()`.
@@ -274,7 +297,7 @@ local function pushHud()
             inVehicle = false
         else
             speed = clamp(math.floor(GetEntitySpeed(veh) * 3.6 + 0.5), 0, 450)
-            fuel = clamp(math.floor(GetVehicleFuelLevel(veh) + 0.5), 0, 100)
+            fuel = getVehicleFuelPercent(veh)
             local rpm = GetVehicleCurrentRpm(veh)
             rpmPct = clamp(math.floor((rpm or 0.0) * 100.0 + 0.5), 0, 100)
             local eh = GetVehicleEngineHealth(veh) or 1000.0
@@ -292,8 +315,7 @@ local function pushHud()
                 local st = GetVehicleDoorLockStatus(veh)
                 doorsLocked = st == 2 or st == 3 or st == 4
             end
-            local _, lo = GetVehicleLightsState(veh)
-            lightsOn = lo == true or lo == 1
+            lightsOn = areVehicleExteriorLightsOn(veh)
         end
     else
         seatbeltOn = false
@@ -575,7 +597,7 @@ local function tryToggleEngineMenu(veh)
 
     local blockSec = getEngineStartBlockSecondsLeft(veh)
     if blockSec > 0 then
-        QBCore.Functions.Notify(('Per greitai po avarijos. Palaukite dar %.1fs.'):format(blockSec), 'error')
+        QBCore.Functions.Notify('Variklis užgeso.', 'error')
         return
     end
 
@@ -632,11 +654,9 @@ local function pushVehiclePanelState()
     local eh = GetVehicleEngineHealth(veh) or 1000.0
     local engineTemp = clamp(math.floor((eh / 1000.0) * 42.0 + 58.0 + 0.5), 55, 115)
 
-    local lightsOn = false
-    local highBeams = false
-    local _, lo, hi = GetVehicleLightsState(veh)
-    lightsOn = lo == true or lo == 1
-    highBeams = hi == true or hi == 1
+    local lightState, lo, hi = GetVehicleLightsState(veh)
+    local highBeams = hi == true or hi == 1 or tonumber(lightState) == 2
+    local lightsOn = areVehicleExteriorLightsOn(veh)
 
     local cx, cy, cz = table.unpack(GetEntityCoords(veh))
     local sh1 = GetStreetNameAtCoord(cx, cy, cz)
@@ -651,7 +671,7 @@ local function pushVehiclePanelState()
         end
     end
 
-    local fuel = clamp(math.floor(GetVehicleFuelLevel(veh) + 0.5), 0, 100)
+    local fuel = getVehicleFuelPercent(veh)
     local vehModel = GetEntityModel(veh)
     local dispHash = GetDisplayNameFromVehicleModel(vehModel)
     local vehLabel = dispHash and dispHash ~= '' and GetLabelText(dispHash) or 'Vehicle'
@@ -783,8 +803,7 @@ RegisterNUICallback('vehiclePanel:action', function(data, cb)
             cb({ ok = false })
             return
         end
-        local _, lo = GetVehicleLightsState(veh)
-        local on = lo == true or lo == 1
+        local on = areVehicleExteriorLightsOn(veh)
         if on then
             SetVehicleLights(veh, 1)
         else

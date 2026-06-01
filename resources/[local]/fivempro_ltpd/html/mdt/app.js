@@ -279,9 +279,7 @@ function renderPerson(res) {
     const c = document.createElement('div');
     c.className = 'card';
     let html = `<h4>${escapeHtml(r.name || '')}</h4>`;
-    html += `<div class="muted">citizenid: ${escapeHtml(r.citizenid)}`;
-    if (r.online) html += ' • <span class="badge ok">Prisijungęs</span>';
-    html += '</div>';
+    html += `<div class="muted">citizenid: ${escapeHtml(r.citizenid)}</div>`;
     if (r.fingerprint) {
       html += `<div class="muted">Atspaudas: ${escapeHtml(r.fingerprint)}</div>`;
     }

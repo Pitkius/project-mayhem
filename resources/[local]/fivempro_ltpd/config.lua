@@ -64,18 +64,17 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT žemėlapis — JPG (mažiau lag), pradinis vaizdas tik Los Santos
---- HD: naudok gtav_satellite_2048.png (sunkesnis failas)
+--- MDT žemėlapis — pilna sala, HD satelitas (2048 PNG)
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
-    viewMin = { x = -1750.0, y = -2050.0 },
-    viewMax = { x = 1580.0, y = 480.0 },
+    viewMin = { x = -4000.0, y = -4000.0 },
+    viewMax = { x = 4500.0, y = 6625.0 },
     offsetX = 0.0,
     offsetY = 0.0,
-    imageFile = 'mdt/asset/gtav_satellite.jpg',
-    imageWidth = 1024,
-    imageHeight = 1280,
+    imageFile = 'mdt/asset/gtav_satellite_2048.png',
+    imageWidth = 2048,
+    imageHeight = 2560,
 }
 
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)
