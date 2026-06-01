@@ -197,9 +197,7 @@ CreateThread(function()
         SetBlipColour(b, blip.color or 48)
         SetBlipScale(b, blip.scale or 0.75)
         SetBlipAsShortRange(b, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(blip.label or 'Strip Club')
-        EndTextCommandSetBlipName(b)
+        exports['fivempro_fonts']:SetBlipName(b, blip.label or 'Strip Club')
     end
 
     local center = Config.Club and Config.Club.center or vector3(115.0, -1293.0, 28.27)

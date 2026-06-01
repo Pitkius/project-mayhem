@@ -109,9 +109,7 @@ CreateThread(function()
         SetBlipColour(b, mb.colour or 47)
         SetBlipScale(b, mb.scale or 0.85)
         SetBlipAsShortRange(b, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(mb.label or 'Karjeras')
-        EndTextCommandSetBlipName(b)
+        exports['fivempro_fonts']:SetBlipName(b, mb.label or 'Karjeras')
     end
 
     local pb = Config.Blips.process
@@ -122,9 +120,7 @@ CreateThread(function()
         SetBlipColour(b, pb.colour or 47)
         SetBlipScale(b, pb.scale or 0.82)
         SetBlipAsShortRange(b, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(pb.label or 'Perdirbimas')
-        EndTextCommandSetBlipName(b)
+        exports['fivempro_fonts']:SetBlipName(b, pb.label or 'Perdirbimas')
     end
 
     local sb = Config.Blips.sell
@@ -135,9 +131,7 @@ CreateThread(function()
         SetBlipColour(b, sb.colour or 2)
         SetBlipScale(b, sb.scale or 0.82)
         SetBlipAsShortRange(b, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(sb.label or 'Supirkimas')
-        EndTextCommandSetBlipName(b)
+        exports['fivempro_fonts']:SetBlipName(b, sb.label or 'Supirkimas')
     end
 end)
 

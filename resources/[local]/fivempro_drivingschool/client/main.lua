@@ -29,9 +29,7 @@ local function createBlip()
     SetBlipScale(blip, cfg.scale or 0.85)
     SetBlipColour(blip, cfg.colour or 3)
     SetBlipAsShortRange(blip, true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(cfg.label or 'Vairavimo mokykla')
-    EndTextCommandSetBlipName(blip)
+    exports['fivempro_fonts']:SetBlipName(blip, cfg.label or 'Vairavimo mokykla')
 end
 
 local function spawnSchoolPed()
@@ -109,9 +107,7 @@ local function updateCheckpointBlip()
     SetBlipColour(blip, 5)
     SetBlipRoute(blip, true)
     SetBlipRouteColour(blip, 5)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(('Egzaminas — taškas %s/%s'):format(idx, #Config.RouteCheckpoints))
-    EndTextCommandSetBlipName(blip)
+    exports['fivempro_fonts']:SetBlipName(blip, ('Egzaminas — taškas %s/%s'):format(idx, #Config.RouteCheckpoints))
     practicalState.blip = blip
 end
 

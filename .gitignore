@@ -30,3 +30,6 @@ Thumbs.db
 
 # Preserve existing ignore
 citizen/system_resources/
+
+# Vietinis šrifto konvertavimas (GFX build)
+_font_build/

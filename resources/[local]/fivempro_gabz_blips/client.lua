@@ -24,9 +24,7 @@ local function createBlip(entry)
     SetBlipScale(b, entry.scale or Config.DefaultScale or 0.75)
     SetBlipColour(b, entry.color or 0)
     SetBlipAsShortRange(b, entry.shortRange ~= false and Config.ShortRange ~= false)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(entry.label or entry.resource or 'MLO')
-    EndTextCommandSetBlipName(b)
+    exports['fivempro_fonts']:SetBlipName(b, entry.label or entry.resource or 'MLO')
 end
 
 CreateThread(function()

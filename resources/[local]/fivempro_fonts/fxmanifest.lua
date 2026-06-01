@@ -3,13 +3,16 @@ game 'gta5'
 lua54 'yes'
 
 name 'fivempro_fonts'
-description 'Lietuviški Noto Sans + vietinis Font Awesome NUI'
-version '1.2.1'
+description 'Lietuviški Noto Sans + vietinis Font Awesome NUI + žemėlapio blipų šriftas'
+version '1.3.0'
+
+client_script 'client/main.lua'
 
 files {
     'html/fonts/*.ttf',
     'html/lietuva.css',
     'html/icons.css',
+    'html/ui.css',
     'html/vendor/fontawesome/css/all.min.css',
     'html/vendor/fontawesome/webfonts/*.woff2',
 }

@@ -182,9 +182,7 @@ CreateThread(function()
         SetBlipScale(blip, 0.85)
         SetBlipColour(blip, 2)
         SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName('Bankas')
-        EndTextCommandSetBlipName(blip)
+        exports['fivempro_fonts']:SetBlipName(blip, 'Bankas')
     end
 end)
 

@@ -388,9 +388,7 @@ CreateThread(function()
         SetBlipScale(blip, Config.Kma.blipScale or 0.9)
         SetBlipColour(blip, Config.Kma.blipColor or 1)
         SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(loc.label or Config.Kma.blipLabel or 'KMA')
-        EndTextCommandSetBlipName(blip)
+        exports['fivempro_fonts']:SetBlipName(blip, loc.label or Config.Kma.blipLabel or 'KMA')
         local cat = Config.Kma.mapBlipCategory
         if cat and cat > 0 then
             SetBlipCategory(blip, cat)

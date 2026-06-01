@@ -610,9 +610,7 @@ CreateThread(function()
     SetBlipScale(blip, DEALERSHIP_BLIP_SCALE)
     SetBlipColour(blip, DEALERSHIP_BLIP_COLOR)
     SetBlipAsShortRange(blip, true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(Config.Dealership.label)
-    EndTextCommandSetBlipName(blip)
+    exports['fivempro_fonts']:SetBlipName(blip, Config.Dealership.label)
 
     local size = Config.Dealership.targetSize
     exports['qb-target']:AddBoxZone('fivempro_dealership_office', pos, size.x, size.y, {

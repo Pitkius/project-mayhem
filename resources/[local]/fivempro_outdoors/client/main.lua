@@ -237,9 +237,7 @@ CreateThread(function()
     SetBlipColour(blip, b.colour)
     SetBlipScale(blip, b.scale)
     SetBlipAsShortRange(blip, true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(b.label)
-    EndTextCommandSetBlipName(blip)
+    exports['fivempro_fonts']:SetBlipName(blip, b.label)
 
     if shopLoc and shopLoc.blip then
         local sb = shopLoc.blip
@@ -248,9 +246,7 @@ CreateThread(function()
         SetBlipColour(shopBlip, sb.colour)
         SetBlipScale(shopBlip, sb.scale)
         SetBlipAsShortRange(shopBlip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(sb.label)
-        EndTextCommandSetBlipName(shopBlip)
+        exports['fivempro_fonts']:SetBlipName(shopBlip, sb.label)
     end
 
     for _, z in ipairs(Config.FishingZones) do
@@ -260,9 +256,7 @@ CreateThread(function()
         SetBlipColour(bl, fb.colour)
         SetBlipScale(bl, fb.scale)
         SetBlipAsShortRange(bl, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(z.label or fb.label)
-        EndTextCommandSetBlipName(bl)
+        exports['fivempro_fonts']:SetBlipName(bl, z.label or fb.label)
     end
 
     for _, z in ipairs(Config.HuntingZones) do
@@ -272,9 +266,7 @@ CreateThread(function()
         SetBlipColour(bl, hb.colour)
         SetBlipScale(bl, hb.scale)
         SetBlipAsShortRange(bl, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(z.label or hb.label)
-        EndTextCommandSetBlipName(bl)
+        exports['fivempro_fonts']:SetBlipName(bl, z.label or hb.label)
     end
 
     while true do

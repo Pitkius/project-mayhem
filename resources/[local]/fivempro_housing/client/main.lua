@@ -231,9 +231,7 @@ CreateThread(function()
         SetBlipColour(agencyBlip, agency.blip.color or 2)
         SetBlipScale(agencyBlip, agency.blip.scale or 0.85)
         SetBlipAsShortRange(agencyBlip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(agency.label or 'Dynasty 8')
-        EndTextCommandSetBlipName(agencyBlip)
+        exports['fivempro_fonts']:SetBlipName(agencyBlip, agency.label or 'Dynasty 8')
     end
 
     QBCore.Functions.TriggerCallback('fivempro_housing:server:getOwnership', function(data)

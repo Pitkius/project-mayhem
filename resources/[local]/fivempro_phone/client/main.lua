@@ -429,9 +429,7 @@ RegisterNetEvent('fivempro_phone:client:serviceDispatch', function(data)
         SetBlipColour(blip, 5)
     end
     SetBlipFlashes(blip, true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(data.title or 'Skubus iškvietimas')
-    EndTextCommandSetBlipName(blip)
+    exports['fivempro_fonts']:SetBlipName(blip, data.title or 'Skubus iškvietimas')
     QBCore.Functions.Notify(data.title or 'Skubus iškvietimas', 'primary', 7500)
     local dur = tonumber(data.duration) or 120000
     SetTimeout(dur, function()

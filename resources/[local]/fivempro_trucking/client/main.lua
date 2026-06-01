@@ -18,9 +18,7 @@ local function setMissionBlip(coords, label, route)
     SetBlipColour(missionBlip, 47)
     SetBlipScale(missionBlip, 0.9)
     SetBlipRoute(missionBlip, route == true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(label or 'Kontraktas')
-    EndTextCommandSetBlipName(missionBlip)
+    exports['fivempro_fonts']:SetBlipName(missionBlip, label or 'Kontraktas')
 end
 
 local function isAllowedTruck()
@@ -209,9 +207,7 @@ CreateThread(function()
             SetBlipColour(b, term.blip.color or 47)
             SetBlipScale(b, term.blip.scale or 0.8)
             SetBlipAsShortRange(b, true)
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentSubstringPlayerName(term.blip.label or 'TruckNet')
-            EndTextCommandSetBlipName(b)
+            exports['fivempro_fonts']:SetBlipName(b, term.blip.label or 'TruckNet')
         end
     end
 

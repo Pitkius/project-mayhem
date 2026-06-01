@@ -17,9 +17,7 @@ local function setMissionBlip(coords, label)
     SetBlipSprite(missionBlip, 1)
     SetBlipColour(missionBlip, 27)
     SetBlipRoute(missionBlip, true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(label or 'Misija')
-    EndTextCommandSetBlipName(missionBlip)
+    exports['fivempro_fonts']:SetBlipName(missionBlip, label or 'Misija')
 end
 
 local function getCurrentTurfId()

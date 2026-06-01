@@ -422,9 +422,7 @@ CreateThread(function()
             SetBlipScale(b, Config.BlipScale or 0.85)
             SetBlipColour(b, Config.BlipColour or 38)
             SetBlipAsShortRange(b, true)
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentSubstringPlayerName(st.label or 'Policija')
-            EndTextCommandSetBlipName(b)
+            exports['fivempro_fonts']:SetBlipName(b, st.label or 'Policija')
         end
         if Config.ShowHelipadBlip and st.heliGarage and st.heliGarage.coords then
             local h = st.heliGarage.coords
@@ -434,9 +432,7 @@ CreateThread(function()
             SetBlipScale(bh, Config.HelipadBlipScale or 0.9)
             SetBlipColour(bh, Config.BlipColour or 38)
             SetBlipAsShortRange(bh, true)
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentSubstringPlayerName((st.label or 'PD') .. ' – helipadas')
-            EndTextCommandSetBlipName(bh)
+            exports['fivempro_fonts']:SetBlipName(bh, (st.label or 'PD') .. ' – helipadas')
         end
     end
 end)

@@ -545,9 +545,7 @@ local function createGarageMapBlips()
         SetBlipScale(blip, GARAGE_SCALE)
         SetBlipColour(blip, GARAGE_COLOR)
         SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(Config.GarageMapBlipLabel or 'Garažai')
-        EndTextCommandSetBlipName(blip)
+        exports['fivempro_fonts']:SetBlipName(blip, Config.GarageMapBlipLabel or 'Garažai')
         local cat = Config.GarageMapBlipCategory
         if cat and cat > 0 then
             SetBlipCategory(blip, cat)
@@ -563,9 +561,7 @@ local function createGarageMapBlips()
             SetBlipScale(blip, GARAGE_SCALE)
             SetBlipColour(blip, GARAGE_COLOR)
             SetBlipAsShortRange(blip, true)
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentSubstringPlayerName(garage.label)
-            EndTextCommandSetBlipName(blip)
+            exports['fivempro_fonts']:SetBlipName(blip, garage.label)
             local cat = Config.GarageMapBlipCategory
             if cat and cat > 0 then
                 SetBlipCategory(blip, cat)

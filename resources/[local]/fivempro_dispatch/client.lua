@@ -49,9 +49,7 @@ local function syncUnitBlips()
             end
             ShowHeadingIndicatorOnBlip(b, true)
             SetBlipRotation(b, math.floor((u.heading or 0.0) + 0.5))
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentSubstringPlayerName(('%s %s'):format(u.callsign ~= '' and ('[' .. u.callsign .. ']') or '', u.name or 'Pareigūnas'))
-            EndTextCommandSetBlipName(b)
+            exports['fivempro_fonts']:SetBlipName(b, ('%s %s'):format(u.callsign ~= '' and ('[' .. u.callsign .. ']') or '', u.name or 'Pareigūnas'))
         end
     end
     for src, b in pairs(blips) do
@@ -86,9 +84,7 @@ RegisterNetEvent('fivempro_dispatch:client:update', function(payload)
             SetBlipColour(b, 1)
             SetBlipScale(b, 1.0)
             SetBlipAsShortRange(b, false)
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentSubstringPlayerName(c.callTypeLabel or 'Dispatch')
-            EndTextCommandSetBlipName(b)
+            exports['fivempro_fonts']:SetBlipName(b, c.callTypeLabel or 'Dispatch')
             SetTimeout(90000, function()
                 if DoesBlipExist(b) then RemoveBlip(b) end
             end)
@@ -105,9 +101,7 @@ RegisterNetEvent('fivempro_dispatch:client:panic', function(data)
     SetBlipColour(b, 1)
     SetBlipScale(b, 1.25)
     SetBlipFlashes(b, true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName('PANIC ALERT')
-    EndTextCommandSetBlipName(b)
+    exports['fivempro_fonts']:SetBlipName(b, 'PANIC ALERT')
     if data and data.callId then
         panicBlips[tostring(data.callId)] = b
     end

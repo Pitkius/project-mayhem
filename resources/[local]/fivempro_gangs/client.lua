@@ -371,9 +371,7 @@ CreateThread(function()
         SetBlipScale(b, v.blip.scale or 0.8)
         SetBlipColour(b, v.blip.color or 1)
         SetBlipAsShortRange(b, v.blip.shortRange ~= false)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(v.blip.label or 'Gang Tablet NPC')
-        EndTextCommandSetBlipName(b)
+        exports['fivempro_fonts']:SetBlipName(b, v.blip.label or 'Gang Tablet NPC')
     end
 
     local model = joaat(v.model or 'g_m_y_lost_01')

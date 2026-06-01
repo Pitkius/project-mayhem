@@ -165,9 +165,7 @@ CreateThread(function()
             SetBlipScale(mark, bl.scale)
             SetBlipColour(mark, bl.colour)
             SetBlipAsShortRange(mark, true)
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentSubstringPlayerName(st.label or bl.label)
-            EndTextCommandSetBlipName(mark)
+            exports['fivempro_fonts']:SetBlipName(mark, st.label or bl.label)
         end
     end
 end)

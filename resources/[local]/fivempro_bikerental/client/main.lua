@@ -112,9 +112,7 @@ CreateThread(function()
         SetBlipColour(blip, blipCfg.colour or 2)
         SetBlipScale(blip, blipCfg.scale or 0.75)
         SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(blipCfg.label or 'Dviračių nuoma')
-        EndTextCommandSetBlipName(blip)
+        exports['fivempro_fonts']:SetBlipName(blip, blipCfg.label or 'Dviračių nuoma')
     end
 end)
 

@@ -99,9 +99,7 @@ local function createFuelBlips()
         SetBlipColour(blip, Config.BlipColor or 2)
         SetBlipDisplay(blip, 4)
         SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(Config.BlipLabel or 'Degalinė')
-        EndTextCommandSetBlipName(blip)
+        exports['fivempro_fonts']:SetBlipName(blip, Config.BlipLabel or 'Degalinė')
     end
 end
 

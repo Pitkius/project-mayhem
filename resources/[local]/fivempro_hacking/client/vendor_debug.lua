@@ -18,9 +18,7 @@ local function createBlip()
     SetBlipScale(debugBlip, bl.scale or 0.88)
     SetBlipColour(debugBlip, bl.colour or 1)
     SetBlipAsShortRange(debugBlip, true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(bl.label or 'TEST: Heist įrankiai')
-    EndTextCommandSetBlipName(debugBlip)
+    exports['fivempro_fonts']:SetBlipName(debugBlip, bl.label or 'TEST: Heist įrankiai')
 end
 
 local function spawnDebugVendor()

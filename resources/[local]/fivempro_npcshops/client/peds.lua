@@ -22,9 +22,7 @@ local function createBlip(coords, blipCfg)
     SetBlipScale(blip, blipCfg.scale or 0.75)
     SetBlipColour(blip, blipCfg.color or 0)
     SetBlipAsShortRange(blip, true)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(blipCfg.label or 'Parduotuvė')
-    EndTextCommandSetBlipName(blip)
+    exports['fivempro_fonts']:SetBlipName(blip, blipCfg.label or 'Parduotuvė')
     spawnedBlips[#spawnedBlips + 1] = blip
 end
 

@@ -4,7 +4,7 @@ const regTest = new RegExp(re, "i");
 document.addEventListener("DOMContentLoaded", () => {
     const viewmodel = new Vue({
         el: "#app",
-        vuetify: new Vuetify({ theme: { dark: true } }),
+        vuetify: new Vuetify({ theme: { dark: true }, icons: { iconfont: "fa" } }),
         data: {
             characters: [],
             chardata: {},
