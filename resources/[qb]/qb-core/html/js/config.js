@@ -9,19 +9,19 @@ const defaultConfig = {
     VariantDefinitions: {
         success: {
             classes: "success",
-            icon: "done",
+            icon: "fas fa-circle-check",
         },
         primary: {
             classes: "primary",
-            icon: "info",
+            icon: "fas fa-circle-info",
         },
         error: {
             classes: "error",
-            icon: "dangerous",
+            icon: "fas fa-triangle-exclamation",
         },
         police: {
             classes: "police",
-            icon: "local_police",
+            icon: "fas fa-shield-halved",
         },
         ambulance: {
             classes: "ambulance",

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LTPD MDT</title>
   <link rel="stylesheet" href="nui://fivempro_fonts/html/lietuva.css" />
+  <link rel="stylesheet" href="nui://fivempro_fonts/html/icons.css" />
   <link rel="stylesheet" href="vendor/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -13,7 +14,7 @@
     <header class="top">
       <div class="brand">LTPD <span>MDT</span></div>
       <div class="head-actions row">
-        <button type="button" id="btnDock" class="btn" title="Perkelti į kampą (galima tempti)">⊟ Kampas</button>
+        <button type="button" id="btnDock" class="btn" title="Perkelti į kampą (galima tempti)">Kampas</button>
         <button type="button" id="btnClose" class="btn danger">Uždaryti (ESC)</button>
       </div>
     </header>
@@ -92,10 +93,10 @@
             <div class="gps-map-toolbar">
               <button type="button" class="gps-tool-btn" id="dispatchZoomIn" title="Priartinti">+</button>
               <button type="button" class="gps-tool-btn" id="dispatchZoomOut" title="Nutolinti">−</button>
-              <button type="button" class="gps-tool-btn" id="gpsResetView" title="Atstatyti vaizdą">⟲</button>
-              <button type="button" class="gps-tool-btn" id="gpsCenterSelf" title="Centruoti ant manęs">◎</button>
-              <button type="button" class="gps-tool-btn" id="gpsCenterCall" title="Centruoti ant iškvietimo">⚠</button>
-              <button type="button" class="gps-tool-btn gps-tool-refresh" id="refreshDispatchMap" title="Atnaujinti">↻</button>
+              <button type="button" class="gps-tool-btn" id="gpsResetView" title="Atstatyti vaizdą">R</button>
+              <button type="button" class="gps-tool-btn" id="gpsCenterSelf" title="Centruoti ant manęs">Aš</button>
+              <button type="button" class="gps-tool-btn" id="gpsCenterCall" title="Centruoti ant iškvietimo">!</button>
+              <button type="button" class="gps-tool-btn gps-tool-refresh" id="refreshDispatchMap" title="Atnaujinti">&#8635;</button>
             </div>
             <div class="gps-map-legend">
               <span class="leg-item"><i class="leg-dot officer"></i> Pareigūnas</span>
@@ -132,8 +133,8 @@
           </select>
           <input type="text" id="cctvSearch" placeholder="Ieškoti vietos…" />
           <button type="button" id="cctvRefresh" class="btn">Atnaujinti</button>
-          <button type="button" id="cctvBackBtn" class="btn hidden">← Vietos</button>
-          <button type="button" id="cctvPrevCam" class="btn hidden">‹ Kamera</button>
+          <button type="button" id="cctvBackBtn" class="btn hidden">&lt; Vietos</button>
+          <button type="button" id="cctvPrevCam" class="btn hidden">&lt; Kamera</button>
           <button type="button" id="cctvNextCam" class="btn hidden">Kamera ›</button>
           <button type="button" id="cctvWatchBtn" class="btn primary">Stebėti LIVE</button>
           <button type="button" id="cctvStopBtn" class="btn danger">Stabdyti</button>

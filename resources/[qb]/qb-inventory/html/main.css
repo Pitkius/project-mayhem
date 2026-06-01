@@ -70,9 +70,7 @@ body {
     margin: 0;
 }
 
-div {
-    font-family: var(--font-primary);
-}
+/* Tekstas paveldi iš body (lietuva.css); ikonoms <i class="fas"> neperrašome */
 
 ::-webkit-scrollbar {
     display: none;

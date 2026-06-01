@@ -61,5 +61,5 @@ const app = Vue.createApp({
     },
 });
 
-app.use(Quasar, { config: {} });
+app.use(Quasar, { config: {}, iconSet: Quasar.iconSet.fontawesomeV6 });
 app.mount("#q-app");

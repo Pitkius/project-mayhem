@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Phone</title>
   <link rel="stylesheet" href="nui://fivempro_fonts/html/lietuva.css" />
+  <link rel="stylesheet" href="nui://fivempro_fonts/html/icons.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -26,7 +27,7 @@
         <div class="lock-notifs" id="lockNotifs"></div>
         <div class="lock-unlock-zone" id="lockUnlockZone" aria-label="Braukite aukštyn atrakinti">
           <div class="lock-hint">Braukite aukštyn atrakinti</div>
-          <span class="lock-chevron" aria-hidden="true">⌃</span>
+          <span class="lock-chevron" aria-hidden="true">^</span>
           <div class="lock-bar" id="lockBar"></div>
         </div>
       </section>
@@ -54,7 +55,7 @@
 
       <section id="appStoreScreen" class="screen hidden app-screen-layer">
         <header class="app-nav glass">
-          <button type="button" data-back-home="1" class="nav-back">‹</button>
+          <button type="button" data-back-home="1" class="nav-back">&lt;</button>
           <span>App Store</span>
           <span class="nav-spacer"></span>
         </header>
@@ -63,7 +64,7 @@
 
       <section id="appScreen" class="screen hidden app-screen-layer">
         <header class="app-nav glass">
-          <button type="button" data-back-home="1" class="nav-back">‹</button>
+          <button type="button" data-back-home="1" class="nav-back">&lt;</button>
           <span id="appTitle">Programėlė</span>
           <button type="button" id="openStore" class="nav-link">Store</button>
         </header>
@@ -72,7 +73,7 @@
 
       <div id="callOverlay" class="call-overlay hidden" aria-hidden="true">
         <div class="call-sheet">
-          <div class="call-avatar" aria-hidden="true">📶</div>
+          <div class="call-avatar" aria-hidden="true">Tel</div>
           <div id="callOverlayTitle" class="call-title">Įeinantis skambutis</div>
           <div id="callOverlaySub" class="call-sub">—</div>
           <div class="call-actions">

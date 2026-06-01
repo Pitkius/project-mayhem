@@ -340,7 +340,7 @@ function setTabletDocked(docked, skipPost) {
   tabletDocked = !!docked;
   tablet.classList.toggle("is-docked", tabletDocked);
   const btn = document.getElementById("btnDock");
-  if (btn) btn.textContent = tabletDocked ? "⊞ Visas" : "⊟ Kampas";
+  if (btn) btn.textContent = tabletDocked ? "Visas" : "Kampas";
   if (!skipPost) post("gangs:setDocked", { docked: tabletDocked });
   if (!tabletDocked && tabletBezel) {
     tabletBezel.style.left = "";

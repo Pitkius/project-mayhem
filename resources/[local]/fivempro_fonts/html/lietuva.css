@@ -1,4 +1,4 @@
-/* Noto Sans — pilnas lietuviškų raidžių (ą č ę ė į š ų ū ž) palaikymas, be Google CDN */
+/* Noto Sans — lietuviškos raidės; NE taikoma ikonų šriftams (Font Awesome ir pan.) */
 @font-face {
     font-family: "Noto Sans LT";
     font-style: normal;
@@ -25,17 +25,54 @@
 
 :root {
     --font-lt: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
+    --font-emoji: "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
 }
 
 html,
-body,
-* {
-    font-family: var(--font-lt);
+body {
+    font-family: var(--font-lt), var(--font-emoji);
 }
 
+p,
+span,
+label,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+li,
+td,
+th,
 input,
 textarea,
 button,
-select {
-    font-family: var(--font-lt);
+select,
+option,
+a,
+div {
+    font-family: inherit;
+}
+
+/* Font Awesome / ikonos — neperrašyti Noto (kritiška inventoriui, qb-target) */
+i,
+.fa,
+.fas,
+.far,
+.fab,
+.fal,
+.fad,
+.fa-solid,
+.fa-regular,
+.fa-brands,
+[class^="fa-"],
+[class*=" fa-"] {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", var(--font-emoji) !important;
+}
+
+.fab,
+.fa-brands,
+[class^="fa-brands"] {
+    font-family: "Font Awesome 6 Brands", var(--font-emoji) !important;
 }

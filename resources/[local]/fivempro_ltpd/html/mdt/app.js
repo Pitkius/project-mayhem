@@ -745,7 +745,7 @@ function setMdtDocked(docked, skipPost) {
   mdtDocked = !!docked;
   app.classList.toggle('is-docked', mdtDocked);
   const btn = document.getElementById('btnDock');
-  if (btn) btn.textContent = mdtDocked ? '⊞ Visas' : '⊟ Kampas';
+  if (btn) btn.textContent = mdtDocked ? 'Visas' : 'Kampas';
   if (!skipPost) nuiPost('mdtSetDocked', { docked: mdtDocked });
   if (!mdtDocked) {
     app.style.left = '';
