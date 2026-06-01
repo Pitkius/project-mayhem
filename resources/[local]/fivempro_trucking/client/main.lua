@@ -93,6 +93,13 @@ end)
 
 RegisterNUICallback('trucking:register', function(_, cb)
     QBCore.Functions.TriggerCallback('fivempro_trucking:server:register', function(res)
+        if res and res.ok then
+            QBCore.Functions.Notify('Registracija sėkminga! TruckNet Level 1.', 'success')
+        elseif res and res.reason then
+            QBCore.Functions.Notify(res.reason, 'error')
+        else
+            QBCore.Functions.Notify('Registracija nepavyko.', 'error')
+        end
         cb(res or { ok = false })
     end)
 end)
@@ -125,8 +132,76 @@ RegisterNUICallback('trucking:cancelDelivery', function(_, cb)
     end)
 end)
 
+local function registerAtTerminal()
+    QBCore.Functions.TriggerCallback('fivempro_trucking:server:register', function(res)
+        if res and res.ok then
+            QBCore.Functions.Notify('Registracija sėkminga! TruckNet Level 1.', 'success')
+            openUI('full')
+        else
+            QBCore.Functions.Notify((res and res.reason) or 'Klaida.', 'error')
+        end
+    end)
+end
+
+local function openTerminalMenu()
+    if GetResourceState('qb-menu') == 'started' then
+        exports['qb-menu']:openMenu({
+            { header = 'TruckNet Logistics', isMenuHeader = true },
+            {
+                header = 'Atidaryti panelę',
+                txt = 'Kontraktai, įmonė, parkas',
+                params = { event = 'fivempro_trucking:client:openUI', args = { mode = 'full' } },
+            },
+            {
+                header = 'Registruotis vairuotoju',
+                txt = 'Freelance sunkvežimio vairuotojas',
+                params = { event = 'fivempro_trucking:client:registerAtTerminal' },
+            },
+            { header = 'Uždaryti', params = { event = 'qb-menu:client:closeMenu' } },
+        })
+        return
+    end
+    openUI('full')
+end
+
+RegisterNetEvent('fivempro_trucking:client:openUI', function(data)
+    openUI(type(data) == 'table' and data.mode or 'full')
+end)
+
+RegisterNetEvent('fivempro_trucking:client:registerAtTerminal', function()
+    registerAtTerminal()
+end)
+
+local function setupTargetZones()
+    if GetResourceState('qb-target') ~= 'started' then return false end
+    for _, term in ipairs(Config.RegistrationTerminals or {}) do
+        exports['qb-target']:AddBoxZone(
+            'trucknet_' .. term.id,
+            term.coords,
+            2.5, 2.5,
+            {
+                name = 'trucknet_' .. term.id,
+                heading = term.heading or 0.0,
+                minZ = term.coords.z - 1.2,
+                maxZ = term.coords.z + 2.2,
+                debugPoly = false,
+            },
+            {
+                options = {
+                    {
+                        icon = 'fas fa-truck',
+                        label = 'TruckNet Logistics',
+                        action = openTerminalMenu,
+                    },
+                },
+                distance = 3.0,
+            }
+        )
+    end
+    return true
+end
+
 CreateThread(function()
-    if GetResourceState('qb-target') ~= 'started' then return end
     for _, term in ipairs(Config.RegistrationTerminals or {}) do
         if term.blip then
             local b = AddBlipForCoord(term.coords.x, term.coords.y, term.coords.z)
@@ -138,44 +213,37 @@ CreateThread(function()
             AddTextComponentSubstringPlayerName(term.blip.label or 'TruckNet')
             EndTextCommandSetBlipName(b)
         end
-        exports['qb-target']:AddBoxZone(
-            'trucknet_' .. term.id,
-            term.coords,
-            2.2, 2.2,
-            {
-                name = 'trucknet_' .. term.id,
-                heading = term.heading or 0.0,
-                minZ = term.coords.z - 1.0,
-                maxZ = term.coords.z + 2.0,
-                debugPoly = false,
-            },
-            {
-                options = {
-                    {
-                        icon = 'fas fa-truck',
-                        label = 'Atidaryti TruckNet Logistics',
-                        action = function()
-                            openUI('full')
-                        end,
-                    },
-                    {
-                        icon = 'fas fa-id-card',
-                        label = 'Registruotis vairuotoju',
-                        action = function()
-                            QBCore.Functions.TriggerCallback('fivempro_trucking:server:register', function(res)
-                                if res and res.ok then
-                                    QBCore.Functions.Notify('Registracija sėkminga! TruckNet Level 1.', 'success')
-                                    openUI('full')
-                                else
-                                    QBCore.Functions.Notify((res and res.reason) or 'Klaida.', 'error')
-                                end
-                            end)
-                        end,
-                    },
-                },
-                distance = 2.5,
-            }
-        )
+    end
+
+    local waited = 0
+    while not setupTargetZones() and waited < 60 do
+        Wait(1000)
+        waited = waited + 1
+    end
+end)
+
+CreateThread(function()
+    while true do
+        local sleep = 1200
+        local ped = PlayerPedId()
+        local pos = GetEntityCoords(ped)
+        for _, term in ipairs(Config.RegistrationTerminals or {}) do
+            local c = term.coords
+            local dist = #(pos - vector3(c.x, c.y, c.z))
+            if dist < 25.0 then
+                sleep = 0
+                DrawMarker(1, c.x, c.y, c.z - 1.0, 0, 0, 0, 0, 0, 0, 2.2, 2.2, 1.0, 251, 146, 60, 140, false, false, 2, false, nil, nil, false)
+                if dist < 2.8 then
+                    BeginTextCommandDisplayHelp('STRING')
+                    AddTextComponentSubstringPlayerName('~INPUT_CONTEXT~ TruckNet Logistics')
+                    EndTextCommandDisplayHelp(0, false, true, -1)
+                    if IsControlJustReleased(0, 38) then
+                        openTerminalMenu()
+                    end
+                end
+            end
+        end
+        Wait(sleep)
     end
 end)
 

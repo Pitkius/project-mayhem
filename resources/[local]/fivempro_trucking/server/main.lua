@@ -323,20 +323,26 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:getDashboard', functio
 end)
 
 QBCore.Functions.CreateCallback('fivempro_trucking:server:register', function(src, cb)
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return cb({ ok = false, reason = 'Žaidėjas nerastas.' }) end
-    local citizenid = Player.PlayerData.citizenid
-    local row = ensureProfile(citizenid)
-    if row.registered == 1 then
-        return cb({ ok = false, reason = 'Jau registruotas.' })
+    local ok, err = pcall(function()
+        local Player = QBCore.Functions.GetPlayer(src)
+        if not Player then return cb({ ok = false, reason = 'Žaidėjas nerastas.' }) end
+        local citizenid = Player.PlayerData.citizenid
+        local row = ensureProfile(citizenid)
+        if row.registered == 1 then
+            return cb({ ok = false, reason = 'Jau registruotas.' })
+        end
+        local cost = Config.RegisterCost or 0
+        if cost > 0 and Player.PlayerData.money.bank < cost then
+            return cb({ ok = false, reason = 'Nepakanka pinigų.' })
+        end
+        if cost > 0 then Player.Functions.RemoveMoney('bank', cost, 'trucker-register') end
+        saveProfile(citizenid, { registered = 1 })
+        cb({ ok = true, dashboard = buildDashboard(src) })
+    end)
+    if not ok then
+        print(('[fivempro_trucking] register error: %s'):format(tostring(err)))
+        cb({ ok = false, reason = 'Serverio klaida (DB). Paleisk fivempro_trucking.sql arba restart resursą.' })
     end
-    local cost = Config.RegisterCost or 0
-    if cost > 0 and Player.PlayerData.money.bank < cost then
-        return cb({ ok = false, reason = 'Nepakanka pinigų.' })
-    end
-    if cost > 0 then Player.Functions.RemoveMoney('bank', cost, 'trucker-register') end
-    saveProfile(citizenid, { registered = 1 })
-    cb({ ok = true, dashboard = buildDashboard(src) })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_trucking:server:createCompany', function(src, cb, companyName)

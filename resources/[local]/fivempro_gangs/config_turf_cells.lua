@@ -1,28 +1,68 @@
---- Maži turf langeliai per visą GTA 5 žemėlapį (~350+). Kiekvienas = kelios gatvės.
+--- Turf langeliai tik Los Santos miesto rajonuose (gaujų zonos).
+--- Nėra: oro uostų, uostų, pramonės prie jūros, Blaine County, kalvų už miesto.
 local TurfCells = {}
 local turfIndex = 0
+
+--- Stačiakampiai, kur negalima turf (centroidas viduje = praleidžiama)
+local ExcludedZones = {
+    { minX = -1950.0, maxX = -380.0,  minY = -3250.0, maxY = -1500.0 }, -- LSIA + aplinkkeliai
+    { minX = -750.0,  maxX = 1350.0,  minY = -3450.0, maxY = -2420.0 }, -- Uostas, Terminal, Elysian
+    { minX = 520.0,   maxX = 1750.0,  minY = -2720.0, maxY = -2280.0 }, -- Cypress / pramonė prie vandens
+    { minX = -420.0,  maxX = 1520.0,  minY = 520.0,   maxY = 1500.0 },  -- Vinewood Hills / kalnai
+    { minX = -3200.0, maxX = -1550.0, minY = -250.0,  maxY = 2200.0 },  -- Chumash, Tongva, Banham
+    { minX = -2800.0, maxX = 5000.0,  minY = 1650.0,  maxY = 8000.0 },  -- Už LS (dykuma, Sandy, Paleto…)
+    { minX = 1550.0,  maxX = 5000.0,  minY = -1200.0, maxY = 8000.0 },  -- Rytai už miesto (Zancudo, dykuma)
+}
+
+--- Miesto ribos (turf centroidas turi būti viduje)
+local AllowedCity = {
+    minX = -1750.0,
+    maxX = 1580.0,
+    minY = -2050.0,
+    maxY = 480.0,
+}
+
+local function cellCenterInExcluded(cx, cy)
+    for _, z in ipairs(ExcludedZones) do
+        if cx >= z.minX and cx <= z.maxX and cy >= z.minY and cy <= z.maxY then
+            return true
+        end
+    end
+    return false
+end
+
+local function cellAllowed(minX, minY, maxX, maxY)
+    local cx = (minX + maxX) * 0.5
+    local cy = (minY + maxY) * 0.5
+    if cx < AllowedCity.minX or cx > AllowedCity.maxX then return false end
+    if cy < AllowedCity.minY or cy > AllowedCity.maxY then return false end
+    if cellCenterInExcluded(cx, cy) then return false end
+    return true
+end
 
 local function addBlock(district, anchorX, anchorY, cols, rows, cellW, cellH, baseZ)
     baseZ = baseZ or 30.0
     for row = 0, rows - 1 do
         for col = 0, cols - 1 do
-            turfIndex = turfIndex + 1
-            local id = ('turf_%03d'):format(turfIndex)
             local minX = anchorX + col * cellW
             local minY = anchorY + row * cellH
             local maxX = minX + cellW
             local maxY = minY + cellH
-            TurfCells[id] = {
-                label = district,
-                district = district,
-                minX = minX,
-                minY = minY,
-                maxX = maxX,
-                maxY = maxY,
-                center = vector3(minX + cellW * 0.5, minY + cellH * 0.5, baseZ),
-                radius = math.sqrt(cellW * cellW + cellH * cellH) * 0.5,
-                cell_num = turfIndex,
-            }
+            if cellAllowed(minX, minY, maxX, maxY) then
+                turfIndex = turfIndex + 1
+                local id = ('turf_%03d'):format(turfIndex)
+                TurfCells[id] = {
+                    label = district,
+                    district = district,
+                    minX = minX,
+                    minY = minY,
+                    maxX = maxX,
+                    maxY = maxY,
+                    center = vector3(minX + cellW * 0.5, minY + cellH * 0.5, baseZ),
+                    radius = math.sqrt(cellW * cellW + cellH * cellH) * 0.5,
+                    cell_num = turfIndex,
+                }
+            end
         end
     end
 end
@@ -38,30 +78,19 @@ addBlock('Chamberlain Hills', -280.0, -1700.0, 3, 4, 80.0, 76.0, 32.0)
 addBlock('Mission Row', 380.0, -1040.0, 3, 3, 88.0, 84.0, 30.0)
 addBlock('Textile City', 360.0, -880.0, 3, 3, 86.0, 82.0, 30.0)
 addBlock('Downtown LS', 80.0, -980.0, 4, 3, 95.0, 90.0, 35.0)
-addBlock('Cypress Flats', 880.0, -2580.0, 3, 3, 100.0, 95.0, 28.0)
-addBlock('El Burro Heights', 1480.0, -2180.0, 3, 3, 105.0, 100.0, 45.0)
 addBlock('Mirror Park', 1020.0, -580.0, 3, 4, 88.0, 84.0, 55.0)
+addBlock('El Burro Heights', 1480.0, -2180.0, 2, 2, 105.0, 100.0, 45.0)
+addBlock('Murrieta Heights', 1280.0, -1580.0, 3, 3, 92.0, 88.0, 38.0)
 
--- Vakarai
+-- Vakarai / centras
 addBlock('Little Seoul', -820.0, -980.0, 3, 3, 90.0, 86.0, 28.0)
 addBlock('Del Perro', -1580.0, -640.0, 3, 3, 92.0, 88.0, 32.0)
-addBlock('La Puerta', -1180.0, -1320.0, 3, 2, 95.0, 90.0, 12.0)
 addBlock('Vinewood', 280.0, 80.0, 3, 3, 100.0, 95.0, 70.0)
 addBlock('Rockford Hills', -780.0, -180.0, 2, 3, 95.0, 90.0, 45.0)
-
--- Uostas / pramonė
-addBlock('Terminal', 760.0, -2980.0, 3, 2, 110.0, 100.0, 8.0)
-addBlock('Docks', 180.0, -2780.0, 4, 2, 105.0, 98.0, 6.0)
 addBlock('La Mesa', 720.0, -1280.0, 3, 2, 92.0, 88.0, 30.0)
+addBlock('La Mesa East', 980.0, -1180.0, 3, 3, 88.0, 84.0, 32.0)
 
--- Blaine County
-addBlock('Sandy Shores', 1580.0, 3580.0, 3, 3, 120.0, 115.0, 35.0)
-addBlock('Harmony', 520.0, 2580.0, 2, 2, 115.0, 110.0, 42.0)
-addBlock('Grapeseed', 2280.0, 4780.0, 2, 3, 125.0, 120.0, 48.0)
-addBlock('Paleto Bay', -280.0, 6180.0, 3, 3, 130.0, 125.0, 32.0)
-addBlock('Chumash', -3280.0, 980.0, 2, 2, 120.0, 115.0, 12.0)
-
--- Papildomi LS rajonai (smulkus tinklelis)
+-- Miesto rajonai (be pakrantės uosto)
 addBlock('Vespucci', -1280.0, -1380.0, 4, 4, 72.0, 68.0, 8.0)
 addBlock('Vespucci Canals', -1180.0, -1180.0, 3, 3, 70.0, 66.0, 6.0)
 addBlock('Pillbox Hill', -280.0, -680.0, 3, 3, 78.0, 74.0, 38.0)
@@ -71,41 +100,14 @@ addBlock('Hawick', 180.0, -280.0, 3, 3, 72.0, 68.0, 45.0)
 addBlock('Richman', -1680.0, 120.0, 3, 3, 88.0, 84.0, 55.0)
 addBlock('West Vinewood', 120.0, 220.0, 4, 3, 82.0, 78.0, 62.0)
 addBlock('East Vinewood', 680.0, 280.0, 3, 3, 86.0, 82.0, 68.0)
-addBlock('Vinewood Hills', 420.0, 680.0, 4, 4, 90.0, 86.0, 95.0)
-addBlock('LS Airport', -1380.0, -2280.0, 4, 3, 95.0, 90.0, 14.0)
-addBlock('LSIA Terminal', -1080.0, -2680.0, 3, 2, 100.0, 95.0, 14.0)
 addBlock('Maze Bank', 120.0, -820.0, 2, 2, 80.0, 76.0, 32.0)
 addBlock('Legion Square', 180.0, -920.0, 2, 2, 78.0, 74.0, 30.0)
 addBlock('Pillbox South', -180.0, -920.0, 3, 2, 76.0, 72.0, 32.0)
-addBlock('La Mesa East', 980.0, -1180.0, 3, 3, 88.0, 84.0, 32.0)
-addBlock('Murrieta Heights', 1280.0, -1580.0, 3, 3, 92.0, 88.0, 38.0)
-addBlock('Cypress North', 680.0, -2380.0, 3, 2, 98.0, 92.0, 28.0)
-addBlock('Banning', -280.0, -2280.0, 3, 2, 95.0, 90.0, 12.0)
-addBlock('Elysian Island', 280.0, -3180.0, 3, 2, 105.0, 98.0, 8.0)
-
--- Blaine County / dykuma (daugiau zonų)
-addBlock('Grand Senora', 680.0, 1880.0, 4, 4, 115.0, 110.0, 45.0)
-addBlock('Route 68', 520.0, 2680.0, 3, 3, 118.0, 112.0, 42.0)
-addBlock('Alamo Sea West', 680.0, 3680.0, 3, 2, 120.0, 115.0, 35.0)
-addBlock('Alamo Sea East', 1380.0, 3680.0, 3, 2, 120.0, 115.0, 35.0)
-addBlock('Sandy North', 1680.0, 3980.0, 3, 2, 115.0, 110.0, 38.0)
-addBlock('Sandy South', 1380.0, 3180.0, 3, 3, 112.0, 108.0, 35.0)
-addBlock('Harmony East', 880.0, 2480.0, 3, 2, 110.0, 105.0, 42.0)
-addBlock('Stab City', 120.0, 3580.0, 2, 2, 105.0, 100.0, 32.0)
-addBlock('Grapeseed South', 1980.0, 4280.0, 2, 2, 120.0, 115.0, 45.0)
-addBlock('Mount Chiliad Foothills', 420.0, 5280.0, 3, 2, 125.0, 120.0, 55.0)
-addBlock('Paleto Forest', -680.0, 5480.0, 3, 2, 125.0, 120.0, 48.0)
-addBlock('Paleto South', -480.0, 5780.0, 2, 2, 120.0, 115.0, 35.0)
-addBlock('Procopio Beach', -680.0, 6480.0, 2, 2, 115.0, 110.0, 12.0)
-addBlock('Great Ocean Hwy', -2480.0, 2280.0, 3, 3, 120.0, 115.0, 25.0)
-addBlock('Banham Canyon', -2980.0, 480.0, 2, 2, 115.0, 110.0, 18.0)
-addBlock('Tongva Hills', -2280.0, 1280.0, 2, 3, 110.0, 105.0, 35.0)
-addBlock('Zancudo Approach', -2580.0, 2880.0, 2, 2, 115.0, 110.0, 32.0)
-addBlock('Fort Zancudo Edge', -2180.0, 3280.0, 2, 2, 110.0, 105.0, 28.0)
 
 Config.TurfCells = TurfCells
---- Senasis Config.Turfs API — naudoja tuos pačius mažus langelius
 Config.Turfs = TurfCells
+Config.TurfExcludedZones = ExcludedZones
+Config.TurfAllowedCity = AllowedCity
 
 --- Fiksuotos gaujų spalvos legendai (jei DB spalva nepriskirta)
 Config.FactionColors = {

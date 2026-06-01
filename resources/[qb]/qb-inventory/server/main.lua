@@ -216,92 +216,13 @@ RegisterNetEvent('qb-inventory:server:useItem', function(item)
         local canShoot = true
         TriggerClientEvent('qb-weapons:client:UseWeapon', src, itemData, canShoot)
         TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
-    elseif itemData.name == 'id_card' then
-        if not itemData.info then
-            TriggerClientEvent('QBCore:Notify', src, 'ID card is missing metadata.', 'error')
-            return
-        end
+    elseif itemData.name == 'id_card'
+        or itemData.name == 'driver_license'
+        or itemData.name == 'driving_license'
+        or itemData.name == 'fishing_license'
+        or itemData.name == 'hunting_license' then
         UseItem(itemData.name, src, itemData)
         TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
-        local info = itemData.info
-        local playerPed = GetPlayerPed(src)
-        local playerCoords = GetEntityCoords(playerPed)
-        local players = QBCore.Functions.GetPlayers()
-        local gender = info.gender == 0 and 'Male' or 'Female'
-        for _, v in pairs(players) do
-            local targetPed = GetPlayerPed(v)
-            local dist = #(playerCoords - GetEntityCoords(targetPed))
-            if dist < 3.0 then
-                TriggerClientEvent('chat:addMessage', v, {
-                    template = '<div class="chat-message advert" style="background: linear-gradient(to right, rgba(5, 5, 5, 0.6), #74807c); display: flex;"><div style="margin-right: 10px;"><i class="far fa-id-card" style="height: 100%;"></i><strong> {0}</strong><br> <strong>Civ ID:</strong> {1} <br><strong>First Name:</strong> {2} <br><strong>Last Name:</strong> {3} <br><strong>Birthdate:</strong> {4} <br><strong>Gender:</strong> {5} <br><strong>Nationality:</strong> {6}</div></div>',
-                    args = {
-                        'ID Card',
-                        info.citizenid,
-                        info.firstname,
-                        info.lastname,
-                        info.birthdate,
-                        gender,
-                        info.nationality
-                    }
-                })
-            end
-        end
-    elseif itemData.name == 'driver_license' then
-        if not itemData.info then
-            TriggerClientEvent('QBCore:Notify', src, 'Driver license is missing metadata.', 'error')
-            return
-        end
-        UseItem(itemData.name, src, itemData)
-        TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
-        local info = itemData.info
-        local playerPed = GetPlayerPed(src)
-        local playerCoords = GetEntityCoords(playerPed)
-        local players = QBCore.Functions.GetPlayers()
-        for _, v in pairs(players) do
-            local targetPed = GetPlayerPed(v)
-            local dist = #(playerCoords - GetEntityCoords(targetPed))
-            if dist < 3.0 then
-                TriggerClientEvent('chat:addMessage', v, {
-                    template = '<div class="chat-message advert" style="background: linear-gradient(to right, rgba(5, 5, 5, 0.6), #657175); display: flex;"><div style="margin-right: 10px;"><i class="far fa-id-card" style="height: 100%;"></i><strong> {0}</strong><br> <strong>First Name:</strong> {1} <br><strong>Last Name:</strong> {2} <br><strong>Birth Date:</strong> {3} <br><strong>Licenses:</strong> {4}</div></div>',
-                    args = {
-                        'Drivers License',
-                        info.firstname,
-                        info.lastname,
-                        info.birthdate,
-                        info.type
-                    }
-                }
-                )
-            end
-        end
-    elseif itemData.name == 'fishing_license' or itemData.name == 'hunting_license' then
-        if not itemData.info then
-            TriggerClientEvent('QBCore:Notify', src, 'Licencijoje trūksta duomenų.', 'error')
-            return
-        end
-        UseItem(itemData.name, src, itemData)
-        TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
-        local info = itemData.info
-        local title = itemData.name == 'fishing_license' and 'Žvejybos licencija' or 'Medžioklės licencija'
-        local playerPed = GetPlayerPed(src)
-        local playerCoords = GetEntityCoords(playerPed)
-        local players = QBCore.Functions.GetPlayers()
-        for _, v in pairs(players) do
-            local targetPed = GetPlayerPed(v)
-            local dist = #(playerCoords - GetEntityCoords(targetPed))
-            if dist < 3.0 then
-                TriggerClientEvent('chat:addMessage', v, {
-                    template = '<div class="chat-message advert" style="background: linear-gradient(to right, rgba(5, 5, 5, 0.6), #657175); display: flex;"><div style="margin-right: 10px;"><i class="far fa-id-card" style="height: 100%;"></i><strong> {0}</strong><br> <strong>Vardas:</strong> {1} <br><strong>Pavardė:</strong> {2} <br><strong>Gimimo data:</strong> {3} <br><strong>ID:</strong> {4}</div></div>',
-                    args = {
-                        title,
-                        info.firstname,
-                        info.lastname,
-                        info.birthdate,
-                        info.citizenid,
-                    }
-                })
-            end
-        end
     else
         UseItem(itemData.name, src, itemData)
         if not AmmoUseItems[itemData.name] then

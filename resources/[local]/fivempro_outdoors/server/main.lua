@@ -35,6 +35,15 @@ local function issueLicense(src, licenseItem, label)
         TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
         return
     end
+    local issued = os.date('%Y-%m-%d')
+    local expiry = os.date('%Y-%m-%d', os.time() + (730 * 24 * 60 * 60))
+    if licenseItem == 'fishing_license' then
+        Player.Functions.SetMetaData('fishing_license_issued', issued)
+        Player.Functions.SetMetaData('fishing_license_expiry', expiry)
+    else
+        Player.Functions.SetMetaData('hunting_license_issued', issued)
+        Player.Functions.SetMetaData('hunting_license_expiry', expiry)
+    end
     TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[licenseItem], 'add')
     TriggerClientEvent('QBCore:Notify', src, label .. ' išduota.', 'success')
 end
@@ -229,15 +238,6 @@ AddEventHandler('weaponDamageEvent', function(sender, data)
     if victimSrc and victimSrc > 0 then
         TriggerClientEvent('fivempro_outdoors:client:musketRagdoll', victimSrc)
     end
-end)
-
---- Licencijų naudojimas (rodyti ID)
-QBCore.Functions.CreateUseableItem('fishing_license', function(source, item)
-    TriggerClientEvent('fivempro_outdoors:client:showLicense', source, item.info, 'Žvejybos licencija')
-end)
-
-QBCore.Functions.CreateUseableItem('hunting_license', function(source, item)
-    TriggerClientEvent('fivempro_outdoors:client:showLicense', source, item.info, 'Medžioklės licencija')
 end)
 
 QBCore.Functions.CreateUseableItem('hunting_knife', function(source)

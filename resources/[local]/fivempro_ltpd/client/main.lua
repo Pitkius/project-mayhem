@@ -108,9 +108,13 @@ RegisterNUICallback('mdtSetDocked', function(data, cb)
     cb({ ok = true })
 end)
 
+local function nuiReply(cb, payload)
+    cb(payload or { ok = false })
+end
+
 RegisterNUICallback('searchPerson', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_ltpd:server:searchPerson', function(result)
-        cb(result or { ok = false })
+        nuiReply(cb, result)
     end, data and data.query)
 end)
 

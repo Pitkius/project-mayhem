@@ -152,6 +152,41 @@ div {
     justify-content: space-between;
 }
 
+/* Parduotuvė: keli daiktai vienoje kolonoje be tarpų */
+.item-grid.shop-stacked {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0;
+    justify-content: flex-start;
+}
+
+.item-grid.shop-stacked .item-slot {
+    width: 100%;
+    height: 9.2vh;
+    margin: 0;
+    border-radius: 0;
+}
+
+.item-grid.shop-stacked .item-slot:first-child {
+    border-top-left-radius: var(--radius-small);
+    border-top-right-radius: var(--radius-small);
+}
+
+.item-grid.shop-stacked .item-slot:last-child {
+    border-bottom-left-radius: var(--radius-small);
+    border-bottom-right-radius: var(--radius-small);
+}
+
+.item-grid.shop-stacked .item-slot + .item-slot {
+    border-top: none;
+}
+
+.item-grid.shop-stacked .item-slot-img img {
+    width: 68%;
+    max-height: 85%;
+    object-fit: contain;
+}
+
 .item-slot {
     position: relative;
     display: flex;

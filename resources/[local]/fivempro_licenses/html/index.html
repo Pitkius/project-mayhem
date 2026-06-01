@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Licencijos</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="licenseRoot" class="license-root hidden" aria-hidden="true">
+        <div class="license-backdrop"></div>
+        <div class="license-stage">
+            <button type="button" class="license-close" id="btnClose" title="Uždaryti (ESC)">&times;</button>
+            <article id="licenseCard" class="license-card" data-type="id_card">
+                <div class="card-holo"></div>
+                <header class="card-header">
+                    <div class="card-brand">
+                        <span class="brand-mark">FP</span>
+                        <div>
+                            <strong id="serverName">FIVEMPRO</strong>
+                            <small id="serverSubtitle">Los Santos RP</small>
+                        </div>
+                    </div>
+                    <div class="card-doc-title">
+                        <span class="doc-label" id="docLabel">Dokumentas</span>
+                        <h1 id="docTitle">—</h1>
+                    </div>
+                </header>
+                <div class="card-body">
+                    <div class="card-photo">
+                        <div class="photo-frame">
+                            <span id="photoInitials">?</span>
+                        </div>
+                        <div class="photo-meta">
+                            <span class="meta-id" id="citizenId">—</span>
+                        </div>
+                    </div>
+                    <div class="card-fields" id="cardFields"></div>
+                </div>
+                <footer class="card-footer">
+                    <div class="barcode" aria-hidden="true"></div>
+                    <div class="qr-block" aria-hidden="true">
+                        <div class="qr-grid"></div>
+                    </div>
+                    <p class="footer-note">Oficialus RP dokumentas · Negalioja be serverio patvirtinimo</p>
+                </footer>
+            </article>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -65,18 +65,44 @@ local function chargePlayer(Player, price, reason)
     return false
 end
 
+local function getOwnedCategories(Player)
+    local owned = {}
+    for key, cat in pairs(Config.Categories or {}) do
+        if hasCategoryLicence(Player, cat) then
+            owned[#owned + 1] = {
+                id = cat.id or key,
+                label = cat.label,
+                licenceLabel = cat.licenceLabel,
+                icon = cat.icon or '',
+            }
+        end
+    end
+    table.sort(owned, function(a, b) return (a.id or '') < (b.id or '') end)
+    return owned
+end
+
 local function issueDriverItem(src, Player, cat)
     local charinfo = Player.PlayerData.charinfo or {}
+    local cats = getOwnedCategories(Player)
+    local summary = {}
+    for _, c in ipairs(cats) do
+        summary[#summary + 1] = c.label or c.id
+    end
     local info = {
         citizenid = Player.PlayerData.citizenid,
         firstname = charinfo.firstname or '',
         lastname = charinfo.lastname or '',
         birthdate = charinfo.birthdate or '',
-        type = cat.licenceLabel,
+        type = #summary > 0 and table.concat(summary, ', ') or (cat.licenceLabel or 'Vairuotojo pažymėjimas'),
         category = cat.id,
+        categories = summary,
     }
-    if Player.Functions.AddItem('driver_license', 1, false, info) then
-        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items['driver_license'], 'add')
+    local licenseItem = 'driving_license'
+    if not QBCore.Shared.Items[licenseItem] then licenseItem = 'driver_license' end
+    if Player.Functions.AddItem(licenseItem, 1, false, info) then
+        Player.Functions.SetMetaData('driver_license_issued', os.date('%Y-%m-%d'))
+        Player.Functions.SetMetaData('driver_license_expiry', os.date('%Y-%m-%d', os.time() + (730 * 24 * 60 * 60)))
+        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[licenseItem], 'add')
     end
 end
 
@@ -212,8 +238,18 @@ RegisterNetEvent('fivempro_drivingschool:server:practicalResult', function(categ
     TriggerClientEvent('QBCore:Notify', src, cat.licenceLabel .. ' suteikta!', 'success')
 end)
 
-QBCore.Functions.CreateUseableItem('driver_license', function(source, item)
-    TriggerClientEvent('fivempro_drivingschool:client:showLicense', source, item.info)
+QBCore.Functions.CreateCallback('fivempro_drivingschool:server:getLicenseCard', function(source, cb)
+    local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then return cb(nil) end
+    local charinfo = Player.PlayerData.charinfo or {}
+    local categories = getOwnedCategories(Player)
+    cb({
+        firstname = charinfo.firstname or '',
+        lastname = charinfo.lastname or '',
+        birthdate = charinfo.birthdate or '',
+        citizenid = Player.PlayerData.citizenid,
+        categories = categories,
+    })
 end)
 
 AddEventHandler('playerDropped', function()

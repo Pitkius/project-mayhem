@@ -115,17 +115,32 @@ local function RaycastCamera(flag, playerCoords)
 		if result ~= 1 then
 			local distance = playerCoords and #(playerCoords - endCoords)
 
-			if flag == 30 and entityHit then
-				entityHit = HasEntityClearLosToEntity(entityHit, playerPed, 7) and entityHit
+			if flag == 30 then
+				if entityHit and entityHit ~= 0 and DoesEntityExist(entityHit) then
+					local okLos, hasLos = pcall(HasEntityClearLosToEntity, entityHit, playerPed, 7)
+					if not okLos or not hasLos then
+						entityHit = nil
+					end
+				else
+					entityHit = nil
+				end
 			end
 
-			local entityType = entityHit and GetEntityType(entityHit)
-
-			if entityType == 0 and pcall(GetEntityModel, entityHit) then
-				entityType = 3
+			local entityType = 0
+			if entityHit and entityHit ~= 0 and DoesEntityExist(entityHit) then
+				local okType, et = pcall(GetEntityType, entityHit)
+				entityType = (okType and et) or 0
+				if entityType == 0 then
+					local okModel, model = pcall(GetEntityModel, entityHit)
+					if okModel and model and model ~= 0 then
+						entityType = 3
+					end
+				end
+			else
+				entityHit = nil
 			end
 
-			return endCoords, distance, entityHit, entityType or 0
+			return endCoords, distance, entityHit, entityType
 		end
 
 		Wait(0)
@@ -1203,7 +1218,7 @@ RegisterNUICallback('selectTarget', function(option, cb)
 	table_wipe(sendData)
 	CreateThread(function()
 		Wait(0)
-		if data.entity ~= nil then
+		if data.entity ~= nil and DoesEntityExist(data.entity) then
 			data.coords = GetEntityCoords(data.entity)
 		end
 		if data.action then

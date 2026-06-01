@@ -24,7 +24,7 @@ Config.Ranks = {
     [4] = 'Boss',
 }
 
---- Turf langeliai: config_turf_cells.lua (~350+ mažų zonų)
+--- Turf langeliai: config_turf_cells.lua (tik LS miesto rajonai)
 
 Config.TurfClaimThreshold = 100
 

@@ -223,6 +223,7 @@ QBShared.Items = {
     -- Card ITEMS
     id_card                      = { name = 'id_card', label = 'ID Card', weight = 0, type = 'item', image = 'id_card.png', unique = true, useable = true, shouldClose = false, description = 'A card containing all your information to identify yourself' },
     driver_license               = { name = 'driver_license', label = 'Drivers License', weight = 0, type = 'item', image = 'driver_license.png', unique = true, useable = true, shouldClose = false, description = 'Permit to show you can drive a vehicle' },
+    driving_license              = { name = 'driving_license', label = 'Vairuotojo pažymėjimas', weight = 0, type = 'item', image = 'driver_license.png', unique = true, useable = true, shouldClose = false, description = 'Oficialus vairuotojo pažymėjimas su kategorijomis A/B/C' },
     lawyerpass                   = { name = 'lawyerpass', label = 'Lawyer Pass', weight = 0, type = 'item', image = 'lawyerpass.png', unique = true, useable = true, shouldClose = false, description = 'Pass exclusive to lawyers to show they can represent a suspect' },
     weaponlicense                = { name = 'weaponlicense', label = 'Weapon License', weight = 0, type = 'item', image = 'weapon_license.png', unique = true, useable = true, shouldClose = true, description = 'Weapon License' },
     bank_card                    = { name = 'bank_card', label = 'Bank Card', weight = 0, type = 'item', image = 'bank_card.png', unique = true, useable = true, shouldClose = true, description = 'Used to access ATM' },

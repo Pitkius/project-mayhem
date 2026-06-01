@@ -182,18 +182,48 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:mdtContext', function(src,
 end)
 
 QBCore.Functions.CreateCallback('fivempro_ltpd:server:searchPerson', function(src, cb, query)
-    if not hasPerm(src, 'mdt_search_basic') then return cb({ ok = false }) end
+    if not hasPerm(src, 'mdt_search_basic') then return cb({ ok = false, message = 'Nėra teisės' }) end
     query = tostring(query or ''):gsub('%%', ''):sub(1, 64)
     if #query < 2 then return cb({ ok = true, rows = {} }) end
 
+    local ok, err = pcall(function()
     local like = '%' .. query:lower() .. '%'
-    local rows = MySQL.query.await([[
-        SELECT citizenid, charinfo, money, metadata
-        FROM players
-        WHERE LOWER(charinfo) LIKE ?
-        OR LOWER(citizenid) LIKE ?
-        LIMIT 25
-    ]], { like, like }) or {}
+    local parts = {}
+    for w in query:lower():gmatch('%S+') do
+        parts[#parts + 1] = w
+    end
+
+    local rows
+    if #parts >= 2 then
+        local p1, p2 = '%' .. parts[1] .. '%', '%' .. parts[2] .. '%'
+        rows = MySQL.query.await([[
+            SELECT citizenid, charinfo, money, metadata
+            FROM players
+            WHERE (
+                (LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname'))) LIKE ?
+                 AND LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname'))) LIKE ?)
+                OR (LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname'))) LIKE ?
+                    AND LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname'))) LIKE ?)
+            )
+            OR LOWER(citizenid) LIKE ?
+            LIMIT 25
+        ]], { p1, p2, p2, p1, like }) or {}
+    else
+        rows = MySQL.query.await([[
+            SELECT citizenid, charinfo, money, metadata
+            FROM players
+            WHERE LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname'))) LIKE ?
+               OR LOWER(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname'))) LIKE ?
+               OR LOWER(CONCAT(
+                    COALESCE(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.firstname')), ''),
+                    ' ',
+                    COALESCE(JSON_UNQUOTE(JSON_EXTRACT(charinfo, '$.lastname')), '')
+               )) LIKE ?
+               OR LOWER(charinfo) LIKE ?
+               OR LOWER(citizenid) LIKE ?
+            LIMIT 25
+        ]], { like, like, like, like, like }) or {}
+    end
 
     local full = mdtFullAccess(src)
     for _, r in ipairs(rows) do
@@ -234,6 +264,12 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:searchPerson', function(sr
     end
 
     cb({ ok = true, rows = rows, full = full })
+    end)
+
+    if not ok then
+        print(('[fivempro_ltpd] searchPerson error: %s'):format(tostring(err)))
+        cb({ ok = false, message = 'Paieškos klaida. Patikrink DB.' })
+    end
 end)
 
 QBCore.Functions.CreateCallback('fivempro_ltpd:server:searchVehicle', function(src, cb, plate)

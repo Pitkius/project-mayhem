@@ -31,6 +31,7 @@ server_scripts {
 dependencies {
     'qb-core',
     'oxmysql',
+    'qb-target',
 }
 
 exports {

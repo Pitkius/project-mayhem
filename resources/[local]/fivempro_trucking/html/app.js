@@ -275,8 +275,14 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
 
 document.getElementById("btnClose").addEventListener("click", () => nui("trucking:close"));
 document.getElementById("btnRegister").addEventListener("click", async () => {
+  const btn = document.getElementById("btnRegister");
+  btn.disabled = true;
   const res = await nui("trucking:register");
-  if (res?.dashboard) { state.data = res.dashboard; renderAll(); }
+  btn.disabled = false;
+  if (res?.ok && res.dashboard) {
+    state.data = res.dashboard;
+    renderAll();
+  }
 });
 btnAccept.addEventListener("click", async () => {
   if (!state.selected) return;

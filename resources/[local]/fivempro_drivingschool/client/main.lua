@@ -289,12 +289,57 @@ RegisterNetEvent('fivempro_drivingschool:client:openMenu', function()
 end)
 
 RegisterNetEvent('fivempro_drivingschool:client:showLicense', function(info)
-    info = info or {}
-    notify(('%s | %s %s'):format(
-        info.type or 'Vairuotojo pažymėjimas',
-        info.firstname or '',
-        info.lastname or ''
-    ), 'primary')
+    QBCore.Functions.TriggerCallback('fivempro_drivingschool:server:getLicenseCard', function(card)
+        if not card then
+            return notify('Nepavyko nuskaityti pažymėjimo.', 'error')
+        end
+
+        local lines = {}
+        lines[#lines + 1] = {
+            header = ('%s %s'):format(card.firstname or '', card.lastname or ''),
+            isMenuHeader = true,
+        }
+        if card.birthdate and card.birthdate ~= '' then
+            lines[#lines + 1] = { header = 'Gimimo data', txt = card.birthdate, isMenuHeader = true }
+        end
+        if card.citizenid then
+            lines[#lines + 1] = { header = 'ID', txt = card.citizenid, isMenuHeader = true }
+        end
+
+        lines[#lines + 1] = { header = '— Turimos kategorijos —', isMenuHeader = true }
+
+        if card.categories and #card.categories > 0 then
+            for _, cat in ipairs(card.categories) do
+                lines[#lines + 1] = {
+                    header = ('%s %s'):format(cat.icon or '', cat.label or cat.id or ''),
+                    txt = cat.licenceLabel or '',
+                    isMenuHeader = true,
+                }
+            end
+        else
+            lines[#lines + 1] = {
+                header = 'Nėra galiojančių kategorijų',
+                txt = 'Laikyk egzaminus vairavimo mokykloje.',
+                isMenuHeader = true,
+            }
+        end
+
+        lines[#lines + 1] = { header = 'Uždaryti', params = { event = 'qb-menu:client:closeMenu' } }
+
+        if GetResourceState('qb-menu') == 'started' then
+            exports['qb-menu']:openMenu(lines)
+        else
+            local summary = {}
+            for _, cat in ipairs(card.categories or {}) do
+                summary[#summary + 1] = cat.label or cat.id
+            end
+            notify(('%s %s | %s'):format(
+                card.firstname or '',
+                card.lastname or '',
+                #summary > 0 and table.concat(summary, ', ') or 'be kategorijų'
+            ), 'primary', 8000)
+        end
+    end)
 end)
 
 RegisterNetEvent('fivempro_drivingschool:client:confirmExam', function(data)

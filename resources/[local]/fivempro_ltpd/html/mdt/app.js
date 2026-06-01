@@ -240,15 +240,34 @@ document.querySelectorAll('.tab').forEach((t) => {
   };
 });
 
-document.getElementById('goPerson').onclick = () => {
+function runPersonSearch() {
   const q = document.getElementById('qPerson').value.trim();
-  nuiPost('searchPerson', { query: q }).then((res) => renderPerson(res));
-};
+  const el = document.getElementById('personResults');
+  if (q.length < 2) {
+    el.innerHTML = '<div class="muted">Įvesk bent 2 simbolius (vardas, pavardė arba citizenid).</div>';
+    return;
+  }
+  el.innerHTML = '<div class="muted">Ieškoma…</div>';
+  nuiPost('searchPerson', { query: q }, { force: true }).then((res) => renderPerson(res));
+}
+
+document.getElementById('goPerson').onclick = runPersonSearch;
+document.getElementById('qPerson').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') runPersonSearch();
+});
 
 function renderPerson(res) {
   const el = document.getElementById('personResults');
   el.innerHTML = '';
-  if (!res || !res.ok || !res.rows || !res.rows.length) {
+  if (!res) {
+    el.innerHTML = '<div class="muted">Ryšys su MDT nutrūko. Bandyk dar kartą.</div>';
+    return;
+  }
+  if (!res.ok) {
+    el.innerHTML = `<div class="muted">${escapeHtml(res.message || 'Paieška nepavyko.')}</div>`;
+    return;
+  }
+  if (!res.rows || !res.rows.length) {
     el.innerHTML = '<div class="muted">Nieko nerasta.</div>';
     return;
   }
@@ -307,6 +326,10 @@ document.getElementById('goFine').onclick = () => {
     amount: Number(document.getElementById('fineAmt').value),
     reason_code: opt ? opt.value : '',
     reason_label: document.getElementById('fineLabel').value.trim(),
+  }, { force: true }).then((res) => {
+    if (res && res.ok) {
+      document.getElementById('fineCid').value = '';
+    }
   });
 };
 
