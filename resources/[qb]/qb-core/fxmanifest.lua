@@ -42,7 +42,7 @@ ui_page 'html/index.html'
 
 files {
     'html/index.html',
-    'html/css/style.css',
+    'html/css/notify.css',
     'html/css/drawtext.css',
     'html/js/*.js'
 }

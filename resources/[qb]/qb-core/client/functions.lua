@@ -176,8 +176,8 @@ function QBCore.Functions.Notify(text, texttype, length, icon)
     }
 
     if type(text) == 'table' then
-        message.text = text.text or 'Placeholder'
-        message.caption = text.caption or 'Placeholder'
+        message.text = text.text or text.title or 'Pranešimas'
+        message.caption = text.caption or text.message or text.description
     else
         message.text = text
     end

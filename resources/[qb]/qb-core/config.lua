@@ -135,10 +135,14 @@ QBConfig.Notify.NotificationStyling = {
 QBConfig.Notify.VariantDefinitions = {
     success = {
         classes = 'success',
-        icon = 'fas fa-circle-check',
+        icon = 'fas fa-check',
     },
     primary = {
         classes = 'primary',
+        icon = 'fas fa-circle-info',
+    },
+    info = {
+        classes = 'info',
         icon = 'fas fa-circle-info',
     },
     warning = {
@@ -147,7 +151,7 @@ QBConfig.Notify.VariantDefinitions = {
     },
     error = {
         classes = 'error',
-        icon = 'fas fa-circle-exclamation',
+        icon = 'fas fa-xmark',
     },
     police = {
         classes = 'police',
