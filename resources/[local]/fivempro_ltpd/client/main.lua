@@ -541,19 +541,57 @@ end)
 
 local function applyDutyOutfitTable(ped, tbl)
     if not ped or not tbl then return end
-    for comp, val in pairs(tbl) do
+    local comps = tbl.components or tbl
+    for comp, val in pairs(comps) do
         local c = tonumber(comp)
-        if c ~= nil then
-            local draw, tex = 0, 0
-            if type(val) == 'table' then
-                draw = tonumber(val[1]) or 0
-                tex = tonumber(val[2]) or 0
-            else
-                draw = tonumber(val) or 0
-            end
+        if c == nil then goto continue end
+        local draw, tex, collection = 0, 0, nil
+        if type(val) == 'table' then
+            draw = tonumber(val.draw or val[1]) or 0
+            tex = tonumber(val.tex or val[2]) or 0
+            collection = val.collection
+        else
+            draw = tonumber(val) or 0
+        end
+        if collection and collection ~= '' then
+            SetPedCollectionComponentVariation(ped, c, collection, draw, tex, 0)
+        else
             SetPedComponentVariation(ped, c, draw, tex, 0)
         end
+        ::continue::
     end
+end
+
+local function getDutyOutfitGenderKey(ped)
+    return GetEntityModel(ped) == `mp_m_freemode_01` and 'male' or 'female'
+end
+
+local function buildDutyOutfitCategoryMenu(category, grade)
+    local ped = PlayerPedId()
+    local genderKey = getDutyOutfitGenderKey(ped)
+    local header = category == 'vest' and 'Liemenės' or 'Uniformos'
+    local menu = {
+        { header = header, isMenuHeader = true },
+    }
+    for idx, outfit in ipairs(Config.DutyOutfits or {}) do
+        if outfit.category == category and outfit[genderKey] then
+            if grade >= (tonumber(outfit.minGrade) or 0) then
+                menu[#menu + 1] = {
+                    header = outfit.label,
+                    txt = outfit.description or '',
+                    params = {
+                        event = 'fivempro_ltpd:client:applyDutyOutfit',
+                        args = { index = idx },
+                    },
+                }
+            end
+        end
+    end
+    menu[#menu + 1] = {
+        header = '← Atgal',
+        params = { event = 'fivempro_ltpd:client:openDutyLockerMenu' },
+    }
+    return menu
 end
 
 RegisterNetEvent('fivempro_ltpd:client:toggleDuty', function()
@@ -571,32 +609,44 @@ RegisterNetEvent('fivempro_ltpd:client:openDutyLockerMenu', function()
     if GetResourceState('qb-menu') ~= 'started' then
         return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
     end
-    local P = QBCore.Functions.GetPlayerData()
-    local grade = (P.job and P.job.grade and P.job.grade.level) or 0
     local menu = {
         { header = 'Tarnybinė apranga', isMenuHeader = true },
-    }
-    for idx, outfit in ipairs(Config.DutyOutfits or {}) do
-        if grade >= (tonumber(outfit.minGrade) or 0) then
-            menu[#menu + 1] = {
-                header = outfit.label,
-                txt = outfit.description or '',
-                params = {
-                    event = 'fivempro_ltpd:client:applyDutyOutfit',
-                    args = { index = idx },
-                },
-            }
-        end
-    end
-    menu[#menu + 1] = {
-        header = 'Baigti tarnybą',
-        txt = 'Uždeda tavo išsaugotą civilio aprangą (duty lieka aktyvus — baigti pamainą tik prie tarnybos NPC)',
-        params = {
-            event = 'fivempro_ltpd:client:applyCivilianOutfit',
+        {
+            header = 'Uniformos',
+            txt = 'Bazinė PD apranga (be liemenės)',
+            params = {
+                event = 'fivempro_ltpd:client:openDutyLockerCategory',
+                args = { category = 'uniform' },
+            },
+        },
+        {
+            header = 'Liemenės',
+            txt = 'Balistinės liemenės – uždėk ant uniformos',
+            params = {
+                event = 'fivempro_ltpd:client:openDutyLockerCategory',
+                args = { category = 'vest' },
+            },
+        },
+        {
+            header = 'Baigti tarnybą',
+            txt = 'Uždeda tavo išsaugotą civilio aprangą (duty lieka aktyvus — baigti pamainą tik prie tarnybos NPC)',
+            params = {
+                event = 'fivempro_ltpd:client:applyCivilianOutfit',
+            },
         },
     }
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end)
+
+RegisterNetEvent('fivempro_ltpd:client:openDutyLockerCategory', function(data)
+    if not isPdOnDutyClient() then return end
+    if GetResourceState('qb-menu') ~= 'started' then return end
+    local P = QBCore.Functions.GetPlayerData()
+    local grade = (P.job and P.job.grade and P.job.grade.level) or 0
+    local category = type(data) == 'table' and data.category or 'uniform'
+    local menu = buildDutyOutfitCategoryMenu(category, grade)
     if #menu < 2 then
-        return QBCore.Functions.Notify('Nėra prieinamų aprangų.', 'error')
+        return QBCore.Functions.Notify('Nėra prieinamų aprangų šiai kategorijai.', 'error')
     end
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end)
@@ -607,14 +657,16 @@ RegisterNetEvent('fivempro_ltpd:client:applyDutyOutfit', function(data)
     local outfit = idx and Config.DutyOutfits and Config.DutyOutfits[idx]
     if not outfit then return end
     local ped = PlayerPedId()
-    local male = GetEntityModel(ped) == `mp_m_freemode_01`
-    local tbl = male and outfit.male or outfit.female
-    if not tbl then return end
+    local genderKey = getDutyOutfitGenderKey(ped)
+    local tbl = outfit[genderKey]
+    if not tbl then
+        return QBCore.Functions.Notify('Ši apranga netinka tavo personažo modeliui.', 'error')
+    end
     applyDutyOutfitTable(ped, tbl)
     local arm = tonumber(outfit.armour)
     if arm and arm > 0 then
         SetPedArmour(ped, math.min(100, arm))
-    else
+    elseif outfit.category == 'uniform' then
         SetPedArmour(ped, 0)
     end
     QBCore.Functions.Notify(outfit.label or 'Apranga uždėta.', 'success')

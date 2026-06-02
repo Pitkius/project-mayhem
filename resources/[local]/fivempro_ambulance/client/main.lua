@@ -70,19 +70,57 @@ end, false)
 
 local function applyOutfitTable(ped, tbl)
     if not ped or not tbl then return end
-    for comp, val in pairs(tbl) do
+    local comps = tbl.components or tbl
+    for comp, val in pairs(comps) do
         local c = tonumber(comp)
-        if c ~= nil then
-            local draw, tex = 0, 0
-            if type(val) == 'table' then
-                draw = tonumber(val[1]) or 0
-                tex = tonumber(val[2]) or 0
-            else
-                draw = tonumber(val) or 0
-            end
+        if c == nil then goto continue end
+        local draw, tex, collection = 0, 0, nil
+        if type(val) == 'table' then
+            draw = tonumber(val.draw or val[1]) or 0
+            tex = tonumber(val.tex or val[2]) or 0
+            collection = val.collection
+        else
+            draw = tonumber(val) or 0
+        end
+        if collection and collection ~= '' then
+            SetPedCollectionComponentVariation(ped, c, collection, draw, tex, 0)
+        else
             SetPedComponentVariation(ped, c, draw, tex, 0)
         end
+        ::continue::
     end
+end
+
+local function getOutfitGenderKey(ped)
+    return GetEntityModel(ped) == `mp_m_freemode_01` and 'male' or 'female'
+end
+
+local function buildOutfitCategoryMenu(category, grade)
+    local ped = PlayerPedId()
+    local genderKey = getOutfitGenderKey(ped)
+    local header = category == 'vest' and 'Liemenės' or 'Uniformos'
+    local menu = {
+        { header = header, isMenuHeader = true },
+    }
+    for idx, outfit in ipairs(Config.DutyOutfits or {}) do
+        if outfit.category == category and outfit[genderKey] then
+            if grade >= (tonumber(outfit.minGrade) or 0) then
+                menu[#menu + 1] = {
+                    header = outfit.label,
+                    txt = outfit.description or '',
+                    params = {
+                        event = 'fivempro_ambulance:client:applyOutfit',
+                        args = { index = idx },
+                    },
+                }
+            end
+        end
+    end
+    menu[#menu + 1] = {
+        header = '← Atgal',
+        params = { event = 'fivempro_ambulance:client:openLocker' },
+    }
+    return menu
 end
 
 RegisterNetEvent('fivempro_ambulance:client:openLocker', function(_data)
@@ -92,28 +130,43 @@ RegisterNetEvent('fivempro_ambulance:client:openLocker', function(_data)
     if GetResourceState('qb-menu') ~= 'started' then
         return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
     end
+    local menu = {
+        { header = 'Darbo apranga', isMenuHeader = true },
+        {
+            header = 'Uniformos',
+            txt = 'GMP / EMS medicininė apranga',
+            params = {
+                event = 'fivempro_ambulance:client:openLockerCategory',
+                args = { category = 'uniform' },
+            },
+        },
+        {
+            header = 'Liemenės',
+            txt = 'Atskiros liemenės (atskirai nuo uniformos)',
+            params = {
+                event = 'fivempro_ambulance:client:openLockerCategory',
+                args = { category = 'vest' },
+            },
+        },
+        {
+            header = 'Baigti tarnybą',
+            txt = 'Civilio apranga (duty lieka — pamainą baigti prie registratūros NPC)',
+            params = { event = 'fivempro_ambulance:client:applyCivilianOutfit' },
+        },
+    }
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end)
+
+RegisterNetEvent('fivempro_ambulance:client:openLockerCategory', function(data)
+    if not isEmsOnDuty() then return end
+    if GetResourceState('qb-menu') ~= 'started' then return end
     local P = QBCore.Functions.GetPlayerData()
     local grade = (P.job and P.job.grade and P.job.grade.level) or 0
-    local menu = { { header = 'Darbo apranga', isMenuHeader = true } }
-    for idx, outfit in ipairs(Config.DutyOutfits or {}) do
-        if grade >= (tonumber(outfit.minGrade) or 0) then
-            menu[#menu + 1] = {
-                header = outfit.label,
-                params = {
-                    event = 'fivempro_ambulance:client:applyOutfit',
-                    args = { index = idx },
-                },
-            }
-        end
-    end
+    local category = type(data) == 'table' and data.category or 'uniform'
+    local menu = buildOutfitCategoryMenu(category, grade)
     if #menu < 2 then
-        return QBCore.Functions.Notify('Nėra aprangų.', 'error')
+        return QBCore.Functions.Notify('Nėra prieinamų aprangų šiai kategorijai.', 'error')
     end
-    menu[#menu + 1] = {
-        header = 'Baigti tarnybą',
-        txt = 'Civilio apranga (duty lieka — pamainą baigti prie registratūros NPC)',
-        params = { event = 'fivempro_ambulance:client:applyCivilianOutfit' },
-    }
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end)
 
@@ -137,10 +190,18 @@ RegisterNetEvent('fivempro_ambulance:client:applyOutfit', function(data)
     local outfit = idx and Config.DutyOutfits and Config.DutyOutfits[idx]
     if not outfit then return end
     local ped = PlayerPedId()
-    local male = GetEntityModel(ped) == `mp_m_freemode_01`
-    local tbl = male and outfit.male or outfit.female
-    if not tbl then return end
+    local genderKey = getOutfitGenderKey(ped)
+    local tbl = outfit[genderKey]
+    if not tbl then
+        return QBCore.Functions.Notify('Ši apranga netinka tavo personažo modeliui.', 'error')
+    end
     applyOutfitTable(ped, tbl)
+    local arm = tonumber(outfit.armour)
+    if arm and arm > 0 then
+        SetPedArmour(ped, math.min(100, arm))
+    elseif outfit.category == 'uniform' then
+        SetPedArmour(ped, 0)
+    end
     QBCore.Functions.Notify(outfit.label or 'Apranga uždėta.', 'success')
 end)
 

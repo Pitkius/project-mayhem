@@ -11,6 +11,7 @@ ui_page 'html/mdt/index.html'
 
 shared_scripts {
     'config.lua',
+    'config_duty_outfits.lua',
     'config_surveillance.lua',
     'config_ems_doors.lua',
     'config_ranger_doors.lua',

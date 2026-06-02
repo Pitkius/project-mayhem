@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ShopPedApparel>
+	<pedName>mp_f_freemode_01</pedName>
+	<dlcName>mp_f_eimas25medikai</dlcName>
+	<fullDlcName>mp_f_freemode_01_mp_f_eimas25medikai</fullDlcName>
+	<eCharacter>SCR_CHAR_MULTIPLAYER_F</eCharacter>
+	<creatureMetaData>MP_CreatureMetadata_eimas25</creatureMetaData>
+	<pedOutfits>
+	</pedOutfits>
+	<pedComponents>
+        <!-- Legs: Legs - mp_f_freemode_01_mp_f_eimas25medikai^lowr_diff_000_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_LEGS_0_0_F</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_LOWR</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Legs: Legs - mp_f_freemode_01_mp_f_eimas25medikai^lowr_diff_000_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_LEGS_0_1_F</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_LOWR</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Legs: Legs - mp_f_freemode_01_mp_f_eimas25medikai^lowr_diff_000_c_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_LEGS_0_2_F</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_LOWR</eCompType>
+			<textureIndex value="2" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Top: Top - mp_f_freemode_01_mp_f_eimas25medikai^jbib_diff_003_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_TOP_0_0_F</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_JBIB</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Top: Top - mp_f_freemode_01_mp_f_eimas25medikai^jbib_diff_003_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_TOP_0_1_F</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_JBIB</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+	</pedComponents>
+	<pedProps>
+        <!-- PropHead: PropHead - mp_f_freemode_01_p_halloween^p_head_diff_000_a -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_PROPHEAD_0_0_F</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <forcedProps />
+            <variantComponents />
+            <variantProps />
+			<propIndex value="0" />
+			<localPropIndex value="0" />
+			<eAnchorPoint>ANCHOR_HEAD</eAnchorPoint>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- PropHead: PropHead - mp_f_freemode_01_p_halloween^p_head_diff_000_b -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_PROPHEAD_0_1_F</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <forcedProps />
+            <variantComponents />
+            <variantProps />
+			<propIndex value="0" />
+			<localPropIndex value="0" />
+			<eAnchorPoint>ANCHOR_HEAD</eAnchorPoint>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- PropHead: PropHead - mp_f_freemode_01_p_halloween^p_head_diff_001_a -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_PROPHEAD_1_0_F</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <forcedProps />
+            <variantComponents />
+            <variantProps />
+			<propIndex value="0" />
+			<localPropIndex value="1" />
+			<eAnchorPoint>ANCHOR_HEAD</eAnchorPoint>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- PropHead: PropHead - mp_f_freemode_01_p_halloween^p_head_diff_001_b -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_PROPHEAD_1_1_F</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <forcedProps />
+            <variantComponents />
+            <variantProps />
+			<propIndex value="0" />
+			<localPropIndex value="1" />
+			<eAnchorPoint>ANCHOR_HEAD</eAnchorPoint>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+	</pedProps>
+</ShopPedApparel>

@@ -8,6 +8,7 @@ version '1.0.0'
 
 shared_scripts {
     'config.lua',
+    'config_duty_outfits.lua',
 }
 
 client_scripts {

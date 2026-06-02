@@ -14,21 +14,7 @@ Config.Permissions = {
     boss_menu = 4,
 }
 
---- Medicininė / tarnybinė apranga (keisk pagal odę)
-Config.DutyOutfits = {
-    {
-        label = 'Medicininiai marškiniai 1',
-        minGrade = 0,
-        male = { [4] = 23, [6] = 22, [8] = 15, [11] = 250, [9] = 0 },
-        female = { [4] = 23, [6] = 22, [8] = 15, [11] = 258, [9] = 0 },
-    },
-    {
-        label = 'Greitosios pagalbos liemenė',
-        minGrade = 1,
-        male = { [4] = 23, [6] = 22, [8] = 15, [11] = 250, [9] = 2 },
-        female = { [4] = 23, [6] = 22, [8] = 15, [11] = 258, [9] = 2 },
-    },
-}
+--- Medicininė / tarnybinė apranga – žr. config_duty_outfits.lua (addon kolekcijos fivempro_gmp_uniforms)
 
 --- EMS postai (Gabz Pillbox + Sandy + Paleto MLO zonos)
 Config.Stations = {

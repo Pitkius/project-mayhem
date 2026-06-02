@@ -1,0 +1,896 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ShopPedApparel>
+	<pedName>mp_m_freemode_01</pedName>
+	<dlcName>mp_m_pdv2</dlcName>
+	<fullDlcName>mp_m_freemode_01_mp_m_pdv2</fullDlcName>
+	<eCharacter>SCR_CHAR_MULTIPLAYER</eCharacter>
+	<creatureMetaData>MP_CreatureMetadata_work</creatureMetaData>
+	<pedOutfits>
+	</pedOutfits>
+	<pedComponents>
+        <!-- Accessories: Accessories - mp_m_freemode_01_mp_m_mpleoholster^teef_diff_000_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ACCESSORIES_0_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_TEEF</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Accessories: Accessories - mp_m_freemode_01_mp_m_mpleoholster^teef_diff_002_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ACCESSORIES_1_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="1" />
+			<eCompType>PV_COMP_TEEF</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Accessories: Accessories - mp_m_freemode_01_mp_m_mpleoholster^teef_diff_004_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ACCESSORIES_2_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="2" />
+			<eCompType>PV_COMP_TEEF</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Accessories: Accessories - mp_m_freemode_01_mp_m_mpleoholster^teef_diff_006_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ACCESSORIES_3_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="3" />
+			<eCompType>PV_COMP_TEEF</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Accessories: Accessories - mp_m_freemode_01_mp_m_safelite_belt^teef_diff_000_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ACCESSORIES_4_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="4" />
+			<eCompType>PV_COMP_TEEF</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Accessories: Accessories - mp_m_freemode_01_mp_m_safelite_belt^teef_diff_001_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ACCESSORIES_5_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="5" />
+			<eCompType>PV_COMP_TEEF</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Accessories: Accessories - mp_m_freemode_01_mp_m_safelite_belt^teef_diff_002_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ACCESSORIES_6_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="6" />
+			<eCompType>PV_COMP_TEEF</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Armor: Armor - mp_m_freemode_01_mp_m_january2016^task_diff_002_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ARMOR_0_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_TASK</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Armor: Head - Eazymods -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ARMOR_1_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="1" />
+			<eCompType>PV_COMP_TASK</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Armor: Head - 1 -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ARMOR_2_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="2" />
+			<eCompType>PV_COMP_TASK</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Armor: Head - GravityFlow#0065 -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ARMOR_3_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="3" />
+			<eCompType>PV_COMP_TASK</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Armor: Armor - mp_m_freemode_01_mp_m_work^task_diff_001_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ARMOR_4_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="4" />
+			<eCompType>PV_COMP_TASK</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Armor: Armor - mp_m_freemode_01_mp_m_work^task_diff_001_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ARMOR_4_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="4" />
+			<eCompType>PV_COMP_TASK</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Armor: Armor - task_diff_004_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ARMOR_5_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="5" />
+			<eCompType>PV_COMP_TASK</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Armor: Armor - task_diff_005_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ARMOR_6_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="6" />
+			<eCompType>PV_COMP_TASK</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Armor: Armor - task_diff_005_h_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ARMOR_6_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="6" />
+			<eCompType>PV_COMP_TASK</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Armor: Armor - task_diff_000_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_ARMOR_7_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="7" />
+			<eCompType>PV_COMP_TASK</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Legs: Legs - mp_m_freemode_01_mp_m_mpcombatcloth^lowr_diff_000_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_LEGS_0_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_LOWR</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Legs: Legs - mp_m_freemode_01_mp_m_mpcombatcloth^lowr_diff_000_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_LEGS_0_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_LOWR</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Legs: Legs - mp_m_freemode_01_mp_m_mpcombatcloth^lowr_diff_001_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_LEGS_1_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="1" />
+			<eCompType>PV_COMP_LOWR</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Legs: Legs - mp_m_freemode_01_mp_m_mpcombatcloth^lowr_diff_001_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_LEGS_1_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="1" />
+			<eCompType>PV_COMP_LOWR</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Shoes: Shoes - mp_m_freemode_01_mp_m_mpcombatcloth^feet_diff_000_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_SHOES_0_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_FEET</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Top: Top - mp_m_freemode_01_mp_m_mpcombatcloth^jbib_diff_000_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_TOP_0_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_JBIB</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Top: Top - mp_m_freemode_01_mp_m_mpcombatcloth^jbib_diff_000_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_TOP_0_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_JBIB</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Top: Top - mp_m_freemode_01_mp_m_mpcombatcloth^jbib_diff_001_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_TOP_1_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="1" />
+			<eCompType>PV_COMP_JBIB</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Top: Top - mp_m_freemode_01_mp_m_mpcombatcloth^jbib_diff_001_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_TOP_1_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="1" />
+			<eCompType>PV_COMP_JBIB</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Top: Top - mp_m_freemode_01_mp_m_mpcombatcloth^jbib_diff_002_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_TOP_2_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="2" />
+			<eCompType>PV_COMP_JBIB</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Top: Top - mp_m_freemode_01_mp_m_mpcombatcloth^jbib_diff_002_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_TOP_2_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="2" />
+			<eCompType>PV_COMP_JBIB</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Top: Top - mp_m_freemode_01_mp_m_mpcombatcloth^jbib_diff_003_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_TOP_3_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="3" />
+			<eCompType>PV_COMP_JBIB</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Top: Top - mp_m_freemode_01_mp_m_mpcombatcloth^jbib_diff_003_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_TOP_3_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="3" />
+			<eCompType>PV_COMP_JBIB</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_000_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_0_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_000_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_0_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_000_c_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_0_2_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="0" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="2" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_001_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_1_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="1" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_001_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_1_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="1" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_001_c_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_1_2_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="1" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="2" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_002_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_2_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="2" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_002_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_2_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="2" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_002_c_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_2_2_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="2" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="2" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_003_a_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_3_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="3" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_003_b_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_3_1_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="3" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="1" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- Undershirt: Undershirt - mp_m_freemode_01_mp_m_mptactbelts^accs_diff_003_c_uni -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_UNDERSHIRT_3_2_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <variantComponents />
+			<drawableIndex value="0" />
+			<localDrawableIndex value="3" />
+			<eCompType>PV_COMP_ACCS</eCompType>
+			<textureIndex value="2" />
+			<isInOutfit value="false" />
+		</Item>
+	</pedComponents>
+	<pedProps>
+        <!-- PropHead: PropHead - mp_m_freemode_01_p^p_head_diff_002_a -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_PROPHEAD_0_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <forcedProps />
+            <variantComponents />
+            <variantProps />
+			<propIndex value="0" />
+			<localPropIndex value="0" />
+			<eAnchorPoint>ANCHOR_HEAD</eAnchorPoint>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- PropHead: PropHead - mp_m_freemode_01_p_mp_m_mptacthelmet^p_head_diff_005_a -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_PROPHEAD_1_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <forcedProps />
+            <variantComponents />
+            <variantProps />
+			<propIndex value="0" />
+			<localPropIndex value="1" />
+			<eAnchorPoint>ANCHOR_HEAD</eAnchorPoint>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- PropHead: PropHead - mp_m_freemode_01_p_mp_m_mptacthelmet^p_head_diff_006_a -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_PROPHEAD_2_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <forcedProps />
+            <variantComponents />
+            <variantProps />
+			<propIndex value="0" />
+			<localPropIndex value="2" />
+			<eAnchorPoint>ANCHOR_HEAD</eAnchorPoint>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+        <!-- PropHead: PropHead - mp_m_freemode_01_p_mp_m_mptacthelmet^p_head_diff_007_a -->
+        <Item>
+            <lockHash />
+            <cost value="0"/>
+            <textLabel />
+            <uniqueNameHash>CLO_DCT_PROPHEAD_3_0_M</uniqueNameHash>
+            <eShopEnum>CLO_SHOP_NONE</eShopEnum>
+			<locate value="-99" />
+			<scriptSaveData value="0" />
+			<restrictionTags>
+			</restrictionTags>
+            <forcedComponents />
+            <forcedProps />
+            <variantComponents />
+            <variantProps />
+			<propIndex value="0" />
+			<localPropIndex value="3" />
+			<eAnchorPoint>ANCHOR_HEAD</eAnchorPoint>
+			<textureIndex value="0" />
+			<isInOutfit value="false" />
+		</Item>
+	</pedProps>
+</ShopPedApparel>
