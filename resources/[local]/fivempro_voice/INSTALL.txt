@@ -11,8 +11,10 @@ Kas įdiegta:
 - N — numatytas PTT (kalbėti) FiveM nustatymuose
 - /vol 50 — racijos/skambučio garsumas (1–100)
 
-Burna + rankos kalbant (fivempro_voice):
-- Veidas juda, rankų animacija, bet gali vaikščioti (flag 49)
+Burna + reti gestai kalbant (fivempro_voice, NE racija):
+- Burna visada juda (mic_chatter)
+- Rankų gestai retai (~22% pradžioje, ~8% kol kalbi, min. 5.5 s tarp gestų)
+- Per raciją gestų nėra (pma-voice shoulder anim)
 
 Jei neveikia:
 1. Išjunk vMenu voice chat

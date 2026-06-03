@@ -298,6 +298,9 @@ window.MdtMap = (function () {
     Core.scheduleInvalidate(leafletMap, [0, 120, 320]);
     requestAnimationFrame(() => fitMapFill(12));
     setTimeout(() => fitMapFill(12), 150);
+    if (localPlayerPos && selfSource != null) {
+      upsertUnit(localPlayerUnit(), mapCfg);
+    }
   }
 
   function invalidate() {
@@ -360,8 +363,36 @@ window.MdtMap = (function () {
     return merged;
   }
 
+  function setSelfSource(src) {
+    if (src == null || src === '') return;
+    selfSource = Number(src);
+  }
+
+  function localPlayerUnit() {
+    if (!localPlayerPos || selfSource == null) return null;
+    const key = `u:${selfSource}`;
+    const existing = unitState[key];
+    return {
+      ...(existing?.data || {}),
+      source: selfSource,
+      name: existing?.data?.name || 'Tu',
+      callsign: existing?.data?.callsign || '',
+      x: localPlayerPos.x,
+      y: localPlayerPos.y,
+      z: localPlayerPos.z,
+      heading: localPlayerPos.heading,
+      statusLabel: existing?.data?.statusLabel || 'Patruliuoja',
+      crewLabel: existing?.data?.crewLabel || '—',
+      gpsActive: true,
+      inVeh: existing?.data?.inVeh || false,
+      panic: existing?.data?.panic || false,
+      isCrewLeader: existing?.data?.isCrewLeader || false,
+    };
+  }
+
   function setLocalPlayerPos(pos) {
     if (!pos || pos.x == null || pos.y == null) return;
+    if (pos.selfSource != null) setSelfSource(pos.selfSource);
     localPlayerPos = {
       x: Number(pos.x),
       y: Number(pos.y),
@@ -369,28 +400,19 @@ window.MdtMap = (function () {
       heading: pos.heading != null ? Number(pos.heading) : 0,
     };
     if (!leafletMap || !mapCfg || selfSource == null) return;
-    const key = `u:${selfSource}`;
-    const existing = unitState[key];
-    if (existing && existing.data) {
-      upsertUnit(
-        {
-          ...existing.data,
-          x: localPlayerPos.x,
-          y: localPlayerPos.y,
-          z: localPlayerPos.z,
-          heading: localPlayerPos.heading,
-        },
-        mapCfg,
-      );
+    upsertUnit(localPlayerUnit(), mapCfg);
+    if (!animEnabled) {
+      const s = unitState[`u:${selfSource}`];
+      if (s) applyMarkerPosition(s);
     }
   }
 
   function update(payload) {
     if (!leafletMap || !mapCfg) return;
+    if (payload.selfSource != null) setSelfSource(payload.selfSource);
     const units = applyLocalPlayerToUnits(enrichUnits(payload.units, payload.crews));
     const calls = activeCalls(payload.calls);
     lastCalls = calls;
-    if (payload.selfSource != null) selfSource = payload.selfSource;
 
     const keepU = new Set();
     units.forEach((u) => {
@@ -488,6 +510,7 @@ window.MdtMap = (function () {
     setOnSelect,
     selectByKey,
     setAnimEnabled,
+    setSelfSource,
     setLocalPlayerPos,
     destroy,
     gameToLatLng: (x, y) => gameToLatLng(x, y, mapCfg),

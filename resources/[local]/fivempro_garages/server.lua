@@ -153,7 +153,7 @@ end)
 
 QBCore.Functions.CreateCallback('fivempro_garages:server:spawnVehicle', function(source, cb, plate, garageId)
     local Player = QBCore.Functions.GetPlayer(source)
-    if not Player then return cb({ ok = false, message = 'Player not found' }) end
+    if not Player then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
 
     garageId = tostring(garageId or '')
     if isPdGarageId(garageId) and not isPoliceJobPlayer(Player) then
@@ -252,7 +252,7 @@ end)
 
 QBCore.Functions.CreateCallback('fivempro_garages:server:parkVehicle', function(source, cb, plate, props, garageId)
     local Player = QBCore.Functions.GetPlayer(source)
-    if not Player then return cb({ ok = false, message = 'Player not found' }) end
+    if not Player then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
 
     garageId = tostring(garageId or '')
     if isPdGarageId(garageId) then

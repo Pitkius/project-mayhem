@@ -660,7 +660,7 @@ function updateDrillUI(st) {
 function startDrill(data) {
   hidePhysicalPanels();
   physicalPanel.classList.add("physical-drill-fs");
-  physicalTitle.textContent = "DRILLING";
+  physicalTitle.textContent = "GRĄŽIMAS";
   physicalHint.textContent = "";
   physicalDrill.classList.remove("hidden");
   const stages = data.stages || 5;

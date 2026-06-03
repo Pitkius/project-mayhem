@@ -237,7 +237,7 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:cctvWatch', function(src, 
     camId = tostring(camId or '')
     local cam = camById(camId)
     if not cam then return cb({ ok = false, msg = 'Kamera nerasta.' }) end
-    if not isCctvOnline(camId) then return cb({ ok = false, msg = 'Kamera OFFLINE (sugadinta).' }) end
+    if not isCctvOnline(camId) then return cb({ ok = false, msg = 'Kamera neprieinama (sugadinta).' }) end
     local coords = resolveCamCoords(cam)
     if not coords then return cb({ ok = false, msg = 'Kamera neteisingai sukonfigūruota.' }) end
     local lookAt = resolveCamLookAt(cam, coords)
@@ -269,14 +269,14 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:bodycamWatch', function(sr
     if not isOnDuty(targetId) then return cb({ ok = false, msg = 'Pareigūnas ne tarnyboje.' }) end
     if not hasBodycamItem(targetId) then return cb({ ok = false, msg = 'Pareigūnas neturi bodycam.' }) end
     local st = Player(targetId).state.ltpdBodycam
-    if not st or st == false then return cb({ ok = false, msg = 'Bodycam OFFLINE.' }) end
+    if not st or st == false then return cb({ ok = false, msg = 'Kūno kamera neprieinama.' }) end
     cb({ ok = true, targetId = targetId })
 end)
 
 RegisterNetEvent('fivempro_ltpd:server:bodycamToggle', function()
     local src = source
     if not hasPerm(src, 'bodycam_wear') or not isOnDuty(src) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Bodycam – tik policijai tarnyboje.', 'error')
+        return TriggerClientEvent('QBCore:Notify', src, 'Kūno kamera – tik policijai tarnyboje.', 'error')
     end
     if not hasBodycamItem(src) then
         return TriggerClientEvent('QBCore:Notify', src, 'Neturite bodycam įrenginio.', 'error')
@@ -285,7 +285,7 @@ RegisterNetEvent('fivempro_ltpd:server:bodycamToggle', function()
     local cur = Player(src).state.ltpdBodycam
     if cur and cur ~= false then
         stopBodycam(src, 'toggle')
-        TriggerClientEvent('QBCore:Notify', src, 'Bodycam išjungtas.', 'primary')
+        TriggerClientEvent('QBCore:Notify', src, 'Kūno kamera išjungta.', 'primary')
         return
     end
 
@@ -312,7 +312,7 @@ RegisterNetEvent('fivempro_ltpd:server:bodycamToggle', function()
     }
     setBodycamState(src, true, payload)
     TriggerClientEvent('fivempro_ltpd:client:bodycamState', src, true, 'on')
-    TriggerClientEvent('QBCore:Notify', src, 'Bodycam įjungtas.', 'success')
+    TriggerClientEvent('QBCore:Notify', src, 'Kūno kamera įjungta.', 'success')
 end)
 
 RegisterNetEvent('fivempro_ltpd:server:bodycamForceOff', function(reason)
@@ -372,7 +372,7 @@ CreateThread(function()
                 cur = cur - drain
                 if cur <= 0 then
                     stopBodycam(src, 'battery')
-                    TriggerClientEvent('QBCore:Notify', src, 'Bodycam baterija išsekusi.', 'error')
+                    TriggerClientEvent('QBCore:Notify', src, 'Kūno kameros baterija išsekusi.', 'error')
                 else
                     BodycamBattery[src] = cur
                     st.battery = math.floor(cur + 0.5)
@@ -394,7 +394,7 @@ CreateThread(function()
             local src = tonumber(pid)
             if Player(src).state.ltpdBodycam and not hasBodycamItem(src) then
                 stopBodycam(src, 'no_item')
-                TriggerClientEvent('QBCore:Notify', src, 'Bodycam išjungtas – įrenginys ne inventoriuje.', 'error')
+                TriggerClientEvent('QBCore:Notify', src, 'Kūno kamera išjungta – įrenginys ne inventoriuje.', 'error')
             end
         end
     end

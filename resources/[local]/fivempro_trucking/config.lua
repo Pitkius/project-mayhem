@@ -63,21 +63,21 @@ Config.Map = {
 Config.RegistrationTerminals = {
     {
         id = 'ls_docks_terminal',
-        label = 'LS Docks Logistics',
+        label = 'LS dokų logistika',
         coords = vector3(1208.72, -3250.35, 5.03),
         heading = 90.0,
         blip = { sprite = 477, color = 47, scale = 0.85, label = 'TruckNet Registracija' },
     },
     {
         id = 'sandy_terminal',
-        label = 'Sandy Shores Terminal',
+        label = 'Sandy Shores terminalas',
         coords = vector3(1739.31, 3310.52, 41.22),
         heading = 195.0,
         blip = { sprite = 477, color = 47, scale = 0.75, label = 'TruckNet Registracija' },
     },
     {
         id = 'paleto_terminal',
-        label = 'Paleto Logistics',
+        label = 'Paleto logistika',
         coords = vector3(160.18, 6403.82, 31.22),
         heading = 300.0,
         blip = { sprite = 477, color = 47, scale = 0.75, label = 'TruckNet Registracija' },
@@ -86,31 +86,31 @@ Config.RegistrationTerminals = {
 
 Config.Hubs = {
     ls_docks = {
-        label = 'LS Docks',
+        label = 'LS dokai',
         region = 'los_santos',
         coords = vector3(1208.72, -3250.35, 5.03),
         radius = 35.0,
     },
     airport_cargo = {
-        label = 'Airport Cargo',
+        label = 'Oro uosto kroviniai',
         region = 'los_santos',
         coords = vector3(-1024.6, -2694.2, 13.8),
         radius = 40.0,
     },
     factory_district = {
-        label = 'Factory District',
+        label = 'Fabrikų rajonas',
         region = 'los_santos',
         coords = vector3(917.4, -1264.8, 25.5),
         radius = 32.0,
     },
     cypress_warehouse = {
-        label = 'Cypress Warehouses',
+        label = 'Cypress sandėliai',
         region = 'los_santos',
         coords = vector3(799.2, -2506.4, 20.1),
         radius = 34.0,
     },
     oil_refinery = {
-        label = 'Oil Refinery',
+        label = 'Naftos perdirbimo gamykla',
         region = 'los_santos',
         coords = vector3(2747.3, 1507.2, 24.5),
         radius = 38.0,
@@ -122,13 +122,13 @@ Config.Hubs = {
         radius = 36.0,
     },
     paleto_lumber = {
-        label = 'Paleto Lumber Yard',
+        label = 'Paleto medienos sandėlis',
         region = 'paleto',
         coords = vector3(-551.2, 5326.4, 70.2),
         radius = 34.0,
     },
     paleto_bay = {
-        label = 'Paleto Bay Depot',
+        label = 'Paleto įlankos depas',
         region = 'paleto',
         coords = vector3(160.18, 6403.82, 31.22),
         radius = 30.0,

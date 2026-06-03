@@ -51,6 +51,17 @@ Config.DrugSellItems = {
     { item = 'weed_og-kush', label = 'OG Kush', base = 130 },
     { item = 'meth', label = 'Meth', base = 210 },
     { item = 'cokebaggy', label = 'Coke Baggy', base = 190 },
+    { item = 'thc_cart', label = 'THC kronštainis', base = 95 },
+    { item = 'illegal_alcohol', label = 'Nelegalus alkoholis', base = 75 },
+    { item = 'vape_liquid', label = 'Vape skystis', base = 65 },
+    { item = 'weed_bag', label = 'Žolės maišelis', base = 140 },
+    { item = 'heroin_bag', label = 'Heroino maišelis', base = 220 },
+    { item = 'meth_bag', label = 'Metamfetamino maišelis', base = 260 },
+    { item = 'pills_pack', label = 'Tablečių pakuotė', base = 180 },
+    { item = 'mushroom_pack', label = 'Grybų pakuotė', base = 150 },
+    { item = 'cocaine_bag', label = 'Kokaino maišelis', base = 420 },
+    { item = 'amphetamine_bag', label = 'Amfetamino maišelis', base = 380 },
+    { item = 'cartel_pack', label = 'Kartelio mišinys', base = 520 },
 }
 
 Config.DrugSell = {

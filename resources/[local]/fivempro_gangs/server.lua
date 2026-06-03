@@ -578,3 +578,9 @@ MySQL.ready(function()
 
     print('[^2fivempro_gangs^7] DB paruošta, gang planšetė registruota.')
 end)
+
+exports('FindTurfAt', function(x, y)
+    if Config.FindTurfAt then
+        return Config.FindTurfAt(x, y)
+    end
+end)

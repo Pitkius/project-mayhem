@@ -94,7 +94,7 @@ local function startCctvView(cam)
         pos = pos,
         look = look,
         fov = cam.fov or 52.0,
-        label = cam.label or 'CCTV',
+        label = cam.label or 'Kamera',
         id = cam.id or '—',
     }
     cctvYaw = 0.0

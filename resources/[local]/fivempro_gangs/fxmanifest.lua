@@ -51,6 +51,7 @@ exports {
     'CompleteGangMission',
     'OnHackSuccess',
     'OnHackFailed',
+    'FindTurfAt',
 }
 
 dependencies {

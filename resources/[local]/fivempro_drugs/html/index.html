@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drugs Craft</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+    <header class="head">
+      <div>
+        <h1>NELEGALI <span>GAMYBA</span></h1>
+        <p id="stationLabel" class="sub">Stotis</p>
+      </div>
+      <button type="button" id="btnClose" class="btn ghost">Uždaryti</button>
+    </header>
+    <div class="layout">
+      <aside class="list">
+        <p class="list-title">Produktai</p>
+        <div id="productList"></div>
+      </aside>
+      <main class="detail">
+        <div id="emptyPick" class="empty">Pasirink produktą iš sąrašo.</div>
+        <div id="detailPanel" class="hidden">
+          <h2 id="prodTitle">—</h2>
+          <div class="meta">
+            <span id="prodLevel" class="pill">Lygis</span>
+            <span id="prodRisk" class="pill risk">Rizika</span>
+            <span id="prodTime" class="pill">Laikas</span>
+          </div>
+          <section>
+            <h3>Reikia</h3>
+            <ul id="ingredientList"></ul>
+          </section>
+          <section class="reward">
+            <span>Galimas uždarbis (NPC):</span>
+            <strong id="prodReward">$0</strong>
+          </section>
+          <button type="button" id="btnCraft" class="btn primary">GAMINTI</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="mgSkill" class="mg hidden">
+    <div class="mg-box">
+      <p>Skill check — spausk <kbd>SPACE</kbd> žalioje zonoje</p>
+      <div class="mg-track"><div id="mgZone" class="mg-zone"></div><div id="mgNeedle" class="mg-needle"></div></div>
+    </div>
+  </div>
+
+  <div id="mgAdvanced" class="mg hidden">
+    <div class="mg-box">
+      <p id="mgAdvLabel">Sudėtingas etapas — sek sekas</p>
+      <div id="mgSeq" class="mg-seq">—</div>
+      <div class="mg-keys">
+        <button type="button" data-key="W">W</button>
+        <button type="button" data-key="A">A</button>
+        <button type="button" data-key="S">S</button>
+        <button type="button" data-key="D">D</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

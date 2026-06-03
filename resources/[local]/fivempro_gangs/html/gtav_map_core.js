@@ -70,6 +70,10 @@ window.GtavMapCore = (function () {
     const rangeY = cfg.coordMaxY - cfg.coordMinY || 1;
     const mapRangeX = cfg.maxX - cfg.minX || 1;
     const mapRangeY = cfg.maxY - cfg.minY || 1;
+    const scaleX = cfg.scaleX || 1;
+    const scaleY = cfg.scaleY || 1;
+    const ox = cfg.offsetX || 0;
+    const oy = cfg.offsetY || 0;
 
     let tX = (x - cfg.coordMinX) / rangeX;
     let tY = (y - cfg.coordMinY) / rangeY;
@@ -77,8 +81,22 @@ window.GtavMapCore = (function () {
     tY = Math.max(0, Math.min(1, tY));
     if (cfg.flipY) tY = 1 - tY;
 
-    const lng = cfg.minX + tX * mapRangeX * (cfg.scaleX || 1) + (cfg.offsetX || 0);
-    const lat = cfg.minY + tY * mapRangeY * (cfg.scaleY || 1) + (cfg.offsetY || 0);
+    const lng = cfg.minX + tX * mapRangeX * scaleX + ox;
+    const lat = cfg.minY + tY * mapRangeY * scaleY + oy;
+
+    if (
+      Math.abs(scaleX - 1) < 1e-6 &&
+      Math.abs(scaleY - 1) < 1e-6 &&
+      Math.abs(ox) < 1e-6 &&
+      Math.abs(oy) < 1e-6 &&
+      !cfg.flipY &&
+      Math.abs(cfg.coordMinX - cfg.minX) < 1e-3 &&
+      Math.abs(cfg.coordMinY - cfg.minY) < 1e-3 &&
+      Math.abs(cfg.coordMaxX - cfg.maxX) < 1e-3 &&
+      Math.abs(cfg.coordMaxY - cfg.maxY) < 1e-3
+    ) {
+      return [y, x];
+    }
     return [lat, lng];
   }
 

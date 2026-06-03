@@ -324,7 +324,7 @@ end)
 
 QBCore.Functions.CreateCallback('fivempro_phone:server:saveContact', function(source, cb, data)
     local citizenid, P = getCitizen(source)
-    if not citizenid then return cb({ ok = false, message = 'Player not found' }) end
+    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
     local fullname = getFullName(P)
     ensurePhoneUser(citizenid, fullname)
 
@@ -457,7 +457,7 @@ end)
 
 QBCore.Functions.CreateCallback('fivempro_phone:server:createAccount', function(source, cb, data)
     local citizenid, P = getCitizen(source)
-    if not citizenid or not P then return cb({ ok = false, message = 'Player not found' }) end
+    if not citizenid or not P then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
     local fullname = getFullName(P)
     ensurePhoneUser(citizenid, fullname)
 

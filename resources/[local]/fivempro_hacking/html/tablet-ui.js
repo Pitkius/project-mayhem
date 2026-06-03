@@ -30,7 +30,7 @@ window.TabletUI = (function () {
     if (!data) return;
     const os = data.installed_os;
     const osName = os ? osLabel(os) : "—";
-    $("tabletSubtitle").textContent = data.tabletLabel || "Tablet";
+    $("tabletSubtitle").textContent = data.tabletLabel || "Planšetė";
     $("statOs").textContent = osName;
     const used = (data.exploits || []).length + (os ? 1 : 0);
     $("statStorage").textContent = `${used} / ${data.storage || 12}`;
@@ -42,7 +42,7 @@ window.TabletUI = (function () {
     if (!card || !data) return;
     const os = data.installed_os;
     card.innerHTML = `
-      <h3>${data.tabletLabel || "Tablet"}</h3>
+      <h3>${data.tabletLabel || "Planšetė"}</h3>
       <div class="sys-row"><span class="muted">Įdiegtas OS</span><strong>${osLabel(os)}</strong></div>
       <div class="sys-row"><span class="muted">Tablet tipas</span><strong>${data.tablet || "—"}</strong></div>
       <div class="sys-row"><span class="muted">Saugykla</span><strong>${(data.exploits || []).length + (os ? 1 : 0)} / ${data.storage}</strong></div>
@@ -73,7 +73,7 @@ window.TabletUI = (function () {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "cyber-btn buy-btn";
-      btn.textContent = ready ? "Install" : "Tuščias";
+      btn.textContent = ready ? "Įdiegti" : "Tuščias";
       btn.disabled = !ready;
       btn.onclick = () => installFromSlot(d.slot);
       div.appendChild(btn);
@@ -96,7 +96,7 @@ window.TabletUI = (function () {
       <span class="target-dot ${dotClass}"></span>
       <div>
         <strong>${t.label}</strong>
-        <div class="target-meta">Security Level ${t.security} · Status: ${t.status || "Online"}</div>
+        <div class="target-meta">Apsaugos lygis ${t.security} · Būsena: ${t.status || "Veikia"}</div>
       </div>
       <span class="target-sec">LVL ${t.security}</span>
     `;
@@ -122,7 +122,7 @@ window.TabletUI = (function () {
         id: k,
         label: t.label || k,
         security: (data.osCatalog && data.osCatalog[t.minOs] && data.osCatalog[t.minOs].level) || 1,
-        status: "Online",
+        status: "Veikia",
         tierId: k,
       });
       list.appendChild(card);
@@ -162,7 +162,7 @@ window.TabletUI = (function () {
     (data.tabletFiles || []).forEach((f) => {
       const card = document.createElement("article");
       card.className = "file-card" + (f.locked ? " locked" : "");
-      card.innerHTML = `<strong>${f.label}</strong><p class="muted small">${f.locked ? "Encrypted — reikia breach" : "Decrypted"}</p>`;
+      card.innerHTML = `<strong>${f.label}</strong><p class="muted small">${f.locked ? "Šifruota — reikia įsilaužti" : "Iššifruota"}</p>`;
       grid.appendChild(card);
     });
   }
@@ -210,15 +210,15 @@ window.TabletUI = (function () {
     selectedTarget = t;
     const panel = $("targetPanel");
     const meta = (data.targetMeta || {})[t.tierId || t.id] || {};
-    $("targetTitle").textContent = (t.label || "TARGET").toUpperCase();
-    const rewards = meta.rewards || ["Cash", "Data"];
+    $("targetTitle").textContent = (t.label || "TAIKINYS").toUpperCase();
+    const rewards = meta.rewards || ["Grynieji", "Duomenys"];
     $("targetDetails").innerHTML = `
-      <div class="target-detail-block"><span class="tdt">Security</span><span>Level ${t.security}</span></div>
-      <div class="target-detail-block"><span class="tdt">Encryption</span><span>${meta.encryption || "AES-128"}</span></div>
-      <div class="target-detail-block"><span class="tdt">Firewall</span><span>${meta.firewall || "Active"}</span></div>
-      <div class="target-detail-block"><span class="tdt">Rewards</span><ul>${rewards.map((r) => `<li>${r}</li>`).join("")}</ul></div>
-      <div class="target-detail-block"><span class="tdt">Requirements</span><span>${meta.requirements || "—"}</span></div>
-      <div class="target-detail-block"><span class="tdt">Status</span><span>${t.status || "Online"}</span></div>
+      <div class="target-detail-block"><span class="tdt">Apsauga</span><span>Lygis ${t.security}</span></div>
+      <div class="target-detail-block"><span class="tdt">Šifravimas</span><span>${meta.encryption || "AES-128"}</span></div>
+      <div class="target-detail-block"><span class="tdt">Užkarda</span><span>${meta.firewall || "Aktyvuota"}</span></div>
+      <div class="target-detail-block"><span class="tdt">Atlygis</span><ul>${rewards.map((r) => `<li>${r}</li>`).join("")}</ul></div>
+      <div class="target-detail-block"><span class="tdt">Reikalavimai</span><span>${meta.requirements || "—"}</span></div>
+      <div class="target-detail-block"><span class="tdt">Būsena</span><span>${t.status || "Veikia"}</span></div>
     `;
     panel.classList.remove("hidden");
     renderNetwork();

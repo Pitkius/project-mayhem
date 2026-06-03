@@ -3,13 +3,13 @@ const SLIDES = [
     image: 'assets/slide_police.jpg',
     tag: 'LTPD',
     title: 'TARNYBA GATVĖSE',
-    desc: 'Patruliuok, reaguok į dispatch ir saugok miestą.',
+    desc: 'Patruliuok, reaguok į iškvietimus ir saugok miestą.',
   },
   {
     image: 'assets/slide_heist.jpg',
     tag: 'HEIST',
     title: 'PLANUOK OPERACIJĄ',
-    desc: 'Tablet, OS, hack — bankai, ATM ir kazino laukia.',
+    desc: 'Planšetė, OS, įsilaužimai — bankai, bankomatai ir kazino laukia.',
   },
   {
     image: 'assets/slide_gangs.jpg',
@@ -52,13 +52,13 @@ const SLIDES = [
 const TIPS = [
   'Laikykis taisyklių — geriau RP nei grindinimas.',
   'Naudok /report problemoms, ne OOC šauksmus.',
-  'PD: būk on duty, kad gautum dispatch iškvietimus.',
-  'Heist: įdiek OS į tablet prieš bandant Pacific.',
-  'ATM: reikia tow_chain ir stiprios mašinos tempimui.',
+  'Policija: būk tarnyboje, kad gautum iškvietimus.',
+  'Plėšimas: įdiek OS į planšetę prieš bandant Pacific.',
+  'Bankomatas: reikia tempimo grandinės ir stiprios mašinos.',
   'Gaujos: užimk turf per įtaką ir misijas.',
   'Mechanikai ir EMS — legalūs keliai užsidirbti.',
   'Naktį miestas pavojingesnis — planuok maršrutą.',
-  'Inventorius: tablet ir flashdrive saugok atskirai.',
+  'Inventorius: planšetę ir USB laikyk atskirai.',
   'Kazino — laimė kartais, bet bankas visada laimi.',
 ];
 

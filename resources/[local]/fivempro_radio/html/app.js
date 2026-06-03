@@ -4,13 +4,22 @@ const screenLabel = document.getElementById("screenLabel");
 const screenSub = document.getElementById("screenSub");
 const screenAlias = document.getElementById("screenAlias");
 const screenBatt = document.getElementById("screenBatt");
+const screenLock = document.getElementById("screenLock");
+const screenBadge = document.getElementById("screenBadge");
+const screenConn = document.getElementById("screenConn");
+const signalBars = document.getElementById("signalBars");
+const labelConnect = document.getElementById("labelConnect");
+const labelSound = document.getElementById("labelSound");
 const btnConnect = document.getElementById("btnConnect");
 const btnFreq = document.getElementById("btnFreq");
 const btnSound = document.getElementById("btnSound");
+const btnChPrev = document.getElementById("btnChPrev");
+const btnChNext = document.getElementById("btnChNext");
 const modalFreq = document.getElementById("modal-freq");
 const inputFreq = document.getElementById("inputFreq");
 const inputAlias = document.getElementById("inputAlias");
 const freqHint = document.getElementById("freqHint");
+const waveCanvas = document.getElementById("waveCanvas");
 
 let state = {
   freq: null,
@@ -20,6 +29,8 @@ let state = {
   connected: false,
   soundOn: true,
 };
+
+let waveAnim = null;
 
 function nui(name, data = {}) {
   return fetch(`https://${GetParentResourceName()}/${name}`, {
@@ -34,21 +45,105 @@ function padFreq(n) {
   return String(n).padStart(2, "0");
 }
 
+function inferBadge(label, sub) {
+  const t = `${label || ""} ${sub || ""}`.toUpperCase();
+  if (t.includes("PD") || t.includes("POLIC")) return "PD";
+  if (t.includes("EMS") || t.includes("MED")) return "EMS";
+  if (t.includes("MECH")) return "MECH";
+  return "";
+}
+
+function setSignalBars(connected, locked) {
+  const spans = signalBars.querySelectorAll("span");
+  const level = connected ? (locked ? 3 : 4) : 0;
+  spans.forEach((el, i) => {
+    el.classList.toggle("on", i < level);
+  });
+}
+
 function refreshUi() {
   screenFreq.textContent = state.freq != null ? padFreq(state.freq) : "--";
-  screenLabel.textContent = state.label || "RACIJA";
-  screenSub.textContent = state.sub || (state.freq != null ? "Pasiruošęs" : "Įveskite dažnį");
-  screenAlias.textContent = state.alias ? `Vardas: ${state.alias}` : "";
+  screenLabel.textContent = (state.label || "RACIJA").toUpperCase();
+  screenAlias.textContent = state.alias ? state.alias : "";
 
-  if (state.connected) {
-    btnConnect.classList.add("connected");
-    screenSub.textContent = state.sub || "PRISIJUNGTA";
+  const locked = !!(state.sub && /užkoduot|Užkoduot/i.test(state.sub));
+  screenLock.classList.toggle("visible", locked);
+
+  const badge = inferBadge(state.label, state.sub);
+  if (badge) {
+    screenBadge.textContent = badge;
+    screenBadge.classList.remove("hidden");
   } else {
-    btnConnect.classList.remove("connected");
-    if (state.freq != null && !state.sub) screenSub.textContent = "Pasiruošęs";
+    screenBadge.classList.add("hidden");
   }
 
-  screenBatt.textContent = state.soundOn ? "SND" : "MUT";
+  if (state.connected) {
+    app.classList.add("is-connected");
+    btnConnect.classList.add("is-connected");
+    labelConnect.textContent = "ATJUNGTI";
+    screenConn.textContent = "PRISIJUNGTA";
+    screenConn.classList.add("on");
+    screenSub.textContent = state.sub || "Kanalas aktyvus";
+    startWave();
+  } else {
+    app.classList.remove("is-connected");
+    btnConnect.classList.remove("is-connected");
+    labelConnect.textContent = "PRISIJUNGTI";
+    screenConn.textContent = "NEPRISIJUNGTA";
+    screenConn.classList.remove("on");
+    screenSub.textContent = state.sub || (state.freq != null ? "Pasiruošęs" : "Įveskite dažnį");
+    stopWave();
+  }
+
+  setSignalBars(state.connected, locked);
+  labelSound.textContent = state.soundOn ? "ĮJ." : "IŠJ.";
+  labelSound.classList.toggle("on", state.soundOn);
+  screenBatt.textContent = state.soundOn ? "78%" : "62%";
+}
+
+function changeFreq(delta) {
+  const base = state.freq != null ? state.freq : 0;
+  const next = Math.max(1, Math.min(999, base + delta));
+  if (!state.alias) {
+    modalFreq.classList.remove("hidden");
+    inputFreq.value = next;
+    freqHint.textContent = "Įrašyk vardą ir patvirtink.";
+    freqHint.className = "modal__hint err";
+    return;
+  }
+  nui("validateFreq", { freq: next, alias: state.alias });
+}
+
+function startWave() {
+  if (waveAnim) return;
+  const ctx = waveCanvas.getContext("2d");
+  let t = 0;
+  function draw() {
+    const w = waveCanvas.width;
+    const h = waveCanvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(167, 139, 250, 0.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 0; x < w; x++) {
+      const y = h / 2 + Math.sin((x + t) * 0.08) * 10 + Math.sin((x + t) * 0.03) * 6;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    t += state.connected ? 4 : 1;
+    waveAnim = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function stopWave() {
+  if (waveAnim) {
+    cancelAnimationFrame(waveAnim);
+    waveAnim = null;
+  }
+  const ctx = waveCanvas.getContext("2d");
+  ctx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
 }
 
 document.getElementById("btnClose").addEventListener("click", () => nui("close"));
@@ -60,6 +155,9 @@ btnFreq.addEventListener("click", () => {
   freqHint.className = "modal__hint";
   modalFreq.classList.remove("hidden");
 });
+
+btnChPrev.addEventListener("click", () => changeFreq(-1));
+btnChNext.addEventListener("click", () => changeFreq(1));
 
 document.getElementById("btnFreqCancel").addEventListener("click", () => modalFreq.classList.add("hidden"));
 
@@ -85,19 +183,21 @@ btnSound.addEventListener("click", () => nui("toggleSound"));
 btnConnect.addEventListener("click", () => {
   if (state.connected) {
     nui("disconnect");
-  } else {
-    if (state.freq == null) {
-      modalFreq.classList.remove("hidden");
-      return;
-    }
-    if (!state.alias) {
-      modalFreq.classList.remove("hidden");
-      freqHint.textContent = "Pirmiausia įrašyk vardą ir dažnį.";
-      freqHint.className = "modal__hint err";
-      return;
-    }
-    nui("connect", { freq: state.freq, alias: state.alias });
+    state.connected = false;
+    refreshUi();
+    return;
   }
+  if (state.freq == null) {
+    modalFreq.classList.remove("hidden");
+    return;
+  }
+  if (!state.alias) {
+    modalFreq.classList.remove("hidden");
+    freqHint.textContent = "Pirmiausia įrašyk vardą ir dažnį.";
+    freqHint.className = "modal__hint err";
+    return;
+  }
+  nui("connect", { freq: state.freq, alias: state.alias });
 });
 
 window.addEventListener("keydown", (e) => {
@@ -123,6 +223,7 @@ window.addEventListener("message", (event) => {
   if (msg.action === "close") {
     app.classList.add("hidden");
     modalFreq.classList.add("hidden");
+    stopWave();
   }
   if (msg.action === "freqResult") {
     const d = msg.data || {};
@@ -148,4 +249,4 @@ function tickClock() {
     `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 tickClock();
-setInterval(tickClock, 10000);
+setInterval(tickClock, 15000);

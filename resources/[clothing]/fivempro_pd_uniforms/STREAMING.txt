@@ -1,33 +1,54 @@
-PER DIDELI ASSETAI (97+ serverio perspejimai)
-============================================
+PD UNIFORMA — „Oversized assets“ (97 perspejimai)
+================================================
 
-FiveM rodo "uses 64.0 MiB" / "Oversized assets" kai .ytd/.ydd teksturos
-yra per didelio rezoliucijos (dazniausiai 2048x2048 ar didesnes, be DXT
-suspaudimo). Visas stream/ aplankas kraunamas paleidus resursa — net jei
-zaidejas nenaudoja tos aprangos.
+KAS VYKSTA
+--------
+FiveM krauna VISUS failus is stream/ paleidus resursa. Kiekvienas .ytd
+issipakuoja i RAM (daznai 32–64 MB VIENAM failui), nors diske failas ~7–22 MB.
 
-Kas vyksta serveryje
---------------------
-- Daugelis jbib/task/accs .ytd failu = 64 MB RAM kiekvienas
-- Vienas .ydd (task_004_u) = 128 MB
-- Kartu gali neuzsikrauti MLO, transportas, kiti addon drabuziai
+Tai NE script klaida — addon teksturos yra per didelio rezoliucijos
+(dazniausiai 2048x2048 be DXT suspaudimo).
 
-Ka sutvarkyti (rekomenduojama)
-------------------------------
-1. OpenIV: atidaryk .ytd -> Export teksturas -> PNG
-2. Sumažink iki maks. 1024x1024 (uniformoms daznai pakanka 512x512)
-3. Import atgal su DXT5 / BC7 suspaudimu (ne raw PNG viduje .ytd)
-4. Issaugok ir perkrauk serveri
+SVARBU: visos 5 kolekcijos NAUDOJAMOS (config_duty_outfits.lua):
+  mp_f_pdmot, mp_f_pdv2, mp_f_pdvyrai, mp_m_pdv2, mp_m_pdvyrai
+Negalima tiesiog istrinti stream/ aplanku — uniformos nebeveiks.
 
-Alternatyva (laikinai)
-----------------------
-cfg/20_qb.cfg — uzkommentuok eilutes:
+REZULTATAS jei neoptimizuosi
+----------------------------
+- MLO / masinos / kiti addon gali neuzsikrauti
+- Zaidimas lagina prisijungus
+- Konsoleje 97+ geltoni perspejimai (normalu su siuo pack)
+
+SPRENDIMAS A — OpenIV (rekomenduojama, palieki PD apranga)
+---------------------------------------------------------
+1. Atsisiusti OpenIV: https://openiv.com/
+2. Edit mode → Enable for FiveM
+3. Eik i: resources/[clothing]/fivempro_pd_uniforms/stream/
+4. Kiekvienam dideliam .ytd (ypac jbib_*, task_*, accs_*):
+   a) Atidaryk .ytd → Export visas teksturas → PNG
+   b) Sumažink PNG iki 512x512 arba 1024x1024 (Photoshop / GIMP)
+   c) Import atgal → formatas DXT5 (ne raw PNG viduje!)
+   d) Issaugok .ytd
+5. Ypac svarbu sutvarkyti:
+   - mp_m_freemode_01_mp_m_pdv2^task_004_u.ydd (128 MB RAM!)
+   - visus *jbib_diff_*_uni.ytd (64 MB RAM)
+6. Perkrauk serveri → perspejimai turetu sumazeti iki 0 ar keliu.
+
+Didziausi failai (PowerShell):
+  powershell -File tools/list_large_clothing_assets.ps1
+
+SPRENDIMAS B — Laikinai isjungti (greitas testas)
+-------------------------------------------------
+cfg/20_qb.cfg — uzkomentuok:
   # ensure fivempro_pd_uniforms
   # ensure fivempro_gmp_uniforms
-Tada PD/EMS naudos vanilla drabuzius, kol optimizuosi pack.
+PD naudos vanilla drabuzius, streaming problemos dings.
 
-Sumažinti pack dydi
--------------------
-Jei nenaudoji visu kolekciju (mp_f_pdmot, mp_m_pdvyrai, mp_*_pdv2),
-galima iš stream/ ištrinti nenaudojamus aplankus — žr. config_duty_outfits.lua
-collection pavadinimus.
+SPRENDIMAS C — Naujas lengvesnis pack
+-------------------------------------
+Jei turi originalu moda su mazesne rezoliucija — pakeisk stream/ turini
+arba pirk/naudok pack su 512px teksturinomis.
+
+GMP (fivempro_gmp_uniforms)
+---------------------------
+Tik ~5 perspejimai (32 MB) — maziau kritiska nei PD pack.

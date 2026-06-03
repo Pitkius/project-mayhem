@@ -27,6 +27,7 @@ Config.Permissions = {
     mdt_wanted = 2,
     mdt_fingerprint = 1,
     mdt_arrest_record = 2,
+    mdt_interrogation = 2,
     cuff = 1,
     search_inventory = 1,
     traffic_radar = 1, -- rezervas / ateities integracija
@@ -64,11 +65,11 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT žemėlapis — pilna sala, HD satelitas (2048 PNG, kraštai = gameMin/gameMax)
+--- MDT žemėlapis — pilna sala, HD satelitas (2048×2560, 1:1 su žaidimo X/Y)
+--- Blipai ir satelitas: Leaflet [lat,lng] = [Y,X]. Jei visi blipai pastumti — koreguok offset/scale (ne flipY).
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
-    --- Žaidėjo koord. → žemėlapis (jei blipai pastoviai pastumti — koreguok offset / scale)
     coordMin = { x = -4000.0, y = -4000.0 },
     coordMax = { x = 4500.0, y = 6625.0 },
     viewMin = { x = -4000.0, y = -4000.0 },
@@ -98,20 +99,25 @@ Config.ShowHelipadBlip = false
 Config.HelipadBlipSprite = 43
 Config.HelipadBlipScale = 0.9
 
+--- 3D markeriai ant žemės MRPD / kituose postuose (ne žemėlapio blipai)
+Config.ShowPd3DMarkers = true
+Config.PdMarkerDrawDistance = 80.0
+Config.PdMarkerZOffset = 0.02
+
 --- Tarnybinis transportas (modeliai turi būti whitelist – žr. server spawnFleet)
 Config.FleetVehicles = {
-    { model = 'police', label = 'Cruiser' },
-    { model = 'police2', label = 'Buffalo' },
-    { model = 'police3', label = 'Interceptor' },
+    { model = 'police', label = 'Patrulinis' },
+    { model = 'police2', label = 'Buffalo patrulinis' },
+    { model = 'police3', label = 'Interceptoria' },
     { model = 'policeb', label = 'Motociklas' },
-    { model = 'sheriff', label = 'Sheriff Cruiser' },
-    { model = 'sheriff2', label = 'Sheriff SUV' },
-    { model = 'riot', label = 'Riot' },
+    { model = 'sheriff', label = 'Šerifų patrulinis' },
+    { model = 'sheriff2', label = 'Šerifų visureigis' },
+    { model = 'riot', label = 'Antiriot' },
 }
 
 --- Sraigtasparniai (stogas / helipadas) – spawn ant `heliGarage.spawn`
 Config.FleetHelicopters = {
-    { model = 'polmav', label = 'Police Maverick' },
+    { model = 'polmav', label = 'Policijos Maverick' },
     { model = 'buzzard2', label = 'Buzzard (tarnybinis)' },
 }
 
@@ -322,7 +328,7 @@ Config.PdDoorToggleReach = 4.2
 Config.PdDoorGroups = {
     {
         id = 'ls_mrpd_reception',
-        label = 'Reception entrance',
+        label = 'Registratūros įėjimas',
         interact = vector3(434.81, -981.93, 30.89),
         interactDist = 2.5,
         defaultLocked = true,
@@ -333,7 +339,7 @@ Config.PdDoorGroups = {
     },
     {
         id = 'ls_mrpd_side',
-        label = 'Side entrance',
+        label = 'Šoninis įėjimas',
         interact = vector3(441.9, -998.7, 30.8),
         interactDist = 2.5,
         defaultLocked = true,
@@ -344,7 +350,7 @@ Config.PdDoorGroups = {
     },
     {
         id = 'ls_mrpd_back',
-        label = 'Rear entrance',
+        label = 'Galinis įėjimas',
         interact = vector3(468.6, -1014.4, 26.4),
         interactDist = 2.5,
         defaultLocked = true,
@@ -354,8 +360,18 @@ Config.PdDoorGroups = {
         },
     },
     {
+        id = 'ls_mrpd_interview',
+        label = 'Apklausos kambarys',
+        interact = vector3(475.35, -1003.15, 26.27),
+        interactDist = 3.5,
+        defaultLocked = false,
+        doors = {
+            { model = 'gabz_mrpd_door_03', coords = vector3(474.2, -1003.9, 26.27) },
+        },
+    },
+    {
         id = 'ls_mrpd_back_gate',
-        label = 'Rear yard gate',
+        label = 'Kiemo vartai',
         interact = vector3(488.8, -1020.2, 30.0),
         interactDist = 14.0,
         defaultLocked = true,

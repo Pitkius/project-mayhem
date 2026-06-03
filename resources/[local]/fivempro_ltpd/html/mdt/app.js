@@ -135,6 +135,8 @@ window.addEventListener('message', (e) => {
     document.getElementById('tabWant').style.display = perms.wanted ? '' : 'none';
     const tabArrests = document.getElementById('tabArrests');
     if (tabArrests) tabArrests.style.display = perms.arrest ? '' : 'none';
+    const tabInterr = document.getElementById('tabInterrogations');
+    if (tabInterr) tabInterr.style.display = perms.interrogation ? '' : 'none';
     document.getElementById('tabCctv').style.display = perms.cctv ? '' : 'none';
     document.getElementById('tabBodycam').style.display = perms.bodycam ? '' : 'none';
     const sel = document.getElementById('finePreset');
@@ -158,6 +160,8 @@ window.addEventListener('message', (e) => {
       MdtMap.ensureMap(d.data && d.data.map);
       MdtMap.setOnSelect(onMapBlipSelect);
       if (MdtMap.setAnimEnabled) MdtMap.setAnimEnabled(true);
+      if (d.data?.selfSource != null) MdtMap.setSelfSource(d.data.selfSource);
+      if (d.data?.playerPos) MdtMap.setLocalPlayerPos({ ...d.data.playerPos, selfSource: d.data.selfSource });
     }
     preloadMapImage(mapMeta.imageUrl);
     mdtEnsureConnected().then((ok) => {
@@ -190,7 +194,7 @@ window.addEventListener('message', (e) => {
     mdtSurveillanceLive = d.active === true;
     if (mdtSurveillanceLive) stopDispatchPoll();
     const meta = [d.camId ? `ID ${d.camId}` : '', d.audio ? 'Garsas' : 'Be garso'].filter(Boolean).join(' • ');
-    setSurveillanceOverlay(d.active, d.label || 'CCTV LIVE', meta, d);
+    setSurveillanceOverlay(d.active, d.label || 'Kamera tiesiogiai', meta, d);
     document.getElementById('cctvLiveHint').classList.toggle('hidden', !d.active);
     if (d.active && d.label) {
       document.getElementById('cctvStatus').textContent = d.label;
@@ -203,7 +207,7 @@ window.addEventListener('message', (e) => {
   if (d.action === 'bodycamOverlay') {
     mdtSurveillanceLive = d.active === true;
     if (mdtSurveillanceLive) stopDispatchPoll();
-    setSurveillanceOverlay(d.active, 'BODYCAM LIVE', d.targetId ? `ID ${d.targetId}` : '');
+    setSurveillanceOverlay(d.active, 'Kūno kamera tiesiogiai', d.targetId ? `ID ${d.targetId}` : '');
     document.getElementById('bodycamLiveHint').classList.toggle('hidden', !d.active);
     if (!d.active) {
       onSurveillanceEnded(false);
@@ -460,6 +464,40 @@ if (arrestSave) {
   };
 }
 
+function renderInterrogationHistory(res) {
+  const el = document.getElementById('interrResults');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!res || !res.ok || !res.rows || !res.rows.length) {
+    el.innerHTML = '<div class="muted">Apklausų įrašų nėra.</div>';
+    return;
+  }
+  res.rows.forEach((row) => {
+    const c = document.createElement('div');
+    c.className = 'card';
+    const notes = Array.isArray(row.notes) ? row.notes.join(' · ') : '';
+    const ans = Array.isArray(row.answers) ? row.answers.length : 0;
+    c.innerHTML = `<h4>${escapeHtml(row.created_at || '')} — ${escapeHtml(row.mode || '')}</h4>
+      <div><strong>Rezultatas:</strong> ${escapeHtml(row.result || '—')}</div>
+      <div><strong>Kambarys:</strong> ${escapeHtml(row.room_id || '—')}</div>
+      <div class="muted">Pareigūnas: ${escapeHtml(row.officer_name || row.officer_citizenid || '—')}</div>
+      <div>Įrašyta: ${row.recorded ? 'taip' : 'ne'} · Spaudimas: ${escapeHtml(String(row.pressure_max ?? 0))}</div>
+      ${row.summary ? `<div>${escapeHtml(row.summary)}</div>` : ''}
+      ${notes ? `<div class="muted">${escapeHtml(notes)}</div>` : ''}
+      ${ans ? `<div class="muted">${ans} atsakymų</div>` : ''}`;
+    el.appendChild(c);
+  });
+}
+
+const interrLoad = document.getElementById('interrLoad');
+if (interrLoad) {
+  interrLoad.onclick = () => {
+    const cid = document.getElementById('interrCid').value.trim();
+    if (!cid) return;
+    nuiPost('getInterrogationHistory', { citizenid: cid }).then(renderInterrogationHistory);
+  };
+}
+
 function stopDispatchPoll() {
   if (dispatchPoll) {
     clearInterval(dispatchPoll);
@@ -584,8 +622,6 @@ function enrichUnitForPanel(u, crews) {
 
 function renderDispatchMap(payload) {
   if (!window.MdtMap) return;
-  const panelVisible = !document.getElementById('panel-units')?.classList.contains('hidden');
-  if (!panelVisible) return;
   MdtMap.update(payload || {});
   if (selectedMapTarget?.data) {
     const crews = payload.crews || [];
@@ -851,7 +887,7 @@ function setSurveillanceOverlay(active, label, meta, cctvData) {
   }
   if (!ov) return;
   ov.classList.toggle('hidden', !active);
-  document.getElementById('survOverlayLabel').textContent = label || 'LIVE';
+  document.getElementById('survOverlayLabel').textContent = label || 'TIESIOGIAI';
   document.getElementById('survOverlayMeta').textContent = meta || '';
   const rec = document.getElementById('survRec');
   if (rec) rec.classList.toggle('on', !!(active && cctvData && cctvData.rec));
@@ -977,7 +1013,7 @@ function cctvSelectCamera(camId) {
   const cam = getSiteCameras(site).find((c) => c.id === camId);
   const status = document.getElementById('cctvStatus');
   if (status && cam) {
-    status.textContent = `${site ? site.label + ' — ' : ''}${cam.label}${cam.online ? '' : ' (OFFLINE)'}`;
+    status.textContent = `${site ? site.label + ' — ' : ''}${cam.label}${cam.online ? '' : ' (neprieinama)'}`;
   }
   updateCctvBreadcrumb();
   renderCctvPanel();
@@ -1038,10 +1074,10 @@ function renderCctvPanel() {
       card.type = 'button';
       card.className = 'card surv-card surv-site-card';
       const st = s.allOnline
-        ? '<span class="badge ok">ONLINE</span>'
+        ? '<span class="badge ok">VEIKIA</span>'
         : s.onlineCount > 0
           ? `<span class="badge warn">${s.onlineCount}/${s.cameraCount}</span>`
-          : '<span class="badge off">OFFLINE</span>';
+          : '<span class="badge off">NEPRIEINAMA</span>';
       card.innerHTML = `<h4>${escapeHtml(s.label)}</h4><div class="muted">${escapeHtml(s.zoneLabel || s.zone)} • ${s.cameraCount} kamera(-os) • ${st}</div>`;
       card.onclick = () => cctvOpenSite(s.id);
       card.ondblclick = () => {
@@ -1067,7 +1103,7 @@ function renderCctvPanel() {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'card surv-card' + (selectedCctvId === c.id ? ' selected' : '');
-    const st = c.online ? '<span class="badge ok">ONLINE</span>' : '<span class="badge off">OFFLINE</span>';
+    const st = c.online ? '<span class="badge ok">VEIKIA</span>' : '<span class="badge off">NEPRIEINAMA</span>';
     const prop = c.hasProp ? ' • prop' : '';
     card.innerHTML = `<h4>${escapeHtml(c.label)}</h4><div class="muted">${st}${c.audio ? ' • garsas' : ''}${prop}</div>`;
     card.onclick = () => cctvSelectCamera(c.id);
@@ -1086,7 +1122,7 @@ function refreshCctvList() {
     if (!res || !res.ok) {
       if (listEl) {
         listEl.innerHTML =
-          '<div class="muted">CCTV nepasiekiama. Būkite <strong>police</strong> darbe ir <strong>pamainoje</strong> (duty).</div>';
+          '<div class="muted">Vaizdo stebėjimas nepasiekiamas. Būkite <strong>policijoje</strong> ir <strong>tarnyboje</strong>.</div>';
       }
       return;
     }
@@ -1142,7 +1178,7 @@ function renderBodycamList() {
       const crew = f.crew ? ` • ${escapeHtml(String(f.crew))}` : '';
       const batt = f.battery != null ? ` • ${f.battery}%` : '';
       const tag = f.callsign ? escapeHtml(f.callsign) : escapeHtml(f.name || 'Pareigūnas');
-      card.innerHTML = `<h4>${escapeHtml(f.name)}</h4><div class="muted">${tag}${crew}${batt}</div><span class="badge ok">LIVE</span>`;
+      card.innerHTML = `<h4>${escapeHtml(f.name)}</h4><div class="muted">${tag}${crew}${batt}</div><span class="badge ok">TIESIOGIAI</span>`;
       card.onclick = () => {
         selectedBodycamId = f.serverId;
         document.getElementById('bodycamStatus').textContent = `${f.name}${f.callsign ? ' • ' + f.callsign : ''}`;

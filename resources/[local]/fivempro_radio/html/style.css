@@ -1,9 +1,25 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+    --bg: #08080c;
+    --device: #121218;
+    --device-edge: #2a2a34;
+    --screen: #0c0c12;
+    --purple: #7c3aed;
+    --purple-lit: #a78bfa;
+    --purple-btn: #6d28d9;
+    --green: #22c55e;
+    --green-lit: #4ade80;
+    --text: #f1f5f9;
+    --muted: #64748b;
+    --panel: #16161f;
+}
+
 html, body {
     background: transparent !important;
     overflow: hidden;
     font-family: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
+    color: var(--text);
 }
 
 .hidden { display: none !important; }
@@ -18,257 +34,427 @@ html, body {
 
 .radio-app:not(.hidden) { pointer-events: auto; }
 
-.radio-wrap {
+.radio-stage {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 14px;
+    filter: drop-shadow(0 28px 56px rgba(0, 0, 0, 0.75));
 }
 
 .radio-close {
     position: absolute;
-    top: -10px;
-    right: -14px;
-    z-index: 5;
+    top: -6px;
+    right: -12px;
+    z-index: 20;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(167, 139, 250, 0.45);
+    border-radius: 50%;
+    background: rgba(12, 10, 20, 0.95);
+    color: #e2e8f0;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+/* Brand header */
+.radio-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.radio-brand__icon {
+    width: 52px;
+    height: 52px;
+    color: var(--purple-lit);
+    filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.55));
+}
+
+.radio-brand__text h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1;
+}
+
+.radio-brand__text p {
+    margin-top: 4px;
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+/* Device shell */
+.radio-device {
+    position: relative;
+    width: min(320px, 38vw);
+    padding: 52px 22px 28px;
+    background: linear-gradient(165deg, #1e1e28 0%, var(--device) 35%, #0a0a0f 100%);
+    border-radius: 22px 22px 28px 28px;
+    border: 2px solid var(--device-edge);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 -12px 32px rgba(0, 0, 0, 0.5),
+        0 10px 0 #050508;
+}
+
+.radio-device__hardware { pointer-events: none; }
+
+.radio-antenna {
+    position: absolute;
+    top: -42px;
+    left: 28px;
+    width: 10px;
+    height: 56px;
+    background: linear-gradient(90deg, #4b5563, #9ca3af 50%, #6b7280);
+    border-radius: 4px 4px 2px 2px;
+    transform: rotate(-6deg);
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.4);
+}
+
+.radio-knob {
+    position: absolute;
+    top: 10px;
     width: 36px;
     height: 36px;
-    border: none;
     border-radius: 50%;
-    background: rgba(15, 12, 24, 0.92);
-    color: #e2e8f0;
-    font-size: 1.25rem;
-    cursor: pointer;
-    border: 1px solid rgba(167, 139, 250, 0.45);
+    background: radial-gradient(circle at 32% 28%, #d1d5db, #4b5563 65%, #1f2937);
+    border: 2px solid #374151;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
 }
 
-.radio-chassis {
-    position: relative;
-    width: min(420px, 48vw);
-    aspect-ratio: 520 / 720;
-    user-select: none;
-    filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.7));
-}
+.radio-knob--a { left: 50%; transform: translateX(-52px); }
+.radio-knob--b { left: 50%; transform: translateX(16px); }
 
-/* Racijos korpusas (be išorinio PNG) */
-.radio-body {
+.radio-side {
     position: absolute;
-    inset: 0;
-    border-radius: 28px 28px 36px 36px;
-    background: linear-gradient(165deg, #3d3a48 0%, #1a1824 45%, #12101a 100%);
-    border: 3px solid #5c5768;
-    box-shadow:
-        inset 0 2px 0 rgba(255, 255, 255, 0.08),
-        inset 0 -8px 24px rgba(0, 0, 0, 0.45),
-        0 8px 0 #0a090f;
-}
-
-.radio-body__antenna {
-    position: absolute;
-    top: -18%;
-    left: 18%;
+    top: 38%;
     width: 8px;
-    height: 22%;
-    background: linear-gradient(90deg, #6b7280, #9ca3af);
-    border-radius: 4px;
-    transform: rotate(-8deg);
+    height: 48px;
+    background: linear-gradient(180deg, #374151, #1f2937);
+    border-radius: 3px;
 }
 
-.radio-body__speaker {
+.radio-side--l { left: 4px; }
+.radio-side--r { right: 4px; }
+
+.radio-grill {
     position: absolute;
-    left: 12%;
-    right: 12%;
-    bottom: 8%;
-    height: 14%;
-    border-radius: 10px;
-    background: repeating-linear-gradient(
-        90deg,
-        #0f0e14 0,
-        #0f0e14 3px,
-        #252330 3px,
-        #252330 6px
-    );
-    border: 2px solid #4b5563;
+    left: 18px;
+    right: 18px;
+    bottom: 10px;
+    height: 22px;
+    border-radius: 6px;
+    background: repeating-linear-gradient(90deg, #0a0a0f, #0a0a0f 2px, #252530 2px, #252530 4px);
+    border: 1px solid #3f3f4a;
+    opacity: 0.85;
 }
 
-.radio-body__knob {
-    position: absolute;
-    bottom: 26%;
-    width: 14%;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #9ca3af, #374151 70%);
-    border: 2px solid #1f2937;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
-}
-
-.radio-body__knob--l { left: 10%; }
-.radio-body__knob--r { right: 10%; }
-
+/* LCD */
 .radio-screen {
-    position: absolute;
-    left: 50%;
-    top: 22%;
-    transform: translateX(-50%);
-    width: 62%;
-    height: 30%;
-    padding: 10px 12px;
+    position: relative;
+    z-index: 2;
+    padding: 12px 12px 10px;
+    background: var(--screen);
+    border-radius: 14px;
+    border: 1px solid #1e1e2a;
+    box-shadow: inset 0 0 24px rgba(124, 58, 237, 0.08);
+}
+
+.screen-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+
+.screen-status__right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.signal-mini {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 10px;
+}
+
+.signal-mini span {
+    width: 3px;
+    background: #334155;
+    border-radius: 1px;
+}
+
+.signal-mini span:nth-child(1) { height: 3px; }
+.signal-mini span:nth-child(2) { height: 5px; }
+.signal-mini span:nth-child(3) { height: 7px; }
+.signal-mini span:nth-child(4) { height: 9px; }
+
+.radio-app.is-connected .signal-mini span,
+.radio-app.is-connected .signal-bars span.on {
+    background: var(--green);
+}
+
+.screen-signal-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 0.58rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+}
+
+.signal-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 14px;
+}
+
+.signal-bars span {
+    width: 4px;
+    background: #334155;
+    border-radius: 1px;
+}
+
+.signal-bars span:nth-child(1) { height: 5px; }
+.signal-bars span:nth-child(2) { height: 8px; }
+.signal-bars span:nth-child(3) { height: 11px; }
+.signal-bars span:nth-child(4) { height: 14px; }
+
+.signal-bars span.on { background: var(--green); }
+
+.screen-lock {
+    margin-left: auto;
+    color: var(--purple-lit);
+    opacity: 0;
+}
+
+.screen-lock.visible { opacity: 1; }
+
+.screen-channel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 4px 0 6px;
+}
+
+.ch-arrow {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--muted);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.ch-arrow:hover {
+    background: rgba(124, 58, 237, 0.2);
+    color: var(--purple-lit);
+}
+
+.screen-channel__num {
+    font-size: clamp(2.8rem, 8vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--purple-lit);
+    text-shadow: 0 0 20px rgba(167, 139, 250, 0.45);
+    min-width: 2.2ch;
+    text-align: center;
+}
+
+.screen-title {
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.screen-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.58rem;
+    color: var(--muted);
+    margin-bottom: 2px;
+}
+
+.screen-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(124, 58, 237, 0.35);
+    color: var(--purple-lit);
+    font-weight: 800;
+    font-size: 0.55rem;
+    letter-spacing: 0.06em;
+}
+
+.screen-alias {
+    text-align: center;
+    font-size: 0.55rem;
+    color: var(--purple-lit);
+    min-height: 0.85em;
+    margin-bottom: 6px;
+}
+
+.screen-wave {
+    margin: 8px 0 10px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.35;
+    transition: opacity 0.3s;
+}
+
+.radio-app.is-connected .screen-wave { opacity: 1; }
+
+#waveCanvas {
+    width: 100%;
+    max-width: 280px;
+    height: 48px;
+}
+
+.screen-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.screen-footer__state {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.screen-footer__state.on {
+    color: var(--green-lit);
+}
+
+/* Buttons */
+.btn-connect {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #8b5cf6 0%, var(--purple-btn) 100%);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(109, 40, 217, 0.45);
+    transition: transform 0.12s, filter 0.12s;
+}
+
+.btn-connect:hover { filter: brightness(1.08); }
+.btn-connect:active { transform: scale(0.98); }
+
+.btn-connect.is-connected {
+    background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.btn-connect__icon { color: #fff; opacity: 0.95; }
+
+.screen-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.btn-action {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
-    pointer-events: none;
-    color: #e2e8f0;
-    background: linear-gradient(180deg, #0c1220 0%, #111827 100%);
-    border-radius: 10px;
-    border: 2px solid #1e3a5f;
-    box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.12);
-}
-
-.radio-screen__top {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
+    gap: 4px;
+    padding: 12px 8px;
+    border: 1px solid #2a2a36;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #1a1a24 0%, #12121a 100%);
+    color: #cbd5e1;
     font-size: 0.58rem;
-    color: #64748b;
-    margin-bottom: 4px;
-}
-
-.radio-screen__freq {
-    font-size: clamp(2rem, 6vw, 2.8rem);
-    font-weight: 800;
-    line-height: 1;
-    color: #f0fdf4;
-    letter-spacing: 0.1em;
-    text-shadow: 0 0 12px rgba(74, 222, 128, 0.35);
-}
-
-.radio-screen__label {
-    margin-top: 5px;
-    font-size: 0.65rem;
     font-weight: 700;
-    color: #86efac;
-    text-transform: uppercase;
-}
-
-.radio-screen__sub {
-    font-size: 0.58rem;
-    color: #64748b;
-    margin-top: 3px;
-}
-
-.radio-screen__alias {
-    font-size: 0.6rem;
-    color: #a78bfa;
-    margin-top: 4px;
-    min-height: 0.8em;
-}
-
-.radio-screen__wave {
-    display: flex;
-    gap: 3px;
-    margin-top: 8px;
-    height: 18px;
-    align-items: flex-end;
-}
-
-.radio-screen__wave span {
-    width: 3px;
-    border-radius: 1px;
-    background: linear-gradient(180deg, #4ade80, #16a34a);
-    animation: wave 1s ease-in-out infinite;
-}
-
-.radio-screen__wave span:nth-child(2) { animation-delay: 0.1s; height: 10px; }
-.radio-screen__wave span:nth-child(3) { animation-delay: 0.2s; height: 16px; }
-.radio-screen__wave span:nth-child(4) { animation-delay: 0.15s; height: 12px; }
-.radio-screen__wave span:nth-child(5) { animation-delay: 0.05s; height: 8px; }
-
-@keyframes wave {
-    0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
-    50% { transform: scaleY(1); opacity: 1; }
-}
-
-.radio-hit {
-    position: absolute;
-    border: none;
-    background: transparent;
+    letter-spacing: 0.08em;
     cursor: pointer;
-    z-index: 3;
-    border-radius: 10px;
-    transition: background 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 0.15s, background 0.15s;
 }
 
-.radio-hit:hover {
-    background: rgba(74, 222, 128, 0.15);
-    box-shadow: 0 0 14px rgba(74, 222, 128, 0.3);
+.btn-action:hover {
+    border-color: rgba(124, 58, 237, 0.45);
+    background: linear-gradient(180deg, #222230 0%, #16161f 100%);
 }
 
-.radio-hit:active {
-    background: rgba(34, 197, 94, 0.35);
+.btn-action svg { opacity: 0.9; }
+
+.btn-action__led {
+    font-size: 0.55rem;
+    font-weight: 800;
+    color: var(--muted);
 }
 
-.radio-hit--connect {
-    left: 14%;
-    bottom: 10%;
-    width: 72%;
-    height: 12%;
-}
-
-.radio-hit--freq {
-    left: 8%;
-    bottom: 24%;
-    width: 28%;
-    height: 11%;
-}
-
-.radio-hit--sound {
-    right: 8%;
-    bottom: 24%;
-    width: 28%;
-    height: 11%;
-}
-
-.radio-hit.connected {
-    box-shadow: 0 0 18px rgba(52, 211, 153, 0.55);
-    background: rgba(52, 211, 153, 0.12);
+.btn-action__led.on {
+    color: var(--green-lit);
 }
 
 .radio-hint {
-    font-size: 0.7rem;
-    color: #94a3b8;
+    font-size: 0.68rem;
+    color: var(--muted);
     text-align: center;
 }
 
 .radio-hint kbd {
     padding: 2px 6px;
     border-radius: 4px;
-    background: rgba(74, 222, 128, 0.15);
-    color: #bbf7d0;
-    border: 1px solid rgba(74, 222, 128, 0.35);
+    background: rgba(124, 58, 237, 0.2);
+    color: var(--purple-lit);
+    border: 1px solid rgba(124, 58, 237, 0.35);
 }
 
+/* Modal */
 .modal {
     position: fixed;
     inset: 0;
     display: grid;
     place-items: center;
-    background: rgba(0, 0, 0, 0.45);
-    z-index: 20;
-    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 30;
 }
 
 .modal__card {
     width: min(360px, 92vw);
-    padding: 18px;
+    padding: 20px;
     border-radius: 14px;
-    background: linear-gradient(145deg, rgba(38, 34, 58, 0.96), rgba(18, 14, 30, 0.94));
-    border: 1px solid rgba(167, 139, 250, 0.35);
+    background: linear-gradient(145deg, #1a1828, #0e0c16);
+    border: 1px solid rgba(124, 58, 237, 0.4);
 }
 
 .modal__card h3 {
-    color: #e9d5ff;
+    color: var(--purple-lit);
     margin-bottom: 12px;
     font-size: 0.95rem;
 }
@@ -278,10 +464,9 @@ html, body {
     padding: 10px 12px;
     margin-bottom: 10px;
     border-radius: 10px;
-    border: 1px solid rgba(167, 139, 250, 0.35);
-    background: rgba(0, 0, 0, 0.4);
-    color: #f1f5f9;
-    font-size: 0.95rem;
+    border: 1px solid #3f3f4a;
+    background: rgba(0, 0, 0, 0.45);
+    color: var(--text);
 }
 
 .field {
@@ -290,7 +475,7 @@ html, body {
     gap: 6px;
     margin-bottom: 10px;
     font-size: 0.78rem;
-    color: #cbd5e1;
+    color: #94a3b8;
 }
 
 .modal__actions {
@@ -308,7 +493,7 @@ html, body {
 }
 
 .btn--ghost { background: rgba(255,255,255,0.08); color: #cbd5e1; }
-.btn--primary { background: linear-gradient(180deg, #22c55e, #15803d); color: #fff; }
+.btn--primary { background: linear-gradient(180deg, #8b5cf6, #6d28d9); color: #fff; }
 
 .modal__hint { margin-top: 8px; font-size: 0.72rem; color: #94a3b8; min-height: 1em; }
 .modal__hint.ok { color: #6ee7b7; }

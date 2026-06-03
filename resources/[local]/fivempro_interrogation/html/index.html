@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="overlay" class="hidden">
+    <div class="vignette"></div>
+    <div class="hud">
+      <div class="title" id="modeLabel">RP spaudimas</div>
+      <div class="bar-wrap">
+        <div class="bar-label">Spaudimo lygis</div>
+        <div class="bar-track"><div id="pressureFill" class="bar-fill"></div></div>
+      </div>
+      <p class="hint">Be žalos – tik animacijos. /report jei pažeidžiama.</p>
+    </div>
+  </div>
+
+  <div id="policeControls" class="controls hidden">
+    <div class="panel">
+      <div class="panel-title">LSPD apklausa</div>
+      <button type="button" data-act="start_intense" class="btn">Pradėti apklausą</button>
+      <button type="button" data-act="spotlight" class="btn">Prožektorius</button>
+      <button type="button" data-act="slap" class="btn warn">Trenkti į stalą</button>
+      <button type="button" data-act="finish_police" class="btn primary">Baigti</button>
+      <button type="button" data-act="cancel" class="btn ghost">Atšaukti</button>
+    </div>
+  </div>
+
+  <div id="gangControls" class="controls hidden">
+    <div class="panel">
+      <div class="panel-title">Gaujų RP įranga</div>
+      <button type="button" data-act="tooth" class="btn warn">Dantų traukimas</button>
+      <button type="button" data-act="gas" class="btn warn">Benzinas</button>
+      <button type="button" data-act="electric" class="btn warn">Elektra</button>
+      <button type="button" data-act="finish_gang" class="btn primary">Baigti</button>
+      <button type="button" data-act="cancel" class="btn ghost">Atšaukti</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -6,7 +6,7 @@ Config = {}
 ]]
 Config.Tablets = {
     basic_tablet = {
-        label = 'Basic Tablet',
+        label = 'Paprasta planšetė',
         osLevel = 1,
         storage = 4,
         exploitSlots = 1,
@@ -14,7 +14,7 @@ Config.Tablets = {
         maxRobberyTier = 2, --- iki store
     },
     advanced_tablet = {
-        label = 'Advanced Tablet',
+        label = 'Pažangi planšetė',
         osLevel = 3,
         storage = 8,
         exploitSlots = 2,
@@ -22,7 +22,7 @@ Config.Tablets = {
         maxRobberyTier = 4,
     },
     military_tablet = {
-        label = 'Military Tablet',
+        label = 'Karinė planšetė',
         osLevel = 5,
         storage = 12,
         exploitSlots = 3,
@@ -67,29 +67,29 @@ Config.OperatingSystems = {
 
 --[[ FLASHDRIVE – metadata: payload_type = os|exploit, payload_id = string ]]
 Config.Flashdrives = {
-    basic_flashdrive = { label = 'Basic Flashdrive', capacity = 1 },
-    encrypted_flashdrive = { label = 'Encrypted Flashdrive', capacity = 2 },
-    military_flashdrive = { label = 'Military Flashdrive', capacity = 3 },
+    basic_flashdrive = { label = 'Paprastas USB', capacity = 1 },
+    encrypted_flashdrive = { label = 'Šifruotas USB', capacity = 2 },
+    military_flashdrive = { label = 'Karinis USB', capacity = 3 },
 }
 
 Config.Exploits = {
     signal_jammer = {
-        label = 'Signal Jammer',
-        desc = 'Delays police dispatch after successful hack.',
+        label = 'Signalo slopintuvas',
+        desc = 'Sėkmingo įsilaužimo metu vėluoja policijos iškvietimai.',
         delayDispatchSec = 90,
     },
     atm_bypass = {
-        label = 'ATM Security Bypass',
-        desc = 'Easier ATM hack (+time, -difficulty).',
+        label = 'Bankomato apsaugos apeiti',
+        desc = 'Lengvesnis bankomato įsilaužimas (+laikas, −sunkumas).',
         hackBonus = { timeMs = 4000, steps = -1 },
     },
     dye_sniffer = {
-        label = 'Dye Pack Sniffer',
-        desc = 'Warns before wrong crack sequence (ATM loot).',
+        label = 'Dažų paketo detektorius',
+        desc = 'Įspėja prieš neteisingą sekos kombinaciją (bankomatas).',
     },
     cam_spoof = {
-        label = 'Camera Spoof',
-        desc = 'Disables nearby CCTV on successful hack.',
+        label = 'Kamerų suklastojimas',
+        desc = 'Sėkmingo įsilaužimo metu išjungia artimas kameras.',
         cctvRadius = 35.0,
         cctvSeconds = 180,
     },
@@ -128,7 +128,7 @@ Config.RobberyTiers = {
         hackProfile = 'casino_fingerprint',
     },
     vault = {
-        label = 'Vault / federal',
+        label = 'Seifas / federalinis',
         minOs = 'federalos',
         minTablet = 'military_tablet',
         hackProfile = 'federal_core',
@@ -186,67 +186,67 @@ Config.DrillItem = 'drill'
 
 --- HackOS planšetės NETWORK vaizdas (UI)
 Config.NetworkTargets = {
-    { id = 'bank_fleeca', label = 'Fleeca Bank', security = 1, status = 'Online', tierId = 'bank_fleeca' },
-    { id = 'bank_main', label = 'Pacific Bank', security = 5, status = 'Protected', tierId = 'bank_main' },
-    { id = 'atm', label = 'ATM Network', security = 1, status = 'Online', tierId = 'atm' },
-    { id = 'casino', label = 'Casino Network', security = 4, status = 'Protected', tierId = 'casino' },
-    { id = 'vault', label = 'Humane Labs', security = 5, status = 'Locked', tierId = 'vault' },
-    { id = 'store', label = 'Ammu Warehouse', security = 3, status = 'Online', tierId = 'store' },
-    { id = 'cctv', label = 'CCTV Grid', security = 2, status = 'Online', tierId = 'store' },
-    { id = 'traffic', label = 'Traffic Cameras', security = 1, status = 'Online', tierId = 'atm' },
+    { id = 'bank_fleeca', label = 'Fleeca bankas', security = 1, status = 'Veikia', tierId = 'bank_fleeca' },
+    { id = 'bank_main', label = 'Pacific bankas', security = 5, status = 'Apsaugota', tierId = 'bank_main' },
+    { id = 'atm', label = 'Bankomatų tinklas', security = 1, status = 'Veikia', tierId = 'atm' },
+    { id = 'casino', label = 'Kazino tinklas', security = 4, status = 'Apsaugota', tierId = 'casino' },
+    { id = 'vault', label = 'Humane Labs', security = 5, status = 'Užrakinta', tierId = 'vault' },
+    { id = 'store', label = 'Ammu sandėlis', security = 3, status = 'Veikia', tierId = 'store' },
+    { id = 'cctv', label = 'Kamerų tinklelis', security = 2, status = 'Veikia', tierId = 'store' },
+    { id = 'traffic', label = 'Eismo kameros', security = 1, status = 'Veikia', tierId = 'atm' },
 }
 
 Config.TabletTargetMeta = {
     bank_fleeca = {
         encryption = 'AES-128',
-        firewall = 'Active',
-        rewards = { 'Cash', 'Bank Data', 'Security Codes' },
+        firewall = 'Aktyvuota',
+        rewards = { 'Grynieji', 'Banko duomenys', 'Apsaugos kodai' },
         requirements = 'GhostOS',
     },
     bank_main = {
         encryption = 'AES-256 + HSM',
-        firewall = 'Military Grade',
-        rewards = { 'Cash', 'Gold Bars', 'Federal Data' },
+        firewall = 'Karinė klasė',
+        rewards = { 'Grynieji', 'Aukso luitai', 'Federaliniai duomenys' },
         requirements = 'CipherOS',
     },
     atm = {
         encryption = 'DES Legacy',
-        firewall = 'Weak',
-        rewards = { 'Cash', 'Card Skim Data' },
+        firewall = 'Silpna',
+        rewards = { 'Grynieji', 'Kortelių duomenys' },
         requirements = 'BasicOS',
     },
     casino = {
         encryption = 'RSA-4096',
-        firewall = 'Active',
-        rewards = { 'Chips', 'Vault Codes', 'VIP Data' },
+        firewall = 'Aktyvuota',
+        rewards = { 'Žetonai', 'Seifo kodai', 'VIP duomenys' },
         requirements = 'CipherOS',
     },
     vault = {
         encryption = 'Quantum Seal',
-        firewall = 'Federal',
-        rewards = { 'Prototype Data', 'Bio Samples' },
+        firewall = 'Federalinė',
+        rewards = { 'Prototipo duomenys', 'Biologiniai mėginiai' },
         requirements = 'FederalOS',
     },
     store = {
         encryption = 'TLS 1.2',
-        firewall = 'Standard',
-        rewards = { 'Register Cash', 'Inventory Logs' },
+        firewall = 'Standartinė',
+        rewards = { 'Kasos grynieji', 'Inventoriaus žurnalai' },
         requirements = 'BlackOS',
     },
 }
 
 Config.TabletFiles = {
-    { id = 'bank_codes', label = 'Bank Codes', locked = false },
-    { id = 'police_evidence', label = 'Police Evidence', locked = true },
-    { id = 'encrypted_files', label = 'Encrypted Files', locked = true },
-    { id = 'casino_data', label = 'Casino Data', locked = true },
-    { id = 'blueprints', label = 'Blueprints', locked = true },
+    { id = 'bank_codes', label = 'Banko kodai', locked = false },
+    { id = 'police_evidence', label = 'Policijos įrodymai', locked = true },
+    { id = 'encrypted_files', label = 'Šifruoti failai', locked = true },
+    { id = 'casino_data', label = 'Kazino duomenys', locked = true },
+    { id = 'blueprints', label = 'Brėžiniai', locked = true },
 }
 
 Config.TabletContracts = {
-    { id = 'atm_hack', label = 'Hack ATM', reward = 2500, tierId = 'atm' },
-    { id = 'cctv_off', label = 'Disable CCTV', reward = 5000, tierId = 'store' },
-    { id = 'corp_data', label = 'Steal Corporate Data', reward = 12000, tierId = 'bank_main' },
+    { id = 'atm_hack', label = 'Įsilaužti į bankomatą', reward = 2500, tierId = 'atm' },
+    { id = 'cctv_off', label = 'Išjungti kameras', reward = 5000, tierId = 'store' },
+    { id = 'corp_data', label = 'Vogti korporacinius duomenis', reward = 12000, tierId = 'bank_main' },
 }
 
 --- Test vieta (kaip mechanikų sandbox): blip + NPC + $1 parduotuvė visiems heist/hacking itemams.

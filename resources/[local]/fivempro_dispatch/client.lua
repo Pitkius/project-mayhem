@@ -153,7 +153,7 @@ RegisterKeyMapping(
 RegisterCommand('servicemdt', function()
     local service = myService()
     if not service then
-        return QBCore.Functions.Notify('Tik tarnyboms duty metu.', 'error')
+        return QBCore.Functions.Notify('Tik tarnyboje.', 'error')
     end
     QBCore.Functions.TriggerCallback('fivempro_dispatch:server:getSnapshot', function(res)
         if not res or not res.ok then return end
@@ -247,7 +247,7 @@ end, false)
 RegisterCommand('servicecall', function(_, args)
     local service = myService()
     if not service then
-        return QBCore.Functions.Notify('Tik tarnyboms duty metu.', 'error')
+        return QBCore.Functions.Notify('Tik tarnyboje.', 'error')
     end
     local callType = tostring(args and args[1] or 'custom')
     local text = table.concat(args or {}, ' ', 2)

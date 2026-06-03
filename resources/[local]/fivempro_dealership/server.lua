@@ -365,7 +365,7 @@ end)
 QBCore.Functions.CreateCallback('fivempro_dealership:server:buyPoliceVehicle', function(source, cb, model, stationId)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return cb({ ok = false, message = 'Player not found' }) end
+    if not Player then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
     if not isPoliceJobPlayer(Player) then
         return cb({ ok = false, message = 'Prieinama tik policijai tarnyboje.' })
     end
@@ -440,7 +440,7 @@ QBCore.Functions.CreateCallback('fivempro_dealership:server:buyPoliceVehicle', f
 end)
 
 local function buyFleetJobVehicle(Player, cb, model, stationId, cfg, jobCheckFn, errJob)
-    if not Player then return cb({ ok = false, message = 'Player not found' }) end
+    if not Player then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
     if not jobCheckFn(Player) then
         return cb({ ok = false, message = errJob })
     end
@@ -536,7 +536,7 @@ end)
 QBCore.Functions.CreateCallback('fivempro_dealership:server:buyVehicle', function(source, cb, model)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return cb({ ok = false, message = 'Player not found' }) end
+    if not Player then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
 
     model = string.lower(tostring(model or ''))
     local selectedVehicle = nil
@@ -547,7 +547,7 @@ QBCore.Functions.CreateCallback('fivempro_dealership:server:buyVehicle', functio
         end
     end
     if not selectedVehicle then
-        return cb({ ok = false, message = 'Vehicle not found in catalog' })
+        return cb({ ok = false, message = 'Transportas nerastas kataloge' })
     end
 
     local price = selectedVehicle.price

@@ -1,5 +1,16 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local TX_LABELS = {
+    DEPOSIT = 'Įnešimas',
+    WITHDRAW = 'Išėmimas',
+    TRANSFER_OUT = 'Pervedimas (iš)',
+    TRANSFER_IN = 'Gavimas',
+}
+
+local function txLabel(txType)
+    return TX_LABELS[txType] or txType
+end
+
 local function openBankMenu()
     QBCore.Functions.TriggerCallback('fivempro:bank:server:getSnapshot', function(snapshot)
         if not snapshot then return end
@@ -10,32 +21,32 @@ local function openBankMenu()
                 isMenuHeader = true
             },
             {
-                header = ('Cash: $%s'):format(snapshot.cash),
-                txt = ('Bank: $%s'):format(snapshot.bank),
+                header = ('Grynieji: $%s'):format(snapshot.cash),
+                txt = ('Bankas: $%s'):format(snapshot.bank),
                 isMenuHeader = true
             },
             {
-                header = 'Inesti pinigus',
-                txt = 'Perkelti cash i banka',
+                header = 'Įnešti pinigus',
+                txt = 'Perkelti grynuosius į banką',
                 params = { event = 'fivempro:bank:client:deposit' }
             },
             {
-                header = 'Issiimti pinigus',
-                txt = 'Perkelti is banko i cash',
+                header = 'Išsiimti pinigus',
+                txt = 'Perkelti iš banko į grynuosius',
                 params = { event = 'fivempro:bank:client:withdraw' }
             },
             {
-                header = 'Pervesti zaidejui',
-                txt = 'Pervedimas pagal server ID',
+                header = 'Pervesti žaidėjui',
+                txt = 'Pervedimas pagal serverio ID',
                 params = { event = 'fivempro:bank:client:transfer' }
             },
             {
-                header = 'Operaciju istorija',
-                txt = 'Paskutiniai irasai',
+                header = 'Operacijų istorija',
+                txt = 'Paskutiniai įrašai',
                 params = { event = 'fivempro:bank:client:history' }
             },
             {
-                header = 'Uzdaryti',
+                header = 'Uždaryti',
                 params = { event = 'qb-menu:client:closeMenu' }
             }
         }
@@ -53,22 +64,22 @@ local function openAtmMenu()
                 isMenuHeader = true
             },
             {
-                header = ('Cash: $%s'):format(snapshot.cash),
-                txt = ('Bank: $%s'):format(snapshot.bank),
+                header = ('Grynieji: $%s'):format(snapshot.cash),
+                txt = ('Bankas: $%s'):format(snapshot.bank),
                 isMenuHeader = true
             },
             {
-                header = 'Inesti pinigus',
-                txt = 'Perkelti cash i banka',
+                header = 'Įnešti pinigus',
+                txt = 'Perkelti grynuosius į banką',
                 params = { event = 'fivempro:bank:client:deposit' }
             },
             {
-                header = 'Issiimti pinigus',
-                txt = 'Perkelti is banko i cash',
+                header = 'Išsiimti pinigus',
+                txt = 'Perkelti iš banko į grynuosius',
                 params = { event = 'fivempro:bank:client:withdraw' }
             },
             {
-                header = 'Uzdaryti',
+                header = 'Uždaryti',
                 params = { event = 'qb-menu:client:closeMenu' }
             }
         }
@@ -79,7 +90,7 @@ end
 
 RegisterNetEvent('fivempro:bank:client:deposit', function()
     local result = exports['qb-input']:ShowInput({
-        header = 'Inesti i banka',
+        header = 'Įnešti į banką',
         submitText = 'Patvirtinti',
         inputs = {
             {
@@ -96,7 +107,7 @@ end)
 
 RegisterNetEvent('fivempro:bank:client:withdraw', function()
     local result = exports['qb-input']:ShowInput({
-        header = 'Issiimti is banko',
+        header = 'Išsiimti iš banko',
         submitText = 'Patvirtinti',
         inputs = {
             {
@@ -113,14 +124,14 @@ end)
 
 RegisterNetEvent('fivempro:bank:client:transfer', function()
     local result = exports['qb-input']:ShowInput({
-        header = 'Pervedimas zaidejui',
+        header = 'Pervedimas žaidėjui',
         submitText = 'Patvirtinti',
         inputs = {
             {
                 type = 'number',
                 isRequired = true,
                 name = 'target',
-                text = 'Gavejo ID'
+                text = 'Gavėjo ID'
             },
             {
                 type = 'number',
@@ -145,13 +156,13 @@ RegisterNetEvent('fivempro:bank:client:history', function()
 
         if not rows or #rows == 0 then
             menu[#menu + 1] = {
-                header = 'Irasu nerasta',
+                header = 'Įrašų nerasta',
                 isMenuHeader = true
             }
         else
             for _, row in ipairs(rows) do
                 menu[#menu + 1] = {
-                    header = ('%s $%s'):format(row.tx_type, row.amount),
+                    header = ('%s $%s'):format(txLabel(row.tx_type), row.amount),
                     txt = ('Balansas po operacijos: $%s'):format(row.balance_after),
                     isMenuHeader = true
                 }

@@ -65,6 +65,22 @@ local function ensureTables()
         KEY `officer` (`officer_citizenid`),
         KEY `fingerprint` (`fingerprint`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
+
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `ltpd_interrogations` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `citizenid` varchar(50) NOT NULL,
+        `officer_citizenid` varchar(50) NOT NULL,
+        `mode` varchar(16) NOT NULL DEFAULT 'police',
+        `room_id` varchar(64) DEFAULT NULL,
+        `result` varchar(64) DEFAULT NULL,
+        `recorded` tinyint(1) NOT NULL DEFAULT 0,
+        `pressure_max` tinyint(3) NOT NULL DEFAULT 0,
+        `payload` longtext,
+        `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+        PRIMARY KEY (`id`),
+        KEY `citizenid` (`citizenid`),
+        KEY `officer` (`officer_citizenid`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 end
 
 local function decodeCharinfo(raw)
@@ -468,9 +484,18 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:mdtContext', function(src,
         P.PlayerData.citizenid,
         'patrol',
     })
+    local ped = GetPlayerPed(src)
+    local c = (ped and ped ~= 0) and GetEntityCoords(ped) or vector3(0.0, 0.0, 0.0)
     cb({
         presets = Config.FinePresets,
         map = Config.MdtMap,
+        selfSource = src,
+        playerPos = {
+            x = c.x + 0.0,
+            y = c.y + 0.0,
+            z = c.z + 0.0,
+            heading = (ped and ped ~= 0) and (GetEntityHeading(ped) + 0.0) or 0.0,
+        },
         division = getDivisionForCitizenid(P.PlayerData.citizenid),
         grade = getGrade(src),
         permissions = {
@@ -479,6 +504,7 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:mdtContext', function(src,
             wanted = hasPerm(src, 'mdt_wanted'),
             fingerprint = hasPerm(src, 'mdt_fingerprint'),
             arrest = hasPerm(src, 'mdt_arrest_record'),
+            interrogation = hasPerm(src, 'mdt_interrogation'),
             cctv = hasPerm(src, 'mdt_cctv'),
             bodycam = hasPerm(src, 'mdt_bodycam'),
         },
@@ -692,6 +718,76 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:addArrestNote', function(s
         { citizenid, Officer.PlayerData.citizenid, json.encode(payload) }
     )
     cb({ ok = true })
+end)
+
+local function saveInterrogationRecord(officerSrc, record)
+    if not record or not record.citizenid then return false end
+    local Officer = QBCore.Functions.GetPlayer(officerSrc)
+    if not Officer then return false end
+    if not hasPerm(officerSrc, 'mdt_interrogation') and not hasPerm(officerSrc, 'mdt_arrest_record') then
+        return false
+    end
+    local payload = {
+        suspect_name = tostring(record.suspect_name or ''):sub(1, 128),
+        officer_name = tostring(record.officer_name or ''):sub(1, 128),
+        summary = tostring(record.summary or ''):sub(1, 800),
+        notes = record.notes or {},
+        answers = record.answers or {},
+        categories = record.categories or {},
+        consent_at = record.consent_at,
+        duration_sec = tonumber(record.duration_sec) or 0,
+    }
+    MySQL.insert.await(
+        [[INSERT INTO ltpd_interrogations
+          (citizenid, officer_citizenid, mode, room_id, result, recorded, pressure_max, payload)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)]],
+        {
+            tostring(record.citizenid):sub(1, 50),
+            Officer.PlayerData.citizenid,
+            tostring(record.mode or 'police'):sub(1, 16),
+            tostring(record.room_id or ''):sub(1, 64),
+            tostring(record.result or ''):sub(1, 64),
+            (record.recorded and 1 or 0),
+            math.min(100, math.floor(tonumber(record.pressure_max) or 0)),
+            json.encode(payload),
+        }
+    )
+    return true
+end
+
+exports('SaveInterrogationRecord', saveInterrogationRecord)
+
+QBCore.Functions.CreateCallback('fivempro_ltpd:server:getInterrogationHistory', function(src, cb, citizenid)
+    if not hasPerm(src, 'mdt_interrogation') then return cb({ ok = false }) end
+    citizenid = tostring(citizenid or ''):sub(1, 50)
+    if citizenid == '' then return cb({ ok = true, rows = {} }) end
+    local rows = MySQL.query.await([[
+        SELECT i.id, i.citizenid, i.officer_citizenid, i.mode, i.room_id, i.result,
+               i.recorded, i.pressure_max, i.payload, i.created_at,
+               p.charinfo AS officer_charinfo
+        FROM ltpd_interrogations i
+        LEFT JOIN players p ON p.citizenid = i.officer_citizenid
+        WHERE i.citizenid = ?
+        ORDER BY i.id DESC
+        LIMIT 40
+    ]], { citizenid }) or {}
+    for _, r in ipairs(rows) do
+        local parsed = {}
+        local ok, dec = pcall(json.decode, r.payload or '{}')
+        if ok and type(dec) == 'table' then parsed = dec end
+        r.suspect_name = parsed.suspect_name or ''
+        r.officer_name = parsed.officer_name or ''
+        r.summary = parsed.summary or ''
+        r.notes = parsed.notes or {}
+        r.answers = parsed.answers or {}
+        if r.officer_name == '' and r.officer_charinfo then
+            local ch = json.decode(r.officer_charinfo or '{}') or {}
+            r.officer_name = ((ch.firstname or '') .. ' ' .. (ch.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
+        end
+        r.officer_charinfo = nil
+        r.payload = nil
+    end
+    cb({ ok = true, rows = rows })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_ltpd:server:getArrestHistory', function(src, cb, citizenid)

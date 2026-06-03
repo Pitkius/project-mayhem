@@ -1,54 +1,71 @@
---- PD 3D markeriai — nepriklausomas nuo fivempro_npcshops export
+--- PD 3D markeriai ant žemės (MDT, garažas, rūbinė, sandėliai…)
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local pdZones = {}
 local lastInteractMs = 0
+local markersReady = false
 
 local COLORS = {
-    garage = { 72, 160, 220, 140 },
-    stash = { 255, 180, 72, 160 },
-    locker = { 167, 139, 250, 170 },
-    armory = { 239, 68, 68, 170 },
-    supply = { 34, 197, 94, 160 },
-    mdt = { 96, 165, 250, 170 },
-    duty = { 250, 204, 21, 160 },
+    garage = { 72, 160, 220, 200 },
+    stash = { 255, 180, 72, 200 },
+    locker = { 167, 139, 250, 210 },
+    armory = { 239, 68, 68, 210 },
+    supply = { 34, 197, 94, 200 },
+    mdt = { 96, 165, 250, 210 },
+    duty = { 250, 204, 21, 200 },
 }
 
 local SCALES = {
-    garage = { x = 1.4, y = 1.4, z = 1.4 },
-    stash = { x = 0.85, y = 0.85, z = 0.85 },
-    locker = { x = 0.95, y = 0.95, z = 0.95 },
-    armory = { x = 0.95, y = 0.95, z = 0.95 },
-    supply = { x = 0.85, y = 0.85, z = 0.85 },
-    mdt = { x = 0.9, y = 0.9, z = 0.9 },
-    duty = { x = 0.95, y = 0.95, z = 0.95 },
+    garage = { x = 2.6, y = 2.6, z = 0.28 },
+    stash = { x = 1.35, y = 1.35, z = 0.22 },
+    locker = { x = 1.5, y = 1.5, z = 0.24 },
+    armory = { x = 1.5, y = 1.5, z = 0.24 },
+    supply = { x = 1.35, y = 1.35, z = 0.22 },
+    mdt = { x = 1.45, y = 1.45, z = 0.24 },
+    duty = { x = 1.5, y = 1.5, z = 0.24 },
 }
 
 local MARKER_TYPES = {
     garage = 36,
-    stash = 2,
-    locker = 2,
-    armory = 2,
-    supply = 2,
-    mdt = 2,
-    duty = 2,
+    stash = 27,
+    locker = 27,
+    armory = 27,
+    supply = 27,
+    mdt = 27,
+    duty = 27,
 }
+
+local USE_RADIUS = {
+    garage = 2.2,
+    stash = 1.45,
+    locker = 1.6,
+    armory = 1.6,
+    supply = 1.45,
+    mdt = 1.45,
+    duty = 1.6,
+}
+
+local function jobName()
+    return Config.JobName or 'police'
+end
 
 local function isPdOnDuty()
     local P = QBCore.Functions.GetPlayerData()
-    return P and P.job and P.job.name == 'police' and P.job.onduty
+    return P and P.job and P.job.name == jobName() and P.job.onduty
 end
 
-local function isPdJob()
-    local P = QBCore.Functions.GetPlayerData()
-    return P and P.job and P.job.name == 'police'
+local function vec3From(c)
+    if not c then return nil end
+    return vector3(c.x + 0.0, c.y + 0.0, c.z + 0.0)
 end
 
 function RegisterPdGroundMarker(data)
     if not data or not data.coords then return end
-    local c = data.coords
+    local pos = vec3From(data.coords)
+    if not pos then return end
+    local zOff = Config.PdMarkerZOffset or 0.02
     pdZones[#pdZones + 1] = {
-        coords = vector3(c.x, c.y, c.z),
+        coords = vector3(pos.x, pos.y, pos.z + zOff),
         kind = data.kind or 'stash',
         label = data.label or 'PD',
         onPress = data.onPress,
@@ -58,11 +75,167 @@ end
 
 exports('RegisterPdGroundMarker', RegisterPdGroundMarker)
 
+local function clearPdMarkers()
+    pdZones = {}
+    markersReady = false
+end
+
+local function registerAllPdMarkers()
+    if Config.ShowPd3DMarkers == false then
+        clearPdMarkers()
+        return
+    end
+
+    clearPdMarkers()
+
+    for _, st in ipairs(Config.Stations or {}) do
+        local stationId = st.id
+
+        if st.mdt and st.coords then
+            RegisterPdGroundMarker({
+                coords = st.coords,
+                kind = 'mdt',
+                label = 'MDT planšetė',
+                onPress = function()
+                    TriggerEvent('fivempro_ltpd:client:openMdtAtStation')
+                end,
+            })
+        end
+
+        if st.supply and st.supply.coords then
+            RegisterPdGroundMarker({
+                coords = st.supply.coords,
+                kind = 'supply',
+                label = st.supply.label or 'PD inventorius',
+                onPress = function()
+                    TriggerServerEvent('fivempro_npcshops:server:openJobSupply', jobName(), stationId)
+                end,
+            })
+        end
+
+        if st.garage and st.garage.coords then
+            RegisterPdGroundMarker({
+                coords = st.garage.coords,
+                kind = 'garage',
+                label = 'PD garažas / transportas',
+                onPress = function()
+                    TriggerEvent('fivempro_ltpd:client:markerGarage', stationId)
+                end,
+            })
+        end
+
+        if st.locker and st.locker.coords then
+            RegisterPdGroundMarker({
+                coords = st.locker.coords,
+                kind = 'locker',
+                label = 'PD rūbinė',
+                onPress = function()
+                    TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu')
+                end,
+            })
+        end
+
+        if st.locker2 and st.locker2.coords then
+            RegisterPdGroundMarker({
+                coords = st.locker2.coords,
+                kind = 'locker',
+                label = 'PD rūbinė',
+                onPress = function()
+                    TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu')
+                end,
+            })
+        end
+
+        if st.armory and st.armory.coords then
+            RegisterPdGroundMarker({
+                coords = st.armory.coords,
+                kind = 'armory',
+                label = st.armory.label or 'Ginklinė',
+                onPress = function()
+                    TriggerEvent('fivempro_ltpd:client:tryOpenArmory', { stationId = stationId })
+                end,
+            })
+        end
+
+        for stashIdx, stash in ipairs(st.stashes or {}) do
+            if stash.coords then
+                local index = stashIdx
+                RegisterPdGroundMarker({
+                    coords = stash.coords,
+                    kind = 'stash',
+                    label = stash.label or ('Sandėlis #' .. tostring(stashIdx)),
+                    onPress = function()
+                        TriggerEvent('fivempro_ltpd:client:tryOpenStash', { stationId = stationId, stashIndex = index })
+                    end,
+                })
+            end
+        end
+
+        if st.heliGarage and st.heliGarage.coords then
+            RegisterPdGroundMarker({
+                coords = st.heliGarage.coords,
+                kind = 'garage',
+                label = 'PD sraigtasparniai (helipadas)',
+                onPress = function()
+                    TriggerEvent('fivempro_ltpd:client:openHeliGarageMenu', { stationId = stationId })
+                end,
+            })
+        end
+
+        if st.duty and st.coords then
+            RegisterPdGroundMarker({
+                coords = st.coords,
+                kind = 'duty',
+                label = stationId == 'ls_main' and 'PD pamaina (registratūra)' or 'PD pamaina (pradėti / baigti)',
+                requireDuty = false,
+                onPress = function()
+                    TriggerEvent('fivempro_ltpd:client:toggleDuty')
+                end,
+            })
+        end
+    end
+
+    markersReady = true
+    print(('[fivempro_ltpd] PD 3D markeriai: %d taškų'):format(#pdZones))
+end
+
+local function scheduleRegister()
+    CreateThread(function()
+        Wait(800)
+        registerAllPdMarkers()
+    end)
+end
+
+scheduleRegister()
+
+AddEventHandler('onResourceStart', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    scheduleRegister()
+end)
+
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    scheduleRegister()
+end)
+
+RegisterCommand('pdmarkers', function()
+    local ped = PlayerPedId()
+    local p = GetEntityCoords(ped)
+    print(('[fivempro_ltpd] pdmarkers: registruota=%s skaicius=%d pozicija=%.1f,%.1f,%.1f'):format(
+        tostring(markersReady), #pdZones, p.x, p.y, p.z))
+    for i, z in ipairs(pdZones) do
+        local d = #(p - z.coords)
+        if d < 120.0 then
+            print(('  #%d %s dist=%.1fm @ %.2f,%.2f,%.2f'):format(
+                i, z.kind, d, z.coords.x, z.coords.y, z.coords.z))
+        end
+    end
+end, false)
+
 local function drawMarkerAt(pos, kind)
     local col = COLORS[kind] or COLORS.stash
     local sc = SCALES[kind] or SCALES.stash
-    local mType = MARKER_TYPES[kind] or 2
-    local zOff = mType == 36 and 0.35 or 0.05
+    local mType = MARKER_TYPES[kind] or 27
+    local zOff = mType == 36 and 0.35 or 0.0
     DrawMarker(
         mType,
         pos.x, pos.y, pos.z + zOff,
@@ -75,30 +248,37 @@ local function drawMarkerAt(pos, kind)
 end
 
 CreateThread(function()
-    local drawDist = 55.0
+    local drawDist = Config.PdMarkerDrawDistance or 80.0
     while true do
         local sleep = 500
-        local ped = PlayerPedId()
-        local pcoords = GetEntityCoords(ped)
-        if not IsNuiFocused() then
+        if Config.ShowPd3DMarkers ~= false and #pdZones > 0 and not IsPauseMenuActive() then
+            local ped = PlayerPedId()
+            local pcoords = GetEntityCoords(ped)
             for _, zone in ipairs(pdZones) do
                 local dist = #(pcoords - zone.coords)
                 if dist < drawDist then
                     sleep = 0
                     drawMarkerAt(zone.coords, zone.kind)
-                    if dist < 2.0 then
+                    local useR = USE_RADIUS[zone.kind] or 1.5
+                    if dist < useR then
                         local canUse = true
                         if zone.requireDuty and not isPdOnDuty() then
                             canUse = false
                         end
                         if canUse then
-                            QBCore.Functions.DrawText3D(zone.coords.x, zone.coords.y, zone.coords.z + 0.85, ('[E] %s'):format(zone.label))
+                            QBCore.Functions.DrawText3D(
+                                zone.coords.x, zone.coords.y, zone.coords.z + 0.95,
+                                ('[E] %s'):format(zone.label)
+                            )
                             if IsControlJustPressed(0, 38) and (GetGameTimer() - lastInteractMs) > 450 then
                                 lastInteractMs = GetGameTimer()
                                 if zone.onPress then zone.onPress() end
                             end
                         elseif zone.requireDuty then
-                            QBCore.Functions.DrawText3D(zone.coords.x, zone.coords.y, zone.coords.z + 0.85, 'Tik tarnyboje')
+                            QBCore.Functions.DrawText3D(
+                                zone.coords.x, zone.coords.y, zone.coords.z + 0.95,
+                                'Tik tarnyboje (policija)'
+                            )
                         end
                     end
                 end

@@ -9,7 +9,7 @@ Config.Blip = {
     sprite = 198,
     colour = 5,
     scale = 0.85,
-    label = 'Downtown Cab',
+    label = 'Miesto taksi',
 }
 
 Config.Stash = {

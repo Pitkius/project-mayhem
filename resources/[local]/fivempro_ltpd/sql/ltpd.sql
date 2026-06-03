@@ -53,6 +53,22 @@ CREATE TABLE IF NOT EXISTS `ltpd_arrests` (
     KEY `citizenid` (`citizenid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `ltpd_interrogations` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `citizenid` varchar(50) NOT NULL,
+    `officer_citizenid` varchar(50) NOT NULL,
+    `mode` varchar(16) NOT NULL DEFAULT 'police',
+    `room_id` varchar(64) DEFAULT NULL,
+    `result` varchar(64) DEFAULT NULL,
+    `recorded` tinyint(1) NOT NULL DEFAULT 0,
+    `pressure_max` tinyint(3) NOT NULL DEFAULT 0,
+    `payload` longtext,
+    `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+    PRIMARY KEY (`id`),
+    KEY `citizenid` (`citizenid`),
+    KEY `officer` (`officer_citizenid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `ltpd_fingerprints` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `officer_citizenid` varchar(50) NOT NULL,

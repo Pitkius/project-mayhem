@@ -50,7 +50,7 @@ end
 
 RegisterNetEvent('fivempro_ltpd:client:bodycamUseItem', function()
     if not isPdOnDuty() then
-        return QBCore.Functions.Notify('Bodycam – tik policijai tarnyboje.', 'error')
+        return QBCore.Functions.Notify('Kūno kamera – tik policijai tarnyboje.', 'error')
     end
   TriggerServerEvent('fivempro_ltpd:server:bodycamToggle')
 end)

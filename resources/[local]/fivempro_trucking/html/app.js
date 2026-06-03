@@ -138,7 +138,7 @@ function renderProfile() {
   if (!d) return;
   const p = d.profile || {};
   document.getElementById("profileName").textContent = d.playerName || "Vairuotojas";
-  document.getElementById("profileRank").textContent = `Level ${p.level || 1} Driver`;
+  document.getElementById("profileRank").textContent = `${p.level || 1} lygio vairuotojas`;
   const next = p.xpNext || 400;
   const cur = p.xp || 0;
   const prev = (d.profile && d.profile.level > 1) ? 0 : 0;
@@ -246,7 +246,7 @@ function renderCompany() {
 function renderStats() {
   const p = state.data?.profile || {};
   document.getElementById("statsPanel").innerHTML = `
-    <div class="stat-card"><div>Lygis</div><strong>Level ${esc(p.level)}</strong></div>
+    <div class="stat-card"><div>Lygis</div><strong>${esc(p.level)} lygis</strong></div>
     <div class="stat-card"><div>XP</div><strong>${esc(p.xp)}</strong></div>
     <div class="stat-card"><div>Reputacija</div><strong>${stars(p.stars)}</strong></div>
     <div class="stat-card"><div>Pristatymai</div><strong>${esc(p.total_deliveries)}</strong></div>
@@ -285,7 +285,7 @@ function setTab(tab) {
     fleet: ["TRANSPORTO PARKAS", "Jūsų sunkvežimiai"],
     company: ["ĮMONĖS VALDYMAS", "Logistikos kompanija"],
     stats: ["VAIRUOTOJO STATISTIKA", "Progresija ir pasiekimai"],
-    leaderboard: ["TOP LOGISTICS", "Geriausios serverio įmonės"],
+    leaderboard: ["TOP LOGISTIKA", "Geriausios serverio įmonės"],
   };
   const t = titles[tab] || titles.market;
   document.getElementById("pageTitle").textContent = t[0];

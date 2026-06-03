@@ -1,0 +1,18 @@
+fivempro_drugs — diegimas
+=========================
+
+1. cfg/30_custom.cfg jau turi: ensure fivempro_drugs (po fivempro_gangs)
+2. Itemai įrašyti į qb-core/shared/items.lua
+3. Restart: restart qb-core, restart fivempro_drugs
+
+Testavimas:
+- Config.EnableDrugTestNPC = true — NPC Grove (127, -1930)
+- /drugsell — parduoti artimiausiam NPC (turf zonoje gaujai — +įtaka)
+- qb-target — gamybos stotys (violetinis crafting UI)
+
+Production:
+- Config.EnableDrugTestNPC = false
+- Test zona (EnableDrugTestNPC): Grove alėja ~118–142, -1928 — narkotikai eilėje + ginklų NPC gale, 1 blipas
+- Production: išjunk EnableDrugTestNPC ir perkelk Config.Stations į savo MLO
+
+Priklausomybės: qb-core, qb-target, oxmysql, fivempro_gangs (turf), fivempro_dispatch (alertai)

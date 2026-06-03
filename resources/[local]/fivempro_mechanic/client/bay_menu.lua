@@ -74,13 +74,13 @@ end
 
 local WINDOW_TINTS = {
     { idx = -1, label = 'Gamyklinis (be tamsinimo)' },
-    { idx = 0, label = 'None / Skaidrus' },
-    { idx = 1, label = 'Pure Black' },
-    { idx = 2, label = 'Dark Smoke' },
-    { idx = 3, label = 'Light Smoke' },
-    { idx = 4, label = 'Stock' },
-    { idx = 5, label = 'Limo' },
-    { idx = 6, label = 'Green' },
+    { idx = 0, label = 'Skaidrus' },
+    { idx = 1, label = 'Visiškai juodas' },
+    { idx = 2, label = 'Tamsus dūmas' },
+    { idx = 3, label = 'Šviesus dūmas' },
+    { idx = 4, label = 'Gamyklinis' },
+    { idx = 5, label = 'Limuzinas' },
+    { idx = 6, label = 'Žalias' },
 }
 
 local openPaintCategoryMenu

@@ -1,0 +1,30 @@
+fivempro_interrogation – 2 variantai
+====================================
+
+TEST PARDUOTUVĖ
+---------------
+Config.EnableTestShop = true
+Grove: ~128, -1928, 21.38 (blipas „Test: gaujų įranga“)
+Kaina: Config.TestShop.price (default 250€ cash)
+Production: EnableTestShop = false
+
+VARIANTAS A – GAUJOS (itemas)
+-----------------------------
+Item: gang_interrog_kit (qb-core/shared/items.lua)
+- Naudok itemą → [E] padėti, scroll sukti
+- Išsaugoma DB (fivempro_interrogation_kits) – lieka po server restart
+- Surinkti: tas kas padėjo ARBA admin (target ant dėžės)
+- Target: Pradėti RP spaudimą → sutikimas → mygtukai: Dantys / Benzinas / Elektra / Baigti
+
+VARIANTAS B – POLICIJA (fiksuotos vietos)
+-----------------------------------------
+Tik Config.PoliceStations (MRPD apklausa).
+Tik police + on duty (qb-target).
+- Įtariamasis: paprasta sėdėjimo animacija prie stalo
+- Pareigūnas: mygtukai – Pradėti apklausą (misijos anim), Prožektorius, Trenkti, Baigti → MDT
+
+restart fivempro_ltpd
+restart fivempro_interrogation
+
+Admin / test item:
+/giveitem [id] gang_interrog_kit 1

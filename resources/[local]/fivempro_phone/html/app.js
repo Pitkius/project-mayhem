@@ -21,7 +21,7 @@ const DOCK_APPS = ["calls", "messages", "contacts", "settings"];
 const APPS_PER_PAGE = 16;
 
 const state = {
-  me: { number: "000000", name: "Player" },
+  me: { number: "000000", name: "Žaidėjas" },
   account: { hasAccount: false, username: "" },
   appStore: { availableApps: [] },
   contacts: [],
@@ -332,7 +332,7 @@ function hydrate(payload = {}) {
   state.ads = payload.ads || [];
   state.posts = payload.posts || [];
   state.money = payload.money || state.money;
-  const name = state.account.username || state.me.name || "Player";
+  const name = state.account.username || state.me.name || "Žaidėjas";
   const pn = document.getElementById("profileName");
   if (pn) pn.textContent = `Sveiki, ${name}`;
   applyWallpaper();
@@ -392,7 +392,7 @@ async function openApp(appId) {
 }
 
 window.renderEmergencyApp = (content) => {
-  content.innerHTML = `<div class="card"><b>Skubus iškvietimas</b><div class="row"><button data-emerg="police">Policija</button><button data-emerg="ems">EMS</button></div><div class="row"><button data-emerg="taxi">Taxi</button><button data-emerg="mechanic">Mechanic</button></div></div>`;
+  content.innerHTML = `<div class="card"><b>Skubus iškvietimas</b><div class="row"><button data-emerg="police">Policija</button><button data-emerg="ems">Greitoji</button></div><div class="row"><button data-emerg="taxi">Taksi</button><button data-emerg="mechanic">Mechanikas</button></div></div>`;
   content.querySelectorAll("[data-emerg]").forEach((btn) =>
     btn.addEventListener("click", () => nui("emergencyCall", { service: btn.dataset.emerg })),
   );
@@ -448,7 +448,7 @@ window.renderAdsApp = (content) => {
 };
 
 window.renderSocialApp = (content) => {
-  content.innerHTML = `<div class="card"><input id="postCaption" placeholder="Caption" /><input id="postImageUrl" placeholder="Image URL" /><button id="btnPostInsta">Kelti</button></div>${state.posts.map((p) => `<div class="card"><b>${esc(p.author_name)}</b><div>${esc(p.caption)}</div><button data-like="${Number(p.id)}">Like ${Number(p.likes || 0)}</button></div>`).join("")}`;
+  content.innerHTML = `<div class="card"><input id="postCaption" placeholder="Aprašymas" /><input id="postImageUrl" placeholder="Nuotraukos nuoroda" /><button id="btnPostInsta">Kelti</button></div>${state.posts.map((p) => `<div class="card"><b>${esc(p.author_name)}</b><div>${esc(p.caption)}</div><button data-like="${Number(p.id)}">Patinka ${Number(p.likes || 0)}</button></div>`).join("")}`;
   document.getElementById("btnPostInsta").addEventListener("click", async () => {
     await nui("createPost", {
       caption: document.getElementById("postCaption").value,
@@ -482,9 +482,9 @@ window.renderSettingsApp = (content) => {
     <div class="card">
       <label class="small muted">Fonas</label>
       <select id="wpSelect">
-        <option value="default"${wp === "default" ? " selected" : ""}>Default</option>
-        <option value="midnight"${wp === "midnight" ? " selected" : ""}>Midnight</option>
-        <option value="sunset"${wp === "sunset" ? " selected" : ""}>Sunset</option>
+        <option value="default"${wp === "default" ? " selected" : ""}>Numatyta</option>
+        <option value="midnight"${wp === "midnight" ? " selected" : ""}>Vidurnaktis</option>
+        <option value="sunset"${wp === "sunset" ? " selected" : ""}>Saulėlydis</option>
       </select>
     </div>`;
   document.getElementById("wpSelect").addEventListener("change", (e) => {
@@ -514,9 +514,9 @@ window.renderWeatherApp = (content) => {
 
 window.renderRadioApp = (content) => {
   const stations = [
-    { id: "pop", label: "Los Santos Pop" },
-    { id: "rock", label: "Rock Nation" },
-    { id: "news", label: "Weazel News" },
+    { id: "pop", label: "Los Santos pop" },
+    { id: "rock", label: "Roko stotis" },
+    { id: "news", label: "Weazel naujienos" },
   ];
   content.innerHTML = `<div class="card"><b>Radijas</b><p class="muted small">Pasirinkite stotį.</p>${stations.map((s) => `<button type="button" class="ios-btn" data-radio="${s.id}" style="width:100%;margin-top:8px">${esc(s.label)}</button>`).join("")}</div>`;
   content.querySelectorAll("[data-radio]").forEach((btn) =>

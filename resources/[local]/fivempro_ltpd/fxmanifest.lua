@@ -42,12 +42,15 @@ files {
     'html/mdt/style.css',
     'html/mdt/vendor/leaflet.js',
     'html/mdt/vendor/leaflet.css',
-    'html/mdt/asset/gtav_satellite.jpg',
     'html/mdt/asset/gtav_satellite_2048.png',
 }
 
 dependencies {
     'qb-core',
     'fivempro_dispatch',
+}
+
+server_exports {
+    'SaveInterrogationRecord',
 }
 -- qb-menu (garažo meniu), qb-inventory (ginklinė / stash), qb-target (zonos)

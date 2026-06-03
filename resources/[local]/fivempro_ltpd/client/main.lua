@@ -200,6 +200,12 @@ RegisterNUICallback('getArrestHistory', function(data, cb)
     end, data and data.citizenid)
 end)
 
+RegisterNUICallback('getInterrogationHistory', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_ltpd:server:getInterrogationHistory', function(result)
+        cb(result or { ok = false, rows = {} })
+    end, data and data.citizenid)
+end)
+
 local function isDispatchWritable()
     local P = QBCore.Functions.GetPlayerData()
     return P and P.job and isPdJobName(P.job.name) and P.job.onduty == true
@@ -213,6 +219,7 @@ CreateThread(function()
             local c = GetEntityCoords(ped)
             SendNUIMessage({
                 action = 'mdtPlayerPos',
+                selfSource = GetPlayerServerId(PlayerId()),
                 x = c.x,
                 y = c.y,
                 z = c.z,
@@ -622,117 +629,9 @@ RegisterNetEvent('fivempro_ltpd:client:applyCivilianOutfit', function()
     QBCore.Functions.Notify('Civilio apranga uždėta. Pamainą baigti — MRPD registratūros NPC.', 'success')
 end)
 
---- PD taškai — 3D markeriai (client/pd_markers.lua)
-CreateThread(function()
-    Wait(500)
-    local addMarker = exports['fivempro_ltpd'].RegisterPdGroundMarker
-
-    for _, st in ipairs(Config.Stations or {}) do
-        local stationId = st.id
-
-        if st.mdt and st.coords then
-            addMarker({
-                coords = st.coords,
-                kind = 'mdt',
-                label = 'MDT planšetė',
-                onPress = function()
-                    TriggerEvent('fivempro_ltpd:client:openMdtAtStation')
-                end,
-            })
-        end
-
-        if st.supply and st.supply.coords then
-            addMarker({
-                coords = st.supply.coords,
-                kind = 'supply',
-                label = st.supply.label or 'PD inventorius',
-                onPress = function()
-                    TriggerServerEvent('fivempro_npcshops:server:openJobSupply', 'police', stationId)
-                end,
-            })
-        end
-
-        if st.garage and st.garage.coords then
-            addMarker({
-                coords = st.garage.coords,
-                kind = 'garage',
-                label = 'PD garažas / transportas',
-                onPress = function()
-                    if not isPdOnDutyClient() then return QBCore.Functions.Notify('Tik tarnyboje.', 'error') end
-                    openPdGarageMenu(stationId)
-                end,
-            })
-        end
-
-        if st.locker and st.locker.coords then
-            addMarker({
-                coords = st.locker.coords,
-                kind = 'locker',
-                label = 'PD rūbinė',
-                onPress = function()
-                    TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu')
-                end,
-            })
-        end
-
-        if st.locker2 and st.locker2.coords then
-            addMarker({
-                coords = st.locker2.coords,
-                kind = 'locker',
-                label = 'PD rūbinė',
-                onPress = function()
-                    TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu')
-                end,
-            })
-        end
-
-        if st.armory and st.armory.coords then
-            addMarker({
-                coords = st.armory.coords,
-                kind = 'armory',
-                label = st.armory.label or 'Ginklinė',
-                onPress = function()
-                    TriggerEvent('fivempro_ltpd:client:tryOpenArmory', { stationId = stationId })
-                end,
-            })
-        end
-
-        for stashIdx, stash in ipairs(st.stashes or {}) do
-            if stash.coords then
-                local index = stashIdx
-                addMarker({
-                    coords = stash.coords,
-                    kind = 'stash',
-                    label = stash.label or ('Sandėlis #' .. tostring(stashIdx)),
-                    onPress = function()
-                        TriggerEvent('fivempro_ltpd:client:tryOpenStash', { stationId = stationId, stashIndex = index })
-                    end,
-                })
-            end
-        end
-
-        if st.heliGarage and st.heliGarage.coords then
-            addMarker({
-                coords = st.heliGarage.coords,
-                kind = 'garage',
-                label = 'PD sraigtasparniai (helipadas)',
-                onPress = function()
-                    TriggerEvent('fivempro_ltpd:client:openHeliGarageMenu', { stationId = stationId })
-                end,
-            })
-        end
-
-        --- Pamaina (markeris) — visur išskyrus MRPD, kur yra vienintelis NPC
-        if stationId ~= 'ls_main' and st.duty and st.coords then
-            addMarker({
-                coords = st.coords,
-                kind = 'duty',
-                label = 'PD pamaina (pradėti / baigti)',
-                requireDuty = false,
-                onPress = function()
-                    TriggerEvent('fivempro_ltpd:client:toggleDuty')
-                end,
-            })
-        end
+RegisterNetEvent('fivempro_ltpd:client:markerGarage', function(stationId)
+    if not isPdOnDutyClient() then
+        return QBCore.Functions.Notify('Tik tarnyboje.', 'error')
     end
+    openPdGarageMenu(stationId)
 end)

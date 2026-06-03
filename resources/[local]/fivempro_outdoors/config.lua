@@ -88,7 +88,7 @@ Config.ButcherMap = {
 --- Žvejybos zonos (prie vandens)
 Config.FishingZones = {
     { coords = vector3(-1593.0, 5197.0, 4.36), radius = 90.0, label = 'Paleto krantas' },
-    { coords = vector3(1304.5, 4225.2, 33.9), radius = 85.0, label = 'Alamo Sea' },
+    { coords = vector3(1304.5, 4225.2, 33.9), radius = 85.0, label = 'Alamo jūra' },
     { coords = vector3(-1849.0, -1250.0, 8.6), radius = 70.0, label = 'Paleto įlanka' },
     { coords = vector3(713.0, 4092.0, 30.7), radius = 60.0, label = 'Sandy Shores ežeras' },
     { coords = vector3(-3426.0, 967.0, 8.3), radius = 55.0, label = 'Chumash krantas' },
@@ -99,7 +99,7 @@ Config.HuntingZones = {
     { coords = vector3(2560.0, 4680.0, 34.0), radius = 220.0, label = 'Grapeseed laukai' },
     { coords = vector3(-598.0, 5065.0, 130.0), radius = 200.0, label = 'Paleto miškas' },
     { coords = vector3(1450.0, 6350.0, 23.0), radius = 180.0, label = 'Chiliad pašlaitės' },
-    { coords = vector3(2450.0, 1545.0, 38.0), radius = 160.0, label = 'Grand Senora' },
+    { coords = vector3(2450.0, 1545.0, 38.0), radius = 160.0, label = 'Grand Senora dykuma' },
 }
 
 Config.AnimalSpawn = {

@@ -108,7 +108,7 @@ function renderCars() {
     img.alt = veh.model;
     img.onerror = () => {
       img.src =
-        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="480" height="180"><rect width="100%" height="100%" fill="%2320262b"/><text x="50%" y="50%" fill="%23b3c1c8" font-family="Arial" font-size="20" dominant-baseline="middle" text-anchor="middle">No Image</text></svg>';
+        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="480" height="180"><rect width="100%" height="100%" fill="%2320262b"/><text x="50%" y="50%" fill="%23b3c1c8" font-family="Arial" font-size="20" dominant-baseline="middle" text-anchor="middle">Nėra nuotraukos</text></svg>';
     };
     card.appendChild(img);
 

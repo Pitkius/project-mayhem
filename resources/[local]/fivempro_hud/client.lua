@@ -555,8 +555,8 @@ end
 local function vehicleWeatherLabel()
     local rain = 0.0
     if GetRainLevel then rain = GetRainLevel() end
-    if rain > 0.12 then return 'RAIN' end
-    return 'CLEAR'
+    if rain > 0.12 then return 'Lietus' end
+    return 'Giedra'
 end
 
 local function plateOfV(veh)
@@ -709,8 +709,8 @@ local function pushVehiclePanelState()
     local fuel = getVehicleFuelPercent(veh)
     local vehModel = GetEntityModel(veh)
     local dispHash = GetDisplayNameFromVehicleModel(vehModel)
-    local vehLabel = dispHash and dispHash ~= '' and GetLabelText(dispHash) or 'Vehicle'
-    if vehLabel == 'NULL' or vehLabel == '' then vehLabel = 'Vehicle' end
+    local vehLabel = dispHash and dispHash ~= '' and GetLabelText(dispHash) or 'Transportas'
+    if vehLabel == 'NULL' or vehLabel == '' then vehLabel = 'Transportas' end
     local modelSpawn = dispHash and string.lower(dispHash) or 'default'
     local spawnModel = modelSpawn
     if QBCore.Shared and QBCore.Shared.Vehicles then
