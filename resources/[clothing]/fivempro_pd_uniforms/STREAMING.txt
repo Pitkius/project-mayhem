@@ -1,0 +1,33 @@
+PER DIDELI ASSETAI (97+ serverio perspejimai)
+============================================
+
+FiveM rodo "uses 64.0 MiB" / "Oversized assets" kai .ytd/.ydd teksturos
+yra per didelio rezoliucijos (dazniausiai 2048x2048 ar didesnes, be DXT
+suspaudimo). Visas stream/ aplankas kraunamas paleidus resursa — net jei
+zaidejas nenaudoja tos aprangos.
+
+Kas vyksta serveryje
+--------------------
+- Daugelis jbib/task/accs .ytd failu = 64 MB RAM kiekvienas
+- Vienas .ydd (task_004_u) = 128 MB
+- Kartu gali neuzsikrauti MLO, transportas, kiti addon drabuziai
+
+Ka sutvarkyti (rekomenduojama)
+------------------------------
+1. OpenIV: atidaryk .ytd -> Export teksturas -> PNG
+2. Sumažink iki maks. 1024x1024 (uniformoms daznai pakanka 512x512)
+3. Import atgal su DXT5 / BC7 suspaudimu (ne raw PNG viduje .ytd)
+4. Issaugok ir perkrauk serveri
+
+Alternatyva (laikinai)
+----------------------
+cfg/20_qb.cfg — uzkommentuok eilutes:
+  # ensure fivempro_pd_uniforms
+  # ensure fivempro_gmp_uniforms
+Tada PD/EMS naudos vanilla drabuzius, kol optimizuosi pack.
+
+Sumažinti pack dydi
+-------------------
+Jei nenaudoji visu kolekciju (mp_f_pdmot, mp_m_pdvyrai, mp_*_pdv2),
+galima iš stream/ ištrinti nenaudojamus aplankus — žr. config_duty_outfits.lua
+collection pavadinimus.

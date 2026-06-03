@@ -2,6 +2,8 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 --- [frequency] = { [src] = memberData }
 local ChannelMembers = {}
+--- [src] = žaidėjo įrašytas vardas racijoje
+local RadioAlias = {}
 
 local function getJobName(src)
     local P = QBCore.Functions.GetPlayer(src)
@@ -77,27 +79,19 @@ local function getCallsign(P)
     return ''
 end
 
-local function buildMemberRow(src, displayMode)
+local function buildMemberRow(src)
     local P = QBCore.Functions.GetPlayer(src)
     if not P then return nil end
     local ci = P.PlayerData.charinfo or {}
     local first = ci.firstname or ''
     local last = ci.lastname or ''
     local full = (first .. ' ' .. last):gsub('^%s+', ''):gsub('%s+$', '')
-    local callsign = getCallsign(P)
-    local line = full
-    if displayMode == 'callsign' then
-        line = callsign ~= '' and callsign or full
-    elseif displayMode == 'callsign_name' then
-        if callsign ~= '' then
-            line = ('%s %s'):format(callsign, full)
-        end
-    end
+    if full == '' then full = 'Nežinomas' end
     return {
         src = src,
         name = full,
-        callsign = callsign,
-        line = line,
+        alias = RadioAlias[src] or '',
+        line = full,
     }
 end
 
@@ -130,31 +124,36 @@ local function broadcastChannel(freq)
     end
 end
 
-local function setPlayerChannel(src, freq, displayMode)
+local function setPlayerChannel(src, freq)
     removeFromAllChannels(src)
     if not freq then
-        TriggerClientEvent('fivempro_radio:client:setChannel', src, nil, nil, nil)
+        TriggerClientEvent('fivempro_radio:client:setChannel', src, nil, nil, nil, false)
         return
     end
     ChannelMembers[freq] = ChannelMembers[freq] or {}
-    local row = buildMemberRow(src, displayMode or 'callsign_name')
+    local row = buildMemberRow(src)
     if row then
         ChannelMembers[freq][src] = row
     end
     local label = GetChannelMeta(freq)
     local lock = GetRestrictedLabel(freq)
-    TriggerClientEvent('fivempro_radio:client:setChannel', src, freq, label, lock)
+    TriggerClientEvent('fivempro_radio:client:setChannel', src, freq, label, lock, true)
     broadcastChannel(freq)
 end
 
-RegisterNetEvent('fivempro_radio:server:connect', function(freq, displayMode)
+RegisterNetEvent('fivempro_radio:server:connect', function(freq, alias)
     local src = source
     freq = math.floor(tonumber(freq) or 0)
+    alias = tostring(alias or ''):gsub('^%s+', ''):gsub('%s+$', ''):sub(1, 32)
+    if alias == '' then
+        return TriggerClientEvent('fivempro_radio:client:notify', src, 'Įrašyk savo vardą racijoje.', 'error')
+    end
     local ok, err = canAccessFrequency(src, freq)
     if not ok then
         return TriggerClientEvent('fivempro_radio:client:notify', src, err or 'Negalima prisijungti.', 'error')
     end
-    setPlayerChannel(src, freq, displayMode)
+    RadioAlias[src] = alias
+    setPlayerChannel(src, freq)
     TriggerClientEvent('fivempro_radio:client:voiceJoin', src, freq)
     TriggerClientEvent('fivempro_radio:client:notify', src, ('Sėkmingai prisijungta prie dažnio %s'):format(freq), 'success')
 end)
@@ -162,34 +161,28 @@ end)
 RegisterNetEvent('fivempro_radio:server:disconnect', function()
     local src = source
     removeFromAllChannels(src)
-    TriggerClientEvent('fivempro_radio:client:setChannel', src, nil, nil, nil)
+    TriggerClientEvent('fivempro_radio:client:setChannel', src, nil, nil, nil, false)
     TriggerClientEvent('fivempro_radio:client:voiceLeave', src)
 end)
 
-RegisterNetEvent('fivempro_radio:server:validateFrequency', function(freq)
+RegisterNetEvent('fivempro_radio:server:validateFrequency', function(freq, alias)
     local src = source
     freq = math.floor(tonumber(freq) or 0)
+    alias = tostring(alias or ''):gsub('^%s+', ''):gsub('%s+$', ''):sub(1, 32)
+    if alias ~= '' then
+        RadioAlias[src] = alias
+    end
     local ok, err = canAccessFrequency(src, freq)
     if not ok then
         return TriggerClientEvent('fivempro_radio:client:freqDenied', src, err)
     end
-    TriggerClientEvent('fivempro_radio:client:freqOk', src, freq, GetChannelMeta(freq), GetRestrictedLabel(freq))
-end)
-
-RegisterNetEvent('fivempro_radio:server:updateDisplayMode', function(displayMode)
-    local src = source
-    for freq, members in pairs(ChannelMembers) do
-        if members[src] then
-            local row = buildMemberRow(src, displayMode)
-            if row then members[src] = row end
-            broadcastChannel(freq)
-            break
-        end
-    end
+    TriggerClientEvent('fivempro_radio:client:freqOk', src, freq, GetChannelMeta(freq), GetRestrictedLabel(freq), alias)
 end)
 
 AddEventHandler('playerDropped', function()
-    removeFromAllChannels(source)
+    local src = source
+    RadioAlias[src] = nil
+    removeFromAllChannels(src)
 end)
 
 QBCore.Functions.CreateUseableItem('radio', function(source)

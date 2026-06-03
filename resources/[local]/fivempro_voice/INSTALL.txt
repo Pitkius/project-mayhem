@@ -1,0 +1,20 @@
+fivempro_voice — papildymai prie pma-voice
+============================================
+
+Reikia: pma-voice (resources/[voice]/pma-voice), cfg/25_voice.cfg
+
+Kas įdiegta:
+- Artimo balso (proximity) — ne globalus; girdi tik aplink tave
+- Klavišas ` (GRAVE) — keisti atstumą: šnabždesys / normalu / šauksmas
+- F11 — alternatyva (FiveM nustatymai → pma-voice)
+- CAPS LOCK — racija (fivempro_radio)
+- N — numatytas PTT (kalbėti) FiveM nustatymuose
+- /vol 50 — racijos/skambučio garsumas (1–100)
+
+Burna + rankos kalbant (fivempro_voice):
+- Veidas juda, rankų animacija, bet gali vaikščioti (flag 49)
+
+Jei neveikia:
+1. Išjunk vMenu voice chat
+2. restart pma-voice
+3. restart fivempro_voice

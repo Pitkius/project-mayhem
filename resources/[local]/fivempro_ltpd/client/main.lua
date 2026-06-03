@@ -622,15 +622,10 @@ RegisterNetEvent('fivempro_ltpd:client:applyCivilianOutfit', function()
     QBCore.Functions.Notify('Civilio apranga uždėta. Pamainą baigti — MRPD registratūros NPC.', 'success')
 end)
 
---- PD taškai — 3D markeriai ant žemės (be qb-target; pamaina tik prie vieno NPC MRPD)
+--- PD taškai — 3D markeriai (client/pd_markers.lua)
 CreateThread(function()
-    while GetResourceState('fivempro_npcshops') ~= 'started' do
-        Wait(200)
-    end
-    local addMarker = exports['fivempro_npcshops'].AddJobGroundMarker
-    local stashScale = { x = 0.32, y = 0.32, z = 0.32 }
-    local lockerScale = { x = 0.48, y = 0.48, z = 0.48 }
-    local armoryScale = { x = 0.52, y = 0.52, z = 0.52 }
+    Wait(500)
+    local addMarker = exports['fivempro_ltpd'].RegisterPdGroundMarker
 
     for _, st in ipairs(Config.Stations or {}) do
         local stationId = st.id
@@ -640,8 +635,6 @@ CreateThread(function()
                 coords = st.coords,
                 kind = 'mdt',
                 label = 'MDT planšetė',
-                scale = stashScale,
-                canUse = isPdOnDutyClient,
                 onPress = function()
                     TriggerEvent('fivempro_ltpd:client:openMdtAtStation')
                 end,
@@ -653,8 +646,6 @@ CreateThread(function()
                 coords = st.supply.coords,
                 kind = 'supply',
                 label = st.supply.label or 'PD inventorius',
-                scale = stashScale,
-                canUse = isPdOnDutyClient,
                 onPress = function()
                     TriggerServerEvent('fivempro_npcshops:server:openJobSupply', 'police', stationId)
                 end,
@@ -666,8 +657,8 @@ CreateThread(function()
                 coords = st.garage.coords,
                 kind = 'garage',
                 label = 'PD garažas / transportas',
-                canUse = isPdOnDutyClient,
                 onPress = function()
+                    if not isPdOnDutyClient() then return QBCore.Functions.Notify('Tik tarnyboje.', 'error') end
                     openPdGarageMenu(stationId)
                 end,
             })
@@ -678,8 +669,6 @@ CreateThread(function()
                 coords = st.locker.coords,
                 kind = 'locker',
                 label = 'PD rūbinė',
-                scale = lockerScale,
-                canUse = isPdOnDutyClient,
                 onPress = function()
                     TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu')
                 end,
@@ -691,8 +680,6 @@ CreateThread(function()
                 coords = st.locker2.coords,
                 kind = 'locker',
                 label = 'PD rūbinė',
-                scale = lockerScale,
-                canUse = isPdOnDutyClient,
                 onPress = function()
                     TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu')
                 end,
@@ -704,8 +691,6 @@ CreateThread(function()
                 coords = st.armory.coords,
                 kind = 'armory',
                 label = st.armory.label or 'Ginklinė',
-                scale = armoryScale,
-                canUse = isPdOnDutyClient,
                 onPress = function()
                     TriggerEvent('fivempro_ltpd:client:tryOpenArmory', { stationId = stationId })
                 end,
@@ -719,8 +704,6 @@ CreateThread(function()
                     coords = stash.coords,
                     kind = 'stash',
                     label = stash.label or ('Sandėlis #' .. tostring(stashIdx)),
-                    scale = stashScale,
-                    canUse = isPdOnDutyClient,
                     onPress = function()
                         TriggerEvent('fivempro_ltpd:client:tryOpenStash', { stationId = stationId, stashIndex = index })
                     end,
@@ -733,7 +716,6 @@ CreateThread(function()
                 coords = st.heliGarage.coords,
                 kind = 'garage',
                 label = 'PD sraigtasparniai (helipadas)',
-                canUse = isPdOnDutyClient,
                 onPress = function()
                     TriggerEvent('fivempro_ltpd:client:openHeliGarageMenu', { stationId = stationId })
                 end,
@@ -746,11 +728,7 @@ CreateThread(function()
                 coords = st.coords,
                 kind = 'duty',
                 label = 'PD pamaina (pradėti / baigti)',
-                scale = lockerScale,
-                canUse = function()
-                    local P = QBCore.Functions.GetPlayerData()
-                    return P and P.job and isPdJobName(P.job.name)
-                end,
+                requireDuty = false,
                 onPress = function()
                     TriggerEvent('fivempro_ltpd:client:toggleDuty')
                 end,

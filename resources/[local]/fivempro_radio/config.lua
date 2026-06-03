@@ -37,15 +37,15 @@ Config.DefaultSounds = {
 
 --- Overlay pozicija (dešinė virš minimap)
 Config.Overlay = {
-    x = 0.88,
-    y = 0.72,
+    x = 0.90,
+    y = 0.08,
 }
 
---- Prisijungusių sąrašas ant ekrano (GTA tekstas)
+--- Prisijungusių sąrašas — dešinė, viršuje (vardas pavardė)
 Config.MemberList = {
-    x = 0.86,
-    y = 0.38,
-    maxLines = 8,
+    x = 0.90,
+    y = 0.14,
+    maxLines = 10,
 }
 
 --- Racijos kalbėjimo animacija (judėjimas leidžiamas: flag 49)

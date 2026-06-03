@@ -100,16 +100,23 @@ local function DrawTarget()
 	end)
 end
 
+local function isValidEntity(entity)
+	return entity and entity ~= 0 and DoesEntityExist(entity)
+end
+
+local function safeGetEntityCoords(entity)
+	if not isValidEntity(entity) then return nil end
+	local ok, coords = pcall(GetEntityCoords, entity)
+	if ok and coords then return coords end
+	return nil
+end
+
 local function RaycastCamera(flag, playerCoords)
-	if not playerPed or playerPed == 0 or not DoesEntityExist(playerPed) then
+	if not isValidEntity(playerPed) then
 		playerPed = PlayerPedId()
 	end
 	if not playerCoords then
-		if playerPed and playerPed ~= 0 and DoesEntityExist(playerPed) then
-			playerCoords = GetEntityCoords(playerPed)
-		else
-			playerCoords = vector3(0.0, 0.0, 0.0)
-		end
+		playerCoords = safeGetEntityCoords(playerPed) or vector3(0.0, 0.0, 0.0)
 	end
 
 	local rayPos, rayDir = ScreenPositionToCameraRay()
@@ -270,6 +277,7 @@ end
 exports('CheckEntity', CheckEntity)
 
 local function CheckBones(coords, entity, bonelist)
+	if not isValidEntity(entity) then return end
 	local closestBone = -1
 	local closestDistance = 20
 	local closestPos, closestBoneName
@@ -341,8 +349,11 @@ local function EnableTarget()
 		if flag == 30 then flag = -1 else flag = 30 end
 
 		local coords, distance, entity, entityType = RaycastCamera(flag)
+		if not isValidEntity(entity) then
+			entity, entityType = nil, 0
+		end
 		if distance <= Config.MaxDistance then
-			if entityType > 0 then
+			if entityType > 0 and isValidEntity(entity) then
 				-- Local(non-net) entity targets
 				if Entities[entity] then
 					CheckEntity(flag, Entities[entity], entity, distance)
@@ -356,7 +367,8 @@ local function EnableTarget()
 
 				-- Player and Ped targets
 				if entityType == 1 then
-					local data = Models[GetEntityModel(entity)]
+					local model = isValidEntity(entity) and GetEntityModel(entity) or 0
+					local data = Models[model]
 					if IsPedAPlayer(entity) then data = Players end
 					if data and next(data) then CheckEntity(flag, data, entity, distance) end
 
@@ -404,12 +416,14 @@ local function EnableTarget()
 					end
 
 					-- Vehicle model targets
-					local data = Models[GetEntityModel(entity)]
+					local model = isValidEntity(entity) and GetEntityModel(entity) or 0
+					local data = Models[model]
 					if data then CheckEntity(flag, data, entity, distance) end
 
 					-- Entity targets
 				elseif entityType > 2 then
-					local data = Models[GetEntityModel(entity)]
+					local model = isValidEntity(entity) and GetEntityModel(entity) or 0
+					local data = Models[model]
 					if data then CheckEntity(flag, data, entity, distance) end
 				end
 

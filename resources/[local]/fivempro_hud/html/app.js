@@ -174,7 +174,7 @@ const CAR_FUEL_ARC_LEN = (270 / 360) * 2 * Math.PI * 58;
 })();
 
 let currentSettings = {
-  style: "frame",
+  style: "dots",
   color: "violet",
   alpha: 0.58,
   show: {
@@ -247,7 +247,7 @@ function setBar(name, value, opts) {
 
 function applyVisualStyle(style) {
   const allowed = ["line", "square", "dots", "tiles", "frame"];
-  const normalized = allowed.includes(style) ? style : "frame";
+  const normalized = allowed.includes(style) ? style : "dots";
   body.classList.remove("shape-line", "shape-square", "shape-dots", "shape-tiles", "shape-frame");
   body.classList.add(`shape-${normalized}`);
 

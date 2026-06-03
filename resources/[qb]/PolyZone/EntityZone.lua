@@ -82,6 +82,9 @@ function EntityZone:Create(entity, options)
 end
 
 function UpdateOffsets(entity, zone)
+  if not entity or entity == 0 or not DoesEntityExist(entity) then
+    return
+  end
   local pos = GetEntityCoords(entity)
   local rot = GetRotation(entity)
   zone.offsetPos = pos.xy - zone.startPos

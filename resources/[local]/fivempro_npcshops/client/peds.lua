@@ -271,6 +271,23 @@ CreateThread(function()
     end
 end)
 
+--- Išvalyti qb-target įrašus kai NPC ped išnyksta (nebegaliojantis entity = GetEntityCoords klaidos)
+CreateThread(function()
+    while true do
+        Wait(5000)
+        if GetResourceState('qb-target') ~= 'started' then goto continue end
+        for key, _ in pairs(configured) do
+            if type(key) == 'number' and not DoesEntityExist(key) then
+                pcall(function()
+                    exports['qb-target']:RemoveTargetEntity(key)
+                end)
+                configured[key] = nil
+            end
+        end
+        ::continue::
+    end
+end)
+
 RegisterNetEvent('fivempro_npcshops:client:openBarberWithAnim', function(data)
     local idx = data and tonumber(data.shopIndex)
     local cfg = idx and Config.BarberPeds[idx] or nil

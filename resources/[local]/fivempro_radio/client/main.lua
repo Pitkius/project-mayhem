@@ -4,9 +4,12 @@ local radioOpen = false
 local currentFreq = nil
 local currentLabel = nil
 local currentLock = nil
+local voiceConnected = false
+local radioAlias = ''
 local members = {}
 local soundOn = true
 local talkingOnRadio = false
+local radioTalkers = {}
 
 local settings = {
     beepStart = true,
@@ -15,24 +18,30 @@ local settings = {
     connect = true,
     disconnect = true,
     compactOverlay = true,
-    memberDisplay = 'callsign_name', -- callsign_name | callsign | fullname | hidden
 }
 
-local KVP_KEY = 'fivempro_radio:settings'
+local KVP_SETTINGS = 'fivempro_radio:settings'
+local KVP_ALIAS = 'fivempro_radio:alias'
 
 local function loadSettings()
-    local raw = GetResourceKvpString(KVP_KEY)
-    if not raw or raw == '' then return end
-    local ok, decoded = pcall(json.decode, raw)
-    if ok and type(decoded) == 'table' then
-        for k, v in pairs(settings) do
-            if decoded[k] ~= nil then settings[k] = decoded[k] end
+    local raw = GetResourceKvpString(KVP_SETTINGS)
+    if raw and raw ~= '' then
+        local ok, decoded = pcall(json.decode, raw)
+        if ok and type(decoded) == 'table' then
+            for k, v in pairs(settings) do
+                if decoded[k] ~= nil then settings[k] = decoded[k] end
+            end
         end
     end
+    radioAlias = GetResourceKvpString(KVP_ALIAS) or ''
 end
 
 local function saveSettings()
-    SetResourceKvp(KVP_KEY, json.encode(settings))
+    SetResourceKvp(KVP_SETTINGS, json.encode(settings))
+end
+
+local function saveAlias()
+    SetResourceKvp(KVP_ALIAS, radioAlias or '')
 end
 
 local function playUiSound(kind)
@@ -60,12 +69,11 @@ local function pushState()
         open = radioOpen,
         freq = currentFreq,
         label = currentLabel,
-        lock = currentLock,
-        connected = currentFreq ~= nil,
+        sub = currentLock,
+        alias = radioAlias,
+        connected = voiceConnected,
         soundOn = soundOn,
         settings = settings,
-        members = members,
-        talking = talkingOnRadio,
     })
 end
 
@@ -85,11 +93,12 @@ end
 
 local function voiceJoin(freq)
     if GetResourceState('pma-voice') ~= 'started' then
-        notify('pma-voice nerastas — įdiekite balso resursą.', 'error')
-        return
+        notify('Įdiek pma-voice ir atkomentuok cfg/25_voice.cfg (ensure pma-voice).', 'error')
+        return false
     end
     exports['pma-voice']:setVoiceProperty('radioEnabled', true)
     exports['pma-voice']:setRadioChannel(freq)
+    return true
 end
 
 local function voiceLeave()
@@ -107,7 +116,7 @@ local function startRadioAnim()
     RequestAnimDict(dict)
     local t = GetGameTimer() + 3000
     while not HasAnimDictLoaded(dict) and GetGameTimer() < t do Wait(0) end
-    if HasAnimDictLoaded(dict) and not IsEntityPlayingAnim(ped, dict, anim, 3) then
+    if HasAnimDictLoaded(dict) then
         TaskPlayAnim(ped, dict, anim, 8.0, -8.0, -1, cfg.flag or 49, 0.0, false, false, false)
     end
 end
@@ -115,9 +124,7 @@ end
 local function stopRadioAnim()
     local ped = PlayerPedId()
     local cfg = Config.RadioAnim or {}
-    if IsEntityPlayingAnim(ped, cfg.dict or 'random@arrests', cfg.anim or 'generic_radio_chatter', 3) then
-        StopAnimTask(ped, cfg.dict or 'random@arrests', cfg.anim or 'generic_radio_chatter', 1.0)
-    end
+    StopAnimTask(ped, cfg.dict or 'random@arrests', cfg.anim or 'generic_radio_chatter', 1.0)
 end
 
 RegisterNetEvent('fivempro_radio:client:open', function()
@@ -126,6 +133,9 @@ end)
 
 RegisterNetEvent('fivempro_radio:client:notify', function(msg, ntype)
     notify(msg, ntype)
+    if string.find(msg or '', 'prisijungta', 1, true) then
+        voiceConnected = true
+    end
     if radioOpen then pushState() end
 end)
 
@@ -134,20 +144,28 @@ RegisterNetEvent('fivempro_radio:client:freqDenied', function(msg)
     notify(msg or 'Neturite prieigos.', 'error')
 end)
 
-RegisterNetEvent('fivempro_radio:client:freqOk', function(freq, label, lock)
+RegisterNetEvent('fivempro_radio:client:freqOk', function(freq, label, lock, alias)
     currentFreq = tonumber(freq)
     currentLabel = label
     currentLock = lock
-    sendNui('freqResult', { ok = true, freq = currentFreq, label = label, lock = lock })
+    if alias and alias ~= '' then
+        radioAlias = alias
+        saveAlias()
+    end
+    sendNui('freqResult', { ok = true, freq = currentFreq, label = label, lock = lock, alias = radioAlias })
     if settings.channelChange then playUiSound('channel') end
     pushState()
 end)
 
-RegisterNetEvent('fivempro_radio:client:setChannel', function(freq, label, lock)
+RegisterNetEvent('fivempro_radio:client:setChannel', function(freq, label, lock, connected)
     currentFreq = freq and tonumber(freq) or nil
     currentLabel = label
     currentLock = lock
-    members = {}
+    voiceConnected = connected == true
+    if not voiceConnected then
+        members = {}
+        radioTalkers = {}
+    end
     if radioOpen then pushState() end
 end)
 
@@ -158,14 +176,18 @@ RegisterNetEvent('fivempro_radio:client:channelUpdate', function(freq, list)
 end)
 
 RegisterNetEvent('fivempro_radio:client:voiceJoin', function(freq)
-    voiceJoin(freq)
-    if settings.connect then playUiSound('connect') end
-    if radioOpen then pushState() end
+    if voiceJoin(freq) then
+        voiceConnected = true
+        if settings.connect then playUiSound('connect') end
+        if radioOpen then pushState() end
+    end
 end)
 
 RegisterNetEvent('fivempro_radio:client:voiceLeave', function()
     voiceLeave()
+    voiceConnected = false
     if settings.disconnect then playUiSound('disconnect') end
+    if radioOpen then pushState() end
 end)
 
 RegisterNUICallback('close', function(_, cb)
@@ -175,12 +197,20 @@ end)
 
 RegisterNUICallback('connect', function(data, cb)
     local freq = tonumber(data and data.freq) or currentFreq
+    local alias = data and data.alias or radioAlias
     if not freq then
-        notify('Pirmiausia nustatykite dažnį.', 'error')
+        notify('Pirmiausia nustatyk dažnį (mygtukas Dažnis).', 'error')
         cb('ok')
         return
     end
-    TriggerServerEvent('fivempro_radio:server:connect', freq, settings.memberDisplay)
+    if not alias or alias == '' then
+        notify('Įrašyk savo vardą racijoje.', 'error')
+        cb('ok')
+        return
+    end
+    radioAlias = alias
+    saveAlias()
+    TriggerServerEvent('fivempro_radio:server:connect', freq, radioAlias)
     cb('ok')
 end)
 
@@ -189,19 +219,29 @@ RegisterNUICallback('disconnect', function(_, cb)
     currentFreq = nil
     currentLabel = nil
     currentLock = nil
+    voiceConnected = false
     members = {}
-    pushState()
+    radioTalkers = {}
+    if radioOpen then pushState() end
     cb('ok')
 end)
 
 RegisterNUICallback('validateFreq', function(data, cb)
     local freq = math.floor(tonumber(data and data.freq) or 0)
+    local alias = tostring(data and data.alias or radioAlias or ''):sub(1, 32)
     if freq < 1 then
         sendNui('freqResult', { ok = false, message = 'Įveskite dažnį.' })
         cb('ok')
         return
     end
-    TriggerServerEvent('fivempro_radio:server:validateFrequency', freq)
+    if alias == '' then
+        sendNui('freqResult', { ok = false, message = 'Įrašyk savo vardą racijoje.' })
+        cb('ok')
+        return
+    end
+    radioAlias = alias
+    saveAlias()
+    TriggerServerEvent('fivempro_radio:server:validateFrequency', freq, radioAlias)
     cb('ok')
 end)
 
@@ -218,92 +258,93 @@ RegisterNUICallback('saveSettings', function(data, cb)
             if settings[k] ~= nil then settings[k] = v end
         end
         saveSettings()
-        TriggerServerEvent('fivempro_radio:server:updateDisplayMode', settings.memberDisplay)
     end
     pushState()
     cb('ok')
 end)
 
---- Kas kalba per raciją (pma-voice state)
+--- Kas kalba per raciją
 AddStateBagChangeHandler('radioActive', nil, function(bagName, _, value)
-    local myBag = ('player:%s'):format(GetPlayerServerId(PlayerId()))
-    if bagName ~= myBag then return end
-    talkingOnRadio = value == true
-    if talkingOnRadio then
-        if settings.beepStart then playUiSound('beep') end
-        startRadioAnim()
-    else
-        if settings.beepEnd then playUiSound('beep') end
-        stopRadioAnim()
-    end
-end)
-
-CreateThread(function()
-    loadSettings()
-    while true do
-        if currentFreq and settings.compactOverlay then
-            Wait(0)
+    local sid = tonumber(bagName:match('player:(%d+)'))
+    if not sid then return end
+    if sid == GetPlayerServerId(PlayerId()) then
+        talkingOnRadio = value == true
+        if talkingOnRadio then
+            if settings.beepStart then playUiSound('beep') end
+            startRadioAnim()
         else
-            Wait(500)
+            if settings.beepEnd then playUiSound('beep') end
+            stopRadioAnim()
+        end
+        return
+    end
+    if voiceConnected and currentFreq then
+        if value then
+            for _, m in ipairs(members) do
+                if m.src == sid then
+                    radioTalkers[sid] = m.line or m.name
+                    return
+                end
+            end
+            radioTalkers[sid] = 'Kalbėtojas'
+        else
+            radioTalkers[sid] = nil
         end
     end
 end)
 
---- Kompaktinis overlay + prisijungusių sąrašas (GTA tekstas)
-CreateThread(function()
-    local function drawText(x, y, scale, text, r, g, b, a)
-        SetTextFont(4)
-        SetTextScale(scale, scale)
-        SetTextColour(r, g, b, a)
-        SetTextOutline()
-        SetTextRightJustify(true)
-        SetTextWrap(0.0, x)
-        BeginTextCommandDisplayText('STRING')
-        AddTextComponentSubstringPlayerName(text)
-        EndTextCommandDisplayText(x, y)
-    end
+local function drawTextRight(x, y, scale, text, r, g, b, a)
+    SetTextFont(4)
+    SetTextScale(scale, scale)
+    SetTextColour(r, g, b, a)
+    SetTextOutline()
+    SetTextRightJustify(true)
+    SetTextWrap(0.0, x)
+    BeginTextCommandDisplayText('STRING')
+    AddTextComponentSubstringPlayerName(text)
+    EndTextCommandDisplayText(x, y)
+end
 
+CreateThread(function()
+    loadSettings()
     while true do
         local sleep = 400
-        if currentFreq then
+        if voiceConnected and currentFreq then
             sleep = 0
             local cfgO = Config.Overlay or {}
-            local ox = cfgO.x or 0.88
-            local oy = cfgO.y or 0.72
+            local ox = cfgO.x or 0.90
+            local oy = cfgO.y or 0.08
 
             if settings.compactOverlay then
-                local line1 = ('Racija: %s'):format(tostring(currentFreq))
+                drawTextRight(ox, oy, 0.34, ('Racija: %s'):format(tostring(currentFreq)), 167, 139, 250, 240)
                 local line2
                 if talkingOnRadio then
-                    local P = QBCore.Functions.GetPlayerData()
-                    local cs = ''
-                    if P and P.metadata and P.metadata.callsign then cs = P.metadata.callsign .. ' ' end
-                    local ci = P and P.charinfo or {}
-                    line2 = ('Kalba: %s%s'):format(cs, (ci.firstname or '') .. ' ' .. (ci.lastname or ''))
+                    line2 = ('Kalba: %s'):format(radioAlias ~= '' and radioAlias or 'Tu')
                 else
-                    line2 = ('Prisijungę: %s'):format(#members)
+                    local talkName = nil
+                    for sid, name in pairs(radioTalkers) do
+                        if name then talkName = name break end
+                    end
+                    line2 = talkName and ('Kalba: %s'):format(talkName) or ('Prisijungę: %s'):format(#members)
                 end
-                drawText(ox, oy, 0.32, line1, 167, 139, 250, 230)
-                drawText(ox, oy + 0.028, 0.28, line2, 226, 232, 240, 220)
+                drawTextRight(ox, oy + 0.028, 0.30, line2, 226, 232, 240, 225)
             end
 
-            if settings.memberDisplay ~= 'hidden' and #members > 0 and not radioOpen then
-                local cfgM = Config.MemberList or {}
-                local mx = cfgM.x or 0.86
-                local my = cfgM.y or 0.38
-                local maxL = cfgM.maxLines or 8
-                drawText(mx, my, 0.34, ('Racija %s'):format(tostring(currentFreq)), 167, 139, 250, 240)
-                if currentLabel then
-                    drawText(mx, my + 0.026, 0.30, currentLabel, 200, 200, 210, 220)
-                end
-                drawText(mx, my + 0.052, 0.28, 'Prisijungę:', 180, 180, 190, 210)
-                for i = 1, math.min(#members, maxL) do
-                    local m = members[i]
-                    drawText(mx, my + 0.052 + (i * 0.024), 0.26, ('- %s'):format(m.line or m.name or '?'), 230, 230, 235, 215)
-                end
-                if #members > maxL then
-                    drawText(mx, my + 0.052 + ((maxL + 1) * 0.024), 0.24, ('ir dar %s...'):format(#members - maxL), 160, 160, 170, 200)
-                end
+            local cfgM = Config.MemberList or {}
+            local mx = cfgM.x or 0.90
+            local my = cfgM.y or 0.14
+            local maxL = cfgM.maxLines or 10
+            drawTextRight(mx, my, 0.32, ('Racija %s'):format(tostring(currentFreq)), 167, 139, 250, 235)
+            if currentLabel then
+                drawTextRight(mx, my + 0.024, 0.28, currentLabel, 200, 200, 210, 220)
+            end
+            drawTextRight(mx, my + 0.048, 0.27, 'Prisijungę:', 180, 180, 190, 210)
+            for i = 1, math.min(#members, maxL) do
+                local m = members[i]
+                drawTextRight(mx, my + 0.048 + (i * 0.022), 0.26, ('- %s'):format(m.line or m.name or '?'), 235, 235, 240, 220)
+            end
+            if #members > maxL then
+                drawTextRight(mx, my + 0.048 + ((maxL + 1) * 0.022), 0.24, ('ir dar %s...'):format(#members - maxL), 160, 160, 170, 200)
             end
         end
         Wait(sleep)

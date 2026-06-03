@@ -123,8 +123,8 @@ local function deepCopy(tbl)
 end
 
 local DEFAULT_PRESET = {
-    --- Vientisas rėmas aplink minimap (violetinė tema)
-    style = 'frame',
+    --- Numatytasis: rutuliukai (žiedai) — violetinė tema
+    style = 'dots',
     color = 'violet',
     alpha = 0.58,
     show = {
@@ -1077,6 +1077,15 @@ CreateThread(function()
     Wait(1000)
     PlayerData = QBCore.Functions.GetPlayerData()
     loadPresetSettings()
+    --- Vienkartinė migracija: senas numatytasis „frame“ → rutuliukai (šablonas 1)
+    if GetResourceKvpInt('fivempro_hud:dots_default_v') < 1 then
+        local p1 = presetSettings[1]
+        if p1 and p1.style == 'frame' then
+            p1.style = 'dots'
+            savePresetSettings(1)
+        end
+        SetResourceKvpInt('fivempro_hud:dots_default_v', 1)
+    end
     hudPreset = GetResourceKvpInt('fivempro_hud:preset')
     if hudPreset < 1 or hudPreset > HUD_PRESET_COUNT then
         hudPreset = 1
