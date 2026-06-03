@@ -1,5 +1,10 @@
 /* Fivempro pranešimai — glass + violetinė tema (be Quasar ERROR/CHECK) */
 
+html,
+body {
+    background: transparent !important;
+}
+
 .fp-notify-root {
     position: fixed;
     z-index: 99999;
@@ -68,19 +73,18 @@
     min-width: 280px;
     padding: 11px 12px 13px;
     border-radius: 14px;
+    /* Be backdrop-filter — FiveM CEF dažnai rodo juodą stačią dėžę */
     background: linear-gradient(
         145deg,
-        rgba(12, 10, 24, 0.92) 0%,
-        rgba(21, 18, 38, 0.82) 100%
+        rgba(38, 34, 58, 0.78) 0%,
+        rgba(28, 24, 44, 0.72) 100%
     );
-    border: 1px solid rgba(167, 139, 250, 0.2);
+    border: 1px solid rgba(167, 139, 250, 0.28);
     border-left: 3px solid var(--fp-accent);
     box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-        0 14px 36px rgba(0, 0, 0, 0.42),
-        0 0 24px var(--fp-accent-soft);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+        0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+        0 10px 28px rgba(0, 0, 0, 0.28),
+        0 0 20px var(--fp-accent-soft);
     opacity: 0;
     transform: translateX(28px);
     transition:

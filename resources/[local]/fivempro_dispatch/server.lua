@@ -388,6 +388,10 @@ RegisterNetEvent('fivempro_dispatch:server:setCallsign', function(callsign)
     if not service then return end
     callsign = tostring(callsign or ''):upper():gsub('[^A-Z0-9]', ''):sub(1, 12)
     Callsigns[src] = callsign
+    local Player = QBCore.Functions.GetPlayer(src)
+    if Player then
+        Player.Functions.SetMetaData('callsign', callsign)
+    end
     local crewId = PlayerCrew[src]
     if crewId and Crews[crewId] then
         if Crews[crewId].leader ~= src then

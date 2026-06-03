@@ -9,6 +9,9 @@ local COLORS = {
     stash = { 255, 180, 72, 140 },
     locker = { 167, 139, 250, 150 },
     armory = { 239, 68, 68, 150 },
+    supply = { 34, 197, 94, 140 },
+    mdt = { 96, 165, 250, 150 },
+    duty = { 250, 204, 21, 150 },
 }
 
 local DEFAULT_MARKER_TYPES = {
@@ -16,10 +19,13 @@ local DEFAULT_MARKER_TYPES = {
     stash = 2,
     locker = 2,
     armory = 2,
+    supply = 2,
+    mdt = 2,
+    duty = 2,
 }
 
 local function isMarkerRole(role)
-    return role == 'garage' or role == 'stash' or role == 'locker'
+    return role == 'garage' or role == 'stash' or role == 'locker' or role == 'supply'
 end
 
 local function markerTypeFor(kind)
@@ -46,10 +52,10 @@ local function drawJobMarker(pos, kind, scale)
 end
 
 local function useRadiusFor(kind)
-    if kind == 'stash' then
+    if kind == 'stash' or kind == 'mdt' or kind == 'supply' then
         return Config.JobMarkerStashUseRadius or 1.35
     end
-    if kind == 'locker' or kind == 'armory' then
+    if kind == 'locker' or kind == 'armory' or kind == 'duty' then
         return Config.JobMarkerLockerUseRadius or 1.6
     end
     return Config.JobMarkerUseRadius or 2.2

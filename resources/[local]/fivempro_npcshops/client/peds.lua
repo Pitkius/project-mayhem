@@ -41,7 +41,7 @@ local function setupPedEntity(ent, meta)
 end
 
 local function isJobMarkerRole(role)
-    return role == 'garage' or role == 'stash'
+    return role == 'garage' or role == 'stash' or role == 'locker' or role == 'supply'
 end
 
 local function buildTargetOptions(meta)

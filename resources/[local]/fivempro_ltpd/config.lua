@@ -85,7 +85,7 @@ Config.MdtMap = {
 
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)
 Config.ArmoryGarageDistance = 38.0
---- Vadovybės meniu serverio patikra – priartėk prie „management“ taško
+--- (Rezervas) vadovybės veiksmų atstumo patikra serveryje
 Config.ManagementRadius = 18.0
 
 --- Blipai žemėlapyje (komisariatai)
@@ -127,6 +127,10 @@ Config.Stations = {
         heading = 90.0,
         mdt = true,
         duty = true,
+        supply = {
+            coords = vector3(451.2, -993.4, 30.69),
+            label = 'PD inventorius',
+        },
         armory = {
             coords = vector3(486.5664, -995.1992, 30.6791),
             stashId = 'ltpd_armory_ls',
@@ -189,10 +193,6 @@ Config.Stations = {
                 slots = 90,
             },
         },
-        management = {
-            coords = vector3(463.1892, -988.8655, 30.6897),
-            heading = 263.6569,
-        },
         --- Stogas: helipadas + sraigtasparnio „garažas“ (keisk Z pagal MLO)
         heliGarage = {
             coords = vector3(449.32, -981.38, 43.69),
@@ -206,6 +206,10 @@ Config.Stations = {
         heading = 320.0,
         mdt = true,
         duty = true,
+        supply = {
+            coords = vector3(374.04, -1608.08, 29.29),
+            label = 'PD inventorius',
+        },
         armory = {
             coords = vector3(374.04, -1608.08, 29.29),
             stashId = 'ltpd_armory_davis',
@@ -231,10 +235,6 @@ Config.Stations = {
             { coords = vector3(373.2, -1605.4, 29.29), stashId = 'ltpd_stash_grade3_davis', label = 'PD sandėlis (nuo 3 rango)', minGrade = 3, maxweight = 2500000, slots = 70 },
             { coords = vector3(373.2, -1604.3, 29.29), stashId = 'ltpd_stash_grade8_davis', label = 'PD sandėlis (nuo 8 rango)', minGrade = 8, maxweight = 3000000, slots = 80 },
         },
-        management = {
-            coords = vector3(383.12, -1597.28, 34.73),
-            heading = 230.0,
-        },
     },
     {
         id = 'sandy',
@@ -243,6 +243,10 @@ Config.Stations = {
         heading = 210.0,
         mdt = true,
         duty = true,
+        supply = {
+            coords = vector3(1849.12, 3690.04, 34.27),
+            label = 'PD inventorius',
+        },
         armory = {
             coords = vector3(1849.12, 3690.04, 34.27),
             stashId = 'ltpd_armory_sandy',
@@ -276,6 +280,10 @@ Config.Stations = {
         heading = 45.0,
         mdt = true,
         duty = true,
+        supply = {
+            coords = vector3(-449.38, 6014.12, 31.72),
+            label = 'PD inventorius',
+        },
         armory = {
             coords = vector3(-449.38, 6014.12, 31.72),
             stashId = 'ltpd_armory_paleto',

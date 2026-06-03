@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="nui://fivempro_fonts/html/ui.css" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="radio-app" class="radio-app hidden">
+        <div class="radio-device">
+            <button type="button" class="radio-device__close" id="btnClose" aria-label="Uždaryti">×</button>
+            <button type="button" class="radio-device__settings" id="btnSettings" aria-label="Nustatymai">⚙</button>
+
+            <div class="radio-device__screen">
+                <div class="screen-top">
+                    <span id="screenTime">12:00</span>
+                    <span class="screen-signal">▮▮▮</span>
+                    <span id="screenLock" class="screen-lock hidden">🔒</span>
+                </div>
+                <div class="screen-freq" id="screenFreq">--</div>
+                <div class="screen-label" id="screenLabel">Nenustatytas dažnis</div>
+                <div class="screen-sub" id="screenSub">Įveskite dažnį</div>
+                <div class="screen-wave" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+            </div>
+
+            <div class="radio-device__keys">
+                <button type="button" class="key key--main" id="btnConnect">Prisijungti</button>
+                <button type="button" class="key key--side" id="btnFreq">Dažnis</button>
+                <button type="button" class="key key--side" id="btnSound">Garsas ON</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-freq" class="modal hidden">
+        <div class="modal__card">
+            <h3>Įvesti dažnį</h3>
+            <input type="number" id="inputFreq" min="1" max="999" placeholder="pvz. 1, 12, 21, 88" />
+            <div class="modal__actions">
+                <button type="button" class="btn btn--ghost" id="btnFreqCancel">Atšaukti</button>
+                <button type="button" class="btn btn--primary" id="btnFreqOk">Patvirtinti</button>
+            </div>
+            <p class="modal__hint" id="freqHint"></p>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="modal hidden">
+        <div class="modal__card modal__card--wide">
+            <h3>Nustatymai</h3>
+            <label class="toggle"><input type="checkbox" id="setBeepStart" checked /> Racijos pyptelėjimas (pradžia)</label>
+            <label class="toggle"><input type="checkbox" id="setBeepEnd" checked /> Racijos pyptelėjimas (pabaiga)</label>
+            <label class="toggle"><input type="checkbox" id="setChannelChange" checked /> Kanalo keitimo garsas</label>
+            <label class="toggle"><input type="checkbox" id="setConnect" checked /> Prisijungimo garsas</label>
+            <label class="toggle"><input type="checkbox" id="setDisconnect" checked /> Atsijungimo garsas</label>
+            <label class="toggle"><input type="checkbox" id="setCompactOverlay" checked /> Compact overlay (ekrane)</label>
+            <label class="field">
+                <span>Rodomas sąrašas</span>
+                <select id="setMemberDisplay">
+                    <option value="callsign_name">Šaukinys + vardas</option>
+                    <option value="callsign">Tik šaukinys</option>
+                    <option value="fullname">Vardas Pavardė</option>
+                    <option value="hidden">Slėpti sąrašą</option>
+                </select>
+            </label>
+            <div class="modal__actions">
+                <button type="button" class="btn btn--primary" id="btnSettingsSave">Išsaugoti</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
