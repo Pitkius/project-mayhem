@@ -39,6 +39,7 @@ exports {
 }
 
 dependencies {
+    'fivempro_fonts',
     'qb-core',
     'qb-clothing',
     'oxmysql',

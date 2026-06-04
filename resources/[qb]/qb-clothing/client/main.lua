@@ -295,7 +295,7 @@ local function resetClothing(data)
 
     -- Lipstick
     SetPedHeadOverlay(ped, 8, data["lipstick"].item, 1.0)
-    SetPedHeadOverlayColor(ped, 8, 1, data["lipstick"].item, 0)
+    SetPedHeadOverlayColor(ped, 8, 1, data["lipstick"].texture, 0)
 
     -- Makeup
     SetPedHeadOverlay(ped, 4, data["makeup"].item, 1.0)
@@ -678,7 +678,7 @@ local function ChangeVariation(data)
             local newitem = (item / 10)
             -- print(newitem)
             SetPedFaceFeature(ped, 9, newitem)
-            skinData["cheek_1"].item = item
+            skinData["cheek_2"].item = item
         end
     elseif clothingCategory == "cheek_3" then
         if type == "item" then
@@ -768,7 +768,7 @@ local function ChangeVariation(data)
             local newitem = (item / 10)
             -- print(newitem)
             SetPedFaceFeature(ped, 19, newitem)
-            skinData["chimp_hole"].item = item
+            skinData["neck_thikness"].item = item
         end
     elseif clothingCategory == "t-shirt" then
         if type == "item" then

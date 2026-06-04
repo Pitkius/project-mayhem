@@ -6,6 +6,8 @@ author 'FIVEMPRO'
 description 'NPC barber, 24/7, clothing, tattoo, pharmacy shops (server-synced peds)'
 lua54 'yes'
 
+dependency 'fivempro_fonts'
+
 shared_scripts {
     '@qb-core/shared/locale.lua',
     'config.lua',

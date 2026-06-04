@@ -267,6 +267,7 @@ AddEventHandler('onResourceStop', function(res)
 end)
 
 exports('IsInCreator', function()
+    if ShopSession and ShopSession.IsActive() then return true end
     return inCreator
 end)
 

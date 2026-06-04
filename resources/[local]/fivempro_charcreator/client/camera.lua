@@ -54,9 +54,6 @@ local function applyCamera(instant)
     SetCamCoord(cam, cx, cy, cz)
     PointCamAtCoord(cam, tx, ty, tz)
     SetCamFov(cam, preset.fov or 42.0)
-    if not instant and cam then
-        SetCamActiveWithInterp(cam, cam, 600, 1, 1)
-    end
 end
 
 function CharCamera.addOrbit(delta)

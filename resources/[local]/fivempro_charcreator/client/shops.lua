@@ -11,7 +11,7 @@ function ShopSession.IsActive()
 end
 
 function ShopSession.Teardown(reloadSkin)
-    if not ShopSession.active and not ShopSession.inCreator then return end
+    if not ShopSession.active then return end
 
     CharCamera.disable()
     local ped = PlayerPedId()
@@ -23,7 +23,6 @@ function ShopSession.Teardown(reloadSkin)
 
     ShopSession.active = false
     ShopSession.kind = nil
-    ShopSession.inCreator = false
     SetNuiFocusKeepInput(false)
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
@@ -55,7 +54,8 @@ local function setupShopPed(skinJson, gender)
 end
 
 function ShopSession.Open(kind, camLoc)
-    if ShopSession.active or ShopSession.inCreator then return end
+    if ShopSession.active then return end
+    if exports[GetCurrentResourceName()]:IsInCreator() then return end
     if not LocalPlayer.state.isLoggedIn then
         return notify('Pirmiausia prisijunk prie personažo.')
     end
@@ -86,7 +86,6 @@ function ShopSession.Open(kind, camLoc)
 
         setupShopPed(data.current and data.current.skin, gender)
 
-        ShopSession.inCreator = true
         SetNuiFocus(true, true)
         SetNuiFocusKeepInput(true)
         SendNUIMessage({

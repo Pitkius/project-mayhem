@@ -67,6 +67,16 @@ body {
   padding: 3vh 2.5vw;
 }
 
+.btn i {
+  margin-right: 6px;
+  opacity: 0.92;
+}
+.btn.primary i:last-child {
+  margin-right: 0;
+  margin-left: 6px;
+}
+.cam-hint i { margin-right: 6px; }
+
 .glass {
   background: var(--cc-glass);
   border: 1px solid var(--cc-border);
@@ -144,8 +154,11 @@ body {
   gap: 12px;
 }
 .brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-weight: 700;
-  text-align: center;
   color: var(--cc-violet-lit);
   letter-spacing: 0.08em;
   font-size: 0.85rem;
@@ -153,6 +166,8 @@ body {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--cc-border);
 }
+.brand i { opacity: 0.92; font-size: 1rem; }
+.step-link i { margin-right: 8px; width: 1.1em; text-align: center; opacity: 0.85; }
 #stepNav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .step-link {
   padding: 10px 12px;

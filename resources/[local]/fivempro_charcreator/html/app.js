@@ -24,15 +24,15 @@ const state = {
 };
 
 const STEPS = [
-  { id: 'personal', title: 'Asmeninė informacija', desc: 'Vardas, pilietybė, gimimo data' },
-  { id: 'genetics', title: 'Genetika', desc: 'Tėvai ir veido struktūra' },
-  { id: 'eyes', title: 'Akys', desc: 'Spalva ir forma' },
-  { id: 'hair', title: 'Šukuosena', desc: 'Plaukai, barzda, antakiai' },
-  { id: 'facedetails', title: 'Veido detalės', desc: 'Makiažas, senėjimas' },
-  { id: 'body', title: 'Kūnas', desc: 'Sudėjimas ir proporcijos' },
-  { id: 'voice', title: 'Balsas', desc: 'RP balso preset' },
-  { id: 'clothes', title: 'Pradinė apranga', desc: 'Startinis stilius' },
-  { id: 'review', title: 'Galutinė peržiūra', desc: 'Patvirtink ir sukurk' },
+  { id: 'personal', title: 'Asmeninė informacija', icon: 'fa-id-card', desc: 'Vardas, pilietybė, gimimo data' },
+  { id: 'genetics', title: 'Genetika', icon: 'fa-users', desc: 'Tėvai ir veido struktūra' },
+  { id: 'eyes', title: 'Akys', icon: 'fa-eye', desc: 'Spalva ir forma' },
+  { id: 'hair', title: 'Šukuosena', icon: 'fa-scissors', desc: 'Plaukai, barzda, antakiai' },
+  { id: 'facedetails', title: 'Veido detalės', icon: 'fa-palette', desc: 'Makiažas, senėjimas' },
+  { id: 'body', title: 'Kūnas', icon: 'fa-person', desc: 'Sudėjimas ir proporcijos' },
+  { id: 'voice', title: 'Balsas', icon: 'fa-microphone', desc: 'RP balso preset' },
+  { id: 'clothes', title: 'Apranga', icon: 'fa-shirt', desc: 'Startinis stilius' },
+  { id: 'review', title: 'Peržiūra', icon: 'fa-circle-check', desc: 'Patvirtink ir sukurk' },
 ];
 
 function post(name, data = {}) {
@@ -107,7 +107,8 @@ function renderNav() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'step-link' + (i === stepIndex ? ' active' : '') + (i < stepIndex ? ' done' : '');
-    b.textContent = `${i + 1}. ${s.title}`;
+    const ic = s.icon ? `<i class="fa-solid ${s.icon}" aria-hidden="true"></i> ` : '';
+    b.innerHTML = `${ic}${i + 1}. ${esc(s.title)}`;
     b.onclick = () => { stepIndex = i; renderStep(); };
     stepNav.appendChild(b);
   });
@@ -324,14 +325,19 @@ function renderStep() {
       Balsas: ${esc(state.voice)}<br/>
       Apranga: ${esc(state.outfit)}`;
     stepBody.innerHTML = '<p class="muted">Patikrink personažą dešinėje (3D peržiūra). Paspausk „Sukurti personažą“.</p>';
-    document.getElementById('btnNext').textContent = wizardMode === 'edit' ? 'Išsaugoti išvaizdą' : 'Sukurti personažą';
+    const fin = wizardMode === 'edit' ? 'Išsaugoti išvaizdą' : 'Sukurti personažą';
+    document.getElementById('btnNext').innerHTML = `<i class="fa-solid fa-check" aria-hidden="true"></i> ${fin}`;
     return;
   }
 
-  const steps = getActiveSteps();
   let finishLabel = wizardMode === 'edit' ? 'Išsaugoti išvaizdą' : 'Sukurti personažą';
   if (isShop()) finishLabel = 'Išsaugoti ir uždaryti';
-  document.getElementById('btnNext').textContent = stepIndex === steps.length - 1 ? finishLabel : 'Toliau';
+  const btnNext = document.getElementById('btnNext');
+  if (stepIndex === steps.length - 1) {
+    btnNext.innerHTML = `<i class="fa-solid fa-check" aria-hidden="true"></i> ${finishLabel}`;
+  } else {
+    btnNext.innerHTML = `Toliau <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>`;
+  }
   reviewBox.classList.add('hidden');
 }
 

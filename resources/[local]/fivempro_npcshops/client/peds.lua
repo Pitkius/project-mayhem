@@ -22,7 +22,16 @@ local function createBlip(coords, blipCfg)
     SetBlipScale(blip, blipCfg.scale or 0.75)
     SetBlipColour(blip, blipCfg.color or 0)
     SetBlipAsShortRange(blip, true)
-    exports['fivempro_fonts']:SetBlipName(blip, blipCfg.label or 'Parduotuvė')
+    local label = blipCfg.label or 'Parduotuvė'
+    if GetResourceState('fivempro_fonts') == 'started' then
+        pcall(function()
+            exports['fivempro_fonts']:SetBlipName(blip, label)
+        end)
+    else
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentSubstringPlayerName(label)
+        EndTextCommandSetBlipName(blip)
+    end
     spawnedBlips[#spawnedBlips + 1] = blip
 end
 
