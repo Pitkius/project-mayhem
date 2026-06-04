@@ -53,7 +53,7 @@ local function buildTargetOptions(meta)
                     type = 'client',
                     event = 'fivempro_npcshops:client:openBarberWithAnim',
                     icon = 'fas fa-scissors',
-                    label = 'Kirpykla (tik plaukai)',
+                    label = 'Kirpykla',
                     shopIndex = meta.index,
                 },
             },
@@ -64,7 +64,7 @@ local function buildTargetOptions(meta)
             options = {
                 {
                     type = 'client',
-                    event = 'qb-clothing:client:openClothingOnly',
+                    event = 'fivempro_charcreator:client:openClothingShop',
                     icon = 'fas fa-shirt',
                     label = 'Rūbų parduotuvė',
                 },

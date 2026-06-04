@@ -408,7 +408,33 @@ local function GetPositionByRelativeHeading(ped, head, dist)
 
     return finPosx, finPosy
 end
+local function charcreatorShopKind(allowedMenus)
+    if GetResourceState('fivempro_charcreator') ~= 'started' or not allowedMenus then return nil end
+    if #allowedMenus == 1 and allowedMenus[1].menu == 'hair' then
+        return 'barber'
+    end
+    local hasClothing, hasAccess, hasHair, hasChar = false, false, false, false
+    for _, m in ipairs(allowedMenus) do
+        if m.menu == 'clothing' then hasClothing = true end
+        if m.menu == 'accessoires' then hasAccess = true end
+        if m.menu == 'hair' then hasHair = true end
+        if m.menu == 'character' then hasChar = true end
+    end
+    if hasClothing and not hasHair and not hasChar then
+        return 'clothing'
+    end
+    if hasClothing and hasAccess and not hasHair and not hasChar then
+        return 'clothing'
+    end
+    return nil
+end
+
 local function openMenu(allowedMenus)
+    local shopKind = charcreatorShopKind(allowedMenus)
+    if shopKind then
+        TriggerEvent('fivempro_charcreator:client:openShop', shopKind)
+        return
+    end
     previousSkinData = json.encode(skinData)
     creatingCharacter = true
     PlayerData = QBCore.Functions.GetPlayerData()
@@ -1011,17 +1037,25 @@ RegisterNetEvent('qb-clothing:client:openMenu', function()
 end)
 
 RegisterNetEvent('qb-clothing:client:openBarberOnly', function(camLoc)
-  if camLoc and camLoc.x and camLoc.y and camLoc.z then
-    customCamLocation = camLoc
-  else
-    customCamLocation = nil
-  end
-  openMenu({
-    {menu = "hair", label = Lang:t("menu.hair"), selected = true},
-  })
+    if GetResourceState('fivempro_charcreator') == 'started' then
+        TriggerEvent('fivempro_charcreator:client:openShop', 'barber', camLoc)
+        return
+    end
+    if camLoc and camLoc.x and camLoc.y and camLoc.z then
+        customCamLocation = camLoc
+    else
+        customCamLocation = nil
+    end
+    openMenu({
+        {menu = "hair", label = Lang:t("menu.hair"), selected = true},
+    })
 end)
 
 RegisterNetEvent('qb-clothing:client:openClothingOnly', function()
+    if GetResourceState('fivempro_charcreator') == 'started' then
+        TriggerEvent('fivempro_charcreator:client:openShop', 'clothing')
+        return
+    end
     customCamLocation = nil
     openMenu({
         {menu = "clothing", label = Lang:t("menu.character"), selected = true},
@@ -1042,6 +1076,11 @@ RegisterNetEvent('qb-clothing:client:reloadOutfits', function(myOutfits)
     })
 end)
 RegisterNetEvent('qb-clothes:client:CreateFirstCharacter', function()
+    if GetResourceState('fivempro_charcreator') == 'started' then
+        local loggedIn = LocalPlayer.state.isLoggedIn
+        TriggerEvent('fivempro_charcreator:client:openWizard', loggedIn == true)
+        return
+    end
     QBCore.Functions.GetPlayerData(function(pData)
         local skin = "mp_m_freemode_01"
         openMenu({

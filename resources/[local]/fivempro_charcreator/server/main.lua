@@ -81,10 +81,43 @@ AddEventHandler('QBCore:Server:OnPlayerUnload', function(src)
     hasDonePreloading[src] = false
 end)
 
+local function fetchCharacters(license)
+    local rows = MySQL.query.await(
+        'SELECT citizenid, charinfo, position, last_updated FROM players WHERE license = ? ORDER BY last_updated DESC',
+        { license }
+    ) or {}
+    return rows
+end
+
 RegisterNetEvent('fivempro_charcreator:server:sessionStart', function()
     local src = source
     if QBCore.Players[src] then return end
-    TriggerClientEvent('fivempro_charcreator:client:open', src)
+
+    local license = QBCore.Functions.GetIdentifier(src, 'license')
+    if not license then
+        DropPlayer(src, 'Nepavyko nustatyti licencijos.')
+        return
+    end
+
+    local rows = fetchCharacters(license)
+    if #rows > 0 and Config.AutoLoginExistingCharacter ~= false then
+        local row = rows[1]
+        if QBCore.Player.Login(src, row.citizenid) then
+            if row.position then
+                local Player = QBCore.Functions.GetPlayer(src)
+                local savedPos = json.decode(row.position)
+                if Player and savedPos then
+                    Player.PlayerData.position = savedPos
+                end
+            end
+            finishLoad(src)
+            return
+        end
+        TriggerClientEvent('QBCore:Notify', src, 'Nepavyko užkrauti personažo.', 'error')
+        return
+    end
+
+    TriggerClientEvent('fivempro_charcreator:client:openWizard', src)
 end)
 
 QBCore.Functions.CreateCallback('fivempro_charcreator:server:getSession', function(src, cb)
@@ -121,7 +154,7 @@ QBCore.Functions.CreateCallback('fivempro_charcreator:server:getSession', functi
         }
     end
 
-    cb({
+    local payload = {
         ok = true,
         maxChars = getMaxChars(license),
         enableDelete = Config.EnableDeleteButton ~= false,
@@ -133,7 +166,79 @@ QBCore.Functions.CreateCallback('fivempro_charcreator:server:getSession', functi
             eyeColors = Config.EyeColors,
             voicePresets = Config.VoicePresets,
         },
+    }
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if Player then
+        local ch = Player.PlayerData.charinfo or {}
+        local meta = Player.PlayerData.metadata or {}
+        local cc = meta.charcreator or {}
+        local skinRow = MySQL.single.await(
+            'SELECT model, skin FROM playerskins WHERE citizenid = ? AND active = 1 LIMIT 1',
+            { Player.PlayerData.citizenid }
+        )
+        payload.editMode = true
+        payload.current = {
+            personal = {
+                firstname = ch.firstname or '',
+                lastname = ch.lastname or '',
+                birthdate = ch.birthdate or '01-01-1995',
+                gender = ch.gender or 0,
+                nationality = ch.nationality or 'Lietuvos',
+                originCity = ch.origin_city or 'Vilnius',
+                bloodType = ch.blood_type or 'A+',
+            },
+            voice = cc.voice or 'male_young',
+            model = skinRow and skinRow.model,
+            skin = skinRow and skinRow.skin,
+        }
+    end
+
+    cb(payload)
+end)
+
+RegisterNetEvent('fivempro_charcreator:server:saveAppearance', function(payload)
+    local src = source
+    if type(payload) ~= 'table' then return end
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then
+        TriggerClientEvent('QBCore:Notify', src, 'Prisijunk prie personažo.', 'error')
+        return
+    end
+
+    local personal = payload.personal or {}
+    local firstname = tostring(personal.firstname or ''):gsub('[^%a%s%-]', ''):sub(1, 20)
+    local lastname = tostring(personal.lastname or ''):gsub('[^%a%s%-]', ''):sub(1, 20)
+    if firstname == '' or lastname == '' then
+        return TriggerClientEvent('QBCore:Notify', src, 'Įvesk vardą ir pavardę.', 'error')
+    end
+
+    local gender = personal.gender == 1 and 1 or 0
+    local ch = Player.PlayerData.charinfo or {}
+    ch.firstname = firstname
+    ch.lastname = lastname
+    ch.birthdate = tostring(personal.birthdate or ch.birthdate or '01-01-1995'):sub(1, 10)
+    ch.gender = gender
+    ch.nationality = tostring(personal.nationality or 'Lietuvos'):sub(1, 32)
+    ch.origin_city = tostring(personal.originCity or 'Vilnius'):sub(1, 48)
+    ch.blood_type = tostring(personal.bloodType or 'A+'):sub(1, 8)
+    Player.Functions.SetPlayerData('charinfo', ch)
+
+    local meta = Player.PlayerData.metadata or {}
+    meta.charcreator = {
+        voice = tostring(payload.voice or 'male_young'):sub(1, 32),
+        body = payload.body or {},
+    }
+    Player.Functions.SetMetaData('charcreator', meta.charcreator)
+
+    Player.Functions.Save()
+
+    TriggerClientEvent('fivempro_charcreator:client:applyAppearance', src, {
+        model = payload.model,
+        skin = payload.skin,
     })
+    TriggerClientEvent('QBCore:Notify', src, 'Išvaizda išsaugota.', 'success')
 end)
 
 RegisterNetEvent('fivempro_charcreator:server:selectCharacter', function(citizenid)

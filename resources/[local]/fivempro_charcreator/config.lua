@@ -1,13 +1,35 @@
 Config = {}
 
-Config.DefaultNumberOfCharacters = 5
-Config.EnableDeleteButton = true
+--- Vienas personažas — be multichar kortelių
+Config.DefaultNumberOfCharacters = 1
+Config.EnableDeleteButton = false
+Config.AutoLoginExistingCharacter = true
 
 --- Scena (Gabz stiliaus interjeras – kaip qb-multicharacter)
 Config.Interior = vector3(-763.28, 330.04, 199.49)
 Config.HiddenCoords = vector4(-779.02, 326.18, 196.09, 91.0)
 Config.PedCoords = vector4(-763.28, 330.04, 199.49, 177.79)
 Config.DefaultSpawn = vector4(-1035.71, -2731.87, 12.86, 0.0)
+
+--- Rodyklės ← → suka kamerą apie personažą (laipsniai per paspaudimą / kadrą)
+Config.CameraRotateSpeed = 2.5
+
+--- Kirpykla: plaukai, barzda, antakiai, makiažas
+Config.BarberSteps = { 'hair', 'facedetails' }
+
+--- Rūbų parduotuvė: tik drabužiai (be veido / plaukų)
+Config.ClothingShopSteps = { 'clothes' }
+Config.ClothingShopItems = {
+    { key = 't-shirt', label = 'Marškinėliai', maxItem = 200, maxTex = 15 },
+    { key = 'torso2', label = 'Viršus / striukė', maxItem = 400, maxTex = 15 },
+    { key = 'arms', label = 'Rankos', maxItem = 120, maxTex = 10 },
+    { key = 'pants', label = 'Kelnės', maxItem = 200, maxTex = 15 },
+    { key = 'shoes', label = 'Batai', maxItem = 120, maxTex = 15 },
+    { key = 'vest', label = 'Liemenė', maxItem = 80, maxTex = 10 },
+    { key = 'bag', label = 'Krepšys', maxItem = 80, maxTex = 10 },
+    { key = 'decals', label = 'Lipdukai', maxItem = 120, maxTex = 10 },
+    { key = 'accessory', label = 'Aksesuaras (kaklo)', maxItem = 120, maxTex = 10 },
+}
 
 Config.Cameras = {
     default = { offset = vector3(0.0, 2.35, 0.35), point = vector3(0.0, 0.0, 0.55), fov = 42.0 },

@@ -1,6 +1,25 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local hasDonePreloading = {}
 
+local function stopLegacyCharResources()
+    for _, res in ipairs({ 'qb-multicharacter', 'qb-spawn' }) do
+        if GetResourceState(res) == 'started' then
+            StopResource(res)
+            print(('^3[fivempro_spawnfix]^0 Sustabdytas %s — naudokite fivempro_charcreator'):format(res))
+        end
+    end
+end
+
+AddEventHandler('onResourceStart', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    SetTimeout(1500, stopLegacyCharResources)
+end)
+
+CreateThread(function()
+    Wait(3000)
+    stopLegacyCharResources()
+end)
+
 local function giveStarterItems(source)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then return end

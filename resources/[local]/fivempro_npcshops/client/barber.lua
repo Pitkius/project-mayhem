@@ -207,7 +207,11 @@ function BarberSession.Start(cfg, barberPed)
 
     local camLoc = faceCamFromPed(ped)
     Wait(350)
-    TriggerEvent('qb-clothing:client:openBarberOnly', camLoc)
+    if GetResourceState('fivempro_charcreator') == 'started' then
+        TriggerEvent('fivempro_charcreator:client:openShop', 'barber', camLoc)
+    else
+        TriggerEvent('qb-clothing:client:openBarberOnly', camLoc)
+    end
 end
 
 AddEventHandler('qb-clothing:client:onMenuClose', function()

@@ -385,14 +385,11 @@ RegisterNetEvent('fivempro_basics:client:adminHeal', function()
 end)
 
 RegisterNetEvent('fivempro_basics:client:openRegister', function()
-    if GetResourceState('qb-clothing') ~= 'started' then
-        BeginTextCommandThefeedPost('STRING')
-        AddTextComponentSubstringPlayerName('qb-clothing nera paleistas.')
-        EndTextCommandThefeedPostTicker(false, false)
+    if GetResourceState('fivempro_charcreator') ~= 'started' then
+        QBCore.Functions.Notify('fivempro_charcreator nėra paleistas.', 'error')
         return
     end
-
-    TriggerEvent('qb-clothes:client:CreateFirstCharacter')
+    TriggerEvent('fivempro_charcreator:client:openWizard', true)
 end)
 
 RegisterNetEvent('fivempro_basics:client:toggleCoords', function()

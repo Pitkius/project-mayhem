@@ -95,6 +95,18 @@ function CharAppearance.applyPatch(patch)
     end
 end
 
+function CharAppearance.setComponent(skinKey, item, texture)
+    if not currentSkin then return end
+    if not currentSkin[skinKey] then
+        currentSkin[skinKey] = { item = 0, texture = 0 }
+    end
+    currentSkin[skinKey].item = math.floor(item or 0)
+    currentSkin[skinKey].texture = math.floor(texture or 0)
+    if previewPed and previewPed ~= 0 then
+        CharAppearance.applyToPed(previewPed, currentSkin)
+    end
+end
+
 function CharAppearance.applyOutfit(outfitKey, gender)
     if not currentSkin then return end
     local g = (gender == 1 or gender == 'female') and 'female' or 'male'

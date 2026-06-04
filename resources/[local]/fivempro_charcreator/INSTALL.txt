@@ -1,7 +1,8 @@
 fivempro_charcreator
 ====================
 
-Vienintelė personažų sistema (qb-multicharacter pašalintas).
+Vienas personažas / slot — be multichar kortelių (qb-multicharacter pašalintas).
+Esamas žaidėjas prisijungia automatiškai; naujas — tiesiai į 9 žingsnių kūrimą.
 Prisijungimas: fivempro_charcreator -> fivempro_spawnfix spawn.
 
 Paleisti:
@@ -10,6 +11,9 @@ Paleisti:
   restart fivempro_spawnfix
 
 Admin logout: /logout -> vėl charcreator.
+Kirpykla: plaukai / barzda / antakiai / makiažas (fivempro_charcreator).
+Rūbų parduotuvė: tik drabužiai (fivempro_charcreator).
+Vanilla qb-clothing zonos (E) taip pat nukreipiamos.
 
 Presetai: DB lentelė fivempro_char_presets (auto).
 

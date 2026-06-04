@@ -209,12 +209,31 @@ body {
   min-height: 200px;
   border-radius: 12px;
   border: 1px dashed var(--cc-border);
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   color: var(--cc-muted);
   font-size: 0.8rem;
   text-align: center;
   padding: 12px;
+}
+.sidebar-tools.hidden {
+  display: none;
+}
+.shop-hint {
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+}
+.clothing-row {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--cc-border);
+}
+.preview-avatar .cam-hint {
+  font-size: 0.72rem;
+  color: var(--cc-violet-lit);
+  letter-spacing: 0.04em;
 }
 
 .field-grid {

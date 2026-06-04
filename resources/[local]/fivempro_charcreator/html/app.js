@@ -1,14 +1,13 @@
 const app = document.getElementById('app');
-const screenHome = document.getElementById('screenHome');
 const screenWizard = document.getElementById('screenWizard');
-const charCards = document.getElementById('charCards');
 const stepNav = document.getElementById('stepNav');
 const stepBody = document.getElementById('stepBody');
 const stepTitle = document.getElementById('stepTitle');
 const stepDesc = document.getElementById('stepDesc');
 const reviewBox = document.getElementById('reviewBox');
 
-let session = { maxChars: 5, enableDelete: true, characters: [], options: {} };
+let session = { maxChars: 1, enableDelete: false, characters: [], options: {} };
+let wizardMode = 'create';
 let stepIndex = 0;
 const state = {
   personal: {
@@ -83,43 +82,28 @@ function syncAppearance() {
   post('applyPatch', { patch: buildPatch() });
 }
 
-function renderCards() {
-  charCards.innerHTML = '';
-  session.characters.forEach((c, i) => {
-    const el = document.createElement('article');
-    el.className = 'card glass';
-    el.style.animationDelay = `${i * 0.06}s`;
-    el.innerHTML = `
-      <div class="avatar">${c.gender === 1 ? '♀' : '♂'}</div>
-      <h3>${esc(c.firstname)} ${esc(c.lastname)}</h3>
-      <div class="meta">
-        <div>${esc(c.job)}</div>
-        <div>Paskutinis: ${esc(c.lastPlayed || '—')}</div>
-      </div>
-      <div class="money">€ ${(c.cash || 0).toLocaleString()} · Bank ${(c.bank || 0).toLocaleString()}</div>
-      <div class="actions">
-        <button type="button" class="btn primary sm btn-play">Žaisti</button>
-        ${session.enableDelete ? '<button type="button" class="btn danger sm btn-del">Ištrinti</button>' : ''}
-      </div>`;
-    el.querySelector('.btn-play').onclick = (ev) => {
-      ev.stopPropagation();
-      post('selectChar', { citizenid: c.citizenid });
-      closeUi();
-    };
-    el.querySelector('.btn-del')?.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      if (confirm('Ištrinti personažą?')) post('deleteChar', { citizenid: c.citizenid });
-    });
-    el.onclick = () => {
-      post('previewCharacter', { model: c.model, skin: c.skin });
-    };
-    charCards.appendChild(el);
-  });
+function isShop() {
+  return session.shopMode === 'barber' || session.shopMode === 'clothing';
+}
+
+function getActiveSteps() {
+  if (isShop() && session.shopSteps && session.shopSteps.length) {
+    return STEPS.filter((s) => session.shopSteps.includes(s.id));
+  }
+  return STEPS;
+}
+
+function updateShopChrome() {
+  const shop = isShop();
+  document.getElementById('btnCancel').classList.toggle('hidden', !shop);
+  const tools = document.querySelector('.sidebar-tools');
+  if (tools) tools.classList.toggle('hidden', shop);
 }
 
 function renderNav() {
+  const steps = getActiveSteps();
   stepNav.innerHTML = '';
-  STEPS.forEach((s, i) => {
+  steps.forEach((s, i) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'step-link' + (i === stepIndex ? ' active' : '') + (i < stepIndex ? ' done' : '');
@@ -155,10 +139,73 @@ function bindSliders(container, obj, extra) {
   });
 }
 
+function parseCurrentSkin() {
+  try {
+    const raw = session.current?.skin;
+    if (!raw) return {};
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch {
+    return {};
+  }
+}
+
+function renderClothingShop() {
+  const items = session.clothingItems || [];
+  const skin = parseCurrentSkin();
+  let html = '<p class="muted shop-hint">Pasirink drabužių modelį ir tekstūrą. ← → suka kamerą.</p><div class="field-grid">';
+  items.forEach((it) => {
+    html += `<div class="field full clothing-row" data-key="${esc(it.key)}">
+      <label>${esc(it.label)}</label>
+      <div class="slider-row">
+        <label><span>Modelis</span><span class="cv-item">0</span></label>
+        <input type="range" class="sl-cloth" data-key="${esc(it.key)}" data-part="item" min="0" max="${it.maxItem || 100}" step="1" value="0" />
+      </div>
+      <div class="slider-row">
+        <label><span>Spalva / tekstūra</span><span class="cv-tex">0</span></label>
+        <input type="range" class="sl-cloth" data-key="${esc(it.key)}" data-part="texture" min="0" max="${it.maxTex || 15}" step="1" value="0" />
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  stepBody.innerHTML = html;
+  items.forEach((it) => {
+    const row = stepBody.querySelector(`.clothing-row[data-key="${it.key}"]`);
+    if (!row) return;
+    const part = skin[it.key] || { item: 0, texture: 0 };
+    const itemInp = row.querySelector('[data-part="item"]');
+    const texInp = row.querySelector('[data-part="texture"]');
+    itemInp.value = part.item ?? 0;
+    texInp.value = part.texture ?? 0;
+    row.querySelector('.cv-item').textContent = itemInp.value;
+    row.querySelector('.cv-tex').textContent = texInp.value;
+  });
+  stepBody.querySelectorAll('.sl-cloth').forEach((inp) => {
+    inp.oninput = () => {
+      const key = inp.dataset.key;
+      const row = inp.closest('.clothing-row');
+      const itemInp = row.querySelector('[data-part="item"]');
+      const texInp = row.querySelector('[data-part="texture"]');
+      row.querySelector('.cv-item').textContent = itemInp.value;
+      row.querySelector('.cv-tex').textContent = texInp.value;
+      post('setClothing', {
+        key,
+        item: parseInt(itemInp.value, 10),
+        texture: parseInt(texInp.value, 10),
+      });
+    };
+  });
+}
+
 function renderStep() {
-  const step = STEPS[stepIndex];
+  const steps = getActiveSteps();
+  const step = steps[stepIndex];
+  if (!step) return;
   stepTitle.textContent = step.title;
-  stepDesc.textContent = step.desc;
+  stepDesc.textContent = isShop() && session.shopMode === 'barber' && step.id === 'hair'
+    ? 'Plaukai, barzda, antakiai'
+    : isShop() && session.shopMode === 'clothing' && step.id === 'clothes'
+      ? 'Tik drabužiai — be veido ar plaukų'
+      : step.desc;
   post('setCamera', { step: step.id });
   renderNav();
 
@@ -215,9 +262,12 @@ function renderStep() {
     html = slider('Šukuosena', 'style', state.hair, 0, 80, 1) +
       slider('Plaukų spalva', 'color', state.hair, 0, 63, 1) +
       slider('Antra spalva', 'color2', state.hair, 0, 63, 1) +
-      slider('Barzda', 'beard', state.hair, -1, 28, 1) +
-      slider('Barzdos spalva', 'beardColor', state.hair, 0, 63, 1) +
-      slider('Antakiai', 'brows', state.hair, 0, 33, 1);
+      slider('Antakiai', 'brows', state.hair, 0, 33, 1) +
+      slider('Antakių spalva', 'browColor', state.hair, 0, 63, 1);
+    if (state.personal.gender !== 1) {
+      html += slider('Barzda', 'beard', state.hair, -1, 28, 1) +
+        slider('Barzdos spalva', 'beardColor', state.hair, 0, 63, 1);
+    }
     stepBody.innerHTML = html;
     bindSliders(stepBody, state.hair);
   } else if (step.id === 'facedetails') {
@@ -242,23 +292,27 @@ function renderStep() {
     document.getElementById('voice').value = state.voice;
     document.getElementById('voice').onchange = (e) => { state.voice = e.target.value; };
   } else if (step.id === 'clothes') {
-    const outfits = [
-      { id: 'casual', label: 'Casual' },
-      { id: 'street', label: 'Streetwear' },
-      { id: 'business', label: 'Business' },
-      { id: 'sport', label: 'Sport' },
-    ];
-    html = `<div class="outfit-grid">${outfits.map((o) =>
-      `<button type="button" class="outfit-btn${state.outfit === o.id ? ' active' : ''}" data-o="${o.id}">${o.label}</button>`
-    ).join('')}</div>`;
-    stepBody.innerHTML = html;
-    stepBody.querySelectorAll('.outfit-btn').forEach((btn) => {
-      btn.onclick = () => {
-        state.outfit = btn.dataset.o;
-        stepBody.querySelectorAll('.outfit-btn').forEach((b) => b.classList.toggle('active', b.dataset.o === state.outfit));
-        post('applyOutfit', { outfit: state.outfit, gender: state.personal.gender });
-      };
-    });
+    if (isShop() && session.shopMode === 'clothing') {
+      renderClothingShop();
+    } else {
+      const outfits = [
+        { id: 'casual', label: 'Casual' },
+        { id: 'street', label: 'Streetwear' },
+        { id: 'business', label: 'Business' },
+        { id: 'sport', label: 'Sport' },
+      ];
+      html = `<div class="outfit-grid">${outfits.map((o) =>
+        `<button type="button" class="outfit-btn${state.outfit === o.id ? ' active' : ''}" data-o="${o.id}">${o.label}</button>`
+      ).join('')}</div>`;
+      stepBody.innerHTML = html;
+      stepBody.querySelectorAll('.outfit-btn').forEach((btn) => {
+        btn.onclick = () => {
+          state.outfit = btn.dataset.o;
+          stepBody.querySelectorAll('.outfit-btn').forEach((b) => b.classList.toggle('active', b.dataset.o === state.outfit));
+          post('applyOutfit', { outfit: state.outfit, gender: state.personal.gender });
+        };
+      });
+    }
   } else if (step.id === 'review') {
     const p = state.personal;
     reviewBox.classList.remove('hidden');
@@ -270,17 +324,22 @@ function renderStep() {
       Balsas: ${esc(state.voice)}<br/>
       Apranga: ${esc(state.outfit)}`;
     stepBody.innerHTML = '<p class="muted">Patikrink personažą dešinėje (3D peržiūra). Paspausk „Sukurti personažą“.</p>';
-    document.getElementById('btnNext').textContent = 'Sukurti personažą';
+    document.getElementById('btnNext').textContent = wizardMode === 'edit' ? 'Išsaugoti išvaizdą' : 'Sukurti personažą';
     return;
   }
 
-  document.getElementById('btnNext').textContent = stepIndex === STEPS.length - 1 ? 'Sukurti personažą' : 'Toliau';
+  const steps = getActiveSteps();
+  let finishLabel = wizardMode === 'edit' ? 'Išsaugoti išvaizdą' : 'Sukurti personažą';
+  if (isShop()) finishLabel = 'Išsaugoti ir uždaryti';
+  document.getElementById('btnNext').textContent = stepIndex === steps.length - 1 ? finishLabel : 'Toliau';
   reviewBox.classList.add('hidden');
 }
 
 function validateStep() {
+  if (isShop()) return true;
   const p = state.personal;
-  if (STEPS[stepIndex].id === 'personal') {
+  const steps = getActiveSteps();
+  if (steps[stepIndex].id === 'personal') {
     if (!p.firstname.trim() || !p.lastname.trim()) {
       alert('Įvesk vardą ir pavardę.');
       return false;
@@ -291,45 +350,75 @@ function validateStep() {
 
 function closeUi() {
   app.classList.add('hidden');
-  screenHome.classList.remove('hidden');
   screenWizard.classList.add('hidden');
 }
 
-document.getElementById('btnNew').onclick = () => {
-  if (session.characters.length >= session.maxChars) {
-    alert('Pasiektas personažų limitas.');
+function applyCurrentFromSession() {
+  const cur = session.current;
+  if (!cur) return;
+  if (cur.personal) Object.assign(state.personal, cur.personal);
+  if (cur.voice) state.voice = cur.voice;
+}
+
+function beginAppearanceUi(mode) {
+  wizardMode = mode || (session.editMode ? 'edit' : 'create');
+  if (!isShop() && wizardMode === 'create' && session.characters.length >= session.maxChars) {
+    alert('Jau turi personažą šioje paskyroje.');
     return;
   }
+  applyCurrentFromSession();
   stepIndex = 0;
-  screenHome.classList.add('hidden');
   screenWizard.classList.remove('hidden');
-  post('setGender', { gender: 0 });
-  renderStep();
+  updateShopChrome();
+  const gender = state.personal.gender ?? 0;
+  if (isShop()) {
+    post('loadPreset', { skin: session.current?.skin }).then(() => renderStep());
+  } else {
+    post('setGender', { gender }).then(() => {
+      if (session.current?.skin) post('loadPreset', { skin: session.current.skin });
+      renderStep();
+    });
+  }
+}
+
+function startWizard(mode) {
+  session.shopMode = null;
+  beginAppearanceUi(mode);
+}
+
+function startShop() {
+  wizardMode = 'edit';
+  beginAppearanceUi('edit');
+}
+
+document.getElementById('btnCancel').onclick = () => {
+  post('cancelShop');
+  closeUi();
 };
 
 document.getElementById('btnBack').onclick = () => {
-  if (stepIndex === 0) {
-    screenWizard.classList.add('hidden');
-    screenHome.classList.remove('hidden');
-    return;
-  }
+  if (stepIndex === 0) return;
   stepIndex -= 1;
   renderStep();
 };
 
 document.getElementById('btnNext').onclick = () => {
   if (!validateStep()) return;
-  if (STEPS[stepIndex].id === 'review') {
-    post('createChar', {
-      personal: state.personal,
-      voice: state.voice,
-      body: state.body,
-      outfit: state.outfit,
-    });
+  const steps = getActiveSteps();
+  const step = steps[stepIndex];
+  const payload = {
+    personal: state.personal,
+    voice: state.voice,
+    body: state.body,
+    outfit: state.outfit,
+  };
+
+  if (step.id === 'review' || (isShop() && stepIndex === steps.length - 1)) {
+    post(isShop() || wizardMode === 'edit' ? 'saveAppearance' : 'createChar', payload);
     closeUi();
     return;
   }
-  if (stepIndex < STEPS.length - 1) {
+  if (stepIndex < steps.length - 1) {
     stepIndex += 1;
     renderStep();
   }
@@ -353,15 +442,36 @@ document.getElementById('btnLoadPreset').onclick = async () => {
   if (rows[idx]) post('loadPreset', { skin: rows[idx].skin });
 };
 
+function onCameraKeydown(e) {
+  if (app.classList.contains('hidden')) return;
+  if (e.key === 'Escape' && isShop()) {
+    e.preventDefault();
+    post('cancelShop');
+    closeUi();
+    return;
+  }
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const tag = (e.target && e.target.tagName) || '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  e.preventDefault();
+  const step = e.repeat ? 2.2 : 8;
+  post('rotateCamera', { delta: e.key === 'ArrowLeft' ? -step : step });
+}
+
+document.addEventListener('keydown', onCameraKeydown);
+
 window.addEventListener('message', (e) => {
   const d = e.data;
   if (!d || !d.action) return;
-  if (d.action === 'open') {
+  if (d.action === 'openWizard') {
     session = d.data || session;
     app.classList.remove('hidden');
-    screenWizard.classList.add('hidden');
-    screenHome.classList.remove('hidden');
-    renderCards();
+    startWizard(session.editMode && session.current ? 'edit' : 'create');
+  }
+  if (d.action === 'openShop') {
+    session = d.data || session;
+    app.classList.remove('hidden');
+    startShop();
   }
   if (d.action === 'close') closeUi();
 });

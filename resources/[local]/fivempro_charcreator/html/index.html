@@ -12,19 +12,7 @@
     <div class="bg-glow"></div>
     <div class="bg-glow g2"></div>
 
-    <section id="screenHome" class="screen">
-      <header class="hero">
-        <p class="eyebrow">FIVEMPRO · RP</p>
-        <h1>Sukurti personažą</h1>
-        <p class="sub">Pasirink esamą kortelę arba pradėk naują istoriją</p>
-      </header>
-      <div id="charCards" class="cards"></div>
-      <div class="home-actions">
-        <button type="button" id="btnNew" class="btn primary">Kurti naują</button>
-      </div>
-    </section>
-
-    <section id="screenWizard" class="screen hidden">
+    <section id="screenWizard" class="screen">
       <aside class="sidebar">
         <div class="brand">Personažas</div>
         <nav id="stepNav"></nav>
@@ -41,6 +29,7 @@
         </header>
         <div id="stepBody" class="step-body glass"></div>
         <footer class="wizard-foot">
+          <button type="button" id="btnCancel" class="btn ghost hidden">Atšaukti</button>
           <button type="button" id="btnBack" class="btn ghost">Grįžti</button>
           <button type="button" id="btnNext" class="btn primary">Toliau</button>
         </footer>
@@ -49,6 +38,7 @@
         <p class="preview-label">Peržiūra</p>
         <div class="preview-avatar" id="previewHint">
           <span>3D peržiūra žaidime</span>
+          <span class="cam-hint">← → sukite kamerą (360°)</span>
         </div>
         <div id="reviewBox" class="review-box hidden"></div>
       </aside>

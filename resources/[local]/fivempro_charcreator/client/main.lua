@@ -55,37 +55,79 @@ local function teardownScene()
         previewPed = 0
     end
     inCreator = false
+    SetNuiFocusKeepInput(false)
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
 end
 
-local function openUi()
-    QBCore.Functions.TriggerCallback('fivempro_charcreator:server:getSession', function(data)
-        if not data or not data.ok then return end
-        inCreator = true
-        SetNuiFocus(true, true)
-        SendNUIMessage({
-            action = 'open',
-            data = data,
-        })
-    end)
-end
-
-RegisterNetEvent('fivempro_charcreator:client:open', function()
-    if inCreator then return end
+local function closeLoadscreen()
     if GetResourceState('fivempro_loadscreen') == 'started' then
         pcall(function() exports['fivempro_loadscreen']:CloseLoadscreen() end)
     else
         ShutdownLoadingScreenNui()
         ShutdownLoadingScreen()
     end
+end
+
+local pendingEditMode = false
+
+local function openWizardUi(editMode)
+    QBCore.Functions.TriggerCallback('fivempro_charcreator:server:getSession', function(data)
+        if not data or not data.ok then return end
+        if (editMode == true or pendingEditMode) and LocalPlayer.state.isLoggedIn then
+            data.editMode = true
+        end
+        pendingEditMode = false
+        inCreator = true
+        SetNuiFocus(true, true)
+        SetNuiFocusKeepInput(true)
+        SendNUIMessage({
+            action = 'openWizard',
+            data = data,
+        })
+    end)
+end
+
+RegisterNetEvent('fivempro_charcreator:client:openWizard', function(editMode)
+    if inCreator or (ShopSession and ShopSession.IsActive()) then return end
+    pendingEditMode = editMode == true
+    closeLoadscreen()
     setupScene()
-    openUi()
+    openWizardUi(editMode)
+end)
+
+RegisterNetEvent('fivempro_charcreator:client:applyAppearance', function(data)
+    local model = data.model or CharAppearance.modelHash(0)
+    if type(model) == 'string' then model = joaat(model) end
+    local ped = PlayerPedId()
+
+    if ShopSession and ShopSession.IsActive() then
+        if data.skin then
+            local ok, skinTbl = pcall(json.decode, data.skin)
+            if ok and type(skinTbl) == 'table' then
+                TriggerEvent('qb-clothing:client:loadPlayerClothing', skinTbl, ped)
+            end
+        end
+        ShopSession.Teardown(false)
+        return
+    end
+
+    teardownScene()
+    loadModel(model)
+    SetPlayerModel(PlayerId(), model)
+    SetPedDefaultComponentVariation(ped)
+    if data.skin then
+        local ok, skinTbl = pcall(json.decode, data.skin)
+        if ok and type(skinTbl) == 'table' then
+            TriggerEvent('qb-clothing:client:loadPlayerClothing', skinTbl, ped)
+            TriggerServerEvent('qb-clothing:saveSkin', model, data.skin)
+        end
+    end
 end)
 
 RegisterNetEvent('fivempro_charcreator:client:refreshList', function()
     if not inCreator then return end
-    openUi()
+    openWizardUi()
 end)
 
 RegisterNetEvent('fivempro_charcreator:client:finishCreate', function(data)
@@ -132,6 +174,19 @@ RegisterNUICallback('createChar', function(data, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('saveAppearance', function(data, cb)
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
+    local skin = CharAppearance.exportForSave()
+    data.model = CharAppearance.modelHash(data.personal and data.personal.gender or 0)
+    data.skin = json.encode(skin)
+    TriggerServerEvent('fivempro_charcreator:server:saveAppearance', data)
+    if not (ShopSession and ShopSession.IsActive()) then
+        teardownScene()
+    end
+    cb('ok')
+end)
+
 RegisterNUICallback('setGender', function(data, cb)
     local g = data.gender
     local model = CharAppearance.modelHash(g)
@@ -166,6 +221,11 @@ end)
 
 RegisterNUICallback('setCamera', function(data, cb)
     CharCamera.forStep(data.step)
+    cb('ok')
+end)
+
+RegisterNUICallback('rotateCamera', function(data, cb)
+    CharCamera.addOrbit(tonumber(data.delta) or 0)
     cb('ok')
 end)
 
@@ -208,4 +268,8 @@ end)
 
 exports('IsInCreator', function()
     return inCreator
+end)
+
+exports('OpenWizard', function(editMode)
+    TriggerEvent('fivempro_charcreator:client:openWizard', editMode == true)
 end)

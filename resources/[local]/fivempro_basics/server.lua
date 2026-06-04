@@ -12,8 +12,12 @@ AddEventHandler('playerJoining', function(playerName)
     })
 end)
 
-QBCore.Commands.Add('register', 'Atidaryti veikejo kurimo langa (admin)', {}, false, function(source)
-    TriggerClientEvent('fivempro_basics:client:openRegister', source)
+QBCore.Commands.Add('register', 'Personažo kūrimas / redagavimas (admin)', {}, false, function(source)
+    if GetResourceState('fivempro_charcreator') ~= 'started' then
+        TriggerClientEvent('QBCore:Notify', source, 'fivempro_charcreator nėra paleistas.', 'error')
+        return
+    end
+    TriggerClientEvent('fivempro_charcreator:client:openWizard', source, true)
 end, 'admin')
 
 local function setNeedsFull(player)
