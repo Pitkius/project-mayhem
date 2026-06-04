@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personažo kūrimas</title>
+  <link rel="stylesheet" href="nui://fivempro_fonts/html/ui.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+    <div class="bg-glow"></div>
+    <div class="bg-glow g2"></div>
+
+    <section id="screenHome" class="screen">
+      <header class="hero">
+        <p class="eyebrow">FIVEMPRO · RP</p>
+        <h1>Sukurti personažą</h1>
+        <p class="sub">Pasirink esamą kortelę arba pradėk naują istoriją</p>
+      </header>
+      <div id="charCards" class="cards"></div>
+      <div class="home-actions">
+        <button type="button" id="btnNew" class="btn primary">Kurti naują</button>
+      </div>
+    </section>
+
+    <section id="screenWizard" class="screen hidden">
+      <aside class="sidebar">
+        <div class="brand">Personažas</div>
+        <nav id="stepNav"></nav>
+        <div class="sidebar-tools">
+          <button type="button" id="btnRandom" class="btn ghost sm">Atsitiktinis</button>
+          <button type="button" id="btnSavePreset" class="btn ghost sm">Išsaugoti preset</button>
+          <button type="button" id="btnLoadPreset" class="btn ghost sm">Įkelti preset</button>
+        </div>
+      </aside>
+      <main class="wizard-main">
+        <header class="wizard-head">
+          <h2 id="stepTitle">Asmeninė informacija</h2>
+          <p id="stepDesc" class="muted">Užpildyk pagrindinius duomenis</p>
+        </header>
+        <div id="stepBody" class="step-body glass"></div>
+        <footer class="wizard-foot">
+          <button type="button" id="btnBack" class="btn ghost">Grįžti</button>
+          <button type="button" id="btnNext" class="btn primary">Toliau</button>
+        </footer>
+      </main>
+      <aside class="preview-panel glass">
+        <p class="preview-label">Peržiūra</p>
+        <div class="preview-avatar" id="previewHint">
+          <span>3D peržiūra žaidime</span>
+        </div>
+        <div id="reviewBox" class="review-box hidden"></div>
+      </aside>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

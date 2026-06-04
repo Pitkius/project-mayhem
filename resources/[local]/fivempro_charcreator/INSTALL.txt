@@ -1,0 +1,18 @@
+fivempro_charcreator
+====================
+
+Pakeičia qb-multicharacter + seną QB creator.
+Prisijungimas: fivempro_charcreator -> fivempro_spawnfix spawn.
+
+Paleisti:
+  ensure fivempro_charcreator  (prieš fivempro_spawnfix)
+  restart fivempro_charcreator
+  restart fivempro_spawnfix
+
+Admin logout: /logout -> vėl charcreator.
+
+Presetai: DB lentelė fivempro_char_presets (auto).
+
+Jei reikia senojo auto personažo be UI:
+  fivempro_spawnfix Config.AutoCreateCharacter = true
+  ir išjunk fivempro_charcreator ensure.

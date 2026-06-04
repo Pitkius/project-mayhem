@@ -58,7 +58,11 @@ end
 
 RegisterNetEvent('fivempro_spawnfix:client:beginLogin', function()
     loginRequested = false
-    requestLogin()
+    if GetResourceState('fivempro_charcreator') == 'started' then
+        TriggerServerEvent('fivempro_charcreator:server:sessionStart')
+    else
+        requestLogin()
+    end
 end)
 
 RegisterNetEvent('fivempro_spawnfix:client:spawn', function()
@@ -96,7 +100,12 @@ CreateThread(function()
     while not NetworkIsSessionStarted() do
         Wait(0)
     end
-    requestLogin()
+    if GetResourceState('fivempro_charcreator') == 'started' then
+        loginRequested = true
+        TriggerServerEvent('fivempro_charcreator:server:sessionStart')
+    else
+        requestLogin()
+    end
 end)
 
 CreateThread(function()
