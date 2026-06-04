@@ -70,7 +70,25 @@ function RegisterPdGroundMarker(data)
         label = data.label or 'PD',
         onPress = data.onPress,
         requireDuty = data.requireDuty ~= false,
+        access = data.access,
     }
+end
+
+local function isPdJob()
+    local P = QBCore.Functions.GetPlayerData()
+    return P and P.job and P.job.name == jobName()
+end
+
+local function markerVisible(zone)
+    if zone.access then
+        if not isPdJob() then
+            return false
+        end
+        local grade = exports['fivempro_ltpd']:GetPdGrade()
+        local division = exports['fivempro_ltpd']:GetPdDivision()
+        return PdDivisions.canAccessPoint(grade, division, zone.access)
+    end
+    return true
 end
 
 exports('RegisterPdGroundMarker', RegisterPdGroundMarker)
@@ -128,9 +146,14 @@ local function registerAllPdMarkers()
             RegisterPdGroundMarker({
                 coords = st.locker.coords,
                 kind = 'locker',
-                label = 'PD rūbinė',
+                label = st.locker.label or 'PD rūbinė',
+                access = {
+                    minGrade = st.locker.minGrade or 0,
+                    divisions = st.locker.divisions,
+                    excludeDivisions = st.locker.excludeDivisions,
+                },
                 onPress = function()
-                    TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu')
+                    TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu', { lockerMode = 'standard' })
                 end,
             })
         end
@@ -139,9 +162,16 @@ local function registerAllPdMarkers()
             RegisterPdGroundMarker({
                 coords = st.locker2.coords,
                 kind = 'locker',
-                label = 'PD rūbinė',
+                label = st.locker2.label or 'ARO rūbinė',
+                access = {
+                    minGrade = st.locker2.minGrade or 0,
+                    divisions = st.locker2.divisions or { 'aro' },
+                    excludeDivisions = st.locker2.excludeDivisions,
+                },
                 onPress = function()
-                    TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu')
+                    TriggerEvent('fivempro_ltpd:client:openDutyLockerMenu', {
+                        lockerMode = st.locker2.lockerMode or 'aro',
+                    })
                 end,
             })
         end
@@ -151,6 +181,11 @@ local function registerAllPdMarkers()
                 coords = st.armory.coords,
                 kind = 'armory',
                 label = st.armory.label or 'Ginklinė',
+                access = {
+                    minGrade = st.armory.minGrade or 0,
+                    divisions = st.armory.divisions,
+                    excludeDivisions = st.armory.excludeDivisions,
+                },
                 onPress = function()
                     TriggerEvent('fivempro_ltpd:client:tryOpenArmory', { stationId = stationId })
                 end,
@@ -164,6 +199,11 @@ local function registerAllPdMarkers()
                     coords = stash.coords,
                     kind = 'stash',
                     label = stash.label or ('Sandėlis #' .. tostring(stashIdx)),
+                    access = {
+                        minGrade = stash.minGrade or 0,
+                        divisions = stash.divisions,
+                        excludeDivisions = stash.excludeDivisions,
+                    },
                     onPress = function()
                         TriggerEvent('fivempro_ltpd:client:tryOpenStash', { stationId = stationId, stashIndex = index })
                     end,
@@ -255,6 +295,9 @@ CreateThread(function()
             local ped = PlayerPedId()
             local pcoords = GetEntityCoords(ped)
             for _, zone in ipairs(pdZones) do
+                if not markerVisible(zone) then
+                    goto continue_zone
+                end
                 local dist = #(pcoords - zone.coords)
                 if dist < drawDist then
                     sleep = 0
@@ -282,6 +325,7 @@ CreateThread(function()
                         end
                     end
                 end
+                ::continue_zone::
             end
         end
         Wait(sleep)

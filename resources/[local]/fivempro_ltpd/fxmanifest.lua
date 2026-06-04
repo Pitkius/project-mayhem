@@ -11,6 +11,7 @@ ui_page 'html/mdt/index.html'
 
 shared_scripts {
     'config.lua',
+    'shared/pd_divisions.lua',
     'config_duty_outfits.lua',
     'config_surveillance.lua',
     'config_ems_doors.lua',
@@ -19,6 +20,7 @@ shared_scripts {
 
 client_scripts {
     'client/pd_markers.lua',
+    'client/divisions.lua',
     'client/main.lua',
     'client/cctv_props.lua',
     'client/cctv.lua',

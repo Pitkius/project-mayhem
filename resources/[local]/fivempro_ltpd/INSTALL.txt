@@ -29,7 +29,11 @@ fivempro_ltpd – Lietuvos policija (MDT, rangai)
 
 8) qb-target zonos prie stočių: „MDT planšetė“, „Ginklinė“ (bendras stash per qb-inventory), „Tarnybinis transportas“ (qb-menu sąrašas + serverio spawn). PD blipai žemėlapyje: Config.ShowStationBlips.
 
-9) Padaliniai: INSERT į ltpd_profiles (division = patrol|traffic|criminal|aras|admin) arba INSERT IGNORE patrol atidarius MDT.
+9) Padaliniai (tik police):
+   - Rangai 0–3: automatiškai LPM (sandėliai / rūbinė pagal config).
+   - Nuo 4 rango: /pddept arba rūbinė → „Keisti padalinį“ (patruliai, kriminalistai, ARO, kelių policija).
+   - ARO: ginklinė + ARO rūbinė (locker2) + sandėlis su divisions = { aro }.
+   - 3D markeriai ant žemės matomi tik jei turi rangą ir padalinį atidaryti.
 
 10) Papildomai: antrankiai – TriggerServerEvent į fivempro_ltpd:server:cuffPlayer.
 

@@ -509,16 +509,17 @@ local function getDutyOutfitGenderKey(ped)
     return GetEntityModel(ped) == `mp_m_freemode_01` and 'male' or 'female'
 end
 
-local function buildDutyOutfitCategoryMenu(category, grade)
+local function buildDutyOutfitCategoryMenu(category, grade, lockerMode)
     local ped = PlayerPedId()
     local genderKey = getDutyOutfitGenderKey(ped)
     local header = category == 'vest' and 'Liemenės' or 'Uniformos'
+    local division = exports['fivempro_ltpd']:GetPdDivision()
     local menu = {
         { header = header, isMenuHeader = true },
     }
     for idx, outfit in ipairs(Config.DutyOutfits or {}) do
         if outfit.category == category and outfit[genderKey] then
-            if grade >= (tonumber(outfit.minGrade) or 0) then
+            if PdDivisions.outfitAllowed(outfit, lockerMode, grade, division) then
                 menu[#menu + 1] = {
                     header = outfit.label,
                     txt = outfit.description or '',
@@ -532,7 +533,10 @@ local function buildDutyOutfitCategoryMenu(category, grade)
     end
     menu[#menu + 1] = {
         header = '← Atgal',
-        params = { event = 'fivempro_ltpd:client:openDutyLockerMenu' },
+        params = {
+            event = 'fivempro_ltpd:client:openDutyLockerMenu',
+            args = { lockerMode = lockerMode or 'standard' },
+        },
     }
     return menu
 end
@@ -543,23 +547,39 @@ RegisterNetEvent('fivempro_ltpd:client:toggleDuty', function()
         return QBCore.Functions.Notify('Tik policijos darbuotojams.', 'error')
     end
     TriggerServerEvent('QBCore:ToggleDuty')
+    SetTimeout(400, function()
+        if SyncPdDivisionState then
+            SyncPdDivisionState()
+        end
+    end)
 end)
 
-RegisterNetEvent('fivempro_ltpd:client:openDutyLockerMenu', function()
+RegisterNetEvent('fivempro_ltpd:client:openDutyLockerMenu', function(data)
     if not isPdOnDutyClient() then
         return QBCore.Functions.Notify('Rūbinė – tik policijai tarnyboje.', 'error')
     end
     if GetResourceState('qb-menu') ~= 'started' then
         return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
     end
+    local lockerMode = (type(data) == 'table' and data.lockerMode) or 'standard'
+    local title = lockerMode == 'aro' and 'ARO rūbinė' or 'Tarnybinė apranga'
+    if lockerMode == 'aro' then
+        local eff = exports['fivempro_ltpd']:GetPdEffectiveDivision()
+        if eff ~= 'aro' then
+            return QBCore.Functions.Notify('ARO rūbinė – tik ARO padaliniui (/pddept).', 'error')
+        end
+    end
+    local P = QBCore.Functions.GetPlayerData()
+    local grade = (P.job and P.job.grade and P.job.grade.level) or 0
+    local chooseMin = tonumber((Config.DivisionRules or {}).chooseMinGrade) or 4
     local menu = {
-        { header = 'Tarnybinė apranga', isMenuHeader = true },
+        { header = title, isMenuHeader = true },
         {
             header = 'Uniformos',
             txt = 'Bazinė PD apranga (be liemenės)',
             params = {
                 event = 'fivempro_ltpd:client:openDutyLockerCategory',
-                args = { category = 'uniform' },
+                args = { category = 'uniform', lockerMode = lockerMode },
             },
         },
         {
@@ -567,17 +587,24 @@ RegisterNetEvent('fivempro_ltpd:client:openDutyLockerMenu', function()
             txt = 'Balistinės liemenės – uždėk ant uniformos',
             params = {
                 event = 'fivempro_ltpd:client:openDutyLockerCategory',
-                args = { category = 'vest' },
-            },
-        },
-        {
-            header = 'Baigti tarnybą',
-            txt = 'Civilio apranga (pamainą baigti tik prie MRPD NPC)',
-            params = {
-                event = 'fivempro_ltpd:client:applyCivilianOutfit',
+                args = { category = 'vest', lockerMode = lockerMode },
             },
         },
     }
+    if lockerMode ~= 'aro' and grade >= chooseMin then
+        menu[#menu + 1] = {
+            header = 'Keisti padalinį',
+            txt = 'Patruliai, kriminalistai, ARO, kelių policija…',
+            params = { event = 'fivempro_ltpd:client:openChooseDivisionMenu' },
+        }
+    end
+    if lockerMode ~= 'aro' then
+        menu[#menu + 1] = {
+            header = 'Baigti tarnybą',
+            txt = 'Civilio apranga (pamainą baigti tik prie MRPD NPC)',
+            params = { event = 'fivempro_ltpd:client:applyCivilianOutfit' },
+        }
+    end
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end)
 
@@ -587,7 +614,8 @@ RegisterNetEvent('fivempro_ltpd:client:openDutyLockerCategory', function(data)
     local P = QBCore.Functions.GetPlayerData()
     local grade = (P.job and P.job.grade and P.job.grade.level) or 0
     local category = type(data) == 'table' and data.category or 'uniform'
-    local menu = buildDutyOutfitCategoryMenu(category, grade)
+    local lockerMode = type(data) == 'table' and data.lockerMode or 'standard'
+    local menu = buildDutyOutfitCategoryMenu(category, grade, lockerMode)
     if #menu < 2 then
         return QBCore.Functions.Notify('Nėra prieinamų aprangų šiai kategorijai.', 'error')
     end

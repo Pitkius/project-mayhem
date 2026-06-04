@@ -4,16 +4,25 @@ Config = {}
 Config.JobName = 'police'
 
 --[[
-  Padaliniai – saugoma DB `ltpd_profiles.division`.
-  Teisės: žemiausias grade (0–10), kuriam leidžiama (optional filtras).
+  Padaliniai – saugoma DB `ltpd_profiles.division` (tik police job).
+  Rangai 0–3: automatiškai LPM. Nuo 4 rango – žaidėjas renkasi padalinį (/pddept arba rūbinėje).
 ]]
-Config.Divisions = {
-    patrol = { label = 'Patrulių tarnyba', minGrade = 0 },
-    traffic = { label = 'Kelių policija', minGrade = 1 },
-    criminal = { label = 'Kriminalinė policija', minGrade = 3 },
-    aras = { label = 'ARAS', minGrade = 2 },
-    admin = { label = 'Administracija', minGrade = 7 },
+Config.DivisionRules = {
+    lpmMaxGrade = 3,      -- įskaitant 3 – vis dar LPM
+    chooseMinGrade = 4,   -- nuo šio rango galima keisti padalinį
 }
+
+Config.Divisions = {
+    lpm = { label = 'LPM (mokymo padalinys)', minGrade = 0, choosable = false, autoOnly = true },
+    patrol = { label = 'Patrulių tarnyba', minGrade = 4, choosable = true },
+    traffic = { label = 'Kelių policija', minGrade = 4, choosable = true },
+    criminal = { label = 'Kriminalistai', minGrade = 4, choosable = true },
+    aro = { label = 'ARO', minGrade = 4, choosable = true },
+    admin = { label = 'Administracija', minGrade = 7, choosable = false },
+}
+
+--- Kol nėra atskirų ARO aprangų įrašų su `divisions = {'aro'}`, ARO rūbinė rodo tas pačias uniformas
+Config.AroLockerShowsAllUniforms = true
 
 --- Minimalus grade (0 = Kursantas) veiksmui
 --- F7 – surinktų pirštų atspaudų žurnalas (tarnybos metu)
@@ -141,6 +150,8 @@ Config.Stations = {
             coords = vector3(486.5664, -995.1992, 30.6791),
             stashId = 'ltpd_armory_ls',
             label = 'ARO sandėlis (ginklinė)',
+            minGrade = 2,
+            divisions = { 'aro' },
             maxweight = 5000000,
             slots = 90,
         },
@@ -160,10 +171,13 @@ Config.Stations = {
             coords = vector3(461.85, -998.35, 30.69),
             heading = 90.0,
         },
-        --- Rūbinė 2
+        --- Rūbinė 2 – ARO uniforma
         locker2 = {
             coords = vector3(460.1924, -998.6480, 30.6849),
             heading = 0.3915,
+            label = 'ARO rūbinė',
+            lockerMode = 'aro',
+            divisions = { 'aro' },
         },
         stashes = {
             {
@@ -171,14 +185,25 @@ Config.Stations = {
                 stashId = 'ltpd_stash_public_ls',
                 label = 'PD sandėlis (bendras)',
                 minGrade = 0,
+                divisions = { 'lpm', 'patrol', 'traffic', 'criminal', 'admin' },
                 maxweight = 2000000,
                 slots = 60,
             },
             {
                 coords = vector3(482.4943, -995.2571, 30.6896),
                 stashId = 'ltpd_stash_grade3_ls',
-                label = 'PD sandėlis (aukštesnio rango)',
+                label = 'PD sandėlis (≥3 rango)',
                 minGrade = 3,
+                divisions = { 'lpm', 'patrol', 'traffic', 'criminal', 'admin' },
+                maxweight = 2500000,
+                slots = 70,
+            },
+            {
+                coords = vector3(484.20, -995.27, 30.6896),
+                stashId = 'ltpd_stash_criminal_ls',
+                label = 'Kriminalistų sandėlis',
+                minGrade = 4,
+                divisions = { 'criminal', 'admin' },
                 maxweight = 2500000,
                 slots = 70,
             },
@@ -187,6 +212,7 @@ Config.Stations = {
                 stashId = 'ltpd_stash_grade8_ls',
                 label = 'PD sandėlis (vadovų)',
                 minGrade = 8,
+                divisions = { 'patrol', 'traffic', 'criminal', 'admin' },
                 maxweight = 3000000,
                 slots = 80,
             },
@@ -195,6 +221,7 @@ Config.Stations = {
                 stashId = 'ltpd_stash_boss_ls',
                 label = 'PD sandėlis (bosas / pavaduotojas)',
                 minGrade = 7,
+                divisions = { 'patrol', 'traffic', 'criminal', 'admin' },
                 maxweight = 3500000,
                 slots = 90,
             },

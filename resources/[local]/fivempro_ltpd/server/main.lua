@@ -395,12 +395,22 @@ end
 MySQL.ready(function()
     ensureTables()
     migrateLtpdJobToPolice()
+    MySQL.update.await("UPDATE ltpd_profiles SET division = 'aro' WHERE division = 'aras' OR division = 'ARAS'")
 end)
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
     local job = Player.PlayerData.job
     if job and job.name == 'ltpd' then
         Player.Functions.SetJob('police', tonumber(job.grade and job.grade.level) or 0)
+    end
+    if jobIsPd(Player.PlayerData.job) then
+        local grade = tonumber(Player.PlayerData.job.grade and Player.PlayerData.job.grade.level) or 0
+        MySQL.query.await('INSERT IGNORE INTO ltpd_profiles (citizenid, division) VALUES (?, ?)', {
+            Player.PlayerData.citizenid,
+            defaultDivisionForGrade(grade),
+        })
+        enforceDivisionForPlayer(Player.PlayerData.source)
+        syncDivisionClient(Player.PlayerData.source)
     end
 end)
 
@@ -441,8 +451,71 @@ end
 
 local function getDivisionForCitizenid(citizenid)
     local row = MySQL.single.await('SELECT division FROM ltpd_profiles WHERE citizenid = ?', { citizenid })
-    if row and row.division then return row.division end
+    return PdDivisions.normalize(row and row.division or 'patrol')
+end
+
+local function setDivisionForCitizenid(citizenid, division)
+    division = PdDivisions.normalize(division)
+    if not Config.Divisions[division] then return false end
+    MySQL.query.await(
+        'INSERT INTO ltpd_profiles (citizenid, division) VALUES (?, ?) ON DUPLICATE KEY UPDATE division = VALUES(division)',
+        { citizenid, division }
+    )
+    return true
+end
+
+local function defaultDivisionForGrade(grade)
+    grade = tonumber(grade) or 0
+    local lpmMax = tonumber((Config.DivisionRules or {}).lpmMaxGrade) or 3
+    if grade <= lpmMax then
+        return 'lpm'
+    end
     return 'patrol'
+end
+
+local function enforceDivisionForPlayer(src)
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P or not jobIsPd(P.PlayerData.job) then return end
+    local grade = getGrade(src)
+    local cid = P.PlayerData.citizenid
+    local stored = getDivisionForCitizenid(cid)
+    local want = defaultDivisionForGrade(grade)
+    if grade <= ((Config.DivisionRules or {}).lpmMaxGrade or 3) then
+        if stored ~= 'lpm' then
+            setDivisionForCitizenid(cid, 'lpm')
+        end
+        return 'lpm'
+    end
+    if stored == 'lpm' then
+        setDivisionForCitizenid(cid, 'patrol')
+        stored = 'patrol'
+    end
+    return stored
+end
+
+local function syncDivisionClient(src)
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P or not jobIsPd(P.PlayerData.job) then return end
+    local grade = getGrade(src)
+    local div = enforceDivisionForPlayer(src)
+    TriggerClientEvent('fivempro_ltpd:client:syncDivision', src, {
+        division = div,
+        storedDivision = getDivisionForCitizenid(P.PlayerData.citizenid),
+        grade = grade,
+        effective = PdDivisions.effectiveDivision(grade, div),
+    })
+end
+
+local function pdAccessPayload(src)
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P or not jobIsPd(P.PlayerData.job) then return nil end
+    local grade = getGrade(src)
+    local stored = enforceDivisionForPlayer(src)
+    return {
+        division = stored,
+        grade = grade,
+        effective = PdDivisions.effectiveDivision(grade, stored),
+    }
 end
 
 -- Išplėstinė MDT informacija (transportas, baudų istorija, pinigai)
@@ -452,7 +525,7 @@ local function mdtFullAccess(src)
     if not Player then return false end
     local g = getGrade(src)
     local div = getDivisionForCitizenid(Player.PlayerData.citizenid)
-    if div == 'aras' and g < 5 then
+    if div == 'aro' and g < 5 then
         return false
     end
     local divCfg = Config.Divisions[div]
@@ -465,11 +538,39 @@ end
 RegisterNetEvent('fivempro_ltpd:server:setDivision', function(targetCitizenid, newDiv)
     local src = source
     if not hasPerm(src, 'division_admin') then return end
+    newDiv = PdDivisions.normalize(newDiv)
     if not Config.Divisions[newDiv] then return end
-    MySQL.query.await(
-        'INSERT INTO ltpd_profiles (citizenid, division) VALUES (?, ?) ON DUPLICATE KEY UPDATE division = VALUES(division)',
-        { targetCitizenid, newDiv }
-    )
+    setDivisionForCitizenid(targetCitizenid, newDiv)
+    local T = QBCore.Functions.GetPlayerByCitizenId(targetCitizenid)
+    if T then syncDivisionClient(T.PlayerData.source) end
+end)
+
+RegisterNetEvent('fivempro_ltpd:server:chooseDivision', function(data)
+    local src = source
+    if not isLtpdOnDuty(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik tarnyboje.', 'error')
+    end
+    local newDiv = PdDivisions.normalize(type(data) == 'table' and data.division or data)
+    local chooseMin = tonumber((Config.DivisionRules or {}).chooseMinGrade) or 4
+    if getGrade(src) < chooseMin then
+        return TriggerClientEvent('QBCore:Notify', src, 'Padalinį galima keisti nuo 4 rango.', 'error')
+    end
+    if not PdDivisions.isChoosable(newDiv) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Šis padalinys neprieinamas.', 'error')
+    end
+    local cfg = Config.Divisions[newDiv]
+    if getGrade(src) < (tonumber(cfg.minGrade) or chooseMin) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per žemas rangas šiam padaliniui.', 'error')
+    end
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P then return end
+    setDivisionForCitizenid(P.PlayerData.citizenid, newDiv)
+    syncDivisionClient(src)
+    TriggerClientEvent('QBCore:Notify', src, ('Padalinys: %s'):format(cfg.label or newDiv), 'success')
+end)
+
+QBCore.Functions.CreateCallback('fivempro_ltpd:server:getPdDivisionState', function(src, cb)
+    cb(pdAccessPayload(src))
 end)
 
 QBCore.Functions.CreateCallback('fivempro_ltpd:server:canOpenMdt', function(src, cb)
@@ -480,10 +581,12 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:mdtContext', function(src,
     if not hasPerm(src, 'mdt_open') then return cb(nil) end
     local P = QBCore.Functions.GetPlayer(src)
     if not P then return cb(nil) end
+    local defDiv = defaultDivisionForGrade(getGrade(src))
     MySQL.query.await('INSERT IGNORE INTO ltpd_profiles (citizenid, division) VALUES (?, ?)', {
         P.PlayerData.citizenid,
-        'patrol',
+        defDiv,
     })
+    enforceDivisionForPlayer(src)
     local ped = GetPlayerPed(src)
     local c = (ped and ped ~= 0) and GetEntityCoords(ped) or vector3(0.0, 0.0, 0.0)
     cb({
@@ -496,7 +599,8 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:mdtContext', function(src,
             z = c.z + 0.0,
             heading = (ped and ped ~= 0) and (GetEntityHeading(ped) + 0.0) or 0.0,
         },
-        division = getDivisionForCitizenid(P.PlayerData.citizenid),
+        division = PdDivisions.effectiveDivision(getGrade(src), getDivisionForCitizenid(P.PlayerData.citizenid)),
+        divisionStored = getDivisionForCitizenid(P.PlayerData.citizenid),
         grade = getGrade(src),
         permissions = {
             fullSearch = mdtFullAccess(src),
@@ -886,8 +990,10 @@ RegisterNetEvent('fivempro_ltpd:server:openPoliceStash', function(stationId, sta
     if not st or not st.stashes then return end
     local entry = st.stashes[stashIndex]
     if not entry or not entry.coords or not entry.stashId then return end
-    if getGrade(src) < (tonumber(entry.minGrade) or 0) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per žemas rangas šiam sandėliui.', 'error')
+    local P = QBCore.Functions.GetPlayer(src)
+    local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'patrol'
+    if not PdDivisions.canAccessPoint(getGrade(src), div, entry) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Neturi prieigos prie šio sandėlio (rangas / padalinys).', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
     if not officerNearCoords(src, entry.coords, maxD) then
@@ -914,6 +1020,11 @@ RegisterNetEvent('fivempro_ltpd:server:openArmory', function(stationId)
     stationId = tostring(stationId or '')
     local st = getStationById(stationId)
     if not st or not st.armory or not st.armory.coords or not st.armory.stashId then return end
+    local P = QBCore.Functions.GetPlayer(src)
+    local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'patrol'
+    if not PdDivisions.canAccessPoint(getGrade(src), div, st.armory) then
+        return TriggerClientEvent('QBCore:Notify', src, 'ARO sandėlis – tik ARO padaliniui.', 'error')
+    end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
     if not officerNearCoords(src, st.armory.coords, maxD) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo ginklinės (rūbinės). Priartėk arba patikrink koordinates.', 'error')
@@ -1049,6 +1160,8 @@ RegisterNetEvent('fivempro_ltpd:server:bossHire', function(targetId, grade)
     end
     T.Functions.SetJob(Config.JobName, grade)
     T.Functions.SetJobDuty(true)
+    setDivisionForCitizenid(T.PlayerData.citizenid, defaultDivisionForGrade(grade))
+    syncDivisionClient(targetId)
     TriggerClientEvent('QBCore:Notify', src, ('Įdarbinta (ID %s), rangas %s'):format(targetId, grade), 'success')
     TriggerClientEvent('QBCore:Notify', targetId, ('Priimta į policiją. Rangas: %s'):format(grade), 'success')
 end)
@@ -1106,6 +1219,8 @@ RegisterNetEvent('fivempro_ltpd:server:bossSetGrade', function(targetId, grade)
         return TriggerClientEvent('QBCore:Notify', src, 'Negali skirti šio rango (per aukštas).', 'error')
     end
     T.Functions.SetJob(Config.JobName, grade)
+    enforceDivisionForPlayer(targetId)
+    syncDivisionClient(targetId)
     TriggerClientEvent('QBCore:Notify', src, ('Rangas pakeistas (ID %s → %s)'):format(targetId, grade), 'success')
     TriggerClientEvent('QBCore:Notify', targetId, ('Tavo naujas rangas: %s'):format(grade), 'primary')
 end)
