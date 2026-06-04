@@ -95,18 +95,35 @@ local function loginExisting(src, row)
     return QBCore.Player.Login(src, row.citizenid)
 end
 
+--- txAdmin duoda group.admin — QBCore komandoms reikia qbcore.god ant player.ID
+local function syncQBCoreAdmin(src)
+    if not src or src < 1 then return end
+    if IsPlayerAceAllowed(src, 'group.admin') then
+        QBCore.Functions.AddPermission(src, 'god')
+    end
+    QBCore.Commands.Refresh(src)
+end
+
 local function finishPlayerLoad(src)
     repeat
         Wait(10)
     until hasDonePreloading[src]
-    QBCore.Commands.Refresh(src)
+    syncQBCoreAdmin(src)
     loadHouseData(src)
     TriggerClientEvent('fivempro_spawnfix:client:spawn', src)
 end
 
+exports('SyncQBCoreAdmin', syncQBCoreAdmin)
+
 AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
+    local src = Player.PlayerData.source
     Wait(1000)
-    hasDonePreloading[Player.PlayerData.source] = true
+    hasDonePreloading[src] = true
+    SetTimeout(2500, function()
+        if QBCore.Players[src] then
+            syncQBCoreAdmin(src)
+        end
+    end)
 end)
 
 AddEventHandler('QBCore:Server:OnPlayerUnload', function(src)
@@ -167,6 +184,11 @@ RegisterNetEvent('fivempro_spawnfix:server:syncVitals', function()
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then return end
     syncVitalsFromPed(Player)
+end)
+
+QBCore.Commands.Add('fixadmin', 'Sinchronizuoti txAdmin admin -> QBCore (F8)', {}, false, function(source)
+    syncQBCoreAdmin(source)
+    TriggerClientEvent('QBCore:Notify', source, 'Admin teisės patikrintos (reikia txAdmin Administrator).', 'primary')
 end)
 
 QBCore.Commands.Add('logout', 'Atsijungti nuo personažo (admin)', {}, false, function(source)

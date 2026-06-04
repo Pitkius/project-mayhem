@@ -50,7 +50,11 @@ end
 
 local function finishLoad(src)
     repeat Wait(10) until hasDonePreloading[src]
-    QBCore.Commands.Refresh(src)
+    if GetResourceState('fivempro_spawnfix') == 'started' then
+        exports['fivempro_spawnfix']:SyncQBCoreAdmin(src)
+    else
+        QBCore.Commands.Refresh(src)
+    end
     loadHouseData(src)
     TriggerClientEvent('fivempro_spawnfix:client:spawn', src)
 end

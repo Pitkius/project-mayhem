@@ -23,9 +23,8 @@ Kadangi QBCore naudoja išorinius resursus, pridėk į `resources` bent:
 - `qb-menu`
 - `qb-input`
 - `qb-inventory`
-- `qb-multicharacter` (char kūrimas)
-- `qb-apartments`
-- `qb-spawn`
+- `fivempro_charcreator` + `fivempro_spawnfix` (personažų kūrimas / prisijungimas)
+- `qb-apartments` (nebūtina)
 
 ## 4) Paleidimas
 

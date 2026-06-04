@@ -1,7 +1,7 @@
 fivempro_charcreator
 ====================
 
-Pakeičia qb-multicharacter + seną QB creator.
+Vienintelė personažų sistema (qb-multicharacter pašalintas).
 Prisijungimas: fivempro_charcreator -> fivempro_spawnfix spawn.
 
 Paleisti:

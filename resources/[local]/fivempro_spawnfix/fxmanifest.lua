@@ -24,3 +24,7 @@ dependencies {
     'qb-core',
     'oxmysql',
 }
+
+server_exports {
+    'SyncQBCoreAdmin',
+}
