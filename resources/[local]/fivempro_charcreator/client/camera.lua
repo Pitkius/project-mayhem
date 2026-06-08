@@ -115,7 +115,6 @@ function CharCamera.forStep(stepId)
         hair = 'hair',
         facedetails = 'face',
         body = 'body',
-        voice = 'face',
         clothes = 'clothes',
         review = 'body',
     }

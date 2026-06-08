@@ -74,8 +74,8 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT žemėlapis — pilna sala, HD satelitas (2048×2560, 1:1 su žaidimo X/Y)
---- Blipai ir satelitas: Leaflet [lat,lng] = [Y,X]. Jei visi blipai pastumti — koreguok offset/scale (ne flipY).
+--- MDT žemėlapis — tas pats kaip ESC pause map (šiaurė viršuje, 1:1 su GetEntityCoords X/Y)
+--- Leaflet: lat = ekrano Y, lng = X. flipY = true — privaloma satelitiniam PNG (šiaurė viršuje).
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
@@ -87,7 +87,7 @@ Config.MdtMap = {
     offsetY = 0.0,
     scaleX = 1.0,
     scaleY = 1.0,
-    flipY = false,
+    flipY = true,
     imageFile = 'mdt/asset/gtav_satellite_2048.png',
     imageWidth = 2048,
     imageHeight = 2560,

@@ -19,7 +19,6 @@ local DrawSprite = DrawSprite
 local ClearDrawOrigin = ClearDrawOrigin
 local HasStreamedTextureDictLoaded = HasStreamedTextureDictLoaded
 local RequestStreamedTextureDict = RequestStreamedTextureDict
-local HasEntityClearLosToEntity = HasEntityClearLosToEntity
 local currentResourceName = GetCurrentResourceName()
 local Config, Types, Players, Entities, Models, Zones, nuiData, sendData, sendDistance = Config, { {}, {}, {} }, {}, {},
 	{}, {}, {}, {}, {}
@@ -104,11 +103,35 @@ local function isValidEntity(entity)
 	return entity and entity ~= 0 and DoesEntityExist(entity)
 end
 
+--- Saugi entity rakto rezoliucija (nebekviesti native ant mirusio handle)
+local function entityStorageKey(entity)
+	if type(entity) ~= 'number' then return entity end
+	if not isValidEntity(entity) then return entity end
+	local okNet, networked = pcall(NetworkGetEntityIsNetworked, entity)
+	if okNet and networked then
+		local okId, netId = pcall(NetworkGetNetworkIdFromEntity, entity)
+		if okId and netId and netId ~= 0 then return netId end
+	end
+	return entity
+end
+
 local function safeGetEntityCoords(entity)
 	if not isValidEntity(entity) then return nil end
 	local ok, coords = pcall(GetEntityCoords, entity)
 	if ok and coords then return coords end
 	return nil
+end
+
+local function safeGetEntityModel(entity)
+	if not isValidEntity(entity) then return 0 end
+	local ok, model = pcall(GetEntityModel, entity)
+	return (ok and model) or 0
+end
+
+local function safeIsPedAPlayer(entity)
+	if not isValidEntity(entity) then return false end
+	local ok, result = pcall(IsPedAPlayer, entity)
+	return ok and result == true
 end
 
 local function RaycastCamera(flag, playerCoords)
@@ -129,17 +152,6 @@ local function RaycastCamera(flag, playerCoords)
 
 		if result ~= 1 then
 			local distance = playerCoords and #(playerCoords - endCoords)
-
-			if flag == 30 then
-				if entityHit and entityHit ~= 0 and DoesEntityExist(entityHit) then
-					local okLos, hasLos = pcall(HasEntityClearLosToEntity, entityHit, playerPed, 7)
-					if not okLos or not hasLos then
-						entityHit = nil
-					end
-				else
-					entityHit = nil
-				end
-			end
 
 			local entityType = 0
 			if entityHit and entityHit ~= 0 and DoesEntityExist(entityHit) then
@@ -205,9 +217,11 @@ end
 exports('DisableTarget', DisableTarget)
 
 local function DrawOutlineEntity(entity, bool)
-	if not Config.EnableOutline or IsEntityAPed(entity) then return end
-	SetEntityDrawOutline(entity, bool)
-	SetEntityDrawOutlineColor(Config.OutlineColor[1], Config.OutlineColor[2], Config.OutlineColor[3], Config.OutlineColor[4])
+	if not Config.EnableOutline or not isValidEntity(entity) then return end
+	local okPed, isPed = pcall(IsEntityAPed, entity)
+	if okPed and isPed then return end
+	pcall(SetEntityDrawOutline, entity, bool)
+	pcall(SetEntityDrawOutlineColor, Config.OutlineColor[1], Config.OutlineColor[2], Config.OutlineColor[3], Config.OutlineColor[4])
 end
 
 exports('DrawOutlineEntity', DrawOutlineEntity)
@@ -283,12 +297,15 @@ local function CheckBones(coords, entity, bonelist)
 	local closestPos, closestBoneName
 	for _, v in pairs(bonelist) do
 		if Bones.Options[v] then
-			local boneId = GetEntityBoneIndexByName(entity, v)
-			local bonePos = GetWorldPositionOfEntityBone(entity, boneId)
+			local okBone, boneId = pcall(GetEntityBoneIndexByName, entity, v)
+			if not okBone or not boneId or boneId == -1 then goto continue_bone end
+			local okPos, bonePos = pcall(GetWorldPositionOfEntityBone, entity, boneId)
+			if not okPos or not bonePos then goto continue_bone end
 			local distance = #(coords - bonePos)
 			if closestBone == -1 or distance < closestDistance then
 				closestBone, closestDistance, closestPos, closestBoneName = boneId, distance, bonePos, v
 			end
+			::continue_bone::
 		end
 	end
 	if closestBone ~= -1 then
@@ -342,11 +359,10 @@ local function EnableTarget()
 		until not targetActive
 	end)
 
-	local flag = 30
+	local flag = -1
 
 	while targetActive do
 		local sleep = 0
-		if flag == 30 then flag = -1 else flag = 30 end
 
 		local coords, distance, entity, entityType = RaycastCamera(flag)
 		if not isValidEntity(entity) then
@@ -360,16 +376,22 @@ local function EnableTarget()
 				end
 
 				-- Owned entity targets
-				if NetworkGetEntityIsNetworked(entity) then
-					local data = Entities[NetworkGetNetworkIdFromEntity(entity)]
-					if data then CheckEntity(flag, data, entity, distance) end
+				do
+					local okNet, networked = pcall(NetworkGetEntityIsNetworked, entity)
+					if okNet and networked then
+						local okId, netId = pcall(NetworkGetNetworkIdFromEntity, entity)
+						if okId and netId then
+							local data = Entities[netId]
+							if data then CheckEntity(flag, data, entity, distance) end
+						end
+					end
 				end
 
 				-- Player and Ped targets
 				if entityType == 1 then
-					local model = isValidEntity(entity) and GetEntityModel(entity) or 0
+					local model = safeGetEntityModel(entity)
 					local data = Models[model]
-					if IsPedAPlayer(entity) then data = Players end
+					if safeIsPedAPlayer(entity) then data = Players end
 					if data and next(data) then CheckEntity(flag, data, entity, distance) end
 
 					-- Vehicle bones and models
@@ -416,13 +438,13 @@ local function EnableTarget()
 					end
 
 					-- Vehicle model targets
-					local model = isValidEntity(entity) and GetEntityModel(entity) or 0
+					local model = safeGetEntityModel(entity)
 					local data = Models[model]
 					if data then CheckEntity(flag, data, entity, distance) end
 
 					-- Entity targets
 				elseif entityType > 2 then
-					local model = isValidEntity(entity) and GetEntityModel(entity) or 0
+					local model = safeGetEntityModel(entity)
 					local data = Models[model]
 					if data then CheckEntity(flag, data, entity, distance) end
 				end
@@ -628,16 +650,34 @@ end
 
 exports('RemoveTargetBone', RemoveTargetBone)
 
+local function clearEntityTargetStore(storeKey, labels)
+	if not Entities[storeKey] then return end
+	if labels then
+		if type(labels) == 'table' then
+			for _, v in pairs(labels) do
+				Entities[storeKey][v] = nil
+			end
+		elseif type(labels) == 'string' then
+			Entities[storeKey][labels] = nil
+		end
+	else
+		Entities[storeKey] = nil
+	end
+end
+
 local function AddTargetEntity(entities, parameters)
 	local distance, options = parameters.distance or Config.MaxDistance, parameters.options
 	if type(entities) == 'table' then
 		for _, entity in pairs(entities) do
-			if NetworkGetEntityIsNetworked(entity) then entity = NetworkGetNetworkIdFromEntity(entity) end -- Allow non-networked entities to be targeted
+			if type(entity) ~= 'number' or not isValidEntity(entity) then goto continue_add end
+			entity = entityStorageKey(entity)
 			if not Entities[entity] then Entities[entity] = {} end
 			SetOptions(Entities[entity], distance, options)
+			::continue_add::
 		end
 	elseif type(entities) == 'number' then
-		if NetworkGetEntityIsNetworked(entities) then entities = NetworkGetNetworkIdFromEntity(entities) end -- Allow non-networked entities to be targeted
+		if not isValidEntity(entities) then return end
+		entities = entityStorageKey(entities)
 		if not Entities[entities] then Entities[entities] = {} end
 		SetOptions(Entities[entities], distance, options)
 	end
@@ -646,42 +686,23 @@ end
 exports('AddTargetEntity', AddTargetEntity)
 
 local function RemoveTargetEntity(entities, labels)
+	local function removeOne(rawEntity)
+		if type(rawEntity) ~= 'number' then return end
+		clearEntityTargetStore(rawEntity, labels)
+		if isValidEntity(rawEntity) then
+			local netKey = entityStorageKey(rawEntity)
+			if netKey ~= rawEntity then
+				clearEntityTargetStore(netKey, labels)
+			end
+		end
+	end
+
 	if type(entities) == 'table' then
 		for _, entity in pairs(entities) do
-			if NetworkGetEntityIsNetworked(entity) then entity = NetworkGetNetworkIdFromEntity(entity) end -- Allow non-networked entities to be targeted
-			if labels then
-				if type(labels) == 'table' then
-					for _, v in pairs(labels) do
-						if Entities[entity] then
-							Entities[entity][v] = nil
-						end
-					end
-				elseif type(labels) == 'string' then
-					if Entities[entity] then
-						Entities[entity][labels] = nil
-					end
-				end
-			else
-				Entities[entity] = nil
-			end
+			removeOne(entity)
 		end
 	elseif type(entities) == 'number' then
-		if NetworkGetEntityIsNetworked(entities) then entities = NetworkGetNetworkIdFromEntity(entities) end -- Allow non-networked entities to be targeted
-		if labels then
-			if type(labels) == 'table' then
-				for _, v in pairs(labels) do
-					if Entities[entities] then
-						Entities[entities][v] = nil
-					end
-				end
-			elseif type(labels) == 'string' then
-				if Entities[entities] then
-					Entities[entities][labels] = nil
-				end
-			end
-		else
-			Entities[entities] = nil
-		end
+		removeOne(entities)
 	end
 end
 

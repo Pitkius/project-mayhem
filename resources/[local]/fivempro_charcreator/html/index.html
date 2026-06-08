@@ -9,11 +9,8 @@
 </head>
 <body>
   <div id="app" class="hidden">
-    <div class="bg-glow"></div>
-    <div class="bg-glow g2"></div>
-
     <section id="screenWizard" class="screen">
-      <aside class="sidebar">
+      <aside class="sidebar glass">
         <div class="brand"><i class="fa-solid fa-user-astronaut" aria-hidden="true"></i> Personažas</div>
         <nav id="stepNav"></nav>
         <div class="sidebar-tools">
@@ -22,27 +19,25 @@
           <button type="button" id="btnLoadPreset" class="btn ghost sm"><i class="fa-solid fa-folder-open" aria-hidden="true"></i> Įkelti preset</button>
         </div>
       </aside>
-      <main class="wizard-main">
+      <main class="wizard-main glass">
         <header class="wizard-head">
           <h2 id="stepTitle">Asmeninė informacija</h2>
           <p id="stepDesc" class="muted">Užpildyk pagrindinius duomenis</p>
         </header>
-        <div id="stepBody" class="step-body glass"></div>
+        <div id="stepBody" class="step-body"></div>
         <footer class="wizard-foot">
           <button type="button" id="btnCancel" class="btn ghost hidden"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Atšaukti</button>
           <button type="button" id="btnBack" class="btn ghost"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Grįžti</button>
           <button type="button" id="btnNext" class="btn primary">Toliau <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
         </footer>
       </main>
-      <aside class="preview-panel glass">
-        <p class="preview-label">Peržiūra</p>
-        <div class="preview-avatar" id="previewHint">
-          <span>3D peržiūra žaidime</span>
-          <span class="cam-hint"><i class="fa-solid fa-rotate" aria-hidden="true"></i> ← → sukite kamerą (360°)</span>
-        </div>
-        <div id="reviewBox" class="review-box hidden"></div>
-      </aside>
     </section>
+    <aside class="char-view-hint glass" id="charViewHint">
+      <p class="preview-label"><i class="fa-solid fa-eye" aria-hidden="true"></i> Tavo personažas</p>
+      <p class="muted">Peržiūra dešinėje — sukite kamerą rodyklėmis</p>
+      <p class="cam-hint"><i class="fa-solid fa-rotate" aria-hidden="true"></i> ← → 360°</p>
+      <div id="reviewBox" class="review-box hidden"></div>
+    </aside>
   </div>
   <script src="app.js"></script>
 </body>

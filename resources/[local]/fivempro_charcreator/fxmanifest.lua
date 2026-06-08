@@ -16,6 +16,7 @@ files {
 }
 
 shared_scripts {
+    'shared/countries.lua',
     'config.lua',
 }
 

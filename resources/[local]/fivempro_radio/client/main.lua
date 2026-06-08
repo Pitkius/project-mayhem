@@ -12,8 +12,8 @@ local talkingOnRadio = false
 local radioTalkers = {}
 
 local settings = {
-    beepStart = true,
-    beepEnd = true,
+    beepStart = false,
+    beepEnd = false,
     channelChange = true,
     connect = true,
     disconnect = true,
@@ -50,7 +50,6 @@ local function playUiSound(kind)
         connect = { 'NAV_UP_DOWN', 'HUD_FRONTEND_DEFAULT_SOUNDSET' },
         disconnect = { 'NAV_LEFT_RIGHT', 'HUD_FRONTEND_DEFAULT_SOUNDSET' },
         channel = { 'SELECT', 'HUD_FRONTEND_DEFAULT_SOUNDSET' },
-        beep = { 'Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS' },
     }
     local s = map[kind]
     if s then PlaySoundFrontend(-1, s[1], s[2], true) end
@@ -108,23 +107,15 @@ local function voiceLeave()
     end
 end
 
-local function startRadioAnim()
-    local ped = PlayerPedId()
+local function syncPmaRadioAnim()
+    if GetResourceState('pma-voice') ~= 'started' then return end
     local cfg = Config.RadioAnim or {}
-    local dict = cfg.dict or 'random@arrests'
-    local anim = cfg.anim or 'generic_radio_chatter'
-    RequestAnimDict(dict)
-    local t = GetGameTimer() + 3000
-    while not HasAnimDictLoaded(dict) and GetGameTimer() < t do Wait(0) end
-    if HasAnimDictLoaded(dict) then
-        TaskPlayAnim(ped, dict, anim, 8.0, -8.0, -1, cfg.flag or 49, 0.0, false, false, false)
-    end
-end
-
-local function stopRadioAnim()
-    local ped = PlayerPedId()
-    local cfg = Config.RadioAnim or {}
-    StopAnimTask(ped, cfg.dict or 'random@arrests', cfg.anim or 'generic_radio_chatter', 1.0)
+    pcall(function()
+        exports['pma-voice']:setRadioTalkAnim(
+            cfg.dict or 'random@arrests',
+            cfg.anim or 'generic_radio_chatter'
+        )
+    end)
 end
 
 RegisterNetEvent('fivempro_radio:client:open', function()
@@ -269,13 +260,6 @@ AddStateBagChangeHandler('radioActive', nil, function(bagName, _, value)
     if not sid then return end
     if sid == GetPlayerServerId(PlayerId()) then
         talkingOnRadio = value == true
-        if talkingOnRadio then
-            if settings.beepStart then playUiSound('beep') end
-            startRadioAnim()
-        else
-            if settings.beepEnd then playUiSound('beep') end
-            stopRadioAnim()
-        end
         return
     end
     if voiceConnected and currentFreq then
@@ -307,44 +291,29 @@ end
 
 CreateThread(function()
     loadSettings()
+    syncPmaRadioAnim()
     while true do
         local sleep = 400
         if voiceConnected and currentFreq then
             sleep = 0
-            local cfgO = Config.Overlay or {}
-            local ox = cfgO.x or 0.90
-            local oy = cfgO.y or 0.08
-
-            if settings.compactOverlay then
-                drawTextRight(ox, oy, 0.34, ('Racija: %s'):format(tostring(currentFreq)), 167, 139, 250, 240)
-                local line2
-                if talkingOnRadio then
-                    line2 = ('Kalba: %s'):format(radioAlias ~= '' and radioAlias or 'Tu')
-                else
-                    local talkName = nil
-                    for sid, name in pairs(radioTalkers) do
-                        if name then talkName = name break end
-                    end
-                    line2 = talkName and ('Kalba: %s'):format(talkName) or ('Prisijungę: %s'):format(#members)
-                end
-                drawTextRight(ox, oy + 0.028, 0.30, line2, 226, 232, 240, 225)
-            end
-
             local cfgM = Config.MemberList or {}
             local mx = cfgM.x or 0.90
-            local my = cfgM.y or 0.14
+            local my = cfgM.y or 0.08
             local maxL = cfgM.maxLines or 10
-            drawTextRight(mx, my, 0.32, ('Racija %s'):format(tostring(currentFreq)), 167, 139, 250, 235)
-            if currentLabel then
-                drawTextRight(mx, my + 0.024, 0.28, currentLabel, 200, 200, 210, 220)
-            end
-            drawTextRight(mx, my + 0.048, 0.27, 'Prisijungę:', 180, 180, 190, 210)
+            local line = 0
+
+            drawTextRight(mx, my + (line * 0.026), 0.34, ('Racija: %s'):format(tostring(currentFreq)), 167, 139, 250, 240)
+            line = line + 1
+            drawTextRight(mx, my + (line * 0.026), 0.30, ('Prisijungę: %s'):format(#members), 226, 232, 240, 225)
+            line = line + 1
+
             for i = 1, math.min(#members, maxL) do
                 local m = members[i]
-                drawTextRight(mx, my + 0.048 + (i * 0.022), 0.26, ('- %s'):format(m.line or m.name or '?'), 235, 235, 240, 220)
+                drawTextRight(mx, my + (line * 0.026), 0.28, ('- %s'):format(m.line or m.name or '?'), 235, 235, 240, 220)
+                line = line + 1
             end
             if #members > maxL then
-                drawTextRight(mx, my + 0.048 + ((maxL + 1) * 0.022), 0.24, ('ir dar %s...'):format(#members - maxL), 160, 160, 170, 200)
+                drawTextRight(mx, my + (line * 0.026), 0.26, ('ir dar %s...'):format(#members - maxL), 160, 160, 170, 200)
             end
         end
         Wait(sleep)

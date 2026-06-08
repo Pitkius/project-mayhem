@@ -1,5 +1,18 @@
 Config = {}
 
+--- LS oro uostas — testų eilė statmena žaidėjo krypčiai (kairė–dešinė)
+local DEV_CENTER = vector3(-886.92, -3208.01, 13.94)
+local DEV_ROW_H = 239.51
+
+local function devRow(offset)
+    local h = math.rad(DEV_ROW_H)
+    return vector3(
+        DEV_CENTER.x + math.cos(h) * offset,
+        DEV_CENTER.y + math.sin(h) * offset,
+        DEV_CENTER.z
+    )
+end
+
 --- Production: false. Test NPC + nemokami itemai tik testavimui.
 Config.EnableDrugTestNPC = true
 
@@ -13,13 +26,14 @@ Config.StationBlip = {
     color = 27,
     scale = 0.85,
     shortRange = true,
-    label = 'Test: narkotikai ir ginklai',
+    label = 'Test: LS oro uostas',
 }
 
---- Grove — visos stočių zonos vienoje eilėje (šiaurė–pietūs palei X)
+--- Visos stočių zonos vienoje eilėje (LS airport)
 Config.DevHub = {
-    blipCoords = vector3(128.0, -1928.0, 21.38),
-    rowHeading = 90.0,
+    center = DEV_CENTER,
+    blipCoords = DEV_CENTER,
+    rowHeading = DEV_ROW_H,
     spacing = 3.5,
 }
 Config.CraftCooldownMs = 4500
@@ -266,15 +280,15 @@ Config.Recipes = {
     },
 }
 
---- Gamybos vietos — Grove testų alėjoje (viena eilė, žr. Config.DevHub)
+--- Gamybos vietos — LS airport eilėje (žr. Config.DevHub)
 Config.Stations = {
-    { id = 'stash_grove', label = 'L1 · Sandėliukas', level = 1, coords = vector3(118.0, -1928.0, 21.38), radius = 2.2, blip = false },
-    { id = 'garage_davis', label = 'L1 · Garažas', level = 1, coords = vector3(121.5, -1928.0, 21.38), radius = 2.2, blip = false },
-    { id = 'trap_chamberlain', label = 'L2 · Trap house', level = 2, coords = vector3(125.0, -1928.0, 21.38), radius = 2.2, blip = false },
-    { id = 'gang_base', label = 'L2 · Gaujos bazė', level = 2, coords = vector3(128.5, -1928.0, 21.38), radius = 2.2, blip = false },
-    { id = 'lab_sandy', label = 'L2 · Laboratorija', level = 2, coords = vector3(132.0, -1928.0, 21.38), radius = 2.2, blip = false },
-    { id = 'cartel_lab', label = 'L3 · Kartelis', level = 3, coords = vector3(135.5, -1928.0, 21.38), radius = 2.2, blip = false },
-    { id = 'secret_humane', label = 'L3 · Slapta lab.', level = 3, coords = vector3(139.0, -1928.0, 21.38), radius = 2.2, blip = false },
+    { id = 'stash_grove', label = 'L1 · Sandėliukas', level = 1, coords = devRow(-10.5), radius = 2.2, blip = false },
+    { id = 'garage_davis', label = 'L1 · Garažas', level = 1, coords = devRow(-7.0), radius = 2.2, blip = false },
+    { id = 'trap_chamberlain', label = 'L2 · Trap house', level = 2, coords = devRow(-3.5), radius = 2.2, blip = false },
+    { id = 'gang_base', label = 'L2 · Gaujos bazė', level = 2, coords = devRow(0.0), radius = 2.2, blip = false },
+    { id = 'lab_sandy', label = 'L2 · Laboratorija', level = 2, coords = devRow(3.5), radius = 2.2, blip = false },
+    { id = 'cartel_lab', label = 'L3 · Kartelis', level = 3, coords = devRow(7.0), radius = 2.2, blip = false },
+    { id = 'secret_humane', label = 'L3 · Slapta lab.', level = 3, coords = devRow(10.5), radius = 2.2, blip = false },
 }
 
 Config.Sell = {
@@ -299,9 +313,12 @@ Config.PoliceAlerts = {
     sell_burst = 'Įtartina narkotikų veikla',
 }
 
+local DRUG_TEST_POS = devRow(-14.0)
+local WEAPON_TEST_POS = devRow(14.0)
+
 Config.TestNPC = {
     model = 's_m_y_dealer_01',
-    coords = vector4(114.5, -1928.0, 21.38, 90.0),
+    coords = vector4(DRUG_TEST_POS.x, DRUG_TEST_POS.y, DRUG_TEST_POS.z, 149.51),
     scenario = 'WORLD_HUMAN_STAND_MOBILE',
     label = 'Narkotikų testas',
     blip = false,
@@ -310,7 +327,7 @@ Config.TestNPC = {
 --- Ginklų + kulkų testas (toje pačioje eilėje, gale)
 Config.WeaponTestNPC = {
     model = 's_m_y_ammucity_01',
-    coords = vector4(142.5, -1928.0, 21.38, 270.0),
+    coords = vector4(WEAPON_TEST_POS.x, WEAPON_TEST_POS.y, WEAPON_TEST_POS.z, 329.51),
     scenario = 'WORLD_HUMAN_STAND_MOBILE',
     label = 'Ginklų testas',
     blip = false,

@@ -164,7 +164,6 @@ QBCore.Functions.CreateCallback('fivempro_charcreator:server:getSession', functi
             originCities = Config.OriginCities,
             bloodTypes = Config.BloodTypes,
             eyeColors = Config.EyeColors,
-            voicePresets = Config.VoicePresets,
         },
     }
 
@@ -184,11 +183,10 @@ QBCore.Functions.CreateCallback('fivempro_charcreator:server:getSession', functi
                 lastname = ch.lastname or '',
                 birthdate = ch.birthdate or '01-01-1995',
                 gender = ch.gender or 0,
-                nationality = ch.nationality or 'Lietuvos',
-                originCity = ch.origin_city or 'Vilnius',
+                nationality = ch.nationality or 'Lietuva',
+                originCity = ch.origin_city or 'Los Santos',
                 bloodType = ch.blood_type or 'A+',
             },
-            voice = cc.voice or 'male_young',
             model = skinRow and skinRow.model,
             skin = skinRow and skinRow.skin,
         }
@@ -220,14 +218,13 @@ RegisterNetEvent('fivempro_charcreator:server:saveAppearance', function(payload)
     ch.lastname = lastname
     ch.birthdate = tostring(personal.birthdate or ch.birthdate or '01-01-1995'):sub(1, 10)
     ch.gender = gender
-    ch.nationality = tostring(personal.nationality or 'Lietuvos'):sub(1, 32)
-    ch.origin_city = tostring(personal.originCity or 'Vilnius'):sub(1, 48)
+    ch.nationality = tostring(personal.nationality or 'Lietuva'):sub(1, 32)
+    ch.origin_city = tostring(personal.originCity or 'Los Santos'):sub(1, 48)
     ch.blood_type = tostring(personal.bloodType or 'A+'):sub(1, 8)
     Player.Functions.SetPlayerData('charinfo', ch)
 
     local meta = Player.PlayerData.metadata or {}
     meta.charcreator = {
-        voice = tostring(payload.voice or 'male_young'):sub(1, 32),
         body = payload.body or {},
     }
     Player.Functions.SetMetaData('charcreator', meta.charcreator)
@@ -278,8 +275,8 @@ RegisterNetEvent('fivempro_charcreator:server:createCharacter', function(payload
             lastname = lastname,
             birthdate = tostring(personal.birthdate or '01-01-1995'):sub(1, 10),
             gender = gender,
-            nationality = tostring(personal.nationality or 'Lietuvos'):sub(1, 32),
-            origin_city = tostring(personal.originCity or 'Vilnius'):sub(1, 48),
+            nationality = tostring(personal.nationality or 'Lietuva'):sub(1, 32),
+            origin_city = tostring(personal.originCity or 'Los Santos'):sub(1, 48),
             blood_type = tostring(personal.bloodType or 'A+'):sub(1, 8),
         },
     }
@@ -290,14 +287,23 @@ RegisterNetEvent('fivempro_charcreator:server:createCharacter', function(payload
 
     repeat Wait(10) until hasDonePreloading[src]
 
+    local city = tostring(personal.originCity or 'Los Santos')
+    local spawn = (Config.CitySpawns and Config.CitySpawns[city]) or Config.DefaultSpawn
+
     local Player = QBCore.Functions.GetPlayer(src)
     if Player then
         local meta = Player.PlayerData.metadata or {}
         meta.charcreator = {
-            voice = tostring(payload.voice or 'male_young'):sub(1, 32),
             body = payload.body or {},
         }
         Player.Functions.SetMetaData('charcreator', meta.charcreator)
+        local pos = { x = spawn.x, y = spawn.y, z = spawn.z, w = spawn.w or 0.0 }
+        Player.PlayerData.position = pos
+        Player.Functions.Save()
+        MySQL.update.await('UPDATE players SET position = ? WHERE citizenid = ?', {
+            json.encode(pos),
+            Player.PlayerData.citizenid,
+        })
     end
 
     giveStarterItems(src)
@@ -307,7 +313,7 @@ RegisterNetEvent('fivempro_charcreator:server:createCharacter', function(payload
     TriggerClientEvent('fivempro_charcreator:client:finishCreate', src, {
         model = payload.model,
         skin = payload.skin,
-        spawn = Config.DefaultSpawn,
+        spawn = spawn,
     })
     SetTimeout(1800, function()
         finishLoad(src)

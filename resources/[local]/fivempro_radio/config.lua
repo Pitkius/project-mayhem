@@ -28,23 +28,17 @@ Config.ChannelNames = {
 
 --- Numatyti garsai (NUI / frontend)
 Config.DefaultSounds = {
-    beepStart = true,
-    beepEnd = true,
+    beepStart = false,
+    beepEnd = false,
     channelChange = true,
     connect = true,
     disconnect = true,
 }
 
---- Overlay pozicija (dešinė virš minimap)
-Config.Overlay = {
-    x = 0.90,
-    y = 0.08,
-}
-
---- Prisijungusių sąrašas — dešinė, viršuje (vardas pavardė)
+--- HUD dešinėje: Racija, Prisijungę: N, - vardai
 Config.MemberList = {
     x = 0.90,
-    y = 0.14,
+    y = 0.08,
     maxLines = 10,
 }
 

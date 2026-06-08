@@ -35,6 +35,16 @@ Kadangi QBCore naudoja išorinius resursus, pridėk į `resources` bent:
    - DB jungtį
 3. Paleisk serverį per txAdmin arba `FXServer.exe +exec server.cfg`
 
+### Artifacts / txAdmin atnaujinimas (Windows)
+
+Jei matai „artifact End of Support“ arba seną txAdmin versiją:
+
+1. Sustabdyk serverį txAdmin panelėje
+2. Paleisk: `powershell -ExecutionPolicy Bypass -File scripts/update-fivem-artifacts.ps1`
+3. Paleisk serverį iš naujo
+
+Skriptas atnaujina tik `FXServer.exe` + `citizen/` (neliečia `resources/`, `cfg/`).
+
 ## 5) Testas
 
 Resource `fivempro_basics` automatiškai:

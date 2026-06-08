@@ -2,6 +2,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local previewPed = 0
 local inCreator = false
+local inPlaceMode = false
 
 local function loadModel(hash)
     RequestModel(hash)
@@ -11,6 +12,23 @@ local function loadModel(hash)
         t = t + 10
     end
     return HasModelLoaded(hash)
+end
+
+local function createInteriorPed(gender)
+    if previewPed ~= 0 and DoesEntityExist(previewPed) then
+        DeleteEntity(previewPed)
+    end
+    local model = CharAppearance.modelHash(gender or 0)
+    loadModel(model)
+    local c = Config.PedCoords
+    previewPed = CreatePed(2, model, c.x, c.y, c.z - 0.98, c.w, false, true)
+    SetEntityInvincible(previewPed, true)
+    FreezeEntityPosition(previewPed, true)
+    SetBlockingOfNonTemporaryEvents(previewPed, true)
+    PlaceObjectOnGroundProperly(previewPed)
+    CharAppearance.setPreviewPed(previewPed)
+    CharAppearance.init(gender or 0)
+    CharAppearance.applyToPed(previewPed, CharAppearance.getSkin())
 end
 
 local function setupScene()
@@ -25,34 +43,50 @@ local function setupScene()
     SetEntityVisible(PlayerPedId(), false, false)
     FreezeEntityPosition(PlayerPedId(), true)
 
-    if previewPed ~= 0 and DoesEntityExist(previewPed) then
-        DeleteEntity(previewPed)
-    end
-
-    local model = CharAppearance.modelHash(0)
-    loadModel(model)
-    local c = Config.PedCoords
-    previewPed = CreatePed(2, model, c.x, c.y, c.z - 0.98, c.w, false, true)
-    SetEntityInvincible(previewPed, true)
-    FreezeEntityPosition(previewPed, true)
-    SetBlockingOfNonTemporaryEvents(previewPed, true)
-    PlaceObjectOnGroundProperly(previewPed)
-
-    CharAppearance.setPreviewPed(previewPed)
-    CharAppearance.init(0)
-    CharAppearance.applyToPed(previewPed, CharAppearance.getSkin())
-
+    inPlaceMode = false
+    createInteriorPed(0)
     CharCamera.enable()
     DoScreenFadeIn(600)
 end
 
+local function setupInPlaceEdit(sessionData)
+    inPlaceMode = true
+    local ped = PlayerPedId()
+    previewPed = ped
+    SetEntityVisible(ped, true, false)
+    FreezeEntityPosition(ped, true)
+
+    local gender = 0
+    if sessionData and sessionData.current and sessionData.current.personal then
+        gender = sessionData.current.personal.gender or 0
+    end
+
+    CharAppearance.setPreviewPed(ped)
+    if sessionData and sessionData.current and sessionData.current.skin then
+        CharAppearance.loadFromJson(sessionData.current.skin)
+    else
+        CharAppearance.init(gender)
+        CharAppearance.applyToPed(ped, CharAppearance.getSkin())
+    end
+
+    local c = GetEntityCoords(ped)
+    local h = GetEntityHeading(ped)
+    CharCamera.setShopAnchor(vector4(c.x, c.y, c.z, h))
+    CharCamera.enable()
+end
+
 local function teardownScene()
     CharCamera.disable()
-    SetEntityVisible(PlayerPedId(), true, false)
-    FreezeEntityPosition(PlayerPedId(), false)
-    if previewPed ~= 0 and DoesEntityExist(previewPed) then
-        DeleteEntity(previewPed)
-        previewPed = 0
+    if inPlaceMode then
+        FreezeEntityPosition(PlayerPedId(), false)
+        inPlaceMode = false
+    else
+        SetEntityVisible(PlayerPedId(), true, false)
+        FreezeEntityPosition(PlayerPedId(), false)
+        if previewPed ~= 0 and DoesEntityExist(previewPed) then
+            DeleteEntity(previewPed)
+            previewPed = 0
+        end
     end
     inCreator = false
     SetNuiFocusKeepInput(false)
@@ -71,12 +105,13 @@ end
 
 local pendingEditMode = false
 
-local function openWizardUi(editMode)
-    QBCore.Functions.TriggerCallback('fivempro_charcreator:server:getSession', function(data)
+local function openWizardUi(editMode, preloaded)
+    local function show(data)
         if not data or not data.ok then return end
         if (editMode == true or pendingEditMode) and LocalPlayer.state.isLoggedIn then
             data.editMode = true
         end
+        data.clothingItems = Config.CreatorClothingItems or {}
         pendingEditMode = false
         inCreator = true
         SetNuiFocus(true, true)
@@ -85,15 +120,30 @@ local function openWizardUi(editMode)
             action = 'openWizard',
             data = data,
         })
-    end)
+    end
+
+    if preloaded then
+        show(preloaded)
+    else
+        QBCore.Functions.TriggerCallback('fivempro_charcreator:server:getSession', show)
+    end
 end
 
 RegisterNetEvent('fivempro_charcreator:client:openWizard', function(editMode)
     if inCreator or (ShopSession and ShopSession.IsActive()) then return end
     pendingEditMode = editMode == true
     closeLoadscreen()
-    setupScene()
-    openWizardUi(editMode)
+
+    QBCore.Functions.TriggerCallback('fivempro_charcreator:server:getSession', function(data)
+        if not data or not data.ok then return end
+        local isEdit = (editMode == true or pendingEditMode) and LocalPlayer.state.isLoggedIn
+        if isEdit then
+            setupInPlaceEdit(data)
+        else
+            setupScene()
+        end
+        openWizardUi(editMode, data)
+    end)
 end)
 
 RegisterNetEvent('fivempro_charcreator:client:applyAppearance', function(data)
@@ -145,6 +195,11 @@ RegisterNetEvent('fivempro_charcreator:client:finishCreate', function(data)
             TriggerServerEvent('qb-clothing:saveSkin', model, data.skin)
         end
     end
+    if data.spawn then
+        local s = data.spawn
+        SetEntityCoords(ped, s.x, s.y, s.z, false, false, false, false)
+        SetEntityHeading(ped, s.w or 0.0)
+    end
     Wait(500)
     TriggerEvent('QBCore:Client:OnPlayerLoaded')
 end)
@@ -189,18 +244,19 @@ end)
 
 RegisterNUICallback('setGender', function(data, cb)
     local g = data.gender
-    local model = CharAppearance.modelHash(g)
-    if previewPed ~= 0 and DoesEntityExist(previewPed) then
-        DeleteEntity(previewPed)
+    if inPlaceMode then
+        local model = CharAppearance.modelHash(g)
+        loadModel(model)
+        SetPlayerModel(PlayerId(), model)
+        SetPedDefaultComponentVariation(PlayerPedId())
+        previewPed = PlayerPedId()
+        FreezeEntityPosition(previewPed, true)
+        CharAppearance.setPreviewPed(previewPed)
+        CharAppearance.init(g)
+        CharAppearance.applyToPed(previewPed, CharAppearance.getSkin())
+    else
+        createInteriorPed(g)
     end
-    loadModel(model)
-    local c = Config.PedCoords
-    previewPed = CreatePed(2, model, c.x, c.y, c.z - 0.98, c.w, false, true)
-    SetEntityInvincible(previewPed, true)
-    FreezeEntityPosition(previewPed, true)
-    CharAppearance.setPreviewPed(previewPed)
-    CharAppearance.init(g)
-    CharAppearance.applyToPed(previewPed, CharAppearance.getSkin())
     cb('ok')
 end)
 
@@ -209,14 +265,19 @@ RegisterNUICallback('applyPatch', function(data, cb)
     cb('ok')
 end)
 
-RegisterNUICallback('applyOutfit', function(data, cb)
-    CharAppearance.applyOutfit(data.outfit, data.gender)
-    cb('ok')
-end)
-
 RegisterNUICallback('randomize', function(data, cb)
     local skin = CharAppearance.randomize(data.gender)
     cb({ skin = skin })
+end)
+
+RegisterNUICallback('setClothing', function(data, cb)
+    CharAppearance.setComponent(data.key, data.item, data.texture)
+    cb('ok')
+end)
+
+RegisterNUICallback('getClothingLimits', function(_, cb)
+    local items = Config.CreatorClothingItems or Config.ClothingShopItems or {}
+    cb(CharAppearance.getClothingLimits(previewPed, items))
 end)
 
 RegisterNUICallback('setCamera', function(data, cb)
@@ -250,14 +311,22 @@ end)
 RegisterNUICallback('previewCharacter', function(data, cb)
     if not data.model or not data.skin then return cb('ok') end
     local model = type(data.model) == 'string' and joaat(data.model) or tonumber(data.model)
-    if previewPed ~= 0 and DoesEntityExist(previewPed) then DeleteEntity(previewPed) end
-    loadModel(model)
-    local c = Config.PedCoords
-    previewPed = CreatePed(2, model, c.x, c.y, c.z - 0.98, c.w, false, true)
-    SetEntityInvincible(previewPed, true)
-    FreezeEntityPosition(previewPed, true)
-    CharAppearance.setPreviewPed(previewPed)
-    CharAppearance.loadFromJson(data.skin)
+    if inPlaceMode then
+        loadModel(model)
+        SetPlayerModel(PlayerId(), model)
+        previewPed = PlayerPedId()
+        CharAppearance.setPreviewPed(previewPed)
+        CharAppearance.loadFromJson(data.skin)
+    else
+        if previewPed ~= 0 and DoesEntityExist(previewPed) then DeleteEntity(previewPed) end
+        loadModel(model)
+        local c = Config.PedCoords
+        previewPed = CreatePed(2, model, c.x, c.y, c.z - 0.98, c.w, false, true)
+        SetEntityInvincible(previewPed, true)
+        FreezeEntityPosition(previewPed, true)
+        CharAppearance.setPreviewPed(previewPed)
+        CharAppearance.loadFromJson(data.skin)
+    end
     cb('ok')
 end)
 

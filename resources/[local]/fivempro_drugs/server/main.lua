@@ -392,7 +392,9 @@ RegisterNetEvent('fivempro_drugs:server:testGiveKit', function(kitKey)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
     for item, amount in pairs(kit) do
-        Player.Functions.AddItem(item, amount)
+        if not Player.Functions.AddItem(item, amount) then
+            return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko duoti: ' .. item, 'error')
+        end
     end
     TriggerClientEvent('QBCore:Notify', src, 'Test rinkinys išduotas.', 'success')
 end)
@@ -405,7 +407,9 @@ RegisterNetEvent('fivempro_drugs:server:testGiveWeaponKit', function(kitKey)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
     for item, amount in pairs(kit) do
-        Player.Functions.AddItem(item, amount)
+        if not Player.Functions.AddItem(item, amount) then
+            return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko duoti: ' .. item, 'error')
+        end
     end
     TriggerClientEvent('QBCore:Notify', src, 'Ginklas ir kulkos išduoti (test).', 'success')
 end)

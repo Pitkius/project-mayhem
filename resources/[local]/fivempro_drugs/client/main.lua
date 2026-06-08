@@ -304,60 +304,57 @@ local function openWeaponTestMenu()
     TriggerEvent('qb-menu:client:openMenu', rows, false, true)
 end
 
+local function spawnHubPed(cfg, onTarget)
+    if not cfg then return 0 end
+    local model = joaat(cfg.model or 's_m_y_dealer_01')
+    RequestModel(model)
+    local t = GetGameTimer() + 8000
+    while not HasModelLoaded(model) and GetGameTimer() < t do Wait(10) end
+    if not HasModelLoaded(model) then return 0 end
+    local c = cfg.coords
+    local ped = CreatePed(0, model, c.x, c.y, c.z, c.w, false, false)
+    SetEntityInvincible(ped, true)
+    FreezeEntityPosition(ped, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    PlaceObjectOnGroundProperly(ped)
+    if cfg.scenario then
+        TaskStartScenarioInPlace(ped, cfg.scenario, 0, true)
+    end
+    if onTarget then onTarget(ped) end
+    SetModelAsNoLongerNeeded(model)
+    return ped
+end
+
 local function spawnWeaponTestNpc()
     if not Config.EnableDrugTestNPC or not Config.WeaponTestNPC then return end
-    local cfg = Config.WeaponTestNPC
-    local model = joaat(cfg.model or 's_m_y_ammucity_01')
-    RequestModel(model)
-    while not HasModelLoaded(model) do Wait(10) end
-    local c = cfg.coords
-    weaponTestPed = CreatePed(0, model, c.x, c.y, c.z - 1.0, c.w, false, false)
-    SetEntityInvincible(weaponTestPed, true)
-    FreezeEntityPosition(weaponTestPed, true)
-    SetBlockingOfNonTemporaryEvents(weaponTestPed, true)
-    if cfg.scenario then
-        TaskStartScenarioInPlace(weaponTestPed, cfg.scenario, 0, true)
-    end
-    if GetResourceState('qb-target') == 'started' then
-        exports['qb-target']:AddTargetEntity(weaponTestPed, {
+    weaponTestPed = spawnHubPed(Config.WeaponTestNPC, function(ped)
+        exports['qb-target']:AddTargetEntity(ped, {
             options = {
                 {
                     icon = 'fas fa-gun',
-                    label = 'Ginklų test meniu',
+                    label = Config.WeaponTestNPC.label or 'Ginklų testas',
                     action = openWeaponTestMenu,
                 },
             },
-            distance = 2.5,
+            distance = Config.InteractDistance or 2.5,
         })
-    end
+    end)
 end
 
 local function spawnTestNpc()
     if not Config.EnableDrugTestNPC or not Config.TestNPC then return end
-    local cfg = Config.TestNPC
-    local model = joaat(cfg.model or 's_m_y_dealer_01')
-    RequestModel(model)
-    while not HasModelLoaded(model) do Wait(10) end
-    local c = cfg.coords
-    testPed = CreatePed(0, model, c.x, c.y, c.z - 1.0, c.w, false, false)
-    SetEntityInvincible(testPed, true)
-    FreezeEntityPosition(testPed, true)
-    SetBlockingOfNonTemporaryEvents(testPed, true)
-    if cfg.scenario then
-        TaskStartScenarioInPlace(testPed, cfg.scenario, 0, true)
-    end
-    if GetResourceState('qb-target') == 'started' then
-        exports['qb-target']:AddTargetEntity(testPed, {
+    testPed = spawnHubPed(Config.TestNPC, function(ped)
+        exports['qb-target']:AddTargetEntity(ped, {
             options = {
                 {
                     icon = 'fas fa-vial',
-                    label = 'Drugs test meniu',
+                    label = Config.TestNPC.label or 'Narkotikų testas',
                     action = openTestMenu,
                 },
             },
-            distance = 2.5,
+            distance = Config.InteractDistance or 2.5,
         })
-    end
+    end)
 end
 
 --- Violetiniai žymekliai ant žemės — matosi eilė (tik test režime)
@@ -367,7 +364,7 @@ CreateThread(function()
         local sleep = 800
         local ped = PlayerPedId()
         local pos = GetEntityCoords(ped)
-        local hub = Config.DevHub and Config.DevHub.blipCoords
+        local hub = Config.DevHub and (Config.DevHub.center or Config.DevHub.blipCoords)
         if hub and #(pos - hub) < 55.0 then
             sleep = 0
             for _, st in ipairs(Config.Stations or {}) do
@@ -382,7 +379,10 @@ CreateThread(function()
 end)
 
 CreateThread(function()
-    Wait(1500)
+    while GetResourceState('qb-target') ~= 'started' do
+        Wait(250)
+    end
+    Wait(500)
     setupStationBlips()
     setupStations()
     spawnTestNpc()

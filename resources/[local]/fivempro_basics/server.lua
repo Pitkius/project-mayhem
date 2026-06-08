@@ -36,6 +36,25 @@ local function resolveTarget(source, argValue)
     return QBCore.Functions.GetPlayer(source)
 end
 
+local function isFemale(player)
+    local ch = player and player.PlayerData and player.PlayerData.charinfo
+    return ch and ch.gender == 1
+end
+
+local function healNotifyText(player)
+    if isFemale(player) then
+        return 'Jūs buvote sėkmingai pagydyta.'
+    end
+    return 'Jūs buvote sėkmingai pagydytas.'
+end
+
+local function reviveNotifyText(player)
+    if isFemale(player) then
+        return 'Jūs buvote sėkmingai atgaivinta.'
+    end
+    return 'Jūs buvote sėkmingai atgaivintas.'
+end
+
 QBCore.Commands.Add('revive', 'Admin revive su max maistu/vandeniu', {
     { name = 'id', help = 'Server ID (optional)' }
 }, false, function(source, args)
@@ -49,7 +68,7 @@ QBCore.Commands.Add('revive', 'Admin revive su max maistu/vandeniu', {
     target.Functions.SetMetaData('inlaststand', false)
     setNeedsFull(target)
     TriggerClientEvent('fivempro_basics:client:adminRevive', target.PlayerData.source)
-    TriggerClientEvent('QBCore:Notify', target.PlayerData.source, 'Admin revive + needs atnaujinti', 'success')
+    TriggerClientEvent('QBCore:Notify', target.PlayerData.source, reviveNotifyText(target), 'success')
 end, 'admin')
 
 QBCore.Commands.Add('heal', 'Admin heal su max maistu/vandeniu', {
@@ -63,7 +82,7 @@ QBCore.Commands.Add('heal', 'Admin heal su max maistu/vandeniu', {
 
     setNeedsFull(target)
     TriggerClientEvent('fivempro_basics:client:adminHeal', target.PlayerData.source)
-    TriggerClientEvent('QBCore:Notify', target.PlayerData.source, 'Admin heal + needs atnaujinti', 'success')
+    TriggerClientEvent('QBCore:Notify', target.PlayerData.source, healNotifyText(target), 'success')
 end, 'admin')
 
 QBCore.Commands.Add('coords', 'Ijungti/isjungti savo koordinates ekrano virsuje (admin)', {}, false, function(source)

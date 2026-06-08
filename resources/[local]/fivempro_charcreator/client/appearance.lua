@@ -95,6 +95,14 @@ function CharAppearance.applyPatch(patch)
     end
 end
 
+local VARIATION_IDS = {
+    mask = 1, arms = 3, pants = 4, bag = 5, shoes = 6, accessory = 7,
+    ['t-shirt'] = 8, vest = 9, decals = 10, torso2 = 11,
+}
+local PROP_IDS = {
+    hat = 0, glass = 1, ear = 2, watch = 6, bracelet = 7,
+}
+
 function CharAppearance.setComponent(skinKey, item, texture)
     if not currentSkin then return end
     if not currentSkin[skinKey] then
@@ -105,6 +113,45 @@ function CharAppearance.setComponent(skinKey, item, texture)
     if previewPed and previewPed ~= 0 then
         CharAppearance.applyToPed(previewPed, currentSkin)
     end
+end
+
+function CharAppearance.getClothingLimits(ped, items)
+    ped = ped or previewPed
+    local out = {}
+    for _, cfg in ipairs(items or {}) do
+        local maxItem = cfg.maxItem or 100
+        local maxTex = cfg.maxTex or 15
+        local minItem = cfg.propMin
+        if ped and ped ~= 0 and DoesEntityExist(ped) then
+            local varId = VARIATION_IDS[cfg.key]
+            if varId then
+                local n = GetNumberOfPedDrawableVariations(ped, varId)
+                if n and n > 0 then maxItem = n - 1 end
+                local cur = currentSkin and currentSkin[cfg.key] and currentSkin[cfg.key].item or 0
+                if cur < 0 then cur = 0 end
+                local texN = GetNumberOfPedTextureVariations(ped, varId, cur)
+                if texN and texN > 0 then maxTex = texN - 1 end
+            end
+            local propId = PROP_IDS[cfg.key]
+            if propId then
+                local n = GetNumberOfPedPropDrawableVariations(ped, propId)
+                if n and n > 0 then maxItem = n - 1 end
+                local cur = currentSkin and currentSkin[cfg.key] and currentSkin[cfg.key].item or -1
+                if cur < 0 then cur = 0 end
+                local texN = GetNumberOfPedPropTextureVariations(ped, propId, cur)
+                if texN and texN > 0 then maxTex = texN - 1 end
+                if minItem == nil then minItem = -1 end
+            end
+        end
+        out[#out + 1] = {
+            key = cfg.key,
+            label = cfg.label,
+            maxItem = maxItem,
+            maxTex = maxTex,
+            minItem = minItem,
+        }
+    end
+    return out
 end
 
 function CharAppearance.applyOutfit(outfitKey, gender)

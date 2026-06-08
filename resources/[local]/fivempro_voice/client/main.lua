@@ -101,6 +101,16 @@ local function onTalkEnd()
     stopFaceAnim(ped)
 end
 
+AddStateBagChangeHandler('radioActive', nil, function(bagName, _, value)
+    local sid = tonumber(bagName:match('player:(%d+)'))
+    if sid ~= GetPlayerServerId(PlayerId()) then return end
+    if value then
+        local ped = PlayerPedId()
+        stopGesture(ped)
+        stopFaceAnim(ped)
+    end
+end)
+
 CreateThread(function()
     while GetResourceState('pma-voice') ~= 'started' do
         Wait(500)

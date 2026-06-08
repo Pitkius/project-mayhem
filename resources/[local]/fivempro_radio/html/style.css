@@ -1,25 +1,10 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-    --bg: #08080c;
-    --device: #121218;
-    --device-edge: #2a2a34;
-    --screen: #0c0c12;
-    --purple: #7c3aed;
-    --purple-lit: #a78bfa;
-    --purple-btn: #6d28d9;
-    --green: #22c55e;
-    --green-lit: #4ade80;
-    --text: #f1f5f9;
-    --muted: #64748b;
-    --panel: #16161f;
-}
-
 html, body {
     background: transparent !important;
     overflow: hidden;
     font-family: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
-    color: var(--text);
+    color: #f1f5f9;
 }
 
 .hidden { display: none !important; }
@@ -34,405 +19,213 @@ html, body {
 
 .radio-app:not(.hidden) { pointer-events: auto; }
 
-.radio-stage {
-    position: relative;
+.mm-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
-    filter: drop-shadow(0 28px 56px rgba(0, 0, 0, 0.75));
-}
-
-.radio-close {
-    position: absolute;
-    top: -6px;
-    right: -12px;
-    z-index: 20;
-    width: 34px;
-    height: 34px;
-    border: 1px solid rgba(167, 139, 250, 0.45);
-    border-radius: 50%;
-    background: rgba(12, 10, 20, 0.95);
-    color: #e2e8f0;
-    font-size: 1.2rem;
-    cursor: pointer;
-}
-
-/* Brand header */
-.radio-brand {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.radio-brand__icon {
-    width: 52px;
-    height: 52px;
-    color: var(--purple-lit);
-    filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.55));
-}
-
-.radio-brand__text h1 {
-    font-size: 1.75rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    line-height: 1;
-}
-
-.radio-brand__text p {
-    margin-top: 4px;
-    font-size: 0.62rem;
-    letter-spacing: 0.22em;
-    color: var(--muted);
-    font-weight: 600;
-}
-
-/* Device shell */
-.radio-device {
-    position: relative;
-    width: min(320px, 38vw);
-    padding: 52px 22px 28px;
-    background: linear-gradient(165deg, #1e1e28 0%, var(--device) 35%, #0a0a0f 100%);
-    border-radius: 22px 22px 28px 28px;
-    border: 2px solid var(--device-edge);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.06),
-        inset 0 -12px 32px rgba(0, 0, 0, 0.5),
-        0 10px 0 #050508;
-}
-
-.radio-device__hardware { pointer-events: none; }
-
-.radio-antenna {
-    position: absolute;
-    top: -42px;
-    left: 28px;
-    width: 10px;
-    height: 56px;
-    background: linear-gradient(90deg, #4b5563, #9ca3af 50%, #6b7280);
-    border-radius: 4px 4px 2px 2px;
-    transform: rotate(-6deg);
-    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.4);
-}
-
-.radio-knob {
-    position: absolute;
-    top: 10px;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 32% 28%, #d1d5db, #4b5563 65%, #1f2937);
-    border: 2px solid #374151;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
-}
-
-.radio-knob--a { left: 50%; transform: translateX(-52px); }
-.radio-knob--b { left: 50%; transform: translateX(16px); }
-
-.radio-side {
-    position: absolute;
-    top: 38%;
-    width: 8px;
-    height: 48px;
-    background: linear-gradient(180deg, #374151, #1f2937);
-    border-radius: 3px;
-}
-
-.radio-side--l { left: 4px; }
-.radio-side--r { right: 4px; }
-
-.radio-grill {
-    position: absolute;
-    left: 18px;
-    right: 18px;
-    bottom: 10px;
-    height: 22px;
-    border-radius: 6px;
-    background: repeating-linear-gradient(90deg, #0a0a0f, #0a0a0f 2px, #252530 2px, #252530 4px);
-    border: 1px solid #3f3f4a;
-    opacity: 0.85;
-}
-
-/* LCD */
-.radio-screen {
-    position: relative;
-    z-index: 2;
-    padding: 12px 12px 10px;
-    background: var(--screen);
-    border-radius: 14px;
-    border: 1px solid #1e1e2a;
-    box-shadow: inset 0 0 24px rgba(124, 58, 237, 0.08);
-}
-
-.screen-status {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.65rem;
-    color: var(--muted);
-    margin-bottom: 6px;
-}
-
-.screen-status__right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.signal-mini {
-    display: flex;
-    align-items: flex-end;
-    gap: 2px;
-    height: 10px;
-}
-
-.signal-mini span {
-    width: 3px;
-    background: #334155;
-    border-radius: 1px;
-}
-
-.signal-mini span:nth-child(1) { height: 3px; }
-.signal-mini span:nth-child(2) { height: 5px; }
-.signal-mini span:nth-child(3) { height: 7px; }
-.signal-mini span:nth-child(4) { height: 9px; }
-
-.radio-app.is-connected .signal-mini span,
-.radio-app.is-connected .signal-bars span.on {
-    background: var(--green);
-}
-
-.screen-signal-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-    font-size: 0.58rem;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-}
-
-.signal-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 14px;
-}
-
-.signal-bars span {
-    width: 4px;
-    background: #334155;
-    border-radius: 1px;
-}
-
-.signal-bars span:nth-child(1) { height: 5px; }
-.signal-bars span:nth-child(2) { height: 8px; }
-.signal-bars span:nth-child(3) { height: 11px; }
-.signal-bars span:nth-child(4) { height: 14px; }
-
-.signal-bars span.on { background: var(--green); }
-
-.screen-lock {
-    margin-left: auto;
-    color: var(--purple-lit);
-    opacity: 0;
-}
-
-.screen-lock.visible { opacity: 1; }
-
-.screen-channel {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin: 4px 0 6px;
-}
-
-.ch-arrow {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--muted);
-    font-size: 1.4rem;
-    line-height: 1;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-}
-
-.ch-arrow:hover {
-    background: rgba(124, 58, 237, 0.2);
-    color: var(--purple-lit);
-}
-
-.screen-channel__num {
-    font-size: clamp(2.8rem, 8vw, 3.4rem);
-    font-weight: 800;
-    line-height: 1;
-    color: var(--purple-lit);
-    text-shadow: 0 0 20px rgba(167, 139, 250, 0.45);
-    min-width: 2.2ch;
-    text-align: center;
-}
-
-.screen-title {
-    text-align: center;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    color: var(--text);
-    margin-bottom: 4px;
-}
-
-.screen-meta {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 0.58rem;
-    color: var(--muted);
-    margin-bottom: 2px;
-}
-
-.screen-badge {
-    padding: 2px 8px;
-    border-radius: 4px;
-    background: rgba(124, 58, 237, 0.35);
-    color: var(--purple-lit);
-    font-weight: 800;
-    font-size: 0.55rem;
-    letter-spacing: 0.06em;
-}
-
-.screen-alias {
-    text-align: center;
-    font-size: 0.55rem;
-    color: var(--purple-lit);
-    min-height: 0.85em;
-    margin-bottom: 6px;
-}
-
-.screen-wave {
-    margin: 8px 0 10px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.35;
-    transition: opacity 0.3s;
-}
-
-.radio-app.is-connected .screen-wave { opacity: 1; }
-
-#waveCanvas {
-    width: 100%;
-    max-width: 280px;
-    height: 48px;
-}
-
-.screen-footer {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.58rem;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    margin-bottom: 10px;
-}
-
-.screen-footer__state {
-    color: var(--muted);
-    font-weight: 700;
-}
-
-.screen-footer__state.on {
-    color: var(--green-lit);
-}
-
-/* Buttons */
-.btn-connect {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     gap: 10px;
-    padding: 12px 16px;
+    filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.72));
+}
+
+/* —— MEINMACHT walkie body —— */
+.mm-radio {
+    position: relative;
+    width: 196px;
+    padding: 38px 14px 20px;
+    background: linear-gradient(168deg, #2a2a2e 0%, #141416 28%, #0c0c0e 72%, #18181c 100%);
+    border-radius: 14px 14px 18px 18px;
+    border: 1px solid #3a3a42;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.07),
+        inset 0 -8px 20px rgba(0, 0, 0, 0.55),
+        0 6px 0 #050506;
+}
+
+.mm-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    pointer-events: none;
+}
+
+.mm-knob {
+    position: absolute;
+    top: 6px;
+    left: 14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #c8c8cc, #5a5a62 55%, #2a2a30);
+    border: 2px solid #484850;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.mm-preset-label {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.42rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.mm-antenna {
+    position: absolute;
+    top: -28px;
+    right: 18px;
+    width: 9px;
+    height: 44px;
+    background: linear-gradient(90deg, #3a3a40, #8a8a92 45%, #5a5a62);
+    border-radius: 4px 4px 2px 2px;
+    transform: rotate(4deg);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.35);
+}
+
+.mm-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
     margin-bottom: 8px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(180deg, #8b5cf6 0%, var(--purple-btn) 100%);
-    color: #fff;
+    color: #f0f0f2;
+}
+
+.mm-logo {
+    width: 22px;
+    height: 16px;
+    opacity: 0.95;
+}
+
+.mm-brand-text {
     font-size: 0.72rem;
     font-weight: 800;
-    letter-spacing: 0.12em;
-    cursor: pointer;
-    box-shadow: 0 4px 16px rgba(109, 40, 217, 0.45);
-    transition: transform 0.12s, filter 0.12s;
+    letter-spacing: 0.18em;
 }
 
-.btn-connect:hover { filter: brightness(1.08); }
-.btn-connect:active { transform: scale(0.98); }
-
-.btn-connect.is-connected {
-    background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-.btn-connect__icon { color: #fff; opacity: 0.95; }
-
-.screen-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.btn-action {
+/* Olive LCD */
+.mm-lcd {
+    margin: 0 2px 10px;
+    padding: 10px 8px 8px;
+    background: linear-gradient(180deg, #b4c48a 0%, #9db070 45%, #8fa364 100%);
+    border-radius: 6px;
+    border: 2px solid #1a1a1a;
+    box-shadow:
+        inset 0 2px 6px rgba(0, 0, 0, 0.22),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.15);
+    min-height: 58px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 12px 8px;
-    border: 1px solid #2a2a36;
-    border-radius: 12px;
-    background: linear-gradient(180deg, #1a1a24 0%, #12121a 100%);
-    color: #cbd5e1;
-    font-size: 0.58rem;
+}
+
+.mm-lcd-freq {
+    font-family: "Courier New", "Lucida Console", monospace;
+    font-size: 2.05rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    line-height: 1;
+    color: #1a2210;
+    letter-spacing: 0.04em;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.mm-lcd-meta {
+    margin-top: 4px;
+    font-size: 0.48rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: rgba(26, 34, 16, 0.72);
+    text-align: center;
+    min-height: 0.7em;
+    text-transform: uppercase;
+}
+
+.radio-app.is-connected .mm-lcd {
+    box-shadow:
+        inset 0 2px 6px rgba(0, 0, 0, 0.22),
+        inset 0 0 12px rgba(120, 180, 60, 0.35);
+}
+
+/* 3×2 button pad */
+.mm-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.mm-key {
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #2e2e34 0%, #1a1a1e 100%);
+    border: 1px solid #404048;
+    color: #e8e8ec;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    display: grid;
+    place-items: center;
+    transition: background 0.12s, transform 0.1s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
-.btn-action:hover {
-    border-color: rgba(124, 58, 237, 0.45);
-    background: linear-gradient(180deg, #222230 0%, #16161f 100%);
+.mm-key svg {
+    width: 18px;
+    height: 18px;
+    opacity: 0.9;
 }
 
-.btn-action svg { opacity: 0.9; }
-
-.btn-action__led {
-    font-size: 0.55rem;
-    font-weight: 800;
-    color: var(--muted);
+.mm-key--num {
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: "Segoe UI", sans-serif;
 }
 
-.btn-action__led.on {
-    color: var(--green-lit);
+.mm-key:hover {
+    background: linear-gradient(180deg, #3a3a42 0%, #242428 100%);
 }
 
-.radio-hint {
-    font-size: 0.68rem;
-    color: var(--muted);
+.mm-key:active {
+    transform: scale(0.94);
+    background: #141418;
+}
+
+.mm-key.is-active {
+    background: linear-gradient(180deg, #4a5a38 0%, #3a4a2a 100%);
+    border-color: #6a7a52;
+    color: #e8f0d8;
+}
+
+.mm-key.is-muted svg {
+    opacity: 0.45;
+}
+
+.mm-grill {
+    height: 16px;
+    margin: 0 4px;
+    border-radius: 4px;
+    background:
+        radial-gradient(circle, #0a0a0c 1px, transparent 1px) 0 0 / 5px 5px,
+        linear-gradient(180deg, #1a1a1e, #0e0e12);
+    border: 1px solid #333338;
+    opacity: 0.9;
+}
+
+.mm-hint {
+    font-size: 0.65rem;
+    color: rgba(200, 200, 210, 0.75);
     text-align: center;
 }
 
-.radio-hint kbd {
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: rgba(124, 58, 237, 0.2);
-    color: var(--purple-lit);
-    border: 1px solid rgba(124, 58, 237, 0.35);
+.mm-hint kbd {
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.62rem;
 }
 
 /* Modal */
@@ -443,30 +236,31 @@ html, body {
     place-items: center;
     background: rgba(0, 0, 0, 0.55);
     z-index: 30;
+    pointer-events: auto;
 }
 
 .modal__card {
-    width: min(360px, 92vw);
-    padding: 20px;
-    border-radius: 14px;
-    background: linear-gradient(145deg, #1a1828, #0e0c16);
-    border: 1px solid rgba(124, 58, 237, 0.4);
+    width: min(340px, 92vw);
+    padding: 18px;
+    border-radius: 12px;
+    background: linear-gradient(145deg, #1e1c24, #101014);
+    border: 1px solid #4a4a54;
 }
 
 .modal__card h3 {
-    color: var(--purple-lit);
     margin-bottom: 12px;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
+    color: #c8c8d0;
 }
 
 .modal__card input {
     width: 100%;
     padding: 10px 12px;
     margin-bottom: 10px;
-    border-radius: 10px;
-    border: 1px solid #3f3f4a;
+    border-radius: 8px;
+    border: 1px solid #404048;
     background: rgba(0, 0, 0, 0.45);
-    color: var(--text);
+    color: #f1f5f9;
 }
 
 .field {
@@ -474,7 +268,7 @@ html, body {
     flex-direction: column;
     gap: 6px;
     margin-bottom: 10px;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     color: #94a3b8;
 }
 
@@ -487,14 +281,15 @@ html, body {
 .btn {
     padding: 8px 14px;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
+    font-size: 0.82rem;
 }
 
 .btn--ghost { background: rgba(255,255,255,0.08); color: #cbd5e1; }
-.btn--primary { background: linear-gradient(180deg, #8b5cf6, #6d28d9); color: #fff; }
+.btn--primary { background: linear-gradient(180deg, #6a6a72, #4a4a52); color: #fff; }
 
 .modal__hint { margin-top: 8px; font-size: 0.72rem; color: #94a3b8; min-height: 1em; }
-.modal__hint.ok { color: #6ee7b7; }
+.modal__hint.ok { color: #86efac; }
 .modal__hint.err { color: #fca5a5; }

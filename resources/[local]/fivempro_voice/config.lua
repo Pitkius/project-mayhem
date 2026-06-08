@@ -33,7 +33,6 @@ Config.GesturesMale = {
     { dict = 'gestures@m@standing@casual', anim = 'gesture_easy_now', duration = 2500 },
     { dict = 'gestures@m@standing@casual', anim = 'gesture_point', duration = 2200 },
     { dict = 'gestures@m@standing@casual', anim = 'gesture_me', duration = 2300 },
-    { dict = 'random@arrests', anim = 'generic_radio_chatter', duration = 3200 },
 }
 
 --- Moteriški gestai

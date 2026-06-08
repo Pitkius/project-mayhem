@@ -87,11 +87,12 @@ local function buildMemberRow(src)
     local last = ci.lastname or ''
     local full = (first .. ' ' .. last):gsub('^%s+', ''):gsub('%s+$', '')
     if full == '' then full = 'Nežinomas' end
+    local alias = RadioAlias[src] or ''
     return {
         src = src,
         name = full,
-        alias = RadioAlias[src] or '',
-        line = full,
+        alias = alias,
+        line = alias ~= '' and alias or full,
     }
 end
 

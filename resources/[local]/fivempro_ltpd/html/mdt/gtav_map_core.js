@@ -7,6 +7,9 @@ window.GtavMapCore = (function () {
     viewMax: { x: 4500, y: 6625 },
     offsetX: 0,
     offsetY: 0,
+    scaleX: 1,
+    scaleY: 1,
+    flipY: true,
     imageWidth: 2048,
     imageHeight: 2560,
   };
@@ -53,7 +56,7 @@ window.GtavMapCore = (function () {
       offsetY: num(t.offsetY, 0),
       scaleX: num(t.scaleX, 1),
       scaleY: num(t.scaleY, 1),
-      flipY: t.flipY === true,
+      flipY: t.flipY !== false,
       imgW: num(t.imageWidth, ISLAND.imageWidth),
       imgH: num(t.imageHeight, ISLAND.imageHeight),
       imageUrl: nuiImageUrl(file, resourceName),
@@ -61,8 +64,8 @@ window.GtavMapCore = (function () {
   }
 
   /**
-   * GTA (x,y) → Leaflet [lat, lng] (CRS.Simple: lat = Y, lng = X).
-   * Tas pats 1:1 principas kaip gaujų turf tinklelyje ir RiceaRaul GTA map.
+   * GTA (x,y) → Leaflet [lat, lng] — kaip pause map (šiaurė = mažesnis lat).
+   * Naudoja tuos pačius GetEntityCoords x/y kaip AddBlipForCoord.
    */
   function gameToLatLng(gx, gy, cfg) {
     if (!cfg) return [Number(gy) || 0, Number(gx) || 0];
@@ -78,29 +81,16 @@ window.GtavMapCore = (function () {
     const scaleY = cfg.scaleY || 1;
     const ox = cfg.offsetX || 0;
     const oy = cfg.offsetY || 0;
+    const flipY = cfg.flipY !== false;
 
     let tX = (x - cfg.coordMinX) / rangeX;
     let tY = (y - cfg.coordMinY) / rangeY;
     tX = Math.max(0, Math.min(1, tX));
     tY = Math.max(0, Math.min(1, tY));
-    if (cfg.flipY) tY = 1 - tY;
+    if (flipY) tY = 1 - tY;
 
     const lng = cfg.minX + tX * mapRangeX * scaleX + ox;
     const lat = cfg.minY + tY * mapRangeY * scaleY + oy;
-
-    if (
-      Math.abs(scaleX - 1) < 1e-6 &&
-      Math.abs(scaleY - 1) < 1e-6 &&
-      Math.abs(ox) < 1e-6 &&
-      Math.abs(oy) < 1e-6 &&
-      !cfg.flipY &&
-      Math.abs(cfg.coordMinX - cfg.minX) < 1e-3 &&
-      Math.abs(cfg.coordMinY - cfg.minY) < 1e-3 &&
-      Math.abs(cfg.coordMaxX - cfg.maxX) < 1e-3 &&
-      Math.abs(cfg.coordMaxY - cfg.maxY) < 1e-3
-    ) {
-      return [y, x];
-    }
     return [lat, lng];
   }
 
@@ -112,7 +102,7 @@ window.GtavMapCore = (function () {
     let tY = (Number(lat) - (cfg.offsetY || 0) - cfg.minY) / (mapRangeY * (cfg.scaleY || 1));
     tX = Math.max(0, Math.min(1, tX));
     tY = Math.max(0, Math.min(1, tY));
-    if (cfg.flipY) tY = 1 - tY;
+    if (cfg.flipY !== false) tY = 1 - tY;
     return {
       x: cfg.coordMinX + tX * (cfg.coordMaxX - cfg.coordMinX),
       y: cfg.coordMinY + tY * (cfg.coordMaxY - cfg.coordMinY),
