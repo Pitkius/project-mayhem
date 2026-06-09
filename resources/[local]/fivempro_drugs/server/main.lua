@@ -10,7 +10,22 @@ local function logAdmin(msg)
 end
 
 local function getProduct(id)
-    return Config.Products and Config.Products[id]
+    if Config.Products and Config.Products[id] then return Config.Products[id] end
+    return Config.WeaponProducts and Config.WeaponProducts[id]
+end
+
+local function getStationProductPool(st)
+    if st and st.mode == 'weapon' then
+        return Config.WeaponProducts or {}
+    end
+    return Config.Products or {}
+end
+
+local function getRecipe(productId, st)
+    if st and st.mode == 'weapon' then
+        return (Config.WeaponRecipes or {})[productId] or {}
+    end
+    return (Config.Recipes or {})[productId] or {}
 end
 
 local function getStation(id)
@@ -54,8 +69,8 @@ local function refundPartial(Player, list, percent)
     end
 end
 
-local function buildRecipeStatus(Player, productId)
-    local recipe = Config.Recipes[productId] or {}
+local function buildRecipeStatus(Player, productId, st)
+    local recipe = getRecipe(productId, st)
     local rows = {}
     for _, row in ipairs(recipe) do
         local it = Player.Functions.GetItemByName(row.item)
@@ -71,8 +86,8 @@ local function buildRecipeStatus(Player, productId)
     return rows
 end
 
-local function hasAllIngredients(Player, productId)
-    for _, row in ipairs(Config.Recipes[productId] or {}) do
+local function hasAllIngredients(Player, productId, st)
+    for _, row in ipairs(getRecipe(productId, st)) do
         if not countItem(Player, row.item, row.count) then
             return false
         end
@@ -143,7 +158,8 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:getStationUi', function(s
     if not Player then return cb({ ok = false }) end
 
     local products = {}
-    for pid, prod in pairs(Config.Products or {}) do
+    local pool = getStationProductPool(st)
+    for pid, prod in pairs(pool) do
         if prod.level == st.level then
             products[#products + 1] = {
                 id = pid,
@@ -154,7 +170,8 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:getStationUi', function(s
                 craftTimeSec = math.floor((prod.craftTimeMs or 30000) / 1000),
                 sellBase = prod.sellBase,
                 minigame = prod.minigame,
-                ingredients = buildRecipeStatus(Player, pid),
+                ingredients = buildRecipeStatus(Player, pid, st),
+                mode = st.mode or 'drugs',
             }
         end
     end
@@ -162,7 +179,7 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:getStationUi', function(s
 
     cb({
         ok = true,
-        station = { id = st.id, label = st.label, level = st.level },
+        station = { id = st.id, label = st.label, level = st.level, mode = st.mode or 'drugs' },
         products = products,
     })
 end)
@@ -188,11 +205,11 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:startCraft', function(src
 
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return cb({ ok = false }) end
-    if not hasAllIngredients(Player, productId) then
+    if not hasAllIngredients(Player, productId, st) then
         return cb({ ok = false, reason = 'Trūksta ingredientų.' })
     end
 
-    local recipe = Config.Recipes[productId] or {}
+    local recipe = getRecipe(productId, st)
     if not removeItems(Player, recipe) then
         return cb({ ok = false, reason = 'Nepavyko paimti ingredientų.' })
     end
@@ -259,6 +276,14 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:finishCraft', function(sr
         return cb({ ok = false, reason = 'Inventorius pilnas.' })
     end
 
+    if prod.bonusItems then
+        for _, bonus in ipairs(prod.bonusItems) do
+            if bonus.item and bonus.count and bonus.count > 0 then
+                Player.Functions.AddItem(bonus.item, bonus.count)
+            end
+        end
+    end
+
     local turfId = findTurfAtPlayer(src)
     if turfId then addTurfHeat(turfId, math.max(1, math.floor((prod.heatGain or 2) / 2))) end
     rollPolice(prod.policeChance, src, 'craft_high')
@@ -321,7 +346,7 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:tryNpcSell', function(src
     local turfId = findTurfAtPlayer(src)
     local price = prod.sellBase or 100
     if gang then
-        price = math.floor(price * (1.0 + ((tonumber(gang.reputation) or 0) * (sellCfg.reputationPriceFactor or 0.004)))))
+        price = math.floor(price * (1.0 + ((tonumber(gang.reputation) or 0) * (sellCfg.reputationPriceFactor or 0.004))))
     end
     if turfId and zoneHeat[turfId] and zoneHeat[turfId] > 40 then
         price = math.floor(price * 1.08)
@@ -384,6 +409,46 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:tryNpcSell', function(src
     })
 end)
 
+local function playerNearSupplyShop(src)
+    local cfg = Config.SupplyShopNPC
+    if not cfg or not cfg.coords then return false end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local p = GetEntityCoords(ped)
+    local c = cfg.coords
+    return #(p - vector3(c.x, c.y, c.z)) <= (Config.InteractDistance or 2.5) + 2.0
+end
+
+local function registerMaterialShop()
+    if GetResourceState('qb-inventory') ~= 'started' then return false end
+    local cfg = Config.MaterialShop
+    if not cfg or not cfg.name or not cfg.items then return false end
+    exports['qb-inventory']:CreateShop({
+        name = cfg.name,
+        label = cfg.label or 'Reikmenys',
+        slots = #cfg.items,
+        items = cfg.items,
+    })
+    return true
+end
+
+CreateThread(function()
+    Wait(1500)
+    registerMaterialShop()
+end)
+
+RegisterNetEvent('fivempro_drugs:server:openMaterialShop', function()
+    if not Config.EnableDrugTestNPC then return end
+    local src = source
+    if not playerNearSupplyShop(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo parduotuvės.', 'error')
+    end
+    if not registerMaterialShop() then
+        return TriggerClientEvent('QBCore:Notify', src, 'Parduotuvė nepasiekiama (qb-inventory).', 'error')
+    end
+    exports['qb-inventory']:OpenShop(src, Config.MaterialShop.name)
+end)
+
 RegisterNetEvent('fivempro_drugs:server:testGiveKit', function(kitKey)
     if not Config.EnableDrugTestNPC then return end
     local src = source
@@ -397,21 +462,6 @@ RegisterNetEvent('fivempro_drugs:server:testGiveKit', function(kitKey)
         end
     end
     TriggerClientEvent('QBCore:Notify', src, 'Test rinkinys išduotas.', 'success')
-end)
-
-RegisterNetEvent('fivempro_drugs:server:testGiveWeaponKit', function(kitKey)
-    if not Config.EnableDrugTestNPC then return end
-    local src = source
-    local kit = Config.WeaponTestKits and Config.WeaponTestKits[kitKey]
-    if not kit then return end
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
-    for item, amount in pairs(kit) do
-        if not Player.Functions.AddItem(item, amount) then
-            return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko duoti: ' .. item, 'error')
-        end
-    end
-    TriggerClientEvent('QBCore:Notify', src, 'Ginklas ir kulkos išduoti (test).', 'success')
 end)
 
 RegisterNetEvent('fivempro_drugs:server:testTriggerAlert', function()

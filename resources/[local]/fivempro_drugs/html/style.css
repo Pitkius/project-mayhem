@@ -21,6 +21,25 @@ body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; 
   padding: 16px 20px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.25);
 }
+.head-brand { display: flex; align-items: center; gap: 12px; }
+.head-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(124, 58, 237, 0.35), rgba(76, 29, 149, 0.5));
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  box-shadow: 0 0 18px rgba(124, 58, 237, 0.25);
+}
+.head-logo svg { width: 28px; height: 28px; }
+.head-server {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: #c4b5fd;
+  margin-bottom: 2px;
+}
 .head h1 { font-size: 20px; letter-spacing: 0.14em; font-weight: 700; }
 .head h1 span { color: #c084fc; }
 .sub { color: #a78bfa; font-size: 13px; margin-top: 4px; }

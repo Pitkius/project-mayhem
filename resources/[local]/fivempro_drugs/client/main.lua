@@ -3,7 +3,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local uiOpen = false
 local currentStationId = nil
 local testPed = 0
-local weaponTestPed = 0
+local supplyShopPed = 0
 local mapBlips = {}
 
 local function nui(msg, data)
@@ -248,6 +248,7 @@ end
 local function setupStations()
     if GetResourceState('qb-target') ~= 'started' then return end
     for _, st in ipairs(Config.Stations or {}) do
+        local isWeapon = st.mode == 'weapon'
         exports['qb-target']:AddCircleZone(('fivempro_drugs_%s'):format(st.id), st.coords, st.radius or 2.0, {
             name = ('fivempro_drugs_%s'):format(st.id),
             debugPoly = false,
@@ -255,8 +256,8 @@ local function setupStations()
         }, {
             options = {
                 {
-                    icon = 'fas fa-flask',
-                    label = ('Gamybos stotis: %s'):format(st.label),
+                    icon = isWeapon and 'fas fa-gun' or 'fas fa-flask',
+                    label = isWeapon and ('Ginklų gamyba: %s'):format(st.label) or ('Gamybos stotis: %s'):format(st.label),
                     action = function()
                         openStationUi(st.id)
                     end,
@@ -267,18 +268,20 @@ local function setupStations()
     end
 end
 
+local function openMaterialShop()
+    TriggerServerEvent('fivempro_drugs:server:openMaterialShop')
+end
+
 local function openTestMenu()
     if not Config.EnableDrugTestNPC then return end
     local rows = {
-        { header = 'Drugs test NPC', isMenuHeader = true },
-        { header = 'Start rinkinys (L1)', params = { event = 'fivempro_drugs:client:testKit', args = { kit = 'level1' } } },
-        { header = 'Vidutinis rinkinys (L2)', params = { event = 'fivempro_drugs:client:testKit', args = { kit = 'level2' } } },
-        { header = 'Aukštas rinkinys (L3)', params = { event = 'fivempro_drugs:client:testKit', args = { kit = 'level3' } } },
-        { header = 'Eilėje: L1 sandėliukas', params = { isAction = true, event = function() openStationUi('stash_grove') end } },
-        { header = 'Eilėje: L2 trap house', params = { isAction = true, event = function() openStationUi('trap_chamberlain') end } },
-        { header = 'Eilėje: L3 kartelis', params = { isAction = true, event = function() openStationUi('cartel_lab') end } },
-        { header = 'Test pardavimas (/drugsell)', txt = 'Laikyk produktą ir stovėk prie NPC', isMenuHeader = true },
-        { header = 'Test policijos alert', params = { isAction = true, event = function() TriggerServerEvent('fivempro_drugs:server:testTriggerAlert') end } },
+        { header = 'Narkotikų gamyba', isMenuHeader = true },
+        { header = 'Pirkti reikmenis (parduotuvė)', txt = 'Ingredientai ir ginklų dalys', params = { isAction = true, event = openMaterialShop } },
+        { header = 'L1 sandėliukas', params = { isAction = true, event = function() openStationUi('stash_grove') end } },
+        { header = 'L2 trap house', params = { isAction = true, event = function() openStationUi('trap_chamberlain') end } },
+        { header = 'L3 kartelis', params = { isAction = true, event = function() openStationUi('cartel_lab') end } },
+        { header = 'Ginklų dirbtuvė', params = { isAction = true, event = function() openStationUi('weapon_bench') end } },
+        { header = 'Pardavimas (/drugsell)', txt = 'Stovėk prie NPC su produktu inventoriuje', isMenuHeader = true },
         { header = 'Uždaryti', params = { event = 'qb-menu:client:closeMenu' } },
     }
     TriggerEvent('qb-menu:client:openMenu', rows, false, true)
@@ -287,22 +290,6 @@ end
 RegisterNetEvent('fivempro_drugs:client:testKit', function(data)
     TriggerServerEvent('fivempro_drugs:server:testGiveKit', data and data.kit or 'level1')
 end)
-
-RegisterNetEvent('fivempro_drugs:client:testWeaponKit', function(data)
-    TriggerServerEvent('fivempro_drugs:server:testGiveWeaponKit', data and data.kit or 'pistol')
-end)
-
-local function openWeaponTestMenu()
-    if not Config.EnableDrugTestNPC or not Config.WeaponTestNPC then return end
-    local rows = {
-        { header = 'Ginklų testas', isMenuHeader = true },
-        { header = 'Pistoletas + kulkos', params = { event = 'fivempro_drugs:client:testWeaponKit', args = { kit = 'pistol' } } },
-        { header = 'Karabinas + kulkos', params = { event = 'fivempro_drugs:client:testWeaponKit', args = { kit = 'rifle' } } },
-        { header = 'SMG + kulkos', params = { event = 'fivempro_drugs:client:testWeaponKit', args = { kit = 'smg' } } },
-        { header = 'Uždaryti', params = { event = 'qb-menu:client:closeMenu' } },
-    }
-    TriggerEvent('qb-menu:client:openMenu', rows, false, true)
-end
 
 local function spawnHubPed(cfg, onTarget)
     if not cfg then return 0 end
@@ -325,15 +312,15 @@ local function spawnHubPed(cfg, onTarget)
     return ped
 end
 
-local function spawnWeaponTestNpc()
-    if not Config.EnableDrugTestNPC or not Config.WeaponTestNPC then return end
-    weaponTestPed = spawnHubPed(Config.WeaponTestNPC, function(ped)
+local function spawnSupplyShopNpc()
+    if not Config.EnableDrugTestNPC or not Config.SupplyShopNPC then return end
+    supplyShopPed = spawnHubPed(Config.SupplyShopNPC, function(ped)
         exports['qb-target']:AddTargetEntity(ped, {
             options = {
                 {
-                    icon = 'fas fa-gun',
-                    label = Config.WeaponTestNPC.label or 'Ginklų testas',
-                    action = openWeaponTestMenu,
+                    icon = 'fas fa-store',
+                    label = Config.SupplyShopNPC.label or 'Nelegalūs reikmenys',
+                    action = openMaterialShop,
                 },
             },
             distance = Config.InteractDistance or 2.5,
@@ -348,7 +335,7 @@ local function spawnTestNpc()
             options = {
                 {
                     icon = 'fas fa-vial',
-                    label = Config.TestNPC.label or 'Narkotikų testas',
+                    label = Config.TestNPC.label or 'Narkotikų gamyba',
                     action = openTestMenu,
                 },
             },
@@ -386,7 +373,7 @@ CreateThread(function()
     setupStationBlips()
     setupStations()
     spawnTestNpc()
-    spawnWeaponTestNpc()
+    spawnSupplyShopNpc()
 end)
 
 AddEventHandler('onResourceStop', function(res)
@@ -399,7 +386,7 @@ AddEventHandler('onResourceStop', function(res)
     if testPed ~= 0 and DoesEntityExist(testPed) then
         DeleteEntity(testPed)
     end
-    if weaponTestPed ~= 0 and DoesEntityExist(weaponTestPed) then
-        DeleteEntity(weaponTestPed)
+    if supplyShopPed ~= 0 and DoesEntityExist(supplyShopPed) then
+        DeleteEntity(supplyShopPed)
     end
 end)

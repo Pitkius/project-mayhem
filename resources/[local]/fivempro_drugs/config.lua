@@ -289,6 +289,122 @@ Config.Stations = {
     { id = 'lab_sandy', label = 'L2 · Laboratorija', level = 2, coords = devRow(3.5), radius = 2.2, blip = false },
     { id = 'cartel_lab', label = 'L3 · Kartelis', level = 3, coords = devRow(7.0), radius = 2.2, blip = false },
     { id = 'secret_humane', label = 'L3 · Slapta lab.', level = 3, coords = devRow(10.5), radius = 2.2, blip = false },
+    { id = 'weapon_bench', label = 'Ginklų dirbtuvė', level = 1, mode = 'weapon', coords = devRow(17.5), radius = 2.2, blip = false },
+}
+
+--- Ginklų gamyba (atskira stotis, mode = weapon)
+Config.WeaponProducts = {
+    craft_pistol = {
+        label = 'Pistoletas',
+        level = 1,
+        output = 'weapon_pistol',
+        outputAmount = 1,
+        bonusItems = { { item = 'pistol_ammo', count = 60 } },
+        craftTimeMs = 38000,
+        risk = 'high',
+        minigame = 'skill',
+        failChance = 16,
+        policeChance = 14,
+        heatGain = 4,
+        sellBase = 0,
+        failLosePercent = 55,
+    },
+    craft_smg = {
+        label = 'SMG',
+        level = 1,
+        output = 'weapon_smg',
+        outputAmount = 1,
+        bonusItems = { { item = 'smg_ammo', count = 90 } },
+        craftTimeMs = 48000,
+        risk = 'high',
+        minigame = 'advanced',
+        failChance = 20,
+        policeChance = 18,
+        heatGain = 6,
+        sellBase = 0,
+        failLosePercent = 60,
+    },
+    craft_rifle = {
+        label = 'Karabinas',
+        level = 1,
+        output = 'weapon_carbinerifle',
+        outputAmount = 1,
+        bonusItems = { { item = 'rifle_ammo', count = 90 } },
+        craftTimeMs = 55000,
+        risk = 'extreme',
+        minigame = 'advanced',
+        failChance = 22,
+        policeChance = 20,
+        heatGain = 8,
+        sellBase = 0,
+        failLosePercent = 65,
+    },
+}
+
+Config.WeaponRecipes = {
+    craft_pistol = {
+        { item = 'gun_frame', count = 1 },
+        { item = 'gun_barrel', count = 1 },
+        { item = 'gun_spring', count = 2 },
+        { item = 'gun_trigger', count = 1 },
+        { item = 'metal_scrap', count = 4 },
+    },
+    craft_smg = {
+        { item = 'gun_frame', count = 2 },
+        { item = 'gun_barrel', count = 2 },
+        { item = 'gun_spring', count = 4 },
+        { item = 'gun_trigger', count = 2 },
+        { item = 'weapon_parts', count = 3 },
+        { item = 'metal_scrap', count = 8 },
+    },
+    craft_rifle = {
+        { item = 'gun_frame', count = 2 },
+        { item = 'gun_barrel', count = 2 },
+        { item = 'gun_spring', count = 3 },
+        { item = 'gun_trigger', count = 2 },
+        { item = 'weapon_parts', count = 5 },
+        { item = 'metal_scrap', count = 10 },
+    },
+}
+
+--- Parduotuvė: visi craft ingredientai (qb-inventory shop)
+Config.MaterialShop = {
+    name = 'fivempro-illegal-supply',
+    label = 'Nelegalūs reikmenys',
+    items = {
+        -- L1 narkotikai
+        { name = 'weed_leaf', amount = 500, price = 22, slot = 1 },
+        { name = 'alcohol_base', amount = 500, price = 18, slot = 2 },
+        { name = 'vape_liquid_base', amount = 500, price = 16, slot = 3 },
+        { name = 'empty_cart', amount = 500, price = 12, slot = 4 },
+        { name = 'empty_bottle', amount = 500, price = 10, slot = 5 },
+        { name = 'filter', amount = 500, price = 8, slot = 6 },
+        { name = 'packaging', amount = 500, price = 9, slot = 7 },
+        -- L2 narkotikai
+        { name = 'poppy_flower', amount = 500, price = 28, slot = 8 },
+        { name = 'meth_ingredient', amount = 500, price = 35, slot = 9 },
+        { name = 'pill_powder', amount = 500, price = 30, slot = 10 },
+        { name = 'mushroom_raw', amount = 500, price = 24, slot = 11 },
+        { name = 'chemical_mix', amount = 500, price = 40, slot = 12 },
+        { name = 'empty_bag', amount = 500, price = 11, slot = 13 },
+        { name = 'scale', amount = 100, price = 85, slot = 14 },
+        { name = 'lab_kit', amount = 50, price = 220, slot = 15 },
+        { name = 'gloves', amount = 200, price = 25, slot = 16 },
+        -- L3 narkotikai
+        { name = 'coca_leaf', amount = 500, price = 45, slot = 17 },
+        { name = 'burner', amount = 100, price = 120, slot = 18 },
+        -- Ginklų dalys
+        { name = 'metal_scrap', amount = 500, price = 35, slot = 19 },
+        { name = 'gun_frame', amount = 200, price = 140, slot = 20 },
+        { name = 'gun_barrel', amount = 200, price = 165, slot = 21 },
+        { name = 'gun_spring', amount = 500, price = 28, slot = 22 },
+        { name = 'gun_trigger', amount = 300, price = 55, slot = 23 },
+        { name = 'weapon_parts', amount = 300, price = 95, slot = 24 },
+        -- Kulkos (papildomai)
+        { name = 'pistol_ammo', amount = 500, price = 12, slot = 25 },
+        { name = 'smg_ammo', amount = 500, price = 18, slot = 26 },
+        { name = 'rifle_ammo', amount = 500, price = 22, slot = 27 },
+    },
 }
 
 Config.Sell = {
@@ -314,29 +430,23 @@ Config.PoliceAlerts = {
 }
 
 local DRUG_TEST_POS = devRow(-14.0)
-local WEAPON_TEST_POS = devRow(14.0)
+local SUPPLY_SHOP_POS = devRow(-17.5)
 
 Config.TestNPC = {
     model = 's_m_y_dealer_01',
     coords = vector4(DRUG_TEST_POS.x, DRUG_TEST_POS.y, DRUG_TEST_POS.z, 149.51),
     scenario = 'WORLD_HUMAN_STAND_MOBILE',
-    label = 'Narkotikų testas',
+    label = 'Narkotikų gamyba',
     blip = false,
 }
 
---- Ginklų + kulkų testas (toje pačioje eilėje, gale)
-Config.WeaponTestNPC = {
-    model = 's_m_y_ammucity_01',
-    coords = vector4(WEAPON_TEST_POS.x, WEAPON_TEST_POS.y, WEAPON_TEST_POS.z, 329.51),
+--- Ingredientų parduotuvė (qb-inventory shop UI)
+Config.SupplyShopNPC = {
+    model = 's_m_m_linecook',
+    coords = vector4(SUPPLY_SHOP_POS.x, SUPPLY_SHOP_POS.y, SUPPLY_SHOP_POS.z, 149.51),
     scenario = 'WORLD_HUMAN_STAND_MOBILE',
-    label = 'Ginklų testas',
+    label = 'Nelegalūs reikmenys',
     blip = false,
-}
-
-Config.WeaponTestKits = {
-    pistol = { weapon_pistol = 1, pistol_ammo = 150 },
-    rifle = { weapon_carbinerifle = 1, rifle_ammo = 200 },
-    smg = { weapon_smg = 1, smg_ammo = 200 },
 }
 
 --- Test meniu — duoda itemus / atidaro UI

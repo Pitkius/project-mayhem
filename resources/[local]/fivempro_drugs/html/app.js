@@ -67,6 +67,13 @@ window.addEventListener("message", (e) => {
     const d = msg.data || {};
     state.products = d.products || [];
     state.selectedId = state.products[0] ? state.products[0].id : null;
+    const headTitle = document.getElementById("headTitle");
+    if (headTitle) {
+      const isWeapon = d.station && d.station.mode === "weapon";
+      headTitle.innerHTML = isWeapon
+        ? 'GINKLŲ <span>DIRBTUVĖ</span>'
+        : 'NELEGALI <span>GAMYBA</span>';
+    }
     document.getElementById("stationLabel").textContent = d.station
       ? `${d.station.label} · ${d.station.level} lygis`
       : "Stotis";

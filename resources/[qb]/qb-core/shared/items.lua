@@ -520,4 +520,12 @@ QBShared.Items = {
     mushroom_pack                = { name = 'mushroom_pack', label = 'Grybų pakuotė', weight = 110, type = 'item', image = 'weed_baggy.png', unique = false, useable = false, shouldClose = false, description = 'Parduodamas produktas.' },
     cartel_pack                  = { name = 'cartel_pack', label = 'Kartelio mišinys', weight = 130, type = 'item', image = 'coke_small_brick.png', unique = false, useable = false, shouldClose = false, description = 'Aukščiausio lygio produktas.' },
 
+    -- fivempro_drugs — ginklų gamybos dalys
+    metal_scrap                  = { name = 'metal_scrap', label = 'Metalo laužas', weight = 120, type = 'item', image = 'ironore_raw.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava ginklų gamybai.' },
+    gun_frame                    = { name = 'gun_frame', label = 'Ginklo korpusas', weight = 350, type = 'item', image = 'aluminumore.png', unique = false, useable = false, shouldClose = false, description = 'Ginklo rėmas.' },
+    gun_barrel                   = { name = 'gun_barrel', label = 'Vamzdis', weight = 280, type = 'item', image = 'ironore.png', unique = false, useable = false, shouldClose = false, description = 'Ginklo vamzdis.' },
+    gun_spring                   = { name = 'gun_spring', label = 'Spyruoklė', weight = 40, type = 'item', image = 'copperore.png', unique = false, useable = false, shouldClose = false, description = 'Mechaninė spyruoklė.' },
+    gun_trigger                  = { name = 'gun_trigger', label = 'Užtaisas', weight = 60, type = 'item', image = 'drill.png', unique = false, useable = false, shouldClose = false, description = 'Ginklo užtaisas.' },
+    weapon_parts                 = { name = 'weapon_parts', label = 'Ginklo komponentai', weight = 180, type = 'item', image = 'screwdriverset.png', unique = false, useable = false, shouldClose = false, description = 'Sudėtinės ginklo dalys.' },
+
 }

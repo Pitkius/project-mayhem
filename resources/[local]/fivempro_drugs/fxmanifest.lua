@@ -32,6 +32,7 @@ dependencies {
     'qb-core',
     'qb-target',
     'qb-menu',
+    'qb-inventory',
     'oxmysql',
     'fivempro_gangs',
     'fivempro_dispatch',

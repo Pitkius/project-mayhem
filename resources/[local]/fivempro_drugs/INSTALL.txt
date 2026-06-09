@@ -5,8 +5,10 @@ fivempro_drugs — diegimas
 2. Itemai įrašyti į qb-core/shared/items.lua
 3. Restart: restart qb-core, restart fivempro_drugs
 
-Testavimas:
-- Config.EnableDrugTestNPC = true — NPC Grove (127, -1930)
+Testavimas (LS oro uostas):
+- Config.EnableDrugTestNPC = true — NPC eilėje + reikmenų parduotuvė (qb-inventory shop)
+- Ingredientus ir ginklų dalis perki parduotuvėje, ne nemokami rinkiniai
+- Ginklų dirbtuvė — atskira stotis (craft_pistol / craft_smg / craft_rifle)
 - /drugsell — parduoti artimiausiam NPC (turf zonoje gaujai — +įtaka)
 - qb-target — gamybos stotys (violetinis crafting UI)
 
