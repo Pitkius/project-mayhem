@@ -785,16 +785,16 @@ const InventoryContainer = Vue.createApp({
             }
         },
         inventoryError(slot) {
-            const slotElement = document.getElementById(`slot-${slot}`);
+            const slotElement = document.querySelector(`.item-slot[data-slot="${slot}"]`);
             if (slotElement) {
-                slotElement.style.backgroundColor = "red";
+                slotElement.classList.add("invalid-slot-highlight");
             }
             axios.post("https://qb-inventory/PlayDropFail", {}).catch((error) => {
                 console.error("Error playing drop fail:", error);
             });
             setTimeout(() => {
                 if (slotElement) {
-                    slotElement.style.backgroundColor = "";
+                    slotElement.classList.remove("invalid-slot-highlight");
                 }
             }, 1000);
         },

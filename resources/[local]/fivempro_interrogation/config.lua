@@ -1,5 +1,24 @@
 Config = {}
 
+--- Žemėlapio blipai (policijos stotys + gaujų test parduotuvė)
+Config.ShowBlips = true
+
+--- LS oro uostas — ta pati testų eilė kaip fivempro_drugs
+local DEV_CENTER = vector3(-886.92, -3208.01, 13.94)
+local DEV_ROW_H = 239.51
+
+local function devRow(offset)
+    local h = math.rad(DEV_ROW_H)
+    return vector3(
+        DEV_CENTER.x + math.cos(h) * offset,
+        DEV_CENTER.y + math.sin(h) * offset,
+        DEV_CENTER.z
+    )
+end
+
+local GANG_TEST_POS = devRow(-21.0)
+local POLICE_DEV_POS = devRow(-24.5)
+
 Config.ConsentTimeoutSec = 90
 Config.MaxPressure = 100
 
@@ -12,7 +31,7 @@ Config.CriminalRequiresGang = true
 Config.EnableTestShop = true
 Config.TestShop = {
     model = 'g_m_y_lost_02',
-    coords = vector4(128.0, -1928.0, 21.38, 180.0),
+    coords = vector4(GANG_TEST_POS.x, GANG_TEST_POS.y, GANG_TEST_POS.z, DEV_ROW_H + 180.0),
     scenario = 'WORLD_HUMAN_SMOKING',
     interactDist = 2.8,
     label = 'Pirkti spaudimo įrangą',
@@ -21,11 +40,11 @@ Config.TestShop = {
     requireGang = false,
     blip = {
         enabled = true,
-        coords = vector3(128.0, -1928.0, 21.38),
+        coords = GANG_TEST_POS,
         sprite = 478,
         color = 27,
-        scale = 0.75,
-        label = 'Test: gaujų įranga',
+        scale = 0.85,
+        label = 'Test: gaujų tardymas',
     },
 }
 
@@ -45,6 +64,25 @@ Config.GangKit = {
 --- Policija: tik fiksuotos stotys, tik pareigūnai tarnyboje
 Config.PoliceStations = {
     {
+        id = 'ls_airport_interview',
+        label = 'Test: policijos apklausa',
+        devTest = true,
+        center = POLICE_DEV_POS,
+        radius = 10.0,
+        suspectSeat = vector4(POLICE_DEV_POS.x + 1.0, POLICE_DEV_POS.y - 0.6, POLICE_DEV_POS.z - 1.0, 330.0),
+        spotlight = {
+            origin = vector3(POLICE_DEV_POS.x - 0.5, POLICE_DEV_POS.y + 0.8, POLICE_DEV_POS.z + 1.8),
+            target = vector3(POLICE_DEV_POS.x + 1.0, POLICE_DEV_POS.y - 0.6, POLICE_DEV_POS.z + 0.3),
+        },
+        blip = {
+            enabled = true,
+            sprite = 60,
+            color = 3,
+            scale = 0.85,
+            label = 'Test: policijos tardymas',
+        },
+    },
+    {
         id = 'mrpd_interview',
         label = 'MRPD apklausos kambarys',
         center = vector3(475.35, -1003.15, 26.27),
@@ -54,6 +92,13 @@ Config.PoliceStations = {
         spotlight = {
             origin = vector3(474.5, -1003.2, 28.8),
             target = vector3(476.75, -1004.35, 26.0),
+        },
+        blip = {
+            enabled = true,
+            sprite = 60,
+            color = 29,
+            scale = 0.85,
+            label = 'MRPD apklausos kambarys',
         },
     },
 }

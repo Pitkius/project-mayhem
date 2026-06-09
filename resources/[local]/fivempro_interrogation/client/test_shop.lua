@@ -7,6 +7,17 @@ local function notify(msg, typ)
     QBCore.Functions.Notify(msg, typ or 'primary')
 end
 
+local function setBlipLabel(blip, label)
+    local text = tostring(label or 'Test: gaujų tardymas')
+    if GetResourceState('fivempro_fonts') == 'started' then
+        exports['fivempro_fonts']:SetBlipName(blip, text)
+        return
+    end
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentString(text)
+    EndTextCommandSetBlipName(blip)
+end
+
 local function openTestShopMenu()
     if not Config.EnableTestShop or not Config.TestShop then return end
     local cfg = Config.TestShop
@@ -47,16 +58,14 @@ local function spawnTestShop()
         TaskStartScenarioInPlace(testShopPed, cfg.scenario, 0, true)
     end
 
-    if cfg.blip and cfg.blip.enabled then
+    if Config.ShowBlips ~= false and cfg.blip and cfg.blip.enabled then
         local bc = cfg.blip.coords or vector3(c.x, c.y, c.z)
         testShopBlip = AddBlipForCoord(bc.x, bc.y, bc.z)
         SetBlipSprite(testShopBlip, cfg.blip.sprite or 478)
         SetBlipColour(testShopBlip, cfg.blip.color or 27)
-        SetBlipScale(testShopBlip, cfg.blip.scale or 0.75)
+        SetBlipScale(testShopBlip, cfg.blip.scale or 0.85)
         SetBlipAsShortRange(testShopBlip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentString(cfg.blip.label or 'Test: gaujų įranga')
-        EndTextCommandSetBlipName(testShopBlip)
+        setBlipLabel(testShopBlip, cfg.blip.label or 'Test: gaujų tardymas')
     end
 
     if GetResourceState('qb-target') == 'started' then
