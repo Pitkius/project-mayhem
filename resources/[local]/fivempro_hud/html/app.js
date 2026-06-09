@@ -10,7 +10,6 @@ const rows = {
   stamina: document.getElementById("row-stamina"),
   hunger: document.getElementById("row-hunger"),
   thirst: document.getElementById("row-thirst"),
-  stress: document.getElementById("row-stress"),
   voice: document.getElementById("row-voice"),
 };
 const ringWraps = {
@@ -19,7 +18,6 @@ const ringWraps = {
   stamina: document.getElementById("ring-wrap-stamina"),
   hunger: document.getElementById("ring-wrap-hunger"),
   thirst: document.getElementById("ring-wrap-thirst"),
-  stress: document.getElementById("ring-wrap-stress"),
   voice: document.getElementById("ring-wrap-voice"),
 };
 const ringTexts = {
@@ -28,7 +26,6 @@ const ringTexts = {
   stamina: document.getElementById("ring-pct-stamina"),
   hunger: document.getElementById("ring-pct-hunger"),
   thirst: document.getElementById("ring-pct-thirst"),
-  stress: document.getElementById("ring-pct-stress"),
   voice: document.getElementById("ring-pct-voice"),
 };
 const carHud = document.getElementById("carhud");
@@ -38,7 +35,7 @@ const seatbeltText = document.getElementById("seatbelt");
 const body = document.body;
 const hudMenu = document.getElementById("hudMenu");
 
-const MAIN_STATS = ["health", "armor", "stamina", "hunger", "thirst", "stress", "voice"];
+const MAIN_STATS = ["health", "armor", "stamina", "hunger", "thirst", "voice"];
 const RING_R = 15;
 const RING_LEN = 2 * Math.PI * RING_R;
 
@@ -47,19 +44,71 @@ const menu = {
   style: document.getElementById("menuStyle"),
   color: document.getElementById("menuColor"),
   alpha: document.getElementById("menuAlpha"),
+  scale: document.getElementById("menuScale"),
+  scaleVal: document.getElementById("menuScaleVal"),
+  alphaVal: document.getElementById("menuAlphaVal"),
   health: document.getElementById("optHealth"),
   armor: document.getElementById("optArmor"),
   stamina: document.getElementById("optStamina"),
   hunger: document.getElementById("optHunger"),
   thirst: document.getElementById("optThirst"),
-  stress: document.getElementById("optStress"),
   voice: document.getElementById("optVoice"),
   speed: document.getElementById("optSpeed"),
   fuel: document.getElementById("optFuel"),
   seatbelt: document.getElementById("optSeatbelt"),
+  compact: document.getElementById("optCompact"),
+  anim: document.getElementById("optAnim"),
   btnApplyPreset: document.getElementById("btnApplyPreset"),
   btnSavePreset: document.getElementById("btnSavePreset"),
+  btnResetDefaults: document.getElementById("btnResetDefaults"),
   btnCloseMenu: document.getElementById("btnCloseMenu"),
+  btnExport: document.getElementById("btnExport"),
+  btnImport: document.getElementById("btnImport"),
+  importArea: document.getElementById("hmImportArea"),
+  savedBadge: document.getElementById("hmSavedBadge"),
+  pvStats: document.getElementById("hmPvStats"),
+  pvVoice: document.getElementById("hmPvVoice"),
+  pvCar: document.getElementById("hmPvCar"),
+  swatches: document.getElementById("hmSwatches"),
+  tabs: document.getElementById("hmTabs"),
+};
+
+const PREVIEW_SAMPLE = {
+  health: 85,
+  armor: 22,
+  stamina: 74,
+  hunger: 90,
+  thirst: 87,
+  voice: 62,
+};
+
+const PREVIEW_COLORS = {
+  health: "#f43f5e",
+  armor: "#a78bfa",
+  hunger: "#fb923c",
+  thirst: "#38bdf8",
+  stamina: "#e879f9",
+  voice: "#c4b5fd",
+};
+
+const DEFAULT_MENU_STATE = {
+  style: "dots",
+  color: "violet",
+  alpha: 0.58,
+  scale: 1,
+  compact: false,
+  anim: true,
+  show: {
+    health: true,
+    armor: true,
+    stamina: false,
+    hunger: true,
+    thirst: true,
+    voice: true,
+    speed: false,
+    fuel: false,
+    seatbelt: false,
+  },
 };
 
 const bars = {
@@ -68,7 +117,6 @@ const bars = {
   stamina: document.getElementById("stamina"),
   hunger: document.getElementById("hunger"),
   thirst: document.getElementById("thirst"),
-  stress: document.getElementById("stress"),
   voice: document.getElementById("voice"),
 };
 
@@ -83,7 +131,6 @@ const tileWraps = {
   stamina: document.getElementById("tile-wrap-stamina"),
   hunger: document.getElementById("tile-wrap-hunger"),
   thirst: document.getElementById("tile-wrap-thirst"),
-  stress: document.getElementById("tile-wrap-stress"),
   voice: document.getElementById("tile-wrap-voice"),
 };
 const hfWraps = {
@@ -92,7 +139,6 @@ const hfWraps = {
   stamina: document.getElementById("hf-wrap-stamina"),
   hunger: document.getElementById("hf-wrap-hunger"),
   thirst: document.getElementById("hf-wrap-thirst"),
-  stress: document.getElementById("hf-wrap-stress"),
   voice: document.getElementById("hf-wrap-voice"),
 };
 const hfFills = {};
@@ -177,13 +223,15 @@ let currentSettings = {
   style: "dots",
   color: "violet",
   alpha: 0.58,
+  scale: 1,
+  compact: false,
+  anim: true,
   show: {
     health: true,
     armor: true,
     stamina: false,
     hunger: true,
     thirst: true,
-    stress: true,
     voice: true,
     speed: false,
     fuel: false,
@@ -191,6 +239,7 @@ let currentSettings = {
   },
 };
 let menuPresets = {};
+let savedBadgeTimer = null;
 
 function resourceName() {
   try {
@@ -284,6 +333,9 @@ function applyThemeData(data) {
   currentSettings.alpha = Number(data.alpha || currentSettings.alpha);
   currentSettings.color = data.color || currentSettings.color;
   if (data.show) currentSettings.show = { ...currentSettings.show, ...data.show };
+  if (data.scale != null) currentSettings.scale = Number(data.scale) || 1;
+  if (data.compact != null) currentSettings.compact = data.compact === true;
+  if (data.anim != null) currentSettings.anim = data.anim !== false;
   if (data.fillColor) {
     document.documentElement.style.setProperty("--accent-fill", data.fillColor);
   }
@@ -297,14 +349,165 @@ function applyThemeData(data) {
     if (tc.hunger) document.documentElement.style.setProperty("--tile-hunger", tc.hunger);
     if (tc.thirst) document.documentElement.style.setProperty("--tile-thirst", tc.thirst);
     if (tc.stamina) document.documentElement.style.setProperty("--tile-stamina", tc.stamina);
-    if (tc.stress) document.documentElement.style.setProperty("--tile-stress", tc.stress);
     if (tc.voice) document.documentElement.style.setProperty("--tile-voice", tc.voice);
   }
   if (data.vehicleUiAccent) {
     document.documentElement.style.setProperty("--vehicle-accent", data.vehicleUiAccent);
   }
   document.documentElement.style.setProperty("--panel-alpha", String(currentSettings.alpha || 0.55));
+  document.documentElement.style.setProperty("--hud-scale", String(currentSettings.scale || 1));
+  body.classList.toggle("hud-compact", currentSettings.compact === true);
+  body.classList.toggle("no-hud-anim", currentSettings.anim === false);
   applyVisualStyle(currentSettings.style);
+}
+
+function updateMenuLabels() {
+  if (menu.alphaVal && menu.alpha) {
+    menu.alphaVal.textContent = `${Math.round(Number(menu.alpha.value) * 100)}%`;
+  }
+  if (menu.scaleVal && menu.scale) {
+    menu.scaleVal.textContent = `${Math.round(Number(menu.scale.value) * 100)}%`;
+  }
+}
+
+function syncSwitchLabels() {
+  document.querySelectorAll(".hm-el").forEach((el) => {
+    const input = el.querySelector('input[type="checkbox"]');
+    if (input) el.classList.toggle("is-on", input.checked);
+  });
+}
+
+function activePreviewStats(show) {
+  const s = show || {};
+  return MAIN_STATS.filter((k) => s[k] === true);
+}
+
+function renderPreviewStats(style, show) {
+  if (!menu.pvStats) return;
+  const keys = activePreviewStats(show);
+  menu.pvStats.innerHTML = "";
+  if (!keys.length) {
+    menu.pvStats.innerHTML = '<span class="hm-pv-empty">Nėra aktyvių elementų</span>';
+    return;
+  }
+  const st = style || "dots";
+  if (st === "dots") {
+    const wrap = document.createElement("div");
+    wrap.className = "hm-pv-dots";
+    keys.forEach((k) => {
+      const pct = PREVIEW_SAMPLE[k] || 50;
+      const el = document.createElement("div");
+      el.className = "hm-pv-dot";
+      el.style.setProperty("--pv-accent", PREVIEW_COLORS[k] || "var(--accent-fill)");
+      el.style.background = `conic-gradient(${PREVIEW_COLORS[k] || "#a78bfa"} ${pct * 3.6}deg, rgba(0,0,0,0.35) 0)`;
+      el.textContent = String(pct);
+      wrap.appendChild(el);
+    });
+    menu.pvStats.appendChild(wrap);
+    return;
+  }
+  if (st === "tiles") {
+    const wrap = document.createElement("div");
+    wrap.className = "hm-pv-tiles";
+    keys.forEach((k) => {
+      const pct = PREVIEW_SAMPLE[k] || 50;
+      const el = document.createElement("div");
+      el.className = "hm-pv-tile";
+      const fill = document.createElement("div");
+      fill.className = "hm-pv-tile-fill";
+      fill.style.height = `${pct}%`;
+      fill.style.background = PREVIEW_COLORS[k] || "#a78bfa";
+      el.appendChild(fill);
+      wrap.appendChild(el);
+    });
+    menu.pvStats.appendChild(wrap);
+    return;
+  }
+  if (st === "frame") {
+    const wrap = document.createElement("div");
+    wrap.className = "hm-pv-frame";
+    keys.forEach((k) => {
+      const pct = PREVIEW_SAMPLE[k] || 50;
+      const el = document.createElement("div");
+      el.className = "hm-pv-frame-cell";
+      const fill = document.createElement("div");
+      fill.className = "hm-pv-frame-fill";
+      fill.style.height = `${pct}%`;
+      fill.style.background = `linear-gradient(0deg, ${PREVIEW_COLORS[k] || "#a78bfa"}, transparent)`;
+      el.appendChild(fill);
+      el.appendChild(document.createTextNode(String(pct)));
+      wrap.appendChild(el);
+    });
+    menu.pvStats.appendChild(wrap);
+    return;
+  }
+  keys.forEach((k) => {
+    const pct = PREVIEW_SAMPLE[k] || 50;
+    const row = document.createElement("div");
+    row.className = "hm-pv-bar-row";
+    row.innerHTML = `<span>●</span><div class="hm-pv-bar-track"><div class="hm-pv-bar-fill" style="width:${pct}%;background:${PREVIEW_COLORS[k] || "#a78bfa"}"></div></div><span>${pct}</span>`;
+    menu.pvStats.appendChild(row);
+  });
+}
+
+function renderMenuPreview() {
+  const state = getMenuState();
+  renderPreviewStats(state.style, state.show);
+  if (menu.pvVoice) menu.pvVoice.classList.toggle("hidden", !state.show.voice);
+  const showCar = state.show.speed || state.show.fuel || state.show.seatbelt;
+  if (menu.pvCar) menu.pvCar.classList.toggle("hidden", !showCar);
+  if (menu.swatches) {
+    menu.swatches.querySelectorAll(".hm-swatch").forEach((sw) => {
+      sw.classList.toggle("is-active", sw.getAttribute("data-c") === state.color);
+    });
+  }
+  syncSwitchLabels();
+  updateMenuLabels();
+}
+
+function applyMenuLive() {
+  const payload = getMenuState();
+  currentSettings = {
+    ...currentSettings,
+    style: payload.style,
+    color: payload.color,
+    alpha: payload.alpha,
+    scale: payload.scale,
+    compact: payload.compact,
+    anim: payload.anim,
+    show: { ...currentSettings.show, ...payload.show },
+  };
+  syncRows();
+  applyThemeData({
+    style: currentSettings.style,
+    alpha: currentSettings.alpha,
+    color: currentSettings.color,
+    show: currentSettings.show,
+    fillColor: document.documentElement.style.getPropertyValue("--accent-fill") || undefined,
+    glowColor: document.documentElement.style.getPropertyValue("--accent-glow") || undefined,
+  });
+  document.documentElement.style.setProperty("--hud-scale", String(currentSettings.scale || 1));
+  body.classList.toggle("hud-compact", currentSettings.compact === true);
+  body.classList.toggle("no-hud-anim", currentSettings.anim === false);
+  renderMenuPreview();
+}
+
+function flashSavedBadge() {
+  if (!menu.savedBadge) return;
+  menu.savedBadge.classList.remove("hidden");
+  if (savedBadgeTimer) clearTimeout(savedBadgeTimer);
+  savedBadgeTimer = setTimeout(() => menu.savedBadge.classList.add("hidden"), 2200);
+}
+
+function highlightTabPanel(tab) {
+  document.querySelectorAll(".hm-tab").forEach((t) => {
+    t.classList.toggle("is-active", t.getAttribute("data-tab") === tab);
+  });
+  const map = { hud: null, colors: "colors", layout: "layout", other: "export" };
+  document.querySelectorAll(".hm-panel").forEach((p) => {
+    const key = p.getAttribute("data-panel");
+    p.classList.toggle("is-highlight", map[tab] === key);
+  });
 }
 
 function getMenuState() {
@@ -313,13 +516,15 @@ function getMenuState() {
     style: menu.style.value,
     color: menu.color.value,
     alpha: Number(menu.alpha.value || 0.55),
+    scale: Number(menu.scale ? menu.scale.value : 1) || 1,
+    compact: menu.compact ? menu.compact.checked : false,
+    anim: menu.anim ? menu.anim.checked !== false : true,
     show: {
       health: menu.health.checked,
       armor: menu.armor.checked,
       stamina: menu.stamina.checked,
       hunger: menu.hunger.checked,
       thirst: menu.thirst.checked,
-      stress: menu.stress ? menu.stress.checked : true,
       voice: menu.voice ? menu.voice.checked : true,
       speed: menu.speed.checked,
       fuel: menu.fuel.checked,
@@ -335,17 +540,20 @@ function fillMenuFromPreset(idx) {
   menu.style.value = p.style || "dots";
   menu.color.value = p.color || "violet";
   menu.alpha.value = String(p.alpha || 0.55);
+  if (menu.scale) menu.scale.value = String(p.scale != null ? p.scale : 1);
+  if (menu.compact) menu.compact.checked = p.compact === true;
+  if (menu.anim) menu.anim.checked = p.anim !== false;
   const show = p.show || {};
   menu.health.checked = show.health !== false;
   menu.armor.checked = show.armor === true;
   menu.stamina.checked = show.stamina === true;
   menu.hunger.checked = show.hunger !== false;
   menu.thirst.checked = show.thirst !== false;
-  if (menu.stress) menu.stress.checked = show.stress !== false;
   if (menu.voice) menu.voice.checked = show.voice !== false;
   menu.speed.checked = show.speed === true;
   menu.fuel.checked = show.fuel === true;
   menu.seatbelt.checked = show.seatbelt === true;
+  renderMenuPreview();
 }
 
 window.addEventListener("message", (event) => {
@@ -367,11 +575,15 @@ window.addEventListener("message", (event) => {
     const active = Number(data.activePreset || 1);
     fillMenuFromPreset(active);
     hudMenu.classList.remove("hidden");
+    body.classList.add("hud-menu-open");
+    highlightTabPanel("hud");
+    applyMenuLive();
     return;
   }
 
   if (data.action === "closeMenu") {
     hudMenu.classList.add("hidden");
+    body.classList.remove("hud-menu-open");
     return;
   }
 
@@ -506,7 +718,6 @@ window.addEventListener("message", (event) => {
   setBar("stamina", data.stamina);
   setBar("hunger", data.hunger);
   setBar("thirst", data.thirst);
-  setBar("stress", data.stress);
   setBar("voice", data.voice, voiceOpts);
 
   const showCarHud = !!data.inVehicle && !!data.show;
@@ -555,33 +766,112 @@ window.addEventListener("message", (event) => {
   if (statEngine) statEngine.classList.toggle("state-warn", motorPctHud < 40);
 });
 
-menu.preset.addEventListener("change", () => {
-  fillMenuFromPreset(Number(menu.preset.value || 1));
+function bindMenuInput(el, eventName, handler) {
+  if (!el) return;
+  el.addEventListener(eventName, handler);
+}
+
+[
+  menu.style,
+  menu.color,
+  menu.alpha,
+  menu.scale,
+  menu.health,
+  menu.armor,
+  menu.stamina,
+  menu.hunger,
+  menu.thirst,
+  menu.voice,
+  menu.speed,
+  menu.fuel,
+  menu.seatbelt,
+  menu.compact,
+  menu.anim,
+].forEach((el) => {
+  bindMenuInput(el, "input", () => applyMenuLive());
+  bindMenuInput(el, "change", () => applyMenuLive());
 });
 
-menu.btnApplyPreset.addEventListener("click", () => {
-  nuiPost("hud:applyPreset", { preset: Number(menu.preset.value || 1) }).then(() => {
-    const p = menuPresets[Number(menu.preset.value || 1)];
-    if (p) {
-      currentSettings = { ...currentSettings, ...p, show: { ...currentSettings.show, ...(p.show || {}) } };
-      syncRows();
-      applyVisualStyle(currentSettings.style);
-    }
-  });
+menu.preset.addEventListener("change", () => {
+  fillMenuFromPreset(Number(menu.preset.value || 1));
+  applyMenuLive();
 });
+
+if (menu.btnApplyPreset) {
+  menu.btnApplyPreset.addEventListener("click", () => {
+    nuiPost("hud:applyPreset", { preset: Number(menu.preset.value || 1) }).then(() => {
+      const p = menuPresets[Number(menu.preset.value || 1)];
+      if (p) fillMenuFromPreset(Number(menu.preset.value || 1));
+      applyMenuLive();
+    });
+  });
+}
+
+if (menu.btnResetDefaults) {
+  menu.btnResetDefaults.addEventListener("click", () => {
+    const idx = Number(menu.preset.value || 1);
+    menuPresets[idx] = { ...DEFAULT_MENU_STATE, preset: idx };
+    fillMenuFromPreset(idx);
+    applyMenuLive();
+  });
+}
 
 menu.btnSavePreset.addEventListener("click", () => {
   const payload = getMenuState();
   menuPresets[payload.preset] = payload;
-  currentSettings = { ...currentSettings, ...payload, show: { ...currentSettings.show, ...payload.show } };
-  syncRows();
-  applyVisualStyle(currentSettings.style);
-  nuiPost("hud:savePreset", payload);
+  applyMenuLive();
+  nuiPost("hud:savePreset", payload).then(() => flashSavedBadge());
 });
 
 menu.btnCloseMenu.addEventListener("click", () => {
   nuiPost("hud:close", {});
 });
+
+if (menu.tabs) {
+  menu.tabs.addEventListener("click", (e) => {
+    const btn = e.target.closest(".hm-tab");
+    if (!btn) return;
+    highlightTabPanel(btn.getAttribute("data-tab") || "hud");
+  });
+}
+
+if (menu.swatches) {
+  menu.swatches.addEventListener("click", (e) => {
+    const sw = e.target.closest(".hm-swatch");
+    if (!sw || !menu.color) return;
+    menu.color.value = sw.getAttribute("data-c") || "violet";
+    applyMenuLive();
+  });
+}
+
+if (menu.btnExport) {
+  menu.btnExport.addEventListener("click", () => {
+    const json = JSON.stringify(getMenuState(), null, 2);
+    if (menu.importArea) {
+      menu.importArea.classList.remove("hidden");
+      menu.importArea.value = json;
+      menu.importArea.focus();
+      menu.importArea.select();
+    }
+  });
+}
+
+if (menu.btnImport) {
+  menu.btnImport.addEventListener("click", () => {
+    if (menu.importArea) menu.importArea.classList.toggle("hidden");
+    if (!menu.importArea || menu.importArea.classList.contains("hidden")) return;
+    try {
+      const data = JSON.parse(menu.importArea.value || "{}");
+      const idx = Number(menu.preset.value || 1);
+      menuPresets[idx] = { ...DEFAULT_MENU_STATE, ...data, preset: idx };
+      fillMenuFromPreset(idx);
+      applyMenuLive();
+      flashSavedBadge();
+    } catch (err) {
+      /* neteisingas JSON */
+    }
+  });
+}
 
 if (vpBtnClose) {
   vpBtnClose.addEventListener("click", () => {

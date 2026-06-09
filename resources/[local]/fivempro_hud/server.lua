@@ -25,3 +25,7 @@ RegisterNetEvent('fivempro_hud:server:setVehicleDoor', function(netId, doorIndex
     if not playerNearVehicle(src, netId, 10.0) then return end
     TriggerClientEvent('fivempro_hud:client:syncVehicleDoor', -1, netId, doorIndex, open == true)
 end)
+
+--- Stresas išjungtas serveryje; qb-smallresources vis dar gali kviesti šį eventą.
+RegisterNetEvent('hud:server:RelieveStress', function() end)
+RegisterNetEvent('hud:server:GainStress', function() end)

@@ -15,11 +15,11 @@ local COLOR_THEMES = {
 
 --- Kvadratinių vitalų spalvos pagal temą (NUI `--tile-*`).
 local TILE_COLORS = {
-    violet = { health = '#f43f5e', armor = '#a78bfa', hunger = '#fb923c', thirst = '#38bdf8', stamina = '#e879f9', stress = '#f472b6', voice = '#c4b5fd' },
-    cyan = { health = '#fb7185', armor = '#22d3ee', hunger = '#fdba74', thirst = '#67e8f9', stamina = '#a5f3fc', stress = '#f9a8d4', voice = '#a5f3fc' },
-    red = { health = '#fca5a5', armor = '#c084fc', hunger = '#fdba74', thirst = '#7dd3fc', stamina = '#f9a8d4', stress = '#fb7185', voice = '#e9d5ff' },
-    green = { health = '#f87171', armor = '#86efac', hunger = '#fcd34d', thirst = '#6ee7b7', stamina = '#bbf7d0', stress = '#fda4af', voice = '#d9f99d' },
-    amber = { health = '#ef4444', armor = '#d8b4fe', hunger = '#fbbf24', thirst = '#38bdf8', stamina = '#fbcfe8', stress = '#f472b6', voice = '#fde68a' },
+    violet = { health = '#f43f5e', armor = '#a78bfa', hunger = '#fb923c', thirst = '#38bdf8', stamina = '#e879f9', voice = '#c4b5fd' },
+    cyan = { health = '#fb7185', armor = '#22d3ee', hunger = '#fdba74', thirst = '#67e8f9', stamina = '#a5f3fc', voice = '#a5f3fc' },
+    red = { health = '#fca5a5', armor = '#c084fc', hunger = '#fdba74', thirst = '#7dd3fc', stamina = '#f9a8d4', voice = '#e9d5ff' },
+    green = { health = '#f87171', armor = '#86efac', hunger = '#fcd34d', thirst = '#6ee7b7', stamina = '#bbf7d0', voice = '#d9f99d' },
+    amber = { health = '#ef4444', armor = '#d8b4fe', hunger = '#fbbf24', thirst = '#38bdf8', stamina = '#fbcfe8', voice = '#fde68a' },
 }
 
 --- Transporto valdymo panelė (NUI) – iOS stiliaus violetinis akcentas.
@@ -127,13 +127,15 @@ local DEFAULT_PRESET = {
     style = 'dots',
     color = 'violet',
     alpha = 0.58,
+    scale = 1.0,
+    compact = false,
+    anim = true,
     show = {
         health = true,
         armor = true,
         stamina = false,
         hunger = true,
         thirst = true,
-        stress = true,
         voice = true,
         speed = false,
         fuel = false,
@@ -183,14 +185,6 @@ local function getNeeds()
     return clamp(hunger, 0, 100), clamp(thirst, 0, 100)
 end
 
-local function getStress()
-    local pd = QBCore.Functions.GetPlayerData() or {}
-    local metadata = pd.metadata or {}
-    local stress = tonumber(metadata.stress)
-    if stress == nil then stress = 0 end
-    return clamp(stress, 0, 100)
-end
-
 local function getVoiceHud()
     local talking = NetworkIsPlayerTalking(PlayerId())
     local level = 35
@@ -221,6 +215,9 @@ local function loadPresetSettings()
                 p.style = tostring(decoded.style or p.style)
                 p.color = tostring(decoded.color or p.color)
                 p.alpha = tonumber(decoded.alpha) or p.alpha
+                p.scale = clamp(tonumber(decoded.scale) or p.scale or 1.0, 0.75, 1.25)
+                p.compact = decoded.compact == true
+                p.anim = decoded.anim ~= false
                 for k, v in pairs(p.show) do
                     p.show[k] = decoded.show[k] == nil and v or (decoded.show[k] == true)
                 end
@@ -293,6 +290,9 @@ local function sendHudTheme()
         preset = hudPreset,
         style = s.style,
         alpha = s.alpha,
+        scale = s.scale or 1.0,
+        compact = s.compact == true,
+        anim = s.anim ~= false,
         color = s.color,
         fillColor = c.fill,
         glowColor = c.glow,
@@ -307,7 +307,6 @@ local function pushHud()
     local health = clamp(GetEntityHealth(ped) - 100, 0, 100)
     local armor = clamp(GetPedArmour(ped), 0, 100)
     local hunger, thirst = getNeeds()
-    local stress = getStress()
     local voiceTalking, voiceLevel = getVoiceHud()
     local show = not IsPauseMenuActive()
     local inVehicle = IsPedInAnyVehicle(ped, false)
@@ -386,7 +385,6 @@ local function pushHud()
         stamina = staminaSmooth,
         hunger = hunger,
         thirst = thirst,
-        stress = stress,
         voice = voiceLevel,
         voiceTalking = voiceTalking,
         inVehicle = inVehicle,
@@ -519,6 +517,9 @@ RegisterNUICallback('hud:savePreset', function(data, cb)
     p.style = tostring(data and data.style or p.style)
     p.color = tostring(data and data.color or p.color)
     p.alpha = clamp(tonumber(data and data.alpha) or p.alpha, 0.2, 1.0)
+    p.scale = clamp(tonumber(data and data.scale) or p.scale or 1.0, 0.75, 1.25)
+    p.compact = data and data.compact == true
+    p.anim = not (data and data.anim == false)
     p.show = p.show or deepCopy(DEFAULT_PRESET.show)
     local show = data and data.show or {}
     for k, defaultValue in pairs(DEFAULT_PRESET.show) do
