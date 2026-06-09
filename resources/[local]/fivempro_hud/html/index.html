@@ -370,21 +370,24 @@
         <div class="hm-shell">
             <header class="hm-header">
                 <div class="hm-brand">
-                    <span class="hm-brand-mark">F</span>
-                    <span class="hm-brand-name">FIVEMPRO</span>
+                    <span class="hm-brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M4 18L12 4l8 14H4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 14h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </span>
+                    <span class="hm-brand-name">fivemprojektas</span>
                 </div>
                 <div class="hm-title-block">
                     <h1>HUD NUSTATYMAI</h1>
                     <p>Pritaikykite savo ekrano sąsają</p>
                 </div>
                 <nav class="hm-tabs" id="hmTabs">
-                    <button type="button" class="hm-tab is-active" data-tab="hud">HUD</button>
-                    <button type="button" class="hm-tab" data-tab="colors">SPALVOS</button>
-                    <button type="button" class="hm-tab" data-tab="layout">IŠDĖSTYMAS</button>
-                    <button type="button" class="hm-tab" data-tab="other">KITI</button>
+                    <button type="button" class="hm-tab is-active" data-tab="hud"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>HUD</button>
+                    <button type="button" class="hm-tab" data-tab="colors"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 22a10 10 0 0 1-10-10c0-5.52 4.48-10 10-10 1.5 0 2.5.5 3 1.5.5 1 .2 2.2-.8 3.2l-1 1c-.6.6-.8 1.4-.5 2.1.3.7 1 1.2 1.8 1.2H16c2.2 0 4 1.8 4 4 0 4.4-3.6 8-8 8z"/><circle fill="currentColor" cx="7.5" cy="13.5" r="1.5"/><circle fill="currentColor" cx="10.5" cy="9.5" r="1.5"/><circle fill="currentColor" cx="14.5" cy="11.5" r="1.5"/></svg>SPALVOS</button>
+                    <button type="button" class="hm-tab" data-tab="notif"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6V11c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S10.5 3.17 10.5 4v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>NOTIFIKACIJOS</button>
+                    <button type="button" class="hm-tab" data-tab="minimap"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM10 5.47l4 1.4v11.66l-4-1.4V5.47z"/></svg>MINIMAP</button>
+                    <button type="button" class="hm-tab" data-tab="other"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>KITI</button>
                 </nav>
                 <div class="hm-header-actions">
-                    <span id="hmSavedBadge" class="hm-saved hidden">IŠSAUGOTA</span>
+                    <span id="hmSavedBadge" class="hm-saved hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>IŠSAUGOTA</span>
                     <button type="button" id="btnCloseMenu" class="hm-close" title="Uždaryti">×</button>
                 </div>
             </header>
@@ -395,55 +398,55 @@
                     <div class="hm-elements">
                         <label class="hm-el" data-opt="health">
                             <input type="checkbox" id="optHealth" checked hidden />
-                            <span class="hm-el-ico">♥</span>
+                            <span class="hm-el-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.53L12 21.35z"/></svg></span>
                             <span class="hm-el-text"><strong>Gyvybės</strong><small>Sveikatos indikatorius</small></span>
                             <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                         </label>
                         <label class="hm-el" data-opt="armor">
                             <input type="checkbox" id="optArmor" hidden />
-                            <span class="hm-el-ico">🛡</span>
+                            <span class="hm-el-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></span>
                             <span class="hm-el-text"><strong>Šarvai</strong><small>Šarvų lygis</small></span>
                             <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                         </label>
                         <label class="hm-el" data-opt="hunger">
                             <input type="checkbox" id="optHunger" checked hidden />
-                            <span class="hm-el-ico">🍔</span>
+                            <span class="hm-el-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg></span>
                             <span class="hm-el-text"><strong>Alkis</strong><small>Alkio indikatorius</small></span>
                             <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                         </label>
                         <label class="hm-el" data-opt="thirst">
                             <input type="checkbox" id="optThirst" checked hidden />
-                            <span class="hm-el-ico">💧</span>
+                            <span class="hm-el-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 22c4.97 0 9-4.03 9-9 0-4.97-4.5-10-9-13-4.5 3-9 8.03-9 13 0 4.97 4.03 9 9 9z"/></svg></span>
                             <span class="hm-el-text"><strong>Troškulys</strong><small>Vandens lygis</small></span>
                             <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                         </label>
                         <label class="hm-el" data-opt="stamina">
                             <input type="checkbox" id="optStamina" hidden />
-                            <span class="hm-el-ico">⚡</span>
+                            <span class="hm-el-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg></span>
                             <span class="hm-el-text"><strong>Ištvermė</strong><small>Bėgimo energija</small></span>
                             <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                         </label>
                         <label class="hm-el" data-opt="voice">
                             <input type="checkbox" id="optVoice" checked hidden />
-                            <span class="hm-el-ico">🎤</span>
+                            <span class="hm-el-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/></svg></span>
                             <span class="hm-el-text"><strong>Balsas</strong><small>Balso indikatorius</small></span>
                             <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                         </label>
                         <label class="hm-el" data-opt="speed">
                             <input type="checkbox" id="optSpeed" hidden />
-                            <span class="hm-el-ico">🚗</span>
+                            <span class="hm-el-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/></svg></span>
                             <span class="hm-el-text"><strong>Transporto HUD</strong><small>Greitis ir RPM</small></span>
                             <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                         </label>
                         <label class="hm-el" data-opt="fuel">
                             <input type="checkbox" id="optFuel" hidden />
-                            <span class="hm-el-ico">⛽</span>
+                            <span class="hm-el-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77z"/></svg></span>
                             <span class="hm-el-text"><strong>Kuras</strong><small>Kuro lygis automobilyje</small></span>
                             <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                         </label>
                         <label class="hm-el" data-opt="seatbelt">
                             <input type="checkbox" id="optSeatbelt" hidden />
-                            <span class="hm-el-ico">🔒</span>
+                            <span class="hm-el-ico"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2z"/></svg></span>
                             <span class="hm-el-text"><strong>Diržas</strong><small>Saugos diržo indikatorius</small></span>
                             <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                         </label>
@@ -457,32 +460,62 @@
                 <section class="hm-preview-wrap">
                     <h3 class="hm-section-title">HUD PERŽIŪRA</h3>
                     <div class="hm-preview" id="hmPreview">
-                        <div class="hm-preview-bg"></div>
+                        <div class="hm-preview-bg">
+                            <div class="hm-pv-scene-sky"></div>
+                            <div class="hm-pv-scene-road"></div>
+                            <div class="hm-pv-scene-car"></div>
+                            <div class="hm-pv-scene-lights"></div>
+                        </div>
                         <div class="hm-pv-compass">
                             <span>W</span><span>NW</span><span class="is-n">N 345°</span><span>NE</span><span>E</span>
                         </div>
                         <div class="hm-pv-server">
-                            <span class="hm-pv-server-id">ID 128</span>
-                            <span class="hm-pv-server-name">FIVEMPRO</span>
+                            <div class="hm-pv-server-row"><span>Žaidėjo ID</span><strong>128</strong></div>
+                            <div class="hm-pv-server-row"><span>Seanso vieta</span><strong>#1</strong></div>
+                            <div class="hm-pv-server-row"><span>Žaidėjų sk.</span><strong>128/256</strong></div>
+                            <div class="hm-pv-server-logo">fivemprojektas</div>
                         </div>
-                        <div class="hm-pv-stats" id="hmPvStats"></div>
+                        <div class="hm-pv-left">
+                            <div class="hm-pv-stats" id="hmPvStats"></div>
+                            <div class="hm-pv-money">
+                                <div class="hm-pv-cash"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>$12,450</div>
+                                <div class="hm-pv-bank"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-7-5L2 6v2h19V6l-7-3z"/></svg>$245,750</div>
+                            </div>
+                            <div class="hm-pv-job"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 7V3H2v18h20V7H12zm-2 12H4v-2h6v2zm0-4H4v-2h6v2zm0-4H4V9h6v2zm8 8h-6v-2h6v2zm0-4h-6v-2h6v2zm0-4h-6V9h6v2z"/></svg>Mechanikas</div>
+                        </div>
                         <div class="hm-pv-minimap">
                             <div class="hm-pv-map-grid"></div>
+                            <div class="hm-pv-map-player"></div>
+                        </div>
+                        <div class="hm-pv-location">
                             <span class="hm-pv-street">Vespucci Blvd</span>
                             <span class="hm-pv-zone">Pillbox Hill</span>
+                            <span class="hm-pv-clock" id="hmPvClock">21:45 · 19.05.2026</span>
                         </div>
-                        <div class="hm-pv-voice hidden" id="hmPvVoice">
+                        <div class="hm-pv-voice" id="hmPvVoice">
                             <span class="hm-pv-voice-lbl">Kalba: Normaliai</span>
-                            <div class="hm-pv-voice-bars"><span></span><span></span><span></span><span></span><span></span></div>
+                            <div class="hm-pv-voice-bars"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
                         </div>
-                        <div class="hm-pv-car hidden" id="hmPvCar">
+                        <div class="hm-pv-weapon" id="hmPvWeapon">
+                            <div class="hm-pv-weapon-ico">
+                                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 5h2v2h7.59L19 10.41V13h2v-3.59L15.59 4H7zm-2 4v12h2V9H5zm4 0v12h2V9H9zm4 0v12h2V9h-2z"/></svg>
+                            </div>
+                            <div class="hm-pv-weapon-info">
+                                <strong>12 / 60</strong>
+                                <span>Pistoletas</span>
+                            </div>
+                        </div>
+                        <div class="hm-pv-car" id="hmPvCar">
                             <div class="hm-pv-speed-ring">
-                                <span class="hm-pv-speed-val">120</span>
-                                <span class="hm-pv-speed-unit">KM/H</span>
+                                <svg class="hm-pv-rpm-arc" viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke="rgba(167,139,250,0.2)" stroke-width="4"/><circle cx="40" cy="40" r="34" fill="none" stroke="var(--accent-fill)" stroke-width="4" stroke-dasharray="160 220" stroke-linecap="round" transform="rotate(135 40 40)"/></svg>
+                                <div class="hm-pv-speed-center">
+                                    <span class="hm-pv-speed-val">120</span>
+                                    <span class="hm-pv-speed-unit">KM/H</span>
+                                </div>
                             </div>
                             <div class="hm-pv-car-meta">
-                                <span>⛽ 65%</span>
-                                <span>🔧 45%</span>
+                                <span class="hm-pv-fuel"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77z"/></svg>65%</span>
+                                <span class="hm-pv-engine"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 10v3h2v-2h1v2h8v-2h1v2h2v-3l-1-3H6l-1 3z"/></svg>45 L</span>
                             </div>
                         </div>
                     </div>
@@ -492,14 +525,7 @@
             <footer class="hm-footer">
                 <div class="hm-panel" data-panel="layout">
                     <h4>HUD IŠDĖSTYMAS</h4>
-                    <label class="hm-field">Šablonas
-                        <select id="menuPreset">
-                            <option value="1">Šablonas 1</option>
-                            <option value="2">Šablonas 2</option>
-                            <option value="3">Šablonas 3</option>
-                        </select>
-                    </label>
-                    <label class="hm-field">Stilius
+                    <label class="hm-field">Išdėstymo stilius
                         <select id="menuStyle">
                             <option value="dots">Rutuliukai</option>
                             <option value="frame">Minimap rėmas</option>
@@ -508,11 +534,18 @@
                             <option value="tiles">Kvadratai (vitalai)</option>
                         </select>
                     </label>
-                    <label class="hm-field">HUD mastelis <span id="menuScaleVal">100%</span>
+                    <label class="hm-field hm-field-range">HUD mastelis <span id="menuScaleVal">100%</span>
                         <input type="range" id="menuScale" min="0.75" max="1.25" step="0.05" value="1" />
                     </label>
-                    <label class="hm-field">HUD permatomumas <span id="menuAlphaVal">58%</span>
+                    <label class="hm-field hm-field-range">HUD permatomumas <span id="menuAlphaVal">58%</span>
                         <input type="range" id="menuAlpha" min="0.2" max="1" step="0.05" value="0.58" />
+                    </label>
+                    <label class="hm-field">Šablonas
+                        <select id="menuPreset">
+                            <option value="1">Šablonas 1</option>
+                            <option value="2">Šablonas 2</option>
+                            <option value="3">Šablonas 3</option>
+                        </select>
                     </label>
                 </div>
                 <div class="hm-panel" data-panel="colors">
@@ -526,16 +559,32 @@
                             <option value="amber">Gintarinė</option>
                         </select>
                     </label>
+                    <div class="hm-color-picks" id="hmColorPicks">
+                        <div class="hm-color-pick"><span>Pirminė</span><i id="hmColPrimary" style="background:#a78bfa"></i></div>
+                        <div class="hm-color-pick"><span>Antrinė</span><i id="hmColSecondary" style="background:#5b21b6"></i></div>
+                        <div class="hm-color-pick"><span>Akcentas</span><i id="hmColAccent" style="background:#e879f9"></i></div>
+                        <div class="hm-color-pick"><span>Tekstas</span><i id="hmColText" style="background:#f8fafc"></i></div>
+                    </div>
                     <div class="hm-swatches" id="hmSwatches">
-                        <span class="hm-swatch" data-c="violet" style="--sw:#a78bfa"></span>
-                        <span class="hm-swatch" data-c="cyan" style="--sw:#22d3ee"></span>
-                        <span class="hm-swatch" data-c="red" style="--sw:#f87171"></span>
-                        <span class="hm-swatch" data-c="green" style="--sw:#86efac"></span>
-                        <span class="hm-swatch" data-c="amber" style="--sw:#fbbf24"></span>
+                        <span class="hm-swatch" data-c="violet" style="--sw:#a78bfa" title="Violetinė"></span>
+                        <span class="hm-swatch" data-c="cyan" style="--sw:#22d3ee" title="Žydra"></span>
+                        <span class="hm-swatch" data-c="red" style="--sw:#f87171" title="Raudona"></span>
+                        <span class="hm-swatch" data-c="green" style="--sw:#86efac" title="Žalia"></span>
+                        <span class="hm-swatch" data-c="amber" style="--sw:#fbbf24" title="Gintarinė"></span>
                     </div>
                 </div>
                 <div class="hm-panel" data-panel="other">
                     <h4>PAPILDOMI NUSTATYMAI</h4>
+                    <label class="hm-el hm-el-compact" data-opt="hudbg">
+                        <input type="checkbox" id="optHudBg" checked hidden />
+                        <span class="hm-el-text"><strong>Rodyti HUD fone</strong><small>Peržiūroje matomas žaidimas</small></span>
+                        <span class="hm-switch"><span class="hm-switch-knob"></span></span>
+                    </label>
+                    <label class="hm-el hm-el-compact" data-opt="dynamic">
+                        <input type="checkbox" id="optDynamic" checked hidden />
+                        <span class="hm-el-text"><strong>Dinaminis HUD</strong><small>Slėpti pilnus rodiklius</small></span>
+                        <span class="hm-switch"><span class="hm-switch-knob"></span></span>
+                    </label>
                     <label class="hm-el hm-el-compact" data-opt="compact">
                         <input type="checkbox" id="optCompact" hidden />
                         <span class="hm-el-text"><strong>Kompaktiškas režimas</strong><small>Mažesni vitalų elementai</small></span>
@@ -546,7 +595,6 @@
                         <span class="hm-el-text"><strong>Animacijos</strong><small>Sklandūs perėjimai</small></span>
                         <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                     </label>
-                    <button type="button" id="btnApplyPreset" class="hm-btn hm-btn-ghost hm-btn-block">Užkrauti pasirinktą šabloną</button>
                 </div>
                 <div class="hm-panel" data-panel="export">
                     <h4>EKSPORTAVIMAS / IMPORTAVIMAS</h4>

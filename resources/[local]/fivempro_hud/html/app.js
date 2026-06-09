@@ -69,8 +69,36 @@ const menu = {
   pvStats: document.getElementById("hmPvStats"),
   pvVoice: document.getElementById("hmPvVoice"),
   pvCar: document.getElementById("hmPvCar"),
+  pvWeapon: document.getElementById("hmPvWeapon"),
+  pvClock: document.getElementById("hmPvClock"),
+  preview: document.getElementById("hmPreview"),
+  hudBg: document.getElementById("optHudBg"),
+  dynamic: document.getElementById("optDynamic"),
+  colPrimary: document.getElementById("hmColPrimary"),
+  colSecondary: document.getElementById("hmColSecondary"),
+  colAccent: document.getElementById("hmColAccent"),
+  colText: document.getElementById("hmColText"),
   swatches: document.getElementById("hmSwatches"),
   tabs: document.getElementById("hmTabs"),
+};
+
+const SERVER_PLACEHOLDER = "fivemprojektas";
+
+const THEME_PALETTE = {
+  violet: { primary: "#a78bfa", secondary: "#5b21b6", accent: "#e879f9", text: "#f8fafc" },
+  cyan: { primary: "#22d3ee", secondary: "#0e7490", accent: "#67e8f9", text: "#f0fdfa" },
+  red: { primary: "#f87171", secondary: "#991b1b", accent: "#fb7185", text: "#fff1f2" },
+  green: { primary: "#86efac", secondary: "#166534", accent: "#bbf7d0", text: "#f0fdf4" },
+  amber: { primary: "#fbbf24", secondary: "#b45309", accent: "#fde68a", text: "#fffbeb" },
+};
+
+const PREVIEW_ICONS = {
+  health: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.53L12 21.35z"/></svg>',
+  armor: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>',
+  stamina: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg>',
+  hunger: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>',
+  thirst: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 22c4.97 0 9-4.03 9-9 0-4.97-4.5-10-9-13-4.5 3-9 8.03-9 13 0 4.97 4.03 9 9 9z"/></svg>',
+  voice: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/></svg>',
 };
 
 const PREVIEW_SAMPLE = {
@@ -382,7 +410,36 @@ function activePreviewStats(show) {
   return MAIN_STATS.filter((k) => s[k] === true);
 }
 
-function renderPreviewStats(style, show) {
+function updatePreviewClock() {
+  if (!menu.pvClock) return;
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mo = String(now.getMonth() + 1).padStart(2, "0");
+  const yr = now.getFullYear();
+  menu.pvClock.textContent = `${hh}:${mm} · ${dd}.${mo}.${yr}`;
+}
+
+function updateThemeColorPicks(colorKey) {
+  const pal = THEME_PALETTE[colorKey] || THEME_PALETTE.violet;
+  if (menu.colPrimary) menu.colPrimary.style.background = pal.primary;
+  if (menu.colSecondary) menu.colSecondary.style.background = pal.secondary;
+  if (menu.colAccent) menu.colAccent.style.background = pal.accent;
+  if (menu.colText) menu.colText.style.background = pal.text;
+}
+
+function renderPreviewBarRows(keys) {
+  keys.forEach((k) => {
+    const pct = PREVIEW_SAMPLE[k] || 50;
+    const row = document.createElement("div");
+    row.className = "hm-pv-bar-row";
+    row.innerHTML = `<span class="hm-pv-bar-ico">${PREVIEW_ICONS[k] || ""}</span><div class="hm-pv-bar-track"><div class="hm-pv-bar-fill" style="width:${pct}%;background:${PREVIEW_COLORS[k] || "#a78bfa"};box-shadow:0 0 8px ${PREVIEW_COLORS[k] || "#a78bfa"}55"></div></div>`;
+    menu.pvStats.appendChild(row);
+  });
+}
+
+function renderPreviewStats(_style, show) {
   if (!menu.pvStats) return;
   const keys = activePreviewStats(show);
   menu.pvStats.innerHTML = "";
@@ -390,72 +447,23 @@ function renderPreviewStats(style, show) {
     menu.pvStats.innerHTML = '<span class="hm-pv-empty">Nėra aktyvių elementų</span>';
     return;
   }
-  const st = style || "dots";
-  if (st === "dots") {
-    const wrap = document.createElement("div");
-    wrap.className = "hm-pv-dots";
-    keys.forEach((k) => {
-      const pct = PREVIEW_SAMPLE[k] || 50;
-      const el = document.createElement("div");
-      el.className = "hm-pv-dot";
-      el.style.setProperty("--pv-accent", PREVIEW_COLORS[k] || "var(--accent-fill)");
-      el.style.background = `conic-gradient(${PREVIEW_COLORS[k] || "#a78bfa"} ${pct * 3.6}deg, rgba(0,0,0,0.35) 0)`;
-      el.textContent = String(pct);
-      wrap.appendChild(el);
-    });
-    menu.pvStats.appendChild(wrap);
-    return;
-  }
-  if (st === "tiles") {
-    const wrap = document.createElement("div");
-    wrap.className = "hm-pv-tiles";
-    keys.forEach((k) => {
-      const pct = PREVIEW_SAMPLE[k] || 50;
-      const el = document.createElement("div");
-      el.className = "hm-pv-tile";
-      const fill = document.createElement("div");
-      fill.className = "hm-pv-tile-fill";
-      fill.style.height = `${pct}%`;
-      fill.style.background = PREVIEW_COLORS[k] || "#a78bfa";
-      el.appendChild(fill);
-      wrap.appendChild(el);
-    });
-    menu.pvStats.appendChild(wrap);
-    return;
-  }
-  if (st === "frame") {
-    const wrap = document.createElement("div");
-    wrap.className = "hm-pv-frame";
-    keys.forEach((k) => {
-      const pct = PREVIEW_SAMPLE[k] || 50;
-      const el = document.createElement("div");
-      el.className = "hm-pv-frame-cell";
-      const fill = document.createElement("div");
-      fill.className = "hm-pv-frame-fill";
-      fill.style.height = `${pct}%`;
-      fill.style.background = `linear-gradient(0deg, ${PREVIEW_COLORS[k] || "#a78bfa"}, transparent)`;
-      el.appendChild(fill);
-      el.appendChild(document.createTextNode(String(pct)));
-      wrap.appendChild(el);
-    });
-    menu.pvStats.appendChild(wrap);
-    return;
-  }
-  keys.forEach((k) => {
-    const pct = PREVIEW_SAMPLE[k] || 50;
-    const row = document.createElement("div");
-    row.className = "hm-pv-bar-row";
-    row.innerHTML = `<span>●</span><div class="hm-pv-bar-track"><div class="hm-pv-bar-fill" style="width:${pct}%;background:${PREVIEW_COLORS[k] || "#a78bfa"}"></div></div><span>${pct}</span>`;
-    menu.pvStats.appendChild(row);
-  });
+  renderPreviewBarRows(keys);
 }
 
 function renderMenuPreview() {
   const state = getMenuState();
   renderPreviewStats(state.style, state.show);
+  updatePreviewClock();
+  updateThemeColorPicks(state.color);
+  if (menu.preview) {
+    menu.preview.classList.toggle("hm-pv-dim-bg", menu.hudBg ? !menu.hudBg.checked : false);
+  }
   if (menu.pvVoice) menu.pvVoice.classList.toggle("hidden", !state.show.voice);
   const showCar = state.show.speed || state.show.fuel || state.show.seatbelt;
   if (menu.pvCar) menu.pvCar.classList.toggle("hidden", !showCar);
+  document.querySelectorAll(".hm-pv-server-logo").forEach((el) => {
+    el.textContent = SERVER_PLACEHOLDER;
+  });
   if (menu.swatches) {
     menu.swatches.querySelectorAll(".hm-swatch").forEach((sw) => {
       sw.classList.toggle("is-active", sw.getAttribute("data-c") === state.color);
@@ -503,7 +511,7 @@ function highlightTabPanel(tab) {
   document.querySelectorAll(".hm-tab").forEach((t) => {
     t.classList.toggle("is-active", t.getAttribute("data-tab") === tab);
   });
-  const map = { hud: null, colors: "colors", layout: "layout", other: "export" };
+  const map = { hud: null, colors: "colors", notif: "other", minimap: "layout", other: "export" };
   document.querySelectorAll(".hm-panel").forEach((p) => {
     const key = p.getAttribute("data-panel");
     p.classList.toggle("is-highlight", map[tab] === key);
@@ -787,6 +795,8 @@ function bindMenuInput(el, eventName, handler) {
   menu.seatbelt,
   menu.compact,
   menu.anim,
+  menu.hudBg,
+  menu.dynamic,
 ].forEach((el) => {
   bindMenuInput(el, "input", () => applyMenuLive());
   bindMenuInput(el, "change", () => applyMenuLive());
