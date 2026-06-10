@@ -74,18 +74,18 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT žemėlapis — 1:1 su GetEntityCoords (x → lng, y → lat). Šiaurė viršuje (sat PNG).
---- Kalibruota pagal gtav_satellite_2048.png (2048×2048): maxY 8150 + offsetY 225.
---- flipY = false — kitaip blipai apverčiami (LS rodo šiaurėje ir atvirkščiai).
+--- MDT žemėlapis — GetEntityCoords (x → lng, y → lat). Šiaurė viršuje.
+--- coordMin/coordMax — subpikselinė PNG paklaida (gtav_satellite_2048.png kraštai).
+--- flipY = false. Jei reikia tiksliau: calibration[] + u/v taškai (žr. gtav_map_core.js).
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 8150.0 },
-    coordMin = { x = -4000.0, y = -4000.0 },
-    coordMax = { x = 4500.0, y = 8150.0 },
+    coordMin = { x = -4003.0, y = -4012.0 },
+    coordMax = { x = 4503.0, y = 8138.0 },
     viewMin = { x = -4000.0, y = -4000.0 },
     viewMax = { x = 4500.0, y = 8150.0 },
     offsetX = 0.0,
-    offsetY = 225.0,
+    offsetY = 0.0,
     scaleX = 1.0,
     scaleY = 1.0,
     flipY = false,

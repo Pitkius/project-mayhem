@@ -237,6 +237,15 @@ local function savePresetSettings(idx)
     SetResourceKvp(('fivempro_hud:preset:%s'):format(idx), json.encode(p))
 end
 
+--- NUI naudoja 1-based string raktus — kitaip `json.encode` gali tapti 0-based masyvu.
+local function presetsForNui()
+    local out = {}
+    for i = 1, HUD_PRESET_COUNT do
+        out[tostring(i)] = presetSettings[i] or deepCopy(DEFAULT_PRESET)
+    end
+    return out
+end
+
 local function currentSettings()
     return presetSettings[hudPreset] or DEFAULT_PRESET
 end
@@ -408,7 +417,7 @@ local function saveHudPreset()
     SetResourceKvpInt('fivempro_hud:preset', hudPreset)
 end
 
-local function setHudPreset(newPreset)
+local function setHudPreset(newPreset, silent)
     local p = tonumber(newPreset) or 1
     p = math.floor(p)
     if p < 1 then p = HUD_PRESET_COUNT end
@@ -416,7 +425,9 @@ local function setHudPreset(newPreset)
     hudPreset = p
     saveHudPreset()
     sendHudTheme()
-    QBCore.Functions.Notify(('HUD stilius: %s/%s'):format(hudPreset, HUD_PRESET_COUNT), 'primary')
+    if not silent then
+        QBCore.Functions.Notify(('HUD stilius: %s/%s'):format(hudPreset, HUD_PRESET_COUNT), 'primary')
+    end
 end
 
 local function openHudMenu()
@@ -430,7 +441,7 @@ local function openHudMenu()
     local payload = {
         action = 'openMenu',
         activePreset = hudPreset,
-        presets = presetSettings,
+        presets = presetsForNui(),
         presetCount = HUD_PRESET_COUNT,
     }
     SendNUIMessage(payload)
@@ -443,6 +454,7 @@ local function closeHudMenu()
     SendNUIMessage({ action = 'vehicleList', open = false })
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'closeMenu' })
+    sendHudTheme()
 end
 
 local function syncPlayerDataFromCore()
@@ -506,7 +518,7 @@ end)
 
 RegisterNUICallback('hud:applyPreset', function(data, cb)
     local idx = tonumber(data and data.preset) or 1
-    setHudPreset(idx)
+    setHudPreset(idx, data and data.silent == true)
     cb({ ok = true })
 end)
 

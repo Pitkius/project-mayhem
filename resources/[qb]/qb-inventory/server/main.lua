@@ -374,7 +374,8 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
         return
     end
 
-    if amount > shopItem.amount or shopItem.amount <= 0 then
+    local stock = tonumber(shopItem.amount) or 0
+    if stock <= 0 or amount > stock then
         TriggerClientEvent('QBCore:Notify', source, 'Nepakanka likučio parduotuvėje.', 'error')
         cb(false)
         return
@@ -417,9 +418,10 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
         return
     end
 
-    shopItem.amount -= amount
+    shopItem.amount = stock - amount
     TriggerEvent('qb-shops:server:UpdateShopItems', shop, itemInfo, amount)
-    TriggerClientEvent('qb-inventory:client:updateInventory', source)
+    local freshItems = Player.PlayerData.items
+    TriggerClientEvent('qb-inventory:client:updateInventory', source, freshItems)
     local sharedItem = QBCore.Shared.Items[itemName]
     if sharedItem then
         TriggerClientEvent('qb-inventory:client:ItemBox', source, sharedItem, 'add', amount)

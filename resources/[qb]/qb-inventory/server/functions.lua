@@ -29,7 +29,7 @@ local function SetupShopItems(shopItems)
                 local slot = tonumber(item.slot) or index
                 items[slot] = {
                     name = itemInfo['name'],
-                    amount = tonumber(item.amount),
+                    amount = tonumber(item.amount) or 999,
                     info = item.info or {},
                     label = itemInfo['label'],
                     description = itemInfo['description'] or '',
@@ -626,17 +626,17 @@ exports('CreateShop', CreateShop)
 --- @param source number The player's server ID.
 --- @param name string The identifier of the inventory to open.
 function OpenShop(source, name)
-    if not name then return end
+    if not name then return false end
     local Player = QBCore.Functions.GetPlayer(source)
-    if not Player then return end
-    if not RegisteredShops[name] then return end
+    if not Player then return false end
+    if not RegisteredShops[name] then return false end
     local playerPed = GetPlayerPed(source)
     local playerCoords = GetEntityCoords(playerPed)
     if RegisteredShops[name].coords then
         local shopDistance = vector3(RegisteredShops[name].coords.x, RegisteredShops[name].coords.y, RegisteredShops[name].coords.z)
         if shopDistance then
             local distance = #(playerCoords - shopDistance)
-            if distance > 5.0 then return end
+            if distance > 5.0 then return false end
         end
     end
     local formattedInventory = {
@@ -646,7 +646,9 @@ function OpenShop(source, name)
         slots = RegisteredShops[name].slots or Config.MaxSlots,
         inventory = RegisteredShops[name].items
     }
+    Player(source).state.inv_busy = true
     TriggerClientEvent('qb-inventory:client:openInventory', source, Player.PlayerData.items, formattedInventory)
+    return true
 end
 
 exports('OpenShop', OpenShop)
@@ -818,8 +820,8 @@ function AddItem(identifier, item, amount, slot, info, reason)
 
     if player then
         player.Functions.SetPlayerData('items', inventory)
-        if not player.Offline and Player(identifier).state.inv_busy then
-            TriggerClientEvent('qb-inventory:client:updateInventory', identifier)
+        if not player.Offline then
+            TriggerClientEvent('qb-inventory:client:updateInventory', identifier, inventory)
         end
     end
     local invName = player and GetPlayerName(identifier) .. ' (' .. identifier .. ')' or identifier

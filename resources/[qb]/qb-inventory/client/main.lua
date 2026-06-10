@@ -139,10 +139,12 @@ RegisterNetEvent('qb-inventory:client:closeInv', function()
     })
 end)
 
-RegisterNetEvent('qb-inventory:client:updateInventory', function()
-    local items = {}
-    if PlayerData and type(PlayerData.items) == "table" then
-        items = PlayerData.items
+RegisterNetEvent('qb-inventory:client:updateInventory', function(items)
+    if type(items) ~= 'table' then
+        items = (PlayerData and type(PlayerData.items) == 'table') and PlayerData.items or {}
+    end
+    if PlayerData then
+        PlayerData.items = items
     end
 
     SendNUIMessage({

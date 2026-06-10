@@ -44,7 +44,7 @@
             <strong id="prodReward">$0</strong>
           </section>
           <div class="action-row">
-            <button type="button" id="btnBuyParts" class="btn secondary hidden">Pirkti ginklų dalis</button>
+            <button type="button" id="btnBuyParts" class="btn secondary hidden">Reikmenų parduotuvė</button>
             <button type="button" id="btnCraft" class="btn primary">GAMINTI</button>
           </div>
         </div>
@@ -56,6 +56,18 @@
     <div class="mg-box">
       <p>Skill check — spausk <kbd>SPACE</kbd> žalioje zonoje</p>
       <div class="mg-track"><div id="mgZone" class="mg-zone"></div><div id="mgNeedle" class="mg-needle"></div></div>
+    </div>
+  </div>
+
+  <div id="craftProgress" class="craft-progress hidden">
+    <div class="craft-progress-box">
+      <p id="craftProgressPhase" class="craft-phase">1/1</p>
+      <p id="craftProgressLabel" class="craft-label">Gaminama…</p>
+      <div class="craft-bar-wrap">
+        <div id="craftProgressBar" class="craft-bar"></div>
+      </div>
+      <p id="craftProgressTime" class="craft-time">Liko: —</p>
+      <p class="craft-hint">[X] Atšaukti</p>
     </div>
   </div>
 

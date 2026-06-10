@@ -34,7 +34,17 @@ local function getStation(id)
     end
 end
 
-local function estimateWeaponCraftSec(prod)
+local PRINTER_PARTS = { gun_frame = true, gun_barrel = true }
+
+local function productUsesPrinter(productId, st)
+    if not st or st.mode ~= 'weapon' then return false end
+    for _, row in ipairs(getRecipe(productId, st)) do
+        if PRINTER_PARTS[row.item] then return true end
+    end
+    return false
+end
+
+local function estimateWeaponCraftSec(prod, usesPrinter)
     if not prod then return 0 end
     local wc = Config.WeaponCraft or {}
     local level = tonumber(prod.level) or 1
@@ -193,6 +203,7 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:getStationUi', function(s
                 craftTimeSec = (st.mode == 'weapon') and estimateWeaponCraftSec(prod) or math.floor((prod.craftTimeMs or 30000) / 1000),
                 sellBase = (st.mode == 'weapon') and 0 or prod.sellBase,
                 minigame = prod.minigame,
+                usesPrinter = productUsesPrinter(pid, st),
                 ingredients = buildRecipeStatus(Player, pid, st),
                 mode = st.mode or 'drugs',
             }
@@ -263,6 +274,7 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:startCraft', function(src
         failChance = prod.failChance,
         level = prod.level,
         isWeapon = st.mode == 'weapon',
+        usesPrinter = productUsesPrinter(productId, st),
     })
 end)
 
@@ -514,17 +526,31 @@ CreateThread(function()
     registerMaterialShop()
 end)
 
+AddEventHandler('onResourceStart', function(res)
+    if res ~= 'qb-inventory' and res ~= GetCurrentResourceName() then return end
+    CreateThread(function()
+        Wait(800)
+        registerMaterialShop()
+    end)
+end)
+
 local function tryOpenMaterialShop(src)
     if not Config.EnableDrugTestNPC then
         return false, 'Parduotuvė išjungta (production režimas).'
     end
     if not playerNearSupplyShop(src) then
-        return false, 'Per toli nuo parduotuvės.'
+        return false, 'Per toli nuo parduotuvės ar dirbtuvės.'
+    end
+    if GetResourceState('qb-inventory') ~= 'started' then
+        return false, 'Inventoriaus sistema nepasiekiama.'
     end
     if not registerMaterialShop() then
-        return false, 'Parduotuvė nepasiekiama (qb-inventory).'
+        return false, 'Parduotuvė nepasiekiama (prekės neįkeltos).'
     end
-    exports['qb-inventory']:OpenShop(src, Config.MaterialShop.name)
+    local opened = exports['qb-inventory']:OpenShop(src, Config.MaterialShop.name)
+    if not opened then
+        return false, 'Nepavyko atidaryti parduotuvės.'
+    end
     return true
 end
 
@@ -546,7 +572,7 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:buyMaterial', function(sr
         return cb({ ok = false, reason = 'Parduotuvė išjungta.' })
     end
     if not playerNearSupplyShop(src) then
-        return cb({ ok = false, reason = 'Per toli nuo parduotuvės ar spausdintuvo.' })
+        return cb({ ok = false, reason = 'Per toli nuo parduotuvės ar dirbtuvės.' })
     end
 
     amount = math.max(1, math.min(50, math.floor(tonumber(amount) or 1)))
@@ -593,13 +619,14 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:buyMaterial', function(sr
         return cb({ ok = false, reason = 'Nepakanka pinigų (grynieji arba bankas).' })
     end
 
-    if not Player.Functions.AddItem(itemName, amount) then
+    local added = exports['qb-inventory']:AddItem(src, itemName, amount, nil, {}, 'fivempro-drugs-supply')
+    if not added then
         Player.Functions.AddMoney(paidWith, price, 'fivempro-drugs-supply-refund')
         return cb({ ok = false, reason = 'Nepavyko pridėti į inventorių.' })
     end
 
     TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', amount)
-    TriggerClientEvent('qb-inventory:client:updateInventory', src)
+    TriggerClientEvent('qb-inventory:client:updateInventory', src, Player.PlayerData.items)
     cb({ ok = true, item = itemName, amount = amount, label = shared.label })
 end)
 

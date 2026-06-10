@@ -35,7 +35,11 @@ dependencies {
     'qb-target',
 }
 
-exports {
+client_exports {
     'OpenTruckNet',
+}
+
+server_exports {
     'GetTruckerProfile',
+    'OpenTruckNetForPlayer',
 }

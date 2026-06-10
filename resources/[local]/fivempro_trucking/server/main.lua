@@ -362,16 +362,23 @@ local function getLeaderboard()
 end
 
 local function getDriverLeaderboard()
-    return MySQL.query.await([[
-        SELECT p.citizenid, p.level, p.total_deliveries, p.total_earned, p.reputation,
-               JSON_UNQUOTE(JSON_EXTRACT(pl.charinfo, '$.firstname')) AS firstname,
-               JSON_UNQUOTE(JSON_EXTRACT(pl.charinfo, '$.lastname')) AS lastname
-        FROM fivempro_trucker_profiles p
-        LEFT JOIN players pl ON pl.citizenid = p.citizenid
-        WHERE p.registered = 1
-        ORDER BY p.total_deliveries DESC, p.total_earned DESC
-        LIMIT 10
-    ]]) or {}
+    local ok, rows = pcall(function()
+        return MySQL.query.await([[
+            SELECT p.citizenid, p.level, p.total_deliveries, p.total_earned, p.reputation,
+                   JSON_UNQUOTE(JSON_EXTRACT(pl.charinfo, '$.firstname')) AS firstname,
+                   JSON_UNQUOTE(JSON_EXTRACT(pl.charinfo, '$.lastname')) AS lastname
+            FROM fivempro_trucker_profiles p
+            LEFT JOIN players pl ON pl.citizenid = p.citizenid
+            WHERE p.registered = 1
+            ORDER BY p.total_deliveries DESC, p.total_earned DESC
+            LIMIT 10
+        ]])
+    end)
+    if not ok then
+        print(('[fivempro_trucking] driver leaderboard query failed: %s'):format(tostring(rows)))
+        return {}
+    end
+    return rows or {}
 end
 
 local function getDeliveryHistory(citizenid)
@@ -436,7 +443,13 @@ local function buildDashboard(src)
 end
 
 QBCore.Functions.CreateCallback('fivempro_trucking:server:getDashboard', function(src, cb)
-    cb(buildDashboard(src))
+    local ok, result = pcall(buildDashboard, src)
+    if not ok then
+        print(('[fivempro_trucking] getDashboard error: %s'):format(tostring(result)))
+        cb(nil)
+        return
+    end
+    cb(result)
 end)
 
 QBCore.Functions.CreateCallback('fivempro_trucking:server:isRegistered', function(src, cb)
@@ -678,6 +691,7 @@ exports('GetTruckerProfile', function(src)
     return buildProfile(ensureProfile(Player.PlayerData.citizenid))
 end)
 
-exports('OpenTruckNet', function(src)
-    TriggerClientEvent('fivempro_trucking:client:openUI', src, 'full')
+exports('OpenTruckNetForPlayer', function(src)
+    if not src then return end
+    TriggerClientEvent('fivempro_trucking:client:openUI', src, { mode = 'full' })
 end)

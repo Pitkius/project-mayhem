@@ -79,7 +79,21 @@ local function runLocalProgress(ms, label)
 end
 
 local function openUI(mode)
+    if uiOpen then
+        closeUI()
+        Wait(50)
+    end
+
+    local resolved = false
+    CreateThread(function()
+        Wait(12000)
+        if not resolved then
+            QBCore.Functions.Notify('CargoNet duomenų užklausa užtruko. Bandyk dar kartą.', 'error')
+        end
+    end)
+
     QBCore.Functions.TriggerCallback('fivempro_trucking:server:getDashboard', function(data)
+        resolved = true
         if not data then
             QBCore.Functions.Notify('CargoNet duomenų nepavyko gauti.', 'error')
             return
@@ -225,7 +239,13 @@ local function openTerminalMenu()
 end
 
 RegisterNetEvent('fivempro_trucking:client:openUI', function(data)
-    openUI(type(data) == 'table' and data.mode or 'full')
+    local mode = 'full'
+    if type(data) == 'table' then
+        mode = data.mode or 'full'
+    elseif type(data) == 'string' and data ~= '' then
+        mode = data
+    end
+    openUI(mode)
 end)
 
 RegisterNetEvent('fivempro_trucking:client:registerAtTerminal', function()

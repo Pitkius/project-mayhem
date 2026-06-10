@@ -92,6 +92,22 @@ const THEME_PALETTE = {
   amber: { primary: "#fbbf24", secondary: "#b45309", accent: "#fde68a", text: "#fffbeb" },
 };
 
+const COLOR_THEMES = {
+  cyan: { fill: "#22d3ee", glow: "rgba(34,211,238,0.5)" },
+  violet: { fill: "#a78bfa", glow: "rgba(167,139,250,0.5)" },
+  red: { fill: "#f87171", glow: "rgba(248,113,113,0.5)" },
+  green: { fill: "#4ade80", glow: "rgba(74,222,128,0.5)" },
+  amber: { fill: "#fbbf24", glow: "rgba(251,191,36,0.5)" },
+};
+
+const TILE_COLORS = {
+  violet: { health: "#f43f5e", armor: "#a78bfa", hunger: "#fb923c", thirst: "#38bdf8", stamina: "#e879f9", voice: "#c4b5fd" },
+  cyan: { health: "#fb7185", armor: "#22d3ee", hunger: "#fdba74", thirst: "#67e8f9", stamina: "#a5f3fc", voice: "#a5f3fc" },
+  red: { health: "#fca5a5", armor: "#c084fc", hunger: "#fdba74", thirst: "#7dd3fc", stamina: "#f9a8d4", voice: "#e9d5ff" },
+  green: { health: "#f87171", armor: "#86efac", hunger: "#fcd34d", thirst: "#6ee7b7", stamina: "#bbf7d0", voice: "#d9f99d" },
+  amber: { health: "#ef4444", armor: "#d8b4fe", hunger: "#fbbf24", thirst: "#38bdf8", stamina: "#fbcfe8", voice: "#fde68a" },
+};
+
 const PREVIEW_ICONS = {
   health: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.53L12 21.35z"/></svg>',
   armor: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>',
@@ -110,14 +126,8 @@ const PREVIEW_SAMPLE = {
   voice: 62,
 };
 
-const PREVIEW_COLORS = {
-  health: "#f43f5e",
-  armor: "#a78bfa",
-  hunger: "#fb923c",
-  thirst: "#38bdf8",
-  stamina: "#e879f9",
-  voice: "#c4b5fd",
-};
+const PV_RING_R = 12;
+const PV_RING_LEN = 2 * Math.PI * PV_RING_R;
 
 const DEFAULT_MENU_STATE = {
   style: "dots",
@@ -429,34 +439,140 @@ function updateThemeColorPicks(colorKey) {
   if (menu.colText) menu.colText.style.background = pal.text;
 }
 
-function renderPreviewBarRows(keys) {
+function normalizePresets(raw) {
+  if (!raw || typeof raw !== "object") return {};
+  if (Array.isArray(raw)) {
+    const out = {};
+    raw.forEach((p, i) => {
+      if (p) out[i + 1] = p;
+    });
+    return out;
+  }
+  return raw;
+}
+
+function getPreset(idx) {
+  const n = Number(idx) || 1;
+  if (!menuPresets || typeof menuPresets !== "object") return null;
+  return menuPresets[n] || menuPresets[String(n)] || (Array.isArray(menuPresets) ? menuPresets[n - 1] : null);
+}
+
+function buildThemePayload(state) {
+  const colorKey = state.color || "violet";
+  const colors = COLOR_THEMES[colorKey] || COLOR_THEMES.violet;
+  const tiles = TILE_COLORS[colorKey] || TILE_COLORS.violet;
+  return {
+    style: state.style,
+    alpha: state.alpha,
+    color: colorKey,
+    scale: state.scale,
+    compact: state.compact,
+    anim: state.anim,
+    show: state.show,
+    fillColor: colors.fill,
+    glowColor: colors.glow,
+    tileColors: tiles,
+  };
+}
+
+function previewStatColor(keys, colorKey, k) {
+  const tiles = TILE_COLORS[colorKey] || TILE_COLORS.violet;
+  return tiles[k] || (COLOR_THEMES[colorKey] || COLOR_THEMES.violet).fill;
+}
+
+function renderPreviewBarRows(keys, colorKey, isSquare) {
   keys.forEach((k) => {
     const pct = PREVIEW_SAMPLE[k] || 50;
+    const col = previewStatColor(keys, colorKey, k);
     const row = document.createElement("div");
     row.className = "hm-pv-bar-row";
-    row.innerHTML = `<span class="hm-pv-bar-ico">${PREVIEW_ICONS[k] || ""}</span><div class="hm-pv-bar-track"><div class="hm-pv-bar-fill" style="width:${pct}%;background:${PREVIEW_COLORS[k] || "#a78bfa"};box-shadow:0 0 8px ${PREVIEW_COLORS[k] || "#a78bfa"}55"></div></div>`;
+    row.innerHTML = `<span class="hm-pv-bar-ico">${PREVIEW_ICONS[k] || ""}</span><div class="hm-pv-bar-track${isSquare ? " is-square" : ""}"><div class="hm-pv-bar-fill" style="width:${pct}%;background:${col};box-shadow:0 0 8px ${col}55"></div></div>`;
     menu.pvStats.appendChild(row);
   });
 }
 
-function renderPreviewStats(_style, show) {
+function renderPreviewDots(keys, colorKey) {
+  const wrap = document.createElement("div");
+  wrap.className = "hm-pv-dots";
+  keys.forEach((k) => {
+    const pct = PREVIEW_SAMPLE[k] || 50;
+    const col = previewStatColor(keys, colorKey, k);
+    const offset = PV_RING_LEN * (1 - pct / 100);
+    const item = document.createElement("div");
+    item.className = "hm-pv-dot";
+    item.innerHTML = `<svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><circle cx="16" cy="16" r="${PV_RING_R}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2.5"/><circle cx="16" cy="16" r="${PV_RING_R}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" transform="rotate(-90 16 16)" stroke-dasharray="${PV_RING_LEN}" stroke-dashoffset="${offset}"/></svg><span class="hm-pv-dot-ico">${PREVIEW_ICONS[k] || ""}</span><span class="hm-pv-dot-pct">${Math.round(pct)}</span>`;
+    wrap.appendChild(item);
+  });
+  menu.pvStats.appendChild(wrap);
+}
+
+function renderPreviewTiles(keys, colorKey) {
+  const wrap = document.createElement("div");
+  wrap.className = "hm-pv-tiles";
+  keys.forEach((k) => {
+    const pct = PREVIEW_SAMPLE[k] || 50;
+    const col = previewStatColor(keys, colorKey, k);
+    const tile = document.createElement("div");
+    tile.className = "hm-pv-tile";
+    tile.innerHTML = `<div class="hm-pv-tile-fill" style="height:${pct}%;background:${col}"></div><span class="hm-pv-tile-ico">${PREVIEW_ICONS[k] || ""}</span>`;
+    wrap.appendChild(tile);
+  });
+  menu.pvStats.appendChild(wrap);
+}
+
+function renderPreviewFrame(keys, colorKey) {
+  const wrap = document.createElement("div");
+  wrap.className = "hm-pv-frame";
+  keys.forEach((k) => {
+    const pct = PREVIEW_SAMPLE[k] || 50;
+    const col = previewStatColor(keys, colorKey, k);
+    const cell = document.createElement("div");
+    cell.className = "hm-pv-frame-cell";
+    cell.innerHTML = `<div class="hm-pv-frame-fill" style="height:${pct}%;background:${col}"></div><span>${Math.round(pct)}</span>`;
+    wrap.appendChild(cell);
+  });
+  menu.pvStats.appendChild(wrap);
+}
+
+function renderPreviewStats(style, show, colorKey) {
   if (!menu.pvStats) return;
   const keys = activePreviewStats(show);
+  const allowed = ["line", "square", "dots", "tiles", "frame"];
+  const normalized = allowed.includes(style) ? style : "dots";
   menu.pvStats.innerHTML = "";
+  menu.pvStats.classList.remove("hm-pv-stats-dots", "hm-pv-stats-tiles", "hm-pv-stats-frame", "hm-pv-stats-bars");
   if (!keys.length) {
     menu.pvStats.innerHTML = '<span class="hm-pv-empty">Nėra aktyvių elementų</span>';
     return;
   }
-  renderPreviewBarRows(keys);
+  if (normalized === "dots") {
+    menu.pvStats.classList.add("hm-pv-stats-dots");
+    renderPreviewDots(keys, colorKey);
+  } else if (normalized === "tiles") {
+    menu.pvStats.classList.add("hm-pv-stats-tiles");
+    renderPreviewTiles(keys, colorKey);
+  } else if (normalized === "frame") {
+    menu.pvStats.classList.add("hm-pv-stats-frame");
+    renderPreviewFrame(keys, colorKey);
+  } else {
+    menu.pvStats.classList.add("hm-pv-stats-bars");
+    renderPreviewBarRows(keys, colorKey, normalized === "square");
+  }
 }
 
 function renderMenuPreview() {
   const state = getMenuState();
-  renderPreviewStats(state.style, state.show);
+  renderPreviewStats(state.style, state.show, state.color);
   updatePreviewClock();
   updateThemeColorPicks(state.color);
   if (menu.preview) {
     menu.preview.classList.toggle("hm-pv-dim-bg", menu.hudBg ? !menu.hudBg.checked : false);
+    menu.preview.style.setProperty("--panel-alpha", String(state.alpha || 0.55));
+    const pvLeft = menu.preview.querySelector(".hm-pv-left");
+    if (pvLeft) {
+      pvLeft.style.transform = `scale(${state.scale || 1})`;
+      pvLeft.style.transformOrigin = "left top";
+    }
   }
   if (menu.pvVoice) menu.pvVoice.classList.toggle("hidden", !state.show.voice);
   const showCar = state.show.speed || state.show.fuel || state.show.seatbelt;
@@ -486,17 +602,7 @@ function applyMenuLive() {
     show: { ...currentSettings.show, ...payload.show },
   };
   syncRows();
-  applyThemeData({
-    style: currentSettings.style,
-    alpha: currentSettings.alpha,
-    color: currentSettings.color,
-    show: currentSettings.show,
-    fillColor: document.documentElement.style.getPropertyValue("--accent-fill") || undefined,
-    glowColor: document.documentElement.style.getPropertyValue("--accent-glow") || undefined,
-  });
-  document.documentElement.style.setProperty("--hud-scale", String(currentSettings.scale || 1));
-  body.classList.toggle("hud-compact", currentSettings.compact === true);
-  body.classList.toggle("no-hud-anim", currentSettings.anim === false);
+  applyThemeData(buildThemePayload(currentSettings));
   renderMenuPreview();
 }
 
@@ -542,7 +648,7 @@ function getMenuState() {
 }
 
 function fillMenuFromPreset(idx) {
-  const p = menuPresets[idx] || currentSettings;
+  const p = getPreset(idx) || currentSettings;
   if (!p) return;
   menu.preset.value = String(idx);
   menu.style.value = p.style || "dots";
@@ -569,17 +675,19 @@ window.addEventListener("message", (event) => {
   if (!data) return;
 
   if (data.action === "theme") {
-    applyThemeData(data);
     if (typeof data.preset === "number") {
       body.classList.remove("preset-1", "preset-2", "preset-3");
       body.classList.add(`preset-${data.preset}`);
     }
-    syncRows();
+    if (!body.classList.contains("hud-menu-open")) {
+      applyThemeData(data);
+      syncRows();
+    }
     return;
   }
 
   if (data.action === "openMenu") {
-    menuPresets = data.presets || {};
+    menuPresets = normalizePresets(data.presets || {});
     const active = Number(data.activePreset || 1);
     fillMenuFromPreset(active);
     hudMenu.classList.remove("hidden");
@@ -708,7 +816,7 @@ window.addEventListener("message", (event) => {
 
   if (data.action !== "update") return;
 
-  if (data.settings) {
+  if (data.settings && !body.classList.contains("hud-menu-open")) {
     currentSettings = {
       ...currentSettings,
       ...data.settings,
@@ -803,15 +911,17 @@ function bindMenuInput(el, eventName, handler) {
 });
 
 menu.preset.addEventListener("change", () => {
-  fillMenuFromPreset(Number(menu.preset.value || 1));
+  const idx = Number(menu.preset.value || 1);
+  fillMenuFromPreset(idx);
   applyMenuLive();
+  nuiPost("hud:applyPreset", { preset: idx, silent: true });
 });
 
 if (menu.btnApplyPreset) {
   menu.btnApplyPreset.addEventListener("click", () => {
-    nuiPost("hud:applyPreset", { preset: Number(menu.preset.value || 1) }).then(() => {
-      const p = menuPresets[Number(menu.preset.value || 1)];
-      if (p) fillMenuFromPreset(Number(menu.preset.value || 1));
+    const idx = Number(menu.preset.value || 1);
+    nuiPost("hud:applyPreset", { preset: idx }).then(() => {
+      fillMenuFromPreset(idx);
       applyMenuLive();
     });
   });

@@ -6,6 +6,11 @@ const btnCraft = document.getElementById("btnCraft");
 const btnBuyParts = document.getElementById("btnBuyParts");
 const mgSkill = document.getElementById("mgSkill");
 const mgAdvanced = document.getElementById("mgAdvanced");
+const craftProgress = document.getElementById("craftProgress");
+const craftProgressPhase = document.getElementById("craftProgressPhase");
+const craftProgressLabel = document.getElementById("craftProgressLabel");
+const craftProgressBar = document.getElementById("craftProgressBar");
+const craftProgressTime = document.getElementById("craftProgressTime");
 
 let state = { products: [], selectedId: null, isWeaponMode: false };
 
@@ -15,6 +20,49 @@ function post(name, data = {}) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
+}
+
+function formatCraftTime(ms) {
+  const sec = Math.max(0, Math.ceil((ms || 0) / 1000));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m > 0) return `${m}:${String(s).padStart(2, "0")}`;
+  return `${s} sek.`;
+}
+
+function showCraftProgress(data) {
+  if (!craftProgress) return;
+  const d = data || {};
+  const phaseIndex = d.phaseIndex || 1;
+  const phaseCount = d.phaseCount || 1;
+  if (craftProgressPhase) {
+    craftProgressPhase.textContent =
+      phaseCount > 1 ? `Etapas ${phaseIndex}/${phaseCount}` : "Gamyba";
+  }
+  if (craftProgressLabel) craftProgressLabel.textContent = d.label || "Gaminama…";
+  if (craftProgressBar) craftProgressBar.style.width = "0%";
+  const totalMs = d.totalMs || d.durationMs || 0;
+  if (craftProgressTime) {
+    craftProgressTime.textContent = `Liko: ${formatCraftTime(totalMs)}`;
+  }
+  craftProgress.classList.remove("hidden");
+}
+
+function updateCraftProgress(data) {
+  if (!craftProgress || craftProgress.classList.contains("hidden")) return;
+  const d = data || {};
+  if (craftProgressBar && typeof d.overallPct === "number") {
+    craftProgressBar.style.width = `${Math.min(100, Math.max(0, d.overallPct))}%`;
+  }
+  if (craftProgressTime && typeof d.totalRemainingMs === "number") {
+    craftProgressTime.textContent = `Liko: ${formatCraftTime(d.totalRemainingMs)}`;
+  }
+}
+
+function hideCraftProgress() {
+  if (!craftProgress) return;
+  craftProgress.classList.add("hidden");
+  if (craftProgressBar) craftProgressBar.style.width = "0%";
 }
 
 function canCraftProduct(p) {
@@ -51,8 +99,11 @@ function renderDetail(p) {
   document.getElementById("prodLevel").textContent = (p.stageLabel ? `${p.stageLabel} · ` : "") + (p.levelLabel || `Lygis ${p.level}`);
   document.getElementById("prodRisk").textContent = `Rizika: ${p.risk || "—"}`;
   const sec = p.craftTimeSec || 0;
-  document.getElementById("prodTime").textContent =
-    sec >= 90 ? `~${Math.ceil(sec / 60)} min (${sec} sek.)` : `${sec} sek.`;
+  let timeText = sec >= 90 ? `~${Math.ceil(sec / 60)} min (${sec} sek.)` : `${sec} sek.`;
+  if (state.isWeaponMode) {
+    timeText += p.usesPrinter ? " · 3D spausdintuvas" : " · rankinis surinkimas";
+  }
+  document.getElementById("prodTime").textContent = timeText;
   const rewardSection = document.getElementById("rewardSection");
   if (rewardSection) {
     rewardSection.classList.toggle("hidden", state.isWeaponMode || !(p.sellBase > 0));
@@ -81,7 +132,7 @@ window.addEventListener("message", (e) => {
     state.isWeaponMode = !!(d.station && d.station.mode === "weapon");
     if (headTitle) {
       headTitle.innerHTML = state.isWeaponMode
-        ? '3D <span>SPAUSDINTUVAS</span>'
+        ? 'GINKLŲ <span>DIRBTUVĖ</span>'
         : 'NELEGALI <span>GAMYBA</span>';
     }
     if (btnBuyParts) {
@@ -102,6 +153,15 @@ window.addEventListener("message", (e) => {
     app.classList.add("hidden");
     mgSkill.classList.add("hidden");
     mgAdvanced.classList.add("hidden");
+  }
+  if (msg.action === "craftProgress") {
+    showCraftProgress(msg.data);
+  }
+  if (msg.action === "craftProgressUpdate") {
+    updateCraftProgress(msg.data);
+  }
+  if (msg.action === "craftProgressHide") {
+    hideCraftProgress();
   }
   if (msg.action === "minigameSkill") {
     runSkillGame();

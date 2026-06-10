@@ -448,15 +448,26 @@ RegisterNUICallback('radioStation', function(data, cb)
 end)
 
 RegisterNUICallback('openCargoNet', function(_, cb)
-    if GetResourceState('fivempro_trucking') ~= 'started' then
-        QBCore.Functions.Notify('CargoNet šiuo metu nepasiekiama.', 'error')
-        cb({ ok = false })
-        return
-    end
-    closePhone()
-    Wait(150)
-    exports['fivempro_trucking']:OpenTruckNet('phone')
     cb({ ok = true })
+    CreateThread(function()
+        if GetResourceState('fivempro_trucking') ~= 'started' then
+            QBCore.Functions.Notify('CargoNet šiuo metu nepasiekiama.', 'error')
+            return
+        end
+        closePhone()
+        local deadline = GetGameTimer() + 2500
+        while phonePhase ~= 'idle' and GetGameTimer() < deadline do
+            Wait(50)
+        end
+        Wait(100)
+        local ok, err = pcall(function()
+            TriggerEvent('fivempro_trucking:client:openUI', { mode = 'phone' })
+        end)
+        if not ok then
+            print(('[fivempro_phone] CargoNet open error: %s'):format(tostring(err)))
+            QBCore.Functions.Notify('Nepavyko atidaryti CargoNet.', 'error')
+        end
+    end)
 end)
 
 AddEventHandler('onResourceStop', function(res)

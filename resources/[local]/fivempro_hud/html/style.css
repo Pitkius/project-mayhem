@@ -793,6 +793,15 @@ body.shape-square .fill {
     overflow: hidden;
 }
 
+.hm-pv-bar-track.is-square {
+    height: 10px;
+    border-radius: 2px;
+}
+
+.hm-pv-bar-track.is-square .hm-pv-bar-fill {
+    border-radius: 1px;
+}
+
 .hm-pv-bar-fill {
     height: 100%;
     border-radius: 999px;
@@ -807,26 +816,46 @@ body.shape-square .fill {
 
 .hm-pv-dot {
     width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.12);
-    display: grid;
-    place-items: center;
-    font-size: 8px;
-    font-weight: 700;
-    color: #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
     position: relative;
-    background: rgba(0, 0, 0, 0.35);
 }
 
-.hm-pv-dot::before {
-    content: "";
+.hm-pv-dot svg {
+    display: block;
+}
+
+.hm-pv-dot-ico {
     position: absolute;
-    inset: -2px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    border-top-color: var(--pv-accent, var(--accent-fill));
-    transform: rotate(-90deg);
+    top: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 14px;
+    color: var(--accent-soft, #c4b5fd);
+    pointer-events: none;
+}
+
+.hm-pv-dot-ico svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.hm-pv-dot-pct {
+    font-size: 8px;
+    font-weight: 700;
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.hm-pv-stats-dots {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 .hm-pv-tiles {
@@ -852,6 +881,33 @@ body.shape-square .fill {
     bottom: 0;
     height: 50%;
     opacity: 0.85;
+}
+
+.hm-pv-tile-ico {
+    position: relative;
+    z-index: 1;
+    width: 14px;
+    height: 14px;
+    color: #f1f5f9;
+    display: grid;
+    place-items: center;
+}
+
+.hm-pv-tile-ico svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.hm-pv-tile {
+    display: grid;
+    place-items: center;
+}
+
+.hm-pv-stats-tiles {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 .hm-pv-frame {
@@ -881,6 +937,10 @@ body.shape-square .fill {
     bottom: 0;
     height: 40%;
     opacity: 0.75;
+}
+
+.hm-pv-stats-frame .hm-pv-frame {
+    width: 100%;
 }
 
 .hm-pv-money {

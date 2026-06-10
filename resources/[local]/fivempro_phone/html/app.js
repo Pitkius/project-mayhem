@@ -517,7 +517,17 @@ window.renderCargoNetApp = (content) => {
         <button id="btnOpenCargoNet" class="ios-btn primary">Registruotis vairuotoju</button>
       </div>`;
   }
-  document.getElementById("btnOpenCargoNet").addEventListener("click", () => nui("openCargoNet", {}));
+  document.getElementById("btnOpenCargoNet").addEventListener("click", async () => {
+    const btn = document.getElementById("btnOpenCargoNet");
+    if (btn) btn.disabled = true;
+    try {
+      await nui("openCargoNet", {});
+    } catch (_) {
+      /* fetch klaida – dažniausiai resursas perkraunamas */
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
 };
 
 window.renderNotesApp = (content) => {

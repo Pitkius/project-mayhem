@@ -63,8 +63,8 @@ local function applyProgressDisables(disableControls)
     end
 end
 
-local craftAnimActive = false
 local craftPropEntity = nil
+local craftProgressToken = 0
 
 local function loadAnimDict(dict)
     if not dict or dict == '' then return false end
@@ -104,82 +104,96 @@ local function attachCraftProp(propCfg)
 end
 
 local function stopCraftAnim()
-    craftAnimActive = false
+    craftProgressToken = craftProgressToken + 1
+    hideCraftProgress()
     clearCraftProp()
     local ped = PlayerPedId()
     ClearPedTasks(ped)
+end
+
+local function hideCraftProgress()
+    nui('craftProgressHide')
 end
 
 local function startCraftAnim(anim)
     if not anim or not anim.dict then return end
     if not loadAnimDict(anim.dict) then return end
     local ped = PlayerPedId()
-    craftAnimActive = true
-    TaskPlayAnim(ped, anim.dict, anim.clip or 'base', 2.0, 2.0, -1, anim.flag or 49, 0, false, false, false)
+    TaskPlayAnim(ped, anim.dict, anim.clip or 'base', 4.0, 4.0, -1, anim.flag or 49, 0, false, false, false)
 end
 
-local function buildProgressAnim(anim)
-    if not anim or not anim.dict then return nil end
-    return {
-        animDict = anim.dict,
-        anim = anim.clip or 'base',
-        flags = anim.flag or 49,
-    }
-end
-
-local function runProgress(label, durationMs, onDone, anim, propCfg)
+local function runProgress(label, durationMs, onDone, anim, propCfg, meta)
     durationMs = tonumber(durationMs) or 5000
     label = label or 'Gaminama…'
-    local animation = buildProgressAnim(anim)
-    local propData = {}
-    if propCfg and propCfg.model then
-        propData = {
-            model = propCfg.model,
-            bone = propCfg.bone or 28422,
-            coords = propCfg.pos or vector3(0.0, 0.0, 0.0),
-            rotation = propCfg.rot or vector3(0.0, 0.0, 0.0),
-        }
-    end
+    meta = meta or {}
+
+    craftProgressToken = craftProgressToken + 1
+    local token = craftProgressToken
+
+    local phaseStart = GetGameTimer()
+    local endAt = phaseStart + durationMs
+    local totalMs = tonumber(meta.totalMs) or durationMs
+    local elapsedBefore = tonumber(meta.elapsedMs) or 0
+    local phaseIndex = tonumber(meta.phaseIndex) or 1
+    local phaseCount = tonumber(meta.phaseCount) or 1
 
     if anim then
-        startCraftAnim(anim)
         if propCfg then attachCraftProp(propCfg) end
-        CreateThread(function()
-            while craftAnimActive do
-                local ped = PlayerPedId()
-                if anim.dict and not IsEntityPlayingAnim(ped, anim.dict, anim.clip or 'base', 3) then
-                    TaskPlayAnim(ped, anim.dict, anim.clip or 'base', 2.0, 2.0, -1, anim.flag or 49, 0, false, false, false)
-                end
-                Wait(750)
-            end
-        end)
+        startCraftAnim(anim)
     end
 
-    local function finish(ok)
-        stopCraftAnim()
-        if onDone then onDone(ok) end
-    end
-
-    if GetResourceState('progressbar') == 'started' then
-        QBCore.Functions.Progressbar('fivempro_drugs_craft', label, durationMs, false, true, PROGRESS_DISABLE, animation or {}, propData, {}, function()
-            finish(true)
-        end, function()
-            finish(false)
-        end)
-        return
-    end
+    nui('craftProgress', {
+        label = label,
+        phaseIndex = phaseIndex,
+        phaseCount = phaseCount,
+        durationMs = durationMs,
+        totalMs = totalMs,
+        elapsedMs = elapsedBefore,
+    })
 
     CreateThread(function()
-        QBCore.Functions.Notify(label, 'primary', math.min(durationMs, 8000))
-        local endAt = GetGameTimer() + durationMs
+        local lastNuiUpdate = 0
         while GetGameTimer() < endAt do
+            if token ~= craftProgressToken then return end
+
             applyProgressDisables(PROGRESS_DISABLE)
-            if IsControlJustReleased(0, 73) or IsControlJustReleased(0, 200) then
-                return finish(false)
+
+            if anim and anim.dict then
+                local ped = PlayerPedId()
+                local clip = anim.clip or 'base'
+                if not IsEntityPlayingAnim(ped, anim.dict, clip, 3) then
+                    TaskPlayAnim(ped, anim.dict, clip, 4.0, 4.0, -1, anim.flag or 49, 0, false, false, false)
+                end
             end
+
+            if IsControlJustReleased(0, 73) or IsControlJustReleased(0, 200) then
+                hideCraftProgress()
+                stopCraftAnim()
+                if onDone then onDone(false) end
+                return
+            end
+
+            local now = GetGameTimer()
+            if now - lastNuiUpdate >= 100 then
+                lastNuiUpdate = now
+                local phaseElapsed = now - phaseStart
+                local totalRemaining = math.max(0, totalMs - elapsedBefore - phaseElapsed)
+                local overallPct = math.min(100, math.floor(((elapsedBefore + phaseElapsed) / totalMs) * 100))
+                nui('craftProgressUpdate', {
+                    totalRemainingMs = totalRemaining,
+                    overallPct = overallPct,
+                })
+            end
+
             Wait(0)
         end
-        finish(true)
+
+        if token ~= craftProgressToken then return end
+        hideCraftProgress()
+        clearCraftProp()
+        local ped = PlayerPedId()
+        ClearPedTasks(ped)
+        if onDone then onDone(true) end
     end)
 end
 
@@ -218,7 +232,8 @@ local function runWeaponCraftSequence(res, afterMinigame)
     faceCraftStation(currentStationId)
 
     local wc = Config.WeaponCraft or {}
-    local phases = wc.phases or {}
+    local usesPrinter = res.usesPrinter == true
+    local phases = usesPrinter and (wc.phases or {}) or (wc.benchPhases or wc.phases or {})
     if #phases == 0 then
         return runProgress(res.label, res.craftTimeMs or 60000, afterMinigame)
     end
@@ -229,6 +244,13 @@ local function runWeaponCraftSequence(res, afterMinigame)
     local mg = res.minigame or 'progress'
     local minPhase = tonumber(wc.minPhaseMs) or 9000
     local phaseIndex = 1
+    local phaseDurations = {}
+    local totalMs = 0
+    for _, phase in ipairs(phases) do
+        local dur = math.max(minPhase, math.floor(baseMs * (phase.weight or 0.25)))
+        phaseDurations[#phaseDurations + 1] = dur
+        totalMs = totalMs + dur
+    end
 
     local function runMinigameThen(nextFn)
         if mg == 'skill' then
@@ -246,6 +268,8 @@ local function runWeaponCraftSequence(res, afterMinigame)
         end
     end
 
+    local minigameAt = usesPrinter and 3 or math.max(1, #phases - 1)
+
     local function nextPhase()
         if phaseIndex > #phases then
             return afterMinigame(true)
@@ -253,18 +277,31 @@ local function runWeaponCraftSequence(res, afterMinigame)
         local phase = phases[phaseIndex]
         local currentIdx = phaseIndex
         phaseIndex = phaseIndex + 1
-        local dur = math.max(minPhase, math.floor(baseMs * (phase.weight or 0.25)))
+        local dur = phaseDurations[currentIdx] or minPhase
+        local elapsedBefore = 0
+        for i = 1, currentIdx - 1 do
+            elapsedBefore = elapsedBefore + (phaseDurations[i] or 0)
+        end
 
         runProgress(phase.label or res.label, dur, function(ok)
             if not ok then return afterMinigame(false) end
-            if currentIdx == 3 and (mg == 'skill' or mg == 'advanced') then
+            if currentIdx == minigameAt and (mg == 'skill' or mg == 'advanced') then
                 return runMinigameThen(nextPhase)
             end
             nextPhase()
-        end, phase.anim, phase.prop)
+        end, phase.anim, phase.prop, {
+            phaseIndex = currentIdx,
+            phaseCount = #phases,
+            totalMs = totalMs,
+            elapsedMs = elapsedBefore,
+        })
     end
 
-    QBCore.Functions.Notify('3D spausdintuvas paleistas — neuždaryk proceso.', 'primary', 5000)
+    if usesPrinter then
+        QBCore.Functions.Notify('3D spausdintuvas paleistas — neuždaryk proceso.', 'primary', 5000)
+    else
+        QBCore.Functions.Notify('Gamyba prasidėjo — neuždaryk proceso.', 'primary', 5000)
+    end
     nextPhase()
 end
 
@@ -362,12 +399,12 @@ RegisterNUICallback('craft', function(data, cb)
 end)
 
 RegisterNUICallback('buyParts', function(_, cb)
+    cb('ok')
     closeUi()
     CreateThread(function()
-        Wait(200)
-        openWeaponPartsMenu()
+        Wait(300)
+        openMaterialShop()
     end)
-    cb('ok')
 end)
 
 RegisterNUICallback('refresh', function(_, cb)
@@ -472,8 +509,8 @@ local function setupStations()
         local isWeapon = st.mode == 'weapon'
         local options = {
             {
-                icon = isWeapon and 'fas fa-print' or 'fas fa-flask',
-                label = isWeapon and ('3D spausdintuvas: %s'):format(st.label) or ('Gamybos stotis: %s'):format(st.label),
+                icon = isWeapon and 'fas fa-tools' or 'fas fa-flask',
+                label = isWeapon and ('Ginklų dirbtuvė: %s'):format(st.label) or ('Gamybos stotis: %s'):format(st.label),
                 action = function()
                     openStationUi(st.id)
                 end,
@@ -514,7 +551,7 @@ end
 
 local function openWeaponPartsMenu()
     local rows = {
-        { header = 'Ginklų dalys · 3D spausdintuvas', isMenuHeader = true },
+        { header = 'Ginklų dalys ir reikmenys', isMenuHeader = true },
     }
     local shopItems = (Config.MaterialShop and Config.MaterialShop.items) or {}
     for _, itemName in ipairs(WEAPON_PART_ITEMS) do
@@ -547,14 +584,21 @@ local function openWeaponPartsMenu()
     }
     rows[#rows + 1] = {
         header = 'Uždaryti',
-        params = { isAction = true, event = function() exports['qb-menu']:closeMenu() end },
+        params = { isAction = true, event = function() TriggerEvent('qb-menu:client:closeMenu') end },
     }
-    TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+    if GetResourceState('qb-menu') == 'started' then
+        TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+    else
+        openMaterialShop()
+    end
 end
 
 local function openMaterialShop()
     QBCore.Functions.TriggerCallback('fivempro_drugs:server:openMaterialShop', function(res)
-        if res and res.ok then return end
+        if res and res.ok then
+            QBCore.Functions.Notify('Pasirink prekes ir vilk į inventorių.', 'primary', 4500)
+            return
+        end
         QBCore.Functions.Notify((res and res.reason) or 'Parduotuvė neprieinama.', 'error')
     end)
 end
@@ -571,9 +615,11 @@ local function openTestMenu()
         { header = 'Ginklų dirbtuvė L2', params = { isAction = true, event = function() openStationUi('weapon_bench_l2') end } },
         { header = 'Ginklų dirbtuvė L3', params = { isAction = true, event = function() openStationUi('weapon_bench_l3') end } },
         { header = 'Pardavimas (/drugsell)', txt = 'Stovėk prie NPC su produktu inventoriuje', isMenuHeader = true },
-        { header = 'Uždaryti', params = { isAction = true, event = function() exports['qb-menu']:closeMenu() end } },
+        { header = 'Uždaryti', params = { isAction = true, event = function() TriggerEvent('qb-menu:client:closeMenu') end } },
     }
-    TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+    if GetResourceState('qb-menu') == 'started' then
+        TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+    end
 end
 
 RegisterNetEvent('fivempro_drugs:client:testKit', function(data)

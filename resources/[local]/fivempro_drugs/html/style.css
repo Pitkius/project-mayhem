@@ -190,3 +190,60 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   cursor: pointer;
 }
 .mg-keys button.hit { background: #22c55e; }
+
+.craft-progress {
+  position: fixed;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  z-index: 9000;
+  pointer-events: none;
+}
+.craft-progress-box {
+  min-width: 340px;
+  max-width: 420px;
+  padding: 16px 20px;
+  background: rgba(12, 8, 24, 0.94);
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+.craft-phase {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  margin-bottom: 6px;
+}
+.craft-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f3e8ff;
+  margin-bottom: 12px;
+}
+.craft-bar-wrap {
+  height: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.craft-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+  border-radius: 999px;
+  transition: width 0.12s linear;
+}
+.craft-time {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e9d5ff;
+  font-variant-numeric: tabular-nums;
+}
+.craft-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: rgba(233, 228, 255, 0.45);
+}
