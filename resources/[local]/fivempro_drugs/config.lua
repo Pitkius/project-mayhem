@@ -289,9 +289,9 @@ Config.Stations = {
     { id = 'lab_sandy', label = 'L2 · Laboratorija', level = 2, coords = devRow(3.5), radius = 2.2, blip = false },
     { id = 'cartel_lab', label = 'L3 · Kartelis', level = 3, coords = devRow(7.0), radius = 2.2, blip = false },
     { id = 'secret_humane', label = 'L3 · Slapta lab.', level = 3, coords = devRow(10.5), radius = 2.2, blip = false },
-    { id = 'weapon_bench_l1', label = 'Ginklų dirbtuvė · L1', level = 1, mode = 'weapon', coords = devRow(14.0), radius = 2.2, blip = false },
-    { id = 'weapon_bench_l2', label = 'Ginklų dirbtuvė · L2', level = 2, mode = 'weapon', coords = devRow(15.5), radius = 2.2, blip = false },
-    { id = 'weapon_bench_l3', label = 'Ginklų dirbtuvė · L3', level = 3, mode = 'weapon', coords = devRow(17.0), radius = 2.2, blip = false },
+    { id = 'weapon_bench_l1', label = '3D spausdintuvas · L1', level = 1, mode = 'weapon', coords = devRow(14.0), radius = 2.2, blip = false },
+    { id = 'weapon_bench_l2', label = '3D spausdintuvas · L2', level = 2, mode = 'weapon', coords = devRow(15.5), radius = 2.2, blip = false },
+    { id = 'weapon_bench_l3', label = '3D spausdintuvas · L3', level = 3, mode = 'weapon', coords = devRow(17.0), radius = 2.2, blip = false },
 }
 
 --- Ginklų gamyba (atskira stotis, mode = weapon) — be NPC pardavimo kainos

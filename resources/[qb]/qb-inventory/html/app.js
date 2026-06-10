@@ -227,7 +227,7 @@ const InventoryContainer = Vue.createApp({
                 }
             } else if (event.button === 2 && itemInSlot) {
                 if (this.otherInventoryName.startsWith("shop-")) {
-                    this.handlePurchase(slot, itemInSlot.slot, itemInSlot, 1);
+                    this.buyFromShop(itemInSlot, 1);
                     return;
                 }
                 if (!this.isOtherInventoryEmpty) {
@@ -509,17 +509,48 @@ const InventoryContainer = Vue.createApp({
                 this.clearDragData();
             }
         },
+        shopPurchaseAmount(sourceItem, transferAmount) {
+            const raw = transferAmount !== null && transferAmount !== undefined ? transferAmount : 1;
+            const amount = Math.max(1, Math.floor(Number(raw) || 1));
+            return Math.min(amount, sourceItem.amount || amount);
+        },
+        resolvePurchaseTargetSlot(sourceItem) {
+            const targetInventory = this.playerInventory;
+            const stackSlot = Object.keys(targetInventory).find(
+                (slot) => targetInventory[slot] && targetInventory[slot].name === sourceItem.name,
+            );
+            if (stackSlot) return Number(stackSlot);
+            const freeSlot = Array.from({ length: this.totalSlots }, (_, i) => i + 1).find((i) => !(i in targetInventory));
+            return freeSlot || null;
+        },
+        buyFromShop(sourceItem, transferAmount) {
+            if (!sourceItem || !this.isShopInventory) return;
+            const amountToTransfer = this.shopPurchaseAmount(sourceItem, transferAmount);
+            const targetSlot = this.resolvePurchaseTargetSlot(sourceItem);
+            if (!targetSlot) {
+                this.inventoryError(sourceItem.slot);
+                return;
+            }
+            this.handlePurchase(targetSlot, sourceItem.slot, sourceItem, amountToTransfer);
+        },
+        handleShopSlotActivate(slot) {
+            if (!this.isShopInventory) return;
+            const item = this.getItemInSlot(slot, "other");
+            if (!item) return;
+            const amount = this.transferAmount !== null && this.transferAmount > 0 ? this.transferAmount : 1;
+            this.buyFromShop(item, amount);
+        },
         async handlePurchase(targetSlot, sourceSlot, sourceItem, transferAmount) {
             try {
+                const amountToTransfer = this.shopPurchaseAmount(sourceItem, transferAmount);
                 const response = await axios.post("https://qb-inventory/AttemptPurchase", {
                     item: sourceItem,
-                    amount: transferAmount || sourceItem.amount,
+                    amount: amountToTransfer,
                     shop: this.otherInventoryName,
                 });
                 if (response.data) {
                     const sourceInventory = this.getInventoryByType("other");
                     const targetInventory = this.getInventoryByType("player");
-                    const amountToTransfer = transferAmount !== null ? transferAmount : sourceItem.amount;
                     if (sourceItem.amount < amountToTransfer) {
                         this.inventoryError(sourceSlot);
                         return;
@@ -536,6 +567,7 @@ const InventoryContainer = Vue.createApp({
                                 targetInventory[freeSlot] = {
                                     ...sourceItem,
                                     amount: amountToTransfer,
+                                    slot: freeSlot,
                                 };
                             } else {
                                 this.inventoryError(sourceSlot);

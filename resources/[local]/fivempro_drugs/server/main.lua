@@ -442,11 +442,20 @@ local function registerMaterialShop()
     if GetResourceState('qb-inventory') ~= 'started' then return false end
     local cfg = Config.MaterialShop
     if not cfg or not cfg.name or not cfg.items then return false end
+    local validItems = {}
+    for _, row in ipairs(cfg.items) do
+        if QBCore.Shared.Items[row.name] or QBCore.Shared.Items[string.lower(row.name or '')] then
+            validItems[#validItems + 1] = row
+        else
+            logAdmin(('MaterialShop praleidžia nežinomą item: %s'):format(tostring(row.name)))
+        end
+    end
+    if #validItems == 0 then return false end
     exports['qb-inventory']:CreateShop({
         name = cfg.name,
         label = cfg.label or 'Reikmenys',
-        slots = #cfg.items,
-        items = cfg.items,
+        slots = #validItems,
+        items = validItems,
     })
     return true
 end
@@ -456,16 +465,31 @@ CreateThread(function()
     registerMaterialShop()
 end)
 
-RegisterNetEvent('fivempro_drugs:server:openMaterialShop', function()
-    if not Config.EnableDrugTestNPC then return end
-    local src = source
+local function tryOpenMaterialShop(src)
+    if not Config.EnableDrugTestNPC then
+        return false, 'Parduotuvė išjungta (production režimas).'
+    end
     if not playerNearSupplyShop(src) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo parduotuvės.', 'error')
+        return false, 'Per toli nuo parduotuvės.'
     end
     if not registerMaterialShop() then
-        return TriggerClientEvent('QBCore:Notify', src, 'Parduotuvė nepasiekiama (qb-inventory).', 'error')
+        return false, 'Parduotuvė nepasiekiama (qb-inventory).'
     end
     exports['qb-inventory']:OpenShop(src, Config.MaterialShop.name)
+    return true
+end
+
+RegisterNetEvent('fivempro_drugs:server:openMaterialShop', function()
+    local src = source
+    local ok, reason = tryOpenMaterialShop(src)
+    if not ok then
+        TriggerClientEvent('QBCore:Notify', src, reason or 'Parduotuvė neprieinama.', 'error')
+    end
+end)
+
+QBCore.Functions.CreateCallback('fivempro_drugs:server:openMaterialShop', function(src, cb)
+    local ok, reason = tryOpenMaterialShop(src)
+    cb({ ok = ok, reason = reason })
 end)
 
 RegisterNetEvent('fivempro_drugs:server:testGiveKit', function(kitKey)

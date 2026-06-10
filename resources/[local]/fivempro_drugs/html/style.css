@@ -118,11 +118,22 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   font-weight: 600;
   letter-spacing: 0.06em;
 }
+.action-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+.action-row .btn { flex: 1; margin-top: 0; }
 .btn.primary {
   width: 100%;
   background: linear-gradient(90deg, #7c3aed, #a855f7);
   color: #fff;
   margin-top: 8px;
+}
+.btn.secondary {
+  background: rgba(30, 27, 46, 0.95);
+  color: #e9d5ff;
+  border: 1px solid rgba(167, 139, 250, 0.45);
 }
 .btn.primary:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn.ghost { background: transparent; color: #c4b5fd; border: 1px solid rgba(167, 139, 250, 0.35); }

@@ -2,13 +2,29 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 print("^2[fivempro_basics]^7 Resource paleistas sekmingai.")
 
-AddEventHandler('playerJoining', function(playerName)
+local function playerDisplayName(src, Player)
+    if Player and Player.PlayerData and Player.PlayerData.charinfo then
+        local c = Player.PlayerData.charinfo
+        local full = ('%s %s'):format(c.firstname or '', c.lastname or '')
+        full = full:gsub('^%s+', ''):gsub('%s+$', '')
+        if full ~= '' then return full end
+    end
+    return GetPlayerName(src) or ('Žaidėjas %s'):format(src)
+end
+
+AddEventHandler('playerJoining', function()
     local src = source
-    print(("[fivempro_basics] Prisijunge zaidejas: %s (ID: %s)"):format(playerName, src))
+    print(('[fivempro_basics] Prisijungia žaidėjas (ID: %s)'):format(src))
+end)
+
+AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
+    if not Player or not Player.PlayerData then return end
+    local src = Player.PlayerData.source
+    local name = playerDisplayName(src, Player)
     TriggerClientEvent('chat:addMessage', src, {
         color = { 0, 200, 120 },
         multiline = true,
-        args = { "SERVER", ("Sveikas atvykes, %s!"):format(playerName) }
+        args = { 'SERVER', ('Sveikas atvykęs, %s!'):format(name) },
     })
 end)
 

@@ -31,15 +31,63 @@ local function openStationUi(stationId)
     end, stationId)
 end
 
+local PROGRESS_DISABLE = {
+    disableMovement = true,
+    disableCarMovement = true,
+    disableCombat = true,
+}
+
+local function applyProgressDisables(disableControls)
+    if type(disableControls) ~= 'table' then return end
+    if disableControls.disableMovement then
+        DisableControlAction(0, 30, true)
+        DisableControlAction(0, 31, true)
+        DisableControlAction(0, 36, true)
+        DisableControlAction(0, 21, true)
+    end
+    if disableControls.disableCarMovement then
+        DisableControlAction(0, 63, true)
+        DisableControlAction(0, 64, true)
+        DisableControlAction(0, 71, true)
+        DisableControlAction(0, 72, true)
+    end
+    if disableControls.disableCombat then
+        DisableControlAction(0, 24, true)
+        DisableControlAction(0, 25, true)
+        DisableControlAction(0, 47, true)
+        DisableControlAction(0, 58, true)
+        DisableControlAction(0, 140, true)
+        DisableControlAction(0, 141, true)
+        DisableControlAction(0, 142, true)
+        DisableControlAction(0, 143, true)
+    end
+end
+
 local function runProgress(label, durationMs, onDone)
-    QBCore.Functions.Progressbar('fivempro_drugs_craft', label or 'Gaminama…', durationMs, false, true, {
-        disableMovement = true,
-        disableCarMovement = true,
-        disableCombat = true,
-    }, {}, {}, {}, function()
+    durationMs = tonumber(durationMs) or 5000
+    label = label or 'Gaminama…'
+
+    if GetResourceState('progressbar') == 'started' then
+        QBCore.Functions.Progressbar('fivempro_drugs_craft', label, durationMs, false, true, PROGRESS_DISABLE, {}, {}, {}, function()
+            if onDone then onDone(true) end
+        end, function()
+            if onDone then onDone(false) end
+        end)
+        return
+    end
+
+    CreateThread(function()
+        QBCore.Functions.Notify(label, 'primary', math.min(durationMs, 8000))
+        local endAt = GetGameTimer() + durationMs
+        while GetGameTimer() < endAt do
+            applyProgressDisables(PROGRESS_DISABLE)
+            if IsControlJustReleased(0, 73) or IsControlJustReleased(0, 200) then
+                if onDone then onDone(false) end
+                return
+            end
+            Wait(0)
+        end
         if onDone then onDone(true) end
-    end, function()
-        if onDone then onDone(false) end
     end)
 end
 
@@ -80,12 +128,12 @@ local function startCraftFlow(productId)
         if mg == 'progress' then
             runProgress(res.label, res.craftTimeMs or 25000, afterMinigame)
         elseif mg == 'skill' then
-            runProgress(res.label, math.floor((res.craftTimeMs or 30000) * 0.55), function()
-                runSkillMinigame(afterMinigame)
+            runProgress(res.label, math.floor((res.craftTimeMs or 30000) * 0.55), function(ok)
+                if ok then runSkillMinigame(afterMinigame) end
             end)
         else
-            runProgress(res.label, math.floor((res.craftTimeMs or 40000) * 0.45), function()
-                runAdvancedMinigame(afterMinigame)
+            runProgress(res.label, math.floor((res.craftTimeMs or 40000) * 0.45), function(ok)
+                if ok then runAdvancedMinigame(afterMinigame) end
             end)
         end
     end, currentStationId, productId)
@@ -149,6 +197,13 @@ RegisterNUICallback('craft', function(data, cb)
     if data and data.productId then
         startCraftFlow(data.productId)
     end
+    cb('ok')
+end)
+
+RegisterNUICallback('buyParts', function(_, cb)
+    closeUi()
+    Wait(120)
+    openMaterialShop()
     cb('ok')
 end)
 
@@ -250,27 +305,38 @@ local function setupStations()
     if GetResourceState('qb-target') ~= 'started' then return end
     for _, st in ipairs(Config.Stations or {}) do
         local isWeapon = st.mode == 'weapon'
+        local options = {
+            {
+                icon = isWeapon and 'fas fa-print' or 'fas fa-flask',
+                label = isWeapon and ('3D spausdintuvas: %s'):format(st.label) or ('Gamybos stotis: %s'):format(st.label),
+                action = function()
+                    openStationUi(st.id)
+                end,
+            },
+        }
+        if isWeapon then
+            options[#options + 1] = {
+                icon = 'fas fa-shopping-bag',
+                label = 'Pirkti ginklų dalis',
+                action = openMaterialShop,
+            }
+        end
         exports['qb-target']:AddCircleZone(('fivempro_drugs_%s'):format(st.id), st.coords, st.radius or 2.0, {
             name = ('fivempro_drugs_%s'):format(st.id),
             debugPoly = false,
             useZ = true,
         }, {
-            options = {
-                {
-                    icon = isWeapon and 'fas fa-gun' or 'fas fa-flask',
-                    label = isWeapon and ('Ginklų gamyba: %s'):format(st.label) or ('Gamybos stotis: %s'):format(st.label),
-                    action = function()
-                        openStationUi(st.id)
-                    end,
-                },
-            },
+            options = options,
             distance = Config.InteractDistance or 2.0,
         })
     end
 end
 
 local function openMaterialShop()
-    TriggerServerEvent('fivempro_drugs:server:openMaterialShop')
+    QBCore.Functions.TriggerCallback('fivempro_drugs:server:openMaterialShop', function(res)
+        if res and res.ok then return end
+        QBCore.Functions.Notify((res and res.reason) or 'Parduotuvė neprieinama.', 'error')
+    end)
 end
 
 local function openTestMenu()

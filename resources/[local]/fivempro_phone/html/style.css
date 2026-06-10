@@ -583,6 +583,23 @@ input, textarea {
 
 .list-item.compact { padding: 10px 12px; }
 
+.list-item.system-contact {
+  border-color: rgba(10, 132, 255, 0.22);
+  background: rgba(10, 132, 255, 0.08);
+}
+
+.list-item-body .tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  vertical-align: middle;
+  background: rgba(10, 132, 255, 0.2);
+  color: #64b5ff;
+}
+
 .list-item-body { flex: 1; min-width: 0; }
 
 .list-item-actions {

@@ -17,6 +17,13 @@ Config.Phone = {
     maxAdTitleLength = 48,
     maxPostCaptionLength = 260,
     maxImageUrlLength = 500,
+    --- Automatiniai tarnybų kontaktai (įrašomi kiekvienam žaidėjui, abėcėlės tvarka)
+    DefaultContacts = {
+        { key = 'ems', name = 'Greitoji pagalba', number = '112', service = 'ems' },
+        { key = 'mechanic', name = 'Mechanikas', number = '1313', service = 'mechanic' },
+        { key = 'police', name = 'Policija', number = '110', service = 'police' },
+        { key = 'taxi', name = 'Taksi', number = '1818', service = 'taxi' },
+    },
     --- Skelbimų kategorijos (lengvai pridėti naujas)
     AdCategories = {
         { id = 'all', label = 'Visi' },

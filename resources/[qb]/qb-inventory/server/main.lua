@@ -330,6 +330,7 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
 
     local shopInfo = RegisteredShops[shop]
     if not shopInfo then
+        TriggerClientEvent('QBCore:Notify', source, 'Parduotuvė nerasta.', 'error')
         cb(false)
         return
     end
@@ -339,18 +340,22 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
     if shopInfo.coords then
         local shopCoords = vector3(shopInfo.coords.x, shopInfo.coords.y, shopInfo.coords.z)
         if #(playerCoords - shopCoords) > 10 then
+            TriggerClientEvent('QBCore:Notify', source, 'Per toli nuo parduotuvės.', 'error')
             cb(false)
             return
         end
     end
 
-    if shopInfo.items[itemInfo.slot].name ~= itemInfo.name then -- Check if item name passed is the same as the item in that slot
+    local slotIdx = tonumber(itemInfo.slot)
+    local shopItem = slotIdx and shopInfo.items[slotIdx]
+    if not shopItem or shopItem.name ~= itemInfo.name then
+        TriggerClientEvent('QBCore:Notify', source, 'Prekė parduotuvėje nerasta.', 'error')
         cb(false)
         return
     end
 
-    if amount > shopInfo.items[itemInfo.slot].amount or shopInfo.items[itemInfo.slot].amount <= 0 then
-        TriggerClientEvent('QBCore:Notify', source, 'Cannot purchase larger quantity than currently in stock', 'error')
+    if amount > shopItem.amount or shopItem.amount <= 0 then
+        TriggerClientEvent('QBCore:Notify', source, 'Nepakanka likučio parduotuvėje.', 'error')
         cb(false)
         return
     end
@@ -368,17 +373,22 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
         return
     end
 
-    local price = shopInfo.items[itemInfo.slot].price * amount
-    if Player.PlayerData.money.cash >= price then
+    local price = shopItem.price * amount
+    local cash = Player.PlayerData.money.cash or 0
+    local bank = Player.PlayerData.money.bank or 0
+    if cash >= price then
         Player.Functions.RemoveMoney('cash', price, 'shop-purchase')
-        AddItem(source, itemInfo.name, amount, nil, itemInfo.info, 'shop-purchase')
-        shopInfo.items[itemInfo.slot].amount -= amount
-        TriggerEvent('qb-shops:server:UpdateShopItems', shop, itemInfo, amount)
-        cb(true)
+    elseif bank >= price then
+        Player.Functions.RemoveMoney('bank', price, 'shop-purchase')
     else
-        TriggerClientEvent('QBCore:Notify', source, 'You do not have enough money', 'error')
+        TriggerClientEvent('QBCore:Notify', source, 'Nepakanka pinigų (grynieji arba bankas).', 'error')
         cb(false)
+        return
     end
+    AddItem(source, itemInfo.name, amount, nil, itemInfo.info, 'shop-purchase')
+    shopItem.amount -= amount
+    TriggerEvent('qb-shops:server:UpdateShopItems', shop, itemInfo, amount)
+    cb(true)
 end)
 
 QBCore.Functions.CreateCallback('qb-inventory:server:giveItem', function(source, cb, target, item, amount, slot, info)

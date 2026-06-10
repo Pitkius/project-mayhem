@@ -2,16 +2,16 @@
 window.GtavMapCore = (function () {
   const ISLAND = {
     gameMin: { x: -4000, y: -4000 },
-    gameMax: { x: 4500, y: 8000 },
+    gameMax: { x: 4500, y: 8150 },
     viewMin: { x: -4000, y: -4000 },
-    viewMax: { x: 4500, y: 8000 },
+    viewMax: { x: 4500, y: 8150 },
     offsetX: 0,
-    offsetY: 0,
+    offsetY: 225,
     scaleX: 1,
     scaleY: 1,
     flipY: false,
     imageWidth: 2048,
-    imageHeight: 2560,
+    imageHeight: 2048,
   };
 
   function nuiImageUrl(pathFromHtml, resourceName) {

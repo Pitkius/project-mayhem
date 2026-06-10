@@ -3,6 +3,7 @@ const productList = document.getElementById("productList");
 const emptyPick = document.getElementById("emptyPick");
 const detailPanel = document.getElementById("detailPanel");
 const btnCraft = document.getElementById("btnCraft");
+const btnBuyParts = document.getElementById("btnBuyParts");
 const mgSkill = document.getElementById("mgSkill");
 const mgAdvanced = document.getElementById("mgAdvanced");
 
@@ -77,8 +78,11 @@ window.addEventListener("message", (e) => {
     state.isWeaponMode = !!(d.station && d.station.mode === "weapon");
     if (headTitle) {
       headTitle.innerHTML = state.isWeaponMode
-        ? 'GINKLŲ <span>DIRBTUVĖ</span>'
+        ? '3D <span>SPAUSDINTUVAS</span>'
         : 'NELEGALI <span>GAMYBA</span>';
+    }
+    if (btnBuyParts) {
+      btnBuyParts.classList.toggle("hidden", !state.isWeaponMode);
     }
     const rewardSection = document.getElementById("rewardSection");
     if (rewardSection) rewardSection.classList.toggle("hidden", state.isWeaponMode);
@@ -105,6 +109,9 @@ window.addEventListener("message", (e) => {
 });
 
 document.getElementById("btnClose").onclick = () => post("close");
+if (btnBuyParts) {
+  btnBuyParts.onclick = () => post("buyParts");
+}
 btnCraft.onclick = () => {
   if (!state.selectedId) return;
   post("craft", { productId: state.selectedId });

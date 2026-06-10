@@ -15,6 +15,16 @@
     return hit ? hit.display_name : n;
   }
 
+  function sortContacts(list) {
+    return [...(list || [])].sort((a, b) =>
+      String(a.display_name || "").localeCompare(String(b.display_name || ""), "lt", { sensitivity: "base" }),
+    );
+  }
+
+  function isSystemContact(c) {
+    return !!(c && (c.is_system || c.system));
+  }
+
   function formatWhen(ts) {
     if (!ts) return "";
     const d = new Date(ts);
@@ -48,9 +58,7 @@
 
   window.PhoneApps = {
     renderContactsApp(content) {
-      const contacts = [...(window.PhoneState.contacts || [])].sort((a, b) =>
-        String(a.display_name || "").localeCompare(String(b.display_name || ""), "lt"),
-      );
+      const contacts = sortContacts(window.PhoneState.contacts);
       const editing = window.PhoneState.contactEditId || null;
 
       content.innerHTML = `
@@ -89,10 +97,11 @@
           .map((c) => {
             const num = digits(c.contact_number);
             const isEdit = editing === Number(c.id);
-            return `<div class="list-item contact-item" data-id="${Number(c.id)}">
+            const system = isSystemContact(c);
+            return `<div class="list-item contact-item${system ? " system-contact" : ""}" data-id="${Number(c.id)}">
               <div class="avatar">${window.PhoneEsc(initials(c.display_name))}</div>
               <div class="list-item-body">
-                <b>${window.PhoneEsc(c.display_name)}</b>
+                <b>${window.PhoneEsc(c.display_name)}</b>${system ? ` <span class="tag">Tarnyba</span>` : ""}
                 <div class="muted small">${window.PhoneEsc(num)}</div>
                 ${
                   isEdit
@@ -106,9 +115,9 @@
               </div>
               <div class="list-item-actions">
                 <button type="button" class="icon-btn call" title="${window.t("contacts.call")}" data-call="${window.PhoneEsc(num)}">📞</button>
-                <button type="button" class="icon-btn msg" title="${window.t("contacts.message")}" data-msg="${window.PhoneEsc(num)}">💬</button>
+                ${system ? "" : `<button type="button" class="icon-btn msg" title="${window.t("contacts.message")}" data-msg="${window.PhoneEsc(num)}">💬</button>
                 <button type="button" class="icon-btn edit" title="${window.t("contacts.edit")}" data-edit="${Number(c.id)}">✎</button>
-                <button type="button" class="icon-btn danger" title="${window.t("contacts.delete")}" data-del="${Number(c.id)}">✕</button>
+                <button type="button" class="icon-btn danger" title="${window.t("contacts.delete")}" data-del="${Number(c.id)}">✕</button>`}
               </div>
             </div>`;
           })
@@ -284,7 +293,7 @@
 
     renderCallsApp(content) {
       const threads = (window.PhoneState.messageThreads || []).slice(0, 8);
-      const contacts = (window.PhoneState.contacts || []).slice(0, 12);
+      const contacts = sortContacts(window.PhoneState.contacts);
       const pad = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"];
 
       content.innerHTML = `

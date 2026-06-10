@@ -22,6 +22,44 @@ local function getPlayerGang(src)
     ]], { Player.PlayerData.citizenid })
 end
 
+local function pickMissionSite(missionType, near)
+    local pool = Config.MissionSites and Config.MissionSites[missionType]
+    if not pool or #pool == 0 then return nil end
+    local best, bestDist
+    for _, site in ipairs(pool) do
+        local c = site.coords
+        local d = #(vector3(c.x, c.y, c.z) - near)
+        if not bestDist or d < bestDist then
+            best = site
+            bestDist = d
+        end
+    end
+    return best
+end
+
+local function resolvePickupCoords(missionType, turfId, mCfg)
+    local turfCfg = Config.GetTurfCell(turfId)
+    if not turfCfg then return nil end
+    local center = turfCfg.center
+    local site = pickMissionSite(missionType, center)
+    if site and site.coords then
+        local c = site.coords
+        return vector3(c.x, c.y, c.z), center, site
+    end
+    if mCfg and mCfg.pickupOffset then
+        local off = mCfg.pickupOffset
+        return vector3(center.x + off.x, center.y + off.y, center.z + (off.z or 0.0)), center, nil
+    end
+    return center, center, nil
+end
+
+local function playerNearCoords(src, coords, maxDist)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local p = GetEntityCoords(ped)
+    return #(p - coords) <= (maxDist or Config.MissionInteractDistance or 4.5)
+end
+
 local function missionAllowed(gangType, missionKey)
     local m = Config.MissionTypes and Config.MissionTypes[missionKey]
     if not m then return false end
@@ -210,14 +248,17 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:startMission', function(s
     end
 
     local token = ('%s-%s-%s'):format(src, turfId, os.time())
-    local turfCfg = Config.GetTurfCell(turfId)
-    local center = turfCfg.center
-    local pickup = mCfg.pickupOffset and vector3(center.x + mCfg.pickupOffset.x, center.y + mCfg.pickupOffset.y, center.z + (mCfg.pickupOffset.z or 0.0)) or center
+    local pickup, center, site = resolvePickupCoords(missionType, turfId, mCfg)
+    if not pickup or not center then
+        return cb({ ok = false, reason = 'Turf nerastas.' })
+    end
 
     activeMissions[src] = {
         token = token,
         turfId = turfId,
         missionType = missionType,
+        pickup = pickup,
+        drop = center,
         step = 1,
         startedAt = os.time(),
     }
@@ -232,10 +273,14 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:startMission', function(s
         missionType = missionType,
         label = mCfg.label,
         turfId = turfId,
+        siteLabel = site and site.label or nil,
+        siteVehicle = site and site.vehicle or nil,
+        heading = site and site.coords and site.coords.w or 0.0,
         pickup = { x = pickup.x, y = pickup.y, z = pickup.z },
         drop = { x = center.x, y = center.y, z = center.z },
         durationMs = mCfg.durationMs or 7000,
         requireVehicle = mCfg.requireVehicle == true,
+        dropInTurf = mCfg.dropInTurf ~= false,
         checkpointCount = mCfg.checkpointCount or 3,
     })
 end)
@@ -250,6 +295,15 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:finishMissionStep', funct
     if not mCfg then return cb({ ok = false }) end
 
     if step == 1 then
+        if not act.pickup or not playerNearCoords(src, act.pickup, Config.MissionInteractDistance) then
+            return cb({ ok = false, reason = 'Per toli nuo paėmimo taško.' })
+        end
+        if mCfg.requireVehicle then
+            local ped = GetPlayerPed(src)
+            if not ped or ped == 0 or not IsPedInAnyVehicle(ped, false) then
+                return cb({ ok = false, reason = 'Reikia transporto.' })
+            end
+        end
         act.step = 2
         return cb({ ok = true, nextStep = 2, needTurf = mCfg.dropInTurf == true })
     end
@@ -257,6 +311,9 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:finishMissionStep', funct
     if step == 2 then
         if mCfg.dropInTurf and not playerInTurfServer(src, act.turfId) then
             return cb({ ok = false, reason = 'Pristatymas turi būti target turf zonoje.' })
+        end
+        if mCfg.dropInTurf and act.drop and not playerNearCoords(src, act.drop, Config.MissionDropDistance or 15.0) then
+            return cb({ ok = false, reason = 'Eik arčiau pristatymo taško turf zonoje.' })
         end
         if mCfg.requireVehicle then
             local ped = GetPlayerPed(src)

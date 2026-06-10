@@ -89,7 +89,7 @@
                     </div>
                     <div class="inventory-grid">
                         <div class="item-grid">
-                            <div v-for="slot in otherInventorySlots" :key="slot" class="item-slot" :data-slot="slot" @mousedown="event => handleMouseDown(event, slot, 'other')" @dragover.prevent>
+                            <div v-for="slot in otherInventorySlots" :key="slot" class="item-slot" :data-slot="slot" @dblclick="handleShopSlotActivate(slot)" @mousedown="event => handleMouseDown(event, slot, 'other')" @dragover.prevent>
                                 <div class="item-slot-img" v-if="getItemInSlot(slot, 'other')" v-tooltip.right-end="{content: generateTooltipContent(getItemInSlot(slot, 'other')), html: true}">
                                     <img :src="'images/' + getItemInSlot(slot, 'other').image" alt="" />
                                 </div>

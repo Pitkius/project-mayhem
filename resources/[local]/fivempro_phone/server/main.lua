@@ -145,6 +145,77 @@ local function getMessageThreads(citizenid)
     return threads
 end
 
+local function getDefaultContactsConfig()
+    local out = {}
+    for _, def in ipairs((Config.Phone and Config.Phone.DefaultContacts) or {}) do
+        out[#out + 1] = {
+            key = tostring(def.key or ''),
+            name = tostring(def.name or ''),
+            number = digitsOnly(def.number or ''),
+            service = tostring(def.service or def.key or ''),
+        }
+    end
+    if #out == 0 then
+        out = {
+            { key = 'ems', name = 'Greitoji pagalba', number = '112', service = 'ems' },
+            { key = 'mechanic', name = 'Mechanikas', number = '1313', service = 'mechanic' },
+            { key = 'police', name = 'Policija', number = '110', service = 'police' },
+            { key = 'taxi', name = 'Taksi', number = '1818', service = 'taxi' },
+        }
+    end
+    return out
+end
+
+local function getServiceByHotline(number)
+    number = digitsOnly(number)
+    if number == '' then return nil end
+    for _, def in ipairs(getDefaultContactsConfig()) do
+        if def.number == number then
+            return def.service
+        end
+    end
+    return nil
+end
+
+local function isSystemContactNumber(number)
+    return getServiceByHotline(number) ~= nil
+end
+
+local function ensureDefaultContacts(citizenid)
+    if not citizenid then return end
+    for _, def in ipairs(getDefaultContactsConfig()) do
+        local num = def.number
+        local name = clampStr(def.name, 60)
+        if num == '' or name == '' then goto continue end
+        local existing = MySQL.single.await([[
+            SELECT id FROM fivempro_phone_contacts
+            WHERE owner_citizenid = ? AND contact_number = ?
+            LIMIT 1
+        ]], { citizenid, num })
+        if existing then
+            MySQL.update.await([[
+                UPDATE fivempro_phone_contacts
+                SET display_name = ?
+                WHERE id = ? AND owner_citizenid = ?
+            ]], { name, existing.id, citizenid })
+        else
+            MySQL.insert.await([[
+                INSERT INTO fivempro_phone_contacts (owner_citizenid, display_name, contact_number)
+                VALUES (?, ?, ?)
+            ]], { citizenid, name, num })
+        end
+        ::continue::
+    end
+end
+
+local function enrichContacts(rows)
+    for i = 1, #rows do
+        local row = rows[i]
+        row.is_system = isSystemContactNumber(row.contact_number) == true
+    end
+    return rows
+end
+
 local function getAdCategories()
     local out = {}
     for _, cat in ipairs((Config.Phone and Config.Phone.AdCategories) or {}) do
@@ -316,13 +387,15 @@ local function getInitialDataFor(src)
     if not citizenid then return nil end
     local fullname = getFullName(P)
     local myNumber, profile = ensurePhoneUser(citizenid, fullname)
+    ensureDefaultContacts(citizenid)
 
     local contacts = MySQL.query.await([[
         SELECT id, display_name, contact_number
         FROM fivempro_phone_contacts
         WHERE owner_citizenid = ?
-        ORDER BY display_name ASC, id DESC
+        ORDER BY display_name ASC, id ASC
     ]], { citizenid }) or {}
+    contacts = enrichContacts(contacts)
 
     local msgs = MySQL.query.await([[
         SELECT id, from_number, to_number, body, created_at
@@ -442,11 +515,14 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:updateContact', function(
     end
 
     local row = MySQL.single.await([[
-        SELECT id FROM fivempro_phone_contacts
+        SELECT id, contact_number FROM fivempro_phone_contacts
         WHERE id = ? AND owner_citizenid = ? LIMIT 1
     ]], { contactId, citizenid })
     if not row then
         return cb({ ok = false, message = 'Kontaktas nerastas.' })
+    end
+    if isSystemContactNumber(row.contact_number) then
+        return cb({ ok = false, message = 'Tarnybos kontakto redaguoti negalima.' })
     end
 
     MySQL.update.await([[
@@ -465,6 +541,17 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:deleteContact', function(
 
     local contactId = tonumber(data and data.id)
     if not contactId then return cb({ ok = false, message = 'Blogi duomenys.' }) end
+
+    local row = MySQL.single.await([[
+        SELECT contact_number FROM fivempro_phone_contacts
+        WHERE id = ? AND owner_citizenid = ? LIMIT 1
+    ]], { contactId, citizenid })
+    if not row then
+        return cb({ ok = false, message = 'Kontaktas nerastas.' })
+    end
+    if isSystemContactNumber(row.contact_number) then
+        return cb({ ok = false, message = 'Tarnybos kontakto pašalinti negalima.' })
+    end
 
     MySQL.update.await('DELETE FROM fivempro_phone_contacts WHERE id = ? AND owner_citizenid = ?', {
         contactId, citizenid
@@ -486,6 +573,9 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:sendMessage', function(so
     end
     if toNumber == fromNumber then
         return cb({ ok = false, message = 'Negali rašyti sau.' })
+    end
+    if isSystemContactNumber(toNumber) then
+        return cb({ ok = false, message = 'Šis numeris skirtas skambučiams, ne žinutėms.' })
     end
 
     local target = getUserByNumber(toNumber)
@@ -633,6 +723,7 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:createAccount', function(
             })
         end
     end
+    ensureDefaultContacts(citizenid)
     cb({ ok = true })
     TriggerClientEvent('fivempro_phone:client:refreshData', source)
 end)
@@ -666,6 +757,14 @@ RegisterNetEvent('fivempro_phone:server:startCall', function(data)
     local toNumber = digitsOnly(data and data.number or '')
     if toNumber == '' or toNumber == fromNumber then
         return TriggerClientEvent('QBCore:Notify', src, 'Neteisingas numeris.', 'error')
+    end
+
+    local service = getServiceByHotline(toNumber)
+    if service then
+        local ped = GetPlayerPed(src)
+        local c = ped and ped ~= 0 and GetEntityCoords(ped) or vector3(0.0, 0.0, 0.0)
+        dispatchEmergency(src, service, { x = c.x, y = c.y, z = c.z })
+        return
     end
 
     local target = getUserByNumber(toNumber)

@@ -13,9 +13,9 @@ const mapMeta = {
   minX: -4000,
   maxX: 4500,
   minY: -4000,
-  maxY: 6625,
+  maxY: 8150,
   imgW: 2048,
-  imgH: 2560,
+  imgH: 2048,
   imageUrl: '',
   loaded: false,
 };
