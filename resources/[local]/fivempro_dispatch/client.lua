@@ -75,7 +75,7 @@ RegisterNetEvent('fivempro_dispatch:client:update', function(payload)
         if not oldIds[c.id] then
             QBCore.Functions.Notify(
                 ('[%s] %s — %s'):format(c.id, c.callTypeLabel or c.callType or 'Iškvietimas', c.text or ''),
-                'error',
+                'police',
                 10000
             )
             PlaySoundFrontend(-1, 'CONFIRM_BEEP', 'HUD_MINI_GAME_SOUNDSET', true)

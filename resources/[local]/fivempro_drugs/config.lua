@@ -54,229 +54,190 @@ Config.RiskLabels = {
 }
 
 --[[
-  Produktai: output = item name, level = stoties lygis, recipe key = product id
+  Kiekvienas narkotikas: 1) žaliava (parduotuvė) → 2) apdorotas (gamybos stotis) → 3) supakuotas (pardavimas).
+  stage = 'process' | 'pack' · sellBase > 0 tik supakuotiems.
 ]]
+local function drugProcess(label, level, output, craftTimeMs, risk, minigame, fail, police, heat, failPct, lineOrder, outAmt)
+    return {
+        label = label,
+        level = level,
+        stage = 'process',
+        lineOrder = lineOrder,
+        output = output,
+        outputAmount = outAmt or 1,
+        craftTimeMs = craftTimeMs,
+        risk = risk,
+        minigame = minigame,
+        failChance = fail,
+        policeChance = police,
+        heatGain = heat,
+        failLosePercent = failPct,
+        sellBase = 0,
+    }
+end
+
+local function drugPack(label, level, output, sellBase, craftTimeMs, risk, minigame, fail, police, heat, failPct, lineOrder, outAmt)
+    return {
+        label = label,
+        level = level,
+        stage = 'pack',
+        lineOrder = lineOrder,
+        output = output,
+        outputAmount = outAmt or 1,
+        craftTimeMs = craftTimeMs,
+        risk = risk,
+        minigame = minigame,
+        failChance = fail,
+        policeChance = police,
+        heatGain = heat,
+        failLosePercent = failPct,
+        sellBase = sellBase,
+    }
+end
+
 Config.Products = {
-    thc_cart = {
-        label = 'THC kronštainas',
-        level = 1,
-        output = 'thc_cart',
-        outputAmount = 1,
-        craftTimeMs = 25000,
-        risk = 'low',
-        minigame = 'progress',
-        failChance = 6,
-        policeChance = 4,
-        heatGain = 2,
-        sellBase = 95,
-        failLosePercent = 40,
-    },
-    illegal_alcohol = {
-        label = 'Nelegalus alkoholis',
-        level = 1,
-        output = 'illegal_alcohol',
-        outputAmount = 1,
-        craftTimeMs = 22000,
-        risk = 'low',
-        minigame = 'progress',
-        failChance = 5,
-        policeChance = 3,
-        heatGain = 2,
-        sellBase = 75,
-        failLosePercent = 35,
-    },
-    vape_liquid = {
-        label = 'Vape skystis',
-        level = 1,
-        output = 'vape_liquid',
-        outputAmount = 2,
-        craftTimeMs = 20000,
-        risk = 'low',
-        minigame = 'progress',
-        failChance = 5,
-        policeChance = 3,
-        heatGain = 1,
-        sellBase = 65,
-        failLosePercent = 30,
-    },
-    weed_bag = {
-        label = 'Žolės maišelis',
-        level = 2,
-        output = 'weed_bag',
-        outputAmount = 1,
-        craftTimeMs = 30000,
-        risk = 'medium',
-        minigame = 'skill',
-        failChance = 12,
-        policeChance = 8,
-        heatGain = 4,
-        sellBase = 140,
-        failLosePercent = 50,
-    },
-    heroin_bag = {
-        label = 'Heroino maišelis',
-        level = 2,
-        output = 'heroin_bag',
-        outputAmount = 1,
-        craftTimeMs = 35000,
-        risk = 'medium',
-        minigame = 'skill',
-        failChance = 14,
-        policeChance = 10,
-        heatGain = 5,
-        sellBase = 220,
-        failLosePercent = 55,
-    },
-    meth_bag = {
-        label = 'Metamfetamino maišelis',
-        level = 2,
-        output = 'meth_bag',
-        outputAmount = 1,
-        craftTimeMs = 40000,
-        risk = 'high',
-        minigame = 'skill',
-        failChance = 15,
-        policeChance = 12,
-        heatGain = 6,
-        sellBase = 260,
-        failLosePercent = 60,
-    },
-    pills_pack = {
-        label = 'Tablečių pakuotė',
-        level = 2,
-        output = 'pills_pack',
-        outputAmount = 1,
-        craftTimeMs = 28000,
-        risk = 'medium',
-        minigame = 'skill',
-        failChance = 11,
-        policeChance = 7,
-        heatGain = 4,
-        sellBase = 180,
-        failLosePercent = 45,
-    },
-    mushroom_pack = {
-        label = 'Grybų pakuotė',
-        level = 2,
-        output = 'mushroom_pack',
-        outputAmount = 1,
-        craftTimeMs = 26000,
-        risk = 'medium',
-        minigame = 'skill',
-        failChance = 10,
-        policeChance = 6,
-        heatGain = 3,
-        sellBase = 150,
-        failLosePercent = 40,
-    },
-    cocaine_bag = {
-        label = 'Kokaino maišelis',
-        level = 3,
-        output = 'cocaine_bag',
-        outputAmount = 1,
-        craftTimeMs = 50000,
-        risk = 'high',
-        minigame = 'advanced',
-        failChance = 22,
-        policeChance = 16,
-        heatGain = 8,
-        sellBase = 420,
-        failLosePercent = 70,
-    },
-    amphetamine_bag = {
-        label = 'Amfetamino maišelis',
-        level = 3,
-        output = 'amphetamine_bag',
-        outputAmount = 1,
-        craftTimeMs = 45000,
-        risk = 'high',
-        minigame = 'advanced',
-        failChance = 20,
-        policeChance = 14,
-        heatGain = 7,
-        sellBase = 380,
-        failLosePercent = 65,
-    },
-    cartel_pack = {
-        label = 'Kartelio specialus mišinys',
-        level = 3,
-        output = 'cartel_pack',
-        outputAmount = 1,
-        craftTimeMs = 55000,
-        risk = 'extreme',
-        minigame = 'advanced',
-        failChance = 25,
-        policeChance = 20,
-        heatGain = 10,
-        sellBase = 520,
-        failLosePercent = 75,
-    },
+    --- L1
+    thc_process = drugProcess('THC · distiliacija', 1, 'weed_resin', 14000, 'low', 'progress', 5, 3, 1, 35, 1),
+    thc_pack = drugPack('THC kronštainis · supakavimas', 1, 'thc_cart', 95, 12000, 'low', 'progress', 6, 4, 2, 35, 2),
+    alcohol_process = drugProcess('Samagonas · distiliacija', 1, 'moonshine_spirit', 13000, 'low', 'progress', 4, 3, 1, 30, 3),
+    alcohol_pack = drugPack('Nelegalus alkoholis · supakavimas', 1, 'illegal_alcohol', 75, 11000, 'low', 'progress', 5, 3, 2, 30, 4),
+    vape_process = drugProcess('Vape · paruošimas', 1, 'vape_mix', 12000, 'low', 'progress', 4, 2, 1, 28, 5),
+    vape_pack = drugPack('Vape skystis · supakavimas', 1, 'vape_liquid', 65, 10000, 'low', 'progress', 5, 3, 1, 28, 6, 2),
+    --- L2
+    weed_process = drugProcess('Žolė · džiovinimas', 2, 'weed_buds', 18000, 'medium', 'skill', 10, 6, 3, 45, 7),
+    weed_pack = drugPack('Žolė · supakavimas', 2, 'weed_bag', 140, 15000, 'medium', 'skill', 12, 8, 4, 50, 8),
+    heroin_process = drugProcess('Heroinas · virimas', 2, 'heroin_paste', 22000, 'medium', 'skill', 12, 8, 4, 50, 9),
+    heroin_pack = drugPack('Heroinas · supakavimas', 2, 'heroin_bag', 220, 16000, 'medium', 'skill', 14, 10, 5, 55, 10),
+    meth_process = drugProcess('Metas · kristalizacija', 2, 'meth_crystal', 26000, 'high', 'skill', 13, 10, 5, 55, 11),
+    meth_pack = drugPack('Metas · supakavimas', 2, 'meth_bag', 260, 18000, 'high', 'skill', 15, 12, 6, 60, 12),
+    pills_process = drugProcess('Tabletės · presavimas', 2, 'pill_tablets', 17000, 'medium', 'skill', 9, 6, 3, 40, 13, 2),
+    pills_pack = drugPack('Tabletės · supakavimas', 2, 'pills_pack', 180, 14000, 'medium', 'skill', 11, 7, 4, 45, 14),
+    mushroom_process = drugProcess('Grybai · džiovinimas', 2, 'mushroom_dried', 15000, 'medium', 'skill', 8, 5, 2, 38, 15),
+    mushroom_pack = drugPack('Grybai · supakavimas', 2, 'mushroom_pack', 150, 13000, 'medium', 'skill', 10, 6, 3, 40, 16),
+    --- L3
+    cocaine_process = drugProcess('Kokainas · ekstrakcija', 3, 'cocaine_paste', 32000, 'high', 'advanced', 18, 12, 6, 65, 17),
+    cocaine_pack = drugPack('Kokainas · supakavimas', 3, 'cocaine_bag', 420, 22000, 'high', 'advanced', 22, 16, 8, 70, 18),
+    amp_process = drugProcess('Amfetaminas · sintezė', 3, 'amp_paste', 30000, 'high', 'advanced', 17, 11, 6, 60, 19),
+    amp_pack = drugPack('Amfetaminas · supakavimas', 3, 'amphetamine_bag', 380, 20000, 'high', 'advanced', 20, 14, 7, 65, 20),
+    cartel_process = drugProcess('Kartelio mišinys · virimas', 3, 'cartel_blend', 35000, 'extreme', 'advanced', 20, 15, 7, 70, 21),
+    cartel_pack = drugPack('Kartelio mišinys · supakavimas', 3, 'cartel_pack', 520, 24000, 'extreme', 'advanced', 25, 20, 10, 75, 22),
 }
 
 Config.Recipes = {
-    thc_cart = {
-        { item = 'weed_leaf', count = 2 },
-        { item = 'empty_cart', count = 1 },
+    --- L1: žaliava → apdorota → supakuota
+    thc_process = {
+        { item = 'weed_leaf', count = 4 },
         { item = 'filter', count = 1 },
+        { item = 'gloves', count = 1 },
+    },
+    thc_pack = {
+        { item = 'weed_resin', count = 1 },
+        { item = 'empty_cart', count = 1 },
         { item = 'packaging', count = 1 },
     },
-    illegal_alcohol = {
-        { item = 'alcohol_base', count = 2 },
+    alcohol_process = {
+        { item = 'alcohol_base', count = 3 },
+        { item = 'filter', count = 1 },
+    },
+    alcohol_pack = {
+        { item = 'moonshine_spirit', count = 1 },
         { item = 'empty_bottle', count = 1 },
         { item = 'packaging', count = 1 },
     },
-    vape_liquid = {
+    vape_process = {
         { item = 'vape_liquid_base', count = 2 },
+        { item = 'filter', count = 1 },
+    },
+    vape_pack = {
+        { item = 'vape_mix', count = 1 },
         { item = 'empty_bottle', count = 1 },
         { item = 'packaging', count = 1 },
     },
-    weed_bag = {
+    --- L2
+    weed_process = {
         { item = 'weed_leaf', count = 5 },
+        { item = 'gloves', count = 1 },
+    },
+    weed_pack = {
+        { item = 'weed_buds', count = 2 },
         { item = 'empty_bag', count = 1 },
         { item = 'scale', count = 1 },
         { item = 'packaging', count = 1 },
     },
-    heroin_bag = {
-        { item = 'poppy_flower', count = 4 },
+    heroin_process = {
+        { item = 'poppy_flower', count = 5 },
         { item = 'chemical_mix', count = 1 },
+        { item = 'gloves', count = 1 },
+    },
+    heroin_pack = {
+        { item = 'heroin_paste', count = 1 },
         { item = 'empty_bag', count = 1 },
         { item = 'scale', count = 1 },
+        { item = 'packaging', count = 1 },
     },
-    meth_bag = {
-        { item = 'meth_ingredient', count = 3 },
+    meth_process = {
+        { item = 'meth_ingredient', count = 4 },
         { item = 'chemical_mix', count = 2 },
         { item = 'lab_kit', count = 1 },
+        { item = 'burner', count = 1 },
+    },
+    meth_pack = {
+        { item = 'meth_crystal', count = 1 },
         { item = 'empty_bag', count = 1 },
+        { item = 'scale', count = 1 },
+        { item = 'packaging', count = 1 },
+    },
+    pills_process = {
+        { item = 'pill_powder', count = 4 },
+        { item = 'lab_kit', count = 1 },
     },
     pills_pack = {
-        { item = 'pill_powder', count = 3 },
+        { item = 'pill_tablets', count = 2 },
         { item = 'packaging', count = 2 },
         { item = 'empty_bag', count = 1 },
+    },
+    mushroom_process = {
+        { item = 'mushroom_raw', count = 5 },
+        { item = 'gloves', count = 1 },
     },
     mushroom_pack = {
-        { item = 'mushroom_raw', count = 4 },
-        { item = 'packaging', count = 1 },
+        { item = 'mushroom_dried', count = 1 },
         { item = 'empty_bag', count = 1 },
+        { item = 'packaging', count = 1 },
     },
-    cocaine_bag = {
+    --- L3
+    cocaine_process = {
         { item = 'coca_leaf', count = 6 },
         { item = 'chemical_mix', count = 2 },
+        { item = 'burner', count = 1 },
+    },
+    cocaine_pack = {
+        { item = 'cocaine_paste', count = 1 },
         { item = 'empty_bag', count = 1 },
         { item = 'scale', count = 1 },
+        { item = 'packaging', count = 1 },
     },
-    amphetamine_bag = {
-        { item = 'meth_ingredient', count = 2 },
-        { item = 'pill_powder', count = 2 },
+    amp_process = {
+        { item = 'amp_precursor', count = 4 },
         { item = 'chemical_mix', count = 2 },
         { item = 'lab_kit', count = 1 },
-        { item = 'empty_bag', count = 1 },
     },
-    cartel_pack = {
-        { item = 'coca_leaf', count = 4 },
-        { item = 'pill_powder', count = 3 },
+    amp_pack = {
+        { item = 'amp_paste', count = 1 },
+        { item = 'empty_bag', count = 1 },
+        { item = 'scale', count = 1 },
+        { item = 'packaging', count = 1 },
+    },
+    cartel_process = {
+        { item = 'cartel_raw', count = 4 },
         { item = 'chemical_mix', count = 3 },
         { item = 'lab_kit', count = 1 },
+        { item = 'burner', count = 1 },
+    },
+    cartel_pack = {
+        { item = 'cartel_blend', count = 1 },
         { item = 'packaging', count = 2 },
+        { item = 'empty_bag', count = 1 },
     },
 }
 
@@ -294,6 +255,40 @@ Config.Stations = {
     { id = 'weapon_bench_l3', label = '3D spausdintuvas · L3', level = 3, mode = 'weapon', coords = devRow(17.0), radius = 2.2, blip = false },
 }
 
+--- Ginklų 3D spausdintuvas: kelios fazės + animacijos (client). craftTimeMs = bazinis laikas prieš lygio daugiklį.
+Config.WeaponCraft = {
+    minPhaseMs = 9000,
+    timeMultiplier = { [1] = 1.0, [2] = 1.3, [3] = 1.55 },
+    minigameBonusMs = { progress = 0, skill = 14000, advanced = 20000 },
+    phases = {
+        {
+            id = 'warmup',
+            label = '3D spausdintuvo paruošimas…',
+            weight = 0.14,
+            anim = { dict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@', clip = 'machinic_loop_mechandplayer', flag = 1 },
+        },
+        {
+            id = 'print',
+            label = 'Spausdinamos ginklo dalys…',
+            weight = 0.36,
+            anim = { dict = 'amb@world_human_welding@male@base', clip = 'base', flag = 1 },
+            prop = { model = 'prop_tool_blowtorch', bone = 28422, pos = vector3(0.0, 0.0, 0.0), rot = vector3(0.0, 0.0, 0.0) },
+        },
+        {
+            id = 'assemble',
+            label = 'Surenkamas ginklas…',
+            weight = 0.28,
+            anim = { dict = 'mini@repair', clip = 'fixing_a_player', flag = 16 },
+        },
+        {
+            id = 'calibrate',
+            label = 'Kalibruojamas užtaisas…',
+            weight = 0.22,
+            anim = { dict = 'missmechanic', clip = 'work2_base', flag = 1 },
+        },
+    },
+}
+
 --- Ginklų gamyba (atskira stotis, mode = weapon) — be NPC pardavimo kainos
 local function wp(label, level, output, ammoItem, ammoCount, craftTimeMs, minigame, failChance, policeChance, heatGain, failLosePercent, risk)
     local row = {
@@ -305,7 +300,7 @@ local function wp(label, level, output, ammoItem, ammoCount, craftTimeMs, miniga
         risk = risk or 'high',
         minigame = minigame or 'skill',
         failChance = failChance,
-        policeChance = policeChance,
+        policeChance = 0,
         heatGain = heatGain,
         sellBase = 0,
         failLosePercent = failLosePercent,
@@ -317,21 +312,21 @@ local function wp(label, level, output, ammoItem, ammoCount, craftTimeMs, miniga
 end
 
 Config.WeaponProducts = {
-    --- L1 — pistoletai + šalti ginklai
-    craft_pistol = wp('Pistoletas', 1, 'weapon_pistol', 'pistol_ammo', 60, 32000, 'progress', 12, 10, 3, 45, 'medium'),
-    craft_combat_pistol = wp('Combat pistoletas', 1, 'weapon_combatpistol', 'pistol_ammo', 72, 36000, 'skill', 14, 12, 4, 50, 'medium'),
-    craft_bat = wp('Beisbolo lazda', 1, 'weapon_bat', nil, 0, 18000, 'progress', 6, 4, 1, 30, 'low'),
-    craft_switchblade = wp('Switchblade', 1, 'weapon_switchblade', nil, 0, 22000, 'progress', 8, 5, 2, 35, 'low'),
-    --- L2 — SMG / .50 / shotgun
-    craft_tec9 = wp('Tec-9', 2, 'weapon_machinepistol', 'pistol_ammo', 90, 42000, 'skill', 16, 14, 5, 52, 'high'),
-    craft_mini_uzi = wp('Mini Uzi', 2, 'weapon_minismg', 'smg_ammo', 90, 44000, 'skill', 17, 15, 5, 54, 'high'),
-    craft_smg = wp('SMG', 2, 'weapon_smg', 'smg_ammo', 120, 46000, 'skill', 18, 16, 6, 56, 'high'),
-    craft_pistol50 = wp('Pistoletas .50', 2, 'weapon_pistol50', 'pistol_ammo', 48, 40000, 'skill', 15, 14, 5, 50, 'high'),
-    craft_pumpshotgun = wp('Pump shotgun', 2, 'weapon_pumpshotgun', 'shotgun_ammo', 32, 48000, 'advanced', 19, 17, 6, 58, 'high'),
-    --- L3 — karabinai
-    craft_carbine = wp('Karabinas', 3, 'weapon_carbinerifle', 'rifle_ammo', 120, 52000, 'advanced', 20, 18, 7, 60, 'extreme'),
-    craft_ak47 = wp('AK-47', 3, 'weapon_assaultrifle', 'rifle_ammo', 120, 54000, 'advanced', 21, 19, 8, 62, 'extreme'),
-    craft_micro_draco = wp('Micro Draco', 3, 'weapon_compactrifle', 'rifle_ammo', 90, 50000, 'advanced', 20, 18, 7, 60, 'extreme'),
+    --- L1 — pistoletai + šalti ginklai (bazinis laikas ~70–85 s + fazės)
+    craft_pistol = wp('Pistoletas', 1, 'weapon_pistol', 'pistol_ammo', 60, 72000, 'progress', 12, 10, 3, 45, 'medium'),
+    craft_combat_pistol = wp('Combat pistoletas', 1, 'weapon_combatpistol', 'pistol_ammo', 72, 78000, 'skill', 14, 12, 4, 50, 'medium'),
+    craft_bat = wp('Beisbolo lazda', 1, 'weapon_bat', nil, 0, 65000, 'progress', 6, 4, 1, 30, 'low'),
+    craft_switchblade = wp('Switchblade', 1, 'weapon_switchblade', nil, 0, 68000, 'progress', 8, 5, 2, 35, 'low'),
+    --- L2 — SMG / .50 / shotgun (~95–120 s + minigame)
+    craft_tec9 = wp('Tec-9', 2, 'weapon_machinepistol', 'pistol_ammo', 90, 92000, 'skill', 16, 14, 5, 52, 'high'),
+    craft_mini_uzi = wp('Mini Uzi', 2, 'weapon_minismg', 'smg_ammo', 90, 96000, 'skill', 17, 15, 5, 54, 'high'),
+    craft_smg = wp('SMG', 2, 'weapon_smg', 'smg_ammo', 120, 100000, 'skill', 18, 16, 6, 56, 'high'),
+    craft_pistol50 = wp('Pistoletas .50', 2, 'weapon_pistol50', 'pistol_ammo', 48, 94000, 'skill', 15, 14, 5, 50, 'high'),
+    craft_pumpshotgun = wp('Pump shotgun', 2, 'weapon_pumpshotgun', 'shotgun_ammo', 32, 108000, 'advanced', 19, 17, 6, 58, 'high'),
+    --- L3 — karabinai (~120–150 s + minigame)
+    craft_carbine = wp('Karabinas', 3, 'weapon_carbinerifle', 'rifle_ammo', 120, 118000, 'advanced', 20, 18, 7, 60, 'extreme'),
+    craft_ak47 = wp('AK-47', 3, 'weapon_assaultrifle', 'rifle_ammo', 120, 125000, 'advanced', 21, 19, 8, 62, 'extreme'),
+    craft_micro_draco = wp('Micro Draco', 3, 'weapon_compactrifle', 'rifle_ammo', 90, 120000, 'advanced', 20, 18, 7, 60, 'extreme'),
 }
 
 Config.WeaponRecipes = {
@@ -451,6 +446,8 @@ Config.MaterialShop = {
         -- L3 narkotikai
         { name = 'coca_leaf', amount = 500, price = 45, slot = 17 },
         { name = 'burner', amount = 100, price = 120, slot = 18 },
+        { name = 'amp_precursor', amount = 500, price = 38, slot = 29 },
+        { name = 'cartel_raw', amount = 500, price = 52, slot = 30 },
         -- Ginklų dalys
         { name = 'metal_scrap', amount = 500, price = 35, slot = 19 },
         { name = 'gun_frame', amount = 200, price = 140, slot = 20 },
@@ -527,6 +524,7 @@ Config.TestKits = {
     },
     level3 = {
         coca_leaf = 25, chemical_mix = 20, meth_ingredient = 10, pill_powder = 15,
+        amp_precursor = 20, cartel_raw = 15,
         lab_kit = 5, empty_bag = 15, scale = 5, packaging = 20, burner = 3,
     },
 }

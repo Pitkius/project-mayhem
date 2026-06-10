@@ -80,7 +80,10 @@ end
 
 local function openUI(mode)
     QBCore.Functions.TriggerCallback('fivempro_trucking:server:getDashboard', function(data)
-        if not data then return end
+        if not data then
+            QBCore.Functions.Notify('CargoNet duomenų nepavyko gauti.', 'error')
+            return
+        end
         uiOpen = true
         SetNuiFocus(true, true)
         SendNUIMessage({
@@ -182,7 +185,11 @@ end)
 local function registerAtTerminal()
     QBCore.Functions.TriggerCallback('fivempro_trucking:server:register', function(res)
         if res and res.ok then
-            QBCore.Functions.Notify('Registracija sėkminga! TruckNet Level 1.', 'success')
+            if res.alreadyRegistered then
+                QBCore.Functions.Notify('Atidaroma CargoNet panelė.', 'primary')
+            else
+                QBCore.Functions.Notify('Registracija sėkminga! CargoNet 1 lygis.', 'success')
+            end
             openUI('full')
         else
             QBCore.Functions.Notify((res and res.reason) or 'Klaida.', 'error')
@@ -191,24 +198,30 @@ local function registerAtTerminal()
 end
 
 local function openTerminalMenu()
-    if GetResourceState('qb-menu') == 'started' then
-        exports['qb-menu']:openMenu({
-            { header = 'TruckNet Logistics', isMenuHeader = true },
-            {
-                header = 'Atidaryti panelę',
-                txt = 'Kontraktai, įmonė, parkas',
-                params = { event = 'fivempro_trucking:client:openUI', args = { mode = 'full' } },
-            },
-            {
-                header = 'Registruotis vairuotoju',
-                txt = 'Freelance sunkvežimio vairuotojas',
-                params = { event = 'fivempro_trucking:client:registerAtTerminal' },
-            },
-            { header = 'Uždaryti', params = { event = 'qb-menu:client:closeMenu' } },
-        })
-        return
-    end
-    openUI('full')
+    QBCore.Functions.TriggerCallback('fivempro_trucking:server:isRegistered', function(registered)
+        if GetResourceState('qb-menu') == 'started' then
+            local menu = {
+                { header = 'CargoNet Logistics', isMenuHeader = true },
+            }
+            if registered then
+                menu[#menu + 1] = {
+                    header = 'Atidaryti CargoNet',
+                    txt = 'Kontraktai, birža, įmonė ir parkas',
+                    params = { event = 'fivempro_trucking:client:openUI', args = { mode = 'full' } },
+                }
+            else
+                menu[#menu + 1] = {
+                    header = 'Registruotis vairuotoju',
+                    txt = 'Freelance sunkvežimio vairuotojas',
+                    params = { event = 'fivempro_trucking:client:registerAtTerminal' },
+                }
+            end
+            menu[#menu + 1] = { header = 'Uždaryti', params = { event = 'qb-menu:client:closeMenu' } }
+            exports['qb-menu']:openMenu(menu)
+            return
+        end
+        openUI('full')
+    end)
 end
 
 RegisterNetEvent('fivempro_trucking:client:openUI', function(data)

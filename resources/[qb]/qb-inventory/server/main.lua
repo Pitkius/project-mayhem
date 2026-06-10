@@ -315,13 +315,33 @@ QBCore.Functions.CreateCallback('qb-inventory:server:createDrop', function(sourc
     end
 end)
 
+local function findShopItem(shopInfo, slotIdx, itemName)
+    if not shopInfo or not shopInfo.items then return nil end
+    itemName = tostring(itemName or ''):lower()
+    if slotIdx and shopInfo.items[slotIdx] then
+        local bySlot = shopInfo.items[slotIdx]
+        if bySlot.name and bySlot.name:lower() == itemName then
+            return bySlot
+        end
+    end
+    for _, row in pairs(shopInfo.items) do
+        if row and row.name and row.name:lower() == itemName then
+            return row
+        end
+    end
+    return nil
+end
+
 QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(source, cb, data)
-    local itemInfo = data.item
-    local amount = data.amount
-    local shop = string.gsub(data.shop, 'shop%-', '')
+    local itemInfo = data and data.item
+    local amount = math.max(1, math.floor(tonumber(data and data.amount) or 1))
+    local shop = string.gsub(tostring(data and data.shop or ''), 'shop%-', '')
     local Player = QBCore.Functions.GetPlayer(source)
 
-    if amount < 0 then cb(false) return end
+    if not itemInfo or not itemInfo.name then
+        cb(false)
+        return
+    end
 
     if not Player then
         cb(false)
@@ -346,9 +366,9 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
         end
     end
 
-    local slotIdx = tonumber(itemInfo.slot)
-    local shopItem = slotIdx and shopInfo.items[slotIdx]
-    if not shopItem or shopItem.name ~= itemInfo.name then
+    local itemName = tostring(itemInfo.name):lower()
+    local shopItem = findShopItem(shopInfo, tonumber(itemInfo.slot), itemName)
+    if not shopItem then
         TriggerClientEvent('QBCore:Notify', source, 'Prekė parduotuvėje nerasta.', 'error')
         cb(false)
         return
@@ -360,7 +380,7 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
         return
     end
 
-    local canAdd, reason = CanAddItem(source, itemInfo.name, amount)
+    local canAdd, reason = CanAddItem(source, itemName, amount)
     if not canAdd then
         local msg = 'Negali laikyti daikto.'
         if reason == 'weight' then
@@ -376,18 +396,34 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
     local price = shopItem.price * amount
     local cash = Player.PlayerData.money.cash or 0
     local bank = Player.PlayerData.money.bank or 0
+    local paidWith
     if cash >= price then
+        paidWith = 'cash'
         Player.Functions.RemoveMoney('cash', price, 'shop-purchase')
     elseif bank >= price then
+        paidWith = 'bank'
         Player.Functions.RemoveMoney('bank', price, 'shop-purchase')
     else
         TriggerClientEvent('QBCore:Notify', source, 'Nepakanka pinigų (grynieji arba bankas).', 'error')
         cb(false)
         return
     end
-    AddItem(source, itemInfo.name, amount, nil, itemInfo.info, 'shop-purchase')
+
+    local added = AddItem(source, itemName, amount, nil, itemInfo.info, 'shop-purchase')
+    if not added then
+        Player.Functions.AddMoney(paidWith, price, 'shop-purchase-refund')
+        TriggerClientEvent('QBCore:Notify', source, 'Nepavyko pridėti į inventorių.', 'error')
+        cb(false)
+        return
+    end
+
     shopItem.amount -= amount
     TriggerEvent('qb-shops:server:UpdateShopItems', shop, itemInfo, amount)
+    TriggerClientEvent('qb-inventory:client:updateInventory', source)
+    local sharedItem = QBCore.Shared.Items[itemName]
+    if sharedItem then
+        TriggerClientEvent('qb-inventory:client:ItemBox', source, sharedItem, 'add', amount)
+    end
     cb(true)
 end)
 

@@ -148,19 +148,21 @@ end
 local function getDefaultContactsConfig()
     local out = {}
     for _, def in ipairs((Config.Phone and Config.Phone.DefaultContacts) or {}) do
+        local service = tostring(def.service or def.key or '')
         out[#out + 1] = {
             key = tostring(def.key or ''),
             name = tostring(def.name or ''),
             number = digitsOnly(def.number or ''),
-            service = tostring(def.service or def.key or ''),
+            service = service,
+            icon = tostring(def.icon or ('service-' .. service)),
         }
     end
     if #out == 0 then
         out = {
-            { key = 'ems', name = 'Greitoji pagalba', number = '112', service = 'ems' },
-            { key = 'mechanic', name = 'Mechanikas', number = '1313', service = 'mechanic' },
-            { key = 'police', name = 'Policija', number = '110', service = 'police' },
-            { key = 'taxi', name = 'Taksi', number = '1818', service = 'taxi' },
+            { key = 'police', name = 'Policija', number = '112', service = 'police', icon = 'service-police' },
+            { key = 'ems', name = 'Greitoji pagalba', number = '113', service = 'ems', icon = 'service-ems' },
+            { key = 'mechanic', name = 'Mechanikas', number = '111', service = 'mechanic', icon = 'service-mechanic' },
+            { key = 'taxi', name = 'Taksi', number = '1818', service = 'taxi', icon = 'service-taxi' },
         }
     end
     return out
@@ -181,8 +183,24 @@ local function isSystemContactNumber(number)
     return getServiceByHotline(number) ~= nil
 end
 
+local LEGACY_DEFAULT_NUMBERS = { '110', '1313' }
+
+local function migrateLegacyDefaultContacts(citizenid)
+    if not citizenid then return end
+    for _, num in ipairs(LEGACY_DEFAULT_NUMBERS) do
+        MySQL.update.await('DELETE FROM fivempro_phone_contacts WHERE owner_citizenid = ? AND contact_number = ?', {
+            citizenid, num,
+        })
+    end
+    MySQL.update.await([[
+        DELETE FROM fivempro_phone_contacts
+        WHERE owner_citizenid = ? AND contact_number = '112' AND display_name = 'Greitoji pagalba'
+    ]], { citizenid })
+end
+
 local function ensureDefaultContacts(citizenid)
     if not citizenid then return end
+    migrateLegacyDefaultContacts(citizenid)
     for _, def in ipairs(getDefaultContactsConfig()) do
         local num = def.number
         local name = clampStr(def.name, 60)
@@ -211,7 +229,17 @@ end
 local function enrichContacts(rows)
     for i = 1, #rows do
         local row = rows[i]
-        row.is_system = isSystemContactNumber(row.contact_number) == true
+        local service = getServiceByHotline(row.contact_number)
+        row.is_system = service ~= nil
+        if service then
+            row.service = service
+            for _, def in ipairs(getDefaultContactsConfig()) do
+                if def.service == service then
+                    row.system_icon = def.icon
+                    break
+                end
+            end
+        end
     end
     return rows
 end
@@ -382,6 +410,31 @@ local function getPendingIncomingCallFor(src)
     return nil
 end
 
+local function getCargoNetStatus(citizenid)
+    if not citizenid then
+        return { registered = false, level = 1, deliveries = 0 }
+    end
+    local row = MySQL.single.await([[
+        SELECT registered, level, total_deliveries
+        FROM fivempro_trucker_profiles
+        WHERE citizenid = ?
+        LIMIT 1
+    ]], { citizenid })
+    if not row then
+        return { registered = false, level = 1, deliveries = 0 }
+    end
+    local registered = row.registered == 1 or row.registered == true or row.registered == '1'
+    local deliveries = tonumber(row.total_deliveries) or 0
+    if deliveries > 0 then
+        registered = true
+    end
+    return {
+        registered = registered,
+        level = tonumber(row.level) or 1,
+        deliveries = deliveries,
+    }
+end
+
 local function getInitialDataFor(src)
     local citizenid, P = getCitizen(src)
     if not citizenid then return nil end
@@ -468,6 +521,7 @@ local function getInitialDataFor(src)
         adCategories = getAdCategories(),
         posts = posts,
         pendingIncomingCall = getPendingIncomingCallFor(src),
+        cargoNet = getCargoNetStatus(citizenid),
     }
 end
 

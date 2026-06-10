@@ -448,11 +448,14 @@ RegisterNUICallback('radioStation', function(data, cb)
 end)
 
 RegisterNUICallback('openCargoNet', function(_, cb)
-    if GetResourceState('fivempro_trucking') == 'started' then
-        exports['fivempro_trucking']:OpenTruckNet('phone')
-    else
+    if GetResourceState('fivempro_trucking') ~= 'started' then
         QBCore.Functions.Notify('CargoNet šiuo metu nepasiekiama.', 'error')
+        cb({ ok = false })
+        return
     end
+    closePhone()
+    Wait(150)
+    exports['fivempro_trucking']:OpenTruckNet('phone')
     cb({ ok = true })
 end)
 

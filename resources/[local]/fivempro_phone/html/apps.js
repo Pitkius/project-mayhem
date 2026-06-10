@@ -16,9 +16,26 @@
   }
 
   function sortContacts(list) {
-    return [...(list || [])].sort((a, b) =>
-      String(a.display_name || "").localeCompare(String(b.display_name || ""), "lt", { sensitivity: "base" }),
-    );
+    const serviceOrder = { police: 0, ems: 1, mechanic: 2, taxi: 3 };
+    return [...(list || [])].sort((a, b) => {
+      const sa = isSystemContact(a) ? (serviceOrder[a.service] ?? 9) : 100;
+      const sb = isSystemContact(b) ? (serviceOrder[b.service] ?? 9) : 100;
+      if (sa !== sb) return sa - sb;
+      return String(a.display_name || "").localeCompare(String(b.display_name || ""), "lt", { sensitivity: "base" });
+    });
+  }
+
+  function contactAvatar(c, small) {
+    const cls = small ? "avatar sm" : "avatar";
+    if (isSystemContact(c) && c.system_icon && window.PhoneIconHtml) {
+      return `<div class="${cls} avatar-icon">${window.PhoneIconHtml(c.system_icon, "contact-icon-wrap")}</div>`;
+    }
+    return `<div class="${cls}">${window.PhoneEsc(initials(c.display_name))}</div>`;
+  }
+
+  function contactByNumber(number) {
+    const n = digits(number);
+    return (window.PhoneState?.contacts || []).find((c) => digits(c.contact_number) === n) || null;
   }
 
   function isSystemContact(c) {
@@ -33,6 +50,37 @@
     const sameDay = d.toDateString() === now.toDateString();
     if (sameDay) return d.toLocaleTimeString("lt-LT", { hour: "2-digit", minute: "2-digit" });
     return d.toLocaleDateString("lt-LT", { month: "short", day: "numeric" });
+  }
+
+  function bindChipScrollIndicator(wrap) {
+    if (!wrap) return;
+    const row = wrap.querySelector(".scroll-chips");
+    const rail = wrap.querySelector(".chip-scroll-rail");
+    const thumb = wrap.querySelector(".chip-scroll-thumb");
+    if (!row || !rail || !thumb) return;
+
+    const update = () => {
+      const maxScroll = row.scrollWidth - row.clientWidth;
+      const railW = rail.clientWidth;
+      if (maxScroll <= 4 || railW <= 0) {
+        rail.classList.add("is-hidden");
+        return;
+      }
+      rail.classList.remove("is-hidden");
+      const ratio = row.clientWidth / row.scrollWidth;
+      const thumbW = Math.max(28, Math.floor(railW * ratio));
+      const travel = railW - thumbW;
+      const pct = row.scrollLeft / maxScroll;
+      thumb.style.width = `${thumbW}px`;
+      thumb.style.transform = `translateX(${Math.round(pct * travel)}px)`;
+    };
+
+    row.addEventListener("scroll", update, { passive: true });
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(update);
+      ro.observe(row);
+    }
+    requestAnimationFrame(update);
   }
 
   function categoryLabel(id) {
@@ -99,7 +147,7 @@
             const isEdit = editing === Number(c.id);
             const system = isSystemContact(c);
             return `<div class="list-item contact-item${system ? " system-contact" : ""}" data-id="${Number(c.id)}">
-              <div class="avatar">${window.PhoneEsc(initials(c.display_name))}</div>
+              ${contactAvatar(c)}
               <div class="list-item-body">
                 <b>${window.PhoneEsc(c.display_name)}</b>${system ? ` <span class="tag">Tarnyba</span>` : ""}
                 <div class="muted small">${window.PhoneEsc(num)}</div>
@@ -214,7 +262,7 @@
               const num = digits(th.peer_number);
               const name = contactName(num);
               return `<button type="button" class="list-item thread-item" data-peer="${window.PhoneEsc(num)}">
-                <div class="avatar">${window.PhoneEsc(initials(name))}</div>
+                ${contactAvatar(contactByNumber(num) || { display_name: name }, false)}
                 <div class="list-item-body">
                   <div class="thread-top"><b>${window.PhoneEsc(name)}</b><span class="muted small">${formatWhen(th.last_at)}</span></div>
                   <div class="muted small thread-preview">${th.direction === "out" ? "Jūs: " : ""}${window.PhoneEsc(th.last_body)}</div>
@@ -320,7 +368,7 @@
           .map((th) => {
             const num = digits(th.peer_number);
             return `<button type="button" class="list-item thread-item compact" data-num="${window.PhoneEsc(num)}">
-              <div class="avatar sm">${window.PhoneEsc(initials(contactName(num)))}</div>
+              ${contactAvatar(contactByNumber(num) || { display_name: contactName(num) }, true)}
               <div class="list-item-body"><b>${window.PhoneEsc(contactName(num))}</b><div class="muted small">${window.PhoneEsc(num)}</div></div>
             </button>`;
           })
@@ -354,10 +402,15 @@
       else if (filter !== "all") ads = ads.filter((a) => (a.category || "other") === filter);
 
       content.innerHTML = `
-        <div class="chip-row scroll-chips">
-          <button type="button" class="chip${filter === "all" && !showMine ? " active" : ""}" data-filter="all">${window.t("ads.title")}</button>
-          <button type="button" class="chip${showMine ? " active" : ""}" data-mine="1">${window.t("ads.mine")}</button>
-          ${cats.map((c) => `<button type="button" class="chip${filter === c.id ? " active" : ""}" data-filter="${window.PhoneEsc(c.id)}">${window.PhoneEsc(c.label)}</button>`).join("")}
+        <div class="chip-scroll-wrap">
+          <div class="chip-row scroll-chips" id="adsChipRow">
+            <button type="button" class="chip${filter === "all" && !showMine ? " active" : ""}" data-filter="all">${window.t("ads.title")}</button>
+            <button type="button" class="chip${showMine ? " active" : ""}" data-mine="1">${window.t("ads.mine")}</button>
+            ${cats.map((c) => `<button type="button" class="chip${filter === c.id ? " active" : ""}" data-filter="${window.PhoneEsc(c.id)}">${window.PhoneEsc(c.label)}</button>`).join("")}
+          </div>
+          <div class="chip-scroll-rail" id="adsChipRail" aria-hidden="true">
+            <div class="chip-scroll-thumb" id="adsChipThumb"></div>
+          </div>
         </div>
         <button type="button" class="ios-btn primary" id="btnToggleAdForm">${window.t("ads.post")}</button>
         <div id="adForm" class="card form-card hidden">
@@ -435,6 +488,8 @@
           window.PhoneOpenApp("ads");
         }),
       );
+
+      bindChipScrollIndicator(content.querySelector(".chip-scroll-wrap"));
     },
   };
 })();

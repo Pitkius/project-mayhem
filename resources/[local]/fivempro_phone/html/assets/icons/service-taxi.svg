@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="taxi" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD60A"/>
+      <stop offset="1" stop-color="#FFCC00"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#taxi)"/>
+  <path d="M14 38h36l-2-10H18l-4 10zm4 6a3 3 0 110 6 3 3 0 010-6zm28 0a3 3 0 110 6 3 3 0 010-6zM20 24h24l3 4H17l3-4z" fill="#1C1C1E"/>
+  <rect x="28" y="18" width="8" height="4" rx="1" fill="#1C1C1E"/>
+</svg>

@@ -439,6 +439,15 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:getDashboard', functio
     cb(buildDashboard(src))
 end)
 
+QBCore.Functions.CreateCallback('fivempro_trucking:server:isRegistered', function(src, cb)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb(false) end
+    local row = getProfileRow(Player.PlayerData.citizenid)
+    if not row then return cb(false) end
+    if isRegisteredDb(row.registered) then return cb(true) end
+    cb((tonumber(row.total_deliveries) or 0) > 0)
+end)
+
 QBCore.Functions.CreateCallback('fivempro_trucking:server:register', function(src, cb)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then

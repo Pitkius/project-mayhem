@@ -28,7 +28,8 @@ function renderList() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "prod-item" + (state.selectedId === p.id ? " active" : "");
-    btn.innerHTML = `<strong>${p.label}</strong><small>${p.levelLabel || ""} · ${p.risk || ""}</small>`;
+    const stage = p.stageLabel ? `${p.stageLabel} · ` : "";
+    btn.innerHTML = `<strong>${p.label}</strong><small>${stage}${p.levelLabel || ""} · ${p.risk || ""}</small>`;
     btn.onclick = () => {
       state.selectedId = p.id;
       renderList();
@@ -47,9 +48,11 @@ function renderDetail(p) {
   emptyPick.classList.add("hidden");
   detailPanel.classList.remove("hidden");
   document.getElementById("prodTitle").textContent = p.label;
-  document.getElementById("prodLevel").textContent = p.levelLabel || `Lygis ${p.level}`;
+  document.getElementById("prodLevel").textContent = (p.stageLabel ? `${p.stageLabel} · ` : "") + (p.levelLabel || `Lygis ${p.level}`);
   document.getElementById("prodRisk").textContent = `Rizika: ${p.risk || "—"}`;
-  document.getElementById("prodTime").textContent = `${p.craftTimeSec || 0} sek.`;
+  const sec = p.craftTimeSec || 0;
+  document.getElementById("prodTime").textContent =
+    sec >= 90 ? `~${Math.ceil(sec / 60)} min (${sec} sek.)` : `${sec} sek.`;
   const rewardSection = document.getElementById("rewardSection");
   if (rewardSection) {
     rewardSection.classList.toggle("hidden", state.isWeaponMode || !(p.sellBase > 0));

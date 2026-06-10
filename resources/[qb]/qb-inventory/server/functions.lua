@@ -791,7 +791,7 @@ function AddItem(identifier, item, amount, slot, info, reason)
         end
 
         inventory[slot] = {
-            name = item,
+            name = itemInfo.name,
             amount = amount,
             info = info or {},
             label = itemInfo.label,
@@ -816,7 +816,12 @@ function AddItem(identifier, item, amount, slot, info, reason)
         end
     end
 
-    if player then player.Functions.SetPlayerData('items', inventory) end
+    if player then
+        player.Functions.SetPlayerData('items', inventory)
+        if not player.Offline and Player(identifier).state.inv_busy then
+            TriggerClientEvent('qb-inventory:client:updateInventory', identifier)
+        end
+    end
     local invName = player and GetPlayerName(identifier) .. ' (' .. identifier .. ')' or identifier
     local addReason = reason or 'No reason specified'
     local resourceName = GetInvokingResource() or 'qb-inventory'
@@ -826,7 +831,7 @@ function AddItem(identifier, item, amount, slot, info, reason)
         'Item Added',
         'green',
         '**Inventory:** ' .. invName .. ' (Slot: ' .. slot .. ')\n' ..
-        '**Item:** ' .. item .. '\n' ..
+        '**Item:** ' .. itemInfo.name .. '\n' ..
         '**Amount:** ' .. amount .. '\n' ..
         '**Reason:** ' .. addReason .. '\n' ..
         '**Resource:** ' .. resourceName

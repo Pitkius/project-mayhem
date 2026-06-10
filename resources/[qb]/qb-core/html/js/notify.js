@@ -36,10 +36,10 @@ const VARIANT_META = {
         icon: "fas fa-circle-info",
     },
     police: {
-        title: "Policija",
+        title: "Iškvietimas",
         accent: "#a78bfa",
         accentSoft: "rgba(167, 139, 250, 0.2)",
-        icon: "fas fa-shield-halved",
+        icon: "fas fa-bullhorn",
     },
     ambulance: {
         title: "Medikai",

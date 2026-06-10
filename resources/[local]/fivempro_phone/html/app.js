@@ -30,6 +30,7 @@ const state = {
   ads: [],
   adCategories: [],
   posts: [],
+  cargoNet: { registered: false, level: 1, deliveries: 0 },
   money: { cash: 0, bank: 0 },
   activeCallId: null,
   activeConvNumber: "",
@@ -44,6 +45,7 @@ const state = {
 window.PhoneState = state;
 window.PhoneNui = nui;
 window.PhoneEsc = esc;
+window.PhoneIconHtml = iconHtml;
 
 let lockDragY = 0;
 
@@ -343,6 +345,7 @@ function hydrate(payload = {}) {
   state.adCategories = payload.adCategories || [];
   state.posts = payload.posts || [];
   state.money = payload.money || state.money;
+  state.cargoNet = payload.cargoNet || state.cargoNet || { registered: false, level: 1, deliveries: 0 };
   const name = state.account.username || state.me.name || "Žaidėjas";
   const pn = document.getElementById("profileName");
   if (pn) pn.textContent = `Sveiki, ${name}`;
@@ -496,7 +499,24 @@ window.renderRadioApp = (content) => {
 };
 
 window.renderCargoNetApp = (content) => {
-  content.innerHTML = `<div class="card"><b>CargoNet</b><p class="muted small">Krovinių birža ir logistikos kontraktai.</p><button id="btnOpenCargoNet" class="ios-btn primary">Atidaryti TruckNet</button></div>`;
+  const cn = state.cargoNet || {};
+  const registered = cn.registered === true;
+  if (registered) {
+    content.innerHTML = `
+      <div class="card">
+        <b>CargoNet</b>
+        <p class="muted small">Krovinių birža ir logistikos kontraktai.</p>
+        <p class="small">${esc(cn.level || 1)} lygis · ${Number(cn.deliveries || 0).toLocaleString("lt-LT")} pristatymai</p>
+        <button id="btnOpenCargoNet" class="ios-btn primary">Atidaryti CargoNet</button>
+      </div>`;
+  } else {
+    content.innerHTML = `
+      <div class="card">
+        <b>CargoNet</b>
+        <p class="muted small">Tapkite nepriklausomu sunkvežimio vairuotoju ir gaukite prieigą prie krovinių biržos.</p>
+        <button id="btnOpenCargoNet" class="ios-btn primary">Registruotis vairuotoju</button>
+      </div>`;
+  }
   document.getElementById("btnOpenCargoNet").addEventListener("click", () => nui("openCargoNet", {}));
 };
 

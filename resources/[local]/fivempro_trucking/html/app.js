@@ -196,7 +196,11 @@ function renderProfile() {
     pill.classList.add("hidden");
     document.getElementById("companyBalance").classList.add("hidden");
   }
-  const isReg = p.registered === true || p.registered === 1 || p.registered === "1";
+  const isReg =
+    p.registered === true ||
+    p.registered === 1 ||
+    p.registered === "1" ||
+    Number(p.total_deliveries) > 0;
   registerOverlay.classList.toggle("hidden", isReg);
   if (isReg) setRegisterStatus("");
 }

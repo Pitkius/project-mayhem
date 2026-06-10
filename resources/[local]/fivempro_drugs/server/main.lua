@@ -34,6 +34,19 @@ local function getStation(id)
     end
 end
 
+local function estimateWeaponCraftSec(prod)
+    if not prod then return 0 end
+    local wc = Config.WeaponCraft or {}
+    local level = tonumber(prod.level) or 1
+    local mult = (wc.timeMultiplier and wc.timeMultiplier[level]) or 1.0
+    local ms = math.floor((tonumber(prod.craftTimeMs) or 60000) * mult)
+    local mg = tostring(prod.minigame or 'progress')
+    if mg ~= 'progress' and wc.minigameBonusMs then
+        ms = ms + (tonumber(wc.minigameBonusMs[mg]) or 0)
+    end
+    return math.floor(ms / 1000)
+end
+
 local function playerNearStation(src, stationId)
     local st = getStation(stationId)
     if not st or not st.coords then return false end
@@ -143,7 +156,9 @@ local function policeAlert(src, alertKey, extra)
     local c = GetEntityCoords(ped)
     local msg = (Config.PoliceAlerts and Config.PoliceAlerts[alertKey]) or 'Įtartina veikla'
     if extra then msg = msg .. ' — ' .. extra end
-    TriggerClientEvent('fivempro_drugs:client:policeAlert', src, msg)
+    pcall(function()
+        exports['fivempro_dispatch']:CreateDispatchCall('police', 'drugs', { x = c.x, y = c.y, z = c.z }, msg, src)
+    end)
 end
 
 local function rollPolice(chance, src, key)
@@ -171,9 +186,11 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:getStationUi', function(s
                 id = pid,
                 label = prod.label,
                 level = prod.level,
+                stage = prod.stage,
+                stageLabel = prod.stage == 'pack' and '3 · Supakuota' or '2 · Apdorojimas',
                 levelLabel = Config.LevelLabels[prod.level] or ('Lygis ' .. prod.level),
                 risk = Config.RiskLabels[prod.risk] or prod.risk,
-                craftTimeSec = math.floor((prod.craftTimeMs or 30000) / 1000),
+                craftTimeSec = (st.mode == 'weapon') and estimateWeaponCraftSec(prod) or math.floor((prod.craftTimeMs or 30000) / 1000),
                 sellBase = (st.mode == 'weapon') and 0 or prod.sellBase,
                 minigame = prod.minigame,
                 ingredients = buildRecipeStatus(Player, pid, st),
@@ -181,7 +198,13 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:getStationUi', function(s
             }
         end
     end
-    table.sort(products, function(a, b) return a.label < b.label end)
+    table.sort(products, function(a, b)
+        local pool = getStationProductPool(st)
+        local orderA = pool[a.id] and pool[a.id].lineOrder or 99
+        local orderB = pool[b.id] and pool[b.id].lineOrder or 99
+        if orderA ~= orderB then return orderA < orderB end
+        return a.label < b.label
+    end)
 
     cb({
         ok = true,
@@ -227,6 +250,7 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:startCraft', function(src
         productId = productId,
         startedAt = now,
         recipe = recipe,
+        isWeapon = st.mode == 'weapon',
     }
     lastCraftAt[src] = now
 
@@ -237,6 +261,8 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:startCraft', function(src
         minigame = prod.minigame,
         label = prod.label,
         failChance = prod.failChance,
+        level = prod.level,
+        isWeapon = st.mode == 'weapon',
     })
 end)
 
@@ -270,7 +296,9 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:finishCraft', function(sr
         refundPartial(Player, active.recipe, 100 - (prod.failLosePercent or 50))
         local turfId = findTurfAtPlayer(src)
         if turfId then addTurfHeat(turfId, prod.heatGain or 3) end
-        rollPolice((prod.policeChance or 8) + 6, src, 'craft_fail')
+        if not active.isWeapon then
+            rollPolice((prod.policeChance or 8) + 6, src, 'craft_fail')
+        end
         logAdmin(('FAIL craft %s cid=%s'):format(active.productId, Player.PlayerData.citizenid))
         return cb({ ok = false, reason = 'Gamyba nepavyko — dalis medžiagų prarasta.', failed = true })
     end
@@ -292,7 +320,9 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:finishCraft', function(sr
 
     local turfId = findTurfAtPlayer(src)
     if turfId then addTurfHeat(turfId, math.max(1, math.floor((prod.heatGain or 2) / 2))) end
-    rollPolice(prod.policeChance, src, 'craft_high')
+    if not active.isWeapon then
+        rollPolice(prod.policeChance, src, 'craft_high')
+    end
     logAdmin(('OK craft %s x%d cid=%s'):format(outItem, outAmt, Player.PlayerData.citizenid))
 
     cb({
@@ -307,7 +337,10 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:tryNpcSell', function(src
     local sellCfg = Config.Sell or {}
     local prod
     for pid, p in pairs(Config.Products or {}) do
-        if p.output == itemName then prod = p break end
+        if p.output == itemName and (p.sellBase or 0) > 0 then
+            prod = p
+            break
+        end
     end
     if not prod then return cb({ ok = false, reason = 'Šio daikto negalima parduoti čia.' }) end
 
@@ -435,7 +468,23 @@ local function playerNearSupplyShop(src)
             end
         end
     end
+    for _, st in ipairs(Config.Stations or {}) do
+        if st.mode == 'weapon' and st.coords then
+            if #(p - st.coords) <= (st.radius or 2.5) + 2.5 then
+                return true
+            end
+        end
+    end
     return false
+end
+
+local function findMaterialShopRow(itemName)
+    itemName = tostring(itemName or ''):lower()
+    for _, row in ipairs((Config.MaterialShop and Config.MaterialShop.items) or {}) do
+        if row.name and row.name:lower() == itemName then
+            return row
+        end
+    end
 end
 
 local function registerMaterialShop()
@@ -490,6 +539,68 @@ end)
 QBCore.Functions.CreateCallback('fivempro_drugs:server:openMaterialShop', function(src, cb)
     local ok, reason = tryOpenMaterialShop(src)
     cb({ ok = ok, reason = reason })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_drugs:server:buyMaterial', function(src, cb, itemName, amount)
+    if not Config.EnableDrugTestNPC then
+        return cb({ ok = false, reason = 'Parduotuvė išjungta.' })
+    end
+    if not playerNearSupplyShop(src) then
+        return cb({ ok = false, reason = 'Per toli nuo parduotuvės ar spausdintuvo.' })
+    end
+
+    amount = math.max(1, math.min(50, math.floor(tonumber(amount) or 1)))
+    itemName = tostring(itemName or ''):lower()
+    local row = findMaterialShopRow(itemName)
+    if not row then
+        return cb({ ok = false, reason = 'Prekė nerasta.' })
+    end
+
+    local shared = QBCore.Shared.Items[itemName]
+    if not shared then
+        return cb({ ok = false, reason = 'Daiktas neįregistruotas serveryje.' })
+    end
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false }) end
+
+    local canAdd, reason = exports['qb-inventory']:CanAddItem(src, itemName, amount)
+    if not canAdd then
+        local msg = 'Negali pasiimti daikto.'
+        if reason == 'weight' then
+            msg = 'Per sunku inventoriui.'
+        elseif reason == 'slots' then
+            msg = 'Inventorius pilnas.'
+        end
+        return cb({ ok = false, reason = msg })
+    end
+
+    local price = (tonumber(row.price) or 0) * amount
+    if price <= 0 then
+        return cb({ ok = false, reason = 'Netinkama kaina.' })
+    end
+
+    local cash = Player.PlayerData.money.cash or 0
+    local bank = Player.PlayerData.money.bank or 0
+    local paidWith
+    if cash >= price then
+        paidWith = 'cash'
+        Player.Functions.RemoveMoney('cash', price, 'fivempro-drugs-supply')
+    elseif bank >= price then
+        paidWith = 'bank'
+        Player.Functions.RemoveMoney('bank', price, 'fivempro-drugs-supply')
+    else
+        return cb({ ok = false, reason = 'Nepakanka pinigų (grynieji arba bankas).' })
+    end
+
+    if not Player.Functions.AddItem(itemName, amount) then
+        Player.Functions.AddMoney(paidWith, price, 'fivempro-drugs-supply-refund')
+        return cb({ ok = false, reason = 'Nepavyko pridėti į inventorių.' })
+    end
+
+    TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', amount)
+    TriggerClientEvent('qb-inventory:client:updateInventory', src)
+    cb({ ok = true, item = itemName, amount = amount, label = shared.label })
 end)
 
 RegisterNetEvent('fivempro_drugs:server:testGiveKit', function(kitKey)
