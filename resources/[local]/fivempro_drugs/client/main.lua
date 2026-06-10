@@ -282,7 +282,7 @@ local function openTestMenu()
         { header = 'L3 kartelis', params = { isAction = true, event = function() openStationUi('cartel_lab') end } },
         { header = 'Ginklų dirbtuvė', params = { isAction = true, event = function() openStationUi('weapon_bench') end } },
         { header = 'Pardavimas (/drugsell)', txt = 'Stovėk prie NPC su produktu inventoriuje', isMenuHeader = true },
-        { header = 'Uždaryti', params = { event = 'qb-menu:client:closeMenu' } },
+        { header = 'Uždaryti', params = { isAction = true, event = function() exports['qb-menu']:closeMenu() end } },
     }
     TriggerEvent('qb-menu:client:openMenu', rows, false, true)
 end

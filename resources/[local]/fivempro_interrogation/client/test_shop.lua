@@ -27,7 +27,7 @@ local function openTestShopMenu()
 
     exports['qb-menu']:openMenu({
         { header = 'Gaujų įrangos testas', isMenuHeader = true },
-        { header = itemLabel, txt = priceTxt },
+        { header = itemLabel, txt = priceTxt, isMenuHeader = true },
         { header = 'Pirkti 1 vnt.', params = { event = 'fivempro_interrogation:client:buyTestKit' } },
         { header = 'Uždaryti', params = { isAction = true, event = function() exports['qb-menu']:closeMenu() end } },
     })

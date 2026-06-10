@@ -277,6 +277,27 @@ window.MdtMap = (function () {
     mapBounds = Core.gameBoundsLatLng(mapCfg);
   }
 
+  function reprojectMarkers() {
+    if (!mapCfg) return;
+    Object.values(unitState).forEach((s) => {
+      if (!s.data || s.data.x == null || s.data.y == null) return;
+      const [lat, lng] = gameToLatLng(s.data.x, s.data.y, mapCfg);
+      s.tgtLat = lat;
+      s.tgtLng = lng;
+      if (!animEnabled) applyMarkerPosition(s);
+    });
+    Object.values(callState).forEach((s) => {
+      if (!s.data || s.data.x == null || s.data.y == null) return;
+      const [lat, lng] = gameToLatLng(s.data.x, s.data.y, mapCfg);
+      s.tgtLat = lat;
+      s.tgtLng = lng;
+      if (!animEnabled) applyMarkerPosition(s);
+    });
+    if (localPlayerPos && selfSource != null) {
+      upsertUnit(localPlayerUnit(), mapCfg);
+    }
+  }
+
   function ensureMap(cfg) {
     mapCfg = normalizeMapConfig(cfg);
     const el = document.getElementById('mdtLeafletMap');
@@ -296,11 +317,14 @@ window.MdtMap = (function () {
     imageLayer = Core.addSatelliteLayer(leafletMap, mapCfg, 'mdt-sat-layer');
 
     Core.scheduleInvalidate(leafletMap, [0, 120, 320]);
-    requestAnimationFrame(() => fitMapFill(12));
-    setTimeout(() => fitMapFill(12), 150);
-    if (localPlayerPos && selfSource != null) {
-      upsertUnit(localPlayerUnit(), mapCfg);
-    }
+    requestAnimationFrame(() => {
+      fitMapFill(12);
+      reprojectMarkers();
+    });
+    setTimeout(() => {
+      fitMapFill(12);
+      reprojectMarkers();
+    }, 150);
   }
 
   function invalidate() {

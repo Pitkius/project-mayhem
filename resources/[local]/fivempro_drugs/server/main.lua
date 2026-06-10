@@ -40,6 +40,12 @@ local function playerNearStation(src, stationId)
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return false end
     local p = GetEntityCoords(ped)
+    if Config.EnableDrugTestNPC and Config.DevHub then
+        local hub = Config.DevHub.center or Config.DevHub.blipCoords
+        if hub and #(p - hub) <= 55.0 then
+            return true
+        end
+    end
     return #(p - st.coords) <= (st.radius or 2.5) + 1.5
 end
 

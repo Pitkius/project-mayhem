@@ -2,14 +2,14 @@
 window.GtavMapCore = (function () {
   const ISLAND = {
     gameMin: { x: -4000, y: -4000 },
-    gameMax: { x: 4500, y: 6625 },
+    gameMax: { x: 4500, y: 8000 },
     viewMin: { x: -4000, y: -4000 },
-    viewMax: { x: 4500, y: 6625 },
+    viewMax: { x: 4500, y: 8000 },
     offsetX: 0,
     offsetY: 0,
     scaleX: 1,
     scaleY: 1,
-    flipY: true,
+    flipY: false,
     imageWidth: 2048,
     imageHeight: 2560,
   };
@@ -56,7 +56,7 @@ window.GtavMapCore = (function () {
       offsetY: num(t.offsetY, 0),
       scaleX: num(t.scaleX, 1),
       scaleY: num(t.scaleY, 1),
-      flipY: t.flipY !== false,
+      flipY: t.flipY === true,
       imgW: num(t.imageWidth, ISLAND.imageWidth),
       imgH: num(t.imageHeight, ISLAND.imageHeight),
       imageUrl: nuiImageUrl(file, resourceName),
@@ -64,7 +64,7 @@ window.GtavMapCore = (function () {
   }
 
   /**
-   * GTA (x,y) → Leaflet [lat, lng] — kaip pause map (šiaurė = mažesnis lat).
+   * GTA (x,y) → Leaflet [lat, lng] — šiaurė viršuje (didesnis game Y → didesnis lat).
    * Naudoja tuos pačius GetEntityCoords x/y kaip AddBlipForCoord.
    */
   function gameToLatLng(gx, gy, cfg) {
@@ -81,7 +81,7 @@ window.GtavMapCore = (function () {
     const scaleY = cfg.scaleY || 1;
     const ox = cfg.offsetX || 0;
     const oy = cfg.offsetY || 0;
-    const flipY = cfg.flipY !== false;
+    const flipY = cfg.flipY === true;
 
     let tX = (x - cfg.coordMinX) / rangeX;
     let tY = (y - cfg.coordMinY) / rangeY;
@@ -102,7 +102,7 @@ window.GtavMapCore = (function () {
     let tY = (Number(lat) - (cfg.offsetY || 0) - cfg.minY) / (mapRangeY * (cfg.scaleY || 1));
     tX = Math.max(0, Math.min(1, tX));
     tY = Math.max(0, Math.min(1, tY));
-    if (cfg.flipY !== false) tY = 1 - tY;
+    if (cfg.flipY === true) tY = 1 - tY;
     return {
       x: cfg.coordMinX + tX * (cfg.coordMaxX - cfg.coordMinX),
       y: cfg.coordMinY + tY * (cfg.coordMaxY - cfg.coordMinY),

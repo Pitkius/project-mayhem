@@ -70,7 +70,7 @@ end)
 RegisterNetEvent('fivempro_interrogation:client:consentPrompt', function(data)
     exports['qb-menu']:openMenu({
         { header = 'RP sutikimas', isMenuHeader = true },
-        { header = data and data.roomLabel or 'Scena', txt = (data and data.leadName) or '' },
+        { header = data and data.roomLabel or 'Scena', txt = (data and data.leadName) or '', isMenuHeader = true },
         { header = 'Sutinku (be žalos RP)', params = { event = 'fivempro_interrogation:client:consentReply', args = { accept = true } } },
         { header = 'Atsisakau', params = { event = 'fivempro_interrogation:client:consentReply', args = { accept = false } } },
     })

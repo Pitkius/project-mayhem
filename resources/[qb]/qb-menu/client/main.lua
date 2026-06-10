@@ -79,7 +79,7 @@ RegisterNUICallback('clickedButton', function(option, cb)
             cb('ok')
             return
         end
-        if data then
+        if data and data.params then
             if data.params.event then
                 if data.params.isServer then
                     TriggerServerEvent(data.params.event, data.params.args)

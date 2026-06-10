@@ -74,20 +74,20 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT žemėlapis — tas pats kaip ESC pause map (šiaurė viršuje, 1:1 su GetEntityCoords X/Y)
---- Leaflet: lat = ekrano Y, lng = X. flipY = true — privaloma satelitiniam PNG (šiaurė viršuje).
+--- MDT žemėlapis — 1:1 su GetEntityCoords (x → lng, y → lat). Šiaurė viršuje (sat PNG).
+--- flipY = false — kitaip blipai apverčiami (LS rodo šiaurėje ir atvirkščiai).
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
-    gameMax = { x = 4500.0, y = 6625.0 },
+    gameMax = { x = 4500.0, y = 8000.0 },
     coordMin = { x = -4000.0, y = -4000.0 },
-    coordMax = { x = 4500.0, y = 6625.0 },
+    coordMax = { x = 4500.0, y = 8000.0 },
     viewMin = { x = -4000.0, y = -4000.0 },
-    viewMax = { x = 4500.0, y = 6625.0 },
+    viewMax = { x = 4500.0, y = 8000.0 },
     offsetX = 0.0,
     offsetY = 0.0,
     scaleX = 1.0,
     scaleY = 1.0,
-    flipY = true,
+    flipY = false,
     imageFile = 'mdt/asset/gtav_satellite_2048.png',
     imageWidth = 2048,
     imageHeight = 2560,
