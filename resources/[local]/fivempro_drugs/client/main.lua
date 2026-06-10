@@ -4,6 +4,7 @@ local uiOpen = false
 local currentStationId = nil
 local testPed = 0
 local supplyShopPed = 0
+local supplyShopBlip = nil
 local mapBlips = {}
 
 local function nui(msg, data)
@@ -280,7 +281,9 @@ local function openTestMenu()
         { header = 'L1 sandėliukas', params = { isAction = true, event = function() openStationUi('stash_grove') end } },
         { header = 'L2 trap house', params = { isAction = true, event = function() openStationUi('trap_chamberlain') end } },
         { header = 'L3 kartelis', params = { isAction = true, event = function() openStationUi('cartel_lab') end } },
-        { header = 'Ginklų dirbtuvė', params = { isAction = true, event = function() openStationUi('weapon_bench') end } },
+        { header = 'Ginklų dirbtuvė L1', params = { isAction = true, event = function() openStationUi('weapon_bench_l1') end } },
+        { header = 'Ginklų dirbtuvė L2', params = { isAction = true, event = function() openStationUi('weapon_bench_l2') end } },
+        { header = 'Ginklų dirbtuvė L3', params = { isAction = true, event = function() openStationUi('weapon_bench_l3') end } },
         { header = 'Pardavimas (/drugsell)', txt = 'Stovėk prie NPC su produktu inventoriuje', isMenuHeader = true },
         { header = 'Uždaryti', params = { isAction = true, event = function() exports['qb-menu']:closeMenu() end } },
     }
@@ -299,17 +302,41 @@ local function spawnHubPed(cfg, onTarget)
     while not HasModelLoaded(model) and GetGameTimer() < t do Wait(10) end
     if not HasModelLoaded(model) then return 0 end
     local c = cfg.coords
-    local ped = CreatePed(0, model, c.x, c.y, c.z, c.w, false, false)
+    local ped = CreatePed(0, model, c.x, c.y, c.z - 1.0, c.w, false, false)
     SetEntityInvincible(ped, true)
     FreezeEntityPosition(ped, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
-    PlaceObjectOnGroundProperly(ped)
+    SetEntityCoordsNoOffset(ped, c.x, c.y, c.z, false, false, false)
     if cfg.scenario then
         TaskStartScenarioInPlace(ped, cfg.scenario, 0, true)
     end
     if onTarget then onTarget(ped) end
     SetModelAsNoLongerNeeded(model)
     return ped
+end
+
+local function setNpcBlip(blip, label)
+    local text = tostring(label or 'Nelegalūs reikmenys')
+    if GetResourceState('fivempro_fonts') == 'started' then
+        exports['fivempro_fonts']:SetBlipName(blip, text)
+        return
+    end
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentString(text)
+    EndTextCommandSetBlipName(blip)
+end
+
+local function createSupplyShopBlip()
+    local cfg = Config.SupplyShopNPC
+    if not cfg or not cfg.blip or cfg.blip.enabled == false then return end
+    local bc = cfg.blip.coords or (cfg.coords and vector3(cfg.coords.x, cfg.coords.y, cfg.coords.z))
+    if not bc then return end
+    supplyShopBlip = AddBlipForCoord(bc.x, bc.y, bc.z)
+    SetBlipSprite(supplyShopBlip, cfg.blip.sprite or 52)
+    SetBlipColour(supplyShopBlip, cfg.blip.color or 27)
+    SetBlipScale(supplyShopBlip, cfg.blip.scale or 0.8)
+    SetBlipAsShortRange(supplyShopBlip, true)
+    setNpcBlip(supplyShopBlip, cfg.blip.label or cfg.label)
 end
 
 local function spawnSupplyShopNpc()
@@ -323,9 +350,10 @@ local function spawnSupplyShopNpc()
                     action = openMaterialShop,
                 },
             },
-            distance = Config.InteractDistance or 2.5,
+            distance = (Config.InteractDistance or 2.5) + 1.0,
         })
     end)
+    createSupplyShopBlip()
 end
 
 local function spawnTestNpc()
@@ -338,8 +366,13 @@ local function spawnTestNpc()
                     label = Config.TestNPC.label or 'Narkotikų gamyba',
                     action = openTestMenu,
                 },
+                {
+                    icon = 'fas fa-shopping-bag',
+                    label = 'Pirkti reikmenis',
+                    action = openMaterialShop,
+                },
             },
-            distance = Config.InteractDistance or 2.5,
+            distance = (Config.InteractDistance or 2.5) + 1.0,
         })
     end)
 end
@@ -358,6 +391,13 @@ CreateThread(function()
                 if st.coords then
                     DrawMarker(27, st.coords.x, st.coords.y, st.coords.z - 0.98, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                         1.15, 1.15, 0.25, 120, 80, 220, 140, false, false, 2, false, nil, nil, false)
+                end
+            end
+            for _, key in ipairs({ 'TestNPC', 'SupplyShopNPC' }) do
+                local npc = Config[key]
+                if npc and npc.coords then
+                    DrawMarker(2, npc.coords.x, npc.coords.y, npc.coords.z + 1.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                        0.35, 0.35, 0.35, 251, 191, 36, 180, false, false, 2, false, nil, nil, false)
                 end
             end
         end
@@ -388,5 +428,9 @@ AddEventHandler('onResourceStop', function(res)
     end
     if supplyShopPed ~= 0 and DoesEntityExist(supplyShopPed) then
         DeleteEntity(supplyShopPed)
+    end
+    if supplyShopBlip and DoesBlipExist(supplyShopBlip) then
+        RemoveBlip(supplyShopBlip)
+        supplyShopBlip = nil
     end
 end)

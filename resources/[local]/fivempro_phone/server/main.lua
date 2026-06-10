@@ -86,6 +86,82 @@ local function getFullName(player)
     return full
 end
 
+local function syncCharinfoPhone(src, phone)
+    if not src or not phone then return end
+    local P = getPlayer(src)
+    if not P or not P.PlayerData then return end
+    phone = tostring(phone)
+    local c = P.PlayerData.charinfo or {}
+    if tostring(c.phone or '') == phone then return end
+    if P.Functions and P.Functions.SetCharInfo then
+        P.Functions.SetCharInfo('phone', phone)
+    else
+        c.phone = phone
+        P.Functions.SetPlayerData('charinfo', c)
+    end
+end
+
+local function setPhoneCallVoice(call, channel)
+    if GetResourceState('pma-voice') ~= 'started' then return end
+    if not call then return end
+    channel = tonumber(channel) or 0
+    pcall(function()
+        exports['pma-voice']:setPlayerCall(call.callerSrc, channel)
+        exports['pma-voice']:setPlayerCall(call.calleeSrc, channel)
+    end)
+end
+
+local function endPhoneCall(call, status)
+    if not call then return end
+    setPhoneCallVoice(call, 0)
+    TriggerClientEvent('fivempro_phone:client:callState', call.callerSrc, { id = call.id, status = status or 'ended' })
+    TriggerClientEvent('fivempro_phone:client:callState', call.calleeSrc, { id = call.id, status = status or 'ended' })
+    ActiveCalls[call.id] = nil
+end
+
+local function getMessageThreads(citizenid)
+    local rows = MySQL.query.await([[
+        SELECT id, from_citizenid, to_citizenid, from_number, to_number, body, created_at
+        FROM fivempro_phone_messages
+        WHERE from_citizenid = ? OR to_citizenid = ?
+        ORDER BY id DESC
+        LIMIT 500
+    ]], { citizenid, citizenid }) or {}
+
+    local threads = {}
+    local seen = {}
+    for _, m in ipairs(rows) do
+        local peer = (m.from_citizenid == citizenid) and tostring(m.to_number) or tostring(m.from_number)
+        if peer ~= '' and not seen[peer] then
+            seen[peer] = true
+            threads[#threads + 1] = {
+                peer_number = peer,
+                last_body = tostring(m.body or ''),
+                last_at = m.created_at,
+                direction = (m.from_citizenid == citizenid) and 'out' or 'in',
+            }
+        end
+    end
+    return threads
+end
+
+local function getAdCategories()
+    local out = {}
+    for _, cat in ipairs((Config.Phone and Config.Phone.AdCategories) or {}) do
+        out[#out + 1] = {
+            id = tostring(cat.id or ''),
+            label = tostring(cat.label or cat.id or ''),
+        }
+    end
+    if #out == 0 then
+        out = {
+            { id = 'all', label = 'Visi' },
+            { id = 'other', label = 'Kita' },
+        }
+    end
+    return out
+end
+
 local function getUserByNumber(number)
     number = digitsOnly(number)
     if number == '' then return nil end
@@ -257,7 +333,7 @@ local function getInitialDataFor(src)
     ]], { citizenid, citizenid }) or {}
 
     local ads = MySQL.query.await([[
-        SELECT id, author_name, phone_number, body, created_at
+        SELECT id, citizenid, author_name, phone_number, category, title, price, body, created_at
         FROM fivempro_phone_ads
         ORDER BY id DESC
         LIMIT 80
@@ -291,11 +367,14 @@ local function getInitialDataFor(src)
         bank = tonumber(P.PlayerData.money.bank) or 0
     end
 
+    syncCharinfoPhone(src, myNumber)
+
     return {
         ok = true,
         me = {
             number = myNumber,
             name = profile,
+            citizenid = citizenid,
         },
         money = {
             cash = cash,
@@ -311,7 +390,9 @@ local function getInitialDataFor(src)
         },
         contacts = contacts,
         messagePreview = msgs,
+        messageThreads = getMessageThreads(citizenid),
         ads = ads,
+        adCategories = getAdCategories(),
         posts = posts,
         pendingIncomingCall = getPendingIncomingCallFor(src),
     }
@@ -345,6 +426,49 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:saveContact', function(so
         VALUES (?, ?, ?)
     ]], { citizenid, name, number })
 
+    cb({ ok = true })
+    TriggerClientEvent('fivempro_phone:client:refreshData', source)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:updateContact', function(source, cb, data)
+    local citizenid = getCitizen(source)
+    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+
+    local contactId = tonumber(data and data.id)
+    local name = clampStr(data and data.name or '', 60)
+    local number = digitsOnly(data and data.number or '')
+    if not contactId or name == '' or number == '' then
+        return cb({ ok = false, message = 'Blogi duomenys.' })
+    end
+
+    local row = MySQL.single.await([[
+        SELECT id FROM fivempro_phone_contacts
+        WHERE id = ? AND owner_citizenid = ? LIMIT 1
+    ]], { contactId, citizenid })
+    if not row then
+        return cb({ ok = false, message = 'Kontaktas nerastas.' })
+    end
+
+    MySQL.update.await([[
+        UPDATE fivempro_phone_contacts
+        SET display_name = ?, contact_number = ?
+        WHERE id = ? AND owner_citizenid = ?
+    ]], { name, number, contactId, citizenid })
+
+    cb({ ok = true })
+    TriggerClientEvent('fivempro_phone:client:refreshData', source)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:deleteContact', function(source, cb, data)
+    local citizenid = getCitizen(source)
+    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+
+    local contactId = tonumber(data and data.id)
+    if not contactId then return cb({ ok = false, message = 'Blogi duomenys.' }) end
+
+    MySQL.update.await('DELETE FROM fivempro_phone_contacts WHERE id = ? AND owner_citizenid = ?', {
+        contactId, citizenid
+    })
     cb({ ok = true })
     TriggerClientEvent('fivempro_phone:client:refreshData', source)
 end)
@@ -411,14 +535,39 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:createAd', function(sourc
     if not citizenid then return cb({ ok = false }) end
     local fullname = getFullName(P)
     local number = ensurePhoneUser(citizenid, fullname)
+    local title = clampStr(data and data.title or '', (Config.Phone and Config.Phone.maxAdTitleLength) or 48)
+    local category = clampStr(data and data.category or 'other', 24):lower()
+    local price = math.max(0, math.floor(tonumber(data and data.price) or 0))
     local body = clampStr(data and data.body or '', (Config.Phone and Config.Phone.maxAdLength) or 260)
     if body == '' then
         return cb({ ok = false, message = 'Skelbimas tuščias.' })
     end
+    if title == '' then
+        title = body:sub(1, math.min(48, #body))
+    end
     MySQL.insert.await([[
-        INSERT INTO fivempro_phone_ads (citizenid, author_name, phone_number, body)
-        VALUES (?, ?, ?, ?)
-    ]], { citizenid, fullname, number, body })
+        INSERT INTO fivempro_phone_ads (citizenid, author_name, phone_number, category, title, price, body)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ]], { citizenid, fullname, number, category, title, price, body })
+    cb({ ok = true })
+    local players = QBCore.Functions.GetQBPlayers()
+    for sid in pairs(players) do
+        TriggerClientEvent('fivempro_phone:client:refreshData', sid)
+    end
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:deleteAd', function(source, cb, data)
+    local citizenid = getCitizen(source)
+    if not citizenid then return cb({ ok = false }) end
+    local adId = tonumber(data and data.adId)
+    if not adId then return cb({ ok = false, message = 'Blogas ID.' }) end
+    local row = MySQL.single.await('SELECT id FROM fivempro_phone_ads WHERE id = ? AND citizenid = ? LIMIT 1', {
+        adId, citizenid
+    })
+    if not row then
+        return cb({ ok = false, message = 'Skelbimas nerastas arba ne jūsų.' })
+    end
+    MySQL.update.await('DELETE FROM fivempro_phone_ads WHERE id = ? AND citizenid = ?', { adId, citizenid })
     cb({ ok = true })
     local players = QBCore.Functions.GetQBPlayers()
     for sid in pairs(players) do
@@ -552,6 +701,13 @@ RegisterNetEvent('fivempro_phone:server:startCall', function(data)
         fromNumber = fromNumber,
         fromName = fromName,
     })
+
+    SetTimeout(35000, function()
+        local live = ActiveCalls[callId]
+        if live and not live.accepted then
+            endPhoneCall(live, 'ended')
+        end
+    end)
 end)
 
 RegisterNetEvent('fivempro_phone:server:respondCall', function(data)
@@ -563,18 +719,13 @@ RegisterNetEvent('fivempro_phone:server:respondCall', function(data)
     if src ~= call.calleeSrc then return end
 
     if not accept then
-        TriggerClientEvent('fivempro_phone:client:callState', call.callerSrc, {
-            id = call.id, status = 'rejected'
-        })
-        TriggerClientEvent('fivempro_phone:client:callState', call.calleeSrc, {
-            id = call.id, status = 'ended'
-        })
-        ActiveCalls[call.id] = nil
+        endPhoneCall(call, 'rejected')
         return
     end
 
     call.accepted = true
     call.connectedAt = os.time()
+    setPhoneCallVoice(call, call.id)
     TriggerClientEvent('fivempro_phone:client:callState', call.callerSrc, {
         id = call.id,
         status = 'connected',
@@ -593,21 +744,19 @@ RegisterNetEvent('fivempro_phone:server:endCall', function(data)
     local call = callId and ActiveCalls[callId]
     if not call then return end
     if src ~= call.callerSrc and src ~= call.calleeSrc then return end
-    TriggerClientEvent('fivempro_phone:client:callState', call.callerSrc, { id = call.id, status = 'ended' })
-    TriggerClientEvent('fivempro_phone:client:callState', call.calleeSrc, { id = call.id, status = 'ended' })
-    ActiveCalls[call.id] = nil
+    endPhoneCall(call, 'ended')
 end)
 
 AddEventHandler('playerDropped', function()
     local src = source
-    for id, call in pairs(ActiveCalls) do
+    local ending = {}
+    for _, call in pairs(ActiveCalls) do
         if call.callerSrc == src or call.calleeSrc == src then
-            local other = (call.callerSrc == src) and call.calleeSrc or call.callerSrc
-            if other then
-                TriggerClientEvent('fivempro_phone:client:callState', other, { id = id, status = 'ended' })
-            end
-            ActiveCalls[id] = nil
+            ending[#ending + 1] = call
         end
+    end
+    for i = 1, #ending do
+        endPhoneCall(ending[i], 'ended')
     end
     DeathStartedAt[src] = nil
     LastEmergencyCall[src] = nil
@@ -764,12 +913,25 @@ CreateThread(function()
           `citizenid` varchar(60) NOT NULL,
           `author_name` varchar(64) NOT NULL,
           `phone_number` varchar(20) NOT NULL,
+          `category` varchar(24) NOT NULL DEFAULT 'other',
+          `title` varchar(48) NOT NULL DEFAULT '',
+          `price` int NOT NULL DEFAULT 0,
           `body` varchar(260) NOT NULL,
           `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (`id`),
-          KEY `idx_created` (`created_at`)
+          KEY `idx_created` (`created_at`),
+          KEY `idx_category` (`category`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
+    pcall(function()
+        MySQL.query.await('ALTER TABLE fivempro_phone_ads ADD COLUMN category varchar(24) NOT NULL DEFAULT \'other\'')
+    end)
+    pcall(function()
+        MySQL.query.await('ALTER TABLE fivempro_phone_ads ADD COLUMN title varchar(48) NOT NULL DEFAULT \'\'')
+    end)
+    pcall(function()
+        MySQL.query.await('ALTER TABLE fivempro_phone_ads ADD COLUMN price int NOT NULL DEFAULT 0')
+    end)
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_posts` (
           `id` int NOT NULL AUTO_INCREMENT,

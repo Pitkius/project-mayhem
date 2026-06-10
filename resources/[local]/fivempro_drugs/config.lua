@@ -289,56 +289,49 @@ Config.Stations = {
     { id = 'lab_sandy', label = 'L2 · Laboratorija', level = 2, coords = devRow(3.5), radius = 2.2, blip = false },
     { id = 'cartel_lab', label = 'L3 · Kartelis', level = 3, coords = devRow(7.0), radius = 2.2, blip = false },
     { id = 'secret_humane', label = 'L3 · Slapta lab.', level = 3, coords = devRow(10.5), radius = 2.2, blip = false },
-    { id = 'weapon_bench', label = 'Ginklų dirbtuvė', level = 1, mode = 'weapon', coords = devRow(17.5), radius = 2.2, blip = false },
+    { id = 'weapon_bench_l1', label = 'Ginklų dirbtuvė · L1', level = 1, mode = 'weapon', coords = devRow(14.0), radius = 2.2, blip = false },
+    { id = 'weapon_bench_l2', label = 'Ginklų dirbtuvė · L2', level = 2, mode = 'weapon', coords = devRow(15.5), radius = 2.2, blip = false },
+    { id = 'weapon_bench_l3', label = 'Ginklų dirbtuvė · L3', level = 3, mode = 'weapon', coords = devRow(17.0), radius = 2.2, blip = false },
 }
 
---- Ginklų gamyba (atskira stotis, mode = weapon)
+--- Ginklų gamyba (atskira stotis, mode = weapon) — be NPC pardavimo kainos
+local function wp(label, level, output, ammoItem, ammoCount, craftTimeMs, minigame, failChance, policeChance, heatGain, failLosePercent, risk)
+    local row = {
+        label = label,
+        level = level,
+        output = output,
+        outputAmount = 1,
+        craftTimeMs = craftTimeMs,
+        risk = risk or 'high',
+        minigame = minigame or 'skill',
+        failChance = failChance,
+        policeChance = policeChance,
+        heatGain = heatGain,
+        sellBase = 0,
+        failLosePercent = failLosePercent,
+    }
+    if ammoItem and ammoCount and ammoCount > 0 then
+        row.bonusItems = { { item = ammoItem, count = ammoCount } }
+    end
+    return row
+end
+
 Config.WeaponProducts = {
-    craft_pistol = {
-        label = 'Pistoletas',
-        level = 1,
-        output = 'weapon_pistol',
-        outputAmount = 1,
-        bonusItems = { { item = 'pistol_ammo', count = 60 } },
-        craftTimeMs = 38000,
-        risk = 'high',
-        minigame = 'skill',
-        failChance = 16,
-        policeChance = 14,
-        heatGain = 4,
-        sellBase = 0,
-        failLosePercent = 55,
-    },
-    craft_smg = {
-        label = 'SMG',
-        level = 1,
-        output = 'weapon_smg',
-        outputAmount = 1,
-        bonusItems = { { item = 'smg_ammo', count = 90 } },
-        craftTimeMs = 48000,
-        risk = 'high',
-        minigame = 'advanced',
-        failChance = 20,
-        policeChance = 18,
-        heatGain = 6,
-        sellBase = 0,
-        failLosePercent = 60,
-    },
-    craft_rifle = {
-        label = 'Karabinas',
-        level = 1,
-        output = 'weapon_carbinerifle',
-        outputAmount = 1,
-        bonusItems = { { item = 'rifle_ammo', count = 90 } },
-        craftTimeMs = 55000,
-        risk = 'extreme',
-        minigame = 'advanced',
-        failChance = 22,
-        policeChance = 20,
-        heatGain = 8,
-        sellBase = 0,
-        failLosePercent = 65,
-    },
+    --- L1 — pistoletai + šalti ginklai
+    craft_pistol = wp('Pistoletas', 1, 'weapon_pistol', 'pistol_ammo', 60, 32000, 'progress', 12, 10, 3, 45, 'medium'),
+    craft_combat_pistol = wp('Combat pistoletas', 1, 'weapon_combatpistol', 'pistol_ammo', 72, 36000, 'skill', 14, 12, 4, 50, 'medium'),
+    craft_bat = wp('Beisbolo lazda', 1, 'weapon_bat', nil, 0, 18000, 'progress', 6, 4, 1, 30, 'low'),
+    craft_switchblade = wp('Switchblade', 1, 'weapon_switchblade', nil, 0, 22000, 'progress', 8, 5, 2, 35, 'low'),
+    --- L2 — SMG / .50 / shotgun
+    craft_tec9 = wp('Tec-9', 2, 'weapon_machinepistol', 'pistol_ammo', 90, 42000, 'skill', 16, 14, 5, 52, 'high'),
+    craft_mini_uzi = wp('Mini Uzi', 2, 'weapon_minismg', 'smg_ammo', 90, 44000, 'skill', 17, 15, 5, 54, 'high'),
+    craft_smg = wp('SMG', 2, 'weapon_smg', 'smg_ammo', 120, 46000, 'skill', 18, 16, 6, 56, 'high'),
+    craft_pistol50 = wp('Pistoletas .50', 2, 'weapon_pistol50', 'pistol_ammo', 48, 40000, 'skill', 15, 14, 5, 50, 'high'),
+    craft_pumpshotgun = wp('Pump shotgun', 2, 'weapon_pumpshotgun', 'shotgun_ammo', 32, 48000, 'advanced', 19, 17, 6, 58, 'high'),
+    --- L3 — karabinai
+    craft_carbine = wp('Karabinas', 3, 'weapon_carbinerifle', 'rifle_ammo', 120, 52000, 'advanced', 20, 18, 7, 60, 'extreme'),
+    craft_ak47 = wp('AK-47', 3, 'weapon_assaultrifle', 'rifle_ammo', 120, 54000, 'advanced', 21, 19, 8, 62, 'extreme'),
+    craft_micro_draco = wp('Micro Draco', 3, 'weapon_compactrifle', 'rifle_ammo', 90, 50000, 'advanced', 20, 18, 7, 60, 'extreme'),
 }
 
 Config.WeaponRecipes = {
@@ -349,6 +342,39 @@ Config.WeaponRecipes = {
         { item = 'gun_trigger', count = 1 },
         { item = 'metal_scrap', count = 4 },
     },
+    craft_combat_pistol = {
+        { item = 'gun_frame', count = 1 },
+        { item = 'gun_barrel', count = 1 },
+        { item = 'gun_spring', count = 2 },
+        { item = 'gun_trigger', count = 1 },
+        { item = 'weapon_parts', count = 1 },
+        { item = 'metal_scrap', count = 5 },
+    },
+    craft_bat = {
+        { item = 'metal_scrap', count = 4 },
+        { item = 'weapon_parts', count = 1 },
+    },
+    craft_switchblade = {
+        { item = 'metal_scrap', count = 2 },
+        { item = 'gun_spring', count = 1 },
+        { item = 'weapon_parts', count = 1 },
+    },
+    craft_tec9 = {
+        { item = 'gun_frame', count = 1 },
+        { item = 'gun_barrel', count = 1 },
+        { item = 'gun_spring', count = 3 },
+        { item = 'gun_trigger', count = 1 },
+        { item = 'weapon_parts', count = 2 },
+        { item = 'metal_scrap', count = 6 },
+    },
+    craft_mini_uzi = {
+        { item = 'gun_frame', count = 1 },
+        { item = 'gun_barrel', count = 2 },
+        { item = 'gun_spring', count = 3 },
+        { item = 'gun_trigger', count = 1 },
+        { item = 'weapon_parts', count = 2 },
+        { item = 'metal_scrap', count = 7 },
+    },
     craft_smg = {
         { item = 'gun_frame', count = 2 },
         { item = 'gun_barrel', count = 2 },
@@ -357,13 +383,45 @@ Config.WeaponRecipes = {
         { item = 'weapon_parts', count = 3 },
         { item = 'metal_scrap', count = 8 },
     },
-    craft_rifle = {
+    craft_pistol50 = {
+        { item = 'gun_frame', count = 1 },
+        { item = 'gun_barrel', count = 1 },
+        { item = 'gun_spring', count = 2 },
+        { item = 'gun_trigger', count = 1 },
+        { item = 'weapon_parts', count = 2 },
+        { item = 'metal_scrap', count = 6 },
+    },
+    craft_pumpshotgun = {
+        { item = 'gun_frame', count = 2 },
+        { item = 'gun_barrel', count = 2 },
+        { item = 'gun_spring', count = 2 },
+        { item = 'gun_trigger', count = 1 },
+        { item = 'weapon_parts', count = 3 },
+        { item = 'metal_scrap', count = 8 },
+    },
+    craft_carbine = {
         { item = 'gun_frame', count = 2 },
         { item = 'gun_barrel', count = 2 },
         { item = 'gun_spring', count = 3 },
         { item = 'gun_trigger', count = 2 },
         { item = 'weapon_parts', count = 5 },
         { item = 'metal_scrap', count = 10 },
+    },
+    craft_ak47 = {
+        { item = 'gun_frame', count = 2 },
+        { item = 'gun_barrel', count = 2 },
+        { item = 'gun_spring', count = 4 },
+        { item = 'gun_trigger', count = 2 },
+        { item = 'weapon_parts', count = 6 },
+        { item = 'metal_scrap', count = 12 },
+    },
+    craft_micro_draco = {
+        { item = 'gun_frame', count = 2 },
+        { item = 'gun_barrel', count = 2 },
+        { item = 'gun_spring', count = 3 },
+        { item = 'gun_trigger', count = 2 },
+        { item = 'weapon_parts', count = 4 },
+        { item = 'metal_scrap', count = 9 },
     },
 }
 
@@ -404,6 +462,7 @@ Config.MaterialShop = {
         { name = 'pistol_ammo', amount = 500, price = 12, slot = 25 },
         { name = 'smg_ammo', amount = 500, price = 18, slot = 26 },
         { name = 'rifle_ammo', amount = 500, price = 22, slot = 27 },
+        { name = 'shotgun_ammo', amount = 500, price = 20, slot = 28 },
     },
 }
 
@@ -434,19 +493,25 @@ local SUPPLY_SHOP_POS = devRow(-17.5)
 
 Config.TestNPC = {
     model = 's_m_y_dealer_01',
-    coords = vector4(DRUG_TEST_POS.x, DRUG_TEST_POS.y, DRUG_TEST_POS.z, 149.51),
+    coords = vector4(DRUG_TEST_POS.x, DRUG_TEST_POS.y, DRUG_TEST_POS.z, DEV_ROW_H + 180.0),
     scenario = 'WORLD_HUMAN_STAND_MOBILE',
     label = 'Narkotikų gamyba',
     blip = false,
 }
 
---- Ingredientų parduotuvė (qb-inventory shop UI)
+--- Ingredientų parduotuvė (qb-inventory shop UI) — šalia test NPC
 Config.SupplyShopNPC = {
-    model = 's_m_m_linecook',
-    coords = vector4(SUPPLY_SHOP_POS.x, SUPPLY_SHOP_POS.y, SUPPLY_SHOP_POS.z, 149.51),
-    scenario = 'WORLD_HUMAN_STAND_MOBILE',
+    model = 's_m_y_dealer_01',
+    coords = vector4(SUPPLY_SHOP_POS.x, SUPPLY_SHOP_POS.y, SUPPLY_SHOP_POS.z, DEV_ROW_H + 180.0),
+    scenario = 'WORLD_HUMAN_SMOKING',
     label = 'Nelegalūs reikmenys',
-    blip = false,
+    blip = {
+        enabled = true,
+        sprite = 52,
+        color = 27,
+        scale = 0.8,
+        label = 'Nelegalūs reikmenys',
+    },
 }
 
 --- Test meniu — duoda itemus / atidaro UI

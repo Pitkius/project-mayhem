@@ -21,20 +21,29 @@ const DOCK_APPS = ["calls", "messages", "contacts", "settings"];
 const APPS_PER_PAGE = 16;
 
 const state = {
-  me: { number: "000000", name: "Žaidėjas" },
+  me: { number: "000000", name: "Žaidėjas", citizenid: "" },
   account: { hasAccount: false, username: "" },
   appStore: { availableApps: [] },
   contacts: [],
   messagePreview: [],
+  messageThreads: [],
   ads: [],
+  adCategories: [],
   posts: [],
   money: { cash: 0, bank: 0 },
   activeCallId: null,
   activeConvNumber: "",
+  contactEditId: null,
+  adsFilter: "all",
+  adsMineOnly: false,
   unlocked: false,
   homePage: 0,
   lockNotifs: [],
 };
+
+window.PhoneState = state;
+window.PhoneNui = nui;
+window.PhoneEsc = esc;
 
 let lockDragY = 0;
 
@@ -329,7 +338,9 @@ function hydrate(payload = {}) {
   state.appStore = payload.appStore || state.appStore;
   state.contacts = payload.contacts || [];
   state.messagePreview = payload.messagePreview || [];
+  state.messageThreads = payload.messageThreads || [];
   state.ads = payload.ads || [];
+  state.adCategories = payload.adCategories || [];
   state.posts = payload.posts || [];
   state.money = payload.money || state.money;
   const name = state.account.username || state.me.name || "Žaidėjas";
@@ -339,6 +350,8 @@ function hydrate(payload = {}) {
   syncPendingIncomingCall(payload);
   if (!state.activeCallId) openHome();
 }
+
+window.PhoneHydrate = hydrate;
 
 function renderAppStore() {
   const list = document.getElementById("storeList");
@@ -383,6 +396,11 @@ async function openApp(appId) {
   document.getElementById("appTitle").textContent =
     installedApps().find((a) => a.id === appId)?.label || appId;
   const content = document.getElementById("appContent");
+  const phoneApp = window.PhoneApps && window.PhoneApps[`render${appId.charAt(0).toUpperCase()}${appId.slice(1)}App`];
+  if (phoneApp) {
+    phoneApp(content);
+    return;
+  }
   const fn = APP_TEMPLATE[appId];
   if (!fn || typeof window[fn] !== "function") {
     content.innerHTML = `<div class="card">Programėlė ruošiama.</div>`;
@@ -391,60 +409,13 @@ async function openApp(appId) {
   window[fn](content);
 }
 
+window.PhoneOpenApp = openApp;
+
 window.renderEmergencyApp = (content) => {
   content.innerHTML = `<div class="card"><b>Skubus iškvietimas</b><div class="row"><button data-emerg="police">Policija</button><button data-emerg="ems">Greitoji</button></div><div class="row"><button data-emerg="taxi">Taksi</button><button data-emerg="mechanic">Mechanikas</button></div></div>`;
   content.querySelectorAll("[data-emerg]").forEach((btn) =>
     btn.addEventListener("click", () => nui("emergencyCall", { service: btn.dataset.emerg })),
   );
-};
-
-window.renderCallsApp = (content) => {
-  content.innerHTML = `<div class="card"><div class="row"><input id="callNumber" placeholder="Numeris" /><button id="btnCall">Skambinti</button></div><button id="btnHangup">Baigti</button><p class="muted small">Jūsų nr: ${esc(state.me.number)}</p></div>`;
-  document.getElementById("btnCall").addEventListener("click", () =>
-    nui("startCall", { number: (document.getElementById("callNumber").value || "").replace(/\D+/g, "") }),
-  );
-  document.getElementById("btnHangup").addEventListener("click", () =>
-    state.activeCallId && nui("endCall", { callId: state.activeCallId }),
-  );
-};
-
-window.renderMessagesApp = (content) => {
-  const n = state.activeConvNumber || "";
-  const rows = state.messagePreview.filter((m) => !n || String(m.from_number) === n || String(m.to_number) === n);
-  content.innerHTML = `<div class="card"><div class="row"><input id="msgNumber" value="${esc(n)}" placeholder="Numeris" /><button id="btnLoadConv">Atidaryti</button></div><div id="conversationList">${rows.map((m) => `<div class="small">${esc(m.from_number)}: ${esc(m.body)}</div>`).join("")}</div><div class="row"><input id="msgBody" placeholder="Žinutė" /><button id="btnSendMsg">Siųsti</button></div></div>`;
-  document.getElementById("btnLoadConv").addEventListener("click", () => {
-    state.activeConvNumber = (document.getElementById("msgNumber").value || "").replace(/\D+/g, "");
-    openApp("messages");
-  });
-  document.getElementById("btnSendMsg").addEventListener("click", async () => {
-    const number = (document.getElementById("msgNumber").value || "").replace(/\D+/g, "");
-    const body = document.getElementById("msgBody").value || "";
-    if (!number || !body) return;
-    await nui("sendMessage", { number, body });
-    hydrate(await nui("refresh"));
-    openApp("messages");
-  });
-};
-
-window.renderContactsApp = (content) => {
-  content.innerHTML = `<div class="card"><div class="row"><input id="contactName" placeholder="Vardas" /><input id="contactNumber" placeholder="Nr" /></div><button id="btnSaveContact">Išsaugoti</button></div>${state.contacts.map((c) => `<div class="card">${esc(c.display_name)} (${esc(c.contact_number)})</div>`).join("")}`;
-  document.getElementById("btnSaveContact").addEventListener("click", async () => {
-    await nui("saveContact", {
-      name: document.getElementById("contactName").value,
-      number: document.getElementById("contactNumber").value,
-    });
-    hydrate(await nui("refresh"));
-    openApp("contacts");
-  });
-};
-
-window.renderAdsApp = (content) => {
-  content.innerHTML = `<div class="card"><div class="row"><input id="adBody" placeholder="Skelbimas" /><button id="btnPostAd">Kelti</button></div></div>${state.ads.map((a) => `<div class="card"><b>${esc(a.author_name)}</b><div>${esc(a.body)}</div></div>`).join("")}`;
-  document.getElementById("btnPostAd").addEventListener("click", async () => {
-    await nui("createAd", { body: document.getElementById("adBody").value });
-    hydrate(await nui("refresh"));
-    openApp("ads");
-  });
 };
 
 window.renderSocialApp = (content) => {
@@ -564,8 +535,16 @@ window.addEventListener("message", async (e) => {
     showIncomingCallOverlay(payload || {});
   } else if (action === "callState") {
     const st = payload?.status || "";
+    const labels = {
+      ringing: "Skambinama…",
+      connected: "Skambutis aktyvus",
+      ended: "Skambutis baigtas",
+      rejected: "Atmesta",
+      busy: "Užimta",
+      failed: "Nepavyko",
+    };
     const cs = document.getElementById("callState");
-    if (cs) cs.textContent = st;
+    if (cs) cs.textContent = labels[st] || st;
     if (/(ended|rejected|busy|failed)/i.test(st)) {
       state.activeCallId = null;
       hideCallOverlay();

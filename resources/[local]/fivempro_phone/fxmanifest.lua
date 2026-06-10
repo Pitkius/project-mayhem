@@ -4,7 +4,7 @@ lua54 'yes'
 
 name 'fivempro_phone'
 description 'Bazinis telefonas: skambučiai, žinutės, kontaktai, skelbimai, social feed'
-version '1.0.0'
+version '2.0.0'
 
 ui_page 'html/index.html'
 
@@ -12,6 +12,8 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/apps.js',
+    'html/locale/lt.js',
     'html/assets/icons/*.svg',
 }
 

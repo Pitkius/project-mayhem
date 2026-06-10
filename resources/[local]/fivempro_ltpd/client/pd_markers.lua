@@ -98,6 +98,43 @@ local function clearPdMarkers()
     markersReady = false
 end
 
+local function stationFeatureCoords(st, key)
+    local feat = st[key]
+    if type(feat) == 'table' and feat.coords then
+        return vec3From(feat.coords)
+    end
+    if feat == true and st.coords then
+        return vec3From(st.coords)
+    end
+    return nil
+end
+
+local function coordsNear(a, b, eps)
+    if not a or not b then return false end
+    return #(a - b) < (eps or 0.85)
+end
+
+local function openReceptionMenu()
+    if GetResourceState('qb-menu') ~= 'started' then
+        TriggerEvent('fivempro_ltpd:client:openMdtAtStation')
+        return
+    end
+    exports['qb-menu']:openMenu({
+        { header = 'PD registratūra', isMenuHeader = true },
+        {
+            header = 'MDT planšetė',
+            txt = 'Atidaryti MDT',
+            params = { event = 'fivempro_ltpd:client:openMdtAtStation' },
+        },
+        {
+            header = 'Pamaina',
+            txt = 'Pradėti arba baigti tarnybą',
+            params = { event = 'fivempro_ltpd:client:toggleDuty' },
+        },
+        { header = 'Uždaryti', params = { event = 'qb-menu:client:closeMenu' } },
+    })
+end
+
 local function registerAllPdMarkers()
     if Config.ShowPd3DMarkers == false then
         clearPdMarkers()
@@ -108,16 +145,40 @@ local function registerAllPdMarkers()
 
     for _, st in ipairs(Config.Stations or {}) do
         local stationId = st.id
+        local mdtPos = stationFeatureCoords(st, 'mdt')
+        local dutyPos = stationFeatureCoords(st, 'duty')
+        local mergedReception = mdtPos and dutyPos and coordsNear(mdtPos, dutyPos)
 
-        if st.mdt and st.coords then
+        if mergedReception then
             RegisterPdGroundMarker({
-                coords = st.coords,
-                kind = 'mdt',
-                label = 'MDT planšetė',
-                onPress = function()
-                    TriggerEvent('fivempro_ltpd:client:openMdtAtStation')
-                end,
+                coords = mdtPos,
+                kind = 'duty',
+                label = stationId == 'ls_main' and 'PD registratūra' or 'Registratūra (MDT / pamaina)',
+                requireDuty = false,
+                onPress = openReceptionMenu,
             })
+        else
+            if mdtPos then
+                RegisterPdGroundMarker({
+                    coords = mdtPos,
+                    kind = 'mdt',
+                    label = 'MDT planšetė',
+                    onPress = function()
+                        TriggerEvent('fivempro_ltpd:client:openMdtAtStation')
+                    end,
+                })
+            end
+            if dutyPos then
+                RegisterPdGroundMarker({
+                    coords = dutyPos,
+                    kind = 'duty',
+                    label = stationId == 'ls_main' and 'PD pamaina (registratūra)' or 'PD pamaina (pradėti / baigti)',
+                    requireDuty = false,
+                    onPress = function()
+                        TriggerEvent('fivempro_ltpd:client:toggleDuty')
+                    end,
+                })
+            end
         end
 
         if st.supply and st.supply.coords then
@@ -222,17 +283,6 @@ local function registerAllPdMarkers()
             })
         end
 
-        if st.duty and st.coords then
-            RegisterPdGroundMarker({
-                coords = st.coords,
-                kind = 'duty',
-                label = stationId == 'ls_main' and 'PD pamaina (registratūra)' or 'PD pamaina (pradėti / baigti)',
-                requireDuty = false,
-                onPress = function()
-                    TriggerEvent('fivempro_ltpd:client:toggleDuty')
-                end,
-            })
-        end
     end
 
     markersReady = true

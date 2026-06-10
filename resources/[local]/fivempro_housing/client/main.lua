@@ -288,6 +288,10 @@ CreateThread(function()
 end)
 
 function DrawText3D(x, y, z, text)
+    if GetResourceState('fivempro_fonts') == 'started' then
+        exports['fivempro_fonts']:DrawText3D(x, y, z, text, { scale = 0.32, background = false })
+        return
+    end
     SetTextScale(0.32, 0.32)
     SetTextFont(4)
     SetTextProportional(1)

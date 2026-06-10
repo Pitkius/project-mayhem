@@ -21,6 +21,41 @@ local function setMissionBlip(coords, label, route)
     exports['fivempro_fonts']:SetBlipName(missionBlip, label or 'Kontraktas')
 end
 
+--- Kelių maršruto taškai NUI žemėlapiui (snap į artimiausius kelių mazgus).
+local function sampleRoadPath(x1, y1, z1, x2, y2, z2)
+    local points = { { x = x1, y = y1 } }
+    local cx, cy, cz = x1, y1, z1
+    local tx, ty, tz = x2, y2, z2
+
+    for _ = 1, 72 do
+        local dx, dy, dz = tx - cx, ty - cy, tz - cz
+        local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+        if dist < 90.0 then break end
+
+        local step = math.min(160.0, dist * 0.38)
+        dx, dy = dx / dist, dy / dist
+        local px, py, pz = cx + dx * step, cy + dy * step, cz
+
+        local found, nodePos = GetClosestVehicleNodeWithHeading(px, py, pz, 1, 3.0, 0)
+        if found and nodePos then
+            local nx, ny, nz = nodePos.x, nodePos.y, nodePos.z
+            if math.abs(nx - cx) + math.abs(ny - cy) > 18.0 then
+                cx, cy, cz = nx, ny, nz
+                points[#points + 1] = { x = cx, y = cy }
+            else
+                cx, cy = cx + dx * 70.0, cy + dy * 70.0
+                points[#points + 1] = { x = cx, y = cy }
+            end
+        else
+            cx, cy = cx + dx * 70.0, cy + dy * 70.0
+            points[#points + 1] = { x = cx, y = cy }
+        end
+    end
+
+    points[#points + 1] = { x = tx, y = ty }
+    return points
+end
+
 local function isAllowedTruck()
     local ped = PlayerPedId()
     if not IsPedInAnyVehicle(ped, false) then return false end
@@ -108,11 +143,25 @@ RegisterNUICallback('trucking:createCompany', function(data, cb)
     end, data and data.name)
 end)
 
+RegisterNUICallback('trucking:getRoutePath', function(data, cb)
+    local from, to = data and data.from, data and data.to
+    if not from or not to or from.x == nil or to.x == nil then
+        return cb({ ok = false, points = {} })
+    end
+    local points = sampleRoadPath(
+        tonumber(from.x), tonumber(from.y), tonumber(from.z or 0),
+        tonumber(to.x), tonumber(to.y), tonumber(to.z or 0)
+    )
+    cb({ ok = true, points = points })
+end)
+
 RegisterNUICallback('trucking:acceptContract', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_trucking:server:acceptContract', function(res)
         if res and res.ok then
             closeUI()
             QBCore.Functions.Notify('Kontraktas priimtas — važiuok į paėmimo vietą.', 'success')
+        elseif res and res.reason then
+            QBCore.Functions.Notify(res.reason, 'error')
         end
         cb(res or { ok = false })
     end, data and data.contractId)

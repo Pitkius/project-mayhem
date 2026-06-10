@@ -115,6 +115,21 @@ local function runPhonePutAwayAnim()
 end
 
 local phoneCameraActive = false
+local activeVoiceCallId = 0
+
+local function setPhoneVoiceCall(callId)
+    if GetResourceState('pma-voice') ~= 'started' then return end
+    callId = tonumber(callId) or 0
+    if callId == activeVoiceCallId then return end
+    activeVoiceCallId = callId
+    pcall(function()
+        if callId > 0 then
+            exports['pma-voice']:addPlayerToCall(callId)
+        else
+            exports['pma-voice']:removePlayerFromCall()
+        end
+    end)
+end
 
 local function stopPhoneCamera()
     if not phoneCameraActive then return end
@@ -274,7 +289,17 @@ RegisterNetEvent('fivempro_phone:client:incomingCall', function(call)
 end)
 
 RegisterNetEvent('fivempro_phone:client:callState', function(call)
-    sendUi('callState', call or {})
+    call = call or {}
+    local st = tostring(call.status or '')
+    if st == 'connected' and call.id then
+        setPhoneVoiceCall(call.id)
+        QBCore.Functions.Notify('Skambutis prijungtas — kalbėkite.', 'success', 4000)
+    elseif st == 'ringing' and call.id then
+        -- laukiam atsakymo
+    elseif st == 'rejected' or st == 'ended' or st == 'busy' or st == 'failed' then
+        setPhoneVoiceCall(0)
+    end
+    sendUi('callState', call)
 end)
 
 RegisterNetEvent('fivempro_phone:client:closePhone', function()
@@ -307,6 +332,18 @@ RegisterNUICallback('saveContact', function(data, cb)
     end, data or {})
 end)
 
+RegisterNUICallback('updateContact', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:updateContact', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
+RegisterNUICallback('deleteContact', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:deleteContact', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
 RegisterNUICallback('sendMessage', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_phone:server:sendMessage', function(res)
         cb(res or { ok = false })
@@ -321,6 +358,12 @@ end)
 
 RegisterNUICallback('createAd', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_phone:server:createAd', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
+RegisterNUICallback('deleteAd', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:deleteAd', function(res)
         cb(res or { ok = false })
     end, data or {})
 end)
@@ -415,6 +458,7 @@ end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
+    setPhoneVoiceCall(0)
     stopPhoneCamera()
 end)
 

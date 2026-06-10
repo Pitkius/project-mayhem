@@ -6,11 +6,17 @@ local fontId = nil
 local fontReady = false
 local blipSeq = 0
 
-CreateThread(function()
-    Wait(0)
+local function ensureFont()
+    if fontReady then return true end
     RegisterFontFile(FONT_FILE)
     fontId = RegisterFontId(FONT_FACE)
     fontReady = fontId ~= nil and fontId ~= -1
+    return fontReady
+end
+
+CreateThread(function()
+    Wait(0)
+    ensureFont()
 end)
 
 --- @param text string
@@ -44,9 +50,43 @@ local function applyTextFont()
     end
 end
 
+local function textDisplayLen(s)
+    s = tostring(s or '')
+    if utf8 and utf8.len then
+        return utf8.len(s) or #s
+    end
+    return #s
+end
+
+--- 3D tekstas su lietuviškomis raidėmis (ė, ū, š, …) — naudoti vietoj QBCore SetTextFont(4).
+local function drawText3D(x, y, z, text, opts)
+    text = tostring(text or '')
+    local o = opts or {}
+    local scale = o.scale or 0.35
+    SetTextScale(scale, scale)
+    if ensureFont() then
+        SetTextFont(fontId)
+    else
+        SetTextFont(4)
+    end
+    SetTextProportional(1)
+    SetTextColour(o.r or 255, o.g or 255, o.b or 255, o.a or 215)
+    BeginTextCommandDisplayText('STRING')
+    SetTextCentre(o.center ~= false)
+    AddTextComponentSubstringPlayerName(text)
+    SetDrawOrigin(x + 0.0, y + 0.0, z + 0.0, 0)
+    EndTextCommandDisplayText(0.0, 0.0)
+    if o.background ~= false then
+        local factor = textDisplayLen(text) / 370
+        DrawRect(0.0, 0.0 + 0.0125, 0.017 + factor, 0.03, 0, 0, 0, o.bgAlpha or 75)
+    end
+    ClearDrawOrigin()
+end
+
 exports('SetBlipName', setBlipName)
 exports('FormatNativeText', formatNativeText)
 exports('ApplyTextFont', applyTextFont)
+exports('DrawText3D', drawText3D)
 exports('IsNativeFontReady', function()
     return fontReady
 end)

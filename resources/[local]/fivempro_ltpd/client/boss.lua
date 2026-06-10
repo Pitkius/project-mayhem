@@ -1,5 +1,13 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local bossLaptops = {}
+
+local LAPTOP_MODELS = {
+    `prop_laptop_01a`,
+    `prop_laptop_02_closed`,
+    `prop_laptop_lester2`,
+}
+
 local function isPdJobName(name)
     return name == Config.JobName
 end
@@ -108,4 +116,88 @@ RegisterNetEvent('fivempro_ltpd:client:bossToggleDuty', function()
         return
     end
     TriggerServerEvent('QBCore:ToggleDuty')
+end)
+
+local function findLaptopAt(coords, radius)
+    for i = 1, #LAPTOP_MODELS do
+        local ent = GetClosestObjectOfType(coords.x, coords.y, coords.z, radius or 1.8, LAPTOP_MODELS[i], false, false, false)
+        if ent ~= 0 then return ent end
+    end
+    return 0
+end
+
+local function ensureBossLaptop(bossCfg)
+    local c = bossCfg.coords
+    if not c then return 0, false end
+    local pos = vector3(c.x, c.y, c.z)
+    local ent = findLaptopAt(pos, 2.0)
+    if ent ~= 0 then return ent, false end
+    if bossCfg.spawnProp == false then return 0, false end
+
+    local model = bossCfg.prop or 'prop_laptop_01a'
+    local hash = type(model) == 'number' and model or joaat(model)
+    RequestModel(hash)
+    local deadline = GetGameTimer() + 5000
+    while not HasModelLoaded(hash) do
+        if GetGameTimer() > deadline then return 0, false end
+        Wait(10)
+    end
+    ent = CreateObject(hash, c.x, c.y, c.z, false, false, false)
+    if ent == 0 then return 0, false end
+    SetEntityHeading(ent, c.w or c.heading or 0.0)
+    FreezeEntityPosition(ent, true)
+    SetEntityInvincible(ent, true)
+    SetEntityAsMissionEntity(ent, true, true)
+    SetModelAsNoLongerNeeded(hash)
+    return ent, true
+end
+
+local function setupBossTargets()
+    if GetResourceState('qb-target') ~= 'started' then return false end
+
+    for _, st in ipairs(Config.Stations or {}) do
+        local bossCfg = st.boss
+        if not bossCfg or not bossCfg.coords then goto continue end
+
+        local ent, weSpawned = ensureBossLaptop(bossCfg)
+        if ent == 0 then goto continue end
+        if weSpawned then bossLaptops[#bossLaptops + 1] = ent end
+
+        exports['qb-target']:AddTargetEntity(ent, {
+            options = {
+                {
+                    type = 'client',
+                    event = 'fivempro_ltpd:client:bossOpenMenu',
+                    icon = 'fas fa-user-shield',
+                    label = bossCfg.label or 'LTPD vadovybė',
+                    job = Config.JobName or 'police',
+                    canInteract = function()
+                        return canOpenBoss()
+                    end,
+                },
+            },
+            distance = 2.2,
+        })
+
+        ::continue::
+    end
+    return true
+end
+
+CreateThread(function()
+    local waited = 0
+    while not setupBossTargets() and waited < 60 do
+        Wait(1000)
+        waited = waited + 1
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for _, ent in ipairs(bossLaptops) do
+        if ent and DoesEntityExist(ent) then
+            DeleteEntity(ent)
+        end
+    end
+    bossLaptops = {}
 end)

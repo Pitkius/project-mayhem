@@ -174,7 +174,7 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:getStationUi', function(s
                 levelLabel = Config.LevelLabels[prod.level] or ('Lygis ' .. prod.level),
                 risk = Config.RiskLabels[prod.risk] or prod.risk,
                 craftTimeSec = math.floor((prod.craftTimeMs or 30000) / 1000),
-                sellBase = prod.sellBase,
+                sellBase = (st.mode == 'weapon') and 0 or prod.sellBase,
                 minigame = prod.minigame,
                 ingredients = buildRecipeStatus(Player, pid, st),
                 mode = st.mode or 'drugs',
@@ -416,13 +416,26 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:tryNpcSell', function(src
 end)
 
 local function playerNearSupplyShop(src)
-    local cfg = Config.SupplyShopNPC
-    if not cfg or not cfg.coords then return false end
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return false end
     local p = GetEntityCoords(ped)
-    local c = cfg.coords
-    return #(p - vector3(c.x, c.y, c.z)) <= (Config.InteractDistance or 2.5) + 2.0
+    if Config.EnableDrugTestNPC and Config.DevHub then
+        local hub = Config.DevHub.center or Config.DevHub.blipCoords
+        if hub and #(p - hub) <= 55.0 then
+            return true
+        end
+    end
+    local maxD = (Config.InteractDistance or 2.5) + 3.0
+    for _, key in ipairs({ 'SupplyShopNPC', 'TestNPC' }) do
+        local cfg = Config[key]
+        if cfg and cfg.coords then
+            local c = cfg.coords
+            if #(p - vector3(c.x, c.y, c.z)) <= maxD then
+                return true
+            end
+        end
+    end
+    return false
 end
 
 local function registerMaterialShop()

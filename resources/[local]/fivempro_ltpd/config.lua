@@ -140,12 +140,9 @@ Config.Stations = {
         label = 'Los Santos – pagrindinė komisariatas',
         coords = vector3(441.84, -982.05, 30.69),
         heading = 90.0,
-        mdt = true,
-        duty = true,
-        supply = {
-            coords = vector3(451.2, -993.4, 30.69),
-            label = 'PD inventorius',
-        },
+        --- Registratūra (vienas 3D taškas — MDT + pamaina)
+        mdt = { coords = vector3(442.8203, -982.3546, 30.6895) },
+        duty = { coords = vector3(442.8203, -982.3546, 30.6895) },
         armory = {
             coords = vector3(486.5664, -995.1992, 30.6791),
             stashId = 'ltpd_armory_ls',
@@ -165,6 +162,13 @@ Config.Stations = {
         garage = {
             coords = vector3(460.1003, -986.7195, 25.6998),
             spawn = vector4(460.1003, -986.7195, 25.6998, 269.0115),
+        },
+        --- Vadovybės meniu (qb-target ant laptop propo)
+        boss = {
+            coords = vector4(462.1010, -985.5582, 30.7281, 169.0399),
+            label = 'LTPD vadovybė',
+            prop = 'prop_laptop_01a',
+            spawnProp = true,
         },
         --- Rūbinė 1 (palikta)
         locker = {
@@ -387,13 +391,23 @@ Config.PdDoorGroups = {
         },
     },
     {
-        id = 'ls_mrpd_interview',
-        label = 'Apklausos kambarys',
-        interact = vector3(475.35, -1003.15, 26.27),
-        interactDist = 3.5,
+        id = 'ls_mrpd_interview_1',
+        label = 'Tardymo kambarys 1',
+        interact = vector3(486.1472, -987.6362, 26.2733),
+        interactDist = 3.0,
         defaultLocked = false,
         doors = {
-            { model = 'gabz_mrpd_door_03', coords = vector3(474.2, -1003.9, 26.27) },
+            { model = 'gabz_mrpd_door_03', coords = vector3(485.0, -987.6362, 26.2733) },
+        },
+    },
+    {
+        id = 'ls_mrpd_interview_2',
+        label = 'Tardymo kambarys 2',
+        interact = vector3(486.1502, -995.6803, 26.2733),
+        interactDist = 3.0,
+        defaultLocked = false,
+        doors = {
+            { model = 'gabz_mrpd_door_03', coords = vector3(485.0, -995.6803, 26.2733) },
         },
     },
     {

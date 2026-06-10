@@ -60,35 +60,23 @@ Config.Map = {
     imageFile = 'asset/gtav_satellite_2048.png',
 }
 
+--- Vienintelis TruckNet terminalas (žemėlapio blipas + paėmimo pradžia).
 Config.RegistrationTerminals = {
     {
-        id = 'ls_docks_terminal',
-        label = 'LS dokų logistika',
-        coords = vector3(1208.72, -3250.35, 5.03),
-        heading = 90.0,
-        blip = { sprite = 477, color = 47, scale = 0.85, label = 'TruckNet Registracija' },
-    },
-    {
-        id = 'sandy_terminal',
-        label = 'Sandy Shores terminalas',
-        coords = vector3(1739.31, 3310.52, 41.22),
-        heading = 195.0,
-        blip = { sprite = 477, color = 47, scale = 0.75, label = 'TruckNet Registracija' },
-    },
-    {
-        id = 'paleto_terminal',
-        label = 'Paleto logistika',
-        coords = vector3(160.18, 6403.82, 31.22),
-        heading = 300.0,
-        blip = { sprite = 477, color = 47, scale = 0.75, label = 'TruckNet Registracija' },
+        id = 'logistics_center',
+        label = 'Logistikos centras',
+        hubId = 'ls_docks',
+        coords = vector3(1206.3842, -3249.9958, 7.0952),
+        heading = 174.3897,
+        blip = { sprite = 477, color = 47, scale = 0.85, label = 'Logistikos centras' },
     },
 }
 
 Config.Hubs = {
     ls_docks = {
-        label = 'LS dokai',
+        label = 'Logistikos centras',
         region = 'los_santos',
-        coords = vector3(1208.72, -3250.35, 5.03),
+        coords = vector3(1206.3842, -3249.9958, 7.0952),
         radius = 35.0,
     },
     airport_cargo = {

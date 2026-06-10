@@ -207,6 +207,10 @@ end)
 -- Functions
 
 local function DrawText3Ds(x, y, z, text)
+    if GetResourceState('fivempro_fonts') == 'started' then
+        exports['fivempro_fonts']:DrawText3D(x, y, z, text)
+        return
+    end
     SetTextScale(0.35, 0.35)
     SetTextFont(4)
     SetTextProportional(1)

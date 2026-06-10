@@ -6,7 +6,7 @@ const btnCraft = document.getElementById("btnCraft");
 const mgSkill = document.getElementById("mgSkill");
 const mgAdvanced = document.getElementById("mgAdvanced");
 
-let state = { products: [], selectedId: null };
+let state = { products: [], selectedId: null, isWeaponMode: false };
 
 function post(name, data = {}) {
   return fetch(`https://${GetParentResourceName()}/${name}`, {
@@ -49,7 +49,13 @@ function renderDetail(p) {
   document.getElementById("prodLevel").textContent = p.levelLabel || `Lygis ${p.level}`;
   document.getElementById("prodRisk").textContent = `Rizika: ${p.risk || "—"}`;
   document.getElementById("prodTime").textContent = `${p.craftTimeSec || 0} sek.`;
-  document.getElementById("prodReward").textContent = `$${p.sellBase || 0}`;
+  const rewardSection = document.getElementById("rewardSection");
+  if (rewardSection) {
+    rewardSection.classList.toggle("hidden", state.isWeaponMode || !(p.sellBase > 0));
+  }
+  if (!state.isWeaponMode && p.sellBase > 0) {
+    document.getElementById("prodReward").textContent = `$${p.sellBase}`;
+  }
   const ul = document.getElementById("ingredientList");
   ul.innerHTML = "";
   (p.ingredients || []).forEach((i) => {
@@ -68,12 +74,14 @@ window.addEventListener("message", (e) => {
     state.products = d.products || [];
     state.selectedId = state.products[0] ? state.products[0].id : null;
     const headTitle = document.getElementById("headTitle");
+    state.isWeaponMode = !!(d.station && d.station.mode === "weapon");
     if (headTitle) {
-      const isWeapon = d.station && d.station.mode === "weapon";
-      headTitle.innerHTML = isWeapon
+      headTitle.innerHTML = state.isWeaponMode
         ? 'GINKLŲ <span>DIRBTUVĖ</span>'
         : 'NELEGALI <span>GAMYBA</span>';
     }
+    const rewardSection = document.getElementById("rewardSection");
+    if (rewardSection) rewardSection.classList.toggle("hidden", state.isWeaponMode);
     document.getElementById("stationLabel").textContent = d.station
       ? `${d.station.label} · ${d.station.level} lygis`
       : "Stotis";

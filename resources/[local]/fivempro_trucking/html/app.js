@@ -6,6 +6,22 @@ const btnAccept = document.getElementById("btnAccept");
 const registerOverlay = document.getElementById("registerOverlay");
 
 let state = { data: null, selected: null };
+let routeRequestId = 0;
+
+function showToast(msg, type) {
+  const el = document.getElementById("toast");
+  if (!el) return;
+  if (!msg) {
+    el.classList.add("hidden");
+    el.textContent = "";
+    return;
+  }
+  el.textContent = msg;
+  el.className = "toast " + (type || "");
+  el.classList.remove("hidden");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => showToast(""), 4200);
+}
 
 function resourceName() {
   try {
@@ -58,18 +74,16 @@ function mapImageUrl(map) {
   return `nui://${res}/${p}`;
 }
 
-function renderRouteMap(contract) {
+function drawRouteSvg(contract, pathPoints, map) {
   const el = document.getElementById("routeMap");
-  if (!el) return;
-  if (!contract) {
-    el.innerHTML = '<div class="route-map-empty">Pasirinkite kontraktą</div>';
-    return;
-  }
-  const map = state.data?.map || {};
+  if (!el || !contract) return;
   const bg = mapImageUrl(map);
   const a = normCoord(contract.pickup.x, contract.pickup.y, map);
   const b = normCoord(contract.delivery.x, contract.delivery.y, map);
   const uid = `rg${Date.now() % 100000}`;
+  const pts = (pathPoints && pathPoints.length > 1 ? pathPoints : [a, b])
+    .map((p) => (p.px != null ? p : normCoord(p.x, p.y, map)));
+  const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.px.toFixed(2)} ${p.py.toFixed(2)}`).join(" ");
   el.innerHTML = `
     <div class="route-map-bg" style="background-image:url('${bg}')"></div>
     <div class="route-map-vignette"></div>
@@ -80,10 +94,34 @@ function renderRouteMap(contract) {
           <stop offset="100%" stop-color="#fb923c"/>
         </linearGradient>
       </defs>
-      <line x1="${a.px}" y1="${a.py}" x2="${b.px}" y2="${b.py}" stroke="url(#${uid})" stroke-width="1.4" stroke-linecap="round" opacity="0.95"/>
+      <path d="${pathD}" fill="none" stroke="url(#${uid})" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
       <circle cx="${a.px}" cy="${a.py}" r="2.4" fill="#fff" stroke="#0f0e14" stroke-width="0.45"/>
       <circle cx="${b.px}" cy="${b.py}" r="2.6" fill="#a78bfa" stroke="#fff" stroke-width="0.4"/>
     </svg>`;
+}
+
+async function renderRouteMap(contract) {
+  const el = document.getElementById("routeMap");
+  if (!el) return;
+  if (!contract) {
+    el.innerHTML = '<div class="route-map-empty">Pasirinkite kontraktą</div>';
+    return;
+  }
+  const map = state.data?.map || {};
+  const reqId = ++routeRequestId;
+  drawRouteSvg(contract, null, map);
+  try {
+    const res = await nui("trucking:getRoutePath", {
+      from: contract.pickup,
+      to: contract.delivery,
+    });
+    if (reqId !== routeRequestId) return;
+    if (res?.ok && Array.isArray(res.points) && res.points.length > 1) {
+      drawRouteSvg(contract, res.points, map);
+    }
+  } catch (e) {
+    /* tiesi linija kaip atsarginė */
+  }
 }
 
 function renderContractItem(c, selected) {
@@ -109,8 +147,10 @@ function selectContract(c) {
     return;
   }
   contractDetail.classList.remove("empty");
+  const startLabel = state.data?.startHubLabel || c.pickupLabel;
   contractDetail.innerHTML = `
     <div class="detail-row"><span>Krovinys</span><strong>${esc(c.cargoLabel)}</strong></div>
+    <div class="detail-row"><span>Pradžia</span><span>${esc(startLabel)}</span></div>
     <div class="detail-row"><span>Iš</span><span>${esc(c.pickupLabel)}</span></div>
     <div class="detail-row"><span>Į</span><span>${esc(c.deliveryLabel)}</span></div>
     <div class="detail-row"><span>Atstumas</span><span>${esc(c.distanceKm)} km</span></div>
@@ -161,15 +201,21 @@ function renderProfile() {
   if (isReg) setRegisterStatus("");
 }
 
+function exchangeContracts(list) {
+  const premium = (list || []).filter((c) => c.category && c.category !== "standard");
+  return premium.length ? premium : (list || []);
+}
+
 function renderContracts() {
   const list = state.data?.contracts || [];
+  const exchange = exchangeContracts(list);
   const emptyMsg =
     '<div class="contract-empty">Šiuo metu kontraktų nėra — palaukite atnaujinimo arba pakelkite lygį.</div>';
   contractList.innerHTML = list.length
     ? list.map((c) => renderContractItem(c, state.selected?.id === c.id)).join("")
     : emptyMsg;
-  exchangeList.innerHTML = list.length
-    ? list.map((c) => renderContractItem(c, false)).join("")
+  exchangeList.innerHTML = exchange.length
+    ? exchange.map((c) => renderContractItem(c, false)).join("")
     : emptyMsg;
   bindContractClicks(contractList);
   bindContractClicks(exchangeList);
@@ -182,6 +228,10 @@ function renderFleet() {
   const fleet = state.data?.fleet || [];
   const shop = state.data?.fleetShop || [];
   if (!grid) return;
+  if (!state.data?.company) {
+    grid.innerHTML = '<div class="stat-card">Transporto parkas prieinamas tik įkūrus įmonę. Skiltyje „Įmonės valdymas“ paspausk „Įkurk savo įmonę“.</div>';
+    return;
+  }
   let html = fleet.map((v) => `
     <div class="fleet-card">
       <h4>${esc(v.label || v.model)}</h4>
@@ -203,7 +253,13 @@ function renderFleet() {
   grid.querySelectorAll(".buy-fleet").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const res = await nui("trucking:buyFleet", { model: btn.dataset.model });
-      if (res?.ok && res.dashboard) { state.data = res.dashboard; renderAll(); }
+      if (res?.ok && res.dashboard) {
+        state.data = res.dashboard;
+        renderAll();
+        showToast("Transportas nupirktas.", "ok");
+      } else {
+        showToast(res?.reason || "Pirkimas nepavyko.", "err");
+      }
     });
   });
 }
@@ -212,57 +268,103 @@ function renderCompany() {
   const el = document.getElementById("companyPanel");
   const d = state.data;
   const p = d?.profile || {};
+  const minLvl = d?.companyMinLevel || 5;
   if (!el) return;
   if (d?.company) {
+    const members = (d.members || []).map((m) => `
+      <div class="member-row">
+        <span>${esc(m.role === "owner" ? "Savininkas" : "Vairuotojas")}</span>
+        <span class="meta">${esc(m.citizenid)}</span>
+      </div>`).join("");
     el.innerHTML = `
       <div class="company-card">
         <h3>${esc(d.company.name)}</h3>
         <p>Balansas: <strong>${fmtMoney(d.company.balance)}</strong></p>
         <p>Pristatymai: ${esc(d.company.total_deliveries)} · Pajamos: ${fmtMoney(d.company.total_revenue)}</p>
         <p>Darbuotojai: ${(d.members || []).length}</p>
+        <div class="member-list">${members || '<p class="meta">Dar nėra papildomų darbuotojų.</p>'}</div>
       </div>`;
     return;
   }
-  if ((p.level || 1) < (d?.companyMinLevel || 5)) {
-    el.innerHTML = `<div class="company-card">Įmonę galima įkurti nuo ${d?.companyMinLevel || 5} lygio.</div>`;
+  if ((p.level || 1) < minLvl) {
+    el.innerHTML = `
+      <div class="company-card company-empty">
+        <h3>Įkurk savo įmonę</h3>
+        <p>Įmonę galima įkurti nuo <strong>${minLvl} lygio</strong>. Dabar tavo lygis: ${esc(p.level || 1)}.</p>
+      </div>`;
     return;
   }
   el.innerHTML = `
-    <div class="company-card">
-      <h3>Įkurti transporto įmonę</h3>
-      <p>Kaina: ${fmtMoney(d?.companyCreateCost || 50000)}</p>
+    <div class="company-card company-empty">
+      <h3>Įkurk savo įmonę</h3>
+      <p>Įkūrimo kaina: <strong>${fmtMoney(d?.companyCreateCost || 50000)}</strong></p>
       <div class="company-form">
         <input id="companyNameInput" placeholder="Pvz. Baltic Logistics" maxlength="48" />
-        <button type="button" class="btn-secondary" id="btnCreateCompany">Įkurti</button>
+        <button type="button" class="btn-secondary" id="btnCreateCompany">Įkurti įmonę</button>
       </div>
     </div>`;
   document.getElementById("btnCreateCompany")?.addEventListener("click", async () => {
     const name = document.getElementById("companyNameInput")?.value || "";
     const res = await nui("trucking:createCompany", { name });
-    if (res?.ok && res.dashboard) { state.data = res.dashboard; renderAll(); }
+    if (res?.ok && res.dashboard) {
+      state.data = res.dashboard;
+      renderAll();
+      showToast("Įmonė sėkmingai įkurta.", "ok");
+    } else {
+      showToast(res?.reason || "Įmonės įkūrimas nepavyko.", "err");
+    }
   });
 }
 
 function renderStats() {
   const p = state.data?.profile || {};
+  const hist = state.data?.deliveryHistory || [];
   document.getElementById("statsPanel").innerHTML = `
     <div class="stat-card"><div>Lygis</div><strong>${esc(p.level)} lygis</strong></div>
     <div class="stat-card"><div>XP</div><strong>${esc(p.xp)}</strong></div>
     <div class="stat-card"><div>Reputacija</div><strong>${stars(p.stars)}</strong></div>
     <div class="stat-card"><div>Pristatymai</div><strong>${esc(p.total_deliveries)}</strong></div>
     <div class="stat-card"><div>Uždirbta</div><strong>${fmtMoney(p.total_earned)}</strong></div>
-    <div class="stat-card"><div>Licencijos</div><strong>${p.licenses?.heavy_truck ? "Heavy Truck ✓" : "—"}</strong></div>`;
+    <div class="stat-card"><div>Licencijos</div><strong>${p.licenses?.heavy_truck ? "Sunkiojo transporto ✓" : "—"}</strong></div>`;
+  const histEl = document.getElementById("deliveryHistoryPanel");
+  if (!histEl) return;
+  histEl.innerHTML = hist.length
+    ? `<h3 class="history-title">Paskutiniai pristatymai</h3>
+      <div class="history-table">
+        ${hist.map((h) => `
+          <div class="history-row">
+            <div><strong>${esc(h.cargoLabel)}</strong></div>
+            <div class="meta">${esc(h.pickupLabel)} → ${esc(h.deliveryLabel)}</div>
+            <div class="meta">${fmtMoney(h.pay)} · būklė ${esc(h.condition_pct)}% · ${h.on_time ? "laiku" : "vėluota"}</div>
+          </div>`).join("")}
+      </div>`
+    : '<div class="stat-card">Dar nėra pristatymų istorijos — priimk pirmą kontraktą.</div>';
 }
 
 function renderLeaderboard() {
-  const rows = state.data?.leaderboard || [];
-  document.getElementById("leaderboardPanel").innerHTML = rows.length
-    ? rows.map((r, i) => `
+  const companies = state.data?.leaderboard || [];
+  const drivers = state.data?.driverLeaderboard || [];
+  const parts = [];
+  parts.push('<h3 class="history-title">Top įmonės</h3>');
+  parts.push(companies.length
+    ? companies.map((r, i) => `
       <div class="lb-row">
         <strong>#${i + 1} ${esc(r.name)}</strong>
         <div class="meta">${fmtMoney(r.total_revenue)} · ${esc(r.total_deliveries)} kroviniai · ${esc(r.members)} darbuotojai</div>
       </div>`).join("")
-    : '<div class="stat-card">Dar nėra įmonių statistikos.</div>';
+    : '<div class="stat-card">Dar nėra įmonių reitingo.</div>');
+  parts.push('<h3 class="history-title">Top vairuotojai</h3>');
+  parts.push(drivers.length
+    ? drivers.map((r, i) => {
+      const name = `${r.firstname || ""} ${r.lastname || ""}`.trim() || r.citizenid;
+      return `
+      <div class="lb-row">
+        <strong>#${i + 1} ${esc(name)}</strong>
+        <div class="meta">${esc(r.total_deliveries)} pristatymų · ${fmtMoney(r.total_earned)} · ${esc(r.level)} lygis</div>
+      </div>`;
+    }).join("")
+    : '<div class="stat-card">Dar nėra vairuotojų reitingo.</div>');
+  document.getElementById("leaderboardPanel").innerHTML = parts.join("");
 }
 
 function renderAll() {
@@ -278,14 +380,18 @@ function renderAll() {
 
 function setTab(tab) {
   document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
-  document.querySelectorAll(".tab").forEach((p) => p.classList.toggle("active", p.dataset.panel === tab));
+  document.querySelectorAll(".tab").forEach((p) => {
+    p.classList.toggle("active", p.dataset.panel === tab);
+    p.classList.remove("hidden");
+  });
+  const startHub = state.data?.startHubLabel || "Logistikos centras";
   const titles = {
-    market: ["KONTRAKTŲ RINKA", "Pasirinkite kitą krovinio pristatymą"],
-    exchange: ["KROVINIŲ BIRŽA", "CargoNet aktyvūs kontraktai"],
-    fleet: ["TRANSPORTO PARKAS", "Jūsų sunkvežimiai"],
-    company: ["ĮMONĖS VALDYMAS", "Logistikos kompanija"],
-    stats: ["VAIRUOTOJO STATISTIKA", "Progresija ir pasiekimai"],
-    leaderboard: ["TOP LOGISTIKA", "Geriausios serverio įmonės"],
+    market: ["KONTRAKTŲ RINKA", `Paėmimas: ${startHub} · pasirinkite krovinį`],
+    exchange: ["KROVINIŲ BIRŽA", "Specialūs ir aktyvūs kroviniai"],
+    fleet: ["TRANSPORTO PARKAS", "Jūsų sunkvežimiai ir pirkimas"],
+    company: ["ĮMONĖS VALDYMAS", state.data?.company ? "Kompanijos valdymas" : "Įkurk savo įmonę"],
+    stats: ["VAIRUOTOJO STATISTIKA", "Progresija, licencijos ir istorija"],
+    leaderboard: ["LENTELĖS", "Geriausios įmonės ir vairuotojai"],
   };
   const t = titles[tab] || titles.market;
   document.getElementById("pageTitle").textContent = t[0];
@@ -325,7 +431,10 @@ document.getElementById("btnRegister").addEventListener("click", async () => {
 });
 btnAccept.addEventListener("click", async () => {
   if (!state.selected) return;
-  await nui("trucking:acceptContract", { contractId: state.selected.id });
+  btnAccept.disabled = true;
+  const res = await nui("trucking:acceptContract", { contractId: state.selected.id });
+  btnAccept.disabled = false;
+  if (!res?.ok) showToast(res?.reason || "Kontrakto priimti nepavyko.", "err");
 });
 
 window.addEventListener("message", (event) => {

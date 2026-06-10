@@ -292,6 +292,26 @@ body {
   padding-top: 4px;
 }
 
+.tab-hint { font-size: 12px; margin-bottom: 12px; }
+.history-title { font-size: 13px; font-weight: 800; margin: 18px 0 10px; color: #e9d5ff; }
+.history-panel { margin-top: 8px; }
+.history-table { display: flex; flex-direction: column; gap: 8px; }
+.history-row {
+  padding: 12px 14px; border-radius: 12px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(167,139,250,0.15);
+}
+.company-empty h3 { color: #e9d5ff; margin-bottom: 8px; }
+.member-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.member-row { display: flex; justify-content: space-between; font-size: 12px; }
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 50;
+  padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;
+  background: rgba(24, 24, 32, 0.96); border: 1px solid rgba(167,139,250,0.35);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45); max-width: 360px;
+}
+.toast.ok { border-color: rgba(134,239,172,0.5); color: #bbf7d0; }
+.toast.err { border-color: rgba(252,165,165,0.5); color: #fecaca; }
+
 @media (max-width: 1100px) {
   .app { grid-template-columns: 1fr; }
   .sidebar { display: none; }

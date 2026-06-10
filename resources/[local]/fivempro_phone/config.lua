@@ -14,8 +14,20 @@ Config.Phone = {
     maxContacts = 120,
     maxMessageLength = 320,
     maxAdLength = 260,
+    maxAdTitleLength = 48,
     maxPostCaptionLength = 260,
     maxImageUrlLength = 500,
+    --- Skelbimų kategorijos (lengvai pridėti naujas)
+    AdCategories = {
+        { id = 'all', label = 'Visi' },
+        { id = 'sell', label = 'Parduodu' },
+        { id = 'buy', label = 'Perku' },
+        { id = 'job', label = 'Darbas' },
+        { id = 'service', label = 'Paslaugos' },
+        { id = 'vehicle', label = 'Transportas' },
+        { id = 'property', label = 'Nekilnojama' },
+        { id = 'other', label = 'Kita' },
+    },
     --- default = įdiegiama su paskyra ir rodoma pagrindiniame ekrane
     --- default = false → tik per App Store
     AppStoreApps = {
@@ -27,13 +39,13 @@ Config.Phone = {
         { id = 'notes', label = 'Užrašai', icon = 'notes', default = true },
         { id = 'emergency', label = '112', icon = 'emergency', default = true },
         { id = 'appstore', label = 'Programėlės', icon = 'appstore', default = true },
-        { id = 'ads', label = 'Skelbimai', icon = 'ads', default = false, description = 'Skelbimų lenta ir pardavimai' },
+        { id = 'ads', label = 'Skelbimai', icon = 'ads', default = true, description = 'Skelbimų lenta ir pardavimai' },
         { id = 'insta', label = 'LifeGram', icon = 'insta', default = false, description = 'Socialinis tinklas su nuotraukomis' },
         { id = 'bank', label = 'Bankas', icon = 'bank', default = false, description = 'Sąskaitos ir balansas' },
         { id = 'shop', label = 'Turgus', icon = 'shop', default = false, description = 'Parduotuvės ir prekės mieste' },
         { id = 'weather', label = 'Orai', icon = 'weather', default = false, description = 'Orų prognozė Los Santos' },
         { id = 'radio', label = 'Radijas', icon = 'radio', default = false, description = 'Miesto radijo stotys' },
-        { id = 'cargonet', label = 'CargoNet', icon = 'shop', default = false, description = 'Krovinių birža ir logistikos kontraktai' },
+        { id = 'cargonet', label = 'CargoNet', icon = 'cargonet', default = false, description = 'Krovinių birža ir logistikos kontraktai' },
     }
 }
 

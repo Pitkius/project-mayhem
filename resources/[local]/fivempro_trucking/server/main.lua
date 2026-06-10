@@ -202,12 +202,51 @@ local function calcContractPay(cargoId, distanceKm)
     return pay
 end
 
-local function generateContract(profile, seed)
+local function nearestTerminalHub(src)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return 'ls_docks', nil end
+    local coords = GetEntityCoords(ped)
+    local bestTerm, bestDist
+    for _, term in ipairs(Config.RegistrationTerminals or {}) do
+        local d = #(coords - term.coords)
+        if not bestDist or d < bestDist then
+            bestTerm, bestDist = term, d
+        end
+    end
+    if bestTerm and bestTerm.hubId and Config.Hubs[bestTerm.hubId] then
+        return bestTerm.hubId, bestTerm
+    end
+    local bestHub, hubDist
+    for id, hub in pairs(Config.Hubs or {}) do
+        local d = #(coords - hub.coords)
+        if not hubDist or d < hubDist then
+            bestHub, hubDist = id, d
+        end
+    end
+    return bestHub or 'ls_docks', bestTerm
+end
+
+local function applyPickupHub(contract, pickupId)
+    local pickup = TruckingShared.Hub(pickupId)
+    local delivery = TruckingShared.Hub(contract.deliveryId)
+    if not pickup or not delivery then return contract end
+    local distanceKm = TruckingShared.DistanceKm(pickup.coords, delivery.coords)
+    distanceKm = math.floor(distanceKm * 10) / 10
+    contract.pickupId = pickupId
+    contract.pickupLabel = pickup.label
+    contract.pickup = { x = pickup.coords.x, y = pickup.coords.y, z = pickup.coords.z }
+    contract.distanceKm = distanceKm
+    contract.timeLimitMin = math.max(12, math.floor(distanceKm * 1.35 + 8))
+    contract.pay = calcContractPay(contract.cargoId, distanceKm)
+    return contract
+end
+
+local function generateContract(profile, seed, forcedPickupId)
     math.randomseed(seed or (os.time() + math.random(99999)))
     local hubIds = {}
     for id in pairs(Config.Hubs or {}) do hubIds[#hubIds + 1] = id end
     if #hubIds < 2 then return nil end
-    local pickupId = hubIds[math.random(#hubIds)]
+    local pickupId = forcedPickupId or hubIds[math.random(#hubIds)]
     local deliveryId = hubIds[math.random(#hubIds)]
     local guard = 0
     while deliveryId == pickupId and guard < 20 do
@@ -270,7 +309,8 @@ local function contractKey(c)
     return ('%s|%s|%s'):format(c.pickupId or '', c.deliveryId or '', c.cargoId or '')
 end
 
-local function contractsForPlayer(profile)
+local function contractsForPlayer(profile, src)
+    local startHubId = src and (select(1, nearestTerminalHub(src))) or 'ls_docks'
     local out = {}
     local seen = {}
     for _, c in ipairs(contractPool) do
@@ -279,7 +319,9 @@ local function contractsForPlayer(profile)
             local key = contractKey(c)
             if not seen[key] then
                 seen[key] = true
-                out[#out + 1] = c
+                local copy = json.decode(json.encode(c))
+                applyPickupHub(copy, startHubId)
+                out[#out + 1] = copy
             end
         end
     end
@@ -288,7 +330,7 @@ local function contractsForPlayer(profile)
     local guard = 0
     while #out < target and guard < 48 do
         guard = guard + 1
-        local c = generateContract(profile, seed + guard * 1337)
+        local c = generateContract(profile, seed + guard * 1337, startHubId)
         if c then
             c.id = ('live_%s_%s'):format(guard, c.id)
             local key = contractKey(c)
@@ -302,6 +344,13 @@ local function contractsForPlayer(profile)
     return out
 end
 
+local function findContractForPlayer(profile, contractId, src)
+    for _, c in ipairs(contractsForPlayer(profile, src)) do
+        if c.id == contractId then return c end
+    end
+    return nil
+end
+
 local function getLeaderboard()
     return MySQL.query.await([[
         SELECT c.id, c.name, c.balance, c.reputation, c.total_deliveries, c.total_revenue,
@@ -310,6 +359,38 @@ local function getLeaderboard()
         ORDER BY c.total_revenue DESC, c.total_deliveries DESC
         LIMIT 10
     ]]) or {}
+end
+
+local function getDriverLeaderboard()
+    return MySQL.query.await([[
+        SELECT p.citizenid, p.level, p.total_deliveries, p.total_earned, p.reputation,
+               JSON_UNQUOTE(JSON_EXTRACT(pl.charinfo, '$.firstname')) AS firstname,
+               JSON_UNQUOTE(JSON_EXTRACT(pl.charinfo, '$.lastname')) AS lastname
+        FROM fivempro_trucker_profiles p
+        LEFT JOIN players pl ON pl.citizenid = p.citizenid
+        WHERE p.registered = 1
+        ORDER BY p.total_deliveries DESC, p.total_earned DESC
+        LIMIT 10
+    ]]) or {}
+end
+
+local function getDeliveryHistory(citizenid)
+    local rows = MySQL.query.await([[
+        SELECT cargo_type, pickup_hub, delivery_hub, pay, condition_pct, on_time, created_at
+        FROM fivempro_trucker_delivery_log
+        WHERE citizenid = ?
+        ORDER BY created_at DESC
+        LIMIT 20
+    ]], { citizenid }) or {}
+    for _, row in ipairs(rows) do
+        local pickup = TruckingShared.Hub(row.pickup_hub)
+        local delivery = TruckingShared.Hub(row.delivery_hub)
+        local cargo = TruckingShared.Cargo(row.cargo_type)
+        row.pickupLabel = pickup and pickup.label or row.pickup_hub
+        row.deliveryLabel = delivery and delivery.label or row.delivery_hub
+        row.cargoLabel = cargo and cargo.label or row.cargo_type
+    end
+    return rows
 end
 
 local function buildDashboard(src)
@@ -321,10 +402,14 @@ local function buildDashboard(src)
     local company = profile.company_id and getCompany(profile.company_id) or nil
     local charinfo = Player.PlayerData.charinfo or {}
     local name = ('%s %s'):format(charinfo.firstname or 'Vairuotojas', charinfo.lastname or '')
+    local startHubId = select(1, nearestTerminalHub(src))
+    local startHub = TruckingShared.Hub(startHubId)
     return {
         profile = profile,
         playerName = name,
-        contracts = contractsForPlayer(profile),
+        contracts = contractsForPlayer(profile, src),
+        startHubId = startHubId,
+        startHubLabel = (startHub and startHub.label) or 'Logistikos centras',
         hubs = hubList(),
         company = company and {
             id = company.id,
@@ -338,6 +423,8 @@ local function buildDashboard(src)
         fleet = company and getFleet(company.id) or {},
         members = company and getCompanyMembers(company.id) or {},
         leaderboard = getLeaderboard(),
+        driverLeaderboard = getDriverLeaderboard(),
+        deliveryHistory = getDeliveryHistory(citizenid),
         fleetShop = Config.FleetShop or {},
         vehicles = Config.Vehicles or {},
         activeDelivery = activeDeliveries[src],
@@ -431,11 +518,10 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:acceptContract', funct
     local row = ensureProfile(citizenid)
     local profile = buildProfile(row)
     if not profile.registered then return cb({ ok = false, reason = 'Registruokis kaip vairuotojas.' }) end
-    local contract
-    for _, c in ipairs(contractPool) do
-        if c.id == contractId then contract = c break end
-    end
+    local contract = findContractForPlayer(profile, contractId, src)
     if not contract then return cb({ ok = false, reason = 'Kontraktas nebegalioja.' }) end
+    local startHubId = select(1, nearestTerminalHub(src))
+    contract = applyPickupHub(json.decode(json.encode(contract)), startHubId)
     if not TruckingShared.PlayerCanAccessCargo(profile, contract.cargoId) then
         return cb({ ok = false, reason = 'Per žemas lygis ar reputacija.' })
     end
