@@ -114,10 +114,10 @@ local function loginExisting(src, row)
     return QBCore.Player.Login(src, row.citizenid)
 end
 
---- txAdmin duoda group.admin — QBCore komandoms reikia qbcore.god ant player.ID
+--- txAdmin (group.admin) arba cfg (identifier → qbcore.god) — QBCore komandoms reikia player.ID → qbcore.*
 local function syncQBCoreAdmin(src)
     if not src or src < 1 then return end
-    if IsPlayerAceAllowed(src, 'group.admin') then
+    if IsPlayerAceAllowed(src, 'group.admin') and not QBCore.Functions.HasPermission(src, 'god') then
         QBCore.Functions.AddPermission(src, 'god')
     end
     QBCore.Commands.Refresh(src)
@@ -205,9 +205,12 @@ RegisterNetEvent('fivempro_spawnfix:server:syncVitals', function()
     syncVitalsFromPed(Player)
 end)
 
-QBCore.Commands.Add('fixadmin', 'Sinchronizuoti txAdmin admin -> QBCore (F8)', {}, false, function(source)
+QBCore.Commands.Add('fixadmin', 'Sinchronizuoti admin teises -> QBCore (F8)', {}, false, function(source)
     syncQBCoreAdmin(source)
-    TriggerClientEvent('QBCore:Notify', source, 'Admin teisės patikrintos (reikia txAdmin Administrator).', 'primary')
+    local hasGod = QBCore.Functions.HasPermission(source, 'god')
+    local hasAdmin = QBCore.Functions.HasPermission(source, 'admin')
+    local msg = hasGod and 'God teisės aktyvios.' or (hasAdmin and 'Admin teisės aktyvios.' or 'Admin teisių nėra — patikrink txAdmin arba cfg/00_base.cfg license.')
+    TriggerClientEvent('QBCore:Notify', source, msg, (hasGod or hasAdmin) and 'success' or 'error')
 end)
 
 QBCore.Commands.Add('logout', 'Atsijungti nuo personažo (admin)', {}, false, function(source)
