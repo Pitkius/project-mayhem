@@ -45,11 +45,12 @@ local function setupShopPed(skinJson, gender)
     local c = GetEntityCoords(ped)
     local h = GetEntityHeading(ped)
     CharCamera.setShopAnchor(vector4(c.x, c.y, c.z, h))
+    CharCamera.setTargetPed(ped)
     CharCamera.enable()
     if ShopSession.kind == 'barber' then
-        CharCamera.setPreset('hair', true)
+        CharCamera.setPreset('hair')
     else
-        CharCamera.setPreset('clothes', true)
+        CharCamera.setPreset('body')
     end
 end
 

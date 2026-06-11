@@ -21,12 +21,14 @@ local function createInteriorPed(gender)
     local model = CharAppearance.modelHash(gender or 0)
     loadModel(model)
     local c = Config.PedCoords
-    previewPed = CreatePed(2, model, c.x, c.y, c.z - 0.98, c.w, false, true)
+    previewPed = CreatePed(2, model, c.x, c.y, c.z, c.w, false, true)
     SetEntityInvincible(previewPed, true)
     FreezeEntityPosition(previewPed, true)
     SetBlockingOfNonTemporaryEvents(previewPed, true)
-    PlaceObjectOnGroundProperly(previewPed)
+    SetEntityCoords(previewPed, c.x, c.y, c.z, false, false, false, false)
+    SetEntityHeading(previewPed, c.w)
     CharAppearance.setPreviewPed(previewPed)
+    CharCamera.setTargetPed(previewPed)
     CharAppearance.init(gender or 0)
     CharAppearance.applyToPed(previewPed, CharAppearance.getSkin())
 end
@@ -45,7 +47,9 @@ local function setupScene()
 
     inPlaceMode = false
     createInteriorPed(0)
+    CharCamera.setTargetPed(previewPed)
     CharCamera.enable()
+    CharCamera.forStep('personal')
     DoScreenFadeIn(600)
 end
 
@@ -72,6 +76,7 @@ local function setupInPlaceEdit(sessionData)
     local c = GetEntityCoords(ped)
     local h = GetEntityHeading(ped)
     CharCamera.setShopAnchor(vector4(c.x, c.y, c.z, h))
+    CharCamera.setTargetPed(previewPed)
     CharCamera.enable()
 end
 
@@ -252,10 +257,12 @@ RegisterNUICallback('setGender', function(data, cb)
         previewPed = PlayerPedId()
         FreezeEntityPosition(previewPed, true)
         CharAppearance.setPreviewPed(previewPed)
+        CharCamera.setTargetPed(previewPed)
         CharAppearance.init(g)
         CharAppearance.applyToPed(previewPed, CharAppearance.getSkin())
     else
         createInteriorPed(g)
+        CharCamera.setTargetPed(previewPed)
     end
     cb('ok')
 end)
@@ -321,10 +328,11 @@ RegisterNUICallback('previewCharacter', function(data, cb)
         if previewPed ~= 0 and DoesEntityExist(previewPed) then DeleteEntity(previewPed) end
         loadModel(model)
         local c = Config.PedCoords
-        previewPed = CreatePed(2, model, c.x, c.y, c.z - 0.98, c.w, false, true)
+        previewPed = CreatePed(2, model, c.x, c.y, c.z, c.w, false, true)
         SetEntityInvincible(previewPed, true)
         FreezeEntityPosition(previewPed, true)
         CharAppearance.setPreviewPed(previewPed)
+        CharCamera.setTargetPed(previewPed)
         CharAppearance.loadFromJson(data.skin)
     end
     cb('ok')

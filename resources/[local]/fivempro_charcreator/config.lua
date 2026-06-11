@@ -50,13 +50,12 @@ Config.CreatorClothingItems = {
     { key = 'bracelet', label = 'Apyrankė', maxItem = 20, maxTex = 15, propMin = -1 },
 }
 
+--- distance = atstumas nuo ped; camHeight / lookAt = Z offset nuo ped kojų; fov = lauko kampas
 Config.Cameras = {
-    default = { offset = vector3(0.0, 2.35, 0.35), point = vector3(0.0, 0.0, 0.55), fov = 42.0 },
-    face = { offset = vector3(0.0, 0.85, 0.68), point = vector3(0.0, 0.0, 0.68), fov = 28.0 },
-    eyes = { offset = vector3(0.0, 0.55, 0.72), point = vector3(0.0, 0.0, 0.70), fov = 18.0 },
-    hair = { offset = vector3(0.0, 0.95, 0.82), point = vector3(0.0, 0.0, 0.78), fov = 32.0 },
-    body = { offset = vector3(0.0, 3.1, 0.15), point = vector3(0.0, 0.0, 0.35), fov = 48.0 },
-    clothes = { offset = vector3(0.0, 2.8, 0.2), point = vector3(0.0, 0.0, 0.4), fov = 45.0 },
+    default = { distance = 2.85, camHeight = 0.45, lookAt = 0.55, fov = 46.0 },
+    face = { distance = 1.45, camHeight = 0.62, lookAt = 0.62, fov = 38.0 },
+    hair = { distance = 1.55, camHeight = 0.72, lookAt = 0.68, fov = 38.0 },
+    body = { distance = 4.0, camHeight = 0.15, lookAt = -0.08, fov = 56.0 },
 }
 
 --- Pilietybės — visas sąrašas iš shared/countries.lua

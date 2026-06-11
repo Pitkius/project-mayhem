@@ -43,9 +43,6 @@ local function isBlockedPlayer(src)
     if IsPedInAnyVehicle(ped, false) then
         return true, 'Transporte negalima.'
     end
-    if IsEntityDead(ped) then
-        return true, 'Kai esate be sąmonės, negalima.'
-    end
     local st = Player(src).state
     if st and st.ltpdCuffed then
         return true, 'Su LTPD antrankiais negalima.'

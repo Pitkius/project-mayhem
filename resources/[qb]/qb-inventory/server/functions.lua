@@ -627,8 +627,8 @@ exports('CreateShop', CreateShop)
 --- @param name string The identifier of the inventory to open.
 function OpenShop(source, name)
     if not name then return false end
-    local Player = QBCore.Functions.GetPlayer(source)
-    if not Player then return false end
+    local QBPlayer = QBCore.Functions.GetPlayer(source)
+    if not QBPlayer then return false end
     if not RegisteredShops[name] then return false end
     local playerPed = GetPlayerPed(source)
     local playerCoords = GetEntityCoords(playerPed)
@@ -647,7 +647,7 @@ function OpenShop(source, name)
         inventory = RegisteredShops[name].items
     }
     Player(source).state.inv_busy = true
-    TriggerClientEvent('qb-inventory:client:openInventory', source, Player.PlayerData.items, formattedInventory)
+    TriggerClientEvent('qb-inventory:client:openInventory', source, QBPlayer.PlayerData.items, formattedInventory)
     return true
 end
 
