@@ -15,10 +15,27 @@ local function encodeLicenses(tbl)
     return json.encode(tbl or {})
 end
 
+--- Sutampa su `players.citizenid` net kai skirtingi utf8mb4 collation (MySQL 8.4 vs senesni).
+local JOIN_CITIZENID = 'pl.citizenid COLLATE utf8mb4_bin = p.citizenid COLLATE utf8mb4_bin'
+
+local function migrateCitizenidCollations()
+    local alters = {
+        'ALTER TABLE `fivempro_trucker_profiles` MODIFY `citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL',
+        'ALTER TABLE `fivempro_trucker_companies` MODIFY `owner_citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL',
+        'ALTER TABLE `fivempro_trucker_company_members` MODIFY `citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL',
+        'ALTER TABLE `fivempro_trucker_delivery_log` MODIFY `citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL',
+    }
+    for _, sql in ipairs(alters) do
+        pcall(function()
+            MySQL.query.await(sql)
+        end)
+    end
+end
+
 local function ensureTables()
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_trucker_profiles` (
-            `citizenid` varchar(50) NOT NULL,
+            `citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL,
             `registered` tinyint(1) NOT NULL DEFAULT 0,
             `level` int NOT NULL DEFAULT 1,
             `xp` int NOT NULL DEFAULT 0,
@@ -34,7 +51,7 @@ local function ensureTables()
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_trucker_companies` (
             `id` int NOT NULL AUTO_INCREMENT,
-            `owner_citizenid` varchar(50) NOT NULL,
+            `owner_citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL,
             `name` varchar(64) NOT NULL,
             `logo` varchar(32) DEFAULT 'default',
             `balance` bigint NOT NULL DEFAULT 0,
@@ -49,7 +66,7 @@ local function ensureTables()
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_trucker_company_members` (
             `company_id` int NOT NULL,
-            `citizenid` varchar(50) NOT NULL,
+            `citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL,
             `role` varchar(16) NOT NULL DEFAULT 'driver',
             `salary` int NOT NULL DEFAULT 0,
             `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -73,7 +90,7 @@ local function ensureTables()
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_trucker_delivery_log` (
             `id` int NOT NULL AUTO_INCREMENT,
-            `citizenid` varchar(50) NOT NULL,
+            `citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL,
             `company_id` int DEFAULT NULL,
             `cargo_type` varchar(32) NOT NULL,
             `pickup_hub` varchar(32) NOT NULL,
@@ -90,6 +107,7 @@ end
 
 MySQL.ready(function()
     ensureTables()
+    migrateCitizenidCollations()
 end)
 
 local function isRegisteredDb(val)
@@ -368,7 +386,7 @@ local function getDriverLeaderboard()
                    JSON_UNQUOTE(JSON_EXTRACT(pl.charinfo, '$.firstname')) AS firstname,
                    JSON_UNQUOTE(JSON_EXTRACT(pl.charinfo, '$.lastname')) AS lastname
             FROM fivempro_trucker_profiles p
-            LEFT JOIN players pl ON pl.citizenid = p.citizenid
+            LEFT JOIN players pl ON ]] .. JOIN_CITIZENID .. [[
             WHERE p.registered = 1
             ORDER BY p.total_deliveries DESC, p.total_earned DESC
             LIMIT 10

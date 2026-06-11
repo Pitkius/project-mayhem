@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS `fivempro_trucker_profiles` (
-    `citizenid` varchar(50) NOT NULL,
+    `citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL,
     `registered` tinyint(1) NOT NULL DEFAULT 0,
     `level` int NOT NULL DEFAULT 1,
     `xp` int NOT NULL DEFAULT 0,
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `fivempro_trucker_profiles` (
 
 CREATE TABLE IF NOT EXISTS `fivempro_trucker_companies` (
     `id` int NOT NULL AUTO_INCREMENT,
-    `owner_citizenid` varchar(50) NOT NULL,
+    `owner_citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL,
     `name` varchar(64) NOT NULL,
     `logo` varchar(32) DEFAULT 'default',
     `balance` bigint NOT NULL DEFAULT 0,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `fivempro_trucker_companies` (
 
 CREATE TABLE IF NOT EXISTS `fivempro_trucker_company_members` (
     `company_id` int NOT NULL,
-    `citizenid` varchar(50) NOT NULL,
+    `citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL,
     `role` varchar(16) NOT NULL DEFAULT 'driver',
     `salary` int NOT NULL DEFAULT 0,
     `joined_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS `fivempro_trucker_fleet` (
 
 CREATE TABLE IF NOT EXISTS `fivempro_trucker_delivery_log` (
     `id` int NOT NULL AUTO_INCREMENT,
-    `citizenid` varchar(50) NOT NULL,
+    `citizenid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL,
     `company_id` int DEFAULT NULL,
     `cargo_type` varchar(32) NOT NULL,
     `pickup_hub` varchar(32) NOT NULL,
