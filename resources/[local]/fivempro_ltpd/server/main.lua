@@ -398,22 +398,6 @@ MySQL.ready(function()
     MySQL.update.await("UPDATE ltpd_profiles SET division = 'aro' WHERE division = 'aras' OR division = 'ARAS'")
 end)
 
-AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
-    local job = Player.PlayerData.job
-    if job and job.name == 'ltpd' then
-        Player.Functions.SetJob('police', tonumber(job.grade and job.grade.level) or 0)
-    end
-    if jobIsPd(Player.PlayerData.job) then
-        local grade = tonumber(Player.PlayerData.job.grade and Player.PlayerData.job.grade.level) or 0
-        MySQL.query.await('INSERT IGNORE INTO ltpd_profiles (citizenid, division) VALUES (?, ?)', {
-            Player.PlayerData.citizenid,
-            defaultDivisionForGrade(grade),
-        })
-        enforceDivisionForPlayer(Player.PlayerData.source)
-        syncDivisionClient(Player.PlayerData.source)
-    end
-end)
-
 local function getGrade(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return -1 end
@@ -505,6 +489,22 @@ local function syncDivisionClient(src)
         effective = PdDivisions.effectiveDivision(grade, div),
     })
 end
+
+AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
+    local job = Player.PlayerData.job
+    if job and job.name == 'ltpd' then
+        Player.Functions.SetJob('police', tonumber(job.grade and job.grade.level) or 0)
+    end
+    if jobIsPd(Player.PlayerData.job) then
+        local grade = tonumber(Player.PlayerData.job.grade and Player.PlayerData.job.grade.level) or 0
+        MySQL.query.await('INSERT IGNORE INTO ltpd_profiles (citizenid, division) VALUES (?, ?)', {
+            Player.PlayerData.citizenid,
+            defaultDivisionForGrade(grade),
+        })
+        enforceDivisionForPlayer(Player.PlayerData.source)
+        syncDivisionClient(Player.PlayerData.source)
+    end
+end)
 
 local function pdAccessPayload(src)
     local P = QBCore.Functions.GetPlayer(src)

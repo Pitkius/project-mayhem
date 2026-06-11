@@ -64,7 +64,7 @@ local function occupantsOfVehicle(netId)
         local ped = GetPlayerPed(src)
         if ped and ped ~= 0 and IsPedInAnyVehicle(ped, false) then
             local v = GetVehiclePedIsIn(ped, false)
-            if v ~= 0 and VehToNet(v) == tonumber(netId) then
+            if v ~= 0 and NetworkGetNetworkIdFromEntity(v) == tonumber(netId) then
                 out[#out + 1] = src
             end
         end
@@ -187,8 +187,8 @@ end)
 AddEventHandler('entityRemoved', function(entity)
     if not entity or entity == 0 then return end
     if GetEntityType(entity) ~= 2 then return end
-    local netId = VehToNet(entity)
-    if CarPlaySessions[netId] then
+    local netId = NetworkGetNetworkIdFromEntity(entity)
+    if netId ~= 0 and CarPlaySessions[netId] then
         CarPlaySessions[netId] = nil
     end
 end)
