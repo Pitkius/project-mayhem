@@ -482,28 +482,69 @@ local function openPdGarageMenu(stationId)
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end
 
+local function applyDutyComponent(ped, compId, val)
+    if not ped or compId == nil or val == nil then return end
+    local draw, tex, collection = 0, 0, nil
+    if type(val) == 'table' then
+        draw = tonumber(val.draw or val[1]) or 0
+        tex = tonumber(val.tex or val[2]) or 0
+        collection = val.collection
+    else
+        draw = tonumber(val) or 0
+    end
+    if collection and collection ~= '' then
+        SetPedCollectionComponentVariation(ped, compId, collection, draw, tex, 0)
+    else
+        SetPedComponentVariation(ped, compId, draw, tex, 0)
+    end
+end
+
+local function applyDutyProp(ped, propSlot, val)
+    if not ped or propSlot == nil or val == nil then return end
+    local draw, tex, collection = 0, 0, nil
+    if type(val) == 'table' then
+        draw = tonumber(val.draw or val[1]) or 0
+        tex = tonumber(val.tex or val[2]) or 0
+        collection = val.collection
+    else
+        draw = tonumber(val) or 0
+    end
+    if collection and collection ~= '' then
+        SetPedCollectionPropIndex(ped, propSlot, collection, draw, tex, true)
+    else
+        SetPedPropIndex(ped, propSlot, draw, tex, true)
+    end
+end
+
 local function applyDutyOutfitTable(ped, tbl)
     if not ped or not tbl then return end
     local comps = tbl.components or tbl
-    for comp, val in pairs(comps) do
-        local c = tonumber(comp)
-        if c == nil then goto continue end
-        local draw, tex, collection = 0, 0, nil
-        if type(val) == 'table' then
-            draw = tonumber(val.draw or val[1]) or 0
-            tex = tonumber(val.tex or val[2]) or 0
-            collection = val.collection
-        else
-            draw = tonumber(val) or 0
+    if type(comps) == 'table' then
+        for comp, val in pairs(comps) do
+            local c = tonumber(comp)
+            if c ~= nil then applyDutyComponent(ped, c, val) end
         end
-        if collection and collection ~= '' then
-            SetPedCollectionComponentVariation(ped, c, collection, draw, tex, 0)
-        else
-            SetPedComponentVariation(ped, c, draw, tex, 0)
+    end
+    local props = tbl.props
+    if type(props) == 'table' then
+        for slot, val in pairs(props) do
+            local p = tonumber(slot)
+            if p ~= nil then applyDutyProp(ped, p, val) end
         end
-        ::continue::
     end
 end
+
+local function clearDutyVest(ped)
+    if not ped then return end
+    SetPedComponentVariation(ped, 9, 0, 0, 0)
+end
+
+local DUTY_CATEGORY_HEADERS = {
+    uniform = 'Uniformos',
+    vest = 'Liemenės',
+    belt = 'Diržai',
+    hat = 'Kepurės',
+}
 
 local function getDutyOutfitGenderKey(ped)
     return GetEntityModel(ped) == `mp_m_freemode_01` and 'male' or 'female'
@@ -512,7 +553,7 @@ end
 local function buildDutyOutfitCategoryMenu(category, grade, lockerMode)
     local ped = PlayerPedId()
     local genderKey = getDutyOutfitGenderKey(ped)
-    local header = category == 'vest' and 'Liemenės' or 'Uniformos'
+    local header = DUTY_CATEGORY_HEADERS[category] or 'Apranga'
     local division = exports['fivempro_ltpd']:GetPdDivision()
     local menu = {
         { header = header, isMenuHeader = true },
@@ -584,10 +625,26 @@ RegisterNetEvent('fivempro_ltpd:client:openDutyLockerMenu', function(data)
         },
         {
             header = 'Liemenės',
-            txt = 'Balistinės liemenės – uždėk ant uniformos',
+            txt = 'Balistinės liemenės – pilni šarvai',
             params = {
                 event = 'fivempro_ltpd:client:openDutyLockerCategory',
                 args = { category = 'vest', lockerMode = lockerMode },
+            },
+        },
+        {
+            header = 'Diržai',
+            txt = 'Diržai ir kiti aksesuarai',
+            params = {
+                event = 'fivempro_ltpd:client:openDutyLockerCategory',
+                args = { category = 'belt', lockerMode = lockerMode },
+            },
+        },
+        {
+            header = 'Kepurės',
+            txt = 'Šalmai ir kepurės',
+            params = {
+                event = 'fivempro_ltpd:client:openDutyLockerCategory',
+                args = { category = 'hat', lockerMode = lockerMode },
             },
         },
     }
@@ -633,10 +690,12 @@ RegisterNetEvent('fivempro_ltpd:client:applyDutyOutfit', function(data)
     if not tbl then
         return QBCore.Functions.Notify('Ši apranga netinka tavo personažo modeliui.', 'error')
     end
+    if outfit.category == 'uniform' then
+        clearDutyVest(ped)
+    end
     applyDutyOutfitTable(ped, tbl)
-    local arm = tonumber(outfit.armour)
-    if arm and arm > 0 then
-        SetPedArmour(ped, math.min(100, arm))
+    if outfit.category == 'vest' then
+        SetPedArmour(ped, 100)
     elseif outfit.category == 'uniform' then
         SetPedArmour(ped, 0)
     end

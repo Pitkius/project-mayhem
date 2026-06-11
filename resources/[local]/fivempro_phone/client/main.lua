@@ -114,7 +114,6 @@ local function runPhonePutAwayAnim()
     ClearPedSecondaryTask(ped)
 end
 
-local phoneCameraActive = false
 local activeVoiceCallId = 0
 
 local function setPhoneVoiceCall(callId)
@@ -131,60 +130,10 @@ local function setPhoneVoiceCall(callId)
     end)
 end
 
-local function stopPhoneCamera()
-    if not phoneCameraActive then return end
-    phoneCameraActive = false
-    pcall(function()
-        CellCamActivate(false, false)
-    end)
-    pcall(function()
-        DestroyMobilePhone()
-    end)
-    local ped = PlayerPedId()
-    if ped and ped ~= 0 then
-        FreezeEntityPosition(ped, false)
-        SetEntityCollision(ped, true, true)
-        SetPlayerControl(PlayerId(), true, 0)
-        ClearPedTasks(ped)
-    end
-    RenderScriptCams(false, false, 0, true, true)
-end
-
-local function startPhoneCamera()
-    stopPhoneCamera()
-    phoneCameraActive = true
-    CreateMobilePhone(1)
-    CellCamActivate(true, true)
-    QBCore.Functions.Notify('Kamera — ESC / Backspace uždaryti.', 'primary', 5000)
-
-    CreateThread(function()
-        while phoneCameraActive do
-            Wait(0)
-            DisableControlAction(0, 24, true)
-            DisableControlAction(0, 25, true)
-            DisableControlAction(0, 37, true)
-            DisableControlAction(0, 44, true)
-            DisableControlAction(0, 140, true)
-            DisableControlAction(0, 141, true)
-            DisableControlAction(0, 142, true)
-
-            if IsControlJustPressed(0, 177)
-                or IsControlJustPressed(0, 200)
-                or IsControlJustPressed(0, 202)
-                or IsControlJustPressed(0, 322)
-            then
-                stopPhoneCamera()
-                QBCore.Functions.Notify('Kamera uždaryta.', 'primary')
-                break
-            end
-        end
-    end)
-end
-
 local function closePhone()
     if phonePhase == 'idle' or phonePhase == 'closing' then return end
 
-    stopPhoneCamera()
+    if PhoneCamera and PhoneCamera.stop then PhoneCamera.stop() end
     phonePhase = 'closing'
     SetNuiFocus(false, false)
     sendUi('close')
@@ -418,15 +367,30 @@ RegisterNUICallback('installApp', function(data, cb)
 end)
 
 RegisterNUICallback('openCamera', function(_, cb)
-    closePhone()
-    Wait(200)
-    startPhoneCamera()
     cb({ ok = true })
 end)
 
 RegisterNUICallback('closeCamera', function(_, cb)
-    stopPhoneCamera()
+    if PhoneCamera and PhoneCamera.stop then PhoneCamera.stop() end
     cb({ ok = true })
+end)
+
+RegisterNUICallback('getPhoto', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:getPhoto', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
+RegisterNUICallback('saveAdProfile', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:saveAdProfile', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
+RegisterNUICallback('getAdProfileAvatar', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:getAdProfileAvatar', function(res)
+        cb(res or { ok = false })
+    end, data or {})
 end)
 
 RegisterNUICallback('getWeather', function(_, cb)
@@ -473,7 +437,7 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     setPhoneVoiceCall(0)
-    stopPhoneCamera()
+    if PhoneCamera and PhoneCamera.stop then PhoneCamera.stop() end
 end)
 
 RegisterNetEvent('fivempro_phone:client:serviceDispatch', function(data)

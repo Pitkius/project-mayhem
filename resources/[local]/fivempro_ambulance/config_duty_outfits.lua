@@ -140,4 +140,100 @@ Config.DutyOutfits = {
             },
         },
     },
+    {
+        label = 'GMP kepurė #1 (A)',
+        description = 'male · galvos apdangalas',
+        category = 'hat',
+        minGrade = 0,
+        armour = 0,
+        male = {
+            props = {
+                [0] = { collection = 'mp_m_eimas25medikai', draw = 0, tex = 0 },
+            },
+        },
+    },
+    {
+        label = 'GMP kepurė #1 (A)',
+        description = 'female · galvos apdangalas',
+        category = 'hat',
+        minGrade = 0,
+        armour = 0,
+        female = {
+            props = {
+                [0] = { collection = 'mp_f_eimas25medikai', draw = 0, tex = 0 },
+            },
+        },
+    },
+    {
+        label = 'GMP kepurė #1 (B)',
+        description = 'male · galvos apdangalas',
+        category = 'hat',
+        minGrade = 0,
+        armour = 0,
+        male = {
+            props = {
+                [0] = { collection = 'mp_m_eimas25medikai', draw = 0, tex = 1 },
+            },
+        },
+    },
+    {
+        label = 'GMP kepurė #1 (B)',
+        description = 'female · galvos apdangalas',
+        category = 'hat',
+        minGrade = 0,
+        armour = 0,
+        female = {
+            props = {
+                [0] = { collection = 'mp_f_eimas25medikai', draw = 0, tex = 1 },
+            },
+        },
+    },
+    {
+        label = 'GMP kepurė #2 (A)',
+        description = 'male · galvos apdangalas',
+        category = 'hat',
+        minGrade = 0,
+        armour = 0,
+        male = {
+            props = {
+                [0] = { collection = 'mp_m_eimas25medikai', draw = 1, tex = 0 },
+            },
+        },
+    },
+    {
+        label = 'GMP kepurė #2 (A)',
+        description = 'female · galvos apdangalas',
+        category = 'hat',
+        minGrade = 0,
+        armour = 0,
+        female = {
+            props = {
+                [0] = { collection = 'mp_f_eimas25medikai', draw = 1, tex = 0 },
+            },
+        },
+    },
+    {
+        label = 'GMP kepurė #2 (B)',
+        description = 'male · galvos apdangalas',
+        category = 'hat',
+        minGrade = 0,
+        armour = 0,
+        male = {
+            props = {
+                [0] = { collection = 'mp_m_eimas25medikai', draw = 1, tex = 1 },
+            },
+        },
+    },
+    {
+        label = 'GMP kepurė #2 (B)',
+        description = 'female · galvos apdangalas',
+        category = 'hat',
+        minGrade = 0,
+        armour = 0,
+        female = {
+            props = {
+                [0] = { collection = 'mp_f_eimas25medikai', draw = 1, tex = 1 },
+            },
+        },
+    },
 }

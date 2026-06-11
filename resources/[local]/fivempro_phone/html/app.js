@@ -7,6 +7,8 @@ const APP_TEMPLATE = {
   messages: "renderMessagesApp",
   contacts: "renderContactsApp",
   ads: "renderAdsApp",
+  gallery: "renderGalleryApp",
+  carplay: "renderCarplayApp",
   insta: "renderSocialApp",
   bank: "renderBankApp",
   settings: "renderSettingsApp",
@@ -29,6 +31,8 @@ const state = {
   messageThreads: [],
   ads: [],
   adCategories: [],
+  adProfile: null,
+  photos: [],
   posts: [],
   cargoNet: { registered: false, level: 1, deliveries: 0 },
   money: { cash: 0, bank: 0 },
@@ -107,7 +111,7 @@ function applyWallpaper() {
   const el = document.getElementById("deviceWallpaper");
   if (!el) return;
   const presets = {
-    default: "radial-gradient(120% 80% at 20% 0%, rgba(88,86,214,.45), transparent 55%), radial-gradient(90% 70% at 90% 20%, rgba(10,132,255,.35), transparent 50%), linear-gradient(165deg,#0c0c12,#12121c,#08080e)",
+    default: "radial-gradient(120% 80% at 20% 0%, rgba(191,95,255,.42), transparent 55%), radial-gradient(90% 70% at 90% 20%, rgba(157,78,221,.28), transparent 50%), linear-gradient(165deg,#0c0c12,#12121c,#08080e)",
     midnight: "linear-gradient(160deg,#050508,#0f0f18 50%,#1a1030)",
     sunset: "linear-gradient(165deg,#1a0a12,#3d1a28 45%,#5c2d14)",
   };
@@ -343,6 +347,8 @@ function hydrate(payload = {}) {
   state.messageThreads = payload.messageThreads || [];
   state.ads = payload.ads || [];
   state.adCategories = payload.adCategories || [];
+  state.adProfile = payload.adProfile || null;
+  state.photos = payload.photos || [];
   state.posts = payload.posts || [];
   state.money = payload.money || state.money;
   state.cargoNet = payload.cargoNet || state.cargoNet || { registered: false, level: 1, deliveries: 0 };
@@ -391,6 +397,10 @@ function openAppStore() {
 }
 
 async function openApp(appId) {
+  if (appId !== "camera") {
+    nui("cameraStopLive", {}).catch(() => {});
+    document.getElementById("phone")?.classList.remove("camera-live-mode");
+  }
   if (appId === "appstore") {
     openAppStore();
     return;
@@ -409,7 +419,8 @@ async function openApp(appId) {
     content.innerHTML = `<div class="card">Programėlė ruošiama.</div>`;
     return;
   }
-  window[fn](content);
+  const rendered = window[fn](content);
+  if (rendered && typeof rendered.then === "function") await rendered;
 }
 
 window.PhoneOpenApp = openApp;
@@ -465,12 +476,6 @@ window.renderSettingsApp = (content) => {
     localStorage.setItem("fivempro_phone_wp", e.target.value);
     applyWallpaper();
   });
-};
-
-window.renderCameraApp = (content) => {
-  content.innerHTML = `<div class="card"><p>Foto režimas. Uždaryti: <b>ESC</b> arba <b>Backspace</b>.</p><button id="btnCam" class="ios-btn primary">Atidaryti kamerą</button><button id="btnCamClose" class="ios-btn" type="button">Uždaryti kamerą</button></div>`;
-  document.getElementById("btnCam").addEventListener("click", () => nui("openCamera", {}));
-  document.getElementById("btnCamClose").addEventListener("click", () => nui("closeCamera", {}));
 };
 
 window.renderShopApp = (content) => {

@@ -104,6 +104,10 @@
     window.PhoneOpenApp("messages");
   }
 
+  window.refreshState = refreshState;
+  window.startCall = startCall;
+  window.openChat = openChat;
+
   window.PhoneApps = {
     renderContactsApp(content) {
       const contacts = sortContacts(window.PhoneState.contacts);

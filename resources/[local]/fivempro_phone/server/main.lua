@@ -459,11 +459,26 @@ local function getInitialDataFor(src)
     ]], { citizenid, citizenid }) or {}
 
     local ads = MySQL.query.await([[
-        SELECT id, citizenid, author_name, phone_number, category, title, price, body, created_at
+        SELECT id, citizenid, author_name, phone_number, category, title, price, body, image_urls, created_at
         FROM fivempro_phone_ads
         ORDER BY id DESC
-        LIMIT 80
+        LIMIT 120
     ]]) or {}
+
+    local photos = MySQL.query.await([[
+        SELECT id, is_front, created_at
+        FROM fivempro_phone_photos
+        WHERE citizenid = ?
+        ORDER BY id DESC
+        LIMIT 80
+    ]], { citizenid }) or {}
+
+    local adProfile = MySQL.single.await([[
+        SELECT username, bio, avatar_data, created_at
+        FROM fivempro_phone_ad_profiles
+        WHERE citizenid = ?
+        LIMIT 1
+    ]], { citizenid })
 
     local posts = MySQL.query.await([[
         SELECT id, author_name, caption, image_url, likes, created_at
@@ -519,6 +534,13 @@ local function getInitialDataFor(src)
         messageThreads = getMessageThreads(citizenid),
         ads = ads,
         adCategories = getAdCategories(),
+        adProfile = adProfile and {
+            username = tostring(adProfile.username or ''),
+            bio = tostring(adProfile.bio or ''),
+            hasAvatar = adProfile.avatar_data ~= nil and adProfile.avatar_data ~= '',
+            created_at = adProfile.created_at,
+        } or nil,
+        photos = photos,
         posts = posts,
         pendingIncomingCall = getPendingIncomingCallFor(src),
         cargoNet = getCargoNetStatus(citizenid),
@@ -689,15 +711,156 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:createAd', function(sourc
     if title == '' then
         title = body:sub(1, math.min(48, #body))
     end
+    local imageUrls = ''
+    if type(data and data.imagePhotoIds) == 'table' then
+        local parts = {}
+        for _, pid in ipairs(data.imagePhotoIds) do
+            local n = tonumber(pid)
+            if n then
+                local owned = MySQL.scalar.await(
+                    'SELECT id FROM fivempro_phone_photos WHERE id = ? AND citizenid = ? LIMIT 1',
+                    { n, citizenid }
+                )
+                if owned then parts[#parts + 1] = ('p:%s'):format(n) end
+            end
+        end
+        imageUrls = table.concat(parts, '|')
+    elseif type(data and data.imageUrls) == 'table' then
+        local parts = {}
+        for _, u in ipairs(data.imageUrls) do
+            local s = clampStr(u, (Config.Phone and Config.Phone.maxImageUrlLength) or 500)
+            if s ~= '' then parts[#parts + 1] = s end
+        end
+        imageUrls = table.concat(parts, '||')
+    elseif data and data.imageUrl then
+        imageUrls = clampStr(data.imageUrl, (Config.Phone and Config.Phone.maxImageUrlLength) or 500)
+    end
     MySQL.insert.await([[
-        INSERT INTO fivempro_phone_ads (citizenid, author_name, phone_number, category, title, price, body)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ]], { citizenid, fullname, number, category, title, price, body })
+        INSERT INTO fivempro_phone_ads (citizenid, author_name, phone_number, category, title, price, body, image_urls)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ]], { citizenid, fullname, number, category, title, price, body, imageUrls })
     cb({ ok = true })
     local players = QBCore.Functions.GetQBPlayers()
     for sid in pairs(players) do
         TriggerClientEvent('fivempro_phone:client:refreshData', sid)
     end
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:savePhoto', function(source, cb, data)
+    local citizenid = getCitizen(source)
+    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    local imageData = tostring(data and data.imageData or '')
+    local maxLen = (Config.Phone and Config.Phone.maxPhotoDataLength) or 220000
+    if imageData == '' or #imageData < 32 then
+        return cb({ ok = false, message = 'Tuščia nuotrauka.' })
+    end
+    if #imageData > maxLen then
+        imageData = imageData:sub(1, maxLen)
+    end
+    local maxPhotos = (Config.Phone and Config.Phone.maxPhotosPerUser) or 80
+    local count = MySQL.scalar.await('SELECT COUNT(*) FROM fivempro_phone_photos WHERE citizenid = ?', { citizenid }) or 0
+    if tonumber(count) >= maxPhotos then
+        local oldest = MySQL.scalar.await(
+            'SELECT id FROM fivempro_phone_photos WHERE citizenid = ? ORDER BY id ASC LIMIT 1',
+            { citizenid }
+        )
+        if oldest then
+            MySQL.update.await('DELETE FROM fivempro_phone_photos WHERE id = ?', { oldest })
+        end
+    end
+    local isFront = (data and data.front == true) and 1 or 0
+    local zoom = tonumber(data and data.zoom) or 1.0
+    local id = MySQL.insert.await([[
+        INSERT INTO fivempro_phone_photos (citizenid, image_data, is_front, zoom_level)
+        VALUES (?, ?, ?, ?)
+    ]], { citizenid, imageData, isFront, zoom })
+    local newCount = MySQL.scalar.await('SELECT COUNT(*) FROM fivempro_phone_photos WHERE citizenid = ?', { citizenid }) or 0
+    cb({ ok = true, id = id, count = tonumber(newCount) or 0 })
+    TriggerClientEvent('fivempro_phone:client:refreshData', source)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:getPhoto', function(source, cb, data)
+    local citizenid = getCitizen(source)
+    if not citizenid then return cb({ ok = false }) end
+    local photoId = tonumber(data and data.id)
+    if not photoId then return cb({ ok = false }) end
+    local row = MySQL.single.await([[
+        SELECT id, image_data, is_front, created_at
+        FROM fivempro_phone_photos
+        WHERE id = ? AND citizenid = ?
+        LIMIT 1
+    ]], { photoId, citizenid })
+    if not row then return cb({ ok = false, message = 'Nuotrauka nerasta.' }) end
+    cb({
+        ok = true,
+        photo = {
+            id = row.id,
+            image = row.image_data,
+            is_front = row.is_front == 1,
+            created_at = row.created_at,
+        },
+    })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:deletePhoto', function(source, cb, data)
+    local citizenid = getCitizen(source)
+    if not citizenid then return cb({ ok = false }) end
+    local photoId = tonumber(data and data.id)
+    if not photoId then return cb({ ok = false }) end
+    MySQL.update.await('DELETE FROM fivempro_phone_photos WHERE id = ? AND citizenid = ?', { photoId, citizenid })
+    cb({ ok = true })
+    TriggerClientEvent('fivempro_phone:client:refreshData', source)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:saveAdProfile', function(source, cb, data)
+    local citizenid, P = getCitizen(source)
+    if not citizenid then return cb({ ok = false }) end
+    local username = clampStr(data and data.username or '', 24)
+    local bio = clampStr(data and data.bio or '', 200)
+    if username == '' then
+        return cb({ ok = false, message = 'Įveskite vartotojo vardą.' })
+    end
+    local taken = MySQL.single.await([[
+        SELECT citizenid FROM fivempro_phone_ad_profiles
+        WHERE username = ? AND citizenid <> ? LIMIT 1
+    ]], { username, citizenid })
+    if taken then
+        return cb({ ok = false, message = 'Vartotojo vardas užimtas.' })
+    end
+    local avatar = data and data.avatarData
+    if avatar ~= nil and avatar ~= '' then
+        avatar = clampStr(avatar, (Config.Phone and Config.Phone.maxPhotoDataLength) or 220000)
+    else
+        avatar = nil
+    end
+    local exists = MySQL.single.await('SELECT id FROM fivempro_phone_ad_profiles WHERE citizenid = ? LIMIT 1', { citizenid })
+    if exists then
+        if avatar then
+            MySQL.update.await([[
+                UPDATE fivempro_phone_ad_profiles SET username = ?, bio = ?, avatar_data = ? WHERE citizenid = ?
+            ]], { username, bio, avatar, citizenid })
+        else
+            MySQL.update.await([[
+                UPDATE fivempro_phone_ad_profiles SET username = ?, bio = ? WHERE citizenid = ?
+            ]], { username, bio, citizenid })
+        end
+    else
+        MySQL.insert.await([[
+            INSERT INTO fivempro_phone_ad_profiles (citizenid, username, bio, avatar_data)
+            VALUES (?, ?, ?, ?)
+        ]], { citizenid, username, bio, avatar or '' })
+    end
+    cb({ ok = true })
+    TriggerClientEvent('fivempro_phone:client:refreshData', source)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:getAdProfileAvatar', function(source, cb, data)
+    local targetCid = clampStr(data and data.citizenid or '', 60)
+    if targetCid == '' then return cb({ ok = false }) end
+    local row = MySQL.single.await([[
+        SELECT avatar_data FROM fivempro_phone_ad_profiles WHERE citizenid = ? LIMIT 1
+    ]], { targetCid })
+    cb({ ok = true, avatar = row and row.avatar_data or '' })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_phone:server:deleteAd', function(source, cb, data)
@@ -1085,6 +1248,35 @@ CreateThread(function()
     pcall(function()
         MySQL.query.await('ALTER TABLE fivempro_phone_ads ADD COLUMN price int NOT NULL DEFAULT 0')
     end)
+    pcall(function()
+        MySQL.query.await('ALTER TABLE fivempro_phone_ads ADD COLUMN image_urls text NULL')
+    end)
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS `fivempro_phone_photos` (
+          `id` int NOT NULL AUTO_INCREMENT,
+          `citizenid` varchar(60) NOT NULL,
+          `image_data` mediumtext NOT NULL,
+          `is_front` tinyint NOT NULL DEFAULT 0,
+          `zoom_level` float NOT NULL DEFAULT 1,
+          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          KEY `idx_photo_owner` (`citizenid`),
+          KEY `idx_photo_created` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS `fivempro_phone_ad_profiles` (
+          `id` int NOT NULL AUTO_INCREMENT,
+          `citizenid` varchar(60) NOT NULL,
+          `username` varchar(24) NOT NULL,
+          `bio` varchar(200) NOT NULL DEFAULT '',
+          `avatar_data` mediumtext NULL,
+          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uniq_ad_profile_cid` (`citizenid`),
+          UNIQUE KEY `uniq_ad_profile_username` (`username`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_posts` (
           `id` int NOT NULL AUTO_INCREMENT,

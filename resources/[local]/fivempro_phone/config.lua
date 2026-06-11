@@ -1,5 +1,7 @@
 Config = {}
 
+--- Nuotraukų fiksavimui rekomenduojama: ensure screenshot-basic (server.cfg)
+
 Config.KeybindCommand = 'fivempro_phone_toggle'
 Config.KeybindDefault = 'F1'
 
@@ -17,6 +19,10 @@ Config.Phone = {
     maxAdTitleLength = 48,
     maxPostCaptionLength = 260,
     maxImageUrlLength = 500,
+    maxPhotosPerUser = 80,
+    maxPhotoDataLength = 220000,
+    --- CarPlay: max nuorodos ilgis
+    maxCarPlayUrlLength = 512,
     --- Automatiniai tarnybų kontaktai (įrašomi kiekvienam žaidėjui, abėcėlės tvarka)
     DefaultContacts = {
         { key = 'police', name = 'Policija', number = '112', service = 'police', icon = 'service-police' },
@@ -27,13 +33,13 @@ Config.Phone = {
     --- Skelbimų kategorijos (lengvai pridėti naujas)
     AdCategories = {
         { id = 'all', label = 'Visi' },
-        { id = 'sell', label = 'Parduodu' },
-        { id = 'buy', label = 'Perku' },
-        { id = 'job', label = 'Darbas' },
-        { id = 'service', label = 'Paslaugos' },
         { id = 'vehicle', label = 'Transportas' },
-        { id = 'property', label = 'Nekilnojama' },
-        { id = 'other', label = 'Kita' },
+        { id = 'property', label = 'Nekilnojamas turtas' },
+        { id = 'job', label = 'Darbai' },
+        { id = 'service', label = 'Paslaugos' },
+        { id = 'electronics', label = 'Elektronika' },
+        { id = 'clothes', label = 'Drabužiai' },
+        { id = 'other', label = 'Įvairūs' },
     },
     --- default = įdiegiama su paskyra ir rodoma pagrindiniame ekrane
     --- default = false → tik per App Store
@@ -42,11 +48,13 @@ Config.Phone = {
         { id = 'messages', label = 'Žinutės', icon = 'messages', default = true },
         { id = 'contacts', label = 'Kontaktai', icon = 'contacts', default = true },
         { id = 'settings', label = 'Nustatymai', icon = 'settings', default = true },
-        { id = 'camera', label = 'Kamera', icon = 'camera', default = true },
+        { id = 'camera', label = 'Kamera', icon = 'camera', default = true, description = 'iPhone stiliaus kamera ir galerija' },
+        { id = 'gallery', label = 'Galerija', icon = 'camera', default = true, description = 'Nuotraukų albumas' },
+        { id = 'carplay', label = 'CarPlay', icon = 'radio', default = false, description = 'Muzika automobilyje (Spotify / YouTube)' },
         { id = 'notes', label = 'Užrašai', icon = 'notes', default = true },
         { id = 'emergency', label = '112', icon = 'emergency', default = true },
         { id = 'appstore', label = 'Programėlės', icon = 'appstore', default = true },
-        { id = 'ads', label = 'Skelbimai', icon = 'ads', default = true, description = 'Skelbimų lenta ir pardavimai' },
+        { id = 'ads', label = 'Skelbimai', icon = 'ads', default = true, description = 'Skelbimų portalas su profiliais' },
         { id = 'insta', label = 'LifeGram', icon = 'insta', default = false, description = 'Socialinis tinklas su nuotraukomis' },
         { id = 'bank', label = 'Bankas', icon = 'bank', default = false, description = 'Sąskaitos ir balansas' },
         { id = 'shop', label = 'Turgus', icon = 'shop', default = false, description = 'Parduotuvės ir prekės mieste' },

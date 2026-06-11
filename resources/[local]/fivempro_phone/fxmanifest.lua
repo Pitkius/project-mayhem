@@ -4,7 +4,7 @@ lua54 'yes'
 
 name 'fivempro_phone'
 description 'Bazinis telefonas: skambučiai, žinutės, kontaktai, skelbimai, social feed'
-version '2.0.0'
+version '2.1.0'
 
 ui_page 'html/index.html'
 
@@ -13,6 +13,10 @@ files {
     'html/style.css',
     'html/app.js',
     'html/apps.js',
+    'html/phone-apps.css',
+    'html/phone-camera.js',
+    'html/phone-carplay.js',
+    'html/phone-ads.js',
     'html/locale/lt.js',
     'html/assets/icons/*.svg',
 }
@@ -23,12 +27,15 @@ shared_scripts {
 
 client_scripts {
     'client/main.lua',
+    'client/camera.lua',
+    'client/carplay.lua',
     'client/death.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
+    'server/carplay.lua',
 }
 
 dependency 'qb-core'

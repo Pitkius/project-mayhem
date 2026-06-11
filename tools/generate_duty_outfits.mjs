@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const EXTRACT = path.join(ROOT, '_clothing_extract');
+const CLOTHING = path.join(ROOT, 'resources', '[clothing]');
 
 const COMP_MAP = {
   PV_COMP_LOWR: 4,
@@ -22,29 +22,48 @@ const COMP_MAP = {
 };
 
 const TEX_LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+const CATEGORY_ORDER = { uniform: 0, vest: 1, belt: 2, hat: 3 };
+
+function metaTag(block, name, def = '0') {
+  const m = block.match(new RegExp(`<${name}\\s+value="([^"]*)"`));
+  if (m) return m[1];
+  const m2 = block.match(new RegExp(`<${name}>([^<]*)</${name}>`));
+  return m2 ? m2[1].trim() : def;
+}
 
 function parseShopMeta(filePath) {
   const text = fs.readFileSync(filePath, 'utf8');
   const dlcMatch = text.match(/<dlcName>([^<]+)<\/dlcName>/);
   const dlc = dlcMatch ? dlcMatch[1].trim() : path.basename(filePath);
   const items = [];
-  for (const block of text.matchAll(/<Item>([\s\S]*?)<\/Item>/g)) {
-    const b = block[1];
-    const tag = (name, def = '0') => {
-      const m = b.match(new RegExp(`<${name}\\s+value="([^"]*)"`));
-      if (m) return m[1];
-      const m2 = b.match(new RegExp(`<${name}>([^<]*)</${name}>`));
-      return m2 ? m2[1].trim() : def;
-    };
-    const compType = tag('eCompType', '');
-    if (!COMP_MAP[compType]) continue;
-    items.push({
-      comp: COMP_MAP[compType],
-      draw: parseInt(tag('localDrawableIndex', '0'), 10),
-      tex: parseInt(tag('textureIndex', '0'), 10),
-    });
+  const componentsSection = text.match(/<pedComponents>([\s\S]*?)<\/pedComponents>/);
+  if (componentsSection) {
+    for (const block of componentsSection[1].matchAll(/<Item>([\s\S]*?)<\/Item>/g)) {
+      const b = block[1];
+      const compType = metaTag(b, 'eCompType', '');
+      if (!COMP_MAP[compType]) continue;
+      items.push({
+        comp: COMP_MAP[compType],
+        draw: parseInt(metaTag(b, 'localDrawableIndex', '0'), 10),
+        tex: parseInt(metaTag(b, 'textureIndex', '0'), 10),
+      });
+    }
   }
-  return { dlc, items };
+  const props = [];
+  const propsSection = text.match(/<pedProps>([\s\S]*?)<\/pedProps>/);
+  if (propsSection) {
+    for (const block of propsSection[1].matchAll(/<Item>([\s\S]*?)<\/Item>/g)) {
+      const b = block[1];
+      const anchor = metaTag(b, 'eAnchorPoint', '');
+      if (anchor !== 'ANCHOR_HEAD') continue;
+      props.push({
+        slot: 0,
+        draw: parseInt(metaTag(b, 'localPropIndex', '0'), 10),
+        tex: parseInt(metaTag(b, 'textureIndex', '0'), 10),
+      });
+    }
+  }
+  return { dlc, items, props };
 }
 
 function texLabel(tex) {
@@ -89,7 +108,15 @@ function makeComponents(dlc, spec) {
   return out;
 }
 
-function buildPackOutfits(packLabel, dlc, items, gender) {
+function makeProps(dlc, spec) {
+  const out = {};
+  for (const [slot, [d, t]] of Object.entries(spec)) {
+    out[Number(slot)] = compEntry(dlc, d, t);
+  }
+  return out;
+}
+
+function buildPackOutfits(packLabel, dlc, items, props, gender) {
   const byComp = {};
   for (const it of items) {
     (byComp[it.comp] ||= []).push(it);
@@ -124,6 +151,7 @@ function buildPackOutfits(packLabel, dlc, items, gender) {
       minGrade: 0,
       armour: 0,
       components: makeComponents(dlc, spec),
+      props: null,
     });
   }
 
@@ -144,6 +172,7 @@ function buildPackOutfits(packLabel, dlc, items, gender) {
       minGrade: 0,
       armour: 0,
       components: makeComponents(dlc, spec),
+      props: null,
     });
   }
 
@@ -163,36 +192,43 @@ function buildPackOutfits(packLabel, dlc, items, gender) {
       minGrade: 0,
       armour: 0,
       components: makeComponents(dlc, spec),
+      props: null,
     });
   }
 
   for (const t of teefItems) {
-    if (!jbibItems.length) continue;
-    const j0 = [...jbibItems].sort((a, b) => a.draw - b.draw || a.tex - b.tex)[0];
-    const [ld, lt] = pickLowrTex(lowrItems, j0.tex);
-    const [fd, ft] = pickFeet(feetItems);
-    const spec = { 11: [j0.draw, j0.tex], 4: [ld, lt], 6: [fd, ft], 7: [t.draw, t.tex] };
-    const key = `u-t-${t.draw}-${t.tex}`;
-    if (seenUniform.has(key)) continue;
-    seenUniform.add(key);
     outfits.push({
-      label: `${packLabel} uniforma – aksesuaras #${t.draw + 1} (${texLabel(t.tex)})`,
-      description: `${gender} · be liemenės`,
-      category: 'uniform',
+      label: `${packLabel} diržas #${t.draw + 1} (${texLabel(t.tex)})`,
+      description: `${gender} · diržas / aksesuaras (uždėk ant uniformos)`,
+      category: 'belt',
       minGrade: 0,
       armour: 0,
-      components: makeComponents(dlc, spec),
+      components: makeComponents(dlc, { 7: [t.draw, t.tex] }),
+      props: null,
     });
   }
 
   for (const v of taskItems) {
     outfits.push({
       label: `${packLabel} liemenė #${v.draw + 1} (${texLabel(v.tex)})`,
-      description: `${gender} · balistinė liemenė (uždėk ant uniformos)`,
+      description: `${gender} · balistinė liemenė (pilni šarvai)`,
       category: 'vest',
       minGrade: 0,
       armour: 100,
       components: makeComponents(dlc, { 9: [v.draw, v.tex] }),
+      props: null,
+    });
+  }
+
+  for (const p of [...props].sort((a, b) => a.draw - b.draw || a.tex - b.tex)) {
+    outfits.push({
+      label: `${packLabel} kepurė #${p.draw + 1} (${texLabel(p.tex)})`,
+      description: `${gender} · galvos apdangalas`,
+      category: 'hat',
+      minGrade: 0,
+      armour: 0,
+      components: null,
+      props: makeProps(dlc, { [p.slot]: [p.draw, p.tex] }),
     });
   }
 
@@ -202,9 +238,12 @@ function buildPackOutfits(packLabel, dlc, items, gender) {
 function mergeGenderOutfits(packs) {
   const merged = new Map();
   for (const [packLabel, metaPath, gender] of packs) {
-    if (!fs.existsSync(metaPath)) continue;
-    const { dlc, items } = parseShopMeta(metaPath);
-    for (const o of buildPackOutfits(packLabel, dlc, items, gender)) {
+    if (!fs.existsSync(metaPath)) {
+      console.warn(`Missing meta: ${metaPath}`);
+      continue;
+    }
+    const { dlc, items, props } = parseShopMeta(metaPath);
+    for (const o of buildPackOutfits(packLabel, dlc, items, props, gender)) {
       const sig = `${gender}|${o.category}|${o.label}`;
       if (!merged.has(sig)) {
         merged.set(sig, {
@@ -217,12 +256,15 @@ function mergeGenderOutfits(packs) {
           female: null,
         });
       }
-      merged.get(sig)[gender] = o.components;
+      merged.get(sig)[gender] = {
+        components: o.components,
+        props: o.props,
+      };
     }
   }
   return [...merged.values()].sort((a, b) => {
-    const ca = a.category === 'uniform' ? 0 : 1;
-    const cb = b.category === 'uniform' ? 0 : 1;
+    const ca = CATEGORY_ORDER[a.category] ?? 9;
+    const cb = CATEGORY_ORDER[b.category] ?? 9;
     return ca - cb || a.label.localeCompare(b.label, 'lt');
   });
 }
@@ -232,6 +274,7 @@ function luaStr(s) {
 }
 
 function luaComponentsTable(comps) {
+  if (!comps || !Object.keys(comps).length) return '';
   const lines = ['            components = {'];
   for (const compId of Object.keys(comps).map(Number).sort((a, b) => a - b)) {
     const c = comps[compId];
@@ -241,6 +284,32 @@ function luaComponentsTable(comps) {
   }
   lines.push('            },');
   return lines.join('\n');
+}
+
+function luaPropsTable(props) {
+  if (!props || !Object.keys(props).length) return '';
+  const lines = ['            props = {'];
+  for (const slot of Object.keys(props).map(Number).sort((a, b) => a - b)) {
+    const p = props[slot];
+    lines.push(
+      `                [${slot}] = { collection = '${p.collection}', draw = ${p.draw}, tex = ${p.tex} },`,
+    );
+  }
+  lines.push('            },');
+  return lines.join('\n');
+}
+
+function emitGender(genderKey, genderData) {
+  const lines = [];
+  if (!genderData) return lines;
+  const compBlock = luaComponentsTable(genderData.components);
+  const propBlock = luaPropsTable(genderData.props);
+  if (!compBlock && !propBlock) return lines;
+  lines.push(`        ${genderKey} = {`);
+  if (compBlock) lines.push(compBlock);
+  if (propBlock) lines.push(propBlock);
+  lines.push('        },');
+  return lines;
 }
 
 function emitLua(outfits) {
@@ -258,16 +327,8 @@ function emitLua(outfits) {
     lines.push(`        category = ${luaStr(o.category)},`);
     lines.push('        minGrade = 0,');
     lines.push(`        armour = ${o.armour || 0},`);
-    if (hasM) {
-      lines.push('        male = {');
-      lines.push(luaComponentsTable(o.male));
-      lines.push('        },');
-    }
-    if (hasF) {
-      lines.push('        female = {');
-      lines.push(luaComponentsTable(o.female));
-      lines.push('        },');
-    }
+    lines.push(...emitGender('male', o.male));
+    lines.push(...emitGender('female', o.female));
     lines.push('    },');
   }
   lines.push('}');
@@ -275,17 +336,20 @@ function emitLua(outfits) {
   return lines.join('\n');
 }
 
+const pdUniforms = path.join(CLOTHING, 'fivempro_pd_uniforms');
+const gmpUniforms = path.join(CLOTHING, 'fivempro_gmp_uniforms');
+
 const pdPacks = [
-  ['PD V2', path.join(EXTRACT, 'pdv2', 'PDV2', 'mp_m_freemode_01_mp_m_pdv2_shop.meta'), 'male'],
-  ['PD Vyrai', path.join(EXTRACT, 'pdvyrai', 'pdvyrai', 'mp_m_freemode_01_mp_m_pdvyrai_shop.meta'), 'male'],
-  ['PD V2', path.join(EXTRACT, 'pdv2', 'PDV2', 'mp_f_freemode_01_mp_f_pdv2_shop.meta'), 'female'],
-  ['PD Vyrai', path.join(EXTRACT, 'pdvyrai', 'pdvyrai', 'mp_f_freemode_01_mp_f_pdvyrai_shop.meta'), 'female'],
-  ['PD Moterys', path.join(EXTRACT, 'pdmot', 'pdmot', 'mp_f_freemode_01_mp_f_pdmot_shop.meta'), 'female'],
+  ['PD V2', path.join(pdUniforms, 'mp_m_freemode_01_mp_m_pdv2_shop.meta'), 'male'],
+  ['PD Vyrai', path.join(pdUniforms, 'mp_m_freemode_01_mp_m_pdvyrai_shop.meta'), 'male'],
+  ['PD V2', path.join(pdUniforms, 'mp_f_freemode_01_mp_f_pdv2_shop.meta'), 'female'],
+  ['PD Vyrai', path.join(pdUniforms, 'mp_f_freemode_01_mp_f_pdvyrai_shop.meta'), 'female'],
+  ['PD Moterys', path.join(pdUniforms, 'mp_f_freemode_01_mp_f_pdmot_shop.meta'), 'female'],
 ];
 
 const gmpPacks = [
-  ['GMP', path.join(EXTRACT, 'gmp', 'medikai', 'mp_m_freemode_01_mp_m_eimas25medikai_shop.meta'), 'male'],
-  ['GMP', path.join(EXTRACT, 'gmp', 'medikai', 'mp_f_freemode_01_mp_f_eimas25medikai_shop.meta'), 'female'],
+  ['GMP', path.join(gmpUniforms, 'mp_m_freemode_01_mp_m_eimas25medikai_shop.meta'), 'male'],
+  ['GMP', path.join(gmpUniforms, 'mp_f_freemode_01_mp_f_eimas25medikai_shop.meta'), 'female'],
 ];
 
 const pdOutfits = mergeGenderOutfits(pdPacks);
@@ -297,11 +361,15 @@ const gmpCfg = path.join(ROOT, 'resources', '[local]', 'fivempro_ambulance', 'co
 fs.writeFileSync(pdCfg, emitLua(pdOutfits));
 fs.writeFileSync(gmpCfg, emitLua(gmpOutfits));
 
+function countCat(list, cat) {
+  return list.filter((o) => o.category === cat).length;
+}
+
 console.log(`PD outfits: ${pdOutfits.length} -> ${pdCfg}`);
 console.log(`GMP outfits: ${gmpOutfits.length} -> ${gmpCfg}`);
 console.log(
-  `  PD uniform=${pdOutfits.filter((o) => o.category === 'uniform').length} vest=${pdOutfits.filter((o) => o.category === 'vest').length}`,
+  `  PD uniform=${countCat(pdOutfits, 'uniform')} vest=${countCat(pdOutfits, 'vest')} belt=${countCat(pdOutfits, 'belt')} hat=${countCat(pdOutfits, 'hat')}`,
 );
 console.log(
-  `  GMP uniform=${gmpOutfits.filter((o) => o.category === 'uniform').length} vest=${gmpOutfits.filter((o) => o.category === 'vest').length}`,
+  `  GMP uniform=${countCat(gmpOutfits, 'uniform')} vest=${countCat(gmpOutfits, 'vest')} belt=${countCat(gmpOutfits, 'belt')} hat=${countCat(gmpOutfits, 'hat')}`,
 );

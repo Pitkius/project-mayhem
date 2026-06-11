@@ -34,6 +34,20 @@ window.PhoneLocale = {
     recent: "Naujausi",
     keypad: "Klaviatūra",
   },
+  camera: {
+    title: "Kamera",
+    gallery: "Galerija",
+    capture: "Fotografuoti",
+    flip: "Keisti kamerą",
+    flash: "Blykstė",
+    zoom: "Priartinimas",
+  },
+  carplay: {
+    title: "CarPlay",
+    nowPlaying: "Dabar groja",
+    addUrl: "Pridėti nuorodą",
+    inVehicleOnly: "Veikia tik automobilyje",
+  },
   ads: {
     title: "Skelbimai",
     post: "Naujas skelbimas",
