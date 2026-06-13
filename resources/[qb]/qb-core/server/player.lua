@@ -497,6 +497,14 @@ function QBCore.Player.Save(source)
     local pcoords = GetEntityCoords(ped)
     local PlayerData = QBCore.Players[source].PlayerData
     if PlayerData then
+        if GetResourceState('fivempro_spawnfix') == 'started' then
+            local ok, keep = pcall(function()
+                return exports['fivempro_spawnfix']:KeepCachedPositionOnSave(source)
+            end)
+            if ok and keep and PlayerData.position and PlayerData.position.x then
+                pcoords = vector3(PlayerData.position.x, PlayerData.position.y, PlayerData.position.z)
+            end
+        end
         MySQL.insert('INSERT INTO players (citizenid, cid, license, name, money, charinfo, job, gang, position, metadata) VALUES (:citizenid, :cid, :license, :name, :money, :charinfo, :job, :gang, :position, :metadata) ON DUPLICATE KEY UPDATE cid = :cid, name = :name, money = :money, charinfo = :charinfo, job = :job, gang = :gang, position = :position, metadata = :metadata', {
             citizenid = PlayerData.citizenid,
             cid = tonumber(PlayerData.cid),

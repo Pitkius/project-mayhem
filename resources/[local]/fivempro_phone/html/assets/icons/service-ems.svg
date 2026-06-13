@@ -1,11 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
-    <linearGradient id="ems" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ems-bg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FF453A"/>
       <stop offset="1" stop-color="#D70015"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#ems)"/>
+  <rect width="64" height="64" rx="15" fill="url(#ems-bg)"/>
   <rect x="28" y="16" width="8" height="32" rx="2" fill="#fff"/>
-  <rect x="16" y="28" width="32" height="8" rx="2" fill="#fff"/>
+  <rect x="18" y="28" width="28" height="8" rx="2" fill="#fff"/>
+  <path d="M32 14 38 28h14l-11 8 4 14-11-8-11 8 4-14-11-8h14L32 14z" fill="#fff" opacity=".18"/>
 </svg>

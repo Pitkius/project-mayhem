@@ -1,6 +1,6 @@
 Config = {}
 
---- Nuotraukų fiksavimui rekomenduojama: ensure screenshot-basic (server.cfg)
+--- Nuotraukų fiksavimui būtinas resursas: ensure screenshot-basic (prieš fivempro_phone)
 
 Config.KeybindCommand = 'fivempro_phone_toggle'
 Config.KeybindDefault = 'F1'
@@ -49,8 +49,8 @@ Config.Phone = {
         { id = 'contacts', label = 'Kontaktai', icon = 'contacts', default = true },
         { id = 'settings', label = 'Nustatymai', icon = 'settings', default = true },
         { id = 'camera', label = 'Kamera', icon = 'camera', default = true, description = 'iPhone stiliaus kamera ir galerija' },
-        { id = 'gallery', label = 'Galerija', icon = 'camera', default = true, description = 'Nuotraukų albumas' },
-        { id = 'carplay', label = 'CarPlay', icon = 'radio', default = false, description = 'Muzika automobilyje (Spotify / YouTube)' },
+        { id = 'gallery', label = 'Galerija', icon = 'gallery', default = true, description = 'Nuotraukų albumas' },
+        { id = 'carplay', label = 'CarPlay', icon = 'carplay', default = false, description = 'Muzika automobilyje (Spotify / YouTube)' },
         { id = 'notes', label = 'Užrašai', icon = 'notes', default = true },
         { id = 'emergency', label = '112', icon = 'emergency', default = true },
         { id = 'appstore', label = 'Programėlės', icon = 'appstore', default = true },
@@ -59,7 +59,6 @@ Config.Phone = {
         { id = 'bank', label = 'Bankas', icon = 'bank', default = false, description = 'Sąskaitos ir balansas' },
         { id = 'shop', label = 'Turgus', icon = 'shop', default = false, description = 'Parduotuvės ir prekės mieste' },
         { id = 'weather', label = 'Orai', icon = 'weather', default = false, description = 'Orų prognozė Los Santos' },
-        { id = 'radio', label = 'Radijas', icon = 'radio', default = false, description = 'Miesto radijo stotys' },
         { id = 'cargonet', label = 'CargoNet', icon = 'cargonet', default = false, description = 'Krovinių birža ir logistikos kontraktai' },
     }
 }

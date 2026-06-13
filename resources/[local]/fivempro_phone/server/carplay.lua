@@ -26,7 +26,8 @@ local function parseMediaUrl(raw)
             type = 'youtube',
             url = url,
             stream = ('https://www.youtube.com/embed/%s?autoplay=1'):format(ytId),
-            title = 'YouTube',
+            title = 'YouTube vaizdo įrašas',
+            thumbnail = ('https://img.youtube.com/vi/%s/hqdefault.jpg'):format(ytId),
         }
     end
 
@@ -85,6 +86,8 @@ end
 local function defaultSession()
     return {
         title = 'Niekas negroja',
+        artist = '',
+        thumbnail = '',
         url = '',
         stream = '',
         mediaType = '',
@@ -114,7 +117,9 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:carplayControl', function
         session.url = media.url
         session.stream = media.stream
         session.mediaType = media.type
-        session.title = clampStr(data and data.title or media.title, 80)
+        session.title = clampStr(data and data.title or media.title, 120)
+        session.artist = clampStr(data and data.artist or '', 80)
+        session.thumbnail = clampStr(data and data.thumbnail or media.thumbnail or '', 500)
         session.playing = true
         CarPlaySessions[netId] = session
         broadcastCarPlay(netId, session, {

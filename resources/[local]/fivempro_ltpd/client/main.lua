@@ -442,8 +442,9 @@ end)
 CreateThread(function()
     if not Config.ShowStationBlips then return end
     for _, st in ipairs(Config.Stations or {}) do
-        if st.coords then
-            local b = AddBlipForCoord(st.coords.x, st.coords.y, st.coords.z)
+        local bc = st.blipCoords or st.coords
+        if bc then
+            local b = AddBlipForCoord(bc.x, bc.y, bc.z)
             SetBlipSprite(b, Config.BlipSprite or 60)
             SetBlipDisplay(b, 4)
             SetBlipScale(b, Config.BlipScale or 0.85)

@@ -16,7 +16,6 @@ const APP_TEMPLATE = {
   notes: "renderNotesApp",
   shop: "renderShopApp",
   weather: "renderWeatherApp",
-  radio: "renderRadioApp",
   cargonet: "renderCargoNetApp",
 };
 const DOCK_APPS = ["calls", "messages", "contacts", "settings"];
@@ -491,17 +490,6 @@ window.renderWeatherApp = (content) => {
   });
 };
 
-window.renderRadioApp = (content) => {
-  const stations = [
-    { id: "pop", label: "Los Santos pop" },
-    { id: "rock", label: "Roko stotis" },
-    { id: "news", label: "Weazel naujienos" },
-  ];
-  content.innerHTML = `<div class="card"><b>Radijas</b><p class="muted small">Pasirinkite stotį.</p>${stations.map((s) => `<button type="button" class="ios-btn" data-radio="${s.id}" style="width:100%;margin-top:8px">${esc(s.label)}</button>`).join("")}</div>`;
-  content.querySelectorAll("[data-radio]").forEach((btn) =>
-    btn.addEventListener("click", () => nui("radioStation", { station: btn.dataset.radio })),
-  );
-};
 
 window.renderCargoNetApp = (content) => {
   const cn = state.cargoNet || {};

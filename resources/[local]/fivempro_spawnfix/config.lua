@@ -2,7 +2,7 @@ Config = {}
 
 --- Jei fivempro_charcreator paleistas – naudok jį (šis auto tik be charcreator)
 Config.AutoCreateCharacter = false
-Config.DefaultSpawn = vector4(-1035.71, -2731.87, 12.86, 0.0)
+Config.DefaultSpawn = vector4(-1037.9487, -2738.0669, 20.1693, 330.3262)
 Config.DefaultFirstName = 'Zaidejas'
 Config.DefaultLastName = 'Naujas'
 Config.DefaultGender = 0

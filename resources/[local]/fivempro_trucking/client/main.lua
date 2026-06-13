@@ -21,39 +21,71 @@ local function setMissionBlip(coords, label, route)
     exports['fivempro_fonts']:SetBlipName(missionBlip, label or 'Kontraktas')
 end
 
---- Kelių maršruto taškai NUI žemėlapiui (snap į artimiausius kelių mazgus).
+--- GTA kelių tinklo atstumas (metrais) + maršruto taškai žemėlapiui.
+local function snapRoadCoord(x, y, z)
+    local found, nodePos = GetClosestVehicleNodeWithHeading(x, y, z, 1, 3.0, 0)
+    if found and nodePos then
+        return nodePos.x, nodePos.y
+    end
+    found, nodePos = GetClosestVehicleNode(x, y, z, 1, 3.0, 0)
+    if found and nodePos then
+        return nodePos.x, nodePos.y
+    end
+    return x, y
+end
+
+local function roadDistanceMeters(x1, y1, z1, x2, y2, z2)
+    local meters = CalculateTravelDistanceBetweenPoints(x1, y1, z1, x2, y2, z2)
+    if not meters or meters <= 0 or meters ~= meters then
+        meters = #(vector3(x1, y1, z1) - vector3(x2, y2, z2))
+    end
+    return meters
+end
+
 local function sampleRoadPath(x1, y1, z1, x2, y2, z2)
-    local points = { { x = x1, y = y1 } }
-    local cx, cy, cz = x1, y1, z1
-    local tx, ty, tz = x2, y2, z2
+    local roadMeters = roadDistanceMeters(x1, y1, z1, x2, y2, z2)
+    local steps = math.max(32, math.min(160, math.floor(roadMeters / 55.0)))
+    local points = {}
 
-    for _ = 1, 72 do
-        local dx, dy, dz = tx - cx, ty - cy, tz - cz
-        local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
-        if dist < 90.0 then break end
+    local sx, sy = snapRoadCoord(x1, y1, z1)
+    points[1] = { x = sx, y = sy }
 
-        local step = math.min(160.0, dist * 0.38)
-        dx, dy = dx / dist, dy / dist
-        local px, py, pz = cx + dx * step, cy + dy * step, cz
-
-        local found, nodePos = GetClosestVehicleNodeWithHeading(px, py, pz, 1, 3.0, 0)
-        if found and nodePos then
-            local nx, ny, nz = nodePos.x, nodePos.y, nodePos.z
-            if math.abs(nx - cx) + math.abs(ny - cy) > 18.0 then
-                cx, cy, cz = nx, ny, nz
-                points[#points + 1] = { x = cx, y = cy }
-            else
-                cx, cy = cx + dx * 70.0, cy + dy * 70.0
-                points[#points + 1] = { x = cx, y = cy }
-            end
-        else
-            cx, cy = cx + dx * 70.0, cy + dy * 70.0
-            points[#points + 1] = { x = cx, y = cy }
+    for i = 1, steps - 1 do
+        local t = i / steps
+        local px = x1 + (x2 - x1) * t
+        local py = y1 + (y2 - y1) * t
+        local pz = z1 + (z2 - z1) * t
+        local nx, ny = snapRoadCoord(px, py, pz)
+        local last = points[#points]
+        if math.abs(nx - last.x) + math.abs(ny - last.y) > 22.0 then
+            points[#points + 1] = { x = nx, y = ny }
         end
     end
 
-    points[#points + 1] = { x = tx, y = ty }
-    return points
+    local tx, ty = snapRoadCoord(x2, y2, z2)
+    local last = points[#points]
+    if math.abs(tx - last.x) + math.abs(ty - last.y) > 8.0 then
+        points[#points + 1] = { x = tx, y = ty }
+    else
+        points[#points] = { x = tx, y = ty }
+    end
+
+    return points, roadMeters
+end
+
+local function computeRouteMetrics(from, to)
+    local x1, y1, z1 = tonumber(from.x), tonumber(from.y), tonumber(from.z or 0)
+    local x2, y2, z2 = tonumber(to.x), tonumber(to.y), tonumber(to.z or 0)
+    if not x1 or not x2 then
+        return { points = {}, distanceKm = 0, straightKm = 0 }
+    end
+    local points, roadMeters = sampleRoadPath(x1, y1, z1, x2, y2, z2)
+    local straightM = #(vector3(x1, y1, z1) - vector3(x2, y2, z2))
+    return {
+        points = points,
+        distanceKm = math.floor(roadMeters / 100.0) / 10.0,
+        straightKm = math.floor(straightM / 100.0) / 10.0,
+    }
 end
 
 local function isAllowedTruck()
@@ -163,13 +195,40 @@ end)
 RegisterNUICallback('trucking:getRoutePath', function(data, cb)
     local from, to = data and data.from, data and data.to
     if not from or not to or from.x == nil or to.x == nil then
-        return cb({ ok = false, points = {} })
+        return cb({ ok = false, points = {}, distanceKm = 0 })
     end
-    local points = sampleRoadPath(
-        tonumber(from.x), tonumber(from.y), tonumber(from.z or 0),
-        tonumber(to.x), tonumber(to.y), tonumber(to.z or 0)
-    )
-    cb({ ok = true, points = points })
+    local metrics = computeRouteMetrics(from, to)
+    cb({
+        ok = true,
+        points = metrics.points,
+        distanceKm = metrics.distanceKm,
+        straightKm = metrics.straightKm,
+    })
+end)
+
+RegisterNUICallback('trucking:quoteContracts', function(data, cb)
+    local contracts = data and data.contracts
+    if type(contracts) ~= 'table' then
+        return cb({ ok = false, contracts = {} })
+    end
+    local quoted = {}
+    for _, c in ipairs(contracts) do
+        if c and c.pickup and c.delivery then
+            local metrics = computeRouteMetrics(c.pickup, c.delivery)
+            quoted[#quoted + 1] = {
+                id = c.id,
+                distanceKm = metrics.distanceKm,
+                straightKm = metrics.straightKm,
+            }
+        end
+    end
+    cb({ ok = true, quotes = quoted })
+end)
+
+RegisterNUICallback('trucking:applyRoadQuotes', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_trucking:server:applyRoadQuotes', function(res)
+        cb(res or { ok = false })
+    end, data and data.quotes)
 end)
 
 RegisterNUICallback('trucking:acceptContract', function(data, cb)
@@ -181,7 +240,7 @@ RegisterNUICallback('trucking:acceptContract', function(data, cb)
             QBCore.Functions.Notify(res.reason, 'error')
         end
         cb(res or { ok = false })
-    end, data and data.contractId)
+    end, data and data.contractId, data and data.roadDistanceKm)
 end)
 
 RegisterNUICallback('trucking:buyFleet', function(data, cb)

@@ -40,3 +40,4 @@ server_scripts {
 
 dependency 'qb-core'
 dependency 'qb-inventory'
+dependency 'screenshot-basic'

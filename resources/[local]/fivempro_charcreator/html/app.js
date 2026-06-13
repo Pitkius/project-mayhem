@@ -12,7 +12,7 @@ let stepIndex = 0;
 const state = {
   personal: {
     firstname: '', lastname: '', birthdate: '01-01-1995', gender: 0,
-    nationality: 'Lietuva', originCity: 'Los Santos', bloodType: 'A+',
+    nationality: 'Lietuva', originCity: 'Los Santos',
   },
   genetics: { mom: 0, dad: 0, shapeMix: 0.5, skinMix: 0.5, nose: 0 },
   eyes: { color: 0, opening: 0.0 },
@@ -216,7 +216,6 @@ function renderStep() {
     const p = state.personal;
     const nats = opt.nationalities || [];
     const cities = opt.originCities || [];
-    const bloods = opt.bloodTypes || [];
     let html = `<div class="field-grid">
       ${field('Vardas', '<input id="fn" maxlength="20" type="text" />')}
       ${field('Pavardė', '<input id="ln" maxlength="20" type="text" />')}
@@ -227,9 +226,6 @@ function renderStep() {
       </div>`)}
       ${field('Pilietybė', `<input id="nat" list="natList" placeholder="Ieškoti šalies..." autocomplete="off" />
         <datalist id="natList">${nats.map((n) => `<option value="${esc(n)}">`).join('')}</datalist>`)}
-      ${field('Kraujo grupė', `<div class="pill-row" id="bloodPills">${bloods.map((b) =>
-        `<button type="button" class="pill-btn${p.bloodType === b ? ' active' : ''}" data-b="${esc(b)}">${esc(b)}</button>`
-      ).join('')}</div>`)}
       ${field('Miestas (spawn)', `<div class="city-grid" id="cityGrid">${cities.map((c) => {
         const id = typeof c === 'string' ? c : c.id;
         const label = typeof c === 'string' ? c : c.label;
@@ -254,12 +250,6 @@ function renderStep() {
         p.gender = parseInt(btn.dataset.g, 10);
         document.querySelectorAll('#genderPills .pill-btn').forEach((b) => b.classList.toggle('active', b === btn));
         post('setGender', { gender: p.gender });
-      };
-    });
-    document.querySelectorAll('#bloodPills .pill-btn').forEach((btn) => {
-      btn.onclick = () => {
-        p.bloodType = btn.dataset.b;
-        document.querySelectorAll('#bloodPills .pill-btn').forEach((b) => b.classList.toggle('active', b === btn));
       };
     });
     document.querySelectorAll('#cityGrid .city-card').forEach((btn) => {
@@ -341,8 +331,7 @@ function renderStep() {
     reviewBox.innerHTML = `
       <strong>${esc(p.firstname)} ${esc(p.lastname)}</strong><br/>
       Gim.: ${esc(p.birthdate)} · ${p.gender === 1 ? 'Moteris' : 'Vyras'}<br/>
-      ${esc(p.nationality)} · ${esc(cityLabel)}<br/>
-      Kraujas: ${esc(p.bloodType)}`;
+      ${esc(p.nationality)} · ${esc(cityLabel)}`;
     stepBody.innerHTML = '<p class="muted">Patikrink personažą dešinėje. Paspausk „Sukurti personažą“.</p>';
     const fin = wizardMode === 'edit' ? 'Išsaugoti išvaizdą' : 'Sukurti personažą';
     document.getElementById('btnNext').innerHTML = `<i class="fa-solid fa-check" aria-hidden="true"></i> ${fin}`;

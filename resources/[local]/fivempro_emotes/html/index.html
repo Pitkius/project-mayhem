@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Animacijos</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="app" class="em-app hidden">
+        <div class="em-backdrop"></div>
+        <div class="em-panel">
+            <header class="em-header">
+                <div class="em-brand">
+                    <span class="em-brand-icon">▶</span>
+                    <div>
+                        <h1>Animacijos</h1>
+                        <p id="emCount">0 animacijų</p>
+                    </div>
+                </div>
+                <div class="em-search-wrap">
+                    <input id="emSearch" type="search" placeholder="Ieškoti animacijos..." autocomplete="off" />
+                </div>
+                <button type="button" id="emClose" class="em-close" title="Uždaryti">×</button>
+            </header>
+            <div class="em-body">
+                <nav id="emCats" class="em-cats"></nav>
+                <div class="em-main">
+                    <div id="emGrid" class="em-grid"></div>
+                    <p id="emEmpty" class="em-empty hidden">Nieko nerasta.</p>
+                </div>
+            </div>
+            <footer class="em-footer">
+                <button type="button" id="emCancel" class="em-btn em-btn-ghost">Atšaukti animaciją (X)</button>
+                <span>F3 — meniu · Spustelėk animaciją — paleisti</span>
+            </footer>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

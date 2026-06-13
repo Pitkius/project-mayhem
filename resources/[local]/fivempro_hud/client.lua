@@ -4,6 +4,10 @@ local seatbeltOn = false
 local hudPreset = 1
 local HUD_PRESET_COUNT = 3
 local hudMenuOpen = false
+local hudMenuProp = 0
+local hudMenuAnimToken = 0
+
+local HUD_MENU_TABLET_MODEL = `prop_cs_tablet`
 
 local COLOR_THEMES = {
     cyan = { fill = '#22d3ee', glow = 'rgba(34,211,238,0.5)' },
@@ -430,6 +434,111 @@ local function setHudPreset(newPreset, silent)
     end
 end
 
+local function loadAnimDict(dict)
+    if not dict or dict == '' then return false end
+    RequestAnimDict(dict)
+    local deadline = GetGameTimer() + 5000
+    while not HasAnimDictLoaded(dict) and GetGameTimer() < deadline do
+        Wait(10)
+    end
+    return HasAnimDictLoaded(dict)
+end
+
+local function deleteHudMenuProp()
+    if hudMenuProp ~= 0 and DoesEntityExist(hudMenuProp) then
+        DetachEntity(hudMenuProp, true, true)
+        DeleteEntity(hudMenuProp)
+    end
+    hudMenuProp = 0
+end
+
+local function canPlayHudMenuAnim()
+    local ped = PlayerPedId()
+    if not ped or ped == 0 then return false end
+    if IsPedInAnyVehicle(ped, false) then return false end
+    if IsEntityDead(ped) or IsPedRagdoll(ped) then return false end
+    if IsPedFalling(ped) or IsPedSwimming(ped) or IsPedClimbing(ped) then return false end
+    return true
+end
+
+local function attachHudTablet(ped)
+    deleteHudMenuProp()
+    RequestModel(HUD_MENU_TABLET_MODEL)
+    local deadline = GetGameTimer() + 3000
+    while not HasModelLoaded(HUD_MENU_TABLET_MODEL) and GetGameTimer() < deadline do
+        Wait(10)
+    end
+    if not HasModelLoaded(HUD_MENU_TABLET_MODEL) then return end
+
+    local c = GetEntityCoords(ped)
+    hudMenuProp = CreateObject(HUD_MENU_TABLET_MODEL, c.x, c.y, c.z + 0.2, true, true, false)
+    SetEntityCollision(hudMenuProp, false, false)
+    AttachEntityToEntity(
+        hudMenuProp,
+        ped,
+        GetPedBoneIndex(ped, 60309),
+        0.03, 0.002, -0.02,
+        10.0, 160.0, 0.0,
+        true, true, false, true, 1, true
+    )
+    SetModelAsNoLongerNeeded(HUD_MENU_TABLET_MODEL)
+end
+
+local function playHudMenuOpenAnim()
+    if not canPlayHudMenuAnim() then return end
+
+    local token = hudMenuAnimToken + 1
+    hudMenuAnimToken = token
+    local ped = PlayerPedId()
+
+    CreateThread(function()
+        local pickupDict, pickupAnim = 'pickup_object', 'pickup_low'
+        if not loadAnimDict(pickupDict) then
+            pickupDict, pickupAnim = 'random@domestic', 'pickup_low'
+            if not loadAnimDict(pickupDict) then return end
+        end
+
+        ClearPedSecondaryTask(ped)
+        TaskPlayAnim(ped, pickupDict, pickupAnim, 2.0, 2.0, 1100, 0, 0.0, false, false, false)
+        Wait(850)
+        if hudMenuAnimToken ~= token or not hudMenuOpen then return end
+
+        local holdDict, holdAnim = 'amb@code_human_in_bus_passenger_idles@female@tablet@idle_a', 'idle_a'
+        if loadAnimDict(holdDict) then
+            TaskPlayAnim(ped, holdDict, holdAnim, 2.0, 2.0, -1, 49, 0.0, false, false, false)
+            attachHudTablet(ped)
+        end
+    end)
+end
+
+local function playHudMenuCloseAnim()
+    local token = hudMenuAnimToken + 1
+    hudMenuAnimToken = token
+
+    if not canPlayHudMenuAnim() then
+        deleteHudMenuProp()
+        ClearPedSecondaryTask(PlayerPedId())
+        return
+    end
+
+    local ped = PlayerPedId()
+    deleteHudMenuProp()
+    ClearPedSecondaryTask(ped)
+
+    CreateThread(function()
+        local putDict, putAnim = 'pickup_object', 'putdown_low'
+        if not loadAnimDict(putDict) then
+            putDict, putAnim = 'random@domestic', 'putdown_low'
+            if not loadAnimDict(putDict) then return end
+        end
+
+        TaskPlayAnim(ped, putDict, putAnim, 2.0, 2.0, 1000, 0, 0.0, false, false, false)
+        Wait(900)
+        if hudMenuAnimToken ~= token then return end
+        ClearPedSecondaryTask(ped)
+    end)
+end
+
 local function openHudMenu()
     if listMenuOpen then
         listMenuOpen = false
@@ -437,6 +546,7 @@ local function openHudMenu()
         SendNUIMessage({ action = 'vehicleList', open = false })
     end
     hudMenuOpen = true
+    playHudMenuOpenAnim()
     SetNuiFocus(true, true)
     local payload = {
         action = 'openMenu',
@@ -448,12 +558,15 @@ local function openHudMenu()
 end
 
 local function closeHudMenu()
+    if not hudMenuOpen then return end
     hudMenuOpen = false
+    hudMenuAnimToken = hudMenuAnimToken + 1
     listMenuOpen = false
     listMenuVeh = 0
     SendNUIMessage({ action = 'vehicleList', open = false })
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'closeMenu' })
+    playHudMenuCloseAnim()
     sendHudTheme()
 end
 
@@ -1108,6 +1221,17 @@ CreateThread(function()
     while true do
         pushHud()
         Wait(700)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        if hudMenuOpen and not canPlayHudMenuAnim() then
+            hudMenuAnimToken = hudMenuAnimToken + 1
+            deleteHudMenuProp()
+            ClearPedSecondaryTask(PlayerPedId())
+        end
+        Wait(400)
     end
 end)
 

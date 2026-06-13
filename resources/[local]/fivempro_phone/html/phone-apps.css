@@ -189,104 +189,279 @@
   flex-direction: column;
   gap: 14px;
   min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+
+.carplay-empty {
+  padding: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .carplay-now {
   text-align: center;
-  padding: 20px 14px;
+  padding: 22px 16px 18px;
 }
+
 .carplay-cover {
-  width: 140px;
-  height: 140px;
-  margin: 0 auto 14px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #2d1b4e, #12081f);
-  border: 1px solid var(--glass-border);
+  width: 168px;
+  height: 168px;
+  margin: 0 auto 16px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #2d1b4e 0%, #12081f 100%);
+  border: 1px solid rgba(196, 181, 253, 0.22);
   display: grid;
   place-items: center;
-  font-size: 42px;
-  box-shadow: 0 12px 32px var(--neon-purple-soft);
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 }
-.carplay-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 4px;
+
+.carplay-cover.has-thumb {
+  background: #0d0a16;
 }
+
+.carplay-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  image-rendering: auto;
+}
+
+.carplay-cover-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(196, 181, 253, 0.9);
+}
+
+.carplay-cover-fallback svg,
+.carplay-icon-inline svg,
+.carplay-icon-btn svg,
+.carplay-chip svg {
+  width: 1em;
+  height: 1em;
+  display: block;
+  shape-rendering: geometricPrecision;
+}
+
+.carplay-cover-fallback svg {
+  width: 52px;
+  height: 52px;
+}
+
 .carplay-sub {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(196, 181, 253, 0.72);
+  margin-bottom: 6px;
 }
+
+.carplay-title {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin-bottom: 4px;
+  padding: 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.carplay-artist {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.58);
+  margin-bottom: 2px;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .carplay-progress {
-  height: 4px;
+  height: 5px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
-  margin: 12px 0;
+  margin: 14px 10px 0;
 }
+
 .carplay-progress > span {
   display: block;
   height: 100%;
-  width: 35%;
-  background: linear-gradient(90deg, #9d4edd, var(--neon-purple));
+  background: linear-gradient(90deg, #9d4edd, #c084fc);
+  border-radius: inherit;
+  transition: width 0.35s ease;
 }
+
 .carplay-transport {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 18px;
+  gap: 20px;
 }
-.carplay-transport button {
-  width: 48px;
-  height: 48px;
+
+.carplay-icon-btn {
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8fafc;
+  display: grid;
+  place-items: center;
   cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
-.carplay-transport .play-main {
-  width: 58px;
-  height: 58px;
-  background: linear-gradient(135deg, #9d4edd, #bf5fff);
-  box-shadow: 0 8px 20px var(--neon-purple-soft);
+
+.carplay-icon-btn svg {
+  width: 22px;
+  height: 22px;
 }
+
+.carplay-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(196, 181, 253, 0.28);
+}
+
+.carplay-icon-btn:active {
+  transform: scale(0.94);
+}
+
+.carplay-icon-btn.play-main {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(145deg, #8b5cf6, #a855f7);
+  border: none;
+  box-shadow: 0 10px 24px rgba(139, 92, 246, 0.35);
+}
+
+.carplay-icon-btn.play-main svg {
+  width: 28px;
+  height: 28px;
+}
+
 .carplay-volume {
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.72);
 }
+
+.carplay-icon-inline {
+  display: grid;
+  place-items: center;
+  color: rgba(196, 181, 253, 0.95);
+  flex-shrink: 0;
+}
+
+.carplay-icon-inline svg {
+  width: 18px;
+  height: 18px;
+}
+
+.carplay-vol-lbl {
+  min-width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
 .carplay-volume input {
   flex: 1;
-  accent-color: var(--neon-purple);
+  accent-color: #a855f7;
 }
+
+.carplay-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 2px;
+}
+
 .carplay-url-box textarea,
 .carplay-url-box input {
   width: 100%;
   margin-top: 6px;
-  padding: 10px 12px;
+  padding: 11px 12px;
   border-radius: 12px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(196, 181, 253, 0.18);
   background: rgba(0, 0, 0, 0.35);
   color: #fff;
   font-size: 13px;
+  font-weight: 500;
 }
+
+.carplay-url-box input:focus {
+  outline: none;
+  border-color: rgba(168, 85, 247, 0.55);
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.15);
+}
+
 .carplay-chip-row {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
+
 .carplay-chip {
   flex: 1;
-  padding: 8px;
+  padding: 10px 8px;
   border-radius: 12px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   font-size: 12px;
-  font-weight: 600;
-  background: rgba(191, 95, 255, 0.12);
-  border: 1px solid var(--glass-border);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: rgba(191, 95, 255, 0.1);
+  border: 1px solid rgba(196, 181, 253, 0.18);
+  color: #f5f3ff;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.carplay-chip svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.carplay-chip.spotify {
+  color: #d1fae5;
+  background: rgba(30, 215, 96, 0.1);
+  border-color: rgba(30, 215, 96, 0.22);
+}
+
+.carplay-chip.youtube {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.22);
+}
+
+.carplay-chip:hover {
+  filter: brightness(1.08);
+}
+
+.carplay-play-btn {
+  width: 100%;
+  margin-top: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
 }
 
 /* —— Skelbimai —— */

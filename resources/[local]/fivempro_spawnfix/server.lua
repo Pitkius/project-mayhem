@@ -1,5 +1,6 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local hasDonePreloading = {}
+local keepCachedPosition = {}
 
 local function stopLegacyCharResources()
     for _, res in ipairs({ 'qb-multicharacter', 'qb-spawn' }) do
@@ -72,17 +73,73 @@ local function loadHouseData(src)
     TriggerClientEvent('qb-houses:client:setHouseConfig', src, Houses)
 end
 
+local function shouldSkipPositionSave(ped, metadata)
+    if not ped or ped == 0 then return true end
+
+    local health = GetEntityHealth(ped)
+    if not health or health <= 100 then return true end
+
+    if metadata and (metadata.isdead or metadata.inlaststand) then
+        return true
+    end
+
+    local height = GetEntityHeightAboveGround(ped)
+    if height and height > 2.0 then return true end
+
+    local vel = GetEntityVelocity(ped)
+    if vel then
+        local speed = math.sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z))
+        if speed > 4.0 then return true end
+    end
+
+    return false
+end
+
+local function normalizeSavedPosition(pos)
+    if type(pos) ~= 'table' then return nil end
+    local x = pos.x or pos[1]
+    local y = pos.y or pos[2]
+    local z = pos.z or pos[3]
+    if not x or not y or not z then return nil end
+    local w = pos.w or pos.a or pos.h or 0.0
+    return vector4(x + 0.0, y + 0.0, z + 0.0, w + 0.0)
+end
+
 local function syncVitalsFromPed(Player)
     if not Player or not Player.PlayerData.source then return end
     local src = Player.PlayerData.source
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return end
 
-    local coords = GetEntityCoords(ped)
-    local heading = GetEntityHeading(ped)
-    Player.PlayerData.position = vector4(coords.x, coords.y, coords.z, heading)
+    local metadata = Player.PlayerData.metadata or {}
+    if not shouldSkipPositionSave(ped, metadata) then
+        local coords = GetEntityCoords(ped)
+        local heading = GetEntityHeading(ped)
+        Player.PlayerData.position = vector4(coords.x, coords.y, coords.z, heading)
+    end
+
     Player.Functions.SetMetaData('armor', GetPedArmour(ped))
     Player.Functions.SetMetaData('health', GetEntityHealth(ped))
+
+    local savedHealth = tonumber(Player.PlayerData.metadata.health) or 0
+    if savedHealth > 100 and (metadata.isdead or metadata.inlaststand) then
+        Player.Functions.SetMetaData('isdead', false)
+        Player.Functions.SetMetaData('inlaststand', false)
+    end
+end
+
+local function sanitizeLoginState(Player)
+    if not Player then return end
+    local m = Player.PlayerData.metadata or {}
+    local savedHealth = tonumber(m.health) or 200
+    if savedHealth > 100 then
+        Player.Functions.SetMetaData('isdead', false)
+        Player.Functions.SetMetaData('inlaststand', false)
+    end
+    local pos = normalizeSavedPosition(Player.PlayerData.position)
+    if pos then
+        Player.PlayerData.position = pos
+    end
 end
 
 local function fetchCharacterRow(license)
@@ -133,6 +190,16 @@ local function finishPlayerLoad(src)
 end
 
 exports('SyncQBCoreAdmin', syncQBCoreAdmin)
+exports('SanitizeLoginState', sanitizeLoginState)
+
+--- QBCore.Player.Save kviečiamas iškart po PlayerDropped — naudoti paskutinę saugią poziciją, ne ore esančią.
+exports('KeepCachedPositionOnSave', function(src)
+    if keepCachedPosition[src] then
+        keepCachedPosition[src] = nil
+        return true
+    end
+    return false
+end)
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
     local src = Player.PlayerData.source
@@ -147,9 +214,17 @@ end)
 
 AddEventHandler('QBCore:Server:OnPlayerUnload', function(src)
     hasDonePreloading[src] = false
+    keepCachedPosition[src] = nil
 end)
 
 AddEventHandler('QBCore:Server:PlayerDropped', function(Player)
+    local src = Player.PlayerData.source
+    local ped = GetPlayerPed(src)
+    local metadata = Player.PlayerData.metadata or {}
+    if shouldSkipPositionSave(ped, metadata) then
+        keepCachedPosition[src] = true
+    end
+
     syncVitalsFromPed(Player)
     if Player.PlayerData.metadata and Player.PlayerData.metadata.inside then
         Player.PlayerData.metadata.inside.house = nil
@@ -176,12 +251,16 @@ RegisterNetEvent('fivempro_spawnfix:server:requestLogin', function()
 
     if row then
         okLogin = loginExisting(src, row)
-        if okLogin and row.position then
+        if okLogin then
             local Player = QBCore.Functions.GetPlayer(src)
-            local savedPos = json.decode(row.position)
-            if Player and savedPos then
-                Player.PlayerData.position = savedPos
-                MySQL.update.await('UPDATE players SET position = ? WHERE citizenid = ?', { row.position, row.citizenid })
+            if Player then
+                if row.position then
+                    local savedPos = json.decode(row.position)
+                    if savedPos then
+                        Player.PlayerData.position = savedPos
+                    end
+                end
+                sanitizeLoginState(Player)
             end
         end
     elseif Config.AutoCreateCharacter then

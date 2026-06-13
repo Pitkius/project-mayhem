@@ -4,6 +4,7 @@ const hudRings = document.getElementById("hudRings");
 const hudTiles = document.getElementById("hudTiles");
 const hudFrame = document.getElementById("hudFrame");
 const hudBlCluster = document.getElementById("hudBlCluster");
+const hudBrCluster = document.getElementById("hudBrCluster");
 const rows = {
   health: document.getElementById("row-health"),
   armor: document.getElementById("row-armor"),
@@ -66,12 +67,10 @@ const menu = {
   btnImport: document.getElementById("btnImport"),
   importArea: document.getElementById("hmImportArea"),
   savedBadge: document.getElementById("hmSavedBadge"),
-  pvStats: document.getElementById("hmPvStats"),
-  pvVoice: document.getElementById("hmPvVoice"),
-  pvCar: document.getElementById("hmPvCar"),
-  pvWeapon: document.getElementById("hmPvWeapon"),
   pvClock: document.getElementById("hmPvClock"),
+  pvWeapon: document.getElementById("hmPvWeapon"),
   preview: document.getElementById("hmPreview"),
+  previewStage: document.getElementById("hmPvHudStage"),
   hudBg: document.getElementById("optHudBg"),
   dynamic: document.getElementById("optDynamic"),
   colPrimary: document.getElementById("hmColPrimary"),
@@ -108,15 +107,6 @@ const TILE_COLORS = {
   amber: { health: "#ef4444", armor: "#d8b4fe", hunger: "#fbbf24", thirst: "#38bdf8", stamina: "#fbcfe8", voice: "#fde68a" },
 };
 
-const PREVIEW_ICONS = {
-  health: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.53L12 21.35z"/></svg>',
-  armor: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>',
-  stamina: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg>',
-  hunger: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>',
-  thirst: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 22c4.97 0 9-4.03 9-9 0-4.97-4.5-10-9-13-4.5 3-9 8.03-9 13 0 4.97 4.03 9 9 9z"/></svg>',
-  voice: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/></svg>',
-};
-
 const PREVIEW_SAMPLE = {
   health: 85,
   armor: 22,
@@ -126,8 +116,16 @@ const PREVIEW_SAMPLE = {
   voice: 62,
 };
 
-const PV_RING_R = 12;
-const PV_RING_LEN = 2 * Math.PI * PV_RING_R;
+const PREVIEW_CAR = {
+  speed: 120,
+  gear: "4",
+  fuel: 65,
+  motor: 88,
+  rpm: 72,
+};
+
+let previewClustersHome = null;
+let previewClustersMounted = false;
 
 const DEFAULT_MENU_STATE = {
   style: "dots",
@@ -361,6 +359,11 @@ function syncRows() {
 }
 
 function updateHudVisibility(gameShowHud) {
+  if (body.classList.contains("hud-menu-open")) {
+    const show = MAIN_STATS.some((k) => (currentSettings.show || {})[k] === true);
+    if (hudRoot) hudRoot.style.display = show ? "flex" : "none";
+    return;
+  }
   const show = !!gameShowHud && mainStatsVisible();
   hudRoot.style.display = show ? "flex" : "none";
 }
@@ -415,9 +418,70 @@ function syncSwitchLabels() {
   });
 }
 
-function activePreviewStats(show) {
-  const s = show || {};
-  return MAIN_STATS.filter((k) => s[k] === true);
+function rememberPreviewClustersHome() {
+  if (previewClustersHome || !hudBlCluster || !hudBlCluster.parentNode) return;
+  previewClustersHome = {
+    parent: hudBlCluster.parentNode,
+    before: hudBlCluster,
+  };
+}
+
+function mountPreviewClusters() {
+  if (previewClustersMounted || !menu.previewStage || !hudBlCluster || !hudBrCluster) return;
+  rememberPreviewClustersHome();
+  menu.previewStage.appendChild(hudBlCluster);
+  menu.previewStage.appendChild(hudBrCluster);
+  if (menu.preview) menu.preview.classList.add("hm-pv-live");
+  previewClustersMounted = true;
+}
+
+function unmountPreviewClusters() {
+  if (!previewClustersMounted || !previewClustersHome) return;
+  const { parent, before } = previewClustersHome;
+  if (before && before.parentNode === parent) {
+    parent.insertBefore(hudBlCluster, before);
+    parent.insertBefore(hudBrCluster, before);
+  } else {
+    parent.appendChild(hudBlCluster);
+    parent.appendChild(hudBrCluster);
+  }
+  if (menu.preview) menu.preview.classList.remove("hm-pv-live");
+  previewClustersMounted = false;
+}
+
+function applyPreviewSampleData(state) {
+  if (!body.classList.contains("hud-menu-open")) return;
+  const show = state.show || {};
+  MAIN_STATS.forEach((k) => {
+    if (show[k]) setBar(k, PREVIEW_SAMPLE[k]);
+  });
+  if (hudRoot) {
+    hudRoot.style.display = MAIN_STATS.some((k) => show[k]) ? "flex" : "none";
+  }
+
+  const showCar = show.speed || show.fuel || show.seatbelt;
+  if (carHud) carHud.classList.toggle("hidden", !showCar);
+  if (!showCar) return;
+
+  const sample = PREVIEW_CAR;
+  if (carSpeedDigits) carSpeedDigits.textContent = String(sample.speed);
+  if (carGear) carGear.textContent = sample.gear;
+  const carFuelPctLbl = document.getElementById("carFuelPctLbl");
+  const carMotorPctLbl = document.getElementById("carMotorPctLbl");
+  if (carFuelPctLbl) carFuelPctLbl.textContent = `${sample.fuel}%`;
+  if (carMotorPctLbl) carMotorPctLbl.textContent = `${sample.motor}%`;
+  if (carRpmArc) {
+    carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN * (1 - sample.rpm / 100));
+  }
+  if (carFuelArc) {
+    carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - sample.fuel / 100));
+  }
+  setChStat(chStatBelt, "state-on");
+  setChStat(chStatHandbrake, "state-off");
+  setChStat(chStatLock, "state-on");
+  setChStat(chStatLights, "state-on");
+  setChStat(chStatTurnL, "state-off");
+  setChStat(chStatTurnR, "state-off");
 }
 
 function updatePreviewClock() {
@@ -475,108 +539,17 @@ function buildThemePayload(state) {
   };
 }
 
-function previewStatColor(keys, colorKey, k) {
-  const tiles = TILE_COLORS[colorKey] || TILE_COLORS.violet;
-  return tiles[k] || (COLOR_THEMES[colorKey] || COLOR_THEMES.violet).fill;
-}
-
-function renderPreviewBarRows(keys, colorKey, isSquare) {
-  keys.forEach((k) => {
-    const pct = PREVIEW_SAMPLE[k] || 50;
-    const col = previewStatColor(keys, colorKey, k);
-    const row = document.createElement("div");
-    row.className = "hm-pv-bar-row";
-    row.innerHTML = `<span class="hm-pv-bar-ico">${PREVIEW_ICONS[k] || ""}</span><div class="hm-pv-bar-track${isSquare ? " is-square" : ""}"><div class="hm-pv-bar-fill" style="width:${pct}%;background:${col};box-shadow:0 0 8px ${col}55"></div></div>`;
-    menu.pvStats.appendChild(row);
-  });
-}
-
-function renderPreviewDots(keys, colorKey) {
-  const wrap = document.createElement("div");
-  wrap.className = "hm-pv-dots";
-  keys.forEach((k) => {
-    const pct = PREVIEW_SAMPLE[k] || 50;
-    const col = previewStatColor(keys, colorKey, k);
-    const offset = PV_RING_LEN * (1 - pct / 100);
-    const item = document.createElement("div");
-    item.className = "hm-pv-dot";
-    item.innerHTML = `<svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><circle cx="16" cy="16" r="${PV_RING_R}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2.5"/><circle cx="16" cy="16" r="${PV_RING_R}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" transform="rotate(-90 16 16)" stroke-dasharray="${PV_RING_LEN}" stroke-dashoffset="${offset}"/></svg><span class="hm-pv-dot-ico">${PREVIEW_ICONS[k] || ""}</span><span class="hm-pv-dot-pct">${Math.round(pct)}</span>`;
-    wrap.appendChild(item);
-  });
-  menu.pvStats.appendChild(wrap);
-}
-
-function renderPreviewTiles(keys, colorKey) {
-  const wrap = document.createElement("div");
-  wrap.className = "hm-pv-tiles";
-  keys.forEach((k) => {
-    const pct = PREVIEW_SAMPLE[k] || 50;
-    const col = previewStatColor(keys, colorKey, k);
-    const tile = document.createElement("div");
-    tile.className = "hm-pv-tile";
-    tile.innerHTML = `<div class="hm-pv-tile-fill" style="height:${pct}%;background:${col}"></div><span class="hm-pv-tile-ico">${PREVIEW_ICONS[k] || ""}</span>`;
-    wrap.appendChild(tile);
-  });
-  menu.pvStats.appendChild(wrap);
-}
-
-function renderPreviewFrame(keys, colorKey) {
-  const wrap = document.createElement("div");
-  wrap.className = "hm-pv-frame";
-  keys.forEach((k) => {
-    const pct = PREVIEW_SAMPLE[k] || 50;
-    const col = previewStatColor(keys, colorKey, k);
-    const cell = document.createElement("div");
-    cell.className = "hm-pv-frame-cell";
-    cell.innerHTML = `<div class="hm-pv-frame-fill" style="height:${pct}%;background:${col}"></div><span>${Math.round(pct)}</span>`;
-    wrap.appendChild(cell);
-  });
-  menu.pvStats.appendChild(wrap);
-}
-
-function renderPreviewStats(style, show, colorKey) {
-  if (!menu.pvStats) return;
-  const keys = activePreviewStats(show);
-  const allowed = ["line", "square", "dots", "tiles", "frame"];
-  const normalized = allowed.includes(style) ? style : "dots";
-  menu.pvStats.innerHTML = "";
-  menu.pvStats.classList.remove("hm-pv-stats-dots", "hm-pv-stats-tiles", "hm-pv-stats-frame", "hm-pv-stats-bars");
-  if (!keys.length) {
-    menu.pvStats.innerHTML = '<span class="hm-pv-empty">Nėra aktyvių elementų</span>';
-    return;
-  }
-  if (normalized === "dots") {
-    menu.pvStats.classList.add("hm-pv-stats-dots");
-    renderPreviewDots(keys, colorKey);
-  } else if (normalized === "tiles") {
-    menu.pvStats.classList.add("hm-pv-stats-tiles");
-    renderPreviewTiles(keys, colorKey);
-  } else if (normalized === "frame") {
-    menu.pvStats.classList.add("hm-pv-stats-frame");
-    renderPreviewFrame(keys, colorKey);
-  } else {
-    menu.pvStats.classList.add("hm-pv-stats-bars");
-    renderPreviewBarRows(keys, colorKey, normalized === "square");
-  }
-}
-
 function renderMenuPreview() {
   const state = getMenuState();
-  renderPreviewStats(state.style, state.show, state.color);
   updatePreviewClock();
   updateThemeColorPicks(state.color);
   if (menu.preview) {
     menu.preview.classList.toggle("hm-pv-dim-bg", menu.hudBg ? !menu.hudBg.checked : false);
     menu.preview.style.setProperty("--panel-alpha", String(state.alpha || 0.55));
-    const pvLeft = menu.preview.querySelector(".hm-pv-left");
-    if (pvLeft) {
-      pvLeft.style.transform = `scale(${state.scale || 1})`;
-      pvLeft.style.transformOrigin = "left top";
-    }
+    menu.preview.style.setProperty("--pv-hud-scale", String(state.scale || 1));
   }
-  if (menu.pvVoice) menu.pvVoice.classList.toggle("hidden", !state.show.voice);
-  const showCar = state.show.speed || state.show.fuel || state.show.seatbelt;
-  if (menu.pvCar) menu.pvCar.classList.toggle("hidden", !showCar);
+  applyPreviewSampleData(state);
+  if (menu.pvWeapon) menu.pvWeapon.classList.remove("hidden");
   document.querySelectorAll(".hm-pv-server-logo").forEach((el) => {
     el.textContent = SERVER_PLACEHOLDER;
   });
@@ -670,6 +643,26 @@ function fillMenuFromPreset(idx) {
   renderMenuPreview();
 }
 
+const HUD_MENU_CLOSE_MS = 380;
+
+function openHudMenuUi() {
+  hudMenu.classList.remove("hidden", "is-closing");
+  requestAnimationFrame(() => {
+    hudMenu.classList.add("is-open");
+  });
+}
+
+function closeHudMenuUi() {
+  hudMenu.classList.remove("is-open");
+  hudMenu.classList.add("is-closing");
+  window.setTimeout(() => {
+    unmountPreviewClusters();
+    hudMenu.classList.add("hidden");
+    hudMenu.classList.remove("is-closing");
+    body.classList.remove("hud-menu-open");
+  }, HUD_MENU_CLOSE_MS);
+}
+
 window.addEventListener("message", (event) => {
   const data = event.data;
   if (!data) return;
@@ -690,16 +683,16 @@ window.addEventListener("message", (event) => {
     menuPresets = normalizePresets(data.presets || {});
     const active = Number(data.activePreset || 1);
     fillMenuFromPreset(active);
-    hudMenu.classList.remove("hidden");
+    openHudMenuUi();
     body.classList.add("hud-menu-open");
+    mountPreviewClusters();
     highlightTabPanel("hud");
     applyMenuLive();
     return;
   }
 
   if (data.action === "closeMenu") {
-    hudMenu.classList.add("hidden");
-    body.classList.remove("hud-menu-open");
+    closeHudMenuUi();
     return;
   }
 
@@ -880,6 +873,10 @@ window.addEventListener("message", (event) => {
   const statEngine = document.getElementById("carStatEngine");
   if (statFuel) statFuel.classList.toggle("state-warn", fuelN < 18);
   if (statEngine) statEngine.classList.toggle("state-warn", motorPctHud < 40);
+
+  if (body.classList.contains("hud-menu-open")) {
+    applyPreviewSampleData(currentSettings);
+  }
 });
 
 function bindMenuInput(el, eventName, handler) {

@@ -92,9 +92,13 @@ body {
 
 .market-grid {
   display: grid;
-  grid-template-columns: 1.25fr 0.75fr;
+  grid-template-columns: 1.35fr 0.65fr;
   gap: 16px;
   flex: 0 0 auto;
+}
+
+.map-panel {
+  min-height: 0;
 }
 
 .map-panel, .detail-panel, .list-panel {
@@ -106,9 +110,10 @@ body {
 }
 
 .map-head { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #a1a1aa; margin-bottom: 10px; }
+
 .route-map {
-  height: min(38vh, 340px);
-  min-height: 220px;
+  height: min(56vh, 520px);
+  min-height: 360px;
   border-radius: 14px;
   background: linear-gradient(180deg, #1a1824, #0f0e14);
   position: relative;
@@ -150,7 +155,27 @@ body {
 .map-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
 .map-legend .pickup { background: #fff; }
 .map-legend .delivery { background: #a78bfa; }
-.map-legend .line { display: inline-block; width: 16px; height: 2px; background: #fb923c; margin-right: 4px; vertical-align: middle; }
+.map-legend .line { display: inline-block; width: 16px; height: 1px; background: #fb923c; margin-right: 4px; vertical-align: middle; }
+
+.road-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+  background: rgba(124, 58, 237, 0.22);
+  vertical-align: middle;
+}
+
+.detail-distance span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 
 .detail-panel {
   display: flex;

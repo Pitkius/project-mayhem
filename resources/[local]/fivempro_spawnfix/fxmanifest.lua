@@ -27,4 +27,6 @@ dependencies {
 
 server_exports {
     'SyncQBCoreAdmin',
+    'SanitizeLoginState',
+    'KeepCachedPositionOnSave',
 }

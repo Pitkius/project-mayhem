@@ -8,7 +8,7 @@ Config.Club = {
 
 Config.Blip = {
     enabled = true,
-    coords = vector3(128.87, -1298.93, 29.0),
+    coords = vector3(135.409, -1308.931, 28.991),
     sprite = 121,
     color = 48,
     scale = 0.75,

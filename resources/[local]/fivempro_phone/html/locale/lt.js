@@ -46,7 +46,8 @@ window.PhoneLocale = {
     title: "CarPlay",
     nowPlaying: "Dabar groja",
     addUrl: "Pridėti nuorodą",
-    inVehicleOnly: "Veikia tik automobilyje",
+    inVehicleOnly: "CarPlay veikia tik automobilyje",
+    emptyTitle: "Niekas negroja",
   },
   ads: {
     title: "Skelbimai",

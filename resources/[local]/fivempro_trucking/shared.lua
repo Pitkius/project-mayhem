@@ -67,9 +67,33 @@ function TruckingShared.HasLicense(profile, license)
     return profile.licenses[license] == true
 end
 
-function TruckingShared.DistanceKm(a, b)
+function TruckingShared.StraightDistanceKm(a, b)
     if not a or not b then return 0 end
     return #(vector3(a.x, a.y, a.z) - vector3(b.x, b.y, b.z)) / 1000.0
+end
+
+--- Tiesi linija × koeficientas (serveris). Tikslų kelio atstumą skaičiuoja klientas.
+function TruckingShared.DistanceKm(a, b)
+    local straight = TruckingShared.StraightDistanceKm(a, b)
+    return math.floor(straight * (Config.RoadDistanceFactor or 1.28) * 10) / 10
+end
+
+function TruckingShared.ValidateRoadDistanceKm(straightKm, roadKm)
+    straightKm = tonumber(straightKm) or 0
+    roadKm = tonumber(roadKm) or 0
+    if roadKm <= 0 or straightKm <= 0 then return false end
+    if roadKm < straightKm * 0.92 then return false end
+    if roadKm > straightKm * 3.8 then return false end
+    return true
+end
+
+function TruckingShared.ApplyDistanceMetrics(contract, distanceKm)
+    distanceKm = math.floor((tonumber(distanceKm) or 0) * 10) / 10
+    if distanceKm <= 0 then return contract end
+    contract.distanceKm = distanceKm
+    contract.timeLimitMin = math.max(12, math.floor(distanceKm * 1.35 + 8))
+    contract.pay = nil
+    return contract
 end
 
 function TruckingShared.TimePayMultiplier(secondsLeft, totalSeconds)

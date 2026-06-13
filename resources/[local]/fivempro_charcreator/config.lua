@@ -9,7 +9,7 @@ Config.AutoLoginExistingCharacter = true
 Config.Interior = vector3(-763.28, 330.04, 199.49)
 Config.HiddenCoords = vector4(-779.02, 326.18, 196.09, 91.0)
 Config.PedCoords = vector4(-763.28, 330.04, 199.49, 177.79)
-Config.DefaultSpawn = vector4(-1037.89, -2737.68, 20.17, 328.89)
+Config.DefaultSpawn = vector4(-1037.9487, -2738.0669, 20.1693, 330.3262)
 
 --- Rodyklės ← → suka kamerą apie personažą (laipsniai per paspaudimą / kadrą)
 Config.CameraRotateSpeed = 2.5
@@ -71,13 +71,11 @@ Config.OriginCities = {
 
 --- Spawn pagal pasirinktą miestą (naujam personažui)
 Config.CitySpawns = {
-    ['Los Santos'] = vector4(-1037.89, -2737.68, 20.17, 328.89),
-    ['Sandy Shores'] = vector4(1853.24, 3689.83, 34.27, 210.0),
-    ['Paleto Bay'] = vector4(-288.55, 6637.45, 7.52, 225.0),
-    ['Grapeseed'] = vector4(-1037.89, -2737.68, 20.17, 328.89),
+    ['Los Santos'] = vector4(-1037.9487, -2738.0669, 20.1693, 330.3262),
+    ['Sandy Shores'] = vector4(1968.7705, 3710.0442, 32.1498, 66.6371),
+    ['Paleto Bay'] = vector4(-679.1505, 5834.2915, 17.3313, 133.0065),
+    ['Grapeseed'] = vector4(1793.4620, 4595.1646, 37.6829, 183.1981),
 }
-
-Config.BloodTypes = { 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', '0+', '0-' }
 
 Config.EyeColors = {
     { id = 0, label = 'Ruda' },

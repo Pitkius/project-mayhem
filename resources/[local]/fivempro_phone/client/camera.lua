@@ -87,13 +87,22 @@ function PhoneCamera.start(opts)
 end
 
 local function captureScreenshot(cb)
-    if GetResourceState('screenshot-basic') == 'started' then
-        exports['screenshot-basic']:requestScreenshot(function(data)
-            cb(data)
-        end)
+    local state = GetResourceState('screenshot-basic')
+    if state ~= 'started' then
+        cb(nil, state)
         return
     end
-    cb(nil)
+    local ok, err = pcall(function()
+        exports['screenshot-basic']:requestScreenshot({
+            encoding = 'jpg',
+            quality = 0.82,
+        }, function(data)
+            cb(data)
+        end)
+    end)
+    if not ok then
+        cb(nil, tostring(err))
+    end
 end
 
 function PhoneCamera.capture()
@@ -102,9 +111,13 @@ function PhoneCamera.capture()
         sendUi('cameraFlash', {})
         Wait(80)
     end
-    captureScreenshot(function(data)
+    captureScreenshot(function(data, errState)
         if not data or data == '' then
-            QBCore.Functions.Notify('Nuotraukai reikia screenshot-basic resurso.', 'error', 6000)
+            if errState and errState ~= 'started' then
+                QBCore.Functions.Notify('screenshot-basic neįkeltas. Serverio konsolėje: ensure screenshot-basic', 'error', 7000)
+            else
+                QBCore.Functions.Notify('Nepavyko padaryti nuotraukos. Bandyk dar kartą.', 'error', 5000)
+            end
             return
         end
         QBCore.Functions.TriggerCallback('fivempro_phone:server:savePhoto', function(res)

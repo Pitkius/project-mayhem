@@ -94,9 +94,9 @@ function drawRouteSvg(contract, pathPoints, map) {
           <stop offset="100%" stop-color="#fb923c"/>
         </linearGradient>
       </defs>
-      <path d="${pathD}" fill="none" stroke="url(#${uid})" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
-      <circle cx="${a.px}" cy="${a.py}" r="2.4" fill="#fff" stroke="#0f0e14" stroke-width="0.45"/>
-      <circle cx="${b.px}" cy="${b.py}" r="2.6" fill="#a78bfa" stroke="#fff" stroke-width="0.4"/>
+      <path d="${pathD}" fill="none" stroke="url(#${uid})" stroke-width="0.55" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+      <circle cx="${a.px}" cy="${a.py}" r="1.8" fill="#fff" stroke="#0f0e14" stroke-width="0.35"/>
+      <circle cx="${b.px}" cy="${b.py}" r="2" fill="#a78bfa" stroke="#fff" stroke-width="0.3"/>
     </svg>`;
 }
 
@@ -119,9 +119,87 @@ async function renderRouteMap(contract) {
     if (res?.ok && Array.isArray(res.points) && res.points.length > 1) {
       drawRouteSvg(contract, res.points, map);
     }
+    if (res?.ok && res.distanceKm > 0 && state.selected?.id === contract.id) {
+      contract.distanceKm = res.distanceKm;
+      contract.roadDistanceKm = res.distanceKm;
+      updateSelectedDistanceUi(contract);
+    }
   } catch (e) {
-    /* tiesi linija kaip atsarginė */
+    /* atsarginė tiesi linija */
   }
+}
+
+function updateSelectedDistanceUi(c) {
+  const distEl = document.querySelector("#contractDetail .detail-distance");
+  if (distEl) {
+    distEl.innerHTML = `<span>${esc(c.distanceKm)} km <small class="road-tag">keliu</small></span>`;
+  }
+  const titleDist = document.querySelector(`[data-id="${CSS.escape(c.id)}"] .meta`);
+  if (titleDist && c.distanceKm) {
+    const parts = titleDist.textContent.split("·");
+    if (parts.length >= 2) {
+      titleDist.textContent = `${esc(c.distanceKm)} km · ${parts.slice(1).join("·").trim()}`;
+    }
+  }
+}
+
+function applyQuoteToContract(quote) {
+  if (!quote?.id) return;
+  const list = state.data?.contracts || [];
+  const c = list.find((x) => x.id === quote.id);
+  if (!c) return;
+  c.distanceKm = quote.distanceKm;
+  c.roadDistanceKm = quote.distanceKm;
+  c.timeLimitMin = quote.timeLimitMin;
+  c.pay = quote.pay;
+  if (state.selected?.id === c.id) {
+    contractDetail.classList.remove("empty");
+    const startLabel = state.data?.startHubLabel || c.pickupLabel;
+    contractDetail.innerHTML = `
+    <div class="detail-row"><span>Krovinys</span><strong>${esc(c.cargoLabel)}</strong></div>
+    <div class="detail-row"><span>Pradžia</span><span>${esc(startLabel)}</span></div>
+    <div class="detail-row"><span>Iš</span><span>${esc(c.pickupLabel)}</span></div>
+    <div class="detail-row"><span>Į</span><span>${esc(c.deliveryLabel)}</span></div>
+    <div class="detail-row detail-distance"><span>Atstumas</span><span>${esc(c.distanceKm)} km <small class="road-tag">keliu</small></span></div>
+    <div class="detail-row"><span>Laikas</span><span>${esc(c.timeLimitMin)} min</span></div>
+    <div class="detail-row"><span>Rizika</span><span class="risk-${esc(c.risk)}">${esc(c.risk)}</span></div>
+    <div class="detail-row"><span>Atlygis</span><strong>${fmtMoney(c.pay)}</strong></div>`;
+    renderRouteMap(c);
+  }
+}
+
+async function refreshRoadQuotes() {
+  const list = state.data?.contracts || [];
+  if (!list.length) return;
+  try {
+    const local = await nui("trucking:quoteContracts", {
+      contracts: list.map((c) => ({ id: c.id, pickup: c.pickup, delivery: c.delivery })),
+    });
+    if (!local?.ok || !Array.isArray(local.quotes) || !local.quotes.length) return;
+    const server = await nui("trucking:applyRoadQuotes", { quotes: local.quotes });
+    if (!server?.ok || !Array.isArray(server.quotes)) return;
+    server.quotes.forEach(applyQuoteToContract);
+    renderContractsListOnly();
+    if (state.selected) {
+      const refreshed = list.find((x) => x.id === state.selected.id);
+      if (refreshed) selectContract(refreshed);
+    }
+  } catch (e) {}
+}
+
+function renderContractsListOnly() {
+  const list = state.data?.contracts || [];
+  const exchange = exchangeContracts(list);
+  const emptyMsg =
+    '<div class="contract-empty">Šiuo metu kontraktų nėra — palaukite atnaujinimo arba pakelkite lygį.</div>';
+  contractList.innerHTML = list.length
+    ? list.map((c) => renderContractItem(c, state.selected?.id === c.id)).join("")
+    : emptyMsg;
+  exchangeList.innerHTML = exchange.length
+    ? exchange.map((c) => renderContractItem(c, false)).join("")
+    : emptyMsg;
+  bindContractClicks(contractList);
+  bindContractClicks(exchangeList);
 }
 
 function renderContractItem(c, selected) {
@@ -153,7 +231,7 @@ function selectContract(c) {
     <div class="detail-row"><span>Pradžia</span><span>${esc(startLabel)}</span></div>
     <div class="detail-row"><span>Iš</span><span>${esc(c.pickupLabel)}</span></div>
     <div class="detail-row"><span>Į</span><span>${esc(c.deliveryLabel)}</span></div>
-    <div class="detail-row"><span>Atstumas</span><span>${esc(c.distanceKm)} km</span></div>
+    <div class="detail-row detail-distance"><span>Atstumas</span><span>${esc(c.distanceKm)} km</span></div>
     <div class="detail-row"><span>Laikas</span><span>${esc(c.timeLimitMin)} min</span></div>
     <div class="detail-row"><span>Rizika</span><span class="risk-${esc(c.risk)}">${esc(c.risk)}</span></div>
     <div class="detail-row"><span>Atlygis</span><strong>${fmtMoney(c.pay)}</strong></div>`;
@@ -225,6 +303,7 @@ function renderContracts() {
   bindContractClicks(exchangeList);
   if (state.selected) selectContract(state.selected);
   else selectContract(list[0] || null);
+  refreshRoadQuotes();
 }
 
 function renderFleet() {
@@ -436,7 +515,18 @@ document.getElementById("btnRegister").addEventListener("click", async () => {
 btnAccept.addEventListener("click", async () => {
   if (!state.selected) return;
   btnAccept.disabled = true;
-  const res = await nui("trucking:acceptContract", { contractId: state.selected.id });
+  let roadDistanceKm = state.selected.roadDistanceKm || state.selected.distanceKm;
+  try {
+    const route = await nui("trucking:getRoutePath", {
+      from: state.selected.pickup,
+      to: state.selected.delivery,
+    });
+    if (route?.ok && route.distanceKm > 0) roadDistanceKm = route.distanceKm;
+  } catch (e) {}
+  const res = await nui("trucking:acceptContract", {
+    contractId: state.selected.id,
+    roadDistanceKm,
+  });
   btnAccept.disabled = false;
   if (!res?.ok) showToast(res?.reason || "Kontrakto priimti nepavyko.", "err");
 });

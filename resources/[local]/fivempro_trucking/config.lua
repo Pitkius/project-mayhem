@@ -52,6 +52,10 @@ Config.Pay = {
     ownFleetBonus = 0.12,
 }
 
+Config.DefaultStartHubId = 'ls_docks'
+--- Jei true — serverio atsarginis kelio atstumas (tik kol klientas negrąžino tikslaus)
+Config.RoadDistanceFactor = 1.28
+
 Config.Map = {
     minX = -4000.0,
     minY = -4000.0,

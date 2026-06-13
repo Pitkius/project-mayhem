@@ -405,12 +405,6 @@ RegisterNUICallback('shopHint', function(_, cb)
     cb({ ok = true })
 end)
 
-RegisterNUICallback('radioStation', function(data, cb)
-    local station = data and data.station or ''
-    QBCore.Functions.Notify(('Radijas: %s (RP stotis).'):format(station), 'primary')
-    cb({ ok = true })
-end)
-
 RegisterNUICallback('openCargoNet', function(_, cb)
     cb({ ok = true })
     CreateThread(function()

@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
-    <linearGradient id="ct" x1="10" y1="6" x2="54" y2="58" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#5E5CE6"/>
-      <stop offset="1" stop-color="#BF5AF2"/>
+    <linearGradient id="contacts-bg" x1="10" y1="6" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7B61FF"/>
+      <stop offset="1" stop-color="#5E5CE6"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#ct)"/>
-  <circle cx="32" cy="24" r="9" fill="#fff"/>
-  <path d="M16 48c2.5-8 9-12 16-12s13.5 4 16 12" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="46" cy="22" r="6" fill="#fff" opacity=".85"/>
-  <path d="M40 38c2-3 5-4 8-4 4 0 7 2 9 6" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/>
+  <rect width="64" height="64" rx="15" fill="url(#contacts-bg)"/>
+  <circle cx="28" cy="25" r="8" fill="#fff"/>
+  <path d="M14 46c2.2-7.2 8-11 14-11s11.8 3.8 14 11" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="44" cy="24" r="6.5" fill="#fff" opacity=".92"/>
+  <path d="M38 40c1.8-2.8 4.5-4 7.5-4 3.8 0 6.8 2 8.5 5.5" stroke="#fff" stroke-width="2.8" stroke-linecap="round" opacity=".92"/>
 </svg>

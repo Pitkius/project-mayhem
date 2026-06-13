@@ -24,6 +24,67 @@ local function resolveSpawnCoords(position)
     return vector4(x, y, z, w)
 end
 
+local function ensurePedUnstuck(ped)
+    if not ped or ped == 0 then
+        ped = PlayerPedId()
+    end
+    FreezeEntityPosition(ped, false)
+    SetEntityCollision(ped, true, true)
+    SetPlayerInvincible(PlayerId(), false)
+    ClearPedTasksImmediately(ped)
+    return ped
+end
+
+local function loadCollisionAround(x, y, z, ped)
+    RequestCollisionAtCoord(x, y, z)
+    NewLoadSceneStart(x, y, z, x, y, z, 50.0, 0)
+    local deadline = GetGameTimer() + 2500
+    while IsNetworkLoadingScene() and GetGameTimer() < deadline do
+        Wait(0)
+    end
+    NewLoadSceneStop()
+
+    deadline = GetGameTimer() + 3000
+    while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() < deadline do
+        RequestCollisionAtCoord(x, y, z)
+        Wait(0)
+    end
+end
+
+local function findGroundZ(x, y, zHint)
+    local hint = zHint or 50.0
+    local found, groundZ = GetGroundZFor_3dCoord(x, y, hint + 50.0, false)
+    if found then
+        return groundZ + 0.08
+    end
+
+    for z = 950.0, 0.0, -25.0 do
+        found, groundZ = GetGroundZFor_3dCoord(x, y, z, false)
+        if found then
+            return groundZ + 0.08
+        end
+    end
+
+    return hint
+end
+
+local function safePlacePed(spawn)
+    local ped = PlayerPedId()
+    local x, y, z, h = spawn.x + 0.0, spawn.y + 0.0, spawn.z + 0.0, spawn.w or 0.0
+
+    loadCollisionAround(x, y, z, ped)
+    z = findGroundZ(x, y, z)
+
+    ensurePedUnstuck(ped)
+    NetworkResurrectLocalPlayer(x, y, z, h, true, false)
+    ped = PlayerPedId()
+    SetEntityCoordsNoOffset(ped, x, y, z, false, false, false)
+    SetEntityHeading(ped, h)
+    ensurePedUnstuck(ped)
+
+    return ped
+end
+
 local function applySavedVitals()
     local playerData = QBCore.Functions.GetPlayerData()
     if not playerData or not playerData.metadata then return end
@@ -33,19 +94,22 @@ local function applySavedVitals()
         return
     end
 
-    local ped = PlayerPedId()
+    local ped = ensurePedUnstuck(PlayerPedId())
     local savedHealth = tonumber(metadata.health)
     if savedHealth and savedHealth > 0 then
-        if IsEntityDead(ped) then
+        if IsEntityDead(ped) or IsPedDeadOrDying(ped, true) then
             local coords = GetEntityCoords(ped)
             local heading = GetEntityHeading(ped)
-            NetworkResurrectLocalPlayer(coords.x, coords.y, coords.z + 0.2, heading, true, false)
+            local gz = findGroundZ(coords.x, coords.y, coords.z)
+            NetworkResurrectLocalPlayer(coords.x, coords.y, gz, heading, true, false)
+            ped = ensurePedUnstuck(PlayerPedId())
             ClearPedBloodDamage(ped)
         end
         SetEntityHealth(ped, math.max(101, math.min(savedHealth, 200)))
     end
 
     SetPedArmour(ped, math.max(0, math.min(tonumber(metadata.armor) or 0, 100)))
+    ensurePedUnstuck(ped)
     TriggerEvent('hud:client:UpdateNeeds')
 end
 
@@ -68,15 +132,12 @@ end)
 RegisterNetEvent('fivempro_spawnfix:client:spawn', function()
     local playerData = QBCore.Functions.GetPlayerData()
     local spawn = resolveSpawnCoords(playerData.position)
-    local ped = PlayerPedId()
 
     DoScreenFadeOut(500)
     Wait(400)
 
-    SetEntityCoords(ped, spawn.x, spawn.y, spawn.z, false, false, false, false)
-    SetEntityHeading(ped, spawn.w)
-    FreezeEntityPosition(ped, true)
-    SetEntityVisible(ped, true)
+    local ped = safePlacePed(spawn)
+    SetEntityVisible(ped, true, false)
 
     if GetResourceState('qb-houses') == 'started' then
         TriggerServerEvent('qb-houses:server:SetInsideMeta', 0, false)
@@ -87,9 +148,10 @@ RegisterNetEvent('fivempro_spawnfix:client:spawn', function()
 
     TriggerEvent('QBCore:Client:OnPlayerLoaded')
 
-    Wait(1500)
-    FreezeEntityPosition(ped, false)
+    Wait(600)
     applySavedVitals()
+    ensurePedUnstuck(PlayerPedId())
+
     TriggerEvent('qb-weathersync:client:EnableSync')
     DoScreenFadeIn(500)
     Wait(600)
@@ -108,16 +170,36 @@ CreateThread(function()
     end
 end)
 
+--- Dažnesnis sync kai sužeistas — kad atsijungus neįrašytų ore esančios pozicijos
 CreateThread(function()
+    local lastSync = 0
     while true do
-        Wait(45000)
-        if LocalPlayer.state.isLoggedIn then
+        Wait(1000)
+        if not LocalPlayer.state.isLoggedIn then goto continue end
+
+        local ped = PlayerPedId()
+        local hp = GetEntityHealth(ped)
+        local interval = (hp < 200 or IsPedRagdoll(ped) or GetEntityHeightAboveGround(ped) > 1.25) and 8000 or 45000
+        local now = GetGameTimer()
+        if now - lastSync >= interval then
+            lastSync = now
             TriggerServerEvent('fivempro_spawnfix:server:syncVitals')
         end
+        ::continue::
     end
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     Wait(2000)
     applySavedVitals()
+    ensurePedUnstuck(PlayerPedId())
 end)
+
+RegisterCommand('fixstuck', function()
+    local ped = PlayerPedId()
+    local c = GetEntityCoords(ped)
+    local h = GetEntityHeading(ped)
+    safePlacePed(vector4(c.x, c.y, c.z, h))
+    applySavedVitals()
+    QBCore.Functions.Notify('Pozicija atstatyta.', 'success')
+end, false)

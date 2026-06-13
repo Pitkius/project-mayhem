@@ -103,11 +103,16 @@ RegisterNetEvent('fivempro_charcreator:server:sessionStart', function()
     if #rows > 0 and Config.AutoLoginExistingCharacter ~= false then
         local row = rows[1]
         if QBCore.Player.Login(src, row.citizenid) then
-            if row.position then
-                local Player = QBCore.Functions.GetPlayer(src)
-                local savedPos = json.decode(row.position)
-                if Player and savedPos then
-                    Player.PlayerData.position = savedPos
+            local Player = QBCore.Functions.GetPlayer(src)
+            if Player then
+                if row.position then
+                    local savedPos = json.decode(row.position)
+                    if savedPos then
+                        Player.PlayerData.position = savedPos
+                    end
+                end
+                if GetResourceState('fivempro_spawnfix') == 'started' then
+                    exports['fivempro_spawnfix']:SanitizeLoginState(Player)
                 end
             end
             finishLoad(src)
@@ -162,7 +167,6 @@ QBCore.Functions.CreateCallback('fivempro_charcreator:server:getSession', functi
         options = {
             nationalities = Config.Nationalities,
             originCities = Config.OriginCities,
-            bloodTypes = Config.BloodTypes,
             eyeColors = Config.EyeColors,
         },
     }
@@ -185,7 +189,6 @@ QBCore.Functions.CreateCallback('fivempro_charcreator:server:getSession', functi
                 gender = ch.gender or 0,
                 nationality = ch.nationality or 'Lietuva',
                 originCity = ch.origin_city or 'Los Santos',
-                bloodType = ch.blood_type or 'A+',
             },
             model = skinRow and skinRow.model,
             skin = skinRow and skinRow.skin,
@@ -220,7 +223,6 @@ RegisterNetEvent('fivempro_charcreator:server:saveAppearance', function(payload)
     ch.gender = gender
     ch.nationality = tostring(personal.nationality or 'Lietuva'):sub(1, 32)
     ch.origin_city = tostring(personal.originCity or 'Los Santos'):sub(1, 48)
-    ch.blood_type = tostring(personal.bloodType or 'A+'):sub(1, 8)
     Player.Functions.SetPlayerData('charinfo', ch)
 
     local meta = Player.PlayerData.metadata or {}
@@ -243,6 +245,10 @@ RegisterNetEvent('fivempro_charcreator:server:selectCharacter', function(citizen
     citizenid = tostring(citizenid or '')
     if citizenid == '' then return end
     if QBCore.Player.Login(src, citizenid) then
+        local Player = QBCore.Functions.GetPlayer(src)
+        if Player and GetResourceState('fivempro_spawnfix') == 'started' then
+            exports['fivempro_spawnfix']:SanitizeLoginState(Player)
+        end
         finishLoad(src)
     else
         TriggerClientEvent('QBCore:Notify', src, 'Nepavyko užkrauti personažo.', 'error')
@@ -277,7 +283,6 @@ RegisterNetEvent('fivempro_charcreator:server:createCharacter', function(payload
             gender = gender,
             nationality = tostring(personal.nationality or 'Lietuva'):sub(1, 32),
             origin_city = tostring(personal.originCity or 'Los Santos'):sub(1, 48),
-            blood_type = tostring(personal.bloodType or 'A+'):sub(1, 8),
         },
     }
 

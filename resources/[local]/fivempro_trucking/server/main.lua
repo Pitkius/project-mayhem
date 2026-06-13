@@ -248,14 +248,26 @@ local function applyPickupHub(contract, pickupId)
     local pickup = TruckingShared.Hub(pickupId)
     local delivery = TruckingShared.Hub(contract.deliveryId)
     if not pickup or not delivery then return contract end
+    local straightKm = TruckingShared.StraightDistanceKm(pickup.coords, delivery.coords)
     local distanceKm = TruckingShared.DistanceKm(pickup.coords, delivery.coords)
-    distanceKm = math.floor(distanceKm * 10) / 10
     contract.pickupId = pickupId
     contract.pickupLabel = pickup.label
     contract.pickup = { x = pickup.coords.x, y = pickup.coords.y, z = pickup.coords.z }
+    contract.straightKm = math.floor(straightKm * 10) / 10
     contract.distanceKm = distanceKm
     contract.timeLimitMin = math.max(12, math.floor(distanceKm * 1.35 + 8))
     contract.pay = calcContractPay(contract.cargoId, distanceKm)
+    return contract
+end
+
+local function finalizeContractDistance(contract, roadDistanceKm)
+    if not contract or not contract.pickup or not contract.delivery then return contract end
+    local straightKm = TruckingShared.StraightDistanceKm(contract.pickup, contract.delivery)
+    contract.straightKm = math.floor(straightKm * 10) / 10
+    if TruckingShared.ValidateRoadDistanceKm(straightKm, roadDistanceKm) then
+        TruckingShared.ApplyDistanceMetrics(contract, roadDistanceKm)
+        contract.pay = calcContractPay(contract.cargoId, contract.distanceKm)
+    end
     return contract
 end
 
@@ -328,7 +340,7 @@ local function contractKey(c)
 end
 
 local function contractsForPlayer(profile, src)
-    local startHubId = src and (select(1, nearestTerminalHub(src))) or 'ls_docks'
+    local startHubId = Config.DefaultStartHubId or 'ls_docks'
     local out = {}
     local seen = {}
     for _, c in ipairs(contractPool) do
@@ -427,7 +439,7 @@ local function buildDashboard(src)
     local company = profile.company_id and getCompany(profile.company_id) or nil
     local charinfo = Player.PlayerData.charinfo or {}
     local name = ('%s %s'):format(charinfo.firstname or 'Vairuotojas', charinfo.lastname or '')
-    local startHubId = select(1, nearestTerminalHub(src))
+    local startHubId = Config.DefaultStartHubId or 'ls_docks'
     local startHub = TruckingShared.Hub(startHubId)
     return {
         profile = profile,
@@ -550,7 +562,33 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:createCompany', functi
     cb({ ok = true, dashboard = buildDashboard(src) })
 end)
 
-QBCore.Functions.CreateCallback('fivempro_trucking:server:acceptContract', function(src, cb, contractId)
+QBCore.Functions.CreateCallback('fivempro_trucking:server:applyRoadQuotes', function(src, cb, quotes)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false }) end
+    local profile = buildProfile(ensureProfile(Player.PlayerData.citizenid))
+    local contracts = contractsForPlayer(profile, src)
+    local byId = {}
+    for _, c in ipairs(contracts) do
+        byId[c.id] = c
+    end
+    local out = {}
+    for _, q in ipairs(quotes or {}) do
+        local base = byId[q.id]
+        if base then
+            local copy = json.decode(json.encode(base))
+            copy = finalizeContractDistance(copy, q.distanceKm)
+            out[#out + 1] = {
+                id = copy.id,
+                distanceKm = copy.distanceKm,
+                timeLimitMin = copy.timeLimitMin,
+                pay = copy.pay,
+            }
+        end
+    end
+    cb({ ok = true, quotes = out })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:acceptContract', function(src, cb, contractId, roadDistanceKm)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return cb({ ok = false }) end
     if activeDeliveries[src] then return cb({ ok = false, reason = 'Jau vykdomas kontraktas.' }) end
@@ -560,8 +598,9 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:acceptContract', funct
     if not profile.registered then return cb({ ok = false, reason = 'Registruokis kaip vairuotojas.' }) end
     local contract = findContractForPlayer(profile, contractId, src)
     if not contract then return cb({ ok = false, reason = 'Kontraktas nebegalioja.' }) end
-    local startHubId = select(1, nearestTerminalHub(src))
+    local startHubId = Config.DefaultStartHubId or 'ls_docks'
     contract = applyPickupHub(json.decode(json.encode(contract)), startHubId)
+    contract = finalizeContractDistance(contract, roadDistanceKm)
     if not TruckingShared.PlayerCanAccessCargo(profile, contract.cargoId) then
         return cb({ ok = false, reason = 'Per žemas lygis ar reputacija.' })
     end

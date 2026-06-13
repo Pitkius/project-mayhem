@@ -266,6 +266,40 @@ body.shape-square .fill {
     display: none !important;
 }
 
+.hudmenu.is-open {
+    display: flex;
+}
+
+.hudmenu .hm-backdrop-glow {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: radial-gradient(ellipse 70% 55% at 50% 42%, rgba(124, 58, 237, 0.22), transparent 68%);
+    pointer-events: none;
+    transition: opacity 0.55s ease;
+}
+
+.hudmenu.is-open .hm-backdrop-glow {
+    opacity: 1;
+}
+
+.hudmenu:not(.is-open) {
+    background: rgba(6, 8, 16, 0);
+    backdrop-filter: blur(0);
+}
+
+.hudmenu.is-open {
+    background: rgba(6, 8, 16, 0.72);
+    backdrop-filter: blur(8px);
+    transition: background 0.42s ease, backdrop-filter 0.42s ease;
+}
+
+.hudmenu.is-closing {
+    background: rgba(6, 8, 16, 0);
+    backdrop-filter: blur(0);
+    transition: background 0.38s ease, backdrop-filter 0.38s ease;
+}
+
 .hm-shell {
     width: min(1320px, 97vw);
     max-height: 94vh;
@@ -281,6 +315,85 @@ body.shape-square .fill {
         0 0 60px rgba(109, 40, 217, 0.14);
     color: #e5e7eb;
     overflow: hidden;
+    transform: scale(0.92) translateY(28px);
+    opacity: 0;
+    filter: blur(6px);
+    transition:
+        transform 0.52s cubic-bezier(0.22, 1.12, 0.36, 1),
+        opacity 0.38s ease,
+        filter 0.45s ease;
+}
+
+.hudmenu.is-open .hm-shell {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    filter: blur(0);
+}
+
+.hudmenu.is-closing .hm-shell {
+    transform: scale(0.96) translateY(16px);
+    opacity: 0;
+    filter: blur(4px);
+    transition:
+        transform 0.34s cubic-bezier(0.4, 0, 0.85, 0.2),
+        opacity 0.3s ease,
+        filter 0.3s ease;
+}
+
+@keyframes hm-rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hudmenu.is-open .hm-header {
+    animation: hm-rise-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.hudmenu.is-open .hm-sidebar {
+    animation: hm-rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
+}
+
+.hudmenu.is-open .hm-preview-wrap {
+    animation: hm-rise-in 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+
+.hudmenu.is-open .hm-footer {
+    animation: hm-rise-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
+}
+
+.hudmenu.is-open .hm-el {
+    animation: hm-rise-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hudmenu.is-open .hm-elements .hm-el:nth-child(1) { animation-delay: 0.22s; }
+.hudmenu.is-open .hm-elements .hm-el:nth-child(2) { animation-delay: 0.26s; }
+.hudmenu.is-open .hm-elements .hm-el:nth-child(3) { animation-delay: 0.3s; }
+.hudmenu.is-open .hm-elements .hm-el:nth-child(4) { animation-delay: 0.34s; }
+.hudmenu.is-open .hm-elements .hm-el:nth-child(5) { animation-delay: 0.38s; }
+.hudmenu.is-open .hm-elements .hm-el:nth-child(6) { animation-delay: 0.42s; }
+.hudmenu.is-open .hm-elements .hm-el:nth-child(7) { animation-delay: 0.46s; }
+.hudmenu.is-open .hm-elements .hm-el:nth-child(8) { animation-delay: 0.5s; }
+.hudmenu.is-open .hm-elements .hm-el:nth-child(9) { animation-delay: 0.54s; }
+
+.hudmenu.is-open .hm-brand-mark {
+    animation: hm-brand-pop 0.55s cubic-bezier(0.34, 1.45, 0.64, 1) 0.12s both;
+}
+
+@keyframes hm-brand-pop {
+    0% {
+        transform: scale(0.6) rotate(-8deg);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+    }
 }
 
 .hm-header {
@@ -613,12 +726,50 @@ body.shape-square .fill {
 .hm-preview {
     position: relative;
     flex: 1;
-    min-height: 320px;
+    min-height: 280px;
+    aspect-ratio: 16 / 9;
     border-radius: 16px;
     overflow: hidden;
     border: 1px solid rgba(167, 139, 250, 0.22);
     background: #06080f;
     box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
+}
+
+.hm-pv-hud-stage {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.hm-preview.hm-pv-live .hm-pv-hud-stage .hud-bl-cluster {
+    position: absolute;
+    left: 1.2%;
+    bottom: 36%;
+    transform: scale(calc(0.34 * var(--pv-hud-scale, 1)));
+    transform-origin: left bottom;
+    opacity: 1 !important;
+    pointer-events: none;
+}
+
+.hm-preview.hm-pv-live .hm-pv-hud-stage .hud-br-cluster {
+    position: absolute;
+    right: 1.2%;
+    bottom: 18%;
+    transform: scale(calc(0.34 * var(--pv-hud-scale, 1)));
+    transform-origin: right bottom;
+    opacity: 1 !important;
+    pointer-events: none;
+}
+
+.hm-preview.hm-pv-live .hm-pv-hud-stage .hud-root {
+    min-width: 0;
+}
+
+body.hud-menu-open > .hud-bl-cluster,
+body.hud-menu-open > .hud-br-cluster {
+    display: none !important;
 }
 
 .hm-preview-bg {
@@ -1339,12 +1490,6 @@ body.shape-square .fill {
 
 .hm-import-area.hidden {
     display: none !important;
-}
-
-body.hud-menu-open .hud-bl-cluster,
-body.hud-menu-open .hud-br-cluster {
-    opacity: 0.35;
-    pointer-events: none;
 }
 
 .hud-bl-cluster,
