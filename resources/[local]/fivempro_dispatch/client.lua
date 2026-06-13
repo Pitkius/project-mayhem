@@ -73,9 +73,10 @@ RegisterNetEvent('fivempro_dispatch:client:update', function(payload)
     if not hadSync then return end
     for _, c in ipairs(payload.calls or {}) do
         if not oldIds[c.id] then
+            local notifyType = payload.service == 'police' and 'police' or (payload.service == 'ems' and 'error' or 'primary')
             QBCore.Functions.Notify(
                 ('[%s] %s — %s'):format(c.id, c.callTypeLabel or c.callType or 'Iškvietimas', c.text or ''),
-                'police',
+                notifyType,
                 10000
             )
             PlaySoundFrontend(-1, 'CONFIRM_BEEP', 'HUD_MINI_GAME_SOUNDSET', true)

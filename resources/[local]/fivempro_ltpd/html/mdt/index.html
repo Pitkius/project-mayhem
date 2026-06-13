@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="nui://fivempro_fonts/html/ui.css" />
   <link rel="stylesheet" href="vendor/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../craft/style.css" />
 </head>
 <body>
   <div id="app" class="hidden">
@@ -175,6 +176,59 @@
     </main>
     <footer class="hint">Server-side tikrinimas • RB AC • Fivempro LTPD</footer>
   </div>
+  <div id="pdCraftApp" class="hidden">
+    <header class="pdc-head">
+      <div class="pdc-brand">
+        <span class="pdc-logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none"><path d="M16 4l10 4v8c0 6.5-4.2 12.1-10 14-5.8-1.9-10-7.5-10-14V8l10-4z" stroke="#60a5fa" stroke-width="1.5" fill="rgba(37,99,235,0.25)"/><path d="M12 16l3 3 6-7" stroke="#dbeafe" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <div>
+          <h1>LTPD <span>GINKLINĖ</span></h1>
+          <p id="pdcStationLabel" class="pdc-sub">MRPD ginklų gamykla</p>
+          <p id="pdcLevelBar" class="pdc-level-bar">Gamybos lygis 1 / 3</p>
+        </div>
+      </div>
+      <button type="button" id="pdcBtnClose" class="pdc-btn ghost">Uždaryti</button>
+    </header>
+    <div class="pdc-layout">
+      <aside class="pdc-list">
+        <p class="pdc-list-title">Gaminiai</p>
+        <div id="pdcProductList"></div>
+      </aside>
+      <main class="pdc-detail">
+        <div id="pdcEmptyPick" class="pdc-empty">Pasirink gaminį iš sąrašo.</div>
+        <div id="pdcDetailPanel" class="hidden">
+          <h2 id="pdcProdTitle">—</h2>
+          <div class="pdc-meta">
+            <span id="pdcProdLevel" class="pdc-pill">Lygis</span>
+            <span id="pdcProdLock" class="pdc-pill">Prieinama</span>
+            <span id="pdcProdTime" class="pdc-pill">Laikas</span>
+          </div>
+          <section>
+            <h3>Receptas (ingredientai)</h3>
+            <ul id="pdcIngredientList"></ul>
+          </section>
+          <div class="pdc-out">
+            <span>Gausi:</span>
+            <strong id="pdcProdOut">—</strong>
+          </div>
+          <button type="button" id="pdcBtnCraft" class="pdc-btn primary">GAMINTI</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="pdcCraftProgress" class="hidden">
+    <div class="pdc-progress-box">
+      <p id="pdcProgressLabel" class="pdc-progress-label">Gaminama…</p>
+      <div class="pdc-bar-wrap">
+        <div id="pdcProgressBar" class="pdc-bar"></div>
+      </div>
+      <p id="pdcProgressTime" class="pdc-time">Liko: —</p>
+      <p class="pdc-time">[X] Atšaukti</p>
+    </div>
+  </div>
+
   <div id="survOverlay" class="surv-overlay hidden" aria-hidden="true">
     <div class="cctv-crt" aria-hidden="true">
       <div class="cctv-scanlines"></div>
@@ -196,5 +250,6 @@
   <script src="gtav_map_core.js"></script>
   <script src="mdt_map.js"></script>
   <script src="app.js"></script>
+  <script src="../craft/app.js"></script>
 </body>
 </html>

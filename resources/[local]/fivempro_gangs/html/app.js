@@ -28,6 +28,8 @@ let lastState = null;
 let tabletDocked = false;
 let tabletDragBound = false;
 const tabletBezel = document.querySelector(".tablet-bezel");
+/** @type {Record<string, string>} */
+let colorLabelMap = {};
 /** @type {'register' | 'gang' | 'map' | 'missions' | 'top' | 'wars'} */
 let activeTab = "register";
 
@@ -78,6 +80,40 @@ function hexKey(hex) {
   return String(hex || "").trim().toUpperCase();
 }
 
+function normalizePaletteEntry(entry) {
+  if (typeof entry === "string") return { hex: entry, label: entry };
+  return { hex: entry.hex || entry.color || "#64748B", label: entry.label || entry.hex || "Spalva" };
+}
+
+function buildColorLabelMap(palette) {
+  colorLabelMap = {};
+  (palette || []).forEach((entry) => {
+    const { hex, label } = normalizePaletteEntry(entry);
+    colorLabelMap[hexKey(hex)] = label;
+  });
+}
+
+function colorLabel(hex) {
+  return colorLabelMap[hexKey(hex)] || "Spalva";
+}
+
+function formatColorPair(primaryHex, secondaryHex) {
+  const primary = colorLabel(primaryHex);
+  const secondary = colorLabel(secondaryHex || primaryHex);
+  if (primary === secondary) return primary;
+  return `${primary} / ${secondary}`;
+}
+
+function gangSwatchStyle(primaryHex, secondaryHex) {
+  const top = primaryHex || "#64748B";
+  const bottom = secondaryHex || top;
+  return `background:linear-gradient(to bottom, ${top}, ${bottom})`;
+}
+
+window.GangColorLabel = colorLabel;
+window.GangFormatColorPair = formatColorPair;
+window.GangSwatchStyle = gangSwatchStyle;
+
 function syncSwatchSelection(selectEl, containerEl) {
   if (!containerEl) return;
   const cur = hexKey(selectEl.value);
@@ -89,16 +125,18 @@ function syncSwatchSelection(selectEl, containerEl) {
 function renderColorSwatches(selectEl, containerEl, palette, usage) {
   if (!containerEl || !selectEl) return;
   containerEl.innerHTML = "";
-  const opts = palette || [];
-  opts.forEach((hex) => {
-    const used = Number((usage || {})[String(hex).toUpperCase()] || 0);
+  const opts = (palette || []).map(normalizePaletteEntry);
+  opts.forEach(({ hex, label }) => {
+    const used = Number((usage || {})[hexKey(hex)] || 0);
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "color-swatch";
     if (used > 0) btn.classList.add("is-used");
+    if (hexKey(hex) === "#0A0A0A") btn.classList.add("is-black");
     btn.style.backgroundColor = hex;
     btn.dataset.hex = hex;
-    btn.title = used > 0 ? `${hex} — jau naudojama` : String(hex);
+    btn.title = used > 0 ? `${label} — jau naudojama` : label;
+    btn.setAttribute("aria-label", label);
     btn.addEventListener("click", () => {
       selectEl.value = hex;
       syncSwatchSelection(selectEl, containerEl);
@@ -107,17 +145,18 @@ function renderColorSwatches(selectEl, containerEl, palette, usage) {
     containerEl.appendChild(btn);
   });
 
-  const valid = opts.some((h) => hexKey(h) === hexKey(selectEl.value));
-  if (!valid && opts.length) selectEl.value = opts[0];
+  const valid = opts.some(({ hex }) => hexKey(hex) === hexKey(selectEl.value));
+  if (!valid && opts.length) selectEl.value = opts[0].hex;
   syncSwatchSelection(selectEl, containerEl);
 }
 
 function renderPalette(palette, usage) {
+  buildColorLabelMap(palette);
   primaryColor.innerHTML = "";
   secondaryColor.innerHTML = "";
-  (palette || []).forEach((hex) => {
-    const used = Number((usage || {})[String(hex).toUpperCase()] || 0);
-    const txt = used > 0 ? `${hex} (used ${used})` : hex;
+  (palette || []).map(normalizePaletteEntry).forEach(({ hex, label }) => {
+    const used = Number((usage || {})[hexKey(hex)] || 0);
+    const txt = used > 0 ? `${label} (užimta)` : label;
     const o1 = document.createElement("option");
     o1.value = hex;
     o1.textContent = txt;
@@ -157,7 +196,9 @@ function renderMissionsTab(state) {
     const o = document.createElement("option");
     o.value = m.id;
     const rep = Number(m.reputationReward || m.progress || 0);
-    o.textContent = `${m.label} (Rep +${rep})`;
+    const inf = Number(m.influenceReward || 0);
+    const cash = Number(m.moneyReward || 0);
+    o.textContent = `${m.label} · Rep +${rep} · Įtaka +${inf} · $${cash}`;
     missionTypeSelect.appendChild(o);
   });
   if (missionTypeSelect.options.length > 0) {
@@ -182,8 +223,11 @@ function renderTopAndWarsTabs(state) {
         (g, i) =>
           `<li class="top-gang-row">
             <span class="top-rank">#${i + 1}</span>
-            <span class="top-color-swatch" style="background:linear-gradient(135deg, ${g.color_hex || "#64748b"}, ${g.secondary_color_hex || g.color_hex || "#64748b"})"></span>
-            <span class="top-color-code">${safe((g.color_hex || "#64748B").toUpperCase())}</span>
+            <span class="top-color-swatch" style="${gangSwatchStyle(g.color_hex, g.secondary_color_hex)}" title="${safe(formatColorPair(g.color_hex, g.secondary_color_hex))}"></span>
+            <div class="top-gang-copy">
+              <strong class="top-gang-name">${safe(g.name || "Gauja")}</strong>
+              <span class="top-color-label">${safe(formatColorPair(g.color_hex, g.secondary_color_hex))}</span>
+            </div>
             <span class="top-meta">${g.turf_count || 0} turf · ${Number(g.reputation || 0).toLocaleString()} rep</span>
           </li>`,
       )
@@ -222,7 +266,7 @@ function updateGangTabContent(state) {
     gangPanelEmpty.classList.add("hidden");
     gangPanelContent.classList.remove("hidden");
     gangTitle.textContent = `${state.gang.name} (${state.gang.gang_type})`;
-    gangMeta.textContent = `Rep: ${state.gang.reputation || 0} · ${state.gang.color_hex || "-"} / ${state.gang.secondary_color_hex || "-"}`;
+    gangMeta.textContent = `Rep: ${state.gang.reputation || 0} · Spalvos: ${formatColorPair(state.gang.color_hex, state.gang.secondary_color_hex)}`;
     const rows = state.members || [];
     memberListEl.innerHTML = rows.length
       ? rows
@@ -301,7 +345,7 @@ function refreshWarn() {
   const usage = lastState.colorUsage || {};
   const used = Number(usage[String(primaryColor.value || "").toUpperCase()] || 0) > 0;
   colorWarn.classList.toggle("hidden", !used);
-  colorWarn.textContent = used ? `Spalva ${primaryColor.value} jau naudojama — vis tiek gali rinktis.` : "";
+  colorWarn.textContent = used ? `Spalva „${colorLabel(primaryColor.value)}“ jau naudojama — vis tiek gali rinktis.` : "";
 }
 primaryColor.addEventListener("change", refreshWarn);
 
@@ -334,6 +378,7 @@ window.addEventListener("message", (e) => {
   }
   if (d.action === "close") {
     destroyTurfMap();
+    setTabletDocked(false, true);
     tablet.classList.add("hidden");
     activeTab = "register";
   }

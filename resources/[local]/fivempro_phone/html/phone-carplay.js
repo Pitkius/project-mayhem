@@ -4,9 +4,12 @@
     session: null,
     audioEl: null,
     ytPlayer: null,
+    spotifyIframe: null,
     ytReady: false,
+    ytPlaylistMode: false,
     activeStream: "",
     mediaType: "",
+    playlistKind: "single",
     duration: 0,
     currentTime: 0,
     isSeeking: false,
@@ -14,6 +17,7 @@
     targetVolume: 0.65,
     progressTimer: null,
     ytApiPromise: null,
+    endedLock: false,
   };
 
   const ICONS = {
@@ -71,8 +75,75 @@
       u.match(/youtu\.be\/([\w-]+)/)?.[1] ||
       u.match(/youtube\.com\/watch\?v=([\w-]+)/)?.[1] ||
       u.match(/youtube\.com\/embed\/([\w-]+)/)?.[1] ||
+      u.match(/youtube\.com\/shorts\/([\w-]+)/)?.[1] ||
       null
     );
+  }
+
+  function parseYoutubeListId(url) {
+    const u = String(url || "");
+    return u.match(/[?&]list=([\w-]+)/)?.[1] || u.match(/youtube\.com\/playlist\?list=([\w-]+)/)?.[1] || null;
+  }
+
+  function parseSpotifyUrl(url) {
+    const u = String(url || "");
+    const m = u.match(/open\.spotify\.com\/(playlist|album|track)\/([\w-]+)/) || u.match(/spotify\.com\/(playlist|album|track)\/([\w-]+)/);
+    if (!m) return null;
+    return { type: m[1], id: m[2] };
+  }
+
+  async function handleTrackEnded() {
+    if (carplay.endedLock) return;
+    carplay.endedLock = true;
+    setTimeout(() => {
+      carplay.endedLock = false;
+    }, 1500);
+    try {
+      const res = await window.PhoneNui("carplayEnded", {});
+      if (res?.ok && res.session) {
+        carplay.session = res.session;
+        const content = document.getElementById("appContent");
+        if (content && document.getElementById("appTitle")?.textContent === "CarPlay") {
+          if (res.session.playing && res.session.stream) {
+            playAudio({
+              command: "play",
+              stream: res.session.stream,
+              url: res.session.url,
+              mediaType: res.session.mediaType,
+              volume: res.session.volume,
+              youtubeVideoId: res.session.youtubeVideoId,
+              youtubeListId: res.session.youtubeListId,
+              spotifyType: res.session.spotifyType,
+              spotifyId: res.session.spotifyId,
+              playlistKind: res.session.playlistKind,
+            });
+            syncSessionMeta(content, res.session);
+          } else {
+            updateCarPlaySession(content, res.session, { fullRender: true });
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  async function syncYoutubeMeta(player) {
+    if (!player || typeof player.getVideoData !== "function") return;
+    try {
+      const data = player.getVideoData() || {};
+      const title = data.title || "YouTube";
+      const videoId = data.video_id;
+      const payload = {
+        action: "meta",
+        title,
+        artist: "YouTube",
+        thumbnail: videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "",
+      };
+      const content = document.getElementById("appContent");
+      if (content) {
+        syncSessionMeta(content, { ...(carplay.session || {}), title, artist: "YouTube", thumbnail: payload.thumbnail });
+      }
+      await window.PhoneNui("carplayControl", payload).catch(() => {});
+    } catch (_) {}
   }
 
   async function fetchMediaMeta(url) {
@@ -80,6 +151,22 @@
     if (!raw) return null;
 
     const ytId = parseYoutubeId(raw);
+    const listId = parseYoutubeListId(raw);
+    if (listId) {
+      let title = "YouTube grojaraštis";
+      try {
+        const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(raw)}&format=json`);
+        if (res.ok) {
+          const data = await res.json();
+          title = data.title || title;
+        }
+      } catch (_) {}
+      return {
+        title,
+        artist: "YouTube",
+        thumbnail: ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : "",
+      };
+    }
     if (ytId) {
       let title = "YouTube vaizdo įrašas";
       let artist = "YouTube";
@@ -99,18 +186,23 @@
     }
 
     if (raw.includes("spotify.com")) {
+      const sp = parseSpotifyUrl(raw);
       try {
         const res = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(raw)}`);
         if (res.ok) {
           const data = await res.json();
           return {
-            title: data.title || "Spotify",
+            title: data.title || (sp?.type === "playlist" ? "Spotify grojaraštis" : "Spotify"),
             artist: data.author_name || "Spotify",
             thumbnail: data.thumbnail_url || "",
           };
         }
       } catch (_) {}
-      return { title: "Spotify takelis", artist: "Spotify", thumbnail: "" };
+      return {
+        title: sp?.type === "playlist" ? "Spotify grojaraštis" : sp?.type === "album" ? "Spotify albumas" : "Spotify takelis",
+        artist: "Spotify",
+        thumbnail: "",
+      };
     }
 
     return { title: "Medija", artist: "Tiesioginė nuoroda", thumbnail: "" };
@@ -190,6 +282,7 @@
   function destroyPlayers() {
     stopProgressLoop();
     carplay.ytReady = false;
+    carplay.ytPlaylistMode = false;
     if (carplay.audioEl) {
       carplay.audioEl.pause();
       carplay.audioEl.removeAttribute("src");
@@ -201,9 +294,11 @@
       } catch (_) {}
       carplay.ytPlayer = null;
     }
+    carplay.spotifyIframe = null;
     ensureAudioHost().innerHTML = "";
     carplay.activeStream = "";
     carplay.mediaType = "";
+    carplay.playlistKind = "single";
     carplay.duration = 0;
     carplay.currentTime = 0;
   }
@@ -258,48 +353,92 @@
     audio.addEventListener("ended", () => {
       stopProgressLoop();
       updateProgressUi();
+      handleTrackEnded();
     });
   }
 
-  function playYoutube(videoId, volume) {
+  function playSpotifyEmbed(spotifyType, spotifyId) {
+    const host = ensureAudioHost();
+    host.innerHTML = "";
+    const iframe = document.createElement("iframe");
+    iframe.src = `https://open.spotify.com/embed/${spotifyType}/${spotifyId}?utm_source=generator&theme=0`;
+    iframe.setAttribute("allow", "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture");
+    iframe.setAttribute("loading", "lazy");
+    iframe.style.cssText = "position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none";
+    host.appendChild(iframe);
+    carplay.spotifyIframe = iframe;
+    carplay.mediaType = "spotify";
+    carplay.playlistKind = spotifyType === "track" ? "single" : "spotify_embed";
+    carplay.activeStream = iframe.src;
+    carplay.duration = 0;
+    carplay.currentTime = 0;
+    stopProgressLoop();
+  }
+
+  function playYoutube(opts) {
+    const videoId = opts.videoId || null;
+    const listId = opts.listId || null;
     const host = ensureAudioHost();
     host.innerHTML = '<div id="yt-player-node"></div>';
     carplay.ytReady = false;
+    carplay.ytPlaylistMode = !!listId;
     loadYouTubeApi().then(() => {
-      carplay.ytPlayer = new window.YT.Player("yt-player-node", {
+      const playerVars = {
+        autoplay: 1,
+        controls: 0,
+        disablekb: 1,
+        playsinline: 1,
+        modestbranding: 1,
+        rel: 0,
+      };
+      if (listId) {
+        playerVars.listType = "playlist";
+        playerVars.list = listId;
+      }
+      const config = {
         height: "0",
         width: "0",
-        videoId,
-        playerVars: {
-          autoplay: 1,
-          controls: 0,
-          disablekb: 1,
-          playsinline: 1,
-          modestbranding: 1,
-          rel: 0,
-        },
+        playerVars,
         events: {
           onReady: (e) => {
             carplay.ytReady = true;
-            const vol = carplay.targetVolume ?? (Number(volume) || 0.65);
+            const vol = carplay.targetVolume ?? (Number(opts.volume) || 0.65);
             e.target.setVolume(Math.round(vol * 100));
             carplay.duration = e.target.getDuration() || 0;
             startProgressLoop();
             updateProgressUi();
+            syncYoutubeMeta(e.target);
             if (carplay.duration > 0) {
               window.PhoneNui("carplayControl", { action: "duration", duration: carplay.duration }).catch(() => {});
             }
           },
           onStateChange: (e) => {
-            if (e.data === window.YT.PlayerState.PLAYING) startProgressLoop();
+            if (e.data === window.YT.PlayerState.PLAYING) {
+              startProgressLoop();
+              syncYoutubeMeta(e.target);
+            }
             if (e.data === window.YT.PlayerState.PAUSED) stopProgressLoop();
             if (e.data === window.YT.PlayerState.ENDED) {
               stopProgressLoop();
               updateProgressUi();
+              if (carplay.ytPlaylistMode) {
+                try {
+                  const idx = e.target.getPlaylistIndex();
+                  const list = e.target.getPlaylist() || [];
+                  if (list.length > 0 && idx >= list.length - 1) handleTrackEnded();
+                } catch (_) {
+                  handleTrackEnded();
+                }
+              } else {
+                handleTrackEnded();
+              }
             }
           },
         },
-      });
+      };
+      if (videoId && !listId) config.videoId = videoId;
+      else if (videoId && listId) config.videoId = videoId;
+      carplay.ytPlayer = new window.YT.Player("yt-player-node", config);
     });
   }
 
@@ -329,8 +468,22 @@
       else if (cmd.position != null && carplay.duration > 0) seekMedia(cmd.position * carplay.duration);
       return;
     }
-    if (cmd.command === "play" && cmd.stream) {
-      if (carplay.activeStream === cmd.stream && (carplay.audioEl || carplay.ytPlayer)) {
+    if (cmd.command === "ytNext") {
+      if (carplay.ytPlayer && carplay.ytReady && typeof carplay.ytPlayer.nextVideo === "function") {
+        carplay.ytPlayer.nextVideo();
+        startProgressLoop();
+      } else {
+        handleTrackEnded();
+      }
+      return;
+    }
+    if (cmd.command === "play") {
+      const streamKey = cmd.spotifyId
+        ? `spotify:${cmd.spotifyType}:${cmd.spotifyId}`
+        : cmd.youtubeListId
+          ? `ytlist:${cmd.youtubeListId}:${cmd.youtubeVideoId || ""}`
+          : cmd.stream;
+      if (streamKey && streamKey === carplay.activeStream && (carplay.audioEl || carplay.ytPlayer || carplay.spotifyIframe)) {
         applyVolume(cmd.volume);
         if (carplay.audioEl) {
           carplay.audioEl.play().catch(() => {});
@@ -343,15 +496,29 @@
       }
 
       destroyPlayers();
-      carplay.activeStream = cmd.stream;
+      carplay.activeStream = streamKey || cmd.stream || "";
       carplay.mediaType = cmd.mediaType || "";
+      carplay.playlistKind = cmd.playlistKind || "single";
 
-      const ytId = parseYoutubeId(cmd.stream) || (cmd.mediaType === "youtube" ? parseYoutubeId(cmd.url || "") : null);
-      if (ytId || cmd.mediaType === "youtube") {
-        playYoutube(ytId || parseYoutubeId(cmd.stream), cmd.volume);
+      const sp = cmd.spotifyType && cmd.spotifyId
+        ? { type: cmd.spotifyType, id: cmd.spotifyId }
+        : cmd.mediaType === "spotify"
+          ? parseSpotifyUrl(cmd.url || cmd.stream || "")
+          : null;
+      if (sp) {
+        playSpotifyEmbed(sp.type, sp.id);
+        applyVolume(cmd.volume);
         return;
       }
 
+      const listId = cmd.youtubeListId || parseYoutubeListId(cmd.url || "");
+      const ytId = cmd.youtubeVideoId || parseYoutubeId(cmd.stream) || parseYoutubeId(cmd.url || "");
+      if (listId || ytId || cmd.mediaType === "youtube") {
+        playYoutube({ videoId: ytId, listId, volume: cmd.volume });
+        return;
+      }
+
+      if (!cmd.stream) return;
       carplay.audioEl = document.createElement("audio");
       carplay.audioEl.autoplay = true;
       carplay.audioEl.volume = Number(cmd.volume) || 0.65;
@@ -396,18 +563,23 @@
   function syncPlaybackState(session) {
     const s = session || {};
     const playing = !!s.playing;
-    const hasPlayer = !!(carplay.audioEl || carplay.ytPlayer || carplay.activeStream);
+    const hasPlayer = !!(carplay.audioEl || carplay.ytPlayer || carplay.spotifyIframe || carplay.activeStream);
     if (!hasPlayer) {
       applyVolume(s.volume);
       return;
     }
-    if (playing && s.stream) {
+    if (playing && (s.stream || s.youtubeListId || s.spotifyId)) {
       playAudio({
         command: "play",
         stream: s.stream,
         url: s.url,
         mediaType: s.mediaType,
         volume: s.volume,
+        youtubeVideoId: s.youtubeVideoId,
+        youtubeListId: s.youtubeListId,
+        spotifyType: s.spotifyType,
+        spotifyId: s.spotifyId,
+        playlistKind: s.playlistKind,
       });
     } else {
       playAudio({ command: "pause", volume: s.volume });
@@ -475,8 +647,9 @@
           <span class="carplay-vol-lbl" id="cpVolLbl">${vol}%</span>
         </div>
         <div class="neon-card carplay-url-box">
-          <label class="carplay-label">${window.t("carplay.addUrl", "Pridėti nuorodą")}</label>
-          <input type="text" id="cpUrl" placeholder="${window.t("carplay.urlPlaceholder", "Spotify / YouTube nuoroda")}" value="${window.PhoneEsc(s.url || "")}" />
+          <label class="carplay-label">${window.t("carplay.addUrl", "Nuoroda ar grojaraštis")}</label>
+          <textarea id="cpUrl" rows="3" placeholder="${window.t("carplay.urlPlaceholder", "YouTube / Spotify nuoroda ar grojaraštis")}">${window.PhoneEsc(s.url || "")}</textarea>
+          <p class="small muted carplay-hint">Palaikomi: YouTube vaizdo įrašai ir grojaraščiai, Spotify takeliai / albumai / grojaraščiai. Kelios nuorodos — po vieną eilutėje.</p>
           <div class="carplay-chip-row">
             <button type="button" class="carplay-chip spotify" data-paste="spotify">${ICONS.spotify}<span>Spotify</span></button>
             <button type="button" class="carplay-chip youtube" data-paste="youtube">${ICONS.youtube}<span>YouTube</span></button>
@@ -503,11 +676,11 @@
 
     const urlInput = content.querySelector("#cpUrl");
     content.querySelector("[data-paste=youtube]")?.addEventListener("click", () => {
-      urlInput.placeholder = "https://www.youtube.com/watch?v=...";
+      urlInput.placeholder = "https://www.youtube.com/playlist?list=...";
       urlInput.focus();
     });
     content.querySelector("[data-paste=spotify]")?.addEventListener("click", () => {
-      urlInput.placeholder = "https://open.spotify.com/track/...";
+      urlInput.placeholder = "https://open.spotify.com/playlist/...";
       urlInput.focus();
     });
 
@@ -557,7 +730,8 @@
     });
 
     async function playWithMeta(url, extraAction) {
-      const meta = await fetchMediaMeta(url);
+      const firstLine = String(url || "").split(/\r?\n/).map((l) => l.trim()).find(Boolean) || "";
+      const meta = await fetchMediaMeta(firstLine);
       const payload = {
         action: extraAction || "play",
         url,
@@ -603,9 +777,27 @@
     });
 
     content.querySelector("#cpSkip").addEventListener("click", async () => {
-      playAudio({ command: "stop" });
+      if (carplay.ytPlayer && carplay.ytReady && typeof carplay.ytPlayer.nextVideo === "function") {
+        carplay.ytPlayer.nextVideo();
+      }
       const res = await window.PhoneNui("carplayControl", { action: "skip" });
-      if (res?.ok) updateCarPlaySession(content, res.session);
+      if (res?.ok) {
+        if (res.session?.playing && res.session.stream) {
+          playAudio({
+            command: "play",
+            stream: res.session.stream,
+            url: res.session.url,
+            mediaType: res.session.mediaType,
+            volume: res.session.volume,
+            youtubeVideoId: res.session.youtubeVideoId,
+            youtubeListId: res.session.youtubeListId,
+            spotifyType: res.session.spotifyType,
+            spotifyId: res.session.spotifyId,
+            playlistKind: res.session.playlistKind,
+          });
+        }
+        updateCarPlaySession(content, res.session);
+      }
     });
 
     content.querySelector("#cpStop").addEventListener("click", async () => {
@@ -637,7 +829,11 @@
       const title = document.getElementById("appTitle");
       if (!content || title?.textContent !== "CarPlay") return;
 
-      const sameStream = payload.session.stream && payload.session.stream === carplay.activeStream;
+      const sameStream =
+        payload.session.stream &&
+        (payload.session.stream === carplay.activeStream ||
+          (payload.session.spotifyId && carplay.activeStream.includes(payload.session.spotifyId)) ||
+          (payload.session.youtubeListId && carplay.activeStream.includes(payload.session.youtubeListId)));
       if (sameStream) {
         syncSessionMeta(content, payload.session);
         if (!carplay.isVolumeDragging) {

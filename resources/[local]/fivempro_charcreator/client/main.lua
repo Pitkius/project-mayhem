@@ -4,6 +4,23 @@ local previewPed = 0
 local inCreator = false
 local inPlaceMode = false
 
+local function loadCreatorInterior()
+    local c = Config.Interior
+    local interior = GetInteriorAtCoords(c.x, c.y, c.z)
+    if interior == 0 then
+        interior = GetInteriorAtCoords(c.x, c.y, c.z - 1.0)
+    end
+    if interior ~= 0 then
+        LoadInterior(interior)
+        PinInteriorInMemory(interior)
+        RefreshInterior(interior)
+        local timeout = GetGameTimer() + 8000
+        while not IsInteriorReady(interior) and GetGameTimer() < timeout do
+            Wait(50)
+        end
+    end
+end
+
 local function loadModel(hash)
     RequestModel(hash)
     local t = 0
@@ -36,9 +53,7 @@ end
 local function setupScene()
     DoScreenFadeOut(300)
     Wait(400)
-    local interior = GetInteriorAtCoords(Config.Interior.x, Config.Interior.y, Config.Interior.z - 18.9)
-    LoadInterior(interior)
-    while not IsInteriorReady(interior) do Wait(50) end
+    loadCreatorInterior()
 
     local hid = Config.HiddenCoords
     SetEntityCoords(PlayerPedId(), hid.x, hid.y, hid.z, false, false, false, false)
@@ -120,7 +135,7 @@ local function openWizardUi(editMode, preloaded)
         pendingEditMode = false
         inCreator = true
         SetNuiFocus(true, true)
-        SetNuiFocusKeepInput(true)
+        SetNuiFocusKeepInput(false)
         SendNUIMessage({
             action = 'openWizard',
             data = data,

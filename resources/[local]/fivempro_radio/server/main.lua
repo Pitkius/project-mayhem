@@ -1,6 +1,6 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
---- [frequency] = { [src] = memberData }
+--- [freqKey] = { [src] = memberData }
 local ChannelMembers = {}
 --- [src] = žaidėjo įrašytas vardas racijoje
 local RadioAlias = {}
@@ -19,24 +19,15 @@ local function isMechanicJob(job)
 end
 
 function GetChannelMeta(freq)
-    freq = tonumber(freq)
-    if not freq then return nil end
-    if Config.ChannelNames and Config.ChannelNames[freq] then
-        return Config.ChannelNames[freq]
-    end
-    for _, r in ipairs(Config.RestrictedRanges or {}) do
-        if freq >= r.min and freq <= r.max then
-            return ('%s %s'):format(r.label, freq)
-        end
-    end
-    if freq >= (Config.PublicMinFrequency or 21) then
-        return ('Viešas %s'):format(freq)
-    end
-    return ('Dažnis %s'):format(freq)
+    local label = Config.GetFactionForFreq(freq)
+    if label then return label end
+    freq = RadioFreq.normalize(freq)
+    if not freq then return '—' end
+    return 'Viešas'
 end
 
 function GetRestrictedLabel(freq)
-    freq = tonumber(freq)
+    freq = RadioFreq.normalize(freq)
     if not freq then return nil end
     for _, r in ipairs(Config.RestrictedRanges or {}) do
         if freq >= r.min and freq <= r.max then
@@ -46,37 +37,25 @@ function GetRestrictedLabel(freq)
     return nil
 end
 
-local function canAccessFrequency(src, freq)
-    freq = math.floor(tonumber(freq) or 0)
-    if freq < (Config.MinFrequency or 1) or freq > (Config.MaxFrequency or 999) then
-        return false, 'Netinkamas dažnis.'
+local function canAccessFrequency(src, rawFreq)
+    local freq = RadioFreq.normalize(rawFreq)
+    if not freq then
+        return false, 'Netinkamas dažnis (pvz. 19.81).'
     end
-    if freq >= (Config.PublicMinFrequency or 21) then
-        return true
+    if freq >= (Config.PublicMinFrequency or 21.0) then
+        return true, freq
     end
     local job = getJobName(src)
     for _, r in ipairs(Config.RestrictedRanges or {}) do
         if freq >= r.min and freq <= r.max then
             for _, allowed in ipairs(r.jobs) do
-                if job == allowed then return true end
-                if allowed == 'mechanic' and isMechanicJob(job) then return true end
+                if job == allowed then return true, freq end
+                if allowed == 'mechanic' and isMechanicJob(job) then return true, freq end
             end
             return false, 'Neturite prieigos prie šio užkoduoto dažnio.'
         end
     end
     return false, 'Neturite prieigos prie šio užkoduoto dažnio.'
-end
-
-local function getCallsign(P)
-    if not P then return '' end
-    local md = P.PlayerData.metadata or {}
-    if type(md.callsign) == 'string' and md.callsign ~= '' then
-        return md.callsign:upper()
-    end
-    if type(md.ltpd_callsign) == 'string' and md.ltpd_callsign ~= '' then
-        return md.ltpd_callsign:upper()
-    end
-    return ''
 end
 
 local function buildMemberRow(src)
@@ -97,17 +76,17 @@ local function buildMemberRow(src)
 end
 
 local function removeFromAllChannels(src)
-    for freq, members in pairs(ChannelMembers) do
+    for key, members in pairs(ChannelMembers) do
         if members[src] then
             members[src] = nil
-            TriggerClientEvent('fivempro_radio:client:channelUpdate', -1, freq, buildMemberList(freq))
+            TriggerClientEvent('fivempro_radio:client:channelUpdate', -1, RadioFreq.fromKey(key), buildMemberList(key))
         end
     end
 end
 
-function buildMemberList(freq)
+function buildMemberList(freqKey)
     local list = {}
-    local members = ChannelMembers[freq]
+    local members = ChannelMembers[freqKey]
     if not members then return list end
     for src, row in pairs(members) do
         if row then list[#list + 1] = row end
@@ -118,9 +97,10 @@ function buildMemberList(freq)
     return list
 end
 
-local function broadcastChannel(freq)
-    local payload = buildMemberList(freq)
-    for src, _ in pairs(ChannelMembers[freq] or {}) do
+local function broadcastChannel(freqKey)
+    local freq = RadioFreq.fromKey(freqKey)
+    local payload = buildMemberList(freqKey)
+    for src, _ in pairs(ChannelMembers[freqKey] or {}) do
         TriggerClientEvent('fivempro_radio:client:channelUpdate', src, freq, payload)
     end
 end
@@ -131,32 +111,36 @@ local function setPlayerChannel(src, freq)
         TriggerClientEvent('fivempro_radio:client:setChannel', src, nil, nil, nil, false)
         return
     end
-    ChannelMembers[freq] = ChannelMembers[freq] or {}
+    local key = RadioFreq.toKey(freq)
+    if not key then return end
+    ChannelMembers[key] = ChannelMembers[key] or {}
     local row = buildMemberRow(src)
     if row then
-        ChannelMembers[freq][src] = row
+        ChannelMembers[key][src] = row
     end
     local label = GetChannelMeta(freq)
     local lock = GetRestrictedLabel(freq)
     TriggerClientEvent('fivempro_radio:client:setChannel', src, freq, label, lock, true)
-    broadcastChannel(freq)
+    broadcastChannel(key)
 end
 
-RegisterNetEvent('fivempro_radio:server:connect', function(freq, alias)
+RegisterNetEvent('fivempro_radio:server:connect', function(rawFreq, alias)
     local src = source
-    freq = math.floor(tonumber(freq) or 0)
     alias = tostring(alias or ''):gsub('^%s+', ''):gsub('%s+$', ''):sub(1, 32)
     if alias == '' then
         return TriggerClientEvent('fivempro_radio:client:notify', src, 'Įrašyk savo vardą racijoje.', 'error')
     end
-    local ok, err = canAccessFrequency(src, freq)
+    local ok, result = canAccessFrequency(src, rawFreq)
     if not ok then
-        return TriggerClientEvent('fivempro_radio:client:notify', src, err or 'Negalima prisijungti.', 'error')
+        return TriggerClientEvent('fivempro_radio:client:notify', src, result or 'Negalima prisijungti.', 'error')
     end
+    local freq = result
     RadioAlias[src] = alias
     setPlayerChannel(src, freq)
     TriggerClientEvent('fivempro_radio:client:voiceJoin', src, freq)
-    TriggerClientEvent('fivempro_radio:client:notify', src, ('Sėkmingai prisijungta prie dažnio %s'):format(freq), 'success')
+    TriggerClientEvent('fivempro_radio:client:notify', src, ('Prisijungta: %s MHz · %s'):format(
+        RadioFreq.format(freq), GetChannelMeta(freq)
+    ), 'success')
 end)
 
 RegisterNetEvent('fivempro_radio:server:disconnect', function()
@@ -166,17 +150,17 @@ RegisterNetEvent('fivempro_radio:server:disconnect', function()
     TriggerClientEvent('fivempro_radio:client:voiceLeave', src)
 end)
 
-RegisterNetEvent('fivempro_radio:server:validateFrequency', function(freq, alias)
+RegisterNetEvent('fivempro_radio:server:validateFrequency', function(rawFreq, alias)
     local src = source
-    freq = math.floor(tonumber(freq) or 0)
     alias = tostring(alias or ''):gsub('^%s+', ''):gsub('%s+$', ''):sub(1, 32)
     if alias ~= '' then
         RadioAlias[src] = alias
     end
-    local ok, err = canAccessFrequency(src, freq)
+    local ok, result = canAccessFrequency(src, rawFreq)
     if not ok then
-        return TriggerClientEvent('fivempro_radio:client:freqDenied', src, err)
+        return TriggerClientEvent('fivempro_radio:client:freqDenied', src, result)
     end
+    local freq = result
     TriggerClientEvent('fivempro_radio:client:freqOk', src, freq, GetChannelMeta(freq), GetRestrictedLabel(freq), alias)
 end)
 
@@ -191,7 +175,12 @@ QBCore.Functions.CreateUseableItem('radio', function(source)
 end)
 
 exports('GetChannelMembers', function(freq)
-    return buildMemberList(freq)
+    local key = RadioFreq.toKey(freq)
+    if not key then return {} end
+    return buildMemberList(key)
 end)
 
-exports('CanAccessFrequency', canAccessFrequency)
+exports('CanAccessFrequency', function(src, freq)
+    local ok = canAccessFrequency(src, freq)
+    return ok
+end)

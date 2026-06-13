@@ -87,6 +87,19 @@ AddEventHandler('fivempro_phone:local:AfterHospitalWake', function()
     stopDeathFx()
 end)
 
+local function tryRequestMedic()
+    if not isDown() then
+        QBCore.Functions.Notify('Negalima – nesate sužeistas.', 'error')
+        return
+    end
+    if IsPauseMenuActive() then return end
+    if IsNuiFocused and IsNuiFocused() then return end
+    local now = GetGameTimer()
+    if now - (tryRequestMedic._last or 0) < 1500 then return end
+    tryRequestMedic._last = now
+    TriggerServerEvent('fivempro_phone:server:medicRequestFromDead')
+end
+
 CreateThread(function()
     while true do
         local down = isDown()
@@ -108,7 +121,7 @@ CreateThread(function()
                 TriggerServerEvent('fivempro_phone:server:reportAlive')
             end
         end
-        Wait(250)
+        Wait(100)
     end
 end)
 
@@ -117,9 +130,12 @@ CreateThread(function()
     local needHold = (Config.HospitalWake and Config.HospitalWake.holdGMs) or 2800.0
     while true do
         if wasDown and downSinceMs and not IsPauseMenuActive() and not (IsNuiFocused and IsNuiFocused()) then
+            if IsControlJustPressed(0, 47) or IsDisabledControlJustPressed(0, 47) then
+                tryRequestMedic()
+            end
             local elapsed = GetGameTimer() - downSinceMs
             if elapsed >= needSec * 1000 then
-                if IsControlPressed(0, 47) then
+                if IsControlPressed(0, 47) or IsDisabledControlPressed(0, 47) then
                     holdGMs = holdGMs + (GetFrameTime() * 1000.0)
                     if holdGMs >= needHold then
                         holdGMs = 0.0
@@ -154,10 +170,7 @@ CreateThread(function()
 end)
 
 RegisterCommand('fivempro_phone_medic', function()
-    if not wasDown then return end
-    if IsPauseMenuActive() then return end
-    if IsNuiFocused and IsNuiFocused() then return end
-    TriggerServerEvent('fivempro_phone:server:medicRequestFromDead')
+    tryRequestMedic()
 end, false)
 
 RegisterKeyMapping(

@@ -117,6 +117,42 @@ end
 local activeVoiceCallId = 0
 local phoneInputTyping = false
 
+local PHONE_BLOCK_ATTACK = { 24, 25, 37, 44, 45, 47, 58, 140, 141, 142, 143, 257, 263, 264 }
+local PHONE_BLOCK_LOOK = { 1, 2, 3, 4, 5, 6 }
+
+local function isPhoneInHand()
+    return phonePhase == 'opening' or phonePhase == 'open' or phonePhase == 'closing'
+end
+
+local function isPhoneCameraLive()
+    return PhoneCamera and PhoneCamera.isActive and PhoneCamera.isActive()
+end
+
+local function applyPhoneHandRestrictions()
+    DisablePlayerFiring(PlayerId(), true)
+
+    for i = 1, #PHONE_BLOCK_ATTACK do
+        DisableControlAction(0, PHONE_BLOCK_ATTACK[i], true)
+    end
+
+    if not isPhoneCameraLive() then
+        for i = 1, #PHONE_BLOCK_LOOK do
+            DisableControlAction(0, PHONE_BLOCK_LOOK[i], true)
+        end
+    end
+end
+
+CreateThread(function()
+    while true do
+        if isPhoneInHand() then
+            applyPhoneHandRestrictions()
+            Wait(0)
+        else
+            Wait(400)
+        end
+    end
+end)
+
 local function applyPhoneNuiFocus()
     if phonePhase ~= 'open' then return end
     if phoneInputTyping then

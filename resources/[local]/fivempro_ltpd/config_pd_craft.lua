@@ -1,10 +1,15 @@
---- Policijos ginklų gamyba (lygių sistema · MRPD)
+--- Policijos ginklų gamyba (NUI · gang-style receptai)
 Config.PdWeaponCraft = {
-    --- Kiek pagamintų daiktų reikia kitam lygiui
     craftsPerLevel = { [1] = 6, [2] = 10 },
     maxLevel = 3,
     defaultLevel = 1,
     interactDistance = 2.2,
+
+    levelLabels = {
+        [1] = '1 lygis · Bazinis',
+        [2] = '2 lygis · Patyręs',
+        [3] = '3 lygis · Elitas',
+    },
 
     stations = {
         {
@@ -12,163 +17,255 @@ Config.PdWeaponCraft = {
             stationId = 'ls_main',
             coords = vector3(487.2437, -997.1946, 30.6896),
             heading = 268.2779,
-            label = 'Policijos ginklų gamyba',
+            label = 'MRPD ginklų gamykla',
             minGrade = 0,
         },
     },
 
-    --- Žaliava (PD inventorius / sandėlis)
     materialItem = 'pd_armory_materials',
 
     recipes = {
-        --- 1 lygis — antrankiai, combat pistol, tazeris, pistoletų priedai, kulkos, pusiniai šarvai
         pd_craft_cuffs = {
             label = 'Antrankiai',
             craftLevel = 1,
             output = 'handcuffs',
             count = 1,
-            materials = { pd_armory_materials = 2 },
             timeMs = 6500,
+            ingredients = {
+                { item = 'metal_scrap', count = 2 },
+                { item = 'pd_armory_materials', count = 2 },
+            },
         },
         pd_craft_combat_pistol = {
             label = 'Combat pistoletas',
             craftLevel = 1,
             output = 'weapon_combatpistol',
             count = 1,
-            materials = { pd_armory_materials = 10 },
             timeMs = 22000,
+            ingredients = {
+                { item = 'gun_frame', count = 1 },
+                { item = 'gun_barrel', count = 1 },
+                { item = 'gun_spring', count = 2 },
+                { item = 'gun_trigger', count = 1 },
+                { item = 'pd_armory_materials', count = 4 },
+            },
         },
         pd_craft_stungun = {
             label = 'Tazeris',
             craftLevel = 1,
             output = 'weapon_stungun',
             count = 1,
-            materials = { pd_armory_materials = 8 },
             timeMs = 18000,
+            ingredients = {
+                { item = 'weapon_parts', count = 2 },
+                { item = 'electronickit', count = 1 },
+                { item = 'pd_armory_materials', count = 5 },
+            },
         },
         pd_craft_pistol_flash = {
             label = 'Pistoletų žibintuvėlis',
             craftLevel = 1,
             output = 'flashlight_attachment',
             count = 1,
-            materials = { pd_armory_materials = 3 },
             timeMs = 9000,
+            ingredients = {
+                { item = 'weapon_parts', count = 1 },
+                { item = 'electronickit', count = 1 },
+                { item = 'pd_armory_materials', count = 2 },
+            },
         },
         pd_craft_pistol_supp = {
             label = 'Pistoletų slopintuvas',
             craftLevel = 1,
             output = 'suppressor_attachment',
             count = 1,
-            materials = { pd_armory_materials = 5 },
             timeMs = 12000,
+            ingredients = {
+                { item = 'gun_barrel', count = 1 },
+                { item = 'metal_scrap', count = 3 },
+                { item = 'pd_armory_materials', count = 3 },
+            },
         },
         pd_craft_pistol_clip = {
             label = 'Papildomas pistoletų apkaba',
             craftLevel = 1,
             output = 'clip_attachment',
             count = 1,
-            materials = { pd_armory_materials = 4 },
             timeMs = 10000,
+            ingredients = {
+                { item = 'metal_scrap', count = 2 },
+                { item = 'weapon_parts', count = 1 },
+                { item = 'pd_armory_materials', count = 2 },
+            },
         },
         pd_craft_pistol_ammo = {
             label = 'Pistoletų kulkos (50 vnt.)',
             craftLevel = 1,
             output = 'pistol_ammo',
             count = 50,
-            materials = { pd_armory_materials = 3 },
             timeMs = 7000,
+            ingredients = {
+                { item = 'metal_scrap', count = 4 },
+                { item = 'weapon_parts', count = 1 },
+                { item = 'pd_armory_materials', count = 2 },
+            },
         },
         pd_craft_armor_light = {
-            label = 'Pusiniai šarvai (lengva liemenė)',
+            label = 'Pusiniai šarvai',
             craftLevel = 1,
             output = 'armor_light',
             count = 1,
-            materials = { pd_armory_materials = 6 },
             timeMs = 14000,
+            ingredients = {
+                { item = 'metal_scrap', count = 4 },
+                { item = 'plastic', count = 2 },
+                { item = 'pd_armory_materials', count = 4 },
+            },
         },
 
-        --- 2 lygis — SMG, priedai, kulkos, pilni šarvai
         pd_craft_smg = {
             label = 'SMG',
             craftLevel = 2,
             output = 'weapon_smg',
             count = 1,
-            materials = { pd_armory_materials = 18 },
             timeMs = 32000,
+            ingredients = {
+                { item = 'gun_frame', count = 2 },
+                { item = 'gun_barrel', count = 2 },
+                { item = 'gun_spring', count = 4 },
+                { item = 'gun_trigger', count = 2 },
+                { item = 'weapon_parts', count = 2 },
+                { item = 'pd_armory_materials', count = 8 },
+            },
         },
         pd_craft_smg_scope = {
             label = 'SMG taikiklis',
             craftLevel = 2,
             output = 'smallscope_attachment',
             count = 1,
-            materials = { pd_armory_materials = 6 },
             timeMs = 13000,
+            ingredients = {
+                { item = 'weapon_parts', count = 2 },
+                { item = 'electronickit', count = 1 },
+                { item = 'pd_armory_materials', count = 4 },
+            },
         },
         pd_craft_smg_ammo = {
             label = 'SMG kulkos (60 vnt.)',
             craftLevel = 2,
             output = 'smg_ammo',
             count = 60,
-            materials = { pd_armory_materials = 5 },
             timeMs = 9000,
+            ingredients = {
+                { item = 'metal_scrap', count = 5 },
+                { item = 'weapon_parts', count = 2 },
+                { item = 'pd_armory_materials', count = 3 },
+            },
         },
         pd_craft_armor_police = {
             label = 'Pilni šarvai (policijos liemenė)',
             craftLevel = 2,
             output = 'armor_police',
             count = 1,
-            materials = { pd_armory_materials = 12 },
             timeMs = 18000,
+            ingredients = {
+                { item = 'metal_scrap', count = 6 },
+                { item = 'plastic', count = 3 },
+                { item = 'weapon_parts', count = 1 },
+                { item = 'pd_armory_materials', count = 6 },
+            },
         },
 
-        --- 3 lygis — karabinai ir rifle priedai
         pd_craft_carbine = {
             label = 'Karabinas',
             craftLevel = 3,
             output = 'weapon_carbinerifle',
             count = 1,
-            materials = { pd_armory_materials = 28 },
             timeMs = 42000,
+            ingredients = {
+                { item = 'gun_frame', count = 2 },
+                { item = 'gun_barrel', count = 2 },
+                { item = 'gun_spring', count = 4 },
+                { item = 'gun_trigger', count = 2 },
+                { item = 'weapon_parts', count = 3 },
+                { item = 'pd_armory_materials', count = 10 },
+            },
         },
         pd_craft_special_carbine = {
             label = 'Special carbine',
             craftLevel = 3,
             output = 'weapon_specialcarbine',
             count = 1,
-            materials = { pd_armory_materials = 30 },
             timeMs = 44000,
+            ingredients = {
+                { item = 'gun_frame', count = 2 },
+                { item = 'gun_barrel', count = 2 },
+                { item = 'gun_spring', count = 5 },
+                { item = 'gun_trigger', count = 2 },
+                { item = 'weapon_parts', count = 4 },
+                { item = 'pd_armory_materials', count = 12 },
+            },
         },
         pd_craft_bullpup = {
             label = 'Bullpup rifle',
             craftLevel = 3,
             output = 'weapon_bullpuprifle',
             count = 1,
-            materials = { pd_armory_materials = 30 },
             timeMs = 44000,
+            ingredients = {
+                { item = 'gun_frame', count = 2 },
+                { item = 'gun_barrel', count = 2 },
+                { item = 'gun_spring', count = 5 },
+                { item = 'gun_trigger', count = 2 },
+                { item = 'weapon_parts', count = 4 },
+                { item = 'pd_armory_materials', count = 12 },
+            },
         },
         pd_craft_rifle_scope = {
             label = 'Karabino taikiklis',
             craftLevel = 3,
             output = 'medscope_attachment',
             count = 1,
-            materials = { pd_armory_materials = 8 },
             timeMs = 15000,
+            ingredients = {
+                { item = 'weapon_parts', count = 3 },
+                { item = 'electronickit', count = 2 },
+                { item = 'pd_armory_materials', count = 5 },
+            },
         },
         pd_craft_rifle_grip = {
             label = 'Karabino rankena',
             craftLevel = 3,
             output = 'grip_attachment',
             count = 1,
-            materials = { pd_armory_materials = 5 },
             timeMs = 11000,
+            ingredients = {
+                { item = 'metal_scrap', count = 3 },
+                { item = 'plastic', count = 2 },
+                { item = 'pd_armory_materials', count = 3 },
+            },
         },
         pd_craft_rifle_ammo = {
             label = 'Karabino kulkos (90 vnt.)',
             craftLevel = 3,
             output = 'rifle_ammo',
             count = 90,
-            materials = { pd_armory_materials = 7 },
             timeMs = 10000,
+            ingredients = {
+                { item = 'metal_scrap', count = 6 },
+                { item = 'weapon_parts', count = 2 },
+                { item = 'pd_armory_materials', count = 4 },
+            },
         },
     },
 }
+
+function Config.PdRecipeIngredients(recipe)
+    if not recipe then return {} end
+    if recipe.ingredients then return recipe.ingredients end
+    local out = {}
+    for item, cnt in pairs(recipe.materials or {}) do
+        out[#out + 1] = { item = item, count = cnt }
+    end
+    return out
+end

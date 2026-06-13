@@ -10,11 +10,49 @@ Config.GangTypes = {
     racing = 'Racing Crew',
 }
 
-Config.ColorPalette = {
-    '#22C55E', '#EF4444', '#3B82F6', '#F59E0B', '#A855F7', '#EC4899',
-    '#14B8A6', '#F97316', '#84CC16', '#06B6D4', '#EAB308', '#6366F1',
-    '#DC2626', '#15803D', '#7C3AED', '#DB2777'
+--- Gaujų spalvos: hex + lietuviškas pavadinimas (planšetėje rodoma žodžiais)
+Config.GangColors = {
+    { hex = '#A855F7', label = 'Violetinė' },
+    { hex = '#7C3AED', label = 'Purpurinė' },
+    { hex = '#EF4444', label = 'Raudona' },
+    { hex = '#DC2626', label = 'Tamsiai raudona' },
+    { hex = '#22C55E', label = 'Žalia' },
+    { hex = '#15803D', label = 'Tamsiai žalia' },
+    { hex = '#84CC16', label = 'Šviesiai žalia' },
+    { hex = '#3B82F6', label = 'Mėlyna' },
+    { hex = '#6366F1', label = 'Indigo' },
+    { hex = '#06B6D4', label = 'Žydra' },
+    { hex = '#14B8A6', label = 'Turkio' },
+    { hex = '#F59E0B', label = 'Oranžinė' },
+    { hex = '#F97316', label = 'Rusva' },
+    { hex = '#EAB308', label = 'Geltona' },
+    { hex = '#EC4899', label = 'Rožinė' },
+    { hex = '#DB2777', label = 'Fuksija' },
+    { hex = '#0A0A0A', label = 'Juoda' },
+    { hex = '#64748B', label = 'Pilka' },
 }
+
+Config.ColorPalette = {}
+for _, entry in ipairs(Config.GangColors) do
+    Config.ColorPalette[#Config.ColorPalette + 1] = entry.hex
+end
+
+function Config.GetColorLabel(hex)
+    local key = tostring(hex or ''):upper():gsub('%s+', '')
+    for _, entry in ipairs(Config.GangColors) do
+        if tostring(entry.hex or ''):upper() == key then
+            return entry.label or entry.hex
+        end
+    end
+    return 'Spalva'
+end
+
+function Config.FormatColorPair(primaryHex, secondaryHex)
+    local p = Config.GetColorLabel(primaryHex)
+    local s = Config.GetColorLabel(secondaryHex)
+    if p == s then return p end
+    return ('%s / %s'):format(p, s)
+end
 
 Config.Ranks = {
     [0] = 'Runner',
@@ -34,6 +72,7 @@ Config.TurfInfluence = {
     graffiti = 6,
     drugSaleInfluence = 2,
     presencePerMinute = 1,
+    mission = 6,
 }
 
 --- Graffiti turf įtakai

@@ -14,6 +14,7 @@ files {
     'html/app.js',
     'html/apps.js',
     'html/phone-apps.css',
+    'html/phone-ads.css',
     'html/phone-bank.css',
     'html/phone-camera.js',
     'html/phone-carplay.js',

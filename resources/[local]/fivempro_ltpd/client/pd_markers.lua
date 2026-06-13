@@ -18,7 +18,7 @@ local COLORS = {
 
 local SCALES = {
     garage = { x = 2.6, y = 2.6, z = 0.28 },
-    stash = { x = 1.35, y = 1.35, z = 0.22 },
+    stash = nil, -- naudoja Config.PdStashMarkerScale
     locker = { x = 1.5, y = 1.5, z = 0.24 },
     armory = { x = 1.5, y = 1.5, z = 0.24 },
     supply = { x = 1.35, y = 1.35, z = 0.22 },
@@ -29,7 +29,7 @@ local SCALES = {
 
 local MARKER_TYPES = {
     garage = 36,
-    stash = 27,
+    stash = nil, -- naudoja Config.PdStashMarkerType
     locker = 27,
     armory = 27,
     supply = 27,
@@ -88,11 +88,37 @@ local function markerVisible(zone)
         return false
     end
     if zone.access then
-        local grade = exports['fivempro_ltpd']:GetPdGrade()
-        local division = exports['fivempro_ltpd']:GetPdDivision()
-        return PdDivisions.canAccessPoint(grade, division, zone.access)
+        return exports['fivempro_ltpd']:CanAccessPdPoint(zone.access)
     end
     return true
+end
+
+local function markerTypeFor(kind)
+    if kind == 'stash' then
+        return Config.PdStashMarkerType or 2
+    end
+    return MARKER_TYPES[kind] or 27
+end
+
+local function markerScaleFor(kind)
+    if kind == 'stash' then
+        return Config.PdStashMarkerScale or { x = 0.34, y = 0.34, z = 0.34 }
+    end
+    return SCALES[kind] or { x = 1.35, y = 1.35, z = 0.22 }
+end
+
+local function drawDistanceFor(kind)
+    if kind == 'stash' then
+        return Config.PdStashMarkerDrawDistance or 22.0
+    end
+    return Config.PdMarkerDrawDistance or 80.0
+end
+
+local function textDistanceFor(kind)
+    if kind == 'stash' then
+        return Config.PdMarkerTextDistance or 1.1
+    end
+    return USE_RADIUS[kind] or 1.5
 end
 
 exports('RegisterPdGroundMarker', RegisterPdGroundMarker)
@@ -346,9 +372,14 @@ end, false)
 
 local function drawMarkerAt(pos, kind)
     local col = COLORS[kind] or COLORS.stash
-    local sc = SCALES[kind] or SCALES.stash
-    local mType = MARKER_TYPES[kind] or 27
-    local zOff = mType == 36 and 0.35 or 0.0
+    local sc = markerScaleFor(kind)
+    local mType = markerTypeFor(kind)
+    local zOff = 0.0
+    if mType == 36 then
+        zOff = 0.35
+    elseif mType == 2 then
+        zOff = 0.06
+    end
     DrawMarker(
         mType,
         pos.x, pos.y, pos.z + zOff,
@@ -361,7 +392,6 @@ local function drawMarkerAt(pos, kind)
 end
 
 CreateThread(function()
-    local drawDist = Config.PdMarkerDrawDistance or 80.0
     while true do
         local sleep = 500
         if Config.ShowPd3DMarkers ~= false and #pdZones > 0 and not IsPauseMenuActive() then
@@ -372,27 +402,29 @@ CreateThread(function()
                     goto continue_zone
                 end
                 local dist = #(pcoords - zone.coords)
+                local drawDist = drawDistanceFor(zone.kind)
                 if dist < drawDist then
                     sleep = 0
                     drawMarkerAt(zone.coords, zone.kind)
                     local useR = USE_RADIUS[zone.kind] or 1.5
+                    local textR = textDistanceFor(zone.kind)
                     if dist < useR then
                         local canUse = true
                         if zone.requireDuty and not isPdOnDuty() then
                             canUse = false
                         end
-                        if canUse then
+                        if canUse and dist < textR then
                             QBCore.Functions.DrawText3D(
-                                zone.coords.x, zone.coords.y, zone.coords.z + 0.95,
+                                zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
                                 ('[E] %s'):format(zone.label)
                             )
                             if IsControlJustPressed(0, 38) and (GetGameTimer() - lastInteractMs) > 450 then
                                 lastInteractMs = GetGameTimer()
                                 if zone.onPress then zone.onPress() end
                             end
-                        elseif zone.requireDuty then
+                        elseif zone.requireDuty and dist < textR then
                             QBCore.Functions.DrawText3D(
-                                zone.coords.x, zone.coords.y, zone.coords.z + 0.95,
+                                zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
                                 'Tik tarnyboje (policija)'
                             )
                         end

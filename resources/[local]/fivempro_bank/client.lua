@@ -1,194 +1,72 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local TX_LABELS = {
-    DEPOSIT = 'Įnešimas',
-    WITHDRAW = 'Išėmimas',
-    TRANSFER_OUT = 'Pervedimas (iš)',
-    TRANSFER_IN = 'Gavimas',
-}
+local terminalOpen = false
 
-local function txLabel(txType)
-    return TX_LABELS[txType] or txType
+local function bankCb(name, data, cb)
+    QBCore.Functions.TriggerCallback(name, function(res)
+        cb(res or { ok = false, message = 'Klaida.' })
+    end, data or {})
 end
 
-local function openBankMenu()
-    QBCore.Functions.TriggerCallback('fivempro:bank:server:getSnapshot', function(snapshot)
-        if not snapshot then return end
-
-        local menu = {
-            {
-                header = 'Fivempro Bankas',
-                isMenuHeader = true
-            },
-            {
-                header = ('Grynieji: $%s'):format(snapshot.cash),
-                txt = ('Bankas: $%s'):format(snapshot.bank),
-                isMenuHeader = true
-            },
-            {
-                header = 'Įnešti pinigus',
-                txt = 'Perkelti grynuosius į banką',
-                params = { event = 'fivempro:bank:client:deposit' }
-            },
-            {
-                header = 'Išsiimti pinigus',
-                txt = 'Perkelti iš banko į grynuosius',
-                params = { event = 'fivempro:bank:client:withdraw' }
-            },
-            {
-                header = 'Pervesti žaidėjui',
-                txt = 'Pervedimas pagal serverio ID',
-                params = { event = 'fivempro:bank:client:transfer' }
-            },
-            {
-                header = 'Operacijų istorija',
-                txt = 'Paskutiniai įrašai',
-                params = { event = 'fivempro:bank:client:history' }
-            },
-            {
-                header = 'Uždaryti',
-                params = { event = 'qb-menu:client:closeMenu' }
-            }
-        }
-        exports['qb-menu']:openMenu(menu)
-    end)
+local function openTerminal()
+    if terminalOpen then return end
+    terminalOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({ action = 'open' })
 end
 
-local function openAtmMenu()
-    QBCore.Functions.TriggerCallback('fivempro:bank:server:getSnapshot', function(snapshot)
-        if not snapshot then return end
-
-        local menu = {
-            {
-                header = 'Bankomatas',
-                isMenuHeader = true
-            },
-            {
-                header = ('Grynieji: $%s'):format(snapshot.cash),
-                txt = ('Bankas: $%s'):format(snapshot.bank),
-                isMenuHeader = true
-            },
-            {
-                header = 'Įnešti pinigus',
-                txt = 'Perkelti grynuosius į banką',
-                params = { event = 'fivempro:bank:client:deposit' }
-            },
-            {
-                header = 'Išsiimti pinigus',
-                txt = 'Perkelti iš banko į grynuosius',
-                params = { event = 'fivempro:bank:client:withdraw' }
-            },
-            {
-                header = 'Uždaryti',
-                params = { event = 'qb-menu:client:closeMenu' }
-            }
-        }
-
-        exports['qb-menu']:openMenu(menu)
-    end)
+local function closeTerminal()
+    if not terminalOpen then return end
+    terminalOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
 end
 
-RegisterNetEvent('fivempro:bank:client:deposit', function()
-    local result = exports['qb-input']:ShowInput({
-        header = 'Įnešti į banką',
-        submitText = 'Patvirtinti',
-        inputs = {
-            {
-                type = 'number',
-                isRequired = true,
-                name = 'amount',
-                text = 'Suma'
-            }
-        }
-    })
-    if not result or not result.amount then return end
-    TriggerServerEvent('fivempro:bank:server:deposit', tonumber(result.amount))
+RegisterNUICallback('atmClose', function(_, cb)
+    closeTerminal()
+    cb({ ok = true })
 end)
 
-RegisterNetEvent('fivempro:bank:client:withdraw', function()
-    local result = exports['qb-input']:ShowInput({
-        header = 'Išsiimti iš banko',
-        submitText = 'Patvirtinti',
-        inputs = {
-            {
-                type = 'number',
-                isRequired = true,
-                name = 'amount',
-                text = 'Suma'
-            }
-        }
-    })
-    if not result or not result.amount then return end
-    TriggerServerEvent('fivempro:bank:server:withdraw', tonumber(result.amount))
+RegisterNUICallback('copyText', function(_, cb)
+    cb({ ok = true })
 end)
 
-RegisterNetEvent('fivempro:bank:client:transfer', function()
-    local result = exports['qb-input']:ShowInput({
-        header = 'Pervedimas žaidėjui',
-        submitText = 'Patvirtinti',
-        inputs = {
-            {
-                type = 'number',
-                isRequired = true,
-                name = 'target',
-                text = 'Gavėjo ID'
-            },
-            {
-                type = 'number',
-                isRequired = true,
-                name = 'amount',
-                text = 'Suma'
-            }
-        }
-    })
-    if not result or not result.target or not result.amount then return end
-    TriggerServerEvent('fivempro:bank:server:transfer', tonumber(result.target), tonumber(result.amount))
+RegisterNUICallback('bankGetState', function(_, cb)
+    bankCb('fivempro_phone:server:bankGetState', {}, cb)
 end)
 
-RegisterNetEvent('fivempro:bank:client:history', function()
-    QBCore.Functions.TriggerCallback('fivempro:bank:server:getHistory', function(rows)
-        local menu = {
-            {
-                header = 'Banko istorija',
-                isMenuHeader = true
-            }
-        }
+RegisterNUICallback('bankLookupRecipient', function(data, cb)
+    bankCb('fivempro_phone:server:bankLookupRecipient', data, cb)
+end)
 
-        if not rows or #rows == 0 then
-            menu[#menu + 1] = {
-                header = 'Įrašų nerasta',
-                isMenuHeader = true
-            }
-        else
-            for _, row in ipairs(rows) do
-                menu[#menu + 1] = {
-                    header = ('%s $%s'):format(txLabel(row.tx_type), row.amount),
-                    txt = ('Balansas po operacijos: $%s'):format(row.balance_after),
-                    isMenuHeader = true
-                }
-            end
-        end
+RegisterNUICallback('bankTransfer', function(data, cb)
+    bankCb('fivempro_phone:server:bankTransfer', data, cb)
+end)
 
-        menu[#menu + 1] = {
-            header = 'Atgal',
-            params = { event = 'fivempro:bank:client:open' }
-        }
-        exports['qb-menu']:openMenu(menu)
-    end)
+RegisterNUICallback('bankDeposit', function(data, cb)
+    bankCb('fivempro_phone:server:bankDeposit', data, cb)
+end)
+
+RegisterNUICallback('bankWithdraw', function(data, cb)
+    bankCb('fivempro_phone:server:bankWithdraw', data, cb)
+end)
+
+RegisterNUICallback('bankGetHistory', function(data, cb)
+    bankCb('fivempro_phone:server:bankGetHistory', data, cb)
 end)
 
 RegisterNetEvent('fivempro:bank:client:open', function()
-    openBankMenu()
+    openTerminal()
 end)
 
 RegisterCommand('bank', function()
-    openBankMenu()
+    openTerminal()
 end, false)
 
 CreateThread(function()
     for _, coords in ipairs(Config.BankLocations) do
         local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
-        SetBlipSprite(blip, 108) -- Dollar sign icon.
+        SetBlipSprite(blip, 108)
         SetBlipDisplay(blip, 4)
         SetBlipScale(blip, 0.85)
         SetBlipColour(blip, 2)
@@ -207,11 +85,10 @@ CreateThread(function()
             options = {
                 {
                     type = 'client',
-                    event = 'fivempro:bank:client:open',
                     icon = 'fas fa-building-columns',
-                    label = 'Atidaryti banka',
+                    label = 'Atidaryti BANKNET terminalą',
                     action = function()
-                        openBankMenu()
+                        openTerminal()
                     end
                 }
             },
@@ -226,9 +103,9 @@ CreateThread(function()
             {
                 type = 'client',
                 icon = 'fas fa-money-bill-wave',
-                label = 'Naudoti bankomata',
+                label = 'Naudoti bankomatą',
                 action = function()
-                    openAtmMenu()
+                    openTerminal()
                 end
             }
         },
@@ -239,17 +116,25 @@ end)
 CreateThread(function()
     while true do
         local sleep = 1000
-        local ped = PlayerPedId()
-        local pos = GetEntityCoords(ped)
-        for _, coords in ipairs(Config.BankLocations) do
-            local dist = #(pos - coords)
-            if dist < 2.0 then
-                sleep = 0
-                BeginTextCommandDisplayHelp('STRING')
-                AddTextComponentSubstringPlayerName('Spausk ~INPUT_CONTEXT~ atidaryti banka')
-                EndTextCommandDisplayHelp(0, false, true, -1)
-                if IsControlJustPressed(0, 38) then
-                    openBankMenu()
+        if terminalOpen then
+            sleep = 0
+            DisableControlAction(0, 1, true)
+            DisableControlAction(0, 2, true)
+            DisableControlAction(0, 142, true)
+            DisableControlAction(0, 106, true)
+        else
+            local ped = PlayerPedId()
+            local pos = GetEntityCoords(ped)
+            for _, coords in ipairs(Config.BankLocations) do
+                local dist = #(pos - coords)
+                if dist < 2.0 then
+                    sleep = 0
+                    BeginTextCommandDisplayHelp('STRING')
+                    AddTextComponentSubstringPlayerName('Spausk ~INPUT_CONTEXT~ atidaryti BANKNET')
+                    EndTextCommandDisplayHelp(0, false, true, -1)
+                    if IsControlJustPressed(0, 38) then
+                        openTerminal()
+                    end
                 end
             end
         end

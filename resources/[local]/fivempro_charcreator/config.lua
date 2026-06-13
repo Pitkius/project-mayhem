@@ -5,10 +5,10 @@ Config.DefaultNumberOfCharacters = 1
 Config.EnableDeleteButton = false
 Config.AutoLoginExistingCharacter = true
 
---- Scena (tik pirmam personažo kūrimui prisijungus)
-Config.Interior = vector3(-763.28, 330.04, 199.49)
-Config.HiddenCoords = vector4(-779.02, 326.18, 196.09, 91.0)
-Config.PedCoords = vector4(-763.28, 330.04, 199.49, 177.79)
+--- Scena (tik pirmam personažo kūrimui prisijungus) — apšviestas bunkerio kambarys
+Config.Interior = vector3(404.9589, -957.7651, -99.0042)
+Config.HiddenCoords = vector4(397.0, -965.0, -99.0042, 0.0)
+Config.PedCoords = vector4(404.9589, -957.7651, -99.0042, 180.0)
 Config.DefaultSpawn = vector4(-1037.9487, -2738.0669, 20.1693, 330.3262)
 
 --- Rodyklės ← → suka kamerą apie personažą (laipsniai per paspaudimą / kadrą)

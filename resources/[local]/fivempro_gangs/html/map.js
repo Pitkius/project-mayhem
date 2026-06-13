@@ -208,7 +208,7 @@ window.GangMap = (function () {
 
     if (nameEl) nameEl.textContent = state.hasGang ? (gang.name || "Gauja").toUpperCase() : "NEPRIKLAUSAI";
     if (logoEl) {
-      logoEl.style.background = `linear-gradient(135deg, ${gangColor}, ${gang.secondary_color_hex || gangColor})`;
+      logoEl.style.background = `linear-gradient(to bottom, ${gangColor}, ${gang.secondary_color_hex || gangColor})`;
       logoEl.style.boxShadow = `0 0 24px ${gangColor}55`;
     }
 
@@ -242,7 +242,8 @@ window.GangMap = (function () {
       strip.innerHTML = colors
         .map((g) => {
           const hex = g.color_hex || g.color || "#64748B";
-          return `<span class="color-chip" style="background:${hex}" title="${hex}"></span>`;
+          const label = typeof window.GangColorLabel === "function" ? window.GangColorLabel(hex) : hex;
+          return `<span class="color-chip" style="background:${hex}" title="${label}"></span>`;
         })
         .join("");
     }

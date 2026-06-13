@@ -58,6 +58,8 @@ const InventoryContainer = Vue.createApp({
                 totalSlots: 0,
                 // Escape Key
                 isInventoryOpen: false,
+                isInventoryClosing: false,
+                inventoryAnimKey: 0,
                 // Single pane
                 isOtherInventoryEmpty: true,
                 // Error handling
@@ -111,6 +113,8 @@ const InventoryContainer = Vue.createApp({
                 this.toggleHotbar(false);
             }
 
+            this.isInventoryClosing = false;
+            this.inventoryAnimKey += 1;
             this.isInventoryOpen = true;
             this.maxWeight = data.maxweight;
             this.totalSlots = data.slots;
@@ -187,12 +191,11 @@ const InventoryContainer = Vue.createApp({
             }
         },
         async closeInventory() {
-            if (!this.isInventoryOpen) return;
+            if (!this.isInventoryOpen || this.isInventoryClosing) return;
             this.clearDragData();
             const inventoryName = this.otherInventoryName;
-            const container = document.querySelector(".inventory-container");
-            if (container) container.classList.add("inv-closing");
-            await new Promise((resolve) => setTimeout(resolve, 200));
+            this.isInventoryClosing = true;
+            await new Promise((resolve) => setTimeout(resolve, 280));
             Object.assign(this, this.getInitialState());
             try {
                 await axios.post("https://qb-inventory/CloseInventory", { name: inventoryName });

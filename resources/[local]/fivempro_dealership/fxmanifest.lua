@@ -21,7 +21,10 @@ client_scripts {
 files {
     'html/index.html',
     'html/style.css',
-    'html/app.js'
+    'html/app.js',
+    'html/images/vehicles/*.webp',
+    'html/images/vehicles/*.jpg',
+    'html/images/vehicles/*.png',
 }
 
 server_scripts {

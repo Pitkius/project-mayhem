@@ -75,8 +75,8 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT žemėlapis — Leaflet CRS.Simple: blipas [gameY, gameX] (flipY = false).
---- HD satelitas 2048×2048; ribos atitinka pilną San Andreas salą.
+--- MDT žemėlapis — Leaflet CRS.Simple, 1:1 su GetEntityCoords (X→lng, Y→lat).
+--- HD satelitas 2048×2048; kalibracija pagal žinomas vietas ant PNG (u/v ∈ [0,1]).
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
@@ -89,9 +89,20 @@ Config.MdtMap = {
     scaleX = 1.0,
     scaleY = 1.0,
     flipY = false,
+    syncGameBounds = true,
     imageFile = 'mdt/asset/gtav_satellite_2048.png',
     imageWidth = 2048,
     imageHeight = 2048,
+    --- u: 0=vakarai (kairė), 1=rytai; v: 0=šiaurė (viršus PNG), 1=pietūs (apačia)
+    calibration = {
+        { gx = -448.15, gy = 6012.0, u = 0.418, v = 0.072 },   -- Paleto PD
+        { gx = 450.77, gy = 5566.86, u = 0.500, v = 0.125 },   -- Mt Chiliad
+        { gx = 1853.2, gy = 3686.5, u = 0.708, v = 0.362 },    -- Sandy Shores PD
+        { gx = -2360.0, gy = 3249.0, u = 0.138, v = 0.455 },   -- Fort Zancudo
+        { gx = 441.84, gy = -982.05, u = 0.398, v = 0.762 },   -- MRPD
+        { gx = 379.39, gy = -1591.37, u = 0.412, v = 0.792 },  -- Davis PD
+        { gx = -1037.0, gy = -2737.0, u = 0.272, v = 0.878 },  -- LSIA
+    },
 }
 
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)
@@ -113,6 +124,11 @@ Config.HelipadBlipScale = 0.9
 Config.ShowPd3DMarkers = true
 Config.PdMarkerDrawDistance = 80.0
 Config.PdMarkerZOffset = 0.02
+--- Sandėliai: mažas trikampis (DrawMarker tipas 2), tekstas tik labai arti
+Config.PdStashMarkerType = 2
+Config.PdStashMarkerScale = { x = 0.34, y = 0.34, z = 0.34 }
+Config.PdStashMarkerDrawDistance = 22.0
+Config.PdMarkerTextDistance = 1.1
 
 --- Tarnybinis transportas (modeliai turi būti whitelist – žr. server spawnFleet)
 Config.FleetVehicles = {

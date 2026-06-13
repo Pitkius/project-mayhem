@@ -43,7 +43,20 @@ local function pickAmmoItemForType(ammoType)
     return list[1]
 end
 
---- Kai GetMaxAmmoInClip grąžina 0 – apkabos dydis pagal tipą (viena apkaba į kulkas).
+--- Kai GetMaxAmmoInClip grąžina 0 – apkabos dydis pagal ginklą ar tipą.
+local DefaultClipByWeapon = {
+    [`weapon_minismg`] = 12,
+    [`weapon_machinepistol`] = 12,
+    [`weapon_microsmg`] = 16,
+    [`weapon_smg`] = 30,
+    [`weapon_smg_mk2`] = 30,
+    [`weapon_assaultsmg`] = 30,
+    [`weapon_combatpdw`] = 30,
+    [`weapon_pistol`] = 12,
+    [`weapon_combatpistol`] = 12,
+    [`weapon_appistol`] = 18,
+}
+
 local DefaultClipByAmmoType = {
     AMMO_PISTOL = 12,
     AMMO_SMG = 30,
@@ -60,6 +73,29 @@ local function clearPedWeaponInfiniteAmmo(ped, weaponHash)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then return end
     SetPedInfiniteAmmoClip(ped, false)
     SetPedInfiniteAmmo(ped, false, weaponHash)
+end
+
+local function resolveMaxClip(ped, weaponHash, weaponData)
+    local weaponName = weaponData and weaponData.name
+    if weaponName and DefaultClipByWeapon[joaat(weaponName)] then
+        return DefaultClipByWeapon[joaat(weaponName)]
+    end
+    local hasMaxClip, maxClipAmmo = GetMaxAmmoInClip(ped, weaponHash, true)
+    if hasMaxClip and maxClipAmmo and (tonumber(maxClipAmmo) or 0) > 0 then
+        return tonumber(maxClipAmmo) or 0
+    end
+    local ammoType = tostring(weaponData and weaponData.ammotype or ''):upper()
+    return DefaultClipByAmmoType[ammoType] or 30
+end
+
+local function applyWeaponAmmoState(ped, weaponHash, ammo)
+    ammo = math.max(0, tonumber(ammo) or 0)
+    SetPedAmmo(ped, weaponHash, ammo)
+    local maxClip = resolveMaxClip(ped, weaponHash, QBCore.Shared.Weapons[weaponHash])
+    if maxClip > 0 then
+        SetAmmoInClip(ped, weaponHash, math.min(ammo, maxClip))
+    end
+    clearPedWeaponInfiniteAmmo(ped, weaponHash)
 end
 
 -- Handlers
@@ -128,7 +164,7 @@ function applyHolsteredWeaponsFromInventory()
         local hidden = not shownHash or h ~= shownHash
 
         GiveWeaponToPed(ped, h, ammo, hidden, false)
-        SetPedAmmo(ped, h, ammo)
+        applyWeaponAmmoState(ped, h, ammo)
 
         local weaponInfo = item.info or {}
         if weaponInfo.attachments then
@@ -283,14 +319,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     end
 
     local hasClip, currentClipAmmo = GetAmmoInClip(ped, weapon)
-    local hasMaxClip, maxClipAmmo = GetMaxAmmoInClip(ped, weapon, true)
-
-    local maxC = 0
-    if hasMaxClip and maxClipAmmo and (tonumber(maxClipAmmo) or 0) > 0 then
-        maxC = tonumber(maxClipAmmo) or 0
-    else
-        maxC = DefaultClipByAmmoType[normalizedAmmoType] or 30
-    end
+    local maxC = resolveMaxClip(ped, weapon, selectedWeaponData)
     local curInClip = 0
     if hasClip and currentClipAmmo ~= nil then
         curInClip = tonumber(currentClipAmmo) or 0
@@ -332,7 +361,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         end
 
         local hadClipBefore, clipBefore = GetAmmoInClip(ped, weapon)
-        local hadMaxClipBefore, maxClipBefore = GetMaxAmmoInClip(ped, weapon, true)
+        local maxClipBefore = resolveMaxClip(ped, weapon, current)
         local ammoBefore = GetAmmoInPedWeapon(ped, weapon)
         AddAmmoToPed(ped, weapon, bulletsToLoad)
         Wait(50)
@@ -346,8 +375,8 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         local totalLoaded = math.max(0, (tonumber(ammoAfter) or 0) - (tonumber(ammoBefore) or 0))
 
         local expectedMaxLoad = bulletsToLoad
-        if hadClipBefore and hadMaxClipBefore and (tonumber(maxClipBefore) or 0) > 0 then
-            expectedMaxLoad = math.min(bulletsToLoad, math.max(0, (tonumber(maxClipBefore) or 0) - (tonumber(clipBefore) or 0)))
+        if hadClipBefore and maxClipBefore and maxClipBefore > 0 then
+            expectedMaxLoad = math.min(bulletsToLoad, math.max(0, maxClipBefore - (tonumber(clipBefore) or 0)))
         elseif maxC and maxC > 0 and hadClipBefore then
             expectedMaxLoad = math.min(bulletsToLoad, math.max(0, maxC - (tonumber(clipBefore) or 0)))
         end
@@ -495,7 +524,7 @@ end)
 CreateThread(function()
     while true do
         local ped = PlayerPedId()
-        if IsPedArmed(ped, 7) == 1 then
+        if IsPedArmed(ped, 7) then
             local weapon = GetSelectedPedWeapon(ped)
             local selectedWeaponData = QBCore.Shared.Weapons[weapon]
             if selectedWeaponData then

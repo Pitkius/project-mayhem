@@ -98,31 +98,86 @@ local function materialLabel(item)
     return shared and shared.label or item
 end
 
-local function buildRecipeRows(Player, craftLevel)
+local function recipeIngredients(recipe)
+    if Config.PdRecipeIngredients then
+        return Config.PdRecipeIngredients(recipe)
+    end
+    if recipe and recipe.ingredients then return recipe.ingredients end
+    local out = {}
+    for item, cnt in pairs(recipe and recipe.materials or {}) do
+        out[#out + 1] = { item = item, count = cnt }
+    end
+    return out
+end
+
+local function buildIngredientStatus(Player, recipe)
+    local rows = {}
+    for _, row in ipairs(recipeIngredients(recipe)) do
+        local it = Player.Functions.GetItemByName(row.item)
+        local have = it and it.amount or 0
+        rows[#rows + 1] = {
+            item = row.item,
+            label = materialLabel(row.item),
+            need = row.count,
+            have = have,
+            missing = math.max(0, row.count - have),
+        }
+    end
+    return rows
+end
+
+local function hasAllIngredients(Player, recipe)
+    for _, row in ipairs(recipeIngredients(recipe)) do
+        local it = Player.Functions.GetItemByName(row.item)
+        if not it or (it.amount or 0) < row.count then
+            return false
+        end
+    end
+    return true
+end
+
+local function removeIngredients(Player, recipe)
+    for _, row in ipairs(recipeIngredients(recipe)) do
+        if not Player.Functions.RemoveItem(row.item, row.count) then
+            return false
+        end
+        local shared = QBCore.Shared.Items[row.item]
+        if shared then
+            TriggerClientEvent('qb-inventory:client:ItemBox', Player.PlayerData.source, shared, 'remove', row.count)
+        end
+    end
+    return true
+end
+
+local function refundIngredients(Player, recipe)
+    for _, row in ipairs(recipeIngredients(recipe)) do
+        Player.Functions.AddItem(row.item, row.count)
+        local shared = QBCore.Shared.Items[row.item]
+        if shared then
+            TriggerClientEvent('qb-inventory:client:ItemBox', Player.PlayerData.source, shared, 'add', row.count)
+        end
+    end
+end
+
+local function buildProductRows(Player, craftLevel)
+    local labels = cfg().levelLabels or {}
     local rows = {}
     for id, recipe in pairs(cfg().recipes or {}) do
         local needLv = tonumber(recipe.craftLevel) or 1
         local locked = craftLevel < needLv
-        local mats = {}
-        local canCraft = not locked
-        for item, cnt in pairs(recipe.materials or {}) do
-            local it = Player.Functions.GetItemByName(item)
-            local have = it and it.amount or 0
-            if have < cnt then canCraft = false end
-            mats[#mats + 1] = ('%s %d/%d'):format(materialLabel(item), have, cnt)
-        end
         local out = recipe.output
         local outLabel = QBCore.Shared.Items[out] and QBCore.Shared.Items[out].label or out
+        local timeSec = math.ceil((tonumber(recipe.timeMs) or 10000) / 1000)
         rows[#rows + 1] = {
             id = id,
             label = recipe.label or id,
             outputLabel = outLabel,
             outputCount = recipe.count or 1,
             craftLevel = needLv,
+            levelLabel = labels[needLv] or ('Lygis ' .. needLv),
             locked = locked,
-            canCraft = canCraft,
-            materials = mats,
-            timeSec = math.ceil((tonumber(recipe.timeMs) or 10000) / 1000),
+            timeLabel = timeSec >= 60 and ('~%d min'):format(math.ceil(timeSec / 60)) or ('%d sek.'):format(timeSec),
+            ingredients = buildIngredientStatus(Player, recipe),
         }
     end
     table.sort(rows, function(a, b)
@@ -143,23 +198,41 @@ local function tryLevelUp(profile)
     end
 end
 
-QBCore.Functions.CreateCallback('fivempro_ltpd:server:getPdCraftMenu', function(src, cb, stationKey)
-    if not hasCraftPerm(src, getStation(stationKey)) or not officerNearCraftStation(src, stationKey) then
-        return cb(nil)
+local function craftUiPayload(src, stationKey)
+    local st = getStation(stationKey)
+    if not hasCraftPerm(src, st) or not officerNearCraftStation(src, stationKey) then
+        return { ok = false, reason = 'Neturi teisės arba per toli nuo ginklinės.' }
     end
     local P = QBCore.Functions.GetPlayer(src)
-    if not P then return cb(nil) end
+    if not P then return { ok = false, reason = 'Žaidėjas nerastas.' } end
     ensureProfileRow(P.PlayerData.citizenid)
     local profile = getCraftProfile(P.PlayerData.citizenid)
     local per = cfg().craftsPerLevel or {}
-    local needNext = tonumber(per[profile.craft_level])
-    cb({
+    return {
+        ok = true,
+        stationLabel = (st and st.label) or 'Ginklų gamykla',
         craftLevel = profile.craft_level,
         craftsAtLevel = profile.crafts_at_level,
-        craftsNeeded = needNext,
+        craftsNeeded = tonumber(per[profile.craft_level]),
         maxLevel = tonumber(cfg().maxLevel) or 3,
-        recipes = buildRecipeRows(P, profile.craft_level),
+        products = buildProductRows(P, profile.craft_level),
+    }
+end
+
+QBCore.Functions.CreateCallback('fivempro_ltpd:server:getPdCraftUi', function(src, cb, stationKey)
+    cb(craftUiPayload(src, stationKey))
+end)
+
+QBCore.Functions.CreateCallback('fivempro_ltpd:server:getPdCraftMenu', function(src, cb, stationKey)
+    local data = craftUiPayload(src, stationKey)
+    if not data.ok then return cb(nil) end
+    cb({
+        craftLevel = data.craftLevel,
+        craftsAtLevel = data.craftsAtLevel,
+        craftsNeeded = data.craftsNeeded,
+        maxLevel = data.maxLevel,
         materialItem = cfg().materialItem or 'pd_armory_materials',
+        recipes = data.products,
     })
 end)
 
@@ -184,29 +257,18 @@ RegisterNetEvent('fivempro_ltpd:server:pdWeaponCraft', function(stationKey, reci
         return TriggerClientEvent('QBCore:Notify', src, ('Reikia gamybos %d lygio.'):format(needLv), 'error')
     end
 
-    for item, cnt in pairs(recipe.materials or {}) do
-        local it = P.Functions.GetItemByName(item)
-        if not it or (it.amount or 0) < cnt then
-            return TriggerClientEvent('QBCore:Notify', src, ('Trūksta: %s'):format(materialLabel(item)), 'error')
-        end
+    if not hasAllIngredients(P, recipe) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Trūksta ingredientų.', 'error')
     end
 
-    for item, cnt in pairs(recipe.materials or {}) do
-        if not P.Functions.RemoveItem(item, cnt) then
-            return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko paimti medžiagų.', 'error')
-        end
-        local shared = QBCore.Shared.Items[item]
-        if shared then
-            TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'remove', cnt)
-        end
+    if not removeIngredients(P, recipe) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko paimti medžiagų.', 'error')
     end
 
     local out = recipe.output
     local count = tonumber(recipe.count) or 1
     if not P.Functions.AddItem(out, count) then
-        for item, cnt in pairs(recipe.materials or {}) do
-            P.Functions.AddItem(item, cnt)
-        end
+        refundIngredients(P, recipe)
         return TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
     end
 

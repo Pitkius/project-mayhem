@@ -420,6 +420,7 @@ async function openApp(appId) {
     return;
   }
   showScreen("appScreen");
+  document.getElementById("appScreen")?.classList.toggle("app-fullscreen", appId === "ads" || appId === "bank");
   document.getElementById("appTitle").textContent =
     installedApps().find((a) => a.id === appId)?.label || appId;
   const content = document.getElementById("appContent");

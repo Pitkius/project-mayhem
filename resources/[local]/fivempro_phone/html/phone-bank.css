@@ -174,9 +174,12 @@
 
 .bank-card-visual {
   position: relative;
+  flex-shrink: 0;
+  min-height: 156px;
   border-radius: 18px;
   padding: 16px 18px;
   margin-bottom: 14px;
+  color: #fff;
   background: linear-gradient(135deg, #6b21a8 0%, #9d4edd 45%, #bf5fff 100%);
   box-shadow: 0 12px 32px var(--neon-purple-soft), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   overflow: hidden;
@@ -191,6 +194,14 @@
   height: 120%;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.15), transparent 70%);
   pointer-events: none;
+  z-index: 0;
+}
+.bank-card-chip,
+.bank-card-number,
+.bank-card-holder,
+.bank-card-meta {
+  position: relative;
+  z-index: 1;
 }
 .bank-card-chip {
   width: 36px;
@@ -204,21 +215,36 @@
   font-size: 15px;
   letter-spacing: 0.18em;
   font-weight: 600;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  color: #fff;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bank-card-holder {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.92);
 }
 .bank-card-meta {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   font-size: 11px;
-  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.88);
+}
+.bank-card-account {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
 }
 .bank-card-visa {
   font-size: 18px;
   font-weight: 800;
   font-style: italic;
   letter-spacing: 0.06em;
+  color: #fff;
 }
 
 .bank-balances {
@@ -273,6 +299,9 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 18px;
+}
+.bank-quick-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
 }
 .bank-quick-btn {
   display: flex;

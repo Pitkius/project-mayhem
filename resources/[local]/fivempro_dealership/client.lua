@@ -155,7 +155,17 @@ local function getVehicleStats(model)
     }
 end
 
+local REH_MODELS = {}
+if Config.RehPriceOverrides then
+    for model in pairs(Config.RehPriceOverrides) do
+        REH_MODELS[model] = true
+    end
+end
+
 local function getImageUrl(model)
+    if REH_MODELS[model] then
+        return ('nui://%s/html/images/vehicles/%s.webp'):format(GetCurrentResourceName(), model)
+    end
     return ('https://docs.fivem.net/vehicles/%s.webp'):format(model)
 end
 

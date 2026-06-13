@@ -88,7 +88,7 @@ function ShopSession.Open(kind, camLoc)
         setupShopPed(data.current and data.current.skin, gender)
 
         SetNuiFocus(true, true)
-        SetNuiFocusKeepInput(true)
+        SetNuiFocusKeepInput(false)
         SendNUIMessage({
             action = 'openShop',
             data = data,

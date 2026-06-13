@@ -211,6 +211,9 @@ window.MdtMap = (function () {
   }
 
   function upsertUnit(u, cfg) {
+    if (selfSource != null && Number(u.source) === Number(selfSource)) {
+      return;
+    }
     const key = unitKey(u);
     const [lat, lng] = gameToLatLng(u.x, u.y, cfg);
     let s = unitState[key];
@@ -304,9 +307,8 @@ window.MdtMap = (function () {
       applyMarkerPosition(s);
     });
     if (localPlayerPos && selfSource != null) {
-      upsertUnit(localPlayerUnit(), mapCfg);
+      syncSelfMarker();
     }
-    syncSelfMarker();
     refreshRoute();
   }
 
@@ -450,10 +452,6 @@ window.MdtMap = (function () {
       heading: pos.heading != null ? Number(pos.heading) : 0,
     };
     syncSelfMarker();
-    if (!leafletMap || !mapCfg || selfSource == null) return;
-    upsertUnit(localPlayerUnit(), mapCfg);
-    const s = unitState[`u:${selfSource}`];
-    if (s) applyMarkerPosition(s);
     refreshRoute();
   }
 

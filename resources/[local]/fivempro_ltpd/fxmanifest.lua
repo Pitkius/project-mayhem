@@ -49,6 +49,8 @@ files {
     'html/mdt/vendor/leaflet.css',
     'html/mdt/asset/gtav_satellite.jpg',
     'html/mdt/asset/gtav_satellite_2048.png',
+    'html/craft/style.css',
+    'html/craft/app.js',
 }
 
 dependencies {

@@ -251,6 +251,8 @@ local function getMissionCatalog(gangType)
                 label = m.label or key,
                 reputationReward = tonumber(m.reputationReward) or tonumber(m.progress) or (Config.TaskReputation and Config.TaskReputation[key]) or 0,
                 influenceReward = tonumber(m.influenceReward) or 0,
+                moneyReward = tonumber(m.moneyReward) or 0,
+                archetype = m.archetype or 'delivery',
             }
         end
     end
@@ -267,7 +269,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
                 ok = true,
                 hasGang = false,
                 gangTypes = Config.GangTypes,
-                palette = Config.ColorPalette or {},
+                palette = Config.GangColors or {},
                 colorUsage = getColorUsage(),
                 turfs = getTurfs(),
                 tabletMap = Config.TabletMap or {},
@@ -287,7 +289,7 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
             members = getGangMembers(gang.gang_id),
             turfs = getTurfs(),
             gangTypes = Config.GangTypes,
-            palette = Config.ColorPalette or {},
+            palette = Config.GangColors or {},
             colorUsage = getColorUsage(),
             tabletMap = Config.TabletMap or {},
             gangColors = getGangColorLegend(),

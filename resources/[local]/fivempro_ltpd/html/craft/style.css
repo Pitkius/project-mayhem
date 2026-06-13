@@ -1,0 +1,181 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+
+#pdCraftApp {
+  position: fixed;
+  inset: 6% 10%;
+  background: linear-gradient(145deg, rgba(8, 18, 36, 0.98), rgba(12, 28, 52, 0.97));
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  border-radius: 14px;
+  color: #e8f1ff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 80px rgba(15, 40, 90, 0.45);
+  z-index: 5000;
+}
+
+#pdCraftApp.hidden { display: none !important; }
+
+.pdc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.25);
+}
+.pdc-brand { display: flex; align-items: center; gap: 12px; }
+.pdc-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(37, 99, 235, 0.35), rgba(30, 58, 138, 0.55));
+  border: 1px solid rgba(96, 165, 250, 0.45);
+}
+.pdc-logo svg { width: 26px; height: 26px; }
+.pdc-head h1 { font-size: 19px; letter-spacing: 0.12em; font-weight: 700; }
+.pdc-head h1 span { color: #60a5fa; }
+.pdc-sub { color: #93c5fd; font-size: 13px; margin-top: 4px; }
+.pdc-level-bar {
+  font-size: 11px;
+  color: #bfdbfe;
+  margin-top: 4px;
+}
+
+.pdc-layout { display: flex; flex: 1; min-height: 0; }
+.pdc-list {
+  width: 34%;
+  border-right: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 12px;
+  overflow-y: auto;
+}
+.pdc-list-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #60a5fa;
+  margin-bottom: 10px;
+}
+
+.pdc-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  color: inherit;
+  cursor: pointer;
+}
+.pdc-item:hover, .pdc-item.active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+}
+.pdc-item.locked { opacity: 0.55; cursor: not-allowed; }
+.pdc-item strong { display: block; font-size: 14px; }
+.pdc-item small { color: #93c5fd; }
+
+.pdc-detail { flex: 1; padding: 18px 20px; overflow-y: auto; }
+.pdc-empty { color: #93c5fd; margin-top: 40px; text-align: center; }
+.pdc-meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 16px; }
+.pdc-pill {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+}
+.pdc-pill.warn { background: rgba(245, 158, 11, 0.15); border-color: rgba(251, 191, 36, 0.4); }
+
+.pdc-detail h2 { font-size: 22px; margin-bottom: 4px; }
+.pdc-detail h3 {
+  font-size: 13px;
+  color: #93c5fd;
+  margin: 14px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+#pdcIngredientList { list-style: none; }
+#pdcIngredientList li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 13px;
+}
+#pdcIngredientList li.ok { border-left: 3px solid #22c55e; }
+#pdcIngredientList li.bad { border-left: 3px solid #ef4444; }
+
+.pdc-out {
+  margin: 16px 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.pdc-out strong { color: #dbeafe; font-size: 16px; }
+
+.pdc-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.pdc-btn.ghost {
+  background: rgba(255, 255, 255, 0.06);
+  color: #dbeafe;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+.pdc-btn.primary {
+  width: 100%;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+}
+.pdc-btn.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+#pdcCraftProgress {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+#pdcCraftProgress.hidden { display: none !important; }
+.pdc-progress-box {
+  width: min(420px, 90vw);
+  padding: 22px;
+  border-radius: 12px;
+  background: rgba(8, 18, 36, 0.96);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+.pdc-progress-label { font-size: 15px; margin-bottom: 12px; }
+.pdc-bar-wrap {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.pdc-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  transition: width 0.12s linear;
+}
+.pdc-time { font-size: 12px; color: #93c5fd; margin-top: 10px; }

@@ -1209,6 +1209,18 @@ RegisterNetEvent('fivempro_phone:server:medicRequestFromDead', function()
     end
 
     local cfg = Config.Emergency or {}
+    local title = ('MEDIC: %s prašo pagalbos (%s)'):format(callerName, phone)
+
+    if GetResourceState('fivempro_dispatch') == 'started' then
+        exports['fivempro_dispatch']:CreateDispatchCall(
+            'ems',
+            'civilian_help',
+            { x = c.x, y = c.y, z = c.z },
+            title,
+            src
+        )
+    end
+
     local count = 0
     for _, P in pairs(QBCore.Functions.GetQBPlayers()) do
         if P and P.PlayerData and P.PlayerData.job and P.PlayerData.job.onduty then
@@ -1217,14 +1229,14 @@ RegisterNetEvent('fivempro_phone:server:medicRequestFromDead', function()
                 TriggerClientEvent('fivempro_phone:client:serviceDispatch', P.PlayerData.source, {
                     service = 'ems',
                     x = c.x, y = c.y, z = c.z,
-                    title = ('MEDIC: %s prašo pagalbos (%s)'):format(callerName, phone),
+                    title = title,
                     caller = callerName,
                     phone = phone,
                     duration = tonumber(cfg.blipDurationMs) or 120000,
                     sprite = 153,
                     scale = 1.1,
                 })
-                TriggerClientEvent('QBCore:Notify', P.PlayerData.source, ('Medic: %s – žemėlapyje taškas.'):format(callerName), 'error')
+                TriggerClientEvent('QBCore:Notify', P.PlayerData.source, ('🚑 %s prašo pagalbos – žemėlapyje taškas.'):format(callerName), 'error', 10000)
             end
         end
     end

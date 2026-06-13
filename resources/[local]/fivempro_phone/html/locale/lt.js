@@ -45,8 +45,8 @@ window.PhoneLocale = {
   carplay: {
     title: "CarPlay",
     nowPlaying: "Dabar groja",
-    addUrl: "Pridėti nuorodą",
-    urlPlaceholder: "Spotify / YouTube nuoroda",
+    addUrl: "Nuoroda ar grojaraštis",
+    urlPlaceholder: "YouTube / Spotify nuoroda ar grojaraštis",
     inVehicleOnly: "CarPlay veikia tik automobilyje",
     emptyTitle: "Niekas negroja",
   },

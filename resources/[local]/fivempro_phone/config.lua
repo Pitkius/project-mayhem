@@ -23,7 +23,7 @@ Config.Phone = {
     maxPhotoDataLength = 1500000,
     maxNotesLength = 8000,
     --- CarPlay: max nuorodos ilgis
-    maxCarPlayUrlLength = 512,
+    maxCarPlayUrlLength = 2048,
     --- Automatiniai tarnybų kontaktai (įrašomi kiekvienam žaidėjui, abėcėlės tvarka)
     DefaultContacts = {
         { key = 'police', name = 'Policija', number = '112', service = 'police', icon = 'service-police' },
@@ -82,13 +82,13 @@ Config.Emergency = {
 
 --- BANKAS telefono programėlė
 Config.Bank = {
-    name = 'BANKAS',
+    name = 'BANKNET',
     transferCooldownSec = 5,
     minTransferAmount = 1,
     maxTransferAmount = 500000,
     maxDepositWithdraw = 500000,
     maxPurposeLength = 80,
-    recentTransactionLimit = 8,
+    recentTransactionLimit = 20,
     historyLimit = 50,
 }
 

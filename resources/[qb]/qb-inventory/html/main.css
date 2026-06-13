@@ -88,70 +88,142 @@ body {
     width: 100vw;
 }
 
+.inventory-root {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: auto;
+}
+
+.inventory-backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--scrim);
+    animation: invBackdropIn 0.38s ease both;
+}
+
+.inventory-root.inv-closing .inventory-backdrop {
+    animation: invBackdropOut 0.26s ease-in both;
+}
+
 .inventory-container {
+    position: relative;
+    z-index: 1;
     height: 100%;
     width: 100%;
-    animation: invPanelIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+    pointer-events: none;
 }
 
-.inventory-container.inv-closing {
-    animation: invPanelOut 0.22s ease-in both;
+.inventory-container > * {
+    pointer-events: auto;
 }
 
-@keyframes invPanelIn {
+.inventory-root.inv-closing .player-inventory-section,
+.inventory-root.inv-closing .other-inventory-section {
+    animation: invPanelOut 0.26s ease-in both;
+}
+
+.inventory-root.inv-closing .other-inventory-section {
+    animation-delay: 0s;
+}
+
+.inventory-root.inv-closing .input-container {
+    animation: invInputOut 0.22s ease-in both;
+}
+
+@keyframes invBackdropIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes invBackdropOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.player-inventory-section,
+.other-inventory-section {
+    animation: invSlideFromLeft 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.other-inventory-section {
+    animation-name: invSlideFromRight;
+    animation-delay: 0.07s;
+}
+
+.centered-inventory-section.player-inventory-section {
+    animation-name: invSectionCenterIn;
+    animation-delay: 0s;
+}
+
+@keyframes invSlideFromLeft {
     from {
         opacity: 0;
-        transform: scale(0.97) translateY(14px);
+        transform: translateY(-50%) translateX(-36px) scale(0.96);
     }
     to {
         opacity: 1;
-        transform: scale(1) translateY(0);
+        transform: translateY(-50%) translateX(0) scale(1);
+    }
+}
+
+@keyframes invSlideFromRight {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(36px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0) scale(1);
+    }
+}
+
+@keyframes invSectionCenterIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 24px)) scale(0.94);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
     }
 }
 
 @keyframes invPanelOut {
     from {
         opacity: 1;
-        transform: scale(1) translateY(0);
+        transform: translateY(-50%) translateX(0) scale(1);
     }
     to {
         opacity: 0;
-        transform: scale(0.98) translateY(10px);
+        transform: translateY(calc(-50% + 12px)) scale(0.97);
     }
 }
 
-.player-inventory-section,
-.other-inventory-section {
-    animation: invSectionIn 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.other-inventory-section {
-    animation-delay: 0.05s;
-}
-
-@keyframes invSectionIn {
+@keyframes invInputOut {
     from {
-        opacity: 0;
-        transform: translateY(calc(-50% + 18px));
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
     }
     to {
-        opacity: 1;
-        transform: translateY(-50%);
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.88);
     }
 }
 
-.centered-inventory-section {
-    animation-name: invSectionCenterIn;
+.centered-inventory-section.inv-closing,
+.inventory-root.inv-closing .centered-inventory-section {
+    animation-name: invCenterOut;
 }
 
-@keyframes invSectionCenterIn {
+@keyframes invCenterOut {
     from {
-        opacity: 0;
-        transform: translate(-50%, calc(-50% + 18px));
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
     }
     to {
-        opacity: 1;
-        transform: translate(-50%, -50%);
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 12px)) scale(0.97);
     }
 }
 
@@ -527,6 +599,18 @@ body {
     align-items: center;
     justify-content: center;
     box-shadow: var(--elevation-2);
+    animation: invInputIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+@keyframes invInputIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.82);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
 }
 
 .input-wrapper {

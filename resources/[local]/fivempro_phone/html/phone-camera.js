@@ -53,16 +53,40 @@
       cell.addEventListener("click", async () => {
         const url = await loadThumbUrl(p.id);
         if (!url) return;
-        container.innerHTML = `
-          <div class="neon-card" style="margin:8px;padding:10px">
-            <img src="${url}" style="width:100%;border-radius:12px" alt="" />
-            <div style="display:flex;gap:8px;margin-top:10px">
-              <button type="button" class="neon-btn" id="camBackGallery">← Atgal</button>
-              <button type="button" class="neon-btn danger" id="camDelPhoto" data-id="${p.id}">Šalinti</button>
-            </div>
-          </div>`;
-        container.querySelector("#camBackGallery").addEventListener("click", () => renderGalleryGrid(container));
-        container.querySelector("#camDelPhoto").addEventListener("click", async () => {
+
+        container.replaceChildren();
+        const card = document.createElement("div");
+        card.className = "neon-card cam-gallery-detail";
+        card.style.margin = "8px";
+        card.style.padding = "10px";
+
+        const img = document.createElement("img");
+        img.alt = "";
+        img.className = "cam-gallery-detail-img";
+        img.src = url;
+
+        const actions = document.createElement("div");
+        actions.className = "cam-gallery-detail-actions";
+
+        const backBtn = document.createElement("button");
+        backBtn.type = "button";
+        backBtn.className = "neon-btn";
+        backBtn.id = "camBackGallery";
+        backBtn.textContent = "← Atgal";
+
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "neon-btn danger";
+        delBtn.id = "camDelPhoto";
+        delBtn.dataset.id = String(p.id);
+        delBtn.textContent = "Šalinti";
+
+        actions.append(backBtn, delBtn);
+        card.append(img, actions);
+        container.append(card);
+
+        backBtn.addEventListener("click", () => renderGalleryGrid(container));
+        delBtn.addEventListener("click", async () => {
           await window.PhoneNui("deletePhoto", { id: Number(p.id) });
           await window.refreshState?.();
           renderGalleryGrid(container);

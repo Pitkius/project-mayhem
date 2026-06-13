@@ -10,9 +10,11 @@ local missionBusy = false
 local INTERACT = Config.MissionInteractDistance or 4.5
 local DROP_DIST = Config.MissionDropDistance or 15.0
 local MARKER_DIST = Config.MissionMarkerDrawDistance or 90.0
+local CHECKPOINT_DIST = Config.MissionCheckpointDistance or 12.0
 
 local PICKUP_ANIM = { dict = 'random@domestic', clip = 'pickup_low', flag = 1 }
 local DROP_ANIM = { dict = 'mp_common', clip = 'givetake1_a', flag = 1 }
+local SPRAY_ANIM = { dict = 'switch@franklin@lamar_tagging_wall', clip = 'lamar_tagging_wall_loop_lamar', flag = 1 }
 
 local function drawText3D(x, y, z, text)
     if GetResourceState('fivempro_fonts') == 'started' then
@@ -65,6 +67,10 @@ local function groundZAt(x, y, hintZ)
     return base
 end
 
+local function flatDist(a, b)
+    return #(vector2(a.x, a.y) - vector2(b.x, b.y))
+end
+
 local function resolveDropPoint(drop)
     if not drop then return drop end
     local ped = PlayerPedId()
@@ -81,8 +87,62 @@ local function snapCoordsToGround(coords)
     return vector3(coords.x, coords.y, groundZAt(coords.x, coords.y, coords.z))
 end
 
-local function flatDist(a, b)
-    return #(vector2(a.x, a.y) - vector2(b.x, b.y))
+local TRUNK_LOAD_DIST = 4.5
+local CARRY_ANIM = { dict = 'anim@heists@box_carry@', clip = 'idle', flag = 49 }
+
+local function missionArchetype()
+    return missionData and missionData.archetype or 'delivery'
+end
+
+local function missionUsesTrunk()
+    return missionData and missionData.spawnVehicle and missionData.spawnVehicle ~= ''
+end
+
+local function removeCarriedProp()
+    if not missionData then return end
+    local ped = PlayerPedId()
+    ClearPedTasks(ped)
+    if missionData.carriedProp and DoesEntityExist(missionData.carriedProp) then
+        DetachEntity(missionData.carriedProp, true, true)
+        DeleteEntity(missionData.carriedProp)
+    end
+    missionData.carriedProp = nil
+end
+
+local function spawnCarriedProp(missionType, visualKey)
+    removeCarriedProp()
+    local key = visualKey or missionType
+    local visual = Config.MissionVisuals and Config.MissionVisuals[key]
+    if not visual or not visual.prop then return end
+    local hash = loadModel(visual.prop)
+    if not hash then return end
+    local ped = PlayerPedId()
+    local coords = GetEntityCoords(ped)
+    local obj = CreateObject(hash, coords.x, coords.y, coords.z, true, true, false)
+    AttachEntityToEntity(
+        obj, ped, GetPedBoneIndex(ped, 57005),
+        0.12, 0.02, -0.02, 5.0, 0.0, 0.0,
+        true, true, false, true, 1, true
+    )
+    RequestAnimDict(CARRY_ANIM.dict)
+    local deadline = GetGameTimer() + 3000
+    while not HasAnimDictLoaded(CARRY_ANIM.dict) and GetGameTimer() < deadline do
+        Wait(10)
+    end
+    if HasAnimDictLoaded(CARRY_ANIM.dict) then
+        TaskPlayAnim(ped, CARRY_ANIM.dict, CARRY_ANIM.clip, 8.0, -8.0, -1, CARRY_ANIM.flag, 0, false, false, false)
+    end
+    missionData.carriedProp = obj
+    missionEntities[#missionEntities + 1] = obj
+end
+
+local function getVehicleTrunkPos(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return nil end
+    local bone = GetEntityBoneIndexByName(veh, 'boot')
+    if bone ~= -1 then
+        return GetWorldPositionOfEntityBone(veh, bone)
+    end
+    return GetOffsetFromEntityInWorldCoords(veh, 0.0, -2.8, 0.35)
 end
 
 local function removeTargetZone(name)
@@ -107,9 +167,13 @@ local function clearMissionEntities(opts)
         dropTargetZone = nil
     end
     local keepVeh = opts.keepMissionVehicle and missionData and missionData.missionVehicle
+    local keepDelivery = opts.keepDeliveryVehicle and missionData and missionData.deliveryVehicle
+    local keepCarried = opts.keepCarriedProp and missionData and missionData.carriedProp
     for i = #missionEntities, 1, -1 do
         local ent = missionEntities[i]
-        if not (keepVeh and ent == keepVeh) then
+        if not (keepVeh and ent == keepVeh)
+            and not (keepDelivery and ent == keepDelivery)
+            and not (keepCarried and ent == keepCarried) then
             if ent and DoesEntityExist(ent) then
                 DeleteEntity(ent)
             end
@@ -119,6 +183,11 @@ local function clearMissionEntities(opts)
 end
 
 local function clearMission()
+    removeCarriedProp()
+    if missionData and missionData.deliveryVehicle and DoesEntityExist(missionData.deliveryVehicle) then
+        DeleteEntity(missionData.deliveryVehicle)
+        missionData.deliveryVehicle = nil
+    end
     if missionData and missionData.missionVehicle and DoesEntityExist(missionData.missionVehicle) then
         local ped = PlayerPedId()
         if IsPedInVehicle(ped, missionData.missionVehicle, false) then
@@ -172,6 +241,82 @@ local function progressForStep(inVehicle)
     return nil, nil
 end
 
+local function advanceCheckpoint()
+    if missionBusy or not missionData or not missionData.checkpoints then return end
+    local idx = missionData.checkpointIndex or 1
+    local pt = missionData.checkpoints[idx]
+    if not pt then return end
+    local ped = PlayerPedId()
+    local pos = GetEntityCoords(ped)
+    if flatDist(pos, pt) > CHECKPOINT_DIST then
+        return QBCore.Functions.Notify('Eik arčiau checkpoint.', 'error')
+    end
+    if missionData.archetype == 'racing' and not IsPedInAnyVehicle(ped, false) then
+        return QBCore.Functions.Notify('Reikia transporto.', 'error')
+    end
+    missionBusy = true
+    local label = missionData.archetype == 'racing' and 'Checkpoint…' or 'Patikrinama…'
+    if missionData.archetype ~= 'racing' then
+        if not runProgress(missionData.durationMs or 4000, label, nil, nil) then
+            missionBusy = false
+            return
+        end
+    end
+    QBCore.Functions.TriggerCallback('fivempro_gangs:server:advanceMissionCheckpoint', function(res)
+        missionBusy = false
+        if not res or not res.ok then
+            QBCore.Functions.Notify((res and res.reason) or 'Checkpoint nepavyko.', 'error')
+            if res and res.done == false then
+                TriggerServerEvent('fivempro_gangs:server:cancelMission')
+                clearMission()
+            end
+            return
+        end
+        if res.done then
+            QBCore.Functions.Notify('Misija įvykdyta.', 'success')
+            clearMission()
+            return
+        end
+        missionData.checkpointIndex = res.nextIndex or (idx + 1)
+        local nextPt = missionData.checkpoints[missionData.checkpointIndex]
+        if nextPt then
+            setMissionBlip(nextPt, ('Checkpoint %s/%s'):format(missionData.checkpointIndex, #missionData.checkpoints))
+        end
+    end, missionData.token, idx)
+end
+
+local function tryGraffitiMission()
+    if missionBusy or not missionData or missionData.archetype ~= 'graffiti' then return end
+    if missionData.turfId and Config.FindTurfAt then
+        local p = GetEntityCoords(PlayerPedId())
+        local here = Config.FindTurfAt(p.x, p.y)
+        if here ~= missionData.turfId then
+            return QBCore.Functions.Notify('Turi būti pasirinkto turf zonoje.', 'error')
+        end
+    end
+    missionBusy = true
+    if runProgress(missionData.durationMs or 5000, 'Dažoma graffiti…', SPRAY_ANIM, nil) then
+        finishStep(missionData.token, 1)
+    else
+        missionBusy = false
+        releasePlayerControl()
+    end
+end
+
+local function completeHoldMission()
+    if missionBusy or not missionData or missionData.archetype ~= 'hold' then return end
+    missionBusy = true
+    QBCore.Functions.TriggerCallback('fivempro_gangs:server:completeHoldMission', function(res)
+        missionBusy = false
+        if not res or not res.ok then
+            QBCore.Functions.Notify((res and res.reason) or 'Kontrolė nepavyko.', 'error')
+            return
+        end
+        QBCore.Functions.Notify('Misija įvykdyta.', 'success')
+        clearMission()
+    end, missionData.token)
+end
+
 local function finishStep(token, step)
     QBCore.Functions.TriggerCallback('fivempro_gangs:server:finishMissionStep', function(res)
         missionBusy = false
@@ -187,22 +332,81 @@ local function finishStep(token, step)
             clearMission()
             return
         end
-        if missionData and res.nextStep == 2 then
+        if not missionData then return end
+        if res.nextStep == 2 and res.phase == 'trunk' then
             missionData.step = 2
-            clearMissionEntities({ keepMissionVehicle = missionData.requireVehicle == true })
+            missionData.cargoLoaded = false
+            clearMissionEntities({ keepDeliveryVehicle = true })
+            removeTargetZone(pickupTargetZone)
+            pickupTargetZone = nil
+            spawnCarriedProp(missionData.missionType, missionData.visualKey)
+            if missionBlip and DoesBlipExist(missionBlip) then
+                RemoveBlip(missionBlip)
+                missionBlip = nil
+            end
+            if missionData.deliveryVehicle and DoesEntityExist(missionData.deliveryVehicle) then
+                local v = missionData.deliveryVehicle
+                local vc = GetEntityCoords(v)
+                missionBlip = AddBlipForEntity(v)
+                SetBlipSprite(missionBlip, 477)
+                SetBlipColour(missionBlip, 5)
+                SetBlipRoute(missionBlip, true)
+                exports['fivempro_fonts']:SetBlipName(missionBlip, 'Furgonas — bagažinė')
+            end
+            QBCore.Functions.Notify('Įdėk krovinį į furgono bagažinę — [E] už galinės durų', 'primary')
+            return
+        end
+        if res.nextStep == 3 or (res.nextStep == 2 and res.phase ~= 'trunk') then
+            missionData.step = missionUsesTrunk() and 3 or 2
+            missionData.cargoLoaded = missionUsesTrunk() and true or missionData.cargoLoaded
+            clearMissionEntities({ keepDeliveryVehicle = true, keepMissionVehicle = missionData.requireVehicle == true })
             missionData.drop = resolveDropPoint(missionData.drop)
             if missionData.dropInTurf ~= false then
                 setMissionBlip(missionData.drop, 'Pristatymas į turf')
-                QBCore.Functions.Notify('Nuvežk krovinį į turf centrą — [E] pristatymo taške', 'primary')
+                QBCore.Functions.Notify('Nuvežk krovinį į turf — [E] pristatymo taške', 'primary')
             else
                 if missionBlip and DoesBlipExist(missionBlip) then
                     RemoveBlip(missionBlip)
                     missionBlip = nil
                 end
-                QBCore.Functions.Notify('Krovinys paimtas — [E] užbaigti misiją', 'primary')
+                QBCore.Functions.Notify('Krovinys pristatytas — [E] užbaigti misiją', 'primary')
             end
         end
     end, token, step)
+end
+
+local function tryLoadTrunk()
+    if missionBusy or not missionData or missionData.step ~= 2 or not missionUsesTrunk() then return end
+    if not missionData.carriedProp or not DoesEntityExist(missionData.carriedProp) then
+        return QBCore.Functions.Notify('Pirmiausia paimk krovinį.', 'error')
+    end
+    local veh = missionData.deliveryVehicle
+    if not veh or not DoesEntityExist(veh) then
+        return QBCore.Functions.Notify('Furgonas nerastas.', 'error')
+    end
+    local ped = PlayerPedId()
+    local trunk = getVehicleTrunkPos(veh)
+    if not trunk or flatDist(GetEntityCoords(ped), trunk) > TRUNK_LOAD_DIST then
+        return QBCore.Functions.Notify('Eik prie furgono bagažinės.', 'error')
+    end
+    missionBusy = true
+    SetVehicleDoorOpen(veh, 5, false, false)
+    SetVehicleDoorOpen(veh, 2, false, false)
+    SetVehicleDoorOpen(veh, 3, false, false)
+    if runProgress(missionData.durationMs or 6000, 'Kraunama į bagažinę…', PICKUP_ANIM, nil) then
+        removeCarriedProp()
+        SetVehicleDoorShut(veh, 5, false)
+        SetVehicleDoorShut(veh, 2, false)
+        SetVehicleDoorShut(veh, 3, false)
+        finishStep(missionData.token, 2)
+    else
+        SetVehicleDoorShut(veh, 5, false)
+        SetVehicleDoorShut(veh, 2, false)
+        SetVehicleDoorShut(veh, 3, false)
+        missionBusy = false
+        releasePlayerControl()
+        spawnCarriedProp(missionData.missionType, missionData.visualKey)
+    end
 end
 
 local function tryPickup()
@@ -230,7 +434,12 @@ local function tryPickup()
 end
 
 local function tryDrop()
-    if missionBusy or not missionData or missionData.step ~= 2 or missionData.hacking then return end
+    if missionBusy or not missionData or missionData.hacking then return end
+    local dropStep = missionUsesTrunk() and 3 or 2
+    if missionData.step ~= dropStep then return end
+    if missionUsesTrunk() and not missionData.cargoLoaded then
+        return QBCore.Functions.Notify('Pirmiausia įdėk krovinį į furgono bagažinę.', 'error')
+    end
     local ped = PlayerPedId()
     if missionData.dropInTurf ~= false then
         if flatDist(GetEntityCoords(ped), missionData.drop) > DROP_DIST then
@@ -246,7 +455,7 @@ local function tryDrop()
     if not inVehicle then anim = DROP_ANIM end
     local label = missionData.dropLabel or (inVehicle and 'Pristatomas transportas…' or 'Pristatoma…')
     if runProgress(missionData.durationMs or 7000, label, anim, disableControls) then
-        finishStep(missionData.token, 2)
+        finishStep(missionData.token, dropStep)
     else
         missionBusy = false
         releasePlayerControl()
@@ -317,13 +526,16 @@ local function spawnDeliveryVehicle(model, pickup, heading)
     SetVehicleEngineOn(veh, true, true, false)
     SetVehicleDoorsLocked(veh, 1)
     SetVehicleNumberPlateText(veh, 'GANG' .. math.random(100, 999))
+    if missionData then
+        missionData.deliveryVehicle = veh
+    end
     missionEntities[#missionEntities + 1] = veh
     return veh
 end
 
-local function spawnMissionWorld(missionType, pickup, heading, siteVehicle, spawnVehicle)
+local function spawnMissionWorld(missionType, pickup, heading, siteVehicle, spawnVehicle, visualKey)
     clearMissionEntities()
-    local visual = Config.MissionVisuals and Config.MissionVisuals[missionType]
+    local visual = Config.MissionVisuals and Config.MissionVisuals[visualKey or missionType]
     local mCfg = Config.MissionTypes and Config.MissionTypes[missionType]
     heading = heading or 0.0
     local gz = groundZAt(pickup.x, pickup.y, pickup.z)
@@ -394,35 +606,80 @@ local function startMissionAt(turfId, missionType)
         end
         if missionType == 'hacking' then
             missionData = { token = res.token, step = 1, hacking = true }
-            return QBCore.Functions.Notify('Atlik sėkmingą hack — turf progresas bus priskirtas.', 'primary')
+            return QBCore.Functions.Notify('Hacking misija pašalinta — naudok gaujos misijas planšetėje.', 'error')
         end
+        local archetype = res.archetype or 'delivery'
         local pickup = snapCoordsToGround(vector3(res.pickup.x, res.pickup.y, res.pickup.z))
         local drop = snapCoordsToGround(vector3(res.drop.x, res.drop.y, res.drop.z))
+        local checkpoints = nil
+        if res.checkpoints then
+            checkpoints = {}
+            for i, c in ipairs(res.checkpoints) do
+                checkpoints[i] = snapCoordsToGround(vector3(c.x, c.y, c.z))
+            end
+        end
         missionData = {
             token = res.token,
             step = 1,
             missionType = res.missionType or missionType,
+            archetype = archetype,
+            turfId = res.turfId,
             pickup = pickup,
             drop = drop,
+            checkpoints = checkpoints,
+            checkpointIndex = 1,
+            holdSeconds = res.holdSeconds or 60,
+            holdRadius = res.holdRadius or 80,
+            holdElapsed = 0,
+            holdNotified = false,
             durationMs = res.durationMs or 7000,
             requireVehicle = res.requireVehicle == true,
+            spawnVehicle = res.spawnVehicle,
             dropInTurf = res.dropInTurf ~= false,
+            cargoLoaded = false,
+            visualKey = res.visualKey,
             siteLabel = res.siteLabel,
             pickupLabel = res.pickupLabel,
             dropLabel = res.dropLabel,
         }
+        if res.randomEvent and res.randomEvent.notify then
+            QBCore.Functions.Notify(res.randomEvent.notify, 'primary', 6000)
+        end
+        if archetype == 'patrol' or archetype == 'racing' then
+            if checkpoints and checkpoints[1] then
+                setMissionBlip(checkpoints[1], archetype == 'racing' and 'Lenktynių startas' or 'Patrulio taškas 1')
+            end
+            local hint = archetype == 'racing' and 'važiuok per checkpoint\'us' or 'aplankyk visus patrulio taškus [E]'
+            QBCore.Functions.Notify(('Misija: %s — %s'):format(res.label, hint), 'success')
+            return
+        end
+        if archetype == 'hold' then
+            setMissionBlip(drop, 'Kontrolės zona')
+            spawnMissionWorld(missionData.missionType, pickup, res.heading or 0.0, res.siteVehicle, res.spawnVehicle, res.visualKey)
+            QBCore.Functions.Notify(('Misija: %s — išlaikyk zoną %ss'):format(res.label, missionData.holdSeconds), 'success')
+            return
+        end
+        if archetype == 'graffiti' then
+            setMissionBlip(drop, 'Graffiti vieta')
+            QBCore.Functions.Notify(('Misija: %s — pažymėk turf [E]'):format(res.label), 'success')
+            return
+        end
         spawnMissionWorld(
             missionData.missionType,
             missionData.pickup,
             res.heading or 0.0,
             res.siteVehicle,
-            res.spawnVehicle
+            res.spawnVehicle,
+            res.visualKey
         )
         local blipLabel = res.siteLabel and ('Paėmimas: ' .. res.siteLabel) or res.label
         setMissionBlip(missionData.pickup, blipLabel)
         local hint = res.requireVehicle and 'įsėsk į transportą ir [E]' or '[E]'
         if res.spawnVehicle and not res.requireVehicle then
-            hint = 'paėmimo taške [E] — šalia stovi furgonas'
+            hint = 'paimk krovinį [E], tada įdėk į furgono bagažinę'
+        end
+        if archetype == 'extortion' then
+            hint = '[E] atlikti veiksmą'
         end
         QBCore.Functions.Notify(('Misija: %s — %s'):format(res.label, hint), 'success')
     end, turfId, missionType)
@@ -437,7 +694,7 @@ RegisterCommand('gangmission', function(_, args)
     if not turfId then
         return QBCore.Functions.Notify('Stovėk turf zonoje.', 'error')
     end
-    startMissionAt(turfId, tostring(args[1] or 'smuggle'))
+    startMissionAt(turfId, tostring(args[1] or 'street_patrol'))
 end, false)
 
 RegisterCommand('gangmissiondrop', function()
@@ -450,18 +707,97 @@ CreateThread(function()
         if missionData and not missionData.hacking then
             local ped = PlayerPedId()
             local pos = GetEntityCoords(ped)
+            local arch = missionArchetype()
 
-            if missionData.step == 1 and missionData.pickup then
+            if arch == 'patrol' and missionData.checkpoints then
+                local idx = missionData.checkpointIndex or 1
+                local pt = missionData.checkpoints[idx]
+                if pt then
+                    local dist = flatDist(pos, pt)
+                    if dist < MARKER_DIST then
+                        sleep = 0
+                        drawMissionMarker(pt, 59, 130, 246, ('[E] Patrulio taškas %s/%s'):format(idx, #missionData.checkpoints))
+                        if dist < CHECKPOINT_DIST and IsControlJustReleased(0, 38) and not missionBusy then
+                            advanceCheckpoint()
+                        end
+                    end
+                end
+            elseif arch == 'racing' and missionData.checkpoints then
+                sleep = 0
+                local idx = missionData.checkpointIndex or 1
+                local pt = missionData.checkpoints[idx]
+                if pt then
+                    local dist = flatDist(pos, pt)
+                    if dist < MARKER_DIST then
+                        drawMissionMarker(pt, 250, 204, 21, ('Checkpoint %s/%s'):format(idx, #missionData.checkpoints))
+                    end
+                    if dist < CHECKPOINT_DIST and not missionBusy and IsPedInAnyVehicle(ped, false) then
+                        advanceCheckpoint()
+                    end
+                end
+            elseif arch == 'hold' and missionData.drop then
+                sleep = 0
+                local dist = flatDist(pos, missionData.drop)
+                local inZone = dist <= (missionData.holdRadius or 80)
+                if dist < MARKER_DIST then
+                    drawMissionMarker(missionData.drop, 168, 85, 247, inZone and '[E] Laikoma zona' or 'Eik į kontrolės zoną')
+                end
+                if inZone then
+                    if not missionData.holdStartTime then
+                        missionData.holdStartTime = GetGameTimer()
+                        TriggerServerEvent('fivempro_gangs:server:holdMissionStarted', missionData.token)
+                        QBCore.Functions.Notify(('Laikyk zoną %ss…'):format(missionData.holdSeconds), 'primary')
+                    end
+                    local elapsed = (GetGameTimer() - missionData.holdStartTime) / 1000.0
+                    if elapsed >= (missionData.holdSeconds or 60) and not missionBusy then
+                        completeHoldMission()
+                    end
+                else
+                    missionData.holdStartTime = nil
+                end
+            elseif arch == 'graffiti' and missionData.drop then
+                local dist = flatDist(pos, missionData.drop)
+                if dist < MARKER_DIST then
+                    sleep = 0
+                    drawMissionMarker(missionData.drop, 236, 72, 153, '[E] Pažymėti graffiti')
+                    if dist < INTERACT and IsControlJustReleased(0, 38) and not missionBusy then
+                        tryGraffitiMission()
+                    end
+                end
+            elseif missionData.step == 1 and missionData.pickup then
                 local dist = flatDist(pos, missionData.pickup)
                 if dist < MARKER_DIST then
                     sleep = 0
-                    local pickupLabel = missionData.requireVehicle and '[E] Pavogti transportą' or '[E] Paimti krovinį'
+                    local pickupLabel = missionData.pickupLabel
+                        or (missionData.requireVehicle and '[E] Pavogti transportą' or '[E] Paimti krovinį')
+                    if arch == 'extortion' then
+                        pickupLabel = missionData.pickupLabel or '[E] Atlikti'
+                    end
                     drawMissionMarker(missionData.pickup, 59, 130, 246, pickupLabel)
                     if dist < INTERACT and IsControlJustReleased(0, 38) and not missionBusy then
                         tryPickup()
                     end
                 end
-            elseif missionData.step == 2 then
+            elseif missionData.step == 2 and missionUsesTrunk() then
+                sleep = 0
+                local veh = missionData.deliveryVehicle
+                if veh and DoesEntityExist(veh) and missionData.carriedProp then
+                    local trunk = getVehicleTrunkPos(veh)
+                    if trunk then
+                        local dist = flatDist(pos, trunk)
+                        if dist < MARKER_DIST then
+                            drawMissionMarker(trunk, 250, 204, 21, '[E] Įdėti į bagažinę')
+                            if dist < TRUNK_LOAD_DIST and IsControlJustReleased(0, 38) and not missionBusy then
+                                tryLoadTrunk()
+                            end
+                        end
+                    end
+                end
+            elseif missionData.step == 2 or missionData.step == 3 then
+                local dropStep = missionUsesTrunk() and 3 or 2
+                if missionData.step ~= dropStep then
+                    -- wait for trunk step
+                else
                 sleep = 0
                 if missionData.dropInTurf ~= false and missionData.drop then
                     local dist = flatDist(pos, missionData.drop)
@@ -473,6 +809,7 @@ CreateThread(function()
                     end
                 elseif IsControlJustReleased(0, 38) and not missionBusy then
                     tryDrop()
+                end
                 end
             end
         end

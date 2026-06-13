@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BANKNET Terminal</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <div id="app" class="atm-hidden" aria-hidden="true">
+        <div class="atm-backdrop"></div>
+
+        <div class="atm-shell">
+            <div class="atm-terminal" role="dialog" aria-label="BANKNET bankomatas">
+                <aside class="atm-sidebar">
+                    <div class="atm-logo-block">
+                        <div class="atm-logo-mark">BN</div>
+                        <div class="atm-logo-text">BANKNET</div>
+                    </div>
+
+                    <nav class="atm-nav" id="atmNav"></nav>
+
+                    <button type="button" class="atm-help-btn" data-tab="help">
+                        <span>?</span>
+                        Reikia pagalbos?
+                    </button>
+                </aside>
+
+                <main class="atm-main">
+                    <header class="atm-header">
+                        <div class="atm-header-left">
+                            <div class="atm-brand" id="atmBrand">BANKNET</div>
+                            <div class="atm-greeting">
+                                Sveiki,<br />
+                                <strong id="atmHolder">—</strong>
+                            </div>
+                        </div>
+                        <div class="atm-header-right">
+                            <div class="atm-clock" id="atmClock">00:00</div>
+                            <div class="atm-date" id="atmDate">—</div>
+                        </div>
+                    </header>
+
+                    <div class="atm-content atm-fade" id="atmContent"></div>
+                </main>
+
+                <footer class="atm-bezel">
+                    <div class="atm-slot"><span>KVITAS</span></div>
+                    <div class="atm-slot"><span>GRYNAI</span></div>
+                    <div class="atm-slot"><span>KORTELĖ</span></div>
+                </footer>
+            </div>
+        </div>
+
+        <div class="atm-overlay atm-hidden" id="confirmOverlay">
+            <div class="atm-modal">
+                <div class="atm-modal-icon">!</div>
+                <h3 id="confirmTitle">Patvirtinimas</h3>
+                <p id="confirmText"></p>
+                <div class="atm-modal-actions">
+                    <button type="button" class="atm-btn ghost" id="confirmCancel">Atšaukti</button>
+                    <button type="button" class="atm-btn primary" id="confirmOk">Patvirtinti</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="atm-overlay atm-hidden" id="numpadOverlay">
+            <div class="atm-numpad-panel">
+                <div class="atm-numpad-head">
+                    <span id="numpadLabel">Suma</span>
+                    <button type="button" class="atm-numpad-close" id="numpadClose">×</button>
+                </div>
+                <div class="atm-numpad-display" id="numpadDisplay">0 €</div>
+                <div class="atm-numpad-grid" id="numpadGrid"></div>
+                <button type="button" class="atm-btn primary wide" id="numpadConfirm">Patvirtinti</button>
+            </div>
+        </div>
+
+        <div class="atm-overlay atm-hidden" id="successOverlay">
+            <div class="atm-success">
+                <div class="atm-success-ring">
+                    <svg viewBox="0 0 52 52"><path d="M14 27l8 8 16-16"/></svg>
+                </div>
+                <h3 id="successTitle">Sėkmingai!</h3>
+                <p id="successText"></p>
+                <button type="button" class="atm-btn primary" id="successOk">Baigti</button>
+            </div>
+        </div>
+
+        <div class="atm-toast atm-hidden" id="atmToast"></div>
+    </div>
+</body>
+</html>

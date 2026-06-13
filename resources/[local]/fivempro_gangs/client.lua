@@ -313,9 +313,7 @@ RegisterNUICallback('gangs:startMission', function(data, cb)
     end
     local turfId = tostring(data and data.turfId or '')
     TriggerEvent('fivempro_gangs:client:startMission', turfId, missionType)
-    SetNuiFocus(false, false)
-    stopTabletAnim()
-    SendNUIMessage({ action = 'dock' })
+    closeTabletUi()
     cb({ ok = true })
 end)
 

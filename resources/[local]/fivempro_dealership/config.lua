@@ -131,6 +131,7 @@ Config.CivilianPriceBands = {
 
 --- Papildomas blokas civiliniam katalogui (šarvai / ginklai / arena / aiškūs dubliatai).
 Config.CivilianShopExtraBlockedModels = {
+    vapiddurango = true, -- trūksta stream modelio (yft/ytd)
     kuruma2 = true, voltic2 = true, caracara2 = true, tampa3 = true,
     vigilante = true, scramjet = true, toreador = true, stromberg = true,
     dune3 = true, dune4 = true, dune5 = true,

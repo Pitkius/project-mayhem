@@ -4,8 +4,59 @@ local cam = nil
 local activePreset = 'default'
 local orbitAngle = 0.0
 local rotateThreadActive = false
+local controlLockThread = false
 local shopAnchor = nil
 local targetPed = 0
+
+local BLOCKED_CONTROLS = {
+    21, 22, 23, 24, 25, 30, 31, 32, 33, 34, 35, 36, 37, 44, 45, 47, 58,
+    140, 141, 142, 143, 257, 263, 264, 266, 267, 268, 269, 270, 271, 272,
+}
+
+local function clearCoverState(ped)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
+    SetPedCanPeekInCover(ped, false)
+    if IsPedInCover(ped, false) or IsPedGoingIntoCover(ped) then
+        ClearPedTasks(ped)
+    end
+end
+
+local function restoreCoverAbility()
+    SetPlayerCanUseCover(PlayerId(), true)
+    local ped = PlayerPedId()
+    if ped ~= 0 and DoesEntityExist(ped) then
+        SetPedCanPeekInCover(ped, true)
+    end
+end
+
+local function startControlLock()
+    if controlLockThread then return end
+    controlLockThread = true
+    SetPlayerCanUseCover(PlayerId(), false)
+    CreateThread(function()
+        while rotateThreadActive do
+            Wait(0)
+            local playerId = PlayerId()
+            local ped = PlayerPedId()
+            SetPlayerCanUseCover(playerId, false)
+            for _, ctrl in ipairs(BLOCKED_CONTROLS) do
+                DisableControlAction(0, ctrl, true)
+                DisableControlAction(1, ctrl, true)
+                DisableControlAction(2, ctrl, true)
+            end
+            DisablePlayerFiring(playerId, true)
+            if ped ~= 0 then
+                FreezeEntityPosition(ped, true)
+                clearCoverState(ped)
+            end
+            if targetPed ~= 0 and DoesEntityExist(targetPed) and targetPed ~= ped then
+                clearCoverState(targetPed)
+            end
+        end
+        restoreCoverAbility()
+        controlLockThread = false
+    end)
+end
 
 function CharCamera.setTargetPed(ped)
     targetPed = ped or 0
@@ -77,12 +128,13 @@ function CharCamera.addOrbit(delta)
 end
 
 local function refreshSceneLighting()
-    NetworkOverrideClockTime(14, 30, 0)
+    NetworkOverrideClockTime(12, 0, 0)
     ClearOverrideWeather()
     ClearWeatherTypePersist()
-    SetWeatherTypePersist('CLEAR')
-    SetWeatherTypeNow('CLEAR')
+    SetWeatherTypePersist('EXTRASUNNY')
+    SetWeatherTypeNow('EXTRASUNNY')
     SetRainLevel(0.0)
+    SetArtificialLightsState(false)
 end
 
 function CharCamera.enable()
@@ -100,6 +152,7 @@ function CharCamera.enable()
     end
 
     applyCamera()
+    startControlLock()
 
     CreateThread(function()
         local speed = Config.CameraRotateSpeed or 2.5
@@ -120,6 +173,7 @@ end
 
 function CharCamera.disable()
     rotateThreadActive = false
+    restoreCoverAbility()
     CharCamera.clearShopAnchor()
     CharCamera.setTargetPed(0)
     ClearFocus()

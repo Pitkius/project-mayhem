@@ -13,7 +13,7 @@ local function audioCmdForAction(action, session)
         return { command = 'pause', volume = session.volume }
     end
     if action == 'resume' or action == 'play' then
-        if session.stream and session.stream ~= '' then
+        if session.stream and session.stream ~= '' or session.youtubeListId or session.spotifyId then
             return {
                 command = 'play',
                 stream = session.stream,
@@ -21,11 +21,41 @@ local function audioCmdForAction(action, session)
                 mediaType = session.mediaType,
                 title = session.title,
                 volume = session.volume,
+                youtubeVideoId = session.youtubeVideoId,
+                youtubeListId = session.youtubeListId,
+                spotifyType = session.spotifyType,
+                spotifyId = session.spotifyId,
+                playlistKind = session.playlistKind,
+                queueIndex = session.queueIndex,
+                queueLength = session.queue and #session.queue or 0,
             }
         end
         return nil
     end
-    if action == 'stop' or action == 'skip' then
+    if action == 'stop' then
+        return { command = 'stop' }
+    end
+    if action == 'skip' or action == 'next' then
+        if session.playlistKind == 'youtube_list' then
+            return { command = 'ytNext', volume = session.volume }
+        end
+        if session.playing and (session.stream or session.spotifyId or session.youtubeListId) then
+            return {
+                command = 'play',
+                stream = session.stream,
+                url = session.url,
+                mediaType = session.mediaType,
+                title = session.title,
+                volume = session.volume,
+                youtubeVideoId = session.youtubeVideoId,
+                youtubeListId = session.youtubeListId,
+                spotifyType = session.spotifyType,
+                spotifyId = session.spotifyId,
+                playlistKind = session.playlistKind,
+                queueIndex = session.queueIndex,
+                queueLength = session.queue and #session.queue or 0,
+            }
+        end
         return { command = 'stop' }
     end
     if action == 'volume' then
@@ -127,6 +157,27 @@ RegisterNUICallback('carplayControl', function(data, cb)
         seconds = data and data.seconds,
         duration = data and data.duration,
     })
+end)
+
+RegisterNUICallback('carplayEnded', function(_, cb)
+    local netId = getVehicleNetId()
+    if netId == 0 then return cb({ ok = false }) end
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:carplayControl', function(res)
+        if res and res.ok and res.session then
+            local audio = audioCmdForAction('next', res.session)
+            if audio and audio.command == 'play' then
+                sendUi('carplayAudio', audio)
+            elseif audio then
+                sendUi('carplayAudio', audio)
+            end
+            sendUi('carplayState', {
+                inVehicle = true,
+                netId = netId,
+                session = res.session,
+            })
+        end
+        cb(res or { ok = false })
+    end, { netId = netId, action = 'next' })
 end)
 
 RegisterNetEvent('fivempro_phone:client:carplaySync', function(payload)

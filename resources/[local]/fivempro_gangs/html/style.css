@@ -276,6 +276,15 @@ select.color-select-native {
   outline-offset: 2px;
 }
 
+.color-swatch.is-black {
+  border-color: rgba(196, 181, 253, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.color-swatch.is-black.active {
+  border-color: #f8fafc;
+}
+
 .color-swatch.active {
   border-color: #f8fafc;
   box-shadow:
@@ -1007,7 +1016,38 @@ select.color-select-native {
 }
 
 .top-gang-row {
-  grid-template-columns: auto 36px 1fr auto;
+  grid-template-columns: auto 36px minmax(0, 1fr) auto;
+}
+
+.top-gang-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.top-gang-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-color-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #c4b5fd;
+  letter-spacing: 0.01em;
+}
+
+.top-color-swatch {
+  width: 36px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
 .war-row {
@@ -1018,23 +1058,6 @@ select.color-select-native {
   font-weight: 800;
   color: var(--fp-accent-soft);
 }
-
-.top-color-swatch {
-  width: 36px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
-}
-
-.top-color-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #e2e8f0;
-}
-
 .war-dot,
 .act-dot {
   width: 12px;

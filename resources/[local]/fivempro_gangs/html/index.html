@@ -41,21 +41,21 @@
               <label>Pavadinimas <input id="gangName" type="text" maxlength="42" placeholder="Pvz. Grove" /></label>
               <label>Tipas <select id="gangType"></select></label>
               <div class="color-field">
-                <span class="color-field-label">Spalva</span>
+                <span class="color-field-label">Pagrindinė</span>
                 <select id="primaryColor" class="color-select-native" aria-hidden="true" tabindex="-1"></select>
-                <div id="primarySwatches" class="color-swatches" role="group" aria-label="Pagrindinė spalva"></div>
+                <div id="primarySwatches" class="color-swatches" role="group" aria-label="Pagrindinė spalva (viršus)"></div>
               </div>
               <div class="color-field">
-                <span class="color-field-label">Papild.</span>
+                <span class="color-field-label">Antrinė</span>
                 <select id="secondaryColor" class="color-select-native" aria-hidden="true" tabindex="-1"></select>
-                <div id="secondarySwatches" class="color-swatches" role="group" aria-label="Papildoma spalva"></div>
+                <div id="secondarySwatches" class="color-swatches" role="group" aria-label="Antrinė spalva (apačia)"></div>
               </div>
             </div>
             <div id="colorWarn" class="warn hidden"></div>
             <button type="button" id="btnCreate" class="btn btn-primary wide">Sukurti gaują</button>
           </div>
           <div class="rail-card hints">
-            <p class="small muted">Užpildyk formą ir sukurk gaują. Turfų žemėlapį rasi skiltyje <strong>Žemėlapis</strong>.</p>
+            <p class="small muted">Viršutinė spalva — pagrindinė, apatinė — antrinė (matoma Top gaujos ir žemėlapyje). Juoda spalva taip pat galima.</p>
           </div>
         </section>
 
@@ -90,7 +90,7 @@
         <section id="tabPanelMissions" class="tab-panel hidden" role="tabpanel">
           <div class="rail-card">
             <h3>Gaujos misijos</h3>
-            <p class="small muted">Misijos duoda <strong>reputaciją</strong> ir pinigus — <em>neužima turf</em>. Turf įtaka: graffiti, <code>/gangsell</code>, veikla rajone.</p>
+            <p class="small muted">Misijos kelia <strong>reputaciją</strong>, <strong>Turf įtaką</strong> ir nedidelį atlygį. Tai pagrindinis kelias link teritorijos kontrolės — kartu su graffiti, narkotikų prekyba ir buvimu rajone.</p>
             <div id="gangMissionStats" class="gang-mission-stats muted small"></div>
             <div class="grid tight">
               <label>Pristatymo turf (jei reikia)

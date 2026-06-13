@@ -95,8 +95,10 @@ local function voiceJoin(freq)
         notify('Įdiek pma-voice ir atkomentuok cfg/25_voice.cfg (ensure pma-voice).', 'error')
         return false
     end
+    local channel = RadioFreq.toVoiceChannel(freq)
+    if not channel then return false end
     exports['pma-voice']:setVoiceProperty('radioEnabled', true)
-    exports['pma-voice']:setRadioChannel(freq)
+    exports['pma-voice']:setRadioChannel(channel)
     return true
 end
 
@@ -161,7 +163,7 @@ RegisterNetEvent('fivempro_radio:client:setChannel', function(freq, label, lock,
 end)
 
 RegisterNetEvent('fivempro_radio:client:channelUpdate', function(freq, list)
-    if currentFreq and tonumber(freq) == currentFreq then
+    if currentFreq and RadioFreq.toKey(freq) == RadioFreq.toKey(currentFreq) then
         members = list or {}
     end
 end)
@@ -218,10 +220,10 @@ RegisterNUICallback('disconnect', function(_, cb)
 end)
 
 RegisterNUICallback('validateFreq', function(data, cb)
-    local freq = math.floor(tonumber(data and data.freq) or 0)
+    local freq = RadioFreq.normalize(data and data.freq)
     local alias = tostring(data and data.alias or radioAlias or ''):sub(1, 32)
-    if freq < 1 then
-        sendNui('freqResult', { ok = false, message = 'Įveskite dažnį.' })
+    if not freq then
+        sendNui('freqResult', { ok = false, message = 'Įveskite dažnį (pvz. 19.81).' })
         cb('ok')
         return
     end
@@ -302,7 +304,7 @@ CreateThread(function()
             local maxL = cfgM.maxLines or 10
             local line = 0
 
-            drawTextRight(mx, my + (line * 0.026), 0.34, ('Racija: %s'):format(tostring(currentFreq)), 167, 139, 250, 240)
+            drawTextRight(mx, my + (line * 0.026), 0.34, ('Racija: %s MHz'):format(RadioFreq.format(currentFreq)), 167, 139, 250, 240)
             line = line + 1
             drawTextRight(mx, my + (line * 0.026), 0.30, ('Prisijungę: %s'):format(#members), 226, 232, 240, 225)
             line = line + 1

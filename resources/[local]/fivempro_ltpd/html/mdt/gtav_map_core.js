@@ -131,6 +131,17 @@ window.GtavMapCore = (function () {
       applyCalibration(out, t.calibration);
     }
 
+    if (t.syncGameBounds !== false && Array.isArray(t.calibration) && t.calibration.length >= 2) {
+      out.minX = out.coordMinX;
+      out.minY = out.coordMinY;
+      out.maxX = out.coordMaxX;
+      out.maxY = out.coordMaxY;
+      out.viewMinX = out.coordMinX;
+      out.viewMinY = out.coordMinY;
+      out.viewMaxX = out.coordMaxX;
+      out.viewMaxY = out.coordMaxY;
+    }
+
     return out;
   }
 
@@ -147,7 +158,7 @@ window.GtavMapCore = (function () {
     return L.latLngBounds([cfg.minY + oy, cfg.minX + ox], [cfg.maxY + oy, cfg.maxX + ox]);
   }
 
-  /** GTA (x,y) → Leaflet [lat, lng] — lat=gameY, lng=gameX (standartinis GTA Leaflet). */
+  /** GTA (x,y) → Leaflet [lat, lng] — lat=Y, lng=X. Su kalibracija: 1:1 game koordinatės. */
   function gameToLatLng(gx, gy, cfg) {
     if (!cfg) return [Number(gy) || 0, Number(gx) || 0];
     const x = Number(gx);
@@ -160,10 +171,6 @@ window.GtavMapCore = (function () {
     const oy = cfg.offsetY || 0;
     const scaleX = cfg.scaleX || 1;
     const scaleY = cfg.scaleY || 1;
-
-    if (cfg.flipY !== true && scaleX === 1 && scaleY === 1) {
-      return [y + oy, x + ox];
-    }
 
     const rangeX = cfg.coordMaxX - cfg.coordMinX || 1;
     const rangeY = cfg.coordMaxY - cfg.coordMinY || 1;

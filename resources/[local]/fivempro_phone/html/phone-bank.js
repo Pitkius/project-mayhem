@@ -177,8 +177,9 @@
         <div class="bank-card-visual">
           <div class="bank-card-chip"></div>
           <div class="bank-card-number">${maskCard(d.cardLast4)}</div>
+          <div class="bank-card-holder">${esc(d.holderName || "žaidėjas")}</div>
           <div class="bank-card-meta">
-            <span>${esc(d.accountNumber || "")}</span>
+            <span class="bank-card-account">${esc(d.accountNumber || "LT-0000-0000")}</span>
             <span class="bank-card-visa">VISA</span>
           </div>
         </div>
@@ -200,9 +201,8 @@
           </div>
         </div>
 
-        <div class="bank-quick-grid">
+        <div class="bank-quick-grid bank-quick-grid-2">
           <button type="button" class="bank-quick-btn" data-bank-action="transfer">${icon("transfer", "bank-quick-svg")}<span>Pervesti</span></button>
-          <button type="button" class="bank-quick-btn" data-bank-action="deposit">${icon("deposit", "bank-quick-svg")}<span>Įnešti</span></button>
           <button type="button" class="bank-quick-btn" data-bank-action="history">${icon("history", "bank-quick-svg")}<span>Istorija</span></button>
         </div>
 
@@ -211,7 +211,7 @@
           <button type="button" class="bank-link" data-bank-action="history">Žiūrėti viską</button>
         </div>
         <div class="bank-tx-list">
-          ${txs.length ? txs.map(renderTxItem).join("") : '<div class="bank-empty">Operacijų dar nėra. Atlikite pervedimą ar įnešimą.</div>'}
+          ${txs.length ? txs.map(renderTxItem).join("") : '<div class="bank-empty">Operacijų dar nėra. Atlikite pervedimą.</div>'}
         </div>
       </div>
       ${navHtml("home")}
@@ -231,9 +231,6 @@
           bankUi.tab = "transfer";
           bankUi.screen = "transfer";
           bankUi.transfer = { query: "", recipient: null, amount: "", purpose: "" };
-        } else {
-          bankUi.screen = a;
-          bankUi.amountAction = a;
         }
         renderBank(host);
       });
@@ -453,69 +450,13 @@
     });
   }
 
-  function renderDepositScreen(host) {
-    const chips = [100, 500, 1000, 5000];
-    host.innerHTML = `<div class="bank-app">
-      <div class="bank-screen bank-screen-scroll">
-        <div class="bank-header">
-          <button type="button" class="bank-header-back" data-bank-back="home">‹</button>
-          <span class="bank-header-title">Įnešti pinigus</span>
-          <span class="bank-header-spacer"></span>
-        </div>
-        <p class="bank-hint">Grynieji → bankas</p>
-        <div class="bank-field">
-          <label>Suma (€)</label>
-          <input type="number" id="bankAmtInput" min="1" placeholder="0" />
-        </div>
-        <div class="bank-chips">
-          ${chips.map((c) => `<button type="button" class="bank-chip" data-bank-chip="${c}">€${c}</button>`).join("")}
-        </div>
-        <button type="button" class="bank-submit" id="bankAmtSubmit">Įnešti</button>
-        <div class="bank-status-msg" id="bankAmtMsg"></div>
-      </div>
-    </div>`;
-
-    let amount = "";
-    host.querySelector("#bankAmtInput")?.addEventListener("input", (e) => {
-      amount = e.target.value;
-    });
-    host.querySelectorAll("[data-bank-chip]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        amount = btn.dataset.bankChip;
-        const inp = host.querySelector("#bankAmtInput");
-        if (inp) inp.value = amount;
-      });
-    });
-    host.querySelector("[data-bank-back]")?.addEventListener("click", () => {
-      bankUi.screen = "home";
-      bankUi.tab = "home";
-      renderBank(host);
-    });
-    host.querySelector("#bankAmtSubmit")?.addEventListener("click", async () => {
-      const msg = host.querySelector("#bankAmtMsg");
-      const inp = host.querySelector("#bankAmtInput");
-      const val = Math.floor(Number(inp?.value || amount) || 0);
-      if (val < 1) {
-        if (msg) {
-          msg.textContent = "Įveskite sumą.";
-          msg.className = "bank-status-msg err";
-        }
-        return;
-      }
-      const res = await window.PhoneNui("bankDeposit", { amount: val });
-      if (res?.ok) {
-        await loadState();
-        bankUi.success = {
-          title: "Įnešta!",
-          body: `${fmtMoney(val)} perkelta į banką.`,
-        };
-        bankUi.screen = "success";
-        renderBank(host);
-      } else if (msg) {
-        msg.textContent = res?.message || "Operacija nepavyko.";
-        msg.className = "bank-status-msg err";
-      }
-    });
+  function renderBank(host) {
+    const screen = bankUi.screen;
+    if (screen === "confirm") return renderConfirm(host);
+    if (screen === "success") return renderSuccess(host);
+    if (screen === "transfer" || bankUi.tab === "transfer") return renderTransfer(host);
+    if (screen === "history" || bankUi.tab === "history") return renderHistory(host);
+    return renderHome(host);
   }
 
   async function renderHistory(host) {
@@ -523,7 +464,6 @@
       { id: "all", label: "Visos" },
       { id: "transfer_out", label: "Pervedimai" },
       { id: "transfer_in", label: "Gautos" },
-      { id: "deposit", label: "Įnešimai" },
       { id: "salary", label: "Algos" },
       { id: "payment", label: "Pirkimai" },
       { id: "fine", label: "Baudos" },
@@ -577,16 +517,6 @@
       renderBank(host);
     });
     bindNav(host);
-  }
-
-  function renderBank(host) {
-    const screen = bankUi.screen;
-    if (screen === "confirm") return renderConfirm(host);
-    if (screen === "success") return renderSuccess(host);
-    if (screen === "deposit") return renderDepositScreen(host);
-    if (screen === "transfer" || bankUi.tab === "transfer") return renderTransfer(host);
-    if (screen === "history" || bankUi.tab === "history") return renderHistory(host);
-    return renderHome(host);
   }
 
   window.renderBankApp = async function renderBankApp(content) {

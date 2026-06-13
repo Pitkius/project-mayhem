@@ -4,7 +4,7 @@ html, body {
     background: transparent !important;
     overflow: hidden;
     font-family: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
-    color: #f1f5f9;
+    color: #e8ecf0;
 }
 
 .hidden { display: none !important; }
@@ -13,218 +13,337 @@ html, body {
     position: fixed;
     inset: 0;
     display: grid;
-    place-items: center;
+    place-items: end center;
+    padding-bottom: 4vh;
     pointer-events: none;
 }
 
 .radio-app:not(.hidden) { pointer-events: auto; }
 
-.mm-wrap {
+.radio-scene {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.72));
+    gap: 12px;
+    filter: drop-shadow(0 28px 56px rgba(0, 0, 0, 0.78));
 }
 
-/* —— MEINMACHT walkie body —— */
-.mm-radio {
+/* —— Realistiškas nešiojamas racijos korpusas —— */
+.radio-unit {
     position: relative;
-    width: 196px;
-    padding: 38px 14px 20px;
-    background: linear-gradient(168deg, #2a2a2e 0%, #141416 28%, #0c0c0e 72%, #18181c 100%);
-    border-radius: 14px 14px 18px 18px;
-    border: 1px solid #3a3a42;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.07),
-        inset 0 -8px 20px rgba(0, 0, 0, 0.55),
-        0 6px 0 #050506;
+    width: 228px;
 }
 
-.mm-top {
+.radio-antenna {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 36px;
-    pointer-events: none;
+    top: -36px;
+    right: 28px;
+    width: 11px;
+    height: 48px;
+    background: linear-gradient(90deg, #2a2a30 0%, #7a7a84 42%, #4a4a52 100%);
+    border-radius: 5px 5px 2px 2px;
+    transform: rotate(6deg);
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.45);
+    z-index: 2;
 }
 
-.mm-knob {
+.radio-antenna::after {
+    content: "";
     position: absolute;
-    top: 6px;
-    left: 14px;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #c8c8cc, #5a5a62 55%, #2a2a30);
-    border: 2px solid #484850;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-}
-
-.mm-preset-label {
-    position: absolute;
-    top: 14px;
+    top: -5px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 0.42rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    color: rgba(255, 255, 255, 0.55);
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #888;
 }
 
-.mm-antenna {
+.radio-body {
+    position: relative;
+    padding: 42px 16px 22px;
+    background:
+        linear-gradient(175deg, rgba(255,255,255,0.06) 0%, transparent 18%),
+        linear-gradient(168deg, #3d3f44 0%, #1e1f22 22%, #121316 68%, #25262a 100%);
+    border-radius: 16px 16px 20px 20px;
+    border: 1px solid #4a4c54;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -12px 24px rgba(0, 0, 0, 0.55),
+        0 8px 0 #080809,
+        0 12px 24px rgba(0, 0, 0, 0.5);
+}
+
+.radio-top-bar {
     position: absolute;
-    top: -28px;
-    right: 18px;
-    width: 9px;
-    height: 44px;
-    background: linear-gradient(90deg, #3a3a40, #8a8a92 45%, #5a5a62);
-    border-radius: 4px 4px 2px 2px;
-    transform: rotate(4deg);
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.35);
-}
-
-.mm-brand {
+    top: 10px;
+    left: 14px;
+    right: 14px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 7px;
-    margin-bottom: 8px;
-    color: #f0f0f2;
+    justify-content: space-between;
 }
 
-.mm-logo {
-    width: 22px;
-    height: 16px;
-    opacity: 0.95;
+.radio-knob {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 32% 28%, #e0e0e6, #8a8a94 45%, #3a3a42 78%);
+    border: 2px solid #52525c;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55), inset 0 -2px 4px rgba(0,0,0,0.3);
 }
 
-.mm-brand-text {
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.18em;
+.radio-knob::after {
+    content: "";
+    position: absolute;
+    margin: 14px 0 0 22px;
+    width: 4px;
+    height: 8px;
+    background: #1a1a1e;
+    border-radius: 2px;
+    transform: rotate(-35deg);
 }
 
-/* Olive LCD */
-.mm-lcd {
-    margin: 0 2px 10px;
-    padding: 10px 8px 8px;
-    background: linear-gradient(180deg, #b4c48a 0%, #9db070 45%, #8fa364 100%);
-    border-radius: 6px;
-    border: 2px solid #1a1a1a;
-    box-shadow:
-        inset 0 2px 6px rgba(0, 0, 0, 0.22),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.15);
-    min-height: 58px;
+.radio-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2a1515;
+    border: 1px solid #3a2020;
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.6);
+    transition: background 0.25s, box-shadow 0.25s;
+}
+
+.radio-led.on {
+    background: #22c55e;
+    border-color: #166534;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.85), inset 0 0 2px rgba(255,255,255,0.4);
+}
+
+.radio-brand-row {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    align-items: baseline;
     justify-content: center;
-}
-
-.mm-lcd-freq {
-    font-family: "Courier New", "Lucida Console", monospace;
-    font-size: 2.05rem;
-    font-weight: 700;
-    line-height: 1;
-    color: #1a2210;
-    letter-spacing: 0.04em;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-
-.mm-lcd-meta {
-    margin-top: 4px;
-    font-size: 0.48rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: rgba(26, 34, 16, 0.72);
-    text-align: center;
-    min-height: 0.7em;
-    text-transform: uppercase;
-}
-
-.radio-app.is-connected .mm-lcd {
-    box-shadow:
-        inset 0 2px 6px rgba(0, 0, 0, 0.22),
-        inset 0 0 12px rgba(120, 180, 60, 0.35);
-}
-
-/* 3×2 button pad */
-.mm-pad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
+    gap: 6px;
     margin-bottom: 10px;
 }
 
-.mm-key {
-    aspect-ratio: 1;
+.radio-brand {
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    color: #f4f4f6;
+}
+
+.radio-model {
+    font-size: 0.52rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: rgba(200, 204, 212, 0.55);
+}
+
+/* LCD ekranas */
+.radio-lcd {
+    position: relative;
+    margin: 0 2px 12px;
+    padding: 11px 10px 9px;
+    min-height: 72px;
+    background: linear-gradient(180deg, #1a2418 0%, #0f180e 48%, #0a1209 100%);
+    border-radius: 7px;
+    border: 2px solid #0a0a0c;
+    box-shadow:
+        inset 0 2px 8px rgba(0, 0, 0, 0.65),
+        inset 0 0 20px rgba(80, 200, 60, 0.08),
+        0 1px 0 rgba(255,255,255,0.04);
+    overflow: hidden;
+}
+
+.radio-lcd.is-live {
+    box-shadow:
+        inset 0 2px 8px rgba(0, 0, 0, 0.65),
+        inset 0 0 24px rgba(80, 220, 70, 0.18),
+        0 0 12px rgba(34, 197, 94, 0.15);
+}
+
+.lcd-scanlines {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.12) 2px,
+        rgba(0, 0, 0, 0.12) 3px
+    );
+    opacity: 0.35;
+}
+
+.lcd-row--freq {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 5px;
+}
+
+.lcd-freq {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 2.15rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #7dff6a;
+    text-shadow: 0 0 12px rgba(100, 255, 80, 0.45), 0 1px 0 rgba(0,0,0,0.8);
+    letter-spacing: 0.06em;
+}
+
+.lcd-mhz {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: rgba(125, 255, 106, 0.55);
+    letter-spacing: 0.08em;
+}
+
+.lcd-faction {
+    margin-top: 5px;
+    text-align: center;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: rgba(125, 255, 106, 0.75);
+    min-height: 0.85em;
+}
+
+.lcd-faction.faction-pd { color: #60a5fa; text-shadow: 0 0 8px rgba(96,165,250,0.35); }
+.lcd-faction.faction-ems { color: #f87171; text-shadow: 0 0 8px rgba(248,113,113,0.35); }
+.lcd-faction.faction-mech { color: #fbbf24; text-shadow: 0 0 8px rgba(251,191,36,0.35); }
+.lcd-faction.faction-pub { color: #a78bfa; text-shadow: 0 0 8px rgba(167,139,250,0.35); }
+
+.lcd-status {
+    margin-top: 3px;
+    text-align: center;
+    font-size: 0.48rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: rgba(125, 255, 106, 0.45);
+}
+
+/* Klaviatūra */
+.radio-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.rk {
     border: none;
-    border-radius: 6px;
-    background: linear-gradient(180deg, #2e2e34 0%, #1a1a1e 100%);
-    border: 1px solid #404048;
-    color: #e8e8ec;
+    border-radius: 7px;
     cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 46px;
+    background: linear-gradient(180deg, #3a3c42 0%, #222328 55%, #18191c 100%);
+    border: 1px solid #50525a;
+    color: #e8eaee;
+    box-shadow: 0 3px 0 #0a0a0c, inset 0 1px 0 rgba(255,255,255,0.08);
+    transition: transform 0.08s, background 0.12s;
+}
+
+.rk svg { width: 16px; height: 16px; opacity: 0.88; }
+.rk span { font-size: 0.48rem; font-weight: 700; letter-spacing: 0.06em; opacity: 0.7; }
+
+.rk--main .rk-num {
+    font-size: 1.05rem;
+    font-weight: 800;
+    opacity: 1;
+    line-height: 1;
+}
+
+.rk--main .rk-lbl {
+    font-size: 0.42rem;
+    opacity: 0.65;
+}
+
+.rk:hover {
+    background: linear-gradient(180deg, #484a52 0%, #2a2b30 55%, #1e1f24 100%);
+}
+
+.rk:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #0a0a0c;
+}
+
+.rk.is-active {
+    background: linear-gradient(180deg, #2d4a28 0%, #1a3018 55%, #142812 100%);
+    border-color: #4ade80;
+    color: #dcfce7;
+    box-shadow: 0 3px 0 #0a1a0a, inset 0 0 12px rgba(74, 222, 128, 0.2);
+}
+
+.rk.is-muted svg { opacity: 0.35; }
+
+.radio-ptt {
+    position: absolute;
+    left: -14px;
+    top: 52%;
+    width: 22px;
+    height: 64px;
+    border-radius: 8px 4px 4px 8px;
+    background: linear-gradient(90deg, #1a1a1e, #32343a);
+    border: 1px solid #484850;
     display: grid;
     place-items: center;
-    transition: background 0.12s, transform 0.1s;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+    box-shadow: -3px 2px 8px rgba(0,0,0,0.45);
 }
 
-.mm-key svg {
-    width: 18px;
+.radio-ptt span {
+    writing-mode: vertical-rl;
+    font-size: 0.42rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.35);
+}
+
+.radio-grill {
     height: 18px;
-    opacity: 0.9;
-}
-
-.mm-key--num {
-    font-size: 1.05rem;
-    font-weight: 700;
-    font-family: "Segoe UI", sans-serif;
-}
-
-.mm-key:hover {
-    background: linear-gradient(180deg, #3a3a42 0%, #242428 100%);
-}
-
-.mm-key:active {
-    transform: scale(0.94);
-    background: #141418;
-}
-
-.mm-key.is-active {
-    background: linear-gradient(180deg, #4a5a38 0%, #3a4a2a 100%);
-    border-color: #6a7a52;
-    color: #e8f0d8;
-}
-
-.mm-key.is-muted svg {
-    opacity: 0.45;
-}
-
-.mm-grill {
-    height: 16px;
-    margin: 0 4px;
+    margin: 0 6px 4px;
     border-radius: 4px;
     background:
-        radial-gradient(circle, #0a0a0c 1px, transparent 1px) 0 0 / 5px 5px,
-        linear-gradient(180deg, #1a1a1e, #0e0e12);
-    border: 1px solid #333338;
-    opacity: 0.9;
+        radial-gradient(circle, #060608 1.2px, transparent 1.2px) 0 0 / 5px 5px,
+        linear-gradient(180deg, #1c1c20, #0c0c0e);
+    border: 1px solid #383840;
 }
 
-.mm-hint {
-    font-size: 0.65rem;
-    color: rgba(200, 200, 210, 0.75);
+.radio-clip {
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 14px;
+    border-radius: 0 0 6px 6px;
+    background: linear-gradient(180deg, #52525c, #2a2a30);
+    border: 1px solid #404048;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+}
+
+.radio-hint {
+    font-size: 0.68rem;
+    color: rgba(200, 204, 212, 0.72);
     text-align: center;
+    max-width: 320px;
+    line-height: 1.45;
 }
 
-.mm-hint kbd {
-    padding: 2px 5px;
-    border-radius: 3px;
+.radio-hint kbd {
+    padding: 2px 6px;
+    border-radius: 4px;
     background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     font-size: 0.62rem;
 }
 
@@ -234,23 +353,40 @@ html, body {
     inset: 0;
     display: grid;
     place-items: center;
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(0, 0, 0, 0.62);
     z-index: 30;
     pointer-events: auto;
 }
 
 .modal__card {
-    width: min(340px, 92vw);
-    padding: 18px;
-    border-radius: 12px;
-    background: linear-gradient(145deg, #1e1c24, #101014);
-    border: 1px solid #4a4a54;
+    width: min(360px, 92vw);
+    padding: 20px;
+    border-radius: 14px;
+    background: linear-gradient(155deg, #22242a, #101114);
+    border: 1px solid #454850;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.55);
 }
 
 .modal__card h3 {
-    margin-bottom: 12px;
-    font-size: 0.92rem;
-    color: #c8c8d0;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    color: #e2e8f0;
+}
+
+.modal__bands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.modal__bands span {
+    font-size: 0.62rem;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #94a3b8;
 }
 
 .modal__card input {
@@ -261,6 +397,8 @@ html, body {
     border: 1px solid #404048;
     background: rgba(0, 0, 0, 0.45);
     color: #f1f5f9;
+    font-family: "Consolas", monospace;
+    font-size: 1rem;
 }
 
 .field {
@@ -279,7 +417,7 @@ html, body {
 }
 
 .btn {
-    padding: 8px 14px;
+    padding: 9px 16px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -288,8 +426,12 @@ html, body {
 }
 
 .btn--ghost { background: rgba(255,255,255,0.08); color: #cbd5e1; }
-.btn--primary { background: linear-gradient(180deg, #6a6a72, #4a4a52); color: #fff; }
+.btn--primary {
+    background: linear-gradient(180deg, #3d5240, #2a382c);
+    color: #ecfdf5;
+    border: 1px solid #4ade80;
+}
 
-.modal__hint { margin-top: 8px; font-size: 0.72rem; color: #94a3b8; min-height: 1em; }
+.modal__hint { margin-top: 10px; font-size: 0.72rem; color: #94a3b8; min-height: 1em; }
 .modal__hint.ok { color: #86efac; }
 .modal__hint.err { color: #fca5a5; }

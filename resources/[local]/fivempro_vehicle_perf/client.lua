@@ -49,7 +49,8 @@ local function resolveMaxKmh(veh)
         if isFullyTuned(veh) then
             return tonumber(cfg.HyperTunedMaxKmh) or 330
         end
-        return tonumber(cfg.GlobalCapKmh) or 310
+        local untuned = cfg.HyperUntunedKmh and cfg.HyperUntunedKmh[name]
+        return tonumber(untuned) or tonumber(cfg.GlobalCapKmh) or 310
     end
 
     if name and cfg.RehMaxKmh and cfg.RehMaxKmh[name] then
