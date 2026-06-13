@@ -59,4 +59,5 @@ Config.Blips = {
     { resource = 'dynasty8', label = 'Dynasty 8', coords = vec3(-694.03, 273.51, 82.90), sprite = 374, color = 2 },
     { resource = 'druglabs', label = 'Drug Labs', coords = vec3(1096.0, -3194.0, -38.0), sprite = 499, color = 1 },
     { resource = 'sc_secret_drug', label = 'Secret Meth Lab', coords = vec3(2719.0, 5204.7, 49.64), sprite = 499, color = 6 },
+    { resource = 'sc1_29_motel', label = 'Davis Motel', coords = vec3(356.2, -1800.96, 28.85), sprite = 475, color = 48 },
 }
