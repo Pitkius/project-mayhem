@@ -114,8 +114,12 @@
   </InitDatas>
   <txdRelationships>
     <Item>
+      <parent>vehshare</parent>
+      <child>vehicles_race_interior</child>
+    </Item>
+    <Item>
       <parent>vehicles_nero_w_interior</parent>
-      <child>2018zl1</child>
+      <child>coquettezl1</child>
     </Item>
   </txdRelationships>
 </CVehicleModelInfo__InitDataList>

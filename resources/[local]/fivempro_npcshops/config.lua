@@ -71,8 +71,65 @@ Config.PharmacyShop = {
         { name = 'painkillers', amount = 200, price = 18, slot = 2 },
         { name = 'firstaid',   amount = 100, price = 85, slot = 3 },
         { name = 'ifaks',      amount = 100, price = 120, slot = 4 },
-        { name = 'armor_light', amount = 50, price = 350, slot = 5 },
-        { name = 'armor_standard', amount = 50, price = 750, slot = 6 },
-        { name = 'armor', amount = 30, price = 1200, slot = 7 },
     }
+}
+
+--- Ūkio turgelis — senovinio tipo parduotuvė (kirtiklis, virvė, įrankiai, lauko reikmenys)
+Config.JunkShopBlip = {
+    sprite = 566,
+    color = 17,
+    scale = 0.82,
+    label = 'Ūkio turgelis',
+}
+
+Config.JunkShopMarker = {
+    drawDistance = 32.0,
+    useRadius = 2.4,
+    type = 27,
+    scale = { x = 1.15, y = 1.15, z = 0.32 },
+    color = { 184, 134, 72, 135 },
+    zOffset = 0.02,
+}
+
+Config.JunkShopPeds = {
+    {
+        model = 's_m_m_lathandy_01',
+        coords = vector4(2747.2649, 3472.9866, 55.6701, 246.1098),
+        scenario = 'WORLD_HUMAN_LEAN_BAR',
+    },
+    {
+        model = 's_m_m_lathandy_01',
+        coords = vector4(46.7457, -1749.7040, 29.6324, 46.4768),
+        scenario = 'WORLD_HUMAN_HAMMERING',
+    },
+    {
+        model = 'a_m_m_hillbilly_01',
+        coords = vector4(-10.8677, 6499.2393, 31.5051, 39.2733),
+        scenario = 'WORLD_HUMAN_SMOKING',
+    },
+}
+
+Config.JunkShop = {
+    name = 'fivempro-junk-shop',
+    label = 'Ūkio turgelis',
+    items = {
+        { name = 'mining_pickaxe', amount = 80, price = 185, slot = 1 },
+        { name = 'utility_rope', amount = 200, price = 42, slot = 2 },
+        { name = 'tow_chain', amount = 60, price = 390, slot = 3 },
+        { name = 'screwdriverset', amount = 120, price = 295, slot = 4 },
+        { name = 'repairkit', amount = 80, price = 820, slot = 5 },
+        { name = 'tirerepairkit', amount = 150, price = 115, slot = 6 },
+        { name = 'jerry_can', amount = 60, price = 88, slot = 7 },
+        { name = 'lighter', amount = 300, price = 6, slot = 8 },
+        { name = 'binoculars', amount = 80, price = 265, slot = 9 },
+        { name = 'lockpick', amount = 120, price = 58, slot = 10 },
+        { name = 'hunting_knife', amount = 80, price = 175, slot = 11 },
+        { name = 'gloves', amount = 250, price = 14, slot = 12 },
+        { name = 'metal_scrap', amount = 400, price = 28, slot = 13 },
+        { name = 'plastic', amount = 400, price = 9, slot = 14 },
+        { name = 'rubber', amount = 300, price = 18, slot = 15 },
+        { name = 'coal', amount = 300, price = 12, slot = 16 },
+        { name = 'gravel', amount = 300, price = 10, slot = 17 },
+        { name = 'empty_bottle', amount = 500, price = 4, slot = 18 },
+    },
 }

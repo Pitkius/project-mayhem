@@ -221,69 +221,6 @@ end
 
 RegisterNetEvent('fivempro_basics:client:globalEscClose', fivemproForceCloseAllUi)
 
-local blockedWeaponVehicles = {
-    rhino = true,
-    khanjali = true,
-    insurgent = true,
-    insurgent2 = true,
-    insurgent3 = true,
-    apc = true,
-    scarab = true,
-    scarab2 = true,
-    scarab3 = true,
-    halftrack = true,
-    technical = true,
-    technical2 = true,
-    technical3 = true,
-    nightshark = true,
-    barrage = true,
-    menacer = true,
-    oppressor = true,
-    oppressor2 = true,
-    deluxo = true,
-    ruiner2 = true,
-    ruiner3 = true,
-    lazer = true,
-    hydra = true,
-    savage = true,
-    hunter = true,
-    akula = true,
-    valkyrie = true,
-    valkyrie2 = true,
-    annihilator = true,
-    annihilator2 = true,
-    strikeforce = true,
-    rogue = true,
-    molotok = true,
-    pyro = true,
-    starling = true,
-    volatol = true,
-    bombushka = true,
-    nokota = true,
-    buzzard = true,
-    buzzard2 = true,
-}
-
-local function isVehicleWeaponBlocked(veh)
-    if not veh or veh == 0 or not DoesEntityExist(veh) then return false end
-    local model = GetEntityModel(veh)
-    local name = string.lower(GetDisplayNameFromVehicleModel(model) or '')
-    if blockedWeaponVehicles[name] then
-        return true
-    end
-    local class = GetVehicleClass(veh)
-    if class == 19 then -- military
-        return true
-    end
-    local patterns = { 'weapon', 'armed', 'turret', 'cannon', 'rocket', 'missile', 'gun' }
-    for _, p in ipairs(patterns) do
-        if name:find(p, 1, true) then
-            return true
-        end
-    end
-    return false
-end
-
 -- GTA `SetPlayerHealthRechargeMultiplier`: jei > 0, žaidėjas palaipsniui atsigauna (dažnai matoma kaip „gydymas“ po ~50 % HUD).
 -- Anksčiau išjungdavom tik kai entity HP <= 50 % max — tada dar vis HP > 100 (pvz. 150 = 50 HUD) vis tiek leisdavo regen. Išjungiam visada (RP).
 CreateThread(function()
@@ -297,28 +234,30 @@ CreateThread(function()
 end)
 
 CreateThread(function()
+    SetPlayerCanDoDriveBy(PlayerId(), false)
     while true do
         local ped = PlayerPedId()
         if IsPedInAnyVehicle(ped, false) then
-            local veh = GetVehiclePedIsIn(ped, false)
-            if veh and veh ~= 0 then
-                if isVehicleWeaponBlocked(veh) then
-                    DisablePlayerFiring(PlayerId(), true)
-                    DisableControlAction(0, 24, true)
-                    DisableControlAction(0, 25, true)
-                    DisableControlAction(0, 68, true)
-                    DisableControlAction(0, 69, true)
-                    DisableControlAction(0, 70, true)
-                    DisableControlAction(0, 91, true)
-                    DisableControlAction(0, 92, true)
-                    DisableControlAction(0, 114, true)
-                    DisableControlAction(0, 257, true)
-                    DisableControlAction(0, 263, true)
-                    DisableControlAction(0, 264, true)
-                    DisableControlAction(0, 330, true)
-                    DisableControlAction(0, 331, true)
-                end
-            end
+            local playerId = PlayerId()
+            DisablePlayerFiring(playerId, true)
+            DisableControlAction(0, 24, true)  -- attack
+            DisableControlAction(0, 25, true)  -- aim
+            DisableControlAction(0, 47, true)  -- weapon
+            DisableControlAction(0, 58, true)  -- weapon
+            DisableControlAction(0, 68, true)
+            DisableControlAction(0, 69, true)
+            DisableControlAction(0, 70, true)
+            DisableControlAction(0, 91, true)
+            DisableControlAction(0, 92, true)
+            DisableControlAction(0, 114, true)
+            DisableControlAction(0, 140, true) -- melee
+            DisableControlAction(0, 141, true)
+            DisableControlAction(0, 142, true)
+            DisableControlAction(0, 257, true) -- attack 2
+            DisableControlAction(0, 263, true)
+            DisableControlAction(0, 264, true)
+            DisableControlAction(0, 330, true)
+            DisableControlAction(0, 331, true)
             Wait(0)
         else
             Wait(400)

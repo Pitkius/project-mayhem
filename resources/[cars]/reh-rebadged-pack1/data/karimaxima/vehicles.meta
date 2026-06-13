@@ -15,8 +15,8 @@
       <animConvRoofName></animConvRoofName>
       <animConvRoofWindowsAffected />
       <ptfxAssetName>null</ptfxAssetName>
-      <audioNameHash>FQ2</audioNameHash>
-      <layout>LAYOUT_RANGER</layout>
+      <audioNameHash>TAILGATER</audioNameHash>
+      <layout>LAYOUT_STANDARD</layout>
       <coverBoundOffsets>GRESLEY_COVER_OFFSET_INFO</coverBoundOffsets>
       <explosionInfo>EXPLOSION_INFO_DEFAULT</explosionInfo>
       <scenarioLayout />
@@ -47,7 +47,7 @@
       <PovCameraVerticalAdjustmentForRollCage value="0.000000" />
       <PovPassengerCameraOffset x="-0.050000" y="0.040000" z="0.015000" />
       <PovRearPassengerCameraOffset x="-0.050000" y="0.040000" z="0.015000" />
-      <vfxInfoName>VFXVEHICLEINFO_CAR_OFFROAD</vfxInfoName>
+      <vfxInfoName>VFXVEHICLEINFO_CAR_GENERIC</vfxInfoName>
       <shouldUseCinematicViewMode value="true" />
       <shouldCameraTransitionOnClimbUpDown value="false" />
       <shouldCameraIgnoreExiting value="false" />
@@ -87,7 +87,7 @@
       <frequency value="50" />
       <swankness>SWANKNESS_2</swankness>
       <maxNum value="5" />
-      <flags>FLAG_EXTRAS_STRONG FLAG_PARKING_SENSORS FLAG_IS_OFFROAD_VEHICLE FLAG_IS_BULKY FLAG_USE_RESTRICTED_DRIVEBY_HEIGHT</flags>
+      <flags>FLAG_PARKING_SENSORS FLAG_AVERAGE_CAR</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_FRONT_AND_BACK_PLATES</plateType>
 	  <dashboardType>VDT_TAILGATER</dashboardType>
@@ -130,17 +130,13 @@
 
   </InitDatas>
   <txdRelationships>
-     <Item>
-      <parent>vehshare</parent>
-      <child>vehicles_race_generic</child>
-    </Item>
     <Item>
       <parent>vehshare</parent>
       <child>vehicles_race_interior</child>
     </Item>
-
-
-
-	
+    <Item>
+      <parent>vehicles_race_generic</parent>
+      <child>karimaxima</child>
+    </Item>
   </txdRelationships>
 </CVehicleModelInfo__InitDataList>

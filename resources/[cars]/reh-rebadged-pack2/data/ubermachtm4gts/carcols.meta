@@ -6,24 +6,6 @@
       <id value="811" />	 	  
       <kitType>MKT_SPORT</kitType>
       <visibleMods>
-									<Item>
-          <modelName>ubermachtm4gts_body</modelName>
-          <modShopLabel>ubermachtm4gts_body</modShopLabel>
-          <linkedModels>
-					</linkedModels>
-					<turnOffBones>
-            <Item>misc_e</Item>
-          </turnOffBones>
-          <type>VMT_SKIRT</type>
-          <bone>chassis</bone>
-          <collisionBone>chassis</collisionBone>
-          <cameraPos>VMCP_DEFAULT</cameraPos>
-          <audioApply value="1.000000" />
-          <weight value="10" />
-          <turnOffExtra value="false" />
-          <disableBonnetCamera value="false" />
-          <allowBonnetSlide value="true" />
-        </Item>
 				<Item>
           <modelName>ubermachtm4gts_bumr</modelName>
           <modShopLabel>ubermachtm4gts_bumr</modShopLabel>

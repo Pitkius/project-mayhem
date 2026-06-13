@@ -75,7 +75,12 @@ RegisterNUICallback('carplayControl', function(data, cb)
         action = data and data.action,
         url = data and data.url,
         title = data and data.title,
+        artist = data and data.artist,
+        thumbnail = data and data.thumbnail,
         volume = data and data.volume,
+        position = data and data.position,
+        seconds = data and data.seconds,
+        duration = data and data.duration,
     })
 end)
 

@@ -3,7 +3,7 @@
   <Kits>
     <Item>
       <kitName>2939999997173521533_karinsupra_modkit</kitName>
-      <id value="2939999997173521533" />	 	  
+      <id value="14938" />	 	  
       <kitType>MKT_SPECIAL</kitType>
       <visibleMods>
 	<Item>
@@ -570,11 +570,12 @@
           <type>VMT_SUSPENSION</type>
         </Item>
       </statMods>
-      <slotNames />
+      <slotNames>
         <Item>
           <slot>VMT_CHASSIS</slot>
           <name>chassis_CAGE</name>
         </Item>
+      </slotNames>
       <liveryNames />
     </Item>
   </Kits>

@@ -47,6 +47,11 @@ function NpcRegistry.collect()
         blip = { sprite = 51, color = 2, label = 'Vaistinė', scale = 0.75 },
     })
 
+    push(entries, 'junk', Config.JunkShopPeds, {
+        scenario = 'WORLD_HUMAN_STAND_IMPATIENT',
+        blip = Config.JunkShopBlip,
+    })
+
     for i, row in ipairs(Config.JobStationNpcs or {}) do
         if row.role ~= 'garage' and row.role ~= 'stash' and row.role ~= 'locker' and row.role ~= 'supply' and row.role ~= 'boss' then
             entries[#entries + 1] = {

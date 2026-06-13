@@ -8,6 +8,10 @@ description "REH Rebadged Car Pack 2"
 version "1.0.0"
 lua54 "yes"
 
+client_scripts {
+    "client/fix_spawn.lua",
+}
+
 files({
     "data/**/vehicles.meta",
     "data/**/carvariations.meta",

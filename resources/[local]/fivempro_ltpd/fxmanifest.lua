@@ -11,6 +11,7 @@ ui_page 'html/mdt/index.html'
 
 shared_scripts {
     'config.lua',
+    'config_pd_craft.lua',
     'shared/pd_divisions.lua',
     'config_duty_outfits.lua',
     'config_surveillance.lua',
@@ -22,6 +23,7 @@ client_scripts {
     'client/pd_markers.lua',
     'client/divisions.lua',
     'client/main.lua',
+    'client/pd_craft.lua',
     'client/cctv_props.lua',
     'client/cctv.lua',
     'client/bodycam.lua',
@@ -33,6 +35,7 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
+    'server/pd_craft.lua',
     'server/surveillance.lua',
 }
 
@@ -44,11 +47,14 @@ files {
     'html/mdt/style.css',
     'html/mdt/vendor/leaflet.js',
     'html/mdt/vendor/leaflet.css',
+    'html/mdt/asset/gtav_satellite.jpg',
     'html/mdt/asset/gtav_satellite_2048.png',
 }
 
 dependencies {
     'qb-core',
+    'qb-menu',
+    'qb-inventory',
     'fivempro_dispatch',
 }
 

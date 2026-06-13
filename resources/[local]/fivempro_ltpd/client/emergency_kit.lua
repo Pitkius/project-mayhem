@@ -124,6 +124,11 @@ local function drawScriptFlash(vehicle)
     end
 end
 
+local function safeVehicleNetId(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return 0 end
+    return NetworkGetNetworkIdFromEntity(vehicle)
+end
+
 local function readVehicleStateBag(vehicle)
     local bag = Entity(vehicle).state
     if bag == nil then return 'off', false end
@@ -291,8 +296,8 @@ CreateThread(function()
             lastVehAsDriver = veh
             if pdOnDuty() then ingestFromEntity(veh) end
         elseif lastVehAsDriver ~= 0 then
-            if RESET_ON_EXIT and pdOnDuty() then
-                local netId = NetworkGetNetworkIdFromEntity(lastVehAsDriver)
+            if RESET_ON_EXIT and pdOnDuty() and DoesEntityExist(lastVehAsDriver) then
+                local netId = safeVehicleNetId(lastVehAsDriver)
                 if netId ~= 0 then
                     TriggerServerEvent('fivempro_ltpd:server:clearPdEmergencyOnExit', netId)
                 end

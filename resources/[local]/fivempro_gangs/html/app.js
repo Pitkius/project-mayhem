@@ -160,6 +160,9 @@ function renderMissionsTab(state) {
     o.textContent = `${m.label} (Rep +${rep})`;
     missionTypeSelect.appendChild(o);
   });
+  if (missionTypeSelect.options.length > 0) {
+    missionTypeSelect.selectedIndex = 0;
+  }
   if (claimThresholdLbl) claimThresholdLbl.textContent = String(state.claimThreshold || 100);
   const stats = document.getElementById("gangMissionStats");
   if (stats && state.gang) {
@@ -475,9 +478,13 @@ document.getElementById("btnKickMember").onclick = () => {
 const btnStartMission = document.getElementById("btnStartMission");
 if (btnStartMission) {
   btnStartMission.onclick = () => {
-    const turfId = missionTurfSelect?.value;
     const missionType = missionTypeSelect?.value;
-    if (!turfId || !missionType) return;
+    const turfId = missionTurfSelect?.value || "";
+    if (!missionType) {
+      const stats = document.getElementById("gangMissionStats");
+      if (stats) stats.textContent = "Pasirink misijos tipą.";
+      return;
+    }
     post("gangs:startMission", { turfId, missionType });
   };
 }

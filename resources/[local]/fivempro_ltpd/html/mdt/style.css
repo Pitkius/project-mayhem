@@ -310,6 +310,26 @@ input, select {
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.75);
 }
 
+.mdt-blip.self::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 50%;
+  background: #22d3ee;
+  border: 3px solid #fff;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.95);
+  animation: mdt-self-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes mdt-self-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.88; }
+}
+
+.mdt-blip.self.in-veh::after {
+  border-bottom-color: #fff;
+}
+
 .mdt-blip.leader::before {
   content: '';
   position: absolute;

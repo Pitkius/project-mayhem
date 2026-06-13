@@ -91,12 +91,12 @@
       <frequency value="100" />
       <swankness>SWANKNESS_1</swankness>
       <maxNum value="999" />
-      <flags>FLAG_EXTRAS_STRONG FLAG_POOR_CAR FLAG_HAS_LOWRIDER_HYDRAULICS FLAG_IS_BULKY FLAG_INCREASE_CAMBER_WITH_SUSPENSION_MOD</flags>
+      <flags>FLAG_POOR_CAR FLAG_IS_BULKY</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_FRONT_AND_BACK_PLATES</plateType>
       <dashboardType>VDT_BOBCAT</dashboardType>
       <vehicleClass>VC_MUSCLE</vehicleClass>
-      <wheelType>VWT_LOWRIDER</wheelType>
+      <wheelType>VWT_MUSCLE</wheelType>
       <trailers />
       <additionalTrailers />
       <drivers />
@@ -137,12 +137,12 @@
   </InitDatas>
   <txdRelationships>
     <Item>
+      <parent>vehshare</parent>
+      <child>vehicles_race_interior</child>
+    </Item>
+    <Item>
       <parent>vehicles_peyote_interior</parent>
       <child>declasseimpala</child>
     </Item>
-
-
-
-	
   </txdRelationships>
 </CVehicleModelInfo__InitDataList>

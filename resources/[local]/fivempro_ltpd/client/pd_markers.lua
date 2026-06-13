@@ -11,6 +11,7 @@ local COLORS = {
     locker = { 167, 139, 250, 210 },
     armory = { 239, 68, 68, 210 },
     supply = { 34, 197, 94, 200 },
+    craft = { 251, 191, 36, 210 },
     mdt = { 96, 165, 250, 210 },
     duty = { 250, 204, 21, 200 },
 }
@@ -21,6 +22,7 @@ local SCALES = {
     locker = { x = 1.5, y = 1.5, z = 0.24 },
     armory = { x = 1.5, y = 1.5, z = 0.24 },
     supply = { x = 1.35, y = 1.35, z = 0.22 },
+    craft = { x = 1.55, y = 1.55, z = 0.24 },
     mdt = { x = 1.45, y = 1.45, z = 0.24 },
     duty = { x = 1.5, y = 1.5, z = 0.24 },
 }
@@ -31,6 +33,7 @@ local MARKER_TYPES = {
     locker = 27,
     armory = 27,
     supply = 27,
+    craft = 27,
     mdt = 27,
     duty = 27,
 }
@@ -41,6 +44,7 @@ local USE_RADIUS = {
     locker = 1.6,
     armory = 1.6,
     supply = 1.45,
+    craft = 1.6,
     mdt = 1.45,
     duty = 1.6,
 }
@@ -80,10 +84,10 @@ local function isPdJob()
 end
 
 local function markerVisible(zone)
+    if not isPdJob() then
+        return false
+    end
     if zone.access then
-        if not isPdJob() then
-            return false
-        end
         local grade = exports['fivempro_ltpd']:GetPdGrade()
         local division = exports['fivempro_ltpd']:GetPdDivision()
         return PdDivisions.canAccessPoint(grade, division, zone.access)
@@ -283,6 +287,25 @@ local function registerAllPdMarkers()
             })
         end
 
+    end
+
+    for _, st in ipairs((Config.PdWeaponCraft and Config.PdWeaponCraft.stations) or {}) do
+        if st.coords then
+            local craftKey = st.id
+            RegisterPdGroundMarker({
+                coords = st.coords,
+                kind = 'craft',
+                label = st.label or 'Policijos ginklų gamyba',
+                requireDuty = true,
+                access = {
+                    minGrade = st.minGrade or 0,
+                    divisions = st.divisions,
+                },
+                onPress = function()
+                    TriggerEvent('fivempro_ltpd:client:openPdWeaponCraft', { stationKey = craftKey })
+                end,
+            })
+        end
     end
 
     markersReady = true

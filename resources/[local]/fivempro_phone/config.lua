@@ -20,7 +20,7 @@ Config.Phone = {
     maxPostCaptionLength = 260,
     maxImageUrlLength = 500,
     maxPhotosPerUser = 80,
-    maxPhotoDataLength = 220000,
+    maxPhotoDataLength = 1500000,
     maxNotesLength = 8000,
     --- CarPlay: max nuorodos ilgis
     maxCarPlayUrlLength = 512,
@@ -56,7 +56,7 @@ Config.Phone = {
         { id = 'appstore', label = 'Programėlės', icon = 'appstore', default = true },
         { id = 'ads', label = 'Skelbimai', icon = 'ads', default = true, description = 'Skelbimų portalas su profiliais' },
         { id = 'insta', label = 'LifeGram', icon = 'insta', default = false, description = 'Socialinis tinklas su nuotraukomis' },
-        { id = 'bank', label = 'NEON Bankas', icon = 'bank', default = true, description = 'Mobilus bankas — pervedimai, balansas, istorija' },
+        { id = 'bank', label = 'BANKAS', icon = 'bank', default = true, description = 'Mobilus bankas — pervedimai, balansas, istorija' },
         { id = 'weather', label = 'Orai', icon = 'weather', default = false, description = 'Orų prognozė Los Santos' },
         { id = 'cargonet', label = 'CargoNet', icon = 'cargonet', default = false, description = 'Krovinių birža ir logistikos kontraktai' },
     }
@@ -80,9 +80,9 @@ Config.Emergency = {
     policePanicOnMedicRequest = true,
 }
 
---- NEON BANK telefono programėlė
+--- BANKAS telefono programėlė
 Config.Bank = {
-    name = 'NEON BANK',
+    name = 'BANKAS',
     transferCooldownSec = 5,
     minTransferAmount = 1,
     maxTransferAmount = 500000,

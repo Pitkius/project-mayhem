@@ -9,7 +9,7 @@ window.GtavMapCore = (function () {
     offsetY: 0,
     scaleX: 1,
     scaleY: 1,
-    flipY: true,
+    flipY: false,
     imageWidth: 2048,
     imageHeight: 2048,
   };
@@ -121,7 +121,7 @@ window.GtavMapCore = (function () {
       offsetY: num(t.offsetY, 0),
       scaleX: num(t.scaleX, 1),
       scaleY: num(t.scaleY, 1),
-      flipY: t.flipY !== false,
+      flipY: t.flipY === true,
       imgW: num(t.imageWidth, ISLAND.imageWidth),
       imgH: num(t.imageHeight, ISLAND.imageHeight),
       imageUrl: nuiImageUrl(file, resourceName),
@@ -147,29 +147,34 @@ window.GtavMapCore = (function () {
     return L.latLngBounds([cfg.minY + oy, cfg.minX + ox], [cfg.maxY + oy, cfg.maxX + ox]);
   }
 
-  /**
-   * GTA (x,y) → Leaflet [lat, lng] — šiaurė viršuje (didesnis game Y → didesnis lat).
-   */
+  /** GTA (x,y) → Leaflet [lat, lng] — lat=gameY, lng=gameX (standartinis GTA Leaflet). */
   function gameToLatLng(gx, gy, cfg) {
     if (!cfg) return [Number(gy) || 0, Number(gx) || 0];
     const x = Number(gx);
     const y = Number(gy);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return [cfg.minY + (cfg.offsetY || 0), cfg.minX + (cfg.offsetX || 0)];
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return [cfg.minY + (cfg.offsetY || 0), cfg.minX + (cfg.offsetX || 0)];
+    }
+
+    const ox = cfg.offsetX || 0;
+    const oy = cfg.offsetY || 0;
+    const scaleX = cfg.scaleX || 1;
+    const scaleY = cfg.scaleY || 1;
+
+    if (cfg.flipY !== true && scaleX === 1 && scaleY === 1) {
+      return [y + oy, x + ox];
+    }
 
     const rangeX = cfg.coordMaxX - cfg.coordMinX || 1;
     const rangeY = cfg.coordMaxY - cfg.coordMinY || 1;
     const mapRangeX = cfg.maxX - cfg.minX || 1;
     const mapRangeY = cfg.maxY - cfg.minY || 1;
-    const scaleX = cfg.scaleX || 1;
-    const scaleY = cfg.scaleY || 1;
-    const ox = cfg.offsetX || 0;
-    const oy = cfg.offsetY || 0;
 
     let tX = (x - cfg.coordMinX) / rangeX;
     let tY = (y - cfg.coordMinY) / rangeY;
     tX = Math.max(0, Math.min(1, tX));
     tY = Math.max(0, Math.min(1, tY));
-    if (cfg.flipY !== false) tY = 1 - tY;
+    if (cfg.flipY === true) tY = 1 - tY;
 
     const lng = cfg.minX + tX * mapRangeX * scaleX + ox;
     const lat = cfg.minY + tY * mapRangeY * scaleY + oy;
@@ -188,7 +193,7 @@ window.GtavMapCore = (function () {
     let tY = (Number(lat) - (cfg.offsetY || 0) - cfg.minY) / (mapRangeY * scaleY);
     tX = Math.max(0, Math.min(1, tX));
     tY = Math.max(0, Math.min(1, tY));
-    if (cfg.flipY !== false) tY = 1 - tY;
+    if (cfg.flipY === true) tY = 1 - tY;
     return {
       x: cfg.coordMinX + tX * rangeX,
       y: cfg.coordMinY + tY * rangeY,

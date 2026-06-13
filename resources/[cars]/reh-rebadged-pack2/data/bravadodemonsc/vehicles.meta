@@ -15,7 +15,7 @@
       <animConvRoofName>null</animConvRoofName>
       <animConvRoofWindowsAffected />
       <ptfxAssetName>null</ptfxAssetName>
-      <audioNameHash>npolcharciv</audioNameHash>
+      <audioNameHash>GAUNTLET4</audioNameHash>
       <layout>LAYOUT_STANDARD</layout>
       <coverBoundOffsets>BUFFALO2_COVER_OFFSET_INFO</coverBoundOffsets>
       <explosionInfo>EXPLOSION_INFO_DEFAULT</explosionInfo>
@@ -136,7 +136,7 @@
       <animConvRoofName>null</animConvRoofName>
       <animConvRoofWindowsAffected />
       <ptfxAssetName>null</ptfxAssetName>
-      <audioNameHash>npolcharciv</audioNameHash>
+      <audioNameHash>GAUNTLET4</audioNameHash>
       <layout>LAYOUT_STANDARD</layout>
       <coverBoundOffsets>BUFFALO2_COVER_OFFSET_INFO</coverBoundOffsets>
       <explosionInfo>EXPLOSION_INFO_DEFAULT</explosionInfo>

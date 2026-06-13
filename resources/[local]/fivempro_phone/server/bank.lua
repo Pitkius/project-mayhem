@@ -81,6 +81,71 @@ local function logAdmin(action, src, citizenid, details)
     ))
 end
 
+local function normalizeTransactions(rows)
+    if type(rows) ~= 'table' then return {} end
+    for i = 1, #rows do
+        local row = rows[i]
+        if row.created_at ~= nil then
+            row.created_at = tostring(row.created_at)
+        end
+        if row.status == nil or row.status == '' then
+            row.status = 'completed'
+        end
+    end
+    return rows
+end
+
+local function classifyMoneyChange(moneyType, action, amount, reason)
+    reason = tostring(reason or '')
+    local lower = reason:lower()
+    local delta = math.floor(tonumber(amount) or 0)
+    if action == 'remove' then
+        delta = -math.abs(delta)
+    elseif action == 'add' then
+        delta = math.abs(delta)
+    else
+        return nil
+    end
+    if delta == 0 then return nil end
+
+    local txType = 'other'
+    local title = reason ~= '' and reason or 'Operacija'
+
+    if lower:find('paycheck', 1, true) or lower:find('alga', 1, true) or lower:find('salary', 1, true) then
+        txType = 'salary'
+        title = 'Alga'
+    elseif lower:find('fine', 1, true) or lower:find('bauda', 1, true) then
+        txType = 'fine'
+        title = 'Bauda'
+    elseif lower:find('deposit', 1, true) or lower:find('įneš', 1, true) or lower:find('ines', 1, true) then
+        txType = 'deposit'
+        title = 'Įnešimas į banką'
+    elseif lower:find('transfer', 1, true) or lower:find('perved', 1, true) then
+        if delta > 0 then
+            txType = 'transfer_in'
+            title = 'Gautas pervedimas'
+        else
+            txType = 'transfer_out'
+            title = 'Pervedimas'
+        end
+    elseif moneyType == 'bank' and delta < 0 then
+        txType = 'payment'
+        title = title ~= '' and title or 'Mokėjimas'
+    elseif moneyType == 'bank' and delta > 0 then
+        txType = 'transfer_in'
+        title = title ~= '' and title or 'Įskaitymas'
+    end
+
+    return txType, delta, title
+end
+
+local function shouldSkipMoneyLog(reason)
+    reason = tostring(reason or '')
+    if reason == '' then return false end
+    if reason:find('^phone%-bank', 1, false) then return true end
+    return false
+end
+
 function Bank.LogTransaction(citizenid, txType, amount, title, opts)
     opts = opts or {}
     citizenid = tostring(citizenid or '')
@@ -203,14 +268,14 @@ function Bank.GetState(src)
 
     return {
         ok = true,
-        bankName = cfg().name or 'NEON BANK',
+        bankName = cfg().name or 'BANKAS',
         holderName = fullname,
         citizenid = citizenid,
         accountNumber = acc.account_number,
         cardLast4 = acc.card_last4,
         cash = cash,
         bank = bank,
-        transactions = txs,
+        transactions = normalizeTransactions(txs),
     }
 end
 
@@ -292,7 +357,7 @@ function Bank.Transfer(src, data)
         recipientCitizenid = recipient.citizenid,
         cash = cash,
         bank = bank,
-        txId = ('NEON%s'):format(os.time()),
+        txId = ('BNK%s'):format(os.time()),
     }
 end
 
@@ -355,7 +420,7 @@ function Bank.GetHistory(src, filter)
             ORDER BY id DESC LIMIT ?
         ]], { citizenid, filter, limit }) or {}
     end
-    return { ok = true, transactions = rows }
+    return { ok = true, transactions = normalizeTransactions(rows) }
 end
 
 QBCore.Functions.CreateCallback('fivempro_phone:server:bankGetState', function(source, cb)
@@ -396,6 +461,21 @@ end)
 
 exports('LogBankTransaction', function(citizenid, txType, amount, title, opts)
     Bank.LogTransaction(citizenid, txType, amount, title, opts or {})
+end)
+
+AddEventHandler('QBCore:Server:OnMoneyChange', function(src, moneyType, amount, action, reason)
+    if moneyType ~= 'bank' then return end
+    if shouldSkipMoneyLog(reason) then return end
+
+    local citizenid = citizenFromSrc(src)
+    if not citizenid then return end
+
+    Bank.EnsureAccount(citizenid)
+
+    local txType, delta, title = classifyMoneyChange(moneyType, action, amount, reason)
+    if not txType or not delta then return end
+
+    Bank.LogTransaction(citizenid, txType, delta, title, { status = 'completed' })
 end)
 
 AddEventHandler('playerDropped', function()

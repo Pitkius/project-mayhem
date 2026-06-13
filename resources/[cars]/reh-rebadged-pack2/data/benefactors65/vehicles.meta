@@ -87,7 +87,7 @@
       <frequency value="100" />
       <swankness>SWANKNESS_1</swankness>
       <maxNum value="999" />
-      <flags>FLAG_EXTRAS_REQUIRE FLAG_PARKING_SENSORS FLAG_RICH_CAR FLAG_NO_BROKEN_DOWN_SCENARIO</flags>
+      <flags>FLAG_PARKING_SENSORS FLAG_RICH_CAR FLAG_NO_BROKEN_DOWN_SCENARIO FLAG_HAS_INTERIOR_EXTRAS</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_FRONT_AND_BACK_PLATES</plateType>
 	  <dashboardType>VDT_RACE</dashboardType>
@@ -121,6 +121,10 @@
   </InitDatas>
   
   <txdRelationships>
+    <Item>
+      <parent>vehshare</parent>
+      <child>vehicles_race_interior</child>
+    </Item>
     <Item>
       <parent>vehicles_race_generic</parent>
       <child>benefactors65</child>

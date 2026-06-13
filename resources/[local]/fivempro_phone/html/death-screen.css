@@ -1,0 +1,181 @@
+/* Mirties ekranas — pilnas vaizdas, lietuviškas UTF-8, kraujo lašai */
+#deathScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+  font-family: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
+}
+
+#deathScreen.death-screen--visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.death-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 85% 70% at 50% 42%, rgba(28, 0, 8, 0.15) 0%, rgba(8, 0, 4, 0.72) 55%, rgba(4, 0, 2, 0.94) 100%),
+    linear-gradient(180deg, rgba(120, 8, 22, 0.55) 0%, transparent 18%, transparent 82%, rgba(120, 8, 22, 0.5) 100%),
+    linear-gradient(90deg, rgba(90, 6, 18, 0.42) 0%, transparent 12%, transparent 88%, rgba(90, 6, 18, 0.42) 100%);
+}
+
+.death-blood-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 22vh;
+  pointer-events: none;
+}
+
+.death-blood-edge--top {
+  top: 0;
+  background: linear-gradient(180deg, rgba(140, 10, 28, 0.82) 0%, rgba(90, 6, 18, 0.35) 45%, transparent 100%);
+}
+
+.death-blood-edge--bottom {
+  bottom: 0;
+  transform: rotate(180deg);
+}
+
+.death-drops {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.death-drop {
+  position: absolute;
+  top: -8vh;
+  width: var(--drop-w, 14px);
+  height: var(--drop-h, 34px);
+  transform-origin: 50% 0%;
+  animation: death-drip var(--drop-dur, 3.8s) ease-in infinite;
+  animation-delay: var(--drop-delay, 0s);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+  opacity: var(--drop-opacity, 0.88);
+}
+
+.death-drop svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes death-drip {
+  0% {
+    transform: translateY(0) scaleY(0.65);
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--drop-opacity, 0.88);
+    transform: translateY(0) scaleY(1);
+  }
+  75% {
+    opacity: var(--drop-opacity, 0.88);
+  }
+  100% {
+    transform: translateY(108vh) scaleY(1.15);
+    opacity: 0;
+  }
+}
+
+.death-splatter {
+  position: absolute;
+  width: var(--splatter-size, 120px);
+  height: var(--splatter-size, 120px);
+  opacity: 0.22;
+  filter: blur(0.3px);
+  pointer-events: none;
+}
+
+.death-splatter--tl { top: 2%; left: 1%; transform: rotate(-18deg); }
+.death-splatter--tr { top: 3%; right: 2%; transform: rotate(24deg) scaleX(-1); }
+.death-splatter--bl { bottom: 4%; left: 3%; transform: rotate(12deg) scale(0.85); }
+.death-splatter--br { bottom: 5%; right: 2%; transform: rotate(-8deg) scale(0.9); }
+
+.death-content {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  width: min(92vw, 720px);
+  text-align: center;
+  padding: 2.2rem 1.6rem;
+}
+
+.death-panel {
+  position: relative;
+  padding: 1.8rem 1.4rem 1.6rem;
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(24, 4, 10, 0.72) 0%, rgba(12, 2, 6, 0.55) 100%);
+  border: 1px solid rgba(200, 40, 60, 0.22);
+  box-shadow:
+    0 0 48px rgba(160, 16, 36, 0.18),
+    inset 0 0 32px rgba(80, 8, 20, 0.12);
+}
+
+.death-title {
+  margin: 0;
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #e81838;
+  text-shadow:
+    0 0 18px rgba(232, 24, 56, 0.55),
+    0 2px 0 rgba(0, 0, 0, 0.65);
+  animation: death-pulse 1.9s ease-in-out infinite;
+}
+
+@keyframes death-pulse {
+  0%, 100% { opacity: 0.92; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+
+.death-divider {
+  width: min(280px, 60%);
+  height: 2px;
+  margin: 1rem auto 1.25rem;
+  background: linear-gradient(90deg, transparent, rgba(191, 95, 255, 0.75), transparent);
+  border-radius: 2px;
+}
+
+.death-line {
+  margin: 0.55rem 0;
+  line-height: 1.45;
+  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+}
+
+.death-line--primary {
+  color: #fff5fa;
+  font-size: clamp(1.05rem, 2.5vw, 1.28rem);
+  font-weight: 600;
+}
+
+.death-line--accent {
+  color: #d9b4ff;
+}
+
+.death-line--timer {
+  color: #ffd878;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.death-key {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0.08em 0.45em;
+  margin: 0 0.15em;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}

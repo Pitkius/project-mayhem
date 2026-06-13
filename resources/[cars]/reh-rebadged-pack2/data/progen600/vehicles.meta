@@ -116,6 +116,10 @@
 
   <txdRelationships>
     <Item>
+      <parent>vehshare</parent>
+      <child>vehicles_race_interior</child>
+    </Item>
+    <Item>
       <parent>vehicles_race_generic</parent>
       <child>progen600</child>
     </Item>

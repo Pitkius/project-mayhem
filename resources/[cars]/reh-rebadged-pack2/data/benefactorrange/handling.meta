@@ -14,7 +14,7 @@
       <fDriveInertia value="1.000000" />
       <fClutchChangeRateScaleUpShift value="5.000000" /> <!-- Quick shifting for improved acceleration -->
       <fClutchChangeRateScaleDownShift value="5.000000" />
-      <fInitialDriveMaxFlatVel value="240.000000" /> <!-- Increased top speed to match enhanced performance -->
+      <fInitialDriveMaxFlatVel value="189" /> <!-- Increased top speed to match enhanced performance -->
       <fBrakeForce value="1.100000" /> <!-- Improved braking capability -->
       <fBrakeBiasFront value="0.500000" />
       <fHandBrakeForce value="0.600000" />

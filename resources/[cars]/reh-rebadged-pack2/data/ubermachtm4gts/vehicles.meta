@@ -16,8 +16,8 @@
       <animConvRoofWindowsAffected />
       <ptfxAssetName>null</ptfxAssetName>
       <audioNameHash>schafter3</audioNameHash>
-      <layout>LAYOUT_LOW_RESTRICTED</layout>
-      <coverBoundOffsets>NERO_COVER_OFFSET_INFO</coverBoundOffsets>
+      <layout>LAYOUT_LOW</layout>
+      <coverBoundOffsets>BULLET_COVER_OFFSET_INFO</coverBoundOffsets>
       <explosionInfo>EXPLOSION_INFO_DEFAULT</explosionInfo>
       <scenarioLayout />
       <cameraName>FOLLOW_CHEETAH_CAMERA</cameraName>
@@ -80,7 +80,7 @@
       <frequency value="30" />
       <swankness>SWANKNESS_5</swankness>
       <maxNum value="4" />
-      <flags>FLAG_HAS_LIVERY FLAG_FRONT_BOOT FLAG_FRONT_BOOT FLAG_SPORTS FLAG_RICH_CAR FLAG_NO_BROKEN_DOWN_SCENARIO FLAG_COUNT_AS_FACEBOOK_DRIVEN FLAG_RECESSED_HEADLIGHT_CORONAS FLAG_EXTRAS_REQUIRE FLAG_EXTRAS_STRONG FLAG_HAS_EXTRA FLAG_HAS_INTERIOR_EXTRA</flags>
+      <flags>FLAG_HAS_LIVERY FLAG_SPORTS FLAG_RICH_CAR FLAG_NO_BROKEN_DOWN_SCENARIO FLAG_RECESSED_HEADLIGHT_CORONAS FLAG_NO_HEAVY_BRAKE_ANIMATION</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_BACK_PLATES</plateType>
       <dashboardType>VDT_RACE</dashboardType>
@@ -90,9 +90,7 @@
       <additionalTrailers />
       <drivers />
       <extraIncludes />
-      <doorsWithCollisionWhenClosed>
-        <Item>VEH_EXT_BONNET</Item>
-      </doorsWithCollisionWhenClosed>
+      <doorsWithCollisionWhenClosed />
       <driveableDoors />
       <bumpersNeedToCollideWithMap value="false" />
       <needsRopeTexture value="false" />
@@ -108,9 +106,10 @@
       <buoyancySphereOffset x="0.000000" y="0.000000" z="0.000000" />
       <buoyancySphereSizeScale value="1.000000" />
       <pOverrideRagdollThreshold type="NULL" />
+      <minSeatHeight value="0.813" />
 	  <firstPersonDrivebyData>
-        <Item>LOW_JB700_FRONT_LEFT</Item>
-        <Item>LOW_JB700_FRONT_RIGHT</Item>
+        <Item>LOW_BULLET_FRONT_LEFT</Item>
+        <Item>LOW_BULLET_FRONT_RIGHT</Item>
       </firstPersonDrivebyData>
     </Item>    
  </InitDatas>

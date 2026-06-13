@@ -13,7 +13,7 @@
             156
           </indices>
           <liveries>
-            <Item value="true" />
+            <Item value="false" />
             <Item value="false" />
             <Item value="false" />
             <Item value="false" />
@@ -25,7 +25,7 @@
         </Item>
       </colors>
       <kits>
-        <Item>0_default_modkit</Item>
+        <Item>652785_progen600_modkit</Item>
 	      </kits>
       <windowsWithExposedEdges />
       <plateProbabilities>

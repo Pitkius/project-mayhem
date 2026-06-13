@@ -13,6 +13,7 @@ end
 CreateThread(function()
     registerShop(Config.FoodShop)
     registerShop(Config.PharmacyShop)
+    registerShop(Config.JunkShop)
 end)
 
 RegisterNetEvent('fivempro_npcshops:server:openFoodShop', function()
@@ -29,4 +30,12 @@ RegisterNetEvent('fivempro_npcshops:server:openPharmacyShop', function()
     if not player then return end
     registerShop(Config.PharmacyShop)
     exports['qb-inventory']:OpenShop(src, Config.PharmacyShop.name)
+end)
+
+RegisterNetEvent('fivempro_npcshops:server:openJunkShop', function()
+    local src = source
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+    registerShop(Config.JunkShop)
+    exports['qb-inventory']:OpenShop(src, Config.JunkShop.name)
 end)

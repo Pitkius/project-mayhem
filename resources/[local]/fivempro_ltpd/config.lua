@@ -49,6 +49,7 @@ Config.Permissions = {
     pd_emergency_kit = 0,
     --- PD išorinių / vidinių durų ir vartų užraktas (E) – tik tarnyboje
     pd_doors = 0,
+    pd_craft = 0,
     mdt_cctv = 0,
     mdt_bodycam = 0,
     bodycam_wear = 0,
@@ -74,8 +75,8 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT žemėlapis — Leaflet CRS.Simple (x → lng, y → lat su flipY).
---- Tas pats 2048×2048 satelitas kaip gaujų planšetėje / TruckNet.
+--- MDT žemėlapis — Leaflet CRS.Simple: blipas [gameY, gameX] (flipY = false).
+--- HD satelitas 2048×2048; ribos atitinka pilną San Andreas salą.
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
@@ -87,7 +88,7 @@ Config.MdtMap = {
     offsetY = 0.0,
     scaleX = 1.0,
     scaleY = 1.0,
-    flipY = true,
+    flipY = false,
     imageFile = 'mdt/asset/gtav_satellite_2048.png',
     imageWidth = 2048,
     imageHeight = 2048,
@@ -144,6 +145,10 @@ Config.Stations = {
         --- Registratūra (vienas 3D taškas — MDT + pamaina)
         mdt = { coords = vector3(442.8203, -982.3546, 30.6895) },
         duty = { coords = vector3(442.8203, -982.3546, 30.6895) },
+        supply = {
+            coords = vector3(489.05, -997.1946, 30.6896),
+            label = 'PD inventorius (žaliavos)',
+        },
         armory = {
             coords = vector3(486.5664, -995.1992, 30.6791),
             stashId = 'ltpd_armory_ls',

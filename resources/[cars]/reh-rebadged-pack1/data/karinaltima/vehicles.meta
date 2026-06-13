@@ -15,7 +15,7 @@
       <animConvRoofName>null</animConvRoofName>
       <animConvRoofWindowsAffected />
       <ptfxAssetName>null</ptfxAssetName>
-      <audioNameHash>FUTO</audioNameHash>
+      <audioNameHash>TAILGATER</audioNameHash>
       <layout>LAYOUT_STD_HIGHWINDOW</layout>
       <coverBoundOffsets>GRESLEY_COVER_OFFSET_INFO</coverBoundOffsets>
       <explosionInfo>EXPLOSION_INFO_DEFAULT</explosionInfo>
@@ -91,12 +91,12 @@
       <frequency value="100" />
       <swankness>SWANKNESS_3</swankness>
       <maxNum value="999" />
-      <flags>FLAG_HAS_LIVERY FLAG_IS_BULKY FLAG_PARKING_SENSORS FLAG_IS_ELECTRIC</flags>
+      <flags>FLAG_HAS_LIVERY FLAG_PARKING_SENSORS FLAG_AVERAGE_CAR</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_BACK_PLATES</plateType>
 	  <dashboardType>VDT_TAILGATER</dashboardType>
       <vehicleClass>VC_SEDAN</vehicleClass>
-      <wheelType>VWT_SUV</wheelType>
+      <wheelType>VWT_SPORT</wheelType>
       <trailers />
       <additionalTrailers />
       <drivers />
@@ -113,7 +113,7 @@
         <Item>WHEEL_REAR_RIGHT_CAMERA</Item>
         <Item>WHEEL_REAR_LEFT_CAMERA</Item>
       </cinematicPartCamera>
-      <NmBraceOverrideSet>Truck</NmBraceOverrideSet>
+      <NmBraceOverrideSet />
       <buoyancySphereOffset x="0.000000" y="0.000000" z="0.000000" />
       <buoyancySphereSizeScale value="1.000000" />
       <pOverrideRagdollThreshold type="NULL" />
@@ -126,9 +126,13 @@
     </Item>
   </InitDatas>
   <txdRelationships>
-	    <Item>
-      <parent>vehicles_bob_brown_interior</parent>
-      <child>23altimavctsr</child>
+    <Item>
+      <parent>vehshare</parent>
+      <child>vehicles_race_interior</child>
+    </Item>
+    <Item>
+      <parent>vehicles_race_generic</parent>
+      <child>karinaltima</child>
     </Item>
   </txdRelationships>
 </CVehicleModelInfo__InitDataList>

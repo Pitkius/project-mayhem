@@ -305,12 +305,13 @@ RegisterNUICallback('gangs:setMemberRank', function(data, cb)
 end)
 
 RegisterNUICallback('gangs:startMission', function(data, cb)
-    local turfId = tostring(data and data.turfId or '')
     local missionType = tostring(data and data.missionType or '')
-    if turfId == '' or missionType == '' then
+    if missionType == '' then
+        QBCore.Functions.Notify('Pasirink misijos tipą.', 'error')
         cb({ ok = false })
         return
     end
+    local turfId = tostring(data and data.turfId or '')
     TriggerEvent('fivempro_gangs:client:startMission', turfId, missionType)
     SetNuiFocus(false, false)
     stopTabletAnim()

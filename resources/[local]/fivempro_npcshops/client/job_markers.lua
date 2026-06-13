@@ -69,9 +69,27 @@ local function registerZone(data)
         kind = data.kind or 'stash',
         label = data.label or 'Tarnyba',
         scale = data.scale,
+        job = data.job,
+        visible = data.visible,
         onPress = data.onPress,
         canUse = data.canUse,
     }
+end
+
+local function playerHasJob(jobName)
+    if not jobName or jobName == '' then return false end
+    local P = QBCore.Functions.GetPlayerData()
+    return P and P.job and P.job.name == jobName
+end
+
+local function zoneVisible(zone)
+    if zone.visible then
+        return zone.visible()
+    end
+    if zone.job then
+        return playerHasJob(zone.job)
+    end
+    return false
 end
 
 exports('AddJobGroundMarker', registerZone)
@@ -86,6 +104,7 @@ for _, entry in ipairs(Config.JobStationNpcs or {}) do
         registerZone({
             coords = entry.coords,
             kind = entry.role,
+            job = entry.job,
             label = entry.label,
             scale = entry.role == 'garage' and (Config.JobMarkerGarageScale or Config.JobMarkerScale)
                 or entry.role == 'locker' and (Config.JobMarkerLockerScale or Config.JobMarkerScale)
@@ -106,6 +125,9 @@ CreateThread(function()
 
         if not IsNuiFocused() then
             for _, zone in ipairs(zones) do
+                if not zoneVisible(zone) then
+                    goto continue_zone
+                end
                 local dist = #(pcoords - zone.coords)
                 local useR = useRadiusFor(zone.kind)
                 if dist < drawD then
@@ -127,6 +149,7 @@ CreateThread(function()
                         end
                     end
                 end
+                ::continue_zone::
             end
         end
 

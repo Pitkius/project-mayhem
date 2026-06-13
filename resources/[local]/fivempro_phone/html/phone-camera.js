@@ -22,11 +22,13 @@
     camState.live = !!on;
   }
 
+  const normalizeImageSrc = (raw) =>
+    (window.PhoneNormalizeImageSrc ? window.PhoneNormalizeImageSrc(raw) : String(raw || ""));
+
   async function loadThumbUrl(photoId) {
     const res = await window.PhoneNui("getPhoto", { id: photoId });
     if (!res?.ok || !res.photo?.image) return "";
-    const img = res.photo.image;
-    return img.startsWith("data:") ? img : `data:image/png;base64,${img}`;
+    return normalizeImageSrc(res.photo.image);
   }
 
   async function renderGalleryGrid(container) {

@@ -98,13 +98,23 @@ local function getVehicleDisplayName(model)
     return model
 end
 
+local function getConfiguredMaxKmh(model)
+    if GetResourceState('fivempro_vehicle_perf') ~= 'started' then return nil end
+    local ok, kmh = pcall(function()
+        return exports['fivempro_vehicle_perf']:GetConfiguredMaxKmh(model)
+    end)
+    if ok and kmh then return tonumber(kmh) end
+    return nil
+end
+
 local function getVehicleStats(model)
     local hash = joaat(model)
     local maxSpeedMps = GetVehicleModelEstimatedMaxSpeed(hash)
     local accel = GetVehicleModelAcceleration(hash)
     local braking = GetVehicleModelMaxBraking(hash)
     local traction = GetVehicleModelMaxTraction(hash)
-    local maxKmh = (tonumber(maxSpeedMps) or 0.0) * 3.6
+    local configuredKmh = getConfiguredMaxKmh(model)
+    local maxKmh = configuredKmh or ((tonumber(maxSpeedMps) or 0.0) * 3.6)
     local zeroToHundred = 27.777 / math.max(0.1, (tonumber(accel) or 0.1) * 7.5)
     return {
         maxKmh = maxKmh,

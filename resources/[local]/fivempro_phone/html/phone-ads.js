@@ -22,8 +22,9 @@
     if (refs.photoIds[0]) {
       const res = await window.PhoneNui("getPhoto", { id: refs.photoIds[0] });
       if (res?.ok && res.photo?.image) {
-        const img = res.photo.image;
-        return img.startsWith("data:") ? img : `data:image/png;base64,${img}`;
+        return window.PhoneNormalizeImageSrc
+          ? window.PhoneNormalizeImageSrc(res.photo.image)
+          : res.photo.image;
       }
     }
     return "";
@@ -35,8 +36,11 @@
     for (const pid of refs.photoIds) {
       const res = await window.PhoneNui("getPhoto", { id: pid });
       if (res?.ok && res.photo?.image) {
-        const img = res.photo.image;
-        out.push(img.startsWith("data:") ? img : `data:image/png;base64,${img}`);
+        out.push(
+          window.PhoneNormalizeImageSrc
+            ? window.PhoneNormalizeImageSrc(res.photo.image)
+            : res.photo.image,
+        );
       }
     }
     return out;
@@ -97,7 +101,9 @@
     const id = photos[0].id;
     const res = await window.PhoneNui("getPhoto", { id });
     if (res?.ok && res.photo?.image) {
-      const img = res.photo.image.startsWith("data:") ? res.photo.image : `data:image/png;base64,${res.photo.image}`;
+      const img = window.PhoneNormalizeImageSrc
+        ? window.PhoneNormalizeImageSrc(res.photo.image)
+        : res.photo.image;
       onPick(id, img);
     }
   }

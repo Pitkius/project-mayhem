@@ -86,6 +86,31 @@ function PhoneCamera.start(opts)
     end)
 end
 
+local function normalizeImageData(raw)
+    local imageData = tostring(raw or '')
+    imageData = imageData:match('^%s*(.-)%s*$') or ''
+    if imageData == '' then return '' end
+
+    if imageData:sub(1, 1) == '{' then
+        local ok, parsed = pcall(json.decode, imageData)
+        if ok and type(parsed) == 'table' and type(parsed.data) == 'string' then
+            imageData = parsed.data:match('^%s*(.-)%s*$') or ''
+        end
+    end
+
+    if imageData ~= '' and not imageData:find('^data:') then
+        if imageData:sub(1, 3) == '/9j' then
+            imageData = 'data:image/jpeg;base64,' .. imageData
+        elseif imageData:sub(1, 8) == 'iVBORw0K' then
+            imageData = 'data:image/png;base64,' .. imageData
+        else
+            imageData = 'data:image/jpeg;base64,' .. imageData
+        end
+    end
+
+    return imageData
+end
+
 local function captureScreenshot(cb)
     local state = GetResourceState('screenshot-basic')
     if state ~= 'started' then
@@ -95,9 +120,9 @@ local function captureScreenshot(cb)
     local ok, err = pcall(function()
         exports['screenshot-basic']:requestScreenshot({
             encoding = 'jpg',
-            quality = 0.82,
+            quality = 0.58,
         }, function(data)
-            cb(data)
+            cb(normalizeImageData(data))
         end)
     end)
     if not ok then

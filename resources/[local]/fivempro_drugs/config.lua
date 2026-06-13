@@ -98,7 +98,7 @@ end
 Config.Products = {
     --- L1
     thc_process = drugProcess('THC · distiliacija', 1, 'weed_resin', 14000, 'low', 'progress', 5, 3, 1, 35, 1),
-    thc_pack = drugPack('THC kronštainis · supakavimas', 1, 'thc_cart', 95, 12000, 'low', 'progress', 6, 4, 2, 35, 2),
+    thc_pack = drugPack('Vape buteliukas · supakavimas', 1, 'thc_cart', 95, 12000, 'low', 'progress', 6, 4, 2, 35, 2),
     alcohol_process = drugProcess('Samagonas · distiliacija', 1, 'moonshine_spirit', 13000, 'low', 'progress', 4, 3, 1, 30, 3),
     alcohol_pack = drugPack('Nelegalus alkoholis · supakavimas', 1, 'illegal_alcohol', 75, 11000, 'low', 'progress', 5, 3, 2, 30, 4),
     vape_process = drugProcess('Vape · paruošimas', 1, 'vape_mix', 12000, 'low', 'progress', 4, 2, 1, 28, 5),
@@ -119,8 +119,8 @@ Config.Products = {
     cocaine_pack = drugPack('Kokainas · supakavimas', 3, 'cocaine_bag', 420, 22000, 'high', 'advanced', 22, 16, 8, 70, 18),
     amp_process = drugProcess('Amfetaminas · sintezė', 3, 'amp_paste', 30000, 'high', 'advanced', 17, 11, 6, 60, 19),
     amp_pack = drugPack('Amfetaminas · supakavimas', 3, 'amphetamine_bag', 380, 20000, 'high', 'advanced', 20, 14, 7, 65, 20),
-    cartel_process = drugProcess('Kartelio mišinys · virimas', 3, 'cartel_blend', 35000, 'extreme', 'advanced', 20, 15, 7, 70, 21),
-    cartel_pack = drugPack('Kartelio mišinys · supakavimas', 3, 'cartel_pack', 520, 24000, 'extreme', 'advanced', 25, 20, 10, 75, 22),
+    cartel_process = drugProcess('Kokainas · virimas (kartelis)', 3, 'cartel_blend', 35000, 'extreme', 'advanced', 20, 15, 7, 70, 21),
+    cartel_pack = drugPack('Kokainas · supakavimas (kartelis)', 3, 'cartel_pack', 520, 24000, 'extreme', 'advanced', 25, 20, 10, 75, 22),
 }
 
 Config.Recipes = {
@@ -132,7 +132,7 @@ Config.Recipes = {
     },
     thc_pack = {
         { item = 'weed_resin', count = 1 },
-        { item = 'empty_cart', count = 1 },
+        { item = 'empty_bottle', count = 1 },
         { item = 'packaging', count = 1 },
     },
     alcohol_process = {
@@ -253,6 +253,62 @@ Config.Stations = {
     { id = 'weapon_bench_l1', label = 'Ginklų dirbtuvė · L1', level = 1, mode = 'weapon', coords = devRow(14.0), radius = 2.2, blip = false },
     { id = 'weapon_bench_l2', label = 'Ginklų dirbtuvė · L2', level = 2, mode = 'weapon', coords = devRow(15.5), radius = 2.2, blip = false },
     { id = 'weapon_bench_l3', label = 'Ginklų dirbtuvė · L3', level = 3, mode = 'weapon', coords = devRow(17.0), radius = 2.2, blip = false },
+}
+
+--- Nešiojamas 3D spausdintuvas (itemas · DB · spausdinimas)
+Config.Printer3d = {
+    item = '3d_printer',
+    propModel = 'prop_printer_01',
+    maxPerPlayer = 2,
+    pickupDist = 2.8,
+    interactDist = 2.4,
+    products = {
+        print_gun_frame = {
+            label = 'Ginklo korpusas',
+            output = { item = 'gun_frame', count = 1 },
+            ingredients = {
+                { item = 'metal_scrap', count = 3 },
+                { item = 'plastic', count = 4 },
+            },
+            timeMs = 42000,
+        },
+        print_gun_barrel = {
+            label = 'Vamzdis',
+            output = { item = 'gun_barrel', count = 1 },
+            ingredients = {
+                { item = 'metal_scrap', count = 4 },
+                { item = 'plastic', count = 3 },
+            },
+            timeMs = 45000,
+        },
+        print_gun_spring = {
+            label = 'Spyruoklė',
+            output = { item = 'gun_spring', count = 2 },
+            ingredients = {
+                { item = 'metal_scrap', count = 2 },
+                { item = 'plastic', count = 2 },
+            },
+            timeMs = 28000,
+        },
+        print_gun_trigger = {
+            label = 'Užtaisas',
+            output = { item = 'gun_trigger', count = 1 },
+            ingredients = {
+                { item = 'metal_scrap', count = 2 },
+                { item = 'plastic', count = 3 },
+            },
+            timeMs = 32000,
+        },
+        print_weapon_parts = {
+            label = 'Ginklo komponentai',
+            output = { item = 'weapon_parts', count = 1 },
+            ingredients = {
+                { item = 'metal_scrap', count = 5 },
+                { item = 'plastic', count = 5 },
+            },
+            timeMs = 55000,
+        },
+    },
 }
 
 --- Ginklų dirbtuvė (client). 3D spausdintuvas — tik šaunamiesiems (recepte gun_frame / gun_barrel).
@@ -441,67 +497,74 @@ Config.MaterialShop = {
     name = 'fivempro-illegal-supply',
     label = 'Nelegalūs reikmenys',
     items = {
-        -- 1/3 žaliava · L1
+        -- Kiekvienas narkotikas: 1 → 2 → 3 etapas
+        -- THC / vape buteliukas
         { name = 'weed_leaf', amount = 500, price = 22, slot = 1 },
-        { name = 'alcohol_base', amount = 500, price = 18, slot = 2 },
-        { name = 'vape_liquid_base', amount = 500, price = 16, slot = 3 },
-        -- 1/3 žaliava · L2
-        { name = 'poppy_flower', amount = 500, price = 28, slot = 4 },
-        { name = 'meth_ingredient', amount = 500, price = 35, slot = 5 },
-        { name = 'pill_powder', amount = 500, price = 30, slot = 6 },
-        { name = 'mushroom_raw', amount = 500, price = 24, slot = 7 },
-        -- 1/3 žaliava · L3
-        { name = 'coca_leaf', amount = 500, price = 45, slot = 8 },
-        { name = 'amp_precursor', amount = 500, price = 38, slot = 9 },
-        { name = 'cartel_raw', amount = 500, price = 52, slot = 10 },
-        -- Reagentai ir įrankiai
-        { name = 'chemical_mix', amount = 500, price = 40, slot = 11 },
-        { name = 'filter', amount = 500, price = 8, slot = 12 },
-        { name = 'gloves', amount = 200, price = 25, slot = 13 },
-        { name = 'scale', amount = 100, price = 85, slot = 14 },
-        { name = 'lab_kit', amount = 50, price = 220, slot = 15 },
-        { name = 'burner', amount = 100, price = 120, slot = 16 },
-        -- Pakavimo reikmenys
-        { name = 'empty_cart', amount = 500, price = 12, slot = 17 },
-        { name = 'empty_bottle', amount = 500, price = 10, slot = 18 },
-        { name = 'empty_bag', amount = 500, price = 11, slot = 19 },
-        { name = 'packaging', amount = 500, price = 9, slot = 20 },
-        -- 2/3 apdorota
-        { name = 'weed_resin', amount = 300, price = 48, slot = 21 },
-        { name = 'moonshine_spirit', amount = 300, price = 42, slot = 22 },
-        { name = 'vape_mix', amount = 300, price = 38, slot = 23 },
-        { name = 'weed_buds', amount = 300, price = 55, slot = 24 },
-        { name = 'heroin_paste', amount = 300, price = 72, slot = 25 },
-        { name = 'meth_crystal', amount = 300, price = 85, slot = 26 },
-        { name = 'pill_tablets', amount = 300, price = 58, slot = 27 },
-        { name = 'mushroom_dried', amount = 300, price = 50, slot = 28 },
-        { name = 'cocaine_paste', amount = 300, price = 95, slot = 29 },
-        { name = 'amp_paste', amount = 300, price = 88, slot = 30 },
+        { name = 'weed_resin', amount = 300, price = 48, slot = 2 },
+        { name = 'thc_cart', amount = 200, price = 75, slot = 3 },
+        -- Samagonas
+        { name = 'alcohol_base', amount = 500, price = 18, slot = 4 },
+        { name = 'moonshine_spirit', amount = 300, price = 42, slot = 5 },
+        { name = 'illegal_alcohol', amount = 200, price = 58, slot = 6 },
+        -- Vape skystis
+        { name = 'vape_liquid_base', amount = 500, price = 16, slot = 7 },
+        { name = 'vape_mix', amount = 300, price = 38, slot = 8 },
+        { name = 'vape_liquid', amount = 200, price = 52, slot = 9 },
+        -- Žolė
+        { name = 'weed_buds', amount = 300, price = 55, slot = 10 },
+        { name = 'weed_bag', amount = 200, price = 110, slot = 11 },
+        -- Heroinas
+        { name = 'poppy_flower', amount = 500, price = 28, slot = 12 },
+        { name = 'heroin_paste', amount = 300, price = 72, slot = 13 },
+        { name = 'heroin_bag', amount = 200, price = 175, slot = 14 },
+        -- Metas
+        { name = 'meth_ingredient', amount = 500, price = 35, slot = 15 },
+        { name = 'meth_crystal', amount = 300, price = 85, slot = 16 },
+        { name = 'meth_bag', amount = 200, price = 195, slot = 17 },
+        -- Tabletės
+        { name = 'pill_powder', amount = 500, price = 30, slot = 18 },
+        { name = 'pill_tablets', amount = 300, price = 58, slot = 19 },
+        { name = 'pills_pack', amount = 200, price = 145, slot = 20 },
+        -- Grybai
+        { name = 'mushroom_raw', amount = 500, price = 24, slot = 21 },
+        { name = 'mushroom_dried', amount = 300, price = 50, slot = 22 },
+        { name = 'mushroom_pack', amount = 200, price = 125, slot = 23 },
+        -- Kokainas
+        { name = 'coca_leaf', amount = 500, price = 45, slot = 24 },
+        { name = 'cocaine_paste', amount = 300, price = 95, slot = 25 },
+        { name = 'cocaine_bag', amount = 200, price = 280, slot = 26 },
+        -- Amfetaminas
+        { name = 'amp_precursor', amount = 500, price = 38, slot = 27 },
+        { name = 'amp_paste', amount = 300, price = 88, slot = 28 },
+        { name = 'amphetamine_bag', amount = 200, price = 250, slot = 29 },
+        -- Kartelio kokainas
+        { name = 'cartel_raw', amount = 500, price = 52, slot = 30 },
         { name = 'cartel_blend', amount = 300, price = 105, slot = 31 },
-        -- 3/3 supakuota (galutiniai produktai)
-        { name = 'thc_cart', amount = 200, price = 75, slot = 32 },
-        { name = 'illegal_alcohol', amount = 200, price = 58, slot = 33 },
-        { name = 'vape_liquid', amount = 200, price = 52, slot = 34 },
-        { name = 'weed_bag', amount = 200, price = 110, slot = 35 },
-        { name = 'heroin_bag', amount = 200, price = 175, slot = 36 },
-        { name = 'meth_bag', amount = 200, price = 195, slot = 37 },
-        { name = 'pills_pack', amount = 200, price = 145, slot = 38 },
-        { name = 'mushroom_pack', amount = 200, price = 125, slot = 39 },
-        { name = 'cocaine_bag', amount = 200, price = 280, slot = 40 },
-        { name = 'amphetamine_bag', amount = 200, price = 250, slot = 41 },
-        { name = 'cartel_pack', amount = 200, price = 320, slot = 42 },
-        -- Ginklų dalys (dirbtuvė)
+        { name = 'cartel_pack', amount = 200, price = 320, slot = 32 },
+        -- Ekstra: reagentai ir įrankiai
+        { name = 'chemical_mix', amount = 500, price = 40, slot = 33 },
+        { name = 'filter', amount = 500, price = 8, slot = 34 },
+        { name = 'gloves', amount = 200, price = 25, slot = 35 },
+        { name = 'scale', amount = 100, price = 85, slot = 36 },
+        { name = 'lab_kit', amount = 50, price = 220, slot = 37 },
+        { name = 'burner', amount = 100, price = 120, slot = 38 },
+        { name = 'empty_cart', amount = 500, price = 12, slot = 39 },
+        { name = 'empty_bottle', amount = 500, price = 10, slot = 40 },
+        { name = 'empty_bag', amount = 500, price = 11, slot = 41 },
+        { name = 'packaging', amount = 500, price = 9, slot = 42 },
+        -- Ginklų dalys
         { name = 'metal_scrap', amount = 500, price = 35, slot = 43 },
         { name = 'gun_frame', amount = 200, price = 140, slot = 44 },
         { name = 'gun_barrel', amount = 200, price = 165, slot = 45 },
         { name = 'gun_spring', amount = 500, price = 28, slot = 46 },
         { name = 'gun_trigger', amount = 300, price = 55, slot = 47 },
         { name = 'weapon_parts', amount = 300, price = 95, slot = 48 },
-        -- Kulkos
         { name = 'pistol_ammo', amount = 500, price = 12, slot = 49 },
         { name = 'smg_ammo', amount = 500, price = 18, slot = 50 },
         { name = 'rifle_ammo', amount = 500, price = 22, slot = 51 },
         { name = 'shotgun_ammo', amount = 500, price = 20, slot = 52 },
+        { name = '3d_printer', amount = 25, price = 4800, slot = 53 },
+        { name = 'plastic', amount = 500, price = 15, slot = 54 },
     },
 }
 

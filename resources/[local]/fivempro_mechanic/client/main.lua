@@ -166,6 +166,7 @@ CreateThread(function()
     addMarker({
         coords = gh.coords,
         kind = 'garage',
+        job = Config.JobName,
         label = 'Mechanikų garažas / transportas',
         scale = { x = 3.2, y = 3.2, z = 0.28 },
         canUse = isMechanicOnDuty,
@@ -182,6 +183,7 @@ CreateThread(function()
     addMarker({
         coords = st.coords,
         kind = 'stash',
+        job = Config.JobName,
         label = st.label or 'Mechanikų sandėlis',
         canUse = isMechanicOnDuty,
         onPress = function()

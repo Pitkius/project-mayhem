@@ -187,8 +187,12 @@ const InventoryContainer = Vue.createApp({
             }
         },
         async closeInventory() {
+            if (!this.isInventoryOpen) return;
             this.clearDragData();
-            let inventoryName = this.otherInventoryName;
+            const inventoryName = this.otherInventoryName;
+            const container = document.querySelector(".inventory-container");
+            if (container) container.classList.add("inv-closing");
+            await new Promise((resolve) => setTimeout(resolve, 200));
             Object.assign(this, this.getInitialState());
             try {
                 await axios.post("https://qb-inventory/CloseInventory", { name: inventoryName });

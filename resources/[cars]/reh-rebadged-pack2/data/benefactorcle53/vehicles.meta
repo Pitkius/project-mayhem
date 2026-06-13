@@ -81,7 +81,7 @@
       <frequency value="30" />
       <swankness>SWANKNESS_2</swankness>
       <maxNum value="4" />
-      <flags>FLAG_SPORTS FLAG_SPAWN_ON_TRAILER FLAG_PARKING_SENSORS FLAG_RICH_CAR FLAG_NO_BROKEN_DOWN_SCENARIO FLAG_EXTRAS_REQUIRE FLAG_HAS_INTERIOR_EXTRAS</flags>
+      <flags>FLAG_SPORTS FLAG_SPAWN_ON_TRAILER FLAG_PARKING_SENSORS FLAG_RICH_CAR FLAG_NO_BROKEN_DOWN_SCENARIO FLAG_HAS_INTERIOR_EXTRAS</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_BACK_PLATES</plateType>
 	  <dashboardType>VDT_RACE</dashboardType>
@@ -90,15 +90,12 @@
       <trailers />
       <additionalTrailers />
       <drivers />
-      <extraIncludes>
-        <Item>EXTRA_5 EXTRA_6</Item>
-		<Item>EXTRA_7 EXTRA_8</Item>
-      </extraIncludes>
+      <extraIncludes />
       <doorsWithCollisionWhenClosed />
       <driveableDoors />
       <bumpersNeedToCollideWithMap value="false" />
       <needsRopeTexture value="false" />
-      <requiredExtras>EXTRA_5 EXTRA_6</requiredExtras>
+      <requiredExtras />
       <rewards />
       <cinematicPartCamera>
         <Item>WHEEL_FRONT_RIGHT_CAMERA</Item>
@@ -117,6 +114,10 @@
     </Item>
  </InitDatas>
  <txdRelationships>
+    <Item>
+      <parent>vehshare</parent>
+      <child>vehicles_race_interior</child>
+    </Item>
     <Item>
       <parent>vehicles_race_generic</parent>
       <child>benefactorcle53_tuning</child>

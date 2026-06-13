@@ -12,15 +12,17 @@
     lookupTimer: null,
   };
 
+  const icon = (name, cls) => (window.BankIcon ? window.BankIcon(name, cls) : "");
+
   const TX_META = {
-    transfer_out: { icon: "💸", income: false },
-    transfer_in: { icon: "💰", income: true },
-    deposit: { icon: "📥", income: true },
-    withdraw: { icon: "📤", income: false },
-    payment: { icon: "🛒", income: false },
-    salary: { icon: "💼", income: true },
-    fine: { icon: "⚠️", income: false },
-    other: { icon: "📋", income: false },
+    transfer_out: { icon: "transferOut", income: false },
+    transfer_in: { icon: "transferIn", income: true },
+    deposit: { icon: "deposit", income: true },
+    withdraw: { icon: "transferOut", income: false },
+    payment: { icon: "payment", income: false },
+    salary: { icon: "salary", income: true },
+    fine: { icon: "fine", income: false },
+    other: { icon: "other", income: false },
   };
 
   function esc(s) {
@@ -45,6 +47,19 @@
     return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || "?";
   }
 
+  function parseTxDate(iso) {
+    if (!iso) return null;
+    if (typeof iso === "number") {
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    const direct = new Date(iso);
+    if (!Number.isNaN(direct.getTime())) return direct;
+    const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (!m) return null;
+    return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  }
+
   function txMeta(type, amount) {
     const m = TX_META[type] || TX_META.other;
     const amt = Number(amount) || 0;
@@ -53,9 +68,8 @@
   }
 
   function formatTxDate(iso) {
-    if (!iso) return "";
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return String(iso);
+    const d = parseTxDate(iso);
+    if (!d) return String(iso || "");
     const now = new Date();
     const sameDay = (a, b) =>
       a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -71,14 +85,14 @@
     const groups = [];
     let cur = null;
     for (const tx of txs || []) {
-      const d = new Date(tx.created_at);
+      const d = parseTxDate(tx.created_at);
       let label = "Anksčiau";
       const now = new Date();
       const yesterday = new Date(now);
       yesterday.setDate(yesterday.getDate() - 1);
       const same = (a, b) =>
-        a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-      if (!Number.isNaN(d.getTime())) {
+        a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+      if (d) {
         if (same(d, now)) label = "Šiandien";
         else if (same(d, yesterday)) label = "Vakar";
         else label = d.toLocaleDateString("lt-LT", { weekday: "long", month: "long", day: "numeric" });
@@ -96,11 +110,12 @@
     const meta = txMeta(tx.tx_type, tx.amount);
     const amt = Number(tx.amount) || 0;
     const cls = amt > 0 ? "pos" : amt < 0 ? "neg" : "neu";
+    const status = tx.status === "completed" ? "įvykdyta" : esc(tx.status || "įvykdyta");
     return `<div class="bank-tx-item">
-      <div class="bank-tx-icon ${meta.cls}">${meta.icon}</div>
+      <div class="bank-tx-icon ${meta.cls}">${icon(meta.icon)}</div>
       <div>
         <div class="bank-tx-title">${esc(tx.title || "Operacija")}</div>
-        <div class="bank-tx-sub">${esc(formatTxDate(tx.created_at))} · ${esc(tx.status || "įvykdyta")}</div>
+        <div class="bank-tx-sub">${esc(formatTxDate(tx.created_at))} · ${status}</div>
       </div>
       <div class="bank-tx-amount ${cls}">${fmtMoney(amt, true)}</div>
     </div>`;
@@ -119,15 +134,15 @@
 
   function navHtml(active) {
     const tabs = [
-      { id: "home", icon: "🏠", label: "Pagrindinis" },
-      { id: "transfer", icon: "✈️", label: "Pervedimai" },
-      { id: "history", icon: "🕐", label: "Istorija" },
+      { id: "home", icon: "home", label: "Pagrindinis" },
+      { id: "transfer", icon: "transfer", label: "Pervedimai" },
+      { id: "history", icon: "history", label: "Istorija" },
     ];
     return `<nav class="bank-nav">${tabs
       .map(
         (t) =>
           `<button type="button" class="bank-nav-btn${active === t.id ? " active" : ""}" data-bank-tab="${t.id}">
-            <span>${t.icon}</span><span>${t.label}</span>
+            ${icon(t.icon, "bank-nav-svg")}<span>${t.label}</span>
           </button>`
       )
       .join("")}</nav>`;
@@ -152,10 +167,10 @@
     const txs = (d.transactions || []).slice(0, 6);
 
     host.innerHTML = `<div class="bank-app">
-      <div class="bank-screen">
+      <div class="bank-screen bank-screen-scroll">
         <div class="bank-brand-row">
-          <div class="bank-brand">${esc(d.bankName || "NEON BANK")}</div>
-          <div class="bank-bell">🔔</div>
+          <div class="bank-brand">${esc(d.bankName || "BANKAS")}</div>
+          <div class="bank-bell">${icon("bell")}</div>
         </div>
         <div class="bank-greeting">Sveiki, ${esc(d.holderName || "žaidėjas")}</div>
 
@@ -173,7 +188,7 @@
             <div>
               <div class="bank-balance-label">Banko balansas</div>
               <div class="bank-balance-value bank">${bankStr}
-                <button type="button" class="bank-hide-bal" id="bankToggleBal" title="Slėpti">${balHidden ? "👁" : "👁‍🗨"}</button>
+                <button type="button" class="bank-hide-bal" id="bankToggleBal" title="Slėpti">${icon(balHidden ? "eye" : "eyeOff", "bank-eye-svg")}</button>
               </div>
             </div>
           </div>
@@ -186,10 +201,9 @@
         </div>
 
         <div class="bank-quick-grid">
-          <button type="button" class="bank-quick-btn" data-bank-action="transfer"><span class="bank-quick-icon">✈️</span>Pervesti</button>
-          <button type="button" class="bank-quick-btn" data-bank-action="deposit"><span class="bank-quick-icon">📥</span>Įnešti</button>
-          <button type="button" class="bank-quick-btn" data-bank-action="withdraw"><span class="bank-quick-icon">📤</span>Išsiimti</button>
-          <button type="button" class="bank-quick-btn" data-bank-action="history"><span class="bank-quick-icon">🕐</span>Istorija</button>
+          <button type="button" class="bank-quick-btn" data-bank-action="transfer">${icon("transfer", "bank-quick-svg")}<span>Pervesti</span></button>
+          <button type="button" class="bank-quick-btn" data-bank-action="deposit">${icon("deposit", "bank-quick-svg")}<span>Įnešti</span></button>
+          <button type="button" class="bank-quick-btn" data-bank-action="history">${icon("history", "bank-quick-svg")}<span>Istorija</span></button>
         </div>
 
         <div class="bank-section-head">
@@ -197,7 +211,7 @@
           <button type="button" class="bank-link" data-bank-action="history">Žiūrėti viską</button>
         </div>
         <div class="bank-tx-list">
-          ${txs.length ? txs.map(renderTxItem).join("") : '<div class="bank-empty">Operacijų dar nėra.</div>'}
+          ${txs.length ? txs.map(renderTxItem).join("") : '<div class="bank-empty">Operacijų dar nėra. Atlikite pervedimą ar įnešimą.</div>'}
         </div>
       </div>
       ${navHtml("home")}
@@ -234,12 +248,12 @@
       ? `<div class="bank-recipient-found">
           <div class="bank-recipient-avatar">${esc(initials(t.recipient.name))}</div>
           <div><b>${esc(t.recipient.name)}</b><small>ID: ${esc(t.recipient.citizenid)}</small></div>
-          <span class="bank-found-badge">✓ Rastas</span>
+          <span class="bank-found-badge">Rastas</span>
         </div>`
       : "";
 
     host.innerHTML = `<div class="bank-app">
-      <div class="bank-screen">
+      <div class="bank-screen bank-screen-scroll">
         <div class="bank-header">
           <button type="button" class="bank-header-back" data-bank-back="home">‹</button>
           <span class="bank-header-title">Pervesti pinigus</span>
@@ -346,15 +360,15 @@
     const p = bankUi.pending || {};
     const amt = p.amount || 0;
     host.innerHTML = `<div class="bank-app">
-      <div class="bank-screen">
+      <div class="bank-screen bank-screen-scroll">
         <div class="bank-header">
           <button type="button" class="bank-header-back" data-bank-back="transfer">‹</button>
           <span class="bank-header-title">Patvirtinti</span>
           <span class="bank-header-spacer"></span>
         </div>
-        <div class="bank-confirm-icon">✈️</div>
+        <div class="bank-confirm-icon">${icon("transfer", "bank-confirm-svg")}</div>
         <div class="bank-confirm-title">Ar tikrai norite pervesti?</div>
-        <p style="text-align:center;color:rgba(255,255,255,.55);font-size:13px;margin-bottom:8px">
+        <p class="bank-confirm-sub">
           ${fmtMoney(amt)} žaidėjui <b>${esc(p.recipient?.name)}</b>
         </p>
         <div class="bank-confirm-card">
@@ -365,7 +379,7 @@
           <div class="bank-confirm-row"><span>Mokesčiai</span><span>€0</span></div>
           <div class="bank-confirm-row"><span>Iš viso</span><span class="bank-confirm-total">${fmtMoney(amt)}</span></div>
         </div>
-        <p style="text-align:center;font-size:11px;color:rgba(255,255,255,.4)">🛡 Pervedimas bus atliktas akimirksniu.</p>
+        <p class="bank-confirm-note">${icon("shield", "bank-shield-svg")} Pervedimas bus atliktas akimirksniu.</p>
         <div class="bank-confirm-actions">
           <button type="button" class="bank-btn-secondary" id="bankCancelConfirm">Atšaukti</button>
           <button type="button" class="bank-btn-primary" id="bankDoConfirm">Patvirtinti</button>
@@ -413,13 +427,13 @@
   function renderSuccess(host) {
     const s = bankUi.success || {};
     host.innerHTML = `<div class="bank-app">
-      <div class="bank-screen bank-success">
-        <div class="bank-success-icon">✓</div>
+      <div class="bank-screen bank-success bank-screen-scroll">
+        <div class="bank-success-icon">${icon("check", "bank-success-svg")}</div>
         <h3>${esc(s.title || "Atlikta!")}</h3>
         <p>${esc(s.body || "")}</p>
         ${s.txId ? `<div class="bank-tx-id">#${esc(s.txId)} <button type="button" class="bank-copy-btn" id="bankCopyTx">Kopijuoti</button></div>` : ""}
         <button type="button" class="bank-submit" id="bankGoHome">Grįžti į pagrindinį</button>
-        <button type="button" class="bank-btn-secondary" style="width:100%;margin-top:10px" id="bankAgain">Atlikti dar vieną</button>
+        <button type="button" class="bank-btn-secondary bank-success-secondary" id="bankAgain">Atlikti dar vieną</button>
       </div>
     </div>`;
     host.querySelector("#bankGoHome")?.addEventListener("click", () => {
@@ -439,19 +453,16 @@
     });
   }
 
-  function renderAmountScreen(host, mode) {
-    const isDeposit = mode === "deposit";
-    const title = isDeposit ? "Įnešti pinigus" : "Išsiimti pinigus";
-    const hint = isDeposit ? "Grynieji → bankas" : "Bankas → grynieji";
+  function renderDepositScreen(host) {
     const chips = [100, 500, 1000, 5000];
     host.innerHTML = `<div class="bank-app">
-      <div class="bank-screen">
+      <div class="bank-screen bank-screen-scroll">
         <div class="bank-header">
           <button type="button" class="bank-header-back" data-bank-back="home">‹</button>
-          <span class="bank-header-title">${title}</span>
+          <span class="bank-header-title">Įnešti pinigus</span>
           <span class="bank-header-spacer"></span>
         </div>
-        <p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:14px">${hint}</p>
+        <p class="bank-hint">Grynieji → bankas</p>
         <div class="bank-field">
           <label>Suma (€)</label>
           <input type="number" id="bankAmtInput" min="1" placeholder="0" />
@@ -459,7 +470,7 @@
         <div class="bank-chips">
           ${chips.map((c) => `<button type="button" class="bank-chip" data-bank-chip="${c}">€${c}</button>`).join("")}
         </div>
-        <button type="button" class="bank-submit" id="bankAmtSubmit">${isDeposit ? "Įnešti" : "Išsiimti"}</button>
+        <button type="button" class="bank-submit" id="bankAmtSubmit">Įnešti</button>
         <div class="bank-status-msg" id="bankAmtMsg"></div>
       </div>
     </div>`;
@@ -491,13 +502,12 @@
         }
         return;
       }
-      const event = isDeposit ? "bankDeposit" : "bankWithdraw";
-      const res = await window.PhoneNui(event, { amount: val });
+      const res = await window.PhoneNui("bankDeposit", { amount: val });
       if (res?.ok) {
         await loadState();
         bankUi.success = {
-          title: isDeposit ? "Įnešta!" : "Išsiimta!",
-          body: `${fmtMoney(val)} ${isDeposit ? "perkelta į banką" : "perkelta į grynuosius"}.`,
+          title: "Įnešta!",
+          body: `${fmtMoney(val)} perkelta į banką.`,
         };
         bankUi.screen = "success";
         renderBank(host);
@@ -514,41 +524,46 @@
       { id: "transfer_out", label: "Pervedimai" },
       { id: "transfer_in", label: "Gautos" },
       { id: "deposit", label: "Įnešimai" },
-      { id: "withdraw", label: "Išėmimai" },
       { id: "salary", label: "Algos" },
       { id: "payment", label: "Pirkimai" },
       { id: "fine", label: "Baudos" },
     ];
-    const res = await window.PhoneNui("bankGetHistory", { filter: bankUi.historyFilter });
-    const txs = res?.transactions || [];
-    const groups = groupByDate(txs);
 
     host.innerHTML = `<div class="bank-app">
-      <div class="bank-screen">
+      <div class="bank-screen bank-screen-history">
         <div class="bank-header">
           <button type="button" class="bank-header-back" data-bank-back="home">‹</button>
           <span class="bank-header-title">Transakcijų istorija</span>
           <span class="bank-header-spacer"></span>
         </div>
-        <div class="bank-filter-tabs">
-          ${filters
-            .map(
-              (f) =>
-                `<button type="button" class="bank-filter-tab${bankUi.historyFilter === f.id ? " active" : ""}" data-bank-filter="${f.id}">${f.label}</button>`
-            )
-            .join("")}
+        <div class="bank-filter-tabs bank-scroll-x">${filters
+          .map(
+            (f) =>
+              `<button type="button" class="bank-filter-tab${bankUi.historyFilter === f.id ? " active" : ""}" data-bank-filter="${f.id}">${f.label}</button>`
+          )
+          .join("")}</div>
+        <div class="bank-history-scroll bank-scroll-y">
+          <div class="bank-history-loading">Kraunama…</div>
         </div>
-        ${groups.length
-          ? groups
-              .map(
-                (g) =>
-                  `<div class="bank-date-group">${esc(g.label)}</div>${g.items.map(renderTxItem).join("")}`
-              )
-              .join("")
-          : '<div class="bank-empty">Operacijų nerasta.</div>'}
       </div>
       ${navHtml("history")}
     </div>`;
+
+    const scroll = host.querySelector(".bank-history-scroll");
+    const res = await window.PhoneNui("bankGetHistory", { filter: bankUi.historyFilter });
+    const txs = res?.ok ? res.transactions || [] : bankUi.data?.transactions || [];
+    const groups = groupByDate(txs);
+
+    if (scroll) {
+      scroll.innerHTML = groups.length
+        ? groups
+            .map(
+              (g) =>
+                `<div class="bank-date-group">${esc(g.label)}</div>${g.items.map(renderTxItem).join("")}`
+            )
+            .join("")
+        : `<div class="bank-empty">${res?.ok === false ? esc(res.message || "Nepavyko užkrauti istorijos.") : "Operacijų nerasta."}</div>`;
+    }
 
     host.querySelectorAll("[data-bank-filter]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -568,7 +583,7 @@
     const screen = bankUi.screen;
     if (screen === "confirm") return renderConfirm(host);
     if (screen === "success") return renderSuccess(host);
-    if (screen === "deposit" || screen === "withdraw") return renderAmountScreen(host, screen);
+    if (screen === "deposit") return renderDepositScreen(host);
     if (screen === "transfer" || bankUi.tab === "transfer") return renderTransfer(host);
     if (screen === "history" || bankUi.tab === "history") return renderHistory(host);
     return renderHome(host);
@@ -581,6 +596,7 @@
     bankUi.screen = "home";
     bankUi.pending = null;
     bankUi.success = null;
+    bankUi.historyFilter = "all";
     await loadState();
     renderBank(content);
   };

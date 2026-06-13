@@ -1,10 +1,11 @@
-/* —— NEON BANK telefono app —— */
+/* —— BANKAS telefono app —— */
 .scroll-body.bank-body {
   padding: 0 !important;
   background: var(--app-bg);
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  overflow: hidden;
 }
 
 .bank-app {
@@ -33,6 +34,87 @@
   flex-direction: column;
   padding: 10px 14px 72px;
   animation: bankFadeIn 0.28s ease;
+  min-height: 0;
+}
+
+.bank-screen-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+  margin-right: -2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(191, 95, 255, 0.75) rgba(255, 255, 255, 0.05);
+}
+
+.bank-screen-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.bank-screen-scroll::-webkit-scrollbar-track {
+  margin: 4px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.bank-screen-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #c084fc 0%, #7c3aed 100%);
+  box-shadow: 0 0 10px rgba(155, 92, 255, 0.45);
+}
+
+.bank-screen-history {
+  overflow: hidden;
+}
+
+.bank-history-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+  margin-right: -2px;
+}
+
+.bank-scroll-y {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(191, 95, 255, 0.75) rgba(255, 255, 255, 0.05);
+}
+
+.bank-scroll-y::-webkit-scrollbar {
+  width: 5px;
+}
+
+.bank-scroll-y::-webkit-scrollbar-track {
+  margin: 4px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.bank-scroll-y::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #c084fc 0%, #7c3aed 100%);
+  box-shadow: 0 0 10px rgba(155, 92, 255, 0.45);
+}
+
+.bank-scroll-x {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(191, 95, 255, 0.75) rgba(255, 255, 255, 0.05);
+}
+
+.bank-scroll-x::-webkit-scrollbar {
+  height: 4px;
+}
+
+.bank-scroll-x::-webkit-scrollbar-track {
+  margin: 0 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.bank-scroll-x::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7c3aed 0%, #c084fc 100%);
+  box-shadow: 0 0 8px rgba(155, 92, 255, 0.4);
 }
 
 .bank-header {
@@ -188,7 +270,7 @@
 
 .bank-quick-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 18px;
 }
@@ -196,8 +278,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 12px 6px;
+  gap: 8px;
+  padding: 14px 8px;
   border-radius: 14px;
   border: 1px solid var(--glass-border);
   background: rgba(191, 95, 255, 0.08);
@@ -211,14 +293,63 @@
   transform: scale(0.96);
   background: rgba(191, 95, 255, 0.2);
 }
-.bank-quick-icon {
+.bank-quick-icon,
+.bank-svg-wrap {
   width: 36px;
   height: 36px;
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(157, 78, 221, 0.5), rgba(191, 95, 255, 0.35));
   display: grid;
   place-items: center;
-  font-size: 16px;
+  color: #f3e8ff;
+}
+
+.bank-svg-wrap svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.bank-quick-svg {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+}
+
+.bank-quick-svg svg {
+  width: 20px;
+  height: 20px;
+}
+
+.bank-nav-svg svg {
+  width: 20px;
+  height: 20px;
+}
+
+.bank-eye-svg {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  vertical-align: middle;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.bank-eye-svg svg {
+  width: 15px;
+  height: 15px;
+}
+
+.bank-tx-icon .bank-svg-wrap {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.bank-tx-icon .bank-svg-wrap svg {
+  width: 18px;
+  height: 18px;
 }
 
 .bank-section-head {
@@ -260,8 +391,8 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-  font-size: 18px;
   background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.88);
 }
 .bank-tx-icon.income { background: rgba(52, 199, 89, 0.15); }
 .bank-tx-icon.expense { background: rgba(255, 69, 58, 0.12); }
@@ -317,7 +448,44 @@
   color: var(--neon-purple);
   background: rgba(191, 95, 255, 0.1);
 }
-.bank-nav-btn span:first-child { font-size: 18px; }
+.bank-nav-btn span:last-child { font-size: 10px; }
+
+.bank-hint,
+.bank-confirm-sub {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.bank-confirm-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 4px;
+}
+
+.bank-shield-svg svg {
+  width: 14px;
+  height: 14px;
+  color: #c084fc;
+}
+
+.bank-success-secondary {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.bank-history-loading {
+  text-align: center;
+  padding: 24px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 13px;
+}
 
 .bank-field {
   margin-bottom: 14px;
@@ -454,8 +622,13 @@
   background: linear-gradient(135deg, rgba(157, 78, 221, 0.4), rgba(191, 95, 255, 0.25));
   display: grid;
   place-items: center;
-  font-size: 32px;
+  color: #f3e8ff;
   box-shadow: 0 0 40px var(--neon-purple-soft);
+}
+
+.bank-confirm-svg svg {
+  width: 30px;
+  height: 30px;
 }
 .bank-confirm-title {
   text-align: center;
@@ -500,9 +673,14 @@
   background: linear-gradient(135deg, #34c759, #30d158);
   display: grid;
   place-items: center;
-  font-size: 40px;
+  color: #fff;
   box-shadow: 0 0 48px rgba(52, 199, 89, 0.35);
   animation: bankPop 0.45s ease;
+}
+
+.bank-success-svg svg {
+  width: 38px;
+  height: 38px;
 }
 .bank-success h3 {
   font-size: 20px;
@@ -530,8 +708,9 @@
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  margin-bottom: 14px;
-  padding-bottom: 4px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  flex-shrink: 0;
 }
 .bank-filter-tab {
   flex-shrink: 0;

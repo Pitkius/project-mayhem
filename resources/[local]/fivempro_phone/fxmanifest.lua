@@ -18,7 +18,10 @@ files {
     'html/phone-camera.js',
     'html/phone-carplay.js',
     'html/phone-ads.js',
+    'html/phone-bank-icons.js',
     'html/phone-bank.js',
+    'html/death-screen.css',
+    'html/death-screen.js',
     'html/locale/lt.js',
     'html/assets/icons/*.svg',
 }
@@ -42,6 +45,7 @@ server_scripts {
     'server/carplay.lua',
 }
 
+dependency 'fivempro_fonts'
 dependency 'qb-core'
 dependency 'qb-inventory'
 dependency 'screenshot-basic'

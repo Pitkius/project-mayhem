@@ -118,7 +118,11 @@
   <!------------------------------------------------------------------------------------------------------------------->
   <txdRelationships>
     <Item>
-      <parent>vehicles_bob_interior</parent>
+      <parent>vehshare</parent>
+      <child>vehicles_race_interior</child>
+    </Item>
+    <Item>
+      <parent>vehicles_race_generic</parent>
       <child>karinsupra</child>
     </Item>
   </txdRelationships>

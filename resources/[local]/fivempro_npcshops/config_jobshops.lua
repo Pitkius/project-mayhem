@@ -12,6 +12,7 @@ Config.PoliceSupplyShop = {
         { name = 'painkillers', amount = 999, price = 0, slot = 5 },
         { name = 'vehicle_key_copy', amount = 999, price = 0, slot = 6 },
         { name = 'lockpick', amount = 50, price = 25, slot = 7 },
+        { name = 'pd_armory_materials', amount = 999, price = 0, slot = 8 },
     },
 }
 
@@ -51,6 +52,7 @@ Config.RangerSupplyShop = {
 Config.JobStationNpcs = {
     --- Vienintelis PD NPC — pamainos pradžia / pabaiga (MRPD)
     { job = 'police', stationId = 'ls_main', role = 'duty', model = 's_m_y_cop_01', coords = vector4(441.84, -982.05, 30.69, 90.0), label = 'PD pamaina (pradėti / baigti)' },
+    { job = 'police', stationId = 'ls_main', role = 'supply', model = 's_m_y_cop_01', coords = vector4(489.05, -997.1946, 30.6896, 268.0), label = 'PD inventorius (žaliavos)' },
 
     --- EMS Pillbox (Gabz MLO)
     { job = 'ambulance', stationId = 'ems_ls', role = 'duty', model = 's_m_m_doctor_01', coords = vector4(309.52, -595.29, 43.28, 71.0), label = 'EMS registratūra / tarnyba' },

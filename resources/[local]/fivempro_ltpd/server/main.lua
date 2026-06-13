@@ -1257,6 +1257,11 @@ local function vehicleNearPlayer(src, veh, maxDist)
     return #(p - v) <= maxDist
 end
 
+local function safeVehicleNetId(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return 0 end
+    return NetworkGetNetworkIdFromEntity(veh)
+end
+
 local function isEmergencyFleetModel(entity)
     if not entity or entity == 0 then return false end
     local hash = GetEntityModel(entity)
@@ -1293,7 +1298,7 @@ RegisterNetEvent('fivempro_ltpd:server:setPdEmergencyMode', function(mode)
     if not veh then
         return TriggerClientEvent('QBCore:Notify', src, 'Turi būti vairuotoju transporte.', 'error')
     end
-    if NetworkGetNetworkIdFromEntity(veh) == 0 then
+    if safeVehicleNetId(veh) == 0 then
         return TriggerClientEvent('QBCore:Notify', src, 'Mašina turi būti tinkamai sinchronizuota (išimk iš garažo / naujas spawn).', 'error')
     end
     if not vehicleNearPlayer(src, veh, Config.EmergencyVehicle and Config.EmergencyVehicle.validateDistance) then
@@ -1325,7 +1330,7 @@ RegisterNetEvent('fivempro_ltpd:server:setPdEmergencyKit', function(equip)
     if not vehicleNearPlayer(src, veh, Config.EmergencyVehicle and Config.EmergencyVehicle.validateDistance) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo transporto.', 'error')
     end
-    if NetworkGetNetworkIdFromEntity(veh) == 0 then
+    if safeVehicleNetId(veh) == 0 then
         return TriggerClientEvent('QBCore:Notify', src, 'Mašina turi būti tinkamai sinchronizuota (išimk iš garažo / naujas spawn).', 'error')
     end
     if isEmergencyFleetModel(veh) then
@@ -1344,10 +1349,10 @@ end)
 RegisterNetEvent('fivempro_ltpd:server:clearPdEmergencyOnExit', function(netId)
     local src = source
     netId = tonumber(netId)
-    if not netId then return end
+    if not netId or not NetworkDoesNetworkIdExist(netId) then return end
     if not isLtpdOnDuty(src) then return end
     local veh = NetworkGetEntityFromNetworkId(netId)
-    if not veh or veh == 0 then return end
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     if not vehicleNearPlayer(src, veh, (Config.EmergencyVehicle and Config.EmergencyVehicle.validateDistance or 28.0) + 10.0) then
         return
     end

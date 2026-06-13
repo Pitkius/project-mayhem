@@ -8,6 +8,10 @@ description "REH Rebadged Car Pack 1"
 version "1.0.0"
 lua54 "yes"
 
+client_scripts {
+    "client/plates.lua",
+}
+
 files({
     "data/**/vehicles.meta",
     "data/**/carvariations.meta",

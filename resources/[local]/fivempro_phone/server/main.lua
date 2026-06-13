@@ -752,16 +752,41 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:createAd', function(sourc
     end
 end)
 
+local function normalizePhotoImageData(raw)
+    local imageData = tostring(raw or '')
+    imageData = imageData:match('^%s*(.-)%s*$') or ''
+    if imageData == '' then return '' end
+
+    if imageData:sub(1, 1) == '{' then
+        local ok, parsed = pcall(json.decode, imageData)
+        if ok and type(parsed) == 'table' and type(parsed.data) == 'string' then
+            imageData = parsed.data:match('^%s*(.-)%s*$') or ''
+        end
+    end
+
+    if imageData ~= '' and not imageData:find('^data:') then
+        if imageData:sub(1, 3) == '/9j' then
+            imageData = 'data:image/jpeg;base64,' .. imageData
+        elseif imageData:sub(1, 8) == 'iVBORw0K' then
+            imageData = 'data:image/png;base64,' .. imageData
+        else
+            imageData = 'data:image/jpeg;base64,' .. imageData
+        end
+    end
+
+    return imageData
+end
+
 QBCore.Functions.CreateCallback('fivempro_phone:server:savePhoto', function(source, cb, data)
     local citizenid = getCitizen(source)
     if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
-    local imageData = tostring(data and data.imageData or '')
-    local maxLen = (Config.Phone and Config.Phone.maxPhotoDataLength) or 220000
+    local imageData = normalizePhotoImageData(data and data.imageData)
+    local maxLen = (Config.Phone and Config.Phone.maxPhotoDataLength) or 1500000
     if imageData == '' or #imageData < 32 then
         return cb({ ok = false, message = 'Tuščia nuotrauka.' })
     end
     if #imageData > maxLen then
-        imageData = imageData:sub(1, maxLen)
+        return cb({ ok = false, message = 'Nuotrauka per didelė. Bandyk dar kartą.' })
     end
     local maxPhotos = (Config.Phone and Config.Phone.maxPhotosPerUser) or 80
     local count = MySQL.scalar.await('SELECT COUNT(*) FROM fivempro_phone_photos WHERE citizenid = ?', { citizenid }) or 0
@@ -797,11 +822,15 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:getPhoto', function(sourc
         LIMIT 1
     ]], { photoId, citizenid })
     if not row then return cb({ ok = false, message = 'Nuotrauka nerasta.' }) end
+    local imageData = normalizePhotoImageData(row.image_data)
+    if imageData == '' or #imageData < 32 then
+        return cb({ ok = false, message = 'Nuotraukos duomenys sugadinti.' })
+    end
     cb({
         ok = true,
         photo = {
             id = row.id,
-            image = row.image_data,
+            image = imageData,
             is_front = row.is_front == 1,
             created_at = row.created_at,
         },

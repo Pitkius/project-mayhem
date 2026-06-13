@@ -87,7 +87,7 @@ Config.Disable = {
     idleCamera = true,                                            -- disables the idle cinematic camera
     vestDrawable = false,                                         -- disables the vest equipped when using heavy armor
     pistolWhipping = true,                                        -- disables pistol whipping
-    driveby = false,                                              -- disables driveby
+    driveby = true,                                              -- disables driveby
     carRadio = false                                              -- When set to true car radio will default to off when entering a vehicle.
 }
 

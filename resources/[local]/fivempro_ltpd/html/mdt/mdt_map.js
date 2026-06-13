@@ -1,4 +1,4 @@
-/** LTPD MDT GPS žemėlapis — Leaflet, 1:1 koordinatės (be išlyginimo) */
+/** LTPD MDT GPS žemėlapis — Leaflet, tiesioginės GTA koordinatės [Y, X]. */
 window.MdtMap = (function () {
   const CALL_ACTIVE = new Set(['pending', 'accepted', 'enroute', 'arrived']);
 
@@ -19,6 +19,8 @@ window.MdtMap = (function () {
   const callState = {};
   let tooltipEl = null;
   let selectedKey = null;
+  let selfMarker = null;
+  let selfHeading = 0;
   let routeLayer = null;
   let routeDest = null;
 
@@ -304,6 +306,7 @@ window.MdtMap = (function () {
     if (localPlayerPos && selfSource != null) {
       upsertUnit(localPlayerUnit(), mapCfg);
     }
+    syncSelfMarker();
     refreshRoute();
   }
 
@@ -325,10 +328,12 @@ window.MdtMap = (function () {
     requestAnimationFrame(() => {
       fitMapFill(12);
       reprojectMarkers();
+      syncSelfMarker();
     });
     setTimeout(() => {
       fitMapFill(12);
       reprojectMarkers();
+      syncSelfMarker();
     }, 150);
   }
 
@@ -419,6 +424,22 @@ window.MdtMap = (function () {
     };
   }
 
+  function syncSelfMarker() {
+    if (!leafletMap || !mapCfg || !localPlayerPos) return;
+    const [lat, lng] = gameToLatLng(localPlayerPos.x, localPlayerPos.y, mapCfg);
+    selfHeading = localPlayerPos.heading != null ? Number(localPlayerPos.heading) : selfHeading;
+    if (!selfMarker) {
+      selfMarker = L.marker([lat, lng], {
+        icon: makeDivIcon('mdt-blip self', selfHeading),
+        interactive: false,
+        zIndexOffset: 1200,
+      }).addTo(leafletMap);
+      return;
+    }
+    selfMarker.setLatLng([lat, lng]);
+    selfMarker.setIcon(makeDivIcon('mdt-blip self', selfHeading));
+  }
+
   function setLocalPlayerPos(pos) {
     if (!pos || pos.x == null || pos.y == null) return;
     if (pos.selfSource != null) setSelfSource(pos.selfSource);
@@ -428,6 +449,7 @@ window.MdtMap = (function () {
       z: pos.z != null ? Number(pos.z) : 0,
       heading: pos.heading != null ? Number(pos.heading) : 0,
     };
+    syncSelfMarker();
     if (!leafletMap || !mapCfg || selfSource == null) return;
     upsertUnit(localPlayerUnit(), mapCfg);
     const s = unitState[`u:${selfSource}`];
@@ -469,6 +491,12 @@ window.MdtMap = (function () {
   }
 
   function centerOnPlayer() {
+    if (localPlayerPos && leafletMap && mapCfg) {
+      syncSelfMarker();
+      const [lat, lng] = gameToLatLng(localPlayerPos.x, localPlayerPos.y, mapCfg);
+      centerOnLatLng(lat, lng, 1.4);
+      return true;
+    }
     if (!selfSource) return false;
     const s = unitState[`u:${selfSource}`];
     if (!s) return false;
@@ -515,6 +543,8 @@ window.MdtMap = (function () {
     stopAnimLoop();
     hideTooltip();
     clearRoute();
+    if (selfMarker && leafletMap) leafletMap.removeLayer(selfMarker);
+    selfMarker = null;
     Object.values(unitState).forEach((s) => leafletMap?.removeLayer(s.marker));
     Object.values(callState).forEach((s) => leafletMap?.removeLayer(s.marker));
     Object.keys(unitState).forEach((k) => delete unitState[k]);

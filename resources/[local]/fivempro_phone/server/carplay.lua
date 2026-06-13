@@ -25,7 +25,7 @@ local function parseMediaUrl(raw)
         return {
             type = 'youtube',
             url = url,
-            stream = ('https://www.youtube.com/embed/%s?autoplay=1'):format(ytId),
+            stream = ('https://www.youtube.com/embed/%s?autoplay=1&enablejsapi=1'):format(ytId),
             title = 'YouTube vaizdo įrašas',
             thumbnail = ('https://img.youtube.com/vi/%s/hqdefault.jpg'):format(ytId),
         }
@@ -94,6 +94,8 @@ local function defaultSession()
         playing = false,
         volume = 0.65,
         progress = 0,
+        duration = 0,
+        position = 0,
     }
 end
 
@@ -166,6 +168,35 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:carplayControl', function
         session.volume = math.max(0.0, math.min(1.0, tonumber(data and data.volume) or session.volume))
         CarPlaySessions[netId] = session
         broadcastCarPlay(netId, session, { command = 'volume', volume = session.volume })
+        return cb({ ok = true, session = session })
+    end
+
+    if action == 'seek' then
+        local seconds = tonumber(data and data.seconds)
+        local position = tonumber(data and data.position)
+        if seconds then
+            session.position = math.max(0, seconds)
+            if tonumber(session.duration) and session.duration > 0 then
+                session.progress = math.max(0, math.min(1, session.position / session.duration))
+            end
+        elseif position then
+            session.progress = math.max(0.0, math.min(1.0, position))
+        end
+        CarPlaySessions[netId] = session
+        broadcastCarPlay(netId, session, {
+            command = 'seek',
+            seconds = session.position,
+            position = session.progress,
+        })
+        return cb({ ok = true, session = session })
+    end
+
+    if action == 'duration' then
+        local dur = tonumber(data and data.duration)
+        if dur and dur > 0 then
+            session.duration = dur
+            CarPlaySessions[netId] = session
+        end
         return cb({ ok = true, session = session })
     end
 

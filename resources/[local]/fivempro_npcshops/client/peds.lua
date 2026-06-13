@@ -116,6 +116,18 @@ local function buildTargetOptions(meta)
             },
             distance = 2.0,
         }, false
+    elseif meta.category == 'junk' then
+        return {
+            options = {
+                {
+                    type = 'server',
+                    event = 'fivempro_npcshops:server:openJunkShop',
+                    icon = 'fas fa-hammer',
+                    label = 'Ūkio turgelis',
+                },
+            },
+            distance = 2.2,
+        }, false
     elseif meta.category == 'job' then
         if isJobMarkerRole(meta.role) then
             return nil, false

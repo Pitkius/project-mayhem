@@ -8,8 +8,25 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="phone-apps.css" />
   <link rel="stylesheet" href="phone-bank.css" />
+  <link rel="stylesheet" href="death-screen.css" />
 </head>
 <body>
+  <div id="deathScreen" class="death-screen" aria-hidden="true">
+    <div class="death-vignette"></div>
+    <div class="death-blood-edge death-blood-edge--top"></div>
+    <div class="death-blood-edge death-blood-edge--bottom"></div>
+    <div class="death-drops" id="deathDrops"></div>
+    <div class="death-content">
+      <div class="death-panel">
+        <h1 class="death-title" id="deathTitle">MIRĘS</h1>
+        <div class="death-divider"></div>
+        <p class="death-line death-line--primary" id="deathLine1">Spausk <span class="death-key">G</span> — iškviesti medikus</p>
+        <p class="death-line death-line--accent" id="deathLine2">EMS pamatys tavo vietą žemėlapyje</p>
+        <p class="death-line death-line--timer" id="deathLine3">Liko 0:00 — tada laikyk G ligoninėje</p>
+      </div>
+    </div>
+  </div>
+
   <div id="phone" class="hidden">
     <div class="device">
       <div class="device-wallpaper" id="deviceWallpaper"></div>
@@ -90,10 +107,13 @@
 
   <script src="locale/lt.js"></script>
   <script src="apps.js"></script>
+  <script src="phone-image.js"></script>
   <script src="phone-camera.js"></script>
   <script src="phone-carplay.js"></script>
   <script src="phone-ads.js"></script>
+  <script src="phone-bank-icons.js"></script>
   <script src="phone-bank.js"></script>
+  <script src="death-screen.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
