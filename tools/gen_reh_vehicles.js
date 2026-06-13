@@ -2,9 +2,9 @@ const fs = require('fs');
 const path = require('path');
 
 const roots = [
-  'resources/[cars]/reh-rebadged-car-pack/reh-rebadged-pack1',
-  'resources/[cars]/reh-rebadged-car-pack/reh-rebadged-pack2',
-  'resources/[cars]/reh-rebadged-car-pack/reh-rebadged-pack3',
+  'resources/[cars]/reh-rebadged-pack1',
+  'resources/[cars]/reh-rebadged-pack2',
+  'resources/[cars]/reh-rebadged-pack3',
 ];
 
 const classMap = {
