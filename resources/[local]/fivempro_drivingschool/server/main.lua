@@ -109,7 +109,22 @@ end
 QBCore.Functions.CreateCallback('fivempro_drivingschool:server:getLicenceStatus', function(source, cb)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then cb({}) return end
-    cb(Player.PlayerData.metadata.licences or {})
+    cb({
+        licences = Player.PlayerData.metadata.licences or {},
+        pendingPractical = pendingPractical[source],
+    })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_drivingschool:server:canStartPractical', function(source, cb, category)
+    if pendingPractical[source] ~= category then
+        cb(false, 'Praktikos egzaminas negalioja. Išlaikykite teoriją iš naujo.')
+        return
+    end
+    if theorySessions[source] then
+        cb(false, 'Pirmiausia baikite teorijos egzaminą.')
+        return
+    end
+    cb(true)
 end)
 
 QBCore.Functions.CreateCallback('fivempro_drivingschool:server:startTheory', function(source, cb, category)
@@ -122,6 +137,11 @@ QBCore.Functions.CreateCallback('fivempro_drivingschool:server:startTheory', fun
 
     if hasCategoryLicence(Player, cat) then
         cb(false, nil, 'Jau turite šią licenciją.')
+        return
+    end
+
+    if pendingPractical[src] == category then
+        cb(false, nil, 'Teorija jau išlaikyta — pradėkite praktikos egzaminą.')
         return
     end
 

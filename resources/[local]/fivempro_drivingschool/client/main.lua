@@ -211,7 +211,34 @@ local function startPracticalLoop()
     end)
 end
 
-RegisterNetEvent('fivempro_drivingschool:client:startPractical', function(category)
+local function showPracticalOfferMenu(category, score, total)
+    local cat = Config.Categories[category]
+    if not cat then return end
+
+    exports['qb-menu']:openMenu({
+        { header = 'Teorija išlaikyta!', isMenuHeader = true },
+        {
+            header = ('Rezultatas: %s/%s teisingų'):format(score or '?', total or '?'),
+            txt = cat.label,
+            isMenuHeader = true,
+        },
+        {
+            header = 'Laikyti praktikos egzaminą',
+            txt = 'Būsite teleportuoti į egzamino transportą ir pradėsite važiavimą',
+            params = {
+                event = 'fivempro_drivingschool:client:beginPractical',
+                args = { category = category },
+            },
+        },
+        {
+            header = 'Vėliau',
+            txt = 'Tęskite pas mokyklos instruktorių',
+            params = { event = 'qb-menu:client:closeMenu' },
+        },
+    })
+end
+
+local function startPracticalExam(category)
     if practicalState then
         notify('Jau vyksta praktinis egzaminas.', 'error')
         return
@@ -226,14 +253,21 @@ RegisterNetEvent('fivempro_drivingschool:client:startPractical', function(catego
         return
     end
 
+    local ped = PlayerPedId()
+    DoScreenFadeOut(400)
+    while not IsScreenFadedOut() do Wait(10) end
+
+    cleanupPractical()
+    SetEntityCoords(ped, sp.x, sp.y, sp.z + 0.35, false, false, false, false)
+    SetEntityHeading(ped, sp.w)
+    RequestCollisionAtCoord(sp.x, sp.y, sp.z)
+
     local veh = CreateVehicle(joaat(cat.vehicleModel), sp.x, sp.y, sp.z, sp.w, true, false)
     SetEntityAsMissionEntity(veh, true, true)
     SetVehicleOnGroundProperly(veh)
     SetVehicleNumberPlateText(veh, 'EGZAMIN')
     SetVehicleFuelLevel(veh, 100.0)
     SetVehicleEngineOn(veh, true, true, false)
-
-    local ped = PlayerPedId()
     TaskWarpPedIntoVehicle(ped, veh, -1)
 
     practicalState = {
@@ -247,31 +281,68 @@ RegisterNetEvent('fivempro_drivingschool:client:startPractical', function(catego
     }
 
     updateCheckpointBlip()
+    DoScreenFadeIn(500)
     notify(('Praktinis %s egzaminas prasidėjo. Laikykitės greičio limitų!'):format(cat.label), 'primary')
     startPracticalLoop()
+end
+
+RegisterNetEvent('fivempro_drivingschool:client:beginPractical', function(data)
+    local category = type(data) == 'table' and data.category or nil
+    if not category then return end
+
+    QBCore.Functions.TriggerCallback('fivempro_drivingschool:server:canStartPractical', function(ok, msg)
+        if not ok then
+            notify(msg or 'Negalima pradėti praktikos.', 'error')
+            return
+        end
+        startPracticalExam(category)
+    end, category)
+end)
+
+RegisterNetEvent('fivempro_drivingschool:client:startPractical', function(category)
+    startPracticalExam(category)
 end)
 
 RegisterNetEvent('fivempro_drivingschool:client:openMenu', function()
     QBCore.Functions.TriggerCallback('fivempro_drivingschool:server:getLicenceStatus', function(status)
         status = status or {}
+        local licences = status.licences or status
+        local pending = status.pendingPractical
+
         local menu = {
             { header = 'Vairavimo mokykla', isMenuHeader = true },
-            { header = 'Pasirinkite kategoriją', isMenuHeader = true },
         }
+
+        if pending and Config.Categories[pending] then
+            local pCat = Config.Categories[pending]
+            menu[#menu + 1] = {
+                header = '▶ Laikyti praktikos egzaminą',
+                txt = ('Teorija išlaikyta — %s'):format(pCat.label),
+                params = {
+                    event = 'fivempro_drivingschool:client:beginPractical',
+                    args = { category = pending },
+                },
+            }
+        end
+
+        menu[#menu + 1] = { header = 'Pasirinkite kategoriją', isMenuHeader = true }
 
         for _, key in ipairs({ 'a', 'b', 'c' }) do
             local cat = Config.Categories[key]
             if cat then
-                local owned = status[cat.licenceKey] == true
+                local owned = licences[cat.licenceKey] == true
                 if cat.licenceKeys then
                     for _, lk in ipairs(cat.licenceKeys) do
-                        if status[lk] == true then owned = true break end
+                        if licences[lk] == true then owned = true break end
                     end
                 end
+                local awaitingPractical = pending == key and not owned
                 menu[#menu + 1] = {
                     header = ('%s %s'):format(cat.icon or '', cat.label),
-                    txt = owned and 'Jau turite licenciją' or ('Egzaminas: $%s | Teorija 80%% + praktika'):format(cat.examPrice),
-                    disabled = owned,
+                    txt = owned and 'Jau turite licenciją'
+                        or awaitingPractical and 'Teorija išlaikyta — naudokite praktikos mygtuką viršuje'
+                        or ('Egzaminas: $%s | Teorija 80%% + praktika'):format(cat.examPrice),
+                    disabled = owned or awaitingPractical,
                     params = {
                         event = 'fivempro_drivingschool:client:confirmExam',
                         args = { category = key },
@@ -422,9 +493,9 @@ RegisterNetEvent('fivempro_drivingschool:client:theoryPick', function(data)
             local cat = theoryState.category
             theoryState = nil
             if result.passed then
-                notify(('Teorija išlaikyta (%s/%s teisingų)! Pradedamas praktinis egzaminas.'):format(
+                notify(('Teorija išlaikyta (%s/%s teisingų)!'):format(
                     result.score, result.total), 'success')
-                TriggerEvent('fivempro_drivingschool:client:startPractical', cat)
+                showPracticalOfferMenu(cat, result.score, result.total)
             else
                 notify(('Teorija neišlaikyta (%s/%s). Reikia bent %s%%.'):format(
                     result.score, result.total, Config.TheoryPassPercent), 'error')
