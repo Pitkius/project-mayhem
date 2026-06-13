@@ -115,6 +115,18 @@ local function runPhonePutAwayAnim()
 end
 
 local activeVoiceCallId = 0
+local phoneInputTyping = false
+
+local function applyPhoneNuiFocus()
+    if phonePhase ~= 'open' then return end
+    if phoneInputTyping then
+        SetNuiFocus(true, true)
+        SetNuiFocusKeepInput(false)
+    else
+        SetNuiFocus(true, true)
+        SetNuiFocusKeepInput(true)
+    end
+end
 
 local function setPhoneVoiceCall(callId)
     if GetResourceState('pma-voice') ~= 'started' then return end
@@ -135,6 +147,8 @@ local function closePhone()
 
     if PhoneCamera and PhoneCamera.stop then PhoneCamera.stop() end
     phonePhase = 'closing'
+    phoneInputTyping = false
+    SetNuiFocusKeepInput(false)
     SetNuiFocus(false, false)
     sendUi('close')
 
@@ -170,7 +184,7 @@ local function showPhone(opts)
         runPhoneOpenAnim()
         if phonePhase ~= 'opening' then return end
         phonePhase = 'open'
-        SetNuiFocus(true, true)
+        applyPhoneNuiFocus()
         sendUi('open')
         fetchPhoneData(function(data)
             sendUi('hydrate', data)
@@ -266,6 +280,12 @@ end)
 
 RegisterNUICallback('close', function(_, cb)
     closePhone()
+    cb('ok')
+end)
+
+RegisterNUICallback('phoneInputFocus', function(data, cb)
+    phoneInputTyping = data and data.focused == true
+    applyPhoneNuiFocus()
     cb('ok')
 end)
 

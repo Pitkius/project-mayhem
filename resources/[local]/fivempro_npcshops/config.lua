@@ -74,7 +74,7 @@ Config.PharmacyShop = {
     }
 }
 
---- Ūkio turgelis — senovinio tipo parduotuvė (kirtiklis, virvė, įrankiai, lauko reikmenys)
+--- Ūkio turgelis — senovinio tipo parduotuvė (be NPC, tik markeris + blip)
 Config.JunkShopBlip = {
     sprite = 566,
     color = 17,
@@ -91,23 +91,14 @@ Config.JunkShopMarker = {
     zOffset = 0.02,
 }
 
-Config.JunkShopPeds = {
-    {
-        model = 's_m_m_lathandy_01',
-        coords = vector4(2747.2649, 3472.9866, 55.6701, 246.1098),
-        scenario = 'WORLD_HUMAN_LEAN_BAR',
-    },
-    {
-        model = 's_m_m_lathandy_01',
-        coords = vector4(46.7457, -1749.7040, 29.6324, 46.4768),
-        scenario = 'WORLD_HUMAN_HAMMERING',
-    },
-    {
-        model = 'a_m_m_hillbilly_01',
-        coords = vector4(-10.8677, 6499.2393, 31.5051, 39.2733),
-        scenario = 'WORLD_HUMAN_SMOKING',
-    },
+--- Vietos markeriams / blipams (NPC nenaudojami)
+Config.JunkShopLocations = {
+    vector4(2747.2649, 3472.9866, 55.6701, 246.1098),
+    vector4(46.7457, -1749.7040, 29.6324, 46.4768),
+    vector4(-10.8677, 6499.2393, 31.5051, 39.2733),
 }
+
+Config.JunkShopPeds = {}
 
 Config.JunkShop = {
     name = 'fivempro-junk-shop',
@@ -123,13 +114,7 @@ Config.JunkShop = {
         { name = 'lighter', amount = 300, price = 6, slot = 8 },
         { name = 'binoculars', amount = 80, price = 265, slot = 9 },
         { name = 'lockpick', amount = 120, price = 58, slot = 10 },
-        { name = 'hunting_knife', amount = 80, price = 175, slot = 11 },
-        { name = 'gloves', amount = 250, price = 14, slot = 12 },
-        { name = 'metal_scrap', amount = 400, price = 28, slot = 13 },
-        { name = 'plastic', amount = 400, price = 9, slot = 14 },
-        { name = 'rubber', amount = 300, price = 18, slot = 15 },
-        { name = 'coal', amount = 300, price = 12, slot = 16 },
-        { name = 'gravel', amount = 300, price = 10, slot = 17 },
-        { name = 'empty_bottle', amount = 500, price = 4, slot = 18 },
+        { name = 'gloves', amount = 250, price = 14, slot = 11 },
+        { name = 'empty_bottle', amount = 500, price = 4, slot = 12 },
     },
 }

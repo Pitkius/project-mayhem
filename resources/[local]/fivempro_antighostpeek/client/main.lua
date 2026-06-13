@@ -7,6 +7,14 @@ local function rotationToDirection(rot)
     return vector3(-math.sin(radZ) * cosX, math.cos(radZ) * cosX, math.sin(radX))
 end
 
+local function normalizeVec(vec)
+    local len = #(vec)
+    if len < 0.001 then
+        return vector3(0.0, 0.0, 0.0), 0.0
+    end
+    return vec / len, len
+end
+
 local function castRay(from, to, ped)
     local handle = StartShapeTestRay(
         from.x, from.y, from.z,
@@ -18,8 +26,10 @@ local function castRay(from, to, ped)
     local deadline = GetGameTimer() + 25
 
     while result == 1 and GetGameTimer() < deadline do
-        result, hit, endCoords = GetShapeTestResult(handle)
-        if result ~= 1 then break end
+        result, hit, endCoords, _, _ = GetShapeTestResult(handle)
+        if result ~= 1 then
+            break
+        end
         Wait(0)
     end
 
@@ -30,13 +40,46 @@ local function castRay(from, to, ped)
     return false, to
 end
 
-local function getWeaponOrigin(ped)
-    local bone = GetPedBoneIndex(ped, 28422) -- PH_R_Hand
-    if bone ~= -1 then
-        return GetWorldPositionOfEntityBone(ped, bone)
+local function isPathBlocked(from, to, ped)
+    local dist = #(from - to)
+    if dist < 0.05 then
+        return false
     end
 
-    return GetPedBoneCoords(ped, 57005, 0.05, 0.0, 0.0)
+    local hit, endCoords = castRay(from, to, ped)
+    if not hit then
+        return false
+    end
+
+    local hitDist = #(from - endCoords)
+    return hitDist < dist - Config.DistanceThreshold
+end
+
+local function getShootOrigins(ped, direction)
+    local origins = {}
+    local dir = select(1, normalizeVec(direction))
+
+    local weaponEnt = GetCurrentPedWeaponEntityIndex(ped)
+    if weaponEnt and weaponEnt ~= 0 and DoesEntityExist(weaponEnt) then
+        origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, 0.58, 0.03)
+        origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, 0.42, 0.08)
+        origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, 0.26, 0.02)
+    end
+
+    local hand = GetPedBoneCoords(ped, 57005, 0.0, 0.0, 0.0)
+    origins[#origins + 1] = hand + dir * 0.58
+    origins[#origins + 1] = hand + dir * 0.42 + vector3(0.0, 0.0, 0.16)
+    origins[#origins + 1] = hand + dir * 0.28
+
+    local rhBone = GetPedBoneIndex(ped, 28422) -- PH_R_Hand
+    if rhBone ~= -1 then
+        origins[#origins + 1] = GetWorldPositionOfEntityBone(ped, rhBone) + dir * 0.45
+    end
+
+    local head = GetPedBoneCoords(ped, 31086, 0.08, 0.04, 0.0) -- SKEL_Head
+    origins[#origins + 1] = head + dir * 0.18
+
+    return origins
 end
 
 local function isAiming(ped)
@@ -55,6 +98,7 @@ local function isAiming(ped)
     return false
 end
 
+--- Ghost peek tik jei kamera mato taikinį (crosshair), bet nė vienas šūvio taškas negali pasiekti to taško.
 local function isGhostPeeking(ped)
     if not Config.Enabled then
         return false
@@ -80,24 +124,24 @@ local function isGhostPeeking(ped)
     local camCoord = GetGameplayCamCoord()
     local camRot = GetGameplayCamRot(2)
     local direction = rotationToDirection(camRot)
-    local destination = camCoord + (direction * Config.MaxRayDistance)
-    local weaponCoord = getWeaponOrigin(ped)
+    local farDest = camCoord + (direction * Config.MaxRayDistance)
 
-    local camHit, camEnd = castRay(camCoord, destination, ped)
-    local weaponHit, weaponEnd = castRay(weaponCoord, destination, ped)
+    local camHit, camEnd = castRay(camCoord, farDest, ped)
+    local aimTarget = camHit and camEnd or farDest
+    local aimDist = #(camCoord - aimTarget)
 
-    local camDist = camHit and #(camCoord - camEnd) or Config.MaxRayDistance
-    local weaponDist = weaponHit and #(weaponCoord - weaponEnd) or Config.MaxRayDistance
-
-    if weaponHit and camDist > (weaponDist + Config.DistanceThreshold) then
-        return true
+    if aimDist < (Config.MinAimDistance or 2.0) then
+        return false
     end
 
-    if weaponHit and not camHit then
-        return true
+    local origins = getShootOrigins(ped, direction)
+    for i = 1, #origins do
+        if not isPathBlocked(origins[i], aimTarget, ped) then
+            return false
+        end
     end
 
-    return false
+    return true
 end
 
 local function setIndicator(active)

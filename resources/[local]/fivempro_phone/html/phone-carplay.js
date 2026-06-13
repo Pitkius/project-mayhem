@@ -11,6 +11,7 @@
     currentTime: 0,
     isSeeking: false,
     isVolumeDragging: false,
+    targetVolume: 0.65,
     progressTimer: null,
     ytApiPromise: null,
   };
@@ -209,6 +210,7 @@
 
   function applyVolume(volume) {
     const v = Math.max(0, Math.min(1, Number(volume) || 0));
+    carplay.targetVolume = v;
     if (carplay.audioEl) carplay.audioEl.volume = v;
     if (carplay.ytPlayer && carplay.ytReady && typeof carplay.ytPlayer.setVolume === "function") {
       carplay.ytPlayer.setVolume(Math.round(v * 100));
@@ -279,7 +281,8 @@
         events: {
           onReady: (e) => {
             carplay.ytReady = true;
-            e.target.setVolume(Math.round((Number(volume) || 0.65) * 100));
+            const vol = carplay.targetVolume ?? (Number(volume) || 0.65);
+            e.target.setVolume(Math.round(vol * 100));
             carplay.duration = e.target.getDuration() || 0;
             startProgressLoop();
             updateProgressUi();
@@ -388,6 +391,40 @@
       playBtn.title = playing ? "Pauzė" : "Leisti";
       playBtn.innerHTML = playing ? ICONS.pause : ICONS.play;
     }
+  }
+
+  function syncPlaybackState(session) {
+    const s = session || {};
+    const playing = !!s.playing;
+    const hasPlayer = !!(carplay.audioEl || carplay.ytPlayer || carplay.activeStream);
+    if (!hasPlayer) {
+      applyVolume(s.volume);
+      return;
+    }
+    if (playing && s.stream) {
+      playAudio({
+        command: "play",
+        stream: s.stream,
+        url: s.url,
+        mediaType: s.mediaType,
+        volume: s.volume,
+      });
+    } else {
+      playAudio({ command: "pause", volume: s.volume });
+      applyVolume(s.volume);
+    }
+  }
+
+  function updateCarPlaySession(content, session, options = {}) {
+    if (!content || !session) return;
+    if (options.fullRender) {
+      renderCarPlayUi(content, { inVehicle: true, session });
+      return;
+    }
+    syncSessionMeta(content, session);
+    syncPlaybackState(session);
+    if (session.duration) carplay.duration = session.duration;
+    updateProgressUi();
   }
 
   function bindRangeControl(input, onChange) {
@@ -506,13 +543,17 @@
     volEl?.addEventListener("pointerup", () => {
       carplay.isVolumeDragging = false;
     });
-    volEl?.addEventListener("input", async (e) => {
+    volEl?.addEventListener("input", (e) => {
       const pct = Number(e.target.value) || 0;
-      content.querySelector("#cpVolLbl").textContent = `${pct}%`;
+      const lbl = content.querySelector("#cpVolLbl");
+      if (lbl) lbl.textContent = `${pct}%`;
       syncRangeFill(volEl);
-      const v = pct / 100;
-      applyVolume(v);
-      await window.PhoneNui("carplayControl", { action: "volume", volume: v }).catch(() => {});
+      applyVolume(pct / 100);
+    });
+    volEl?.addEventListener("change", (e) => {
+      carplay.isVolumeDragging = false;
+      const v = (Number(e.target.value) || 0) / 100;
+      window.PhoneNui("carplayControl", { action: "volume", volume: v }).catch(() => {});
     });
 
     async function playWithMeta(url, extraAction) {
@@ -538,33 +579,42 @@
     content.querySelector("#cpPlay").addEventListener("click", async () => {
       const url = urlInput?.value?.trim() || s.url;
       const act = playing ? "pause" : s.stream ? "resume" : "play";
+
+      if (act === "pause") {
+        playAudio({ command: "pause" });
+        syncSessionMeta(content, { ...s, playing: false });
+      } else if (act === "resume") {
+        playAudio({
+          command: "play",
+          stream: s.stream,
+          url: s.url,
+          mediaType: s.mediaType,
+          volume: s.volume,
+        });
+        syncSessionMeta(content, { ...s, playing: true });
+      }
+
       let res;
       if (act === "play" && url) res = await playWithMeta(url, "play");
       else res = await window.PhoneNui("carplayControl", { action: act, url });
-      if (res?.ok) renderCarPlayUi(content, { inVehicle: true, session: res.session });
+      if (res?.ok) {
+        updateCarPlaySession(content, res.session, { fullRender: act === "play" && !!url });
+      }
     });
 
     content.querySelector("#cpSkip").addEventListener("click", async () => {
+      playAudio({ command: "stop" });
       const res = await window.PhoneNui("carplayControl", { action: "skip" });
-      if (res?.ok) renderCarPlayUi(content, { inVehicle: true, session: res.session });
+      if (res?.ok) updateCarPlaySession(content, res.session);
     });
 
     content.querySelector("#cpStop").addEventListener("click", async () => {
+      playAudio({ command: "stop" });
       const res = await window.PhoneNui("carplayControl", { action: "stop" });
-      if (res?.ok) renderCarPlayUi(content, { inVehicle: true, session: res.session });
+      if (res?.ok) updateCarPlaySession(content, res.session, { fullRender: true });
     });
 
-    if (playing && s.stream && s.stream !== carplay.activeStream) {
-      playAudio({
-        command: "play",
-        stream: s.stream,
-        url: s.url,
-        mediaType: s.mediaType,
-        volume: s.volume,
-      });
-    } else {
-      applyVolume(s.volume);
-    }
+    syncPlaybackState(s);
 
     updateProgressUi();
   }
@@ -590,7 +640,9 @@
       const sameStream = payload.session.stream && payload.session.stream === carplay.activeStream;
       if (sameStream) {
         syncSessionMeta(content, payload.session);
-        applyVolume(payload.session.volume);
+        if (!carplay.isVolumeDragging) {
+          applyVolume(payload.session.volume);
+        }
         if (payload.session.duration) carplay.duration = payload.session.duration;
         updateProgressUi();
       } else {

@@ -73,13 +73,21 @@ local function occupantsOfVehicle(netId)
     return out
 end
 
-local function broadcastCarPlay(netId, session, audioCmd)
-    for _, src in ipairs(occupantsOfVehicle(netId)) do
+local function broadcastCarPlay(netId, session, audioCmd, initiatorSrc)
+    local sent = {}
+    local function deliver(src)
+        src = tonumber(src)
+        if not src or sent[src] then return end
+        sent[src] = true
         TriggerClientEvent('fivempro_phone:client:carplaySync', src, {
             netId = netId,
             session = session,
             audio = audioCmd,
         })
+    end
+    if initiatorSrc then deliver(initiatorSrc) end
+    for _, src in ipairs(occupantsOfVehicle(netId)) do
+        deliver(src)
     end
 end
 
@@ -130,14 +138,14 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:carplayControl', function
             mediaType = session.mediaType,
             title = session.title,
             volume = session.volume,
-        })
+        }, source)
         return cb({ ok = true, session = session })
     end
 
     if action == 'pause' then
         session.playing = false
         CarPlaySessions[netId] = session
-        broadcastCarPlay(netId, session, { command = 'pause', volume = session.volume })
+        broadcastCarPlay(netId, session, { command = 'pause', volume = session.volume }, source)
         return cb({ ok = true, session = session })
     end
 
@@ -153,21 +161,21 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:carplayControl', function
             mediaType = session.mediaType,
             title = session.title,
             volume = session.volume,
-        })
+        }, source)
         return cb({ ok = true, session = session })
     end
 
     if action == 'stop' then
         session = defaultSession()
         CarPlaySessions[netId] = session
-        broadcastCarPlay(netId, session, { command = 'stop' })
+        broadcastCarPlay(netId, session, { command = 'stop' }, source)
         return cb({ ok = true, session = session })
     end
 
     if action == 'volume' then
         session.volume = math.max(0.0, math.min(1.0, tonumber(data and data.volume) or session.volume))
         CarPlaySessions[netId] = session
-        broadcastCarPlay(netId, session, { command = 'volume', volume = session.volume })
+        broadcastCarPlay(netId, session, { command = 'volume', volume = session.volume }, source)
         return cb({ ok = true, session = session })
     end
 
@@ -187,7 +195,7 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:carplayControl', function
             command = 'seek',
             seconds = session.position,
             position = session.progress,
-        })
+        }, source)
         return cb({ ok = true, session = session })
     end
 
@@ -204,7 +212,7 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:carplayControl', function
         session.playing = false
         session.progress = 0
         CarPlaySessions[netId] = session
-        broadcastCarPlay(netId, session, { command = 'stop' })
+        broadcastCarPlay(netId, session, { command = 'stop' }, source)
         return cb({ ok = true, session = session })
     end
 

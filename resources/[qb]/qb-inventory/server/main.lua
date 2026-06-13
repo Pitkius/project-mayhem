@@ -282,7 +282,7 @@ QBCore.Functions.CreateCallback('qb-inventory:server:createDrop', function(sourc
     local playerCoords = GetEntityCoords(playerPed)
     if RemoveItem(src, item.name, item.amount, item.fromSlot, 'dropped item') then
         if item.type == 'weapon' then checkWeapon(src, item) end
-        TaskPlayAnim(playerPed, 'pickup_object', 'pickup_low', 8.0, -8.0, 2000, 0, 0, false, false, false)
+        TriggerClientEvent('qb-inventory:client:itemHandAnim', src, 'drop')
         local bag = CreateObjectNoOffset(Config.ItemDropObject, playerCoords.x + 0.5, playerCoords.y + 0.5, playerCoords.z, true, true, false)
         local dropId = NetworkGetNetworkIdFromEntity(bag)
         local newDropId = 'drop-' .. dropId

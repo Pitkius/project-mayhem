@@ -49,6 +49,21 @@ window.PhoneNui = nui;
 window.PhoneEsc = esc;
 window.PhoneIconHtml = iconHtml;
 
+function isPhoneTextInput(el) {
+  return !!(el && el.id === "msgBody");
+}
+
+function phoneHasActiveTextInput() {
+  const phone = document.getElementById("phone");
+  const active = document.activeElement;
+  if (!phone || !active || !phone.contains(active)) return false;
+  return isPhoneTextInput(active);
+}
+
+function syncPhoneInputFocus() {
+  nui("phoneInputFocus", { focused: phoneHasActiveTextInput() }).catch(() => {});
+}
+
 let lockDragY = 0;
 
 function nui(event, data = {}) {
@@ -560,6 +575,7 @@ window.addEventListener("message", async (e) => {
     document.getElementById("phone").classList.add("hidden");
     state.unlocked = false;
     setLockUiState(true);
+    syncPhoneInputFocus();
   } else if (action === "hydrate") {
     hydrate(payload || {});
   } else if (action === "newMessageNotify") {
@@ -627,3 +643,14 @@ tickClock();
 bindLockSwipe();
 applyWallpaper();
 setLockUiState(true);
+
+const phoneRoot = document.getElementById("phone");
+if (phoneRoot) {
+  phoneRoot.addEventListener("focusin", (e) => {
+    if (!isPhoneTextInput(e.target)) return;
+    syncPhoneInputFocus();
+  });
+  phoneRoot.addEventListener("focusout", () => {
+    setTimeout(syncPhoneInputFocus, 0);
+  });
+}

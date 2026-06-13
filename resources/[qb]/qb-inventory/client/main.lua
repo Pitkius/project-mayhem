@@ -188,6 +188,12 @@ RegisterNetEvent('qb-inventory:client:giveAnim', function()
     TaskPlayAnim(PlayerPedId(), 'mp_common', 'givetake1_b', 8.0, 1.0, -1, 16, 0, false, false, false)
 end)
 
+RegisterNetEvent('qb-inventory:client:itemHandAnim', function(action)
+    if InventoryAnim and InventoryAnim.playHandAction then
+        InventoryAnim.playHandAction(action)
+    end
+end)
+
 -- NUI Callbacks
 
 RegisterNUICallback('PlayDropFail', function(_, cb)
@@ -222,6 +228,19 @@ RegisterNUICallback('UseItem', function(data, cb)
 end)
 
 RegisterNUICallback('SetInventoryData', function(data, cb)
+    if data and data.fromInventory and data.toInventory then
+        local fromInv = tostring(data.fromInventory)
+        local toInv = tostring(data.toInventory)
+        if fromInv:find('drop%-') and toInv == 'player' then
+            if InventoryAnim and InventoryAnim.playHandAction then
+                InventoryAnim.playHandAction('pickup')
+            end
+        elseif fromInv == 'player' and toInv:find('drop%-') then
+            if InventoryAnim and InventoryAnim.playHandAction then
+                InventoryAnim.playHandAction('drop')
+            end
+        end
+    end
     TriggerServerEvent('qb-inventory:server:SetInventoryData', data.fromInventory, data.toInventory, data.fromSlot, data.toSlot, data.fromAmount, data.toAmount)
     cb('ok')
 end)

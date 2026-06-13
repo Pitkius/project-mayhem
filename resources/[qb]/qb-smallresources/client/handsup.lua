@@ -5,15 +5,14 @@ local function isPlayingHandsup(ped)
 end
 
 local function setHandsDown(clearTasks)
-    if not handsUp then return end
     handsUp = false
+    exports['qb-smallresources']:removeDisableControls(Config.HandsUp.controls)
     if clearTasks ~= false then
         local ped = PlayerPedId()
         if ped and ped ~= 0 then
             ClearPedSecondaryTask(ped)
         end
     end
-    exports['qb-smallresources']:removeDisableControls(Config.HandsUp.controls)
 end
 
 exports('resetHandsupState', function()
@@ -41,18 +40,22 @@ RegisterCommand(Config.HandsUp.command, function()
     end)
     if okBusy and isCarryBusy then return end
 
-    -- Atšaukti tik aktyvią emote animaciją (ne rankų pakėlimą)
-    if not handsUp or not isPlayingHandsup(ped) then
-        if GetResourceState('fivempro_emotes') == 'started' then
+    if GetResourceState('fivempro_emotes') == 'started' then
+        local okPlaying, isEmotePlaying = pcall(function()
+            return exports['fivempro_emotes']:IsEmotePlaying()
+        end)
+        if okPlaying and isEmotePlaying then
             pcall(function()
                 exports['fivempro_emotes']:CancelEmote(true)
             end)
+            return
         end
     end
 
-    -- Animacijos kartais palieka handsUp=true be animacijos
+    -- Animacija nutrūko, bet rankų būsena liko — atstatom be pakartotinio pakėlimo
     if handsUp and not isPlayingHandsup(ped) then
-        setHandsDown(false)
+        setHandsDown(true)
+        return
     end
 
     if not HasAnimDictLoaded('missminuteman_1ig_2') then

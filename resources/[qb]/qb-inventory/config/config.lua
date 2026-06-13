@@ -19,17 +19,14 @@ Config = {
         Hotbar = 'Z',
     },
 
-    --- F2 inventoriaus atidarymo / uždarymo animacijos (ped + optional kuprinės prop)
+    --- F2 inventoriaus rankų animacijos (be kuprinės, trumpas gestas)
     InventoryAnimation = {
         enabled = true,
         disableInVehicle = true,
-        useProp = true,
-        propModel = `p_michael_backpack_s`,
-        propBone = 57005,
-        propOffset = { 0.14, -0.02, -0.03, 175.0, 120.0, 0.0 },
-        open = { dict = 'pickup_object', anim = 'pickup_low', durationMs = 850 },
-        idle = { dict = 'clothingshirt', anim = 'try_shirt_positive_a', flag = 49 },
-        close = { dict = 'pickup_object', anim = 'putdown_low', durationMs = 900 },
+        open = { dict = 'pickup_object', anim = 'putdown_low', durationMs = 450 },
+        close = { dict = 'pickup_object', anim = 'putdown_low', durationMs = 450 },
+        drop = { dict = 'pickup_object', anim = 'putdown_low', durationMs = 450 },
+        pickup = { dict = 'pickup_object', anim = 'putdown_low', durationMs = 450 },
     },
 
     CleanupDropTime = 15,    -- in minutes

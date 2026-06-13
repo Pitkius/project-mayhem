@@ -1,11 +1,34 @@
---- Ūkio turgelis — 3D žymekliai ant žemės (kartu su žemėlapio blipais ir NPC)
+--- Ūkio turgelis — 3D žymekliai ant žemės (be NPC, tik blip + [E])
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local zones = {}
+local spawnedBlips = {}
 local lastInteractMs = 0
 
 local function markerCfg()
     return Config.JunkShopMarker or {}
+end
+
+local function createBlip(coords)
+    local blipCfg = Config.JunkShopBlip
+    if not blipCfg or not coords then return end
+    local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
+    SetBlipSprite(blip, blipCfg.sprite or 566)
+    SetBlipDisplay(blip, 4)
+    SetBlipScale(blip, blipCfg.scale or 0.82)
+    SetBlipColour(blip, blipCfg.color or 17)
+    SetBlipAsShortRange(blip, true)
+    local label = blipCfg.label or 'Ūkio turgelis'
+    if GetResourceState('fivempro_fonts') == 'started' then
+        pcall(function()
+            exports['fivempro_fonts']:SetBlipName(blip, label)
+        end)
+    else
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentSubstringPlayerName(label)
+        EndTextCommandSetBlipName(blip)
+    end
+    spawnedBlips[#spawnedBlips + 1] = blip
 end
 
 local function drawJunkMarker(pos)
@@ -24,14 +47,15 @@ local function drawJunkMarker(pos)
     )
 end
 
-for i, row in ipairs(Config.JunkShopPeds or {}) do
-    if row.coords then
-        local c = row.coords
+for i, row in ipairs(Config.JunkShopLocations or {}) do
+    if row then
+        local c = row
         zones[#zones + 1] = {
             coords = vector3(c.x + 0.0, c.y + 0.0, c.z + 0.0),
             label = 'Ūkio turgelis',
             index = i,
         }
+        createBlip(c)
     end
 end
 
@@ -69,5 +93,14 @@ CreateThread(function()
         end
 
         Wait(sleep)
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for i = 1, #spawnedBlips do
+        if DoesBlipExist(spawnedBlips[i]) then
+            RemoveBlip(spawnedBlips[i])
+        end
     end
 end)

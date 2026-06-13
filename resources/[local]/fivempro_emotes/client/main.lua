@@ -74,6 +74,10 @@ local function buildCatalog()
 end
 
 local function cancelEmote(silent)
+    if not emotePlaying and currentProp == 0 then
+        return false
+    end
+
     deleteProp()
     emotePlaying = false
     local ped = PlayerPedId()
@@ -89,6 +93,7 @@ local function cancelEmote(silent)
     if not silent then
         QBCore.Functions.Notify('Animacija atšaukta.', 'primary')
     end
+    return true
 end
 
 local function attachProp(ped, entry)

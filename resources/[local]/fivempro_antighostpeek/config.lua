@@ -2,8 +2,11 @@ Config = {}
 
 Config.Enabled = true
 
---- Kiek toliau kamera „mato“ nei ginklo spindulys — laikoma ghost peek.
-Config.DistanceThreshold = 0.35
+--- Kiek arti taikinio kliūtis turi būti, kad laikytume kelią užblokuotu (metrai).
+Config.DistanceThreshold = 0.22
+
+--- Minimalus atstumas iki taikinio — per arti nevertiname (metrai).
+Config.MinAimDistance = 2.0
 
 --- Maksimalus raycast atstumas (metrai).
 Config.MaxRayDistance = 120.0

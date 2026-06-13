@@ -7,6 +7,40 @@ local function sendUi(action, payload)
     SendNUIMessage({ action = action, payload = payload or {} })
 end
 
+local function audioCmdForAction(action, session)
+    action = tostring(action or '')
+    if action == 'pause' then
+        return { command = 'pause', volume = session.volume }
+    end
+    if action == 'resume' or action == 'play' then
+        if session.stream and session.stream ~= '' then
+            return {
+                command = 'play',
+                stream = session.stream,
+                url = session.url,
+                mediaType = session.mediaType,
+                title = session.title,
+                volume = session.volume,
+            }
+        end
+        return nil
+    end
+    if action == 'stop' or action == 'skip' then
+        return { command = 'stop' }
+    end
+    if action == 'volume' then
+        return { command = 'volume', volume = session.volume }
+    end
+    if action == 'seek' then
+        return {
+            command = 'seek',
+            seconds = session.position,
+            position = session.progress,
+        }
+    end
+    return nil
+end
+
 local function getVehicleNetId()
     local ped = PlayerPedId()
     if not IsPedInAnyVehicle(ped, false) then return 0 end
@@ -69,6 +103,17 @@ RegisterNUICallback('carplayControl', function(data, cb)
         return cb({ ok = false, message = 'Turite būti transporto priemonėje.' })
     end
     QBCore.Functions.TriggerCallback('fivempro_phone:server:carplayControl', function(res)
+        if res and res.ok and res.session then
+            local audio = audioCmdForAction(data and data.action, res.session)
+            if audio then
+                sendUi('carplayAudio', audio)
+            end
+            sendUi('carplayState', {
+                inVehicle = true,
+                netId = netId,
+                session = res.session,
+            })
+        end
         cb(res or { ok = false })
     end, {
         netId = netId,
