@@ -74,21 +74,20 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT žemėlapis — GetEntityCoords (x → lng, y → lat). Šiaurė viršuje.
---- coordMin/coordMax — subpikselinė PNG paklaida (gtav_satellite_2048.png kraštai).
---- flipY = false. Jei reikia tiksliau: calibration[] + u/v taškai (žr. gtav_map_core.js).
+--- MDT žemėlapis — Leaflet CRS.Simple (x → lng, y → lat su flipY).
+--- Tas pats 2048×2048 satelitas kaip gaujų planšetėje / TruckNet.
 Config.MdtMap = {
     gameMin = { x = -4000.0, y = -4000.0 },
-    gameMax = { x = 4500.0, y = 8150.0 },
-    coordMin = { x = -4003.0, y = -4012.0 },
-    coordMax = { x = 4503.0, y = 8138.0 },
+    gameMax = { x = 4500.0, y = 6625.0 },
+    coordMin = { x = -4000.0, y = -4000.0 },
+    coordMax = { x = 4500.0, y = 6625.0 },
     viewMin = { x = -4000.0, y = -4000.0 },
-    viewMax = { x = 4500.0, y = 8150.0 },
+    viewMax = { x = 4500.0, y = 6625.0 },
     offsetX = 0.0,
     offsetY = 0.0,
     scaleX = 1.0,
     scaleY = 1.0,
-    flipY = false,
+    flipY = true,
     imageFile = 'mdt/asset/gtav_satellite_2048.png',
     imageWidth = 2048,
     imageHeight = 2048,

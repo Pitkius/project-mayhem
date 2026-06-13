@@ -1,7 +1,7 @@
 Config = {}
 
 Config.OpenKey = 'F3'
-Config.CancelKey = 'X'
+Config.CancelKey = 'Z'
 Config.OpenCommand = 'animacijos'
 
 --- Animacijos meniu negalima kai miręs / ragdoll / krenta

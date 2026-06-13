@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<CVehicleModelInfoVariation>
+  <variationData>
+    <Item>
+      <modelName>benefactorcle53</modelName>
+      <colors>
+        <Item>
+          <indices content="char_array">
+            5
+            27
+            1
+            131
+			27
+			28
+          </indices>
+        </Item>
+      </colors>
+      <kits>
+        <Item>14932_benefactorcle53_modkit</Item>
+	      </kits>
+      <windowsWithExposedEdges />
+      <plateProbabilities>
+        <Probabilities>
+          <Item>
+            <Name>Standard White</Name>
+            <Value value="25" />
+          </Item>
+          <Item>
+            <Name>White Plate 2</Name>
+            <Value value="50" />
+          </Item>
+          <Item>
+            <Name>Blue Plate</Name>
+            <Value value="10" />
+          </Item>
+          <Item>
+            <Name>Yellow Plate</Name>
+            <Value value="15" />
+          </Item>
+        </Probabilities>
+      </plateProbabilities>
+      <lightSettings value="0" />        
+	      <sirenSettings value="0" />
+    </Item>       
+
+  </variationData>
+</CVehicleModelInfoVariation>

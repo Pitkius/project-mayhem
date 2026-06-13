@@ -198,6 +198,8 @@ local function fivemproForceCloseAllUi()
     TriggerEvent('fivempro_garages:client:forceCloseUi')
     TriggerEvent('fivempro_kma:client:forceCloseUi')
     TriggerEvent('fivempro_ltpd:client:forceCloseMdt')
+    TriggerEvent('fivempro_emotes:client:forceClose')
+    TriggerEvent('fivempro_hud:client:forceClose')
     TriggerEvent('qb-menu:client:closeMenu')
     if GetResourceState('qb-menu') == 'started' then
         pcall(function()

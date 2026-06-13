@@ -765,6 +765,22 @@ local Vehicles = {
     { model = 'formula',         name = 'PR4',                           brand = 'Progen',          price = 100000,  category = 'openwheel',      type = 'automobile', shop = 'none' },
 }
 
+-- REH Rebadged Car Pack
+do
+    local chunk = LoadResourceFile('qb-core', 'shared/vehicles_reh.lua')
+    if chunk then
+        local fn = load(chunk, '@qb-core/shared/vehicles_reh.lua')
+        if fn then
+            local ok, rehList = pcall(fn)
+            if ok and type(rehList) == 'table' then
+                for i = 1, #rehList do
+                    Vehicles[#Vehicles + 1] = rehList[i]
+                end
+            end
+        end
+    end
+end
+
 QBShared.VehicleHashes = QBShared.VehicleHashes or {}
 for i = 1, #Vehicles do
     local hash = joaat(Vehicles[i].model)

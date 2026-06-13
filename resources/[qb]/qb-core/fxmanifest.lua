@@ -44,7 +44,8 @@ files {
     'html/index.html',
     'html/css/notify.css',
     'html/css/drawtext.css',
-    'html/js/*.js'
+    'html/js/*.js',
+    'shared/vehicles_reh.lua',
 }
 
 dependency 'oxmysql'

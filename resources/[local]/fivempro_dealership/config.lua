@@ -159,6 +159,12 @@ Config.CivilianShopExtraBlockedModels = {
     deity = true, jubilee = true, asterope2 = true,
 }
 
+if Config.RehPriceOverrides then
+    for model, price in pairs(Config.RehPriceOverrides) do
+        Config.PriceOverrides[model] = price
+    end
+end
+
 --- Policijos salonas – tas pats NUI kaip Simion; mašinos įrašomos į `pd_*` garažą pagal stotį.
 Config.PoliceDealership = {
     label = 'Policijos transporto skyrius',

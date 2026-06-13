@@ -170,16 +170,31 @@ CreateThread(function()
     end
 end)
 
---- Dažnesnis sync kai sužeistas — kad atsijungus neįrašytų ore esančios pozicijos
+--- Klientas praneša ar saugu išsaugoti poziciją (GetEntityHeightAboveGround tik kliente)
 CreateThread(function()
     local lastSync = 0
     while true do
         Wait(1000)
-        if not LocalPlayer.state.isLoggedIn then goto continue end
+        if not LocalPlayer.state.isLoggedIn then
+            if LocalPlayer.state.spawnfixSkipSave then
+                LocalPlayer.state:set('spawnfixSkipSave', false, true)
+            end
+            goto continue
+        end
 
         local ped = PlayerPedId()
         local hp = GetEntityHealth(ped)
-        local interval = (hp < 200 or IsPedRagdoll(ped) or GetEntityHeightAboveGround(ped) > 1.25) and 8000 or 45000
+        local height = GetEntityHeightAboveGround(ped)
+        local inAir = height > 2.0 or IsPedFalling(ped) or IsPedRagdoll(ped)
+        local movingFast = false
+        local vel = GetEntityVelocity(ped)
+        if vel then
+            local speed = math.sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z))
+            movingFast = speed > 4.0
+        end
+        LocalPlayer.state:set('spawnfixSkipSave', inAir or movingFast, true)
+
+        local interval = (hp < 200 or inAir or height > 1.25) and 8000 or 45000
         local now = GetGameTimer()
         if now - lastSync >= interval then
             lastSync = now

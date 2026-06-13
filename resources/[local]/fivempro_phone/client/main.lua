@@ -381,6 +381,12 @@ RegisterNUICallback('getPhoto', function(data, cb)
     end, data or {})
 end)
 
+RegisterNUICallback('saveNotes', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:saveNotes', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
 RegisterNUICallback('saveAdProfile', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_phone:server:saveAdProfile', function(res)
         cb(res or { ok = false })
@@ -398,11 +404,6 @@ RegisterNUICallback('getWeather', function(_, cb)
     if GetRainLevel then rain = GetRainLevel() end
     local label = rain > 0.15 and 'Lietinga, ~18°C' or 'Giedra, ~24°C'
     cb({ ok = true, label = label })
-end)
-
-RegisterNUICallback('shopHint', function(_, cb)
-    QBCore.Functions.Notify('Ieškokite parduotuvių žemėlapyje (24/7, Ammu-Nation ir kt.).', 'primary', 6000)
-    cb({ ok = true })
 end)
 
 RegisterNUICallback('openCargoNet', function(_, cb)

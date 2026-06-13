@@ -33,6 +33,7 @@ Config.FoodPeds = {
     { model = 'mp_m_shopkeep_01', coords = vector4(1164.71, -322.94, 69.21, 101.72) },
     { model = 'mp_m_shopkeep_01', coords = vector4(-47.02, -1758.23, 29.42, 45.05) },
     { model = 'mp_m_shopkeep_01', coords = vector4(-706.06, -913.97, 19.22, 88.04) },
+    { model = 'mp_m_shopkeep_01', coords = vector4(377.1436, -1786.7267, 29.5227, 318.4302) },
 }
 
 --- Tatuiruotės

@@ -33,15 +33,25 @@ local function applyDisableControls(disableControls)
 end
 
 --- Grąžina true jei baigta, false jei atšaukta.
-function GangRunProgressSync(name, label, durationMs, disableControls, canCancel)
+function GangRunProgressSync(name, label, durationMs, disableControls, canCancel, anim)
     durationMs = tonumber(durationMs) or 5000
     disableControls = disableControls or DEFAULT_DISABLE
     canCancel = canCancel ~= false
+    local animDict, animClip, animFlags = nil, nil, nil
+    if type(anim) == 'table' then
+        animDict = anim.dict
+        animClip = anim.clip
+        animFlags = anim.flag
+    end
 
     if GetResourceState('progressbar') == 'started' then
         local done = false
         local cancelled = false
-        QBCore.Functions.Progressbar(name, label or 'Vykdoma…', durationMs, false, canCancel, disableControls, {}, {}, {}, function()
+        QBCore.Functions.Progressbar(name, label or 'Vykdoma…', durationMs, false, canCancel, disableControls, {
+            animDict = animDict,
+            anim = animClip,
+            flags = animFlags or 1,
+        }, {}, {}, function()
             done = true
         end, function()
             cancelled = true
@@ -56,13 +66,26 @@ function GangRunProgressSync(name, label, durationMs, disableControls, canCancel
     end
 
     local endAt = GetGameTimer() + durationMs
+    local ped = PlayerPedId()
+    if animDict and animClip then
+        RequestAnimDict(animDict)
+        local deadline = GetGameTimer() + 3000
+        while not HasAnimDictLoaded(animDict) and GetGameTimer() < deadline do
+            Wait(10)
+        end
+        if HasAnimDictLoaded(animDict) then
+            TaskPlayAnim(ped, animDict, animClip, 2.0, 2.0, -1, animFlags or 1, 0.0, false, false, false)
+        end
+    end
     while GetGameTimer() < endAt do
         applyDisableControls(disableControls)
         if canCancel and (IsControlJustReleased(0, 73) or IsControlJustReleased(0, 200)) then
+            ClearPedTasks(ped)
             return false
         end
         Wait(0)
     end
+    ClearPedTasks(ped)
     return true
 end
 

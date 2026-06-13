@@ -42,7 +42,7 @@ Config.CallStatus = {
 }
 
 Config.MaxActiveCalls = 120
-Config.BlipRefreshMs = 1500
+Config.BlipRefreshMs = 800
 --- Civiliniai/teisėti iškvietimai iš telefono / skriptų: anti-spam (ms vienam žaidėjui)
 Config.CreateCallCooldownMs = 4000
 

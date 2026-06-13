@@ -44,33 +44,12 @@ end
 
 local function sampleRoadPath(x1, y1, z1, x2, y2, z2)
     local roadMeters = roadDistanceMeters(x1, y1, z1, x2, y2, z2)
-    local steps = math.max(32, math.min(160, math.floor(roadMeters / 55.0)))
-    local points = {}
-
     local sx, sy = snapRoadCoord(x1, y1, z1)
-    points[1] = { x = sx, y = sy }
-
-    for i = 1, steps - 1 do
-        local t = i / steps
-        local px = x1 + (x2 - x1) * t
-        local py = y1 + (y2 - y1) * t
-        local pz = z1 + (z2 - z1) * t
-        local nx, ny = snapRoadCoord(px, py, pz)
-        local last = points[#points]
-        if math.abs(nx - last.x) + math.abs(ny - last.y) > 22.0 then
-            points[#points + 1] = { x = nx, y = ny }
-        end
-    end
-
     local tx, ty = snapRoadCoord(x2, y2, z2)
-    local last = points[#points]
-    if math.abs(tx - last.x) + math.abs(ty - last.y) > 8.0 then
-        points[#points + 1] = { x = tx, y = ty }
-    else
-        points[#points] = { x = tx, y = ty }
-    end
-
-    return points, roadMeters
+    return {
+        { x = sx, y = sy },
+        { x = tx, y = ty },
+    }, roadMeters
 end
 
 local function computeRouteMetrics(from, to)

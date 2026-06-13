@@ -50,7 +50,6 @@ Config.Blips = {
     -- ── Pack 2 (papildomi) ──
     { resource = 'cfx-gabz-lscustoms', label = 'LS Customs', coords = vec3(716.214, -1088.703, 22.365), sprite = 72, color = 3 },
     { resource = 'cfx-gabz-lost', label = 'Lost MC', coords = vec3(957.232, -143.250, 74.496), sprite = 226, color = 1 },
-    { resource = 'cfx-gabz-pinkcage', label = 'Pink Cage Motel', coords = vec3(322.326, -218.825, 54.087), sprite = 475, color = 48 },
     { resource = 'cfx-gabz-prison', label = 'Bolingbroke kalėjimas', coords = vec3(1855.556, 2586.384, 45.673), sprite = 188, color = 29 },
     { resource = 'cfx-gabz-parkranger', label = 'Park Ranger', coords = vec3(388.640, 787.820, 187.474), sprite = 60, color = 25 },
 
@@ -60,4 +59,5 @@ Config.Blips = {
     { resource = 'druglabs', label = 'Drug Labs', coords = vec3(1096.0, -3194.0, -38.0), sprite = 499, color = 1 },
     { resource = 'sc_secret_drug', label = 'Secret Meth Lab', coords = vec3(2719.0, 5204.7, 49.64), sprite = 499, color = 6 },
     { resource = 'sc1_29_motel', label = 'Davis Motel', coords = vec3(356.2, -1800.96, 28.85), sprite = 475, color = 48 },
+    { resource = 'fivempro_motel', label = 'Motelio sandėlis', coords = vec3(-1273.8059, 316.0920, 65.5118), sprite = 473, color = 48 },
 }

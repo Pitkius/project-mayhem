@@ -10,7 +10,8 @@ ui_page 'html/index.html'
 
 shared_scripts {
     '@qb-core/shared/locale.lua',
-    'config.lua'
+    'config.lua',
+    'config_reh_prices.lua',
 }
 
 client_scripts {

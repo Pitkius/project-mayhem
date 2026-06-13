@@ -1,6 +1,5 @@
-/** LTPD MDT GPS žemėlapis — Leaflet + smooth blip tracking */
+/** LTPD MDT GPS žemėlapis — Leaflet, 1:1 koordinatės (be išlyginimo) */
 window.MdtMap = (function () {
-  const LERP_SPEED = 7;
   const CALL_ACTIVE = new Set(['pending', 'accepted', 'enroute', 'arrived']);
 
   let leafletMap = null;
@@ -20,6 +19,8 @@ window.MdtMap = (function () {
   const callState = {};
   let tooltipEl = null;
   let selectedKey = null;
+  let routeLayer = null;
+  let routeDest = null;
 
   const Core = window.GtavMapCore;
 
@@ -147,6 +148,40 @@ window.MdtMap = (function () {
     });
   }
 
+  function clearRoute() {
+    if (routeLayer && leafletMap) {
+      leafletMap.removeLayer(routeLayer);
+    }
+    routeLayer = null;
+    routeDest = null;
+  }
+
+  function drawRouteTo(destX, destY) {
+    clearRoute();
+    if (!leafletMap || !mapCfg || !localPlayerPos) return false;
+    const dx = Number(destX);
+    const dy = Number(destY);
+    if (!Number.isFinite(dx) || !Number.isFinite(dy)) return false;
+    const from = gameToLatLng(localPlayerPos.x, localPlayerPos.y, mapCfg);
+    const to = gameToLatLng(dx, dy, mapCfg);
+    routeDest = { x: dx, y: dy };
+    routeLayer = L.polyline([from, to], {
+      color: '#60a5fa',
+      weight: 3,
+      opacity: 0.9,
+      dashArray: '10 8',
+      lineCap: 'round',
+      lineJoin: 'round',
+      interactive: false,
+    }).addTo(leafletMap);
+    return true;
+  }
+
+  function refreshRoute() {
+    if (!routeDest || !localPlayerPos) return;
+    drawRouteTo(routeDest.x, routeDest.y);
+  }
+
   function syncSelectionStyles() {
     Object.values(unitState).forEach((s) => {
       const el = s.marker.getElement()?.querySelector('.mdt-blip');
@@ -200,7 +235,7 @@ window.MdtMap = (function () {
     s.data = { ...u };
     s.marker.setIcon(makeDivIcon(unitBlipClass(u), u.heading));
     s.marker.setZIndexOffset(u.panic ? 900 : u.isCrewLeader ? 600 : 400);
-    if (!animEnabled) applyMarkerPosition(s);
+    applyMarkerPosition(s);
   }
 
   function upsertCall(c, cfg) {
@@ -230,33 +265,7 @@ window.MdtMap = (function () {
     s.data = { ...c };
     s.marker.setIcon(makeDivIcon(callBlipClass(c), 0));
     s.marker.setZIndexOffset(c.panic ? 950 : 500);
-    if (!animEnabled) applyMarkerPosition(s);
-  }
-
-  function lerp(a, b, t) {
-    return a + (b - a) * t;
-  }
-
-  function startAnimLoop() {
-    if (animFrame || !animEnabled) return;
-    lastFrame = performance.now();
-    const tick = (now) => {
-      if (!animEnabled) {
-        animFrame = null;
-        return;
-      }
-      const dt = Math.min(0.12, (now - lastFrame) / 1000);
-      lastFrame = now;
-      const alpha = 1 - Math.exp(-dt * LERP_SPEED);
-      const all = [...Object.values(unitState), ...Object.values(callState)];
-      all.forEach((s) => {
-        s.curLat = lerp(s.curLat, s.tgtLat, alpha);
-        s.curLng = lerp(s.curLng, s.tgtLng, alpha);
-        s.marker.setLatLng([s.curLat, s.curLng]);
-      });
-      animFrame = requestAnimationFrame(tick);
-    };
-    animFrame = requestAnimationFrame(tick);
+    applyMarkerPosition(s);
   }
 
   function stopAnimLoop() {
@@ -264,10 +273,9 @@ window.MdtMap = (function () {
     animFrame = null;
   }
 
-  function setAnimEnabled(on) {
-    animEnabled = on === true;
-    if (animEnabled) startAnimLoop();
-    else stopAnimLoop();
+  function setAnimEnabled(_on) {
+    animEnabled = false;
+    stopAnimLoop();
   }
 
   function fitMapFill(pad) {
@@ -284,18 +292,19 @@ window.MdtMap = (function () {
       const [lat, lng] = gameToLatLng(s.data.x, s.data.y, mapCfg);
       s.tgtLat = lat;
       s.tgtLng = lng;
-      if (!animEnabled) applyMarkerPosition(s);
+      applyMarkerPosition(s);
     });
     Object.values(callState).forEach((s) => {
       if (!s.data || s.data.x == null || s.data.y == null) return;
       const [lat, lng] = gameToLatLng(s.data.x, s.data.y, mapCfg);
       s.tgtLat = lat;
       s.tgtLng = lng;
-      if (!animEnabled) applyMarkerPosition(s);
+      applyMarkerPosition(s);
     });
     if (localPlayerPos && selfSource != null) {
       upsertUnit(localPlayerUnit(), mapCfg);
     }
+    refreshRoute();
   }
 
   function ensureMap(cfg) {
@@ -307,10 +316,6 @@ window.MdtMap = (function () {
 
     if (!leafletMap) {
       leafletMap = L.map(el, Core.createLeafletOptions());
-      leafletMap.on('moveend', () => {
-        const vb = Core.viewBoundsLatLng(mapCfg) || mapBounds;
-        if (vb) leafletMap.panInsideBounds(vb, { animate: false });
-      });
     }
 
     if (imageLayer) leafletMap.removeLayer(imageLayer);
@@ -425,10 +430,9 @@ window.MdtMap = (function () {
     };
     if (!leafletMap || !mapCfg || selfSource == null) return;
     upsertUnit(localPlayerUnit(), mapCfg);
-    if (!animEnabled) {
-      const s = unitState[`u:${selfSource}`];
-      if (s) applyMarkerPosition(s);
-    }
+    const s = unitState[`u:${selfSource}`];
+    if (s) applyMarkerPosition(s);
+    refreshRoute();
   }
 
   function update(payload) {
@@ -510,6 +514,7 @@ window.MdtMap = (function () {
     animEnabled = false;
     stopAnimLoop();
     hideTooltip();
+    clearRoute();
     Object.values(unitState).forEach((s) => leafletMap?.removeLayer(s.marker));
     Object.values(callState).forEach((s) => leafletMap?.removeLayer(s.marker));
     Object.keys(unitState).forEach((k) => delete unitState[k]);
@@ -536,6 +541,8 @@ window.MdtMap = (function () {
     setAnimEnabled,
     setSelfSource,
     setLocalPlayerPos,
+    setRoute: drawRouteTo,
+    clearRoute,
     destroy,
     gameToLatLng: (x, y) => gameToLatLng(x, y, mapCfg),
   };

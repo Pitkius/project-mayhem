@@ -62,6 +62,12 @@
   background: rgba(0, 0, 0, 0.35);
   border-bottom-color: var(--glass-border);
 }
+#phone.camera-live-mode .cam-app {
+  background: transparent;
+}
+#phone.camera-live-mode .scroll-body.camera-body {
+  background: transparent;
+}
 
 .cam-app {
   display: flex;

@@ -3,6 +3,22 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local menuOpen = false
 local currentProp = 0
 local catalogForNui = {}
+local emotePlaying = false
+
+local function preparePedForAnim(ped)
+    if not ped or ped == 0 then return false end
+    if IsPedInAnyVehicle(ped, false) then return false end
+    if IsEntityDead(ped) or IsPedRagdoll(ped) then return false end
+    if IsPedArmed(ped, 7) then
+        SetCurrentPedWeapon(ped, joaat('WEAPON_UNARMED'), true)
+    end
+    if IsPedUsingAnyScenario(ped) then
+        ClearPedTasksImmediately(ped)
+    else
+        ClearPedSecondaryTask(ped)
+    end
+    return true
+end
 
 local function loadAnimDict(dict)
     if not dict or dict == '' then return false end
@@ -59,9 +75,17 @@ end
 
 local function cancelEmote(silent)
     deleteProp()
+    emotePlaying = false
     local ped = PlayerPedId()
-    ClearPedTasks(ped)
-    ClearPedSecondaryTask(ped)
+    if ped and ped ~= 0 then
+        ClearPedTasks(ped)
+        ClearPedSecondaryTask(ped)
+    end
+    if GetResourceState('qb-smallresources') == 'started' then
+        pcall(function()
+            exports['qb-smallresources']:resetHandsupState()
+        end)
+    end
     if not silent then
         QBCore.Functions.Notify('Animacija atšaukta.', 'primary')
     end
@@ -101,8 +125,12 @@ local function playEmoteById(id)
     local entry = EmoteCatalog[tonumber(id)]
     if not entry then return end
 
-    local ped = PlayerPedId()
     cancelEmote(true)
+
+    local ped = PlayerPedId()
+    if not preparePedForAnim(ped) then
+        return QBCore.Functions.Notify('Dabar negali naudoti animacijų.', 'error')
+    end
 
     if entry.clipset then
         if entry.clipset == 'reset' then
@@ -122,6 +150,7 @@ local function playEmoteById(id)
 
     if entry.scenario then
         TaskStartScenarioInPlace(ped, entry.scenario, 0, true)
+        emotePlaying = true
         QBCore.Functions.Notify(entry.label or 'Scenarijus', 'success')
         return
     end
@@ -131,7 +160,8 @@ local function playEmoteById(id)
         return QBCore.Functions.Notify('Animacija nerasta.', 'error')
     end
 
-    TaskPlayAnim(ped, entry.dict, entry.anim, 2.0, 2.0, -1, entry.flags or 49, 0.0, false, false, false)
+    TaskPlayAnim(ped, entry.dict, entry.anim, 8.0, -8.0, -1, entry.flags or 49, 0.0, false, false, false)
+    emotePlaying = true
     if entry.prop then
         attachProp(ped, entry)
     end
@@ -140,6 +170,12 @@ end
 
 local function openMenu()
     if menuOpen then return end
+    if #catalogForNui == 0 then
+        buildCatalog()
+    end
+    if #catalogForNui == 0 then
+        return QBCore.Functions.Notify('Animacijų katalogas tuščias.', 'error')
+    end
     menuOpen = true
     SetNuiFocus(true, true)
     SendNUIMessage({
@@ -154,6 +190,7 @@ local function closeMenu()
     if not menuOpen then return end
     menuOpen = false
     SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
     SendNUIMessage({ action = 'close' })
 end
 
@@ -171,7 +208,7 @@ RegisterNUICallback('emotes:close', function(_, cb)
 end)
 
 RegisterNUICallback('emotes:play', function(data, cb)
-    if data and data.id then
+    if data and data.id ~= nil then
         playEmoteById(data.id)
     end
     cb({ ok = true })
@@ -191,7 +228,7 @@ RegisterKeyMapping('+fivempro_emotes_open', 'Animacijų meniu (F3)', 'keyboard',
 RegisterCommand('emotecancel', function()
     cancelEmote(false)
 end, false)
-RegisterKeyMapping('emotecancel', 'Atšaukti animaciją', 'keyboard', Config.CancelKey or 'X')
+RegisterKeyMapping('emotecancel', 'Atšaukti animaciją', 'keyboard', Config.CancelKey or 'Z')
 
 RegisterCommand(Config.OpenCommand or 'animacijos', function()
     toggleMenu()
@@ -228,3 +265,8 @@ end)
 exports('OpenEmoteMenu', openMenu)
 exports('CancelEmote', cancelEmote)
 exports('PlayEmote', playEmoteById)
+exports('IsEmotePlaying', function() return emotePlaying end)
+
+RegisterNetEvent('fivempro_emotes:client:forceClose', function()
+    closeMenu()
+end)

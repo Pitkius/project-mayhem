@@ -72,6 +72,20 @@ window.PhoneLocale = {
     error: "Klaida",
     saved: "Išsaugota",
   },
+  notes: {
+    save: "Išsaugoti",
+    saving: "Saugoma…",
+    saved: "Išsaugota",
+    error: "Nepavyko išsaugoti.",
+  },
+  bank: {
+    title: "NEON BANK",
+    transfer: "Pervesti",
+    deposit: "Įnešti",
+    withdraw: "Išsiimti",
+    history: "Istorija",
+    saved: "Operacija atlikta",
+  },
 };
 
 window.t = function t(key, fallback) {

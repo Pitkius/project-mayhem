@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CVehicleModelInfoVariation>
+  <variationData> 
+    <Item>
+      <modelName>karinelantra</modelName>
+      <colors>
+        <Item>
+          <indices content="char_array">
+            49
+            27
+            156
+            0
+	        0
+	        29
+          </indices>
+          <liveries>
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+          </liveries>
+        </Item>   
+        <Item>
+          <indices content="char_array">
+            8
+            27
+            112
+            0
+	        0
+	        29
+          </indices>
+          <liveries>
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+          </liveries>
+        </Item>
+        <Item>
+          <indices content="char_array">
+            29
+            27
+            0
+            0
+	        0
+	        29
+          </indices>
+          <liveries>
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+          </liveries>
+        </Item>		
+        <Item>
+          <indices content="char_array">
+            0
+            27
+            0
+            0
+	        0
+	        29
+          </indices>
+          <liveries>
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+          </liveries>
+        </Item>		
+        <Item>
+          <indices content="char_array">
+            12
+            27
+            112
+            0
+	        0
+	        29
+          </indices>
+          <liveries>
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+          </liveries>
+        </Item>
+        <Item>
+          <indices content="char_array">
+            74
+            27
+            12
+            0
+	        0
+	        29
+          </indices>
+          <liveries>
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+          </liveries>
+        </Item>	
+        <Item>
+          <indices content="char_array">
+            64
+            27
+            68
+            0
+	        0
+	        29
+          </indices>
+          <liveries>
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+          </liveries>
+        </Item>									
+      </colors>
+      <kits>
+        <Item>623_karinelantra_modkit</Item>
+      </kits>
+      <windowsWithExposedEdges />
+      <plateProbabilities>
+        <Probabilities />
+      </plateProbabilities>
+      <lightSettings value="1" />
+      <sirenSettings />
+    </Item>
+  </variationData>
+</CVehicleModelInfoVariation>

@@ -37,7 +37,7 @@ Config.MissionSites = {
         { coords = vector4(85.22, -1959.44, 20.75, 320.0), label = 'Grove sandėlis' },
     },
     theft = {
-        { coords = vector4(215.44, -809.88, 30.73, 250.0), label = 'Legion aikštelė', vehicle = 'sultan' },
+        { coords = vector4(218.52, -768.24, 30.65, 160.0), label = 'Legion aikštelė', vehicle = 'sultan' },
         { coords = vector4(-340.88, -874.22, 31.08, 0.0), label = 'Downtown garažas', vehicle = 'futo' },
         { coords = vector4(1737.22, 3710.44, 34.14, 20.0), label = 'Sandy aikštelė', vehicle = 'bison' },
     },
@@ -86,7 +86,7 @@ Config.MissionTypes = {
     influenceReward = 0,
     durationMs = 8000,
     gangs = { street = true, cartel = true, mafia = true, biker = true },
-    pickupOffset = vector3(45.0, 35.0, 0.0),
+    spawnVehicle = 'mule3',
     dropInTurf = true,
   },
   theft = {
@@ -98,6 +98,8 @@ Config.MissionTypes = {
     gangs = { street = true, biker = true, racing = true },
     requireVehicle = true,
     dropInTurf = true,
+    pickupLabel = 'Pavogti transportą',
+    dropLabel = 'Pristatyti transportą',
   },
   extortion = {
     label = 'Reketas / NPC spaudimas',
@@ -133,6 +135,7 @@ Config.MissionTypes = {
     influenceReward = 0,
     durationMs = 7500,
     gangs = { street = true, cartel = true },
+    spawnVehicle = 'burrito3',
     dropInTurf = true,
   },
   weapon_run = {
@@ -142,6 +145,7 @@ Config.MissionTypes = {
     influenceReward = 0,
     durationMs = 8000,
     gangs = { biker = true, cartel = true, mafia = true },
+    spawnVehicle = 'mule3',
     dropInTurf = true,
   },
   money_launder = {
@@ -151,6 +155,7 @@ Config.MissionTypes = {
     influenceReward = 0,
     durationMs = 9000,
     gangs = { mafia = true },
+    spawnVehicle = 'speedo',
     dropInTurf = true,
   },
   getaway = {

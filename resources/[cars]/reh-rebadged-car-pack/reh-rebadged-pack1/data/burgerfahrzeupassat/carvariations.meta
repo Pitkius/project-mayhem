@@ -1,0 +1,192 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<CVehicleModelInfoVariation>
+  <variationData> 
+
+
+
+
+
+
+
+
+
+
+    <Item>
+      <modelName>12passatv6sel</modelName>
+      <colors>
+        <Item>
+		 <Item>
+          <indices content="char_array">  <!-- Black / Titan Black -->
+            0
+            0
+            0
+            37
+          </indices>
+        </Item>
+          <indices content="char_array">  <!-- Black / Beige -->
+            0
+            106
+            0
+            27
+          </indices>
+        </Item>
+        <Item>
+          <indices content="char_array">  <!-- Candy White / Beige -->
+            111
+            106
+            0
+            28
+          </indices>
+        </Item>
+        <Item>
+          <indices content="char_array">  <!-- Candy White / Titan Black -->
+            111
+            0
+            0
+            1
+          </indices>
+        </Item>
+        <Item>
+          <indices content="char_array">  <!-- Reflex Silver Metallic / Moonrock -->
+            4
+            4
+            111
+            5
+          </indices>
+        </Item>
+        <Item>
+          <indices content="char_array">  <!-- Reflex Silver Metallic / Titan Black -->
+            4
+            0
+            111
+            111
+          </indices>
+        </Item>
+        <Item>
+          <indices content="char_array">  <!-- Night Blue / Moonrock -->
+            142
+            4
+            87
+            5
+          </indices>
+        </Item>
+        <Item>
+          <indices content="char_array">  <!-- Night Blue / Titan Black -->
+            142
+            0
+            87
+            111
+          </indices>
+        </Item>
+        <Item>
+          <indices content="char_array">  <!-- Night Blue / Beige -->
+            142
+            106
+            87
+            5
+          </indices>
+        </Item>
+        <Item>
+          <indices content="char_array">  <!-- Opera Red / Beige -->
+            143
+            106
+            45
+            5
+          </indices>
+        </Item>
+        <Item>
+          <indices content="char_array">  <!-- Opera Red / Titan Black -->
+            143
+            0
+            45
+            111
+          </indices>
+        </Item>
+        <Item>
+          <indices content="char_array">  <!-- Platinum Gray / Titan Black -->
+            2
+            0
+            18
+            111
+          </indices>
+        </Item>
+	<Item>
+          <indices content="char_array">  <!-- Platinum Gray / Moonrock -->
+            2
+            4
+            18
+            111
+          </indices>
+        </Item>
+	<Item>
+          <indices content="char_array">  <!-- Tungsten Silver / Titan Black -->
+            8
+            0
+            24
+            111
+          </indices>
+        </Item>
+	<Item>
+          <indices content="char_array">  <!-- Tungsten Silver / Beige -->
+            8
+            106
+            24
+            111
+          </indices>
+        </Item>
+	<Item>
+          <indices content="char_array">  <!-- Fortana Red / Beige -->
+            32
+            106
+            34
+            111
+          </indices>
+        </Item>
+	<Item>
+          <indices content="char_array">  <!-- Fortana Red / Titan Black -->
+            32
+            0
+            34
+            111
+          </indices>
+        </Item>
+	<Item>
+          <indices content="char_array">  <!-- Glacier Blue / Beige -->
+            74
+            106
+            111
+            111
+          </indices>
+        </Item>
+	<Item>
+          <indices content="char_array">  <!-- Glacier Blue / Titan Black -->
+            74
+            0
+            111
+            111
+          </indices>
+        </Item>
+      </colors>
+      <kits>
+        <Item>0_default_modkit</Item>
+      </kits>
+      <windowsWithExposedEdges />
+      <plateProbabilities>
+        <Probabilities />
+      </plateProbabilities>
+      <lightSettings value="1" />
+      <sirenSettings value="0" />
+    </Item>
+
+
+
+
+
+
+
+
+
+
+  </variationData>
+</CVehicleModelInfoVariation>

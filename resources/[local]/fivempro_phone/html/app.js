@@ -2,7 +2,6 @@ const resourceName = typeof GetParentResourceName === "function" ? GetParentReso
 
 const SCREENS = ["lockScreen", "accountSetup", "homeScreen", "appStoreScreen", "appScreen"];
 const APP_TEMPLATE = {
-  emergency: "renderEmergencyApp",
   calls: "renderCallsApp",
   messages: "renderMessagesApp",
   contacts: "renderContactsApp",
@@ -14,7 +13,6 @@ const APP_TEMPLATE = {
   settings: "renderSettingsApp",
   camera: "renderCameraApp",
   notes: "renderNotesApp",
-  shop: "renderShopApp",
   weather: "renderWeatherApp",
   cargonet: "renderCargoNetApp",
 };
@@ -32,6 +30,7 @@ const state = {
   adCategories: [],
   adProfile: null,
   photos: [],
+  notes: "",
   posts: [],
   cargoNet: { registered: false, level: 1, deliveries: 0 },
   money: { cash: 0, bank: 0 },
@@ -348,6 +347,7 @@ function hydrate(payload = {}) {
   state.adCategories = payload.adCategories || [];
   state.adProfile = payload.adProfile || null;
   state.photos = payload.photos || [];
+  state.notes = typeof payload.notes === "string" ? payload.notes : (state.notes || "");
   state.posts = payload.posts || [];
   state.money = payload.money || state.money;
   state.cargoNet = payload.cargoNet || state.cargoNet || { registered: false, level: 1, deliveries: 0 };
@@ -424,13 +424,6 @@ async function openApp(appId) {
 
 window.PhoneOpenApp = openApp;
 
-window.renderEmergencyApp = (content) => {
-  content.innerHTML = `<div class="card"><b>Skubus iškvietimas</b><div class="row"><button data-emerg="police">Policija</button><button data-emerg="ems">Greitoji</button></div><div class="row"><button data-emerg="taxi">Taksi</button><button data-emerg="mechanic">Mechanikas</button></div></div>`;
-  content.querySelectorAll("[data-emerg]").forEach((btn) =>
-    btn.addEventListener("click", () => nui("emergencyCall", { service: btn.dataset.emerg })),
-  );
-};
-
 window.renderSocialApp = (content) => {
   content.innerHTML = `<div class="card"><input id="postCaption" placeholder="Aprašymas" /><input id="postImageUrl" placeholder="Nuotraukos nuoroda" /><button id="btnPostInsta">Kelti</button></div>${state.posts.map((p) => `<div class="card"><b>${esc(p.author_name)}</b><div>${esc(p.caption)}</div><button data-like="${Number(p.id)}">Patinka ${Number(p.likes || 0)}</button></div>`).join("")}`;
   document.getElementById("btnPostInsta").addEventListener("click", async () => {
@@ -448,12 +441,6 @@ window.renderSocialApp = (content) => {
       openApp("insta");
     }),
   );
-};
-
-window.renderBankApp = (content) => {
-  const cash = Number(state.money.cash || 0);
-  const bank = Number(state.money.bank || 0);
-  content.innerHTML = `<div class="card"><b>Piniginė</b><p>Grynieji: $${cash.toLocaleString("lt-LT")}</p><p>Bankas: $${bank.toLocaleString("lt-LT")}</p><p class="muted small">Balansas sinchronizuojamas su QBCore.</p></div>`;
 };
 
 window.renderSettingsApp = (content) => {
@@ -475,11 +462,6 @@ window.renderSettingsApp = (content) => {
     localStorage.setItem("fivempro_phone_wp", e.target.value);
     applyWallpaper();
   });
-};
-
-window.renderShopApp = (content) => {
-  content.innerHTML = `<div class="card"><b>Marketplace</b><p class="muted small">Apsipirkite miesto NPC parduotuvėse.</p><button id="btnShopHint" class="ios-btn primary">Patikrinti parduotuves</button></div>`;
-  document.getElementById("btnShopHint").addEventListener("click", () => nui("shopHint", {}));
 };
 
 window.renderWeatherApp = (content) => {
@@ -524,10 +506,42 @@ window.renderCargoNetApp = (content) => {
 };
 
 window.renderNotesApp = (content) => {
-  const notes = localStorage.getItem("fivempro_phone_notes") || "";
-  content.innerHTML = `<div class="card"><textarea id="notesArea" rows="12" placeholder="Užrašai…">${esc(notes)}</textarea><button id="btnSaveNotes" class="ios-btn primary">Išsaugoti</button></div>`;
-  document.getElementById("btnSaveNotes").addEventListener("click", () => {
-    localStorage.setItem("fivempro_phone_notes", document.getElementById("notesArea").value);
+  const notes = state.notes || "";
+  const saveLabel = window.t?.("notes.save") || "Išsaugoti";
+  content.innerHTML = `<div class="card">
+    <textarea id="notesArea" rows="12" placeholder="Užrašai…">${esc(notes)}</textarea>
+    <p class="small muted" id="notesStatus" style="min-height:18px;margin-top:8px"></p>
+    <button id="btnSaveNotes" class="ios-btn primary">${esc(saveLabel)}</button>
+  </div>`;
+  const status = content.querySelector("#notesStatus");
+  const btn = content.querySelector("#btnSaveNotes");
+  btn.addEventListener("click", async () => {
+    const body = content.querySelector("#notesArea").value;
+    btn.disabled = true;
+    if (status) {
+      status.textContent = window.t?.("notes.saving") || "Saugoma…";
+      status.style.color = "";
+    }
+    try {
+      const res = await nui("saveNotes", { body });
+      if (res?.ok) {
+        state.notes = body;
+        if (status) {
+          status.textContent = window.t?.("notes.saved") || "Išsaugota";
+          status.style.color = "#34c759";
+        }
+      } else if (status) {
+        status.textContent = res?.message || window.t?.("notes.error") || "Nepavyko išsaugoti.";
+        status.style.color = "#ff6b6b";
+      }
+    } catch (_) {
+      if (status) {
+        status.textContent = window.t?.("notes.error") || "Nepavyko išsaugoti.";
+        status.style.color = "#ff6b6b";
+      }
+    } finally {
+      btn.disabled = false;
+    }
   });
 };
 

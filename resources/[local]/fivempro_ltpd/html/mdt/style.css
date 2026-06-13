@@ -124,6 +124,16 @@ input, select {
   z-index: 1;
 }
 
+.gps-map,
+.gps-map .leaflet-container {
+  cursor: grab;
+  touch-action: none;
+}
+
+.gps-map .leaflet-container.leaflet-dragging {
+  cursor: grabbing;
+}
+
 .gps-map .leaflet-container {
   background: #0a0f1a;
   font-family: inherit;
@@ -166,6 +176,20 @@ input, select {
 }
 
 .gps-tool-refresh { font-size: 16px; }
+
+.gps-map-hint {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 500;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  font-size: 10px;
+  color: #94a3b8;
+  pointer-events: none;
+}
 
 .gps-map-legend {
   position: absolute;

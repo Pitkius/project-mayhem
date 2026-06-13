@@ -2,14 +2,14 @@
 window.GtavMapCore = (function () {
   const ISLAND = {
     gameMin: { x: -4000, y: -4000 },
-    gameMax: { x: 4500, y: 8150 },
+    gameMax: { x: 4500, y: 6625 },
     viewMin: { x: -4000, y: -4000 },
-    viewMax: { x: 4500, y: 8150 },
+    viewMax: { x: 4500, y: 6625 },
     offsetX: 0,
     offsetY: 0,
     scaleX: 1,
     scaleY: 1,
-    flipY: false,
+    flipY: true,
     imageWidth: 2048,
     imageHeight: 2048,
   };
@@ -121,7 +121,7 @@ window.GtavMapCore = (function () {
       offsetY: num(t.offsetY, 0),
       scaleX: num(t.scaleX, 1),
       scaleY: num(t.scaleY, 1),
-      flipY: t.flipY === true,
+      flipY: t.flipY !== false,
       imgW: num(t.imageWidth, ISLAND.imageWidth),
       imgH: num(t.imageHeight, ISLAND.imageHeight),
       imageUrl: nuiImageUrl(file, resourceName),
@@ -169,7 +169,7 @@ window.GtavMapCore = (function () {
     let tY = (y - cfg.coordMinY) / rangeY;
     tX = Math.max(0, Math.min(1, tX));
     tY = Math.max(0, Math.min(1, tY));
-    if (cfg.flipY === true) tY = 1 - tY;
+    if (cfg.flipY !== false) tY = 1 - tY;
 
     const lng = cfg.minX + tX * mapRangeX * scaleX + ox;
     const lat = cfg.minY + tY * mapRangeY * scaleY + oy;
@@ -178,16 +178,20 @@ window.GtavMapCore = (function () {
 
   function latLngToGame(lat, lng, cfg) {
     if (!cfg) return { x: Number(lng) || 0, y: Number(lat) || 0 };
+    const rangeX = cfg.coordMaxX - cfg.coordMinX || 1;
+    const rangeY = cfg.coordMaxY - cfg.coordMinY || 1;
     const mapRangeX = cfg.maxX - cfg.minX || 1;
     const mapRangeY = cfg.maxY - cfg.minY || 1;
-    let tX = (Number(lng) - (cfg.offsetX || 0) - cfg.minX) / (mapRangeX * (cfg.scaleX || 1));
-    let tY = (Number(lat) - (cfg.offsetY || 0) - cfg.minY) / (mapRangeY * (cfg.scaleY || 1));
+    const scaleX = cfg.scaleX || 1;
+    const scaleY = cfg.scaleY || 1;
+    let tX = (Number(lng) - (cfg.offsetX || 0) - cfg.minX) / (mapRangeX * scaleX);
+    let tY = (Number(lat) - (cfg.offsetY || 0) - cfg.minY) / (mapRangeY * scaleY);
     tX = Math.max(0, Math.min(1, tX));
     tY = Math.max(0, Math.min(1, tY));
-    if (cfg.flipY === true) tY = 1 - tY;
+    if (cfg.flipY !== false) tY = 1 - tY;
     return {
-      x: cfg.coordMinX + tX * (cfg.coordMaxX - cfg.coordMinX),
-      y: cfg.coordMinY + tY * (cfg.coordMaxY - cfg.coordMinY),
+      x: cfg.coordMinX + tX * rangeX,
+      y: cfg.coordMinY + tY * rangeY,
     };
   }
 
@@ -222,7 +226,8 @@ window.GtavMapCore = (function () {
         fadeAnimation: false,
         zoomAnimation: true,
         markerZoomAnimation: false,
-        maxBoundsViscosity: 1.0,
+        maxBoundsViscosity: 0.35,
+        touchZoom: true,
       },
       extra || {},
     );

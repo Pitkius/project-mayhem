@@ -73,8 +73,15 @@ local function loadHouseData(src)
     TriggerClientEvent('qb-houses:client:setHouseConfig', src, Houses)
 end
 
-local function shouldSkipPositionSave(ped, metadata)
+local function shouldSkipPositionSave(src, ped, metadata)
     if not ped or ped == 0 then return true end
+
+    if src then
+        local ply = Player(src)
+        if ply and ply.state and ply.state.spawnfixSkipSave then
+            return true
+        end
+    end
 
     local health = GetEntityHealth(ped)
     if not health or health <= 100 then return true end
@@ -83,11 +90,9 @@ local function shouldSkipPositionSave(ped, metadata)
         return true
     end
 
-    local height = GetEntityHeightAboveGround(ped)
-    if height and height > 2.0 then return true end
-
     local vel = GetEntityVelocity(ped)
     if vel then
+        if math.abs(vel.z or 0.0) > 6.0 then return true end
         local speed = math.sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z))
         if speed > 4.0 then return true end
     end
@@ -112,7 +117,7 @@ local function syncVitalsFromPed(Player)
     if not ped or ped == 0 then return end
 
     local metadata = Player.PlayerData.metadata or {}
-    if not shouldSkipPositionSave(ped, metadata) then
+    if not shouldSkipPositionSave(src, ped, metadata) then
         local coords = GetEntityCoords(ped)
         local heading = GetEntityHeading(ped)
         Player.PlayerData.position = vector4(coords.x, coords.y, coords.z, heading)
@@ -215,13 +220,17 @@ end)
 AddEventHandler('QBCore:Server:OnPlayerUnload', function(src)
     hasDonePreloading[src] = false
     keepCachedPosition[src] = nil
+    local ply = Player(src)
+    if ply and ply.state then
+        ply.state:set('spawnfixSkipSave', false, true)
+    end
 end)
 
 AddEventHandler('QBCore:Server:PlayerDropped', function(Player)
     local src = Player.PlayerData.source
     local ped = GetPlayerPed(src)
     local metadata = Player.PlayerData.metadata or {}
-    if shouldSkipPositionSave(ped, metadata) then
+    if shouldSkipPositionSave(src, ped, metadata) then
         keepCachedPosition[src] = true
     end
 

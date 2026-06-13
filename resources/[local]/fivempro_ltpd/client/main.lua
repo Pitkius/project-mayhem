@@ -225,7 +225,7 @@ CreateThread(function()
                 z = c.z,
                 heading = GetEntityHeading(ped),
             })
-            Wait(350)
+            Wait(250)
         else
             Wait(750)
         end

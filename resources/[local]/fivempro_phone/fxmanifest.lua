@@ -14,9 +14,11 @@ files {
     'html/app.js',
     'html/apps.js',
     'html/phone-apps.css',
+    'html/phone-bank.css',
     'html/phone-camera.js',
     'html/phone-carplay.js',
     'html/phone-ads.js',
+    'html/phone-bank.js',
     'html/locale/lt.js',
     'html/assets/icons/*.svg',
 }
@@ -29,12 +31,14 @@ client_scripts {
     'client/main.lua',
     'client/camera.lua',
     'client/carplay.lua',
+    'client/bank.lua',
     'client/death.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
+    'server/bank.lua',
     'server/carplay.lua',
 }
 

@@ -21,6 +21,7 @@ Config.Phone = {
     maxImageUrlLength = 500,
     maxPhotosPerUser = 80,
     maxPhotoDataLength = 220000,
+    maxNotesLength = 8000,
     --- CarPlay: max nuorodos ilgis
     maxCarPlayUrlLength = 512,
     --- Automatiniai tarnybų kontaktai (įrašomi kiekvienam žaidėjui, abėcėlės tvarka)
@@ -52,12 +53,10 @@ Config.Phone = {
         { id = 'gallery', label = 'Galerija', icon = 'gallery', default = true, description = 'Nuotraukų albumas' },
         { id = 'carplay', label = 'CarPlay', icon = 'carplay', default = false, description = 'Muzika automobilyje (Spotify / YouTube)' },
         { id = 'notes', label = 'Užrašai', icon = 'notes', default = true },
-        { id = 'emergency', label = '112', icon = 'emergency', default = true },
         { id = 'appstore', label = 'Programėlės', icon = 'appstore', default = true },
         { id = 'ads', label = 'Skelbimai', icon = 'ads', default = true, description = 'Skelbimų portalas su profiliais' },
         { id = 'insta', label = 'LifeGram', icon = 'insta', default = false, description = 'Socialinis tinklas su nuotraukomis' },
-        { id = 'bank', label = 'Bankas', icon = 'bank', default = false, description = 'Sąskaitos ir balansas' },
-        { id = 'shop', label = 'Turgus', icon = 'shop', default = false, description = 'Parduotuvės ir prekės mieste' },
+        { id = 'bank', label = 'NEON Bankas', icon = 'bank', default = true, description = 'Mobilus bankas — pervedimai, balansas, istorija' },
         { id = 'weather', label = 'Orai', icon = 'weather', default = false, description = 'Orų prognozė Los Santos' },
         { id = 'cargonet', label = 'CargoNet', icon = 'cargonet', default = false, description = 'Krovinių birža ir logistikos kontraktai' },
     }
@@ -79,6 +78,29 @@ Config.Emergency = {
     medicRequestKey = 'G',
     --- Miręs policijos darbuotojas iškviečiant medikus automatiškai siunčia PANIC (fivempro_dispatch)
     policePanicOnMedicRequest = true,
+}
+
+--- NEON BANK telefono programėlė
+Config.Bank = {
+    name = 'NEON BANK',
+    transferCooldownSec = 5,
+    minTransferAmount = 1,
+    maxTransferAmount = 500000,
+    maxDepositWithdraw = 500000,
+    maxPurposeLength = 80,
+    recentTransactionLimit = 8,
+    historyLimit = 50,
+}
+
+--- Mirties ekrano vaizdas (fivempro_phone/client/death.lua)
+Config.DeathScreen = {
+    title = 'MIRĘS',
+    postFx = 'DeathFailMPIn',
+    timecycle = 'damage',
+    timecycleStrength = 0.72,
+    --- Neon purple + kraujo raudona
+    accent = { r = 191, g = 95, b = 255 },
+    blood = { r = 175, g = 18, b = 38 },
 }
 
 --- Po mirties: po N sek. galima laikyti G ir atsikelti ARTIMIAUSIOJE ligoninėje (iš sąrašo)

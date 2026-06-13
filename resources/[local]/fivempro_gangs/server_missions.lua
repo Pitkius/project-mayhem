@@ -57,7 +57,10 @@ local function playerNearCoords(src, coords, maxDist)
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return false end
     local p = GetEntityCoords(ped)
-    return #(p - coords) <= (maxDist or Config.MissionInteractDistance or 4.5)
+    local limit = maxDist or Config.MissionInteractDistance or 4.5
+    local flat = #(vector2(p.x, p.y) - vector2(coords.x, coords.y))
+    if flat <= limit then return true end
+    return #(p - coords) <= limit
 end
 
 local function missionAllowed(gangType, missionKey)
@@ -200,7 +203,16 @@ function CompleteGangMission(src, missionType, opts)
     end
 
     if not opts.skipCooldown then addRateProgress(src, rep) end
-    TriggerClientEvent('QBCore:Notify', src, ('Misija baigta · Rep +%s'):format(rep), 'success')
+    TriggerClientEvent('QBCore:Notify', src, ('Misija baigta · Rep +%s%s'):format(
+        rep,
+        money > 0 and (' · $' .. money) or ''
+    ), 'success')
+    TriggerClientEvent('fivempro_gangs:client:refreshTablet', src)
+    TriggerClientEvent('fivempro_gangs:client:missionComplete', src, {
+        reputation = rep,
+        money = money,
+        missionType = missionType,
+    })
     return true, 'ok'
 end
 
@@ -280,7 +292,10 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:startMission', function(s
         drop = { x = center.x, y = center.y, z = center.z },
         durationMs = mCfg.durationMs or 7000,
         requireVehicle = mCfg.requireVehicle == true,
+        spawnVehicle = mCfg.spawnVehicle or (site and site.vehicle) or nil,
         dropInTurf = mCfg.dropInTurf ~= false,
+        pickupLabel = mCfg.pickupLabel,
+        dropLabel = mCfg.dropLabel,
         checkpointCount = mCfg.checkpointCount or 3,
     })
 end)

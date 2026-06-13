@@ -1,3 +1,6 @@
+const RESOURCE =
+  typeof GetParentResourceName === "function" ? GetParentResourceName() : "fivempro_emotes";
+
 const app = document.getElementById("app");
 const emCats = document.getElementById("emCats");
 const emGrid = document.getElementById("emGrid");
@@ -16,7 +19,7 @@ let activeCat = "all";
 let searchQuery = "";
 
 function nui(name, data) {
-  return fetch(`https://${GetParentResourceName()}/${name}`, {
+  return fetch(`https://${RESOURCE}/${name}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data || {}),
@@ -25,7 +28,10 @@ function nui(name, data) {
 
 function openUi() {
   app.classList.remove("hidden", "is-closing");
-  requestAnimationFrame(() => app.classList.add("is-open"));
+  void app.offsetWidth;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => app.classList.add("is-open"));
+  });
 }
 
 function closeUi() {

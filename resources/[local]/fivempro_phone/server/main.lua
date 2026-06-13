@@ -480,6 +480,11 @@ local function getInitialDataFor(src)
         LIMIT 1
     ]], { citizenid })
 
+    local notesRow = MySQL.single.await([[
+        SELECT body FROM fivempro_phone_notes WHERE citizenid = ? LIMIT 1
+    ]], { citizenid })
+    local notes = notesRow and tostring(notesRow.body or '') or ''
+
     local posts = MySQL.query.await([[
         SELECT id, author_name, caption, image_url, likes, created_at
         FROM fivempro_phone_posts
@@ -541,6 +546,7 @@ local function getInitialDataFor(src)
             created_at = adProfile.created_at,
         } or nil,
         photos = photos,
+        notes = notes,
         posts = posts,
         pendingIncomingCall = getPendingIncomingCallFor(src),
         cargoNet = getCargoNetStatus(citizenid),
@@ -810,6 +816,23 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:deletePhoto', function(so
     MySQL.update.await('DELETE FROM fivempro_phone_photos WHERE id = ? AND citizenid = ?', { photoId, citizenid })
     cb({ ok = true })
     TriggerClientEvent('fivempro_phone:client:refreshData', source)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:saveNotes', function(source, cb, data)
+    local citizenid = getCitizen(source)
+    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    local body = tostring(data and data.body or '')
+    local maxLen = (Config.Phone and Config.Phone.maxNotesLength) or 8000
+    if #body > maxLen then
+        body = body:sub(1, maxLen)
+    end
+    local exists = MySQL.scalar.await('SELECT citizenid FROM fivempro_phone_notes WHERE citizenid = ? LIMIT 1', { citizenid })
+    if exists then
+        MySQL.update.await('UPDATE fivempro_phone_notes SET body = ? WHERE citizenid = ?', { body, citizenid })
+    else
+        MySQL.insert.await('INSERT INTO fivempro_phone_notes (citizenid, body) VALUES (?, ?)', { citizenid, body })
+    end
+    cb({ ok = true })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_phone:server:saveAdProfile', function(source, cb, data)
@@ -1252,6 +1275,14 @@ CreateThread(function()
         MySQL.query.await('ALTER TABLE fivempro_phone_ads ADD COLUMN image_urls text NULL')
     end)
     MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS `fivempro_phone_notes` (
+          `citizenid` varchar(60) NOT NULL,
+          `body` mediumtext NOT NULL,
+          `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`citizenid`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
+    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_photos` (
           `id` int NOT NULL AUTO_INCREMENT,
           `citizenid` varchar(60) NOT NULL,
@@ -1310,6 +1341,7 @@ CreateThread(function()
           PRIMARY KEY (`citizenid`,`app_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
+    MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('emergency', 'shop')")
 end)
 
 local phoneItemName = (Config.PhoneItem or 'phone')

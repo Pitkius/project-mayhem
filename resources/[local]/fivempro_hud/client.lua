@@ -452,13 +452,20 @@ local function deleteHudMenuProp()
     hudMenuProp = 0
 end
 
-local function canPlayHudMenuAnim()
-    local ped = PlayerPedId()
+local function preparePedForHudAnim(ped)
     if not ped or ped == 0 then return false end
     if IsPedInAnyVehicle(ped, false) then return false end
     if IsEntityDead(ped) or IsPedRagdoll(ped) then return false end
     if IsPedFalling(ped) or IsPedSwimming(ped) or IsPedClimbing(ped) then return false end
+    if IsPedArmed(ped, 7) then
+        SetCurrentPedWeapon(ped, joaat('WEAPON_UNARMED'), true)
+    end
+    ClearPedSecondaryTask(ped)
     return true
+end
+
+local function canPlayHudMenuAnim()
+    return preparePedForHudAnim(PlayerPedId())
 end
 
 local function attachHudTablet(ped)
@@ -492,20 +499,24 @@ local function playHudMenuOpenAnim()
     local ped = PlayerPedId()
 
     CreateThread(function()
+        if not preparePedForHudAnim(ped) then return end
+
         local pickupDict, pickupAnim = 'pickup_object', 'pickup_low'
         if not loadAnimDict(pickupDict) then
             pickupDict, pickupAnim = 'random@domestic', 'pickup_low'
-            if not loadAnimDict(pickupDict) then return end
+            if not loadAnimDict(pickupDict) then
+                pickupDict, pickupAnim = 'cellphone@', 'cellphone_text_in'
+                if not loadAnimDict(pickupDict) then return end
+            end
         end
 
-        ClearPedSecondaryTask(ped)
-        TaskPlayAnim(ped, pickupDict, pickupAnim, 2.0, 2.0, 1100, 0, 0.0, false, false, false)
+        TaskPlayAnim(ped, pickupDict, pickupAnim, 8.0, -8.0, 1100, 0, 0.0, false, false, false)
         Wait(850)
         if hudMenuAnimToken ~= token or not hudMenuOpen then return end
 
         local holdDict, holdAnim = 'amb@code_human_in_bus_passenger_idles@female@tablet@idle_a', 'idle_a'
         if loadAnimDict(holdDict) then
-            TaskPlayAnim(ped, holdDict, holdAnim, 2.0, 2.0, -1, 49, 0.0, false, false, false)
+            TaskPlayAnim(ped, holdDict, holdAnim, 8.0, -8.0, -1, 49, 0.0, false, false, false)
             attachHudTablet(ped)
         end
     end)
@@ -532,7 +543,7 @@ local function playHudMenuCloseAnim()
             if not loadAnimDict(putDict) then return end
         end
 
-        TaskPlayAnim(ped, putDict, putAnim, 2.0, 2.0, 1000, 0, 0.0, false, false, false)
+        TaskPlayAnim(ped, putDict, putAnim, 8.0, -8.0, 1000, 0, 0.0, false, false, false)
         Wait(900)
         if hudMenuAnimToken ~= token then return end
         ClearPedSecondaryTask(ped)
@@ -565,10 +576,15 @@ local function closeHudMenu()
     listMenuVeh = 0
     SendNUIMessage({ action = 'vehicleList', open = false })
     SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
     SendNUIMessage({ action = 'closeMenu' })
     playHudMenuCloseAnim()
     sendHudTheme()
 end
+
+RegisterNetEvent('fivempro_hud:client:forceClose', function()
+    closeHudMenu()
+end)
 
 local function syncPlayerDataFromCore()
     PlayerData = QBCore.Functions.GetPlayerData() or {}

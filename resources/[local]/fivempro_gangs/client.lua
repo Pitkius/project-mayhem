@@ -114,9 +114,9 @@ RegisterNetEvent('fivempro_gangs:client:openTablet', function()
 end)
 
 RegisterNetEvent('fivempro_gangs:client:refreshTablet', function()
-    if not tabletOpen then return end
     QBCore.Functions.TriggerCallback('fivempro_gangs:server:getTabletState', function(res)
         if not res or not res.ok then return end
+        if not tabletOpen then return end
         SendNUIMessage({
             action = 'open',
             payload = {

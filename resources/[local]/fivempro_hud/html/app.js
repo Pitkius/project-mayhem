@@ -647,8 +647,11 @@ const HUD_MENU_CLOSE_MS = 380;
 
 function openHudMenuUi() {
   hudMenu.classList.remove("hidden", "is-closing");
+  void hudMenu.offsetWidth;
   requestAnimationFrame(() => {
-    hudMenu.classList.add("is-open");
+    requestAnimationFrame(() => {
+      hudMenu.classList.add("is-open");
+    });
   });
 }
 

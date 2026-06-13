@@ -13,7 +13,7 @@ const mapMeta = {
   minX: -4000,
   maxX: 4500,
   minY: -4000,
-  maxY: 8150,
+  maxY: 6625,
   imgW: 2048,
   imgH: 2048,
   imageUrl: '',
@@ -159,7 +159,7 @@ window.addEventListener('message', (e) => {
     if (window.MdtMap) {
       MdtMap.ensureMap(d.data && d.data.map);
       MdtMap.setOnSelect(onMapBlipSelect);
-      if (MdtMap.setAnimEnabled) MdtMap.setAnimEnabled(true);
+      if (MdtMap.setAnimEnabled) MdtMap.setAnimEnabled(false);
       if (d.data?.selfSource != null) MdtMap.setSelfSource(d.data.selfSource);
       if (d.data?.playerPos) MdtMap.setLocalPlayerPos({ ...d.data.playerPos, selfSource: d.data.selfSource });
     }
@@ -242,7 +242,7 @@ document.querySelectorAll('.tab').forEach((t) => {
     const pan = document.getElementById(id);
     if (pan) pan.classList.remove('hidden');
     if (window.MdtMap && window.MdtMap.setAnimEnabled) {
-      window.MdtMap.setAnimEnabled(t.dataset.tab === 'units');
+      window.MdtMap.setAnimEnabled(false);
     }
     if (t.dataset.tab === 'units') {
       requestAnimationFrame(() => {
@@ -581,7 +581,10 @@ function renderMapDetail(kind, data) {
     `;
     const btn = document.getElementById('gpsSetRouteBtn');
     if (btn) {
-      btn.onclick = () => nuiPost('mdtSetRoute', { x: data.x, y: data.y });
+      btn.onclick = () => {
+        nuiPost('mdtSetRoute', { x: data.x, y: data.y });
+        if (window.MdtMap?.setRoute) MdtMap.setRoute(data.x, data.y);
+      };
     }
     return;
   }
@@ -600,7 +603,10 @@ function renderMapDetail(kind, data) {
   `;
   const btn = document.getElementById('gpsSetRouteBtn');
   if (btn) {
-    btn.onclick = () => nuiPost('mdtSetRoute', { x: data.x, y: data.y });
+    btn.onclick = () => {
+      nuiPost('mdtSetRoute', { x: data.x, y: data.y });
+      if (window.MdtMap?.setRoute) MdtMap.setRoute(data.x, data.y);
+    };
   }
 }
 
