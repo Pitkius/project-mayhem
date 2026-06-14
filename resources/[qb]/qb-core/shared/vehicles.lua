@@ -537,8 +537,8 @@ local Vehicles = {
     { model = 'trailers5',       name = 'Trailer (Christmas)',           brand = 'Unknown',         price = 30000,   category = 'utility',        type = 'automobile', shop = 'truck' },
     { model = 'tvtrailer2',      name = 'Trailer (TV)',                  brand = 'Unknown',         price = 30000,   category = 'utility',        type = 'automobile', shop = 'truck' },
     --- Vans (12)
-    { model = 'bison',           name = 'Bison',                         brand = 'Bravado',         price = 18000,   category = 'vans',           type = 'automobile', shop = 'pdm' },
-    { model = 'bobcatxl',        name = 'Bobcat XL Open',                brand = 'Vapid',           price = 13500,   category = 'vans',           type = 'automobile', shop = 'pdm' },
+    { model = 'bison',           name = 'Bison',                         brand = 'Bravado',         price = 18000,   category = 'utility',        type = 'automobile', shop = 'pdm' },
+    { model = 'bobcatxl',        name = 'Bobcat XL Open',                brand = 'Vapid',           price = 13500,   category = 'utility',        type = 'automobile', shop = 'pdm' },
     { model = 'burrito3',        name = 'Burrito',                       brand = 'Declasse',        price = 4000,    category = 'vans',           type = 'automobile', shop = 'pdm' },
     { model = 'gburrito2',       name = 'Burrito Custom',                brand = 'Declasse',        price = 11500,   category = 'vans',           type = 'automobile', shop = 'pdm' },
     { model = 'rumpo',           name = 'Rumpo',                         brand = 'Bravado',         price = 9000,    category = 'vans',           type = 'automobile', shop = 'pdm' },

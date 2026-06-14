@@ -553,10 +553,14 @@ body {
     color: var(--on-primary-container);
 }
 
+.context-menu li.has-submenu {
+    position: relative;
+}
+
 .submenu {
     position: absolute;
     top: 0;
-    left: 100%;
+    left: calc(100% - 4px);
     font-size: 0.9vh;
     background-color: var(--surface-container-high);
     border: 1px solid var(--outline);
@@ -566,9 +570,11 @@ body {
     display: none;
     box-shadow: var(--elevation-3);
     z-index: 1001;
+    min-width: 72px;
 }
 
-.context-menu li:hover .submenu {
+.context-menu li.has-submenu:hover > .submenu,
+.submenu:hover {
     display: block;
 }
 

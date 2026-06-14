@@ -231,7 +231,7 @@ QBCore.Functions.CreateCallback('fivempro_ltpd:server:getPdCraftMenu', function(
         craftsAtLevel = data.craftsAtLevel,
         craftsNeeded = data.craftsNeeded,
         maxLevel = data.maxLevel,
-        materialItem = cfg().materialItem or 'pd_armory_materials',
+        materialItem = cfg().materialItem,
         recipes = data.products,
     })
 end)

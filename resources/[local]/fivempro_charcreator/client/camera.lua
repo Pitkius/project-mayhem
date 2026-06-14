@@ -22,10 +22,10 @@ local function clearCoverState(ped)
 end
 
 local function restoreCoverAbility()
-    SetPlayerCanUseCover(PlayerId(), true)
+    SetPlayerCanUseCover(PlayerId(), false)
     local ped = PlayerPedId()
     if ped ~= 0 and DoesEntityExist(ped) then
-        SetPedCanPeekInCover(ped, true)
+        SetPedCanPeekInCover(ped, false)
     end
 end
 

@@ -14,7 +14,7 @@ const state = {
     firstname: '', lastname: '', birthdate: '01-01-1995', gender: 0,
     nationality: 'Lietuva', originCity: 'Los Santos',
   },
-  genetics: { mom: 0, dad: 0, shapeMix: 0.5, skinMix: 0.5, nose: 0 },
+  genetics: { mom: 0, dad: 0, shapeMix: 0.5, skinMix: 0.5, skinTone: 0, nose: 0 },
   eyes: { color: 0, opening: 0.0 },
   hair: { style: 0, color: 0, color2: 0, beard: 0, beardColor: 0, brows: 0, browColor: 0 },
   facedetails: { ageing: -1, blush: -1, lipstick: -1, makeup: -1, moles: 0 },
@@ -52,12 +52,13 @@ function buildPatch() {
   const e = state.eyes;
   const f = state.facedetails;
   const b = state.body;
+  const skinTex = Math.min(45, Math.max(0, Math.round(g.skinTone ?? 0)));
   return {
-    face: { item: g.mom, texture: 0 },
-    face2: { item: g.dad, texture: 0 },
+    face: { item: g.mom, texture: skinTex },
+    face2: { item: g.dad, texture: skinTex },
     facemix: { shapeMix: g.shapeMix, skinMix: g.skinMix },
     eye_color: { item: e.color, texture: 0 },
-    eye_opening: { item: e.opening, texture: 0 },
+    eye_opening: { item: e.opening * 10, texture: 0 },
     hair: { item: h.style, texture: h.color },
     eyebrows: { item: h.brows, texture: h.browColor },
     beard: { item: state.personal.gender === 1 ? -1 : h.beard, texture: h.beardColor },
@@ -146,6 +147,30 @@ function parseCurrentSkin() {
   }
 }
 
+function updateClothingTextureLimit(row, key, itemValue, applyChange) {
+  return post('getTextureLimit', { key, item: itemValue }).then((res) => {
+    const texInp = row.querySelector('[data-part="texture"]');
+    if (!texInp) return;
+    const maxTex = Math.max(0, Number(res?.maxTex) || 0);
+    texInp.max = String(maxTex);
+    let tex = parseInt(texInp.value, 10);
+    if (!Number.isFinite(tex) || tex < 0) tex = 0;
+    if (tex > maxTex) {
+      tex = maxTex;
+      texInp.value = String(tex);
+    }
+    row.querySelector('.cv-tex').textContent = String(tex);
+    if (applyChange) {
+      const itemInp = row.querySelector('[data-part="item"]');
+      post('setClothing', {
+        key,
+        item: parseInt(itemInp.value, 10),
+        texture: tex,
+      });
+    }
+  });
+}
+
 function bindClothingSliders(container) {
   container.querySelectorAll('.sl-cloth').forEach((inp) => {
     inp.oninput = () => {
@@ -154,6 +179,10 @@ function bindClothingSliders(container) {
       const itemInp = row.querySelector('[data-part="item"]');
       const texInp = row.querySelector('[data-part="texture"]');
       row.querySelector('.cv-item').textContent = itemInp.value;
+      if (inp.dataset.part === 'item') {
+        updateClothingTextureLimit(row, key, parseInt(itemInp.value, 10), true);
+        return;
+      }
       row.querySelector('.cv-tex').textContent = texInp.value;
       post('setClothing', {
         key,
@@ -177,7 +206,7 @@ function renderClothingShop(items) {
       </div>
       <div class="slider-row">
         <label><span>Spalva / tekstūra</span><span class="cv-tex">0</span></label>
-        <input type="range" class="sl-cloth" data-part="texture" min="0" max="${it.maxTex || 15}" step="1" value="0" />
+        <input type="range" class="sl-cloth" data-part="texture" min="0" max="${Math.max(0, it.maxTex ?? 0)}" step="1" value="0" />
       </div>
     </div>`;
   });
@@ -193,6 +222,7 @@ function renderClothingShop(items) {
     texInp.value = part.texture ?? 0;
     row.querySelector('.cv-item').textContent = itemInp.value;
     row.querySelector('.cv-tex').textContent = texInp.value;
+    updateClothingTextureLimit(row, it.key, parseInt(itemInp.value, 10), false);
   });
   bindClothingSliders(stepBody);
 }
@@ -262,7 +292,7 @@ function renderStep() {
     const html = slider('Mama (veidas)', 'mom', state.genetics, 0, 45, 1) +
       slider('Tėtis (veidas)', 'dad', state.genetics, 0, 45, 1) +
       slider('Veido maišymas', 'shapeMix', state.genetics, 0, 1, 0.01) +
-      slider('Odos spalva', 'skinMix', state.genetics, 0, 1, 0.01) +
+      slider('Odos spalva', 'skinTone', state.genetics, 0, 45, 1) +
       slider('Nosies plotis', 'nose', state.genetics, -1, 1, 0.01);
     state.genetics.nose = state.genetics.nose || 0;
     stepBody.innerHTML = html;

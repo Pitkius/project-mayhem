@@ -67,8 +67,6 @@ const menu = {
   btnImport: document.getElementById("btnImport"),
   importArea: document.getElementById("hmImportArea"),
   savedBadge: document.getElementById("hmSavedBadge"),
-  pvClock: document.getElementById("hmPvClock"),
-  pvWeapon: document.getElementById("hmPvWeapon"),
   preview: document.getElementById("hmPreview"),
   previewStage: document.getElementById("hmPvHudStage"),
   hudBg: document.getElementById("optHudBg"),
@@ -81,7 +79,6 @@ const menu = {
   tabs: document.getElementById("hmTabs"),
 };
 
-const SERVER_PLACEHOLDER = "fivemprojektas";
 
 const THEME_PALETTE = {
   violet: { primary: "#a78bfa", secondary: "#5b21b6", accent: "#e879f9", text: "#f8fafc" },
@@ -107,22 +104,7 @@ const TILE_COLORS = {
   amber: { health: "#ef4444", armor: "#d8b4fe", hunger: "#fbbf24", thirst: "#38bdf8", stamina: "#fbcfe8", voice: "#fde68a" },
 };
 
-const PREVIEW_SAMPLE = {
-  health: 85,
-  armor: 22,
-  stamina: 74,
-  hunger: 90,
-  thirst: 87,
-  voice: 62,
-};
-
-const PREVIEW_CAR = {
-  speed: 120,
-  gear: "4",
-  fuel: 65,
-  motor: 88,
-  rpm: 72,
-};
+const PREVIEW_HUD_SCALE = 0.72;
 
 let previewClustersHome = null;
 let previewClustersMounted = false;
@@ -360,8 +342,8 @@ function syncRows() {
 
 function updateHudVisibility(gameShowHud) {
   if (body.classList.contains("hud-menu-open")) {
-    const show = MAIN_STATS.some((k) => (currentSettings.show || {})[k] === true);
-    if (hudRoot) hudRoot.style.display = show ? "flex" : "none";
+    const show = getMenuShowSettings();
+    if (hudRoot) hudRoot.style.display = MAIN_STATS.some((k) => show[k]) ? "flex" : "none";
     return;
   }
   const show = !!gameShowHud && mainStatsVisible();
@@ -449,50 +431,23 @@ function unmountPreviewClusters() {
   previewClustersMounted = false;
 }
 
-function applyPreviewSampleData(state) {
+function getMenuShowSettings() {
+  return getMenuState().show || currentSettings.show || {};
+}
+
+function syncPreviewVisibility(state) {
   if (!body.classList.contains("hud-menu-open")) return;
-  const show = state.show || {};
+  const show = state?.show || getMenuShowSettings();
   MAIN_STATS.forEach((k) => {
-    if (show[k]) setBar(k, PREVIEW_SAMPLE[k]);
+    const on = show[k] === true;
+    if (rows[k]) rows[k].classList.toggle("hidden", !on);
+    if (ringWraps[k]) ringWraps[k].classList.toggle("hidden", !on);
+    if (tileWraps[k]) tileWraps[k].classList.toggle("hidden", !on);
+    if (hfWraps[k]) hfWraps[k].classList.toggle("hidden", !on);
   });
   if (hudRoot) {
     hudRoot.style.display = MAIN_STATS.some((k) => show[k]) ? "flex" : "none";
   }
-
-  const showCar = show.speed || show.fuel || show.seatbelt;
-  if (carHud) carHud.classList.toggle("hidden", !showCar);
-  if (!showCar) return;
-
-  const sample = PREVIEW_CAR;
-  if (carSpeedDigits) carSpeedDigits.textContent = String(sample.speed);
-  if (carGear) carGear.textContent = sample.gear;
-  const carFuelPctLbl = document.getElementById("carFuelPctLbl");
-  const carMotorPctLbl = document.getElementById("carMotorPctLbl");
-  if (carFuelPctLbl) carFuelPctLbl.textContent = `${sample.fuel}%`;
-  if (carMotorPctLbl) carMotorPctLbl.textContent = `${sample.motor}%`;
-  if (carRpmArc) {
-    carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN * (1 - sample.rpm / 100));
-  }
-  if (carFuelArc) {
-    carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - sample.fuel / 100));
-  }
-  setChStat(chStatBelt, "state-on");
-  setChStat(chStatHandbrake, "state-off");
-  setChStat(chStatLock, "state-on");
-  setChStat(chStatLights, "state-on");
-  setChStat(chStatTurnL, "state-off");
-  setChStat(chStatTurnR, "state-off");
-}
-
-function updatePreviewClock() {
-  if (!menu.pvClock) return;
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2, "0");
-  const mm = String(now.getMinutes()).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const mo = String(now.getMonth() + 1).padStart(2, "0");
-  const yr = now.getFullYear();
-  menu.pvClock.textContent = `${hh}:${mm} · ${dd}.${mo}.${yr}`;
 }
 
 function updateThemeColorPicks(colorKey) {
@@ -541,18 +496,16 @@ function buildThemePayload(state) {
 
 function renderMenuPreview() {
   const state = getMenuState();
-  updatePreviewClock();
   updateThemeColorPicks(state.color);
   if (menu.preview) {
-    menu.preview.classList.toggle("hm-pv-dim-bg", menu.hudBg ? !menu.hudBg.checked : false);
+    const liveView = menu.hudBg ? menu.hudBg.checked !== false : true;
+    menu.preview.classList.toggle("hm-pv-live-view", liveView);
+    menu.preview.classList.toggle("hm-pv-static-bg", !liveView);
     menu.preview.style.setProperty("--panel-alpha", String(state.alpha || 0.55));
     menu.preview.style.setProperty("--pv-hud-scale", String(state.scale || 1));
+    menu.preview.style.setProperty("--pv-hud-base-scale", String(PREVIEW_HUD_SCALE));
   }
-  applyPreviewSampleData(state);
-  if (menu.pvWeapon) menu.pvWeapon.classList.remove("hidden");
-  document.querySelectorAll(".hm-pv-server-logo").forEach((el) => {
-    el.textContent = SERVER_PLACEHOLDER;
-  });
+  syncPreviewVisibility(state);
   if (menu.swatches) {
     menu.swatches.querySelectorAll(".hm-swatch").forEach((sw) => {
       sw.classList.toggle("is-active", sw.getAttribute("data-c") === state.color);
@@ -699,6 +652,11 @@ window.addEventListener("message", (event) => {
     return;
   }
 
+  if (data.action === "inventoryFocus") {
+    body.classList.toggle("inventory-open", data.active === true);
+    return;
+  }
+
   if (data.action === "vehicleList") {
     if (!vehicleListMenu) return;
     if (!data.open) {
@@ -824,6 +782,9 @@ window.addEventListener("message", (event) => {
 
   updateHudVisibility(data.show);
 
+  const menuShow = body.classList.contains("hud-menu-open") ? getMenuShowSettings() : null;
+  const effectiveShow = menuShow || currentSettings.show || {};
+
   const voiceOpts = { voiceTalking: !!data.voiceTalking };
   setBar("health", data.health);
   setBar("armor", data.armor);
@@ -832,7 +793,12 @@ window.addEventListener("message", (event) => {
   setBar("thirst", data.thirst);
   setBar("voice", data.voice, voiceOpts);
 
-  const showCarHud = !!data.inVehicle && !!data.show;
+  if (body.classList.contains("hud-menu-open")) {
+    syncPreviewVisibility({ show: effectiveShow });
+  }
+
+  const wantsCarHud = !!(effectiveShow.speed || effectiveShow.fuel || effectiveShow.seatbelt);
+  const showCarHud = !!data.inVehicle && !!data.show && wantsCarHud;
   carHud.classList.toggle("hidden", !showCarHud);
   if (carhudClassic) carhudClassic.classList.add("hidden");
 
@@ -876,10 +842,6 @@ window.addEventListener("message", (event) => {
   const statEngine = document.getElementById("carStatEngine");
   if (statFuel) statFuel.classList.toggle("state-warn", fuelN < 18);
   if (statEngine) statEngine.classList.toggle("state-warn", motorPctHud < 40);
-
-  if (body.classList.contains("hud-menu-open")) {
-    applyPreviewSampleData(currentSettings);
-  }
 });
 
 function bindMenuInput(el, eventName, handler) {

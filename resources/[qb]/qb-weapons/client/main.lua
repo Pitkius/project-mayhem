@@ -6,6 +6,7 @@ local lastAutoReloadAt = 0
 local lastSyncedWeapon = nil
 local lastSyncedAmmo = nil
 local lastAmmoSyncAt = 0
+local reloadGuardUntil = 0
 
 local AmmoItemByType = {
     AMMO_PISTOL = { 'pistol_ammo', 'pistolammo' },
@@ -76,13 +77,15 @@ local function clearPedWeaponInfiniteAmmo(ped, weaponHash)
 end
 
 local function resolveMaxClip(ped, weaponHash, weaponData)
+    for _, p2 in ipairs({ true, false }) do
+        local hasMaxClip, maxClipAmmo = GetMaxAmmoInClip(ped, weaponHash, p2)
+        if hasMaxClip and maxClipAmmo and (tonumber(maxClipAmmo) or 0) > 0 then
+            return tonumber(maxClipAmmo)
+        end
+    end
     local weaponName = weaponData and weaponData.name
     if weaponName and DefaultClipByWeapon[joaat(weaponName)] then
         return DefaultClipByWeapon[joaat(weaponName)]
-    end
-    local hasMaxClip, maxClipAmmo = GetMaxAmmoInClip(ped, weaponHash, true)
-    if hasMaxClip and maxClipAmmo and (tonumber(maxClipAmmo) or 0) > 0 then
-        return tonumber(maxClipAmmo) or 0
     end
     local ammoType = tostring(weaponData and weaponData.ammotype or ''):upper()
     return DefaultClipByAmmoType[ammoType] or 30
@@ -96,6 +99,37 @@ local function applyWeaponAmmoState(ped, weaponHash, ammo)
         SetAmmoInClip(ped, weaponHash, math.min(ammo, maxClip))
     end
     clearPedWeaponInfiniteAmmo(ped, weaponHash)
+end
+
+--- AddAmmoToPed kai kuriems SMG (pvz. Mini SMG) neužpildo apkabos — priverstinai SetAmmoInClip.
+local function loadBulletsIntoClip(ped, weaponHash, weaponData, bulletsToLoad)
+    bulletsToLoad = math.max(0, tonumber(bulletsToLoad) or 0)
+    if bulletsToLoad <= 0 or not ped or ped == 0 or not weaponHash or weaponHash == 0 then return 0 end
+
+    clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    local maxClip = resolveMaxClip(ped, weaponHash, weaponData)
+    local _, clipBefore = GetAmmoInClip(ped, weaponHash)
+    local curClip = math.max(0, tonumber(clipBefore) or 0)
+    local toLoad = math.min(bulletsToLoad, math.max(0, maxClip - curClip))
+    if toLoad <= 0 then return 0 end
+
+    local newClip = curClip + toLoad
+    local totalBefore = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
+    local reserve = math.max(0, totalBefore - curClip)
+    local newTotal = reserve + newClip
+
+    SetPedAmmo(ped, weaponHash, newTotal)
+    SetAmmoInClip(ped, weaponHash, newClip)
+    clearPedWeaponInfiniteAmmo(ped, weaponHash)
+
+    local _, clipAfter = GetAmmoInClip(ped, weaponHash)
+    local loaded = math.max(0, (tonumber(clipAfter) or newClip) - curClip)
+    if loaded <= 0 then
+        SetPedAmmo(ped, weaponHash, newTotal)
+        SetAmmoInClip(ped, weaponHash, newClip)
+        loaded = toLoad
+    end
+    return math.min(loaded, toLoad)
 end
 
 -- Handlers
@@ -234,6 +268,7 @@ end)
 RegisterNetEvent('QBCore:Player:UpdatePlayerDataField', function(field, _)
     PlayerData = QBCore.Functions.GetPlayerData() or {}
     if field == 'items' then
+        if GetGameTimer() < reloadGuardUntil then return end
         if not (currentWeapon and isThrowableInventoryWeaponName(currentWeapon)) then
             scheduleHolsteredWeaponVisuals()
         end
@@ -353,6 +388,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         return
     end
     local function finishReload()
+        reloadGuardUntil = GetGameTimer() + 600
         weapon = GetSelectedPedWeapon(ped)
         local current = QBCore.Shared.Weapons[weapon]
 
@@ -360,46 +396,14 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             return QBCore.Functions.Notify(Lang:t('error.wrong_ammo'), 'error')
         end
 
-        local hadClipBefore, clipBefore = GetAmmoInClip(ped, weapon)
-        local maxClipBefore = resolveMaxClip(ped, weapon, current)
-        local ammoBefore = GetAmmoInPedWeapon(ped, weapon)
-        AddAmmoToPed(ped, weapon, bulletsToLoad)
-        Wait(50)
-        clearPedWeaponInfiniteAmmo(ped, weapon)
-        local hasClipAfter, clipAfter = GetAmmoInClip(ped, weapon)
-        local ammoAfter = GetAmmoInPedWeapon(ped, weapon)
-        local clipLoaded = 0
-        if hadClipBefore and hasClipAfter then
-            clipLoaded = math.max(0, (tonumber(clipAfter) or 0) - (tonumber(clipBefore) or 0))
-        end
-        local totalLoaded = math.max(0, (tonumber(ammoAfter) or 0) - (tonumber(ammoBefore) or 0))
-
-        local expectedMaxLoad = bulletsToLoad
-        if hadClipBefore and maxClipBefore and maxClipBefore > 0 then
-            expectedMaxLoad = math.min(bulletsToLoad, math.max(0, maxClipBefore - (tonumber(clipBefore) or 0)))
-        elseif maxC and maxC > 0 and hadClipBefore then
-            expectedMaxLoad = math.min(bulletsToLoad, math.max(0, maxC - (tonumber(clipBefore) or 0)))
-        end
-
-        local reallyLoaded = clipLoaded > 0 and clipLoaded or totalLoaded
+        local reallyLoaded = loadBulletsIntoClip(ped, weapon, current, bulletsToLoad)
         if reallyLoaded <= 0 then
-            -- Some weapons/natives return stale values immediately after AddAmmoToPed.
-            -- Fall back to the calculated expected load so inventory deduction stays in sync.
-            reallyLoaded = expectedMaxLoad
-        end
-        reallyLoaded = math.min(reallyLoaded, expectedMaxLoad)
-        if reallyLoaded <= 0 then
-            return
+            reloadGuardUntil = 0
+            return QBCore.Functions.Notify('Nepavyko užpildyti apkabos.', 'error')
         end
 
-        -- Keep weapon metadata synced with total ammo, not just current clip.
         local refreshedAmmo = GetAmmoInPedWeapon(ped, weapon)
-        -- Jei natives meluoja (reallyLoaded=0), vis tiek nurašom užsukto apkabos kulkas iš inventoriaus.
-        local unitsToRemove = reallyLoaded
-        if unitsToRemove < 1 and bulletsToLoad > 0 then
-            unitsToRemove = math.min(bulletsToLoad, availableBullets)
-        end
-        unitsToRemove = math.min(unitsToRemove, bulletsToLoad, availableBullets)
+        local unitsToRemove = math.min(reallyLoaded, bulletsToLoad, availableBullets)
         local payload = CurrentWeaponData
         if not payload or not payload.name then
             payload = resolveCurrentWeaponDataByName(current.name)
@@ -412,6 +416,15 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         if ammoItemName and QBCore.Shared.Items[ammoItemName] then
             TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'use', unitsToRemove)
         end
+
+        SetTimeout(150, function()
+            if currentWeapon ~= current.name then return end
+            local p = PlayerPedId()
+            local w = GetSelectedPedWeapon(p)
+            if w ~= weapon then return end
+            applyWeaponAmmoState(p, w, GetAmmoInPedWeapon(p, w))
+            reloadGuardUntil = 0
+        end)
     end
 
     -- Instant reload path to avoid stopping movement while reloading/changing magazine.

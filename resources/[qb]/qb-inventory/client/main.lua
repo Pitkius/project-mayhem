@@ -134,7 +134,6 @@ RegisterNetEvent('qb-inventory:client:hotbar', function(items)
 end)
 
 RegisterNetEvent('qb-inventory:client:closeInv', function()
-    if InventoryAnim and InventoryAnim.stop then InventoryAnim.stop(true) end
     SendNUIMessage({
         action = 'close',
     })
@@ -170,8 +169,14 @@ RegisterNetEvent('qb-inventory:server:RobPlayer', function(TargetId)
     })
 end)
 
+local function setInventoryHudFocus(active)
+    if GetResourceState('fivempro_hud') ~= 'started' then return end
+    TriggerEvent('fivempro_hud:client:inventoryFocus', active == true)
+end
+
 RegisterNetEvent('qb-inventory:client:openInventory', function(items, other)
     if InventoryAnim and InventoryAnim.playOpen then InventoryAnim.playOpen() end
+    setInventoryHudFocus(true)
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'open',
@@ -208,6 +213,7 @@ RegisterNUICallback('AttemptPurchase', function(data, cb)
 end)
 
 RegisterNUICallback('CloseInventory', function(data, cb)
+    setInventoryHudFocus(false)
     if InventoryAnim and InventoryAnim.stop then InventoryAnim.stop(true) end
     SetNuiFocus(false, false)
     if data.name then

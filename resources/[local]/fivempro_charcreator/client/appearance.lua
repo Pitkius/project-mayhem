@@ -66,6 +66,9 @@ end
 function CharAppearance.applyToPed(ped, skin)
     if not ped or ped == 0 or not skin then return end
     TriggerEvent('qb-clothing:client:loadPlayerClothing', skin, ped)
+    if skin.eye_color and skin.eye_color.item ~= nil and skin.eye_color.item >= 0 then
+        SetPedEyeColor(ped, skin.eye_color.item)
+    end
 end
 
 function CharAppearance.setGender(gender)
@@ -152,6 +155,26 @@ function CharAppearance.getClothingLimits(ped, items)
         }
     end
     return out
+end
+
+function CharAppearance.getTextureLimit(ped, skinKey, item)
+    ped = ped or previewPed
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return 0 end
+    item = math.floor(item or 0)
+    local varId = VARIATION_IDS[skinKey]
+    if varId then
+        if item < 0 then item = 0 end
+        local texN = GetNumberOfPedTextureVariations(ped, varId, item)
+        if texN and texN > 0 then return texN - 1 end
+        return 0
+    end
+    local propId = PROP_IDS[skinKey]
+    if propId then
+        if item < 0 then return 0 end
+        local texN = GetNumberOfPedPropTextureVariations(ped, propId, item)
+        if texN and texN > 0 then return texN - 1 end
+    end
+    return 0
 end
 
 function CharAppearance.applyOutfit(outfitKey, gender)

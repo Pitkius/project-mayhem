@@ -28,20 +28,6 @@ html, body {
   animation: ccIn 0.4s ease;
   background: transparent;
 }
-#app::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  width: 48%;
-  background: linear-gradient(
-    90deg,
-    rgba(6, 4, 12, 0.55) 0%,
-    rgba(6, 4, 12, 0.28) 70%,
-    transparent 100%
-  );
-  pointer-events: none;
-  z-index: 0;
-}
 #app > * {
   pointer-events: auto;
   position: relative;

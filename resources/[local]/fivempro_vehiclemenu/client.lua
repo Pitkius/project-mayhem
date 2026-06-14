@@ -60,6 +60,14 @@ local function setLocked(veh, locked)
 end
 
 local function toggleLock(veh)
+    if GetResourceState('fivempro_basics') == 'started' then
+        local ok, isNpc = pcall(function()
+            return exports['fivempro_basics']:IsNaturalNpcVehicle(veh)
+        end)
+        if ok and isNpc then
+            return QBCore.Functions.Notify('NPC transportas visada užrakintas.', 'error')
+        end
+    end
     if GetResourceState('fivempro_hud') == 'started' then
         local netId = NetworkGetNetworkIdFromEntity(veh)
         local nextLocked = not isLocked(veh)

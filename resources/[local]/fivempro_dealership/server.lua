@@ -40,13 +40,12 @@ local function mergeCivilianBlocked()
 end
 
 local function resolvePrice(model, defaultPrice, category)
-    local price
     local override = Config.PriceOverrides[model]
     if override and override > 0 then
-        price = override
-    else
-        price = math.max(1, tonumber(defaultPrice) or 1)
+        return override
     end
+
+    local price = math.max(1, tonumber(defaultPrice) or 1)
     local bands = Config.CivilianPriceBands
     if bands then
         local cat = category or 'other'

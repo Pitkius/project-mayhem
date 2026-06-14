@@ -284,7 +284,18 @@ QBCore.Functions.CreateCallback('qb-inventory:server:createDrop', function(sourc
         if item.type == 'weapon' then checkWeapon(src, item) end
         TriggerClientEvent('qb-inventory:client:itemHandAnim', src, 'drop')
         local bag = CreateObjectNoOffset(Config.ItemDropObject, playerCoords.x + 0.5, playerCoords.y + 0.5, playerCoords.z, true, true, false)
+        if not bag or bag == 0 or not DoesEntityExist(bag) then
+            AddItem(src, item.name, item.amount, item.fromSlot, item.info, 'drop-rollback')
+            cb(false)
+            return
+        end
         local dropId = NetworkGetNetworkIdFromEntity(bag)
+        if not dropId or dropId <= 0 then
+            DeleteEntity(bag)
+            AddItem(src, item.name, item.amount, item.fromSlot, item.info, 'drop-rollback')
+            cb(false)
+            return
+        end
         local newDropId = 'drop-' .. dropId
         local itemsTable = setmetatable({ item }, {
             __len = function(t)

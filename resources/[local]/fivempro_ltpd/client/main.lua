@@ -494,10 +494,22 @@ local function applyDutyComponent(ped, compId, val)
         draw = tonumber(val) or 0
     end
     if collection and collection ~= '' then
-        SetPedCollectionComponentVariation(ped, compId, collection, draw, tex, 0)
+        SetPedCollectionComponentVariation(ped, compId, collection, draw, tex, 2)
     else
-        SetPedComponentVariation(ped, compId, draw, tex, 0)
+        SetPedComponentVariation(ped, compId, draw, tex, 2)
     end
+end
+
+local function syncDutyArmsWithTorso(ped, comps)
+    if not ped or type(comps) ~= 'table' then return end
+    local torso = comps[11]
+    if type(torso) ~= 'table' or not torso.collection then return end
+    if comps[3] then return end
+    applyDutyComponent(ped, 3, {
+        collection = torso.collection,
+        draw = tonumber(torso.draw) or 0,
+        tex = tonumber(torso.tex) or 0,
+    })
 end
 
 local function applyDutyProp(ped, propSlot, val)
@@ -521,10 +533,22 @@ local function applyDutyOutfitTable(ped, tbl)
     if not ped or not tbl then return end
     local comps = tbl.components or tbl
     if type(comps) == 'table' then
+        local order = { 3, 8, 11, 4, 6, 7, 9, 10, 1, 2, 5 }
+        for _, compId in ipairs(order) do
+            local val = comps[compId]
+            if val ~= nil then applyDutyComponent(ped, compId, val) end
+        end
         for comp, val in pairs(comps) do
             local c = tonumber(comp)
-            if c ~= nil then applyDutyComponent(ped, c, val) end
+            if c ~= nil then
+                local listed = false
+                for _, id in ipairs(order) do
+                    if id == c then listed = true break end
+                end
+                if not listed then applyDutyComponent(ped, c, val) end
+            end
         end
+        syncDutyArmsWithTorso(ped, comps)
     end
     local props = tbl.props
     if type(props) == 'table' then
@@ -541,6 +565,8 @@ local function clearDutyVest(ped)
 end
 
 local DUTY_CATEGORY_HEADERS = {
+    uniform_pants = 'Kelnės',
+    uniform_top = 'Viršutiniai drabužiai',
     uniform = 'Uniformos',
     vest = 'Liemenės',
     belt = 'Diržai',
@@ -617,11 +643,19 @@ RegisterNetEvent('fivempro_ltpd:client:openDutyLockerMenu', function(data)
     local menu = {
         { header = title, isMenuHeader = true },
         {
-            header = 'Uniformos',
-            txt = 'Bazinė PD apranga (be liemenės)',
+            header = 'Kelnės',
+            txt = 'Uniformos kelnės (atskirai nuo viršaus)',
             params = {
                 event = 'fivempro_ltpd:client:openDutyLockerCategory',
-                args = { category = 'uniform', lockerMode = lockerMode },
+                args = { category = 'uniform_pants', lockerMode = lockerMode },
+            },
+        },
+        {
+            header = 'Viršutiniai drabužiai',
+            txt = 'Striukės, marškinėliai, rankos suderintos',
+            params = {
+                event = 'fivempro_ltpd:client:openDutyLockerCategory',
+                args = { category = 'uniform_top', lockerMode = lockerMode },
             },
         },
         {

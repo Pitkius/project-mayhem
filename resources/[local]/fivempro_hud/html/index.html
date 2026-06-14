@@ -368,6 +368,7 @@
 
     <div id="hudMenu" class="hudmenu hidden">
         <div class="hm-backdrop-glow" aria-hidden="true"></div>
+        <div class="hm-layout">
         <div class="hm-shell">
             <header class="hm-header">
                 <div class="hm-brand">
@@ -457,46 +458,6 @@
                         <button type="button" id="btnSavePreset" class="hm-btn hm-btn-primary">IŠSAUGOTI</button>
                     </div>
                 </aside>
-
-                <section class="hm-preview-wrap">
-                    <h3 class="hm-section-title">HUD PERŽIŪRA</h3>
-                    <div class="hm-preview" id="hmPreview">
-                        <div class="hm-preview-bg">
-                            <div class="hm-pv-scene-sky"></div>
-                            <div class="hm-pv-scene-road"></div>
-                            <div class="hm-pv-scene-car"></div>
-                            <div class="hm-pv-scene-lights"></div>
-                        </div>
-                        <div class="hm-pv-compass">
-                            <span>W</span><span>NW</span><span class="is-n">N 345°</span><span>NE</span><span>E</span>
-                        </div>
-                        <div class="hm-pv-server">
-                            <div class="hm-pv-server-row"><span>Žaidėjo ID</span><strong>128</strong></div>
-                            <div class="hm-pv-server-row"><span>Seanso vieta</span><strong>#1</strong></div>
-                            <div class="hm-pv-server-row"><span>Žaidėjų sk.</span><strong>128/256</strong></div>
-                            <div class="hm-pv-server-logo">fivemprojektas</div>
-                        </div>
-                        <div class="hm-pv-hud-stage" id="hmPvHudStage" aria-hidden="true"></div>
-                        <div class="hm-pv-minimap">
-                            <div class="hm-pv-map-grid"></div>
-                            <div class="hm-pv-map-player"></div>
-                        </div>
-                        <div class="hm-pv-location">
-                            <span class="hm-pv-street">Vespucci Blvd</span>
-                            <span class="hm-pv-zone">Pillbox Hill</span>
-                            <span class="hm-pv-clock" id="hmPvClock">21:45 · 19.05.2026</span>
-                        </div>
-                        <div class="hm-pv-weapon" id="hmPvWeapon">
-                            <div class="hm-pv-weapon-ico">
-                                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 5h2v2h7.59L19 10.41V13h2v-3.59L15.59 4H7zm-2 4v12h2V9H5zm4 0v12h2V9H9zm4 0v12h2V9h-2z"/></svg>
-                            </div>
-                            <div class="hm-pv-weapon-info">
-                                <strong>12 / 60</strong>
-                                <span>Pistoletas</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
             </div>
 
             <footer class="hm-footer">
@@ -554,7 +515,7 @@
                     <h4>PAPILDOMI NUSTATYMAI</h4>
                     <label class="hm-el hm-el-compact" data-opt="hudbg">
                         <input type="checkbox" id="optHudBg" checked hidden />
-                        <span class="hm-el-text"><strong>Rodyti HUD fone</strong><small>Peržiūroje matomas žaidimas</small></span>
+                        <span class="hm-el-text"><strong>Gyva peržiūra</strong><small>Matomas žaidimas ir tikri rodikliai</small></span>
                         <span class="hm-switch"><span class="hm-switch-knob"></span></span>
                     </label>
                     <label class="hm-el hm-el-compact" data-opt="dynamic">
@@ -580,6 +541,14 @@
                     <textarea id="hmImportArea" class="hm-import-area hidden" placeholder="Įklijuokite JSON čia…"></textarea>
                 </div>
             </footer>
+        </div>
+
+        <section class="hm-preview-wrap">
+            <h3 class="hm-section-title">GYVA PERŽIŪRA</h3>
+            <div class="hm-preview hm-pv-live-view" id="hmPreview">
+                <div class="hm-pv-hud-stage" id="hmPvHudStage" aria-hidden="true"></div>
+            </div>
+        </section>
         </div>
     </div>
 

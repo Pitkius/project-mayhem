@@ -90,15 +90,23 @@ end)
 
 RegisterNUICallback('DropItem', function(item, cb)
     QBCore.Functions.TriggerCallback('qb-inventory:server:createDrop', function(dropId)
-        if dropId then
-            while not NetworkDoesNetworkIdExist(dropId) do Wait(10) end
-            local bag = NetworkGetEntityFromNetworkId(dropId)
-            SetModelAsNoLongerNeeded(bag)
-            PlaceObjectOnGroundProperly(bag)
-            FreezeEntityPosition(bag, true)
+        if dropId and dropId > 0 then
+            local timeout = GetGameTimer() + 5000
+            while not NetworkDoesNetworkIdExist(dropId) and GetGameTimer() < timeout do
+                Wait(10)
+            end
+            if NetworkDoesNetworkIdExist(dropId) then
+                local bag = NetworkGetEntityFromNetworkId(dropId)
+                if DoesEntityExist(bag) then
+                    SetModelAsNoLongerNeeded(Config.ItemDropObject)
+                    PlaceObjectOnGroundProperly(bag)
+                    FreezeEntityPosition(bag, true)
+                end
+            end
             local newDropId = 'drop-' .. dropId
             cb(newDropId)
         else
+            QBCore.Functions.Notify('Nepavyko išmesti daikto.', 'error')
             cb(false)
         end
     end, item)

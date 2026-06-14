@@ -9,6 +9,36 @@ currentTargets = {}
 -- the value will be set to false if we didn't actually start listening to them (in situations where their channel didn't exist)
 -- TODO: PR a native to let us get if we're listening to a certain channel.
 local listeners = {}
+local activeListenChannels = {}
+
+local function clearActiveListenChannels()
+	activeListenChannels = {}
+end
+
+local function safeAddVoiceChannelListen(channel)
+	channel = tonumber(channel)
+	if not channel or channel <= 0 then return false end
+	if activeListenChannels[channel] then return true end
+
+	local assignedChannel = LocalPlayer.state.assignedChannel
+	if channel == assignedChannel then
+		if MumbleGetVoiceChannelFromServerId(playerServerId) ~= assignedChannel then
+			return false
+		end
+	end
+
+	MumbleAddVoiceChannelListen(channel)
+	activeListenChannels[channel] = true
+	return true
+end
+
+local function safeRemoveVoiceChannelListen(channel)
+	channel = tonumber(channel)
+	if not channel or channel <= 0 then return end
+	if not activeListenChannels[channel] then return end
+	MumbleRemoveVoiceChannelListen(channel)
+	activeListenChannels[channel] = nil
+end
 
 function orig_addProximityCheck(ply)
 	local tgtPed = GetPlayerPed(ply)
@@ -35,8 +65,12 @@ function addNearbyPlayers()
 	currentTargets = {}
 	MumbleClearVoiceTargetChannels(voiceTarget)
 	if LocalPlayer.state.disableProximity then return end
-	MumbleAddVoiceChannelListen(LocalPlayer.state.assignedChannel)
-	MumbleAddVoiceTargetChannel(voiceTarget, LocalPlayer.state.assignedChannel)
+
+	local assignedChannel = LocalPlayer.state.assignedChannel
+	if assignedChannel and assignedChannel > 0 and MumbleGetVoiceChannelFromServerId(playerServerId) == assignedChannel then
+		safeAddVoiceChannelListen(assignedChannel)
+		MumbleAddVoiceTargetChannel(voiceTarget, assignedChannel)
+	end
 
 	for source, _ in pairs(callData) do
 		if source ~= playerServerId then
@@ -69,20 +103,22 @@ function addNearbyPlayers()
 end
 
 function addChannelListener(serverId)
+	if serverId == playerServerId then return end
 	-- not in the documentation, but this will return -1 whenever the client isn't in a channel
 	local channel = MumbleGetVoiceChannelFromServerId(serverId)
-	if channel ~= -1 then
-		MumbleAddVoiceChannelListen(channel)
+	if channel ~= -1 and safeAddVoiceChannelListen(channel) then
 		logger.verbose("Adding %s to listen table", serverId)
+		listeners[serverId] = true
+	else
+		listeners[serverId] = false
 	end
-	listeners[serverId] = channel ~= -1
 end
 
 function removeChannelListener(serverId)
 	if listeners[serverId] then
 		local channel = MumbleGetVoiceChannelFromServerId(serverId)
 		if channel ~= -1 then
-			MumbleRemoveVoiceChannelListen(channel)
+			safeRemoveVoiceChannelListen(channel)
 		end
 		logger.verbose("Removing %s from listen table", serverId)
 	end
@@ -135,6 +171,11 @@ RegisterNetEvent('onPlayerDropped', function(serverId)
 	if isListenerEnabled then
 		removeChannelListener(serverId)
 	end
+end)
+
+AddEventHandler('mumbleDisconnected', function()
+	clearActiveListenChannels()
+	listeners = {}
 end)
 
 local listenerOverride = false

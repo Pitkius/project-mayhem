@@ -586,6 +586,13 @@ RegisterNetEvent('fivempro_hud:client:forceClose', function()
     closeHudMenu()
 end)
 
+RegisterNetEvent('fivempro_hud:client:inventoryFocus', function(active)
+    SendNUIMessage({
+        action = 'inventoryFocus',
+        active = active == true,
+    })
+end)
+
 local function syncPlayerDataFromCore()
     PlayerData = QBCore.Functions.GetPlayerData() or {}
 end
@@ -744,6 +751,15 @@ local function playerHasVehicleKeys(veh)
 end
 
 local function toggleVehicleLockMenu(veh)
+    if GetResourceState('fivempro_basics') == 'started' then
+        local ok, isNpc = pcall(function()
+            return exports['fivempro_basics']:IsNaturalNpcVehicle(veh)
+        end)
+        if ok and isNpc then
+            QBCore.Functions.Notify('NPC transportas visada užrakintas.', 'error')
+            return
+        end
+    end
     if not playerHasVehicleKeys(veh) then
         QBCore.Functions.Notify('Neturite raktų nuo šio transporto.', 'error')
         return
@@ -1236,7 +1252,7 @@ CreateThread(function()
 
     while true do
         pushHud()
-        Wait(700)
+        Wait(hudMenuOpen and 180 or 700)
     end
 end)
 

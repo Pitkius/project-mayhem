@@ -12,7 +12,6 @@ Config.PoliceSupplyShop = {
         { name = 'painkillers', amount = 999, price = 0, slot = 5 },
         { name = 'vehicle_key_copy', amount = 999, price = 0, slot = 6 },
         { name = 'lockpick', amount = 50, price = 25, slot = 7 },
-        { name = 'pd_armory_materials', amount = 999, price = 0, slot = 8 },
     },
 }
 

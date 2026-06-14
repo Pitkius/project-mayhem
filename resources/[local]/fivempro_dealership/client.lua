@@ -203,17 +203,27 @@ local function spawnPreviewVehicle(model)
         RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
 
         local hash = joaat(model)
+        if not IsModelInCdimage(hash) or not IsModelAVehicle(hash) then
+            QBCore.Functions.Notify(('Auto "%s" neprieinamas (trūksta DLC / modelio).'):format(model), 'error')
+            return
+        end
+
         RequestModel(hash)
         local timeout = 0
+        local maxWait = model == 'yosemite4' and 15000 or 8000
         while not HasModelLoaded(hash) do
             Wait(0)
             timeout = timeout + 1
             if gen ~= previewSpawnGen then return end
-            if timeout > 8000 then return end
+            if timeout > maxWait then
+                QBCore.Functions.Notify(('Nepavyko užkrauti "%s" peržiūrai.'):format(model), 'error')
+                return
+            end
         end
         if gen ~= previewSpawnGen then return end
 
-        local veh = CreateVehicle(hash, spawn.x, spawn.y, spawn.z, spawn.w, false, false)
+        local spawnZ = spawn.z + (model == 'yosemite4' and 0.35 or 0.0)
+        local veh = CreateVehicle(hash, spawn.x, spawn.y, spawnZ, spawn.w, false, false)
         if gen ~= previewSpawnGen then
             if veh and veh ~= 0 then forceDeleteVehicleEntity(veh) end
             return
@@ -226,6 +236,10 @@ local function spawnPreviewVehicle(model)
 
         previewVehicle = veh
         SetEntityAsMissionEntity(previewVehicle, true, true)
+        SetVehicleModKit(previewVehicle, 0)
+        if model == 'yosemite4' then
+            SetVehicleOnGroundProperly(previewVehicle)
+        end
         SetVehicleDirtLevel(previewVehicle, 0.0)
         SetVehicleColours(previewVehicle, currentColorIdx, currentColorIdx)
         SetVehicleExtraColours(previewVehicle, 0, 0)

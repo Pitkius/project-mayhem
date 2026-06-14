@@ -17,7 +17,7 @@
         <div id="app">
             <div
                 class="inventory-root"
-                v-if="isInventoryOpen"
+                v-if="isInventoryOpen || isInventoryClosing"
                 :key="inventoryAnimKey"
                 :class="{ 'inv-closing': isInventoryClosing }"
             >
@@ -206,17 +206,17 @@
             </div>
             <ul v-if="showContextMenu" class="context-menu" :style="{ top: contextMenuPosition.top, left: contextMenuPosition.left }">
                 <li v-if="contextMenuItem.useable" @click="useItem(contextMenuItem)">Use</li>
-                <li @mouseover="showSubmenu = true" @mouseleave="showSubmenu = false">
+                <li class="has-submenu">
                     Give
-                    <ul v-if="showSubmenu" class="submenu">
+                    <ul class="submenu">
                         <li @click="giveItem(contextMenuItem, 1)">Single</li>
                         <li @click="giveItem(contextMenuItem, 'half')">Half</li>
                         <li @click="giveItem(contextMenuItem, 'all')">All</li>
                     </ul>
                 </li>
-                <li @mouseover="showSubmenu = true" @mouseleave="showSubmenu = false">
+                <li class="has-submenu">
                     Drop
-                    <ul v-if="showSubmenu" class="submenu">
+                    <ul class="submenu">
                         <li @click="dropItem(contextMenuItem, 1)">Single</li>
                         <li @click="dropItem(contextMenuItem, 'half')">Half</li>
                         <li @click="dropItem(contextMenuItem, 'all')">All</li>

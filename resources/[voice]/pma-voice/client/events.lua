@@ -1,20 +1,25 @@
 isInitialized = false
 
 function handleInitialState()
+	while not LocalPlayer.state.assignedChannel or LocalPlayer.state.assignedChannel <= 0 do
+		Wait(100)
+	end
+
+	local assignedChannel = LocalPlayer.state.assignedChannel
 	local voiceModeData = Cfg.voiceModes[mode]
 	MumbleSetTalkerProximity(voiceModeData[1] + 0.0)
 	MumbleClearVoiceTarget(voiceTarget)
 	MumbleSetVoiceTarget(voiceTarget)
-	MumbleSetVoiceChannel(LocalPlayer.state.assignedChannel)
+	MumbleSetVoiceChannel(assignedChannel)
 
-	while MumbleGetVoiceChannelFromServerId(playerServerId) ~= LocalPlayer.state.assignedChannel do
+	while MumbleGetVoiceChannelFromServerId(playerServerId) ~= assignedChannel do
 		Wait(100)
-		MumbleSetVoiceChannel(LocalPlayer.state.assignedChannel)
+		MumbleSetVoiceChannel(assignedChannel)
 	end
 
 	isInitialized = true
 
-	MumbleAddVoiceTargetChannel(voiceTarget, LocalPlayer.state.assignedChannel)
+	MumbleAddVoiceTargetChannel(voiceTarget, assignedChannel)
 
 	addNearbyPlayers()
 end

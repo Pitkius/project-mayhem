@@ -256,9 +256,22 @@ body.shape-square .fill {
     align-items: center;
     justify-content: center;
     padding: 1.2vh 1vw;
-    background: rgba(6, 8, 16, 0.72);
-    backdrop-filter: blur(8px);
+    background: transparent;
+    backdrop-filter: none;
     z-index: 5000;
+    pointer-events: none;
+}
+
+.hudmenu > * {
+    pointer-events: auto;
+}
+
+.hm-layout {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    width: min(98vw, 1680px);
+    max-height: 94vh;
     pointer-events: auto;
 }
 
@@ -284,24 +297,25 @@ body.shape-square .fill {
 }
 
 .hudmenu:not(.is-open) {
-    background: rgba(6, 8, 16, 0);
-    backdrop-filter: blur(0);
+    background: transparent;
+    backdrop-filter: none;
 }
 
 .hudmenu.is-open {
-    background: rgba(6, 8, 16, 0.72);
-    backdrop-filter: blur(8px);
-    transition: background 0.42s ease, backdrop-filter 0.42s ease;
+    background: transparent;
+    backdrop-filter: none;
+    transition: none;
 }
 
 .hudmenu.is-closing {
-    background: rgba(6, 8, 16, 0);
-    backdrop-filter: blur(0);
-    transition: background 0.38s ease, backdrop-filter 0.38s ease;
+    background: transparent;
+    backdrop-filter: none;
+    transition: none;
 }
 
 .hm-shell {
-    width: min(1320px, 97vw);
+    width: min(520px, 38vw);
+    flex: 0 0 auto;
     max-height: 94vh;
     display: grid;
     grid-template-rows: auto 1fr auto;
@@ -543,10 +557,10 @@ body.shape-square .fill {
 
 .hm-main {
     display: grid;
-    grid-template-columns: minmax(260px, 300px) 1fr;
+    grid-template-columns: 1fr;
     gap: 0;
-    min-height: 340px;
-    max-height: 52vh;
+    min-height: 320px;
+    max-height: 58vh;
     overflow: hidden;
 }
 
@@ -718,21 +732,40 @@ body.shape-square .fill {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 14px 16px;
+    flex: 1 1 auto;
+    min-width: 0;
     min-height: 0;
+    padding: 14px 16px 14px 0;
     overflow: hidden;
+    pointer-events: none;
+}
+
+.hm-preview-wrap .hm-section-title {
+    color: #e2e8f0;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.85);
 }
 
 .hm-preview {
     position: relative;
     flex: 1;
-    min-height: 280px;
-    aspect-ratio: 16 / 9;
+    min-height: 360px;
     border-radius: 16px;
     overflow: hidden;
-    border: 1px solid rgba(167, 139, 250, 0.22);
+    border: 1px solid rgba(167, 139, 250, 0.28);
     background: #06080f;
-    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.35);
+}
+
+.hm-preview.hm-pv-live-view {
+    background: transparent;
+    border: 2px solid rgba(167, 139, 250, 0.42);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+        0 12px 40px rgba(0, 0, 0, 0.28);
+}
+
+.hm-preview.hm-pv-static-bg {
+    background: linear-gradient(160deg, #0c1224 0%, #14102a 55%, #0a0814 100%);
 }
 
 .hm-pv-hud-stage {
@@ -745,9 +778,9 @@ body.shape-square .fill {
 
 .hm-preview.hm-pv-live .hm-pv-hud-stage .hud-bl-cluster {
     position: absolute;
-    left: 1.2%;
-    bottom: 36%;
-    transform: scale(calc(0.34 * var(--pv-hud-scale, 1)));
+    left: 2.5%;
+    bottom: 24%;
+    transform: scale(calc(var(--pv-hud-base-scale, 0.72) * var(--pv-hud-scale, 1)));
     transform-origin: left bottom;
     opacity: 1 !important;
     pointer-events: none;
@@ -755,9 +788,9 @@ body.shape-square .fill {
 
 .hm-preview.hm-pv-live .hm-pv-hud-stage .hud-br-cluster {
     position: absolute;
-    right: 1.2%;
-    bottom: 18%;
-    transform: scale(calc(0.34 * var(--pv-hud-scale, 1)));
+    right: 2.5%;
+    bottom: 24%;
+    transform: scale(calc(var(--pv-hud-base-scale, 0.72) * var(--pv-hud-scale, 1)));
     transform-origin: right bottom;
     opacity: 1 !important;
     pointer-events: none;
@@ -770,6 +803,30 @@ body.shape-square .fill {
 body.hud-menu-open > .hud-bl-cluster,
 body.hud-menu-open > .hud-br-cluster {
     display: none !important;
+}
+
+body.inventory-open > .hud-bl-cluster,
+body.inventory-open > .hud-br-cluster {
+    opacity: 0;
+    transform: scale(var(--hud-scale, 1)) translateY(14px);
+    pointer-events: none;
+}
+
+.hud-bl-cluster,
+.hud-br-cluster {
+    opacity: 1;
+    transform: scale(var(--hud-scale, 1));
+    transition:
+        opacity 0.26s ease,
+        transform 0.26s ease;
+}
+
+.hud-bl-cluster {
+    transform-origin: left bottom;
+}
+
+.hud-br-cluster {
+    transform-origin: right bottom;
 }
 
 .hm-preview-bg {
@@ -1490,19 +1547,6 @@ body.hud-menu-open > .hud-br-cluster {
 
 .hm-import-area.hidden {
     display: none !important;
-}
-
-.hud-bl-cluster,
-.hud-br-cluster {
-    transform: scale(var(--hud-scale, 1));
-}
-
-.hud-bl-cluster {
-    transform-origin: left bottom;
-}
-
-.hud-br-cluster {
-    transform-origin: right bottom;
 }
 
 body.hud-compact .hud-rings {

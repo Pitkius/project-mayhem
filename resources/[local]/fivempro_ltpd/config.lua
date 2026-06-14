@@ -84,8 +84,9 @@ Config.MdtMap = {
     coordMax = { x = 4500.0, y = 6625.0 },
     viewMin = { x = -4000.0, y = -4000.0 },
     viewMax = { x = 4500.0, y = 6625.0 },
-    offsetX = 0.0,
-    offsetY = 0.0,
+    --- Fine-tune (žaidimo vienetais ≈ m): LS/MRPD ~1 pastato korekcija
+    offsetX = -32.0,
+    offsetY = -38.0,
     scaleX = 1.0,
     scaleY = 1.0,
     flipY = false,
@@ -99,9 +100,9 @@ Config.MdtMap = {
         { gx = 450.77, gy = 5566.86, u = 0.500, v = 0.125 },   -- Mt Chiliad
         { gx = 1853.2, gy = 3686.5, u = 0.708, v = 0.362 },    -- Sandy Shores PD
         { gx = -2360.0, gy = 3249.0, u = 0.138, v = 0.455 },   -- Fort Zancudo
-        { gx = 441.84, gy = -982.05, u = 0.398, v = 0.762 },   -- MRPD
-        { gx = 379.39, gy = -1591.37, u = 0.412, v = 0.792 },  -- Davis PD
-        { gx = -1037.0, gy = -2737.0, u = 0.272, v = 0.878 },  -- LSIA
+        { gx = 441.84, gy = -982.05, u = 0.404, v = 0.756 },   -- MRPD
+        { gx = 379.39, gy = -1591.37, u = 0.410, v = 0.788 },  -- Davis PD
+        { gx = -1037.0, gy = -2737.0, u = 0.276, v = 0.874 },  -- LSIA
     },
 }
 

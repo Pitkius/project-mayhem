@@ -95,18 +95,63 @@ local function setupInPlaceEdit(sessionData)
     CharCamera.enable()
 end
 
+local function revealAndUnfreezePlayerPed(ped)
+    ped = ped or PlayerPedId()
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
+    SetEntityVisible(ped, true, false)
+    ResetEntityAlpha(ped)
+    SetEntityCollision(ped, true, true)
+    FreezeEntityPosition(ped, false)
+    SetEntityInvincible(ped, false)
+    SetPlayerInvincible(PlayerId(), false)
+end
+
+local function placePlayerAtSpawn(spawn)
+    if not spawn then return PlayerPedId() end
+    local x, y, z, h = spawn.x + 0.0, spawn.y + 0.0, spawn.z + 0.0, spawn.w or 0.0
+    RequestCollisionAtCoord(x, y, z)
+    local deadline = GetGameTimer() + 2500
+    while not HasCollisionLoadedAroundEntity(PlayerPedId()) and GetGameTimer() < deadline do
+        RequestCollisionAtCoord(x, y, z)
+        Wait(0)
+    end
+    NetworkResurrectLocalPlayer(x, y, z, h, true, false)
+    local ped = PlayerPedId()
+    SetEntityCoordsNoOffset(ped, x, y, z, false, false, false)
+    SetEntityHeading(ped, h)
+    revealAndUnfreezePlayerPed(ped)
+    return ped
+end
+
+local function applyPlayerModelAndSkin(model, skinJson)
+    if type(model) == 'string' then model = joaat(model) end
+    loadModel(model)
+    SetPlayerModel(PlayerId(), model)
+    local ped = PlayerPedId()
+    SetPedDefaultComponentVariation(ped)
+    if skinJson then
+        local ok, skinTbl = pcall(json.decode, skinJson)
+        if ok and type(skinTbl) == 'table' then
+            CharAppearance.applyToPed(ped, skinTbl)
+            TriggerServerEvent('qb-clothing:saveSkin', model, skinJson)
+        end
+    end
+    revealAndUnfreezePlayerPed(ped)
+    return ped
+end
+
 local function teardownScene()
     CharCamera.disable()
     if inPlaceMode then
         FreezeEntityPosition(PlayerPedId(), false)
         inPlaceMode = false
     else
-        SetEntityVisible(PlayerPedId(), true, false)
-        FreezeEntityPosition(PlayerPedId(), false)
         if previewPed ~= 0 and DoesEntityExist(previewPed) then
             DeleteEntity(previewPed)
             previewPed = 0
         end
+        CharAppearance.setPreviewPed(0)
+        revealAndUnfreezePlayerPed(PlayerPedId())
     end
     inCreator = false
     SetNuiFocusKeepInput(false)
@@ -167,15 +212,12 @@ RegisterNetEvent('fivempro_charcreator:client:openWizard', function(editMode)
 end)
 
 RegisterNetEvent('fivempro_charcreator:client:applyAppearance', function(data)
-    local model = data.model or CharAppearance.modelHash(0)
-    if type(model) == 'string' then model = joaat(model) end
-    local ped = PlayerPedId()
-
     if ShopSession and ShopSession.IsActive() then
+        local ped = PlayerPedId()
         if data.skin then
             local ok, skinTbl = pcall(json.decode, data.skin)
             if ok and type(skinTbl) == 'table' then
-                TriggerEvent('qb-clothing:client:loadPlayerClothing', skinTbl, ped)
+                CharAppearance.applyToPed(ped, skinTbl)
             end
         end
         ShopSession.Teardown(false)
@@ -183,16 +225,8 @@ RegisterNetEvent('fivempro_charcreator:client:applyAppearance', function(data)
     end
 
     teardownScene()
-    loadModel(model)
-    SetPlayerModel(PlayerId(), model)
-    SetPedDefaultComponentVariation(ped)
-    if data.skin then
-        local ok, skinTbl = pcall(json.decode, data.skin)
-        if ok and type(skinTbl) == 'table' then
-            TriggerEvent('qb-clothing:client:loadPlayerClothing', skinTbl, ped)
-            TriggerServerEvent('qb-clothing:saveSkin', model, data.skin)
-        end
-    end
+    applyPlayerModelAndSkin(data.model or CharAppearance.modelHash(0), data.skin)
+    DoScreenFadeIn(500)
 end)
 
 RegisterNetEvent('fivempro_charcreator:client:refreshList', function()
@@ -202,24 +236,25 @@ end)
 
 RegisterNetEvent('fivempro_charcreator:client:finishCreate', function(data)
     teardownScene()
+
     local model = data.model or CharAppearance.modelHash(0)
     if type(model) == 'string' then model = joaat(model) end
     loadModel(model)
     SetPlayerModel(PlayerId(), model)
     SetPedDefaultComponentVariation(PlayerPedId())
-    local ped = PlayerPedId()
+
+    placePlayerAtSpawn(data.spawn)
+
     if data.skin then
         local ok, skinTbl = pcall(json.decode, data.skin)
         if ok and type(skinTbl) == 'table' then
-            TriggerEvent('qb-clothing:client:loadPlayerClothing', skinTbl, ped)
+            CharAppearance.applyToPed(PlayerPedId(), skinTbl)
             TriggerServerEvent('qb-clothing:saveSkin', model, data.skin)
         end
     end
-    if data.spawn then
-        local s = data.spawn
-        SetEntityCoords(ped, s.x, s.y, s.z, false, false, false, false)
-        SetEntityHeading(ped, s.w or 0.0)
-    end
+
+    revealAndUnfreezePlayerPed(PlayerPedId())
+    DoScreenFadeIn(600)
     Wait(500)
     TriggerEvent('QBCore:Client:OnPlayerLoaded')
 end)
@@ -245,6 +280,9 @@ RegisterNUICallback('createChar', function(data, cb)
     local skin = CharAppearance.exportForSave()
     data.model = CharAppearance.modelHash(data.personal and data.personal.gender or 0)
     data.skin = json.encode(skin)
+    SetNuiFocusKeepInput(false)
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
     TriggerServerEvent('fivempro_charcreator:server:createCharacter', data)
     cb('ok')
 end)
@@ -300,6 +338,10 @@ end)
 RegisterNUICallback('getClothingLimits', function(_, cb)
     local items = Config.CreatorClothingItems or Config.ClothingShopItems or {}
     cb(CharAppearance.getClothingLimits(previewPed, items))
+end)
+
+RegisterNUICallback('getTextureLimit', function(data, cb)
+    cb({ maxTex = CharAppearance.getTextureLimit(previewPed, data.key, data.item) })
 end)
 
 RegisterNUICallback('setCamera', function(data, cb)

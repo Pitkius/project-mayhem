@@ -883,7 +883,7 @@ function RemoveItem(identifier, item, amount, slot, reason)
     local itemKey = nil
 
     for key, invItem in pairs(inventory) do
-        if invItem.slot == slot then
+        if tonumber(invItem.slot) == tonumber(slot) then
             inventoryItem = invItem
             itemKey = key
             break

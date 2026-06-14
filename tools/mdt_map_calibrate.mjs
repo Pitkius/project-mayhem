@@ -18,9 +18,9 @@ const landmarks = [
   { name: "Mt Chiliad", gx: 450.77, gy: 5566.86, u: 0.500, v: 0.125 },
   { name: "Sandy PD", gx: 1853.2, gy: 3686.5, u: 0.708, v: 0.362 },
   { name: "Fort Zancudo", gx: -2360.0, gy: 3249.0, u: 0.138, v: 0.455 },
-  { name: "MRPD", gx: 441.84, gy: -982.05, u: 0.398, v: 0.762 },
-  { name: "Davis PD", gx: 379.39, gy: -1591.37, u: 0.412, v: 0.792 },
-  { name: "LSIA", gx: -1037.0, gy: -2737.0, u: 0.272, v: 0.878 },
+  { name: "MRPD", gx: 441.84, gy: -982.05, u: 0.404, v: 0.756 },
+  { name: "Davis PD", gx: 379.39, gy: -1591.37, u: 0.410, v: 0.788 },
+  { name: "LSIA", gx: -1037.0, gy: -2737.0, u: 0.276, v: 0.874 },
 ];
 
 const u = [], v = [], gx = [], gy = [];
@@ -44,13 +44,21 @@ function toLatLng(x, y) {
 console.log("coordMinX", coordMinX.toFixed(2), "coordMaxX", coordMaxX.toFixed(2));
 console.log("coordMinY", coordMinY.toFixed(2), "coordMaxY", coordMaxY.toFixed(2));
 console.log("");
+const offsetX = -32.0;
+const offsetY = -38.0;
+const rangeX = coordMaxX - coordMinX;
+const rangeY = coordMaxY - coordMinY;
+
 for (const p of landmarks) {
   const r = toLatLng(p.gx, p.gy);
+  const vImg = 1 - r.tY;
+  const errXm = (r.tX - p.u) * rangeX - offsetX;
+  const errYm = (vImg - p.v) * rangeY - offsetY;
   console.log(
     p.name,
     `target u/v ${p.u}/${p.v}`,
-    `got ${r.tX.toFixed(3)}/${r.tY.toFixed(3)}`,
-    `err ${((r.tX - p.u) * 100).toFixed(1)}% / ${((r.tY - p.v) * 100).toFixed(1)}%`,
-    `1:1 ${r.lng.toFixed(1)},${r.lat.toFixed(1)} vs game ${p.gx},${p.gy}`,
+    `got ${r.tX.toFixed(3)}/${vImg.toFixed(3)}`,
+    `err ${errXm.toFixed(1)}m / ${errYm.toFixed(1)}m`,
+    `game ${p.gx},${p.gy}`,
   );
 }

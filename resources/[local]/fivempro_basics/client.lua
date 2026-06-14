@@ -150,6 +150,7 @@ CreateThread(function()
 end)
 
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
+    SetPlayerCanUseCover(PlayerId(), false)
     Wait(1000)
     refreshSlungWeapons()
 end)
@@ -162,6 +163,26 @@ end)
 AddEventHandler('onResourceStop', function(resName)
     if resName ~= GetCurrentResourceName() then return end
     clearSlungProps()
+end)
+
+-- Uždrausti GTA slėpimąsi už užtvarų (Q / cover) — RP serveryje nenaudojama.
+CreateThread(function()
+    local playerId = PlayerId()
+    SetPlayerCanUseCover(playerId, false)
+    while true do
+        SetPlayerCanUseCover(playerId, false)
+        for cg = 0, 2 do
+            DisableControlAction(cg, 44, true) -- INPUT_COVER (Q)
+        end
+        local ped = PlayerPedId()
+        if ped ~= 0 and DoesEntityExist(ped) then
+            SetPedCanPeekInCover(ped, false)
+            if IsPedInCover(ped, false) or IsPedGoingIntoCover(ped) then
+                ClearPedTasks(ped)
+            end
+        end
+        Wait(0)
+    end
 end)
 
 -- Disable GTA default weapon wheel (TAB) so inventory/hotbar flow is consistent.
@@ -367,3 +388,68 @@ CreateThread(function()
     end
 end)
 
+--- Natūraliai spawninami NPC automobiliai — visada užrakinti (su vairuotoju ar be).
+local NPC_VEHICLE_POP = {
+    [1] = true, -- RANDOM_PERMANENT
+    [2] = true, -- RANDOM_PARKED
+    [3] = true, -- RANDOM_PATROL
+    [4] = true, -- RANDOM_SCENARIO
+    [5] = true, -- RANDOM_AMBIENT
+    [6] = true, -- PERMANENT
+}
+
+local function networkOwnerIsPlayer(veh)
+    if not NetworkGetEntityIsNetworked(veh) then return false end
+    local owner = NetworkGetEntityOwner(veh)
+    if not owner or owner <= 0 then return false end
+    for _, pid in ipairs(GetActivePlayers()) do
+        if GetPlayerServerId(pid) == owner then
+            return true
+        end
+    end
+    return false
+end
+
+local function isNaturalNpcVehicle(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return false end
+    local pop = GetEntityPopulationType(veh)
+    if pop == 7 or pop == 8 or pop == 9 or pop == 10 then return false end
+    if networkOwnerIsPlayer(veh) then return false end
+    if NPC_VEHICLE_POP[pop] then return true end
+    if pop == 0 then return true end
+    return false
+end
+
+local function lockNpcVehicle(veh)
+    SetVehicleDoorsLocked(veh, 2)
+    SetVehicleDoorsLockedForAllPlayers(veh, true)
+    SetVehicleDoorsLockedForPlayer(veh, PlayerId(), true)
+    SetVehicleNeedsToBeHotwired(veh, false)
+end
+
+exports('IsNaturalNpcVehicle', isNaturalNpcVehicle)
+
+CreateThread(function()
+    local scanRadius = 240.0
+    while true do
+        local pcoords = GetEntityCoords(PlayerPedId())
+        for _, veh in ipairs(GetGamePool('CVehicle')) do
+            if DoesEntityExist(veh) and #(GetEntityCoords(veh) - pcoords) <= scanRadius then
+                if isNaturalNpcVehicle(veh) then
+                    lockNpcVehicle(veh)
+                end
+            end
+        end
+        Wait(600)
+    end
+end)
+
+AddEventHandler('entityCreated', function(entity)
+    if not entity or entity == 0 then return end
+    if GetEntityType(entity) ~= 2 then return end
+    SetTimeout(0, function()
+        if DoesEntityExist(entity) and isNaturalNpcVehicle(entity) then
+            lockNpcVehicle(entity)
+        end
+    end)
+end)

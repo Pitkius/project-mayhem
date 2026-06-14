@@ -22,7 +22,7 @@ const COMP_MAP = {
 };
 
 const TEX_LETTERS = 'abcdefghijklmnopqrstuvwxyz';
-const CATEGORY_ORDER = { uniform: 0, vest: 1, belt: 2, hat: 3 };
+const CATEGORY_ORDER = { uniform_pants: 0, uniform_top: 1, vest: 2, belt: 3, hat: 4 };
 
 function metaTag(block, name, def = '0') {
   const m = block.match(new RegExp(`<${name}\\s+value="([^"]*)"`));
@@ -116,6 +116,18 @@ function makeProps(dlc, spec) {
   return out;
 }
 
+function pickArmsForJbib(j, upprItems) {
+  const match = upprItems.find((i) => i.draw === j.draw && i.tex === j.tex);
+  if (match) return [match.draw, match.tex];
+  const matchDraw = upprItems.find((i) => i.draw === j.draw);
+  if (matchDraw) return [matchDraw.draw, matchDraw.tex];
+  if (upprItems.length) {
+    const u = [...upprItems].sort((a, b) => a.draw - b.draw || a.tex - b.tex)[0];
+    return [u.draw, u.tex];
+  }
+  return [j.draw, j.tex];
+}
+
 function buildPackOutfits(packLabel, dlc, items, props, gender) {
   const byComp = {};
   for (const it of items) {
@@ -129,25 +141,22 @@ function buildPackOutfits(packLabel, dlc, items, props, gender) {
   const upprItems = byComp[3] || [];
   const taskItems = (byComp[9] || []).sort((a, b) => a.draw - b.draw || a.tex - b.tex);
   const teefItems = (byComp[7] || []).sort((a, b) => a.draw - b.draw || a.tex - b.tex);
-  const seenUniform = new Set();
+  const seenTop = new Set();
+  const seenPants = new Set();
+  const seenUndershirt = new Set();
 
   for (const j of jbibItems) {
-    const [ld, lt] = pickLowrTex(lowrItems, j.tex);
-    const [fd, ft] = pickFeet(feetItems);
-    const spec = { 11: [j.draw, j.tex], 4: [ld, lt], 6: [fd, ft] };
+    const [ad, at] = pickArmsForJbib(j, upprItems);
+    const spec = { 11: [j.draw, j.tex], 3: [ad, at] };
     const acc = pickAccs(accsItems, j.tex);
     if (acc) spec[8] = acc;
-    if (upprItems.length) {
-      const u = [...upprItems].sort((a, b) => a.draw - b.draw || a.tex - b.tex)[0];
-      spec[3] = [u.draw, u.tex];
-    }
-    const key = `u-j-${j.draw}-${j.tex}-${ld}-${lt}`;
-    if (seenUniform.has(key)) continue;
-    seenUniform.add(key);
+    const key = `top-${j.draw}-${j.tex}-${ad}-${at}`;
+    if (seenTop.has(key)) continue;
+    seenTop.add(key);
     outfits.push({
-      label: `${packLabel} uniforma – viršus #${j.draw + 1} (${texLabel(j.tex)})`,
-      description: `${gender} · be liemenės`,
-      category: 'uniform',
+      label: `${packLabel} viršus #${j.draw + 1} (${texLabel(j.tex)})`,
+      description: `${gender} · viršutinė dalis (rankos suderintos)`,
+      category: 'uniform_top',
       minGrade: 0,
       armour: 0,
       components: makeComponents(dlc, spec),
@@ -156,19 +165,16 @@ function buildPackOutfits(packLabel, dlc, items, props, gender) {
   }
 
   for (const l of [...lowrItems].sort((a, b) => a.draw - b.draw || a.tex - b.tex)) {
-    if (!jbibItems.length) continue;
-    const j0 = [...jbibItems].sort((a, b) => a.draw - b.draw || a.tex - b.tex)[0];
     const [fd, ft] = pickFeet(feetItems);
-    const spec = { 11: [j0.draw, j0.tex], 4: [l.draw, l.tex], 6: [fd, ft] };
-    const acc = pickAccs(accsItems, j0.tex);
-    if (acc) spec[8] = acc;
-    const key = `u-l-${l.draw}-${l.tex}`;
-    if (seenUniform.has(key)) continue;
-    seenUniform.add(key);
+    const spec = { 4: [l.draw, l.tex] };
+    if (feetItems.length) spec[6] = [fd, ft];
+    const key = `pants-${l.draw}-${l.tex}`;
+    if (seenPants.has(key)) continue;
+    seenPants.add(key);
     outfits.push({
-      label: `${packLabel} uniforma – kelnės #${l.draw + 1} (${texLabel(l.tex)})`,
-      description: `${gender} · be liemenės`,
-      category: 'uniform',
+      label: `${packLabel} kelnės #${l.draw + 1} (${texLabel(l.tex)})`,
+      description: `${gender} · tik kelnės`,
+      category: 'uniform_pants',
       minGrade: 0,
       armour: 0,
       components: makeComponents(dlc, spec),
@@ -177,21 +183,16 @@ function buildPackOutfits(packLabel, dlc, items, props, gender) {
   }
 
   for (const a of [...accsItems].sort((x, y) => x.draw - y.draw || x.tex - y.tex)) {
-    if (!jbibItems.length) continue;
-    const j0 = [...jbibItems].sort((x, y) => x.draw - y.draw || x.tex - y.tex)[0];
-    const [ld, lt] = pickLowrTex(lowrItems, j0.tex);
-    const [fd, ft] = pickFeet(feetItems);
-    const spec = { 11: [j0.draw, j0.tex], 4: [ld, lt], 6: [fd, ft], 8: [a.draw, a.tex] };
-    const key = `u-a-${a.draw}-${a.tex}`;
-    if (seenUniform.has(key)) continue;
-    seenUniform.add(key);
+    const key = `acc-${a.draw}-${a.tex}`;
+    if (seenUndershirt.has(key)) continue;
+    seenUndershirt.add(key);
     outfits.push({
-      label: `${packLabel} uniforma – marškinėliai #${a.draw + 1} (${texLabel(a.tex)})`,
-      description: `${gender} · be liemenės`,
-      category: 'uniform',
+      label: `${packLabel} marškinėliai #${a.draw + 1} (${texLabel(a.tex)})`,
+      description: `${gender} · po uniforma (tik marškinėliai)`,
+      category: 'uniform_top',
       minGrade: 0,
       armour: 0,
-      components: makeComponents(dlc, spec),
+      components: makeComponents(dlc, { 8: [a.draw, a.tex] }),
       props: null,
     });
   }
@@ -368,8 +369,8 @@ function countCat(list, cat) {
 console.log(`PD outfits: ${pdOutfits.length} -> ${pdCfg}`);
 console.log(`GMP outfits: ${gmpOutfits.length} -> ${gmpCfg}`);
 console.log(
-  `  PD uniform=${countCat(pdOutfits, 'uniform')} vest=${countCat(pdOutfits, 'vest')} belt=${countCat(pdOutfits, 'belt')} hat=${countCat(pdOutfits, 'hat')}`,
+  `  PD uniform_pants=${countCat(pdOutfits, 'uniform_pants')} uniform_top=${countCat(pdOutfits, 'uniform_top')} vest=${countCat(pdOutfits, 'vest')} belt=${countCat(pdOutfits, 'belt')} hat=${countCat(pdOutfits, 'hat')}`,
 );
 console.log(
-  `  GMP uniform=${countCat(gmpOutfits, 'uniform')} vest=${countCat(gmpOutfits, 'vest')} belt=${countCat(gmpOutfits, 'belt')} hat=${countCat(gmpOutfits, 'hat')}`,
+  `  GMP uniform_pants=${countCat(gmpOutfits, 'uniform_pants')} uniform_top=${countCat(gmpOutfits, 'uniform_top')} vest=${countCat(gmpOutfits, 'vest')} belt=${countCat(gmpOutfits, 'belt')} hat=${countCat(gmpOutfits, 'hat')}`,
 );
