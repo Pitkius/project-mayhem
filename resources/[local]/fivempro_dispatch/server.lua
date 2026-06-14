@@ -498,9 +498,7 @@ exports('TriggerOfficerPanic', triggerOfficerPanic)
 
 RegisterNetEvent('fivempro_dispatch:server:panic', function(clientPos)
     local src = source
-    if triggerOfficerPanic(src, clientPos) then
-        TriggerClientEvent('QBCore:Notify', src, 'PANIC išsiųstas visiems pamainoje esantiems pareigūnams.', 'error')
-    else
+    if not triggerOfficerPanic(src, clientPos) then
         if not isPoliceJob(src) then
             TriggerClientEvent('QBCore:Notify', src, 'PANIC – tik policijos darbuotojams.', 'error')
         end

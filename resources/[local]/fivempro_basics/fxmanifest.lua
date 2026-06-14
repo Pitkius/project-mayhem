@@ -16,4 +16,5 @@ server_scripts {
 
 exports {
     'IsNaturalNpcVehicle',
+    'IsLongBackWeapon',
 }

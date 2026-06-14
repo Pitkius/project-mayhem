@@ -141,30 +141,6 @@ Config.DutyOutfits = {
         },
     },
     {
-        label = 'PD Vyrai kelnės #1 (A)',
-        description = 'male · tik kelnės',
-        category = 'uniform_pants',
-        minGrade = 0,
-        armour = 0,
-        male = {
-            components = {
-                [4] = { collection = 'mp_m_pdvyrai', draw = 0, tex = 0 },
-            },
-        },
-    },
-    {
-        label = 'PD Vyrai kelnės #1 (A)',
-        description = 'female · tik kelnės',
-        category = 'uniform_pants',
-        minGrade = 0,
-        armour = 0,
-        female = {
-            components = {
-                [4] = { collection = 'mp_f_pdvyrai', draw = 0, tex = 0 },
-            },
-        },
-    },
-    {
         label = 'PD Vyrai kelnės #2 (A)',
         description = 'male · tik kelnės',
         category = 'uniform_pants',

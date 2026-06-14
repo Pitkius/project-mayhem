@@ -26,6 +26,10 @@ Config.Garages = {
     { id = 'chumash', label = 'Chumash garažas', coords = vector3(-3142.3, 1128.7, 20.86), heading = 339.0, spawn = vector4(-3134.8, 1112.9, 20.85, 339.0) },
     { id = 'vinewood', label = 'Vinewood garažas', coords = vector3(596.2, 90.7, 92.13), heading = 69.0, spawn = vector4(604.9, 97.7, 92.12, 248.0) },
     { id = 'casino', label = 'Kazino garažas', coords = vector3(895.0, -1.7, 78.76), heading = 328.0, spawn = vector4(909.1, -6.9, 78.76, 147.0) },
+    --- Cayo Perico (vieši garažai)
+    { id = 'cayo_vehicle', label = 'Cayo Perico garažas', garageType = 'car', coords = vector3(4519.86, -4514.64, 4.50), heading = 28.0, spawn = vector4(4512.63, -4516.42, 4.17, 27.77) },
+    { id = 'cayo_heli', label = 'Cayo Perico malūnsparnių garažas', garageType = 'heli', coords = vector3(4489.08, -4453.93, 4.22), heading = 200.0, spawn = vector4(4489.08, -4453.93, 6.50, 200.0), blipSprite = 43, blipColor = 3 },
+    { id = 'cayo_boat', label = 'Cayo Perico laivų garažas', garageType = 'boat', coords = vector3(4930.77, -5145.10, 2.47), heading = 70.0, spawn = vector4(4933.00, -5135.00, 0.12, 65.0), blipSprite = 410, blipColor = 3 },
     --- Policijos garažai (tik police + tarnyba) – tas pats UI kaip kiti garažai
     { id = 'pd_ls_main', label = 'Policijos garažas', coords = vector3(460.1003, -986.7195, 25.6998), heading = 269.0115, spawn = vector4(460.1003, -986.7195, 25.6998, 269.0115), policeOnly = true, hideBlip = true },
     { id = 'pd_davis', label = 'Policijos garažas (Davis)', coords = vector3(383.0487, -1616.0627, 29.2921), heading = 52.1940, spawn = vector4(383.0487, -1616.0627, 29.2921, 52.1940), policeOnly = true, hideBlip = true },

@@ -247,3 +247,54 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   font-size: 11px;
   color: rgba(233, 228, 255, 0.45);
 }
+
+.amp-quiz {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 9999;
+}
+.amp-quiz.hidden { display: none; }
+.amp-quiz-box {
+  width: min(520px, 92vw);
+  background: linear-gradient(160deg, #1a1028 0%, #120a1c 100%);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: 14px;
+  padding: 22px 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+}
+.amp-quiz-step {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a78bfa;
+  margin-bottom: 8px;
+}
+.amp-quiz-box h3 {
+  font-size: 18px;
+  color: #f3e8ff;
+  margin: 0 0 16px;
+  line-height: 1.35;
+}
+.amp-quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.amp-quiz-options button {
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  background: rgba(124, 58, 237, 0.12);
+  color: #ede9fe;
+  cursor: pointer;
+  font-size: 14px;
+}
+.amp-quiz-options button:hover {
+  background: rgba(124, 58, 237, 0.28);
+  border-color: rgba(167, 139, 250, 0.55);
+}

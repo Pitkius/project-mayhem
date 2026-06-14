@@ -123,3 +123,81 @@ QBCore.Commands.Add('addmoney', 'Admin: prideti pinigu sau (cash/bank)', {
     TriggerClientEvent('QBCore:Notify', source, ('Prideta $%s i %s'):format(amount, moneyType), 'success')
 end, 'admin')
 
+QBCore.Commands.Add('s', 'Sukti — matoma chate ir virš galvos', {
+    { name = 'žinutė', help = 'Tekstas kurį nori sukti' },
+}, false, function(source, args)
+    if #args < 1 then
+        TriggerClientEvent('QBCore:Notify', source, 'Naudojimas: /s tekstas', 'error')
+        return
+    end
+
+    local Player = QBCore.Functions.GetPlayer(source)
+    local name = playerDisplayName(source, Player)
+    local ped = GetPlayerPed(source)
+    if not ped or ped == 0 then return end
+
+    local pCoords = GetEntityCoords(ped)
+    local msg = table.concat(args, ' '):gsub('[~<].-[>~]', '')
+    if msg == '' then
+        TriggerClientEvent('QBCore:Notify', source, 'Tuščia žinutė.', 'error')
+        return
+    end
+
+    local range = 35.0
+    for _, playerId in ipairs(QBCore.Functions.GetPlayers()) do
+        local targetPed = GetPlayerPed(playerId)
+        if targetPed and targetPed ~= 0 then
+            local tCoords = GetEntityCoords(targetPed)
+            if targetPed == ped or #(pCoords - tCoords) <= range then
+                TriggerClientEvent('fivempro_basics:client:showShout', playerId, source, name, msg)
+            end
+        end
+    end
+end, 'user')
+
+local staffTags = {}
+
+local function getStaffTagInfo(src)
+    if QBCore.Functions.HasPermission(src, 'god') then
+        return 'Savininkas', { 220, 50, 50 }
+    elseif QBCore.Functions.HasPermission(src, 'admin') then
+        return 'Adminas', { 255, 140, 0 }
+    elseif QBCore.Functions.HasPermission(src, 'mod') then
+        return 'Moderatorius', { 70, 160, 255 }
+    end
+end
+
+local function syncStaffTags(target)
+    TriggerClientEvent('fivempro_basics:client:syncStaffTags', target or -1, staffTags)
+end
+
+QBCore.Commands.Add('tag', 'Staff žymė virš galvos (įjungti/išjungti)', {}, false, function(source)
+    local label, color = getStaffTagInfo(source)
+    if not label then
+        TriggerClientEvent('QBCore:Notify', source, 'Neturi staff teisių.', 'error')
+        return
+    end
+
+    if staffTags[source] then
+        staffTags[source] = nil
+        TriggerClientEvent('QBCore:Notify', source, 'Staff žymė išjungta.', 'primary')
+    else
+        staffTags[source] = { label = label, color = color }
+        TriggerClientEvent('QBCore:Notify', source, ('Staff žymė įjungta: %s'):format(label), 'success')
+    end
+    syncStaffTags()
+end, 'mod')
+
+AddEventHandler('playerDropped', function()
+    local src = source
+    if staffTags[src] then
+        staffTags[src] = nil
+        syncStaffTags()
+    end
+end)
+
+AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
+    if not Player or not Player.PlayerData then return end
+    syncStaffTags(Player.PlayerData.source)
+end)
+

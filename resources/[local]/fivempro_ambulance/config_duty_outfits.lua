@@ -73,6 +73,30 @@ Config.DutyOutfits = {
         },
     },
     {
+        label = 'GMP kelnės #3 (A)',
+        description = 'male · tik kelnės',
+        category = 'uniform_pants',
+        minGrade = 0,
+        armour = 0,
+        male = {
+            components = {
+                [4] = { collection = 'mp_m_pdvyrai', draw = 0, tex = 0 },
+            },
+        },
+    },
+    {
+        label = 'GMP kelnės #3 (A)',
+        description = 'female · tik kelnės',
+        category = 'uniform_pants',
+        minGrade = 0,
+        armour = 0,
+        female = {
+            components = {
+                [4] = { collection = 'mp_f_pdvyrai', draw = 0, tex = 0 },
+            },
+        },
+    },
+    {
         label = 'GMP viršus #1 (A)',
         description = 'male · viršutinė dalis (rankos suderintos)',
         category = 'uniform_top',

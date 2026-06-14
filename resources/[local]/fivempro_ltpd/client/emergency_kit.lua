@@ -6,6 +6,8 @@ local TRACKED = {} --- [vehicle] = { supportsNative }
 local Ec = Config.EmergencyVehicle or {}
 local RESET_ON_EXIT = Ec.resetWhenLeaveDriverSeat ~= false
 
+local EMS_JOB = 'ambulance'
+
 local function isPdJobName(name)
     return name == Config.JobName
 end
@@ -13,6 +15,15 @@ end
 local function pdOnDuty()
     local P = QBCore.Functions.GetPlayerData()
     return P and P.job and isPdJobName(P.job.name) and P.job.onduty
+end
+
+local function emsOnDuty()
+    local P = QBCore.Functions.GetPlayerData()
+    return P and P.job and P.job.name == EMS_JOB and P.job.onduty
+end
+
+local function emergencyOnDuty()
+    return pdOnDuty() or emsOnDuty()
 end
 
 local function hasGradePerm(minGrade)
@@ -132,10 +143,10 @@ end
 local function readVehicleStateBag(vehicle)
     local bag = Entity(vehicle).state
     if bag == nil then return 'off', false end
-    local mode = bag.ltPdSirenMode or 'off'
+    local mode = bag.ltPdSirenMode or bag.ltEmsSirenMode or 'off'
     if type(mode) ~= 'string' then mode = 'off' end
     mode = mode:lower()
-    local kit = bag.ltPdKit == true
+    local kit = bag.ltPdKit == true or bag.ltEmsKit == true
     return mode, kit
 end
 
@@ -153,10 +164,11 @@ local function applyNativeForEveryone(vehicle, mode)
     end
     --- lights ir full naudoja GTA sirenos šviesas
     SetVehicleSiren(vehicle, true)
+    local muted = Entity(vehicle).state.fpSirenMuted == true
     if mode == 'lights' then
         SetVehicleHasMutedSirens(vehicle, true)
     elseif mode == 'full' then
-        SetVehicleHasMutedSirens(vehicle, false)
+        SetVehicleHasMutedSirens(vehicle, muted)
     end
 end
 
@@ -212,8 +224,11 @@ local function onAnyPdBag(_, bagName)
 end
 
 AddStateBagChangeHandler('ltPdSirenMode', '', onAnyPdBag)
+AddStateBagChangeHandler('ltEmsSirenMode', '', onAnyPdBag)
 
 AddStateBagChangeHandler('ltPdKit', '', onAnyPdBag)
+AddStateBagChangeHandler('ltEmsKit', '', onAnyPdBag)
+AddStateBagChangeHandler('fpSirenMuted', '', onAnyPdBag)
 
 CreateThread(function()
     --- Laikinai palaiko natyvias sirenas užrakinant „lights/full“ prieš GTA resetą
@@ -231,7 +246,7 @@ CreateThread(function()
                         SetVehicleHasMutedSirens(veh, true)
                     elseif mode == 'full' then
                         SetVehicleSiren(veh, true)
-                        SetVehicleHasMutedSirens(veh, false)
+                        SetVehicleHasMutedSirens(veh, Entity(veh).state.fpSirenMuted == true)
                     elseif mode == 'sound' then
                         stopNativeSirenVisual(veh)
                     end
@@ -262,9 +277,12 @@ CreateThread(function()
     end
 end)
 
---- Sceninė sirena („garsas tik“ civilinei TP arba tarnybinei kai pasirinkta tik sirena).
+--- Sceninė sirena – garsą valdo fivempro_siren_controller (tonai WAIL/YELP/PRIORITY).
 CreateThread(function()
     while true do
+        if GetResourceState('fivempro_siren_controller') == 'started' then
+            Wait(1200)
+        else
         Wait(780)
         for veh, meta in pairs(TRACKED) do
             if not DoesEntityExist(veh) then
@@ -283,6 +301,7 @@ CreateThread(function()
                 end
             end
         end
+        end
     end
 end)
 
@@ -294,12 +313,17 @@ CreateThread(function()
         local veh = GetVehiclePedIsIn(ped, false)
         if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
             lastVehAsDriver = veh
-            if pdOnDuty() then ingestFromEntity(veh) end
+            if emergencyOnDuty() then ingestFromEntity(veh) end
         elseif lastVehAsDriver ~= 0 then
-            if RESET_ON_EXIT and pdOnDuty() and DoesEntityExist(lastVehAsDriver) then
+            if RESET_ON_EXIT and DoesEntityExist(lastVehAsDriver) then
                 local netId = safeVehicleNetId(lastVehAsDriver)
                 if netId ~= 0 then
-                    TriggerServerEvent('fivempro_ltpd:server:clearPdEmergencyOnExit', netId)
+                    if pdOnDuty() then
+                        TriggerServerEvent('fivempro_ltpd:server:clearPdEmergencyOnExit', netId)
+                    end
+                    if emsOnDuty() then
+                        TriggerServerEvent('fivempro_siren:server:clearEmsEmergencyOnExit', netId)
+                    end
                 end
             end
             if DoesEntityExist(lastVehAsDriver) then ingestFromEntity(lastVehAsDriver) end
@@ -324,34 +348,10 @@ local function openSirenModesMenu()
         )
     end
     ingestFromEntity(veh)
-    if GetResourceState('qb-menu') ~= 'started' then
-        return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
+    if GetResourceState('fivempro_siren_controller') == 'started' then
+        return exports['fivempro_siren_controller']:OpenSirenController('police')
     end
-    local menu = {
-        { header = 'PD šviestuvai ir sirenos', txt = 'Iškvietimo kodas veikia kol perjungi į off', isMenuHeader = true },
-        {
-            header = '① Tik žibintai (silent)',
-            txt = 'Mirksinčios tarnybinės šviesos – be garso.',
-            params = { event = 'fivempro_ltpd:client:setPdEmergencyMode', args = { mode = 'lights' } },
-        },
-        {
-            header = '② Tik sirena (garsas)',
-            txt = 'Garsinė sirena — civilinėje mašinoje kartu žibinti scenoje.',
-            params = { event = 'fivempro_ltpd:client:setPdEmergencyMode', args = { mode = 'sound' } },
-        },
-        {
-            header = '③ Šviesos + sirena (pilnas)',
-            txt = 'Pilnas režimas (tarnybinei mašinai – GTA sirenos).',
-            params = { event = 'fivempro_ltpd:client:setPdEmergencyMode', args = { mode = 'full' } },
-        },
-        {
-            header = 'Išjungti',
-            txt = 'Visi kodai išjungiami.',
-            params = { event = 'fivempro_ltpd:client:setPdEmergencyMode', args = { mode = 'off' } },
-        },
-        { header = '< Užverti meniu', params = { event = 'qb-menu:client:closeMenu' } },
-    }
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+    return QBCore.Functions.Notify('Reikia fivempro_siren_controller resurso.', 'error')
 end
 
 RegisterNetEvent('fivempro_ltpd:client:setPdEmergencyMode', function(data)

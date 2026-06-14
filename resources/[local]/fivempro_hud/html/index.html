@@ -371,15 +371,21 @@
         <div class="hm-layout">
         <div class="hm-shell">
             <header class="hm-header">
-                <div class="hm-brand">
-                    <span class="hm-brand-mark" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none"><path d="M4 18L12 4l8 14H4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 14h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                    </span>
-                    <span class="hm-brand-name">fivemprojektas</span>
-                </div>
-                <div class="hm-title-block">
-                    <h1>HUD NUSTATYMAI</h1>
-                    <p>Pritaikykite savo ekrano sąsają</p>
+                <div class="hm-header-top">
+                    <div class="hm-brand">
+                        <span class="hm-brand-mark" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none"><path d="M4 18L12 4l8 14H4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 14h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        </span>
+                        <span class="hm-brand-name">fivemprojektas</span>
+                    </div>
+                    <div class="hm-title-block">
+                        <h1>HUD NUSTATYMAI</h1>
+                        <p>Pritaikykite savo ekrano sąsają</p>
+                    </div>
+                    <div class="hm-header-actions">
+                        <span id="hmSavedBadge" class="hm-saved hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>IŠSAUGOTA</span>
+                        <button type="button" id="btnCloseMenu" class="hm-close" title="Uždaryti">×</button>
+                    </div>
                 </div>
                 <nav class="hm-tabs" id="hmTabs">
                     <button type="button" class="hm-tab is-active" data-tab="hud"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>HUD</button>
@@ -388,14 +394,10 @@
                     <button type="button" class="hm-tab" data-tab="minimap"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM10 5.47l4 1.4v11.66l-4-1.4V5.47z"/></svg>MINIMAP</button>
                     <button type="button" class="hm-tab" data-tab="other"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>KITI</button>
                 </nav>
-                <div class="hm-header-actions">
-                    <span id="hmSavedBadge" class="hm-saved hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>IŠSAUGOTA</span>
-                    <button type="button" id="btnCloseMenu" class="hm-close" title="Uždaryti">×</button>
-                </div>
             </header>
 
             <div class="hm-main">
-                <aside class="hm-sidebar">
+                <aside class="hm-sidebar" id="hmSidebar">
                     <h3 class="hm-section-title">HUD ELEMENTAI</h3>
                     <div class="hm-elements">
                         <label class="hm-el" data-opt="health">
@@ -458,9 +460,8 @@
                         <button type="button" id="btnSavePreset" class="hm-btn hm-btn-primary">IŠSAUGOTI</button>
                     </div>
                 </aside>
-            </div>
 
-            <footer class="hm-footer">
+                <div class="hm-panels" id="hmPanels">
                 <div class="hm-panel" data-panel="layout">
                     <h4>HUD IŠDĖSTYMAS</h4>
                     <label class="hm-field">Išdėstymo stilius
@@ -540,7 +541,8 @@
                     <button type="button" id="btnImport" class="hm-btn hm-btn-ghost hm-btn-block">IMPORTUOTI</button>
                     <textarea id="hmImportArea" class="hm-import-area hidden" placeholder="Įklijuokite JSON čia…"></textarea>
                 </div>
-            </footer>
+                </div>
+            </div>
         </div>
 
         <section class="hm-preview-wrap">

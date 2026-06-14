@@ -184,9 +184,29 @@ html, body {
 
 .atm-nav-icon {
     width: 20px;
-    text-align: center;
-    font-size: 16px;
-    opacity: 0.9;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: currentColor;
+    opacity: 0.92;
+}
+
+.atm-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: currentColor;
+}
+
+.atm-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
 .atm-help-btn {
@@ -207,14 +227,14 @@ html, body {
     transition: background 0.2s, transform 0.15s;
 }
 
+.atm-help-btn .atm-icon {
+    width: 18px;
+    height: 18px;
+}
+
 .atm-help-btn span {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    background: rgba(191, 95, 255, 0.2);
-    font-size: 13px;
+    flex: 1;
+    text-align: left;
 }
 
 .atm-help-btn:hover {
@@ -385,6 +405,9 @@ html, body {
 }
 
 .atm-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 28px;
     height: 28px;
     border: none;
@@ -399,6 +422,11 @@ html, body {
 .atm-copy-btn:hover {
     background: rgba(255, 255, 255, 0.24);
     transform: scale(1.05);
+}
+
+.atm-copy-btn .atm-icon {
+    width: 16px;
+    height: 16px;
 }
 
 .atm-card-number {
@@ -418,7 +446,7 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     min-height: 88px;
     padding: 12px 8px;
     border-radius: var(--radius-sm);
@@ -432,6 +460,12 @@ html, body {
     transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
+.atm-quick-btn .atm-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--neon-purple);
+}
+
 .atm-quick-btn:hover {
     background: rgba(191, 95, 255, 0.14);
     border-color: rgba(191, 95, 255, 0.45);
@@ -439,8 +473,9 @@ html, body {
     box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2);
 }
 
-.atm-quick-btn .icon {
-    font-size: 22px;
+.atm-tx-icon .atm-icon {
+    width: 18px;
+    height: 18px;
 }
 
 /* —— Recent tx sidebar —— */
@@ -610,7 +645,68 @@ html, body {
     border-color: rgba(191, 95, 255, 0.5);
 }
 
-/* —— Forms —— */
+.atm-custom-amount {
+    margin-top: 4px;
+}
+
+.atm-custom-amount label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.atm-custom-amount-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.atm-custom-amount-row input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+    background: rgba(8, 6, 14, 0.65);
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.atm-custom-amount-row input:focus {
+    border-color: rgba(191, 95, 255, 0.55);
+    box-shadow: 0 0 0 3px rgba(191, 95, 255, 0.12);
+}
+
+.atm-custom-amount-row .atm-btn {
+    min-width: 120px;
+    white-space: nowrap;
+}
+
+.atm-recipient-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--success-bg);
+    border: 1px solid rgba(74, 222, 128, 0.25);
+    font-size: 13px;
+    color: var(--success);
+}
+
+.atm-recipient-preview .atm-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--success);
+}
 .atm-form {
     display: flex;
     flex-direction: column;
@@ -647,16 +743,6 @@ html, body {
     box-shadow: 0 0 0 3px rgba(191, 95, 255, 0.18);
 }
 
-.atm-recipient-preview {
-    padding: 12px 14px;
-    border-radius: var(--radius-sm);
-    background: var(--success-bg);
-    border: 1px solid rgba(74, 222, 128, 0.25);
-    font-size: 13px;
-    color: var(--success);
-}
-
-/* —— Buttons —— */
 .atm-btn {
     display: inline-flex;
     align-items: center;

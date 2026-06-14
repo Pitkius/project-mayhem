@@ -87,6 +87,40 @@ local function isRangerVehicleModel(modelName)
     return t[modelName] == true
 end
 
+local function getGarageConfig(garageId)
+    for _, g in ipairs(Config.Garages or {}) do
+        if g.id == garageId then return g end
+    end
+end
+
+local function getGarageTypeFilter(garageId)
+    local g = getGarageConfig(garageId)
+    return g and g.garageType or nil
+end
+
+local function getVehicleDbType(modelName)
+    modelName = tostring(modelName or ''):lower()
+    local v = QBCore.Shared.Vehicles[modelName]
+    if v and v.type then return tostring(v.type):lower() end
+    return 'automobile'
+end
+
+local function matchesGarageType(garageType, vehicleType)
+    if not garageType or garageType == '' then return true end
+    garageType = tostring(garageType):lower()
+    vehicleType = tostring(vehicleType or ''):lower()
+    if garageType == 'heli' then return vehicleType == 'heli' end
+    if garageType == 'boat' then return vehicleType == 'boat' end
+    return vehicleType ~= 'heli' and vehicleType ~= 'boat' and vehicleType ~= 'plane'
+end
+
+local function garageTypeMismatchMessage(garageType)
+    garageType = tostring(garageType or ''):lower()
+    if garageType == 'heli' then return 'Čia galima tik malūnsparnius.' end
+    if garageType == 'boat' then return 'Čia galima tik laivus.' end
+    return 'Čia galima tik automobilius ir motociklus.'
+end
+
 QBCore.Functions.CreateCallback('fivempro_garages:server:getPlayerVehicles', function(source, cb, garageId)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then return cb({}) end
@@ -97,6 +131,7 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:getPlayerVehicles', fun
     local emsgGarage = isEmsGarageId(garageId)
     local taxiGarage = isTaxiGarageId(garageId)
     local rangerGarage = isRangerGarageId(garageId)
+    local garageType = getGarageTypeFilter(garageId)
     if pdGarage and not isPoliceJobPlayer(Player) then
         return cb({})
     end
@@ -135,6 +170,8 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:getPlayerVehicles', fun
             include = isTaxiVehicleModel(modelLower) and tostring(r.garage or '') == garageId
         elseif rangerGarage then
             include = isRangerVehicleModel(modelLower) and tostring(r.garage or '') == garageId
+        elseif garageType then
+            include = matchesGarageType(garageType, getVehicleDbType(modelLower))
         end
         if include then
             vehicles[#vehicles + 1] = {
@@ -219,6 +256,11 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:spawnVehicle', function
         if tostring(row.garage or '') ~= garageId then
             return cb({ ok = false, message = 'Masina saugoma kitame garaže.' })
         end
+    else
+        local garageType = getGarageTypeFilter(garageId)
+        if garageType and not matchesGarageType(garageType, getVehicleDbType(row.vehicle)) then
+            return cb({ ok = false, message = garageTypeMismatchMessage(garageType) })
+        end
     end
 
     if tonumber(row.state) ~= 1 then
@@ -300,6 +342,11 @@ QBCore.Functions.CreateCallback('fivempro_garages:server:parkVehicle', function(
     end
     if isRangerGarageId(garageId) and not isRangerVehicleModel(rowPark.vehicle) then
         return cb({ ok = false, message = 'Į šį garažą tik gamtos apsaugos transportas.' })
+    end
+
+    local garageType = getGarageTypeFilter(garageId)
+    if garageType and not matchesGarageType(garageType, getVehicleDbType(rowPark.vehicle)) then
+        return cb({ ok = false, message = garageTypeMismatchMessage(garageType) })
     end
 
     local fuelPct = 100

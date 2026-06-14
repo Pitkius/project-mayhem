@@ -1,26 +1,50 @@
 (function () {
     const resourceName = typeof GetParentResourceName === "function" ? GetParentResourceName() : "fivempro_bank";
 
+    const ICONS = {
+        home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-8.5Z"/></svg>',
+        transfer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11M7 7 10 4M7 7l3 3M17 17H6M17 17l-3-3M17 17l-3 3"/></svg>',
+        deposit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>',
+        withdraw: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h4M7 14h6"/></svg>',
+        history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',
+        stats: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V10M12 20V4M18 20v-6"/></svg>',
+        settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>',
+        transfer_out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7H7M17 7l-3-3M17 7l-3 3"/><path d="M7 17h10M7 17l3 3M7 17l3-3"/></svg>',
+        transfer_in: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17h10M7 17l3 3M7 17l3-3"/><path d="M17 7H7M17 7l-3-3M17 7l-3 3"/></svg>',
+        payment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z"/><path d="M3 10h18"/></svg>',
+        salary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 1.5"/></svg>',
+        fine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 16h.01"/><path d="M10.3 4.5 2.7 18a1 1 0 0 0 .9 1.5h16.8a1 1 0 0 0 .9-1.5L13.7 4.5a1 1 0 0 0-1.8 0Z"/></svg>',
+        other: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v16H7z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
+        copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
+        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 6"/></svg>',
+        help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 4.2 1.8c-.8.7-1.2 1.1-1.2 2.2M12 16.5h.01"/></svg>',
+    };
+
     const NAV = [
-        { id: "home", icon: "🏠", label: "Pagrindinis" },
-        { id: "transfer", icon: "💸", label: "Pervesti" },
-        { id: "deposit", icon: "🏦", label: "Įnešti" },
-        { id: "withdraw", icon: "💵", label: "Išsiimti" },
-        { id: "history", icon: "📋", label: "Istorija" },
-        { id: "stats", icon: "📊", label: "Statistika" },
-        { id: "settings", icon: "⚙️", label: "Nustatymai" },
+        { id: "home", icon: "home", label: "Pagrindinis" },
+        { id: "transfer", icon: "transfer", label: "Pervesti" },
+        { id: "deposit", icon: "deposit", label: "Įnešti" },
+        { id: "withdraw", icon: "withdraw", label: "Išsiimti" },
+        { id: "history", icon: "history", label: "Istorija" },
+        { id: "stats", icon: "stats", label: "Statistika" },
+        { id: "settings", icon: "settings", label: "Nustatymai" },
     ];
 
     const TX_ICON = {
-        transfer_out: "💸",
-        transfer_in: "💰",
-        deposit: "🏦",
-        withdraw: "💵",
-        payment: "🏪",
-        salary: "💰",
-        fine: "⚠️",
-        other: "📄",
+        transfer_out: "transfer_out",
+        transfer_in: "transfer_in",
+        deposit: "deposit",
+        withdraw: "withdraw",
+        payment: "payment",
+        salary: "salary",
+        fine: "fine",
+        other: "other",
     };
+
+    function icon(name, extraClass = "") {
+        const svg = ICONS[name] || ICONS.other;
+        return `<span class="atm-icon${extraClass ? ` ${extraClass}` : ""}" aria-hidden="true">${svg}</span>`;
+    }
 
     const FILTER_CHIPS = [
         { id: "all", label: "Visos" },
@@ -46,6 +70,8 @@
         settings: { sounds: true, hideBalance: false },
         numpad: { value: "", action: null },
         lookupTimer: null,
+        withdrawAmount: "",
+        depositAmount: "",
     };
 
     const $ = (sel) => document.querySelector(sel);
@@ -149,13 +175,17 @@
         nav.innerHTML = NAV.map(
             (t) =>
                 `<button type="button" class="atm-nav-btn${state.tab === t.id ? " active" : ""}" data-tab="${t.id}">
-                    <span class="atm-nav-icon">${t.icon}</span>${esc(t.label)}
+                    <span class="atm-nav-icon">${icon(t.icon)}</span>${esc(t.label)}
                 </button>`
         ).join("");
         nav.querySelectorAll("[data-tab]").forEach((btn) => {
             btn.addEventListener("click", () => switchTab(btn.dataset.tab));
         });
-        $(".atm-help-btn")?.addEventListener("click", () => switchTab("help"));
+        const helpBtn = $(".atm-help-btn");
+        if (helpBtn) {
+            helpBtn.innerHTML = `${icon("help")}<span>Reikia pagalbos?</span>`;
+            helpBtn.onclick = () => switchTab("help");
+        }
     }
 
     function switchTab(tab) {
@@ -169,9 +199,9 @@
         const income = txIncome(tx);
         const amt = Number(tx.amount) || 0;
         const cls = amt > 0 ? "pos" : amt < 0 ? "neg" : income ? "pos" : "neg";
-        const icon = TX_ICON[tx.tx_type] || TX_ICON.other;
+        const iconName = TX_ICON[tx.tx_type] || TX_ICON.other;
         return `<div class="atm-tx-item">
-            <div class="atm-tx-icon ${income ? "income" : "expense"}">${icon}</div>
+            <div class="atm-tx-icon ${income ? "income" : "expense"}">${icon(iconName)}</div>
             <div>
                 <div class="atm-tx-title">${esc(tx.title || "Operacija")}</div>
                 <div class="atm-tx-time">${esc(formatTxTime(tx.created_at))}</div>
@@ -206,7 +236,7 @@
                             <div class="atm-card-label">Sąskaitos numeris</div>
                             <div class="atm-account-row">
                                 <span>${esc(d.accountNumber || "LT-0000-0000")}</span>
-                                <button type="button" class="atm-copy-btn" data-copy="${esc(d.accountNumber || "")}" title="Kopijuoti">⎘</button>
+                                <button type="button" class="atm-copy-btn" data-copy="${esc(d.accountNumber || "")}" title="Kopijuoti">${icon("copy")}</button>
                             </div>
                         </div>
                         <div>
@@ -216,10 +246,10 @@
                     </div>
                 </div>
                 <div class="atm-quick-actions">
-                    <button type="button" class="atm-quick-btn" data-goto="transfer"><span class="icon">💸</span>Pervesti</button>
-                    <button type="button" class="atm-quick-btn" data-goto="deposit"><span class="icon">🏦</span>Įnešti</button>
-                    <button type="button" class="atm-quick-btn" data-goto="withdraw"><span class="icon">💵</span>Išsiimti</button>
-                    <button type="button" class="atm-quick-btn" data-goto="history"><span class="icon">📋</span>Istorija</button>
+                    <button type="button" class="atm-quick-btn" data-goto="transfer">${icon("transfer")}<span>Pervesti</span></button>
+                    <button type="button" class="atm-quick-btn" data-goto="deposit">${icon("deposit")}<span>Įnešti</span></button>
+                    <button type="button" class="atm-quick-btn" data-goto="withdraw">${icon("withdraw")}<span>Išsiimti</span></button>
+                    <button type="button" class="atm-quick-btn" data-goto="history">${icon("history")}<span>Istorija</span></button>
                 </div>
             </div>
             <div class="atm-recent">
@@ -238,11 +268,17 @@
         const d = state.data || {};
         return `<div class="atm-screen">
             <h2 class="atm-screen-title">Išėmimas</h2>
-            <p class="atm-screen-sub">Pasirinkite sumą arba įveskite kitą</p>
+            <p class="atm-screen-sub">Pasirinkite sumą arba įveskite norimą išėmimą</p>
             <div class="atm-cash-banner">Banko balansas: <strong>${fmtMoney(d.bank)}</strong></div>
             <div class="atm-amount-grid">
                 ${WITHDRAW_PRESETS.map((a) => `<button type="button" class="atm-amount-btn" data-withdraw="${a}">${a} €</button>`).join("")}
-                <button type="button" class="atm-amount-btn wide" data-numpad="withdraw">Kita suma</button>
+            </div>
+            <div class="atm-custom-amount">
+                <label for="withdrawCustom">Kita suma (€)</label>
+                <div class="atm-custom-amount-row">
+                    <input type="number" id="withdrawCustom" min="1" step="1" inputmode="numeric" placeholder="Įveskite sumą" value="${esc(state.withdrawAmount)}" />
+                    <button type="button" class="atm-btn primary" id="withdrawCustomBtn">Išsiimti</button>
+                </div>
             </div>
         </div>`;
     }
@@ -257,7 +293,13 @@
             <div class="atm-amount-grid">
                 ${DEPOSIT_PRESETS.map((a) => `<button type="button" class="atm-amount-btn${cash >= a ? "" : ""}" data-deposit="${a}" ${cash < a ? "disabled style='opacity:0.4'" : ""}>${a} €</button>`).join("")}
                 <button type="button" class="atm-amount-btn highlight" data-deposit-all="1" ${cash < 1 ? "disabled style='opacity:0.4'" : ""}>Viską</button>
-                <button type="button" class="atm-amount-btn wide" data-numpad="deposit">Kita suma</button>
+            </div>
+            <div class="atm-custom-amount">
+                <label for="depositCustom">Kita suma (€)</label>
+                <div class="atm-custom-amount-row">
+                    <input type="number" id="depositCustom" min="1" step="1" inputmode="numeric" placeholder="Įveskite sumą" value="${esc(state.depositAmount)}" />
+                    <button type="button" class="atm-btn primary" id="depositCustomBtn">Įnešti</button>
+                </div>
             </div>
         </div>`;
     }
@@ -265,7 +307,7 @@
     function renderTransfer() {
         const t = state.transfer;
         const preview = t.recipient
-            ? `<div class="atm-recipient-preview">✓ ${esc(t.recipient.name)} · ${esc(t.recipient.accountNumber || t.recipient.citizenid)}</div>`
+            ? `<div class="atm-recipient-preview">${icon("check")} ${esc(t.recipient.name)} · ${esc(t.recipient.accountNumber || t.recipient.citizenid)}</div>`
             : "";
         return `<div class="atm-screen">
             <h2 class="atm-screen-title">Pervedimas</h2>
@@ -430,7 +472,18 @@
         host.querySelectorAll("[data-withdraw]").forEach((btn) => {
             btn.addEventListener("click", () => confirmWithdraw(Number(btn.dataset.withdraw)));
         });
-        host.querySelector('[data-numpad="withdraw"]')?.addEventListener("click", () => openNumpad("withdraw"));
+        const input = host.querySelector("#withdrawCustom");
+        const submit = () => {
+            state.withdrawAmount = input?.value || "";
+            confirmWithdraw(state.withdrawAmount);
+        };
+        host.querySelector("#withdrawCustomBtn")?.addEventListener("click", submit);
+        input?.addEventListener("input", (e) => {
+            state.withdrawAmount = e.target.value;
+        });
+        input?.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") submit();
+        });
     }
 
     function bindDepositEvents(host) {
@@ -441,7 +494,18 @@
             const cash = Number(state.data?.cash) || 0;
             if (cash > 0) confirmDeposit(cash);
         });
-        host.querySelector('[data-numpad="deposit"]')?.addEventListener("click", () => openNumpad("deposit"));
+        const input = host.querySelector("#depositCustom");
+        const submit = () => {
+            state.depositAmount = input?.value || "";
+            confirmDeposit(state.depositAmount);
+        };
+        host.querySelector("#depositCustomBtn")?.addEventListener("click", submit);
+        input?.addEventListener("input", (e) => {
+            state.depositAmount = e.target.value;
+        });
+        input?.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") submit();
+        });
     }
 
     function bindTransferEvents(host) {
@@ -625,12 +689,14 @@
     async function doWithdraw(amount) {
         const res = await nui("bankWithdraw", { amount });
         if (!res?.ok) return showToast(res?.message || "Nepavyko.");
+        state.withdrawAmount = "";
         showSuccess("Sėkmingai!", `Sėkmingai išimta ${fmtMoney(amount)}`, "home");
     }
 
     async function doDeposit(amount) {
         const res = await nui("bankDeposit", { amount });
         if (!res?.ok) return showToast(res?.message || "Nepavyko.");
+        state.depositAmount = "";
         showSuccess("Sėkmingai!", `Sėkmingai įnešta ${fmtMoney(amount)}`, "home");
     }
 

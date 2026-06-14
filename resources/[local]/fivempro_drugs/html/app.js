@@ -169,6 +169,12 @@ window.addEventListener("message", (e) => {
   if (msg.action === "minigameAdvanced") {
     runAdvancedGame(msg.data && msg.data.rounds ? msg.data.rounds : 3);
   }
+  if (msg.action === "ampQuizShow") {
+    showAmpQuiz(msg.data || {});
+  }
+  if (msg.action === "ampQuizHide") {
+    hideAmpQuiz();
+  }
 });
 
 document.getElementById("btnClose").onclick = () => post("close");
@@ -244,3 +250,33 @@ document.addEventListener("keydown", (e) => {
     post("skillResult", { success: false });
   }
 });
+
+const ampQuiz = document.getElementById("ampQuiz");
+const ampQuizStep = document.getElementById("ampQuizStep");
+const ampQuizQuestion = document.getElementById("ampQuizQuestion");
+const ampQuizOptions = document.getElementById("ampQuizOptions");
+
+function hideAmpQuiz() {
+  if (ampQuiz) ampQuiz.classList.add("hidden");
+  if (ampQuizOptions) ampQuizOptions.innerHTML = "";
+}
+
+function showAmpQuiz(data) {
+  if (!ampQuiz) return;
+  const d = data || {};
+  if (ampQuizStep) {
+    ampQuizStep.textContent = `Klausimas ${d.index || 1}/${d.total || 3}`;
+  }
+  if (ampQuizQuestion) ampQuizQuestion.textContent = d.question || "—";
+  if (ampQuizOptions) {
+    ampQuizOptions.innerHTML = "";
+    (d.options || []).forEach((opt, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = opt;
+      btn.onclick = () => post("ampQuizAnswer", { choice: i + 1 });
+      ampQuizOptions.appendChild(btn);
+    });
+  }
+  ampQuiz.classList.remove("hidden");
+}

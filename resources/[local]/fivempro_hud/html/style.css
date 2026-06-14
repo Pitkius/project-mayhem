@@ -314,11 +314,11 @@ body.shape-square .fill {
 }
 
 .hm-shell {
-    width: min(520px, 38vw);
+    width: min(600px, 42vw);
     flex: 0 0 auto;
     max-height: 94vh;
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto 1fr;
     gap: 0;
     background: linear-gradient(160deg, rgba(10, 8, 22, 0.97) 0%, rgba(16, 13, 32, 0.94) 45%, rgba(12, 10, 26, 0.98) 100%);
     border: 1px solid rgba(167, 139, 250, 0.32);
@@ -377,8 +377,12 @@ body.shape-square .fill {
     animation: hm-rise-in 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
 }
 
-.hudmenu.is-open .hm-footer {
-    animation: hm-rise-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
+.hudmenu.is-open .hm-panels.is-visible {
+    animation: hm-rise-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
+}
+
+.hudmenu.is-open .hm-panels .hm-panel.is-visible {
+    animation: hm-rise-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
 }
 
 .hudmenu.is-open .hm-el {
@@ -411,13 +415,19 @@ body.shape-square .fill {
 }
 
 .hm-header {
-    display: grid;
-    grid-template-columns: auto minmax(160px, 220px) 1fr auto;
-    align-items: center;
-    gap: 20px;
-    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 18px 14px;
     border-bottom: 1px solid rgba(167, 139, 250, 0.16);
     background: linear-gradient(180deg, rgba(12, 9, 24, 0.88), rgba(8, 6, 18, 0.55));
+}
+
+.hm-header-top {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 16px;
 }
 
 .hm-brand {
@@ -456,6 +466,7 @@ body.shape-square .fill {
     font-weight: 800;
     letter-spacing: 0.08em;
     color: #f8fafc;
+    white-space: nowrap;
 }
 
 .hm-title-block p {
@@ -466,9 +477,21 @@ body.shape-square .fill {
 
 .hm-tabs {
     display: flex;
-    gap: 2px;
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(167, 139, 250, 0.35) transparent;
+}
+
+.hm-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.hm-tabs::-webkit-scrollbar-thumb {
+    background: rgba(167, 139, 250, 0.35);
+    border-radius: 999px;
 }
 
 .hm-tab {
@@ -485,6 +508,8 @@ body.shape-square .fill {
     border-radius: 10px;
     cursor: pointer;
     transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .hm-tab svg {
@@ -556,11 +581,10 @@ body.shape-square .fill {
 }
 
 .hm-main {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
-    min-height: 320px;
-    max-height: 58vh;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: calc(94vh - 130px);
     overflow: hidden;
 }
 
@@ -569,9 +593,35 @@ body.shape-square .fill {
     flex-direction: column;
     gap: 10px;
     padding: 14px;
-    border-right: 1px solid rgba(167, 139, 250, 0.12);
     background: rgba(8, 6, 18, 0.35);
     overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.hm-sidebar.is-hidden {
+    display: none;
+}
+
+.hm-panels {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 14px;
+}
+
+.hm-panels.is-visible {
+    display: block;
+}
+
+.hm-panels .hm-panel {
+    display: none;
+    height: 100%;
+}
+
+.hm-panels .hm-panel.is-visible {
+    display: flex;
 }
 
 .hm-section-title {
@@ -732,8 +782,8 @@ body.shape-square .fill {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    flex: 1 1 auto;
-    min-width: 0;
+    flex: 1 1 58%;
+    min-width: 320px;
     min-height: 0;
     padding: 14px 16px 14px 0;
     overflow: hidden;
@@ -748,12 +798,24 @@ body.shape-square .fill {
 .hm-preview {
     position: relative;
     flex: 1;
-    min-height: 360px;
+    min-height: 420px;
     border-radius: 16px;
     overflow: hidden;
     border: 1px solid rgba(167, 139, 250, 0.28);
     background: #06080f;
     box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.35);
+}
+
+.hm-preview.hm-pv-live-view::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 32%;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.42), transparent);
+    pointer-events: none;
+    z-index: 2;
 }
 
 .hm-preview.hm-pv-live-view {
@@ -778,9 +840,9 @@ body.shape-square .fill {
 
 .hm-preview.hm-pv-live .hm-pv-hud-stage .hud-bl-cluster {
     position: absolute;
-    left: 2.5%;
-    bottom: 24%;
-    transform: scale(calc(var(--pv-hud-base-scale, 0.72) * var(--pv-hud-scale, 1)));
+    left: 1.8%;
+    bottom: 20%;
+    transform: scale(calc(var(--pv-hud-base-scale, 0.92) * var(--pv-hud-scale, 1)));
     transform-origin: left bottom;
     opacity: 1 !important;
     pointer-events: none;
@@ -788,12 +850,26 @@ body.shape-square .fill {
 
 .hm-preview.hm-pv-live .hm-pv-hud-stage .hud-br-cluster {
     position: absolute;
-    right: 2.5%;
-    bottom: 24%;
-    transform: scale(calc(var(--pv-hud-base-scale, 0.72) * var(--pv-hud-scale, 1)));
+    right: 1.8%;
+    bottom: 20%;
+    transform: scale(calc(var(--pv-hud-base-scale, 0.92) * var(--pv-hud-scale, 1)));
     transform-origin: right bottom;
     opacity: 1 !important;
     pointer-events: none;
+}
+
+.hm-preview.hm-pv-live .hm-pv-hud-stage .hud-rings {
+    grid-template-columns: repeat(3, 56px);
+    gap: 12px 14px;
+}
+
+.hm-preview.hm-pv-live .hm-pv-hud-stage .ring-graphic {
+    width: 56px;
+    height: 56px;
+}
+
+.hm-preview.hm-pv-live .hm-pv-hud-stage .ring-pct {
+    font-size: 10px;
 }
 
 .hm-preview.hm-pv-live .hm-pv-hud-stage .hud-root {
@@ -1450,23 +1526,14 @@ body.inventory-open > .hud-br-cluster {
     font-style: normal;
 }
 
-.hm-footer {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    padding: 12px 14px 14px;
-    border-top: 1px solid rgba(167, 139, 250, 0.12);
-    background: rgba(8, 6, 18, 0.4);
-}
-
 .hm-panel {
-    padding: 10px 12px;
+    padding: 12px 14px;
     border-radius: 12px;
     background: rgba(18, 16, 34, 0.72);
     border: 1px solid rgba(167, 139, 250, 0.1);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 

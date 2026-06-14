@@ -58,6 +58,7 @@ dependencies {
     'qb-menu',
     'qb-inventory',
     'fivempro_dispatch',
+    'fivempro_siren_controller',
 }
 
 server_exports {

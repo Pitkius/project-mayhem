@@ -41,6 +41,23 @@ local function canUseGarageEntry(garage)
     return true
 end
 
+local function vehicleMatchesGarageType(veh, garageType)
+    if not garageType or garageType == '' then return true end
+    if not veh or veh == 0 then return false end
+    local class = GetVehicleClass(veh)
+    garageType = tostring(garageType):lower()
+    if garageType == 'heli' then return class == 15 end
+    if garageType == 'boat' then return class == 14 end
+    return class ~= 14 and class ~= 15 and class ~= 16
+end
+
+local function garageTypeMismatchNotify(garageType)
+    garageType = tostring(garageType or ''):lower()
+    if garageType == 'heli' then return QBCore.Functions.Notify('Čia galima tik malūnsparnius.', 'error') end
+    if garageType == 'boat' then return QBCore.Functions.Notify('Čia galima tik laivus.', 'error') end
+    return QBCore.Functions.Notify('Čia galima tik automobilius ir motociklus.', 'error')
+end
+
 local GARAGE_SPRITE = 357
 local GARAGE_COLOR = 3
 local GARAGE_SCALE = 0.75
@@ -421,10 +438,15 @@ RegisterNetEvent('fivempro_garages:client:spawnVehicle', function(data)
 end)
 
 RegisterNetEvent('fivempro_garages:client:parkVehicle', function(data)
+    local garageCfg
     if data and data.garageId then
         for _, g in ipairs(Config.Garages or {}) do
-            if g.id == data.garageId and not canUseGarageEntry(g) then
-                return QBCore.Functions.Notify('Tik tarnybiniam darbui ir būnant duty.', 'error')
+            if g.id == data.garageId then
+                garageCfg = g
+                if not canUseGarageEntry(g) then
+                    return QBCore.Functions.Notify('Tik tarnybiniam darbui ir būnant duty.', 'error')
+                end
+                break
             end
         end
     end
@@ -434,6 +456,9 @@ RegisterNetEvent('fivempro_garages:client:parkVehicle', function(data)
     end
 
     local veh = GetVehiclePedIsIn(ped, false)
+    if garageCfg and garageCfg.garageType and not vehicleMatchesGarageType(veh, garageCfg.garageType) then
+        return garageTypeMismatchNotify(garageCfg.garageType)
+    end
     if GetPedInVehicleSeat(veh, -1) ~= ped then
         return QBCore.Functions.Notify('Tu turi būti vairuotojas', 'error')
     end
@@ -566,10 +591,10 @@ local function createGarageMapBlips()
     for _, garage in ipairs(Config.Garages) do
         if not garage.hideBlip then
             local blip = AddBlipForCoord(garage.coords.x, garage.coords.y, garage.coords.z)
-            SetBlipSprite(blip, GARAGE_SPRITE)
+            SetBlipSprite(blip, garage.blipSprite or GARAGE_SPRITE)
             SetBlipDisplay(blip, 4)
             SetBlipScale(blip, GARAGE_SCALE)
-            SetBlipColour(blip, GARAGE_COLOR)
+            SetBlipColour(blip, garage.blipColor or GARAGE_COLOR)
             SetBlipAsShortRange(blip, true)
             exports['fivempro_fonts']:SetBlipName(blip, garage.label)
             local cat = Config.GarageMapBlipCategory

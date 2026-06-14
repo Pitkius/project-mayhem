@@ -234,7 +234,7 @@ QBShared.Items = {
     -- Eat ITEMS (vienas pagrindinis maistas + užkandžiai)
     burger                       = { name = 'burger', label = 'Sumuštinis', weight = 220, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Skrudintas sumuštinis' },
     twerks_candy                 = { name = 'twerks_candy', label = 'Šokoladas', weight = 100, type = 'item', image = 'snikkel_candy.png', unique = false, useable = true, shouldClose = true, description = 'Šokolado batonėlis' },
-    chips                        = { name = 'chips', label = 'Čipsai', weight = 70, type = 'item', image = 'twerks_candy.png', unique = false, useable = true, shouldClose = true, description = 'Traškūs čipsai' },
+    chips                        = { name = 'chips', label = 'Čipsai', weight = 70, type = 'item', image = 'chips.png', unique = false, useable = true, shouldClose = true, description = 'Traškūs čipsai' },
 
     -- Drink ITEMS (vanduo + gazuotas gėrimas + kava)
     water_bottle                 = { name = 'water_bottle', label = 'Vanduo', weight = 500, type = 'item', image = 'water_bottle.png', unique = false, useable = true, shouldClose = true, description = 'Buteliukas vandens' },
@@ -491,6 +491,7 @@ QBShared.Items = {
     rabbit_fur                   = { name = 'rabbit_fur', label = 'Triušio kailis', weight = 200, type = 'item', image = 'rabbit_fur.png', unique = false, useable = false, shouldClose = false, description = 'Triušio kailis.' },
 
     -- fivempro_drugs — 1 etapas: žaliava (nuskinta / gryna)
+    weed_seed                    = { name = 'weed_seed', label = 'Kanapių sėkla', weight = 5, type = 'item', image = 'weed_seed.png', unique = false, useable = true, shouldClose = true, description = 'Pasodink bet kur — auga į žolės lapus.' },
     weed_leaf                    = { name = 'weed_leaf', label = 'Nuskintos žolės lapai', weight = 50, type = 'item', image = 'weed_leaf.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
     coca_leaf                    = { name = 'coca_leaf', label = 'Nuskinti kokos lapai', weight = 50, type = 'item', image = 'coca_leaf.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
     poppy_flower                 = { name = 'poppy_flower', label = 'Nuskinti aguonų žiedai', weight = 40, type = 'item', image = 'poppy_flower.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },

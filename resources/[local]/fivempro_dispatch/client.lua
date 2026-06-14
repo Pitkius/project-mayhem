@@ -95,7 +95,6 @@ end)
 
 RegisterNetEvent('fivempro_dispatch:client:panic', function(data)
     if currentService ~= 'police' then return end
-    QBCore.Functions.Notify(('PANIC: %s %s'):format(data.callsign or '', data.officerName or 'Pareigūnas'), 'error', 10000)
     PlaySoundFrontend(-1, 'TIMER_STOP', 'HUD_MINI_GAME_SOUNDSET', true)
     local b = AddBlipForCoord((data.x or 0.0) + 0.0, (data.y or 0.0) + 0.0, (data.z or 0.0) + 0.0)
     SetBlipSprite(b, 161)

@@ -31,11 +31,22 @@ function fmtMoney(n) {
   return `$${Number(n || 0).toLocaleString('lt-LT')}`;
 }
 
+function formatVehicleLabel(vehicle) {
+  const brand = (vehicle?.brand || '').trim();
+  const name = (vehicle?.name || vehicle?.model || '').trim();
+  if (!brand) return name;
+  const brandLower = brand.toLowerCase();
+  const nameLower = name.toLowerCase();
+  if (nameLower === brandLower) return brand;
+  if (nameLower.startsWith(`${brandLower} `)) return name;
+  return `${brand} ${name}`;
+}
+
 function setSelectedVehicle(vehicle) {
   state.selectedVehicle = vehicle;
   if (!vehicle) return;
 
-  selectedNameEl.textContent = `${vehicle.brand || ''} ${vehicle.name || vehicle.model}`.trim();
+  selectedNameEl.textContent = formatVehicleLabel(vehicle);
   selectedPriceEl.textContent = fmtMoney(vehicle.price);
   statMaxEl.textContent = vehicle.stats?.maxKmh ?? 0;
   stat0100El.textContent = vehicle.stats?.zeroToHundred ?? 0;
@@ -95,7 +106,7 @@ function renderCars() {
 
     const info = document.createElement('div');
     info.className = 'car-info';
-    info.innerHTML = `<div>${veh.brand || ''} ${veh.name || veh.model}</div><div class="car-price">${fmtMoney(veh.price)}</div>`;
+    info.innerHTML = `<div>${formatVehicleLabel(veh)}</div><div class="car-price">${fmtMoney(veh.price)}</div>`;
     card.appendChild(info);
 
     carsEl.appendChild(card);

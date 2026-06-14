@@ -5,6 +5,8 @@ local currentStationId = nil
 local testPed = 0
 local supplyShopPed = 0
 local supplyShopBlip = nil
+local productBuyerPeds = {}
+local productBuyerBlips = {}
 local mapBlips = {}
 
 local function nui(msg, data)
@@ -211,8 +213,26 @@ local function runAdvancedMinigame(onDone)
     SetNuiFocus(true, true)
 end
 
-local function getStationById(stationId)
+local function getAllStations()
+    local list = {}
     for _, st in ipairs(Config.Stations or {}) do
+        list[#list + 1] = st
+    end
+    local lab = Config.HeroinLab
+    if lab and lab.stations then
+        for _, st in ipairs(lab.stations) do
+            list[#list + 1] = st
+        end
+    end
+    local ampLab = Config.AmpMobileLab
+    if ampLab and ampLab.packStation then
+        list[#list + 1] = ampLab.packStation
+    end
+    return list
+end
+
+local function getStationById(stationId)
+    for _, st in ipairs(getAllStations()) do
         if st.id == stationId then return st end
     end
 end
@@ -488,6 +508,70 @@ local function setupStationBlips()
         if bl and DoesBlipExist(bl) then RemoveBlip(bl) end
     end
     mapBlips = {}
+
+    local function addCfgBlip(coords, blipCfg, fallbackLabel)
+        if not coords or not blipCfg or blipCfg.enabled == false then return end
+        createMapBlip({
+            coords = coords,
+            sprite = blipCfg.sprite,
+            color = blipCfg.color,
+            scale = blipCfg.scale,
+            shortRange = blipCfg.shortRange ~= false,
+            label = blipCfg.label or fallbackLabel,
+        })
+    end
+
+    -- Nelegalūs reikmenys (Grove)
+    local supply = Config.SupplyShopNPC
+    if supply and supply.enabled ~= false and supply.coords then
+        addCfgBlip(
+            (supply.blip and supply.blip.coords) or vector3(supply.coords.x, supply.coords.y, supply.coords.z),
+            supply.blip or { enabled = true, label = supply.label },
+            supply.label
+        )
+    end
+
+    -- Žolės reikmenys
+    local weedShop = Config.WeedGrowShop
+    if weedShop and weedShop.enabled ~= false and weedShop.coords then
+        addCfgBlip(
+            vector3(weedShop.coords.x, weedShop.coords.y, weedShop.coords.z),
+            weedShop.blip or { enabled = true, label = weedShop.label },
+            weedShop.label
+        )
+    end
+
+    -- Grybų rinkimas
+    for _, field in ipairs(Config.MushroomFields or {}) do
+        if field.center then
+            addCfgBlip(field.center, field.blip, field.blip and field.blip.label or 'Grybų rinkimas')
+        end
+    end
+
+    -- Heroino laboratorija
+    local heroinLab = Config.HeroinLab
+    if heroinLab and heroinLab.blip then
+        addCfgBlip(heroinLab.blip.coords, heroinLab.blip, heroinLab.blip.label or 'Heroino laboratorija')
+    end
+
+    -- Amfetamino laboratorija
+    local ampLab = Config.AmpMobileLab
+    if ampLab and ampLab.enabled ~= false and ampLab.blip then
+        local bc = ampLab.blip.coords or (ampLab.lab and ampLab.lab.coords)
+        addCfgBlip(bc, ampLab.blip, ampLab.blip.label or 'Amfetamino laboratorija')
+    end
+
+    -- Produktų supirkėjai
+    for _, cfg in pairs(Config.ProductBuyerNPCs or {}) do
+        if cfg and cfg.enabled ~= false and cfg.coords then
+            addCfgBlip(
+                vector3(cfg.coords.x, cfg.coords.y, cfg.coords.z),
+                cfg.blip,
+                cfg.label
+            )
+        end
+    end
+
     if not Config.ShowStationBlips then return end
     local hub = Config.DevHub
     local def = Config.StationBlip or {}
@@ -505,12 +589,16 @@ end
 
 local function setupStations()
     if GetResourceState('qb-target') ~= 'started' then return end
-    for _, st in ipairs(Config.Stations or {}) do
+    for _, st in ipairs(getAllStations()) do
         local isWeapon = st.mode == 'weapon'
+        local targetLabel = st.label
+        if not targetLabel then
+            targetLabel = isWeapon and ('Ginklų dirbtuvė: %s'):format(st.id) or ('Gamybos stotis: %s'):format(st.id)
+        end
         local options = {
             {
                 icon = isWeapon and 'fas fa-tools' or 'fas fa-flask',
-                label = isWeapon and ('Ginklų dirbtuvė: %s'):format(st.label) or ('Gamybos stotis: %s'):format(st.label),
+                label = targetLabel,
                 action = function()
                     openStationUi(st.id)
                 end,
@@ -603,6 +691,55 @@ local function openMaterialShop()
     end)
 end
 
+local function openProductSellMenu(buyerId)
+    buyerId = tostring(buyerId or '')
+    local cfg = Config.ProductBuyerNPCs and Config.ProductBuyerNPCs[buyerId]
+    if not cfg or cfg.enabled == false then return end
+    local prices = cfg.prices or {}
+    local rows = {
+        { header = cfg.label or 'Supirkėjas', txt = 'Kainos už 1 vnt.', isMenuHeader = true },
+    }
+    local sorted = {}
+    for itemName, price in pairs(prices) do
+        sorted[#sorted + 1] = { item = itemName, price = tonumber(price) or 0 }
+    end
+    table.sort(sorted, function(a, b) return tostring(a.item) < tostring(b.item) end)
+    for _, row in ipairs(sorted) do
+        if row.price > 0 then
+            local shared = QBCore.Shared.Items[row.item]
+            local label = shared and shared.label or row.item
+            rows[#rows + 1] = {
+                header = ('%s — $%s / vnt.'):format(label, row.price),
+                txt = row.item,
+                isMenuHeader = true,
+            }
+        end
+    end
+    rows[#rows + 1] = {
+        header = cfg.sellAllLabel or 'Parduoti viską',
+        txt = 'Visi supirkėjo priimami produktai iš inventoriaus',
+        params = {
+            isAction = true,
+            event = function()
+                TriggerServerEvent('fivempro_drugs:server:sellProductAll', buyerId)
+            end,
+        },
+    }
+    rows[#rows + 1] = {
+        header = 'Uždaryti',
+        params = { isAction = true, event = function() TriggerEvent('qb-menu:client:closeMenu') end },
+    }
+    if GetResourceState('qb-menu') == 'started' then
+        TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+    else
+        TriggerServerEvent('fivempro_drugs:server:sellProductAll', buyerId)
+    end
+end
+
+RegisterNetEvent('fivempro_drugs:client:openProductSellMenu', function(buyerId)
+    openProductSellMenu(buyerId)
+end)
+
 local function openTestMenu()
     if not Config.EnableDrugTestNPC then return end
     local rows = {
@@ -659,33 +796,69 @@ local function setNpcBlip(blip, label)
 end
 
 local function createSupplyShopBlip()
-    local cfg = Config.SupplyShopNPC
-    if not cfg or not cfg.blip or cfg.blip.enabled == false then return end
-    local bc = cfg.blip.coords or (cfg.coords and vector3(cfg.coords.x, cfg.coords.y, cfg.coords.z))
-    if not bc then return end
-    supplyShopBlip = AddBlipForCoord(bc.x, bc.y, bc.z)
-    SetBlipSprite(supplyShopBlip, cfg.blip.sprite or 52)
-    SetBlipColour(supplyShopBlip, cfg.blip.color or 27)
-    SetBlipScale(supplyShopBlip, cfg.blip.scale or 0.8)
-    SetBlipAsShortRange(supplyShopBlip, true)
-    setNpcBlip(supplyShopBlip, cfg.blip.label or cfg.label)
+    -- Blipai kuriami centralizuotai per setupStationBlips()
 end
 
 local function spawnSupplyShopNpc()
-    if not Config.EnableDrugTestNPC or not Config.SupplyShopNPC then return end
-    supplyShopPed = spawnHubPed(Config.SupplyShopNPC, function(ped)
+    local cfg = Config.SupplyShopNPC
+    if not cfg or cfg.enabled == false or not cfg.coords then return end
+    supplyShopPed = spawnHubPed(cfg, function(ped)
+        exports['qb-target']:AddTargetEntity(ped, {
+            options = {
+                {
+                    icon = cfg.targetIcon or 'fas fa-store',
+                    label = cfg.label or 'Nelegalūs reikmenys',
+                    action = openMaterialShop,
+                },
+            },
+            distance = (cfg.maxDistance or Config.InteractDistance or 2.5) + 1.0,
+        })
+    end)
+    createSupplyShopBlip()
+end
+
+local function spawnTestSupplyShopNpc()
+    if not Config.EnableDrugTestNPC or not Config.TestSupplyShopNPC then return end
+    local cfg = Config.TestSupplyShopNPC
+    spawnHubPed(cfg, function(ped)
         exports['qb-target']:AddTargetEntity(ped, {
             options = {
                 {
                     icon = 'fas fa-store',
-                    label = Config.SupplyShopNPC.label or 'Nelegalūs reikmenys',
+                    label = cfg.label or 'Nelegalūs reikmenys (test)',
                     action = openMaterialShop,
                 },
             },
             distance = (Config.InteractDistance or 2.5) + 1.0,
         })
     end)
-    createSupplyShopBlip()
+end
+
+local function createProductBuyerBlip(buyerId, cfg)
+    -- Blipai kuriami centralizuotai per setupStationBlips()
+end
+
+local function spawnProductBuyerNpcs()
+    for buyerId, cfg in pairs(Config.ProductBuyerNPCs or {}) do
+        if cfg and cfg.enabled ~= false then
+            local id = buyerId
+            productBuyerPeds[id] = spawnHubPed(cfg, function(ped)
+                exports['qb-target']:AddTargetEntity(ped, {
+                    options = {
+                        {
+                            icon = cfg.targetIcon or 'fas fa-dollar-sign',
+                            label = cfg.label or 'Supirkėjas',
+                            action = function()
+                                openProductSellMenu(id)
+                            end,
+                        },
+                    },
+                    distance = (cfg.maxDistance or Config.InteractDistance or 2.5) + 0.5,
+                })
+            end)
+            createProductBuyerBlip(id, cfg)
+        end
+    end
 end
 
 local function spawnTestNpc()
@@ -725,7 +898,7 @@ CreateThread(function()
                         1.15, 1.15, 0.25, 120, 80, 220, 140, false, false, 2, false, nil, nil, false)
                 end
             end
-            for _, key in ipairs({ 'TestNPC', 'SupplyShopNPC' }) do
+            for _, key in ipairs({ 'TestNPC', 'TestSupplyShopNPC' }) do
                 local npc = Config[key]
                 if npc and npc.coords then
                     DrawMarker(2, npc.coords.x, npc.coords.y, npc.coords.z + 1.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -746,6 +919,8 @@ CreateThread(function()
     setupStations()
     spawnTestNpc()
     spawnSupplyShopNpc()
+    spawnTestSupplyShopNpc()
+    spawnProductBuyerNpcs()
 end)
 
 AddEventHandler('onResourceStop', function(res)
@@ -766,4 +941,11 @@ AddEventHandler('onResourceStop', function(res)
         RemoveBlip(supplyShopBlip)
         supplyShopBlip = nil
     end
+    for _, ped in pairs(productBuyerPeds) do
+        if ped ~= 0 and DoesEntityExist(ped) then
+            DeleteEntity(ped)
+        end
+    end
+    productBuyerPeds = {}
+    productBuyerBlips = {}
 end)

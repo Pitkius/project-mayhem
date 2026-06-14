@@ -28,72 +28,124 @@ window.GtavMapCore = (function () {
     return Number.isFinite(n) ? n : fallback;
   }
 
-  /** gy = intercept + slope * v  (mažiausios kvadratų) */
-  function linearFit(xs, ys) {
-    const n = xs.length;
-    if (n < 1) return { intercept: 0, slope: 1 };
-    if (n === 1) return { intercept: ys[0] - xs[0], slope: 1 };
-    let sumX = 0;
-    let sumY = 0;
-    let sumXX = 0;
-    let sumXY = 0;
+  function solve3x3(A, b) {
+    const M = A.map((row) => row.slice());
+    const x = b.slice();
+    const n = 3;
     for (let i = 0; i < n; i += 1) {
-      const x = xs[i];
-      const y = ys[i];
-      sumX += x;
-      sumY += y;
-      sumXX += x * x;
-      sumXY += x * y;
+      let piv = i;
+      for (let r = i + 1; r < n; r += 1) {
+        if (Math.abs(M[r][i]) > Math.abs(M[piv][i])) piv = r;
+      }
+      [M[i], M[piv]] = [M[piv], M[i]];
+      [x[i], x[piv]] = [x[piv], x[i]];
+      const d = M[i][i];
+      if (Math.abs(d) < 1e-12) return null;
+      for (let j = i; j < n; j += 1) M[i][j] /= d;
+      x[i] /= d;
+      for (let r = 0; r < n; r += 1) {
+        if (r === i) continue;
+        const f = M[r][i];
+        for (let j = i; j < n; j += 1) M[r][j] -= f * M[i][j];
+        x[r] -= f * x[i];
+      }
     }
-    const denom = n * sumXX - sumX * sumX;
-    if (Math.abs(denom) < 1e-9) return { intercept: sumY / n, slope: 0 };
-    const slope = (n * sumXY - sumX * sumY) / denom;
-    const intercept = (sumY - slope * sumX) / n;
-    return { intercept, slope };
+    return x;
+  }
+
+  function fitAffineGameToNorm(points, targetKey) {
+    const ata = [
+      [0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],
+    ];
+    const atb = [0, 0, 0];
+    points.forEach((p) => {
+      const row = [p.gx, p.gy, 1];
+      const t = p[targetKey];
+      for (let i = 0; i < 3; i += 1) {
+        atb[i] += row[i] * t;
+        for (let j = 0; j < 3; j += 1) ata[i][j] += row[i] * row[j];
+      }
+    });
+    return solve3x3(ata, atb);
   }
 
   /**
    * Kalibracija: žinomos vietos ant PNG (u,v ∈ [0,1], v=0 šiaurė).
-   * Iš jų apskaičiuojami coordMin/coordMax — tiksliau nei rankinis offsetY.
+   * Afini transformacija (gx,gy) → (u,v) — tiksliau nei atskiri X/Y linijiniai fit'ai.
    */
   function applyCalibration(cfg, points) {
-    if (!Array.isArray(points) || points.length < 2) return cfg;
+    if (!Array.isArray(points) || points.length < 3) return cfg;
 
-    const u = [];
-    const v = [];
-    const gx = [];
-    const gy = [];
-
+    const clean = [];
     points.forEach((p) => {
       const px = num(p.gx, NaN);
       const py = num(p.gy, NaN);
       const pu = num(p.u, NaN);
       const pv = num(p.v, NaN);
       if (!Number.isFinite(px) || !Number.isFinite(py) || !Number.isFinite(pu) || !Number.isFinite(pv)) return;
-      gx.push(px);
-      gy.push(py);
-      u.push(Math.max(0, Math.min(1, pu)));
-      v.push(Math.max(0, Math.min(1, pv)));
+      clean.push({
+        gx: px,
+        gy: py,
+        u: Math.max(0, Math.min(1, pu)),
+        v: Math.max(0, Math.min(1, pv)),
+      });
     });
 
-    if (gx.length < 2) return cfg;
+    if (clean.length < 3) return cfg;
 
-    const fitX = linearFit(u, gx);
-    const fitY = linearFit(v, gy);
+    const coeffsU = fitAffineGameToNorm(clean, "u");
+    const coeffsV = fitAffineGameToNorm(clean, "v");
+    if (!coeffsU || !coeffsV) return cfg;
 
-    const coordMinX = fitX.intercept;
-    const coordMaxX = fitX.intercept + fitX.slope;
-    const coordMaxY = fitY.intercept;
-    const coordMinY = fitY.intercept + fitY.slope;
+    cfg.affineU = coeffsU;
+    cfg.affineV = coeffsV;
+    return cfg;
+  }
 
-    if (coordMaxX - coordMinX > 100 && coordMaxY - coordMinY > 100) {
-      cfg.coordMinX = coordMinX;
-      cfg.coordMaxX = coordMaxX;
-      cfg.coordMinY = coordMinY;
-      cfg.coordMaxY = coordMaxY;
+  function gameToNormUV(gx, gy, cfg) {
+    if (cfg.affineU && cfg.affineV) {
+      const u = cfg.affineU[0] * gx + cfg.affineU[1] * gy + cfg.affineU[2];
+      const v = cfg.affineV[0] * gx + cfg.affineV[1] * gy + cfg.affineV[2];
+      return [
+        Math.max(0, Math.min(1, u)),
+        Math.max(0, Math.min(1, v)),
+      ];
     }
 
-    return cfg;
+    const rangeX = cfg.coordMaxX - cfg.coordMinX || 1;
+    const rangeY = cfg.coordMaxY - cfg.coordMinY || 1;
+    let u = (gx - cfg.coordMinX) / rangeX;
+    let v = (gy - cfg.coordMinY) / rangeY;
+    if (cfg.flipY === true) v = 1 - v;
+    return [Math.max(0, Math.min(1, u)), Math.max(0, Math.min(1, v))];
+  }
+
+  function normUVToGame(u, v, cfg) {
+    if (cfg.affineU && cfg.affineV) {
+      const rhsU = u - cfg.affineU[2];
+      const rhsV = v - cfg.affineV[2];
+      const a = cfg.affineU[0];
+      const b = cfg.affineU[1];
+      const c = cfg.affineV[0];
+      const d = cfg.affineV[1];
+      const det = a * d - b * c;
+      if (Math.abs(det) < 1e-12) return { x: 0, y: 0 };
+      return {
+        x: (d * rhsU - b * rhsV) / det,
+        y: (-c * rhsU + a * rhsV) / det,
+      };
+    }
+
+    let tY = v;
+    if (cfg.flipY === true) tY = 1 - tY;
+    const rangeX = cfg.coordMaxX - cfg.coordMinX || 1;
+    const rangeY = cfg.coordMaxY - cfg.coordMinY || 1;
+    return {
+      x: cfg.coordMinX + u * rangeX,
+      y: cfg.coordMinY + tY * rangeY,
+    };
   }
 
   function normalizeMapConfig(cfg, resourceName, defaultImageFile) {
@@ -127,19 +179,8 @@ window.GtavMapCore = (function () {
       imageUrl: nuiImageUrl(file, resourceName),
     };
 
-    if (Array.isArray(t.calibration) && t.calibration.length >= 2) {
+    if (Array.isArray(t.calibration) && t.calibration.length >= 3) {
       applyCalibration(out, t.calibration);
-    }
-
-    if (t.syncGameBounds !== false && Array.isArray(t.calibration) && t.calibration.length >= 2) {
-      out.minX = out.coordMinX;
-      out.minY = out.coordMinY;
-      out.maxX = out.coordMaxX;
-      out.maxY = out.coordMaxY;
-      out.viewMinX = out.coordMinX;
-      out.viewMinY = out.coordMinY;
-      out.viewMaxX = out.coordMaxX;
-      out.viewMaxY = out.coordMaxY;
     }
 
     return out;
@@ -158,7 +199,7 @@ window.GtavMapCore = (function () {
     return L.latLngBounds([cfg.minY + oy, cfg.minX + ox], [cfg.maxY + oy, cfg.maxX + ox]);
   }
 
-  /** GTA (x,y) → Leaflet [lat, lng] — lat=Y, lng=X. Su kalibracija: 1:1 game koordinatės. */
+  /** GTA (x,y) → Leaflet [lat, lng] — lat=Y, lng=X. v=0 šiaurė (viršus PNG). */
   function gameToLatLng(gx, gy, cfg) {
     if (!cfg) return [Number(gy) || 0, Number(gx) || 0];
     const x = Number(gx);
@@ -171,40 +212,26 @@ window.GtavMapCore = (function () {
     const oy = cfg.offsetY || 0;
     const scaleX = cfg.scaleX || 1;
     const scaleY = cfg.scaleY || 1;
-
-    const rangeX = cfg.coordMaxX - cfg.coordMinX || 1;
-    const rangeY = cfg.coordMaxY - cfg.coordMinY || 1;
     const mapRangeX = cfg.maxX - cfg.minX || 1;
     const mapRangeY = cfg.maxY - cfg.minY || 1;
 
-    let tX = (x - cfg.coordMinX) / rangeX;
-    let tY = (y - cfg.coordMinY) / rangeY;
-    tX = Math.max(0, Math.min(1, tX));
-    tY = Math.max(0, Math.min(1, tY));
-    if (cfg.flipY === true) tY = 1 - tY;
-
-    const lng = cfg.minX + tX * mapRangeX * scaleX + ox;
-    const lat = cfg.minY + tY * mapRangeY * scaleY + oy;
+    const uv = gameToNormUV(x, y, cfg);
+    const lng = cfg.minX + uv[0] * mapRangeX * scaleX + ox;
+    const lat = cfg.maxY - uv[1] * mapRangeY * scaleY + oy;
     return [lat, lng];
   }
 
   function latLngToGame(lat, lng, cfg) {
     if (!cfg) return { x: Number(lng) || 0, y: Number(lat) || 0 };
-    const rangeX = cfg.coordMaxX - cfg.coordMinX || 1;
-    const rangeY = cfg.coordMaxY - cfg.coordMinY || 1;
     const mapRangeX = cfg.maxX - cfg.minX || 1;
     const mapRangeY = cfg.maxY - cfg.minY || 1;
     const scaleX = cfg.scaleX || 1;
     const scaleY = cfg.scaleY || 1;
-    let tX = (Number(lng) - (cfg.offsetX || 0) - cfg.minX) / (mapRangeX * scaleX);
-    let tY = (Number(lat) - (cfg.offsetY || 0) - cfg.minY) / (mapRangeY * scaleY);
-    tX = Math.max(0, Math.min(1, tX));
-    tY = Math.max(0, Math.min(1, tY));
-    if (cfg.flipY === true) tY = 1 - tY;
-    return {
-      x: cfg.coordMinX + tX * rangeX,
-      y: cfg.coordMinY + tY * rangeY,
-    };
+    let u = (Number(lng) - (cfg.offsetX || 0) - cfg.minX) / (mapRangeX * scaleX);
+    let v = (cfg.maxY - (Number(lat) - (cfg.offsetY || 0))) / (mapRangeY * scaleY);
+    u = Math.max(0, Math.min(1, u));
+    v = Math.max(0, Math.min(1, v));
+    return normUVToGame(u, v, cfg);
   }
 
   function gameBoundsLatLng(cfg) {

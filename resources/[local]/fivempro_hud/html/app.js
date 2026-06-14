@@ -104,7 +104,15 @@ const TILE_COLORS = {
   amber: { health: "#ef4444", armor: "#d8b4fe", hunger: "#fbbf24", thirst: "#38bdf8", stamina: "#fbcfe8", voice: "#fde68a" },
 };
 
-const PREVIEW_HUD_SCALE = 0.72;
+const PREVIEW_HUD_SCALE = 0.92;
+
+const TAB_ROUTES = {
+  hud: { sidebar: true, panel: null },
+  colors: { sidebar: false, panel: "colors" },
+  notif: { sidebar: false, panel: "other" },
+  minimap: { sidebar: false, panel: "layout" },
+  other: { sidebar: false, panel: "export" },
+};
 
 let previewClustersHome = null;
 let previewClustersMounted = false;
@@ -540,13 +548,19 @@ function flashSavedBadge() {
 }
 
 function highlightTabPanel(tab) {
+  const route = TAB_ROUTES[tab] || TAB_ROUTES.hud;
   document.querySelectorAll(".hm-tab").forEach((t) => {
     t.classList.toggle("is-active", t.getAttribute("data-tab") === tab);
   });
-  const map = { hud: null, colors: "colors", notif: "other", minimap: "layout", other: "export" };
-  document.querySelectorAll(".hm-panel").forEach((p) => {
+  const sidebar = document.getElementById("hmSidebar");
+  const panelsWrap = document.getElementById("hmPanels");
+  if (sidebar) sidebar.classList.toggle("is-hidden", !route.sidebar);
+  if (panelsWrap) panelsWrap.classList.toggle("is-visible", !!route.panel);
+  document.querySelectorAll(".hm-panels .hm-panel").forEach((p) => {
     const key = p.getAttribute("data-panel");
-    p.classList.toggle("is-highlight", map[tab] === key);
+    const visible = route.panel === key;
+    p.classList.toggle("is-visible", visible);
+    p.classList.toggle("is-highlight", visible);
   });
 }
 

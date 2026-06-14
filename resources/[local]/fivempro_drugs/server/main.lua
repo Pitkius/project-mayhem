@@ -28,8 +28,34 @@ local function getRecipe(productId, st)
     return (Config.Recipes or {})[productId] or {}
 end
 
-local function getStation(id)
+local function getAllStations()
+    local list = {}
     for _, st in ipairs(Config.Stations or {}) do
+        list[#list + 1] = st
+    end
+    local lab = Config.HeroinLab
+    if lab and lab.stations then
+        for _, st in ipairs(lab.stations) do
+            list[#list + 1] = st
+        end
+    end
+    local ampLab = Config.AmpMobileLab
+    if ampLab and ampLab.packStation then
+        list[#list + 1] = ampLab.packStation
+    end
+    return list
+end
+
+local function stationProductAllowed(st, productId)
+    if not st or not st.products or #st.products == 0 then return true end
+    for _, pid in ipairs(st.products) do
+        if pid == productId then return true end
+    end
+    return false
+end
+
+local function getStation(id)
+    for _, st in ipairs(getAllStations()) do
         if st.id == id then return st end
     end
 end
@@ -191,22 +217,25 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:getStationUi', function(s
     local products = {}
     local pool = getStationProductPool(st)
     for pid, prod in pairs(pool) do
-        if prod.level == st.level then
-            products[#products + 1] = {
-                id = pid,
-                label = prod.label,
-                level = prod.level,
-                stage = prod.stage,
-                stageLabel = prod.stage == 'pack' and '3 · Supakuota' or '2 · Apdorojimas',
-                levelLabel = Config.LevelLabels[prod.level] or ('Lygis ' .. prod.level),
-                risk = Config.RiskLabels[prod.risk] or prod.risk,
-                craftTimeSec = (st.mode == 'weapon') and estimateWeaponCraftSec(prod) or math.floor((prod.craftTimeMs or 30000) / 1000),
-                sellBase = (st.mode == 'weapon') and 0 or prod.sellBase,
-                minigame = prod.minigame,
-                usesPrinter = productUsesPrinter(pid, st),
-                ingredients = buildRecipeStatus(Player, pid, st),
-                mode = st.mode or 'drugs',
-            }
+        if prod.level == st.level and stationProductAllowed(st, pid) then
+            local exclusive = Config.AmpExclusiveProducts and Config.AmpExclusiveProducts[pid]
+            if not exclusive or (st.products and #st.products > 0) then
+                products[#products + 1] = {
+                    id = pid,
+                    label = prod.label,
+                    level = prod.level,
+                    stage = prod.stage,
+                    stageLabel = prod.stage == 'pack' and '3 · Supakuota' or '2 · Apdorojimas',
+                    levelLabel = Config.LevelLabels[prod.level] or ('Lygis ' .. prod.level),
+                    risk = Config.RiskLabels[prod.risk] or prod.risk,
+                    craftTimeSec = (st.mode == 'weapon') and estimateWeaponCraftSec(prod) or math.floor((prod.craftTimeMs or 30000) / 1000),
+                    sellBase = (st.mode == 'weapon') and 0 or prod.sellBase,
+                    minigame = prod.minigame,
+                    usesPrinter = productUsesPrinter(pid, st),
+                    ingredients = buildRecipeStatus(Player, pid, st),
+                    mode = st.mode or 'drugs',
+                }
+            end
         end
     end
     table.sort(products, function(a, b)
@@ -230,6 +259,9 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:startCraft', function(src
     if not st or not prod then return cb({ ok = false, reason = 'Netinkami duomenys.' }) end
     if prod.level ~= st.level then
         return cb({ ok = false, reason = 'Ši stotis netinka šiam produktui.' })
+    end
+    if not stationProductAllowed(st, productId) then
+        return cb({ ok = false, reason = 'Šiame punkte negalima gaminti šio produkto.' })
     end
     if not playerNearStation(src, stationId) then
         return cb({ ok = false, reason = 'Per toli nuo stoties.' })
@@ -464,14 +496,23 @@ local function playerNearSupplyShop(src)
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return false end
     local p = GetEntityCoords(ped)
+    local maxD = (Config.InteractDistance or 2.5) + 3.0
+
+    local prodShop = Config.SupplyShopNPC
+    if prodShop and prodShop.enabled ~= false and prodShop.coords then
+        local c = prodShop.coords
+        if #(p - vector3(c.x, c.y, c.z)) <= (prodShop.maxDistance or maxD) then
+            return true
+        end
+    end
+
     if Config.EnableDrugTestNPC and Config.DevHub then
         local hub = Config.DevHub.center or Config.DevHub.blipCoords
         if hub and #(p - hub) <= 55.0 then
             return true
         end
     end
-    local maxD = (Config.InteractDistance or 2.5) + 3.0
-    for _, key in ipairs({ 'SupplyShopNPC', 'TestNPC' }) do
+    for _, key in ipairs({ 'TestSupplyShopNPC', 'TestNPC' }) do
         local cfg = Config[key]
         if cfg and cfg.coords then
             local c = cfg.coords
@@ -488,6 +529,23 @@ local function playerNearSupplyShop(src)
         end
     end
     return false
+end
+
+local function getProductBuyer(buyerId)
+    buyerId = tostring(buyerId or '')
+    local cfg = Config.ProductBuyerNPCs and Config.ProductBuyerNPCs[buyerId]
+    if not cfg or cfg.enabled == false then return nil end
+    return cfg
+end
+
+local function playerNearProductBuyer(src, buyerId)
+    local cfg = getProductBuyer(buyerId)
+    if not cfg or not cfg.coords then return false end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local p = GetEntityCoords(ped)
+    local c = cfg.coords
+    return #(p - vector3(c.x, c.y, c.z)) <= (cfg.maxDistance or 3.5) + 1.0
 end
 
 local function findMaterialShopRow(itemName)
@@ -535,11 +593,8 @@ AddEventHandler('onResourceStart', function(res)
 end)
 
 local function tryOpenMaterialShop(src)
-    if not Config.EnableDrugTestNPC then
-        return false, 'Parduotuvė išjungta (production režimas).'
-    end
     if not playerNearSupplyShop(src) then
-        return false, 'Per toli nuo parduotuvės ar dirbtuvės.'
+        return false, 'Per toli nuo parduotuvės.'
     end
     if GetResourceState('qb-inventory') ~= 'started' then
         return false, 'Inventoriaus sistema nepasiekiama.'
@@ -568,11 +623,8 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:openMaterialShop', functi
 end)
 
 QBCore.Functions.CreateCallback('fivempro_drugs:server:buyMaterial', function(src, cb, itemName, amount)
-    if not Config.EnableDrugTestNPC then
-        return cb({ ok = false, reason = 'Parduotuvė išjungta.' })
-    end
     if not playerNearSupplyShop(src) then
-        return cb({ ok = false, reason = 'Per toli nuo parduotuvės ar dirbtuvės.' })
+        return cb({ ok = false, reason = 'Per toli nuo parduotuvės.' })
     end
 
     amount = math.max(1, math.min(50, math.floor(tonumber(amount) or 1)))
@@ -651,9 +703,133 @@ RegisterNetEvent('fivempro_drugs:server:testTriggerAlert', function()
     TriggerClientEvent('QBCore:Notify', source, 'Test policijos alert išsiųstas.', 'primary')
 end)
 
+local function processProductSell(src, buyerId)
+    buyerId = tostring(buyerId or '')
+    if not playerNearProductBuyer(src, buyerId) then
+        TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo supirkėjo.', 'error')
+        return
+    end
+    local cfg = getProductBuyer(buyerId)
+    if not cfg then return end
+    local prices = cfg.prices or {}
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    local total = 0
+    local sold = 0
+    for itemName, price in pairs(prices) do
+        local unit = tonumber(price) or 0
+        if unit > 0 then
+            local data = Player.Functions.GetItemByName(itemName)
+            local amt = data and (tonumber(data.amount) or tonumber(data.count) or 0) or 0
+            if amt > 0 and Player.Functions.RemoveItem(itemName, amt, false) then
+                total = total + (unit * amt)
+                sold = sold + amt
+            end
+        end
+    end
+
+    if total <= 0 then
+        TriggerClientEvent('QBCore:Notify', src, 'Neturi produktų, kuriuos šis supirkėjas priima.', 'error')
+        return
+    end
+
+    Player.Functions.AddMoney('cash', total, ('fivempro-drugs-buyer-%s'):format(buyerId))
+    TriggerClientEvent('QBCore:Notify', src, ('Parduota %s vnt. už $%s'):format(sold, total), 'success')
+end
+
+RegisterNetEvent('fivempro_drugs:server:sellProductAll', function(buyerId)
+    processProductSell(source, buyerId)
+end)
+
+RegisterNetEvent('fivempro_drugs:server:sellAlcoholAll', function()
+    processProductSell(source, 'alcohol')
+end)
+
+local mushroomPicked = {}
+local mushroomPlayerCd = {}
+
+local function getMushroomField(id)
+    for _, field in ipairs(Config.MushroomFields or {}) do
+        if field.id == id then return field end
+    end
+end
+
+local function mushroomSpawnCoord(field, index)
+    local total = math.max(1, tonumber(field.spawnCount) or 12)
+    local radius = tonumber(field.radius) or 35.0
+    local angle = ((index - 1) / total) * (math.pi * 2.0)
+    local ring = 0.32 + (((index - 1) % 4) * 0.16)
+    local dist = radius * ring
+    local x = field.center.x + math.cos(angle) * dist
+    local y = field.center.y + math.sin(angle) * dist
+    return vector3(x, y, field.center.z)
+end
+
+RegisterNetEvent('fivempro_drugs:server:pickMushroom', function(fieldId, spawnIndex, px, py, pz)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    fieldId = tostring(fieldId or '')
+    spawnIndex = tonumber(spawnIndex)
+    if fieldId == '' or not spawnIndex then return end
+
+    local field = getMushroomField(fieldId)
+    if not field then return end
+
+    local key = ('%s:%s'):format(fieldId, spawnIndex)
+    local now = os.time()
+    if mushroomPicked[key] and mushroomPicked[key] > now then
+        TriggerClientEvent('QBCore:Notify', src, 'Čia jau nieko nėra.', 'error')
+        return
+    end
+
+    local pcoords = vector3(tonumber(px) or 0.0, tonumber(py) or 0.0, tonumber(pz) or 0.0)
+    local spawnCoords = mushroomSpawnCoord(field, spawnIndex)
+    local maxDist = (tonumber(field.pickDistance) or 2.4) + 1.5
+    if #(pcoords - spawnCoords) > maxDist then
+        TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
+        return
+    end
+
+    if #(pcoords - field.center) > (tonumber(field.radius) or 40.0) + 5.0 then
+        TriggerClientEvent('QBCore:Notify', src, 'Ne grybų lauke.', 'error')
+        return
+    end
+
+    local playerCd = tonumber(field.playerCooldownSec) or 3
+    if mushroomPlayerCd[src] and (now - mushroomPlayerCd[src]) < playerCd then return end
+    mushroomPlayerCd[src] = now
+
+    local item = field.item or 'mushroom_raw'
+    local amtMin = math.max(1, tonumber(field.amountMin) or 1)
+    local amtMax = math.max(amtMin, tonumber(field.amountMax) or 2)
+    local amount = math.random(amtMin, amtMax)
+
+    if not Player.Functions.AddItem(item, amount) then
+        TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
+        return
+    end
+
+    local respawn = math.max(30, tonumber(field.respawnSec) or 100)
+    mushroomPicked[key] = now + respawn
+
+    local itemData = QBCore.Shared.Items[item]
+    TriggerClientEvent('inventory:client:ItemBox', src, itemData, 'add', amount)
+    TriggerClientEvent('QBCore:Notify', src, ('Surinkta %sx %s'):format(amount, itemData and itemData.label or item), 'success')
+    TriggerClientEvent('fivempro_drugs:client:mushroomDespawn', -1, fieldId, spawnIndex)
+
+    SetTimeout(respawn * 1000, function()
+        mushroomPicked[key] = nil
+        TriggerClientEvent('fivempro_drugs:client:mushroomRespawn', -1, fieldId, spawnIndex)
+    end)
+end)
+
 AddEventHandler('playerDropped', function()
     local src = source
     activeCrafts[src] = nil
     lastCraftAt[src] = nil
     lastSellAt[src] = nil
+    mushroomPlayerCd[src] = nil
 end)

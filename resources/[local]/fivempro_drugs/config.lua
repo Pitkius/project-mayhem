@@ -602,18 +602,291 @@ Config.TestNPC = {
     blip = false,
 }
 
---- Ingredientų parduotuvė (qb-inventory shop UI) — šalia test NPC
+--- Ingredientų parduotuvė (production) — Grove
 Config.SupplyShopNPC = {
+    enabled = true,
     model = 's_m_y_dealer_01',
-    coords = vector4(SUPPLY_SHOP_POS.x, SUPPLY_SHOP_POS.y, SUPPLY_SHOP_POS.z, DEV_ROW_H + 180.0),
+    coords = vector4(124.15, -1930.62, 21.38, 118.0),
     scenario = 'WORLD_HUMAN_SMOKING',
     label = 'Nelegalūs reikmenys',
+    maxDistance = 3.5,
+    targetIcon = 'fas fa-store',
     blip = {
         enabled = true,
         sprite = 52,
         color = 27,
         scale = 0.8,
         label = 'Nelegalūs reikmenys',
+    },
+}
+
+--- Testų parduotuvė (tik kai EnableDrugTestNPC) — LS airport
+Config.TestSupplyShopNPC = {
+    model = 's_m_y_dealer_01',
+    coords = vector4(SUPPLY_SHOP_POS.x, SUPPLY_SHOP_POS.y, SUPPLY_SHOP_POS.z, DEV_ROW_H + 180.0),
+    scenario = 'WORLD_HUMAN_SMOKING',
+    label = 'Nelegalūs reikmenys (test)',
+}
+
+--- Produktų supirkėjai (production) — NPC perka supakuotus / tarpinius produktus
+Config.ProductBuyerNPCs = {
+    alcohol = {
+        enabled = true,
+        model = 's_m_m_dockworker_01',
+        coords = vector4(186.4651, -1273.1499, 29.1985, 81.7421),
+        scenario = 'WORLD_HUMAN_SMOKING',
+        label = 'Alkoholio supirkėjas',
+        sellAllLabel = 'Parduoti visą alkoholį',
+        targetIcon = 'fas fa-wine-bottle',
+        maxDistance = 3.5,
+        blip = { enabled = true, sprite = 93, color = 5, scale = 0.75, label = 'Alkoholio supirkėjas' },
+        prices = {
+            illegal_alcohol = 75,
+            moonshine_spirit = 42,
+        },
+    },
+    thc = {
+        enabled = true,
+        model = 's_m_y_dealer_01',
+        coords = vector4(-1164.4401, -1567.7615, 4.4471, 30.6944),
+        scenario = 'WORLD_HUMAN_SMOKING',
+        label = 'THC supirkėjas',
+        sellAllLabel = 'Parduoti visą THC',
+        targetIcon = 'fas fa-cannabis',
+        maxDistance = 3.5,
+        blip = { enabled = true, sprite = 140, color = 25, scale = 0.75, label = 'THC supirkėjas' },
+        prices = {
+            thc_cart = 95,
+            weed_resin = 52,
+        },
+    },
+    vape = {
+        enabled = true,
+        model = 's_m_y_dealer_01',
+        coords = vector4(-1724.6089, 234.1453, 58.4717, 23.0746),
+        scenario = 'WORLD_HUMAN_SMOKING',
+        label = 'Vape skysčių supirkėjas',
+        sellAllLabel = 'Parduoti visus vape skysčius',
+        targetIcon = 'fas fa-smoking',
+        maxDistance = 3.5,
+        blip = { enabled = true, sprite = 52, color = 27, scale = 0.75, label = 'Vape supirkėjas' },
+        prices = {
+            vape_liquid = 65,
+            vape_mix = 38,
+        },
+    },
+}
+
+--- @deprecated naudok Config.ProductBuyerNPCs.alcohol
+Config.AlcoholBuyerNPC = Config.ProductBuyerNPCs.alcohol
+
+--- Production žemėlapio blipai — visi kuriami `client/main.lua` → setupStationBlips()
+--- Grybų rinkimas · Žolės reikmenys · Nelegalūs reikmenys · Heroino lab. · Amfetamino lab. · Supirkėjai
+--- Cayo Perico sala + garažai — `fivempro_cayoperico` ir `fivempro_garages`
+
+--- Grybų rinkimo laukai — prop'ai atauga po surinkimo
+Config.MushroomFields = {
+    {
+        id = 'chiliad_meadow',
+        center = vector3(2145.9426, 6418.3452, 153.0742),
+        radius = 42.0,
+        spawnCount = 16,
+        respawnSec = 100,
+        item = 'mushroom_raw',
+        amountMin = 1,
+        amountMax = 2,
+        pickDurationMs = 5200,
+        pickDistance = 2.4,
+        prop = 'prop_stoneshroom2',
+        blip = {
+            enabled = true,
+            sprite = 469,
+            color = 2,
+            scale = 0.78,
+            label = 'Grybų rinkimas',
+        },
+    },
+}
+
+--- Žolės reikmenų parduotuvė (production) — sėklos, trąšos ir pan.
+Config.WeedGrowShop = {
+    enabled = true,
+    model = 's_m_y_dealer_01',
+    coords = vector4(2221.8792, 5614.7041, 54.9016, 106.6511),
+    scenario = 'WORLD_HUMAN_GARDENER_PLANT',
+    label = 'Žolės reikmenys',
+    maxDistance = 3.5,
+    targetIcon = 'fas fa-cannabis',
+    blip = {
+        enabled = true,
+        sprite = 140,
+        color = 25,
+        scale = 0.82,
+        label = 'Žolės reikmenys',
+    },
+}
+
+Config.WeedGrowShopItems = {
+    name = 'fivempro-weed-grow',
+    label = 'Žolės reikmenys',
+    items = {
+        { name = 'weed_seed', amount = 250, price = 38, slot = 1 },
+        { name = 'weed_nutrition', amount = 120, price = 32, slot = 2 },
+        { name = 'empty_bag', amount = 200, price = 6, slot = 3 },
+        { name = 'packaging', amount = 200, price = 9, slot = 4 },
+        { name = 'gloves', amount = 80, price = 22, slot = 5 },
+    },
+}
+
+--- Laisvas žolės auginimas — sodink bet kur (sėkla iš parduotuvės)
+Config.WeedGrow = {
+    maxPlantsPerPlayer = 10,
+    minPlantDistance = 2.8,
+    plantDurationMs = 4200,
+    harvestDurationMs = 5600,
+    feedDurationMs = 3800,
+    growthTickSec = 60,
+    growthPerTick = 4,
+    growthPerTickFed = 7,
+    nutritionBoostTicks = 6,
+    harvestItem = 'weed_leaf',
+    harvestMin = 2,
+    harvestMax = 5,
+    harvestAt = 100,
+    interactDistance = 2.4,
+    placeDistance = 1.35,
+    seedItems = {
+        weed_seed = true,
+        weed_skunk_seed = true,
+        weed_ogkush_seed = true,
+        weed_whitewidow_seed = true,
+        weed_purplehaze_seed = true,
+        weed_amnesia_seed = true,
+        weed_ak47_seed = true,
+    },
+    props = {
+        { min = 0, model = 'prop_weed_01' },
+        { min = 35, model = 'prop_weed_02' },
+        { min = 70, model = 'bkr_prop_weed_lrg_01a' },
+    },
+}
+
+--- Heroino laboratorija (production) — Paleto / Grapeseed zona
+Config.HeroinLab = {
+    blip = {
+        enabled = true,
+        coords = vector3(1953.0, 5180.0, 47.98),
+        sprite = 499,
+        color = 1,
+        scale = 0.82,
+        label = 'Heroino laboratorija',
+    },
+    stations = {
+        {
+            id = 'heroin_lab_process_1',
+            label = 'Heroinas · virimas',
+            level = 2,
+            coords = vector3(1951.3479, 5179.1650, 47.9838),
+            heading = 357.6904,
+            radius = 1.4,
+            products = { 'heroin_process' },
+        },
+        {
+            id = 'heroin_lab_process_2',
+            label = 'Heroinas · virimas',
+            level = 2,
+            coords = vector3(1953.2771, 5179.2207, 47.9838),
+            heading = 9.3222,
+            radius = 1.4,
+            products = { 'heroin_process' },
+        },
+        {
+            id = 'heroin_lab_process_3',
+            label = 'Heroinas · virimas',
+            level = 2,
+            coords = vector3(1955.4858, 5179.1523, 47.9838),
+            heading = 10.8591,
+            radius = 1.4,
+            products = { 'heroin_process' },
+        },
+        {
+            id = 'heroin_lab_pack_1',
+            label = 'Heroinas · supakavimas',
+            level = 2,
+            coords = vector3(1953.3029, 5180.7964, 47.9838),
+            heading = 182.5970,
+            radius = 1.4,
+            products = { 'heroin_pack' },
+        },
+        {
+            id = 'heroin_lab_pack_2',
+            label = 'Heroinas · supakavimas',
+            level = 2,
+            coords = vector3(1951.2515, 5180.7446, 47.9838),
+            heading = 168.0956,
+            radius = 1.4,
+            products = { 'heroin_pack' },
+        },
+        {
+            id = 'heroin_lab_both',
+            label = 'Heroino perdirbimas',
+            level = 2,
+            coords = vector3(1943.1868, 5182.9590, 47.9838),
+            heading = 3.7185,
+            radius = 1.6,
+            products = { 'heroin_process', 'heroin_pack' },
+        },
+    },
+}
+
+--- Amfetamino mobilioji laboratorija — Zirconium Journey + dykuma prie Grapeseed
+Config.AmpExclusiveProducts = { amp_process = true, amp_pack = true }
+
+Config.AmpMobileLab = {
+    enabled = true,
+    vehicleModels = { journey = true, journey2 = true },
+    vehicleMaxDistance = 9.0,
+    lab = {
+        coords = vector3(1903.48, 4922.55, 48.86),
+        radius = 14.0,
+        label = 'Amfetamino laboratorija',
+    },
+    processDurationMs = 72000,
+    questionCount = 3,
+    outputItem = 'amp_paste',
+    yieldByWrong = { [0] = 2, [1] = 1, [2] = 1, [3] = 0 },
+    policeChance = 18,
+    blip = {
+        enabled = true,
+        coords = vector3(1903.48, 4922.55, 48.86),
+        sprite = 499,
+        color = 5,
+        scale = 0.82,
+        label = 'Amfetamino laboratorija',
+    },
+    packStation = {
+        id = 'amp_lab_pack',
+        label = 'Amfetaminas · supakavimas',
+        level = 3,
+        coords = vector3(1908.20, 4926.80, 48.86),
+        heading = 225.0,
+        radius = 1.6,
+        products = { 'amp_pack' },
+    },
+    recipe = {
+        { item = 'amp_precursor', count = 4 },
+        { item = 'chemical_mix', count = 2 },
+        { item = 'lab_kit', count = 1 },
+    },
+    questions = {
+        { q = 'Koks pH tinkamiausias precursoriaus neutralizavimui?', options = { '3–4 (rūgštus)', '7–8 (neutralus)', '11–12 (šarmus)' }, answer = 2 },
+        { q = 'Kuris reagentas stabdo nepageidaujamą polimerizaciją?', options = { 'Eteris', 'Acetono inhibitorius', 'Druska' }, answer = 2 },
+        { q = 'Kokia distiliacijos temperatūra saugiausia sintezei?', options = { '45–55 °C', '95–110 °C', '180–200 °C' }, answer = 2 },
+        { q = 'Ką daryti, jei mišinys pradeda virpėti?', options = { 'Padidinti šilumą', 'Sumažinti temperatūrą ir maišyti', 'Nieko — tai normalu' }, answer = 2 },
+        { q = 'Kuris indas tinka rūgštims ir solventams?', options = { 'Aliuminis', 'Stiklas ar PTFE', 'Plienas be dangos' }, answer = 2 },
+        { q = 'Kada sustabdyti sintezę?', options = { 'Kai kvepuoja balta migla', 'Kai pasiekiamas stabilus kristalizacijos etapas', 'Kai išgaruoja visas vanduo' }, answer = 2 },
+        { q = 'Koks ventiliacijos tikslas laboratorijoje?', options = { 'Sumažinti drėgmę', 'Pašalinti garus ir apsaugoti nuo sprogimo', 'Padidinti slėgį' }, answer = 2 },
+        { q = 'Ką reiškia drumstumas mišinyje po neutralizacijos?', options = { 'Sėkmė', 'Per daug vandens', 'Netinkamas pH ar nešvarumai' }, answer = 3 },
     },
 }
 

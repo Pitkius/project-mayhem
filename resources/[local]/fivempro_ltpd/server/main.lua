@@ -1316,6 +1316,7 @@ RegisterNetEvent('fivempro_ltpd:server:setPdEmergencyMode', function(mode)
     end
     Entity(veh).state:set('ltPdSirenMode', mode, true)
     TriggerClientEvent('QBCore:Notify', src, ('Šviesos / sirena: %s'):format(mode), 'primary')
+    TriggerClientEvent('fivempro_siren:client:syncUi', src)
 end)
 
 RegisterNetEvent('fivempro_ltpd:server:setPdEmergencyKit', function(equip)

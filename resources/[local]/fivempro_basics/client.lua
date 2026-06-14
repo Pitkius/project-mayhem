@@ -52,6 +52,18 @@ local LongWeaponModels = {
     weapon_tecpistol = 'w_pi_pistolsmg_m31',
 }
 
+local function isLongBackWeapon(weaponName)
+    return weaponName and LongWeaponModels[tostring(weaponName)] ~= nil
+end
+
+exports('IsLongBackWeapon', isLongBackWeapon)
+
+local function componentHash(comp)
+    if type(comp) == 'number' then return comp end
+    if not comp then return nil end
+    return joaat(tostring(comp))
+end
+
 local function hasBackpackOnPed(ped)
     -- Component 5 is bags/parachutes for freemode peds.
     local drawable = GetPedDrawableVariation(ped, 5)
@@ -59,15 +71,43 @@ local function hasBackpackOnPed(ped)
 end
 
 local function clearSlungProps()
-    for _, ent in pairs(slungProps) do
+    for _, data in pairs(slungProps) do
+        local ent = type(data) == 'table' and data.entity or data
+        local weaponHash = type(data) == 'table' and data.weaponHash or nil
         if ent and DoesEntityExist(ent) then
             DeleteEntity(ent)
+        end
+        if weaponHash and HasWeaponAssetLoaded(weaponHash) then
+            RemoveWeaponAsset(weaponHash)
         end
     end
     slungProps = {}
 end
 
-local function attachWeaponModelToBack(slotIndex, modelName)
+local function loadWeaponAsset(weaponHash)
+    if HasWeaponAssetLoaded(weaponHash) then return true end
+    RequestWeaponAsset(weaponHash, 31, 0)
+    local deadline = GetGameTimer() + 5000
+    while not HasWeaponAssetLoaded(weaponHash) and GetGameTimer() < deadline do
+        Wait(0)
+    end
+    return HasWeaponAssetLoaded(weaponHash)
+end
+
+local function attachEntityToBackSlot(ped, slotIndex, ent)
+    SetEntityCollision(ent, false, false)
+    local bone = GetPedBoneIndex(ped, 24816)
+    if slotIndex == 1 then
+        AttachEntityToEntity(ent, ped, bone, -0.17, -0.15, 0.02, 0.0, 150.0, 0.0, true, true, false, true, 2, true)
+    elseif slotIndex == 2 then
+        AttachEntityToEntity(ent, ped, bone, 0.17, -0.15, 0.02, 0.0, 150.0, 0.0, true, true, false, true, 2, true)
+    else
+        local hipBone = GetPedBoneIndex(ped, 11816)
+        AttachEntityToEntity(ent, ped, hipBone, 0.10, 0.02, 0.0, 75.0, 20.0, 170.0, true, true, false, true, 2, true)
+    end
+end
+
+local function attachFallbackPropToBack(slotIndex, modelName)
     local ped = PlayerPedId()
     local model = joaat(modelName)
     RequestModel(model)
@@ -77,17 +117,53 @@ local function attachWeaponModelToBack(slotIndex, modelName)
     end
     if not HasModelLoaded(model) then return end
     local obj = CreateObject(model, 0.0, 0.0, 0.0, true, true, false)
-    SetEntityCollision(obj, false, false)
-    local bone = GetPedBoneIndex(ped, 24816)
-    if slotIndex == 1 then
-        AttachEntityToEntity(obj, ped, bone, -0.17, -0.15, 0.02, 0.0, 150.0, 0.0, true, true, false, true, 2, true)
-    elseif slotIndex == 2 then
-        AttachEntityToEntity(obj, ped, bone, 0.17, -0.15, 0.02, 0.0, 150.0, 0.0, true, true, false, true, 2, true)
-    else
-        local hipBone = GetPedBoneIndex(ped, 11816)
-        AttachEntityToEntity(obj, ped, hipBone, 0.10, 0.02, 0.0, 75.0, 20.0, 170.0, true, true, false, true, 2, true)
+    attachEntityToBackSlot(ped, slotIndex, obj)
+    slungProps[slotIndex] = { entity = obj }
+    SetModelAsNoLongerNeeded(model)
+end
+
+local function applyAttachmentsToWeaponObject(obj, weaponInfo)
+    if not obj or obj == 0 or not weaponInfo or not weaponInfo.attachments then return end
+    for _, attachment in pairs(weaponInfo.attachments) do
+        local comp = componentHash(attachment and attachment.component)
+        if comp then
+            GiveWeaponComponentToWeaponObject(obj, comp)
+        end
     end
-    slungProps[slotIndex] = obj
+    local tint = tonumber(weaponInfo.tint)
+    if tint and tint >= 0 then
+        SetWeaponObjectTintIndex(obj, tint)
+    end
+end
+
+local function attachWeaponItemToBack(slotIndex, weaponItem)
+    local ped = PlayerPedId()
+    local weaponName = weaponItem and weaponItem.name
+    if not isLongBackWeapon(weaponName) then return end
+
+    local weaponHash = joaat(weaponName)
+    local fallbackModel = LongWeaponModels[weaponName]
+    local weaponInfo = weaponItem.info or {}
+
+    if not loadWeaponAsset(weaponHash) then
+        if fallbackModel then
+            attachFallbackPropToBack(slotIndex, fallbackModel)
+        end
+        return
+    end
+
+    local coords = GetEntityCoords(ped)
+    local obj = CreateWeaponObject(weaponHash, 0, coords.x, coords.y, coords.z, true, 1.0, 0.0)
+    if not obj or obj == 0 then
+        if fallbackModel then
+            attachFallbackPropToBack(slotIndex, fallbackModel)
+        end
+        return
+    end
+
+    applyAttachmentsToWeaponObject(obj, weaponInfo)
+    attachEntityToBackSlot(ped, slotIndex, obj)
+    slungProps[slotIndex] = { entity = obj, weaponHash = weaponHash }
 end
 
 local function refreshSlungWeapons()
@@ -106,21 +182,22 @@ local function refreshSlungWeapons()
     local currentWeaponData = QBCore.Shared.Weapons[currentWeaponHash]
     local equippedName = currentWeaponData and currentWeaponData.name or nil
 
-    local carryModels = {}
+    local carryItems = {}
     for _, item in pairs(items) do
-        if item and item.type == 'weapon' and item.name ~= equippedName then
-            local mdl = LongWeaponModels[item.name]
-            if mdl then
-                carryModels[#carryModels + 1] = mdl
-            end
+        if item and item.type == 'weapon' and item.name ~= equippedName and isLongBackWeapon(item.name) then
+            carryItems[#carryItems + 1] = item
         end
-        if #carryModels >= 3 then break end
+        if #carryItems >= 3 then break end
     end
 
-    for idx, mdl in ipairs(carryModels) do
-        attachWeaponModelToBack(idx, mdl)
+    for idx, item in ipairs(carryItems) do
+        attachWeaponItemToBack(idx, item)
     end
 end
+
+RegisterNetEvent('fivempro_basics:client:refreshSlungWeapons', function()
+    refreshSlungWeapons()
+end)
 
 CreateThread(function()
     Wait(1500)
@@ -360,6 +437,106 @@ RegisterNetEvent('fivempro_basics:client:toggleCoords', function()
         QBCore.Functions.Notify('/coords ijungta', 'success')
     else
         QBCore.Functions.Notify('/coords isjungta', 'error')
+    end
+end)
+
+local function getHeadCoords(ped)
+    return GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.38)
+end
+
+local function drawShout3D(coords, text)
+    local onScreen, worldX, worldY = World3dToScreen2d(coords.x, coords.y, coords.z)
+    if not onScreen then return end
+    local camCoords = GetGameplayCamCoord()
+    local scale = 220 / (GetGameplayCamFov() * #(camCoords - coords))
+    SetTextScale(1.0, 0.58 * scale)
+    SetTextFont(4)
+    SetTextColour(255, 210, 70, 255)
+    SetTextEdge(2, 0, 0, 0, 180)
+    SetTextProportional(1)
+    SetTextOutline()
+    SetTextCentre(1)
+    BeginTextCommandDisplayText('STRING')
+    AddTextComponentSubstringPlayerName(text)
+    EndTextCommandDisplayText(worldX, worldY)
+end
+
+RegisterNetEvent('fivempro_basics:client:showShout', function(senderId, name, msg)
+    TriggerEvent('chat:addMessage', {
+        color = { 255, 194, 14 },
+        multiline = true,
+        args = { ('%s suktų'):format(name or 'Žaidėjas'), msg or '' },
+    })
+
+    local sender = GetPlayerFromServerId(senderId)
+    if sender == -1 then return end
+
+    CreateThread(function()
+        local displayUntil = GetGameTimer() + 7000
+        while GetGameTimer() < displayUntil do
+            local targetPed = GetPlayerPed(sender)
+            if targetPed and targetPed ~= 0 and DoesEntityExist(targetPed) then
+                drawShout3D(getHeadCoords(targetPed), msg)
+            end
+            Wait(0)
+        end
+    end)
+end)
+
+local staffTags = {}
+
+local function getStaffHeadCoords(ped)
+    return GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.52)
+end
+
+local function drawStaffTag3D(coords, text, color)
+    local onScreen, worldX, worldY = World3dToScreen2d(coords.x, coords.y, coords.z)
+    if not onScreen then return end
+    local camCoords = GetGameplayCamCoord()
+    local scale = 200 / (GetGameplayCamFov() * #(camCoords - coords))
+    local r, g, b = 255, 255, 255
+    if type(color) == 'table' then
+        r = tonumber(color[1]) or r
+        g = tonumber(color[2]) or g
+        b = tonumber(color[3]) or b
+    end
+    SetTextScale(1.0, 0.50 * scale)
+    SetTextFont(4)
+    SetTextColour(r, g, b, 255)
+    SetTextEdge(2, 0, 0, 0, 200)
+    SetTextProportional(1)
+    SetTextOutline()
+    SetTextCentre(1)
+    BeginTextCommandDisplayText('STRING')
+    AddTextComponentSubstringPlayerName(text)
+    EndTextCommandDisplayText(worldX, worldY)
+end
+
+RegisterNetEvent('fivempro_basics:client:syncStaffTags', function(tags)
+    staffTags = tags or {}
+end)
+
+CreateThread(function()
+    while true do
+        local sleep = 500
+        local myCoords = GetEntityCoords(PlayerPedId())
+
+        for serverId, tag in pairs(staffTags) do
+            local sid = tonumber(serverId) or serverId
+            local player = GetPlayerFromServerId(sid)
+            if player ~= -1 and tag and tag.label then
+                local ped = GetPlayerPed(player)
+                if ped and ped ~= 0 and DoesEntityExist(ped) then
+                    local head = getStaffHeadCoords(ped)
+                    if #(myCoords - head) <= 50.0 then
+                        sleep = 0
+                        drawStaffTag3D(head, tag.label, tag.color)
+                    end
+                end
+            end
+        end
+
+        Wait(sleep)
     end
 end)
 

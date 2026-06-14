@@ -7,6 +7,7 @@ local lastSyncedWeapon = nil
 local lastSyncedAmmo = nil
 local lastAmmoSyncAt = 0
 local reloadGuardUntil = 0
+local isReloading = false
 
 local AmmoItemByType = {
     AMMO_PISTOL = { 'pistol_ammo', 'pistolammo' },
@@ -132,6 +133,56 @@ local function loadBulletsIntoClip(ped, weaponHash, weaponData, bulletsToLoad)
     return math.min(loaded, toLoad)
 end
 
+local function getReloadWaitMs()
+    local t = tonumber(Config.ReloadTime)
+    if t and t > 0 then return t end
+    return 2800
+end
+
+--- GTA rodo perkrovos animaciją tik kai rezerve yra kulkų — laikinai pridedam, po animacijos atstatom būseną.
+local function playWeaponReloadAnimation(ped, weaponHash, bulletsToLoad)
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then
+        Wait(900)
+        return
+    end
+
+    bulletsToLoad = math.max(0, tonumber(bulletsToLoad) or 0)
+    local hasClip, clipNow = GetAmmoInClip(ped, weaponHash)
+    clipNow = hasClip and (tonumber(clipNow) or 0) or 0
+    local totalBefore = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
+    local reserve = math.max(0, totalBefore - clipNow)
+
+    if reserve < 1 and bulletsToLoad > 0 then
+        SetPedAmmo(ped, weaponHash, totalBefore + bulletsToLoad)
+    end
+
+    clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    SetCurrentPedWeapon(ped, weaponHash, true)
+    MakePedReload(ped)
+    if not IsPedReloading(ped) then
+        TaskReloadWeapon(ped, true)
+    end
+
+    local deadline = GetGameTimer() + getReloadWaitMs()
+    local sawReload = false
+    while GetGameTimer() < deadline do
+        if IsPedReloading(ped) then
+            sawReload = true
+        elseif sawReload then
+            break
+        end
+        Wait(0)
+    end
+
+    if not sawReload then
+        Wait(math.min(1500, getReloadWaitMs()))
+    end
+
+    SetPedAmmo(ped, weaponHash, totalBefore)
+    SetAmmoInClip(ped, weaponHash, clipNow)
+    clearPedWeaponInfiniteAmmo(ped, weaponHash)
+end
+
 -- Handlers
 
 --- QB dažnai atnaujina inventorių per `UpdatePlayerDataField` — visada skaitom iš core, ne iš pasenusios `PlayerData` kopijos.
@@ -166,6 +217,14 @@ local function isThrowableInventoryWeaponName(name)
     return false
 end
 
+local function isExternallyBackCarriedWeapon(name)
+    if GetResourceState('fivempro_basics') ~= 'started' then return false end
+    local ok, res = pcall(function()
+        return exports['fivempro_basics']:IsLongBackWeapon(name)
+    end)
+    return ok and res == true
+end
+
 --- Visi inventoriaus ginklai ant pedo (paslėpti), išskyrus dabar pasirinktą — kad matytųsi ant nugaros/kojų.
 function applyHolsteredWeaponsFromInventory()
     if not LocalPlayer.state.isLoggedIn then return end
@@ -197,13 +256,22 @@ function applyHolsteredWeaponsFromInventory()
 
         local hidden = not shownHash or h ~= shownHash
 
+        if hidden and isExternallyBackCarriedWeapon(name) then
+            goto continue
+        end
+
         GiveWeaponToPed(ped, h, ammo, hidden, false)
         applyWeaponAmmoState(ped, h, ammo)
 
         local weaponInfo = item.info or {}
         if weaponInfo.attachments then
             for _, attachment in pairs(weaponInfo.attachments) do
-                GiveWeaponComponentToPed(ped, h, joaat(attachment.component))
+                local comp = attachment.component
+                if type(comp) == 'number' then
+                    GiveWeaponComponentToPed(ped, h, comp)
+                elseif comp then
+                    GiveWeaponComponentToPed(ped, h, joaat(tostring(comp)))
+                end
             end
         end
         if weaponInfo.tint then
@@ -227,6 +295,9 @@ local function scheduleHolsteredWeaponVisuals()
     SetTimeout(200, function()
         holsterApplyPending = false
         applyHolsteredWeaponsFromInventory()
+        if GetResourceState('fivempro_basics') == 'started' then
+            TriggerEvent('fivempro_basics:client:refreshSlungWeapons')
+        end
     end)
 end
 
@@ -326,6 +397,8 @@ RegisterNetEvent('qb-weapons:client:SetWeaponQuality', function(amount)
 end)
 
 RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemData)
+    if isReloading then return end
+
     local ped = PlayerPedId()
     local weapon = GetSelectedPedWeapon(ped)
     local selectedWeaponData = QBCore.Shared.Weapons[weapon]
@@ -387,23 +460,47 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     if bulletsToLoad <= 0 then
         return
     end
+
     local function finishReload()
         reloadGuardUntil = GetGameTimer() + 600
+        ped = PlayerPedId()
         weapon = GetSelectedPedWeapon(ped)
         local current = QBCore.Shared.Weapons[weapon]
 
         if not current or tostring(current.ammotype or ''):upper() ~= normalizedAmmoType then
+            reloadGuardUntil = 0
             return QBCore.Functions.Notify(Lang:t('error.wrong_ammo'), 'error')
         end
 
-        local reallyLoaded = loadBulletsIntoClip(ped, weapon, current, bulletsToLoad)
+        local hasClipNow, currentClipAmmo = GetAmmoInClip(ped, weapon)
+        local maxCNow = resolveMaxClip(ped, weapon, current)
+        local curInClipNow = 0
+        if hasClipNow and currentClipAmmo ~= nil then
+            curInClipNow = tonumber(currentClipAmmo) or 0
+        end
+        local clipMissingNow = math.max(0, maxCNow - curInClipNow)
+        if clipMissingNow <= 0 then
+            reloadGuardUntil = 0
+            return
+        end
+
+        local bulletsNow = math.min(clipMissingNow, availableBullets)
+        if maxCNow > 0 then
+            bulletsNow = math.min(bulletsNow, maxCNow)
+        end
+        if bulletsNow <= 0 then
+            reloadGuardUntil = 0
+            return
+        end
+
+        local reallyLoaded = loadBulletsIntoClip(ped, weapon, current, bulletsNow)
         if reallyLoaded <= 0 then
             reloadGuardUntil = 0
             return QBCore.Functions.Notify('Nepavyko užpildyti apkabos.', 'error')
         end
 
         local refreshedAmmo = GetAmmoInPedWeapon(ped, weapon)
-        local unitsToRemove = math.min(reallyLoaded, bulletsToLoad, availableBullets)
+        local unitsToRemove = math.min(reallyLoaded, bulletsNow, availableBullets)
         local payload = CurrentWeaponData
         if not payload or not payload.name then
             payload = resolveCurrentWeaponDataByName(current.name)
@@ -416,6 +513,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         if ammoItemName and QBCore.Shared.Items[ammoItemName] then
             TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[ammoItemName], 'use', unitsToRemove)
         end
+        QBCore.Functions.Notify(Lang:t('success.reloaded'), 'success')
 
         SetTimeout(150, function()
             if currentWeapon ~= current.name then return end
@@ -427,8 +525,17 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         end)
     end
 
-    -- Instant reload path to avoid stopping movement while reloading/changing magazine.
-    finishReload()
+    isReloading = true
+    reloadGuardUntil = GetGameTimer() + getReloadWaitMs() + 900
+    local reloadPed = ped
+    local reloadWeapon = weapon
+    local reloadBullets = bulletsToLoad
+
+    CreateThread(function()
+        playWeaponReloadAnimation(reloadPed, reloadWeapon, reloadBullets)
+        finishReload()
+        isReloading = false
+    end)
 end)
 
 RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
@@ -509,7 +616,7 @@ CreateThread(function()
         local reloadPressed = IsControlJustPressed(0, 45) or IsDisabledControlJustPressed(0, 45)
         if reloadPressed then
             local now = GetGameTimer()
-            if now - lastAutoReloadAt > 500 then
+            if not isReloading and now - lastAutoReloadAt > 500 then
                 lastAutoReloadAt = now
 
                 local ped = PlayerPedId()
