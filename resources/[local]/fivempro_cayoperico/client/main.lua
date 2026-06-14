@@ -3,6 +3,7 @@ local islandLoaded = false
 local IPLS = {
     'h4_islandairstrip',
     'h4_islandairstrip_props',
+    'h4_islandairstrip_propsb',
     'h4_islandxparty',
     'h4_islandxparty_props',
     'h4_islandxparty_props_2',
@@ -43,6 +44,46 @@ local IPLS = {
     'h4_mansion_gate_closed',
     'h4_Underwater_Gate_Closed',
     'h4_islandairstrip_doorsclosed',
+    'h4_ne_ipl_00',
+    'h4_ne_ipl_01',
+    'h4_ne_ipl_02',
+    'h4_ne_ipl_03',
+    'h4_ne_ipl_04',
+    'h4_ne_ipl_05',
+    'h4_ne_ipl_06',
+    'h4_ne_ipl_07',
+    'h4_ne_ipl_08',
+    'h4_ne_ipl_09',
+    'h4_nw_ipl_00',
+    'h4_nw_ipl_01',
+    'h4_nw_ipl_02',
+    'h4_nw_ipl_03',
+    'h4_nw_ipl_04',
+    'h4_nw_ipl_05',
+    'h4_nw_ipl_06',
+    'h4_nw_ipl_07',
+    'h4_nw_ipl_08',
+    'h4_nw_ipl_09',
+    'h4_se_ipl_00',
+    'h4_se_ipl_01',
+    'h4_se_ipl_02',
+    'h4_se_ipl_03',
+    'h4_se_ipl_04',
+    'h4_se_ipl_05',
+    'h4_se_ipl_06',
+    'h4_se_ipl_07',
+    'h4_se_ipl_08',
+    'h4_se_ipl_09',
+    'h4_sw_ipl_00',
+    'h4_sw_ipl_01',
+    'h4_sw_ipl_02',
+    'h4_sw_ipl_03',
+    'h4_sw_ipl_04',
+    'h4_sw_ipl_05',
+    'h4_sw_ipl_06',
+    'h4_sw_ipl_07',
+    'h4_sw_ipl_08',
+    'h4_sw_ipl_09',
 }
 
 local function enableIslandMap()
@@ -54,6 +95,16 @@ local function enableIslandMap()
     pcall(function()
         Citizen.InvokeNative(0x5E1460624D194A38, true)
     end)
+    pcall(function()
+        Citizen.InvokeNative(0xF74B1FFA4A15FBEA, true)
+    end)
+end
+
+local function requestCollisionAt(x, y, z)
+    RequestCollisionAtCoord(x, y, z)
+    for i = 0, 4 do
+        RequestCollisionAtCoord(x, y, z + (i * 12.0))
+    end
 end
 
 local function loadIsland()
@@ -88,18 +139,37 @@ CreateThread(function()
     createIslandBlip()
 end)
 
---- Minimapas saloje
+--- Minimapas saloje + collision streaming
 CreateThread(function()
     local center = Config.IslandCenter or vector3(4840.57, -5174.42, 2.0)
-    local radius = Config.IslandLoadRadius or 2200.0
+    local radius = Config.IslandLoadRadius or 2400.0
     while true do
         local sleep = 800
-        local coords = GetEntityCoords(PlayerPedId())
-        if #(coords - center) <= radius then
+        local ped = PlayerPedId()
+        local coords = GetEntityCoords(ped)
+        local dist = #(coords - center)
+        if dist <= radius then
             sleep = 0
             SetRadarAsExteriorThisFrame()
             SetRadarAsInteriorThisFrame(joaat('h4_fake_islandx'), 4700.0, -5145.0, 0, 0)
+            requestCollisionAt(coords.x, coords.y, coords.z)
+            for _, zone in ipairs(Config.StreamZones or {}) do
+                if #(coords - zone) < 220.0 then
+                    requestCollisionAt(zone.x, zone.y, zone.z)
+                end
+            end
         end
         Wait(sleep)
     end
+end)
+
+exports('RequestIslandCollision', function(x, y, z)
+    loadIsland()
+    requestCollisionAt(x, y, z)
+end)
+
+exports('IsOnCayoIsland', function(coords)
+    coords = coords or GetEntityCoords(PlayerPedId())
+    local center = Config.IslandCenter or vector3(4840.57, -5174.42, 2.0)
+    return #(coords - center) <= (Config.IslandLoadRadius or 2400.0)
 end)

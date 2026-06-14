@@ -548,6 +548,13 @@ local function setupStationBlips()
         end
     end
 
+    -- Kokos lapai (Cayo)
+    for _, field in ipairs(Config.CocaFields or {}) do
+        if field.center then
+            addCfgBlip(field.center, field.blip, field.blip and field.blip.label or 'Kokos lapai')
+        end
+    end
+
     -- Heroino laboratorija
     local heroinLab = Config.HeroinLab
     if heroinLab and heroinLab.blip then

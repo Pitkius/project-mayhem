@@ -708,6 +708,32 @@ Config.MushroomFields = {
     },
 }
 
+--- Kokos lapų rinkimas (Cayo Perico)
+Config.CocaFields = {
+    {
+        id = 'cayo_coca_grove',
+        center = vector3(4715.0337, -4529.3638, 26.8199),
+        radius = 48.0,
+        spawnCount = 18,
+        respawnSec = 120,
+        item = 'coca_leaf',
+        amountMin = 1,
+        amountMax = 3,
+        pickDurationMs = 5400,
+        pickDistance = 2.5,
+        pickLabel = 'Rinkti kokos lapus',
+        prop = 'prop_bush_neat_04',
+        requireIsland = true,
+        blip = {
+            enabled = true,
+            sprite = 140,
+            color = 2,
+            scale = 0.76,
+            label = 'Kokos lapai (Cayo)',
+        },
+    },
+}
+
 --- Žolės reikmenų parduotuvė (production) — sėklos, trąšos ir pan.
 Config.WeedGrowShop = {
     enabled = true,

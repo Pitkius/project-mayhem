@@ -2,6 +2,18 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local fieldSpawns = {}
 local picking = false
+local fieldsReady = {}
+
+local function allHarvestFields()
+    local out = {}
+    for _, field in ipairs(Config.MushroomFields or {}) do
+        out[#out + 1] = field
+    end
+    for _, field in ipairs(Config.CocaFields or {}) do
+        out[#out + 1] = field
+    end
+    return out
+end
 
 local function loadModel(model)
     local hash = type(model) == 'string' and joaat(model) or model
@@ -16,6 +28,26 @@ local function loadModel(model)
     return hash
 end
 
+local function ensureGroundLoaded(x, y, z)
+    if GetResourceState('fivempro_cayoperico') == 'started' then
+        pcall(function()
+            exports['fivempro_cayoperico']:RequestIslandCollision(x, y, z)
+        end)
+    end
+    for _ = 1, 12 do
+        RequestCollisionAtCoord(x, y, z)
+        RequestCollisionAtCoord(x, y, z + 20.0)
+        Wait(0)
+    end
+end
+
+local function resolveGroundZ(x, y, refZ)
+    local z = refZ
+    local found, gz = GetGroundZFor_3dCoord(x, y, refZ + 80.0, false)
+    if found then z = gz end
+    return z
+end
+
 local function spawnCoordForIndex(field, index)
     local total = math.max(1, tonumber(field.spawnCount) or 12)
     local radius = tonumber(field.radius) or 35.0
@@ -24,9 +56,7 @@ local function spawnCoordForIndex(field, index)
     local dist = radius * ring
     local x = field.center.x + math.cos(angle) * dist
     local y = field.center.y + math.sin(angle) * dist
-    local z = field.center.z
-    local found, gz = GetGroundZFor_3dCoord(x, y, field.center.z + 60.0, false)
-    if found then z = gz end
+    local z = resolveGroundZ(x, y, field.center.z)
     return vector3(x, y, z)
 end
 
@@ -46,7 +76,7 @@ local function attachTarget(field, spawn)
                 type = 'client',
                 event = 'fivempro_drugs:client:pickMushroom',
                 icon = 'fas fa-seedling',
-                label = 'Rinkti grybus',
+                label = field.pickLabel or 'Rinkti',
                 fieldId = field.id,
                 spawnIndex = spawn.index,
                 canInteract = function()
@@ -78,6 +108,9 @@ end
 
 local function initField(field)
     if not field or not field.id or not field.center then return end
+    if fieldsReady[field.id] then return end
+    ensureGroundLoaded(field.center.x, field.center.y, field.center.z)
+
     local spawns = {}
     local count = math.max(1, tonumber(field.spawnCount) or 12)
     for i = 1, count do
@@ -89,6 +122,7 @@ local function initField(field)
         }
     end
     fieldSpawns[field.id] = { field = field, spawns = spawns }
+    fieldsReady[field.id] = true
     for _, spawn in ipairs(spawns) do
         spawnMushroomProp(field, spawn)
     end
@@ -114,7 +148,8 @@ RegisterNetEvent('fivempro_drugs:client:pickMushroom', function(data)
     end
 
     picking = true
-    QBCore.Functions.Progressbar('fivempro_drugs_mushroom', 'Renki grybus…', state.field.pickDurationMs or 5200, false, true, {
+    local label = state.field.pickLabel or 'Renki…'
+    QBCore.Functions.Progressbar('fivempro_drugs_harvest', label, state.field.pickDurationMs or 5200, false, true, {
         disableMovement = true,
         disableCarMovement = true,
         disableMouse = false,
@@ -147,13 +182,22 @@ RegisterNetEvent('fivempro_drugs:client:mushroomRespawn', function(fieldId, spaw
     local spawn = state.spawns[spawnIndex]
     if not spawn then return end
     spawn.available = true
+    spawn.coords = spawnCoordForIndex(state.field, spawnIndex)
     spawnMushroomProp(state.field, spawn)
 end)
 
 CreateThread(function()
     Wait(1500)
-    for _, field in ipairs(Config.MushroomFields or {}) do
-        initField(field)
+    while true do
+        local ped = PlayerPedId()
+        local pcoords = GetEntityCoords(ped)
+        for _, field in ipairs(allHarvestFields()) do
+            local loadDist = tonumber(field.loadDistance) or 180.0
+            if #(pcoords - field.center) <= loadDist then
+                initField(field)
+            end
+        end
+        Wait(1200)
     end
 end)
 

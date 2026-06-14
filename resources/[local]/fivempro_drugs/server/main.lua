@@ -753,6 +753,9 @@ local function getMushroomField(id)
     for _, field in ipairs(Config.MushroomFields or {}) do
         if field.id == id then return field end
     end
+    for _, field in ipairs(Config.CocaFields or {}) do
+        if field.id == id then return field end
+    end
 end
 
 local function mushroomSpawnCoord(field, index)
@@ -794,7 +797,7 @@ RegisterNetEvent('fivempro_drugs:server:pickMushroom', function(fieldId, spawnIn
     end
 
     if #(pcoords - field.center) > (tonumber(field.radius) or 40.0) + 5.0 then
-        TriggerClientEvent('QBCore:Notify', src, 'Ne grybų lauke.', 'error')
+        TriggerClientEvent('QBCore:Notify', src, 'Ne rinkimo zonoje.', 'error')
         return
     end
 
