@@ -39,6 +39,12 @@ local function getAllStations()
             list[#list + 1] = st
         end
     end
+    local weedCayo = Config.WeedCayoLab
+    if weedCayo and weedCayo.stations then
+        for _, st in ipairs(weedCayo.stations) do
+            list[#list + 1] = st
+        end
+    end
     local ampLab = Config.AmpMobileLab
     if ampLab and ampLab.packStation then
         list[#list + 1] = ampLab.packStation

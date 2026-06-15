@@ -1,4 +1,6 @@
-local islandLoaded = false
+local islandIplsLoaded = false
+local islandMapActive = false
+local islandBlip = nil
 
 local IPLS = {
     'h4_islandairstrip',
@@ -86,7 +88,18 @@ local IPLS = {
     'h4_sw_ipl_09',
 }
 
+local function islandCenter()
+    return Config.IslandCenter or vector3(4840.57, -5174.42, 2.0)
+end
+
+local function distanceToIsland(coords)
+    return #(coords - islandCenter())
+end
+
 local function setIslandMapEnabled(enabled)
+    if islandMapActive == enabled then return end
+    islandMapActive = enabled
+
     SetIslandHopperEnabled('HeistIsland', enabled)
     SetToggleMinimapHeistIsland(enabled)
     pcall(function()
@@ -100,6 +113,12 @@ local function setIslandMapEnabled(enabled)
     end)
 end
 
+local function removeAllIslandIpls()
+    for _, ipl in ipairs(IPLS) do
+        RemoveIpl(ipl)
+    end
+end
+
 local function requestCollisionAt(x, y, z)
     RequestCollisionAtCoord(x, y, z)
     for i = 0, 4 do
@@ -107,73 +126,85 @@ local function requestCollisionAt(x, y, z)
     end
 end
 
-local function loadIsland()
-    if islandLoaded then return end
-    for _, ipl in ipairs(IPLS) do
-        RequestIpl(ipl)
-    end
-    setIslandMapEnabled(true)
-    islandLoaded = true
-end
-
-local function unloadIsland()
-    if not islandLoaded then return end
-    setIslandMapEnabled(false)
-    for _, ipl in ipairs(IPLS) do
-        RemoveIpl(ipl)
-    end
-    islandLoaded = false
+local function notifyIslandState(loaded)
+    TriggerEvent('fivempro_cayoperico:client:islandState', loaded)
 end
 
 local function createIslandBlip()
+    if islandBlip and DoesBlipExist(islandBlip) then return end
     local cfg = Config.IslandBlip
     if not cfg or not cfg.enabled or not cfg.coords then return end
     local c = cfg.coords
-    local blip = AddBlipForCoord(c.x, c.y, c.z)
-    SetBlipSprite(blip, cfg.sprite or 836)
-    SetBlipColour(blip, cfg.color or 2)
-    SetBlipScale(blip, cfg.scale or 0.95)
-    SetBlipAsShortRange(blip, false)
+    islandBlip = AddBlipForCoord(c.x, c.y, c.z)
+    SetBlipSprite(islandBlip, cfg.sprite or 836)
+    SetBlipColour(islandBlip, cfg.color or 2)
+    SetBlipScale(islandBlip, cfg.scale or 0.95)
+    SetBlipAsShortRange(islandBlip, false)
     BeginTextCommandSetBlipName('STRING')
     AddTextComponentString(cfg.label or 'Cayo Perico')
-    EndTextCommandSetBlipName(blip)
+    EndTextCommandSetBlipName(islandBlip)
     if GetResourceState('fivempro_fonts') == 'started' then
-        exports['fivempro_fonts']:SetBlipName(blip, cfg.label or 'Cayo Perico')
+        exports['fivempro_fonts']:SetBlipName(islandBlip, cfg.label or 'Cayo Perico')
     end
 end
 
-local function islandCenter()
-    return Config.IslandCenter or vector3(4840.57, -5174.42, 2.0)
+local function removeIslandBlip()
+    if islandBlip and DoesBlipExist(islandBlip) then
+        RemoveBlip(islandBlip)
+    end
+    islandBlip = nil
 end
 
-local function distanceToIsland(coords)
-    return #(coords - islandCenter())
-end
-
-CreateThread(function()
-    Wait(500)
+--- Tik IPL / pasaulio mesh (be HeistIsland pause žemėlapio)
+local function loadIslandIpls()
+    if islandIplsLoaded then return end
+    for _, ipl in ipairs(IPLS) do
+        RequestIpl(ipl)
+    end
+    islandIplsLoaded = true
     createIslandBlip()
+    notifyIslandState(true)
+end
+
+local function unloadIslandIpls()
+    if not islandIplsLoaded then
+        setIslandMapEnabled(false)
+        return
+    end
+    setIslandMapEnabled(false)
+    removeIslandBlip()
+    removeAllIslandIpls()
+    islandIplsLoaded = false
+    notifyIslandState(false)
+end
+
+--- Pradžioje — tik LS žemėlapis, jokio Cayo
+CreateThread(function()
+    Wait(250)
+    setIslandMapEnabled(false)
+    removeAllIslandIpls()
 end)
 
---- Salos IPL + žemėlapis tik šiam žaidėjui, kai priartėja; LS žemėlapis kai toli
+--- IPL + blipai priartėjus; HeistIsland pause/minimap tik ant salos
 CreateThread(function()
-    local streamR = Config.StreamRadius or 2800.0
-    local unloadR = Config.UnloadRadius or (streamR + 300.0)
-    local minimapR = Config.MinimapRadius or Config.IslandLoadRadius or 2000.0
+    local streamR = Config.StreamRadius or 2200.0
+    local unloadR = Config.UnloadRadius or (streamR + 350.0)
+    local mapR = Config.MapRadius or Config.MinimapRadius or Config.IslandLoadRadius or 1800.0
 
     while true do
-        local sleep = 900
+        local sleep = 1000
         local coords = GetEntityCoords(PlayerPedId())
         local dist = distanceToIsland(coords)
 
         if dist <= streamR then
-            loadIsland()
-            sleep = 400
+            loadIslandIpls()
+            sleep = 450
         elseif dist > unloadR then
-            unloadIsland()
+            unloadIslandIpls()
         end
 
-        if islandLoaded and dist <= minimapR then
+        if islandIplsLoaded and dist <= mapR then
+            setIslandMapEnabled(true)
             sleep = 0
             SetRadarAsExteriorThisFrame()
             SetRadarAsInteriorThisFrame(joaat('h4_fake_islandx'), 4700.0, -5145.0, 0, 0)
@@ -183,6 +214,8 @@ CreateThread(function()
                     requestCollisionAt(zone.x, zone.y, zone.z)
                 end
             end
+        else
+            setIslandMapEnabled(false)
         end
 
         Wait(sleep)
@@ -190,21 +223,28 @@ CreateThread(function()
 end)
 
 exports('RequestIslandCollision', function(x, y, z)
-    loadIsland()
+    local mapR = Config.MapRadius or Config.MinimapRadius or Config.IslandLoadRadius or 1800.0
+    local dist = distanceToIsland(vector3(x, y, z))
+    if dist <= (Config.StreamRadius or 2200.0) + 400.0 then
+        loadIslandIpls()
+    end
     requestCollisionAt(x, y, z)
+    if dist <= mapR then
+        setIslandMapEnabled(true)
+    end
 end)
 
 exports('IsOnCayoIsland', function(coords)
     coords = coords or GetEntityCoords(PlayerPedId())
-    local minimapR = Config.MinimapRadius or Config.IslandLoadRadius or 2000.0
-    return distanceToIsland(coords) <= minimapR
+    local mapR = Config.MapRadius or Config.MinimapRadius or Config.IslandLoadRadius or 1800.0
+    return distanceToIsland(coords) <= mapR
 end)
 
 exports('IsIslandLoaded', function()
-    return islandLoaded
+    return islandIplsLoaded
 end)
 
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
-    unloadIsland()
+    unloadIslandIpls()
 end)

@@ -175,7 +175,7 @@ RegisterNetEvent('fivempro_drugs:client:printerCraftStarted', function(printerId
     local duration = tonumber(timeMs) or 30000
     local label = 'Spausdinama…'
 
-    QBCore.Functions.Progressbar('fivempro_3d_print', label, duration, false, true, {
+    DrugProgress.run('fivempro_3d_print', label, duration, false, true, {
         disableMovement = true,
         disableCarMovement = true,
         disableCombat = true,
@@ -183,7 +183,7 @@ RegisterNetEvent('fivempro_drugs:client:printerCraftStarted', function(printerId
         animDict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@',
         anim = 'machinic_loop_mechandplayer',
         flags = 49,
-    }, {}, {}, function()
+    }, function()
         printing = false
         TriggerServerEvent('fivempro_drugs:server:finishPrinterCraft', printerId, productId)
     end, function()

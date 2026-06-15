@@ -74,7 +74,7 @@ local function refreshPlantTargets()
                         action = function()
                             if busy then return end
                             busy = true
-                            QBCore.Functions.Progressbar('fivempro_weed_feed', 'Tręši…', growCfg().feedDurationMs or 3800, false, true, {
+                            DrugProgress.run('fivempro_weed_feed', 'Tręši…', growCfg().feedDurationMs or 3800, false, true, {
                                 disableMovement = true,
                                 disableCarMovement = true,
                                 disableCombat = true,
@@ -82,7 +82,7 @@ local function refreshPlantTargets()
                                 animDict = 'amb@world_human_gardener_plant@male@base',
                                 anim = 'base',
                                 flags = 49,
-                            }, {}, {}, function()
+                            }, function()
                                 busy = false
                                 TriggerServerEvent('fivempro_drugs:server:feedWeedPlant', id)
                             end, function()
@@ -100,7 +100,7 @@ local function refreshPlantTargets()
                         action = function()
                             if busy then return end
                             busy = true
-                            QBCore.Functions.Progressbar('fivempro_weed_harvest', 'Renki žolę…', growCfg().harvestDurationMs or 5600, false, true, {
+                            DrugProgress.run('fivempro_weed_harvest', 'Renki žolę…', growCfg().harvestDurationMs or 5600, false, true, {
                                 disableMovement = true,
                                 disableCarMovement = true,
                                 disableCombat = true,
@@ -108,7 +108,7 @@ local function refreshPlantTargets()
                                 animDict = 'amb@world_human_gardener_plant@male@base',
                                 anim = 'base',
                                 flags = 49,
-                            }, {}, {}, function()
+                            }, function()
                                 busy = false
                                 TriggerServerEvent('fivempro_drugs:server:harvestWeedPlant', id)
                             end, function()
@@ -203,7 +203,7 @@ RegisterNetEvent('fivempro_drugs:client:startPlaceWeed', function(seedItem)
                 local fh = GetEntityHeading(preview)
                 placing = false
                 busy = true
-                QBCore.Functions.Progressbar('fivempro_weed_plant', 'Sodini sėklą…', growCfg().plantDurationMs or 4200, false, true, {
+                DrugProgress.run('fivempro_weed_plant', 'Sodini sėklą…', growCfg().plantDurationMs or 4200, false, true, {
                     disableMovement = true,
                     disableCarMovement = true,
                     disableCombat = true,
@@ -211,7 +211,7 @@ RegisterNetEvent('fivempro_drugs:client:startPlaceWeed', function(seedItem)
                     animDict = 'amb@world_human_gardener_plant@male@base',
                     anim = 'base',
                     flags = 49,
-                }, {}, {}, function()
+                }, function()
                     busy = false
                     TriggerServerEvent('fivempro_drugs:server:placeWeedPlant', fc.x, fc.y, fc.z, fh, seedItem)
                 end, function()
