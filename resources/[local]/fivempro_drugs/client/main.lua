@@ -579,6 +579,26 @@ local function setupStationBlips()
         end
     end
 
+    -- Nelegalūs reikmenys (test) — tik kai įjungtas test NPC
+    if Config.EnableDrugTestNPC then
+        local testShop = Config.TestSupplyShopNPC
+        if testShop and testShop.coords then
+            addCfgBlip(
+                vector3(testShop.coords.x, testShop.coords.y, testShop.coords.z),
+                { enabled = true, sprite = 52, color = 27, scale = 0.75, label = testShop.label or 'Nelegalūs reikmenys (test)' },
+                testShop.label
+            )
+        end
+        local testNpc = Config.TestNPC
+        if testNpc and testNpc.coords then
+            addCfgBlip(
+                vector3(testNpc.coords.x, testNpc.coords.y, testNpc.coords.z),
+                { enabled = true, sprite = 496, color = 27, scale = 0.75, label = testNpc.label or 'Narkotikų gamyba (test)' },
+                testNpc.label
+            )
+        end
+    end
+
     if not Config.ShowStationBlips then return end
     local hub = Config.DevHub
     local def = Config.StationBlip or {}

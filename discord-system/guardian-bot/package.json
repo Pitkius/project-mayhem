@@ -1,0 +1,19 @@
+{
+  "name": "guardian-bot",
+  "version": "1.0.0",
+  "description": "Discord server protection, anti-nuke, moderation and logging bot",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node deploy-commands.js",
+    "branding": "node setup-branding.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "defaultAntinuke": {
+    "enabled": true,
+    "punishment": "ban",
+    "thresholds": {
+      "channelDelete": { "limit": 3, "windowSec": 10 },
+      "channelCreate": { "limit": 5, "windowSec": 10 },
+      "roleDelete": { "limit": 3, "windowSec": 10 },
+      "roleCreate": { "limit": 5, "windowSec": 10 },
+      "roleUpdate": { "limit": 5, "windowSec": 15 },
+      "massBan": { "limit": 3, "windowSec": 15 },
+      "massKick": { "limit": 3, "windowSec": 15 },
+      "webhookCreate": { "limit": 2, "windowSec": 10 },
+      "botAdd": { "limit": 1, "windowSec": 30 }
+    }
+  },
+  "spam": {
+    "maxMessages": 6,
+    "windowSec": 4,
+    "maxMentions": 5,
+    "maxEveryonePings": 2
+  },
+  "dangerousPermissions": [
+    "Administrator",
+    "ManageGuild",
+    "ManageRoles",
+    "ManageChannels",
+    "BanMembers",
+    "KickMembers",
+    "MentionEveryone",
+    "ManageWebhooks"
+  ]
+}

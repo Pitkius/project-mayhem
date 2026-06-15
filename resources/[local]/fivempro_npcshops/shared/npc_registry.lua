@@ -54,13 +54,22 @@ function NpcRegistry.collect()
 
     for i, row in ipairs(Config.JobStationNpcs or {}) do
         if row.role ~= 'garage' and row.role ~= 'stash' and row.role ~= 'locker' and row.role ~= 'supply' and row.role ~= 'boss' then
+            local blip = row.blip
+            if blip == nil and row.coords then
+                blip = {
+                    sprite = row.role == 'duty' and 60 or 280,
+                    color = row.job == 'police' and 3 or row.job == 'ambulance' and 1 or 25,
+                    scale = 0.72,
+                    label = row.label or 'Tarnyba',
+                }
+            end
             entries[#entries + 1] = {
                 category = 'job',
                 index = i,
                 model = row.model,
                 coords = row.coords,
                 scenario = row.scenario,
-                blip = row.blip,
+                blip = blip,
                 job = row.job,
                 stationId = row.stationId,
                 role = row.role,
