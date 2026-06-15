@@ -86,17 +86,17 @@ local IPLS = {
     'h4_sw_ipl_09',
 }
 
-local function enableIslandMap()
-    SetIslandHopperEnabled('HeistIsland', true)
-    SetToggleMinimapHeistIsland(true)
+local function setIslandMapEnabled(enabled)
+    SetIslandHopperEnabled('HeistIsland', enabled)
+    SetToggleMinimapHeistIsland(enabled)
     pcall(function()
-        Citizen.InvokeNative(0x9A9D1BA639675CF1, 'HeistIsland', true)
+        Citizen.InvokeNative(0x9A9D1BA639675CF1, 'HeistIsland', enabled)
     end)
     pcall(function()
-        Citizen.InvokeNative(0x5E1460624D194A38, true)
+        Citizen.InvokeNative(0x5E1460624D194A38, enabled)
     end)
     pcall(function()
-        Citizen.InvokeNative(0xF74B1FFA4A15FBEA, true)
+        Citizen.InvokeNative(0xF74B1FFA4A15FBEA, enabled)
     end)
 end
 
@@ -112,8 +112,17 @@ local function loadIsland()
     for _, ipl in ipairs(IPLS) do
         RequestIpl(ipl)
     end
-    enableIslandMap()
+    setIslandMapEnabled(true)
     islandLoaded = true
+end
+
+local function unloadIsland()
+    if not islandLoaded then return end
+    setIslandMapEnabled(false)
+    for _, ipl in ipairs(IPLS) do
+        RemoveIpl(ipl)
+    end
+    islandLoaded = false
 end
 
 local function createIslandBlip()
@@ -133,22 +142,38 @@ local function createIslandBlip()
     end
 end
 
+local function islandCenter()
+    return Config.IslandCenter or vector3(4840.57, -5174.42, 2.0)
+end
+
+local function distanceToIsland(coords)
+    return #(coords - islandCenter())
+end
+
 CreateThread(function()
     Wait(500)
-    loadIsland()
     createIslandBlip()
 end)
 
---- Minimapas saloje + collision streaming
+--- Salos IPL + žemėlapis tik šiam žaidėjui, kai priartėja; LS žemėlapis kai toli
 CreateThread(function()
-    local center = Config.IslandCenter or vector3(4840.57, -5174.42, 2.0)
-    local radius = Config.IslandLoadRadius or 2400.0
+    local streamR = Config.StreamRadius or 2800.0
+    local unloadR = Config.UnloadRadius or (streamR + 300.0)
+    local minimapR = Config.MinimapRadius or Config.IslandLoadRadius or 2000.0
+
     while true do
-        local sleep = 800
-        local ped = PlayerPedId()
-        local coords = GetEntityCoords(ped)
-        local dist = #(coords - center)
-        if dist <= radius then
+        local sleep = 900
+        local coords = GetEntityCoords(PlayerPedId())
+        local dist = distanceToIsland(coords)
+
+        if dist <= streamR then
+            loadIsland()
+            sleep = 400
+        elseif dist > unloadR then
+            unloadIsland()
+        end
+
+        if islandLoaded and dist <= minimapR then
             sleep = 0
             SetRadarAsExteriorThisFrame()
             SetRadarAsInteriorThisFrame(joaat('h4_fake_islandx'), 4700.0, -5145.0, 0, 0)
@@ -159,6 +184,7 @@ CreateThread(function()
                 end
             end
         end
+
         Wait(sleep)
     end
 end)
@@ -170,6 +196,15 @@ end)
 
 exports('IsOnCayoIsland', function(coords)
     coords = coords or GetEntityCoords(PlayerPedId())
-    local center = Config.IslandCenter or vector3(4840.57, -5174.42, 2.0)
-    return #(coords - center) <= (Config.IslandLoadRadius or 2400.0)
+    local minimapR = Config.MinimapRadius or Config.IslandLoadRadius or 2000.0
+    return distanceToIsland(coords) <= minimapR
+end)
+
+exports('IsIslandLoaded', function()
+    return islandLoaded
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+    unloadIsland()
 end)
