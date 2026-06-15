@@ -220,6 +220,59 @@ Config.WeaponRepairCosts = {
     shotgun = 6000
 }
 
+--- Extended / drum apkabų talpa (kai GetMaxAmmoInClip grąžina standartinį 30)
+Config.ExtendedClipCapacity = {
+    weapon_pistol = 16,
+    weapon_pistol_mk2 = 16,
+    weapon_combatpistol = 24,
+    weapon_appistol = 36,
+    weapon_pistol50 = 12,
+    weapon_snspistol = 12,
+    weapon_snspistol_mk2 = 12,
+    weapon_heavypistol = 24,
+    weapon_vintagepistol = 14,
+    weapon_ceramicpistol = 24,
+    weapon_microsmg = 30,
+    weapon_smg = 60,
+    weapon_assaultsmg = 60,
+    weapon_minismg = 20,
+    weapon_smg_mk2 = 60,
+    weapon_machinepistol = 30,
+    weapon_combatpdw = 60,
+    weapon_assaultshotgun = 32,
+    weapon_heavyshotgun = 32,
+    weapon_assaultrifle = 60,
+    weapon_carbinerifle = 60,
+    weapon_advancedrifle = 60,
+    weapon_specialcarbine = 60,
+    weapon_bullpuprifle = 60,
+    weapon_bullpuprifle_mk2 = 60,
+    weapon_specialcarbine_mk2 = 60,
+    weapon_assaultrifle_mk2 = 60,
+    weapon_carbinerifle_mk2 = 60,
+    weapon_compactrifle = 60,
+    weapon_militaryrifle = 60,
+    weapon_heavyrifle = 60,
+    weapon_mg = 100,
+    weapon_combatmg = 100,
+    weapon_combatmg_mk2 = 100,
+    weapon_gusenberg = 50,
+    weapon_marksmanrifle = 16,
+    weapon_marksmanrifle_mk2 = 16,
+    weapon_heavysniper_mk2 = 12,
+}
+
+Config.DrumClipCapacity = {
+    weapon_smg = 100,
+    weapon_machinepistol = 50,
+    weapon_combatpdw = 100,
+    weapon_heavyshotgun = 32,
+    weapon_assaultrifle = 100,
+    weapon_carbinerifle = 100,
+    weapon_specialcarbine = 100,
+    weapon_compactrifle = 100,
+}
+
 WeaponAttachments = {
     clip_attachment = {
         weapon_pistol = `COMPONENT_PISTOL_CLIP_02`,

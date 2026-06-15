@@ -1,7 +1,7 @@
 local Translations = {
     error = {
         canceled = 'Atšaukta',
-        max_ammo = 'Maksimali šovinių talpa',
+        max_ammo = 'Apkaba pilna.',
         no_weapon = 'Jūs neturite ginklo.',
         no_support_attachment = 'Šis ginklas negali turėti šio priedo.',
         no_weapon_in_hand = 'Jūs neturite ginklo rankoje.',

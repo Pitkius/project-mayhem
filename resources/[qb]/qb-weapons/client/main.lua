@@ -70,6 +70,52 @@ local DefaultClipByAmmoType = {
     AMMO_EMPLAUNCHER = 10,
 }
 
+local function componentHash(comp)
+    if type(comp) == 'number' then return comp end
+    if comp then return joaat(tostring(comp)) end
+end
+
+local function weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable)
+    local weaponName = weaponData and weaponData.name
+    if not weaponName or type(attachmentTable) ~= 'table' then return false end
+    local comp = attachmentTable[weaponName]
+    if not comp then return false end
+    local compHash = componentHash(comp)
+    if ped and weaponHash and compHash and HasPedGotWeaponComponent(ped, weaponHash, compHash) then
+        return true
+    end
+    local info = weaponData.info or weaponData
+    if type(info) == 'table' and type(info.attachments) == 'table' then
+        for _, attachment in pairs(info.attachments) do
+            local attached = attachment and (attachment.component or attachment)
+            if attached == comp or attached == compHash then return true end
+            if type(attached) == 'string' and compHash and joaat(attached) == compHash then return true end
+        end
+    end
+    return false
+end
+
+local function resolveAttachmentClipCapacity(weaponName, ped, weaponHash, weaponData)
+    if not weaponName then return 0 end
+    local cap = 0
+    if weaponHasAttachment(ped, weaponHash, weaponData, WeaponAttachments.drum_attachment) then
+        cap = math.max(cap, tonumber(Config.DrumClipCapacity and Config.DrumClipCapacity[weaponName]) or 0)
+    end
+    if weaponHasAttachment(ped, weaponHash, weaponData, WeaponAttachments.clip_attachment) then
+        cap = math.max(cap, tonumber(Config.ExtendedClipCapacity and Config.ExtendedClipCapacity[weaponName]) or 0)
+    end
+    return cap
+end
+
+local function getClipAmmoState(ped, weaponHash, weaponData)
+    local maxClip = resolveMaxClip(ped, weaponHash, weaponData)
+    local hasClip, currentClipAmmo = GetAmmoInClip(ped, weaponHash)
+    local curInClip = hasClip and (tonumber(currentClipAmmo) or 0) or 0
+    local totalAmmo = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
+    local clipMissing = math.max(0, maxClip - curInClip)
+    return curInClip, maxClip, clipMissing, totalAmmo
+end
+
 --- Kai kurie resursai ar būsenos palieka begalinę apkabą — tada šūviai nenaudoja kulkų.
 local function clearPedWeaponInfiniteAmmo(ped, weaponHash)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then return end
@@ -78,13 +124,22 @@ local function clearPedWeaponInfiniteAmmo(ped, weaponHash)
 end
 
 local function resolveMaxClip(ped, weaponHash, weaponData)
+    local maxClip = 0
     for _, p2 in ipairs({ true, false }) do
         local hasMaxClip, maxClipAmmo = GetMaxAmmoInClip(ped, weaponHash, p2)
-        if hasMaxClip and maxClipAmmo and (tonumber(maxClipAmmo) or 0) > 0 then
-            return tonumber(maxClipAmmo)
+        if hasMaxClip and maxClipAmmo then
+            maxClip = math.max(maxClip, tonumber(maxClipAmmo) or 0)
         end
     end
+
     local weaponName = weaponData and weaponData.name
+    local attachmentCap = resolveAttachmentClipCapacity(weaponName, ped, weaponHash, weaponData)
+    if attachmentCap > 0 then
+        maxClip = math.max(maxClip, attachmentCap)
+    end
+
+    if maxClip > 0 then return maxClip end
+
     if weaponName and DefaultClipByWeapon[joaat(weaponName)] then
         return DefaultClipByWeapon[joaat(weaponName)]
     end
@@ -92,12 +147,19 @@ local function resolveMaxClip(ped, weaponHash, weaponData)
     return DefaultClipByAmmoType[ammoType] or 30
 end
 
-local function applyWeaponAmmoState(ped, weaponHash, ammo)
+local function applyWeaponAmmoState(ped, weaponHash, ammo, weaponData)
     ammo = math.max(0, tonumber(ammo) or 0)
+    weaponData = weaponData or QBCore.Shared.Weapons[weaponHash]
     SetPedAmmo(ped, weaponHash, ammo)
-    local maxClip = resolveMaxClip(ped, weaponHash, QBCore.Shared.Weapons[weaponHash])
+    local maxClip = resolveMaxClip(ped, weaponHash, weaponData)
     if maxClip > 0 then
-        SetAmmoInClip(ped, weaponHash, math.min(ammo, maxClip))
+        local _, clipNow = GetAmmoInClip(ped, weaponHash)
+        local curClip = math.max(0, tonumber(clipNow) or 0)
+        if curClip > 0 and curClip <= maxClip and curClip <= ammo then
+            SetAmmoInClip(ped, weaponHash, curClip)
+        else
+            SetAmmoInClip(ped, weaponHash, math.min(ammo, maxClip))
+        end
     end
     clearPedWeaponInfiniteAmmo(ped, weaponHash)
 end
@@ -140,9 +202,16 @@ local function getReloadWaitMs()
 end
 
 --- GTA rodo perkrovos animaciją tik kai rezerve yra kulkų — laikinai pridedam, po animacijos atstatom būseną.
+local function stopReloadAnimation(ped)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
+    ClearPedTasks(ped)
+    ClearPedSecondaryTask(ped)
+    SetPedCurrentWeaponVisible(ped, true, false, false, false)
+end
+
 local function playWeaponReloadAnimation(ped, weaponHash, bulletsToLoad)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then
-        Wait(900)
+        Wait(400)
         return
     end
 
@@ -158,26 +227,33 @@ local function playWeaponReloadAnimation(ped, weaponHash, bulletsToLoad)
 
     clearPedWeaponInfiniteAmmo(ped, weaponHash)
     SetCurrentPedWeapon(ped, weaponHash, true)
-    MakePedReload(ped)
-    if not IsPedReloading(ped) then
-        TaskReloadWeapon(ped, true)
-    end
 
-    local deadline = GetGameTimer() + getReloadWaitMs()
     local sawReload = false
-    while GetGameTimer() < deadline do
-        if IsPedReloading(ped) then
-            sawReload = true
-        elseif sawReload then
-            break
+    if not IsPedInAnyVehicle(ped, false) then
+        MakePedReload(ped)
+        if not IsPedReloading(ped) then
+            TaskReloadWeapon(ped, true)
         end
-        Wait(0)
+
+        local deadline = GetGameTimer() + getReloadWaitMs()
+        while GetGameTimer() < deadline do
+            if not DoesEntityExist(ped) then break end
+            if IsPedReloading(ped) then
+                sawReload = true
+            elseif sawReload then
+                break
+            end
+            Wait(0)
+        end
+    else
+        Wait(math.min(1200, getReloadWaitMs()))
     end
 
     if not sawReload then
-        Wait(math.min(1500, getReloadWaitMs()))
+        Wait(math.min(900, getReloadWaitMs()))
     end
 
+    stopReloadAnimation(ped)
     SetPedAmmo(ped, weaponHash, totalBefore)
     SetAmmoInClip(ped, weaponHash, clipNow)
     clearPedWeaponInfiniteAmmo(ped, weaponHash)
@@ -261,7 +337,7 @@ function applyHolsteredWeaponsFromInventory()
         end
 
         GiveWeaponToPed(ped, h, ammo, hidden, false)
-        applyWeaponAmmoState(ped, h, ammo)
+        applyWeaponAmmoState(ped, h, ammo, item)
 
         local weaponInfo = item.info or {}
         if weaponInfo.attachments then
@@ -426,17 +502,10 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         CurrentWeaponData = resolveCurrentWeaponDataByName(selectedWeaponData.name) or CurrentWeaponData
     end
 
-    local hasClip, currentClipAmmo = GetAmmoInClip(ped, weapon)
-    local maxC = resolveMaxClip(ped, weapon, selectedWeaponData)
-    local curInClip = 0
-    if hasClip and currentClipAmmo ~= nil then
-        curInClip = tonumber(currentClipAmmo) or 0
-    end
-    -- Tik vienos apkabos užpildymas (GTA max apkaba arba fallback). Nenaudojam GetMaxAmmo – tai būna ~250 visam rezervuarui.
-    local clipMissing = math.max(0, maxC - curInClip)
+    local curInClip, maxC, clipMissing = getClipAmmoState(ped, weapon, CurrentWeaponData or selectedWeaponData)
 
     if clipMissing <= 0 then
-        QBCore.Functions.Notify('Magazine is already full.', 'error')
+        QBCore.Functions.Notify(Lang:t('error.max_ammo') or 'Apkaba pilna.', 'error')
         return
     end
 
@@ -469,18 +538,19 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
 
         if not current or tostring(current.ammotype or ''):upper() ~= normalizedAmmoType then
             reloadGuardUntil = 0
+            stopReloadAnimation(ped)
             return QBCore.Functions.Notify(Lang:t('error.wrong_ammo'), 'error')
         end
 
-        local hasClipNow, currentClipAmmo = GetAmmoInClip(ped, weapon)
-        local maxCNow = resolveMaxClip(ped, weapon, current)
-        local curInClipNow = 0
-        if hasClipNow and currentClipAmmo ~= nil then
-            curInClipNow = tonumber(currentClipAmmo) or 0
+        local weaponPayload = CurrentWeaponData
+        if not weaponPayload or not weaponPayload.name then
+            weaponPayload = resolveCurrentWeaponDataByName(current.name) or selectedWeaponData
         end
-        local clipMissingNow = math.max(0, maxCNow - curInClipNow)
+
+        local curInClipNow, maxCNow, clipMissingNow = getClipAmmoState(ped, weapon, weaponPayload or current)
         if clipMissingNow <= 0 then
             reloadGuardUntil = 0
+            stopReloadAnimation(ped)
             return
         end
 
@@ -490,12 +560,14 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         end
         if bulletsNow <= 0 then
             reloadGuardUntil = 0
+            stopReloadAnimation(ped)
             return
         end
 
         local reallyLoaded = loadBulletsIntoClip(ped, weapon, current, bulletsNow)
         if reallyLoaded <= 0 then
             reloadGuardUntil = 0
+            stopReloadAnimation(ped)
             return QBCore.Functions.Notify('Nepavyko užpildyti apkabos.', 'error')
         end
 
@@ -520,7 +592,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             local p = PlayerPedId()
             local w = GetSelectedPedWeapon(p)
             if w ~= weapon then return end
-            applyWeaponAmmoState(p, w, GetAmmoInPedWeapon(p, w))
+            applyWeaponAmmoState(p, w, GetAmmoInPedWeapon(p, w), CurrentWeaponData)
             reloadGuardUntil = 0
         end)
     end
@@ -532,8 +604,15 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     local reloadBullets = bulletsToLoad
 
     CreateThread(function()
-        playWeaponReloadAnimation(reloadPed, reloadWeapon, reloadBullets)
-        finishReload()
+        local ok, err = pcall(function()
+            playWeaponReloadAnimation(reloadPed, reloadWeapon, reloadBullets)
+            finishReload()
+        end)
+        if not ok then
+            print(('[qb-weapons] reload error: %s'):format(tostring(err)))
+            stopReloadAnimation(PlayerPedId())
+            reloadGuardUntil = 0
+        end
         isReloading = false
     end)
 end)
