@@ -44,7 +44,7 @@ Config.Blips = {
 
     -- ── Pack 1 (papildomi) ──
     { resource = 'cfx-gabz-diner', label = 'Pop\'s Diner', coords = vec3(1576.905, 6451.104, 25.006), sprite = 93, color = 46 },
-    { resource = 'cfx-gabz-haters', label = 'Haters Shop', coords = vec3(-1115.524, -1439.953, 5.107), sprite = 73, color = 4 },
+    { resource = 'cfx-gabz-haters', label = 'Rūbų parduotuvė', coords = vec3(-1127.176, -1439.432, 5.228), sprite = 73, color = 4 },
     { resource = 'cfx-gabz-hayes', label = 'Hayes Auto', coords = vec3(-1434.173, -441.539, 35.624), sprite = 72, color = 46 },
 
     -- ── Pack 2 (papildomi) ──

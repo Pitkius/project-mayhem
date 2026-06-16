@@ -49,6 +49,27 @@ local function savePlayerSkin(Player, model, skinJson, cb)
     end)
 end
 
+local function tattooKey(entry)
+    return ('%s@%s'):format(tostring(entry.name or ''), tostring(entry.zone or ''))
+end
+
+local function countNewTattoos(oldSkin, newSkin)
+    if type(newSkin) ~= 'table' or type(newSkin.tattoos) ~= 'table' then return 0 end
+    local old = {}
+    if type(oldSkin) == 'table' and type(oldSkin.tattoos) == 'table' then
+        for _, t in ipairs(oldSkin.tattoos) do
+            old[tattooKey(t)] = true
+        end
+    end
+    local added = 0
+    for _, t in ipairs(newSkin.tattoos) do
+        if not old[tattooKey(t)] then
+            added = added + 1
+        end
+    end
+    return added
+end
+
 local function giveStarterItems(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
@@ -457,6 +478,59 @@ QBCore.Functions.CreateCallback('fivempro_charcreator:server:saveClothingShop', 
             cb(true, ('Apmokėta $%s (%s). Drabužiai išsaugoti.'):format(price, wallet))
         else
             cb(true, 'Drabužiai nepakito — nieko nemokėjai.')
+        end
+    end)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_charcreator:server:saveTattooShop', function(src, cb, model, skinJson, originalSkinJson)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then
+        return cb(false, 'Klaida.')
+    end
+    if type(skinJson) ~= 'string' or skinJson == '' then
+        return cb(false, 'Nepavyko išsaugoti tatuiruočių.')
+    end
+
+    local ok, newSkin = pcall(json.decode, skinJson)
+    if not ok or type(newSkin) ~= 'table' then
+        return cb(false, 'Nepavyko išsaugoti tatuiruočių.')
+    end
+
+    local oldSkin = nil
+    if type(originalSkinJson) == 'string' and originalSkinJson ~= '' then
+        local okOld, decoded = pcall(json.decode, originalSkinJson)
+        if okOld and type(decoded) == 'table' then
+            oldSkin = decoded
+        end
+    end
+
+    local added = countNewTattoos(oldSkin, newSkin)
+    local unitPrice = Config.TattooShopPrice or 350
+    local price = unitPrice * added
+    local paidFrom = nil
+
+    if price > 0 then
+        local cash = Player.PlayerData.money.cash or 0
+        local bank = Player.PlayerData.money.bank or 0
+        if cash >= price then
+            Player.Functions.RemoveMoney('cash', price, 'tattoo-shop')
+            paidFrom = 'cash'
+        elseif bank >= price then
+            Player.Functions.RemoveMoney('bank', price, 'tattoo-shop')
+            paidFrom = 'bank'
+        else
+            return cb(false, ('Nepakanka pinigų. Reikia $%s — tatuiruotės nuimtos.'):format(price))
+        end
+    end
+
+    local gender = Player.PlayerData.charinfo and Player.PlayerData.charinfo.gender or 0
+    model = sanitizeModel(model, gender)
+    savePlayerSkin(Player, model, skinJson, function()
+        if price > 0 then
+            local wallet = paidFrom == 'bank' and 'banko sąskaitos' or 'grynaisiais'
+            cb(true, ('Apmokėta $%s (%s) už %s tatuiruotę(-es).'):format(price, wallet, added))
+        else
+            cb(true, 'Išsaugota — naujų tatuiruočių nebuvo.')
         end
     end)
 end)

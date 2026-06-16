@@ -13,6 +13,7 @@ Config.BarberPeds = {
 
 --- Rūbų parduotuvės — prie kasos (qb-clothing vanilla zonos)
 Config.ClothingPeds = {
+    { model = 's_f_y_shop_mid', coords = vector4(-1127.1760, -1439.4318, 5.2283, 306.7758) },
     { model = 's_f_y_shop_mid', coords = vector4(73.9787, -1392.0791, 29.3761, 270.4405) },
     { model = 's_f_y_shop_mid', coords = vector4(-712.22, -155.35, 37.42, 122.0) },
     { model = 's_f_y_shop_mid', coords = vector4(-162.66, -303.40, 38.73, 251.0) },

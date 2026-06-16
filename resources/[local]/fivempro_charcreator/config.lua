@@ -19,6 +19,7 @@ Config.BarberSteps = { 'hair', 'facedetails' }
 
 --- Tatuiruočių salonas
 Config.TattooShopSteps = { 'tattoos' }
+Config.TattooShopPrice = 350
 Config.TattooZones = {
     { id = 'ZONE_HEAD', label = 'Galva' },
     { id = 'ZONE_TORSO', label = 'Liemuo' },

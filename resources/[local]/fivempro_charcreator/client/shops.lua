@@ -11,6 +11,7 @@ function ShopSession.IsActive()
 end
 
 function ShopSession.Teardown(reloadSkin)
+    local kind = ShopSession.kind
     CharCamera.disable()
 
     local ped = PlayerPedId()
@@ -21,12 +22,15 @@ function ShopSession.Teardown(reloadSkin)
         SetEntityVisible(ped, true, false)
         ResetEntityAlpha(ped)
     end
+    SetPlayerControl(PlayerId(), true, 0)
 
     if ShopSession.active and reloadSkin then
         if ShopSession.originalSkinJson then
             CharAppearance.setPreviewPed(ped)
             CharAppearance.loadFromJson(ShopSession.originalSkinJson)
         end
+        TriggerServerEvent('qb-clothes:loadPlayerSkin')
+    elseif ShopSession.active and kind == 'tattoo' and not reloadSkin then
         TriggerServerEvent('qb-clothes:loadPlayerSkin')
     end
 
@@ -116,7 +120,7 @@ function ShopSession.Open(kind, camLoc)
 
         local gender = getSessionGender(data)
 
-        if kind == 'clothing' then
+        if kind == 'clothing' or kind == 'tattoo' then
             ShopSession.originalSkinJson = data.current and data.current.skin or nil
         else
             ShopSession.originalSkinJson = nil
@@ -180,6 +184,21 @@ RegisterNUICallback('saveShop', function(_, cb)
             else
                 ShopSession.Teardown(true)
                 QBCore.Functions.Notify(msg or 'Nepakanka pinigų — drabužiai nuimti.', 'error')
+            end
+            cb('ok')
+        end, model, skinJson, ShopSession.originalSkinJson)
+        return
+    end
+
+    if ShopSession.kind == 'tattoo' then
+        QBCore.Functions.TriggerCallback('fivempro_charcreator:server:saveTattooShop', function(ok, msg)
+            if ok then
+                ShopSession.originalSkinJson = nil
+                ShopSession.Teardown(false)
+                QBCore.Functions.Notify(msg or 'Išsaugota.', 'success')
+            else
+                ShopSession.Teardown(true)
+                QBCore.Functions.Notify(msg or 'Nepakanka pinigų — tatuiruotės nuimtos.', 'error')
             end
             cb('ok')
         end, model, skinJson, ShopSession.originalSkinJson)

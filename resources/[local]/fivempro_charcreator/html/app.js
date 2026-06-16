@@ -602,8 +602,7 @@ function startShop() {
 }
 
 document.getElementById('btnCancel').onclick = () => {
-  post('cancelShop');
-  closeUi();
+  post('cancelShop').then(() => closeUi());
 };
 
 document.getElementById('btnBack').onclick = () => {
@@ -623,11 +622,10 @@ document.getElementById('btnNext').onclick = () => {
 
   if (step.id === 'review' || (isShop() && stepIndex === steps.length - 1)) {
     if (isShop()) {
-      post('saveShop');
+      post('saveShop').then(() => closeUi());
     } else {
-      post(wizardMode === 'edit' ? 'saveAppearance' : 'createChar', payload);
+      post(wizardMode === 'edit' ? 'saveAppearance' : 'createChar', payload).then(() => closeUi());
     }
-    closeUi();
     return;
   }
   if (stepIndex < steps.length - 1) {
@@ -658,8 +656,7 @@ function onCameraKeydown(e) {
   if (app.classList.contains('hidden')) return;
   if (e.key === 'Escape' && isShop()) {
     e.preventDefault();
-    post('cancelShop');
-    closeUi();
+    post('cancelShop').then(() => closeUi());
     return;
   }
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
