@@ -3,79 +3,122 @@ pcall(function()
     QBCore = exports['qb-core']:GetCoreObject()
 end)
 
-local function isDevMode()
-    return GetConvarInt('moo', 0) == 31337
-end
+local resmonVisible = false
 
 local function notify(msg, ntype)
     if QBCore and QBCore.Functions and QBCore.Functions.Notify then
-        QBCore.Functions.Notify(msg, ntype or 'primary', 10000)
+        QBCore.Functions.Notify(msg, ntype or 'primary', 9000)
     end
     print(('[^5fivempro_devtools^7] %s'):format(msg))
 end
 
-local function devGuard()
+local function isStaff()
+    return IsAceAllowed('command.resmon')
+        or IsAceAllowed('command.profiler')
+        or IsAceAllowed('group.admin')
+end
+
+local function isDevMode()
+    return GetConvarInt('moo', 0) == 31337
+end
+
+local function tryEnableDevMode()
     if isDevMode() then return true end
-    notify('Dev režimas išjungtas. Paleisk FiveM per tools/Start-FiveM-Dev.bat (+set moo 31337)', 'error')
-    return false
+    ExecuteCommand('set moo 31337')
+    Wait(50)
+    return isDevMode()
 end
 
 local function printHelp()
     print([[
 ^5════════ fivempro_devtools ════════^7
+^3Resmon (resursų apkrova)^7
+  ^2F10^7 — įjungti / išjungti resmon
+  F8: resmon true  |  resmon false
+
 ^3NUI (HTML/CSS/JS)^7
-  F8: nui_devTools
-  Naršyklė: ^2http://localhost:13172/^7  ← pasirink resursą (pvz. fivempro_charcreator), NE pilkas „Main cfx.re“
-  Žaidime: /devtools  arba ^2F10^7
+  /devtools  arba F8: nui_devTools
+  Naršyklė: ^2http://localhost:13172/^7
 
-^3Resursų apkrova (klientas)^7
-  F8: resmon true   |   resmon false
-  Žaidime: /devresmon 1  |  /devresmon 0
-
-^3Serverio profilis (txAdmin Live Console)^7
+^3Serverio profilis (txAdmin)^7
   profiler record 300
   profiler view
 
-^3Greita diagnostika^7
-  /devhelp — šis sąrašas
+^3Jei F10 neveikia^7
+  Paleisk FiveM per ^2tools\Start-FiveM-Dev.bat^7
+  arba shortcut su: +set moo 31337
 ^5══════════════════════════════════^7]])
 end
 
+local function toggleResmon()
+    if not isStaff() then
+        notify('Resmon tik adminams.', 'error')
+        return
+    end
+
+    if not tryEnableDevMode() then
+        notify('Dev režimas išjungtas. Paleisk FiveM per tools\\Start-FiveM-Dev.bat (+set moo 31337)', 'error')
+        return
+    end
+
+    resmonVisible = not resmonVisible
+    ExecuteCommand(resmonVisible and 'resmon true' or 'resmon false')
+    notify(resmonVisible and 'Resmon įjungtas (F10 — uždaryti)' or 'Resmon išjungtas', resmonVisible and 'success' or 'primary')
+end
+
+RegisterCommand('devresmon_toggle', toggleResmon, false)
+RegisterKeyMapping('devresmon_toggle', 'Resmon — resursų monitorius (admin)', 'keyboard', 'F10')
+
 RegisterCommand('devhelp', function()
     printHelp()
-    if devGuard() then
-        notify('Instrukcijos — F8 konsolėje (devhelp)', 'success')
-    end
+    notify('Instrukcijos — F8 konsolėje (/devhelp)', 'primary')
 end, false)
 
 RegisterCommand('devtools', function()
-    if not devGuard() then return end
+    if not isStaff() then
+        notify('Tik adminams.', 'error')
+        return
+    end
+    if not tryEnableDevMode() then
+        notify('Paleisk FiveM per tools\\Start-FiveM-Dev.bat', 'error')
+        return
+    end
     ExecuteCommand('nui_devTools')
-    notify('NUI DevTools: naršyklėje atidaryk http://localhost:13172/ ir pasirink UI resursą', 'primary')
+    notify('NUI DevTools — naršyklėje: http://localhost:13172/', 'primary')
 end, false)
 
 RegisterCommand('devresmon', function(_, args)
-    if not devGuard() then return end
+    if not isStaff() then
+        notify('Tik adminams.', 'error')
+        return
+    end
+    if not tryEnableDevMode() then
+        notify('Paleisk FiveM per tools\\Start-FiveM-Dev.bat', 'error')
+        return
+    end
     local arg = args[1]
     local on = not (arg == '0' or arg == 'false' or arg == 'off')
+    resmonVisible = on
     ExecuteCommand(on and 'resmon true' or 'resmon false')
-    notify(on and 'resmon įjungtas (F8 overlay)' or 'resmon išjungtas', on and 'success' or 'error')
+    notify(on and 'Resmon įjungtas' or 'Resmon išjungtas', on and 'success' or 'primary')
 end, false)
 
 RegisterCommand('devnui', function()
-    if not devGuard() then return end
-    notify('Atidaryk Chrome/Edge: http://localhost:13172/', 'primary')
-    print('^2[fivempro_devtools]^7 NUI sąrašas: http://localhost:13172/')
+    if not isStaff() then return end
+    notify('Atidaryk: http://localhost:13172/', 'primary')
 end, false)
 
-RegisterKeyMapping('devtools', 'NUI DevTools (reikia dev režimo)', 'keyboard', 'F10')
+RegisterNetEvent('fivempro_devtools:client:enableDev', function()
+    tryEnableDevMode()
+end)
 
 CreateThread(function()
-    Wait(4000)
-    if not isDevMode() then
-        print('[^3fivempro_devtools^7] Dev OFF — naudok tools/Start-FiveM-Dev.bat. Komandos: /devhelp')
+    Wait(5000)
+    if not isStaff() then return end
+    if isDevMode() then
+        printHelp()
+        notify('Dev ON | F10 = resmon | /devtools = NUI inspector', 'success')
         return
     end
-    printHelp()
-    notify('Dev ON | NUI: F10 arba http://localhost:13172/ | resmon: /devresmon 1', 'success')
+    print('[^3fivempro_devtools^7] Dev OFF — F10/resmon reikia +set moo 31337. Paleisk tools\\Start-FiveM-Dev.bat')
 end)
