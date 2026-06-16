@@ -17,8 +17,6 @@ Config.StreamZones = {
     vector3(4715.03, -4529.36, 26.82),
     vector3(4519.86, -4514.64, 4.50),
     vector3(4489.08, -4453.93, 4.22),
-    vector3(5186.06, -5152.00, 3.60),
-    vector3(5185.57, -5147.68, 3.62),
 }
 
 --- Blipas — rodomas tik kai IPL įkrauti (priartėjus)

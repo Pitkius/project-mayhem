@@ -120,7 +120,7 @@
       const d = msg.data || {};
       state.products = d.products || [];
       state.stationKey = d.stationKey;
-      state.selectedId = state.products.find((x) => !x.locked)?.id || (state.products[0] && state.products[0].id) || null;
+      state.selectedId = (state.products[0] && state.products[0].id) || null;
       if (stationLabel) stationLabel.textContent = d.stationLabel || "MRPD ginklinė";
       if (levelBar) {
         let txt = `Gamybos lygis ${d.craftLevel || 1} / ${d.maxLevel || 3}`;

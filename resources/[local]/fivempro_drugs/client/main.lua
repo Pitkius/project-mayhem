@@ -576,10 +576,10 @@ local function setupStationBlips()
         addCfgBlip(heroinLab.blip.coords, heroinLab.blip, heroinLab.blip.label or 'Heroino laboratorija')
     end
 
-    -- Žolės džiovinimas (Cayo) — blipas tik priartėjus prie salos
+    -- Žolės džiovinimas (hid_weed_lab)
     local weedCayo = Config.WeedCayoLab
     if weedCayo and weedCayo.blip and (not weedCayo.requireIsland or isCayoIslandLoaded()) then
-        addCfgBlip(weedCayo.blip.coords, weedCayo.blip, weedCayo.blip.label or 'Žolės džiovinimas (Cayo)')
+        addCfgBlip(weedCayo.blip.coords, weedCayo.blip, weedCayo.blip.label or 'Žolės džiovinimas')
     end
 
     -- Amfetamino laboratorija

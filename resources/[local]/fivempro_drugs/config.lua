@@ -822,34 +822,33 @@ Config.WeedGrow = {
     },
 }
 
---- Žolės laboratorija — Cayo Perico (hid_weed_lab MLO + stalai)
+--- Žolės džiovinimas — hid_weed_lab MLO (Davis / LS)
 Config.WeedCayoLab = {
-    requireIsland = true,
     blip = {
         enabled = true,
-        coords = vector3(5185.82, -5149.84, 3.61),
+        coords = vector3(1144.82, -1659.86, 36.61),
         sprite = 140,
         color = 25,
         scale = 0.78,
         shortRange = true,
-        label = 'Žolės džiovinimas (Cayo)',
+        label = 'Žolės džiovinimas',
     },
     stations = {
         {
-            id = 'cayo_weed_dry_1',
+            id = 'weed_dry_1',
             label = 'Žolė · džiovinimas',
             level = 2,
-            coords = vector3(5186.0610, -5152.0049, 3.6043),
-            heading = 100.9467,
+            coords = vector3(1144.3669, -1658.9980, 36.6147),
+            heading = 292.0355,
             radius = 1.5,
             products = { 'weed_process' },
         },
         {
-            id = 'cayo_weed_dry_2',
+            id = 'weed_dry_2',
             label = 'Žolė · džiovinimas',
             level = 2,
-            coords = vector3(5185.5698, -5147.6777, 3.6213),
-            heading = 291.4137,
+            coords = vector3(1145.2770, -1660.7167, 36.6147),
+            heading = 291.2983,
             radius = 1.5,
             products = { 'weed_process' },
         },

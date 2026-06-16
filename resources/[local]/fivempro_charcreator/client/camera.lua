@@ -134,7 +134,10 @@ local function refreshSceneLighting()
     SetWeatherTypePersist('EXTRASUNNY')
     SetWeatherTypeNow('EXTRASUNNY')
     SetRainLevel(0.0)
-    SetArtificialLightsState(false)
+    SetArtificialLightsState(true)
+    ClearTimecycleModifier()
+    SetTimecycleModifier('MP_corona_heist_blend')
+    SetTimecycleModifierStrength(0.28)
 end
 
 function CharCamera.enable()
@@ -167,6 +170,9 @@ function CharCamera.enable()
             if delta ~= 0.0 then
                 CharCamera.addOrbit(delta)
             end
+            local base = pedBase()
+            DrawLightWithRange(base.x, base.y, base.z + 1.35, 255, 248, 240, 2.8, 4.2)
+            DrawLightWithRange(base.x + 0.6, base.y + 0.4, base.z + 0.9, 196, 148, 255, 1.6, 2.4)
         end
     end)
 end

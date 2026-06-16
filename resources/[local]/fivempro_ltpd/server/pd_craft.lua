@@ -164,21 +164,22 @@ local function buildProductRows(Player, craftLevel)
     local rows = {}
     for id, recipe in pairs(cfg().recipes or {}) do
         local needLv = tonumber(recipe.craftLevel) or 1
-        local locked = craftLevel < needLv
-        local out = recipe.output
-        local outLabel = QBCore.Shared.Items[out] and QBCore.Shared.Items[out].label or out
-        local timeSec = math.ceil((tonumber(recipe.timeMs) or 10000) / 1000)
-        rows[#rows + 1] = {
-            id = id,
-            label = recipe.label or id,
-            outputLabel = outLabel,
-            outputCount = recipe.count or 1,
-            craftLevel = needLv,
-            levelLabel = labels[needLv] or ('Lygis ' .. needLv),
-            locked = locked,
-            timeLabel = timeSec >= 60 and ('~%d min'):format(math.ceil(timeSec / 60)) or ('%d sek.'):format(timeSec),
-            ingredients = buildIngredientStatus(Player, recipe),
-        }
+        if craftLevel >= needLv then
+            local out = recipe.output
+            local outLabel = QBCore.Shared.Items[out] and QBCore.Shared.Items[out].label or out
+            local timeSec = math.ceil((tonumber(recipe.timeMs) or 10000) / 1000)
+            rows[#rows + 1] = {
+                id = id,
+                label = recipe.label or id,
+                outputLabel = outLabel,
+                outputCount = recipe.count or 1,
+                craftLevel = needLv,
+                levelLabel = labels[needLv] or ('Lygis ' .. needLv),
+                locked = false,
+                timeLabel = timeSec >= 60 and ('~%d min'):format(math.ceil(timeSec / 60)) or ('%d sek.'):format(timeSec),
+                ingredients = buildIngredientStatus(Player, recipe),
+            }
+        end
     end
     table.sort(rows, function(a, b)
         if a.craftLevel ~= b.craftLevel then return a.craftLevel < b.craftLevel end

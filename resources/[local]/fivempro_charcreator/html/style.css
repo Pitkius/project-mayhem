@@ -1,9 +1,10 @@
 :root {
-  --cc-glass: rgba(12, 8, 22, 0.82);
-  --cc-border: rgba(168, 85, 247, 0.38);
+  --cc-glass: rgba(18, 12, 32, 0.48);
+  --cc-glass-strong: rgba(22, 14, 38, 0.62);
+  --cc-border: rgba(168, 85, 247, 0.34);
   --cc-violet: #a855f7;
   --cc-violet-lit: #c084fc;
-  --cc-violet-dim: rgba(168, 85, 247, 0.18);
+  --cc-violet-dim: rgba(168, 85, 247, 0.16);
   --cc-text: #f4efff;
   --cc-muted: #a89bc8;
   --cc-radius: 16px;
@@ -13,7 +14,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   font-family: var(--cc-font);
-  background: transparent !important;
+  background: none !important;
+  background-color: rgba(0, 0, 0, 0) !important;
   color: var(--cc-text);
   overflow: hidden;
 }
@@ -28,10 +30,27 @@ html, body {
   animation: ccIn 0.4s ease;
   background: transparent;
 }
-#app > * {
+#app > *:not(.cc-ambient) {
   pointer-events: auto;
   position: relative;
   z-index: 1;
+}
+
+/* Kairė — švelnus violetinis filtras; dešinė — visiškai permatoma (personažo peržiūra) */
+.cc-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 80% at 18% 50%, rgba(124, 58, 237, 0.14), transparent 72%),
+    linear-gradient(
+      100deg,
+      rgba(10, 6, 20, 0.42) 0%,
+      rgba(10, 6, 20, 0.22) 34%,
+      rgba(10, 6, 20, 0.06) 48%,
+      transparent 62%
+    );
 }
 
 @keyframes ccIn {
@@ -42,10 +61,10 @@ html, body {
 .glass {
   background: var(--cc-glass);
   border: 1px solid var(--cc-border);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border-radius: var(--cc-radius);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 #screenWizard {
@@ -173,7 +192,7 @@ html, body {
 .field input[type="text"],
 .field input[type="date"],
 .field input:not([type]) {
-  background: rgba(20, 14, 32, 0.75);
+  background: rgba(20, 14, 32, 0.52);
   border: 1px solid var(--cc-border);
   border-radius: 10px;
   padding: 10px 12px;
@@ -196,7 +215,7 @@ html, body {
   padding: 9px 14px;
   border-radius: 999px;
   border: 1px solid var(--cc-border);
-  background: rgba(20, 14, 32, 0.6);
+  background: rgba(20, 14, 32, 0.45);
   color: var(--cc-muted);
   font-size: 0.82rem;
   cursor: pointer;
@@ -218,7 +237,7 @@ html, body {
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid var(--cc-border);
-  background: rgba(20, 14, 32, 0.55);
+  background: rgba(20, 14, 32, 0.4);
   color: var(--cc-text);
   text-align: left;
   cursor: pointer;
@@ -310,7 +329,7 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 4px 24px rgba(124, 58, 237, 0.45);
 }
 .btn.ghost {
-  background: rgba(20, 14, 32, 0.5);
+  background: rgba(20, 14, 32, 0.38);
   color: var(--cc-muted);
   border: 1px solid var(--cc-border);
 }

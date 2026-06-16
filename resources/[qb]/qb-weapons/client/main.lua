@@ -107,22 +107,6 @@ local function resolveAttachmentClipCapacity(weaponName, ped, weaponHash, weapon
     return cap
 end
 
-local function getClipAmmoState(ped, weaponHash, weaponData)
-    local maxClip = resolveMaxClip(ped, weaponHash, weaponData)
-    local hasClip, currentClipAmmo = GetAmmoInClip(ped, weaponHash)
-    local curInClip = hasClip and (tonumber(currentClipAmmo) or 0) or 0
-    local totalAmmo = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
-    local clipMissing = math.max(0, maxClip - curInClip)
-    return curInClip, maxClip, clipMissing, totalAmmo
-end
-
---- Kai kurie resursai ar būsenos palieka begalinę apkabą — tada šūviai nenaudoja kulkų.
-local function clearPedWeaponInfiniteAmmo(ped, weaponHash)
-    if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then return end
-    SetPedInfiniteAmmoClip(ped, false)
-    SetPedInfiniteAmmo(ped, false, weaponHash)
-end
-
 local function resolveMaxClip(ped, weaponHash, weaponData)
     local maxClip = 0
     for _, p2 in ipairs({ true, false }) do
@@ -145,6 +129,22 @@ local function resolveMaxClip(ped, weaponHash, weaponData)
     end
     local ammoType = tostring(weaponData and weaponData.ammotype or ''):upper()
     return DefaultClipByAmmoType[ammoType] or 30
+end
+
+local function getClipAmmoState(ped, weaponHash, weaponData)
+    local maxClip = resolveMaxClip(ped, weaponHash, weaponData)
+    local hasClip, currentClipAmmo = GetAmmoInClip(ped, weaponHash)
+    local curInClip = hasClip and (tonumber(currentClipAmmo) or 0) or 0
+    local totalAmmo = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
+    local clipMissing = math.max(0, maxClip - curInClip)
+    return curInClip, maxClip, clipMissing, totalAmmo
+end
+
+--- Kai kurie resursai ar būsenos palieka begalinę apkabą — tada šūviai nenaudoja kulkų.
+local function clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then return end
+    SetPedInfiniteAmmoClip(ped, false)
+    SetPedInfiniteAmmo(ped, false, weaponHash)
 end
 
 local function applyWeaponAmmoState(ped, weaponHash, ammo, weaponData)
