@@ -160,11 +160,11 @@ local function startAmpSynthesis()
             quizDone = true
         end)
 
-        QBCore.Functions.Progressbar('fivempro_amp_synth', 'Amfetamino sintezė…', duration, false, true, {
+        DrugProgress.run('fivempro_amp_synth', 'Amfetamino sintezė…', duration, false, true, {
             disableMovement = true,
             disableCarMovement = true,
             disableCombat = true,
-        }, {}, {}, {}, function()
+        }, nil, function()
             flareToken = flareToken + 1
             synthesizing = false
             while not quizDone do Wait(50) end

@@ -255,6 +255,27 @@ Config.Stations = {
     { id = 'weapon_bench_l3', label = 'Ginklų dirbtuvė · L3', level = 3, mode = 'weapon', coords = devRow(17.0), radius = 2.2, blip = false },
 }
 
+--[[
+  PLANNED — LSD tablet (turinys dar nežinomas).
+  Kai turėsi vietą žaidime: /coords → įrašyk į coords žemiau.
+  Blipas pasirodys žemėlapyje kai coords != nil ir showBlip = true.
+]]
+Config.PlannedSites = {
+    lsd_tablet = {
+        coords = nil, -- pvz. vector4(892.26, -960.85, 38.18, 0.0)
+        label = 'LSD tablet (planuojama)',
+        note = 'Čia bus LSD tablet susijęs content — mechanika ir NPC dar TBD.',
+        showBlip = true,
+        blip = {
+            sprite = 606,
+            color = 27,
+            scale = 0.78,
+            shortRange = true,
+            label = 'LSD tablet (TBD)',
+        },
+    },
+}
+
 --- Nešiojamas 3D spausdintuvas (itemas · DB · spausdinimas)
 Config.Printer3d = {
     item = '3d_printer',
@@ -697,6 +718,8 @@ Config.MushroomFields = {
         amountMax = 2,
         pickDurationMs = 5200,
         pickDistance = 2.4,
+        pickLabel = 'Rinkti grybus',
+        zoneRadius = 1.05,
         prop = 'prop_stoneshroom2',
         blip = {
             enabled = true,
@@ -722,7 +745,9 @@ Config.CocaFields = {
         pickDurationMs = 5400,
         pickDistance = 2.5,
         pickLabel = 'Rinkti kokos lapus',
-        prop = 'prop_bush_neat_04',
+        zoneRadius = 1.05,
+        prop = 'prop_plant_paradise_b',
+        propScale = 0.52,
         requireIsland = true,
         blip = {
             enabled = true,
@@ -794,6 +819,40 @@ Config.WeedGrow = {
         { min = 0, model = 'prop_weed_01' },
         { min = 35, model = 'prop_weed_02' },
         { min = 70, model = 'bkr_prop_weed_lrg_01a' },
+    },
+}
+
+--- Žolės laboratorija — Cayo Perico (hid_weed_lab MLO + stalai)
+Config.WeedCayoLab = {
+    requireIsland = true,
+    blip = {
+        enabled = true,
+        coords = vector3(5185.82, -5149.84, 3.61),
+        sprite = 140,
+        color = 25,
+        scale = 0.78,
+        shortRange = true,
+        label = 'Žolės džiovinimas (Cayo)',
+    },
+    stations = {
+        {
+            id = 'cayo_weed_dry_1',
+            label = 'Žolė · džiovinimas',
+            level = 2,
+            coords = vector3(5186.0610, -5152.0049, 3.6043),
+            heading = 100.9467,
+            radius = 1.5,
+            products = { 'weed_process' },
+        },
+        {
+            id = 'cayo_weed_dry_2',
+            label = 'Žolė · džiovinimas',
+            level = 2,
+            coords = vector3(5185.5698, -5147.6777, 3.6213),
+            heading = 291.4137,
+            radius = 1.5,
+            products = { 'weed_process' },
+        },
     },
 }
 

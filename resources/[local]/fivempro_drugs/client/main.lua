@@ -224,6 +224,12 @@ local function getAllStations()
             list[#list + 1] = st
         end
     end
+    local weedCayo = Config.WeedCayoLab
+    if weedCayo and weedCayo.stations then
+        for _, st in ipairs(weedCayo.stations) do
+            list[#list + 1] = st
+        end
+    end
     local ampLab = Config.AmpMobileLab
     if ampLab and ampLab.packStation then
         list[#list + 1] = ampLab.packStation
@@ -521,6 +527,17 @@ local function setupStationBlips()
         })
     end
 
+    local function isCayoIslandLoaded()
+        if GetResourceState('fivempro_cayoperico') ~= 'started' then return false end
+        return exports['fivempro_cayoperico']:IsIslandLoaded()
+    end
+
+    local function addFieldBlip(field, fallbackLabel)
+        if not field or not field.center then return end
+        if field.requireIsland and not isCayoIslandLoaded() then return end
+        addCfgBlip(field.center, field.blip, field.blip and field.blip.label or fallbackLabel)
+    end
+
     -- Nelegalūs reikmenys (Grove)
     local supply = Config.SupplyShopNPC
     if supply and supply.enabled ~= false and supply.coords then
@@ -548,17 +565,21 @@ local function setupStationBlips()
         end
     end
 
-    -- Kokos lapai (Cayo)
+    -- Kokos lapai (Cayo) — blipas tik priartėjus prie salos
     for _, field in ipairs(Config.CocaFields or {}) do
-        if field.center then
-            addCfgBlip(field.center, field.blip, field.blip and field.blip.label or 'Kokos lapai')
-        end
+        addFieldBlip(field, 'Kokos lapai')
     end
 
     -- Heroino laboratorija
     local heroinLab = Config.HeroinLab
     if heroinLab and heroinLab.blip then
         addCfgBlip(heroinLab.blip.coords, heroinLab.blip, heroinLab.blip.label or 'Heroino laboratorija')
+    end
+
+    -- Žolės džiovinimas (Cayo) — blipas tik priartėjus prie salos
+    local weedCayo = Config.WeedCayoLab
+    if weedCayo and weedCayo.blip and (not weedCayo.requireIsland or isCayoIslandLoaded()) then
+        addCfgBlip(weedCayo.blip.coords, weedCayo.blip, weedCayo.blip.label or 'Žolės džiovinimas (Cayo)')
     end
 
     -- Amfetamino laboratorija
@@ -579,6 +600,26 @@ local function setupStationBlips()
         end
     end
 
+    -- Nelegalūs reikmenys (test) — tik kai įjungtas test NPC
+    if Config.EnableDrugTestNPC then
+        local testShop = Config.TestSupplyShopNPC
+        if testShop and testShop.coords then
+            addCfgBlip(
+                vector3(testShop.coords.x, testShop.coords.y, testShop.coords.z),
+                { enabled = true, sprite = 52, color = 27, scale = 0.75, label = testShop.label or 'Nelegalūs reikmenys (test)' },
+                testShop.label
+            )
+        end
+        local testNpc = Config.TestNPC
+        if testNpc and testNpc.coords then
+            addCfgBlip(
+                vector3(testNpc.coords.x, testNpc.coords.y, testNpc.coords.z),
+                { enabled = true, sprite = 496, color = 27, scale = 0.75, label = testNpc.label or 'Narkotikų gamyba (test)' },
+                testNpc.label
+            )
+        end
+    end
+
     if not Config.ShowStationBlips then return end
     local hub = Config.DevHub
     local def = Config.StationBlip or {}
@@ -593,6 +634,10 @@ local function setupStationBlips()
         })
     end
 end
+
+AddEventHandler('fivempro_cayoperico:client:islandState', function()
+    setupStationBlips()
+end)
 
 local function setupStations()
     if GetResourceState('qb-target') ~= 'started' then return end

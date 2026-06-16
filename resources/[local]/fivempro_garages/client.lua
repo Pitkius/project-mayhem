@@ -61,6 +61,22 @@ end
 local GARAGE_SPRITE = 357
 local GARAGE_COLOR = 3
 local GARAGE_SCALE = 0.75
+local garageMapBlips = {}
+
+local function isCayoIslandLoaded()
+    if GetResourceState('fivempro_cayoperico') ~= 'started' then return false end
+    return exports['fivempro_cayoperico']:IsIslandLoaded()
+end
+
+local function garageNeedsIsland(garage)
+    return garage.requireIsland == true
+end
+
+local function canShowGarageBlip(garage)
+    if garage.hideBlip then return false end
+    if garageNeedsIsland(garage) then return isCayoIslandLoaded() end
+    return true
+end
 
 local uiOpen = false
 local previewVehicle = nil
@@ -564,10 +580,21 @@ CreateThread(function()
     end
 end)
 
+local function clearGarageMapBlips()
+    for _, blip in ipairs(garageMapBlips) do
+        if blip and DoesBlipExist(blip) then
+            RemoveBlip(blip)
+        end
+    end
+    garageMapBlips = {}
+end
+
 local function createGarageMapBlips()
+    clearGarageMapBlips()
+
     if Config.UseSingleGarageMapBlip then
         local ref = Config.Garages[1]
-        if not ref then return end
+        if not ref or not canShowGarageBlip(ref) then return end
         local cx, cy, cz = ref.coords.x, ref.coords.y, ref.coords.z
         if Config.GarageMapBlipCoords then
             cx = Config.GarageMapBlipCoords.x
@@ -585,11 +612,12 @@ local function createGarageMapBlips()
         if cat and cat > 0 then
             SetBlipCategory(blip, cat)
         end
+        garageMapBlips[#garageMapBlips + 1] = blip
         return
     end
 
     for _, garage in ipairs(Config.Garages) do
-        if not garage.hideBlip then
+        if canShowGarageBlip(garage) then
             local blip = AddBlipForCoord(garage.coords.x, garage.coords.y, garage.coords.z)
             SetBlipSprite(blip, garage.blipSprite or GARAGE_SPRITE)
             SetBlipDisplay(blip, 4)
@@ -601,9 +629,14 @@ local function createGarageMapBlips()
             if cat and cat > 0 then
                 SetBlipCategory(blip, cat)
             end
+            garageMapBlips[#garageMapBlips + 1] = blip
         end
     end
 end
+
+AddEventHandler('fivempro_cayoperico:client:islandState', function()
+    createGarageMapBlips()
+end)
 
 local function drawFlatCylinderMarker(pos, scaleX, scaleY, scaleZ, r, g, b, a)
     DrawMarker(

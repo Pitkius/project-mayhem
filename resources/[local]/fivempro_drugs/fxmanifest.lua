@@ -20,7 +20,9 @@ shared_scripts {
 }
 
 client_scripts {
+    'client/progress.lua',
     'client/main.lua',
+    'client/planned.lua',
     'client/printer.lua',
     'client/mushrooms.lua',
     'client/weed.lua',

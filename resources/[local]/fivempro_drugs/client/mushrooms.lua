@@ -15,6 +15,10 @@ local function allHarvestFields()
     return out
 end
 
+local function zoneName(fieldId, spawnIndex)
+    return ('fivempro_harvest_%s_%s'):format(tostring(fieldId), tostring(spawnIndex))
+end
+
 local function loadModel(model)
     local hash = type(model) == 'string' and joaat(model) or model
     if not IsModelInCdimage(hash) then return nil end
@@ -60,37 +64,101 @@ local function spawnCoordForIndex(field, index)
     return vector3(x, y, z)
 end
 
-local function deleteSpawnEntity(spawn)
+local function removeHarvestZone(fieldId, spawnIndex)
+    pcall(function()
+        exports['qb-target']:RemoveZone(zoneName(fieldId, spawnIndex))
+    end)
+end
+
+local function deleteSpawnEntity(fieldId, spawn)
     if spawn.entity and DoesEntityExist(spawn.entity) then
-        exports['qb-target']:RemoveTargetEntity(spawn.entity)
         DeleteEntity(spawn.entity)
     end
     spawn.entity = nil
+    removeHarvestZone(fieldId, spawn.index)
 end
 
-local function attachTarget(field, spawn)
-    if not spawn.entity or not DoesEntityExist(spawn.entity) then return end
-    exports['qb-target']:AddTargetEntity(spawn.entity, {
+local function tryPickHarvest(fieldId, spawnIndex)
+    if picking then return end
+    spawnIndex = tonumber(spawnIndex)
+    if not fieldId or not spawnIndex then return end
+
+    local state = fieldSpawns[fieldId]
+    if not state then return end
+    local spawn = state.spawns[spawnIndex]
+    if not spawn or not spawn.available then
+        return QBCore.Functions.Notify('Čia jau nieko nėra.', 'error')
+    end
+
+    local ped = PlayerPedId()
+    local pcoords = GetEntityCoords(ped)
+    local interactAt = spawn.coords
+    if spawn.entity and DoesEntityExist(spawn.entity) then
+        interactAt = GetEntityCoords(spawn.entity)
+    end
+
+    if #(pcoords - interactAt) > (state.field.pickDistance or 2.4) + 1.0 then
+        return QBCore.Functions.Notify('Per toli.', 'error')
+    end
+
+    picking = true
+    local label = state.field.pickLabel or 'Renki…'
+    DrugProgress.run('fivempro_drugs_harvest', label, state.field.pickDurationMs or 5200, false, true, {
+        disableMovement = true,
+        disableCarMovement = true,
+        disableMouse = false,
+        disableCombat = true,
+    }, {
+        animDict = 'amb@world_human_gardener_plant@male@base',
+        anim = 'base',
+        flags = 49,
+    }, function()
+        picking = false
+        TriggerServerEvent('fivempro_drugs:server:pickMushroom', fieldId, spawnIndex, pcoords.x, pcoords.y, pcoords.z)
+    end, function()
+        picking = false
+        QBCore.Functions.Notify('Atšaukta.', 'error')
+    end)
+end
+
+local function attachHarvestZone(field, spawn)
+    if not spawn.available or not spawn.coords then return end
+
+    local zname = zoneName(field.id, spawn.index)
+    removeHarvestZone(field.id, spawn.index)
+
+    local zoneRadius = tonumber(field.zoneRadius) or 1.05
+    exports['qb-target']:AddCircleZone(zname, spawn.coords, zoneRadius, {
+        name = zname,
+        debugPoly = false,
+        useZ = true,
+    }, {
         options = {
             {
-                type = 'client',
-                event = 'fivempro_drugs:client:pickMushroom',
                 icon = 'fas fa-seedling',
                 label = field.pickLabel or 'Rinkti',
-                fieldId = field.id,
-                spawnIndex = spawn.index,
+                action = function()
+                    tryPickHarvest(field.id, spawn.index)
+                end,
                 canInteract = function()
                     return spawn.available and not picking
                 end,
             },
         },
-        distance = field.pickDistance or 2.4,
+        distance = (field.pickDistance or 2.4) + 0.35,
     })
+end
+
+local function setEntityScale(entity, scale)
+    scale = tonumber(scale)
+    if not entity or not DoesEntityExist(entity) or not scale or math.abs(scale - 1.0) < 0.01 then return end
+    local forward, right, up, position = GetEntityMatrix(entity)
+    SetEntityMatrix(entity, forward * scale, right * scale, up * scale, position)
 end
 
 local function spawnMushroomProp(field, spawn)
     if not spawn.available then return end
-    deleteSpawnEntity(spawn)
+    deleteSpawnEntity(field.id, spawn)
     local hash = loadModel(field.prop or 'prop_stoneshroom2')
     if not hash then return end
     local obj = CreateObject(hash, spawn.coords.x, spawn.coords.y, spawn.coords.z, false, false, false)
@@ -99,11 +167,13 @@ local function spawnMushroomProp(field, spawn)
         return
     end
     PlaceObjectOnGroundProperly(obj)
+    setEntityScale(obj, field.propScale)
     FreezeEntityPosition(obj, true)
     SetEntityAsMissionEntity(obj, true, true)
     spawn.entity = obj
+    spawn.coords = GetEntityCoords(obj)
     SetModelAsNoLongerNeeded(hash)
-    attachTarget(field, spawn)
+    attachHarvestZone(field, spawn)
 end
 
 local function initField(field)
@@ -129,42 +199,8 @@ local function initField(field)
 end
 
 RegisterNetEvent('fivempro_drugs:client:pickMushroom', function(data)
-    if picking then return end
-    local fieldId = data and data.fieldId
-    local spawnIndex = data and tonumber(data.spawnIndex)
-    if not fieldId or not spawnIndex then return end
-
-    local state = fieldSpawns[fieldId]
-    if not state then return end
-    local spawn = state.spawns[spawnIndex]
-    if not spawn or not spawn.available then
-        return QBCore.Functions.Notify('Čia jau nieko nėra.', 'error')
-    end
-
-    local ped = PlayerPedId()
-    local pcoords = GetEntityCoords(ped)
-    if #(pcoords - spawn.coords) > (state.field.pickDistance or 2.4) + 1.0 then
-        return QBCore.Functions.Notify('Per toli.', 'error')
-    end
-
-    picking = true
-    local label = state.field.pickLabel or 'Renki…'
-    QBCore.Functions.Progressbar('fivempro_drugs_harvest', label, state.field.pickDurationMs or 5200, false, true, {
-        disableMovement = true,
-        disableCarMovement = true,
-        disableMouse = false,
-        disableCombat = true,
-    }, {
-        animDict = 'amb@world_human_gardener_plant@male@base',
-        anim = 'base',
-        flags = 49,
-    }, {}, {}, function()
-        picking = false
-        TriggerServerEvent('fivempro_drugs:server:pickMushroom', fieldId, spawnIndex, pcoords.x, pcoords.y, pcoords.z)
-    end, function()
-        picking = false
-        QBCore.Functions.Notify('Atšaukta.', 'error')
-    end)
+    if type(data) ~= 'table' then return end
+    tryPickHarvest(data.fieldId, data.spawnIndex)
 end)
 
 RegisterNetEvent('fivempro_drugs:client:mushroomDespawn', function(fieldId, spawnIndex)
@@ -173,7 +209,7 @@ RegisterNetEvent('fivempro_drugs:client:mushroomDespawn', function(fieldId, spaw
     local spawn = state.spawns[spawnIndex]
     if not spawn then return end
     spawn.available = false
-    deleteSpawnEntity(spawn)
+    deleteSpawnEntity(fieldId, spawn)
 end)
 
 RegisterNetEvent('fivempro_drugs:client:mushroomRespawn', function(fieldId, spawnIndex)
@@ -201,11 +237,54 @@ CreateThread(function()
     end
 end)
 
+CreateThread(function()
+    while true do
+        local sleep = 600
+        if not picking then
+            local ped = PlayerPedId()
+            local pcoords = GetEntityCoords(ped)
+            local bestDist, bestFieldId, bestSpawn
+
+            for fieldId, state in pairs(fieldSpawns) do
+                local maxPick = (state.field.pickDistance or 2.4) + 0.45
+                for _, spawn in ipairs(state.spawns or {}) do
+                    if spawn.available and spawn.coords then
+                        local at = spawn.coords
+                        if spawn.entity and DoesEntityExist(spawn.entity) then
+                            at = GetEntityCoords(spawn.entity)
+                        end
+                        local dist = #(pcoords - at)
+                        if dist <= maxPick and (not bestDist or dist < bestDist) then
+                            bestDist = dist
+                            bestFieldId = fieldId
+                            bestSpawn = spawn
+                        end
+                    end
+                end
+            end
+
+            if bestSpawn and bestFieldId then
+                sleep = 0
+                local label = fieldSpawns[bestFieldId].field.pickLabel or 'Rinkti'
+                local at = bestSpawn.coords
+                if bestSpawn.entity and DoesEntityExist(bestSpawn.entity) then
+                    at = GetEntityCoords(bestSpawn.entity)
+                end
+                QBCore.Functions.DrawText3D(at.x, at.y, at.z + 0.28, ('[E] %s'):format(label))
+                if IsControlJustReleased(0, 38) then
+                    tryPickHarvest(bestFieldId, bestSpawn.index)
+                end
+            end
+        end
+        Wait(sleep)
+    end
+end)
+
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    for _, state in pairs(fieldSpawns) do
+    for fieldId, state in pairs(fieldSpawns) do
         for _, spawn in ipairs(state.spawns or {}) do
-            deleteSpawnEntity(spawn)
+            deleteSpawnEntity(fieldId, spawn)
         end
     end
 end)
