@@ -10,14 +10,7 @@ if not exist "%FIVEM%" (
   exit /b 1
 )
 
-powershell -NoProfile -Command ^
-  "$s = New-Object -ComObject WScript.Shell; ^
-   $l = $s.CreateShortcut('%SHORTCUT%'); ^
-   $l.TargetPath = '%FIVEM%'; ^
-   $l.Arguments = '+set moo 31337'; ^
-   $l.WorkingDirectory = '%LOCALAPPDATA%\FiveM'; ^
-   $l.Description = 'FiveM dev režimas (F10 resmon)'; ^
-   $l.Save()"
+powershell -NoProfile -Command "$s = New-Object -ComObject WScript.Shell; $l = $s.CreateShortcut('%SHORTCUT%'); $l.TargetPath = '%FIVEM%'; $l.Arguments = '+set moo 31337'; $l.WorkingDirectory = '%LOCALAPPDATA%\FiveM'; $l.Description = 'FiveM dev rezimas (F10 resmon)'; $l.Save()"
 
 echo.
 echo Sukurta: %SHORTCUT%
