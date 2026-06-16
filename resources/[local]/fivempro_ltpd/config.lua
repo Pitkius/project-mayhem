@@ -122,7 +122,7 @@ Config.HelipadBlipScale = 0.9
 
 --- 3D markeriai ant žemės MRPD / kituose postuose (ne žemėlapio blipai)
 Config.ShowPd3DMarkers = true
-Config.PdMarkerDrawDistance = 80.0
+Config.PdMarkerDrawDistance = 32.0
 Config.PdMarkerZOffset = 0.02
 --- Sandėliai: mažas trikampis (DrawMarker tipas 2), tekstas tik labai arti
 Config.PdStashMarkerType = 2

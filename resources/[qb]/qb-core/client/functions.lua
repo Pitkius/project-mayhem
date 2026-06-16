@@ -98,7 +98,7 @@ function QBCore.Functions.LookAtEntity(entity, timeout, speed)
             currentHeading = currentHeading - turnSpeed
         end
         SetEntityHeading(ped, currentHeading)
-        Wait(0)
+        Wait(10)
         if (startTimeout + timeout) < GetGameTimer() then break end
     end
     SetEntityHeading(ped, targetHeading)
@@ -360,7 +360,7 @@ function QBCore.Functions.LoadModel(model)
     if HasModelLoaded(model) then return end
     RequestModel(model)
     while not HasModelLoaded(model) do
-        Wait(0)
+        Wait(10)
     end
 end
 
@@ -887,7 +887,7 @@ function QBCore.Functions.RequestAnimDict(animDict)
     if HasAnimDictLoaded(animDict) then return end
     RequestAnimDict(animDict)
     while not HasAnimDictLoaded(animDict) do
-        Wait(0)
+        Wait(10)
     end
 end
 
@@ -955,7 +955,7 @@ function QBCore.Functions.LoadAnimSet(animSet)
     if HasAnimSetLoaded(animSet) then return end
     RequestAnimSet(animSet)
     while not HasAnimSetLoaded(animSet) do
-        Wait(0)
+        Wait(10)
     end
 end
 
@@ -963,7 +963,7 @@ function QBCore.Functions.LoadParticleDictionary(dictionary)
     if HasNamedPtfxAssetLoaded(dictionary) then return end
     RequestNamedPtfxAsset(dictionary)
     while not HasNamedPtfxAssetLoaded(dictionary) do
-        Wait(0)
+        Wait(10)
     end
 end
 

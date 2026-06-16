@@ -272,24 +272,19 @@ local function nearestPdDoorDist(pcoords)
         if g.interact then
             minD = math.min(minD, #(pcoords - g.interact))
         end
-        for _, slab in ipairs(g.slabs or {}) do
-            if slab.coords then
-                minD = math.min(minD, #(pcoords - slab.coords))
-            end
-        end
     end
     return minD
 end
 
 local function pdDoorZoneIdleWaitMs(zones, pcoords)
-    local wm = 900
+    local wm = 1200
     for _, z in ipairs(zones) do
         local d = #(pcoords - z.pos)
         if d < z.maxd + 2.0 then
-            return 50
+            return 250
         end
         if d < z.maxd + 14.0 then
-            wm = 180
+            wm = 400
         end
     end
     return wm
@@ -305,17 +300,10 @@ local function ensureDoorInSystem(dh, modelHash, x, y, z)
 end
 
 local function findClosestObject(modelHash, coords, radius)
-    local best, bestD = 0, (radius or 5.0) + 1.0
-    for _, ent in ipairs(GetGamePool('CObject')) do
-        if DoesEntityExist(ent) and GetEntityModel(ent) == modelHash then
-            local d = #(GetEntityCoords(ent) - coords)
-            if d <= (radius or 5.0) and d < bestD then
-                bestD = d
-                best = ent
-            end
-        end
-    end
-    return best
+    local r = radius or 5.0
+    local ent = GetClosestObjectOfType(coords.x, coords.y, coords.z, r, modelHash, false, false, false)
+    if ent and ent ~= 0 then return ent end
+    return 0
 end
 
 local function registerSlab(groupId, slabIndex, modelName, coords, heading)
@@ -640,10 +628,13 @@ local function applyEntityGroupLocked(entities, locked)
     end
 end
 
-local function scanEntitiesForDef(entityScan)
+local function scanEntitiesForDef(entityScan, playerCoords)
     if not entityScan or not entityScan.center then return {} end
     local center = entityScan.center
     local radius = entityScan.radius or 12.0
+    if playerCoords and #(playerCoords - center) > radius + 65.0 then
+        return {}
+    end
     local models = {}
     for _, name in ipairs(entityScan.models or {}) do
         models[joaat(name)] = true
@@ -881,10 +872,16 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(4500)
+        Wait(8000)
+        local pc = GetEntityCoords(PlayerPedId())
+        if nearestPdDoorDist(pc) > 150.0 then
+            goto continue
+        end
         for _, g in ipairs(doorGroups) do
             if g.entityScanDef then
-                g.entities = scanEntitiesForDef(g.entityScanDef)
+                local ents = scanEntitiesForDef(g.entityScanDef, pc)
+                if #ents == 0 then goto next_group end
+                g.entities = ents
                 if g.doorType == 'garage_roll' then
                     for _, ent in ipairs(g.entities) do
                         local ec = GetEntityCoords(ent)
@@ -916,34 +913,26 @@ CreateThread(function()
                     end
                 end
             end
+            ::next_group::
         end
+        ::continue::
     end
 end)
 
 CreateThread(function()
     while true do
-        Wait(1800)
-        local pc = GetEntityCoords(PlayerPedId())
-        for _, g in ipairs(doorGroups) do
-            if g.doorType == 'garage_roll' and isGroupLocked(g.id) then
-                local near = false
-                for _, slab in ipairs(g.slabs or {}) do
-                    if #(pc - slab.coords) < 95.0 then
-                        near = true
-                        break
-                    end
-                end
-                if near then
-                    applyGarageRollLocked(g.slabs, g.entities, true)
-                end
+        Wait(5000)
+        local allDone = true
+        for _, dyn in ipairs(allDoorDynamics()) do
+            if not dynStationDone[dyn.stationId] then
+                allDone = false
+                break
             end
         end
-    end
-end)
-
-CreateThread(function()
-    while true do
-        Wait(2200)
+        if allDone then
+            Wait(30000)
+            goto continue
+        end
         local ped = PlayerPedId()
         local pc = GetEntityCoords(ped)
         for _, dyn in ipairs(allDoorDynamics()) do
@@ -957,6 +946,7 @@ CreateThread(function()
                 end
             end
         end
+        ::continue::
     end
 end)
 
@@ -1021,7 +1011,7 @@ CreateThread(function()
             end
 
             if next(bestByGroup) then
-                waitMs = math.min(waitMs, 50)
+                waitMs = math.min(waitMs, 250)
                 if canUseServiceDoorsClient() then
                     for gid, hit in pairs(bestByGroup) do
                         if canUseDoorGroupClient(gid) then
@@ -1056,34 +1046,18 @@ CreateThread(function()
         local ped = PlayerPedId()
         local pc = GetEntityCoords(ped)
         if nearestPdDoorDist(pc) > 130.0 then
-            Wait(2500)
+            Wait(4000)
         else
             local anyNear = false
             for _, g in ipairs(doorGroups) do
                 if g.doorType == 'yard_gate' then
                     local near = g.interact and #(pc - g.interact) < 55.0
-                    if not near then
-                        for _, slab in ipairs(g.slabs or {}) do
-                            if #(pc - slab.coords) < 55.0 then
-                                near = true
-                                break
-                            end
-                        end
-                    end
                     if near then
                         anyNear = true
                         applyYardGateGroupLocked(g, isGroupLocked(g.id))
                     end
                 elseif (g.doorType == 'barrier' or g.doorType == 'bollard') and isGroupLocked(g.id) then
                     local near = g.interact and #(pc - g.interact) < 55.0
-                    if not near then
-                        for _, slab in ipairs(g.slabs or {}) do
-                            if #(pc - slab.coords) < 55.0 then
-                                near = true
-                                break
-                            end
-                        end
-                    end
                     if near then
                         anyNear = true
                         if g.doorType == 'bollard' then
@@ -1093,25 +1067,14 @@ CreateThread(function()
                         end
                     end
                 elseif g.doorType == 'garage_roll' and isGroupLocked(g.id) then
-                    local near = false
-                    if g.interact and #(pc - g.interact) < 90.0 then
-                        near = true
-                    end
-                    if not near then
-                        for _, slab in ipairs(g.slabs or {}) do
-                            if #(pc - slab.coords) < 90.0 then
-                                near = true
-                                break
-                            end
-                        end
-                    end
+                    local near = g.interact and #(pc - g.interact) < 90.0
                     if near then
                         anyNear = true
                         applyGarageRollLocked(g.slabs, g.entities, true)
                     end
                 end
             end
-            Wait(anyNear and 450 or 900)
+            Wait(anyNear and 2500 or 5000)
         end
     end
 end)

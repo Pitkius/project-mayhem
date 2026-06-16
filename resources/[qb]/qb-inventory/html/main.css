@@ -323,6 +323,42 @@ body {
     filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
 }
 
+/* PNG su baltu fonu — blend ant tamsaus inventoriaus */
+.item-slot-img img[src*="cocaine_powder"],
+.item-slot-img img[src*="chemical_mix"],
+.item-slot-img img[src*="moonshine_spirit"],
+.item-slot-img img[src*="weed_buds"],
+.item-slot-img img[src*="heroin_powder"],
+.item-slot-img img[src*="heroin_bag"],
+.notification-slot .item-slot-img img[src*="cocaine_powder"],
+.notification-slot .item-slot-img img[src*="chemical_mix"],
+.notification-slot .item-slot-img img[src*="moonshine_spirit"],
+.notification-slot .item-slot-img img[src*="weed_buds"],
+.notification-slot .item-slot-img img[src*="heroin_powder"],
+.notification-slot .item-slot-img img[src*="heroin_bag"],
+.required-item .item-slot-img img[src*="cocaine_powder"],
+.required-item .item-slot-img img[src*="chemical_mix"],
+.required-item .item-slot-img img[src*="moonshine_spirit"],
+.required-item .item-slot-img img[src*="weed_buds"],
+.required-item .item-slot-img img[src*="heroin_powder"],
+.required-item .item-slot-img img[src*="heroin_bag"],
+.dragged-item .item-slot-img img[src*="cocaine_powder"],
+.dragged-item .item-slot-img img[src*="chemical_mix"],
+.dragged-item .item-slot-img img[src*="moonshine_spirit"],
+.dragged-item .item-slot-img img[src*="weed_buds"],
+.dragged-item .item-slot-img img[src*="heroin_powder"],
+.dragged-item .item-slot-img img[src*="heroin_bag"] {
+    mix-blend-mode: darken;
+}
+
+/* PNG su juodu fonu (grybai ir pan.) — blend ant tamsaus inventoriaus */
+.item-slot-img img[src*="mushroom"],
+.notification-slot .item-slot-img img[src*="mushroom"],
+.required-item .item-slot-img img[src*="mushroom"],
+.dragged-item .item-slot-img img[src*="mushroom"] {
+    mix-blend-mode: lighten;
+}
+
 .item-slot-key {
     font-weight: var(--font-weight-bold);
     color: var(--on-primary);

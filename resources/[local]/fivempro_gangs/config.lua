@@ -98,9 +98,8 @@ Config.DrugSellItems = {
     { item = 'meth_bag', label = 'Metamfetamino maišelis', base = 260 },
     { item = 'pills_pack', label = 'Tablečių pakuotė', base = 180 },
     { item = 'mushroom_pack', label = 'Grybų pakuotė', base = 150 },
-    { item = 'cocaine_bag', label = 'Kokaino maišelis', base = 420 },
+    { item = 'cartel_pack', label = 'Supakuotas kokainas', base = 520 },
     { item = 'amphetamine_bag', label = 'Amfetamino maišelis', base = 380 },
-    { item = 'cartel_pack', label = 'Kartelio mišinys', base = 520 },
 }
 
 Config.DrugSell = {

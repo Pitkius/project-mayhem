@@ -51,9 +51,19 @@ end
 
 RegisterNetEvent('fivempro_loadscreen:client:close', closeLoadscreen)
 
-CreateThread(function()
-    Wait(600)
+--- Muzika tik kai NUI loading screen parodomas
+RegisterNUICallback('loadscreenReady', function(_, cb)
     startLoadingMusic()
+    cb('ok')
+end)
+
+RegisterNUICallback('setLoadscreenMusic', function(data, cb)
+    if data and data.enabled then
+        startLoadingMusic()
+    else
+        stopLoadingMusic()
+    end
+    cb('ok')
 end)
 
 CreateThread(function()

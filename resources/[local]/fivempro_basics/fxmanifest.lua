@@ -7,7 +7,8 @@ description 'Minimalus startinis local resource'
 version '1.0.0'
 
 client_scripts {
-    'client.lua'
+    'client.lua',
+    'client/vehicle_lockpick.lua',
 }
 
 server_scripts {
@@ -17,4 +18,5 @@ server_scripts {
 exports {
     'IsNaturalNpcVehicle',
     'IsLongBackWeapon',
+    'MarkNpcVehicleUnlocked',
 }

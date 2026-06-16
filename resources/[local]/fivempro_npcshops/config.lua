@@ -8,7 +8,7 @@ Config.BarberPeds = {
     { model = 's_f_m_fembarber', coords = vector4(136.78, -1708.40, 28.29, 140.11), chair = vector4(136.35, -1708.55, 28.29, 230.0) },
     { model = 's_f_m_fembarber', coords = vector4(1212.80, -472.90, 65.20, 72.94),  chair = vector4(1211.15, -474.25, 65.20, 165.0) },
     { model = 's_f_m_fembarber', coords = vector4(1931.50, 3729.70, 31.84, 212.61), chair = vector4(1933.85, 3730.45, 31.84, 295.0) },
-    { model = 's_f_m_fembarber', coords = vector4(-278.10, 6228.54, 30.70, 49.32),  chair = vector4(-277.05, 6228.05, 30.70, 225.0) },
+    { model = 's_f_m_fembarber', coords = vector4(-277.7234, 6230.6265, 31.6955, 49.3482), chair = vector4(-276.67, 6230.14, 31.6955, 225.0) },
 }
 
 --- Rūbų parduotuvės — prie kasos (qb-clothing vanilla zonos)
@@ -17,7 +17,7 @@ Config.ClothingPeds = {
     { model = 's_f_y_shop_mid', coords = vector4(73.9787, -1392.0791, 29.3761, 270.4405) },
     { model = 's_f_y_shop_mid', coords = vector4(-712.22, -155.35, 37.42, 122.0) },
     { model = 's_f_y_shop_mid', coords = vector4(-162.66, -303.40, 38.73, 251.0) },
-    { model = 's_f_y_shop_mid', coords = vector4(4.25, 6512.81, 30.88, 42.0) },
+    { model = 's_f_y_shop_mid', coords = vector4(5.2023, 6510.7515, 31.8779, 38.4227) },
 }
 
 --- 24/7 + LTD — vanilla qb-shops kasininkų koordinatės
@@ -106,16 +106,15 @@ Config.JunkShop = {
     label = 'Ūkio turgelis',
     items = {
         { name = 'mining_pickaxe', amount = 80, price = 185, slot = 1 },
-        { name = 'utility_rope', amount = 200, price = 42, slot = 2 },
-        { name = 'tow_chain', amount = 60, price = 390, slot = 3 },
-        { name = 'screwdriverset', amount = 120, price = 295, slot = 4 },
-        { name = 'repairkit', amount = 80, price = 820, slot = 5 },
-        { name = 'tirerepairkit', amount = 150, price = 115, slot = 6 },
-        { name = 'jerry_can', amount = 60, price = 88, slot = 7 },
-        { name = 'lighter', amount = 300, price = 6, slot = 8 },
-        { name = 'binoculars', amount = 80, price = 265, slot = 9 },
-        { name = 'lockpick', amount = 120, price = 58, slot = 10 },
-        { name = 'gloves', amount = 250, price = 14, slot = 11 },
-        { name = 'empty_bottle', amount = 500, price = 4, slot = 12 },
+        { name = 'tow_chain', amount = 120, price = 390, slot = 2 },
+        { name = 'screwdriverset', amount = 120, price = 295, slot = 3 },
+        { name = 'repairkit', amount = 80, price = 820, slot = 4 },
+        { name = 'tirerepairkit', amount = 150, price = 115, slot = 5 },
+        { name = 'jerry_can', amount = 60, price = 88, slot = 6 },
+        { name = 'lighter', amount = 300, price = 6, slot = 7 },
+        { name = 'binoculars', amount = 80, price = 265, slot = 8 },
+        { name = 'lockpick', amount = 120, price = 58, slot = 9 },
+        { name = 'gloves', amount = 250, price = 14, slot = 10 },
+        { name = 'empty_bottle', amount = 500, price = 4, slot = 11 },
     },
 }

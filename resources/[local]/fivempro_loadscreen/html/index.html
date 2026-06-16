@@ -52,6 +52,18 @@
   </div>
   <audio id="themeAudio" preload="auto" loop></audio>
 
+  <script>
+    (function ping(attempt) {
+      var res = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'fivempro_loadscreen';
+      fetch('https://' + res + '/loadscreenReady', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      }).catch(function () {
+        if (attempt < 40) setTimeout(function () { ping(attempt + 1); }, 50);
+      });
+    })(0);
+  </script>
   <script src="app.js"></script>
 </body>
 </html>

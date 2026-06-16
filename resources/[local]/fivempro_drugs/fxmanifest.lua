@@ -25,7 +25,6 @@ client_scripts {
     'client/planned.lua',
     'client/printer.lua',
     'client/mushrooms.lua',
-    'client/weed.lua',
     'client/amp_lab.lua',
 }
 
@@ -33,7 +32,6 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
     'server/printer.lua',
-    'server/weed.lua',
     'server/amp_lab.lua',
 }
 

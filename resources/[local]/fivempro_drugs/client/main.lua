@@ -230,6 +230,18 @@ local function getAllStations()
             list[#list + 1] = st
         end
     end
+    local methLab = Config.MethLab
+    if methLab and methLab.stations then
+        for _, st in ipairs(methLab.stations) do
+            list[#list + 1] = st
+        end
+    end
+    local pillsLab = Config.PillsLab
+    if pillsLab and pillsLab.stations then
+        for _, st in ipairs(pillsLab.stations) do
+            list[#list + 1] = st
+        end
+    end
     local ampLab = Config.AmpMobileLab
     if ampLab and ampLab.packStation then
         list[#list + 1] = ampLab.packStation
@@ -548,15 +560,7 @@ local function setupStationBlips()
         )
     end
 
-    -- Žolės reikmenys
-    local weedShop = Config.WeedGrowShop
-    if weedShop and weedShop.enabled ~= false and weedShop.coords then
-        addCfgBlip(
-            vector3(weedShop.coords.x, weedShop.coords.y, weedShop.coords.z),
-            weedShop.blip or { enabled = true, label = weedShop.label },
-            weedShop.label
-        )
-    end
+    -- Žolės reikmenų NPC / laisvas auginimas išjungtas — žaliava tik iš nelegalių reikmenų parduotuvės
 
     -- Grybų rinkimas
     for _, field in ipairs(Config.MushroomFields or {}) do
@@ -580,6 +584,18 @@ local function setupStationBlips()
     local weedCayo = Config.WeedCayoLab
     if weedCayo and weedCayo.blip and (not weedCayo.requireIsland or isCayoIslandLoaded()) then
         addCfgBlip(weedCayo.blip.coords, weedCayo.blip, weedCayo.blip.label or 'Žolės džiovinimas')
+    end
+
+    -- Metamfetamino supakavimas
+    local methLab = Config.MethLab
+    if methLab and methLab.blip then
+        addCfgBlip(methLab.blip.coords, methLab.blip, methLab.blip.label or 'Metamfetamino laboratorija')
+    end
+
+    -- Tablečių gamyba
+    local pillsLab = Config.PillsLab
+    if pillsLab and pillsLab.blip then
+        addCfgBlip(pillsLab.blip.coords, pillsLab.blip, pillsLab.blip.label or 'Tablečių gamyba')
     end
 
     -- Amfetamino laboratorija
@@ -799,7 +815,7 @@ local function openTestMenu()
         { header = 'Pirkti reikmenis (parduotuvė)', txt = 'Ingredientai ir ginklų dalys', params = { isAction = true, event = openMaterialShop } },
         { header = 'L1 sandėliukas', params = { isAction = true, event = function() openStationUi('stash_grove') end } },
         { header = 'L2 trap house', params = { isAction = true, event = function() openStationUi('trap_chamberlain') end } },
-        { header = 'L3 kartelis', params = { isAction = true, event = function() openStationUi('cartel_lab') end } },
+        { header = 'L3 kokaino lab.', params = { isAction = true, event = function() openStationUi('cartel_lab') end } },
         { header = 'Ginklų dirbtuvė L1', params = { isAction = true, event = function() openStationUi('weapon_bench_l1') end } },
         { header = 'Ginklų dirbtuvė L2', params = { isAction = true, event = function() openStationUi('weapon_bench_l2') end } },
         { header = 'Ginklų dirbtuvė L3', params = { isAction = true, event = function() openStationUi('weapon_bench_l3') end } },

@@ -21,6 +21,7 @@ server_scripts {
 
 server_exports {
     'TriggerOfficerPanic',
+    'CreateDispatchCall',
 }
 
 dependencies {

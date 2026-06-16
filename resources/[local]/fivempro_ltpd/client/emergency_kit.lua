@@ -233,7 +233,11 @@ AddStateBagChangeHandler('fpSirenMuted', '', onAnyPdBag)
 CreateThread(function()
     --- Laikinai palaiko natyvias sirenas užrakinant „lights/full“ prieš GTA resetą
     while true do
-        Wait(360)
+        local hasTracked = next(TRACKED) ~= nil
+        if not hasTracked then
+            Wait(1500)
+        else
+        Wait(500)
         for veh, meta in pairs(TRACKED) do
             if not DoesEntityExist(veh) then
                 stopScriptSound(veh)
@@ -253,12 +257,13 @@ CreateThread(function()
                 end
             end
         end
+        end
     end
 end)
 
 CreateThread(function()
     while true do
-        Wait(42)
+        local sleep = 100
         local drew = false
         for veh, meta in pairs(TRACKED) do
             if not DoesEntityExist(veh) then
@@ -273,17 +278,20 @@ CreateThread(function()
                 end
             end
         end
-        if not drew then Wait(200) end
+        if not drew then sleep = 400 end
+        Wait(sleep)
     end
 end)
 
 --- Sceninė sirena – garsą valdo fivempro_siren_controller (tonai WAIL/YELP/PRIORITY).
 CreateThread(function()
     while true do
-        if GetResourceState('fivempro_siren_controller') == 'started' then
+        if next(TRACKED) == nil then
+            Wait(1500)
+        elseif GetResourceState('fivempro_siren_controller') == 'started' then
             Wait(1200)
         else
-        Wait(780)
+        Wait(900)
         for veh, meta in pairs(TRACKED) do
             if not DoesEntityExist(veh) then
                 stopScriptSound(veh)

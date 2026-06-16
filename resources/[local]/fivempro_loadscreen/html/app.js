@@ -69,6 +69,105 @@ const MUSIC = {
   label: 'GTA V — Los Santos',
 };
 
+function nuiPost(name, data = {}) {
+  const res = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'fivempro_loadscreen';
+  return fetch(`https://${res}/${name}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).catch(() => {});
+}
+
+function initLoadscreenMusic() {
+  const audio = document.getElementById('themeAudio');
+  const toggle = document.getElementById('musicToggle');
+  const volume = document.getElementById('musicVolume');
+  const label = document.getElementById('musicLabel');
+  if (!audio || !toggle || !volume) return;
+
+  let muted = false;
+  let hasFile = false;
+  let nativeStarted = false;
+  let nuiStarted = false;
+
+  if (label) label.textContent = MUSIC.label || 'GTA V — Los Santos';
+  volume.value = String(Math.round((MUSIC.volume || 0.28) * 100));
+  audio.volume = MUSIC.volume || 0.28;
+
+  const syncUi = () => {
+    toggle.classList.toggle('is-muted', muted);
+    toggle.textContent = muted ? '🔇' : '♪';
+    audio.muted = muted;
+  };
+
+  const startNativeMusic = () => {
+    if (nativeStarted) return;
+    nativeStarted = true;
+    nuiPost('loadscreenReady');
+  };
+
+  const setNativeMusic = (enabled) => {
+    if (enabled) {
+      startNativeMusic();
+      nuiPost('setLoadscreenMusic', { enabled: true });
+      return;
+    }
+    nuiPost('setLoadscreenMusic', { enabled: false });
+  };
+
+  const playNuiAudio = () => {
+    if (nuiStarted || muted || !MUSIC.enabled || !MUSIC.track) return;
+    nuiStarted = true;
+    audio.src = MUSIC.track;
+    audio.load();
+    audio.play().then(() => {
+      hasFile = true;
+    }).catch(() => {
+      hasFile = false;
+      nuiStarted = false;
+    });
+  };
+
+  const startAllMusic = () => {
+    if (muted) return;
+    setNativeMusic(true);
+    playNuiAudio();
+  };
+
+  toggle.addEventListener('click', () => {
+    muted = !muted;
+    syncUi();
+    if (muted) {
+      audio.pause();
+      setNativeMusic(false);
+      nuiStarted = false;
+      return;
+    }
+    startAllMusic();
+  });
+
+  volume.addEventListener('input', () => {
+    audio.volume = Number(volume.value) / 100;
+    if (audio.volume <= 0) {
+      muted = true;
+      syncUi();
+      audio.pause();
+      setNativeMusic(false);
+      nuiStarted = false;
+      return;
+    }
+    if (muted) {
+      muted = false;
+      syncUi();
+    }
+    startAllMusic();
+    if (nuiStarted && hasFile) audio.play().catch(() => {});
+  });
+
+  syncUi();
+  startAllMusic();
+}
+
 const slidesEl = document.getElementById('slides');
 const slideTag = document.getElementById('slideTag');
 const slideTitle = document.getElementById('slideTitle');
@@ -169,6 +268,7 @@ window.addEventListener('message', (e) => {
 
 buildSlides();
 setProgress(0, 'Inicializuojama...');
+initLoadscreenMusic();
 setInterval(rotateSlides, 6500);
 setInterval(rotateTips, 9000);
 rotateTips();
@@ -183,50 +283,3 @@ const fakeTimer = setInterval(() => {
   fake += 0.004 + Math.random() * 0.006;
   setProgress(fake, progressDetail.textContent);
 }, 400);
-
-function initLoadscreenMusic() {
-  const audio = document.getElementById('themeAudio');
-  const toggle = document.getElementById('musicToggle');
-  const volume = document.getElementById('musicVolume');
-  const label = document.getElementById('musicLabel');
-  if (!audio || !toggle || !volume) return;
-
-  let muted = false;
-  let hasFile = false;
-
-  if (label) label.textContent = MUSIC.label || 'GTA V — Los Santos';
-  volume.value = String(Math.round((MUSIC.volume || 0.28) * 100));
-  audio.volume = MUSIC.volume || 0.28;
-
-  if (MUSIC.enabled && MUSIC.track) {
-    audio.src = MUSIC.track;
-    audio.load();
-    audio.play().then(() => {
-      hasFile = true;
-    }).catch(() => {
-      hasFile = false;
-    });
-  }
-
-  const syncUi = () => {
-    toggle.classList.toggle('is-muted', muted);
-    toggle.textContent = muted ? '🔇' : '♪';
-    audio.muted = muted;
-  };
-
-  toggle.addEventListener('click', () => {
-    muted = !muted;
-    syncUi();
-    if (!muted && hasFile) audio.play().catch(() => {});
-  });
-
-  volume.addEventListener('input', () => {
-    audio.volume = Number(volume.value) / 100;
-    if (audio.volume > 0) muted = false;
-    syncUi();
-  });
-
-  syncUi();
-}
-
-initLoadscreenMusic();

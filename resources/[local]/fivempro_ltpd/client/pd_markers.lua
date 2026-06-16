@@ -4,6 +4,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local pdZones = {}
 local lastInteractMs = 0
 local markersReady = false
+local forceAccessRefresh = false
 
 local COLORS = {
     garage = { 72, 160, 220, 200 },
@@ -83,9 +84,9 @@ local function isPdJob()
     return P and P.job and P.job.name == jobName()
 end
 
-local function markerVisible(zone)
-    if not isPdJob() then
-        return false
+local function markerVisible(zone, accessCache, zoneIndex)
+    if accessCache[zoneIndex] ~= nil then
+        return accessCache[zoneIndex]
     end
     if zone.access then
         return exports['fivempro_ltpd']:CanAccessPdPoint(zone.access)
@@ -356,6 +357,15 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     scheduleRegister()
 end)
 
+RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
+    forceAccessRefresh = true
+    scheduleRegister()
+end)
+
+RegisterNetEvent('fivempro_ltpd:client:syncDivision', function()
+    forceAccessRefresh = true
+end)
+
 RegisterCommand('pdmarkers', function()
     local ped = PlayerPedId()
     local p = GetEntityCoords(ped)
@@ -392,47 +402,86 @@ local function drawMarkerAt(pos, kind)
 end
 
 CreateThread(function()
-    while true do
-        local sleep = 500
-        if Config.ShowPd3DMarkers ~= false and #pdZones > 0 and not IsPauseMenuActive() then
-            local ped = PlayerPedId()
-            local pcoords = GetEntityCoords(ped)
-            for _, zone in ipairs(pdZones) do
-                if not markerVisible(zone) then
-                    goto continue_zone
-                end
-                local dist = #(pcoords - zone.coords)
-                local drawDist = drawDistanceFor(zone.kind)
-                if dist < drawDist then
-                    sleep = 0
-                    drawMarkerAt(zone.coords, zone.kind)
-                    local useR = USE_RADIUS[zone.kind] or 1.5
-                    local textR = textDistanceFor(zone.kind)
-                    if dist < useR then
-                        local canUse = true
-                        if zone.requireDuty and not isPdOnDuty() then
-                            canUse = false
-                        end
-                        if canUse and dist < textR then
-                            QBCore.Functions.DrawText3D(
-                                zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
-                                ('[E] %s'):format(zone.label)
-                            )
-                            if IsControlJustPressed(0, 38) and (GetGameTimer() - lastInteractMs) > 450 then
-                                lastInteractMs = GetGameTimer()
-                                if zone.onPress then zone.onPress() end
-                            end
-                        elseif zone.requireDuty and dist < textR then
-                            QBCore.Functions.DrawText3D(
-                                zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
-                                'Tik tarnyboje (policija)'
-                            )
-                        end
-                    end
-                end
-                ::continue_zone::
-            end
+    local accessCache = {}
+    local lastAccessRefresh = 0
+
+    local function refreshAccessCache()
+        local now = GetGameTimer()
+        if not forceAccessRefresh and now - lastAccessRefresh < 2500 then return end
+        forceAccessRefresh = false
+        lastAccessRefresh = now
+        accessCache = {}
+        if not isPdJob() then return end
+        for i, zone in ipairs(pdZones) do
+            accessCache[i] = markerVisible(zone, accessCache, i)
         end
+    end
+
+    while true do
+        local sleep = 1500
+
+        if Config.ShowPd3DMarkers == false or #pdZones == 0 or IsPauseMenuActive() then
+            Wait(sleep)
+            goto continue
+        end
+
+        if not isPdJob() then
+            Wait(sleep)
+            goto continue
+        end
+
+        refreshAccessCache()
+
+        local ped = PlayerPedId()
+        local pcoords = GetEntityCoords(ped)
+        local nearInteract = false
+
+        for i, zone in ipairs(pdZones) do
+            if accessCache[i] == false then
+                goto continue_zone
+            end
+
+            local dist = #(pcoords - zone.coords)
+            local drawDist = drawDistanceFor(zone.kind)
+            if dist >= drawDist then
+                goto continue_zone
+            end
+
+            drawMarkerAt(zone.coords, zone.kind)
+            sleep = math.min(sleep, 200)
+
+            local useR = USE_RADIUS[zone.kind] or 1.5
+            local textR = textDistanceFor(zone.kind)
+            if dist < useR then
+                nearInteract = true
+                local canUse = not zone.requireDuty or isPdOnDuty()
+                if canUse and dist < textR then
+                    QBCore.Functions.DrawText3D(
+                        zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
+                        ('[E] %s'):format(zone.label)
+                    )
+                    if IsControlJustPressed(0, 38) and (GetGameTimer() - lastInteractMs) > 450 then
+                        lastInteractMs = GetGameTimer()
+                        if zone.onPress then zone.onPress() end
+                    end
+                elseif zone.requireDuty and dist < textR then
+                    QBCore.Functions.DrawText3D(
+                        zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
+                        'Tik tarnyboje (policija)'
+                    )
+                end
+            end
+
+            ::continue_zone::
+        end
+
+        if nearInteract then
+            sleep = 0
+        elseif sleep > 200 then
+            sleep = 500
+        end
+
         Wait(sleep)
+        ::continue::
     end
 end)

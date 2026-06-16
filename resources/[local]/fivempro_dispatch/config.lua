@@ -25,6 +25,7 @@ Config.CallTypes = {
     robbery = 'Apiplėšimas',
     atm = 'Bankomatas',
     theft = 'Vagystė',
+    vehicle_alarm = 'Transporto signalizacija',
     shooting = 'Šaudymas',
     fight = 'Muštynės',
     traffic = 'Eismo įvykis',

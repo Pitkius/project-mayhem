@@ -201,3 +201,67 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
     syncStaffTags(Player.PlayerData.source)
 end)
 
+local LOCKPICK_SUCCESS_CHANCE = { lockpick = 68, advancedlockpick = 88 }
+local LOCKPICK_BREAK_CHANCE = { lockpick = 45, advancedlockpick = 20 }
+
+RegisterNetEvent('fivempro_basics:server:vehicleLockpick', function(netId, plate, vehicleLabel, advanced)
+    local src = source
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return end
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    local itemName = advanced and 'advancedlockpick' or 'lockpick'
+    if not Player.Functions.GetItemByName(itemName) then
+        TriggerClientEvent('QBCore:Notify', src, 'Neturi visrakčio.', 'error')
+        return
+    end
+
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return end
+    local coords = GetEntityCoords(ped)
+
+    local ent = NetworkGetEntityFromNetworkId(netId)
+    if ent == 0 or not DoesEntityExist(ent) or GetEntityType(ent) ~= 2 then
+        TriggerClientEvent('QBCore:Notify', src, 'Transportas nerastas.', 'error')
+        return
+    end
+
+    if #(coords - GetEntityCoords(ent)) > 6.0 then
+        TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo transporto.', 'error')
+        return
+    end
+
+    plate = tostring(plate or GetVehicleNumberPlateText(ent) or '???'):upper():gsub('%s+', '')
+    vehicleLabel = tostring(vehicleLabel or 'Transportas')
+
+    local chance = LOCKPICK_SUCCESS_CHANCE[itemName] or 60
+    local success = math.random(1, 100) <= chance
+
+    if success then
+        TriggerClientEvent('fivempro_basics:client:vehicleLockpickResult', src, {
+            success = true,
+            netId = netId,
+            msg = 'Spyna sėkmingai atrakinta.',
+        })
+        return
+    end
+
+    if math.random(1, 100) <= (LOCKPICK_BREAK_CHANCE[itemName] or 40) then
+        Player.Functions.RemoveItem(itemName, 1)
+        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[itemName], 'remove', 1)
+    end
+
+    local alertText = ('Signalizacija: %s, numeriai %s'):format(vehicleLabel, plate)
+    if GetResourceState('fivempro_dispatch') == 'started' then
+        exports['fivempro_dispatch']:CreateDispatchCall('police', 'vehicle_alarm', coords, alertText, src)
+    end
+
+    TriggerClientEvent('fivempro_basics:client:vehicleLockpickResult', src, {
+        success = false,
+        netId = netId,
+        msg = 'Nepavyko atrakinti — signalizacija!',
+    })
+end)
+

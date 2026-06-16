@@ -575,6 +575,27 @@ local NPC_VEHICLE_POP = {
     [6] = true, -- PERMANENT
 }
 
+local unlockedNpcVehicles = {}
+
+local function npcVehicleNetId(veh)
+    if not veh or veh == 0 or not NetworkGetEntityIsNetworked(veh) then return nil end
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    if netId and netId > 0 then return netId end
+    return nil
+end
+
+local function isNpcVehicleUnlocked(veh)
+    local netId = npcVehicleNetId(veh)
+    return netId ~= nil and unlockedNpcVehicles[netId] == true
+end
+
+function MarkNpcVehicleUnlocked(veh)
+    local netId = npcVehicleNetId(veh)
+    if netId then unlockedNpcVehicles[netId] = true end
+end
+
+exports('MarkNpcVehicleUnlocked', MarkNpcVehicleUnlocked)
+
 local function networkOwnerIsPlayer(veh)
     if not NetworkGetEntityIsNetworked(veh) then return false end
     local owner = NetworkGetEntityOwner(veh)
@@ -598,10 +619,19 @@ local function isNaturalNpcVehicle(veh)
 end
 
 local function lockNpcVehicle(veh)
+    if isNpcVehicleUnlocked(veh) then return end
     SetVehicleDoorsLocked(veh, 2)
     SetVehicleDoorsLockedForAllPlayers(veh, true)
     SetVehicleDoorsLockedForPlayer(veh, PlayerId(), true)
     SetVehicleNeedsToBeHotwired(veh, false)
+end
+
+local function keepNpcDriverInVehicle(ped, veh)
+    SetPedCanBeDraggedOut(ped, false)
+    SetPedStayInVehicleWhenJacked(ped, true)
+    SetPedConfigFlag(ped, 184, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    SetPedFleeAttributes(ped, 0, false)
 end
 
 exports('IsNaturalNpcVehicle', isNaturalNpcVehicle)
@@ -629,4 +659,22 @@ AddEventHandler('entityCreated', function(entity)
             lockNpcVehicle(entity)
         end
     end)
+end)
+
+--- NPC vairuotojai neislipa prie žaidėjo — lieka savo automobilyje.
+CreateThread(function()
+    while true do
+        local pcoords = GetEntityCoords(PlayerPedId())
+        for _, ped in ipairs(GetGamePool('CPed')) do
+            if DoesEntityExist(ped) and not IsPedAPlayer(ped) and IsPedInAnyVehicle(ped, false) then
+                local veh = GetVehiclePedIsIn(ped, false)
+                if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped and isNaturalNpcVehicle(veh) then
+                    if #(GetEntityCoords(veh) - pcoords) <= 220.0 then
+                        keepNpcDriverInVehicle(ped, veh)
+                    end
+                end
+            end
+        end
+        Wait(900)
+    end
 end)

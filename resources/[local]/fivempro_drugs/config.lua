@@ -114,13 +114,11 @@ Config.Products = {
     pills_pack = drugPack('Tabletės · supakavimas', 2, 'pills_pack', 180, 14000, 'medium', 'skill', 11, 7, 4, 45, 14),
     mushroom_process = drugProcess('Grybai · džiovinimas', 2, 'mushroom_dried', 15000, 'medium', 'skill', 8, 5, 2, 38, 15),
     mushroom_pack = drugPack('Grybai · supakavimas', 2, 'mushroom_pack', 150, 13000, 'medium', 'skill', 10, 6, 3, 40, 16),
-    --- L3
-    cocaine_process = drugProcess('Kokainas · ekstrakcija', 3, 'cocaine_paste', 32000, 'high', 'advanced', 18, 12, 6, 65, 17),
-    cocaine_pack = drugPack('Kokainas · supakavimas', 3, 'cocaine_bag', 420, 22000, 'high', 'advanced', 22, 16, 8, 70, 18),
+    --- L3 — kokainas: lapai → nesupakuotas → supakuotas
+    cocaine_process = drugProcess('Kokainas · virimas', 3, 'cartel_blend', 35000, 'high', 'advanced', 20, 15, 7, 65, 17),
+    cocaine_pack = drugPack('Kokainas · supakavimas', 3, 'cartel_pack', 520, 24000, 'high', 'advanced', 25, 20, 10, 70, 18),
     amp_process = drugProcess('Amfetaminas · sintezė', 3, 'amp_paste', 30000, 'high', 'advanced', 17, 11, 6, 60, 19),
     amp_pack = drugPack('Amfetaminas · supakavimas', 3, 'amphetamine_bag', 380, 20000, 'high', 'advanced', 20, 14, 7, 65, 20),
-    cartel_process = drugProcess('Kokainas · virimas (kartelis)', 3, 'cartel_blend', 35000, 'extreme', 'advanced', 20, 15, 7, 70, 21),
-    cartel_pack = drugPack('Kokainas · supakavimas (kartelis)', 3, 'cartel_pack', 520, 24000, 'extreme', 'advanced', 25, 20, 10, 75, 22),
 }
 
 Config.Recipes = {
@@ -133,7 +131,7 @@ Config.Recipes = {
     thc_pack = {
         { item = 'weed_resin', count = 1 },
         { item = 'empty_bottle', count = 1 },
-        { item = 'packaging', count = 1 },
+        { item = 'empty_bag', count = 1 },
     },
     alcohol_process = {
         { item = 'alcohol_base', count = 3 },
@@ -142,7 +140,7 @@ Config.Recipes = {
     alcohol_pack = {
         { item = 'moonshine_spirit', count = 1 },
         { item = 'empty_bottle', count = 1 },
-        { item = 'packaging', count = 1 },
+        { item = 'empty_bag', count = 1 },
     },
     vape_process = {
         { item = 'vape_liquid_base', count = 2 },
@@ -151,7 +149,7 @@ Config.Recipes = {
     vape_pack = {
         { item = 'vape_mix', count = 1 },
         { item = 'empty_bottle', count = 1 },
-        { item = 'packaging', count = 1 },
+        { item = 'empty_bag', count = 1 },
     },
     --- L2
     weed_process = {
@@ -160,9 +158,8 @@ Config.Recipes = {
     },
     weed_pack = {
         { item = 'weed_buds', count = 2 },
-        { item = 'empty_bag', count = 1 },
+        { item = 'empty_bag', count = 2 },
         { item = 'scale', count = 1 },
-        { item = 'packaging', count = 1 },
     },
     heroin_process = {
         { item = 'poppy_flower', count = 5 },
@@ -171,9 +168,8 @@ Config.Recipes = {
     },
     heroin_pack = {
         { item = 'heroin_paste', count = 1 },
-        { item = 'empty_bag', count = 1 },
+        { item = 'empty_bag', count = 2 },
         { item = 'scale', count = 1 },
-        { item = 'packaging', count = 1 },
     },
     meth_process = {
         { item = 'meth_ingredient', count = 4 },
@@ -183,9 +179,8 @@ Config.Recipes = {
     },
     meth_pack = {
         { item = 'meth_crystal', count = 1 },
-        { item = 'empty_bag', count = 1 },
+        { item = 'empty_bag', count = 2 },
         { item = 'scale', count = 1 },
-        { item = 'packaging', count = 1 },
     },
     pills_process = {
         { item = 'pill_powder', count = 4 },
@@ -193,8 +188,7 @@ Config.Recipes = {
     },
     pills_pack = {
         { item = 'pill_tablets', count = 2 },
-        { item = 'packaging', count = 2 },
-        { item = 'empty_bag', count = 1 },
+        { item = 'empty_bag', count = 3 },
     },
     mushroom_process = {
         { item = 'mushroom_raw', count = 5 },
@@ -202,20 +196,18 @@ Config.Recipes = {
     },
     mushroom_pack = {
         { item = 'mushroom_dried', count = 1 },
-        { item = 'empty_bag', count = 1 },
-        { item = 'packaging', count = 1 },
+        { item = 'empty_bag', count = 2 },
     },
-    --- L3
+    --- L3 — kokainas
     cocaine_process = {
-        { item = 'coca_leaf', count = 6 },
-        { item = 'chemical_mix', count = 2 },
+        { item = 'cartel_raw', count = 4 },
+        { item = 'chemical_mix', count = 3 },
+        { item = 'lab_kit', count = 1 },
         { item = 'burner', count = 1 },
     },
     cocaine_pack = {
-        { item = 'cocaine_paste', count = 1 },
-        { item = 'empty_bag', count = 1 },
-        { item = 'scale', count = 1 },
-        { item = 'packaging', count = 1 },
+        { item = 'cartel_blend', count = 1 },
+        { item = 'empty_bag', count = 3 },
     },
     amp_process = {
         { item = 'amp_precursor', count = 4 },
@@ -224,20 +216,8 @@ Config.Recipes = {
     },
     amp_pack = {
         { item = 'amp_paste', count = 1 },
-        { item = 'empty_bag', count = 1 },
+        { item = 'empty_bag', count = 2 },
         { item = 'scale', count = 1 },
-        { item = 'packaging', count = 1 },
-    },
-    cartel_process = {
-        { item = 'cartel_raw', count = 4 },
-        { item = 'chemical_mix', count = 3 },
-        { item = 'lab_kit', count = 1 },
-        { item = 'burner', count = 1 },
-    },
-    cartel_pack = {
-        { item = 'cartel_blend', count = 1 },
-        { item = 'packaging', count = 2 },
-        { item = 'empty_bag', count = 1 },
     },
 }
 
@@ -248,7 +228,7 @@ Config.Stations = {
     { id = 'trap_chamberlain', label = 'L2 · Trap house', level = 2, coords = devRow(-3.5), radius = 2.2, blip = false },
     { id = 'gang_base', label = 'L2 · Gaujos bazė', level = 2, coords = devRow(0.0), radius = 2.2, blip = false },
     { id = 'lab_sandy', label = 'L2 · Laboratorija', level = 2, coords = devRow(3.5), radius = 2.2, blip = false },
-    { id = 'cartel_lab', label = 'L3 · Kartelis', level = 3, coords = devRow(7.0), radius = 2.2, blip = false },
+    { id = 'cartel_lab', label = 'L3 · Kokaino laboratorija', level = 3, coords = devRow(7.0), radius = 2.2, blip = false },
     { id = 'secret_humane', label = 'L3 · Slapta lab.', level = 3, coords = devRow(10.5), radius = 2.2, blip = false },
     { id = 'weapon_bench_l1', label = 'Ginklų dirbtuvė · L1', level = 1, mode = 'weapon', coords = devRow(14.0), radius = 2.2, blip = false },
     { id = 'weapon_bench_l2', label = 'Ginklų dirbtuvė · L2', level = 2, mode = 'weapon', coords = devRow(15.5), radius = 2.2, blip = false },
@@ -551,18 +531,14 @@ Config.MaterialShop = {
         { name = 'mushroom_raw', amount = 500, price = 24, slot = 21 },
         { name = 'mushroom_dried', amount = 300, price = 50, slot = 22 },
         { name = 'mushroom_pack', amount = 200, price = 125, slot = 23 },
-        -- Kokainas
-        { name = 'coca_leaf', amount = 500, price = 45, slot = 24 },
-        { name = 'cocaine_paste', amount = 300, price = 95, slot = 25 },
-        { name = 'cocaine_bag', amount = 200, price = 280, slot = 26 },
+        -- Kokainas (lapai → nesupakuotas → supakuotas)
+        { name = 'cartel_raw', amount = 500, price = 52, slot = 24 },
+        { name = 'cartel_blend', amount = 300, price = 105, slot = 25 },
+        { name = 'cartel_pack', amount = 200, price = 320, slot = 26 },
         -- Amfetaminas
         { name = 'amp_precursor', amount = 500, price = 38, slot = 27 },
         { name = 'amp_paste', amount = 300, price = 88, slot = 28 },
         { name = 'amphetamine_bag', amount = 200, price = 250, slot = 29 },
-        -- Kartelio kokainas
-        { name = 'cartel_raw', amount = 500, price = 52, slot = 30 },
-        { name = 'cartel_blend', amount = 300, price = 105, slot = 31 },
-        { name = 'cartel_pack', amount = 200, price = 320, slot = 32 },
         -- Ekstra: reagentai ir įrankiai
         { name = 'chemical_mix', amount = 500, price = 40, slot = 33 },
         { name = 'filter', amount = 500, price = 8, slot = 34 },
@@ -573,7 +549,6 @@ Config.MaterialShop = {
         { name = 'empty_cart', amount = 500, price = 12, slot = 39 },
         { name = 'empty_bottle', amount = 500, price = 10, slot = 40 },
         { name = 'empty_bag', amount = 500, price = 11, slot = 41 },
-        { name = 'packaging', amount = 500, price = 9, slot = 42 },
         -- Ginklų dalys
         { name = 'metal_scrap', amount = 500, price = 55, slot = 43 },
         { name = 'gun_frame', amount = 200, price = 220, slot = 44 },
@@ -731,7 +706,7 @@ Config.MushroomFields = {
     },
 }
 
---- Kokos lapų rinkimas (Cayo Perico)
+--- Kokainmedžio lapų rinkimas (Cayo Perico)
 Config.CocaFields = {
     {
         id = 'cayo_coca_grove',
@@ -739,12 +714,12 @@ Config.CocaFields = {
         radius = 48.0,
         spawnCount = 18,
         respawnSec = 120,
-        item = 'coca_leaf',
+        item = 'cartel_raw',
         amountMin = 1,
         amountMax = 3,
         pickDurationMs = 5400,
         pickDistance = 2.5,
-        pickLabel = 'Rinkti kokos lapus',
+        pickLabel = 'Rinkti kokainmedžio lapus',
         zoneRadius = 1.05,
         prop = 'prop_plant_paradise_b',
         propScale = 0.52,
@@ -754,71 +729,8 @@ Config.CocaFields = {
             sprite = 140,
             color = 2,
             scale = 0.76,
-            label = 'Kokos lapai (Cayo)',
+            label = 'Kokainmedžio lapai (Cayo)',
         },
-    },
-}
-
---- Žolės reikmenų parduotuvė (production) — sėklos, trąšos ir pan.
-Config.WeedGrowShop = {
-    enabled = true,
-    model = 's_m_y_dealer_01',
-    coords = vector4(2221.8792, 5614.7041, 54.9016, 106.6511),
-    scenario = 'WORLD_HUMAN_GARDENER_PLANT',
-    label = 'Žolės reikmenys',
-    maxDistance = 3.5,
-    targetIcon = 'fas fa-cannabis',
-    blip = {
-        enabled = true,
-        sprite = 140,
-        color = 25,
-        scale = 0.82,
-        label = 'Žolės reikmenys',
-    },
-}
-
-Config.WeedGrowShopItems = {
-    name = 'fivempro-weed-grow',
-    label = 'Žolės reikmenys',
-    items = {
-        { name = 'weed_seed', amount = 250, price = 38, slot = 1 },
-        { name = 'weed_nutrition', amount = 120, price = 32, slot = 2 },
-        { name = 'empty_bag', amount = 200, price = 6, slot = 3 },
-        { name = 'packaging', amount = 200, price = 9, slot = 4 },
-        { name = 'gloves', amount = 80, price = 22, slot = 5 },
-    },
-}
-
---- Laisvas žolės auginimas — sodink bet kur (sėkla iš parduotuvės)
-Config.WeedGrow = {
-    maxPlantsPerPlayer = 10,
-    minPlantDistance = 2.8,
-    plantDurationMs = 4200,
-    harvestDurationMs = 5600,
-    feedDurationMs = 3800,
-    growthTickSec = 60,
-    growthPerTick = 4,
-    growthPerTickFed = 7,
-    nutritionBoostTicks = 6,
-    harvestItem = 'weed_leaf',
-    harvestMin = 2,
-    harvestMax = 5,
-    harvestAt = 100,
-    interactDistance = 2.4,
-    placeDistance = 1.35,
-    seedItems = {
-        weed_seed = true,
-        weed_skunk_seed = true,
-        weed_ogkush_seed = true,
-        weed_whitewidow_seed = true,
-        weed_purplehaze_seed = true,
-        weed_amnesia_seed = true,
-        weed_ak47_seed = true,
-    },
-    props = {
-        { min = 0, model = 'prop_weed_01' },
-        { min = 35, model = 'prop_weed_02' },
-        { min = 70, model = 'bkr_prop_weed_lrg_01a' },
     },
 }
 
@@ -923,6 +835,89 @@ Config.HeroinLab = {
     },
 }
 
+--- Tablečių presavimas — 2 etapas (production) · ta pati lab. zona kaip heroinas
+Config.PillsLab = {
+    blip = {
+        enabled = true,
+        coords = vector3(1953.0, 5180.0, 47.9838),
+        sprite = 499,
+        color = 38,
+        scale = 0.78,
+        shortRange = true,
+        label = 'Tablečių gamyba',
+    },
+    stations = {
+        {
+            id = 'pills_lab_process_1',
+            label = 'Tabletės · presavimas',
+            level = 2,
+            coords = vector3(1951.2238, 5179.1294, 47.9838),
+            heading = 5.9604,
+            radius = 1.4,
+            products = { 'pills_process' },
+        },
+        {
+            id = 'pills_lab_process_2',
+            label = 'Tabletės · presavimas',
+            level = 2,
+            coords = vector3(1955.4041, 5179.1353, 47.9838),
+            heading = 359.5552,
+            radius = 1.4,
+            products = { 'pills_process' },
+        },
+        {
+            id = 'pills_lab_process_3',
+            label = 'Tabletės · presavimas',
+            level = 2,
+            coords = vector3(1951.1562, 5180.8154, 47.9838),
+            heading = 172.7080,
+            radius = 1.4,
+            products = { 'pills_process' },
+        },
+        {
+            id = 'pills_lab_process_4',
+            label = 'Tabletės · presavimas',
+            level = 2,
+            coords = vector3(1955.4730, 5180.8521, 47.9838),
+            heading = 176.3169,
+            radius = 1.4,
+            products = { 'pills_process' },
+        },
+        {
+            id = 'pills_lab_process_5',
+            label = 'Tabletės · presavimas',
+            level = 2,
+            coords = vector3(1943.0104, 5182.9053, 47.9838),
+            heading = 3.1554,
+            radius = 1.6,
+            products = { 'pills_process' },
+        },
+    },
+}
+
+--- Metamfetamino laboratorija — supakavimo stalas (Grapeseed)
+Config.MethLab = {
+    blip = {
+        enabled = true,
+        coords = vector3(2709.0989, 5235.0547, 49.3645),
+        sprite = 499,
+        color = 3,
+        scale = 0.82,
+        label = 'Metamfetamino laboratorija',
+    },
+    stations = {
+        {
+            id = 'meth_lab_pack',
+            label = 'Metas · supakavimas',
+            level = 2,
+            coords = vector3(2709.0989, 5235.0547, 49.3645),
+            heading = 286.5156,
+            radius = 1.5,
+            products = { 'meth_pack' },
+        },
+    },
+}
+
 --- Amfetamino mobilioji laboratorija — Zirconium Journey + dykuma prie Grapeseed
 Config.AmpExclusiveProducts = { amp_process = true, amp_pack = true }
 
@@ -978,16 +973,16 @@ Config.AmpMobileLab = {
 Config.TestKits = {
     level1 = {
         weed_leaf = 20, alcohol_base = 10, vape_liquid_base = 10,
-        empty_cart = 10, empty_bottle = 10, filter = 10, packaging = 20,
+        empty_cart = 10, empty_bottle = 10, filter = 10, empty_bag = 20,
     },
     level2 = {
         weed_leaf = 30, poppy_flower = 20, meth_ingredient = 15, pill_powder = 15,
-        mushroom_raw = 15, chemical_mix = 15, empty_bag = 15, scale = 5,
-        lab_kit = 3, packaging = 20, gloves = 5,
+        mushroom_raw = 15, chemical_mix = 15, empty_bag = 35, scale = 5,
+        lab_kit = 3, gloves = 5,
     },
     level3 = {
-        coca_leaf = 25, chemical_mix = 20, meth_ingredient = 10, pill_powder = 15,
-        amp_precursor = 20, cartel_raw = 15,
-        lab_kit = 5, empty_bag = 15, scale = 5, packaging = 20, burner = 3,
+        cartel_raw = 25, chemical_mix = 20, meth_ingredient = 10, pill_powder = 15,
+        amp_precursor = 20,
+        lab_kit = 5, empty_bag = 35, scale = 5, burner = 3,
     },
 }

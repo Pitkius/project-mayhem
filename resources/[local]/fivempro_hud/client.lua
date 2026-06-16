@@ -756,7 +756,7 @@ local function toggleVehicleLockMenu(veh)
             return exports['fivempro_basics']:IsNaturalNpcVehicle(veh)
         end)
         if ok and isNpc then
-            QBCore.Functions.Notify('NPC transportas visada užrakintas.', 'error')
+            QBCore.Functions.Notify('NPC transportą atrakink visraktu.', 'error')
             return
         end
     end

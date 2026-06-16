@@ -45,6 +45,18 @@ local function getAllStations()
             list[#list + 1] = st
         end
     end
+    local methLab = Config.MethLab
+    if methLab and methLab.stations then
+        for _, st in ipairs(methLab.stations) do
+            list[#list + 1] = st
+        end
+    end
+    local pillsLab = Config.PillsLab
+    if pillsLab and pillsLab.stations then
+        for _, st in ipairs(pillsLab.stations) do
+            list[#list + 1] = st
+        end
+    end
     local ampLab = Config.AmpMobileLab
     if ampLab and ampLab.packStation then
         list[#list + 1] = ampLab.packStation
