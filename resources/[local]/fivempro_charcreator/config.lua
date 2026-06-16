@@ -17,8 +17,21 @@ Config.CameraRotateSpeed = 2.5
 --- Kirpykla: plaukai, barzda, antakiai, makiažas
 Config.BarberSteps = { 'hair', 'facedetails' }
 
+--- Tatuiruočių salonas
+Config.TattooShopSteps = { 'tattoos' }
+Config.TattooZones = {
+    { id = 'ZONE_HEAD', label = 'Galva' },
+    { id = 'ZONE_TORSO', label = 'Liemuo' },
+    { id = 'ZONE_LEFT_ARM', label = 'Kairė ranka' },
+    { id = 'ZONE_RIGHT_ARM', label = 'Dešinė ranka' },
+    { id = 'ZONE_LEFT_LEG', label = 'Kairė koja' },
+    { id = 'ZONE_RIGHT_LEG', label = 'Dešinė koja' },
+    { id = 'ZONE_HAIR', label = 'Plaukai' },
+}
+
 --- Rūbų parduotuvė: tik drabužiai (be veido / plaukų)
 Config.ClothingShopSteps = { 'clothes' }
+Config.ClothingShopPrice = 250
 Config.ClothingShopItems = {
     { key = 't-shirt', label = 'Marškinėliai', maxItem = 200, maxTex = 15 },
     { key = 'torso2', label = 'Viršus / striukė', maxItem = 400, maxTex = 15 },

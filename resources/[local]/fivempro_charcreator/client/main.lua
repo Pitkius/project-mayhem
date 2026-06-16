@@ -288,15 +288,23 @@ RegisterNUICallback('createChar', function(data, cb)
 end)
 
 RegisterNUICallback('saveAppearance', function(data, cb)
+    if ShopSession and ShopSession.IsActive() then
+        local pd = QBCore.Functions.GetPlayerData()
+        local gender = pd and pd.charinfo and pd.charinfo.gender or 0
+        local model = CharAppearance.modelHash(gender)
+        TriggerServerEvent('qb-clothing:saveSkin', model, json.encode(CharAppearance.exportForSave()))
+        ShopSession.Teardown(false)
+        cb('ok')
+        return
+    end
+
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
     local skin = CharAppearance.exportForSave()
     data.model = CharAppearance.modelHash(data.personal and data.personal.gender or 0)
     data.skin = json.encode(skin)
     TriggerServerEvent('fivempro_charcreator:server:saveAppearance', data)
-    if not (ShopSession and ShopSession.IsActive()) then
-        teardownScene()
-    end
+    teardownScene()
     cb('ok')
 end)
 
@@ -356,7 +364,15 @@ end)
 
 RegisterNUICallback('loadPreset', function(data, cb)
     if data.skin then
-        CharAppearance.loadFromJson(data.skin)
+        local opts
+        if ShopSession and ShopSession.IsActive and ShopSession.IsActive() then
+            local pd = QBCore.Functions.GetPlayerData()
+            opts = {
+                gender = pd and pd.charinfo and pd.charinfo.gender or 0,
+                tattooShop = ShopSession.kind == 'tattoo',
+            }
+        end
+        CharAppearance.loadFromJson(data.skin, opts)
     end
     cb('ok')
 end)

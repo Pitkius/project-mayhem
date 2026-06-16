@@ -179,9 +179,30 @@ end
 --- txAdmin (group.admin) arba cfg (identifier → qbcore.god) — QBCore komandoms reikia player.ID → qbcore.*
 local function syncQBCoreAdmin(src)
     if not src or src < 1 then return end
-    if IsPlayerAceAllowed(src, 'group.admin') and not QBCore.Functions.HasPermission(src, 'god') then
+    local hasAceAdmin = IsPlayerAceAllowed(src, 'group.admin')
+        or IsPlayerAceAllowed(src, 'qbcore.god')
+        or IsPlayerAceAllowed(src, 'qbcore.admin')
+    if hasAceAdmin and not QBCore.Functions.HasPermission(src, 'god') then
         QBCore.Functions.AddPermission(src, 'god')
     end
+    if hasAceAdmin and not IsPlayerAceAllowed(src, 'group.admin') then
+        ExecuteCommand(('add_principal player.%s group.admin'):format(src))
+    end
+    QBCore.Commands.Refresh(src)
+end
+
+local function grantPlayerAdmin(src, level)
+    level = tostring(level or 'god'):lower()
+    if level ~= 'god' and level ~= 'admin' and level ~= 'mod' then
+        level = 'god'
+    end
+    if level == 'god' then
+        ExecuteCommand(('add_principal player.%s qbcore.god'):format(src))
+        ExecuteCommand(('add_principal player.%s group.admin'):format(src))
+    else
+        ExecuteCommand(('add_principal player.%s qbcore.%s'):format(src, level))
+    end
+    QBCore.Functions.AddPermission(src, level)
     QBCore.Commands.Refresh(src)
 end
 
@@ -297,9 +318,28 @@ QBCore.Commands.Add('fixadmin', 'Sinchronizuoti admin teises -> QBCore (F8)', {}
     syncQBCoreAdmin(source)
     local hasGod = QBCore.Functions.HasPermission(source, 'god')
     local hasAdmin = QBCore.Functions.HasPermission(source, 'admin')
-    local msg = hasGod and 'God teisės aktyvios.' or (hasAdmin and 'Admin teisės aktyvios.' or 'Admin teisių nėra — patikrink txAdmin arba cfg/00_base.cfg license.')
+    local lic = QBCore.Functions.GetIdentifier(source, 'license') or 'n/a'
+    local msg = hasGod and 'God teisės aktyvios.' or (hasAdmin and 'Admin teisės aktyvios.' or ('Admin teisių nėra — patikrink txAdmin arba cfg license: %s'):format(lic))
     TriggerClientEvent('QBCore:Notify', source, msg, (hasGod or hasAdmin) and 'success' or 'error')
 end)
+
+QBCore.Commands.Add('grantadmin', 'Duoti žaidėjui god/admin (online ID)', {
+    { name = 'id', help = 'Server ID (skaičius šalia vardo)' },
+    { name = 'lygis', help = 'god / admin / mod (default: god)' },
+}, true, function(source, args)
+    local targetId = tonumber(args[1])
+    if not targetId then
+        return TriggerClientEvent('QBCore:Notify', source, 'Naudojimas: /grantadmin [server_id] [god]', 'error')
+    end
+    local Player = QBCore.Functions.GetPlayer(targetId)
+    if not Player then
+        return TriggerClientEvent('QBCore:Notify', source, 'Žaidėjas neprisijungęs.', 'error')
+    end
+    local level = args[2] or 'god'
+    grantPlayerAdmin(Player.PlayerData.source, level)
+    TriggerClientEvent('QBCore:Notify', source, ('Duotos %s teisės ID %s'):format(level, targetId), 'success')
+    TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, ('Gautos %s teisės. Jei komandos neveikia — /fixadmin'):format(level), 'success')
+end, 'god')
 
 QBCore.Commands.Add('logout', 'Atsijungti nuo personažo (admin)', {}, false, function(source)
     local src = source

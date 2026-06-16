@@ -18,10 +18,12 @@ files {
 shared_scripts {
     'shared/countries.lua',
     'config.lua',
+    'shared/tattoos.lua',
 }
 
 client_scripts {
     'client/appearance.lua',
+    'client/tattoos.lua',
     'client/camera.lua',
     'client/main.lua',
     'client/shops.lua',
@@ -37,6 +39,8 @@ exports {
     'IsInCreator',
     'OpenBarber',
     'OpenClothing',
+    'OpenTattoo',
+    'ApplyTattoos',
 }
 
 dependencies {

@@ -35,8 +35,20 @@ local function nearCoords(src, center, radius)
     return #(c - center) <= (radius or 8.0)
 end
 
+local function nearPlayer(src, otherSrc, maxDist)
+    local c1 = playerCoords(src)
+    local c2 = playerCoords(otherSrc)
+    if not c1 or not c2 then return false end
+    return #(c1 - c2) <= (maxDist or 6.0)
+end
+
 local function inStation(src, st)
     return nearCoords(src, st.center, st.radius or 14.0)
+end
+
+local function suspectInRange(leadSrc, suspectSrc, st)
+    if inStation(suspectSrc, st) then return true end
+    return nearPlayer(leadSrc, suspectSrc, math.max(6.0, (st.radius or 4.5) + 1.5))
 end
 
 local function inKitZone(src, kit)
@@ -172,8 +184,8 @@ RegisterNetEvent('fivempro_interrogation:server:requestStart', function(location
 
     local mode = locationKind == 'station' and 'police' or 'criminal'
     if locationKind == 'station' then
-        if not inStation(suspectSrc, loc) then
-            return TriggerClientEvent('QBCore:Notify', src, 'Įtariamasis turi būti zonoje.', 'error')
+        if not suspectInRange(src, suspectSrc, loc) then
+            return TriggerClientEvent('QBCore:Notify', src, 'Įtariamasis turi būti šalia tavęs kambaryje.', 'error')
         end
     else
         if not inKitZone(suspectSrc, loc) then
@@ -227,8 +239,12 @@ RegisterNetEvent('fivempro_interrogation:server:consent', function(accept)
     end
     if Sessions[pending.key] then return end
     if pending.locationKind == 'station' then
-        if not inStation(pending.leadSrc, loc) or not inStation(src, loc) then
-            return TriggerClientEvent('QBCore:Notify', pending.leadSrc, 'Abu turi būti zonoje.', 'error')
+        local st = stationById(pending.locationId)
+        if not st or not inStation(pending.leadSrc, st) then
+            return TriggerClientEvent('QBCore:Notify', pending.leadSrc, 'Pareigūnas turi būti tardymo kambaryje.', 'error')
+        end
+        if not suspectInRange(pending.leadSrc, src, st) then
+            return TriggerClientEvent('QBCore:Notify', pending.leadSrc, 'Įtariamasis turi būti šalia.', 'error')
         end
     else
         if not inKitZone(pending.leadSrc, loc) or not inKitZone(src, loc) then

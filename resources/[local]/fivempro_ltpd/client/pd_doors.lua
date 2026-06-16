@@ -257,12 +257,39 @@ local function buildPdDoorProximityZones()
     return zones
 end
 
+local cachedDoorProximityZones = nil
+
+local function getPdDoorProximityZones()
+    if not cachedDoorProximityZones then
+        cachedDoorProximityZones = buildPdDoorProximityZones()
+    end
+    return cachedDoorProximityZones
+end
+
+local function nearestPdDoorDist(pcoords)
+    local minD = 999999.0
+    for _, g in ipairs(doorGroups) do
+        if g.interact then
+            minD = math.min(minD, #(pcoords - g.interact))
+        end
+        for _, slab in ipairs(g.slabs or {}) do
+            if slab.coords then
+                minD = math.min(minD, #(pcoords - slab.coords))
+            end
+        end
+    end
+    return minD
+end
+
 local function pdDoorZoneIdleWaitMs(zones, pcoords)
-    local wm = 650
+    local wm = 900
     for _, z in ipairs(zones) do
-        if #(pcoords - z.pos) < z.maxd + 14.0 then
-            wm = 120
-            break
+        local d = #(pcoords - z.pos)
+        if d < z.maxd + 2.0 then
+            return 50
+        end
+        if d < z.maxd + 14.0 then
+            wm = 180
         end
     end
     return wm
@@ -846,6 +873,7 @@ end
 CreateThread(function()
     Wait(1500)
     buildManualGroups()
+    cachedDoorProximityZones = buildPdDoorProximityZones()
     for id, locked in pairs(doorLocked) do
         applyGroupLocked(id, locked)
     end
@@ -970,51 +998,55 @@ CreateThread(function()
     while true do
         local ped = PlayerPedId()
         local pcoords = GetEntityCoords(ped)
-        local zones = buildPdDoorProximityZones()
-        local waitMs = pdDoorZoneIdleWaitMs(zones, pcoords)
+        if nearestPdDoorDist(pcoords) > 140.0 then
+            Wait(2000)
+        else
+            local zones = getPdDoorProximityZones()
+            local waitMs = pdDoorZoneIdleWaitMs(zones, pcoords)
 
-        local bestByGroup = {}
-        local closestHit = nil
+            local bestByGroup = {}
+            local closestHit = nil
 
-        for _, z in ipairs(zones) do
-            local d = #(pcoords - z.pos)
-            if d <= z.maxd then
-                local prev = bestByGroup[z.groupId]
-                if not prev or d < prev.d then
-                    bestByGroup[z.groupId] = { d = d, z = z }
-                end
-                if not closestHit or d < closestHit.d then
-                    closestHit = { gid = z.groupId, d = d, z = z }
-                end
-            end
-        end
-
-        if next(bestByGroup) then
-            waitMs = 0
-            if canUseServiceDoorsClient() then
-                for gid, hit in pairs(bestByGroup) do
-                    if canUseDoorGroupClient(gid) then
-                        local g = findDoorGroupById(gid)
-                        if g then
-                            local locked = isGroupLocked(gid)
-                            drawGroupLockIcons(g, pcoords, locked)
-                        end
+            for _, z in ipairs(zones) do
+                local d = #(pcoords - z.pos)
+                if d <= z.maxd then
+                    local prev = bestByGroup[z.groupId]
+                    if not prev or d < prev.d then
+                        bestByGroup[z.groupId] = { d = d, z = z }
                     end
-                end
-                if closestHit and canUseDoorGroupClient(closestHit.gid) and IsControlJustPressed(0, 38) then
-                    local now = GetGameTimer()
-                    if now - lastToggle > 650 then
-                        lastToggle = now
-                        local g = findDoorGroupById(closestHit.gid)
-                        if g then
-                            TriggerServerEvent('fivempro_ltpd:server:togglePdDoorGroup', g.id)
-                        end
+                    if not closestHit or d < closestHit.d then
+                        closestHit = { gid = z.groupId, d = d, z = z }
                     end
                 end
             end
-        end
 
-        Wait(waitMs)
+            if next(bestByGroup) then
+                waitMs = math.min(waitMs, 50)
+                if canUseServiceDoorsClient() then
+                    for gid, hit in pairs(bestByGroup) do
+                        if canUseDoorGroupClient(gid) then
+                            local g = findDoorGroupById(gid)
+                            if g then
+                                local locked = isGroupLocked(gid)
+                                drawGroupLockIcons(g, pcoords, locked)
+                            end
+                        end
+                    end
+                    if closestHit and canUseDoorGroupClient(closestHit.gid) and IsControlJustPressed(0, 38) then
+                        local now = GetGameTimer()
+                        if now - lastToggle > 650 then
+                            lastToggle = now
+                            local g = findDoorGroupById(closestHit.gid)
+                            if g then
+                                TriggerServerEvent('fivempro_ltpd:server:togglePdDoorGroup', g.id)
+                            end
+                        end
+                    end
+                end
+            end
+
+            Wait(waitMs)
+        end
     end
 end)
 
@@ -1023,59 +1055,63 @@ CreateThread(function()
     while true do
         local ped = PlayerPedId()
         local pc = GetEntityCoords(ped)
-        local anyNear = false
-        for _, g in ipairs(doorGroups) do
-            if g.doorType == 'yard_gate' then
-                local near = g.interact and #(pc - g.interact) < 55.0
-                if not near then
-                    for _, slab in ipairs(g.slabs or {}) do
-                        if #(pc - slab.coords) < 55.0 then
-                            near = true
-                            break
+        if nearestPdDoorDist(pc) > 130.0 then
+            Wait(2500)
+        else
+            local anyNear = false
+            for _, g in ipairs(doorGroups) do
+                if g.doorType == 'yard_gate' then
+                    local near = g.interact and #(pc - g.interact) < 55.0
+                    if not near then
+                        for _, slab in ipairs(g.slabs or {}) do
+                            if #(pc - slab.coords) < 55.0 then
+                                near = true
+                                break
+                            end
                         end
                     end
-                end
-                if near then
-                    anyNear = true
-                    applyYardGateGroupLocked(g, isGroupLocked(g.id))
-                end
-            elseif (g.doorType == 'barrier' or g.doorType == 'bollard') and isGroupLocked(g.id) then
-                local near = g.interact and #(pc - g.interact) < 55.0
-                if not near then
-                    for _, slab in ipairs(g.slabs or {}) do
-                        if #(pc - slab.coords) < 55.0 then
-                            near = true
-                            break
+                    if near then
+                        anyNear = true
+                        applyYardGateGroupLocked(g, isGroupLocked(g.id))
+                    end
+                elseif (g.doorType == 'barrier' or g.doorType == 'bollard') and isGroupLocked(g.id) then
+                    local near = g.interact and #(pc - g.interact) < 55.0
+                    if not near then
+                        for _, slab in ipairs(g.slabs or {}) do
+                            if #(pc - slab.coords) < 55.0 then
+                                near = true
+                                break
+                            end
                         end
                     end
-                end
-                if near then
-                    anyNear = true
-                    if g.doorType == 'bollard' then
-                        applyBollardGroupLocked(g.slabs, g.entities, true, bollardRaiseForGroup(g))
-                    else
-                        applyBarrierGroupLocked(g.slabs, g.entities, true, bollardRaiseForGroup(g))
-                    end
-                end
-            elseif g.doorType == 'garage_roll' and isGroupLocked(g.id) then
-                local near = false
-                if g.interact and #(pc - g.interact) < 90.0 then
-                    near = true
-                end
-                if not near then
-                    for _, slab in ipairs(g.slabs or {}) do
-                        if #(pc - slab.coords) < 90.0 then
-                            near = true
-                            break
+                    if near then
+                        anyNear = true
+                        if g.doorType == 'bollard' then
+                            applyBollardGroupLocked(g.slabs, g.entities, true, bollardRaiseForGroup(g))
+                        else
+                            applyBarrierGroupLocked(g.slabs, g.entities, true, bollardRaiseForGroup(g))
                         end
                     end
-                end
-                if near then
-                    anyNear = true
-                    applyGarageRollLocked(g.slabs, g.entities, true)
+                elseif g.doorType == 'garage_roll' and isGroupLocked(g.id) then
+                    local near = false
+                    if g.interact and #(pc - g.interact) < 90.0 then
+                        near = true
+                    end
+                    if not near then
+                        for _, slab in ipairs(g.slabs or {}) do
+                            if #(pc - slab.coords) < 90.0 then
+                                near = true
+                                break
+                            end
+                        end
+                    end
+                    if near then
+                        anyNear = true
+                        applyGarageRollLocked(g.slabs, g.entities, true)
+                    end
                 end
             end
+            Wait(anyNear and 450 or 900)
         end
-        Wait(anyNear and 0 or 400)
     end
 end)

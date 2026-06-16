@@ -29,6 +29,7 @@ const STEPS = [
   { id: 'facedetails', title: 'Veido detalės', icon: 'fa-palette', desc: 'Makiažas, senėjimas' },
   { id: 'body', title: 'Kūnas', icon: 'fa-person', desc: 'Sudėjimas ir proporcijos' },
   { id: 'clothes', title: 'Apranga', icon: 'fa-shirt', desc: 'Visi drabužių variantai' },
+  { id: 'tattoos', title: 'Tatuiruotės', icon: 'fa-pen-nib', desc: 'Kūno tatuiruotės' },
   { id: 'review', title: 'Peržiūra', icon: 'fa-circle-check', desc: 'Patvirtink ir sukurk' },
 ];
 
@@ -81,7 +82,7 @@ function syncAppearance() {
 }
 
 function isShop() {
-  return session.shopMode === 'barber' || session.shopMode === 'clothing';
+  return session.shopMode === 'barber' || session.shopMode === 'clothing' || session.shopMode === 'tattoo';
 }
 
 function getActiveSteps() {
@@ -227,6 +228,163 @@ function renderClothingShop(items) {
   bindClothingSliders(stepBody);
 }
 
+let tattooState = { zone: 'ZONE_TORSO', catalog: [], owned: [], filter: '' };
+
+function tattooOwnedInZone(zone) {
+  return tattooState.owned.filter((t) => t.zone === zone);
+}
+
+function tattooIsOwned(name, zone) {
+  return tattooState.owned.some((t) => t.name === name && t.zone === zone);
+}
+
+function renderTattooOwned(zone) {
+  const owned = tattooOwnedInZone(zone);
+  if (!owned.length) {
+    return '<p class="muted tattoo-owned-empty">Šioje zonoje tatuiruočių nėra.</p>';
+  }
+  return `<div class="tattoo-owned-list">${owned.map((t) => {
+    const label = tattooState.catalog.find((c) => c.name === t.name)?.label || t.name;
+    return `<div class="tattoo-owned-item">
+      <span>${esc(label)}</span>
+      <button type="button" class="btn ghost sm" data-remove-name="${esc(t.name)}">Pašalinti</button>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderTattooCatalogList(zone) {
+  const q = (tattooState.filter || '').trim().toLowerCase();
+  const rows = tattooState.catalog.filter((t) => {
+    if (!q) return true;
+    return (t.label || '').toLowerCase().includes(q) || (t.name || '').toLowerCase().includes(q);
+  });
+  if (!rows.length) {
+    return '<p class="muted">Nieko nerasta.</p>';
+  }
+  return `<div class="tattoo-list">${rows.map((t) => {
+    const active = tattooIsOwned(t.name, zone) ? ' active' : '';
+    return `<button type="button" class="tattoo-item${active}" data-tattoo-name="${esc(t.name)}">
+      <span class="tattoo-item-label">${esc(t.label || t.name)}</span>
+      <span class="tattoo-item-state">${active ? 'Uždėta' : 'Uždėti'}</span>
+    </button>`;
+  }).join('')}</div>`;
+}
+
+function bindTattooShop(zone) {
+  const search = stepBody.querySelector('#tattooSearch');
+  if (search) {
+    search.oninput = () => {
+      tattooState.filter = search.value;
+      const list = stepBody.querySelector('#tattooCatalog');
+      if (list) list.innerHTML = renderTattooCatalogList(zone);
+      bindTattooShop(zone);
+    };
+  }
+
+  stepBody.querySelectorAll('.pill-btn[data-zone]').forEach((btn) => {
+    btn.onclick = () => {
+      tattooState.zone = btn.dataset.zone;
+      tattooState.filter = '';
+      loadTattooZone(tattooState.zone);
+    };
+  });
+
+  stepBody.querySelectorAll('.tattoo-item[data-tattoo-name]').forEach((btn) => {
+    btn.onclick = () => {
+      post('toggleTattoo', { name: btn.dataset.tattooName, zone }).then((res) => {
+        tattooState.owned = res.tattoos || [];
+        const ownedBox = stepBody.querySelector('#tattooOwned');
+        const catalogBox = stepBody.querySelector('#tattooCatalog');
+        if (ownedBox) ownedBox.innerHTML = renderTattooOwned(zone);
+        if (catalogBox) catalogBox.innerHTML = renderTattooCatalogList(zone);
+        bindTattooShop(zone);
+      });
+    };
+  });
+
+  stepBody.querySelectorAll('[data-remove-name]').forEach((btn) => {
+    btn.onclick = () => {
+      post('toggleTattoo', { name: btn.dataset.removeName, zone }).then((res) => {
+        tattooState.owned = res.tattoos || [];
+        const ownedBox = stepBody.querySelector('#tattooOwned');
+        const catalogBox = stepBody.querySelector('#tattooCatalog');
+        if (ownedBox) ownedBox.innerHTML = renderTattooOwned(zone);
+        if (catalogBox) catalogBox.innerHTML = renderTattooCatalogList(zone);
+        bindTattooShop(zone);
+      });
+    };
+  });
+
+  const clearBtn = stepBody.querySelector('#clearTattooZone');
+  if (clearBtn) {
+    clearBtn.onclick = () => {
+      post('clearTattooZone', { zone }).then((res) => {
+        tattooState.owned = res.tattoos || [];
+        const ownedBox = stepBody.querySelector('#tattooOwned');
+        const catalogBox = stepBody.querySelector('#tattooCatalog');
+        if (ownedBox) ownedBox.innerHTML = renderTattooOwned(zone);
+        if (catalogBox) catalogBox.innerHTML = renderTattooCatalogList(zone);
+        bindTattooShop(zone);
+      });
+    };
+  }
+}
+
+function loadTattooZone(zone) {
+  post('setTattooZoneCamera', { zone });
+  stepBody.querySelectorAll('.pill-btn[data-zone]').forEach((b) => {
+    b.classList.toggle('active', b.dataset.zone === zone);
+  });
+  const catalogBox = stepBody.querySelector('#tattooCatalog');
+  if (catalogBox) catalogBox.innerHTML = '<p class="muted">Kraunama...</p>';
+  return Promise.all([
+    post('getTattooZoneCatalog', { zone }),
+    post('getPlayerTattoos'),
+  ]).then(([catalog, owned]) => {
+    tattooState.catalog = Array.isArray(catalog) ? catalog : [];
+    tattooState.owned = Array.isArray(owned) ? owned : [];
+    const ownedBox = stepBody.querySelector('#tattooOwned');
+    if (ownedBox) ownedBox.innerHTML = renderTattooOwned(zone);
+    if (catalogBox) catalogBox.innerHTML = renderTattooCatalogList(zone);
+    bindTattooShop(zone);
+  });
+}
+
+function renderTattooShop() {
+  const zones = session.tattooZones || [
+    { id: 'ZONE_HEAD', label: 'Galva' },
+    { id: 'ZONE_TORSO', label: 'Liemuo' },
+    { id: 'ZONE_LEFT_ARM', label: 'Kairė ranka' },
+    { id: 'ZONE_RIGHT_ARM', label: 'Dešinė ranka' },
+    { id: 'ZONE_LEFT_LEG', label: 'Kairė koja' },
+    { id: 'ZONE_RIGHT_LEG', label: 'Dešinė koja' },
+    { id: 'ZONE_HAIR', label: 'Plaukai' },
+  ];
+  const zone = tattooState.zone || zones[1]?.id || 'ZONE_TORSO';
+  tattooState.zone = zone;
+
+  stepBody.innerHTML = `
+    <p class="muted shop-hint">Pasirink kūno zoną, tada tatuiruotę. ← → suka kamerą. Personažas aprengtas minimaliai, kad matytumėte tatuiruotes.</p>
+    <div class="pill-row tattoo-zones" id="tattooZonePills">
+      ${zones.map((z) => `<button type="button" class="pill-btn${z.id === zone ? ' active' : ''}" data-zone="${esc(z.id)}">${esc(z.label)}</button>`).join('')}
+    </div>
+    <div class="field full">
+      <label>Dabartinės tatuiruotės</label>
+      <div id="tattooOwned"></div>
+      <button type="button" class="btn ghost sm" id="clearTattooZone">Pašalinti visas iš zonos</button>
+    </div>
+    <div class="field full">
+      <label>Paieška</label>
+      <input type="text" id="tattooSearch" placeholder="Ieškoti tatuiruotės..." autocomplete="off" />
+    </div>
+    <div class="field full">
+      <label>Katalogas</label>
+      <div id="tattooCatalog"><p class="muted">Kraunama...</p></div>
+    </div>`;
+
+  loadTattooZone(zone);
+}
+
 function renderStep() {
   const steps = getActiveSteps();
   const step = steps[stepIndex];
@@ -236,7 +394,9 @@ function renderStep() {
     ? 'Plaukai, barzda, antakiai'
     : isShop() && session.shopMode === 'clothing' && step.id === 'clothes'
       ? 'Tik drabužiai — be veido ar plaukų'
-      : step.desc;
+      : isShop() && session.shopMode === 'tattoo' && step.id === 'tattoos'
+        ? 'Tatuiruotės visose GTA kūno zonose'
+        : step.desc;
   post('setCamera', { step: step.id });
   renderNav();
 
@@ -353,6 +513,10 @@ function renderStep() {
     }
     finishStepButtons(steps);
     return;
+  } else if (step.id === 'tattoos') {
+    renderTattooShop();
+    finishStepButtons(steps);
+    return;
   } else if (step.id === 'review') {
     const p = state.personal;
     const cityObj = (opt.originCities || []).find((c) => (typeof c === 'string' ? c : c.id) === p.originCity);
@@ -458,7 +622,11 @@ document.getElementById('btnNext').onclick = () => {
   };
 
   if (step.id === 'review' || (isShop() && stepIndex === steps.length - 1)) {
-    post(isShop() || wizardMode === 'edit' ? 'saveAppearance' : 'createChar', payload);
+    if (isShop()) {
+      post('saveShop');
+    } else {
+      post(wizardMode === 'edit' ? 'saveAppearance' : 'createChar', payload);
+    }
     closeUi();
     return;
   }

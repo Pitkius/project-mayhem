@@ -1,6 +1,54 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local hasDonePreloading = {}
 
+local CLOTHING_SHOP_KEYS = {
+    't-shirt', 'torso2', 'arms', 'pants', 'shoes', 'vest', 'bag', 'decals', 'accessory',
+}
+
+local function sanitizeModel(model, gender)
+    local asString = tostring(model or ''):lower()
+    if asString == 'mp_f_freemode_01' then return 'mp_f_freemode_01' end
+    if asString == 'mp_m_freemode_01' then return 'mp_m_freemode_01' end
+    if tonumber(gender) == 1 then return 'mp_f_freemode_01' end
+    return 'mp_m_freemode_01'
+end
+
+local function clothingPart(skin, key)
+    if type(skin) ~= 'table' or type(skin[key]) ~= 'table' then
+        return { item = 0, texture = 0 }
+    end
+    return {
+        item = tonumber(skin[key].item) or 0,
+        texture = tonumber(skin[key].texture) or 0,
+    }
+end
+
+local function clothingChanged(oldSkin, newSkin)
+    if type(newSkin) ~= 'table' then return false end
+    if type(oldSkin) ~= 'table' then return true end
+    for _, key in ipairs(CLOTHING_SHOP_KEYS) do
+        local a = clothingPart(oldSkin, key)
+        local b = clothingPart(newSkin, key)
+        if a.item ~= b.item or a.texture ~= b.texture then
+            return true
+        end
+    end
+    return false
+end
+
+local function savePlayerSkin(Player, model, skinJson, cb)
+    MySQL.query('DELETE FROM playerskins WHERE citizenid = ?', { Player.PlayerData.citizenid }, function()
+        MySQL.insert('INSERT INTO playerskins (citizenid, model, skin, active) VALUES (?, ?, ?, ?)', {
+            Player.PlayerData.citizenid,
+            model,
+            skinJson,
+            1,
+        }, function()
+            if cb then cb(true) end
+        end)
+    end)
+end
+
 local function giveStarterItems(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
@@ -359,6 +407,58 @@ QBCore.Functions.CreateCallback('fivempro_charcreator:server:getPresets', functi
         out[#out + 1] = { name = r.name, skin = r.skin }
     end
     cb(out)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_charcreator:server:saveClothingShop', function(src, cb, model, skinJson, originalSkinJson)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then
+        return cb(false, 'Klaida.')
+    end
+    if type(skinJson) ~= 'string' or skinJson == '' then
+        return cb(false, 'Nepavyko išsaugoti drabužių.')
+    end
+
+    local ok, newSkin = pcall(json.decode, skinJson)
+    if not ok or type(newSkin) ~= 'table' then
+        return cb(false, 'Nepavyko išsaugoti drabužių.')
+    end
+
+    local oldSkin = nil
+    if type(originalSkinJson) == 'string' and originalSkinJson ~= '' then
+        local okOld, decoded = pcall(json.decode, originalSkinJson)
+        if okOld and type(decoded) == 'table' then
+            oldSkin = decoded
+        end
+    end
+
+    local changed = clothingChanged(oldSkin, newSkin)
+    local price = Config.ClothingShopPrice or 250
+    local paidFrom = nil
+
+    if changed then
+        local cash = Player.PlayerData.money.cash or 0
+        local bank = Player.PlayerData.money.bank or 0
+        if cash >= price then
+            Player.Functions.RemoveMoney('cash', price, 'clothing-shop')
+            paidFrom = 'cash'
+        elseif bank >= price then
+            Player.Functions.RemoveMoney('bank', price, 'clothing-shop')
+            paidFrom = 'bank'
+        else
+            return cb(false, ('Nepakanka pinigų. Reikia $%s — drabužiai nuimti.'):format(price))
+        end
+    end
+
+    local gender = Player.PlayerData.charinfo and Player.PlayerData.charinfo.gender or 0
+    model = sanitizeModel(model, gender)
+    savePlayerSkin(Player, model, skinJson, function()
+        if changed then
+            local wallet = paidFrom == 'bank' and 'banko sąskaitos' or 'grynaisiais'
+            cb(true, ('Apmokėta $%s (%s). Drabužiai išsaugoti.'):format(price, wallet))
+        else
+            cb(true, 'Drabužiai nepakito — nieko nemokėjai.')
+        end
+    end)
 end)
 
 CreateThread(function()

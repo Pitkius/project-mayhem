@@ -15,44 +15,117 @@ local function normalizeVec(vec)
     return vec / len, len
 end
 
-local function castRay(from, to, ped)
-    local handle = StartShapeTestRay(
-        from.x, from.y, from.z,
-        to.x, to.y, to.z,
-        511, ped, 4
-    )
+local function getDistanceThreshold(dist)
+    local base = Config.DistanceThreshold or 0.35
+    local scale = Config.DistanceThresholdScale or 0.011
+    local maxThreshold = Config.MaxDistanceThreshold or 1.85
+    return math.min(maxThreshold, base + dist * scale)
+end
 
-    local result, hit, endCoords = 1, 0, vector3(0.0, 0.0, 0.0)
-    local deadline = GetGameTimer() + 25
+local function isIgnoredHitEntity(entityHit, ped, weaponEnt)
+    if not entityHit or entityHit == 0 or not DoesEntityExist(entityHit) then
+        return true
+    end
 
-    while result == 1 and GetGameTimer() < deadline do
-        result, hit, endCoords, _, _ = GetShapeTestResult(handle)
-        if result ~= 1 then
-            break
+    if entityHit == ped then
+        return true
+    end
+
+    if weaponEnt and weaponEnt ~= 0 and entityHit == weaponEnt then
+        return true
+    end
+
+    if IsEntityAPed(entityHit) and IsPedAPlayer(entityHit) and entityHit == ped then
+        return true
+    end
+
+    return false
+end
+
+local function isPenetrableMaterial(materialHash)
+    return materialHash and materialHash ~= 0 and Config.PenetrableMaterials[materialHash] == true
+end
+
+local function waitShapeTestResult(handle, useMaterial)
+    local deadline = GetGameTimer() + 30
+    while GetGameTimer() < deadline do
+        local result, hit, endCoords, surfaceNormal, materialHash, entityHit
+
+        if useMaterial then
+            result, hit, endCoords, surfaceNormal, materialHash, entityHit = GetShapeTestResultIncludingMaterial(handle)
+        else
+            result, hit, endCoords, surfaceNormal, entityHit = GetShapeTestResult(handle)
+            materialHash = 0
         end
+
+        if result ~= 1 then
+            return result == 2 and hit == 1, endCoords, materialHash or 0, entityHit or 0
+        end
+
         Wait(0)
     end
 
-    if result == 2 and hit == 1 then
-        return true, endCoords
-    end
-
-    return false, to
+    return false, vector3(0.0, 0.0, 0.0), 0, 0
 end
 
-local function isPathBlocked(from, to, ped)
-    local dist = #(from - to)
-    if dist < 0.05 then
-        return false
+local function castProbe(from, to, ped, traceFlags, traceOptions)
+    local handle = StartShapeTestLosProbe(
+        from.x, from.y, from.z,
+        to.x, to.y, to.z,
+        traceFlags or Config.TraceFlags or 255,
+        ped,
+        traceOptions or Config.TraceOptions or 7
+    )
+
+    return waitShapeTestResult(handle, true)
+end
+
+--- Spindulys ta pačia kryptimi; praleidžia krūmus, žolę, tinklelius ir pan.
+local function traceAlongDirection(origin, direction, maxDistance, ped, weaponEnt)
+    local dir = select(1, normalizeVec(direction))
+    if #(dir) < 0.001 or maxDistance <= 0.05 then
+        return maxDistance, false, 0, 0, origin
     end
 
-    local hit, endCoords = castRay(from, to, ped)
-    if not hit then
-        return false
+    local traveled = 0.0
+    local cursor = origin
+    local maxPasses = Config.RayMaxPasses or 5
+    local step = Config.PenetrateStep or 0.1
+
+    for _ = 1, maxPasses do
+        local remaining = maxDistance - traveled
+        if remaining <= 0.05 then
+            break
+        end
+
+        local dest = cursor + dir * remaining
+        local hit, endCoords, materialHash, entityHit = castProbe(cursor, dest, ped)
+
+        if not hit or not endCoords then
+            return maxDistance, false, 0, 0, dest
+        end
+
+        if isIgnoredHitEntity(entityHit, ped, weaponEnt) then
+            local advance = math.max(step, #(cursor - endCoords) + step)
+            traveled = traveled + advance
+            cursor = cursor + dir * advance
+            if traveled >= maxDistance - 0.05 then
+                return maxDistance, false, 0, 0, cursor
+            end
+        elseif isPenetrableMaterial(materialHash) then
+            local seg = #(cursor - endCoords)
+            traveled = traveled + seg + step
+            cursor = endCoords + dir * step
+            if traveled >= maxDistance - 0.05 then
+                return maxDistance, false, 0, 0, cursor
+            end
+        else
+            traveled = traveled + #(cursor - endCoords)
+            return traveled, true, materialHash, entityHit, endCoords
+        end
     end
 
-    local hitDist = #(from - endCoords)
-    return hitDist < dist - Config.DistanceThreshold
+    return maxDistance, false, 0, 0, origin + dir * maxDistance
 end
 
 local function getShootOrigins(ped, direction)
@@ -61,25 +134,26 @@ local function getShootOrigins(ped, direction)
 
     local weaponEnt = GetCurrentPedWeaponEntityIndex(ped)
     if weaponEnt and weaponEnt ~= 0 and DoesEntityExist(weaponEnt) then
-        origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, 0.58, 0.03)
-        origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, 0.42, 0.08)
-        origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, 0.26, 0.02)
+        origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, 0.55, 0.03)
+        origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, 0.38, 0.06)
     end
 
     local hand = GetPedBoneCoords(ped, 57005, 0.0, 0.0, 0.0)
-    origins[#origins + 1] = hand + dir * 0.58
-    origins[#origins + 1] = hand + dir * 0.42 + vector3(0.0, 0.0, 0.16)
-    origins[#origins + 1] = hand + dir * 0.28
+    origins[#origins + 1] = hand + dir * 0.52
+    origins[#origins + 1] = hand + dir * 0.36 + vector3(0.0, 0.0, 0.12)
 
-    local rhBone = GetPedBoneIndex(ped, 28422) -- PH_R_Hand
+    local rhBone = GetPedBoneIndex(ped, 28422)
     if rhBone ~= -1 then
-        origins[#origins + 1] = GetWorldPositionOfEntityBone(ped, rhBone) + dir * 0.45
+        origins[#origins + 1] = GetWorldPositionOfEntityBone(ped, rhBone) + dir * 0.4
     end
 
-    local head = GetPedBoneCoords(ped, 31086, 0.08, 0.04, 0.0) -- SKEL_Head
-    origins[#origins + 1] = head + dir * 0.18
+    local head = GetPedBoneCoords(ped, 31086, 0.06, 0.03, 0.0)
+    origins[#origins + 1] = head + dir * 0.14
 
-    return origins
+    local shoulder = GetPedBoneCoords(ped, 40269, 0.04, 0.02, 0.0)
+    origins[#origins + 1] = shoulder + dir * 0.2
+
+    return origins, weaponEnt
 end
 
 local function isAiming(ped)
@@ -98,7 +172,27 @@ local function isAiming(ped)
     return false
 end
 
---- Ghost peek tik jei kamera mato taikinį (crosshair), bet nė vienas šūvio taškas negali pasiekti to taško.
+local function isClearWeaponPath(origin, direction, camDistance, ped, weaponEnt, threshold)
+    local weaponDist, weaponHit, _, weaponEntity = traceAlongDirection(
+        origin,
+        direction,
+        camDistance + 0.35,
+        ped,
+        weaponEnt
+    )
+
+    if not weaponHit then
+        return true
+    end
+
+    if weaponEntity and weaponEntity ~= 0 and DoesEntityExist(weaponEntity) and IsEntityAPed(weaponEntity) then
+        return weaponDist >= camDistance - threshold
+    end
+
+    return weaponDist >= camDistance - threshold
+end
+
+--- Ghost peek: kamera mato toliau nei realus šūvis (už kietos kliūties), ne krūmo/tinklelio.
 local function isGhostPeeking(ped)
     if not Config.Enabled then
         return false
@@ -121,27 +215,44 @@ local function isGhostPeeking(ped)
         return false
     end
 
-    local camCoord = GetGameplayCamCoord()
-    local camRot = GetGameplayCamRot(2)
+    local camCoord = GetFinalRenderedCamCoord()
+    local camRot = GetFinalRenderedCamRot(2)
     local direction = rotationToDirection(camRot)
-    local farDest = camCoord + (direction * Config.MaxRayDistance)
 
-    local camHit, camEnd = castRay(camCoord, farDest, ped)
-    local aimTarget = camHit and camEnd or farDest
-    local aimDist = #(camCoord - aimTarget)
+    local camDistance, camHit, camMaterial, camEntity = traceAlongDirection(
+        camCoord,
+        direction,
+        Config.MaxRayDistance,
+        ped,
+        nil
+    )
 
-    if aimDist < (Config.MinAimDistance or 2.0) then
+    if not camHit then
         return false
     end
 
-    local origins = getShootOrigins(ped, direction)
+    if camDistance < (Config.MinAimDistance or 2.0) then
+        return false
+    end
+
+    if camEntity and camEntity ~= 0 and DoesEntityExist(camEntity) and IsEntityAPed(camEntity) and not IsPedDeadOrDying(camEntity, true) then
+        -- Kamera mato gyvą pedą — tikriname ar ginklas gali pasiekti tą patį atstumą.
+    elseif isPenetrableMaterial(camMaterial) then
+        return false
+    end
+
+    local threshold = getDistanceThreshold(camDistance)
+    local origins, weaponEnt = getShootOrigins(ped, direction)
+    local clearPaths = 0
+
     for i = 1, #origins do
-        if not isPathBlocked(origins[i], aimTarget, ped) then
-            return false
+        if isClearWeaponPath(origins[i], direction, camDistance, ped, weaponEnt, threshold) then
+            clearPaths = clearPaths + 1
         end
     end
 
-    return true
+    local minClear = Config.MinClearPaths or 2
+    return clearPaths < minClear
 end
 
 local function setIndicator(active)
@@ -154,13 +265,13 @@ end
 local function blockFiring()
     local playerId = PlayerId()
     DisablePlayerFiring(playerId, true)
-    DisableControlAction(0, 24, true)  -- attack
-    DisableControlAction(0, 47, true)  -- weapon
-    DisableControlAction(0, 58, true)  -- weapon
-    DisableControlAction(0, 140, true) -- melee light
-    DisableControlAction(0, 141, true) -- melee heavy
-    DisableControlAction(0, 142, true) -- melee alternate
-    DisableControlAction(0, 257, true) -- attack 2
+    DisableControlAction(0, 24, true)
+    DisableControlAction(0, 47, true)
+    DisableControlAction(0, 58, true)
+    DisableControlAction(0, 140, true)
+    DisableControlAction(0, 141, true)
+    DisableControlAction(0, 142, true)
+    DisableControlAction(0, 257, true)
     DisableControlAction(0, 263, true)
     DisableControlAction(0, 264, true)
 end

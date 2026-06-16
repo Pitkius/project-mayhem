@@ -1,5 +1,7 @@
 import { Events, ActivityType } from 'discord.js';
-import { applyBotBranding, BOT_BRAND } from '../utils/branding.js';
+import { applyBotBranding } from '../utils/branding.js';
+import { hasLogChannels } from '../database/sqlite.js';
+import { provisionLogChannels } from '../logs/provision.js';
 
 export default {
   name: Events.ClientReady,
@@ -18,5 +20,17 @@ export default {
 
     console.log(`[MRP] Prisijungta kaip ${client.user.tag}`);
     console.log(`[MRP] Serveriu: ${client.guilds.cache.size}`);
+
+    if (process.env.AUTO_PROVISION_LOGS === 'true') {
+      for (const guild of client.guilds.cache.values()) {
+        if (hasLogChannels(guild.id)) continue;
+        try {
+          const results = await provisionLogChannels(guild, client);
+          console.log(`[MRP] Auto-provision ${guild.name}: ${results.created.length} sukurta`);
+        } catch (err) {
+          console.warn(`[MRP] Auto-provision klaida (${guild.name}):`, err.message);
+        }
+      }
+    }
   },
 };

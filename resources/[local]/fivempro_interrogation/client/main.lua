@@ -39,30 +39,57 @@ local function resolveSeat(state)
     end
 end
 
+local pendingPick = nil
+
+RegisterNetEvent('fivempro_interrogation:client:cancelPickSuspect', function()
+    pendingPick = nil
+end)
+
+RegisterNetEvent('fivempro_interrogation:client:confirmPickSuspect', function(args)
+    if not pendingPick then return end
+    local idx = args and tonumber(args.index)
+    local nearby = pendingPick.nearby
+    if not idx or not nearby or not nearby[idx] then
+        pendingPick = nil
+        return notify('Nepavyko pasirinkti žaidėjo.', 'error')
+    end
+
+    local picked = nearby[idx]
+    TriggerServerEvent(
+        'fivempro_interrogation:server:requestStart',
+        pendingPick.locationKind,
+        pendingPick.locationId,
+        picked.serverId
+    )
+    pendingPick = nil
+    notify('Laukiama įtariamojo sutikimo…', 'primary')
+end)
+
 RegisterNetEvent('fivempro_interrogation:client:startPickSuspect', function(data)
-    local nearby = getNearbyPlayers(4.5)
+    if type(data) ~= 'table' then return end
+    local nearby = getNearbyPlayers(6.0)
     if #nearby == 0 then return notify('Šalia nėra žaidėjų.', 'error') end
+
+    pendingPick = {
+        locationKind = data.locationKind,
+        locationId = data.locationId,
+        mode = data.mode,
+        nearby = nearby,
+    }
+
     local menu = { { header = 'Pasirink įtariamąjį', isMenuHeader = true } }
-    for _, p in ipairs(nearby) do
+    for i, p in ipairs(nearby) do
         menu[#menu + 1] = {
             header = ('Žaidėjas #%s (%.1f m)'):format(p.serverId, p.dist),
             params = {
-                isAction = true,
-                event = function()
-                    TriggerServerEvent(
-                        'fivempro_interrogation:server:requestStart',
-                        data.locationKind,
-                        data.locationId,
-                        p.serverId
-                    )
-                    exports['qb-menu']:closeMenu()
-                end,
+                event = 'fivempro_interrogation:client:confirmPickSuspect',
+                args = { index = i },
             },
         }
     end
     menu[#menu + 1] = {
         header = 'Atšaukti',
-        params = { isAction = true, event = function() exports['qb-menu']:closeMenu() end },
+        params = { event = 'fivempro_interrogation:client:cancelPickSuspect' },
     }
     exports['qb-menu']:openMenu(menu)
 end)

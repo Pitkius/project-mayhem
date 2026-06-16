@@ -18,7 +18,10 @@ end
 Config = {}
 
 -- It's possible to interact with entities through walls so this should be low
-Config.MaxDistance = 7.0
+Config.MaxDistance = 3.5
+
+-- Block targets/sprites when a wall is between player and zone/entity
+Config.RequireLineOfSight = true
 
 -- Enable debug options
 Config.Debug = false
@@ -36,7 +39,7 @@ Config.Toggle = false
 Config.DrawSprite = true
 
 -- The default distance to draw the Sprite
-Config.DrawDistance = 10.0
+Config.DrawDistance = 4.0
 
 -- The color of the sprite in rgb, the first value is red, the second value is green, the third value is blue and the last value is alpha (opacity). Here is a link to a color picker to get these values: https://htmlcolorcodes.com/color-picker/
 Config.DrawColor = { 255, 255, 255, 255 }

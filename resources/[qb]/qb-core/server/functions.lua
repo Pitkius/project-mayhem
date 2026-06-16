@@ -567,10 +567,14 @@ end
 ---@param source any
 ---@param permission string
 function QBCore.Functions.AddPermission(source, permission)
-    if not IsPlayerAceAllowed(source, permission) then
-        ExecuteCommand(('add_principal player.%s qbcore.%s'):format(source, permission))
-        QBCore.Commands.Refresh(source)
+    permission = tostring(permission or ''):lower()
+    if permission == '' then return end
+    if QBCore.Functions.HasPermission(source, permission) then return end
+    ExecuteCommand(('add_principal player.%s qbcore.%s'):format(source, permission))
+    if permission == 'god' and not IsPlayerAceAllowed(source, 'group.admin') then
+        ExecuteCommand(('add_principal player.%s group.admin'):format(source))
     end
+    QBCore.Commands.Refresh(source)
 end
 
 ---Remove permission from player

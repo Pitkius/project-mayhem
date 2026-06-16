@@ -23,28 +23,54 @@ local function resetAnimSet()
     end
 end
 
+local function setCrouch(state)
+    local ped = PlayerPedId()
+    if state then
+        if IsPedSittingInAnyVehicle(ped) or IsPedFalling(ped) or IsPedSwimming(ped) or IsPedSwimmingUnderWater(ped) then
+            return
+        end
+        ClearPedTasks(ped)
+        loadAnimSet('move_ped_crouched')
+        SetPedMovementClipset(ped, 'move_ped_crouched', 1.0)
+        SetPedStrafeClipset(ped, 'move_ped_crouched_strafing')
+        SetPedStealthMovement(ped, false, 'DEFAULT_ACTION')
+        isCrouching = true
+    else
+        resetAnimSet()
+        SetPedStealthMovement(ped, false, 'DEFAULT_ACTION')
+        isCrouching = false
+    end
+end
+
 RegisterNetEvent('crouchprone:client:SetWalkSet', function(clipset)
     walkSet = clipset
 end)
 
-RegisterCommand('togglecrouch', function()
-    local ped = PlayerPedId()
-    if IsPedSittingInAnyVehicle(ped) or IsPedFalling(ped) or IsPedSwimming(ped) or IsPedSwimmingUnderWater(ped) or IsPauseMenuActive() then
-        return
-    end
+local function toggleCrouch()
+    if IsPauseMenuActive() then return end
+    setCrouch(not isCrouching)
+end
 
-    ClearPedTasks(ped)
-    if isCrouching then
-        resetAnimSet()
-        SetPedStealthMovement(ped, false, 'DEFAULT_ACTION')
-        isCrouching = false
-    else
-        loadAnimSet('move_ped_crouched')
-        SetPedMovementClipset(ped, 'move_ped_crouched', 1.0)
-        SetPedStrafeClipset(ped, 'move_ped_crouched_strafing')
-        isCrouching = true
-    end
-end, false)
+RegisterCommand('togglecrouch', toggleCrouch, false)
+RegisterKeyMapping('togglecrouch', 'Atsitūpti', 'keyboard', 'LCONTROL')
 
--- Optional: Register a keybind so they can press CTRL (36) to toggle
-RegisterKeyMapping('togglecrouch', 'Toggle Crouch', 'keyboard', 'LCONTROL')
+-- Blokuoja GTA sneak (tylus ėjimas su Ctrl), palieka tik atsitūpimą
+CreateThread(function()
+    while true do
+        local ped = PlayerPedId()
+
+        DisableControlAction(0, 36, true) -- INPUT_DUCK (Ctrl)
+        DisableControlAction(1, 36, true)
+        DisableControlAction(2, 36, true)
+
+        if GetPedStealthMovement(ped) then
+            SetPedStealthMovement(ped, false, 'DEFAULT_ACTION')
+        end
+
+        if isCrouching and (IsPedSittingInAnyVehicle(ped) or IsPedDeadOrDying(ped, true)) then
+            setCrouch(false)
+        end
+
+        Wait(0)
+    end
+end)

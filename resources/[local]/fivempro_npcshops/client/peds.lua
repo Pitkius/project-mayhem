@@ -97,7 +97,7 @@ local function buildTargetOptions(meta)
             options = {
                 {
                     type = 'client',
-                    event = 'qb-clothing:client:openTattooOnly',
+                    event = 'fivempro_charcreator:client:openTattooShop',
                     icon = 'fas fa-pen-nib',
                     label = 'Tatuiruotės',
                 },

@@ -5,6 +5,7 @@ import { env } from '../config.js';
 const defaultData = () => ({
   guild_settings: {},
   log_channels: {},
+  fivem_webhooks: {},
   whitelist: [],
   warnings: [],
   _nextId: 1,
@@ -20,12 +21,27 @@ function resolvePath() {
   return filePath;
 }
 
+function migrateStore(parsed) {
+  const base = defaultData();
+  return {
+    ...base,
+    ...parsed,
+    guild_settings: { ...base.guild_settings, ...(parsed.guild_settings || {}) },
+    log_channels: { ...base.log_channels, ...(parsed.log_channels || {}) },
+    fivem_webhooks: { ...base.fivem_webhooks, ...(parsed.fivem_webhooks || {}) },
+    whitelist: Array.isArray(parsed.whitelist) ? parsed.whitelist : base.whitelist,
+    warnings: Array.isArray(parsed.warnings) ? parsed.warnings : base.warnings,
+    _nextId: parsed._nextId || base._nextId,
+  };
+}
+
 function load() {
   if (data) return data;
   const target = resolvePath();
   fs.mkdirSync(path.dirname(target), { recursive: true });
   if (fs.existsSync(target)) {
-    data = JSON.parse(fs.readFileSync(target, 'utf8'));
+    data = migrateStore(JSON.parse(fs.readFileSync(target, 'utf8')));
+    save();
   } else {
     data = defaultData();
     save();
@@ -78,6 +94,21 @@ export function getLogChannel(guildId, logType) {
 export function getAllLogChannels(guildId) {
   const channels = load().log_channels[guildId] || {};
   return Object.entries(channels).map(([log_type, channel_id]) => ({ log_type, channel_id }));
+}
+
+export function setFivemWebhooks(guildId, webhooks) {
+  const store = load();
+  store.fivem_webhooks[guildId] = { ...(store.fivem_webhooks[guildId] || {}), ...webhooks };
+  save();
+}
+
+export function getFivemWebhooks(guildId) {
+  return load().fivem_webhooks[guildId] || {};
+}
+
+export function hasLogChannels(guildId) {
+  const discord = load().log_channels[guildId] || {};
+  return Object.keys(discord).length > 0;
 }
 
 export function addWhitelist(guildId, targetId, targetType, addedBy, note = '') {

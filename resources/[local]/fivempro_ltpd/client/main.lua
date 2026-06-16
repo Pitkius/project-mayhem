@@ -319,10 +319,14 @@ end)
 
 CreateThread(function()
     while true do
-        if mdtOpen and (IsControlJustPressed(0, 199) or IsDisabledControlJustPressed(0, 199) or IsControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 200)) then
-            closeMdt()
+        if mdtOpen then
+            if IsControlJustPressed(0, 199) or IsDisabledControlJustPressed(0, 199) or IsControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 200) then
+                closeMdt()
+            end
+            Wait(0)
+        else
+            Wait(400)
         end
-        Wait(0)
     end
 end)
 

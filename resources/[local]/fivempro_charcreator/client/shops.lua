@@ -11,18 +11,29 @@ function ShopSession.IsActive()
 end
 
 function ShopSession.Teardown(reloadSkin)
-    if not ShopSession.active then return end
-
     CharCamera.disable()
-    local ped = PlayerPedId()
-    FreezeEntityPosition(ped, false)
 
-    if reloadSkin then
-        TriggerServerEvent('qb-clothing:loadPlayerSkin')
+    local ped = PlayerPedId()
+    if ped and ped ~= 0 and DoesEntityExist(ped) then
+        ClearPedTasks(ped)
+        FreezeEntityPosition(ped, false)
+        SetEntityCollision(ped, true, true)
+        SetEntityVisible(ped, true, false)
+        ResetEntityAlpha(ped)
+    end
+
+    if ShopSession.active and reloadSkin then
+        if ShopSession.originalSkinJson then
+            CharAppearance.setPreviewPed(ped)
+            CharAppearance.loadFromJson(ShopSession.originalSkinJson)
+        end
+        TriggerServerEvent('qb-clothes:loadPlayerSkin')
     end
 
     ShopSession.active = false
     ShopSession.kind = nil
+    ShopSession.previewPed = nil
+    ShopSession.originalSkinJson = nil
     SetNuiFocusKeepInput(false)
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
@@ -32,14 +43,31 @@ function ShopSession.Teardown(reloadSkin)
     end)
 end
 
-local function setupShopPed(skinJson, gender)
+local function getSessionGender(data)
+    if data and data.current and data.current.personal then
+        return data.current.personal.gender or 0
+    end
+    local pd = QBCore.Functions.GetPlayerData()
+    return pd and pd.charinfo and pd.charinfo.gender or 0
+end
+
+local function applyOpts()
+    local tattooShop = ShopSession.kind == 'tattoo'
+    local pd = QBCore.Functions.GetPlayerData()
+    local gender = pd and pd.charinfo and pd.charinfo.gender or 0
+    return { gender = gender, tattooShop = tattooShop }
+end
+
+local function setupShopPed(skinJson, gender, kind)
     local ped = PlayerPedId()
     ShopSession.previewPed = ped
     CharAppearance.setPreviewPed(ped)
+    local opts = { gender = gender or 0, tattooShop = kind == 'tattoo' }
     if skinJson then
-        CharAppearance.loadFromJson(skinJson)
+        CharAppearance.loadFromJson(skinJson, opts)
     else
         CharAppearance.init(gender or 0)
+        CharAppearance.applyToPed(ped, CharAppearance.getSkin(), opts)
     end
     FreezeEntityPosition(ped, true)
     local c = GetEntityCoords(ped)
@@ -47,8 +75,10 @@ local function setupShopPed(skinJson, gender)
     CharCamera.setShopAnchor(vector4(c.x, c.y, c.z, h))
     CharCamera.setTargetPed(ped)
     CharCamera.enable()
-    if ShopSession.kind == 'barber' then
+    if kind == 'barber' then
         CharCamera.setPreset('hair')
+    elseif kind == 'tattoo' then
+        CharCamera.setPreset('body')
     else
         CharCamera.setPreset('body')
     end
@@ -61,7 +91,7 @@ function ShopSession.Open(kind, camLoc)
         return notify('Pirmiausia prisijunk prie personažo.')
     end
 
-    kind = kind == 'clothing' and 'clothing' or 'barber'
+    kind = (kind == 'clothing' or kind == 'barber' or kind == 'tattoo') and kind or 'clothing'
     ShopSession.kind = kind
     ShopSession.active = true
 
@@ -74,18 +104,25 @@ function ShopSession.Open(kind, camLoc)
 
         data.editMode = true
         data.shopMode = kind
-        data.shopSteps = kind == 'barber' and (Config.BarberSteps or { 'hair', 'facedetails' }) or (Config.ClothingShopSteps or { 'clothes' })
-        data.clothingItems = kind == 'clothing' and (Config.ClothingShopItems or {}) or nil
-
-        local gender = 0
-        if data.current and data.current.personal then
-            gender = data.current.personal.gender or 0
+        if kind == 'barber' then
+            data.shopSteps = Config.BarberSteps or { 'hair', 'facedetails' }
+        elseif kind == 'tattoo' then
+            data.shopSteps = Config.TattooShopSteps or { 'tattoos' }
+            data.tattooZones = Config.TattooZones or {}
         else
-            local pd = QBCore.Functions.GetPlayerData()
-            gender = pd.charinfo and pd.charinfo.gender or 0
+            data.shopSteps = Config.ClothingShopSteps or { 'clothes' }
+            data.clothingItems = Config.ClothingShopItems or {}
         end
 
-        setupShopPed(data.current and data.current.skin, gender)
+        local gender = getSessionGender(data)
+
+        if kind == 'clothing' then
+            ShopSession.originalSkinJson = data.current and data.current.skin or nil
+        else
+            ShopSession.originalSkinJson = nil
+        end
+
+        setupShopPed(data.current and data.current.skin, gender, kind)
 
         SetNuiFocus(true, true)
         SetNuiFocusKeepInput(false)
@@ -114,13 +151,89 @@ RegisterNetEvent('fivempro_charcreator:client:openBarberShop', function()
     ShopSession.Open('barber')
 end)
 
+RegisterNetEvent('fivempro_charcreator:client:openTattooShop', function()
+    ShopSession.Open('tattoo')
+end)
+
 RegisterNUICallback('cancelShop', function(_, cb)
     ShopSession.Teardown(true)
     cb('ok')
 end)
 
+RegisterNUICallback('saveShop', function(_, cb)
+    if not ShopSession.active then
+        cb('ok')
+        return
+    end
+
+    local pd = QBCore.Functions.GetPlayerData()
+    local gender = pd and pd.charinfo and pd.charinfo.gender or 0
+    local model = CharAppearance.modelHash(gender)
+    local skinJson = json.encode(CharAppearance.exportForSave())
+
+    if ShopSession.kind == 'clothing' then
+        QBCore.Functions.TriggerCallback('fivempro_charcreator:server:saveClothingShop', function(ok, msg)
+            if ok then
+                ShopSession.originalSkinJson = nil
+                ShopSession.Teardown(false)
+                QBCore.Functions.Notify(msg or 'Išsaugota.', 'success')
+            else
+                ShopSession.Teardown(true)
+                QBCore.Functions.Notify(msg or 'Nepakanka pinigų — drabužiai nuimti.', 'error')
+            end
+            cb('ok')
+        end, model, skinJson, ShopSession.originalSkinJson)
+        return
+    end
+
+    TriggerServerEvent('qb-clothing:saveSkin', model, skinJson)
+    ShopSession.Teardown(false)
+    QBCore.Functions.Notify('Išsaugota.', 'success')
+    cb('ok')
+end)
+
 RegisterNUICallback('setClothing', function(data, cb)
     CharAppearance.setComponent(data.key, data.item, data.texture)
+    cb('ok')
+end)
+
+RegisterNUICallback('getTattooZoneCatalog', function(data, cb)
+    local pd = QBCore.Functions.GetPlayerData()
+    local gender = pd and pd.charinfo and pd.charinfo.gender or 0
+    cb(CharTattoos.getZoneCatalog(data.zone or 'ZONE_TORSO', gender))
+end)
+
+RegisterNUICallback('getPlayerTattoos', function(_, cb)
+    local skin = CharAppearance.getSkin()
+    cb(skin and skin.tattoos or {})
+end)
+
+RegisterNUICallback('toggleTattoo', function(data, cb)
+    local skin = CharAppearance.getSkin()
+    if not skin then
+        cb({ tattoos = {} })
+        return
+    end
+    CharTattoos.toggle(skin, data.name, data.zone)
+    local ped = ShopSession.previewPed or PlayerPedId()
+    CharTattoos.refreshPreview(ped, skin, applyOpts().gender, ShopSession.kind == 'tattoo')
+    cb({ tattoos = skin.tattoos })
+end)
+
+RegisterNUICallback('clearTattooZone', function(data, cb)
+    local skin = CharAppearance.getSkin()
+    if not skin then
+        cb({ tattoos = {} })
+        return
+    end
+    CharTattoos.clearZone(skin, data.zone)
+    local ped = ShopSession.previewPed or PlayerPedId()
+    CharTattoos.refreshPreview(ped, skin, applyOpts().gender, ShopSession.kind == 'tattoo')
+    cb({ tattoos = skin.tattoos })
+end)
+
+RegisterNUICallback('setTattooZoneCamera', function(data, cb)
+    CharCamera.forTattooZone(data.zone)
     cb('ok')
 end)
 
@@ -130,4 +243,8 @@ end)
 
 exports('OpenClothing', function()
     ShopSession.Open('clothing')
+end)
+
+exports('OpenTattoo', function()
+    ShopSession.Open('tattoo')
 end)

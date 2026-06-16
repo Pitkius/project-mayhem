@@ -63,11 +63,21 @@ function CharAppearance.setPreviewPed(ped)
     previewPed = ped
 end
 
-function CharAppearance.applyToPed(ped, skin)
+function CharAppearance.applyToPed(ped, skin, opts)
     if not ped or ped == 0 or not skin then return end
     TriggerEvent('qb-clothing:client:loadPlayerClothing', skin, ped)
     if skin.eye_color and skin.eye_color.item ~= nil and skin.eye_color.item >= 0 then
         SetPedEyeColor(ped, skin.eye_color.item)
+    end
+    if CharTattoos then
+        local gender = opts and opts.gender
+        if gender == nil then
+            gender = GetEntityModel(ped) == `mp_f_freemode_01` and 1 or 0
+        end
+        if opts and opts.tattooShop then
+            CharTattoos.applyPreviewOutfit(ped, gender)
+            CharTattoos.applyToPed(ped, skin.tattoos, gender)
+        end
     end
 end
 
@@ -213,12 +223,13 @@ function CharAppearance.randomize(gender)
     return currentSkin
 end
 
-function CharAppearance.loadFromJson(skinJson)
+function CharAppearance.loadFromJson(skinJson, opts)
     if not skinJson then return end
     local ok, data = pcall(json.decode, skinJson)
     if ok and type(data) == 'table' then
         currentSkin = data
-        CharAppearance.applyToPed(previewPed, currentSkin)
+        if CharTattoos then CharTattoos.ensureList(currentSkin) end
+        CharAppearance.applyToPed(previewPed, currentSkin, opts)
     end
 end
 

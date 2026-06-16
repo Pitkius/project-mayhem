@@ -1064,6 +1064,10 @@ RegisterNetEvent('qb-clothing:client:openClothingOnly', function()
 end)
 
 RegisterNetEvent('qb-clothing:client:openTattooOnly', function()
+    if GetResourceState('fivempro_charcreator') == 'started' then
+        TriggerEvent('fivempro_charcreator:client:openTattooShop')
+        return
+    end
     customCamLocation = nil
     openMenu({
         {menu = "character", label = Lang:t("menu.features"), selected = true},
@@ -1280,6 +1284,11 @@ RegisterNetEvent('qb-clothing:client:loadPlayerClothing', function(data, ped)
     SetPedFaceFeature(ped, 18, (data['chimp_hole'].item / 10))
     SetPedFaceFeature(ped, 19, (data['neck_thikness'].item / 10))
     skinData = data
+
+    if data.tattoos and GetResourceState('fivempro_charcreator') == 'started' then
+        local gender = GetEntityModel(ped) == GetHashKey('mp_f_freemode_01') and 1 or 0
+        exports['fivempro_charcreator']:ApplyTattoos(ped, data.tattoos, gender)
+    end
 end)
 RegisterNetEvent('qb-clothing:client:loadOutfit', function(oData)
     local ped = PlayerPedId()

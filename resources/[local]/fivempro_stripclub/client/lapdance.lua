@@ -8,8 +8,12 @@ local prevCamMode = nil
 
 local function loadDict(dict)
     RequestAnimDict(dict)
-    while not HasAnimDictLoaded(dict) do Wait(10) end
-    return dict
+    local t = 0
+    while not HasAnimDictLoaded(dict) and t < 8000 do
+        Wait(10)
+        t = t + 10
+    end
+    return HasAnimDictLoaded(dict)
 end
 
 local function isFemalePed(ped)
@@ -20,105 +24,132 @@ local function femaleSuffix(ped)
     return isFemalePed(ped) and '_female' or ''
 end
 
+local function waitPedAtCoord(ped, coords, timeoutMs, dist)
+    timeoutMs = timeoutMs or 12000
+    dist = dist or 0.45
+    local deadline = GetGameTimer() + timeoutMs
+    while GetGameTimer() < deadline and not lapStop do
+        if not ped or not DoesEntityExist(ped) then return false end
+        if #(GetEntityCoords(ped) - coords) <= dist then
+            return true
+        end
+        Wait(100)
+    end
+    return false
+end
+
 local function stripperAnim(ped)
     if lapStop or not ped or not DoesEntityExist(ped) then return end
-    loadDict('mini@strip_club@private_dance@part1')
-    TaskPlayAnim(ped, 'mini@strip_club@private_dance@part1', 'priv_dance_p1', 8.0, -8.0, -1, 0, 0, false, false, false)
+    if not loadDict('mini@strip_club@private_dance@part1') then return end
+    TaskPlayAnim(ped, 'mini@strip_club@private_dance@part1', 'priv_dance_p1', 8.0, -8.0, -1, 1, 0, false, false, false)
     Wait(22300)
     if lapStop then return end
-    loadDict('mini@strip_club@private_dance@part2')
-    TaskPlayAnim(ped, 'mini@strip_club@private_dance@part2', 'priv_dance_p2', 8.0, -8.0, -1, 0, 0, false, false, false)
+    if not loadDict('mini@strip_club@private_dance@part2') then return end
+    TaskPlayAnim(ped, 'mini@strip_club@private_dance@part2', 'priv_dance_p2', 8.0, -8.0, -1, 1, 0, false, false, false)
     Wait(31200)
     if lapStop then return end
-    loadDict('mini@strip_club@private_dance@exit')
+    if not loadDict('mini@strip_club@private_dance@exit') then return end
     TaskPlayAnim(ped, 'mini@strip_club@private_dance@exit', 'priv_dance_exit', 8.0, -8.0, -1, 0, 0, false, false, false)
     Wait(8000)
 end
 
 local function playerSitLoop(ped, seat)
-    local dict = loadDict('mini@strip_club@lap_dance_2g@ld_2g_reach')
+    if not loadDict('mini@strip_club@lap_dance_2g@ld_2g_reach') then return end
     local anim = 'ld_2g_sit_idle'
     playerSitted = true
-    prevCamMode = GetFollowPedCamViewMode(ped)
+    prevCamMode = GetFollowPedCamViewMode()
     SetFollowPedCamViewMode(4)
-    SetEntityCoords(ped, seat.sit.x, seat.sit.y, seat.sit.z, false, false, false, false)
-    FreezeEntityPosition(ped, true)
+
+    ClearPedTasksImmediately(ped)
+    SetEntityCoordsNoOffset(ped, seat.sit.x, seat.sit.y, seat.sit.z, false, false, false)
     SetEntityHeading(ped, seat.sit.w)
-    TaskPlayAnim(ped, dict, anim, 8.0, -8.0, -1, 0, 0, false, false, false)
+    FreezeEntityPosition(ped, true)
+    TaskPlayAnim(ped, 'mini@strip_club@lap_dance_2g@ld_2g_reach', anim, 8.0, -8.0, -1, 1, 0, false, false, false)
     SetGameplayCamRelativeHeading(seat.camHeading or -10.0)
 
-    while inLapDance do
-        if GetEntityAnimCurrentTime(ped, dict, anim) >= 0.97 and GetEntityAnimCurrentTime(ped, dict, anim) < 1.0 then
-            TaskPlayAnim(ped, dict, anim, 8.0, -8.0, -1, 0, 0, false, false, false)
+    while inLapDance and not lapStop do
+        if not IsEntityPlayingAnim(ped, 'mini@strip_club@lap_dance_2g@ld_2g_reach', anim, 3) then
+            TaskPlayAnim(ped, 'mini@strip_club@lap_dance_2g@ld_2g_reach', anim, 8.0, -8.0, -1, 1, 0, false, false, false)
         end
-        Wait(50)
+        Wait(500)
     end
 
     FreezeEntityPosition(ped, false)
+    ClearPedTasks(ped)
     playerSitted = false
+
     if not lapStop and seat.exit then
-        SetEntityCoords(ped, seat.exit.x, seat.exit.y, seat.exit.z, false, false, false, false)
+        SetEntityCoordsNoOffset(ped, seat.exit.x, seat.exit.y, seat.exit.z, false, false, false)
         Wait(200)
         if prevCamMode then SetFollowPedCamViewMode(prevCamMode) end
-        TaskGoToCoordAnyMeans(ped, 117.48, -1294.82, 28.43, 1.0, 0, 0, 786603, 1.0)
-        Wait(seat.exitWait or 5000)
+    elseif prevCamMode then
+        SetFollowPedCamViewMode(prevCamMode)
     end
 end
 
-local function runStripperSequence(seat, stripperCfg, heading)
+local function runStripperSequence(seat, heading)
     local ped = lapStripper
     if not ped or not DoesEntityExist(ped) then return end
 
+    FreezeEntityPosition(ped, false)
     SetEntityHeading(ped, heading or 303.19)
-    FreezeEntityPosition(ped, true)
-    loadDict('mini@strip_club@idles@stripper')
-    TaskPlayAnim(ped, 'mini@strip_club@idles@stripper', 'stripper_idle_02', 8.0, -8.0, -1, 0, 0, false, false, false)
 
-    TaskGoToCoordAnyMeans(ped, seat.stripperPath1.x, seat.stripperPath1.y, seat.stripperPath1.z, 1.0, 0, 0, 786603, 1.0)
-    Wait(seat.approachWait or 5000)
+    if loadDict('mini@strip_club@idles@stripper') then
+        TaskPlayAnim(ped, 'mini@strip_club@idles@stripper', 'stripper_idle_02', 8.0, -8.0, -1, 1, 0, false, false, false)
+    end
 
-    local repeatCount = -13
-    local repeatMax = 0
-    repeat
-        Wait(200)
-        repeatCount = repeatCount + 1
-        repeatMax = repeatMax + 1
-        if repeatCount == 17 then
-            TaskPlayAnim(ped, 'mini@strip_club@idles@stripper', 'stripper_idle_02', 8.0, -8.0, -1, 0, 0, false, false, false)
-            repeatCount = 0
+    TaskGoToCoordAnyMeans(ped, seat.stripperPath1.x, seat.stripperPath1.y, seat.stripperPath1.z, 1.0, 0, 0, 786603, 0.0)
+    waitPedAtCoord(ped, seat.stripperPath1, seat.approachWait or 7000, 0.55)
+
+    local waitUntil = GetGameTimer() + 25000
+    while GetGameTimer() < waitUntil and not playerSitted and not lapStop do
+        if loadDict('mini@strip_club@idles@stripper') and not IsEntityPlayingAnim(ped, 'mini@strip_club@idles@stripper', 'stripper_idle_02', 3) then
+            TaskPlayAnim(ped, 'mini@strip_club@idles@stripper', 'stripper_idle_02', 8.0, -8.0, -1, 1, 0, false, false, false)
         end
-        if repeatMax >= 160 then break end
-    until playerSitted or lapStop
+        Wait(250)
+    end
 
     if lapStop then return end
 
     FreezeEntityPosition(ped, false)
-    TaskGoToCoordAnyMeans(ped, seat.stripperPath2.x, seat.stripperPath2.y, seat.stripperPath2.z, 1.0, 0, 0, 786603, 1.0)
-    Wait(1000)
-    TaskGoToCoordAnyMeans(ped, seat.stripperDance.x, seat.stripperDance.y, seat.stripperDance.z, 1.0, 0, 0, 786603, 1.0)
-    Wait(2100)
+    TaskGoToCoordAnyMeans(ped, seat.stripperPath2.x, seat.stripperPath2.y, seat.stripperPath2.z, 1.0, 0, 0, 786603, 0.0)
+    waitPedAtCoord(ped, seat.stripperPath2, 5000, 0.6)
+    TaskGoToCoordAnyMeans(ped, seat.stripperDance.x, seat.stripperDance.y, seat.stripperDance.z, 1.0, 0, 0, 786603, 0.0)
+    waitPedAtCoord(ped, seat.stripperDance, 5000, 0.45)
 
     FreezeEntityPosition(ped, true)
     SetEntityHeading(ped, heading or 303.19)
     stripperAnim(ped)
 
     if not lapStop then
-        TaskGoToCoordAnyMeans(ped, seat.stripperEnd.x, seat.stripperEnd.y, seat.stripperEnd.z, 1.0, 0, 0, 786603, 1.0)
-        Wait(2000)
-        TaskPlayAnim(ped, 'mini@strip_club@idles@stripper', 'stripper_idle_02', 8.0, -8.0, -1, 0, 0, false, false, false)
+        FreezeEntityPosition(ped, false)
+        TaskGoToCoordAnyMeans(ped, seat.stripperEnd.x, seat.stripperEnd.y, seat.stripperEnd.z, 1.0, 0, 0, 786603, 0.0)
+        waitPedAtCoord(ped, seat.stripperEnd, 5000, 0.55)
+        if loadDict('mini@strip_club@idles@stripper') then
+            FreezeEntityPosition(ped, true)
+            TaskPlayAnim(ped, 'mini@strip_club@idles@stripper', 'stripper_idle_02', 8.0, -8.0, -1, 1, 0, false, false, false)
+        end
     end
 end
 
 local function spawnLapStripper(stripperCfg, seat)
     local model = stripperCfg.model
+    if type(model) == 'string' then model = joaat(model) end
     RequestModel(model)
-    while not HasModelLoaded(model) do Wait(10) end
+    local t = 0
+    while not HasModelLoaded(model) and t < 8000 do
+        Wait(10)
+        t = t + 10
+    end
+    if not HasModelLoaded(model) then return nil end
+
     local s = seat.stripperSpawn
     local ped = CreatePed(4, model, s.x, s.y, s.z, s.w, false, true)
     SetEntityAsMissionEntity(ped, true, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedCanRagdoll(ped, false)
-    FreezeEntityPosition(ped, true)
+    SetEntityInvincible(ped, true)
+    FreezeEntityPosition(ped, false)
 
     if stripperCfg.components then
         for _, c in ipairs(stripperCfg.components) do
@@ -127,6 +158,16 @@ local function spawnLapStripper(stripperCfg, seat)
     end
     SetModelAsNoLongerNeeded(model)
     return ped
+end
+
+local function findSeat(seatId)
+    local wanted = tonumber(seatId)
+    if not wanted then return nil end
+    for _, s in ipairs(Config.LapSeats or {}) do
+        if tonumber(s.id) == wanted then
+            return s
+        end
+    end
 end
 
 function IsLapDanceActive()
@@ -139,10 +180,12 @@ function StopLapDance()
     local player = PlayerPedId()
     FreezeEntityPosition(player, false)
     ClearPedTasks(player)
+    if prevCamMode then SetFollowPedCamViewMode(prevCamMode) end
     if lapStripper and DoesEntityExist(lapStripper) then
         DeleteEntity(lapStripper)
     end
     lapStripper = nil
+    playerSitted = false
 end
 
 function StartLapDance(seatId, stripperIndex)
@@ -150,11 +193,10 @@ function StartLapDance(seatId, stripperIndex)
         return QBCore.Functions.Notify('Jau vyksta šokis.', 'error')
     end
 
-    local seat = nil
-    for _, s in ipairs(Config.LapSeats or {}) do
-        if s.id == seatId then seat = s break end
+    local seat = findSeat(seatId)
+    if not seat then
+        return QBCore.Functions.Notify('VIP vieta nerasta.', 'error')
     end
-    if not seat then return end
 
     local stripperCfg = Config.Strippers[stripperIndex or 1] or Config.Strippers[1]
     if not stripperCfg then return end
@@ -170,21 +212,20 @@ function StartLapDance(seatId, stripperIndex)
         local player = PlayerPedId()
 
         lapStripper = spawnLapStripper(stripperCfg, seat)
-        SetEntityCoords(player, 116.88, -1295.04, 28.42, false, false, false, false)
+        if not lapStripper then
+            inLapDance = false
+            TriggerServerEvent('fivempro_stripclub:server:releaseSeat', seatId)
+            return QBCore.Functions.Notify('Nepavyko sukurti šokėjos.', 'error')
+        end
 
         CreateThread(function()
-            runStripperSequence(seat, stripperCfg, seat.stripperSpawn.w)
+            runStripperSequence(seat, seat.stripperSpawn.w)
         end)
 
         CreateThread(function()
-            Wait(800)
-            while inLapDance and not playerSitted and not lapStop do
-                local dist = #(GetEntityCoords(player) - seat.target)
-                if dist < 1.2 then
-                    playerSitLoop(player, seat)
-                    break
-                end
-                Wait(100)
+            Wait(350)
+            if inLapDance and not lapStop then
+                playerSitLoop(player, seat)
             end
         end)
 
@@ -193,6 +234,12 @@ function StartLapDance(seatId, stripperIndex)
                 DisableControlAction(0, 24, true)
                 DisableControlAction(0, 25, true)
                 DisableControlAction(0, 22, true)
+                DisableControlAction(0, 30, true)
+                DisableControlAction(0, 31, true)
+                DisableControlAction(0, 32, true)
+                DisableControlAction(0, 33, true)
+                DisableControlAction(0, 34, true)
+                DisableControlAction(0, 35, true)
                 if IsControlJustPressed(0, 200) or IsControlJustPressed(0, 177) then
                     lapStop = true
                     break
@@ -203,10 +250,12 @@ function StartLapDance(seatId, stripperIndex)
             inLapDance = false
             FreezeEntityPosition(player, false)
             ClearPedTasks(player)
+            if prevCamMode then SetFollowPedCamViewMode(prevCamMode) end
             if lapStripper and DoesEntityExist(lapStripper) then
                 DeleteEntity(lapStripper)
             end
             lapStripper = nil
+            playerSitted = false
             TriggerServerEvent('fivempro_stripclub:server:releaseSeat', seatId)
             QBCore.Functions.Notify('Privatus šokis baigtas.', 'primary')
         end)
@@ -228,11 +277,14 @@ function StartLeanThrow(heading)
         SetEntityHeading(player, heading)
 
         local suf = femaleSuffix(player)
-        loadDict('mini@strip_club@leaning@enter')
+        if not loadDict('mini@strip_club@leaning@enter') then
+            FreezeEntityPosition(player, false)
+            return
+        end
         TaskPlayAnim(player, 'mini@strip_club@leaning@enter', 'enter' .. suf, 8.0, -8.0, -1, 0, 0, false, false, false)
         Wait(2750)
 
-        prevCamMode = GetFollowPedCamViewMode(player)
+        prevCamMode = GetFollowPedCamViewMode()
         SetFollowPedCamViewMode(4)
         SetGameplayCamRelativeHeading(0.0)
         loadDict('mini@strip_club@leaning@base')

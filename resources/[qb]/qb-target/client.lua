@@ -134,6 +134,38 @@ local function safeIsPedAPlayer(entity)
 	return ok and result == true
 end
 
+local function getZoneCentre(zone)
+	if type(zone.center) == 'vector2' then
+		return vector3(zone.center.x, zone.center.y, zone.maxZ or 0.0)
+	end
+	return zone.center
+end
+
+local function getPlayerEyeCoords()
+	local coords = safeGetEntityCoords(playerPed)
+	if not coords then return nil end
+	return vector3(coords.x, coords.y, coords.z + 0.65)
+end
+
+local function hasPointLineOfSight(from, to, ignoreEntity)
+	if not Config.RequireLineOfSight then return true end
+	if not from or not to then return false end
+	local handle = StartShapeTestLosProbe(from.x, from.y, from.z, to.x, to.y, to.z, -1, ignoreEntity or playerPed, 4)
+	while true do
+		local result, _, endCoords = GetShapeTestResult(handle)
+		if result ~= 1 then
+			return #(vector3(endCoords.x, endCoords.y, endCoords.z) - to) < 0.45
+		end
+		Wait(0)
+	end
+end
+
+local function hasEntityLineOfSight(entity)
+	if not Config.RequireLineOfSight or not isValidEntity(entity) then return true end
+	local ok, clear = pcall(HasEntityClearLosToEntity, playerPed, entity, 17)
+	return ok and clear == true
+end
+
 local function RaycastCamera(flag, playerCoords)
 	if not isValidEntity(playerPed) then
 		playerPed = PlayerPedId()
@@ -143,7 +175,8 @@ local function RaycastCamera(flag, playerCoords)
 	end
 
 	local rayPos, rayDir = ScreenPositionToCameraRay()
-	local destination = rayPos + 16 * rayDir
+	local rayLength = (Config.MaxDistance or 3.5) + 1.5
+	local destination = rayPos + rayLength * rayDir
 	local rayHandle = StartShapeTestLosProbe(rayPos.x, rayPos.y, rayPos.z, destination.x, destination.y, destination.z,
 		flag or -1, playerPed, 4)
 
@@ -255,6 +288,7 @@ end
 
 local function CheckEntity(flag, datatable, entity, distance)
 	if not next(datatable) then return end
+	if not hasEntityLineOfSight(entity) then return end
 	local slot = SetupOptions(datatable, entity, distance)
 	if not next(nuiData) then
 		LeftTarget()
@@ -364,7 +398,12 @@ local function EnableTarget()
 	while targetActive do
 		local sleep = 0
 
-		local coords, distance, entity, entityType = RaycastCamera(flag)
+		if not isValidEntity(playerPed) then
+			playerPed = PlayerPedId()
+		end
+		local playerCoords = safeGetEntityCoords(playerPed)
+		local eyeCoords = getPlayerEyeCoords()
+		local coords, distance, entity, entityType = RaycastCamera(flag, playerCoords)
 		if not isValidEntity(entity) then
 			entity, entityType = nil, 0
 		end
@@ -399,7 +438,7 @@ local function EnableTarget()
 					local closestBone, _, closestBoneName = CheckBones(coords, entity, Bones.Vehicle)
 					local datatable = Bones.Options[closestBoneName]
 
-					if datatable and next(datatable) and closestBone then
+					if datatable and next(datatable) and closestBone and hasEntityLineOfSight(entity) then
 						local slot = SetupOptions(datatable, entity, distance)
 						if next(nuiData) then
 							success = true
@@ -461,14 +500,24 @@ local function EnableTarget()
 				-- Zone targets
 				local closestDis, closestZone
 				for k, zone in pairs(Zones) do
-					if distance < (closestDis or Config.MaxDistance) and distance <= zone.targetoptions.distance and zone:isPointInside(coords) then
-						closestDis = distance
+					local zoneCentre = getZoneCentre(zone)
+					local zoneReach = zone.targetoptions.distance or Config.MaxDistance
+					local insideZone = zone:isPointInside(coords)
+						or (playerCoords and zone:isPointInside(playerCoords))
+					local interactDist = distance
+					local losTarget = zone:isPointInside(coords) and coords or zoneCentre
+					local canSeeZone = eyeCoords and hasPointLineOfSight(eyeCoords, losTarget)
+
+					if canSeeZone and insideZone and interactDist <= zoneReach and interactDist < (closestDis or Config.MaxDistance) then
+						closestDis = interactDist
 						closestZone = zone
 					end
 					if Config.DrawSprite then
-						local testCentre = type(zone.center) == 'vector2' and vector3(zone.center.x, zone.center.y, zone.maxZ) or zone.center
-						if #(coords - testCentre) < (zone.targetoptions.drawDistance or Config.DrawDistance) then
-							if HasAnyValidTargetOption(zone.targetoptions.options, entity, distance) then
+						local drawDistance = zone.targetoptions.drawDistance or Config.DrawDistance
+						local playerToCentre = playerCoords and #(playerCoords - zoneCentre) or 999.0
+						local canSeeSprite = eyeCoords and hasPointLineOfSight(eyeCoords, zoneCentre)
+						if canSeeSprite and insideZone and playerToCentre < drawDistance and interactDist <= zoneReach then
+							if HasAnyValidTargetOption(zone.targetoptions.options, entity, interactDist) then
 								listSprite[k] = zone
 							else
 								listSprite[k] = nil
@@ -479,7 +528,9 @@ local function EnableTarget()
 					end
 				end
 				if closestZone then
-					local slot = SetupOptions(closestZone.targetoptions.options, entity, distance, true)
+					local zoneCentre = getZoneCentre(closestZone)
+					local zoneReach = closestZone.targetoptions.distance or Config.MaxDistance
+					local slot = SetupOptions(closestZone.targetoptions.options, entity, closestDis or distance, true)
 					if next(nuiData) then
 						success = true
 						SendNUIMessage({ response = 'foundTarget', data = nuiData[slot].targeticon, options = nuiData })
@@ -488,8 +539,18 @@ local function EnableTarget()
 						end
 						DrawOutlineEntity(entity, true)
 						while targetActive and success do
-							local newCoords, dist = RaycastCamera(flag)
-							if not closestZone:isPointInside(newCoords) or dist > closestZone.targetoptions.distance then
+							if not isValidEntity(playerPed) then
+								playerPed = PlayerPedId()
+							end
+							local livePlayerCoords = safeGetEntityCoords(playerPed)
+							local liveEyeCoords = getPlayerEyeCoords()
+							local newCoords, dist = RaycastCamera(flag, livePlayerCoords)
+							local liveCentre = getZoneCentre(closestZone)
+							local liveInsideZone = closestZone:isPointInside(newCoords)
+								or (livePlayerCoords and closestZone:isPointInside(livePlayerCoords))
+							local liveLosTarget = closestZone:isPointInside(newCoords) and newCoords or liveCentre
+							local liveCanSeeZone = liveEyeCoords and hasPointLineOfSight(liveEyeCoords, liveLosTarget)
+							if not liveCanSeeZone or not liveInsideZone or dist > zoneReach then
 								LeftTarget()
 								DrawOutlineEntity(entity, false)
 								break

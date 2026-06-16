@@ -57,23 +57,30 @@ npm start
 
 ### Pirmas paleidimas Discord serveryje
 
-1. `/setup` — inicializuoja guild nustatymus
-2. Sukurk kanalus:
-   - `#discord-mod-logs`
-   - `#discord-antinuke-logs`
-   - `#discord-message-logs`
-   - `#discord-member-logs`
-   - `#discord-role-logs`
-   - `#discord-channel-logs`
-   - `#discord-voice-logs`
-   - `#discord-webhook-logs`
-   - `#discord-security-logs`
-3. Kiekvienam tipui: `/setlogchannel type:mod channel:#discord-mod-logs` (ir t.t.)
+1. `/setup` — inicializuoja guild, **automatiškai sukuria logų kategorijas ir kanalus** po `Admin-logai`
+2. Arba vėliau perkurti: `/setuplogs`
+3. FiveM webhook URL nukopijuok iš `guardian-bot/data/fivem-webhooks-{GUILD_ID}.lua` → `server_logs/config.lua`
 4. `/whitelist add` — pridėk owner/trusted admin ID
 5. `/antinuke settings` — peržiūrėk threshold
 
+### Logų struktūra (auto-sukuriama)
+
+Po kategorijos **📋 Admin-logai**:
+
+| Kategorija | Kanalai |
+|------------|---------|
+| Discord · Saugumas | mod, antinuke, security |
+| Discord · Žinutės | message |
+| Discord · Nariai | member, join, role |
+| Discord · Serveris | channel, voice, webhook |
+| FiveM · Žaidėjai | join_leave, chat, death, revive, spawn |
+| FiveM · Ekonomika | bank, money, inventory, warehouse |
+| FiveM · Frakcijos | job, gang, mission |
+| FiveM · Transportas | vehicle |
+| FiveM · Admin | admin, security |
+
 ### Slash komandos
-`setup`, `setlogchannel`, `whitelist`, `antinuke`, `ban`, `kick`, `timeout`, `warn`, `warnings`, `clearwarnings`, `purge`, `lock`, `unlock`, `slowmode`, `serverinfo`, `userinfo`
+`setup`, `setuplogs`, `setlogchannel`, `whitelist`, `antinuke`, `ban`, `kick`, `timeout`, `warn`, `warnings`, `clearwarnings`, `purge`, `lock`, `unlock`, `slowmode`, `serverinfo`, `userinfo`
 
 ---
 

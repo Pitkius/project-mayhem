@@ -180,6 +180,12 @@ end
 function CharCamera.disable()
     rotateThreadActive = false
     restoreCoverAbility()
+
+    local ped = PlayerPedId()
+    if ped and ped ~= 0 and DoesEntityExist(ped) then
+        FreezeEntityPosition(ped, false)
+    end
+
     CharCamera.clearShopAnchor()
     CharCamera.setTargetPed(0)
     ClearFocus()
@@ -209,7 +215,21 @@ function CharCamera.forStep(stepId)
         facedetails = 'face',
         body = 'body',
         clothes = 'body',
+        tattoos = 'body',
         review = 'body',
     }
     CharCamera.setPreset(map[stepId] or 'default')
+end
+
+function CharCamera.forTattooZone(zone)
+    local map = {
+        ZONE_HEAD = 'hair',
+        ZONE_HAIR = 'hair',
+        ZONE_TORSO = 'body',
+        ZONE_LEFT_ARM = 'body',
+        ZONE_RIGHT_ARM = 'body',
+        ZONE_LEFT_LEG = 'body',
+        ZONE_RIGHT_LEG = 'body',
+    }
+    CharCamera.setPreset(map[zone] or 'body')
 end

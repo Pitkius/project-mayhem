@@ -65,9 +65,26 @@ local function createPoliceBlips()
     end
 end
 
-CreateThread(function()
-    Wait(1500)
-    createPoliceBlips()
+local function stationAtPlayer()
+    for _, st in ipairs(Config.PoliceStations or {}) do
+        if inStation(st) then
+            return st
+        end
+    end
+end
+
+local function startInterrogationWithSuspect(suspectServerId, station)
+    if not station then
+        return notify('Eik į tardymo kambarys.', 'error')
+    end
+    if not suspectServerId or suspectServerId == GetPlayerServerId(PlayerId()) then
+        return notify('Pasirink kitą žaidėją.', 'error')
+    end
+    TriggerServerEvent('fivempro_interrogation:server:requestStart', 'station', station.id, suspectServerId)
+    notify('Laukiama įtariamojo sutikimo…', 'primary')
+end
+
+local function registerPoliceTargets()
     for _, st in ipairs(Config.PoliceStations or {}) do
         exports['qb-target']:AddCircleZone(('police_interr_%s'):format(st.id), st.center, 1.8, {
             name = ('police_interr_%s'):format(st.id),
@@ -103,6 +120,34 @@ CreateThread(function()
             distance = 2.3,
         })
     end
+
+    exports['qb-target']:AddGlobalPlayer({
+        options = {
+            {
+                icon = 'fas fa-user-clock',
+                label = 'Tardyti',
+                action = function(entity)
+                    local idx = NetworkGetPlayerIndexFromPed(entity)
+                    if idx == -1 then return end
+                    startInterrogationWithSuspect(GetPlayerServerId(idx), stationAtPlayer())
+                end,
+                canInteract = function(entity, distance)
+                    if not isPoliceOnDuty() or distance > 3.0 then return false end
+                    if not entity or entity == 0 or not IsPedAPlayer(entity) then return false end
+                    return stationAtPlayer() ~= nil
+                end,
+            },
+        },
+        distance = 3.0,
+    })
+end
+
+CreateThread(function()
+    while GetResourceState('qb-target') ~= 'started' do
+        Wait(300)
+    end
+    createPoliceBlips()
+    registerPoliceTargets()
 end)
 
 function InterrogationActivePoliceLead(stationId)

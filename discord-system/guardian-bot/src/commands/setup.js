@@ -1,42 +1,39 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
-import { upsertGuildSettings, setLogChannel } from '../database/sqlite.js';
+import { upsertGuildSettings } from '../database/sqlite.js';
 import { appConfig } from '../config.js';
 import { isAdmin } from '../utils/permissions.js';
+import { provisionLogChannels, formatProvisionSummary } from '../logs/provision.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('setup')
-    .setDescription('Inicializuoja Guardian bota siame serveryje')
+    .setDescription('Inicializuoja Guardian bota ir sukuria logų kanalus')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
   async execute(interaction) {
     if (!isAdmin(interaction.member)) {
       return interaction.reply({ content: 'Neturi teisių.', ephemeral: true });
     }
 
+    await interaction.deferReply({ ephemeral: true });
+
     upsertGuildSettings(interaction.guildId, {
       antinuke_enabled: true,
       antinuke: appConfig.defaultAntinuke,
     });
 
-    const airportChannel = interaction.guild.channels.cache.find(
-      (channel) => channel.isTextBased() && /oro[\s_-]?uostas/i.test(channel.name),
-    );
+    const lines = ['**MRP Guardian** sukonfigūruotas.', ''];
 
-    if (airportChannel) {
-      setLogChannel(interaction.guildId, 'join', airportChannel.id);
+    try {
+      const results = await provisionLogChannels(interaction.guild, interaction.client);
+      lines.push(formatProvisionSummary(results));
+      lines.push('', 'Jei reikia perkurti kanalus vėliau: `/setuplogs`');
+      lines.push('Whitelist: `/whitelist add` · Anti-nuke: `/antinuke settings`');
+    } catch (err) {
+      console.error('[MRP] setup logs error:', err);
+      lines.push(`Logų kanalų klaida: ${err.message}`);
+      lines.push('Bandyk rankiniu būdu: `/setuplogs`');
     }
 
-    const lines = ['**MRP Guardian** sukonfigūruotas.'];
-    if (airportChannel) {
-      lines.push(`Prisijungimai → ${airportChannel}`);
-    } else {
-      lines.push('Nustatyk prisijungimų kanalą: `/setlogchannel type:join channel:#oro-uostas`');
-    }
-    lines.push('Kiti logai: `/setlogchannel`');
-
-    await interaction.reply({
-      content: lines.join('\n'),
-      ephemeral: true,
-    });
+    await interaction.editReply({ content: lines.join('\n') });
   },
 };

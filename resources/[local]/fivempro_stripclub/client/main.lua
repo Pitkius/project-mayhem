@@ -27,16 +27,22 @@ end
 
 local function playPoleDance(ped, poleIndex)
     local anims = Config.PoleAnims or {}
-    local a = anims[(poleIndex % #anims) + 1] or anims[1]
-    if not a then return end
-    loadDict(a.dict)
+    if #anims == 0 then return end
+    local a = anims[((poleIndex - 1) % #anims) + 1]
+    if not a or not loadDict(a.dict) then return end
+
+    ClearPedTasksImmediately(ped)
     TaskPlayAnim(ped, a.dict, a.clip, 8.0, -8.0, -1, 1, 0, false, false, false)
+    Wait(150)
+    FreezeEntityPosition(ped, true)
+
     CreateThread(function()
         while DoesEntityExist(ped) do
-            Wait(500)
+            Wait(1000)
             if not IsEntityPlayingAnim(ped, a.dict, a.clip, 3) then
-                loadDict(a.dict)
-                TaskPlayAnim(ped, a.dict, a.clip, 8.0, -8.0, -1, 1, 0, false, false, false)
+                if loadDict(a.dict) then
+                    TaskPlayAnim(ped, a.dict, a.clip, 8.0, -8.0, -1, 1, 0, false, false, false)
+                end
             end
         end
     end)
@@ -61,8 +67,9 @@ local function spawnPoleDancers()
         SetEntityAsMissionEntity(ped, true, true)
         SetBlockingOfNonTemporaryEvents(ped, true)
         SetEntityInvincible(ped, true)
-        FreezeEntityPosition(ped, true)
         SetPedCanRagdoll(ped, false)
+        SetPedCanPlayAmbientAnims(ped, false)
+        SetPedCanPlayAmbientBaseAnims(ped, false)
         applyStripperLook(ped, cfg)
         playPoleDance(ped, i)
         polePeds[#polePeds + 1] = ped
@@ -91,27 +98,45 @@ local function sitOnChair(coords4)
 
     sitting = true
     local scenario = Config.WatchScenario or 'PROP_HUMAN_SEAT_STRIP_WATCH'
-    TaskStartScenarioAtPosition(ped, scenario, coords4.x, coords4.y, coords4.z, coords4.w, 0, true, false)
+
+    ClearPedTasksImmediately(ped)
+    RequestCollisionAtCoord(coords4.x, coords4.y, coords4.z)
+    SetEntityCoordsNoOffset(ped, coords4.x, coords4.y, coords4.z - 0.48, false, false, false)
+    SetEntityHeading(ped, coords4.w)
+    FreezeEntityPosition(ped, true)
+
+    TaskStartScenarioAtPosition(ped, scenario, coords4.x, coords4.y, coords4.z - 0.48, coords4.w, -1, true, true)
 
     QBCore.Functions.Notify('Atsistok su ESC.', 'primary')
 
     CreateThread(function()
+        local started = GetGameTimer() + 2500
+        while sitting and GetGameTimer() < started do
+            if IsPedUsingScenario(ped, scenario) or IsPedActiveInScenario(ped) then
+                break
+            end
+            Wait(50)
+        end
+
         while sitting do
             if IsControlJustPressed(0, 200) or IsControlJustPressed(0, 177) then
                 sitting = false
-                ClearPedTasks(ped)
                 break
             end
             if not IsPedUsingScenario(ped, scenario) and not IsPedActiveInScenario(ped) then
-                sitting = false
+                TaskStartScenarioAtPosition(ped, scenario, coords4.x, coords4.y, coords4.z - 0.48, coords4.w, -1, true, true)
             end
-            Wait(0)
+            Wait(200)
         end
+
+        FreezeEntityPosition(ped, false)
+        ClearPedTasks(ped)
     end)
 end
 
 local function addTargets()
     if targetsAdded then return end
+    if GetResourceState('qb-target') ~= 'started' then return end
     targetsAdded = true
 
     for _, seat in ipairs(Config.LapSeats or {}) do
@@ -197,7 +222,17 @@ CreateThread(function()
         SetBlipColour(b, blip.color or 48)
         SetBlipScale(b, blip.scale or 0.75)
         SetBlipAsShortRange(b, true)
-        exports['fivempro_fonts']:SetBlipName(b, blip.label or 'Strip Club')
+        if GetResourceState('fivempro_fonts') == 'started' then
+            exports['fivempro_fonts']:SetBlipName(b, blip.label or 'Strip Club')
+        else
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentSubstringPlayerName(blip.label or 'Strip Club')
+            EndTextCommandSetBlipName(b)
+        end
+    end
+
+    while GetResourceState('qb-target') ~= 'started' do
+        Wait(300)
     end
 
     local center = Config.Club and Config.Club.center or vector3(115.0, -1293.0, 28.27)
@@ -258,7 +293,7 @@ RegisterNetEvent('fivempro_stripclub:client:menuLapFromPole', function(data)
 end)
 
 RegisterNetEvent('fivempro_stripclub:client:startLap', function(args)
-    if not args or not args.seatId then return end
+    if not args or args.seatId == nil then return end
     StartLapDance(tonumber(args.seatId), tonumber(args.stripperIndex) or 1)
 end)
 
