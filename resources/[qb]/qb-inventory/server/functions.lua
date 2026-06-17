@@ -32,6 +32,8 @@ local function resolveSharedItem(itemName)
     end
 end
 
+exports('ResolveSharedItem', resolveSharedItem)
+
 local function SetupShopItems(shopItems)
     local items = {}
     if shopItems and next(shopItems) then
@@ -57,6 +59,18 @@ local function SetupShopItems(shopItems)
         end
     end
     return items
+end
+
+local function resolveShopSlotCount(shopItems, configuredSlots)
+    local items = SetupShopItems(shopItems)
+    local maxSlot = 0
+    for slot in pairs(items) do
+        maxSlot = math.max(maxSlot, tonumber(slot) or 0)
+    end
+    if maxSlot > 0 then return maxSlot end
+    local configured = tonumber(configuredSlots)
+    if configured and configured > 0 then return configured end
+    return Config.MaxSlots
 end
 
 local BulkyItemsNoPocket = {
@@ -421,7 +435,7 @@ exports('GetItemCount', GetItemCount)
 function CanAddItem(identifier, item, amount)
     local Player = QBCore.Functions.GetPlayer(identifier)
 
-    local itemData = QBCore.Shared.Items[item:lower()]
+    local itemData = resolveSharedItem(item)
     if not itemData then return false end
 
     local inventory, items
@@ -606,24 +620,26 @@ exports('ClearStash', ClearStash)
 --- @param shopData table The data of the shop to create.
 function CreateShop(shopData)
     if shopData.name then
+        local items = SetupShopItems(shopData.items)
         RegisteredShops[shopData.name] = {
             name = shopData.name,
             label = shopData.label,
             coords = shopData.coords,
-            slots = Config.MaxSlots,
-            items = SetupShopItems(shopData.items)
+            slots = resolveShopSlotCount(shopData.items, shopData.slots),
+            items = items
         }
     else
         for key, data in pairs(shopData) do
             if type(data) == 'table' then
                 if data.name then
                     local shopName = type(key) == 'number' and data.name or key
+                    local items = SetupShopItems(data.items)
                     RegisteredShops[shopName] = {
                         name = shopName,
                         label = data.label,
                         coords = data.coords,
-                        slots = Config.MaxSlots,
-                        items = SetupShopItems(data.items)
+                        slots = resolveShopSlotCount(data.items, data.slots),
+                        items = items
                     }
                 else
                     CreateShop(data)
@@ -748,7 +764,7 @@ exports('RemoveInventory', RemoveInventory)
 --- @param reason string (optional) The reason for adding the item.
 --- @return boolean Returns true if the item was successfully added, false otherwise.
 function AddItem(identifier, item, amount, slot, info, reason)
-    local itemInfo = QBCore.Shared.Items[item:lower()]
+    local itemInfo = resolveSharedItem(item)
     if not itemInfo then
         print('AddItem: Invalid item')
         return false

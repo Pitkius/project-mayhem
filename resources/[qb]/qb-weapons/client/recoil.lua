@@ -57,6 +57,7 @@ local recoils = {
     [`weapon_minismg`] = 0.1,
     [`weapon_raycarbine`] = 0.3,
     [`weapon_tecpistol`] = 0.3,
+    [`weapon_fgc9`] = 0.22,
 
     -- Shotguns
     [`weapon_pumpshotgun`] = 0.4,

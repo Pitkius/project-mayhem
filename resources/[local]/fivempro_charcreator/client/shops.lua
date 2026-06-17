@@ -6,41 +6,57 @@ local function notify(msg, t)
     QBCore.Functions.Notify(msg, t or 'error')
 end
 
+local function unlockPlayerMovement()
+    local ped = PlayerPedId()
+    local pid = PlayerId()
+    if ped and ped ~= 0 and DoesEntityExist(ped) then
+        ClearPedTasks(ped)
+        SetPedCanRagdoll(ped, true)
+        FreezeEntityPosition(ped, false)
+        SetEntityCollision(ped, true, true)
+        SetEntityVisible(ped, true, false)
+        ResetEntityAlpha(ped)
+    end
+    SetPlayerControl(pid, true, 0)
+    SetNuiFocusKeepInput(false)
+    SetNuiFocus(false, false)
+end
+
+local function scheduleMovementUnlock()
+    for _, delay in ipairs({ 0, 80, 250, 600 }) do
+        SetTimeout(delay, unlockPlayerMovement)
+    end
+end
+
 function ShopSession.IsActive()
     return ShopSession.active == true
 end
 
 function ShopSession.Teardown(reloadSkin)
     local kind = ShopSession.kind
+    local wasActive = ShopSession.active == true
+    ShopSession.active = false
+    ShopSession.kind = nil
+    ShopSession.previewPed = nil
+
     CharCamera.disable()
+    unlockPlayerMovement()
 
     local ped = PlayerPedId()
-    if ped and ped ~= 0 and DoesEntityExist(ped) then
-        ClearPedTasks(ped)
-        FreezeEntityPosition(ped, false)
-        SetEntityCollision(ped, true, true)
-        SetEntityVisible(ped, true, false)
-        ResetEntityAlpha(ped)
-    end
-    SetPlayerControl(PlayerId(), true, 0)
 
-    if ShopSession.active and reloadSkin then
+    if wasActive and reloadSkin then
         if ShopSession.originalSkinJson then
             CharAppearance.setPreviewPed(ped)
             CharAppearance.loadFromJson(ShopSession.originalSkinJson)
         end
         TriggerServerEvent('qb-clothes:loadPlayerSkin')
-    elseif ShopSession.active and kind == 'tattoo' and not reloadSkin then
+    elseif wasActive and kind == 'tattoo' and not reloadSkin then
         TriggerServerEvent('qb-clothes:loadPlayerSkin')
     end
 
-    ShopSession.active = false
-    ShopSession.kind = nil
-    ShopSession.previewPed = nil
     ShopSession.originalSkinJson = nil
-    SetNuiFocusKeepInput(false)
-    SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
+    scheduleMovementUnlock()
 
     SetTimeout(80, function()
         TriggerEvent('qb-clothing:client:onMenuClose')
@@ -126,6 +142,7 @@ function ShopSession.Open(kind, camLoc)
             ShopSession.originalSkinJson = nil
         end
 
+        unlockPlayerMovement()
         setupShopPed(data.current and data.current.skin, gender, kind)
 
         SetNuiFocus(true, true)
@@ -254,6 +271,13 @@ end)
 RegisterNUICallback('setTattooZoneCamera', function(data, cb)
     CharCamera.forTattooZone(data.zone)
     cb('ok')
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if ShopSession.IsActive() then
+        ShopSession.Teardown(true)
+    end
 end)
 
 exports('OpenBarber', function()

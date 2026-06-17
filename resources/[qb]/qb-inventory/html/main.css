@@ -320,80 +320,13 @@ body {
 .item-slot-img img {
     width: 75%;
     height: auto;
-    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+    filter: brightness(1.08) contrast(1.06) saturate(1.05) drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55));
 }
 
-/* Permatomo fono narkotikų ikonos — darken ant tamsaus inventoriaus jas beveik paslepia */
-.item-slot-img img[src*="cocaine_powder"],
-.item-slot-img img[src*="cocaine_paste"],
-.item-slot-img img[src*="cocaine_baggy"],
-.item-slot-img img[src*="moonshine_spirit"],
-.item-slot-img img[src*="weed_buds"],
-.item-slot-img img[src*="weed_resin"],
-.item-slot-img img[src*="heroin_powder"],
-.item-slot-img img[src*="heroin_bag"],
-.item-slot-img img[src*="chemical_mix"],
-.item-slot-img img[src*="coke_small_brick"],
-.item-slot-img img[src*="meth_crystal"],
-.item-slot-img img[src*="poppy_flower"],
-.notification-slot .item-slot-img img[src*="cocaine_powder"],
-.notification-slot .item-slot-img img[src*="cocaine_paste"],
-.notification-slot .item-slot-img img[src*="cocaine_baggy"],
-.notification-slot .item-slot-img img[src*="moonshine_spirit"],
-.notification-slot .item-slot-img img[src*="weed_buds"],
-.notification-slot .item-slot-img img[src*="weed_resin"],
-.notification-slot .item-slot-img img[src*="heroin_powder"],
-.notification-slot .item-slot-img img[src*="heroin_bag"],
-.notification-slot .item-slot-img img[src*="chemical_mix"],
-.notification-slot .item-slot-img img[src*="coke_small_brick"],
-.notification-slot .item-slot-img img[src*="meth_crystal"],
-.notification-slot .item-slot-img img[src*="poppy_flower"],
-.required-item .item-slot-img img[src*="cocaine_powder"],
-.required-item .item-slot-img img[src*="cocaine_paste"],
-.required-item .item-slot-img img[src*="cocaine_baggy"],
-.required-item .item-slot-img img[src*="moonshine_spirit"],
-.required-item .item-slot-img img[src*="weed_buds"],
-.required-item .item-slot-img img[src*="weed_resin"],
-.required-item .item-slot-img img[src*="heroin_powder"],
-.required-item .item-slot-img img[src*="heroin_bag"],
-.required-item .item-slot-img img[src*="chemical_mix"],
-.required-item .item-slot-img img[src*="coke_small_brick"],
-.required-item .item-slot-img img[src*="meth_crystal"],
-.required-item .item-slot-img img[src*="poppy_flower"],
-.dragged-item .item-slot-img img[src*="cocaine_powder"],
-.dragged-item .item-slot-img img[src*="cocaine_paste"],
-.dragged-item .item-slot-img img[src*="cocaine_baggy"],
-.dragged-item .item-slot-img img[src*="moonshine_spirit"],
-.dragged-item .item-slot-img img[src*="weed_buds"],
-.dragged-item .item-slot-img img[src*="weed_resin"],
-.dragged-item .item-slot-img img[src*="heroin_powder"],
-.dragged-item .item-slot-img img[src*="heroin_bag"],
-.dragged-item .item-slot-img img[src*="chemical_mix"],
-.dragged-item .item-slot-img img[src*="coke_small_brick"],
-.dragged-item .item-slot-img img[src*="meth_crystal"],
-.dragged-item .item-slot-img img[src*="poppy_flower"] {
-    mix-blend-mode: normal;
-    filter: brightness(1.45) contrast(1.16) saturate(1.12) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
-}
-
-/* Tamsesnės žolės / aguonų ikonos */
-.item-slot-img img[src*="weed_buds"],
-.item-slot-img img[src*="weed_leaf"],
-.notification-slot .item-slot-img img[src*="weed_buds"],
-.notification-slot .item-slot-img img[src*="weed_leaf"],
-.required-item .item-slot-img img[src*="weed_buds"],
-.required-item .item-slot-img img[src*="weed_leaf"],
-.dragged-item .item-slot-img img[src*="weed_buds"],
-.dragged-item .item-slot-img img[src*="weed_leaf"] {
-    filter: brightness(1.68) contrast(1.22) saturate(1.2) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
-}
-
-/* PNG su juodu fonu (grybai ir pan.) — blend ant tamsaus inventoriaus */
-.item-slot-img img[src*="mushroom"],
-.notification-slot .item-slot-img img[src*="mushroom"],
-.required-item .item-slot-img img[src*="mushroom"],
-.dragged-item .item-slot-img img[src*="mushroom"] {
-    mix-blend-mode: lighten;
+.notification-slot .item-slot-img img,
+.required-item .item-slot-img img,
+.dragged-item .item-slot-img img {
+    filter: brightness(1.08) contrast(1.06) saturate(1.05) drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55));
 }
 
 .item-slot-key {

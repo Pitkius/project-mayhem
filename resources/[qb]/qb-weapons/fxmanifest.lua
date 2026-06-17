@@ -10,15 +10,20 @@ shared_scripts {
     'locales/en.lua',
     'locales/*.lua',
     'config.lua',
+    'shared/weapon_damage.lua',
 }
 
 client_scripts {
     'client/main.lua',
+    'client/damage.lua',
     'client/recoil.lua',
     'client/weapdraw.lua',
 }
 
-server_script 'server/main.lua'
+server_scripts {
+    'server/main.lua',
+    'server/damage.lua',
+}
 
 files {
     'weaponsnspistol.meta'

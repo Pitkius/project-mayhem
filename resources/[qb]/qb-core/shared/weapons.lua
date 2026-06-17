@@ -59,6 +59,7 @@ QBShared.Weapons = {
 	[`weapon_machinepistol`]         = { name = 'weapon_machinepistol', label = 'Tec-9', weapontype = 'Submachine Gun', ammotype = 'AMMO_PISTOL', damagereason = 'Riddled / Drilled / Finished / Submachine Gunned' },
 	[`weapon_minismg`]               = { name = 'weapon_minismg', label = 'Mini SMG', weapontype = 'Submachine Gun', ammotype = 'AMMO_SMG', damagereason = 'Riddled / Drilled / Finished / Submachine Gunned' },
 	[`weapon_raycarbine`]            = { name = 'weapon_raycarbine', label = 'Raycarbine', weapontype = 'Submachine Gun', ammotype = 'AMMO_SMG', damagereason = 'Riddled / Drilled / Finished / Submachine Gunned' },
+	[`weapon_fgc9`]                  = { name = 'weapon_fgc9', label = 'FGC-9', weapontype = 'Submachine Gun', ammotype = 'AMMO_PISTOL', damagereason = 'Riddled / Drilled / Finished / Submachine Gunned' },
 
 	-- Shotguns
 	[`weapon_pumpshotgun`]           = { name = 'weapon_pumpshotgun', label = 'Pump Shotgun', weapontype = 'Shotgun', ammotype = 'AMMO_SHOTGUN', damagereason = 'Devastated / Pulverized / Shotgunned' },

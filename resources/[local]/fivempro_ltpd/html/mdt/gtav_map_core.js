@@ -189,7 +189,11 @@ window.GtavMapCore = (function () {
     const maxY = num(t.gameMax?.y, ISLAND.gameMax.y);
     const file = t.imageFile || defaultImageFile || "mdt/asset/gtav_satellite_2048.png";
 
-    const projection = String(t.projection || "identity").toLowerCase();
+    let projection = String(t.projection || "identity").toLowerCase();
+    const hasCalibration = Array.isArray(t.calibration) && t.calibration.length >= 3;
+    if (hasCalibration && projection === "identity") {
+      projection = "affine";
+    }
 
     const out = {
       projection,
@@ -215,7 +219,7 @@ window.GtavMapCore = (function () {
       imageUrl: nuiImageUrl(file, resourceName),
     };
 
-    if (projection === "affine" && Array.isArray(t.calibration) && t.calibration.length >= 3) {
+    if (hasCalibration) {
       applyCalibration(out, t.calibration);
     }
 

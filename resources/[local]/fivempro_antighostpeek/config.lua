@@ -17,11 +17,22 @@ Config.MinAimDistance = 2.0
 --- Maksimalus raycast atstumas (m).
 Config.MaxRayDistance = 150.0
 
---- Kiek šūvio krypčių turi būti laisvos, kad leistų šaudyti (mažiau klaidingų „siena“).
-Config.MinClearPaths = 2
+--- Kiek šūvio krypčių turi būti laisvos, kad leistų šaudyti.
+Config.MinClearPaths = 1
 
---- Kiek kartų leisti praskrodyti minkštą medžiagą vienu spinduliu.
-Config.RayMaxPasses = 5
+--- Kai matomas ginklo prop — tik jo vamzdžio taškai (mažiau klaidų su raumeningais ped).
+Config.MinClearPathsWithWeapon = 1
+Config.WeaponOnlyOrigins = true
+Config.WeaponMuzzleOffsets = { 0.82, 0.62, 0.42 }
+
+--- Kiek kartų leisti praskrodyti minkštą medžiagą / kūną vienu spinduliu.
+Config.RayMaxPasses = 12
+
+--- Kiek prasukti pro savo kūną, kai ray vis dar kerta ped (stipresni modeliai).
+Config.SelfBodyAdvance = 0.5
+
+--- Negyvų pedų hitai nelaikomi kliūtimi (dažna klaida šaudant virš lavonų).
+Config.IgnoreDeadPedHits = true
 
 --- Žingsnis praskrodžiant minkštą paviršių (m).
 Config.PenetrateStep = 0.1

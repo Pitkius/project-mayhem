@@ -1,5 +1,13 @@
 Config = Config or {}
 
+--- Shop NPC: spawn tik kai žaidėjas arti; kiti lieka išjungti (mažesnis load).
+Config.NpcProximity = {
+    enabled = true,
+    spawnDistance = 72.0,
+    despawnDistance = 92.0,
+    checkIntervalMs = 1800,
+}
+
 --- Kirpyklos — vanilla qb-clothing zonos + kasininkės pozicija
 --- chair = kliento kėdės vieta (Z turi sutapti su interjeru; barber.lua ieško artimiausio chair prop)
 Config.BarberPeds = {

@@ -3,48 +3,137 @@ Config = {}
 Config.JobName = 'mechanic'
 Config.TargetDistance = 3.2
 
---- Blipas ir tarnybos taškas – prie garažo (6 nuotrauka)
-Config.Base = vector4(-350.41, -117.01, 38.95, 246.37)
+--- LS dokai — mechanikų bazė
+Config.Base = vector4(153.8655, -3011.3054, 7.0409, 266.9864)
 
+--- Viešas žemėlapio blipas (visiems)
 Config.Blip = {
     sprite = 446,
     colour = 47,
     scale = 0.85,
     label = 'Mechanikų dirbtuvės',
+    coords = vector3(128.5848, -3013.5708, 7.0409),
 }
 
---- Sandėlis / įrankiai (5 nuotrauka)
+--- Vidiniai blipai — tik mechanikų job (žemėlapyje)
+Config.ShowMapBlips = true
+Config.MapBlips = {
+    { coords = vector3(125.9513, -3023.2095, 7.0409), sprite = 446, colour = 5, scale = 0.72, label = 'Tvarkymas / tuningas #1' },
+    { coords = vector3(125.7720, -3034.8445, 7.0409), sprite = 446, colour = 5, scale = 0.72, label = 'Tvarkymas / tuningas #2' },
+    { coords = vector3(126.1551, -3047.4792, 7.0409), sprite = 446, colour = 5, scale = 0.72, label = 'Tvarkymas / tuningas #3' },
+    { coords = vector3(153.8655, -3011.3054, 7.0409), sprite = 366, colour = 47, scale = 0.7, label = 'Mechanikų persirengimas' },
+    { coords = vector3(125.4779, -3007.6318, 7.8205), sprite = 521, colour = 46, scale = 0.72, label = 'Mechanikų vadovybė' },
+    { coords = vector3(128.5848, -3013.5708, 7.0409), sprite = 478, colour = 47, scale = 0.72, label = 'Mechanikų sandėlis' },
+    { coords = vector3(146.4569, -3007.8015, 7.0409), sprite = 587, colour = 46, scale = 0.72, label = 'Boso sandėlis' },
+    { coords = vector3(138.9832, -3050.7783, 7.0409), sprite = 402, colour = 3, scale = 0.7, label = 'Tuningo dalių stalas' },
+    { coords = vector3(134.7361, -3050.6108, 7.0409), sprite = 402, colour = 2, scale = 0.7, label = 'Remonto dalių stalas' },
+    { coords = vector3(154.5346, -3024.6370, 7.0409), sprite = 285, colour = 47, scale = 0.65, label = 'Garažo vartai #1' },
+    { coords = vector3(154.3884, -3034.6260, 7.0409), sprite = 285, colour = 47, scale = 0.65, label = 'Garažo vartai #2' },
+    { coords = vector3(154.6730, -3017.9270, 7.0430), sprite = 521, colour = 47, scale = 0.65, label = 'Įėjimo durys' },
+}
+
+--- Durų / vartų raktai (E arba qb-target) — tik mechanikams tarnyboje
+Config.DoorToggleReach = 5.0
+Config.DoorGroups = {
+    {
+        id = 'mech_garage_gate_1',
+        label = 'Garažo vartai #1',
+        doorType = 'garage_roll',
+        interact = vector3(154.5346, -3024.6370, 7.0409),
+        interactDist = 5.0,
+        defaultLocked = true,
+        entityScan = {
+            center = vector3(154.5346, -3024.6370, 7.0409),
+            radius = 5.5,
+            maxCount = 2,
+            models = {
+                'denis3d_ts_gate',
+                'po1_08_whouse_05',
+                'prop_com_gar_door_01',
+            },
+        },
+    },
+    {
+        id = 'mech_garage_gate_2',
+        label = 'Garažo vartai #2',
+        doorType = 'garage_roll',
+        interact = vector3(154.3884, -3034.6260, 7.0409),
+        interactDist = 5.0,
+        defaultLocked = true,
+        entityScan = {
+            center = vector3(154.3884, -3034.6260, 7.0409),
+            radius = 5.5,
+            maxCount = 2,
+            models = {
+                'denis3d_ts_gate',
+                'po1_08_whouse_05',
+                'prop_com_gar_door_01',
+            },
+        },
+    },
+    {
+        id = 'mech_entry_door',
+        label = 'Įėjimo durys',
+        doorType = 'entity',
+        interact = vector3(154.6730, -3017.9270, 7.0430),
+        interactDist = 4.0,
+        defaultLocked = true,
+        entityScan = {
+            center = vector3(154.6730, -3017.9270, 7.0430),
+            radius = 5.0,
+            maxCount = 3,
+            models = {
+                'denis3d_ts_exteriorgate',
+                'denis3d_ts_container_doors',
+                'denis3d_ts_doorframe',
+            },
+        },
+    },
+}
+
+--- Bendras sandėlis
 Config.Stash = {
-    coords = vector3(-319.45, -132.02, 38.98),
-    heading = 260.38,
+    coords = vector3(128.5848, -3013.5708, 7.0409),
+    heading = 178.1475,
     stashId = 'fivempro_mechanic_ls',
     label = 'Mechanikų sandėlis',
     maxweight = 4000000,
     slots = 80,
 }
 
---- Vadovybės meniu (4 nuotrauka)
+--- Boso sandėlis
+Config.BossStash = {
+    coords = vector3(146.4569, -3007.8015, 7.0409),
+    heading = 85.3863,
+    stashId = 'fivempro_mechanic_boss_ls',
+    label = 'Boso sandėlis',
+    maxweight = 6000000,
+    slots = 100,
+}
+
+--- Vadovybės meniu
 Config.Management = {
-    coords = vector3(-323.52, -129.54, 39.01),
-    heading = 335.34,
+    coords = vector3(125.4779, -3007.6318, 7.8205),
+    heading = 343.4840,
 }
 
---- Persirengimas / rūbinė (1 nuotrauka)
+--- Persirengimas / rūbinė
 Config.Locker = {
-    coords = vector3(-345.48, -122.90, 39.01),
-    heading = 66.30,
+    coords = vector3(153.8655, -3011.3054, 7.0409),
+    heading = 266.9864,
 }
 
---- Garažas + tarnybinio transporto pirkimas (6 nuotrauka)
+--- Garažas + tarnybinio transporto pirkimas
 Config.GarageHub = {
-    coords = vector3(-350.41, -117.01, 38.95),
-    heading = 246.37,
+    coords = vector3(128.5848, -3013.5708, 7.0409),
+    heading = 178.1475,
 }
 
---- Remonto vietos (2 ir 3 nuotraukos)
+--- Remonto / tuning vietos
 Config.RepairBays = {
-    { coords = vector3(-340.89, -128.34, 39.01), length = 5.2, width = 6.8, heading = 161.82 },
-    { coords = vector3(-330.82, -131.43, 39.01), length = 5.2, width = 6.8, heading = 156.15 },
+    { coords = vector3(125.9513, -3023.2095, 7.0409), length = 5.4, width = 7.0, heading = 87.3217 },
+    { coords = vector3(125.7720, -3034.8445, 7.0409), length = 5.4, width = 7.0, heading = 93.2096 },
+    { coords = vector3(126.1551, -3047.4792, 7.0409), length = 5.4, width = 7.0, heading = 87.9093 },
 }
 
 Config.Permissions = {
@@ -52,7 +141,22 @@ Config.Permissions = {
 }
 
 Config.CraftingStations = {
-    { coords = vector3(-325.52, -136.11, 39.01), heading = 159.0, length = 1.8, width = 1.8, label = 'Tuningo dalių staklės' },
+    {
+        coords = vector3(138.9832, -3050.7783, 7.0409),
+        heading = 177.6345,
+        length = 1.9,
+        width = 1.9,
+        label = 'Tuningo dalių stalas',
+        craftKind = 'tuning',
+    },
+    {
+        coords = vector3(134.7361, -3050.6108, 7.0409),
+        heading = 183.3353,
+        length = 1.9,
+        width = 1.9,
+        label = 'Remonto dalių stalas',
+        craftKind = 'kits',
+    },
 }
 
 --- GTA mod lygis (0-based) -> item engine_upgrade_1 .. engine_upgrade_4
@@ -141,9 +245,9 @@ Config.DutyOutfits = {
 
 --- Laikinas testavimo NPC: $1 rinkinys (žaliavos) + brangesnių kirtiklių meniu.
 Config.DebugSandboxVendor = {
-    enabled = true,
+    enabled = false,
     pedModel = `s_m_y_construct_02`,
-    coords = vector4(-334.94, -127.18, 39.02, 158.0),
+    coords = vector4(132.0, -3018.0, 7.04, 178.0),
     scenario = 'WORLD_HUMAN_CLIPBOARD',
     bundlePrice = 1,
 }

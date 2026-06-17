@@ -622,10 +622,14 @@ local function registerMaterialShop()
         end
     end
     if #validItems == 0 then return false end
+    local maxSlot = 0
+    for _, row in ipairs(validItems) do
+        maxSlot = math.max(maxSlot, tonumber(row.slot) or 0)
+    end
     exports['qb-inventory']:CreateShop({
         name = cfg.name,
         label = cfg.label or 'Reikmenys',
-        slots = #validItems,
+        slots = math.max(maxSlot, #validItems),
         items = validItems,
     })
     return true

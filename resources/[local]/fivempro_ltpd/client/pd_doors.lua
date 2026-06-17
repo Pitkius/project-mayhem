@@ -78,6 +78,19 @@ CreateThread(function()
     end
 end)
 
+local cachedObjectPool = nil
+local cachedObjectPoolAt = 0
+
+local function getCachedObjectPool(maxAgeMs)
+    maxAgeMs = maxAgeMs or 6000
+    local now = GetGameTimer()
+    if not cachedObjectPool or (now - cachedObjectPoolAt) > maxAgeMs then
+        cachedObjectPool = GetGamePool('CObject')
+        cachedObjectPoolAt = now
+    end
+    return cachedObjectPool
+end
+
 local function drawPdDoorLock(worldX, worldY, worldZ, locked)
     RequestStreamedTextureDict(PD_LOCK_TX, false)
     if not HasStreamedTextureDictLoaded(PD_LOCK_TX) then return end
@@ -395,14 +408,15 @@ local function applyStandardSlabLocked(slab, locked)
     local dh = slab.doorHash
     local force = true
     if locked then
-        DoorSystemSetDoorState(dh, 4, false, force)
+        DoorSystemSetDoorState(dh, 1, false, force)
         pcall(function() DoorSystemSetOpenRatio(dh, 0.0, true, true) end)
         pcall(function() DoorSystemSetHoldOpen(dh, false) end)
         pcall(function() DoorSystemSetAutomaticDistance(dh, 0.0, false, false) end)
         snapSlabEntity(slab)
     else
         DoorSystemSetDoorState(dh, 0, false, force)
-        pcall(function() DoorSystemSetOpenRatio(dh, 1.0, false, false) end)
+        pcall(function() DoorSystemSetOpenRatio(dh, 0.0, false, false) end)
+        pcall(function() DoorSystemSetHoldOpen(dh, false) end)
         pcall(function() DoorSystemSetAutomaticDistance(dh, 30.0, false, false) end)
     end
 end
@@ -697,7 +711,7 @@ local function scanEntitiesForDef(entityScan, playerCoords)
         models[joaat(name)] = true
     end
     local out = {}
-    for _, ent in ipairs(GetGamePool('CObject')) do
+    for _, ent in ipairs(getCachedObjectPool(8000)) do
         if DoesEntityExist(ent) then
             local m = GetEntityModel(ent)
             if models[m] then
@@ -833,7 +847,7 @@ local function scanDynamicForStation(dyn)
         whitelist[joaat(name)] = name
     end
     local found = {}
-    for _, ent in ipairs(GetGamePool('CObject')) do
+    for _, ent in ipairs(getCachedObjectPool(10000)) do
         if DoesEntityExist(ent) then
             local m = GetEntityModel(ent)
             if whitelist[m] then
@@ -848,6 +862,7 @@ local function scanDynamicForStation(dyn)
     local pairDist = dyn.pairDist or 2.35
     local used = {}
     local clusters = {}
+    local newGroupIds = {}
 
     for i = 1, #found do
         if not used[i] then
@@ -907,12 +922,16 @@ local function scanDynamicForStation(dyn)
                 entities = entities,
             }
             registerDoorGroupTarget(doorGroups[#doorGroups])
+            newGroupIds[#newGroupIds + 1] = groupId
             local regSlabs = {}
             for _, s in ipairs(cluster) do
                 regSlabs[#regSlabs + 1] = { x = s.coords.x, y = s.coords.y, z = s.coords.z, model = s.modelHash }
             end
             TriggerServerEvent('fivempro_ltpd:server:registerPdDynDoorGroup', groupId, dyn.stationId, c.x, c.y, c.z, dyn.interactDist or 2.5, regSlabs)
         end
+    end
+    for _, gid in ipairs(newGroupIds) do
+        applyGroupLocked(gid, doorLocked[gid] ~= false)
     end
     if #found > 0 then
         dynStationDone[dyn.stationId] = true
@@ -935,11 +954,12 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(8000)
+        Wait(20000)
         local pc = GetEntityCoords(PlayerPedId())
         if nearestPdDoorDist(pc) > 150.0 then
             goto continue
         end
+        invalidateObjectPoolCache()
         for _, g in ipairs(doorGroups) do
             if g.entityScanDef then
                 local ents = scanEntitiesForDef(g.entityScanDef, pc)
@@ -984,7 +1004,7 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(5000)
+        Wait(10000)
         local allDone = true
         for _, dyn in ipairs(allDoorDynamics()) do
             if not dynStationDone[dyn.stationId] then
@@ -1003,9 +1023,6 @@ CreateThread(function()
                 local c = (dyn.bounds.min + dyn.bounds.max) * 0.5
                 if #(pc - c) < 145.0 then
                     scanDynamicForStation(dyn)
-                    for id, locked in pairs(doorLocked) do
-                        applyGroupLocked(id, locked ~= false)
-                    end
                 end
             end
         end
@@ -1048,72 +1065,65 @@ end)
 
 local lastToggle = 0
 
---- qb-target durų zonos (pagrindinis būdas). E mygtukas – atsarginis, jei target neįkeltas.
+local function tryToggleNearestDoor(pcoords)
+    if not canUseServiceDoorsClient() then return end
+    local zones = getPdDoorProximityZones()
+    local reach = doorInteractRadius(Config.PdDoorToggleReach)
+    local closestHit = nil
+    for _, z in ipairs(zones) do
+        local d = #(pcoords - z.pos)
+        if d <= reach and canUseDoorGroupClient(z.groupId) then
+            if not closestHit or d < closestHit.d then
+                closestHit = { gid = z.groupId, d = d }
+            end
+        end
+    end
+    if not closestHit then return end
+    local now = GetGameTimer()
+    if now - lastToggle <= 650 then return end
+    lastToggle = now
+    TriggerServerEvent('fivempro_ltpd:server:togglePdDoorGroup', closestHit.gid)
+end
+
+--- Spynos ikonos (retas piešimas — ne kiekvieną kadrą).
 CreateThread(function()
     while true do
-        if useQbTargetDoors then
-            local ped = PlayerPedId()
-            local pcoords = GetEntityCoords(ped)
-            if canUseServiceDoorsClient() and nearestPdDoorDist(pcoords) < 55.0 then
+        local waitMs = 900
+        if canUseServiceDoorsClient() then
+            local pcoords = GetEntityCoords(PlayerPedId())
+            local near = nearestPdDoorDist(pcoords)
+            if near < 28.0 then
+                waitMs = 200
                 for _, g in ipairs(doorGroups) do
                     if g.interact and canUseDoorGroupClient(g.id) then
-                        if #(pcoords - g.interact) < (g.interactDist or 2.5) + 6.5 then
+                        if #(pcoords - g.interact) < (g.interactDist or 2.5) + 4.0 then
                             drawGroupLockIcons(g, pcoords, isGroupLocked(g.id))
                         end
                     end
                 end
-                Wait(0)
-            else
-                Wait(600)
             end
+        end
+        Wait(waitMs)
+    end
+end)
+
+--- E mygtukas – visada veikia (qb-target papildomai, ne vietoj).
+CreateThread(function()
+    while true do
+        local ped = PlayerPedId()
+        local pcoords = GetEntityCoords(ped)
+        local doorNear = nearestPdDoorDist(pcoords)
+        if doorNear > 140.0 then
+            Wait(2000)
         else
-            local ped = PlayerPedId()
-            local pcoords = GetEntityCoords(ped)
-            if nearestPdDoorDist(pcoords) > 140.0 then
-                Wait(2000)
-            else
-                local zones = getPdDoorProximityZones()
-                local waitMs = 150
-                local reach = doorInteractRadius(Config.PdDoorToggleReach)
-
-                local bestByGroup = {}
-                local closestHit = nil
-
-                for _, z in ipairs(zones) do
-                    local d = #(pcoords - z.pos)
-                    if d <= reach then
-                        local prev = bestByGroup[z.groupId]
-                        if not prev or d < prev.d then
-                            bestByGroup[z.groupId] = { d = d, z = z }
-                        end
-                        if not closestHit or d < closestHit.d then
-                            closestHit = { gid = z.groupId, d = d, z = z }
-                        end
-                    end
+            local waitMs = 400
+            if canUseServiceDoorsClient() and doorNear < 35.0 then
+                waitMs = 100
+                if IsControlJustPressed(0, 38) then
+                    tryToggleNearestDoor(pcoords)
                 end
-
-                if next(bestByGroup) and canUseServiceDoorsClient() then
-                    for gid, hit in pairs(bestByGroup) do
-                        if canUseDoorGroupClient(gid) then
-                            local g = findDoorGroupById(gid)
-                            if g then
-                                drawGroupLockIcons(g, pcoords, isGroupLocked(gid))
-                            end
-                        end
-                    end
-                    if closestHit and canUseDoorGroupClient(closestHit.gid) and IsControlJustPressed(0, 38) then
-                        local now = GetGameTimer()
-                        if now - lastToggle > 650 then
-                            lastToggle = now
-                            TriggerServerEvent('fivempro_ltpd:server:togglePdDoorGroup', closestHit.gid)
-                        end
-                    end
-                else
-                    waitMs = 500
-                end
-
-                Wait(waitMs)
             end
+            Wait(waitMs)
         end
     end
 end)
@@ -1169,7 +1179,7 @@ CreateThread(function()
                     end
                 end
             end
-            Wait(anyNear and 2500 or 5000)
+            Wait(anyNear and 5000 or 8000)
         end
     end
 end)

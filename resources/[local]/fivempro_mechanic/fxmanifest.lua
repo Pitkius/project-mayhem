@@ -12,6 +12,7 @@ shared_scripts {
 
 client_scripts {
     'client/main.lua',
+    'client/doors.lua',
     'client/bay_menu.lua',
     'client/boss.lua',
     'client/vendor_debug.lua',
@@ -20,6 +21,7 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
+    'server/doors.lua',
 }
 
 dependency 'qb-core'

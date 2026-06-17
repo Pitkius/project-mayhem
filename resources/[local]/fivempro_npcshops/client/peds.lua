@@ -2,6 +2,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local spawnedBlips = {}
+local blipsByKey = {}
 local configured = {}
 local jobBoxZones = {}
 local barberPedByIndex = {}
@@ -33,6 +34,17 @@ local function createBlip(coords, blipCfg)
         EndTextCommandSetBlipName(blip)
     end
     spawnedBlips[#spawnedBlips + 1] = blip
+    return blip
+end
+
+local function ensureRegistryBlips()
+    for _, entry in ipairs(NpcRegistry.collect()) do
+        local key = NpcRegistry.entryKey(entry)
+        if entry.blip and entry.coords and not blipsByKey[key] then
+            local blip = createBlip(entry.coords, entry.blip)
+            if blip then blipsByKey[key] = blip end
+        end
+    end
 end
 
 local function loadAnimDict(dict)
@@ -219,10 +231,6 @@ local function configureShopPed(ent, meta, key)
     if meta.category == 'job' and not isJobMarkerRole(meta.role) then
         addJobBoxZone(meta)
     end
-
-    if meta.blip and meta.coords then
-        createBlip(meta.coords, meta.blip)
-    end
 end
 
 AddStateBagChangeHandler('npcShopMeta', nil, function(bagName, _, value)
@@ -237,6 +245,12 @@ AddStateBagChangeHandler('npcShopMeta', nil, function(bagName, _, value)
         if ent == 0 or not DoesEntityExist(ent) then return end
         configureShopPed(ent, value, bagName)
     end)
+end)
+
+--- Blipai visada matomi; NPC spawninasi tik arti (server proximity)
+CreateThread(function()
+    Wait(500)
+    ensureRegistryBlips()
 end)
 
 --- Jau egzistuojantys serverio NPC (state bag handler ne visada suveikia prisijungus vėliau)
@@ -257,14 +271,21 @@ CreateThread(function()
     end
 end)
 
+--- Retas atsarginis sync tik arti esantiems NPC (ne visam ped pool)
 CreateThread(function()
-    Wait(5000)
-    while GetResourceState('qb-target') ~= 'started' do Wait(250) end
-    for _, ped in ipairs(GetGamePool('CPed')) do
-        if DoesEntityExist(ped) and not IsPedAPlayer(ped) then
-            local meta = Entity(ped).state.npcShopMeta
-            if meta then
-                configureShopPed(ped, meta, ped)
+    Wait(12000)
+    while GetResourceState('qb-target') ~= 'started' do Wait(500) end
+    local ped = PlayerPedId()
+    local pc = GetEntityCoords(ped)
+    local reach = (Config.NpcProximity and Config.NpcProximity.spawnDistance or 72.0) + 15.0
+    for _, other in ipairs(GetGamePool('CPed')) do
+        if DoesEntityExist(other) and not IsPedAPlayer(other) then
+            local meta = Entity(other).state.npcShopMeta
+            if meta and not configured[other] then
+                local mc = meta.coords
+                if mc and #(pc - vector3(mc.x, mc.y, mc.z)) < reach then
+                    configureShopPed(other, meta, other)
+                end
             end
         end
     end
@@ -302,6 +323,9 @@ CreateThread(function()
                 pcall(function()
                     exports['qb-target']:RemoveTargetEntity(key)
                 end)
+                for idx, ent in pairs(barberPedByIndex) do
+                    if ent == key then barberPedByIndex[idx] = nil end
+                end
                 configured[key] = nil
             end
         end

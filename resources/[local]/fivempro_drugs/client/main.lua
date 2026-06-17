@@ -441,7 +441,7 @@ RegisterNUICallback('buyParts', function(_, cb)
     closeUi()
     CreateThread(function()
         Wait(300)
-        openMaterialShop()
+        openWeaponPartsMenu()
     end)
 end)
 
@@ -695,6 +695,17 @@ local WEAPON_PART_ITEMS = {
     'pistol_ammo', 'smg_ammo', 'rifle_ammo', 'shotgun_ammo',
 }
 
+local function resolveSharedItem(itemName)
+    if not itemName then return nil end
+    local key = tostring(itemName):lower()
+    if QBCore.Shared.Items[key] then return QBCore.Shared.Items[key] end
+    for _, info in pairs(QBCore.Shared.Items) do
+        if type(info) == 'table' and info.name and string.lower(info.name) == key then
+            return info
+        end
+    end
+end
+
 local function buyMaterialItem(itemName, amount)
     QBCore.Functions.TriggerCallback('fivempro_drugs:server:buyMaterial', function(res)
         if res and res.ok then
@@ -719,7 +730,7 @@ local function openWeaponPartsMenu()
             end
         end
         if row then
-            local shared = QBCore.Shared.Items[itemName]
+            local shared = resolveSharedItem(itemName)
             local label = shared and shared.label or itemName
             rows[#rows + 1] = {
                 header = ('%s — $%s'):format(label, row.price),

@@ -1524,7 +1524,9 @@ RegisterNetEvent('fivempro_ltpd:server:togglePdDoorGroup', function(groupId)
         return TriggerClientEvent('QBCore:Notify', src, 'Neturi teisės arba ne tarnyboje.', 'error')
     end
     local meta = LtpdPdDoorMeta[groupId]
-    if not meta then return end
+    if not meta then
+        return TriggerClientEvent('QBCore:Notify', src, 'Durų duomenys dar kraunami — palauk kelias sekundes.', 'error')
+    end
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return end
     local pc = GetEntityCoords(ped)

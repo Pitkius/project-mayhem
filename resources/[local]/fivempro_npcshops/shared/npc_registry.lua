@@ -80,3 +80,8 @@ function NpcRegistry.collect()
 
     return entries
 end
+
+function NpcRegistry.entryKey(entry)
+    if not entry then return 'unknown_0' end
+    return ('%s_%d'):format(entry.category or 'shop', tonumber(entry.index) or 0)
+end

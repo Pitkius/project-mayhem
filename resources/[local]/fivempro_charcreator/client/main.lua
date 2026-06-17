@@ -413,6 +413,9 @@ end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
+    if ShopSession and ShopSession.IsActive() then
+        ShopSession.Teardown(true)
+    end
     teardownScene()
 end)
 

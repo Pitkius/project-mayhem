@@ -1,33 +1,61 @@
---- Server-side shop NPC spawn — viena pozicija visam serveriui (OneSync)
-local spawned = {}
+--- Server-side shop NPC — spawn tik kai prie taško yra žaidėjas (proximity)
+local registry = {}
+local activeByKey = {}
+
+local function proximityCfg()
+    return Config.NpcProximity or {}
+end
+
+local function spawnDistance()
+    local p = proximityCfg()
+    return tonumber(p.spawnDistance) or 72.0
+end
+
+local function despawnDistance()
+    local p = proximityCfg()
+    local spawn = spawnDistance()
+    return tonumber(p.despawnDistance) or (spawn + 20.0)
+end
+
+local function proximityEnabled()
+    local p = proximityCfg()
+    return p.enabled ~= false
+end
 
 local function loadModel(model)
     if not model then return nil end
     return type(model) == 'string' and joaat(model) or model
 end
 
-local function spawnEntry(entry)
-    local c = entry.coords
-    if not c then return nil end
-    local hash = loadModel(entry.model or 'mp_m_shopkeep_01')
-    if not hash then return nil end
-
-    local x, y, z, h = c.x, c.y, c.z, c.w or 0.0
-    local ped = CreatePed(0, hash, x, y, z - 1.0, h, true, true)
-    if not ped or ped == 0 then return nil end
-
-    local timeout = GetGameTimer() + 5000
-    while not DoesEntityExist(ped) and GetGameTimer() < timeout do
-        Wait(0)
+local function playerCoordsList()
+    local out = {}
+    for _, src in ipairs(GetPlayers()) do
+        local sid = tonumber(src)
+        local ped = sid and GetPlayerPed(sid) or 0
+        if ped and ped ~= 0 then
+            local c = GetEntityCoords(ped)
+            out[#out + 1] = vector3(c.x, c.y, c.z)
+        end
     end
-    if not DoesEntityExist(ped) then return nil end
+    return out
+end
 
-    SetEntityCoords(ped, x, y, z - 1.0, false, false, false)
-    SetEntityHeading(ped, h)
-    FreezeEntityPosition(ped, true)
-    -- Invincible / blocking / scenario: client/peds.lua (setupPedEntity) — tik kliente
+local function anyPlayerWithin(coords, dist)
+    if not coords then return false end
+    local cx, cy, cz = coords.x + 0.0, coords.y + 0.0, coords.z + 0.0
+    local d2 = dist * dist
+    for _, p in ipairs(playerCoordsList()) do
+        local dx, dy, dz = p.x - cx, p.y - cy, p.z - cz
+        if (dx * dx + dy * dy + dz * dz) <= d2 then
+            return true
+        end
+    end
+    return false
+end
 
+local function buildMeta(entry, x, y, z)
     local meta = {
+        registryKey = NpcRegistry.entryKey(entry),
         category = entry.category,
         index = entry.index,
         scenario = entry.scenario,
@@ -43,32 +71,97 @@ local function spawnEntry(entry)
         meta.role = entry.role
         meta.label = entry.label
     end
+    return meta
+end
 
-    Entity(ped).state:set('npcShopMeta', meta, true)
-    spawned[#spawned + 1] = ped
+local function spawnEntry(entry)
+    local c = entry.coords
+    if not c then return nil end
+    local hash = loadModel(entry.model or 'mp_m_shopkeep_01')
+    if not hash then return nil end
+
+    local x, y, z, h = c.x, c.y, c.z, c.w or 0.0
+    local ped = CreatePed(0, hash, x, y, z, h, true, true)
+    if not ped or ped == 0 then return nil end
+
+    local timeout = GetGameTimer() + 5000
+    while not DoesEntityExist(ped) and GetGameTimer() < timeout do
+        Wait(0)
+    end
+    if not DoesEntityExist(ped) then return nil end
+
+    SetEntityCoords(ped, x, y, z, false, false, false)
+    SetEntityHeading(ped, h)
+    FreezeEntityPosition(ped, true)
+
+    Entity(ped).state:set('npcShopMeta', buildMeta(entry, x, y, z), true)
     return ped
 end
 
-local function spawnAll()
-    for _, ped in ipairs(spawned) do
-        if DoesEntityExist(ped) then DeleteEntity(ped) end
+local function despawnKey(key)
+    local row = activeByKey[key]
+    if not row then return end
+    local ped = row.ped
+    activeByKey[key] = nil
+    if ped and DoesEntityExist(ped) then
+        DeleteEntity(ped)
     end
-    spawned = {}
+end
 
-    for _, entry in ipairs(NpcRegistry.collect()) do
-        spawnEntry(entry)
+local function spawnAll()
+    for key in pairs(activeByKey) do
+        despawnKey(key)
+    end
+    for _, entry in ipairs(registry) do
+        local ped = spawnEntry(entry)
+        if ped then
+            activeByKey[NpcRegistry.entryKey(entry)] = { ped = ped, entry = entry }
+        end
+    end
+end
+
+local function tickProximity()
+    local spawnDist = spawnDistance()
+    local despawnDist = math.max(despawnDistance(), spawnDist + 5.0)
+
+    for _, entry in ipairs(registry) do
+        local key = NpcRegistry.entryKey(entry)
+        local active = activeByKey[key]
+        local nearSpawn = anyPlayerWithin(entry.coords, spawnDist)
+        local nearKeep = anyPlayerWithin(entry.coords, despawnDist)
+
+        if nearSpawn and not active then
+            local ped = spawnEntry(entry)
+            if ped then
+                activeByKey[key] = { ped = ped, entry = entry }
+            end
+        elseif active and not nearKeep then
+            despawnKey(key)
+        end
     end
 end
 
 CreateThread(function()
     Wait(1500)
-    spawnAll()
+    registry = NpcRegistry.collect()
+
+    if not proximityEnabled() then
+        spawnAll()
+        return
+    end
+
+    tickProximity()
+    local interval = tonumber(proximityCfg().checkIntervalMs) or 1800
+    while true do
+        Wait(interval)
+        tickProximity()
+    end
 end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    for _, ped in ipairs(spawned) do
-        if DoesEntityExist(ped) then DeleteEntity(ped) end
+    for key in pairs(activeByKey) do
+        despawnKey(key)
     end
-    spawned = {}
+    registry = {}
 end)

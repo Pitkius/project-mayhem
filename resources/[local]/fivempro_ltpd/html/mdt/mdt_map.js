@@ -210,8 +210,18 @@ window.MdtMap = (function () {
     if (s.marker) s.marker.setLatLng([s.curLat, s.curLng]);
   }
 
+  function removeSelfUnitMarker() {
+    if (selfSource == null) return;
+    const key = `u:${selfSource}`;
+    const s = unitState[key];
+    if (!s) return;
+    if (leafletMap) leafletMap.removeLayer(s.marker);
+    delete unitState[key];
+  }
+
   function upsertUnit(u, cfg) {
     if (selfSource != null && Number(u.source) === Number(selfSource)) {
+      removeSelfUnitMarker();
       return;
     }
     const key = unitKey(u);
@@ -401,7 +411,11 @@ window.MdtMap = (function () {
 
   function setSelfSource(src) {
     if (src == null || src === '') return;
-    selfSource = Number(src);
+    const next = Number(src);
+    if (next === selfSource) return;
+    if (selfSource != null) removeSelfUnitMarker();
+    selfSource = next;
+    removeSelfUnitMarker();
   }
 
   function localPlayerUnit() {
@@ -477,6 +491,7 @@ window.MdtMap = (function () {
       upsertCall(c, mapCfg);
     });
     removeStale(callState, keepC);
+    syncSelfMarker();
     syncSelectionStyles();
   }
 

@@ -230,9 +230,9 @@ Config.MechanicDealership = {
     },
     stations = {
         mech_ls = {
-            spawn = vector4(-347.5, -119.2, 38.95, 246.37),
-            preview = vector4(-349.1, -118.05, 38.95, 246.37),
-            camera = vector4(-352.0, -115.2, 40.35, 246.37),
+            spawn = vector4(125.9513, -3023.2095, 7.0409, 87.3217),
+            preview = vector4(126.1551, -3047.4792, 7.0409, 87.9093),
+            camera = vector4(118.5, -3035.5, 10.5, 265.0),
         },
     },
     MechanicCategoryLabels = {

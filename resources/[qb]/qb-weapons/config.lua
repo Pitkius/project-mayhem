@@ -1,6 +1,9 @@
 Config = Config or {}
 
-Config.ReloadTime = math.random(4000, 6000)
+Config.ReloadTime = math.random(2200, 3200)
+
+--- Leidžia bėgti/judėti perkrovos metu (viršutinės kūno dalies animacija, be sustojimo).
+Config.ReloadAllowMovement = true
 
 --[[
   Recoil: client/recoil.lua kelia kamerą + šoninį išsisklaidymą.
@@ -17,6 +20,30 @@ Config.RecoilHorizontalSpread = 0.40
 Config.RecoilPitchVariance = 0.078
 --- Jei ginklas recoils lentelėje turi 0 arba beveik 0 – vis tiek šiek tiek spyris (ne „lazeris“).
 Config.RecoilMinimumBase = 0.17
+
+--[[
+  Ginklo žalos daugiklis (client/damage.lua → SetWeaponDamageModifier).
+  FGC-9: ~13 kūno šūvių prieš pilną šarvą (200 HP + 100 armor = 300 pool).
+  Jei per stiprus/silpnas — keisk assumedBaseDamage (addon weapons.meta <Damage>) arba modifier ranka.
+]]
+Config.WeaponDamageBalance = {
+    weapon_fgc9 = {
+        targetBodyShotsFullArmor = 13,
+        playerHealthPool = 200,
+        playerArmorPool = 100,
+        assumedBaseDamage = 27.0,
+    },
+}
+
+--- Vienoda žala visoms kūno vietoms (galva / pilvas / kojos).
+--- Klientas: išjungia headshot kritus. Serveris: šūviams taiko fiksuotą weaponDamage.
+Config.DisableCriticalHits = true
+Config.FlatHitboxDamage = true
+--- Jei ginklo nėra WeaponDamageBalance — naudojama pagal ammo tipą arba ši reikšmė.
+Config.FlatBulletDamageDefault = 27.0
+--- Pasirinktinai: tikslus šūvio damage konkrečiam ginklui (weapon_pistol = 26.0, …).
+Config.FlatBulletDamage = {}
+Config.DefaultBulletDamage = {}
 
 Config.DurabilityBlockedWeapons = {
     'weapon_stungun',
@@ -134,6 +161,7 @@ Config.DurabilityMultiplier = {
     weapon_machinepistol         = 0.15,
     weapon_minismg               = 0.15,
     weapon_raycarbine            = 0.15,
+    weapon_fgc9                  = 0.15,
 
     -- Shotguns
     weapon_pumpshotgun           = 0.15,

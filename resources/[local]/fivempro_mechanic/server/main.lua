@@ -31,6 +31,28 @@ RegisterNetEvent('fivempro_mechanic:server:openStash', function()
     })
 end)
 
+RegisterNetEvent('fivempro_mechanic:server:openBossStash', function()
+    local src = source
+    if GetResourceState('qb-inventory') ~= 'started' then
+        return TriggerClientEvent('QBCore:Notify', src, 'qb-inventory neįjungtas.', 'error')
+    end
+    if not canBoss(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik vadovybei tarnyboje.', 'error')
+    end
+    local st = Config.BossStash
+    if not st or not st.coords then
+        return TriggerClientEvent('QBCore:Notify', src, 'Boso sandėlis nesukonfigūruotas.', 'error')
+    end
+    if not nearCoords(src, st.coords, 22.0) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo boso sandėlio.', 'error')
+    end
+    exports['qb-inventory']:OpenInventory(src, st.stashId, {
+        maxweight = st.maxweight,
+        slots = st.slots,
+        label = st.label,
+    })
+end)
+
 local function getGrade(src)
     local P = QBCore.Functions.GetPlayer(src)
     if not P then return -1 end

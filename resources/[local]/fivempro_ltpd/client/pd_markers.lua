@@ -476,7 +476,7 @@ CreateThread(function()
         end
 
         if nearInteract then
-            sleep = 0
+            sleep = 50
         elseif sleep > 200 then
             sleep = 500
         end

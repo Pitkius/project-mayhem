@@ -1,5 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local jobMapBlips = {}
+
 local function isMechanicJob()
     local P = QBCore.Functions.GetPlayerData()
     return P and P.job and P.job.name == Config.JobName
@@ -8,6 +10,54 @@ end
 local function isMechanicOnDuty()
     local P = QBCore.Functions.GetPlayerData()
     return P and P.job and P.job.name == Config.JobName and P.job.onduty
+end
+
+local function canBossMenu()
+    local P = QBCore.Functions.GetPlayerData()
+    if not P or not P.job or P.job.name ~= Config.JobName or not P.job.onduty then return false end
+    if P.job.isboss then return true end
+    return (P.job.grade and P.job.grade.level or 0) >= (Config.Permissions.boss_menu or 4)
+end
+
+local function setBlipLabel(blip, label)
+    if GetResourceState('fivempro_fonts') == 'started' then
+        exports['fivempro_fonts']:SetBlipName(blip, label)
+        return
+    end
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentString(label)
+    EndTextCommandSetBlipName(blip)
+end
+
+local function createMapBlip(entry)
+    local c = entry.coords
+    if not c then return nil end
+    local blip = AddBlipForCoord(c.x + 0.0, c.y + 0.0, c.z + 0.0)
+    SetBlipSprite(blip, entry.sprite or 446)
+    SetBlipDisplay(blip, 4)
+    SetBlipScale(blip, entry.scale or 0.72)
+    SetBlipColour(blip, entry.colour or 47)
+    SetBlipAsShortRange(blip, entry.shortRange ~= false)
+    setBlipLabel(blip, entry.label or 'Mechanikai')
+    return blip
+end
+
+local function clearJobMapBlips()
+    for _, blip in ipairs(jobMapBlips) do
+        if blip and DoesBlipExist(blip) then
+            RemoveBlip(blip)
+        end
+    end
+    jobMapBlips = {}
+end
+
+local function refreshJobMapBlips()
+    clearJobMapBlips()
+    if not Config.ShowMapBlips or not isMechanicJob() then return end
+    for _, entry in ipairs(Config.MapBlips or {}) do
+        local blip = createMapBlip(entry)
+        if blip then jobMapBlips[#jobMapBlips + 1] = blip end
+    end
 end
 
 RegisterNetEvent('fivempro_mechanic:client:toggleDuty', function()
@@ -37,6 +87,13 @@ RegisterNetEvent('fivempro_mechanic:client:openStash', function()
     TriggerServerEvent('fivempro_mechanic:server:openStash')
 end)
 
+RegisterNetEvent('fivempro_mechanic:client:openBossStash', function()
+    if not canBossMenu() then
+        return QBCore.Functions.Notify('Tik vadovybei tarnyboje.', 'error')
+    end
+    TriggerServerEvent('fivempro_mechanic:server:openBossStash')
+end)
+
 RegisterCommand('mechmdt', function()
     if not isMechanicOnDuty() then
         return QBCore.Functions.Notify('Tik mechanikams tarnyboje.', 'error')
@@ -54,14 +111,18 @@ RegisterCommand('mechcall', function(_, args)
     QBCore.Functions.Notify('Mechanikų iškvietimas sukurtas MDT sistemoje.', 'success')
 end, false)
 
-RegisterNetEvent('fivempro_mechanic:client:openCraftMenu', function()
+RegisterNetEvent('fivempro_mechanic:client:openCraftMenu', function(data)
     if not isMechanicOnDuty() then
         return QBCore.Functions.Notify('Tik mechanikams tarnyboje.', 'error')
     end
+    local craftKind = (data and data.craftKind) or 'tuning'
     local menu = {
-        { header = 'Tuningo detalių gamyba', txt = 'Gamyba naudoja žaliavas iš inventoriaus', isMenuHeader = true },
+        { header = craftKind == 'kits' and 'Remonto dalių gamyba' or 'Tuningo detalių gamyba', txt = 'Gamyba naudoja žaliavas iš inventoriaus', isMenuHeader = true },
     }
     for key, recipe in pairs(Config.TuningRecipes or {}) do
+        local isKit = key:sub(-4) == '_kit' or key == 'turbo_kit'
+        if craftKind == 'kits' and not isKit then goto continue end
+        if craftKind == 'tuning' and isKit then goto continue end
         local req = {}
         for item, cnt in pairs(recipe.materials or {}) do
             req[#req + 1] = ('%s x%s'):format(item, cnt)
@@ -84,6 +145,10 @@ RegisterNetEvent('fivempro_mechanic:client:openCraftMenu', function()
                 end,
             },
         }
+        ::continue::
+    end
+    if #menu < 2 then
+        return QBCore.Functions.Notify('Nėra receptų šiam stalui.', 'error')
     end
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end)
@@ -146,15 +211,35 @@ RegisterNetEvent('fivempro_mechanic:client:applyOutfit', function(data)
 end)
 
 CreateThread(function()
-    local b = Config.Base
-    local bl = Config.Blip
-    local mark = AddBlipForCoord(b.x, b.y, b.z)
-    SetBlipSprite(mark, bl.sprite)
+    local bl = Config.Blip or {}
+    local c = bl.coords or (Config.GarageHub and Config.GarageHub.coords)
+    if not c then return end
+    local mark = AddBlipForCoord(c.x + 0.0, c.y + 0.0, c.z + 0.0)
+    SetBlipSprite(mark, bl.sprite or 446)
     SetBlipDisplay(mark, 4)
-    SetBlipScale(mark, bl.scale)
-    SetBlipColour(mark, bl.colour)
+    SetBlipScale(mark, bl.scale or 0.85)
+    SetBlipColour(mark, bl.colour or 47)
     SetBlipAsShortRange(mark, true)
-    exports['fivempro_fonts']:SetBlipName(mark, bl.label)
+    setBlipLabel(mark, bl.label or 'Mechanikų dirbtuvės')
+end)
+
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    refreshJobMapBlips()
+end)
+
+RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
+    refreshJobMapBlips()
+end)
+
+AddEventHandler('onResourceStart', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    Wait(500)
+    refreshJobMapBlips()
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    clearJobMapBlips()
 end)
 
 CreateThread(function()
@@ -190,6 +275,19 @@ CreateThread(function()
             TriggerEvent('fivempro_mechanic:client:openStash')
         end,
     })
+    local bs = Config.BossStash
+    if bs and bs.coords then
+        addMarker({
+            coords = bs.coords,
+            kind = 'stash',
+            job = Config.JobName,
+            label = bs.label or 'Boso sandėlis',
+            canUse = canBossMenu,
+            onPress = function()
+                TriggerEvent('fivempro_mechanic:client:openBossStash')
+            end,
+        })
+    end
 end)
 
 CreateThread(function()
@@ -234,15 +332,36 @@ CreateThread(function()
                 icon = 'fas fa-user-tie',
                 label = 'Vadovybė (įdarb./rangai)',
                 canInteract = function()
-                    local P = QBCore.Functions.GetPlayerData()
-                    if not P or not P.job or P.job.name ~= Config.JobName or not P.job.onduty then return false end
-                    if P.job.isboss then return true end
-                    return (P.job.grade and P.job.grade.level or 0) >= (Config.Permissions.boss_menu or 4)
+                    return canBossMenu()
                 end,
             },
         },
         distance = 3.4,
     })
+
+    local bs = Config.BossStash
+    if bs and bs.coords then
+        exports['qb-target']:AddBoxZone('fivempro_mech_boss_stash', bs.coords, 1.75, 1.75, {
+            name = 'fivempro_mech_boss_stash',
+            heading = bs.heading or 0.0,
+            debugPoly = false,
+            minZ = bs.coords.z - 1.1,
+            maxZ = bs.coords.z + 2.2,
+        }, {
+            options = {
+                {
+                    type = 'client',
+                    event = 'fivempro_mechanic:client:openBossStash',
+                    icon = 'fas fa-box-open',
+                    label = bs.label or 'Boso sandėlis',
+                    canInteract = function()
+                        return canBossMenu()
+                    end,
+                },
+            },
+            distance = 2.6,
+        })
+    end
 
     exports['qb-target']:AddBoxZone('fivempro_mech_duty', vector3(Config.Base.x, Config.Base.y, Config.Base.z), 1.85, 1.85, {
         name = 'fivempro_mech_duty',
@@ -290,6 +409,7 @@ CreateThread(function()
     end
 
     for i, st in ipairs(Config.CraftingStations or {}) do
+        local craftKind = st.craftKind or 'tuning'
         exports['qb-target']:AddBoxZone(('fivempro_mech_craft_%s'):format(i), st.coords, st.length or 1.8, st.width or 1.8, {
             name = ('fivempro_mech_craft_%s'):format(i),
             heading = st.heading or 0.0,
@@ -303,6 +423,7 @@ CreateThread(function()
                     event = 'fivempro_mechanic:client:openCraftMenu',
                     icon = 'fas fa-industry',
                     label = st.label or 'Tuningo dalių staklės',
+                    craftKind = craftKind,
                     canInteract = function()
                         return isMechanicOnDuty()
                     end,

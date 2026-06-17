@@ -45,7 +45,7 @@ local function startControlLock()
                 DisableControlAction(2, ctrl, true)
             end
             DisablePlayerFiring(playerId, true)
-            if ped ~= 0 then
+            if ped ~= 0 and rotateThreadActive then
                 FreezeEntityPosition(ped, true)
                 clearCoverState(ped)
             end
@@ -53,6 +53,11 @@ local function startControlLock()
                 clearCoverState(targetPed)
             end
         end
+        local ped = PlayerPedId()
+        if ped ~= 0 and DoesEntityExist(ped) then
+            FreezeEntityPosition(ped, false)
+        end
+        SetPlayerControl(PlayerId(), true, 0)
         restoreCoverAbility()
         controlLockThread = false
     end)
@@ -179,12 +184,20 @@ end
 
 function CharCamera.disable()
     rotateThreadActive = false
+
+    local deadline = GetGameTimer() + 600
+    while controlLockThread and GetGameTimer() < deadline do
+        Wait(0)
+    end
+
     restoreCoverAbility()
 
     local ped = PlayerPedId()
     if ped and ped ~= 0 and DoesEntityExist(ped) then
+        ClearPedTasks(ped)
         FreezeEntityPosition(ped, false)
     end
+    SetPlayerControl(PlayerId(), true, 0)
 
     CharCamera.clearShopAnchor()
     CharCamera.setTargetPed(0)

@@ -12,6 +12,38 @@ function linearFit(xs, ys) {
   return { intercept, slope };
 }
 
+function solveLs(rows, target) {
+  const m = 3;
+  const ata = Array.from({ length: m }, () => Array(m).fill(0));
+  const atb = Array(m).fill(0);
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const y = target[i];
+    for (let j = 0; j < m; j++) {
+      atb[j] += r[j] * y;
+      for (let k = 0; k < m; k++) ata[j][k] += r[j] * r[k];
+    }
+  }
+  const A = ata.map((row, i) => [...row, atb[i]]);
+  for (let c = 0; c < m; c++) {
+    let p = c;
+    for (let r = c + 1; r < m; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+    [A[c], A[p]] = [A[p], A[c]];
+    const d = A[c][c];
+    for (let r = c + 1; r < m; r++) {
+      const f = A[r][c] / d;
+      for (let j = c; j <= m; j++) A[r][j] -= f * A[c][j];
+    }
+  }
+  const x = Array(m);
+  for (let i = m - 1; i >= 0; i--) {
+    let s = A[i][m];
+    for (let j = i + 1; j < m; j++) s -= A[i][j] * x[j];
+    x[i] = s / A[i][i];
+  }
+  return x;
+}
+
 // u = 0 vakarai (kairė), u = 1 rytai (dešinė); v = 0 šiaurė (viršus), v = 1 pietūs (apačia)
 const landmarks = [
   { name: "Paleto PD", gx: -448.15, gy: 6012.0, u: 0.418, v: 0.072 },
@@ -23,42 +55,49 @@ const landmarks = [
   { name: "LSIA", gx: -1037.0, gy: -2737.0, u: 0.276, v: 0.874 },
 ];
 
-const u = [], v = [], gx = [], gy = [];
-landmarks.forEach((p) => { u.push(p.u); v.push(p.v); gx.push(p.gx); gy.push(p.gy); });
-const fitX = linearFit(u, gx);
-const fitY = linearFit(v, gy);
+const minX = -4000;
+const maxX = 4500;
+const minY = -4000;
+const maxY = 6625;
+const rangeX = maxX - minX;
+const rangeY = maxY - minY;
 
-const coordMinX = fitX.intercept;
-const coordMaxX = fitX.intercept + fitX.slope;
-const coordMaxY = fitY.intercept;
-const coordMinY = fitY.intercept + fitY.slope;
+const rows = landmarks.map((p) => [p.gx, p.gy, 1]);
+const affineLng = solveLs(rows, landmarks.map((p) => minX + p.u * rangeX));
+const affineLat = solveLs(rows, landmarks.map((p) => maxY - p.v * rangeY));
 
-function toLatLng(x, y) {
-  const tX = (x - coordMinX) / (coordMaxX - coordMinX);
-  const tY = (y - coordMinY) / (coordMaxY - coordMinY);
-  const lat = coordMinY + tY * (coordMaxY - coordMinY);
-  const lng = coordMinX + tX * (coordMaxX - coordMinX);
-  return { lat, lng, tX, tY };
+function affineLatLng(gx, gy) {
+  return {
+    lng: affineLng[0] * gx + affineLng[1] * gy + affineLng[2],
+    lat: affineLat[0] * gx + affineLat[1] * gy + affineLat[2],
+  };
 }
 
-console.log("coordMinX", coordMinX.toFixed(2), "coordMaxX", coordMaxX.toFixed(2));
-console.log("coordMinY", coordMinY.toFixed(2), "coordMaxY", coordMaxY.toFixed(2));
-console.log("");
-const offsetX = -32.0;
-const offsetY = -38.0;
-const rangeX = coordMaxX - coordMinX;
-const rangeY = coordMaxY - coordMinY;
-
+console.log("Affine calibration (MDT projection=affine):");
+let sumSq = 0;
+let maxErr = 0;
 for (const p of landmarks) {
-  const r = toLatLng(p.gx, p.gy);
-  const vImg = 1 - r.tY;
-  const errXm = (r.tX - p.u) * rangeX - offsetX;
-  const errYm = (vImg - p.v) * rangeY - offsetY;
+  const ll = affineLatLng(p.gx, p.gy);
+  const tgtLng = minX + p.u * rangeX;
+  const tgtLat = maxY - p.v * rangeY;
+  const err = Math.hypot(ll.lng - tgtLng, ll.lat - tgtLat);
+  sumSq += err * err;
+  if (err > maxErr) maxErr = err;
   console.log(
     p.name,
-    `target u/v ${p.u}/${p.v}`,
-    `got ${r.tX.toFixed(3)}/${vImg.toFixed(3)}`,
-    `err ${errXm.toFixed(1)}m / ${errYm.toFixed(1)}m`,
+    `err ${err.toFixed(1)}m`,
     `game ${p.gx},${p.gy}`,
+    `target lng/lat ${tgtLng.toFixed(1)}/${tgtLat.toFixed(1)}`,
+    `got ${ll.lng.toFixed(1)}/${ll.lat.toFixed(1)}`,
   );
 }
+console.log("");
+console.log("rms", Math.sqrt(sumSq / landmarks.length).toFixed(1), "m");
+console.log("max", maxErr.toFixed(1), "m");
+console.log("");
+console.log("Identity at MRPD for comparison:");
+const mrpd = landmarks.find((p) => p.name === "MRPD");
+const tgtLng = minX + mrpd.u * rangeX;
+const tgtLat = maxY - mrpd.v * rangeY;
+const idErr = Math.hypot(mrpd.gx - tgtLng, mrpd.gy - tgtLat);
+console.log(`MRPD identity err ${idErr.toFixed(1)}m (lng ${(mrpd.gx - tgtLng).toFixed(1)} / lat ${(mrpd.gy - tgtLat).toFixed(1)})`);

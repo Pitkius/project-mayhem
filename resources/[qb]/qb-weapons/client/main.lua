@@ -8,6 +8,34 @@ local lastSyncedAmmo = nil
 local lastAmmoSyncAt = 0
 local reloadGuardUntil = 0
 local isReloading = false
+local activeReloadAnim = nil
+
+local function loadAnimDict(dict)
+    if not dict or dict == '' or HasAnimDictLoaded(dict) then return true end
+    RequestAnimDict(dict)
+    local deadline = GetGameTimer() + 3000
+    while not HasAnimDictLoaded(dict) and GetGameTimer() < deadline do
+        Wait(10)
+    end
+    return HasAnimDictLoaded(dict)
+end
+
+local function getReloadAnimForWeapon(weaponHash)
+    local group = GetWeapontypeGroup(weaponHash)
+    if group == `GROUP_SMG` or group == `GROUP_MG` then
+        return 'weapons@submg@', 'reload_aim'
+    end
+    if group == `GROUP_RIFLE` then
+        return 'weapons@rifle@lo@carbine_str', 'reload_aim'
+    end
+    if group == `GROUP_SHOTGUN` then
+        return 'weapons@shotgun@', 'reload_aim'
+    end
+    if group == `GROUP_SNIPER` then
+        return 'weapons@rifle@lo@carbine_str', 'reload_aim'
+    end
+    return 'weapons@pistol@', 'reload_aim'
+end
 
 local AmmoItemByType = {
     AMMO_PISTOL = { 'pistol_ammo', 'pistolammo' },
@@ -201,12 +229,38 @@ local function getReloadWaitMs()
     return 2800
 end
 
---- GTA rodo perkrovos animaciją tik kai rezerve yra kulkų — laikinai pridedam, po animacijos atstatom būseną.
+--- Sustabdo tik perkrovos animaciją — ne visą ped judėjimą (ClearPedTasks sustabdytų bėgimą).
 local function stopReloadAnimation(ped)
     if not ped or ped == 0 or not DoesEntityExist(ped) then return end
-    ClearPedTasks(ped)
-    ClearPedSecondaryTask(ped)
+    if activeReloadAnim then
+        StopAnimTask(ped, activeReloadAnim.dict, activeReloadAnim.anim, 1.0)
+        activeReloadAnim = nil
+    end
     SetPedCurrentWeaponVisible(ped, true, false, false, false)
+end
+
+local function playMobileReloadAnimation(ped, weaponHash, durationMs)
+    local dict, anim = getReloadAnimForWeapon(weaponHash)
+    if not loadAnimDict(dict) then
+        Wait(math.min(900, durationMs))
+        return
+    end
+
+    activeReloadAnim = { dict = dict, anim = anim }
+    SetCurrentPedWeapon(ped, weaponHash, true)
+    TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, 51, 0.0, false, false, false)
+
+    local deadline = GetGameTimer() + durationMs
+    while GetGameTimer() < deadline do
+        if not DoesEntityExist(ped) then break end
+        if not IsEntityPlayingAnim(ped, dict, anim, 3) and (GetGameTimer() + 350) < deadline then
+            TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, 51, 0.0, false, false, false)
+        end
+        if IsPedRunning(ped) or IsPedSprinting(ped) then
+            SetPedMoveRateOverride(ped, 1.0)
+        end
+        Wait(0)
+    end
 end
 
 local function playWeaponReloadAnimation(ped, weaponHash, bulletsToLoad)
@@ -216,6 +270,23 @@ local function playWeaponReloadAnimation(ped, weaponHash, bulletsToLoad)
     end
 
     bulletsToLoad = math.max(0, tonumber(bulletsToLoad) or 0)
+    local durationMs = getReloadWaitMs()
+    clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    SetCurrentPedWeapon(ped, weaponHash, true)
+
+    if IsPedInAnyVehicle(ped, false) then
+        Wait(math.min(1200, durationMs))
+        stopReloadAnimation(ped)
+        return
+    end
+
+    if Config.ReloadAllowMovement ~= false then
+        playMobileReloadAnimation(ped, weaponHash, durationMs)
+        stopReloadAnimation(ped)
+        clearPedWeaponInfiniteAmmo(ped, weaponHash)
+        return
+    end
+
     local hasClip, clipNow = GetAmmoInClip(ped, weaponHash)
     clipNow = hasClip and (tonumber(clipNow) or 0) or 0
     local totalBefore = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
@@ -225,32 +296,25 @@ local function playWeaponReloadAnimation(ped, weaponHash, bulletsToLoad)
         SetPedAmmo(ped, weaponHash, totalBefore + bulletsToLoad)
     end
 
-    clearPedWeaponInfiniteAmmo(ped, weaponHash)
-    SetCurrentPedWeapon(ped, weaponHash, true)
-
     local sawReload = false
-    if not IsPedInAnyVehicle(ped, false) then
-        MakePedReload(ped)
-        if not IsPedReloading(ped) then
-            TaskReloadWeapon(ped, true)
-        end
+    MakePedReload(ped)
+    if not IsPedReloading(ped) then
+        TaskReloadWeapon(ped, true)
+    end
 
-        local deadline = GetGameTimer() + getReloadWaitMs()
-        while GetGameTimer() < deadline do
-            if not DoesEntityExist(ped) then break end
-            if IsPedReloading(ped) then
-                sawReload = true
-            elseif sawReload then
-                break
-            end
-            Wait(0)
+    local deadline = GetGameTimer() + durationMs
+    while GetGameTimer() < deadline do
+        if not DoesEntityExist(ped) then break end
+        if IsPedReloading(ped) then
+            sawReload = true
+        elseif sawReload then
+            break
         end
-    else
-        Wait(math.min(1200, getReloadWaitMs()))
+        Wait(0)
     end
 
     if not sawReload then
-        Wait(math.min(900, getReloadWaitMs()))
+        Wait(math.min(900, durationMs))
     end
 
     stopReloadAnimation(ped)
@@ -643,6 +707,10 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             print(('[qb-weapons] reload error: %s'):format(tostring(err)))
             stopReloadAnimation(PlayerPedId())
             reloadGuardUntil = 0
+        end
+        local p = PlayerPedId()
+        if p and p ~= 0 and DoesEntityExist(p) then
+            SetPedMoveRateOverride(p, 0.0)
         end
         isReloading = false
     end)

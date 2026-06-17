@@ -22,16 +22,46 @@ local function getDistanceThreshold(dist)
     return math.min(maxThreshold, base + dist * scale)
 end
 
+local function isAttachedToPed(entityHit, ped)
+    if not entityHit or entityHit == 0 or not ped or ped == 0 then
+        return false
+    end
+    local current = entityHit
+    for _ = 1, 5 do
+        if current == ped then
+            return true
+        end
+        local parent = GetEntityAttachedTo(current)
+        if not parent or parent == 0 then
+            break
+        end
+        current = parent
+    end
+    return false
+end
+
+local function isDeadPedEntity(entityHit)
+    return entityHit
+        and entityHit ~= 0
+        and DoesEntityExist(entityHit)
+        and IsEntityAPed(entityHit)
+        and IsPedDeadOrDying(entityHit, true)
+end
+
 local function isIgnoredHitEntity(entityHit, ped, weaponEnt)
     if not entityHit or entityHit == 0 or not DoesEntityExist(entityHit) then
         return true
     end
 
-    if entityHit == ped then
+    if entityHit == ped or isAttachedToPed(entityHit, ped) then
         return true
     end
 
-    if weaponEnt and weaponEnt ~= 0 and entityHit == weaponEnt then
+    if weaponEnt and weaponEnt ~= 0 and (entityHit == weaponEnt or isAttachedToPed(entityHit, weaponEnt)) then
+        return true
+    end
+
+    if Config.IgnoreDeadPedHits ~= false and isDeadPedEntity(entityHit) then
         return true
     end
 
@@ -106,7 +136,12 @@ local function traceAlongDirection(origin, direction, maxDistance, ped, weaponEn
         end
 
         if isIgnoredHitEntity(entityHit, ped, weaponEnt) then
-            local advance = math.max(step, #(cursor - endCoords) + step)
+            local selfSkip = Config.SelfBodyAdvance or 0.5
+            local segLen = #(cursor - endCoords)
+            local advance = math.max(step, segLen + step)
+            if entityHit == ped or isAttachedToPed(entityHit, ped) then
+                advance = math.max(advance, selfSkip)
+            end
             traveled = traveled + advance
             cursor = cursor + dir * advance
             if traveled >= maxDistance - 0.05 then
@@ -134,24 +169,23 @@ local function getShootOrigins(ped, direction)
 
     local weaponEnt = GetCurrentPedWeaponEntityIndex(ped)
     if weaponEnt and weaponEnt ~= 0 and DoesEntityExist(weaponEnt) then
-        origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, 0.55, 0.03)
-        origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, 0.38, 0.06)
+        local offsets = Config.WeaponMuzzleOffsets or { 0.82, 0.62, 0.42 }
+        for _, yOff in ipairs(offsets) do
+            origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, yOff, 0.03)
+        end
+        if Config.WeaponOnlyOrigins ~= false then
+            return origins, weaponEnt
+        end
     end
 
     local hand = GetPedBoneCoords(ped, 57005, 0.0, 0.0, 0.0)
-    origins[#origins + 1] = hand + dir * 0.52
-    origins[#origins + 1] = hand + dir * 0.36 + vector3(0.0, 0.0, 0.12)
+    origins[#origins + 1] = hand + dir * 0.58
+    origins[#origins + 1] = hand + dir * 0.42 + vector3(0.0, 0.0, 0.08)
 
     local rhBone = GetPedBoneIndex(ped, 28422)
     if rhBone ~= -1 then
-        origins[#origins + 1] = GetWorldPositionOfEntityBone(ped, rhBone) + dir * 0.4
+        origins[#origins + 1] = GetWorldPositionOfEntityBone(ped, rhBone) + dir * 0.48
     end
-
-    local head = GetPedBoneCoords(ped, 31086, 0.06, 0.03, 0.0)
-    origins[#origins + 1] = head + dir * 0.14
-
-    local shoulder = GetPedBoneCoords(ped, 40269, 0.04, 0.02, 0.0)
-    origins[#origins + 1] = shoulder + dir * 0.2
 
     return origins, weaponEnt
 end
@@ -185,8 +219,8 @@ local function isClearWeaponPath(origin, direction, camDistance, ped, weaponEnt,
         return true
     end
 
-    if weaponEntity and weaponEntity ~= 0 and DoesEntityExist(weaponEntity) and IsEntityAPed(weaponEntity) then
-        return weaponDist >= camDistance - threshold
+    if Config.IgnoreDeadPedHits ~= false and isDeadPedEntity(weaponEntity) then
+        return true
     end
 
     return weaponDist >= camDistance - threshold
@@ -235,7 +269,10 @@ local function isGhostPeeking(ped)
         return false
     end
 
-    if camEntity and camEntity ~= 0 and DoesEntityExist(camEntity) and IsEntityAPed(camEntity) and not IsPedDeadOrDying(camEntity, true) then
+    if camEntity and camEntity ~= 0 and DoesEntityExist(camEntity) and IsEntityAPed(camEntity) then
+        if Config.IgnoreDeadPedHits ~= false and IsPedDeadOrDying(camEntity, true) then
+            return false
+        end
         -- Kamera mato gyvą pedą — tikriname ar ginklas gali pasiekti tą patį atstumą.
     elseif isPenetrableMaterial(camMaterial) then
         return false
@@ -251,7 +288,10 @@ local function isGhostPeeking(ped)
         end
     end
 
-    local minClear = Config.MinClearPaths or 2
+    local minClear = Config.MinClearPaths or 1
+    if weaponEnt and weaponEnt ~= 0 then
+        minClear = Config.MinClearPathsWithWeapon or minClear
+    end
     return clearPaths < minClear
 end
 

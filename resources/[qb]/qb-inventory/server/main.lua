@@ -433,7 +433,7 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
     TriggerEvent('qb-shops:server:UpdateShopItems', shop, itemInfo, amount)
     local freshItems = Player.PlayerData.items
     TriggerClientEvent('qb-inventory:client:updateInventory', source, freshItems)
-    local sharedItem = QBCore.Shared.Items[itemName]
+    local sharedItem = exports['qb-inventory']:ResolveSharedItem(itemName)
     if sharedItem then
         TriggerClientEvent('qb-inventory:client:ItemBox', source, sharedItem, 'add', amount)
     end
