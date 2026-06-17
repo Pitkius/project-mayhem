@@ -117,11 +117,53 @@ function field(label, html) {
   return `<div class="field">${label ? `<label>${label}</label>` : ''}${html}</div>`;
 }
 
+function sliderControlHtml(inputHtml) {
+  return `<div class="slider-with-arrows">
+    <button type="button" class="btn ghost sm slider-arrow" data-dir="-1" aria-label="Atgal">
+      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+    </button>
+    ${inputHtml}
+    <button type="button" class="btn ghost sm slider-arrow" data-dir="1" aria-label="Pirmyn">
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+    </button>
+  </div>`;
+}
+
+function stepRangeInput(inp, delta) {
+  const min = parseFloat(inp.min);
+  const max = parseFloat(inp.max);
+  const step = parseFloat(inp.step) || 1;
+  let val = parseFloat(inp.value) + delta * step;
+  if (!Number.isFinite(val)) val = min;
+  val = Math.min(max, Math.max(min, val));
+  if (step < 1) {
+    const decimals = (String(step).split('.')[1] || '').length;
+    val = parseFloat(val.toFixed(decimals));
+  } else {
+    val = Math.round(val);
+  }
+  inp.value = String(val);
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function bindSliderArrows(container) {
+  container.querySelectorAll('.slider-arrow').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.preventDefault();
+      const wrap = btn.closest('.slider-with-arrows');
+      const inp = wrap?.querySelector('input[type="range"]');
+      if (!inp) return;
+      stepRangeInput(inp, parseInt(btn.dataset.dir, 10) || 0);
+    };
+  });
+}
+
 function slider(label, key, obj, min, max, step) {
   const v = obj[key];
+  const dec = step < 1 ? 2 : 0;
   return `<div class="slider-row">
-    <label><span>${label}</span><span>${Number(v).toFixed(step < 1 ? 2 : 0)}</span></label>
-    <input type="range" min="${min}" max="${max}" step="${step}" value="${v}" data-k="${key}" class="sl" />
+    <label><span>${label}</span><span class="slider-val">${Number(v).toFixed(dec)}</span></label>
+    ${sliderControlHtml(`<input type="range" min="${min}" max="${max}" step="${step}" value="${v}" data-k="${key}" class="sl" />`)}
   </div>`;
 }
 
@@ -131,11 +173,12 @@ function bindSliders(container, obj) {
       const k = inp.dataset.k;
       obj[k] = parseFloat(inp.value);
       const dec = parseFloat(inp.step) < 1 ? 2 : 0;
-      const valSpan = inp.parentElement?.querySelector('label span:last-child');
+      const valSpan = inp.closest('.slider-row')?.querySelector('.slider-val');
       if (valSpan) valSpan.textContent = parseFloat(inp.value).toFixed(dec);
       syncAppearance();
     };
   });
+  bindSliderArrows(container);
 }
 
 function parseCurrentSkin() {
@@ -192,23 +235,25 @@ function bindClothingSliders(container) {
       });
     };
   });
+  bindSliderArrows(container);
+}
+
+function clothingSliderRow(label, valueClass, part, min, max, value) {
+  return `<div class="slider-row">
+    <label><span>${label}</span><span class="${valueClass}">${value}</span></label>
+    ${sliderControlHtml(`<input type="range" class="sl-cloth" data-part="${part}" min="${min}" max="${max}" step="1" value="${value}" />`)}
+  </div>`;
 }
 
 function renderClothingShop(items) {
   const skin = parseCurrentSkin();
-  let html = '<p class="muted shop-hint">Visi drabužių variantai — slankikliai. ← → suka kamerą.</p><div class="field-grid">';
+  let html = '<p class="muted shop-hint">Drabužiai — slankiklis arba ← → mygtukai. Klaviatūros rodyklės suka kamerą (ne fokusuotame lauke).</p><div class="field-grid">';
   items.forEach((it) => {
     const minItem = it.minItem ?? 0;
     html += `<div class="field full clothing-row" data-key="${esc(it.key)}">
       <label>${esc(it.label)}</label>
-      <div class="slider-row">
-        <label><span>Modelis</span><span class="cv-item">${minItem}</span></label>
-        <input type="range" class="sl-cloth" data-part="item" min="${minItem}" max="${it.maxItem || 100}" step="1" value="${minItem}" />
-      </div>
-      <div class="slider-row">
-        <label><span>Spalva / tekstūra</span><span class="cv-tex">0</span></label>
-        <input type="range" class="sl-cloth" data-part="texture" min="0" max="${Math.max(0, it.maxTex ?? 0)}" step="1" value="0" />
-      </div>
+      ${clothingSliderRow('Modelis', 'cv-item', 'item', minItem, it.maxItem || 100, minItem)}
+      ${clothingSliderRow('Spalva / tekstūra', 'cv-tex', 'texture', 0, Math.max(0, it.maxTex ?? 0), 0)}
     </div>`;
   });
   html += '</div>';
@@ -228,7 +273,15 @@ function renderClothingShop(items) {
   bindClothingSliders(stepBody);
 }
 
-let tattooState = { zone: 'ZONE_TORSO', catalog: [], owned: [], filter: '' };
+let tattooState = { zone: 'ZONE_TORSO', catalog: [], owned: [], filter: '', catalogIndex: 0 };
+
+function tattooFilteredCatalog() {
+  const q = (tattooState.filter || '').trim().toLowerCase();
+  return tattooState.catalog.filter((t) => {
+    if (!q) return true;
+    return (t.label || '').toLowerCase().includes(q) || (t.name || '').toLowerCase().includes(q);
+  });
+}
 
 function tattooOwnedInZone(zone) {
   return tattooState.owned.filter((t) => t.zone === zone);
@@ -253,21 +306,95 @@ function renderTattooOwned(zone) {
 }
 
 function renderTattooCatalogList(zone) {
-  const q = (tattooState.filter || '').trim().toLowerCase();
-  const rows = tattooState.catalog.filter((t) => {
-    if (!q) return true;
-    return (t.label || '').toLowerCase().includes(q) || (t.name || '').toLowerCase().includes(q);
-  });
+  const rows = tattooFilteredCatalog();
   if (!rows.length) {
     return '<p class="muted">Nieko nerasta.</p>';
   }
-  return `<div class="tattoo-list">${rows.map((t) => {
+  const activeIdx = Math.min(Math.max(0, tattooState.catalogIndex), rows.length - 1);
+  tattooState.catalogIndex = activeIdx;
+  return `<div class="tattoo-list">${rows.map((t, i) => {
     const active = tattooIsOwned(t.name, zone) ? ' active' : '';
-    return `<button type="button" class="tattoo-item${active}" data-tattoo-name="${esc(t.name)}">
+    const selected = i === activeIdx ? ' selected' : '';
+    return `<button type="button" class="tattoo-item${active}${selected}" data-tattoo-name="${esc(t.name)}" data-tattoo-index="${i}">
       <span class="tattoo-item-label">${esc(t.label || t.name)}</span>
       <span class="tattoo-item-state">${active ? 'Uždėta' : 'Uždėti'}</span>
     </button>`;
   }).join('')}</div>`;
+}
+
+function renderTattooNavigator(zone) {
+  const rows = tattooFilteredCatalog();
+  if (!rows.length) {
+    return '<p class="muted tattoo-nav-empty">Šioje zonoje katalogas tuščias.</p>';
+  }
+  const idx = Math.min(Math.max(0, tattooState.catalogIndex), rows.length - 1);
+  tattooState.catalogIndex = idx;
+  const t = rows[idx];
+  const owned = tattooIsOwned(t.name, zone);
+  return `<div class="tattoo-navigator">
+    <button type="button" class="btn ghost sm" id="tattooPrev" aria-label="Ankstesnė tatuiruotė">
+      <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+    </button>
+    <div class="tattoo-nav-center">
+      <span class="tattoo-nav-counter">${idx + 1} / ${rows.length}</span>
+      <strong class="tattoo-nav-name">${esc(t.label || t.name)}</strong>
+    </div>
+    <button type="button" class="btn ghost sm" id="tattooNext" aria-label="Kita tatuiruotė">
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="btn primary sm" id="tattooApply">${owned ? 'Nuimti' : 'Uždėti'}</button>
+  </div>`;
+}
+
+function refreshTattooNavigator(zone) {
+  const nav = stepBody.querySelector('#tattooNavigator');
+  if (nav) {
+    nav.innerHTML = renderTattooNavigator(zone);
+    bindTattooNavigator(zone);
+  }
+}
+
+function highlightTattooCatalogSelection() {
+  const rows = tattooFilteredCatalog();
+  const idx = Math.min(Math.max(0, tattooState.catalogIndex), Math.max(0, rows.length - 1));
+  tattooState.catalogIndex = idx;
+  stepBody.querySelectorAll('.tattoo-item[data-tattoo-index]').forEach((btn) => {
+    const selected = parseInt(btn.dataset.tattooIndex, 10) === idx;
+    btn.classList.toggle('selected', selected);
+    if (selected) btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+  refreshTattooNavigator(tattooState.zone);
+}
+
+function stepTattooCatalog(delta) {
+  const rows = tattooFilteredCatalog();
+  if (!rows.length) return;
+  const max = rows.length - 1;
+  tattooState.catalogIndex = Math.min(max, Math.max(0, tattooState.catalogIndex + delta));
+  highlightTattooCatalogSelection();
+}
+
+function applySelectedTattoo(zone) {
+  const rows = tattooFilteredCatalog();
+  const t = rows[tattooState.catalogIndex];
+  if (!t) return;
+  post('toggleTattoo', { name: t.name, zone }).then((res) => {
+    tattooState.owned = res.tattoos || [];
+    const ownedBox = stepBody.querySelector('#tattooOwned');
+    const catalogBox = stepBody.querySelector('#tattooCatalog');
+    if (ownedBox) ownedBox.innerHTML = renderTattooOwned(zone);
+    if (catalogBox) catalogBox.innerHTML = renderTattooCatalogList(zone);
+    bindTattooShop(zone);
+  });
+}
+
+function bindTattooNavigator(zone) {
+  const prev = stepBody.querySelector('#tattooPrev');
+  const next = stepBody.querySelector('#tattooNext');
+  const apply = stepBody.querySelector('#tattooApply');
+  if (prev) prev.onclick = () => stepTattooCatalog(-1);
+  if (next) next.onclick = () => stepTattooCatalog(1);
+  if (apply) apply.onclick = () => applySelectedTattoo(zone);
 }
 
 function bindTattooShop(zone) {
@@ -275,6 +402,7 @@ function bindTattooShop(zone) {
   if (search) {
     search.oninput = () => {
       tattooState.filter = search.value;
+      tattooState.catalogIndex = 0;
       const list = stepBody.querySelector('#tattooCatalog');
       if (list) list.innerHTML = renderTattooCatalogList(zone);
       bindTattooShop(zone);
@@ -285,12 +413,15 @@ function bindTattooShop(zone) {
     btn.onclick = () => {
       tattooState.zone = btn.dataset.zone;
       tattooState.filter = '';
+      tattooState.catalogIndex = 0;
       loadTattooZone(tattooState.zone);
     };
   });
 
   stepBody.querySelectorAll('.tattoo-item[data-tattoo-name]').forEach((btn) => {
     btn.onclick = () => {
+      const idx = parseInt(btn.dataset.tattooIndex, 10);
+      if (Number.isFinite(idx)) tattooState.catalogIndex = idx;
       post('toggleTattoo', { name: btn.dataset.tattooName, zone }).then((res) => {
         tattooState.owned = res.tattoos || [];
         const ownedBox = stepBody.querySelector('#tattooOwned');
@@ -328,6 +459,8 @@ function bindTattooShop(zone) {
       });
     };
   }
+
+  refreshTattooNavigator(zone);
 }
 
 function loadTattooZone(zone) {
@@ -343,6 +476,7 @@ function loadTattooZone(zone) {
   ]).then(([catalog, owned]) => {
     tattooState.catalog = Array.isArray(catalog) ? catalog : [];
     tattooState.owned = Array.isArray(owned) ? owned : [];
+    tattooState.catalogIndex = 0;
     const ownedBox = stepBody.querySelector('#tattooOwned');
     if (ownedBox) ownedBox.innerHTML = renderTattooOwned(zone);
     if (catalogBox) catalogBox.innerHTML = renderTattooCatalogList(zone);
@@ -364,9 +498,13 @@ function renderTattooShop() {
   tattooState.zone = zone;
 
   stepBody.innerHTML = `
-    <p class="muted shop-hint">Pasirink kūno zoną, tada tatuiruotę. ← → suka kamerą. Personažas aprengtas minimaliai, kad matytumėte tatuiruotes.</p>
+    <p class="muted shop-hint">Pasirink zoną, tada tatuiruotę — sąraše arba ← → greitajai navigacijai. Klaviatūros rodyklės suka kamerą.</p>
     <div class="pill-row tattoo-zones" id="tattooZonePills">
       ${zones.map((z) => `<button type="button" class="pill-btn${z.id === zone ? ' active' : ''}" data-zone="${esc(z.id)}">${esc(z.label)}</button>`).join('')}
+    </div>
+    <div class="field full">
+      <label>Greita navigacija</label>
+      <div id="tattooNavigator"></div>
     </div>
     <div class="field full">
       <label>Dabartinės tatuiruotės</label>

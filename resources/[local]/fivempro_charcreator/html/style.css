@@ -226,6 +226,40 @@ html, body {
   letter-spacing: 0.05em;
 }
 .tattoo-item.active .tattoo-item-state { color: var(--cc-violet-lit); }
+.tattoo-item.selected {
+  border-color: rgba(192, 132, 252, 0.85);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.35), inset 0 0 0 1px rgba(168, 85, 247, 0.15);
+}
+.tattoo-navigator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--cc-border);
+  border-radius: 12px;
+  background: rgba(12, 8, 22, 0.45);
+}
+.tattoo-nav-center {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+.tattoo-nav-counter {
+  font-size: 0.72rem;
+  color: var(--cc-muted);
+}
+.tattoo-nav-name {
+  font-size: 0.86rem;
+  color: var(--cc-text);
+  font-weight: 600;
+}
+.tattoo-nav-empty {
+  margin: 0;
+}
 .clothing-row {
   padding-bottom: 10px;
   margin-bottom: 6px;
@@ -324,10 +358,36 @@ html, body {
   font-size: 0.8rem;
   color: var(--cc-muted);
 }
-.slider-row label span:last-child {
+.slider-row label span:last-child,
+.slider-row .slider-val,
+.slider-row .cv-item,
+.slider-row .cv-tex {
   color: var(--cc-violet-lit);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.slider-with-arrows {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.slider-with-arrows input[type="range"] {
+  flex: 1;
+  min-width: 0;
+}
+.slider-with-arrows .slider-arrow {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.slider-with-arrows .slider-arrow i {
+  font-size: 0.82rem;
 }
 
 input[type="range"] {
