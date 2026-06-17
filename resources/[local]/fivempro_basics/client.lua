@@ -48,6 +48,7 @@ local LongWeaponModels = {
     weapon_combatpdw = 'w_sb_pdw',
     weapon_machinepistol = 'w_sb_compactsmg',
     weapon_minismg = 'w_sb_minismg',
+    weapon_fgc9 = 'w_pi_combatpistol',
     weapon_raycarbine = 'w_ar_srifle',
     weapon_tecpistol = 'w_pi_pistolsmg_m31',
 }

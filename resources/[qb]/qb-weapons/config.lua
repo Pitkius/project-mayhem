@@ -45,6 +45,11 @@ Config.FlatBulletDamageDefault = 27.0
 Config.FlatBulletDamage = {}
 Config.DefaultBulletDamage = {}
 
+--- Inventoriaus ginklas → GTA native hash (replace/stream modai be atskiro WEAPON_ entry).
+Config.WeaponNativeHash = {
+    weapon_fgc9 = 'weapon_combatpistol',
+}
+
 Config.DurabilityBlockedWeapons = {
     'weapon_stungun',
     'weapon_nightstick',
@@ -159,9 +164,9 @@ Config.DurabilityMultiplier = {
     weapon_assaultsmg            = 0.15,
     weapon_combatpdw             = 0.15,
     weapon_machinepistol         = 0.15,
+    weapon_fgc9                  = 0.15,
     weapon_minismg               = 0.15,
     weapon_raycarbine            = 0.15,
-    weapon_fgc9                  = 0.15,
 
     -- Shotguns
     weapon_pumpshotgun           = 0.15,
@@ -253,6 +258,7 @@ Config.ExtendedClipCapacity = {
     weapon_pistol = 16,
     weapon_pistol_mk2 = 16,
     weapon_combatpistol = 24,
+    weapon_fgc9 = 24,
     weapon_appistol = 36,
     weapon_pistol50 = 12,
     weapon_snspistol = 12,

@@ -73,6 +73,33 @@ local function pickAmmoItemForType(ammoType)
     return list[1]
 end
 
+local function nativeWeaponHash(weaponName)
+    if WeaponHash and WeaponHash.resolve then
+        return WeaponHash.resolve(weaponName)
+    end
+    return joaat(weaponName)
+end
+
+local function resolveCurrentWeaponDataForPed(pedWeaponHash, selectedWeaponData)
+    if CurrentWeaponData and CurrentWeaponData.name and nativeWeaponHash(CurrentWeaponData.name) == pedWeaponHash then
+        return CurrentWeaponData
+    end
+    local invName = WeaponHash and WeaponHash.inventoryNameFromNative(pedWeaponHash)
+    if invName then
+        local row = resolveCurrentWeaponDataByName(invName)
+        if row then return row end
+    end
+    if selectedWeaponData and selectedWeaponData.name then
+        return resolveCurrentWeaponDataByName(selectedWeaponData.name) or CurrentWeaponData
+    end
+    return CurrentWeaponData
+end
+
+local function inventoryWeaponNameForPed(pedWeaponHash, selectedWeaponData)
+    local row = resolveCurrentWeaponDataForPed(pedWeaponHash, selectedWeaponData)
+    return (row and row.name) or (selectedWeaponData and selectedWeaponData.name)
+end
+
 --- Kai GetMaxAmmoInClip grąžina 0 – apkabos dydis pagal ginklą ar tipą.
 local DefaultClipByWeapon = {
     [`weapon_minismg`] = 12,
@@ -84,6 +111,7 @@ local DefaultClipByWeapon = {
     [`weapon_combatpdw`] = 30,
     [`weapon_pistol`] = 12,
     [`weapon_combatpistol`] = 12,
+    [`weapon_fgc9`] = 12,
     [`weapon_appistol`] = 18,
 }
 
@@ -152,8 +180,8 @@ local function resolveMaxClip(ped, weaponHash, weaponData)
 
     if maxClip > 0 then return maxClip end
 
-    if weaponName and DefaultClipByWeapon[joaat(weaponName)] then
-        return DefaultClipByWeapon[joaat(weaponName)]
+    if weaponName and DefaultClipByWeapon[nativeWeaponHash(weaponName)] then
+        return DefaultClipByWeapon[nativeWeaponHash(weaponName)]
     end
     local ammoType = tostring(weaponData and weaponData.ammotype or ''):upper()
     return DefaultClipByAmmoType[ammoType] or 30
@@ -410,7 +438,7 @@ function applyHolsteredWeaponsFromInventory(force)
 
     local shownHash = nil
     if currentWeapon then
-        shownHash = joaat(currentWeapon)
+        shownHash = nativeWeaponHash(currentWeapon)
     end
 
     for _, item in pairs(items) do
@@ -418,7 +446,7 @@ function applyHolsteredWeaponsFromInventory(force)
         local name = tostring(item.name or '')
         if isThrowableInventoryWeaponName(name) then goto continue end
 
-        local h = joaat(name)
+        local h = nativeWeaponHash(name)
         local ammo = tonumber(item.info and item.info.ammo) or 0
         if name == 'weapon_petrolcan' or name == 'weapon_fireextinguisher' then
             ammo = 4000
@@ -593,9 +621,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         return
     end
 
-    if (not CurrentWeaponData or not CurrentWeaponData.slot or CurrentWeaponData.name ~= selectedWeaponData.name) then
-        CurrentWeaponData = resolveCurrentWeaponDataByName(selectedWeaponData.name) or CurrentWeaponData
-    end
+    CurrentWeaponData = resolveCurrentWeaponDataForPed(weapon, selectedWeaponData)
 
     local curInClip, maxC, clipMissing = getClipAmmoState(ped, weapon, CurrentWeaponData or selectedWeaponData)
 
@@ -725,7 +751,7 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
     end
     local ped = PlayerPedId()
     local weaponName = tostring(weaponData.name)
-    local weaponHash = joaat(weaponData.name)
+    local weaponHash = nativeWeaponHash(weaponData.name)
     local weaponInfo = weaponData.info or {}
     if currentWeapon == weaponName then
         TriggerEvent('qb-weapons:client:DrawWeapon', nil)
@@ -752,7 +778,7 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', weaponData, shootbool)
         currentWeapon = weaponName
         applyHolsteredWeaponsFromInventory(true)
-        weaponHash = joaat(weaponData.name)
+        weaponHash = nativeWeaponHash(weaponData.name)
         local syncedAmmo = GetAmmoInPedWeapon(ped, weaponHash)
         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', weaponData, syncedAmmo)
     end
@@ -834,7 +860,7 @@ CreateThread(function()
             local weapon = GetSelectedPedWeapon(ped)
             local selectedWeaponData = QBCore.Shared.Weapons[weapon]
             if selectedWeaponData then
-                CurrentWeaponData = resolveCurrentWeaponDataByName(selectedWeaponData.name) or CurrentWeaponData
+                CurrentWeaponData = resolveCurrentWeaponDataForPed(weapon, selectedWeaponData)
                 local ammo = GetAmmoInPedWeapon(ped, weapon)
                 local hasMaxTotal, maxTotalAmmo = GetMaxAmmo(ped, weapon)
                 if hasMaxTotal and maxTotalAmmo and maxTotalAmmo > 0 and ammo > maxTotalAmmo then
@@ -844,12 +870,13 @@ CreateThread(function()
                 if CurrentWeaponData and CurrentWeaponData.name then
                     -- Tik kai ped kulkų sk. pasikeičia (šūvis / perkrova) ar keičiasi ginklas — atnaujinam ginklo item info.ammo serveryje.
                     local now = GetGameTimer()
-                    local weaponSwitched = lastSyncedWeapon ~= selectedWeaponData.name
+                    local syncName = inventoryWeaponNameForPed(weapon, selectedWeaponData)
+                    local weaponSwitched = lastSyncedWeapon ~= syncName
                     local ammoDelta = lastSyncedAmmo ~= ammo
                     local rareResync = (now - lastAmmoSyncAt) >= 120000
                     if weaponSwitched or ammoDelta or rareResync then
                         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', CurrentWeaponData, tonumber(ammo))
-                        lastSyncedWeapon = selectedWeaponData.name
+                        lastSyncedWeapon = syncName
                         lastSyncedAmmo = ammo
                         lastAmmoSyncAt = now
                     end

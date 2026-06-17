@@ -8,6 +8,7 @@ CreateThread(function()
         else
             local ped = PlayerPedId()
             local _, weapon = GetCurrentPedWeapon(ped, true)
+            weapon = WeaponHash.recoilLookupHash(weapon)
             if weapon ~= joaat('WEAPON_UNARMED') then
                 if weapon ~= lastWeapon then
                     pcall(function()

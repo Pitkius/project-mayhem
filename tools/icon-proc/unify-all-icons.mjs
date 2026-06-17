@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { PNG } from 'pngjs';
+import jpeg from 'jpeg-js';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -14,10 +15,10 @@ const CX = SIZE / 2;
 const CY = SIZE / 2;
 
 const STYLE = {
-  rim: [168, 85, 247],
-  rimAlpha: 0.1,
-  shadow: [8, 4, 18],
-  highlight: [255, 255, 255],
+  plate: [22, 26, 38],
+  plateEdge: [58, 68, 92],
+  shadow: [6, 8, 14],
+  highlight: [240, 244, 252],
 };
 
 class Canvas {
@@ -87,11 +88,17 @@ class Canvas {
   }
 
   addGroundShadow() {
-    this.fillCircle(CX, CY + 78, 62, 18, ...STYLE.shadow, 55);
+    this.fillCircle(CX, CY + 78, 58, 16, ...STYLE.shadow, 48);
   }
 
+  addIconPlate() {
+    this.fillRoundRect(28, 28, 200, 200, 28, ...STYLE.plate, 235);
+    this.strokeRoundRect(30, 30, 196, 196, 26, ...STYLE.plateEdge, 70, 2);
+  }
+
+  /** @deprecated use addIconPlate */
   addRimGlow() {
-    this.fillCircle(CX, CY, 88, 88, ...STYLE.rim, Math.round(255 * STYLE.rimAlpha));
+    this.addIconPlate();
   }
 
   toPng() {
@@ -123,22 +130,21 @@ function drawBag(c, fill, accent, sealed = true) {
 
 function drawJar(c, liquid, label = 'liq') {
   c.addGroundShadow();
-  c.addRimGlow();
-  c.strokeRoundRect(96, 68, 64, 108, 10, 180, 190, 205, 230, 3);
-  c.fillRoundRect(102, 88, 52, 76, 8, ...liquid, 230);
-  c.fillRect(108, 58, 40, 18, 160, 165, 175, 255);
+  c.addIconPlate();
+  c.strokeRoundRect(96, 68, 64, 108, 10, 120, 130, 148, 220, 3);
+  c.fillRoundRect(102, 88, 52, 76, 8, ...liquid, 235);
+  c.fillRect(108, 58, 40, 18, 100, 108, 122, 255);
   if (label === 'chem') {
-    c.fillCircle(128, 118, 10, 10, 120, 220, 180, 200);
-    c.fillCircle(142, 132, 8, 8, 220, 120, 160, 180);
+    c.fillCircle(128, 118, 8, 8, 90, 170, 150, 120);
+    c.fillCircle(142, 132, 6, 6, 170, 100, 140, 100);
   }
 }
 
 function drawBottle(c, liquid, capColor) {
   c.addGroundShadow();
-  c.addRimGlow();
+  c.addIconPlate();
   c.fillRoundRect(108, 92, 40, 88, 12, ...liquid, 235);
   c.fillRect(114, 58, 28, 36, ...capColor, 255);
-  c.fillCircle(120, 118, 6, 14, ...STYLE.highlight, 70);
 }
 
 function drawBrick(c, color) {
@@ -301,9 +307,9 @@ function drawLighter(c) {
 
 function drawPlastic(c) {
   c.addGroundShadow();
-  c.addRimGlow();
-  c.fillRoundRect(88, 108, 80, 56, 12, 120, 200, 230, 230);
-  for (let i = 0; i < 4; i++) c.fillCircle(104 + i * 16, 132, 6, 6, ...STYLE.highlight, 100);
+  c.addIconPlate();
+  c.fillRoundRect(88, 108, 80, 56, 12, 100, 170, 210, 240);
+  for (let i = 0; i < 4; i++) c.fillCircle(104 + i * 16, 132, 5, 5, ...STYLE.highlight, 45);
 }
 
 function drawBlueprint(c) {
@@ -399,6 +405,60 @@ for (const [dest, src] of Object.entries(EXTRA_COPIES)) {
     fs.copyFileSync(srcPath, destPath);
     console.log('copied', `${dest}.png`, '<-', `${src}.png`);
     count++;
+  }
+}
+
+function blitScaled(canvas, srcPng, fitScale = 0.82) {
+  const sw = srcPng.width;
+  const sh = srcPng.height;
+  const maxW = SIZE * fitScale;
+  const maxH = SIZE * fitScale;
+  const scale = Math.min(maxW / sw, maxH / sh);
+  const dw = Math.round(sw * scale);
+  const dh = Math.round(sh * scale);
+  const ox = Math.round((SIZE - dw) / 2);
+  const oy = Math.round((SIZE - dh) / 2) - 4;
+  for (let y = 0; y < dh; y += 1) {
+    for (let x = 0; x < dw; x += 1) {
+      const sx = Math.min(sw - 1, Math.floor((x / dw) * sw));
+      const sy = Math.min(sh - 1, Math.floor((y / dh) * sh));
+      const si = (sy * sw + sx) << 2;
+      const a = srcPng.data[si + 3];
+      if (a < 10) continue;
+      canvas.blend(ox + x, oy + y, srcPng.data[si], srcPng.data[si + 1], srcPng.data[si + 2], a);
+    }
+  }
+}
+
+function readRasterImage(srcPath) {
+  const buf = fs.readFileSync(srcPath);
+  if (buf[0] === 0xff && buf[1] === 0xd8) {
+    const decoded = jpeg.decode(buf, { useTArray: true });
+    return { width: decoded.width, height: decoded.height, data: decoded.data };
+  }
+  const png = PNG.sync.read(buf);
+  return { width: png.width, height: png.height, data: png.data };
+}
+
+function buildWeaponPhotoIcon(srcFile, outName) {
+  const srcPath = path.join(__dirname, 'sources', srcFile);
+  if (!fs.existsSync(srcPath)) return false;
+  const src = readRasterImage(srcPath);
+  const c = new Canvas();
+  c.addGroundShadow();
+  c.addIconPlate();
+  blitScaled(c, src, 0.9);
+  fs.writeFileSync(path.join(imagesDir, outName), c.toPng());
+  return true;
+}
+
+const photoIcons = [
+  ['weapon_fgc9_ref.png', 'weapon_fgc9.png'],
+];
+for (const [src, out] of photoIcons) {
+  if (buildWeaponPhotoIcon(src, out)) {
+    console.log('photo icon', out);
+    count += 1;
   }
 }
 

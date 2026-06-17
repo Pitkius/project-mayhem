@@ -85,6 +85,7 @@ local BulkyItemsNoPocket = {
     weapon_bullpuprifle = true,
     weapon_bullpuprifle_mk2 = true,
     weapon_compactrifle = true,
+    weapon_fgc9 = true,
     weapon_militaryrifle = true,
     weapon_heavyrifle = true,
     weapon_mg = true,

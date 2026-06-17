@@ -11,6 +11,7 @@ shared_scripts {
     'locales/*.lua',
     'config.lua',
     'shared/weapon_damage.lua',
+    'shared/weapon_hash.lua',
 }
 
 client_scripts {

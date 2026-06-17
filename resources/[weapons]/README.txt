@@ -1,15 +1,14 @@
-FGC-9 (addon ginklas)
-=====================
+FGC-9 (combat pistol model swap)
+================================
 
-1. Nukopijuok f60129-FGC-9.rar į tools/weapon-drops/
-2. Paleisk tools/START-FGC9-INSTALL.bat
-3. Perkrauk serverį arba: ensure [weapons]
+Įdiegtas: resources/[weapons]/fgc9/
+- Streamina FGC-9 3D modelį vietoj combat pistol (ospo mod)
+- QB itemas: weapon_fgc9 (žaidime naudoja combat pistol hash per qb-weapons alias)
 
-QB integracija (jau paruošta):
-- item: weapon_fgc9
-- gamyba: fivempro_drugs ginklų dirbtuvė (L2, craft_fgc9)
-- ammo: pistol_ammo (9 mm)
-- inventory ikona: qb-inventory/html/images/weapon_fgc9.png
+Testas:
+  ensure [weapons]
+  restart qb-weapons
+  /giveitem [id] weapon_fgc9 1
+  /giveitem [id] pistol_ammo 90
 
-Jei ginklas nematomas arba duoda vanilla modelį — atidaryk weapons.meta ir patikrink <Name>.
-Jei hash ne WEAPON_FGC9, atnaujink qb-core/shared/items.lua ir weapons.lua.
+Pastaba: visi weapon_combatpistol serveryje atrodys kaip FGC-9 (replace mod).
