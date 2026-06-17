@@ -11,16 +11,40 @@ const TARGET = 256;
 const NAMES = [
   'cocaine_paste',
   'cocaine_powder_loose',
+  'cocaine_baggy',
   'heroin_powder_loose',
   'heroin_bag',
   'chemical_mix',
   'weed_buds',
+  'weed_leaf',
+  'weed_resin',
   'moonshine_spirit',
   'poppy_flower',
   'heroin_paste',
-  'weed_resin',
   'cartel_pack',
+  'coke_small_brick',
+  'meth_crystal',
 ];
+
+/** Stipresnis šviesinimas tamsesnėms ikonoms */
+const BRIGHT_BOOST = {
+  weed_buds: { lift: 42, mult: 1.34 },
+  weed_leaf: { lift: 38, mult: 1.3 },
+  weed_resin: { lift: 34, mult: 1.28 },
+  poppy_flower: { lift: 32, mult: 1.26 },
+};
+
+const DEFAULT_BOOST = { lift: 26, mult: 1.22 };
+
+function brightenRgb(r, g, b, boost) {
+  const lift = boost.lift;
+  const mult = boost.mult;
+  return [
+    Math.min(255, Math.round(r * mult + lift)),
+    Math.min(255, Math.round(g * mult + lift)),
+    Math.min(255, Math.round(b * mult + lift)),
+  ];
+}
 
 function dist(a, b) {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -79,7 +103,8 @@ function cornerBg(data, w, h) {
   return [Math.round(r / n), Math.round(g / n), Math.round(b / n)];
 }
 
-function processPng(buf) {
+function processPng(buf, name) {
+  const boost = BRIGHT_BOOST[name] || DEFAULT_BOOST;
   const src = PNG.sync.read(buf);
   let { width: w, height: h, data } = src;
   const scale = TARGET / Math.max(w, h);
@@ -119,7 +144,14 @@ function processPng(buf) {
   for (let i = 0; i < out.data.length; i += 4) {
     const r = out.data[i], g = out.data[i + 1], b = out.data[i + 2], a = out.data[i + 3];
     if (a === 0) continue;
-    if (r < 32 && g < 32 && b < 32) out.data[i + 3] = 0;
+    if (r < 32 && g < 32 && b < 32) {
+      out.data[i + 3] = 0;
+      continue;
+    }
+    const [nr, ng, nb] = brightenRgb(r, g, b, boost);
+    out.data[i] = nr;
+    out.data[i + 1] = ng;
+    out.data[i + 2] = nb;
   }
   return PNG.sync.write(out);
 }
@@ -131,7 +163,7 @@ for (const name of NAMES) {
     console.log('missing', name);
     continue;
   }
-  fs.writeFileSync(p, processPng(fs.readFileSync(p)));
+  fs.writeFileSync(p, processPng(fs.readFileSync(p), name));
   console.log('fixed', name);
   n++;
 }

@@ -627,11 +627,92 @@ local function lockNpcVehicle(veh)
 end
 
 local function keepNpcDriverInVehicle(ped, veh)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+
     SetPedCanBeDraggedOut(ped, false)
     SetPedStayInVehicleWhenJacked(ped, true)
-    SetPedConfigFlag(ped, 184, true)
+    SetPedCanBeKnockedOffVehicle(ped, 1)
+    SetPedConfigFlag(ped, 184, true) -- neitraukti iš mašinos
+    SetPedConfigFlag(ped, 251, true) -- lieka sėdėje kai bando carjack
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedFleeAttributes(ped, 0, false)
+    SetPedCombatAttributes(ped, 3, false)  -- negali palikti transporto
+    SetPedCombatAttributes(ped, 17, false)
+    SetPedKeepTask(ped, true)
+    SetDriverAbility(ped, 1.0)
+    SetDriverAggressiveness(ped, 0.35)
+
+    if IsPedInAnyVehicle(ped, false) then
+        for _, taskId in ipairs({ 2, 165, 167, 169 }) do
+            if GetIsTaskActive(ped, taskId) then
+                ClearPedTasks(ped)
+                break
+            end
+        end
+    end
+end
+
+local ambientDriverMemory = {} ---@type table<number, { veh: number, untilMs: number }>
+
+local function rememberAmbientDriver(ped, veh)
+    ambientDriverMemory[ped] = {
+        veh = veh,
+        untilMs = GetGameTimer() + 45000,
+    }
+end
+
+local function pruneAmbientDriverMemory()
+    local now = GetGameTimer()
+    for ped, row in pairs(ambientDriverMemory) do
+        if now > row.untilMs or not DoesEntityExist(ped) or not DoesEntityExist(row.veh) then
+            ambientDriverMemory[ped] = nil
+        end
+    end
+end
+
+local function tryReturnAmbientDriverToVehicle(ped, veh)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    if IsPedInAnyVehicle(ped, false) then return end
+    if GetPedInVehicleSeat(veh, -1) ~= 0 then return end
+    if not isNaturalNpcVehicle(veh) then return end
+
+    local pcoords = GetEntityCoords(ped)
+    local vcoords = GetEntityCoords(veh)
+    if #(pcoords - vcoords) > 18.0 then return end
+
+    ClearPedTasksImmediately(ped)
+    SetPedIntoVehicle(ped, veh, -1)
+    if GetPedInVehicleSeat(veh, -1) == ped then
+        keepNpcDriverInVehicle(ped, veh)
+        if GetEntitySpeed(veh) < 1.5 then
+            TaskVehicleDriveWander(ped, veh, 18.0, 786603)
+        end
+    end
+end
+
+local function processAmbientVehicleOccupants(veh, pcoords, maxDist)
+    if not isNaturalNpcVehicle(veh) then return false end
+    if #(GetEntityCoords(veh) - pcoords) > maxDist then return false end
+
+    local touched = false
+    for seat = -1, GetVehicleMaxNumberOfPassengers(veh) - 1 do
+        local ped = GetPedInVehicleSeat(veh, seat)
+        if ped ~= 0 and DoesEntityExist(ped) and not IsPedAPlayer(ped) then
+            if seat == -1 then
+                keepNpcDriverInVehicle(ped, veh)
+                rememberAmbientDriver(ped, veh)
+            else
+                SetPedCanBeDraggedOut(ped, false)
+                SetPedStayInVehicleWhenJacked(ped, true)
+                SetBlockingOfNonTemporaryEvents(ped, true)
+                SetPedCombatAttributes(ped, 3, false)
+            end
+            touched = true
+        end
+    end
+    return touched
 end
 
 exports('IsNaturalNpcVehicle', isNaturalNpcVehicle)
@@ -653,28 +734,49 @@ end)
 
 AddEventHandler('entityCreated', function(entity)
     if not entity or entity == 0 then return end
-    if GetEntityType(entity) ~= 2 then return end
-    SetTimeout(0, function()
-        if DoesEntityExist(entity) and isNaturalNpcVehicle(entity) then
-            lockNpcVehicle(entity)
-        end
-    end)
+    local et = GetEntityType(entity)
+    if et == 2 then
+        SetTimeout(0, function()
+            if DoesEntityExist(entity) and isNaturalNpcVehicle(entity) then
+                lockNpcVehicle(entity)
+                processAmbientVehicleOccupants(entity, GetEntityCoords(PlayerPedId()), 320.0)
+            end
+        end)
+        return
+    end
+    if et == 1 then
+        SetTimeout(0, function()
+            if not DoesEntityExist(entity) or IsPedAPlayer(entity) then return end
+            if not IsPedInAnyVehicle(entity, false) then return end
+            local veh = GetVehiclePedIsIn(entity, false)
+            if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == entity and isNaturalNpcVehicle(veh) then
+                keepNpcDriverInVehicle(entity, veh)
+                rememberAmbientDriver(entity, veh)
+            end
+        end)
+    end
 end)
 
 --- NPC vairuotojai neislipa prie žaidėjo — lieka savo automobilyje.
 CreateThread(function()
     while true do
         local pcoords = GetEntityCoords(PlayerPedId())
-        for _, ped in ipairs(GetGamePool('CPed')) do
-            if DoesEntityExist(ped) and not IsPedAPlayer(ped) and IsPedInAnyVehicle(ped, false) then
-                local veh = GetVehiclePedIsIn(ped, false)
-                if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped and isNaturalNpcVehicle(veh) then
-                    if #(GetEntityCoords(veh) - pcoords) <= 220.0 then
-                        keepNpcDriverInVehicle(ped, veh)
-                    end
-                end
+        local nearTraffic = false
+
+        for _, veh in ipairs(GetGamePool('CVehicle')) do
+            if DoesEntityExist(veh) and processAmbientVehicleOccupants(veh, pcoords, 260.0) then
+                nearTraffic = true
             end
         end
-        Wait(900)
+
+        pruneAmbientDriverMemory()
+        if nearTraffic then
+            for ped, row in pairs(ambientDriverMemory) do
+                tryReturnAmbientDriverToVehicle(ped, row.veh)
+            end
+            Wait(200)
+        else
+            Wait(900)
+        end
     end
 end)

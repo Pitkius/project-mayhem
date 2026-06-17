@@ -1,5 +1,6 @@
 --- Sumažina žaidimo ginklo recoil drebulę; vertikalų kilimą valdo apačios CEventGunShot blokas + Config.RecoilMultiplier.
 CreateThread(function()
+    local lastWeapon = 0
     while true do
         local scale = Config.RecoilShakeAmplitude
         if scale == nil then
@@ -8,12 +9,16 @@ CreateThread(function()
             local ped = PlayerPedId()
             local _, weapon = GetCurrentPedWeapon(ped, true)
             if weapon ~= joaat('WEAPON_UNARMED') then
-                pcall(function()
-                    SetWeaponRecoilShakeAmplitude(weapon, scale)
-                end)
-                Wait(0)
+                if weapon ~= lastWeapon then
+                    pcall(function()
+                        SetWeaponRecoilShakeAmplitude(weapon, scale)
+                    end)
+                    lastWeapon = weapon
+                end
+                Wait(300)
             else
-                Wait(200)
+                lastWeapon = 0
+                Wait(400)
             end
         end
     end
@@ -172,9 +177,9 @@ CreateThread(function()
                 applyVerticalRecoil(ped, weap)
                 lastRecoilAt = now
             end
-            Wait(0)
+            Wait(16)
         else
-            Wait(5)
+            Wait(50)
         end
     end
 end)

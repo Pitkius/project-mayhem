@@ -531,7 +531,7 @@ end)
 
 CreateThread(function()
     local cfg = Config or {}
-    local refreshMs = math.max(500, tonumber(cfg.BlipRefreshMs) or 1500)
+    local refreshMs = math.max(200, tonumber(cfg.BlipRefreshMs) or 1500)
     while true do
         for service, _ in pairs(cfg.Services or {}) do
             pushServiceUpdate(service)

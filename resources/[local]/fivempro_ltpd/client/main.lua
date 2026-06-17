@@ -225,14 +225,14 @@ CreateThread(function()
                 z = c.z,
                 heading = GetEntityHeading(ped),
             })
-            Wait(500)
+            Wait(150)
         else
-            Wait(750)
+            Wait(500)
         end
     end
 end)
 
---- Gyvas GPS / dispatch atnaujinimas į MDT (iš fivempro_dispatch push kas ~1.5s)
+--- Gyvas GPS / dispatch atnaujinimas į MDT (iš fivempro_dispatch push kas ~300ms)
 RegisterNetEvent('fivempro_dispatch:client:update', function(payload)
     if not mdtOpen or not payload or payload.service ~= 'police' then return end
     SendNUIMessage({

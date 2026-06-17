@@ -268,6 +268,7 @@ Config.Printer3d = {
             label = 'Ginklo korpusas',
             output = { item = 'gun_frame', count = 1 },
             ingredients = {
+                { item = 'weapon_prototype', count = 1 },
                 { item = 'metal_scrap', count = 5 },
                 { item = 'plastic', count = 6 },
             },
@@ -277,6 +278,7 @@ Config.Printer3d = {
             label = 'Vamzdis',
             output = { item = 'gun_barrel', count = 1 },
             ingredients = {
+                { item = 'weapon_prototype', count = 1 },
                 { item = 'metal_scrap', count = 6 },
                 { item = 'plastic', count = 5 },
             },
@@ -286,6 +288,7 @@ Config.Printer3d = {
             label = 'Spyruoklė',
             output = { item = 'gun_spring', count = 2 },
             ingredients = {
+                { item = 'weapon_prototype', count = 1 },
                 { item = 'metal_scrap', count = 3 },
                 { item = 'plastic', count = 3 },
             },
@@ -295,6 +298,7 @@ Config.Printer3d = {
             label = 'Užtaisas',
             output = { item = 'gun_trigger', count = 1 },
             ingredients = {
+                { item = 'weapon_prototype', count = 1 },
                 { item = 'metal_scrap', count = 3 },
                 { item = 'plastic', count = 5 },
             },
@@ -304,6 +308,7 @@ Config.Printer3d = {
             label = 'Ginklo komponentai',
             output = { item = 'weapon_parts', count = 1 },
             ingredients = {
+                { item = 'weapon_prototype', count = 1 },
                 { item = 'metal_scrap', count = 8 },
                 { item = 'plastic', count = 8 },
             },
@@ -549,19 +554,21 @@ Config.MaterialShop = {
         { name = 'empty_cart', amount = 500, price = 12, slot = 39 },
         { name = 'empty_bottle', amount = 500, price = 10, slot = 40 },
         { name = 'empty_bag', amount = 500, price = 11, slot = 41 },
+        -- 3D spausdinimas
+        { name = 'weapon_prototype', amount = 200, price = 380, slot = 41 },
+        { name = '3d_printer', amount = 25, price = 7500, slot = 42 },
+        { name = 'plastic', amount = 500, price = 22, slot = 43 },
         -- Ginklų dalys
-        { name = 'metal_scrap', amount = 500, price = 55, slot = 43 },
-        { name = 'gun_frame', amount = 200, price = 220, slot = 44 },
-        { name = 'gun_barrel', amount = 200, price = 260, slot = 45 },
-        { name = 'gun_spring', amount = 500, price = 45, slot = 46 },
-        { name = 'gun_trigger', amount = 300, price = 85, slot = 47 },
-        { name = 'weapon_parts', amount = 300, price = 150, slot = 48 },
-        { name = 'pistol_ammo', amount = 500, price = 18, slot = 49 },
-        { name = 'smg_ammo', amount = 500, price = 28, slot = 50 },
-        { name = 'rifle_ammo', amount = 500, price = 35, slot = 51 },
-        { name = 'shotgun_ammo', amount = 500, price = 32, slot = 52 },
-        { name = '3d_printer', amount = 25, price = 7500, slot = 53 },
-        { name = 'plastic', amount = 500, price = 22, slot = 54 },
+        { name = 'metal_scrap', amount = 500, price = 55, slot = 44 },
+        { name = 'gun_frame', amount = 200, price = 220, slot = 45 },
+        { name = 'gun_barrel', amount = 200, price = 260, slot = 46 },
+        { name = 'gun_spring', amount = 500, price = 45, slot = 47 },
+        { name = 'gun_trigger', amount = 300, price = 85, slot = 48 },
+        { name = 'weapon_parts', amount = 300, price = 150, slot = 49 },
+        { name = 'pistol_ammo', amount = 500, price = 18, slot = 50 },
+        { name = 'smg_ammo', amount = 500, price = 28, slot = 51 },
+        { name = 'rifle_ammo', amount = 500, price = 35, slot = 52 },
+        { name = 'shotgun_ammo', amount = 500, price = 32, slot = 53 },
     },
 }
 

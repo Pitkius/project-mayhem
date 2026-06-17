@@ -79,6 +79,40 @@ local function getStation(id)
 end
 
 local PRINTER_PARTS = { gun_frame = true, gun_barrel = true }
+local PROTOTYPE_ITEM = 'weapon_prototype'
+
+local function resolveSharedItem(itemName)
+    if not itemName then return nil end
+    local key = tostring(itemName):lower()
+    if QBCore.Shared.Items[key] then return QBCore.Shared.Items[key] end
+    for _, info in pairs(QBCore.Shared.Items) do
+        if type(info) == 'table' and info.name and string.lower(info.name) == key then
+            return info
+        end
+    end
+end
+
+local function isPoliceOnDuty(src)
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P or not P.PlayerData.job then return false end
+    return P.PlayerData.job.name == 'police' and P.PlayerData.job.onduty == true
+end
+
+local function getEffectiveRecipe(productId, st, src)
+    local recipe = getRecipe(productId, st)
+    if not src or isPoliceOnDuty(src) or not productUsesPrinter(productId, st) then
+        return recipe
+    end
+    for _, row in ipairs(recipe) do
+        if row.item == PROTOTYPE_ITEM then return recipe end
+    end
+    local out = {}
+    for i, row in ipairs(recipe) do
+        out[i] = row
+    end
+    out[#out + 1] = { item = PROTOTYPE_ITEM, count = 1 }
+    return out
+end
 
 local function productUsesPrinter(productId, st)
     if not st or st.mode ~= 'weapon' then return false end
@@ -142,15 +176,15 @@ local function refundPartial(Player, list, percent)
     end
 end
 
-local function buildRecipeStatus(Player, productId, st)
-    local recipe = getRecipe(productId, st)
+local function buildRecipeStatus(Player, productId, st, src)
+    local recipe = getEffectiveRecipe(productId, st, src)
     local rows = {}
     for _, row in ipairs(recipe) do
         local it = Player.Functions.GetItemByName(row.item)
         local have = it and it.amount or 0
         rows[#rows + 1] = {
             item = row.item,
-            label = QBCore.Shared.Items[row.item] and QBCore.Shared.Items[row.item].label or row.item,
+            label = (resolveSharedItem(row.item) or {}).label or row.item,
             need = row.count,
             have = have,
             missing = math.max(0, row.count - have),
@@ -159,8 +193,8 @@ local function buildRecipeStatus(Player, productId, st)
     return rows
 end
 
-local function hasAllIngredients(Player, productId, st)
-    for _, row in ipairs(getRecipe(productId, st)) do
+local function hasAllIngredients(Player, productId, st, src)
+    for _, row in ipairs(getEffectiveRecipe(productId, st, src)) do
         if not countItem(Player, row.item, row.count) then
             return false
         end
@@ -250,7 +284,7 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:getStationUi', function(s
                     sellBase = (st.mode == 'weapon') and 0 or prod.sellBase,
                     minigame = prod.minigame,
                     usesPrinter = productUsesPrinter(pid, st),
-                    ingredients = buildRecipeStatus(Player, pid, st),
+                    ingredients = buildRecipeStatus(Player, pid, st, src),
                     mode = st.mode or 'drugs',
                 }
             end
@@ -295,11 +329,11 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:startCraft', function(src
 
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return cb({ ok = false }) end
-    if not hasAllIngredients(Player, productId, st) then
+    if not hasAllIngredients(Player, productId, st, src) then
         return cb({ ok = false, reason = 'Trūksta ingredientų.' })
     end
 
-    local recipe = getRecipe(productId, st)
+    local recipe = getEffectiveRecipe(productId, st, src)
     if not removeItems(Player, recipe) then
         return cb({ ok = false, reason = 'Nepavyko paimti ingredientų.' })
     end
@@ -581,7 +615,7 @@ local function registerMaterialShop()
     if not cfg or not cfg.name or not cfg.items then return false end
     local validItems = {}
     for _, row in ipairs(cfg.items) do
-        if QBCore.Shared.Items[row.name] or QBCore.Shared.Items[string.lower(row.name or '')] then
+        if resolveSharedItem(row.name) then
             validItems[#validItems + 1] = row
         else
             logAdmin(('MaterialShop praleidžia nežinomą item: %s'):format(tostring(row.name)))
@@ -652,7 +686,7 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:buyMaterial', function(sr
         return cb({ ok = false, reason = 'Prekė nerasta.' })
     end
 
-    local shared = QBCore.Shared.Items[itemName]
+    local shared = resolveSharedItem(itemName)
     if not shared then
         return cb({ ok = false, reason = 'Daiktas neįregistruotas serveryje.' })
     end

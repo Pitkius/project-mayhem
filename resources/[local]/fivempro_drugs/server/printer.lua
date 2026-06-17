@@ -3,6 +3,17 @@ local QBCore = exports['qb-core']:GetCoreObject()
 Printers3d = Printers3d or { byId = {} }
 local pendingPrint = {}
 
+local function resolveSharedItem(itemName)
+    if not itemName then return nil end
+    local key = tostring(itemName):lower()
+    if QBCore.Shared.Items[key] then return QBCore.Shared.Items[key] end
+    for _, info in pairs(QBCore.Shared.Items) do
+        if type(info) == 'table' and info.name and string.lower(info.name) == key then
+            return info
+        end
+    end
+end
+
 local function cfg()
     return Config.Printer3d or {}
 end
@@ -118,7 +129,7 @@ local function refundIngredients(src, product)
     if not P or not product then return end
     for _, row in ipairs(product.ingredients or {}) do
         P.Functions.AddItem(row.item, row.count)
-        local shared = QBCore.Shared.Items[row.item]
+        local shared = resolveSharedItem(row.item)
         if shared then
             TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', row.count)
         end
@@ -135,11 +146,11 @@ local function buildProductRows(Player)
             local have = it and it.amount or 0
             local missing = math.max(0, row.count - have)
             if missing > 0 then canCraft = false end
-            local label = QBCore.Shared.Items[row.item] and QBCore.Shared.Items[row.item].label or row.item
+            local label = (resolveSharedItem(row.item) or {}).label or row.item
             ing[#ing + 1] = ('%s %d/%d'):format(label, have, row.count)
         end
         local out = prod.output or {}
-        local outLabel = QBCore.Shared.Items[out.item] and QBCore.Shared.Items[out.item].label or out.item
+        local outLabel = (resolveSharedItem(out.item) or {}).label or out.item
         rows[#rows + 1] = {
             id = id,
             label = prod.label or id,
@@ -174,7 +185,7 @@ RegisterNetEvent('fivempro_drugs:server:placePrinter', function(x, y, z, heading
     if not P.Functions.RemoveItem(item, 1) then
         return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko paimti itemo.', 'error')
     end
-    local shared = QBCore.Shared.Items[item]
+    local shared = resolveSharedItem(item)
     if shared then
         TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'remove', 1)
     end
@@ -214,7 +225,7 @@ RegisterNetEvent('fivempro_drugs:server:pickupPrinter', function(printerId)
     if P then
         local item = cfg().item or '3d_printer'
         P.Functions.AddItem(item, 1)
-        local shared = QBCore.Shared.Items[item]
+        local shared = resolveSharedItem(item)
         if shared then
             TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', 1)
         end
@@ -254,7 +265,7 @@ RegisterNetEvent('fivempro_drugs:server:startPrinterCraft', function(printerId, 
         return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko paimti medžiagų.', 'error')
     end
     for _, row in ipairs(product.ingredients or {}) do
-        local shared = QBCore.Shared.Items[row.item]
+        local shared = resolveSharedItem(row.item)
         if shared then
             TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'remove', row.count)
         end
@@ -308,7 +319,7 @@ RegisterNetEvent('fivempro_drugs:server:finishPrinterCraft', function(printerId,
         refundIngredients(src, product)
         return TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
     end
-    local shared = QBCore.Shared.Items[item]
+    local shared = resolveSharedItem(item)
     if shared then
         TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', count)
     end

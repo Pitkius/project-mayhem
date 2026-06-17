@@ -1528,7 +1528,7 @@ RegisterNetEvent('fivempro_ltpd:server:togglePdDoorGroup', function(groupId)
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return end
     local pc = GetEntityCoords(ped)
-    local reach = (Config.PdDoorToggleReach or 4.2) + 0.05
+    local reach = (Config.PdDoorToggleReach or 5.0) + 0.35
     local ok = false
     for _, c in ipairs(meta.slabs) do
         if #(pc - c) <= reach then
@@ -1536,15 +1536,16 @@ RegisterNetEvent('fivempro_ltpd:server:togglePdDoorGroup', function(groupId)
             break
         end
     end
+    local interactReach = math.max(meta.interactDist or 2.5, Config.PdDoorToggleReach or 5.0) + 0.5
     if not ok and meta.interact then
-        if #(pc - meta.interact) <= (meta.interactDist or 2.5) + 1.45 then
+        if #(pc - meta.interact) <= interactReach then
             ok = true
         end
     end
     if not ok and type(meta.interactAnchors) == 'table' then
         for _, anch in ipairs(meta.interactAnchors) do
             local ac = anch.coords
-            if ac and #(pc - ac) <= (anch.interactDist or 2.5) + 1.45 then
+            if ac and #(pc - ac) <= math.max(anch.interactDist or 2.5, Config.PdDoorToggleReach or 5.0) + 0.5 then
                 ok = true
                 break
             end

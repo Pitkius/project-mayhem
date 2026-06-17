@@ -57,6 +57,7 @@ dependencies {
     'qb-core',
     'qb-menu',
     'qb-inventory',
+    'qb-target',
     'fivempro_dispatch',
     'fivempro_siren_controller',
 }

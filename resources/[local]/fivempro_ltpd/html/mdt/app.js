@@ -170,6 +170,12 @@ window.addEventListener('message', (e) => {
   }
   if (d.action === 'mdtPlayerPos' && window.MdtMap && d.x != null && d.y != null) {
     MdtMap.setLocalPlayerPos(d);
+    if (lastDispatchPayload && mdtSessionActive && !mdtSurveillanceLive) {
+      renderDispatchMap({
+        ...lastDispatchPayload,
+        selfSource: d.selfSource != null ? d.selfSource : lastDispatchPayload.selfSource,
+      });
+    }
   }
   if (d.action === 'dispatchLive') {
     if (!mdtSessionActive || mdtSurveillanceLive || !d.data) return;
@@ -512,7 +518,7 @@ function startDispatchPoll() {
   dispatchPoll = setInterval(() => {
     if (!mdtSessionActive || mdtSurveillanceLive) return;
     refreshDispatch();
-  }, 1000);
+  }, 350);
 }
 
 function countObj(obj) {

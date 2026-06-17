@@ -268,6 +268,7 @@ local function getItemsFromCore()
 end
 
 local holsterApplyPending = false
+local lastHolsterVisualSig = nil
 
 local function isThrowableInventoryWeaponName(name)
     if not name then return true end
@@ -301,14 +302,43 @@ local function isExternallyBackCarriedWeapon(name)
     return ok and res == true
 end
 
+local function buildHolsterVisualSignature(items)
+    if not items then return '' end
+    local parts = {}
+    for _, item in pairs(items) do
+        if item and item.type == 'weapon' and (tonumber(item.amount) or 0) > 0 then
+            local name = tostring(item.name or '')
+            if not isThrowableInventoryWeaponName(name) and not isExternallyBackCarriedWeapon(name) then
+                local attachments = ''
+                if item.info and item.info.attachments then
+                    local ac = {}
+                    for _, a in pairs(item.info.attachments) do
+                        ac[#ac + 1] = tostring(a.component or a)
+                    end
+                    table.sort(ac)
+                    attachments = table.concat(ac, ',')
+                end
+                local tint = item.info and item.info.tint or ''
+                parts[#parts + 1] = name .. '#' .. attachments .. '#' .. tostring(tint)
+            end
+        end
+    end
+    table.sort(parts)
+    return table.concat(parts, '|') .. '@' .. tostring(currentWeapon or '')
+end
+
 --- Visi inventoriaus ginklai ant pedo (paslėpti), išskyrus dabar pasirinktą — kad matytųsi ant nugaros/kojų.
-function applyHolsteredWeaponsFromInventory()
+function applyHolsteredWeaponsFromInventory(force)
     if not LocalPlayer.state.isLoggedIn then return end
     if currentWeapon and isThrowableInventoryWeaponName(currentWeapon) then return end
+    local items = getItemsFromCore()
+    local sig = buildHolsterVisualSignature(items)
+    if not force and sig == lastHolsterVisualSig then return end
+    lastHolsterVisualSig = sig
+
     local ped = PlayerPedId()
     RemoveAllPedWeapons(ped, true)
 
-    local items = getItemsFromCore()
     if not items then
         SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
         return
@@ -402,6 +432,7 @@ AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
+    lastHolsterVisualSig = nil
     for k in pairs(Config.WeaponRepairPoints) do
         Config.WeaponRepairPoints[k].IsRepairing = false
         Config.WeaponRepairPoints[k].RepairingData = {}
@@ -632,7 +663,7 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
         TriggerEvent('qb-weapons:client:DrawWeapon', nil)
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', nil, shootbool)
         currentWeapon = nil
-        applyHolsteredWeaponsFromInventory()
+        applyHolsteredWeaponsFromInventory(true)
     elseif weaponName == 'weapon_stickybomb' or weaponName == 'weapon_pipebomb' or weaponName == 'weapon_smokegrenade' or weaponName == 'weapon_flare' or weaponName == 'weapon_proxmine' or weaponName == 'weapon_ball' or weaponName == 'weapon_molotov' or weaponName == 'weapon_grenade' or weaponName == 'weapon_bzgas' then
         TriggerEvent('qb-weapons:client:DrawWeapon', weaponName)
         GiveWeaponToPed(ped, weaponHash, 1, false, false)
@@ -652,7 +683,7 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
         TriggerEvent('qb-weapons:client:DrawWeapon', weaponName)
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', weaponData, shootbool)
         currentWeapon = weaponName
-        applyHolsteredWeaponsFromInventory()
+        applyHolsteredWeaponsFromInventory(true)
         weaponHash = joaat(weaponData.name)
         local syncedAmmo = GetAmmoInPedWeapon(ped, weaponHash)
         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', weaponData, syncedAmmo)
@@ -665,7 +696,7 @@ RegisterNetEvent('qb-weapons:client:CheckWeapon', function(weaponName)
     TriggerEvent('qb-weapons:ResetHolster')
     TriggerEvent('qb-weapons:client:SetCurrentWeapon', nil, CanShoot)
     currentWeapon = nil
-    applyHolsteredWeaponsFromInventory()
+    applyHolsteredWeaponsFromInventory(true)
 end)
 
 -- Threads
@@ -677,7 +708,7 @@ end)
 --- Kai kurie resursai vėl įjungia begalinę apkabą – blokuoja tikrą kulkų mažėjimą.
 CreateThread(function()
     while true do
-        Wait(75)
+        Wait(150)
         local ped = PlayerPedId()
         if IsPedArmed(ped, 7) then
             local w = GetSelectedPedWeapon(ped)
@@ -690,33 +721,41 @@ end)
 
 CreateThread(function()
     while true do
-        -- R = INPUT_RELOAD (45). Kiti resursai gali išjungti valdiklį — vis tiek leidžiame ir tikriname „disabled“ būseną.
-        EnableControlAction(0, 45, true)
-        local reloadPressed = IsControlJustPressed(0, 45) or IsDisabledControlJustPressed(0, 45)
-        if reloadPressed then
-            local now = GetGameTimer()
-            if not isReloading and now - lastAutoReloadAt > 500 then
-                lastAutoReloadAt = now
+        local waitMs = 250
+        if LocalPlayer.state.isLoggedIn then
+            EnableControlAction(0, 45, true)
+            local ped = PlayerPedId()
+            if IsPedArmed(ped, 7) then
+                waitMs = 50
+                local reloadPressed = IsControlJustPressed(0, 45) or IsDisabledControlJustPressed(0, 45)
+                if reloadPressed then
+                    local now = GetGameTimer()
+                    if not isReloading and now - lastAutoReloadAt > 500 then
+                        lastAutoReloadAt = now
 
-                local ped = PlayerPedId()
-                local weapon = GetSelectedPedWeapon(ped)
-                local selectedWeaponData = QBCore.Shared.Weapons[weapon]
-                if selectedWeaponData and selectedWeaponData.name ~= 'weapon_unarmed' then
-                    local ammoType = tostring(selectedWeaponData.ammotype or ''):upper()
-                    local ammoItemName = pickAmmoItemForType(ammoType)
-                    if ammoItemName and PlayerData and PlayerData.items then
-                        for _, item in pairs(PlayerData.items) do
-                            if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
-                                local invSlot = tonumber(item.slot)
-                                TriggerServerEvent('qb-weapons:server:requestQuickReload', ammoItemName, ammoType, invSlot)
-                                break
+                        local weapon = GetSelectedPedWeapon(ped)
+                        local selectedWeaponData = QBCore.Shared.Weapons[weapon]
+                        if selectedWeaponData and selectedWeaponData.name ~= 'weapon_unarmed' then
+                            local ammoType = tostring(selectedWeaponData.ammotype or ''):upper()
+                            local ammoItemName = pickAmmoItemForType(ammoType)
+                            if ammoItemName then
+                                local items = getItemsFromCore()
+                                if items then
+                                    for _, item in pairs(items) do
+                                        if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
+                                            local invSlot = tonumber(item.slot)
+                                            TriggerServerEvent('qb-weapons:server:requestQuickReload', ammoItemName, ammoType, invSlot)
+                                            break
+                                        end
+                                    end
+                                end
                             end
                         end
                     end
                 end
             end
         end
-        Wait(0)
+        Wait(waitMs)
     end
 end)
 
@@ -761,40 +800,47 @@ CreateThread(function()
     end
 end)
 
+local lastDurabilityCheckAt = 0
+
 CreateThread(function()
     while true do
-        if LocalPlayer.state.isLoggedIn then
+        local waitMs = 400
+        if LocalPlayer.state.isLoggedIn and CurrentWeaponData and next(CurrentWeaponData) then
             local ped = PlayerPedId()
-            if CurrentWeaponData and next(CurrentWeaponData) then
-                if IsPedShooting(ped) or IsControlJustPressed(0, 24) then
+            if IsPedArmed(ped, 7) then
+                waitMs = 50
+                if IsPedShooting(ped) then
                     local weapon = GetSelectedPedWeapon(ped)
                     clearPedWeaponInfiniteAmmo(ped, weapon)
                     if CanShoot then
                         if weapon and weapon ~= 0 and QBCore.Shared.Weapons[weapon] then
-                            QBCore.Functions.TriggerCallback('prison:server:checkThrowable', function(result)
-                                if result or GetAmmoInPedWeapon(ped, weapon) <= 0 then return end
-                                MultiplierAmount += 1
-                            end, weapon)
-                            Wait(200)
+                            local now = GetGameTimer()
+                            if now - lastDurabilityCheckAt > 180 then
+                                lastDurabilityCheckAt = now
+                                QBCore.Functions.TriggerCallback('prison:server:checkThrowable', function(result)
+                                    if result or GetAmmoInPedWeapon(ped, weapon) <= 0 then return end
+                                    MultiplierAmount += 1
+                                end, weapon)
+                            end
                         end
-                    else
-                        if weapon ~= `WEAPON_UNARMED` then
-                            TriggerEvent('qb-weapons:client:CheckWeapon', QBCore.Shared.Weapons[weapon]['name'])
-                            QBCore.Functions.Notify(Lang:t('error.weapon_broken'), 'error')
-                            MultiplierAmount = 0
-                        end
+                    elseif weapon ~= `WEAPON_UNARMED` then
+                        TriggerEvent('qb-weapons:client:CheckWeapon', QBCore.Shared.Weapons[weapon]['name'])
+                        QBCore.Functions.Notify(Lang:t('error.weapon_broken'), 'error')
+                        MultiplierAmount = 0
                     end
                 end
             end
         end
-        Wait(0)
+        Wait(waitMs)
     end
 end)
 
 CreateThread(function()
     while true do
+        local waitMs = 1500
         if LocalPlayer.state.isLoggedIn then
             local inRange = false
+            local nearInteract = false
             local ped = PlayerPedId()
             local pos = GetEntityCoords(ped)
             local myCitizenId = (QBCore.Functions.GetPlayerData() or {}).citizenid
@@ -803,6 +849,7 @@ CreateThread(function()
                 if distance < 10 then
                     inRange = true
                     if distance < 1 then
+                        nearInteract = true
                         if data.IsRepairing then
                             if data.RepairingData.CitizenId ~= myCitizenId then
                                 DrawText3Ds(data.coords.x, data.coords.y, data.coords.z, Lang:t('info.repairshop_not_usable'))
@@ -850,10 +897,12 @@ CreateThread(function()
                     end
                 end
             end
-            if not inRange then
-                Wait(1000)
+            if nearInteract then
+                waitMs = 5
+            elseif inRange then
+                waitMs = 250
             end
         end
-        Wait(0)
+        Wait(waitMs)
     end
 end)

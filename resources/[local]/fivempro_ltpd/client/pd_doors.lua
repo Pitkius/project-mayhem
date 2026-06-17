@@ -258,6 +258,14 @@ local function buildPdDoorProximityZones()
 end
 
 local cachedDoorProximityZones = nil
+local doorTargetZoneIds = {} ---@type table<string, boolean>
+local useQbTargetDoors = false
+
+local function doorInteractRadius(dist)
+    local base = tonumber(dist) or 2.5
+    local reach = tonumber(Config.PdDoorToggleReach) or 5.0
+    return math.max(base, reach) + 0.35
+end
 
 local function getPdDoorProximityZones()
     if not cachedDoorProximityZones then
@@ -276,18 +284,67 @@ local function nearestPdDoorDist(pcoords)
     return minD
 end
 
-local function pdDoorZoneIdleWaitMs(zones, pcoords)
-    local wm = 1200
-    for _, z in ipairs(zones) do
-        local d = #(pcoords - z.pos)
-        if d < z.maxd + 2.0 then
-            return 250
-        end
-        if d < z.maxd + 14.0 then
-            wm = 400
-        end
+local function removeDoorTargetZone(zoneId)
+    if not zoneId or not doorTargetZoneIds[zoneId] then return end
+    if GetResourceState('qb-target') == 'started' then
+        pcall(function()
+            exports['qb-target']:RemoveZone(zoneId)
+        end)
     end
-    return wm
+    doorTargetZoneIds[zoneId] = nil
+end
+
+local function registerDoorTargetZone(zoneId, groupId, pos, interactDist, label)
+    if not zoneId or not groupId or not pos or doorTargetZoneIds[zoneId] then return false end
+    if GetResourceState('qb-target') ~= 'started' then return false end
+
+    local radius = doorInteractRadius(interactDist)
+    local optionLabel = label and ('%s'):format(label) or 'Durų spyna'
+
+    exports['qb-target']:AddCircleZone(zoneId, pos, radius, {
+        name = zoneId,
+        debugPoly = false,
+        useZ = true,
+    }, {
+        options = {
+            {
+                icon = 'fas fa-door-closed',
+                label = optionLabel,
+                action = function()
+                    TriggerServerEvent('fivempro_ltpd:server:togglePdDoorGroup', groupId)
+                end,
+                canInteract = function()
+                    return canUseDoorGroupClient(groupId)
+                end,
+            },
+        },
+        distance = radius + 1.25,
+    })
+
+    doorTargetZoneIds[zoneId] = true
+    return true
+end
+
+local function registerDoorGroupTarget(g)
+    if not g or not g.interact then return end
+    local zoneId = ('ltpd_door_%s_main'):format(g.id)
+    registerDoorTargetZone(zoneId, g.id, g.interact, g.interactDist, g.label)
+end
+
+local function setupDoorTargetsFromZones()
+    if GetResourceState('qb-target') ~= 'started' then return false end
+    local zones = getPdDoorProximityZones()
+    for i, z in ipairs(zones) do
+        local g = findDoorGroupById(z.groupId)
+        local zoneId = ('ltpd_door_%s_%d'):format(z.groupId, i)
+        registerDoorTargetZone(zoneId, z.groupId, z.pos, z.maxd, g and g.label)
+    end
+    return true
+end
+
+local function setupPdDoorTargets()
+    useQbTargetDoors = setupDoorTargetsFromZones()
+    return useQbTargetDoors
 end
 
 local function ensureDoorInSystem(dh, modelHash, x, y, z)
@@ -849,6 +906,7 @@ local function scanDynamicForStation(dyn)
                 slabs = slabs,
                 entities = entities,
             }
+            registerDoorGroupTarget(doorGroups[#doorGroups])
             local regSlabs = {}
             for _, s in ipairs(cluster) do
                 regSlabs[#regSlabs + 1] = { x = s.coords.x, y = s.coords.y, z = s.coords.z, model = s.modelHash }
@@ -867,6 +925,11 @@ CreateThread(function()
     cachedDoorProximityZones = buildPdDoorProximityZones()
     for id, locked in pairs(doorLocked) do
         applyGroupLocked(id, locked)
+    end
+    local waited = 0
+    while not setupPdDoorTargets() and waited < 45 do
+        Wait(1000)
+        waited = waited + 1
     end
 end)
 
@@ -984,41 +1047,57 @@ AddEventHandler('onResourceStart', function(res)
 end)
 
 local lastToggle = 0
+
+--- qb-target durų zonos (pagrindinis būdas). E mygtukas – atsarginis, jei target neįkeltas.
 CreateThread(function()
     while true do
-        local ped = PlayerPedId()
-        local pcoords = GetEntityCoords(ped)
-        if nearestPdDoorDist(pcoords) > 140.0 then
-            Wait(2000)
-        else
-            local zones = getPdDoorProximityZones()
-            local waitMs = pdDoorZoneIdleWaitMs(zones, pcoords)
-
-            local bestByGroup = {}
-            local closestHit = nil
-
-            for _, z in ipairs(zones) do
-                local d = #(pcoords - z.pos)
-                if d <= z.maxd then
-                    local prev = bestByGroup[z.groupId]
-                    if not prev or d < prev.d then
-                        bestByGroup[z.groupId] = { d = d, z = z }
-                    end
-                    if not closestHit or d < closestHit.d then
-                        closestHit = { gid = z.groupId, d = d, z = z }
+        if useQbTargetDoors then
+            local ped = PlayerPedId()
+            local pcoords = GetEntityCoords(ped)
+            if canUseServiceDoorsClient() and nearestPdDoorDist(pcoords) < 55.0 then
+                for _, g in ipairs(doorGroups) do
+                    if g.interact and canUseDoorGroupClient(g.id) then
+                        if #(pcoords - g.interact) < (g.interactDist or 2.5) + 6.5 then
+                            drawGroupLockIcons(g, pcoords, isGroupLocked(g.id))
+                        end
                     end
                 end
+                Wait(0)
+            else
+                Wait(600)
             end
+        else
+            local ped = PlayerPedId()
+            local pcoords = GetEntityCoords(ped)
+            if nearestPdDoorDist(pcoords) > 140.0 then
+                Wait(2000)
+            else
+                local zones = getPdDoorProximityZones()
+                local waitMs = 150
+                local reach = doorInteractRadius(Config.PdDoorToggleReach)
 
-            if next(bestByGroup) then
-                waitMs = math.min(waitMs, 250)
-                if canUseServiceDoorsClient() then
+                local bestByGroup = {}
+                local closestHit = nil
+
+                for _, z in ipairs(zones) do
+                    local d = #(pcoords - z.pos)
+                    if d <= reach then
+                        local prev = bestByGroup[z.groupId]
+                        if not prev or d < prev.d then
+                            bestByGroup[z.groupId] = { d = d, z = z }
+                        end
+                        if not closestHit or d < closestHit.d then
+                            closestHit = { gid = z.groupId, d = d, z = z }
+                        end
+                    end
+                end
+
+                if next(bestByGroup) and canUseServiceDoorsClient() then
                     for gid, hit in pairs(bestByGroup) do
                         if canUseDoorGroupClient(gid) then
                             local g = findDoorGroupById(gid)
                             if g then
-                                local locked = isGroupLocked(gid)
-                                drawGroupLockIcons(g, pcoords, locked)
+                                drawGroupLockIcons(g, pcoords, isGroupLocked(gid))
                             end
                         end
                     end
@@ -1026,17 +1105,33 @@ CreateThread(function()
                         local now = GetGameTimer()
                         if now - lastToggle > 650 then
                             lastToggle = now
-                            local g = findDoorGroupById(closestHit.gid)
-                            if g then
-                                TriggerServerEvent('fivempro_ltpd:server:togglePdDoorGroup', g.id)
-                            end
+                            TriggerServerEvent('fivempro_ltpd:server:togglePdDoorGroup', closestHit.gid)
                         end
                     end
+                else
+                    waitMs = 500
                 end
-            end
 
-            Wait(waitMs)
+                Wait(waitMs)
+            end
         end
+    end
+end)
+
+AddEventHandler('onResourceStart', function(res)
+    if res == 'qb-target' then
+        SetTimeout(800, function()
+            doorTargetZoneIds = {}
+            cachedDoorProximityZones = nil
+            setupPdDoorTargets()
+        end)
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for zoneId in pairs(doorTargetZoneIds) do
+        removeDoorTargetZone(zoneId)
     end
 end)
 

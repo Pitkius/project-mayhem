@@ -691,7 +691,7 @@ local function setupStations()
 end
 
 local WEAPON_PART_ITEMS = {
-    'metal_scrap', 'gun_frame', 'gun_barrel', 'gun_spring', 'gun_trigger', 'weapon_parts',
+    'metal_scrap', 'gun_frame', 'gun_barrel', 'gun_spring', 'gun_trigger', 'weapon_parts', 'weapon_prototype', '3d_printer',
     'pistol_ammo', 'smg_ammo', 'rifle_ammo', 'shotgun_ammo',
 }
 

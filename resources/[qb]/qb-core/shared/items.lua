@@ -541,6 +541,7 @@ QBShared.Items = {
     gun_spring                   = { name = 'gun_spring', label = 'Spyruoklė', weight = 40, type = 'item', image = 'gun_spring.png', unique = false, useable = false, shouldClose = false, description = 'Mechaninė spyruoklė.' },
     gun_trigger                  = { name = 'gun_trigger', label = 'Užtaisas', weight = 60, type = 'item', image = 'gun_trigger.png', unique = false, useable = false, shouldClose = false, description = 'Ginklo užtaisas.' },
     weapon_parts                 = { name = 'weapon_parts', label = 'Ginklo komponentai', weight = 180, type = 'item', image = 'weapon_parts.png', unique = false, useable = false, shouldClose = false, description = 'Sudėtinės ginklo dalys.' },
-    ['3d_printer']               = { name = '3d_printer', label = '3D spausdintuvas', weight = 8500, type = 'item', image = '3d_printer.png', unique = false, useable = true, shouldClose = true, description = 'Nešiojamas 3D spausdintuvas — padėk ir spausdink ginklų dalis.' },
+    weapon_prototype             = { name = 'weapon_prototype', label = 'Ginklo prototipas', weight = 120, type = 'item', image = 'weapon_prototype.png', unique = false, useable = false, shouldClose = false, description = '3D spausdinimo šablonas ginklų dalims.' },
+    ['3d_printer']               = { name = '3d_printer', label = '3D spausdintuvas', weight = 8500, type = 'item', image = '3d_printer.png', unique = false, useable = true, shouldClose = true, description = 'Nešiojamas 3D spausdintuvas — padėk žemėje ir spausdink specialias dalis.' },
 
 }

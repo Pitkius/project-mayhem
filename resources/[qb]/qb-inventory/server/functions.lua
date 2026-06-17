@@ -20,11 +20,23 @@ local function GetFirstFreeSlot(items, maxSlots)
     return nil
 end
 
+local function resolveSharedItem(itemName)
+    if not itemName then return nil end
+    local key = tostring(itemName):lower()
+    local itemInfo = QBCore.Shared.Items[key]
+    if itemInfo then return itemInfo end
+    for _, info in pairs(QBCore.Shared.Items) do
+        if type(info) == 'table' and info.name and string.lower(info.name) == key then
+            return info
+        end
+    end
+end
+
 local function SetupShopItems(shopItems)
     local items = {}
     if shopItems and next(shopItems) then
         for index, item in ipairs(shopItems) do
-            local itemInfo = QBCore.Shared.Items[item.name:lower()]
+            local itemInfo = resolveSharedItem(item.name)
             if itemInfo then
                 local slot = tonumber(item.slot) or index
                 items[slot] = {

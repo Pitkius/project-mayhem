@@ -319,6 +319,38 @@ RegisterNetEvent('fivempro_npcshops:client:openBarberWithAnim', function(data)
     TriggerEvent('qb-clothing:client:openBarberOnly')
 end)
 
+local function refreshShopTargetsAfterTargetRestart()
+    if GetResourceState('qb-target') ~= 'started' then return end
+    jobBoxZones = {}
+    for _, entry in ipairs(Config.JobStationNpcs or {}) do
+        if not isJobMarkerRole(entry.role) then
+            addJobBoxZone({
+                category = 'job',
+                job = entry.job,
+                stationId = entry.stationId,
+                role = entry.role,
+                label = entry.label,
+                coords = entry.coords,
+            })
+        end
+    end
+    for _, ped in ipairs(GetGamePool('CPed')) do
+        if DoesEntityExist(ped) and not IsPedAPlayer(ped) then
+            local meta = Entity(ped).state.npcShopMeta
+            if meta then
+                configured[ped] = nil
+                configureShopPed(ped, meta, ped)
+            end
+        end
+    end
+end
+
+AddEventHandler('onResourceStart', function(resourceName)
+    if resourceName == 'qb-target' then
+        SetTimeout(1200, refreshShopTargetsAfterTargetRestart)
+    end
+end)
+
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
     for i = 1, #spawnedBlips do

@@ -76,8 +76,10 @@ Config.FinePresets = {
 }
 
 --- MDT žemėlapis — Leaflet CRS.Simple, 1:1 su GetEntityCoords (X→lng, Y→lat).
---- HD satelitas 2048×2048; kalibracija pagal žinomas vietas ant PNG (u/v ∈ [0,1]).
+--- projection = 'identity' — tiksliausia blipų pozicija (be senos afini kalibracijos).
+--- Jei reikia koreguoti PNG, naudok offsetX/offsetY arba projection = 'affine' + calibration.
 Config.MdtMap = {
+    projection = 'identity',
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
     coordMin = { x = -4000.0, y = -4000.0 },
@@ -89,20 +91,9 @@ Config.MdtMap = {
     scaleX = 1.0,
     scaleY = 1.0,
     flipY = false,
-    syncGameBounds = false,
     imageFile = 'mdt/asset/gtav_satellite_2048.png',
     imageWidth = 2048,
     imageHeight = 2048,
-    --- u: 0=vakarai (kairė), 1=rytai; v: 0=šiaurė (viršus PNG), 1=pietūs (apačia)
-    calibration = {
-        { gx = -448.15, gy = 6012.0, u = 0.418, v = 0.072 },   -- Paleto PD
-        { gx = 450.77, gy = 5566.86, u = 0.500, v = 0.125 },   -- Mt Chiliad
-        { gx = 1853.2, gy = 3686.5, u = 0.708, v = 0.362 },    -- Sandy Shores PD
-        { gx = -2360.0, gy = 3249.0, u = 0.138, v = 0.455 },   -- Fort Zancudo
-        { gx = 441.84, gy = -982.05, u = 0.404, v = 0.756 },   -- MRPD
-        { gx = 379.39, gy = -1591.37, u = 0.410, v = 0.788 },  -- Davis PD
-        { gx = -1037.0, gy = -2737.0, u = 0.276, v = 0.874 },  -- LSIA
-    },
 }
 
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)
@@ -380,7 +371,7 @@ Config.TargetDistance = 2.5
 Config.MaxFineAmount = 50000
 
 --- PD durys / vartai (Gabz MRPD LS + automatinis Sandy / Paleto MLO skenavimas)
-Config.PdDoorToggleReach = 4.2
+Config.PdDoorToggleReach = 5.0
 Config.PdDoorGroups = {
     {
         id = 'ls_mrpd_reception',

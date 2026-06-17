@@ -283,7 +283,7 @@ CreateThread(function()
                 z = c.z,
                 heading = GetEntityHeading(ped),
             }, true)
-            Wait(400)
+            Wait(150)
         else
             if LocalPlayer.state.dispatchGps then
                 LocalPlayer.state:set('dispatchGps', nil, true)

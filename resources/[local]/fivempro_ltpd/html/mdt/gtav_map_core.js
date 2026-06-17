@@ -75,9 +75,13 @@ window.GtavMapCore = (function () {
    * Kalibracija: žinomos vietos ant PNG (u,v ∈ [0,1], v=0 šiaurė).
    * Afini transformacija (gx,gy) → (u,v) — tiksliau nei atskiri X/Y linijiniai fit'ai.
    */
-  function applyCalibration(cfg, points) {
-    if (!Array.isArray(points) || points.length < 3) return cfg;
-
+  function calibrationTargets(points, cfg) {
+    const mapRangeX = cfg.maxX - cfg.minX || 1;
+    const mapRangeY = cfg.maxY - cfg.minY || 1;
+    const scaleX = cfg.scaleX || 1;
+    const scaleY = cfg.scaleY || 1;
+    const ox = cfg.offsetX || 0;
+    const oy = cfg.offsetY || 0;
     const clean = [];
     points.forEach((p) => {
       const px = num(p.gx, NaN);
@@ -88,9 +92,24 @@ window.GtavMapCore = (function () {
       clean.push({
         gx: px,
         gy: py,
-        u: Math.max(0, Math.min(1, pu)),
-        v: Math.max(0, Math.min(1, pv)),
+        lng: cfg.minX + pu * mapRangeX * scaleX + ox,
+        lat: cfg.maxY - pv * mapRangeY * scaleY + oy,
       });
+    });
+    return clean;
+  }
+
+  function applyCalibration(cfg, points) {
+    if (!Array.isArray(points) || points.length < 3) return cfg;
+
+    const clean = [];
+    points.forEach((p) => {
+      const px = num(p.gx, NaN);
+      const py = num(p.gy, NaN);
+      const pu = num(p.u, NaN);
+      const pv = num(p.v, NaN);
+      if (!Number.isFinite(px) || !Number.isFinite(py) || !Number.isFinite(pu) || !Number.isFinite(pv)) return;
+      clean.push({ gx: px, gy: py, u: pu, v: pv });
     });
 
     if (clean.length < 3) return cfg;
@@ -101,6 +120,23 @@ window.GtavMapCore = (function () {
 
     cfg.affineU = coeffsU;
     cfg.affineV = coeffsV;
+
+    const direct = calibrationTargets(points, cfg);
+    if (direct.length >= 3) {
+      const coeffsLng = fitAffineGameToNorm(
+        direct.map((p) => ({ gx: p.gx, gy: p.gy, target: p.lng })),
+        "target",
+      );
+      const coeffsLat = fitAffineGameToNorm(
+        direct.map((p) => ({ gx: p.gx, gy: p.gy, target: p.lat })),
+        "target",
+      );
+      if (coeffsLng && coeffsLat) {
+        cfg.affineLng = coeffsLng;
+        cfg.affineLat = coeffsLat;
+      }
+    }
+
     return cfg;
   }
 
@@ -108,10 +144,7 @@ window.GtavMapCore = (function () {
     if (cfg.affineU && cfg.affineV) {
       const u = cfg.affineU[0] * gx + cfg.affineU[1] * gy + cfg.affineU[2];
       const v = cfg.affineV[0] * gx + cfg.affineV[1] * gy + cfg.affineV[2];
-      return [
-        Math.max(0, Math.min(1, u)),
-        Math.max(0, Math.min(1, v)),
-      ];
+      return [u, v];
     }
 
     const rangeX = cfg.coordMaxX - cfg.coordMinX || 1;
@@ -156,7 +189,10 @@ window.GtavMapCore = (function () {
     const maxY = num(t.gameMax?.y, ISLAND.gameMax.y);
     const file = t.imageFile || defaultImageFile || "mdt/asset/gtav_satellite_2048.png";
 
+    const projection = String(t.projection || "identity").toLowerCase();
+
     const out = {
+      projection,
       minX,
       minY,
       maxX,
@@ -179,7 +215,7 @@ window.GtavMapCore = (function () {
       imageUrl: nuiImageUrl(file, resourceName),
     };
 
-    if (Array.isArray(t.calibration) && t.calibration.length >= 3) {
+    if (projection === "affine" && Array.isArray(t.calibration) && t.calibration.length >= 3) {
       applyCalibration(out, t.calibration);
     }
 
@@ -199,7 +235,7 @@ window.GtavMapCore = (function () {
     return L.latLngBounds([cfg.minY + oy, cfg.minX + ox], [cfg.maxY + oy, cfg.maxX + ox]);
   }
 
-  /** GTA (x,y) → Leaflet [lat, lng] — lat=Y, lng=X. v=0 šiaurė (viršus PNG). */
+  /** GTA (x,y) → Leaflet [lat, lng] — lat=Y, lng=X. */
   function gameToLatLng(gx, gy, cfg) {
     if (!cfg) return [Number(gy) || 0, Number(gx) || 0];
     const x = Number(gx);
@@ -210,6 +246,18 @@ window.GtavMapCore = (function () {
 
     const ox = cfg.offsetX || 0;
     const oy = cfg.offsetY || 0;
+    const projection = String(cfg.projection || "identity").toLowerCase();
+
+    if (projection === "identity") {
+      return [y + oy, x + ox];
+    }
+
+    if (projection === "affine" && cfg.affineLat && cfg.affineLng) {
+      const lng = cfg.affineLng[0] * x + cfg.affineLng[1] * y + cfg.affineLng[2];
+      const lat = cfg.affineLat[0] * x + cfg.affineLat[1] * y + cfg.affineLat[2];
+      return [lat, lng];
+    }
+
     const scaleX = cfg.scaleX || 1;
     const scaleY = cfg.scaleY || 1;
     const mapRangeX = cfg.maxX - cfg.minX || 1;
@@ -223,14 +271,37 @@ window.GtavMapCore = (function () {
 
   function latLngToGame(lat, lng, cfg) {
     if (!cfg) return { x: Number(lng) || 0, y: Number(lat) || 0 };
+    const ox = cfg.offsetX || 0;
+    const oy = cfg.offsetY || 0;
+    const projection = String(cfg.projection || "identity").toLowerCase();
+
+    if (projection === "identity") {
+      return { x: Number(lng) - ox, y: Number(lat) - oy };
+    }
+
+    if (projection === "affine" && cfg.affineLat && cfg.affineLng) {
+      const a = cfg.affineLng[0];
+      const b = cfg.affineLng[1];
+      const c = cfg.affineLng[2];
+      const d = cfg.affineLat[0];
+      const e = cfg.affineLat[1];
+      const f = cfg.affineLat[2];
+      const rhsLng = Number(lng) - c;
+      const rhsLat = Number(lat) - f;
+      const det = a * e - b * d;
+      if (Math.abs(det) < 1e-12) return { x: 0, y: 0 };
+      return {
+        x: (e * rhsLng - b * rhsLat) / det,
+        y: (-d * rhsLng + a * rhsLat) / det,
+      };
+    }
+
     const mapRangeX = cfg.maxX - cfg.minX || 1;
     const mapRangeY = cfg.maxY - cfg.minY || 1;
     const scaleX = cfg.scaleX || 1;
     const scaleY = cfg.scaleY || 1;
-    let u = (Number(lng) - (cfg.offsetX || 0) - cfg.minX) / (mapRangeX * scaleX);
-    let v = (cfg.maxY - (Number(lat) - (cfg.offsetY || 0))) / (mapRangeY * scaleY);
-    u = Math.max(0, Math.min(1, u));
-    v = Math.max(0, Math.min(1, v));
+    let u = (Number(lng) - ox - cfg.minX) / (mapRangeX * scaleX);
+    let v = (cfg.maxY - (Number(lat) - oy)) / (mapRangeY * scaleY);
     return normUVToGame(u, v, cfg);
   }
 

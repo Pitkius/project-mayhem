@@ -351,6 +351,16 @@ end
 
 exports('CheckBones', CheckBones)
 
+local function zoneEffectiveDistance(zone, zoneCentre, playerCoords, rayDist)
+	local zoneReach = zone.targetoptions.distance or Config.MaxDistance
+	local playerInside = playerCoords and zone:isPointInside(playerCoords)
+	if playerInside then
+		local playerZoneDist = #(playerCoords - zoneCentre)
+		return playerZoneDist, true, zoneReach
+	end
+	return rayDist, false, zoneReach
+end
+
 local function EnableTarget()
 	if not allowTarget or success or (not Config.Standalone and not LocalPlayer.state['isLoggedIn']) or IsNuiFocused() or (Config.DisableInVehicle and IsPedInAnyVehicle(playerPed or PlayerPedId(), false)) then return end
 	if targetActive then return end
@@ -501,23 +511,26 @@ local function EnableTarget()
 				local closestDis, closestZone
 				for k, zone in pairs(Zones) do
 					local zoneCentre = getZoneCentre(zone)
-					local zoneReach = zone.targetoptions.distance or Config.MaxDistance
 					local insideZone = zone:isPointInside(coords)
 						or (playerCoords and zone:isPointInside(playerCoords))
-					local interactDist = distance
+					local effectiveDist, playerInside, zoneReach = zoneEffectiveDistance(zone, zoneCentre, playerCoords, distance)
 					local losTarget = zone:isPointInside(coords) and coords or zoneCentre
-					local canSeeZone = eyeCoords and hasPointLineOfSight(eyeCoords, losTarget)
+					local canSeeZone = playerInside
+						or not Config.RequireLineOfSight
+						or (eyeCoords and hasPointLineOfSight(eyeCoords, losTarget))
 
-					if canSeeZone and insideZone and interactDist <= zoneReach and interactDist < (closestDis or Config.MaxDistance) then
-						closestDis = interactDist
+					if canSeeZone and insideZone and effectiveDist <= zoneReach and effectiveDist < (closestDis or Config.MaxDistance) then
+						closestDis = effectiveDist
 						closestZone = zone
 					end
 					if Config.DrawSprite then
 						local drawDistance = zone.targetoptions.drawDistance or Config.DrawDistance
 						local playerToCentre = playerCoords and #(playerCoords - zoneCentre) or 999.0
-						local canSeeSprite = eyeCoords and hasPointLineOfSight(eyeCoords, zoneCentre)
-						if canSeeSprite and insideZone and playerToCentre < drawDistance and interactDist <= zoneReach then
-							if HasAnyValidTargetOption(zone.targetoptions.options, entity, interactDist) then
+						local canSeeSprite = playerInside
+							or not Config.RequireLineOfSight
+							or (eyeCoords and hasPointLineOfSight(eyeCoords, zoneCentre))
+						if canSeeSprite and insideZone and playerToCentre < drawDistance and effectiveDist <= zoneReach then
+							if HasAnyValidTargetOption(zone.targetoptions.options, entity, effectiveDist) then
 								listSprite[k] = zone
 							else
 								listSprite[k] = nil
@@ -548,9 +561,17 @@ local function EnableTarget()
 							local liveCentre = getZoneCentre(closestZone)
 							local liveInsideZone = closestZone:isPointInside(newCoords)
 								or (livePlayerCoords and closestZone:isPointInside(livePlayerCoords))
+							local liveEffectiveDist, livePlayerInside = zoneEffectiveDistance(
+								closestZone,
+								liveCentre,
+								livePlayerCoords,
+								dist
+							)
 							local liveLosTarget = closestZone:isPointInside(newCoords) and newCoords or liveCentre
-							local liveCanSeeZone = liveEyeCoords and hasPointLineOfSight(liveEyeCoords, liveLosTarget)
-							if not liveCanSeeZone or not liveInsideZone or dist > zoneReach then
+							local liveCanSeeZone = livePlayerInside
+								or not Config.RequireLineOfSight
+								or (liveEyeCoords and hasPointLineOfSight(liveEyeCoords, liveLosTarget))
+							if not liveCanSeeZone or not liveInsideZone or liveEffectiveDist > zoneReach then
 								LeftTarget()
 								DrawOutlineEntity(entity, false)
 								break
