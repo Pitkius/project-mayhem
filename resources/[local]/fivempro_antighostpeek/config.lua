@@ -41,6 +41,11 @@ Config.MuzzleHitSlack = 0.45
 Config.BlockMessage = 'Ghost Peek apsauga'
 Config.NotifyCooldownMs = 2800
 
+--- Mažas ekrano indikatorius (žalias = galima šaudyti, raudonas = blokuojama).
+Config.ShowHudIndicator = true
+Config.HudUpdateMs = 80
+Config.HudOnlyWhenAiming = false
+
 --- Shape test: pasaulis + objektai, be lapų (255 = be IntersectFoliage).
 Config.TraceFlags = 255
 Config.TraceOptions = 7

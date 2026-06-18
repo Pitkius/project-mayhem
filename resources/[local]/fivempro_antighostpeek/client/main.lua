@@ -1,6 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local lastNotifyAt = 0
+local lastHudState = 'hidden'
 local FIRE_CONTROLS = { 24, 47, 58, 140, 141, 142, 257, 263, 264 }
 
 -- ── Vektoriai / raycast ─────────────────────────────────────────────────────
@@ -401,6 +402,46 @@ local function canEvaluate(ped)
     return true
 end
 
+local function isPlayerAiming(ped)
+    return IsPlayerFreeAiming(PlayerId())
+        or IsControlPressed(0, 25)
+        or IsDisabledControlPressed(0, 25)
+end
+
+--- hidden | clear | blocked
+local function evaluateHudState(ped)
+    if not canEvaluate(ped) then
+        return 'hidden'
+    end
+    if Config.HudOnlyWhenAiming and not isPlayerAiming(ped) then
+        return 'hidden'
+    end
+
+    local target = findAimedPlayerTarget(ped)
+    if not target then
+        return 'hidden'
+    end
+
+    if shouldBlockGhostPeekShot(ped, target) then
+        return 'blocked'
+    end
+    return 'clear'
+end
+
+local function setHudState(state)
+    if not Config.ShowHudIndicator then
+        state = 'hidden'
+    end
+    if state == lastHudState then
+        return
+    end
+    lastHudState = state
+    SendNUIMessage({
+        action = 'ghostpeek',
+        state = state,
+    })
+end
+
 -- ── Pagrindinis ciklas: tik šūvio bandymas, ne taikymasis ───────────────────
 
 CreateThread(function()
@@ -412,10 +453,26 @@ CreateThread(function()
             if target and shouldBlockGhostPeekShot(ped, target) then
                 blockFiringThisFrame()
                 notifyBlocked()
+                setHudState('blocked')
             end
             Wait(0)
         else
             Wait(50)
+        end
+    end
+end)
+
+-- ── Ekrano indikatorius (žalias / raudonas) ─────────────────────────────────
+
+CreateThread(function()
+    while true do
+        local ped = PlayerPedId()
+        if Config.ShowHudIndicator and Config.Enabled then
+            setHudState(evaluateHudState(ped))
+            Wait(Config.HudUpdateMs or 80)
+        else
+            setHudState('hidden')
+            Wait(400)
         end
     end
 end)
