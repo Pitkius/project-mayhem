@@ -41,6 +41,7 @@ KUR DĖTI NAUJUS MLO (atsisiųstus)
    - [mlo_pack_3]/sc_secret_drug
    - [mlo_pack_3]/sc1_29_motel (Davis Motel + 24/7)
    - [mlo_pack_3]/hid_weed_lab (Hidden Weed Lab — Davis id1_29; žolės supakavimas Cayo)
+   - [mlo_pack_3]/weapon_warehouse (Ginklų sandėlis — Grapeseed/Paleto kelias ~-1143, 4944)
    - Restart serveris arba: ensure [mlo]
    - Parašyk Cursor / dev'ui MLO aplankų pavadinimus (pvz. cfx-gabz-prison)
    - Tada bus pridėti blip'ai (fivempro_gabz_blips) ir NPC koordinatės (jobs, outdoors).

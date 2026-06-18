@@ -63,6 +63,7 @@ Config.Blips = {
     { resource = 'druglabs', label = 'Narkotikų lab. (LS)', coords = vec3(-1366.68, -316.94, 38.29), sprite = 499, color = 6 },
     { resource = 'druglabs', label = 'Narkotikų sandėlis (LS uostas)', coords = vec3(1009.54, -3196.64, 14.00), sprite = 499, color = 1 },
     { resource = 'sc_secret_drug', label = 'Secret Meth Lab', coords = vec3(2719.0, 5204.7, 49.64), sprite = 499, color = 6 },
+    { resource = 'weapon_warehouse', label = 'Ginklų sandėlis', coords = vec3(-1143.28, 4944.29, 221.27), sprite = 473, color = 1 },
     { resource = 'sc1_29_motel', label = 'Davis Motel', coords = vec3(356.2, -1800.96, 28.85), sprite = 475, color = 48 },
     { resource = 'fivempro_motel', label = 'Motelio sandėlis', coords = vec3(-1273.8059, 316.0920, 65.5118), sprite = 473, color = 48 },
 }
