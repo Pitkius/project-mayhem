@@ -225,6 +225,27 @@ body {
   gap: 16px;
 }
 
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.selected-tier {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(167, 243, 208, 0.92);
+}
+
+.car-tier {
+  font-size: 0.72rem;
+  color: rgba(196, 181, 253, 0.85);
+  letter-spacing: 0.04em;
+}
+
 .selected-name {
   font-size: clamp(1.15rem, 2.2vw, 1.65rem);
   font-weight: 700;

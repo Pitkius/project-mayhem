@@ -296,6 +296,19 @@ local function stopReloadAnimation(ped)
     SetPedCurrentWeaponVisible(ped, true, false, false, false)
 end
 
+local function cancelActiveReload()
+    if not isReloading and GetGameTimer() >= reloadGuardUntil then return end
+    stopReloadAnimation(PlayerPedId())
+    isReloading = false
+    reloadGuardUntil = 0
+end
+
+local function queueDrawWeapon(weaponName)
+    CreateThread(function()
+        TriggerEvent('qb-weapons:client:DrawWeapon', weaponName)
+    end)
+end
+
 local function playMobileReloadAnimation(ped, weaponHash, durationMs)
     local dict, anim = getReloadAnimForWeapon(weaponHash)
     if not loadAnimDict(dict) then
@@ -809,35 +822,38 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
     local ped = PlayerPedId()
     local weaponName = tostring(weaponData.name)
     local weaponHash = nativeWeaponHash(weaponData.name)
-    local weaponInfo = weaponData.info or {}
     if currentWeapon == weaponName then
-        TriggerEvent('qb-weapons:client:DrawWeapon', nil)
+        cancelActiveReload()
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', nil, shootbool)
         currentWeapon = nil
         applyHolsteredWeaponsFromInventory(true)
+        queueDrawWeapon(nil)
     elseif weaponName == 'weapon_stickybomb' or weaponName == 'weapon_pipebomb' or weaponName == 'weapon_smokegrenade' or weaponName == 'weapon_flare' or weaponName == 'weapon_proxmine' or weaponName == 'weapon_ball' or weaponName == 'weapon_molotov' or weaponName == 'weapon_grenade' or weaponName == 'weapon_bzgas' then
-        TriggerEvent('qb-weapons:client:DrawWeapon', weaponName)
+        cancelActiveReload()
         GiveWeaponToPed(ped, weaponHash, 1, false, false)
         SetPedAmmo(ped, weaponHash, 1)
         SetCurrentPedWeapon(ped, weaponHash, true)
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', weaponData, shootbool)
         currentWeapon = weaponName
+        queueDrawWeapon(weaponName)
     elseif weaponName == 'weapon_snowball' then
-        TriggerEvent('qb-weapons:client:DrawWeapon', weaponName)
+        cancelActiveReload()
         GiveWeaponToPed(ped, weaponHash, 10, false, false)
         SetPedAmmo(ped, weaponHash, 10)
         SetCurrentPedWeapon(ped, weaponHash, true)
         TriggerServerEvent('qb-inventory:server:snowball', 'remove')
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', weaponData, shootbool)
         currentWeapon = weaponName
+        queueDrawWeapon(weaponName)
     else
-        TriggerEvent('qb-weapons:client:DrawWeapon', weaponName)
+        cancelActiveReload()
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', weaponData, shootbool)
         currentWeapon = weaponName
         applyHolsteredWeaponsFromInventory(true)
         weaponHash = nativeWeaponHash(weaponData.name)
         local syncedAmmo = GetAmmoInPedWeapon(ped, weaponHash)
         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', weaponData, syncedAmmo)
+        queueDrawWeapon(weaponName)
     end
 end)
 

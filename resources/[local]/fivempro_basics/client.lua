@@ -441,19 +441,28 @@ RegisterNetEvent('fivempro_basics:client:toggleCoords', function()
     end
 end)
 
+local HEAD_BONE = 31086
+local HEAD_TEXT_Z = 0.45
+
 local function getHeadCoords(ped)
-    return GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.38)
+    return GetPedBoneCoords(ped, HEAD_BONE, 0.0, 0.0, HEAD_TEXT_Z)
 end
 
-local function drawShout3D(coords, text)
+local function drawHead3D(coords, text, opts)
+    local o = opts or {}
     local onScreen, worldX, worldY = World3dToScreen2d(coords.x, coords.y, coords.z)
     if not onScreen then return end
     local camCoords = GetGameplayCamCoord()
-    local scale = 220 / (GetGameplayCamFov() * #(camCoords - coords))
-    SetTextScale(1.0, 0.58 * scale)
-    SetTextFont(4)
-    SetTextColour(255, 210, 70, 255)
-    SetTextEdge(2, 0, 0, 0, 180)
+    local scale = (o.scaleDiv or 220) / (GetGameplayCamFov() * #(camCoords - coords))
+    local r, g, b, a = o.r or 255, o.g or 255, o.b or 255, o.a or 255
+    SetTextScale(1.0, (o.textScale or 0.5) * scale)
+    if GetResourceState('fivempro_fonts') == 'started' then
+        exports['fivempro_fonts']:ApplyTextFont()
+    else
+        SetTextFont(4)
+    end
+    SetTextColour(r, g, b, a)
+    SetTextEdge(2, 0, 0, 0, o.edgeAlpha or 180)
     SetTextProportional(1)
     SetTextOutline()
     SetTextCentre(1)
@@ -461,6 +470,27 @@ local function drawShout3D(coords, text)
     AddTextComponentSubstringPlayerName(text)
     EndTextCommandDisplayText(worldX, worldY)
 end
+
+local function drawShout3D(coords, text)
+    drawHead3D(coords, text, { r = 255, g = 210, b = 70, textScale = 0.58 })
+end
+
+RegisterNetEvent('fivempro_basics:client:showTad', function(senderId, msg)
+    local sender = GetPlayerFromServerId(senderId)
+    if sender == -1 then return end
+
+    CreateThread(function()
+        local displayUntil = GetGameTimer() + 5000
+        local label = ('* %s *'):format(msg or '')
+        while GetGameTimer() < displayUntil do
+            local targetPed = GetPlayerPed(sender)
+            if targetPed and targetPed ~= 0 and DoesEntityExist(targetPed) then
+                drawHead3D(getHeadCoords(targetPed), label, { r = 194, g = 162, b = 255 })
+            end
+            Wait(0)
+        end
+    end)
+end)
 
 RegisterNetEvent('fivempro_basics:client:showShout', function(senderId, name, msg)
     TriggerEvent('chat:addMessage', {

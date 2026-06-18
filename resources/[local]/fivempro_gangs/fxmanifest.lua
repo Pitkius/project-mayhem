@@ -56,6 +56,7 @@ exports {
 
 dependencies {
     'qb-core',
+    'qb-target',
     'qb-menu',
     'qb-input',
 }

@@ -136,8 +136,24 @@ local function getConfiguredMaxKmh(model)
     return nil
 end
 
-local function getVehicleStats(model)
+local function getVehicleStats(model, category)
     local hash = joaat(model)
+    if GetResourceState('fivempro_vehicle_perf') == 'started' then
+        local ok, profile = pcall(function()
+            return exports['fivempro_vehicle_perf']:GetVehiclePerfProfile(model, category)
+        end)
+        if ok and profile then
+            return {
+                maxKmh = profile.maxKmh,
+                zeroToHundred = profile.zeroTo100,
+                tier = profile.tier,
+                tierLabel = profile.tierLabel,
+                braking = profile.braking,
+                traction = profile.traction,
+            }
+        end
+    end
+
     local maxSpeedMps = GetVehicleModelEstimatedMaxSpeed(hash)
     local accel = GetVehicleModelAcceleration(hash)
     local braking = GetVehicleModelMaxBraking(hash)
@@ -156,7 +172,11 @@ local function getVehicleStats(model)
 end
 
 local REH_MODELS = {}
-if Config.RehPriceOverrides then
+if Config.RehModels then
+    for _, model in ipairs(Config.RehModels) do
+        REH_MODELS[tostring(model):lower()] = true
+    end
+elseif Config.RehPriceOverrides then
     for model in pairs(Config.RehPriceOverrides) do
         REH_MODELS[model] = true
     end
@@ -286,13 +306,15 @@ local function buildUiPayload()
 
     local vehicles = {}
     for _, veh in ipairs(srcCat.vehicles) do
-        local st = getVehicleStats(veh.model)
+        local st = getVehicleStats(veh.model, veh.category)
         vehicles[#vehicles + 1] = {
             model = veh.model,
             name = veh.name,
             brand = veh.brand,
             category = veh.category,
             price = veh.price,
+            tier = veh.tier or st.tier,
+            tierLabel = st.tierLabel,
             image = getImageUrl(veh.model),
             stats = {
                 maxKmh = math.floor(st.maxKmh + 0.5),

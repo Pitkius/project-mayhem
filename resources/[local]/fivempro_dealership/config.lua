@@ -51,8 +51,12 @@ Config.CategoryLabels = {
     openwheel = 'Formulės',
 }
 
--- Specific RP-balanced prices from your list. Any model not listed here
--- falls back to QBShared.Vehicles price.
+Config.UsePerformancePricing = true
+
+--- Rankinės išimtys (darbo transportas ir pan.) — ne performance formulė.
+Config.ManualPriceOverrides = {}
+
+--- Seni rankiniai override (naudojami tik jei UsePerformancePricing = false).
 Config.PriceOverrides = {
     -- Sedans
     asea = 8000, asterope = 12000, fugitive = 18000, intruder = 15000, premier = 14000,
@@ -110,23 +114,23 @@ Config.CivilianShopAllowedCategories = {
     cycles = true,
 }
 
---- Po `PriceOverrides` ir QB kainos – ribos pagal kategoriją (RP ekonomika).
+--- Performance kainų fallback ribos (kai vehicle_perf išjungtas).
 Config.CivilianPriceBands = {
-    compacts = { min = 5000, max = 25000 },
+    compacts = { min = 8000, max = 65000 },
     cycles = { min = 500, max = 15000 },
-    sedans = { min = 15000, max = 60000 },
-    wagons = { min = 12000, max = 55000 },
-    coupes = { min = 18000, max = 90000 },
-    suvs = { min = 35000, max = 120000 },
-    sports = { min = 80000, max = 350000 },
-    sportsclassics = { min = 25000, max = 280000 },
-    super = { min = 500000, max = 2000000 },
-    muscle = { min = 12000, max = 220000 },
-    offroad = { min = 15000, max = 150000 },
-    utility = { min = 20000, max = 90000 },
-    vans = { min = 20000, max = 90000 },
-    motorcycles = { min = 10000, max = 120000 },
-    _default = { min = 5000, max = 2500000 },
+    sedans = { min = 45000, max = 320000 },
+    wagons = { min = 40000, max = 280000 },
+    coupes = { min = 90000, max = 380000 },
+    suvs = { min = 55000, max = 420000 },
+    sports = { min = 200000, max = 650000 },
+    sportsclassics = { min = 80000, max = 450000 },
+    super = { min = 480000, max = 1500000 },
+    muscle = { min = 70000, max = 380000 },
+    offroad = { min = 35000, max = 280000 },
+    utility = { min = 25000, max = 120000 },
+    vans = { min = 25000, max = 120000 },
+    motorcycles = { min = 15000, max = 180000 },
+    _default = { min = 8000, max = 4500000 },
 }
 
 --- Papildomas blokas civiliniam katalogui (šarvai / ginklai / arena / aiškūs dubliatai).
@@ -161,8 +165,8 @@ Config.CivilianShopExtraBlockedModels = {
     deity = true, jubilee = true, asterope2 = true,
 }
 
-if Config.RehPriceOverrides then
-    for model, price in pairs(Config.RehPriceOverrides) do
+if Config.ManualPriceOverrides then
+    for model, price in pairs(Config.ManualPriceOverrides) do
         Config.PriceOverrides[model] = price
     end
 end

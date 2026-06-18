@@ -104,6 +104,7 @@ local weapons = {
 
 local holstered = true
 local canFire = true
+local drawSession = 0
 local currWeap = `WEAPON_UNARMED`
 local currHolster = nil
 local currHolsterTexture = nil
@@ -163,9 +164,11 @@ end)
 
 RegisterNetEvent('qb-weapons:client:DrawWeapon', function()
     if GetResourceState('qb-inventory') == 'missing' then return end
+    drawSession = drawSession + 1
+    local mySession = drawSession
     local sleep
     local weaponCheck = 0
-    while true do
+    while mySession == drawSession do
         local ped = PlayerPedId()
         sleep = 250
         if DoesEntityExist(ped) and not IsEntityDead(ped) and not IsPedInParachuteFreeFall(ped) and not IsPedFalling(ped) and (GetPedParachuteState(ped) == -1 or GetPedParachuteState(ped) == 0) then
@@ -339,8 +342,11 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function()
             if weaponCheck == 2 then
                 break
             end
+        else
+            weaponCheck = 0
         end
     end
+    canFire = true
 end)
 
 function CeaseFire()

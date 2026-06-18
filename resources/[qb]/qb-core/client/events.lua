@@ -239,6 +239,13 @@ end)
 
 -- Me command
 
+local HEAD_BONE = 31086
+local HEAD_TEXT_Z = 0.45
+
+local function getHeadCoords(ped)
+    return GetPedBoneCoords(ped, HEAD_BONE, 0.0, 0.0, HEAD_TEXT_Z)
+end
+
 local function Draw3DText(coords, str)
     local onScreen, worldX, worldY = World3dToScreen2d(coords.x, coords.y, coords.z)
     local camCoords = GetGameplayCamCoord()
@@ -259,13 +266,15 @@ end
 
 RegisterNetEvent('QBCore:Command:ShowMe3D', function(senderId, msg)
     local sender = GetPlayerFromServerId(senderId)
+    if sender == -1 then return end
     CreateThread(function()
         local displayTime = 5000 + GetGameTimer()
         while displayTime > GetGameTimer() do
             local targetPed = GetPlayerPed(sender)
-            local tCoords = GetEntityCoords(targetPed)
-            Draw3DText(tCoords, msg)
-            Wait(1)
+            if targetPed and targetPed ~= 0 and DoesEntityExist(targetPed) then
+                Draw3DText(getHeadCoords(targetPed), msg)
+            end
+            Wait(0)
         end
     end)
 end)

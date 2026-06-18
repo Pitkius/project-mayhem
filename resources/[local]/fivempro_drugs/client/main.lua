@@ -8,6 +8,7 @@ local supplyShopBlip = nil
 local productBuyerPeds = {}
 local productBuyerBlips = {}
 local mapBlips = {}
+local streetSellExcludedPeds = {}
 
 local function nui(msg, data)
     SendNUIMessage({ action = msg, data = data or {} })
@@ -394,30 +395,33 @@ local function startCraftFlow(productId)
     end, currentStationId, productId)
 end
 
-local function findSellTargetPed()
-    local ped = PlayerPedId()
-    local p = GetEntityCoords(ped)
-    local handle, foundPed = FindFirstPed()
-    local ok = true
-    local target = 0
-    repeat
-        if foundPed and foundPed ~= ped and not IsPedAPlayer(foundPed) and not IsEntityDead(foundPed) then
-            local tp = GetEntityCoords(foundPed)
-            if #(p - tp) <= (Config.Sell and Config.Sell.maxDistanceToPed or 3.0) then
-                target = foundPed
-                break
-            end
+local function getFirstSellableDrugItem()
+    for _, prod in pairs(Config.Products or {}) do
+        if (prod.sellBase or 0) > 0 and prod.output and QBCore.Functions.HasItem(prod.output, 1) then
+            return prod.output
         end
-        ok, foundPed = FindNextPed(handle)
-    until not ok
-    EndFindPed(handle)
-    return target
+    end
 end
 
-local function trySellToNpc(itemName)
-    local target = findSellTargetPed()
-    if target == 0 then
-        return QBCore.Functions.Notify('Netoliese nėra NPC.', 'error')
+local function canStreetSellToPed(entity)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
+    if entity == PlayerPedId() or IsPedAPlayer(entity) or IsEntityDead(entity) then return false end
+    if streetSellExcludedPeds[entity] then return false end
+    if IsPedInAnyVehicle(PlayerPedId(), false) then return false end
+    return getFirstSellableDrugItem() ~= nil
+end
+
+local function trySellToNpcEntity(entity)
+    local itemName = getFirstSellableDrugItem()
+    if not itemName then
+        return QBCore.Functions.Notify('Neturi parduodamų produktų.', 'error')
+    end
+    if not entity or entity == 0 or not DoesEntityExist(entity) then
+        return QBCore.Functions.Notify('Netinkamas NPC.', 'error')
+    end
+    local maxDist = (Config.Sell and Config.Sell.maxDistanceToPed or 3.0) + 0.5
+    if #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(entity)) > maxDist then
+        return QBCore.Functions.Notify('NPC per toli.', 'error')
     end
     QBCore.Functions.TriggerCallback('fivempro_drugs:server:tryNpcSell', function(res)
         if not res or not res.ok then
@@ -433,7 +437,24 @@ local function trySellToNpc(itemName)
         if res.alertPolice then
             QBCore.Functions.Notify('Kažkas gali būti iškvietęs policiją…', 'error', 5500)
         end
-    end, itemName, NetworkGetNetworkIdFromEntity(target))
+    end, itemName, NetworkGetNetworkIdFromEntity(entity))
+end
+
+local function setupNpcStreetSell()
+    if GetResourceState('qb-target') ~= 'started' then return end
+    exports['qb-target']:AddGlobalPed({
+        options = {
+            {
+                icon = 'fas fa-cannabis',
+                label = 'Parduoti narkotikus',
+                action = function(entity)
+                    trySellToNpcEntity(entity)
+                end,
+                canInteract = canStreetSellToPed,
+            },
+        },
+        distance = (Config.Sell and Config.Sell.maxDistanceToPed or 3.0) + 0.5,
+    })
 end
 
 RegisterNUICallback('close', function(_, cb)
@@ -478,21 +499,6 @@ RegisterNUICallback('advancedResult', function(data, cb)
     finishMinigame(data and data.success)
     cb('ok')
 end)
-
-RegisterCommand('drugsell', function()
-    local sellables = {}
-    for _, prod in pairs(Config.Products or {}) do
-        if (prod.sellBase or 0) > 0 and prod.output then
-            sellables[#sellables + 1] = prod.output
-        end
-    end
-    for _, outItem in ipairs(sellables) do
-        if QBCore.Functions.HasItem(outItem, 1) then
-            return trySellToNpc(outItem)
-        end
-    end
-    QBCore.Functions.Notify('Neturi parduodamų produktų.', 'error')
-end, false)
 
 local function setBlipLabel(blip, label)
     local text = tostring(label or 'Gamyba')
@@ -800,11 +806,14 @@ local function openProductSellMenu(buyerId)
     if not cfg or cfg.enabled == false then return end
     local prices = cfg.prices or {}
     local rows = {
-        { header = cfg.label or 'Supirkėjas', txt = 'Kainos už 1 vnt.', isMenuHeader = true },
+        { header = cfg.label or 'Supirkėjas', txt = 'Tik supakuoti produktai · kainos už 1 vnt.', isMenuHeader = true },
     }
     local sorted = {}
     for itemName, price in pairs(prices) do
-        sorted[#sorted + 1] = { item = itemName, price = tonumber(price) or 0 }
+        itemName = tostring(itemName or ''):lower()
+        if Config.IsPackagedDrugItem(itemName) then
+            sorted[#sorted + 1] = { item = itemName, price = tonumber(price) or 0 }
+        end
     end
     table.sort(sorted, function(a, b) return tostring(a.item) < tostring(b.item) end)
     for _, row in ipairs(sorted) do
@@ -820,7 +829,7 @@ local function openProductSellMenu(buyerId)
     end
     rows[#rows + 1] = {
         header = cfg.sellAllLabel or 'Parduoti viską',
-        txt = 'Visi supirkėjo priimami produktai iš inventoriaus',
+        txt = 'Tik supakuoti produktai iš inventoriaus',
         params = {
             isAction = true,
             event = function()
@@ -854,7 +863,7 @@ local function openTestMenu()
         { header = 'Ginklų dirbtuvė L1', params = { isAction = true, event = function() openStationUi('weapon_bench_l1') end } },
         { header = 'Ginklų dirbtuvė L2', params = { isAction = true, event = function() openStationUi('weapon_bench_l2') end } },
         { header = 'Ginklų dirbtuvė L3', params = { isAction = true, event = function() openStationUi('weapon_bench_l3') end } },
-        { header = 'Pardavimas (/drugsell)', txt = 'Stovėk prie NPC su produktu inventoriuje', isMenuHeader = true },
+        { header = 'Pardavimas (qb-target)', txt = 'Alt + taikykis į NPC su produktu inventoriuje', isMenuHeader = true },
         { header = 'Uždaryti', params = { isAction = true, event = function() TriggerEvent('qb-menu:client:closeMenu') end } },
     }
     if GetResourceState('qb-menu') == 'started' then
@@ -881,6 +890,9 @@ local function spawnHubPed(cfg, onTarget)
     SetEntityCoordsNoOffset(ped, c.x, c.y, c.z, false, false, false)
     if cfg.scenario then
         TaskStartScenarioInPlace(ped, cfg.scenario, 0, true)
+    end
+    if ped and ped ~= 0 then
+        streetSellExcludedPeds[ped] = true
     end
     if onTarget then onTarget(ped) end
     SetModelAsNoLongerNeeded(model)
@@ -1020,6 +1032,7 @@ CreateThread(function()
     Wait(500)
     setupStationBlips()
     setupStations()
+    setupNpcStreetSell()
     spawnTestNpc()
     spawnSupplyShopNpc()
     spawnTestSupplyShopNpc()

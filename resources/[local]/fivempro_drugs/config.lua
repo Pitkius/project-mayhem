@@ -648,7 +648,7 @@ Config.TestSupplyShopNPC = {
     label = 'Nelegalūs reikmenys (test)',
 }
 
---- Produktų supirkėjai (production) — NPC perka supakuotus / tarpinius produktus
+--- Produktų supirkėjai (production) — NPC perka tik supakuotus galutinius produktus
 Config.ProductBuyerNPCs = {
     alcohol = {
         enabled = true,
@@ -656,13 +656,12 @@ Config.ProductBuyerNPCs = {
         coords = vector4(186.4651, -1273.1499, 29.1985, 81.7421),
         scenario = 'WORLD_HUMAN_SMOKING',
         label = 'Alkoholio supirkėjas',
-        sellAllLabel = 'Parduoti visą alkoholį',
+        sellAllLabel = 'Parduoti supakuotą alkoholį',
         targetIcon = 'fas fa-wine-bottle',
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 93, color = 5, scale = 0.75, label = 'Alkoholio supirkėjas' },
         prices = {
             illegal_alcohol = 75,
-            moonshine_spirit = 42,
         },
     },
     thc = {
@@ -671,13 +670,12 @@ Config.ProductBuyerNPCs = {
         coords = vector4(-1164.4401, -1567.7615, 4.4471, 30.6944),
         scenario = 'WORLD_HUMAN_SMOKING',
         label = 'THC supirkėjas',
-        sellAllLabel = 'Parduoti visą THC',
+        sellAllLabel = 'Parduoti supakuotą THC',
         targetIcon = 'fas fa-cannabis',
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 140, color = 25, scale = 0.75, label = 'THC supirkėjas' },
         prices = {
             thc_cart = 95,
-            weed_resin = 52,
         },
     },
     vape = {
@@ -686,13 +684,12 @@ Config.ProductBuyerNPCs = {
         coords = vector4(-1724.6089, 234.1453, 58.4717, 23.0746),
         scenario = 'WORLD_HUMAN_SMOKING',
         label = 'Vape skysčių supirkėjas',
-        sellAllLabel = 'Parduoti visus vape skysčius',
+        sellAllLabel = 'Parduoti supakuotus vape skysčius',
         targetIcon = 'fas fa-smoking',
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 52, color = 27, scale = 0.75, label = 'Vape supirkėjas' },
         prices = {
             vape_liquid = 65,
-            vape_mix = 38,
         },
     },
     weed = {
@@ -701,13 +698,12 @@ Config.ProductBuyerNPCs = {
         coords = vector4(-3.4450, -1820.9264, 29.5432, 230.3047),
         scenario = 'WORLD_HUMAN_SMOKING',
         label = 'Žolės supirkėjas',
-        sellAllLabel = 'Parduoti visą žolę',
+        sellAllLabel = 'Parduoti supakuotą žolę',
         targetIcon = 'fas fa-cannabis',
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 140, color = 2, scale = 0.75, label = 'Žolės supirkėjas' },
         prices = {
             weed_bag = 140,
-            weed_buds = 55,
         },
     },
     cocaine = {
@@ -716,15 +712,12 @@ Config.ProductBuyerNPCs = {
         coords = vector4(5587.6470, -5220.6377, 14.6235, 57.1762),
         scenario = 'WORLD_HUMAN_SMOKING',
         label = 'Kokaino supirkėjas',
-        sellAllLabel = 'Parduoti visą kokainą',
+        sellAllLabel = 'Parduoti supakuotą kokainą',
         targetIcon = 'fas fa-snowflake',
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 501, color = 0, scale = 0.75, label = 'Kokaino supirkėjas' },
         prices = {
             cartel_pack = 195,
-            cocaine_bag = 195,
-            cartel_blend = 95,
-            cocaine_paste = 48,
         },
     },
 }
@@ -1113,3 +1106,15 @@ Config.TestKits = {
         lab_kit = 5, empty_bag = 35, scale = 5, burner = 3,
     },
 }
+
+--- Galutiniai supakuoti produktai (Config.Products su stage = 'pack')
+Config.PackagedDrugOutputs = {}
+for _, prod in pairs(Config.Products) do
+    if prod.stage == 'pack' and prod.output then
+        Config.PackagedDrugOutputs[tostring(prod.output):lower()] = true
+    end
+end
+
+function Config.IsPackagedDrugItem(itemName)
+    return Config.PackagedDrugOutputs[tostring(itemName or ''):lower()] == true
+end

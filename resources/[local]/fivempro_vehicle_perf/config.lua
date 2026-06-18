@@ -1,6 +1,6 @@
 Config = Config or {}
 
---- Max greičiai km/h. Vanilla GTA paliekama be keitimo (nebent viršija GlobalCap).
+--- Max greičiai km/h + handling (pagreitis, stabdymas, vairavimas).
 Config.VehiclePerf = {
     Enabled = true,
     GlobalCapKmh = 310,
@@ -139,4 +139,190 @@ Config.VehiclePerf = {
 
     --- Hiperautomobilių minimali parduotuvės kaina (sinchronizuota su dealership)
     HyperMinPrice = 3000000,
+
+    --- Realistiškas vairavimas: pagreitis, stabdymas, trauka (runtime handling.meta koregavimas).
+    Handling = {
+        Enabled = true,
+        --- Taikyti visiems QB ginklams pagal kategoriją (ne tik REH / cap).
+        ApplyToAllVehicles = true,
+
+        --- Numatytas 0–100 km/h laikas (sek.) pagal kategoriją — IRL įkvėpta.
+        CategoryZeroTo100 = {
+            compacts = 11.2,
+            sedans = 8.8,
+            suvs = 10.8,
+            coupes = 7.2,
+            muscle = 5.4,
+            sports = 4.6,
+            sportsclassics = 6.8,
+            super = 3.3,
+            offroad = 12.5,
+            utility = 14.0,
+            vans = 13.5,
+            motorcycles = 3.1,
+            cycles = 99.0,
+            boats = 99.0,
+            helicopters = 99.0,
+            planes = 99.0,
+            service = 11.0,
+            emergency = 9.5,
+            military = 10.0,
+            commercial = 15.0,
+            industrial = 16.0,
+        },
+
+        --- Hiperautomobiliai (sek. iki 100 km/h)
+        HyperZeroTo100 = 2.75,
+        HyperTunedZeroTo100 = 2.55,
+
+        --- Stabdymo jėgos daugiklis pagal kategoriją (didesnis = stipresni stabdžiai).
+        CategoryBrakeScale = {
+            compacts = 0.94,
+            sedans = 0.98,
+            suvs = 1.04,
+            coupes = 1.00,
+            muscle = 0.96,
+            sports = 1.06,
+            sportsclassics = 0.98,
+            super = 1.12,
+            offroad = 0.90,
+            utility = 0.92,
+            vans = 0.94,
+            motorcycles = 1.08,
+            emergency = 1.10,
+            commercial = 0.88,
+            industrial = 0.86,
+        },
+        HyperBrakeScale = 1.18,
+
+        --- Variklio inercija (mažiau = greitesnis atsakas į gazą).
+        CategoryDriveInertia = {
+            compacts = 1.02,
+            sedans = 1.00,
+            suvs = 1.10,
+            coupes = 0.98,
+            muscle = 1.04,
+            sports = 0.94,
+            sportsclassics = 1.00,
+            super = 0.90,
+            offroad = 1.12,
+            utility = 1.14,
+            vans = 1.12,
+            motorcycles = 0.88,
+        },
+        HyperDriveInertia = 0.86,
+
+        --- Vairavimo kampas (mažiau = stabiliau aukštesniu greičiu).
+        CategorySteeringLock = {
+            compacts = 39.0,
+            sedans = 38.5,
+            suvs = 37.0,
+            coupes = 40.0,
+            muscle = 39.5,
+            sports = 41.0,
+            super = 41.5,
+            offroad = 36.5,
+            utility = 36.0,
+            vans = 36.5,
+            motorcycles = 42.0,
+        },
+
+        DriveForceMin = 0.11,
+        DriveForceMax = 0.54,
+        BrakeForceMin = 0.62,
+        BrakeForceMax = 1.38,
+        MaxFlatVelMin = 120.0,
+        MaxFlatVelMax = 210.0,
+
+        --- Greitesnės mašinos — šiek tiek didesnė aerodinaminė trauka (realistiškesnis „galas“).
+        DragCoeffPerKmhAbove200 = 0.0018,
+
+        --- Modelio 0–100 override (sek.), jei reikia tiksliau nei kategorija.
+        ModelZeroTo100 = {
+            bravadodemon = 4.2,
+            bravadodemonsc = 3.9,
+            bravadodemonsc2 = 4.0,
+            bravadocharger23 = 4.8,
+            ubermachtm5 = 3.8,
+            ubermachtm3cs = 3.6,
+            ubermachtm4 = 3.9,
+            benefactorc63m = 3.7,
+            coquettec8 = 3.2,
+            coquettec8a = 3.2,
+            coquettezr1 = 3.1,
+            inveteroc7 = 3.4,
+            inveterozr1 = 3.0,
+            progen600 = 2.9,
+            progenartura = 2.8,
+            overflodjesko2 = 2.7,
+            dinkansx = 3.0,
+            dinkacivic = 7.5,
+            karincorolla = 10.2,
+            vapidstanier = 11.0,
+            caniswrangler = 12.0,
+        },
+    },
+
+    --- Kainos pagal max greitį + 0–100 (sinchronizuota su autosalonu).
+    Pricing = {
+        BasePrice = 10000,
+        SpeedWeight = 400000,
+        AccelWeight = 88000,
+        RoundTo = 500,
+        GlobalMinPrice = 8000,
+        GlobalMaxPrice = 4500000,
+
+        TierLabels = {
+            D = 'D — Ekonominis',
+            C = 'C — Kasdienis',
+            B = 'B — Greitas',
+            A = 'A — Sportas',
+            S = 'S — Super',
+            X = 'X — Hiper',
+        },
+
+        CategoryMultiplier = {
+            compacts = 0.78,
+            sedans = 0.90,
+            suvs = 0.94,
+            wagons = 0.88,
+            coupes = 0.96,
+            muscle = 0.92,
+            sports = 1.06,
+            sportsclassics = 1.02,
+            super = 1.22,
+            offroad = 0.86,
+            utility = 0.84,
+            vans = 0.82,
+            motorcycles = 0.88,
+            cycles = 0.35,
+        },
+
+        TierBands = {
+            D = { min = 8000, max = 55000 },
+            C = { min = 45000, max = 125000 },
+            B = { min = 110000, max = 245000 },
+            A = { min = 220000, max = 520000 },
+            S = { min = 480000, max = 1200000 },
+            X = { min = 3000000, max = 4500000 },
+        },
+
+        --- Vanilla QB auto be REH override — vidutinis perf. pagal kategoriją.
+        VanillaCategoryPerf = {
+            compacts = { maxKmh = 182, zeroTo100 = 11.2 },
+            sedans = { maxKmh = 212, zeroTo100 = 8.8 },
+            suvs = { maxKmh = 202, zeroTo100 = 10.8 },
+            wagons = { maxKmh = 208, zeroTo100 = 9.5 },
+            coupes = { maxKmh = 238, zeroTo100 = 7.2 },
+            muscle = { maxKmh = 258, zeroTo100 = 5.4 },
+            sports = { maxKmh = 278, zeroTo100 = 4.6 },
+            sportsclassics = { maxKmh = 248, zeroTo100 = 6.8 },
+            super = { maxKmh = 302, zeroTo100 = 3.3 },
+            offroad = { maxKmh = 172, zeroTo100 = 12.5 },
+            utility = { maxKmh = 162, zeroTo100 = 14.0 },
+            vans = { maxKmh = 168, zeroTo100 = 13.5 },
+            motorcycles = { maxKmh = 228, zeroTo100 = 3.1 },
+            cycles = { maxKmh = 45, zeroTo100 = 99.0 },
+        },
+    },
 }

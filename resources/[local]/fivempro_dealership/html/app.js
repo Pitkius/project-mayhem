@@ -4,6 +4,7 @@ const categoriesEl = document.getElementById('categories');
 const carsEl = document.getElementById('cars');
 const colorsEl = document.getElementById('colors');
 const selectedNameEl = document.getElementById('selectedName');
+const selectedTierEl = document.getElementById('selectedTier');
 const selectedPriceEl = document.getElementById('selectedPrice');
 const statMaxEl = document.getElementById('statMax');
 const stat0100El = document.getElementById('stat0100');
@@ -47,6 +48,7 @@ function setSelectedVehicle(vehicle) {
   if (!vehicle) return;
 
   selectedNameEl.textContent = formatVehicleLabel(vehicle);
+  selectedTierEl.textContent = vehicle.tierLabel || vehicle.tier || '-';
   selectedPriceEl.textContent = fmtMoney(vehicle.price);
   statMaxEl.textContent = vehicle.stats?.maxKmh ?? 0;
   stat0100El.textContent = vehicle.stats?.zeroToHundred ?? 0;
@@ -106,7 +108,7 @@ function renderCars() {
 
     const info = document.createElement('div');
     info.className = 'car-info';
-    info.innerHTML = `<div>${formatVehicleLabel(veh)}</div><div class="car-price">${fmtMoney(veh.price)}</div>`;
+    info.innerHTML = `<div>${formatVehicleLabel(veh)}</div><div class="car-tier">${veh.tier ? `Lygis ${veh.tier}` : ''}</div><div class="car-price">${fmtMoney(veh.price)}</div>`;
     card.appendChild(info);
 
     carsEl.appendChild(card);

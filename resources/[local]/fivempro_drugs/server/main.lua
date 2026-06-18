@@ -790,8 +790,9 @@ local function processProductSell(src, buyerId)
     local total = 0
     local sold = 0
     for itemName, price in pairs(prices) do
+        itemName = tostring(itemName or ''):lower()
         local unit = tonumber(price) or 0
-        if unit > 0 then
+        if unit > 0 and Config.IsPackagedDrugItem(itemName) then
             local data = Player.Functions.GetItemByName(itemName)
             local amt = data and (tonumber(data.amount) or tonumber(data.count) or 0) or 0
             if amt > 0 and Player.Functions.RemoveItem(itemName, amt, false) then
@@ -802,7 +803,7 @@ local function processProductSell(src, buyerId)
     end
 
     if total <= 0 then
-        TriggerClientEvent('QBCore:Notify', src, 'Neturi produktų, kuriuos šis supirkėjas priima.', 'error')
+        TriggerClientEvent('QBCore:Notify', src, 'Neturi supakuotų produktų, kuriuos šis supirkėjas priima.', 'error')
         return
     end
 

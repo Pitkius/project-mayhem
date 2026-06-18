@@ -140,32 +140,36 @@ RegisterNetEvent('fivempro_gangs:client:refreshTablet', function()
     end)
 end)
 
-RegisterCommand('gangsell', function()
+local function playerHasGangDrugItem()
+    for _, d in ipairs(Config.DrugSellItems or {}) do
+        if QBCore.Functions.HasItem(d.item, 1) then
+            return true
+        end
+    end
+    return false
+end
+
+local function canGangSellToPed(entity)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
+    if entity == PlayerPedId() or IsPedAPlayer(entity) or IsEntityDead(entity) then return false end
+    if vendorPed and entity == vendorPed then return false end
+    if IsPedInAnyVehicle(PlayerPedId(), false) then return false end
+    if not getCurrentTurfId() then return false end
+    return playerHasGangDrugItem()
+end
+
+local function tryGangSellToNpc(entity)
     local turfId = getCurrentTurfId()
     if not turfId then
         return QBCore.Functions.Notify('Nesi turf teritorijoje.', 'error')
     end
-    local ped = PlayerPedId()
-    local p = GetEntityCoords(ped)
-    local handle, foundPed = FindFirstPed()
-    local ok = true
-    local target = 0
-    repeat
-        if foundPed and foundPed ~= ped and not IsPedAPlayer(foundPed) and not IsEntityDead(foundPed) then
-            local tp = GetEntityCoords(foundPed)
-            if #(p - tp) <= (Config.DrugSell.maxDistanceToPed or 3.0) then
-                target = foundPed
-                break
-            end
-        end
-        ok, foundPed = FindNextPed(handle)
-    until not ok
-    EndFindPed(handle)
-
-    if target == 0 then
-        return QBCore.Functions.Notify('Netoliese nėra NPC pirkėjų.', 'error')
+    if not entity or entity == 0 or not DoesEntityExist(entity) then
+        return QBCore.Functions.Notify('Netinkamas NPC.', 'error')
     end
-
+    local maxDist = (Config.DrugSell.maxDistanceToPed or 3.0) + 0.5
+    if #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(entity)) > maxDist then
+        return QBCore.Functions.Notify('NPC per toli.', 'error')
+    end
     QBCore.Functions.TriggerCallback('fivempro_gangs:server:tryDrugSale', function(res)
         if not res or not res.ok then
             if res and res.refused then
@@ -180,8 +184,28 @@ RegisterCommand('gangsell', function()
             local cp = GetEntityCoords(PlayerPedId())
             TriggerServerEvent('fivempro_dispatch:server:createServiceCall', 'police', 'drug', 'Pranešta apie įtartiną sandorį', { x = cp.x, y = cp.y, z = cp.z })
         end
-    end, turfId, NetworkGetNetworkIdFromEntity(target))
-end, false)
+    end, turfId, NetworkGetNetworkIdFromEntity(entity))
+end
+
+CreateThread(function()
+    while GetResourceState('qb-target') ~= 'started' do
+        Wait(250)
+    end
+    Wait(500)
+    exports['qb-target']:AddGlobalPed({
+        options = {
+            {
+                icon = 'fas fa-hand-holding-dollar',
+                label = 'Parduoti gaujos turf',
+                action = function(entity)
+                    tryGangSellToNpc(entity)
+                end,
+                canInteract = canGangSellToPed,
+            },
+        },
+        distance = (Config.DrugSell.maxDistanceToPed or 3.0) + 0.5,
+    })
+end)
 
 RegisterCommand('gangadmin', function()
     openAdminMenu()

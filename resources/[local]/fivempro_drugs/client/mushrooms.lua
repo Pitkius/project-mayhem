@@ -237,49 +237,6 @@ CreateThread(function()
     end
 end)
 
-CreateThread(function()
-    while true do
-        local sleep = 600
-        if not picking then
-            local ped = PlayerPedId()
-            local pcoords = GetEntityCoords(ped)
-            local bestDist, bestFieldId, bestSpawn
-
-            for fieldId, state in pairs(fieldSpawns) do
-                local maxPick = (state.field.pickDistance or 2.4) + 0.45
-                for _, spawn in ipairs(state.spawns or {}) do
-                    if spawn.available and spawn.coords then
-                        local at = spawn.coords
-                        if spawn.entity and DoesEntityExist(spawn.entity) then
-                            at = GetEntityCoords(spawn.entity)
-                        end
-                        local dist = #(pcoords - at)
-                        if dist <= maxPick and (not bestDist or dist < bestDist) then
-                            bestDist = dist
-                            bestFieldId = fieldId
-                            bestSpawn = spawn
-                        end
-                    end
-                end
-            end
-
-            if bestSpawn and bestFieldId then
-                sleep = 0
-                local label = fieldSpawns[bestFieldId].field.pickLabel or 'Rinkti'
-                local at = bestSpawn.coords
-                if bestSpawn.entity and DoesEntityExist(bestSpawn.entity) then
-                    at = GetEntityCoords(bestSpawn.entity)
-                end
-                QBCore.Functions.DrawText3D(at.x, at.y, at.z + 0.28, ('[E] %s'):format(label))
-                if IsControlJustReleased(0, 38) then
-                    tryPickHarvest(bestFieldId, bestSpawn.index)
-                end
-            end
-        end
-        Wait(sleep)
-    end
-end)
-
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for fieldId, state in pairs(fieldSpawns) do

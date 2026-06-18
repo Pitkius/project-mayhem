@@ -155,6 +155,49 @@ QBCore.Commands.Add('s', 'Sukti — matoma chate ir virš galvos', {
     end
 end, 'user')
 
+local function broadcastHeadText(source, eventName, args, range)
+    local ped = GetPlayerPed(source)
+    if not ped or ped == 0 then return end
+
+    local pCoords = GetEntityCoords(ped)
+    for _, playerId in ipairs(QBCore.Functions.GetPlayers()) do
+        local targetPed = GetPlayerPed(playerId)
+        if targetPed and targetPed ~= 0 then
+            local tCoords = GetEntityCoords(targetPed)
+            if targetPed == ped or #(pCoords - tCoords) <= range then
+                TriggerClientEvent(eventName, playerId, table.unpack(args))
+            end
+        end
+    end
+end
+
+local function sendTadText(source, args)
+    if #args < 1 then
+        TriggerClientEvent('QBCore:Notify', source, 'Naudojimas: /tad tekstas', 'error')
+        return
+    end
+
+    local msg = table.concat(args, ' '):gsub('[~<].-[>~]', '')
+    if msg == '' then
+        TriggerClientEvent('QBCore:Notify', source, 'Tuščias tekstas.', 'error')
+        return
+    end
+
+    broadcastHeadText(source, 'fivempro_basics:client:showTad', { source, msg }, 20.0)
+end
+
+QBCore.Commands.Add('tad', 'Aplinkos aprašymas virš galvos (kaip /do)', {
+    { name = 'tekstas', help = 'Kas vyksta aplinkoje' },
+}, false, function(source, args)
+    sendTadText(source, args)
+end, 'user')
+
+QBCore.Commands.Add('do', 'Alias /tad — aplinkos aprašymas virš galvos', {
+    { name = 'tekstas', help = 'Kas vyksta aplinkoje' },
+}, false, function(source, args)
+    sendTadText(source, args)
+end, 'user')
+
 local staffTags = {}
 
 local function getStaffTagInfo(src)

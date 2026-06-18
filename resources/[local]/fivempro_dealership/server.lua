@@ -39,7 +39,31 @@ local function mergeCivilianBlocked()
     return blocked
 end
 
+local function resolvePerformancePrice(model, category)
+    if GetResourceState('fivempro_vehicle_perf') ~= 'started' then
+        return nil
+    end
+    local ok, price = pcall(function()
+        return exports['fivempro_vehicle_perf']:CalculateVehiclePrice(model, category)
+    end)
+    if ok and price and price > 0 then
+        return price
+    end
+    return nil
+end
+
 local function resolvePrice(model, defaultPrice, category)
+    if Config.ManualPriceOverrides and Config.ManualPriceOverrides[model] and Config.ManualPriceOverrides[model] > 0 then
+        return Config.ManualPriceOverrides[model]
+    end
+
+    if Config.UsePerformancePricing ~= false then
+        local perfPrice = resolvePerformancePrice(model, category)
+        if perfPrice then
+            return perfPrice
+        end
+    end
+
     local override = Config.PriceOverrides[model]
     if override and override > 0 then
         return override
@@ -55,6 +79,20 @@ local function resolvePrice(model, defaultPrice, category)
         end
     end
     return price
+end
+
+local function resolveVehicleMeta(model, category)
+    if GetResourceState('fivempro_vehicle_perf') ~= 'started' then
+        return nil
+    end
+    local ok, result = pcall(function()
+        local price, profile = exports['fivempro_vehicle_perf']:CalculateVehiclePrice(model, category)
+        return { price = price, profile = profile }
+    end)
+    if ok and result and result.profile then
+        return result.profile
+    end
+    return nil
 end
 
 local function resolveCategory(model, baseCategory)
@@ -119,13 +157,19 @@ local function buildCatalog()
                 local category = resolveCategory(model, veh.category)
                 if not isModelBlockedForCivilianShop(model, veh.category) then
                     local price = resolvePrice(model, veh.price, category)
+                    local meta = resolveVehicleMeta(model, category)
                     categories[category] = Config.CategoryLabels[category] or category
                     vehicles[#vehicles + 1] = {
                         model = model,
                         name = veh.name or model,
                         brand = veh.brand or 'Unknown',
                         category = category,
-                        price = price
+                        price = price,
+                        tier = meta and meta.tier or nil,
+                        perf = meta and {
+                            maxKmh = meta.maxKmh,
+                            zeroTo100 = meta.zeroTo100,
+                        } or nil,
                     }
                 end
             end

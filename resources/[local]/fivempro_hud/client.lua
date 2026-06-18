@@ -956,10 +956,18 @@ local function toggleVehiclePanel()
 end
 
 RegisterCommand('fivempro_vehicle_hud', function()
-    toggleVehiclePanel()
+    local ped = PlayerPedId()
+    if IsPedInAnyVehicle(ped, false) then
+        local veh = GetVehiclePedIsIn(ped, false)
+        if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
+            toggleVehiclePanel()
+            return
+        end
+    end
+    TriggerEvent('fivempro_basics:client:openClothingMenu')
 end, false)
 
-RegisterKeyMapping('fivempro_vehicle_hud', 'Fivempro: transporto valdymo panelė', 'keyboard', 'U')
+RegisterKeyMapping('fivempro_vehicle_hud', 'Drabužiai (U) / transporto panelė (vairuotojas)', 'keyboard', 'U')
 
 RegisterNUICallback('vehiclePanel:action', function(data, cb)
     local ped = PlayerPedId()
