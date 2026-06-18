@@ -1,6 +1,6 @@
 Config = Config or {}
 
-Config.ReloadTime = math.random(2200, 3200)
+Config.ReloadTime = 2400
 
 --- Leidžia bėgti/judėti perkrovos metu (viršutinės kūno dalies animacija, be sustojimo).
 Config.ReloadAllowMovement = true
