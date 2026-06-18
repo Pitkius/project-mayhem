@@ -17,6 +17,10 @@ files {
 data_file 'DLC_ITYP_REQUEST' 'stream/ydr/gabz_lost_props.ytyp'
 data_file 'DLC_ITYP_REQUEST' 'stream/ytyp/bkr_biker_dlc_int_02.ytyp'
 
-client_script {
+client_scripts {
     'gabz_lost_entitysets.lua',
+}
+
+exports {
+    'ReloadLostMc',
 }

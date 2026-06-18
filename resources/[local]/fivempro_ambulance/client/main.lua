@@ -126,6 +126,8 @@ local function clearDutyVest(ped)
 end
 
 local DUTY_CATEGORY_HEADERS = {
+    uniform_pants = 'Kelnės',
+    uniform_top = 'Viršutiniai drabužiai',
     uniform = 'Uniformos',
     vest = 'Liemenės',
     belt = 'Diržai',
@@ -174,27 +176,19 @@ RegisterNetEvent('fivempro_ambulance:client:openLocker', function(_data)
     local menu = {
         { header = 'Darbo apranga', isMenuHeader = true },
         {
-            header = 'Uniformos',
-            txt = 'GMP / EMS medicininė apranga',
+            header = 'Kelnės',
+            txt = 'Uniformos kelnės (atskirai nuo viršaus)',
             params = {
                 event = 'fivempro_ambulance:client:openLockerCategory',
-                args = { category = 'uniform' },
+                args = { category = 'uniform_pants' },
             },
         },
         {
-            header = 'Liemenės',
-            txt = 'Balistinės liemenės – pilni šarvai',
+            header = 'Viršutiniai drabužiai',
+            txt = 'Striukės / marškiniai (rankos suderintos)',
             params = {
                 event = 'fivempro_ambulance:client:openLockerCategory',
-                args = { category = 'vest' },
-            },
-        },
-        {
-            header = 'Diržai',
-            txt = 'Diržai ir kiti aksesuarai',
-            params = {
-                event = 'fivempro_ambulance:client:openLockerCategory',
-                args = { category = 'belt' },
+                args = { category = 'uniform_top' },
             },
         },
         {

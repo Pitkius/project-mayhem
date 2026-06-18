@@ -258,7 +258,7 @@ Config.PlannedSites = {
 
 --- Nešiojamas 3D spausdintuvas (itemas · DB · spausdinimas)
 Config.Printer3d = {
-    item = '3d_printer',
+    item = 'printer_3d',
     propModel = 'prop_printer_01',
     maxPerPlayer = 2,
     pickupDist = 2.8,
@@ -393,6 +393,7 @@ Config.WeaponProducts = {
     --- L1 — pistoletai + šalti ginklai (bazinis laikas ~70–85 s + fazės)
     craft_pistol = wp('Pistoletas', 1, 'weapon_pistol', 'pistol_ammo', 60, 90000, 'progress', 12, 10, 3, 45, 'medium'),
     craft_combat_pistol = wp('Combat pistoletas', 1, 'weapon_combatpistol', 'pistol_ammo', 72, 98000, 'skill', 14, 12, 4, 50, 'medium'),
+    craft_armor_light = wp('Lengva šarvų liemenė', 1, 'armor_light', nil, 0, 72000, 'progress', 10, 6, 2, 40, 'medium'),
     craft_bat = wp('Beisbolo lazda', 1, 'weapon_bat', nil, 0, 82000, 'progress', 6, 4, 1, 30, 'low'),
     craft_switchblade = wp('Switchblade', 1, 'weapon_switchblade', nil, 0, 85000, 'progress', 8, 5, 2, 35, 'low'),
     --- L2 — SMG / .50 / shotgun (~95–120 s + minigame)
@@ -424,6 +425,11 @@ Config.WeaponRecipes = {
         { item = 'gun_trigger', count = 2 },
         { item = 'weapon_parts', count = 2 },
         { item = 'metal_scrap', count = 8 },
+    },
+    craft_armor_light = {
+        { item = 'metal_scrap', count = 8 },
+        { item = 'plastic', count = 5 },
+        { item = 'weapon_parts', count = 2 },
     },
     craft_bat = {
         { item = 'metal_scrap', count = 6 },
@@ -567,7 +573,7 @@ Config.MaterialShop = {
         { name = 'empty_bag', amount = 500, price = 11, slot = 41 },
         -- 3D spausdinimas
         { name = 'weapon_prototype', amount = 200, price = 380, slot = 42 },
-        { name = '3d_printer', amount = 25, price = 7500, slot = 43 },
+        { name = 'printer_3d', amount = 25, price = 7500, slot = 43 },
         { name = 'plastic', amount = 500, price = 22, slot = 44 },
         -- Ginklų dalys
         { name = 'metal_scrap', amount = 500, price = 55, slot = 45 },
@@ -689,6 +695,38 @@ Config.ProductBuyerNPCs = {
             vape_mix = 38,
         },
     },
+    weed = {
+        enabled = true,
+        model = 's_m_y_barman_01',
+        coords = vector4(-3.4450, -1820.9264, 29.5432, 230.3047),
+        scenario = 'WORLD_HUMAN_SMOKING',
+        label = 'Žolės supirkėjas',
+        sellAllLabel = 'Parduoti visą žolę',
+        targetIcon = 'fas fa-cannabis',
+        maxDistance = 3.5,
+        blip = { enabled = true, sprite = 140, color = 2, scale = 0.75, label = 'Žolės supirkėjas' },
+        prices = {
+            weed_bag = 140,
+            weed_buds = 55,
+        },
+    },
+    cocaine = {
+        enabled = true,
+        model = 's_m_y_dealer_01',
+        coords = vector4(5587.6470, -5220.6377, 14.6235, 57.1762),
+        scenario = 'WORLD_HUMAN_SMOKING',
+        label = 'Kokaino supirkėjas',
+        sellAllLabel = 'Parduoti visą kokainą',
+        targetIcon = 'fas fa-snowflake',
+        maxDistance = 3.5,
+        blip = { enabled = true, sprite = 501, color = 0, scale = 0.75, label = 'Kokaino supirkėjas' },
+        prices = {
+            cartel_pack = 195,
+            cocaine_bag = 195,
+            cartel_blend = 95,
+            cocaine_paste = 48,
+        },
+    },
 }
 
 --- @deprecated naudok Config.ProductBuyerNPCs.alcohol
@@ -748,6 +786,77 @@ Config.CocaFields = {
             color = 2,
             scale = 0.76,
             label = 'Kokainmedžio lapai (Cayo)',
+        },
+    },
+}
+
+--- THC distiliacija — 2 etapas (production) · Sandy Shores laboratorija
+Config.ThcLab = {
+    blip = {
+        enabled = true,
+        coords = vector3(1391.13, 3603.61, 38.94),
+        sprite = 140,
+        color = 25,
+        scale = 0.78,
+        shortRange = true,
+        label = 'THC laboratorija',
+    },
+    stations = {
+        {
+            id = 'thc_lab_process_1',
+            label = 'THC · distiliacija',
+            level = 1,
+            coords = vector3(1389.0527, 3605.6160, 38.9419),
+            heading = 292.4335,
+            radius = 1.5,
+            products = { 'thc_process' },
+        },
+        {
+            id = 'thc_lab_process_2',
+            label = 'THC · distiliacija',
+            level = 1,
+            coords = vector3(1389.8134, 3603.4443, 38.9419),
+            heading = 290.9305,
+            radius = 1.5,
+            products = { 'thc_process' },
+        },
+        {
+            id = 'thc_lab_process_3',
+            label = 'THC · distiliacija',
+            level = 1,
+            coords = vector3(1394.5112, 3601.7563, 38.9419),
+            heading = 201.5253,
+            radius = 1.5,
+            products = { 'thc_process' },
+        },
+    },
+}
+
+--- Ginklų dirbtuvė · L1 — šarvai ir pistoletai (Mount Chiliad)
+Config.WeaponBenchL1 = {
+    blip = {
+        enabled = true,
+        coords = vector3(-1142.7271, 4941.6255, 222.3038),
+        sprite = 110,
+        color = 1,
+        scale = 0.78,
+        shortRange = true,
+        label = 'Ginklų dirbtuvė · L1',
+    },
+    stations = {
+        {
+            id = 'weapon_bench_l1_chiliad',
+            label = 'Ginklų dirbtuvė · L1',
+            level = 1,
+            mode = 'weapon',
+            coords = vector3(-1142.7271, 4941.6255, 222.3038),
+            heading = 162.4606,
+            radius = 2.0,
+            products = {
+                'craft_pistol',
+                'craft_combat_pistol',
+                'craft_armor_light',
+            },
         },
     },
 }

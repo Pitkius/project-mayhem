@@ -78,10 +78,6 @@ window.GtavMapCore = (function () {
   function calibrationTargets(points, cfg) {
     const mapRangeX = cfg.maxX - cfg.minX || 1;
     const mapRangeY = cfg.maxY - cfg.minY || 1;
-    const scaleX = cfg.scaleX || 1;
-    const scaleY = cfg.scaleY || 1;
-    const ox = cfg.offsetX || 0;
-    const oy = cfg.offsetY || 0;
     const clean = [];
     points.forEach((p) => {
       const px = num(p.gx, NaN);
@@ -92,8 +88,8 @@ window.GtavMapCore = (function () {
       clean.push({
         gx: px,
         gy: py,
-        lng: cfg.minX + pu * mapRangeX * scaleX + ox,
-        lat: cfg.maxY - pv * mapRangeY * scaleY + oy,
+        lng: cfg.minX + pu * mapRangeX,
+        lat: cfg.maxY - pv * mapRangeY,
       });
     });
     return clean;
@@ -120,23 +116,6 @@ window.GtavMapCore = (function () {
 
     cfg.affineU = coeffsU;
     cfg.affineV = coeffsV;
-
-    const direct = calibrationTargets(points, cfg);
-    if (direct.length >= 3) {
-      const coeffsLng = fitAffineGameToNorm(
-        direct.map((p) => ({ gx: p.gx, gy: p.gy, target: p.lng })),
-        "target",
-      );
-      const coeffsLat = fitAffineGameToNorm(
-        direct.map((p) => ({ gx: p.gx, gy: p.gy, target: p.lat })),
-        "target",
-      );
-      if (coeffsLng && coeffsLat) {
-        cfg.affineLng = coeffsLng;
-        cfg.affineLat = coeffsLat;
-      }
-    }
-
     return cfg;
   }
 
@@ -256,16 +235,17 @@ window.GtavMapCore = (function () {
       return [y + oy, x + ox];
     }
 
-    if (projection === "affine" && cfg.affineLat && cfg.affineLng) {
-      const lng = cfg.affineLng[0] * x + cfg.affineLng[1] * y + cfg.affineLng[2];
-      const lat = cfg.affineLat[0] * x + cfg.affineLat[1] * y + cfg.affineLat[2];
-      return [lat, lng];
-    }
-
     const scaleX = cfg.scaleX || 1;
     const scaleY = cfg.scaleY || 1;
     const mapRangeX = cfg.maxX - cfg.minX || 1;
     const mapRangeY = cfg.maxY - cfg.minY || 1;
+
+    if (projection === "affine" && cfg.affineU && cfg.affineV) {
+      const uv = gameToNormUV(x, y, cfg);
+      const lng = cfg.minX + uv[0] * mapRangeX * scaleX + ox;
+      const lat = cfg.maxY - uv[1] * mapRangeY * scaleY + oy;
+      return [lat, lng];
+    }
 
     const uv = gameToNormUV(x, y, cfg);
     const lng = cfg.minX + uv[0] * mapRangeX * scaleX + ox;
@@ -281,23 +261,6 @@ window.GtavMapCore = (function () {
 
     if (projection === "identity") {
       return { x: Number(lng) - ox, y: Number(lat) - oy };
-    }
-
-    if (projection === "affine" && cfg.affineLat && cfg.affineLng) {
-      const a = cfg.affineLng[0];
-      const b = cfg.affineLng[1];
-      const c = cfg.affineLng[2];
-      const d = cfg.affineLat[0];
-      const e = cfg.affineLat[1];
-      const f = cfg.affineLat[2];
-      const rhsLng = Number(lng) - c;
-      const rhsLat = Number(lat) - f;
-      const det = a * e - b * d;
-      if (Math.abs(det) < 1e-12) return { x: 0, y: 0 };
-      return {
-        x: (e * rhsLng - b * rhsLat) / det,
-        y: (-d * rhsLng + a * rhsLat) / det,
-      };
     }
 
     const mapRangeX = cfg.maxX - cfg.minX || 1;

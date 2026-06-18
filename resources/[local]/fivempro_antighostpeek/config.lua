@@ -2,77 +2,84 @@ Config = {}
 
 Config.Enabled = true
 
---- Bazinė tolerancija (m) — kiek artesnė kliūtis vis dar laikoma „tas pats taškas“.
-Config.DistanceThreshold = 0.35
+--- Tik PvP — jei nėra žaidėjo taikinio, sistema neįsijungia (galima taikytis į sieną).
+Config.MaxTargetDistance = 120.0
 
---- Papildoma tolerancija pagal atstumą (m per 1 m atstumo). Toli sumažina klaidingus blokavimus.
-Config.DistanceThresholdScale = 0.011
-
---- Maksimali tolerancija (m) — viršutinė riba toliems šūviams.
-Config.MaxDistanceThreshold = 1.85
-
---- Minimalus atstumas iki taikinio — per arti nevertiname (m).
-Config.MinAimDistance = 2.0
+--- Papildomas taikinio paieška pagal kamerą (laipsniai).
+Config.AimConeDegrees = 9.0
 
 --- Maksimalus raycast atstumas (m).
 Config.MaxRayDistance = 150.0
 
---- Kiek šūvio krypčių turi būti laisvos, kad leistų šaudyti.
-Config.MinClearPaths = 1
+--- Kiek kaulų priešininkas turi matyti pas šaulį, kad būtų laikoma sąžininga kova.
+Config.MinShooterBonesVisibleToTarget = 1
 
---- Kai matomas ginklo prop — tik jo vamzdžio taškai (mažiau klaidų su raumeningais ped).
-Config.MinClearPathsWithWeapon = 1
-Config.WeaponOnlyOrigins = true
-Config.WeaponMuzzleOffsets = { 0.82, 0.62, 0.42 }
-
---- Kiek kartų leisti praskrodyti minkštą medžiagą / kūną vienu spinduliu.
-Config.RayMaxPasses = 12
-
---- Kiek prasukti pro savo kūną, kai ray vis dar kerta ped (stipresni modeliai).
-Config.SelfBodyAdvance = 0.5
-
---- Negyvų pedų hitai nelaikomi kliūtimi (dažna klaida šaudant virš lavonų).
-Config.IgnoreDeadPedHits = true
-
---- Žingsnis praskrodžiant minkštą paviršių (m).
-Config.PenetrateStep = 0.1
-
---- Shape test: be lapų/krumų (511 - 256 IntersectFoliage).
-Config.TraceFlags = 255
-
---- Ignoruoja stiklą, permatomus ir no-collision paviršius.
-Config.TraceOptions = 7
-
---- Medžiagos, kurias laikome „ne sienu“ (krūmai, žolė, tinkleliai, plonas stiklas ir pan.).
-Config.PenetrableMaterials = {
-    [0x22AD7B72] = true, -- Bushes
-    [0x55E5AAEE] = true, -- BushesNoinst
-    [0x4F747B87] = true, -- Grass
-    [0xE47A3E41] = true, -- GrassLong
-    [0xB34E900D] = true, -- GrassShort
-    [0x8653C6CD] = true, -- Leaves
-    [0xC98F5B61] = true, -- Twigs
-    [0x92B69883] = true, -- Hay
-    [0xED932E53] = true, -- Woodchips
-    [0x8DD4EBB9] = true, -- TreeBark
-    [0x2D6E26CD] = true, -- MetalChainLinkSmall
-    [0x0781FA34] = true, -- MetalChainLinkLarge
-    [0xE699F485] = true, -- MetalGrille
-    [0x77E08A22] = true, -- WoodLattice
-    [0x37E12A0B] = true, -- GlassShootThrough
-    [0x2827CBD9] = true, -- SlattedBlinds
-    [0xD9B1CDE0] = true, -- Tarpaulin
-    [0x7519E5D]  = true, -- Cloth
-    [0x1C42F3BC] = true, -- Paper
-    [0x30341454] = true, -- Foam
-    [0x4FFB413F] = true, -- FeatherPillow
-    [0x97476A9D] = true, -- Polystyrene
-    [0x76D9AC2F] = true, -- WoodHollowSmall
-    [0xEA3746BD] = true, -- WoodHollowMedium
-    [0xA402C0C0] = true, -- PhysBarbedWire
+--- Šaulio kaulai, kuriuos tikrina priešininkas (matomumas).
+Config.ShooterVisibilityBones = {
+    31086, -- SKEL_Head
+    24818, -- SKEL_Spine3
+    11816, -- SKEL_Pelvis
 }
 
---- Nerodyti ant šių ginklų (melee, granatos ir pan.).
+--- Taikinio kaulai šūvio trajektorijai.
+Config.TargetAimBones = {
+    24818, -- chest
+    31086, -- head
+}
+
+--- Mūsio taškai ant ginklo (Y offset).
+Config.WeaponMuzzleOffsets = { 0.82, 0.62, 0.42 }
+Config.WeaponOnlyOrigins = true
+
+--- Jei vamzdis < šio atstumo nuo kliūties — laikoma, kad šūvis prasideda sienoje.
+Config.MuzzleWallEmbedDistance = 0.14
+
+--- Tolerancija mūsio vs taikinio atstumui (m).
+Config.MuzzleHitSlack = 0.45
+
+--- Pranešimas tik kai realiai užblokuotas šūvis.
+Config.BlockMessage = 'Ghost Peek apsauga'
+Config.NotifyCooldownMs = 2800
+
+--- Shape test: pasaulis + objektai, be lapų (255 = be IntersectFoliage).
+Config.TraceFlags = 255
+Config.TraceOptions = 7
+
+Config.RayMaxPasses = 8
+Config.PenetrateStep = 0.1
+Config.SelfBodyAdvance = 0.45
+
+Config.IgnoreDeadPedHits = true
+
+--- Medžiagos, kurias laikome permatomomis (ne sienu).
+Config.PenetrableMaterials = {
+    [0x22AD7B72] = true,
+    [0x55E5AAEE] = true,
+    [0x4F747B87] = true,
+    [0xE47A3E41] = true,
+    [0xB34E900D] = true,
+    [0x8653C6CD] = true,
+    [0xC98F5B61] = true,
+    [0x92B69883] = true,
+    [0xED932E53] = true,
+    [0x8DD4EBB9] = true,
+    [0x2D6E26CD] = true,
+    [0x0781FA34] = true,
+    [0xE699F485] = true,
+    [0x77E08A22] = true,
+    [0x37E12A0B] = true,
+    [0x2827CBD9] = true,
+    [0xD9B1CDE0] = true,
+    [0x7519E5D]  = true,
+    [0x1C42F3BC] = true,
+    [0x30341454] = true,
+    [0x4FFB413F] = true,
+    [0x97476A9D] = true,
+    [0x76D9AC2F] = true,
+    [0xEA3746BD] = true,
+    [0xA402C0C0] = true,
+}
+
 Config.IgnoredWeapons = {
     [`WEAPON_UNARMED`] = true,
     [`WEAPON_KNIFE`] = true,

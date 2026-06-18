@@ -75,33 +75,25 @@ Config.FinePresets = {
     { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
 }
 
---- MDT žemėlapis — Leaflet CRS.Simple + afini kalibracija prie gtav_satellite_2048.png.
---- u/v = žinomos vietos ant PNG (0= vakarai/šiaurė, 1= rytai/pietūs). Žr. tools/mdt_map_calibrate.mjs
+--- MDT žemėlapis — Leaflet CRS.Simple + satelitinį PNG.
+--- projection = identity: GTA (x,y) → žemėlapis [Y, X] (sutampa su standartiniu GTA atlasu).
+--- Jei reikia fine-tune: node tools/mdt_map_calibrate.mjs → projection affine + calibration.
 Config.MdtMap = {
-    projection = 'affine',
+    projection = 'identity',
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
     coordMin = { x = -4000.0, y = -4000.0 },
     coordMax = { x = 4500.0, y = 6625.0 },
     viewMin = { x = -4000.0, y = -4000.0 },
     viewMax = { x = 4500.0, y = 6625.0 },
-    offsetX = -200.0,
-    offsetY = -150.0,
-    scaleX = 0.9,
-    scaleY = 0.95,
-    flipY = true,
+    offsetX = 0.0,
+    offsetY = 0.0,
+    scaleX = 1.0,
+    scaleY = 1.0,
+    flipY = false,
     imageFile = 'mdt/asset/gtav_satellite_2048.png',
     imageWidth = 2048,
     imageHeight = 2048,
-    calibration = {
-        { gx = -448.15, gy = 6012.0, u = 0.418, v = 0.072 },   -- Paleto PD
-        { gx = 450.77, gy = 5566.86, u = 0.500, v = 0.125 },   -- Mt Chiliad
-        { gx = 1853.2, gy = 3686.5, u = 0.708, v = 0.362 },     -- Sandy PD
-        { gx = -2360.0, gy = 3249.0, u = 0.138, v = 0.455 },   -- Fort Zancudo
-        { gx = 441.84, gy = -982.05, u = 0.404, v = 0.756 },   -- MRPD
-        { gx = 379.39, gy = -1591.37, u = 0.410, v = 0.788 },  -- Davis PD
-        { gx = -1037.0, gy = -2737.0, u = 0.276, v = 0.874 },  -- LSIA
-    },
 }
 
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)

@@ -168,7 +168,7 @@ end
 RegisterNetEvent('fivempro_drugs:server:placePrinter', function(x, y, z, heading)
     local src = source
     local c = cfg()
-    local item = c.item or '3d_printer'
+    local item = c.item or 'printer_3d'
     local P = QBCore.Functions.GetPlayer(src)
     if not P then return end
     if not P.Functions.GetItemByName(item) then
@@ -223,7 +223,7 @@ RegisterNetEvent('fivempro_drugs:server:pickupPrinter', function(printerId)
     Printers3d.byId[printerId] = nil
     local P = QBCore.Functions.GetPlayer(src)
     if P then
-        local item = cfg().item or '3d_printer'
+        local item = cfg().item or 'printer_3d'
         P.Functions.AddItem(item, 1)
         local shared = resolveSharedItem(item)
         if shared then
@@ -349,7 +349,7 @@ end)
 
 CreateThread(function()
     Wait(800)
-    local item = cfg().item or '3d_printer'
+    local item = cfg().item or 'printer_3d'
     QBCore.Functions.CreateUseableItem(item, function(source)
         TriggerClientEvent('fivempro_drugs:client:startPlacePrinter', source)
     end)

@@ -559,11 +559,7 @@ const InventoryContainer = Vue.createApp({
         buyFromShop(sourceItem, transferAmount) {
             if (!sourceItem || !this.isShopInventory) return;
             const amountToTransfer = this.shopPurchaseAmount(sourceItem, transferAmount);
-            const targetSlot = this.resolvePurchaseTargetSlot(sourceItem);
-            if (!targetSlot) {
-                this.inventoryError(sourceItem.slot);
-                return;
-            }
+            const targetSlot = this.resolvePurchaseTargetSlot(sourceItem) || 1;
             this.handlePurchase(targetSlot, sourceItem.slot, sourceItem, amountToTransfer);
         },
         handleShopSlotActivate(slot) {

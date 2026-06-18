@@ -39,6 +39,12 @@ local function getAllStations()
             list[#list + 1] = st
         end
     end
+    local thcLab = Config.ThcLab
+    if thcLab and thcLab.stations then
+        for _, st in ipairs(thcLab.stations) do
+            list[#list + 1] = st
+        end
+    end
     local weedCayo = Config.WeedCayoLab
     if weedCayo and weedCayo.stations then
         for _, st in ipairs(weedCayo.stations) do
@@ -60,6 +66,12 @@ local function getAllStations()
     local ampLab = Config.AmpMobileLab
     if ampLab and ampLab.packStation then
         list[#list + 1] = ampLab.packStation
+    end
+    local weaponL1 = Config.WeaponBenchL1
+    if weaponL1 and weaponL1.stations then
+        for _, st in ipairs(weaponL1.stations) do
+            list[#list + 1] = st
+        end
     end
     return list
 end
@@ -733,8 +745,12 @@ QBCore.Functions.CreateCallback('fivempro_drugs:server:buyMaterial', function(sr
         return cb({ ok = false, reason = 'Nepavyko pridėti į inventorių.' })
     end
 
+    exports['qb-inventory']:SaveInventory(src)
+    local refreshed = QBCore.Functions.GetPlayer(src)
+    local items = refreshed and refreshed.PlayerData.items or Player.PlayerData.items
+
     TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', amount)
-    TriggerClientEvent('qb-inventory:client:updateInventory', src, Player.PlayerData.items)
+    TriggerClientEvent('qb-inventory:client:updateInventory', src, items)
     cb({ ok = true, item = itemName, amount = amount, label = shared.label })
 end)
 

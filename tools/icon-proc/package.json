@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "unify": "node unify-all-icons.mjs",
+    "weapon-icon": "node make-weapon-photo-icon.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

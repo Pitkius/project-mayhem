@@ -120,7 +120,7 @@ function LoadInventory(source, citizenid)
 
     for _, item in pairs(inventory) do
         if item then
-            local itemInfo = QBCore.Shared.Items[item.name:lower()]
+            local itemInfo = resolveSharedItem(item.name)
 
             if itemInfo then
                 loadedInventory[item.slot] = {

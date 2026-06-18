@@ -224,6 +224,12 @@ local function getAllStations()
             list[#list + 1] = st
         end
     end
+    local thcLab = Config.ThcLab
+    if thcLab and thcLab.stations then
+        for _, st in ipairs(thcLab.stations) do
+            list[#list + 1] = st
+        end
+    end
     local weedCayo = Config.WeedCayoLab
     if weedCayo and weedCayo.stations then
         for _, st in ipairs(weedCayo.stations) do
@@ -245,6 +251,12 @@ local function getAllStations()
     local ampLab = Config.AmpMobileLab
     if ampLab and ampLab.packStation then
         list[#list + 1] = ampLab.packStation
+    end
+    local weaponL1 = Config.WeaponBenchL1
+    if weaponL1 and weaponL1.stations then
+        for _, st in ipairs(weaponL1.stations) do
+            list[#list + 1] = st
+        end
     end
     return list
 end
@@ -580,6 +592,18 @@ local function setupStationBlips()
         addCfgBlip(heroinLab.blip.coords, heroinLab.blip, heroinLab.blip.label or 'Heroino laboratorija')
     end
 
+    -- THC distiliacija (2 etapas)
+    local thcLab = Config.ThcLab
+    if thcLab and thcLab.blip then
+        addCfgBlip(thcLab.blip.coords, thcLab.blip, thcLab.blip.label or 'THC laboratorija')
+    end
+
+    -- Ginklų dirbtuvė L1
+    local weaponL1 = Config.WeaponBenchL1
+    if weaponL1 and weaponL1.blip then
+        addCfgBlip(weaponL1.blip.coords, weaponL1.blip, weaponL1.blip.label or 'Ginklų dirbtuvė · L1')
+    end
+
     -- Žolės džiovinimas (hid_weed_lab)
     local weedCayo = Config.WeedCayoLab
     if weedCayo and weedCayo.blip and (not weedCayo.requireIsland or isCayoIslandLoaded()) then
@@ -691,7 +715,7 @@ local function setupStations()
 end
 
 local WEAPON_PART_ITEMS = {
-    'metal_scrap', 'gun_frame', 'gun_barrel', 'gun_spring', 'gun_trigger', 'weapon_parts', 'weapon_prototype', '3d_printer',
+    'metal_scrap', 'plastic', 'gun_frame', 'gun_barrel', 'gun_spring', 'gun_trigger', 'weapon_parts', 'weapon_prototype', 'printer_3d',
     'pistol_ammo', 'smg_ammo', 'rifle_ammo', 'shotgun_ammo',
 }
 
@@ -709,7 +733,7 @@ end
 local function buyMaterialItem(itemName, amount)
     QBCore.Functions.TriggerCallback('fivempro_drugs:server:buyMaterial', function(res)
         if res and res.ok then
-            QBCore.Functions.Notify(('Nupirkta: %s x%s'):format(res.label or itemName, res.amount or amount), 'success')
+            QBCore.Functions.Notify(('Nupirkta: %s x%s — žiūrėk inventorių.'):format(res.label or itemName, res.amount or amount), 'success', 5500)
             return
         end
         QBCore.Functions.Notify((res and res.reason) or 'Pirkimas nepavyko.', 'error')

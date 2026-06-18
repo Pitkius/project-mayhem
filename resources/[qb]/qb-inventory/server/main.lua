@@ -205,7 +205,8 @@ RegisterNetEvent('qb-inventory:server:useItem', function(item)
     local src = source
     local itemData = GetItemBySlot(src, item.slot)
     if not itemData then return end
-    local itemInfo = QBCore.Shared.Items[itemData.name]
+    local itemInfo = exports['qb-inventory']:ResolveSharedItem(itemData.name)
+    if not itemInfo then return end
     if itemData.type == 'weapon' then
         if BlockedWeaponItems[itemData.name] then
             TriggerClientEvent('QBCore:Notify', src, 'This weapon is blocked on this server.', 'error')
@@ -431,7 +432,9 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
 
     shopItem.amount = stock - amount
     TriggerEvent('qb-shops:server:UpdateShopItems', shop, itemInfo, amount)
-    local freshItems = Player.PlayerData.items
+    exports['qb-inventory']:SaveInventory(source)
+    local freshPlayer = QBCore.Functions.GetPlayer(source)
+    local freshItems = freshPlayer and freshPlayer.PlayerData.items or Player.PlayerData.items
     TriggerClientEvent('qb-inventory:client:updateInventory', source, freshItems)
     local sharedItem = exports['qb-inventory']:ResolveSharedItem(itemName)
     if sharedItem then

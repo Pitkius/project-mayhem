@@ -1,4 +1,9 @@
-local blocked = false
+local QBCore = exports['qb-core']:GetCoreObject()
+
+local lastNotifyAt = 0
+local FIRE_CONTROLS = { 24, 47, 58, 140, 141, 142, 257, 263, 264 }
+
+-- ── Vektoriai / raycast ─────────────────────────────────────────────────────
 
 local function rotationToDirection(rot)
     local radX = math.rad(rot.x)
@@ -13,13 +18,6 @@ local function normalizeVec(vec)
         return vector3(0.0, 0.0, 0.0), 0.0
     end
     return vec / len, len
-end
-
-local function getDistanceThreshold(dist)
-    local base = Config.DistanceThreshold or 0.35
-    local scale = Config.DistanceThresholdScale or 0.011
-    local maxThreshold = Config.MaxDistanceThreshold or 1.85
-    return math.min(maxThreshold, base + dist * scale)
 end
 
 local function isAttachedToPed(entityHit, ped)
@@ -48,69 +46,61 @@ local function isDeadPedEntity(entityHit)
         and IsPedDeadOrDying(entityHit, true)
 end
 
-local function isIgnoredHitEntity(entityHit, ped, weaponEnt)
-    if not entityHit or entityHit == 0 or not DoesEntityExist(entityHit) then
-        return true
-    end
-
-    if entityHit == ped or isAttachedToPed(entityHit, ped) then
-        return true
-    end
-
-    if weaponEnt and weaponEnt ~= 0 and (entityHit == weaponEnt or isAttachedToPed(entityHit, weaponEnt)) then
-        return true
-    end
-
-    if Config.IgnoreDeadPedHits ~= false and isDeadPedEntity(entityHit) then
-        return true
-    end
-
-    if IsEntityAPed(entityHit) and IsPedAPlayer(entityHit) and entityHit == ped then
-        return true
-    end
-
-    return false
-end
-
 local function isPenetrableMaterial(materialHash)
     return materialHash and materialHash ~= 0 and Config.PenetrableMaterials[materialHash] == true
 end
 
-local function waitShapeTestResult(handle, useMaterial)
+local function isIgnoredHitEntity(entityHit, ped, weaponEnt)
+    if not entityHit or entityHit == 0 or not DoesEntityExist(entityHit) then
+        return true
+    end
+    if entityHit == ped or isAttachedToPed(entityHit, ped) then
+        return true
+    end
+    if weaponEnt and weaponEnt ~= 0 and (entityHit == weaponEnt or isAttachedToPed(entityHit, weaponEnt)) then
+        return true
+    end
+    if Config.IgnoreDeadPedHits ~= false and isDeadPedEntity(entityHit) then
+        return true
+    end
+    return false
+end
+
+local function waitShapeTestResult(handle)
     local deadline = GetGameTimer() + 30
     while GetGameTimer() < deadline do
-        local result, hit, endCoords, surfaceNormal, materialHash, entityHit
-
-        if useMaterial then
-            result, hit, endCoords, surfaceNormal, materialHash, entityHit = GetShapeTestResultIncludingMaterial(handle)
-        else
-            result, hit, endCoords, surfaceNormal, entityHit = GetShapeTestResult(handle)
-            materialHash = 0
-        end
-
+        local result, hit, endCoords, surfaceNormal, materialHash, entityHit =
+            GetShapeTestResultIncludingMaterial(handle)
         if result ~= 1 then
             return result == 2 and hit == 1, endCoords, materialHash or 0, entityHit or 0
         end
-
         Wait(0)
     end
-
     return false, vector3(0.0, 0.0, 0.0), 0, 0
 end
 
-local function castProbe(from, to, ped, traceFlags, traceOptions)
+local function castProbe(from, to, ped, ignoreEnt)
+    local handle = StartShapeTestRay(
+        from.x, from.y, from.z,
+        to.x, to.y, to.z,
+        Config.TraceFlags or 255,
+        ignoreEnt or ped,
+        Config.TraceOptions or 7
+    )
+    return waitShapeTestResult(handle)
+end
+
+local function castLosProbe(from, to, ped)
     local handle = StartShapeTestLosProbe(
         from.x, from.y, from.z,
         to.x, to.y, to.z,
-        traceFlags or Config.TraceFlags or 255,
+        Config.TraceFlags or 255,
         ped,
-        traceOptions or Config.TraceOptions or 7
+        Config.TraceOptions or 7
     )
-
-    return waitShapeTestResult(handle, true)
+    return waitShapeTestResult(handle)
 end
 
---- Spindulys ta pačia kryptimi; praleidžia krūmus, žolę, tinklelius ir pan.
 local function traceAlongDirection(origin, direction, maxDistance, ped, weaponEnt)
     local dir = select(1, normalizeVec(direction))
     if #(dir) < 0.001 or maxDistance <= 0.05 then
@@ -119,7 +109,7 @@ local function traceAlongDirection(origin, direction, maxDistance, ped, weaponEn
 
     local traveled = 0.0
     local cursor = origin
-    local maxPasses = Config.RayMaxPasses or 5
+    local maxPasses = Config.RayMaxPasses or 8
     local step = Config.PenetrateStep or 0.1
 
     for _ = 1, maxPasses do
@@ -129,48 +119,62 @@ local function traceAlongDirection(origin, direction, maxDistance, ped, weaponEn
         end
 
         local dest = cursor + dir * remaining
-        local hit, endCoords, materialHash, entityHit = castProbe(cursor, dest, ped)
+        local hit, endCoords, materialHash, entityHit = castLosProbe(cursor, dest, ped)
 
         if not hit or not endCoords then
             return maxDistance, false, 0, 0, dest
         end
 
         if isIgnoredHitEntity(entityHit, ped, weaponEnt) then
-            local selfSkip = Config.SelfBodyAdvance or 0.5
             local segLen = #(cursor - endCoords)
             local advance = math.max(step, segLen + step)
             if entityHit == ped or isAttachedToPed(entityHit, ped) then
-                advance = math.max(advance, selfSkip)
+                advance = math.max(advance, Config.SelfBodyAdvance or 0.45)
             end
             traveled = traveled + advance
             cursor = cursor + dir * advance
-            if traveled >= maxDistance - 0.05 then
-                return maxDistance, false, 0, 0, cursor
-            end
         elseif isPenetrableMaterial(materialHash) then
             local seg = #(cursor - endCoords)
             traveled = traveled + seg + step
             cursor = endCoords + dir * step
-            if traveled >= maxDistance - 0.05 then
-                return maxDistance, false, 0, 0, cursor
-            end
         else
             traveled = traveled + #(cursor - endCoords)
             return traveled, true, materialHash, entityHit, endCoords
+        end
+
+        if traveled >= maxDistance - 0.05 then
+            return maxDistance, false, 0, 0, cursor
         end
     end
 
     return maxDistance, false, 0, 0, origin + dir * maxDistance
 end
 
+-- ── Ginklas / taikinys ──────────────────────────────────────────────────────
+
+local function isValidPlayerTarget(entity, shooterPed)
+    if not entity or entity == 0 or entity == shooterPed then
+        return false
+    end
+    if not DoesEntityExist(entity) or not IsEntityAPed(entity) then
+        return false
+    end
+    if not IsPedAPlayer(entity) then
+        return false
+    end
+    if IsPedDeadOrDying(entity, true) then
+        return false
+    end
+    return true
+end
+
 local function getShootOrigins(ped, direction)
     local origins = {}
     local dir = select(1, normalizeVec(direction))
-
     local weaponEnt = GetCurrentPedWeaponEntityIndex(ped)
+
     if weaponEnt and weaponEnt ~= 0 and DoesEntityExist(weaponEnt) then
-        local offsets = Config.WeaponMuzzleOffsets or { 0.82, 0.62, 0.42 }
-        for _, yOff in ipairs(offsets) do
+        for _, yOff in ipairs(Config.WeaponMuzzleOffsets or { 0.82, 0.62 }) do
             origins[#origins + 1] = GetOffsetFromEntityInWorldCoords(weaponEnt, 0.0, yOff, 0.03)
         end
         if Config.WeaponOnlyOrigins ~= false then
@@ -179,185 +183,239 @@ local function getShootOrigins(ped, direction)
     end
 
     local hand = GetPedBoneCoords(ped, 57005, 0.0, 0.0, 0.0)
-    origins[#origins + 1] = hand + dir * 0.58
-    origins[#origins + 1] = hand + dir * 0.42 + vector3(0.0, 0.0, 0.08)
-
-    local rhBone = GetPedBoneIndex(ped, 28422)
-    if rhBone ~= -1 then
-        origins[#origins + 1] = GetWorldPositionOfEntityBone(ped, rhBone) + dir * 0.48
-    end
-
+    origins[#origins + 1] = hand + dir * 0.55
     return origins, weaponEnt
 end
 
-local function isAiming(ped)
-    if IsPlayerFreeAiming(PlayerId()) then
+local function getPedBonePos(ped, boneId)
+    return GetPedBoneCoords(ped, boneId, 0.0, 0.0, 0.0)
+end
+
+local function getTargetAimPoint(targetPed)
+    for _, boneId in ipairs(Config.TargetAimBones or { 24818, 31086 }) do
+        local pos = getPedBonePos(targetPed, boneId)
+        if pos and #(pos) > 0.01 then
+            return pos
+        end
+    end
+    return GetEntityCoords(targetPed)
+end
+
+local function angleBetweenDegrees(a, b)
+    local dot = a.x * b.x + a.y * b.y + a.z * b.z
+    dot = math.max(-1.0, math.min(1.0, dot))
+    return math.deg(math.acos(dot))
+end
+
+local function findAimedPlayerTarget(shooterPed)
+    local playerId = PlayerId()
+    local maxDist = Config.MaxTargetDistance or 120.0
+
+    local _, freeAimEntity = GetEntityPlayerIsFreeAimingAt(playerId)
+    if isValidPlayerTarget(freeAimEntity, shooterPed) then
+        return freeAimEntity
+    end
+
+    local camCoord = GetFinalRenderedCamCoord()
+    local camDir = rotationToDirection(GetFinalRenderedCamRot(2))
+    local rayDist, rayHit, _, rayEntity = traceAlongDirection(
+        camCoord,
+        camDir,
+        maxDist,
+        shooterPed,
+        nil
+    )
+
+    if rayHit and isValidPlayerTarget(rayEntity, shooterPed) then
+        return rayEntity
+    end
+
+    if rayHit and rayEntity and rayEntity ~= 0 and DoesEntityExist(rayEntity) then
+        local attachedTo = GetEntityAttachedTo(rayEntity)
+        if isValidPlayerTarget(attachedTo, shooterPed) then
+            return attachedTo
+        end
+    end
+
+    local bestPed, bestAngle = nil, Config.AimConeDegrees or 9.0
+    local shooterCoords = GetEntityCoords(shooterPed)
+
+    for _, pid in ipairs(GetActivePlayers()) do
+        if pid ~= playerId then
+            local tp = GetPlayerPed(pid)
+            if isValidPlayerTarget(tp, shooterPed) then
+                local tCoords = getTargetAimPoint(tp)
+                local dist = #(shooterCoords - tCoords)
+                if dist <= maxDist then
+                    local toTarget = select(1, normalizeVec(tCoords - camCoord))
+                    local ang = angleBetweenDegrees(camDir, toTarget)
+                    if ang < bestAngle then
+                        local losDist, losHit, _, losEnt = traceAlongDirection(camCoord, toTarget, dist, shooterPed, nil)
+                        local hitsTarget = not losHit or losEnt == tp or isAttachedToPed(losEnt, tp)
+                        if hitsTarget or losDist >= dist - 1.2 then
+                            bestAngle = ang
+                            bestPed = tp
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return bestPed
+end
+
+-- ── Sąžiningumo tikrinimas ──────────────────────────────────────────────────
+
+local function hasClearLos(from, to, ped, weaponEnt, targetEnt)
+    local dist = #(from - to)
+    if dist < 0.05 then
+        return true
+    end
+    local dir = (to - from) / dist
+    local traveled, hit, _, hitEnt = traceAlongDirection(from, dir, dist + 0.35, ped, weaponEnt)
+
+    if not hit then
         return true
     end
 
-    if IsControlPressed(0, 25) then
+    if targetEnt and (hitEnt == targetEnt or isAttachedToPed(hitEnt, targetEnt)) then
         return true
     end
 
-    if IsPedShooting(ped) then
+    local slack = Config.MuzzleHitSlack or 0.45
+    return traveled >= dist - slack
+end
+
+local function countBonesVisibleTo(fromPed, toPed, boneList)
+    local eye = getPedBonePos(fromPed, 31086) + vector3(0.0, 0.0, 0.08)
+    local visible = 0
+
+    for _, boneId in ipairs(boneList or {}) do
+        local bonePos = getPedBonePos(toPed, boneId)
+        if hasClearLos(eye, bonePos, fromPed, nil, toPed) then
+            visible = visible + 1
+        end
+    end
+
+    return visible
+end
+
+local function isMuzzleBehindCover(muzzle, direction, ped, weaponEnt)
+    local dir = select(1, normalizeVec(direction))
+    local embed = Config.MuzzleWallEmbedDistance or 0.14
+    local behind = muzzle - dir * 0.22
+    local dist, hit = traceAlongDirection(behind, dir, embed + 0.08, ped, weaponEnt)
+    return hit and dist < embed
+end
+
+--- Blokuoti tik nesąžiningą kampą prieš žaidėją (ne taikymąsi į sieną).
+local function shouldBlockGhostPeekShot(shooterPed, targetPed)
+    if not targetPed or not isValidPlayerTarget(targetPed, shooterPed) then
+        return false
+    end
+
+    local camDir = rotationToDirection(GetFinalRenderedCamRot(2))
+    local targetPoint = getTargetAimPoint(targetPed)
+    local origins, weaponEnt = getShootOrigins(shooterPed, camDir)
+
+    -- 1) Ar bent vienas vamzdis gali pasiekti taikinį be kietos kliūties?
+    for i = 1, #origins do
+        if hasClearLos(origins[i], targetPoint, shooterPed, weaponEnt, targetPed) then
+            return false
+        end
+    end
+
+    -- 2) Ar priešininkas mato šaulio modelį?
+    local shooterBonesSeen = countBonesVisibleTo(
+        targetPed,
+        shooterPed,
+        Config.ShooterVisibilityBones
+    )
+    if shooterBonesSeen >= (Config.MinShooterBonesVisibleToTarget or 1) then
+        return false
+    end
+
+    -- 3) Ar šūvis prasideda už kampo / sienos viduje?
+    local muzzle = origins[1]
+    if muzzle and isMuzzleBehindCover(muzzle, camDir, shooterPed, weaponEnt) then
+        return true
+    end
+
+    -- 4) Kamera mato taikinį, bet vamzdis ir priešininkas — ne: klasikinis ghost peek.
+    local camCoord = GetFinalRenderedCamCoord()
+    if hasClearLos(camCoord, targetPoint, shooterPed, nil, targetPed) then
         return true
     end
 
     return false
 end
 
-local function isClearWeaponPath(origin, direction, camDistance, ped, weaponEnt, threshold)
-    local weaponDist, weaponHit, _, weaponEntity = traceAlongDirection(
-        origin,
-        direction,
-        camDistance + 0.35,
-        ped,
-        weaponEnt
-    )
+-- ── Įvestis / pranešimai ────────────────────────────────────────────────────
 
-    if not weaponHit then
-        return true
-    end
-
-    if Config.IgnoreDeadPedHits ~= false and isDeadPedEntity(weaponEntity) then
-        return true
-    end
-
-    return weaponDist >= camDistance - threshold
+local function isIgnoredWeapon(ped)
+    local weapon = GetSelectedPedWeapon(ped)
+    return Config.IgnoredWeapons[weapon] == true
 end
 
---- Ghost peek: kamera mato toliau nei realus šūvis (už kietos kliūties), ne krūmo/tinklelio.
-local function isGhostPeeking(ped)
+local function isTryingToFire()
+    for i = 1, #FIRE_CONTROLS do
+        if IsControlPressed(0, FIRE_CONTROLS[i]) or IsDisabledControlPressed(0, FIRE_CONTROLS[i]) then
+            return true
+        end
+    end
+    return IsPedShooting(PlayerPedId())
+end
+
+local function blockFiringThisFrame()
+    local playerId = PlayerId()
+    DisablePlayerFiring(playerId, true)
+    for i = 1, #FIRE_CONTROLS do
+        DisableControlAction(0, FIRE_CONTROLS[i], true)
+    end
+end
+
+local function notifyBlocked()
+    local now = GetGameTimer()
+    local cooldown = Config.NotifyCooldownMs or 2800
+    if now - lastNotifyAt < cooldown then
+        return
+    end
+    lastNotifyAt = now
+    QBCore.Functions.Notify(Config.BlockMessage or 'Ghost Peek apsauga', 'error', 2200)
+end
+
+local function canEvaluate(ped)
     if not Config.Enabled then
         return false
     end
-
     if not DoesEntityExist(ped) or IsPedDeadOrDying(ped, true) then
         return false
     end
-
     if not IsPedArmed(ped, 4) then
         return false
     end
-
-    local weapon = GetSelectedPedWeapon(ped)
-    if Config.IgnoredWeapons[weapon] then
+    if isIgnoredWeapon(ped) then
         return false
     end
-
-    if not isAiming(ped) then
-        return false
-    end
-
-    local camCoord = GetFinalRenderedCamCoord()
-    local camRot = GetFinalRenderedCamRot(2)
-    local direction = rotationToDirection(camRot)
-
-    local camDistance, camHit, camMaterial, camEntity = traceAlongDirection(
-        camCoord,
-        direction,
-        Config.MaxRayDistance,
-        ped,
-        nil
-    )
-
-    if not camHit then
-        return false
-    end
-
-    if camDistance < (Config.MinAimDistance or 2.0) then
-        return false
-    end
-
-    if camEntity and camEntity ~= 0 and DoesEntityExist(camEntity) and IsEntityAPed(camEntity) then
-        if Config.IgnoreDeadPedHits ~= false and IsPedDeadOrDying(camEntity, true) then
-            return false
-        end
-        -- Kamera mato gyvą pedą — tikriname ar ginklas gali pasiekti tą patį atstumą.
-    elseif isPenetrableMaterial(camMaterial) then
-        return false
-    end
-
-    local threshold = getDistanceThreshold(camDistance)
-    local origins, weaponEnt = getShootOrigins(ped, direction)
-    local clearPaths = 0
-
-    for i = 1, #origins do
-        if isClearWeaponPath(origins[i], direction, camDistance, ped, weaponEnt, threshold) then
-            clearPaths = clearPaths + 1
-        end
-    end
-
-    local minClear = Config.MinClearPaths or 1
-    if weaponEnt and weaponEnt ~= 0 then
-        minClear = Config.MinClearPathsWithWeapon or minClear
-    end
-    return clearPaths < minClear
+    return true
 end
 
-local function setIndicator(active)
-    SendNUIMessage({
-        action = 'ghostpeek',
-        active = active == true,
-    })
-end
-
-local function blockFiring()
-    local playerId = PlayerId()
-    DisablePlayerFiring(playerId, true)
-    DisableControlAction(0, 24, true)
-    DisableControlAction(0, 47, true)
-    DisableControlAction(0, 58, true)
-    DisableControlAction(0, 140, true)
-    DisableControlAction(0, 141, true)
-    DisableControlAction(0, 142, true)
-    DisableControlAction(0, 257, true)
-    DisableControlAction(0, 263, true)
-    DisableControlAction(0, 264, true)
-end
+-- ── Pagrindinis ciklas: tik šūvio bandymas, ne taikymasis ───────────────────
 
 CreateThread(function()
     while true do
-        local sleep = 250
         local ped = PlayerPedId()
 
-        if Config.Enabled and DoesEntityExist(ped) and IsPedArmed(ped, 4) and isAiming(ped) then
-            sleep = 0
-            local peeking = isGhostPeeking(ped)
-
-            if peeking then
-                blockFiring()
+        if canEvaluate(ped) and isTryingToFire() then
+            local target = findAimedPlayerTarget(ped)
+            if target and shouldBlockGhostPeekShot(ped, target) then
+                blockFiringThisFrame()
+                notifyBlocked()
             end
-
-            if peeking ~= blocked then
-                blocked = peeking
-                setIndicator(blocked)
-            end
-        elseif blocked then
-            blocked = false
-            setIndicator(false)
-        end
-
-        Wait(sleep)
-    end
-end)
-
-CreateThread(function()
-    while true do
-        if blocked then
-            blockFiring()
             Wait(0)
         else
-            Wait(100)
+            Wait(50)
         end
     end
-end)
-
-AddEventHandler('onResourceStop', function(resource)
-    if resource ~= GetCurrentResourceName() then
-        return
-    end
-
-    blocked = false
-    setIndicator(false)
 end)

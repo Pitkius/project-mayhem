@@ -320,13 +320,13 @@ body {
 .item-slot-img img {
     width: 75%;
     height: auto;
-    filter: contrast(1.04) saturate(1.02) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+    filter: brightness(1.08) contrast(1.06) saturate(1.05) drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55));
 }
 
 .notification-slot .item-slot-img img,
 .required-item .item-slot-img img,
 .dragged-item .item-slot-img img {
-    filter: contrast(1.04) saturate(1.02) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+    filter: brightness(1.08) contrast(1.06) saturate(1.05) drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55));
 }
 
 .item-slot-key {

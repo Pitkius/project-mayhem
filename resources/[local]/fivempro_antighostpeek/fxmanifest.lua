@@ -4,15 +4,11 @@ lua54 'yes'
 
 name 'fivempro_antighostpeek'
 author 'FIVEMPROJEKTAS'
-description 'Anti ghost peek — blokuoja saudymą per sienas, rodo violetinį indikatorių'
-version '1.0.0'
+description 'Anti ghost peek — blokuoja nesąžiningus šūvius per kampą (tik PvP, ne taikymąsi į sieną)'
+version '2.0.0'
 
-ui_page 'html/index.html'
-
-files {
-    'html/index.html',
-    'html/style.css',
-    'html/app.js',
+dependencies {
+    'qb-core',
 }
 
 shared_scripts {
