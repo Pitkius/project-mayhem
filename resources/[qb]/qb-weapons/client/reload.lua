@@ -133,80 +133,40 @@ end
 local function canTryNativeReload(invName)
     if Config.ReloadUseNativeFirst == false then return false end
     if isSwappedWeaponModel(invName) then return false end
-    if allowReloadMovement() then
-        -- Stovint native užšaldo kojas; bėgant GTA turi normalią reload animaciją.
-        return isReloadMoving()
-    end
+    -- Su ReloadAllowMovement native reload visada užšaldo kojas (stovint ir bėgant).
+    if allowReloadMovement() then return false end
     return true
 end
 
 local function reloadAnimCandidates(weaponHash, weaponData)
-    local moving = isReloadMoving()
     local invName = resolveInventoryWeaponName(weaponHash, weaponData)
     if invName == 'weapon_fgc9' then
-        if moving then
-            return {
-                { 'weapons@rifle@lo@carbine_str', 'reload' },
-                { 'weapons@submg@', 'reload' },
-            }
-        end
         return {
-            { 'weapons@rifle@lo@carbine_str', 'reload_aim' },
             { 'weapons@rifle@lo@carbine_str', 'reload' },
-            { 'weapons@submg@', 'reload_aim' },
             { 'weapons@submg@', 'reload' },
         }
     end
 
     local group = GetWeapontypeGroup(weaponHash)
     if group == `GROUP_SMG` or group == `GROUP_MG` then
-        if moving then
-            return {
-                { 'weapons@submg@', 'reload' },
-                { 'weapons@rifle@lo@carbine_str', 'reload' },
-            }
-        end
         return {
-            { 'weapons@submg@', 'reload_aim' },
             { 'weapons@submg@', 'reload' },
-            { 'weapons@rifle@lo@carbine_str', 'reload_aim' },
+            { 'weapons@rifle@lo@carbine_str', 'reload' },
         }
     end
     if group == `GROUP_RIFLE` or group == `GROUP_SNIPER` then
-        if moving then
-            return {
-                { 'weapons@rifle@lo@carbine_str', 'reload' },
-                { 'weapons@submg@', 'reload' },
-            }
-        end
         return {
-            { 'weapons@rifle@lo@carbine_str', 'reload_aim' },
             { 'weapons@rifle@lo@carbine_str', 'reload' },
-            { 'weapons@submg@', 'reload_aim' },
+            { 'weapons@submg@', 'reload' },
         }
     end
     if group == `GROUP_SHOTGUN` then
-        if moving then
-            return {
-                { 'weapons@shotgun@', 'reload' },
-            }
-        end
         return {
-            { 'weapons@shotgun@', 'reload_aim' },
             { 'weapons@shotgun@', 'reload' },
         }
     end
-  -- Pistoletai: judant tik `reload`, ne `reload_aim` (kitaip dubluojasi su native).
-    if moving then
-        return {
-            { 'weapons@pistol@', 'reload' },
-            { 'weapons@pistol@combat@', 'reload' },
-        }
-    end
     return {
-        { 'weapons@pistol@', 'reload_aim' },
         { 'weapons@pistol@', 'reload' },
-        { 'weapons@pistol@combat@', 'reload_aim' },
         { 'weapons@pistol@combat@', 'reload' },
     }
 end
@@ -254,6 +214,7 @@ end
 
 local function playMobileReloadAnimation(ped, weaponHash, durationMs, weaponData, clipNow)
     local animFlags = reloadAnimFlags()
+    SetBlockingOfNonTemporaryEvents(ped, false)
     for _, pair in ipairs(reloadAnimCandidates(weaponHash, weaponData)) do
         local dict, anim = pair[1], pair[2]
         if loadAnimDict(dict) then
@@ -266,11 +227,16 @@ local function playMobileReloadAnimation(ped, weaponHash, durationMs, weaponData
             local replayAt = GetGameTimer() + 180
             while GetGameTimer() < deadline do
                 if not DoesEntityExist(ped) then break end
-                suppressNativeReloadDuringVisual(ped, weaponHash, clipNow)
                 enableReloadMovementControls()
-                if not isReloadMoving()
-                    and GetGameTimer() >= replayAt
-                    and not IsEntityPlayingAnim(ped, dict, anim, 3) then
+                if IsPedReloading(ped) then
+                    suppressNativeReloadDuringVisual(ped, weaponHash, clipNow)
+                else
+                    pinClipDuringVisual(ped, weaponHash, clipNow)
+                end
+                if allowReloadMovement() then
+                    SetPedCanPlayAmbientAnims(ped, true)
+                end
+                if not IsEntityPlayingAnim(ped, dict, anim, 3) and GetGameTimer() >= replayAt then
                     TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, animFlags, 0.0, false, false, false)
                     replayAt = GetGameTimer() + 220
                 end

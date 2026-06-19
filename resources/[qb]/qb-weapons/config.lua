@@ -2,8 +2,8 @@ Config = Config or {}
 
 Config.ReloadTime = 2400
 
---- true = native reload bėgant; stovint naudojama viršutinės kūno dalies animacija (galima judėti).
-Config.ReloadUseNativeFirst = true
+--- true = custom viršutinės kūno dalies reload (galima judėti); native reload nenaudojamas.
+Config.ReloadUseNativeFirst = false
 
 --- Inventoriaus perkrovos vizualinė animacija (kulkos kraunamos po animacijos).
 Config.ReloadVisualTime = 0

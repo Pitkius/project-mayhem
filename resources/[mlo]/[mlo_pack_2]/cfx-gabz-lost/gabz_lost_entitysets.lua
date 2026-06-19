@@ -1,6 +1,6 @@
 local CLUBHOUSE_COORDS = vector3(994.4787, -122.9949, 73.11467)
 local GARAGE_COORDS = vector3(972.16, -118.05, 74.35)
-local ENTRANCE_COORDS = vector3(982.1292, -103.1277, 74.8483)
+local ENTRANCE_COORDS = vector3(981.3867, -102.3285, 74.3489)
 
 local VANILLA_BIKER_IPL = 'bkr_biker_interior_placement_interior_1_biker_dlc_int_02_milo'
 

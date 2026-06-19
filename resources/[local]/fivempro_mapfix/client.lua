@@ -17,30 +17,39 @@ local VANILLA_FARM_INTERIOR_IPLS = {
     'farmint_cap',
 }
 
-local ONEIL_CENTER = vec3(2435.61, 4975.78, 46.57)
+local ONEIL_CENTER = vec3(2435.81, 4975.95, 46.57)
 local ONEIL_INTERIOR_PROBE = vec3(2453.229, 4965.452, 45.572)
 local ONEIL_DOOR_PROBE = vec3(2452.2986, 4969.7222, 46.5716)
 
---- Druglabs MLO IPL (O'Neil zona) — turi būti išjungti, kad veiktų vanilla sodyba
+--- Druglabs MLO IPL — stream failai gali likti, bet IPL taip pat nuimame
 local ONEIL_DRUGLAB_IPLS = {
+    'brown_amfsted_milo_',
     'brown_amfsted2_milo_',
+    'brown_amfsted3_milo_',
     'brown_amfsted4_milo_',
 }
 
---- O'Neil sodybos durys — keli modeliai + tikslios koordinatės
+local ONEIL_BLOCK_MODELS = {
+    `brown_amfsted_shell`,
+}
+
 local ONEIL_DOORS = {
     {
         coords = vec3(2452.2986, 4969.7222, 46.5716),
         heading = 308.7976,
         models = { `prop_ld_farm_door01`, `prop_farmhouse_door1`, `prop_farmhouse_door2` },
+        radius = 5.0,
     },
     {
-        coords = vec3(2435.78, 4975.82, 46.81),
-        models = { `prop_ld_farm_door01`, `prop_farmhouse_door1` },
+        coords = vec3(2435.8105, 4975.9517, 46.5714),
+        heading = 224.2388,
+        models = { `prop_ld_farm_door01`, `prop_farmhouse_door1`, `prop_farmhouse_door2` },
+        radius = 5.0,
     },
     {
         coords = vec3(2441.50, 4981.85, 46.81),
         models = { `prop_ld_farm_door01`, `prop_farmhouse_door1` },
+        radius = 4.5,
     },
 }
 
@@ -60,25 +69,35 @@ local SIMEON_DOORS = {
     { model = `prop_com_gar_door_01`, coords = vec3(-37.86, -1094.71, 27.26) },
 }
 
---- Gabz Lost MC — įėjimas (vartai / durys) + clubhouse interjeras
-local LOST_MC_CENTER = vec3(981.6895, -102.8003, 74.8478)
-local LOST_MC_ENTRANCE = vec3(981.6895, -102.8003, 74.8478)
+local LOST_MC_CENTER = vec3(981.3867, -102.3285, 74.3489)
+local LOST_MC_ENTRANCE = vec3(981.3867, -102.3285, 74.3489)
 local LOST_MC_CLUB_PROBE = vec3(994.4787, -122.9949, 73.11467)
 local LOST_MC_GARAGE_PROBE = vec3(972.16, -118.05, 74.35)
 local VANILLA_BIKER_IPL = 'bkr_biker_interior_placement_interior_1_biker_dlc_int_02_milo'
 
 local LOST_MC_DOORS = {
     {
-        coords = vec3(982.1292, -103.1277, 74.8483),
-        heading = 49.5662,
+        coords = vec3(981.3867, -102.3285, 74.3489),
+        heading = 34.8568,
         models = { `lost_mc_door_01`, `lost_mc_gate`, `v_ilev_lostdoor`, `prop_lrggate_01_l` },
-        radius = 5.0,
+        radius = 6.0,
     },
     {
         coords = vec3(982.6339, -104.7095, 74.8488),
+        heading = 30.8738,
         models = { `lost_mc_door_01`, `v_ilev_lostdoor` },
-        radius = 4.5,
+        radius = 5.0,
     },
+}
+
+local LOST_MC_VANILLA_DOOR_MODELS = {
+    `v_ilev_lostdoor`,
+    `prop_lrggate_01_l`,
+}
+
+local LOST_MC_GABZ_DOOR_MODELS = {
+    `lost_mc_door_01`,
+    `lost_mc_gate`,
 }
 
 local function removeIpls(list)
@@ -140,6 +159,54 @@ local function pinInteriorAt(coords, interiorType)
     return interiorId
 end
 
+local function hasNearbyModel(coords, radius, models)
+    for _, model in ipairs(models) do
+        if GetClosestObjectOfType(coords.x, coords.y, coords.z, radius, model, false, false, false) ~= 0 then
+            return true
+        end
+    end
+    return false
+end
+
+local function hideDuplicateObjects(center, radius, vanillaModels, customModels)
+    if not hasNearbyModel(center, radius, customModels) then return end
+
+    local pool = GetGamePool('CObject')
+    for _, entity in ipairs(pool) do
+        if DoesEntityExist(entity) then
+            local model = GetEntityModel(entity)
+            local isVanilla = false
+            for _, vanilla in ipairs(vanillaModels) do
+                if model == vanilla then
+                    isVanilla = true
+                    break
+                end
+            end
+            if isVanilla and #(GetEntityCoords(entity) - center) <= radius then
+                SetEntityVisible(entity, false, false)
+                SetEntityCollision(entity, false, false)
+                FreezeEntityPosition(entity, true)
+            end
+        end
+    end
+end
+
+local function stripBlockingModels(center, radius, models)
+    local pool = GetGamePool('CObject')
+    for _, entity in ipairs(pool) do
+        if DoesEntityExist(entity) then
+            local model = GetEntityModel(entity)
+            for _, block in ipairs(models) do
+                if model == block and #(GetEntityCoords(entity) - center) <= radius then
+                    SetEntityVisible(entity, false, false)
+                    SetEntityCollision(entity, false, false)
+                    FreezeEntityPosition(entity, true)
+                end
+            end
+        end
+    end
+end
+
 local function getSimeonInteriorId()
     local id = GetInteriorAtCoords(SIMEON_INTERIOR_PROBE.x, SIMEON_INTERIOR_PROBE.y, SIMEON_INTERIOR_PROBE.z)
     if id and id ~= 0 then return id end
@@ -187,35 +254,42 @@ end
 
 local function unlockDoorEntry(door, prefix, index)
     local c = door.coords
-    local radius = door.radius or 4.0
+    local radius = door.radius or 5.0
     local models = door.models or (door.model and { door.model } or {})
-    local heading = door.heading or 0.0
 
     requestCollision(c)
 
+    local bestObj, bestModel, bestDist = 0, nil, radius + 1.0
     for _, model in ipairs(models) do
-        unlockLegacyDoor(model, c, heading)
+        unlockLegacyDoor(model, c, door.heading)
         local obj = GetClosestObjectOfType(c.x, c.y, c.z, radius, model, false, false, false)
         if obj and obj ~= 0 then
-            FreezeEntityPosition(obj, false)
-            SetEntityCanBeDamaged(obj, false)
-            SetEntityCollision(obj, true, true)
-            if door.heading then
-                SetEntityHeading(obj, door.heading)
+            local dist = #(GetEntityCoords(obj) - c)
+            if dist < bestDist then
+                bestDist = dist
+                bestObj = obj
+                bestModel = model
             end
         end
     end
 
-    local primaryModel = models[1]
-    if not primaryModel then return end
+    if bestObj == 0 or not bestModel then return end
+
+    local oc = GetEntityCoords(bestObj)
+    local oh = door.heading or GetEntityHeading(bestObj)
+
+    FreezeEntityPosition(bestObj, false)
+    SetEntityCanBeDamaged(bestObj, false)
+    SetEntityCollision(bestObj, true, true)
+    SetEntityHeading(bestObj, oh)
 
     local dh = joaat(('%s_%s'):format(prefix, index))
-    local ok, reg = pcall(function()
-        return IsDoorRegisteredWithSystem(dh)
+    pcall(function()
+        if IsDoorRegisteredWithSystem(dh) then
+            RemoveDoorFromSystem(dh)
+        end
     end)
-    if not ok or not reg then
-        AddDoorToSystem(dh, primaryModel, c.x, c.y, c.z, false, false, false)
-    end
+    AddDoorToSystem(dh, bestModel, oc.x, oc.y, oc.z, false, false, false)
     DoorSystemSetDoorState(dh, 0, false, false)
     pcall(function() DoorSystemSetAutomaticDistance(dh, 40.0, false, false) end)
     pcall(function() DoorSystemSetAutomaticRate(dh, 1.0, false, false) end)
@@ -245,7 +319,8 @@ local function suppressOneilMloInterior()
     local probes = {
         ONEIL_INTERIOR_PROBE,
         ONEIL_DOOR_PROBE,
-        vec3(2452.28, 4969.70, 46.57),
+        ONEIL_CENTER,
+        vec3(2435.81, 4975.95, 46.57),
     }
     for _, coords in ipairs(probes) do
         local interiorId = GetInteriorAtCoords(coords.x, coords.y, coords.z)
@@ -292,11 +367,27 @@ local function loadOneilFarmhouse()
     requestCollision(ONEIL_DOOR_PROBE)
     pinInteriorAt(ONEIL_INTERIOR_PROBE, 'farmhouse')
     pinInteriorAt(ONEIL_DOOR_PROBE, 'farmhouse')
+    pinInteriorAt(ONEIL_CENTER, 'farmhouse')
     suppressOneilMloInterior()
+    stripBlockingModels(ONEIL_CENTER, 55.0, ONEIL_BLOCK_MODELS)
     unlockOneilDoors()
 end
 
-local lostMcReloadCooldown = 0
+local function setupLostClubhouse(interiorId)
+    PinInteriorInMemory(interiorId)
+    LoadInterior(interiorId)
+    enableInteriorProp(interiorId, 'walls_02', 8)
+    enableInteriorProp(interiorId, 'Furnishings_02', 8)
+    enableInteriorProp(interiorId, 'decorative_02')
+    enableInteriorProp(interiorId, 'mural_03')
+    enableInteriorProp(interiorId, 'lower_walls_default', 8)
+    enableInteriorProp(interiorId, 'mod_booth')
+    enableInteriorProp(interiorId, 'gun_locker')
+    enableInteriorProp(interiorId, 'cash_small')
+    enableInteriorProp(interiorId, 'id_small')
+    enableInteriorProp(interiorId, 'weed_small')
+    RefreshInterior(interiorId)
+end
 
 local function isLostMcInteriorReady()
     local clubhouseId = GetInteriorAtCoords(LOST_MC_CLUB_PROBE.x, LOST_MC_CLUB_PROBE.y, LOST_MC_CLUB_PROBE.z)
@@ -306,39 +397,35 @@ local function isLostMcInteriorReady()
     return clubhouseId ~= 0 and IsValidInterior(clubhouseId) and IsInteriorReady(clubhouseId)
 end
 
-local function ensureLostMcInterior()
+local function loadLostMcClubhouse()
     RemoveIpl(VANILLA_BIKER_IPL)
+    RequestIpl('gabz_biker_milo_')
+    RequestIpl('lost_garage_milo_')
 
-    if isLostMcInteriorReady() then
-        pinInteriorAt(LOST_MC_CLUB_PROBE)
-        pinInteriorAt(LOST_MC_ENTRANCE)
-        pinInteriorAt(LOST_MC_GARAGE_PROBE)
-        return
+    requestCollision(LOST_MC_ENTRANCE)
+    requestCollision(LOST_MC_CLUB_PROBE)
+
+    local clubhouseId = waitInteriorAt(LOST_MC_CLUB_PROBE, 200)
+    if clubhouseId == 0 then
+        clubhouseId = waitInteriorAt(LOST_MC_ENTRANCE, 120)
     end
 
-    local now = GetGameTimer()
-    if now < lostMcReloadCooldown then return end
-    lostMcReloadCooldown = now + 8000
-
-    if GetResourceState('cfx-gabz-lost') == 'started' then
+    if clubhouseId ~= 0 then
+        setupLostClubhouse(clubhouseId)
+    elseif GetResourceState('cfx-gabz-lost') == 'started' then
         pcall(function()
             exports['cfx-gabz-lost']:ReloadLostMc()
         end)
-        return
+        clubhouseId = waitInteriorAt(LOST_MC_CLUB_PROBE, 120)
+        if clubhouseId ~= 0 then
+            setupLostClubhouse(clubhouseId)
+        end
     end
 
-    RequestIpl('gabz_biker_milo_')
-    RequestIpl('lost_garage_milo_')
-    requestCollision(LOST_MC_ENTRANCE)
-    requestCollision(LOST_MC_CLUB_PROBE)
-    pinInteriorAt(LOST_MC_CLUB_PROBE)
     pinInteriorAt(LOST_MC_ENTRANCE)
     pinInteriorAt(LOST_MC_GARAGE_PROBE)
-end
 
-local function loadLostMcClubhouse()
-    RemoveIpl(VANILLA_BIKER_IPL)
-    ensureLostMcInterior()
+    hideDuplicateObjects(LOST_MC_ENTRANCE, 18.0, LOST_MC_VANILLA_DOOR_MODELS, LOST_MC_GABZ_DOOR_MODELS)
     unlockLostMcDoors()
 end
 
@@ -361,23 +448,39 @@ end)
 CreateThread(function()
     while true do
         local p = GetEntityCoords(PlayerPedId())
-        local nearOneil = #(p - ONEIL_CENTER) < 90.0 or #(p - ONEIL_DOOR_PROBE) < 45.0
+        local nearOneil = #(p - ONEIL_CENTER) < 95.0 or #(p - ONEIL_DOOR_PROBE) < 50.0
         local nearSimeon = #(p - SIMEON_CENTER) < 120.0
-        local nearLost = #(p - LOST_MC_CENTER) < 110.0
+        local nearLost = #(p - LOST_MC_CENTER) < 120.0
 
         if nearOneil then
+            removeIpls(ONEIL_DRUGLAB_IPLS)
+            removeIpls(BURNT_FARM_IPLS)
             loadOneilFarmhouse()
-            unlockOneilDoors()
-            Wait(2000)
+            Wait(1500)
         elseif nearLost then
+            RemoveIpl(VANILLA_BIKER_IPL)
             loadLostMcClubhouse()
-            Wait(2000)
+            Wait(1500)
         elseif nearSimeon then
             loadSimeonShowroom()
             unlockSimeonDoors()
             Wait(1200)
         else
             Wait(3500)
+        end
+    end
+end)
+
+--- Vanilla biker IPL žaidimas vėl užkrauna šalia Lost MC — nuimame nuolat
+CreateThread(function()
+    while true do
+        local p = GetEntityCoords(PlayerPedId())
+        if #(p - LOST_MC_CENTER) < 150.0 then
+            RemoveIpl(VANILLA_BIKER_IPL)
+            hideDuplicateObjects(LOST_MC_ENTRANCE, 20.0, LOST_MC_VANILLA_DOOR_MODELS, LOST_MC_GABZ_DOOR_MODELS)
+            Wait(750)
+        else
+            Wait(2500)
         end
     end
 end)
