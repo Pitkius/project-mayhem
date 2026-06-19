@@ -19,8 +19,9 @@ const STYLE = {
 };
 
 const args = process.argv.slice(2);
-const srcFile = args[0] || 'weapon_fgc9_ref.png';
+const srcFile = args[0] || 'weapon_fgc9_ingame.png';
 const outName = args[1] || 'weapon_fgc9.png';
+const rotateDeg = Number(args[2] || '-28');
 const srcPath = path.isAbsolute(srcFile)
   ? srcFile
   : path.join(__dirname, 'sources', srcFile);
@@ -75,6 +76,16 @@ function removeBackground(data, w, h) {
   }
 }
 
+function removeBlueGlove(data) {
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) continue;
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    if (b > 120 && b > r * 1.15 && b > g * 1.05 && g > 70) {
+      data[i + 3] = 0;
+    }
+  }
+}
+
 function enhancePixels(data) {
   for (let i = 0; i < data.length; i += 4) {
     if (data[i + 3] === 0) continue;
@@ -92,7 +103,7 @@ function trimBounds(data, w, h) {
   let minX = w, minY = h, maxX = 0, maxY = 0;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      if (data[(w * y + x) << 2 + 3] > 8) {
+      if (data[((w * y + x) << 2) + 3] > 8) {
         minX = Math.min(minX, x);
         minY = Math.min(minY, y);
         maxX = Math.max(maxX, x);
@@ -245,9 +256,11 @@ if (!fs.existsSync(srcPath)) {
 const png = PNG.sync.read(fs.readFileSync(srcPath));
 const data = Uint8Array.from(png.data);
 removeBackground(data, png.width, png.height);
+removeBlueGlove(data);
 enhancePixels(data);
-const trimmed = trimBounds(data, png.width, png.height);
-const finalSubject = trimmed;
+let trimmed = trimBounds(data, png.width, png.height);
+if (rotateDeg) trimmed = rotateSubject(trimmed, rotateDeg);
+const finalSubject = trimBounds(trimmed.data, trimmed.w, trimmed.h);
 
 const canvas = new Canvas();
 canvas.addGroundShadow();
