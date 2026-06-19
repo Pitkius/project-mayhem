@@ -25,7 +25,12 @@ const outName = args[1] || 'weapon_fgc9.png';
 const rotateDeg = Number(args[2] || '-32');
 const cleanMode = args[3] === 'clean' || /\.jpe?g$/i.test(args[0] || '');
 const cropTopRatio = Math.max(0, Math.min(0.45, Number(args[4] || 0)));
-const scopeOnly = args[5] === 'scope';
+const extraFlag = args[5] || '';
+const scopeOnly = extraFlag.includes('scope');
+const padMatch = extraFlag.match(/pad([0-9.]+)/);
+const padRatio = padMatch
+  ? Math.max(0, Math.min(0.35, Number(padMatch[1] || 0.12)))
+  : Math.max(0, Math.min(0.35, Number(args[6] || 0)));
 const srcPath = path.isAbsolute(srcFile)
   ? srcFile
   : path.join(__dirname, 'sources', srcFile);
@@ -234,6 +239,26 @@ function removeScopeMount(data, w, h) {
   }
 }
 
+function padRaster({ data, w, h }, ratio = 0.12) {
+  if (!ratio || ratio <= 0) return { data, w, h };
+  const px = Math.max(8, Math.round(w * ratio));
+  const py = Math.max(8, Math.round(h * ratio));
+  const nw = w + px * 2;
+  const nh = h + py * 2;
+  const out = new Uint8Array(nw * nh * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const si = (w * y + x) << 2;
+      const di = (nw * (y + py) + (x + px)) << 2;
+      out[di] = data[si];
+      out[di + 1] = data[si + 1];
+      out[di + 2] = data[si + 2];
+      out[di + 3] = data[si + 3];
+    }
+  }
+  return { data: out, w: nw, h: nh };
+}
+
 function trimBounds(data, w, h) {
   let minX = w, minY = h, maxX = 0, maxY = 0;
   for (let y = 0; y < h; y++) {
@@ -374,8 +399,10 @@ class Canvas {
   blitScaled(src, fitScale = 0.9) {
     const sw = src.w;
     const sh = src.h;
-    const maxW = SIZE * fitScale;
-    const maxH = SIZE * fitScale;
+    const aspect = sw / Math.max(1, sh);
+    const longFit = aspect > 1.45 ? fitScale * 0.86 : fitScale;
+    const maxW = SIZE * longFit;
+    const maxH = SIZE * longFit;
     const scale = Math.min(maxW / sw, maxH / sh);
     const dw = Math.round(sw * scale);
     const dh = Math.round(sh * scale);
@@ -417,10 +444,14 @@ if (cleanMode || /\.jpe?g$/i.test(srcPath)) {
   enhancePixels(data, false);
 }
 let trimmed = trimBounds(data, w, h);
-if (scopeOnly) {
+if (scopeOnly || extraFlag.includes('scope')) {
   removeScopeMount(trimmed.data, trimmed.w, trimmed.h);
   trimmed = trimBounds(trimmed.data, trimmed.w, trimmed.h);
 }
+const autoPad = padRatio > 0
+  ? padRatio
+  : (trimmed.w / Math.max(1, trimmed.h) > 1.45 && rotateDeg ? 0.1 : 0);
+if (autoPad > 0) trimmed = padRaster(trimmed, autoPad);
 if (rotateDeg) trimmed = rotateSubject(trimmed, rotateDeg);
 let finalSubject = trimBounds(trimmed.data, trimmed.w, trimmed.h);
 if (!scopeOnly && cropTopRatio > 0) {

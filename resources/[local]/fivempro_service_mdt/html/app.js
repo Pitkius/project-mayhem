@@ -10,6 +10,7 @@ let selectedMapTarget = null;
 let activeService = null;
 let unitLabel = 'Vienetas';
 let canInvoice = false;
+let crewsEnabled = true;
 
 function resourceName() {
   try {
@@ -104,7 +105,16 @@ window.addEventListener('message', (e) => {
     activeService = d.data?.service || null;
     unitLabel = d.data?.unitLabel || 'Vienetas';
     canInvoice = d.data?.canInvoice === true;
+    crewsEnabled = d.data?.enableCrews !== false;
     dispatchReadOnly = d.data?.onDuty === false;
+
+    const tabCrews = document.querySelector('.tab[data-tab="crews"]');
+    const panelCrews = document.getElementById('panel-crews');
+    if (tabCrews) tabCrews.style.display = crewsEnabled ? '' : 'none';
+    if (panelCrews) panelCrews.classList.toggle('hidden', !crewsEnabled);
+    const legendLeader = document.querySelector('#mapLegend .leg-item .leg-dot.leader')?.parentElement;
+    if (legendLeader) legendLeader.style.display = crewsEnabled ? '' : 'none';
+    if (window.MdtMap?.setCrewsVisible) MdtMap.setCrewsVisible(crewsEnabled);
 
     const brand = document.getElementById('mdtBrand');
     if (brand) {
@@ -171,7 +181,7 @@ window.addEventListener('message', (e) => {
       ok: base.ok !== false,
       units: d.data.units || [],
       calls: d.data.calls || [],
-      crews: d.data.crews || [],
+      crews: crewsEnabled ? (d.data.crews || []) : [],
       selfSource: d.data.selfSource != null ? d.data.selfSource : base.selfSource,
     });
   }
@@ -230,7 +240,7 @@ function renderMapDetail(kind, data) {
         <h3>${escapeHtml(unitLabel)}</h3>
         <div class="gps-detail-row"><span>Vardas</span><strong>${escapeHtml(data.name || '—')}</strong></div>
         <div class="gps-detail-row"><span>Ženklelis</span><strong>${escapeHtml(badge)}</strong></div>
-        <div class="gps-detail-row"><span>Ekipažas</span><strong>${escapeHtml(data.crewLabel || '—')}</strong></div>
+        ${crewsEnabled ? `<div class="gps-detail-row"><span>Ekipažas</span><strong>${escapeHtml(data.crewLabel || '—')}</strong></div>` : ''}
         <div class="gps-detail-row"><span>Statusas</span><strong><span class="gps-status-pill ${pill}">${escapeHtml(data.statusLabel || 'Patruliuoja')}</span></strong></div>
         <div class="gps-detail-row"><span>Koordinatės</span><strong>${Number(data.x || 0).toFixed(1)} ${Number(data.y || 0).toFixed(1)}</strong></div>
         <div class="gps-detail-actions">
@@ -274,8 +284,11 @@ function renderDispatchMap(payload) {
 }
 
 function setDispatchControlsEnabled(enabled) {
-  ['btnCreateCrew', 'btnJoinCrew', 'btnAddCrewMember', 'btnDeleteCrew', 'btnLeaveCrew', 'btnSetCallsign', 'refreshDispatch']
-    .forEach((id) => {
+  const ids = ['refreshDispatch'];
+  if (crewsEnabled) {
+    ids.push('btnCreateCrew', 'btnJoinCrew', 'btnAddCrewMember', 'btnDeleteCrew', 'btnLeaveCrew', 'btnSetCallsign');
+  }
+  ids.forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.disabled = !enabled;
     });
@@ -287,7 +300,7 @@ function renderDispatch(res) {
   const callsEl = document.getElementById('dispatchCalls');
   const crewsEl = document.getElementById('dispatchCrews');
   callsEl.innerHTML = '';
-  crewsEl.innerHTML = '';
+  if (crewsEl) crewsEl.innerHTML = '';
 
   if (res && res.ok === false && res.msg) {
     callsEl.innerHTML = `<div class="muted">${escapeHtml(res.msg)}</div>`;
@@ -320,24 +333,26 @@ function renderDispatch(res) {
     });
   }
 
-  if (!crews.length) {
-    crewsEl.innerHTML = '<div class="muted">Aktyvių ekipažų nėra.</div>';
-  } else {
-    crews.forEach((c) => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      const members = (c.members || []).map((m) => `${escapeHtml(m.name)} ${m.callsign ? `[${escapeHtml(m.callsign)}]` : ''}`).join(', ');
-      card.innerHTML = `
+  if (crewsEnabled && crewsEl) {
+    if (!crews.length) {
+      crewsEl.innerHTML = '<div class="muted">Aktyvių ekipažų nėra.</div>';
+    } else {
+      crews.forEach((c) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const members = (c.members || []).map((m) => `${escapeHtml(m.name)} ${m.callsign ? `[${escapeHtml(m.callsign)}]` : ''}`).join(', ');
+        card.innerHTML = `
         <h4>Ekipažas #${escapeHtml(String(c.crewNumber || 'N/A'))} ${c.callsign ? '[' + escapeHtml(c.callsign) + ']' : ''}</h4>
         <div>ID: <strong>${escapeHtml(c.crewId || '-')}</strong> | Vadas: ${escapeHtml(String(c.leader || '-'))}</div>
         <div>Statusas: ${escapeHtml(c.status || 'active')}</div>
         <div>Nariai: ${members || '-'}</div>`;
-      crewsEl.appendChild(card);
-    });
+        crewsEl.appendChild(card);
+      });
+    }
   }
 
   lastDispatchPayload = res;
-  renderDispatchMap(res);
+  renderDispatchMap(crewsEnabled ? res : { ...res, crews: [] });
 
   document.querySelectorAll('.js-dispatch').forEach((btn) => {
     btn.onclick = () => nuiPost('dispatchAction', { callId: btn.dataset.callid, action: btn.dataset.action }).then(() => refreshDispatch());

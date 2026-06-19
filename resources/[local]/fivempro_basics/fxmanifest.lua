@@ -6,6 +6,14 @@ author 'FIVEMPROJEKTAS'
 description 'Minimalus startinis local resource'
 version '1.0.0'
 
+ui_page 'html/clothing_radial/index.html'
+
+files {
+    'html/clothing_radial/index.html',
+    'html/clothing_radial/style.css',
+    'html/clothing_radial/app.js',
+}
+
 client_scripts {
     'client.lua',
     'client/vehicle_lockpick.lua',
@@ -23,4 +31,5 @@ exports {
     'MarkNpcVehicleUnlocked',
     'ToggleClothingSlot',
     'OpenClothingMenu',
+    'RestoreAllClothing',
 }

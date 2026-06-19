@@ -19,13 +19,19 @@ local VANILLA_FARM_INTERIOR_IPLS = {
 
 local ONEIL_CENTER = vec3(2435.61, 4975.78, 46.57)
 local ONEIL_INTERIOR_PROBE = vec3(2453.229, 4965.452, 45.572)
-local ONEIL_DOOR_PROBE = vec3(2452.2766, 4969.6963, 46.5716)
+local ONEIL_DOOR_PROBE = vec3(2452.2986, 4969.7222, 46.5716)
+
+--- Druglabs MLO IPL (O'Neil zona) — turi būti išjungti, kad veiktų vanilla sodyba
+local ONEIL_DRUGLAB_IPLS = {
+    'brown_amfsted2_milo_',
+    'brown_amfsted4_milo_',
+}
 
 --- O'Neil sodybos durys — keli modeliai + tikslios koordinatės
 local ONEIL_DOORS = {
     {
-        coords = vec3(2452.2766, 4969.6963, 46.5716),
-        heading = 62.8952,
+        coords = vec3(2452.2986, 4969.7222, 46.5716),
+        heading = 308.7976,
         models = { `prop_ld_farm_door01`, `prop_farmhouse_door1`, `prop_farmhouse_door2` },
     },
     {
@@ -63,9 +69,9 @@ local VANILLA_BIKER_IPL = 'bkr_biker_interior_placement_interior_1_biker_dlc_int
 
 local LOST_MC_DOORS = {
     {
-        coords = vec3(981.6895, -102.8003, 74.8478),
-        heading = 37.7347,
-        models = { `lost_mc_door_01`, `v_ilev_lostdoor`, `prop_lrggate_01_l` },
+        coords = vec3(982.1292, -103.1277, 74.8483),
+        heading = 49.5662,
+        models = { `lost_mc_door_01`, `lost_mc_gate`, `v_ilev_lostdoor`, `prop_lrggate_01_l` },
         radius = 5.0,
     },
     {
@@ -89,9 +95,14 @@ end
 
 local function requestCollision(coords)
     RequestCollisionAtCoord(coords.x, coords.y, coords.z)
-    local deadline = GetGameTimer() + 2500
-    while not HasCollisionLoadedAroundEntity(PlayerPedId()) and GetGameTimer() < deadline do
+    local ped = PlayerPedId()
+    local deadline = GetGameTimer() + 3500
+    while GetGameTimer() < deadline do
         RequestCollisionAtCoord(coords.x, coords.y, coords.z)
+        if #(GetEntityCoords(ped) - coords) < 120.0
+            and HasCollisionLoadedAroundEntity(ped) then
+            break
+        end
         Wait(0)
     end
 end
@@ -274,6 +285,7 @@ end
 
 local function loadOneilFarmhouse()
     removeIpls(BURNT_FARM_IPLS)
+    removeIpls(ONEIL_DRUGLAB_IPLS)
     requestIpls(VANILLA_FARM_EXTERIOR_IPLS)
     requestIpls(VANILLA_FARM_INTERIOR_IPLS)
 
@@ -284,52 +296,50 @@ local function loadOneilFarmhouse()
     unlockOneilDoors()
 end
 
-local function setupLostClubhouse(interiorId)
-    PinInteriorInMemory(interiorId)
-    LoadInterior(interiorId)
-    enableInteriorProp(interiorId, 'walls_02', 8)
-    enableInteriorProp(interiorId, 'Furnishings_02', 8)
-    enableInteriorProp(interiorId, 'decorative_02')
-    enableInteriorProp(interiorId, 'mural_03')
-    enableInteriorProp(interiorId, 'lower_walls_default', 8)
-    enableInteriorProp(interiorId, 'mod_booth')
-    enableInteriorProp(interiorId, 'gun_locker')
-    enableInteriorProp(interiorId, 'cash_small')
-    enableInteriorProp(interiorId, 'id_small')
-    enableInteriorProp(interiorId, 'weed_small')
-    RefreshInterior(interiorId)
+local lostMcReloadCooldown = 0
+
+local function isLostMcInteriorReady()
+    local clubhouseId = GetInteriorAtCoords(LOST_MC_CLUB_PROBE.x, LOST_MC_CLUB_PROBE.y, LOST_MC_CLUB_PROBE.z)
+    if clubhouseId == 0 then
+        clubhouseId = GetInteriorAtCoords(LOST_MC_ENTRANCE.x, LOST_MC_ENTRANCE.y, LOST_MC_ENTRANCE.z)
+    end
+    return clubhouseId ~= 0 and IsValidInterior(clubhouseId) and IsInteriorReady(clubhouseId)
 end
 
-local function loadLostMcClubhouse()
+local function ensureLostMcInterior()
     RemoveIpl(VANILLA_BIKER_IPL)
-    RequestIpl('gabz_biker_milo_')
-    RequestIpl('lost_garage_milo_')
 
-    requestCollision(LOST_MC_ENTRANCE)
-    requestCollision(LOST_MC_CLUB_PROBE)
-
-    local clubhouseId = waitInteriorAt(LOST_MC_CLUB_PROBE, 300)
-    if clubhouseId ~= 0 then
-        setupLostClubhouse(clubhouseId)
+    if isLostMcInteriorReady() then
+        pinInteriorAt(LOST_MC_CLUB_PROBE)
+        pinInteriorAt(LOST_MC_ENTRANCE)
+        pinInteriorAt(LOST_MC_GARAGE_PROBE)
+        return
     end
 
-    pinInteriorAt(LOST_MC_ENTRANCE)
-    pinInteriorAt(LOST_MC_GARAGE_PROBE)
-
-    local entranceInterior = waitInteriorAt(LOST_MC_ENTRANCE, 80)
-    if entranceInterior ~= 0 and entranceInterior ~= clubhouseId then
-        PinInteriorInMemory(entranceInterior)
-        LoadInterior(entranceInterior)
-        RefreshInterior(entranceInterior)
-    end
-
-    unlockLostMcDoors()
+    local now = GetGameTimer()
+    if now < lostMcReloadCooldown then return end
+    lostMcReloadCooldown = now + 8000
 
     if GetResourceState('cfx-gabz-lost') == 'started' then
         pcall(function()
             exports['cfx-gabz-lost']:ReloadLostMc()
         end)
+        return
     end
+
+    RequestIpl('gabz_biker_milo_')
+    RequestIpl('lost_garage_milo_')
+    requestCollision(LOST_MC_ENTRANCE)
+    requestCollision(LOST_MC_CLUB_PROBE)
+    pinInteriorAt(LOST_MC_CLUB_PROBE)
+    pinInteriorAt(LOST_MC_ENTRANCE)
+    pinInteriorAt(LOST_MC_GARAGE_PROBE)
+end
+
+local function loadLostMcClubhouse()
+    RemoveIpl(VANILLA_BIKER_IPL)
+    ensureLostMcInterior()
+    unlockLostMcDoors()
 end
 
 local function applyMapFixes()
@@ -358,11 +368,10 @@ CreateThread(function()
         if nearOneil then
             loadOneilFarmhouse()
             unlockOneilDoors()
-            Wait(1200)
+            Wait(2000)
         elseif nearLost then
             loadLostMcClubhouse()
-            unlockLostMcDoors()
-            Wait(1200)
+            Wait(2000)
         elseif nearSimeon then
             loadSimeonShowroom()
             unlockSimeonDoors()

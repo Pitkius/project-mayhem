@@ -23,18 +23,17 @@ local function isMovementControlPressed()
     return false
 end
 
-local function isPedMoving(ped)
+local function isPedActuallyMoving(ped)
     if not ped or ped == 0 or not DoesEntityExist(ped) then return false end
     if IsPedRunning(ped) or IsPedSprinting(ped) then return true end
-    if GetEntitySpeed(ped) > 1.0 then return true end
-    return isMovementControlPressed()
+    return GetEntitySpeed(ped) > 1.15
 end
 
 local function captureMovementState(ped)
     reloadMovementState.sprint = IsPedSprinting(ped)
         or IsControlPressed(0, 21)
         or IsDisabledControlPressed(0, 21)
-    reloadMovementState.moving = isPedMoving(ped)
+    reloadMovementState.moving = isPedActuallyMoving(ped)
 end
 
 local function restoreMovementAfterReload(ped)
@@ -124,8 +123,21 @@ local function suppressNativeReloadDuringVisual(ped, weaponHash, clipNow)
 end
 
 local function isReloadMoving()
-    return allowReloadMovement()
-        and (reloadMovementState.moving or reloadMovementState.sprint)
+    if not allowReloadMovement() then return false end
+    local ped = PlayerPedId()
+    return reloadMovementState.moving
+        or reloadMovementState.sprint
+        or isPedActuallyMoving(ped)
+end
+
+local function canTryNativeReload(invName)
+    if Config.ReloadUseNativeFirst == false then return false end
+    if isSwappedWeaponModel(invName) then return false end
+    if allowReloadMovement() then
+        -- Stovint native užšaldo kojas; bėgant GTA turi normalią reload animaciją.
+        return isReloadMoving()
+    end
+    return true
 end
 
 local function reloadAnimCandidates(weaponHash, weaponData)
@@ -320,7 +332,6 @@ function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
 
     local clipNow, totalBefore = snapshotClipState(ped, weaponHash)
     local invName = resolveInventoryWeaponName(weaponHash, weaponData)
-    pinClipDuringVisual(ped, weaponHash, clipNow)
 
     if IsPedInAnyVehicle(ped, false) then
         Wait(math.min(1400, durationMs))
@@ -330,10 +341,7 @@ function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
     end
 
     local usedNative = false
-    local canUseNative = Config.ReloadUseNativeFirst ~= false
-        and not isSwappedWeaponModel(invName)
-        and not isReloadMoving()
-    if canUseNative then
+    if canTryNativeReload(invName) then
         usedNative = tryNativeReloadAnimation(ped, weaponHash, clipNow, totalBefore, bulletsToLoad, durationMs)
     end
 

@@ -23,6 +23,7 @@ window.MdtMap = (function () {
   let selfHeading = 0;
   let routeLayer = null;
   let routeDest = null;
+  let crewsVisible = true;
 
   const Core = window.GtavMapCore;
 
@@ -67,7 +68,7 @@ window.MdtMap = (function () {
   function unitBlipClass(u) {
     const parts = ['mdt-blip'];
     if (u.panic) parts.push('panic');
-    else if (u.isCrewLeader) parts.push('leader');
+    else if (crewsVisible && u.isCrewLeader) parts.push('leader');
     else parts.push('officer');
     if (u.inVeh) parts.push('in-veh');
     return parts.join(' ');
@@ -113,10 +114,13 @@ window.MdtMap = (function () {
   }
 
   function unitTooltipHtml(u) {
+    const crewRow = crewsVisible
+      ? `<div class="tt-row"><span>Ekipažas</span><strong>${escapeHtml(u.crewLabel || '—')}</strong></div>`
+      : '';
     return `
       <div class="tt-title">${escapeHtml(u.name || 'Pareigūnas')}</div>
       <div class="tt-row"><span>Pareigūnas</span><strong>${escapeHtml(u.name || '—')}</strong></div>
-      <div class="tt-row"><span>Ekipažas</span><strong>${escapeHtml(u.crewLabel || '—')}</strong></div>
+      ${crewRow}
       <div class="tt-row"><span>Statusas</span><strong>${escapeHtml(u.statusLabel || 'Patruliuoja')}</strong></div>
       <div class="tt-row"><span>Koordinatės</span><strong>${Number(u.x || 0).toFixed(1)} ${Number(u.y || 0).toFixed(1)} ${Number(u.z || 0).toFixed(1)}</strong></div>
     `;
@@ -231,7 +235,7 @@ window.MdtMap = (function () {
       const marker = L.marker([lat, lng], {
         icon: makeDivIcon(unitBlipClass(u), u.heading),
         interactive: true,
-        zIndexOffset: u.panic ? 900 : u.isCrewLeader ? 600 : 400,
+        zIndexOffset: u.panic ? 900 : (crewsVisible && u.isCrewLeader) ? 600 : 400,
       }).addTo(leafletMap);
       s = {
         key,
@@ -249,7 +253,7 @@ window.MdtMap = (function () {
     s.tgtLng = lng;
     s.data = { ...u };
     s.marker.setIcon(makeDivIcon(unitBlipClass(u), u.heading));
-    s.marker.setZIndexOffset(u.panic ? 900 : u.isCrewLeader ? 600 : 400);
+    s.marker.setZIndexOffset(u.panic ? 900 : (crewsVisible && u.isCrewLeader) ? 600 : 400);
     applyMarkerPosition(s);
   }
 
@@ -570,6 +574,10 @@ window.MdtMap = (function () {
     selectedKey = null;
   }
 
+  function setCrewsVisible(on) {
+    crewsVisible = on !== false;
+  }
+
   return {
     ensureMap,
     update,
@@ -582,6 +590,7 @@ window.MdtMap = (function () {
     setOnSelect,
     selectByKey,
     setAnimEnabled,
+    setCrewsVisible,
     setSelfSource,
     setLocalPlayerPos,
     setRoute: drawRouteTo,

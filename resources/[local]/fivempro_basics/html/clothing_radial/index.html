@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Drabužiai</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="root" class="hidden">
+        <div class="radial-backdrop"></div>
+        <div class="radial-wrap">
+            <svg class="radial-ring" viewBox="0 0 420 420" aria-hidden="true">
+                <g id="outer-segments"></g>
+                <g id="inner-segments"></g>
+            </svg>
+
+            <div id="outer-icons" class="icon-layer outer"></div>
+            <div id="inner-icons" class="icon-layer inner"></div>
+
+            <button type="button" id="btn-restore-all" class="center-btn" title="Uždėti visus drabužius">
+                <span class="center-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 3l3 3h-2v6h-2V6H9l3-3zm-6 9h12v2H6v-2zm2 4h8v6h-3v-4h-2v4H8v-6z"/></svg>
+                </span>
+                <span class="center-label">Visi</span>
+            </button>
+
+            <button type="button" id="btn-close" class="close-btn" title="Uždaryti">
+                <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6H4c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8z"/></svg>
+            </button>
+
+            <div id="tooltip" class="tooltip hidden"></div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

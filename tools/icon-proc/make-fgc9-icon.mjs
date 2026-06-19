@@ -35,9 +35,10 @@ const sourceArgs = [
   script,
   sourceName,
   'weapon_fgc9.png',
-  '-38',
+  '-22',
   useClean ? 'clean' : 'raw',
-  '0.22',
+  '0',
+  'pad0.16',
 ];
 
 const result = spawnSync(process.execPath, sourceArgs, {

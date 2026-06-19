@@ -139,6 +139,10 @@ RegisterNUICallback('crewAction', function(data, cb)
     if not isDispatchWritable() then
         return cb({ ok = false, msg = 'Tik pamainoje galima valdyti ekipažus.' })
     end
+    local cfg = activeService and Config.Services[activeService]
+    if cfg and cfg.enableCrews == false then
+        return cb({ ok = false, msg = 'Šis MDT neturi ekipažų.' })
+    end
     local action = tostring(data and data.action or '')
     if action == 'create' then
         TriggerServerEvent('fivempro_dispatch:server:createCrew', tostring(data.callsign or ''))

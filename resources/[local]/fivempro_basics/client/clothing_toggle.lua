@@ -4,6 +4,7 @@ local activeSkin = nil
 local slotBackups = {}
 local slotRemoved = {}
 local selfUpdating = false
+local radialMenuOpen = false
 
 local CLOTHING_SLOTS = {
     mask = { label = 'Kaukė', offLabel = 'kaukę', commands = { 'mask', 'kauke' } },
@@ -167,6 +168,7 @@ function ToggleClothingSlot(slotKey)
         applyActiveSkin()
         saveActiveSkin()
         QBCore.Functions.Notify(('%s uždėta.'):format(cfg.label), 'success')
+        refreshRadialMenu()
         return
     end
 
@@ -187,28 +189,79 @@ function ToggleClothingSlot(slotKey)
     applyActiveSkin()
     saveActiveSkin()
     QBCore.Functions.Notify(('%s nusiimta.'):format(cfg.label), 'success')
+    refreshRadialMenu()
 end
 
-local function buildClothingMenu()
-    local items = {
-        { header = 'Drabužiai', isMenuHeader = true },
-    }
+local function buildRadialSlotStates()
+    local slots = {}
     for slotKey, cfg in pairs(CLOTHING_SLOTS) do
-        local state = slotRemoved[slotKey] and 'nusiimta' or 'uždėta'
-        items[#items + 1] = {
-            header = cfg.label,
-            txt = ('Būsena: %s'):format(state),
-            params = {
-                event = 'fivempro_basics:client:toggleClothing',
-                args = { slotKey },
-            },
+        slots[slotKey] = {
+            label = cfg.label,
+            removed = slotRemoved[slotKey] == true,
         }
     end
-    items[#items + 1] = {
-        header = 'Uždaryti',
-        params = { event = 'qb-menu:client:closeMenu' },
-    }
-    return items
+    return slots
+end
+
+local function refreshRadialMenu()
+    if not radialMenuOpen then return end
+    SendNUIMessage({
+        action = 'update',
+        slots = buildRadialSlotStates(),
+    })
+end
+
+local function closeClothingRadial()
+    if not radialMenuOpen then return end
+    radialMenuOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
+end
+
+function RestoreAllClothing()
+    local ok, err = canToggleClothing()
+    if not ok then
+        QBCore.Functions.Notify(err, 'error')
+        return false
+    end
+    if not ensureActiveSkin() then return false end
+
+    local restored = 0
+    for slotKey in pairs(CLOTHING_SLOTS) do
+        if slotRemoved[slotKey] and slotBackups[slotKey] then
+            if not activeSkin[slotKey] then
+                activeSkin[slotKey] = { item = 0, texture = 0 }
+            end
+            activeSkin[slotKey].item = slotBackups[slotKey].item
+            activeSkin[slotKey].texture = slotBackups[slotKey].texture or 0
+            slotRemoved[slotKey] = nil
+            slotBackups[slotKey] = nil
+            restored = restored + 1
+        end
+    end
+
+    if restored <= 0 then
+        QBCore.Functions.Notify('Visi drabužiai jau uždėti.', 'primary')
+        return false
+    end
+
+    local ped = PlayerPedId()
+    if not IsPedInAnyVehicle(ped, false) then
+        RequestAnimDict('clothingtie')
+        local deadline = GetGameTimer() + 2000
+        while not HasAnimDictLoaded('clothingtie') and GetGameTimer() < deadline do
+            Wait(10)
+        end
+        if HasAnimDictLoaded('clothingtie') then
+            TaskPlayAnim(ped, 'clothingtie', 'try_tie_negative_a', 4.0, 3.0, 900, 49, 0.0, false, false, false)
+        end
+    end
+
+    applyActiveSkin()
+    saveActiveSkin()
+    QBCore.Functions.Notify(('Uždėta %d drabužių dalys.'):format(restored), 'success')
+    refreshRadialMenu()
+    return true
 end
 
 local function openClothingMenu()
@@ -218,12 +271,36 @@ local function openClothingMenu()
         return
     end
     if not ensureActiveSkin() then return end
-    if GetResourceState('qb-menu') ~= 'started' then
-        QBCore.Functions.Notify('Naudok /mask, /kepure, /kelnes ir kitas komandas.', 'primary', 6000)
+    if radialMenuOpen then
+        closeClothingRadial()
         return
     end
-    exports['qb-menu']:openMenu(buildClothingMenu(), true, true)
+    radialMenuOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'open',
+        slots = buildRadialSlotStates(),
+    })
 end
+
+RegisterNUICallback('clothingRadial:toggle', function(data, cb)
+    local slotKey = data and (data.slotKey or data[1])
+    if slotKey then
+        ToggleClothingSlot(tostring(slotKey))
+        refreshRadialMenu()
+    end
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('clothingRadial:restoreAll', function(_, cb)
+    RestoreAllClothing()
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('clothingRadial:close', function(_, cb)
+    closeClothingRadial()
+    cb({ ok = true })
+end)
 
 RegisterNetEvent('fivempro_basics:client:toggleClothing', function(slotKey)
     if type(slotKey) == 'table' then
@@ -270,3 +347,4 @@ end)
 
 exports('ToggleClothingSlot', ToggleClothingSlot)
 exports('OpenClothingMenu', openClothingMenu)
+exports('RestoreAllClothing', RestoreAllClothing)

@@ -89,6 +89,7 @@ QBCore.Functions.CreateCallback('fivempro_service_mdt:server:mdtContext', functi
         selfSource = src,
         onDuty = P.PlayerData.job.onduty == true,
         canInvoice = canIssueInvoice(src, service),
+        enableCrews = cfg.enableCrews ~= false,
         playerPos = {
             x = c.x + 0.0,
             y = c.y + 0.0,

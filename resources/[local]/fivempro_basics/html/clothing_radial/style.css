@@ -1,0 +1,186 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    user-select: none;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#root {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.radial-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.radial-wrap {
+    position: relative;
+    width: 420px;
+    height: 420px;
+}
+
+.radial-ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.segment {
+    fill: rgba(18, 20, 28, 0.82);
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-width: 1;
+    transition: fill 0.15s ease, filter 0.15s ease;
+    pointer-events: all;
+    cursor: pointer;
+}
+
+.segment:hover,
+.segment.active {
+    fill: rgba(36, 99, 235, 0.92);
+    filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.45));
+}
+
+.segment.removed {
+    fill: rgba(30, 34, 48, 0.9);
+}
+
+.segment.removed:hover {
+    fill: rgba(36, 99, 235, 0.88);
+}
+
+.icon-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.slot-icon {
+    position: absolute;
+    width: 34px;
+    height: 34px;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.92);
+    pointer-events: none;
+}
+
+.slot-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+.slot-icon.removed {
+    opacity: 0.45;
+}
+
+.center-btn {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 74px;
+    height: 74px;
+    margin: -37px 0 0 -37px;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    background: rgba(12, 14, 20, 0.94);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    transition: background 0.15s ease, transform 0.12s ease, border-color 0.15s ease;
+    z-index: 5;
+}
+
+.center-btn:hover {
+    background: rgba(36, 99, 235, 0.95);
+    border-color: rgba(147, 197, 253, 0.5);
+    transform: scale(1.04);
+}
+
+.center-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.center-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+.center-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.close-btn {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(12, 14, 20, 0.9);
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, transform 0.12s ease;
+    z-index: 6;
+}
+
+.close-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.close-btn:hover {
+    background: rgba(36, 99, 235, 0.9);
+    transform: scale(1.05);
+}
+
+.tooltip {
+    position: absolute;
+    left: 50%;
+    top: calc(50% - 58px);
+    transform: translateX(-50%);
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.82);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+}

@@ -89,7 +89,102 @@ window.GtavMapCore = (function () {
     return solveLinear(ata, atb);
   }
 
-  /** IDW (inverse distance weighting) — tikslu ant kalibracijos taškų, sklandu tarp jų. */
+  function tpsKernel(r) {
+    if (r < 1e-8) return 0;
+    return r * r * Math.log(r);
+  }
+
+  /** Thin Plate Spline — geriau nei IDW tarp retų kalibracijos taškų (mažiau „bulių akies“ artefaktų). */
+  function fitTpsModel(points) {
+    const n = points.length;
+    if (n < 3) return null;
+    const size = n + 3;
+    const A = Array.from({ length: size }, () => Array(size).fill(0));
+    const bu = Array(size).fill(0);
+    const bv = Array(size).fill(0);
+    for (let i = 0; i < n; i += 1) {
+      for (let j = 0; j < n; j += 1) {
+        const dx = points[i].gx - points[j].gx;
+        const dy = points[i].gy - points[j].gy;
+        A[i][j] = tpsKernel(Math.hypot(dx, dy));
+      }
+      A[i][n] = 1;
+      A[i][n + 1] = points[i].gx;
+      A[i][n + 2] = points[i].gy;
+      A[n][i] = 1;
+      A[n + 1][i] = points[i].gx;
+      A[n + 2][i] = points[i].gy;
+      bu[i] = points[i].u;
+      bv[i] = points[i].v;
+    }
+    const wx = solveLinear(A, bu);
+    const wy = solveLinear(A, bv);
+    if (!wx || !wy) return null;
+    return { points, wx, wy };
+  }
+
+  function evalTps(gx, gy, model) {
+    if (!model || !model.points || !model.wx || !model.wy) return [0, 0];
+    const n = model.points.length;
+    let u = model.wx[n] + model.wx[n + 1] * gx + model.wx[n + 2] * gy;
+    let v = model.wy[n] + model.wy[n + 1] * gx + model.wy[n + 2] * gy;
+    for (let i = 0; i < n; i += 1) {
+      const dx = gx - model.points[i].gx;
+      const dy = gy - model.points[i].gy;
+      const k = tpsKernel(Math.hypot(dx, dy));
+      u += model.wx[i] * k;
+      v += model.wy[i] * k;
+    }
+    return [u, v];
+  }
+
+  function clamp01(t) {
+    return Math.max(0, Math.min(1, t));
+  }
+
+  function usesPixelSpace(cfg) {
+    return String(cfg.coordSpace || "pixel").toLowerCase() === "pixel";
+  }
+
+  function uvToLatLng(u, v, cfg) {
+    const uv = clamp01(u);
+    const vv = clamp01(v);
+    if (usesPixelSpace(cfg)) {
+      const imgW = cfg.imgW || ISLAND.imageWidth;
+      const imgH = cfg.imgH || ISLAND.imageHeight;
+      return [imgH * (1 - vv), imgW * uv];
+    }
+    const ox = cfg.offsetX || 0;
+    const oy = cfg.offsetY || 0;
+    const mapRangeX = cfg.maxX - cfg.minX || 1;
+    const mapRangeY = cfg.maxY - cfg.minY || 1;
+    const scaleX = cfg.scaleX || 1;
+    const scaleY = cfg.scaleY || 1;
+    return [
+      cfg.maxY - vv * mapRangeY * scaleY + oy,
+      cfg.minX + uv * mapRangeX * scaleX + ox,
+    ];
+  }
+
+  function latLngToUV(lat, lng, cfg) {
+    if (usesPixelSpace(cfg)) {
+      const imgW = cfg.imgW || ISLAND.imageWidth;
+      const imgH = cfg.imgH || ISLAND.imageHeight;
+      return [clamp01(Number(lng) / imgW), clamp01(1 - Number(lat) / imgH)];
+    }
+    const ox = cfg.offsetX || 0;
+    const oy = cfg.offsetY || 0;
+    const mapRangeX = cfg.maxX - cfg.minX || 1;
+    const mapRangeY = cfg.maxY - cfg.minY || 1;
+    const scaleX = cfg.scaleX || 1;
+    const scaleY = cfg.scaleY || 1;
+    return [
+      clamp01((Number(lng) - ox - cfg.minX) / (mapRangeX * scaleX)),
+      clamp01((cfg.maxY - (Number(lat) - oy)) / (mapRangeY * scaleY)),
+    ];
+  }
+
+  /** IDW (inverse distance weighting) — tikslu ant kalibracijos taškų, bet prastai tarp jų. */
   function idwGameToNorm(gx, gy, points, power) {
     const pwr = Number.isFinite(power) && power > 0 ? power : 2;
     let wSum = 0;
@@ -110,29 +205,31 @@ window.GtavMapCore = (function () {
     return [uSum / wSum, vSum / wSum];
   }
 
-  function latLngToGameIdw(lat, lng, cfg) {
-    const mapRangeX = cfg.maxX - cfg.minX || 1;
-    const mapRangeY = cfg.maxY - cfg.minY || 1;
-    const ox = cfg.offsetX || 0;
-    const oy = cfg.offsetY || 0;
-    const scaleX = cfg.scaleX || 1;
-    const scaleY = cfg.scaleY || 1;
-    const targetU = (Number(lng) - ox - cfg.minX) / (mapRangeX * scaleX);
-    const targetV = (cfg.maxY - (Number(lat) - oy)) / (mapRangeY * scaleY);
-    const pts = cfg.idwPoints;
-    const power = cfg.idwPower || 2;
+  function projectGameToNorm(gx, gy, cfg) {
+    if (cfg.tpsModel) return evalTps(gx, gy, cfg.tpsModel);
+    if (cfg.idwPoints && cfg.idwPoints.length >= 3) {
+      return idwGameToNorm(gx, gy, cfg.idwPoints, cfg.idwPower);
+    }
+    return gameToNormUV(gx, gy, cfg);
+  }
+
+  function latLngToGameProjected(lat, lng, cfg) {
+    const target = latLngToUV(lat, lng, cfg);
+    const targetU = target[0];
+    const targetV = target[1];
+    const pts = cfg.calibrationPoints || cfg.idwPoints || (cfg.tpsModel && cfg.tpsModel.points) || [];
     const rangeX = cfg.coordMaxX - cfg.coordMinX || 1;
     const rangeY = cfg.coordMaxY - cfg.coordMinY || 1;
     let x = cfg.coordMinX + targetU * rangeX;
     let y = cfg.maxY - targetV * rangeY;
-    for (let i = 0; i < 28; i += 1) {
-      const uv = idwGameToNorm(x, y, pts, power);
+    for (let i = 0; i < 32; i += 1) {
+      const uv = projectGameToNorm(x, y, cfg);
       const du = targetU - uv[0];
       const dv = targetV - uv[1];
       if (Math.abs(du) < 1e-6 && Math.abs(dv) < 1e-6) break;
-      const eps = 18;
-      const uvx = idwGameToNorm(x + eps, y, pts, power);
-      const uvy = idwGameToNorm(x, y + eps, pts, power);
+      const eps = 16;
+      const uvx = projectGameToNorm(x + eps, y, cfg);
+      const uvy = projectGameToNorm(x, y + eps, cfg);
       const duDx = (uvx[0] - uv[0]) / eps;
       const duDy = (uvy[0] - uv[0]) / eps;
       const dvDx = (uvx[1] - uv[1]) / eps;
@@ -141,6 +238,9 @@ window.GtavMapCore = (function () {
       if (Math.abs(det) < 1e-14) break;
       x += (du * dvDy - dv * duDy) / det;
       y += (dv * duDx - du * dvDx) / det;
+    }
+    if ((!pts || pts.length < 3) && usesPixelSpace(cfg)) {
+      return { x, y };
     }
     return { x, y };
   }
@@ -200,18 +300,24 @@ window.GtavMapCore = (function () {
     if (clean.length < 3) return cfg;
 
     const projection = String(cfg.projection || "identity").toLowerCase();
-    if (projection === "idw" && clean.length >= 3) {
-      cfg.idwPoints = clean;
-      cfg.idwPower = num(cfg.idwPower, 2);
-      return cfg;
-    }
+    cfg.calibrationPoints = clean;
 
-    if (projection === "homography" && clean.length >= 4) {
+    if ((projection === "homography" || projection === "tps" || projection === "idw") && clean.length >= 4) {
       const homographyH = fitHomographyGameToNorm(clean);
       if (homographyH) {
         cfg.homographyH = homographyH;
-        return cfg;
+        if (projection === "homography") return cfg;
       }
+    }
+
+    if ((projection === "tps" || projection === "idw") && clean.length >= 3) {
+      const tpsModel = fitTpsModel(clean);
+      if (tpsModel) cfg.tpsModel = tpsModel;
+      if (projection === "idw") {
+        cfg.idwPoints = clean;
+        cfg.idwPower = num(cfg.idwPower, 2);
+      }
+      return cfg;
     }
 
     const coeffsU = fitAffineGameToNorm(clean, "u");
@@ -224,6 +330,7 @@ window.GtavMapCore = (function () {
   }
 
   function gameToNormUV(gx, gy, cfg) {
+    if (cfg.tpsModel) return evalTps(gx, gy, cfg.tpsModel);
     if (cfg.idwPoints && cfg.idwPoints.length >= 3) {
       return idwGameToNorm(gx, gy, cfg.idwPoints, cfg.idwPower);
     }
@@ -288,8 +395,8 @@ window.GtavMapCore = (function () {
 
     let projection = String(t.projection || "linear").toLowerCase();
     const hasCalibration = Array.isArray(t.calibration) && t.calibration.length >= 3;
-    if (hasCalibration && (projection === "identity" || projection === "linear")) {
-      projection = t.calibration.length >= 3 ? "idw" : "affine";
+    if (hasCalibration && (projection === "identity" || projection === "linear" || projection === "idw" || projection === "tps")) {
+      projection = "homography";
     }
     if (Array.isArray(t.homographyH) && t.homographyH.length >= 8) {
       projection = "homography";
@@ -297,6 +404,7 @@ window.GtavMapCore = (function () {
 
     const out = {
       projection,
+      coordSpace: String(t.coordSpace || "pixel").toLowerCase(),
       minX,
       minY,
       maxX,
@@ -331,8 +439,43 @@ window.GtavMapCore = (function () {
     return out;
   }
 
+  function calibrationUvBounds(cfg, pad) {
+    const pts = cfg.calibrationPoints || cfg.idwPoints || (cfg.tpsModel && cfg.tpsModel.points) || [];
+    const margin = pad != null ? pad : 0.035;
+    if (!pts.length) {
+      return { u0: 0, v0: 0, u1: 1, v1: 1 };
+    }
+    let u0 = 1;
+    let v0 = 1;
+    let u1 = 0;
+    let v1 = 0;
+    pts.forEach((p) => {
+      u0 = Math.min(u0, p.u);
+      v0 = Math.min(v0, p.v);
+      u1 = Math.max(u1, p.u);
+      v1 = Math.max(v1, p.v);
+    });
+    return {
+      u0: Math.max(0, u0 - margin),
+      v0: Math.max(0, v0 - margin),
+      u1: Math.min(1, u1 + margin),
+      v1: Math.min(1, v1 + margin),
+    };
+  }
+
   function mapBoundsLatLng(cfg, kind) {
     if (!cfg || typeof L === "undefined") return null;
+    if (usesPixelSpace(cfg)) {
+      const imgW = cfg.imgW || ISLAND.imageWidth;
+      const imgH = cfg.imgH || ISLAND.imageHeight;
+      if (kind === "view") {
+        const b = calibrationUvBounds(cfg, 0.03);
+        const sw = uvToLatLng(b.u0, b.v1, cfg);
+        const ne = uvToLatLng(b.u1, b.v0, cfg);
+        return L.latLngBounds(sw, ne);
+      }
+      return L.latLngBounds([0, 0], [imgH, imgW]);
+    }
     const ox = cfg.offsetX || 0;
     const oy = cfg.offsetY || 0;
     if (kind === "view") {
@@ -344,65 +487,48 @@ window.GtavMapCore = (function () {
     return L.latLngBounds([cfg.minY + oy, cfg.minX + ox], [cfg.maxY + oy, cfg.maxX + ox]);
   }
 
-  /** GTA (x,y) → Leaflet [lat, lng] — lat=Y, lng=X. */
+  /** GTA (x,y) → Leaflet [lat, lng]. Su kalibracija — tiesiai į PNG pikselius. */
   function gameToLatLng(gx, gy, cfg) {
     if (!cfg) return [Number(gy) || 0, Number(gx) || 0];
     const x = Number(gx);
     const y = Number(gy);
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      if (usesPixelSpace(cfg)) {
+        const imgW = cfg.imgW || ISLAND.imageWidth;
+        const imgH = cfg.imgH || ISLAND.imageHeight;
+        return [imgH * 0.5, imgW * 0.5];
+      }
       return [cfg.minY + (cfg.offsetY || 0), cfg.minX + (cfg.offsetX || 0)];
     }
 
-    const ox = cfg.offsetX || 0;
-    const oy = cfg.offsetY || 0;
     const projection = String(cfg.projection || "identity").toLowerCase();
-
-    if (projection === "identity") {
-      return [y + oy, x + ox];
+    if (projection === "identity" && !usesPixelSpace(cfg)) {
+      return [y + (cfg.offsetY || 0), x + (cfg.offsetX || 0)];
     }
 
-    const scaleX = cfg.scaleX || 1;
-    const scaleY = cfg.scaleY || 1;
-    const mapRangeX = cfg.maxX - cfg.minX || 1;
-    const mapRangeY = cfg.maxY - cfg.minY || 1;
-
-    if (
-      (projection === "affine" || projection === "homography" || projection === "idw") &&
-      (cfg.affineU || cfg.homographyH || cfg.idwPoints)
-    ) {
+    if (cfg.tpsModel || cfg.idwPoints || cfg.homographyH || cfg.affineU) {
       const uv = gameToNormUV(x, y, cfg);
-      const lng = cfg.minX + uv[0] * mapRangeX * scaleX + ox;
-      const lat = cfg.maxY - uv[1] * mapRangeY * scaleY + oy;
-      return [lat, lng];
+      return uvToLatLng(uv[0], uv[1], cfg);
     }
 
     const uv = gameToNormUV(x, y, cfg);
-    const lng = cfg.minX + uv[0] * mapRangeX * scaleX + ox;
-    const lat = cfg.maxY - uv[1] * mapRangeY * scaleY + oy;
-    return [lat, lng];
+    return uvToLatLng(uv[0], uv[1], cfg);
   }
 
   function latLngToGame(lat, lng, cfg) {
     if (!cfg) return { x: Number(lng) || 0, y: Number(lat) || 0 };
-    const ox = cfg.offsetX || 0;
-    const oy = cfg.offsetY || 0;
     const projection = String(cfg.projection || "identity").toLowerCase();
 
-    if (projection === "identity") {
-      return { x: Number(lng) - ox, y: Number(lat) - oy };
+    if (projection === "identity" && !usesPixelSpace(cfg)) {
+      return { x: Number(lng) - (cfg.offsetX || 0), y: Number(lat) - (cfg.offsetY || 0) };
     }
 
-    const mapRangeX = cfg.maxX - cfg.minX || 1;
-    const mapRangeY = cfg.maxY - cfg.minY || 1;
-    const scaleX = cfg.scaleX || 1;
-    const scaleY = cfg.scaleY || 1;
-    if (cfg.idwPoints && cfg.idwPoints.length >= 3) {
-      return latLngToGameIdw(lat, lng, cfg);
+    if (cfg.tpsModel || cfg.idwPoints || cfg.homographyH) {
+      return latLngToGameProjected(lat, lng, cfg);
     }
 
-    let u = (Number(lng) - ox - cfg.minX) / (mapRangeX * scaleX);
-    let v = (cfg.maxY - (Number(lat) - oy)) / (mapRangeY * scaleY);
-    return normUVToGame(u, v, cfg);
+    const uv = latLngToUV(lat, lng, cfg);
+    return normUVToGame(uv[0], uv[1], cfg);
   }
 
   function gameBoundsLatLng(cfg) {
