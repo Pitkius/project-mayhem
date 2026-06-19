@@ -5,13 +5,20 @@ CurrentDrop = nil
 
 -- Functions
 
+local function setupBagTarget(bag, options)
+    if not bag or bag == 0 or not DoesEntityExist(bag) then return end
+    -- Seni 24/7 NPC targetai kartais lieka ant to paties network ID (entity perpanaudojimas)
+    exports['qb-target']:RemoveTargetEntity(bag)
+    exports['qb-target']:AddTargetEntity(bag, options)
+end
+
 function GetDrops()
     QBCore.Functions.TriggerCallback('qb-inventory:server:GetCurrentDrops', function(drops)
         if not drops then return end
         for k, v in pairs(drops) do
             local bag = NetworkGetEntityFromNetworkId(v.entityId)
             if DoesEntityExist(bag) then
-                exports['qb-target']:AddTargetEntity(bag, {
+                setupBagTarget(bag, {
                     options = {
                         {
                             icon = 'fas fa-backpack',
@@ -43,7 +50,7 @@ RegisterNetEvent('qb-inventory:client:setupDropTarget', function(dropId)
     local bag = NetworkGetEntityFromNetworkId(dropId)
     while not DoesEntityExist(bag) do Wait(10) end
     local newDropId = 'drop-' .. dropId
-    exports['qb-target']:AddTargetEntity(bag, {
+    setupBagTarget(bag, {
         options = {
             {
                 icon = 'fas fa-backpack',

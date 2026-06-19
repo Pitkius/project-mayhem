@@ -4,10 +4,48 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local spawnedBlips = {}
 local blipsByKey = {}
 local configured = {}
+local targetStoreKeyByEntity = {}
+local targetStoreKeyByNetId = {}
 local jobBoxZones = {}
 local barberPedByIndex = {}
 local pendingTargets = {}
 local pendingJobTargets = {}
+
+local function entityTargetStoreKey(ent)
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return nil end
+    if NetworkGetEntityIsNetworked(ent) then
+        local netId = NetworkGetNetworkIdFromEntity(ent)
+        if netId and netId ~= 0 then return netId end
+    end
+    return ent
+end
+
+local function clearShopTarget(ent, storeKey)
+    if ent and targetStoreKeyByEntity[ent] then
+        storeKey = storeKey or targetStoreKeyByEntity[ent]
+    end
+    if not storeKey and ent and DoesEntityExist(ent) then
+        storeKey = entityTargetStoreKey(ent)
+    end
+    if storeKey then
+        pcall(function()
+            exports['qb-target']:RemoveTargetEntity(storeKey)
+        end)
+        local linked = targetStoreKeyByNetId[storeKey]
+        if linked then
+            configured[linked] = nil
+            targetStoreKeyByEntity[linked] = nil
+        end
+        targetStoreKeyByNetId[storeKey] = nil
+    end
+    if ent then
+        configured[ent] = nil
+        targetStoreKeyByEntity[ent] = nil
+        for idx, barberEnt in pairs(barberPedByIndex) do
+            if barberEnt == ent then barberPedByIndex[idx] = nil end
+        end
+    end
+end
 
 local function queueTarget(ped, data, jobQueue)
     if not ped or not DoesEntityExist(ped) then return end
@@ -217,6 +255,7 @@ end
 local function configureShopPed(ent, meta, key)
     key = ent
     if configured[key] then return end
+    if not IsEntityAPed(ent) then return end
     configured[key] = true
 
     setupPedEntity(ent, meta)
@@ -296,14 +335,24 @@ CreateThread(function()
         if GetResourceState('qb-target') == 'started' then
             for i = #pendingTargets, 1, -1 do
                 local entry = pendingTargets[i]
-                if entry and DoesEntityExist(entry.ped) then
+                if entry and DoesEntityExist(entry.ped) and IsEntityAPed(entry.ped) then
+                    local storeKey = entityTargetStoreKey(entry.ped)
+                    if storeKey then
+                        targetStoreKeyByEntity[entry.ped] = storeKey
+                        targetStoreKeyByNetId[storeKey] = entry.ped
+                    end
                     exports['qb-target']:AddTargetEntity(entry.ped, entry.data)
                 end
                 table.remove(pendingTargets, i)
             end
             for i = #pendingJobTargets, 1, -1 do
                 local entry = pendingJobTargets[i]
-                if entry and DoesEntityExist(entry.ped) then
+                if entry and DoesEntityExist(entry.ped) and IsEntityAPed(entry.ped) then
+                    local storeKey = entityTargetStoreKey(entry.ped)
+                    if storeKey then
+                        targetStoreKeyByEntity[entry.ped] = storeKey
+                        targetStoreKeyByNetId[storeKey] = entry.ped
+                    end
                     exports['qb-target']:AddTargetEntity(entry.ped, entry.data)
                 end
                 table.remove(pendingJobTargets, i)
@@ -320,17 +369,17 @@ CreateThread(function()
         if GetResourceState('qb-target') ~= 'started' then goto continue end
         for key, _ in pairs(configured) do
             if type(key) == 'number' and not DoesEntityExist(key) then
-                pcall(function()
-                    exports['qb-target']:RemoveTargetEntity(key)
-                end)
-                for idx, ent in pairs(barberPedByIndex) do
-                    if ent == key then barberPedByIndex[idx] = nil end
-                end
-                configured[key] = nil
+                clearShopTarget(key)
             end
         end
         ::continue::
     end
+end)
+
+RegisterNetEvent('fivempro_npcshops:client:clearNpcTarget', function(netId)
+    netId = tonumber(netId)
+    if not netId or netId == 0 then return end
+    clearShopTarget(targetStoreKeyByNetId[netId], netId)
 end)
 
 RegisterNetEvent('fivempro_npcshops:client:openBarberWithAnim', function(data)

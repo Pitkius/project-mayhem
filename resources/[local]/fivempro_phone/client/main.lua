@@ -119,6 +119,7 @@ local phoneInputTyping = false
 
 local PHONE_BLOCK_ATTACK = { 24, 25, 37, 44, 45, 47, 58, 140, 141, 142, 143, 257, 263, 264 }
 local PHONE_BLOCK_LOOK = { 1, 2, 3, 4, 5, 6 }
+local CHAT_OPEN_CONTROL = 245
 
 local function isPhoneInHand()
     return phonePhase == 'opening' or phonePhase == 'open' or phonePhase == 'closing'
@@ -139,6 +140,10 @@ local function applyPhoneHandRestrictions()
         for i = 1, #PHONE_BLOCK_LOOK do
             DisableControlAction(0, PHONE_BLOCK_LOOK[i], true)
         end
+    end
+
+    if phoneInputTyping then
+        DisableControlAction(0, CHAT_OPEN_CONTROL, true)
     end
 end
 
@@ -589,4 +594,12 @@ RegisterNetEvent('fivempro_phone:client:hospitalWake', function(data)
     SetEntityHealth(ped, 200)
     SetPedArmour(ped, 0)
     TriggerEvent('fivempro_phone:local:AfterHospitalWake')
+end)
+
+exports('IsPhoneOpen', function()
+    return phonePhase == 'open' or phonePhase == 'opening'
+end)
+
+exports('IsBlockingChat', function()
+    return phonePhase == 'open' and phoneInputTyping == true
 end)

@@ -248,6 +248,16 @@ if not isRDR then
   end, false)
 end
 
+local function isPhoneBlockingChat()
+  if GetResourceState('fivempro_phone') ~= 'started' then
+    return false
+  end
+  local ok, blocking = pcall(function()
+    return exports['fivempro_phone']:IsBlockingChat()
+  end)
+  return ok and blocking == true
+end
+
 Citizen.CreateThread(function()
   SetTextChatEnabled(false)
   SetNuiFocus(false, false)
@@ -258,7 +268,7 @@ Citizen.CreateThread(function()
   while true do
     Wait(0)
 
-    if not chatInputActive then
+    if not chatInputActive and not isPhoneBlockingChat() then
       if IsControlPressed(0, isRDR and `INPUT_MP_TEXT_CHAT_ALL` or 245) --[[ INPUT_MP_TEXT_CHAT_ALL ]] then
         chatInputActive = true
         chatInputActivating = true

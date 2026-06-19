@@ -100,7 +100,9 @@ local function DrawTarget()
 end
 
 local function isValidEntity(entity)
-	return entity and entity ~= 0 and DoesEntityExist(entity)
+	if not entity or entity == 0 then return false end
+	local ok, exists = pcall(DoesEntityExist, entity)
+	return ok and exists == true
 end
 
 --- Saugi entity rakto rezoliucija (nebekviesti native ant mirusio handle)
@@ -187,7 +189,7 @@ local function RaycastCamera(flag, playerCoords)
 			local distance = playerCoords and #(playerCoords - endCoords)
 
 			local entityType = 0
-			if entityHit and entityHit ~= 0 and DoesEntityExist(entityHit) then
+			if isValidEntity(entityHit) then
 				local okType, et = pcall(GetEntityType, entityHit)
 				entityType = (okType and et) or 0
 				if entityType == 0 then
@@ -288,6 +290,7 @@ end
 
 local function CheckEntity(flag, datatable, entity, distance)
 	if not next(datatable) then return end
+	if not isValidEntity(entity) then return end
 	if not hasEntityLineOfSight(entity) then return end
 	local slot = SetupOptions(datatable, entity, distance)
 	if not next(nuiData) then
@@ -299,6 +302,11 @@ local function CheckEntity(flag, datatable, entity, distance)
 	SendNUIMessage({ response = 'foundTarget', data = nuiData[slot].targeticon, options = nuiData })
 	DrawOutlineEntity(entity, true)
 	while targetActive and success do
+		if not isValidEntity(entity) then
+			LeftTarget()
+			DrawOutlineEntity(entity, false)
+			break
+		end
 		local _, dist, entity2 = RaycastCamera(flag)
 		if entity ~= entity2 then
 			LeftTarget()
@@ -425,26 +433,30 @@ local function EnableTarget()
 				end
 
 				-- Owned entity targets
-				do
-					local okNet, networked = pcall(NetworkGetEntityIsNetworked, entity)
-					if okNet and networked then
-						local okId, netId = pcall(NetworkGetNetworkIdFromEntity, entity)
-						if okId and netId then
-							local data = Entities[netId]
-							if data then CheckEntity(flag, data, entity, distance) end
+				if isValidEntity(entity) then
+					do
+						local okNet, networked = pcall(NetworkGetEntityIsNetworked, entity)
+						if okNet and networked then
+							local okId, netId = pcall(NetworkGetNetworkIdFromEntity, entity)
+							if okId and netId then
+								local data = Entities[netId]
+								if data then CheckEntity(flag, data, entity, distance) end
+							end
 						end
 					end
 				end
 
 				-- Player and Ped targets
-				if entityType == 1 then
+				if entityType == 1 and isValidEntity(entity) then
 					local model = safeGetEntityModel(entity)
-					local data = Models[model]
-					if safeIsPedAPlayer(entity) then data = Players end
-					if data and next(data) then CheckEntity(flag, data, entity, distance) end
+					if model ~= 0 then
+						local data = Models[model]
+						if safeIsPedAPlayer(entity) then data = Players end
+						if data and next(data) then CheckEntity(flag, data, entity, distance) end
+					end
 
 					-- Vehicle bones and models
-				elseif entityType == 2 then
+				elseif entityType == 2 and isValidEntity(entity) then
 					local closestBone, _, closestBoneName = CheckBones(coords, entity, Bones.Vehicle)
 					local datatable = Bones.Options[closestBoneName]
 
@@ -488,18 +500,22 @@ local function EnableTarget()
 
 					-- Vehicle model targets
 					local model = safeGetEntityModel(entity)
-					local data = Models[model]
-					if data then CheckEntity(flag, data, entity, distance) end
+					if model ~= 0 then
+						local data = Models[model]
+						if data then CheckEntity(flag, data, entity, distance) end
+					end
 
 					-- Entity targets
-				elseif entityType > 2 then
+				elseif entityType > 2 and isValidEntity(entity) then
 					local model = safeGetEntityModel(entity)
-					local data = Models[model]
-					if data then CheckEntity(flag, data, entity, distance) end
+					if model ~= 0 then
+						local data = Models[model]
+						if data then CheckEntity(flag, data, entity, distance) end
+					end
 				end
 
 				-- Generic targets
-				if not success then
+				if not success and isValidEntity(entity) then
 					local data = Types[entityType]
 					if data and next(data) then CheckEntity(flag, data, entity, distance) end
 				end
@@ -1343,7 +1359,7 @@ RegisterNUICallback('selectTarget', function(option, cb)
 	table_wipe(sendData)
 	CreateThread(function()
 		Wait(0)
-		if data.entity ~= nil and data.entity ~= 0 and DoesEntityExist(data.entity) then
+		if data.entity ~= nil and data.entity ~= 0 and isValidEntity(data.entity) then
 			local ok, coords = pcall(GetEntityCoords, data.entity)
 			if ok and coords then data.coords = coords end
 		end

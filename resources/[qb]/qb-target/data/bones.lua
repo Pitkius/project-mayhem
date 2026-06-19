@@ -108,12 +108,22 @@ if Config.EnableDefaultOptions then
         }
     }
 
+    local function safeEntityModel(entity)
+        if not entity or entity == 0 then return 0 end
+        local okExists, exists = pcall(DoesEntityExist, entity)
+        if not okExists or not exists then return 0 end
+        local okModel, model = pcall(GetEntityModel, entity)
+        return (okModel and model) or 0
+    end
+
     Bones.Options['bonnet'] = {
         ['Toggle Hood'] = {
             icon = 'fa-duotone fa-engine',
             label = 'Toggle Hood',
             action = function(entity)
-                ToggleDoor(entity, BackEngineVehicles[GetEntityModel(entity)] and 5 or 4)
+                local model = safeEntityModel(entity)
+                if model == 0 then return end
+                ToggleDoor(entity, BackEngineVehicles[model] and 5 or 4)
             end,
             distance = 0.9
         }
@@ -124,7 +134,9 @@ if Config.EnableDefaultOptions then
             icon = 'fas fa-truck-ramp-box',
             label = 'Toggle Trunk',
             action = function(entity)
-                ToggleDoor(entity, BackEngineVehicles[GetEntityModel(entity)] and 4 or 5)
+                local model = safeEntityModel(entity)
+                if model == 0 then return end
+                ToggleDoor(entity, BackEngineVehicles[model] and 4 or 5)
             end,
             distance = 0.9
         }

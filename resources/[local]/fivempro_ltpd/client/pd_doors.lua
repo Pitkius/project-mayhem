@@ -81,6 +81,11 @@ end)
 local cachedObjectPool = nil
 local cachedObjectPoolAt = 0
 
+local function invalidateObjectPoolCache()
+    cachedObjectPool = nil
+    cachedObjectPoolAt = 0
+end
+
 local function getCachedObjectPool(maxAgeMs)
     maxAgeMs = maxAgeMs or 6000
     local now = GetGameTimer()

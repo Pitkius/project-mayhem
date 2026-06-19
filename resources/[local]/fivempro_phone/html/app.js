@@ -51,7 +51,14 @@ window.PhoneEsc = esc;
 window.PhoneIconHtml = iconHtml;
 
 function isPhoneTextInput(el) {
-  return !!(el && el.id === "msgBody");
+  if (!el) return false;
+  const tag = el.tagName;
+  if (tag === "TEXTAREA") return true;
+  if (tag === "INPUT") {
+    const type = (el.type || "text").toLowerCase();
+    return !["button", "submit", "checkbox", "radio", "range", "file", "hidden"].includes(type);
+  }
+  return el.isContentEditable === true;
 }
 
 function phoneHasActiveTextInput() {

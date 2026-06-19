@@ -104,6 +104,10 @@ local function despawnKey(key)
     local ped = row.ped
     activeByKey[key] = nil
     if ped and DoesEntityExist(ped) then
+        local netId = NetworkGetNetworkIdFromEntity(ped)
+        if netId and netId ~= 0 then
+            TriggerClientEvent('fivempro_npcshops:client:clearNpcTarget', -1, netId)
+        end
         DeleteEntity(ped)
     end
 end

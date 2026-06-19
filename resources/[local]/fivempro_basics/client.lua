@@ -444,7 +444,7 @@ RegisterNetEvent('fivempro_basics:client:toggleCoords', function()
 end)
 
 local HEAD_BONE = 31086
-local HEAD_TEXT_Z = 0.45
+local HEAD_TEXT_Z = 0.58
 
 local function getHeadCoords(ped)
     return GetPedBoneCoords(ped, HEAD_BONE, 0.0, 0.0, HEAD_TEXT_Z)
@@ -452,25 +452,34 @@ end
 
 local function drawHead3D(coords, text, opts)
     local o = opts or {}
-    local onScreen, worldX, worldY = World3dToScreen2d(coords.x, coords.y, coords.z)
-    if not onScreen then return end
-    local camCoords = GetGameplayCamCoord()
-    local scale = (o.scaleDiv or 220) / (GetGameplayCamFov() * #(camCoords - coords))
     local r, g, b, a = o.r or 255, o.g or 255, o.b or 255, o.a or 255
-    SetTextScale(1.0, (o.textScale or 0.5) * scale)
+    local scale = (o.textScale or 0.5) * 0.72
+
     if GetResourceState('fivempro_fonts') == 'started' then
-        exports['fivempro_fonts']:ApplyTextFont()
-    else
-        SetTextFont(4)
+        exports['fivempro_fonts']:DrawText3D(coords.x, coords.y, coords.z, text, {
+            r = r,
+            g = g,
+            b = b,
+            a = a,
+            scale = scale,
+            background = false,
+            center = true,
+        })
+        return
     end
+
+    SetDrawOrigin(coords.x, coords.y, coords.z, 0)
+    SetTextScale(scale, scale)
+    SetTextFont(4)
     SetTextColour(r, g, b, a)
     SetTextEdge(2, 0, 0, 0, o.edgeAlpha or 180)
     SetTextProportional(1)
     SetTextOutline()
-    SetTextCentre(1)
+    SetTextCentre(true)
     BeginTextCommandDisplayText('STRING')
     AddTextComponentSubstringPlayerName(text)
-    EndTextCommandDisplayText(worldX, worldY)
+    EndTextCommandDisplayText(0.0, 0.0)
+    ClearDrawOrigin()
 end
 
 local function drawShout3D(coords, text)
@@ -518,33 +527,6 @@ end)
 
 local staffTags = {}
 
-local function getStaffHeadCoords(ped)
-    return GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.52)
-end
-
-local function drawStaffTag3D(coords, text, color)
-    local onScreen, worldX, worldY = World3dToScreen2d(coords.x, coords.y, coords.z)
-    if not onScreen then return end
-    local camCoords = GetGameplayCamCoord()
-    local scale = 200 / (GetGameplayCamFov() * #(camCoords - coords))
-    local r, g, b = 255, 255, 255
-    if type(color) == 'table' then
-        r = tonumber(color[1]) or r
-        g = tonumber(color[2]) or g
-        b = tonumber(color[3]) or b
-    end
-    SetTextScale(1.0, 0.50 * scale)
-    SetTextFont(4)
-    SetTextColour(r, g, b, 255)
-    SetTextEdge(2, 0, 0, 0, 200)
-    SetTextProportional(1)
-    SetTextOutline()
-    SetTextCentre(1)
-    BeginTextCommandDisplayText('STRING')
-    AddTextComponentSubstringPlayerName(text)
-    EndTextCommandDisplayText(worldX, worldY)
-end
-
 RegisterNetEvent('fivempro_basics:client:syncStaffTags', function(tags)
     staffTags = tags or {}
 end)
@@ -560,10 +542,16 @@ CreateThread(function()
             if player ~= -1 and tag and tag.label then
                 local ped = GetPlayerPed(player)
                 if ped and ped ~= 0 and DoesEntityExist(ped) then
-                    local head = getStaffHeadCoords(ped)
+                    local head = getHeadCoords(ped)
                     if #(myCoords - head) <= 50.0 then
                         sleep = 0
-                        drawStaffTag3D(head, tag.label, tag.color)
+                        local c = tag.color or {}
+                        drawHead3D(head, tag.label, {
+                            r = tonumber(c[1]) or 255,
+                            g = tonumber(c[2]) or 255,
+                            b = tonumber(c[3]) or 255,
+                            textScale = 0.52,
+                        })
                     end
                 end
             end

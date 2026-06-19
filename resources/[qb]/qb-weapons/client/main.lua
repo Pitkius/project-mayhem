@@ -87,6 +87,23 @@ local function isInventoryWeaponItem(item)
     return shared and shared.type == 'weapon'
 end
 
+--- QB dažnai atnaujina inventorių per `UpdatePlayerDataField` — visada skaitom iš core, ne iš pasenusios `PlayerData` kopijos.
+local function getItemsFromCore()
+    local pd = QBCore.Functions.GetPlayerData()
+    return pd and pd.items or nil
+end
+
+local function resolveCurrentWeaponDataByName(weaponName)
+    local items = getItemsFromCore()
+    if not items then return nil end
+    for _, item in pairs(items) do
+        if item and isInventoryWeaponItem(item) and item.name == weaponName then
+            return item
+        end
+    end
+    return nil
+end
+
 local function resolveCurrentWeaponDataForPed(pedWeaponHash, selectedWeaponData)
     if CurrentWeaponData and CurrentWeaponData.name and nativeWeaponHash(CurrentWeaponData.name) == pedWeaponHash then
         return CurrentWeaponData
@@ -173,12 +190,6 @@ local function queueDrawWeapon(weaponName)
 end
 
 -- Handlers
-
---- QB dažnai atnaujina inventorių per `UpdatePlayerDataField` — visada skaitom iš core, ne iš pasenusios `PlayerData` kopijos.
-local function getItemsFromCore()
-    local pd = QBCore.Functions.GetPlayerData()
-    return pd and pd.items or nil
-end
 
 local function attemptQuickReload(ped)
     if isReloadBusy() then return false end
@@ -353,17 +364,6 @@ local function scheduleHolsteredWeaponVisuals()
             TriggerEvent('fivempro_basics:client:refreshSlungWeapons')
         end
     end)
-end
-
-local function resolveCurrentWeaponDataByName(weaponName)
-    local items = getItemsFromCore()
-    if not items then return nil end
-    for _, item in pairs(items) do
-        if item and isInventoryWeaponItem(item) and item.name == weaponName then
-            return item
-        end
-    end
-    return nil
 end
 
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()

@@ -2,7 +2,6 @@ const indicator = document.getElementById('ghostpeek-indicator');
 const label = indicator.querySelector('.ghostpeek__label');
 
 const LABELS = {
-    clear: 'OK',
     blocked: 'COVER',
 };
 
@@ -13,7 +12,7 @@ window.addEventListener('message', (event) => {
     }
 
     const state = data.state || (data.active ? 'blocked' : 'hidden');
-    const visible = state === 'clear' || state === 'blocked';
+    const visible = state === 'blocked';
 
     indicator.dataset.state = state;
     indicator.classList.toggle('ghostpeek--visible', visible);

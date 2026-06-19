@@ -425,7 +425,7 @@ local function evaluateHudState(ped)
     if shouldBlockGhostPeekShot(ped, target) then
         return 'blocked'
     end
-    return 'clear'
+    return 'hidden'
 end
 
 local function setHudState(state)
