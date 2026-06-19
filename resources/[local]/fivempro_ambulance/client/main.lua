@@ -55,7 +55,11 @@ RegisterCommand('emsmdt', function()
     if not isEmsOnDuty() then
         return QBCore.Functions.Notify('Tik EMS tarnyboje.', 'error')
     end
-    ExecuteCommand('servicemdt')
+    if GetResourceState('fivempro_service_mdt') == 'started' then
+        exports['fivempro_service_mdt']:OpenMdt('ems')
+    else
+        ExecuteCommand('servicemdt')
+    end
 end, false)
 
 RegisterCommand('emscall', function(_, args)

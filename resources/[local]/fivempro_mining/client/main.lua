@@ -2,12 +2,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local sellPed = nil
 
 local function playerHasMiningPickaxe()
-    if QBCore.Functions.HasItem('mining_pickaxe', 1) then return true end
-    if QBCore.Functions.HasItem('mining_pickaxe_tier2', 1) then return true end
-    if QBCore.Functions.HasItem('mining_pickaxe_tier3', 1) then return true end
-    if QBCore.Functions.HasItem('mining_pickaxe_tier4', 1) then return true end
-    if QBCore.Functions.HasItem('mining_pickaxe_tier5', 1) then return true end
-    return false
+    return QBCore.Functions.HasItem('mining_pickaxe', 1)
 end
 
 local function loadModel(hash)

@@ -98,7 +98,11 @@ RegisterCommand('mechmdt', function()
     if not isMechanicOnDuty() then
         return QBCore.Functions.Notify('Tik mechanikams tarnyboje.', 'error')
     end
-    ExecuteCommand('servicemdt')
+    if GetResourceState('fivempro_service_mdt') == 'started' then
+        exports['fivempro_service_mdt']:OpenMdt('mechanic')
+    else
+        ExecuteCommand('servicemdt')
+    end
 end, false)
 
 RegisterCommand('mechcall', function(_, args)

@@ -704,6 +704,7 @@ CreateThread(function()
     while true do
         if isReloading then
             DisableControlAction(0, 24, true)
+            DisableControlAction(0, 45, true)
             DisableControlAction(0, 140, true)
             DisableControlAction(0, 141, true)
             DisableControlAction(0, 142, true)

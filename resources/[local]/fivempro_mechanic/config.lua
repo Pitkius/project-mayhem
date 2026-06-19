@@ -272,11 +272,7 @@ Config.DebugSandboxBundleItems = {
 }
 
 Config.DebugPickaxeOffers = {
-    { item = 'mining_pickaxe', label = 'Kirtiklis I — pradinis', price = 320 },
-    { item = 'mining_pickaxe_tier2', label = 'Kirtiklis II — patikimesnis', price = 980 },
-    { item = 'mining_pickaxe_tier3', label = 'Kirtiklis III — darbo klase', price = 2650 },
-    { item = 'mining_pickaxe_tier4', label = 'Kirtiklis IV — pramoninis', price = 6200 },
-    { item = 'mining_pickaxe_tier5', label = 'Kirtiklis V — elitas', price = 14500 },
+    { item = 'mining_pickaxe', label = 'Kirtiklis', price = 320 },
 }
 
 Config.DebugSandboxSupplyShop = {

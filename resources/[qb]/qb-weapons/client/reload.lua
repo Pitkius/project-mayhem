@@ -90,9 +90,70 @@ local function loadAnimDict(dict)
     return HasAnimDictLoaded(dict)
 end
 
-local function reloadAnimCandidates(weaponHash)
+local function resolveInventoryWeaponName(weaponHash, weaponData)
+    if weaponData and weaponData.name then
+        return string.lower(tostring(weaponData.name))
+    end
+    if WeaponHash and WeaponHash.inventoryNameFromNative then
+        return WeaponHash.inventoryNameFromNative(weaponHash)
+    end
+    return nil
+end
+
+local function isSwappedWeaponModel(invName)
+    if not invName then return false end
+    local map = Config.WeaponNativeHash
+    return type(map) == 'table' and map[invName] ~= nil
+end
+
+local function pinClipDuringVisual(ped, weaponHash, clipNow)
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return end
+    clipNow = math.max(0, tonumber(clipNow) or 0)
+    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    SetPedAmmo(ped, weaponHash, clipNow)
+    SetAmmoInClip(ped, weaponHash, clipNow)
+end
+
+local function suppressNativeReloadDuringVisual(ped, weaponHash, clipNow)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
+    pinClipDuringVisual(ped, weaponHash, clipNow)
+    if IsPedReloading(ped) then
+        SetCurrentPedWeapon(ped, weaponHash, true)
+        pinClipDuringVisual(ped, weaponHash, clipNow)
+    end
+end
+
+local function isReloadMoving()
+    return allowReloadMovement()
+        and (reloadMovementState.moving or reloadMovementState.sprint)
+end
+
+local function reloadAnimCandidates(weaponHash, weaponData)
+    local moving = isReloadMoving()
+    local invName = resolveInventoryWeaponName(weaponHash, weaponData)
+    if invName == 'weapon_fgc9' then
+        if moving then
+            return {
+                { 'weapons@rifle@lo@carbine_str', 'reload' },
+                { 'weapons@submg@', 'reload' },
+            }
+        end
+        return {
+            { 'weapons@rifle@lo@carbine_str', 'reload_aim' },
+            { 'weapons@rifle@lo@carbine_str', 'reload' },
+            { 'weapons@submg@', 'reload_aim' },
+            { 'weapons@submg@', 'reload' },
+        }
+    end
+
     local group = GetWeapontypeGroup(weaponHash)
     if group == `GROUP_SMG` or group == `GROUP_MG` then
+        if moving then
+            return {
+                { 'weapons@submg@', 'reload' },
+                { 'weapons@rifle@lo@carbine_str', 'reload' },
+            }
+        end
         return {
             { 'weapons@submg@', 'reload_aim' },
             { 'weapons@submg@', 'reload' },
@@ -100,6 +161,12 @@ local function reloadAnimCandidates(weaponHash)
         }
     end
     if group == `GROUP_RIFLE` or group == `GROUP_SNIPER` then
+        if moving then
+            return {
+                { 'weapons@rifle@lo@carbine_str', 'reload' },
+                { 'weapons@submg@', 'reload' },
+            }
+        end
         return {
             { 'weapons@rifle@lo@carbine_str', 'reload_aim' },
             { 'weapons@rifle@lo@carbine_str', 'reload' },
@@ -107,19 +174,32 @@ local function reloadAnimCandidates(weaponHash)
         }
     end
     if group == `GROUP_SHOTGUN` then
+        if moving then
+            return {
+                { 'weapons@shotgun@', 'reload' },
+            }
+        end
         return {
             { 'weapons@shotgun@', 'reload_aim' },
             { 'weapons@shotgun@', 'reload' },
+        }
+    end
+  -- Pistoletai: judant tik `reload`, ne `reload_aim` (kitaip dubluojasi su native).
+    if moving then
+        return {
+            { 'weapons@pistol@', 'reload' },
+            { 'weapons@pistol@combat@', 'reload' },
         }
     end
     return {
         { 'weapons@pistol@', 'reload_aim' },
         { 'weapons@pistol@', 'reload' },
         { 'weapons@pistol@combat@', 'reload_aim' },
+        { 'weapons@pistol@combat@', 'reload' },
     }
 end
 
-local function stopReloadAnimation(ped)
+local function stopReloadAnimation(ped, restoreMovement)
     if not ped or ped == 0 or not DoesEntityExist(ped) then return end
     if activeReloadAnim then
         if allowReloadMovement() then
@@ -128,11 +208,11 @@ local function stopReloadAnimation(ped)
             StopAnimTask(ped, activeReloadAnim.dict, activeReloadAnim.anim, 1.0)
         end
         activeReloadAnim = nil
-    elseif allowReloadMovement() then
-        ClearPedSecondaryTask(ped)
     end
     SetPedCurrentWeaponVisible(ped, true, false, false, false)
-    restoreMovementAfterReload(ped)
+    if restoreMovement ~= false then
+        restoreMovementAfterReload(ped)
+    end
 end
 
 local function snapshotClipState(ped, weaponHash)
@@ -160,27 +240,31 @@ local function primeReloadReserve(ped, weaponHash, clipNow, totalBefore, bullets
     return boosted
 end
 
-local function playMobileReloadAnimation(ped, weaponHash, durationMs)
+local function playMobileReloadAnimation(ped, weaponHash, durationMs, weaponData, clipNow)
     local animFlags = reloadAnimFlags()
-    for _, pair in ipairs(reloadAnimCandidates(weaponHash)) do
+    for _, pair in ipairs(reloadAnimCandidates(weaponHash, weaponData)) do
         local dict, anim = pair[1], pair[2]
         if loadAnimDict(dict) then
             activeReloadAnim = { dict = dict, anim = anim }
             SetCurrentPedWeapon(ped, weaponHash, true)
+            pinClipDuringVisual(ped, weaponHash, clipNow)
             TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, animFlags, 0.0, false, false, false)
 
             local deadline = GetGameTimer() + durationMs
             local replayAt = GetGameTimer() + 180
             while GetGameTimer() < deadline do
                 if not DoesEntityExist(ped) then break end
+                suppressNativeReloadDuringVisual(ped, weaponHash, clipNow)
                 enableReloadMovementControls()
-                if GetGameTimer() >= replayAt and not IsEntityPlayingAnim(ped, dict, anim, 3) then
+                if not isReloadMoving()
+                    and GetGameTimer() >= replayAt
+                    and not IsEntityPlayingAnim(ped, dict, anim, 3) then
                     TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, animFlags, 0.0, false, false, false)
                     replayAt = GetGameTimer() + 220
                 end
                 Wait(0)
             end
-            stopReloadAnimation(ped)
+            activeReloadAnim = nil
             return true
         end
     end
@@ -235,6 +319,8 @@ function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
     SetCurrentPedWeapon(ped, weaponHash, true)
 
     local clipNow, totalBefore = snapshotClipState(ped, weaponHash)
+    local invName = resolveInventoryWeaponName(weaponHash, weaponData)
+    pinClipDuringVisual(ped, weaponHash, clipNow)
 
     if IsPedInAnyVehicle(ped, false) then
         Wait(math.min(1400, durationMs))
@@ -245,17 +331,19 @@ function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
 
     local usedNative = false
     local canUseNative = Config.ReloadUseNativeFirst ~= false
-        and not (allowReloadMovement() and (reloadMovementState.moving or reloadMovementState.sprint))
+        and not isSwappedWeaponModel(invName)
+        and not isReloadMoving()
     if canUseNative then
         usedNative = tryNativeReloadAnimation(ped, weaponHash, clipNow, totalBefore, bulletsToLoad, durationMs)
     end
 
     if not usedNative then
-        local played = playMobileReloadAnimation(ped, weaponHash, durationMs)
+        local played = playMobileReloadAnimation(ped, weaponHash, durationMs, weaponData, clipNow)
         if not played then
             local waitMs = math.min(1200, durationMs)
             local deadline = GetGameTimer() + waitMs
             while GetGameTimer() < deadline do
+                suppressNativeReloadDuringVisual(ped, weaponHash, clipNow)
                 enableReloadMovementControls()
                 Wait(0)
             end
@@ -269,5 +357,5 @@ function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
 end
 
 function WeaponReload.cancel(ped)
-    stopReloadAnimation(ped or PlayerPedId())
+    stopReloadAnimation(ped or PlayerPedId(), false)
 end

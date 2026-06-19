@@ -13,5 +13,6 @@ client_scripts {
 exports {
     'ReloadSimeonShowroom',
     'ReloadOneilFarmhouse',
+    'ReloadLostMc',
     'ApplyMapFixes',
 }

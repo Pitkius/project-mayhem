@@ -2,6 +2,10 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 PhoneCamera = PhoneCamera or {}
 
+local function photosEnabled()
+    return Config.Phone and Config.Phone.enablePhotos == true
+end
+
 local camActive = false
 local camFront = false
 local camZoom = 1.0
@@ -48,6 +52,7 @@ function PhoneCamera.isActive()
 end
 
 function PhoneCamera.start(opts)
+    if not photosEnabled() then return end
     opts = opts or {}
     PhoneCamera.stop()
     camActive = true
@@ -162,6 +167,7 @@ function PhoneCamera.capture()
 end
 
 RegisterNUICallback('cameraStartLive', function(data, cb)
+    if not photosEnabled() then return cb({ ok = false, message = 'Nuotraukos išjungtos.' }) end
     PhoneCamera.start({
         front = data and data.front == true,
         zoom = data and data.zoom,
@@ -197,6 +203,7 @@ RegisterNUICallback('cameraToggleFlash', function(_, cb)
 end)
 
 RegisterNUICallback('cameraCapture', function(_, cb)
+    if not photosEnabled() then return cb({ ok = false, message = 'Nuotraukos išjungtos.' }) end
     PhoneCamera.capture()
     cb({ ok = true })
 end)

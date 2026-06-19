@@ -30,7 +30,7 @@ window.MdtMap = (function () {
     try {
       if (typeof GetParentResourceName === 'function') return GetParentResourceName();
     } catch (e) {}
-    return 'fivempro_ltpd';
+    return 'fivempro_service_mdt';
   }
 
   function normalizeMapConfig(cfg) {

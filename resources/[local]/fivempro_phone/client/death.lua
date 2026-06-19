@@ -87,6 +87,8 @@ AddEventHandler('fivempro_phone:local:AfterHospitalWake', function()
     stopDeathFx()
 end)
 
+local lastMedicRequestMs = 0
+
 local function tryRequestMedic()
     if not isDown() then
         QBCore.Functions.Notify('Negalima – nesate sužeistas.', 'error')
@@ -95,8 +97,8 @@ local function tryRequestMedic()
     if IsPauseMenuActive() then return end
     if IsNuiFocused and IsNuiFocused() then return end
     local now = GetGameTimer()
-    if now - (tryRequestMedic._last or 0) < 1500 then return end
-    tryRequestMedic._last = now
+    if now - lastMedicRequestMs < 1500 then return end
+    lastMedicRequestMs = now
     TriggerServerEvent('fivempro_phone:server:medicRequestFromDead')
 end
 

@@ -268,12 +268,14 @@ QBCore.Functions.CreateCallback('fivempro_dispatch:server:getSnapshot', function
     })
 end)
 
---- MDT žemėlapis: policijos darbuotojams net ir ne on-duty (tik peržiūra)
+--- MDT žemėlapis / dispatch snapshot: tarnybos darbuotojams (net ir ne on-duty — tik peržiūra)
 QBCore.Functions.CreateCallback('fivempro_dispatch:server:getMdtSnapshot', function(src, cb, service)
     service = service or 'police'
-    local jn = jobName(src)
+    local jn = select(1, jobName(src))
     if serviceForJob(jn) ~= service then
-        return cb({ ok = false, msg = 'Ne policijos darbuotojas.' })
+        local cfg = Config.Services and Config.Services[service]
+        local label = cfg and cfg.label or service
+        return cb({ ok = false, msg = ('Ne %s darbuotojas.'):format(label) })
     end
     cb({
         ok = true,

@@ -2,20 +2,11 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local mineCooldown = {}
 
-local PICKAXE_ITEMS = {
-    'mining_pickaxe',
-    'mining_pickaxe_tier2',
-    'mining_pickaxe_tier3',
-    'mining_pickaxe_tier4',
-    'mining_pickaxe_tier5',
-}
+local PICKAXE_ITEM = 'mining_pickaxe'
 
 local function playerHasMiningPickaxe(src)
     if not src then return false end
-    for _, n in ipairs(PICKAXE_ITEMS) do
-        if QBCore.Functions.HasItem(src, n, 1) then return true end
-    end
-    return false
+    return QBCore.Functions.HasItem(src, PICKAXE_ITEM, 1)
 end
 
 local function nearMiningSite(src, siteIdx)
@@ -60,6 +51,36 @@ local function rollMineLoot()
     end
     return Config.MineLoot[1].item
 end
+
+--- Seni lygiuoti kirtikliai → vienas `mining_pickaxe` (jei žaidėjas prisijungia)
+local LEGACY_PICKAXES = {
+    mining_pickaxe_tier2 = true,
+    mining_pickaxe_tier3 = true,
+    mining_pickaxe_tier4 = true,
+    mining_pickaxe_tier5 = true,
+}
+
+local function migrateLegacyPickaxes(src)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    local converted = 0
+    for itemName in pairs(LEGACY_PICKAXES) do
+        local data = Player.Functions.GetItemByName(itemName)
+        local amt = data and (data.amount or data.count or 0) or 0
+        if amt and amt > 0 and Player.Functions.RemoveItem(itemName, amt, false) then
+            converted = converted + amt
+        end
+    end
+    if converted > 0 then
+        Player.Functions.AddItem(PICKAXE_ITEM, converted, false)
+        TriggerClientEvent('QBCore:Notify', src, ('Seni kirtikliai pakeisti į %sx Kirtiklis.'):format(converted), 'primary', 6000)
+    end
+end
+
+AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
+    local src = Player and Player.PlayerData and Player.PlayerData.source
+    if src then migrateLegacyPickaxes(src) end
+end)
 
 RegisterNetEvent('fivempro_mining:server:mineAttempt', function(siteIdx)
     local src = source
@@ -167,8 +188,6 @@ RegisterNetEvent('fivempro_mining:server:sellAll', function()
     end
 end)
 
-for _, pickName in ipairs(PICKAXE_ITEMS) do
-    QBCore.Functions.CreateUseableItem(pickName, function(source, _)
-        TriggerClientEvent('QBCore:Notify', source, 'Eik į karjerą (žemėlapyje „Karjeras — kasimas“) ir naudok qb-target.', 'primary', 6500)
-    end)
-end
+QBCore.Functions.CreateUseableItem(PICKAXE_ITEM, function(source, _)
+    TriggerClientEvent('QBCore:Notify', source, 'Eik į karjerą (žemėlapyje „Karjeras — kasimas“) ir naudok qb-target.', 'primary', 6500)
+end)

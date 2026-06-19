@@ -24,6 +24,8 @@ const srcFile = args[0] || 'weapon_fgc9_clean.jpg';
 const outName = args[1] || 'weapon_fgc9.png';
 const rotateDeg = Number(args[2] || '-32');
 const cleanMode = args[3] === 'clean' || /\.jpe?g$/i.test(args[0] || '');
+const cropTopRatio = Math.max(0, Math.min(0.45, Number(args[4] || 0)));
+const scopeOnly = args[5] === 'scope';
 const srcPath = path.isAbsolute(srcFile)
   ? srcFile
   : path.join(__dirname, 'sources', srcFile);
@@ -168,6 +170,67 @@ function enhancePixels(data, mild = false) {
     data[i] = r;
     data[i + 1] = g;
     data[i + 2] = b;
+  }
+}
+
+function cropTopOfSubject(data, w, h, ratio) {
+  if (!ratio || ratio <= 0) return;
+  let minY = h;
+  let maxY = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (data[((w * y + x) << 2) + 3] > 8) {
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+  if (maxY <= minY) return;
+  const cutY = minY + (maxY - minY) * ratio;
+  for (let y = 0; y < h; y++) {
+    if (y >= cutY) break;
+    for (let x = 0; x < w; x++) {
+      const i = (w * y + x) << 2;
+      if (data[i + 3] > 8) data[i + 3] = 0;
+    }
+  }
+}
+
+/** Pašalina tik viršutinį taikiklį ir užpildo plyšį rail spalva. */
+function removeScopeMount(data, w, h) {
+  let minX = w;
+  let minY = h;
+  let maxX = 0;
+  let maxY = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (data[((w * y + x) << 2) + 3] > 8) {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+  if (maxX <= minX || maxY <= minY) return;
+  const sw = maxX - minX + 1;
+  const sh = maxY - minY + 1;
+  const y0 = Math.floor(minY + sh * 0.04);
+  const y1 = Math.floor(minY + sh * 0.3);
+  const x0 = Math.floor(minX + sw * 0.28);
+  const x1 = Math.floor(minX + sw * 0.78);
+  const sampleY = Math.min(maxY, y1 + 16);
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const srcX = Math.min(x1, Math.max(x0, x + ((y - y0) % 3) - 1));
+      const si = (w * sampleY + srcX) << 2;
+      const di = (w * y + x) << 2;
+      if (data[si + 3] < 20) continue;
+      data[di] = data[si];
+      data[di + 1] = data[si + 1];
+      data[di + 2] = data[si + 2];
+      data[di + 3] = 255;
+    }
   }
 }
 
@@ -354,8 +417,16 @@ if (cleanMode || /\.jpe?g$/i.test(srcPath)) {
   enhancePixels(data, false);
 }
 let trimmed = trimBounds(data, w, h);
+if (scopeOnly) {
+  removeScopeMount(trimmed.data, trimmed.w, trimmed.h);
+  trimmed = trimBounds(trimmed.data, trimmed.w, trimmed.h);
+}
 if (rotateDeg) trimmed = rotateSubject(trimmed, rotateDeg);
-const finalSubject = trimBounds(trimmed.data, trimmed.w, trimmed.h);
+let finalSubject = trimBounds(trimmed.data, trimmed.w, trimmed.h);
+if (!scopeOnly && cropTopRatio > 0) {
+  cropTopOfSubject(finalSubject.data, finalSubject.w, finalSubject.h, cropTopRatio);
+  finalSubject = trimBounds(finalSubject.data, finalSubject.w, finalSubject.h);
+}
 
 const canvas = new Canvas();
 if (!cleanMode) {
@@ -364,4 +435,4 @@ if (!cleanMode) {
 }
 canvas.blitScaled(finalSubject, cleanMode ? 0.9 : 0.88);
 fs.writeFileSync(outPath, canvas.toPng());
-console.log('OK', outPath, `(${finalSubject.w}x${finalSubject.h} subject, clean=${cleanMode})`);
+console.log('OK', outPath, `(${finalSubject.w}x${finalSubject.h} subject, clean=${cleanMode}, cropTop=${cropTopRatio})`);

@@ -1,18 +1,27 @@
 local CLUBHOUSE_COORDS = vector3(994.4787, -122.9949, 73.11467)
 local GARAGE_COORDS = vector3(972.16, -118.05, 74.35)
+local ENTRANCE_COORDS = vector3(981.6895, -102.8003, 74.8478)
 
 local VANILLA_BIKER_IPL = 'bkr_biker_interior_placement_interior_1_biker_dlc_int_02_milo'
 
+local function requestCollision(coords)
+    RequestCollisionAtCoord(coords.x, coords.y, coords.z)
+end
+
 local function waitInteriorAt(coords, attempts)
-    attempts = attempts or 200
+    attempts = attempts or 250
     for _ = 1, attempts do
+        requestCollision(coords)
         local id = GetInteriorAtCoords(coords.x, coords.y, coords.z)
-        if id ~= 0 and IsValidInterior(id) then
+        if id ~= 0 and IsValidInterior(id) and IsInteriorReady(id) then
             return id
         end
-        Wait(100)
+        if id ~= 0 then
+            LoadInterior(id)
+        end
+        Wait(50)
     end
-    return 0
+    return GetInteriorAtCoords(coords.x, coords.y, coords.z)
 end
 
 local function enableProp(interiorId, prop, color)
@@ -53,17 +62,24 @@ local function loadLostMc()
     RequestIpl('gabz_biker_milo_')
     RequestIpl('lost_garage_milo_')
 
-    Wait(1500)
+    Wait(500)
+
+    requestCollision(ENTRANCE_COORDS)
+    requestCollision(CLUBHOUSE_COORDS)
 
     local clubhouseId = waitInteriorAt(CLUBHOUSE_COORDS)
+    if clubhouseId == 0 then
+        clubhouseId = waitInteriorAt(ENTRANCE_COORDS, 120)
+    end
     if clubhouseId == 0 then
         print('^1[cfx-gabz-lost]^7 Clubhouse interjeras neužsikrovė — patikrink mapdata ir ytyp.')
         return
     end
 
     setupClubhouse(clubhouseId)
+    PinInteriorInMemory(clubhouseId)
 
-    local garageId = waitInteriorAt(GARAGE_COORDS, 80)
+    local garageId = waitInteriorAt(GARAGE_COORDS, 120)
     if garageId ~= 0 and garageId ~= clubhouseId then
         setupGarage(garageId)
     end

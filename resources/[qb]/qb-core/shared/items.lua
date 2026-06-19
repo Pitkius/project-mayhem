@@ -434,11 +434,7 @@ QBShared.Items = {
     attachment_bench = {name = "attachment_bench", label = 'Priedų darbo stalas', weight = 15000, type = "item", image = "attworkbench.png", unique = true, useable = true, shouldClose = false, combinable = nil, description = 'Stalas ginklų priedams gaminti.'},
 
     -- Fivempro: skaldakasys / karjeras
-    mining_pickaxe               = { name = 'mining_pickaxe', label = 'Kirtiklis I', weight = 3500, type = 'item', image = 'mining_pickaxe.png', unique = false, useable = true, shouldClose = true, description = 'Pradinis kasimo lygis karjere.' },
-    mining_pickaxe_tier2        = { name = 'mining_pickaxe_tier2', label = 'Kirtiklis II', weight = 3400, type = 'item', image = 'mining_pickaxe.png', unique = false, useable = true, shouldClose = true, description = 'Patobulintas kirtiklis — greičiau skaldo uolieną.' },
-    mining_pickaxe_tier3        = { name = 'mining_pickaxe_tier3', label = 'Kirtiklis III', weight = 3300, type = 'item', image = 'mining_pickaxe.png', unique = false, useable = true, shouldClose = true, description = 'Profesionalus įrankis kasimui.' },
-    mining_pickaxe_tier4        = { name = 'mining_pickaxe_tier4', label = 'Kirtiklis IV', weight = 3150, type = 'item', image = 'mining_pickaxe.png', unique = false, useable = true, shouldClose = true, description = 'Pramoninis kirtiklis rimtam kasimui.' },
-    mining_pickaxe_tier5        = { name = 'mining_pickaxe_tier5', label = 'Kirtiklis V', weight = 3000, type = 'item', image = 'mining_pickaxe_tier5.png', unique = false, useable = true, shouldClose = true, description = 'Geriausios klasės kirtiklis — retas įrankis.' },
+    mining_pickaxe               = { name = 'mining_pickaxe', label = 'Kirtiklis', weight = 3500, type = 'item', image = 'mining_pickaxe.png', unique = false, useable = true, shouldClose = true, description = 'Kasimo įrankis karjere.' },
     stone_raw                    = { name = 'stone_raw', label = 'Žalias akmuo', weight = 1200, type = 'item', image = 'stone_raw.png', unique = false, useable = false, shouldClose = false, description = 'Neapdorotas akmuo.' },
     coal_raw                     = { name = 'coal_raw', label = 'Žalia anglis', weight = 900, type = 'item', image = 'coal_raw.png', unique = false, useable = false, shouldClose = false, description = 'Neapdorota anglis.' },
     gravel_raw                   = { name = 'gravel_raw', label = 'Žalias žvyras', weight = 800, type = 'item', image = 'gravel_raw.png', unique = false, useable = false, shouldClose = false, description = 'Neapdorotas žvyras.' },

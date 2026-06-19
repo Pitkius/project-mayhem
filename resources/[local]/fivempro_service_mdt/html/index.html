@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Service MDT</title>
+  <link rel="stylesheet" href="nui://fivempro_fonts/html/ui.css" />
+  <link rel="stylesheet" href="vendor/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+    <header class="top">
+      <div class="brand" id="mdtBrand">SERVICE <span>MDT</span></div>
+      <div class="head-actions row">
+        <button type="button" id="btnClose" class="btn danger">Uždaryti (ESC)</button>
+      </div>
+    </header>
+    <nav class="tabs">
+      <button type="button" data-tab="calls" class="tab active">Iškvietimai</button>
+      <button type="button" data-tab="crews" class="tab">Ekipažai</button>
+      <button type="button" data-tab="units" class="tab">Žemėlapis</button>
+      <button type="button" data-tab="invoices" class="tab" id="tabInvoices">Sąskaitos</button>
+    </nav>
+    <main>
+      <section id="panel-calls" class="panel">
+        <div class="row">
+          <button type="button" id="refreshDispatch" class="btn">Atnaujinti</button>
+        </div>
+        <div id="dispatchCalls" class="results"></div>
+      </section>
+      <section id="panel-crews" class="panel hidden">
+        <div class="row">
+          <input type="text" id="crewCallsign" placeholder="Šaukinys pvz. ALPHA12" />
+          <input type="text" id="crewIdInput" placeholder="Ekipažo ID (CRW-...)" />
+          <input type="number" id="crewMemberId" placeholder="Nario server ID" />
+          <button type="button" id="btnSetCallsign" class="btn">Nustatyti šaukinį</button>
+          <button type="button" id="btnCreateCrew" class="btn">Kurti ekipažą</button>
+          <button type="button" id="btnJoinCrew" class="btn">Prisijungti</button>
+          <button type="button" id="btnAddCrewMember" class="btn">Pridėti narį</button>
+          <button type="button" id="btnDeleteCrew" class="btn danger">Trinti ekipažą</button>
+          <button type="button" id="btnLeaveCrew" class="btn">Išeiti</button>
+        </div>
+        <div id="dispatchCrews" class="results"></div>
+      </section>
+      <section id="panel-units" class="panel hidden">
+        <div class="gps-layout">
+          <div class="gps-map-wrap">
+            <div id="mdtLeafletMap" class="gps-map"></div>
+            <div class="gps-map-toolbar">
+              <button type="button" class="gps-tool-btn" id="dispatchZoomIn" title="Priartinti">+</button>
+              <button type="button" class="gps-tool-btn" id="dispatchZoomOut" title="Nutolinti">−</button>
+              <button type="button" class="gps-tool-btn" id="gpsResetView" title="Atstatyti vaizdą">R</button>
+              <button type="button" class="gps-tool-btn" id="gpsCenterSelf" title="Centruoti ant manęs">Aš</button>
+              <button type="button" class="gps-tool-btn" id="gpsCenterCall" title="Centruoti ant iškvietimo">!</button>
+              <button type="button" class="gps-tool-btn gps-tool-refresh" id="refreshDispatchMap" title="Atnaujinti">&#8635;</button>
+            </div>
+            <div class="gps-map-hint muted">Tempk žemėlapį pele · ratukas zoom</div>
+            <div class="gps-map-legend" id="mapLegend">
+              <span class="leg-item"><i class="leg-dot officer"></i> <span id="legendUnit">Vienetas</span></span>
+              <span class="leg-item"><i class="leg-dot leader"></i> Ekipažo vadovas</span>
+              <span class="leg-item"><i class="leg-dot dispatch"></i> Iškvietimas</span>
+              <span class="leg-item"><i class="leg-dot arrived"></i> Atvykta</span>
+            </div>
+          </div>
+          <aside id="dispatchMapSidebar" class="gps-sidebar">
+            <div id="dispatchMapDetail" class="gps-detail">
+              <div class="gps-detail-empty muted">Pasirink blipą žemėlapyje arba užvesk pelę dėl informacijos.</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+      <section id="panel-invoices" class="panel hidden">
+        <div class="grid2">
+          <label>Piliečio ID <input type="text" id="invCid" placeholder="Citizenid…" /></label>
+          <label>Numeriai <input type="text" id="invPlate" placeholder="ABC123 (nebūtina)" /></label>
+          <label>Suma € <input type="number" id="invAmt" min="1" /></label>
+        </div>
+        <label>Paslauga
+          <select id="invPreset"></select>
+        </label>
+        <label>Aprašymas <input type="text" id="invLabel" placeholder="Paslaugos aprašymas" /></label>
+        <div class="row">
+          <button type="button" id="goInvoice" class="btn primary">Išrašyti sąskaitą</button>
+          <button type="button" id="invSearch" class="btn">Ieškoti istorijos</button>
+          <button type="button" id="invRecent" class="btn">Naujausios</button>
+        </div>
+        <p id="invStatus" class="muted" role="status"></p>
+        <div id="invResults" class="results"></div>
+      </section>
+    </main>
+    <footer class="hint" id="mdtFooter">Server-side tikrinimas • Fivempro Service MDT</footer>
+  </div>
+
+  <script src="vendor/leaflet.js"></script>
+  <script src="gtav_map_core.js"></script>
+  <script src="mdt_map.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

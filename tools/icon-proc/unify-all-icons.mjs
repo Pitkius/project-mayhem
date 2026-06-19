@@ -467,14 +467,45 @@ function drawPoppy(c) {
   c.fillRect(124, 148, 8, 28, ...hex('#166534'), 255);
 }
 
+function fillEllipseRotated(c, cx, cy, rx, ry, angle, r, g, b, a = 255) {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const rMax = Math.ceil(Math.max(rx, ry) * 1.6);
+  for (let y = Math.floor(cy - rMax); y <= cy + rMax; y += 1) {
+    for (let x = Math.floor(cx - rMax); x <= cx + rMax; x += 1) {
+      const lx = (x - cx) * cos + (y - cy) * sin;
+      const ly = -(x - cx) * sin + (y - cy) * cos;
+      if ((lx * lx) / (rx * rx) + (ly * ly) / (ry * ry) <= 1) c.blend(x, y, r, g, b, a);
+    }
+  }
+}
+
+function drawCocaLeafSingle(c, cx, cy, angle, scale, tone) {
+  const leaf = hex(tone);
+  const dark = shade(leaf, 0.72);
+  const light = shade(leaf, 1.18);
+  const rx = 34 * scale;
+  const ry = 16 * scale;
+  fillEllipseRotated(c, cx, cy, rx, ry, angle, ...leaf, 245);
+  fillEllipseRotated(c, cx - Math.cos(angle) * 4, cy - Math.sin(angle) * 4, rx * 0.92, ry * 0.88, angle, ...dark, 70);
+  fillEllipseRotated(c, cx - Math.cos(angle + 0.35) * 8, cy - Math.sin(angle + 0.35) * 8, rx * 0.22, ry * 0.72, angle, ...dark, 120);
+  fillEllipseRotated(c, cx + Math.cos(angle + 0.2) * 10, cy + Math.sin(angle + 0.2) * 10, rx * 0.18, ry * 0.55, angle, ...light, 85);
+}
+
 function drawCocaLeaf(c) {
   c.addGroundShadow();
   c.addRimGlow();
-  const poses = [[100, 120], [128, 108], [156, 122], [118, 140], [138, 138]];
-  poses.forEach(([x, y], i) => {
-    c.fillCircle(x, y, 24, 12, ...hex(i % 2 ? '#16a34a' : '#22c55e'), 230);
-    c.fillCircle(x - 4, y - 3, 6, 4, ...hex('#86efac'), 80);
-  });
+  const stem = hex('#4d7c0f');
+  c.fillRoundRect(124, 148, 8, 42, 4, ...stem, 255);
+  c.fillRoundRect(120, 144, 16, 10, 4, ...shade(stem, 0.85), 255);
+  const leaves = [
+    [128, 118, -0.15, 1.05, '#22c55e'],
+    [104, 128, -0.72, 0.95, '#16a34a'],
+    [152, 128, 0.72, 0.95, '#16a34a'],
+    [116, 104, -0.42, 0.82, '#15803d'],
+    [140, 104, 0.42, 0.82, '#15803d'],
+  ];
+  leaves.forEach(([x, y, ang, sc, tone]) => drawCocaLeafSingle(c, x, y, ang, sc, tone));
 }
 
 function drawBlueprint(c) {

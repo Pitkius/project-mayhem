@@ -11,6 +11,10 @@ local function trim(s)
     return tostring(s or ''):gsub('^%s+', ''):gsub('%s+$', '')
 end
 
+local function photosEnabled()
+    return Config.Phone and Config.Phone.enablePhotos == true
+end
+
 local function clampStr(s, maxLen)
     s = trim(s)
     if #s > maxLen then
@@ -72,6 +76,10 @@ local function getInstalledApps(citizenid)
     local set = {}
     for _, r in ipairs(rows) do
         set[tostring(r.app_id)] = true
+    end
+    if not photosEnabled() then
+        set.camera = nil
+        set.gallery = nil
     end
     return set
 end
@@ -465,13 +473,16 @@ local function getInitialDataFor(src)
         LIMIT 120
     ]]) or {}
 
-    local photos = MySQL.query.await([[
-        SELECT id, is_front, created_at
-        FROM fivempro_phone_photos
-        WHERE citizenid = ?
-        ORDER BY id DESC
-        LIMIT 80
-    ]], { citizenid }) or {}
+    local photos = {}
+    if photosEnabled() then
+        photos = MySQL.query.await([[
+            SELECT id, is_front, created_at
+            FROM fivempro_phone_photos
+            WHERE citizenid = ?
+            ORDER BY id DESC
+            LIMIT 80
+        ]], { citizenid }) or {}
+    end
 
     local adProfile = MySQL.single.await([[
         SELECT username, bio, avatar_data, created_at
@@ -510,14 +521,19 @@ local function getInitialDataFor(src)
     local installed = getInstalledApps(citizenid)
     local availableApps = {}
     for _, app in ipairs((Config.Phone and Config.Phone.AppStoreApps) or {}) do
+        local appId = tostring(app.id or '')
+        if not photosEnabled() and (appId == 'camera' or appId == 'gallery') then
+            goto continue_app
+        end
         availableApps[#availableApps + 1] = {
-            id = tostring(app.id or ''),
+            id = appId,
             label = tostring(app.label or app.id or ''),
             icon = tostring(app.icon or 'appstore'),
             description = tostring(app.description or ''),
-            installed = installed[tostring(app.id or '')] == true,
+            installed = installed[appId] == true,
             default = app.default == true,
         }
+        ::continue_app::
     end
 
     local cash = 0
@@ -793,6 +809,9 @@ local function normalizePhotoImageData(raw)
 end
 
 QBCore.Functions.CreateCallback('fivempro_phone:server:savePhoto', function(source, cb, data)
+    if not photosEnabled() then
+        return cb({ ok = false, message = 'Telefono nuotraukos išjungtos serveryje.' })
+    end
     local citizenid = getCitizen(source)
     if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
     local imageData = normalizePhotoImageData(data and data.imageData)
@@ -826,6 +845,9 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:savePhoto', function(sour
 end)
 
 QBCore.Functions.CreateCallback('fivempro_phone:server:getPhoto', function(source, cb, data)
+    if not photosEnabled() then
+        return cb({ ok = false, message = 'Telefono nuotraukos išjungtos serveryje.' })
+    end
     local citizenid = getCitizen(source)
     if not citizenid then return cb({ ok = false }) end
     local photoId = tonumber(data and data.id)
@@ -853,6 +875,9 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:getPhoto', function(sourc
 end)
 
 QBCore.Functions.CreateCallback('fivempro_phone:server:deletePhoto', function(source, cb, data)
+    if not photosEnabled() then
+        return cb({ ok = false, message = 'Telefono nuotraukos išjungtos serveryje.' })
+    end
     local citizenid = getCitizen(source)
     if not citizenid then return cb({ ok = false }) end
     local photoId = tonumber(data and data.id)
@@ -1083,6 +1108,9 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:installApp', function(sou
         end
     end
     if not allowed then return cb({ ok = false, message = 'Programėlė neegzistuoja.' }) end
+    if not photosEnabled() and (appId == 'camera' or appId == 'gallery') then
+        return cb({ ok = false, message = 'Nuotraukos išjungtos serveryje.' })
+    end
     MySQL.insert.await('INSERT IGNORE INTO fivempro_phone_installed_apps (citizenid, app_id) VALUES (?, ?)', {
         citizenid, appId
     })
@@ -1500,6 +1528,10 @@ CreateThread(function()
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
     MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('emergency', 'shop')")
+    if not photosEnabled() then
+        MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('camera', 'gallery')")
+        MySQL.update.await('DELETE FROM fivempro_phone_photos')
+    end
 end)
 
 local phoneItemName = (Config.PhoneItem or 'phone')

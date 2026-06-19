@@ -1,5 +1,5 @@
 /**
- * FGC-9 inventoriaus ikona — tik ginklas, permatomas fonas (švarus profilis).
+ * FGC-9 inventoriaus ikona — tik ginklas, be taikiklio, permatomas fonas.
  * Usage: npm run fgc9-icon
  */
 import fs from 'fs';
@@ -21,14 +21,32 @@ const outIcon = path.join(
   'weapon_fgc9.png',
 );
 const classicCopy = path.join(__dirname, 'sources', 'weapon_fgc9_classic.png');
+const jpgSrc = path.join(__dirname, 'sources', 'weapon_fgc9_clean.jpg');
+const pngSrc = path.join(__dirname, 'sources', 'weapon_fgc9_base.png');
 
-const result = spawnSync(
-  process.execPath,
-  [script, 'weapon_fgc9_clean.jpg', 'weapon_fgc9.png', '-38', 'clean'],
-  { stdio: 'inherit', cwd: __dirname },
-);
+const sourceName = fs.existsSync(jpgSrc)
+  ? 'weapon_fgc9_clean.jpg'
+  : fs.existsSync(pngSrc)
+    ? 'weapon_fgc9_base.png'
+    : outIcon;
+
+const useClean = /\.jpe?g$/i.test(sourceName);
+const sourceArgs = [
+  script,
+  sourceName,
+  'weapon_fgc9.png',
+  '-38',
+  useClean ? 'clean' : 'raw',
+  '0.22',
+];
+
+const result = spawnSync(process.execPath, sourceArgs, {
+  stdio: 'inherit',
+  cwd: __dirname,
+});
 
 if (result.status === 0 && fs.existsSync(outIcon)) {
+  fs.mkdirSync(path.dirname(classicCopy), { recursive: true });
   fs.copyFileSync(outIcon, classicCopy);
   console.log('Saved backup:', classicCopy);
 }
