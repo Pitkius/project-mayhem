@@ -143,6 +143,27 @@ function updateSelectedDistanceUi(c) {
   }
 }
 
+function missionDetailRows(c, startLabel) {
+  const trailer = c.trailerModel ? ` + priekaba` : "";
+  const truckLine = c.truckLabel
+    ? `<div class="detail-row"><span>Transportas</span><strong>${esc(c.truckLabel)}${trailer}</strong></div>`
+    : "";
+  const boxesLine = c.boxesRequired
+    ? `<div class="detail-row"><span>Kiekis</span><span>${esc(c.boxesRequired)} dėž.</span></div>`
+    : "";
+  return `
+    <div class="detail-row"><span>Krovinys</span><strong>${esc(c.cargoLabel)}</strong></div>
+    ${boxesLine}
+    ${truckLine}
+    <div class="detail-row"><span>Pradžia</span><span>${esc(startLabel)}</span></div>
+    <div class="detail-row"><span>Iš</span><span>${esc(c.pickupLabel)}</span></div>
+    <div class="detail-row"><span>Į</span><span>${esc(c.deliveryLabel)}</span></div>
+    <div class="detail-row detail-distance"><span>Atstumas</span><span>${esc(c.distanceKm)} km <small class="road-tag">keliu</small></span></div>
+    <div class="detail-row"><span>Laikas</span><span>${esc(c.timeLimitMin)} min</span></div>
+    <div class="detail-row"><span>Rizika</span><span class="risk-${esc(c.risk)}">${esc(c.risk)}</span></div>
+    <div class="detail-row"><span>Atlygis</span><strong>${fmtMoney(c.pay)}</strong></div>`;
+}
+
 function applyQuoteToContract(quote) {
   if (!quote?.id) return;
   const list = state.data?.contracts || [];
@@ -155,15 +176,7 @@ function applyQuoteToContract(quote) {
   if (state.selected?.id === c.id) {
     contractDetail.classList.remove("empty");
     const startLabel = state.data?.startHubLabel || c.pickupLabel;
-    contractDetail.innerHTML = `
-    <div class="detail-row"><span>Krovinys</span><strong>${esc(c.cargoLabel)}</strong></div>
-    <div class="detail-row"><span>Pradžia</span><span>${esc(startLabel)}</span></div>
-    <div class="detail-row"><span>Iš</span><span>${esc(c.pickupLabel)}</span></div>
-    <div class="detail-row"><span>Į</span><span>${esc(c.deliveryLabel)}</span></div>
-    <div class="detail-row detail-distance"><span>Atstumas</span><span>${esc(c.distanceKm)} km <small class="road-tag">keliu</small></span></div>
-    <div class="detail-row"><span>Laikas</span><span>${esc(c.timeLimitMin)} min</span></div>
-    <div class="detail-row"><span>Rizika</span><span class="risk-${esc(c.risk)}">${esc(c.risk)}</span></div>
-    <div class="detail-row"><span>Atlygis</span><strong>${fmtMoney(c.pay)}</strong></div>`;
+    contractDetail.innerHTML = missionDetailRows(c, startLabel);
     renderRouteMap(c);
   }
 }
@@ -209,7 +222,7 @@ function renderContractItem(c, selected) {
       <div>
         <div><strong>${esc(c.cargoLabel)}</strong> ${illegal}</div>
         <div class="meta">${esc(c.pickupLabel)} → ${esc(c.deliveryLabel)}</div>
-        <div class="meta">${esc(c.distanceKm)} km · ${esc(c.timeLimitMin)} min · <span class="risk-${esc(c.risk)}">${esc(c.risk)}</span></div>
+        <div class="meta">${esc(c.distanceKm)} km · ${esc(c.boxesRequired || "?")} dėž. · ${esc(c.truckLabel || "transportas")} · <span class="risk-${esc(c.risk)}">${esc(c.risk)}</span></div>
       </div>
       <div class="pay">${fmtMoney(c.pay)}</div>
     </div>`;
@@ -226,15 +239,7 @@ function selectContract(c) {
   }
   contractDetail.classList.remove("empty");
   const startLabel = state.data?.startHubLabel || c.pickupLabel;
-  contractDetail.innerHTML = `
-    <div class="detail-row"><span>Krovinys</span><strong>${esc(c.cargoLabel)}</strong></div>
-    <div class="detail-row"><span>Pradžia</span><span>${esc(startLabel)}</span></div>
-    <div class="detail-row"><span>Iš</span><span>${esc(c.pickupLabel)}</span></div>
-    <div class="detail-row"><span>Į</span><span>${esc(c.deliveryLabel)}</span></div>
-    <div class="detail-row detail-distance"><span>Atstumas</span><span>${esc(c.distanceKm)} km</span></div>
-    <div class="detail-row"><span>Laikas</span><span>${esc(c.timeLimitMin)} min</span></div>
-    <div class="detail-row"><span>Rizika</span><span class="risk-${esc(c.risk)}">${esc(c.risk)}</span></div>
-    <div class="detail-row"><span>Atlygis</span><strong>${fmtMoney(c.pay)}</strong></div>`;
+  contractDetail.innerHTML = missionDetailRows(c, startLabel);
   renderRouteMap(c);
   document.querySelectorAll(".contract-item").forEach((el) => {
     el.classList.toggle("selected", el.dataset.id === c.id);

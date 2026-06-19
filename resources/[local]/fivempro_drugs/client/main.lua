@@ -10,6 +10,7 @@ local productBuyerPeds = {}
 local productBuyerBlips = {}
 local mapBlips = {}
 local streetSellExcludedPeds = {}
+local failedNpcModels = {}
 
 local function nui(msg, data)
     SendNUIMessage({ action = msg, data = data or {} })
@@ -987,7 +988,14 @@ local function spawnHubPed(cfg, onTarget)
     requestCollisionAt(c.x, c.y, c.z)
     local groundZ = resolveGroundZ(c.x, c.y, c.z)
 
-    local model = joaat(cfg.model or 's_m_y_dealer_01')
+    local modelName = cfg.model or 's_m_y_dealer_01'
+    if failedNpcModels[modelName] then return 0 end
+    local model = joaat(modelName)
+    if not IsModelInCdimage(model) or not IsModelValid(model) then
+        failedNpcModels[modelName] = true
+        print(('[fivempro_drugs] Nežinomas NPC modelis: %s'):format(tostring(modelName)))
+        return 0
+    end
     RequestModel(model)
     local t = GetGameTimer() + 10000
     while not HasModelLoaded(model) and GetGameTimer() < t do

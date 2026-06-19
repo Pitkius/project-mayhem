@@ -80,6 +80,16 @@ local function nativeWeaponHash(weaponName)
     return joaat(weaponName)
 end
 
+--- Seni DB itemai dažnai neturi `type` — kitaip holster sync ištrina visus ginklus ir nebeatstato.
+local function isInventoryWeaponItem(item)
+    if not item or not item.name then return false end
+    if item.type == 'weapon' then return true end
+    local name = tostring(item.name):lower()
+    if name:find('^weapon_', 1, false) then return true end
+    local shared = QBCore.Shared.Items[name]
+    return shared and shared.type == 'weapon'
+end
+
 local function resolveCurrentWeaponDataForPed(pedWeaponHash, selectedWeaponData)
     if CurrentWeaponData and CurrentWeaponData.name and nativeWeaponHash(CurrentWeaponData.name) == pedWeaponHash then
         return CurrentWeaponData
@@ -490,7 +500,7 @@ local function buildHolsterVisualSignature(items)
     if not items then return '' end
     local parts = {}
     for _, item in pairs(items) do
-        if item and item.type == 'weapon' and (tonumber(item.amount) or 0) > 0 then
+        if item and isInventoryWeaponItem(item) and (tonumber(item.amount) or 0) > 0 then
             local name = tostring(item.name or '')
             if not isThrowableInventoryWeaponName(name) and not isExternallyBackCarriedWeapon(name) then
                 local attachments = ''
@@ -535,7 +545,7 @@ function applyHolsteredWeaponsFromInventory(force)
     end
 
     for _, item in pairs(items) do
-        if not item or item.type ~= 'weapon' or (tonumber(item.amount) or 0) <= 0 then goto continue end
+        if not item or not isInventoryWeaponItem(item) or (tonumber(item.amount) or 0) <= 0 then goto continue end
         local name = tostring(item.name or '')
         if isThrowableInventoryWeaponName(name) then goto continue end
 
@@ -560,6 +570,16 @@ function applyHolsteredWeaponsFromInventory(force)
     end
 
     if shownHash and shownHash ~= 0 and shownHash ~= `WEAPON_UNARMED` then
+        if not HasPedGotWeapon(ped, shownHash, false) and currentWeapon then
+            local activeItem = resolveCurrentWeaponDataByName(currentWeapon)
+            if activeItem then
+                local ammo = tonumber(activeItem.info and activeItem.info.ammo) or 0
+                GiveWeaponToPed(ped, shownHash, math.max(ammo, 0), false, false)
+                applyWeaponAmmoState(ped, shownHash, ammo, activeItem)
+                applyWeaponAttachmentsAndTint(ped, shownHash, activeItem.info)
+            end
+        end
+        SetPedCurrentWeaponVisible(ped, true, false, false, false)
         SetCurrentPedWeapon(ped, shownHash, true)
         clearPedWeaponInfiniteAmmo(ped, shownHash)
     else
@@ -583,7 +603,7 @@ local function resolveCurrentWeaponDataByName(weaponName)
     local items = getItemsFromCore()
     if not items then return nil end
     for _, item in pairs(items) do
-        if item and item.type == 'weapon' and item.name == weaponName then
+        if item and isInventoryWeaponItem(item) and item.name == weaponName then
             return item
         end
     end
@@ -892,8 +912,8 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
         cancelActiveReload()
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', weaponData, shootbool)
         currentWeapon = weaponName
-        applyHolsteredWeaponsFromInventory(true)
         equipWeaponInHand(weaponData)
+        applyHolsteredWeaponsFromInventory(true)
         weaponHash = nativeWeaponHash(weaponData.name)
         local syncedAmmo = GetAmmoInPedWeapon(ped, weaponHash)
         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', weaponData, syncedAmmo)
@@ -997,48 +1017,45 @@ end)
 
 CreateThread(function()
     while true do
-        if isReloadBusy() then
-            Wait(150)
-            goto ammo_sync_continue
-        end
-        local ped = PlayerPedId()
-        if IsPedArmed(ped, 7) then
-            local weapon = GetSelectedPedWeapon(ped)
-            local selectedWeaponData = QBCore.Shared.Weapons[weapon]
-            if selectedWeaponData then
-                CurrentWeaponData = resolveCurrentWeaponDataForPed(weapon, selectedWeaponData)
-                local ammo = GetAmmoInPedWeapon(ped, weapon)
-                local hasMaxTotal, maxTotalAmmo = GetMaxAmmo(ped, weapon)
-                if hasMaxTotal and maxTotalAmmo and maxTotalAmmo > 0 and ammo > maxTotalAmmo then
-                    SetPedAmmo(ped, weapon, maxTotalAmmo)
-                    ammo = maxTotalAmmo
-                end
-                if CurrentWeaponData and CurrentWeaponData.name then
-                    -- Tik kai ped kulkų sk. pasikeičia (šūvis / perkrova) ar keičiasi ginklas — atnaujinam ginklo item info.ammo serveryje.
-                    local now = GetGameTimer()
-                    local syncName = inventoryWeaponNameForPed(weapon, selectedWeaponData)
-                    local weaponSwitched = lastSyncedWeapon ~= syncName
-                    local ammoDelta = lastSyncedAmmo ~= ammo
-                    local rareResync = (now - lastAmmoSyncAt) >= 120000
-                    if weaponSwitched or ammoDelta or rareResync then
-                        TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', CurrentWeaponData, tonumber(ammo))
-                        lastSyncedWeapon = syncName
-                        lastSyncedAmmo = ammo
-                        lastAmmoSyncAt = now
+        if not isReloadBusy() then
+            local ped = PlayerPedId()
+            if IsPedArmed(ped, 7) then
+                local weapon = GetSelectedPedWeapon(ped)
+                local selectedWeaponData = QBCore.Shared.Weapons[weapon]
+                if selectedWeaponData then
+                    CurrentWeaponData = resolveCurrentWeaponDataForPed(weapon, selectedWeaponData)
+                    local ammo = GetAmmoInPedWeapon(ped, weapon)
+                    local hasMaxTotal, maxTotalAmmo = GetMaxAmmo(ped, weapon)
+                    if hasMaxTotal and maxTotalAmmo and maxTotalAmmo > 0 and ammo > maxTotalAmmo then
+                        SetPedAmmo(ped, weapon, maxTotalAmmo)
+                        ammo = maxTotalAmmo
+                    end
+                    if CurrentWeaponData and CurrentWeaponData.name then
+                        -- Tik kai ped kulkų sk. pasikeičia (šūvis / perkrova) ar keičiasi ginklas — atnaujinam ginklo item info.ammo serveryje.
+                        local now = GetGameTimer()
+                        local syncName = inventoryWeaponNameForPed(weapon, selectedWeaponData)
+                        local weaponSwitched = lastSyncedWeapon ~= syncName
+                        local ammoDelta = lastSyncedAmmo ~= ammo
+                        local rareResync = (now - lastAmmoSyncAt) >= 120000
+                        if weaponSwitched or ammoDelta or rareResync then
+                            TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', CurrentWeaponData, tonumber(ammo))
+                            lastSyncedWeapon = syncName
+                            lastSyncedAmmo = ammo
+                            lastAmmoSyncAt = now
+                        end
+                    end
+                    if MultiplierAmount > 0 and CurrentWeaponData and CurrentWeaponData.name then
+                        TriggerServerEvent('qb-weapons:server:UpdateWeaponQuality', CurrentWeaponData, MultiplierAmount)
+                        MultiplierAmount = 0
                     end
                 end
-                if MultiplierAmount > 0 and CurrentWeaponData and CurrentWeaponData.name then
-                    TriggerServerEvent('qb-weapons:server:UpdateWeaponQuality', CurrentWeaponData, MultiplierAmount)
-                    MultiplierAmount = 0
-                end
+            else
+                lastSyncedWeapon = nil
+                lastSyncedAmmo = nil
+                lastAmmoSyncAt = 0
             end
-        else
-            lastSyncedWeapon = nil
-            lastSyncedAmmo = nil
-            lastAmmoSyncAt = 0
         end
-        ::ammo_sync_continue::
-        Wait(100)
+        Wait(isReloadBusy() and 150 or 100)
     end
 end)
 

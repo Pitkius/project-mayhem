@@ -129,12 +129,18 @@ RegisterNetEvent('fivempro_trucking:client:startDelivery', function(state)
     deliveryState = state
     if state and state.contract then
         if state.phase == 'loading' then
-            TruckingLogisticsSpawnTruck()
+            TruckingLogisticsSpawnTruck({
+                model = state.truckModel,
+                trailer = state.trailerModel,
+                tier = state.truckTier,
+                label = state.truckLabel,
+            })
             local cfg = Config.LogisticsCenter or {}
             local center = cfg.truckSpawn and cfg.truckSpawn.coords or state.contract.pickup
             setMissionBlip(center, 'Pakrovimas — logistikos centras', false)
+            local truckName = state.truckLabel or 'transportas'
             QBCore.Functions.Notify(
-                ('Kontraktas priimtas — pakrauk furgoną (%s dėžės).'):format(state.boxesRequired or '?'),
+                ('Kontraktas priimtas — %s, pakrauk %s dėž. (%s).'):format(truckName, state.boxesRequired or '?', state.contract.cargoLabel or ''),
                 'success'
             )
         else
@@ -226,7 +232,6 @@ RegisterNUICallback('trucking:acceptContract', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_trucking:server:acceptContract', function(res)
         if res and res.ok then
             closeUI()
-            QBCore.Functions.Notify('Kontraktas priimtas — eik į logistikos centrą krauti furgoną.', 'success')
         elseif res and res.reason then
             QBCore.Functions.Notify(res.reason, 'error')
         end
@@ -392,9 +397,9 @@ CreateThread(function()
                         local veh = GetVehiclePedIsIn(ped, false)
                         local work = TruckingLogisticsGetTruck()
                         if veh == 0 or GetPedInVehicleSeat(veh, -1) ~= ped then
-                            QBCore.Functions.Notify('Pristatymui reikia vairuoti furgoną.', 'error')
+                            QBCore.Functions.Notify('Pristatymui reikia vairuoti misijos transportą.', 'error')
                         elseif work ~= 0 and veh ~= work then
-                            QBCore.Functions.Notify('Naudok logistikos centro furgoną.', 'error')
+                            QBCore.Functions.Notify('Naudok šios misijos transportą.', 'error')
                         elseif not isAllowedTruck() then
                             QBCore.Functions.Notify('Reikia tinkamo transporto (Mule, Benson, Phantom…).', 'error')
                         else

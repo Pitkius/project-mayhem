@@ -95,6 +95,10 @@ body {
   transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.screen.app-screen-layer {
+  padding: 0;
+}
+
 .screen.hidden {
   opacity: 0;
   pointer-events: none;
@@ -130,6 +134,18 @@ body {
   gap: 10px;
   max-height: 220px;
   overflow: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(191, 95, 255, 0.5) transparent;
+}
+
+.lock-notifs::-webkit-scrollbar {
+  width: 4px;
+}
+
+.lock-notifs::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(191, 95, 255, 0.75), rgba(157, 80, 255, 0.55));
+  border-radius: 999px;
 }
 
 .lock-notif {
@@ -354,7 +370,27 @@ body {
 
 .app-screen-layer {
   padding: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--app-bg, #0a0812);
+  overflow: hidden;
+}
+
+.app-screen-layer .app-nav {
+  flex-shrink: 0;
+  margin: 0;
+  width: 100%;
+  padding: 48px 16px 10px;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid rgba(191, 95, 255, 0.14);
+  background: rgba(8, 6, 14, 0.94);
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+}
+
+.app-screen-layer .app-nav.glass {
+  border-left: none;
+  border-right: none;
+  border-top: none;
 }
 
 .app-nav {
@@ -388,6 +424,30 @@ body {
   flex: 1;
   overflow: auto;
   padding: 14px;
+}
+
+.app-screen-layer .scroll-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 0 22px;
+  background: var(--app-bg, #0a0812);
+}
+
+.app-screen-layer .scroll-body > .card {
+  margin-bottom: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.app-screen-layer .scroll-body > .card:first-child {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+#appScreen.app-fullscreen .scroll-body {
+  padding: 0 !important;
 }
 
 .setup-screen {
@@ -725,6 +785,18 @@ input, textarea {
   flex-direction: column;
   gap: 8px;
   padding: 4px 2px 12px;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(191, 95, 255, 0.5) transparent;
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(191, 95, 255, 0.75), rgba(157, 80, 255, 0.55));
+  border-radius: 999px;
 }
 
 .bubble-row {
@@ -943,6 +1015,8 @@ select {
   display: flex;
   flex-direction: column;
 }
+
+/* Bendri slankjuostės stiliai — žr. phone-apps.css .phone-scroll */
 
 @media (max-height: 700px) {
   .lock-time { font-size: 3rem; }

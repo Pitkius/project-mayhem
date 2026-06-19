@@ -65,6 +65,10 @@ Config.LogisticsCenter = {
         heading = 181.2378,
     },
     truckModel = 'mule',
+    heavySpawn = {
+        coords = vector3(1204.5, -3193.9375, 5.5279),
+        heading = 181.2378,
+    },
     boxProp = 'hei_prop_heist_box',
     boxCount = { min = 3, max = 8 },
     spotRadius = 1.85,
@@ -172,18 +176,33 @@ Config.Hubs = {
 }
 
 Config.CargoTypes = {
-    food = { label = 'Maistas', minLevel = 1, minReputation = 1, category = 'standard', risk = 'low', payMult = 1.0, xpMult = 1.0 },
-    furniture = { label = 'Baldai', minLevel = 1, minReputation = 1, category = 'standard', risk = 'low', payMult = 1.05, xpMult = 1.0 },
-    construction = { label = 'Statybinės medžiagos', minLevel = 2, minReputation = 1, category = 'standard', risk = 'low', payMult = 1.1, xpMult = 1.05 },
-    mail = { label = 'Pašto siuntos', minLevel = 1, minReputation = 1, category = 'standard', risk = 'low', payMult = 0.95, xpMult = 0.95 },
-    electronics = { label = 'Elektronika', minLevel = 3, minReputation = 2, category = 'standard', risk = 'medium', payMult = 1.2, xpMult = 1.1 },
-    luxury_cars = { label = 'Prabangūs automobiliai', minLevel = 10, minReputation = 3, category = 'special', risk = 'medium', payMult = 1.65, xpMult = 1.35 },
-    machinery = { label = 'Statybinė technika', minLevel = 10, minReputation = 3, category = 'special', risk = 'medium', payMult = 1.55, xpMult = 1.3 },
-    valuables = { label = 'Brangūs kroviniai', minLevel = 10, minReputation = 4, category = 'special', risk = 'high', payMult = 1.8, xpMult = 1.4 },
-    fuel = { label = 'Degalai', minLevel = 15, minReputation = 3, category = 'hazard', risk = 'high', payMult = 1.75, xpMult = 1.45 },
-    chemicals = { label = 'Chemikalai', minLevel = 15, minReputation = 4, category = 'hazard', risk = 'high', payMult = 1.85, xpMult = 1.5 },
-    contraband = { label = 'Kontrabanda', minLevel = 12, minReputation = 3, category = 'illegal', risk = 'extreme', payMult = 2.2, xpMult = 1.2, illegal = true },
-    weapon_parts = { label = 'Ginklų komponentai', minLevel = 14, minReputation = 4, category = 'illegal', risk = 'extreme', payMult = 2.8, xpMult = 1.3, illegal = true },
+    food = { label = 'Maistas', minLevel = 1, minReputation = 1, category = 'standard', risk = 'low', payMult = 1.0, xpMult = 1.0, boxes = { min = 2, max = 4 } },
+    furniture = { label = 'Baldai', minLevel = 1, minReputation = 1, category = 'standard', risk = 'low', payMult = 1.05, xpMult = 1.0, boxes = { min = 3, max = 5 } },
+    construction = { label = 'Statybinės medžiagos', minLevel = 2, minReputation = 1, category = 'standard', risk = 'low', payMult = 1.1, xpMult = 1.05, boxes = { min = 4, max = 6 } },
+    mail = { label = 'Pašto siuntos', minLevel = 1, minReputation = 1, category = 'standard', risk = 'low', payMult = 0.95, xpMult = 0.95, boxes = { min = 2, max = 3 } },
+    electronics = { label = 'Elektronika', minLevel = 3, minReputation = 2, category = 'standard', risk = 'medium', payMult = 1.2, xpMult = 1.1, boxes = { min = 3, max = 5 } },
+    luxury_cars = { label = 'Prabangūs automobiliai', minLevel = 10, minReputation = 3, category = 'special', risk = 'medium', payMult = 1.65, xpMult = 1.35, boxes = { min = 6, max = 8 }, minVehicleTier = 'heavy' },
+    machinery = { label = 'Statybinė technika', minLevel = 10, minReputation = 3, category = 'special', risk = 'medium', payMult = 1.55, xpMult = 1.3, boxes = { min = 6, max = 8 }, minVehicleTier = 'truck' },
+    valuables = { label = 'Brangūs kroviniai', minLevel = 10, minReputation = 4, category = 'special', risk = 'high', payMult = 1.8, xpMult = 1.4, boxes = { min = 4, max = 6 }, minVehicleTier = 'medium' },
+    fuel = { label = 'Degalai', minLevel = 15, minReputation = 3, category = 'hazard', risk = 'high', payMult = 1.75, xpMult = 1.45, boxes = { min = 5, max = 7 }, minVehicleTier = 'truck' },
+    chemicals = { label = 'Chemikalai', minLevel = 15, minReputation = 4, category = 'hazard', risk = 'high', payMult = 1.85, xpMult = 1.5, boxes = { min = 5, max = 7 }, minVehicleTier = 'truck' },
+    contraband = { label = 'Kontrabanda', minLevel = 12, minReputation = 3, category = 'illegal', risk = 'extreme', payMult = 2.2, xpMult = 1.2, illegal = true, boxes = { min = 3, max = 5 } },
+    weapon_parts = { label = 'Ginklų komponentai', minLevel = 14, minReputation = 4, category = 'illegal', risk = 'extreme', payMult = 2.8, xpMult = 1.3, illegal = true, boxes = { min = 4, max = 6 }, minVehicleTier = 'medium' },
+}
+
+--- Misijos transportas pagal krovinio kiekį (dėžių skaičių).
+Config.MissionTrucks = {
+    tiers = {
+        van = { models = { 'speedo', 'pony', 'mule' } },
+        medium = { models = { 'mule', 'boxville', 'benson' } },
+        truck = { models = { 'benson', 'mule' } },
+        heavy = { models = { 'phantom', 'hauler', 'packer' } },
+    },
+    trailers = {
+        default = 'trailers',
+        bulk = 'trailers2',
+        tanker = 'tanker',
+    },
 }
 
 Config.Vehicles = {

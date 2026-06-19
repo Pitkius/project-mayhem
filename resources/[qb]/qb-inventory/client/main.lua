@@ -348,12 +348,21 @@ local function findPlayerItemBySlot(slotNum)
     return nil
 end
 
+local function isWeaponItem(itemData)
+    if not itemData or not itemData.name then return false end
+    if itemData.type == 'weapon' then return true end
+    local name = tostring(itemData.name):lower()
+    if name:find('^weapon_', 1, false) then return true end
+    local shared = QBCore.Shared.Items[name]
+    return shared and shared.type == 'weapon'
+end
+
 for i = 1, 5 do
     RegisterCommand('slot_' .. i, function()
         if not PlayerData or not PlayerData.items then return end
         local itemData = findPlayerItemBySlot(i)
         if not itemData then return end
-        if itemData.type == "weapon" then
+        if isWeaponItem(itemData) then
             if HoldingDrop then
                 return QBCore.Functions.Notify("Your already holding a bag, Go Drop it!", "error", 5500)
             end

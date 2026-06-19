@@ -9,7 +9,6 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { normalizeIconBuffer } from './normalize-classic-icons.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const imagesDir = path.join(__dirname, '..', '..', 'resources', '[qb]', 'qb-inventory', 'html', 'images');
@@ -107,18 +106,7 @@ for (const name of TARGETS) {
 
 regenSmallIcons();
 
-let normalized = 0;
-for (const name of TARGETS) {
-  const p = path.join(imagesDir, `${name}.png`);
-  if (!fs.existsSync(p)) continue;
-  try {
-    const buf = fs.readFileSync(p);
-    fs.writeFileSync(p, normalizeIconBuffer(buf));
-    normalized++;
-  } catch (e) {
-    console.log('normalize fail', name, e.message);
-  }
-}
-
+// Normalizacija dažnai sunaikina detalias QB ikonas — paliekame originalų git restore.
+// Jei reikia tik dydžio korekcijos, paleisk normalize atskirai po peržiūros.
 console.log(JSON.stringify(log, null, 2));
-console.log(`Normalized ${normalized}/${TARGETS.length} icons.`);
+console.log('Skip normalize — classic illustrated icons kept as restored from git.');

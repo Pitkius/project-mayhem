@@ -686,7 +686,9 @@ const InventoryContainer = Vue.createApp({
             if (!item) {
                 return;
             }
-            const isWeapon = item.type === "weapon";
+            const isWeapon =
+                item.type === "weapon" ||
+                (item.name && String(item.name).toLowerCase().startsWith("weapon_"));
             if (!isWeapon && item.useable === false) {
                 return;
             }

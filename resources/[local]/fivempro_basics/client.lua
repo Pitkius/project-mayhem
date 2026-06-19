@@ -185,7 +185,7 @@ local function refreshSlungWeapons()
 
     local carryItems = {}
     for _, item in pairs(items) do
-        if item and item.type == 'weapon' and item.name ~= equippedName and isLongBackWeapon(item.name) then
+        if item and (item.type == 'weapon' or (item.name and tostring(item.name):lower():find('^weapon_', 1, false))) and item.name ~= equippedName and isLongBackWeapon(item.name) then
             carryItems[#carryItems + 1] = item
         end
         if #carryItems >= 3 then break end

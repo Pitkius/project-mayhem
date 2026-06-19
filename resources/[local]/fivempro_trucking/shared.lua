@@ -113,3 +113,110 @@ function TruckingShared.ConditionPayMultiplier(conditionPct)
     elseif conditionPct >= 50 then return 0.6
     else return 0.45 end
 end
+
+local TIER_LIST = { 'van', 'medium', 'truck', 'heavy' }
+local TIER_RANK = { van = 1, medium = 2, truck = 3, heavy = 4 }
+
+function TruckingShared.TierRank(tier)
+    return TIER_RANK[tier] or 1
+end
+
+function TruckingShared.TierFromBoxes(boxes)
+    boxes = tonumber(boxes) or 1
+    if boxes <= 3 then return 'van' end
+    if boxes <= 5 then return 'medium' end
+    if boxes <= 7 then return 'truck' end
+    return 'heavy'
+end
+
+function TruckingShared.CargoBoxCount(cargoId)
+    local cargo = TruckingShared.Cargo(cargoId) or {}
+    local boxCfg = cargo.boxes or (Config.LogisticsCenter and Config.LogisticsCenter.boxCount) or { min = 3, max = 8 }
+    local lo = tonumber(boxCfg.min) or 3
+    local hi = tonumber(boxCfg.max) or lo
+    if hi < lo then hi = lo end
+    return math.random(lo, hi)
+end
+
+function TruckingShared.MinTierForCargo(cargoId)
+    local cargo = TruckingShared.Cargo(cargoId) or {}
+    if cargo.minVehicleTier then return cargo.minVehicleTier end
+    if cargo.category == 'special' then return 'truck' end
+    if cargo.category == 'hazard' then return 'truck' end
+    return 'van'
+end
+
+function TruckingShared.TrailerForCargo(cargoId, tier)
+    if tier ~= 'heavy' then return nil end
+    local trailers = (Config.MissionTrucks or {}).trailers or {}
+    if cargoId == 'fuel' or cargoId == 'chemicals' then
+        return trailers.tanker or 'tanker'
+    end
+    if cargoId == 'machinery' or cargoId == 'luxury_cars' or cargoId == 'construction' then
+        return trailers.bulk or 'trailers2'
+    end
+    return trailers.default or 'trailers'
+end
+
+function TruckingShared.PlayerCanUseVehicle(profile, model)
+    local veh = TruckingShared.Vehicle(model)
+    if not veh then return false end
+    if (profile.level or 1) < (veh.minLevel or 1) then return false end
+    if veh.license and not TruckingShared.HasLicense(profile, veh.license) then
+        if veh.class == 'heavy' and (profile.level or 1) >= (Config.Unlocks.heavy_truck_license or 5) then
+            return true
+        end
+        return false
+    end
+    return true
+end
+
+function TruckingShared.ResolveMissionTruck(profile, cargoId, boxesRequired)
+    local wantRank = math.max(
+        TruckingShared.TierRank(TruckingShared.TierFromBoxes(boxesRequired)),
+        TruckingShared.TierRank(TruckingShared.MinTierForCargo(cargoId))
+    )
+    local tiers = (Config.MissionTrucks or {}).tiers or {}
+    local chosenTier, chosenModel
+    for rank = wantRank, 1, -1 do
+        local tierName = TIER_LIST[rank]
+        local tierCfg = tiers[tierName]
+        if tierCfg and tierCfg.models then
+            for _, model in ipairs(tierCfg.models) do
+                if TruckingShared.PlayerCanUseVehicle(profile, model) then
+                    chosenTier = tierName
+                    chosenModel = model
+                    break
+                end
+            end
+        end
+        if chosenModel then break end
+    end
+    if not chosenModel then
+        chosenModel = 'mule'
+        chosenTier = 'van'
+    end
+    local veh = TruckingShared.Vehicle(chosenModel) or {}
+    local trailer = TruckingShared.TrailerForCargo(cargoId, chosenTier)
+    return {
+        model = chosenModel,
+        label = veh.label or chosenModel,
+        class = veh.class or chosenTier,
+        tier = chosenTier,
+        trailer = trailer,
+    }
+end
+
+function TruckingShared.EnrichContractMission(profile, contract)
+    if not contract or not contract.cargoId then return contract end
+    if not contract.boxesRequired then
+        contract.boxesRequired = TruckingShared.CargoBoxCount(contract.cargoId)
+    end
+    local truck = TruckingShared.ResolveMissionTruck(profile, contract.cargoId, contract.boxesRequired)
+    contract.truckModel = truck.model
+    contract.truckLabel = truck.label
+    contract.truckClass = truck.class
+    contract.truckTier = truck.tier
+    contract.trailerModel = truck.trailer
+    return contract
+end

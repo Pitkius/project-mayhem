@@ -17,12 +17,14 @@ local VANILLA_FARM_INTERIOR_IPLS = {
     'farmint_cap',
 }
 
+local ONEIL_CENTER = vec3(2435.61, 4975.78, 46.57)
 local ONEIL_INTERIOR_PROBE = vec3(2453.229, 4965.452, 45.572)
 
 --- O'Neil sodybos durys (vanilla prop_ld_farm_door01)
 local ONEIL_DOORS = {
     { model = `prop_ld_farm_door01`, coords = vec3(2435.78, 4975.82, 46.81) },
     { model = `prop_ld_farm_door01`, coords = vec3(2441.50, 4981.85, 46.81) },
+    { model = `prop_ld_farm_door01`, coords = vec3(2452.70, 4969.31, 46.57) },
 }
 
 local function removeIpls(list)
@@ -39,9 +41,25 @@ end
 
 local function pinInteriorAt(coords)
     local interiorId = GetInteriorAtCoords(coords.x, coords.y, coords.z)
-    if not interiorId or interiorId == 0 then return end
+    if not interiorId or interiorId == 0 then return 0 end
     PinInteriorInMemory(interiorId)
     LoadInterior(interiorId)
+    RefreshInterior(interiorId)
+    return interiorId
+end
+
+local function suppressOneilMloInterior()
+    local interiorId = GetInteriorAtCoords(ONEIL_INTERIOR_PROBE.x, ONEIL_INTERIOR_PROBE.y, ONEIL_INTERIOR_PROBE.z)
+    if not interiorId or interiorId == 0 then return end
+
+    local sets = { 'brown_amfsted', 'amfsted', 'methlab', 'drug', 'lab' }
+    for _, setName in ipairs(sets) do
+        pcall(function()
+            if IsInteriorEntitySetActive(interiorId, setName) then
+                DeactivateInteriorEntitySet(interiorId, setName)
+            end
+        end)
+    end
     RefreshInterior(interiorId)
 end
 
@@ -64,6 +82,7 @@ local function unlockOneilDoors()
         DoorSystemSetDoorState(dh, 0, false, false)
         pcall(function() DoorSystemSetAutomaticDistance(dh, 25.0, false, false) end)
         pcall(function() DoorSystemSetHoldOpen(dh, false) end)
+        pcall(function() DoorSystemSetOpenRatio(dh, 0.0, false, false) end)
     end
 end
 
@@ -73,12 +92,13 @@ local function loadSimionShowroom()
     pinInteriorAt(vec3(-47.59, -1115.42, 26.43))
 end
 
---- O'Neil sodyba (vanilla) — druglabs build4 (id2_15) išjungtas, visada krauname pilną vanilla farm.
+--- O'Neil sodyba — tik vanilla farm (druglabs build4 išjungtas / išarchyvuotas).
 local function loadOneilFarmhouse()
     removeIpls(BURNT_FARM_IPLS)
     requestIpls(VANILLA_FARM_EXTERIOR_IPLS)
     requestIpls(VANILLA_FARM_INTERIOR_IPLS)
     pinInteriorAt(ONEIL_INTERIOR_PROBE)
+    suppressOneilMloInterior()
     unlockOneilDoors()
 end
 
@@ -102,10 +122,10 @@ end)
 
 CreateThread(function()
     while true do
-        local ped = PlayerPedId()
-        local p = GetEntityCoords(ped)
-        local nearOneil = #(p - vec3(2435.61, 4975.78, 46.57)) < 80.0
+        local p = GetEntityCoords(PlayerPedId())
+        local nearOneil = #(p - ONEIL_CENTER) < 80.0
         if nearOneil then
+            loadOneilFarmhouse()
             unlockOneilDoors()
             Wait(1500)
         else
@@ -115,7 +135,7 @@ CreateThread(function()
 end)
 
 AddEventHandler('onResourceStart', function(resourceName)
-    if resourceName == GetCurrentResourceName() then
+    if resourceName == GetCurrentResourceName() or resourceName == 'druglabs' then
         Wait(500)
         applyMapFixes()
     end

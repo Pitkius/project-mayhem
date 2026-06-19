@@ -178,12 +178,14 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
 
     local ped = PlayerPedId()
     if targetHash and targetHash ~= 0 and targetHash ~= `WEAPON_UNARMED` and ped and ped ~= 0 then
-        if GetSelectedPedWeapon(ped) == targetHash and HasPedGotWeapon(ped, targetHash, false) then
+        if HasPedGotWeapon(ped, targetHash, false) then
             SetPedCurrentWeaponVisible(ped, true, false, false, false)
+            SetCurrentPedWeapon(ped, targetHash, true)
             currWeap = targetHash
             holstered = false
             canFire = true
             _G.QBWeaponDrawBusy = false
+            TriggerEvent('qb-weapons:client:HolsterVisualsAfterDraw')
             return
         end
     end

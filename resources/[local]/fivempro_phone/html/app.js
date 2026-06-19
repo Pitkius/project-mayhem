@@ -424,6 +424,7 @@ async function openApp(appId) {
   document.getElementById("appTitle").textContent =
     installedApps().find((a) => a.id === appId)?.label || appId;
   const content = document.getElementById("appContent");
+  content.className = "scroll-body";
   const phoneApp = window.PhoneApps && window.PhoneApps[`render${appId.charAt(0).toUpperCase()}${appId.slice(1)}App`];
   if (phoneApp) {
     phoneApp(content);
@@ -441,7 +442,36 @@ async function openApp(appId) {
 window.PhoneOpenApp = openApp;
 
 window.renderSocialApp = (content) => {
-  content.innerHTML = `<div class="card"><input id="postCaption" placeholder="Aprašymas" /><input id="postImageUrl" placeholder="Nuotraukos nuoroda" /><button id="btnPostInsta">Kelti</button></div>${state.posts.map((p) => `<div class="card"><b>${esc(p.author_name)}</b><div>${esc(p.caption)}</div><button data-like="${Number(p.id)}">Patinka ${Number(p.likes || 0)}</button></div>`).join("")}`;
+  content.className = "scroll-body insta-body";
+  const postsHtml = (state.posts || []).length
+    ? state.posts
+        .map((p) => {
+          const img = p.image_url
+            ? `<div class="lg-post-media"><img src="${esc(p.image_url)}" alt="" loading="lazy" /></div>`
+            : "";
+          return `<article class="lg-post">
+            <header class="lg-post-head"><strong>${esc(p.author_name)}</strong></header>
+            ${img}
+            <p class="lg-post-caption">${esc(p.caption || "")}</p>
+            <footer class="lg-post-actions">
+              <button type="button" class="lg-like-btn" data-like="${Number(p.id)}">♥ Patinka ${Number(p.likes || 0)}</button>
+            </footer>
+          </article>`;
+        })
+        .join("")
+    : `<div class="lg-empty muted">Dar nėra įrašų. Būk pirmas!</div>`;
+
+  content.innerHTML = `
+    <div class="lg-app">
+      <section class="lg-compose neon-card">
+        <h3 class="lg-compose-title">Naujas įrašas</h3>
+        <input id="postCaption" placeholder="Aprašymas" />
+        <input id="postImageUrl" placeholder="Nuotraukos nuoroda" />
+        <button type="button" id="btnPostInsta" class="neon-btn primary">Kelti</button>
+      </section>
+      <div class="lg-feed">${postsHtml}</div>
+    </div>`;
+
   document.getElementById("btnPostInsta").addEventListener("click", async () => {
     await nui("createPost", {
       caption: document.getElementById("postCaption").value,

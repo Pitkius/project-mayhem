@@ -207,7 +207,15 @@ RegisterNetEvent('qb-inventory:server:useItem', function(item)
     if not itemData then return end
     local itemInfo = exports['qb-inventory']:ResolveSharedItem(itemData.name)
     if not itemInfo then return end
-    if itemData.type == 'weapon' then
+
+    local itemType = itemData.type or itemInfo.type
+    local itemName = tostring(itemData.name or ''):lower()
+    local isWeapon = itemType == 'weapon' or itemName:find('^weapon_', 1, false) ~= nil
+
+    if isWeapon then
+        itemData.type = itemData.type or itemInfo.type
+        itemData.label = itemData.label or itemInfo.label
+        itemData.useable = itemData.useable ~= nil and itemData.useable or itemInfo.useable
         if BlockedWeaponItems[itemData.name] then
             TriggerClientEvent('QBCore:Notify', src, 'This weapon is blocked on this server.', 'error')
             return

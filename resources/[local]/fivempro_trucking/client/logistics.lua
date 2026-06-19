@@ -1,6 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local workTruck = 0
+local workTrailer = 0
 local carriedProp = 0
 local loadingBusy = false
 
@@ -104,6 +105,11 @@ end
 function TruckingLogisticsCleanup()
     clearCarriedProp()
     loadingBusy = false
+    if workTrailer ~= 0 and DoesEntityExist(workTrailer) then
+        SetEntityAsMissionEntity(workTrailer, true, true)
+        DeleteVehicle(workTrailer)
+    end
+    workTrailer = 0
     if workTruck ~= 0 and DoesEntityExist(workTruck) then
         SetEntityAsMissionEntity(workTruck, true, true)
         DeleteVehicle(workTruck)
@@ -111,15 +117,19 @@ function TruckingLogisticsCleanup()
     workTruck = 0
 end
 
-function TruckingLogisticsSpawnTruck()
+function TruckingLogisticsSpawnTruck(opts)
+    opts = opts or {}
     TruckingLogisticsCleanup()
     local cfg = lc()
     local spawn = cfg.truckSpawn
+    if opts.tier == 'heavy' and cfg.heavySpawn then
+        spawn = cfg.heavySpawn
+    end
     if not spawn then return nil end
-    local model = cfg.truckModel or 'mule'
+    local model = opts.model or cfg.truckModel or 'mule'
     local hash = loadModel(model)
     if not hash then
-        QBCore.Functions.Notify('Nepavyko sukurti furgono.', 'error')
+        QBCore.Functions.Notify('Nepavyko sukurti transporto.', 'error')
         return nil
     end
     local veh = CreateVehicle(hash, spawn.coords.x, spawn.coords.y, spawn.coords.z, spawn.heading or 0.0, true, false)
@@ -136,6 +146,22 @@ function TruckingLogisticsSpawnTruck()
     end
     SetModelAsNoLongerNeeded(hash)
     workTruck = veh
+
+    local trailerModel = opts.trailer
+    if trailerModel then
+        local th = loadModel(trailerModel)
+        if th then
+            local off = GetOffsetFromEntityInWorldCoords(veh, 0.0, -9.5, 0.0)
+            workTrailer = CreateVehicle(th, off.x, off.y, off.z, spawn.heading or 0.0, true, false)
+            SetEntityAsMissionEntity(workTrailer, true, true)
+            SetVehicleOnGroundProperly(workTrailer)
+            AttachVehicleToTrailer(veh, workTrailer, 1.0)
+            SetModelAsNoLongerNeeded(th)
+        end
+    end
+
+    local label = opts.label or model
+    QBCore.Functions.Notify(('Tavo %s paruoštas pakrovimui.'):format(label), 'success')
     return veh
 end
 
@@ -165,10 +191,10 @@ end
 local function tryPickupBox()
     if loadingBusy or not deliveryState or deliveryState.phase ~= 'loading' then return end
     if TruckingLogisticsIsCarrying() then
-        return QBCore.Functions.Notify('Jau neši dežę — padėk į furgoną.', 'error')
+        return QBCore.Functions.Notify('Jau neši dežę — padėk į transportą.', 'error')
     end
     if (deliveryState.boxesLoaded or 0) >= (deliveryState.boxesRequired or 1) then
-        return QBCore.Functions.Notify('Furgonas pilnas — važiuok pristatyti.', 'primary')
+        return QBCore.Functions.Notify('Transportas pilnas — važiuok pristatyti.', 'primary')
     end
     local ped = PlayerPedId()
     if IsPedInAnyVehicle(ped, false) then
@@ -184,7 +210,7 @@ local function tryPickupBox()
     playTimedAnim(pickupAnim, 'Imama dėžė…')
     attachCarriedBox()
     loadingBusy = false
-    QBCore.Functions.Notify('Nešk dėžę prie furgono galinės.', 'primary')
+    QBCore.Functions.Notify('Nešk dėžę prie transporto galinės.', 'primary')
 end
 
 local function tryLoadBoxIntoTruck()
@@ -194,12 +220,12 @@ local function tryLoadBoxIntoTruck()
     end
     local veh = TruckingLogisticsGetTruck()
     if veh == 0 then
-        return QBCore.Functions.Notify('Darbinis furgonas nerastas.', 'error')
+        return QBCore.Functions.Notify('Darbinis transportas nerastas.', 'error')
     end
     local ped = PlayerPedId()
     local rear = getVehicleRearPos(veh)
     if not rear or #(GetEntityCoords(ped) - rear) > (lc().truckLoadRadius or 4.8) then
-        return QBCore.Functions.Notify('Eik prie furgono galinės.', 'error')
+        return QBCore.Functions.Notify('Eik prie transporto galinės.', 'error')
     end
     loadingBusy = true
     SetVehicleDoorOpen(veh, 5, false, false)
@@ -227,7 +253,7 @@ local function tryLoadBoxIntoTruck()
             if c and c.delivery then
                 setMissionBlip(c.delivery, 'Pristatymas: ' .. (c.deliveryLabel or ''), true)
             end
-            QBCore.Functions.Notify('Furgonas pakrautas — važiuok į pristatymo vietą.', 'success')
+            QBCore.Functions.Notify('Transportas pakrautas — važiuok į pristatymo vietą.', 'success')
         else
             QBCore.Functions.Notify(
                 ('Pakrauta %s/%s — imk kitą dėžę.'):format(res.boxesLoaded, res.boxesRequired),
@@ -267,7 +293,7 @@ CreateThread(function()
                     DrawMarker(1, rear.x, rear.y, rear.z - 0.4, 0, 0, 0, 0, 0, 0, 1.8, 1.8, 1.0, 124, 58, 237, 150, false, false, 2, false, nil, nil, false)
                     if #(pos - rear) < (cfg.truckLoadRadius or 4.8) then
                         BeginTextCommandDisplayHelp('STRING')
-                        AddTextComponentSubstringPlayerName('~INPUT_CONTEXT~ Padėti dėžę į furgoną')
+                        AddTextComponentSubstringPlayerName('~INPUT_CONTEXT~ Padėti dėžę į transportą')
                         EndTextCommandDisplayHelp(0, false, true, -1)
                         if IsControlJustReleased(0, 38) and not loadingBusy then
                             tryLoadBoxIntoTruck()

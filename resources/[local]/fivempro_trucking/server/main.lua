@@ -292,7 +292,7 @@ local function generateContract(profile, seed, forcedPickupId)
     distanceKm = math.floor(distanceKm * 10) / 10
     local timeMin = math.max(12, math.floor(distanceKm * 1.35 + 8))
     local pay = calcContractPay(cargoId, distanceKm)
-    return {
+    local contract = {
         id = ('c_%s_%s_%s'):format(pickupId, deliveryId, cargoId),
         cargoId = cargoId,
         cargoLabel = cargo.label or cargoId,
@@ -311,6 +311,7 @@ local function generateContract(profile, seed, forcedPickupId)
         pickup = { x = pickup.coords.x, y = pickup.coords.y, z = pickup.coords.z },
         delivery = { x = delivery.coords.x, y = delivery.coords.y, z = delivery.coords.z },
     }
+    return TruckingShared.EnrichContractMission(profile, contract)
 end
 
 local function refreshContractPool()
@@ -351,6 +352,7 @@ local function contractsForPlayer(profile, src)
                 seen[key] = true
                 local copy = json.decode(json.encode(c))
                 applyPickupHub(copy, startHubId)
+                TruckingShared.EnrichContractMission(profile, copy)
                 out[#out + 1] = copy
             end
         end
@@ -366,6 +368,7 @@ local function contractsForPlayer(profile, src)
             local key = contractKey(c)
             if not seen[key] then
                 seen[key] = true
+                TruckingShared.EnrichContractMission(profile, c)
                 out[#out + 1] = c
             end
         end
@@ -605,9 +608,8 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:acceptContract', funct
         return cb({ ok = false, reason = 'Per žemas lygis ar reputacija.' })
     end
     local deadline = os.time() + (contract.timeLimitMin * 60)
-    local lc = Config.LogisticsCenter or {}
-    local boxCfg = lc.boxCount or { min = 3, max = 8 }
-    local boxesRequired = math.random(boxCfg.min or 3, boxCfg.max or 8)
+    local boxesRequired = contract.boxesRequired or TruckingShared.CargoBoxCount(contract.cargoId)
+    local truck = TruckingShared.ResolveMissionTruck(profile, contract.cargoId, boxesRequired)
     activeDeliveries[src] = {
         contract = contract,
         phase = 'loading',
@@ -617,6 +619,10 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:acceptContract', funct
         loaded = false,
         boxesRequired = boxesRequired,
         boxesLoaded = 0,
+        truckModel = truck.model,
+        truckLabel = truck.label,
+        truckTier = truck.tier,
+        trailerModel = truck.trailer,
     }
     TriggerClientEvent('fivempro_trucking:client:startDelivery', src, activeDeliveries[src])
     cb({ ok = true, delivery = activeDeliveries[src] })
@@ -628,7 +634,7 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:loadBox', function(src
         return cb({ ok = false, reason = 'Nėra aktyvaus pakrovimo.' })
     end
     if (d.boxesLoaded or 0) >= (d.boxesRequired or 1) then
-        return cb({ ok = false, reason = 'Furgonas jau pilnas.' })
+        return cb({ ok = false, reason = 'Transportas jau pilnas.' })
     end
     d.boxesLoaded = (d.boxesLoaded or 0) + 1
     local complete = d.boxesLoaded >= (d.boxesRequired or 1)

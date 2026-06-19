@@ -41,14 +41,6 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 48px 14px 78px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(157, 80, 255, 0.6) rgba(255, 255, 255, 0.05);
-}
-
-.ads-screen::-webkit-scrollbar { width: 4px; }
-.ads-screen::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: linear-gradient(180deg, #c084fc, #7c3aed);
 }
 
 .ads-screen-detail {
