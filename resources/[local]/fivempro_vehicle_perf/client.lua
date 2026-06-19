@@ -8,6 +8,18 @@ local activeMaxMs = 0.0
 local originalHandlingByHash = {}
 local appliedSigByVeh = {}
 
+local NON_ROAD_CATEGORIES = {
+    boats = true,
+    helicopters = true,
+    planes = true,
+    cycles = true,
+    trains = true,
+}
+
+local function isRoadCategory(category)
+    return category and not NON_ROAD_CATEGORIES[category]
+end
+
 local HANDLING_FIELDS = {
     'fInitialDriveForce',
     'fInitialDriveMaxFlatVel',
@@ -18,6 +30,9 @@ local HANDLING_FIELDS = {
     'fTractionCurveMin',
     'fSteeringLock',
     'fLowSpeedTractionLossMult',
+    'fMass',
+    'fDownforceModifier',
+    'fSuspensionForce',
 }
 
 local function kmhToMs(kmh)
@@ -93,6 +108,11 @@ local function resolveMaxKmh(veh)
     local hash = GetEntityModel(veh)
     local row = modelIndex[hash]
     local name = row and row.name or nil
+    local category = (row and row.category) or 'sedans'
+
+    if not isRoadCategory(category) then
+        return nil
+    end
 
     if name and cfg.HyperCars and cfg.HyperCars[name] then
         if isFullyTuned(veh) then
@@ -106,37 +126,34 @@ local function resolveMaxKmh(veh)
         return math.min(cfg.RehMaxKmh[name], cfg.GlobalCapKmh or 310)
     end
 
+    if name and VanillaMaxKmh and VanillaMaxKmh[name] then
+        local kmh = tonumber(VanillaMaxKmh[name])
+        local cap = categoryCapKmh(category)
+        if cap and kmh then kmh = math.min(kmh, cap) end
+        return math.min(kmh or 215, cfg.GlobalCapKmh or 310)
+    end
+
     if row and row.isReh then
-        local cat = row.category or 'sedans'
-        local catKmh = (cfg.RehCategoryKmh or {})[cat] or 218
+        local catKmh = (cfg.RehCategoryKmh or {})[category] or 218
         return math.min(catKmh, cfg.GlobalCapKmh or 310)
     end
 
-    if row and row.category then
-        local cap = categoryCapKmh(row.category)
-        if cap then
-            local est = estimatedModelKmh(hash)
-            if est > cap + 2.0 then
-                return cap
-            end
-        end
-    end
-
-    if handlingCfg.ApplyToAllVehicles and row and row.category then
-        local est = estimatedModelKmh(hash)
-        local cap = categoryCapKmh(row.category)
-        if cap and est > cap then
-            return cap
-        end
-        if est > 0.5 then
-            return math.min(est, cfg.GlobalCapKmh or 310)
-        end
+    local cap = categoryCapKmh(category)
+    local est = estimatedModelKmh(hash)
+    if cap and est > cap + 2.0 then
+        return cap
     end
 
     return nil
 end
 
 local function resolveZeroTo100Target(name, category, maxKmh, veh)
+    local perfCategory = VehiclePricing.ResolveEffectiveCategory(category, maxKmh)
+    local fromPricing = VehiclePricing.ResolveZeroTo100(name or '', perfCategory, maxKmh)
+    if fromPricing then
+        return fromPricing
+    end
+
     local modelMap = handlingCfg.ModelZeroTo100 or {}
     if name and modelMap[name] then
         return tonumber(modelMap[name])
@@ -150,15 +167,48 @@ local function resolveZeroTo100Target(name, category, maxKmh, veh)
     end
 
     local catTable = handlingCfg.CategoryZeroTo100 or {}
-    local base = tonumber(catTable[category]) or 9.0
+    return tonumber(catTable[category]) or 9.0
+end
 
-    -- Greitesnės mašinos — trumpesnis 0–100 (logiška korekcija pagal max greitį).
-    if maxKmh and maxKmh > 80 then
-        local speedNorm = clamp(maxKmh / 240.0, 0.55, 1.35)
-        base = base / speedNorm
+local function resolveTargetMassKg(category, origMass)
+    local targets = handlingCfg.CategoryMassKg or {}
+    local target = tonumber(targets[category]) or 1520
+    origMass = tonumber(origMass) or target
+
+    local minKg = target * 0.78
+    local maxKg = target * 1.22
+    if category == 'commercial' or category == 'industrial' then
+        minKg = target * 0.88
+        maxKg = target * 1.08
     end
 
-    return clamp(base, 2.4, 18.0)
+    if origMass >= minKg and origMass <= maxKg then
+        return origMass
+    end
+
+    local blend = tonumber(handlingCfg.MassBlend) or 0.72
+    if origMass > maxKg then
+        return target + ((origMass - target) * (1.0 - blend))
+    end
+    return target - ((target - origMass) * (1.0 - blend))
+end
+
+local function resolveTargetDownforce(category, origDf)
+    local caps = handlingCfg.CategoryDownforceMax or {}
+    local cap = tonumber(caps[category]) or tonumber(handlingCfg.DefaultDownforceMax) or 0.35
+    origDf = tonumber(origDf) or 0.0
+    if origDf <= cap then return origDf end
+    if origDf > cap * 4.0 then return cap end
+    return cap + ((origDf - cap) * 0.12)
+end
+
+local function resolveTargetSuspensionForce(category, origForce)
+    local caps = handlingCfg.CategorySuspensionForceMax or {}
+    local cap = caps[category]
+    if not cap then return origForce end
+    origForce = tonumber(origForce) or cap
+    if origForce <= cap then return origForce end
+    return cap + ((origForce - cap) * 0.18)
 end
 
 local function resolveBrakeScale(category, name, maxKmh)
@@ -201,6 +251,8 @@ local function applyHandlingTune(veh)
     local category = (row and row.category) or 'sedans'
     local maxKmh = resolveMaxKmh(veh)
 
+    if not isRoadCategory(category) then return end
+
     if not maxKmh and not handlingCfg.ApplyToAllVehicles then return end
     if not maxKmh then
         maxKmh = estimatedModelKmh(hash)
@@ -212,32 +264,40 @@ local function applyHandlingTune(veh)
 
     local orig = cacheOriginalHandling(veh, hash)
     local estKmh = math.max(estimatedModelKmh(hash), 1.0)
-    local speedRatio = clamp(maxKmh / estKmh, 0.72, 1.28)
+    local speedRatio = clamp(
+        maxKmh / estKmh,
+        handlingCfg.SpeedRatioMin or 0.82,
+        handlingCfg.SpeedRatioMax or 1.12
+    )
 
     local newMaxFlatVel = clamp(
         orig.fInitialDriveMaxFlatVel * speedRatio,
-        handlingCfg.MaxFlatVelMin or 120.0,
-        handlingCfg.MaxFlatVelMax or 210.0
+        handlingCfg.MaxFlatVelMin or 118.0,
+        handlingCfg.MaxFlatVelMax or 205.0
     )
 
     local currentZeroTo100 = accelToZeroTo100(GetVehicleModelAcceleration(hash))
     local targetZeroTo100 = resolveZeroTo100Target(name, category, maxKmh, veh)
-    local accelRatio = clamp(currentZeroTo100 / math.max(targetZeroTo100, 2.0), 0.55, 1.65)
+    local accelRatio = clamp(
+        currentZeroTo100 / math.max(targetZeroTo100, 2.0),
+        handlingCfg.AccelRatioMin or 0.78,
+        handlingCfg.AccelRatioMax or 1.15
+    )
     local newDriveForce = clamp(
         orig.fInitialDriveForce * accelRatio,
-        handlingCfg.DriveForceMin or 0.11,
-        handlingCfg.DriveForceMax or 0.54
+        handlingCfg.DriveForceMin or 0.10,
+        handlingCfg.DriveForceMax or 0.36
     )
 
     local brakeScale = resolveBrakeScale(category, name, maxKmh)
     local newBrakeForce = clamp(
         orig.fBrakeForce * brakeScale,
         handlingCfg.BrakeForceMin or 0.62,
-        handlingCfg.BrakeForceMax or 1.38
+        handlingCfg.BrakeForceMax or 1.32
     )
 
     local inertiaMult = resolveDriveInertia(category, name)
-    local newInertia = clamp(orig.fDriveInertia * inertiaMult, 0.75, 1.35)
+    local newInertia = clamp(orig.fDriveInertia * inertiaMult, 0.82, 1.22)
 
     local dragBoost = 1.0
     if maxKmh > 200 then
@@ -247,16 +307,24 @@ local function applyHandlingTune(veh)
 
     local newSteering = resolveSteeringLock(category, orig.fSteeringLock)
 
-    -- Šiek tiek mažiau „raketinio“ sukibimo super/hyper — realistiškesnis išsispausdinimas.
+    local newMass = resolveTargetMassKg(category, orig.fMass)
+    local newDownforce = resolveTargetDownforce(category, orig.fDownforceModifier)
+    local newSuspension = resolveTargetSuspensionForce(category, orig.fSuspensionForce)
+
     local tractionMult = 1.0
     if category == 'super' or (name and isHyperModel(name)) then
-        tractionMult = 0.97
+        tractionMult = 0.99
     elseif category == 'muscle' then
-        tractionMult = 0.98
+        tractionMult = 0.995
     elseif category == 'offroad' or category == 'suvs' then
-        tractionMult = 1.02
+        tractionMult = 1.01
     end
 
+    setHandlingFloat(veh, 'fMass', newMass)
+    setHandlingFloat(veh, 'fDownforceModifier', newDownforce)
+    if orig.fSuspensionForce and orig.fSuspensionForce > 0 then
+        setHandlingFloat(veh, 'fSuspensionForce', newSuspension)
+    end
     setHandlingFloat(veh, 'fInitialDriveMaxFlatVel', newMaxFlatVel)
     setHandlingFloat(veh, 'fInitialDriveForce', newDriveForce)
     setHandlingFloat(veh, 'fBrakeForce', newBrakeForce)
@@ -266,8 +334,8 @@ local function applyHandlingTune(veh)
     setHandlingFloat(veh, 'fTractionCurveMax', orig.fTractionCurveMax * tractionMult)
     setHandlingFloat(veh, 'fTractionCurveMin', orig.fTractionCurveMin * tractionMult)
 
-    if category == 'muscle' or category == 'sports' or category == 'super' then
-        setHandlingFloat(veh, 'fLowSpeedTractionLossMult', clamp(orig.fLowSpeedTractionLossMult * 1.06, 0.5, 1.4))
+    if category == 'muscle' then
+        setHandlingFloat(veh, 'fLowSpeedTractionLossMult', clamp(orig.fLowSpeedTractionLossMult * 1.03, 0.55, 1.25))
     end
 
     appliedSigByVeh[veh] = sig
@@ -294,8 +362,12 @@ local function applyMaxSpeed(veh)
 end
 
 local function applyVehiclePerf(veh)
-    applyHandlingTune(veh)
     applyMaxSpeed(veh)
+    if not handlingCfg.Enabled or not veh or veh == 0 then return end
+    local hash = GetEntityModel(veh)
+    local row = modelIndex[hash]
+    if row and row.isReh then return end
+    applyHandlingTune(veh)
 end
 
 local function clearVehicleState(veh)
@@ -325,6 +397,7 @@ local function buildModelIndex()
         modelIndex[hash] = {
             name = model,
             category = row.category,
+            price = tonumber(row.price) or 0,
             isReh = rehSet[model] == true or rehSet[name:lower()] == true,
         }
         modelIndex[model] = modelIndex[hash]
@@ -395,6 +468,12 @@ exports('GetConfiguredMaxKmh', function(model)
     if row.isReh and row.category and cfg.RehCategoryKmh then
         return cfg.RehCategoryKmh[row.category]
     end
+    if row.price and row.price > 0 and VanillaMaxKmh and VanillaMaxKmh[row.name] then
+        return VanillaMaxKmh[row.name]
+    end
+    if row.price and row.price > 0 then
+        return VehiclePricing.MaxKmhFromPrice(row.price, row.category or 'sedans')
+    end
     return categoryCapKmh(row.category)
 end)
 
@@ -407,7 +486,7 @@ exports('GetVehiclePerfProfile', function(model, category)
         category = row.category
     end
 
-    local profile = VehiclePricing.ResolveProfile(model, category)
+    local profile = VehiclePricing.ResolveProfile(model, category, row and row.price)
     local accel = GetVehicleModelAcceleration(hash)
     local brakeScale = (handlingCfg.CategoryBrakeScale or {})[category] or 1.0
     if VehiclePricing.IsHyperModel(model) then

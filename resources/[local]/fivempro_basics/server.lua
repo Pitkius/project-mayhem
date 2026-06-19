@@ -115,6 +115,75 @@ QBCore.Commands.Add('heal', 'Admin heal su max maistu/vandeniu', {
     end
 end, 'admin')
 
+local function logAdminTeleport(adminSrc, command, targetId, coords)
+    if GetResourceState('server_logs') ~= 'started' then return end
+    pcall(function()
+        local targetName = GetPlayerName(targetId) or ('ID %s'):format(targetId)
+        local coordText = coords and ('%.1f, %.1f, %.1f'):format(coords.x, coords.y, coords.z) or '?'
+        exports['server_logs']:LogAdminAction(adminSrc, command, ('**%s** [%s]'):format(targetName, targetId), {
+            { name = 'Žaidėjas', value = ('%s [%s]'):format(targetName, targetId), inline = true },
+            { name = 'Koordinatės', value = coordText, inline = false },
+        })
+    end)
+end
+
+QBCore.Commands.Add('goto', 'Admin: nueiti pas žaidėją', {
+    { name = 'id', help = 'Server ID' },
+}, true, function(source, args)
+    local targetId = tonumber(args[1])
+    if not targetId then
+        TriggerClientEvent('QBCore:Notify', source, 'Naudojimas: /goto [id]', 'error')
+        return
+    end
+
+    if targetId == source then
+        TriggerClientEvent('QBCore:Notify', source, 'Negalite nueiti pas save.', 'error')
+        return
+    end
+
+    local targetPed = GetPlayerPed(targetId)
+    if not targetPed or targetPed == 0 then
+        TriggerClientEvent('QBCore:Notify', source, 'Žaidėjas nerastas.', 'error')
+        return
+    end
+
+    local coords = GetEntityCoords(targetPed)
+    TriggerClientEvent('QBCore:Command:TeleportToPlayer', source, coords)
+    TriggerClientEvent('QBCore:Notify', source, ('Nueita pas %s [%s]'):format(GetPlayerName(targetId) or '?', targetId), 'success')
+    logAdminTeleport(source, 'goto', targetId, coords)
+end, 'admin')
+
+QBCore.Commands.Add('bring', 'Admin: atvesti žaidėją pas save', {
+    { name = 'id', help = 'Server ID' },
+}, true, function(source, args)
+    local targetId = tonumber(args[1])
+    if not targetId then
+        TriggerClientEvent('QBCore:Notify', source, 'Naudojimas: /bring [id]', 'error')
+        return
+    end
+
+    if targetId == source then
+        TriggerClientEvent('QBCore:Notify', source, 'Negalite atvesti savęs.', 'error')
+        return
+    end
+
+    local targetPed = GetPlayerPed(targetId)
+    if not targetPed or targetPed == 0 then
+        TriggerClientEvent('QBCore:Notify', source, 'Žaidėjas nerastas.', 'error')
+        return
+    end
+
+    local adminPed = GetPlayerPed(source)
+    if not adminPed or adminPed == 0 then return end
+
+    local coords = GetEntityCoords(adminPed)
+    local heading = GetEntityHeading(adminPed)
+    TriggerClientEvent('QBCore:Command:TeleportToCoords', targetId, coords.x, coords.y, coords.z, heading)
+    TriggerClientEvent('QBCore:Notify', source, ('Atvestas %s [%s]'):format(GetPlayerName(targetId) or '?', targetId), 'success')
+    TriggerClientEvent('QBCore:Notify', targetId, 'Administratorius jus perkėlė.', 'primary')
+    logAdminTeleport(source, 'bring', targetId, coords)
+end, 'admin')
+
 QBCore.Commands.Add('coords', 'Ijungti/isjungti savo koordinates ekrano virsuje (admin)', {}, false, function(source)
     TriggerClientEvent('fivempro_basics:client:toggleCoords', source)
 end, 'admin')

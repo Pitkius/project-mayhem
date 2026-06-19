@@ -3,19 +3,19 @@
   <HandlingData>
     <Item type="CHandlingData">
       <handlingName>benefactorrange</handlingName>
-      <fMass value="2400.000000" /> <!-- Adjusted for the Range Rover's typical weight and added MANSORY components -->
+      <fMass value="2150.0" /> <!-- Adjusted for the Range Rover's typical weight and added MANSORY components -->
       <fInitialDragCoeff value="8.500000" /> <!-- Tuned for aerodynamic enhancements from MANSORY -->
       <fPercentSubmerged value="85.000000" />
       <vecCentreOfMassOffset x="0.000000" y="0.050000" z="0.000000" />
       <vecInertiaMultiplier x="1.000000" y="1.050000" z="1.050000" /> <!-- Slightly adjusted for balance -->
       <fDriveBiasFront value="0.500000" /> <!-- AWD configuration assumed for the Range Rover -->
       <nInitialDriveGears value="8" /> <!-- Modern transmission setup -->
-      <fInitialDriveForce value="0.315000" /> <!-- Increased for performance tuning -->
+      <fInitialDriveForce value="0.192" /> <!-- Increased for performance tuning -->
       <fDriveInertia value="1.000000" />
       <fClutchChangeRateScaleUpShift value="5.000000" /> <!-- Quick shifting for improved acceleration -->
       <fClutchChangeRateScaleDownShift value="5.000000" />
-      <fInitialDriveMaxFlatVel value="189" /> <!-- Increased top speed to match enhanced performance -->
-      <fBrakeForce value="1.100000" /> <!-- Improved braking capability -->
+      <fInitialDriveMaxFlatVel value="210.6" /> <!-- Increased top speed to match enhanced performance -->
+      <fBrakeForce value="1.040" /> <!-- Improved braking capability -->
       <fBrakeBiasFront value="0.500000" />
       <fHandBrakeForce value="0.600000" />
       <fSteeringLock value="35.000000" />
@@ -27,7 +27,7 @@
       <fCamberStiffnesss value="0.000000" />
       <fTractionBiasFront value="0.485000" />
       <fTractionLossMult value="1.000000" />
-      <fSuspensionForce value="2.600000" /> <!-- Stiffer suspension for performance handling -->
+      <fSuspensionForce value="2.60" /> <!-- Stiffer suspension for performance handling -->
       <fSuspensionCompDamp value="1.500000" />
       <fSuspensionReboundDamp value="2.200000" />
       <fSuspensionUpperLimit value="0.050000" />

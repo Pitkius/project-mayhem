@@ -162,8 +162,18 @@ RegisterNetEvent('qb-weapons:ResetHolster', function()
     wearingHolster = nil
 end)
 
-RegisterNetEvent('qb-weapons:client:DrawWeapon', function()
+RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
     if GetResourceState('qb-inventory') == 'missing' then return end
+
+    local targetHash = nil
+    if targetWeaponName and targetWeaponName ~= '' then
+        if WeaponHash and WeaponHash.resolve then
+            targetHash = WeaponHash.resolve(targetWeaponName)
+        else
+            targetHash = joaat(tostring(targetWeaponName))
+        end
+    end
+
     drawSession = drawSession + 1
     local mySession = drawSession
     local sleep
@@ -347,6 +357,17 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function()
         end
     end
     canFire = true
+
+  --- Animacija kartais palieka UNARMED — grąžinam tikslų ginklą jei jis vis dar pasirinktas inventoriuje.
+    if targetHash and targetHash ~= 0 and targetHash ~= `WEAPON_UNARMED` then
+        local ped = PlayerPedId()
+        if ped and ped ~= 0 and HasPedGotWeapon(ped, targetHash, false) then
+            SetPedCurrentWeaponVisible(ped, true, false, false, false)
+            SetCurrentPedWeapon(ped, targetHash, true)
+            currWeap = targetHash
+            holstered = false
+        end
+    end
 end)
 
 function CeaseFire()

@@ -303,6 +303,48 @@ local function cancelActiveReload()
     reloadGuardUntil = 0
 end
 
+local function applyWeaponAttachmentsAndTint(ped, weaponHash, weaponInfo)
+    weaponInfo = weaponInfo or {}
+    if weaponInfo.attachments then
+        for _, attachment in pairs(weaponInfo.attachments) do
+            local comp = attachment.component
+            if type(comp) == 'number' then
+                GiveWeaponComponentToPed(ped, weaponHash, comp)
+            elseif comp then
+                GiveWeaponComponentToPed(ped, weaponHash, joaat(tostring(comp)))
+            end
+        end
+    end
+    if weaponInfo.tint then
+        SetPedWeaponTintIndex(ped, weaponHash, weaponInfo.tint)
+    end
+end
+
+--- Užtikrina, kad pasirinktas inventoriaus ginklas būtų rankoje (ne tik ant nugaros / paslėptas).
+local function equipWeaponInHand(weaponData)
+    if not weaponData or not weaponData.name then return end
+    local ped = PlayerPedId()
+    if not ped or ped == 0 then return end
+
+    local name = tostring(weaponData.name)
+    local weaponHash = nativeWeaponHash(name)
+    if not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then return end
+
+    local ammo = tonumber(weaponData.info and weaponData.info.ammo) or 0
+    if name == 'weapon_petrolcan' or name == 'weapon_fireextinguisher' then
+        ammo = 4000
+    end
+
+    if not HasPedGotWeapon(ped, weaponHash, false) then
+        GiveWeaponToPed(ped, weaponHash, math.max(ammo, 0), false, false)
+    end
+    applyWeaponAmmoState(ped, weaponHash, ammo, weaponData)
+    applyWeaponAttachmentsAndTint(ped, weaponHash, weaponData.info)
+    SetPedCurrentWeaponVisible(ped, true, false, false, false)
+    SetCurrentPedWeapon(ped, weaponHash, true)
+    clearPedWeaponInfiniteAmmo(ped, weaponHash)
+end
+
 local function queueDrawWeapon(weaponName)
     CreateThread(function()
         TriggerEvent('qb-weapons:client:DrawWeapon', weaponName)
@@ -508,20 +550,7 @@ function applyHolsteredWeaponsFromInventory(force)
         GiveWeaponToPed(ped, h, ammo, hidden, false)
         applyWeaponAmmoState(ped, h, ammo, item)
 
-        local weaponInfo = item.info or {}
-        if weaponInfo.attachments then
-            for _, attachment in pairs(weaponInfo.attachments) do
-                local comp = attachment.component
-                if type(comp) == 'number' then
-                    GiveWeaponComponentToPed(ped, h, comp)
-                elseif comp then
-                    GiveWeaponComponentToPed(ped, h, joaat(tostring(comp)))
-                end
-            end
-        end
-        if weaponInfo.tint then
-            SetPedWeaponTintIndex(ped, h, weaponInfo.tint)
-        end
+        applyWeaponAttachmentsAndTint(ped, h, item.info)
 
         ::continue::
     end
@@ -850,10 +879,18 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', weaponData, shootbool)
         currentWeapon = weaponName
         applyHolsteredWeaponsFromInventory(true)
+        equipWeaponInHand(weaponData)
         weaponHash = nativeWeaponHash(weaponData.name)
         local syncedAmmo = GetAmmoInPedWeapon(ped, weaponHash)
         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', weaponData, syncedAmmo)
         queueDrawWeapon(weaponName)
+        CreateThread(function()
+            local expected = weaponName
+            local payload = weaponData
+            Wait(3200)
+            if currentWeapon ~= expected then return end
+            equipWeaponInHand(payload)
+        end)
     end
 end)
 

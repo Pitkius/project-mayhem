@@ -5,11 +5,12 @@ lua54 'yes'
 name 'fivempro_vehicle_perf'
 author 'FIVEMPROJEKTAS'
 description 'Realistiški max greičiai, pagreitis, stabdymas, vairavimas ir kainos'
-version '1.2.0'
+version '1.5.0'
 
 shared_scripts {
     'config.lua',
     'shared/pricing.lua',
+    'shared/vanilla_max_kmh.lua',
 }
 
 client_scripts {

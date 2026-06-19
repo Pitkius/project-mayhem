@@ -17,14 +17,15 @@ body {
     --accent-soft: #c4b5fd;
     --accent-glow: rgba(167, 139, 250, 0.5);
     --panel-alpha: 0.55;
-    --cluster-right: 1.35vw;
-    --cluster-bottom: 21.5vh;
+    --cluster-right: 0.7vw;
+    --cluster-bottom: 11vh;
     --cluster-left: 1.15vw;
     --cluster-left-bottom: 22.5vh;
     --hud-width: 19vw;
     --hud-min-width: 260px;
     --hud-gap: 0.55vh;
-    --car-min-width: 220px;
+    --car-min-width: 258px;
+    --car-gauge-size: 192px;
     --tile-health: #f43f5e;
     --tile-armor: #a78bfa;
     --tile-hunger: #fb923c;
@@ -1634,30 +1635,33 @@ body.no-hud-anim .hf-fill {
 }
 
 body.preset-1 {
-    --cluster-right: 1.4vw;
-    --cluster-bottom: 21.5vh;
+    --cluster-right: 0.75vw;
+    --cluster-bottom: 11vh;
     --hud-width: 19vw;
     --hud-min-width: 260px;
     --hud-gap: 0.55vh;
-    --car-min-width: 200px;
+    --car-min-width: 248px;
+    --car-gauge-size: 188px;
 }
 
 body.preset-2 {
-    --cluster-right: 1.2vw;
-    --cluster-bottom: 20.8vh;
+    --cluster-right: 0.6vw;
+    --cluster-bottom: 10vh;
     --hud-width: 16.5vw;
     --hud-min-width: 230px;
     --hud-gap: 0.45vh;
-    --car-min-width: 190px;
+    --car-min-width: 238px;
+    --car-gauge-size: 180px;
 }
 
 body.preset-3 {
-    --cluster-right: 1.6vw;
-    --cluster-bottom: 23vh;
+    --cluster-right: 0.85vw;
+    --cluster-bottom: 12vh;
     --hud-width: 20.5vw;
     --hud-min-width: 290px;
     --hud-gap: 0.65vh;
-    --car-min-width: 210px;
+    --car-min-width: 268px;
+    --car-gauge-size: 200px;
 }
 
 .hud-tiles {
@@ -3189,9 +3193,9 @@ body.shape-frame .hud-root {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 10px 14px 12px;
-    border-radius: 20px;
+    gap: 9px;
+    padding: 12px 16px 14px;
+    border-radius: 22px;
     background: rgba(18, 16, 28, 0.28);
     border: 1px solid rgba(167, 139, 250, 0.22);
     backdrop-filter: blur(14px);
@@ -3210,9 +3214,9 @@ body.shape-frame .hud-root {
 }
 
 .ch-stat {
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
     display: grid;
     place-items: center;
     background: rgba(255, 255, 255, 0.04);
@@ -3222,8 +3226,8 @@ body.shape-frame .hud-root {
 }
 
 .ch-stat .hud-ico-svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
 }
 
 .ch-stat.state-on {
@@ -3267,8 +3271,8 @@ body.shape-frame .hud-root {
 
 .ch-gauge-wrap {
     position: relative;
-    width: 168px;
-    height: 168px;
+    width: var(--car-gauge-size, 192px);
+    height: var(--car-gauge-size, 192px);
 }
 
 .ch-rpm-svg {
@@ -3333,7 +3337,7 @@ body.shape-frame .hud-root {
 }
 
 .ch-gear {
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     font-weight: 800;
     letter-spacing: 0.12em;
     color: rgba(167, 139, 250, 0.95);
@@ -3342,7 +3346,7 @@ body.shape-frame .hud-root {
 }
 
 .ch-speed {
-    font-size: clamp(1.85rem, 3.6vw, 2.5rem);
+    font-size: clamp(2.05rem, 4.1vw, 2.85rem);
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.04em;
@@ -3352,7 +3356,7 @@ body.shape-frame .hud-root {
 }
 
 .ch-unit {
-    font-size: 0.62rem;
+    font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.16em;
     color: rgba(196, 181, 253, 0.85);

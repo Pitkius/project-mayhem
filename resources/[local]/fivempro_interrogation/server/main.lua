@@ -311,8 +311,7 @@ RegisterNetEvent('fivempro_interrogation:server:action', function(action)
     action = tostring(action or '')
 
     for key, s in pairs(Sessions) do
-        if s.leadSrc ~= src then goto continue end
-
+        if s.leadSrc == src then
         local locOk = false
         if s.locationKind == 'station' then
             local st = stationById(s.locationId)
@@ -368,7 +367,7 @@ RegisterNetEvent('fivempro_interrogation:server:action', function(action)
         end
 
         syncState(key)
-        ::continue::
+        end
     end
 end)
 
@@ -377,8 +376,7 @@ RegisterNetEvent('fivempro_interrogation:server:endSession', function(payload)
     payload = type(payload) == 'table' and payload or {}
 
     for key, s in pairs(Sessions) do
-        if s.leadSrc ~= src then goto continue end
-
+        if s.leadSrc == src then
         if s.mode == 'police' then
             local result = tostring(payload.result or 'cooperative'):sub(1, 64)
             local summary = tostring(payload.summary or ''):sub(1, 800)
@@ -415,7 +413,7 @@ RegisterNetEvent('fivempro_interrogation:server:endSession', function(payload)
         end
         endSessionInternal(key, 'saved')
         return
-        ::continue::
+        end
     end
 end)
 

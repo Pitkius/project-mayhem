@@ -4,20 +4,20 @@
   <HandlingData>
     <Item type="CHandlingData">
       <handlingName>karinq50</handlingName>
-      <fMass value="1813.0000" />
+      <fMass value="1520.0" />
       <fInitialDragCoeff value="2.8500" />
-      <fDownforceModifier value="0.0300" />
+      <fDownforceModifier value="0.22" />
       <fPercentSubmerged value="85.0000" />
       <vecCentreOfMassOffset x="0.0000" y="0.0000" z="0.0000" />
       <vecInertiaMultiplier x="1.3000" y="1.5000" z="1.5000" />
       <fDriveBiasFront value="0.1000" />
       <nInitialDriveGears value="6" />
-      <fInitialDriveForce value="0.2200" />
+      <fInitialDriveForce value="0.162" />
       <fDriveInertia value="1.0000" />
       <fClutchChangeRateScaleUpShift value="5.0000" />
       <fClutchChangeRateScaleDownShift value="5.0000" />
-      <fInitialDriveMaxFlatVel value="136.0" />
-      <fBrakeForce value="0.9500" />
+      <fInitialDriveMaxFlatVel value="151.5" />
+      <fBrakeForce value="0.980" />
       <fBrakeBiasFront value="0.4250" />
       <fHandBrakeForce value="0.4500" />
       <fSteeringLock value="41.0000" />
@@ -29,7 +29,7 @@
       <fCamberStiffnesss value="0.0000" />
       <fTractionBiasFront value="0.4800" />
       <fTractionLossMult value="1.0000" />
-      <fSuspensionForce value="1.6000" />
+      <fSuspensionForce value="1.60" />
       <fSuspensionCompDamp value="0.9000" />
       <fSuspensionReboundDamp value="1.2000" />
       <fSuspensionUpperLimit value="0.1500" />

@@ -3,6 +3,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local uiOpen = false
 local currentStationId = nil
 local testPed = 0
+local testSupplyShopPed = 0
 local supplyShopPed = 0
 local supplyShopBlip = nil
 local productBuyerPeds = {}
@@ -887,25 +888,129 @@ RegisterNetEvent('fivempro_drugs:client:testKit', function(data)
     TriggerServerEvent('fivempro_drugs:server:testGiveKit', data and data.kit or 'level1')
 end)
 
-local function spawnHubPed(cfg, onTarget)
-    if not cfg then return 0 end
-    local model = joaat(cfg.model or 's_m_y_dealer_01')
-    RequestModel(model)
-    local t = GetGameTimer() + 8000
-    while not HasModelLoaded(model) and GetGameTimer() < t do Wait(10) end
-    if not HasModelLoaded(model) then return 0 end
-    local c = cfg.coords
-    local ped = CreatePed(0, model, c.x, c.y, c.z - 1.0, c.w, false, false)
+local function requestCollisionAt(x, y, z)
+    RequestCollisionAtCoord(x, y, z)
+    local deadline = GetGameTimer() + 4000
+    while GetGameTimer() < deadline do
+        if HasCollisionLoadedAroundEntity(PlayerPedId()) then break end
+        RequestCollisionAtCoord(x, y, z)
+        Wait(0)
+    end
+end
+
+local function resolveGroundZ(x, y, z)
+    local found, groundZ = GetGroundZFor_3dCoord(x, y, z + 3.0, false)
+    if found and groundZ and groundZ > 0.0 then
+        return groundZ
+    end
+    return z
+end
+
+local function safeDeleteHubPed(ped)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
+    if GetResourceState('qb-target') == 'started' then
+        pcall(function()
+            exports['qb-target']:RemoveTargetEntity(ped)
+        end)
+    end
+    SetEntityAsMissionEntity(ped, true, true)
+    DeleteEntity(ped)
+end
+
+local function configureHubPed(ped)
+    SetEntityAsMissionEntity(ped, true, true)
     SetEntityInvincible(ped, true)
     FreezeEntityPosition(ped, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
-    SetEntityCoordsNoOffset(ped, c.x, c.y, c.z, false, false, false)
+    SetPedCanRagdoll(ped, false)
+    SetPedDiesWhenInjured(ped, false)
+    SetPedFleeAttributes(ped, 0, false)
+    SetPedCanBeTargetted(ped, true)
+end
+
+local npcTargetZonesReady = false
+
+local function addNpcCircleZone(zoneId, cfg, action)
+    if not cfg or cfg.enabled == false or not cfg.coords then return end
+    if GetResourceState('qb-target') ~= 'started' then return end
+    local c = cfg.coords
+    local dist = (cfg.maxDistance or Config.InteractDistance or 2.5) + 0.5
+    exports['qb-target']:AddCircleZone(zoneId, vector3(c.x, c.y, c.z), dist, {
+        name = zoneId,
+        debugPoly = false,
+        useZ = true,
+    }, {
+        options = {
+            {
+                icon = cfg.targetIcon or 'fas fa-store',
+                label = cfg.label or 'NPC',
+                action = action,
+            },
+        },
+        distance = dist + 0.5,
+    })
+end
+
+local function setupNpcTargetZones()
+    if npcTargetZonesReady then return end
+    if GetResourceState('qb-target') ~= 'started' then return end
+
+    local supply = Config.SupplyShopNPC
+    if supply and supply.enabled ~= false then
+        addNpcCircleZone('fivempro_drugs_supply_shop', supply, openMaterialShop)
+    end
+
+    if Config.EnableDrugTestNPC then
+        if Config.TestSupplyShopNPC then
+            addNpcCircleZone('fivempro_drugs_test_supply', Config.TestSupplyShopNPC, openMaterialShop)
+        end
+        if Config.TestNPC then
+            addNpcCircleZone('fivempro_drugs_test_npc', Config.TestNPC, openTestMenu)
+        end
+    end
+
+    for buyerId, cfg in pairs(Config.ProductBuyerNPCs or {}) do
+        if cfg and cfg.enabled ~= false then
+            local id = buyerId
+            addNpcCircleZone(('fivempro_drugs_buyer_%s'):format(id), cfg, function()
+                openProductSellMenu(id)
+            end)
+        end
+    end
+
+    npcTargetZonesReady = true
+end
+
+local function spawnHubPed(cfg, onTarget)
+    if not cfg or not cfg.coords then return 0 end
+    local c = cfg.coords
+    requestCollisionAt(c.x, c.y, c.z)
+    local groundZ = resolveGroundZ(c.x, c.y, c.z)
+
+    local model = joaat(cfg.model or 's_m_y_dealer_01')
+    RequestModel(model)
+    local t = GetGameTimer() + 10000
+    while not HasModelLoaded(model) and GetGameTimer() < t do
+        Wait(10)
+    end
+    if not HasModelLoaded(model) then
+        print(('[fivempro_drugs] Nepavyko užkrauti NPC modelio: %s'):format(tostring(cfg.model)))
+        return 0
+    end
+
+    local ped = CreatePed(0, model, c.x, c.y, groundZ, c.w or 0.0, false, true)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then
+        SetModelAsNoLongerNeeded(model)
+        return 0
+    end
+
+    configureHubPed(ped)
+    SetEntityCoordsNoOffset(ped, c.x, c.y, groundZ, false, false, false)
+    SetEntityHeading(ped, c.w or 0.0)
     if cfg.scenario then
         TaskStartScenarioInPlace(ped, cfg.scenario, 0, true)
     end
-    if ped and ped ~= 0 then
-        streetSellExcludedPeds[ped] = true
-    end
+    streetSellExcludedPeds[ped] = true
     if onTarget then onTarget(ped) end
     SetModelAsNoLongerNeeded(model)
     return ped
@@ -929,6 +1034,7 @@ end
 local function spawnSupplyShopNpc()
     local cfg = Config.SupplyShopNPC
     if not cfg or cfg.enabled == false or not cfg.coords then return end
+    if supplyShopPed ~= 0 then safeDeleteHubPed(supplyShopPed) end
     supplyShopPed = spawnHubPed(cfg, function(ped)
         exports['qb-target']:AddTargetEntity(ped, {
             options = {
@@ -947,7 +1053,8 @@ end
 local function spawnTestSupplyShopNpc()
     if not Config.EnableDrugTestNPC or not Config.TestSupplyShopNPC then return end
     local cfg = Config.TestSupplyShopNPC
-    spawnHubPed(cfg, function(ped)
+    if testSupplyShopPed ~= 0 then safeDeleteHubPed(testSupplyShopPed) end
+    testSupplyShopPed = spawnHubPed(cfg, function(ped)
         exports['qb-target']:AddTargetEntity(ped, {
             options = {
                 {
@@ -969,6 +1076,9 @@ local function spawnProductBuyerNpcs()
     for buyerId, cfg in pairs(Config.ProductBuyerNPCs or {}) do
         if cfg and cfg.enabled ~= false then
             local id = buyerId
+            if productBuyerPeds[id] and productBuyerPeds[id] ~= 0 then
+                safeDeleteHubPed(productBuyerPeds[id])
+            end
             productBuyerPeds[id] = spawnHubPed(cfg, function(ped)
                 exports['qb-target']:AddTargetEntity(ped, {
                     options = {
@@ -990,6 +1100,7 @@ end
 
 local function spawnTestNpc()
     if not Config.EnableDrugTestNPC or not Config.TestNPC then return end
+    if testPed ~= 0 then safeDeleteHubPed(testPed) end
     testPed = spawnHubPed(Config.TestNPC, function(ped)
         exports['qb-target']:AddTargetEntity(ped, {
             options = {
@@ -1009,46 +1120,138 @@ local function spawnTestNpc()
     end)
 end
 
---- Violetiniai žymekliai ant žemės — matosi eilė (tik test režime)
+--- 3D žymekliai prie NPC (artėjus)
 CreateThread(function()
-    if not Config.EnableDrugTestNPC then return end
+    local drawDist = 42.0
     while true do
         local sleep = 800
         local ped = PlayerPedId()
         local pos = GetEntityCoords(ped)
-        local hub = Config.DevHub and (Config.DevHub.center or Config.DevHub.blipCoords)
-        if hub and #(pos - hub) < 55.0 then
+
+        local function drawNpcMarker(c, alpha)
+            if not c then return end
+            DrawMarker(2, c.x, c.y, c.z + 1.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.35, 0.35, 0.35, 251, 191, 36, alpha or 180, false, false, 2, false, nil, nil, false)
+        end
+
+        local function nearCoords(c)
+            return c and #(pos - vector3(c.x, c.y, c.z)) < drawDist
+        end
+
+        local supply = Config.SupplyShopNPC
+        if supply and supply.enabled ~= false and nearCoords(supply.coords) then
             sleep = 0
-            for _, st in ipairs(Config.Stations or {}) do
-                if st.coords then
-                    DrawMarker(27, st.coords.x, st.coords.y, st.coords.z - 0.98, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                        1.15, 1.15, 0.25, 120, 80, 220, 140, false, false, 2, false, nil, nil, false)
-                end
+            drawNpcMarker(supply.coords, 180)
+        end
+
+        for _, key in ipairs({ 'TestNPC', 'TestSupplyShopNPC' }) do
+            local npc = Config[key]
+            if Config.EnableDrugTestNPC and npc and nearCoords(npc.coords) then
+                sleep = 0
+                drawNpcMarker(npc.coords, 180)
             end
-            for _, key in ipairs({ 'TestNPC', 'TestSupplyShopNPC' }) do
-                local npc = Config[key]
-                if npc and npc.coords then
-                    DrawMarker(2, npc.coords.x, npc.coords.y, npc.coords.z + 1.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                        0.35, 0.35, 0.35, 251, 191, 36, 180, false, false, 2, false, nil, nil, false)
+        end
+
+        for _, cfg in pairs(Config.ProductBuyerNPCs or {}) do
+            if cfg and cfg.enabled ~= false and nearCoords(cfg.coords) then
+                sleep = 0
+                drawNpcMarker(cfg.coords, 160)
+            end
+        end
+
+        if Config.EnableDrugTestNPC then
+            local hub = Config.DevHub and (Config.DevHub.center or Config.DevHub.blipCoords)
+            if hub and #(pos - hub) < 55.0 then
+                sleep = 0
+                for _, st in ipairs(Config.Stations or {}) do
+                    if st.coords then
+                        DrawMarker(27, st.coords.x, st.coords.y, st.coords.z - 0.98, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                            1.15, 1.15, 0.25, 120, 80, 220, 140, false, false, 2, false, nil, nil, false)
+                    end
                 end
             end
         end
+
         Wait(sleep)
     end
 end)
+
+local function spawnAllDrugNpcs()
+    spawnTestNpc()
+    spawnSupplyShopNpc()
+    spawnTestSupplyShopNpc()
+    spawnProductBuyerNpcs()
+end
+
+local function ensureDrugNpcsAlive()
+    if not LocalPlayer.state.isLoggedIn then return end
+
+    local supply = Config.SupplyShopNPC
+    if supply and supply.enabled ~= false and (supplyShopPed == 0 or not DoesEntityExist(supplyShopPed)) then
+        spawnSupplyShopNpc()
+    end
+
+    if Config.EnableDrugTestNPC then
+        if Config.TestNPC and (testPed == 0 or not DoesEntityExist(testPed)) then
+            spawnTestNpc()
+        end
+        if Config.TestSupplyShopNPC and (testSupplyShopPed == 0 or not DoesEntityExist(testSupplyShopPed)) then
+            spawnTestSupplyShopNpc()
+        end
+    end
+
+    for buyerId, cfg in pairs(Config.ProductBuyerNPCs or {}) do
+        if cfg and cfg.enabled ~= false then
+            local ped = productBuyerPeds[buyerId]
+            if not ped or ped == 0 or not DoesEntityExist(ped) then
+                local id = buyerId
+                productBuyerPeds[id] = spawnHubPed(cfg, function(entity)
+                    exports['qb-target']:AddTargetEntity(entity, {
+                        options = {
+                            {
+                                icon = cfg.targetIcon or 'fas fa-dollar-sign',
+                                label = cfg.label or 'Supirkėjas',
+                                action = function()
+                                    openProductSellMenu(id)
+                                end,
+                            },
+                        },
+                        distance = (cfg.maxDistance or Config.InteractDistance or 2.5) + 0.5,
+                    })
+                end)
+            end
+        end
+    end
+end
 
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do
         Wait(250)
     end
-    Wait(500)
+    while not LocalPlayer.state.isLoggedIn do
+        Wait(500)
+    end
+    Wait(1500)
     setupStationBlips()
     setupStations()
     setupNpcStreetSell()
-    spawnTestNpc()
-    spawnSupplyShopNpc()
-    spawnTestSupplyShopNpc()
-    spawnProductBuyerNpcs()
+    setupNpcTargetZones()
+    spawnAllDrugNpcs()
+end)
+
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    CreateThread(function()
+        Wait(2500)
+        setupNpcTargetZones()
+        spawnAllDrugNpcs()
+    end)
+end)
+
+CreateThread(function()
+    while true do
+        Wait(15000)
+        ensureDrugNpcsAlive()
+    end
 end)
 
 AddEventHandler('onResourceStop', function(res)
@@ -1060,10 +1263,16 @@ AddEventHandler('onResourceStop', function(res)
     end
     mapBlips = {}
     if testPed ~= 0 and DoesEntityExist(testPed) then
-        DeleteEntity(testPed)
+        safeDeleteHubPed(testPed)
+        testPed = 0
+    end
+    if testSupplyShopPed ~= 0 and DoesEntityExist(testSupplyShopPed) then
+        safeDeleteHubPed(testSupplyShopPed)
+        testSupplyShopPed = 0
     end
     if supplyShopPed ~= 0 and DoesEntityExist(supplyShopPed) then
-        DeleteEntity(supplyShopPed)
+        safeDeleteHubPed(supplyShopPed)
+        supplyShopPed = 0
     end
     if supplyShopBlip and DoesBlipExist(supplyShopBlip) then
         RemoveBlip(supplyShopBlip)
@@ -1071,7 +1280,7 @@ AddEventHandler('onResourceStop', function(res)
     end
     for _, ped in pairs(productBuyerPeds) do
         if ped ~= 0 and DoesEntityExist(ped) then
-            DeleteEntity(ped)
+            safeDeleteHubPed(ped)
         end
     end
     productBuyerPeds = {}

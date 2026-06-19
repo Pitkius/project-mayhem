@@ -1,22 +1,22 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 
 <CHandlingDataMgr>
   <HandlingData>
       <Item type="CHandlingData"><!--ubermachtm5 HANDLING STARTS HERE-->
       <handlingName>ubermachtm5</handlingName>
-      <fMass value="2400.000000" />
+      <fMass value="1520.0" />
       <fInitialDragCoeff value="8.0500000" />
       <fPercentSubmerged value="85.000000" />
       <vecCentreOfMassOffset x="0.000000" y="0.050000" z="0.050000" />
       <vecInertiaMultiplier x="1.400000" y="1.500000" z="1.600000" />
       <fDriveBiasFront value="0.220000" />
       <nInitialDriveGears value="6" />
-      <fInitialDriveForce value="0.582000" />
+      <fInitialDriveForce value="0.322" />
       <fDriveInertia value="0.810000" />
       <fClutchChangeRateScaleUpShift value="45.000000" />
       <fClutchChangeRateScaleDownShift value="45.000000" />
-      <fInitialDriveMaxFlatVel value="197.3" />
-      <fBrakeForce value="2.950000" />
+      <fInitialDriveMaxFlatVel value="219.7" />
+      <fBrakeForce value="0.980" />
       <fBrakeBiasFront value="0.485000" />
       <fHandBrakeForce value="0.700000" />
       <fSteeringLock value="45.000000" />
@@ -28,7 +28,7 @@
       <fCamberStiffnesss value="0.000000" />
       <fTractionBiasFront value="0.483000" />
       <fTractionLossMult value="1.500000" />
-      <fSuspensionForce value="2.200000" />
+      <fSuspensionForce value="2.20" />
       <fSuspensionCompDamp value="1.800000" />
       <fSuspensionReboundDamp value="1.90000" />
       <fSuspensionUpperLimit value="0.150000" />

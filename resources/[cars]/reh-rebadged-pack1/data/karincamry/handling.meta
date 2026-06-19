@@ -1,23 +1,23 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 
 <CHandlingDataMgr>
   <HandlingData>
     <Item type="CHandlingData">
       <handlingName>karincamry</handlingName>
-      <fMass value="1650.000000"/>
+      <fMass value="1520.0"/>
       <fInitialDragCoeff value="4.6360002"/>
-      <fDownforceModifier value="1.150000"/>
+      <fDownforceModifier value="0.22"/>
       <fPercentSubmerged value="85.000000"/>
       <vecCentreOfMassOffset x="0.000000" y="-0.175000" z="0.130000"/>
       <vecInertiaMultiplier x="1.170000" y="1.000000" z="1.540000"/>
       <fDriveBiasFront value="1.000000"/>
       <nInitialDriveGears value="8"/>
-      <fInitialDriveForce value="0.164000"/>
+      <fInitialDriveForce value="0.178"/>
       <fDriveInertia value="0.98199999"/>
       <fClutchChangeRateScaleUpShift value="1.700000"/>
       <fClutchChangeRateScaleDownShift value="2.000000"/>
-      <fInitialDriveMaxFlatVel value="142.8"/>
-      <fBrakeForce value="0.516000"/>
+      <fInitialDriveMaxFlatVel value="159.1"/>
+      <fBrakeForce value="0.980"/>
       <fBrakeBiasFront value="0.452250"/>
       <fHandBrakeForce value="0.800000"/>
       <fSteeringLock value="36.000000"/>
@@ -29,7 +29,7 @@
       <fCamberStiffnesss value="0.000000"/>
       <fTractionBiasFront value="0.4798"/>
       <fTractionLossMult value="0.230000"/>
-      <fSuspensionForce value="2.2000"/>
+      <fSuspensionForce value="2.20"/>
       <fSuspensionCompDamp value="1.270000"/>
       <fSuspensionReboundDamp value="1.000000"/>
       <fSuspensionUpperLimit value="0.165000"/>

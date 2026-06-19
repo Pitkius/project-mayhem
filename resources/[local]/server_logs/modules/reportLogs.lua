@@ -7,8 +7,24 @@ function LogReportEvent(title, report, extraFields, staffSrc)
         { name = 'Report #', value = tostring(report.id or '?'), inline = true },
         { name = 'Žaidėjas', value = ('%s (ID %s)'):format(report.name or '?', report.source or '?'), inline = true },
         { name = 'CitizenID', value = tostring(report.citizenid or '—'), inline = true },
-        { name = 'Pranešimas', value = tostring(report.message or '—'):sub(1, 1024), inline = false },
     }
+
+    if report.title and report.title ~= '' then
+        fields[#fields + 1] = { name = 'Pavadinimas', value = tostring(report.title):sub(1, 256), inline = false }
+    end
+
+    fields[#fields + 1] = {
+        name = 'Pranešimas',
+        value = tostring(report.message or '—'):sub(1, 1024),
+        inline = false,
+    }
+
+    if report.category then
+        fields[#fields + 1] = { name = 'Kategorija', value = tostring(report.category), inline = true }
+    end
+    if report.priority then
+        fields[#fields + 1] = { name = 'Prioritetas', value = tostring(report.priority), inline = true }
+    end
 
     if report.coords then
         fields[#fields + 1] = {

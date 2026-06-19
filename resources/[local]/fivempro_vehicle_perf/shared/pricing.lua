@@ -53,13 +53,70 @@ function VehiclePricing.ResolveEffectiveCategory(category, maxKmh)
     return category
 end
 
-function VehiclePricing.ResolveMaxKmh(model, category)
+function VehiclePricing.ResolveTierFromPrice(price)
+    price = tonumber(price) or 8000
+    local tier = 'D'
+    for _, t in ipairs({ 'D', 'C', 'B', 'A', 'S', 'X' }) do
+        local band = (pricingCfg().TierBands or {})[t]
+        if band and price >= (tonumber(band.min) or 0) then
+            tier = t
+        end
+    end
+    return tier
+end
+
+local TIER_BASE_KMH = {
+    D = 174,
+    C = 204,
+    B = 242,
+    A = 270,
+    S = 294,
+    X = 304,
+}
+
+--- Atvirkštinė kainos formulė — vanilla QB auto max greitis pagal parduotuvės kainą.
+function VehiclePricing.MaxKmhFromPrice(price, category)
+    price = tonumber(price) or 10000
+    category = tostring(category or 'sedans')
+
+    local tier = VehiclePricing.ResolveTierFromPrice(price)
+    local kmh = TIER_BASE_KMH[tier] or 204
+
+    local band = (pricingCfg().TierBands or {})[tier]
+    if band then
+        local minP = tonumber(band.min) or 8000
+        local maxP = tonumber(band.max) or (minP + 1)
+        if maxP > minP then
+            local pos = clamp((price - minP) / (maxP - minP), 0.0, 1.0)
+            kmh = kmh + ((pos - 0.5) * 16.0)
+        end
+    end
+
+    local vanilla = (pricingCfg().VanillaCategoryPerf or {})[category]
+    if vanilla and vanilla.maxKmh then
+        kmh = (kmh * 0.58) + (tonumber(vanilla.maxKmh) * 0.42)
+    end
+
+    local caps = cfg().VanillaCategoryCap or {}
+    local cap = caps[category] or cfg().GlobalCapKmh or 310
+    return clamp(kmh, 148.0, cap)
+end
+
+function VehiclePricing.ResolveMaxKmh(model, category, price)
     model = tostring(model or ''):lower()
     category = tostring(category or 'sedans')
 
     local reh = cfg().RehMaxKmh or {}
     if reh[model] then
         return tonumber(reh[model])
+    end
+
+    if VanillaMaxKmh and VanillaMaxKmh[model] then
+        return tonumber(VanillaMaxKmh[model])
+    end
+
+    if price and tonumber(price) and tonumber(price) > 0 then
+        return VehiclePricing.MaxKmhFromPrice(price, category)
     end
 
     local rehCat = cfg().RehCategoryKmh or {}
@@ -113,11 +170,11 @@ function VehiclePricing.ResolveTier(maxKmh, zeroTo100, isHyper)
     return 'D'
 end
 
-function VehiclePricing.ResolveProfile(model, category)
+function VehiclePricing.ResolveProfile(model, category, price)
     model = tostring(model or ''):lower()
     category = tostring(category or 'sedans')
 
-    local maxKmh = VehiclePricing.ResolveMaxKmh(model, category)
+    local maxKmh = VehiclePricing.ResolveMaxKmh(model, category, price)
     local perfCategory = VehiclePricing.ResolveEffectiveCategory(category, maxKmh)
     local zeroTo100 = VehiclePricing.ResolveZeroTo100(model, perfCategory, maxKmh)
     local isHyper = VehiclePricing.IsHyperModel(model)
@@ -133,8 +190,8 @@ function VehiclePricing.ResolveProfile(model, category)
     }
 end
 
-function VehiclePricing.CalculatePrice(model, category)
-    local profile = VehiclePricing.ResolveProfile(model, category)
+function VehiclePricing.CalculatePrice(model, category, priceHint)
+    local profile = VehiclePricing.ResolveProfile(model, category, priceHint)
     local pCfg = pricingCfg()
 
     local maxKmh = profile.maxKmh

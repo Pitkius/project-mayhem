@@ -150,14 +150,163 @@ function drawBrick(c, color) {
 }
 
 function drawLeaves(c, colors) {
+  drawCannabisLeaf(c, 1);
+}
+
+function drawCannabisLeaf(c, scale = 1) {
   c.addGroundShadow();
   c.addRimGlow();
-  const poses = [[108, 118, -0.4], [128, 108, 0.2], [148, 122, 0.55], [118, 138, -0.1], [138, 140, 0.35]];
-  poses.forEach(([x, y, rot], i) => {
-    const col = colors[i % colors.length];
-    for (let s = 0; s < 3; s++) {
-      c.fillCircle(x + s * 4, y + s * 2, 22 - s * 3, 12 - s, ...col, 220 - s * 20);
+  const leaf = hex('#22c55e');
+  const dark = hex('#15803d');
+  const light = hex('#86efac');
+  const fingers = [
+    [0, -52], [-28, -38], [-42, -12], [-38, 14], [-18, 32],
+    [0, 38], [18, 32], [38, 14], [42, -12], [28, -38],
+  ];
+  fingers.forEach(([ox, oy], i) => {
+    const x = CX + ox * scale;
+    const y = CY + oy * scale;
+    const col = i % 2 === 0 ? leaf : dark;
+    c.fillCircle(x, y, 16 * scale, 28 * scale, ...col, 235);
+    c.fillCircle(x - 3 * scale, y - 4 * scale, 5 * scale, 8 * scale, ...light, 90);
+  });
+  c.fillCircle(CX, CY + 8 * scale, 10 * scale, 18 * scale, ...dark, 255);
+}
+
+function drawWeedBudsIcon(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  const clusters = [
+    [108, 128, 34, 28], [128, 112, 40, 32], [148, 126, 36, 30],
+    [118, 142, 28, 24], [138, 148, 30, 26], [128, 132, 22, 20],
+  ];
+  clusters.forEach(([x, y, rx, ry], i) => {
+    const g = i % 3 === 0 ? hex('#166534') : i % 3 === 1 ? hex('#22c55e') : hex('#4ade80');
+    c.fillCircle(x, y, rx, ry, ...g, 245);
+    for (let h = 0; h < 6; h++) {
+      const a = (h / 6) * Math.PI * 2 + i * 0.3;
+      c.fillCircle(x + Math.cos(a) * (rx - 6), y + Math.sin(a) * (ry - 5), 5, 8, ...hex('#f97316'), 200);
     }
+    c.fillCircle(x - 6, y - 8, 7, 5, ...STYLE.highlight, 70);
+  });
+}
+
+function drawZipBag(c, contentColor, accentColor, label = '') {
+  c.addGroundShadow();
+  c.addRimGlow();
+  const bag = [200, 210, 225];
+  c.fillRoundRect(74, 78, 108, 112, 10, ...bag, 245);
+  c.fillRoundRect(82, 94, 92, 78, 8, ...contentColor, 255);
+  c.fillRect(78, 82, 100, 16, ...shade(bag, 0.88), 255);
+  c.fillRect(88, 84, 80, 6, ...accentColor, 180);
+  c.fillCircle(100, 108, 6, 6, ...STYLE.highlight, 60);
+  if (label === 'coke') {
+    for (let i = 0; i < 5; i++) c.fillCircle(108 + i * 10, 128 + (i % 2) * 6, 4, 4, ...STYLE.highlight, 120);
+  }
+  if (label === 'meth') {
+    drawCrystalsOnCanvas(c, 128, 128, hex('#38bdf8'), 0.55);
+  }
+}
+
+function drawCrystalsOnCanvas(c, cx, cy, color, scale = 1) {
+  const pts = [[0, 18], [14, -8], [0, -22], [-14, -8], [20, 12], [-18, 14]];
+  pts.forEach(([ox, oy], i) => {
+    const x = cx + ox * scale;
+    const y = cy + oy * scale;
+    c.fillCircle(x, y, 10 * scale, 16 * scale, ...shade(color, 0.85 + (i % 3) * 0.08), 240);
+    c.fillCircle(x - 3 * scale, y - 5 * scale, 4 * scale, 4 * scale, ...STYLE.highlight, 100);
+  });
+}
+
+function drawMushroomDetailed(c, capColor, spotColor, stemColor, dried = false) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  c.fillRoundRect(116, 124, 24, 52, 10, ...stemColor, 255);
+  c.fillCircle(128, 108, 50, 34, ...capColor, 255);
+  if (!dried) {
+    [[108, 98], [138, 96], [122, 112], [145, 108], [112, 108]].forEach(([x, y]) => {
+      c.fillCircle(x, y, 7, 6, ...spotColor, 240);
+    });
+  } else {
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      c.fillCircle(128 + Math.cos(a) * 28, 108 + Math.sin(a) * 18, 3, 3, ...shade(capColor, 0.7), 200);
+    }
+  }
+  c.fillCircle(110, 96, 12, 8, ...STYLE.highlight, 55);
+}
+
+function drawCokeBrickIcon(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  c.fillRoundRect(68, 96, 120, 72, 6, ...hex('#d4d4d8'), 255);
+  c.fillRoundRect(74, 90, 108, 18, 4, ...hex('#f4f4f5'), 255);
+  c.fillRect(82, 108, 92, 3, ...STYLE.highlight, 80);
+  c.fillRect(82, 124, 88, 2, ...shade(hex('#a1a1aa'), 0.9), 100);
+  c.fillRect(82, 140, 90, 2, ...shade(hex('#a1a1aa'), 0.9), 100);
+}
+
+function drawJointIcon(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  c.fillRoundRect(88, 118, 80, 18, 8, ...hex('#fef3c7'), 255);
+  c.fillRoundRect(92, 120, 52, 14, 6, ...hex('#4ade80'), 255);
+  c.fillRoundRect(148, 119, 18, 16, 6, ...hex('#ea580c'), 255);
+  c.fillCircle(96, 124, 4, 4, ...hex('#166534'), 200);
+}
+
+function drawAmmoPistol(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  c.fillRoundRect(76, 108, 104, 68, 10, ...hex('#3f3f46'), 240);
+  c.fillRect(84, 116, 88, 4, ...hex('#52525b'), 255);
+  const brass = hex('#d4a017');
+  const tip = hex('#b45309');
+  [[100, 132], [118, 128], [136, 132], [154, 128]].forEach(([x, y]) => {
+    c.fillRoundRect(x - 7, y, 14, 22, 4, ...brass, 255);
+    c.fillCircle(x, y - 2, 7, 7, ...tip, 255);
+    c.fillCircle(x - 2, y + 4, 3, 3, ...STYLE.highlight, 80);
+  });
+}
+
+function drawAmmoSmg(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  c.fillRoundRect(82, 100, 92, 88, 12, ...hex('#374151'), 245);
+  c.fillRoundRect(88, 108, 80, 72, 8, ...hex('#1f2937'), 255);
+  const brass = hex('#ca8a04');
+  const tip = hex('#78716c');
+  for (let i = 0; i < 5; i++) {
+    const x = 96 + i * 14;
+    c.fillRoundRect(x, 118 - i * 2, 10, 32, 3, ...brass, 255);
+    c.fillRoundRect(x + 1, 108 - i * 2, 8, 12, 2, ...tip, 255);
+  }
+  c.fillRect(118, 92, 20, 18, ...hex('#4b5563'), 255);
+}
+
+function drawAmmoRifle(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  const brass = hex('#b8860b');
+  const body = hex('#57534e');
+  const tip = hex('#365314');
+  [[94, 130], [118, 124], [142, 130]].forEach(([x, y], i) => {
+    const h = 48 - i * 4;
+    c.fillRoundRect(x - 6, y - h + 20, 12, h, 3, ...brass, 255 - i * 15);
+    c.fillRoundRect(x - 4, y - h + 4, 8, 18, 2, ...body, 255);
+    c.fillRoundRect(x - 3, y - h, 6, 10, 2, ...tip, 255);
+  });
+  c.fillRoundRect(156, 118, 28, 36, 6, ...hex('#292524'), 230);
+}
+
+function drawAmmoShotgun(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  [[88, 132], [118, 126], [148, 132]].forEach(([x, y]) => {
+    c.fillRoundRect(x, y, 52, 18, 8, ...hex('#dc2626'), 255);
+    c.fillRoundRect(x, y + 10, 52, 8, 4, ...hex('#b91c1c'), 255);
+    c.fillRoundRect(x - 4, y + 2, 10, 14, 3, ...hex('#d4a017'), 255);
+    c.fillRect(x + 8, y + 4, 36, 3, ...STYLE.highlight, 50);
   });
 }
 
@@ -182,11 +331,7 @@ function drawCrystals(c, color) {
 }
 
 function drawMushroom(c, cap, stem) {
-  c.addGroundShadow();
-  c.addRimGlow();
-  c.fillRoundRect(118, 118, 20, 48, 8, ...stem, 255);
-  c.fillCircle(128, 108, 46, 30, ...cap, 255);
-  c.fillCircle(112, 100, 10, 8, ...STYLE.highlight, 60);
+  drawMushroomDetailed(c, cap, [255, 255, 255], stem, cap[0] < 200);
 }
 
 function drawPills(c, colors) {
@@ -265,16 +410,11 @@ function drawPrinter(c) {
 }
 
 function drawAmmo(c, tip) {
-  c.addGroundShadow();
-  c.addRimGlow();
-  const brass = [210, 175, 80];
-  const tipColors = { pistol: [180, 180, 185], smg: [170, 175, 160], rifle: [160, 175, 140], shotgun: [150, 155, 150] };
-  const tc = tipColors[tip] || tipColors.pistol;
-  for (let i = 0; i < 4; i++) {
-    const x = 92 + i * 18;
-    c.fillRoundRect(x, 118, 14, 36, 4, ...brass, 255);
-    c.fillRoundRect(x + 1, 104, 12, 16, 3, ...tc, 255);
-  }
+  if (tip === 'pistol') drawAmmoPistol(c);
+  else if (tip === 'smg') drawAmmoSmg(c);
+  else if (tip === 'rifle') drawAmmoRifle(c);
+  else if (tip === 'shotgun') drawAmmoShotgun(c);
+  else drawAmmoPistol(c);
 }
 
 function drawPapers(c) {
@@ -306,6 +446,27 @@ function drawPlastic(c) {
   for (let i = 0; i < 4; i++) c.fillCircle(104 + i * 16, 132, 6, 6, ...STYLE.highlight, 100);
 }
 
+function drawPoppy(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+    c.fillCircle(CX + Math.cos(a) * 38, CY + Math.sin(a) * 30, 24, 16, ...hex('#ef4444'), 235);
+  }
+  c.fillCircle(CX, CY, 20, 20, ...hex('#3f3f46'), 255);
+  c.fillRect(124, 148, 8, 28, ...hex('#166534'), 255);
+}
+
+function drawCocaLeaf(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  const poses = [[100, 120], [128, 108], [156, 122], [118, 140], [138, 138]];
+  poses.forEach(([x, y], i) => {
+    c.fillCircle(x, y, 24, 12, ...hex(i % 2 ? '#16a34a' : '#22c55e'), 230);
+    c.fillCircle(x - 4, y - 3, 6, 4, ...hex('#86efac'), 80);
+  });
+}
+
 function drawBlueprint(c) {
   c.addGroundShadow();
   c.addRimGlow();
@@ -317,28 +478,44 @@ function drawBlueprint(c) {
 }
 
 const GENERATORS = {
-  weed_leaf: () => { const c = new Canvas(); drawLeaves(c, [hex('#3d9a4a'), hex('#2f7d3b'), hex('#52b86a')]); return c; },
-  weed_buds: () => { const c = new Canvas(); drawLeaves(c, [hex('#4ade80'), hex('#22c55e'), hex('#86efac')]); return c; },
-  weed_resin: () => { const c = new Canvas(); drawJar(c, hex('#a3e635'), 'liq'); return c; },
-  weed_seed: () => { const c = new Canvas(); drawPills(c, [hex('#8B7355'), hex('#6d5a44')]); return c; },
-  weed_baggy: () => { const c = new Canvas(); drawBag(c, hex('#4ade80'), hex('#22c55e')); return c; },
+  weed_leaf: () => { const c = new Canvas(); drawCannabisLeaf(c, 1); return c; },
+  weed_buds: () => { const c = new Canvas(); drawWeedBudsIcon(c); return c; },
+  weed_resin: () => {
+    const c = new Canvas();
+    c.addGroundShadow();
+    c.addRimGlow();
+    c.strokeRoundRect(88, 72, 80, 108, 12, 200, 210, 225, 240, 3);
+    c.fillRoundRect(94, 92, 68, 76, 10, ...hex('#84cc16'), 230);
+    c.fillRoundRect(102, 100, 52, 48, 8, ...hex('#a3e635'), 220);
+    c.fillCircle(128, 118, 18, 14, ...hex('#ecfccb'), 180);
+    c.fillRect(104, 58, 48, 22, 160, 165, 175, 255);
+    c.fillRect(110, 64, 36, 8, ...hex('#fde047'), 200);
+    return c;
+  },
+  weed_seed: () => { const c = new Canvas(); drawPills(c, [hex('#8B7355'), hex('#6d5a44'), hex('#a89070')]); return c; },
+  weed_baggy: () => { const c = new Canvas(); drawZipBag(c, hex('#22c55e'), hex('#16a34a')); return c; },
   weed_baggy_empty: () => { const c = new Canvas(); drawBag(c, hex('#d8dee9'), hex('#c5ccd8'), false); return c; },
-  coca_leaf: () => { const c = new Canvas(); drawLeaves(c, [hex('#2f9e44'), hex('#51cf66'), hex('#1f7a35')]); return c; },
-  cocaine_paste: () => { const c = new Canvas(); drawJar(c, hex('#f1f5f9'), 'chem'); return c; },
-  cocaine_powder_loose: () => { const c = new Canvas(); drawBag(c, hex('#f8fafc'), hex('#e2e8f0')); return c; },
-  cocaine_baggy: () => { const c = new Canvas(); drawBag(c, hex('#f8fafc'), hex('#cbd5e1')); return c; },
-  coke_small_brick: () => { const c = new Canvas(); drawBrick(c, hex('#f1f5f9')); return c; },
-  poppy_flower: () => { const c = new Canvas(); drawFlower(c, hex('#f87171'), hex('#3f3f46')); return c; },
-  heroin_powder_loose: () => { const c = new Canvas(); drawBag(c, hex('#b45309'), hex('#92400e')); return c; },
-  heroin_bag: () => { const c = new Canvas(); drawBag(c, hex('#d97706'), hex('#b45309')); return c; },
+  weed_brick: () => { const c = new Canvas(); drawBrick(c, hex('#166534')); return c; },
+  coca_leaf: () => { const c = new Canvas(); drawCocaLeaf(c); return c; },
+  cocaine_paste: () => { const c = new Canvas(); drawJar(c, hex('#fef9c3'), 'chem'); return c; },
+  cocaine_powder_loose: () => { const c = new Canvas(); drawZipBag(c, hex('#fafafa'), hex('#e5e5e5'), 'coke'); return c; },
+  cocaine_baggy: () => { const c = new Canvas(); drawZipBag(c, hex('#ffffff'), hex('#d4d4d4'), 'coke'); return c; },
+  coke_small_brick: () => { const c = new Canvas(); drawCokeBrickIcon(c); return c; },
+  coke_brick: () => { const c = new Canvas(); drawCokeBrickIcon(c); return c; },
+  poppy_flower: () => { const c = new Canvas(); drawPoppy(c); return c; },
+  heroin_powder_loose: () => { const c = new Canvas(); drawZipBag(c, hex('#92400e'), hex('#78350f')); return c; },
+  heroin_bag: () => { const c = new Canvas(); drawZipBag(c, hex('#b45309'), hex('#92400e')); return c; },
   meth_crystal: () => { const c = new Canvas(); drawCrystals(c, hex('#38bdf8')); return c; },
-  meth_baggy: () => { const c = new Canvas(); drawBag(c, hex('#7dd3fc'), hex('#38bdf8')); return c; },
-  mushroom_raw: () => { const c = new Canvas(); drawMushroom(c, hex('#c084fc'), hex('#f5f5f4')); return c; },
-  mushroom_dried: () => { const c = new Canvas(); drawMushroom(c, hex('#a78bfa'), hex('#e7e5e4')); return c; },
-  mushroom_pack: () => { const c = new Canvas(); drawBag(c, hex('#c4b5fd'), hex('#a78bfa')); return c; },
+  meth_baggy: () => { const c = new Canvas(); drawZipBag(c, hex('#0ea5e9'), hex('#0284c7'), 'meth'); return c; },
+  mushroom_raw: () => { const c = new Canvas(); drawMushroomDetailed(c, hex('#ef4444'), [255, 255, 255], hex('#fef3c7'), false); return c; },
+  mushroom_dried: () => { const c = new Canvas(); drawMushroomDetailed(c, hex('#a78bfa'), [200, 200, 200], hex('#e7e5e4'), true); return c; },
+  mushroom_pack: () => { const c = new Canvas(); drawZipBag(c, hex('#c4b5fd'), hex('#a78bfa')); return c; },
+  joint: () => { const c = new Canvas(); drawJointIcon(c); return c; },
+  crack_baggy: () => { const c = new Canvas(); drawZipBag(c, hex('#f5f5f4'), hex('#d6d3d1')); return c; },
+  xtc_baggy: () => { const c = new Canvas(); drawZipBag(c, hex('#f472b6'), hex('#ec4899')); return c; },
+  oxy: () => { const c = new Canvas(); drawPills(c, [hex('#f8fafc'), hex('#e2e8f0')]); return c; },
   amp_precursor: () => { const c = new Canvas(); drawJar(c, hex('#fdba74'), 'chem'); return c; },
   amp_paste: () => { const c = new Canvas(); drawJar(c, hex('#fb923c'), 'chem'); return c; },
-  xtc_baggy: () => { const c = new Canvas(); drawBag(c, hex('#f472b6'), hex('#ec4899')); return c; },
   pill_tablets: () => { const c = new Canvas(); drawPills(c, [hex('#f472b6'), hex('#60a5fa'), hex('#fbbf24')]); return c; },
   moonshine_spirit: () => { const c = new Canvas(); drawBottle(c, hex('#fef08a'), hex('#57534e')); return c; },
   alcohol_base: () => { const c = new Canvas(); drawJar(c, hex('#fde68a'), 'liq'); return c; },
@@ -372,7 +549,12 @@ const GENERATORS = {
 
 const EXTRA_COPIES = {
   cartel_pack: 'coke_small_brick',
+  cartel_blend: 'cocaine_powder_loose',
   heroin_paste: 'heroin_powder_loose',
+  meth: 'meth_baggy',
+  meth_ingredient: 'amp_precursor',
+  rolling_paper: 'ocb_papers',
+  cokebaggy: 'cocaine_baggy',
 };
 
 function writeIcon(name) {

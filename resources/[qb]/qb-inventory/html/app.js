@@ -683,7 +683,11 @@ const InventoryContainer = Vue.createApp({
             this.showContextMenu = false;
         },
         async useItem(item) {
-            if (!item || item.useable === false) {
+            if (!item) {
+                return;
+            }
+            const isWeapon = item.type === "weapon";
+            if (!isWeapon && item.useable === false) {
                 return;
             }
             const playerItemKey = Object.keys(this.playerInventory).find((key) => this.playerInventory[key] && this.playerInventory[key].slot === item.slot);

@@ -10,13 +10,11 @@ client_scripts {
     'client.lua',
     'client/vehicle_lockpick.lua',
     'client/clothing_toggle.lua',
-    'client/reports.lua',
 }
 
 server_scripts {
     'server.lua',
     'server/clothing_toggle.lua',
-    'server/reports.lua',
 }
 
 exports {

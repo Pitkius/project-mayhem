@@ -73,18 +73,11 @@ local function loadSimionShowroom()
     pinInteriorAt(vec3(-47.59, -1115.42, 26.43))
 end
 
---- druglabs build4 keičia O'Neil išorę (id2_15) — vanilla farm IPL sukuria antrą interjerą ir užrakina duris.
+--- O'Neil sodyba (vanilla) — druglabs build4 (id2_15) išjungtas, visada krauname pilną vanilla farm.
 local function loadOneilFarmhouse()
     removeIpls(BURNT_FARM_IPLS)
-
-    if GetResourceState('druglabs') == 'started' then
-        removeIpls(VANILLA_FARM_EXTERIOR_IPLS)
-        requestIpls(VANILLA_FARM_INTERIOR_IPLS)
-    else
-        requestIpls(VANILLA_FARM_EXTERIOR_IPLS)
-        requestIpls(VANILLA_FARM_INTERIOR_IPLS)
-    end
-
+    requestIpls(VANILLA_FARM_EXTERIOR_IPLS)
+    requestIpls(VANILLA_FARM_INTERIOR_IPLS)
     pinInteriorAt(ONEIL_INTERIOR_PROBE)
     unlockOneilDoors()
 end
@@ -122,7 +115,7 @@ CreateThread(function()
 end)
 
 AddEventHandler('onResourceStart', function(resourceName)
-    if resourceName == GetCurrentResourceName() or resourceName == 'druglabs' then
+    if resourceName == GetCurrentResourceName() then
         Wait(500)
         applyMapFixes()
     end
