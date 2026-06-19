@@ -602,6 +602,15 @@ Config.Sell = {
     basePriceMultiplier = 1.0,
 }
 
+--- Gatvės / NPC pardavimo animacija (rankų perdavimas)
+Config.SellAnim = {
+    label = 'Sandoris su pirkėju...',
+    durationMs = 2800,
+    faceMs = 550,
+    player = { dict = 'mp_common', clip = 'givetake1_a', flag = 49 },
+    npc = { dict = 'mp_common', clip = 'givetake1_b', flag = 49 },
+}
+
 Config.PoliceAlerts = {
     craft_fail = 'Įtartinas cheminis kvapas rajone',
     craft_high = 'Galima nelegali laboratorija',

@@ -21,6 +21,7 @@ shared_scripts {
 
 client_scripts {
     'client/progress.lua',
+    'client/drug_sell_anim.lua',
     'client/main.lua',
     'client/planned.lua',
     'client/printer.lua',
@@ -33,6 +34,11 @@ server_scripts {
     'server/main.lua',
     'server/printer.lua',
     'server/amp_lab.lua',
+}
+
+client_exports {
+    'PlayDrugSellAnim',
+    'IsDrugSellAnimBusy',
 }
 
 dependencies {

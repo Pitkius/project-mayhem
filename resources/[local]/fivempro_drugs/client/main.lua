@@ -419,25 +419,37 @@ local function trySellToNpcEntity(entity)
     if not entity or entity == 0 or not DoesEntityExist(entity) then
         return QBCore.Functions.Notify('Netinkamas NPC.', 'error')
     end
+    if DrugSellAnim.isBusy() then return end
     local maxDist = (Config.Sell and Config.Sell.maxDistanceToPed or 3.0) + 0.5
     if #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(entity)) > maxDist then
         return QBCore.Functions.Notify('NPC per toli.', 'error')
     end
-    QBCore.Functions.TriggerCallback('fivempro_drugs:server:tryNpcSell', function(res)
-        if not res or not res.ok then
-            if res and res.panic then
-                return QBCore.Functions.Notify(res.reason or 'NPC panikuoja!', 'error')
-            end
-            if res and res.refused then
-                return QBCore.Functions.Notify('NPC atsisakė pirkti.', 'error')
-            end
-            return QBCore.Functions.Notify((res and res.reason) or 'Pardavimas nepavyko.', 'error')
+
+    DrugSellAnim.play(entity, function(ok)
+        if not ok then return end
+        if not DoesEntityExist(entity) then
+            return QBCore.Functions.Notify('NPC nebepasiekiamas.', 'error')
         end
-        QBCore.Functions.Notify(('Parduota už $%s'):format(res.price or 0), 'success')
-        if res.alertPolice then
-            QBCore.Functions.Notify('Kažkas gali būti iškvietęs policiją…', 'error', 5500)
+        if #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(entity)) > maxDist then
+            return QBCore.Functions.Notify('NPC per toli.', 'error')
         end
-    end, itemName, NetworkGetNetworkIdFromEntity(entity))
+
+        QBCore.Functions.TriggerCallback('fivempro_drugs:server:tryNpcSell', function(res)
+            if not res or not res.ok then
+                if res and res.panic then
+                    return QBCore.Functions.Notify(res.reason or 'NPC panikuoja!', 'error')
+                end
+                if res and res.refused then
+                    return QBCore.Functions.Notify('NPC atsisakė pirkti.', 'error')
+                end
+                return QBCore.Functions.Notify((res and res.reason) or 'Pardavimas nepavyko.', 'error')
+            end
+            QBCore.Functions.Notify(('Parduota už $%s'):format(res.price or 0), 'success')
+            if res.alertPolice then
+                QBCore.Functions.Notify('Kažkas gali būti iškvietęs policiją…', 'error', 5500)
+            end
+        end, itemName, NetworkGetNetworkIdFromEntity(entity))
+    end)
 end
 
 local function setupNpcStreetSell()

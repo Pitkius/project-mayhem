@@ -166,25 +166,44 @@ local function tryGangSellToNpc(entity)
     if not entity or entity == 0 or not DoesEntityExist(entity) then
         return QBCore.Functions.Notify('Netinkamas NPC.', 'error')
     end
+    if GetResourceState('fivempro_drugs') == 'started' and exports['fivempro_drugs']:IsDrugSellAnimBusy() then
+        return
+    end
     local maxDist = (Config.DrugSell.maxDistanceToPed or 3.0) + 0.5
     if #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(entity)) > maxDist then
         return QBCore.Functions.Notify('NPC per toli.', 'error')
     end
-    QBCore.Functions.TriggerCallback('fivempro_gangs:server:tryDrugSale', function(res)
-        if not res or not res.ok then
-            if res and res.refused then
-                QBCore.Functions.Notify('NPC atsisakė. Bandyk kitą.', 'error')
-            else
-                QBCore.Functions.Notify((res and res.reason) or 'Pardavimas nepavyko.', 'error')
+
+    local function doSell()
+        QBCore.Functions.TriggerCallback('fivempro_gangs:server:tryDrugSale', function(res)
+            if not res or not res.ok then
+                if res and res.refused then
+                    QBCore.Functions.Notify('NPC atsisakė. Bandyk kitą.', 'error')
+                else
+                    QBCore.Functions.Notify((res and res.reason) or 'Pardavimas nepavyko.', 'error')
+                end
+                return
             end
-            return
-        end
-        QBCore.Functions.Notify(('Parduota (%s) už $%s'):format(res.item or 'item', res.price or 0), 'success')
-        if res.alertPolice then
-            local cp = GetEntityCoords(PlayerPedId())
-            TriggerServerEvent('fivempro_dispatch:server:createServiceCall', 'police', 'drug', 'Pranešta apie įtartiną sandorį', { x = cp.x, y = cp.y, z = cp.z })
-        end
-    end, turfId, NetworkGetNetworkIdFromEntity(entity))
+            QBCore.Functions.Notify(('Parduota (%s) už $%s'):format(res.item or 'item', res.price or 0), 'success')
+            if res.alertPolice then
+                local cp = GetEntityCoords(PlayerPedId())
+                TriggerServerEvent('fivempro_dispatch:server:createServiceCall', 'police', 'drug', 'Pranešta apie įtartiną sandorį', { x = cp.x, y = cp.y, z = cp.z })
+            end
+        end, turfId, NetworkGetNetworkIdFromEntity(entity))
+    end
+
+    if GetResourceState('fivempro_drugs') == 'started' then
+        exports['fivempro_drugs']:PlayDrugSellAnim(entity, function(ok)
+            if not ok then return end
+            if not DoesEntityExist(entity) then
+                return QBCore.Functions.Notify('NPC nebepasiekiamas.', 'error')
+            end
+            doSell()
+        end)
+        return
+    end
+
+    doSell()
 end
 
 CreateThread(function()
