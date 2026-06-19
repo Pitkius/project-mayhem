@@ -57,16 +57,10 @@ local function trimOldReports()
     end
 end
 
-local function logReportToDiscord(report)
+local function logReportToDiscord(title, report, extraFields, staffSrc)
     if GetResourceState('server_logs') ~= 'started' then return end
-    local coords = report.coords
-    local coordsText = coords and ('%.1f, %.1f, %.1f'):format(coords.x, coords.y, coords.z) or '—'
     pcall(function()
-        exports['server_logs']:SendLog('admin', ('Report #%s'):format(report.id), report.message, {
-            { name = 'Žaidėjas', value = ('%s (ID %s)'):format(report.name, report.source), inline = true },
-            { name = 'CitizenID', value = report.citizenid or '—', inline = true },
-            { name = 'Koordinatės', value = coordsText, inline = false },
-        }, report.source)
+        exports['server_logs']:LogReportEvent(title, report, extraFields, staffSrc)
     end)
 end
 
@@ -114,7 +108,11 @@ local function createReport(source, message)
         createdAt = now,
         status = 'open',
         closedBy = nil,
+        closedByName = nil,
         closedAt = nil,
+        handledBy = nil,
+        handledByName = nil,
+        replies = {},
     }
     nextReportId = nextReportId + 1
     reports[#reports + 1] = report
@@ -122,7 +120,9 @@ local function createReport(source, message)
     reportCooldown[source] = now
 
     notifyStaffNewReport(report)
-    logReportToDiscord(report)
+    logReportToDiscord('📩 Naujas report', report, {
+        { name = 'Būsena', value = 'Atviras', inline = true },
+    }, report.source)
 
     return true, report
 end
@@ -179,19 +179,35 @@ local function replyToReport(source, args)
     end
 
     local staffName = GetPlayerName(source) or ('Staff %s'):format(source)
+    if not report.handledBy then
+        report.handledBy = source
+        report.handledByName = staffName
+    end
+    report.replies[#report.replies + 1] = {
+        staffId = source,
+        staffName = staffName,
+        text = reply,
+        at = os.time(),
+    }
+
     local targetPlayer = QBCore.Functions.GetPlayer(report.source)
-    if not targetPlayer then
-        TriggerClientEvent('QBCore:Notify', source, 'Žaidėjas neprisijungęs — žinutė neišsiųsta.', 'error')
-        return
+    if targetPlayer then
+        TriggerClientEvent('QBCore:Notify', report.source, ('Admin atsakymas (#%s): %s'):format(report.id, reply), 'primary', 12000)
+        TriggerClientEvent('chat:addMessage', report.source, {
+            color = { 100, 200, 255 },
+            multiline = true,
+            args = { ('REPORT #%s'):format(report.id), ('%s: %s'):format(staffName, reply) },
+        })
+        TriggerClientEvent('QBCore:Notify', source, ('Atsakymas į #%s išsiųstas.'):format(report.id), 'success')
+    else
+        TriggerClientEvent('QBCore:Notify', source, 'Žaidėjas neprisijungęs — Discord logas išsaugotas.', 'primary')
     end
 
-    TriggerClientEvent('QBCore:Notify', report.source, ('Admin atsakymas (#%s): %s'):format(report.id, reply), 'primary', 12000)
-    TriggerClientEvent('chat:addMessage', report.source, {
-        color = { 100, 200, 255 },
-        multiline = true,
-        args = { ('REPORT #%s'):format(report.id), ('%s: %s'):format(staffName, reply) },
-    })
-    TriggerClientEvent('QBCore:Notify', source, ('Atsakymas į #%s išsiųstas.'):format(report.id), 'success')
+    logReportToDiscord(('💬 Report #%s — admin atsakė'):format(report.id), report, {
+        { name = 'Adminas', value = ('%s [ID %s]'):format(staffName, source), inline = true },
+        { name = 'Atsakymas', value = reply:sub(1, 1024), inline = false },
+        { name = 'Būsena', value = 'Atviras', inline = true },
+    }, source)
 end
 
 QBCore.Commands.Add('report', 'Pranešti adminams apie problemą / žaidėją', {
@@ -249,7 +265,25 @@ QBCore.Commands.Add('closereport', 'Uždaryti reportą (staff)', {
 
     report.status = 'closed'
     report.closedBy = source
+    report.closedByName = GetPlayerName(source) or ('Staff %s'):format(source)
     report.closedAt = os.time()
+
+    local replySummary = '—'
+    if report.replies and #report.replies > 0 then
+        local parts = {}
+        for _, row in ipairs(report.replies) do
+            parts[#parts + 1] = ('%s: %s'):format(row.staffName or '?', row.text or '')
+        end
+        replySummary = table.concat(parts, '\n'):sub(1, 1024)
+    end
+
+    logReportToDiscord(('✅ Report #%s — uždarytas'):format(report.id), report, {
+        { name = 'Uždarė', value = ('%s [ID %s]'):format(report.closedByName, source), inline = true },
+        { name = 'Sureagavo', value = report.handledByName or '—', inline = true },
+        { name = 'Būsena', value = 'Uždarytas / išspręstas', inline = true },
+        { name = 'Admin atsakymai', value = replySummary, inline = false },
+    }, source)
+
     TriggerClientEvent('QBCore:Notify', source, ('Report #%s uždarytas.'):format(report.id), 'success')
 end, 'mod')
 

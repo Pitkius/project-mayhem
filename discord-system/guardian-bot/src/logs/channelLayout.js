@@ -61,6 +61,15 @@ export const LOG_LAYOUT = {
       ],
     },
     {
+      name: '📦 FiveM · Frakcijų sandėliai',
+      channels: [
+        { name: 'fivem-police-stash-logs', logType: 'police', fivem: true },
+        { name: 'fivem-ems-stash-logs', logType: 'ems', fivem: true },
+        { name: 'fivem-mechanic-stash-logs', logType: 'mechanic', fivem: true },
+        { name: 'fivem-taxi-stash-logs', logType: 'taxi', fivem: true },
+      ],
+    },
+    {
       name: '🚗 FiveM · Transportas',
       channels: [
         { name: 'fivem-vehicle-logs', logType: 'vehicle', fivem: true },
@@ -70,6 +79,9 @@ export const LOG_LAYOUT = {
       name: '⚙️ FiveM · Admin',
       channels: [
         { name: 'fivem-admin-logs', logType: 'admin', fivem: true },
+        { name: 'fivem-txadmin-logs', logType: 'tx_admin', fivem: true },
+        { name: 'fivem-admin-actions-logs', logType: 'admin_actions', fivem: true },
+        { name: 'fivem-report-logs', logType: 'reports', fivem: true },
         { name: 'fivem-security-logs', logType: 'security', fivem: true },
       ],
     },

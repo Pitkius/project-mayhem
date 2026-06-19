@@ -85,6 +85,13 @@ QBCore.Commands.Add('revive', 'Admin revive su max maistu/vandeniu', {
     setNeedsFull(target)
     TriggerClientEvent('fivempro_basics:client:adminRevive', target.PlayerData.source)
     TriggerClientEvent('QBCore:Notify', target.PlayerData.source, reviveNotifyText(target), 'success')
+    if GetResourceState('server_logs') == 'started' then
+        pcall(function()
+            exports['server_logs']:LogAdminAction(source, 'revive', ('Atgaivintas **%s**'):format(GetPlayerName(target.PlayerData.source) or target.PlayerData.source), {
+                { name = 'Žaidėjas', value = ('%s [%s]'):format(GetPlayerName(target.PlayerData.source) or '?', target.PlayerData.source), inline = true },
+            })
+        end)
+    end
 end, 'admin')
 
 QBCore.Commands.Add('heal', 'Admin heal su max maistu/vandeniu', {
@@ -99,6 +106,13 @@ QBCore.Commands.Add('heal', 'Admin heal su max maistu/vandeniu', {
     setNeedsFull(target)
     TriggerClientEvent('fivempro_basics:client:adminHeal', target.PlayerData.source)
     TriggerClientEvent('QBCore:Notify', target.PlayerData.source, healNotifyText(target), 'success')
+    if GetResourceState('server_logs') == 'started' then
+        pcall(function()
+            exports['server_logs']:LogAdminAction(source, 'heal', ('Pagydytas **%s**'):format(GetPlayerName(target.PlayerData.source) or target.PlayerData.source), {
+                { name = 'Žaidėjas', value = ('%s [%s]'):format(GetPlayerName(target.PlayerData.source) or '?', target.PlayerData.source), inline = true },
+            })
+        end)
+    end
 end, 'admin')
 
 QBCore.Commands.Add('coords', 'Ijungti/isjungti savo koordinates ekrano virsuje (admin)', {}, false, function(source)

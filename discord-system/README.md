@@ -76,8 +76,9 @@ Po kategorijos **📋 Admin-logai**:
 | FiveM · Žaidėjai | join_leave, chat, death, revive, spawn |
 | FiveM · Ekonomika | bank, money, inventory, warehouse |
 | FiveM · Frakcijos | job, gang, mission |
+| FiveM · Frakcijų sandėliai | police, ems, mechanic, taxi |
 | FiveM · Transportas | vehicle |
-| FiveM · Admin | admin, security |
+| FiveM · Admin | admin, **tx_admin**, **admin_actions**, **reports**, security |
 
 ### Slash komandos
 `setup`, `setuplogs`, `setlogchannel`, `whitelist`, `antinuke`, `ban`, `kick`, `timeout`, `warn`, `warnings`, `clearwarnings`, `purge`, `lock`, `unlock`, `slowmode`, `serverinfo`, `userinfo`

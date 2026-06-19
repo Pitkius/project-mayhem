@@ -856,17 +856,19 @@ function AddItem(identifier, item, amount, slot, info, reason)
     local invName = player and GetPlayerName(identifier) .. ' (' .. identifier .. ')' or identifier
     local addReason = reason or 'No reason specified'
     local resourceName = GetInvokingResource() or 'qb-inventory'
-    TriggerEvent(
-        'qb-log:server:CreateLog',
-        'playerinventory',
-        'Item Added',
-        'green',
-        '**Inventory:** ' .. invName .. ' (Slot: ' .. slot .. ')\n' ..
-        '**Item:** ' .. itemInfo.name .. '\n' ..
-        '**Amount:** ' .. amount .. '\n' ..
-        '**Reason:** ' .. addReason .. '\n' ..
-        '**Resource:** ' .. resourceName
-    )
+    if player then
+        TriggerEvent(
+            'qb-log:server:CreateLog',
+            'playerinventory',
+            'Item Added',
+            'green',
+            '**Inventory:** ' .. invName .. ' (Slot: ' .. slot .. ')\n' ..
+            '**Item:** ' .. itemInfo.name .. '\n' ..
+            '**Amount:** ' .. amount .. '\n' ..
+            '**Reason:** ' .. addReason .. '\n' ..
+            '**Resource:** ' .. resourceName
+        )
+    end
     return true
 end
 
@@ -950,17 +952,19 @@ function RemoveItem(identifier, item, amount, slot, reason)
     local removeReason = reason or 'No reason specified'
     local resourceName = GetInvokingResource() or 'qb-inventory'
 
-    TriggerEvent(
-        'qb-log:server:CreateLog',
-        'playerinventory',
-        'Item Removed',
-        'red',
-        '**Inventory:** ' .. invName .. ' (Slot: ' .. slot .. ')\n' ..
-        '**Item:** ' .. item .. '\n' ..
-        '**Amount:** ' .. amount .. '\n' ..
-        '**Reason:** ' .. removeReason .. '\n' ..
-        '**Resource:** ' .. resourceName
-    )
+    if player then
+        TriggerEvent(
+            'qb-log:server:CreateLog',
+            'playerinventory',
+            'Item Removed',
+            'red',
+            '**Inventory:** ' .. invName .. ' (Slot: ' .. slot .. ')\n' ..
+            '**Item:** ' .. item .. '\n' ..
+            '**Amount:** ' .. amount .. '\n' ..
+            '**Reason:** ' .. removeReason .. '\n' ..
+            '**Resource:** ' .. resourceName
+        )
+    end
     return true
 end
 

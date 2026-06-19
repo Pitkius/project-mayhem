@@ -12,11 +12,50 @@ CreateThread(function()
         TriggerEvent('server_logs:jobSet', job.name, job.grade and job.grade.level or 0, src)
     end)
 
-    -- Money (example - hook your economy events)
-    RegisterNetEvent('server_logs:qbcoreMoney', function(src, moneytype, amount, action, reason)
-        if action == 'add' then
-            TriggerClientEvent('server_logs:internal', src) -- placeholder
-            TriggerEvent('server_logs:moneyAdd', moneytype, amount, reason)
+    AddEventHandler('QBCore:Server:OnMoneyChange', function(src, moneytype, amount, action, reason)
+        if not src or src <= 0 then return end
+        reason = reason or 'N/A'
+        moneytype = moneytype or 'cash'
+        amount = tonumber(amount) or 0
+
+        if reason == 'fivempro-bank-deposit' and action == 'add' and moneytype == 'bank' then
+            return SendLog('bank', 'Banko įnešimas', ('**$%s** į banką'):format(amount), {
+                { name = 'Priežastis', value = reason, inline = true },
+            }, src)
+        end
+        if reason == 'fivempro-bank-withdraw' and action == 'remove' and moneytype == 'bank' then
+            return SendLog('bank', 'Banko išėmimas', ('**$%s** iš banko'):format(amount), {
+                { name = 'Priežastis', value = reason, inline = true },
+            }, src)
+        end
+        if reason == 'fivempro-bank-transfer-out' and action == 'remove' and moneytype == 'bank' then
+            return SendLog('bank', 'Banko pavedimas', ('**$%s** (siuntėjas)'):format(amount), {
+                { name = 'Priežastis', value = reason, inline = true },
+            }, src)
+        end
+        if reason == 'fivempro-bank-transfer-in' then
+            return
+        end
+
+        local title = 'Pinigų pokytis'
+        local sign = '+'
+        if action == 'remove' then
+            title = 'Pinigai pašalinti'
+            sign = '-'
+        elseif action == 'set' then
+            title = 'Pinigai nustatyti'
+            sign = '='
+        elseif action == 'add' then
+            title = 'Pinigai pridėti'
+        end
+
+        SendLog('money', title, ('%s$%s **%s**'):format(sign, amount, moneytype), {
+            { name = 'Priežastis', value = reason, inline = false },
+        }, src)
+
+        local threshold = Config.Security and Config.Security.suspiciousMoneyThreshold or 500000
+        if action == 'add' and amount >= threshold then
+            TriggerEvent('server_logs:securityCheck', 'suspicious_money', { amount = amount, account = moneytype })
         end
     end)
 end)

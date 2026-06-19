@@ -36,6 +36,14 @@ QBCore.Commands.Add('giveitem', 'Give An Item (Admin Only)', { { name = 'id', he
             if AddItem(id, itemData['name'], amount, false, info, 'give item command') then
                 TriggerClientEvent('qb-inventory:client:ItemBox', id, itemData, 'add', amount)
                 if Player(id).state.inv_busy then TriggerClientEvent('qb-inventory:client:updateInventory', id) end
+                if GetResourceState('server_logs') == 'started' then
+                    pcall(function()
+                        exports['server_logs']:LogAdminAction(source, 'giveitem', ('**%s** x%s'):format(itemData.label or itemData.name, amount), {
+                            { name = 'Gavėjas', value = ('%s [%s]'):format(GetPlayerName(id) or '?', id), inline = true },
+                            { name = 'Item', value = ('`%s`'):format(itemData.name), inline = true },
+                        })
+                    end)
+                end
             else
                 QBCore.Functions.Notify(source, Lang:t('notify.cgitem'), 'error')
             end

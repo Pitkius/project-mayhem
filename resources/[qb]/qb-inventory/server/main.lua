@@ -553,6 +553,12 @@ local function getIdentifier(inventoryId, src)
     end
 end
 
+local function notifyInventoryTransfer(src, fromInventory, toInventory, itemName, amount)
+    if not itemName or not amount or amount <= 0 then return end
+    if GetResourceState('server_logs') ~= 'started' then return end
+    TriggerEvent('server_logs:inventoryTransfer', src, fromInventory, toInventory, itemName, amount)
+end
+
 RegisterNetEvent('qb-inventory:server:SetInventoryData', function(fromInventory, toInventory, fromSlot, toSlot, fromAmount, toAmount)
     if toInventory:find('shop%-') then return end
     if not fromInventory or not toInventory or not fromSlot or not toSlot or not fromAmount or not toAmount or fromAmount < 0 or toAmount < 0 then return end
@@ -575,10 +581,12 @@ RegisterNetEvent('qb-inventory:server:SetInventoryData', function(fromInventory,
         if toItem and fromItem.name == toItem.name then
             if RemoveItem(fromId, fromItem.name, toAmount, fromSlot, 'stacked item') then
                 AddItem(toId, toItem.name, toAmount, toSlot, toItem.info, 'stacked item')
+                notifyInventoryTransfer(src, fromInventory, toInventory, fromItem.name, toAmount)
             end
         elseif not toItem and toAmount < fromAmount then
             if RemoveItem(fromId, fromItem.name, toAmount, fromSlot, 'split item') then
                 AddItem(toId, fromItem.name, toAmount, toSlot, fromItem.info, 'split item')
+                notifyInventoryTransfer(src, fromInventory, toInventory, fromItem.name, toAmount)
             end
         else
             if toItem then
@@ -588,10 +596,13 @@ RegisterNetEvent('qb-inventory:server:SetInventoryData', function(fromInventory,
                 if RemoveItem(fromId, fromItem.name, fromItemAmount, fromSlot, 'swapped item') and RemoveItem(toId, toItem.name, toItemAmount, toSlot, 'swapped item') then
                     AddItem(toId, fromItem.name, fromItemAmount, toSlot, fromItem.info, 'swapped item')
                     AddItem(fromId, toItem.name, toItemAmount, fromSlot, toItem.info, 'swapped item')
+                    notifyInventoryTransfer(src, fromInventory, toInventory, fromItem.name, fromItemAmount)
+                    notifyInventoryTransfer(src, toInventory, fromInventory, toItem.name, toItemAmount)
                 end
             else
                 if RemoveItem(fromId, fromItem.name, toAmount, fromSlot, 'moved item') then
                     AddItem(toId, fromItem.name, toAmount, toSlot, fromItem.info, 'moved item')
+                    notifyInventoryTransfer(src, fromInventory, toInventory, fromItem.name, toAmount)
                 end
             end
         end

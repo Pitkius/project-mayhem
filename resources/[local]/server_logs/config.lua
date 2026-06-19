@@ -3,29 +3,13 @@ Config = {}
 -- Bendri nustatymai
 Config.ServerName = 'MRP | MAYHEM RP'
 Config.LogIpAddresses = false          -- IP identifikatoriai (GDPR / privatumas)
-Config.RateLimitPerSecond = 4          -- Max webhook POST per sekunde
-Config.QueueProcessInterval = 250      -- ms
+Config.RateLimitPerSecond = 8          -- Max webhook POST per sekunde
+Config.QueueProcessInterval = 150      -- ms
 Config.DefaultColor = 3447003           -- melyna
 Config.EnableScreenshotOnDeath = false -- reikia screenshot-basic resurso
 
--- Discord webhook URL kiekvienam logu tipui (palik tuscia jei nenaudoji)
-Config.Webhooks = {
-    join_leave   = '',
-    chat         = '',
-    death        = '',
-    revive       = '',
-    admin        = '',
-    spawn        = '',
-    bank         = '',
-    money        = '',
-    inventory    = '',
-    job          = '',
-    warehouse    = '',
-    gang         = '',
-    mission      = '',
-    vehicle      = '',
-    security     = '',
-}
+-- Discord webhook URL — pilnas sąrašas webhooks.lua (sinchronizuok: tools/sync_server_log_webhooks.ps1)
+Config.Webhooks = Config.Webhooks or {}
 
 -- Spalvos embedams
 Config.Colors = {
@@ -34,12 +18,19 @@ Config.Colors = {
     death      = 15158332,
     revive     = 5763719,
     admin      = 15105570,
+    tx_admin   = 10181046,
+    admin_actions = 16744228,
+    reports    = 15844367,
     spawn      = 10181046,
     bank       = 15844367,
     money      = 16776960,
     inventory  = 1752220,
     job        = 1146986,
     warehouse  = 2067276,
+    police     = 3447003,
+    ems        = 5763719,
+    mechanic   = 15105570,
+    taxi       = 16776960,
     gang       = 9442302,
     mission    = 7419530,
     vehicle    = 3447003,

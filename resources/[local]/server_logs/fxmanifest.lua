@@ -9,10 +9,13 @@ version '1.0.0'
 
 server_scripts {
     'config.lua',
+    'webhooks.lua',
     'modules/discord.lua',
     'modules/identifiers.lua',
     'modules/playerLogs.lua',
     'modules/adminLogs.lua',
+    'modules/txAdminLogs.lua',
+    'modules/reportLogs.lua',
     'modules/deathLogs.lua',
     'modules/reviveLogs.lua',
     'modules/spawnLogs.lua',
@@ -25,6 +28,9 @@ server_scripts {
     'modules/vehicleLogs.lua',
     'modules/moneyLogs.lua',
     'modules/securityLogs.lua',
+    'integrations/admin_commands.lua',
+    'integrations/stashRouter.lua',
+    'integrations/qb_log_bridge.lua',
     'integrations/qbcore.lua',
     'integrations/esx.lua',
     'server.lua',
@@ -34,4 +40,6 @@ server_exports {
     'SendCustomLog',
     'SendLog',
     'GetPlayerIdentifiersFormatted',
+    'LogAdminAction',
+    'LogReportEvent',
 }

@@ -1,0 +1,26 @@
+-- MRP Guardian auto-generated 2026-06-19T06:27:04.016Z
+-- Sinchronizuok: tools/sync_server_log_webhooks.ps1 (arba npm run setup:logs guardian-bote)
+Config.Webhooks = {
+    join_leave = 'https://discord.com/api/webhooks/1516482654604755185/Cpf2pbOs2hrHNRWVgy3iYMAHr9Y_20Ol4l7QxaphOPCQm0e8ImIr71CmrcZGvPGrz-25',
+    chat = 'https://discord.com/api/webhooks/1516482658576761024/-YLUsr0ncDSLbmuS4VZ9VVfrPq4l7DmVOPfCku7DyW22oqKDcfmJP5TXdDA7i7FskNYE',
+    death = 'https://discord.com/api/webhooks/1516482663291293856/7WjDmF2_S2-9bvQ76o-_K6RAk1KfISCnIBjGH--psF77BgWoWEurtx3p9928cqOeeWKF',
+    revive = 'https://discord.com/api/webhooks/1516482667523084459/WyeveA1AJV54urtcW0UG5pgsZT8o39kvnLIPpdidr9OVi3xLtmHjX0TVcaDb_Ouhqyoj',
+    spawn = 'https://discord.com/api/webhooks/1516482673605087262/HsHBCip4XwvkJ15VzTiS2DYOlvZ9rtIKefwSk1WHmraK_Cc1b6IxfFwm1Jn8CTrogqHC',
+    bank = 'https://discord.com/api/webhooks/1516482678461960363/bs5ZpRvYWgOwu-Yi5KBXY0ZZ4EEcbZ3sQrrhGgsjbLbzZRQrncnrKMfB_AFVmSo8FXPr',
+    money = 'https://discord.com/api/webhooks/1516482682681294868/syvoeiHzK7lHp_3HOfhzfpNYU5lu-TM2f44Vhk1X6AxroPS3EKBkcks8vmYVDx5d4r2y',
+    inventory = 'https://discord.com/api/webhooks/1516482686129012778/K_jYI2shtrdAvMRcHAfFHmWSg07tWwS16dBnOdfOfayDHZw86FentTyIii9mwUGvYySL',
+    warehouse = 'https://discord.com/api/webhooks/1516482690172456970/QuWpMyFvK2uoMzknwyCxdRjpwgjS0C3F4DkJ_uqeBRUpc5gkeg0pq3fQtdGbr8FrHvSx',
+    job = 'https://discord.com/api/webhooks/1516482696271106058/LxoVvJvvBpejT8HwPEaXmrqfxMJjcjT-zxLptWAsYPK3h78QhEwF5T895PfyF9BlnyLe',
+    gang = 'https://discord.com/api/webhooks/1516482701513855097/LlKb6LsD9tQuDIL7A8l9b9oKhuWZNHq5ErJ-jU47XHv600WAF4dKKrfMCxMD6uP6KLMc',
+    mission = 'https://discord.com/api/webhooks/1516482707947917467/a7PDm7K12xArfdoM_acDgGcB5JhTRAT3uEsz7Yb3KoC9Ft5lCNFe_V7eKadGWiH92b4L',
+    police = 'https://discord.com/api/webhooks/1517415368107360407/GQ3Ey-uoZAjW7qwWnzVQZ27rs4HO_BpdU5CmrSZgX019IjbDgnDG8wdX0U_J2iaSd5au',
+    ems = 'https://discord.com/api/webhooks/1517415372360388678/-n45U4c3Eu9L9K6WxNsURYQ1yyetj87HV_AWowDx9C1jnRoLHW9zBELaPcT9BjytVED1',
+    mechanic = 'https://discord.com/api/webhooks/1517415376743301120/FX-o_THSyumrg0L2Latzp-yoCEH3c4xJ59qdN8WfhXkW5JPTASCm8zCFxlykRRJdhHp6',
+    taxi = 'https://discord.com/api/webhooks/1517415381445251073/tiXVGbG6smEltYCwfzrblwwWxMled-sCcU-DW54fkPkfrfNJJ8mHvlPsKcToi8LYcX-N',
+    vehicle = 'https://discord.com/api/webhooks/1516482713169952771/UuVwqDe2tRYXqb8G4IE1sq-AJpscL30Ia2yiJaTPaE05i6ZYeP8l-wxopob31ugxLHWd',
+    admin = 'https://discord.com/api/webhooks/1516482720048611368/8WiBDo-NnjXxxWsSk1Uq9vlDgwd5hJjjZueWgWeqmvBnsWt85Q9LFXg7X3b2pJgLo7Ih',
+    tx_admin = 'https://discord.com/api/webhooks/1517415390412800060/GclUAO20i-Wy3lIYZXKfWrHN2evlj7Vdt0lvmzN69OIPDtjM-vA8UXTKxtbN_o9Mxde7',
+    admin_actions = 'https://discord.com/api/webhooks/1517415394460172310/5uEGB9z9-ulVG_4QV-sRY4yCoFFbbUt3EKPjqPXcqv_IbWGFO8ilPoS91Mq6Exf2JwOW',
+    reports = 'https://discord.com/api/webhooks/1517415398746624011/4QrBfWSwFJs5qmur-g4rn_98xTuOpuz7dxxGAwZSrnsUKhGR8iu5XMW-bVDDQzXhTcyL',
+    security = 'https://discord.com/api/webhooks/1516482724817404004/IGlpVm82zrZWxfB3Wq7ihe54Ukjw0AxOi1217wk1hISDrjiZVGHj5TCFIFlKvHMXsEou',
+}

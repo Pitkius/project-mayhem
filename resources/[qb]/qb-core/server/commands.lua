@@ -220,18 +220,34 @@ end, 'admin')
 -- Money
 
 QBCore.Commands.Add('givemoney', Lang:t('command.givemoney.help'), { { name = Lang:t('command.givemoney.params.id.name'), help = Lang:t('command.givemoney.params.id.help') }, { name = Lang:t('command.givemoney.params.moneytype.name'), help = Lang:t('command.givemoney.params.moneytype.help') }, { name = Lang:t('command.givemoney.params.amount.name'), help = Lang:t('command.givemoney.params.amount.help') } }, true, function(source, args)
-    local Player = QBCore.Functions.GetPlayer(tonumber(args[1]))
+    local targetId = tonumber(args[1])
+    local Player = QBCore.Functions.GetPlayer(targetId)
     if Player then
         Player.Functions.AddMoney(tostring(args[2]), tonumber(args[3]), 'Admin give money')
+        if GetResourceState('server_logs') == 'started' then
+            pcall(function()
+                exports['server_logs']:LogAdminAction(source, 'givemoney', ('**$%s** %s'):format(args[3], args[2]), {
+                    { name = 'Gavėjas', value = ('%s [%s]'):format(GetPlayerName(targetId) or '?', targetId), inline = true },
+                })
+            end)
+        end
     else
         TriggerClientEvent('QBCore:Notify', source, Lang:t('error.not_online'), 'error')
     end
 end, 'admin')
 
 QBCore.Commands.Add('setmoney', Lang:t('command.setmoney.help'), { { name = Lang:t('command.setmoney.params.id.name'), help = Lang:t('command.setmoney.params.id.help') }, { name = Lang:t('command.setmoney.params.moneytype.name'), help = Lang:t('command.setmoney.params.moneytype.help') }, { name = Lang:t('command.setmoney.params.amount.name'), help = Lang:t('command.setmoney.params.amount.help') } }, true, function(source, args)
-    local Player = QBCore.Functions.GetPlayer(tonumber(args[1]))
+    local targetId = tonumber(args[1])
+    local Player = QBCore.Functions.GetPlayer(targetId)
     if Player then
         Player.Functions.SetMoney(tostring(args[2]), tonumber(args[3]))
+        if GetResourceState('server_logs') == 'started' then
+            pcall(function()
+                exports['server_logs']:LogAdminAction(source, 'setmoney', ('**$%s** %s (nustatyta)'):format(args[3], args[2]), {
+                    { name = 'Žaidėjas', value = ('%s [%s]'):format(GetPlayerName(targetId) or '?', targetId), inline = true },
+                })
+            end)
+        end
     else
         TriggerClientEvent('QBCore:Notify', source, Lang:t('error.not_online'), 'error')
     end
