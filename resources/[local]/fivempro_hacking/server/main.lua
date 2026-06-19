@@ -200,6 +200,40 @@ local function applyCctvTamper(src, coords, ctx)
     exports['fivempro_ltpd']:TamperCctvRadius(coords, ex.cctvRadius or 30, ex.cctvSeconds or 120)
 end
 
+local function buildRobberyMapSites()
+    local sites = {}
+    local tiers = Config.RobberyTiers or {}
+    local locations = Config.Robberies and Config.Robberies.Locations or {}
+
+    for tierId, list in pairs(locations) do
+        if tierId ~= 'atm' then
+            local tierCfg = tiers[tierId] or {}
+            local level = tonumber(tierCfg.level) or 1
+            for _, loc in ipairs(list) do
+                local c = loc.coords
+                if c then
+                    sites[#sites + 1] = {
+                        id = loc.id,
+                        tierId = tierId,
+                        label = loc.label or loc.id,
+                        level = level,
+                        x = c.x,
+                        y = c.y,
+                        z = c.z,
+                    }
+                end
+            end
+        end
+    end
+
+    table.sort(sites, function(a, b)
+        if a.level ~= b.level then return a.level > b.level end
+        return tostring(a.label) < tostring(b.label)
+    end)
+
+    return sites
+end
+
 QBCore.Functions.CreateCallback('fivempro_hacking:server:getTabletData', function(src, cb)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return cb(nil) end
@@ -234,6 +268,15 @@ QBCore.Functions.CreateCallback('fivempro_hacking:server:getTabletData', functio
         tabletFiles = Config.TabletFiles or {},
         tabletContracts = Config.TabletContracts or {},
         marketItems = Config.BlackMarket and Config.BlackMarket.items or {},
+        marketCurrency = (Config.BlackMarket and Config.BlackMarket.currency) or 'crypto',
+        marketCurrencyLabel = (Config.CryptoExchange and Config.CryptoExchange.currencyLabel) or 'Crypto',
+        playerMoney = {
+            bank = Player.PlayerData.money.bank or 0,
+            crypto = Player.PlayerData.money.crypto or 0,
+        },
+        cryptoExchange = Config.CryptoExchange or {},
+        robberyMapSites = buildRobberyMapSites(),
+        atmMapNote = 'Galima apiplėšti bet kurį bankomatą mieste (LVL 1).',
     })
 end)
 
@@ -366,13 +409,55 @@ RegisterNetEvent('fivempro_hacking:server:buyBlackMarket', function(index)
     local entry = Config.BlackMarket.items[tonumber(index)]
     if not entry then return end
     local price = tonumber(entry.price) or 0
-    if Player.PlayerData.money.cash < price then
-        return TriggerClientEvent('QBCore:Notify', src, 'Nepakanka grynais.', 'error')
+    local currency = (Config.BlackMarket and Config.BlackMarket.currency) or 'crypto'
+    local balance = Player.PlayerData.money[currency] or 0
+    if balance < price then
+        local hint = currency == 'crypto'
+            and 'Nepakanka crypto. Keisk švarius banko pinigus pas Dark Net pardavėją.'
+            or 'Nepakanka pinigų.'
+        return TriggerClientEvent('QBCore:Notify', src, hint, 'error')
     end
     local info = buildFlashInfo(entry.payload)
-    if not Player.Functions.RemoveMoney('cash', price, 'blackmarket-hack') then return end
+    if not Player.Functions.RemoveMoney(currency, price, 'darknet-hack') then return end
     Player.Functions.AddItem(entry.item, 1, false, info)
-    TriggerClientEvent('QBCore:Notify', src, 'Nupirkta.', 'success')
+    TriggerClientEvent('QBCore:Notify', src, 'Nupirkta už crypto.', 'success')
+end)
+
+RegisterNetEvent('fivempro_hacking:server:exchangeBankToCrypto', function(amount)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    local cfg = Config.CryptoExchange or {}
+    amount = math.floor(tonumber(amount) or 0)
+    local minAmount = tonumber(cfg.minAmount) or 500
+    local maxAmount = tonumber(cfg.maxAmount) or 500000
+
+    if amount < minAmount then
+        return TriggerClientEvent('QBCore:Notify', src, ('Minimali suma: $%s'):format(minAmount), 'error')
+    end
+    if amount > maxAmount then
+        return TriggerClientEvent('QBCore:Notify', src, ('Maksimali suma: $%s'):format(maxAmount), 'error')
+    end
+
+    local bank = Player.PlayerData.money.bank or 0
+    if bank < amount then
+        return TriggerClientEvent('QBCore:Notify', src, 'Nepakanka švarių pinigų banke.', 'error')
+    end
+
+    local fee = math.floor(amount * (tonumber(cfg.feePercent) or 5) / 100)
+    local rate = tonumber(cfg.bankToCryptoRate) or 1.0
+    local receive = math.floor((amount - fee) * rate)
+    if receive <= 0 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Suma per maža po mokesčio.', 'error')
+    end
+
+    if not Player.Functions.RemoveMoney('bank', amount, 'bank-to-crypto') then return end
+    Player.Functions.AddMoney('crypto', receive, 'bank-to-crypto')
+
+    local label = cfg.currencyLabel or 'Crypto'
+    TriggerClientEvent('QBCore:Notify', src,
+        ('$%s → %s %s (mokestis $%s)'):format(amount, receive, label, fee), 'success')
 end)
 
 exports('CanAccessRobbery', function(src, tierId)

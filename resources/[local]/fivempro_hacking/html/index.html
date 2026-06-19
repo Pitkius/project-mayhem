@@ -73,9 +73,13 @@
           </section>
 
           <section id="view-network" class="hackos-view">
-            <div class="view-head"><h2>Tinklas</h2><p class="muted">Aktyvūs mazgai Los Santos tinkle</p></div>
-            <div class="network-layout">
-              <div class="network-graph glass-card" id="networkGraph" aria-hidden="true"></div>
+            <div class="view-head"><h2>Tinklas</h2><p class="muted">Visi apiplėšimų taškai — užvesk pelę ant žymeklio</p></div>
+            <div class="network-layout network-layout--map-first">
+              <div class="network-graph glass-card" id="networkGraph">
+                <div id="networkMapMarkers" class="network-map-markers"></div>
+                <div id="networkMapTooltip" class="network-map-tooltip hidden" role="tooltip"></div>
+                <div id="networkMapAtmNote" class="network-map-atm-note"></div>
+              </div>
               <div id="networkList" class="target-list"></div>
             </div>
           </section>
@@ -96,7 +100,7 @@
           </section>
 
           <section id="view-market" class="hackos-view hidden">
-            <div class="view-head"><h2>Juodoji rinka</h2><p class="muted">Pirkti OS, exploit, įrankius</p></div>
+            <div class="view-head"><h2>Dark Net</h2><p class="muted">Pirkti tik už crypto — keisk banko pinigus pas pardavėją</p></div>
             <div id="marketList" class="market-grid"></div>
           </section>
 

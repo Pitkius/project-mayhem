@@ -41,11 +41,13 @@ files {
     'html/hackos.css',
     'html/tablet-ui.js',
     'html/app.js',
+    'html/asset/gtav_satellite_2048.png',
 }
 
 dependencies {
     'qb-core',
     'qb-target',
     'qb-menu',
+    'qb-input',
     'fivempro_dispatch',
 }

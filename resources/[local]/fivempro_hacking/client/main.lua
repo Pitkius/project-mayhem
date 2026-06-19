@@ -3,8 +3,73 @@ local tabletOpen = false
 local hackCb = nil
 local tabletProp = nil
 
+local TABLET_ANIM_DICT = 'amb@code_human_in_bus_passenger_idles@female@tablet@idle_a'
+local TABLET_ANIM_CLIP = 'idle_a'
+local TABLET_ANIM_FALLBACK_DICT = 'amb@world_human_seat_wall_tablet@female@base'
+local TABLET_ANIM_FALLBACK_CLIP = 'base'
+local TABLET_PROP = `prop_cs_tablet`
+
+local function loadAnimDict(dict)
+    if not dict or dict == '' then return false end
+    RequestAnimDict(dict)
+    local deadline = GetGameTimer() + 5000
+    while not HasAnimDictLoaded(dict) and GetGameTimer() < deadline do
+        Wait(0)
+    end
+    return HasAnimDictLoaded(dict)
+end
+
+local function attachTabletProp(ped)
+    if tabletProp and DoesEntityExist(tabletProp) then
+        DeleteEntity(tabletProp)
+    end
+    tabletProp = nil
+
+    RequestModel(TABLET_PROP)
+    local deadline = GetGameTimer() + 5000
+    while not HasModelLoaded(TABLET_PROP) and GetGameTimer() < deadline do
+        Wait(0)
+    end
+    if not HasModelLoaded(TABLET_PROP) then return end
+
+    local c = GetEntityCoords(ped)
+    tabletProp = CreateObject(TABLET_PROP, c.x, c.y, c.z + 0.2, true, true, false)
+    SetEntityCollision(tabletProp, false, false)
+    AttachEntityToEntity(
+        tabletProp,
+        ped,
+        GetPedBoneIndex(ped, 60309),
+        0.03, 0.002, -0.02,
+        10.0, 160.0, 0.0,
+        true, true, false, true, 1, true
+    )
+    SetModelAsNoLongerNeeded(TABLET_PROP)
+end
+
+local function getTabletAnim()
+    if loadAnimDict(TABLET_ANIM_DICT) then
+        return TABLET_ANIM_DICT, TABLET_ANIM_CLIP
+    end
+    if loadAnimDict(TABLET_ANIM_FALLBACK_DICT) then
+        return TABLET_ANIM_FALLBACK_DICT, TABLET_ANIM_FALLBACK_CLIP
+    end
+    return nil, nil
+end
+
+local function playTabletHoldAnim(ped, dict, clip)
+    TaskPlayAnim(ped, dict, clip, 8.0, -8.0, -1, 49, 0.0, false, false, false)
+end
+
 local function stopTabletAnim()
     local ped = PlayerPedId()
+    for _, pair in ipairs({
+        { TABLET_ANIM_DICT, TABLET_ANIM_CLIP },
+        { TABLET_ANIM_FALLBACK_DICT, TABLET_ANIM_FALLBACK_CLIP },
+    }) do
+        if pair[1] and IsEntityPlayingAnim(ped, pair[1], pair[2], 3) then
+            StopAnimTask(ped, pair[1], pair[2], 1.0)
+        end
+    end
     ClearPedSecondaryTask(ped)
     if tabletProp and DoesEntityExist(tabletProp) then
         DeleteEntity(tabletProp)
@@ -14,15 +79,10 @@ end
 
 local function playTabletAnim()
     local ped = PlayerPedId()
-    local dict = 'amb@world_human_seat_wall_tablet@female@base'
-    RequestAnimDict(dict)
-    while not HasAnimDictLoaded(dict) do Wait(0) end
-    TaskPlayAnim(ped, dict, 'base', 8.0, -8.0, -1, 49, 0, false, false, false)
-    local model = joaat('prop_cs_tablet')
-    RequestModel(model)
-    while not HasModelLoaded(model) do Wait(0) end
-    tabletProp = CreateObject(model, 1.0, 1.0, 1.0, true, true, false)
-    AttachEntityToEntity(tabletProp, ped, GetPedBoneIndex(ped, 60309), 0.03, 0.002, 0.0, 10.0, 160.0, 0.0, true, true, false, true, 1, true)
+    local dict, clip = getTabletAnim()
+    if not dict then return end
+    playTabletHoldAnim(ped, dict, clip)
+    attachTabletProp(ped)
 end
 
 local function closeTablet()
@@ -133,10 +193,28 @@ exports('StartHack', StartHackMinigame)
 
 CreateThread(function()
     while true do
-        if tabletOpen and IsControlJustPressed(0, 322) then
-            closeTablet()
+        if tabletOpen then
+            local ped = PlayerPedId()
+            local dict, clip = getTabletAnim()
+            if dict and not IsEntityPlayingAnim(ped, dict, clip, 3) then
+                playTabletHoldAnim(ped, dict, clip)
+            end
+            if not tabletProp or not DoesEntityExist(tabletProp) then
+                attachTabletProp(ped)
+            end
+            DisableControlAction(0, 24, true)
+            DisableControlAction(0, 25, true)
+            DisableControlAction(0, 37, true)
+            DisableControlAction(0, 140, true)
+            DisableControlAction(0, 141, true)
+            DisableControlAction(0, 142, true)
+            if IsControlJustPressed(0, 322) then
+                closeTablet()
+            end
+            Wait(0)
+        else
+            Wait(500)
         end
-        Wait(tabletOpen and 0 or 500)
     end
 end)
 
@@ -146,6 +224,10 @@ AddEventHandler('onResourceStop', function(res)
 end)
 
 CreateThread(function()
+    while GetResourceState('qb-target') ~= 'started' do
+        Wait(500)
+    end
+
     local bm = Config.BlackMarket
     if not bm or not bm.coords then return end
     local hash = joaat(bm.pedModel or 's_m_y_dealer_01')
@@ -155,33 +237,64 @@ CreateThread(function()
     SetEntityInvincible(ped, true)
     FreezeEntityPosition(ped, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
+
+    local darkNetLabel = bm.label or 'Dark Net'
+
+    local function openDarkNetShop()
+        local rows = { { header = darkNetLabel .. ' (tik crypto)', isMenuHeader = true } }
+        for i, e in ipairs(bm.items or {}) do
+            local label = QBCore.Shared.Items[e.item] and QBCore.Shared.Items[e.item].label or e.item
+            local extra = ''
+            if e.payload and e.payload.payload_id then
+                extra = ' [' .. tostring(e.payload.payload_id) .. ']'
+            end
+            rows[#rows + 1] = {
+                header = ('%s — %s₿%s'):format(label, e.price, extra),
+                params = {
+                    isAction = true,
+                    event = function()
+                        TriggerServerEvent('fivempro_hacking:server:buyBlackMarket', i)
+                    end,
+                },
+            }
+        end
+        TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+    end
+
+    local function openCryptoExchange()
+        local cfg = Config.CryptoExchange or {}
+        if GetResourceState('qb-input') ~= 'started' then
+            return QBCore.Functions.Notify('qb-input neaktyvus.', 'error')
+        end
+        local input = exports['qb-input']:ShowInput({
+            header = 'Bankas → Crypto',
+            submitText = 'Keisti',
+            inputs = {
+                {
+                    type = 'number',
+                    name = 'amount',
+                    text = ('Suma banke ($%s–$%s)'):format(cfg.minAmount or 500, cfg.maxAmount or 500000),
+                    isRequired = true,
+                },
+            },
+        })
+        if not input or not input.amount then return end
+        TriggerServerEvent('fivempro_hacking:server:exchangeBankToCrypto', tonumber(input.amount))
+    end
+
     exports['qb-target']:AddTargetEntity(ped, {
         options = {
             {
                 icon = 'fas fa-skull',
-                label = 'Black market (hacking)',
-                action = function()
-                    local rows = { { header = 'Hacking black market', isMenuHeader = true } }
-                    for i, e in ipairs(bm.items or {}) do
-                        local label = QBCore.Shared.Items[e.item] and QBCore.Shared.Items[e.item].label or e.item
-                        local extra = ''
-                        if e.payload and e.payload.payload_id then
-                            extra = ' [' .. tostring(e.payload.payload_id) .. ']'
-                        end
-                        rows[#rows + 1] = {
-                            header = ('%s — $%s%s'):format(label, e.price, extra),
-                            params = {
-                                isAction = true,
-                                event = function()
-                                    TriggerServerEvent('fivempro_hacking:server:buyBlackMarket', i)
-                                end,
-                            },
-                        }
-                    end
-                    TriggerEvent('qb-menu:client:openMenu', rows, false, true)
-                end,
+                label = darkNetLabel .. ' — pirkti (crypto)',
+                action = openDarkNetShop,
+            },
+            {
+                icon = 'fas fa-bitcoin-sign',
+                label = 'Keisti banką į crypto',
+                action = openCryptoExchange,
             },
         },
-        distance = 2.0,
+        distance = 2.5,
     })
 end)

@@ -95,40 +95,46 @@ Config.Exploits = {
     },
 }
 
---- Robbery tier reikalavimai (progresija)
+--- Robbery tier reikalavimai (progresija) — level 1 (apačia) … 5 (viršus)
 Config.RobberyTiers = {
     atm = {
         label = 'Bankomatas',
+        level = 1,
         minOs = 'basicos',
         minTablet = 'basic_tablet',
         hackProfile = 'atm_security',
     },
     store = {
         label = 'Parduotuvė',
+        level = 2,
         minOs = 'blackos',
         minTablet = 'basic_tablet',
         hackProfile = 'store_register',
     },
     bank_fleeca = {
         label = 'Fleeca bankas',
+        level = 3,
         minOs = 'ghostos',
         minTablet = 'advanced_tablet',
         hackProfile = 'fleeca_vault',
     },
     bank_main = {
         label = 'Pagrindinis bankas',
+        level = 4,
         minOs = 'cipheros',
         minTablet = 'advanced_tablet',
         hackProfile = 'pacific_vault',
     },
     casino = {
         label = 'Kazino',
+        level = 4,
         minOs = 'cipheros',
         minTablet = 'military_tablet',
         hackProfile = 'casino_fingerprint',
     },
     vault = {
         label = 'Seifas / federalinis',
+        level = 5,
         minOs = 'federalos',
         minTablet = 'military_tablet',
         hackProfile = 'federal_core',
@@ -156,11 +162,21 @@ Config.HackProfiles = {
     federal_core = { mode = 'code', steps = 7, timeMs = 10000, grid = 5, flashMs = 320 },
 }
 
---- Black market (qb-target)
+--- Dark Net (qb-target) — mokama tik crypto valiuta
+Config.CryptoExchange = {
+    bankToCryptoRate = 1.0,
+    feePercent = 5,
+    minAmount = 500,
+    maxAmount = 500000,
+    currencyLabel = 'Crypto',
+}
+
 Config.BlackMarket = {
     coords = vector3(707.35, -966.98, 30.41),
     heading = 180.0,
     pedModel = 's_m_y_dealer_01',
+    currency = 'crypto',
+    label = 'Dark Net',
     items = {
         { item = 'basic_tablet', price = 2500, payload = nil },
         { item = 'advanced_tablet', price = 8500, payload = nil },
@@ -184,16 +200,14 @@ Config.BlackMarket = {
 Config.ChainItem = 'tow_chain'
 Config.DrillItem = 'drill'
 
---- HackOS planšetės NETWORK vaizdas (UI)
+--- HackOS planšetės NETWORK vaizdas (UI) — LVL 5 viršuje, LVL 1 apačioje
 Config.NetworkTargets = {
-    { id = 'bank_fleeca', label = 'Fleeca bankas', security = 1, status = 'Veikia', tierId = 'bank_fleeca' },
-    { id = 'bank_main', label = 'Pacific bankas', security = 5, status = 'Apsaugota', tierId = 'bank_main' },
+    { id = 'vault', label = 'Federal vault', security = 5, status = 'Užrakinta', tierId = 'vault' },
+    { id = 'bank_main', label = 'Pacific Standard', security = 4, status = 'Apsaugota', tierId = 'bank_main' },
+    { id = 'casino', label = 'Diamond Casino', security = 4, status = 'Apsaugota', tierId = 'casino' },
+    { id = 'bank_fleeca', label = 'Fleeca bankai', security = 3, status = 'Veikia', tierId = 'bank_fleeca' },
+    { id = 'store', label = 'Parduotuvės tinklas', security = 2, status = 'Veikia', tierId = 'store' },
     { id = 'atm', label = 'Bankomatų tinklas', security = 1, status = 'Veikia', tierId = 'atm' },
-    { id = 'casino', label = 'Kazino tinklas', security = 4, status = 'Apsaugota', tierId = 'casino' },
-    { id = 'vault', label = 'Humane Labs', security = 5, status = 'Užrakinta', tierId = 'vault' },
-    { id = 'store', label = 'Ammu sandėlis', security = 3, status = 'Veikia', tierId = 'store' },
-    { id = 'cctv', label = 'Kamerų tinklelis', security = 2, status = 'Veikia', tierId = 'store' },
-    { id = 'traffic', label = 'Eismo kameros', security = 1, status = 'Veikia', tierId = 'atm' },
 }
 
 Config.TabletTargetMeta = {

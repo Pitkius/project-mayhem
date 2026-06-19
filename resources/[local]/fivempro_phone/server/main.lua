@@ -84,6 +84,21 @@ local function getInstalledApps(citizenid)
     return set
 end
 
+local function ensureDefaultInstalledApps(citizenid)
+    local row = MySQL.single.await('SELECT id FROM fivempro_phone_accounts WHERE citizenid = ? LIMIT 1', { citizenid })
+    if not row then return end
+    for _, app in ipairs((Config.Phone and Config.Phone.AppStoreApps) or {}) do
+        if app.default == true then
+            local appId = tostring(app.id or '')
+            if appId ~= '' and (photosEnabled() or (appId ~= 'camera' and appId ~= 'gallery')) then
+                MySQL.insert.await('INSERT IGNORE INTO fivempro_phone_installed_apps (citizenid, app_id) VALUES (?, ?)', {
+                    citizenid, appId
+                })
+            end
+        end
+    end
+end
+
 local function getFullName(player)
     if not player then return 'Player' end
     local c = player.PlayerData.charinfo or {}
@@ -449,6 +464,7 @@ local function getInitialDataFor(src)
     local fullname = getFullName(P)
     local myNumber, profile = ensurePhoneUser(citizenid, fullname)
     ensureDefaultContacts(citizenid)
+    ensureDefaultInstalledApps(citizenid)
 
     local contacts = MySQL.query.await([[
         SELECT id, display_name, contact_number
@@ -1531,6 +1547,18 @@ CreateThread(function()
     if not photosEnabled() then
         MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('camera', 'gallery')")
         MySQL.update.await('DELETE FROM fivempro_phone_photos')
+    else
+        for _, app in ipairs((Config.Phone and Config.Phone.AppStoreApps) or {}) do
+            if app.default == true then
+                local appId = tostring(app.id or '')
+                if appId == 'camera' or appId == 'gallery' then
+                    MySQL.update.await([[
+                        INSERT IGNORE INTO fivempro_phone_installed_apps (citizenid, app_id)
+                        SELECT citizenid, ? FROM fivempro_phone_accounts
+                    ]], { appId })
+                end
+            end
+        end
     end
 end)
 

@@ -2,14 +2,14 @@ Config = Config or {}
 
 Config.ReloadTime = 2400
 
---- true = stiprus custom reload modulis (viršutinė kūno dalis + bėgimas); native reload nenaudojamas.
-Config.ReloadUseNativeFirst = false
+--- GTA native reload animacija (standartinis užtaisymas).
+Config.ReloadUseNativeFirst = true
 
 --- Inventoriaus perkrovos vizualinė animacija (kulkos kraunamos po animacijos).
 Config.ReloadVisualTime = 0
 
---- Leidžia bėgti/judėti perkrovos metu (ForcePedMotionState + viršutinės kūno animacija).
-Config.ReloadAllowMovement = true
+--- false = vanilla GTA reload (stovi vietoje kaip singleplayer).
+Config.ReloadAllowMovement = false
 
 --[[
   Recoil: client/recoil.lua kelia kamerą + šoninį išsisklaidymą.

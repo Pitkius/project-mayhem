@@ -2,6 +2,14 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local session = nil
 
+local TIER_META = {
+    store = { level = 2, action = 'Pradėti apiplėšimą' },
+    bank_fleeca = { level = 3, action = 'Fleeca vault hack' },
+    bank_main = { level = 4, action = 'Pacific vault hack' },
+    casino = { level = 4, action = 'Casino heist' },
+    vault = { level = 5, action = 'Federal vault hack' },
+}
+
 local function resetSession()
     if session and session.locId then
         exports['fivempro_hacking']:ReleaseHeistDoors(session.locId)
@@ -51,10 +59,6 @@ end
 
 local function playHackSound(name)
     PlaySoundFrontend(-1, name or 'Pin_Good', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS', true)
-end
-
-local function playDrillSound(name)
-    PlaySoundFrontend(-1, name or 'Drill', 'DLC_HEIST_FLEECA_BANK_DRILLING_SOUNDS', true)
 end
 
 local function runHackPhase()
@@ -132,6 +136,14 @@ local function runPhase(phase)
     end
 end
 
+local function tierTargetLabel(tierId, loc)
+    local tierCfg = Config.RobberyTiers and Config.RobberyTiers[tierId]
+    local meta = TIER_META[tierId]
+    local level = (tierCfg and tierCfg.level) or (meta and meta.level) or 1
+    local action = (meta and meta.action) or 'Pradėti apiplėšimą'
+    return ('LVL %d · %s — %s'):format(level, loc.label or tierId, action)
+end
+
 local function startRobbery(tierId, loc)
     if session then
         return QBCore.Functions.Notify('Jau vyksta apiplėšimas.', 'error')
@@ -188,40 +200,32 @@ RegisterNetEvent('fivempro_hacking:client:robberyAbort', function()
     resetSession()
 end)
 
-local tierLabels = {
-    store = 'Apiplėšti kasą',
-    bank_fleeca = 'Fleeca vault hack',
-    bank_main = 'Pacific vault',
-    casino = 'Diamond Casino Heist',
-    vault = 'Federal vault',
-}
-
 function IsRobberySessionActive()
     return session ~= nil
 end
 
 exports('IsRobberySessionActive', IsRobberySessionActive)
 
-local robberyInteract = {}
+local robberyZones = {}
 
-CreateThread(function()
-    while true do
-        Wait(3000)
-        local locations = Config.Robberies and Config.Robberies.Locations or {}
-        for tierId in pairs(locations) do
-            QBCore.Functions.TriggerCallback('fivempro_hacking:server:robberyCanInteract', function(ok)
-                robberyInteract[tierId] = ok == true
-            end, tierId)
-        end
+local function removeRobberyTargets()
+    for zoneName in pairs(robberyZones) do
+        pcall(function()
+            exports['qb-target']:RemoveZone(zoneName)
+        end)
     end
-end)
+    robberyZones = {}
+end
 
-CreateThread(function()
-    while GetResourceState('qb-target') ~= 'started' do Wait(500) end
+local function registerRobberyTargets()
+    removeRobberyTargets()
+    if GetResourceState('qb-target') ~= 'started' then return end
+
     local locations = Config.Robberies and Config.Robberies.Locations or {}
     for tierId, list in pairs(locations) do
         for _, loc in ipairs(list) do
             local zoneName = ('hack_rob_%s_%s'):format(tierId, loc.id)
+            robberyZones[zoneName] = true
             exports['qb-target']:AddCircleZone(zoneName, loc.coords, loc.radius or 1.6, {
                 name = zoneName,
                 debugPoly = false,
@@ -230,22 +234,37 @@ CreateThread(function()
                 options = {
                     {
                         icon = 'fas fa-mask',
-                        label = tierLabels[tierId] or ('Apiplėšimas: ' .. tierId),
+                        label = tierTargetLabel(tierId, loc),
                         canInteract = function()
-                            return not session and robberyInteract[tierId] == true
+                            return not session
                         end,
                         action = function()
                             startRobbery(tierId, loc)
                         end,
                     },
                 },
-                distance = 2.0,
+                distance = 2.5,
             })
         end
+    end
+end
+
+CreateThread(function()
+    while GetResourceState('qb-target') ~= 'started' do
+        Wait(500)
+    end
+    Wait(1000)
+    registerRobberyTargets()
+end)
+
+AddEventHandler('onResourceStart', function(res)
+    if res == 'qb-target' or res == GetCurrentResourceName() then
+        SetTimeout(1500, registerRobberyTargets)
     end
 end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
+    removeRobberyTargets()
     resetSession()
 end)

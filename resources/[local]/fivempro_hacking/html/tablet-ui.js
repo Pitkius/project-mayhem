@@ -87,6 +87,95 @@ window.TabletUI = (function () {
     if (window.HackPost) await window.HackPost("installDrive", { slot });
   }
 
+  function sortTargetsByLevel(targets) {
+    return [...(targets || [])].sort((a, b) => (b.security || 0) - (a.security || 0));
+  }
+
+  const MAP_BOUNDS = { minX: -4000, minY: -4000, maxX: 4500, maxY: 6625 };
+
+  function gameToMapPercent(gx, gy) {
+    const rangeX = MAP_BOUNDS.maxX - MAP_BOUNDS.minX;
+    const rangeY = MAP_BOUNDS.maxY - MAP_BOUNDS.minY;
+    let tX = (Number(gx) - MAP_BOUNDS.minX) / rangeX;
+    let tY = (Number(gy) - MAP_BOUNDS.minY) / rangeY;
+    tX = Math.max(0, Math.min(1, tX));
+    tY = Math.max(0, Math.min(1, tY));
+    tY = 1 - tY;
+    return { leftPct: tX * 100, topPct: tY * 100 };
+  }
+
+  function showMapTooltip(tooltip, mapEl, html, clientX, clientY) {
+    const rect = mapEl.getBoundingClientRect();
+    const x = Math.max(16, Math.min(rect.width - 16, clientX - rect.left));
+    const y = Math.max(16, Math.min(rect.height - 16, clientY - rect.top));
+    tooltip.innerHTML = html;
+    tooltip.classList.remove("hidden");
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
+  }
+
+  function hideMapTooltip(tooltip) {
+    tooltip?.classList.add("hidden");
+  }
+
+  function renderNetworkMap() {
+    const mapEl = $("networkGraph");
+    const markersEl = $("networkMapMarkers");
+    const tooltip = $("networkMapTooltip");
+    const atmNote = $("networkMapAtmNote");
+    if (!mapEl || !markersEl || !data) return;
+
+    markersEl.innerHTML = "";
+    hideMapTooltip(tooltip);
+
+    if (atmNote) {
+      atmNote.textContent =
+        data.atmMapNote || "Galima apiplėšti bet kurį bankomatą mieste (LVL 1).";
+    }
+
+    const sites = data.robberyMapSites || [];
+    const tiers = data.robberyTiers || {};
+
+    sites.forEach((site) => {
+      const pos = gameToMapPercent(site.x, site.y);
+      const dot = document.createElement("button");
+      dot.type = "button";
+      dot.className = `network-map-marker lvl-${site.level || 1}`;
+      dot.style.left = `${pos.leftPct}%`;
+      dot.style.top = `${pos.topPct}%`;
+      dot.setAttribute("aria-label", site.label || site.id);
+
+      const tierLabel = (tiers[site.tierId] && tiers[site.tierId].label) || site.tierId || "";
+      const tipHtml = `<strong>${site.label || site.id}</strong>LVL ${site.level || 1} · ${tierLabel}`;
+
+      dot.addEventListener("mouseenter", () => dot.classList.add("is-hover"));
+      dot.addEventListener("mouseleave", () => {
+        dot.classList.remove("is-hover");
+        hideMapTooltip(tooltip);
+      });
+      dot.addEventListener("mousemove", (e) => {
+        showMapTooltip(tooltip, mapEl, tipHtml, e.clientX, e.clientY);
+      });
+
+      markersEl.appendChild(dot);
+    });
+  }
+
+  function tierSecurityLevel(tierId, tierCfg) {
+    if (tierCfg && tierCfg.level) return tierCfg.level;
+    const os = tierCfg && tierCfg.minOs;
+    if (os && data.osCatalog && data.osCatalog[os] && data.osCatalog[os].level) {
+      return data.osCatalog[os].level;
+    }
+    return 1;
+  }
+
+  function marketPriceLabel(price) {
+    const cur = data.marketCurrency || "crypto";
+    if (cur === "crypto") return `${price || 0}₿`;
+    return `$${price || 0}`;
+  }
+
   function buildTargetCard(t) {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -105,10 +194,11 @@ window.TabletUI = (function () {
   }
 
   function renderNetwork() {
+    renderNetworkMap();
     const list = $("networkList");
     if (!list) return;
     list.innerHTML = "";
-    (data.networkTargets || []).forEach((t) => list.appendChild(buildTargetCard(t)));
+    sortTargetsByLevel(data.networkTargets).forEach((t) => list.appendChild(buildTargetCard(t)));
   }
 
   function renderTargets() {
@@ -116,17 +206,17 @@ window.TabletUI = (function () {
     if (!list) return;
     list.innerHTML = "";
     const tiers = data.robberyTiers || {};
-    Object.keys(tiers).forEach((k) => {
+    const entries = Object.keys(tiers).map((k) => {
       const t = tiers[k];
-      const card = buildTargetCard({
+      return {
         id: k,
         label: t.label || k,
-        security: (data.osCatalog && data.osCatalog[t.minOs] && data.osCatalog[t.minOs].level) || 1,
+        security: tierSecurityLevel(k, t),
         status: "Veikia",
         tierId: k,
-      });
-      list.appendChild(card);
+      };
     });
+    sortTargetsByLevel(entries).forEach((entry) => list.appendChild(buildTargetCard(entry)));
   }
 
   function renderExploits() {
@@ -172,7 +262,12 @@ window.TabletUI = (function () {
     if (!grid) return;
     grid.innerHTML = "";
     const items = data.marketItems || [];
-    const QBCore = null;
+    const cryptoBal = data.playerMoney && data.playerMoney.crypto != null ? data.playerMoney.crypto : 0;
+    const curLabel = data.marketCurrencyLabel || "Crypto";
+    const head = document.createElement("p");
+    head.className = "muted small";
+    head.textContent = `Dark Net — balansas: ${cryptoBal}₿ ${curLabel} (keisk banke pas pardavėją)`;
+    grid.appendChild(head);
     items.forEach((e, i) => {
       const card = document.createElement("article");
       card.className = "market-card";
@@ -181,7 +276,7 @@ window.TabletUI = (function () {
       const label = e.item || "item";
       card.innerHTML = `
         <strong>${label}</strong>
-        <span class="muted small">$${e.price || 0}${extra}</span>
+        <span class="muted small">${marketPriceLabel(e.price)}${extra}</span>
       `;
       const btn = document.createElement("button");
       btn.type = "button";
@@ -191,7 +286,7 @@ window.TabletUI = (function () {
       card.appendChild(btn);
       grid.appendChild(card);
     });
-    if (!items.length) grid.innerHTML = '<p class="muted">Black market tuščias config.</p>';
+    if (!items.length) grid.innerHTML = '<p class="muted">Dark Net tuščias config.</p>';
   }
 
   function renderContracts() {

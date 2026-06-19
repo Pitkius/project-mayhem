@@ -1,6 +1,6 @@
 Config = {}
 
---- Nuotraukų fiksavimas išjungtas (enablePhotos = false)
+--- Nuotraukų fiksavimas (kamera + galerija)
 
 Config.KeybindCommand = 'fivempro_phone_toggle'
 Config.KeybindDefault = 'F1'
@@ -19,8 +19,8 @@ Config.Phone = {
     maxAdTitleLength = 48,
     maxPostCaptionLength = 260,
     maxImageUrlLength = 500,
-    --- Telefono kamera / galerija (išjungta — nenaudoja DB vietos)
-    enablePhotos = false,
+    --- Telefono kamera / galerija
+    enablePhotos = true,
     maxPhotosPerUser = 80,
     maxPhotoDataLength = 1500000,
     maxNotesLength = 8000,
@@ -55,6 +55,8 @@ Config.Phone = {
         { id = 'messages', label = 'Žinutės', icon = 'messages', default = true },
         { id = 'contacts', label = 'Kontaktai', icon = 'contacts', default = true },
         { id = 'settings', label = 'Nustatymai', icon = 'settings', default = true },
+        { id = 'camera', label = 'Kamera', icon = 'camera', default = true, description = 'Fotografuok ir saugok nuotraukas telefone' },
+        { id = 'gallery', label = 'Galerija', icon = 'gallery', default = true, description = 'Tavo nuotraukų albumas' },
         { id = 'carplay', label = 'CarPlay', icon = 'carplay', default = false, description = 'Muzika automobilyje (Spotify / YouTube)' },
         { id = 'notes', label = 'Užrašai', icon = 'notes', default = true },
         { id = 'appstore', label = 'Programėlės', icon = 'appstore', default = true },

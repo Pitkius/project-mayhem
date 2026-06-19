@@ -49,12 +49,27 @@ Config.MissionSites = {
         { coords = vector4(1737.22, 3710.44, 34.14, 20.0), label = 'Sandy trasa', vehicle = 'sultan2' },
     },
     mc_meet = {
-        { coords = vector4(215.44, -809.88, 30.73, 250.0), label = 'MC susitikimo vieta' },
-        { coords = vector4(1248.12, -3258.44, 5.80, 270.0), label = 'Uosto susitikimas' },
+        { coords = vector4(981.52, -102.96, 74.85, 70.7), label = 'Lost MC kiemas' },
+        { coords = vector4(1702.44, 3298.22, 41.15, 195.0), label = 'Sandy dykuma' },
+        { coords = vector4(2350.88, 3054.44, 48.15, 270.0), label = 'Senas laužynas' },
+        { coords = vector4(797.44, -2997.22, 6.02, 90.0), label = 'Uosto užkulisiai' },
+        { coords = vector4(1304.22, 4226.44, 33.91, 180.0), label = 'Alamo Sea angaras' },
+    },
+    --- Slapti susitikimai / sandoriai (ne miesto centre)
+    secret_meet = {
+        { coords = vector4(1395.22, 3611.44, 34.89, 200.0), label = 'Sandy sandėlis' },
+        { coords = vector4(-1578.44, 5160.22, 19.58, 135.0), label = 'Zancudo upės angaras' },
+        { coords = vector4(2550.88, 2838.44, 42.15, 45.0), label = 'Palomino angaras' },
+        { coords = vector4(-2595.44, 3102.22, 14.88, 270.0), label = 'Didžiojo vandenyno slėptuvė' },
+        { coords = vector4(724.44, 1196.88, 326.12, 250.0), label = 'Vinewood apžvalga' },
+        { coords = vector4(3620.22, 3754.44, 28.52, 320.0), label = 'Humane užnugaris' },
+        { coords = vector4(-677.44, 5834.22, 17.33, 90.0), label = 'Paleto miškas' },
+        { coords = vector4(2488.44, 3778.22, 41.65, 120.0), label = 'Chiliad tunelis' },
     },
     vip = {
-        { coords = vector4(978.44, 18.22, 81.00, 240.0), label = 'VIP zona' },
-        { coords = vector4(-1569.22, -546.88, 34.96, 220.0), label = 'Richman apsauga' },
+        { coords = vector4(724.44, 1196.88, 326.12, 250.0), label = 'Vinewood slėptuvė' },
+        { coords = vector4(-3422.44, 967.22, 8.35, 90.0), label = 'Chumash užkulisiai' },
+        { coords = vector4(-1578.44, 5160.22, 19.58, 135.0), label = 'Upės angaras' },
     },
 }
 
@@ -341,7 +356,7 @@ Config.MissionTypes = {
     cartel_secret_deal = {
         label = 'Slaptas sandoris',
         archetype = 'extortion',
-        sitePool = 'extortion',
+        sitePool = 'secret_meet',
         visual = 'deal',
         reputationReward = 11,
         influenceReward = 7,
@@ -419,7 +434,7 @@ Config.MissionTypes = {
     mafia_vip = {
         label = 'VIP apsauga',
         archetype = 'extortion',
-        sitePool = 'vip',
+        sitePool = 'secret_meet',
         visual = 'vip',
         reputationReward = 11,
         influenceReward = 7,
