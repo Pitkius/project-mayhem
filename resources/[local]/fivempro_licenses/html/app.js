@@ -41,7 +41,7 @@ function renderCategories(categories) {
 }
 
 function renderCard(data) {
-  document.getElementById("serverName").textContent = data.serverName || "FIVEMPRO";
+  document.getElementById("serverName").textContent = data.serverName || "MRP";
   document.getElementById("serverSubtitle").textContent = data.serverSubtitle || "Los Santos RP";
   document.getElementById("docTitle").textContent = data.title || "Dokumentas";
   document.getElementById("docLabel").textContent = data.type === "id_card" ? "Tapatybė" : "Licencija";

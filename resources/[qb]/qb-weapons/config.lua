@@ -2,8 +2,11 @@ Config = Config or {}
 
 Config.ReloadTime = 2400
 
---- Inventoriaus perkrovos vizualinė animacija (kulkos užkraunamos iš karto, be GTA native reload laukimo).
-Config.ReloadVisualTime = 850
+--- true = pirmiausia GTA native reload, tada atsarginė animacija.
+Config.ReloadUseNativeFirst = true
+
+--- Inventoriaus perkrovos vizualinė animacija (kulkos kraunamos po animacijos).
+Config.ReloadVisualTime = 0
 
 --- Leidžia bėgti/judėti perkrovos metu (viršutinės kūno dalies animacija, be sustojimo).
 Config.ReloadAllowMovement = true

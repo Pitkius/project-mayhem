@@ -1,6 +1,6 @@
 Config = {}
 
-Config.ServerName = 'FIVEMPRO'
+Config.ServerName = 'MRP'
 Config.ServerSubtitle = 'Los Santos RP'
 Config.ShowRadius = 3.0
 

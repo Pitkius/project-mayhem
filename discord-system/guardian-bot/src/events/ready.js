@@ -2,6 +2,7 @@ import { Events, ActivityType } from 'discord.js';
 import { applyBotBranding } from '../utils/branding.js';
 import { hasLogChannels } from '../database/sqlite.js';
 import { provisionLogChannels } from '../logs/provision.js';
+import { registerSlashCommands } from '../registerSlashCommands.js';
 
 export default {
   name: Events.ClientReady,
@@ -11,6 +12,13 @@ export default {
       await applyBotBranding(client);
     } catch (err) {
       console.warn('[MRP] Branding error:', err.message);
+    }
+
+    if (process.env.SYNC_COMMANDS_ON_START !== 'false') {
+      const sync = await registerSlashCommands(client);
+      if (!sync.ok) {
+        console.warn('[MRP] Paleisk rankiniu būdu: npm run deploy');
+      }
     }
 
     client.user.setPresence({

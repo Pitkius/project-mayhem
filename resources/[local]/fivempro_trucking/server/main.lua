@@ -244,10 +244,47 @@ local function nearestTerminalHub(src)
     return bestHub or 'ls_docks', bestTerm
 end
 
+local function hubIdsExcluding(...)
+    local exclude = {}
+    for i = 1, select('#', ...) do
+        exclude[select(i, ...)] = true
+    end
+    local out = {}
+    for id in pairs(Config.Hubs or {}) do
+        if not exclude[id] then
+            out[#out + 1] = id
+        end
+    end
+    return out
+end
+
+local function pickRandomHubId(excludeIds)
+    local candidates = hubIdsExcluding(table.unpack(excludeIds or {}))
+    if #candidates == 0 then return nil end
+    return candidates[math.random(#candidates)]
+end
+
+local function ensureDeliveryHub(contract, pickupId)
+    pickupId = pickupId or contract.pickupId
+    local deliveryId = contract.deliveryId
+    if deliveryId == pickupId or deliveryId == (Config.DefaultStartHubId or 'ls_docks') then
+        deliveryId = pickRandomHubId({ pickupId, Config.DefaultStartHubId or 'ls_docks' })
+        if not deliveryId then return contract end
+        local delivery = TruckingShared.Hub(deliveryId)
+        if not delivery then return contract end
+        contract.deliveryId = deliveryId
+        contract.deliveryLabel = delivery.label
+        contract.delivery = { x = delivery.coords.x, y = delivery.coords.y, z = delivery.coords.z }
+    end
+    return contract
+end
+
 local function applyPickupHub(contract, pickupId)
     local pickup = TruckingShared.Hub(pickupId)
+    if not pickup then return contract end
+    contract = ensureDeliveryHub(contract, pickupId)
     local delivery = TruckingShared.Hub(contract.deliveryId)
-    if not pickup or not delivery then return contract end
+    if not delivery then return contract end
     local straightKm = TruckingShared.StraightDistanceKm(pickup.coords, delivery.coords)
     local distanceKm = TruckingShared.DistanceKm(pickup.coords, delivery.coords)
     contract.pickupId = pickupId
@@ -276,13 +313,13 @@ local function generateContract(profile, seed, forcedPickupId)
     local hubIds = {}
     for id in pairs(Config.Hubs or {}) do hubIds[#hubIds + 1] = id end
     if #hubIds < 2 then return nil end
+    local startHubId = Config.DefaultStartHubId or 'ls_docks'
     local pickupId = forcedPickupId or hubIds[math.random(#hubIds)]
-    local deliveryId = hubIds[math.random(#hubIds)]
-    local guard = 0
-    while deliveryId == pickupId and guard < 20 do
-        deliveryId = hubIds[math.random(#hubIds)]
-        guard = guard + 1
+    local deliveryCandidates = hubIdsExcluding(pickupId, startHubId)
+    if #deliveryCandidates == 0 then
+        deliveryCandidates = hubIdsExcluding(pickupId)
     end
+    local deliveryId = deliveryCandidates[math.random(#deliveryCandidates)]
     local pickup = TruckingShared.Hub(pickupId)
     local delivery = TruckingShared.Hub(deliveryId)
     if not pickup or not delivery then return nil end
@@ -734,6 +771,31 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:cancelDelivery', funct
     activeDeliveries[src] = nil
     TriggerClientEvent('fivempro_trucking:client:clearDelivery', src)
     cb({ ok = true })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:failDelivery', function(src, cb, reason)
+    local Player = QBCore.Functions.GetPlayer(src)
+    local d = activeDeliveries[src]
+    if not Player or not d then
+        return cb({ ok = false })
+    end
+    local citizenid = Player.PlayerData.citizenid
+    local row = ensureProfile(citizenid)
+    local repLoss = math.random(
+        Config.RepPerFailedDelivery.min or 8,
+        Config.RepPerFailedDelivery.max or 20
+    )
+    local newRep = math.max(0, (row.reputation or 0) - repLoss)
+    saveProfile(citizenid, { reputation = newRep })
+    activeDeliveries[src] = nil
+    TriggerClientEvent('fivempro_trucking:client:clearDelivery', src)
+    cb({
+        ok = true,
+        reason = reason or 'Misija atšaukta.',
+        repLoss = repLoss,
+        reputation = newRep,
+        stars = TruckingShared.ReputationStars(newRep),
+    })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_trucking:server:buyFleetVehicle', function(src, cb, model)

@@ -3,6 +3,7 @@ import { handleAntinuke, getAuditExecutor } from '../antinuke/punish.js';
 import { sendJoinLog, sendGuildLog } from '../logs/dispatcher.js';
 import { getVerificationSettings } from '../database/sqlite.js';
 import { assertBotCanManageRoles } from '../verification/helpers.js';
+import { sendWelcomeAnnouncement } from '../verification/welcome.js';
 
 export default {
   name: Events.GuildMemberAdd,
@@ -28,6 +29,10 @@ export default {
       } catch (err) {
         console.error('[Verification] guildMemberAdd role:', err.message);
       }
+    }
+
+    if (verification?.enabled && verification.welcomeChannelId) {
+      await sendWelcomeAnnouncement(member, verification);
     }
 
     await sendJoinLog(member);

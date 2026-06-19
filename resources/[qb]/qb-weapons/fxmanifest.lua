@@ -15,6 +15,8 @@ shared_scripts {
 }
 
 client_scripts {
+    'client/ammo_state.lua',
+    'client/reload.lua',
     'client/main.lua',
     'client/damage.lua',
     'client/recoil.lua',

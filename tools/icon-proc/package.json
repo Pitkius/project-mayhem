@@ -9,6 +9,7 @@
     "normalize": "node normalize-classic-icons.mjs",
     "mushroom": "node make-mushroom-icon.mjs",
     "weapon-icon": "node make-weapon-photo-icon.mjs",
+    "fgc9-icon": "node make-fgc9-icon.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

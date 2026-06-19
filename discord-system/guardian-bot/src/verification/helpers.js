@@ -11,15 +11,51 @@ export const VERIFY_EMOJI_PING = '🔔';
 export function normalizeChannelName(name) {
   return String(name || '')
     .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\p{L}\p{N}\-]+/gu, '')
     .trim();
 }
 
-export function findChannelBySlug(guild, slug) {
-  const want = normalizeChannelName(slug);
+const CHANNEL_SLUG_ALIASES = {
+  'oro-uostas': ['oro-uostas', 'orouostas', 'uostas'],
+  pasitvirtinimas: ['pasitvirtinimas', 'patvirtinimas', 'verify', 'verification'],
+  taisykles: ['taisykles', 'taisykle', 'rules', 'server-rules', 'taisykliu'],
+};
+
+function channelNameCandidates(name) {
+  const base = normalizeChannelName(name);
+  const set = new Set([base]);
+  for (const aliases of Object.values(CHANNEL_SLUG_ALIASES)) {
+    for (const alias of aliases) {
+      if (base.includes(alias) || alias.includes(base)) set.add(alias);
+    }
+  }
+  return set;
+}
+
+export async function findChannelBySlug(guild, slug) {
+  const aliases = CHANNEL_SLUG_ALIASES[slug] || [slug];
+  const wants = new Set(aliases.map((a) => normalizeChannelName(a)).filter(Boolean));
+
+  if (guild.channels.cache.size < 3) {
+    await guild.channels.fetch().catch(() => null);
+  }
+
   return guild.channels.cache.find((ch) => {
     if (!ch.isTextBased?.()) return false;
-    return normalizeChannelName(ch.name) === want || normalizeChannelName(ch.name).includes(want);
+    const normalized = normalizeChannelName(ch.name);
+    if (wants.has(normalized)) return true;
+    for (const want of wants) {
+      if (want && (normalized.includes(want) || want.includes(normalized))) return true;
+    }
+    const candidates = channelNameCandidates(ch.name);
+    for (const want of wants) {
+      for (const cand of candidates) {
+        if (cand === want || cand.includes(want) || want.includes(cand)) return true;
+      }
+    }
+    return false;
   }) || null;
 }
 

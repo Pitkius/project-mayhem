@@ -403,21 +403,33 @@ CreateThread(function()
                         elseif not isAllowedTruck() then
                             QBCore.Functions.Notify('Reikia tinkamo transporto (Mule, Benson, Phantom…).', 'error')
                         else
-                            runLocalProgress(Config.UnloadDurationMs or 7000, 'Iškraunamas krovinys…')
-                            local cond = deliveryState.condition or 100
-                            QBCore.Functions.TriggerCallback('fivempro_trucking:server:completeDelivery', function(res)
-                                if res and res.ok then
-                                    clearBlip()
-                                    deliveryState = nil
-                                    TruckingLogisticsCleanup()
-                                    QBCore.Functions.Notify(
-                                        ('Pristatyta! $%s (XP +%s)'):format(res.pay or 0, res.xpGain or 0),
-                                        'success'
-                                    )
-                                else
-                                    QBCore.Functions.Notify((res and res.reason) or 'Pristatymas nepavyko.', 'error')
-                                end
-                            end, cond)
+                            local failed, failReason = TruckingLogisticsCheckMissionVehicle()
+                            if failed then
+                                QBCore.Functions.TriggerCallback('fivempro_trucking:server:failDelivery', function(res)
+                                    if res and res.ok then
+                                        QBCore.Functions.Notify(res.reason or failReason, 'error', 7000)
+                                        if res.repLoss and res.repLoss > 0 then
+                                            QBCore.Functions.Notify(('Reputacija -%s'):format(res.repLoss), 'error', 6000)
+                                        end
+                                    end
+                                end, failReason)
+                            else
+                                runLocalProgress(Config.UnloadDurationMs or 7000, 'Iškraunamas krovinys…')
+                                local cond = deliveryState.condition or 100
+                                QBCore.Functions.TriggerCallback('fivempro_trucking:server:completeDelivery', function(res)
+                                    if res and res.ok then
+                                        clearBlip()
+                                        deliveryState = nil
+                                        TruckingLogisticsCleanup()
+                                        QBCore.Functions.Notify(
+                                            ('Pristatyta! $%s (XP +%s)'):format(res.pay or 0, res.xpGain or 0),
+                                            'success'
+                                        )
+                                    else
+                                        QBCore.Functions.Notify((res and res.reason) or 'Pristatymas nepavyko.', 'error')
+                                    end
+                                end, cond)
+                            end
                         end
                     end
                 end

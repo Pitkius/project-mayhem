@@ -14,7 +14,7 @@ import {
   findChannelBySlug,
 } from '../verification/helpers.js';
 
-function resolveTextChannel(guild, provided, fallbackSlug) {
+async function resolveTextChannelAsync(guild, provided, fallbackSlug) {
   if (provided) return provided;
   return findChannelBySlug(guild, fallbackSlug);
 }
@@ -23,6 +23,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName('setupverify')
     .setDescription('Pasitvirtinimo sistema — oro-uostas + ✅ / 🔔 rolės')
+    .setDMPermission(false)
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addSubcommand((sc) => sc
       .setName('config')
@@ -37,6 +38,10 @@ export default {
       .addChannelOption((o) => o
         .setName('verification_channel')
         .setDescription('Pasitvirtinimas kanalas')
+        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
+      .addChannelOption((o) => o
+        .setName('rules_channel')
+        .setDescription('Taisyklių kanalas (embed nuoroda)')
         .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)))
     .addSubcommand((sc) => sc
       .setName('permissions')
@@ -67,6 +72,7 @@ export default {
         cfg.unverifiedRoleId ? `Unverified rolė: <@&${cfg.unverifiedRoleId}>` : 'Unverified rolė: —',
         `oro-uostas: <#${cfg.welcomeChannelId}>`,
         `Pasitvirtinimas: <#${cfg.verificationChannelId}>`,
+        cfg.rulesChannelId ? `Taisyklės: <#${cfg.rulesChannelId}>` : 'Taisyklės: auto (taisykles)',
         cfg.verificationMessageId ? `Žinutė: \`${cfg.verificationMessageId}\`` : 'Žinutė: dar nepaskelbta (`/setupverify post`)',
       ];
       return interaction.reply({ content: lines.join('\n'), ephemeral: true });
@@ -76,15 +82,20 @@ export default {
       const verifiedRole = interaction.options.getRole('verified_role', true);
       const pingRole = interaction.options.getRole('ping_role', true);
       const unverifiedRole = interaction.options.getRole('unverified_role');
-      const welcomeChannel = resolveTextChannel(
+      const welcomeChannel = await resolveTextChannelAsync(
         interaction.guild,
         interaction.options.getChannel('welcome_channel'),
         'oro-uostas',
       );
-      const verificationChannel = resolveTextChannel(
+      const verificationChannel = await resolveTextChannelAsync(
         interaction.guild,
         interaction.options.getChannel('verification_channel'),
         'pasitvirtinimas',
+      );
+      const rulesChannel = await resolveTextChannelAsync(
+        interaction.guild,
+        interaction.options.getChannel('rules_channel'),
+        'taisykles',
       );
 
       if (!welcomeChannel) {
@@ -112,6 +123,8 @@ export default {
         unverifiedRoleId: unverifiedRole?.id || null,
         welcomeChannelId: welcomeChannel.id,
         verificationChannelId: verificationChannel.id,
+        rulesChannelId: rulesChannel?.id || null,
+        welcomeTitle: existing.welcomeTitle || 'MRP',
         visibleChannelIds: [welcomeChannel.id, verificationChannel.id],
         verificationMessageId: existing.verificationMessageId || null,
         memberEmoji: VERIFY_EMOJI_MEMBER,

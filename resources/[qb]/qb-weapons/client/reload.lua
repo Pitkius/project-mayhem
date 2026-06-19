@@ -1,0 +1,182 @@
+--- Stipresnis užtaisymas: native reload + atsarginės animacijos, kulkos kraunamos po vizualo.
+WeaponReload = WeaponReload or {}
+
+local activeReloadAnim = nil
+
+local function getReloadWaitMs()
+    local t = tonumber(Config.ReloadTime)
+    if t and t > 0 then return t end
+    return 2400
+end
+
+local function loadAnimDict(dict)
+    if not dict or dict == '' or HasAnimDictLoaded(dict) then return true end
+    RequestAnimDict(dict)
+    local deadline = GetGameTimer() + 4000
+    while not HasAnimDictLoaded(dict) and GetGameTimer() < deadline do
+        Wait(10)
+    end
+    return HasAnimDictLoaded(dict)
+end
+
+local function reloadAnimCandidates(weaponHash)
+    local group = GetWeapontypeGroup(weaponHash)
+    if group == `GROUP_SMG` or group == `GROUP_MG` then
+        return {
+            { 'weapons@submg@', 'reload_aim' },
+            { 'weapons@submg@', 'reload' },
+            { 'weapons@rifle@lo@carbine_str', 'reload_aim' },
+        }
+    end
+    if group == `GROUP_RIFLE` or group == `GROUP_SNIPER` then
+        return {
+            { 'weapons@rifle@lo@carbine_str', 'reload_aim' },
+            { 'weapons@rifle@lo@carbine_str', 'reload' },
+            { 'weapons@submg@', 'reload_aim' },
+        }
+    end
+    if group == `GROUP_SHOTGUN` then
+        return {
+            { 'weapons@shotgun@', 'reload_aim' },
+            { 'weapons@shotgun@', 'reload' },
+        }
+    end
+    return {
+        { 'weapons@pistol@', 'reload_aim' },
+        { 'weapons@pistol@', 'reload' },
+        { 'weapons@pistol@combat@', 'reload_aim' },
+    }
+end
+
+local function stopReloadAnimation(ped)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
+    if activeReloadAnim then
+        StopAnimTask(ped, activeReloadAnim.dict, activeReloadAnim.anim, 1.0)
+        activeReloadAnim = nil
+    end
+    SetPedCurrentWeaponVisible(ped, true, false, false, false)
+end
+
+local function snapshotClipState(ped, weaponHash)
+    local hasClip, clipNow = GetAmmoInClip(ped, weaponHash)
+    clipNow = hasClip and (tonumber(clipNow) or 0) or 0
+    local totalBefore = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
+    return clipNow, totalBefore
+end
+
+local function restoreClipState(ped, weaponHash, clipNow, totalBefore)
+    SetPedAmmo(ped, weaponHash, totalBefore)
+    SetAmmoInClip(ped, weaponHash, clipNow)
+    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+end
+
+local function primeReloadReserve(ped, weaponHash, clipNow, totalBefore, bulletsToLoad)
+    bulletsToLoad = math.max(0, tonumber(bulletsToLoad) or 0)
+    if bulletsToLoad <= 0 then return totalBefore end
+    local reserve = math.max(0, totalBefore - clipNow)
+    if reserve >= bulletsToLoad then return totalBefore end
+    local boosted = totalBefore + (bulletsToLoad - reserve)
+    SetPedAmmo(ped, weaponHash, boosted)
+    SetAmmoInClip(ped, weaponHash, clipNow)
+    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    return boosted
+end
+
+local function playMobileReloadAnimation(ped, weaponHash, durationMs)
+    for _, pair in ipairs(reloadAnimCandidates(weaponHash)) do
+        local dict, anim = pair[1], pair[2]
+        if loadAnimDict(dict) then
+            activeReloadAnim = { dict = dict, anim = anim }
+            SetCurrentPedWeapon(ped, weaponHash, true)
+            TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, 49, 0.0, false, false, false)
+
+            local deadline = GetGameTimer() + durationMs
+            local replayAt = GetGameTimer() + 180
+            while GetGameTimer() < deadline do
+                if not DoesEntityExist(ped) then break end
+                if GetGameTimer() >= replayAt and not IsEntityPlayingAnim(ped, dict, anim, 3) then
+                    TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, 49, 0.0, false, false, false)
+                    replayAt = GetGameTimer() + 220
+                end
+                Wait(0)
+            end
+            stopReloadAnimation(ped)
+            return true
+        end
+    end
+    return false
+end
+
+local function tryNativeReloadAnimation(ped, weaponHash, clipNow, totalBefore, bulletsToLoad, durationMs)
+    primeReloadReserve(ped, weaponHash, clipNow, totalBefore, bulletsToLoad)
+    SetCurrentPedWeapon(ped, weaponHash, true)
+    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+
+    MakePedReload(ped)
+    if not IsPedReloading(ped) then
+        TaskReloadWeapon(ped, true)
+    end
+
+    local startDeadline = GetGameTimer() + 700
+    while GetGameTimer() < startDeadline do
+        if not DoesEntityExist(ped) then return false end
+        if IsPedReloading(ped) then
+            local endDeadline = GetGameTimer() + durationMs
+            while GetGameTimer() < endDeadline do
+                if not DoesEntityExist(ped) then break end
+                if not IsPedReloading(ped) then
+                    return true
+                end
+                Wait(0)
+            end
+            return true
+        end
+        if not IsPedReloading(ped) then
+            TaskReloadWeapon(ped, true)
+        end
+        Wait(0)
+    end
+    return false
+end
+
+--- Animacija be kulkų keitimo — kulkos kraunamos tik po šios funkcijos.
+function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then
+        Wait(400)
+        return
+    end
+
+    bulletsToLoad = math.max(0, tonumber(bulletsToLoad) or 0)
+    local durationMs = getReloadWaitMs()
+    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    SetCurrentPedWeapon(ped, weaponHash, true)
+
+    local clipNow, totalBefore = snapshotClipState(ped, weaponHash)
+
+    if IsPedInAnyVehicle(ped, false) then
+        Wait(math.min(1400, durationMs))
+        stopReloadAnimation(ped)
+        restoreClipState(ped, weaponHash, clipNow, totalBefore)
+        return
+    end
+
+    local usedNative = false
+    if Config.ReloadUseNativeFirst ~= false then
+        usedNative = tryNativeReloadAnimation(ped, weaponHash, clipNow, totalBefore, bulletsToLoad, durationMs)
+    end
+
+    if not usedNative then
+        local played = playMobileReloadAnimation(ped, weaponHash, durationMs)
+        if not played then
+            Wait(math.min(1200, durationMs))
+        end
+    end
+
+    stopReloadAnimation(ped)
+    restoreClipState(ped, weaponHash, clipNow, totalBefore)
+    WeaponAmmo.normalizePedAmmo(ped, weaponHash, weaponData)
+end
+
+function WeaponReload.cancel(ped)
+    stopReloadAnimation(ped or PlayerPedId())
+end

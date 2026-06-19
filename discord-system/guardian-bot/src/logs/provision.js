@@ -28,16 +28,29 @@ function findCategory(guild, categoryName) {
   );
 }
 
+function collectLogViewerRoleIds(guild) {
+  const ids = new Set();
+  for (const role of guild.roles.cache.values()) {
+    if (role.permissions.has(PermissionFlagsBits.Administrator)) {
+      ids.add(role.id);
+    }
+  }
+
+  const extra = process.env.DISCORD_LOG_ROLE_IDS;
+  if (extra) {
+    for (const id of extra.split(',').map((s) => s.trim()).filter(Boolean)) {
+      if (guild.roles.cache.has(id)) ids.add(id);
+    }
+  }
+
+  return [...ids];
+}
+
 function buildOverwrites(guild, botId) {
-  return [
+  const overwrites = [
     {
       id: guild.roles.everyone.id,
-      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
-      deny: [
-        PermissionFlagsBits.SendMessages,
-        PermissionFlagsBits.CreatePublicThreads,
-        PermissionFlagsBits.SendMessagesInThreads,
-      ],
+      deny: [PermissionFlagsBits.ViewChannel],
     },
     {
       id: botId,
@@ -51,6 +64,28 @@ function buildOverwrites(guild, botId) {
       ],
     },
   ];
+
+  for (const roleId of collectLogViewerRoleIds(guild)) {
+    overwrites.push({
+      id: roleId,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.ReadMessageHistory,
+      ],
+      deny: [
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.CreatePublicThreads,
+        PermissionFlagsBits.SendMessagesInThreads,
+      ],
+    });
+  }
+
+  return overwrites;
+}
+
+async function applyPrivateLogOverwrites(channel, guild, botId) {
+  if (!channel?.permissionOverwrites) return;
+  await channel.permissionOverwrites.set(buildOverwrites(guild, botId));
 }
 
 async function ensureAnchor(guild) {
@@ -58,15 +93,20 @@ async function ensureAnchor(guild) {
   const existing = sorted.find(
     (channel) => channel.type === ChannelType.GuildCategory && LOG_LAYOUT.anchorMatch.test(channel.name),
   );
-  if (existing) return existing;
+  if (existing) {
+    await applyPrivateLogOverwrites(existing, guild, guild.members.me?.id || guild.client.user.id).catch(() => null);
+    return existing;
+  }
 
   const maxPos = sorted.length ? Math.max(...sorted.map((channel) => channel.rawPosition)) : 0;
-  return guild.channels.create({
+  const anchor = await guild.channels.create({
     name: LOG_LAYOUT.anchorName,
     type: ChannelType.GuildCategory,
     position: maxPos + 1,
+    permissionOverwrites: buildOverwrites(guild, guild.members.me?.id || guild.client.user.id),
     reason: 'MRP Guardian — logų zona',
   });
+  return anchor;
 }
 
 async function resolveStartPosition(guild, anchor) {
@@ -128,8 +168,10 @@ export async function provisionLogChannels(guild, client) {
     webhooks: {},
     exportPath: null,
     errors: [],
+    permissionsApplied: 0,
   };
 
+  const botId = client.user.id;
   const anchor = await ensureAnchor(guild);
   let position = await resolveStartPosition(guild, anchor);
 
@@ -140,6 +182,7 @@ export async function provisionLogChannels(guild, client) {
         name: categoryDef.name,
         type: ChannelType.GuildCategory,
         position,
+        permissionOverwrites: buildOverwrites(guild, botId),
         reason: 'MRP Guardian — logų kategorija',
       });
       results.created.push(`Kategorija **${categoryDef.name}**`);
@@ -148,7 +191,11 @@ export async function provisionLogChannels(guild, client) {
       await category.setPosition(position).catch((err) => {
         results.errors.push(`Kategorijos pozicija (${categoryDef.name}): ${err.message}`);
       });
+      await applyPrivateLogOverwrites(category, guild, botId).catch((err) => {
+        results.errors.push(`Kategorijos teisės (${categoryDef.name}): ${err.message}`);
+      });
       results.reused.push(`Kategorija **${categoryDef.name}**`);
+      results.permissionsApplied += 1;
       position += 1;
     }
 
@@ -159,7 +206,7 @@ export async function provisionLogChannels(guild, client) {
           name: channelDef.name,
           type: ChannelType.GuildText,
           parent: category.id,
-          permissionOverwrites: buildOverwrites(guild, client.user.id),
+          permissionOverwrites: buildOverwrites(guild, botId),
           reason: 'MRP Guardian — logų kanalas',
         });
         results.created.push(`#${channelDef.name}`);
@@ -169,7 +216,11 @@ export async function provisionLogChannels(guild, client) {
             results.errors.push(`#${channelDef.name} perkėlimas: ${err.message}`);
           });
         }
+        await applyPrivateLogOverwrites(channel, guild, botId).catch((err) => {
+          results.errors.push(`#${channelDef.name} teisės: ${err.message}`);
+        });
         results.reused.push(`#${channelDef.name}`);
+        results.permissionsApplied += 1;
       }
 
       if (channelDef.discord) {
@@ -196,7 +247,7 @@ export async function provisionLogChannels(guild, client) {
 }
 
 export function formatProvisionSummary(results) {
-  const lines = ['**Logų kanalai sukonfigūruoti.**', ''];
+  const lines = ['**Logų kanalai sukonfigūruoti.**', '🔒 Visi logų kanalai — tik **Administrator** rolėms.', ''];
 
   if (results.created.length) {
     lines.push(`Sukurta (${results.created.length}):`);

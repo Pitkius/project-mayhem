@@ -118,11 +118,21 @@ end)
 
 -- Events
 
+local function capStoredWeaponAmmo(weaponName, amount)
+    amount = math.max(0, math.floor(tonumber(amount) or 0))
+    weaponName = tostring(weaponName or ''):lower()
+    if weaponName == 'weapon_petrolcan' or weaponName == 'weapon_fireextinguisher' then
+        return math.min(amount, 4000)
+    end
+    return math.min(amount, 120)
+end
+
 RegisterNetEvent('qb-weapons:server:UpdateWeaponAmmo', function(CurrentWeaponData, amount)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
-    amount = tonumber(amount)
+    local weaponName = CurrentWeaponData and CurrentWeaponData.name
+    amount = capStoredWeaponAmmo(weaponName, amount)
     if CurrentWeaponData then
         local slot = tonumber(CurrentWeaponData.slot)
         local updated = false

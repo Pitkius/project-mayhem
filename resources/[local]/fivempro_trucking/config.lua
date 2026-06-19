@@ -44,6 +44,11 @@ Config.ReputationStars = {
 
 Config.XpPerDelivery = { min = 35, max = 120 }
 Config.RepPerDelivery = { min = 4, max = 18 }
+Config.RepPerFailedDelivery = { min = 8, max = 20 }
+
+--- Misija atšaukiama, jei darbinis transportas per daug pažeistas ar sunaikintas.
+Config.VehicleFailBodyHealth = 280.0
+Config.VehicleFailEngineHealth = 150.0
 
 Config.Pay = {
     base = 180,
@@ -84,9 +89,9 @@ Config.LogisticsCenter = {
         { coords = vector3(1224.2406, -3169.7268, 5.5278), heading = 82.9993 },
     },
     anims = {
-        pickup = { dict = 'random@domestic', clip = 'pickup_low', flag = 1, duration = 1200 },
+        pickup = { dict = 'anim@move_m@trash', clip = 'pickup', flag = 0, duration = 1100 },
         carry = { dict = 'anim@heists@box_carry@', clip = 'idle', flag = 49 },
-        place = { dict = 'mp_common', clip = 'givetake1_a', flag = 1, duration = 1400 },
+        place = { dict = 'anim@heists@narcotics@trash', clip = 'drop_front', flag = 0, duration = 1400 },
     },
 }
 --- Jei true — serverio atsarginis kelio atstumas (tik kol klientas negrąžino tikslaus)

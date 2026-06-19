@@ -1,32 +1,23 @@
 import 'dotenv/config';
+import { assertEnv } from './src/config.js';
+import { loadCommandPayloads } from './src/commands/loadCommandPayloads.js';
 import { REST, Routes } from 'discord.js';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { env, assertEnv } from './src/config.js';
+import { env } from './src/config.js';
 
 assertEnv();
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const commandsPath = path.join(__dirname, 'src', 'commands');
-const files = fs.readdirSync(commandsPath).filter((f) => f.endsWith('.js'));
-
-const commands = [];
-for (const file of files) {
-  const mod = await import(pathToFileURL(path.join(commandsPath, file)).href);
-  if (mod.default?.data) commands.push(mod.default.data.toJSON());
-}
-
+const commands = await loadCommandPayloads();
 const rest = new REST({ version: '10' }).setToken(env.token);
 
 try {
   if (env.guildId) {
     await rest.put(Routes.applicationGuildCommands(env.clientId, env.guildId), { body: commands });
-    console.log(`Deployed ${commands.length} guild commands.`);
+    console.log(`Deployed ${commands.length} guild commands to ${env.guildId}.`);
   } else {
     await rest.put(Routes.applicationCommands(env.clientId), { body: commands });
     console.log(`Deployed ${commands.length} global commands.`);
   }
+  console.log(commands.map((c) => c.name).sort().join(', '));
 } catch (err) {
   if (env.guildId && err.code === 50001) {
     console.warn('Bot not in guild yet — deploying global commands instead.');
