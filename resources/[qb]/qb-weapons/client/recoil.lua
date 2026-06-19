@@ -58,7 +58,7 @@ local recoils = {
     [`weapon_minismg`] = 0.1,
     [`weapon_raycarbine`] = 0.3,
     [`weapon_tecpistol`] = 0.3,
-    [`weapon_fgc9`] = 0.22,
+    [`weapon_fgc9`] = 0.42,
 
     -- Shotguns
     [`weapon_pumpshotgun`] = 0.4,
@@ -165,6 +165,9 @@ AddEventHandler('CEventGunShot', function(entities, eventEntity, args)
     if eventEntity ~= ped then return end
     if IsPedDoingDriveby(ped) then return end
     local _, weap = GetCurrentPedWeapon(ped, false)
+    if WeaponHash and WeaponHash.recoilLookupHash then
+        weap = WeaponHash.recoilLookupHash(weap)
+    end
     applyVerticalRecoil(ped, weap)
 end)
 
@@ -176,6 +179,9 @@ CreateThread(function()
             local now = GetGameTimer()
             if now - lastRecoilAt > 80 then
                 local _, weap = GetCurrentPedWeapon(ped, false)
+                if WeaponHash and WeaponHash.recoilLookupHash then
+                    weap = WeaponHash.recoilLookupHash(weap)
+                end
                 applyVerticalRecoil(ped, weap)
                 lastRecoilAt = now
             end

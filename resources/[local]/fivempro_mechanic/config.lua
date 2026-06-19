@@ -15,8 +15,8 @@ Config.Blip = {
     coords = vector3(128.5848, -3013.5708, 7.0409),
 }
 
---- Vidiniai blipai — tik mechanikų job (žemėlapyje)
-Config.ShowMapBlips = true
+--- Vidiniai blipai — išjungta (naudok markerius / qb-target, ne žemėlapį)
+Config.ShowMapBlips = false
 Config.MapBlips = {
     { coords = vector3(125.9513, -3023.2095, 7.0409), sprite = 446, colour = 5, scale = 0.72, label = 'Tvarkymas / tuningas #1' },
     { coords = vector3(125.7720, -3034.8445, 7.0409), sprite = 446, colour = 5, scale = 0.72, label = 'Tvarkymas / tuningas #2' },

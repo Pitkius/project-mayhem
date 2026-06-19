@@ -1,6 +1,8 @@
 import { AuditLogEvent, Events } from 'discord.js';
 import { handleAntinuke, getAuditExecutor } from '../antinuke/punish.js';
 import { sendJoinLog, sendGuildLog } from '../logs/dispatcher.js';
+import { getVerificationSettings } from '../database/sqlite.js';
+import { assertBotCanManageRoles } from '../verification/helpers.js';
 
 export default {
   name: Events.GuildMemberAdd,
@@ -14,6 +16,18 @@ export default {
         { name: 'Added By', value: executor ? `${executor}` : 'Unknown', inline: true },
       ]);
       return;
+    }
+
+    const verification = getVerificationSettings(member.guild.id);
+    if (verification?.enabled && verification.unverifiedRoleId) {
+      try {
+        await assertBotCanManageRoles(member.guild, [verification.unverifiedRoleId]);
+        if (!member.roles.cache.has(verification.unverifiedRoleId)) {
+          await member.roles.add(verification.unverifiedRoleId, 'Naujas narys — laukia pasitvirtinimo');
+        }
+      } catch (err) {
+        console.error('[Verification] guildMemberAdd role:', err.message);
+      }
     }
 
     await sendJoinLog(member);

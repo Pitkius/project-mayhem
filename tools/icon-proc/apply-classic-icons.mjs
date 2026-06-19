@@ -78,17 +78,27 @@ function copyLocalAlias(name, aliasFile) {
   return true;
 }
 
-// Pergeneruoti tik grybus / svarstykles (procedūrinis, be rimo)
+// Pergeneruoti tik džiovintus grybus / pakuotę / svarstykles (ne mushroom_raw — HD nuotrauka)
 function regenSmallIcons() {
-  execSync('node unify-all-icons.mjs --only=mushroom_raw,mushroom_dried,mushroom_pack,drug_scale', {
+  execSync('node unify-all-icons.mjs --only=mushroom_dried,mushroom_pack,drug_scale', {
     cwd: __dirname,
     stdio: 'inherit',
   });
 }
 
+function buildMushroomRawIcon() {
+  execSync('node make-mushroom-icon.mjs', { cwd: __dirname, stdio: 'inherit' });
+}
+
+const SKIP_GIT_RESTORE = new Set(['mushroom_raw']);
+
 const log = [];
 for (const name of TARGETS) {
   const out = path.join(imagesDir, `${name}.png`);
+  if (SKIP_GIT_RESTORE.has(name)) {
+    log.push({ name, source: 'photo:make-mushroom-icon' });
+    continue;
+  }
   if (LOCAL_ALIASES[name]) {
     if (copyLocalAlias(name, LOCAL_ALIASES[name])) {
       log.push({ name, source: `alias:${LOCAL_ALIASES[name]}` });
@@ -104,6 +114,7 @@ for (const name of TARGETS) {
   }
 }
 
+buildMushroomRawIcon();
 regenSmallIcons();
 
 // Normalizacija dažnai sunaikina detalias QB ikonas — paliekame originalų git restore.

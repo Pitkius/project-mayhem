@@ -8,6 +8,16 @@ html, body {
 
 * { box-sizing: border-box; }
 
+button {
+  font: inherit;
+  color: inherit;
+}
+
+button:focus-visible {
+  outline: 2px solid rgba(192, 132, 252, 0.55);
+  outline-offset: 2px;
+}
+
 .hidden { display: none !important; }
 
 #app {
@@ -304,6 +314,7 @@ kbd {
   cursor: pointer;
   transition: 0.22s ease;
   text-align: left;
+  color: var(--text);
 }
 
 .cat-card:hover {
@@ -331,7 +342,12 @@ kbd {
 }
 
 .cat-card .icon svg { width: 22px; height: 22px; }
-.cat-card .label { font-weight: 600; font-size: 0.9rem; }
+.cat-card .label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #f3eeff;
+  line-height: 1.35;
+}
 .cat-card .prio { margin-top: 8px; font-size: 0.72rem; color: var(--muted); }
 
 .ui-icon {

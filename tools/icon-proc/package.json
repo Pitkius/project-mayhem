@@ -7,6 +7,7 @@
     "unify": "node unify-all-icons.mjs",
     "classic": "node apply-classic-icons.mjs",
     "normalize": "node normalize-classic-icons.mjs",
+    "mushroom": "node make-mushroom-icon.mjs",
     "weapon-icon": "node make-weapon-photo-icon.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

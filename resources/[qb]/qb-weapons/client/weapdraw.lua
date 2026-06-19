@@ -178,16 +178,22 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
 
     local ped = PlayerPedId()
     if targetHash and targetHash ~= 0 and targetHash ~= `WEAPON_UNARMED` and ped and ped ~= 0 then
-        if HasPedGotWeapon(ped, targetHash, false) then
-            SetPedCurrentWeaponVisible(ped, true, false, false, false)
-            SetCurrentPedWeapon(ped, targetHash, true)
-            currWeap = targetHash
-            holstered = false
-            canFire = true
-            _G.QBWeaponDrawBusy = false
-            TriggerEvent('qb-weapons:client:HolsterVisualsAfterDraw')
-            return
+        if not HasPedGotWeapon(ped, targetHash, false) then
+            local ammo = 0
+            if WeaponHash and WeaponHash.resolve then
+                GiveWeaponToPed(ped, targetHash, ammo, true, false)
+            else
+                GiveWeaponToPed(ped, targetHash, 0, true, false)
+            end
         end
+        -- Priverstinai sukeliam ginklo pasikeitimą, kad pullout loop'as paleistų animaciją.
+        if currWeap == targetHash then
+            currWeap = `WEAPON_UNARMED`
+            holstered = true
+        end
+        SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
+        Wait(0)
+        SetCurrentPedWeapon(ped, targetHash, true)
     end
 
     drawSession = drawSession + 1

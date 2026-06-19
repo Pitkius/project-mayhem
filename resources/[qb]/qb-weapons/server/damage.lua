@@ -20,6 +20,13 @@ AddEventHandler('weaponDamageEvent', function(sender, data)
 
     local weaponData = QBCore.Shared.Weapons[weaponHash]
     local weaponName = weaponData and weaponData.name
+    if WeaponHash and WeaponHash.inventoryNameFromNative then
+        local invName = WeaponHash.inventoryNameFromNative(weaponHash)
+        if invName then
+            weaponName = invName
+            weaponData = QBCore.Shared.Weapons[joaat(invName)] or weaponData
+        end
+    end
     if weaponData and weaponData.ammotype == 'AMMO_SHOTGUN' then return end
 
     local flatDamage = WeaponDamage.resolveFlatBulletDamage(weaponName, weaponData)

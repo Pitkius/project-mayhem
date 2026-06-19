@@ -17,8 +17,9 @@ export async function createClient() {
       GatewayIntentBits.GuildMessages,
       GatewayIntentBits.MessageContent,
       GatewayIntentBits.GuildVoiceStates,
+      GatewayIntentBits.GuildMessageReactions,
     ],
-    partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
+    partials: [Partials.Message, Partials.Channel, Partials.GuildMember, Partials.Reaction],
   });
 
   client.commands = new Collection();

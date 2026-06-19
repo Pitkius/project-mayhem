@@ -64,7 +64,23 @@ export function getGuildSettings(guildId) {
     guild_id: guildId,
     antinuke_enabled: !!row.antinuke_enabled,
     antinuke: row.antinuke || null,
+    verification: row.verification || null,
   };
+}
+
+export function getVerificationSettings(guildId) {
+  return load().guild_settings[guildId]?.verification || null;
+}
+
+export function setVerificationSettings(guildId, verification) {
+  const store = load();
+  const existing = store.guild_settings[guildId] || {};
+  store.guild_settings[guildId] = {
+    ...existing,
+    verification,
+    created_at: existing.created_at || new Date().toISOString(),
+  };
+  save();
 }
 
 export function upsertGuildSettings(guildId, settings = {}) {
@@ -75,6 +91,7 @@ export function upsertGuildSettings(guildId, settings = {}) {
       ? !!settings.antinuke_enabled
       : (existing.antinuke_enabled ?? true),
     antinuke: settings.antinuke !== undefined ? settings.antinuke : (existing.antinuke || null),
+    verification: settings.verification !== undefined ? settings.verification : (existing.verification || null),
     created_at: existing.created_at || new Date().toISOString(),
   };
   save();

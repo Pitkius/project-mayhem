@@ -36,6 +36,7 @@ resources/[local]/server_logs/   # FiveM webhook logai
 4. Įjunk **Privileged Gateway Intents**:
    - Server Members Intent
    - Message Content Intent
+   - (Rekomenduojama) visi intents, kurių prašo botas
 5. **OAuth2 → URL Generator**:
    - Scopes: `bot`, `applications.commands`
    - Bot Permissions: `Administrator` (arba: Manage Channels, Manage Roles, Ban/Kick, Moderate, View Audit Log, Manage Messages)
@@ -63,6 +64,25 @@ npm start
 4. `/whitelist add` — pridėk owner/trusted admin ID
 5. `/antinuke settings` — peržiūrėk threshold
 
+### Pasitvirtinimas (oro-uostas + ✅ / 🔔)
+
+Nauji nariai mato tik **oro-uostas** ir **pasitvirtinimas**. Reakcijos duoda jau sukurtas roles.
+
+1. Sukurk roles Discord (pvz. `Member`, `Ping`, optional `Unverified`)
+2. Bot rolė turi būti **aukščiau** už tas roles (Server Settings → Roles)
+3. Paleisk serveryje:
+   ```
+   /setupverify config verified_role:@Member ping_role:@Ping unverified_role:@Unverified
+   /setupverify permissions
+   /setupverify post
+   ```
+4. Kanalai randami pagal pavadinimą (`oro-uostas`, `pasitvirtinimas`) arba pasirenki ranka
+
+| Reakcija | Rolė |
+|----------|------|
+| ✅ | Verified — mato visą serverį |
+| 🔔 | Ping — pranešimų rolė (įjungti/išjungti) |
+
 ### Logų struktūra (auto-sukuriama)
 
 Po kategorijos **📋 Admin-logai**:
@@ -81,7 +101,7 @@ Po kategorijos **📋 Admin-logai**:
 | FiveM · Admin | admin, **tx_admin**, **admin_actions**, **reports**, security |
 
 ### Slash komandos
-`setup`, `setuplogs`, `setlogchannel`, `whitelist`, `antinuke`, `ban`, `kick`, `timeout`, `warn`, `warnings`, `clearwarnings`, `purge`, `lock`, `unlock`, `slowmode`, `serverinfo`, `userinfo`
+`setup`, `setuplogs`, `setlogchannel`, `setupverify`, `whitelist`, `antinuke`, `ban`, `kick`, `timeout`, `warn`, `warnings`, `clearwarnings`, `purge`, `lock`, `unlock`, `slowmode`, `serverinfo`, `userinfo`
 
 ---
 

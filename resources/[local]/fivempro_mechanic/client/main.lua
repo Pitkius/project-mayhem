@@ -53,7 +53,7 @@ end
 
 local function refreshJobMapBlips()
     clearJobMapBlips()
-    if not Config.ShowMapBlips or not isMechanicJob() then return end
+    if Config.ShowMapBlips ~= true or not isMechanicJob() then return end
     for _, entry in ipairs(Config.MapBlips or {}) do
         local blip = createMapBlip(entry)
         if blip then jobMapBlips[#jobMapBlips + 1] = blip end

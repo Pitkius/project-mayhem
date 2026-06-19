@@ -2,6 +2,9 @@ Config = Config or {}
 
 Config.ReloadTime = 2400
 
+--- Inventoriaus perkrovos vizualinė animacija (kulkos užkraunamos iš karto, be GTA native reload laukimo).
+Config.ReloadVisualTime = 850
+
 --- Leidžia bėgti/judėti perkrovos metu (viršutinės kūno dalies animacija, be sustojimo).
 Config.ReloadAllowMovement = true
 
@@ -23,12 +26,12 @@ Config.RecoilMinimumBase = 0.17
 
 --[[
   Ginklo žalos daugiklis (client/damage.lua → SetWeaponDamageModifier).
-  FGC-9: ~13 kūno šūvių prieš pilną šarvą (200 HP + 100 armor = 300 pool).
+  FGC-9: ~18 kūno šūvių prieš pilną šarvą (200 HP + 100 armor = 300 pool).
   Jei per stiprus/silpnas — keisk assumedBaseDamage (addon weapons.meta <Damage>) arba modifier ranka.
 ]]
 Config.WeaponDamageBalance = {
     weapon_fgc9 = {
-        targetBodyShotsFullArmor = 13,
+        targetBodyShotsFullArmor = 18,
         playerHealthPool = 200,
         playerArmorPool = 100,
         assumedBaseDamage = 27.0,

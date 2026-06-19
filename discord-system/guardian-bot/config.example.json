@@ -29,5 +29,11 @@
     "KickMembers",
     "MentionEveryone",
     "ManageWebhooks"
-  ]
+  ],
+  "verification": {
+    "welcomeChannelSlug": "oro-uostas",
+    "verificationChannelSlug": "pasitvirtinimas",
+    "memberEmoji": "✅",
+    "pingEmoji": "🔔"
+  }
 }
