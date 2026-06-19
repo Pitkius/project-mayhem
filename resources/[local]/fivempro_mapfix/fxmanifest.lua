@@ -6,6 +6,9 @@ author 'FIVEMPRO'
 description 'Forces key map interiors/IPLs to load'
 lua54 'yes'
 
+dependency 'cfx-gabz-mapdata'
+dependency 'cfx-gabz-lost'
+
 client_scripts {
     'client.lua'
 }

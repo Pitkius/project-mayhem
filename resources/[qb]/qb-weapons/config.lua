@@ -2,13 +2,13 @@ Config = Config or {}
 
 Config.ReloadTime = 2400
 
---- true = custom viršutinės kūno dalies reload (galima judėti); native reload nenaudojamas.
+--- true = stiprus custom reload modulis (viršutinė kūno dalis + bėgimas); native reload nenaudojamas.
 Config.ReloadUseNativeFirst = false
 
 --- Inventoriaus perkrovos vizualinė animacija (kulkos kraunamos po animacijos).
 Config.ReloadVisualTime = 0
 
---- Leidžia bėgti/judėti perkrovos metu (viršutinės kūno dalies animacija, be sustojimo).
+--- Leidžia bėgti/judėti perkrovos metu (ForcePedMotionState + viršutinės kūno animacija).
 Config.ReloadAllowMovement = true
 
 --[[

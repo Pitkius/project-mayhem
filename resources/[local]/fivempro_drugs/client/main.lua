@@ -11,6 +11,9 @@ local productBuyerBlips = {}
 local mapBlips = {}
 local streetSellExcludedPeds = {}
 local failedNpcModels = {}
+local npcModelRefCount = {}
+local npcModelLoading = {}
+local npcSpawnRetryAt = {}
 
 local function nui(msg, data)
     SendNUIMessage({ action = msg, data = data or {} })
@@ -899,6 +902,63 @@ local function requestCollisionAt(x, y, z)
     end
 end
 
+local function npcSpawnKey(cfg)
+    if not cfg or not cfg.coords then return nil end
+    local c = cfg.coords
+    return ('%s:%.2f,%.2f,%.2f'):format(cfg.model or 's_m_y_dealer_01', c.x, c.y, c.z)
+end
+
+local function requestHubPedModel(modelName)
+    if failedNpcModels[modelName] then return nil end
+
+    local hash = joaat(modelName)
+    if not IsModelInCdimage(hash) or not IsModelValid(hash) then
+        failedNpcModels[modelName] = true
+        print(('[fivempro_drugs] Nežinomas NPC modelis: %s'):format(tostring(modelName)))
+        return nil
+    end
+
+    if HasModelLoaded(hash) then
+        npcModelRefCount[modelName] = (npcModelRefCount[modelName] or 0) + 1
+        return hash
+    end
+
+    while npcModelLoading[modelName] do
+        Wait(10)
+    end
+
+    if HasModelLoaded(hash) then
+        npcModelRefCount[modelName] = (npcModelRefCount[modelName] or 0) + 1
+        return hash
+    end
+
+    npcModelLoading[modelName] = true
+    RequestModel(hash)
+    local deadline = GetGameTimer() + 30000
+    while not HasModelLoaded(hash) and GetGameTimer() < deadline do
+        Wait(10)
+    end
+    npcModelLoading[modelName] = nil
+
+    if not HasModelLoaded(hash) then
+        return nil
+    end
+
+    npcModelRefCount[modelName] = (npcModelRefCount[modelName] or 0) + 1
+    return hash
+end
+
+local function releaseHubPedModel(modelName)
+    if not modelName then return end
+    local count = npcModelRefCount[modelName] or 0
+    if count <= 1 then
+        npcModelRefCount[modelName] = nil
+        SetModelAsNoLongerNeeded(joaat(modelName))
+    else
+        npcModelRefCount[modelName] = count - 1
+    end
+end
+
 local function resolveGroundZ(x, y, z)
     local found, groundZ = GetGroundZFor_3dCoord(x, y, z + 3.0, false)
     if found and groundZ and groundZ > 0.0 then
@@ -984,32 +1044,38 @@ end
 
 local function spawnHubPed(cfg, onTarget)
     if not cfg or not cfg.coords then return 0 end
+
+    local spawnKey = npcSpawnKey(cfg)
+    local now = GetGameTimer()
+    if spawnKey and npcSpawnRetryAt[spawnKey] and now < npcSpawnRetryAt[spawnKey] then
+        return 0
+    end
+
     local c = cfg.coords
     requestCollisionAt(c.x, c.y, c.z)
     local groundZ = resolveGroundZ(c.x, c.y, c.z)
 
     local modelName = cfg.model or 's_m_y_dealer_01'
-    if failedNpcModels[modelName] then return 0 end
-    local model = joaat(modelName)
-    if not IsModelInCdimage(model) or not IsModelValid(model) then
-        failedNpcModels[modelName] = true
-        print(('[fivempro_drugs] Nežinomas NPC modelis: %s'):format(tostring(modelName)))
-        return 0
-    end
-    RequestModel(model)
-    local t = GetGameTimer() + 10000
-    while not HasModelLoaded(model) and GetGameTimer() < t do
-        Wait(10)
-    end
-    if not HasModelLoaded(model) then
-        print(('[fivempro_drugs] Nepavyko užkrauti NPC modelio: %s'):format(tostring(cfg.model)))
+    local model = requestHubPedModel(modelName)
+    if not model then
+        if spawnKey then
+            npcSpawnRetryAt[spawnKey] = now + 60000
+        end
+        print(('[fivempro_drugs] Nepavyko užkrauti NPC modelio: %s'):format(tostring(modelName)))
         return 0
     end
 
     local ped = CreatePed(0, model, c.x, c.y, groundZ, c.w or 0.0, false, true)
     if not ped or ped == 0 or not DoesEntityExist(ped) then
-        SetModelAsNoLongerNeeded(model)
+        releaseHubPedModel(modelName)
+        if spawnKey then
+            npcSpawnRetryAt[spawnKey] = now + 60000
+        end
         return 0
+    end
+
+    if spawnKey then
+        npcSpawnRetryAt[spawnKey] = nil
     end
 
     configureHubPed(ped)
@@ -1020,7 +1086,6 @@ local function spawnHubPed(cfg, onTarget)
     end
     streetSellExcludedPeds[ped] = true
     if onTarget then onTarget(ped) end
-    SetModelAsNoLongerNeeded(model)
     return ped
 end
 
@@ -1087,6 +1152,7 @@ local function spawnProductBuyerNpcs()
             if productBuyerPeds[id] and productBuyerPeds[id] ~= 0 then
                 safeDeleteHubPed(productBuyerPeds[id])
             end
+            Wait(200)
             productBuyerPeds[id] = spawnHubPed(cfg, function(ped)
                 exports['qb-target']:AddTargetEntity(ped, {
                     options = {
@@ -1186,8 +1252,11 @@ end)
 
 local function spawnAllDrugNpcs()
     spawnTestNpc()
+    Wait(200)
     spawnSupplyShopNpc()
+    Wait(200)
     spawnTestSupplyShopNpc()
+    Wait(200)
     spawnProductBuyerNpcs()
 end
 

@@ -712,6 +712,9 @@ CreateThread(function()
             DisableControlAction(0, 263, true)
             DisableControlAction(0, 264, true)
             if Config.ReloadAllowMovement ~= false then
+                if WeaponReload and WeaponReload.tickControls then
+                    WeaponReload.tickControls()
+                end
                 EnableControlAction(0, 21, true)
                 EnableControlAction(0, 22, true)
                 EnableControlAction(0, 30, true)
