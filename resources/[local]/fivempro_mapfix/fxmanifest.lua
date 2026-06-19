@@ -16,5 +16,6 @@ exports {
     'ReloadSimeonShowroom',
     'ReloadOneilFarmhouse',
     'ReloadLostMc',
+    'ReloadVapeSkyscraper',
     'ApplyMapFixes',
 }

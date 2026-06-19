@@ -49,6 +49,14 @@ local SIMEON_DOORS = {
     { model = `prop_com_gar_door_01`, coords = vec3(-37.86, -1094.71, 27.26) },
 }
 
+--- Vape dangoraižis (sc1_29_motel · Davis)
+local VAPE_SKYSCRAPER_ENTRANCE = vec4(370.0215, -1795.8375, 29.2295, 316.4124)
+local VAPE_SKYSCRAPER_CENTER = vec3(370.0215, -1795.8375, 29.2295)
+local VAPE_SKYSCRAPER_INTERIOR_TYPES = {
+    'sc1_29_motel_shell_milo_',
+    'sc1_29_shop_shell_milo_',
+}
+
 local function removeIpls(list)
     for _, ipl in ipairs(list) do
         RemoveIpl(ipl)
@@ -105,6 +113,56 @@ end
 local function unlockDoorList(doors)
     for _, door in ipairs(doors) do
         unlockDoor(door)
+    end
+end
+
+local function pinInteriorAt(coords, interiorType)
+    if not coords then return false end
+    requestCollision(coords)
+    local interiorId = nil
+    if interiorType and interiorType ~= '' then
+        interiorId = GetInteriorAtCoordsWithType(coords.x, coords.y, coords.z, interiorType)
+    end
+    if not interiorId or interiorId == 0 then
+        interiorId = GetInteriorAtCoords(coords.x, coords.y, coords.z)
+    end
+    if interiorId and interiorId ~= 0 and IsValidInterior(interiorId) then
+        PinInteriorInMemory(interiorId)
+        LoadInterior(interiorId)
+        RefreshInterior(interiorId)
+        return true
+    end
+    return false
+end
+
+local function vapeSkyscraperProbes()
+    local e = VAPE_SKYSCRAPER_ENTRANCE
+    local h = math.rad(e.w or 0.0)
+    return {
+        vec3(e.x, e.y, e.z),
+        vec3(e.x - math.sin(h) * 3.5, e.y + math.cos(h) * 3.5, e.z),
+        vec3(e.x - math.sin(h) * 7.0, e.y + math.cos(h) * 7.0, e.z),
+        vec3(356.20, -1800.96, 28.85),
+    }
+end
+
+local function loadVapeSkyscraper()
+    for _, probe in ipairs(vapeSkyscraperProbes()) do
+        requestCollision(probe)
+    end
+
+    for _, probe in ipairs(vapeSkyscraperProbes()) do
+        for _, interiorType in ipairs(VAPE_SKYSCRAPER_INTERIOR_TYPES) do
+            pinInteriorAt(probe, interiorType)
+        end
+        pinInteriorAt(probe, nil)
+    end
+
+    local interiorId = waitInteriorAt(VAPE_SKYSCRAPER_CENTER, VAPE_SKYSCRAPER_INTERIOR_TYPES[1], 120)
+    if interiorId and interiorId ~= 0 then
+        PinInteriorInMemory(interiorId)
+        LoadInterior(interiorId)
+        RefreshInterior(interiorId)
     end
 end
 
@@ -185,10 +243,12 @@ end
 local function applyMapFixes()
     loadSimeonShowroom()
     loadOneilFarmhouse()
+    loadVapeSkyscraper()
 end
 
 exports('ReloadSimeonShowroom', loadSimeonShowroom)
 exports('ReloadOneilFarmhouse', loadOneilFarmhouse)
+exports('ReloadVapeSkyscraper', loadVapeSkyscraper)
 exports('ReloadLostMc', function()
     if GetResourceState('cfx-gabz-lost') == 'started' then
         pcall(function()
@@ -211,6 +271,7 @@ CreateThread(function()
         local p = GetEntityCoords(PlayerPedId())
         local nearOneil = #(p - ONEIL_CENTER) < 100.0 or #(p - ONEIL_DOOR_PROBE) < 55.0
         local nearSimeon = #(p - SIMEON_CENTER) < 120.0
+        local nearVapeSkyscraper = #(p - VAPE_SKYSCRAPER_CENTER) < 120.0
 
         if nearOneil then
             removeIpls(ONEIL_DRUGLAB_IPLS)
@@ -220,6 +281,9 @@ CreateThread(function()
         elseif nearSimeon then
             loadSimeonShowroom()
             Wait(1500)
+        elseif nearVapeSkyscraper then
+            loadVapeSkyscraper()
+            Wait(2000)
         else
             Wait(3500)
         end
@@ -229,7 +293,8 @@ end)
 AddEventHandler('onResourceStart', function(resourceName)
     if resourceName == GetCurrentResourceName()
         or resourceName == 'druglabs'
-        or resourceName == 'fivempro_dealership' then
+        or resourceName == 'fivempro_dealership'
+        or resourceName == 'sc1_29_motel' then
         Wait(1000)
         applyMapFixes()
     end
