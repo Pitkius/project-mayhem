@@ -18,9 +18,48 @@
 
 .notes-toolbar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+}
+
+.notes-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.notes-cleanup-btn {
+  border: 1px solid rgba(255, 120, 120, 0.28);
+  background: rgba(255, 80, 80, 0.1);
+  color: #ffb4b4;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notes-old-hint {
+  margin: -4px 0 0;
+  line-height: 1.35;
+}
+
+.notes-item-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.notes-item-row.is-old .notes-item {
+  border-color: rgba(255, 140, 100, 0.22);
+}
+
+.notes-item-row .notes-item {
+  flex: 1;
+  min-width: 0;
 }
 
 .notes-new-btn {
@@ -48,6 +87,23 @@
   padding: 12px;
   color: #ece4ff;
   cursor: pointer;
+}
+
+.notes-item-del {
+  flex: 0 0 36px;
+  width: 36px;
+  border: 1px solid rgba(255, 100, 100, 0.22);
+  background: rgba(255, 70, 70, 0.08);
+  color: #ff9a9a;
+  border-radius: 12px;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  align-self: center;
+}
+
+.notes-item-del:hover {
+  background: rgba(255, 70, 70, 0.16);
 }
 
 .notes-item strong {

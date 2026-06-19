@@ -2,7 +2,6 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local PlayerData = QBCore.Functions.GetPlayerData()
 local CurrentWeaponData, CanShoot, MultiplierAmount, currentWeapon = {}, true, 0, nil
-local lastAutoReloadAt = 0
 local lastSyncedWeapon = nil
 local lastSyncedAmmo = nil
 local lastAmmoSyncAt = 0
@@ -179,6 +178,43 @@ end
 local function getItemsFromCore()
     local pd = QBCore.Functions.GetPlayerData()
     return pd and pd.items or nil
+end
+
+local function attemptQuickReload(ped)
+    if isReloadBusy() then return false end
+
+    ped = ped or PlayerPedId()
+    if not ped or ped == 0 or not IsPedArmed(ped, 7) then return false end
+
+    local weapon = GetSelectedPedWeapon(ped)
+    local selectedWeaponData = QBCore.Shared.Weapons[weapon]
+    if not selectedWeaponData or selectedWeaponData.name == 'weapon_unarmed' then return false end
+
+    local weaponRow = resolveCurrentWeaponDataForPed(weapon, selectedWeaponData)
+    local _, _, clipMissing = WeaponAmmo.getClipAmmoState(ped, weapon, weaponRow or selectedWeaponData)
+    if clipMissing <= 0 then
+        QBCore.Functions.Notify(Lang:t('error.max_ammo') or 'Apkaba pilna.', 'error')
+        return false
+    end
+
+    local ammoType = tostring(selectedWeaponData.ammotype or ''):upper()
+    local ammoNames = AmmoItemByType[ammoType]
+    if type(ammoNames) ~= 'table' then return false end
+
+    local items = getItemsFromCore()
+    if not items then return false end
+
+    for _, ammoItemName in ipairs(ammoNames) do
+        for _, item in pairs(items) do
+            if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
+                TriggerServerEvent('qb-weapons:server:requestQuickReload', ammoItemName, ammoType, tonumber(item.slot))
+                return true
+            end
+        end
+    end
+
+    QBCore.Functions.Notify('No ammo in inventory.', 'error')
+    return false
 end
 
 local holsterApplyPending = false
@@ -426,7 +462,7 @@ RegisterNetEvent('qb-weapons:client:SetWeaponQuality', function(amount)
 end)
 
 RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemData)
-    if isReloading then return end
+    if isReloadBusy() then return end
 
     local ped = PlayerPedId()
     local weapon = GetSelectedPedWeapon(ped)
@@ -553,7 +589,6 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     end
 
     isReloading = true
-    reloadGuardUntil = GetGameTimer() + getReloadWaitMs() + 500
 
     local reloadPed = ped
     local reloadWeapon = weapon
@@ -582,9 +617,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         end
 
         isReloading = false
-        SetTimeout(250, function()
-            reloadGuardUntil = 0
-        end)
+        reloadGuardUntil = GetGameTimer() + 120
     end)
 end)
 
@@ -671,13 +704,22 @@ CreateThread(function()
     while true do
         if isReloading then
             DisableControlAction(0, 24, true)
-            DisableControlAction(0, 45, true)
             DisableControlAction(0, 140, true)
             DisableControlAction(0, 141, true)
             DisableControlAction(0, 142, true)
             DisableControlAction(0, 257, true)
             DisableControlAction(0, 263, true)
             DisableControlAction(0, 264, true)
+            if Config.ReloadAllowMovement ~= false then
+                EnableControlAction(0, 21, true)
+                EnableControlAction(0, 22, true)
+                EnableControlAction(0, 30, true)
+                EnableControlAction(0, 31, true)
+                EnableControlAction(0, 32, true)
+                EnableControlAction(0, 33, true)
+                EnableControlAction(0, 34, true)
+                EnableControlAction(0, 35, true)
+            end
             Wait(0)
         else
             Wait(200)
@@ -687,48 +729,21 @@ end)
 
 CreateThread(function()
     while true do
-        local waitMs = 250
-        if LocalPlayer.state.isLoggedIn then
-            EnableControlAction(0, 45, true)
-            local ped = PlayerPedId()
-            if IsPedArmed(ped, 7) then
-                waitMs = 50
-                local reloadPressed = IsControlJustPressed(0, 45) or IsDisabledControlJustPressed(0, 45)
-                if reloadPressed and not isReloadBusy() then
-                    local now = GetGameTimer()
-                    if now - lastAutoReloadAt > 650 then
-                        lastAutoReloadAt = now
+        Wait(0)
+        if not LocalPlayer.state.isLoggedIn then goto continue end
 
-                        local weapon = GetSelectedPedWeapon(ped)
-                        local selectedWeaponData = QBCore.Shared.Weapons[weapon]
-                        if selectedWeaponData and selectedWeaponData.name ~= 'weapon_unarmed' then
-                            local weaponRow = resolveCurrentWeaponDataForPed(weapon, selectedWeaponData)
-                            local _, _, clipMissing = WeaponAmmo.getClipAmmoState(ped, weapon, weaponRow or selectedWeaponData)
-                            if clipMissing > 0 then
-                                local ammoType = tostring(selectedWeaponData.ammotype or ''):upper()
-                                local ammoNames = AmmoItemByType[ammoType]
-                                local items = getItemsFromCore()
-                                if items and type(ammoNames) == 'table' then
-                                    local triggered = false
-                                    for _, ammoItemName in ipairs(ammoNames) do
-                                        for _, item in pairs(items) do
-                                            if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
-                                                local invSlot = tonumber(item.slot)
-                                                TriggerServerEvent('qb-weapons:server:requestQuickReload', ammoItemName, ammoType, invSlot)
-                                                triggered = true
-                                                break
-                                            end
-                                        end
-                                        if triggered then break end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
+        local ped = PlayerPedId()
+        if not IsPedArmed(ped, 7) then goto continue end
+
+        -- Blokuojam GTA native R perkrovą — naudojam tik savo logiką.
+        DisableControlAction(0, 45, true)
+
+        if not isReloadBusy()
+            and (IsDisabledControlJustPressed(0, 45) or IsControlJustPressed(0, 45)) then
+            attemptQuickReload(ped)
         end
-        Wait(waitMs)
+
+        ::continue::
     end
 end)
 

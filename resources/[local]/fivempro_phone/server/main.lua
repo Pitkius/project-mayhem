@@ -561,6 +561,7 @@ local function getInitialDataFor(src)
         } or nil,
         photos = photos,
         notes = notes,
+        notesOldDays = (Config.Phone and Config.Phone.notesOldDays) or 30,
         posts = posts,
         pendingIncomingCall = getPendingIncomingCallFor(src),
         cargoNet = getCargoNetStatus(citizenid),
@@ -918,6 +919,22 @@ QBCore.Functions.CreateCallback('fivempro_phone:server:deleteNote', function(sou
     if not noteId then return cb({ ok = false, message = 'Užrašas nerastas.' }) end
     MySQL.update.await('DELETE FROM fivempro_phone_notes WHERE id = ? AND citizenid = ?', { noteId, citizenid })
     cb({ ok = true })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:deleteOldNotes', function(source, cb, data)
+    local citizenid = getCitizen(source)
+    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+
+    local cfgDays = (Config.Phone and Config.Phone.notesOldDays) or 30
+    local days = tonumber(data and data.olderThanDays) or cfgDays
+    days = math.max(1, math.min(math.floor(days), 365))
+
+    local deleted = MySQL.update.await(
+        'DELETE FROM fivempro_phone_notes WHERE citizenid = ? AND updated_at < DATE_SUB(NOW(), INTERVAL ? DAY)',
+        { citizenid, days }
+    ) or 0
+
+    cb({ ok = true, deleted = tonumber(deleted) or 0, olderThanDays = days })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_phone:server:saveAdProfile', function(source, cb, data)

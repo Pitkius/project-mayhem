@@ -6,6 +6,8 @@ Config.CompanyMinLevel = 5
 Config.IllegalMinLevel = 12
 Config.IllegalPayMultiplier = 2.5
 Config.ContractRefreshSec = 300
+--- Vieno kontrakto galiojimo laikas (sek.) — pasibaigus automatiškai pakeičiamas nauju.
+Config.ContractTtlSec = 300
 Config.LoadDurationMs = 6000
 Config.UnloadDurationMs = 7000
 Config.PickupRadius = 18.0

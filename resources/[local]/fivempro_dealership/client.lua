@@ -34,6 +34,11 @@ local function previewApplyShowroomVisuals()
 end
 
 local function previewBeginShowroom()
+    if GetResourceState('fivempro_mapfix') == 'started' then
+        pcall(function()
+            exports['fivempro_mapfix']:ReloadSimeonShowroom()
+        end)
+    end
     if GetResourceState('qb-weathersync') == 'started' then
         TriggerEvent('qb-weathersync:client:DisableSync')
     end
@@ -657,6 +662,12 @@ end)
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do
         Wait(300)
+    end
+
+    if GetResourceState('fivempro_mapfix') == 'started' then
+        pcall(function()
+            exports['fivempro_mapfix']:ReloadSimeonShowroom()
+        end)
     end
 
     local pos = Config.Dealership.office

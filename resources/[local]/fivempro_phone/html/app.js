@@ -31,6 +31,7 @@ const state = {
   adProfile: null,
   photos: [],
   notes: [],
+  notesOldDays: 30,
   posts: [],
   cargoNet: { registered: false, level: 1, deliveries: 0 },
   money: { cash: 0, bank: 0 },
@@ -363,6 +364,7 @@ function hydrate(payload = {}) {
   state.adProfile = payload.adProfile || null;
   state.photos = payload.photos || [];
   state.notes = Array.isArray(payload.notes) ? payload.notes : (Array.isArray(state.notes) ? state.notes : []);
+  state.notesOldDays = Number(payload.notesOldDays) > 0 ? Number(payload.notesOldDays) : 30;
   state.posts = payload.posts || [];
   state.money = payload.money || state.money;
   state.cargoNet = payload.cargoNet || state.cargoNet || { registered: false, level: 1, deliveries: 0 };

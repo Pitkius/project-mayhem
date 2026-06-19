@@ -9,3 +9,9 @@ lua54 'yes'
 client_scripts {
     'client.lua'
 }
+
+exports {
+    'ReloadSimeonShowroom',
+    'ReloadOneilFarmhouse',
+    'ApplyMapFixes',
+}

@@ -1,9 +1,10 @@
 /**
- * Inventory weapon icon from in-game screenshot reference.
- * Usage: node make-weapon-photo-icon.mjs [source.png] [output.png]
+ * Inventory weapon icon from photo reference.
+ * Usage: node make-weapon-photo-icon.mjs [source] [output.png] [rotateDeg] [clean]
  */
 import fs from 'fs';
 import path from 'path';
+import jpeg from 'jpeg-js';
 import { PNG } from 'pngjs';
 import { fileURLToPath } from 'url';
 
@@ -19,9 +20,10 @@ const STYLE = {
 };
 
 const args = process.argv.slice(2);
-const srcFile = args[0] || 'weapon_fgc9_ingame.png';
+const srcFile = args[0] || 'weapon_fgc9_clean.jpg';
 const outName = args[1] || 'weapon_fgc9.png';
-const rotateDeg = Number(args[2] || '-28');
+const rotateDeg = Number(args[2] || '-32');
+const cleanMode = args[3] === 'clean' || /\.jpe?g$/i.test(args[0] || '');
 const srcPath = path.isAbsolute(srcFile)
   ? srcFile
   : path.join(__dirname, 'sources', srcFile);
@@ -31,6 +33,20 @@ const outPath = path.isAbsolute(outName)
 
 function dist(a, b) {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function loadRaster(filePath) {
+  const buf = fs.readFileSync(filePath);
+  if (/\.jpe?g$/i.test(filePath)) {
+    const decoded = jpeg.decode(buf, { useTArray: true });
+    const data = Uint8Array.from(decoded.data);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i + 3] = 255;
+    }
+    return { data, w: decoded.width, h: decoded.height };
+  }
+  const png = PNG.sync.read(buf);
+  return { data: Uint8Array.from(png.data), w: png.width, h: png.height };
 }
 
 function cornerBg(data, w, h) {
@@ -47,8 +63,7 @@ function cornerBg(data, w, h) {
   return [r / n, g / n, b / n];
 }
 
-function removeBackground(data, w, h) {
-  const bg = cornerBg(data, w, h);
+function floodRemove(data, w, h, bg, tolerance) {
   const visited = new Uint8Array(w * h);
   const q = [];
   const push = (x, y) => {
@@ -70,9 +85,64 @@ function removeBackground(data, w, h) {
     const [x, y] = q.pop();
     const i = (w * y + x) << 2;
     const r = data[i], g = data[i + 1], b = data[i + 2];
-    if (dist([r, g, b], bg) > 78) continue;
+    if (dist([r, g, b], bg) > tolerance) continue;
     data[i + 3] = 0;
     push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1);
+  }
+}
+
+function removeBackground(data, w, h) {
+  floodRemove(data, w, h, cornerBg(data, w, h), 78);
+}
+
+function removeLightBackground(data, w, h) {
+  floodRemove(data, w, h, [255, 255, 255], 92);
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) continue;
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const lum = (r + g + b) / 3;
+    const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+    if (lum > 188 && chroma < 32) {
+      data[i + 3] = 0;
+    }
+  }
+}
+
+function cleanJpegFringe(data) {
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) continue;
+    let r = data[i], g = data[i + 1], b = data[i + 2];
+    const lum = (r + g + b) / 3;
+    if (r > g + 22 && r > b + 22) {
+      r = (g + b) * 0.5;
+    }
+    if (b > r + 18 && b > g + 12) {
+      b = (r + g) * 0.5;
+    }
+    if (lum < 210) {
+      const avg = (r + g + b) / 3;
+      const mix = lum < 90 ? 0.72 : 0.38;
+      r = r * (1 - mix) + avg * mix;
+      g = g * (1 - mix) + avg * mix;
+      b = b * (1 - mix) + avg * mix;
+    }
+    data[i] = Math.round(r);
+    data[i + 1] = Math.round(g);
+    data[i + 2] = Math.round(b);
+  }
+}
+
+function removeWhiteMatte(data) {
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i + 3];
+    if (a === 0) continue;
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const lum = (r + g + b) / 3;
+    const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+    if (chroma < 30 && lum > 150) {
+      const fade = Math.max(0, 255 - (lum - 145) * 3.2);
+      data[i + 3] = Math.min(a, Math.round(fade));
+    }
   }
 }
 
@@ -86,13 +156,15 @@ function removeBlueGlove(data) {
   }
 }
 
-function enhancePixels(data) {
+function enhancePixels(data, mild = false) {
+  const gain = mild ? 1.06 : 1.14;
+  const lift = mild ? 6 : 12;
   for (let i = 0; i < data.length; i += 4) {
     if (data[i + 3] === 0) continue;
     let r = data[i], g = data[i + 1], b = data[i + 2];
-    r = Math.min(255, ((r - 128) * 1.14 + 128) * 1.12 + 12);
-    g = Math.min(255, ((g - 128) * 1.14 + 128) * 1.12 + 12);
-    b = Math.min(255, ((b - 128) * 1.14 + 128) * 1.12 + 14);
+    r = Math.min(255, ((r - 128) * gain + 128) * gain + lift);
+    g = Math.min(255, ((g - 128) * gain + 128) * gain + lift);
+    b = Math.min(255, ((b - 128) * gain + 128) * gain + lift);
     data[i] = r;
     data[i + 1] = g;
     data[i + 2] = b;
@@ -133,6 +205,31 @@ function trimBounds(data, w, h) {
   return { data: out, w: nw, h: nh };
 }
 
+function sampleBilinear(data, w, h, fx, fy) {
+  const x = Math.max(0, Math.min(w - 1.001, fx));
+  const y = Math.max(0, Math.min(h - 1.001, fy));
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const x1 = x0 + 1;
+  const y1 = y0 + 1;
+  const tx = x - x0;
+  const ty = y - y0;
+  const out = [0, 0, 0, 0];
+  for (let c = 0; c < 4; c++) {
+    const v00 = data[((y0 * w + x0) << 2) + c];
+    const v10 = data[((y0 * w + x1) << 2) + c];
+    const v01 = data[((y1 * w + x0) << 2) + c];
+    const v11 = data[((y1 * w + x1) << 2) + c];
+    out[c] = Math.round(
+      v00 * (1 - tx) * (1 - ty) +
+      v10 * tx * (1 - ty) +
+      v01 * (1 - tx) * ty +
+      v11 * tx * ty,
+    );
+  }
+  return out;
+}
+
 function rotateSubject(src, degrees) {
   const rad = (degrees * Math.PI) / 180;
   const cos = Math.cos(rad);
@@ -161,15 +258,13 @@ function rotateSubject(src, degrees) {
     for (let x = 0; x < nw; x++) {
       const lx = (x - ocx) * cos + (y - ocy) * sin + cx;
       const ly = -(x - ocx) * sin + (y - ocy) * cos + cy;
-      const sx = Math.floor(lx);
-      const sy = Math.floor(ly);
-      if (sx < 0 || sy < 0 || sx >= w || sy >= h) continue;
-      const si = (sy * w + sx) << 2;
+      if (lx < 0 || ly < 0 || lx >= w - 1 || ly >= h - 1) continue;
+      const [r, g, b, a] = sampleBilinear(data, w, h, lx, ly);
       const di = (nw * y + x) << 2;
-      out[di] = data[si];
-      out[di + 1] = data[si + 1];
-      out[di + 2] = data[si + 2];
-      out[di + 3] = data[si + 3];
+      out[di] = r;
+      out[di + 1] = g;
+      out[di + 2] = b;
+      out[di + 3] = a;
     }
   }
   return { data: out, w: nw, h: nh };
@@ -218,23 +313,18 @@ class Canvas {
     const sh = src.h;
     const maxW = SIZE * fitScale;
     const maxH = SIZE * fitScale;
-    let scale = Math.min(maxW / sw, maxH / sh);
-    let dw = Math.round(sw * scale);
-    let dh = Math.round(sh * scale);
-    if (sw > sh * 4 && dh < SIZE * 0.28) {
-      dh = Math.round(Math.min(maxH, dh * 2.1));
-      dw = Math.round(Math.min(maxW, dw * 1.05));
-    }
+    const scale = Math.min(maxW / sw, maxH / sh);
+    const dw = Math.round(sw * scale);
+    const dh = Math.round(sh * scale);
     const ox = Math.round((SIZE - dw) / 2);
     const oy = Math.round((SIZE - dh) / 2) - 2;
     for (let y = 0; y < dh; y++) {
       for (let x = 0; x < dw; x++) {
-        const sx = Math.min(sw - 1, Math.floor((x / dw) * sw));
-        const sy = Math.min(sh - 1, Math.floor((y / dh) * sh));
-        const si = (sy * sw + sx) << 2;
-        const a = src.data[si + 3];
+        const fx = ((x + 0.5) / dw) * sw - 0.5;
+        const fy = ((y + 0.5) / dh) * sh - 0.5;
+        const [r, g, b, a] = sampleBilinear(src.data, sw, sh, fx, fy);
         if (a < 10) continue;
-        this.blend(ox + x, oy + y, src.data[si], src.data[si + 1], src.data[si + 2], a);
+        this.blend(ox + x, oy + y, r, g, b, a);
       }
     }
   }
@@ -253,18 +343,25 @@ if (!fs.existsSync(srcPath)) {
   process.exit(1);
 }
 
-const png = PNG.sync.read(fs.readFileSync(srcPath));
-const data = Uint8Array.from(png.data);
-removeBackground(data, png.width, png.height);
-removeBlueGlove(data);
-enhancePixels(data);
-let trimmed = trimBounds(data, png.width, png.height);
+const { data, w, h } = loadRaster(srcPath);
+if (cleanMode || /\.jpe?g$/i.test(srcPath)) {
+  removeLightBackground(data, w, h);
+  cleanJpegFringe(data);
+  removeWhiteMatte(data);
+} else {
+  removeBackground(data, w, h);
+  removeBlueGlove(data);
+  enhancePixels(data, false);
+}
+let trimmed = trimBounds(data, w, h);
 if (rotateDeg) trimmed = rotateSubject(trimmed, rotateDeg);
 const finalSubject = trimBounds(trimmed.data, trimmed.w, trimmed.h);
 
 const canvas = new Canvas();
-canvas.addGroundShadow();
-canvas.addRimGlow();
-canvas.blitScaled(finalSubject, 0.88);
+if (!cleanMode) {
+  canvas.addGroundShadow();
+  canvas.addRimGlow();
+}
+canvas.blitScaled(finalSubject, cleanMode ? 0.9 : 0.88);
 fs.writeFileSync(outPath, canvas.toPng());
-console.log('OK', outPath, `(${finalSubject.w}x${finalSubject.h} subject)`);
+console.log('OK', outPath, `(${finalSubject.w}x${finalSubject.h} subject, clean=${cleanMode})`);

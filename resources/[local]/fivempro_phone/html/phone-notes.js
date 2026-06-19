@@ -19,9 +19,24 @@
     return window.t ? window.t(key, fallback) : fallback;
   }
 
+  function tFmt(key, fallback, vars) {
+    let text = t(key, fallback);
+    if (vars && typeof vars === "object") {
+      for (const [k, v] of Object.entries(vars)) {
+        text = text.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+      }
+    }
+    return text;
+  }
+
   function notes() {
     const list = window.PhoneState?.notes;
     return Array.isArray(list) ? list : [];
+  }
+
+  function notesOldDays() {
+    const days = Number(window.PhoneState?.notesOldDays);
+    return days > 0 ? days : 30;
   }
 
   function setNotes(list) {
@@ -42,6 +57,19 @@
     return d.toLocaleDateString("lt-LT", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 
+  function isOldNote(note) {
+    const iso = note?.updated_at || note?.created_at;
+    if (!iso) return false;
+    const updated = new Date(iso);
+    if (Number.isNaN(updated.getTime())) return false;
+    const cutoff = Date.now() - notesOldDays() * 24 * 60 * 60 * 1000;
+    return updated.getTime() < cutoff;
+  }
+
+  function countOldNotes() {
+    return notes().filter(isOldNote).length;
+  }
+
   function renderList() {
     const items = notes();
     if (!items.length) {
@@ -51,18 +79,29 @@
           <button type="button" id="btnNewNote" class="ios-btn primary">${esc(t("notes.new", "Naujas užrašas"))}</button>
         </div>`;
     }
+
+    const oldCount = countOldNotes();
+    const days = notesOldDays();
+
     return `
       <div class="notes-toolbar">
         <span class="muted small">${items.length} ${esc(t("notes.count", "užrašai"))}</span>
-        <button type="button" id="btnNewNote" class="notes-new-btn">+ ${esc(t("notes.newShort", "Naujas"))}</button>
+        <div class="notes-toolbar-actions">
+          ${oldCount > 0 ? `<button type="button" id="btnDeleteOldNotes" class="notes-cleanup-btn" title="${esc(t("notes.deleteOldShort", "Senų valymas"))}">${esc(t("notes.deleteOld", "Išvalyti senus"))} (${oldCount})</button>` : ""}
+          <button type="button" id="btnNewNote" class="notes-new-btn">+ ${esc(t("notes.newShort", "Naujas"))}</button>
+        </div>
       </div>
+      ${oldCount > 0 ? `<p class="notes-old-hint muted small">${esc(tFmt("notes.oldHint", "Seni užrašai — nebuvo redaguoti daugiau nei {days} d.", { days }))}</p>` : ""}
       <div class="notes-list">${items
         .map(
-          (n) => `<button type="button" class="notes-item" data-id="${n.id}">
-            <strong>${esc(n.title || t("notes.untitled", "Be pavadinimo"))}</strong>
-            <span class="notes-preview">${esc(preview(n.body))}</span>
-            <span class="notes-date muted small">${esc(formatDate(n.updated_at || n.created_at))}</span>
-          </button>`
+          (n) => `<div class="notes-item-row${isOldNote(n) ? " is-old" : ""}">
+            <button type="button" class="notes-item" data-id="${n.id}">
+              <strong>${esc(n.title || t("notes.untitled", "Be pavadinimo"))}</strong>
+              <span class="notes-preview">${esc(preview(n.body))}</span>
+              <span class="notes-date muted small">${esc(formatDate(n.updated_at || n.created_at))}</span>
+            </button>
+            <button type="button" class="notes-item-del" data-id="${n.id}" aria-label="${esc(t("notes.deleteOne", "Ištrinti"))}" title="${esc(t("notes.delete", "Ištrinti"))}">×</button>
+          </div>`
         )
         .join("")}</div>`;
   }
@@ -167,37 +206,107 @@
     paint();
   }
 
-  async function deleteNote() {
-    if (!ui.editingId) return;
-    const root = document.getElementById("notesAppRoot");
-    const btn = root?.querySelector("#btnDeleteNote");
-    if (btn) btn.disabled = true;
+  async function deleteNoteById(noteId, { fromEditor = false } = {}) {
+    const id = Number(noteId);
+    if (!id) return;
+
+    const msg = t("notes.confirmDelete", "Ištrinti šį užrašą?");
+    if (!confirm(msg)) return;
+
+    if (fromEditor) {
+      const root = document.getElementById("notesAppRoot");
+      const btn = root?.querySelector("#btnDeleteNote");
+      if (btn) btn.disabled = true;
+    }
+
     try {
-      const res = await nui("deleteNote", { id: ui.editingId });
+      const res = await nui("deleteNote", { id });
       if (res?.ok) {
-        setNotes(notes().filter((n) => n.id !== ui.editingId));
-        openList();
+        setNotes(notes().filter((n) => n.id !== id));
+        if (fromEditor) {
+          openList();
+        } else {
+          paint();
+        }
         return;
       }
-      ui.status = res?.message || t("notes.error", "Nepavyko ištrinti.");
-      ui.statusError = true;
+      if (fromEditor) {
+        ui.status = res?.message || t("notes.error", "Nepavyko ištrinti.");
+        ui.statusError = true;
+        paint();
+      }
     } catch (_) {
-      ui.status = t("notes.error", "Nepavyko ištrinti.");
-      ui.statusError = true;
+      if (fromEditor) {
+        ui.status = t("notes.error", "Nepavyko ištrinti.");
+        ui.statusError = true;
+        paint();
+      }
     }
-    paint();
+  }
+
+  async function deleteOldNotes() {
+    const oldCount = countOldNotes();
+    const days = notesOldDays();
+    if (oldCount < 1) {
+      ui.status = t("notes.noOldNotes", "Senų užrašų nerasta.");
+      ui.statusError = false;
+      return;
+    }
+
+    const msg = tFmt(
+      "notes.confirmDeleteOld",
+      "Ištrinti užrašus, kurių nebuvo redaguota daugiau nei {days} d.?",
+      { days }
+    );
+    if (!confirm(msg)) return;
+
+    const btn = document.getElementById("btnDeleteOldNotes");
+    if (btn) btn.disabled = true;
+
+    try {
+      const res = await nui("deleteOldNotes", { olderThanDays: days });
+      if (res?.ok) {
+        const deleted = Number(res.deleted) || 0;
+        if (deleted > 0) {
+          const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+          setNotes(
+            notes().filter((n) => {
+              const iso = n.updated_at || n.created_at;
+              const updated = new Date(iso);
+              if (Number.isNaN(updated.getTime())) return true;
+              return updated.getTime() >= cutoff;
+            })
+          );
+        }
+        paint();
+        return;
+      }
+    } catch (_) {
+      /* fall through */
+    }
+    if (btn) btn.disabled = false;
   }
 
   function bindEvents() {
     document.getElementById("btnNewNote")?.addEventListener("click", () => openEditor(null));
     document.getElementById("btnBackNotes")?.addEventListener("click", openList);
     document.getElementById("btnSaveNote")?.addEventListener("click", saveNote);
-    document.getElementById("btnDeleteNote")?.addEventListener("click", deleteNote);
+    document.getElementById("btnDeleteNote")?.addEventListener("click", () => deleteNoteById(ui.editingId, { fromEditor: true }));
+    document.getElementById("btnDeleteOldNotes")?.addEventListener("click", deleteOldNotes);
+
     document.querySelectorAll(".notes-item").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = Number(btn.dataset.id);
         const note = notes().find((n) => n.id === id);
         if (note) openEditor(note);
+      });
+    });
+
+    document.querySelectorAll(".notes-item-del").forEach((btn) => {
+      btn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        deleteNoteById(btn.dataset.id);
       });
     });
   }

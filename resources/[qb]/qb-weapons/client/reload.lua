@@ -2,11 +2,82 @@
 WeaponReload = WeaponReload or {}
 
 local activeReloadAnim = nil
+local reloadMovementState = { sprint = false, moving = false }
 
 local function getReloadWaitMs()
     local t = tonumber(Config.ReloadTime)
     if t and t > 0 then return t end
     return 2400
+end
+
+local function allowReloadMovement()
+    return Config.ReloadAllowMovement ~= false
+end
+
+local function isMovementControlPressed()
+    for _, ctrl in ipairs({ 21, 32, 33, 34, 35 }) do
+        if IsControlPressed(0, ctrl) or IsDisabledControlPressed(0, ctrl) then
+            return true
+        end
+    end
+    return false
+end
+
+local function isPedMoving(ped)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return false end
+    if IsPedRunning(ped) or IsPedSprinting(ped) then return true end
+    if GetEntitySpeed(ped) > 1.0 then return true end
+    return isMovementControlPressed()
+end
+
+local function captureMovementState(ped)
+    reloadMovementState.sprint = IsPedSprinting(ped)
+        or IsControlPressed(0, 21)
+        or IsDisabledControlPressed(0, 21)
+    reloadMovementState.moving = isPedMoving(ped)
+end
+
+local function restoreMovementAfterReload(ped)
+    if not allowReloadMovement() or not ped or ped == 0 or not DoesEntityExist(ped) then return end
+    if IsPedInAnyVehicle(ped, false) then return end
+
+    ClearPedSecondaryTask(ped)
+    SetPedCurrentWeaponVisible(ped, true, false, false, false)
+
+    local wantsSprint = reloadMovementState.sprint
+        or IsControlPressed(0, 21)
+        or IsDisabledControlPressed(0, 21)
+    local wantsMove = reloadMovementState.moving or isMovementControlPressed()
+
+    if not wantsMove and not wantsSprint then return end
+
+    SetPedMoveRateOverride(ped, 1.0)
+    if wantsSprint then
+        SetPedMaxMoveBlendRatio(ped, 3.0)
+        SetPedMinMoveBlendRatio(ped, 2.0)
+    elseif wantsMove then
+        SetPedMaxMoveBlendRatio(ped, 2.0)
+        SetPedMinMoveBlendRatio(ped, 1.0)
+    end
+end
+
+local function reloadAnimFlags()
+    if allowReloadMovement() then
+        return 48 -- viršutinė kūno dalis + žaidėjo valdymas, be loop
+    end
+    return 49
+end
+
+local function enableReloadMovementControls()
+    if not allowReloadMovement() then return end
+    EnableControlAction(0, 21, true) -- sprint
+    EnableControlAction(0, 22, true) -- jump
+    EnableControlAction(0, 30, true) -- move LR
+    EnableControlAction(0, 31, true) -- move UD
+    EnableControlAction(0, 32, true) -- W
+    EnableControlAction(0, 33, true) -- S
+    EnableControlAction(0, 34, true) -- A
+    EnableControlAction(0, 35, true) -- D
 end
 
 local function loadAnimDict(dict)
@@ -51,10 +122,17 @@ end
 local function stopReloadAnimation(ped)
     if not ped or ped == 0 or not DoesEntityExist(ped) then return end
     if activeReloadAnim then
-        StopAnimTask(ped, activeReloadAnim.dict, activeReloadAnim.anim, 1.0)
+        if allowReloadMovement() then
+            ClearPedSecondaryTask(ped)
+        else
+            StopAnimTask(ped, activeReloadAnim.dict, activeReloadAnim.anim, 1.0)
+        end
         activeReloadAnim = nil
+    elseif allowReloadMovement() then
+        ClearPedSecondaryTask(ped)
     end
     SetPedCurrentWeaponVisible(ped, true, false, false, false)
+    restoreMovementAfterReload(ped)
 end
 
 local function snapshotClipState(ped, weaponHash)
@@ -83,19 +161,21 @@ local function primeReloadReserve(ped, weaponHash, clipNow, totalBefore, bullets
 end
 
 local function playMobileReloadAnimation(ped, weaponHash, durationMs)
+    local animFlags = reloadAnimFlags()
     for _, pair in ipairs(reloadAnimCandidates(weaponHash)) do
         local dict, anim = pair[1], pair[2]
         if loadAnimDict(dict) then
             activeReloadAnim = { dict = dict, anim = anim }
             SetCurrentPedWeapon(ped, weaponHash, true)
-            TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, 49, 0.0, false, false, false)
+            TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, animFlags, 0.0, false, false, false)
 
             local deadline = GetGameTimer() + durationMs
             local replayAt = GetGameTimer() + 180
             while GetGameTimer() < deadline do
                 if not DoesEntityExist(ped) then break end
+                enableReloadMovementControls()
                 if GetGameTimer() >= replayAt and not IsEntityPlayingAnim(ped, dict, anim, 3) then
-                    TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, 49, 0.0, false, false, false)
+                    TaskPlayAnim(ped, dict, anim, 8.0, -8.0, durationMs, animFlags, 0.0, false, false, false)
                     replayAt = GetGameTimer() + 220
                 end
                 Wait(0)
@@ -120,10 +200,12 @@ local function tryNativeReloadAnimation(ped, weaponHash, clipNow, totalBefore, b
     local startDeadline = GetGameTimer() + 700
     while GetGameTimer() < startDeadline do
         if not DoesEntityExist(ped) then return false end
+        enableReloadMovementControls()
         if IsPedReloading(ped) then
             local endDeadline = GetGameTimer() + durationMs
             while GetGameTimer() < endDeadline do
                 if not DoesEntityExist(ped) then break end
+                enableReloadMovementControls()
                 if not IsPedReloading(ped) then
                     return true
                 end
@@ -148,6 +230,7 @@ function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
 
     bulletsToLoad = math.max(0, tonumber(bulletsToLoad) or 0)
     local durationMs = getReloadWaitMs()
+    captureMovementState(ped)
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
     SetCurrentPedWeapon(ped, weaponHash, true)
 
@@ -161,20 +244,28 @@ function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
     end
 
     local usedNative = false
-    if Config.ReloadUseNativeFirst ~= false then
+    local canUseNative = Config.ReloadUseNativeFirst ~= false
+        and not (allowReloadMovement() and (reloadMovementState.moving or reloadMovementState.sprint))
+    if canUseNative then
         usedNative = tryNativeReloadAnimation(ped, weaponHash, clipNow, totalBefore, bulletsToLoad, durationMs)
     end
 
     if not usedNative then
         local played = playMobileReloadAnimation(ped, weaponHash, durationMs)
         if not played then
-            Wait(math.min(1200, durationMs))
+            local waitMs = math.min(1200, durationMs)
+            local deadline = GetGameTimer() + waitMs
+            while GetGameTimer() < deadline do
+                enableReloadMovementControls()
+                Wait(0)
+            end
         end
     end
 
     stopReloadAnimation(ped)
     restoreClipState(ped, weaponHash, clipNow, totalBefore)
     WeaponAmmo.normalizePedAmmo(ped, weaponHash, weaponData)
+    restoreMovementAfterReload(ped)
 end
 
 function WeaponReload.cancel(ped)

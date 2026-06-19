@@ -233,7 +233,7 @@ RegisterNUICallback('trucking:acceptContract', function(data, cb)
         if res and res.ok then
             closeUI()
         elseif res and res.reason then
-            QBCore.Functions.Notify(res.reason, 'error')
+            QBCore.Functions.Notify(res.reason, res.refreshContracts and 'primary' or 'error')
         end
         cb(res or { ok = false })
     end, data and data.contractId, data and data.roadDistanceKm)

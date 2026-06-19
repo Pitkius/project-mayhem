@@ -449,6 +449,12 @@ RegisterNUICallback('deleteNote', function(data, cb)
     end, data or {})
 end)
 
+RegisterNUICallback('deleteOldNotes', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:deleteOldNotes', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
 RegisterNUICallback('saveAdProfile', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_phone:server:saveAdProfile', function(res)
         cb(res or { ok = false })

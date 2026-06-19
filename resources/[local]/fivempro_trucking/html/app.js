@@ -191,11 +191,23 @@ async function refreshRoadQuotes() {
     if (!local?.ok || !Array.isArray(local.quotes) || !local.quotes.length) return;
     const server = await nui("trucking:applyRoadQuotes", { quotes: local.quotes });
     if (!server?.ok || !Array.isArray(server.quotes)) return;
+    if (server.quotes.length < list.length) {
+      const refreshed = await nui("trucking:refresh");
+      if (refreshed?.ok && refreshed.data) {
+        state.data = refreshed.data;
+        if (state.selected && !(state.data.contracts || []).some((c) => c.id === state.selected.id)) {
+          state.selected = null;
+        }
+        renderAll();
+        return;
+      }
+    }
     server.quotes.forEach(applyQuoteToContract);
     renderContractsListOnly();
     if (state.selected) {
       const refreshed = list.find((x) => x.id === state.selected.id);
       if (refreshed) selectContract(refreshed);
+      else selectContract(list[0] || null);
     }
   } catch (e) {}
 }
@@ -295,6 +307,9 @@ function exchangeContracts(list) {
 
 function renderContracts() {
   const list = state.data?.contracts || [];
+  if (state.selected && !list.some((c) => c.id === state.selected.id)) {
+    state.selected = null;
+  }
   const exchange = exchangeContracts(list);
   const emptyMsg =
     '<div class="contract-empty">Šiuo metu kontraktų nėra — palaukite atnaujinimo arba pakelkite lygį.</div>';
@@ -533,7 +548,14 @@ btnAccept.addEventListener("click", async () => {
     roadDistanceKm,
   });
   btnAccept.disabled = false;
-  if (!res?.ok) showToast(res?.reason || "Kontrakto priimti nepavyko.", "err");
+  if (!res?.ok) {
+    if (res?.refreshContracts && Array.isArray(res.contracts)) {
+      state.data.contracts = res.contracts;
+      state.selected = null;
+      renderAll();
+    }
+    showToast(res?.reason || "Kontrakto priimti nepavyko.", "err");
+  }
 });
 
 window.addEventListener("message", (event) => {

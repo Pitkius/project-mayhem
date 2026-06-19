@@ -3,6 +3,8 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local activeDeliveries = {}
 local contractPool = {}
 local poolGeneratedAt = 0
+local playerContractBoards = {}
+local CONTRACT_BOARD_SIZE = 10
 
 local function decodeLicenses(raw)
     if not raw or raw == '' then return {} end
@@ -377,46 +379,144 @@ local function contractKey(c)
     return ('%s|%s|%s'):format(c.pickupId or '', c.deliveryId or '', c.cargoId or '')
 end
 
-local function contractsForPlayer(profile, src)
+local function contractTtlSec()
+    return tonumber(Config.ContractTtlSec) or tonumber(Config.ContractRefreshSec) or 300
+end
+
+local function newContractId()
+    return ('ctr_%d_%d'):format(os.time(), math.random(100000, 999999))
+end
+
+local function isContractExpired(c)
+    local listedAt = tonumber(c and c.listedAt) or 0
+    if listedAt <= 0 then return false end
+    return (os.time() - listedAt) >= contractTtlSec()
+end
+
+local function profileCanAccessContract(profile, c)
+    if not c then return false end
+    if (profile.level or 1) < (c.minLevel or 1) then return false end
+    if TruckingShared.ReputationStars(profile.reputation or 0) < (c.minReputation or 1) then return false end
+    if isContractExpired(c) then return false end
+    return true
+end
+
+local function prepareContractCopy(profile, c, startHubId)
+    local copy = json.decode(json.encode(c))
+    applyPickupHub(copy, startHubId)
+    TruckingShared.EnrichContractMission(profile, copy)
+    return copy
+end
+
+local function stampBoardContract(c)
+    c.listedAt = os.time()
+    c.id = newContractId()
+    return c
+end
+
+local function addUniqueContractToBoard(board, profile, c, seen)
+    if not c or not profileCanAccessContract(profile, c) then return false end
+    local key = contractKey(c)
+    if seen[key] then return false end
+    seen[key] = true
+    local copy = json.decode(json.encode(c))
+    stampBoardContract(copy)
+    TruckingShared.EnrichContractMission(profile, copy)
+    board.contracts[#board.contracts + 1] = copy
+    return true
+end
+
+local function fillPlayerContractBoard(profile, board)
+    board.contracts = board.contracts or {}
     local startHubId = Config.DefaultStartHubId or 'ls_docks'
-    local out = {}
     local seen = {}
-    for _, c in ipairs(contractPool) do
-        if (profile.level or 1) >= (c.minLevel or 1)
-            and TruckingShared.ReputationStars(profile.reputation or 0) >= (c.minReputation or 1) then
-            local key = contractKey(c)
-            if not seen[key] then
-                seen[key] = true
-                local copy = json.decode(json.encode(c))
-                applyPickupHub(copy, startHubId)
-                TruckingShared.EnrichContractMission(profile, copy)
-                out[#out + 1] = copy
-            end
+
+    for i = #board.contracts, 1, -1 do
+        local c = board.contracts[i]
+        if not tonumber(c.listedAt) or tonumber(c.listedAt) <= 0 then
+            c.listedAt = os.time()
+        end
+        if not profileCanAccessContract(profile, c) then
+            table.remove(board.contracts, i)
+        else
+            seen[contractKey(c)] = true
         end
     end
-    local target = 10
-    local seed = os.time() + (profile.level or 1) * 997
+
+    for _, c in ipairs(contractPool) do
+        if #board.contracts >= CONTRACT_BOARD_SIZE then break end
+        addUniqueContractToBoard(board, profile, c, seen)
+    end
+
+    local seed = board.seed or (os.time() + (profile.level or 1) * 997)
+    board.seed = seed
     local guard = 0
-    while #out < target and guard < 48 do
+    while #board.contracts < CONTRACT_BOARD_SIZE and guard < 64 do
         guard = guard + 1
         local c = generateContract(profile, seed + guard * 1337, startHubId)
         if c then
-            c.id = ('live_%s_%s'):format(guard, c.id)
-            local key = contractKey(c)
-            if not seen[key] then
-                seen[key] = true
-                TruckingShared.EnrichContractMission(profile, c)
-                out[#out + 1] = c
-            end
+            addUniqueContractToBoard(board, profile, c, seen)
         end
     end
-    table.sort(out, function(a, b) return a.pay > b.pay end)
+
+    table.sort(board.contracts, function(a, b) return (a.pay or 0) > (b.pay or 0) end)
+end
+
+local function getPlayerContractBoard(profile, citizenid)
+    local board = playerContractBoards[citizenid]
+    if not board or board.poolAt ~= poolGeneratedAt then
+        board = {
+            contracts = {},
+            poolAt = poolGeneratedAt,
+            seed = os.time() + (profile.level or 1) * 997,
+        }
+        playerContractBoards[citizenid] = board
+    end
+    fillPlayerContractBoard(profile, board)
+    return board
+end
+
+local function removeContractFromBoard(citizenid, contractId)
+    local board = playerContractBoards[citizenid]
+    if not board or not contractId then return false end
+    for i, c in ipairs(board.contracts) do
+        if c.id == contractId then
+            table.remove(board.contracts, i)
+            return true
+        end
+    end
+    return false
+end
+
+local function replaceStaleContract(citizenid, profile, contractId)
+    removeContractFromBoard(citizenid, contractId)
+    local board = getPlayerContractBoard(profile, citizenid)
+    fillPlayerContractBoard(profile, board)
+end
+
+local function contractsForPlayer(profile, src)
+    local Player = QBCore.Functions.GetPlayer(src)
+    local citizenid = Player and Player.PlayerData.citizenid
+    if not citizenid then return {} end
+    local board = getPlayerContractBoard(profile, citizenid)
+    local startHubId = Config.DefaultStartHubId or 'ls_docks'
+    local out = {}
+    for _, c in ipairs(board.contracts) do
+        out[#out + 1] = prepareContractCopy(profile, c, startHubId)
+    end
     return out
 end
 
 local function findContractForPlayer(profile, contractId, src)
-    for _, c in ipairs(contractsForPlayer(profile, src)) do
-        if c.id == contractId then return c end
+    local Player = QBCore.Functions.GetPlayer(src)
+    local citizenid = Player and Player.PlayerData.citizenid
+    if not citizenid or not contractId then return nil end
+    local board = getPlayerContractBoard(profile, citizenid)
+    local startHubId = Config.DefaultStartHubId or 'ls_docks'
+    for _, c in ipairs(board.contracts) do
+        if c.id == contractId and profileCanAccessContract(profile, c) then
+            return prepareContractCopy(profile, c, startHubId)
+        end
     end
     return nil
 end
@@ -605,18 +705,23 @@ end)
 QBCore.Functions.CreateCallback('fivempro_trucking:server:applyRoadQuotes', function(src, cb, quotes)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return cb({ ok = false }) end
-    local profile = buildProfile(ensureProfile(Player.PlayerData.citizenid))
-    local contracts = contractsForPlayer(profile, src)
+    local citizenid = Player.PlayerData.citizenid
+    local profile = buildProfile(ensureProfile(citizenid))
+    local board = getPlayerContractBoard(profile, citizenid)
     local byId = {}
-    for _, c in ipairs(contracts) do
+    for _, c in ipairs(board.contracts) do
         byId[c.id] = c
     end
     local out = {}
     for _, q in ipairs(quotes or {}) do
         local base = byId[q.id]
         if base then
-            local copy = json.decode(json.encode(base))
+            local copy = prepareContractCopy(profile, base, Config.DefaultStartHubId or 'ls_docks')
             copy = finalizeContractDistance(copy, q.distanceKm)
+            base.distanceKm = copy.distanceKm
+            base.timeLimitMin = copy.timeLimitMin
+            base.pay = copy.pay
+            base.straightKm = copy.straightKm
             out[#out + 1] = {
                 id = copy.id,
                 distanceKm = copy.distanceKm,
@@ -637,7 +742,15 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:acceptContract', funct
     local profile = buildProfile(row)
     if not profile.registered then return cb({ ok = false, reason = 'Registruokis kaip vairuotojas.' }) end
     local contract = findContractForPlayer(profile, contractId, src)
-    if not contract then return cb({ ok = false, reason = 'Kontraktas nebegalioja.' }) end
+    if not contract then
+        replaceStaleContract(citizenid, profile, contractId)
+        return cb({
+            ok = false,
+            reason = 'Kontraktas nebegalioja — parinktas naujas.',
+            refreshContracts = true,
+            contracts = contractsForPlayer(profile, src),
+        })
+    end
     local startHubId = Config.DefaultStartHubId or 'ls_docks'
     contract = applyPickupHub(json.decode(json.encode(contract)), startHubId)
     contract = finalizeContractDistance(contract, roadDistanceKm)
@@ -662,6 +775,11 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:acceptContract', funct
         trailerModel = truck.trailer,
     }
     TriggerClientEvent('fivempro_trucking:client:startDelivery', src, activeDeliveries[src])
+    removeContractFromBoard(citizenid, contractId)
+    local board = playerContractBoards[citizenid]
+    if board then
+        fillPlayerContractBoard(profile, board)
+    end
     cb({ ok = true, delivery = activeDeliveries[src] })
 end)
 

@@ -24,6 +24,8 @@ Config.Phone = {
     maxNotesLength = 8000,
     maxNotes = 50,
     maxNoteTitleLength = 64,
+    --- Užrašai, kurių `updated_at` senesnis nei tiek dienų, laikomi „senais“ (valymui)
+    notesOldDays = 30,
     --- CarPlay: max nuorodos ilgis
     maxCarPlayUrlLength = 2048,
     --- Automatiniai tarnybų kontaktai (įrašomi kiekvienam žaidėjui, abėcėlės tvarka)
