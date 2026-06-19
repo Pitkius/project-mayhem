@@ -20,9 +20,11 @@
                 v-if="isInventoryOpen || isInventoryClosing"
                 :key="inventoryAnimKey"
                 :class="{ 'inv-closing': isInventoryClosing }"
+                @mousemove="drag"
+                @mouseup="endDrag"
             >
                 <div class="inventory-backdrop" @mousedown="containerMouseDownAction"></div>
-                <div class="inventory-container" @mousemove="drag" @mouseup="endDrag" @mousedown="containerMouseDownAction">
+                <div class="inventory-container" @mousedown="containerMouseDownAction">
                 <div class="inventory-section player-inventory-section" :class="{ 'centered-inventory-section': shouldCenterInventory }">
                     <div class="inventory-header">
                         <div class="labels-container">

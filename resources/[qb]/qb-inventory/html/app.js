@@ -369,6 +369,14 @@ const InventoryContainer = Vue.createApp({
             this.ghostElement.style.left = `${centeredX}px`;
             this.ghostElement.style.top = `${centeredY}px`;
         },
+        isOutsideInventoryBounds(event) {
+            const container = document.querySelector(".inventory-container");
+            if (!container) return true;
+            const rect = container.getBoundingClientRect();
+            const x = event.clientX;
+            const y = event.clientY;
+            return x < rect.left || x > rect.right || y < rect.top || y > rect.bottom;
+        },
         endDrag(event) {
             if (!this.currentlyDraggingItem) {
                 return;
@@ -390,12 +398,12 @@ const InventoryContainer = Vue.createApp({
                 if (targetSlot && !(targetSlot === this.currentlyDraggingSlot && this.dragStartInventoryType === "other")) {
                     this.handleDropOnOtherSlot(targetSlot);
                 }
-            } else if (this.isOtherInventoryEmpty && this.dragStartInventoryType === "player") {
-                const isOverInventoryGrid = elementsUnderCursor.some((el) => el.classList.contains("inventory-grid") || el.classList.contains("item-grid"));
-
-                if (!isOverInventoryGrid) {
-                    this.handleDropOnInventoryContainer();
-                }
+            } else if (
+                this.dragStartInventoryType === "player" &&
+                !this.isShopInventory &&
+                this.isOutsideInventoryBounds(event)
+            ) {
+                this.handleDropOnInventoryContainer();
             }
 
             this.clearDragData();
@@ -418,43 +426,60 @@ const InventoryContainer = Vue.createApp({
             this.handleItemDrop("other", targetSlot);
         },
         async handleDropOnInventoryContainer() {
-            if (this.isOtherInventoryEmpty && this.dragStartInventoryType === "player") {
-                const newItem = {
-                    ...this.currentlyDraggingItem,
-                    amount: this.currentlyDraggingItem.amount,
-                    slot: 1,
-                    inventory: "other",
-                };
-                const draggingItem = this.currentlyDraggingItem;
-                try {
-                    const response = await axios.post("https://qb-inventory/DropItem", {
-                        ...newItem,
-                        fromSlot: Number(this.currentlyDraggingSlot),
-                    });
+            if (this.isShopInventory || this.dragStartInventoryType !== "player" || !this.currentlyDraggingItem) {
+                return;
+            }
 
-                    if (response.data) {
+            const draggingItem = this.currentlyDraggingItem;
+            const playerItemKey = this.resolvePlayerItemKey(draggingItem);
+            if (playerItemKey === null) {
+                this.inventoryError(this.currentlyDraggingSlot);
+                return;
+            }
+
+            const playerItem = this.playerInventory[playerItemKey];
+            if (!playerItem) {
+                this.inventoryError(this.currentlyDraggingSlot);
+                return;
+            }
+
+            const amountToDrop =
+                this.transferAmount !== null && this.transferAmount > 0
+                    ? Math.min(this.transferAmount, playerItem.amount)
+                    : playerItem.amount;
+
+            const newItem = {
+                ...playerItem,
+                amount: amountToDrop,
+                slot: 1,
+                inventory: "other",
+            };
+
+            try {
+                const response = await axios.post("https://qb-inventory/DropItem", {
+                    ...newItem,
+                    fromSlot: Number(this.currentlyDraggingSlot),
+                });
+
+                if (response.data) {
+                    if (playerItem.amount > amountToDrop) {
+                        playerItem.amount -= amountToDrop;
+                    } else {
+                        delete this.playerInventory[playerItemKey];
+                    }
+
+                    if (this.isOtherInventoryEmpty) {
                         this.otherInventory[1] = newItem;
-                        const draggingItemKey = this.resolvePlayerItemKey(draggingItem);
-                        if (draggingItemKey !== null) {
-                            const playerItem = this.playerInventory[draggingItemKey];
-                            if (playerItem && playerItem.amount > newItem.amount) {
-                                playerItem.amount -= newItem.amount;
-                            } else {
-                                delete this.playerInventory[draggingItemKey];
-                            }
-                        }
                         this.otherInventoryName = response.data;
                         this.otherInventoryLabel = response.data;
                         this.isOtherInventoryEmpty = false;
-                        this.clearDragData();
-                    } else {
-                        this.inventoryError(this.currentlyDraggingSlot);
                     }
-                } catch (error) {
+                } else {
                     this.inventoryError(this.currentlyDraggingSlot);
                 }
+            } catch (error) {
+                this.inventoryError(this.currentlyDraggingSlot);
             }
-            this.clearDragData();
         },
         clearDragData() {
             if (this.ghostElement) {
