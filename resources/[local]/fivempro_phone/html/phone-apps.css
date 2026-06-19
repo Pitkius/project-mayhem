@@ -9,7 +9,9 @@
 
 .scroll-body.camera-body,
 .scroll-body.carplay-body,
-.scroll-body.ads-portal-body {
+.scroll-body.ads-portal-body,
+.scroll-body.weather-body,
+.scroll-body.notes-body {
   padding: 0 !important;
   background: var(--app-bg);
 }

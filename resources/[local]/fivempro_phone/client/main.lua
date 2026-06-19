@@ -443,6 +443,12 @@ RegisterNUICallback('saveNotes', function(data, cb)
     end, data or {})
 end)
 
+RegisterNUICallback('deleteNote', function(data, cb)
+    QBCore.Functions.TriggerCallback('fivempro_phone:server:deleteNote', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
 RegisterNUICallback('saveAdProfile', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_phone:server:saveAdProfile', function(res)
         cb(res or { ok = false })
@@ -455,7 +461,43 @@ RegisterNUICallback('getAdProfileAvatar', function(data, cb)
     end, data or {})
 end)
 
+RegisterNUICallback('getWeatherForecast', function(data, cb)
+    local region = data and data.region or 'los_santos'
+    if GetResourceState('fivempro_weather') ~= 'started' then
+        cb({ ok = false, error = 'weather_module' })
+        return
+    end
+    QBCore.Functions.TriggerCallback('fivempro_weather:server:getForecast', function(res)
+        QBCore.Functions.TriggerCallback('fivempro_weather:server:getRegions', function(regRes)
+            res = res or { ok = false }
+            if regRes and regRes.regions then
+                res.regions = regRes.regions
+            end
+            cb(res)
+        end)
+    end, region)
+end)
+
+RegisterNUICallback('getWeatherRegions', function(_, cb)
+    if GetResourceState('fivempro_weather') ~= 'started' then
+        cb({ ok = false })
+        return
+    end
+    QBCore.Functions.TriggerCallback('fivempro_weather:server:getRegions', function(res)
+        cb(res or { ok = false })
+    end)
+end)
+
 RegisterNUICallback('getWeather', function(_, cb)
+    if GetResourceState('fivempro_weather') == 'started' then
+        local ok, slot = pcall(function()
+            return exports['fivempro_weather']:getCurrentSlot()
+        end)
+        if ok and slot then
+            cb({ ok = true, label = ('%s, ~%d°C'):format(slot.label or 'Giedra', slot.tempC or 22) })
+            return
+        end
+    end
     local rain = 0.0
     if GetRainLevel then rain = GetRainLevel() end
     local label = rain > 0.15 and 'Lietinga, ~18°C' or 'Giedra, ~24°C'

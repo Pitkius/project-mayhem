@@ -16,7 +16,7 @@
       <handlingName>ubermachtm4</handlingName>
     <fMass value="1410.0"/>
     <fInitialDragCoeff value="3.999936"/>
-    <fDownforceModifier value="1.20"/>
+    <fDownforceModifier value="0.70"/>
     <fPercentSubmerged value="85.000000"/>
     <vecCentreOfMassOffset x="0.000000" y="0.020000" z="0.000000"/>
     <vecInertiaMultiplier x="1.200000" y="1.200000" z="1.400000"/>

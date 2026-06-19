@@ -22,6 +22,7 @@ shared_scripts {
 
 client_scripts {
     'client/main.lua',
+    'client/logistics.lua',
 }
 
 server_scripts {

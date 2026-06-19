@@ -1,4 +1,4 @@
-/** LTPD MDT GPS žemėlapis — Leaflet, tiesioginės GTA koordinatės [Y, X]. */
+/** LTPD MDT GPS žemėlapis — Leaflet + homography kalibracija. */
 window.MdtMap = (function () {
   const CALL_ACTIVE = new Set(['pending', 'accepted', 'enroute', 'arrived']);
 

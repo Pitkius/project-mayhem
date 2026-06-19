@@ -5,7 +5,7 @@
     <Item type="CHandlingData">
       <handlingName>ubermachtm3cs</handlingName>
       <fMass value="1410.0" />
-      <fDownforceModifier value="1.20" />
+      <fDownforceModifier value="0.70" />
       <fInitialDragCoeff value="7.100000" />
       <fPercentSubmerged value="85.000000" />
       <vecCentreOfMassOffset x="0.000000" y="0.200000" z="-0.060000" />
@@ -21,8 +21,8 @@
       <fBrakeBiasFront value="0.550000" />
       <fHandBrakeForce value="0.750000" />
       <fSteeringLock value="49.9254300000" />
-      <fTractionCurveMax value="7.99000" />
-      <fTractionCurveMin value="7.9960000" />
+      <fTractionCurveMax value="2.680000" />
+      <fTractionCurveMin value="2.480000" />
       <fTractionCurveLateral value="24.500000" />
       <fTractionSpringDeltaMax value="0.150000" />
       <fLowSpeedTractionLossMult value="0.000000" />

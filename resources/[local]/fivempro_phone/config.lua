@@ -22,6 +22,8 @@ Config.Phone = {
     maxPhotosPerUser = 80,
     maxPhotoDataLength = 1500000,
     maxNotesLength = 8000,
+    maxNotes = 50,
+    maxNoteTitleLength = 64,
     --- CarPlay: max nuorodos ilgis
     maxCarPlayUrlLength = 2048,
     --- Automatiniai tarnybų kontaktai (įrašomi kiekvienam žaidėjui, abėcėlės tvarka)
@@ -57,7 +59,7 @@ Config.Phone = {
         { id = 'ads', label = 'Skelbimai', icon = 'ads', default = true, description = 'Skelbimų portalas su profiliais' },
         { id = 'insta', label = 'LifeGram', icon = 'insta', default = false, description = 'Socialinis tinklas su nuotraukomis' },
         { id = 'bank', label = 'BANKAS', icon = 'bank', default = true, description = 'Mobilus bankas — pervedimai, balansas, istorija' },
-        { id = 'weather', label = 'Orai', icon = 'weather', default = false, description = 'Orų prognozė Los Santos' },
+        { id = 'weather', label = 'Orai', icon = 'weather', default = false, description = 'Orų prognozė: Los Santos, Sandy Shores, Paleto Bay' },
         { id = 'cargonet', label = 'CargoNet', icon = 'cargonet', default = false, description = 'Krovinių birža ir logistikos kontraktai' },
     }
 }

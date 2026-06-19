@@ -174,6 +174,20 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
         end
     end
 
+    _G.QBWeaponDrawBusy = true
+
+    local ped = PlayerPedId()
+    if targetHash and targetHash ~= 0 and targetHash ~= `WEAPON_UNARMED` and ped and ped ~= 0 then
+        if GetSelectedPedWeapon(ped) == targetHash and HasPedGotWeapon(ped, targetHash, false) then
+            SetPedCurrentWeaponVisible(ped, true, false, false, false)
+            currWeap = targetHash
+            holstered = false
+            canFire = true
+            _G.QBWeaponDrawBusy = false
+            return
+        end
+    end
+
     drawSession = drawSession + 1
     local mySession = drawSession
     local sleep
@@ -368,6 +382,8 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
             holstered = false
         end
     end
+    _G.QBWeaponDrawBusy = false
+    TriggerEvent('qb-weapons:client:HolsterVisualsAfterDraw')
 end)
 
 function CeaseFire()

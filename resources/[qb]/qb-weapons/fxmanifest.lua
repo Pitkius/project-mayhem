@@ -21,6 +21,10 @@ client_scripts {
     'client/weapdraw.lua',
 }
 
+exports {
+    'IsWeaponDrawBusy',
+}
+
 server_scripts {
     'server/main.lua',
     'server/damage.lua',

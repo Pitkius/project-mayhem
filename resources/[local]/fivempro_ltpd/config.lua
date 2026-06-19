@@ -76,10 +76,10 @@ Config.FinePresets = {
 }
 
 --- MDT žemėlapis — Leaflet CRS.Simple + satelitinį PNG.
---- projection = identity: GTA (x,y) → žemėlapis [Y, X] (sutampa su standartiniu GTA atlasu).
---- Jei reikia fine-tune: node tools/mdt_map_calibrate.mjs → projection affine + calibration.
+--- projection = homography: kalibracija pagal žinomus orientyrus ant gtav_satellite_2048.png.
+--- Paleisti: node tools/mdt_map_calibrate.mjs
 Config.MdtMap = {
-    projection = 'identity',
+    projection = 'homography',
     gameMin = { x = -4000.0, y = -4000.0 },
     gameMax = { x = 4500.0, y = 6625.0 },
     coordMin = { x = -4000.0, y = -4000.0 },
@@ -94,6 +94,18 @@ Config.MdtMap = {
     imageFile = 'mdt/asset/gtav_satellite_2048.png',
     imageWidth = 2048,
     imageHeight = 2048,
+    calibration = {
+        { gx = -448.15,  gy = 6012.0,   u = 0.418, v = 0.072 },
+        { gx = 450.77,   gy = 5566.86,  u = 0.500, v = 0.125 },
+        { gx = 1853.2,   gy = 3686.5,   u = 0.708, v = 0.362 },
+        { gx = -2360.0,  gy = 3249.0,   u = 0.138, v = 0.455 },
+        { gx = 441.84,   gy = -982.05,  u = 0.404, v = 0.756 },
+        { gx = 379.39,   gy = -1591.37, u = 0.410, v = 0.788 },
+        { gx = -1037.0,  gy = -2737.0,  u = 0.276, v = 0.874 },
+        { gx = 1206.24,  gy = -3157.06, u = 0.503, v = 0.870 },
+        { gx = -1098.0,  gy = -808.0,   u = 0.332, v = 0.738 },
+        { gx = 85.0,     gy = -1958.0,  u = 0.400, v = 0.820 },
+    },
 }
 
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)

@@ -605,16 +605,44 @@ QBCore.Functions.CreateCallback('fivempro_trucking:server:acceptContract', funct
         return cb({ ok = false, reason = 'Per žemas lygis ar reputacija.' })
     end
     local deadline = os.time() + (contract.timeLimitMin * 60)
+    local lc = Config.LogisticsCenter or {}
+    local boxCfg = lc.boxCount or { min = 3, max = 8 }
+    local boxesRequired = math.random(boxCfg.min or 3, boxCfg.max or 8)
     activeDeliveries[src] = {
         contract = contract,
-        phase = 'pickup',
+        phase = 'loading',
         condition = 100,
         deadline = deadline,
         startedAt = os.time(),
         loaded = false,
+        boxesRequired = boxesRequired,
+        boxesLoaded = 0,
     }
     TriggerClientEvent('fivempro_trucking:client:startDelivery', src, activeDeliveries[src])
     cb({ ok = true, delivery = activeDeliveries[src] })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_trucking:server:loadBox', function(src, cb)
+    local d = activeDeliveries[src]
+    if not d or d.phase ~= 'loading' then
+        return cb({ ok = false, reason = 'Nėra aktyvaus pakrovimo.' })
+    end
+    if (d.boxesLoaded or 0) >= (d.boxesRequired or 1) then
+        return cb({ ok = false, reason = 'Furgonas jau pilnas.' })
+    end
+    d.boxesLoaded = (d.boxesLoaded or 0) + 1
+    local complete = d.boxesLoaded >= (d.boxesRequired or 1)
+    if complete then
+        d.loaded = true
+        d.phase = 'delivery'
+    end
+    cb({
+        ok = true,
+        boxesLoaded = d.boxesLoaded,
+        boxesRequired = d.boxesRequired,
+        complete = complete,
+        delivery = d,
+    })
 end)
 
 QBCore.Functions.CreateCallback('fivempro_trucking:server:loadCargo', function(src, cb)

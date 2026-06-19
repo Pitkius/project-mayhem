@@ -21,7 +21,9 @@ local QB_LOG_MAP = {
 
 local function parsePlayerId(message)
     if type(message) ~= 'string' then return nil end
-    local id = message:match('| id:%s*(%d+)') or message:match('%[(%d+)%]')
+    local id = message:match('| id:%s*(%d+)')
+        or message:match('%[(%d+)%]')
+        or message:match('%((%d+)%)')
     return id and tonumber(id) or nil
 end
 
@@ -32,7 +34,8 @@ AddEventHandler('qb-log:server:CreateLog', function(name, title, _color, message
     local webhook = Config.Webhooks and Config.Webhooks[logType]
     if not webhook or webhook == '' then return end
 
-    local src = (source and source > 0) and source or parsePlayerId(message)
+    local eventSource = tonumber(source)
+    local src = (eventSource and eventSource > 0) and eventSource or parsePlayerId(message)
     local fields = nil
     if tagEveryone then
         fields = { { name = 'Tag', value = '@everyone', inline = true } }

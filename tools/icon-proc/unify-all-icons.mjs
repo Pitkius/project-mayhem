@@ -15,7 +15,7 @@ const CY = SIZE / 2;
 
 const STYLE = {
   rim: [168, 85, 247],
-  rimAlpha: 0.1,
+  rimAlpha: 0,
   shadow: [8, 4, 18],
   highlight: [255, 255, 255],
 };
@@ -220,20 +220,26 @@ function drawCrystalsOnCanvas(c, cx, cy, color, scale = 1) {
 
 function drawMushroomDetailed(c, capColor, spotColor, stemColor, dried = false) {
   c.addGroundShadow();
-  c.addRimGlow();
-  c.fillRoundRect(116, 124, 24, 52, 10, ...stemColor, 255);
-  c.fillCircle(128, 108, 50, 34, ...capColor, 255);
-  if (!dried) {
-    [[108, 98], [138, 96], [122, 112], [145, 108], [112, 108]].forEach(([x, y]) => {
-      c.fillCircle(x, y, 7, 6, ...spotColor, 240);
-    });
-  } else {
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2;
-      c.fillCircle(128 + Math.cos(a) * 28, 108 + Math.sin(a) * 18, 3, 3, ...shade(capColor, 0.7), 200);
+  const mushrooms = dried
+    ? [[128, 132, 1], [102, 142, 0.82], [154, 138, 0.88]]
+    : [[128, 128, 1], [100, 138, 0.85], [156, 134, 0.9]];
+  mushrooms.forEach(([mx, my, sc], idx) => {
+    const stemW = Math.round(20 * sc);
+    const stemH = Math.round(46 * sc);
+    c.fillRoundRect(mx - stemW / 2, my, stemW, stemH, Math.round(8 * sc), ...stemColor, 255);
+    c.fillCircle(mx, my - 6 * sc, 44 * sc, 30 * sc, ...capColor, 255);
+    if (!dried) {
+      [[mx - 14 * sc, my - 12 * sc], [mx + 10 * sc, my - 14 * sc], [mx, my - 4 * sc], [mx + 16 * sc, my - 2 * sc]].forEach(([x, y]) => {
+        c.fillCircle(x, y, 7 * sc, 6 * sc, ...spotColor, 245);
+      });
+    } else {
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        c.fillCircle(mx + Math.cos(a) * 22 * sc, my - 6 * sc + Math.sin(a) * 14 * sc, 3 * sc, 3 * sc, ...shade(capColor, 0.72), 210);
+      }
     }
-  }
-  c.fillCircle(110, 96, 12, 8, ...STYLE.highlight, 55);
+    if (idx === 0) c.fillCircle(mx - 14 * sc, my - 18 * sc, 12 * sc, 8 * sc, ...STYLE.highlight, 65);
+  });
 }
 
 function drawCokeBrickIcon(c) {
@@ -355,11 +361,15 @@ function drawToolBox(c) {
 
 function drawScale(c) {
   c.addGroundShadow();
-  c.addRimGlow();
-  c.fillRoundRect(98, 130, 60, 14, 4, 80, 88, 105, 255);
-  c.fillRect(124, 98, 8, 34, 100, 108, 125, 255);
-  c.fillCircle(104, 148, 18, 8, 130, 135, 150, 255);
-  c.fillCircle(152, 148, 18, 8, 130, 135, 150, 255);
+  c.fillRoundRect(88, 138, 80, 12, 5, ...hex('#3f3f46'), 255);
+  c.fillRoundRect(96, 118, 64, 24, 6, ...hex('#18181b'), 255);
+  c.fillRoundRect(102, 124, 52, 12, 3, ...hex('#22c55e'), 200);
+  c.fillRect(108, 126, 28, 3, ...hex('#86efac'), 180);
+  c.fillRect(138, 126, 8, 3, ...hex('#4ade80'), 160);
+  c.fillCircle(104, 150, 14, 6, ...hex('#71717a'), 255);
+  c.fillCircle(152, 150, 14, 6, ...hex('#71717a'), 255);
+  c.fillCircle(104, 150, 10, 4, ...hex('#a1a1aa'), 220);
+  c.fillCircle(152, 150, 10, 4, ...hex('#a1a1aa'), 220);
 }
 
 function drawGloves(c) {
@@ -567,7 +577,11 @@ function writeIcon(name) {
 }
 
 let count = 0;
+const onlyArg = process.argv.find((a) => a.startsWith('--only='));
+const onlySet = onlyArg ? new Set(onlyArg.slice(7).split(',').map((s) => s.trim()).filter(Boolean)) : null;
+
 for (const name of Object.keys(GENERATORS)) {
+  if (onlySet && !onlySet.has(name)) continue;
   if (writeIcon(name)) {
     console.log('generated', `${name}.png`);
     count++;
@@ -575,6 +589,7 @@ for (const name of Object.keys(GENERATORS)) {
 }
 
 for (const [dest, src] of Object.entries(EXTRA_COPIES)) {
+  if (onlySet && !onlySet.has(dest)) continue;
   const srcPath = path.join(imagesDir, `${src}.png`);
   const destPath = path.join(imagesDir, `${dest}.png`);
   if (fs.existsSync(srcPath)) {

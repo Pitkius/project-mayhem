@@ -261,6 +261,10 @@ local function isReloadBusy()
     return isReloading or GetGameTimer() < reloadGuardUntil
 end
 
+local function isWeaponDrawBusy()
+    return _G.QBWeaponDrawBusy == true
+end
+
 local function snapshotClipState(ped, weaponHash)
     local hasClip, clipNow = GetAmmoInClip(ped, weaponHash)
     clipNow = hasClip and (tonumber(clipNow) or 0) or 0
@@ -510,7 +514,7 @@ end
 --- Visi inventoriaus ginklai ant pedo (paslėpti), išskyrus dabar pasirinktą — kad matytųsi ant nugaros/kojų.
 function applyHolsteredWeaponsFromInventory(force)
     if not LocalPlayer.state.isLoggedIn then return end
-    if not force and isReloadBusy() then return end
+    if not force and (isReloadBusy() or isWeaponDrawBusy()) then return end
     if currentWeapon and isThrowableInventoryWeaponName(currentWeapon) then return end
     local items = getItemsFromCore()
     local sig = buildHolsterVisualSignature(items)
@@ -614,11 +618,21 @@ end)
 RegisterNetEvent('QBCore:Player:UpdatePlayerDataField', function(field, _)
     PlayerData = QBCore.Functions.GetPlayerData() or {}
     if field == 'items' then
-        if isReloadBusy() then return end
+        if isReloadBusy() or isWeaponDrawBusy() then return end
         if not (currentWeapon and isThrowableInventoryWeaponName(currentWeapon)) then
             scheduleHolsteredWeaponVisuals()
         end
     end
+end)
+
+AddEventHandler('qb-weapons:client:HolsterVisualsAfterDraw', function()
+    if isReloadBusy() then return end
+    if currentWeapon and isThrowableInventoryWeaponName(currentWeapon) then return end
+    scheduleHolsteredWeaponVisuals()
+end)
+
+exports('IsWeaponDrawBusy', function()
+    return isWeaponDrawBusy()
 end)
 
 -- Functions

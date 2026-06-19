@@ -53,6 +53,38 @@ Config.Pay = {
 }
 
 Config.DefaultStartHubId = 'ls_docks'
+
+--- Logistikos centras (planšetė, furgonas, dėžių pakrovimas).
+Config.LogisticsCenter = {
+    terminal = {
+        coords = vector3(1206.2418, -3157.0623, 5.5277),
+        heading = 175.5256,
+    },
+    truckSpawn = {
+        coords = vector3(1218.9822, -3193.9375, 5.5279),
+        heading = 181.2378,
+    },
+    truckModel = 'mule',
+    boxProp = 'hei_prop_heist_box',
+    boxCount = { min = 3, max = 8 },
+    spotRadius = 1.85,
+    truckLoadRadius = 4.8,
+    boxSpots = {
+        { coords = vector3(1218.9540, -3176.1790, 5.5279), heading = 261.4153 },
+        { coords = vector3(1215.5833, -3162.7029, 5.5278), heading = 88.5626 },
+        { coords = vector3(1215.6646, -3156.6306, 5.5278), heading = 82.0240 },
+        { coords = vector3(1219.0490, -3147.3210, 5.5278), heading = 268.3811 },
+        { coords = vector3(1227.8285, -3149.0527, 5.5278), heading = 276.8595 },
+        { coords = vector3(1227.7533, -3161.2925, 5.5278), heading = 274.4042 },
+        { coords = vector3(1224.2358, -3176.4561, 5.5279), heading = 84.8647 },
+        { coords = vector3(1224.2406, -3169.7268, 5.5278), heading = 82.9993 },
+    },
+    anims = {
+        pickup = { dict = 'random@domestic', clip = 'pickup_low', flag = 1, duration = 1200 },
+        carry = { dict = 'anim@heists@box_carry@', clip = 'idle', flag = 49 },
+        place = { dict = 'mp_common', clip = 'givetake1_a', flag = 1, duration = 1400 },
+    },
+}
 --- Jei true — serverio atsarginis kelio atstumas (tik kol klientas negrąžino tikslaus)
 Config.RoadDistanceFactor = 1.28
 
@@ -70,8 +102,8 @@ Config.RegistrationTerminals = {
         id = 'logistics_center',
         label = 'Logistikos centras',
         hubId = 'ls_docks',
-        coords = vector3(1206.3842, -3249.9958, 7.0952),
-        heading = 174.3897,
+        coords = vector3(1206.2418, -3157.0623, 5.5277),
+        heading = 175.5256,
         blip = { sprite = 477, color = 47, scale = 0.85, label = 'Logistikos centras' },
     },
 }
@@ -80,8 +112,8 @@ Config.Hubs = {
     ls_docks = {
         label = 'Logistikos centras',
         region = 'los_santos',
-        coords = vector3(1206.3842, -3249.9958, 7.0952),
-        radius = 35.0,
+        coords = vector3(1206.2418, -3157.0623, 5.5277),
+        radius = 45.0,
     },
     airport_cargo = {
         label = 'Oro uosto kroviniai',

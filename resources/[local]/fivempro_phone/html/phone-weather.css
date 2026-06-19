@@ -1,0 +1,153 @@
+.scroll-body.weather-body {
+  padding: 12px 14px 24px !important;
+  background: var(--app-bg, #0a0812);
+}
+
+.wx-app {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wx-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #f5f0ff;
+}
+
+.wx-cities {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.wx-city {
+  text-align: left;
+  border: 1px solid var(--glass-border, rgba(191, 95, 255, 0.18));
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  padding: 10px 12px;
+  color: #e8e0f5;
+  cursor: pointer;
+}
+
+.wx-city strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.wx-city span {
+  display: block;
+  font-size: 0.72rem;
+  opacity: 0.72;
+  margin-top: 2px;
+}
+
+.wx-city.active {
+  border-color: rgba(191, 95, 255, 0.55);
+  background: rgba(191, 95, 255, 0.14);
+  box-shadow: 0 0 0 1px rgba(191, 95, 255, 0.12);
+}
+
+.wx-card {
+  padding: 14px;
+}
+
+.wx-now {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.wx-now-icon svg {
+  width: 52px;
+  height: 52px;
+  stroke: #ffd76a;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.wx-now-temp {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wx-now-label {
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+.wx-days {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.wx-day-tab {
+  flex: 0 0 auto;
+  border: 1px solid var(--glass-border, rgba(191, 95, 255, 0.18));
+  background: rgba(255, 255, 255, 0.04);
+  color: #ddd2f2;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.wx-day-tab.active {
+  background: linear-gradient(135deg, #9d4edd, #bf5fff);
+  border-color: transparent;
+  color: #fff;
+}
+
+.wx-hourly {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 42vh;
+  overflow-y: auto;
+}
+
+.wx-hour {
+  display: grid;
+  grid-template-columns: 52px 34px 42px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.78rem;
+}
+
+.wx-hour.now {
+  border-color: rgba(191, 95, 255, 0.45);
+  background: rgba(191, 95, 255, 0.1);
+}
+
+.wx-hour-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: #c9b8ff;
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.wx-hour-temp {
+  font-weight: 600;
+}
+
+.wx-hour-label {
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wx-loading {
+  text-align: center;
+  padding: 12px 0;
+}

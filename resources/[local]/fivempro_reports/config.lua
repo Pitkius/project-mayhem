@@ -14,16 +14,10 @@ Config.Reports = {
     OpenKeyDescription = 'Atidaryti pagalbos centrą',
 
     Categories = {
-        { id = 'player_violation', label = 'Žaidėjo pažeidimas', icon = '⚠️', color = '#f87171', priority = 'high' },
-        { id = 'bug', label = 'Klaida (Bug)', icon = '🐛', color = '#fbbf24', priority = 'medium' },
-        { id = 'money_items', label = 'Pinigų / daiktų problema', icon = '💰', color = '#f87171', priority = 'high' },
-        { id = 'vehicle', label = 'Transporto problema', icon = '🚗', color = '#60a5fa', priority = 'medium' },
-        { id = 'property', label = 'NT / būsto problema', icon = '🏠', color = '#60a5fa', priority = 'medium' },
-        { id = 'gang', label = 'Gaujos problema', icon = '👥', color = '#a78bfa', priority = 'medium' },
-        { id = 'police', label = 'Policijos problema', icon = '🚔', color = '#38bdf8', priority = 'medium' },
-        { id = 'medic', label = 'Medikų problema', icon = '🚑', color = '#34d399', priority = 'medium' },
-        { id = 'question', label = 'Klausimas administracijai', icon = '❓', color = '#93c5fd', priority = 'low' },
-        { id = 'other', label = 'Kita', icon = '📝', color = '#c4b5fd', priority = 'medium' },
+        { id = 'player_violation', label = 'Žaidėjo pažeidimas', icon = 'violation', color = '#f87171', priority = 'high' },
+        { id = 'bug', label = 'Klaida (Bug)', icon = 'bug', color = '#fbbf24', priority = 'medium' },
+        { id = 'question', label = 'Klausimas', icon = 'question', color = '#93c5fd', priority = 'low' },
+        { id = 'other', label = 'Kita', icon = 'other', color = '#c4b5fd', priority = 'medium' },
     },
 
     PriorityLabels = {

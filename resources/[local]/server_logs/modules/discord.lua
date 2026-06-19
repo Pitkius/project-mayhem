@@ -28,13 +28,14 @@ local function buildEmbed(logType, title, description, fields, source)
         fields = fields or {},
     }
 
-    if source and source > 0 then
-        local name = GetPlayerName(source) or 'Unknown'
-        table.insert(embed.fields, 1, { name = 'Player', value = ('%s [%s]'):format(name, source), inline = true })
+    local playerId = tonumber(source)
+    if playerId and playerId > 0 then
+        local name = GetPlayerName(playerId) or 'Unknown'
+        table.insert(embed.fields, 1, { name = 'Player', value = ('%s [%s]'):format(name, playerId), inline = true })
         if Identifiers and Identifiers.GetFormatted then
             table.insert(embed.fields, {
                 name = 'Identifiers',
-                value = Identifiers.GetFormatted(source):sub(1, 1024),
+                value = Identifiers.GetFormatted(playerId):sub(1, 1024),
                 inline = false,
             })
         end

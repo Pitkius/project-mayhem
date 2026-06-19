@@ -345,3 +345,15 @@ exports('getTime', function()
 
     return hour,minute
 end)
+
+exports('getGameMinutes', function()
+    return math.floor(baseTime + timeOffset)
+end)
+
+exports('getGameDayHour', function()
+    local total = math.floor(baseTime + timeOffset)
+    local day = math.floor(total / 1440)
+    local hour = math.floor((total % 1440) / 60)
+    local minute = total % 60
+    return day, hour, minute, total
+end)

@@ -255,7 +255,8 @@ CreateThread(function()
         local ped = PlayerPedId()
         if ped ~= 0 and DoesEntityExist(ped) then
             SetPedCanPeekInCover(ped, false)
-            if IsPedInCover(ped, false) or IsPedGoingIntoCover(ped) then
+            local drawBusy = GetResourceState('qb-weapons') == 'started' and _G.QBWeaponDrawBusy == true
+            if not drawBusy and (IsPedInCover(ped, false) or IsPedGoingIntoCover(ped)) then
                 ClearPedTasks(ped)
             end
         end
@@ -607,6 +608,10 @@ local NPC_VEHICLE_POP = {
 }
 
 local unlockedNpcVehicles = {}
+local lockedNpcVehicles = {}
+local configuredNpcDrivers = {}
+
+local TASK_EXIT_VEHICLE = 167
 
 local function npcVehicleNetId(veh)
     if not veh or veh == 0 or not NetworkGetEntityIsNetworked(veh) then return nil end
@@ -622,7 +627,10 @@ end
 
 function MarkNpcVehicleUnlocked(veh)
     local netId = npcVehicleNetId(veh)
-    if netId then unlockedNpcVehicles[netId] = true end
+    if netId then
+        unlockedNpcVehicles[netId] = true
+        lockedNpcVehicles[veh] = nil
+    end
 end
 
 exports('MarkNpcVehicleUnlocked', MarkNpcVehicleUnlocked)
@@ -651,36 +659,58 @@ end
 
 local function lockNpcVehicle(veh)
     if isNpcVehicleUnlocked(veh) then return end
+    if lockedNpcVehicles[veh] then return end
+    if GetVehicleDoorLockStatus(veh) == 2 then
+        lockedNpcVehicles[veh] = true
+        return
+    end
     SetVehicleDoorsLocked(veh, 2)
-    SetVehicleDoorsLockedForAllPlayers(veh, true)
-    SetVehicleDoorsLockedForPlayer(veh, PlayerId(), true)
     SetVehicleNeedsToBeHotwired(veh, false)
+    lockedNpcVehicles[veh] = true
+end
+
+local function resumeNpcDriving(ped, veh)
+    if not ped or ped == 0 or not veh or veh == 0 then return end
+    if not IsPedInVehicle(ped, veh, false) then return end
+    if GetIsTaskActive(ped, TASK_EXIT_VEHICLE) then
+        ClearPedTasks(ped)
+    end
+    if not GetIsTaskActive(ped, 169) and not GetIsTaskActive(ped, 165) then
+        local speedKmh = GetEntitySpeed(veh) * 3.6
+        TaskVehicleDriveWander(ped, veh, math.max(12.0, speedKmh), 786603)
+    end
 end
 
 local function keepNpcDriverInVehicle(ped, veh)
     if not ped or ped == 0 or not DoesEntityExist(ped) then return end
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    if IsPedAPlayer(ped) then return end
+
+    if configuredNpcDrivers[ped] then
+        if not IsPedInVehicle(ped, veh, false) then return end
+        if GetIsTaskActive(ped, TASK_EXIT_VEHICLE) then
+            resumeNpcDriving(ped, veh)
+        end
+        return
+    end
 
     SetPedCanBeDraggedOut(ped, false)
     SetPedStayInVehicleWhenJacked(ped, true)
     SetPedCanBeKnockedOffVehicle(ped, 1)
-    SetPedConfigFlag(ped, 184, true) -- neitraukti iš mašinos
-    SetPedConfigFlag(ped, 251, true) -- lieka sėdėje kai bando carjack
+    SetPedConfigFlag(ped, 32, false)
+    SetPedConfigFlag(ped, 184, true)
+    SetPedConfigFlag(ped, 251, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedFleeAttributes(ped, 0, false)
-    SetPedCombatAttributes(ped, 3, false)  -- negali palikti transporto
+    SetPedCombatAttributes(ped, 3, false)
     SetPedCombatAttributes(ped, 17, false)
     SetPedKeepTask(ped, true)
     SetDriverAbility(ped, 1.0)
     SetDriverAggressiveness(ped, 0.35)
+    configuredNpcDrivers[ped] = true
 
-    if IsPedInAnyVehicle(ped, false) then
-        for _, taskId in ipairs({ 2, 165, 167, 169 }) do
-            if GetIsTaskActive(ped, taskId) then
-                ClearPedTasks(ped)
-                break
-            end
-        end
+    if IsPedInVehicle(ped, veh, false) and GetIsTaskActive(ped, TASK_EXIT_VEHICLE) then
+        resumeNpcDriving(ped, veh)
     end
 end
 
@@ -693,11 +723,22 @@ local function rememberAmbientDriver(ped, veh)
     }
 end
 
-local function pruneAmbientDriverMemory()
+local function pruneNpcVehicleCaches()
     local now = GetGameTimer()
     for ped, row in pairs(ambientDriverMemory) do
         if now > row.untilMs or not DoesEntityExist(ped) or not DoesEntityExist(row.veh) then
             ambientDriverMemory[ped] = nil
+            configuredNpcDrivers[ped] = nil
+        end
+    end
+    for ped in pairs(configuredNpcDrivers) do
+        if not DoesEntityExist(ped) then
+            configuredNpcDrivers[ped] = nil
+        end
+    end
+    for veh in pairs(lockedNpcVehicles) do
+        if not DoesEntityExist(veh) then
+            lockedNpcVehicles[veh] = nil
         end
     end
 end
@@ -800,7 +841,7 @@ CreateThread(function()
             end
         end
 
-        pruneAmbientDriverMemory()
+        pruneNpcVehicleCaches()
         if nearTraffic then
             for ped, row in pairs(ambientDriverMemory) do
                 tryReturnAmbientDriverToVehicle(ped, row.veh)

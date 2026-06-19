@@ -90,7 +90,7 @@ local function serializeReport(report, viewerSrc, forStaff)
         citizenid = report.citizenid,
         category = report.category,
         categoryLabel = cat and cat.label or report.category,
-        categoryIcon = cat and cat.icon or '📝',
+        categoryIcon = cat and cat.icon or 'other',
         categoryColor = cat and cat.color or '#a78bfa',
         title = report.title,
         message = report.message,

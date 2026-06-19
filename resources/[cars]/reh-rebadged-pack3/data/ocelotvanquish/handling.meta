@@ -8,7 +8,7 @@
       <handlingName>ocelotvanquish</handlingName>
     <fMass value="1410.0"/>
     <fInitialDragCoeff value="2.000000"/>
-    <fDownforceModifier value="1.20"/>
+    <fDownforceModifier value="0.70"/>
     <fPercentSubmerged value="85.000000"/>
     <vecCentreOfMassOffset x="0.000000" y="-0.000407" z="0.050611"/>
     <vecInertiaMultiplier x="1.100000" y="1.360000" z="1.575000"/>

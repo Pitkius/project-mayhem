@@ -1,17 +1,17 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local uiOpen = false
-local deliveryState = nil
+deliveryState = nil
 local missionBlip = nil
 
-local function clearBlip()
+function clearBlip()
     if missionBlip and DoesBlipExist(missionBlip) then
         RemoveBlip(missionBlip)
     end
     missionBlip = nil
 end
 
-local function setMissionBlip(coords, label, route)
+function setMissionBlip(coords, label, route)
     clearBlip()
     missionBlip = AddBlipForCoord(coords.x, coords.y, coords.z)
     SetBlipSprite(missionBlip, route and 1 or 478)
@@ -128,12 +128,24 @@ end
 RegisterNetEvent('fivempro_trucking:client:startDelivery', function(state)
     deliveryState = state
     if state and state.contract then
-        setMissionBlip(state.contract.pickup, 'Paėmimas: ' .. (state.contract.pickupLabel or ''), true)
+        if state.phase == 'loading' then
+            TruckingLogisticsSpawnTruck()
+            local cfg = Config.LogisticsCenter or {}
+            local center = cfg.truckSpawn and cfg.truckSpawn.coords or state.contract.pickup
+            setMissionBlip(center, 'Pakrovimas — logistikos centras', false)
+            QBCore.Functions.Notify(
+                ('Kontraktas priimtas — pakrauk furgoną (%s dėžės).'):format(state.boxesRequired or '?'),
+                'success'
+            )
+        else
+            setMissionBlip(state.contract.pickup, 'Paėmimas: ' .. (state.contract.pickupLabel or ''), true)
+        end
     end
 end)
 
 RegisterNetEvent('fivempro_trucking:client:clearDelivery', function()
     deliveryState = nil
+    TruckingLogisticsCleanup()
     clearBlip()
 end)
 
@@ -214,7 +226,7 @@ RegisterNUICallback('trucking:acceptContract', function(data, cb)
     QBCore.Functions.TriggerCallback('fivempro_trucking:server:acceptContract', function(res)
         if res and res.ok then
             closeUI()
-            QBCore.Functions.Notify('Kontraktas priimtas — važiuok į paėmimo vietą.', 'success')
+            QBCore.Functions.Notify('Kontraktas priimtas — eik į logistikos centrą krauti furgoną.', 'success')
         elseif res and res.reason then
             QBCore.Functions.Notify(res.reason, 'error')
         end
@@ -308,7 +320,7 @@ local function setupTargetZones()
                 options = {
                     {
                         icon = 'fas fa-truck',
-                        label = 'TruckNet Logistics',
+                        label = 'CargoNet — planšetė',
                         action = openTerminalMenu,
                     },
                 },
@@ -351,7 +363,7 @@ CreateThread(function()
                 DrawMarker(1, c.x, c.y, c.z - 1.0, 0, 0, 0, 0, 0, 0, 2.2, 2.2, 1.0, 251, 146, 60, 140, false, false, 2, false, nil, nil, false)
                 if dist < 2.8 then
                     BeginTextCommandDisplayHelp('STRING')
-                    AddTextComponentSubstringPlayerName('~INPUT_CONTEXT~ TruckNet Logistics')
+                    AddTextComponentSubstringPlayerName('~INPUT_CONTEXT~ CargoNet — planšetė')
                     EndTextCommandDisplayHelp(0, false, true, -1)
                     if IsControlJustReleased(0, 38) then
                         openTerminalMenu()
@@ -371,46 +383,37 @@ CreateThread(function()
             local ped = PlayerPedId()
             local pos = GetEntityCoords(ped)
             local c = deliveryState.contract
-            if deliveryState.phase == 'pickup' then
-                local hub = vector3(c.pickup.x, c.pickup.y, c.pickup.z)
-                local dist = #(pos - hub)
-                if dist < (Config.PickupRadius or 18.0) then
-                    DrawMarker(1, hub.x, hub.y, hub.z - 1.0, 0, 0, 0, 0, 0, 0, 3.5, 3.5, 1.2, 167, 139, 250, 120, false, false, 2, false, nil, nil, false)
-                    if dist < 6.0 and IsControlJustReleased(0, 38) then
-                        if not isAllowedTruck() then
-                            QBCore.Functions.Notify('Reikia tinkamo transporto (Mule, Benson, Phantom…).', 'error')
-                        else
-                            runLocalProgress(Config.LoadDurationMs or 6000, 'Kraunamas krovinys…')
-                            QBCore.Functions.TriggerCallback('fivempro_trucking:server:loadCargo', function(res)
-                                if res and res.ok then
-                                    deliveryState.phase = 'delivery'
-                                    setMissionBlip(c.delivery, 'Pristatymas: ' .. (c.deliveryLabel or ''), true)
-                                    QBCore.Functions.Notify('Krovinys pakrautas — važiuok į pristatymo vietą.', 'primary')
-                                end
-                            end)
-                        end
-                    end
-                end
-            elseif deliveryState.phase == 'delivery' then
+            if deliveryState.phase == 'delivery' then
                 local hub = vector3(c.delivery.x, c.delivery.y, c.delivery.z)
                 local dist = #(pos - hub)
                 if dist < (Config.DeliveryRadius or 22.0) then
                     DrawMarker(1, hub.x, hub.y, hub.z - 1.0, 0, 0, 0, 0, 0, 0, 4.0, 4.0, 1.4, 124, 58, 237, 130, false, false, 2, false, nil, nil, false)
                     if dist < 7.0 and IsControlJustReleased(0, 38) then
-                        runLocalProgress(Config.UnloadDurationMs or 7000, 'Iškraunamas krovinys…')
-                        local cond = deliveryState.condition or 100
-                        QBCore.Functions.TriggerCallback('fivempro_trucking:server:completeDelivery', function(res)
-                            if res and res.ok then
-                                clearBlip()
-                                deliveryState = nil
-                                QBCore.Functions.Notify(
-                                    ('Pristatyta! $%s (XP +%s)'):format(res.pay or 0, res.xpGain or 0),
-                                    'success'
-                                )
-                            else
-                                QBCore.Functions.Notify((res and res.reason) or 'Pristatymas nepavyko.', 'error')
-                            end
-                        end, cond)
+                        local veh = GetVehiclePedIsIn(ped, false)
+                        local work = TruckingLogisticsGetTruck()
+                        if veh == 0 or GetPedInVehicleSeat(veh, -1) ~= ped then
+                            QBCore.Functions.Notify('Pristatymui reikia vairuoti furgoną.', 'error')
+                        elseif work ~= 0 and veh ~= work then
+                            QBCore.Functions.Notify('Naudok logistikos centro furgoną.', 'error')
+                        elseif not isAllowedTruck() then
+                            QBCore.Functions.Notify('Reikia tinkamo transporto (Mule, Benson, Phantom…).', 'error')
+                        else
+                            runLocalProgress(Config.UnloadDurationMs or 7000, 'Iškraunamas krovinys…')
+                            local cond = deliveryState.condition or 100
+                            QBCore.Functions.TriggerCallback('fivempro_trucking:server:completeDelivery', function(res)
+                                if res and res.ok then
+                                    clearBlip()
+                                    deliveryState = nil
+                                    TruckingLogisticsCleanup()
+                                    QBCore.Functions.Notify(
+                                        ('Pristatyta! $%s (XP +%s)'):format(res.pay or 0, res.xpGain or 0),
+                                        'success'
+                                    )
+                                else
+                                    QBCore.Functions.Notify((res and res.reason) or 'Pristatymas nepavyko.', 'error')
+                                end
+                            end, cond)
+                        end
                     end
                 end
             end
@@ -458,5 +461,6 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     clearBlip()
+    TruckingLogisticsCleanup()
     if uiOpen then SetNuiFocus(false, false) end
 end)

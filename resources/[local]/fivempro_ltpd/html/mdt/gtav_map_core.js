@@ -28,10 +28,10 @@ window.GtavMapCore = (function () {
     return Number.isFinite(n) ? n : fallback;
   }
 
-  function solve3x3(A, b) {
+  function solveLinear(A, b) {
     const M = A.map((row) => row.slice());
     const x = b.slice();
-    const n = 3;
+    const n = M.length;
     for (let i = 0; i < n; i += 1) {
       let piv = i;
       for (let r = i + 1; r < n; r += 1) {
@@ -53,6 +53,10 @@ window.GtavMapCore = (function () {
     return x;
   }
 
+  function solve3x3(A, b) {
+    return solveLinear(A, b);
+  }
+
   function fitAffineGameToNorm(points, targetKey) {
     const ata = [
       [0, 0, 0],
@@ -69,6 +73,35 @@ window.GtavMapCore = (function () {
       }
     });
     return solve3x3(ata, atb);
+  }
+
+  function solveLs(rows, target) {
+    const m = rows[0].length;
+    const ata = Array.from({ length: m }, () => Array(m).fill(0));
+    const atb = Array(m).fill(0);
+    rows.forEach((row, i) => {
+      const y = target[i];
+      for (let j = 0; j < m; j += 1) {
+        atb[j] += row[j] * y;
+        for (let k = 0; k < m; k += 1) ata[j][k] += row[j] * row[k];
+      }
+    });
+    return solveLinear(ata, atb);
+  }
+
+  /** Projekcinė transformacija (gx,gy) → (u,v) — tiksliau nei afini ant kvadratinio PNG. */
+  function fitHomographyGameToNorm(points) {
+    const rows = [];
+    const rhs = [];
+    points.forEach((p) => {
+      const { gx, gy, u, v } = p;
+      rows.push([gx, gy, 1, 0, 0, 0, -u * gx, -u * gy]);
+      rhs.push(u);
+      rows.push([0, 0, 0, gx, gy, 1, -v * gx, -v * gy]);
+      rhs.push(v);
+    });
+    if (rows.length < 8) return null;
+    return solveLs(rows, rhs);
   }
 
   /**
@@ -110,6 +143,15 @@ window.GtavMapCore = (function () {
 
     if (clean.length < 3) return cfg;
 
+    const projection = String(cfg.projection || "identity").toLowerCase();
+    if (projection === "homography" && clean.length >= 4) {
+      const homographyH = fitHomographyGameToNorm(clean);
+      if (homographyH) {
+        cfg.homographyH = homographyH;
+        return cfg;
+      }
+    }
+
     const coeffsU = fitAffineGameToNorm(clean, "u");
     const coeffsV = fitAffineGameToNorm(clean, "v");
     if (!coeffsU || !coeffsV) return cfg;
@@ -120,6 +162,16 @@ window.GtavMapCore = (function () {
   }
 
   function gameToNormUV(gx, gy, cfg) {
+    if (cfg.homographyH && cfg.homographyH.length >= 8) {
+      const h = cfg.homographyH;
+      const den = h[6] * gx + h[7] * gy + 1;
+      if (Math.abs(den) < 1e-12) return [0, 0];
+      return [
+        (h[0] * gx + h[1] * gy + h[2]) / den,
+        (h[3] * gx + h[4] * gy + h[5]) / den,
+      ];
+    }
+
     if (cfg.affineU && cfg.affineV) {
       const u = cfg.affineU[0] * gx + cfg.affineU[1] * gy + cfg.affineU[2];
       const v = cfg.affineV[0] * gx + cfg.affineV[1] * gy + cfg.affineV[2];
@@ -168,10 +220,13 @@ window.GtavMapCore = (function () {
     const maxY = num(t.gameMax?.y, ISLAND.gameMax.y);
     const file = t.imageFile || defaultImageFile || "mdt/asset/gtav_satellite_2048.png";
 
-    let projection = String(t.projection || "identity").toLowerCase();
+    let projection = String(t.projection || "linear").toLowerCase();
     const hasCalibration = Array.isArray(t.calibration) && t.calibration.length >= 3;
-    if (hasCalibration && projection === "identity") {
-      projection = "affine";
+    if (hasCalibration && (projection === "identity" || projection === "linear")) {
+      projection = t.calibration.length >= 4 ? "homography" : "affine";
+    }
+    if (Array.isArray(t.homographyH) && t.homographyH.length >= 8) {
+      projection = "homography";
     }
 
     const out = {
@@ -197,6 +252,10 @@ window.GtavMapCore = (function () {
       imgH: num(t.imageHeight, ISLAND.imageHeight),
       imageUrl: nuiImageUrl(file, resourceName),
     };
+
+    if (Array.isArray(t.homographyH) && t.homographyH.length >= 8) {
+      out.homographyH = t.homographyH.map((v) => num(v, 0));
+    }
 
     if (hasCalibration) {
       applyCalibration(out, t.calibration);
@@ -240,7 +299,10 @@ window.GtavMapCore = (function () {
     const mapRangeX = cfg.maxX - cfg.minX || 1;
     const mapRangeY = cfg.maxY - cfg.minY || 1;
 
-    if (projection === "affine" && cfg.affineU && cfg.affineV) {
+    if (
+      (projection === "affine" || projection === "homography") &&
+      (cfg.affineU || cfg.homographyH)
+    ) {
       const uv = gameToNormUV(x, y, cfg);
       const lng = cfg.minX + uv[0] * mapRangeX * scaleX + ox;
       const lat = cfg.maxY - uv[1] * mapRangeY * scaleY + oy;

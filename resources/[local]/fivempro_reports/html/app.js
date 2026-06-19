@@ -30,8 +30,43 @@ function fmtTime(ts) {
   return d.toLocaleString('lt-LT', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+const ICONS = {
+  violation: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 2.5 19.5h19L12 3.5z"/><path d="M12 9.5v5"/><circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none"/></svg>',
+  bug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13a4 4 0 1 0 8 0 4 4 0 0 0-8 0z"/><path d="m9 3 1.5 3M15 3 13.5 6M4 8l3 1M20 8l-3 1M4 16l3-1M20 16l-3-1M12 17v4"/></svg>',
+  question: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.7 2.7 0 1 1 4.3 2.1c-.9.7-1.3 1.2-1.3 2.2"/><circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none"/></svg>',
+  other: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M8.5 9h7M8.5 12.5h7M8.5 16h4.5"/></svg>',
+  headset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="7" rx="2"/><rect x="17" y="13" width="4" height="7" rx="2"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>',
+  inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="m4 10 4 3h8l4-3"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3z"/></svg>',
+  image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m5.5 17 4.5-4 3 3 2.5-2.5L18.5 17"/></svg>',
+  video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 10.5 21 8v8l-5-2.5z"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a3.5 3.5 0 0 0 5 0l2-2a3.5 3.5 0 0 0-5-5l-1 1"/><path d="M14 10a3.5 3.5 0 0 0-5 0l-2 2a3.5 3.5 0 0 0 5 5l1-1"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  progress: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 7.8 4.5"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.2 2.2 2.2L16.5 8.5"/></svg>',
+};
+
+function iconHtml(name, extraClass = '') {
+  const svg = ICONS[name] || ICONS.other;
+  return `<span class="ui-icon ${extraClass}">${svg}</span>`;
+}
+
+function categoryLabelHtml(cat) {
+  if (!cat) return '—';
+  return `${iconHtml(cat.icon, 'ui-icon--sm')}<span>${escapeHtml(cat.label)}</span>`;
+}
+
+function attachIconHtml(type) {
+  if (type === 'image') return iconHtml('image', 'ui-icon--sm');
+  if (type === 'video') return iconHtml('video', 'ui-icon--sm');
+  return iconHtml('link', 'ui-icon--sm');
+}
+
 function statusIcon(status) {
-  return ({ waiting: '🟡', in_progress: '🔵', resolved: '🟢', rejected: '🔴' })[status] || '⚪';
+  return `<span class="status-dot ${status}" aria-hidden="true"></span>`;
 }
 
 function showToast(msg) {
@@ -65,7 +100,7 @@ function renderCategories() {
     card.type = 'button';
     card.className = 'cat-card' + (state.form.category === cat.id ? ' selected' : '');
     card.innerHTML = `
-      <div class="icon">${cat.icon || '📝'}</div>
+      <div class="icon">${iconHtml(cat.icon)}</div>
       <div class="label">${cat.label}</div>
       <div class="prio">Prioritetas: ${prio[cat.priority] || cat.priority}</div>
     `;
@@ -94,7 +129,7 @@ function renderSummary() {
   const prio = cat?.priority || 'medium';
   const pl = state.bootstrap?.priorityLabels?.[prio] || prio;
   $('#summaryCard').innerHTML = `
-    <div class="summary-row"><span class="k">Kategorija</span><span>${cat ? `${cat.icon} ${cat.label}` : '—'}</span></div>
+    <div class="summary-row"><span class="k">Kategorija</span><span class="summary-cat">${categoryLabelHtml(cat)}</span></div>
     <div class="summary-row"><span class="k">Pavadinimas</span><span>${escapeHtml(state.form.title)}</span></div>
     <div class="summary-row"><span class="k">Aprašymas</span><span>${escapeHtml(state.form.message)}</span></div>
     <div class="summary-row"><span class="k">Priedai</span><span>${state.form.attachments.length ? state.form.attachments.length + ' vnt.' : 'Nėra'}</span></div>
@@ -132,10 +167,9 @@ function renderAttachments() {
   state.form.attachments.forEach((a, idx) => {
     const row = document.createElement('div');
     row.className = 'attach-row';
-    const icon = a.type === 'image' ? '📷' : a.type === 'video' ? '🎥' : '🔗';
-    row.innerHTML = `<span>${icon}</span><span>${escapeHtml(a.label || a.url)}</span>`;
+    row.innerHTML = `${attachIconHtml(a.type)}<span>${escapeHtml(a.label || a.url)}</span>`;
     const btn = document.createElement('button');
-    btn.textContent = '✕';
+    btn.textContent = '×';
     btn.addEventListener('click', () => {
       state.form.attachments.splice(idx, 1);
       renderAttachments();
@@ -198,7 +232,7 @@ function reportCardHtml(r, activeId) {
       </div>
       <div class="title">${escapeHtml(r.title)}</div>
       <div class="meta">
-        <span>${r.categoryIcon} ${escapeHtml(r.categoryLabel)}</span>
+        <span class="meta-cat">${iconHtml(r.categoryIcon, 'ui-icon--sm')}<span>${escapeHtml(r.categoryLabel)}</span></span>
         <span class="badge p-${r.priority}">${r.priorityLabel}</span>
         <span>${fmtTime(r.createdAt)}</span>
       </div>
@@ -208,8 +242,7 @@ function reportCardHtml(r, activeId) {
 
 function detailHtml(r, admin) {
   const att = (r.attachments || []).map((a) => {
-    const icon = a.type === 'image' ? '📷' : a.type === 'video' ? '🎥' : '🔗';
-    return `<a class="attach-link" href="#" data-url="${escapeHtml(a.url)}">${icon} ${escapeHtml(a.label || a.url)}</a>`;
+    return `<a class="attach-link" href="#" data-url="${escapeHtml(a.url)}">${attachIconHtml(a.type)} ${escapeHtml(a.label || a.url)}</a>`;
   }).join('') || '<p class="muted">Nėra priedų</p>';
 
   const replies = (r.replies || []).map((rep) => `
@@ -223,10 +256,10 @@ function detailHtml(r, admin) {
   if (admin && r.canManage) {
     adminBlock = `
       <div class="admin-actions">
-        <button class="btn secondary" data-action="status" data-status="in_progress">🔵 Nagrinėti</button>
-        <button class="btn secondary" data-action="status" data-status="resolved">🟢 Išspręsti</button>
-        <button class="btn secondary" data-action="status" data-status="rejected">🔴 Atmesti</button>
-        <button class="btn secondary" data-action="status" data-status="waiting">🟡 Grąžinti į laukiamus</button>
+        <button class="btn secondary" data-action="status" data-status="in_progress">Nagrinėti</button>
+        <button class="btn secondary" data-action="status" data-status="resolved">Išspręsti</button>
+        <button class="btn secondary" data-action="status" data-status="rejected">Atmesti</button>
+        <button class="btn secondary" data-action="status" data-status="waiting">Grąžinti į laukiamus</button>
       </div>
       <div class="admin-reply">
         <textarea id="adminReplyInput" rows="3" placeholder="Atsakymas žaidėjui..."></textarea>
@@ -239,14 +272,14 @@ function detailHtml(r, admin) {
     <div class="detail-head">
       <div>
         <h3>#${r.id} · ${escapeHtml(r.title)}</h3>
-        <p class="muted">${r.categoryIcon} ${escapeHtml(r.categoryLabel)} · ${fmtTime(r.createdAt)}</p>
+        <p class="muted detail-cat">${categoryLabelHtml({ icon: r.categoryIcon, label: r.categoryLabel })} · ${fmtTime(r.createdAt)}</p>
       </div>
       <div>
         <span class="badge ${r.status}">${statusIcon(r.status)} ${r.statusLabel}</span>
         <span class="badge p-${r.priority}">${r.priorityLabel}</span>
       </div>
     </div>
-    ${admin ? `<div class="detail-block"><h4>Žaidėjas</h4><p>${escapeHtml(r.name)} · ID ${r.source} · ${r.playerOnline ? '🟢 Online' : '⚫ Offline'}</p></div>` : ''}
+    ${admin ? `<div class="detail-block"><h4>Žaidėjas</h4><p>${escapeHtml(r.name)} · ID ${r.source} · <span class="online-pill ${r.playerOnline ? 'on' : 'off'}">${r.playerOnline ? 'Online' : 'Offline'}</span></p></div>` : ''}
     <div class="detail-block"><h4>Aprašymas</h4><p>${escapeHtml(r.message)}</p></div>
     <div class="detail-block"><h4>Priedai</h4>${att}</div>
     <div class="detail-block"><h4>Admin atsakymai</h4><div class="replies">${replies}</div></div>
@@ -291,7 +324,7 @@ function renderMyReports(rows) {
   const list = $('#myReportsList');
   if (!filtered.length) {
     list.innerHTML = '<div class="empty-state"><p>Reportų nėra.</p></div>';
-    $('#myReportDetail').innerHTML = '<div class="empty-state"><div class="empty-icon">📨</div><p>Pasirinkite reportą</p></div>';
+    $('#myReportDetail').innerHTML = `<div class="empty-state">${iconHtml('inbox', 'empty-icon')}<p>Pasirinkite reportą</p></div>`;
     return;
   }
   list.innerHTML = filtered.map((r) => reportCardHtml(r, state.selectedMineId)).join('');
@@ -457,7 +490,7 @@ $('#messageInput').addEventListener('input', (e) => {
 $$('.chip-btn[data-attach]').forEach((btn) => {
   btn.addEventListener('click', () => {
     state.pendingAttachType = btn.dataset.attach;
-    const titles = { image: '📷 Nuotraukos nuoroda', video: '🎥 Video nuoroda', link: '🔗 Nuoroda' };
+    const titles = { image: 'Nuotraukos nuoroda', video: 'Video nuoroda', link: 'Nuoroda' };
     $('#attachModalTitle').textContent = titles[state.pendingAttachType] || 'Pridėti nuorodą';
     $('#attachUrlInput').value = '';
     $('#attachLabelInput').value = '';
@@ -478,3 +511,17 @@ $('#attachSave').addEventListener('click', () => {
 
 $('#confirmCancel').addEventListener('click', () => $('#confirmModal').classList.add('hidden'));
 $('#confirmSubmit').addEventListener('click', submitReport);
+
+function initStaticIcons() {
+  document.querySelectorAll('[data-icon]').forEach((el) => {
+    const key = el.dataset.icon;
+    if (!key || !ICONS[key]) return;
+    el.innerHTML = ICONS[key];
+    el.classList.add('ui-icon');
+    if (el.classList.contains('nav-ico')) el.classList.add('ui-icon--nav');
+    if (el.classList.contains('empty-icon')) el.classList.add('ui-icon--empty');
+    if (el.classList.contains('brand-icon')) el.classList.add('ui-icon--brand');
+  });
+}
+
+initStaticIcons();

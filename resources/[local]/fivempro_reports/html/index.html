@@ -13,27 +13,27 @@
     <div class="shell" role="dialog" aria-label="Pagalbos centras">
       <aside class="sidebar glass">
         <div class="brand">
-          <div class="brand-icon" aria-hidden="true">🎧</div>
+          <div class="brand-icon" data-icon="headset" aria-hidden="true"></div>
           <div>
             <h1>Pagalbos centras</h1>
             <p>Sukurkite reportą ir administracija su jumis susisieks.</p>
           </div>
         </div>
         <nav class="nav" id="playerNav">
-          <button class="nav-btn active" data-view="create"><span>✨</span> Naujas reportas</button>
-          <button class="nav-btn" data-view="mine"><span>📋</span> Mano reportai</button>
+          <button class="nav-btn active" data-view="create"><span class="nav-ico" data-icon="plus"></span> Naujas reportas</button>
+          <button class="nav-btn" data-view="mine"><span class="nav-ico" data-icon="list"></span> Mano reportai</button>
         </nav>
         <nav class="nav hidden" id="adminNav">
-          <button class="nav-btn active" data-admin-filter="all"><span>📥</span> Visi reportai</button>
-          <button class="nav-btn" data-admin-filter="active"><span>🟡</span> Aktyvūs</button>
-          <button class="nav-btn" data-admin-filter="waiting"><span>⏳</span> Laukiantys</button>
-          <button class="nav-btn" data-admin-filter="in_progress"><span>🔵</span> Nagrinėjami</button>
-          <button class="nav-btn" data-admin-filter="closed"><span>✅</span> Uždaryti</button>
+          <button class="nav-btn active" data-admin-filter="all"><span class="nav-ico" data-icon="inbox"></span> Visi reportai</button>
+          <button class="nav-btn" data-admin-filter="active"><span class="nav-ico" data-icon="list"></span> Aktyvūs</button>
+          <button class="nav-btn" data-admin-filter="waiting"><span class="nav-ico" data-icon="clock"></span> Laukiantys</button>
+          <button class="nav-btn" data-admin-filter="in_progress"><span class="nav-ico" data-icon="progress"></span> Nagrinėjami</button>
+          <button class="nav-btn" data-admin-filter="closed"><span class="nav-ico" data-icon="check"></span> Uždaryti</button>
         </nav>
         <div class="sidebar-foot">
-          <div class="hint" id="staffBadge" hidden>🛡️ Admin režimas</div>
-          <button class="ghost-btn hidden" id="openAdminBtn">🛡️ Admin panelė</button>
-          <button class="ghost-btn hidden" id="openPlayerBtn">🎧 Žaidėjo režimas</button>
+          <div class="hint" id="staffBadge" hidden><span class="nav-ico" data-icon="shield"></span> Admin režimas</div>
+          <button class="ghost-btn hidden" id="openAdminBtn"><span class="nav-ico" data-icon="shield"></span> Admin panelė</button>
+          <button class="ghost-btn hidden" id="openPlayerBtn"><span class="nav-ico" data-icon="headset"></span> Žaidėjo režimas</button>
           <button class="ghost-btn" id="closeBtn">Uždaryti <kbd>ESC</kbd></button>
         </div>
       </aside>
@@ -84,9 +84,9 @@
               <h3>4. Priedai <span class="optional">(neprivaloma)</span></h3>
               <p class="muted">Nuotraukos, video ar kitos nuorodos.</p>
               <div class="attach-types">
-                <button type="button" class="chip-btn" data-attach="image">📷 Nuotrauka</button>
-                <button type="button" class="chip-btn" data-attach="video">🎥 Video nuoroda</button>
-                <button type="button" class="chip-btn" data-attach="link">🔗 Kita nuoroda</button>
+                <button type="button" class="chip-btn" data-attach="image"><span class="nav-ico" data-icon="image"></span> Nuotrauka</button>
+                <button type="button" class="chip-btn" data-attach="video"><span class="nav-ico" data-icon="video"></span> Video nuoroda</button>
+                <button type="button" class="chip-btn" data-attach="link"><span class="nav-ico" data-icon="link"></span> Kita nuoroda</button>
               </div>
               <div id="attachmentsList" class="attachments-list"></div>
             </div>
@@ -123,7 +123,7 @@
             <div class="list-panel" id="myReportsList"></div>
             <div class="detail-panel" id="myReportDetail">
               <div class="empty-state">
-                <div class="empty-icon">📨</div>
+                <div class="empty-icon" data-icon="inbox"></div>
                 <p>Pasirinkite reportą iš sąrašo</p>
               </div>
             </div>
@@ -143,7 +143,7 @@
             <div class="list-panel" id="adminReportsList"></div>
             <div class="detail-panel admin-detail" id="adminReportDetail">
               <div class="empty-state">
-                <div class="empty-icon">🛡️</div>
+                <div class="empty-icon" data-icon="shield"></div>
                 <p>Pasirinkite reportą administravimui</p>
               </div>
             </div>

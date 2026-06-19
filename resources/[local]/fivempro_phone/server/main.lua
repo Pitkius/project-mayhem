@@ -480,10 +480,24 @@ local function getInitialDataFor(src)
         LIMIT 1
     ]], { citizenid })
 
-    local notesRow = MySQL.single.await([[
-        SELECT body FROM fivempro_phone_notes WHERE citizenid = ? LIMIT 1
-    ]], { citizenid })
-    local notes = notesRow and tostring(notesRow.body or '') or ''
+    local notesRows = MySQL.query.await([[
+        SELECT id, title, body, created_at, updated_at
+        FROM fivempro_phone_notes
+        WHERE citizenid = ?
+        ORDER BY updated_at DESC
+        LIMIT ?
+    ]], { citizenid, (Config.Phone and Config.Phone.maxNotes) or 50 }) or {}
+
+    local notes = {}
+    for _, row in ipairs(notesRows) do
+        notes[#notes + 1] = {
+            id = row.id,
+            title = tostring(row.title or ''),
+            body = tostring(row.body or ''),
+            created_at = row.created_at,
+            updated_at = row.updated_at,
+        }
+    end
 
     local posts = MySQL.query.await([[
         SELECT id, author_name, caption, image_url, likes, created_at
@@ -850,17 +864,59 @@ end)
 QBCore.Functions.CreateCallback('fivempro_phone:server:saveNotes', function(source, cb, data)
     local citizenid = getCitizen(source)
     if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+
+    local noteId = tonumber(data and data.id)
+    local title = clampStr(data and data.title or '', (Config.Phone and Config.Phone.maxNoteTitleLength) or 64)
     local body = tostring(data and data.body or '')
     local maxLen = (Config.Phone and Config.Phone.maxNotesLength) or 8000
+    local maxNotes = (Config.Phone and Config.Phone.maxNotes) or 50
+
+    if title == '' then
+        return cb({ ok = false, message = 'Įveskite užrašo pavadinimą.' })
+    end
+    if body == '' then
+        return cb({ ok = false, message = 'Užrašas negali būti tuščias.' })
+    end
     if #body > maxLen then
         body = body:sub(1, maxLen)
     end
-    local exists = MySQL.scalar.await('SELECT citizenid FROM fivempro_phone_notes WHERE citizenid = ? LIMIT 1', { citizenid })
-    if exists then
-        MySQL.update.await('UPDATE fivempro_phone_notes SET body = ? WHERE citizenid = ?', { body, citizenid })
-    else
-        MySQL.insert.await('INSERT INTO fivempro_phone_notes (citizenid, body) VALUES (?, ?)', { citizenid, body })
+
+    if noteId then
+        local owned = MySQL.scalar.await(
+            'SELECT id FROM fivempro_phone_notes WHERE id = ? AND citizenid = ? LIMIT 1',
+            { noteId, citizenid }
+        )
+        if not owned then
+            return cb({ ok = false, message = 'Užrašas nerastas.' })
+        end
+        MySQL.update.await(
+            'UPDATE fivempro_phone_notes SET title = ?, body = ? WHERE id = ? AND citizenid = ?',
+            { title, body, noteId, citizenid }
+        )
+        return cb({ ok = true, note = { id = noteId, title = title, body = body } })
     end
+
+    local count = MySQL.scalar.await(
+        'SELECT COUNT(*) FROM fivempro_phone_notes WHERE citizenid = ?',
+        { citizenid }
+    ) or 0
+    if tonumber(count) >= maxNotes then
+        return cb({ ok = false, message = ('Galima išsaugoti ne daugiau kaip %d užrašų.'):format(maxNotes) })
+    end
+
+    local newId = MySQL.insert.await(
+        'INSERT INTO fivempro_phone_notes (citizenid, title, body) VALUES (?, ?, ?)',
+        { citizenid, title, body }
+    )
+    cb({ ok = true, note = { id = newId, title = title, body = body } })
+end)
+
+QBCore.Functions.CreateCallback('fivempro_phone:server:deleteNote', function(source, cb, data)
+    local citizenid = getCitizen(source)
+    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    local noteId = tonumber(data and data.id)
+    if not noteId then return cb({ ok = false, message = 'Užrašas nerastas.' }) end
+    MySQL.update.await('DELETE FROM fivempro_phone_notes WHERE id = ? AND citizenid = ?', { noteId, citizenid })
     cb({ ok = true })
 end)
 
@@ -1317,12 +1373,56 @@ CreateThread(function()
     end)
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_notes` (
+          `id` int NOT NULL AUTO_INCREMENT,
           `citizenid` varchar(60) NOT NULL,
+          `title` varchar(64) NOT NULL DEFAULT '',
           `body` mediumtext NOT NULL,
+          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
           `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          PRIMARY KEY (`citizenid`)
+          PRIMARY KEY (`id`),
+          KEY `idx_notes_owner` (`citizenid`),
+          KEY `idx_notes_updated` (`updated_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
+    pcall(function()
+        local hasId = MySQL.scalar.await([[
+            SELECT COUNT(*) FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'fivempro_phone_notes'
+              AND COLUMN_NAME = 'id'
+        ]])
+        if tonumber(hasId or 0) == 0 then
+            MySQL.query.await([[
+                CREATE TABLE IF NOT EXISTS `fivempro_phone_notes_v2` (
+                  `id` int NOT NULL AUTO_INCREMENT,
+                  `citizenid` varchar(60) NOT NULL,
+                  `title` varchar(64) NOT NULL DEFAULT '',
+                  `body` mediumtext NOT NULL,
+                  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  KEY `idx_notes_owner` (`citizenid`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ]])
+            local legacy = MySQL.query.await('SELECT citizenid, body FROM fivempro_phone_notes') or {}
+            for _, row in ipairs(legacy) do
+                local body = tostring(row.body or '')
+                if body ~= '' then
+                    local title = 'Užrašas'
+                    local firstLine = body:match('^([^\r\n]+)')
+                    if firstLine and #firstLine <= 64 then
+                        title = firstLine
+                    end
+                    MySQL.insert.await(
+                        'INSERT INTO fivempro_phone_notes_v2 (citizenid, title, body) VALUES (?, ?, ?)',
+                        { row.citizenid, title, body }
+                    )
+                end
+            end
+            MySQL.query.await('DROP TABLE fivempro_phone_notes')
+            MySQL.query.await('RENAME TABLE fivempro_phone_notes_v2 TO fivempro_phone_notes')
+        end
+    end)
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_photos` (
           `id` int NOT NULL AUTO_INCREMENT,

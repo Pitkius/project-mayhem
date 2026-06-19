@@ -30,7 +30,7 @@ const state = {
   adCategories: [],
   adProfile: null,
   photos: [],
-  notes: "",
+  notes: [],
   posts: [],
   cargoNet: { registered: false, level: 1, deliveries: 0 },
   money: { cash: 0, bank: 0 },
@@ -362,7 +362,7 @@ function hydrate(payload = {}) {
   state.adCategories = payload.adCategories || [];
   state.adProfile = payload.adProfile || null;
   state.photos = payload.photos || [];
-  state.notes = typeof payload.notes === "string" ? payload.notes : (state.notes || "");
+  state.notes = Array.isArray(payload.notes) ? payload.notes : (Array.isArray(state.notes) ? state.notes : []);
   state.posts = payload.posts || [];
   state.money = payload.money || state.money;
   state.cargoNet = payload.cargoNet || state.cargoNet || { registered: false, level: 1, deliveries: 0 };
@@ -480,15 +480,6 @@ window.renderSettingsApp = (content) => {
   });
 };
 
-window.renderWeatherApp = (content) => {
-  content.innerHTML = `<div class="card"><b>Orai Los Santos</b><p id="weatherText" class="muted">Kraunama…</p></div>`;
-  nui("getWeather", {}).then((res) => {
-    const el = document.getElementById("weatherText");
-    if (el) el.textContent = res?.label || "Giedra, ~24°C";
-  });
-};
-
-
 window.renderCargoNetApp = (content) => {
   const cn = state.cargoNet || {};
   const registered = cn.registered === true;
@@ -517,46 +508,6 @@ window.renderCargoNetApp = (content) => {
       /* fetch klaida – dažniausiai resursas perkraunamas */
     } finally {
       if (btn) btn.disabled = false;
-    }
-  });
-};
-
-window.renderNotesApp = (content) => {
-  const notes = state.notes || "";
-  const saveLabel = window.t?.("notes.save") || "Išsaugoti";
-  content.innerHTML = `<div class="card">
-    <textarea id="notesArea" rows="12" placeholder="Užrašai…">${esc(notes)}</textarea>
-    <p class="small muted" id="notesStatus" style="min-height:18px;margin-top:8px"></p>
-    <button id="btnSaveNotes" class="ios-btn primary">${esc(saveLabel)}</button>
-  </div>`;
-  const status = content.querySelector("#notesStatus");
-  const btn = content.querySelector("#btnSaveNotes");
-  btn.addEventListener("click", async () => {
-    const body = content.querySelector("#notesArea").value;
-    btn.disabled = true;
-    if (status) {
-      status.textContent = window.t?.("notes.saving") || "Saugoma…";
-      status.style.color = "";
-    }
-    try {
-      const res = await nui("saveNotes", { body });
-      if (res?.ok) {
-        state.notes = body;
-        if (status) {
-          status.textContent = window.t?.("notes.saved") || "Išsaugota";
-          status.style.color = "#34c759";
-        }
-      } else if (status) {
-        status.textContent = res?.message || window.t?.("notes.error") || "Nepavyko išsaugoti.";
-        status.style.color = "#ff6b6b";
-      }
-    } catch (_) {
-      if (status) {
-        status.textContent = window.t?.("notes.error") || "Nepavyko išsaugoti.";
-        status.style.color = "#ff6b6b";
-      }
-    } finally {
-      btn.disabled = false;
     }
   });
 };
