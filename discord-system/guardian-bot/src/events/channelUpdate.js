@@ -1,4 +1,5 @@
 import { AuditLogEvent, Events } from 'discord.js';
+import { getAuditExecutor } from '../antinuke/punish.js';
 import { sendGuildLog } from '../logs/dispatcher.js';
 
 export default {
