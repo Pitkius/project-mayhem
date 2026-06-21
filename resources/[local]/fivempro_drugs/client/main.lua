@@ -5,6 +5,7 @@ local currentStationId = nil
 local testPed = 0
 local testSupplyShopPed = 0
 local supplyShopPed = 0
+local weedSupplyShopPed = 0
 local supplyShopBlip = nil
 local productBuyerPeds = {}
 local productBuyerBlips = {}
@@ -626,11 +627,14 @@ local function setupStationBlips()
         )
     end
 
-    -- Žolės auginimas (Schedule-1 sodinimas)
-    for _, field in ipairs(Config.WeedGrowFields or {}) do
-        if field.center and field.blip and field.blip.enabled ~= false then
-            addCfgBlip(field.center, field.blip, field.blip.label or 'Kanapių auginimas')
-        end
+    -- Kanapių auginimo reikmenys (Grapeseed kalnai)
+    local weedShop = Config.WeedSupplyShopNPC
+    if weedShop and weedShop.enabled ~= false and weedShop.coords then
+        addCfgBlip(
+            (weedShop.blip and weedShop.blip.coords) or vector3(weedShop.coords.x, weedShop.coords.y, weedShop.coords.z),
+            weedShop.blip or { enabled = true, label = weedShop.label },
+            weedShop.label
+        )
     end
 
     -- Grybų rinkimas
@@ -847,6 +851,16 @@ local function openMaterialShop()
     QBCore.Functions.TriggerCallback('fivempro_drugs:server:openMaterialShop', function(res)
         if res and res.ok then
             QBCore.Functions.Notify('Pasirink prekes ir vilk į inventorių.', 'primary', 4500)
+            return
+        end
+        QBCore.Functions.Notify((res and res.reason) or 'Parduotuvė neprieinama.', 'error')
+    end)
+end
+
+local function openWeedSupplyShop()
+    QBCore.Functions.TriggerCallback('fivempro_drugs:server:openWeedSupplyShop', function(res)
+        if res and res.ok then
+            QBCore.Functions.Notify('Pirk sėklas ir vazonus — sodink kur nori.', 'primary', 4500)
             return
         end
         QBCore.Functions.Notify((res and res.reason) or 'Parduotuvė neprieinama.', 'error')
@@ -1105,6 +1119,11 @@ local function setupNpcTargetZones()
         addNpcCircleZone('fivempro_drugs_supply_shop', supply, openMaterialShop)
     end
 
+    local weedShop = Config.WeedSupplyShopNPC
+    if weedShop and weedShop.enabled ~= false then
+        addNpcCircleZone('fivempro_drugs_weed_supply', weedShop, openWeedSupplyShop, weedShop.label)
+    end
+
     if Config.EnableDrugTestNPC then
         if Config.TestSupplyShopNPC then
             addNpcCircleZone('fivempro_drugs_test_supply', Config.TestSupplyShopNPC, openMaterialShop)
@@ -1187,6 +1206,24 @@ end
 
 local function createSupplyShopBlip()
     -- Blipai kuriami centralizuotai per setupStationBlips()
+end
+
+local function spawnWeedSupplyShopNpc()
+    local cfg = Config.WeedSupplyShopNPC
+    if not cfg or cfg.enabled == false or not cfg.coords then return end
+    if weedSupplyShopPed ~= 0 then safeDeleteHubPed(weedSupplyShopPed) end
+    weedSupplyShopPed = spawnHubPed(cfg, function(ped)
+        exports['qb-target']:AddTargetEntity(ped, {
+            options = {
+                {
+                    icon = cfg.targetIcon or 'fas fa-seedling',
+                    label = cfg.label or 'Kanapių auginimo reikmenys',
+                    action = openWeedSupplyShop,
+                },
+            },
+            distance = (cfg.maxDistance or Config.InteractDistance or 2.5) + 1.0,
+        })
+    end)
 end
 
 local function spawnSupplyShopNpc()
@@ -1313,6 +1350,12 @@ CreateThread(function()
             drawNpcMarker(supply.coords, 180)
         end
 
+        local weedShop = Config.WeedSupplyShopNPC
+        if weedShop and weedShop.enabled ~= false and nearCoords(weedShop.coords) then
+            sleep = 0
+            drawNpcMarker(weedShop.coords, 180)
+        end
+
         for _, key in ipairs({ 'TestNPC', 'TestSupplyShopNPC' }) do
             local npc = Config[key]
             if Config.EnableDrugTestNPC and npc and nearCoords(npc.coords) then
@@ -1350,6 +1393,8 @@ local function spawnAllDrugNpcs()
     Wait(200)
     spawnSupplyShopNpc()
     Wait(200)
+    spawnWeedSupplyShopNpc()
+    Wait(200)
     spawnTestSupplyShopNpc()
     Wait(200)
     spawnProductBuyerNpcs()
@@ -1361,6 +1406,11 @@ local function ensureDrugNpcsAlive()
     local supply = Config.SupplyShopNPC
     if supply and supply.enabled ~= false and (supplyShopPed == 0 or not DoesEntityExist(supplyShopPed)) then
         spawnSupplyShopNpc()
+    end
+
+    local weedShop = Config.WeedSupplyShopNPC
+    if weedShop and weedShop.enabled ~= false and (weedSupplyShopPed == 0 or not DoesEntityExist(weedSupplyShopPed)) then
+        spawnWeedSupplyShopNpc()
     end
 
     if Config.EnableDrugTestNPC then
@@ -1445,6 +1495,10 @@ AddEventHandler('onResourceStop', function(res)
     if supplyShopPed ~= 0 and DoesEntityExist(supplyShopPed) then
         safeDeleteHubPed(supplyShopPed)
         supplyShopPed = 0
+    end
+    if weedSupplyShopPed ~= 0 and DoesEntityExist(weedSupplyShopPed) then
+        safeDeleteHubPed(weedSupplyShopPed)
+        weedSupplyShopPed = 0
     end
     if supplyShopBlip and DoesBlipExist(supplyShopBlip) then
         RemoveBlip(supplyShopBlip)

@@ -23,13 +23,14 @@ Config.Bikes = {
     { model = 'tribike2', label = 'Tri-Cycles (enduro)', price = 55 },
 }
 
---- Nuomos punktai (spawn = kur atsiranda dviratis)
+--- Nuomos punktai (spawn = kur atsiranda dviratis).
+--- Koordinatės nustatytos šalia garažų, ne ant jų (qb-target / marker nesikerta).
 Config.Locations = {
     {
         id = 'airport',
         label = 'Oro uostas (LSIA)',
-        coords = vector4(-1012.40, -2690.80, 13.98, 150.0),
-        spawn = vector4(-1008.20, -2694.50, 13.98, 150.0),
+        coords = vector4(-998.20, -2682.40, 13.98, 330.0),
+        spawn = vector4(-994.80, -2685.60, 13.98, 330.0),
     },
     {
         id = 'legion',
@@ -45,68 +46,68 @@ Config.Locations = {
     },
     {
         id = 'vespucci',
-        label = 'Vespucci krantas',
-        coords = vector4(-1183.60, -1511.40, 4.38, 125.0),
-        spawn = vector4(-1180.50, -1513.80, 4.38, 125.0),
+        label = 'Vespucci',
+        coords = vector4(-1151.20, -732.50, 19.88, 311.0),
+        spawn = vector4(-1148.50, -735.00, 19.88, 311.0),
     },
     {
         id = 'delperro',
-        label = 'Del Perro',
+        label = 'Del Perro krantas',
         coords = vector4(-1520.30, -428.50, 35.45, 230.0),
         spawn = vector4(-1517.60, -430.90, 35.45, 230.0),
     },
     {
         id = 'vinewood',
         label = 'Vinewood',
-        coords = vector4(596.80, 90.50, 92.13, 250.0),
-        spawn = vector4(599.50, 88.20, 92.13, 250.0),
+        coords = vector4(604.50, 82.50, 92.13, 248.0),
+        spawn = vector4(607.00, 80.00, 92.13, 248.0),
     },
     {
         id = 'mirrorpark',
         label = 'Mirror Park',
-        coords = vector4(1036.80, -763.50, 57.99, 225.0),
-        spawn = vector4(1039.50, -765.80, 57.99, 225.0),
+        coords = vector4(1028.50, -755.20, 57.99, 45.0),
+        spawn = vector4(1031.00, -757.50, 57.99, 45.0),
     },
     {
         id = 'casino',
         label = 'Kazino',
-        coords = vector4(895.50, -1.20, 78.76, 150.0),
-        spawn = vector4(898.20, -3.50, 78.76, 150.0),
+        coords = vector4(918.50, 11.20, 78.76, 147.0),
+        spawn = vector4(921.00, 8.50, 78.76, 147.0),
     },
     {
         id = 'sandy',
         label = 'Sandy Shores',
-        coords = vector4(1737.50, 3710.80, 34.14, 20.0),
-        spawn = vector4(1740.20, 3708.50, 34.14, 20.0),
+        coords = vector4(1746.50, 3716.00, 34.14, 110.0),
+        spawn = vector4(1749.00, 3713.50, 34.14, 110.0),
     },
     {
         id = 'grapeseed',
         label = 'Grapeseed',
-        coords = vector4(1718.90, 4933.50, 42.08, 145.0),
-        spawn = vector4(1721.60, 4931.20, 42.08, 145.0),
+        coords = vector4(1727.00, 4926.50, 42.08, 326.0),
+        spawn = vector4(1729.50, 4924.00, 42.08, 326.0),
     },
     {
         id = 'paleto',
         label = 'Paleto Bay',
-        coords = vector4(110.50, 6617.80, 31.89, 225.0),
-        spawn = vector4(113.20, 6615.50, 31.89, 225.0),
+        coords = vector4(119.50, 6624.00, 31.89, 45.0),
+        spawn = vector4(122.00, 6621.50, 31.89, 45.0),
     },
     {
         id = 'chumash',
         label = 'Chumash',
-        coords = vector4(-3142.80, 1129.20, 20.86, 340.0),
-        spawn = vector4(-3140.10, 1126.90, 20.86, 340.0),
+        coords = vector4(-3151.00, 1136.50, 20.86, 159.0),
+        spawn = vector4(-3148.50, 1134.00, 20.86, 159.0),
     },
     {
         id = 'route68',
         label = 'Route 68',
-        coords = vector4(-2553.50, 2335.20, 33.06, 95.0),
-        spawn = vector4(-2551.00, 2332.90, 33.06, 95.0),
+        coords = vector4(-2562.00, 2341.50, 33.06, 182.0),
+        spawn = vector4(-2559.50, 2339.00, 33.06, 182.0),
     },
     {
         id = 'davis',
         label = 'Davis',
-        coords = vector4(367.50, -2037.80, 21.70, 320.0),
-        spawn = vector4(370.20, -2040.10, 21.70, 320.0),
+        coords = vector4(358.00, -2048.00, 21.70, 140.0),
+        spawn = vector4(360.50, -2050.50, 21.70, 140.0),
     },
 }

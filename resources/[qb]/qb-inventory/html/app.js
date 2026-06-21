@@ -350,6 +350,11 @@ const InventoryContainer = Vue.createApp({
             this.dragStartY = event.clientY;
             this.dragStartInventoryType = inventoryType;
             this.showContextMenu = false;
+
+            if (!this._windowMouseUpHandler) {
+                this._windowMouseUpHandler = (e) => this.endDrag(e);
+                window.addEventListener("mouseup", this._windowMouseUpHandler);
+            }
         },
         createGhostElement(slotElement) {
             const ghostElement = slotElement.cloneNode(true);
@@ -369,13 +374,34 @@ const InventoryContainer = Vue.createApp({
             this.ghostElement.style.left = `${centeredX}px`;
             this.ghostElement.style.top = `${centeredY}px`;
         },
-        isOutsideInventoryBounds(event) {
-            const container = document.querySelector(".inventory-container");
-            if (!container) return true;
-            const rect = container.getBoundingClientRect();
+        isPointInsideRect(x, y, rect) {
+            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        },
+        isOverInventoryPanel(event) {
             const x = event.clientX;
             const y = event.clientY;
-            return x < rect.left || x > rect.right || y < rect.top || y > rect.bottom;
+            const selectors = [".player-inventory-section", ".other-inventory-section", ".input-container"];
+            for (const selector of selectors) {
+                const panel = document.querySelector(selector);
+                if (!panel) continue;
+                const style = window.getComputedStyle(panel);
+                if (style.display === "none" || style.visibility === "hidden") continue;
+                const rect = panel.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0 && this.isPointInsideRect(x, y, rect)) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        isOutsideInventoryBounds(event) {
+            return !this.isOverInventoryPanel(event);
+        },
+        canDropDraggedItemToGround() {
+            return (
+                this.dragStartInventoryType === "player" &&
+                !this.isShopInventory &&
+                !!this.currentlyDraggingItem
+            );
         },
         endDrag(event) {
             if (!this.currentlyDraggingItem) {
@@ -388,6 +414,8 @@ const InventoryContainer = Vue.createApp({
 
             const otherSlotElement = elementsUnderCursor.find((el) => el.classList.contains("item-slot") && el.closest(".other-inventory-section"));
 
+            const onBackdrop = elementsUnderCursor.some((el) => el.classList && el.classList.contains("inventory-backdrop"));
+
             if (playerSlotElement) {
                 const targetSlot = Number(playerSlotElement.dataset.slot);
                 if (targetSlot && !(targetSlot === this.currentlyDraggingSlot && this.dragStartInventoryType === "player")) {
@@ -398,11 +426,7 @@ const InventoryContainer = Vue.createApp({
                 if (targetSlot && !(targetSlot === this.currentlyDraggingSlot && this.dragStartInventoryType === "other")) {
                     this.handleDropOnOtherSlot(targetSlot);
                 }
-            } else if (
-                this.dragStartInventoryType === "player" &&
-                !this.isShopInventory &&
-                this.isOutsideInventoryBounds(event)
-            ) {
+            } else if (this.canDropDraggedItemToGround() && (onBackdrop || this.isOutsideInventoryBounds(event))) {
                 this.handleDropOnInventoryContainer();
             }
 
@@ -482,6 +506,10 @@ const InventoryContainer = Vue.createApp({
             }
         },
         clearDragData() {
+            if (this._windowMouseUpHandler) {
+                window.removeEventListener("mouseup", this._windowMouseUpHandler);
+                this._windowMouseUpHandler = null;
+            }
             if (this.ghostElement) {
                 document.body.removeChild(this.ghostElement);
                 this.ghostElement = null;

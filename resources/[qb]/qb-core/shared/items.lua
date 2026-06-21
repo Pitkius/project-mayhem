@@ -487,7 +487,8 @@ QBShared.Items = {
     rabbit_fur                   = { name = 'rabbit_fur', label = 'Triušio kailis', weight = 200, type = 'item', image = 'rabbit_fur.png', unique = false, useable = false, shouldClose = false, description = 'Triušio kailis.' },
 
     -- fivempro_drugs — 1 etapas: žaliava (nuskinta / gryna)
-    weed_seed                    = { name = 'weed_seed', label = 'Kanapių sėkla', weight = 5, type = 'item', image = 'weed_seed.png', unique = false, useable = false, shouldClose = true, description = 'Žaliava · sodink auginimo zonoje (1/3 etapas).' },
+    weed_seed                    = { name = 'weed_seed', label = 'Kanapių sėkla', weight = 5, type = 'item', image = 'weed_seed.png', unique = false, useable = false, shouldClose = true, description = 'Sodink į pastatytą augimo vazoną.' },
+    grow_pot                     = { name = 'grow_pot', label = 'Augimo vazonas', weight = 1200, type = 'item', image = 'weed_seed.png', unique = false, useable = true, shouldClose = true, description = 'Pastatyk ir sodink kanapių sėklas.' },
     weed_leaf                    = { name = 'weed_leaf', label = 'Nuskintos žolės lapai', weight = 50, type = 'item', image = 'weed_leaf.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
     cartel_raw                   = { name = 'cartel_raw', label = 'Nuskinti kokainmedžio lapai', weight = 95, type = 'item', image = 'coca_leaf.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
     poppy_flower                 = { name = 'poppy_flower', label = 'Nuskinti aguonų žiedai', weight = 40, type = 'item', image = 'poppy_flower.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },

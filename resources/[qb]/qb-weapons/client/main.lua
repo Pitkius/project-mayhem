@@ -608,20 +608,20 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     local reloadPayload = CurrentWeaponData or selectedWeaponData
 
     CreateThread(function()
+        local visualOk, visualErr = pcall(function()
+            WeaponReload.playVisual(reloadPed, reloadWeapon, plannedBullets, reloadPayload)
+        end)
+        if not visualOk then
+            print(('[qb-weapons] reload visual error: %s'):format(tostring(visualErr)))
+            WeaponReload.cancel(PlayerPedId())
+        end
+
         local ok, errMsg = applyInventoryReload()
 
         isReloading = false
         reloadGuardUntil = GetGameTimer() + 80
 
         if ok then
-            local threadOk, threadErr = pcall(function()
-                WeaponReload.playVisual(reloadPed, reloadWeapon, plannedBullets, reloadPayload)
-            end)
-            if not threadOk then
-                print(('[qb-weapons] reload visual error: %s'):format(tostring(threadErr)))
-                WeaponReload.cancel(PlayerPedId())
-            end
-
             local p = PlayerPedId()
             local w = GetSelectedPedWeapon(p)
             if p and p ~= 0 and w and w ~= 0 and CurrentWeaponData and CurrentWeaponData.name then

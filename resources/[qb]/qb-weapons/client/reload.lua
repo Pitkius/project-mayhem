@@ -1,7 +1,25 @@
---- Perkrovos animacija (vizualinė). Kulkos kraunamos prieš animaciją — main.lua.
+--- Perkrovos animacija. Kulkos kraunamos PO animacijos — main.lua.
 WeaponReload = WeaponReload or {}
 
 local QBCore = exports['qb-core']:GetCoreObject()
+
+local RELOAD_BY_GROUP = {
+    [`GROUP_PISTOL`] = { dict = 'weapons@pistol_1h@', clips = { 'reload_aim_l', 'reload_aim', 'reload' } },
+    [`GROUP_SMG`] = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
+    [`GROUP_RIFLE`] = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
+    [`GROUP_MG`] = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
+    [`GROUP_SHOTGUN`] = { dict = 'weapons@shotgun@', clips = { 'reload_aim', 'reload' } },
+    [`GROUP_SNIPER`] = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
+}
+
+local RELOAD_BY_AMMO = {
+    AMMO_SHOTGUN = { dict = 'weapons@shotgun@', clips = { 'reload_aim', 'reload' } },
+    AMMO_SMG = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
+    AMMO_MG = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
+    AMMO_RIFLE = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
+    AMMO_SNIPER = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
+    AMMO_PISTOL = { dict = 'weapons@pistol_1h@', clips = { 'reload_aim_l', 'reload_aim', 'reload' } },
+}
 
 local function getReloadWaitMs()
     local t = tonumber(Config.ReloadTime)
@@ -20,16 +38,6 @@ local function loadAnimDict(dict)
     return HasAnimDictLoaded(dict)
 end
 
-local function resolveInventoryWeaponName(weaponHash, weaponData)
-    if weaponData and weaponData.name then
-        return string.lower(tostring(weaponData.name))
-    end
-    if WeaponHash and WeaponHash.inventoryNameFromNative then
-        return WeaponHash.inventoryNameFromNative(weaponHash)
-    end
-    return nil
-end
-
 local function weaponAmmoType(weaponHash, weaponData)
     if weaponData and weaponData.ammotype then
         return tostring(weaponData.ammotype):upper()
@@ -42,17 +50,19 @@ local function weaponAmmoType(weaponHash, weaponData)
 end
 
 local function getReloadAnim(weaponHash, weaponData)
+    local group = GetWeapontypeGroup(weaponHash)
+    local byGroup = RELOAD_BY_GROUP[group]
+    if byGroup then
+        return byGroup.dict, byGroup.clips
+    end
+
     local ammoType = weaponAmmoType(weaponHash, weaponData)
-    if ammoType == 'AMMO_SHOTGUN' then
-        return 'weapons@shotgun@', 'reload_aim'
+    local byAmmo = RELOAD_BY_AMMO[ammoType]
+    if byAmmo then
+        return byAmmo.dict, byAmmo.clips
     end
-    if ammoType == 'AMMO_SMG' or ammoType == 'AMMO_MG' then
-        return 'weapons@smg@', 'reload_aim'
-    end
-    if ammoType == 'AMMO_RIFLE' or ammoType == 'AMMO_SNIPER' then
-        return 'weapons@rifle@', 'reload_aim'
-    end
-    return 'weapons@pistol@', 'reload_aim'
+
+    return 'weapons@pistol_1h@', { 'reload_aim_l', 'reload_aim', 'reload' }
 end
 
 local function pedIsMoving(ped)
@@ -60,28 +70,32 @@ local function pedIsMoving(ped)
     return GetEntitySpeed(ped) > 0.85
 end
 
+local function playClipFromList(ped, dict, clips, durationMs, flags)
+    for _, clip in ipairs(clips) do
+        TaskPlayAnim(ped, dict, clip, 8.0, -8.0, durationMs, flags, 0.0, false, false, false)
+        Wait(80)
+        if IsEntityPlayingAnim(ped, dict, clip, 3) then
+            return clip
+        end
+    end
+    return clips[1]
+end
+
 local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs)
-    local dict, primaryClip = getReloadAnim(weaponHash, weaponData)
+    local dict, clips = getReloadAnim(weaponHash, weaponData)
     if not loadAnimDict(dict) then
         Wait(math.min(900, durationMs))
         return
     end
 
     SetCurrentPedWeapon(ped, weaponHash, true)
-    local flags = 49 -- upper body, allow movement
-    local clip = primaryClip
-    if not IsEntityPlayingAnim(ped, dict, clip, 3) then
-        TaskPlayAnim(ped, dict, clip, 8.0, -8.0, durationMs, flags, 0.0, false, false, false)
-    end
-    if not IsEntityPlayingAnim(ped, dict, clip, 3) and clip == 'reload_aim' then
-        clip = 'reload'
-        TaskPlayAnim(ped, dict, clip, 8.0, -8.0, durationMs, flags, 0.0, false, false, false)
-    end
+    local flags = 49
+    local clip = playClipFromList(ped, dict, clips, durationMs, flags)
 
     local deadline = GetGameTimer() + durationMs
     while DoesEntityExist(ped) and GetGameTimer() < deadline do
         if not IsEntityPlayingAnim(ped, dict, clip, 3) and (GetGameTimer() + 400) < deadline then
-            TaskPlayAnim(ped, dict, clip, 8.0, -8.0, durationMs, flags, 0.0, false, false, false)
+            clip = playClipFromList(ped, dict, clips, durationMs, flags)
         end
         Wait(0)
     end
@@ -93,6 +107,15 @@ end
 local function playNativeReload(ped, weaponHash, durationMs)
     SetCurrentPedWeapon(ped, weaponHash, true)
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+
+    local _, clipNow = GetAmmoInClip(ped, weaponHash)
+    local savedClip = math.max(0, tonumber(clipNow) or 0)
+
+    -- Jei apkaba jau pilna (fallback), trumpam ištuštinam kad GTA paleistų reload anim.
+    if savedClip > 0 then
+        SetPedAmmo(ped, weaponHash, 0)
+        SetAmmoInClip(ped, weaponHash, 0)
+    end
 
     MakePedReload(ped)
     if not IsPedReloading(ped) then
@@ -112,9 +135,15 @@ local function playNativeReload(ped, weaponHash, durationMs)
             Wait(0)
         end
     end
+
+    if savedClip > 0 then
+        SetPedAmmo(ped, weaponHash, savedClip)
+        SetAmmoInClip(ped, weaponHash, savedClip)
+        WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    end
 end
 
---- Vizualinė animacija po sėkmingo inventoriaus užtaisymo (be kulkų keitimo).
+--- Vizualinė animacija prieš inventoriaus užtaisymą.
 function WeaponReload.playVisual(ped, weaponHash, _bulletsToLoad, weaponData)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then
         Wait(250)
@@ -130,8 +159,7 @@ function WeaponReload.playVisual(ped, weaponHash, _bulletsToLoad, weaponData)
         return
     end
 
-    local allowMove = Config.ReloadAllowMovement == true
-    if allowMove or pedIsMoving(ped) then
+    if pedIsMoving(ped) then
         playUpperBodyReload(ped, weaponHash, weaponData, durationMs)
         return
     end
@@ -147,6 +175,6 @@ end
 function WeaponReload.cancel(ped)
     ped = ped or PlayerPedId()
     if ped and ped ~= 0 and DoesEntityExist(ped) then
-        ClearPedTasks(ped)
+        ClearPedSecondaryTask(ped)
     end
 end

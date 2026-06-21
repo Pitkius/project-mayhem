@@ -138,6 +138,32 @@ local function playToggleAnim(slotKey)
     end
 end
 
+local function buildRadialSlotStates()
+    local slots = {}
+    for slotKey, cfg in pairs(CLOTHING_SLOTS) do
+        slots[slotKey] = {
+            label = cfg.label,
+            removed = slotRemoved[slotKey] == true,
+        }
+    end
+    return slots
+end
+
+local function refreshRadialMenu()
+    if not radialMenuOpen then return end
+    SendNUIMessage({
+        action = 'update',
+        slots = buildRadialSlotStates(),
+    })
+end
+
+local function closeClothingRadial()
+    if not radialMenuOpen then return end
+    radialMenuOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
+end
+
 function ToggleClothingSlot(slotKey)
     local ok, err = canToggleClothing()
     if not ok then
@@ -190,32 +216,6 @@ function ToggleClothingSlot(slotKey)
     saveActiveSkin()
     QBCore.Functions.Notify(('%s nusiimta.'):format(cfg.label), 'success')
     refreshRadialMenu()
-end
-
-local function buildRadialSlotStates()
-    local slots = {}
-    for slotKey, cfg in pairs(CLOTHING_SLOTS) do
-        slots[slotKey] = {
-            label = cfg.label,
-            removed = slotRemoved[slotKey] == true,
-        }
-    end
-    return slots
-end
-
-local function refreshRadialMenu()
-    if not radialMenuOpen then return end
-    SendNUIMessage({
-        action = 'update',
-        slots = buildRadialSlotStates(),
-    })
-end
-
-local function closeClothingRadial()
-    if not radialMenuOpen then return end
-    radialMenuOpen = false
-    SetNuiFocus(false, false)
-    SendNUIMessage({ action = 'close' })
 end
 
 function RestoreAllClothing()

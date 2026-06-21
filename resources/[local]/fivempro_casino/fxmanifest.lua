@@ -13,6 +13,7 @@ shared_scripts {
 }
 
 client_scripts {
+    'client/ipl.lua',
     'client/entrance.lua',
     'client/main.lua',
     'client/dice.lua',

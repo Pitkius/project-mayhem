@@ -1,55 +1,16 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local CASINO_IPLS = {
-    'vw_casino_main',
-    'vw_casino_garage',
-    'vw_casino_carpark',
-    'vw_casino_penthouse',
-    'hei_dlc_windows_casino',
-    'hei_dlc_casino_door',
-    'hei_dlc_casino_aircon',
-}
-
-local CASINO_IPLS_REMOVE = {
-    'hei_dlc_casino_door_broken',
-    'hei_dlc_casino_door_broken2',
-    'hei_dlc_vw_roofdoors_locked',
-}
-
 local teleporting = false
 
 local function notify(msg, ntype)
     QBCore.Functions.Notify(msg, ntype or 'primary')
 end
 
-function Casino.loadIpl()
-    if not Config.Casino or Config.Casino.loadVanillaIpl ~= true then return end
-    for _, ipl in ipairs(CASINO_IPLS_REMOVE) do
-        RemoveIpl(ipl)
-    end
-    for _, ipl in ipairs(CASINO_IPLS) do
-        RequestIpl(ipl)
-    end
-end
-
-local function prepareInteriorAt(x, y, z)
-    for _ = 1, 24 do
-        RequestCollisionAtCoord(x, y, z)
-        Wait(0)
-    end
-    local interiorId = GetInteriorAtCoords(x, y, z)
-    if interiorId and interiorId ~= 0 then
-        PinInteriorInMemory(interiorId)
-        LoadInterior(interiorId)
-        RefreshInterior(interiorId)
-    end
-end
-
 local function fadeTeleport(coords, heading)
     if teleporting then return end
     teleporting = true
 
-    Casino.loadIpl()
+    Casino.loadIpl(true)
 
     DoScreenFadeOut(400)
     while not IsScreenFadedOut() do Wait(0) end
@@ -60,9 +21,9 @@ local function fadeTeleport(coords, heading)
         SetEntityHeading(ped, heading)
     end
 
-    prepareInteriorAt(coords.x, coords.y, coords.z)
+    Casino.prepareInteriorAt(coords.x, coords.y, coords.z)
 
-    Wait(350)
+    Wait(500)
     DoScreenFadeIn(400)
     teleporting = false
 end
@@ -144,25 +105,8 @@ end
 
 CreateThread(function()
     Wait(800)
-    Casino.loadIpl()
     while GetResourceState('qb-target') ~= 'started' do Wait(400) end
     setupEntrances()
-end)
-
--- IPL užkraunamas ir artėjant prie kazino išorės
-CreateThread(function()
-    local blip = Config.Casino and Config.Casino.blip and Config.Casino.blip.coords
-    while true do
-        local sleep = 2500
-        if blip then
-            local p = GetEntityCoords(PlayerPedId())
-            if #(p - blip) < 220.0 then
-                Casino.loadIpl()
-                sleep = 8000
-            end
-        end
-        Wait(sleep)
-    end
 end)
 
 AddEventHandler('onResourceStop', function(res)

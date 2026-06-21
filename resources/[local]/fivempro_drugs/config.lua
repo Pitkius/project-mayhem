@@ -538,16 +538,15 @@ Config.MaterialShop = {
         { name = 'vape_liquid_base', amount = 500, price = 16, slot = 7 },
         { name = 'vape_mix', amount = 300, price = 38, slot = 8 },
         { name = 'vape_liquid', amount = 200, price = 52, slot = 9 },
-        -- Žolės reikmenys (sodinimas → džiovinimas → pakavimas)
-        { name = 'weed_seed', amount = 400, price = 18, slot = 10 },
-        { name = 'trimming_scissors', amount = 200, price = 95, slot = 11 },
-        { name = 'gloves', amount = 200, price = 25, slot = 12 },
-        { name = 'empty_bag', amount = 500, price = 11, slot = 13 },
-        { name = 'scale', amount = 100, price = 85, slot = 14 },
-        { name = 'weed_buds', amount = 300, price = 55, slot = 15 },
-        { name = 'weed_bag', amount = 200, price = 110, slot = 16 },
+        -- Žolės apdorojimas (sėklos / vazonai — WeedSupplyShop prie Grapeseed)
+        { name = 'trimming_scissors', amount = 200, price = 95, slot = 10 },
+        { name = 'gloves', amount = 200, price = 25, slot = 11 },
+        { name = 'empty_bag', amount = 500, price = 11, slot = 12 },
+        { name = 'scale', amount = 100, price = 85, slot = 13 },
+        { name = 'weed_buds', amount = 300, price = 55, slot = 14 },
+        { name = 'weed_bag', amount = 200, price = 110, slot = 15 },
         -- Heroinas
-        { name = 'poppy_flower', amount = 500, price = 28, slot = 17 },
+        { name = 'poppy_flower', amount = 500, price = 28, slot = 16 },
         { name = 'heroin_paste', amount = 300, price = 72, slot = 18 },
         { name = 'heroin_bag', amount = 200, price = 175, slot = 19 },
         -- Metas
@@ -800,77 +799,70 @@ Config.CocaFields = {
     },
 }
 
---- Kanapių auginimas — Schedule-1 sodinimas, laistymas, derlius → weed_leaf
-Config.WeedGrowFields = {
-    {
-        id = 'davis_grow_room',
-        center = vector3(1145.50, -1660.50, 36.6147),
-        radius = 12.0,
-        spawnCount = 8,
-        loadDistance = 55.0,
-        seedItem = 'weed_seed',
-        harvestItem = 'weed_leaf',
-        harvestMin = 3,
-        harvestMax = 6,
-        stage2Sec = 90,
-        stage3Sec = 240,
-        waterBonusSec = 40,
-        maxWaters = 2,
-        pickDistance = 2.2,
-        zoneRadius = 0.95,
-        plantLabel = 'Sodinti kanapes',
-        waterLabel = 'Laistyti augalą',
-        harvestLabel = 'Skinti lapus',
-        props = {
-            empty = 'bkr_prop_weed_bucket_01a',
-            stage1 = 'prop_weed_02',
-            stage2 = 'bkr_prop_weed_med_01a',
-            stage3 = 'bkr_prop_weed_lrg_01a',
-        },
-        propScale = { empty = 0.85, stage1 = 0.9, stage2 = 1.0, stage3 = 1.05 },
-        blip = {
-            enabled = true,
-            sprite = 140,
-            color = 2,
-            scale = 0.72,
-            label = 'Kanapių auginimas',
-        },
-    },
-    {
-        id = 'chiliad_hidden_grove',
-        center = vector3(2218.50, 5578.20, 53.85),
-        radius = 38.0,
-        spawnCount = 10,
-        loadDistance = 160.0,
-        seedItem = 'weed_seed',
-        harvestItem = 'weed_leaf',
-        harvestMin = 2,
-        harvestMax = 5,
-        stage2Sec = 120,
-        stage3Sec = 300,
-        waterBonusSec = 45,
-        maxWaters = 2,
-        pickDistance = 2.4,
-        zoneRadius = 1.05,
-        plantLabel = 'Sodinti kanapes',
-        waterLabel = 'Laistyti augalą',
-        harvestLabel = 'Skinti lapus',
-        props = {
-            empty = 'bkr_prop_weed_bucket_01a',
-            stage1 = 'prop_weed_02',
-            stage2 = 'bkr_prop_weed_med_01a',
-            stage3 = 'bkr_prop_weed_lrg_01a',
-        },
-        propScale = { empty = 0.8, stage1 = 0.85, stage2 = 0.95, stage3 = 1.0 },
-        blip = {
-            enabled = true,
-            sprite = 469,
-            color = 25,
-            scale = 0.68,
-            label = 'Slaptas kanapių laukas',
-        },
+--- Kanapių auginimo reikmenys — Grapeseed kalnai (sėklos, vazonai; ne paruošta žolė)
+Config.WeedSupplyShop = {
+    name = 'fivempro-weed-supply',
+    label = 'Kanapių auginimo reikmenys',
+    items = {
+        { name = 'weed_seed', amount = 500, price = 18, slot = 1 },
+        { name = 'grow_pot', amount = 300, price = 42, slot = 2 },
+        { name = 'trimming_scissors', amount = 200, price = 95, slot = 3 },
+        { name = 'gloves', amount = 200, price = 25, slot = 4 },
+        { name = 'empty_bag', amount = 500, price = 11, slot = 5 },
+        { name = 'scale', amount = 100, price = 85, slot = 6 },
+        { name = 'water_bottle', amount = 500, price = 8, slot = 7 },
     },
 }
+
+Config.WeedSupplyShopNPC = {
+    enabled = true,
+    model = 's_m_y_dealer_01',
+    coords = vector4(2221.8557, 5614.7979, 54.9016, 107.1460),
+    scenario = 'WORLD_HUMAN_GARDENER_PLANT',
+    label = 'Kanapių auginimo reikmenys',
+    maxDistance = 3.5,
+    targetIcon = 'fas fa-seedling',
+    blip = {
+        enabled = true,
+        sprite = 469,
+        color = 25,
+        scale = 0.78,
+        label = 'Kanapių reikmenys',
+    },
+}
+
+--- Kanapių auginimas — žaidėjas pats statdo vazonus ir sodina (jokie laukai automatiškai neauga)
+Config.WeedGrow = {
+    seedItem = 'weed_seed',
+    potItem = 'grow_pot',
+    harvestItem = 'weed_leaf',
+    harvestMin = 2,
+    harvestMax = 5,
+    stage2Sec = 120,
+    stage3Sec = 300,
+    waterBonusSec = 45,
+    maxWaters = 2,
+    pickDistance = 2.2,
+    zoneRadius = 0.95,
+    loadDistance = 140.0,
+    minPotDistance = 2.0,
+    maxPotsPerPlayer = 8,
+    maxPotsGlobal = 250,
+    playerCooldownSec = 3,
+    plantLabel = 'Sodinti kanapes',
+    waterLabel = 'Laistyti augalą',
+    harvestLabel = 'Skinti lapus',
+    props = {
+        empty = 'bkr_prop_weed_bucket_01a',
+        stage1 = 'prop_weed_02',
+        stage2 = 'bkr_prop_weed_med_01a',
+        stage3 = 'bkr_prop_weed_lrg_01a',
+    },
+    propScale = { empty = 0.85, stage1 = 0.9, stage2 = 0.95, stage3 = 1.0 },
+}
+
+--- Senas fiksuotų laukų režimas — išjungta (naudok Config.WeedGrow + grow_pot)
+Config.WeedGrowFields = {}
 
 --- THC distiliacija — 2 etapas (production) · Sandy Shores laboratorija
 Config.ThcLab = {
