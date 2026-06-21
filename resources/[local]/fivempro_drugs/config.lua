@@ -39,7 +39,7 @@ Config.DevHub = {
 Config.CraftCooldownMs = 4500
 Config.SellCooldownMs = 6000
 
---- Minigame tipai: progress | skill | advanced
+--- Minigame tipai: progress | skill | advanced | schedule
 Config.LevelLabels = {
     [1] = '1 lygis — startas',
     [2] = '2 lygis — vidutinis',
@@ -97,34 +97,35 @@ end
 
 Config.Products = {
     --- L1
-    thc_process = drugProcess('THC · distiliacija', 1, 'weed_resin', 14000, 'low', 'progress', 5, 3, 1, 35, 1),
-    thc_pack = drugPack('Vape buteliukas · supakavimas', 1, 'thc_cart', 95, 12000, 'low', 'progress', 6, 4, 2, 35, 2),
-    alcohol_process = drugProcess('Samagonas · distiliacija', 1, 'moonshine_spirit', 13000, 'low', 'progress', 4, 3, 1, 30, 3),
-    alcohol_pack = drugPack('Nelegalus alkoholis · supakavimas', 1, 'illegal_alcohol', 75, 11000, 'low', 'progress', 5, 3, 2, 30, 4),
-    vape_process = drugProcess('Vape · paruošimas', 1, 'vape_mix', 12000, 'low', 'progress', 4, 2, 1, 28, 5),
-    vape_pack = drugPack('Vape skystis · supakavimas', 1, 'vape_liquid', 65, 10000, 'low', 'progress', 5, 3, 1, 28, 6, 2),
+    thc_process = drugProcess('THC · distiliacija', 1, 'weed_resin', 14000, 'low', 'schedule', 5, 3, 1, 35, 1),
+    thc_pack = drugPack('Vape buteliukas · supakavimas', 1, 'thc_cart', 95, 12000, 'low', 'schedule', 6, 4, 2, 35, 2),
+    alcohol_process = drugProcess('Samagonas · distiliacija', 1, 'moonshine_spirit', 13000, 'low', 'schedule', 4, 3, 1, 30, 3),
+    alcohol_pack = drugPack('Nelegalus alkoholis · supakavimas', 1, 'illegal_alcohol', 75, 11000, 'low', 'schedule', 5, 3, 2, 30, 4),
+    vape_process = drugProcess('Vape · paruošimas', 1, 'vape_mix', 12000, 'low', 'schedule', 4, 2, 1, 28, 5),
+    vape_pack = drugPack('Vape skystis · supakavimas', 1, 'vape_liquid', 65, 10000, 'low', 'schedule', 5, 3, 1, 28, 6, 2),
     --- L2
-    weed_process = drugProcess('Žolė · džiovinimas', 2, 'weed_buds', 18000, 'medium', 'skill', 10, 6, 3, 45, 7),
-    weed_pack = drugPack('Žolė · supakavimas', 2, 'weed_bag', 140, 15000, 'medium', 'skill', 12, 8, 4, 50, 8),
-    heroin_process = drugProcess('Heroinas · virimas', 2, 'heroin_paste', 22000, 'medium', 'skill', 12, 8, 4, 50, 9),
-    heroin_pack = drugPack('Heroinas · supakavimas', 2, 'heroin_bag', 220, 16000, 'medium', 'skill', 14, 10, 5, 55, 10),
-    meth_process = drugProcess('Metas · kristalizacija', 2, 'meth_crystal', 26000, 'high', 'skill', 13, 10, 5, 55, 11),
-    meth_pack = drugPack('Metas · supakavimas', 2, 'meth_bag', 260, 18000, 'high', 'skill', 15, 12, 6, 60, 12),
-    pills_process = drugProcess('Tabletės · presavimas', 2, 'pill_tablets', 17000, 'medium', 'skill', 9, 6, 3, 40, 13, 2),
-    pills_pack = drugPack('Tabletės · supakavimas', 2, 'pills_pack', 180, 14000, 'medium', 'skill', 11, 7, 4, 45, 14),
-    mushroom_process = drugProcess('Grybai · džiovinimas', 2, 'mushroom_dried', 15000, 'medium', 'skill', 8, 5, 2, 38, 15),
-    mushroom_pack = drugPack('Grybai · supakavimas', 2, 'mushroom_pack', 150, 13000, 'medium', 'skill', 10, 6, 3, 40, 16),
+    weed_process = drugProcess('Žolė · džiovinimas', 2, 'weed_buds', 18000, 'medium', 'schedule', 10, 6, 3, 45, 7),
+    weed_pack = drugPack('Žolė · supakavimas', 2, 'weed_bag', 140, 15000, 'medium', 'schedule', 12, 8, 4, 50, 8),
+    heroin_process = drugProcess('Heroinas · virimas', 2, 'heroin_paste', 22000, 'medium', 'schedule', 12, 8, 4, 50, 9),
+    heroin_pack = drugPack('Heroinas · supakavimas', 2, 'heroin_bag', 220, 16000, 'medium', 'schedule', 14, 10, 5, 55, 10),
+    meth_process = drugProcess('Metas · kristalizacija', 2, 'meth_crystal', 26000, 'high', 'schedule', 13, 10, 5, 55, 11),
+    meth_pack = drugPack('Metas · supakavimas', 2, 'meth_bag', 260, 18000, 'high', 'schedule', 15, 12, 6, 60, 12),
+    pills_process = drugProcess('Tabletės · presavimas', 2, 'pill_tablets', 17000, 'medium', 'schedule', 9, 6, 3, 40, 13, 2),
+    pills_pack = drugPack('Tabletės · supakavimas', 2, 'pills_pack', 180, 14000, 'medium', 'schedule', 11, 7, 4, 45, 14),
+    mushroom_process = drugProcess('Grybai · džiovinimas', 2, 'mushroom_dried', 15000, 'medium', 'schedule', 8, 5, 2, 38, 15),
+    mushroom_pack = drugPack('Grybai · supakavimas', 2, 'mushroom_pack', 150, 13000, 'medium', 'schedule', 10, 6, 3, 40, 16),
     --- L3 — kokainas: lapai → nesupakuotas → supakuotas
-    cocaine_process = drugProcess('Kokainas · virimas', 3, 'cartel_blend', 35000, 'high', 'advanced', 20, 15, 7, 65, 17),
-    cocaine_pack = drugPack('Kokainas · supakavimas', 3, 'cartel_pack', 520, 24000, 'high', 'advanced', 25, 20, 10, 70, 18),
-    amp_process = drugProcess('Amfetaminas · sintezė', 3, 'amp_paste', 30000, 'high', 'advanced', 17, 11, 6, 60, 19),
-    amp_pack = drugPack('Amfetaminas · supakavimas', 3, 'amphetamine_bag', 380, 20000, 'high', 'advanced', 20, 14, 7, 65, 20),
+    cocaine_process = drugProcess('Kokainas · virimas', 3, 'cartel_blend', 35000, 'high', 'schedule', 20, 15, 7, 65, 17),
+    cocaine_pack = drugPack('Kokainas · supakavimas', 3, 'cartel_pack', 520, 24000, 'high', 'schedule', 25, 20, 10, 70, 18),
+    amp_process = drugProcess('Amfetaminas · sintezė', 3, 'amp_paste', 30000, 'high', 'schedule', 17, 11, 6, 60, 19),
+    amp_pack = drugPack('Amfetaminas · supakavimas', 3, 'amphetamine_bag', 380, 20000, 'high', 'schedule', 20, 14, 7, 65, 20),
 }
 
 Config.Recipes = {
     --- L1: žaliava → apdorota → supakuota
     thc_process = {
         { item = 'weed_leaf', count = 4 },
+        { item = 'trimming_scissors', count = 1 },
         { item = 'filter', count = 1 },
         { item = 'gloves', count = 1 },
     },
@@ -154,6 +155,7 @@ Config.Recipes = {
     --- L2
     weed_process = {
         { item = 'weed_leaf', count = 5 },
+        { item = 'trimming_scissors', count = 1 },
         { item = 'gloves', count = 1 },
     },
     weed_pack = {
@@ -184,6 +186,7 @@ Config.Recipes = {
     },
     pills_process = {
         { item = 'pill_powder', count = 4 },
+        { item = 'pill_press', count = 1 },
         { item = 'lab_kit', count = 1 },
     },
     pills_pack = {
@@ -192,6 +195,7 @@ Config.Recipes = {
     },
     mushroom_process = {
         { item = 'mushroom_raw', count = 5 },
+        { item = 'trimming_scissors', count = 1 },
         { item = 'gloves', count = 1 },
     },
     mushroom_pack = {
@@ -561,31 +565,34 @@ Config.MaterialShop = {
         { name = 'amp_precursor', amount = 500, price = 38, slot = 27 },
         { name = 'amp_paste', amount = 300, price = 88, slot = 28 },
         { name = 'amphetamine_bag', amount = 200, price = 250, slot = 29 },
+        -- Mini-žaidimų įrankiai (Schedule-1)
+        { name = 'trimming_scissors', amount = 200, price = 95, slot = 30 },
+        { name = 'pill_press', amount = 100, price = 280, slot = 31 },
+        { name = 'scale', amount = 100, price = 85, slot = 32 },
         -- Ekstra: reagentai ir įrankiai
         { name = 'chemical_mix', amount = 500, price = 40, slot = 33 },
         { name = 'filter', amount = 500, price = 8, slot = 34 },
         { name = 'gloves', amount = 200, price = 25, slot = 35 },
-        { name = 'scale', amount = 100, price = 85, slot = 36 },
-        { name = 'lab_kit', amount = 50, price = 220, slot = 37 },
-        { name = 'burner', amount = 100, price = 120, slot = 38 },
-        { name = 'empty_cart', amount = 500, price = 12, slot = 39 },
-        { name = 'empty_bottle', amount = 500, price = 10, slot = 40 },
-        { name = 'empty_bag', amount = 500, price = 11, slot = 41 },
+        { name = 'lab_kit', amount = 50, price = 220, slot = 36 },
+        { name = 'burner', amount = 100, price = 120, slot = 37 },
+        { name = 'empty_cart', amount = 500, price = 12, slot = 38 },
+        { name = 'empty_bottle', amount = 500, price = 10, slot = 39 },
+        { name = 'empty_bag', amount = 500, price = 11, slot = 40 },
         -- 3D spausdinimas
-        { name = 'weapon_prototype', amount = 200, price = 380, slot = 42 },
-        { name = 'printer_3d', amount = 25, price = 7500, slot = 43 },
-        { name = 'plastic', amount = 500, price = 22, slot = 44 },
+        { name = 'weapon_prototype', amount = 200, price = 380, slot = 41 },
+        { name = 'printer_3d', amount = 25, price = 7500, slot = 42 },
+        { name = 'plastic', amount = 500, price = 22, slot = 43 },
         -- Ginklų dalys
-        { name = 'metal_scrap', amount = 500, price = 55, slot = 45 },
-        { name = 'gun_frame', amount = 200, price = 220, slot = 46 },
-        { name = 'gun_barrel', amount = 200, price = 260, slot = 47 },
-        { name = 'gun_spring', amount = 500, price = 45, slot = 48 },
-        { name = 'gun_trigger', amount = 300, price = 85, slot = 49 },
-        { name = 'weapon_parts', amount = 300, price = 150, slot = 50 },
-        { name = 'pistol_ammo', amount = 500, price = 18, slot = 51 },
-        { name = 'smg_ammo', amount = 500, price = 28, slot = 52 },
-        { name = 'rifle_ammo', amount = 500, price = 35, slot = 53 },
-        { name = 'shotgun_ammo', amount = 500, price = 32, slot = 54 },
+        { name = 'metal_scrap', amount = 500, price = 55, slot = 44 },
+        { name = 'gun_frame', amount = 200, price = 220, slot = 45 },
+        { name = 'gun_barrel', amount = 200, price = 260, slot = 46 },
+        { name = 'gun_spring', amount = 500, price = 45, slot = 47 },
+        { name = 'gun_trigger', amount = 300, price = 85, slot = 48 },
+        { name = 'weapon_parts', amount = 300, price = 150, slot = 49 },
+        { name = 'pistol_ammo', amount = 500, price = 18, slot = 50 },
+        { name = 'smg_ammo', amount = 500, price = 28, slot = 51 },
+        { name = 'rifle_ammo', amount = 500, price = 35, slot = 52 },
+        { name = 'shotgun_ammo', amount = 500, price = 32, slot = 53 },
     },
 }
 
@@ -1098,21 +1105,47 @@ Config.AmpMobileLab = {
     },
 }
 
+--- LS airport test NPC — greitas pirkimas (1 paspaudimas → inventoriuje)
+Config.LsTestQuickBuy = {
+    { item = 'trimming_scissors', amount = 1 },
+    { item = 'pill_press', amount = 1 },
+    { item = 'scale', amount = 1 },
+    { item = 'gloves', amount = 5 },
+    { item = 'empty_bag', amount = 25 },
+    { item = 'empty_bottle', amount = 15 },
+    { item = 'empty_cart', amount = 10 },
+    { item = 'filter', amount = 15 },
+    { item = 'lab_kit', amount = 2 },
+    { item = 'burner', amount = 2 },
+    { item = 'chemical_mix', amount = 15 },
+    { item = 'weed_leaf', amount = 25 },
+    { item = 'poppy_flower', amount = 20 },
+    { item = 'meth_ingredient', amount = 20 },
+    { item = 'pill_powder', amount = 20 },
+    { item = 'mushroom_raw', amount = 20 },
+    { item = 'cartel_raw', amount = 20 },
+    { item = 'amp_precursor', amount = 20 },
+    { item = 'alcohol_base', amount = 15 },
+    { item = 'vape_liquid_base', amount = 15 },
+}
+
 --- Test meniu — duoda itemus / atidaro UI
 Config.TestKits = {
     level1 = {
         weed_leaf = 20, alcohol_base = 10, vape_liquid_base = 10,
         empty_cart = 10, empty_bottle = 10, filter = 10, empty_bag = 20,
+        trimming_scissors = 2, gloves = 5,
     },
     level2 = {
         weed_leaf = 30, poppy_flower = 20, meth_ingredient = 15, pill_powder = 15,
         mushroom_raw = 15, chemical_mix = 15, empty_bag = 35, scale = 5,
-        lab_kit = 3, gloves = 5,
+        lab_kit = 3, gloves = 5, trimming_scissors = 2, pill_press = 1,
     },
     level3 = {
         cartel_raw = 25, chemical_mix = 20, meth_ingredient = 10, pill_powder = 15,
         amp_precursor = 20,
         lab_kit = 5, empty_bag = 35, scale = 5, burner = 3,
+        trimming_scissors = 2, pill_press = 1, gloves = 5,
     },
 }
 
@@ -1126,4 +1159,32 @@ end
 
 function Config.IsPackagedDrugItem(itemName)
     return Config.PackagedDrugOutputs[tostring(itemName or ''):lower()] == true
+end
+
+--- Schedule-1 stiliaus mini-žaidimai pagal produktą (process / pack)
+Config.ScheduleMinigames = {
+    thc_process = { mode = 'trim', title = 'THC · lapų apdorojimas', steps = 4, icon = '🍃', difficulty = 1 },
+    thc_pack = { mode = 'pack_bottle', title = 'Vape buteliuko pildymas', steps = 2, icon = '💨', difficulty = 1 },
+    alcohol_process = { mode = 'distill', title = 'Samagono distiliacija', steps = 1, icon = '🥃', difficulty = 1 },
+    alcohol_pack = { mode = 'pack_bottle', title = 'Alkoholio supilstymas', steps = 2, icon = '🍾', difficulty = 1 },
+    vape_process = { mode = 'mix', title = 'Vape mišinio paruošimas', steps = 1, icon = '💨', difficulty = 1 },
+    vape_pack = { mode = 'pack_bottle', title = 'Vape skysčio buteliukas', steps = 2, icon = '🧴', difficulty = 1 },
+    weed_process = { mode = 'trim', title = 'Žolės lapų skynimas žirklėmis', steps = 5, icon = '🍃', difficulty = 2 },
+    weed_pack = { mode = 'pack_bag', title = 'Žolės žiedų pakavimas', steps = 3, icon = '🌿', difficulty = 2 },
+    heroin_process = { mode = 'cook', title = 'Heroino virimas', steps = 1, icon = '⚗️', difficulty = 2 },
+    heroin_pack = { mode = 'pack_bag', title = 'Heroino supakavimas', steps = 3, icon = '💉', difficulty = 2 },
+    meth_process = { mode = 'crystal', title = 'Meto kristalizacija', steps = 4, icon = '💎', difficulty = 3 },
+    meth_pack = { mode = 'pack_bag', title = 'Meto maišelio užlydinimas', steps = 3, icon = '❄️', difficulty = 3 },
+    pills_process = { mode = 'press', title = 'Tablečių presavimas', steps = 4, icon = '💊', difficulty = 2 },
+    pills_pack = { mode = 'pack_bag', title = 'Tablečių pakavimas', steps = 3, icon = '💊', difficulty = 2 },
+    mushroom_process = { mode = 'trim', title = 'Grybų valymas', steps = 3, icon = '🍄', difficulty = 2 },
+    mushroom_pack = { mode = 'pack_bag', title = 'Grybų pakavimas', steps = 3, icon = '🍄', difficulty = 2 },
+    cocaine_process = { mode = 'wash', title = 'Kokaino lapų plovimas', steps = 4, icon = '🍃', difficulty = 3 },
+    cocaine_pack = { mode = 'pack_brick', title = 'Kokaino bloko pakavimas', steps = 3, icon = '🧱', difficulty = 3 },
+    amp_process = { mode = 'cook', title = 'Amfetamino sintezė', steps = 1, icon = '⚗️', difficulty = 3 },
+    amp_pack = { mode = 'pack_bag', title = 'Amfetamino pakavimas', steps = 3, icon = '⚡', difficulty = 3 },
+}
+
+function Config.GetScheduleMinigame(productId)
+    return Config.ScheduleMinigames and Config.ScheduleMinigames[productId] or nil
 end

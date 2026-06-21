@@ -13,6 +13,7 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/schedule.js',
 }
 
 shared_scripts {
@@ -22,6 +23,7 @@ shared_scripts {
 client_scripts {
     'client/progress.lua',
     'client/drug_sell_anim.lua',
+    'client/schedule_anim.lua',
     'client/main.lua',
     'client/planned.lua',
     'client/printer.lua',

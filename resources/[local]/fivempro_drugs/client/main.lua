@@ -219,6 +219,24 @@ local function runAdvancedMinigame(onDone)
     SetNuiFocus(true, true)
 end
 
+local function runScheduleMinigame(productId, profile, prod, onDone)
+    pendingMinigame = onDone
+    closeUi()
+    Wait(200)
+    if ScheduleAnimStart and profile and profile.mode then
+        ScheduleAnimStart(profile.mode)
+    end
+    nui('minigameSchedule', {
+        productId = productId,
+        mode = profile and profile.mode or 'trim',
+        title = profile and profile.title or (prod and prod.label) or 'Gamyba',
+        steps = profile and profile.steps or 3,
+        icon = profile and profile.icon or '🌿',
+        difficulty = profile and profile.difficulty or (prod and prod.level) or 1,
+    })
+    SetNuiFocus(true, true)
+end
+
 local function getAllStations()
     local list = {}
     for _, st in ipairs(Config.Stations or {}) do
@@ -386,7 +404,14 @@ local function startCraftFlow(productId)
         end
 
         local mg = res.minigame or 'progress'
-        if mg == 'progress' then
+        if mg == 'schedule' then
+            local profile = Config.GetScheduleMinigame and Config.GetScheduleMinigame(productId)
+            local prod = Config.Products and Config.Products[productId]
+            runProgress(res.label, math.floor((res.craftTimeMs or 20000) * 0.25), function(ok)
+                if not ok then return afterMinigame(false) end
+                runScheduleMinigame(productId, profile, prod, afterMinigame)
+            end)
+        elseif mg == 'progress' then
             runProgress(res.label, res.craftTimeMs or 25000, afterMinigame)
         elseif mg == 'skill' then
             runProgress(res.label, math.floor((res.craftTimeMs or 30000) * 0.55), function(ok)
@@ -502,10 +527,16 @@ end)
 
 local function finishMinigame(success)
     SetNuiFocus(uiOpen, uiOpen)
+    if ScheduleAnimStop then ScheduleAnimStop() end
     local cb = pendingMinigame
     pendingMinigame = nil
     if cb then cb(success == true) end
 end
+
+RegisterNUICallback('scheduleResult', function(data, cb)
+    finishMinigame(data and data.success)
+    cb('ok')
+end)
 
 RegisterNUICallback('skillResult', function(data, cb)
     finishMinigame(data and data.success)
@@ -817,6 +848,53 @@ local function openMaterialShop()
     end)
 end
 
+local function findMaterialShopRow(itemName)
+    local shopItems = (Config.MaterialShop and Config.MaterialShop.items) or {}
+    for _, row in ipairs(shopItems) do
+        if row.name == itemName then return row end
+    end
+end
+
+local function openLsQuickBuyMenu()
+    if not Config.EnableDrugTestNPC then return end
+    local rows = {
+        { header = 'LS test — greitas pirkimas', isMenuHeader = true },
+    }
+    for _, entry in ipairs(Config.LsTestQuickBuy or {}) do
+        local itemName = entry.item
+        local amount = tonumber(entry.amount) or 1
+        local shopRow = findMaterialShopRow(itemName)
+        if shopRow then
+            local shared = resolveSharedItem(itemName)
+            local label = entry.label or (shared and shared.label) or itemName
+            rows[#rows + 1] = {
+                header = ('%s x%d — $%s'):format(label, amount, (shopRow.price or 0) * amount),
+                txt = 'Nusipirk tiesiai į inventorių',
+                params = {
+                    isAction = true,
+                    event = function()
+                        buyMaterialItem(itemName, amount)
+                    end,
+                },
+            }
+        end
+    end
+    rows[#rows + 1] = {
+        header = 'Pilna parduotuvė (visi itemai)',
+        txt = 'Atidaryti qb-inventory shop langą',
+        params = { isAction = true, event = openMaterialShop },
+    }
+    rows[#rows + 1] = {
+        header = 'Uždaryti',
+        params = { isAction = true, event = function() TriggerEvent('qb-menu:client:closeMenu') end },
+    }
+    if GetResourceState('qb-menu') == 'started' then
+        TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+    else
+        openMaterialShop()
+    end
+end
+
 local function openProductSellMenu(buyerId)
     buyerId = tostring(buyerId or '')
     local cfg = Config.ProductBuyerNPCs and Config.ProductBuyerNPCs[buyerId]
@@ -873,7 +951,8 @@ local function openTestMenu()
     if not Config.EnableDrugTestNPC then return end
     local rows = {
         { header = 'Narkotikų gamyba', isMenuHeader = true },
-        { header = 'Pirkti reikmenis (parduotuvė)', txt = 'Ingredientai ir ginklų dalys', params = { isAction = true, event = openMaterialShop } },
+        { header = 'Greitas pirkimas (įrankiai + žaliava)', txt = 'Žirklės, presas, maišeliai…', params = { isAction = true, event = openLsQuickBuyMenu } },
+        { header = 'Pilna parduotuvė', txt = 'Visi ingredientai ir ginklų dalys', params = { isAction = true, event = openMaterialShop } },
         { header = 'L1 sandėliukas', params = { isAction = true, event = function() openStationUi('stash_grove') end } },
         { header = 'L2 trap house', params = { isAction = true, event = function() openStationUi('trap_chamberlain') end } },
         { header = 'L3 kokaino lab.', params = { isAction = true, event = function() openStationUi('cartel_lab') end } },
@@ -991,7 +1070,7 @@ end
 
 local npcTargetZonesReady = false
 
-local function addNpcCircleZone(zoneId, cfg, action)
+local function addNpcCircleZone(zoneId, cfg, action, labelOverride)
     if not cfg or cfg.enabled == false or not cfg.coords then return end
     if GetResourceState('qb-target') ~= 'started' then return end
     local c = cfg.coords
@@ -1004,7 +1083,7 @@ local function addNpcCircleZone(zoneId, cfg, action)
         options = {
             {
                 icon = cfg.targetIcon or 'fas fa-store',
-                label = cfg.label or 'NPC',
+                label = labelOverride or cfg.label or 'NPC',
                 action = action,
             },
         },
@@ -1024,6 +1103,7 @@ local function setupNpcTargetZones()
     if Config.EnableDrugTestNPC then
         if Config.TestSupplyShopNPC then
             addNpcCircleZone('fivempro_drugs_test_supply', Config.TestSupplyShopNPC, openMaterialShop)
+            addNpcCircleZone('fivempro_drugs_test_quickbuy', Config.TestSupplyShopNPC, openLsQuickBuyMenu, 'Greitas pirkimas')
         end
         if Config.TestNPC then
             addNpcCircleZone('fivempro_drugs_test_npc', Config.TestNPC, openTestMenu)
@@ -1135,6 +1215,11 @@ local function spawnTestSupplyShopNpc()
                     label = cfg.label or 'Nelegalūs reikmenys (test)',
                     action = openMaterialShop,
                 },
+                {
+                    icon = 'fas fa-bolt',
+                    label = 'Greitas pirkimas',
+                    action = openLsQuickBuyMenu,
+                },
             },
             distance = (Config.InteractDistance or 2.5) + 1.0,
         })
@@ -1187,6 +1272,11 @@ local function spawnTestNpc()
                     icon = 'fas fa-shopping-bag',
                     label = 'Pirkti reikmenis',
                     action = openMaterialShop,
+                },
+                {
+                    icon = 'fas fa-bolt',
+                    label = 'Greitas pirkimas',
+                    action = openLsQuickBuyMenu,
                 },
             },
             distance = (Config.InteractDistance or 2.5) + 1.0,

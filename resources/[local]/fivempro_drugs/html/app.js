@@ -153,6 +153,8 @@ window.addEventListener("message", (e) => {
     app.classList.add("hidden");
     mgSkill.classList.add("hidden");
     mgAdvanced.classList.add("hidden");
+    const mgSchedule = document.getElementById("mgSchedule");
+    if (mgSchedule) mgSchedule.classList.add("hidden");
   }
   if (msg.action === "craftProgress") {
     showCraftProgress(msg.data);
@@ -168,6 +170,9 @@ window.addEventListener("message", (e) => {
   }
   if (msg.action === "minigameAdvanced") {
     runAdvancedGame(msg.data && msg.data.rounds ? msg.data.rounds : 3);
+  }
+  if (msg.action === "minigameSchedule") {
+    /* schedule.js */
   }
   if (msg.action === "ampQuizShow") {
     showAmpQuiz(msg.data || {});

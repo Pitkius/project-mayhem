@@ -123,6 +123,9 @@ Config.JunkShop = {
         { name = 'binoculars', amount = 80, price = 265, slot = 8 },
         { name = 'lockpick', amount = 120, price = 58, slot = 9 },
         { name = 'gloves', amount = 250, price = 14, slot = 10 },
-        { name = 'empty_bottle', amount = 500, price = 4, slot = 11 },
+        { name = 'trimming_scissors', amount = 80, price = 68, slot = 11 },
+        { name = 'scale', amount = 60, price = 120, slot = 12 },
+        { name = 'empty_bag', amount = 300, price = 6, slot = 13 },
+        { name = 'empty_bottle', amount = 500, price = 4, slot = 14 },
     },
 }

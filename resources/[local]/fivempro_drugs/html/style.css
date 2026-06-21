@@ -298,3 +298,64 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   background: rgba(124, 58, 237, 0.28);
   border-color: rgba(167, 139, 250, 0.55);
 }
+
+/* Schedule-1 mini-žaidimai */
+.sch-box {
+  width: min(640px, 94vw);
+  background: linear-gradient(155deg, #14101f 0%, #0c0814 100%);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  border-radius: 16px;
+  padding: 20px 22px 18px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+}
+.sch-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+.sch-head h2 { font-size: 18px; color: #ecfdf5; letter-spacing: 0.06em; }
+.sch-head p { font-size: 12px; color: #86efac; }
+.sch-board { min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.sch-hint { margin-top: 10px; font-size: 13px; color: #a7f3d0; text-align: center; min-height: 18px; }
+.sch-btn {
+  padding: 10px 18px; border-radius: 10px; border: 1px solid rgba(74, 222, 128, 0.4);
+  background: rgba(16, 185, 129, 0.2); color: #ecfdf5; cursor: pointer; font-weight: 600;
+}
+.sch-btn.primary { background: linear-gradient(135deg, #059669, #10b981); border-color: #34d399; }
+.sch-btn:hover { filter: brightness(1.08); }
+.sch-table { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.sch-leaf {
+  width: 96px; height: 110px; border-radius: 12px; border: 1px dashed rgba(74, 222, 128, 0.45);
+  background: rgba(6, 78, 59, 0.35); color: #d1fae5; cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+}
+.sch-leaf.picked { border-style: solid; background: rgba(16, 185, 129, 0.35); box-shadow: 0 0 16px rgba(52, 211, 153, 0.35); }
+.sch-trim-wrap { position: relative; width: 280px; height: 200px; }
+.sch-leaf-big { font-size: 64px; text-align: center; margin-top: 20px; }
+.sch-tool { position: absolute; top: 0; right: 0; font-size: 13px; color: #fef3c7; background: rgba(0,0,0,0.35); padding: 6px 10px; border-radius: 8px; }
+.sch-trim-points { position: absolute; inset: 0; }
+.sch-trim-point {
+  position: absolute; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #4ade80;
+  background: rgba(74, 222, 128, 0.25); cursor: pointer; transform: translate(-50%, -50%);
+}
+.sch-trim-point.done { background: #22c55e; border-color: #bbf7d0; }
+.sch-pack-row { display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.sch-scale, .sch-product, .sch-bag, .sch-bottle {
+  width: 120px; height: 120px; border-radius: 14px; border: 1px solid rgba(167, 139, 250, 0.3);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: rgba(0,0,0,0.3); color: #f5f3ff; font-size: 36px;
+}
+.sch-clickable { cursor: pointer; }
+.sch-clickable.active { outline: 2px solid #4ade80; }
+.sch-bag small, .sch-scale p { font-size: 12px; color: #c4b5fd; }
+.sch-bag.seal { cursor: pointer; width: 160px; height: 140px; }
+.sch-bag.pulse { animation: schPulse 0.2s ease; }
+.sch-bottle { position: relative; overflow: hidden; }
+.sch-fill { position: absolute; bottom: 0; left: 10%; width: 80%; height: 0; background: linear-gradient(0deg, #a78bfa, #7c3aed); border-radius: 6px 6px 0 0; transition: height 0.6s ease; }
+.sch-gauge-track { position: relative; width: 320px; height: 28px; background: rgba(0,0,0,0.45); border-radius: 999px; overflow: hidden; border: 1px solid rgba(74,222,128,0.35); }
+.sch-gauge-zone { position: absolute; top: 0; height: 100%; width: 22%; background: rgba(34, 197, 94, 0.45); }
+.sch-gauge-needle { position: absolute; top: -4px; width: 4px; height: 36px; background: #fef08a; box-shadow: 0 0 8px #facc15; }
+.sch-seq { font-size: 22px; letter-spacing: 0.2em; color: #fde68a; margin-bottom: 12px; }
+.sch-keys { display: flex; gap: 10px; }
+.sch-keys .sch-btn { min-width: 48px; }
+.sch-press, .sch-tub { cursor: pointer; padding: 20px; border-radius: 14px; border: 1px solid rgba(167,139,250,0.35); background: rgba(30,20,50,0.6); color: #f3e8ff; font-size: 42px; }
+.sch-wash-leaf { font-size: 28px; margin: 4px; border: none; background: transparent; cursor: pointer; }
+.sch-wash-leaf.done { opacity: 0.25; }
+.sch-done { text-align: center; color: #bbf7d0; font-size: 18px; }
+@keyframes schPulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
