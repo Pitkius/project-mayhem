@@ -22,6 +22,7 @@ local VANILLA_FARM_INTERIOR_IPLS = {
 local ONEIL_DOOR_PROBE = vec3(2452.2986, 4969.7222, 46.5716)
 local ONEIL_INTERIOR_PROBE = vec3(2453.229, 4965.452, 45.572)
 local ONEIL_CENTER = vec3(2435.7107, 4975.8750, 46.5714)
+local ONEIL_INTERIOR_TYPE = 'farmhouse'
 
 local ONEIL_DRUGLAB_IPLS = {
     'brown_amfsted_milo_',
@@ -33,9 +34,16 @@ local ONEIL_DRUGLAB_IPLS = {
 local ONEIL_DOORS = {
     { model = `prop_ld_farm_door01`, coords = vec3(2452.2986, 4969.7222, 46.5716), heading = 308.7976 },
     { model = `prop_farmhouse_door1`, coords = vec3(2452.2986, 4969.7222, 46.5716), heading = 308.7976 },
+    { model = `prop_ld_farm_door01`, coords = vec3(2452.55, 4970.03, 46.81), heading = 315.0 },
+    { model = `prop_farmhouse_door1`, coords = vec3(2452.55, 4970.03, 46.81), heading = 315.0 },
     { model = `prop_ld_farm_door01`, coords = vec3(2435.7107, 4975.8750, 46.5714), heading = 231.8669 },
     { model = `prop_farmhouse_door1`, coords = vec3(2435.7107, 4975.8750, 46.5714), heading = 231.8669 },
+    { model = `prop_ld_farm_door01`, coords = vec3(2435.29, 4975.52, 46.81), heading = 225.0 },
+    { model = `prop_ld_farm_door01`, coords = vec3(2448.44, 4971.86, 46.81), heading = 135.0 },
+    { model = `prop_gate_farm_03`, coords = vec3(2438.45, 4976.85, 46.81), heading = 225.0 },
 }
+
+local LOST_MC_CENTER = vec3(987.0, -115.0, 74.5)
 
 local SIMEON_CENTER = vec3(-47.59, -1115.42, 26.43)
 local SIMEON_INTERIOR_PROBE = vec3(-38.62, -1099.01, 27.31)
@@ -107,6 +115,9 @@ local function unlockDoor(door)
             door.heading or 0.0,
             false
         )
+    end)
+    pcall(function()
+        DoorSystemSetDoorState(door.model, 0, false, false)
     end)
 end
 
@@ -226,11 +237,24 @@ local function loadOneilFarmhouse()
     requestIpls(VANILLA_FARM_EXTERIOR_IPLS)
     requestIpls(VANILLA_FARM_INTERIOR_IPLS)
 
-    for _, coords in ipairs({ ONEIL_CENTER, ONEIL_DOOR_PROBE, ONEIL_INTERIOR_PROBE }) do
-        requestCollision(coords)
+    local probes = {
+        ONEIL_CENTER,
+        ONEIL_DOOR_PROBE,
+        ONEIL_INTERIOR_PROBE,
+        vec3(2452.55, 4970.03, 46.81),
+        vec3(2448.44, 4971.86, 46.81),
+        vec3(2453.5, 4966.0, 45.57),
+    }
+    for _, coords in ipairs(probes) do
+        for dz = -1.0, 2.5, 0.5 do
+            RequestCollisionAtCoord(coords.x, coords.y, coords.z + dz)
+        end
     end
 
-    local interiorId = waitInteriorAt(ONEIL_INTERIOR_PROBE, 'farmhouse', 250)
+    local interiorId = waitInteriorAt(ONEIL_INTERIOR_PROBE, ONEIL_INTERIOR_TYPE, 300)
+    if (not interiorId or interiorId == 0) then
+        interiorId = waitInteriorAt(ONEIL_DOOR_PROBE, ONEIL_INTERIOR_TYPE, 120)
+    end
     if interiorId and interiorId ~= 0 then
         PinInteriorInMemory(interiorId)
         LoadInterior(interiorId)
@@ -272,12 +296,20 @@ CreateThread(function()
         local nearOneil = #(p - ONEIL_CENTER) < 100.0 or #(p - ONEIL_DOOR_PROBE) < 55.0
         local nearSimeon = #(p - SIMEON_CENTER) < 120.0
         local nearVapeSkyscraper = #(p - VAPE_SKYSCRAPER_CENTER) < 120.0
+        local nearLostMc = #(p - LOST_MC_CENTER) < 140.0
 
         if nearOneil then
             removeIpls(ONEIL_DRUGLAB_IPLS)
             removeIpls(BURNT_FARM_IPLS)
             loadOneilFarmhouse()
             Wait(2500)
+        elseif nearLostMc then
+            if GetResourceState('cfx-gabz-lost') == 'started' then
+                pcall(function()
+                    exports['cfx-gabz-lost']:ReloadLostMc()
+                end)
+            end
+            Wait(1500)
         elseif nearSimeon then
             loadSimeonShowroom()
             Wait(1500)
@@ -294,7 +326,9 @@ AddEventHandler('onResourceStart', function(resourceName)
     if resourceName == GetCurrentResourceName()
         or resourceName == 'druglabs'
         or resourceName == 'fivempro_dealership'
-        or resourceName == 'sc1_29_motel' then
+        or resourceName == 'sc1_29_motel'
+        or resourceName == 'cfx-gabz-lost'
+        or resourceName == 'cfx-gabz-mapdata' then
         Wait(1000)
         applyMapFixes()
     end

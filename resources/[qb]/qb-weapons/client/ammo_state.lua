@@ -163,7 +163,9 @@ function WeaponAmmo.loadBulletsIntoClip(ped, weaponHash, weaponData, bulletsToLo
     bulletsToLoad = math.max(0, tonumber(bulletsToLoad) or 0)
     if bulletsToLoad <= 0 or not ped or ped == 0 or not weaponHash or weaponHash == 0 then return 0 end
 
+    SetCurrentPedWeapon(ped, weaponHash, true)
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+
     local maxClip = WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
     local _, clipBefore = GetAmmoInClip(ped, weaponHash)
     local curClip = math.min(maxClip, math.max(0, tonumber(clipBefore) or 0))

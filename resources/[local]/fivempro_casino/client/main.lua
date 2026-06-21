@@ -45,9 +45,8 @@ end
 Casino.drawText3D = drawText3D
 
 local function loadCasinoIpl()
-    if not Config.Casino or Config.Casino.loadVanillaIpl ~= true then return end
-    for _, ipl in ipairs({ 'vw_casino_main', 'vw_casino_garage', 'vw_casino_carpark' }) do
-        RequestIpl(ipl)
+    if Casino.loadIpl then
+        Casino.loadIpl()
     end
 end
 
@@ -90,11 +89,17 @@ end
 Casino.canUseCasino = canUseCasino
 
 local function ejectFromCasino()
-    local exit = Config.Casino and Config.Casino.exit
-    if not exit then return end
+    local exterior
+    local exits = Config.CasinoExits or {}
+    if exits[1] and exits[1].exterior then
+        exterior = exits[1].exterior
+    else
+        local blip = Config.Casino and Config.Casino.blip and Config.Casino.blip.coords
+        exterior = blip and vector4(blip.x, blip.y, blip.z, 328.0) or vector4(924.78, 46.85, 81.11, 328.0)
+    end
     local ped = PlayerPedId()
-    SetEntityCoords(ped, exit.x, exit.y, exit.z, false, false, false, false)
-    SetEntityHeading(ped, exit.w or 0.0)
+    SetEntityCoords(ped, exterior.x, exterior.y, exterior.z, false, false, false, false)
+    SetEntityHeading(ped, exterior.w or 0.0)
     notify('Jūs išvaryti iš kazino iki rytojaus — dienos laimėjimų limitas pasiektas.', 'error')
 end
 

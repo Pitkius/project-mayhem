@@ -4,6 +4,21 @@ local mineCooldown = {}
 
 local PICKAXE_ITEM = 'mining_pickaxe'
 
+local function getPlayerItem(src, itemName)
+    if not src or not itemName then return nil end
+    local Player = QBCore.Functions.GetPlayer(src)
+    if Player and Player.Functions and Player.Functions.GetItemByName then
+        return Player.Functions.GetItemByName(itemName)
+    end
+    if GetResourceState('qb-inventory') == 'started' then
+        return exports['qb-inventory']:GetItemByName(src, itemName)
+    end
+end
+
+local function itemAmount(itemData)
+    return itemData and (itemData.amount or itemData.count or 0) or 0
+end
+
 local function playerHasMiningPickaxe(src)
     if not src then return false end
     return QBCore.Functions.HasItem(src, PICKAXE_ITEM, 1)
@@ -65,8 +80,8 @@ local function migrateLegacyPickaxes(src)
     if not Player then return end
     local converted = 0
     for itemName in pairs(LEGACY_PICKAXES) do
-        local data = Player.Functions.GetItemByName(itemName)
-        local amt = data and (data.amount or data.count or 0) or 0
+        local data = getPlayerItem(src, itemName)
+        local amt = itemAmount(data)
         if amt and amt > 0 and Player.Functions.RemoveItem(itemName, amt, false) then
             converted = converted + amt
         end
@@ -79,7 +94,10 @@ end
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
     local src = Player and Player.PlayerData and Player.PlayerData.source
-    if src then migrateLegacyPickaxes(src) end
+    if not src then return end
+    SetTimeout(1500, function()
+        migrateLegacyPickaxes(src)
+    end)
 end)
 
 RegisterNetEvent('fivempro_mining:server:mineAttempt', function(siteIdx)
@@ -118,8 +136,8 @@ RegisterNetEvent('fivempro_mining:server:processBatch', function()
     if not Player then return end
     local processed = 0
     for rawName, cleanName in pairs(Config.ProcessMap or {}) do
-        local itemData = Player.Functions.GetItemByName(rawName)
-        local amt = itemData and (itemData.amount or itemData.count or 0) or 0
+        local itemData = getPlayerItem(src, rawName)
+        local amt = itemAmount(itemData)
         if amt and amt > 0 then
             if Player.Functions.RemoveItem(rawName, amt, false) then
                 Player.Functions.AddItem(cleanName, amt, false)
@@ -143,10 +161,10 @@ RegisterNetEvent('fivempro_mining:server:makeSteel', function()
     if not Player then return end
     local R = Config.SteelRecipe
     if not R then return end
-    local iron = Player.Functions.GetItemByName(R.iron)
-    local coal = Player.Functions.GetItemByName(R.coal)
-    local ic = iron and (iron.amount or iron.count or 0) or 0
-    local cc = coal and (coal.amount or coal.count or 0) or 0
+    local iron = getPlayerItem(src, R.iron)
+    local coal = getPlayerItem(src, R.coal)
+    local ic = itemAmount(iron)
+    local cc = itemAmount(coal)
     local needI, needC = tonumber(R.ironCount) or 2, tonumber(R.coalCount) or 1
     if ic < needI or cc < needC then
         return TriggerClientEvent('QBCore:Notify', src, ('Reikia %sx geležies rūdos ir %sx anglies.'):format(needI, needC), 'error')
@@ -171,8 +189,8 @@ RegisterNetEvent('fivempro_mining:server:sellAll', function()
     if not Player then return end
     local total = 0
     for itemName, price in pairs(Config.SellPrices or {}) do
-        local data = Player.Functions.GetItemByName(itemName)
-        local amt = data and (data.amount or data.count or 0) or 0
+        local data = getPlayerItem(src, itemName)
+        local amt = itemAmount(data)
         if amt and amt > 0 then
             local p = tonumber(price) or 0
             if p > 0 and Player.Functions.RemoveItem(itemName, amt, false) then

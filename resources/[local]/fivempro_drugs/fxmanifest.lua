@@ -28,6 +28,7 @@ client_scripts {
     'client/planned.lua',
     'client/printer.lua',
     'client/mushrooms.lua',
+    'client/weed_grow.lua',
     'client/amp_lab.lua',
 }
 
@@ -41,6 +42,7 @@ server_scripts {
 client_exports {
     'PlayDrugSellAnim',
     'IsDrugSellAnimBusy',
+    'RunScheduleMinigame',
 }
 
 dependencies {

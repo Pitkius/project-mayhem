@@ -12,7 +12,48 @@ Config.Casino = {
         label = 'Diamond Casino',
     },
     exit = vector4(1085.98, 214.52, -49.20, 180.0),
+    interiorSpawn = vector4(1089.1294, 207.2294, -48.9997, 320.0139),
     loadVanillaIpl = true,
+}
+
+--- Išoriniai įėjimai (laiptai / stiklinės durys) → teleportas į interjerą
+Config.CasinoEntrances = {
+    {
+        id = 'glass_doors',
+        coords = vector3(935.6165, 47.4366, 81.0958),
+        heading = 278.2361,
+        label = 'Įeiti į kazino',
+        length = 2.2,
+        width = 2.6,
+    },
+    {
+        id = 'main_entrance',
+        coords = vector3(924.7840, 46.8540, 81.1060),
+        heading = 328.0,
+        label = 'Įeiti į kazino',
+        length = 2.4,
+        width = 2.4,
+    },
+}
+
+--- Interjero išėjimai → teleportas į lauką
+Config.CasinoExits = {
+    {
+        id = 'lobby_exit',
+        coords = vector3(1089.1294, 207.2294, -48.9997),
+        exterior = vector4(935.6165, 47.4366, 81.0958, 278.2361),
+        label = 'Išeiti iš kazino',
+        length = 2.0,
+        width = 2.0,
+    },
+    {
+        id = 'side_exit',
+        coords = vector3(1085.98, 214.52, -49.20),
+        exterior = vector4(924.7840, 46.8540, 81.1060, 328.0),
+        label = 'Išeiti iš kazino',
+        length = 2.0,
+        width = 2.0,
+    },
 }
 
 --- Visi limitai — max statymas ir max laimėjimas vienam žaidimui, dienos pergalės limitas (be rato)

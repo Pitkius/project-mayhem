@@ -626,7 +626,12 @@ local function setupStationBlips()
         )
     end
 
-    -- Žolės reikmenų NPC / laisvas auginimas išjungtas — žaliava tik iš nelegalių reikmenų parduotuvės
+    -- Žolės auginimas (Schedule-1 sodinimas)
+    for _, field in ipairs(Config.WeedGrowFields or {}) do
+        if field.center and field.blip and field.blip.enabled ~= false then
+            addCfgBlip(field.center, field.blip, field.blip.label or 'Kanapių auginimas')
+        end
+    end
 
     -- Grybų rinkimas
     for _, field in ipairs(Config.MushroomFields or {}) do
@@ -1452,4 +1457,8 @@ AddEventHandler('onResourceStop', function(res)
     end
     productBuyerPeds = {}
     productBuyerBlips = {}
+end)
+
+exports('RunScheduleMinigame', function(profile, onDone)
+    runScheduleMinigame(nil, profile, nil, onDone)
 end)

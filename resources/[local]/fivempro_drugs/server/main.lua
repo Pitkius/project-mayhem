@@ -110,6 +110,14 @@ local function isPoliceOnDuty(src)
     return P.PlayerData.job.name == 'police' and P.PlayerData.job.onduty == true
 end
 
+local function productUsesPrinter(productId, st)
+    if not st or st.mode ~= 'weapon' then return false end
+    for _, row in ipairs(getRecipe(productId, st)) do
+        if PRINTER_PARTS[row.item] then return true end
+    end
+    return false
+end
+
 local function getEffectiveRecipe(productId, st, src)
     local recipe = getRecipe(productId, st)
     if not src or isPoliceOnDuty(src) or not productUsesPrinter(productId, st) then
@@ -124,14 +132,6 @@ local function getEffectiveRecipe(productId, st, src)
     end
     out[#out + 1] = { item = PROTOTYPE_ITEM, count = 1 }
     return out
-end
-
-local function productUsesPrinter(productId, st)
-    if not st or st.mode ~= 'weapon' then return false end
-    for _, row in ipairs(getRecipe(productId, st)) do
-        if PRINTER_PARTS[row.item] then return true end
-    end
-    return false
 end
 
 local function estimateWeaponCraftSec(prod, usesPrinter)
@@ -902,10 +902,212 @@ RegisterNetEvent('fivempro_drugs:server:pickMushroom', function(fieldId, spawnIn
     end)
 end)
 
+-- Kanapių auginimas (server-side būsena)
+local weedPlants = {}
+local weedPlayerCd = {}
+
+local function weedPlantKey(fieldId, spawnIndex)
+    return ('%s:%s'):format(tostring(fieldId), tostring(spawnIndex))
+end
+
+local function getWeedField(id)
+    for _, field in ipairs(Config.WeedGrowFields or {}) do
+        if field.id == id then return field end
+    end
+end
+
+local function weedSpawnCoord(field, index)
+    if field.fixedSpawns and field.fixedSpawns[index] then
+        local c = field.fixedSpawns[index]
+        return vector3(c.x, c.y, c.z)
+    end
+    local total = math.max(1, tonumber(field.spawnCount) or 8)
+    local radius = tonumber(field.radius) or 30.0
+    local angle = ((index - 1) / total) * (math.pi * 2.0)
+    local ring = 0.28 + (((index - 1) % 4) * 0.14)
+    local dist = radius * ring
+    local x = field.center.x + math.cos(angle) * dist
+    local y = field.center.y + math.sin(angle) * dist
+    return vector3(x, y, field.center.z)
+end
+
+local function computeWeedStage(field, plant)
+    if not plant or not plant.plantedAt then return 0 end
+    local bonus = (tonumber(plant.watered) or 0) * (tonumber(field.waterBonusSec) or 40)
+    local elapsed = os.time() - tonumber(plant.plantedAt) + bonus
+    if elapsed >= (tonumber(field.stage3Sec) or 240) then return 3 end
+    if elapsed >= (tonumber(field.stage2Sec) or 90) then return 2 end
+    return 1
+end
+
+local function plantPayload(field, plant)
+    return {
+        plantedAt = plant.plantedAt,
+        watered = plant.watered or 0,
+        stage = computeWeedStage(field, plant),
+    }
+end
+
+local function playerNearWeedSpot(src, field, spawnIndex, px, py, pz)
+    local ped = GetPlayerPed(src)
+    if ped == 0 then return false end
+    local pcoords = vector3(tonumber(px) or 0.0, tonumber(py) or 0.0, tonumber(pz) or 0.0)
+    if #(pcoords - vector3(0.0, 0.0, 0.0)) < 0.01 then
+        pcoords = GetEntityCoords(ped)
+    end
+    local spawnCoords = weedSpawnCoord(field, spawnIndex)
+    local maxDist = (tonumber(field.pickDistance) or 2.2) + 1.8
+    if #(pcoords - spawnCoords) > maxDist then return false end
+    if #(pcoords - field.center) > (tonumber(field.radius) or 40.0) + 6.0 then return false end
+    return true
+end
+
+QBCore.Functions.CreateCallback('fivempro_drugs:server:syncWeedField', function(_, cb, fieldId)
+    fieldId = tostring(fieldId or '')
+    local field = getWeedField(fieldId)
+    local out = {}
+    if not field then return cb(out) end
+    local count = math.max(1, tonumber(field.spawnCount) or 8)
+    for i = 1, count do
+        local key = weedPlantKey(fieldId, i)
+        local plant = weedPlants[key]
+        if plant then
+            out[tostring(i)] = plantPayload(field, plant)
+        end
+    end
+    cb(out)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_drugs:server:canPlantWeed', function(src, cb, fieldId, spawnIndex)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb(false, 'Klaida.') end
+    fieldId = tostring(fieldId or '')
+    spawnIndex = tonumber(spawnIndex)
+    local field = getWeedField(fieldId)
+    if not field or not spawnIndex then return cb(false, 'Neauga čia.') end
+    local key = weedPlantKey(fieldId, spawnIndex)
+    if weedPlants[key] then return cb(false, 'Vieta užimta.') end
+    local seedItem = field.seedItem or 'weed_seed'
+    local seed = Player.Functions.GetItemByName(seedItem)
+    if not seed or (seed.amount or 0) < 1 then
+        return cb(false, 'Reikia kanapių sėklos.')
+    end
+    if not playerNearWeedSpot(src, field, spawnIndex) then
+        return cb(false, 'Per toli.')
+    end
+    cb(true)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_drugs:server:canHarvestWeed', function(src, cb, fieldId, spawnIndex)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb(false, 'Klaida.') end
+    fieldId = tostring(fieldId or '')
+    spawnIndex = tonumber(spawnIndex)
+    local field = getWeedField(fieldId)
+    if not field or not spawnIndex then return cb(false, 'Neauga čia.') end
+    local key = weedPlantKey(fieldId, spawnIndex)
+    local plant = weedPlants[key]
+    if not plant then return cb(false, 'Čia nieko neauga.') end
+    if computeWeedStage(field, plant) < 3 then
+        return cb(false, 'Augalas dar nebrandus.')
+    end
+    if not playerNearWeedSpot(src, field, spawnIndex) then
+        return cb(false, 'Per toli.')
+    end
+    cb(true)
+end)
+
+RegisterNetEvent('fivempro_drugs:server:plantWeed', function(fieldId, spawnIndex, px, py, pz)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    fieldId = tostring(fieldId or '')
+    spawnIndex = tonumber(spawnIndex)
+    local field = getWeedField(fieldId)
+    if not field or not spawnIndex then return end
+    local key = weedPlantKey(fieldId, spawnIndex)
+    if weedPlants[key] then return end
+    if not playerNearWeedSpot(src, field, spawnIndex, px, py, pz) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
+    end
+    local seedItem = field.seedItem or 'weed_seed'
+    if not exports['qb-inventory']:RemoveItem(src, seedItem, 1, false, 'fivempro_drugs:plantWeed') then
+        return TriggerClientEvent('QBCore:Notify', src, 'Reikia kanapių sėklos.', 'error')
+    end
+    local plant = { plantedAt = os.time(), watered = 0 }
+    weedPlants[key] = plant
+    TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[seedItem], 'remove', 1)
+    TriggerClientEvent('QBCore:Notify', src, 'Sėkla pasodinta — laikyklės ir laistyk augalą.', 'success')
+    TriggerClientEvent('fivempro_drugs:client:weedPlantUpdate', -1, fieldId, spawnIndex, plantPayload(field, plant))
+end)
+
+RegisterNetEvent('fivempro_drugs:server:waterWeed', function(fieldId, spawnIndex)
+    local src = source
+    fieldId = tostring(fieldId or '')
+    spawnIndex = tonumber(spawnIndex)
+    local field = getWeedField(fieldId)
+    if not field or not spawnIndex then return end
+    local key = weedPlantKey(fieldId, spawnIndex)
+    local plant = weedPlants[key]
+    if not plant then return end
+    if computeWeedStage(field, plant) >= 3 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Augalas jau brandus — skink lapus.', 'primary')
+    end
+    local maxWaters = tonumber(field.maxWaters) or 2
+    if (plant.watered or 0) >= maxWaters then
+        return TriggerClientEvent('QBCore:Notify', src, 'Augalas jau pakankamai palaistas.', 'error')
+    end
+    if not playerNearWeedSpot(src, field, spawnIndex) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
+    end
+    plant.watered = (plant.watered or 0) + 1
+    TriggerClientEvent('QBCore:Notify', src, 'Augalas palaistas.', 'success')
+    TriggerClientEvent('fivempro_drugs:client:weedPlantUpdate', -1, fieldId, spawnIndex, plantPayload(field, plant))
+end)
+
+RegisterNetEvent('fivempro_drugs:server:harvestWeed', function(fieldId, spawnIndex, px, py, pz)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    fieldId = tostring(fieldId or '')
+    spawnIndex = tonumber(spawnIndex)
+    local field = getWeedField(fieldId)
+    if not field or not spawnIndex then return end
+    local key = weedPlantKey(fieldId, spawnIndex)
+    local plant = weedPlants[key]
+    if not plant then return end
+    if computeWeedStage(field, plant) < 3 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Augalas dar nebrandus.', 'error')
+    end
+    if not playerNearWeedSpot(src, field, spawnIndex, px, py, pz) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
+    end
+    local cd = tonumber(field.playerCooldownSec) or 3
+    local now = os.time()
+    if weedPlayerCd[src] and (now - weedPlayerCd[src]) < cd then return end
+    weedPlayerCd[src] = now
+
+    local item = field.harvestItem or 'weed_leaf'
+    local amtMin = math.max(1, tonumber(field.harvestMin) or 2)
+    local amtMax = math.max(amtMin, tonumber(field.harvestMax) or 5)
+    local amount = math.random(amtMin, amtMax)
+
+    if not Player.Functions.AddItem(item, amount) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
+    end
+
+    weedPlants[key] = nil
+    local itemData = QBCore.Shared.Items[item]
+    TriggerClientEvent('inventory:client:ItemBox', src, itemData, 'add', amount)
+    TriggerClientEvent('QBCore:Notify', src, ('Nuskinta %sx %s'):format(amount, itemData and itemData.label or item), 'success')
+    TriggerClientEvent('fivempro_drugs:client:weedPlantClear', -1, fieldId, spawnIndex)
+end)
+
 AddEventHandler('playerDropped', function()
     local src = source
     activeCrafts[src] = nil
     lastCraftAt[src] = nil
     lastSellAt[src] = nil
     mushroomPlayerCd[src] = nil
+    weedPlayerCd[src] = nil
 end)

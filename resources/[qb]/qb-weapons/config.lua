@@ -8,8 +8,8 @@ Config.ReloadUseNativeFirst = true
 --- Inventoriaus perkrovos vizualinė animacija (kulkos kraunamos po animacijos).
 Config.ReloadVisualTime = 0
 
---- false = vanilla GTA reload (stovi vietoje kaip singleplayer).
-Config.ReloadAllowMovement = false
+--- true = galima bėgti/judėti perkraunant (viršutinė kūno animacija).
+Config.ReloadAllowMovement = true
 
 --[[
   Recoil: client/recoil.lua kelia kamerą + šoninį išsisklaidymą.

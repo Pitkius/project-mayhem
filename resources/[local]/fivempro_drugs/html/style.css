@@ -358,4 +358,16 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .sch-wash-leaf { font-size: 28px; margin: 4px; border: none; background: transparent; cursor: pointer; }
 .sch-wash-leaf.done { opacity: 0.25; }
 .sch-done { text-align: center; color: #bbf7d0; font-size: 18px; }
+.sch-plant-row { display: flex; gap: 24px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.sch-soil-pile, .sch-seed, .sch-pot {
+  min-width: 110px; min-height: 120px; padding: 16px; border-radius: 14px;
+  border: 1px dashed rgba(74, 222, 128, 0.45); background: rgba(6, 78, 59, 0.35);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  color: #d1fae5; font-size: 36px;
+}
+.sch-pot { position: relative; overflow: hidden; }
+.sch-pot-fill { position: absolute; bottom: 12px; left: 12%; width: 76%; height: 0; background: linear-gradient(0deg, #78350f, #a16207); border-radius: 6px; transition: height 0.25s ease; z-index: 0; }
+.sch-pot span, .sch-pot small { position: relative; z-index: 1; }
+.sch-pot small, .sch-soil-pile small, .sch-seed small { font-size: 12px; color: #86efac; }
+.sch-water-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 @keyframes schPulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }

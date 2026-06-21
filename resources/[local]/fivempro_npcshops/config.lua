@@ -124,8 +124,9 @@ Config.JunkShop = {
         { name = 'lockpick', amount = 120, price = 58, slot = 9 },
         { name = 'gloves', amount = 250, price = 14, slot = 10 },
         { name = 'trimming_scissors', amount = 80, price = 68, slot = 11 },
-        { name = 'scale', amount = 60, price = 120, slot = 12 },
-        { name = 'empty_bag', amount = 300, price = 6, slot = 13 },
-        { name = 'empty_bottle', amount = 500, price = 4, slot = 14 },
+        { name = 'weed_seed', amount = 200, price = 12, slot = 12 },
+        { name = 'scale', amount = 60, price = 120, slot = 13 },
+        { name = 'empty_bag', amount = 300, price = 6, slot = 14 },
+        { name = 'empty_bottle', amount = 500, price = 4, slot = 15 },
     },
 }

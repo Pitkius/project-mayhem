@@ -11,6 +11,7 @@ local MODE_ANIMS = {
     press = { dict = 'anim@amb@business@coc@coc_unpack_cut_left@', clip = 'coke_cut_v1_coccutter', prop = nil },
     wash = { dict = 'amb@world_human_maid_clean@', clip = 'base', prop = 'prop_sponge_01' },
     mix = { dict = 'amb@world_human_bum_wash@male@high@base', clip = 'base', prop = nil },
+    plant = { dict = 'amb@world_human_gardener_plant@male@base', clip = 'base', prop = nil },
 }
 
 local function loadDict(dict)

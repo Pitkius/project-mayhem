@@ -558,7 +558,19 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             return false, nil
         end
 
+        SetCurrentPedWeapon(ped, weapon, true)
+        WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weapon)
+
+        local clipBefore = select(1, WeaponAmmo.getClipAmmoState(ped, weapon, weaponPayload or current))
         local reallyLoaded = WeaponAmmo.loadBulletsIntoClip(ped, weapon, weaponPayload or current, bulletsNow)
+        if reallyLoaded <= 0 then
+            WeaponAmmo.normalizePedAmmo(ped, weapon, weaponPayload or current)
+            reallyLoaded = WeaponAmmo.loadBulletsIntoClip(ped, weapon, weaponPayload or current, bulletsNow)
+        end
+        if reallyLoaded <= 0 then
+            local clipAfter = select(1, WeaponAmmo.getClipAmmoState(ped, weapon, weaponPayload or current))
+            reallyLoaded = math.max(0, clipAfter - clipBefore)
+        end
         if reallyLoaded <= 0 then
             return false, 'Nepavyko užpildyti apkabos.'
         end
@@ -589,35 +601,35 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     end
 
     isReloading = true
+    reloadGuardUntil = GetGameTimer() + 80
 
     local reloadPed = ped
     local reloadWeapon = weapon
     local reloadPayload = CurrentWeaponData or selectedWeaponData
 
     CreateThread(function()
-        local threadOk, threadErr = pcall(function()
-            WeaponReload.playVisual(reloadPed, reloadWeapon, plannedBullets, reloadPayload)
-        end)
-        if not threadOk then
-            print(('[qb-weapons] reload visual error: %s'):format(tostring(threadErr)))
-            WeaponReload.cancel(PlayerPedId())
-        end
-
         local ok, errMsg = applyInventoryReload()
-        if not ok then
-            if errMsg then
-                QBCore.Functions.Notify(errMsg, 'error')
+
+        isReloading = false
+        reloadGuardUntil = GetGameTimer() + 80
+
+        if ok then
+            local threadOk, threadErr = pcall(function()
+                WeaponReload.playVisual(reloadPed, reloadWeapon, plannedBullets, reloadPayload)
+            end)
+            if not threadOk then
+                print(('[qb-weapons] reload visual error: %s'):format(tostring(threadErr)))
+                WeaponReload.cancel(PlayerPedId())
             end
-        else
+
             local p = PlayerPedId()
             local w = GetSelectedPedWeapon(p)
             if p and p ~= 0 and w and w ~= 0 and CurrentWeaponData and CurrentWeaponData.name then
                 WeaponAmmo.normalizePedAmmo(p, w, CurrentWeaponData)
             end
+        elseif errMsg then
+            QBCore.Functions.Notify(errMsg, 'error')
         end
-
-        isReloading = false
-        reloadGuardUntil = GetGameTimer() + 120
     end)
 end)
 
