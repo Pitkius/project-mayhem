@@ -488,7 +488,8 @@ QBShared.Items = {
 
     -- fivempro_drugs — 1 etapas: žaliava (nuskinta / gryna)
     weed_seed                    = { name = 'weed_seed', label = 'Kanapių sėkla', weight = 5, type = 'item', image = 'weed_seed.png', unique = false, useable = false, shouldClose = true, description = 'Sodink į pastatytą augimo vazoną.' },
-    grow_pot                     = { name = 'grow_pot', label = 'Augimo vazonas', weight = 1200, type = 'item', image = 'weed_seed.png', unique = false, useable = true, shouldClose = true, description = 'Pastatyk ir sodink kanapių sėklas.' },
+    grow_pot                     = { name = 'grow_pot', label = 'Augimo vazonas', weight = 1200, type = 'item', image = 'grow_pot.png', unique = false, useable = true, shouldClose = true, description = 'Juodas vazonas — pastatyk ir sodink kanapių sėklas.' },
+    watering_can                 = { name = 'watering_can', label = 'Laistytuvas', weight = 900, type = 'item', image = 'watering_can.png', unique = false, useable = true, shouldClose = true, description = 'Laistyk augalus — papildyk vandens buteliu. Naudok, kad matytum vandens lygį.' },
     weed_leaf                    = { name = 'weed_leaf', label = 'Nuskintos žolės lapai', weight = 50, type = 'item', image = 'weed_leaf.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
     cartel_raw                   = { name = 'cartel_raw', label = 'Nuskinti kokainmedžio lapai', weight = 95, type = 'item', image = 'coca_leaf.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
     poppy_flower                 = { name = 'poppy_flower', label = 'Nuskinti aguonų žiedai', weight = 40, type = 'item', image = 'poppy_flower.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
@@ -518,7 +519,7 @@ QBShared.Items = {
     lab_kit                      = { name = 'lab_kit', label = 'Laboratorijos rinkinys', weight = 800, type = 'item', image = 'lab_kit.png', unique = false, useable = false, shouldClose = false, description = 'Sunkiems produktams.' },
     burner                       = { name = 'burner', label = 'Degiklis', weight = 400, type = 'item', image = 'lighter.png', unique = false, useable = false, shouldClose = false, description = 'Laboratorijai.' },
     scale                        = { name = 'scale', label = 'Svarstyklės', weight = 250, type = 'item', image = 'drug_scale.png', unique = false, useable = false, shouldClose = false, description = 'Tikslus svoris.' },
-    trimming_scissors            = { name = 'trimming_scissors', label = 'Lapų kirpimo žirklės', weight = 180, type = 'item', image = 'drug_scale.png', unique = false, useable = false, shouldClose = false, description = 'Žolės ir grybų apdorojimui.' },
+    trimming_scissors            = { name = 'trimming_scissors', label = 'Lapų kirpimo žirklės', weight = 180, type = 'item', image = 'trimming_scissors.png', unique = false, useable = false, shouldClose = false, description = 'Žolės derliui ir apdorojimui.' },
     pill_press                   = { name = 'pill_press', label = 'Tablečių presas', weight = 1200, type = 'item', image = 'lab_kit.png', unique = false, useable = false, shouldClose = false, description = 'Tablečių gamybai.' },
     gloves                       = { name = 'gloves', label = 'Pirštinės', weight = 50, type = 'item', image = 'gloves_item.png', unique = false, useable = false, shouldClose = false, description = 'Apsauga.' },
     -- fivempro_drugs — 3 etapas: supakuota (pardavimas)

@@ -25,7 +25,8 @@
       </header>
 
       <nav class="tablet-tabs" role="tablist">
-        <button type="button" class="tab-btn" data-tab="register" role="tab">Registracija</button>
+        <button type="button" class="tab-btn" data-tab="register" id="tabBtnRegister" role="tab">Registracija</button>
+        <button type="button" class="tab-btn hidden" data-tab="ganginfo" id="tabBtnGangInfo" role="tab">Gaujos info</button>
         <button type="button" class="tab-btn" data-tab="gang" role="tab">Gauja</button>
         <button type="button" class="tab-btn" data-tab="map" role="tab">Žemėlapis</button>
         <button type="button" class="tab-btn" data-tab="missions" role="tab" id="tabMissions">Misijos</button>
@@ -56,6 +57,31 @@
           </div>
           <div class="rail-card hints">
             <p class="small muted">Viršutinė spalva — pagrindinė, apatinė — antrinė (matoma Top gaujos ir žemėlapyje). Juoda spalva taip pat galima.</p>
+          </div>
+        </section>
+
+        <section id="tabPanelGangInfo" class="tab-panel hidden" role="tabpanel">
+          <div class="rail-card gang-info-card">
+            <div class="gang-info-head">
+              <span class="gang-info-swatch" id="gangInfoSwatch"></span>
+              <div>
+                <h3 id="gangInfoTitle">—</h3>
+                <p id="gangInfoMeta" class="small muted"></p>
+              </div>
+            </div>
+            <div class="gang-info-stats" id="gangInfoStats"></div>
+            <div class="gang-warn-panel" id="gangInfoWarnPanel">
+              <div class="gang-warn-head">
+                <span>Įspėjimai</span>
+                <strong id="gangInfoWarnCount">0/5</strong>
+              </div>
+              <div class="gang-warn-meter" id="gangInfoWarnMeter"></div>
+              <p class="small muted" id="gangInfoWarnHint">Gauja neturi aktyvių įspėjimų.</p>
+              <ul class="gang-warn-list" id="gangInfoWarnList"></ul>
+            </div>
+          </div>
+          <div class="rail-card hints">
+            <p class="small muted">Čia matoma oficiali gaujos informacija ir administraciniai įspėjimai. Valdymui naudok skiltį <strong>Gauja</strong>.</p>
           </div>
         </section>
 

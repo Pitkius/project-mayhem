@@ -154,14 +154,11 @@ Config.Recipes = {
     },
     --- L2
     weed_process = {
-        { item = 'weed_leaf', count = 5 },
-        { item = 'trimming_scissors', count = 1 },
-        { item = 'gloves', count = 1 },
+        { item = 'weed_leaf', count = 2 },
     },
     weed_pack = {
-        { item = 'weed_buds', count = 2 },
-        { item = 'empty_bag', count = 2 },
-        { item = 'scale', count = 1 },
+        { item = 'weed_buds', count = 1 },
+        { item = 'empty_bag', count = 1 },
     },
     heroin_process = {
         { item = 'poppy_flower', count = 5 },
@@ -808,9 +805,10 @@ Config.WeedSupplyShop = {
         { name = 'grow_pot', amount = 300, price = 42, slot = 2 },
         { name = 'trimming_scissors', amount = 200, price = 95, slot = 3 },
         { name = 'gloves', amount = 200, price = 25, slot = 4 },
-        { name = 'empty_bag', amount = 500, price = 11, slot = 5 },
-        { name = 'scale', amount = 100, price = 85, slot = 6 },
+        { name = 'scale', amount = 100, price = 85, slot = 5 },
+        { name = 'watering_can', amount = 150, price = 65, slot = 6, info = { water = 100 } },
         { name = 'water_bottle', amount = 500, price = 8, slot = 7 },
+        { name = 'empty_bag', amount = 500, price = 11, slot = 8 },
     },
 }
 
@@ -818,10 +816,10 @@ Config.WeedSupplyShopNPC = {
     enabled = true,
     model = 's_m_y_dealer_01',
     coords = vector4(2221.8557, 5614.7979, 54.9016, 107.1460),
-    scenario = 'WORLD_HUMAN_GARDENER_PLANT',
+    scenario = 'WORLD_HUMAN_SMOKING',
     label = 'Kanapių auginimo reikmenys',
     maxDistance = 3.5,
-    targetIcon = 'fas fa-seedling',
+    targetIcon = 'fas fa-cannabis',
     blip = {
         enabled = true,
         sprite = 469,
@@ -836,12 +834,20 @@ Config.WeedGrow = {
     seedItem = 'weed_seed',
     potItem = 'grow_pot',
     harvestItem = 'weed_leaf',
+    waterCanItem = 'watering_can',
+    waterRefillItem = 'water_bottle',
+    waterCanCapacity = 100,
+    waterPerUse = 8,
+    waterRefillAmount = 30,
+    scissorsItem = 'trimming_scissors',
+    glovesItem = 'gloves',
     harvestMin = 2,
     harvestMax = 5,
-    stage2Sec = 120,
-    stage3Sec = 300,
-    waterBonusSec = 45,
-    maxWaters = 2,
+    stage2Sec = 180,
+    stage3Sec = 480,
+    waterBonusSec = 55,
+    waterCooldownSec = 120,
+    maxWaters = 4,
     pickDistance = 2.2,
     zoneRadius = 0.95,
     loadDistance = 140.0,
@@ -850,15 +856,17 @@ Config.WeedGrow = {
     maxPotsGlobal = 250,
     playerCooldownSec = 3,
     plantLabel = 'Sodinti kanapes',
-    waterLabel = 'Laistyti augalą',
-    harvestLabel = 'Skinti lapus',
-    props = {
-        empty = 'bkr_prop_weed_bucket_01a',
+    waterLabel = 'Laistyti laistytuvu',
+    harvestLabel = 'Skinti žirklėmis',
+    potModel = 'bkr_prop_weed_bucket_01a',
+    potScale = 0.92,
+    plantOffsetZ = 0.36,
+    plantProps = {
         stage1 = 'prop_weed_02',
         stage2 = 'bkr_prop_weed_med_01a',
         stage3 = 'bkr_prop_weed_lrg_01a',
     },
-    propScale = { empty = 0.85, stage1 = 0.9, stage2 = 0.95, stage3 = 1.0 },
+    plantScale = { stage1 = 0.28, stage2 = 0.48, stage3 = 0.78 },
 }
 
 --- Senas fiksuotų laukų režimas — išjungta (naudok Config.WeedGrow + grow_pot)
@@ -935,7 +943,7 @@ Config.WeaponBenchL1 = {
     },
 }
 
---- Žolės džiovinimas — hid_weed_lab MLO (Davis / LS)
+--- Žolės džiovinimas (Davis) + supakavimas (Cayo Perico)
 Config.WeedCayoLab = {
     blip = {
         enabled = true,
@@ -945,6 +953,16 @@ Config.WeedCayoLab = {
         scale = 0.78,
         shortRange = true,
         label = 'Žolės džiovinimas',
+    },
+    packBlip = {
+        enabled = true,
+        requireIsland = true,
+        coords = vector3(5195.83, -5134.91, 3.35),
+        sprite = 140,
+        color = 2,
+        scale = 0.78,
+        shortRange = true,
+        label = 'Žolės supakavimas',
     },
     stations = {
         {
@@ -964,6 +982,26 @@ Config.WeedCayoLab = {
             heading = 291.2983,
             radius = 1.5,
             products = { 'weed_process' },
+        },
+    },
+    packStations = {
+        {
+            id = 'weed_pack_cayo_1',
+            label = 'Žolė · supakavimas',
+            level = 2,
+            coords = vector3(5196.0693, -5133.6929, 3.3579),
+            heading = 255.6201,
+            radius = 1.5,
+            products = { 'weed_pack' },
+        },
+        {
+            id = 'weed_pack_cayo_2',
+            label = 'Žolė · supakavimas',
+            level = 2,
+            coords = vector3(5195.5938, -5136.1323, 3.3498),
+            heading = 269.6169,
+            radius = 1.5,
+            products = { 'weed_pack' },
         },
     },
 }
@@ -1236,9 +1274,9 @@ Config.ScheduleMinigames = {
     vape_process = { mode = 'mix', title = 'Vape mišinio paruošimas', steps = 1, icon = '💨', difficulty = 1 },
     vape_pack = { mode = 'pack_bottle', title = 'Vape skysčio buteliukas', steps = 2, icon = '🧴', difficulty = 1 },
     weed_plant = { mode = 'plant', title = 'Kanapių sodinimas', steps = 4, icon = '🌱', difficulty = 1 },
-    weed_harvest = { mode = 'trim', title = 'Lapų skynimas nuo augalo', steps = 4, icon = '🍃', difficulty = 2 },
-    weed_process = { mode = 'trim', title = 'Žolės lapų skynimas žirklėmis', steps = 5, icon = '🍃', difficulty = 2 },
-    weed_pack = { mode = 'pack_bag', title = 'Žolės žiedų pakavimas', steps = 3, icon = '🌿', difficulty = 2 },
+    weed_harvest = { mode = 'weed_harvest', title = 'Derliaus nuėmimas', steps = 3, icon = '✂️', difficulty = 2 },
+    weed_process = { mode = 'weed_dry', title = 'Žolės džiovinimas', steps = 3, icon = '🍃', difficulty = 2 },
+    weed_pack = { mode = 'weed_pack', title = 'Žolės supakavimas', steps = 3, icon = '🌿', difficulty = 2 },
     heroin_process = { mode = 'cook', title = 'Heroino virimas', steps = 1, icon = '⚗️', difficulty = 2 },
     heroin_pack = { mode = 'pack_bag', title = 'Heroino supakavimas', steps = 3, icon = '💉', difficulty = 2 },
     meth_process = { mode = 'crystal', title = 'Meto kristalizacija', steps = 4, icon = '💎', difficulty = 3 },

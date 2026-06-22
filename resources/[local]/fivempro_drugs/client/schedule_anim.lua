@@ -12,6 +12,9 @@ local MODE_ANIMS = {
     wash = { dict = 'amb@world_human_maid_clean@', clip = 'base', prop = 'prop_sponge_01' },
     mix = { dict = 'amb@world_human_bum_wash@male@high@base', clip = 'base', prop = nil },
     plant = { dict = 'amb@world_human_gardener_plant@male@base', clip = 'base', prop = nil },
+    weed_dry = { dict = 'anim@amb@business@weed@weed_sorting_seated@', clip = 'sorter_right_sort_v3_weeddry01c', prop = nil },
+    weed_pack = { dict = 'mp_common', clip = 'givetake1_a', prop = 'prop_meth_bag_01' },
+    weed_harvest = { dict = 'anim@amb@business@weed@weed_sorting_seated@', clip = 'sorter_right_sort_v3_weeddry01c', prop = 'prop_cs_scissors' },
 }
 
 local function loadDict(dict)

@@ -14,7 +14,7 @@ RegisterNetEvent('fivempro_casino:client:openSlots', function(_machineId)
 
         local reels = table.concat(res.reels or {}, ' | ')
         if res.won then
-            QBCore.Functions.Notify(('%s  →  x%s  →  $%s'):format(reels, res.multiplier or 0, res.payout or 0), 'success')
+            QBCore.Functions.Notify(('%s  →  x%s  →  %s žetonų'):format(reels, res.multiplier or 0, res.payout or 0), 'success')
         else
             QBCore.Functions.Notify(('%s  →  nieko'):format(reels), 'error')
         end

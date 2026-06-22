@@ -15,7 +15,9 @@ shared_scripts {
 client_scripts {
     'client/ipl.lua',
     'client/entrance.lua',
+    'client/wheel_scene.lua',
     'client/main.lua',
+    'client/cashier.lua',
     'client/dice.lua',
     'client/wheel.lua',
     'client/blackjack.lua',
@@ -32,5 +34,6 @@ dependencies {
     'qb-core',
     'qb-target',
     'qb-menu',
+    'qb-input',
     'oxmysql',
 }

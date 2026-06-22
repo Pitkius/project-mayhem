@@ -4,9 +4,9 @@ local activeSession = false
 
 local function resultText(res)
     if res.result == 'blackjack' then
-        return ('Blackjack! Laimėjote $%s'):format(res.payout or 0)
+        return ('Blackjack! Laimėjote %s žetonų'):format(res.payout or 0)
     elseif res.result == 'win' then
-        return ('Laimėjote $%s'):format(res.payout or 0)
+        return ('Laimėjote %s žetonų'):format(res.payout or 0)
     elseif res.result == 'push' then
         return 'Lygiosios — statymas grąžintas.'
     elseif res.result == 'bust' then

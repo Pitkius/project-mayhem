@@ -2,6 +2,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local statsCache = {}
 local blackjackSessions = {}
+local jackpotCar = nil
 
 CreateThread(function()
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS `casino_player_stats` (
@@ -11,6 +12,12 @@ CreateThread(function()
         `banned_until` VARCHAR(10) NOT NULL DEFAULT '',
         `wheel_at` BIGINT NOT NULL DEFAULT 0,
         PRIMARY KEY (`citizenid`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]])
+
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `casino_state` (
+        `id` VARCHAR(32) NOT NULL,
+        `data` LONGTEXT NOT NULL,
+        PRIMARY KEY (`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]])
 end)
 
@@ -29,6 +36,10 @@ local function dayKey()
     return os.date('%Y-%m-%d')
 end
 
+local function weekKey()
+    return os.date('%Y-W%V')
+end
+
 local function notify(src, msg, ntype)
     TriggerClientEvent('QBCore:Notify', src, msg, ntype or 'primary')
 end
@@ -37,8 +48,26 @@ local function getPlayer(src)
     return QBCore.Functions.GetPlayer(src)
 end
 
-local function playerCash(Player)
-    return tonumber(Player.PlayerData.money and Player.PlayerData.money.cash) or 0
+local function chipItem()
+    return 'casinochips'
+end
+
+local function getChipCount(Player)
+    local item = Player.Functions.GetItemByName(chipItem())
+    return item and tonumber(item.amount) or 0
+end
+
+local function addChips(Player, amount)
+    amount = math.floor(tonumber(amount) or 0)
+    if amount <= 0 then return false end
+    return Player.Functions.AddItem(chipItem(), amount)
+end
+
+local function removeChips(Player, amount)
+    amount = math.floor(tonumber(amount) or 0)
+    if amount <= 0 then return false end
+    if getChipCount(Player) < amount then return false end
+    return Player.Functions.RemoveItem(chipItem(), amount)
 end
 
 local function isInCasino(src)
@@ -118,8 +147,8 @@ end
 local function clampBet(amount)
     local lim = limits()
     amount = math.floor(tonumber(amount) or 0)
-    if amount < (lim.minBet or 50) then return nil, 'minimalus statymas $' .. (lim.minBet or 50) end
-    if amount > (lim.maxBet or 50000) then return nil, 'maksimalus statymas $' .. (lim.maxBet or 50000) end
+    if amount < (lim.minBet or 50) then return nil, 'minimalus statymas ' .. (lim.minBet or 50) .. ' žetonų' end
+    if amount > (lim.maxBet or 50000) then return nil, 'maksimalus statymas ' .. (lim.maxBet or 50000) .. ' žetonų' end
     return amount
 end
 
@@ -153,7 +182,7 @@ local function applyCasinoWin(src, Player, stats, rawWin, countsTowardLimit)
     end
 
     if payout > 0 then
-        Player.Functions.AddMoney('cash', payout, 'casino-win')
+        addChips(Player, payout)
     end
     return payout
 end
@@ -166,7 +195,7 @@ local function validateCasinoPlay(src, cb)
     loadStats(Player.PlayerData.citizenid, function(stats)
         if isCasinoBanned(stats) then
             TriggerClientEvent('fivempro_casino:client:casinoBanned', src, stats.banned_until)
-            return cb(false, 'Pasiekėte dienos laimėjimų limitą ($50,000). Grįžkite rytoj.')
+            return cb(false, 'Pasiekėte dienos laimėjimų limitą. Keiskite žetonus pas kasininkę.')
         end
         cb(true, Player, stats)
     end)
@@ -175,9 +204,118 @@ end
 local function takeBet(Player, amount)
     amount = math.floor(tonumber(amount) or 0)
     if amount <= 0 then return false, 'Netinkamas statymas.' end
-    if playerCash(Player) < amount then return false, 'Nepakanka grynujų.' end
-    Player.Functions.RemoveMoney('cash', amount, 'casino-bet')
+    if getChipCount(Player) < amount then return false, 'Nepakanka žetonų. Keiskite pinigus pas kasininkę.' end
+    if not removeChips(Player, amount) then return false, 'Nepavyko nuskaičiuoti žetonų.' end
     return true
+end
+
+-- Jackpot automobilis
+local function saveJackpotState()
+    if not jackpotCar then return end
+    MySQL.insert.await([[
+        INSERT INTO casino_state (id, data) VALUES ('jackpot_car', ?)
+        ON DUPLICATE KEY UPDATE data = VALUES(data)
+    ]], { json.encode(jackpotCar) })
+end
+
+local function pickRandomJackpotCar(excludeModel)
+    local pool = (Config.JackpotCar and Config.JackpotCar.pool) or {}
+    if #pool == 0 then return { model = 'pariah', label = 'Ocelot Pariah' } end
+
+    local candidates = {}
+    for _, entry in ipairs(pool) do
+        if entry.model ~= excludeModel then
+            candidates[#candidates + 1] = entry
+        end
+    end
+    if #candidates == 0 then candidates = pool end
+    return candidates[math.random(#candidates)]
+end
+
+local function rollJackpotCar(reason)
+    local prev = jackpotCar and jackpotCar.model
+    local picked = pickRandomJackpotCar(prev)
+    local days = (Config.JackpotCar and Config.JackpotCar.weeklyDays) or 7
+    jackpotCar = {
+        model = picked.model,
+        label = picked.label or picked.model,
+        weekKey = weekKey(),
+        resetAt = os.time() + (days * 86400),
+        reason = reason or 'roll',
+    }
+    saveJackpotState()
+    TriggerClientEvent('fivempro_casino:client:jackpotCarUpdated', -1, jackpotCar)
+end
+
+local function loadJackpotCar()
+    local row = MySQL.single.await('SELECT data FROM casino_state WHERE id = ?', { 'jackpot_car' })
+    if row and row.data then
+        local ok, data = pcall(json.decode, row.data)
+        if ok and data and data.model then
+            jackpotCar = data
+        end
+    end
+
+    local now = os.time()
+    local needsRoll = not jackpotCar
+        or not jackpotCar.model
+        or (jackpotCar.weekKey and jackpotCar.weekKey ~= weekKey())
+        or (jackpotCar.resetAt and now >= jackpotCar.resetAt)
+
+    if needsRoll then
+        rollJackpotCar('weekly')
+    end
+end
+
+CreateThread(function()
+    Wait(500)
+    loadJackpotCar()
+end)
+
+local function getUniquePlate()
+    local chars = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789'
+    for _ = 1, 80 do
+        local plate = 'C'
+        for _ = 1, 7 do
+            local i = math.random(1, #chars)
+            plate = plate .. chars:sub(i, i)
+        end
+        local exists = MySQL.scalar.await('SELECT plate FROM player_vehicles WHERE plate = ? LIMIT 1', { plate })
+        if not exists then return plate end
+    end
+    return ('C%07d'):format(math.random(1000000, 9999999))
+end
+
+local function giveJackpotVehicle(Player)
+    if not jackpotCar or not jackpotCar.model then return false end
+    local model = jackpotCar.model
+    local wonLabel = jackpotCar.label or model
+    local plate = getUniquePlate()
+    local hash = joaat(model)
+    local props = { model = hash, plate = plate }
+    local garage = (Config.JackpotCar and Config.JackpotCar.garage) or 'casino'
+
+    MySQL.insert.await([[
+        INSERT INTO player_vehicles
+        (license, citizenid, vehicle, hash, mods, plate, garage, state, fuel, engine, body, depotprice)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ]], {
+        Player.PlayerData.license,
+        Player.PlayerData.citizenid,
+        model,
+        tostring(hash),
+        json.encode(props),
+        plate,
+        garage,
+        0,
+        100,
+        1000,
+        1000,
+        0,
+    })
+
+    rollJackpotCar('won')
+    return true, plate, model, wonLabel
 end
 
 -- Blackjack helpers
@@ -285,15 +423,62 @@ local function slotMultiplier(a, b, c)
     return 0
 end
 
--- Callbacks / events
+-- Callbacks
+QBCore.Functions.CreateCallback('fivempro_casino:server:getJackpotCar', function(_, cb)
+    cb(jackpotCar or {})
+end)
+
+QBCore.Functions.CreateCallback('fivempro_casino:server:getCashierStatus', function(src, cb)
+    local Player = getPlayer(src)
+    if not Player then return cb(nil) end
+    loadStats(Player.PlayerData.citizenid, function(stats)
+        cb({
+            chips = getChipCount(Player),
+            cash = tonumber(Player.PlayerData.money and Player.PlayerData.money.cash) or 0,
+            dailyWins = stats.daily_wins,
+            maxDailyWin = limits().maxDailyWin or 50000,
+            remaining = remainingDailyWin(stats),
+            banned = isCasinoBanned(stats),
+            bannedUntil = stats.banned_until,
+        })
+    end)
+end)
+
+QBCore.Functions.CreateCallback('fivempro_casino:server:exchangeChips', function(src, cb, mode, amount)
+    local Player = getPlayer(src)
+    if not Player then return cb({ ok = false, msg = 'Klaida.' }) end
+    if not isInCasino(src) then return cb({ ok = false, msg = 'Turite būti kazino.' }) end
+
+    amount = math.floor(tonumber(amount) or 0)
+    if amount <= 0 then return cb({ ok = false, msg = 'Netinkama suma.' }) end
+
+    if mode == 'buy' then
+        if (Player.PlayerData.money.cash or 0) < amount then
+            return cb({ ok = false, msg = 'Nepakanka grynujų.' })
+        end
+        Player.Functions.RemoveMoney('cash', amount, 'casino-chips-buy')
+        addChips(Player, amount)
+        return cb({ ok = true, chips = getChipCount(Player), msg = ('Nusipirkote %s žetonų.'):format(amount) })
+    end
+
+    if mode == 'sell' then
+        if getChipCount(Player) < amount then
+            return cb({ ok = false, msg = 'Nepakanka žetonų.' })
+        end
+        removeChips(Player, amount)
+        Player.Functions.AddMoney('cash', amount, 'casino-chips-sell')
+        return cb({ ok = true, chips = getChipCount(Player), msg = ('Iškeitėte %s žetonų į grynuosius.'):format(amount) })
+    end
+
+    cb({ ok = false, msg = 'Nežinomas keitimas.' })
+end)
+
 QBCore.Functions.CreateCallback('fivempro_casino:server:getStatus', function(src, cb)
     local Player = getPlayer(src)
     if not Player then return cb(nil) end
     loadStats(Player.PlayerData.citizenid, function(stats)
         cb({
-            dailyWins = stats.daily_wins,
-            maxDailyWin = limits().maxDailyWin or 50000,
-            remaining = remainingDailyWin(stats),
+            chips = getChipCount(Player),
             banned = isCasinoBanned(stats),
             bannedUntil = stats.banned_until,
             wheelCooldown = stats.wheel_at,
@@ -309,7 +494,7 @@ QBCore.Functions.CreateCallback('fivempro_casino:server:spinWheel', function(src
     loadStats(Player.PlayerData.citizenid, function(stats)
         if isCasinoBanned(stats) then
             TriggerClientEvent('fivempro_casino:client:casinoBanned', src, stats.banned_until)
-            return cb({ ok = false, msg = 'Pasiekėte dienos limitą. Ratas neprieinamas.' })
+            return cb({ ok = false, msg = 'Pasiekėte dienos limitą.' })
         end
 
         local now = os.time()
@@ -325,12 +510,19 @@ QBCore.Functions.CreateCallback('fivempro_casino:server:spinWheel', function(src
         saveStats(Player.PlayerData.citizenid, stats)
 
         local paid = 0
-        if prize.type == 'cash' and prize.amount > 0 then
-            Player.Functions.AddMoney('cash', prize.amount, 'casino-wheel')
+        local carPlate, carModel, carLabel
+
+        if prize.type == 'chips' and prize.amount > 0 then
+            addChips(Player, prize.amount)
             paid = prize.amount
-        elseif prize.type == 'chips' and prize.amount > 0 then
-            Player.Functions.AddItem('casinochips', prize.amount)
-            paid = prize.amount
+        elseif prize.type == 'vehicle' then
+            local ok, plate, model, label = giveJackpotVehicle(Player)
+            if ok then
+                carPlate, carModel, carLabel = plate, model, label
+                paid = 1
+            else
+                prize = { slot = prize.slot or 1, label = 'Nieko', type = 'none', amount = 0 }
+            end
         end
 
         cb({
@@ -339,6 +531,10 @@ QBCore.Functions.CreateCallback('fivempro_casino:server:spinWheel', function(src
             type = prize.type,
             amount = prize.amount,
             paid = paid,
+            slot = prize.slot or 1,
+            carPlate = carPlate,
+            carModel = carModel,
+            carLabel = carLabel,
         })
     end)
 end)
@@ -368,7 +564,6 @@ QBCore.Functions.CreateCallback('fivempro_casino:server:startBlackjack', functio
         }
 
         local pVal = handValue(player)
-        local dVal = handValue({ dealer[1] })
         if pVal == 21 then
             local win = math.floor(amount * 2.5)
             win = math.min(win, limits().maxSingleWin or 50000)
@@ -392,8 +587,8 @@ QBCore.Functions.CreateCallback('fivempro_casino:server:startBlackjack', functio
             playerHand = formatHand(player),
             dealerHand = cardLabel(dealer[1]) .. ' ?',
             playerValue = pVal,
-            dealerValue = dVal,
-            canDouble = #player == 2 and playerCash(Player) >= amount,
+            dealerValue = handValue({ dealer[1] }),
+            canDouble = #player == 2 and getChipCount(Player) >= amount,
         })
     end)
 end)
@@ -419,8 +614,8 @@ QBCore.Functions.CreateCallback('fivempro_casino:server:blackjackAction', functi
             player[#player + 1], deck = drawCard(deck)
         elseif action == 'double' then
             if #player ~= 2 then return cb({ ok = false, msg = 'Double negalimas.' }) end
-            if playerCash(Player) < bet then return cb({ ok = false, msg = 'Nepakanka pinigų double.' }) end
-            Player.Functions.RemoveMoney('cash', bet, 'casino-bj-double')
+            if getChipCount(Player) < bet then return cb({ ok = false, msg = 'Nepakanka žetonų double.' }) end
+            removeChips(Player, bet)
             bet = bet * 2
             session.bet = bet
             player[#player + 1], deck = drawCard(deck)
@@ -454,7 +649,7 @@ QBCore.Functions.CreateCallback('fivempro_casino:server:blackjackAction', functi
             payout = applyCasinoWin(src, Player, stats, bet * 2, true)
         elseif pVal == dVal then
             result = 'push'
-            Player.Functions.AddMoney('cash', bet, 'casino-bj-push')
+            addChips(Player, bet)
             payout = bet
         end
 

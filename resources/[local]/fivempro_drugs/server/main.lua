@@ -51,6 +51,11 @@ local function getAllStations()
             list[#list + 1] = st
         end
     end
+    if weedCayo and weedCayo.packStations then
+        for _, st in ipairs(weedCayo.packStations) do
+            list[#list + 1] = st
+        end
+    end
     local methLab = Config.MethLab
     if methLab and methLab.stations then
         for _, st in ipairs(methLab.stations) do
@@ -929,14 +934,75 @@ local function computeWeedStage(cfg, plant)
     return 1
 end
 
+local function weedGrowthRemaining(cfg, plant)
+    if not plant or not plant.plantedAt then return 0 end
+    local bonus = (tonumber(plant.watered) or 0) * (tonumber(cfg.waterBonusSec) or 40)
+    local elapsed = os.time() - tonumber(plant.plantedAt) + bonus
+    return math.max(0, (tonumber(cfg.stage3Sec) or 240) - elapsed)
+end
+
+local function canWaterPlantNow(cfg, plant)
+    if not plant or not plant.plantedAt then return false, 0 end
+    if (plant.watered or 0) >= (tonumber(cfg.maxWaters) or 4) then return false, 0 end
+    local cd = tonumber(cfg.waterCooldownSec) or 120
+    local last = tonumber(plant.lastWaterAt) or 0
+    local left = math.max(0, (last + cd) - os.time())
+    return left <= 0, left
+end
+
+local function findWateringCan(Player)
+    local itemName = (weedGrowCfg().waterCanItem or 'watering_can')
+    for slot, item in pairs(Player.PlayerData.items or {}) do
+        if item and item.name == itemName then
+            return item, slot
+        end
+    end
+end
+
+local function getCanWater(item, cfg)
+    cfg = cfg or weedGrowCfg()
+    local cap = tonumber(cfg.waterCanCapacity) or 100
+    local w = item.info and item.info.water
+    if w == nil then return cap end
+    return math.max(0, math.min(cap, tonumber(w) or 0))
+end
+
+local function setCanWater(src, slot, amount, cfg)
+    cfg = cfg or weedGrowCfg()
+    local cap = tonumber(cfg.waterCanCapacity) or 100
+    amount = math.max(0, math.min(cap, math.floor(tonumber(amount) or 0)))
+    exports['qb-inventory']:SetItemData(src, cfg.waterCanItem or 'watering_can', 'water', amount, slot)
+    return amount
+end
+
+local function useWaterFromCan(src, Player)
+    local cfg = weedGrowCfg()
+    local item, slot = findWateringCan(Player)
+    if not item or not slot then return false, 'Reikia laistytuvo.' end
+    local need = tonumber(cfg.waterPerUse) or 8
+    local current = getCanWater(item, cfg)
+    if current < need then
+        return false, ('Laistytuve liko %d/%d vandens — papildyk buteliu.'):format(current, cfg.waterCanCapacity or 100)
+    end
+    setCanWater(src, slot, current - need, cfg)
+    return true
+end
+
 local function plantPayload(cfg, plant)
+    local canW, waterCd = canWaterPlantNow(cfg, plant)
+    local remaining = weedGrowthRemaining(cfg, plant)
     return {
         x = plant.x,
         y = plant.y,
         z = plant.z,
         plantedAt = plant.plantedAt,
         watered = plant.watered or 0,
+        lastWaterAt = plant.lastWaterAt or 0,
         stage = computeWeedStage(cfg, plant),
+        growRemaining = remaining,
+        canWater = canW,
+        waterCooldownLeft = waterCd,
+        watersLeft = math.max(0, (tonumber(cfg.maxWaters) or 4) - (plant.watered or 0)),
     }
 end
 
@@ -1060,6 +1126,7 @@ RegisterNetEvent('fivempro_drugs:server:placeWeedPot', function(x, y, z)
         x = x, y = y, z = z,
         owner = citizenid,
         watered = 0,
+        lastWaterAt = 0,
     }
     TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[potItem], 'remove', 1)
     TriggerClientEvent('QBCore:Notify', src, 'Vazonas pastatytas — sodink sėklą.', 'success')
@@ -1083,13 +1150,16 @@ RegisterNetEvent('fivempro_drugs:server:plantWeed', function(plantId, px, py, pz
     end
     plant.plantedAt = os.time()
     plant.watered = 0
+    plant.lastWaterAt = 0
     TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[seedItem], 'remove', 1)
-    TriggerClientEvent('QBCore:Notify', src, 'Sėkla pasodinta — laistyklės augalą.', 'success')
+    TriggerClientEvent('QBCore:Notify', src, 'Sėkla pasodinta — laistyklės laistytuvu.', 'success')
     TriggerClientEvent('fivempro_drugs:client:weedPlantUpdate', -1, plantId, plantPayload(cfg, plant))
 end)
 
 RegisterNetEvent('fivempro_drugs:server:waterWeed', function(plantId)
     local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
     plantId = tostring(plantId or '')
     local plant = weedPlants[plantId]
     local cfg = weedGrowCfg()
@@ -1097,15 +1167,49 @@ RegisterNetEvent('fivempro_drugs:server:waterWeed', function(plantId)
     if computeWeedStage(cfg, plant) >= 3 then
         return TriggerClientEvent('QBCore:Notify', src, 'Augalas jau brandus — skink lapus.', 'primary')
     end
-    if (plant.watered or 0) >= (tonumber(cfg.maxWaters) or 2) then
+    if (plant.watered or 0) >= (tonumber(cfg.maxWaters) or 4) then
         return TriggerClientEvent('QBCore:Notify', src, 'Augalas jau pakankamai palaistas.', 'error')
+    end
+    local canW, cdLeft = canWaterPlantNow(cfg, plant)
+    if not canW then
+        return TriggerClientEvent('QBCore:Notify', src, ('Palauk %s s prieš kitą laistymą.'):format(cdLeft), 'error')
     end
     if not playerNearWeedPlant(src, plant) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
     end
+    local ok, err = useWaterFromCan(src, Player)
+    if not ok then
+        return TriggerClientEvent('QBCore:Notify', src, err or 'Nepakanka vandens.', 'error')
+    end
     plant.watered = (plant.watered or 0) + 1
+    plant.lastWaterAt = os.time()
     TriggerClientEvent('QBCore:Notify', src, 'Augalas palaistas.', 'success')
     TriggerClientEvent('fivempro_drugs:client:weedPlantUpdate', -1, plantId, plantPayload(cfg, plant))
+end)
+
+local function doRefillWateringCan(src)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    local cfg = weedGrowCfg()
+    local canItem, canSlot = findWateringCan(Player)
+    if not canItem or not canSlot then
+        return TriggerClientEvent('QBCore:Notify', src, 'Reikia laistytuvo inventoriuje.', 'error')
+    end
+    local refillItem = cfg.waterRefillItem or 'water_bottle'
+    if not exports['qb-inventory']:RemoveItem(src, refillItem, 1, false, 'fivempro_drugs:refillCan') then
+        return TriggerClientEvent('QBCore:Notify', src, 'Reikia vandens butelio papildymui.', 'error')
+    end
+    local cap = tonumber(cfg.waterCanCapacity) or 100
+    local add = tonumber(cfg.waterRefillAmount) or 30
+    local current = getCanWater(canItem, cfg)
+    local nextVal = math.min(cap, current + add)
+    setCanWater(src, canSlot, nextVal, cfg)
+    TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[refillItem], 'remove', 1)
+    TriggerClientEvent('QBCore:Notify', src, ('Laistytuvas: %d/%d vandens.'):format(nextVal, cap), 'success')
+end
+
+RegisterNetEvent('fivempro_drugs:server:refillWateringCan', function()
+    doRefillWateringCan(source)
 end)
 
 RegisterNetEvent('fivempro_drugs:server:harvestWeed', function(plantId, px, py, pz)
@@ -1121,6 +1225,14 @@ RegisterNetEvent('fivempro_drugs:server:harvestWeed', function(plantId, px, py, 
     end
     if not playerNearWeedPlant(src, plant, px, py, pz) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
+    end
+    local scissors = cfg.scissorsItem or 'trimming_scissors'
+    local gloves = cfg.glovesItem or 'gloves'
+    if not Player.Functions.GetItemByName(scissors) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Reikia lapų kirpimo žirklčių.', 'error')
+    end
+    if not Player.Functions.GetItemByName(gloves) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Reikia pirštinių.', 'error')
     end
     local cd = tonumber(cfg.playerCooldownSec) or 3
     local now = os.time()
@@ -1233,6 +1345,31 @@ end)
 
 QBCore.Functions.CreateUseableItem('grow_pot', function(source)
     TriggerClientEvent('fivempro_drugs:client:placeGrowPot', source)
+end)
+
+QBCore.Functions.CreateUseableItem('watering_can', function(source)
+    local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then return end
+    local cfg = weedGrowCfg()
+    local item, slot = findWateringCan(Player)
+    if not item or not slot then return end
+    local cap = tonumber(cfg.waterCanCapacity) or 100
+    local w = getCanWater(item, cfg)
+    TriggerClientEvent('QBCore:Notify', source, ('Laistytuvas: %d/%d vandens. Papildyk vandens buteliu.'):format(w, cap), 'primary')
+end)
+
+CreateThread(function()
+    Wait(2500)
+    QBCore.Functions.CreateUseableItem('water_bottle', function(source, item)
+        local Player = QBCore.Functions.GetPlayer(source)
+        if not Player then return end
+        local canItem, canSlot = findWateringCan(Player)
+        if canItem and canSlot then
+            return doRefillWateringCan(source)
+        end
+        if not exports['qb-inventory']:RemoveItem(source, item.name, 1, item.slot, 'qb-smallresources:consumables:drink') then return end
+        TriggerClientEvent('consumables:client:Drink', source, item.name)
+    end)
 end)
 
 AddEventHandler('playerDropped', function()

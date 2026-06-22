@@ -108,9 +108,24 @@ RegisterNetEvent('fivempro_gangs:client:openTablet', function()
                 recentActivities = res.recentActivities or {},
                 missions = res.missions or {},
                 claimThreshold = res.claimThreshold or 100,
+                warnings = res.warnings or {},
+                maxWarnings = res.maxWarnings or 5,
             },
         })
     end)
+end)
+
+RegisterNetEvent('fivempro_gangs:client:gangWarning', function(payload)
+    if tabletOpen then
+        QBCore.Functions.TriggerCallback('fivempro_gangs:server:getTabletState', function(res)
+            if not res or not res.ok then return end
+            SendNUIMessage({
+                action = 'gangWarning',
+                payload = res,
+                notice = payload or {},
+            })
+        end)
+    end
 end)
 
 RegisterNetEvent('fivempro_gangs:client:refreshTablet', function()
@@ -135,6 +150,8 @@ RegisterNetEvent('fivempro_gangs:client:refreshTablet', function()
                 recentActivities = res.recentActivities or {},
                 missions = res.missions or {},
                 claimThreshold = res.claimThreshold or 100,
+                warnings = res.warnings or {},
+                maxWarnings = res.maxWarnings or 5,
             }
         })
     end)
@@ -247,6 +264,28 @@ end)
 RegisterNUICallback('gangs:adminRefresh', function(_, cb)
     refreshAdminSnapshot(function(res)
         cb(res or { ok = false })
+    end)
+end)
+
+RegisterNUICallback('gangs:adminIssueWarning', function(data, cb)
+    if not data or not data.gangId then
+        cb({ ok = false })
+        return
+    end
+    TriggerServerEvent('fivempro_gangs:server:adminIssueWarning', data.gangId, tostring(data.reason or ''))
+    SetTimeout(200, function()
+        refreshAdminSnapshot(cb)
+    end)
+end)
+
+RegisterNUICallback('gangs:adminClearWarnings', function(data, cb)
+    if not data or not data.gangId then
+        cb({ ok = false })
+        return
+    end
+    TriggerServerEvent('fivempro_gangs:server:adminClearWarnings', data.gangId)
+    SetTimeout(200, function()
+        refreshAdminSnapshot(cb)
     end)
 end)
 

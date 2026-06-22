@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS `fivempro_gangs` (
   `owner_citizenid` VARCHAR(64) NULL,
   `reputation` INT NOT NULL DEFAULT 0,
   `heat` INT NOT NULL DEFAULT 0,
+  `warnings` INT NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `ux_fivempro_gangs_name` (`name`)
@@ -44,6 +45,17 @@ CREATE TABLE IF NOT EXISTS `fivempro_gang_sales_logs` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_fivempro_gang_sales_logs_gang` (`gang_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `fivempro_gang_warnings` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `gang_id` INT NOT NULL,
+  `reason` VARCHAR(255) NOT NULL DEFAULT '',
+  `admin_citizenid` VARCHAR(64) NULL,
+  `admin_name` VARCHAR(128) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_fivempro_gang_warnings_gang` (`gang_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO `fivempro_gang_turfs` (`turf_id`) VALUES

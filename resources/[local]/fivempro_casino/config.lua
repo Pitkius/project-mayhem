@@ -1,6 +1,6 @@
 Config = Config or {}
 
---- Diamond Casino (GTA Online interjeras / MLO)
+--- Diamond Casino (GTA Online vanilla MLO)
 Config.Casino = {
     center = vector3(1110.0, 220.0, -49.0),
     radius = 90.0,
@@ -11,52 +11,58 @@ Config.Casino = {
         scale = 0.9,
         label = 'Diamond Casino',
     },
-    exit = vector4(1085.98, 214.52, -49.20, 180.0),
     interiorSpawn = vector4(1089.1294, 207.2294, -48.9997, 320.0139),
     loadVanillaIpl = true,
+    --- Įėjimas be juodo ekrano — žingsnis pro duris (IPL turi būti užkrautas)
+    walkIn = true,
 }
 
---- Išoriniai įėjimai (laiptai / stiklinės durys) → teleportas į interjerą
+--- Durų zonos (automatinis įėjimas/išėjimas be qb-target)
 Config.CasinoEntrances = {
     {
         id = 'glass_doors',
         coords = vector3(935.6165, 47.4366, 81.0958),
         heading = 278.2361,
-        label = 'Įeiti į kazino',
-        length = 2.2,
-        width = 2.6,
+        length = 2.4,
+        width = 3.0,
+        interior = vector4(1089.1294, 207.2294, -48.9997, 320.0139),
     },
     {
         id = 'main_entrance',
         coords = vector3(924.7840, 46.8540, 81.1060),
         heading = 328.0,
-        label = 'Įeiti į kazino',
-        length = 2.4,
-        width = 2.4,
+        length = 2.6,
+        width = 2.6,
+        interior = vector4(1085.98, 214.52, -49.20, 180.0),
     },
 }
 
---- Interjero išėjimai → teleportas į lauką
 Config.CasinoExits = {
     {
         id = 'lobby_exit',
         coords = vector3(1089.1294, 207.2294, -48.9997),
         exterior = vector4(935.6165, 47.4366, 81.0958, 278.2361),
-        label = 'Išeiti iš kazino',
-        length = 2.0,
-        width = 2.0,
+        length = 2.2,
+        width = 2.2,
     },
     {
         id = 'side_exit',
         coords = vector3(1085.98, 214.52, -49.20),
         exterior = vector4(924.7840, 46.8540, 81.1060, 328.0),
-        label = 'Išeiti iš kazino',
-        length = 2.0,
-        width = 2.0,
+        length = 2.2,
+        width = 2.2,
     },
 }
 
---- Visi limitai — max statymas ir max laimėjimas vienam žaidimui, dienos pergalės limitas (be rato)
+--- Kazino kasa — žetonų keitimas 1:1, limitas matomas tik čia
+Config.Cashier = {
+    coords = vector4(1117.25, 220.05, -49.44, 90.0),
+    pedModel = 'u_f_m_casinoshop_01',
+    pedScenario = 'WORLD_HUMAN_STAND_IMPATIENT',
+    targetDistance = 2.5,
+}
+
+--- Statymai ir laimėjimai žetonais (1 žetonas = $1 keičiant pas kasininkę)
 Config.Limits = {
     maxBet = 50000,
     maxSingleWin = 50000,
@@ -64,21 +70,60 @@ Config.Limits = {
     minBet = 50,
 }
 
---- Laimėjimai iš rato dienos limitui NESKAIČIUOJAMI
+--- Savaitinis / jackpot automobilis ant podiumo
+Config.JackpotCar = {
+  weeklyDays = 7,
+  garage = 'casino',
+  podium = vector4(1100.47, 220.25, -49.95, 0.0),
+  pool = {
+      { model = 'pariah', label = 'Ocelot Pariah' },
+      { model = 'italigto', label = 'Grotti Itali GTO' },
+      { model = 'emerus', label = 'Progen Emerus' },
+      { model = 'krieger', label = 'Benefactor Krieger' },
+      { model = 't20', label = 'Progen T20' },
+      { model = 'zentorno', label = 'Pegassi Zentorno' },
+      { model = 'toros', label = 'Pegassi Toros' },
+      { model = 'comet6', label = 'Pfister Comet S2' },
+      { model = 'jester4', label = 'Dinka Jester RR' },
+      { model = 'cypher', label = 'Übermacht Cypher' },
+      { model = 'elegy2', label = 'Annis Elegy RH8' },
+      { model = 'seven70', label = 'Dewbauchee Seven-70' },
+      { model = 'schlagen', label = 'Benefactor Schlagen GT' },
+      { model = 'neon', label = 'Pfister Neon' },
+      { model = 'cyclone', label = 'Coil Cyclone' },
+  },
+}
+
+--- Laimės ratas (20 segmentų × 18°)
 Config.Wheel = {
-    coords = vector3(1111.05, 229.85, -49.64),
+    model = `vw_prop_vw_luckywheel_02a`,
+    coords = vector3(1111.052, 229.849, -50.38),
     heading = 0.0,
+    movePos = vector3(1109.55, 228.75, -49.64),
+    moveHeading = 0.0,
     cooldownHours = 24,
-    spinDurationMs = 6500,
+    --- slot 1–20 = rato segmentas (sukimui)
     prizes = {
-        { label = 'Nieko', type = 'none', amount = 0, weight = 22 },
-        { label = '$1,000', type = 'cash', amount = 1000, weight = 24 },
-        { label = '$2,500', type = 'cash', amount = 2500, weight = 18 },
-        { label = '$5,000', type = 'cash', amount = 5000, weight = 14 },
-        { label = '$10,000', type = 'cash', amount = 10000, weight = 10 },
-        { label = '$15,000', type = 'cash', amount = 15000, weight = 6 },
-        { label = '$25,000', type = 'cash', amount = 25000, weight = 4 },
-        { label = '50 žetonų', type = 'chips', amount = 50, weight = 2 },
+        { slot = 1,  label = 'Nieko', type = 'none', amount = 0, weight = 16 },
+        { slot = 2,  label = 'Jackpot automobilis', type = 'vehicle', amount = 1, weight = 1 },
+        { slot = 3,  label = '1,000 žetonų', type = 'chips', amount = 1000, weight = 14 },
+        { slot = 4,  label = 'Nieko', type = 'none', amount = 0, weight = 14 },
+        { slot = 5,  label = '2,500 žetonų', type = 'chips', amount = 2500, weight = 12 },
+        { slot = 6,  label = '500 žetonų', type = 'chips', amount = 500, weight = 16 },
+        { slot = 7,  label = 'Nieko', type = 'none', amount = 0, weight = 14 },
+        { slot = 8,  label = '5,000 žetonų', type = 'chips', amount = 5000, weight = 8 },
+        { slot = 9,  label = '1,500 žetonų', type = 'chips', amount = 1500, weight = 10 },
+        { slot = 10, label = 'Nieko', type = 'none', amount = 0, weight = 14 },
+        { slot = 11, label = '10,000 žetonų', type = 'chips', amount = 10000, weight = 5 },
+        { slot = 12, label = '750 žetonų', type = 'chips', amount = 750, weight = 12 },
+        { slot = 13, label = 'Nieko', type = 'none', amount = 0, weight = 14 },
+        { slot = 14, label = '15,000 žetonų', type = 'chips', amount = 15000, weight = 4 },
+        { slot = 15, label = '2,000 žetonų', type = 'chips', amount = 2000, weight = 10 },
+        { slot = 16, label = 'Nieko', type = 'none', amount = 0, weight = 14 },
+        { slot = 17, label = '20,000 žetonų', type = 'chips', amount = 20000, weight = 3 },
+        { slot = 18, label = '3,000 žetonų', type = 'chips', amount = 3000, weight = 8 },
+        { slot = 19, label = 'Nieko', type = 'none', amount = 0, weight = 14 },
+        { slot = 20, label = '25,000 žetonų', type = 'chips', amount = 25000, weight = 2 },
     },
 }
 
@@ -104,7 +149,6 @@ Config.SlotMachines = {
     { id = 'sl_6', coords = vector3(1120.35, 232.15, -50.44) },
 }
 
---- Ruletės išmokos (europietiška — vienas 0)
 Config.RoulettePayouts = {
     number = 36,
     red = 2,
@@ -126,7 +170,6 @@ Config.SlotPayouts = {
     pair = 2,
 }
 
---- /dice — kauliukų metimas bet kur
 Config.Dice = {
     command = 'dice',
     maxDice = 3,

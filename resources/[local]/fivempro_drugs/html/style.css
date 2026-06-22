@@ -370,4 +370,127 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .sch-pot span, .sch-pot small { position: relative; z-index: 1; }
 .sch-pot small, .sch-soil-pile small, .sch-seed small { font-size: 12px; color: #86efac; }
 .sch-water-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-@keyframes schPulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+.sch-pot-black {
+  position: relative;
+  width: 92px;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+}
+.sch-pot-black small { font-size: 11px; color: #86efac; margin-top: 6px; }
+.sch-pot-rim {
+  width: 78px; height: 14px;
+  background: linear-gradient(180deg, #3f3f46, #18181b);
+  border-radius: 6px 6px 2px 2px;
+  border: 1px solid #52525b;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+}
+.sch-pot-body {
+  position: relative;
+  width: 72px; height: 78px;
+  background: linear-gradient(180deg, #27272a 0%, #09090b 100%);
+  border-radius: 4px 4px 10px 10px;
+  border: 1px solid #3f3f46;
+  overflow: hidden;
+  box-shadow: inset 0 -8px 16px rgba(0,0,0,0.55);
+}
+.sch-pot-soil-fill {
+  position: absolute; bottom: 0; left: 0; width: 100%; height: 0;
+  background: linear-gradient(0deg, #451a03, #78350f);
+  transition: height 0.2s ease;
+}
+.sch-tool-card {
+  min-width: 96px; min-height: 108px; padding: 12px;
+  border-radius: 14px; border: 1px solid rgba(74, 222, 128, 0.35);
+  background: rgba(6, 78, 59, 0.28); color: #ecfdf5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+.sch-tool-icon { font-size: 38px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45)); }
+.sch-tool-float { top: 8px; right: 8px; }
+.sch-scale.pulse { animation: schPulse 0.35s ease infinite alternate; }
+@keyframes schPulse { 0% { transform: scale(1); } 100% { transform: scale(1.06); } }
+
+/* Žolės džiovinimas / pakavimas */
+.sch-dry-rack {
+  width: min(360px, 92vw);
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  background: linear-gradient(180deg, rgba(6, 78, 59, 0.45), rgba(0, 0, 0, 0.35));
+  display: flex; flex-direction: column; gap: 14px; align-items: center;
+}
+.sch-dry-frame {
+  width: 100%; height: 8px; border-radius: 999px;
+  background: linear-gradient(90deg, #78350f, #a16207, #78350f);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+.sch-dry-hooks { display: flex; gap: 28px; justify-content: center; width: 100%; }
+.sch-dry-hook {
+  width: 108px; min-height: 118px; border-radius: 14px;
+  border: 1px dashed rgba(134, 239, 172, 0.45);
+  background: rgba(0,0,0,0.25); color: #d1fae5; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.sch-dry-hook span { font-size: 34px; }
+.sch-dry-hook small { font-size: 11px; color: #86efac; }
+.sch-dry-hook.hung {
+  border-style: solid; background: rgba(16, 185, 129, 0.28);
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.35); transform: translateY(-4px);
+}
+.sch-dry-tray { font-size: 13px; color: #a7f3d0; }
+.sch-dry-control { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
+.sch-dry-fan { font-size: 15px; color: #bbf7d0; letter-spacing: 0.04em; }
+.sch-dry-meter { font-size: 14px; color: #ecfdf5; }
+.sch-dry-leaves-preview { font-size: 28px; letter-spacing: 0.25em; opacity: 0.9; }
+.sch-dry-done .sch-dry-result {
+  font-size: 64px; margin-bottom: 8px;
+  filter: drop-shadow(0 0 16px rgba(250, 204, 21, 0.45));
+}
+.sch-weed-scale {
+  width: 130px; min-height: 130px; border-radius: 14px;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  background: rgba(0,0,0,0.35); color: #ecfdf5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+}
+.sch-weed-scale span { font-size: 34px; }
+.sch-weed-scale p { font-size: 18px; font-weight: 700; color: #4ade80; margin: 0; }
+.sch-weed-scale small { font-size: 11px; color: #86efac; }
+.sch-weed-bud {
+  width: 110px; height: 110px; border-radius: 50%;
+  border: 2px solid rgba(250, 204, 21, 0.45);
+  background: radial-gradient(circle at 35% 30%, rgba(250, 204, 21, 0.35), rgba(6, 78, 59, 0.55));
+  font-size: 42px; cursor: pointer; color: #fef3c7;
+}
+.sch-weed-bud.active { outline: 2px solid #4ade80; box-shadow: 0 0 20px rgba(74, 222, 128, 0.35); }
+.sch-weed-mylar {
+  width: 130px; min-height: 130px; border-radius: 12px;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background: linear-gradient(145deg, rgba(30, 27, 75, 0.65), rgba(0,0,0,0.45));
+  color: #f5f3ff; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+.sch-weed-mylar span { font-size: 38px; }
+.sch-weed-mylar small { font-size: 11px; color: #c4b5fd; }
+.sch-weed-mylar.filled {
+  border-color: rgba(74, 222, 128, 0.55);
+  box-shadow: inset 0 0 24px rgba(16, 185, 129, 0.18);
+}
+.sch-weed-mylar.seal-mode { margin-bottom: 8px; }
+.sch-seal-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
+.sch-seal-bar { display: flex; gap: 10px; width: min(320px, 90vw); }
+.sch-seal-zone {
+  flex: 1; height: 42px; border-radius: 10px; cursor: pointer;
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.15), rgba(0,0,0,0.35));
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.sch-seal-zone:hover { transform: translateY(-2px); filter: brightness(1.08); }
+.sch-seal-zone.done {
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.55), rgba(16, 185, 129, 0.35));
+  border-color: #86efac;
+}
+.sch-seal-label { font-size: 13px; color: #bbf7d0; margin: 0; }

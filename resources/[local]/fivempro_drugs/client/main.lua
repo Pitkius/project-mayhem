@@ -92,6 +92,10 @@ local function clearCraftProp()
     craftPropEntity = nil
 end
 
+local function hideCraftProgress()
+    nui('craftProgressHide')
+end
+
 local function attachCraftProp(propCfg)
     clearCraftProp()
     if not propCfg or not propCfg.model then return end
@@ -118,10 +122,6 @@ local function stopCraftAnim()
     clearCraftProp()
     local ped = PlayerPedId()
     ClearPedTasks(ped)
-end
-
-local function hideCraftProgress()
-    nui('craftProgressHide')
 end
 
 local function startCraftAnim(anim)
@@ -258,6 +258,11 @@ local function getAllStations()
     local weedCayo = Config.WeedCayoLab
     if weedCayo and weedCayo.stations then
         for _, st in ipairs(weedCayo.stations) do
+            list[#list + 1] = st
+        end
+    end
+    if weedCayo and weedCayo.packStations then
+        for _, st in ipairs(weedCayo.packStations) do
             list[#list + 1] = st
         end
     end
@@ -671,6 +676,9 @@ local function setupStationBlips()
     local weedCayo = Config.WeedCayoLab
     if weedCayo and weedCayo.blip and (not weedCayo.requireIsland or isCayoIslandLoaded()) then
         addCfgBlip(weedCayo.blip.coords, weedCayo.blip, weedCayo.blip.label or 'Žolės džiovinimas')
+    end
+    if weedCayo and weedCayo.packBlip and (not weedCayo.packBlip.requireIsland or isCayoIslandLoaded()) then
+        addCfgBlip(weedCayo.packBlip.coords, weedCayo.packBlip, weedCayo.packBlip.label or 'Žolės supakavimas')
     end
 
     -- Metamfetamino supakavimas

@@ -11,7 +11,7 @@
     tabs: root.querySelectorAll(".ga-tab"),
   };
 
-  let state = { gangs: [], turfs: [] };
+  let state = { gangs: [], turfs: [], maxWarnings: 5 };
   let tab = "gangs";
   let selectedGangId = null;
   let selectedTurfId = null;
@@ -46,6 +46,44 @@
     els.toast.className = "ga-toast show " + (type || "");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2800);
+  }
+
+  function maxWarnings() {
+    return Number(state.maxWarnings) || 5;
+  }
+
+  function warnMeterHtml(count, max) {
+    max = max || maxWarnings();
+    count = Math.max(0, Math.min(max, Number(count) || 0));
+    let html = "";
+    for (let i = 1; i <= max; i += 1) {
+      const filled = i <= count;
+      const danger = count >= max && filled;
+      html += `<span class="ga-warn-slot${filled ? " filled" : ""}${danger ? " danger" : ""}" title="${i}/${max}"></span>`;
+    }
+    return html;
+  }
+
+  function formatWhen(iso) {
+    if (!iso) return "—";
+    try {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return String(iso);
+      return d.toLocaleString("lt-LT", { dateStyle: "short", timeStyle: "short" });
+    } catch (e) {
+      return String(iso);
+    }
+  }
+
+  function warnHistoryHtml(items) {
+    const list = items || [];
+    if (!list.length) return `<p class="ga-warn-item"><em>Įspėjimų istorijos nėra.</em></p>`;
+    return list
+      .map(
+        (w) =>
+          `<div class="ga-warn-item"><strong>${safe(w.reason || "Įspėjimas")}</strong><em>${safe(w.admin_name || "Admin")} · ${safe(formatWhen(w.created_at))}</em></div>`,
+      )
+      .join("");
   }
 
   function gangById(id) {
@@ -96,7 +134,7 @@
               <span class="ga-swatch" style="background:${safe(hex)}"></span>
               ${safe(g.name)}
             </div>
-            <div class="ga-list-item-sub">#${g.id} · ${safe(g.gang_type)} · Rep ${g.reputation ?? 0} · ${g.member_count ?? 0} nariai</div>
+            <div class="ga-list-item-sub">#${g.id} · ${safe(g.gang_type)} · Rep ${g.reputation ?? 0} · ⚠ ${g.warnings ?? 0}/${maxWarnings()} · ${g.member_count ?? 0} nariai</div>
           </button>`;
         })
         .join("");
@@ -130,6 +168,9 @@
 
   function renderGangDetail(g) {
     const delName = `DELETE-${g.id}`;
+    const wCount = Number(g.warnings) || 0;
+    const wMax = maxWarnings();
+    const wStatClass = wCount >= wMax ? " is-danger" : wCount > 0 ? " is-warn" : "";
     els.detail.innerHTML = `
       <div class="ga-detail-card">
         <h2><span class="ga-swatch" style="width:14px;height:14px;background:${safe(g.color_hex || "#888")}"></span> ${safe(g.name)} <span class="ga-id">#${g.id}</span></h2>
@@ -138,6 +179,24 @@
           <div class="ga-stat"><span>Reputacija</span><strong id="gaStatRep">${g.reputation ?? 0}</strong></div>
           <div class="ga-stat"><span>Heat</span><strong id="gaStatHeat">${g.heat ?? 0}</strong></div>
           <div class="ga-stat"><span>Nariai</span><strong>${g.member_count ?? 0}</strong></div>
+          <div class="ga-stat${wStatClass}"><span>Įspėjimai</span><strong>${wCount}/${wMax}</strong></div>
+        </div>
+        <div class="ga-warn-box">
+          <h3>⚠ Įspėjimų sistema (${wCount}/${wMax})</h3>
+          <div class="ga-warn-meter" aria-label="Įspėjimai">${warnMeterHtml(wCount, wMax)}</div>
+          <div class="ga-form-grid">
+            <label>Priežastis
+              <textarea id="gaWarnReason" rows="2" maxlength="255" placeholder="Pvz. per dažni turf karai…"></textarea>
+            </label>
+          </div>
+          <div class="ga-actions">
+            <button type="button" class="ga-btn ga-btn-warn" id="gaIssueWarn"${wCount >= wMax ? " disabled" : ""}>Duoti įspėjimą</button>
+            <button type="button" class="ga-btn ga-btn-ghost" id="gaClearWarns"${wCount === 0 ? " disabled" : ""}>Nunulinti įspėjimus</button>
+          </div>
+          <div class="ga-warn-history">
+            <h4>Paskutiniai įspėjimai</h4>
+            ${warnHistoryHtml(g.recent_warnings)}
+          </div>
         </div>
         <div class="ga-form-grid">
           <label>Reputacija
@@ -157,6 +216,29 @@
           <button type="button" class="ga-btn ga-btn-danger" id="gaDeleteGang">Ištrinti gaują</button>
         </div>
       </div>`;
+
+    document.getElementById("gaIssueWarn")?.addEventListener("click", () => {
+      const reason = (document.getElementById("gaWarnReason")?.value || "").trim();
+      post("gangs:adminIssueWarning", { gangId: g.id, reason }).then((res) => {
+        if (res && res.ok) {
+          toast("Įspėjimas suteiktas.", "ok");
+          mergeState(res);
+          selectedGangId = g.id;
+          renderAll();
+        } else toast((res && res.message) || "Nepavyko duoti įspėjimo.", "err");
+      });
+    });
+
+    document.getElementById("gaClearWarns")?.addEventListener("click", () => {
+      post("gangs:adminClearWarnings", { gangId: g.id }).then((res) => {
+        if (res && res.ok) {
+          toast("Įspėjimai nunulinti.", "ok");
+          mergeState(res);
+          selectedGangId = g.id;
+          renderAll();
+        } else toast((res && res.message) || "Klaida.", "err");
+      });
+    });
 
     document.getElementById("gaSaveGang").onclick = () => {
       const reputation = Number(document.getElementById("gaRep").value) || 0;
@@ -276,6 +358,7 @@
     if (!res) return;
     if (res.gangs) state.gangs = res.gangs;
     if (res.turfs) state.turfs = res.turfs;
+    if (res.maxWarnings != null) state.maxWarnings = res.maxWarnings;
   }
 
   function renderAll() {
@@ -302,6 +385,7 @@
     state = {
       gangs: payload.gangs || [],
       turfs: payload.turfs || [],
+      maxWarnings: payload.maxWarnings || 5,
     };
     selectedGangId = state.gangs[0] ? state.gangs[0].id : null;
     selectedTurfId = state.turfs[0] ? state.turfs[0].turf_id : null;

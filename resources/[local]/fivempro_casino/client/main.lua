@@ -3,7 +3,6 @@ local QBCore = exports['qb-core']:GetCoreObject()
 Casino = Casino or {}
 Casino.banned = false
 Casino.bannedUntil = ''
-local cachedStatus = nil
 
 local function notify(msg, ntype)
     QBCore.Functions.Notify(msg, ntype or 'primary')
@@ -44,12 +43,6 @@ end
 
 Casino.drawText3D = drawText3D
 
-local function loadCasinoIpl()
-    if Casino.loadIpl then
-        Casino.loadIpl()
-    end
-end
-
 local function promptBet(title)
     if GetResourceState('qb-input') ~= 'started' then
         notify('qb-input neįkeltas.', 'error')
@@ -57,11 +50,11 @@ local function promptBet(title)
     end
     local lim = Config.Limits or {}
     local r = exports['qb-input']:ShowInput({
-        header = title or 'Statymas',
+        header = title or 'Statymas žetonais',
         submitText = 'Statyti',
         inputs = {
             {
-                text = ('Suma ($%s - $%s)'):format(lim.minBet or 50, lim.maxBet or 50000),
+                text = ('Žetonai (%s - %s)'):format(lim.minBet or 50, lim.maxBet or 50000),
                 name = 'bet',
                 type = 'number',
                 isRequired = true,
@@ -76,7 +69,7 @@ Casino.promptBet = promptBet
 
 local function canUseCasino()
     if Casino.isBanned() then
-        notify('Pasiekėte dienos laimėjimų limitą ($50,000). Grįžkite rytoj.', 'error')
+        notify('Pasiekėte dienos laimėjimų limitą. Informacija — kazino kasoje.', 'error')
         return false
     end
     if not Casino.isInside() then
@@ -100,7 +93,7 @@ local function ejectFromCasino()
     local ped = PlayerPedId()
     SetEntityCoords(ped, exterior.x, exterior.y, exterior.z, false, false, false, false)
     SetEntityHeading(ped, exterior.w or 0.0)
-    notify('Jūs išvaryti iš kazino iki rytojaus — dienos laimėjimų limitas pasiektas.', 'error')
+    notify('Pasiekėte dienos limitą — negalite lošti iki rytojaus.', 'error')
 end
 
 RegisterNetEvent('fivempro_casino:client:casinoBanned', function(untilDay)
@@ -114,7 +107,6 @@ end)
 local function refreshStatus()
     QBCore.Functions.TriggerCallback('fivempro_casino:server:getStatus', function(data)
         if not data then return end
-        cachedStatus = data
         Casino.banned = data.banned == true
         Casino.bannedUntil = data.bannedUntil or ''
     end)
@@ -165,10 +157,13 @@ local function setupTargets()
     if GetResourceState('qb-target') ~= 'started' then return end
 
     local wheel = Config.Wheel
-    if wheel and wheel.coords then
-        addBoxTarget('casino_wheel', wheel.coords, 'Laimės ratas (24h)', 'fas fa-dharmachakra', function()
-            TriggerEvent('fivempro_casino:client:openWheel')
-        end)
+    if wheel then
+        local interact = wheel.movePos or wheel.coords
+        if interact then
+            addBoxTarget('casino_wheel', interact, 'Laimės ratas (24h)', 'fas fa-dharmachakra', function()
+                TriggerEvent('fivempro_casino:client:openWheel')
+            end)
+        end
     end
 
     for _, tbl in ipairs(Config.BlackjackTables or {}) do
@@ -192,7 +187,7 @@ end
 
 CreateThread(function()
     Wait(1500)
-    loadCasinoIpl()
+    if Casino.loadIpl then Casino.loadIpl() end
     setupBlip()
     while GetResourceState('qb-target') ~= 'started' do Wait(500) end
     setupTargets()
@@ -205,32 +200,6 @@ end)
 AddEventHandler('onResourceStart', function(res)
     if res ~= GetCurrentResourceName() then return end
     if LocalPlayer.state.isLoggedIn then refreshStatus() end
-end)
-
--- Limito rodymas kazino zonoje
-CreateThread(function()
-    while true do
-        if Casino.isInside() then
-            refreshStatus()
-            Wait(8000)
-        else
-            cachedStatus = nil
-            Wait(2000)
-        end
-    end
-end)
-
-CreateThread(function()
-    while true do
-        local sleep = 1000
-        if Casino.isInside() and cachedStatus and not Casino.isBanned() then
-            sleep = 0
-            local c = GetEntityCoords(PlayerPedId())
-            local used = (cachedStatus.maxDailyWin or 50000) - (cachedStatus.remaining or 0)
-            drawText3D(vector3(c.x, c.y, c.z + 1.05), ('Kazino limitas: $%s / $%s'):format(used, cachedStatus.maxDailyWin or 50000), 0.30)
-        end
-        Wait(sleep)
-    end
 end)
 
 exports('IsCasinoBanned', function()

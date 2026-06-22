@@ -601,7 +601,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     end
 
     isReloading = true
-    reloadGuardUntil = GetGameTimer() + 80
+    reloadGuardUntil = GetGameTimer() + getReloadWaitMs() + 500
 
     local reloadPed = ped
     local reloadWeapon = weapon
@@ -723,6 +723,11 @@ CreateThread(function()
             DisableControlAction(0, 257, true)
             DisableControlAction(0, 263, true)
             DisableControlAction(0, 264, true)
+            if Config.ReloadAllowMovement ~= false then
+                for _, ctrl in ipairs({ 21, 30, 31, 32, 33, 34, 35 }) do
+                    EnableControlAction(0, ctrl, true)
+                end
+            end
             Wait(0)
         else
             Wait(200)

@@ -2,6 +2,8 @@ Config = {}
 
 Config.TabletItem = 'gang_tablet'
 
+Config.MaxGangWarnings = 5
+
 Config.GangTypes = {
     street = 'Street Gang',
     biker = 'Biker Club',

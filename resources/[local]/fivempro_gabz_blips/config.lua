@@ -15,7 +15,6 @@ Config.Blips = {
     { resource = 'cfx-gabz-townhall', label = 'Rotušė', coords = vec3(-541.0, -210.0, 37.0), sprite = 525, color = 3 },
 
     -- ── Verslai / pramogos ──
-    { resource = 'cfx-gabz-catcafe', label = 'Cat Cafe', coords = vec3(-580.862, -1079.083, 22.330), sprite = 89, color = 48 },
     { resource = 'cfx-gabz-tuners', label = 'Tuner Shop', coords = vec3(166.715, -3014.122, 5.888), sprite = 72, color = 5 },
     { resource = 'cfx-gabz-ottos', label = 'Otto\'s Auto', coords = vec3(793.0, -817.0, 27.0), sprite = 72, color = 46 },
     { resource = 'cfx-gabz-harmony', label = 'Harmony Repair', coords = vec3(1178.985, 2653.985, 37.862), sprite = 72, color = 46 },

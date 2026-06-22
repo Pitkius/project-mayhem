@@ -45,7 +45,7 @@ RegisterNetEvent('fivempro_casino:client:rouletteBet', function(data)
 
         local msg = ('Iškrito %s (%s)'):format(res.result, colorLabel(res.color))
         if res.won then
-            msg = msg .. (' — laimėjote $%s!'):format(res.payout or 0)
+            msg = msg .. (' — laimėjote %s žetonų!'):format(res.payout or 0)
             QBCore.Functions.Notify(msg, 'success')
         else
             msg = msg .. ' — pralaimėjote.'

@@ -8,7 +8,7 @@ local function getPlayerGang(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return nil end
     return MySQL.single.await([[
-        SELECT gm.gang_id, gm.rank, g.name, g.gang_type, g.color_hex, g.secondary_color_hex, g.reputation, g.heat
+        SELECT gm.gang_id, gm.rank, g.name, g.gang_type, g.color_hex, g.secondary_color_hex, g.reputation, g.heat, g.warnings, g.created_at
         FROM fivempro_gang_members gm
         JOIN fivempro_gangs g ON g.id = gm.gang_id
         WHERE gm.citizenid = ?
@@ -33,6 +33,37 @@ end
 
 local function getGangMembers(gangId)
     return MySQL.query.await('SELECT citizenid, name, rank FROM fivempro_gang_members WHERE gang_id = ? ORDER BY rank DESC, name ASC', { tonumber(gangId) }) or {}
+end
+
+local function getGangWarnings(gangId, limit)
+    limit = tonumber(limit) or 8
+    return MySQL.query.await([[
+        SELECT id, reason, admin_name, created_at
+        FROM fivempro_gang_warnings
+        WHERE gang_id = ?
+        ORDER BY id DESC
+        LIMIT ?
+    ]], { tonumber(gangId), limit }) or {}
+end
+
+local function notifyGangMembersOnline(gangId, message, ntype, payload)
+    local members = getGangMembers(gangId)
+    for _, m in ipairs(members) do
+        local tPlayer = QBCore.Functions.GetPlayerByCitizenId(m.citizenid)
+        if tPlayer then
+            TriggerClientEvent('QBCore:Notify', tPlayer.PlayerData.source, message, ntype or 'error', 9000)
+            TriggerClientEvent('fivempro_gangs:client:gangWarning', tPlayer.PlayerData.source, payload or {})
+        end
+    end
+end
+
+local function fetchAdminGangs()
+    return MySQL.query.await([[
+        SELECT g.id, g.name, g.gang_type, g.color_hex, g.reputation, g.heat, g.warnings, g.created_at,
+            (SELECT COUNT(*) FROM fivempro_gang_members m WHERE m.gang_id = g.id) AS member_count
+        FROM fivempro_gangs g
+        ORDER BY g.id ASC
+    ]]) or {}
 end
 
 local function getGangColorLegend()
@@ -287,6 +318,8 @@ QBCore.Functions.CreateCallback('fivempro_gangs:server:getTabletState', function
             hasGang = true,
             gang = gang,
             members = getGangMembers(gang.gang_id),
+            warnings = getGangWarnings(gang.gang_id, 8),
+            maxWarnings = tonumber(Config.MaxGangWarnings) or 5,
             turfs = getTurfs(),
             gangTypes = Config.GangTypes,
             palette = Config.GangColors or {},
@@ -456,14 +489,12 @@ end)
 
 QBCore.Functions.CreateCallback('fivempro_gangs:server:getAdminSnapshot', function(src, cb)
     if not HasGangAdminPermission(src) then return cb({ ok = false, message = 'Nėra teisių.' }) end
-    local gangs = MySQL.query.await([[
-        SELECT g.id, g.name, g.gang_type, g.color_hex, g.reputation, g.heat, g.created_at,
-            (SELECT COUNT(*) FROM fivempro_gang_members m WHERE m.gang_id = g.id) AS member_count
-        FROM fivempro_gangs g
-        ORDER BY g.id ASC
-    ]]) or {}
+    local gangs = fetchAdminGangs()
+    for _, g in ipairs(gangs) do
+        g.recent_warnings = getGangWarnings(g.id, 5)
+    end
     local turfs = getTurfs()
-    cb({ ok = true, gangs = gangs, turfs = turfs })
+    cb({ ok = true, gangs = gangs, turfs = turfs, maxWarnings = tonumber(Config.MaxGangWarnings) or 5 })
 end)
 
 RegisterNetEvent('fivempro_gangs:server:adminSetGangStats', function(gangId, reputation, heat)
@@ -479,12 +510,60 @@ RegisterNetEvent('fivempro_gangs:server:adminSetGangStats', function(gangId, rep
     TriggerClientEvent('QBCore:Notify', src, 'Gaujos statistika atnaujinta.', 'success')
 end)
 
+RegisterNetEvent('fivempro_gangs:server:adminIssueWarning', function(gangId, reason)
+    local src = source
+    if not HasGangAdminPermission(src) then return end
+    gangId = tonumber(gangId)
+    if not gangId then return end
+    local gang = getGangById(gangId)
+    if not gang then
+        return TriggerClientEvent('QBCore:Notify', src, 'Gauja nerasta.', 'error')
+    end
+    reason = tostring(reason or ''):sub(1, 255)
+    if reason == '' then reason = 'Administracinis įspėjimas' end
+    local maxW = tonumber(Config.MaxGangWarnings) or 5
+    local current = tonumber(gang.warnings) or 0
+    if current >= maxW then
+        return TriggerClientEvent('QBCore:Notify', src, ('Gauja jau turi %d/%d įspėjimų.'):format(current, maxW), 'error')
+    end
+    local Admin = QBCore.Functions.GetPlayer(src)
+    local adminName = Admin and ((Admin.PlayerData.charinfo.firstname or '') .. ' ' .. (Admin.PlayerData.charinfo.lastname or '')) or 'Admin'
+    local adminCid = Admin and Admin.PlayerData.citizenid or nil
+    MySQL.insert.await('INSERT INTO fivempro_gang_warnings (gang_id, reason, admin_citizenid, admin_name) VALUES (?, ?, ?, ?)', {
+        gangId, reason, adminCid, adminName,
+    })
+    local nextCount = current + 1
+    MySQL.update.await('UPDATE fivempro_gangs SET warnings = ? WHERE id = ?', { nextCount, gangId })
+    local msg = ('Gauja „%s“ gavo įspėjimą (%d/%d): %s'):format(gang.name, nextCount, maxW, reason)
+    TriggerClientEvent('QBCore:Notify', src, msg, 'success')
+    notifyGangMembersOnline(gangId, ('⚠ Gaujos įspėjimas %d/%d: %s'):format(nextCount, maxW, reason), 'error', {
+        gangId = gangId,
+        warnings = nextCount,
+        maxWarnings = maxW,
+        reason = reason,
+    })
+    if nextCount >= maxW then
+        notifyGangMembersOnline(gangId, ('⚠ Gauja pasiekė %d įspėjimų limitą — susisiek su administracija.'):format(maxW), 'error')
+    end
+end)
+
+RegisterNetEvent('fivempro_gangs:server:adminClearWarnings', function(gangId)
+    local src = source
+    if not HasGangAdminPermission(src) then return end
+    gangId = tonumber(gangId)
+    if not gangId then return end
+    MySQL.update.await('UPDATE fivempro_gangs SET warnings = 0 WHERE id = ?', { gangId })
+    TriggerClientEvent('QBCore:Notify', src, 'Gaujos įspėjimai nunulinti.', 'success')
+    notifyGangMembersOnline(gangId, 'Gaujos įspėjimai buvo panaikinti administracijos.', 'success', { gangId = gangId, warnings = 0 })
+end)
+
 RegisterNetEvent('fivempro_gangs:server:adminDeleteGang', function(gangId)
     local src = source
     if not HasGangAdminPermission(src) then return end
     gangId = tonumber(gangId)
     if not gangId then return end
     MySQL.update.await('DELETE FROM fivempro_gang_members WHERE gang_id = ?', { gangId })
+    MySQL.update.await('DELETE FROM fivempro_gang_warnings WHERE gang_id = ?', { gangId })
     MySQL.update.await('UPDATE fivempro_gang_turfs SET owner_gang_id = NULL, owner_name = NULL, progress = 0 WHERE owner_gang_id = ?', { gangId })
     MySQL.update.await('DELETE FROM fivempro_gang_sales_logs WHERE gang_id = ?', { gangId })
     MySQL.update.await('DELETE FROM fivempro_gangs WHERE id = ?', { gangId })
@@ -502,6 +581,7 @@ MySQL.ready(function()
             `owner_citizenid` VARCHAR(64) NULL,
             `reputation` INT NOT NULL DEFAULT 0,
             `heat` INT NOT NULL DEFAULT 0,
+            `warnings` INT NOT NULL DEFAULT 0,
             `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`),
             UNIQUE KEY `ux_fivempro_gangs_name` (`name`)
@@ -519,6 +599,27 @@ MySQL.ready(function()
             [[ALTER TABLE `fivempro_gangs` ADD COLUMN `secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF' AFTER `color_hex`]]
         )
     end
+    local hasWarnings = MySQL.scalar.await([[
+        SELECT COUNT(*) FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'fivempro_gangs'
+          AND column_name = 'warnings'
+    ]])
+    if (tonumber(hasWarnings) or 0) == 0 then
+        MySQL.query.await([[ALTER TABLE `fivempro_gangs` ADD COLUMN `warnings` INT NOT NULL DEFAULT 0 AFTER `heat`]])
+    end
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS `fivempro_gang_warnings` (
+            `id` INT NOT NULL AUTO_INCREMENT,
+            `gang_id` INT NOT NULL,
+            `reason` VARCHAR(255) NOT NULL DEFAULT '',
+            `admin_citizenid` VARCHAR(64) NULL,
+            `admin_name` VARCHAR(128) NULL,
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_fivempro_gang_warnings_gang` (`gang_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_gang_members` (
             `gang_id` INT NOT NULL,

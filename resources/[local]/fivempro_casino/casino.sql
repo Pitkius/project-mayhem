@@ -6,3 +6,9 @@ CREATE TABLE IF NOT EXISTS `casino_player_stats` (
     `wheel_at` BIGINT NOT NULL DEFAULT 0,
     PRIMARY KEY (`citizenid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `casino_state` (
+    `id` VARCHAR(32) NOT NULL,
+    `data` LONGTEXT NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
