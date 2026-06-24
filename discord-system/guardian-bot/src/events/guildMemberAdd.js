@@ -4,10 +4,11 @@ import { sendJoinLog, sendGuildLog } from '../logs/dispatcher.js';
 import { getVerificationSettings } from '../database/sqlite.js';
 import { assertBotCanManageRoles } from '../verification/helpers.js';
 import { sendWelcomeAnnouncement } from '../verification/welcome.js';
+import { requestMemberStatsRefresh } from '../discord/memberChannel.js';
 
 export default {
   name: Events.GuildMemberAdd,
-  async execute(member) {
+  async execute(member, client) {
     if (member.user.bot) {
       const executor = await getAuditExecutor(member.guild, AuditLogEvent.BotAdd, member.id);
       if (executor) {
@@ -16,6 +17,7 @@ export default {
       await sendGuildLog(member.guild, 'security', 'Bot Added', `${member.user.tag} (${member.id})`, [
         { name: 'Added By', value: executor ? `${executor}` : 'Unknown', inline: true },
       ]);
+      requestMemberStatsRefresh(client, member.guild, 'bot prisijungė');
       return;
     }
 
@@ -36,5 +38,6 @@ export default {
     }
 
     await sendJoinLog(member);
+    requestMemberStatsRefresh(client, member.guild, 'prisijungė');
   },
 };

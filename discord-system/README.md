@@ -36,6 +36,7 @@ resources/[local]/server_logs/   # FiveM webhook logai
 4. Įjunk **Privileged Gateway Intents**:
    - Server Members Intent
    - Message Content Intent
+   - **Presence Intent** (Discord narių skaičiui voice kanale)
    - (Rekomenduojama) visi intents, kurių prašo botas
 5. **OAuth2 → URL Generator**:
    - Scopes: `bot`, `applications.commands`
@@ -63,6 +64,20 @@ npm start
 3. FiveM webhook URL nukopijuok iš `guardian-bot/data/fivem-webhooks-{GUILD_ID}.lua` → `server_logs/config.lua`
 4. `/whitelist add` — pridėk owner/trusted admin ID
 5. `/antinuke settings` — peržiūrėk threshold
+
+### Gyvas Discord narių skaičius (voice kanalas „Gyventojai“)
+
+Botas atnaujina voice kanalo pavadinimą pagal **Discord serverio narių** skaičių (ne FiveM).
+
+1. Botui reikia teisės **Manage Channels**
+2. Developer Portal → Bot → įjunk **Server Members Intent** ir **Presence Intent**
+3. `.env`:
+   - `DISCORD_STATS_ENABLED=true`
+   - `DISCORD_STATS_CHANNEL_ID=` — voice kanalo ID
+   - `DISCORD_STATS_CHANNEL_TEMPLATE=Gyventojai: {members}` (arba `{online}` prisijungusiems)
+4. Perkrauk botą: `npm start`
+
+Šablonai: `{members}` visi nariai, `{online}` prisijungę dabar.
 
 ### Pasitvirtinimas (oro-uostas + ✅ / 🔔)
 

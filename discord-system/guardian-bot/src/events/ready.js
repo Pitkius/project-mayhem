@@ -3,6 +3,7 @@ import { applyBotBranding } from '../utils/branding.js';
 import { hasLogChannels } from '../database/sqlite.js';
 import { provisionLogChannels } from '../logs/provision.js';
 import { registerSlashCommands } from '../registerSlashCommands.js';
+import { startMemberChannelTracker } from '../discord/memberChannel.js';
 
 export default {
   name: Events.ClientReady,
@@ -25,6 +26,8 @@ export default {
       activities: [{ name: 'MAYHEM RP', type: ActivityType.Watching }],
       status: 'online',
     });
+
+    startMemberChannelTracker(client);
 
     console.log(`[MRP] Prisijungta kaip ${client.user.tag}`);
     console.log(`[MRP] Serveriu: ${client.guilds.cache.size}`);
