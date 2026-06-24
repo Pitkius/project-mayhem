@@ -6,9 +6,17 @@ local function musicCfg()
     return Config.LoadscreenMusic or {}
 end
 
+local function sessionReady()
+    if NetworkIsSessionStarted() then return true end
+    if NetworkIsPlayerConnected(PlayerId()) then return true end
+    return false
+end
+
 local function startLoadingMusic()
     local cfg = musicCfg()
     if musicStarted or cfg.enabled == false then return end
+    if not sessionReady() then return end
+
     musicStarted = true
 
     SetFrontendRadioActive(false)
@@ -51,7 +59,6 @@ end
 
 RegisterNetEvent('fivempro_loadscreen:client:close', closeLoadscreen)
 
---- Muzika tik kai NUI loading screen parodomas
 RegisterNUICallback('loadscreenReady', function(_, cb)
     startLoadingMusic()
     cb('ok')
@@ -64,6 +71,18 @@ RegisterNUICallback('setLoadscreenMusic', function(data, cb)
         stopLoadingMusic()
     end
     cb('ok')
+end)
+
+--- Bandome paleisti kai sesija pasiruošusi; Wait(0) kai jau ready — kuo greičiau.
+CreateThread(function()
+    local deadline = GetGameTimer() + 120000
+    while not closed and GetGameTimer() < deadline do
+        if not musicStarted then
+            startLoadingMusic()
+        end
+        if musicStarted then return end
+        Wait(sessionReady() and 0 or 50)
+    end
 end)
 
 CreateThread(function()

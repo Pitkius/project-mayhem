@@ -43,6 +43,8 @@ local vehicleWindowDown = {}
 local vehicleMileageByPlate = {}
 local mileageTrackVeh = 0
 local mileageTrackPos = nil
+local displaySpeedKmh = 0.0
+local displayRpmPct = 0.0
 
 local VEHICLE_CLASS_LT = {
     [0] = 'Kompaktinis',
@@ -76,14 +78,23 @@ end
 local function getVehicleGearDisplay(veh)
     if veh == 0 or not DoesEntityExist(veh) then return 'N' end
     if not GetIsVehicleEngineRunning(veh) then return 'P' end
-    local speed = GetEntitySpeed(veh)
+
+    local speedMs = GetEntitySpeed(veh)
     local gear = GetVehicleCurrentGear(veh) or 0
-    if speed < 0.8 then return 'N' end
-    if gear == 0 then return 'R' end
-    if gear == 1 then return 'D1' end
-    if gear == 2 then return 'D2' end
-    if gear >= 3 then return 'D' .. tostring(math.min(gear, 3)) end
-    return 'D'
+
+    if speedMs < 0.6 then
+        if gear <= 0 then return 'N' end
+    end
+
+    local fwd = GetEntityForwardVector(veh)
+    local vel = GetEntityVelocity(veh)
+    local longitudinal = vel.x * fwd.x + vel.y * fwd.y + vel.z * fwd.z
+    if longitudinal < -0.45 or (gear == 0 and speedMs > 0.45) then
+        return 'R'
+    end
+
+    if gear <= 0 then return 'N' end
+    return tostring(gear)
 end
 
 local function trackVehicleMileage(veh, plate)
@@ -335,15 +346,21 @@ local function pushHud()
     local gearLabel = 'N'
     local handbrake = false
     local indicators = 0
+    local speedExact = 0.0
     if inVehicle then
         veh = GetVehiclePedIsIn(ped, false)
         if veh == 0 then
             inVehicle = false
         else
-            speed = clamp(math.floor(GetEntitySpeed(veh) * 3.6 + 0.5), 0, 450)
+            speedExact = clamp(GetEntitySpeed(veh) * 3.6, 0.0, 450.0)
+            local speedLerp = 0.32
+            displaySpeedKmh = displaySpeedKmh + (speedExact - displaySpeedKmh) * speedLerp
+            speed = clamp(math.floor(displaySpeedKmh + 0.5), 0, 450)
             fuel = getVehicleFuelPercent(veh)
-            local rpm = GetVehicleCurrentRpm(veh)
-            rpmPct = clamp(math.floor((rpm or 0.0) * 100.0 + 0.5), 0, 100)
+            local rpm = GetVehicleCurrentRpm(veh) or 0.0
+            local rpmTarget = clamp((rpm or 0.0) * 100.0, 0.0, 100.0)
+            displayRpmPct = displayRpmPct + (rpmTarget - displayRpmPct) * speedLerp
+            rpmPct = clamp(math.floor(displayRpmPct + 0.5), 0, 100)
             local eh = GetVehicleEngineHealth(veh) or 1000.0
             engineHealth = eh
             engineTemp = clamp(math.floor((eh / 1000.0) * 42.0 + 58.0 + 0.5), 55, 115)
@@ -363,6 +380,8 @@ local function pushHud()
         end
     else
         seatbeltOn = false
+        displaySpeedKmh = 0.0
+        displayRpmPct = 0.0
         mileageTrackVeh = 0
         mileageTrackPos = nil
         if hazardEnabled then
@@ -402,6 +421,7 @@ local function pushHud()
         voiceTalking = voiceTalking,
         inVehicle = inVehicle,
         speed = speed,
+        speedExact = speedExact,
         fuel = fuel,
         seatbelt = seatbeltDisplayActive(),
         rpm = rpmPct,
@@ -1260,7 +1280,13 @@ CreateThread(function()
 
     while true do
         pushHud()
-        Wait(hudMenuOpen and 180 or 700)
+        local waitMs = 700
+        if hudMenuOpen then
+            waitMs = 180
+        elseif IsPedInAnyVehicle(PlayerPedId(), false) then
+            waitMs = 50
+        end
+        Wait(waitMs)
     end
 end)
 

@@ -30,8 +30,11 @@ local RELOAD_BY_INVENTORY = {
     weapon_microsmg = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
     weapon_combatpistol = { dict = 'weapons@pistol@', clips = { 'reload_aim', 'reload' } },
     weapon_pistol = { dict = 'weapons@pistol@', clips = { 'reload_aim', 'reload' } },
+    weapon_pistol_mk2 = { dict = 'weapons@pistol@', clips = { 'reload_aim', 'reload' } },
     weapon_carbinerifle = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
     weapon_assaultrifle = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
+    weapon_specialcarbine = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
+    weapon_specialcarbine_mk2 = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
     weapon_pumpshotgun = { dict = 'weapons@shotgun@', clips = { 'reload_aim', 'reload' } },
 }
 
@@ -43,6 +46,14 @@ end
 
 local function allowReloadMovement()
     return Config.ReloadAllowMovement ~= false
+end
+
+--- 50 = viršutinė kūno dalis + judėjimas + sustoja paskutiniame kadre (kaip weapdraw.lua).
+local function reloadAnimFlags()
+    if allowReloadMovement() then
+        return 50
+    end
+    return 2
 end
 
 local function loadAnimDict(dict)
@@ -115,6 +126,13 @@ local function pedIsMoving(ped)
     return false
 end
 
+local function preparePedForReloadAnim(ped, weaponHash)
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return end
+    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    SetPedCurrentWeaponVisible(ped, true, false, false, false)
+    SetCurrentPedWeapon(ped, weaponHash, true)
+end
+
 local function pinClipDuringVisual(ped, weaponHash, clipNow)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return end
     clipNow = math.max(0, tonumber(clipNow) or 0)
@@ -125,54 +143,98 @@ local function pinClipDuringVisual(ped, weaponHash, clipNow)
     SetAmmoInClip(ped, weaponHash, clipNow)
 end
 
-local function playClipFromList(ped, dict, clips, durationMs, flags)
+local function orderClipsForPed(ped, clips)
+    if not ped or ped == 0 then return clips end
+    local aiming = IsPlayerFreeAiming(PlayerId())
+        or IsControlPressed(0, 25)
+        or IsDisabledControlPressed(0, 25)
+        or pedIsMoving(ped)
+    if not aiming then
+        return clips
+    end
+    local ordered = {}
     for _, clip in ipairs(clips) do
-        TaskPlayAnim(ped, dict, clip, 8.0, -8.0, durationMs, flags, 0.0, false, false, false)
-        Wait(120)
+        if clip == 'reload_aim' then
+            ordered[#ordered + 1] = clip
+        end
+    end
+    for _, clip in ipairs(clips) do
+        if clip ~= 'reload_aim' then
+            ordered[#ordered + 1] = clip
+        end
+    end
+    return ordered
+end
+
+local function playClipFromList(ped, dict, clips, flags)
+    clips = orderClipsForPed(ped, clips)
+    local pos = GetEntityCoords(ped, true)
+    local rot = GetEntityHeading(ped)
+
+    for _, clip in ipairs(clips) do
+        TaskPlayAnimAdvanced(
+            ped, dict, clip,
+            pos.x, pos.y, pos.z,
+            0.0, 0.0, rot,
+            8.0, 3.0, -1,
+            flags, 0.0, false, false
+        )
+        Wait(180)
+        if IsEntityPlayingAnim(ped, dict, clip, 3) then
+            return clip
+        end
+
+        TaskPlayAnim(ped, dict, clip, 8.0, -8.0, -1, flags, 0.0, false, false, false)
+        Wait(180)
         if IsEntityPlayingAnim(ped, dict, clip, 3) then
             return clip
         end
     end
+
     return clips[1]
 end
 
 local function stopReloadAnimation(ped)
     ped = ped or PlayerPedId()
     if activeReloadAnim and activeReloadAnim.dict and activeReloadAnim.clip then
-        StopAnimTask(ped, activeReloadAnim.dict, activeReloadAnim.clip, 1.0)
+        if ped and ped ~= 0 and DoesEntityExist(ped) then
+            StopAnimTask(ped, activeReloadAnim.dict, activeReloadAnim.clip, 1.0)
+        end
         if HasAnimDictLoaded(activeReloadAnim.dict) then
             RemoveAnimDict(activeReloadAnim.dict)
         end
     end
     activeReloadAnim = nil
-    if ped and ped ~= 0 and DoesEntityExist(ped) then
-        ClearPedSecondaryTask(ped)
-    end
 end
 
 local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs)
+    ped = ped or PlayerPedId()
+    if not ped or ped == 0 then return false end
+
     local dict, clips = getReloadAnim(weaponHash, weaponData)
     if not loadAnimDict(dict) then
         Wait(math.min(900, durationMs))
         return false
     end
 
-    SetCurrentPedWeapon(ped, weaponHash, true)
-    SetPedCurrentWeaponVisible(ped, true, false, false, false)
+    preparePedForReloadAnim(ped, weaponHash)
 
-    local flags = allowReloadMovement() and 49 or 0
-    local clip = playClipFromList(ped, dict, clips, durationMs, flags)
+    local flags = reloadAnimFlags()
+    local clip = playClipFromList(ped, dict, clips, flags)
     activeReloadAnim = { dict = dict, clip = clip }
 
     local deadline = GetGameTimer() + durationMs
     while DoesEntityExist(ped) and GetGameTimer() < deadline do
+        ped = PlayerPedId()
         if allowReloadMovement() then
             for _, ctrl in ipairs({ 21, 30, 31, 32, 33, 34, 35 }) do
                 EnableControlAction(0, ctrl, true)
             end
         end
-        if not IsEntityPlayingAnim(ped, dict, clip, 3) and (GetGameTimer() + 450) < deadline then
-            clip = playClipFromList(ped, dict, clips, durationMs, flags)
+
+        if not IsEntityPlayingAnim(ped, dict, clip, 3) and (GetGameTimer() + 500) < deadline then
+            preparePedForReloadAnim(ped, weaponHash)
+            clip = playClipFromList(ped, dict, clips, flags)
             activeReloadAnim.clip = clip
         end
         Wait(0)
@@ -183,9 +245,8 @@ local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs)
 end
 
 local function playNativeReload(ped, weaponHash, durationMs, clipNow)
-    SetCurrentPedWeapon(ped, weaponHash, true)
-    SetPedCurrentWeaponVisible(ped, true, false, false, false)
-    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    ped = ped or PlayerPedId()
+    preparePedForReloadAnim(ped, weaponHash)
 
     clipNow = math.max(0, tonumber(clipNow) or 0)
     -- GTA native reload reikalauja rezervo — kitaip animacija neprasideda.
@@ -202,6 +263,7 @@ local function playNativeReload(ped, weaponHash, durationMs, clipNow)
     local sawReload = false
 
     while DoesEntityExist(ped) and GetGameTimer() < deadline do
+        ped = PlayerPedId()
         if IsPedReloading(ped) then
             sawReload = true
             Wait(0)
@@ -213,21 +275,19 @@ local function playNativeReload(ped, weaponHash, durationMs, clipNow)
         end
     end
 
-    pinClipDuringVisual(ped, weaponHash, clipNow)
     return sawReload
 end
 
 --- Vizualinė animacija prieš inventoriaus užtaisymą.
 function WeaponReload.playVisual(ped, weaponHash, _bulletsToLoad, weaponData)
+    ped = PlayerPedId()
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then
         Wait(250)
         return
     end
 
     local durationMs = getReloadWaitMs()
-    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
-    SetCurrentPedWeapon(ped, weaponHash, true)
-    SetPedCurrentWeaponVisible(ped, true, false, false, false)
+    preparePedForReloadAnim(ped, weaponHash)
 
     if IsPedInAnyVehicle(ped, false) then
         Wait(math.min(1100, durationMs))
@@ -235,16 +295,13 @@ function WeaponReload.playVisual(ped, weaponHash, _bulletsToLoad, weaponData)
     end
 
     local clipNow = select(1, WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData))
-    pinClipDuringVisual(ped, weaponHash, clipNow)
-
-    local moving = pedIsMoving(ped)
     local usedNative = false
 
-    if not moving and Config.ReloadUseNativeFirst ~= false then
+    if Config.ReloadUseNativeFirst ~= false then
         usedNative = playNativeReload(ped, weaponHash, durationMs, clipNow)
     end
 
-    if not usedNative or moving then
+    if not usedNative then
         playUpperBodyReload(ped, weaponHash, weaponData, durationMs)
     else
         local remain = durationMs - 400

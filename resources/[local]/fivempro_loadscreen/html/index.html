@@ -6,6 +6,51 @@
   <title>MRP — Kraunama</title>
   <link rel="stylesheet" href="nui://fivempro_fonts/html/ui.css" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    (function bootMusicEarly() {
+      var res = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'fivempro_loadscreen';
+      var nativePinged = false;
+
+      function pingNative() {
+        if (nativePinged) return;
+        fetch('https://' + res + '/loadscreenReady', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        }).then(function () {
+          nativePinged = true;
+        }).catch(function () {});
+      }
+
+      function playNuiAudio() {
+        var a = document.getElementById('themeAudio');
+        if (!a) return;
+        a.volume = 0.28;
+        a.play().catch(function () {});
+      }
+
+      pingNative();
+      setInterval(pingNative, 80);
+
+      function onDom() {
+        playNuiAudio();
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', onDom);
+      } else {
+        onDom();
+      }
+
+      var rafTicks = 0;
+      function rafPing() {
+        rafTicks += 1;
+        if (rafTicks % 4 === 0) pingNative();
+        if (rafTicks % 30 === 0) playNuiAudio();
+        requestAnimationFrame(rafPing);
+      }
+      requestAnimationFrame(rafPing);
+    })();
+  </script>
 </head>
 <body>
   <div id="slides" class="slides" aria-hidden="true"></div>
@@ -50,20 +95,8 @@
     <span id="musicLabel" class="music-label">GTA V — Los Santos</span>
     <input type="range" id="musicVolume" class="music-volume" min="0" max="100" value="28" />
   </div>
-  <audio id="themeAudio" preload="auto" loop></audio>
+  <audio id="themeAudio" preload="auto" loop playsinline src="nui://fivempro_loadscreen/html/assets/gta_theme.mp3"></audio>
 
-  <script>
-    (function ping(attempt) {
-      var res = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'fivempro_loadscreen';
-      fetch('https://' + res + '/loadscreenReady', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      }).catch(function () {
-        if (attempt < 40) setTimeout(function () { ping(attempt + 1); }, 50);
-      });
-    })(0);
-  </script>
   <script src="app.js"></script>
 </body>
 </html>

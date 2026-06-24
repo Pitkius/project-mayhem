@@ -860,7 +860,8 @@ Config.WeedGrow = {
     harvestLabel = 'Skinti žirklėmis',
     potModel = 'bkr_prop_weed_bucket_01a',
     potScale = 0.92,
-    plantOffsetZ = 0.36,
+    --- Augalas prikabinamas prie vazono (Z offset nuo vazono centro).
+    plantAttachZ = { stage1 = 0.20, stage2 = 0.26, stage3 = 0.32 },
     plantProps = {
         stage1 = 'prop_weed_02',
         stage2 = 'bkr_prop_weed_med_01a',
@@ -1273,7 +1274,8 @@ Config.ScheduleMinigames = {
     alcohol_pack = { mode = 'pack_bottle', title = 'Alkoholio supilstymas', steps = 2, icon = '🍾', difficulty = 1 },
     vape_process = { mode = 'mix', title = 'Vape mišinio paruošimas', steps = 1, icon = '💨', difficulty = 1 },
     vape_pack = { mode = 'pack_bottle', title = 'Vape skysčio buteliukas', steps = 2, icon = '🧴', difficulty = 1 },
-    weed_plant = { mode = 'plant', title = 'Kanapių sodinimas', steps = 4, icon = '🌱', difficulty = 1 },
+    weed_plant = { mode = 'plant', title = 'Kanapių sodinimas', steps = 4, difficulty = 1 },
+    weed_water = { mode = 'weed_water', title = 'Augalo laistymas', steps = 2, difficulty = 1 },
     weed_harvest = { mode = 'weed_harvest', title = 'Derliaus nuėmimas', steps = 3, icon = '✂️', difficulty = 2 },
     weed_process = { mode = 'weed_dry', title = 'Žolės džiovinimas', steps = 3, icon = '🍃', difficulty = 2 },
     weed_pack = { mode = 'weed_pack', title = 'Žolės supakavimas', steps = 3, icon = '🌿', difficulty = 2 },

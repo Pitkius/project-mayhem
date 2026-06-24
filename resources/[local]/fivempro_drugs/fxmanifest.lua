@@ -13,6 +13,7 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/schedule-icons.js',
     'html/schedule.js',
 }
 

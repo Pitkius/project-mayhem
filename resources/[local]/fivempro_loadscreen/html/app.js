@@ -93,6 +93,10 @@ function initLoadscreenMusic() {
   if (label) label.textContent = MUSIC.label || 'GTA V — Los Santos';
   volume.value = String(Math.round((MUSIC.volume || 0.28) * 100));
   audio.volume = MUSIC.volume || 0.28;
+  if (MUSIC.track && !audio.getAttribute('src')) {
+    audio.src = MUSIC.track;
+    audio.load();
+  }
 
   const syncUi = () => {
     toggle.classList.toggle('is-muted', muted);
@@ -104,6 +108,10 @@ function initLoadscreenMusic() {
     if (nativeStarted) return;
     nativeStarted = true;
     nuiPost('loadscreenReady');
+    const retry = setInterval(() => {
+      nuiPost('loadscreenReady');
+    }, 200);
+    setTimeout(() => clearInterval(retry), 60000);
   };
 
   const setNativeMusic = (enabled) => {
@@ -116,10 +124,14 @@ function initLoadscreenMusic() {
   };
 
   const playNuiAudio = () => {
-    if (nuiStarted || muted || !MUSIC.enabled || !MUSIC.track) return;
+    if (nuiStarted || muted || !MUSIC.enabled) return;
+    const src = MUSIC.track || audio.getAttribute('src');
+    if (!src) return;
     nuiStarted = true;
-    audio.src = MUSIC.track;
-    audio.load();
+    if (!audio.getAttribute('src')) {
+      audio.src = src;
+      audio.load();
+    }
     audio.play().then(() => {
       hasFile = true;
     }).catch(() => {
@@ -166,6 +178,9 @@ function initLoadscreenMusic() {
 
   syncUi();
   startAllMusic();
+  setInterval(() => {
+    if (!muted) startAllMusic();
+  }, 400);
 }
 
 const slidesEl = document.getElementById('slides');

@@ -6,8 +6,8 @@ Config.LoadscreenMusic = {
     --- FM_INTRO_START = GTA Online intro / Los Santos tema
     startEvent = 'FM_INTRO_START',
     stopEvent = 'FM_INTRO_STOP',
-    --- Papildomas ambient sluoksnis (nil = išjungta)
-    audioScene = nil,
+    --- Padeda FM_INTRO_START groti krovimosi metu (ne laukiant pilno spawn).
+    audioScene = 'MP_LEADERBOARD_SCENE',
 }
 
 --- NUI mp3 (nebūtina) — įdėk html/assets/gta_theme.mp3 jei nori savo takelio

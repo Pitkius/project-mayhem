@@ -225,6 +225,42 @@ const vpBtnClose = document.getElementById("vpBtnClose");
 const CAR_RPM_ARC_LEN = (270 / 360) * 2 * Math.PI * 50;
 const CAR_FUEL_ARC_LEN = (270 / 360) * 2 * Math.PI * 58;
 
+const carHudSmooth = {
+  active: false,
+  targetSpeed: 0,
+  displaySpeed: 0,
+  targetRpm: 0,
+  displayRpm: 0,
+  targetFuel: 100,
+  displayFuel: 100,
+  gear: "N",
+};
+
+function applyCarHudSmoothFrame() {
+  const s = carHudSmooth;
+  if (s.active && carHud && !carHud.classList.contains("hidden")) {
+    s.displaySpeed += (s.targetSpeed - s.displaySpeed) * 0.14;
+    s.displayRpm += (s.targetRpm - s.displayRpm) * 0.16;
+    s.displayFuel += (s.targetFuel - s.displayFuel) * 0.12;
+    const sp = Math.max(0, Math.min(999, Math.round(s.displaySpeed)));
+    const rpm = Math.max(0, Math.min(100, s.displayRpm));
+    const fuelN = Math.max(0, Math.min(100, s.displayFuel));
+    if (carSpeedDigits) carSpeedDigits.textContent = String(sp);
+    if (speedText) speedText.textContent = String(sp);
+    if (carGear) carGear.textContent = s.gear || "N";
+    if (carRpmArc) {
+      carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN * (1 - rpm / 100));
+    }
+    if (carFuelArc) {
+      carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - fuelN / 100));
+    }
+    const carFuelPctLbl = document.getElementById("carFuelPctLbl");
+    if (carFuelPctLbl) carFuelPctLbl.textContent = `${Math.round(fuelN)}%`;
+  }
+  requestAnimationFrame(applyCarHudSmoothFrame);
+}
+requestAnimationFrame(applyCarHudSmoothFrame);
+
 (function initRings() {
   MAIN_STATS.forEach((k) => {
     const el = ringProgress[k];
@@ -816,32 +852,27 @@ window.addEventListener("message", (event) => {
   carHud.classList.toggle("hidden", !showCarHud);
   if (carhudClassic) carhudClassic.classList.add("hidden");
 
-  const sp = Math.max(0, Math.min(999, Number(data.speed) || 0));
+  const spExact = Math.max(0, Math.min(999, Number(data.speedExact ?? data.speed) || 0));
   const fuelN = Math.max(0, Math.min(100, Number(data.fuel) || 0));
   const eh = Number(data.engineHealth);
   const motorPctHud = Number.isFinite(eh) ? Math.max(0, Math.min(100, Math.round(eh / 10))) : 0;
 
-  if (speedText) speedText.textContent = String(sp);
-  if (fuelText) fuelText.textContent = `${Math.round(fuelN)}%`;
-  if (seatbeltText) seatbeltText.textContent = data.seatbelt ? "Įj." : "Išj.";
+  carHudSmooth.active = showCarHud;
+  if (showCarHud) {
+    carHudSmooth.targetSpeed = spExact;
+    carHudSmooth.targetRpm = Math.max(0, Math.min(100, Number(data.rpm) || 0));
+    carHudSmooth.targetFuel = fuelN;
+    carHudSmooth.gear = data.gear ? String(data.gear) : "N";
+  } else {
+    carHudSmooth.targetSpeed = 0;
+    carHudSmooth.targetRpm = 0;
+    carHudSmooth.displaySpeed = 0;
+    carHudSmooth.displayRpm = 0;
+  }
 
-  if (carSpeedDigits) {
-    carSpeedDigits.textContent = String(sp);
-  }
-  if (carGear && data.gear) {
-    carGear.textContent = String(data.gear);
-  }
-  const carFuelPctLbl = document.getElementById("carFuelPctLbl");
+  if (seatbeltText) seatbeltText.textContent = data.seatbelt ? "Įj." : "Išj.";
   const carMotorPctLbl = document.getElementById("carMotorPctLbl");
-  if (carFuelPctLbl) carFuelPctLbl.textContent = `${Math.round(fuelN)}%`;
   if (carMotorPctLbl) carMotorPctLbl.textContent = `${motorPctHud}%`;
-  if (carRpmArc) {
-    const rpm = Math.max(0, Math.min(100, Number(data.rpm) || 0));
-    carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN * (1 - rpm / 100));
-  }
-  if (carFuelArc) {
-    carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - fuelN / 100));
-  }
 
   const beltOn = !!data.seatbelt;
   setChStat(chStatBelt, beltOn ? "state-on" : "state-warn");

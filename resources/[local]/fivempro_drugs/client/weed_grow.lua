@@ -37,12 +37,50 @@ local function resolveGroundZ(x, y, refZ)
     return found and gz or refZ
 end
 
+local function cloudNow()
+    return GetCloudTimeAsInt()
+end
+
 local function formatTime(sec)
     sec = math.max(0, math.floor(tonumber(sec) or 0))
     local m = math.floor(sec / 60)
     local s = sec % 60
-    if m > 0 then return ('%dm %02ds'):format(m, s) end
-    return ('%ds'):format(s)
+    return ('%d:%02d'):format(m, s)
+end
+
+local function computeClientGrowState(plant)
+    local cfg = growCfg()
+    if not plant or not plant.plantedAt then
+        return 0, 0
+    end
+    local bonus = (tonumber(plant.watered) or 0) * (tonumber(cfg.waterBonusSec) or 55)
+    local plantedAt = tonumber(plant.plantedAt) or 0
+    local elapsed = cloudNow() - plantedAt + bonus
+    local stage3 = tonumber(cfg.stage3Sec) or 480
+    local stage2 = tonumber(cfg.stage2Sec) or 180
+    local remain = math.max(0, stage3 - elapsed)
+    local stage = 1
+    if elapsed >= stage3 then
+        stage = 3
+    elseif elapsed >= stage2 then
+        stage = 2
+    end
+    return stage, remain
+end
+
+local function computeWaterCooldownLeft(plant)
+    local cfg = growCfg()
+    if not plant or not plant.plantedAt then return 0 end
+    local cd = tonumber(cfg.waterCooldownSec) or 120
+    local last = tonumber(plant.lastWaterAt) or 0
+    if last <= 0 then return 0 end
+    return math.max(0, (last + cd) - cloudNow())
+end
+
+local function visualStageForPlant(plant)
+    local clientStage = select(1, computeClientGrowState(plant))
+    local serverStage = tonumber(plant and plant.stage) or 0
+    return math.max(clientStage, serverStage)
 end
 
 local function removeZone(plantId)
@@ -69,10 +107,18 @@ end
 
 local function plantStageKey(plant)
     if not plant or not plant.plantedAt then return nil end
-    local stage = tonumber(plant.stage) or 1
+    local stage = visualStageForPlant(plant)
     if stage >= 3 then return 'stage3' end
     if stage >= 2 then return 'stage2' end
     return 'stage1'
+end
+
+local function plantAttachZ(cfg, stageKey)
+    local tbl = cfg.plantAttachZ
+    if type(tbl) == 'table' and stageKey and tbl[stageKey] then
+        return tonumber(tbl[stageKey]) or 0.24
+    end
+    return tonumber(cfg.plantOffsetZ) or 0.24
 end
 
 local function plantModelForStage(cfg, stageKey)
@@ -92,24 +138,36 @@ local function runSchedule(profile, onDone)
     exports['fivempro_drugs']:RunScheduleMinigame(profile, onDone)
 end
 
-local function drawText3D(coords, text, scale)
-    if GetResourceState('fivempro_fonts') == 'started' then
-        exports['fivempro_fonts']:DrawText3D(coords.x, coords.y, coords.z, text, {
-            scale = scale or 0.32,
-            center = true,
-            background = true,
-        })
-        return
+local function drawMultilinePlantHud(coords, lines)
+    if not lines or #lines == 0 then return end
+    local text = table.concat(lines, '~n~')
+    local scale = 0.36
+    local maxLen = 0
+    for _, line in ipairs(lines) do
+        maxLen = math.max(maxLen, #(tostring(line):gsub('~%w~', '')))
     end
-    SetDrawOrigin(coords.x, coords.y, coords.z, 0)
-    SetTextScale(scale or 0.32, scale or 0.32)
-    SetTextFont(4)
+
+    if GetResourceState('fivempro_fonts') == 'started' then
+        exports['fivempro_fonts']:ApplyTextFont()
+    end
+    SetTextScale(scale, scale)
+    if GetResourceState('fivempro_fonts') ~= 'started' then
+        SetTextFont(4)
+    end
     SetTextProportional(1)
-    SetTextColour(180, 255, 180, 230)
+    SetTextColour(180, 255, 180, 235)
     SetTextCentre(true)
     BeginTextCommandDisplayText('STRING')
     AddTextComponentSubstringPlayerName(text)
+    SetDrawOrigin(coords.x, coords.y, coords.z, 0)
     EndTextCommandDisplayText(0.0, 0.0)
+
+    local lineCount = #lines
+    local factor = maxLen / 300
+    local boxW = 0.022 + factor
+    local boxH = 0.026 * lineCount + 0.012
+    local yOff = 0.006 + (lineCount - 1) * 0.006
+    DrawRect(0.0, yOff, boxW, boxH, 0, 0, 0, 88)
     ClearDrawOrigin()
 end
 
@@ -119,35 +177,40 @@ local function drawPlantHud(entry)
     local ped = PlayerPedId()
     if #(GetEntityCoords(ped) - entry.coords) > 6.5 then return end
 
-    local stage = tonumber(plant.stage) or 1
-    local remain = tonumber(plant.growRemaining) or 0
+    local stage, remain = computeClientGrowState(plant)
+    local cfg = growCfg()
+    local total = tonumber(cfg.stage3Sec) or 480
     local pct = 100
     if stage < 3 and remain > 0 then
-        local cfg = growCfg()
-        local total = tonumber(cfg.stage3Sec) or 480
         pct = math.floor(math.max(0, math.min(100, ((total - remain) / total) * 100)))
     end
 
-    local lines = { ('~g~Kanapės · %d%%'):format(pct) }
+    local waterCd = computeWaterCooldownLeft(plant)
+    local watersLeft = tonumber(plant.watersLeft) or 0
+    local canWater = watersLeft > 0 and waterCd <= 0
+
+    local lines = { ('Kanapės · %d%%'):format(pct) }
     if stage < 3 then
         lines[#lines + 1] = ('Brandu: %s'):format(formatTime(remain))
-        if plant.watersLeft and plant.watersLeft > 0 then
-            if plant.canWater then
-                lines[#lines + 1] = ('Laistyti galima · liko %dx'):format(plant.watersLeft)
+        if watersLeft > 0 then
+            if canWater then
+                lines[#lines + 1] = ('Laistyti galima · liko %dx'):format(watersLeft)
             else
-                lines[#lines + 1] = ('Laistyti po %s'):format(formatTime(plant.waterCooldownLeft or 0))
+                lines[#lines + 1] = ('Laistyti po %s'):format(formatTime(waterCd))
             end
         else
             lines[#lines + 1] = 'Laistymas baigtas'
         end
     else
-        lines[#lines + 1] = '~y~Paruošta derliui'
+        lines[#lines + 1] = 'Paruošta derliui'
     end
 
-    local z = entry.coords.z + 1.05
-    for i, line in ipairs(lines) do
-        drawText3D(vector3(entry.coords.x, entry.coords.y, z + (i - 1) * 0.11), line:gsub('~%w~', ''), 0.32)
+    local hudZ = entry.coords.z + 1.15
+    if entry.potEntity and DoesEntityExist(entry.potEntity) then
+        local potCoords = GetEntityCoords(entry.potEntity)
+        hudZ = potCoords.z + 1.05
     end
+    drawMultilinePlantHud(vector3(entry.coords.x, entry.coords.y, hudZ), lines)
 end
 
 local function attachZone(plantId, entry)
@@ -157,7 +220,7 @@ local function attachZone(plantId, entry)
     removeZone(plantId)
 
     local options = {}
-    local stage = plant and (tonumber(plant.stage) or 0) or 0
+    local stage = plant and visualStageForPlant(plant) or 0
 
     if not plant or not plant.plantedAt then
         options[#options + 1] = {
@@ -190,39 +253,34 @@ local function attachZone(plantId, entry)
         }
     elseif stage < 3 then
         local label = cfg.waterLabel or 'Laistyti'
-        if plant and not plant.canWater and (plant.waterCooldownLeft or 0) > 0 then
-            label = ('Laistyti (%s)'):format(formatTime(plant.waterCooldownLeft))
+        local waterCd = computeWaterCooldownLeft(plant)
+        if plant and waterCd > 0 then
+            label = ('Laistyti (%s)'):format(formatTime(waterCd))
         end
         options[#options + 1] = {
             icon = 'fas fa-fill-drip',
             label = label,
             action = function()
                 if busy then return end
-                if plant and not plant.canWater then
-                    return QBCore.Functions.Notify(('Palauk %s prieš laistymą.'):format(formatTime(plant.waterCooldownLeft or 0)), 'error')
+                local cd = computeWaterCooldownLeft(entry.plant)
+                if cd > 0 then
+                    return QBCore.Functions.Notify(('Palauk %s prieš laistymą.'):format(formatTime(cd)), 'error')
                 end
                 busy = true
-                DrugProgress.run('fivempro_drugs_water', cfg.waterLabel or 'Laistymas…', 3200, false, true, {
-                    disableMovement = true,
-                    disableCarMovement = true,
-                    disableMouse = false,
-                    disableCombat = true,
-                }, {
-                    animDict = 'amb@world_human_gardener_plant@male@base',
-                    anim = 'base',
-                    flags = 49,
-                }, function()
+                local profile = Config.GetScheduleMinigame('weed_water')
+                runSchedule(profile, function(success)
+                    if not success then
+                        busy = false
+                        return QBCore.Functions.Notify('Laistymas nepavyko.', 'error')
+                    end
                     TriggerServerEvent('fivempro_drugs:server:waterWeed', plantId)
                     busy = false
-                end, function()
-                    busy = false
-                    QBCore.Functions.Notify('Atšaukta.', 'error')
                 end)
             end,
             canInteract = function()
-                return not busy and entry.plant and entry.plant.plantedAt
-                    and (tonumber(entry.plant.stage) or 1) < 3
-                    and (entry.plant.watersLeft or 0) > 0
+                if busy or not entry.plant or not entry.plant.plantedAt then return false end
+                if visualStageForPlant(entry.plant) >= 3 then return false end
+                return (tonumber(entry.plant.watersLeft) or 0) > 0
             end,
         }
     else
@@ -251,7 +309,7 @@ local function attachZone(plantId, entry)
                 end, plantId)
             end,
             canInteract = function()
-                return not busy and entry.plant and entry.plant.plantedAt and (tonumber(entry.plant.stage) or 0) >= 3
+                return not busy and entry.plant and entry.plant.plantedAt and visualStageForPlant(entry.plant) >= 3
             end,
         }
     end
@@ -292,11 +350,17 @@ local function spawnPotAndPlant(plantId, entry)
     if stageKey then
         local plantHash = loadModel(plantModelForStage(cfg, stageKey))
         if plantHash then
-            local offsetZ = tonumber(cfg.plantOffsetZ) or 0.36
-            local pc = entry.coords
-            local plantObj = CreateObject(plantHash, pc.x, pc.y, pc.z + offsetZ, false, false, false)
+            local pc = GetEntityCoords(pot)
+            local attachZ = plantAttachZ(cfg, stageKey)
+            local plantObj = CreateObject(plantHash, pc.x, pc.y, pc.z, false, false, false)
             if plantObj and plantObj ~= 0 then
                 setEntityScale(plantObj, plantScaleForStage(cfg, stageKey))
+                AttachEntityToEntity(
+                    plantObj, pot, 0,
+                    0.0, 0.0, attachZ,
+                    0.0, 0.0, 0.0,
+                    false, false, false, false, 2, true
+                )
                 FreezeEntityPosition(plantObj, true)
                 SetEntityAsMissionEntity(plantObj, true, true)
                 entry.plantEntity = plantObj
@@ -306,6 +370,7 @@ local function spawnPotAndPlant(plantId, entry)
     end
 
     SetModelAsNoLongerNeeded(potHash)
+    entry._visualStageKey = plantStageKey(entry.plant)
     attachZone(plantId, entry)
 end
 
@@ -408,6 +473,25 @@ CreateThread(function()
             syncAllPlants()
         end
         Wait(nearAny and 8000 or 15000)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(1000)
+        for plantId, entry in pairs(activePlants) do
+            local plant = entry.plant
+            if not plant or not plant.plantedAt then goto continue end
+            local stageKey = plantStageKey(plant)
+            local prevKey = entry._visualStageKey
+            if stageKey and stageKey ~= prevKey then
+                entry._visualStageKey = stageKey
+                if entry.potEntity and DoesEntityExist(entry.potEntity) then
+                    spawnPotAndPlant(plantId, entry)
+                end
+            end
+            ::continue::
+        end
     end
 end)
 

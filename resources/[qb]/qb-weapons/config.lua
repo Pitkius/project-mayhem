@@ -2,8 +2,8 @@ Config = Config or {}
 
 Config.ReloadTime = 2400
 
---- false = visada custom reload animacija (patikimesnė su inventoriaus ammo).
-Config.ReloadUseNativeFirst = false
+--- true = pirma bandoma GTA native reload; jei nepavyksta — custom viršutinės kūno animacija.
+Config.ReloadUseNativeFirst = true
 
 --- Inventoriaus perkrovos vizualinė animacija (kulkos kraunamos po animacijos).
 Config.ReloadVisualTime = 0
