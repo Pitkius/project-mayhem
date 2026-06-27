@@ -11,7 +11,7 @@ Minimalus startinis projektas FiveM serveriui su QBCore kryptimi ir `Lua` resurs
 ## 2) Projekto struktūra
 
 - `server.cfg` - pagrindinis serverio config
-- `resources/[local]/fivempro_basics/` - tavo pirmas custom Lua resource
+- `resources/[local]/mrp_basics/` - tavo pirmas custom Lua resource
 
 ## 3) Ką pridėti pirmam test startui
 
@@ -23,7 +23,7 @@ Kadangi QBCore naudoja išorinius resursus, pridėk į `resources` bent:
 - `qb-menu`
 - `qb-input`
 - `qb-inventory`
-- `fivempro_charcreator` + `fivempro_spawnfix` (personažų kūrimas / prisijungimas)
+- `mrp_charcreator` + `mrp_spawnfix` (personažų kūrimas / prisijungimas)
 - `qb-apartments` (nebūtina)
 
 ## 4) Paleidimas
@@ -47,11 +47,11 @@ Skriptas atnaujina tik `FXServer.exe` + `citizen/` (neliečia `resources/`, `cfg
 
 ## 5) Testas
 
-Resource `fivempro_basics` automatiškai:
+Resource `mrp_basics` automatiškai:
 - užsikrovus serveriui išspausdina log žinutę
 - žaidėjui prisijungus siunčia chat welcome žinutę
 
-Resource `fivempro_hud` rodo:
+Resource `mrp_hud` rodo:
 - gyvybes juostą
 - maisto ir vandens juostas (QBCore metadata)
 - šarvų juostą tik tada, kai armor > 0

@@ -6,7 +6,7 @@
 - `cfg/` - split server configuration by purpose.
 - `resources/[qb]/` - framework resources (QBCore ecosystem).
 - `resources/[cfx-default]/` - default CFX resources.
-- `resources/[local]/` - custom project resources (`fivempro_*`).
+- `resources/[local]/` - custom project resources (`mrp_*`).
 
 ## Config Files
 

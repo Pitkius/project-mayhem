@@ -1,4 +1,4 @@
--- Reportų logai → `reports` kanalas (kviečiama iš fivempro_basics)
+-- Reportų logai → `reports` kanalas (kviečiama iš mrp_basics)
 
 function LogReportEvent(title, report, extraFields, staffSrc)
     if type(report) ~= 'table' then return end

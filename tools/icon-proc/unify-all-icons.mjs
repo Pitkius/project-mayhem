@@ -363,9 +363,10 @@ function drawScale(c) {
   c.addGroundShadow();
   c.fillRoundRect(88, 138, 80, 12, 5, ...hex('#3f3f46'), 255);
   c.fillRoundRect(96, 118, 64, 24, 6, ...hex('#18181b'), 255);
-  c.fillRoundRect(102, 124, 52, 12, 3, ...hex('#22c55e'), 200);
-  c.fillRect(108, 126, 28, 3, ...hex('#86efac'), 180);
+  c.fillRoundRect(102, 124, 52, 12, 3, ...hex('#052e16'), 255);
+  c.fillRect(108, 126, 28, 3, ...hex('#4ade80'), 200);
   c.fillRect(138, 126, 8, 3, ...hex('#4ade80'), 160);
+  c.fillRoundRect(112, 108, 32, 14, 4, ...hex('#a1a1aa'), 255);
   c.fillCircle(104, 150, 14, 6, ...hex('#71717a'), 255);
   c.fillCircle(152, 150, 14, 6, ...hex('#71717a'), 255);
   c.fillCircle(104, 150, 10, 4, ...hex('#a1a1aa'), 220);
@@ -374,9 +375,73 @@ function drawScale(c) {
 
 function drawGloves(c) {
   c.addGroundShadow();
-  c.addRimGlow();
-  c.fillRoundRect(88, 96, 44, 72, 16, 50, 130, 210, 240);
-  c.fillRoundRect(124, 96, 44, 72, 16, 45, 120, 200, 240);
+  const glove = hex('#3f3f46');
+  const dark = hex('#18181b');
+  c.fillRoundRect(62, 104, 56, 92, 20, ...glove, 255);
+  c.fillRoundRect(138, 104, 56, 92, 20, ...glove, 255);
+  c.fillRoundRect(70, 112, 22, 64, 10, ...dark, 90);
+  c.fillRoundRect(164, 112, 22, 64, 10, ...dark, 90);
+  [76, 86, 96].forEach((x) => c.fillRect(x, 122, 4, 32, ...dark, 110));
+  [152, 162, 172].forEach((x) => c.fillRect(x, 122, 4, 32, ...dark, 110));
+}
+
+function drawGrowPot(c) {
+  c.addGroundShadow();
+  const rim = hex('#71717a');
+  const pot = hex('#27272a');
+  const potDark = hex('#09090b');
+  const soil = hex('#92400e');
+  const soilDark = hex('#451a03');
+  c.fillRoundRect(70, 54, 116, 34, 10, ...rim, 255);
+  c.fillRect(74, 58, 108, 6, ...hex('#a1a1aa'), 90);
+  c.fillRoundRect(78, 86, 100, 108, 8, ...pot, 255);
+  c.fillRoundRect(82, 130, 92, 60, 6, ...potDark, 220);
+  c.fillRoundRect(84, 90, 88, 28, 6, ...soil, 255);
+  c.fillRoundRect(88, 98, 80, 16, 4, ...soilDark, 180);
+  c.fillRect(78, 84, 100, 3, ...hex('#52525b'), 140);
+}
+
+function drawTrimScissors(c) {
+  c.addGroundShadow();
+  const blade = hex('#f4f4f5');
+  const bladeEdge = hex('#a1a1aa');
+  const handle = hex('#ea580c');
+  const pivot = hex('#52525b');
+  c.fillCircle(86, 172, 30, 30, ...handle, 255);
+  c.fillCircle(170, 172, 30, 30, ...handle, 255);
+  c.fillCircle(86, 172, 15, 15, ...hex('#18181b'), 255);
+  c.fillCircle(170, 172, 15, 15, ...hex('#18181b'), 255);
+  c.fillCircle(128, 138, 11, 11, ...pivot, 255);
+  for (let i = 0; i < 48; i++) {
+    const t = i / 48;
+    const w = 10 - t * 5;
+    c.fillCircle(98 + t * 22, 138 - t * 76, w, w * 0.45, ...blade, 245);
+    c.fillCircle(158 - t * 22, 138 - t * 76, w, w * 0.45, ...blade, 245);
+  }
+  c.fillCircle(108, 56, 5, 14, ...bladeEdge, 255);
+  c.fillCircle(148, 56, 5, 14, ...bladeEdge, 255);
+  c.fillRect(118, 150, 20, 4, ...bladeEdge, 200);
+}
+
+function drawWateringCan(c) {
+  c.addGroundShadow();
+  const body = hex('#65a30d');
+  const bodyDark = hex('#365314');
+  const accent = hex('#a3e635');
+  const water = hex('#38bdf8');
+  c.fillRoundRect(68, 102, 92, 98, 16, ...bodyDark, 255);
+  c.fillRoundRect(74, 108, 80, 86, 14, ...body, 255);
+  c.fillRoundRect(82, 132, 64, 46, 10, ...water, 175);
+  c.fillRect(82, 132, 64, 8, ...hex('#7dd3fc'), 90);
+  for (let a = 0; a <= Math.PI; a += 0.1) {
+    const x = 114 + Math.cos(a) * 30;
+    const y = 94 - Math.sin(a) * 24;
+    c.fillCircle(x, y, 5, 5, ...accent, 255);
+  }
+  c.fillRoundRect(156, 118, 36, 18, 7, ...bodyDark, 255);
+  c.fillRoundRect(188, 114, 28, 12, 5, ...accent, 220);
+  c.fillCircle(218, 120, 5, 5, ...accent, 255);
+  c.fillRoundRect(88, 104, 20, 10, 4, ...bodyDark, 200);
 }
 
 function drawMetal(c) {
@@ -572,6 +637,9 @@ const GENERATORS = {
   lab_kit: () => { const c = new Canvas(); drawToolBox(c); return c; },
   drug_scale: () => { const c = new Canvas(); drawScale(c); return c; },
   gloves_item: () => { const c = new Canvas(); drawGloves(c); return c; },
+  grow_pot: () => { const c = new Canvas(); drawGrowPot(c); return c; },
+  trimming_scissors: () => { const c = new Canvas(); drawTrimScissors(c); return c; },
+  watering_can: () => { const c = new Canvas(); drawWateringCan(c); return c; },
   lighter: () => { const c = new Canvas(); drawLighter(c); return c; },
   plastic: () => { const c = new Canvas(); drawPlastic(c); return c; },
   metal_scrap: () => { const c = new Canvas(); drawMetal(c); return c; },

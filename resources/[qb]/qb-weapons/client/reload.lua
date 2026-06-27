@@ -168,26 +168,36 @@ end
 
 local function playClipFromList(ped, dict, clips, flags)
     clips = orderClipsForPed(ped, clips)
-    local pos = GetEntityCoords(ped, true)
-    local rot = GetEntityHeading(ped)
+    local mobile = allowReloadMovement()
 
     for _, clip in ipairs(clips) do
-        TaskPlayAnimAdvanced(
-            ped, dict, clip,
-            pos.x, pos.y, pos.z,
-            0.0, 0.0, rot,
-            8.0, 3.0, -1,
-            flags, 0.0, false, false
-        )
-        Wait(180)
-        if IsEntityPlayingAnim(ped, dict, clip, 3) then
-            return clip
-        end
+        if mobile then
+            -- TaskPlayAnimAdvanced pririša world coords — bėgant „sušaldo“. Tik viršutinė animacija.
+            TaskPlayAnim(ped, dict, clip, 8.0, -8.0, -1, flags, 0.0, false, false, false)
+            Wait(180)
+            if IsEntityPlayingAnim(ped, dict, clip, 3) then
+                return clip
+            end
+        else
+            local pos = GetEntityCoords(ped, true)
+            local rot = GetEntityHeading(ped)
+            TaskPlayAnimAdvanced(
+                ped, dict, clip,
+                pos.x, pos.y, pos.z,
+                0.0, 0.0, rot,
+                8.0, 3.0, -1,
+                flags, 0.0, false, false
+            )
+            Wait(180)
+            if IsEntityPlayingAnim(ped, dict, clip, 3) then
+                return clip
+            end
 
-        TaskPlayAnim(ped, dict, clip, 8.0, -8.0, -1, flags, 0.0, false, false, false)
-        Wait(180)
-        if IsEntityPlayingAnim(ped, dict, clip, 3) then
-            return clip
+            TaskPlayAnim(ped, dict, clip, 8.0, -8.0, -1, flags, 0.0, false, false, false)
+            Wait(180)
+            if IsEntityPlayingAnim(ped, dict, clip, 3) then
+                return clip
+            end
         end
     end
 
@@ -230,6 +240,7 @@ local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs)
             for _, ctrl in ipairs({ 21, 30, 31, 32, 33, 34, 35 }) do
                 EnableControlAction(0, ctrl, true)
             end
+            SetPedCanPlayAmbientAnims(ped, true)
         end
 
         if not IsEntityPlayingAnim(ped, dict, clip, 3) and (GetGameTimer() + 500) < deadline then
@@ -264,6 +275,11 @@ local function playNativeReload(ped, weaponHash, durationMs, clipNow)
 
     while DoesEntityExist(ped) and GetGameTimer() < deadline do
         ped = PlayerPedId()
+        if allowReloadMovement() then
+            for _, ctrl in ipairs({ 21, 30, 31, 32, 33, 34, 35 }) do
+                EnableControlAction(0, ctrl, true)
+            end
+        end
         if IsPedReloading(ped) then
             sawReload = true
             Wait(0)
@@ -296,8 +312,10 @@ function WeaponReload.playVisual(ped, weaponHash, _bulletsToLoad, weaponData)
 
     local clipNow = select(1, WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData))
     local usedNative = false
+    local moving = allowReloadMovement() and pedIsMoving(ped)
 
-    if Config.ReloadUseNativeFirst ~= false then
+    -- Native reload sustabdo pedą bėgant — naudojam tik viršutinės kūno animaciją.
+    if Config.ReloadUseNativeFirst ~= false and not moving then
         usedNative = playNativeReload(ped, weaponHash, durationMs, clipNow)
     end
 

@@ -168,6 +168,10 @@ local function hasEntityLineOfSight(entity)
 	return ok and clear == true
 end
 
+local lastRaycastAt = 0
+local lastRaycastCache = nil
+local RAYCAST_CACHE_MS = 65
+
 local function RaycastCamera(flag, playerCoords)
 	if not isValidEntity(playerPed) then
 		playerPed = PlayerPedId()
@@ -210,6 +214,18 @@ local function RaycastCamera(flag, playerCoords)
 end
 
 exports('RaycastCamera', RaycastCamera)
+
+local function RaycastCameraCached(flag, playerCoords)
+	local now = GetGameTimer()
+	if lastRaycastCache and (now - lastRaycastAt) < RAYCAST_CACHE_MS then
+		local c = lastRaycastCache
+		return c[1], c[2], c[3], c[4]
+	end
+	local a, b, c, d = RaycastCamera(flag, playerCoords)
+	lastRaycastAt = now
+	lastRaycastCache = { a, b, c, d }
+	return a, b, c, d
+end
 
 local function DisableNUI()
 	SetNuiFocus(false, false)
@@ -414,14 +430,14 @@ local function EnableTarget()
 	local flag = -1
 
 	while targetActive do
-		local sleep = 0
+		local sleep = 35
 
 		if not isValidEntity(playerPed) then
 			playerPed = PlayerPedId()
 		end
 		local playerCoords = safeGetEntityCoords(playerPed)
 		local eyeCoords = getPlayerEyeCoords()
-		local coords, distance, entity, entityType = RaycastCamera(flag, playerCoords)
+		local coords, distance, entity, entityType = RaycastCameraCached(flag, playerCoords)
 		if not isValidEntity(entity) then
 			entity, entityType = nil, 0
 		end
@@ -520,7 +536,7 @@ local function EnableTarget()
 					if data and next(data) then CheckEntity(flag, data, entity, distance) end
 				end
 			else
-				sleep = sleep + 20
+				sleep = math.max(sleep, 50)
 			end
 			if not success then
 				-- Zone targets
@@ -604,14 +620,14 @@ local function EnableTarget()
 						DrawOutlineEntity(entity, false)
 					end
 				else
-					sleep = sleep + 20
+					sleep = math.max(sleep, 50)
 				end
 			else
 				LeftTarget()
 				DrawOutlineEntity(entity, false)
 			end
 		else
-			sleep = sleep + 20
+			sleep = math.max(sleep, 55)
 		end
 		Wait(sleep)
 	end

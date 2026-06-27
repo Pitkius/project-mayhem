@@ -35,18 +35,18 @@ RegisterCommand(Config.HandsUp.command, function()
     if IsPedInAnyVehicle(ped, false) then return end
     if IsEntityDead(ped) or IsPedDeadOrDying(ped, true) then return end
     local okBusy, isCarryBusy = pcall(function()
-        if GetResourceState('fivempro_carry') ~= 'started' then return false end
-        return exports['fivempro_carry']:IsCarryBusy()
+        if GetResourceState('mrp_carry') ~= 'started' then return false end
+        return exports['mrp_carry']:IsCarryBusy()
     end)
     if okBusy and isCarryBusy then return end
 
-    if GetResourceState('fivempro_emotes') == 'started' then
+    if GetResourceState('mrp_emotes') == 'started' then
         local okPlaying, isEmotePlaying = pcall(function()
-            return exports['fivempro_emotes']:IsEmotePlaying()
+            return exports['mrp_emotes']:IsEmotePlaying()
         end)
         if okPlaying and isEmotePlaying then
             pcall(function()
-                exports['fivempro_emotes']:CancelEmote(true)
+                exports['mrp_emotes']:CancelEmote(true)
             end)
             return
         end

@@ -497,9 +497,9 @@ function QBCore.Player.Save(source)
     local pcoords = GetEntityCoords(ped)
     local PlayerData = QBCore.Players[source].PlayerData
     if PlayerData then
-        if GetResourceState('fivempro_spawnfix') == 'started' then
+        if GetResourceState('mrp_spawnfix') == 'started' then
             local ok, keep = pcall(function()
-                return exports['fivempro_spawnfix']:KeepCachedPositionOnSave(source)
+                return exports['mrp_spawnfix']:KeepCachedPositionOnSave(source)
             end)
             if ok and keep and PlayerData.position and PlayerData.position.x then
                 pcoords = vector3(PlayerData.position.x, PlayerData.position.y, PlayerData.position.z)

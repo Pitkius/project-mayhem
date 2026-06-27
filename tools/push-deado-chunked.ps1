@@ -14,7 +14,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $Repo = (Resolve-Path -LiteralPath $Repo).Path
-$DeadoPrefix = 'resources/[clothing]/fivempro_deado_clothing'
+$DeadoPrefix = 'resources/[clothing]/mrp_deado_clothing'
 
 function Write-Log {
     param([string]$Message)

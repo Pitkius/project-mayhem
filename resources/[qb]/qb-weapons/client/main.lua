@@ -256,9 +256,9 @@ local function isThrowableInventoryWeaponName(name)
 end
 
 local function isExternallyBackCarriedWeapon(name)
-    if GetResourceState('fivempro_basics') ~= 'started' then return false end
+    if GetResourceState('mrp_basics') ~= 'started' then return false end
     local ok, res = pcall(function()
-        return exports['fivempro_basics']:IsLongBackWeapon(name)
+        return exports['mrp_basics']:IsLongBackWeapon(name)
     end)
     return ok and res == true
 end
@@ -360,8 +360,8 @@ local function scheduleHolsteredWeaponVisuals()
     SetTimeout(200, function()
         holsterApplyPending = false
         applyHolsteredWeaponsFromInventory()
-        if GetResourceState('fivempro_basics') == 'started' then
-            TriggerEvent('fivempro_basics:client:refreshSlungWeapons')
+        if GetResourceState('mrp_basics') == 'started' then
+            TriggerEvent('mrp_basics:client:refreshSlungWeapons')
         end
     end)
 end
@@ -414,8 +414,8 @@ end)
 -- Functions
 
 local function DrawText3Ds(x, y, z, text)
-    if GetResourceState('fivempro_fonts') == 'started' then
-        exports['fivempro_fonts']:DrawText3D(x, y, z, text)
+    if GetResourceState('mrp_fonts') == 'started' then
+        exports['mrp_fonts']:DrawText3D(x, y, z, text)
         return
     end
     SetTextScale(0.35, 0.35)
@@ -737,21 +737,21 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(0)
-        if not LocalPlayer.state.isLoggedIn then goto continue end
-
-        local ped = PlayerPedId()
-        if not IsPedArmed(ped, 7) then goto continue end
-
-        -- Blokuojam GTA native R perkrovą — naudojam tik savo logiką.
-        DisableControlAction(0, 45, true)
-
-        if not isReloadBusy()
-            and (IsDisabledControlJustPressed(0, 45) or IsControlJustPressed(0, 45)) then
-            attemptQuickReload(ped)
+        if not LocalPlayer.state.isLoggedIn then
+            Wait(500)
+        else
+            local ped = PlayerPedId()
+            if IsPedArmed(ped, 7) then
+                DisableControlAction(0, 45, true)
+                if not isReloadBusy()
+                    and (IsDisabledControlJustPressed(0, 45) or IsControlJustPressed(0, 45)) then
+                    attemptQuickReload(ped)
+                end
+                Wait(0)
+            else
+                Wait(300)
+            end
         end
-
-        ::continue::
     end
 end)
 

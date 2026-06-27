@@ -93,7 +93,7 @@ for (const v of vehicles) {
   const key = /^[0-9]/.test(v.model) ? `['${v.model}']` : v.model;
   overrides += `    ${key} = ${v.price},\n`;
 }
-fs.writeFileSync('resources/[local]/fivempro_dealership/config_reh_prices.lua', `--[[ REH pack spawn names: ${vehicles.map(v => v.model).join(', ')} ]]\nConfig.RehPriceOverrides = {\n${overrides}}\n`);
+fs.writeFileSync('resources/[local]/mrp_dealership/config_reh_prices.lua', `--[[ REH pack spawn names: ${vehicles.map(v => v.model).join(', ')} ]]\nConfig.RehPriceOverrides = {\n${overrides}}\n`);
 
 console.log('unique', vehicles.length);
 console.log(vehicles.map(v => `${v.model} (${v.category})`).join('\n'));

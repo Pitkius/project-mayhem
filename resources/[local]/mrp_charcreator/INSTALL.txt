@@ -1,0 +1,22 @@
+mrp_charcreator
+====================
+
+Vienas personažas / slot — be multichar kortelių (qb-multicharacter pašalintas).
+Esamas žaidėjas prisijungia automatiškai; naujas — tiesiai į 9 žingsnių kūrimą.
+Prisijungimas: mrp_charcreator -> mrp_spawnfix spawn.
+
+Paleisti:
+  ensure mrp_charcreator  (prieš mrp_spawnfix)
+  restart mrp_charcreator
+  restart mrp_spawnfix
+
+Admin logout: /logout -> vėl charcreator.
+Kirpykla: plaukai / barzda / antakiai / makiažas (mrp_charcreator).
+Rūbų parduotuvė: tik drabužiai (mrp_charcreator).
+Vanilla qb-clothing zonos (E) taip pat nukreipiamos.
+
+Presetai: DB lentelė mrp_char_presets (auto).
+
+Jei reikia senojo auto personažo be UI:
+  mrp_spawnfix Config.AutoCreateCharacter = true
+  ir išjunk mrp_charcreator ensure.

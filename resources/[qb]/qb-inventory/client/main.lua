@@ -170,8 +170,8 @@ RegisterNetEvent('qb-inventory:server:RobPlayer', function(TargetId)
 end)
 
 local function setInventoryHudFocus(active)
-    if GetResourceState('fivempro_hud') ~= 'started' then return end
-    TriggerEvent('fivempro_hud:client:inventoryFocus', active == true)
+    if GetResourceState('mrp_hud') ~= 'started' then return end
+    TriggerEvent('mrp_hud:client:inventoryFocus', active == true)
 end
 
 RegisterNetEvent('qb-inventory:client:openInventory', function(items, other)

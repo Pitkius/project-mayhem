@@ -8,5 +8,5 @@ Get-ChildItem -LiteralPath $Root -Recurse -Include *.ytd,*.ydd -ErrorAction Sile
     Select-Object -First 40 @{
         N = 'MiB'; E = { [math]::Round($_.Length / 1MB, 2) }
     }, @{
-        N = 'Resource'; E = { ($_.FullName -split '[\\/]fivempro_[^\\/]+')[1].TrimStart('\') }
+        N = 'Resource'; E = { ($_.FullName -split '[\\/]mrp_[^\\/]+')[1].TrimStart('\') }
     }, Name, DirectoryName

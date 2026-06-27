@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="nui://mrp_fonts/html/ui.css" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Outdoors Minigame</title>
+</head>
+<body>
+    <div id="wrap" class="hidden">
+        <div class="panel">
+            <h2 id="title">Minigame</h2>
+            <p id="hint"></p>
+            <div id="fishing" class="game hidden">
+                <div class="track">
+                    <div class="zone" id="fishZone"></div>
+                    <div class="needle" id="fishNeedle"></div>
+                </div>
+                <p class="sub">SPACE � kabinti</p>
+            </div>
+            <div id="butcher" class="game hidden">
+                <div class="seq" id="seqDisplay">�</div>
+                <p class="sub">Spausk rodykles (? ? ? ?)</p>
+                <div class="progress"><div id="butcherBar"></div></div>
+            </div>
+            <button id="cancelBtn" type="button">At�aukti (ESC)</button>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

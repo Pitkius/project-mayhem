@@ -1,5 +1,5 @@
-﻿-- REH Rebadged Car Pack (auto-generated)
--- Kainos sinchronizuotos su fivempro_vehicle_perf (greitis + 0-100)
+-- REH Rebadged Car Pack (auto-generated)
+-- Kainos sinchronizuotos su mrp_vehicle_perf (greitis + 0-100)
 return {
     { model = '08srt8', name = 'Jeep 08RT', brand = 'Jeep', price = 94000, category = 'suvs', type = 'automobile', shop = 'pdm' },
     { model = 'anniselegygt', name = 'Annis Elegy GT', brand = 'Annis', price = 520000, category = 'sports', type = 'automobile', shop = 'pdm' },

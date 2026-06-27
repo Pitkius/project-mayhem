@@ -82,7 +82,7 @@ function Get-Price($model, $cat) {
     return [int]([math]::Round($price / 500.0) * 500)
 }
 
-$lines = @('-- REH Rebadged Car Pack (auto-generated)', '-- Kainos sinchronizuotos su fivempro_vehicle_perf (greitis + 0-100)', 'return {')
+$lines = @('-- REH Rebadged Car Pack (auto-generated)', '-- Kainos sinchronizuotos su mrp_vehicle_perf (greitis + 0-100)', 'return {')
 $entries = @()
 foreach ($line in Get-Content -LiteralPath $vehFile) {
     if ($line -match "\{ model = '([^']+)', name = '((?:''|[^'])*)', brand = '((?:''|[^'])*)', price = \d+, category = '([^']+)'") {

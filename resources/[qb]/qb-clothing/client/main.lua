@@ -409,7 +409,7 @@ local function GetPositionByRelativeHeading(ped, head, dist)
     return finPosx, finPosy
 end
 local function charcreatorShopKind(allowedMenus)
-    if GetResourceState('fivempro_charcreator') ~= 'started' or not allowedMenus then return nil end
+    if GetResourceState('mrp_charcreator') ~= 'started' or not allowedMenus then return nil end
     if #allowedMenus == 1 and allowedMenus[1].menu == 'hair' then
         return 'barber'
     end
@@ -432,7 +432,7 @@ end
 local function openMenu(allowedMenus)
     local shopKind = charcreatorShopKind(allowedMenus)
     if shopKind then
-        TriggerEvent('fivempro_charcreator:client:openShop', shopKind)
+        TriggerEvent('mrp_charcreator:client:openShop', shopKind)
         return
     end
     previousSkinData = json.encode(skinData)
@@ -1037,8 +1037,8 @@ RegisterNetEvent('qb-clothing:client:openMenu', function()
 end)
 
 RegisterNetEvent('qb-clothing:client:openBarberOnly', function(camLoc)
-    if GetResourceState('fivempro_charcreator') == 'started' then
-        TriggerEvent('fivempro_charcreator:client:openShop', 'barber', camLoc)
+    if GetResourceState('mrp_charcreator') == 'started' then
+        TriggerEvent('mrp_charcreator:client:openShop', 'barber', camLoc)
         return
     end
     if camLoc and camLoc.x and camLoc.y and camLoc.z then
@@ -1052,8 +1052,8 @@ RegisterNetEvent('qb-clothing:client:openBarberOnly', function(camLoc)
 end)
 
 RegisterNetEvent('qb-clothing:client:openClothingOnly', function()
-    if GetResourceState('fivempro_charcreator') == 'started' then
-        TriggerEvent('fivempro_charcreator:client:openShop', 'clothing')
+    if GetResourceState('mrp_charcreator') == 'started' then
+        TriggerEvent('mrp_charcreator:client:openShop', 'clothing')
         return
     end
     customCamLocation = nil
@@ -1064,8 +1064,8 @@ RegisterNetEvent('qb-clothing:client:openClothingOnly', function()
 end)
 
 RegisterNetEvent('qb-clothing:client:openTattooOnly', function()
-    if GetResourceState('fivempro_charcreator') == 'started' then
-        TriggerEvent('fivempro_charcreator:client:openTattooShop')
+    if GetResourceState('mrp_charcreator') == 'started' then
+        TriggerEvent('mrp_charcreator:client:openTattooShop')
         return
     end
     customCamLocation = nil
@@ -1080,9 +1080,9 @@ RegisterNetEvent('qb-clothing:client:reloadOutfits', function(myOutfits)
     })
 end)
 RegisterNetEvent('qb-clothes:client:CreateFirstCharacter', function()
-    if GetResourceState('fivempro_charcreator') == 'started' then
+    if GetResourceState('mrp_charcreator') == 'started' then
         local loggedIn = LocalPlayer.state.isLoggedIn
-        TriggerEvent('fivempro_charcreator:client:openWizard', loggedIn == true)
+        TriggerEvent('mrp_charcreator:client:openWizard', loggedIn == true)
         return
     end
     QBCore.Functions.GetPlayerData(function(pData)
@@ -1285,9 +1285,9 @@ RegisterNetEvent('qb-clothing:client:loadPlayerClothing', function(data, ped)
     SetPedFaceFeature(ped, 19, (data['neck_thikness'].item / 10))
     skinData = data
 
-    if data.tattoos and GetResourceState('fivempro_charcreator') == 'started' then
+    if data.tattoos and GetResourceState('mrp_charcreator') == 'started' then
         local gender = GetEntityModel(ped) == GetHashKey('mp_f_freemode_01') and 1 or 0
-        exports['fivempro_charcreator']:ApplyTattoos(ped, data.tattoos, gender)
+        exports['mrp_charcreator']:ApplyTattoos(ped, data.tattoos, gender)
     end
 end)
 RegisterNetEvent('qb-clothing:client:loadOutfit', function(oData)
@@ -1905,7 +1905,7 @@ function loadStores()
             while true do
                 local sleep = 1000
                 if inZone then
-                    sleep = 5
+                    sleep = 50
                     if zoneName == 'surgeon' then
                         if IsControlJustReleased(0, 38) then
                             customCamLocation = nil

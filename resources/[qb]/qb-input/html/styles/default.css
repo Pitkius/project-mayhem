@@ -1,7 +1,7 @@
-@import url("nui://fivempro_fonts/html/ui.css");
+@import url("nui://mrp_fonts/html/ui.css");
 
 :root {
-    /* FIVEMPRO violet (match fivempro_hud default) */
+    /* FIVEMPRO violet (match mrp_hud default) */
     --md-primary: #a78bfa;
     --md-on-primary: #1c1533;
     --md-primary-container: #3b2f5f;

@@ -865,8 +865,8 @@ function QBCore.Functions.DrawText(x, y, width, height, scale, r, g, b, a, text)
 end
 
 function QBCore.Functions.DrawText3D(x, y, z, text)
-    if GetResourceState('fivempro_fonts') == 'started' then
-        exports['fivempro_fonts']:DrawText3D(x, y, z, text)
+    if GetResourceState('mrp_fonts') == 'started' then
+        exports['mrp_fonts']:DrawText3D(x, y, z, text)
         return
     end
     SetTextScale(0.35, 0.35)

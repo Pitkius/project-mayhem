@@ -1,10 +1,10 @@
-# DEPRECATED for HUD: car HUD naudoja SVG (fivempro_hud/html/index.html).
+# DEPRECATED for HUD: car HUD naudoja SVG (mrp_hud/html/index.html).
 # Inventoriaus PNG – naudok AI generuotas ikonas, ne šį scriptą.
 Add-Type -AssemblyName System.Drawing
 
 $root = Split-Path -Parent $PSScriptRoot
-$hudDir = Join-Path $root 'resources\[local]\fivempro_hud\html\assets\icons'
-$vehDir = Join-Path $root 'resources\[local]\fivempro_hud\html\assets\vehicles'
+$hudDir = Join-Path $root 'resources\[local]\mrp_hud\html\assets\icons'
+$vehDir = Join-Path $root 'resources\[local]\mrp_hud\html\assets\vehicles'
 $invDir = Join-Path $root 'resources\[qb]\qb-inventory\html\images'
 
 foreach ($d in @($hudDir, $vehDir)) {

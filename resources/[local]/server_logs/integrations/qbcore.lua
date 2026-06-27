@@ -68,7 +68,7 @@ RegisterNetEvent('inventory:server:GiveItem', function(target, item, amount)
     TriggerEvent('server_logs:inventoryAdd', item, amount, 'give')
 end)
 
-EXAMPLE: bank (fivempro_bank or qb-banking):
+EXAMPLE: bank (mrp_bank or qb-banking):
 
 TriggerEvent('server_logs:bankDeposit', amount, balanceBefore, balanceAfter)
 

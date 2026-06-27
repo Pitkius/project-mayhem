@@ -39,7 +39,7 @@ end)
 CreateThread(function()
     while true do
         if not disable then
-            local regionalWeather = GetResourceState('fivempro_weather') == 'started'
+            local regionalWeather = GetResourceState('mrp_weather') == 'started'
             if not regionalWeather then
                 if lastWeather ~= CurrentWeather then
                     lastWeather = CurrentWeather

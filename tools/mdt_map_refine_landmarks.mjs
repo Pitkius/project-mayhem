@@ -2,7 +2,7 @@ import fs from "fs";
 import { PNG } from "pngjs";
 
 const IMG =
-  "resources/[local]/fivempro_ltpd/html/mdt/asset/gtav_satellite_2048.png";
+  "resources/[local]/mrp_ltpd/html/mdt/asset/gtav_satellite_2048.png";
 
 const landmarks = [
   { name: "Paleto PD", gx: -448.15, gy: 6012.0 },

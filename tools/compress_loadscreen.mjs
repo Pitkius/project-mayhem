@@ -2,7 +2,7 @@ import { readdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import sharp from 'sharp';
 
-const dir = join('..', 'resources', '[local]', 'fivempro_loadscreen', 'html', 'assets');
+const dir = join('..', 'resources', '[local]', 'mrp_loadscreen', 'html', 'assets');
 const files = (await readdir(dir)).filter((f) => f.endsWith('.png'));
 
 for (const file of files) {

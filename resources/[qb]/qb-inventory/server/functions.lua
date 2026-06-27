@@ -1,5 +1,24 @@
 -- Local Functions
 
+local inventoryPushPending = {}
+local INVENTORY_PUSH_DEBOUNCE_MS = 100
+
+--- Viena NUI atnaujinimo banga po kelių AddItem/RemoveItem (craft, pirkimas).
+local function PushInventoryUpdateDebounced(source)
+    local src = tonumber(source)
+    if not src or src <= 0 then return end
+    if inventoryPushPending[src] then return end
+    inventoryPushPending[src] = true
+    SetTimeout(INVENTORY_PUSH_DEBOUNCE_MS, function()
+        inventoryPushPending[src] = nil
+        local player = QBCore.Functions.GetPlayer(src)
+        if not player or player.Offline then return end
+        TriggerClientEvent('qb-inventory:client:updateInventory', src, player.PlayerData.items)
+    end)
+end
+
+exports('PushInventoryUpdateDebounced', PushInventoryUpdateDebounced)
+
 local function InitializeInventory(inventoryId, data)
     Inventories[inventoryId] = {
         items = {},
@@ -523,7 +542,7 @@ function ClearInventory(source, filterItems)
         if weapon ~= `WEAPON_UNARMED` then
             RemoveWeaponFromPed(ped, weapon)
         end
-        if Player(source).state.inv_busy then TriggerClientEvent('qb-inventory:client:updateInventory', source) end
+        if Player(source).state.inv_busy then PushInventoryUpdateDebounced(source) end
     end
 end
 
@@ -850,7 +869,7 @@ function AddItem(identifier, item, amount, slot, info, reason)
     if player then
         player.Functions.SetPlayerData('items', inventory)
         if not player.Offline then
-            TriggerClientEvent('qb-inventory:client:updateInventory', identifier, inventory)
+            PushInventoryUpdateDebounced(identifier)
         end
     end
     local invName = player and GetPlayerName(identifier) .. ' (' .. identifier .. ')' or identifier
@@ -945,6 +964,9 @@ function RemoveItem(identifier, item, amount, slot, reason)
         local itemInfo = QBCore.Shared.Items[item:lower()]
         if itemInfo and itemInfo.type == 'weapon' and inventoryItem.amount <= 0 then
             checkWeapon(identifier, item)
+        end
+        if not player.Offline and Player(identifier).state.inv_busy then
+            PushInventoryUpdateDebounced(identifier)
         end
     end
 

@@ -276,7 +276,7 @@ QBShared.Items = {
     weed_amnesia_seed            = { name = 'weed_amnesia_seed', label = 'Amnesia sėkla', weight = 0, type = 'item', image = 'weed_seed.png', unique = false, useable = false, shouldClose = true, description = 'Senas daiktas — auginimas išjungtas.' },
     weed_ak47_seed               = { name = 'weed_ak47_seed', label = 'AK-47 sėkla', weight = 0, type = 'item', image = 'weed_seed.png', unique = false, useable = false, shouldClose = true, description = 'Senas daiktas — auginimas išjungtas.' },
     empty_weed_bag               = { name = 'empty_weed_bag', label = 'Tuščias maišelis', weight = 0, type = 'item', image = 'weed_baggy_empty.png', unique = false, useable = true, shouldClose = true, description = 'Mažas tuščias pakavimo maišelis.' },
-    weed_nutrition               = { name = 'weed_nutrition', label = 'Augalų trąšos', weight = 2000, type = 'item', image = 'weed_nutrition.png', unique = false, useable = false, shouldClose = true, description = 'Senas daiktas — auginimas išjungtas.' },
+    weed_nutrition               = { name = 'weed_nutrition', label = 'Substrato maišas', weight = 2000, type = 'item', image = 'weed_nutrition.png', unique = false, useable = false, shouldClose = true, description = 'Supilk į augimo vazoną prieš sodinant sėklas.' },
 
     -- Material
     plastic                      = { name = 'plastic', label = 'Plastikas', weight = 100, type = 'item', image = 'plastic.png', unique = false, useable = false, shouldClose = false, description = 'Perdirbtos plastiko granulės.' },
@@ -486,9 +486,9 @@ QBShared.Items = {
     rabbit_meat_clean            = { name = 'rabbit_meat_clean', label = 'Triušienos mėsa', weight = 260, type = 'item', image = 'rabbit_meat_clean.png', unique = false, useable = false, shouldClose = false, description = 'Paruošta triušienos mėsa.' },
     rabbit_fur                   = { name = 'rabbit_fur', label = 'Triušio kailis', weight = 200, type = 'item', image = 'rabbit_fur.png', unique = false, useable = false, shouldClose = false, description = 'Triušio kailis.' },
 
-    -- fivempro_drugs — 1 etapas: žaliava (nuskinta / gryna)
-    weed_seed                    = { name = 'weed_seed', label = 'Kanapių sėkla', weight = 5, type = 'item', image = 'weed_seed.png', unique = false, useable = false, shouldClose = true, description = 'Sodink į pastatytą augimo vazoną.' },
-    grow_pot                     = { name = 'grow_pot', label = 'Augimo vazonas', weight = 1200, type = 'item', image = 'grow_pot.png', unique = false, useable = true, shouldClose = true, description = 'Juodas vazonas — pastatyk ir sodink kanapių sėklas.' },
+    -- mrp_drugs — 1 etapas: žaliava (nuskinta / gryna)
+    weed_seed                    = { name = 'weed_seed', label = 'Kanapių sėkla', weight = 5, type = 'item', image = 'weed_seed.png', unique = false, useable = false, shouldClose = true, description = 'Sodink į vazoną po substrato pylimo.' },
+    grow_pot                     = { name = 'grow_pot', label = 'Augimo vazonas', weight = 1200, type = 'item', image = 'grow_pot.png', unique = false, useable = true, shouldClose = true, description = 'Pastatyk su preview, supilk substratą ir sodink sėklas.' },
     watering_can                 = { name = 'watering_can', label = 'Laistytuvas', weight = 900, type = 'item', image = 'watering_can.png', unique = false, useable = true, shouldClose = true, description = 'Laistyk augalus — papildyk vandens buteliu. Naudok, kad matytum vandens lygį.' },
     weed_leaf                    = { name = 'weed_leaf', label = 'Nuskintos žolės lapai', weight = 50, type = 'item', image = 'weed_leaf.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
     cartel_raw                   = { name = 'cartel_raw', label = 'Nuskinti kokainmedžio lapai', weight = 95, type = 'item', image = 'coca_leaf.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
@@ -500,7 +500,7 @@ QBShared.Items = {
     meth_ingredient              = { name = 'meth_ingredient', label = 'Meto precursorius', weight = 90, type = 'item', image = 'meth_baggy.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
     mushroom_raw                 = { name = 'mushroom_raw', label = 'Nuskinti grybai', weight = 70, type = 'item', image = 'mushroom_raw.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
     amp_precursor                = { name = 'amp_precursor', label = 'Amfetamino precursorius', weight = 85, type = 'item', image = 'amp_precursor.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava · 1/3 etapas.' },
-    -- fivempro_drugs — 2 etapas: apdorota
+    -- mrp_drugs — 2 etapas: apdorota
     weed_buds                    = { name = 'weed_buds', label = 'Džiovinti žolės žiedai', weight = 90, type = 'item', image = 'weed_buds.png', unique = false, useable = false, shouldClose = false, description = 'Apdorota · 2/3 etapas.' },
     weed_resin                   = { name = 'weed_resin', label = 'THC koncentratas', weight = 70, type = 'item', image = 'weed_resin.png', unique = false, useable = false, shouldClose = false, description = 'Apdorota · 2/3 etapas.' },
     moonshine_spirit             = { name = 'moonshine_spirit', label = 'Distiliuotas samagonas', weight = 220, type = 'item', image = 'moonshine_spirit.png', unique = false, useable = false, shouldClose = false, description = 'Apdorota · 2/3 etapas.' },
@@ -522,7 +522,7 @@ QBShared.Items = {
     trimming_scissors            = { name = 'trimming_scissors', label = 'Lapų kirpimo žirklės', weight = 180, type = 'item', image = 'trimming_scissors.png', unique = false, useable = false, shouldClose = false, description = 'Žolės derliui ir apdorojimui.' },
     pill_press                   = { name = 'pill_press', label = 'Tablečių presas', weight = 1200, type = 'item', image = 'lab_kit.png', unique = false, useable = false, shouldClose = false, description = 'Tablečių gamybai.' },
     gloves                       = { name = 'gloves', label = 'Pirštinės', weight = 50, type = 'item', image = 'gloves_item.png', unique = false, useable = false, shouldClose = false, description = 'Apsauga.' },
-    -- fivempro_drugs — 3 etapas: supakuota (pardavimas)
+    -- mrp_drugs — 3 etapas: supakuota (pardavimas)
     weed_bag                     = { name = 'weed_bag', label = 'Supakuota žolė', weight = 120, type = 'item', image = 'weed_baggy.png', unique = false, useable = false, shouldClose = false, description = 'Supakuota · 3/3 etapas.' },
     cocaine_bag                  = { name = 'cocaine_bag', label = 'Supakuotas kokainas', weight = 100, type = 'item', image = 'cocaine_baggy.png', unique = false, useable = false, shouldClose = false, description = 'Supakuota · 3/3 etapas.' },
     heroin_bag                   = { name = 'heroin_bag', label = 'Supakuotas heroinas', weight = 100, type = 'item', image = 'heroin_bag.png', unique = false, useable = false, shouldClose = false, description = 'Supakuota · 3/3 etapas.' },
@@ -535,7 +535,7 @@ QBShared.Items = {
     mushroom_pack                = { name = 'mushroom_pack', label = 'Supakuoti grybai', weight = 110, type = 'item', image = 'mushroom_pack.png', unique = false, useable = false, shouldClose = false, description = 'Supakuota · 3/3 etapas.' },
     cartel_pack                  = { name = 'cartel_pack', label = 'Supakuotas kokainas', weight = 130, type = 'item', image = 'coke_small_brick.png', unique = false, useable = false, shouldClose = false, description = 'Supakuota · 3/3 etapas.' },
 
-    -- fivempro_drugs — ginklų gamybos dalys
+    -- mrp_drugs — ginklų gamybos dalys
     metal_scrap                  = { name = 'metal_scrap', label = 'Metalo laužas', weight = 120, type = 'item', image = 'metal_scrap.png', unique = false, useable = false, shouldClose = false, description = 'Žaliava ginklų gamybai.' },
     gun_frame                    = { name = 'gun_frame', label = 'Ginklo korpusas', weight = 350, type = 'item', image = 'gun_frame.png', unique = false, useable = false, shouldClose = false, description = 'Ginklo rėmas.' },
     gun_barrel                   = { name = 'gun_barrel', label = 'Vamzdis', weight = 280, type = 'item', image = 'gun_barrel.png', unique = false, useable = false, shouldClose = false, description = 'Ginklo vamzdis.' },

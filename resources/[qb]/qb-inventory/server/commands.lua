@@ -35,7 +35,7 @@ QBCore.Commands.Add('giveitem', 'Give An Item (Admin Only)', { { name = 'id', he
 
             if AddItem(id, itemData['name'], amount, false, info, 'give item command') then
                 TriggerClientEvent('qb-inventory:client:ItemBox', id, itemData, 'add', amount)
-                if Player(id).state.inv_busy then TriggerClientEvent('qb-inventory:client:updateInventory', id) end
+                if Player(id).state.inv_busy then exports['qb-inventory']:PushInventoryUpdateDebounced(id) end
                 if GetResourceState('server_logs') == 'started' then
                     pcall(function()
                         exports['server_logs']:LogAdminAction(source, 'giveitem', ('**%s** x%s'):format(itemData.label or itemData.name, amount), {
@@ -82,7 +82,7 @@ QBCore.Commands.Add('randomitems', 'Receive random items', {}, false, function(s
                 TriggerClientEvent('qb-inventory:client:ItemBox', source, QBCore.Shared.Items[randitem.name], 'add')
                 player = QBCore.Functions.GetPlayer(source)
                 playerInventory = player.PlayerData.items
-                if Player(source).state.inv_busy then TriggerClientEvent('qb-inventory:client:updateInventory', source) end
+                if Player(source).state.inv_busy then exports['qb-inventory']:PushInventoryUpdateDebounced(source) end
             end
             Wait(1000)
         end

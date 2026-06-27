@@ -4,9 +4,9 @@ FIVEMPRO — SQL ir deploy checklist (po didelio update)
 === AR REIKIA NAUJO SQL ŠIAM UPDATE? ===
 
 DAIKTAI (inventorius + metadata) — SQL NEREIKIA:
-  - fivempro_hacking (tablet OS/exploits → item.info)
-  - fivempro_outdoors (licencijos → item.info su citizenid)
-  - fivempro_npcshops, fivempro_mining, maistas, šarvai
+  - mrp_hacking (tablet OS/exploits → item.info)
+  - mrp_outdoors (licencijos → item.info su citizenid)
+  - mrp_npcshops, mrp_mining, maistas, šarvai
   - Visi nauji itemai — tik qb-core/shared/items.lua + restart qb-core
 
 ATM / APIPLĖŠIMAI cooldown — SQL NEREIKIA (dabartinė versija):
@@ -22,43 +22,43 @@ Privalomi (jei dar nebuvo):
   [ ] resources/[qb]/qb-apartments/qb-apartments.sql
 
 Fivempro (auto-kuria paleidus resursą ARBA rankiniu .sql):
-  [ ] fivempro_bank/fivempro_bank.sql
-  [ ] fivempro_dispatch/fivempro_dispatch.sql
-  [ ] fivempro_gangs/fivempro_gangs.sql
-  [ ] fivempro_ltpd/sql/ltpd.sql
-  [ ] fivempro_playerlog/fivempro_playerlog.sql
-  [ ] fivempro_phone — lenteles kuria server/main.lua MySQL.ready
+  [ ] mrp_bank/mrp_bank.sql
+  [ ] mrp_dispatch/mrp_dispatch.sql
+  [ ] mrp_gangs/mrp_gangs.sql
+  [ ] mrp_ltpd/sql/ltpd.sql
+  [ ] mrp_playerlog/mrp_playerlog.sql
+  [ ] mrp_phone — lenteles kuria server/main.lua MySQL.ready
 
 Fivempro housing:
-  [ ] fivempro_housing/fivempro_housing.sql (arba auto CREATE paleidus resursą)
+  [ ] mrp_housing/mrp_housing.sql (arba auto CREATE paleidus resursą)
 
 NEREIKIA SQL:
-  [ ] fivempro_hacking
-  [ ] fivempro_outdoors
-  [ ] fivempro_mining
-  [ ] fivempro_npcshops
-  [ ] fivempro_hud / fivempro_vehiclemenu
+  [ ] mrp_hacking
+  [ ] mrp_outdoors
+  [ ] mrp_mining
+  [ ] mrp_npcshops
+  [ ] mrp_hud / mrp_vehiclemenu
 
 === CFG ENSURE (30_custom.cfg) ===
 
-  [x] fivempro_hacking
-  [x] fivempro_outdoors
-  [x] fivempro_mining
-  [x] fivempro_npcshops
-  [x] fivempro_housing
+  [x] mrp_hacking
+  [x] mrp_outdoors
+  [x] mrp_mining
+  [x] mrp_npcshops
+  [x] mrp_housing
   [ ] ensure [mlo] — būtina outdoors ranger stočiai (cfx-gabz-parkranger)
 
 === PRIKLAUSOMYBĖS ===
 
   qb-core, qb-inventory, qb-target, qb-menu, oxmysql
-  fivempro_dispatch (heist alertai)
-  fivempro_gangs (optional — rep po hack)
-  fivempro_ltpd (optional — CCTV tamper exploit)
+  mrp_dispatch (heist alertai)
+  mrp_gangs (optional — rep po hack)
+  mrp_ltpd (optional — CCTV tamper exploit)
 
 === PRODUCTION PRIEŠ PALEIDIMĄ ===
 
-  [ ] Config.DebugHeistVendor.enabled = false (fivempro_hacking/config.lua)
-  [ ] Patikrinti ranger NPC koordinates MLO interjere (fivempro_outdoors/config.lua)
+  [ ] Config.DebugHeistVendor.enabled = false (mrp_hacking/config.lua)
+  [ ] Patikrinti ranger NPC koordinates MLO interjere (mrp_outdoors/config.lua)
   [ ] Live test: ATM, 24/7, Fleeca, outdoors licencija + žvejyba
 
 === ŽINOMOS RIBOS (ne bug'ai, bet svarbu žinoti) ===

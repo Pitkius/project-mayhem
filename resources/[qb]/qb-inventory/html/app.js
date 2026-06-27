@@ -170,22 +170,42 @@ const InventoryContainer = Vue.createApp({
             }
         },
         updateInventory(data) {
-            this.playerInventory = {};
-
+            const nextInventory = {};
             if (data.inventory) {
                 if (Array.isArray(data.inventory)) {
                     data.inventory.forEach((item) => {
                         if (item && item.slot) {
-                            this.playerInventory[item.slot] = item;
+                            nextInventory[item.slot] = item;
                         }
                     });
                 } else if (typeof data.inventory === "object") {
                     for (const key in data.inventory) {
                         const item = data.inventory[key];
                         if (item && item.slot) {
-                            this.playerInventory[item.slot] = item;
+                            nextInventory[item.slot] = item;
                         }
                     }
+                }
+            }
+
+            for (const key of Object.keys(this.playerInventory)) {
+                const slotKey = Number(key);
+                if (!nextInventory[key] && !nextInventory[slotKey]) {
+                    delete this.playerInventory[key];
+                }
+            }
+
+            for (const slot in nextInventory) {
+                const item = nextInventory[slot];
+                const existing = this.playerInventory[slot] || this.playerInventory[Number(slot)];
+                if (
+                    !existing ||
+                    existing.name !== item.name ||
+                    existing.amount !== item.amount ||
+                    existing.slot !== item.slot ||
+                    JSON.stringify(existing.info || {}) !== JSON.stringify(item.info || {})
+                ) {
+                    this.playerInventory[slot] = item;
                 }
             }
         },

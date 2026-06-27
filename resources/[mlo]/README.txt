@@ -44,7 +44,7 @@ KUR DĖTI NAUJUS MLO (atsisiųstus)
    - [mlo_pack_3]/weapon_warehouse (Ginklų sandėlis — Grapeseed/Paleto kelias ~-1143, 4944)
    - Restart serveris arba: ensure [mlo]
    - Parašyk Cursor / dev'ui MLO aplankų pavadinimus (pvz. cfx-gabz-prison)
-   - Tada bus pridėti blip'ai (fivempro_gabz_blips) ir NPC koordinatės (jobs, outdoors).
+   - Tada bus pridėti blip'ai (mrp_gabz_blips) ir NPC koordinatės (jobs, outdoors).
 
 Struktūros pavyzdys:
    resources/[mlo]/[mlo_pack_1]/cfx-gabz-mrpd/fxmanifest.lua

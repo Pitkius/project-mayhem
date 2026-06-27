@@ -337,8 +337,8 @@ function emitLua(outfits) {
   return lines.join('\n');
 }
 
-const pdUniforms = path.join(CLOTHING, 'fivempro_pd_uniforms');
-const gmpUniforms = path.join(CLOTHING, 'fivempro_gmp_uniforms');
+const pdUniforms = path.join(CLOTHING, 'mrp_pd_uniforms');
+const gmpUniforms = path.join(CLOTHING, 'mrp_gmp_uniforms');
 
 const pdPacks = [
   ['PD V2', path.join(pdUniforms, 'mp_m_freemode_01_mp_m_pdv2_shop.meta'), 'male'],
@@ -356,8 +356,8 @@ const gmpPacks = [
 const pdOutfits = mergeGenderOutfits(pdPacks);
 const gmpOutfits = mergeGenderOutfits(gmpPacks);
 
-const pdCfg = path.join(ROOT, 'resources', '[local]', 'fivempro_ltpd', 'config_duty_outfits.lua');
-const gmpCfg = path.join(ROOT, 'resources', '[local]', 'fivempro_ambulance', 'config_duty_outfits.lua');
+const pdCfg = path.join(ROOT, 'resources', '[local]', 'mrp_ltpd', 'config_duty_outfits.lua');
+const gmpCfg = path.join(ROOT, 'resources', '[local]', 'mrp_ambulance', 'config_duty_outfits.lua');
 
 fs.writeFileSync(pdCfg, emitLua(pdOutfits));
 fs.writeFileSync(gmpCfg, emitLua(gmpOutfits));

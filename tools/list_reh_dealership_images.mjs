@@ -9,7 +9,7 @@ const rehLua = fs.readFileSync(
 );
 const imgDir = path.join(
   root,
-  'resources/[local]/fivempro_dealership/html/images/vehicles'
+  'resources/[local]/mrp_dealership/html/images/vehicles'
 );
 
 const models = [...rehLua.matchAll(/model = '([^']+)'/g)].map((m) => m[1]);

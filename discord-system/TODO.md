@@ -16,9 +16,9 @@
 - [ ] Death screenshot upload per screenshot-basic
 - [ ] ox_inventory hooks (add/remove/swap)
 - [ ] qb-inventory / qs-inventory auto hooks
-- [ ] fivempro_bank auto hooks
-- [ ] fivempro_ambulance death/revive auto hooks
-- [ ] fivempro_gangs auto hooks
+- [ ] mrp_bank auto hooks
+- [ ] mrp_ambulance death/revive auto hooks
+- [ ] mrp_gangs auto hooks
 - [ ] Client-side speed/noclip detection thread
 - [ ] Discord bot API endpoint (ne tik webhook) — optional HTTP server
 - [ ] Log rotation / local file backup jei webhook down

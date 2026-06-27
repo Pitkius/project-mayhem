@@ -1,7 +1,7 @@
 Add-Type -AssemblyName System.Drawing
 
 $root = Split-Path -Parent $PSScriptRoot
-$vehDir = Join-Path $root 'resources\[local]\fivempro_hud\html\assets\vehicles'
+$vehDir = Join-Path $root 'resources\[local]\mrp_hud\html\assets\vehicles'
 if (-not (Test-Path -LiteralPath $vehDir)) {
     New-Item -ItemType Directory -Path $vehDir -Force | Out-Null
 }

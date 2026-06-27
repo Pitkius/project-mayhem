@@ -4,8 +4,8 @@ param(
 )
 
 $packs = @(
-    "resources\[clothing]\fivempro_pd_uniforms\stream",
-    "resources\[clothing]\fivempro_gmp_uniforms\stream"
+    "resources\[clothing]\mrp_pd_uniforms\stream",
+    "resources\[clothing]\mrp_gmp_uniforms\stream"
 )
 
 Write-Host "`n=== Uniformu stream suvestine ===" -ForegroundColor Cyan
@@ -29,4 +29,4 @@ foreach ($rel in $packs) {
 }
 
 Write-Host "`nPastaba: RAM gali buti 3-8x didesnis nei diskas (64 MB vienas .ytd)." -ForegroundColor Yellow
-Write-Host "Optimizacija: resources/[clothing]/fivempro_pd_uniforms/STREAMING.txt`n"
+Write-Host "Optimizacija: resources/[clothing]/mrp_pd_uniforms/STREAMING.txt`n"

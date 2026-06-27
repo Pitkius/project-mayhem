@@ -441,9 +441,6 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
     shopItem.amount = stock - amount
     TriggerEvent('qb-shops:server:UpdateShopItems', shop, itemInfo, amount)
     exports['qb-inventory']:SaveInventory(source)
-    local freshPlayer = QBCore.Functions.GetPlayer(source)
-    local freshItems = freshPlayer and freshPlayer.PlayerData.items or Player.PlayerData.items
-    TriggerClientEvent('qb-inventory:client:updateInventory', source, freshItems)
     local sharedItem = exports['qb-inventory']:ResolveSharedItem(itemName)
     if sharedItem then
         TriggerClientEvent('qb-inventory:client:ItemBox', source, sharedItem, 'add', amount)
@@ -514,7 +511,7 @@ QBCore.Functions.CreateCallback('qb-inventory:server:giveItem', function(source,
     TriggerClientEvent('qb-inventory:client:ItemBox', source, itemInfo, 'remove', giveAmount)
     TriggerClientEvent('qb-inventory:client:giveAnim', target)
     TriggerClientEvent('qb-inventory:client:ItemBox', target, itemInfo, 'add', giveAmount)
-    if Player(target).state.inv_busy then TriggerClientEvent('qb-inventory:client:updateInventory', target) end
+    if Player(target).state.inv_busy then exports['qb-inventory']:PushInventoryUpdateDebounced(target) end
     cb(true)
 end)
 

@@ -249,11 +249,11 @@ if not isRDR then
 end
 
 local function isPhoneBlockingChat()
-  if GetResourceState('fivempro_phone') ~= 'started' then
+  if GetResourceState('mrp_phone') ~= 'started' then
     return false
   end
   local ok, blocking = pcall(function()
-    return exports['fivempro_phone']:IsBlockingChat()
+    return exports['mrp_phone']:IsBlockingChat()
   end)
   return ok and blocking == true
 end

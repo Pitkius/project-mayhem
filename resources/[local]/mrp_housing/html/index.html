@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dynasty 8</title>
+  <link rel="stylesheet" href="nui://mrp_fonts/html/ui.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+    <div class="panel">
+      <header class="header">
+        <div>
+          <div class="eyebrow">Nekilnojamasis turtas</div>
+          <h1 id="agencyTitle">Dynasty 8</h1>
+        </div>
+        <button id="closeBtn" class="close" type="button">✕</button>
+      </header>
+      <p class="hint" id="hintText">Neįrengti objektai. Vienas pirkėjas — vienas objektas serveryje.</p>
+      <div class="toolbar">
+        <label for="districtFilter">Rajonas</label>
+        <select id="districtFilter"></select>
+        <label class="chk"><input type="checkbox" id="onlyAvailable" checked /> Tik laisvi</label>
+      </div>
+      <div class="layout">
+        <div class="list-wrap">
+          <div id="propertyList" class="property-list"></div>
+        </div>
+        <div class="detail" id="detailPanel">
+          <div class="detail-empty">Pasirinkite objektą</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

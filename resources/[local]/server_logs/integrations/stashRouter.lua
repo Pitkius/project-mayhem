@@ -36,13 +36,13 @@ function StashRouter.Classify(inventoryId)
     if id:find('^ltpd_') then
         return 'police', 'Policijos sandėlis'
     end
-    if id:find('^fivempro_ems_') then
+    if id:find('^mrp_ems_') then
         return 'ems', 'Medikų sandėlis'
     end
-    if id:find('^fivempro_mechanic') then
+    if id:find('^mrp_mechanic') then
         return 'mechanic', 'Mechanikų sandėlis'
     end
-    if id:find('^fivempro_taxi') then
+    if id:find('^mrp_taxi') then
         return 'taxi', 'Taksistų sandėlis'
     end
     if id:find('^property_') then

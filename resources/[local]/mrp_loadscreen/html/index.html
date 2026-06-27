@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MRP — Kraunama</title>
+  <link rel="icon" type="image/png" href="assets/mrp_icon.png" />
+  <link rel="stylesheet" href="nui://mrp_fonts/html/ui.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    (function bootMusicEarly() {
+      var res = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'mrp_loadscreen';
+      var nativePinged = false;
+
+      function pingNative() {
+        if (nativePinged) return;
+        fetch('https://' + res + '/loadscreenReady', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        }).then(function () {
+          nativePinged = true;
+        }).catch(function () {});
+      }
+
+      function playNuiAudio() {
+        var a = document.getElementById('themeAudio');
+        if (!a) return;
+        a.volume = 0.28;
+        a.play().catch(function () {});
+      }
+
+      pingNative();
+      setInterval(pingNative, 80);
+
+      function onDom() {
+        playNuiAudio();
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', onDom);
+      } else {
+        onDom();
+      }
+
+      var rafTicks = 0;
+      function rafPing() {
+        rafTicks += 1;
+        if (rafTicks % 4 === 0) pingNative();
+        if (rafTicks % 30 === 0) playNuiAudio();
+        requestAnimationFrame(rafPing);
+      }
+      requestAnimationFrame(rafPing);
+    })();
+  </script>
+</head>
+<body>
+  <div id="slides" class="slides" aria-hidden="true"></div>
+  <div class="vignette"></div>
+  <div class="scanlines"></div>
+
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-accent" aria-hidden="true"></div>
+      <img class="brand-logo" src="assets/mrp_logo.png" alt="" width="52" height="52" />
+      <div class="brand-text">
+        <span class="brand-main">MRP</span>
+        <span class="brand-sub">Mayhem Roleplay Server</span>
+      </div>
+    </div>
+    <div class="session">
+      <span id="statusText">Jungiamasi...</span>
+    </div>
+  </header>
+
+  <aside class="character-panel">
+    <div class="panel-tag" id="slideTag">GATVĖS GYVENIMAS</div>
+    <h1 class="panel-title" id="slideTitle">Pasiruošk miestui</h1>
+    <p class="panel-desc" id="slideDesc">Kraunamos sistemos ir pasaulio duomenys.</p>
+    <div class="panel-dots" id="slideDots"></div>
+  </aside>
+
+  <footer class="bottom-bar">
+    <div class="tips">
+      <span class="tips-label">Patarimas</span>
+      <p id="tipText">Laikykis taisyklių — geriau RP nei grindinimas.</p>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="progressPct">0%</span>
+        <span id="progressDetail">Inicializuojama...</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+  </footer>
+
+  <div class="music-bar">
+    <button type="button" id="musicToggle" class="music-btn" title="Garsas">♪</button>
+    <span id="musicLabel" class="music-label">MRP — Mayhem RP</span>
+    <input type="range" id="musicVolume" class="music-volume" min="0" max="100" value="28" />
+  </div>
+  <audio id="themeAudio" preload="auto" loop playsinline src="nui://mrp_loadscreen/html/assets/gta_theme.mp3"></audio>
+
+  <script src="app.js"></script>
+</body>
+</html>

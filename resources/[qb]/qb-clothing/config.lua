@@ -516,7 +516,7 @@ Config.LoadedWomanModels = {}
 Config.UseTarget = GetConvar('UseTarget', 'false') == 'true'
 
 -- width, length, minZ and maxZ are for the size and height of the PolyZone
--- Disabled default qb-clothing stores because custom NPC shops are used in fivempro_npcshops.
+-- Disabled default qb-clothing stores because custom NPC shops are used in mrp_npcshops.
 Config.Stores = {}
 
 Config.OutfitChangers = {

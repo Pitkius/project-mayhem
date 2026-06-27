@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="nui://mrp_fonts/html/ui.css" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="radio-app" class="radio-app hidden">
+        <div class="radio-scene">
+            <div class="radio-unit">
+                <div class="radio-antenna" aria-hidden="true"></div>
+                <div class="radio-body">
+                    <div class="radio-top-bar">
+                        <div class="radio-knob" aria-hidden="true"></div>
+                        <span class="radio-led" id="statusLed" aria-hidden="true"></span>
+                    </div>
+
+                    <div class="radio-brand-row">
+                        <span class="radio-brand">APX</span>
+                        <span class="radio-model">TETRA</span>
+                    </div>
+
+                    <div class="radio-lcd" id="radioLcd">
+                        <div class="lcd-scanlines" aria-hidden="true"></div>
+                        <div class="lcd-row lcd-row--freq">
+                            <span class="lcd-freq" id="lcdFreq">--.--</span>
+                            <span class="lcd-mhz">MHz</span>
+                        </div>
+                        <div class="lcd-faction" id="lcdFaction">STBY</div>
+                        <div class="lcd-status" id="lcdStatus">Įvesk dažnį</div>
+                    </div>
+
+                    <div class="radio-keypad">
+                        <button type="button" class="rk rk--icon" id="btnPower" title="Uždaryti">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42A6.92 6.92 0 0 1 19 12a7 7 0 0 1-7 7 7 7 0 0 1-7-7c0-2.08.9-3.95 2.34-5.24L6.17 5.17A8.96 8.96 0 0 0 3 12a9 9 0 1 0 18 0c0-2.48-1.01-4.73-2.64-6.36z"/></svg>
+                            <span>PWR</span>
+                        </button>
+                        <button type="button" class="rk rk--icon" id="btnUp" title="Dažnis +">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 8l-6 6h12z"/></svg>
+                            <span>▲</span>
+                        </button>
+                        <button type="button" class="rk rk--main" id="btn1" title="Prisijungti / atjungti">
+                            <span class="rk-num">1</span>
+                            <span class="rk-lbl">TX/RX</span>
+                        </button>
+
+                        <button type="button" class="rk rk--icon" id="btnMute" title="Garsas">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.06c1.48-.74 2.5-2.26 2.5-4.03zM5 9v6h4l5 5V4L9 9H5z"/></svg>
+                            <span>VOL</span>
+                        </button>
+                        <button type="button" class="rk rk--icon" id="btnDown" title="Dažnis -">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 16l6-6H6z"/></svg>
+                            <span>▼</span>
+                        </button>
+                        <button type="button" class="rk rk--main" id="btn2" title="Dažnis ir vardas">
+                            <span class="rk-num">2</span>
+                            <span class="rk-lbl">CH</span>
+                        </button>
+                    </div>
+
+                    <div class="radio-ptt" aria-hidden="true">
+                        <span>PTT</span>
+                    </div>
+                    <div class="radio-grill" aria-hidden="true"></div>
+                    <div class="radio-clip" aria-hidden="true"></div>
+                </div>
+            </div>
+            <p class="radio-hint">Kalbėti: <kbd>CAPS LOCK</kbd></p>
+        </div>
+    </div>
+
+    <div id="modal-freq" class="modal hidden">
+        <div class="modal__card">
+            <h3>Dažnis (MHz)</h3>
+            <input type="number" id="inputFreq" min="1" max="999.99" step="0.01" placeholder="19.81" />
+            <label class="field">
+                <span>Tavo šaukinys racijoje</span>
+                <input type="text" id="inputAlias" maxlength="32" placeholder="pvz. 1-Adam-12" autocomplete="off" />
+            </label>
+            <div class="modal__actions">
+                <button type="button" class="btn btn--ghost" id="btnFreqCancel">Atšaukti</button>
+                <button type="button" class="btn btn--primary" id="btnFreqOk">Patvirtinti</button>
+            </div>
+            <p class="modal__hint" id="freqHint"></p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
