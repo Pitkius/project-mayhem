@@ -3,6 +3,14 @@ Config = {}
 Config.OpenKey = 'F6'
 Config.ValidateDistance = 28.0
 
+--- Chat komandos (/pdsirenai, /pdiranga, /emssirenai, /emsdiranga) – tik adminams; žaidėjai naudoja itemus arba F6.
+Config.CommandsAdminOnly = true
+
+Config.EmergencyKit = {
+    emsKitItem = 'ems_emergency_kit',
+    returnKitItemOnRemove = true,
+}
+
 Config.Jobs = {
     police = {
         jobName = 'police',

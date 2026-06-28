@@ -422,6 +422,14 @@ local function hasPerm(src, key)
     return getGrade(src) >= need
 end
 
+local function isAdmin(src)
+    return QBCore.Functions.HasPermission(src, 'admin') or QBCore.Functions.HasPermission(src, 'god')
+end
+
+QBCore.Functions.CreateCallback('mrp_ltpd:server:isAdmin', function(src, cb)
+    cb(isAdmin(src))
+end)
+
 --- @param targetSrc number|nil
 local function validTarget(officerSrc, targetSrc, maxDist)
     if not targetSrc or targetSrc < 1 then return false end
@@ -1309,7 +1317,7 @@ RegisterNetEvent('mrp_ltpd:server:setPdEmergencyMode', function(mode)
             return TriggerClientEvent(
                 'QBCore:Notify',
                 src,
-                'Ant civilinės TP pirmiausiai uždėk laikinas sirenas („/pdiranga“ įmontuoti).',
+                'Ant civilinės TP pirmiausiai uždėk avarinę įrangą (itemas iš inventoriaus).',
                 'error'
             )
         end
@@ -1338,6 +1346,31 @@ RegisterNetEvent('mrp_ltpd:server:setPdEmergencyKit', function(equip)
         return TriggerClientEvent('QBCore:Notify', src, 'Ši mašina jau turi tarnybinę įrangą (ne civilinė).', 'error')
     end
     equip = equip == true
+    local ec = Config.EmergencyVehicle or {}
+    local kitItem = ec.kitItem or 'pd_emergency_kit'
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    if equip then
+        if not isAdmin(src) then
+            if not Player.Functions.GetItemByName(kitItem) then
+                return TriggerClientEvent(
+                    'QBCore:Notify',
+                    src,
+                    'Neturi avarinės įrangos inventoriuje.',
+                    'error'
+                )
+            end
+            if not Player.Functions.RemoveItem(kitItem, 1) then
+                return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko paimti įrangos.', 'error')
+            end
+            TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[kitItem], 'remove', 1)
+        end
+    elseif ec.returnKitItemOnRemove ~= false and not isAdmin(src) then
+        if not Player.Functions.AddItem(kitItem, 1) then
+            return TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas – negalima grąžinti įrangos.', 'error')
+        end
+        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[kitItem], 'add', 1)
+    end
     Entity(veh).state:set('ltPdKit', equip, true)
     if equip then
         TriggerClientEvent('QBCore:Notify', src, 'Įdėtos laikinos sirenos ir žibintai ant šio TP – nuimi per tą patį meniu.', 'success')
@@ -1568,4 +1601,13 @@ RegisterNetEvent('mrp_ltpd:server:togglePdDoorGroup', function(groupId)
         LtpdPdDoorLocked[groupId] and 'Durys užrakintos.' or 'Durys atrakintos.',
         'primary'
     )
+end)
+
+CreateThread(function()
+    Wait(800)
+    local ec = Config.EmergencyVehicle or {}
+    local kitItem = ec.kitItem or 'pd_emergency_kit'
+    QBCore.Functions.CreateUseableItem(kitItem, function(source)
+        TriggerClientEvent('mrp_ltpd:client:openEmergencyKitMenu', source)
+    end)
 end)

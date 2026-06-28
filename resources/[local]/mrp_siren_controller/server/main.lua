@@ -53,6 +53,10 @@ local function isPdOnDuty(src)
     return j and j.name == Config.Jobs.police.jobName and j.onduty
 end
 
+local function isAdmin(src)
+    return QBCore.Functions.HasPermission(src, 'admin') or QBCore.Functions.HasPermission(src, 'god')
+end
+
 RegisterNetEvent('mrp_siren:server:setTone', function(netId, tone)
     local src = source
     netId = tonumber(netId)
@@ -103,7 +107,7 @@ RegisterNetEvent('mrp_siren:server:setEmsEmergencyMode', function(mode)
     local hash = GetEntityModel(veh)
     if mode ~= 'off' and not isFleetModel(hash, 'ambulance') then
         if Entity(veh).state.ltEmsKit ~= true then
-            return TriggerClientEvent('QBCore:Notify', src, 'Ant civilinės TP reikia EMS įrangos.', 'error')
+            return TriggerClientEvent('QBCore:Notify', src, 'Ant civilinės TP reikia EMS avarinės įrangos (itemas iš inventoriaus).', 'error')
         end
     end
     Entity(veh).state:set('ltEmsSirenMode', mode, true)
@@ -116,14 +120,43 @@ end)
 
 RegisterNetEvent('mrp_siren:server:setEmsEmergencyKit', function(equip)
     local src = source
-    if not isEmsOnDuty(src) then return end
+    if not isEmsOnDuty(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik EMS tarnyboje.', 'error')
+    end
     local _, veh = pedVehicleSeatIsDriver(src)
-    if not veh then return end
-    if not vehicleNearPlayer(src, veh) then return end
+    if not veh then
+        return TriggerClientEvent('QBCore:Notify', src, 'Turi būti vairuotoju transporte.', 'error')
+    end
+    if not vehicleNearPlayer(src, veh) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo transporto.', 'error')
+    end
+    if safeVehicleNetId(veh) == 0 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Mašina turi būti tinkamai sinchronizuota.', 'error')
+    end
     equip = equip == true
     local hash = GetEntityModel(veh)
     if isFleetModel(hash, 'ambulance') then
         return TriggerClientEvent('QBCore:Notify', src, 'Ši mašina jau turi tarnybinę įrangą.', 'error')
+    end
+    local ek = Config.EmergencyKit or {}
+    local kitItem = ek.emsKitItem or 'ems_emergency_kit'
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    if equip then
+        if not isAdmin(src) then
+            if not Player.Functions.GetItemByName(kitItem) then
+                return TriggerClientEvent('QBCore:Notify', src, 'Neturi EMS avarinės įrangos inventoriuje.', 'error')
+            end
+            if not Player.Functions.RemoveItem(kitItem, 1) then
+                return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko paimti įrangos.', 'error')
+            end
+            TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[kitItem], 'remove', 1)
+        end
+    elseif ek.returnKitItemOnRemove ~= false and not isAdmin(src) then
+        if not Player.Functions.AddItem(kitItem, 1) then
+            return TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas – negalima grąžinti įrangos.', 'error')
+        end
+        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[kitItem], 'add', 1)
     end
     Entity(veh).state:set('ltEmsKit', equip, true)
     if not equip then
@@ -141,4 +174,13 @@ RegisterNetEvent('mrp_siren:server:clearEmsEmergencyOnExit', function(netId)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     if not vehicleNearPlayer(src, veh, (Config.ValidateDistance or 28.0) + 10.0) then return end
     Entity(veh).state:set('ltEmsSirenMode', 'off', true)
+end)
+
+CreateThread(function()
+    Wait(900)
+    local ek = Config.EmergencyKit or {}
+    local kitItem = ek.emsKitItem or 'ems_emergency_kit'
+    QBCore.Functions.CreateUseableItem(kitItem, function(source)
+        TriggerClientEvent('mrp_siren:client:openEmsEmergencyKitMenu', source)
+    end)
 end)

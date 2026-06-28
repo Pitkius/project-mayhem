@@ -57,9 +57,12 @@ Config.Permissions = {
 
 --- Šviesų ir sirenos valdymas (masinoje): režimas per entity statebag (sinchr. visiems žaidėjams)
 Config.EmergencyVehicle = {
-    --- qb-menu komandos
+    --- qb-menu komandos (tik adminams – žaidėjai naudoja itemą)
     sirenMenuCommand = 'pdsirenai',
     kitMenuCommand = 'pdiranga',
+    commandsAdminOnly = true,
+    kitItem = 'pd_emergency_kit',
+    returnKitItemOnRemove = true,
     --- kai išlipi iš vairuotojo vietos – išjungti sirenos režimą ir garsą
     resetModeWhenLeaveDriverSeat = true,
     --- nuo transporto centro atstumas (m), kuriuo serveris priima veiksmus

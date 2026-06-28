@@ -45,6 +45,27 @@ local function canPdEmergencyKit()
     return hasGradePerm(need)
 end
 
+local function commandsAdminOnly()
+    local ec = Config.EmergencyVehicle or {}
+    return ec.commandsAdminOnly ~= false
+end
+
+local function runIfAdminCommand(fn)
+    if not commandsAdminOnly() then
+        return fn()
+    end
+    QBCore.Functions.TriggerCallback('mrp_ltpd:server:isAdmin', function(ok)
+        if not ok then
+            local item = (Config.EmergencyVehicle or {}).kitItem or 'pd_emergency_kit'
+            return QBCore.Functions.Notify(
+                ('Komandą gali naudoti tik adminai. Naudok itemą „%s“ inventoriuje.'):format(item),
+                'error'
+            )
+        end
+        fn()
+    end)
+end
+
 local function modelIsFleet(hash)
     if Config.FleetVehicles then
         for _, v in ipairs(Config.FleetVehicles) do
@@ -350,8 +371,9 @@ local function openSirenModesMenu()
     end
     local _, kit = readVehicleStateBag(veh)
     if (not vehicleSupportsNativeEmergency(veh)) and kit ~= true then
+        local item = (Config.EmergencyVehicle or {}).kitItem or 'pd_emergency_kit'
         return QBCore.Functions.Notify(
-            'Ant įprastos TP pirmiau įjunk laikinas sirenas (komanda /pdiranga).',
+            ('Ant įprastos TP pirmiau įdėk avarinę įrangą (itemas „%s“).'):format(item),
             'error'
         )
     end
@@ -385,22 +407,30 @@ local function openKitMenu()
     if GetResourceState('qb-menu') ~= 'started' then
         return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
     end
+    local _, hasKit = readVehicleStateBag(veh)
     local menu = {
         { header = 'PD laikinos sirenos civilinei TP', txt = 'Iki nuėmimo statebag išlieka tame pačiame TA', isMenuHeader = true },
-        {
-            header = 'Įmontuoti sirenas ir lempas',
-            txt = 'Leidžia naudoti meniu kodą tame pačiame auto.',
-            params = { event = 'mrp_ltpd:client:setPdEmergencyKit', args = { equip = true } },
-        },
-        {
-            header = 'Nuimti įrangą',
-            txt = 'Pasiekiama tame pačiame vairuojamame TA.',
-            params = { event = 'mrp_ltpd:client:setPdEmergencyKit', args = { equip = false } },
-        },
-        { header = '< Užverti meniu', params = { event = 'qb-menu:client:closeMenu' } },
     }
+    if not hasKit then
+        menu[#menu + 1] = {
+            header = 'Įmontuoti sirenas ir lempas',
+            txt = 'Sunaudoja vieną „pd_emergency_kit“ iš inventoriaus.',
+            params = { event = 'mrp_ltpd:client:setPdEmergencyKit', args = { equip = true } },
+        }
+    else
+        menu[#menu + 1] = {
+            header = 'Nuimti įrangą',
+            txt = 'Įranga grąžinama į inventorių.',
+            params = { event = 'mrp_ltpd:client:setPdEmergencyKit', args = { equip = false } },
+        }
+    end
+    menu[#menu + 1] = { header = '< Užverti meniu', params = { event = 'qb-menu:client:closeMenu' } }
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end
+
+RegisterNetEvent('mrp_ltpd:client:openEmergencyKitMenu', function()
+    openKitMenu()
+end)
 
 RegisterNetEvent('mrp_ltpd:client:setPdEmergencyKit', function(data)
     local equip = data and data.equip == true
@@ -414,5 +444,9 @@ end)
 local cmdLights = Ec.sirenMenuCommand or 'pdsirenai'
 local cmdKit = Ec.kitMenuCommand or 'pdiranga'
 
-RegisterCommand(cmdLights, openSirenModesMenu, false)
-RegisterCommand(cmdKit, openKitMenu, false)
+RegisterCommand(cmdLights, function()
+    runIfAdminCommand(openSirenModesMenu)
+end, false)
+RegisterCommand(cmdKit, function()
+    runIfAdminCommand(openKitMenu)
+end, false)

@@ -99,6 +99,22 @@ local function canOpenForJob(jobType)
     return true
 end
 
+local function commandsAdminOnly()
+    return Config.CommandsAdminOnly ~= false
+end
+
+local function runIfAdminCommand(fn)
+    if not commandsAdminOnly() then
+        return fn()
+    end
+    QBCore.Functions.TriggerCallback('mrp_ltpd:server:isAdmin', function(ok)
+        if not ok then
+            return QBCore.Functions.Notify('Šią komandą gali naudoti tik adminai. Naudok itemus arba F6.', 'error')
+        end
+        fn()
+    end)
+end
+
 local function pushUiSync()
     if not uiOpen or not activeJobType then return end
     local veh = getDriverVehicle()
@@ -126,9 +142,12 @@ local function openController(jobType)
     local cfg = getJobCfg(jobType)
     local bag = Entity(veh).state
     if not vehicleIsFleet(veh, jobType) and bag[cfg.kitStateKey] ~= true then
-        local kitCmd = cfg.kitCommand or '/pdiranga'
+        local kitItem = 'pd_emergency_kit'
+        if jobType == 'ambulance' then
+            kitItem = (Config.EmergencyKit and Config.EmergencyKit.emsKitItem) or 'ems_emergency_kit'
+        end
         return QBCore.Functions.Notify(
-            ('Ant civilinės TP pirmiau įjunk laikinas sirenas (%s).'):format(kitCmd),
+            ('Ant civilinės TP pirmiau įdėk avarinę įrangą (itemas „%s“).'):format(kitItem),
             'error'
         )
     end
@@ -232,28 +251,32 @@ end)
 for jobType, cfg in pairs(Config.Jobs) do
     if cfg.command then
         RegisterCommand(cfg.command, function()
-            if uiOpen and activeJobType == jobType then
-                closeController()
-            else
-                openController(jobType)
-            end
+            runIfAdminCommand(function()
+                if uiOpen and activeJobType == jobType then
+                    closeController()
+                else
+                    openController(jobType)
+                end
+            end)
         end, false)
     end
     if cfg.kitCommand and cfg.kitServerEvent then
         RegisterCommand(cfg.kitCommand, function()
-            if not canOpenForJob(jobType) then
-                return QBCore.Functions.Notify('Neturi teisės.', 'error')
-            end
-            local veh = getDriverVehicle()
-            if not veh then
-                return QBCore.Functions.Notify('Turi būti vairo vietoje.', 'error')
-            end
-            if vehicleIsFleet(veh, jobType) then
-                return QBCore.Functions.Notify('Šiai mašinai nereikia laikinos įrangos.', 'error')
-            end
-            local bag = Entity(veh).state
-            local hasKit = bag[cfg.kitStateKey] == true
-            TriggerServerEvent(cfg.kitServerEvent, not hasKit)
+            runIfAdminCommand(function()
+                if not canOpenForJob(jobType) then
+                    return QBCore.Functions.Notify('Neturi teisės.', 'error')
+                end
+                local veh = getDriverVehicle()
+                if not veh then
+                    return QBCore.Functions.Notify('Turi būti vairo vietoje.', 'error')
+                end
+                if vehicleIsFleet(veh, jobType) then
+                    return QBCore.Functions.Notify('Šiai mašinai nereikia laikinos įrangos.', 'error')
+                end
+                local bag = Entity(veh).state
+                local hasKit = bag[cfg.kitStateKey] == true
+                TriggerServerEvent(cfg.kitServerEvent, not hasKit)
+            end)
         end, false)
     end
 end
@@ -323,3 +346,48 @@ for _, cfg in pairs(Config.Jobs) do
         end)
     end
 end
+
+local function openEmsKitMenu()
+    if not isOnDutyJob(Config.Jobs.ambulance.jobName) then
+        return QBCore.Functions.Notify('Tik EMS tarnyboje.', 'error')
+    end
+    local veh = getDriverVehicle()
+    if not veh then
+        return QBCore.Functions.Notify('Turi būti vairo vietoje.', 'error')
+    end
+    if vehicleIsFleet(veh, 'ambulance') then
+        return QBCore.Functions.Notify('Šiai mašinai nereikia – jau tarnybinė.', 'error')
+    end
+    if GetResourceState('qb-menu') ~= 'started' then
+        return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
+    end
+    local hasKit = Entity(veh).state.ltEmsKit == true
+    local kitItem = (Config.EmergencyKit and Config.EmergencyKit.emsKitItem) or 'ems_emergency_kit'
+    local menu = {
+        { header = 'EMS laikinos sirenos civilinei TP', isMenuHeader = true },
+    }
+    if not hasKit then
+        menu[#menu + 1] = {
+            header = 'Įmontuoti sirenas ir lempas',
+            txt = ('Sunaudoja vieną „%s“ iš inventoriaus.'):format(kitItem),
+            params = { event = 'mrp_siren:client:setEmsEmergencyKit', args = { equip = true } },
+        }
+    else
+        menu[#menu + 1] = {
+            header = 'Nuimti įrangą',
+            txt = 'Įranga grąžinama į inventorių.',
+            params = { event = 'mrp_siren:client:setEmsEmergencyKit', args = { equip = false } },
+        }
+    end
+    menu[#menu + 1] = { header = '< Užverti meniu', params = { event = 'qb-menu:client:closeMenu' } }
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end
+
+RegisterNetEvent('mrp_siren:client:openEmsEmergencyKitMenu', function()
+    openEmsKitMenu()
+end)
+
+RegisterNetEvent('mrp_siren:client:setEmsEmergencyKit', function(data)
+    local equip = data and data.equip == true
+    TriggerServerEvent('mrp_siren:server:setEmsEmergencyKit', equip)
+end)
