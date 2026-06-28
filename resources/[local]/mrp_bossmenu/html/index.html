@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frakcijos vadovybė</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="root" class="bm-root hidden">
+        <div class="bm-backdrop"></div>
+        <div class="bm-shell">
+            <header class="bm-head">
+                <div class="bm-head-left">
+                    <div class="bm-logo">◆</div>
+                    <div>
+                        <div class="bm-title" id="jobLabel">Frakcijos vadovybė</div>
+                        <div class="bm-sub" id="jobSub">Valdymo centras</div>
+                    </div>
+                </div>
+                <div class="bm-head-stats">
+                    <div class="bm-stat"><span>Fondas</span><strong id="fundBalance">$0</strong></div>
+                    <div class="bm-stat"><span>Tarnyboje</span><strong id="onlineCount">0</strong></div>
+                </div>
+                <button type="button" class="bm-close" id="btnClose" aria-label="Uždaryti">✕</button>
+            </header>
+
+            <nav class="bm-tabs" id="tabs">
+                <button type="button" class="bm-tab active" data-tab="overview">Apžvalga</button>
+                <button type="button" class="bm-tab" data-tab="members">Darbuotojai</button>
+                <button type="button" class="bm-tab" data-tab="ranks">Rangai</button>
+                <button type="button" class="bm-tab hidden" data-tab="divisions" id="tabDivisions">Divizijos</button>
+                <button type="button" class="bm-tab" data-tab="fund">Fondas &amp; algos</button>
+            </nav>
+
+            <main class="bm-body">
+                <section class="bm-panel active" data-panel="overview">
+                    <div class="bm-cards">
+                        <article class="bm-card">
+                            <h3>Frakcijos fondas</h3>
+                            <p class="bm-big" id="overviewFund">$0</p>
+                            <p class="bm-muted">Algos mokamos iš šio fondo, kai įjungta.</p>
+                        </article>
+                        <article class="bm-card">
+                            <h3>Algos</h3>
+                            <p class="bm-big" id="overviewSalary">Aktyvios</p>
+                            <p class="bm-muted" id="overviewMultiplier">Koeficientas: 1.00×</p>
+                        </article>
+                        <article class="bm-card">
+                            <h3>Prisijungę</h3>
+                            <p class="bm-big" id="overviewOnline">0</p>
+                            <p class="bm-muted">Tavo rangas: <span id="overviewGrade">—</span></p>
+                        </article>
+                    </div>
+                    <div class="bm-actions-row">
+                        <button type="button" class="bm-btn secondary" id="btnRefresh">Atnaujinti</button>
+                        <button type="button" class="bm-btn secondary" id="btnDuty">Tarnyba ON/OFF</button>
+                    </div>
+                </section>
+
+                <section class="bm-panel" data-panel="members">
+                    <div class="bm-split">
+                        <div class="bm-list-wrap">
+                            <h3>Prisijungę nariai</h3>
+                            <div class="bm-list" id="membersList"></div>
+                        </div>
+                        <div class="bm-form-wrap">
+                            <h3>Personalo veiksmai</h3>
+                            <label>Serverio ID<input type="number" id="memberId" min="1" placeholder="ID" /></label>
+                            <label>Rangas<select id="memberGrade"></select></label>
+                            <label class="hidden" id="memberDivisionWrap">Divizija<select id="memberDivision"></select></label>
+                            <div class="bm-actions-row">
+                                <button type="button" class="bm-btn" id="btnHire">Įdarbinti</button>
+                                <button type="button" class="bm-btn danger" id="btnFire">Atleisti</button>
+                                <button type="button" class="bm-btn secondary" id="btnSetGrade">Keisti rangą</button>
+                            </div>
+                            <button type="button" class="bm-btn secondary hidden" id="btnSetDivision">Keisti diviziją</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bm-panel" data-panel="ranks">
+                    <div class="bm-toolbar">
+                        <h3>Rangų hierarchija</h3>
+                        <button type="button" class="bm-btn small hidden" id="btnAddGrade">+ Naujas rangas</button>
+                    </div>
+                    <div class="bm-list" id="ranksList"></div>
+                    <div class="bm-editor hidden" id="rankEditor">
+                        <h4 id="rankEditorTitle">Redaguoti rangą</h4>
+                        <label>Pavadinimas<input type="text" id="rankName" /></label>
+                        <label>Alga ($)<input type="number" id="rankPayment" min="0" /></label>
+                        <div class="bm-checks">
+                            <label><input type="checkbox" id="rankIsBoss" /> Vadas</label>
+                            <label><input type="checkbox" id="rankIsDeputy" /> Pavaduotojas</label>
+                        </div>
+                        <div class="bm-perms" id="rankPerms"></div>
+                        <div class="bm-actions-row">
+                            <button type="button" class="bm-btn" id="btnSaveRank">Išsaugoti</button>
+                            <button type="button" class="bm-btn secondary" id="btnCancelRank">Atšaukti</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bm-panel" data-panel="divisions">
+                    <div class="bm-toolbar">
+                        <h3>Divizijos</h3>
+                        <button type="button" class="bm-btn small hidden" id="btnAddDivision">+ Nauja divizija</button>
+                    </div>
+                    <div class="bm-list" id="divisionsList"></div>
+                    <div class="bm-editor hidden" id="divisionEditor">
+                        <h4>Divizijos redagavimas</h4>
+                        <label>ID (trumpas kodas)<input type="text" id="divId" placeholder="pvz. spec_ops" /></label>
+                        <label>Pavadinimas<input type="text" id="divLabel" /></label>
+                        <label>Trumpinys (rago žymė)<input type="text" id="divAbbr" maxlength="8" /></label>
+                        <label>Aprašymas<input type="text" id="divDesc" /></label>
+                        <label>Min. rangas<input type="number" id="divMinGrade" min="0" /></label>
+                        <label><input type="checkbox" id="divChoosable" checked /> Galima pasirinkti pareigūnui</label>
+                        <div class="bm-actions-row">
+                            <button type="button" class="bm-btn" id="btnSaveDivision">Išsaugoti</button>
+                            <button type="button" class="bm-btn secondary" id="btnCancelDivision">Atšaukti</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bm-panel" data-panel="fund">
+                    <div class="bm-split">
+                        <div class="bm-form-wrap">
+                            <h3>Fondo operacijos</h3>
+                            <p class="bm-muted bm-note hidden" id="fundLocked">Tik vadas / pavaduotojas gali valdyti fondą.</p>
+                            <label>Suma<input type="number" id="fundAmount" min="1" placeholder="Suma $" /></label>
+                            <div class="bm-actions-row">
+                                <button type="button" class="bm-btn" id="btnDeposit">Įdėti į fondą</button>
+                                <button type="button" class="bm-btn secondary" id="btnWithdraw">Išimti iš fondo</button>
+                            </div>
+                        </div>
+                        <div class="bm-form-wrap">
+                            <h3>Algų nustatymai</h3>
+                            <label class="bm-toggle"><input type="checkbox" id="salaryEnabled" /> Algų mokėjimas iš fondo</label>
+                            <label>Koeficientas (0–3)<input type="number" id="salaryMultiplier" min="0" max="3" step="0.05" /></label>
+                            <button type="button" class="bm-btn" id="btnSaveSalary">Išsaugoti algų nustatymus</button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

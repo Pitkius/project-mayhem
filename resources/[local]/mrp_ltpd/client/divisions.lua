@@ -2,7 +2,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local pdGrade = 0
-local pdDivision = 'patrol'
+local pdDivision = 'mp'
 local pdEffective = 'lpm'
 
 local function refreshFromPlayer()
@@ -122,4 +122,9 @@ CreateThread(function()
     Wait(1500)
     refreshFromPlayer()
     SyncPdDivisionState()
+end)
+
+RegisterNetEvent('mrp_ltpd:client:patchDivisions', function(divisions)
+    if type(divisions) ~= 'table' then return end
+    Config.Divisions = divisions
 end)

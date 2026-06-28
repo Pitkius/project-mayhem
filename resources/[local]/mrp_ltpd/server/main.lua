@@ -395,7 +395,10 @@ end
 MySQL.ready(function()
     ensureTables()
     migrateLtpdJobToPolice()
-    MySQL.update.await("UPDATE ltpd_profiles SET division = 'aro' WHERE division = 'aras' OR division = 'ARAS'")
+    MySQL.update.await("UPDATE ltpd_profiles SET division = 'sor' WHERE division IN ('aro', 'aras', 'ARAS')")
+    MySQL.update.await("UPDATE ltpd_profiles SET division = 'mp' WHERE division = 'patrol'")
+    MySQL.update.await("UPDATE ltpd_profiles SET division = 'kpd' WHERE division = 'traffic'")
+    MySQL.update.await("UPDATE ltpd_profiles SET division = 'ktd' WHERE division = 'criminal'")
 end)
 
 local function getGrade(src)
@@ -419,6 +422,12 @@ local function hasPerm(src, key)
     if not isLtpdOnDuty(src) then return false end
     local need = Config.Permissions[key]
     if need == nil then return false end
+    if GetResourceState('mrp_bossmenu') == 'started' then
+        local override = exports['mrp_bossmenu']:GetGradePermissionMin('police', getGrade(src), key)
+        if override ~= nil then
+            return getGrade(src) >= override
+        end
+    end
     return getGrade(src) >= need
 end
 
@@ -443,7 +452,7 @@ end
 
 local function getDivisionForCitizenid(citizenid)
     local row = MySQL.single.await('SELECT division FROM ltpd_profiles WHERE citizenid = ?', { citizenid })
-    return PdDivisions.normalize(row and row.division or 'patrol')
+    return PdDivisions.normalize(row and row.division or 'mp')
 end
 
 local function setDivisionForCitizenid(citizenid, division)
@@ -462,7 +471,7 @@ local function defaultDivisionForGrade(grade)
     if grade <= lpmMax then
         return 'lpm'
     end
-    return 'patrol'
+    return 'mp'
 end
 
 local function enforceDivisionForPlayer(src)
@@ -479,8 +488,8 @@ local function enforceDivisionForPlayer(src)
         return 'lpm'
     end
     if stored == 'lpm' then
-        setDivisionForCitizenid(cid, 'patrol')
-        stored = 'patrol'
+        setDivisionForCitizenid(cid, 'mp')
+        stored = 'mp'
     end
     return stored
 end
@@ -533,7 +542,7 @@ local function mdtFullAccess(src)
     if not Player then return false end
     local g = getGrade(src)
     local div = getDivisionForCitizenid(Player.PlayerData.citizenid)
-    if div == 'aro' and g < 5 then
+    if (div == 'sor' or div == 'aro') and g < 5 then
         return false
     end
     local divCfg = Config.Divisions[div]
@@ -1005,7 +1014,7 @@ RegisterNetEvent('mrp_ltpd:server:openPoliceStash', function(stationId, stashInd
     local entry = st.stashes[stashIndex]
     if not entry or not entry.coords or not entry.stashId then return end
     local P = QBCore.Functions.GetPlayer(src)
-    local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'patrol'
+    local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
     if not PdDivisions.canAccessPoint(getGrade(src), div, entry) then
         return TriggerClientEvent('QBCore:Notify', src, 'Neturi prieigos prie šio sandėlio (rangas / padalinys).', 'error')
     end
@@ -1035,7 +1044,7 @@ RegisterNetEvent('mrp_ltpd:server:openArmory', function(stationId)
     local st = getStationById(stationId)
     if not st or not st.armory or not st.armory.coords or not st.armory.stashId then return end
     local P = QBCore.Functions.GetPlayer(src)
-    local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'patrol'
+    local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
     if not PdDivisions.canAccessPoint(getGrade(src), div, st.armory) then
         return TriggerClientEvent('QBCore:Notify', src, 'ARO sandėlis – tik ARO padaliniui.', 'error')
     end
@@ -1137,6 +1146,13 @@ local function nearAnyManagement(src)
     for _, st in ipairs(Config.Stations or {}) do
         if st.management and st.management.coords then
             if #(c - st.management.coords) <= r then
+                return true
+            end
+        end
+        if st.boss and st.boss.coords then
+            local bc = st.boss.coords
+            local pos = vector3(bc.x, bc.y, bc.z)
+            if #(c - pos) <= r then
                 return true
             end
         end
@@ -1728,4 +1744,49 @@ CreateThread(function()
     QBCore.Functions.CreateUseableItem(kitItem, function(source)
         TriggerClientEvent('mrp_ltpd:client:openEmergencyKitMenu', source)
     end)
+end)
+
+local function mergeBossmenuDivisions()
+    if GetResourceState('mrp_bossmenu') ~= 'started' then return end
+    local map = exports['mrp_bossmenu']:GetDivisionsMap('police')
+    for id, div in pairs(map or {}) do
+        Config.Divisions[id] = {
+            label = div.label,
+            abbr = div.abbr,
+            minGrade = div.minGrade,
+            choosable = div.choosable,
+            description = div.description,
+        }
+    end
+    TriggerClientEvent('mrp_ltpd:client:patchDivisions', -1, Config.Divisions)
+end
+
+AddEventHandler('mrp_bossmenu:divisionsUpdated', function(jobName)
+    if jobName ~= 'police' then return end
+    mergeBossmenuDivisions()
+end)
+
+AddEventHandler('mrp_bossmenu:internal:setPdDivision', function(targetId, divisionId)
+    targetId = tonumber(targetId)
+    if not targetId or targetId < 1 then return end
+    local T = QBCore.Functions.GetPlayer(targetId)
+    if not T or not jobIsPd(T.PlayerData.job) then return end
+    divisionId = PdDivisions.normalize(divisionId)
+    if not Config.Divisions[divisionId] then return end
+    setDivisionForCitizenid(T.PlayerData.citizenid, divisionId)
+    syncDivisionClient(targetId)
+end)
+
+AddEventHandler('mrp_bossmenu:internal:setPdDivisionByGrade', function(targetId, grade)
+    targetId = tonumber(targetId)
+    if not targetId or targetId < 1 then return end
+    local T = QBCore.Functions.GetPlayer(targetId)
+    if not T or not jobIsPd(T.PlayerData.job) then return end
+    setDivisionForCitizenid(T.PlayerData.citizenid, defaultDivisionForGrade(grade))
+    syncDivisionClient(targetId)
+end)
+
+CreateThread(function()
+    Wait(2500)
+    mergeBossmenuDivisions()
 end)

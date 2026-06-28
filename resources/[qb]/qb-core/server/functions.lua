@@ -411,6 +411,14 @@ function PaycheckInterval()
                 local payment = QBShared.Jobs[Player.PlayerData.job.name]['grades'][tostring(Player.PlayerData.job.grade.level)].payment
                 if not payment then payment = Player.PlayerData.job.payment end
                 if Player.PlayerData.job and payment > 0 and (QBShared.Jobs[Player.PlayerData.job.name].offDutyPay or Player.PlayerData.job.onduty) then
+                    local handled = false
+                    if GetResourceState('mrp_bossmenu') == 'started' then
+                        local ok, result = pcall(function()
+                            return exports['mrp_bossmenu']:ProcessPaycheck(Player)
+                        end)
+                        handled = ok and result == true
+                    end
+                    if not handled then
                     if QBCore.Config.Money.PayCheckSociety then
                         local account = exports['qb-banking']:GetAccountBalance(Player.PlayerData.job.name)
                         if account ~= 0 then
@@ -428,6 +436,7 @@ function PaycheckInterval()
                     else
                         Player.Functions.AddMoney('bank', payment, 'paycheck')
                         TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, Lang:t('info.received_paycheck', { value = payment }))
+                    end
                     end
                 end
                 Wait(50)

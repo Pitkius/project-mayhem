@@ -634,11 +634,11 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
         return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
     end
     local lockerMode = (type(data) == 'table' and data.lockerMode) or 'standard'
-    local title = lockerMode == 'aro' and 'ARO rūbinė' or 'Tarnybinė apranga'
-    if lockerMode == 'aro' then
+    local title = (lockerMode == 'aro' or lockerMode == 'sor') and 'SOR rūbinė' or 'Tarnybinė apranga'
+    if lockerMode == 'aro' or lockerMode == 'sor' then
         local eff = exports['mrp_ltpd']:GetPdEffectiveDivision()
-        if eff ~= 'aro' then
-            return QBCore.Functions.Notify('ARO rūbinė – tik ARO padaliniui (/pddept).', 'error')
+        if eff ~= 'sor' and eff ~= 'aro' then
+            return QBCore.Functions.Notify('SOR rūbinė – tik SOR padaliniui (/pddept).', 'error')
         end
     end
     local P = QBCore.Functions.GetPlayerData()
@@ -687,14 +687,14 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
             },
         },
     }
-    if lockerMode ~= 'aro' and grade >= chooseMin then
+    if lockerMode ~= 'aro' and lockerMode ~= 'sor' and grade >= chooseMin then
         menu[#menu + 1] = {
             header = 'Keisti padalinį',
-            txt = 'Patruliai, kriminalistai, ARO, kelių policija…',
+            txt = 'MP, KPD, KTD, SOR, OPD, KD, VTD…',
             params = { event = 'mrp_ltpd:client:openChooseDivisionMenu' },
         }
     end
-    if lockerMode ~= 'aro' then
+    if lockerMode ~= 'aro' and lockerMode ~= 'sor' then
         menu[#menu + 1] = {
             header = 'Baigti tarnybą',
             txt = 'Civilio apranga (pamainą baigti prie pamainos NPC rūbinėje)',

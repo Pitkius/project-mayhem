@@ -15,7 +15,7 @@ end
 
 local function getDivisionForCitizenid(citizenid)
     local row = MySQL.single.await('SELECT division FROM ltpd_profiles WHERE citizenid = ?', { citizenid })
-    return PdDivisions.normalize(row and row.division or 'patrol')
+    return PdDivisions.normalize(row and row.division or 'mp')
 end
 
 local function getCraftProfile(citizenid)
@@ -42,7 +42,7 @@ end
 
 local function ensureProfileRow(citizenid)
     MySQL.query.await('INSERT IGNORE INTO ltpd_profiles (citizenid, division) VALUES (?, ?)', {
-        citizenid, 'patrol',
+        citizenid, 'mp',
     })
 end
 
@@ -79,7 +79,7 @@ local function hasCraftPerm(src, st)
     if st and st.minGrade and grade < st.minGrade then return false end
     if st and st.divisions and #st.divisions > 0 then
         local P = QBCore.Functions.GetPlayer(src)
-        local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'patrol'
+        local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
         local ok = false
         for _, d in ipairs(st.divisions) do
             if d == div then ok = true break end

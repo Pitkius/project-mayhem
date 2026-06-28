@@ -2,8 +2,12 @@
 PdDivisions = PdDivisions or {}
 
 local ALIASES = {
-    aras = 'aro',
-    ARAS = 'aro',
+    aras = 'sor',
+    ARAS = 'sor',
+    aro = 'sor',
+    patrol = 'mp',
+    traffic = 'kpd',
+    criminal = 'ktd',
 }
 
 local function rules()
@@ -11,7 +15,7 @@ local function rules()
 end
 
 function PdDivisions.normalize(divisionId)
-    local d = tostring(divisionId or 'patrol'):lower()
+    local d = tostring(divisionId or 'mp'):lower()
     return ALIASES[d] or d
 end
 
@@ -24,12 +28,12 @@ function PdDivisions.effectiveDivision(grade, storedDivision)
         return 'lpm'
     end
     if stored == 'lpm' then
-        return 'patrol'
+        return 'mp'
     end
     if Config.Divisions and Config.Divisions[stored] then
         return stored
     end
-    return 'patrol'
+    return 'mp'
 end
 
 function PdDivisions.isChoosable(divisionId)
@@ -77,7 +81,9 @@ function PdDivisions.listChoosable(grade)
     local out = {}
     for id, cfg in pairs(Config.Divisions or {}) do
         if cfg.choosable and grade >= (tonumber(cfg.minGrade) or chooseMin) then
-            out[#out + 1] = { id = id, label = cfg.label or id }
+            local label = cfg.label or id
+            if cfg.abbr then label = ('[%s] %s'):format(cfg.abbr, label) end
+            out[#out + 1] = { id = id, label = label }
         end
     end
     table.sort(out, function(a, b) return a.label < b.label end)
@@ -92,30 +98,33 @@ function PdDivisions.outfitAllowed(outfit, lockerMode, grade, storedDivision)
     end
     local mode = tostring(lockerMode or 'standard'):lower()
     local divs = outfit.divisions
-    if mode == 'aro' then
+    if mode == 'aro' or mode == 'sor' then
         if Config.AroLockerShowsAllUniforms then
-            return PdDivisions.effectiveDivision(grade, storedDivision) == 'aro'
+            local eff = PdDivisions.effectiveDivision(grade, storedDivision)
+            return eff == 'sor' or eff == 'aro'
         end
         if not divs or #divs == 0 then
             return false
         end
         for _, d in ipairs(divs) do
-            if PdDivisions.normalize(d) == 'aro' then
+            local nd = PdDivisions.normalize(d)
+            if nd == 'sor' or nd == 'aro' then
                 return true
             end
         end
         return false
     end
-    -- Standartinė rūbinė – nerodyti tik ARO skirtų
+    -- Standartinė rūbinė – nerodyti tik SOR/ARO skirtų
     if divs and #divs > 0 then
-        local onlyAro = true
+        local onlyTactical = true
         for _, d in ipairs(divs) do
-            if PdDivisions.normalize(d) ~= 'aro' then
-                onlyAro = false
+            local nd = PdDivisions.normalize(d)
+            if nd ~= 'sor' and nd ~= 'aro' then
+                onlyTactical = false
                 break
             end
         end
-        if onlyAro then
+        if onlyTactical then
             return false
         end
     end

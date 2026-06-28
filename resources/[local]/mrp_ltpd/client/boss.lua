@@ -25,6 +25,9 @@ local function openBossMenu()
     if not canOpenBoss() then
         return QBCore.Functions.Notify('Neturi teisės naudoti vadovybės meniu.', 'error')
     end
+    if GetResourceState('mrp_bossmenu') == 'started' then
+        return exports['mrp_bossmenu']:OpenBossMenu(Config.JobName or 'police')
+    end
     if GetResourceState('qb-menu') ~= 'started' then
         return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
     end

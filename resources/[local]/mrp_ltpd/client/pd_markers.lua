@@ -205,7 +205,7 @@ local function registerAllPdMarkers()
                 label = st.locker2.label or 'ARO rūbinė',
                 access = {
                     minGrade = st.locker2.minGrade or 0,
-                    divisions = st.locker2.divisions or { 'aro' },
+                    divisions = st.locker2.divisions or { 'sor' },
                     excludeDivisions = st.locker2.excludeDivisions,
                 },
                 onPress = function()
