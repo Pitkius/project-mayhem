@@ -18,8 +18,10 @@ body {
 }
 
 #app {
-  --fp-edge: rgba(72, 200, 170, 0.26);
-  --fp-edge-soft: rgba(72, 200, 170, 0.16);
+  --fp-accent: #a78bfa;
+  --fp-accent-soft: #c4b5fd;
+  --fp-edge: rgba(167, 139, 250, 0.28);
+  --fp-edge-soft: rgba(167, 139, 250, 0.16);
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -46,7 +48,7 @@ body {
   position: relative;
   flex: 1;
   background: transparent;
-  color: #e8f4f0;
+  color: #e5e7eb;
 }
 
 .panel-chrome {
@@ -77,8 +79,8 @@ body {
   font-size: 1.15rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #f2fffb;
-  text-shadow: 0 1px 12px rgba(80, 220, 180, 0.25);
+  color: #f5f3ff;
+  text-shadow: 0 1px 14px rgba(167, 139, 250, 0.35);
 }
 
 .close {
@@ -127,7 +129,7 @@ body {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #7ec4b8;
+  color: var(--fp-accent-soft);
   margin-bottom: 12px;
 }
 
@@ -140,9 +142,9 @@ body {
 .veh-btn {
   width: 100%;
   text-align: left;
-  border: 1px solid rgba(72, 200, 170, 0.2);
+  border: 1px solid rgba(167, 139, 250, 0.22);
   background: rgba(255, 255, 255, 0.035);
-  color: #d8ebe7;
+  color: #e2e8f0;
   padding: 10px 12px;
   border-radius: 10px;
   cursor: pointer;
@@ -152,24 +154,24 @@ body {
 
 .veh-btn:hover {
   background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(100, 220, 190, 0.35);
+  border-color: rgba(196, 181, 253, 0.4);
 }
 
 .veh-btn.active {
   background: linear-gradient(
     135deg,
-    rgba(40, 160, 120, 0.35) 0%,
-    rgba(30, 120, 100, 0.45) 100%
+    rgba(139, 92, 246, 0.38) 0%,
+    rgba(91, 33, 182, 0.42) 100%
   );
-  border-color: rgba(100, 240, 200, 0.55);
-  box-shadow: 0 0 20px rgba(60, 200, 160, 0.15);
+  border-color: rgba(196, 181, 253, 0.55);
+  box-shadow: 0 0 22px rgba(167, 139, 250, 0.22);
   color: #fff;
 }
 
 .veh-btn .veh-sub {
   display: block;
   font-size: 0.72rem;
-  color: #8eb8ae;
+  color: #94a3b8;
   margin-top: 4px;
 }
 
@@ -201,7 +203,7 @@ body {
   font-size: 0.65rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(200, 240, 230, 0.35);
+  color: rgba(196, 181, 253, 0.4);
   pointer-events: none;
 }
 
@@ -238,15 +240,16 @@ body {
 
 .selected-fuel {
   font-size: clamp(1rem, 1.8vw, 1.35rem);
-  color: #5df0ca;
+  color: var(--fp-accent-soft);
   font-weight: 700;
   white-space: nowrap;
+  text-shadow: 0 0 22px rgba(167, 139, 250, 0.45);
 }
 
 .selected-plate {
   font-size: 0.95rem;
   letter-spacing: 0.08em;
-  color: #b9d6d0;
+  color: #cbd5e1;
   margin-top: -6px;
 }
 
@@ -258,34 +261,35 @@ body {
 
 .stats > div {
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(72, 200, 170, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.14);
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 0.82rem;
-  color: #a8cfc6;
+  color: #94a3b8;
 }
 
 .stats span {
-  color: #e2f7f2;
+  color: #f5f3ff;
   font-weight: 600;
 }
 
 .status-line {
   font-size: 0.88rem;
-  color: #c4e8df;
+  color: #cbd5e1;
   padding: 8px 10px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(72, 200, 170, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.15);
 }
 
 .status-line.ok {
-  border-color: rgba(80, 200, 160, 0.45);
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #ede9fe;
 }
 
 .status-line.warn {
-  border-color: rgba(220, 160, 60, 0.45);
-  color: #f0d9a8;
+  border-color: rgba(251, 191, 36, 0.45);
+  color: #fde68a;
 }
 
 .controls {
@@ -295,9 +299,9 @@ body {
 }
 
 .controls button {
-  border: 1px solid rgba(72, 200, 170, 0.28);
+  border: 1px solid rgba(167, 139, 250, 0.28);
   background: rgba(255, 255, 255, 0.06);
-  color: #e9f7f4;
+  color: #e5e7eb;
   padding: 10px 16px;
   border-radius: 10px;
   cursor: pointer;
@@ -308,7 +312,7 @@ body {
 
 .controls button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(100, 220, 190, 0.45);
+  border-color: rgba(196, 181, 253, 0.45);
 }
 
 .controls button:active:not(:disabled) {
@@ -316,9 +320,9 @@ body {
 }
 
 .controls .buy {
-  background: linear-gradient(180deg, rgba(32, 170, 110, 0.75) 0%, rgba(18, 120, 85, 0.9) 100%);
-  border-color: rgba(100, 240, 190, 0.65);
-  box-shadow: 0 6px 22px rgba(20, 140, 100, 0.35);
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.82) 0%, rgba(91, 33, 182, 0.92) 100%);
+  border-color: rgba(196, 181, 253, 0.65);
+  box-shadow: 0 6px 22px rgba(124, 58, 237, 0.35);
   color: #fff;
 }
 
@@ -366,7 +370,7 @@ body {
 }
 
 .cars::-webkit-scrollbar-thumb {
-  background: rgba(72, 200, 170, 0.35);
+  background: rgba(167, 139, 250, 0.35);
   border-radius: 4px;
 }
 
@@ -394,18 +398,18 @@ body {
 }
 
 .car-card:hover {
-  border-color: rgba(100, 220, 190, 0.55);
+  border-color: rgba(196, 181, 253, 0.55);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 8px 28px rgba(0, 0, 0, 0.35);
 }
 
 .car-card.active {
-  border-color: rgba(100, 240, 200, 0.9);
+  border-color: rgba(196, 181, 253, 0.9);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 1px rgba(100, 240, 200, 0.35),
-    0 10px 32px rgba(40, 160, 120, 0.22);
+    0 0 0 1px rgba(167, 139, 250, 0.35),
+    0 10px 32px rgba(124, 58, 237, 0.22);
 }
 
 .car-card.disabled {
@@ -441,15 +445,21 @@ body {
 }
 
 .car-plate {
-  color: #5df0ca;
+  color: var(--fp-accent-soft);
   font-weight: 700;
   margin-top: 4px;
   font-size: 0.82rem;
 }
 
+.car-status {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
 .empty-msg {
   padding: 12px;
   font-size: 0.9rem;
-  color: #9ec5bf;
+  color: #94a3b8;
   text-align: center;
 }

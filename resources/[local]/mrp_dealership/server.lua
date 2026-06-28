@@ -206,16 +206,22 @@ local function randomNumbers(n)
     return s
 end
 
-local function generatePlate()
-    return (randomNumbers(1) .. randomLetters(2) .. randomNumbers(3) .. randomLetters(1)):upper()
-end
-
 local function isPlateFree(plate)
     local r = MySQL.scalar.await('SELECT plate FROM player_vehicles WHERE plate = ? LIMIT 1', { plate })
     return not r
 end
 
+local function generatePlate()
+    if GetResourceState('mrp_plates') == 'started' then
+        return exports['mrp_plates']:GenerateText()
+    end
+    return (randomNumbers(1) .. randomLetters(2) .. randomNumbers(3) .. randomLetters(1)):upper()
+end
+
 local function getUniquePlate()
+    if GetResourceState('mrp_plates') == 'started' then
+        return exports['mrp_plates']:GenerateUnique()
+    end
     for _ = 1, 25 do
         local p = generatePlate()
         if isPlateFree(p) then
@@ -226,6 +232,9 @@ local function getUniquePlate()
 end
 
 local function buildPurchaseProps(hash, plate, colorIdx)
+    if GetResourceState('mrp_plates') == 'started' then
+        return exports['mrp_plates']:BuildVehicleProps(hash, plate, colorIdx)
+    end
     local props = {
         model = hash,
         plate = plate,
@@ -266,6 +275,35 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_dealership:server:getCatalog', function(_, cb)
     cb(buildCatalog())
+end)
+
+CreateThread(function()
+    Wait(3000)
+    local rehExpected = Config.RehModels and #Config.RehModels or 0
+    if rehExpected == 0 then return end
+
+    local rehSet = {}
+    for _, model in ipairs(Config.RehModels) do
+        rehSet[string.lower(model)] = true
+    end
+
+    local catalog = buildCatalog()
+    local rehInCatalog = 0
+    for _, veh in ipairs(catalog.vehicles) do
+        if rehSet[veh.model] then
+            rehInCatalog = rehInCatalog + 1
+        end
+    end
+
+    print(('[mrp_dealership] Simion catalog: %d vehicles, REH addon: %d / %d expected'):format(
+        #catalog.vehicles, rehInCatalog, rehExpected
+    ))
+
+    if rehInCatalog == 0 then
+        print('^1[mrp_dealership] WARNING: no REH addon cars in catalog — restart qb-core after vehicles_reh.lua changes')
+    elseif rehInCatalog < rehExpected then
+        print(('^3[mrp_dealership] WARNING: %d REH models missing from catalog (blocked or shop != pdm)'):format(rehExpected - rehInCatalog))
+    end
 end)
 
 local function buildPoliceCatalog()

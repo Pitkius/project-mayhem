@@ -10,7 +10,8 @@ ui_page 'html/index.html'
 
 shared_scripts {
     '@qb-core/shared/locale.lua',
-    'config.lua'
+    'config.lua',
+    '@mrp_dealership/config_reh_prices.lua',
 }
 
 client_scripts {
@@ -27,4 +28,9 @@ files {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server.lua'
+}
+
+dependencies {
+    'qb-core',
+    'mrp_dealership',
 }

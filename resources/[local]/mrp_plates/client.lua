@@ -1,0 +1,81 @@
+local textureReady = false
+local patternApplied = false
+
+local function applyPlateTextPatterns()
+    if patternApplied then return end
+    local pattern = Config.PlatePattern or '111 AAA'
+    for i = 0, 5 do
+        SetDefaultVehicleNumberPlateTextPattern(i, pattern)
+    end
+    patternApplied = true
+end
+
+local function replacePlateTextures()
+    if textureReady then return true end
+
+    local dict = Config.TextureDict or 'mrp_plates_txd'
+    local tex = Config.PlateTexture or 'plate01'
+    local file = Config.PlateTextureFile or 'textures/plate01.png'
+
+    if not LoadResourceFile(GetCurrentResourceName(), file) then
+        print('^1[mrp_plates] Missing textures/plate01.png^7')
+        return false
+    end
+
+    local txd = CreateRuntimeTxd(dict)
+    CreateRuntimeTextureFromImage(txd, tex, file)
+
+    RequestStreamedTextureDict(dict, false)
+    local tries = 0
+    while not HasStreamedTextureDictLoaded(dict) and tries < 100 do
+        Wait(0)
+        tries = tries + 1
+    end
+
+    RemoveReplaceTexture('vehshare', 'plate01')
+    AddReplaceTexture('vehshare', 'plate01', dict, tex)
+
+    textureReady = true
+    print('^2[mrp_plates] MRP violet plate texture loaded^7')
+    return true
+end
+
+local function applyPlateStyle(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    if GetEntityType(vehicle) ~= 2 then return end
+
+    local idx = tonumber(Config.DefaultPlateIndex) or 0
+    SetVehicleNumberPlateTextIndex(vehicle, idx)
+end
+
+exports('ApplyPlateStyle', applyPlateStyle)
+
+CreateThread(function()
+    applyPlateTextPatterns()
+    replacePlateTextures()
+
+    while true do
+        local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+        if veh ~= 0 then
+            applyPlateStyle(veh)
+        end
+        Wait(1500)
+    end
+end)
+
+AddEventHandler('gameEventTriggered', function(name, data)
+    if name ~= 'CEventNetworkEntityCreated' then return end
+    local entity = data[1]
+    if not entity or entity == 0 or GetEntityType(entity) ~= 2 then return end
+    CreateThread(function()
+        Wait(50)
+        if DoesEntityExist(entity) then
+            applyPlateStyle(entity)
+        end
+    end)
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    RemoveReplaceTexture('vehshare', 'plate01')
+end)

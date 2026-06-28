@@ -68,27 +68,43 @@ function setSelected(vehicle) {
   renderCars();
 }
 
-function vehicleImageCandidates(model) {
+function vehicleImageCandidates(model, image) {
   const m = String(model || '')
     .trim()
     .toLowerCase()
     .replace(/^[\s\S]*\//g, '')
     .replace(/\s+/g, '');
-  const slug = /^[a-z0-9_]+$/.test(m) ? m : 'default';
+  const slug = /^[a-z0-9_]+$/.test(m) ? m : 'sultan';
   const resName = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'mrp_garages';
   const base = `nui://${resName}/html/assets/vehicles`;
-  const docSlug = /^[a-z0-9_]+$/.test(slug) ? slug : 'sultan';
-  return [`${base}/${slug}.png`, `${base}/${slug}.webp`, `${base}/default.webp`, `${base}/default.png`, `https://docs.fivem.net/vehicles/${docSlug}.webp`];
+  const urls = [
+    `https://docs.fivem.net/vehicles/${slug}.webp`,
+    `nui://mrp_dealership/html/images/vehicles/${slug}.webp`,
+    `${base}/${slug}.webp`,
+    `${base}/${slug}.png`,
+    `${base}/default.webp`,
+  ];
+  if (image && typeof image === 'string') {
+    const rest = urls.filter((u) => u !== image);
+    return [image, ...rest];
+  }
+  return urls;
 }
 
-function bindVehicleThumbnail(imgEl, model) {
-  const urls = vehicleImageCandidates(model);
+function bindVehicleThumbnail(imgEl, model, image) {
+  const urls = vehicleImageCandidates(model, image);
   let attempt = 0;
   imgEl.style.opacity = '1';
   imgEl.onerror = () => {
     attempt += 1;
     if (attempt < urls.length) {
-      imgEl.src = urls[attempt];
+      const next = urls[attempt];
+      if (next.endsWith('.webp')) {
+        imgEl.dataset.fallbackStep = '1';
+      } else if (next.endsWith('.jpg')) {
+        imgEl.dataset.fallbackStep = '2';
+      }
+      imgEl.src = next;
       return;
     }
     imgEl.onerror = null;
@@ -129,12 +145,12 @@ function renderCars() {
     const img = document.createElement('img');
     img.className = 'car-img';
     img.alt = veh.model || '';
-    bindVehicleThumbnail(img, veh.model);
+    bindVehicleThumbnail(img, veh.model, veh.image);
     card.appendChild(img);
 
     const info = document.createElement('div');
     info.className = 'car-info';
-    info.innerHTML = `<div>${veh.displayName || veh.model}</div><div class="car-plate">${veh.plate}</div><div style="margin-top:4px;font-size:0.75rem;color:#9ec5bf">${veh.statusLabel}</div>`;
+    info.innerHTML = `<div>${veh.displayName || veh.model}</div><div class="car-plate">${veh.plate}</div><div class="car-status">${veh.statusLabel}</div>`;
     card.appendChild(info);
 
     carsEl.appendChild(card);

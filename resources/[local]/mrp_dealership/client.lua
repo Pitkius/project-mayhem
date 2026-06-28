@@ -485,6 +485,9 @@ local function spawnPurchasedVehicle(result, colorIdx, successMsg, spawnFailMsg)
     SetModelAsNoLongerNeeded(modelHash)
     if veh and veh ~= 0 then
         SetVehicleNumberPlateText(veh, result.plate)
+        if GetResourceState('mrp_plates') == 'started' then
+            exports['mrp_plates']:ApplyPlateStyle(veh)
+        end
         applyPurchasedVehicleColor(veh, colorIdx)
         SetVehicleEngineOn(veh, true, true, false)
         SetEntityAsMissionEntity(veh, true, true)

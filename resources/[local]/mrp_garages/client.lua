@@ -131,6 +131,22 @@ local function getVehicleDisplayName(model)
     return model
 end
 
+local REH_IMAGE_MODELS = {}
+if Config.RehModels then
+    for _, m in ipairs(Config.RehModels) do
+        REH_IMAGE_MODELS[tostring(m):lower()] = true
+    end
+end
+
+local function getVehicleImageUrl(model)
+    model = tostring(model or ''):lower()
+    if model == '' then return nil end
+    if REH_IMAGE_MODELS[model] and GetResourceState('mrp_dealership') == 'started' then
+        return ('nui://mrp_dealership/html/images/vehicles/%s.webp'):format(model)
+    end
+    return ('https://docs.fivem.net/vehicles/%s.webp'):format(model)
+end
+
 local function getConfiguredMaxKmh(model)
     if GetResourceState('mrp_vehicle_perf') ~= 'started' then return nil end
     local ok, kmh = pcall(function()
@@ -325,6 +341,7 @@ local function buildGarageRows(vehicles, garageId)
             model = v.model,
             plate = v.plate,
             displayName = getVehicleDisplayName(v.model),
+            image = getVehicleImageUrl(v.model),
             fuel = math.floor(math.max(0, math.min(100, tonumber(v.fuel) or 0)) + 0.5),
             state = state,
             statusLabel = statusLabel,
@@ -419,6 +436,9 @@ local function doGarageVehicleSpawn(data)
             if ok and mods and QBCore.Functions.SetVehicleProperties then
                 QBCore.Functions.SetVehicleProperties(veh, mods)
             end
+        end
+        if GetResourceState('mrp_plates') == 'started' then
+            exports['mrp_plates']:ApplyPlateStyle(veh)
         end
         if result.fuel ~= nil and SetVehicleFuelLevel then
             SetVehicleFuelLevel(veh, math.max(0.0, math.min(100.0, tonumber(result.fuel) + 0.0)))

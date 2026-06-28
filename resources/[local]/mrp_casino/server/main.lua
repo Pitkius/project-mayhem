@@ -273,6 +273,9 @@ CreateThread(function()
 end)
 
 local function getUniquePlate()
+    if GetResourceState('mrp_plates') == 'started' then
+        return exports['mrp_plates']:GenerateUnique()
+    end
     local chars = 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789'
     for _ = 1, 80 do
         local plate = 'C'
@@ -292,7 +295,12 @@ local function giveJackpotVehicle(Player)
     local wonLabel = jackpotCar.label or model
     local plate = getUniquePlate()
     local hash = joaat(model)
-    local props = { model = hash, plate = plate }
+    local props
+    if GetResourceState('mrp_plates') == 'started' then
+        props = exports['mrp_plates']:BuildVehicleProps(hash, plate, nil)
+    else
+        props = { model = hash, plate = plate }
+    end
     local garage = (Config.JackpotCar and Config.JackpotCar.garage) or 'casino'
 
     MySQL.insert.await([[

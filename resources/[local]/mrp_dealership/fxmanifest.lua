@@ -35,4 +35,5 @@ server_scripts {
 dependencies {
     'qb-core',
     'mrp_vehicle_perf',
+    'mrp_plates',
 }

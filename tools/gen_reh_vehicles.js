@@ -78,7 +78,7 @@ for (const root of roots) {
 
 const vehicles = [...byModel.values()].sort((a, b) => a.model.localeCompare(b.model));
 
-let out = '-- REH Rebadged Car Pack (auto-generated)\nreturn {\n';
+let out = '-- REH Rebadged Car Pack (auto-generated)\nRehVehicleEntries = {\n';
 for (const v of vehicles) {
   const name = v.name.replace(/'/g, "\\'");
   const brand = v.brand.replace(/'/g, "\\'");

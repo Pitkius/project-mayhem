@@ -765,19 +765,16 @@ local Vehicles = {
     { model = 'formula',         name = 'PR4',                           brand = 'Progen',          price = 100000,  category = 'openwheel',      type = 'automobile', shop = 'none' },
 }
 
--- REH Rebadged Car Pack
+-- REH Rebadged Car Pack (shared/vehicles_reh.lua → RehVehicleEntries)
 do
-    local chunk = LoadResourceFile('qb-core', 'shared/vehicles_reh.lua')
-    if chunk then
-        local fn = load(chunk, '@qb-core/shared/vehicles_reh.lua')
-        if fn then
-            local ok, rehList = pcall(fn)
-            if ok and type(rehList) == 'table' then
-                for i = 1, #rehList do
-                    Vehicles[#Vehicles + 1] = rehList[i]
-                end
-            end
+    local rehList = RehVehicleEntries
+    if type(rehList) ~= 'table' or #rehList == 0 then
+        print('^3[qb-core] REH addon vehicles missing — check shared/vehicles_reh.lua is loaded before vehicles.lua')
+    else
+        for i = 1, #rehList do
+            Vehicles[#Vehicles + 1] = rehList[i]
         end
+        print(('^2[qb-core] Loaded %d REH addon vehicles into Shared.Vehicles'):format(#rehList))
     end
 end
 
