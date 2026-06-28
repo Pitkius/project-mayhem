@@ -361,16 +361,32 @@ function drawToolBox(c) {
 
 function drawScale(c) {
   c.addGroundShadow();
-  c.fillRoundRect(88, 138, 80, 12, 5, ...hex('#3f3f46'), 255);
-  c.fillRoundRect(96, 118, 64, 24, 6, ...hex('#18181b'), 255);
-  c.fillRoundRect(102, 124, 52, 12, 3, ...hex('#052e16'), 255);
-  c.fillRect(108, 126, 28, 3, ...hex('#4ade80'), 200);
-  c.fillRect(138, 126, 8, 3, ...hex('#4ade80'), 160);
-  c.fillRoundRect(112, 108, 32, 14, 4, ...hex('#a1a1aa'), 255);
-  c.fillCircle(104, 150, 14, 6, ...hex('#71717a'), 255);
-  c.fillCircle(152, 150, 14, 6, ...hex('#71717a'), 255);
-  c.fillCircle(104, 150, 10, 4, ...hex('#a1a1aa'), 220);
-  c.fillCircle(152, 150, 10, 4, ...hex('#a1a1aa'), 220);
+  c.fillCircle(CX, CY + 82, 70, 16, ...hex('#000000'), 40);
+  // platform glass
+  c.fillRoundRect(52, 148, 152, 22, 8, ...hex('#d4d4d8'), 255);
+  c.fillRoundRect(58, 152, 140, 10, 5, ...hex('#f4f4f5'), 220);
+  c.fillRect(72, 154, 48, 3, ...STYLE.highlight, 70);
+  // feet
+  [[68, 172], [104, 172], [152, 172], [188, 172]].forEach(([x, y]) => {
+    c.fillRoundRect(x, y, 16, 10, 4, ...hex('#3f3f46'), 255);
+  });
+  // body
+  c.fillRoundRect(64, 108, 128, 44, 10, ...hex('#18181b'), 255);
+  c.fillRoundRect(70, 112, 116, 36, 8, ...hex('#27272a'), 255);
+  c.strokeRoundRect(78, 118, 100, 24, 6, ...hex('#52525b'), 255, 200, 2);
+  // LCD
+  c.fillRoundRect(82, 122, 92, 16, 4, ...hex('#022c22'), 255);
+  c.fillRect(88, 126, 44, 3, ...hex('#4ade80'), 255);
+  c.fillRect(136, 126, 10, 3, ...hex('#4ade80'), 200);
+  c.fillRect(150, 126, 16, 3, ...hex('#22c55e'), 160);
+  // display label
+  c.fillRoundRect(108, 98, 40, 14, 4, ...hex('#a1a1aa'), 255);
+  c.fillRect(112, 102, 32, 4, ...hex('#71717a'), 180);
+  // side buttons
+  c.fillCircle(58, 130, 4, 4, ...hex('#52525b'), 255);
+  c.fillCircle(198, 130, 4, 4, ...hex('#52525b'), 255);
+  // highlight
+  c.fillRect(72, 114, 36, 2, ...STYLE.highlight, 45);
 }
 
 function drawGloves(c) {
@@ -387,18 +403,33 @@ function drawGloves(c) {
 
 function drawGrowPot(c) {
   c.addGroundShadow();
-  const rim = hex('#71717a');
+  c.fillCircle(CX, CY + 86, 74, 18, ...hex('#000000'), 42);
+  const rim = hex('#a1a1aa');
+  const rimDark = hex('#52525b');
   const pot = hex('#27272a');
   const potDark = hex('#09090b');
   const soil = hex('#92400e');
+  const soilLight = hex('#b45309');
   const soilDark = hex('#451a03');
-  c.fillRoundRect(70, 54, 116, 34, 10, ...rim, 255);
-  c.fillRect(74, 58, 108, 6, ...hex('#a1a1aa'), 90);
-  c.fillRoundRect(78, 86, 100, 108, 8, ...pot, 255);
-  c.fillRoundRect(82, 130, 92, 60, 6, ...potDark, 220);
-  c.fillRoundRect(84, 90, 88, 28, 6, ...soil, 255);
-  c.fillRoundRect(88, 98, 80, 16, 4, ...soilDark, 180);
-  c.fillRect(78, 84, 100, 3, ...hex('#52525b'), 140);
+  // rim
+  c.fillRoundRect(58, 62, 140, 28, 10, ...rimDark, 255);
+  c.fillRoundRect(62, 64, 132, 20, 8, ...rim, 255);
+  c.fillRect(66, 66, 124, 6, ...STYLE.highlight, 55);
+  c.fillRect(62, 78, 132, 4, ...potDark, 200);
+  // body
+  c.fillRoundRect(68, 82, 120, 108, 10, ...potDark, 255);
+  c.fillRoundRect(74, 86, 108, 100, 8, ...pot, 255);
+  c.fillRect(78, 90, 16, 88, ...STYLE.highlight, 22);
+  c.fillRect(162, 94, 10, 80, ...potDark, 90);
+  // soil
+  c.fillRoundRect(80, 96, 96, 72, 8, ...soilDark, 255);
+  c.fillRoundRect(84, 100, 88, 58, 6, ...soil, 255);
+  c.fillRoundRect(88, 104, 80, 20, 5, ...soilLight, 140);
+  [[100, 118], [128, 126], [148, 112], [112, 140], [136, 148]].forEach(([x, y]) => {
+    c.fillCircle(x, y, 3, 2, ...soilDark, 120);
+  });
+  // inner shadow
+  c.fillRect(74, 170, 108, 8, ...potDark, 160);
 }
 
 function drawTrimScissors(c) {
@@ -425,23 +456,44 @@ function drawTrimScissors(c) {
 
 function drawWateringCan(c) {
   c.addGroundShadow();
+  c.fillCircle(CX, CY + 84, 76, 18, ...hex('#000000'), 42);
   const body = hex('#65a30d');
+  const bodyMid = hex('#4d7c0f');
   const bodyDark = hex('#365314');
-  const accent = hex('#a3e635');
+  const accent = hex('#bef264');
   const water = hex('#38bdf8');
-  c.fillRoundRect(68, 102, 92, 98, 16, ...bodyDark, 255);
-  c.fillRoundRect(74, 108, 80, 86, 14, ...body, 255);
-  c.fillRoundRect(82, 132, 64, 46, 10, ...water, 175);
-  c.fillRect(82, 132, 64, 8, ...hex('#7dd3fc'), 90);
-  for (let a = 0; a <= Math.PI; a += 0.1) {
-    const x = 114 + Math.cos(a) * 30;
-    const y = 94 - Math.sin(a) * 24;
-    c.fillCircle(x, y, 5, 5, ...accent, 255);
+  const waterLight = hex('#7dd3fc');
+  const brass = hex('#ca8a04');
+  // main body
+  c.fillRoundRect(62, 108, 108, 96, 22, ...bodyDark, 255);
+  c.fillRoundRect(68, 112, 96, 88, 18, ...body, 255);
+  c.fillRoundRect(74, 118, 84, 72, 14, ...bodyMid, 200);
+  c.fillRect(76, 116, 28, 70, ...STYLE.highlight, 28);
+  // water window
+  c.fillRoundRect(82, 136, 68, 48, 10, ...water, 190);
+  c.fillRoundRect(86, 140, 60, 14, 6, ...waterLight, 120);
+  c.fillRect(88, 158, 56, 20, ...water, 160);
+  // handle arch
+  for (let a = 0; a <= Math.PI; a += 0.08) {
+    const x = 118 + Math.cos(a) * 46;
+    const y = 108 - Math.sin(a) * 34;
+    c.fillCircle(x, y, 7, 7, ...accent, 255);
+    c.fillCircle(x, y, 4, 4, ...bodyDark, 80);
   }
-  c.fillRoundRect(156, 118, 36, 18, 7, ...bodyDark, 255);
-  c.fillRoundRect(188, 114, 28, 12, 5, ...accent, 220);
-  c.fillCircle(218, 120, 5, 5, ...accent, 255);
-  c.fillRoundRect(88, 104, 20, 10, 4, ...bodyDark, 200);
+  c.fillRoundRect(104, 88, 24, 16, 8, ...bodyDark, 220);
+  // spout
+  c.fillRoundRect(158, 124, 44, 22, 8, ...bodyDark, 255);
+  c.fillRoundRect(164, 128, 36, 14, 6, ...bodyMid, 255);
+  c.fillRoundRect(196, 126, 28, 18, 6, ...brass, 255);
+  c.fillCircle(224, 135, 7, 7, ...hex('#fde047'), 255);
+  c.fillCircle(224, 135, 4, 4, ...hex('#facc15'), 200);
+  // rose holes
+  [[218, 132], [226, 130], [222, 138]].forEach(([x, y]) => {
+    c.fillCircle(x, y, 2, 2, ...bodyDark, 200);
+  });
+  // cap
+  c.fillRoundRect(92, 104, 20, 10, 4, ...bodyDark, 230);
+  c.fillRect(96, 106, 12, 3, ...accent, 180);
 }
 
 function drawMetal(c) {

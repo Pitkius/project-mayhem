@@ -13,7 +13,8 @@ CreateThread(function()
     end)
 
     AddEventHandler('QBCore:Server:OnMoneyChange', function(src, moneytype, amount, action, reason)
-        if not src or src <= 0 then return end
+        src = tonumber(src) or 0
+        if src <= 0 then return end
         reason = reason or 'N/A'
         moneytype = moneytype or 'cash'
         amount = tonumber(amount) or 0
@@ -55,7 +56,7 @@ CreateThread(function()
 
         local threshold = Config.Security and Config.Security.suspiciousMoneyThreshold or 500000
         if action == 'add' and amount >= threshold then
-            TriggerEvent('server_logs:securityCheck', 'suspicious_money', { amount = amount, account = moneytype })
+            TriggerEvent('server_logs:securityCheck', 'suspicious_money', { amount = amount, account = moneytype, source = src })
         end
     end)
 end)

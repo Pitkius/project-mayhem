@@ -91,6 +91,13 @@
         <div class="gps-layout">
           <div class="gps-map-wrap">
             <div id="mdtLeafletMap" class="gps-map"></div>
+            <div id="mdtMapOffline" class="gps-map-offline hidden" aria-live="polite">
+              <div class="gps-map-offline-card surv-offline-card">
+                <span class="badge off">NEVEIKIA</span>
+                <h3>GPS žemėlapis</h3>
+                <p class="surv-offline-msg" id="mdtMapOfflineMsg"></p>
+              </div>
+            </div>
             <div class="gps-map-toolbar">
               <button type="button" class="gps-tool-btn" id="dispatchZoomIn" title="Priartinti">+</button>
               <button type="button" class="gps-tool-btn" id="dispatchZoomOut" title="Nutolinti">−</button>

@@ -143,11 +143,17 @@ RegisterNetEvent('qb-weapons:server:UpdateWeaponAmmo', function(CurrentWeaponDat
         end
         if not updated then
             for k, item in pairs(Player.PlayerData.items) do
-                if item and item.type == 'weapon' and item.name == CurrentWeaponData.name then
-                    Player.PlayerData.items[k].info = Player.PlayerData.items[k].info or {}
-                    Player.PlayerData.items[k].info.ammo = amount
-                    updated = true
-                    break
+                if item and item.name == CurrentWeaponData.name then
+                    local isWeapon = item.type == 'weapon'
+                    if not isWeapon and item.name:find('^weapon_', 1, false) then
+                        isWeapon = true
+                    end
+                    if isWeapon then
+                        Player.PlayerData.items[k].info = Player.PlayerData.items[k].info or {}
+                        Player.PlayerData.items[k].info.ammo = amount
+                        updated = true
+                        break
+                    end
                 end
             end
         end
@@ -272,34 +278,40 @@ RegisterNetEvent('qb-weapons:server:requestQuickReload', function(ammoItemName, 
     if not Player then return end
 
     ammoItemName = tostring(ammoItemName or ''):lower()
-    if ammoItemName == '' or not Config.AmmoTypes[ammoItemName] then return end
+    if ammoItemName == '' or not Config.AmmoTypes[ammoItemName] then
+        TriggerClientEvent('qb-weapons:client:QuickReloadDenied', src, 'Netinkamas ammo tipas.')
+        return
+    end
 
     local ammoConfig = Config.AmmoTypes[ammoItemName]
     if string.upper(tostring(ammoConfig.ammoType or '')) ~= string.upper(tostring(weaponAmmoType or '')) then
+        TriggerClientEvent('qb-weapons:client:QuickReloadDenied', src, Lang:t('error.wrong_ammo'))
         return
     end
 
     local selectedItem = nil
     preferredSlot = tonumber(preferredSlot)
-    if preferredSlot and Player.PlayerData.items[preferredSlot] then
-        local slotItem = Player.PlayerData.items[preferredSlot]
-        if slotItem and slotItem.name == ammoItemName and (tonumber(slotItem.amount) or 0) > 0 then
-            selectedItem = slotItem
-            selectedItem.slot = tonumber(selectedItem.slot) or preferredSlot
+    if preferredSlot then
+        selectedItem = exports['qb-inventory']:GetItemBySlot(src, preferredSlot)
+        if selectedItem and selectedItem.name ~= ammoItemName then
+            selectedItem = nil
         end
     end
 
     if not selectedItem then
-        for slot, item in pairs(Player.PlayerData.items) do
+        for _, item in pairs(Player.PlayerData.items) do
             if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
                 selectedItem = item
-                selectedItem.slot = tonumber(selectedItem.slot) or tonumber(slot)
+                selectedItem.slot = tonumber(selectedItem.slot) or tonumber(item.slot)
                 break
             end
         end
     end
 
-    if not selectedItem then return end
+    if not selectedItem or (tonumber(selectedItem.amount) or 0) <= 0 then
+        TriggerClientEvent('qb-weapons:client:QuickReloadDenied', src, 'No ammo in inventory.')
+        return
+    end
 
     local totalAmmoItems = 0
     for _, item in pairs(Player.PlayerData.items) do
@@ -307,7 +319,10 @@ RegisterNetEvent('qb-weapons:server:requestQuickReload', function(ammoItemName, 
             totalAmmoItems = totalAmmoItems + (tonumber(item.amount) or 0)
         end
     end
-    if totalAmmoItems <= 0 then return end
+    if totalAmmoItems <= 0 then
+        TriggerClientEvent('qb-weapons:client:QuickReloadDenied', src, 'No ammo in inventory.')
+        return
+    end
 
     TriggerClientEvent('qb-weapons:client:AddAmmo', src, ammoConfig.ammoType, totalAmmoItems, {
         name = selectedItem.name,

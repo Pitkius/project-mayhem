@@ -2,7 +2,7 @@ RegisterNetEvent('server_logs:inventoryAdd', function(item, amount, reason)
     SendLog('inventory', 'Item Added', ('`%s` x%s'):format(item or '?', amount or 1), {
         { name = 'Reason', value = reason or 'N/A', inline = true },
     }, source)
-    TriggerEvent('server_logs:securityCheck', 'item_add', { item = item, amount = amount })
+    TriggerEvent('server_logs:securityCheck', 'item_add', { item = item, amount = amount, source = source })
 end)
 
 RegisterNetEvent('server_logs:inventoryRemove', function(item, amount, reason)

@@ -140,6 +140,7 @@ window.addEventListener('message', (e) => {
     document.getElementById('tabCctv').style.display = perms.cctv ? '' : 'none';
     document.getElementById('tabBodycam').style.display = perms.bodycam ? '' : 'none';
     applySurveillanceMaintenanceFromOpen(d.data || {});
+    applyMapMaintenanceFromOpen(d.data || {});
     const sel = document.getElementById('finePreset');
     sel.innerHTML = '';
     (d.data.presets || []).forEach((p) => {
@@ -170,12 +171,14 @@ window.addEventListener('message', (e) => {
     });
   }
   if (d.action === 'mdtPlayerPos' && window.MdtMap && d.x != null && d.y != null) {
-    MdtMap.setLocalPlayerPos(d);
-    if (lastDispatchPayload && mdtSessionActive && !mdtSurveillanceLive) {
-      renderDispatchMap({
-        ...lastDispatchPayload,
-        selfSource: d.selfSource != null ? d.selfSource : lastDispatchPayload.selfSource,
-      });
+    if (!mapMaintenance) {
+      MdtMap.setLocalPlayerPos(d);
+      if (lastDispatchPayload && mdtSessionActive && !mdtSurveillanceLive) {
+        renderDispatchMap({
+          ...lastDispatchPayload,
+          selfSource: d.selfSource != null ? d.selfSource : lastDispatchPayload.selfSource,
+        });
+      }
     }
   }
   if (d.action === 'dispatchLive') {
@@ -252,7 +255,9 @@ document.querySelectorAll('.tab').forEach((t) => {
       window.MdtMap.setAnimEnabled(false);
     }
     if (t.dataset.tab === 'units') {
+      applyMapMaintenanceUi();
       requestAnimationFrame(() => {
+        if (mapMaintenance) return;
         if (window.MdtMap) {
           MdtMap.invalidate();
           MdtMap.resetView();
@@ -563,6 +568,10 @@ function statusPillClass(label, panic) {
 function renderMapDetail(kind, data) {
   const el = document.getElementById('dispatchMapDetail');
   if (!el) return;
+  if (mapMaintenance) {
+    el.innerHTML = `<div class="surv-offline-status"><span class="surv-offline-title">Sistema neprieinama</span><p class="surv-offline-msg">${escapeHtml(mapMaintenanceMessage)}</p></div>`;
+    return;
+  }
   selectedMapTarget = data ? { kind, data } : null;
   if (!data) {
     el.innerHTML = '<div class="gps-detail-empty muted">Pasirink blipą žemėlapyje arba užvesk pelę dėl informacijos.</div>';
@@ -634,7 +643,7 @@ function enrichUnitForPanel(u, crews) {
 }
 
 function renderDispatchMap(payload) {
-  if (!window.MdtMap) return;
+  if (mapMaintenance || !window.MdtMap) return;
   MdtMap.update(payload || {});
   if (selectedMapTarget?.data) {
     const crews = payload.crews || [];
@@ -889,6 +898,46 @@ let cctvMaintenance = false;
 let cctvMaintenanceMessage = '';
 let bodycamMaintenance = false;
 let bodycamMaintenanceMessage = '';
+let mapMaintenance = false;
+let mapMaintenanceMessage = '';
+
+function applyMapMaintenanceFromOpen(data) {
+  mapMaintenance = !!(data && data.mapMaintenance);
+  mapMaintenanceMessage =
+    (data && data.mapMaintenanceMessage) ||
+    'GPS žemėlapio sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.';
+  applyMapMaintenanceUi();
+}
+
+function applyMapMaintenanceUi() {
+  const wrap = document.querySelector('#panel-units .gps-map-wrap');
+  const overlay = document.getElementById('mdtMapOffline');
+  const msgEl = document.getElementById('mdtMapOfflineMsg');
+  const toolbarIds = [
+    'dispatchZoomIn',
+    'dispatchZoomOut',
+    'gpsResetView',
+    'gpsCenterSelf',
+    'gpsCenterCall',
+    'refreshDispatchMap',
+  ];
+
+  if (wrap) wrap.classList.toggle('is-map-offline', mapMaintenance);
+  if (overlay) overlay.classList.toggle('hidden', !mapMaintenance);
+  if (msgEl) msgEl.textContent = mapMaintenanceMessage;
+
+  toolbarIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = mapMaintenance;
+  });
+
+  if (mapMaintenance) {
+    const sidebar = document.getElementById('dispatchMapDetail');
+    if (sidebar) {
+      sidebar.innerHTML = `<div class="surv-offline-status"><span class="surv-offline-title">Sistema neprieinama</span><p class="surv-offline-msg">${escapeHtml(mapMaintenanceMessage)}</p></div>`;
+    }
+  }
+}
 
 function applySurveillanceMaintenanceFromOpen(data) {
   const on = !!(data && data.surveillanceMaintenance);

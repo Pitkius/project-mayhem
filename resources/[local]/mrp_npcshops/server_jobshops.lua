@@ -77,7 +77,7 @@ RegisterNetEvent('mrp_npcshops:server:validateJobNpc', function(jobName, station
     if not entry then
         return TriggerClientEvent('mrp_npcshops:client:jobNpcDenied', src, 'NPC nerastas.')
     end
-    if role ~= 'duty' and role ~= 'boss' and role ~= 'locker' and not playerJobOk(src, jobName) then
+    if role ~= 'duty' and role ~= 'reception' and role ~= 'boss' and role ~= 'locker' and not playerJobOk(src, jobName) then
         local msg = 'Tik tarnyboje.'
         if jobName == 'ranger' then
             msg = 'Pirmiausia pradėkite tarnybą (Tarnyba NPC arba rūbinė).'
@@ -104,13 +104,14 @@ RegisterNetEvent('mrp_npcshops:server:validateJobNpc', function(jobName, station
             return TriggerClientEvent('mrp_npcshops:client:jobNpcDenied', src, 'Tik EMS darbuotojams.')
         end
     end
-    if jobName == 'police' and role == 'duty' then
+    if role == 'reception' then
+        -- civilinė registratūra — prieinama visiems
+    elseif jobName == 'police' and role == 'duty' then
         local P = QBCore.Functions.GetPlayer(src)
         if not P or P.PlayerData.job.name ~= 'police' then
             return TriggerClientEvent('mrp_npcshops:client:jobNpcDenied', src, 'Tik policijos darbuotojams.')
         end
-    end
-    if jobName == 'ranger' and role == 'duty' then
+    elseif jobName == 'ranger' and role == 'duty' then
         local P = QBCore.Functions.GetPlayer(src)
         if not P or P.PlayerData.job.name ~= 'ranger' then
             return TriggerClientEvent('mrp_npcshops:client:jobNpcDenied', src, 'Tik gamtosaugininkams.')

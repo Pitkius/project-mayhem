@@ -21,6 +21,7 @@ shared_scripts {
 
 client_scripts {
     'client/pd_markers.lua',
+    'client/reception.lua',
     'client/divisions.lua',
     'client/main.lua',
     'client/pd_craft.lua',
@@ -35,6 +36,7 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
+    'server/reception.lua',
     'server/pd_craft.lua',
     'server/surveillance.lua',
 }
@@ -56,6 +58,7 @@ files {
 dependencies {
     'qb-core',
     'qb-menu',
+    'qb-input',
     'qb-inventory',
     'qb-target',
     'mrp_dispatch',

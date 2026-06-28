@@ -48,11 +48,28 @@ Config.RangerSupplyShop = {
     },
 }
 
---- NPC taškai prie tarnybų MLO (duty = pamaina; kiti PD taškai — 3D markeriai mrp_ltpd)
---- role: supply | garage | locker | stash | duty | boss
+--- NPC taškai prie tarnybų MLO (duty = pamaina; reception = civilinė registratūra)
+--- role: supply | garage | locker | stash | duty | boss | reception
 Config.JobStationNpcs = {
-    --- Vienintelis PD NPC — pamainos pradžia / pabaiga (MRPD)
-    { job = 'police', stationId = 'ls_main', role = 'duty', model = 's_m_y_cop_01', coords = vector4(441.84, -982.05, 30.69, 90.0), label = 'PD pamaina (pradėti / baigti)' },
+    --- Civilinė PD registratūra (pareiškimai, anketos)
+    {
+        job = 'police',
+        stationId = 'ls_main',
+        role = 'reception',
+        model = 's_f_y_cop_01',
+        coords = vector4(442.8203, -982.3546, 30.6895, 90.0),
+        label = 'PD registratūra',
+        blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra' },
+    },
+    --- Pamainos pradžia / pabaiga (tik policijai)
+    {
+        job = 'police',
+        stationId = 'ls_main',
+        role = 'duty',
+        model = 's_m_y_cop_01',
+        coords = vector4(463.9745, -996.6197, 30.6895, 84.1146),
+        label = 'PD pamaina (pradėti / baigti)',
+    },
     { job = 'police', stationId = 'ls_main', role = 'supply', model = 's_m_y_cop_01', coords = vector4(489.05, -997.1946, 30.6896, 268.0), label = 'PD inventorius (žaliavos)' },
 
     --- EMS Pillbox (Gabz MLO)

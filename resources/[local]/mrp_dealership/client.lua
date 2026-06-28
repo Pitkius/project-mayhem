@@ -754,7 +754,7 @@ CreateThread(function()
                 SetBlipDisplay(blip, 4)
                 SetBlipScale(blip, blipCfg.scale or 0.88)
                 SetBlipColour(blip, blipCfg.color or 3)
-                SetBlipAsShortRange(blip, blipCfg.shortRange == true)
+                SetBlipAsShortRange(blip, blipCfg.shortRange ~= false)
                 SetBlipCategory(blip, 134)
                 local blipLabel = blipCfg.label or cfg.label or 'Salonas'
                 if GetResourceState('mrp_fonts') == 'started' then

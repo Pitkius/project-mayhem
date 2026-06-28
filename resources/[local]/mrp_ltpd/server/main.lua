@@ -623,6 +623,9 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:mdtContext', function(src, cb)
         surveillanceMaintenance = Config.Surveillance and Config.Surveillance.MaintenanceMode == true,
         surveillanceMaintenanceMessage = (Config.Surveillance and Config.Surveillance.MaintenanceMessage)
             or 'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.',
+        mapMaintenance = Config.MdtMapMaintenance and Config.MdtMapMaintenance.enabled == true,
+        mapMaintenanceMessage = (Config.MdtMapMaintenance and Config.MdtMapMaintenance.message)
+            or 'GPS žemėlapio sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.',
     })
 end)
 
@@ -1276,8 +1279,6 @@ end
 local function isEmergencyFleetModel(entity)
     if not entity or entity == 0 then return false end
     local hash = GetEntityModel(entity)
-    local classId = GetVehicleClass(entity)
-    if classId == 18 then return true end --- Emergency
     if Config.FleetVehicles then
         for _, v in ipairs(Config.FleetVehicles) do
             if v and v.model and joaat(v.model) == hash then
@@ -1546,6 +1547,40 @@ end)
 
 local LtpdPdDoorToggleCooldown = {}
 
+local function pdDoorSlabToggleReach(meta, slabCoord)
+    local base = (Config.PdDoorToggleReach or 5.0) + 0.35
+    local idist = meta.interactDist or 2.5
+    if meta.interact and slabCoord then
+        local span = #(slabCoord - meta.interact)
+        if span > 3.0 then
+            return math.max(base, idist + span * 0.55 + 2.0)
+        end
+    end
+    return math.max(base, idist + 0.5)
+end
+
+local function playerNearPdDoorGroup(pc, meta)
+    if not meta then return false end
+    for _, c in ipairs(meta.slabs or {}) do
+        if #(pc - c) <= pdDoorSlabToggleReach(meta, c) then
+            return true
+        end
+    end
+    local interactReach = math.max(meta.interactDist or 2.5, Config.PdDoorToggleReach or 5.0) + 0.5
+    if meta.interact and #(pc - meta.interact) <= interactReach then
+        return true
+    end
+    if type(meta.interactAnchors) == 'table' then
+        for _, anch in ipairs(meta.interactAnchors) do
+            local ac = anch.coords
+            if ac and #(pc - ac) <= math.max(anch.interactDist or 2.5, Config.PdDoorToggleReach or 5.0) + 0.5 then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 AddEventHandler('playerDropped', function()
     local src = source
     LtpdPdDoorRegCount[src] = nil
@@ -1565,30 +1600,7 @@ RegisterNetEvent('mrp_ltpd:server:togglePdDoorGroup', function(groupId)
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return end
     local pc = GetEntityCoords(ped)
-    local reach = (Config.PdDoorToggleReach or 5.0) + 0.35
-    local ok = false
-    for _, c in ipairs(meta.slabs) do
-        if #(pc - c) <= reach then
-            ok = true
-            break
-        end
-    end
-    local interactReach = math.max(meta.interactDist or 2.5, Config.PdDoorToggleReach or 5.0) + 0.5
-    if not ok and meta.interact then
-        if #(pc - meta.interact) <= interactReach then
-            ok = true
-        end
-    end
-    if not ok and type(meta.interactAnchors) == 'table' then
-        for _, anch in ipairs(meta.interactAnchors) do
-            local ac = anch.coords
-            if ac and #(pc - ac) <= math.max(anch.interactDist or 2.5, Config.PdDoorToggleReach or 5.0) + 0.5 then
-                ok = true
-                break
-            end
-        end
-    end
-    if not ok then
+    if not playerNearPdDoorGroup(pc, meta) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo durų.', 'error')
     end
     local now = GetGameTimer()

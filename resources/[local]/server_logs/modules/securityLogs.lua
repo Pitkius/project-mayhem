@@ -1,32 +1,39 @@
 local lastPositions = {}
 
+local function resolvePlayerSource(data)
+    data = data or {}
+    local src = tonumber(data.source) or tonumber(source)
+    if src and src > 0 then return src end
+    return nil
+end
+
 -- Security / anti-cheat style logs (warning only)
 
 AddEventHandler('server_logs:securityCheck', function(checkType, data)
     data = data or {}
-    local src = source
-    if src and src > 0 then
-        if checkType == 'weapon_spawn' or checkType == 'item_spawn' then
-            local list = checkType == 'weapon_spawn' and Config.Security.blacklistedWeapons or Config.Security.blacklistedItems
-            local key = data.weapon or data.item
-            for _, banned in ipairs(list or {}) do
-                if key == banned then
-                    SendLog('security', 'Blacklisted Spawn', ('Type: %s\nKey: `%s`'):format(checkType, key), nil, src)
-                    return
-                end
+    local src = resolvePlayerSource(data)
+    if not src then return end
+
+    if checkType == 'weapon_spawn' or checkType == 'item_spawn' then
+        local list = checkType == 'weapon_spawn' and Config.Security.blacklistedWeapons or Config.Security.blacklistedItems
+        local key = data.weapon or data.item
+        for _, banned in ipairs(list or {}) do
+            if key == banned then
+                SendLog('security', 'Blacklisted Spawn', ('Type: %s\nKey: `%s`'):format(checkType, key), nil, src)
+                return
             end
         end
-        if checkType == 'vehicle_spawn' then
-            for _, banned in ipairs(Config.Security.blacklistedVehicles or {}) do
-                if data.model == banned then
-                    SendLog('security', 'Blacklisted Vehicle', ('Model: `%s`'):format(data.model), nil, src)
-                    return
-                end
+    end
+    if checkType == 'vehicle_spawn' then
+        for _, banned in ipairs(Config.Security.blacklistedVehicles or {}) do
+            if data.model == banned then
+                SendLog('security', 'Blacklisted Vehicle', ('Model: `%s`'):format(data.model), nil, src)
+                return
             end
         end
-        if checkType == 'suspicious_money' then
-            SendLog('security', 'Suspicious Money Gain', ('$%s in %s'):format(data.amount or 0, data.account or 'cash'), nil, src)
-        end
+    end
+    if checkType == 'suspicious_money' then
+        SendLog('security', 'Suspicious Money Gain', ('$%s in %s'):format(data.amount or 0, data.account or 'cash'), nil, src)
     end
 end)
 

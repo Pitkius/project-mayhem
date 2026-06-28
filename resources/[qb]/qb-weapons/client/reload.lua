@@ -316,8 +316,6 @@ function WeaponReload.playVisual(ped, weaponHash, _bulletsToLoad, weaponData)
         playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clipNow)
     end
 
-    pinClipDuringVisual(ped, weaponHash, clipNow)
-
     local elapsed = GetGameTimer() - startedAt
     if elapsed < durationMs then
         Wait(durationMs - elapsed)

@@ -115,6 +115,36 @@ input, select {
   background: #0a0f1a;
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
 }
+.gps-map-wrap.is-map-offline .gps-map,
+.gps-map-wrap.is-map-offline .gps-map-toolbar,
+.gps-map-wrap.is-map-offline .gps-map-hint,
+.gps-map-wrap.is-map-offline .gps-map-legend {
+  pointer-events: none;
+  opacity: 0.28;
+  filter: grayscale(0.9);
+}
+.gps-map-offline {
+  position: absolute;
+  inset: 0;
+  z-index: 520;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(8, 12, 20, 0.78);
+  backdrop-filter: blur(3px);
+}
+.gps-map-offline.hidden {
+  display: none;
+}
+.gps-map-offline-card {
+  max-width: 26rem;
+  width: 100%;
+  padding: 1.1rem 1.15rem;
+}
+.gps-map-offline-card h3 {
+  margin: 0.35rem 0 0;
+  font-size: 1.05rem;
+}
 
 .gps-map {
   width: 100%;

@@ -20,8 +20,10 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local doorGroups = {} ---@type LtpdDoorGroupRuntime[]
 local doorLocked = {} ---@type table<string, boolean>
+local lastAppliedLockState = {} ---@type table<string, boolean>
 local dynStationDone = {} ---@type table<string, boolean>
 local entitySnapshots = {} ---@type table<number, { coords: vector3, heading: number }>
+local doorToggleCooldownUntil = 0
 
 --- Rakto ikonos dydis (DrawSprite – ~2.5× mažesnis nei anksčiau)
 local LOCK_ICON_W = 0.016
@@ -32,27 +34,11 @@ local manualPdSlabSkip = {}
 
 local function rebuildManualPdSlabSkip()
     manualPdSlabSkip = {}
-    for _, def in ipairs(Config.PdDoorGroups or {}) do
-        for _, d in ipairs(def.doors or {}) do
+    for _, g in ipairs(doorGroups) do
+        for _, slab in ipairs(g.slabs or {}) do
             manualPdSlabSkip[#manualPdSlabSkip + 1] = {
-                m = joaat(d.model),
-                c = d.coords,
-            }
-        end
-    end
-    for _, def in ipairs(Config.EmsDoorGroups or {}) do
-        for _, d in ipairs(def.doors or {}) do
-            manualPdSlabSkip[#manualPdSlabSkip + 1] = {
-                m = joaat(d.model),
-                c = d.coords,
-            }
-        end
-    end
-    for _, def in ipairs(Config.RangerDoorGroups or {}) do
-        for _, d in ipairs(def.doors or {}) do
-            manualPdSlabSkip[#manualPdSlabSkip + 1] = {
-                m = joaat(d.model),
-                c = d.coords,
+                m = slab.modelHash,
+                c = slab.coords,
             }
         end
     end
@@ -60,11 +46,32 @@ end
 
 local function isManualPdDoorSlab(modelHash, coords)
     for _, e in ipairs(manualPdSlabSkip) do
-        if e.m == modelHash and #(coords - e.c) < 1.25 then
+        if e.m == modelHash and #(coords - e.c) < 2.75 then
             return true
         end
     end
     return false
+end
+
+local function requestPdDoorToggle(groupId)
+    if type(groupId) ~= 'string' or groupId == '' then return end
+    if not canUseDoorGroupClient(groupId) then return end
+    local now = GetGameTimer()
+    if now < doorToggleCooldownUntil then return end
+    doorToggleCooldownUntil = now + 800
+    TriggerServerEvent('mrp_ltpd:server:togglePdDoorGroup', groupId)
+end
+
+local function refreshPdDoorInteractZones()
+    cachedDoorProximityZones = buildPdDoorProximityZones()
+    if GetResourceState('qb-target') ~= 'started' then
+        useQbTargetDoors = false
+        return
+    end
+    for zoneId in pairs(doorTargetZoneIds) do
+        removeDoorTargetZone(zoneId)
+    end
+    useQbTargetDoors = setupDoorTargetsFromZones()
 end
 
 --- GTA saugos spynos sprites (`mpsafecracking`): lock_closed / lock_open
@@ -329,7 +336,7 @@ local function registerDoorTargetZone(zoneId, groupId, pos, interactDist, label)
                 icon = 'fas fa-door-closed',
                 label = optionLabel,
                 action = function()
-                    TriggerServerEvent('mrp_ltpd:server:togglePdDoorGroup', groupId)
+                    requestPdDoorToggle(groupId)
                 end,
                 canInteract = function()
                     return canUseDoorGroupClient(groupId)
@@ -730,7 +737,9 @@ local function scanEntitiesForDef(entityScan, playerCoords)
     return out
 end
 
-local function applyGroupLocked(id, locked)
+local function applyGroupLocked(id, locked, force)
+    if not force and lastAppliedLockState[id] == locked then return end
+    lastAppliedLockState[id] = locked
     for _, g in ipairs(doorGroups) do
         if g.id == id then
             if g.doorType == 'garage_roll' then
@@ -938,6 +947,9 @@ local function scanDynamicForStation(dyn)
     for _, gid in ipairs(newGroupIds) do
         applyGroupLocked(gid, doorLocked[gid] ~= false)
     end
+    if #newGroupIds > 0 then
+        refreshPdDoorInteractZones()
+    end
     if #found > 0 then
         dynStationDone[dyn.stationId] = true
     end
@@ -982,19 +994,21 @@ CreateThread(function()
                         end
                     end
                     if isGroupLocked(g.id) then
-                        applyGarageRollLocked(g.slabs, g.entities, true)
+                        lastAppliedLockState[g.id] = nil
+                        applyGroupLocked(g.id, true, true)
                     end
-                elseif g.doorType == 'yard_gate' then
+                elseif g.doorType == 'yard_gate' and isGroupLocked(g.id) then
                     local raiseZ = bollardRaiseForGroup(g)
                     local groundZHint = (g.slabs and g.slabs[1] and g.slabs[1].coords.z) or nil
                     for _, ent in ipairs(g.entities) do
                         if isBollardModel(GetEntityModel(ent)) then
-                            rememberBollardSnapshot(ent, isGroupLocked(g.id), raiseZ, groundZHint)
+                            rememberBollardSnapshot(ent, true, raiseZ, groundZHint)
                         else
                             rememberEntitySnapshot(ent)
                         end
                     end
-                    applyYardGateGroupLocked(g, isGroupLocked(g.id))
+                    lastAppliedLockState[g.id] = nil
+                    applyGroupLocked(g.id, true, true)
                 else
                     for _, ent in ipairs(g.entities) do
                         rememberEntitySnapshot(ent)
@@ -1053,7 +1067,8 @@ RegisterNetEvent('mrp_ltpd:client:setPdDoorState', function(id, locked)
     local parsed = parseDoorLocked(locked)
     if parsed == nil then parsed = locked == true end
     doorLocked[id] = parsed
-    applyGroupLocked(id, doorLocked[id])
+    lastAppliedLockState[id] = nil
+    applyGroupLocked(id, doorLocked[id], true)
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
@@ -1068,13 +1083,11 @@ AddEventHandler('onResourceStart', function(res)
     end)
 end)
 
-local lastToggle = 0
-
 local function tryToggleNearestDoor(pcoords)
     if not canUseServiceDoorsClient() then return end
+    local closestHit = nil
     local zones = getPdDoorProximityZones()
     local reach = doorInteractRadius(Config.PdDoorToggleReach)
-    local closestHit = nil
     for _, z in ipairs(zones) do
         local d = #(pcoords - z.pos)
         if d <= reach and canUseDoorGroupClient(z.groupId) then
@@ -1083,11 +1096,17 @@ local function tryToggleNearestDoor(pcoords)
             end
         end
     end
+    for _, g in ipairs(doorGroups) do
+        if g.interact and canUseDoorGroupClient(g.id) then
+            local r = doorInteractRadius(g.interactDist)
+            local d = #(pcoords - g.interact)
+            if d <= r and (not closestHit or d < closestHit.d) then
+                closestHit = { gid = g.id, d = d }
+            end
+        end
+    end
     if not closestHit then return end
-    local now = GetGameTimer()
-    if now - lastToggle <= 650 then return end
-    lastToggle = now
-    TriggerServerEvent('mrp_ltpd:server:togglePdDoorGroup', closestHit.gid)
+    requestPdDoorToggle(closestHit.gid)
 end
 
 --- Spynos ikonos (retas piešimas — ne kiekvieną kadrą).
@@ -1136,9 +1155,7 @@ end)
 AddEventHandler('onResourceStart', function(res)
     if res == 'qb-target' then
         SetTimeout(800, function()
-            doorTargetZoneIds = {}
-            cachedDoorProximityZones = nil
-            setupPdDoorTargets()
+            refreshPdDoorInteractZones()
         end)
     end
 end)
@@ -1160,11 +1177,11 @@ CreateThread(function()
         else
             local anyNear = false
             for _, g in ipairs(doorGroups) do
-                if g.doorType == 'yard_gate' then
+                if g.doorType == 'yard_gate' and isGroupLocked(g.id) then
                     local near = g.interact and #(pc - g.interact) < 55.0
                     if near then
                         anyNear = true
-                        applyYardGateGroupLocked(g, isGroupLocked(g.id))
+                        applyGroupLocked(g.id, true)
                     end
                 elseif (g.doorType == 'barrier' or g.doorType == 'bollard') and isGroupLocked(g.id) then
                     local near = g.interact and #(pc - g.interact) < 55.0
@@ -1180,7 +1197,7 @@ CreateThread(function()
                     local near = g.interact and #(pc - g.interact) < 90.0
                     if near then
                         anyNear = true
-                        applyGarageRollLocked(g.slabs, g.entities, true)
+                        applyGroupLocked(g.id, true)
                     end
                 end
             end

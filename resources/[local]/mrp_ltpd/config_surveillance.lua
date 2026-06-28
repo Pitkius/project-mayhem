@@ -2,7 +2,8 @@
 Config.Surveillance = Config.Surveillance or {}
 
 --- Laikinai išjungta kol sutvarkoma (MDT langai lieka, rodoma „neveikia“ žinutė).
---- Neįtakoja: PANIC mygtuko, dispatch blipų, MDT žemėlapio.
+--- Neįtakoja: PANIC mygtuko, dispatch blipų įprastame žemėlapyje.
+--- MDT GPS žemėlapis: Config.MdtMapMaintenance (atskirai).
 Config.Surveillance.MaintenanceMode = true
 Config.Surveillance.MaintenanceMessage =
     'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.'

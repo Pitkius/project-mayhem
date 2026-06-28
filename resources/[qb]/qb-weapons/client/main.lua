@@ -128,6 +128,32 @@ local function isReloadBusy()
     return isReloading or GetGameTimer() < reloadGuardUntil
 end
 
+local function releaseReloadLock(extraMs)
+    isReloading = false
+    reloadGuardUntil = GetGameTimer() + (tonumber(extraMs) or 1200)
+    local ped = PlayerPedId()
+    if ped and ped ~= 0 then
+        SetPedMoveRateOverride(ped, 1.0)
+    end
+end
+
+local function resolveSelectedWeaponData(pedWeaponHash)
+    if currentWeapon then
+        local hash = nativeWeaponHash(currentWeapon)
+        if hash == pedWeaponHash then
+            local item = QBCore.Shared.Items[currentWeapon]
+            local shared = QBCore.Shared.Weapons[pedWeaponHash]
+            if item or shared then
+                return {
+                    name = currentWeapon,
+                    ammotype = (item and item.ammotype) or (shared and shared.ammotype),
+                }
+            end
+        end
+    end
+    return QBCore.Shared.Weapons[pedWeaponHash]
+end
+
 local function isWeaponDrawBusy()
     return _G.QBWeaponDrawBusy == true
 end
@@ -210,7 +236,7 @@ local function attemptQuickReload(ped)
     if not ped or ped == 0 or not IsPedArmed(ped, 7) then return false end
 
     local weapon = GetSelectedPedWeapon(ped)
-    local selectedWeaponData = QBCore.Shared.Weapons[weapon]
+    local selectedWeaponData = resolveSelectedWeaponData(weapon)
     if not selectedWeaponData or selectedWeaponData.name == 'weapon_unarmed' then return false end
 
     local weaponRow = resolveCurrentWeaponDataForPed(weapon, selectedWeaponData)
@@ -222,7 +248,10 @@ local function attemptQuickReload(ped)
 
     local ammoType = tostring(selectedWeaponData.ammotype or ''):upper()
     local ammoNames = AmmoItemByType[ammoType]
-    if type(ammoNames) ~= 'table' then return false end
+    if type(ammoNames) ~= 'table' then
+        QBCore.Functions.Notify(Lang:t('error.wrong_ammo') or 'Netinkamas ammo tipas.', 'error')
+        return false
+    end
 
     local items = getItemsFromCore()
     if not items then return false end
@@ -358,6 +387,18 @@ function applyHolsteredWeaponsFromInventory(force)
                 applyWeaponAttachmentsAndTint(ped, shownHash, activeItem.info)
             end
         end
+        local activeItem = currentWeapon and resolveCurrentWeaponDataByName(currentWeapon)
+        if activeItem then
+            local _, clipLive = GetAmmoInClip(ped, shownHash)
+            clipLive = math.max(0, tonumber(clipLive) or 0)
+            local storedAmmo = tonumber(activeItem.info and activeItem.info.ammo) or 0
+            if clipLive > storedAmmo then
+                activeItem.info = activeItem.info or {}
+                activeItem.info.ammo = clipLive
+                CurrentWeaponData = activeItem
+                WeaponAmmo.applyWeaponAmmoState(ped, shownHash, clipLive, activeItem)
+            end
+        end
         SetPedCurrentWeaponVisible(ped, true, false, false, false)
         SetCurrentPedWeapon(ped, shownHash, true)
         WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, shownHash)
@@ -467,6 +508,12 @@ RegisterNetEvent('qb-weapons:client:SetCurrentWeapon', function(data, bool)
     CanShoot = bool ~= false
 end)
 
+RegisterNetEvent('qb-weapons:client:QuickReloadDenied', function(reason)
+    if reason and reason ~= '' then
+        QBCore.Functions.Notify(reason, 'error')
+    end
+end)
+
 RegisterNetEvent('qb-weapons:client:SetWeaponQuality', function(amount)
     if CurrentWeaponData and next(CurrentWeaponData) then
         TriggerServerEvent('qb-weapons:server:SetWeaponQuality', CurrentWeaponData, amount)
@@ -478,7 +525,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
 
     local ped = PlayerPedId()
     local weapon = GetSelectedPedWeapon(ped)
-    local selectedWeaponData = QBCore.Shared.Weapons[weapon]
+    local selectedWeaponData = resolveSelectedWeaponData(weapon)
     if not selectedWeaponData then
         QBCore.Functions.Notify(Lang:t('error.no_weapon'), 'error')
         return
@@ -543,7 +590,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     local function applyInventoryReload()
         ped = PlayerPedId()
         weapon = GetSelectedPedWeapon(ped)
-        local current = QBCore.Shared.Weapons[weapon]
+        local current = resolveSelectedWeaponData(weapon)
 
         if not current or tostring(current.ammotype or ''):upper() ~= normalizedAmmoType then
             return false, Lang:t('error.wrong_ammo')
@@ -597,6 +644,13 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             payload.info = payload.info or {}
             payload.info.ammo = refreshedAmmo
             CurrentWeaponData = payload
+            if currentWeapon == payload.name then
+                local row = resolveCurrentWeaponDataByName(payload.name)
+                if row then
+                    row.info = row.info or {}
+                    row.info.ammo = refreshedAmmo
+                end
+            end
             TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', payload, refreshedAmmo)
         end
         local ammoInvSlot = itemData and tonumber(itemData.slot)
@@ -621,23 +675,25 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     setReloadMoveRate(reloadPed)
 
     CreateThread(function()
-        local visualOk, visualErr = pcall(function()
-            WeaponReload.playVisual(reloadPed, reloadWeapon, plannedBullets, reloadPayload)
+        local ok, errMsg = false, nil
+        local threadOk, threadErr = pcall(function()
+            local visualOk, visualErr = pcall(function()
+                WeaponReload.playVisual(reloadPed, reloadWeapon, plannedBullets, reloadPayload)
+            end)
+            if not visualOk then
+                print(('[qb-weapons] reload visual error: %s'):format(tostring(visualErr)))
+                WeaponReload.cancel(PlayerPedId())
+            end
+
+            ok, errMsg = applyInventoryReload()
         end)
-        if not visualOk then
-            print(('[qb-weapons] reload visual error: %s'):format(tostring(visualErr)))
-            WeaponReload.cancel(PlayerPedId())
+
+        if not threadOk then
+            print(('[qb-weapons] reload error: %s'):format(tostring(threadErr)))
+            ok, errMsg = false, 'Perkrovos klaida.'
         end
 
-        local ok, errMsg = applyInventoryReload()
-
-        isReloading = false
-        reloadGuardUntil = GetGameTimer() + 80
-
-        local p = PlayerPedId()
-        if p and p ~= 0 then
-            SetPedMoveRateOverride(p, 1.0)
-        end
+        releaseReloadLock(ok and 1500 or 400)
 
         if ok then
             local p = PlayerPedId()
@@ -779,7 +835,7 @@ CreateThread(function()
             local ped = PlayerPedId()
             if IsPedArmed(ped, 7) then
                 local weapon = GetSelectedPedWeapon(ped)
-                local selectedWeaponData = QBCore.Shared.Weapons[weapon]
+                local selectedWeaponData = resolveSelectedWeaponData(weapon)
                 if selectedWeaponData then
                     CurrentWeaponData = resolveCurrentWeaponDataForPed(weapon, selectedWeaponData)
                     WeaponAmmo.normalizePedAmmo(ped, weapon, CurrentWeaponData or selectedWeaponData)

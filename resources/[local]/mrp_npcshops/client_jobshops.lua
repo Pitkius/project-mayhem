@@ -113,5 +113,9 @@ RegisterNetEvent('mrp_npcshops:client:jobNpcApproved', function(jobName, station
         elseif jobName == 'ranger' then
             TriggerEvent('mrp_ranger:client:toggleDuty')
         end
+    elseif role == 'reception' then
+        if jobName == 'police' then
+            TriggerEvent('mrp_ltpd:client:openCivilianReception')
+        end
     end
 end)

@@ -697,7 +697,7 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
     if lockerMode ~= 'aro' then
         menu[#menu + 1] = {
             header = 'Baigti tarnybą',
-            txt = 'Civilio apranga (pamainą baigti tik prie MRPD NPC)',
+            txt = 'Civilio apranga (pamainą baigti prie pamainos NPC rūbinėje)',
             params = { event = 'mrp_ltpd:client:applyCivilianOutfit' },
         }
     end
@@ -752,7 +752,7 @@ RegisterNetEvent('mrp_ltpd:client:applyCivilianOutfit', function()
         TriggerServerEvent('qb-clothing:loadPlayerSkin')
     end
     SetPedArmour(PlayerPedId(), 0)
-    QBCore.Functions.Notify('Civilio apranga uždėta. Pamainą baigti — MRPD registratūros NPC.', 'success')
+    QBCore.Functions.Notify('Civilio apranga uždėta. Pamainą baigti — prie pamainos NPC (rūbinės zona).', 'success')
 end)
 
 RegisterNetEvent('mrp_ltpd:client:markerGarage', function(stationId)

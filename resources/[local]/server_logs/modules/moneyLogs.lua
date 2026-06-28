@@ -7,7 +7,7 @@ RegisterNetEvent('server_logs:moneyAdd', function(account, amount, reason, balan
 
     local threshold = Config.Security and Config.Security.suspiciousMoneyThreshold or 500000
     if (amount or 0) >= threshold then
-        TriggerEvent('server_logs:securityCheck', 'suspicious_money', { amount = amount, account = account })
+        TriggerEvent('server_logs:securityCheck', 'suspicious_money', { amount = amount, account = account, source = source })
     end
 end)
 

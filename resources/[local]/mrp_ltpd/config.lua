@@ -125,6 +125,13 @@ Config.MdtMap = {
     },
 }
 
+--- MDT GPS žemėlapis — laikinas išjungimas (skirta nuo CCTV/bodycam).
+--- Neįtakoja: PANIC mygtuko, dispatch blipų įprastame žemėlapyje, iškvietimų sąrašo.
+Config.MdtMapMaintenance = {
+    enabled = true,
+    message = 'GPS žemėlapio sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.',
+}
+
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)
 Config.ArmoryGarageDistance = 38.0
 --- (Rezervas) vadovybės veiksmų atstumo patikra serveryje
@@ -167,6 +174,14 @@ Config.FleetHelicopters = {
     { model = 'buzzard2', label = 'Buzzard (tarnybinis)' },
 }
 
+--- PD registratūra (civiliai) ir priėmimo anketos
+Config.Reception = {
+    statementMinLen = 15,
+    applicationMinMotivation = 20,
+    applicationCooldownHours = 48,
+    statementCooldownMinutes = 10,
+}
+
 --[[
   Postai: MDT + (pasirinktinai) ginklinė ir PD garažas.
   Koordinates patikrink su savo MLO – ypač armory.coords ir garage.spawn.
@@ -178,9 +193,10 @@ Config.Stations = {
         coords = vector3(441.84, -982.05, 30.69),
         blipCoords = vector3(427.120, -979.559, 30.716),
         heading = 90.0,
-        --- Registratūra (vienas 3D taškas — MDT + pamaina)
+        --- MDT planšetė (tik policijai tarnyboje)
         mdt = { coords = vector3(442.8203, -982.3546, 30.6895) },
-        duty = { coords = vector3(442.8203, -982.3546, 30.6895) },
+        --- Civilinė registratūra — NPC (mrp_npcshops role=reception)
+        reception = { coords = vector3(442.8203, -982.3546, 30.6895) },
         supply = {
             coords = vector3(489.05, -997.1946, 30.6896),
             label = 'PD inventorius (žaliavos)',

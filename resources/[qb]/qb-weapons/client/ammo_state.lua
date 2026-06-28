@@ -172,19 +172,41 @@ function WeaponAmmo.loadBulletsIntoClip(ped, weaponHash, weaponData, bulletsToLo
     local toLoad = math.min(bulletsToLoad, math.max(0, maxClip - curClip))
     if toLoad <= 0 then return 0 end
 
+    local function clipDelta()
+        local _, clipAfter = GetAmmoInClip(ped, weaponHash)
+        return math.max(0, (tonumber(clipAfter) or 0) - curClip)
+    end
+
     local newClip = curClip + toLoad
     SetPedAmmo(ped, weaponHash, newClip)
     SetAmmoInClip(ped, weaponHash, newClip)
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
 
-    local _, clipAfter = GetAmmoInClip(ped, weaponHash)
-    local loaded = math.max(0, (tonumber(clipAfter) or newClip) - curClip)
+    local loaded = clipDelta()
+    if loaded <= 0 then
+        local totalBefore = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
+        AddAmmoToPed(ped, weaponHash, toLoad)
+        WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+        loaded = math.max(clipDelta(), math.max(0, (tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0) - totalBefore))
+        if loaded > 0 then
+            local targetClip = math.min(maxClip, curClip + loaded)
+            SetPedAmmo(ped, weaponHash, targetClip)
+            SetAmmoInClip(ped, weaponHash, targetClip)
+        end
+    end
+
     if loaded <= 0 then
         SetPedAmmo(ped, weaponHash, newClip)
         SetAmmoInClip(ped, weaponHash, newClip)
-        loaded = toLoad
+        loaded = math.min(toLoad, clipDelta())
+        if loaded <= 0 then
+            loaded = toLoad
+        end
     end
+
     WeaponAmmo.normalizePedAmmo(ped, weaponHash, weaponData)
+    local _, clipFinal = GetAmmoInClip(ped, weaponHash)
+    loaded = math.max(loaded, math.max(0, (tonumber(clipFinal) or 0) - curClip))
     return math.min(loaded, toLoad)
 end
 

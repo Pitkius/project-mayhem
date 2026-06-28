@@ -15,6 +15,9 @@ files {
     'html/app.js',
     'html/schedule-icons.js',
     'html/schedule.js',
+    'html/icons/grow_pot.png',
+    'html/icons/watering_can.png',
+    'html/icons/drug_scale.png',
 }
 
 shared_scripts {

@@ -57,7 +57,7 @@ function NpcRegistry.collect()
             local blip = row.blip
             if blip == nil and row.coords then
                 blip = {
-                    sprite = row.role == 'duty' and 60 or 280,
+                    sprite = row.role == 'duty' and 60 or row.role == 'reception' and 280 or 280,
                     color = row.job == 'police' and 3 or row.job == 'ambulance' and 1 or 25,
                     scale = 0.72,
                     label = row.label or 'Tarnyba',

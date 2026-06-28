@@ -8,12 +8,12 @@ end)
 
 RegisterNetEvent('server_logs:itemSpawn', function(item, amount)
     SendLog('spawn', 'Item Spawn', ('`%s` x%s'):format(item or '?', amount or 1), nil, source)
-    TriggerEvent('server_logs:securityCheck', 'item_spawn', { item = item, amount = amount })
+    TriggerEvent('server_logs:securityCheck', 'item_spawn', { item = item, amount = amount, source = source })
 end)
 
 RegisterNetEvent('server_logs:weaponSpawn', function(weapon, amount)
     SendLog('spawn', 'Weapon Spawn', ('`%s` x%s'):format(weapon or '?', amount or 1), nil, source)
-    TriggerEvent('server_logs:securityCheck', 'weapon_spawn', { weapon = weapon })
+    TriggerEvent('server_logs:securityCheck', 'weapon_spawn', { weapon = weapon, source = source })
 end)
 
 RegisterNetEvent('server_logs:moneySpawn', function(amount, account)

@@ -377,7 +377,7 @@ Config.BoatDealership = {
             preview = vector4(-797.5, -1368.0, 0.35, 110.0),
             camera = vector4(-788.0, -1360.0, 4.8, 120.0),
             spawn = vector4(-794.0, -1382.0, 0.12, 110.0),
-            blip = { sprite = 410, color = 3, scale = 0.88, shortRange = false, label = 'Laivų salonas · Los Santos' },
+            blip = { sprite = 410, color = 3, scale = 0.88, shortRange = true, label = 'Laivų salonas · Los Santos' },
         },
         sandy = {
             office = vector3(714.35, 4096.85, 30.73),
@@ -385,7 +385,7 @@ Config.BoatDealership = {
             preview = vector4(712.0, 4110.0, 30.2, 180.0),
             camera = vector4(718.0, 4098.0, 33.5, 200.0),
             spawn = vector4(708.5, 4122.0, 29.8, 180.0),
-            blip = { sprite = 410, color = 3, scale = 0.88, shortRange = false, label = 'Laivų salonas · Sandy Shores' },
+            blip = { sprite = 410, color = 3, scale = 0.88, shortRange = true, label = 'Laivų salonas · Sandy Shores' },
         },
     },
 }
@@ -413,7 +413,7 @@ Config.HeliDealership = {
             preview = vector4(-1145.2, -2865.5, 13.95, 330.0),
             camera = vector4(-1135.0, -2858.0, 16.5, 150.0),
             spawn = vector4(-1145.2, -2865.5, 13.95, 330.0),
-            blip = { sprite = 43, color = 3, scale = 0.88, shortRange = false, label = 'Malūnsparnių salonas · Los Santos' },
+            blip = { sprite = 43, color = 3, scale = 0.88, shortRange = true, label = 'Malūnsparnių salonas · Los Santos' },
         },
         sandy = {
             office = vector3(1770.15, 3239.85, 42.13),
@@ -421,7 +421,7 @@ Config.HeliDealership = {
             preview = vector4(1772.0, 3246.0, 42.13, 15.0),
             camera = vector4(1765.0, 3238.0, 45.0, 200.0),
             spawn = vector4(1772.0, 3246.0, 42.13, 15.0),
-            blip = { sprite = 43, color = 3, scale = 0.88, shortRange = false, label = 'Malūnsparnių salonas · Sandy Shores' },
+            blip = { sprite = 43, color = 3, scale = 0.88, shortRange = true, label = 'Malūnsparnių salonas · Sandy Shores' },
         },
     },
 }

@@ -145,27 +145,6 @@ local function coordsNear(a, b, eps)
     return #(a - b) < (eps or 0.85)
 end
 
-local function openReceptionMenu()
-    if GetResourceState('qb-menu') ~= 'started' then
-        TriggerEvent('mrp_ltpd:client:openMdtAtStation')
-        return
-    end
-    exports['qb-menu']:openMenu({
-        { header = 'PD registratūra', isMenuHeader = true },
-        {
-            header = 'MDT planšetė',
-            txt = 'Atidaryti MDT',
-            params = { event = 'mrp_ltpd:client:openMdtAtStation' },
-        },
-        {
-            header = 'Pamaina',
-            txt = 'Pradėti arba baigti tarnybą',
-            params = { event = 'mrp_ltpd:client:toggleDuty' },
-        },
-        { header = 'Uždaryti', params = { event = 'qb-menu:client:closeMenu' } },
-    })
-end
-
 local function registerAllPdMarkers()
     if Config.ShowPd3DMarkers == false then
         clearPdMarkers()
@@ -178,38 +157,28 @@ local function registerAllPdMarkers()
         local stationId = st.id
         local mdtPos = stationFeatureCoords(st, 'mdt')
         local dutyPos = stationFeatureCoords(st, 'duty')
-        local mergedReception = mdtPos and dutyPos and coordsNear(mdtPos, dutyPos)
 
-        if mergedReception then
+        if mdtPos then
             RegisterPdGroundMarker({
                 coords = mdtPos,
-                kind = 'duty',
-                label = stationId == 'ls_main' and 'PD registratūra' or 'Registratūra (MDT / pamaina)',
-                requireDuty = false,
-                onPress = openReceptionMenu,
+                kind = 'mdt',
+                label = stationId == 'ls_main' and 'MDT planšetė' or 'MDT planšetė',
+                requireDuty = true,
+                onPress = function()
+                    TriggerEvent('mrp_ltpd:client:openMdtAtStation')
+                end,
             })
-        else
-            if mdtPos then
-                RegisterPdGroundMarker({
-                    coords = mdtPos,
-                    kind = 'mdt',
-                    label = 'MDT planšetė',
-                    onPress = function()
-                        TriggerEvent('mrp_ltpd:client:openMdtAtStation')
-                    end,
-                })
-            end
-            if dutyPos then
-                RegisterPdGroundMarker({
-                    coords = dutyPos,
-                    kind = 'duty',
-                    label = stationId == 'ls_main' and 'PD pamaina (registratūra)' or 'PD pamaina (pradėti / baigti)',
-                    requireDuty = false,
-                    onPress = function()
-                        TriggerEvent('mrp_ltpd:client:toggleDuty')
-                    end,
-                })
-            end
+        end
+        if dutyPos and (not mdtPos or not coordsNear(mdtPos, dutyPos)) then
+            RegisterPdGroundMarker({
+                coords = dutyPos,
+                kind = 'duty',
+                label = stationId == 'ls_main' and 'PD pamaina' or 'PD pamaina (pradėti / baigti)',
+                requireDuty = false,
+                onPress = function()
+                    TriggerEvent('mrp_ltpd:client:toggleDuty')
+                end,
+            })
         end
 
         if st.supply and st.supply.coords then

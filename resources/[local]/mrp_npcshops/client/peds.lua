@@ -188,6 +188,7 @@ local function buildTargetOptions(meta)
         elseif meta.role == 'locker' then icon = 'fas fa-shirt'
         elseif meta.role == 'stash' then icon = 'fas fa-warehouse'
         elseif meta.role == 'duty' then icon = 'fas fa-id-badge'
+        elseif meta.role == 'reception' then icon = 'fas fa-clipboard'
         elseif meta.role == 'boss' then icon = 'fas fa-user-tie'
         end
         local captured = meta
@@ -213,6 +214,7 @@ local function jobNpcIcon(role)
     elseif role == 'locker' then return 'fas fa-shirt'
     elseif role == 'stash' then return 'fas fa-warehouse'
     elseif role == 'duty' then return 'fas fa-id-badge'
+    elseif role == 'reception' then return 'fas fa-clipboard'
     elseif role == 'boss' then return 'fas fa-user-tie'
     end
     return 'fas fa-user'

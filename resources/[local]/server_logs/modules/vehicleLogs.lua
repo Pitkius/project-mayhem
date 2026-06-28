@@ -1,6 +1,6 @@
 RegisterNetEvent('server_logs:vehicleSpawn', function(model, plate)
     SendLog('vehicle', 'Vehicle Spawned', ('`%s` plate `%s`'):format(model or '?', plate or '?'), nil, source)
-    TriggerEvent('server_logs:securityCheck', 'vehicle_spawn', { model = model })
+    TriggerEvent('server_logs:securityCheck', 'vehicle_spawn', { model = model, source = source })
 end)
 
 RegisterNetEvent('server_logs:vehicleDelete', function(plate, reason)
