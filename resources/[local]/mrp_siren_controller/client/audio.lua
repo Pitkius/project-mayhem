@@ -59,6 +59,7 @@ local function stopSound(veh)
         ReleaseSoundId(meta.sid)
     end
     meta.sid = nil
+    meta.loopTone = nil
 end
 
 local function playSoundOnVehicle(veh, soundName, loop)
@@ -76,6 +77,24 @@ local function playSoundOnVehicle(veh, soundName, loop)
     pcall(function()
         PlaySoundFromEntity(meta.sid, soundName, veh, 0, loop == true, 0)
     end)
+end
+
+local function startLoopTone(veh, tone)
+    if not DoesEntityExist(veh) then return end
+    local meta = TRACKED[veh]
+    if not meta then
+        meta = {}
+        TRACKED[veh] = meta
+    end
+    if meta.loopTone == tone and meta.sid and meta.sid ~= -1 then
+        return
+    end
+    stopSound(veh)
+    meta = TRACKED[veh] or {}
+    TRACKED[veh] = meta
+    meta.loopTone = tone
+    local sound = Config.ToneSounds[tone] or Config.ToneSounds.wail
+    playSoundOnVehicle(veh, sound, true)
 end
 
 local function playBurst(veh, tone)
@@ -99,9 +118,14 @@ local function ingestVehicle(veh)
         TRACKED[veh] = nil
         return
     end
+    local tone = readTone(veh)
+    local meta = TRACKED[veh]
+    if meta and meta.loopTone and meta.loopTone ~= tone then
+        stopSound(veh)
+    end
     TRACKED[veh] = TRACKED[veh] or {}
     TRACKED[veh].mode = mode
-    TRACKED[veh].tone = readTone(veh)
+    TRACKED[veh].tone = tone
     TRACKED[veh].muted = isMuted(veh)
 end
 
@@ -133,7 +157,7 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(380)
+        Wait(250)
         local now = GetGameTimer()
         for veh, meta in pairs(TRACKED) do
             if not DoesEntityExist(veh) then
@@ -143,6 +167,11 @@ CreateThread(function()
                 local mode = readMode(veh)
                 local tone = readTone(veh)
                 local muted = isMuted(veh)
+                if meta.loopTone and meta.loopTone ~= tone then
+                    stopSound(veh)
+                    meta = TRACKED[veh] or {}
+                    TRACKED[veh] = meta
+                end
                 meta.mode = mode
                 meta.tone = tone
                 meta.muted = muted
@@ -159,12 +188,7 @@ CreateThread(function()
                     if now < airhornUntil then
                         -- airhorn burst handles itself
                     elseif useManual or mode == 'sound' or mode == 'full' then
-                        local activeTone = useManual and tone or tone
-                        local interval = Config.ToneIntervals[activeTone] or 700
-                        if not meta.lastBurst or (now - meta.lastBurst) >= interval then
-                            playBurst(veh, activeTone)
-                            meta.lastBurst = now
-                        end
+                        startLoopTone(veh, tone)
                     end
                 else
                     stopSound(veh)

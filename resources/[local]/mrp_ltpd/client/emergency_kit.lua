@@ -2,6 +2,8 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local TRACKED = {} --- [vehicle] = { supportsNative }
+local LIGHTBARS = {} --- [vehicle] = prop entity
+local KIT_PERF = {} --- [vehicle] = { sig, orig }
 
 local Ec = Config.EmergencyVehicle or {}
 local RESET_ON_EXIT = Ec.resetWhenLeaveDriverSeat ~= false
@@ -134,25 +136,231 @@ local function playShortSirenBurst(vehicle)
     end)
 end
 
+local function removeLightbar(vehicle)
+    local prop = LIGHTBARS[vehicle]
+    if prop and prop ~= 0 and DoesEntityExist(prop) then
+        DetachEntity(prop, true, true)
+        DeleteEntity(prop)
+    end
+    LIGHTBARS[vehicle] = nil
+end
+
+local function ensureLightbar(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    local _, kit = readVehicleStateBag(vehicle)
+    if vehicleSupportsNativeEmergency(vehicle) or kit ~= true then
+        removeLightbar(vehicle)
+        return
+    end
+    if LIGHTBARS[vehicle] and DoesEntityExist(LIGHTBARS[vehicle]) then return end
+
+    local modelName = Ec.lightbarModel or 'prop_lightbar_01'
+    local hash = joaat(modelName)
+    if not IsModelInCdimage(hash) then return end
+    RequestModel(hash)
+    local tries = 0
+    while not HasModelLoaded(hash) and tries < 80 do
+        Wait(10)
+        tries = tries + 1
+    end
+    if not HasModelLoaded(hash) then return end
+
+    local c = GetEntityCoords(vehicle)
+    local prop = CreateObject(hash, c.x, c.y, c.z + 1.0, false, false, false)
+    if not prop or prop == 0 then
+        SetModelAsNoLongerNeeded(hash)
+        return
+    end
+    SetEntityCollision(prop, false, false)
+    SetEntityAsMissionEntity(prop, true, true)
+    SetEntityCompletelyDisableCollision(prop, false, false)
+
+    local bone = GetEntityBoneIndexByName(vehicle, 'roof')
+    if bone == -1 then bone = GetEntityBoneIndexByName(vehicle, 'bodyshell') end
+    local yOff = tonumber(Ec.lightbarYOffset) or 0.28
+    local zOff = tonumber(Ec.lightbarZOffset) or 0.0
+    AttachEntityToEntity(prop, vehicle, bone, 0.0, yOff, zOff, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+    LIGHTBARS[vehicle] = prop
+    SetModelAsNoLongerNeeded(hash)
+end
+
+local function syncKitVisuals(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    local _, kit = readVehicleStateBag(vehicle)
+    if kit and not vehicleSupportsNativeEmergency(vehicle) then
+        ensureLightbar(vehicle)
+        syncKitPerformance(vehicle)
+    else
+        removeLightbar(vehicle)
+        removeKitPerformance(vehicle)
+    end
+end
+
+local PERF_FIELDS = {
+    'fInitialDriveForce',
+    'fInitialDriveMaxFlatVel',
+    'fBrakeForce',
+    'fSteeringLock',
+    'fTractionCurveMax',
+    'fTractionCurveMin',
+    'fDriveInertia',
+}
+
+local function getPerformanceTuneCfg()
+    return Ec.performanceTune or {}
+end
+
+local function performanceTuneEnabled()
+    local tune = getPerformanceTuneCfg()
+    return tune.enabled ~= false
+end
+
+local function buildPerfSignature(vehicle)
+    local eng = GetVehicleMod(vehicle, 11)
+    if eng < 0 then eng = 0 end
+    local turbo = IsToggleModOn(vehicle, 18) and 1 or 0
+    return ('%s|%d|%d'):format(GetEntityModel(vehicle), eng, turbo)
+end
+
+local function snapshotPerformanceBaseline(vehicle)
+    local snap = {}
+    for _, field in ipairs(PERF_FIELDS) do
+        snap[field] = GetVehicleHandlingFloat(vehicle, 'CHandlingData', field)
+    end
+    snap.maxSpeedMs = 0.0
+    local capped = GetVehicleMaxSpeed(vehicle)
+    if capped and capped > 0.5 then
+        snap.maxSpeedMs = capped
+    end
+    return snap
+end
+
+local function applyKitPerformanceFromBaseline(vehicle, orig, tune)
+    local accelMult = tonumber(tune.acceleration) or 1.045
+    local topMult = tonumber(tune.topSpeed) or 1.028
+    local brakeMult = tonumber(tune.braking) or 1.06
+    local steerMult = tonumber(tune.steering) or 1.025
+    local tractionMult = tonumber(tune.traction) or 1.03
+    local inertiaMult = tonumber(tune.driveInertia) or 0.97
+    local extraKmh = tonumber(tune.extraMaxKmh) or 6
+
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fInitialDriveForce', orig.fInitialDriveForce * accelMult)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fInitialDriveMaxFlatVel', orig.fInitialDriveMaxFlatVel * topMult)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fBrakeForce', orig.fBrakeForce * brakeMult)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fSteeringLock', orig.fSteeringLock * steerMult)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMax', orig.fTractionCurveMax * tractionMult)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fTractionCurveMin', orig.fTractionCurveMin * tractionMult)
+    SetVehicleHandlingFloat(vehicle, 'CHandlingData', 'fDriveInertia', orig.fDriveInertia * inertiaMult)
+
+    if orig.maxSpeedMs and orig.maxSpeedMs > 0.5 then
+        SetVehicleMaxSpeed(vehicle, (orig.maxSpeedMs * topMult) + (extraKmh / 3.6))
+    end
+end
+
+local function removeKitPerformance(vehicle)
+    if not vehicle or vehicle == 0 then
+        KIT_PERF[vehicle] = nil
+        return
+    end
+    local entry = KIT_PERF[vehicle]
+    if not entry or not entry.orig or not DoesEntityExist(vehicle) then
+        KIT_PERF[vehicle] = nil
+        return
+    end
+    for _, field in ipairs(PERF_FIELDS) do
+        local val = entry.orig[field]
+        if val then
+            SetVehicleHandlingFloat(vehicle, 'CHandlingData', field, val)
+        end
+    end
+    if entry.orig.maxSpeedMs and entry.orig.maxSpeedMs > 0.5 then
+        SetVehicleMaxSpeed(vehicle, entry.orig.maxSpeedMs)
+    else
+        SetVehicleMaxSpeed(vehicle, 0.0)
+    end
+    KIT_PERF[vehicle] = nil
+end
+
+local function syncKitPerformance(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    if not performanceTuneEnabled() then
+        removeKitPerformance(vehicle)
+        return
+    end
+
+    local _, kit = readVehicleStateBag(vehicle)
+    if kit ~= true or vehicleSupportsNativeEmergency(vehicle) then
+        removeKitPerformance(vehicle)
+        return
+    end
+
+    local tune = getPerformanceTuneCfg()
+    local sig = buildPerfSignature(vehicle)
+    local entry = KIT_PERF[vehicle]
+
+    if not entry or entry.sig ~= sig or not entry.orig then
+        if entry then removeKitPerformance(vehicle) end
+        KIT_PERF[vehicle] = {
+            sig = sig,
+            orig = snapshotPerformanceBaseline(vehicle),
+        }
+        entry = KIT_PERF[vehicle]
+    end
+
+    applyKitPerformanceFromBaseline(vehicle, entry.orig, tune)
+end
+
+local function drawLensMarker(x, y, z, r, g, b, alpha)
+    DrawMarker(
+        28,
+        x, y, z,
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0,
+        0.085, 0.085, 0.085,
+        r, g, b, alpha,
+        false, false, 2, false, false, false, false
+    )
+end
+
 local function drawScriptFlash(vehicle)
     if not DoesEntityExist(vehicle) then return end
-    local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
-    local z = (mx.z * 1.06) + 0.06
-    local yBias = mn.y + 0.45
-    local c = GetEntityCoords(vehicle)
+
+    local interval = tonumber(Ec.flashIntervalMs) or 560
+    local phase = math.floor(GetGameTimer() / interval) % 2 == 0
+    local lightRange = tonumber(Ec.flashLightRange) or 2.2
+    local lightPower = tonumber(Ec.flashLightIntensity) or 3.5
+
+    local prop = LIGHTBARS[vehicle]
+    local barPos
     local fwd = GetEntityForwardVector(vehicle)
-    --- „Stogo“ taškai iš šonų — raudona / mėlyna vilktis
-    local side = math.sin(GetGameTimer() / 150.0) > 0 and 1.0 or -1.0
-    local rightVec = vector3(-fwd.y, fwd.x, 0.0)
-    local wx = rightVec.x * side * 0.85
-    local wy = rightVec.y * side * 0.85
-    local x = (c.x + wx * 0.4) + (fwd.x * yBias)
-    local yy = (c.y + wy * 0.4) + (fwd.y * yBias)
-    local zz = c.z + z
-    if side > 0 then
-        DrawLightWithRange(x, yy, zz, 220, 20, 20, 9.5, 32.0)
+    local right = vector3(-fwd.y, fwd.x, 0.0)
+
+    if prop and DoesEntityExist(prop) then
+        barPos = GetEntityCoords(prop)
     else
-        DrawLightWithRange(x, yy, zz, 20, 40, 255, 9.5, 32.0)
+        local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
+        local z = mx.z + 0.12
+        local yBias = mn.y + 0.35
+        local c = GetEntityCoords(vehicle)
+        barPos = vector3(c.x + fwd.x * yBias, c.y + fwd.y * yBias, c.z + z)
+    end
+
+    local leftPos = barPos + right * (-0.38)
+    local rightPos = barPos + right * 0.38
+    local centerPos = barPos + vector3(0.0, 0.0, 0.06)
+
+    if phase then
+        drawLensMarker(leftPos.x, leftPos.y, leftPos.z, 220, 28, 28, 175)
+        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 200, 40, 40, 120)
+        if lightRange > 0 and lightPower > 0 then
+            DrawLightWithRange(leftPos.x, leftPos.y, leftPos.z, 220, 30, 30, lightRange, lightPower)
+        end
+    else
+        drawLensMarker(rightPos.x, rightPos.y, rightPos.z, 28, 72, 220, 175)
+        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 40, 80, 200, 120)
+        if lightRange > 0 and lightPower > 0 then
+            DrawLightWithRange(rightPos.x, rightPos.y, rightPos.z, 30, 72, 220, lightRange, lightPower)
+        end
     end
 end
 
@@ -195,15 +403,17 @@ end
 
 local function ingestFromEntity(vehicle)
     if not vehicle or vehicle == 0 or not IsEntityAVehicle(vehicle) or not DoesEntityExist(vehicle) then return end
-    local mode, _kit = readVehicleStateBag(vehicle)
+    local mode, kit = readVehicleStateBag(vehicle)
     TRACKED[vehicle] = TRACKED[vehicle] or {}
     TRACKED[vehicle].supportsNative = vehicleSupportsNativeEmergency(vehicle)
+    syncKitVisuals(vehicle)
 
-    --- visada bandome nuimti / perstatyti natyvią sirena pagal būseną
     if mode == 'off' then
         stopNativeSirenVisual(vehicle)
-        TRACKED[vehicle] = nil
         stopScriptSound(vehicle)
+        if not kit then
+            TRACKED[vehicle] = nil
+        end
         return
     elseif mode == 'lights' then
         stopScriptSound(vehicle)
@@ -262,6 +472,8 @@ CreateThread(function()
         for veh, meta in pairs(TRACKED) do
             if not DoesEntityExist(veh) then
                 stopScriptSound(veh)
+                removeLightbar(veh)
+                removeKitPerformance(veh)
                 TRACKED[veh] = nil
             else
                 local mode = select(1, readVehicleStateBag(veh))
@@ -289,6 +501,8 @@ CreateThread(function()
         for veh, meta in pairs(TRACKED) do
             if not DoesEntityExist(veh) then
                 stopScriptSound(veh)
+                removeLightbar(veh)
+                removeKitPerformance(veh)
                 TRACKED[veh] = nil
             else
                 local mode = select(1, readVehicleStateBag(veh))
@@ -316,6 +530,8 @@ CreateThread(function()
         for veh, meta in pairs(TRACKED) do
             if not DoesEntityExist(veh) then
                 stopScriptSound(veh)
+                removeLightbar(veh)
+                removeKitPerformance(veh)
                 TRACKED[veh] = nil
             else
                 local mode = select(1, readVehicleStateBag(veh))
@@ -342,7 +558,13 @@ CreateThread(function()
         local veh = GetVehiclePedIsIn(ped, false)
         if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
             lastVehAsDriver = veh
-            if emergencyOnDuty() then ingestFromEntity(veh) end
+            if emergencyOnDuty() then
+                ingestFromEntity(veh)
+                local _, kit = readVehicleStateBag(veh)
+                if kit and not vehicleSupportsNativeEmergency(veh) and performanceTuneEnabled() then
+                    syncKitPerformance(veh)
+                end
+            end
         elseif lastVehAsDriver ~= 0 then
             if RESET_ON_EXIT and DoesEntityExist(lastVehAsDriver) then
                 local netId = safeVehicleNetId(lastVehAsDriver)
@@ -361,13 +583,20 @@ CreateThread(function()
     end
 end)
 
+local function getOccupiedVehicleLocal()
+    local ped = PlayerPedId()
+    local veh = GetVehiclePedIsIn(ped, false)
+    if not veh or veh == 0 then return nil end
+    return veh
+end
+
 local function openSirenModesMenu()
     if not canPdSirenMenu() then
         return QBCore.Functions.Notify('Šis meniu – tik tarnybiniu policininkų.', 'error')
     end
-    local veh = getDriverVehicleLocal()
+    local veh = getOccupiedVehicleLocal()
     if not veh then
-        return QBCore.Functions.Notify('Turi būti vairo vietoje.', 'error')
+        return QBCore.Functions.Notify('Turi būti transporto salėje.', 'error')
     end
     local _, kit = readVehicleStateBag(veh)
     if (not vehicleSupportsNativeEmergency(veh)) and kit ~= true then
@@ -450,3 +679,37 @@ end, false)
 RegisterCommand(cmdKit, function()
     runIfAdminCommand(openKitMenu)
 end, false)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for veh, prop in pairs(LIGHTBARS) do
+        if prop and DoesEntityExist(prop) then
+            DeleteEntity(prop)
+        end
+        LIGHTBARS[veh] = nil
+    end
+    for veh in pairs(KIT_PERF) do
+        if veh and DoesEntityExist(veh) then
+            removeKitPerformance(veh)
+        else
+            KIT_PERF[veh] = nil
+        end
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(750)
+        local ped = PlayerPedId()
+        local veh = GetVehiclePedIsIn(ped, false)
+        if veh == 0 or GetPedInVehicleSeat(veh, -1) ~= ped then
+            goto continue
+        end
+        local _, kit = readVehicleStateBag(veh)
+        if kit ~= true or vehicleSupportsNativeEmergency(veh) or not performanceTuneEnabled() then
+            goto continue
+        end
+        syncKitPerformance(veh)
+        ::continue::
+    end
+end)

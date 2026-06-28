@@ -57,7 +57,7 @@ Config.JobStationNpcs = {
         stationId = 'ls_main',
         role = 'reception',
         model = 's_f_y_cop_01',
-        coords = vector4(442.8203, -982.3546, 30.6895, 90.0),
+        coords = vector4(441.2229, -982.0843, 30.6895, 275.1584),
         label = 'PD registratūra',
         blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra' },
     },

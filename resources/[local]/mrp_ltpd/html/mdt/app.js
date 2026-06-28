@@ -266,8 +266,14 @@ document.querySelectorAll('.tab').forEach((t) => {
       });
     }
     if (t.dataset.tab === 'calls' || t.dataset.tab === 'crews') refreshDispatch();
-    if (t.dataset.tab === 'cctv') refreshCctvList();
-    if (t.dataset.tab === 'bodycam') refreshBodycamList();
+    if (t.dataset.tab === 'cctv') {
+      applySurveillanceMaintenanceUi();
+      refreshCctvList();
+    }
+    if (t.dataset.tab === 'bodycam') {
+      applySurveillanceMaintenanceUi();
+      refreshBodycamList();
+    }
     if (t.dataset.tab !== 'cctv' && t.dataset.tab !== 'bodycam') {
       if (cctvLiveActive || mdtSurveillanceLive || document.body.classList.contains('mdt-surveillance-live')) {
         stopSurveillanceUi(false);
@@ -948,6 +954,37 @@ function applySurveillanceMaintenanceFromOpen(data) {
   bodycamMaintenance = on;
   cctvMaintenanceMessage = msg;
   bodycamMaintenanceMessage = msg;
+  applySurveillanceMaintenanceUi();
+}
+
+function applySurveillanceMaintenanceUi() {
+  const cctvWrap = document.getElementById('cctvPanelWrap');
+  const cctvOverlay = document.getElementById('cctvOffline');
+  const cctvMsg = document.getElementById('cctvOfflineMsg');
+  const cctvList = document.getElementById('cctvList');
+
+  if (cctvWrap) cctvWrap.classList.toggle('is-surv-offline', cctvMaintenance);
+  if (cctvOverlay) cctvOverlay.classList.toggle('hidden', !cctvMaintenance);
+  if (cctvMsg) cctvMsg.textContent = cctvMaintenanceMessage;
+  if (cctvMaintenance && cctvList) cctvList.innerHTML = '';
+
+  const bodyWrap = document.getElementById('bodycamPanelWrap');
+  const bodyOverlay = document.getElementById('bodycamOffline');
+  const bodyMsg = document.getElementById('bodycamOfflineMsg');
+  const bodyList = document.getElementById('bodycamList');
+
+  if (bodyWrap) bodyWrap.classList.toggle('is-surv-offline', bodycamMaintenance);
+  if (bodyOverlay) bodyOverlay.classList.toggle('hidden', !bodycamMaintenance);
+  if (bodyMsg) bodyMsg.textContent = bodycamMaintenanceMessage;
+  if (bodycamMaintenance && bodyList) bodyList.innerHTML = '';
+
+  setSurvToolbarDisabled('cctv', cctvMaintenance);
+  setSurvToolbarDisabled('bodycam', bodycamMaintenance);
+
+  if (cctvMaintenance) {
+    const crumb = document.getElementById('cctvBreadcrumb');
+    if (crumb) crumb.textContent = 'Vaizdo stebėjimo tinklas • laikinai išjungtas';
+  }
 }
 
 function setSurvMaintenancePreview(statusId, message) {
@@ -960,8 +997,18 @@ function setSurvMaintenancePreview(statusId, message) {
 function setSurvToolbarDisabled(kind, disabled) {
   const ids =
     kind === 'cctv'
-      ? ['cctvWatchBtn', 'cctvStopBtn', 'cctvPrevCam', 'cctvNextCam', 'cctvBackBtn']
-      : ['bodycamWatchBtn', 'bodycamStopBtn'];
+      ? [
+          'cctvFilter',
+          'cctvSearch',
+          'cctvRefresh',
+          'cctvWatchBtn',
+          'cctvStopBtn',
+          'cctvPrevCam',
+          'cctvNextCam',
+          'cctvBackBtn',
+          'cctvAudio',
+        ]
+      : ['bodycamRefresh', 'bodycamWatchBtn', 'bodycamStopBtn'];
   ids.forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.disabled = !!disabled;
@@ -969,13 +1016,10 @@ function setSurvToolbarDisabled(kind, disabled) {
 }
 
 function renderBodycamMaintenanceList(el, message) {
-  el.innerHTML = '';
-  const card = document.createElement('div');
-  card.className = 'card surv-card surv-offline-card';
-  card.innerHTML = `<span class="badge off">NEVEIKIA</span><h4>Kūno kamerų sistema</h4><div class="muted">MDT transliacija • laikinai išjungta</div>`;
-  el.appendChild(card);
-  setSurvMaintenancePreview('bodycamStatus', message);
-  setSurvToolbarDisabled('bodycam', true);
+  if (message) bodycamMaintenanceMessage = message;
+  bodycamMaintenance = true;
+  if (el) el.innerHTML = '';
+  applySurveillanceMaintenanceUi();
 }
 
 function activateMdtTab(tabId) {
@@ -1125,10 +1169,7 @@ function cctvSelectCamera(camId) {
 }
 
 function cctvWatchSelected() {
-  if (cctvMaintenance) {
-    setSurvMaintenancePreview('cctvStatus', cctvMaintenanceMessage);
-    return Promise.resolve();
-  }
+  if (cctvMaintenance) return Promise.resolve();
   if (!selectedCctvId) return;
   const audio = document.getElementById('cctvAudio').checked;
   return nuiPost('cctvWatch', { camId: selectedCctvId }).then((res) => {
@@ -1169,33 +1210,7 @@ function renderCctvPanel() {
 
   if (cctvMaintenance) {
     cctvView = 'sites';
-    const rows = cctvSites.filter((s) => {
-      if (zone && s.zone !== zone) return false;
-      if (!q) return true;
-      const hay = `${s.label || ''} ${s.id || ''} ${s.zoneLabel || ''}`.toLowerCase();
-      return hay.includes(q);
-    });
-    if (!rows.length) {
-      el.innerHTML = '<div class="muted">Vietų nerasta.</div>';
-    } else {
-      rows.forEach((s) => {
-        const card = document.createElement('button');
-        card.type = 'button';
-        card.className = 'card surv-card surv-site-card surv-card-disabled';
-        card.innerHTML = `<h4>${escapeHtml(s.label)}</h4><div class="muted">${escapeHtml(s.zoneLabel || s.zone)} • ${s.cameraCount} kamera(-os)</div><span class="badge off">NEVEIKIA</span>`;
-        card.onclick = () => {
-          const status = document.getElementById('cctvStatus');
-          if (status) {
-            status.textContent = `${s.label} • sistema neprieinama`;
-          }
-          setSurvMaintenancePreview('cctvStatus', cctvMaintenanceMessage);
-        };
-        el.appendChild(card);
-      });
-    }
-    const crumb = document.getElementById('cctvBreadcrumb');
-    if (crumb) crumb.textContent = 'Vaizdo stebėjimo tinklas • laikinai išjungtas';
-    setSurvToolbarDisabled('cctv', true);
+    applySurveillanceMaintenanceUi();
     return;
   }
 
@@ -1291,12 +1306,15 @@ function refreshCctvList() {
       sel.value = cur;
       sel.onchange = renderCctvPanel;
       document.getElementById('cctvSearch').oninput = renderCctvPanel;
-      setSurvMaintenancePreview('cctvStatus', cctvMaintenanceMessage);
       updateCctvNavButtons();
       renderCctvPanel();
       return;
     }
     setSurvToolbarDisabled('cctv', false);
+    const cctvWrap = document.getElementById('cctvPanelWrap');
+    const cctvOverlay = document.getElementById('cctvOffline');
+    if (cctvWrap) cctvWrap.classList.remove('is-surv-offline');
+    if (cctvOverlay) cctvOverlay.classList.add('hidden');
     const status = document.getElementById('cctvStatus');
     if (status) status.classList.remove('surv-offline-status');
     cctvSites = res.sites || [];
@@ -1351,7 +1369,12 @@ function renderBodycamList() {
       renderBodycamMaintenanceList(el, bodycamMaintenanceMessage);
       return;
     }
+    bodycamMaintenance = false;
     setSurvToolbarDisabled('bodycam', false);
+    const bodyWrap = document.getElementById('bodycamPanelWrap');
+    const bodyOverlay = document.getElementById('bodycamOffline');
+    if (bodyWrap) bodyWrap.classList.remove('is-surv-offline');
+    if (bodyOverlay) bodyOverlay.classList.add('hidden');
     const status = document.getElementById('bodycamStatus');
     if (status) {
       status.classList.remove('surv-offline-status');
@@ -1386,10 +1409,7 @@ function refreshBodycamList() {
 
 document.getElementById('bodycamRefresh').onclick = () => refreshBodycamList();
 document.getElementById('bodycamWatchBtn').onclick = () => {
-  if (bodycamMaintenance) {
-    setSurvMaintenancePreview('bodycamStatus', bodycamMaintenanceMessage);
-    return;
-  }
+  if (bodycamMaintenance) return;
   if (!selectedBodycamId) return;
   nuiPost('bodycamWatch', { targetId: selectedBodycamId }).then((res) => {
     if (!res || !res.ok) {

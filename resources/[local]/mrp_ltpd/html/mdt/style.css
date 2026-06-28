@@ -502,6 +502,17 @@ input, select {
   background: rgba(0, 0, 0, 0.35);
   color: #e5e7eb;
 }
+.surv-panel-wrap {
+  position: relative;
+  min-height: 360px;
+}
+.surv-panel-wrap.is-surv-offline .surv-toolbar,
+.surv-panel-wrap.is-surv-offline .surv-split,
+.surv-panel-wrap.is-surv-offline .cctv-breadcrumb {
+  pointer-events: none;
+  opacity: 0.28;
+  filter: grayscale(0.9);
+}
 .surv-split {
   display: grid;
   grid-template-columns: 1fr 280px;

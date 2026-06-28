@@ -67,5 +67,7 @@ dependencies {
 
 server_exports {
     'SaveInterrogationRecord',
+    'PersistVehicleEmergencyMods',
+    'ApplyVehicleEmergencyFromMods',
 }
 -- qb-menu (garažo meniu), qb-inventory (ginklinė / stash), qb-target (zonos)

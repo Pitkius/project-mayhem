@@ -1247,7 +1247,91 @@ exports('HasLtpdPermission', function(src, key)
     return hasPerm(src, key)
 end)
 
---- PD sirenos įranga: entity statebags (networked vehicles)
+--- PD sirenos įranga: entity statebags (networked vehicles) + išsaugojimas player_vehicles.mods
+local EMERGENCY_MOD_KEYS = { mrpPdKit = true, mrpEmsKit = true }
+
+local function normalizePlate(plate)
+    return QBCore.Shared.Trim(tostring(plate or '')):upper()
+end
+
+local function mergeVehicleEmergencyMods(plate, citizenid, fields)
+    plate = normalizePlate(plate)
+    if plate == '' or type(fields) ~= 'table' then return end
+    citizenid = citizenid and tostring(citizenid) or nil
+
+    local row
+    if citizenid then
+        row = MySQL.single.await(
+            'SELECT mods FROM player_vehicles WHERE plate = ? AND citizenid = ? LIMIT 1',
+            { plate, citizenid }
+        )
+    else
+        row = MySQL.single.await('SELECT mods FROM player_vehicles WHERE plate = ? LIMIT 1', { plate })
+    end
+    if not row then return end
+
+    local mods = {}
+    if row.mods and row.mods ~= '' then
+        local ok, decoded = pcall(json.decode, row.mods)
+        if ok and type(decoded) == 'table' then mods = decoded end
+    end
+
+    for key, value in pairs(fields) do
+        if EMERGENCY_MOD_KEYS[key] then
+            if value == true then
+                mods[key] = true
+            else
+                mods[key] = nil
+            end
+        end
+    end
+
+    local whereSql = citizenid and 'plate = ? AND citizenid = ?' or 'plate = ?'
+    local params = citizenid and { json.encode(mods), plate, citizenid } or { json.encode(mods), plate }
+    MySQL.update.await(('UPDATE player_vehicles SET mods = ? WHERE %s'):format(whereSql), params)
+end
+
+exports('PersistVehicleEmergencyMods', function(plate, citizenid, fields)
+    mergeVehicleEmergencyMods(plate, citizenid, fields)
+end)
+
+exports('ApplyVehicleEmergencyFromMods', function(veh, mods)
+    if type(mods) == 'string' and mods ~= '' then
+        local ok, decoded = pcall(json.decode, mods)
+        mods = ok and decoded or nil
+    end
+    if type(mods) ~= 'table' then return end
+    if mods.mrpPdKit == true then
+        Entity(veh).state:set('ltPdKit', true, true)
+    end
+    if mods.mrpEmsKit == true then
+        Entity(veh).state:set('ltEmsKit', true, true)
+    end
+end)
+
+RegisterNetEvent('mrp_ltpd:server:restoreVehicleEmergency', function(netId)
+    local src = source
+    netId = tonumber(netId)
+    if not netId or not NetworkDoesNetworkIdExist(netId) then return end
+
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    local plate = normalizePlate(GetVehicleNumberPlateText(veh))
+    if plate == '' then return end
+
+    local row = MySQL.single.await(
+        'SELECT mods FROM player_vehicles WHERE plate = ? AND citizenid = ? LIMIT 1',
+        { plate, Player.PlayerData.citizenid }
+    )
+    if not row then return end
+
+    exports['mrp_ltpd']:ApplyVehicleEmergencyFromMods(veh, row.mods)
+end)
+
 local function normalizeEmergencyMode(mode)
     mode = tostring(mode or 'off'):gsub('^%s+', ''):gsub('%s+$', ''):lower()
     return mode
@@ -1260,6 +1344,22 @@ local function pedVehicleSeatIsDriver(src)
     if not veh or veh == 0 then return nil end
     if GetPedInVehicleSeat(veh, -1) ~= ped then return nil end
     return ped, veh
+end
+
+local function pedVehicleOccupant(src)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return nil end
+    local veh = GetVehiclePedIsIn(ped, false)
+    if not veh or veh == 0 then return nil end
+    return ped, veh
+end
+
+local function pedVehicleForSirenControl(src)
+    local ec = Config.EmergencyVehicle or {}
+    if ec.allowPassengerControl == false then
+        return pedVehicleSeatIsDriver(src)
+    end
+    return pedVehicleOccupant(src)
 end
 
 local function vehicleNearPlayer(src, veh, maxDist)
@@ -1305,9 +1405,9 @@ RegisterNetEvent('mrp_ltpd:server:setPdEmergencyMode', function(mode)
     end
     mode = normalizeEmergencyMode(type(mode) == 'string' and mode or 'off')
     if not LtPdEmergencyModes[mode] then mode = 'off' end
-    local     _, veh = pedVehicleSeatIsDriver(src)
+    local     _, veh = pedVehicleForSirenControl(src)
     if not veh then
-        return TriggerClientEvent('QBCore:Notify', src, 'Turi būti vairuotoju transporte.', 'error')
+        return TriggerClientEvent('QBCore:Notify', src, 'Turi būti transporto salėje.', 'error')
     end
     if safeVehicleNetId(veh) == 0 then
         return TriggerClientEvent('QBCore:Notify', src, 'Mašina turi būti tinkamai sinchronizuota (išimk iš garažo / naujas spawn).', 'error')
@@ -1375,8 +1475,12 @@ RegisterNetEvent('mrp_ltpd:server:setPdEmergencyKit', function(equip)
         TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[kitItem], 'add', 1)
     end
     Entity(veh).state:set('ltPdKit', equip, true)
+    local plate = normalizePlate(GetVehicleNumberPlateText(veh))
+    if plate ~= '' then
+        mergeVehicleEmergencyMods(plate, Player.PlayerData.citizenid, { mrpPdKit = equip })
+    end
     if equip then
-        TriggerClientEvent('QBCore:Notify', src, 'Įdėtos laikinos sirenos ir žibintai ant šio TP – nuimi per tą patį meniu.', 'success')
+        TriggerClientEvent('QBCore:Notify', src, 'Įdėtos sirenos, švyturėliai ir lengvas našumo pakėlimas ant šio TP.', 'success')
     else
         Entity(veh).state:set('ltPdSirenMode', 'off', true)
         TriggerClientEvent('QBCore:Notify', src, 'Laikina įranga nuimta.', 'primary')

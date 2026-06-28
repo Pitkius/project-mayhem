@@ -144,39 +144,57 @@
         <div id="interrResults" class="results"></div>
       </section>
       <section id="panel-cctv" class="panel hidden">
-        <div class="surv-toolbar row">
-          <select id="cctvFilter" class="surv-select">
-            <option value="">Visos kategorijos</option>
-          </select>
-          <input type="text" id="cctvSearch" placeholder="Ieškoti vietos…" />
-          <button type="button" id="cctvRefresh" class="btn">Atnaujinti</button>
-          <button type="button" id="cctvBackBtn" class="btn hidden">&lt; Vietos</button>
-          <button type="button" id="cctvPrevCam" class="btn hidden">&lt; Kamera</button>
-          <button type="button" id="cctvNextCam" class="btn hidden">Kamera ›</button>
-          <button type="button" id="cctvWatchBtn" class="btn primary">Stebėti tiesiogiai</button>
-          <button type="button" id="cctvStopBtn" class="btn danger">Stabdyti</button>
-          <label class="surv-audio-toggle"><input type="checkbox" id="cctvAudio" checked /> Garsas</label>
-        </div>
-        <div id="cctvBreadcrumb" class="cctv-breadcrumb muted">Pasirink stebėjimo vietą</div>
-        <div class="surv-split">
-          <div id="cctvList" class="surv-list results"></div>
-          <div class="surv-preview">
-        <div id="cctvStatus" class="surv-status muted">Pasirink vietą (pvz. Fleeca bankas). Stebėjimui reikia būti prie PD stoties.</div>
-        <div id="cctvLiveHint" class="surv-live-hint hidden">Tiesiogiai • Vaizdas rodomas žaidime • ESC arba „Stabdyti“ MDT lange</div>
+        <div id="cctvPanelWrap" class="surv-panel-wrap">
+          <div class="surv-toolbar row">
+            <select id="cctvFilter" class="surv-select">
+              <option value="">Visos kategorijos</option>
+            </select>
+            <input type="text" id="cctvSearch" placeholder="Ieškoti vietos…" />
+            <button type="button" id="cctvRefresh" class="btn">Atnaujinti</button>
+            <button type="button" id="cctvBackBtn" class="btn hidden">&lt; Vietos</button>
+            <button type="button" id="cctvPrevCam" class="btn hidden">&lt; Kamera</button>
+            <button type="button" id="cctvNextCam" class="btn hidden">Kamera ›</button>
+            <button type="button" id="cctvWatchBtn" class="btn primary">Stebėti tiesiogiai</button>
+            <button type="button" id="cctvStopBtn" class="btn danger">Stabdyti</button>
+            <label class="surv-audio-toggle"><input type="checkbox" id="cctvAudio" checked /> Garsas</label>
+          </div>
+          <div id="cctvBreadcrumb" class="cctv-breadcrumb muted">Pasirink stebėjimo vietą</div>
+          <div class="surv-split">
+            <div id="cctvList" class="surv-list results"></div>
+            <div class="surv-preview">
+              <div id="cctvStatus" class="surv-status muted">Pasirink vietą (pvz. Fleeca bankas). Stebėjimui reikia būti prie PD stoties.</div>
+              <div id="cctvLiveHint" class="surv-live-hint hidden">Tiesiogiai • Vaizdas rodomas žaidime • ESC arba „Stabdyti“ MDT lange</div>
+            </div>
+          </div>
+          <div id="cctvOffline" class="gps-map-offline hidden" aria-live="polite">
+            <div class="gps-map-offline-card surv-offline-card">
+              <span class="badge off">NEVEIKIA</span>
+              <h3>Vaizdo stebėjimas</h3>
+              <p class="surv-offline-msg" id="cctvOfflineMsg"></p>
+            </div>
           </div>
         </div>
       </section>
       <section id="panel-bodycam" class="panel hidden">
-        <div class="surv-toolbar row">
-          <button type="button" id="bodycamRefresh" class="btn">Atnaujinti</button>
-          <button type="button" id="bodycamWatchBtn" class="btn primary">Žiūrėti tiesiogiai</button>
-          <button type="button" id="bodycamStopBtn" class="btn danger">Stabdyti</button>
-        </div>
-        <div class="surv-split">
-          <div id="bodycamList" class="surv-list results"></div>
-          <div class="surv-preview">
-            <div id="bodycamStatus" class="surv-status muted">Pasirink pareigūno bodycam</div>
-            <div id="bodycamLiveHint" class="surv-live-hint hidden">Tiesioginė kūno kamera • Vaizdas žaidime • ESC stabdo</div>
+        <div id="bodycamPanelWrap" class="surv-panel-wrap">
+          <div class="surv-toolbar row">
+            <button type="button" id="bodycamRefresh" class="btn">Atnaujinti</button>
+            <button type="button" id="bodycamWatchBtn" class="btn primary">Žiūrėti tiesiogiai</button>
+            <button type="button" id="bodycamStopBtn" class="btn danger">Stabdyti</button>
+          </div>
+          <div class="surv-split">
+            <div id="bodycamList" class="surv-list results"></div>
+            <div class="surv-preview">
+              <div id="bodycamStatus" class="surv-status muted">Pasirink pareigūno bodycam</div>
+              <div id="bodycamLiveHint" class="surv-live-hint hidden">Tiesioginė kūno kamera • Vaizdas žaidime • ESC stabdo</div>
+            </div>
+          </div>
+          <div id="bodycamOffline" class="gps-map-offline hidden" aria-live="polite">
+            <div class="gps-map-offline-card surv-offline-card">
+              <span class="badge off">NEVEIKIA</span>
+              <h3>Kūno kamera</h3>
+              <p class="surv-offline-msg" id="bodycamOfflineMsg"></p>
+            </div>
           </div>
         </div>
       </section>

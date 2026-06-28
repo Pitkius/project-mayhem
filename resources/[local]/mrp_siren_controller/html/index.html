@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Emergency Siren Controller</title>
+    <title>Sirenos valdymas</title>
     <link rel="stylesheet" href="nui://mrp_fonts/html/ui.css" />
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
     <div id="scRoot" class="sc-root hidden">
-        <div class="sc-backdrop" id="scBackdrop"></div>
+        <div class="sc-backdrop" id="scBackdrop" aria-hidden="true"></div>
         <div class="sc-panel" id="scPanel">
+            <div class="sc-panel-glow" aria-hidden="true"></div>
             <header class="sc-header">
                 <div class="sc-brand">
                     <span class="sc-brand-ico" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l7 4v6c0 5-3.5 9.5-7 11-3.5-1.5-7-6-7-11V6l7-4z" stroke="currentColor" stroke-width="1.6"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </span>
                     <div class="sc-brand-text">
-                        <span class="sc-brand-kicker">fivemprojektas</span>
-                        <h1>EMERGENCY SIREN CONTROLLER</h1>
+                        <span class="sc-brand-kicker">Fivempro • tarnybinis transportas</span>
+                        <h1>Sirenos valdymo pultas</h1>
                     </div>
                 </div>
                 <div class="sc-vehicle-info">
@@ -27,27 +28,29 @@
                         <span id="scVehicleName" class="sc-vi-val">—</span>
                     </div>
                     <div class="sc-vi-row">
-                        <span class="sc-vi-k">Statusas</span>
-                        <span id="scCodeStatus" class="sc-vi-badge sc-vi-off">OFF</span>
+                        <span class="sc-vi-k">Režimas</span>
+                        <span id="scCodeStatus" class="sc-vi-badge sc-vi-off">Išjungta</span>
                     </div>
                     <div class="sc-vi-row">
                         <span class="sc-vi-k">Aktyvi sirena</span>
                         <span id="scToneStatus" class="sc-vi-tone">—</span>
                     </div>
                 </div>
-                <button type="button" class="sc-close" id="scClose" title="Uždaryti">×</button>
+                <button type="button" class="sc-close" id="scClose" title="Uždaryti" aria-label="Uždaryti">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.6 6.6 12 13.2 5.4 6.6 4 8l6.6 6.6L4 21.2l1.4 1.4 6.6-6.6 6.6 6.6 1.4-1.4-6.6-6.6L20 8z"/></svg>
+                </button>
             </header>
 
             <div class="sc-body">
                 <section class="sc-section">
-                    <h2 class="sc-section-title">EMERGENCY MODES</h2>
+                    <h2 class="sc-section-title">Avariniai režimai</h2>
                     <div class="sc-code-grid">
                         <button type="button" class="sc-code sc-code-1" data-code="lights" id="btnCode1">
                             <span class="sc-code-glow" aria-hidden="true"></span>
                             <span class="sc-code-ico" aria-hidden="true">
                                 <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6A4.997 4.997 0 0 1 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>
                             </span>
-                            <strong>CODE 1</strong>
+                            <strong>Kodas 1</strong>
                             <span class="sc-code-sub">Švyturėliai</span>
                             <small>Tik švyturėliai — be garso</small>
                         </button>
@@ -56,7 +59,7 @@
                             <span class="sc-code-ico" aria-hidden="true">
                                 <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
                             </span>
-                            <strong>CODE 2</strong>
+                            <strong>Kodas 2</strong>
                             <span class="sc-code-sub">Garso signalas</span>
                             <small>Tik sirena — be švyturėlių</small>
                         </button>
@@ -65,22 +68,22 @@
                             <span class="sc-code-ico" aria-hidden="true">
                                 <svg viewBox="0 0 24 24"><path fill="currentColor" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
                             </span>
-                            <strong>CODE 3</strong>
+                            <strong>Kodas 3</strong>
                             <span class="sc-code-sub">Pilnas reagavimas</span>
-                            <small>Sirena + švyturėliai</small>
+                            <small>Sirena ir švyturėliai</small>
                         </button>
                     </div>
                 </section>
 
                 <div class="sc-mid-row">
                     <section class="sc-section sc-section-tones">
-                        <h2 class="sc-section-title">SIRENOS REŽIMAI</h2>
+                        <h2 class="sc-section-title">Sirenos tonai</h2>
                         <div class="sc-tone-grid">
                             <button type="button" class="sc-tone" data-tone="wail" id="btnWail">
                                 <span class="sc-tone-ico" aria-hidden="true">
                                     <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
                                 </span>
-                                <strong>WAIL</strong>
+                                <strong>Vilkimas</strong>
                                 <span>Lėta ilga sirena</span>
                                 <small>Ilgesnėse gatvėse</small>
                             </button>
@@ -88,7 +91,7 @@
                                 <span class="sc-tone-ico" aria-hidden="true">
                                     <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
                                 </span>
-                                <strong>YELP</strong>
+                                <strong>Ūkavimas</strong>
                                 <span>Greitesnė sirena</span>
                                 <small>Miesto centre</small>
                             </button>
@@ -96,15 +99,15 @@
                                 <span class="sc-tone-ico" aria-hidden="true">
                                     <svg viewBox="0 0 24 24"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
                                 </span>
-                                <strong>PRIORITY</strong>
+                                <strong>Prioritetas</strong>
                                 <span>Agresyvus signalas</span>
-                                <small>Kamščiams / perspėjimui</small>
+                                <small>Kamščiams ir perspėjimui</small>
                             </button>
                         </div>
                     </section>
 
                     <aside class="sc-schematic" aria-label="Šviesų schema">
-                        <div class="sc-schematic-label">LUXART PANEL</div>
+                        <div class="sc-schematic-label">Šviesų schema</div>
                         <div class="sc-car-top">
                             <svg viewBox="0 0 120 200" class="sc-car-svg" aria-hidden="true">
                                 <rect x="34" y="20" width="52" height="160" rx="14" fill="rgba(30,27,52,0.9)" stroke="rgba(167,139,250,0.35)" stroke-width="1.5"/>
@@ -118,9 +121,9 @@
                             <span class="sc-light sc-light-bar" id="lightBar"></span>
                         </div>
                         <div class="sc-schematic-stages">
-                            <span class="sc-stage" id="stageS1">S-1</span>
-                            <span class="sc-stage" id="stageS2">S-2</span>
-                            <span class="sc-stage" id="stageS3">S-3</span>
+                            <span class="sc-stage" id="stageS1" title="Tik švyturėliai">Šviesos</span>
+                            <span class="sc-stage" id="stageS2" title="Tik garsas">Garsas</span>
+                            <span class="sc-stage" id="stageS3" title="Pilnas režimas">Pilnas</span>
                         </div>
                     </aside>
                 </div>
@@ -128,18 +131,24 @@
                 <section class="sc-section sc-section-extra">
                     <div class="sc-extra-grid">
                         <button type="button" class="sc-extra" data-action="airhorn" id="btnAirhorn">
-                            <span class="sc-extra-ico" aria-hidden="true">📯</span>
-                            <strong>AIRHORN</strong>
-                            <small>Vienkartinis signalas</small>
+                            <span class="sc-extra-ico" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 10v4h3l4 4V6L6 10H3zm13.5-1.5c0 2.03-1.22 3.78-3 4.56v2.13c2.86-.98 5-3.55 5-6.69s-2.14-5.71-5-6.69v2.13c1.78.78 3 2.53 3 4.56zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                            </span>
+                            <strong>Signalas</strong>
+                            <small>Vienkartinis garsas</small>
                         </button>
                         <button type="button" class="sc-extra sc-extra-manual" data-action="manual" id="btnManual">
-                            <span class="sc-extra-ico" aria-hidden="true">🎤</span>
-                            <strong>MANUAL</strong>
+                            <span class="sc-extra-ico" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/></svg>
+                            </span>
+                            <strong>Rankinis</strong>
                             <small>Laikyk — groja sirena</small>
                         </button>
                         <button type="button" class="sc-extra sc-extra-mute" data-action="mute" id="btnMute">
-                            <span class="sc-extra-ico" aria-hidden="true">🔇</span>
-                            <strong>MUTE</strong>
+                            <span class="sc-extra-ico" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3.63 3.63a.996.996 0 0 0 0 1.41L7.29 8.7 7 9H3v6h4l5 5v-6.59l4.18 4.18c-.19.29-.39.56-.61.81l1.42 1.42c.52-.65.95-1.39 1.26-2.19l2.05 2.05c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41L5.05 3.63a.996.996 0 0 0-1.42 0zM19 12c0 .82-.15 1.61-.41 2.34l1.44 1.44A6.995 6.995 0 0 0 21 12c0-2.08-.9-3.96-2.34-5.27l-1.44 1.44A4.98 4.98 0 0 1 19 12zm-7-8v2.34l2 2V4h-2z"/></svg>
+                            </span>
+                            <strong>Pritildyti</strong>
                             <small>Išjungia visą garsą</small>
                         </button>
                     </div>

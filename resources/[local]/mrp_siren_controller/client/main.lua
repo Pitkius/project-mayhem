@@ -33,6 +33,32 @@ local function getDriverVehicle()
     return veh
 end
 
+local function getOccupiedVehicle()
+    local ped = PlayerPedId()
+    local veh = GetVehiclePedIsIn(ped, false)
+    if not veh or veh == 0 then return nil end
+    return veh
+end
+
+local function getSirenVehicle()
+    if Config.AllowPassengerControl == false then
+        return getDriverVehicle()
+    end
+    return getOccupiedVehicle()
+end
+
+local function applySirenNuiFocus(open)
+    if open then
+        SetNuiFocus(true, true)
+        if Config.KeepInputWhileOpen ~= false then
+            SetNuiFocusKeepInput(true)
+        end
+    else
+        SetNuiFocusKeepInput(false)
+        SetNuiFocus(false, false)
+    end
+end
+
 local function fleetHashSet(jobType)
     local list = Config.FleetVehicles[jobType] or {}
     local set = {}
@@ -117,7 +143,7 @@ end
 
 local function pushUiSync()
     if not uiOpen or not activeJobType then return end
-    local veh = getDriverVehicle()
+    local veh = getSirenVehicle()
     if not veh then return end
     local mode, tone, muted = readVehicleState(veh, activeJobType)
     SendNUIMessage({
@@ -135,9 +161,9 @@ local function openController(jobType)
     if not jobType or not canOpenForJob(jobType) then
         return QBCore.Functions.Notify('Neturi teisės arba neesi tarnyboje.', 'error')
     end
-    local veh = getDriverVehicle()
+    local veh = getSirenVehicle()
     if not veh then
-        return QBCore.Functions.Notify('Turi būti vairo vietoje.', 'error')
+        return QBCore.Functions.Notify('Turi būti transporto salėje.', 'error')
     end
     local cfg = getJobCfg(jobType)
     local bag = Entity(veh).state
@@ -155,7 +181,7 @@ local function openController(jobType)
     activeJobType = jobType
     uiOpen = true
     local mode, tone, muted = readVehicleState(veh, jobType)
-    SetNuiFocus(true, true)
+    applySirenNuiFocus(true)
     SendNUIMessage({
         action = 'open',
         code = mode,
@@ -171,13 +197,13 @@ local function closeController()
     uiOpen = false
     activeJobType = nil
     manualHeld = false
-    SetNuiFocus(false, false)
+    applySirenNuiFocus(false)
     SendNUIMessage({ action = 'close' })
 end
 
 local function setCode(mode)
     if not activeJobType then return end
-    local veh = getDriverVehicle()
+    local veh = getSirenVehicle()
     if not veh then return end
     local curMode = select(1, readVehicleState(veh, activeJobType))
     if curMode == mode then mode = 'off' end
@@ -188,7 +214,7 @@ end
 
 local function setTone(tone)
     if not activeJobType then return end
-    local veh = getDriverVehicle()
+    local veh = getSirenVehicle()
     if not veh then return end
     TriggerServerEvent('mrp_siren:server:setTone', NetworkGetNetworkIdFromEntity(veh), tone)
     SetTimeout(120, pushUiSync)
@@ -196,7 +222,7 @@ end
 
 local function toggleMute()
     if not activeJobType then return end
-    local veh = getDriverVehicle()
+    local veh = getSirenVehicle()
     if not veh then return end
     local _, _, muted = readVehicleState(veh, activeJobType)
     TriggerServerEvent('mrp_siren:server:setMuted', NetworkGetNetworkIdFromEntity(veh), not muted)
@@ -294,7 +320,7 @@ end, false)
 CreateThread(function()
     while true do
         if uiOpen then
-            local veh = getDriverVehicle()
+            local veh = getOccupiedVehicle()
             if not veh then
                 closeController()
             else
@@ -308,25 +334,31 @@ CreateThread(function()
 end)
 
 CreateThread(function()
-    local lastVeh = 0
+    local lastDriverVeh = 0
     while true do
         Wait(350)
-        local veh = getDriverVehicle()
-        if veh and veh ~= 0 then
-            lastVeh = veh
-        elseif lastVeh ~= 0 then
+        local ped = PlayerPedId()
+        local inVeh = GetVehiclePedIsIn(ped, false)
+        local driverVeh = getDriverVehicle()
+
+        if driverVeh and driverVeh ~= 0 then
+            lastDriverVeh = driverVeh
+        elseif lastDriverVeh ~= 0 then
             local jt = detectActiveJobType()
             if jt then
                 local cfg = getJobCfg(jt)
                 if cfg and cfg.clearOnExitEvent then
-                    local netId = NetworkGetNetworkIdFromEntity(lastVeh)
+                    local netId = NetworkGetNetworkIdFromEntity(lastDriverVeh)
                     if netId and netId ~= 0 then
                         TriggerServerEvent(cfg.clearOnExitEvent, netId)
                     end
                 end
             end
-            if uiOpen then closeController() end
-            lastVeh = 0
+            lastDriverVeh = 0
+        end
+
+        if uiOpen and (not inVeh or inVeh == 0) then
+            closeController()
         end
     end
 end)

@@ -2,6 +2,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local VALID_MODES = { off = true, lights = true, sound = true, full = true }
 local VALID_TONES = { wail = true, yelp = true, priority = true }
+local TONE_LABELS_LT = { wail = 'Vilkimas', yelp = 'Ūkavimas', priority = 'Prioritetas' }
 
 local function normalizeMode(mode)
     mode = type(mode) == 'string' and mode:lower() or 'off'
@@ -16,6 +17,21 @@ local function pedVehicleSeatIsDriver(src)
     if not veh or veh == 0 then return nil, nil end
     if GetPedInVehicleSeat(veh, -1) ~= ped then return nil, nil end
     return ped, veh
+end
+
+local function pedVehicleOccupant(src)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return nil, nil end
+    local veh = GetVehiclePedIsIn(ped, false)
+    if not veh or veh == 0 then return nil, nil end
+    return ped, veh
+end
+
+local function pedVehicleForSirenControl(src)
+    if Config.AllowPassengerControl == false then
+        return pedVehicleSeatIsDriver(src)
+    end
+    return pedVehicleOccupant(src)
 end
 
 local function vehicleNearPlayer(src, veh, dist)
@@ -65,10 +81,11 @@ RegisterNetEvent('mrp_siren:server:setTone', function(netId, tone)
     local veh = NetworkGetEntityFromNetworkId(netId)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     if not vehicleNearPlayer(src, veh) then return end
-    local _, driverVeh = pedVehicleSeatIsDriver(src)
+    local _, driverVeh = pedVehicleForSirenControl(src)
     if driverVeh ~= veh then return end
     if not isPdOnDuty(src) and not isEmsOnDuty(src) then return end
     Entity(veh).state:set('fpSirenTone', tone, true)
+    TriggerClientEvent('QBCore:Notify', src, ('Sirenos tonas: %s'):format(TONE_LABELS_LT[tone] or tone), 'primary')
     TriggerClientEvent('mrp_siren:client:syncUi', src)
 end)
 
@@ -80,7 +97,7 @@ RegisterNetEvent('mrp_siren:server:setMuted', function(netId, muted)
     local veh = NetworkGetEntityFromNetworkId(netId)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     if not vehicleNearPlayer(src, veh) then return end
-    local _, driverVeh = pedVehicleSeatIsDriver(src)
+    local _, driverVeh = pedVehicleForSirenControl(src)
     if driverVeh ~= veh then return end
     if not isPdOnDuty(src) and not isEmsOnDuty(src) then return end
     Entity(veh).state:set('fpSirenMuted', muted, true)
@@ -93,9 +110,9 @@ RegisterNetEvent('mrp_siren:server:setEmsEmergencyMode', function(mode)
         return TriggerClientEvent('QBCore:Notify', src, 'Tik EMS tarnyboje.', 'error')
     end
     mode = normalizeMode(mode)
-    local _, veh = pedVehicleSeatIsDriver(src)
+    local _, veh = pedVehicleForSirenControl(src)
     if not veh then
-        return TriggerClientEvent('QBCore:Notify', src, 'Turi būti vairuotoju transporte.', 'error')
+        return TriggerClientEvent('QBCore:Notify', src, 'Turi būti transporto salėje.', 'error')
     end
     if safeVehicleNetId(veh) == 0 then
         return TriggerClientEvent('QBCore:Notify', src, 'Mašina turi būti tinkamai sinchronizuota.', 'error')
@@ -158,6 +175,10 @@ RegisterNetEvent('mrp_siren:server:setEmsEmergencyKit', function(equip)
         TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[kitItem], 'add', 1)
     end
     Entity(veh).state:set('ltEmsKit', equip, true)
+    local plate = QBCore.Shared.Trim(GetVehicleNumberPlateText(veh)):upper()
+    if plate ~= '' and GetResourceState('mrp_ltpd') == 'started' then
+        exports['mrp_ltpd']:PersistVehicleEmergencyMods(plate, Player.PlayerData.citizenid, { mrpEmsKit = equip })
+    end
     if not equip then
         Entity(veh).state:set('ltEmsSirenMode', 'off', true)
     end

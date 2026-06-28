@@ -33,8 +33,9 @@ local function replacePlateTextures()
         tries = tries + 1
     end
 
-    RemoveReplaceTexture('vehshare', 'plate01')
-    AddReplaceTexture('vehshare', 'plate01', dict, tex)
+    local vanillaTex = 'plate02'
+    RemoveReplaceTexture('vehshare', vanillaTex)
+    AddReplaceTexture('vehshare', vanillaTex, dict, tex)
 
     textureReady = true
     print('^2[mrp_plates] MRP violet plate texture loaded^7')
@@ -94,6 +95,6 @@ end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    RemoveReplaceTexture('vehshare', 'plate01')
+    RemoveReplaceTexture('vehshare', 'plate02')
     appliedPlates = {}
 end)

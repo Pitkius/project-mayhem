@@ -5,17 +5,17 @@ const codeStatus = document.getElementById("scCodeStatus");
 const toneStatus = document.getElementById("scToneStatus");
 
 const CODE_LABELS = {
-  off: "OFF",
-  lights: "CODE 1",
-  sound: "CODE 2",
-  full: "CODE 3",
+  off: "Išjungta",
+  lights: "Kodas 1",
+  sound: "Kodas 2",
+  full: "Kodas 3",
 };
 
 const TONE_LABELS = {
   off: "—",
-  wail: "WAIL",
-  yelp: "YELP",
-  priority: "PRIORITY",
+  wail: "Vilkimas",
+  yelp: "Ūkavimas",
+  priority: "Prioritetas",
 };
 
 let state = {
@@ -46,18 +46,23 @@ function applyUi() {
     sound: "sc-vi-code2",
     full: "sc-vi-code3",
   };
-  codeStatus.textContent = CODE_LABELS[state.code] || "OFF";
+  codeStatus.textContent = CODE_LABELS[state.code] || "Išjungta";
   codeStatus.className = `sc-vi-badge ${badgeClass[state.code] || "sc-vi-off"}`;
 
   const hasSound = state.code === "sound" || state.code === "full";
   document.querySelectorAll(".sc-tone").forEach((btn) => {
     const tone = btn.getAttribute("data-tone");
-    const active = state.tone === tone && hasSound && !state.muted;
-    btn.classList.toggle("is-active", active);
-    btn.classList.toggle("is-dimmed", !hasSound || state.muted);
+    const selected = state.tone === tone;
+    btn.classList.toggle("is-active", selected && !state.muted);
+    btn.classList.toggle("is-pending", selected && !hasSound && !state.muted);
+    btn.classList.toggle("is-dimmed", state.muted);
   });
 
-  toneStatus.textContent = state.muted ? "MUTE" : (hasSound ? (TONE_LABELS[state.tone] || "—") : "—");
+  toneStatus.textContent = state.muted
+    ? "Pritildyta"
+    : hasSound
+      ? (TONE_LABELS[state.tone] || "—")
+      : (TONE_LABELS[state.tone] ? `${TONE_LABELS[state.tone]} (paruošta)` : "—");
 
   document.getElementById("btnMute")?.classList.toggle("is-active", state.muted);
   if (vehicleName) vehicleName.textContent = state.vehicleLabel || "—";
@@ -106,6 +111,9 @@ document.querySelectorAll(".sc-code").forEach((btn) => {
 document.querySelectorAll(".sc-tone").forEach((btn) => {
   btn.addEventListener("click", () => {
     const tone = btn.getAttribute("data-tone");
+    if (!tone) return;
+    state.tone = tone;
+    applyUi();
     nuiPost("setTone", { tone });
   });
 });

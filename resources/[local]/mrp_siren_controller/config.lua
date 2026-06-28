@@ -2,6 +2,10 @@ Config = {}
 
 Config.OpenKey = 'F6'
 Config.ValidateDistance = 28.0
+--- F6 meniu: vairuotojas gali vairuoti kol pultas atidarytas
+Config.KeepInputWhileOpen = true
+--- Bet kuri sėdynė (vairuotojas / keleivis / gale) gali jungti sirenas
+Config.AllowPassengerControl = true
 
 --- Chat komandos (/pdsirenai, /pdiranga, /emssirenai, /emsdiranga) – tik adminams; žaidėjai naudoja itemus arba F6.
 Config.CommandsAdminOnly = true

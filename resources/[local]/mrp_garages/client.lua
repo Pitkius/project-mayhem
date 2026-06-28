@@ -438,6 +438,24 @@ local function isSpawnClear(spawn)
     return true
 end
 
+local function captureEmergencyProps(veh, props)
+    props = props or {}
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return props end
+    local bag = Entity(veh).state
+    if not bag then return props end
+    props.mrpPdKit = bag.ltPdKit == true
+    props.mrpEmsKit = bag.ltEmsKit == true
+    return props
+end
+
+local function restoreEmergencyProps(veh, mods)
+    if not veh or veh == 0 or not DoesEntityExist(veh) or type(mods) ~= 'table' then return end
+    if mods.mrpPdKit ~= true and mods.mrpEmsKit ~= true then return end
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    if not netId or netId == 0 then return end
+    TriggerServerEvent('mrp_ltpd:server:restoreVehicleEmergency', netId)
+end
+
 local function doGarageVehicleSpawn(data)
     if not data or not data.plate or not data.spawn or not data.garageId then return end
     if not isSpawnClear(data.spawn) then
@@ -460,11 +478,22 @@ local function doGarageVehicleSpawn(data)
 
         SetVehicleNumberPlateText(veh, result.plate)
         SetEntityAsMissionEntity(veh, true, true)
+        local decodedMods
         if result.mods and result.mods ~= '' then
             local ok, mods = pcall(json.decode, result.mods)
-            if ok and mods and QBCore.Functions.SetVehicleProperties then
-                QBCore.Functions.SetVehicleProperties(veh, mods)
+            if ok and mods then
+                decodedMods = mods
+                if QBCore.Functions.SetVehicleProperties then
+                    QBCore.Functions.SetVehicleProperties(veh, mods)
+                end
             end
+        end
+        if decodedMods then
+            SetTimeout(150, function()
+                if DoesEntityExist(veh) then
+                    restoreEmergencyProps(veh, decodedMods)
+                end
+            end)
         end
         if GetResourceState('mrp_plates') == 'started' then
             exports['mrp_plates']:ApplyPlateStyle(veh)
@@ -529,7 +558,7 @@ RegisterNetEvent('mrp_garages:client:parkVehicle', function(data)
     end
 
     local plate = QBCore.Functions.GetPlate(veh)
-    local props = QBCore.Functions.GetVehicleProperties(veh)
+    local props = captureEmergencyProps(veh, QBCore.Functions.GetVehicleProperties(veh))
     QBCore.Functions.TriggerCallback('mrp_garages:server:parkVehicle', function(result)
         if not result or not result.ok then
             return QBCore.Functions.Notify((result and result.message) or 'Nepavyko pastatyti mašinos', 'error')

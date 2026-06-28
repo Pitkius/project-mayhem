@@ -67,6 +67,27 @@ Config.EmergencyVehicle = {
     resetModeWhenLeaveDriverSeat = true,
     --- nuo transporto centro atstumas (m), kuriuo serveris priima veiksmus
     validateDistance = 28.0,
+    --- Laikina švyturėlių juosta civilinei TP (prop ant stogo)
+    lightbarModel = 'prop_lightbar_01',
+    lightbarYOffset = 0.28,
+    lightbarZOffset = 0.0,
+    --- Mirksėjimo intervalas (ms) — lėtesnis = saugesnis regėjimui
+    flashIntervalMs = 560,
+    --- Švelnus aplinkos apšvietimas (0 = tik lemputės ant prop)
+    flashLightRange = 2.2,
+    flashLightIntensity = 3.5,
+    --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
+    allowPassengerControl = true,
+    performanceTune = {
+        enabled = true,
+        acceleration = 1.045,
+        topSpeed = 1.028,
+        extraMaxKmh = 6,
+        braking = 1.06,
+        steering = 1.025,
+        traction = 1.03,
+        driveInertia = 0.97,
+    },
 }
 
 --- Baudų šablonai (kodas rodomas MDT)
@@ -193,10 +214,8 @@ Config.Stations = {
         coords = vector3(441.84, -982.05, 30.69),
         blipCoords = vector3(427.120, -979.559, 30.716),
         heading = 90.0,
-        --- MDT planšetė (tik policijai tarnyboje)
-        mdt = { coords = vector3(442.8203, -982.3546, 30.6895) },
         --- Civilinė registratūra — NPC (mrp_npcshops role=reception)
-        reception = { coords = vector3(442.8203, -982.3546, 30.6895) },
+        reception = { coords = vector3(441.2229, -982.0843, 30.6895) },
         supply = {
             coords = vector3(489.05, -997.1946, 30.6896),
             label = 'PD inventorius (žaliavos)',
@@ -300,7 +319,6 @@ Config.Stations = {
         coords = vector3(379.39, -1591.37, 29.76),
         blipCoords = vector3(383.423, -1590.407, 29.276),
         heading = 320.0,
-        mdt = true,
         duty = true,
         supply = {
             coords = vector3(374.04, -1608.08, 29.29),
@@ -338,7 +356,6 @@ Config.Stations = {
         coords = vector3(1853.2, 3686.5, 34.27),
         blipCoords = vector3(1871.453, 3664.964, 33.687),
         heading = 210.0,
-        mdt = true,
         duty = true,
         supply = {
             coords = vector3(1849.12, 3690.04, 34.27),
@@ -376,7 +393,6 @@ Config.Stations = {
         coords = vector3(-448.15, 6012.0, 31.72),
         blipCoords = vector3(-432.177, 6019.605, 31.490),
         heading = 45.0,
-        mdt = true,
         duty = true,
         supply = {
             coords = vector3(-449.38, 6014.12, 31.72),

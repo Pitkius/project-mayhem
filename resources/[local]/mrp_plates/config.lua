@@ -7,8 +7,8 @@ Config.PlatePattern = ' 111 AAA'
 --- Kiek tarpų prieš skaitmenis ant mašinos (max 1 — GTA limitas 8 simboliai).
 Config.PlateTextPadLeft = 1
 
---- Kuris plateIndex naudojamas naujoms mašinoms (0 = plate01).
-Config.DefaultPlateIndex = 0
+--- plate02 (1) — be „San Andreas“ antrastes virsuje (plate01 ją piešia variklis).
+Config.DefaultPlateIndex = 1
 
 --- MRP violetinė tematika (atitinka HUD / autosaloną).
 Config.Theme = {
@@ -26,8 +26,8 @@ Config.PlateTextureFile = 'textures/plate01.png'
 --- Logo kairėje zonoje (loadscreen asset).
 Config.LogoFile = '../mrp_loadscreen/html/assets/mrp_logo.png'
 
---- Pakeisti tik pagrindinę baltą plokštelę (plate01). Kitos lieka vanilla.
-Config.ReplacePlate01Only = true
+--- Pakeisti plate02 tekstūra (derinama su DefaultPlateIndex = 1).
+Config.ReplacePlate02Only = true
 
 --- Serverio numerių generavimas (atitinka PlatePattern: 3 skaitmenys + tarpas + 3 raidės).
 Config.ExcludedLetters = { 'I', 'O', 'Q' }

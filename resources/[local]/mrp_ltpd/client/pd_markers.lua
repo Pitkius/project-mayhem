@@ -1,4 +1,4 @@
---- PD 3D markeriai ant žemės (MDT, garažas, rūbinė, sandėliai…)
+--- PD 3D markeriai ant žemės (garažas, rūbinė, sandėliai…)
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local pdZones = {}
@@ -13,7 +13,6 @@ local COLORS = {
     armory = { 239, 68, 68, 210 },
     supply = { 34, 197, 94, 200 },
     craft = { 251, 191, 36, 210 },
-    mdt = { 96, 165, 250, 210 },
     duty = { 250, 204, 21, 200 },
 }
 
@@ -24,7 +23,6 @@ local SCALES = {
     armory = { x = 1.5, y = 1.5, z = 0.24 },
     supply = { x = 1.35, y = 1.35, z = 0.22 },
     craft = { x = 1.55, y = 1.55, z = 0.24 },
-    mdt = { x = 1.45, y = 1.45, z = 0.24 },
     duty = { x = 1.5, y = 1.5, z = 0.24 },
 }
 
@@ -35,7 +33,6 @@ local MARKER_TYPES = {
     armory = 27,
     supply = 27,
     craft = 27,
-    mdt = 27,
     duty = 27,
 }
 
@@ -46,7 +43,6 @@ local USE_RADIUS = {
     armory = 1.6,
     supply = 1.45,
     craft = 1.6,
-    mdt = 1.45,
     duty = 1.6,
 }
 
@@ -140,11 +136,6 @@ local function stationFeatureCoords(st, key)
     return nil
 end
 
-local function coordsNear(a, b, eps)
-    if not a or not b then return false end
-    return #(a - b) < (eps or 0.85)
-end
-
 local function registerAllPdMarkers()
     if Config.ShowPd3DMarkers == false then
         clearPdMarkers()
@@ -155,21 +146,9 @@ local function registerAllPdMarkers()
 
     for _, st in ipairs(Config.Stations or {}) do
         local stationId = st.id
-        local mdtPos = stationFeatureCoords(st, 'mdt')
         local dutyPos = stationFeatureCoords(st, 'duty')
 
-        if mdtPos then
-            RegisterPdGroundMarker({
-                coords = mdtPos,
-                kind = 'mdt',
-                label = stationId == 'ls_main' and 'MDT planšetė' or 'MDT planšetė',
-                requireDuty = true,
-                onPress = function()
-                    TriggerEvent('mrp_ltpd:client:openMdtAtStation')
-                end,
-            })
-        end
-        if dutyPos and (not mdtPos or not coordsNear(mdtPos, dutyPos)) then
+        if dutyPos then
             RegisterPdGroundMarker({
                 coords = dutyPos,
                 kind = 'duty',
