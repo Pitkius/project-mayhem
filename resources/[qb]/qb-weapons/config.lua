@@ -2,14 +2,17 @@ Config = Config or {}
 
 Config.ReloadTime = 2400
 
---- true = pirma bandoma GTA native reload; jei nepavyksta — custom viršutinės kūno animacija.
-Config.ReloadUseNativeFirst = true
+--- true = pirma bandoma GTA native reload (tik stovint); judant visada custom animacija.
+Config.ReloadUseNativeFirst = false
 
 --- Inventoriaus perkrovos vizualinė animacija (kulkos kraunamos po animacijos).
 Config.ReloadVisualTime = 0
 
 --- true = galima bėgti/judėti perkraunant (viršutinė kūno animacija).
 Config.ReloadAllowMovement = true
+
+--- Judėjimo greitis perkrovos metu (1.0 = normalu, mažesnis = šiek tiek lėčiau, bet ne freeze).
+Config.ReloadMoveRate = 0.72
 
 --[[
   Recoil: client/recoil.lua kelia kamerą + šoninį išsisklaidymą.

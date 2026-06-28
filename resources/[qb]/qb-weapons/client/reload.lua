@@ -48,10 +48,10 @@ local function allowReloadMovement()
     return Config.ReloadAllowMovement ~= false
 end
 
---- 50 = viršutinė kūno dalis + judėjimas + sustoja paskutiniame kadre (kaip weapdraw.lua).
+--- 48 = viršutinė kūno dalis + leisti judėti (kaip weapdraw.lua).
 local function reloadAnimFlags()
     if allowReloadMovement() then
-        return 50
+        return 48
     end
     return 2
 end
@@ -172,12 +172,7 @@ local function playClipFromList(ped, dict, clips, flags)
 
     for _, clip in ipairs(clips) do
         if mobile then
-            -- TaskPlayAnimAdvanced pririša world coords — bėgant „sušaldo“. Tik viršutinė animacija.
-            TaskPlayAnim(ped, dict, clip, 8.0, -8.0, -1, flags, 0.0, false, false, false)
-            Wait(180)
-            if IsEntityPlayingAnim(ped, dict, clip, 3) then
-                return clip
-            end
+            TaskPlayAnim(ped, dict, clip, 8.0, -4.0, -1, flags, 0.0, false, false, false)
         else
             local pos = GetEntityCoords(ped, true)
             local rot = GetEntityHeading(ped)
@@ -188,16 +183,14 @@ local function playClipFromList(ped, dict, clips, flags)
                 8.0, 3.0, -1,
                 flags, 0.0, false, false
             )
-            Wait(180)
-            if IsEntityPlayingAnim(ped, dict, clip, 3) then
-                return clip
-            end
+        end
 
-            TaskPlayAnim(ped, dict, clip, 8.0, -8.0, -1, flags, 0.0, false, false, false)
-            Wait(180)
+        local started = GetGameTimer() + 1200
+        while GetGameTimer() < started do
             if IsEntityPlayingAnim(ped, dict, clip, 3) then
                 return clip
             end
+            Wait(0)
         end
     end
 
@@ -217,7 +210,15 @@ local function stopReloadAnimation(ped)
     activeReloadAnim = nil
 end
 
-local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs)
+local function enableReloadMovementControls(ped)
+    if not allowReloadMovement() then return end
+    for _, ctrl in ipairs({ 21, 30, 31, 32, 33, 34, 35 }) do
+        EnableControlAction(0, ctrl, true)
+    end
+    SetPedCanPlayAmbientAnims(ped, true)
+end
+
+local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clipNow)
     ped = ped or PlayerPedId()
     if not ped or ped == 0 then return false end
 
@@ -228,22 +229,20 @@ local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs)
     end
 
     preparePedForReloadAnim(ped, weaponHash)
+    pinClipDuringVisual(ped, weaponHash, clipNow)
 
     local flags = reloadAnimFlags()
     local clip = playClipFromList(ped, dict, clips, flags)
     activeReloadAnim = { dict = dict, clip = clip }
 
-    local deadline = GetGameTimer() + durationMs
+    local startedAt = GetGameTimer()
+    local deadline = startedAt + durationMs
     while DoesEntityExist(ped) and GetGameTimer() < deadline do
         ped = PlayerPedId()
-        if allowReloadMovement() then
-            for _, ctrl in ipairs({ 21, 30, 31, 32, 33, 34, 35 }) do
-                EnableControlAction(0, ctrl, true)
-            end
-            SetPedCanPlayAmbientAnims(ped, true)
-        end
+        enableReloadMovementControls(ped)
+        pinClipDuringVisual(ped, weaponHash, clipNow)
 
-        if not IsEntityPlayingAnim(ped, dict, clip, 3) and (GetGameTimer() + 500) < deadline then
+        if not IsEntityPlayingAnim(ped, dict, clip, 3) and (GetGameTimer() + 700) < deadline then
             preparePedForReloadAnim(ped, weaponHash)
             clip = playClipFromList(ped, dict, clips, flags)
             activeReloadAnim.clip = clip
@@ -258,11 +257,7 @@ end
 local function playNativeReload(ped, weaponHash, durationMs, clipNow)
     ped = ped or PlayerPedId()
     preparePedForReloadAnim(ped, weaponHash)
-
-    clipNow = math.max(0, tonumber(clipNow) or 0)
-    -- GTA native reload reikalauja rezervo — kitaip animacija neprasideda.
-    SetPedAmmo(ped, weaponHash, math.max(clipNow, 1) + 30)
-    SetAmmoInClip(ped, weaponHash, clipNow)
+    pinClipDuringVisual(ped, weaponHash, clipNow)
 
     MakePedReload(ped)
     if not IsPedReloading(ped) then
@@ -275,15 +270,11 @@ local function playNativeReload(ped, weaponHash, durationMs, clipNow)
 
     while DoesEntityExist(ped) and GetGameTimer() < deadline do
         ped = PlayerPedId()
-        if allowReloadMovement() then
-            for _, ctrl in ipairs({ 21, 30, 31, 32, 33, 34, 35 }) do
-                EnableControlAction(0, ctrl, true)
-            end
-        end
+        pinClipDuringVisual(ped, weaponHash, clipNow)
         if IsPedReloading(ped) then
             sawReload = true
             Wait(0)
-        elseif sawReload or GetGameTimer() - startedAt > 650 then
+        elseif sawReload or GetGameTimer() - startedAt > 900 then
             break
         else
             TaskReloadWeapon(ped, true)
@@ -291,6 +282,7 @@ local function playNativeReload(ped, weaponHash, durationMs, clipNow)
         end
     end
 
+    pinClipDuringVisual(ped, weaponHash, clipNow)
     return sawReload
 end
 
@@ -303,6 +295,7 @@ function WeaponReload.playVisual(ped, weaponHash, _bulletsToLoad, weaponData)
     end
 
     local durationMs = getReloadWaitMs()
+    local startedAt = GetGameTimer()
     preparePedForReloadAnim(ped, weaponHash)
 
     if IsPedInAnyVehicle(ped, false) then
@@ -311,24 +304,24 @@ function WeaponReload.playVisual(ped, weaponHash, _bulletsToLoad, weaponData)
     end
 
     local clipNow = select(1, WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData))
-    local usedNative = false
     local moving = allowReloadMovement() and pedIsMoving(ped)
+    local usedNative = false
 
-    -- Native reload sustabdo pedą bėgant — naudojam tik viršutinės kūno animaciją.
-    if Config.ReloadUseNativeFirst ~= false and not moving then
+    -- Judant arba su įjungtu movement — tik custom animacija (native užpildo apkabą be animacijos).
+    if Config.ReloadUseNativeFirst ~= false and not moving and not allowReloadMovement() then
         usedNative = playNativeReload(ped, weaponHash, durationMs, clipNow)
     end
 
     if not usedNative then
-        playUpperBodyReload(ped, weaponHash, weaponData, durationMs)
-    else
-        local remain = durationMs - 400
-        if remain > 0 then
-            Wait(remain)
-        end
+        playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clipNow)
     end
 
     pinClipDuringVisual(ped, weaponHash, clipNow)
+
+    local elapsed = GetGameTimer() - startedAt
+    if elapsed < durationMs then
+        Wait(durationMs - elapsed)
+    end
 end
 
 function WeaponReload.cancel(ped)

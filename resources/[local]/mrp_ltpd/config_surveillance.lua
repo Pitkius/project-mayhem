@@ -1,6 +1,12 @@
 --- CCTV ir bodycam (MDT integracija)
 Config.Surveillance = Config.Surveillance or {}
 
+--- Laikinai išjungta kol sutvarkoma (MDT langai lieka, rodoma „neveikia“ žinutė).
+--- Neįtakoja: PANIC mygtuko, dispatch blipų, MDT žemėlapio.
+Config.Surveillance.MaintenanceMode = true
+Config.Surveillance.MaintenanceMessage =
+    'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.'
+
 Config.Surveillance.BodycamItem = 'police_bodycam'
 
 --- CCTV per MDT: leidžiama su mdt_cctv. Fizinis terminalas – tik prie stoties.

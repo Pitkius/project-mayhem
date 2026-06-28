@@ -91,8 +91,131 @@ local function normalizeTransactions(rows)
         if row.status == nil or row.status == '' then
             row.status = 'completed'
         end
+        if row.title then
+            row.title = resolveTransactionTitle(row.title)
+        end
     end
     return rows
+end
+
+local SHOP_REASON_LABELS = {
+    ['fivempro-food'] = 'Maisto parduotuvė',
+    ['fivempro-pharmacy'] = 'Vaistinė',
+    ['fivempro-junk-shop'] = 'Ūkio turgelis',
+    ['mrp_pd_supply'] = 'PD inventorius',
+    ['mrp_ems_supply'] = 'EMS inventorius',
+    ['mrp_ranger_supply'] = 'Gamtos apsaugos inventorius',
+}
+
+local EXACT_REASON_LABELS = {
+    ['fivempro-dealership-buy'] = 'Simiono mašinų parduotuvė',
+    ['fivempro-pd-dealership-buy'] = 'PD transporto pirkimas',
+    ['fivempro-job-dealership-buy'] = 'Tarnybinio transporto pirkimas',
+    ['mrp-dealership-special-buy'] = 'Automobilių parduotuvė',
+    ['shop-purchase'] = 'Parduotuvė',
+    ['shop-purchase-refund'] = 'Grąžinimas (parduotuvė)',
+    ['clothing-shop'] = 'Drabužių parduotuvė',
+    ['tattoo-shop'] = 'Tatuiruotės salonas',
+    ['fuel-pump'] = 'Degalinė',
+    ['car-washed'] = 'Automobilio plovimas',
+    ['bike-rental'] = 'Dviračio nuoma',
+    ['bike-rental-refund'] = 'Dviračio nuomos grąžinimas',
+    ['driving-school-exam'] = 'Vairavimo mokykla',
+    ['fivempro-kma-reclaim'] = 'Transporto išsievimas',
+    ['fivempro-kma-refund'] = 'Transporto išsievimo grąžinimas',
+    ['mrp_housing:purchase'] = 'Nekilnojamojo turto agentūra',
+    ['fivempro-drugs-supply'] = 'Juodoji rinka',
+    ['fivempro-drugs-supply-refund'] = 'Juodosios rinkos grąžinimas',
+    ['gang-tablet-purchase'] = 'Gaujos planšetė',
+    ['trucker-register'] = 'Krovininio transporto registracija',
+    ['trucker-company-create'] = 'Krovininės įmonės steigimas',
+    ['trucker-delivery'] = 'Krovininio transporto užmokestis',
+    ['fivempro-taxi-fare'] = 'Taksi kelionė',
+    ['fivempro-taxi-fare-income'] = 'Taksi uždarbis',
+    ['ltpd-fine'] = 'Policijos bauda',
+    ['ranger-fine'] = 'Gamtos apsaugos bauda',
+    ['casino-chips-buy'] = 'Kazino žetonai',
+    ['casino-chips-sell'] = 'Kazino išmoka',
+    ['darknet-hack'] = 'Darknet paslauga',
+    ['bank-to-crypto'] = 'Kriptovaliutos keitykla',
+    ['fivempro-bank-deposit'] = 'Įnešimas į banką',
+    ['fivempro-bank-withdraw'] = 'Išėmimas iš banko',
+    ['fivempro-bank-transfer-out'] = 'Pervedimas',
+    ['fivempro-bank-transfer-in'] = 'Gautas pervedimas',
+    ['paycheck'] = 'Alga',
+    ['outdoors-license-test'] = 'Medžioklės licencija',
+    ['gang-interrog-kit-test'] = 'Interrogacijos rinkinys',
+    ['debug-heist-item'] = 'Juodoji rinka',
+    ['debug-heist-flash'] = 'Juodoji rinka',
+    ['qb-weapons:server:RepairWeapon'] = 'Ginklų remontas',
+}
+
+local SERVICE_INVOICE_LABELS = {
+    ems = 'EMS paslaugų sąskaita',
+    mechanic = 'Mechanikų sąskaita',
+}
+
+local function looksLikeTechnicalReason(title)
+    title = tostring(title or '')
+    if title == '' then return false end
+    if EXACT_REASON_LABELS[title] then return false end
+    if title:find('^shop%-purchase:', 1, false) then return true end
+    if title:find('^shop%-purchase%-refund:', 1, false) then return true end
+    if title:find('fivempro', 1, true) then return true end
+    if title:find('^mrp[_%-]', 1, false) then return true end
+    if title:find('dealership', 1, true) then return true end
+    if title == 'shop-purchase' or title == 'shop-purchase-refund' then return true end
+    if title:find('^service%-invoice%-', 1, false) then return true end
+    if title:find('^stripclub', 1, false) then return true end
+    return title:find('%-', 1, true) ~= nil and not title:find(' ', 1, true)
+end
+
+function resolveTransactionTitle(reason)
+    reason = trim(reason)
+    if reason == '' then return 'Operacija' end
+
+    local exact = EXACT_REASON_LABELS[reason]
+    if exact then return exact end
+
+    local shopName = reason:match('^shop%-purchase:(.+)$')
+        or reason:match('^shop%-purchase%-refund:(.+)$')
+    if shopName then
+        return SHOP_REASON_LABELS[shopName] or 'Parduotuvė'
+    end
+
+    local service = reason:match('^service%-invoice%-(.+)$')
+    if service then
+        return SERVICE_INVOICE_LABELS[service] or 'Paslaugų sąskaita'
+    end
+
+    if reason:find('^stripclub', 1, false) then
+        return 'Striptizo klubas'
+    end
+
+    if reason:find('dealership', 1, true) then
+        if reason:find('pd', 1, true) then return 'PD transporto pirkimas' end
+        if reason:find('job', 1, true) then return 'Tarnybinio transporto pirkimas' end
+        return 'Simiono mašinų parduotuvė'
+    end
+
+    if reason:find('fuel', 1, true) then return 'Degalinė' end
+    if reason:find('taxi', 1, true) then
+        if reason:find('income', 1, true) then return 'Taksi uždarbis' end
+        return 'Taksi kelionė'
+    end
+    if reason:find('fine', 1, true) or reason:find('bauda', 1, true) then return 'Bauda' end
+    if reason:find('housing', 1, true) then return 'Nekilnojamojo turto agentūra' end
+    if reason:find('trucker', 1, true) then return 'Krovininis transportas' end
+    if reason:find('clothing', 1, true) then return 'Drabužių parduotuvė' end
+    if reason:find('tattoo', 1, true) then return 'Tatuiruotės salonas' end
+    if reason:find('casino', 1, true) then return 'Kazino' end
+    if reason:find('refund', 1, true) then return 'Grąžinimas' end
+
+    if looksLikeTechnicalReason(reason) then
+        return 'Mokėjimas'
+    end
+
+    return reason
 end
 
 local function classifyMoneyChange(moneyType, action, amount, reason)
@@ -109,14 +232,15 @@ local function classifyMoneyChange(moneyType, action, amount, reason)
     if delta == 0 then return nil end
 
     local txType = 'other'
-    local title = reason ~= '' and reason or 'Operacija'
+    local title = resolveTransactionTitle(reason)
 
     if lower:find('paycheck', 1, true) or lower:find('alga', 1, true) or lower:find('salary', 1, true) then
         txType = 'salary'
         title = 'Alga'
     elseif lower:find('fine', 1, true) or lower:find('bauda', 1, true) then
         txType = 'fine'
-        title = 'Bauda'
+        local fineTitle = resolveTransactionTitle(reason)
+        title = (fineTitle ~= reason and fineTitle ~= 'Mokėjimas') and fineTitle or 'Bauda'
     elseif lower:find('deposit', 1, true) or lower:find('įneš', 1, true) or lower:find('ines', 1, true) then
         txType = 'deposit'
         title = 'Įnešimas į banką'

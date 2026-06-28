@@ -418,12 +418,13 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
     local cash = Player.PlayerData.money.cash or 0
     local bank = Player.PlayerData.money.bank or 0
     local paidWith
+    local purchaseReason = ('shop-purchase:%s'):format(shop)
     if cash >= price then
         paidWith = 'cash'
-        Player.Functions.RemoveMoney('cash', price, 'shop-purchase')
+        Player.Functions.RemoveMoney('cash', price, purchaseReason)
     elseif bank >= price then
         paidWith = 'bank'
-        Player.Functions.RemoveMoney('bank', price, 'shop-purchase')
+        Player.Functions.RemoveMoney('bank', price, purchaseReason)
     else
         TriggerClientEvent('QBCore:Notify', source, 'Nepakanka pinigų (grynieji arba bankas).', 'error')
         cb(false)
@@ -432,7 +433,7 @@ QBCore.Functions.CreateCallback('qb-inventory:server:attemptPurchase', function(
 
     local added = AddItem(source, itemName, amount, nil, itemInfo.info, 'shop-purchase')
     if not added then
-        Player.Functions.AddMoney(paidWith, price, 'shop-purchase-refund')
+        Player.Functions.AddMoney(paidWith, price, ('shop-purchase-refund:%s'):format(shop))
         TriggerClientEvent('QBCore:Notify', source, 'Nepavyko pridėti į inventorių.', 'error')
         cb(false)
         return

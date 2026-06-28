@@ -139,6 +139,7 @@ window.addEventListener('message', (e) => {
     if (tabInterr) tabInterr.style.display = perms.interrogation ? '' : 'none';
     document.getElementById('tabCctv').style.display = perms.cctv ? '' : 'none';
     document.getElementById('tabBodycam').style.display = perms.bodycam ? '' : 'none';
+    applySurveillanceMaintenanceFromOpen(d.data || {});
     const sel = document.getElementById('finePreset');
     sel.innerHTML = '';
     (d.data.presets || []).forEach((p) => {
@@ -884,6 +885,49 @@ let cctvLiveActive = false;
 let selectedBodycamId = null;
 let cctvHudTimer = null;
 let mdtTabBeforeSurveillance = null;
+let cctvMaintenance = false;
+let cctvMaintenanceMessage = '';
+let bodycamMaintenance = false;
+let bodycamMaintenanceMessage = '';
+
+function applySurveillanceMaintenanceFromOpen(data) {
+  const on = !!(data && data.surveillanceMaintenance);
+  const msg =
+    (data && data.surveillanceMaintenanceMessage) ||
+    'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.';
+  cctvMaintenance = on;
+  bodycamMaintenance = on;
+  cctvMaintenanceMessage = msg;
+  bodycamMaintenanceMessage = msg;
+}
+
+function setSurvMaintenancePreview(statusId, message) {
+  const status = document.getElementById(statusId);
+  if (!status) return;
+  status.classList.add('surv-offline-status');
+  status.innerHTML = `<span class="surv-offline-title">Sistema neprieinama</span><p class="surv-offline-msg">${escapeHtml(message)}</p>`;
+}
+
+function setSurvToolbarDisabled(kind, disabled) {
+  const ids =
+    kind === 'cctv'
+      ? ['cctvWatchBtn', 'cctvStopBtn', 'cctvPrevCam', 'cctvNextCam', 'cctvBackBtn']
+      : ['bodycamWatchBtn', 'bodycamStopBtn'];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !!disabled;
+  });
+}
+
+function renderBodycamMaintenanceList(el, message) {
+  el.innerHTML = '';
+  const card = document.createElement('div');
+  card.className = 'card surv-card surv-offline-card';
+  card.innerHTML = `<span class="badge off">NEVEIKIA</span><h4>Kūno kamerų sistema</h4><div class="muted">MDT transliacija • laikinai išjungta</div>`;
+  el.appendChild(card);
+  setSurvMaintenancePreview('bodycamStatus', message);
+  setSurvToolbarDisabled('bodycam', true);
+}
 
 function activateMdtTab(tabId) {
   if (!tabId) return;
@@ -1032,6 +1076,10 @@ function cctvSelectCamera(camId) {
 }
 
 function cctvWatchSelected() {
+  if (cctvMaintenance) {
+    setSurvMaintenancePreview('cctvStatus', cctvMaintenanceMessage);
+    return Promise.resolve();
+  }
   if (!selectedCctvId) return;
   const audio = document.getElementById('cctvAudio').checked;
   return nuiPost('cctvWatch', { camId: selectedCctvId }).then((res) => {
@@ -1069,6 +1117,38 @@ function renderCctvPanel() {
   const q = (document.getElementById('cctvSearch').value || '').trim().toLowerCase();
   const zone = document.getElementById('cctvFilter').value;
   el.innerHTML = '';
+
+  if (cctvMaintenance) {
+    cctvView = 'sites';
+    const rows = cctvSites.filter((s) => {
+      if (zone && s.zone !== zone) return false;
+      if (!q) return true;
+      const hay = `${s.label || ''} ${s.id || ''} ${s.zoneLabel || ''}`.toLowerCase();
+      return hay.includes(q);
+    });
+    if (!rows.length) {
+      el.innerHTML = '<div class="muted">Vietų nerasta.</div>';
+    } else {
+      rows.forEach((s) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'card surv-card surv-site-card surv-card-disabled';
+        card.innerHTML = `<h4>${escapeHtml(s.label)}</h4><div class="muted">${escapeHtml(s.zoneLabel || s.zone)} • ${s.cameraCount} kamera(-os)</div><span class="badge off">NEVEIKIA</span>`;
+        card.onclick = () => {
+          const status = document.getElementById('cctvStatus');
+          if (status) {
+            status.textContent = `${s.label} • sistema neprieinama`;
+          }
+          setSurvMaintenancePreview('cctvStatus', cctvMaintenanceMessage);
+        };
+        el.appendChild(card);
+      });
+    }
+    const crumb = document.getElementById('cctvBreadcrumb');
+    if (crumb) crumb.textContent = 'Vaizdo stebėjimo tinklas • laikinai išjungtas';
+    setSurvToolbarDisabled('cctv', true);
+    return;
+  }
 
   if (cctvView === 'sites') {
     const rows = cctvSites.filter((s) => {
@@ -1138,6 +1218,38 @@ function refreshCctvList() {
       }
       return;
     }
+    cctvMaintenance = res.maintenance === true;
+    if (cctvMaintenance) {
+      cctvMaintenanceMessage =
+        res.maintenanceMessage ||
+        'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.';
+      cctvSites = res.sites || [];
+      cctvCameras = [];
+      cctvView = 'sites';
+      selectedCctvSiteId = null;
+      selectedCctvSite = null;
+      selectedCctvId = null;
+      const sel = document.getElementById('cctvFilter');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Visos kategorijos</option>';
+      const cats = res.categories || {};
+      Object.keys(cats).forEach((k) => {
+        const o = document.createElement('option');
+        o.value = k;
+        o.textContent = cats[k] || k;
+        sel.appendChild(o);
+      });
+      sel.value = cur;
+      sel.onchange = renderCctvPanel;
+      document.getElementById('cctvSearch').oninput = renderCctvPanel;
+      setSurvMaintenancePreview('cctvStatus', cctvMaintenanceMessage);
+      updateCctvNavButtons();
+      renderCctvPanel();
+      return;
+    }
+    setSurvToolbarDisabled('cctv', false);
+    const status = document.getElementById('cctvStatus');
+    if (status) status.classList.remove('surv-offline-status');
     cctvSites = res.sites || [];
     cctvCameras = res.cameras || [];
     if (cctvView === 'site' && selectedCctvSiteId) {
@@ -1177,7 +1289,25 @@ document.getElementById('cctvAudio').onchange = (e) => {
 function renderBodycamList() {
   const el = document.getElementById('bodycamList');
   el.innerHTML = '';
+  if (bodycamMaintenance) {
+    renderBodycamMaintenanceList(el, bodycamMaintenanceMessage);
+    return Promise.resolve();
+  }
   return nuiPost('bodycamList', {}).then((res) => {
+    if (res && res.maintenance) {
+      bodycamMaintenance = true;
+      bodycamMaintenanceMessage =
+        res.maintenanceMessage ||
+        'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.';
+      renderBodycamMaintenanceList(el, bodycamMaintenanceMessage);
+      return;
+    }
+    setSurvToolbarDisabled('bodycam', false);
+    const status = document.getElementById('bodycamStatus');
+    if (status) {
+      status.classList.remove('surv-offline-status');
+      if (!selectedBodycamId) status.textContent = 'Pasirink pareigūno bodycam';
+    }
     const feeds = (res && res.feeds) || [];
     if (!feeds.length) {
       el.innerHTML = '<div class="muted">Nėra aktyvių bodycam.</div>';
@@ -1207,6 +1337,10 @@ function refreshBodycamList() {
 
 document.getElementById('bodycamRefresh').onclick = () => refreshBodycamList();
 document.getElementById('bodycamWatchBtn').onclick = () => {
+  if (bodycamMaintenance) {
+    setSurvMaintenancePreview('bodycamStatus', bodycamMaintenanceMessage);
+    return;
+  }
   if (!selectedBodycamId) return;
   nuiPost('bodycamWatch', { targetId: selectedBodycamId }).then((res) => {
     if (!res || !res.ok) {

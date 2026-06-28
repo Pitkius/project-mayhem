@@ -14,6 +14,44 @@ local fleetCatalog = nil
 --- false arba 'police' / 'mechanic' / 'ems' / 'taxi'
 local uiFleetMode = false
 local activeFleetStationId = 'ls_main'
+local PREVIEW_FOCUS_DIST = 80.0
+
+local function mapfixEnsureSimeon()
+    if GetResourceState('mrp_mapfix') ~= 'started' then return end
+    pcall(function()
+        exports['mrp_mapfix']:EnsureSimeonShowroom()
+    end)
+end
+
+local function beginPreviewStreaming(spawn)
+    if not spawn then return false end
+    RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+    local dist = #(GetEntityCoords(PlayerPedId()) - vector3(spawn.x, spawn.y, spawn.z))
+    if dist > PREVIEW_FOCUS_DIST then
+        SetFocusPosAndVel(spawn.x, spawn.y, spawn.z, 0.0, 0.0, 0.0)
+        return true
+    end
+    return false
+end
+
+local function endPreviewStreaming(usedFocus)
+    if usedFocus then
+        ClearFocus()
+    end
+end
+
+local function startSimeonKeepAlive()
+    CreateThread(function()
+        while uiOpen and not uiFleetMode do
+            mapfixEnsureSimeon()
+            local spawn = Config.Dealership and Config.Dealership.preview
+            if spawn then
+                RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+            end
+            Wait(3000)
+        end
+    end)
+end
 
 local function previewApplyShowroomVisuals()
     pcall(function()
@@ -34,11 +72,7 @@ local function previewApplyShowroomVisuals()
 end
 
 local function previewBeginShowroom()
-    if GetResourceState('mrp_mapfix') == 'started' then
-        pcall(function()
-            exports['mrp_mapfix']:ReloadSimeonShowroom()
-        end)
-    end
+    mapfixEnsureSimeon()
     if GetResourceState('qb-weathersync') == 'started' then
         TriggerEvent('qb-weathersync:client:DisableSync')
     end
@@ -232,11 +266,11 @@ local function spawnPreviewVehicle(model)
         if gen ~= previewSpawnGen then return end
 
         local spawn = getPreviewSpawnPos()
-        SetFocusPosAndVel(spawn.x, spawn.y, spawn.z, 0.0, 0.0, 0.0)
-        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+        local usedFocus = beginPreviewStreaming(spawn)
 
         local hash = joaat(model)
         if not IsModelInCdimage(hash) or not IsModelAVehicle(hash) then
+            endPreviewStreaming(usedFocus)
             QBCore.Functions.Notify(('Auto "%s" neprieinamas (trūksta DLC / modelio).'):format(model), 'error')
             return
         end
@@ -247,22 +281,31 @@ local function spawnPreviewVehicle(model)
         while not HasModelLoaded(hash) do
             Wait(0)
             timeout = timeout + 1
-            if gen ~= previewSpawnGen then return end
+            if gen ~= previewSpawnGen then
+                endPreviewStreaming(usedFocus)
+                return
+            end
             if timeout > maxWait then
+                endPreviewStreaming(usedFocus)
                 QBCore.Functions.Notify(('Nepavyko užkrauti "%s" peržiūrai.'):format(model), 'error')
                 return
             end
         end
-        if gen ~= previewSpawnGen then return end
+        if gen ~= previewSpawnGen then
+            endPreviewStreaming(usedFocus)
+            return
+        end
 
         local spawnZ = spawn.z + (model == 'yosemite4' and 0.35 or 0.0)
         local veh = CreateVehicle(hash, spawn.x, spawn.y, spawnZ, spawn.w, false, false)
         if gen ~= previewSpawnGen then
             if veh and veh ~= 0 then forceDeleteVehicleEntity(veh) end
+            endPreviewStreaming(usedFocus)
             return
         end
 
         if not veh or veh == 0 then
+            endPreviewStreaming(usedFocus)
             SetModelAsNoLongerNeeded(hash)
             return
         end
@@ -310,6 +353,7 @@ local function spawnPreviewVehicle(model)
         ensurePreviewCam()
         PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.2, true)
         previewApplyShowroomVisuals()
+        endPreviewStreaming(usedFocus)
     end)
 end
 
@@ -364,6 +408,7 @@ local function closeDealershipUi()
     destroyPreviewCam()
     ClearFocus()
     previewEndShowroom()
+    mapfixEnsureSimeon()
 end
 
 RegisterNetEvent('mrp_dealership:client:forceCloseUi', function()
@@ -403,6 +448,7 @@ local function openDealershipUi()
 
     uiOpen = true
     previewBeginShowroom()
+    startSimeonKeepAlive()
     SetNuiFocus(true, true)
     SendNUIMessage({ action = 'open', payload = payload })
     -- Preview spawną inicijuoja NUI (`selectVehicle`), kad nebūtų dvigubo spawn atidaryme.
@@ -640,9 +686,7 @@ CreateThread(function()
     end
 
     if GetResourceState('mrp_mapfix') == 'started' then
-        pcall(function()
-            exports['mrp_mapfix']:ReloadSimeonShowroom()
-        end)
+        mapfixEnsureSimeon()
     end
 
     local pos = Config.Dealership.office

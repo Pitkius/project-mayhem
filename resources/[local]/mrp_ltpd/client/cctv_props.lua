@@ -122,6 +122,9 @@ end
 exports('ResolveCctvCameraView', ResolveCctvCameraView)
 
 CreateThread(function()
+    if Config.Surveillance and Config.Surveillance.MaintenanceMode == true then
+        return
+    end
     Wait(2500)
     for _, cam in ipairs(Config.Surveillance.CctvCameras or {}) do
         ensureCamPropBinding(cam)
@@ -138,6 +141,9 @@ end)
 
 --- Pašalinti senus script spawnintus CCTV propus parduotuvėse (nebespawninam).
 CreateThread(function()
+    if Config.Surveillance and Config.Surveillance.MaintenanceMode == true then
+        return
+    end
     Wait(8000)
     for _, ent in pairs(spawnedProps) do
         if ent and DoesEntityExist(ent) then

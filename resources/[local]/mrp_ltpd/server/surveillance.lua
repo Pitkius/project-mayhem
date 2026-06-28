@@ -12,6 +12,15 @@ local function isOnDuty(src)
     return exports['mrp_ltpd']:IsLtpdOnDuty(src)
 end
 
+local function isSurvMaintenance()
+    return Config.Surveillance and Config.Surveillance.MaintenanceMode == true
+end
+
+local function survMaintenanceMessage()
+    return (Config.Surveillance and Config.Surveillance.MaintenanceMessage)
+        or 'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.'
+end
+
 local function camById(camId)
     for _, c in ipairs(Config.Surveillance.CctvCameras or {}) do
         if c.id == camId then return c end
@@ -184,6 +193,41 @@ local function buildCctvSites()
     return sites
 end
 
+local function buildCctvSitesMaintenance()
+    local counts = {}
+    for _, c in ipairs(Config.Surveillance.CctvCameras or {}) do
+        local sid = cctvSiteId(c)
+        counts[sid] = (counts[sid] or 0) + 1
+    end
+
+    local sites = {}
+    for siteId, cfg in pairs(Config.Surveillance.CctvSites or {}) do
+        local zone = cfg.zone or 'other'
+        local cameraCount = counts[siteId] or 0
+        sites[#sites + 1] = {
+            id = siteId,
+            label = cfg.label or siteId,
+            zone = zone,
+            zoneLabel = (Config.Surveillance.CctvCategories or {})[zone] or zone,
+            cameraCount = cameraCount,
+            onlineCount = 0,
+            allOnline = false,
+            maintenance = true,
+        }
+    end
+    table.sort(sites, function(a, b) return (a.label or a.id) < (b.label or b.id) end)
+    return sites
+end
+
+local function stopAllBodycams(reason)
+    for _, pid in ipairs(QBCore.Functions.GetPlayers()) do
+        local src = tonumber(pid)
+        if src and Player(src).state.ltpdBodycam then
+            stopBodycam(src, reason or 'maintenance')
+        end
+    end
+end
+
 local function nearCctvStation(src)
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return false end
@@ -221,6 +265,16 @@ end
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:cctvList', function(src, cb)
     if not hasPerm(src, 'mdt_cctv') then return cb({ ok = false }) end
+    if isSurvMaintenance() then
+        return cb({
+            ok = true,
+            maintenance = true,
+            maintenanceMessage = survMaintenanceMessage(),
+            sites = buildCctvSitesMaintenance(),
+            cameras = {},
+            categories = Config.Surveillance.CctvCategories or {},
+        })
+    end
     cb({
         ok = true,
         sites = buildCctvSites(),
@@ -230,6 +284,9 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:cctvList', function(src, cb)
 end)
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:cctvWatch', function(src, cb, camId)
+    if isSurvMaintenance() then
+        return cb({ ok = false, msg = survMaintenanceMessage() })
+    end
     if not hasPerm(src, 'mdt_cctv') then return cb({ ok = false, msg = 'Neturite teisės.' }) end
     if not nearCctvStation(src) then
         return cb({ ok = false, msg = 'CCTV per MDT – tik iš komisariato zonos.' })
@@ -257,10 +314,21 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:bodycamList', function(src, cb)
     if not hasPerm(src, 'mdt_bodycam') then return cb({ ok = false }) end
+    if isSurvMaintenance() then
+        return cb({
+            ok = true,
+            maintenance = true,
+            maintenanceMessage = survMaintenanceMessage(),
+            feeds = {},
+        })
+    end
     cb({ ok = true, feeds = buildBodycamList() })
 end)
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:bodycamWatch', function(src, cb, targetId)
+    if isSurvMaintenance() then
+        return cb({ ok = false, msg = survMaintenanceMessage() })
+    end
     if not hasPerm(src, 'mdt_bodycam') then return cb({ ok = false }) end
     targetId = tonumber(targetId)
     if not targetId or targetId < 1 then return cb({ ok = false, msg = 'Neteisingas ID.' }) end
@@ -275,6 +343,9 @@ end)
 
 RegisterNetEvent('mrp_ltpd:server:bodycamToggle', function()
     local src = source
+    if isSurvMaintenance() then
+        return TriggerClientEvent('QBCore:Notify', src, survMaintenanceMessage(), 'error')
+    end
     if not hasPerm(src, 'bodycam_wear') or not isOnDuty(src) then
         return TriggerClientEvent('QBCore:Notify', src, 'Kūno kamera – tik policijai tarnyboje.', 'error')
     end
@@ -322,6 +393,7 @@ end)
 
 RegisterNetEvent('mrp_ltpd:server:bodycamPanicAutoOn', function()
     local src = source
+    if isSurvMaintenance() then return end
     local cfg = Config.Surveillance.Bodycam or {}
     if not cfg.autoOnPanic or not hasPerm(src, 'bodycam_wear') or not isOnDuty(src) then return end
     if not hasBodycamItem(src) then return end
@@ -363,20 +435,24 @@ CreateThread(function()
     local drain = tonumber(cfg.drainPerMinute) or 2.5
     local tickMs = 60000
     while true do
-        Wait(tickMs)
-        for _, pid in ipairs(QBCore.Functions.GetPlayers()) do
-            local src = tonumber(pid)
-            local st = Player(src).state.ltpdBodycam
-            if st and type(st) == 'table' and st.active then
-                local cur = BodycamBattery[src] or st.battery or 100
-                cur = cur - drain
-                if cur <= 0 then
-                    stopBodycam(src, 'battery')
-                    TriggerClientEvent('QBCore:Notify', src, 'Kūno kameros baterija išsekusi.', 'error')
-                else
-                    BodycamBattery[src] = cur
-                    st.battery = math.floor(cur + 0.5)
-                    setBodycamState(src, true, st)
+        if isSurvMaintenance() then
+            Wait(300000)
+        else
+            Wait(tickMs)
+            for _, pid in ipairs(QBCore.Functions.GetPlayers()) do
+                local src = tonumber(pid)
+                local st = Player(src).state.ltpdBodycam
+                if st and type(st) == 'table' and st.active then
+                    local cur = BodycamBattery[src] or st.battery or 100
+                    cur = cur - drain
+                    if cur <= 0 then
+                        stopBodycam(src, 'battery')
+                        TriggerClientEvent('QBCore:Notify', src, 'Kūno kameros baterija išsekusi.', 'error')
+                    else
+                        BodycamBattery[src] = cur
+                        st.battery = math.floor(cur + 0.5)
+                        setBodycamState(src, true, st)
+                    end
                 end
             end
         end
@@ -385,18 +461,31 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(15000)
+        if isSurvMaintenance() then
+            Wait(120000)
+        else
+            Wait(15000)
+        end
         local now = os.time()
         for id, untilTs in pairs(CctvOffline) do
             if now >= untilTs then CctvOffline[id] = nil end
         end
-        for _, pid in ipairs(QBCore.Functions.GetPlayers()) do
-            local src = tonumber(pid)
-            if Player(src).state.ltpdBodycam and not hasBodycamItem(src) then
-                stopBodycam(src, 'no_item')
-                TriggerClientEvent('QBCore:Notify', src, 'Kūno kamera išjungta – įrenginys ne inventoriuje.', 'error')
+        if not isSurvMaintenance() then
+            for _, pid in ipairs(QBCore.Functions.GetPlayers()) do
+                local src = tonumber(pid)
+                if Player(src).state.ltpdBodycam and not hasBodycamItem(src) then
+                    stopBodycam(src, 'no_item')
+                    TriggerClientEvent('QBCore:Notify', src, 'Kūno kamera išjungta – įrenginys ne inventoriuje.', 'error')
+                end
             end
         end
+    end
+end)
+
+CreateThread(function()
+    Wait(1500)
+    if isSurvMaintenance() then
+        stopAllBodycams('maintenance')
     end
 end)
 

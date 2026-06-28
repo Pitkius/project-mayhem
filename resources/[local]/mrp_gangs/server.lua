@@ -591,7 +591,7 @@ MySQL.ready(function()
     local hasSecondary = MySQL.scalar.await([[
         SELECT COUNT(*) FROM information_schema.columns
         WHERE table_schema = DATABASE()
-          AND table_name = 'mrp_gangs'
+          AND table_name = 'fivempro_gangs'
           AND column_name = 'secondary_color_hex'
     ]])
     if (tonumber(hasSecondary) or 0) == 0 then
@@ -602,7 +602,7 @@ MySQL.ready(function()
     local hasWarnings = MySQL.scalar.await([[
         SELECT COUNT(*) FROM information_schema.columns
         WHERE table_schema = DATABASE()
-          AND table_name = 'mrp_gangs'
+          AND table_name = 'fivempro_gangs'
           AND column_name = 'warnings'
     ]])
     if (tonumber(hasWarnings) or 0) == 0 then

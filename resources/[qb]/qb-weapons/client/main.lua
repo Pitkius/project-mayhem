@@ -139,6 +139,18 @@ local function cancelActiveReload()
     end
     isReloading = false
     reloadGuardUntil = 0
+    local ped = PlayerPedId()
+    if ped and ped ~= 0 then
+        SetPedMoveRateOverride(ped, 1.0)
+    end
+end
+
+local function setReloadMoveRate(ped)
+    if Config.ReloadAllowMovement == false then return end
+    local rate = tonumber(Config.ReloadMoveRate) or 0.72
+    if rate > 0 and rate < 1.0 and ped and ped ~= 0 then
+        SetPedMoveRateOverride(ped, rate)
+    end
 end
 
 local function applyWeaponAttachmentsAndTint(ped, weaponHash, weaponInfo)
@@ -606,6 +618,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     local reloadPed = ped
     local reloadWeapon = weapon
     local reloadPayload = CurrentWeaponData or selectedWeaponData
+    setReloadMoveRate(reloadPed)
 
     CreateThread(function()
         local visualOk, visualErr = pcall(function()
@@ -620,6 +633,11 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
 
         isReloading = false
         reloadGuardUntil = GetGameTimer() + 80
+
+        local p = PlayerPedId()
+        if p and p ~= 0 then
+            SetPedMoveRateOverride(p, 1.0)
+        end
 
         if ok then
             local p = PlayerPedId()

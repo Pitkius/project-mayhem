@@ -85,6 +85,24 @@ local previewSpawnGen = 0
 local activeGarage = nil
 local garagePreviewMods = {}
 local garagePreviewFuel = {}
+local PREVIEW_FOCUS_DIST = 80.0
+
+local function beginPreviewStreaming(spawn)
+    if not spawn then return false end
+    RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+    local dist = #(GetEntityCoords(PlayerPedId()) - vector3(spawn.x, spawn.y, spawn.z))
+    if dist > PREVIEW_FOCUS_DIST then
+        SetFocusPosAndVel(spawn.x, spawn.y, spawn.z, 0.0, 0.0, 0.0)
+        return true
+    end
+    return false
+end
+
+local function endPreviewStreaming(usedFocus)
+    if usedFocus then
+        ClearFocus()
+    end
+end
 
 --- qb-weathersync nuolat perrašo laiką/orą – be DisableSync peržiūra lieka naktinė ir beveik juoda.
 local function previewApplyShowroomVisuals()
@@ -254,8 +272,7 @@ local function spawnGaragePreviewVehicle(model, plate)
         Wait(0)
         if gen ~= previewSpawnGen then return end
 
-        SetFocusPosAndVel(spawn.x, spawn.y, spawn.z, 0.0, 0.0, 0.0)
-        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+        local usedFocus = beginPreviewStreaming(spawn)
 
         local hash = joaat(model)
         RequestModel(hash)
@@ -263,18 +280,29 @@ local function spawnGaragePreviewVehicle(model, plate)
         while not HasModelLoaded(hash) do
             Wait(0)
             timeout = timeout + 1
-            if gen ~= previewSpawnGen then return end
-            if timeout > 8000 then return end
+            if gen ~= previewSpawnGen then
+                endPreviewStreaming(usedFocus)
+                return
+            end
+            if timeout > 8000 then
+                endPreviewStreaming(usedFocus)
+                return
+            end
         end
-        if gen ~= previewSpawnGen then return end
+        if gen ~= previewSpawnGen then
+            endPreviewStreaming(usedFocus)
+            return
+        end
 
         local veh = CreateVehicle(hash, spawn.x, spawn.y, spawn.z, spawn.w, false, false)
         if gen ~= previewSpawnGen then
             if veh and veh ~= 0 then forceDeleteVehicleEntity(veh) end
+            endPreviewStreaming(usedFocus)
             return
         end
 
         if not veh or veh == 0 then
+            endPreviewStreaming(usedFocus)
             SetModelAsNoLongerNeeded(hash)
             return
         end
@@ -323,6 +351,7 @@ local function spawnGaragePreviewVehicle(model, plate)
             PointCamAtEntity(previewCam, previewVehicle, 0.0, 0.0, 0.25, true)
         end
         previewApplyShowroomVisuals()
+        endPreviewStreaming(usedFocus)
     end)
 end
 

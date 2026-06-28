@@ -23,12 +23,6 @@ local function randomLetter()
     return 'Z'
 end
 
-local function normalizePlate(plate)
-    plate = tostring(plate or ''):upper()
-    plate = plate:gsub('%s+', ' ')
-    return plate:match('^%s*(.-)%s*$') or plate
-end
-
 local function generatePlateText()
     return randomDigit() .. randomDigit() .. randomDigit() .. ' ' .. randomLetter() .. randomLetter() .. randomLetter()
 end
@@ -40,18 +34,18 @@ end
 
 local function getUniquePlate()
     for _ = 1, 40 do
-        local plate = normalizePlate(generatePlateText())
-        if isPlateFree(plate) then
+        local plate = MRPPlates.Normalize(generatePlateText())
+        if MRPPlates.IsValid(plate) and isPlateFree(plate) then
             return plate
         end
     end
-    return normalizePlate(generatePlateText())
+    return MRPPlates.Normalize(generatePlateText())
 end
 
 local function buildVehicleProps(hash, plate, colorIdx)
     local props = {
         model = hash,
-        plate = plate,
+        plate = MRPPlates.Normalize(plate),
         plateIndex = tonumber(Config.DefaultPlateIndex) or 0,
     }
     local c = tonumber(colorIdx)
@@ -65,8 +59,15 @@ local function buildVehicleProps(hash, plate, colorIdx)
 end
 
 exports('GenerateUnique', getUniquePlate)
-exports('GenerateText', generatePlateText)
-exports('Normalize', normalizePlate)
+exports('GenerateText', function()
+    return MRPPlates.Normalize(generatePlateText())
+end)
+exports('Normalize', function(plate)
+    return MRPPlates.Normalize(plate)
+end)
+exports('FormatForRender', function(plate)
+    return MRPPlates.FormatForRender(plate, Config.PlateTextPadLeft)
+end)
 exports('BuildVehicleProps', buildVehicleProps)
 exports('GetDefaultPlateIndex', function()
     return tonumber(Config.DefaultPlateIndex) or 0

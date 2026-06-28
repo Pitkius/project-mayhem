@@ -13,6 +13,15 @@ local function isPdOnDuty()
     return false
 end
 
+local function isSurvMaintenance()
+    return Config.Surveillance and Config.Surveillance.MaintenanceMode == true
+end
+
+local function survMaintenanceMessage()
+    return (Config.Surveillance and Config.Surveillance.MaintenanceMessage)
+        or 'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.'
+end
+
 local function destroyBodycamView()
     if bodycamViewCam and DoesCamExist(bodycamViewCam) then
         RenderScriptCams(false, false, 0, true, true)
@@ -52,7 +61,10 @@ RegisterNetEvent('mrp_ltpd:client:bodycamUseItem', function()
     if not isPdOnDuty() then
         return QBCore.Functions.Notify('Kūno kamera – tik policijai tarnyboje.', 'error')
     end
-  TriggerServerEvent('mrp_ltpd:server:bodycamToggle')
+    if isSurvMaintenance() then
+        return QBCore.Functions.Notify(survMaintenanceMessage(), 'error')
+    end
+    TriggerServerEvent('mrp_ltpd:server:bodycamToggle')
 end)
 
 RegisterNetEvent('mrp_ltpd:client:bodycamState', function(active, reason)
@@ -78,6 +90,10 @@ RegisterNUICallback('bodycamList', function(_, cb)
 end)
 
 RegisterNUICallback('bodycamWatch', function(data, cb)
+    if isSurvMaintenance() then
+        cb({ ok = false, msg = survMaintenanceMessage() })
+        return
+    end
     QBCore.Functions.TriggerCallback('mrp_ltpd:server:bodycamWatch', function(res)
         if not res or not res.ok then
             destroyBodycamView()
@@ -98,8 +114,11 @@ RegisterNUICallback('bodycamStop', function(_, cb)
     cb({ ok = true })
 end)
 
---- Panic → auto bodycam
+--- PANIC dispatch signalas — auto bodycam tik kai sistema įjungta (pats PANIC mygtukas ne čia).
 RegisterNetEvent('mrp_dispatch:client:panic', function()
+    if isSurvMaintenance() then return end
+    local cfg = Config.Surveillance and Config.Surveillance.Bodycam
+    if not cfg or cfg.autoOnPanic ~= true then return end
     TriggerServerEvent('mrp_ltpd:server:bodycamPanicAutoOn')
 end)
 

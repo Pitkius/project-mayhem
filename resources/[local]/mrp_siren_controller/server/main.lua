@@ -35,7 +35,6 @@ local function isFleetModel(hash, jobType)
     for _, m in ipairs(list) do
         if joaat(m) == hash then return true end
     end
-    if IsThisModelEmergencyVehicle(hash) then return true end
     return false
 end
 

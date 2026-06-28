@@ -3205,6 +3205,11 @@ body.shape-frame .hud-root {
         0 0 24px rgba(124, 58, 237, 0.12);
 }
 
+.carhud-partial .ch-shell {
+    gap: 8px;
+    padding: 10px 14px;
+}
+
 .ch-status-bar {
     display: flex;
     align-items: center;

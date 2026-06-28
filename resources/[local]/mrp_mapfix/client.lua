@@ -57,6 +57,10 @@ local SIMEON_DOORS = {
     { model = `prop_com_gar_door_01`, coords = vec3(-37.86, -1094.71, 27.26) },
 }
 
+local simeonPinnedId = nil
+local lastSimeonFullReload = 0
+local SIMEON_FULL_RELOAD_COOLDOWN_MS = 15000
+
 --- Vape dangoraižis (sc1_29_motel · Davis)
 local VAPE_SKYSCRAPER_ENTRANCE = vec4(370.0215, -1795.8375, 29.2295, 316.4124)
 local VAPE_SKYSCRAPER_CENTER = vec3(370.0215, -1795.8375, 29.2295)
@@ -192,6 +196,17 @@ local function getSimeonInteriorId()
     return GetInteriorAtCoordsWithType(SIMEON_INTERIOR_PROBE.x, SIMEON_INTERIOR_PROBE.y, SIMEON_INTERIOR_PROBE.z, 'v_carshowroom')
 end
 
+local function isSimeonInteriorReady()
+    local id = simeonPinnedId or getSimeonInteriorId()
+    return id and id ~= 0 and IsValidInterior(id) and IsInteriorReady(id)
+end
+
+local function requestSimeonCollision()
+    requestCollision(SIMEON_CENTER)
+    requestCollision(SIMEON_INTERIOR_PROBE)
+    requestCollision(vec3(-47.25, -1094.42, 26.42))
+end
+
 local function disableInteriorEntitySet(interiorId, name)
     if not interiorId or interiorId == 0 or not name or name == '' then return end
     pcall(function()
@@ -216,28 +231,62 @@ local function enableInteriorEntitySet(interiorId, name)
     end)
 end
 
-local function loadSimeonShowroom()
+local function applySimeonInteriorState(interiorId)
+    if not interiorId or interiorId == 0 then return end
+    for _, prop in ipairs(SIMEON_STYLE_PROPS) do
+        disableInteriorEntitySet(interiorId, prop)
+    end
+    for _, prop in ipairs(SIMEON_SHUTTER_PROPS) do
+        disableInteriorEntitySet(interiorId, prop)
+    end
+    enableInteriorEntitySet(interiorId, 'csr_beforeMission')
+    enableInteriorEntitySet(interiorId, 'shutter_open')
+    RefreshInterior(interiorId)
+end
+
+--- Lengvas užtikrinimas (be entity set reset) — naudoti autosalone ir arti zonos.
+local function ensureSimeonShowroom()
     RequestIpl('shr_int')
     RequestIpl('shr_int_lod')
+    requestSimeonCollision()
 
     local interiorId = getSimeonInteriorId()
-    if interiorId and interiorId ~= 0 then
+    if interiorId and interiorId ~= 0 and IsValidInterior(interiorId) then
         PinInteriorInMemory(interiorId)
-        LoadInterior(interiorId)
-
-        for _, prop in ipairs(SIMEON_STYLE_PROPS) do
-            disableInteriorEntitySet(interiorId, prop)
+        if not IsInteriorReady(interiorId) then
+            LoadInterior(interiorId)
         end
-        for _, prop in ipairs(SIMEON_SHUTTER_PROPS) do
-            disableInteriorEntitySet(interiorId, prop)
-        end
-
-        enableInteriorEntitySet(interiorId, 'csr_beforeMission')
-        enableInteriorEntitySet(interiorId, 'shutter_open')
-        RefreshInterior(interiorId)
+        simeonPinnedId = interiorId
     end
 
     unlockDoorList(SIMEON_DOORS)
+    return isSimeonInteriorReady()
+end
+
+local function loadSimeonShowroom(force)
+    local now = GetGameTimer()
+    if not force and isSimeonInteriorReady() and (now - lastSimeonFullReload) < SIMEON_FULL_RELOAD_COOLDOWN_MS then
+        return ensureSimeonShowroom()
+    end
+
+    lastSimeonFullReload = now
+    RequestIpl('shr_int')
+    RequestIpl('shr_int_lod')
+    requestSimeonCollision()
+
+    local interiorId = getSimeonInteriorId()
+    if not interiorId or interiorId == 0 then
+        interiorId = waitInteriorAt(SIMEON_INTERIOR_PROBE, 'v_carshowroom', 80)
+    end
+    if interiorId and interiorId ~= 0 then
+        PinInteriorInMemory(interiorId)
+        LoadInterior(interiorId)
+        applySimeonInteriorState(interiorId)
+        simeonPinnedId = interiorId
+    end
+
+    unlockDoorList(SIMEON_DOORS)
+    return isSimeonInteriorReady()
 end
 
 local function loadOneilFarmhouse()
@@ -280,7 +329,11 @@ local function applyMapFixes()
     loadVapeSkyscraper()
 end
 
-exports('ReloadSimeonShowroom', loadSimeonShowroom)
+exports('ReloadSimeonShowroom', function()
+    return loadSimeonShowroom(true)
+end)
+exports('EnsureSimeonShowroom', ensureSimeonShowroom)
+exports('IsSimeonShowroomReady', isSimeonInteriorReady)
 exports('ReloadOneilFarmhouse', loadOneilFarmhouse)
 exports('ReloadVapeSkyscraper', loadVapeSkyscraper)
 exports('ReloadLostMc', function()
@@ -313,8 +366,12 @@ CreateThread(function()
             loadOneilFarmhouse()
             Wait(2500)
         elseif nearSimeon then
-            loadSimeonShowroom()
-            Wait(1500)
+            if not isSimeonInteriorReady() then
+                loadSimeonShowroom(false)
+            else
+                ensureSimeonShowroom()
+            end
+            Wait(4000)
         elseif nearVapeSkyscraper then
             loadVapeSkyscraper()
             Wait(2000)

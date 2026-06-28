@@ -620,6 +620,9 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:mdtContext', function(src, cb)
             cctv = hasPerm(src, 'mdt_cctv'),
             bodycam = hasPerm(src, 'mdt_bodycam'),
         },
+        surveillanceMaintenance = Config.Surveillance and Config.Surveillance.MaintenanceMode == true,
+        surveillanceMaintenanceMessage = (Config.Surveillance and Config.Surveillance.MaintenanceMessage)
+            or 'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.',
     })
 end)
 
@@ -1273,7 +1276,6 @@ end
 local function isEmergencyFleetModel(entity)
     if not entity or entity == 0 then return false end
     local hash = GetEntityModel(entity)
-    if IsThisModelEmergencyVehicle(hash) then return true end
     local classId = GetVehicleClass(entity)
     if classId == 18 then return true end --- Emergency
     if Config.FleetVehicles then

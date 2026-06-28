@@ -13,6 +13,15 @@ local CFG = {
     rotateSpeed = 1.35,
 }
 
+local function isSurvMaintenance()
+    return Config.Surveillance and Config.Surveillance.MaintenanceMode == true
+end
+
+local function survMaintenanceMessage()
+    return (Config.Surveillance and Config.Surveillance.MaintenanceMessage)
+        or 'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.'
+end
+
 local function destroyCctvCam()
     cctvSession = cctvSession + 1
     if cctvCam and DoesCamExist(cctvCam) then
@@ -149,6 +158,10 @@ RegisterNUICallback('cctvList', function(_, cb)
 end)
 
 RegisterNUICallback('cctvWatch', function(data, cb)
+    if isSurvMaintenance() then
+        cb({ ok = false, msg = survMaintenanceMessage() })
+        return
+    end
     QBCore.Functions.TriggerCallback('mrp_ltpd:server:cctvWatch', function(res)
         if res and res.ok then
             local camId = tostring((data and data.camId) or (res.cam and res.cam.id) or '')
@@ -170,6 +183,10 @@ RegisterNUICallback('cctvStop', function(_, cb)
 end)
 
 RegisterNUICallback('cctvSwitch', function(data, cb)
+    if isSurvMaintenance() then
+        cb({ ok = false, msg = survMaintenanceMessage() })
+        return
+    end
     local camId = data and data.camId
     if not camId then
         cb({ ok = false })

@@ -1,9 +1,10 @@
 local textureReady = false
 local patternApplied = false
+local appliedPlates = {}
 
 local function applyPlateTextPatterns()
     if patternApplied then return end
-    local pattern = Config.PlatePattern or '111 AAA'
+    local pattern = Config.PlatePattern or ' 111 AAA'
     for i = 0, 5 do
         SetDefaultVehicleNumberPlateTextPattern(i, pattern)
     end
@@ -40,12 +41,28 @@ local function replacePlateTextures()
     return true
 end
 
+local function formatAndSetPlateText(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    local raw = GetVehicleNumberPlateText(vehicle)
+    if not raw or raw == '' then return end
+
+    local norm = MRPPlates.Normalize(raw)
+    if not MRPPlates.IsValid(norm) then return end
+
+    local render = MRPPlates.FormatForRender(norm, Config.PlateTextPadLeft)
+    if render ~= raw then
+        SetVehicleNumberPlateText(vehicle, render)
+    end
+    appliedPlates[vehicle] = norm
+end
+
 local function applyPlateStyle(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     if GetEntityType(vehicle) ~= 2 then return end
 
     local idx = tonumber(Config.DefaultPlateIndex) or 0
     SetVehicleNumberPlateTextIndex(vehicle, idx)
+    formatAndSetPlateText(vehicle)
 end
 
 exports('ApplyPlateStyle', applyPlateStyle)
@@ -78,4 +95,5 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     RemoveReplaceTexture('vehshare', 'plate01')
+    appliedPlates = {}
 end)

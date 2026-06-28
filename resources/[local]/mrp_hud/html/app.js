@@ -190,6 +190,13 @@ const chStatBelt = document.getElementById("chStatBelt");
 const chStatHandbrake = document.getElementById("chStatHandbrake");
 const chStatLock = document.getElementById("chStatLock");
 const chStatLights = document.getElementById("chStatLights");
+const chGaugeWrap = document.querySelector(".ch-gauge-wrap");
+const chVitalsRow = document.querySelector(".ch-vitals-row");
+const chStatusBar = document.querySelector(".ch-status-bar");
+const chFuelTrack = document.querySelector(".ch-fuel-track");
+const chSpeedStatusIcons = [chStatTurnL, chStatTurnR, chStatHandbrake, chStatLock, chStatLights];
+const carStatFuel = document.getElementById("carStatFuel");
+const carStatEngine = document.getElementById("carStatEngine");
 const carhudClassic = document.getElementById("carhudClassic");
 const vehiclePanel = document.getElementById("vehiclePanel");
 const vehicleListMenu = document.getElementById("vehicleListMenu");
@@ -211,6 +218,29 @@ function setChStat(el, mode) {
   if (!el) return;
   el.classList.remove("state-on", "state-off", "state-warn", "state-blink");
   if (mode) el.classList.add(mode);
+}
+
+function applyCarHudPartVisibility(show) {
+  const s = show || {};
+  const showSpeed = s.speed === true;
+  const showFuel = s.fuel === true;
+  const showBelt = s.seatbelt === true;
+
+  if (chGaugeWrap) chGaugeWrap.classList.toggle("hidden", !showSpeed);
+  chSpeedStatusIcons.forEach((el) => {
+    if (el) el.classList.toggle("hidden", !showSpeed);
+  });
+  if (chStatBelt) chStatBelt.classList.toggle("hidden", !showBelt);
+  if (chStatusBar) chStatusBar.classList.toggle("hidden", !showSpeed && !showBelt);
+
+  if (carStatFuel) carStatFuel.classList.toggle("hidden", !showFuel);
+  if (carStatEngine) carStatEngine.classList.toggle("hidden", !showSpeed);
+  if (chVitalsRow) chVitalsRow.classList.toggle("hidden", !showFuel && !showSpeed);
+
+  if (carFuelArc) carFuelArc.classList.toggle("hidden", !showFuel);
+  if (chFuelTrack) chFuelTrack.classList.toggle("hidden", !showFuel);
+
+  if (carHud) carHud.classList.toggle("carhud-partial", !showSpeed && (showFuel || showBelt));
 }
 
 function setVehicleSchemaImage() {
@@ -239,23 +269,32 @@ const carHudSmooth = {
 function applyCarHudSmoothFrame() {
   const s = carHudSmooth;
   if (s.active && carHud && !carHud.classList.contains("hidden")) {
-    s.displaySpeed += (s.targetSpeed - s.displaySpeed) * 0.14;
-    s.displayRpm += (s.targetRpm - s.displayRpm) * 0.16;
-    s.displayFuel += (s.targetFuel - s.displayFuel) * 0.12;
-    const sp = Math.max(0, Math.min(999, Math.round(s.displaySpeed)));
-    const rpm = Math.max(0, Math.min(100, s.displayRpm));
-    const fuelN = Math.max(0, Math.min(100, s.displayFuel));
-    if (carSpeedDigits) carSpeedDigits.textContent = String(sp);
-    if (speedText) speedText.textContent = String(sp);
-    if (carGear) carGear.textContent = s.gear || "N";
-    if (carRpmArc) {
-      carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN * (1 - rpm / 100));
+    const gaugeVisible = chGaugeWrap && !chGaugeWrap.classList.contains("hidden");
+    const fuelVisible = carStatFuel && !carStatFuel.classList.contains("hidden");
+    if (gaugeVisible) {
+      s.displaySpeed += (s.targetSpeed - s.displaySpeed) * 0.14;
+      s.displayRpm += (s.targetRpm - s.displayRpm) * 0.16;
+      const sp = Math.max(0, Math.min(999, Math.round(s.displaySpeed)));
+      const rpm = Math.max(0, Math.min(100, s.displayRpm));
+      if (carSpeedDigits) carSpeedDigits.textContent = String(sp);
+      if (speedText) speedText.textContent = String(sp);
+      if (carGear) carGear.textContent = s.gear || "N";
+      if (carRpmArc) {
+        carRpmArc.style.strokeDashoffset = String(CAR_RPM_ARC_LEN * (1 - rpm / 100));
+      }
+      if (carFuelArc && !carFuelArc.classList.contains("hidden")) {
+        s.displayFuel += (s.targetFuel - s.displayFuel) * 0.12;
+        const fuelN = Math.max(0, Math.min(100, s.displayFuel));
+        carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - fuelN / 100));
+      }
+    } else if (fuelVisible) {
+      s.displayFuel += (s.targetFuel - s.displayFuel) * 0.12;
     }
-    if (carFuelArc) {
-      carFuelArc.style.strokeDashoffset = String(CAR_FUEL_ARC_LEN * (1 - fuelN / 100));
+    if (fuelVisible) {
+      const fuelN = Math.max(0, Math.min(100, s.displayFuel));
+      const carFuelPctLbl = document.getElementById("carFuelPctLbl");
+      if (carFuelPctLbl) carFuelPctLbl.textContent = `${Math.round(fuelN)}%`;
     }
-    const carFuelPctLbl = document.getElementById("carFuelPctLbl");
-    if (carFuelPctLbl) carFuelPctLbl.textContent = `${Math.round(fuelN)}%`;
   }
   requestAnimationFrame(applyCarHudSmoothFrame);
 }
@@ -492,6 +531,7 @@ function syncPreviewVisibility(state) {
   if (hudRoot) {
     hudRoot.style.display = MAIN_STATS.some((k) => show[k]) ? "flex" : "none";
   }
+  applyCarHudPartVisibility(show);
 }
 
 function updateThemeColorPicks(colorKey) {
@@ -851,18 +891,29 @@ window.addEventListener("message", (event) => {
   const showCarHud = !!data.inVehicle && !!data.show && wantsCarHud;
   carHud.classList.toggle("hidden", !showCarHud);
   if (carhudClassic) carhudClassic.classList.add("hidden");
+  applyCarHudPartVisibility(effectiveShow);
 
   const spExact = Math.max(0, Math.min(999, Number(data.speedExact ?? data.speed) || 0));
   const fuelN = Math.max(0, Math.min(100, Number(data.fuel) || 0));
   const eh = Number(data.engineHealth);
   const motorPctHud = Number.isFinite(eh) ? Math.max(0, Math.min(100, Math.round(eh / 10))) : 0;
 
+  const showSpeedHud = effectiveShow.speed === true;
   carHudSmooth.active = showCarHud;
   if (showCarHud) {
-    carHudSmooth.targetSpeed = spExact;
-    carHudSmooth.targetRpm = Math.max(0, Math.min(100, Number(data.rpm) || 0));
-    carHudSmooth.targetFuel = fuelN;
-    carHudSmooth.gear = data.gear ? String(data.gear) : "N";
+    if (showSpeedHud) {
+      carHudSmooth.targetSpeed = spExact;
+      carHudSmooth.targetRpm = Math.max(0, Math.min(100, Number(data.rpm) || 0));
+      carHudSmooth.gear = data.gear ? String(data.gear) : "N";
+    } else {
+      carHudSmooth.targetSpeed = 0;
+      carHudSmooth.targetRpm = 0;
+      carHudSmooth.displaySpeed = 0;
+      carHudSmooth.displayRpm = 0;
+    }
+    if (effectiveShow.fuel === true) {
+      carHudSmooth.targetFuel = fuelN;
+    }
   } else {
     carHudSmooth.targetSpeed = 0;
     carHudSmooth.targetRpm = 0;
@@ -883,10 +934,8 @@ window.addEventListener("message", (event) => {
   setChStat(chStatTurnL, ind === 1 || ind === 3 ? "state-blink" : "state-off");
   setChStat(chStatTurnR, ind === 2 || ind === 3 ? "state-blink" : "state-off");
 
-  const statFuel = document.getElementById("carStatFuel");
-  const statEngine = document.getElementById("carStatEngine");
-  if (statFuel) statFuel.classList.toggle("state-warn", fuelN < 18);
-  if (statEngine) statEngine.classList.toggle("state-warn", motorPctHud < 40);
+  if (carStatFuel) carStatFuel.classList.toggle("state-warn", effectiveShow.fuel === true && fuelN < 18);
+  if (carStatEngine) carStatEngine.classList.toggle("state-warn", showSpeedHud && motorPctHud < 40);
 });
 
 function bindMenuInput(el, eventName, handler) {

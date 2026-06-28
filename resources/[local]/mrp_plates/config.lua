@@ -1,8 +1,11 @@
 Config = Config or {}
 
---- Teksto šablonas visiems GTA plokštelės tipams (1=skaitmuo, A=raidė, tarpas=tarpas).
+--- Teksto šablonas GTA generavimui (1=skaitmuo, A=raidė). Vienas tarpas kairėje — lygiavimas ant tekstūros.
 --- Rezultatas pvz.: 482 KTM
-Config.PlatePattern = '111 AAA'
+Config.PlatePattern = ' 111 AAA'
+
+--- Kiek tarpų prieš skaitmenis ant mašinos (max 1 — GTA limitas 8 simboliai).
+Config.PlateTextPadLeft = 1
 
 --- Kuris plateIndex naudojamas naujoms mašinoms (0 = plate01).
 Config.DefaultPlateIndex = 0
