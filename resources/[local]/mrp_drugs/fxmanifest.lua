@@ -15,13 +15,18 @@ files {
     'html/app.js',
     'html/schedule-icons.js',
     'html/schedule.js',
+    'html/drug-games.js',
     'html/icons/grow_pot.png',
     'html/icons/watering_can.png',
     'html/icons/drug_scale.png',
+    'html/icons/weed_leaf.png',
+    'html/icons/trimming_scissors.png',
+    'html/icons/gloves_item.png',
 }
 
 shared_scripts {
     'config.lua',
+    'shared/minigame_registry.lua',
 }
 
 client_scripts {

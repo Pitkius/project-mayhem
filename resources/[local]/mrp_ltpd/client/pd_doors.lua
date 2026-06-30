@@ -53,27 +53,6 @@ local function isManualPdDoorSlab(modelHash, coords)
     return false
 end
 
-local function requestPdDoorToggle(groupId)
-    if type(groupId) ~= 'string' or groupId == '' then return end
-    if not canUseDoorGroupClient(groupId) then return end
-    local now = GetGameTimer()
-    if now < doorToggleCooldownUntil then return end
-    doorToggleCooldownUntil = now + 800
-    TriggerServerEvent('mrp_ltpd:server:togglePdDoorGroup', groupId)
-end
-
-local function refreshPdDoorInteractZones()
-    cachedDoorProximityZones = buildPdDoorProximityZones()
-    if GetResourceState('qb-target') ~= 'started' then
-        useQbTargetDoors = false
-        return
-    end
-    for zoneId in pairs(doorTargetZoneIds) do
-        removeDoorTargetZone(zoneId)
-    end
-    useQbTargetDoors = setupDoorTargetsFromZones()
-end
-
 --- GTA saugos spynos sprites (`mpsafecracking`): lock_closed / lock_open
 local PD_LOCK_TX = 'mpsafecracking'
 
@@ -230,6 +209,15 @@ local function canUseDoorGroupClient(groupId)
     return isPdJobName(P.job.name)
 end
 
+local function requestPdDoorToggle(groupId)
+    if type(groupId) ~= 'string' or groupId == '' then return end
+    if not canUseDoorGroupClient(groupId) then return end
+    local now = GetGameTimer()
+    if now < doorToggleCooldownUntil then return end
+    doorToggleCooldownUntil = now + 800
+    TriggerServerEvent('mrp_ltpd:server:togglePdDoorGroup', groupId)
+end
+
 local function canUseServiceDoorsClient()
     local P = QBCore.Functions.GetPlayerData()
     if not P or not P.job or not P.job.onduty then return false end
@@ -365,6 +353,18 @@ local function setupDoorTargetsFromZones()
         registerDoorTargetZone(zoneId, z.groupId, z.pos, z.maxd, g and g.label)
     end
     return true
+end
+
+local function refreshPdDoorInteractZones()
+    cachedDoorProximityZones = buildPdDoorProximityZones()
+    if GetResourceState('qb-target') ~= 'started' then
+        useQbTargetDoors = false
+        return
+    end
+    for zoneId in pairs(doorTargetZoneIds) do
+        removeDoorTargetZone(zoneId)
+    end
+    useQbTargetDoors = setupDoorTargetsFromZones()
 end
 
 local function setupPdDoorTargets()

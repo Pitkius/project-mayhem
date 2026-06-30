@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const names = ['grow_pot', 'watering_can', 'drug_scale'];
+const names = ['grow_pot', 'watering_can', 'drug_scale', 'weed_leaf', 'trimming_scissors', 'gloves_item'];
 const invDir = path.join(__dirname, '..', '..', 'resources', '[qb]', 'qb-inventory', 'html', 'images');
 const drugsDir = path.join(__dirname, '..', '..', 'resources', '[local]', 'mrp_drugs', 'html', 'icons');
 

@@ -1279,35 +1279,4 @@ function Config.IsPackagedDrugItem(itemName)
     return Config.PackagedDrugOutputs[tostring(itemName or ''):lower()] == true
 end
 
---- Schedule-1 stiliaus mini-žaidimai pagal produktą (process / pack)
-Config.ScheduleMinigames = {
-    thc_process = { mode = 'trim', title = 'THC · lapų apdorojimas', steps = 4, icon = '🍃', difficulty = 1 },
-    thc_pack = { mode = 'pack_bottle', title = 'Vape buteliuko pildymas', steps = 2, icon = '💨', difficulty = 1 },
-    alcohol_process = { mode = 'distill', title = 'Samagono distiliacija', steps = 1, icon = '🥃', difficulty = 1 },
-    alcohol_pack = { mode = 'pack_bottle', title = 'Alkoholio supilstymas', steps = 2, icon = '🍾', difficulty = 1 },
-    vape_process = { mode = 'mix', title = 'Vape mišinio paruošimas', steps = 1, icon = '💨', difficulty = 1 },
-    vape_pack = { mode = 'pack_bottle', title = 'Vape skysčio buteliukas', steps = 2, icon = '🧴', difficulty = 1 },
-    weed_soil = { mode = 'weed_soil', title = 'Žemės pylimas', steps = 2, difficulty = 1 },
-    weed_seed = { mode = 'weed_seed', title = 'Sėklų sodinimas', steps = 3, difficulty = 1 },
-    weed_plant = { mode = 'plant', title = 'Kanapių sodinimas', steps = 4, difficulty = 1 },
-    weed_water = { mode = 'weed_water', title = 'Augalo laistymas', steps = 2, difficulty = 1 },
-    weed_harvest = { mode = 'weed_harvest', title = 'Derliaus nuėmimas', steps = 3, difficulty = 2 },
-    weed_process = { mode = 'weed_dry', title = 'Žolės džiovinimas', steps = 3, icon = '🍃', difficulty = 2 },
-    weed_pack = { mode = 'weed_pack', title = 'Žolės supakavimas', steps = 3, icon = '🌿', difficulty = 2 },
-    heroin_process = { mode = 'cook', title = 'Heroino virimas', steps = 1, icon = '⚗️', difficulty = 2 },
-    heroin_pack = { mode = 'pack_bag', title = 'Heroino supakavimas', steps = 3, icon = '💉', difficulty = 2 },
-    meth_process = { mode = 'crystal', title = 'Meto kristalizacija', steps = 4, icon = '💎', difficulty = 3 },
-    meth_pack = { mode = 'pack_bag', title = 'Meto maišelio užlydinimas', steps = 3, icon = '❄️', difficulty = 3 },
-    pills_process = { mode = 'press', title = 'Tablečių presavimas', steps = 4, icon = '💊', difficulty = 2 },
-    pills_pack = { mode = 'pack_bag', title = 'Tablečių pakavimas', steps = 3, icon = '💊', difficulty = 2 },
-    mushroom_process = { mode = 'trim', title = 'Grybų valymas', steps = 3, icon = '🍄', difficulty = 2 },
-    mushroom_pack = { mode = 'pack_bag', title = 'Grybų pakavimas', steps = 3, icon = '🍄', difficulty = 2 },
-    cocaine_process = { mode = 'wash', title = 'Kokaino lapų plovimas', steps = 4, icon = '🍃', difficulty = 3 },
-    cocaine_pack = { mode = 'pack_brick', title = 'Kokaino bloko pakavimas', steps = 3, icon = '🧱', difficulty = 3 },
-    amp_process = { mode = 'cook', title = 'Amfetamino sintezė', steps = 1, icon = '⚗️', difficulty = 3 },
-    amp_pack = { mode = 'pack_bag', title = 'Amfetamino pakavimas', steps = 3, icon = '⚡', difficulty = 3 },
-}
-
-function Config.GetScheduleMinigame(productId)
-    return Config.ScheduleMinigames and Config.ScheduleMinigames[productId] or nil
-end
+--- Schedule mini-žaidimai — žr. shared/minigame_registry.lua (unikalūs per narkotiko liniją).

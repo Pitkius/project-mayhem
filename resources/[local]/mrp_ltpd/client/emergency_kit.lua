@@ -145,6 +145,16 @@ local function removeLightbar(vehicle)
     LIGHTBARS[vehicle] = nil
 end
 
+local function readVehicleStateBag(vehicle)
+    local bag = Entity(vehicle).state
+    if bag == nil then return 'off', false end
+    local mode = bag.ltPdSirenMode or bag.ltEmsSirenMode or 'off'
+    if type(mode) ~= 'string' then mode = 'off' end
+    mode = mode:lower()
+    local kit = bag.ltPdKit == true or bag.ltEmsKit == true
+    return mode, kit
+end
+
 local function ensureLightbar(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     local _, kit = readVehicleStateBag(vehicle)
@@ -182,18 +192,6 @@ local function ensureLightbar(vehicle)
     AttachEntityToEntity(prop, vehicle, bone, 0.0, yOff, zOff, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
     LIGHTBARS[vehicle] = prop
     SetModelAsNoLongerNeeded(hash)
-end
-
-local function syncKitVisuals(vehicle)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    local _, kit = readVehicleStateBag(vehicle)
-    if kit and not vehicleSupportsNativeEmergency(vehicle) then
-        ensureLightbar(vehicle)
-        syncKitPerformance(vehicle)
-    else
-        removeLightbar(vehicle)
-        removeKitPerformance(vehicle)
-    end
 end
 
 local PERF_FIELDS = {
@@ -310,6 +308,18 @@ local function syncKitPerformance(vehicle)
     applyKitPerformanceFromBaseline(vehicle, entry.orig, tune)
 end
 
+local function syncKitVisuals(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    local _, kit = readVehicleStateBag(vehicle)
+    if kit and not vehicleSupportsNativeEmergency(vehicle) then
+        ensureLightbar(vehicle)
+        syncKitPerformance(vehicle)
+    else
+        removeLightbar(vehicle)
+        removeKitPerformance(vehicle)
+    end
+end
+
 local function drawLensMarker(x, y, z, r, g, b, alpha)
     DrawMarker(
         28,
@@ -367,16 +377,6 @@ end
 local function safeVehicleNetId(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return 0 end
     return NetworkGetNetworkIdFromEntity(vehicle)
-end
-
-local function readVehicleStateBag(vehicle)
-    local bag = Entity(vehicle).state
-    if bag == nil then return 'off', false end
-    local mode = bag.ltPdSirenMode or bag.ltEmsSirenMode or 'off'
-    if type(mode) ~= 'string' then mode = 'off' end
-    mode = mode:lower()
-    local kit = bag.ltPdKit == true or bag.ltEmsKit == true
-    return mode, kit
 end
 
 local function applyNativeForEveryone(vehicle, mode)

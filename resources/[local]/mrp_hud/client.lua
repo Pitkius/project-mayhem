@@ -17,6 +17,43 @@ local COLOR_THEMES = {
     amber = { fill = '#fbbf24', glow = 'rgba(251,191,36,0.5)' },
 }
 
+local THEME_PALETTE = {
+    violet = { primary = '#a78bfa', secondary = '#c4b5fd', accent = '#e879f9', text = '#f8fafc' },
+    cyan = { primary = '#22d3ee', secondary = '#67e8f9', accent = '#a5f3fc', text = '#f0fdfa' },
+    red = { primary = '#f87171', secondary = '#fca5a5', accent = '#fb7185', text = '#fff1f2' },
+    green = { primary = '#86efac', secondary = '#bbf7d0', accent = '#4ade80', text = '#f0fdf4' },
+    amber = { primary = '#fbbf24', secondary = '#fde68a', accent = '#f59e0b', text = '#fffbeb' },
+}
+
+local function hexGlow(hex, alpha)
+    if type(hex) ~= 'string' then return 'rgba(167,139,250,0.5)' end
+    local r, g, b = hex:match('#(%x%x)(%x%x)(%x%x)')
+    if not r then return 'rgba(167,139,250,0.5)' end
+    return ('rgba(%d,%d,%d,%.2f)'):format(tonumber(r, 16), tonumber(g, 16), tonumber(b, 16), alpha or 0.5)
+end
+
+local function resolveHudColors(s)
+    if s.customColors and s.customColors.primary then
+        local cc = s.customColors
+        return {
+            fill = cc.primary,
+            soft = cc.secondary or cc.primary,
+            glow = hexGlow(cc.primary, 0.5),
+            customColors = cc,
+        }
+    end
+    local key = s.color or 'violet'
+    if key == 'custom' then key = 'violet' end
+    local c = COLOR_THEMES[key] or COLOR_THEMES.violet
+    local pal = THEME_PALETTE[key] or THEME_PALETTE.violet
+    return {
+        fill = c.fill,
+        soft = pal.secondary,
+        glow = c.glow,
+        customColors = nil,
+    }
+end
+
 --- Kvadratinių vitalų spalvos pagal temą (NUI `--tile-*`).
 local TILE_COLORS = {
     violet = { health = '#f43f5e', armor = '#a78bfa', hunger = '#fb923c', thirst = '#38bdf8', stamina = '#e879f9', voice = '#c4b5fd' },
@@ -307,8 +344,9 @@ end)
 
 local function sendHudTheme()
     local s = currentSettings()
-    local c = COLOR_THEMES[s.color] or COLOR_THEMES.violet
-    local tiles = TILE_COLORS[s.color] or TILE_COLORS.violet
+    local resolved = resolveHudColors(s)
+    local colorKey = s.color or 'violet'
+    local tiles = TILE_COLORS[colorKey == 'custom' and 'violet' or colorKey] or TILE_COLORS.violet
     SendNUIMessage({
         action = 'theme',
         preset = hudPreset,
@@ -317,9 +355,11 @@ local function sendHudTheme()
         scale = s.scale or 1.0,
         compact = s.compact == true,
         anim = s.anim ~= false,
-        color = s.color,
-        fillColor = c.fill,
-        glowColor = c.glow,
+        color = colorKey,
+        fillColor = resolved.fill,
+        softColor = resolved.soft,
+        glowColor = resolved.glow,
+        customColors = resolved.customColors or s.customColors,
         show = s.show,
         tileColors = tiles,
         vehicleUiAccent = VEHICLE_PANEL_ACCENT,
@@ -684,6 +724,14 @@ RegisterNUICallback('hud:savePreset', function(data, cb)
     local p = presetSettings[idx] or deepCopy(DEFAULT_PRESET)
     p.style = tostring(data and data.style or p.style)
     p.color = tostring(data and data.color or p.color)
+    if data and data.customColors and type(data.customColors) == 'table' then
+        p.customColors = {
+            primary = tostring(data.customColors.primary or ''),
+            secondary = tostring(data.customColors.secondary or ''),
+            accent = tostring(data.customColors.accent or ''),
+            text = tostring(data.customColors.text or ''),
+        }
+    end
     p.alpha = clamp(tonumber(data and data.alpha) or p.alpha, 0.2, 1.0)
     p.scale = clamp(tonumber(data and data.scale) or p.scale or 1.0, 0.75, 1.25)
     p.compact = data and data.compact == true

@@ -25,6 +25,8 @@ client_scripts {
 
 exports {
     'IsWeaponDrawBusy',
+    'IsReloadBusy',
+    'GetCurrentWeaponName',
 }
 
 server_scripts {

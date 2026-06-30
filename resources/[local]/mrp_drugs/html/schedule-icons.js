@@ -56,13 +56,7 @@ const SchIcons = (() => {
     },
 
     trimScissors() {
-      return `<svg class="sch-svg sch-icon-trim-scissors" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
-        <path d="M18 46 C10 46 8 38 12 32 C16 26 22 24 26 28 L34 36" fill="none" stroke="#ea580c" stroke-width="4" stroke-linecap="round"/>
-        <path d="M46 46 C54 46 56 38 52 32 C48 26 42 24 38 28 L30 36" fill="none" stroke="#ea580c" stroke-width="4" stroke-linecap="round"/>
-        <path d="M26 28 L38 16 L42 20 L30 32 Z" fill="#e4e4e7" stroke="#71717a" stroke-width="0.8"/>
-        <path d="M38 28 L26 16 L22 20 L34 32 Z" fill="#e4e4e7" stroke="#71717a" stroke-width="0.8"/>
-        <circle cx="32" cy="36" r="3" fill="#52525b"/>
-      </svg>`;
+      return pngImg('trimming_scissors', 'sch-png-scissors');
     },
 
     scissors() {
@@ -70,20 +64,11 @@ const SchIcons = (() => {
     },
 
     gloves() {
-      return `<svg class="sch-svg sch-icon-gloves" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
-        <path d="M10 30 Q10 14 20 12 L24 12 Q28 12 28 16 L28 34 Q28 44 20 46 L16 46 Q10 44 10 36 Z" fill="#3f3f46" stroke="#71717a" stroke-width="1.2"/>
-        <path d="M28 20 L34 16 Q42 14 46 22 L46 38 Q46 46 38 48 L32 48 Q28 48 28 44 Z" fill="#3f3f46" stroke="#71717a" stroke-width="1.2"/>
-      </svg>`;
+      return pngImg('gloves_item', 'sch-png-gloves');
     },
 
     cannabisLeaf() {
-      return `<svg class="sch-svg sch-icon-leaf" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
-        <path d="M32 54 L32 30" stroke="#166534" stroke-width="2.2" stroke-linecap="round"/>
-        <path d="M32 44 Q14 40 10 28 Q22 32 32 38" fill="#4ade80" stroke="#22c55e" stroke-width="0.8"/>
-        <path d="M32 42 Q50 38 54 26 Q42 30 32 36" fill="#4ade80" stroke="#22c55e" stroke-width="0.8"/>
-        <path d="M32 36 Q18 30 16 20 Q26 26 32 32" fill="#4ade80" stroke="#22c55e" stroke-width="0.8"/>
-        <path d="M32 34 Q46 28 48 18 Q38 24 32 30" fill="#4ade80" stroke="#22c55e" stroke-width="0.8"/>
-      </svg>`;
+      return pngImg('weed_leaf', 'sch-png-leaf');
     },
 
     seedPacket() {

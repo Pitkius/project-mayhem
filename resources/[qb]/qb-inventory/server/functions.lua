@@ -93,7 +93,6 @@ local function resolveShopSlotCount(shopItems, configuredSlots)
 end
 
 local BulkyItemsNoPocket = {
-    -- Long guns
     weapon_assaultrifle = true,
     weapon_assaultrifle_mk2 = true,
     weapon_carbinerifle = true,
@@ -107,6 +106,7 @@ local BulkyItemsNoPocket = {
     weapon_fgc9 = true,
     weapon_militaryrifle = true,
     weapon_heavyrifle = true,
+    weapon_tacticalrifle = true,
     weapon_mg = true,
     weapon_combatmg = true,
     weapon_combatmg_mk2 = true,
@@ -118,15 +118,39 @@ local BulkyItemsNoPocket = {
     weapon_bullpupshotgun = true,
     weapon_heavyshotgun = true,
     weapon_combatshotgun = true,
+    weapon_dbshotgun = true,
+    weapon_autoshotgun = true,
+    weapon_sweepershotgun = true,
+    weapon_musket = true,
     weapon_sniperrifle = true,
     weapon_heavysniper = true,
     weapon_heavysniper_mk2 = true,
     weapon_marksmanrifle = true,
     weapon_marksmanrifle_mk2 = true,
-    -- Other bulky gear
+    weapon_precisionrifle = true,
+    weapon_microsmg = true,
+    weapon_smg = true,
+    weapon_smg_mk2 = true,
+    weapon_assaultsmg = true,
+    weapon_combatpdw = true,
+    weapon_minismg = true,
+    weapon_raycarbine = true,
     mining_pickaxe = true,
     veh_toolbox = true,
 }
+
+local function isBulkyInventoryItem(itemName)
+    if not itemName then return false end
+    local key = tostring(itemName):lower()
+    if BulkyItemsNoPocket[key] then return true end
+    if GetResourceState('mrp_basics') == 'started' then
+        local ok, res = pcall(function()
+            return exports['mrp_basics']:IsBulkyCarryItem(key)
+        end)
+        if ok and res == true then return true end
+    end
+    return false
+end
 
 -- Exported Functions
 

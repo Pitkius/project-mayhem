@@ -46,7 +46,7 @@ local function buildVehicleProps(hash, plate, colorIdx)
     local props = {
         model = hash,
         plate = MRPPlates.Normalize(plate),
-        plateIndex = tonumber(Config.DefaultPlateIndex) or 0,
+        plateIndex = tonumber(Config.DefaultPlateIndex) or 5,
     }
     local c = tonumber(colorIdx)
     if c then
@@ -70,5 +70,5 @@ exports('FormatForRender', function(plate)
 end)
 exports('BuildVehicleProps', buildVehicleProps)
 exports('GetDefaultPlateIndex', function()
-    return tonumber(Config.DefaultPlateIndex) or 0
+    return tonumber(Config.DefaultPlateIndex) or 5
 end)

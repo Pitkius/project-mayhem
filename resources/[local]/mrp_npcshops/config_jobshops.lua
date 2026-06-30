@@ -48,19 +48,10 @@ Config.RangerSupplyShop = {
     },
 }
 
---- NPC taškai prie tarnybų MLO (duty = pamaina; reception = civilinė registratūra)
---- role: supply | garage | locker | stash | duty | boss | reception
+--- NPC taškai prie tarnybų MLO (duty = pamaina)
+--- role: supply | garage | locker | stash | duty | boss
+--- PD registratūra — tik qb-target (mrp_ltpd/client/reception.lua)
 Config.JobStationNpcs = {
-    --- Civilinė PD registratūra (pareiškimai, anketos)
-    {
-        job = 'police',
-        stationId = 'ls_main',
-        role = 'reception',
-        model = 's_f_y_cop_01',
-        coords = vector4(441.2229, -982.0843, 30.6895, 275.1584),
-        label = 'PD registratūra',
-        blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra' },
-    },
     --- Pamainos pradžia / pabaiga (tik policijai)
     {
         job = 'police',

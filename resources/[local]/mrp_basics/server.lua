@@ -391,3 +391,6 @@ RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, veh
     })
 end)
 
+exports('IsBulkyCarryItem', function(itemName)
+    return WeaponCarry.isBulkyItem(itemName)
+end)

@@ -583,7 +583,8 @@ body.shape-square .fill {
 
 .hm-main {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: stretch;
     min-height: 0;
     max-height: calc(94vh - 130px);
     overflow: hidden;
@@ -596,8 +597,10 @@ body.shape-square .fill {
     padding: 14px;
     background: rgba(8, 6, 18, 0.35);
     overflow-y: auto;
-    flex: 1;
+    flex: 0 0 min(340px, 38%);
+    min-width: 260px;
     min-height: 0;
+    border-right: 1px solid rgba(167, 139, 250, 0.08);
 }
 
 .hm-sidebar.is-hidden {
@@ -623,6 +626,45 @@ body.shape-square .fill {
 
 .hm-panels .hm-panel.is-visible {
     display: flex;
+    flex-direction: column;
+}
+
+.hm-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.hm-panel-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid rgba(167, 139, 250, 0.1);
+}
+
+.hm-panel-note {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #64748b;
+}
+
+.hm-save-header {
+    padding: 8px 14px;
+    font-size: 10px;
+}
+
+.hm-color-pick-btn {
+    cursor: pointer;
+}
+
+.hm-color-pick-btn:hover i {
+    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.45);
 }
 
 .hm-section-title {
@@ -1535,6 +1577,7 @@ body.inventory-open > .hud-br-cluster {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    min-height: 100%;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 

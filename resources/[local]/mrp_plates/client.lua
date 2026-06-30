@@ -33,9 +33,11 @@ local function replacePlateTextures()
         tries = tries + 1
     end
 
-    local vanillaTex = 'plate02'
-    RemoveReplaceTexture('vehshare', vanillaTex)
-    AddReplaceTexture('vehshare', vanillaTex, dict, tex)
+    local vanillaPlates = Config.ReplaceVanillaPlates or { 'plate01', 'plate02' }
+    for _, vanillaTex in ipairs(vanillaPlates) do
+        RemoveReplaceTexture('vehshare', vanillaTex)
+        AddReplaceTexture('vehshare', vanillaTex, dict, tex)
+    end
 
     textureReady = true
     print('^2[mrp_plates] MRP violet plate texture loaded^7')
@@ -61,8 +63,10 @@ local function applyPlateStyle(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     if GetEntityType(vehicle) ~= 2 then return end
 
-    local idx = tonumber(Config.DefaultPlateIndex) or 0
-    SetVehicleNumberPlateTextIndex(vehicle, idx)
+    local idx = tonumber(Config.DefaultPlateIndex) or 5
+    if GetVehicleNumberPlateTextIndex(vehicle) ~= idx then
+        SetVehicleNumberPlateTextIndex(vehicle, idx)
+    end
     formatAndSetPlateText(vehicle)
 end
 
@@ -95,6 +99,8 @@ end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    RemoveReplaceTexture('vehshare', 'plate02')
+    for _, vanillaTex in ipairs(Config.ReplaceVanillaPlates or { 'plate01', 'plate02', 'yankton_plate' }) do
+        RemoveReplaceTexture('vehshare', vanillaTex)
+    end
     appliedPlates = {}
 end)

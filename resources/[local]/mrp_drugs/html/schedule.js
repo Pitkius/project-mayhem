@@ -1,6 +1,7 @@
 /* Schedule-1 stiliaus narkotikų mini-žaidimai */
 const mgSchedule = document.getElementById("mgSchedule");
 const schTitle = document.getElementById("schTitle");
+const schBadge = document.getElementById("schBadge");
 const schStep = document.getElementById("schStep");
 const schBoard = document.getElementById("schBoard");
 const schHint = document.getElementById("schHint");
@@ -17,6 +18,7 @@ function postSchedule(success, extra = {}) {
   }
   if (mgSchedule) mgSchedule.classList.add("hidden");
   if (schBoard) schBoard.innerHTML = "";
+  setScheduleBadge(null, null, null);
   fetch(`https://${GetParentResourceName()}/scheduleResult`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -27,6 +29,27 @@ function postSchedule(success, extra = {}) {
 function setStep(current, total, hint) {
   if (schStep) schStep.textContent = `Žingsnis ${current}/${total}`;
   if (schHint) schHint.textContent = hint || "";
+}
+
+const SCHEDULE_ACTION_LABELS = {
+  harvest: "Derlius",
+  prepare: "Paruošimas",
+  process: "Gamyba",
+  dry: "Džiovinimas",
+  pack: "Pakavimas",
+};
+
+function setScheduleBadge(drug, action, icon) {
+  if (!schBadge) return;
+  if (!drug && !action) {
+    schBadge.textContent = "";
+    schBadge.classList.add("hidden");
+    return;
+  }
+  const actionLabel = SCHEDULE_ACTION_LABELS[action] || action || "";
+  const prefix = icon ? `${icon} ` : "";
+  schBadge.textContent = `${prefix}${String(drug || "").toUpperCase()} · ${actionLabel}`;
+  schBadge.classList.remove("hidden");
 }
 
 function failSchedule() {
@@ -1248,9 +1271,13 @@ function runScheduleGame(data) {
   if (!mgSchedule) return;
   scheduleActive = true;
   if (schTitle) schTitle.textContent = data.title || "Gamyba";
+  setScheduleBadge(data.drug, data.action, data.icon);
   mgSchedule.classList.remove("hidden");
 
   const mode = data.mode || "trim";
+  const drugMode = window.DrugGameModes && window.DrugGameModes[mode];
+  if (drugMode) return drugMode(data);
+
   if (mode === "trim") return runTrimGame(data);
   if (mode === "pack_bag" || mode === "pack_brick") return runPackBagGame(data);
   if (mode === "pack_bottle") return runPackBottleGame(data);

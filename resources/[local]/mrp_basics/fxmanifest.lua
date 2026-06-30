@@ -14,6 +14,10 @@ files {
     'html/clothing_radial/app.js',
 }
 
+shared_scripts {
+    'shared/weapon_carry.lua',
+}
+
 client_scripts {
     'client.lua',
     'client/vehicle_lockpick.lua',
@@ -28,6 +32,7 @@ server_scripts {
 exports {
     'IsNaturalNpcVehicle',
     'IsLongBackWeapon',
+    'IsBulkyCarryItem',
     'MarkNpcVehicleUnlocked',
     'ToggleClothingSlot',
     'OpenClothingMenu',

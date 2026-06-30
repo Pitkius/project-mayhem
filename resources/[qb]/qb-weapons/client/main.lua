@@ -341,6 +341,8 @@ function applyHolsteredWeaponsFromInventory(force)
 
     local ped = PlayerPedId()
     RemoveAllPedWeapons(ped, true)
+    SetWeaponsNoAutoswap(true)
+    SetWeaponsNoAutoselect(true)
 
     if not items then
         SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
@@ -371,11 +373,15 @@ function applyHolsteredWeaponsFromInventory(force)
 
         GiveWeaponToPed(ped, h, ammo, hidden, false)
         WeaponAmmo.applyWeaponAmmoState(ped, h, ammo, item)
-
         applyWeaponAttachmentsAndTint(ped, h, item.info)
+        if hidden then
+            SetPedWeaponTintIndex(ped, h, tonumber(item.info and item.info.tint) or 0)
+        end
 
         ::continue::
     end
+
+    SetPedCanSwitchWeapon(ped, true)
 
     if shownHash and shownHash ~= 0 and shownHash ~= `WEAPON_UNARMED` then
         if not HasPedGotWeapon(ped, shownHash, false) and currentWeapon then
@@ -410,7 +416,8 @@ end
 local function scheduleHolsteredWeaponVisuals()
     if holsterApplyPending then return end
     holsterApplyPending = true
-    SetTimeout(200, function()
+    local delay = isWeaponDrawBusy() and 420 or 140
+    SetTimeout(delay, function()
         holsterApplyPending = false
         applyHolsteredWeaponsFromInventory()
         if GetResourceState('mrp_basics') == 'started' then
@@ -457,11 +464,23 @@ end)
 AddEventHandler('qb-weapons:client:HolsterVisualsAfterDraw', function()
     if isReloadBusy() then return end
     if currentWeapon and isThrowableInventoryWeaponName(currentWeapon) then return end
-    scheduleHolsteredWeaponVisuals()
+    lastHolsterVisualSig = nil
+    applyHolsteredWeaponsFromInventory(true)
+    if GetResourceState('mrp_basics') == 'started' then
+        TriggerEvent('mrp_basics:client:refreshSlungWeapons')
+    end
 end)
 
 exports('IsWeaponDrawBusy', function()
     return isWeaponDrawBusy()
+end)
+
+exports('IsReloadBusy', function()
+    return isReloadBusy()
+end)
+
+exports('GetCurrentWeaponName', function()
+    return currentWeapon
 end)
 
 -- Functions
@@ -721,6 +740,7 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
         cancelActiveReload()
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', nil, shootbool)
         currentWeapon = nil
+        lastHolsterVisualSig = nil
         applyHolsteredWeaponsFromInventory(true)
         queueDrawWeapon(nil)
     elseif weaponName == 'weapon_stickybomb' or weaponName == 'weapon_pipebomb' or weaponName == 'weapon_smokegrenade' or weaponName == 'weapon_flare' or weaponName == 'weapon_proxmine' or weaponName == 'weapon_ball' or weaponName == 'weapon_molotov' or weaponName == 'weapon_grenade' or weaponName == 'weapon_bzgas' then

@@ -384,6 +384,7 @@
                     </div>
                     <div class="hm-header-actions">
                         <span id="hmSavedBadge" class="hm-saved hidden"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>IŠSAUGOTA</span>
+                        <button type="button" id="btnSavePresetHeader" class="hm-btn hm-btn-primary hm-save-header">IŠSAUGOTI</button>
                         <button type="button" id="btnCloseMenu" class="hm-close" title="Uždaryti">×</button>
                     </div>
                 </div>
@@ -463,83 +464,122 @@
 
                 <div class="hm-panels" id="hmPanels">
                 <div class="hm-panel" data-panel="layout">
-                    <h4>HUD IŠDĖSTYMAS</h4>
-                    <label class="hm-field">Išdėstymo stilius
-                        <select id="menuStyle">
-                            <option value="dots">Rutuliukai</option>
-                            <option value="frame">Minimap rėmas</option>
-                            <option value="line">Linijos</option>
-                            <option value="square">Kvadratai (juostos)</option>
-                            <option value="tiles">Kvadratai (vitalai)</option>
-                        </select>
-                    </label>
-                    <label class="hm-field hm-field-range">HUD mastelis <span id="menuScaleVal">100%</span>
-                        <input type="range" id="menuScale" min="0.75" max="1.25" step="0.05" value="1" />
-                    </label>
-                    <label class="hm-field hm-field-range">HUD permatomumas <span id="menuAlphaVal">58%</span>
-                        <input type="range" id="menuAlpha" min="0.2" max="1" step="0.05" value="0.58" />
-                    </label>
-                    <label class="hm-field">Šablonas
-                        <select id="menuPreset">
-                            <option value="1">Šablonas 1</option>
-                            <option value="2">Šablonas 2</option>
-                            <option value="3">Šablonas 3</option>
-                        </select>
-                    </label>
+                    <div class="hm-panel-body">
+                        <h4>HUD IŠDĖSTYMAS</h4>
+                        <label class="hm-field">Išdėstymo stilius
+                            <select id="menuStyle">
+                                <option value="dots">Rutuliukai</option>
+                                <option value="frame">Minimap rėmas</option>
+                                <option value="line">Linijos</option>
+                                <option value="square">Kvadratai (juostos)</option>
+                                <option value="tiles">Kvadratai (vitalai)</option>
+                            </select>
+                        </label>
+                        <label class="hm-field hm-field-range">HUD mastelis <span id="menuScaleVal">100%</span>
+                            <input type="range" id="menuScale" min="0.75" max="1.25" step="0.05" value="1" />
+                        </label>
+                        <label class="hm-field hm-field-range">HUD permatomumas <span id="menuAlphaVal">58%</span>
+                            <input type="range" id="menuAlpha" min="0.2" max="1" step="0.05" value="0.58" />
+                        </label>
+                        <label class="hm-field">Šablonas
+                            <select id="menuPreset">
+                                <option value="1">Šablonas 1</option>
+                                <option value="2">Šablonas 2</option>
+                                <option value="3">Šablonas 3</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="hm-panel-footer">
+                        <button type="button" class="hm-btn hm-btn-primary hm-btn-save-panel">IŠSAUGOTI</button>
+                    </div>
                 </div>
                 <div class="hm-panel" data-panel="colors">
-                    <h4>SPALVŲ TEMA</h4>
-                    <label class="hm-field">Tema
-                        <select id="menuColor">
-                            <option value="violet">Neon Violetinė</option>
-                            <option value="cyan">Žydra</option>
-                            <option value="red">Raudona</option>
-                            <option value="green">Žalia</option>
-                            <option value="amber">Gintarinė</option>
-                        </select>
-                    </label>
-                    <div class="hm-color-picks" id="hmColorPicks">
-                        <div class="hm-color-pick"><span>Pirminė</span><i id="hmColPrimary" style="background:#a78bfa"></i></div>
-                        <div class="hm-color-pick"><span>Antrinė</span><i id="hmColSecondary" style="background:#5b21b6"></i></div>
-                        <div class="hm-color-pick"><span>Akcentas</span><i id="hmColAccent" style="background:#e879f9"></i></div>
-                        <div class="hm-color-pick"><span>Tekstas</span><i id="hmColText" style="background:#f8fafc"></i></div>
+                    <div class="hm-panel-body">
+                        <h4>SPALVŲ TEMA</h4>
+                        <label class="hm-field">Tema
+                            <select id="menuColor">
+                                <option value="violet">Neon Violetinė</option>
+                                <option value="cyan">Žydra</option>
+                                <option value="red">Raudona</option>
+                                <option value="green">Žalia</option>
+                                <option value="amber">Gintarinė</option>
+                                <option value="custom">Pasirinktinė</option>
+                            </select>
+                        </label>
+                        <p class="hm-panel-note">Pirminė spalva keičia rutuliukų progresą, antrinė — ikonas viduje.</p>
+                        <div class="hm-color-picks" id="hmColorPicks">
+                            <label class="hm-color-pick hm-color-pick-btn">
+                                <span>Pirminė</span>
+                                <input type="color" id="hmInputPrimary" value="#a78bfa" hidden />
+                                <i id="hmColPrimary" style="background:#a78bfa"></i>
+                            </label>
+                            <label class="hm-color-pick hm-color-pick-btn">
+                                <span>Antrinė</span>
+                                <input type="color" id="hmInputSecondary" value="#c4b5fd" hidden />
+                                <i id="hmColSecondary" style="background:#c4b5fd"></i>
+                            </label>
+                            <div class="hm-color-pick"><span>Akcentas</span><i id="hmColAccent" style="background:#e879f9"></i></div>
+                            <div class="hm-color-pick"><span>Tekstas</span><i id="hmColText" style="background:#f8fafc"></i></div>
+                        </div>
+                        <div class="hm-swatches" id="hmSwatches">
+                            <span class="hm-swatch" data-c="violet" style="--sw:#a78bfa" title="Violetinė"></span>
+                            <span class="hm-swatch" data-c="cyan" style="--sw:#22d3ee" title="Žydra"></span>
+                            <span class="hm-swatch" data-c="red" style="--sw:#f87171" title="Raudona"></span>
+                            <span class="hm-swatch" data-c="green" style="--sw:#86efac" title="Žalia"></span>
+                            <span class="hm-swatch" data-c="amber" style="--sw:#fbbf24" title="Gintarinė"></span>
+                        </div>
                     </div>
-                    <div class="hm-swatches" id="hmSwatches">
-                        <span class="hm-swatch" data-c="violet" style="--sw:#a78bfa" title="Violetinė"></span>
-                        <span class="hm-swatch" data-c="cyan" style="--sw:#22d3ee" title="Žydra"></span>
-                        <span class="hm-swatch" data-c="red" style="--sw:#f87171" title="Raudona"></span>
-                        <span class="hm-swatch" data-c="green" style="--sw:#86efac" title="Žalia"></span>
-                        <span class="hm-swatch" data-c="amber" style="--sw:#fbbf24" title="Gintarinė"></span>
+                    <div class="hm-panel-footer">
+                        <button type="button" class="hm-btn hm-btn-primary hm-btn-save-panel">IŠSAUGOTI</button>
+                    </div>
+                </div>
+                <div class="hm-panel" data-panel="minimap">
+                    <div class="hm-panel-body">
+                        <h4>MINIMAP</h4>
+                        <p class="hm-panel-note">Minimap rodomas GTA žemėlapyje. Vitalų rėmas pasiekiamas HUD išdėstyme — stilius „Minimap rėmas“.</p>
+                    </div>
+                    <div class="hm-panel-footer">
+                        <button type="button" class="hm-btn hm-btn-primary hm-btn-save-panel">IŠSAUGOTI</button>
                     </div>
                 </div>
                 <div class="hm-panel" data-panel="other">
-                    <h4>PAPILDOMI NUSTATYMAI</h4>
-                    <label class="hm-el hm-el-compact" data-opt="hudbg">
-                        <input type="checkbox" id="optHudBg" checked hidden />
-                        <span class="hm-el-text"><strong>Gyva peržiūra</strong><small>Matomas žaidimas ir tikri rodikliai</small></span>
-                        <span class="hm-switch"><span class="hm-switch-knob"></span></span>
-                    </label>
-                    <label class="hm-el hm-el-compact" data-opt="dynamic">
-                        <input type="checkbox" id="optDynamic" checked hidden />
-                        <span class="hm-el-text"><strong>Dinaminis HUD</strong><small>Slėpti pilnus rodiklius</small></span>
-                        <span class="hm-switch"><span class="hm-switch-knob"></span></span>
-                    </label>
-                    <label class="hm-el hm-el-compact" data-opt="compact">
-                        <input type="checkbox" id="optCompact" hidden />
-                        <span class="hm-el-text"><strong>Kompaktiškas režimas</strong><small>Mažesni vitalų elementai</small></span>
-                        <span class="hm-switch"><span class="hm-switch-knob"></span></span>
-                    </label>
-                    <label class="hm-el hm-el-compact" data-opt="anim">
-                        <input type="checkbox" id="optAnim" checked hidden />
-                        <span class="hm-el-text"><strong>Animacijos</strong><small>Sklandūs perėjimai</small></span>
-                        <span class="hm-switch"><span class="hm-switch-knob"></span></span>
-                    </label>
+                    <div class="hm-panel-body">
+                        <h4>PAPILDOMI NUSTATYMAI</h4>
+                        <label class="hm-el hm-el-compact" data-opt="hudbg">
+                            <input type="checkbox" id="optHudBg" checked hidden />
+                            <span class="hm-el-text"><strong>Gyva peržiūra</strong><small>Matomas žaidimas ir tikri rodikliai</small></span>
+                            <span class="hm-switch"><span class="hm-switch-knob"></span></span>
+                        </label>
+                        <label class="hm-el hm-el-compact" data-opt="dynamic">
+                            <input type="checkbox" id="optDynamic" checked hidden />
+                            <span class="hm-el-text"><strong>Dinaminis HUD</strong><small>Slėpti pilnus rodiklius</small></span>
+                            <span class="hm-switch"><span class="hm-switch-knob"></span></span>
+                        </label>
+                        <label class="hm-el hm-el-compact" data-opt="compact">
+                            <input type="checkbox" id="optCompact" hidden />
+                            <span class="hm-el-text"><strong>Kompaktiškas režimas</strong><small>Mažesni vitalų elementai</small></span>
+                            <span class="hm-switch"><span class="hm-switch-knob"></span></span>
+                        </label>
+                        <label class="hm-el hm-el-compact" data-opt="anim">
+                            <input type="checkbox" id="optAnim" checked hidden />
+                            <span class="hm-el-text"><strong>Animacijos</strong><small>Sklandūs perėjimai</small></span>
+                            <span class="hm-switch"><span class="hm-switch-knob"></span></span>
+                        </label>
+                    </div>
+                    <div class="hm-panel-footer">
+                        <button type="button" class="hm-btn hm-btn-primary hm-btn-save-panel">IŠSAUGOTI</button>
+                    </div>
                 </div>
                 <div class="hm-panel" data-panel="export">
-                    <h4>EKSPORTAVIMAS / IMPORTAVIMAS</h4>
-                    <button type="button" id="btnExport" class="hm-btn hm-btn-primary hm-btn-block">EKSPORTUOTI</button>
-                    <button type="button" id="btnImport" class="hm-btn hm-btn-ghost hm-btn-block">IMPORTUOTI</button>
-                    <textarea id="hmImportArea" class="hm-import-area hidden" placeholder="Įklijuokite JSON čia…"></textarea>
+                    <div class="hm-panel-body">
+                        <h4>EKSPORTAVIMAS / IMPORTAVIMAS</h4>
+                        <button type="button" id="btnExport" class="hm-btn hm-btn-primary hm-btn-block">EKSPORTUOTI</button>
+                        <button type="button" id="btnImport" class="hm-btn hm-btn-ghost hm-btn-block">IMPORTUOTI</button>
+                        <textarea id="hmImportArea" class="hm-import-area hidden" placeholder="Įklijuokite JSON čia…"></textarea>
+                    </div>
+                    <div class="hm-panel-footer">
+                        <button type="button" class="hm-btn hm-btn-primary hm-btn-save-panel">IŠSAUGOTI</button>
+                    </div>
                 </div>
                 </div>
             </div>

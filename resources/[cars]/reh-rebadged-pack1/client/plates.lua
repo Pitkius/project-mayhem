@@ -16,7 +16,7 @@ local function applyGtaPlate(vehicle)
         return false
     end
 
-    SetVehicleNumberPlateTextIndex(vehicle, 1)
+    SetVehicleNumberPlateTextIndex(vehicle, 5)
     fixed[vehicle] = true
     return true
 end

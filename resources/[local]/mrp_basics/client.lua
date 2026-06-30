@@ -1,63 +1,82 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local coordsHudEnabled = false
 local slungProps = {}
-
-local LongWeaponModels = {
-    weapon_pistol = 'w_pi_pistol',
-    weapon_pistol_mk2 = 'w_pi_pistolmk2',
-    weapon_combatpistol = 'w_pi_combatpistol',
-    weapon_appistol = 'w_pi_appistol',
-    weapon_pistol50 = 'w_pi_pistol50',
-    weapon_heavypistol = 'w_pi_heavypistol',
-    weapon_snspistol = 'w_pi_sns_pistol',
-    weapon_vintagepistol = 'w_pi_vintage_pistol',
-    weapon_assaultrifle = 'w_ar_assaultrifle',
-    weapon_assaultrifle_mk2 = 'w_ar_assaultrifle',
-    weapon_carbinerifle = 'w_ar_carbinerifle',
-    weapon_carbinerifle_mk2 = 'w_ar_carbinerifle',
-    weapon_advancedrifle = 'w_ar_advancedrifle',
-    weapon_specialcarbine = 'w_ar_specialcarbine',
-    weapon_specialcarbine_mk2 = 'w_ar_specialcarbine',
-    weapon_bullpuprifle = 'w_ar_bullpuprifle',
-    weapon_bullpuprifle_mk2 = 'w_ar_bullpuprifle',
-    weapon_compactrifle = 'w_ar_assaultrifle_smg',
-    weapon_militaryrifle = 'w_ar_bullpuprifle',
-    weapon_heavyrifle = 'w_ar_specialcarbine',
-    weapon_mg = 'w_mg_mg',
-    weapon_combatmg = 'w_mg_combatmg',
-    weapon_combatmg_mk2 = 'w_mg_combatmg',
-    weapon_gusenberg = 'w_sb_gusenberg',
-    weapon_pumpshotgun = 'w_sg_pumpshotgun',
-    weapon_pumpshotgun_mk2 = 'w_sg_pumpshotgun',
-    weapon_sawnoffshotgun = 'w_sg_sawnoff',
-    weapon_assaultshotgun = 'w_sg_assaultshotgun',
-    weapon_bullpupshotgun = 'w_sg_bullpupshotgun',
-    weapon_heavyshotgun = 'w_sg_heavyshotgun',
-    weapon_combatshotgun = 'w_sg_pumpshotgun',
-    weapon_sniperrifle = 'w_sr_sniperrifle',
-    weapon_heavysniper = 'w_sr_heavysniper',
-    weapon_heavysniper_mk2 = 'w_sr_heavysniper',
-    weapon_marksmanrifle = 'w_sr_marksmanrifle',
-    weapon_marksmanrifle_mk2 = 'w_sr_marksmanrifle',
-
-    -- SMG (stambūs ne rankoj – rodomi tik be kuprinės, kaip karabinai)
-    weapon_microsmg = 'w_sb_microsmg',
-    weapon_smg = 'w_sb_smg',
-    weapon_smg_mk2 = 'w_sb_smgmk2',
-    weapon_assaultsmg = 'w_sb_assaultsmg',
-    weapon_combatpdw = 'w_sb_pdw',
-    weapon_machinepistol = 'w_sb_compactsmg',
-    weapon_minismg = 'w_sb_minismg',
-    weapon_fgc9 = 'w_pi_combatpistol',
-    weapon_raycarbine = 'w_ar_srifle',
-    weapon_tecpistol = 'w_pi_pistolsmg_m31',
-}
+local lastSlungSignature = nil
 
 local function isLongBackWeapon(weaponName)
-    return weaponName and LongWeaponModels[tostring(weaponName)] ~= nil
+    return WeaponCarry.isBackCarried(weaponName)
 end
 
 exports('IsLongBackWeapon', isLongBackWeapon)
+
+exports('IsBulkyCarryItem', function(itemName)
+    return WeaponCarry.isBulkyItem(itemName)
+end)
+
+local function getEquippedWeaponName(ped)
+    if GetResourceState('qb-weapons') == 'started' then
+        local ok, name = pcall(function()
+            return exports['qb-weapons']:GetCurrentWeaponName()
+        end)
+        if ok and name and name ~= '' then
+            return WeaponCarry.normalizeName(name)
+        end
+    end
+    local currentWeaponHash = GetSelectedPedWeapon(ped)
+    local currentWeaponData = QBCore.Shared.Weapons[currentWeaponHash]
+    if currentWeaponData and currentWeaponData.name then
+        return WeaponCarry.normalizeName(currentWeaponData.name)
+    end
+    return nil
+end
+
+local function resolveObjectHash(weaponName)
+    return joaat(WeaponCarry.normalizeName(weaponName))
+end
+
+local function isInventoryWeaponItem(item)
+    if not item or not item.name then return false end
+    if item.type == 'weapon' then return true end
+    local name = tostring(item.name):lower()
+    return name:find('^weapon_', 1, false) ~= nil
+end
+
+local function weaponDrawOrReloadBusy()
+    if _G.QBWeaponDrawBusy == true then return true end
+    if GetResourceState('qb-weapons') ~= 'started' then return false end
+    local okDraw, drawBusy = pcall(function()
+        return exports['qb-weapons']:IsWeaponDrawBusy()
+    end)
+    if okDraw and drawBusy then return true end
+    local okReload, reloadBusy = pcall(function()
+        return exports['qb-weapons']:IsReloadBusy()
+    end)
+    return okReload and reloadBusy == true
+end
+
+local function buildSlungSignature(items, equippedName, hasBackpack)
+    if hasBackpack then return 'backpack' end
+    local parts = {}
+    for _, item in pairs(items or {}) do
+        if item and isInventoryWeaponItem(item) and (tonumber(item.amount) or 0) > 0 then
+            local name = WeaponCarry.normalizeName(item.name)
+            if name ~= equippedName and isLongBackWeapon(name) then
+                local att = ''
+                if item.info and item.info.attachments then
+                    local ac = {}
+                    for _, a in pairs(item.info.attachments) do
+                        ac[#ac + 1] = tostring(a.component or a)
+                    end
+                    table.sort(ac)
+                    att = table.concat(ac, ',')
+                end
+                parts[#parts + 1] = ('%s#%s#%s'):format(name, att, tostring(item.info and item.info.tint or ''))
+            end
+        end
+    end
+    table.sort(parts)
+    return table.concat(parts, '|') .. '@' .. tostring(equippedName or '')
+end
 
 local function componentHash(comp)
     if type(comp) == 'number' then return comp end
@@ -97,14 +116,12 @@ end
 
 local function attachEntityToBackSlot(ped, slotIndex, ent)
     SetEntityCollision(ent, false, false)
-    local bone = GetPedBoneIndex(ped, 24816)
+    SetEntityCompletelyDisableCollision(ent, false, false)
+    local bone = GetPedBoneIndex(ped, 24816) -- SKEL_Spine3
     if slotIndex == 1 then
-        AttachEntityToEntity(ent, ped, bone, -0.17, -0.15, 0.02, 0.0, 150.0, 0.0, true, true, false, true, 2, true)
-    elseif slotIndex == 2 then
-        AttachEntityToEntity(ent, ped, bone, 0.17, -0.15, 0.02, 0.0, 150.0, 0.0, true, true, false, true, 2, true)
+        AttachEntityToEntity(ent, ped, bone, -0.14, -0.16, -0.02, 0.0, 165.0, 5.0, true, true, false, true, 2, true)
     else
-        local hipBone = GetPedBoneIndex(ped, 11816)
-        AttachEntityToEntity(ent, ped, hipBone, 0.10, 0.02, 0.0, 75.0, 20.0, 170.0, true, true, false, true, 2, true)
+        AttachEntityToEntity(ent, ped, bone, 0.14, -0.16, -0.02, 0.0, 195.0, -5.0, true, true, false, true, 2, true)
     end
 end
 
@@ -142,8 +159,8 @@ local function attachWeaponItemToBack(slotIndex, weaponItem)
     local weaponName = weaponItem and weaponItem.name
     if not isLongBackWeapon(weaponName) then return end
 
-    local weaponHash = joaat(weaponName)
-    local fallbackModel = LongWeaponModels[weaponName]
+    local weaponHash = resolveObjectHash(weaponName)
+    local fallbackModel = WeaponCarry.fallbackModel(weaponName)
     local weaponInfo = weaponItem.info or {}
 
     if not loadWeaponAsset(weaponHash) then
@@ -167,37 +184,57 @@ local function attachWeaponItemToBack(slotIndex, weaponItem)
     slungProps[slotIndex] = { entity = obj, weaponHash = weaponHash }
 end
 
-local function refreshSlungWeapons()
-    clearSlungProps()
+local function refreshSlungWeapons(force)
+    if not force and weaponDrawOrReloadBusy() then return end
+
     local ped = PlayerPedId()
-    -- Kuprinė „paslepia“ ilgus ginklus – jie lieka inventoriuje ir naudojami, tik nebededami ant nugaros.
     if hasBackpackOnPed(ped) then
+        if lastSlungSignature ~= 'backpack' then
+            clearSlungProps()
+            lastSlungSignature = 'backpack'
+        end
         return
     end
 
     local pData = QBCore.Functions.GetPlayerData()
     local items = pData and pData.items or {}
-    if not items then return end
+    if not items then
+        clearSlungProps()
+        lastSlungSignature = nil
+        return
+    end
 
-    local currentWeaponHash = GetSelectedPedWeapon(ped)
-    local currentWeaponData = QBCore.Shared.Weapons[currentWeaponHash]
-    local equippedName = currentWeaponData and currentWeaponData.name or nil
+    local equippedName = getEquippedWeaponName(ped)
+
+    local sig = buildSlungSignature(items, equippedName, false)
+    if not force and sig == lastSlungSignature then return end
+    lastSlungSignature = sig
+    clearSlungProps()
 
     local carryItems = {}
     for _, item in pairs(items) do
-        if item and (item.type == 'weapon' or (item.name and tostring(item.name):lower():find('^weapon_', 1, false))) and item.name ~= equippedName and isLongBackWeapon(item.name) then
-            carryItems[#carryItems + 1] = item
+        if item and isInventoryWeaponItem(item) then
+            local name = WeaponCarry.normalizeName(item.name)
+            if name ~= equippedName and isLongBackWeapon(name) then
+                carryItems[#carryItems + 1] = item
+            end
         end
-        if #carryItems >= 3 then break end
     end
 
-    for idx, item in ipairs(carryItems) do
-        attachWeaponItemToBack(idx, item)
+    table.sort(carryItems, function(a, b)
+        return WeaponCarry.carryPriority(a.name) > WeaponCarry.carryPriority(b.name)
+    end)
+
+    local maxSlots = WeaponCarry.maxBackSlots()
+    for idx = 1, math.min(#carryItems, maxSlots) do
+        attachWeaponItemToBack(idx, carryItems[idx])
     end
 end
 
 RegisterNetEvent('mrp_basics:client:refreshSlungWeapons', function()
-    refreshSlungWeapons()
+    SetTimeout(80, function()
+        refreshSlungWeapons(true)
+    end)
 end)
 
 CreateThread(function()
@@ -218,10 +255,11 @@ end)
 CreateThread(function()
     while true do
         if LocalPlayer.state.isLoggedIn then
-            refreshSlungWeapons()
-            Wait(1200)
+            refreshSlungWeapons(false)
+            Wait(1800)
         else
             clearSlungProps()
+            lastSlungSignature = nil
             Wait(2000)
         end
     end
@@ -230,12 +268,13 @@ end)
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
     SetPlayerCanUseCover(PlayerId(), false)
     Wait(1000)
-    refreshSlungWeapons()
+    refreshSlungWeapons(true)
 end)
 
 RegisterNetEvent('QBCore:Player:SetPlayerData', function()
-    Wait(250)
-    refreshSlungWeapons()
+    SetTimeout(200, function()
+        refreshSlungWeapons(false)
+    end)
 end)
 
 AddEventHandler('onResourceStop', function(resName)

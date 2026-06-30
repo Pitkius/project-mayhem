@@ -1,5 +1,5 @@
-# Sugeneruoja mrp_plates/textures/plate01.png (MRP EU/LT, 256x128)
-# Naudoja plate02 indeksa zaidime — be „San Andreas“ antrastes.
+# Sugeneruoja mrp_plates/textures/plate01.png (MRP EU, 256x128)
+# Be „San Andreas“ ir be „LT“ — tik MRP logo kairėje juostoje.
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
@@ -109,48 +109,42 @@ $bandLight = [System.Drawing.Color]::FromArgb(255, 109, 40, 217)
 $white = [System.Drawing.Color]::FromArgb(255, 248, 250, 252)
 $border = [System.Drawing.Color]::FromArgb(255, 124, 58, 237)
 $borderHi = [System.Drawing.Color]::FromArgb(255, 196, 181, 253)
-$ltColor = [System.Drawing.Color]::FromArgb(255, 221, 214, 254)
 $numField = [System.Drawing.Color]::FromArgb(255, 18, 18, 22)
 
 # Fonas
 $g.FillRectangle((New-Object System.Drawing.SolidBrush $violet), 0, 0, $targetW, $targetH)
 
-$bandW = 48
+$bandW = 52
 $bandRect = New-Object System.Drawing.Rectangle 0, 0, $bandW, $targetH
 Draw-LinearGradientRect $g $bandRect $bandLight $bandDark $true
 
-$whiteX = $bandW + 3
-$whiteW = $targetW - $whiteX - 4
-$plateRect = New-Object System.Drawing.Rectangle $whiteX, 5, $whiteW, ($targetH - 10)
-$g.FillRectangle((New-Object System.Drawing.SolidBrush $white), $plateRect)
+$fieldX = $bandW + 3
+$fieldW = $targetW - $fieldX - 4
+$fieldRect = New-Object System.Drawing.Rectangle $fieldX, 5, $fieldW, ($targetH - 10)
 
-# Numeriu laukas (plate02 = geltonas tekstas ant tamsaus)
-$numRect = New-Object System.Drawing.Rectangle ($whiteX + 6), 34, ($whiteW - 12), 58
+# Visas desinys laukas tamsus (be baltos „San Andreas“ juostos viršuje)
+Draw-LinearGradientRect $g $fieldRect ([System.Drawing.Color]::FromArgb(255, 22, 20, 28)) ([System.Drawing.Color]::FromArgb(255, 12, 10, 16)) $true
+
+# Numerių zona
+$numRect = New-Object System.Drawing.Rectangle ($fieldX + 6), 38, ($fieldW - 12), 54
 $g.FillRectangle((New-Object System.Drawing.SolidBrush $numField), $numRect)
-$numPen = New-PenArgb 80 0 0 0 1
+$numPen = New-PenArgb 90 124 58 237 1
 $g.DrawRectangle($numPen, $numRect)
 $numPen.Dispose()
 
-# Subtilus baltas highlight virsuje (be jokio „San Andreas“ teksto)
-$shineRect = New-Object System.Drawing.Rectangle $whiteX, 5, $whiteW, 18
-Draw-LinearGradientRect $g $shineRect ([System.Drawing.Color]::FromArgb(55, 255, 255, 255)) ([System.Drawing.Color]::FromArgb(0, 255, 255, 255)) $true
+# Subtilus violetinis highlight (ne baltas — kad variklis nepieštų „San Andreas“)
+$shineRect = New-Object System.Drawing.Rectangle $fieldX, 5, $fieldW, 10
+Draw-LinearGradientRect $g $shineRect ([System.Drawing.Color]::FromArgb(45, 109, 40, 217)) ([System.Drawing.Color]::FromArgb(0, 109, 40, 217)) $true
 
 # Rėmelis
 $g.DrawRectangle((New-Object System.Drawing.Pen $border, 2), 1, 1, $targetW - 3, $targetH - 3)
 $g.DrawLine((New-PenArgb 120 196 181 253 1), 2, 2, $targetW - 3, 2)
 
-# LT
-$fontLt = New-Object System.Drawing.Font ('Segoe UI', 9, [System.Drawing.FontStyle]::Bold)
-$ltBrush = New-SolidBrushArgb 255 221 214 254
-$g.DrawString('LT', $fontLt, $ltBrush, 9, ($targetH - 21))
-$fontLt.Dispose()
-$ltBrush.Dispose()
-
 if (Test-Path -LiteralPath $logoPath) {
     $logo = [System.Drawing.Image]::FromFile($logoPath)
-    $ls = 36
+    $ls = 40
     $lx = [int](($bandW - $ls) / 2)
-    $ly = [int](($targetH - $ls) / 2) - 6
+    $ly = [int](($targetH - $ls) / 2)
     Draw-EmbossedLogo $g $logo $lx $ly $ls
     $logo.Dispose()
 } else {

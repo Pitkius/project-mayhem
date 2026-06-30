@@ -101,6 +101,20 @@ local function tryPickHarvest(fieldId, spawnIndex)
         return QBCore.Functions.Notify('Per toli.', 'error')
     end
 
+    local profile = Config.GetHarvestMinigameForField and Config.GetHarvestMinigameForField(state.field)
+    if profile and GetResourceState(GetCurrentResourceName()) == 'started' then
+        picking = true
+        exports[GetCurrentResourceName()]:RunScheduleMinigame(profile, function(success)
+            picking = false
+            if success then
+                TriggerServerEvent('mrp_drugs:server:pickMushroom', fieldId, spawnIndex, pcoords.x, pcoords.y, pcoords.z)
+            else
+                QBCore.Functions.Notify('Derliaus rinkimas nepavyko.', 'error')
+            end
+        end)
+        return
+    end
+
     picking = true
     local label = state.field.pickLabel or 'Renki…'
     DrugProgress.run('mrp_drugs_harvest', label, state.field.pickDurationMs or 5200, false, true, {

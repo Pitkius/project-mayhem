@@ -229,6 +229,8 @@ local function runScheduleMinigame(productId, profile, prod, onDone)
     end
     nui('minigameSchedule', {
         productId = productId,
+        drug = profile and profile.drug,
+        action = profile and profile.action,
         mode = profile and profile.mode or 'trim',
         title = profile and profile.title or (prod and prod.label) or 'Gamyba',
         steps = profile and profile.steps or 3,

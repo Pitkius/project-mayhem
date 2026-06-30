@@ -61,6 +61,7 @@ const menu = {
   anim: document.getElementById("optAnim"),
   btnApplyPreset: document.getElementById("btnApplyPreset"),
   btnSavePreset: document.getElementById("btnSavePreset"),
+  btnSavePresetHeader: document.getElementById("btnSavePresetHeader"),
   btnResetDefaults: document.getElementById("btnResetDefaults"),
   btnCloseMenu: document.getElementById("btnCloseMenu"),
   btnExport: document.getElementById("btnExport"),
@@ -75,6 +76,8 @@ const menu = {
   colSecondary: document.getElementById("hmColSecondary"),
   colAccent: document.getElementById("hmColAccent"),
   colText: document.getElementById("hmColText"),
+  inputPrimary: document.getElementById("hmInputPrimary"),
+  inputSecondary: document.getElementById("hmInputSecondary"),
   swatches: document.getElementById("hmSwatches"),
   tabs: document.getElementById("hmTabs"),
 };
@@ -107,10 +110,10 @@ const TILE_COLORS = {
 const PREVIEW_HUD_SCALE = 0.92;
 
 const TAB_ROUTES = {
-  hud: { sidebar: true, panel: null },
+  hud: { sidebar: true, panel: "layout" },
   colors: { sidebar: false, panel: "colors" },
   notif: { sidebar: false, panel: "other" },
-  minimap: { sidebar: false, panel: "layout" },
+  minimap: { sidebar: false, panel: "minimap" },
   other: { sidebar: false, panel: "export" },
 };
 
@@ -120,6 +123,7 @@ let previewClustersMounted = false;
 const DEFAULT_MENU_STATE = {
   style: "dots",
   color: "violet",
+  customColors: { ...THEME_PALETTE.violet },
   alpha: 0.58,
   scale: 1,
   compact: false,
@@ -323,6 +327,7 @@ requestAnimationFrame(applyCarHudSmoothFrame);
 let currentSettings = {
   style: "dots",
   color: "violet",
+  customColors: { ...THEME_PALETTE.violet },
   alpha: 0.58,
   scale: 1,
   compact: false,
@@ -445,6 +450,11 @@ function applyThemeData(data) {
   if (data.fillColor) {
     document.documentElement.style.setProperty("--accent-fill", data.fillColor);
   }
+  if (data.softColor) {
+    document.documentElement.style.setProperty("--accent-soft", data.softColor);
+  } else if (data.customColors && data.customColors.secondary) {
+    document.documentElement.style.setProperty("--accent-soft", data.customColors.secondary);
+  }
   if (data.glowColor) {
     document.documentElement.style.setProperty("--accent-glow", data.glowColor);
   }
@@ -534,12 +544,54 @@ function syncPreviewVisibility(state) {
   applyCarHudPartVisibility(show);
 }
 
-function updateThemeColorPicks(colorKey) {
-  const pal = THEME_PALETTE[colorKey] || THEME_PALETTE.violet;
+function hexToGlow(hex, alpha = 0.5) {
+  const raw = String(hex || "").replace("#", "");
+  if (raw.length !== 6) return "rgba(167,139,250,0.5)";
+  const r = parseInt(raw.slice(0, 2), 16);
+  const g = parseInt(raw.slice(2, 4), 16);
+  const b = parseInt(raw.slice(4, 6), 16);
+  if ([r, g, b].some((n) => Number.isNaN(n))) return "rgba(167,139,250,0.5)";
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function paletteFromThemeKey(colorKey) {
+  return { ...(THEME_PALETTE[colorKey] || THEME_PALETTE.violet) };
+}
+
+function resolveCustomColors(state) {
+  const fromState = state && state.customColors;
+  if (fromState && fromState.primary) {
+    return {
+      primary: fromState.primary,
+      secondary: fromState.secondary || fromState.primary,
+      accent: fromState.accent || fromState.primary,
+      text: fromState.text || "#f8fafc",
+    };
+  }
+  const key = (state && state.color) || "violet";
+  if (key !== "custom") return paletteFromThemeKey(key);
+  return paletteFromThemeKey("violet");
+}
+
+function syncColorInputs(colors) {
+  const pal = colors || paletteFromThemeKey("violet");
+  if (menu.inputPrimary) menu.inputPrimary.value = pal.primary;
+  if (menu.inputSecondary) menu.inputSecondary.value = pal.secondary;
   if (menu.colPrimary) menu.colPrimary.style.background = pal.primary;
   if (menu.colSecondary) menu.colSecondary.style.background = pal.secondary;
   if (menu.colAccent) menu.colAccent.style.background = pal.accent;
   if (menu.colText) menu.colText.style.background = pal.text;
+}
+
+function applyPaletteToMenu(colorKey, markCustom) {
+  const pal = paletteFromThemeKey(colorKey);
+  syncColorInputs(pal);
+  if (menu.color) menu.color.value = markCustom ? "custom" : colorKey;
+  return pal;
+}
+
+function updateThemeColorPicks(colorKey, customColors) {
+  syncColorInputs(customColors || resolveCustomColors({ color: colorKey, customColors }));
 }
 
 function normalizePresets(raw) {
@@ -562,8 +614,10 @@ function getPreset(idx) {
 
 function buildThemePayload(state) {
   const colorKey = state.color || "violet";
-  const colors = COLOR_THEMES[colorKey] || COLOR_THEMES.violet;
-  const tiles = TILE_COLORS[colorKey] || TILE_COLORS.violet;
+  const customColors = resolveCustomColors(state);
+  const tiles = TILE_COLORS[colorKey === "custom" ? "violet" : colorKey] || TILE_COLORS.violet;
+  const primary = customColors.primary;
+  const secondary = customColors.secondary || primary;
   return {
     style: state.style,
     alpha: state.alpha,
@@ -572,15 +626,17 @@ function buildThemePayload(state) {
     compact: state.compact,
     anim: state.anim,
     show: state.show,
-    fillColor: colors.fill,
-    glowColor: colors.glow,
+    fillColor: primary,
+    softColor: secondary,
+    glowColor: hexToGlow(primary),
+    customColors,
     tileColors: tiles,
   };
 }
 
 function renderMenuPreview() {
   const state = getMenuState();
-  updateThemeColorPicks(state.color);
+  updateThemeColorPicks(state.color, state.customColors);
   if (menu.preview) {
     const liveView = menu.hudBg ? menu.hudBg.checked !== false : true;
     menu.preview.classList.toggle("hm-pv-live-view", liveView);
@@ -592,7 +648,8 @@ function renderMenuPreview() {
   syncPreviewVisibility(state);
   if (menu.swatches) {
     menu.swatches.querySelectorAll(".hm-swatch").forEach((sw) => {
-      sw.classList.toggle("is-active", sw.getAttribute("data-c") === state.color);
+      const swKey = sw.getAttribute("data-c");
+      sw.classList.toggle("is-active", state.color === swKey);
     });
   }
   syncSwitchLabels();
@@ -605,6 +662,7 @@ function applyMenuLive() {
     ...currentSettings,
     style: payload.style,
     color: payload.color,
+    customColors: { ...payload.customColors },
     alpha: payload.alpha,
     scale: payload.scale,
     compact: payload.compact,
@@ -641,10 +699,21 @@ function highlightTabPanel(tab) {
 }
 
 function getMenuState() {
+  const colorKey = menu.color ? menu.color.value : "violet";
+  const primary = menu.inputPrimary ? menu.inputPrimary.value : THEME_PALETTE.violet.primary;
+  const secondary = menu.inputSecondary ? menu.inputSecondary.value : THEME_PALETTE.violet.secondary;
+  const basePal = colorKey !== "custom" ? paletteFromThemeKey(colorKey) : null;
+  const customColors = {
+    primary,
+    secondary,
+    accent: basePal ? basePal.accent : secondary,
+    text: basePal ? basePal.text : THEME_PALETTE.violet.text,
+  };
   return {
     preset: Number(menu.preset.value || 1),
     style: menu.style.value,
-    color: menu.color.value,
+    color: colorKey,
+    customColors,
     alpha: Number(menu.alpha.value || 0.55),
     scale: Number(menu.scale ? menu.scale.value : 1) || 1,
     compact: menu.compact ? menu.compact.checked : false,
@@ -668,7 +737,12 @@ function fillMenuFromPreset(idx) {
   if (!p) return;
   menu.preset.value = String(idx);
   menu.style.value = p.style || "dots";
-  menu.color.value = p.color || "violet";
+  const colorKey = p.color || "violet";
+  menu.color.value = colorKey;
+  const pal = p.customColors && p.customColors.primary
+    ? { ...p.customColors }
+    : paletteFromThemeKey(colorKey === "custom" ? "violet" : colorKey);
+  syncColorInputs(pal);
   menu.alpha.value = String(p.alpha || 0.55);
   if (menu.scale) menu.scale.value = String(p.scale != null ? p.scale : 1);
   if (menu.compact) menu.compact.checked = p.compact === true;
@@ -986,18 +1060,33 @@ if (menu.btnApplyPreset) {
 if (menu.btnResetDefaults) {
   menu.btnResetDefaults.addEventListener("click", () => {
     const idx = Number(menu.preset.value || 1);
-    menuPresets[idx] = { ...DEFAULT_MENU_STATE, preset: idx };
+    menuPresets[idx] = {
+      ...DEFAULT_MENU_STATE,
+      preset: idx,
+      customColors: { ...THEME_PALETTE.violet },
+    };
     fillMenuFromPreset(idx);
     applyMenuLive();
   });
 }
 
-menu.btnSavePreset.addEventListener("click", () => {
+function saveCurrentPreset() {
   const payload = getMenuState();
   menuPresets[payload.preset] = payload;
   applyMenuLive();
   nuiPost("hud:savePreset", payload).then(() => flashSavedBadge());
-});
+}
+
+function bindSaveButtons() {
+  const targets = [menu.btnSavePreset, menu.btnSavePresetHeader];
+  document.querySelectorAll(".hm-btn-save-panel").forEach((btn) => targets.push(btn));
+  targets.forEach((btn) => {
+    if (!btn || btn.dataset.saveBound === "1") return;
+    btn.dataset.saveBound = "1";
+    btn.addEventListener("click", () => saveCurrentPreset());
+  });
+}
+bindSaveButtons();
 
 menu.btnCloseMenu.addEventListener("click", () => {
   nuiPost("hud:close", {});
@@ -1015,10 +1104,39 @@ if (menu.swatches) {
   menu.swatches.addEventListener("click", (e) => {
     const sw = e.target.closest(".hm-swatch");
     if (!sw || !menu.color) return;
-    menu.color.value = sw.getAttribute("data-c") || "violet";
+    const key = sw.getAttribute("data-c") || "violet";
+    applyPaletteToMenu(key, false);
     applyMenuLive();
   });
 }
+
+if (menu.color) {
+  menu.color.addEventListener("change", () => {
+    const key = menu.color.value;
+    if (key === "custom") return;
+    applyPaletteToMenu(key, false);
+    applyMenuLive();
+  });
+}
+
+function onCustomColorInput() {
+  if (menu.color) menu.color.value = "custom";
+  const primary = menu.inputPrimary ? menu.inputPrimary.value : THEME_PALETTE.violet.primary;
+  const secondary = menu.inputSecondary ? menu.inputSecondary.value : THEME_PALETTE.violet.secondary;
+  syncColorInputs({
+    primary,
+    secondary,
+    accent: secondary,
+    text: THEME_PALETTE.violet.text,
+  });
+  applyMenuLive();
+}
+
+[menu.inputPrimary, menu.inputSecondary].forEach((el) => {
+  if (!el) return;
+  el.addEventListener("input", onCustomColorInput);
+  el.addEventListener("change", onCustomColorInput);
+});
 
 if (menu.btnExport) {
   menu.btnExport.addEventListener("click", () => {

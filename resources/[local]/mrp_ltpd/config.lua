@@ -217,8 +217,15 @@ Config.Stations = {
         coords = vector3(441.84, -982.05, 30.69),
         blipCoords = vector3(427.120, -979.559, 30.716),
         heading = 90.0,
-        --- Civilinė registratūra — NPC (mrp_npcshops role=reception)
-        reception = { coords = vector3(441.2229, -982.0843, 30.6895) },
+        --- Civilinė registratūra — qb-target (be NPC)
+        reception = {
+            coords = vector3(441.2229, -982.0843, 30.6895),
+            heading = 275.0,
+            length = 1.65,
+            width = 1.45,
+            label = 'PD registratūra',
+            blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra' },
+        },
         supply = {
             coords = vector3(489.05, -997.1946, 30.6896),
             label = 'PD inventorius (žaliavos)',

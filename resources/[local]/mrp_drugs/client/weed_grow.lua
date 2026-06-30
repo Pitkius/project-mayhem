@@ -144,10 +144,19 @@ local function drawMultilinePlantHud(coords, lines)
     if not lines or #lines == 0 then return end
     local text = table.concat(lines, '~n~')
     local scale = 0.34
+    local lineCount = #lines
     local maxLen = 0
     for _, line in ipairs(lines) do
         maxLen = math.max(maxLen, #(tostring(line):gsub('~%w~', '')))
     end
+
+    -- Tekstas ir fonas centre — anksčiau tekstas būdavo per žemai dėl neteisingo Y offset.
+    local lineStep = 0.020
+    local textY = -((lineCount - 1) * lineStep * 0.5) - 0.008
+    local factor = maxLen / 300
+    local boxW = 0.024 + factor
+    local boxH = lineStep * lineCount + 0.016
+    local boxY = textY + (lineCount * lineStep) * 0.5 + 0.007
 
     if GetResourceState('mrp_fonts') == 'started' then
         exports['mrp_fonts']:ApplyTextFont()
@@ -159,17 +168,11 @@ local function drawMultilinePlantHud(coords, lines)
     SetTextProportional(1)
     SetTextColour(196, 181, 253, 240)
     SetTextCentre(true)
+    SetDrawOrigin(coords.x, coords.y, coords.z, 0)
+    DrawRect(0.0, boxY, boxW, boxH, 12, 8, 22, 175)
     BeginTextCommandDisplayText('STRING')
     AddTextComponentSubstringPlayerName(text)
-    SetDrawOrigin(coords.x, coords.y, coords.z, 0)
-    EndTextCommandDisplayText(0.0, 0.0)
-
-    local lineCount = #lines
-    local factor = maxLen / 300
-    local boxW = 0.024 + factor
-    local boxH = 0.024 * lineCount + 0.014
-    local yOff = 0.006 + (lineCount - 1) * 0.005
-    DrawRect(0.0, yOff, boxW, boxH, 12, 8, 22, 175)
+    EndTextCommandDisplayText(0.0, textY)
     ClearDrawOrigin()
 end
 
