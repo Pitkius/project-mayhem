@@ -229,7 +229,8 @@ RegisterNetEvent('qb-inventory:server:useItem', function(item)
         or itemData.name == 'driver_license'
         or itemData.name == 'driving_license'
         or itemData.name == 'fishing_license'
-        or itemData.name == 'hunting_license' then
+        or itemData.name == 'hunting_license'
+        or itemData.name == 'weaponlicense' then
         UseItem(itemData.name, src, itemData)
         TriggerClientEvent('qb-inventory:client:ItemBox', src, itemInfo, 'use')
     else

@@ -10,6 +10,7 @@ Config.Items = {
     driving = { 'driving_license', 'driver_license' },
     fishing = 'fishing_license',
     hunting = 'hunting_license',
+    weapon = 'weaponlicense',
 }
 
 Config.DrivingCategories = {
@@ -30,4 +31,9 @@ Config.Outdoors = {
         licenseType = 'Medžioklės licencija',
         allowed = 'Laukinių zonų medžioklė',
     },
+}
+
+Config.Weapon = {
+    licenseType = 'Ginklo licencija',
+    allowed = 'Legalus ginklo įsigijimas ir nešiojimas',
 }

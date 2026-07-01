@@ -443,6 +443,9 @@ function applyThemeData(data) {
   currentSettings.style = data.style || currentSettings.style;
   currentSettings.alpha = Number(data.alpha || currentSettings.alpha);
   currentSettings.color = data.color || currentSettings.color;
+  if (data.customColors && typeof data.customColors === "object") {
+    currentSettings.customColors = { ...currentSettings.customColors, ...data.customColors };
+  }
   if (data.show) currentSettings.show = { ...currentSettings.show, ...data.show };
   if (data.scale != null) currentSettings.scale = Number(data.scale) || 1;
   if (data.compact != null) currentSettings.compact = data.compact === true;

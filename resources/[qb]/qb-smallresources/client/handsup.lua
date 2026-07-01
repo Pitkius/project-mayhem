@@ -6,6 +6,7 @@ end
 
 local function setHandsDown(clearTasks)
     handsUp = false
+    LocalPlayer.state:set('handsUp', false, true)
     exports['qb-smallresources']:removeDisableControls(Config.HandsUp.controls)
     if clearTasks ~= false then
         local ped = PlayerPedId()
@@ -66,6 +67,7 @@ RegisterCommand(Config.HandsUp.command, function()
     end
 
     handsUp = not handsUp
+    LocalPlayer.state:set('handsUp', handsUp, true)
     if handsUp then
         ClearPedSecondaryTask(ped)
         TaskPlayAnim(ped, 'missminuteman_1ig_2', 'handsup_base', 8.0, 8.0, -1, 50, 0, false, false, false)

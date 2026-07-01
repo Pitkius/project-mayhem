@@ -370,6 +370,18 @@ local function buildPersonLicenses(citizenid, meta, inv, onlinePlayer)
         expiry = huntExp or meta.hunting_license_expiry,
     }
 
+    local weaponActive, weaponExp = outdoorsActive('weapon_license_expiry', 'weapon_license_issued', cfg.WeaponItem or 'weaponlicense')
+    if not weaponActive and (meta.licences or {}).weapon == true and isLicenseExpiryValid(meta.weapon_license_expiry) then
+        weaponActive = true
+        weaponExp = meta.weapon_license_expiry
+    end
+    out[#out + 1] = {
+        id = 'weapon',
+        label = 'Ginklo licencija',
+        active = weaponActive,
+        expiry = weaponExp or meta.weapon_license_expiry,
+    }
+
     return out
 end
 
@@ -628,6 +640,7 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:mdtContext', function(src, cb)
             interrogation = hasPerm(src, 'mdt_interrogation'),
             cctv = hasPerm(src, 'mdt_cctv'),
             bodycam = hasPerm(src, 'mdt_bodycam'),
+            weaponLicense = hasPerm(src, 'mdt_weapon_license'),
         },
         surveillanceMaintenance = Config.Surveillance and Config.Surveillance.MaintenanceMode == true,
         surveillanceMaintenanceMessage = (Config.Surveillance and Config.Surveillance.MaintenanceMessage)
@@ -694,6 +707,32 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:searchPerson', function(src, cb
         print(('[mrp_ltpd] searchPerson error: %s'):format(tostring(err)))
         cb({ ok = false, message = 'Paieškos klaida. Patikrink DB.' })
     end
+end)
+
+QBCore.Functions.CreateCallback('mrp_ltpd:server:issueWeaponLicense', function(src, cb, citizenid)
+    if not hasPerm(src, 'mdt_weapon_license') then
+        return cb({ ok = false, message = 'Nėra teisės išduoti ginklo licencijos (reikia ≥3 rango).' })
+    end
+    citizenid = tostring(citizenid or ''):match('^%s*(.-)%s*$') or ''
+    if citizenid == '' then return cb({ ok = false, message = 'Neteisingas citizenid.' }) end
+    if GetResourceState('mrp_gunshop') ~= 'started' then
+        return cb({ ok = false, message = 'mrp_gunshop neaktyvus.' })
+    end
+    local ok, msg = exports['mrp_gunshop']:IssueWeaponLicense(citizenid, src)
+    cb({ ok = ok == true, message = msg })
+end)
+
+QBCore.Functions.CreateCallback('mrp_ltpd:server:revokeWeaponLicense', function(src, cb, citizenid)
+    if not hasPerm(src, 'mdt_weapon_license') then
+        return cb({ ok = false, message = 'Nėra teisės atšaukti ginklo licencijos (reikia ≥3 rango).' })
+    end
+    citizenid = tostring(citizenid or ''):match('^%s*(.-)%s*$') or ''
+    if citizenid == '' then return cb({ ok = false, message = 'Neteisingas citizenid.' }) end
+    if GetResourceState('mrp_gunshop') ~= 'started' then
+        return cb({ ok = false, message = 'mrp_gunshop neaktyvus.' })
+    end
+    local ok, msg = exports['mrp_gunshop']:RevokeWeaponLicense(citizenid)
+    cb({ ok = ok == true, message = msg })
 end)
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:searchVehicle', function(src, cb, plate)
@@ -953,14 +992,8 @@ RegisterNetEvent('mrp_ltpd:server:cuffPlayer', function(targetId)
     if not hasPerm(src, 'cuff') then return end
     targetId = tonumber(targetId)
     if not targetId or not validTarget(src, targetId, 3.5) then return end
-
-    local tPlayer = QBCore.Functions.GetPlayer(targetId)
-    if not tPlayer then return end
-
-    local cuffed = Player(targetId).state.ltpdCuffed
-    Player(targetId).state:set('ltpdCuffed', not cuffed, true)
-    TriggerClientEvent('mrp_ltpd:client:cuffedState', targetId, not cuffed)
-    TriggerClientEvent('QBCore:Notify', src, cuffed and 'Antrankiai nuimti' or 'Uždėti antrankiai', 'primary')
+    if GetResourceState('mrp_restraints') ~= 'started' then return end
+    TriggerEvent('mrp_restraints:internal:toggleRestraint', src, targetId, 'handcuffs')
 end)
 
 RegisterNetEvent('mrp_ltpd:server:trySearchInventory', function(targetId)
@@ -968,8 +1001,11 @@ RegisterNetEvent('mrp_ltpd:server:trySearchInventory', function(targetId)
     if not hasPerm(src, 'search_inventory') then return end
     targetId = tonumber(targetId)
     if not targetId or not validTarget(src, targetId, 3.0) then return end
-    if GetResourceState('qb-inventory') ~= 'started' then return end
-    exports['qb-inventory']:OpenInventoryById(src, targetId)
+    if GetResourceState('mrp_restraints') ~= 'started' then
+        if GetResourceState('qb-inventory') ~= 'started' then return end
+        return exports['qb-inventory']:OpenInventoryById(src, targetId)
+    end
+    TriggerEvent('mrp_restraints:internal:searchPlayer', src, targetId)
 end)
 
 local function getStationById(id)

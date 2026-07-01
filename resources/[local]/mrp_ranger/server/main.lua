@@ -41,11 +41,8 @@ RegisterNetEvent('mrp_ranger:server:cuffPlayer', function(targetId)
     local src = source
     if not isRanger(src) or not hasGrade(src, Config.Permissions.cuff or 0) then return end
     if not validTarget(src, targetId, 3.5) then return end
-    if not QBCore.Functions.GetPlayer(targetId) then return end
-    local cuffed = Player(targetId).state.ltpdCuffed
-    Player(targetId).state:set('ltpdCuffed', not cuffed, true)
-    TriggerClientEvent('mrp_ranger:client:cuffedState', targetId, not cuffed)
-    TriggerClientEvent('QBCore:Notify', src, cuffed and 'Antrankiai nuimti' or 'Uždėti antrankiai', 'primary')
+    if GetResourceState('mrp_restraints') ~= 'started' then return end
+    TriggerEvent('mrp_restraints:internal:toggleRestraint', src, targetId, 'handcuffs')
 end)
 
 RegisterNetEvent('mrp_ranger:server:issueFine', function(targetId, code, label, amount, notes)

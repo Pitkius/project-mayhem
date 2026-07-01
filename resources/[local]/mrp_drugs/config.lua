@@ -315,6 +315,15 @@ Config.Printer3d = {
             },
             timeMs = 68000,
         },
+        print_ziptie = {
+            label = 'Plastikiniai dirželiai',
+            output = { item = 'ziptie', count = 3 },
+            ingredients = {
+                { item = 'plastic', count = 4 },
+                { item = 'metal_scrap', count = 1 },
+            },
+            timeMs = 22000,
+        },
     },
 }
 

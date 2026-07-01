@@ -8,6 +8,7 @@ let mdtFetchFailStreak = 0;
 const MDT_FETCH_FAIL_MAX = 4;
 let lastDispatchPayload = null;
 let selectedMapTarget = null;
+let mdtPermissions = {};
 
 const mapMeta = {
   minX: -4000,
@@ -131,6 +132,7 @@ window.addEventListener('message', (e) => {
     mdtDocked = false;
     app.classList.remove('is-docked');
     const perms = (d.data && d.data.permissions) || {};
+    mdtPermissions = perms;
     document.getElementById('tabFine').style.display = perms.fine ? '' : 'none';
     document.getElementById('tabWant').style.display = perms.wanted ? '' : 'none';
     const tabArrests = document.getElementById('tabArrests');
@@ -343,7 +345,12 @@ function renderPerson(res) {
       html += '</ul></div>';
     }
     html += `<div class="row card-actions"><button type="button" class="btn js-fill-want" data-cid="${escapeHtml(r.citizenid)}">→ Paieška</button>`;
-    html += `<button type="button" class="btn js-collect-fp" data-cid="${escapeHtml(r.citizenid)}">Įrašyti atspaudus</button></div>`;
+    html += `<button type="button" class="btn js-collect-fp" data-cid="${escapeHtml(r.citizenid)}">Įrašyti atspaudus</button>`;
+    if (mdtPermissions.weaponLicense) {
+      html += `<button type="button" class="btn js-issue-wl" data-cid="${escapeHtml(r.citizenid)}">Išduoti ginklo lic.</button>`;
+      html += `<button type="button" class="btn js-revoke-wl" data-cid="${escapeHtml(r.citizenid)}">Atšaukti ginklo lic.</button>`;
+    }
+    html += `</div>`;
     if (res.full && r.vehicles && r.vehicles.length) {
       html += '<div class="muted">Transportas:</div><ul>';
       r.vehicles.forEach((v) => {
@@ -370,6 +377,22 @@ function renderPerson(res) {
     if (fpBtn) {
       fpBtn.onclick = () => {
         nuiPost('collectFingerprint', { citizenid: fpBtn.dataset.cid }, { force: true }).then((res) => {
+          if (res && res.ok) runPersonSearch();
+        });
+      };
+    }
+    const issueWlBtn = c.querySelector('.js-issue-wl');
+    if (issueWlBtn) {
+      issueWlBtn.onclick = () => {
+        nuiPost('issueWeaponLicense', { citizenid: issueWlBtn.dataset.cid }, { force: true }).then((res) => {
+          if (res && res.ok) runPersonSearch();
+        });
+      };
+    }
+    const revokeWlBtn = c.querySelector('.js-revoke-wl');
+    if (revokeWlBtn) {
+      revokeWlBtn.onclick = () => {
+        nuiPost('revokeWeaponLicense', { citizenid: revokeWlBtn.dataset.cid }, { force: true }).then((res) => {
           if (res && res.ok) runPersonSearch();
         });
       };

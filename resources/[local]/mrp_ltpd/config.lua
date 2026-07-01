@@ -55,6 +55,7 @@ Config.Permissions = {
     pd_craft = 0,
     mdt_cctv = 0,
     mdt_bodycam = 0,
+    mdt_weapon_license = 3,
     bodycam_wear = 0,
 }
 
@@ -768,4 +769,5 @@ Config.MdtLicenses = {
     IdItem = 'id_card',
     FishingItem = 'fishing_license',
     HuntingItem = 'hunting_license',
+    WeaponItem = 'weaponlicense',
 }

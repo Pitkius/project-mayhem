@@ -145,6 +145,24 @@ RegisterNUICallback('collectFingerprint', function(data, cb)
     end, data and data.citizenid)
 end)
 
+RegisterNUICallback('issueWeaponLicense', function(data, cb)
+    QBCore.Functions.TriggerCallback('mrp_ltpd:server:issueWeaponLicense', function(result)
+        if result and result.message then
+            QBCore.Functions.Notify(result.message, result.ok and 'success' or 'error')
+        end
+        cb(result or { ok = false })
+    end, data and data.citizenid)
+end)
+
+RegisterNUICallback('revokeWeaponLicense', function(data, cb)
+    QBCore.Functions.TriggerCallback('mrp_ltpd:server:revokeWeaponLicense', function(result)
+        if result and result.message then
+            QBCore.Functions.Notify(result.message, result.ok and 'success' or 'error')
+        end
+        cb(result or { ok = false })
+    end, data and data.citizenid)
+end)
+
 local function openFingerprintJournal()
     if not isPdOnDutyClient() then
         return QBCore.Functions.Notify('Tik tarnybos metu.', 'error')

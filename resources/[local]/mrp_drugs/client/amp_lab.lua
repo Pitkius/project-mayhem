@@ -2,6 +2,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local synthesizing = false
 local flareToken = 0
+local quizWaiter = nil
 
 local function ampCfg()
     return Config.AmpMobileLab or {}
@@ -108,8 +109,6 @@ local function runAmpQuizFixed(questionCount, durationMs)
 
     return wrong
 end
-
-local quizWaiter = nil
 
 RegisterNUICallback('ampQuizAnswer', function(data, cb)
     if quizWaiter then

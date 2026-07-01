@@ -145,10 +145,33 @@ local function buildOutdoorsCard(Player, licenseKey)
     }
 end
 
+local function buildWeaponCard(Player)
+    local char = Player.PlayerData.charinfo or {}
+    local meta = Player.PlayerData.metadata or {}
+    local cfg = Config.Weapon or {}
+    local licences = meta.licences or {}
+    local active = licences.weapon == true
+    return {
+        type = Config.Items.weapon,
+        title = cfg.licenseType or 'Ginklo licencija',
+        firstname = char.firstname or '',
+        lastname = char.lastname or '',
+        citizenid = Player.PlayerData.citizenid or '—',
+        licenseType = cfg.licenseType or 'Ginklo licencija',
+        allowed = cfg.allowed or 'Legalus ginklo įsigijimas',
+        validUntil = formatDate(meta.weapon_license_expiry) or addYears(Config.LicenseValidityYears),
+        issued = formatDate(meta.weapon_license_issued) or today(),
+        status = active and 'Galiojanti' or 'Negaliojanti',
+        photoInitials = initials(char.firstname, char.lastname),
+        holderName = ('%s %s'):format(char.firstname or '', char.lastname or ''),
+    }
+end
+
 local function resolveItemType(itemName)
     if itemName == Config.Items.id then return 'id_card' end
     if itemName == Config.Items.fishing then return Config.Items.fishing end
     if itemName == Config.Items.hunting then return Config.Items.hunting end
+    if itemName == Config.Items.weapon then return Config.Items.weapon end
     for _, name in ipairs(Config.Items.driving) do
         if itemName == name then return 'driving_license' end
     end
@@ -199,6 +222,15 @@ local function buildCardForPlayer(src, cardType, itemInfo)
         return buildOutdoorsCard(Player, cardType)
     end
 
+    if cardType == Config.Items.weapon then
+        local ok = playerHasItem(Player, Config.Items.weapon)
+        if not ok then return nil, 'Neturite ginklo licencijos.' end
+        if itemInfo and not itemMatchesPlayer(Player, itemInfo) then
+            return nil, 'Licencija nepriklauso jums.'
+        end
+        return buildWeaponCard(Player)
+    end
+
     return nil, 'Nežinomas dokumentas.'
 end
 
@@ -236,6 +268,7 @@ CreateThread(function()
     registerUseable(Config.Items.id)
     registerUseable(Config.Items.fishing)
     registerUseable(Config.Items.hunting)
+    registerUseable(Config.Items.weapon)
     for _, name in ipairs(Config.Items.driving) do
         registerUseable(name)
     end

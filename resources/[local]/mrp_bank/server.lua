@@ -14,91 +14,32 @@ MySQL.ready(function()
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 end)
 
-QBCore.Functions.CreateUseableItem('cash_bundle', function(source, item)
-    TriggerClientEvent('QBCore:Notify', source, 'Cash yra automatiskai sinchronizuojamas su inventory. Naudoti nereikia.', 'primary')
-end)
-
-local function getCashBundleAmount(player)
-    if not player or not player.PlayerData or not player.PlayerData.items then return 0 end
+--- Seniems žaidėjams: cash_bundle inventoriuje → paprasti cash pinigai.
+local function migrateCashBundleItems(src, player)
+    if not player or not player.PlayerData then return end
     local total = 0
-    for _, item in pairs(player.PlayerData.items) do
-        if item and item.name == 'cash_bundle' then
-            total = total + (tonumber(item.amount) or 0)
-        end
-    end
-    return total
-end
-
-local function removeCashBundleAmount(src, player, amount)
-    local remaining = tonumber(amount) or 0
-    if remaining <= 0 then return true end
+    local toRemove = {}
     for slot, item in pairs(player.PlayerData.items or {}) do
-        if remaining <= 0 then break end
         if item and item.name == 'cash_bundle' and (tonumber(item.amount) or 0) > 0 then
-            local take = math.min(tonumber(item.amount) or 0, remaining)
-            local itemSlot = tonumber(item.slot) or tonumber(slot) or false
-            if take > 0 and exports['qb-inventory']:RemoveItem(src, 'cash_bundle', take, itemSlot, 'fivempro-bank-sync-cash-bundle') then
-                remaining = remaining - take
-            end
+            total = total + (tonumber(item.amount) or 0)
+            toRemove[#toRemove + 1] = {
+                slot = tonumber(item.slot) or tonumber(slot),
+                amount = tonumber(item.amount) or 0,
+            }
         end
     end
-    return remaining <= 0
-end
-
-local function syncCashWithInventory(src, player)
-    if not player then return end
-    local cash = math.max(0, math.floor(tonumber(player.PlayerData.money.cash) or 0))
-    local bundle = getCashBundleAmount(player)
-    if bundle == cash then return end
-
-    if bundle < cash then
-        local addAmount = cash - bundle
-        exports['qb-inventory']:AddItem(src, 'cash_bundle', addAmount, false, false, 'fivempro-bank-sync-cash-add')
-    else
-        local removeAmount = bundle - cash
-        removeCashBundleAmount(src, player, removeAmount)
+    if total <= 0 then return end
+    for _, entry in ipairs(toRemove) do
+        exports['qb-inventory']:RemoveItem(src, 'cash_bundle', entry.amount, entry.slot, 'cash-bundle-migrated-to-wallet')
+    end
+    local walletCash = math.max(0, math.floor(tonumber(player.PlayerData.money.cash) or 0))
+    if walletCash < total then
+        player.Functions.AddMoney('cash', total - walletCash, 'cash-bundle-migrated-to-wallet')
     end
 end
-
-AddEventHandler('QBCore:Server:OnMoneyChange', function(source, moneytype)
-    if moneytype ~= 'cash' then return end
-    local player = QBCore.Functions.GetPlayer(source)
-    if not player then return end
-    syncCashWithInventory(source, player)
-end)
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-    if not player then return end
-    syncCashWithInventory(player.PlayerData.source, player)
-end)
-
-local function syncMoneyFromInventory(src, player)
-    if not player then return end
-    local bundle = getCashBundleAmount(player)
-    local cash = math.max(0, math.floor(tonumber(player.PlayerData.money.cash) or 0))
-    if bundle ~= cash then
-        player.Functions.SetMoney('cash', bundle, 'fivempro-bank-sync-money-from-inventory')
-    end
-end
-
-CreateThread(function()
-    Wait(3000)
-    local players = QBCore.Functions.GetQBPlayers()
-    for src, player in pairs(players) do
-        syncCashWithInventory(src, player)
-    end
-end)
-
--- Keep DB cash aligned with physical cash item (cash_bundle) in inventory.
--- This fixes cases where players drop/split cash items and wallet cash must follow.
-CreateThread(function()
-    while true do
-        local players = QBCore.Functions.GetQBPlayers()
-        for src, player in pairs(players) do
-            syncMoneyFromInventory(src, player)
-        end
-        Wait(2500)
-    end
+    if player then migrateCashBundleItems(player.PlayerData.source, player) end
 end)
 
 local function addHistory(citizenid, txType, amount, balanceAfter, targetCitizenid)

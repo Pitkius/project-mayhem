@@ -137,18 +137,6 @@ CreateThread(function()
     exports['qb-target']:AddGlobalPlayer({
         options = {
             {
-                icon = 'fas fa-handcuffs',
-                label = 'Antrankiai',
-                canInteract = function()
-                    return isRangerOnDuty() and hasGrade(Config.Permissions.cuff or 0)
-                end,
-                action = function(entity)
-                    local idx = NetworkGetPlayerIndexFromPed(entity)
-                    if idx == -1 then return end
-                    TriggerServerEvent('mrp_ranger:server:cuffPlayer', GetPlayerServerId(idx))
-                end,
-            },
-            {
                 icon = 'fas fa-file-invoice-dollar',
                 label = 'Bauda',
                 canInteract = function()

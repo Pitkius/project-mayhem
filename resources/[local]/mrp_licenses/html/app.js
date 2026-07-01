@@ -65,6 +65,13 @@ function renderCard(data) {
     html += field("Galioja iki", data.validUntil);
     html += `<div class="field-row"><label>Statusas</label>${statusPill(data.status)}</div>`;
     html += field("Išdavimo data", data.issued);
+  } else if (data.type === "weaponlicense") {
+    html += field("Vardas, pavardė", name || "—");
+    html += field("Licencijos tipas", data.licenseType);
+    html += field("Leidžiama", data.allowed);
+    html += field("Galioja iki", data.validUntil);
+    html += `<div class="field-row"><label>Statusas</label>${statusPill(data.status)}</div>`;
+    html += field("Išdavimo data", data.issued);
   } else {
     html += field("Vardas, pavardė", name || "—");
     html += field("Licencijos tipas", data.licenseType);

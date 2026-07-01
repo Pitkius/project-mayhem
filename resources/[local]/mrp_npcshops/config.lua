@@ -127,5 +127,6 @@ Config.JunkShop = {
         { name = 'scale', amount = 60, price = 120, slot = 12 },
         { name = 'empty_bag', amount = 300, price = 6, slot = 13 },
         { name = 'empty_bottle', amount = 500, price = 4, slot = 14 },
+        { name = 'rope', amount = 120, price = 85, slot = 15 },
     },
 }

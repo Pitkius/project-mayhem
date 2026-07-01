@@ -16,6 +16,8 @@ local npcModelRefCount = {}
 local npcModelLoading = {}
 local npcSpawnRetryAt = {}
 
+local openMaterialShop, openWeaponPartsMenu, openWeedSupplyShop, openLsQuickBuyMenu, openTestMenu
+
 local function nui(msg, data)
     SendNUIMessage({ action = msg, data = data or {} })
 end
@@ -224,7 +226,16 @@ local function runScheduleMinigame(productId, profile, prod, onDone)
     pendingMinigame = onDone
     closeUi()
     Wait(200)
-    if ScheduleAnimStart and profile and profile.mode then
+    if not profile then
+        profile = {
+            mode = 'trim',
+            title = (prod and prod.label) or 'Gamyba',
+            steps = 3,
+            icon = '🌿',
+            difficulty = (prod and prod.level) or 1,
+        }
+    end
+    if ScheduleAnimStart and profile.mode then
         ScheduleAnimStart(profile.mode)
     end
     nui('minigameSchedule', {
@@ -820,7 +831,7 @@ local function buyMaterialItem(itemName, amount)
     end, itemName, amount)
 end
 
-local function openWeaponPartsMenu()
+openWeaponPartsMenu = function()
     local rows = {
         { header = 'Ginklų dalys ir reikmenys', isMenuHeader = true },
     }
@@ -864,7 +875,7 @@ local function openWeaponPartsMenu()
     end
 end
 
-local function openMaterialShop()
+openMaterialShop = function()
     QBCore.Functions.TriggerCallback('mrp_drugs:server:openMaterialShop', function(res)
         if res and res.ok then
             QBCore.Functions.Notify('Pasirink prekes ir vilk į inventorių.', 'primary', 4500)
@@ -874,7 +885,7 @@ local function openMaterialShop()
     end)
 end
 
-local function openWeedSupplyShop()
+openWeedSupplyShop = function()
     QBCore.Functions.TriggerCallback('mrp_drugs:server:openWeedSupplyShop', function(res)
         if res and res.ok then
             QBCore.Functions.Notify('Pirk sėklas ir vazonus — sodink kur nori.', 'primary', 4500)
@@ -891,7 +902,7 @@ local function findMaterialShopRow(itemName)
     end
 end
 
-local function openLsQuickBuyMenu()
+openLsQuickBuyMenu = function()
     if not Config.EnableDrugTestNPC then return end
     local rows = {
         { header = 'LS test — greitas pirkimas', isMenuHeader = true },
@@ -983,7 +994,7 @@ RegisterNetEvent('mrp_drugs:client:openProductSellMenu', function(buyerId)
     openProductSellMenu(buyerId)
 end)
 
-local function openTestMenu()
+openTestMenu = function()
     if not Config.EnableDrugTestNPC then return end
     local rows = {
         { header = 'Narkotikų gamyba', isMenuHeader = true },
