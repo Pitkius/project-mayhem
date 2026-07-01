@@ -448,16 +448,18 @@ body.shape-square .fill {
     box-shadow: 0 0 22px rgba(167, 139, 250, 0.5);
 }
 
-.hm-brand-mark svg {
-    width: 22px;
-    height: 22px;
+.hm-brand-mark svg,
+.hm-brand-mark img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
 }
 
 .hm-brand-name {
     font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.18em;
-    text-transform: lowercase;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     color: var(--accent-soft);
 }
 

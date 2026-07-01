@@ -32,11 +32,12 @@ body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; 
   border: 1px solid rgba(167, 139, 250, 0.4);
   box-shadow: 0 0 18px rgba(124, 58, 237, 0.25);
 }
-.head-logo svg { width: 28px; height: 28px; }
+.head-logo svg,
+.head-logo img { width: 32px; height: 32px; object-fit: contain; }
 .head-server {
   font-size: 9px;
-  letter-spacing: 0.18em;
-  text-transform: lowercase;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: #c4b5fd;
   margin-bottom: 2px;
 }

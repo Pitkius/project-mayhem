@@ -218,7 +218,7 @@ QBShared.Items = {
     smgammo                      = { name = 'smgammo', label = 'SMG kulkos (senas)', weight = 10, type = 'item', image = 'smg_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Suderinamumas su senesniais skriptais.' },
     shotgun_ammo                 = { name = 'shotgun_ammo', label = 'Šratinio kulkos', weight = 10, type = 'item', image = 'shotgun_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Kulkos šratiniams.' },
     mg_ammo                      = { name = 'mg_ammo', label = 'Kulkosvaidžio kulkos', weight = 1000, type = 'item', image = 'mg_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Kulkos kulkosvaidžiams.' },
-    snp_ammo                     = { name = 'snp_ammo', label = 'Snaiperio kulkos', weight = 1000, type = 'item', image = 'rifle_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Kulkos snaiperio šautuvams.' },
+    snp_ammo                     = { name = 'snp_ammo', label = 'Snaiperio kulkos', weight = 1000, type = 'item', image = 'snp_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Kulkos snaiperio šautuvams.' },
     emp_ammo                     = { name = 'emp_ammo', label = 'EMP kulkos', weight = 200, type = 'item', image = 'emp_ammo.png', unique = false, useable = false, shouldClose = true, description = 'Kulkos EMP paleidikliui.' },
 
     -- Card ITEMS

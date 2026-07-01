@@ -5,6 +5,9 @@ local QBCore = exports['qb-core']:GetCoreObject()
 --- @field modelHash number
 --- @field coords vector3
 --- @field heading number|nil
+--- @field restZ number|nil
+--- @field pitch number|nil
+--- @field roll number|nil
 
 --- @class LtpdDoorGroupRuntime
 --- @field id string
@@ -21,6 +24,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local doorGroups = {} ---@type LtpdDoorGroupRuntime[]
 local doorLocked = {} ---@type table<string, boolean>
 local lastAppliedLockState = {} ---@type table<string, boolean>
+local lastAppliedEntitySig = {} ---@type table<string, number>
 local dynStationDone = {} ---@type table<string, boolean>
 local entitySnapshots = {} ---@type table<number, { coords: vector3, heading: number }>
 local doorToggleCooldownUntil = 0
@@ -385,14 +389,45 @@ local function findClosestObject(modelHash, coords, radius)
     local r = radius or 5.0
     local ent = GetClosestObjectOfType(coords.x, coords.y, coords.z, r, modelHash, false, false, false)
     if ent and ent ~= 0 then return ent end
+    if r < 9.0 then
+        ent = GetClosestObjectOfType(coords.x, coords.y, coords.z, 9.0, modelHash, false, false, false)
+        if ent and ent ~= 0 then return ent end
+    end
     return 0
 end
 
-local function registerSlab(groupId, slabIndex, modelName, coords, heading)
+local function registerSlab(groupId, slabIndex, modelName, coords, heading, opts)
+    opts = opts or {}
     local modelHash = type(modelName) == 'string' and joaat(modelName) or modelName
     local dh = slabScriptHash(groupId, slabIndex)
     ensureDoorInSystem(dh, modelHash, coords.x, coords.y, coords.z)
-    return { doorHash = dh, modelHash = modelHash, coords = coords, heading = heading }
+    return {
+        doorHash = dh,
+        modelHash = modelHash,
+        coords = coords,
+        heading = heading,
+        restZ = opts.restZ,
+        pitch = opts.pitch,
+        roll = opts.roll,
+    }
+end
+
+local function findSlabForEntity(slabs, ent, maxDist)
+    if not slabs or not ent or ent == 0 or not DoesEntityExist(ent) then return nil end
+    maxDist = maxDist or 8.0
+    local em = GetEntityModel(ent)
+    local ec = GetEntityCoords(ent)
+    local best, bestD = nil, maxDist + 1.0
+    for _, slab in ipairs(slabs) do
+        if slab.modelHash == em then
+            local d = #(ec - slab.coords)
+            if d <= maxDist and d < bestD then
+                bestD = d
+                best = slab
+            end
+        end
+    end
+    return best
 end
 
 local function alignSlabToWorld(slab)
@@ -457,9 +492,19 @@ local function bollardRaiseForGroup(group)
     return DEFAULT_BOLLARD_RAISE_Z
 end
 
-local function rememberBollardSnapshot(ent, assumeRaised, raiseZ, groundZHint)
+local function rememberBollardSnapshot(ent, assumeRaised, raiseZ, groundZHint, slab)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return end
     raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
+    if slab and slab.restZ then
+        entitySnapshots[ent] = {
+            coords = vector3(slab.coords.x, slab.coords.y, slab.restZ + 0.0),
+            heading = (slab.heading or GetEntityHeading(ent)) + 0.0,
+            restZ = slab.restZ + 0.0,
+            pitch = slab.pitch or 0.0,
+            roll = slab.roll or 0.0,
+        }
+        return
+    end
     local c = GetEntityCoords(ent)
     local snap = entitySnapshots[ent]
     if snap and snap.restZ then
@@ -480,18 +525,20 @@ local function rememberBollardSnapshot(ent, assumeRaised, raiseZ, groundZHint)
         coords = vector3(c.x, c.y, restZ),
         heading = GetEntityHeading(ent),
         restZ = restZ,
+        pitch = 0.0,
+        roll = 0.0,
     }
 end
 
-local function applyBollardEntity(ent, locked, raiseZ)
+local function applyBollardEntity(ent, locked, raiseZ, slab)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return end
     raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
-    rememberBollardSnapshot(ent, locked, raiseZ)
+    rememberBollardSnapshot(ent, locked, raiseZ, nil, slab)
     local snap = entitySnapshots[ent]
     if not snap or not snap.restZ then return end
     local targetZ = locked and (snap.restZ + raiseZ) or snap.restZ
     SetEntityCoords(ent, snap.coords.x, snap.coords.y, targetZ, false, false, false, false)
-    SetEntityHeading(ent, snap.heading)
+    SetEntityRotation(ent, snap.pitch or 0.0, snap.roll or 0.0, snap.heading or 0.0, 2, true)
     FreezeEntityPosition(ent, true)
     SetEntityDynamic(ent, false)
     SetEntityInvincible(ent, true)
@@ -612,21 +659,36 @@ local function applyBarrierGroupLocked(slabs, entities, locked, raiseZ)
     raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
     for _, ent in ipairs(entities or {}) do
         if isBollardModel(GetEntityModel(ent)) then
-            applyBollardEntity(ent, locked, raiseZ)
+            applyBollardEntity(ent, locked, raiseZ, findSlabForEntity(slabs, ent))
         else
-            applyBarrierEntity(ent, locked, nil)
+            applyBarrierEntity(ent, locked, findSlabForEntity(slabs, ent, 6.0))
         end
     end
     for _, slab in ipairs(slabs or {}) do
         local ent = findClosestObject(slab.modelHash, slab.coords, 6.0)
-        if ent ~= 0 then applyBarrierEntity(ent, locked, slab) end
+        if ent ~= 0 then
+            if isBollardModel(slab.modelHash) then
+                applyBollardEntity(ent, locked, raiseZ, slab)
+            else
+                applyBarrierEntity(ent, locked, slab)
+            end
+        end
     end
+end
+
+local function gateSlabForGroup(slabs)
+    for _, slab in ipairs(slabs or {}) do
+        if isFacGateModel(slab.modelHash) then
+            return slab
+        end
+    end
+    return slabs and slabs[1] or nil
 end
 
 local function applyYardGateGroupLocked(group, locked)
     local slabs = group.slabs
     local entities = group.entities
-    local gateSlab = slabs and slabs[1] or nil
+    local gateSlab = gateSlabForGroup(slabs)
     local raiseZ = bollardRaiseForGroup(group)
     local openDelta = group.gateOpenHeadingDelta or 82.0
     local seen = {}
@@ -634,12 +696,13 @@ local function applyYardGateGroupLocked(group, locked)
         if ent and ent ~= 0 and DoesEntityExist(ent) then
             seen[ent] = true
             local model = GetEntityModel(ent)
+            local slab = findSlabForEntity(slabs, ent)
             if isBollardModel(model) then
-                applyBollardEntity(ent, locked, raiseZ)
+                applyBollardEntity(ent, locked, raiseZ, slab)
             elseif isFacGateModel(model) then
-                applyFacGateEntity(ent, locked, gateSlab, openDelta)
+                applyFacGateEntity(ent, locked, slab or gateSlab, openDelta)
             else
-                applyBarrierEntity(ent, locked, gateSlab)
+                applyBarrierEntity(ent, locked, slab or gateSlab)
             end
         end
     end
@@ -649,7 +712,7 @@ local function applyYardGateGroupLocked(group, locked)
             if isFacGateModel(slab.modelHash) then
                 applyFacGateEntity(ent, locked, slab, openDelta)
             elseif isBollardModel(slab.modelHash) then
-                applyBollardEntity(ent, locked, raiseZ)
+                applyBollardEntity(ent, locked, raiseZ, slab)
             else
                 applyBarrierEntity(ent, locked, slab)
             end
@@ -660,11 +723,11 @@ end
 local function applyBollardGroupLocked(slabs, entities, locked, raiseZ)
     raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
     for _, ent in ipairs(entities or {}) do
-        applyBollardEntity(ent, locked, raiseZ)
+        applyBollardEntity(ent, locked, raiseZ, findSlabForEntity(slabs, ent))
     end
     for _, slab in ipairs(slabs or {}) do
         local ent = findClosestObject(slab.modelHash, slab.coords, 8.0)
-        if ent ~= 0 then applyBollardEntity(ent, locked, raiseZ) end
+        if ent ~= 0 then applyBollardEntity(ent, locked, raiseZ, slab) end
     end
 end
 
@@ -715,7 +778,7 @@ local function scanEntitiesForDef(entityScan, playerCoords)
     if not entityScan or not entityScan.center then return {} end
     local center = entityScan.center
     local radius = entityScan.radius or 12.0
-    if playerCoords and #(playerCoords - center) > radius + 65.0 then
+    if playerCoords and #(playerCoords - center) > radius + 28.0 then
         return {}
     end
     local models = {}
@@ -737,34 +800,50 @@ local function scanEntitiesForDef(entityScan, playerCoords)
     return out
 end
 
+local function doorGroupEntitySig(group)
+    if not group then return 0 end
+    return #(group.slabs or {}) * 1000 + #(group.entities or {})
+end
+
 local function applyGroupLocked(id, locked, force)
-    if not force and lastAppliedLockState[id] == locked then return end
-    lastAppliedLockState[id] = locked
+    local group
     for _, g in ipairs(doorGroups) do
         if g.id == id then
-            if g.doorType == 'garage_roll' then
-                applyGarageRollLocked(g.slabs, g.entities, locked)
-                return
-            end
-            if g.doorType == 'bollard' then
-                applyBollardGroupLocked(g.slabs, g.entities, locked, bollardRaiseForGroup(g))
-                return
-            end
-            if g.doorType == 'yard_gate' then
-                applyYardGateGroupLocked(g, locked)
-                return
-            end
-            if g.doorType == 'barrier' then
-                applyBarrierGroupLocked(g.slabs, g.entities, locked, bollardRaiseForGroup(g))
-                return
-            end
-            for _, slab in ipairs(g.slabs) do
-                applyStandardSlabLocked(slab, locked)
-            end
-            applyEntityGroupLocked(g.entities, locked)
-            return
+            group = g
+            break
         end
     end
+    if not group then return end
+
+    local sig = doorGroupEntitySig(group)
+    if not force and lastAppliedLockState[id] == locked and lastAppliedEntitySig[id] == sig then
+        return
+    end
+    lastAppliedLockState[id] = locked
+    lastAppliedEntitySig[id] = sig
+
+    local g = group
+    if g.doorType == 'garage_roll' then
+        applyGarageRollLocked(g.slabs, g.entities, locked)
+        return
+    end
+    if g.doorType == 'bollard' then
+        applyBollardGroupLocked(g.slabs, g.entities, locked, bollardRaiseForGroup(g))
+        return
+    end
+    if g.doorType == 'yard_gate' then
+        applyYardGateGroupLocked(g, locked)
+        return
+    end
+    if g.doorType == 'barrier' then
+        applyBarrierGroupLocked(g.slabs, g.entities, locked, bollardRaiseForGroup(g))
+        return
+    end
+    for _, slab in ipairs(g.slabs) do
+        alignSlabToWorld(slab)
+        applyStandardSlabLocked(slab, locked)
+    end
+    applyEntityGroupLocked(g.entities, locked)
 end
 
 local function buildManualGroupDef(def)
@@ -772,7 +851,11 @@ local function buildManualGroupDef(def)
     for i, d in ipairs(def.doors or {}) do
         local coords = d.coords
         local model = d.model
-        local slab = registerSlab(def.id, i, model, coords, d.heading)
+        local slab = registerSlab(def.id, i, model, coords, d.heading, {
+            restZ = d.restZ,
+            pitch = d.pitch,
+            roll = d.roll,
+        })
         if def.doorType == 'garage_roll' or def.doorType == 'yard_gate' then
             if d.heading then
                 slab.heading = d.heading + 0.0
@@ -795,7 +878,16 @@ local function buildManualGroupDef(def)
         interact = c / #slabs
     end
     local entities = scanEntitiesForDef(def.entityScan)
-    local groundZHint = (#slabs > 0 and slabs[1].coords.z) or nil
+    local groundZHint = nil
+    for _, slab in ipairs(slabs) do
+        if slab.restZ then
+            groundZHint = slab.restZ
+            break
+        end
+    end
+    if not groundZHint and #slabs > 0 then
+        groundZHint = slabs[1].coords.z
+    end
     for _, ent in ipairs(entities) do
         if def.doorType == 'garage_roll' then
             local ec = GetEntityCoords(ent)
@@ -815,7 +907,7 @@ local function buildManualGroupDef(def)
         elseif def.doorType == 'yard_gate' then
             local raiseZ = def.bollardRaiseZ or DEFAULT_BOLLARD_RAISE_Z
             if isBollardModel(GetEntityModel(ent)) then
-                rememberBollardSnapshot(ent, def.defaultLocked ~= false, raiseZ, groundZHint)
+                rememberBollardSnapshot(ent, def.defaultLocked ~= false, raiseZ, groundZHint, findSlabForEntity(slabs, ent))
             else
                 rememberEntitySnapshot(ent)
             end
@@ -971,16 +1063,20 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(20000)
         local pc = GetEntityCoords(PlayerPedId())
-        if nearestPdDoorDist(pc) > 150.0 then
+        local doorNear = nearestPdDoorDist(pc)
+        local waitMs = doorNear < 70.0 and 5000 or 20000
+        Wait(waitMs)
+        if doorNear > 150.0 then
             goto continue
         end
         invalidateObjectPoolCache()
         for _, g in ipairs(doorGroups) do
             if g.entityScanDef then
                 local ents = scanEntitiesForDef(g.entityScanDef, pc)
-                if #ents == 0 then goto next_group end
+                local prevCount = #(g.entities or {})
+                if #ents == 0 and prevCount == 0 then goto next_group end
+                local entitiesChanged = #ents ~= prevCount
                 g.entities = ents
                 if g.doorType == 'garage_roll' then
                     for _, ent in ipairs(g.entities) do
@@ -995,27 +1091,64 @@ CreateThread(function()
                     end
                     if isGroupLocked(g.id) then
                         lastAppliedLockState[g.id] = nil
+                        lastAppliedEntitySig[g.id] = nil
                         applyGroupLocked(g.id, true, true)
+                    elseif entitiesChanged then
+                        lastAppliedEntitySig[g.id] = nil
+                        applyGroupLocked(g.id, doorLocked[g.id] ~= false, true)
                     end
-                elseif g.doorType == 'yard_gate' and isGroupLocked(g.id) then
+                elseif g.doorType == 'yard_gate' then
                     local raiseZ = bollardRaiseForGroup(g)
-                    local groundZHint = (g.slabs and g.slabs[1] and g.slabs[1].coords.z) or nil
+                    local groundZHint = nil
+                    for _, slab in ipairs(g.slabs or {}) do
+                        if slab.restZ then
+                            groundZHint = slab.restZ
+                            break
+                        end
+                    end
+                    if not groundZHint and g.slabs and g.slabs[1] then
+                        groundZHint = g.slabs[1].coords.z
+                    end
+                    local locked = isGroupLocked(g.id)
                     for _, ent in ipairs(g.entities) do
                         if isBollardModel(GetEntityModel(ent)) then
-                            rememberBollardSnapshot(ent, true, raiseZ, groundZHint)
+                            rememberBollardSnapshot(ent, locked, raiseZ, groundZHint, findSlabForEntity(g.slabs, ent))
                         else
                             rememberEntitySnapshot(ent)
                         end
                     end
-                    lastAppliedLockState[g.id] = nil
-                    applyGroupLocked(g.id, true, true)
+                    if locked or entitiesChanged then
+                        lastAppliedLockState[g.id] = nil
+                        lastAppliedEntitySig[g.id] = nil
+                        applyGroupLocked(g.id, locked, true)
+                    end
                 else
                     for _, ent in ipairs(g.entities) do
                         rememberEntitySnapshot(ent)
                     end
+                    if entitiesChanged then
+                        lastAppliedEntitySig[g.id] = nil
+                        applyGroupLocked(g.id, doorLocked[g.id] ~= false, true)
+                    end
                 end
             end
             ::next_group::
+        end
+        for _, g in ipairs(doorGroups) do
+            if g.interact and not g.entityScanDef and #(pc - g.interact) < 45.0 then
+                local aligned = false
+                for _, slab in ipairs(g.slabs or {}) do
+                    local before = slab.coords
+                    alignSlabToWorld(slab)
+                    if #(before - slab.coords) > 0.01 then
+                        aligned = true
+                    end
+                end
+                if aligned or #(pc - g.interact) < 8.0 then
+                    lastAppliedEntitySig[g.id] = nil
+                    applyGroupLocked(g.id, doorLocked[g.id] ~= false, true)
+                end
+            end
         end
         ::continue::
     end
@@ -1023,7 +1156,10 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(10000)
+        local pc = GetEntityCoords(PlayerPedId())
+        local doorNear = nearestPdDoorDist(pc)
+        local waitMs = doorNear < 90.0 and 3500 or 10000
+        Wait(waitMs)
         local allDone = true
         for _, dyn in ipairs(allDoorDynamics()) do
             if not dynStationDone[dyn.stationId] then
@@ -1032,11 +1168,9 @@ CreateThread(function()
             end
         end
         if allDone then
-            Wait(30000)
+            Wait(doorNear < 90.0 and 15000 or 30000)
             goto continue
         end
-        local ped = PlayerPedId()
-        local pc = GetEntityCoords(ped)
         for _, dyn in ipairs(allDoorDynamics()) do
             if not dynStationDone[dyn.stationId] then
                 local c = (dyn.bounds.min + dyn.bounds.max) * 0.5
@@ -1068,6 +1202,7 @@ RegisterNetEvent('mrp_ltpd:client:setPdDoorState', function(id, locked)
     if parsed == nil then parsed = locked == true end
     doorLocked[id] = parsed
     lastAppliedLockState[id] = nil
+    lastAppliedEntitySig[id] = nil
     applyGroupLocked(id, doorLocked[id], true)
 end)
 
@@ -1141,8 +1276,9 @@ CreateThread(function()
             Wait(2000)
         else
             local waitMs = 400
-            if canUseServiceDoorsClient() and doorNear < 35.0 then
-                waitMs = 100
+            if canUseServiceDoorsClient() and doorNear < 40.0 then
+                waitMs = 50
+                EnableControlAction(0, 38, true)
                 if IsControlJustPressed(0, 38) then
                     tryToggleNearestDoor(pcoords)
                 end

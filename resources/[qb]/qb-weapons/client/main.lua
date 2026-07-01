@@ -77,6 +77,13 @@ local function nativeWeaponHash(weaponName)
     return joaat(weaponName)
 end
 
+--- Naujesnis artifact; senesnėse FiveM versijose native neegzistuoja.
+local function safeSetWeaponsNoAutoselect(toggle)
+    if type(SetWeaponsNoAutoselect) == 'function' then
+        SetWeaponsNoAutoselect(toggle)
+    end
+end
+
 --- Seni DB itemai dažnai neturi `type` — kitaip holster sync ištrina visus ginklus ir nebeatstato.
 local function isInventoryWeaponItem(item)
     if not item or not item.name then return false end
@@ -342,7 +349,7 @@ function applyHolsteredWeaponsFromInventory(force)
     local ped = PlayerPedId()
     RemoveAllPedWeapons(ped, true)
     SetWeaponsNoAutoswap(true)
-    SetWeaponsNoAutoselect(true)
+    safeSetWeaponsNoAutoselect(true)
 
     if not items then
         SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)

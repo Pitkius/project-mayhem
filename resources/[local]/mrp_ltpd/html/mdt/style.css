@@ -25,9 +25,18 @@ html, body {
   padding: 12px 16px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.22);
 }
-.top .brand { flex: 1; min-width: 0; }
+.top .brand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
 .brand { font-weight: 800; letter-spacing: 0.06em; }
-.brand span { color: #c4b5fd; font-weight: 600; }
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: rgba(124, 58, 237, 0.25);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  padding: 3px;
+}
+.brand-text span { color: #c4b5fd; font-weight: 600; }
 .head-actions { gap: 8px; }
 .tabs {
   display: flex;

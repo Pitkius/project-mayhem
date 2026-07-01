@@ -1,8 +1,8 @@
 Config = Config or {}
 
 Config.Branding = {
-    title = 'MRP',
-    subtitle = 'Mayhem Roleplay Server',
+    title = 'Mayhem Roleplay',
+    subtitle = 'Los Santos · Roleplay',
     logo = 'assets/mrp_logo.png',
     icon = 'assets/mrp_icon.png',
 }

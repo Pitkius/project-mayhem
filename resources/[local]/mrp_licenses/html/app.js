@@ -41,8 +41,8 @@ function renderCategories(categories) {
 }
 
 function renderCard(data) {
-  document.getElementById("serverName").textContent = data.serverName || "MRP";
-  document.getElementById("serverSubtitle").textContent = data.serverSubtitle || "Los Santos RP";
+  document.getElementById("serverName").textContent = data.serverName || "Mayhem Roleplay";
+  document.getElementById("serverSubtitle").textContent = data.serverSubtitle || "Los Santos · Roleplay";
   document.getElementById("docTitle").textContent = data.title || "Dokumentas";
   document.getElementById("docLabel").textContent = data.type === "id_card" ? "Tapatybė" : "Licencija";
   document.getElementById("photoInitials").textContent = data.photoInitials || "?";

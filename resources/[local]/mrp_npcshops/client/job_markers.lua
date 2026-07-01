@@ -131,7 +131,11 @@ CreateThread(function()
                 local dist = #(pcoords - zone.coords)
                 local useR = useRadiusFor(zone.kind)
                 if dist < drawD then
-                    sleep = 0
+                    if dist < useR then
+                        sleep = math.min(sleep, 0)
+                    else
+                        sleep = math.min(sleep, 120)
+                    end
                     drawJobMarker(zone.coords, zone.kind, zone.scale)
                     if dist < useR then
                         local canUse = true

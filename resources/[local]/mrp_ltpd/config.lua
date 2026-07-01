@@ -73,13 +73,15 @@ Config.EmergencyVehicle = {
     validateDistance = 28.0,
     --- Laikina švyturėlių juosta civilinei TP (prop ant stogo)
     lightbarModel = 'prop_lightbar_01',
-    lightbarYOffset = 0.28,
-    lightbarZOffset = 0.0,
+    lightbarYOffset = 0.12,
+    lightbarZOffset = 0.04,
     --- Mirksėjimo intervalas (ms) — lėtesnis = saugesnis regėjimui
-    flashIntervalMs = 560,
-    --- Švelnus aplinkos apšvietimas (0 = tik lemputės ant prop)
-    flashLightRange = 2.2,
-    flashLightIntensity = 3.5,
+    flashIntervalMs = 720,
+    --- Aplinkos šviesa ant prop (0 = tik maži žibintai ant juostos, be blizgesio)
+    flashLightRange = 0.0,
+    flashLightIntensity = 1.2,
+    --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
+    trustVehicleClassEmergency = false,
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
     allowPassengerControl = true,
     performanceTune = {
@@ -174,13 +176,13 @@ Config.HelipadBlipScale = 0.9
 
 --- 3D markeriai ant žemės MRPD / kituose postuose (ne žemėlapio blipai)
 Config.ShowPd3DMarkers = true
-Config.PdMarkerDrawDistance = 32.0
+Config.PdMarkerDrawDistance = 40.0
 Config.PdMarkerZOffset = 0.02
---- Sandėliai: mažas trikampis (DrawMarker tipas 2), tekstas tik labai arti
+--- Sandėliai: mažas trikampis (DrawMarker tipas 2)
 Config.PdStashMarkerType = 2
 Config.PdStashMarkerScale = { x = 0.34, y = 0.34, z = 0.34 }
-Config.PdStashMarkerDrawDistance = 22.0
-Config.PdMarkerTextDistance = 1.1
+Config.PdStashMarkerDrawDistance = 32.0
+Config.PdMarkerTextDistance = 2.2
 
 --- Tarnybinis transportas (modeliai turi būti whitelist – žr. server spawnFleet)
 Config.FleetVehicles = {
@@ -443,7 +445,7 @@ Config.TargetDistance = 2.5
 Config.MaxFineAmount = 50000
 
 --- PD durys / vartai (Gabz MRPD LS + automatinis Sandy / Paleto MLO skenavimas)
-Config.PdDoorToggleReach = 5.0
+Config.PdDoorToggleReach = 6.0
 Config.PdDoorGroups = {
     {
         id = 'ls_mrpd_reception',
@@ -519,6 +521,18 @@ Config.PdDoorGroups = {
         gateOpenHeadingDelta = 82.0,
         doors = {
             { model = 'prop_facgate_07b', coords = vector3(419.99, -1025.0, 28.99), heading = 270.0 },
+            {
+                model = 'gabz_mrpd_bollards1',
+                coords = vector3(409.9059, -1020.1597, 28.98),
+                heading = 265.5023,
+                restZ = 28.98,
+            },
+            {
+                model = 'gabz_mrpd_bollards2',
+                coords = vector3(410.3823, -1028.5387, 28.98),
+                heading = 168.6483,
+                restZ = 28.98,
+            },
         },
         entityScan = {
             center = vector3(416.2, -1024.0, 29.35),
@@ -586,6 +600,17 @@ Config.PdDoorGroups = {
         },
     },
     {
+        id = 'davis_pd_main',
+        label = 'Davis PD pagrindinės durys',
+        interact = vector3(380.15, -1591.25, 29.76),
+        interactDist = 3.0,
+        defaultLocked = true,
+        doors = {
+            { model = 'gabz_davispd_maindoor_left', coords = vector3(379.85, -1591.55, 29.76) },
+            { model = 'gabz_davispd_maindoor_right', coords = vector3(380.45, -1590.85, 29.76) },
+        },
+    },
+    {
         id = 'davis_pd_fence_gate',
         label = 'Davis PD kiemo vartai',
         doorType = 'barrier',
@@ -593,7 +618,7 @@ Config.PdDoorGroups = {
         interactDist = 5.5,
         defaultLocked = true,
         doors = {
-            { model = 'gabz_davispd_fancegate', coords = vector3(397.2, -1606.5, 29.35) },
+            { model = 'gabz_davispd_fancegate', coords = vector3(397.2, -1606.5, 29.35), heading = 320.0 },
         },
         entityScan = {
             center = vector3(397.2, -1606.5, 29.35),
@@ -625,6 +650,8 @@ Config.PdDoorInteractExtras = {
     { groupId = 'ls_mrpd_reception', interact = vector3(441.39, -977.68, 30.79), interactDist = 3.2 },
     { groupId = 'ls_mrpd_reception', interact = vector3(457.03, -971.67, 30.71), interactDist = 3.2 },
     { groupId = 'ls_mrpd_back_gate', interact = vector3(488.8, -1017.2, 27.1), interactDist = 6.0 },
+    { groupId = 'ls_mrpd_front_entry', interact = vector3(410.1, -1024.3, 29.75), interactDist = 5.0 },
+    { groupId = 'davis_pd_main', interact = vector3(379.39, -1591.37, 29.76), interactDist = 3.0 },
 }
 
 --- Automatinis durų radimas (objektai žemėlapyje pagal modelį ir dėžę) – Gabz Sandy / Paleto MLO
@@ -700,6 +727,7 @@ Config.PdDoorDynamics = {
         pairDist = 4.15,
         interactDist = 2.95,
         interactOffset = vector3(0.0, 0.0, 0.88),
+        defaultLocked = true,
     },
     --- Vanilla / ne-Gabz LS MRPD: tik Rockstar durų propai
     {
@@ -729,12 +757,12 @@ Config.PdDoorDynamics = {
             'gabz_davispd_singledoor_01',
             'gabz_davispd_singledoor_02',
             'gabz_davispd_singledoor_03',
-            'gabz_davispd_fancegate',
-            'gabz_davispd_cell_door',
+            --- fancegate ir cele – valdomos per `PdDoorGroups` / `davis_cells`
         },
         pairDist = 3.85,
         interactDist = 2.85,
         interactOffset = vector3(0.0, 0.0, 0.88),
+        defaultLocked = true,
     },
     {
         stationId = 'paleto',

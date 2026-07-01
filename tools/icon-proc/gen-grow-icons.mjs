@@ -8,7 +8,12 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const names = ['grow_pot', 'watering_can', 'drug_scale', 'weed_leaf', 'trimming_scissors', 'gloves_item'];
+const names = [
+  'grow_pot', 'watering_can', 'drug_scale', 'weed_leaf', 'trimming_scissors', 'gloves_item',
+  'pistol_ammo', 'smg_ammo', 'rifle_ammo', 'shotgun_ammo', 'hunting_ammo', 'mg_ammo', 'snp_ammo',
+];
+const invOnly = names.filter((n) => n.includes('ammo'));
+const drugsNames = names.filter((n) => !n.includes('ammo'));
 const invDir = path.join(__dirname, '..', '..', 'resources', '[qb]', 'qb-inventory', 'html', 'images');
 const drugsDir = path.join(__dirname, '..', '..', 'resources', '[local]', 'mrp_drugs', 'html', 'icons');
 
@@ -19,7 +24,7 @@ execSync(`node unify-all-icons.mjs --only=${names.join(',')}`, {
   stdio: 'inherit',
 });
 
-for (const name of names) {
+for (const name of drugsNames) {
   const src = path.join(invDir, `${name}.png`);
   const dest = path.join(drugsDir, `${name}.png`);
   if (!fs.existsSync(src)) {
@@ -28,6 +33,10 @@ for (const name of names) {
   }
   fs.copyFileSync(src, dest);
   console.log('copied ->', dest);
+}
+
+if (invOnly.length) {
+  console.log('Ammo icons updated in inventory:', invOnly.join(', '));
 }
 
 console.log('Done. Inventory + mrp_drugs icons updated.');

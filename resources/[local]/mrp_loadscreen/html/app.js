@@ -66,7 +66,7 @@ const MUSIC = {
   enabled: true,
   volume: 0.28,
   track: 'assets/gta_theme.mp3',
-  label: 'MRP — Mayhem RP',
+  label: 'Mayhem Roleplay',
 };
 
 function nuiPost(name, data = {}) {

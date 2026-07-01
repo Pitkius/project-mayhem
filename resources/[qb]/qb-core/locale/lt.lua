@@ -28,6 +28,7 @@ local Translations = {
     info = {
         received_paycheck = 'Gavote atlyginimą: $%{value}',
         job_info = 'Darbas: %{value} | Laipsnis: %{value2} | Pamaina: %{value3}',
+        job_info_division = 'Darbas: %{value} | Laipsnis: %{value2} | Pamaina: %{value3} | Divizija: %{value4}',
         gang_info = 'Gauja: %{value} | Laipsnis: %{value2}',
         on_duty = 'Dabar esate pamainoje!',
         off_duty = 'Dabar nebe pamainoje!',

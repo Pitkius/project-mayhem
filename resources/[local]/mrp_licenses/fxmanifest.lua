@@ -24,6 +24,7 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/assets/mayhem_logo.png',
 }
 
 dependencies {

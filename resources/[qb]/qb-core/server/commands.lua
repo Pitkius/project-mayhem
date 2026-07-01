@@ -255,9 +255,34 @@ end, 'admin')
 
 -- Job
 
+local function jobDivisionLabel(src, jobName)
+    if jobName ~= 'police' or GetResourceState('mrp_ltpd') ~= 'started' then return nil end
+    local ok, label = pcall(function()
+        return exports['mrp_ltpd']:GetDivisionLabelForPlayer(src)
+    end)
+    if ok and label and label ~= '' then return label end
+    return nil
+end
+
 QBCore.Commands.Add('job', Lang:t('command.job.help'), {}, false, function(source)
     local PlayerJob = QBCore.Functions.GetPlayer(source).PlayerData.job
-    TriggerClientEvent('QBCore:Notify', source, Lang:t('info.job_info', { value = PlayerJob.label, value2 = PlayerJob.grade.name, value3 = PlayerJob.onduty }))
+    local division = jobDivisionLabel(source, PlayerJob.name)
+    local msg
+    if division then
+        msg = Lang:t('info.job_info_division', {
+            value = PlayerJob.label,
+            value2 = PlayerJob.grade.name,
+            value3 = PlayerJob.onduty,
+            value4 = division,
+        })
+    else
+        msg = Lang:t('info.job_info', {
+            value = PlayerJob.label,
+            value2 = PlayerJob.grade.name,
+            value3 = PlayerJob.onduty,
+        })
+    end
+    TriggerClientEvent('QBCore:Notify', source, msg)
 end, 'user')
 
 QBCore.Commands.Add('setjob', Lang:t('command.setjob.help'), { { name = Lang:t('command.setjob.params.id.name'), help = Lang:t('command.setjob.params.id.help') }, { name = Lang:t('command.setjob.params.job.name'), help = Lang:t('command.setjob.params.job.help') }, { name = Lang:t('command.setjob.params.grade.name'), help = Lang:t('command.setjob.params.grade.help') } }, true, function(source, args)

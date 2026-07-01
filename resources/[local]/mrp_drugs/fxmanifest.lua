@@ -22,6 +22,7 @@ files {
     'html/icons/weed_leaf.png',
     'html/icons/trimming_scissors.png',
     'html/icons/gloves_item.png',
+    'html/assets/mayhem_logo.png',
 }
 
 shared_scripts {

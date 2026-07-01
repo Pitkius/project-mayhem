@@ -37,13 +37,13 @@ local MARKER_TYPES = {
 }
 
 local USE_RADIUS = {
-    garage = 2.2,
-    stash = 1.45,
-    locker = 1.6,
-    armory = 1.6,
-    supply = 1.45,
-    craft = 1.6,
-    duty = 1.6,
+    garage = 2.6,
+    stash = 2.2,
+    locker = 2.0,
+    armory = 2.0,
+    supply = 2.0,
+    craft = 2.0,
+    duty = 2.0,
 }
 
 local function jobName()
@@ -112,10 +112,7 @@ local function drawDistanceFor(kind)
 end
 
 local function textDistanceFor(kind)
-    if kind == 'stash' then
-        return Config.PdMarkerTextDistance or 1.1
-    end
-    return USE_RADIUS[kind] or 1.5
+    return USE_RADIUS[kind] or Config.PdMarkerTextDistance or 2.2
 end
 
 exports('RegisterPdGroundMarker', RegisterPdGroundMarker)
@@ -396,14 +393,15 @@ CreateThread(function()
             end
 
             drawMarkerAt(zone.coords, zone.kind)
-            sleep = math.min(sleep, 200)
+            sleep = math.min(sleep, 120)
 
-            local useR = USE_RADIUS[zone.kind] or 1.5
+            local useR = USE_RADIUS[zone.kind] or 2.0
             local textR = textDistanceFor(zone.kind)
             if dist < useR then
                 nearInteract = true
                 local canUse = not zone.requireDuty or isPdOnDuty()
                 if canUse and dist < textR then
+                    EnableControlAction(0, 38, true)
                     QBCore.Functions.DrawText3D(
                         zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
                         ('[E] %s'):format(zone.label)
@@ -424,9 +422,9 @@ CreateThread(function()
         end
 
         if nearInteract then
-            sleep = 50
-        elseif sleep > 200 then
-            sleep = 500
+            sleep = 0
+        elseif sleep > 120 then
+            sleep = 400
         end
 
         Wait(sleep)

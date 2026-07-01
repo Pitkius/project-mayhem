@@ -40,6 +40,14 @@ local function getOccupiedVehicle()
     return veh
 end
 
+local function safeVehicleNetId(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return 0 end
+    if NetworkGetEntityIsNetworked and not NetworkGetEntityIsNetworked(veh) then return 0 end
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    if not netId or netId == 0 then return 0 end
+    return netId
+end
+
 local function getSirenVehicle()
     if Config.AllowPassengerControl == false then
         return getDriverVehicle()
@@ -72,7 +80,6 @@ local function vehicleIsFleet(veh, jobType)
     if not veh or veh == 0 then return false end
     local hash = GetEntityModel(veh)
     if fleetHashSet(jobType)[hash] then return true end
-    if GetVehicleClass(veh) == 18 then return true end
     for _, name in ipairs({ 'IsThisModelEmergencyVehicle', 'IsThisModelAnEmergencyVehicle' }) do
         local fn = rawget(_G, name)
         if type(fn) == 'function' then
@@ -177,6 +184,9 @@ local function openController(jobType)
             'error'
         )
     end
+    if safeVehicleNetId(veh) == 0 then
+        return QBCore.Functions.Notify('Mašina turi būti tinkamai sinchronizuota (išimk iš garažo / naujas spawn).', 'error')
+    end
 
     activeJobType = jobType
     uiOpen = true
@@ -216,7 +226,7 @@ local function setTone(tone)
     if not activeJobType then return end
     local veh = getSirenVehicle()
     if not veh then return end
-    TriggerServerEvent('mrp_siren:server:setTone', NetworkGetNetworkIdFromEntity(veh), tone)
+    TriggerServerEvent('mrp_siren:server:setTone', tone)
     SetTimeout(120, pushUiSync)
 end
 
@@ -225,7 +235,7 @@ local function toggleMute()
     local veh = getSirenVehicle()
     if not veh then return end
     local _, _, muted = readVehicleState(veh, activeJobType)
-    TriggerServerEvent('mrp_siren:server:setMuted', NetworkGetNetworkIdFromEntity(veh), not muted)
+    TriggerServerEvent('mrp_siren:server:setMuted', not muted)
     SetTimeout(120, pushUiSync)
 end
 
@@ -345,11 +355,11 @@ CreateThread(function()
             lastDriverVeh = driverVeh
         elseif lastDriverVeh ~= 0 then
             local jt = detectActiveJobType()
-            if jt then
+            if jt and DoesEntityExist(lastDriverVeh) then
                 local cfg = getJobCfg(jt)
                 if cfg and cfg.clearOnExitEvent then
-                    local netId = NetworkGetNetworkIdFromEntity(lastDriverVeh)
-                    if netId and netId ~= 0 then
+                    local netId = safeVehicleNetId(lastDriverVeh)
+                    if netId ~= 0 then
                         TriggerServerEvent(cfg.clearOnExitEvent, netId)
                     end
                 end

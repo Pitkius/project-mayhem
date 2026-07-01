@@ -39,15 +39,7 @@ end
 
 local function vehicleNeedsScriptSound(veh, mode)
     if mode ~= 'sound' and mode ~= 'full' then return false end
-    if mode == 'full' then
-        local hash = GetEntityModel(veh)
-        if GetVehicleClass(veh) == 18 then return false end
-        for _, list in pairs(Config.FleetVehicles) do
-            for _, m in ipairs(list) do
-                if joaat(m) == hash then return false end
-            end
-        end
-    end
+    if Entity(veh).state.fpSirenMuted == true then return false end
     return true
 end
 
@@ -120,13 +112,18 @@ local function ingestVehicle(veh)
     end
     local tone = readTone(veh)
     local meta = TRACKED[veh]
-    if meta and meta.loopTone and meta.loopTone ~= tone then
+    local toneChanged = meta and meta.loopTone and meta.loopTone ~= tone
+    if toneChanged then
         stopSound(veh)
+        if TRACKED[veh] then TRACKED[veh].loopTone = nil end
     end
     TRACKED[veh] = TRACKED[veh] or {}
     TRACKED[veh].mode = mode
     TRACKED[veh].tone = tone
     TRACKED[veh].muted = isMuted(veh)
+    if toneChanged and not isMuted(veh) and (vehicleNeedsScriptSound(veh, mode) or mode == 'sound') then
+        startLoopTone(veh, tone)
+    end
 end
 
 local function onBagChange(_, bagName)

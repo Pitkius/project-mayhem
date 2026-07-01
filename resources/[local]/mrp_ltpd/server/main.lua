@@ -1299,6 +1299,18 @@ exports('HasLtpdPermission', function(src, key)
     return hasPerm(src, key)
 end)
 
+local function divisionLabelForPlayer(src)
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P or not jobIsPd(P.PlayerData.job) then return nil end
+    local grade = getGrade(src)
+    local stored = getDivisionForCitizenid(P.PlayerData.citizenid)
+    local effective = PdDivisions.effectiveDivision(grade, stored)
+    local cfg = Config.Divisions and Config.Divisions[effective]
+    return (cfg and cfg.label) or effective
+end
+
+exports('GetDivisionLabelForPlayer', divisionLabelForPlayer)
+
 --- PD sirenos įranga: entity statebags (networked vehicles) + išsaugojimas player_vehicles.mods
 local EMERGENCY_MOD_KEYS = { mrpPdKit = true, mrpEmsKit = true }
 
@@ -1355,9 +1367,15 @@ exports('ApplyVehicleEmergencyFromMods', function(veh, mods)
     if type(mods) ~= 'table' then return end
     if mods.mrpPdKit == true then
         Entity(veh).state:set('ltPdKit', true, true)
+    else
+        Entity(veh).state:set('ltPdKit', false, true)
+        Entity(veh).state:set('ltPdSirenMode', 'off', true)
     end
     if mods.mrpEmsKit == true then
         Entity(veh).state:set('ltEmsKit', true, true)
+    else
+        Entity(veh).state:set('ltEmsKit', false, true)
+        Entity(veh).state:set('ltEmsSirenMode', 'off', true)
     end
 end)
 
@@ -1499,6 +1517,16 @@ RegisterNetEvent('mrp_ltpd:server:setPdEmergencyKit', function(equip)
     end
     if isEmergencyFleetModel(veh) then
         return TriggerClientEvent('QBCore:Notify', src, 'Ši mašina jau turi tarnybinę įrangą (ne civilinė).', 'error')
+    end
+    local hash = GetEntityModel(veh)
+    for _, name in ipairs({ 'IsThisModelEmergencyVehicle', 'IsThisModelAnEmergencyVehicle' }) do
+        local fn = rawget(_G, name)
+        if type(fn) == 'function' then
+            local ok, isEmerg = pcall(fn, hash)
+            if ok and isEmerg then
+                return TriggerClientEvent('QBCore:Notify', src, 'Šiai mašinai negalima montuoti laikinos įrangos.', 'error')
+            end
+        end
     end
     equip = equip == true
     local ec = Config.EmergencyVehicle or {}

@@ -443,8 +443,8 @@ local function captureEmergencyProps(veh, props)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return props end
     local bag = Entity(veh).state
     if not bag then return props end
-    props.mrpPdKit = bag.ltPdKit == true
-    props.mrpEmsKit = bag.ltEmsKit == true
+    props.mrpPdKit = bag.ltPdKit == true or nil
+    props.mrpEmsKit = bag.ltEmsKit == true or nil
     return props
 end
 
@@ -764,7 +764,11 @@ CreateThread(function()
                         local dDesk = #(pcoords - dp)
 
                         if dSpawn < drawD or dDesk < drawD then
-                            sleep = 0
+                            if (dSpawn < openR or dDesk < openR) then
+                                sleep = math.min(sleep, 0)
+                            else
+                                sleep = math.min(sleep, 120)
+                            end
                         end
 
                         if dSpawn < drawD then

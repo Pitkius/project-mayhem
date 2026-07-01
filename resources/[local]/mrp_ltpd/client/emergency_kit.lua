@@ -93,7 +93,9 @@ local function vehicleSupportsNativeEmergency(vehicle)
             if ok and r then return true end
         end
     end
-    if GetVehicleClass(vehicle) == 18 then return true end
+    if Ec.trustVehicleClassEmergency == true and GetVehicleClass(vehicle) == 18 then
+        return true
+    end
     return modelIsFleet(hash)
 end
 
@@ -187,8 +189,10 @@ local function ensureLightbar(vehicle)
 
     local bone = GetEntityBoneIndexByName(vehicle, 'roof')
     if bone == -1 then bone = GetEntityBoneIndexByName(vehicle, 'bodyshell') end
-    local yOff = tonumber(Ec.lightbarYOffset) or 0.28
-    local zOff = tonumber(Ec.lightbarZOffset) or 0.0
+    local mn, mx = GetModelDimensions(hash)
+    local roofZ = (mx.z - mn.z) * 0.5 + 0.04
+    local yOff = tonumber(Ec.lightbarYOffset) or 0.12
+    local zOff = roofZ + (tonumber(Ec.lightbarZOffset) or 0.0)
     AttachEntityToEntity(prop, vehicle, bone, 0.0, yOff, zOff, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
     LIGHTBARS[vehicle] = prop
     SetModelAsNoLongerNeeded(hash)
@@ -326,7 +330,7 @@ local function drawLensMarker(x, y, z, r, g, b, alpha)
         x, y, z,
         0.0, 0.0, 0.0,
         0.0, 0.0, 0.0,
-        0.085, 0.085, 0.085,
+        0.055, 0.055, 0.055,
         r, g, b, alpha,
         false, false, 2, false, false, false, false
     )
@@ -360,16 +364,16 @@ local function drawScriptFlash(vehicle)
     local centerPos = barPos + vector3(0.0, 0.0, 0.06)
 
     if phase then
-        drawLensMarker(leftPos.x, leftPos.y, leftPos.z, 220, 28, 28, 175)
-        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 200, 40, 40, 120)
+        drawLensMarker(leftPos.x, leftPos.y, leftPos.z, 210, 36, 36, 110)
+        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 180, 44, 44, 75)
         if lightRange > 0 and lightPower > 0 then
-            DrawLightWithRange(leftPos.x, leftPos.y, leftPos.z, 220, 30, 30, lightRange, lightPower)
+            DrawLightWithRange(leftPos.x, leftPos.y, leftPos.z, 200, 40, 40, lightRange, lightPower)
         end
     else
-        drawLensMarker(rightPos.x, rightPos.y, rightPos.z, 28, 72, 220, 175)
-        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 40, 80, 200, 120)
+        drawLensMarker(rightPos.x, rightPos.y, rightPos.z, 36, 68, 210, 110)
+        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 44, 76, 190, 75)
         if lightRange > 0 and lightPower > 0 then
-            DrawLightWithRange(rightPos.x, rightPos.y, rightPos.z, 30, 72, 220, lightRange, lightPower)
+            DrawLightWithRange(rightPos.x, rightPos.y, rightPos.z, 40, 70, 200, lightRange, lightPower)
         end
     end
 end
@@ -393,11 +397,11 @@ local function applyNativeForEveryone(vehicle, mode)
     end
     --- lights ir full naudoja GTA sirenos šviesas
     SetVehicleSiren(vehicle, true)
-    local muted = Entity(vehicle).state.fpSirenMuted == true
     if mode == 'lights' then
         SetVehicleHasMutedSirens(vehicle, true)
     elseif mode == 'full' then
-        SetVehicleHasMutedSirens(vehicle, muted)
+        --- Garsą valdo mrp_siren_controller (tonai) — natyvus garso takelis nutildytas.
+        SetVehicleHasMutedSirens(vehicle, true)
     end
 end
 
@@ -423,7 +427,6 @@ local function ingestFromEntity(vehicle)
         stopNativeSirenVisual(vehicle)
     elseif mode == 'full' then
         if TRACKED[vehicle].supportsNative then
-            stopScriptSound(vehicle)
             applyNativeForEveryone(vehicle, 'full')
         end
     end
@@ -483,7 +486,7 @@ CreateThread(function()
                         SetVehicleHasMutedSirens(veh, true)
                     elseif mode == 'full' then
                         SetVehicleSiren(veh, true)
-                        SetVehicleHasMutedSirens(veh, Entity(veh).state.fpSirenMuted == true)
+                        SetVehicleHasMutedSirens(veh, true)
                     elseif mode == 'sound' then
                         stopNativeSirenVisual(veh)
                     end

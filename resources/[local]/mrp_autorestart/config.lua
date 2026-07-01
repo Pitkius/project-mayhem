@@ -17,7 +17,7 @@ Config.KickMessage = 'Planinis serverio restartas. Prisijunk po 1–2 minučių.
 
 --- Po kick — quit (txAdmin / monitorius paleidžia serverį iš naujo)
 Config.QuitDelayMs = 4000
-Config.QuitReason = 'MRP planinis restartas (kas 4 val.)'
+Config.QuitReason = 'Mayhem Roleplay planinis restartas (kas 4 val.)'
 
 Config.Messages = {
     warning = '⚠ Serverio restartas po %s min.',

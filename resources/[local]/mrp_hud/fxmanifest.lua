@@ -17,6 +17,8 @@ files {
     'html/assets/vehicles/car-schema-topdown.svg',
     'html/assets/vehicles/vehicle-topdown.png',
     'html/assets/vehicles/*.png',
+    'html/assets/mayhem_logo.png',
+    'html/assets/mayhem_icon.png',
 }
 
 client_scripts {

@@ -43,7 +43,10 @@ end
 
 local function safeVehicleNetId(veh)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return 0 end
-    return NetworkGetNetworkIdFromEntity(veh)
+    if NetworkGetEntityIsNetworked and not NetworkGetEntityIsNetworked(veh) then return 0 end
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    if not netId or netId == 0 then return 0 end
+    return netId
 end
 
 local function isFleetModel(hash, jobType)
@@ -72,33 +75,31 @@ local function isAdmin(src)
     return QBCore.Functions.HasPermission(src, 'admin') or QBCore.Functions.HasPermission(src, 'god')
 end
 
-RegisterNetEvent('mrp_siren:server:setTone', function(netId, tone)
+RegisterNetEvent('mrp_siren:server:setTone', function(tone)
     local src = source
-    netId = tonumber(netId)
     tone = type(tone) == 'string' and tone:lower() or 'wail'
     if not VALID_TONES[tone] then tone = 'wail' end
-    if not netId or not NetworkDoesNetworkIdExist(netId) then return end
-    local veh = NetworkGetEntityFromNetworkId(netId)
+    local _, veh = pedVehicleForSirenControl(src)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    if safeVehicleNetId(veh) == 0 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Mašina turi būti tinkamai sinchronizuota.', 'error')
+    end
     if not vehicleNearPlayer(src, veh) then return end
-    local _, driverVeh = pedVehicleForSirenControl(src)
-    if driverVeh ~= veh then return end
     if not isPdOnDuty(src) and not isEmsOnDuty(src) then return end
     Entity(veh).state:set('fpSirenTone', tone, true)
     TriggerClientEvent('QBCore:Notify', src, ('Sirenos tonas: %s'):format(TONE_LABELS_LT[tone] or tone), 'primary')
     TriggerClientEvent('mrp_siren:client:syncUi', src)
 end)
 
-RegisterNetEvent('mrp_siren:server:setMuted', function(netId, muted)
+RegisterNetEvent('mrp_siren:server:setMuted', function(muted)
     local src = source
-    netId = tonumber(netId)
     muted = muted == true
-    if not netId or not NetworkDoesNetworkIdExist(netId) then return end
-    local veh = NetworkGetEntityFromNetworkId(netId)
+    local _, veh = pedVehicleForSirenControl(src)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    if safeVehicleNetId(veh) == 0 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Mašina turi būti tinkamai sinchronizuota.', 'error')
+    end
     if not vehicleNearPlayer(src, veh) then return end
-    local _, driverVeh = pedVehicleForSirenControl(src)
-    if driverVeh ~= veh then return end
     if not isPdOnDuty(src) and not isEmsOnDuty(src) then return end
     Entity(veh).state:set('fpSirenMuted', muted, true)
     TriggerClientEvent('mrp_siren:client:syncUi', src)

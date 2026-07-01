@@ -27,7 +27,8 @@ end
 
 local function gradeMeta(jobName, level)
     level = tostring(level)
-    local base = QBShared.Jobs[jobName] and QBShared.Jobs[jobName].grades[level]
+    local jobs = QBCore.Shared and QBCore.Shared.Jobs
+    local base = jobs and jobs[jobName] and jobs[jobName].grades[level]
     local ov = GradeOverrides[jobName] and GradeOverrides[jobName][level]
     if not base and not ov then return nil end
     local merged = {
@@ -41,11 +42,12 @@ local function gradeMeta(jobName, level)
 end
 
 local function applyGradesToShared(jobName)
-    if not QBShared.Jobs[jobName] then return end
+    local jobs = QBCore.Shared and QBCore.Shared.Jobs
+    if not jobs or not jobs[jobName] then return end
     local ovs = GradeOverrides[jobName] or {}
     for level, ov in pairs(ovs) do
-        QBShared.Jobs[jobName].grades[level] = QBShared.Jobs[jobName].grades[level] or {}
-        local g = QBShared.Jobs[jobName].grades[level]
+        jobs[jobName].grades[level] = jobs[jobName].grades[level] or {}
+        local g = jobs[jobName].grades[level]
         if ov.name then g.name = ov.name end
         if ov.payment ~= nil then g.payment = ov.payment end
         if ov.isboss ~= nil then g.isboss = ov.isboss end
@@ -274,8 +276,9 @@ end
 local function maxGradeForJob(jobName)
     local cfg = jobCfg(jobName)
     local max = cfg and cfg.maxGrade or 10
-    if QBShared.Jobs[jobName] and QBShared.Jobs[jobName].grades then
-        for k in pairs(QBShared.Jobs[jobName].grades) do
+    local jobs = QBCore.Shared and QBCore.Shared.Jobs
+    if jobs and jobs[jobName] and jobs[jobName].grades then
+        for k in pairs(jobs[jobName].grades) do
             local n = tonumber(k)
             if n and n > max then max = n end
         end
@@ -422,6 +425,7 @@ local function persistGrade(jobName, data, src)
         jobName, level, data.name or ('Rangas ' .. level), tonumber(data.payment) or 0,
         data.isboss and 1 or 0, data.isdeputy and 1 or 0, json.encode(perms),
     })
+    local sharedJob = QBCore.Shared and QBCore.Shared.Jobs and QBCore.Shared.Jobs[jobName]
     GradeOverrides[jobName] = GradeOverrides[jobName] or {}
     GradeOverrides[jobName][tostring(level)] = {
         name = data.name,
@@ -430,8 +434,11 @@ local function persistGrade(jobName, data, src)
         isdeputy = data.isdeputy == true,
         permissions = perms,
     }
-    if not QBShared.Jobs[jobName].grades[tostring(level)] then
-        QBShared.Jobs[jobName].grades[tostring(level)] = { name = data.name, payment = tonumber(data.payment) or 0 }
+    if sharedJob then
+        sharedJob.grades = sharedJob.grades or {}
+        if not sharedJob.grades[tostring(level)] then
+            sharedJob.grades[tostring(level)] = { name = data.name, payment = tonumber(data.payment) or 0 }
+        end
     end
     applyGradesToShared(jobName)
     refreshOnlineJobPlayers(jobName)
@@ -576,7 +583,8 @@ exports('ProcessPaycheck', function(Player)
     local meta = gradeMeta(jobName, lvl)
     local payment = math.floor((meta and meta.payment or 0) * (st.salary_multiplier or 1.0))
     if payment <= 0 then return true end
-    if not (QBShared.Jobs[jobName].offDutyPay or Player.PlayerData.job.onduty) then return true end
+    local sharedJob = QBCore.Shared and QBCore.Shared.Jobs and QBCore.Shared.Jobs[jobName]
+    if not (sharedJob and (sharedJob.offDutyPay or Player.PlayerData.job.onduty)) then return true end
     if (Funds[jobName] or 0) < payment then
         TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, 'Frakcijos fonde nepakanka algoms.', 'error')
         return true

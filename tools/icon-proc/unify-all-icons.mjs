@@ -159,18 +159,33 @@ function drawCannabisLeaf(c, scale = 1) {
   const leaf = hex('#22c55e');
   const dark = hex('#15803d');
   const light = hex('#86efac');
-  const fingers = [
-    [0, -52], [-28, -38], [-42, -12], [-38, 14], [-18, 32],
-    [0, 38], [18, 32], [38, 14], [42, -12], [28, -38],
+  const trim = hex('#4ade80');
+  // Nuskintų lapų krūvelė ant dėžutės
+  c.fillRoundRect(72, 148, 112, 28, 8, ...hex('#3f3f46'), 255);
+  c.fillRoundRect(76, 152, 104, 18, 6, ...hex('#52525b'), 255);
+  c.fillRect(80, 154, 48, 3, ...STYLE.highlight, 45);
+  const piles = [
+    [108, 138, 26, 18], [132, 132, 30, 20], [148, 140, 24, 16],
+    [118, 148, 22, 14], [140, 150, 20, 12], [126, 126, 18, 14],
   ];
+  piles.forEach(([x, y, rx, ry], i) => {
+    const col = i % 2 === 0 ? leaf : trim;
+    c.fillCircle(x, y, rx, ry, ...col, 240);
+    c.fillCircle(x - 4, y - 5, rx * 0.35, ry * 0.3, ...light, 100);
+    for (let h = 0; h < 4; h++) {
+      const a = (h / 4) * Math.PI * 2 + i * 0.5;
+      c.fillCircle(x + Math.cos(a) * (rx - 4), y + Math.sin(a) * (ry - 3), 3, 5, ...dark, 180);
+    }
+    if (i % 3 === 0) c.fillCircle(x + 6, y - 4, 3, 2, ...hex('#f97316'), 200);
+  });
+  // Vienas aiškus nuskintas lapas viršuje
+  const fingers = [[0, -18], [-14, -10], [14, -10], [-8, 4], [8, 4]];
   fingers.forEach(([ox, oy], i) => {
     const x = CX + ox * scale;
-    const y = CY + oy * scale;
-    const col = i % 2 === 0 ? leaf : dark;
-    c.fillCircle(x, y, 16 * scale, 28 * scale, ...col, 235);
-    c.fillCircle(x - 3 * scale, y - 4 * scale, 5 * scale, 8 * scale, ...light, 90);
+    const y = CY - 8 + oy * scale;
+    c.fillCircle(x, y, 10 * scale, 18 * scale, ...(i % 2 ? dark : leaf), 235);
   });
-  c.fillCircle(CX, CY + 8 * scale, 10 * scale, 18 * scale, ...dark, 255);
+  c.fillCircle(CX, CY - 4, 8 * scale, 12 * scale, ...dark, 255);
 }
 
 function drawWeedBudsIcon(c) {
@@ -264,56 +279,129 @@ function drawJointIcon(c) {
 function drawAmmoPistol(c) {
   c.addGroundShadow();
   c.addRimGlow();
-  c.fillRoundRect(76, 108, 104, 68, 10, ...hex('#3f3f46'), 240);
-  c.fillRect(84, 116, 88, 4, ...hex('#52525b'), 255);
-  const brass = hex('#d4a017');
-  const tip = hex('#b45309');
-  [[100, 132], [118, 128], [136, 132], [154, 128]].forEach(([x, y]) => {
-    c.fillRoundRect(x - 7, y, 14, 22, 4, ...brass, 255);
-    c.fillCircle(x, y - 2, 7, 7, ...tip, 255);
-    c.fillCircle(x - 2, y + 4, 3, 3, ...STYLE.highlight, 80);
+  const box = hex('#27272a');
+  const boxLight = hex('#3f3f46');
+  c.fillRoundRect(70, 118, 116, 64, 12, ...box, 255);
+  c.fillRoundRect(76, 124, 104, 50, 10, ...boxLight, 255);
+  c.fillRect(82, 128, 40, 3, ...STYLE.highlight, 50);
+  const brass = hex('#eab308');
+  const tip = hex('#a16207');
+  [[96, 148], [118, 142], [140, 148], [162, 142]].forEach(([x, y], i) => {
+    const h = 22 - (i % 2) * 4;
+    c.fillRoundRect(x - 6, y - h, 12, h, 4, ...brass, 255);
+    c.fillCircle(x, y - h - 2, 6, 6, ...tip, 255);
+    c.fillCircle(x - 2, y - 6, 3, 3, ...STYLE.highlight, 70);
   });
+  c.fillRoundRect(88, 108, 48, 14, 5, ...hex('#52525b'), 255);
+  c.fillRect(94, 112, 20, 4, ...hex('#a78bfa'), 200);
 }
 
 function drawAmmoSmg(c) {
   c.addGroundShadow();
   c.addRimGlow();
-  c.fillRoundRect(82, 100, 92, 88, 12, ...hex('#374151'), 245);
-  c.fillRoundRect(88, 108, 80, 72, 8, ...hex('#1f2937'), 255);
-  const brass = hex('#ca8a04');
+  const mag = hex('#1f2937');
+  const magEdge = hex('#374151');
+  c.fillRoundRect(88, 96, 80, 108, 14, ...mag, 255);
+  c.fillRoundRect(94, 102, 68, 96, 10, ...magEdge, 255);
+  c.fillRect(98, 108, 8, 80, ...STYLE.highlight, 25);
+  const brass = hex('#f59e0b');
   const tip = hex('#78716c');
-  for (let i = 0; i < 5; i++) {
-    const x = 96 + i * 14;
-    c.fillRoundRect(x, 118 - i * 2, 10, 32, 3, ...brass, 255);
-    c.fillRoundRect(x + 1, 108 - i * 2, 8, 12, 2, ...tip, 255);
+  for (let i = 0; i < 7; i++) {
+    const y = 168 - i * 12;
+    c.fillRoundRect(108, y, 40, 10, 3, ...brass, 255);
+    c.fillRoundRect(112, y - 8, 32, 8, 2, ...tip, 255);
   }
-  c.fillRect(118, 92, 20, 18, ...hex('#4b5563'), 255);
+  c.fillRoundRect(118, 88, 20, 18, 4, ...hex('#4b5563'), 255);
+  c.fillRect(122, 92, 12, 4, ...hex('#a78bfa'), 180);
 }
 
 function drawAmmoRifle(c) {
   c.addGroundShadow();
   c.addRimGlow();
-  const brass = hex('#b8860b');
+  const brass = hex('#ca8a04');
   const body = hex('#57534e');
   const tip = hex('#365314');
-  [[94, 130], [118, 124], [142, 130]].forEach(([x, y], i) => {
-    const h = 48 - i * 4;
-    c.fillRoundRect(x - 6, y - h + 20, 12, h, 3, ...brass, 255 - i * 15);
-    c.fillRoundRect(x - 4, y - h + 4, 8, 18, 2, ...body, 255);
-    c.fillRoundRect(x - 3, y - h, 6, 10, 2, ...tip, 255);
+  const band = hex('#292524');
+  c.fillRoundRect(74, 132, 108, 36, 8, ...band, 240);
+  [[88, 148], [128, 144], [168, 148]].forEach(([x, y], i) => {
+    const h = 56 - i * 2;
+    c.fillRoundRect(x - 7, y - h + 18, 14, h - 8, 3, ...brass, 255);
+    c.fillRoundRect(x - 5, y - h + 10, 10, 16, 2, ...body, 255);
+    c.fillRoundRect(x - 4, y - h + 2, 8, 12, 2, ...tip, 255);
+    c.fillCircle(x - 2, y - h + 6, 3, 3, ...STYLE.highlight, 60);
   });
-  c.fillRoundRect(156, 118, 28, 36, 6, ...hex('#292524'), 230);
+  c.fillRect(82, 136, 92, 2, ...hex('#a78bfa'), 120);
 }
 
 function drawAmmoShotgun(c) {
   c.addGroundShadow();
   c.addRimGlow();
-  [[88, 132], [118, 126], [148, 132]].forEach(([x, y]) => {
-    c.fillRoundRect(x, y, 52, 18, 8, ...hex('#dc2626'), 255);
-    c.fillRoundRect(x, y + 10, 52, 8, 4, ...hex('#b91c1c'), 255);
-    c.fillRoundRect(x - 4, y + 2, 10, 14, 3, ...hex('#d4a017'), 255);
-    c.fillRect(x + 8, y + 4, 36, 3, ...STYLE.highlight, 50);
+  const hull = hex('#dc2626');
+  const hullDark = hex('#991b1b');
+  const brass = hex('#d4a017');
+  [[78, 138], [118, 132], [158, 138]].forEach(([x, y], i) => {
+    c.fillRoundRect(x, y, 58, 22, 10, ...hull, 255);
+    c.fillRoundRect(x + 4, y + 4, 50, 12, 6, ...hullDark, 220);
+    c.fillRoundRect(x - 6, y + 4, 14, 14, 4, ...brass, 255);
+    c.fillRect(x + 10, y + 8, 38, 3, ...STYLE.highlight, 45);
+    if (i === 1) c.fillRect(x + 18, y + 2, 22, 4, ...hex('#fef08a'), 160);
   });
+  c.fillRoundRect(92, 118, 72, 12, 4, ...hex('#3f3f46'), 230);
+}
+
+function drawAmmoHunting(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  const paper = hex('#d6d3d1');
+  const paperDark = hex('#a8a29e');
+  const lead = hex('#52525b');
+  const horn = hex('#92400e');
+  c.fillRoundRect(68, 108, 52, 88, 10, ...horn, 255);
+  c.fillRoundRect(74, 114, 40, 72, 8, ...shade(horn, 1.15), 255);
+  c.fillCircle(94, 128, 10, 10, ...hex('#fde68a'), 200);
+  c.fillRoundRect(128, 118, 36, 72, 6, ...paper, 255);
+  c.fillRoundRect(132, 124, 28, 58, 4, ...paperDark, 200);
+  c.fillCircle(146, 148, 14, 14, ...lead, 255);
+  c.fillCircle(142, 144, 5, 5, ...STYLE.highlight, 80);
+  c.fillCircle(178, 152, 20, 20, ...lead, 255);
+  c.fillCircle(172, 146, 7, 7, ...STYLE.highlight, 90);
+  c.fillRect(168, 132, 24, 6, ...paper, 220);
+}
+
+function drawAmmoMg(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  const link = hex('#52525b');
+  const brass = hex('#eab308');
+  const tip = hex('#78716c');
+  c.fillRoundRect(64, 138, 128, 28, 8, ...hex('#18181b'), 240);
+  for (let i = 0; i < 6; i++) {
+    const x = 78 + i * 20;
+    c.fillRoundRect(x, 126, 16, 34, 4, ...brass, 255);
+    c.fillRoundRect(x + 2, 118, 12, 12, 2, ...tip, 255);
+    c.fillRect(x + 4, 156, 8, 6, ...link, 255);
+    if (i < 5) c.fillRect(x + 14, 148, 8, 4, ...link, 255);
+  }
+  c.fillRoundRect(82, 108, 92, 14, 5, ...hex('#3f3f46'), 255);
+  c.fillRect(88, 112, 28, 4, ...hex('#a78bfa'), 180);
+}
+
+function drawAmmoSniper(c) {
+  c.addGroundShadow();
+  c.addRimGlow();
+  const brass = hex('#b45309');
+  const body = hex('#44403c');
+  const tip = hex('#1c1917');
+  const polymer = hex('#0ea5e9');
+  [[92, 152], [148, 148]].forEach(([x, y], i) => {
+    const h = 72 - i * 6;
+    c.fillRoundRect(x - 8, y - h + 20, 16, h - 10, 4, ...brass, 255);
+    c.fillRoundRect(x - 6, y - h + 14, 12, 22, 3, ...body, 255);
+    c.fillRoundRect(x - 5, y - h + 4, 10, 14, 2, ...polymer, 255);
+    c.fillRoundRect(x - 4, y - h, 8, 8, 2, ...tip, 255);
+  });
+  c.fillRoundRect(76, 158, 104, 20, 6, ...hex('#292524'), 230);
+  c.fillRect(84, 164, 36, 3, ...hex('#38bdf8'), 200);
 }
 
 function drawFlower(c, petal, center) {
@@ -361,87 +449,87 @@ function drawToolBox(c) {
 
 function drawScale(c) {
   c.addGroundShadow();
+  c.addRimGlow();
   c.fillCircle(CX, CY + 82, 70, 16, ...hex('#000000'), 40);
-  // platform glass
   c.fillRoundRect(52, 148, 152, 22, 8, ...hex('#d4d4d8'), 255);
   c.fillRoundRect(58, 152, 140, 10, 5, ...hex('#f4f4f5'), 220);
   c.fillRect(72, 154, 48, 3, ...STYLE.highlight, 70);
-  // feet
   [[68, 172], [104, 172], [152, 172], [188, 172]].forEach(([x, y]) => {
     c.fillRoundRect(x, y, 16, 10, 4, ...hex('#3f3f46'), 255);
   });
-  // body
   c.fillRoundRect(64, 108, 128, 44, 10, ...hex('#18181b'), 255);
   c.fillRoundRect(70, 112, 116, 36, 8, ...hex('#27272a'), 255);
-  c.strokeRoundRect(78, 118, 100, 24, 6, ...hex('#52525b'), 255, 200, 2);
-  // LCD
-  c.fillRoundRect(82, 122, 92, 16, 4, ...hex('#022c22'), 255);
-  c.fillRect(88, 126, 44, 3, ...hex('#4ade80'), 255);
-  c.fillRect(136, 126, 10, 3, ...hex('#4ade80'), 200);
-  c.fillRect(150, 126, 16, 3, ...hex('#22c55e'), 160);
-  // display label
-  c.fillRoundRect(108, 98, 40, 14, 4, ...hex('#a1a1aa'), 255);
-  c.fillRect(112, 102, 32, 4, ...hex('#71717a'), 180);
-  // side buttons
-  c.fillCircle(58, 130, 4, 4, ...hex('#52525b'), 255);
-  c.fillCircle(198, 130, 4, 4, ...hex('#52525b'), 255);
-  // highlight
+  c.strokeRoundRect(78, 118, 100, 24, 6, ...hex('#a78bfa'), 255, 180, 2);
+  c.fillRoundRect(82, 122, 92, 16, 4, ...hex('#1e1b4b'), 255);
+  c.fillRect(88, 126, 52, 3, ...hex('#4ade80'), 255);
+  c.fillRect(144, 126, 22, 3, ...hex('#a78bfa'), 220);
+  c.fillRoundRect(108, 98, 40, 14, 4, ...hex('#a78bfa'), 255);
+  c.fillRect(112, 102, 32, 4, ...hex('#ede9fe'), 200);
+  c.fillCircle(58, 130, 4, 4, ...hex('#c4b5fd'), 255);
+  c.fillCircle(198, 130, 4, 4, ...hex('#c4b5fd'), 255);
   c.fillRect(72, 114, 36, 2, ...STYLE.highlight, 45);
+  c.fillRoundRect(118, 88, 20, 12, 4, ...hex('#7c3aed'), 200);
 }
 
 function drawGloves(c) {
   c.addGroundShadow();
-  const glove = hex('#3f3f46');
-  const dark = hex('#18181b');
-  c.fillRoundRect(62, 104, 56, 92, 20, ...glove, 255);
-  c.fillRoundRect(138, 104, 56, 92, 20, ...glove, 255);
-  c.fillRoundRect(70, 112, 22, 64, 10, ...dark, 90);
-  c.fillRoundRect(164, 112, 22, 64, 10, ...dark, 90);
-  [76, 86, 96].forEach((x) => c.fillRect(x, 122, 4, 32, ...dark, 110));
-  [152, 162, 172].forEach((x) => c.fillRect(x, 122, 4, 32, ...dark, 110));
+  c.addRimGlow();
+  const glove = hex('#7c3aed');
+  const dark = hex('#4c1d95');
+  const palm = hex('#a78bfa');
+  const drawGlove = (bx) => {
+    c.fillRoundRect(bx, 104, 56, 92, 20, ...glove, 255);
+    c.fillRoundRect(bx + 6, 112, 44, 72, 14, ...palm, 220);
+    c.fillRoundRect(bx + 10, 118, 12, 38, 5, ...dark, 100);
+    [bx + 12, bx + 24, bx + 36, bx + 48].forEach((x, i) => {
+      c.fillRoundRect(x, 108 - i * 2, 8, 22, 4, ...shade(glove, 1.1 - i * 0.05), 255);
+      c.fillCircle(x + 4, 106 - i * 2, 4, 4, ...dark, 180);
+    });
+    c.fillRect(bx + 14, 150, 28, 3, ...STYLE.highlight, 40);
+  };
+  drawGlove(62);
+  drawGlove(138);
 }
 
 function drawGrowPot(c) {
   c.addGroundShadow();
+  c.addRimGlow();
   c.fillCircle(CX, CY + 86, 74, 18, ...hex('#000000'), 42);
-  const rim = hex('#a1a1aa');
-  const rimDark = hex('#52525b');
-  const pot = hex('#27272a');
-  const potDark = hex('#09090b');
-  const soil = hex('#92400e');
-  const soilLight = hex('#b45309');
-  const soilDark = hex('#451a03');
-  // rim
+  const rim = hex('#c4b5fd');
+  const rimDark = hex('#7c3aed');
+  const pot = hex('#ea580c');
+  const potDark = hex('#9a3412');
+  const soil = hex('#78350f');
+  const soilLight = hex('#92400e');
+  const stem = hex('#166534');
+  const leaf = hex('#22c55e');
   c.fillRoundRect(58, 62, 140, 28, 10, ...rimDark, 255);
   c.fillRoundRect(62, 64, 132, 20, 8, ...rim, 255);
   c.fillRect(66, 66, 124, 6, ...STYLE.highlight, 55);
-  c.fillRect(62, 78, 132, 4, ...potDark, 200);
-  // body
   c.fillRoundRect(68, 82, 120, 108, 10, ...potDark, 255);
   c.fillRoundRect(74, 86, 108, 100, 8, ...pot, 255);
-  c.fillRect(78, 90, 16, 88, ...STYLE.highlight, 22);
-  c.fillRect(162, 94, 10, 80, ...potDark, 90);
-  // soil
-  c.fillRoundRect(80, 96, 96, 72, 8, ...soilDark, 255);
-  c.fillRoundRect(84, 100, 88, 58, 6, ...soil, 255);
-  c.fillRoundRect(88, 104, 80, 20, 5, ...soilLight, 140);
-  [[100, 118], [128, 126], [148, 112], [112, 140], [136, 148]].forEach(([x, y]) => {
-    c.fillCircle(x, y, 3, 2, ...soilDark, 120);
-  });
-  // inner shadow
-  c.fillRect(74, 170, 108, 8, ...potDark, 160);
+  c.fillRect(78, 90, 16, 88, ...STYLE.highlight, 28);
+  c.fillRoundRect(80, 96, 96, 72, 8, ...soil, 255);
+  c.fillRoundRect(84, 100, 88, 20, 5, ...soilLight, 140);
+  c.fillRoundRect(118, 72, 8, 28, 4, ...stem, 255);
+  c.fillCircle(108, 66, 14, 10, ...leaf, 240);
+  c.fillCircle(128, 64, 12, 9, ...shade(leaf, 0.9), 240);
+  c.fillCircle(118, 58, 10, 8, ...shade(leaf, 1.1), 220);
+  c.fillCircle(114, 62, 4, 3, ...STYLE.highlight, 70);
 }
 
 function drawTrimScissors(c) {
   c.addGroundShadow();
-  const blade = hex('#f4f4f5');
-  const bladeEdge = hex('#a1a1aa');
-  const handle = hex('#ea580c');
+  c.addRimGlow();
+  const blade = hex('#f8fafc');
+  const bladeEdge = hex('#94a3b8');
+  const handle = hex('#a78bfa');
+  const handleDark = hex('#7c3aed');
   const pivot = hex('#52525b');
   c.fillCircle(86, 172, 30, 30, ...handle, 255);
   c.fillCircle(170, 172, 30, 30, ...handle, 255);
-  c.fillCircle(86, 172, 15, 15, ...hex('#18181b'), 255);
-  c.fillCircle(170, 172, 15, 15, ...hex('#18181b'), 255);
+  c.fillCircle(86, 172, 15, 15, ...handleDark, 255);
+  c.fillCircle(170, 172, 15, 15, ...handleDark, 255);
   c.fillCircle(128, 138, 11, 11, ...pivot, 255);
   for (let i = 0; i < 48; i++) {
     const t = i / 48;
@@ -452,10 +540,12 @@ function drawTrimScissors(c) {
   c.fillCircle(108, 56, 5, 14, ...bladeEdge, 255);
   c.fillCircle(148, 56, 5, 14, ...bladeEdge, 255);
   c.fillRect(118, 150, 20, 4, ...bladeEdge, 200);
+  c.fillCircle(128, 138, 4, 4, ...hex('#fde047'), 220);
 }
 
 function drawWateringCan(c) {
   c.addGroundShadow();
+  c.addRimGlow();
   c.fillCircle(CX, CY + 84, 76, 18, ...hex('#000000'), 42);
   const body = hex('#65a30d');
   const bodyMid = hex('#4d7c0f');
@@ -464,16 +554,13 @@ function drawWateringCan(c) {
   const water = hex('#38bdf8');
   const waterLight = hex('#7dd3fc');
   const brass = hex('#ca8a04');
-  // main body
   c.fillRoundRect(62, 108, 108, 96, 22, ...bodyDark, 255);
   c.fillRoundRect(68, 112, 96, 88, 18, ...body, 255);
   c.fillRoundRect(74, 118, 84, 72, 14, ...bodyMid, 200);
   c.fillRect(76, 116, 28, 70, ...STYLE.highlight, 28);
-  // water window
   c.fillRoundRect(82, 136, 68, 48, 10, ...water, 190);
   c.fillRoundRect(86, 140, 60, 14, 6, ...waterLight, 120);
   c.fillRect(88, 158, 56, 20, ...water, 160);
-  // handle arch
   for (let a = 0; a <= Math.PI; a += 0.08) {
     const x = 118 + Math.cos(a) * 46;
     const y = 108 - Math.sin(a) * 34;
@@ -481,17 +568,13 @@ function drawWateringCan(c) {
     c.fillCircle(x, y, 4, 4, ...bodyDark, 80);
   }
   c.fillRoundRect(104, 88, 24, 16, 8, ...bodyDark, 220);
-  // spout
   c.fillRoundRect(158, 124, 44, 22, 8, ...bodyDark, 255);
   c.fillRoundRect(164, 128, 36, 14, 6, ...bodyMid, 255);
   c.fillRoundRect(196, 126, 28, 18, 6, ...brass, 255);
-  c.fillCircle(224, 135, 7, 7, ...hex('#fde047'), 255);
-  c.fillCircle(224, 135, 4, 4, ...hex('#facc15'), 200);
-  // rose holes
-  [[218, 132], [226, 130], [222, 138]].forEach(([x, y]) => {
+  c.fillCircle(224, 135, 8, 8, ...hex('#a78bfa'), 255);
+  [[218, 132], [226, 130], [222, 138], [224, 134]].forEach(([x, y]) => {
     c.fillCircle(x, y, 2, 2, ...bodyDark, 200);
   });
-  // cap
   c.fillRoundRect(92, 104, 20, 10, 4, ...bodyDark, 230);
   c.fillRect(96, 106, 12, 3, ...accent, 180);
 }
@@ -541,6 +624,9 @@ function drawAmmo(c, tip) {
   else if (tip === 'smg') drawAmmoSmg(c);
   else if (tip === 'rifle') drawAmmoRifle(c);
   else if (tip === 'shotgun') drawAmmoShotgun(c);
+  else if (tip === 'hunting') drawAmmoHunting(c);
+  else if (tip === 'mg') drawAmmoMg(c);
+  else if (tip === 'sniper') drawAmmoSniper(c);
   else drawAmmoPistol(c);
 }
 
@@ -706,6 +792,9 @@ const GENERATORS = {
   smg_ammo: () => { const c = new Canvas(); drawAmmo(c, 'smg'); return c; },
   rifle_ammo: () => { const c = new Canvas(); drawAmmo(c, 'rifle'); return c; },
   shotgun_ammo: () => { const c = new Canvas(); drawAmmo(c, 'shotgun'); return c; },
+  hunting_ammo: () => { const c = new Canvas(); drawAmmo(c, 'hunting'); return c; },
+  mg_ammo: () => { const c = new Canvas(); drawAmmo(c, 'mg'); return c; },
+  snp_ammo: () => { const c = new Canvas(); drawAmmo(c, 'sniper'); return c; },
 };
 
 const EXTRA_COPIES = {
@@ -716,6 +805,9 @@ const EXTRA_COPIES = {
   meth_ingredient: 'amp_precursor',
   rolling_paper: 'ocb_papers',
   cokebaggy: 'cocaine_baggy',
+  pistolammo: 'pistol_ammo',
+  rifleammo: 'rifle_ammo',
+  smgammo: 'smg_ammo',
 };
 
 function writeIcon(name) {

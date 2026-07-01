@@ -82,8 +82,8 @@ Config.TargetDistance = 2.2
 
 -- Žemės apskritimas + [E] — matosi priartėjus; spawn = parkuoti, coords = atidaryti garažą
 Config.EnableGroundMarkers = true
-Config.MarkerDrawDistance = 32.0
-Config.MarkerOpenRadius = 2.5
+Config.MarkerDrawDistance = 38.0
+Config.MarkerOpenRadius = 3.0
 Config.MarkerParkRadius = 6.5
 Config.MarkerParkMaxSpeedKmh = 12.0
 Config.MarkerSpawnScale = { x = 4.2, y = 4.2, z = 0.32 }

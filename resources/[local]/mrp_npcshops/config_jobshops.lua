@@ -97,10 +97,10 @@ Config.JobStationNpcs = {
 Config.JobNpcReach = 4.5
 
 --- Garažų / sandėlių / rūbinių 3D markeriai (role garage | stash | locker — be NPC)
-Config.JobMarkerDrawDistance = 28.0
-Config.JobMarkerUseRadius = 2.2
-Config.JobMarkerStashUseRadius = 1.35
-Config.JobMarkerLockerUseRadius = 1.6
+Config.JobMarkerDrawDistance = 36.0
+Config.JobMarkerUseRadius = 2.6
+Config.JobMarkerStashUseRadius = 2.2
+Config.JobMarkerLockerUseRadius = 2.0
 Config.JobMarkerTypes = { garage = 36, stash = 2, locker = 2, armory = 2, supply = 2, mdt = 2, duty = 2 }
 Config.JobMarkerScale = { x = 2.4, y = 2.4, z = 0.24 }
 Config.JobMarkerGarageScale = { x = 1.15, y = 1.15, z = 1.15 }

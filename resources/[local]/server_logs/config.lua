@@ -1,7 +1,7 @@
 Config = {}
 
 -- Bendri nustatymai
-Config.ServerName = 'MRP | MAYHEM RP'
+Config.ServerName = 'Mayhem Roleplay'
 Config.LogIpAddresses = false          -- IP identifikatoriai (GDPR / privatumas)
 Config.RateLimitPerSecond = 8          -- Max webhook POST per sekunde
 Config.QueueProcessInterval = 150      -- ms

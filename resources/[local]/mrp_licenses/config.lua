@@ -1,7 +1,7 @@
 Config = {}
 
-Config.ServerName = 'MRP'
-Config.ServerSubtitle = 'Los Santos RP'
+Config.ServerName = 'Mayhem Roleplay'
+Config.ServerSubtitle = 'Los Santos · Roleplay'
 Config.ShowRadius = 3.0
 
 --- Item pavadinimai (driver_license = senas QBCore pavadinimas)
