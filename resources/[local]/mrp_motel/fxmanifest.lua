@@ -21,5 +21,4 @@ server_scripts {
 dependencies {
     'qb-core',
     'qb-inventory',
-    'qb-target',
 }

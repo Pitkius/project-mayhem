@@ -268,8 +268,18 @@ CreateThread(function()
 
                 if insideProperty.isOwner and interior.stash then
                     if #(pCoords - interior.stash) < 1.5 then
-                        DrawText3D(interior.stash.x, interior.stash.y, interior.stash.z + 0.25, '[E] Sandėliukas')
-                        if IsControlJustReleased(0, 38) then
+                        local stashLabel = '[F2] Sandėliukas'
+                        if GetResourceState('mrp_npcshops') == 'started' then
+                            stashLabel = exports['mrp_npcshops']:StashInteractHint('Sandėliukas')
+                            exports['mrp_npcshops']:EnableStashOpenControl()
+                        else
+                            EnableControlAction(0, 289, true)
+                        end
+                        DrawText3D(interior.stash.x, interior.stash.y, interior.stash.z + 0.25, stashLabel)
+                        local pressed = GetResourceState('mrp_npcshops') == 'started'
+                            and exports['mrp_npcshops']:IsStashOpenPressed()
+                            or (IsControlJustReleased(0, 289) or IsDisabledControlJustPressed(0, 289))
+                        if pressed then
                             TriggerServerEvent('mrp_housing:server:openStash', insideProperty.propertyId)
                         end
                     end

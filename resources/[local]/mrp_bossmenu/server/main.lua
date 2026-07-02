@@ -355,7 +355,6 @@ QBCore.Functions.CreateCallback('mrp_bossmenu:server:getDashboard', function(src
         jobLabel = cfg.label,
         balance = Funds[jobName] or 0,
         salaryEnabled = st.salary_enabled,
-        salaryMultiplier = st.salary_multiplier,
         canManageFunds = canManageFunds(src, jobName),
         canManageRanks = canManageFunds(src, jobName),
         divisionsEnabled = cfg.divisionsEnabled == true,
@@ -397,20 +396,29 @@ RegisterNetEvent('mrp_bossmenu:server:fundWithdraw', function(jobName, amount)
     notify(src, ('Iš fondo išimta $%s'):format(amount), 'success')
 end)
 
-RegisterNetEvent('mrp_bossmenu:server:setSalarySettings', function(jobName, enabled, multiplier)
+RegisterNetEvent('mrp_bossmenu:server:setSalarySettings', function(jobName, enabled)
     local src = source
     if not isManagedJob(jobName) or not canManageFunds(src, jobName) then return end
     enabled = enabled == true
-    multiplier = tonumber(multiplier) or 1.0
-    if multiplier < 0 then multiplier = 0 end
-    if multiplier > 3 then multiplier = 3 end
-    Settings[jobName] = { salary_enabled = enabled, salary_multiplier = multiplier }
+    Settings[jobName] = { salary_enabled = enabled, salary_multiplier = 1.0 }
     MySQL.update.await(
         'UPDATE mrp_faction_settings SET salary_enabled = ?, salary_multiplier = ? WHERE job_name = ?',
-        { enabled and 1 or 0, multiplier, jobName }
+        { enabled and 1 or 0, 1.0, jobName }
     )
-    notify(src, enabled and 'Algos iš fondo įjungtos.' or 'Algos iš fondo išjungtos.', 'success')
+    notify(src, enabled and 'Algos automatiškai mokamos iš fondo.' or 'Algų mokėjimas iš fondo išjungtas.', 'success')
 end)
+
+local function countPlayersAtGrade(jobName, level)
+    local n = 0
+    for _, P in pairs(QBCore.Players) do
+        if P and P.PlayerData.job and P.PlayerData.job.name == jobName then
+            if tonumber(P.PlayerData.job.grade.level) == level then
+                n = n + 1
+            end
+        end
+    end
+    return n
+end
 
 local function persistGrade(jobName, data, src)
     local level = tonumber(data.level)
@@ -446,15 +454,89 @@ local function persistGrade(jobName, data, src)
     return true
 end
 
+local function moveGradeLevel(jobName, oldLevel, newLevel, data, src)
+    oldLevel = tonumber(oldLevel)
+    newLevel = tonumber(newLevel)
+    if oldLevel == nil or newLevel == nil or oldLevel == newLevel then
+        return persistGrade(jobName, data, src)
+    end
+    if newLevel < 0 or newLevel > maxGradeForJob(jobName) then
+        if src then notify(src, 'Netinkamas rango lygis.', 'error') end
+        return false
+    end
+    if oldLevel < 1 then
+        if src then notify(src, 'Pradinio (0) rango lygio keisti negalima.', 'error') end
+        return false
+    end
+    MySQL.update.await('DELETE FROM mrp_faction_grades WHERE job_name = ? AND grade_level = ?', { jobName, oldLevel })
+    if GradeOverrides[jobName] then
+        GradeOverrides[jobName][tostring(oldLevel)] = nil
+    end
+    data.level = newLevel
+    persistGrade(jobName, data, nil)
+    for _, P in pairs(QBCore.Players) do
+        if P and P.PlayerData.job and P.PlayerData.job.name == jobName then
+            if tonumber(P.PlayerData.job.grade.level) == oldLevel then
+                P.Functions.SetJob(jobName, newLevel)
+            end
+        end
+    end
+    if src then notify(src, ('Rango lygis pakeistas: %s → %s'):format(oldLevel, newLevel), 'success') end
+    return true
+end
+
+local function deleteGrade(jobName, level, src)
+    level = tonumber(level)
+    if level == nil or level < 1 then
+        if src then notify(src, 'Pradinio (0) rango ištrinti negalima.', 'error') end
+        return false
+    end
+    if countPlayersAtGrade(jobName, level) > 0 then
+        if src then notify(src, 'Pirmiau perkelk arba atleisk darbuotojus su šiuo rangu.', 'error') end
+        return false
+    end
+    MySQL.update.await('DELETE FROM mrp_faction_grades WHERE job_name = ? AND grade_level = ?', { jobName, level })
+    if GradeOverrides[jobName] then
+        GradeOverrides[jobName][tostring(level)] = nil
+    end
+    local sharedJob = QBCore.Shared and QBCore.Shared.Jobs and QBCore.Shared.Jobs[jobName]
+    if sharedJob and sharedJob.grades then
+        sharedJob.grades[tostring(level)] = nil
+    end
+    applyGradesToShared(jobName)
+    if src then notify(src, ('Rangas [%s] ištrintas.'):format(level), 'success') end
+    return true
+end
+
 RegisterNetEvent('mrp_bossmenu:server:saveGrade', function(jobName, data)
     local src = source
     if not isManagedJob(jobName) or not canManageFunds(src, jobName) then return end
     if type(data) ~= 'table' then return end
     local level = tonumber(data.level)
+    local newLevel = tonumber(data.newLevel)
+    if level == nil then return end
     if not bossOutranks(src, jobName, level) and not (getPlayerJob(src) and getPlayerJob(src).isboss) then
         return notify(src, 'Negali redaguoti aukštesnio ar lygaus rango.', 'error')
     end
+    if newLevel and newLevel ~= level then
+        if not bossOutranks(src, jobName, newLevel) and not (getPlayerJob(src) and getPlayerJob(src).isboss) then
+            return notify(src, 'Negali perkelti į aukštesnį ar lygų rango lygį.', 'error')
+        end
+        moveGradeLevel(jobName, level, newLevel, data, src)
+        return
+    end
     persistGrade(jobName, data, src)
+end)
+
+RegisterNetEvent('mrp_bossmenu:server:deleteGrade', function(jobName, level)
+    local src = source
+    if not isManagedJob(jobName) or not canManageFunds(src, jobName) then return end
+    level = tonumber(level)
+    if level == nil then return end
+    if not bossOutranks(src, jobName, level) and not (getPlayerJob(src) and getPlayerJob(src).isboss) then
+        return notify(src, 'Negali ištrinti aukštesnio ar lygaus rango.', 'error')
+    end
+    deleteGrade(jobName, level, src)
 end)
 
 RegisterNetEvent('mrp_bossmenu:server:addGrade', function(jobName)
@@ -581,7 +663,7 @@ exports('ProcessPaycheck', function(Player)
     if not st or not st.salary_enabled then return false end
     local lvl = tostring(Player.PlayerData.job.grade.level)
     local meta = gradeMeta(jobName, lvl)
-    local payment = math.floor((meta and meta.payment or 0) * (st.salary_multiplier or 1.0))
+    local payment = math.floor(meta and meta.payment or 0)
     if payment <= 0 then return true end
     local sharedJob = QBCore.Shared and QBCore.Shared.Jobs and QBCore.Shared.Jobs[jobName]
     if not (sharedJob and (sharedJob.offDutyPay or Player.PlayerData.job.onduty)) then return true end

@@ -61,7 +61,7 @@ end)
 
 RegisterNUICallback('setSalarySettings', function(data, cb)
     if activeJob then
-        TriggerServerEvent('mrp_bossmenu:server:setSalarySettings', activeJob, data.enabled, data.multiplier)
+        TriggerServerEvent('mrp_bossmenu:server:setSalarySettings', activeJob, data.enabled)
     end
     SetTimeout(300, refreshUi)
     cb('ok')
@@ -75,6 +75,12 @@ end)
 
 RegisterNUICallback('addGrade', function(_, cb)
     if activeJob then TriggerServerEvent('mrp_bossmenu:server:addGrade', activeJob) end
+    SetTimeout(350, refreshUi)
+    cb('ok')
+end)
+
+RegisterNUICallback('deleteGrade', function(data, cb)
+    if activeJob then TriggerServerEvent('mrp_bossmenu:server:deleteGrade', activeJob, data.level) end
     SetTimeout(350, refreshUi)
     cb('ok')
 end)

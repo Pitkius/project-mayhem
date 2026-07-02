@@ -4,6 +4,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local uiOpen = false
 local activeJobType = nil
 local manualHeld = false
+local lastUiSyncSig = ''
 
 local function getJobCfg(jobType)
     return Config.Jobs[jobType]
@@ -153,12 +154,16 @@ local function pushUiSync()
     local veh = getSirenVehicle()
     if not veh then return end
     local mode, tone, muted = readVehicleState(veh, activeJobType)
+    local label = vehicleDisplayName(veh, activeJobType)
+    local sig = ('%s|%s|%s|%s'):format(mode, tone, tostring(muted), label)
+    if sig == lastUiSyncSig then return end
+    lastUiSyncSig = sig
     SendNUIMessage({
         action = 'sync',
         code = mode,
         tone = tone,
         muted = muted,
-        vehicleLabel = vehicleDisplayName(veh, activeJobType),
+        vehicleLabel = label,
         jobType = activeJobType,
     })
 end
@@ -190,6 +195,7 @@ local function openController(jobType)
 
     activeJobType = jobType
     uiOpen = true
+    lastUiSyncSig = ''
     local mode, tone, muted = readVehicleState(veh, jobType)
     applySirenNuiFocus(true)
     SendNUIMessage({
@@ -219,7 +225,7 @@ local function setCode(mode)
     if curMode == mode then mode = 'off' end
     local cfg = getJobCfg(activeJobType)
     TriggerServerEvent(cfg.serverEvent, mode)
-    SetTimeout(180, pushUiSync)
+    SetTimeout(220, pushUiSync)
 end
 
 local function setTone(tone)
@@ -336,9 +342,9 @@ CreateThread(function()
             else
                 pushUiSync()
             end
-            Wait(400)
+            Wait(700)
         else
-            Wait(800)
+            Wait(900)
         end
     end
 end)

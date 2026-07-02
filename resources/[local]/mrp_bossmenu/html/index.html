@@ -44,7 +44,7 @@
                         <article class="bm-card">
                             <h3>Algos</h3>
                             <p class="bm-big" id="overviewSalary">Aktyvios</p>
-                            <p class="bm-muted" id="overviewMultiplier">Koeficientas: 1.00×</p>
+                            <p class="bm-muted" id="overviewSalaryNote">Mokamos automatiškai iš fondo.</p>
                         </article>
                         <article class="bm-card">
                             <h3>Prisijungę</h3>
@@ -80,44 +80,62 @@
                 </section>
 
                 <section class="bm-panel" data-panel="ranks">
-                    <div class="bm-toolbar">
-                        <h3>Rangų hierarchija</h3>
-                        <button type="button" class="bm-btn small hidden" id="btnAddGrade">+ Naujas rangas</button>
-                    </div>
-                    <div class="bm-list" id="ranksList"></div>
-                    <div class="bm-editor hidden" id="rankEditor">
-                        <h4 id="rankEditorTitle">Redaguoti rangą</h4>
-                        <label>Pavadinimas<input type="text" id="rankName" /></label>
-                        <label>Alga ($)<input type="number" id="rankPayment" min="0" /></label>
-                        <div class="bm-checks">
-                            <label><input type="checkbox" id="rankIsBoss" /> Vadas</label>
-                            <label><input type="checkbox" id="rankIsDeputy" /> Pavaduotojas</label>
+                    <div class="bm-split bm-split-editor">
+                        <div class="bm-list-wrap bm-scroll">
+                            <div class="bm-toolbar">
+                                <h3>Rangų hierarchija</h3>
+                                <button type="button" class="bm-btn small hidden" id="btnAddGrade">+ Naujas rangas</button>
+                            </div>
+                            <p class="bm-muted bm-list-hint">Spausk ant rango, kad redaguotum pavadinimą, algą ar lygį.</p>
+                            <div class="bm-list" id="ranksList"></div>
                         </div>
-                        <div class="bm-perms" id="rankPerms"></div>
-                        <div class="bm-actions-row">
-                            <button type="button" class="bm-btn" id="btnSaveRank">Išsaugoti</button>
-                            <button type="button" class="bm-btn secondary" id="btnCancelRank">Atšaukti</button>
+                        <div class="bm-form-wrap bm-scroll">
+                            <div class="bm-editor hidden" id="rankEditor">
+                                <h4 id="rankEditorTitle">Redaguoti rangą</h4>
+                                <label>Rango lygis (0 = žemiausias)<input type="number" id="rankLevel" min="0" /></label>
+                                <label>Pavadinimas<input type="text" id="rankName" /></label>
+                                <label>Alga ($)<input type="number" id="rankPayment" min="0" /></label>
+                                <div class="bm-checks">
+                                    <label><input type="checkbox" id="rankIsBoss" /> Vadas</label>
+                                    <label><input type="checkbox" id="rankIsDeputy" /> Pavaduotojas</label>
+                                </div>
+                                <div class="bm-perms bm-scroll" id="rankPerms"></div>
+                                <div class="bm-actions-row">
+                                    <button type="button" class="bm-btn" id="btnSaveRank">Išsaugoti</button>
+                                    <button type="button" class="bm-btn danger" id="btnDeleteRank">Ištrinti rangą</button>
+                                    <button type="button" class="bm-btn secondary" id="btnCancelRank">Atšaukti</button>
+                                </div>
+                            </div>
+                            <p class="bm-muted bm-editor-hint" id="rankEditorHint">Pasirink rangą kairėje, kad redaguotum.</p>
                         </div>
                     </div>
                 </section>
 
                 <section class="bm-panel" data-panel="divisions">
-                    <div class="bm-toolbar">
-                        <h3>Divizijos</h3>
-                        <button type="button" class="bm-btn small hidden" id="btnAddDivision">+ Nauja divizija</button>
-                    </div>
-                    <div class="bm-list" id="divisionsList"></div>
-                    <div class="bm-editor hidden" id="divisionEditor">
-                        <h4>Divizijos redagavimas</h4>
-                        <label>ID (trumpas kodas)<input type="text" id="divId" placeholder="pvz. spec_ops" /></label>
-                        <label>Pavadinimas<input type="text" id="divLabel" /></label>
-                        <label>Trumpinys (rago žymė)<input type="text" id="divAbbr" maxlength="8" /></label>
-                        <label>Aprašymas<input type="text" id="divDesc" /></label>
-                        <label>Min. rangas<input type="number" id="divMinGrade" min="0" /></label>
-                        <label><input type="checkbox" id="divChoosable" checked /> Galima pasirinkti pareigūnui</label>
-                        <div class="bm-actions-row">
-                            <button type="button" class="bm-btn" id="btnSaveDivision">Išsaugoti</button>
-                            <button type="button" class="bm-btn secondary" id="btnCancelDivision">Atšaukti</button>
+                    <div class="bm-split bm-split-editor">
+                        <div class="bm-list-wrap bm-scroll">
+                            <div class="bm-toolbar">
+                                <h3>Divizijos</h3>
+                                <button type="button" class="bm-btn small hidden" id="btnAddDivision">+ Nauja divizija</button>
+                            </div>
+                            <p class="bm-muted bm-list-hint">Spausk ant divizijos, kad redaguotum.</p>
+                            <div class="bm-list" id="divisionsList"></div>
+                        </div>
+                        <div class="bm-form-wrap bm-scroll">
+                            <div class="bm-editor hidden" id="divisionEditor">
+                                <h4>Divizijos redagavimas</h4>
+                                <label>ID (trumpas kodas)<input type="text" id="divId" placeholder="pvz. spec_ops" /></label>
+                                <label>Pavadinimas<input type="text" id="divLabel" /></label>
+                                <label>Trumpinys (rago žymė)<input type="text" id="divAbbr" maxlength="8" /></label>
+                                <label>Aprašymas<input type="text" id="divDesc" /></label>
+                                <label>Min. rangas<input type="number" id="divMinGrade" min="0" /></label>
+                                <label><input type="checkbox" id="divChoosable" checked /> Galima pasirinkti pareigūnui</label>
+                                <div class="bm-actions-row">
+                                    <button type="button" class="bm-btn" id="btnSaveDivision">Išsaugoti</button>
+                                    <button type="button" class="bm-btn secondary" id="btnCancelDivision">Atšaukti</button>
+                                </div>
+                            </div>
+                            <p class="bm-muted bm-editor-hint" id="divisionEditorHint">Pasirink diviziją kairėje, kad redaguotum.</p>
                         </div>
                     </div>
                 </section>
@@ -135,8 +153,8 @@
                         </div>
                         <div class="bm-form-wrap">
                             <h3>Algų nustatymai</h3>
-                            <label class="bm-toggle"><input type="checkbox" id="salaryEnabled" /> Algų mokėjimas iš fondo</label>
-                            <label>Koeficientas (0–3)<input type="number" id="salaryMultiplier" min="0" max="3" step="0.05" /></label>
+                            <label class="bm-toggle"><input type="checkbox" id="salaryEnabled" /> Automatinis algų mokėjimas iš fondo</label>
+                            <p class="bm-muted bm-note">Algos mokamos pilna suma pagal rango nustatymą — be koeficiento.</p>
                             <button type="button" class="bm-btn" id="btnSaveSalary">Išsaugoti algų nustatymus</button>
                         </div>
                     </div>

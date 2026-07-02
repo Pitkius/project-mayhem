@@ -75,11 +75,16 @@ Config.EmergencyVehicle = {
     lightbarModel = 'prop_lightbar_01',
     lightbarYOffset = 0.12,
     lightbarZOffset = 0.04,
-    --- Mirksėjimo intervalas (ms) — lėtesnis = saugesnis regėjimui
-    flashIntervalMs = 720,
-    --- Aplinkos šviesa ant prop (0 = tik maži žibintai ant juostos, be blizgesio)
-    flashLightRange = 0.0,
-    flashLightIntensity = 1.2,
+    --- Mirksėjimo intervalas (ms)
+    flashIntervalMs = 480,
+    --- Aplinkos šviesa (0 = tik markeriai, be spindulio)
+    flashLightRange = 18.0,
+    flashLightIntensity = 6.0,
+    --- Kryptiniai spinduliai (PD stiliaus „lempos“)
+    flashSpotRange = 32.0,
+    flashSpotIntensity = 14.0,
+    flashDrawDistance = 95.0,
+    flashMarkerScale = 0.11,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
@@ -446,6 +451,8 @@ Config.MaxFineAmount = 50000
 
 --- PD durys / vartai (Gabz MRPD LS + automatinis Sandy / Paleto MLO skenavimas)
 Config.PdDoorToggleReach = 6.0
+--- false = tik E mygtukas; true = papildomai qb-target (numatyta: tik E)
+Config.PdDoorUseQbTarget = false
 Config.PdDoorGroups = {
     {
         id = 'ls_mrpd_reception',

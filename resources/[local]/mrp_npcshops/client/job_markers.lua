@@ -143,10 +143,20 @@ CreateThread(function()
                             canUse = zone.canUse()
                         end
                         if canUse then
-                            EnableControlAction(0, 38, true)
+                            local hint
+                            if zone.kind == 'stash' then
+                                hint = exports['mrp_npcshops']:StashInteractHint(zone.label)
+                                exports['mrp_npcshops']:EnableStashOpenControl()
+                            else
+                                EnableControlAction(0, 38, true)
+                                hint = ('[E] %s'):format(zone.label)
+                            end
                             local hintZ = zone.kind == 'stash' and 0.55 or 0.75
-                            QBCore.Functions.DrawText3D(zone.coords.x, zone.coords.y, zone.coords.z + hintZ, ('[E] %s'):format(zone.label))
-                            if IsControlJustPressed(0, 38) and (GetGameTimer() - lastInteractMs) > 450 then
+                            QBCore.Functions.DrawText3D(zone.coords.x, zone.coords.y, zone.coords.z + hintZ, hint)
+                            local pressed = zone.kind == 'stash'
+                                and exports['mrp_npcshops']:IsStashOpenPressed()
+                                or IsControlJustPressed(0, 38)
+                            if pressed and (GetGameTimer() - lastInteractMs) > 450 then
                                 lastInteractMs = GetGameTimer()
                                 if zone.onPress then zone.onPress() end
                             end

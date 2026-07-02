@@ -104,6 +104,9 @@ document.getElementById("scBackdrop")?.addEventListener("click", () => nuiPost("
 document.querySelectorAll(".sc-code").forEach((btn) => {
   btn.addEventListener("click", () => {
     const code = btn.getAttribute("data-code");
+    if (!code) return;
+    state.code = state.code === code ? "off" : code;
+    applyUi();
     nuiPost("setCode", { code });
   });
 });

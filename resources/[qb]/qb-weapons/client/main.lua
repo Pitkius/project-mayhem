@@ -337,9 +337,12 @@ local function buildHolsterVisualSignature(items)
 end
 
 --- Visi inventoriaus ginklai ant pedo (paslėpti), išskyrus dabar pasirinktą — kad matytųsi ant nugaros/kojų.
-function applyHolsteredWeaponsFromInventory(force)
+--- @param force boolean
+--- @param skipHandEquip boolean|nil  true = never put currentWeapon in hand (draw/holster anim)
+function applyHolsteredWeaponsFromInventory(force, skipHandEquip)
     if not LocalPlayer.state.isLoggedIn then return end
     if not force and (isReloadBusy() or isWeaponDrawBusy()) then return end
+    if isWeaponDrawBusy() then skipHandEquip = true end
     if currentWeapon and isThrowableInventoryWeaponName(currentWeapon) then return end
     local items = getItemsFromCore()
     local sig = buildHolsterVisualSignature(items)
@@ -390,7 +393,7 @@ function applyHolsteredWeaponsFromInventory(force)
 
     SetPedCanSwitchWeapon(ped, true)
 
-    if shownHash and shownHash ~= 0 and shownHash ~= `WEAPON_UNARMED` then
+    if shownHash and shownHash ~= 0 and shownHash ~= `WEAPON_UNARMED` and not skipHandEquip then
         if not HasPedGotWeapon(ped, shownHash, false) and currentWeapon then
             local activeItem = resolveCurrentWeaponDataByName(currentWeapon)
             if activeItem then
@@ -472,7 +475,17 @@ AddEventHandler('qb-weapons:client:HolsterVisualsAfterDraw', function()
     if isReloadBusy() then return end
     if currentWeapon and isThrowableInventoryWeaponName(currentWeapon) then return end
     lastHolsterVisualSig = nil
-    applyHolsteredWeaponsFromInventory(true)
+    applyHolsteredWeaponsFromInventory(true, false)
+    if GetResourceState('mrp_basics') == 'started' then
+        TriggerEvent('mrp_basics:client:refreshSlungWeapons')
+    end
+end)
+
+RegisterNetEvent('qb-weapons:client:HolsterComplete', function()
+    TriggerEvent('qb-weapons:client:SetCurrentWeapon', nil, CanShoot)
+    currentWeapon = nil
+    lastHolsterVisualSig = nil
+    applyHolsteredWeaponsFromInventory(true, false)
     if GetResourceState('mrp_basics') == 'started' then
         TriggerEvent('mrp_basics:client:refreshSlungWeapons')
     end
@@ -745,11 +758,12 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
     local weaponHash = nativeWeaponHash(weaponData.name)
     if currentWeapon == weaponName then
         cancelActiveReload()
-        TriggerEvent('qb-weapons:client:SetCurrentWeapon', nil, shootbool)
-        currentWeapon = nil
-        lastHolsterVisualSig = nil
-        applyHolsteredWeaponsFromInventory(true)
-        queueDrawWeapon(nil)
+        local hash = nativeWeaponHash(weaponName)
+        if hash and hash ~= 0 and hash ~= `WEAPON_UNARMED` and HasPedGotWeapon(ped, hash, false) then
+            SetPedCurrentWeaponVisible(ped, true, false, false, false)
+            SetCurrentPedWeapon(ped, hash, true)
+        end
+        queueDrawWeapon('__holster__')
     elseif weaponName == 'weapon_stickybomb' or weaponName == 'weapon_pipebomb' or weaponName == 'weapon_smokegrenade' or weaponName == 'weapon_flare' or weaponName == 'weapon_proxmine' or weaponName == 'weapon_ball' or weaponName == 'weapon_molotov' or weaponName == 'weapon_grenade' or weaponName == 'weapon_bzgas' then
         cancelActiveReload()
         GiveWeaponToPed(ped, weaponHash, 1, false, false)
@@ -771,15 +785,8 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
         cancelActiveReload()
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', weaponData, shootbool)
         currentWeapon = weaponName
-        applyHolsteredWeaponsFromInventory(true)
-        weaponHash = nativeWeaponHash(weaponData.name)
-        local syncedAmmo = GetAmmoInPedWeapon(ped, weaponHash)
-        TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', weaponData, syncedAmmo)
-        -- Paslėpti aktyvų ginklą ir laikyti UNARMED, kad pullout loop'as paleistų animaciją.
-        if weaponHash and weaponHash ~= 0 and weaponHash ~= `WEAPON_UNARMED` and HasPedGotWeapon(ped, weaponHash, false) then
-            SetPedCurrentWeaponVisible(ped, false, false, false, false)
-        end
-        SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
+        applyHolsteredWeaponsFromInventory(true, true)
+        TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', weaponData, tonumber(weaponData.info and weaponData.info.ammo) or 0)
         queueDrawWeapon(weaponName)
     end
 end)

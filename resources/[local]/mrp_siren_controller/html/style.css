@@ -30,7 +30,7 @@ body {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    padding: 0 10px 24vh;
+    padding: 0 10px 33vh;
     z-index: 9000;
     pointer-events: none;
 }

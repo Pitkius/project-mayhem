@@ -1771,24 +1771,84 @@ AddEventHandler('playerDropped', function()
     LtpdPdDoorToggleCooldown[src] = nil
 end)
 
-RegisterNetEvent('mrp_ltpd:server:togglePdDoorGroup', function(groupId)
+local function syncPdDoorStateToClient(clientId, groupId)
+    TriggerClientEvent('mrp_ltpd:client:setPdDoorState', clientId, groupId, LtpdPdDoorLocked[groupId])
+end
+
+local function parseWantDoorLocked(v)
+    if v == true or v == 1 then return true end
+    if v == false or v == 0 then return false end
+    return nil
+end
+
+RegisterNetEvent('mrp_ltpd:server:setPdDoorGroup', function(groupId, wantLocked)
     local src = source
     if type(groupId) ~= 'string' then return end
+    local parsed = parseWantDoorLocked(wantLocked)
+    if parsed == nil then return end
+
     if not canUseServiceDoors(src, groupId) then
+        syncPdDoorStateToClient(src, groupId)
         return TriggerClientEvent('QBCore:Notify', src, 'Neturi teisės arba ne tarnyboje.', 'error')
     end
     local meta = LtpdPdDoorMeta[groupId]
     if not meta then
+        syncPdDoorStateToClient(src, groupId)
         return TriggerClientEvent('QBCore:Notify', src, 'Durų duomenys dar kraunami — palauk kelias sekundes.', 'error')
     end
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return end
     local pc = GetEntityCoords(ped)
     if not playerNearPdDoorGroup(pc, meta) then
+        syncPdDoorStateToClient(src, groupId)
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo durų.', 'error')
     end
     local now = GetGameTimer()
-    if (LtpdPdDoorToggleCooldown[src] or 0) > now then return end
+    if (LtpdPdDoorToggleCooldown[src] or 0) > now then
+        syncPdDoorStateToClient(src, groupId)
+        return
+    end
+    LtpdPdDoorToggleCooldown[src] = now + 650
+
+    if LtpdPdDoorLocked[groupId] == parsed then
+        syncPdDoorStateToClient(src, groupId)
+        return
+    end
+
+    LtpdPdDoorLocked[groupId] = parsed
+    TriggerClientEvent('mrp_ltpd:client:setPdDoorState', -1, groupId, parsed)
+    TriggerClientEvent(
+        'QBCore:Notify',
+        src,
+        parsed and 'Durys užrakintos.' or 'Durys atrakintos.',
+        'primary'
+    )
+end)
+
+RegisterNetEvent('mrp_ltpd:server:togglePdDoorGroup', function(groupId)
+    local src = source
+    if type(groupId) ~= 'string' then return end
+    if not canUseServiceDoors(src, groupId) then
+        syncPdDoorStateToClient(src, groupId)
+        return TriggerClientEvent('QBCore:Notify', src, 'Neturi teisės arba ne tarnyboje.', 'error')
+    end
+    local meta = LtpdPdDoorMeta[groupId]
+    if not meta then
+        syncPdDoorStateToClient(src, groupId)
+        return TriggerClientEvent('QBCore:Notify', src, 'Durų duomenys dar kraunami — palauk kelias sekundes.', 'error')
+    end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return end
+    local pc = GetEntityCoords(ped)
+    if not playerNearPdDoorGroup(pc, meta) then
+        syncPdDoorStateToClient(src, groupId)
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo durų.', 'error')
+    end
+    local now = GetGameTimer()
+    if (LtpdPdDoorToggleCooldown[src] or 0) > now then
+        syncPdDoorStateToClient(src, groupId)
+        return
+    end
     LtpdPdDoorToggleCooldown[src] = now + 650
     local cur = LtpdPdDoorLocked[groupId] ~= false
     LtpdPdDoorLocked[groupId] = not cur

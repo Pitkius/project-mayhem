@@ -96,6 +96,10 @@ Config.JobStationNpcs = {
 
 Config.JobNpcReach = 4.5
 
+--- Sandėlių atidarymo klavišas (F2 = 289)
+Config.StashOpenControl = 289
+Config.StashOpenKeyLabel = 'F2'
+
 --- Garažų / sandėlių / rūbinių 3D markeriai (role garage | stash | locker — be NPC)
 Config.JobMarkerDrawDistance = 36.0
 Config.JobMarkerUseRadius = 2.6

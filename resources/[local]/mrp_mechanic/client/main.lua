@@ -343,30 +343,6 @@ CreateThread(function()
         distance = 3.4,
     })
 
-    local bs = Config.BossStash
-    if bs and bs.coords then
-        exports['qb-target']:AddBoxZone('mrp_mech_boss_stash', bs.coords, 1.75, 1.75, {
-            name = 'mrp_mech_boss_stash',
-            heading = bs.heading or 0.0,
-            debugPoly = false,
-            minZ = bs.coords.z - 1.1,
-            maxZ = bs.coords.z + 2.2,
-        }, {
-            options = {
-                {
-                    type = 'client',
-                    event = 'mrp_mechanic:client:openBossStash',
-                    icon = 'fas fa-box-open',
-                    label = bs.label or 'Boso sandėlis',
-                    canInteract = function()
-                        return canBossMenu()
-                    end,
-                },
-            },
-            distance = 2.6,
-        })
-    end
-
     exports['qb-target']:AddBoxZone('mrp_mech_duty', vector3(Config.Base.x, Config.Base.y, Config.Base.z), 1.85, 1.85, {
         name = 'mrp_mech_duty',
         heading = Config.Base.w,

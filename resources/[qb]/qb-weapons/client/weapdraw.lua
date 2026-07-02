@@ -1,3 +1,5 @@
+local QBCore = exports['qb-core']:GetCoreObject()
+
 local weapons = {
     'WEAPON_KNIFE',
     'WEAPON_NIGHTSTICK',
@@ -106,6 +108,7 @@ local holstered = true
 local canFire = true
 local drawSession = 0
 local currWeap = `WEAPON_UNARMED`
+local pendingEquipHash = nil
 local currHolster = nil
 local currHolsterTexture = nil
 local wearingHolster = nil
@@ -136,8 +139,55 @@ local function hashesMatchListedWeapon(candidateHash, listEntry)
 end
 
 local function checkWeapon(newWeap)
+    if not newWeap or newWeap == 0 or newWeap == `WEAPON_UNARMED` then return false end
     for i = 1, #weapons do
         if hashesMatchListedWeapon(newWeap, weapons[i]) then
+            return true
+        end
+    end
+    if QBCore.Shared.Weapons and QBCore.Shared.Weapons[newWeap] then
+        return true
+    end
+    local grp = GetWeapontypeGroup(newWeap)
+    if grp and grp ~= `GROUP_UNARMED` and grp ~= `GROUP_THROWN` and grp ~= `GROUP_PETROLCAN` then
+        return true
+    end
+    return false
+end
+
+local function isLongWeapon(weap)
+    if not weap or weap == 0 then return false end
+    local grp = GetWeapontypeGroup(weap)
+    return grp == `GROUP_RIFLE`
+        or grp == `GROUP_SMG`
+        or grp == `GROUP_SHOTGUN`
+        or grp == `GROUP_SNIPER`
+        or grp == `GROUP_MG`
+        or grp == `GROUP_HEAVY`
+end
+
+local function playDrawIntro(ped, pos, rot, wearingHolster, weap)
+    if wearingHolster and not isLongWeapon(weap) then
+        TaskPlayAnimAdvanced(ped, 'rcmjosh4', 'josh_leadout_cop2', pos.x, pos.y, pos.z, 0, 0, rot, 3.0, 3.0, -1, 50, 0, 0, 0)
+        return 300
+    end
+    TaskPlayAnimAdvanced(ped, 'reaction@intimidation@1h', 'intro', pos.x, pos.y, pos.z, 0, 0, rot, 8.0, 3.0, -1, 50, 0, 0, 0)
+    return isLongWeapon(weap) and 1200 or 1000
+end
+
+local function playDrawOutro(ped, pos, rot, wearingHolster, weap)
+    if wearingHolster and not isLongWeapon(weap) then
+        TaskPlayAnimAdvanced(ped, 'reaction@intimidation@cop@unarmed', 'intro', pos.x, pos.y, pos.z, 0, 0, rot, 3.0, 3.0, -1, 50, 0, 0, 0)
+        return 500
+    end
+    TaskPlayAnimAdvanced(ped, 'reaction@intimidation@1h', 'outro', pos.x, pos.y, pos.z, 0, 0, rot, 8.0, 3.0, -1, 50, 0, 0, 0)
+    return isLongWeapon(weap) and 1600 or 1400
+end
+
+local function pedWearingHolster(ped)
+    local holsterVariant = GetPedDrawableVariation(ped, 8)
+    for i = 1, #Config.WeapDraw.variants, 1 do
+        if holsterVariant == Config.WeapDraw.variants[i] then
             return true
         end
     end
@@ -157,6 +207,7 @@ RegisterNetEvent('qb-weapons:ResetHolster', function()
     holstered = true
     canFire = true
     currWeap = `WEAPON_UNARMED`
+    pendingEquipHash = nil
     currHolster = nil
     currHolsterTexture = nil
     wearingHolster = nil
@@ -165,8 +216,11 @@ end)
 RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
     if GetResourceState('qb-inventory') == 'missing' then return end
 
+    local holsterMode = targetWeaponName == '__holster__'
     local targetHash = nil
-    if targetWeaponName and targetWeaponName ~= '' then
+    if holsterMode then
+        targetWeaponName = nil
+    elseif targetWeaponName and targetWeaponName ~= '' then
         if WeaponHash and WeaponHash.resolve then
             targetHash = WeaponHash.resolve(targetWeaponName)
         else
@@ -177,23 +231,22 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
     _G.QBWeaponDrawBusy = true
 
     local ped = PlayerPedId()
-    if targetHash and targetHash ~= 0 and targetHash ~= `WEAPON_UNARMED` and ped and ped ~= 0 then
+    if holsterMode and ped and ped ~= 0 then
+        local held = GetSelectedPedWeapon(ped)
+        if held and held ~= 0 and held ~= `WEAPON_UNARMED` and checkWeapon(held) then
+            currWeap = held
+            holstered = false
+            SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
+        end
+    elseif targetHash and targetHash ~= 0 and targetHash ~= `WEAPON_UNARMED` and ped and ped ~= 0 then
         if not HasPedGotWeapon(ped, targetHash, false) then
-            local ammo = 0
-            if WeaponHash and WeaponHash.resolve then
-                GiveWeaponToPed(ped, targetHash, ammo, true, false)
-            else
-                GiveWeaponToPed(ped, targetHash, 0, true, false)
-            end
+            GiveWeaponToPed(ped, targetHash, 0, true, false)
         end
-        -- Priverstinai sukeliam ginklo pasikeitimą, kad pullout loop'as paleistų animaciją.
-        if currWeap == targetHash then
-            currWeap = `WEAPON_UNARMED`
-            holstered = true
-        end
+        pendingEquipHash = targetHash
+        currWeap = `WEAPON_UNARMED`
+        holstered = true
+        SetPedCurrentWeaponVisible(ped, false, false, false, false)
         SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
-        Wait(0)
-        SetCurrentPedWeapon(ped, targetHash, true)
     end
 
     drawSession = drawSession + 1
@@ -205,28 +258,26 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
         sleep = 250
         if DoesEntityExist(ped) and not IsEntityDead(ped) and not IsPedInParachuteFreeFall(ped) and not IsPedFalling(ped) and (GetPedParachuteState(ped) == -1 or GetPedParachuteState(ped) == 0) then
             sleep = 0
-            if currWeap ~= GetSelectedPedWeapon(ped) then
+            local selectedWeap = GetSelectedPedWeapon(ped)
+            local newWeap = selectedWeap
+            if pendingEquipHash and holstered and selectedWeap == `WEAPON_UNARMED` then
+                newWeap = pendingEquipHash
+                pendingEquipHash = nil
+            end
+            if currWeap ~= newWeap then
                 local pos = GetEntityCoords(ped, true)
                 local rot = GetEntityHeading(ped)
 
-                local newWeap = GetSelectedPedWeapon(ped)
                 SetCurrentPedWeapon(ped, currWeap, true)
                 loadAnimDict('reaction@intimidation@1h')
                 loadAnimDict('reaction@intimidation@cop@unarmed')
                 loadAnimDict('rcmjosh4')
                 loadAnimDict('weapons@pistol@')
 
-                local holsterVariant = GetPedDrawableVariation(ped, 8)
-                wearingHolster = false
-                for i = 1, #Config.WeapDraw.variants, 1 do
-                    if holsterVariant == Config.WeapDraw.variants[i] then
-                        wearingHolster = true
-                    end
-                end
+                local wearingHolster = pedWearingHolster(ped)
                 if checkWeapon(newWeap) then
                     if holstered then
-                        if wearingHolster then
-                            --TaskPlayAnim(ped, 'rcmjosh4', 'josh_leadout_cop2', 8.0, 2.0, -1, 48, 10, 0, 0, 0 )
+                        if wearingHolster and not isLongWeapon(newWeap) then
                             canFire = false
                             CeaseFire()
                             currHolster = GetPedDrawableVariation(ped, 7)
@@ -234,6 +285,7 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                             TaskPlayAnimAdvanced(ped, 'rcmjosh4', 'josh_leadout_cop2', pos.x, pos.y, pos.z, 0, 0, rot, 3.0, 3.0, -1, 50, 0, 0, 0)
                             Wait(300)
                             SetCurrentPedWeapon(ped, newWeap, true)
+                            SetPedCurrentWeaponVisible(ped, true, false, false, false)
 
                             if isWeaponHolsterable(newWeap) then
                                 SetPedComponentVariation(ped, 7, currHolster == 8 and 2 or currHolster == 1 and 3 or currHolster == 6 and 5, currHolsterTexture, 2)
@@ -246,11 +298,12 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                         else
                             canFire = false
                             CeaseFire()
-                            TaskPlayAnimAdvanced(ped, 'reaction@intimidation@1h', 'intro', pos.x, pos.y, pos.z, 0, 0, rot, 8.0, 3.0, -1, 50, 0, 0, 0)
-                            Wait(1000)
+                            local waitMs = playDrawIntro(ped, pos, rot, wearingHolster, newWeap)
+                            Wait(waitMs)
                             SetCurrentPedWeapon(ped, newWeap, true)
+                            SetPedCurrentWeaponVisible(ped, true, false, false, false)
                             currWeap = newWeap
-                            Wait(1400)
+                            Wait(wearingHolster and not isLongWeapon(newWeap) and 300 or (isLongWeapon(newWeap) and 400 or 1400))
                             ClearPedTasks(ped)
                             holstered = false
                             canFire = true
@@ -287,14 +340,15 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                         else
                             canFire = false
                             CeaseFire()
-                            TaskPlayAnimAdvanced(ped, 'reaction@intimidation@1h', 'outro', pos.x, pos.y, pos.z, 0, 0, rot, 8.0, 3.0, -1, 50, 0, 0, 0)
-                            Wait(1600)
+                            local outroMs = playDrawOutro(ped, pos, rot, wearingHolster, currWeap)
+                            Wait(outroMs)
                             SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
-                            TaskPlayAnimAdvanced(ped, 'reaction@intimidation@1h', 'intro', pos.x, pos.y, pos.z, 0, 0, rot, 8.0, 3.0, -1, 50, 0, 0, 0)
-                            Wait(1000)
+                            local introMs = playDrawIntro(ped, pos, rot, wearingHolster, newWeap)
+                            Wait(introMs)
                             SetCurrentPedWeapon(ped, newWeap, true)
+                            SetPedCurrentWeaponVisible(ped, true, false, false, false)
                             currWeap = newWeap
-                            Wait(1400)
+                            Wait(isLongWeapon(newWeap) and 400 or 1400)
                             ClearPedTasks(ped)
                             holstered = false
                             canFire = true
@@ -319,11 +373,12 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                             canFire = true
                         else
                             SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
-                            TaskPlayAnimAdvanced(ped, 'reaction@intimidation@1h', 'intro', pos.x, pos.y, pos.z, 0, 0, rot, 8.0, 3.0, -1, 50, 0, 0, 0)
-                            Wait(1000)
+                            local waitMs = playDrawIntro(ped, pos, rot, wearingHolster, newWeap)
+                            Wait(waitMs)
                             SetCurrentPedWeapon(ped, newWeap, true)
+                            SetPedCurrentWeaponVisible(ped, true, false, false, false)
                             currWeap = newWeap
-                            Wait(1400)
+                            Wait(wearingHolster and not isLongWeapon(newWeap) and 300 or (isLongWeapon(newWeap) and 400 or 1400))
                             ClearPedTasks(ped)
                             holstered = false
                             canFire = true
@@ -331,7 +386,7 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                     end
                 else
                     if not holstered and checkWeapon(currWeap) then
-                        if wearingHolster then
+                        if wearingHolster and not isLongWeapon(currWeap) then
                             canFire = false
                             CeaseFire()
                             TaskPlayAnimAdvanced(ped, 'reaction@intimidation@cop@unarmed', 'intro', pos.x, pos.y, pos.z, 0, 0, rot, 3.0, 3.0, -1, 50, 0, 0, 0)
@@ -350,8 +405,8 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                         else
                             canFire = false
                             CeaseFire()
-                            TaskPlayAnimAdvanced(ped, 'reaction@intimidation@1h', 'outro', pos.x, pos.y, pos.z, 0, 0, rot, 8.0, 3.0, -1, 50, 0, 0, 0)
-                            Wait(1400)
+                            local outroMs = playDrawOutro(ped, pos, rot, wearingHolster, currWeap)
+                            Wait(outroMs)
                             SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
                             ClearPedTasks(ped)
                             SetCurrentPedWeapon(ped, newWeap, true)
@@ -369,7 +424,9 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
             end
         end
         Wait(sleep)
-        if currWeap == nil or currWeap == `WEAPON_UNARMED` then
+        if pendingEquipHash then
+            weaponCheck = 0
+        elseif currWeap == nil or currWeap == `WEAPON_UNARMED` then
             weaponCheck += 1
             if weaponCheck == 2 then
                 break
@@ -391,6 +448,10 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
         end
     end
     _G.QBWeaponDrawBusy = false
+    if holsterMode then
+        TriggerEvent('qb-weapons:client:HolsterComplete')
+        return
+    end
     TriggerEvent('qb-weapons:client:HolsterVisualsAfterDraw')
 end)
 

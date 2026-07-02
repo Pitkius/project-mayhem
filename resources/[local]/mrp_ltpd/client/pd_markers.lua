@@ -325,6 +325,29 @@ RegisterCommand('pdmarkers', function()
     end
 end, false)
 
+local function stashHint(label)
+    if GetResourceState('mrp_npcshops') == 'started' then
+        return exports['mrp_npcshops']:StashInteractHint(label)
+    end
+    return ('[F2] %s'):format(label)
+end
+
+local function isStashOpenPressed()
+    if GetResourceState('mrp_npcshops') == 'started' then
+        return exports['mrp_npcshops']:IsStashOpenPressed()
+    end
+    EnableControlAction(0, 289, true)
+    return IsControlJustPressed(0, 289) or IsDisabledControlJustPressed(0, 289)
+end
+
+local function enableStashOpenControl()
+    if GetResourceState('mrp_npcshops') == 'started' then
+        exports['mrp_npcshops']:EnableStashOpenControl()
+    else
+        EnableControlAction(0, 289, true)
+    end
+end
+
 local function drawMarkerAt(pos, kind)
     local col = COLORS[kind] or COLORS.stash
     local sc = markerScaleFor(kind)
@@ -401,12 +424,22 @@ CreateThread(function()
                 nearInteract = true
                 local canUse = not zone.requireDuty or isPdOnDuty()
                 if canUse and dist < textR then
-                    EnableControlAction(0, 38, true)
+                    local hint
+                    local pressed
+                    if zone.kind == 'stash' then
+                        hint = stashHint(zone.label)
+                        enableStashOpenControl()
+                        pressed = isStashOpenPressed()
+                    else
+                        EnableControlAction(0, 38, true)
+                        hint = ('[E] %s'):format(zone.label)
+                        pressed = IsControlJustPressed(0, 38)
+                    end
                     QBCore.Functions.DrawText3D(
                         zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
-                        ('[E] %s'):format(zone.label)
+                        hint
                     )
-                    if IsControlJustPressed(0, 38) and (GetGameTimer() - lastInteractMs) > 450 then
+                    if pressed and (GetGameTimer() - lastInteractMs) > 450 then
                         lastInteractMs = GetGameTimer()
                         if zone.onPress then zone.onPress() end
                     end

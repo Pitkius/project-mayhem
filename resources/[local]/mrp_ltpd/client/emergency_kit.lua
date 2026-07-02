@@ -1,9 +1,23 @@
 --- PD: šviestuvų ir sirenos režimai masinoje + laikina sirena ant civilinės mašinos (statebag ltPd*)
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local TRACKED = {} --- [vehicle] = { supportsNative }
+local TRACKED = {} --- [vehicle] = { supportsNative, mode }
 local LIGHTBARS = {} --- [vehicle] = prop entity
 local KIT_PERF = {} --- [vehicle] = { sig, orig }
+local LIGHT_LAYOUT = {} --- [vehicle] = layout cache
+local INGEST_SCHEDULED = {} --- [vehicle] = true
+
+local FLEET_HASHES = {}
+local function rebuildFleetHashes()
+    FLEET_HASHES = {}
+    for _, v in ipairs(Config.FleetVehicles or {}) do
+        if v and v.model then FLEET_HASHES[joaat(v.model)] = true end
+    end
+    for _, v in ipairs(Config.FleetHelicopters or {}) do
+        if v and v.model then FLEET_HASHES[joaat(v.model)] = true end
+    end
+end
+rebuildFleetHashes()
 
 local Ec = Config.EmergencyVehicle or {}
 local RESET_ON_EXIT = Ec.resetWhenLeaveDriverSeat ~= false
@@ -69,17 +83,7 @@ local function runIfAdminCommand(fn)
 end
 
 local function modelIsFleet(hash)
-    if Config.FleetVehicles then
-        for _, v in ipairs(Config.FleetVehicles) do
-            if v and v.model and joaat(v.model) == hash then return true end
-        end
-    end
-    if Config.FleetHelicopters then
-        for _, v in ipairs(Config.FleetHelicopters) do
-            if v and v.model and joaat(v.model) == hash then return true end
-        end
-    end
-    return false
+    return FLEET_HASHES[hash] == true
 end
 
 local function vehicleSupportsNativeEmergency(vehicle)
@@ -189,10 +193,10 @@ local function ensureLightbar(vehicle)
 
     local bone = GetEntityBoneIndexByName(vehicle, 'roof')
     if bone == -1 then bone = GetEntityBoneIndexByName(vehicle, 'bodyshell') end
-    local mn, mx = GetModelDimensions(hash)
-    local roofZ = (mx.z - mn.z) * 0.5 + 0.04
-    local yOff = tonumber(Ec.lightbarYOffset) or 0.12
-    local zOff = roofZ + (tonumber(Ec.lightbarZOffset) or 0.0)
+    local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
+    local spanY = mx.y - mn.y
+    local yOff = mx.y - math.max(0.12, spanY * 0.07) + (tonumber(Ec.lightbarYOffset) or 0.0)
+    local zOff = mx.z + 0.02 + (tonumber(Ec.lightbarZOffset) or 0.0)
     AttachEntityToEntity(prop, vehicle, bone, 0.0, yOff, zOff, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
     LIGHTBARS[vehicle] = prop
     SetModelAsNoLongerNeeded(hash)
@@ -324,57 +328,97 @@ local function syncKitVisuals(vehicle)
     end
 end
 
-local function drawLensMarker(x, y, z, r, g, b, alpha)
+local function cleanupVehicleEmergency(vehicle)
+    if not vehicle then return end
+    stopScriptSound(vehicle)
+    removeLightbar(vehicle)
+    removeKitPerformance(vehicle)
+    LIGHT_LAYOUT[vehicle] = nil
+    INGEST_SCHEDULED[vehicle] = nil
+    TRACKED[vehicle] = nil
+end
+
+local function getLightLayout(vehicle)
+    local now = GetGameTimer()
+    local entry = LIGHT_LAYOUT[vehicle]
+    if entry and (now - entry.at) < 240 then return entry end
+    local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
+    local spanX = mx.x - mn.x
+    local spanY = mx.y - mn.y
+    entry = {
+        at = now,
+        halfW = math.max(0.24, spanX * 0.36),
+        roofZ = mx.z - 0.05,
+        frontY = mx.y - math.max(0.14, spanY * 0.05),
+    }
+    LIGHT_LAYOUT[vehicle] = entry
+    return entry
+end
+
+local function worldLightPoints(vehicle)
+    local layout = getLightLayout(vehicle)
+    local prop = LIGHTBARS[vehicle]
+    local barPos
+    if prop and DoesEntityExist(prop) then
+        barPos = GetEntityCoords(prop)
+    else
+        barPos = GetOffsetFromEntityInWorldCoords(vehicle, 0.0, layout.frontY, layout.roofZ)
+    end
+    local leftPos = GetOffsetFromEntityInWorldCoords(vehicle, -layout.halfW, layout.frontY - 0.06, layout.roofZ)
+    local rightPos = GetOffsetFromEntityInWorldCoords(vehicle, layout.halfW, layout.frontY - 0.06, layout.roofZ)
+    local centerPos = GetOffsetFromEntityInWorldCoords(vehicle, 0.0, layout.frontY - 0.02, layout.roofZ + 0.04)
+    local fwd = GetEntityForwardVector(vehicle)
+    local beamDir = vector3(fwd.x * 0.94, fwd.y * 0.94, -0.22)
+    local len = #(beamDir)
+    if len > 0.01 then beamDir = beamDir / len end
+    return barPos, leftPos, rightPos, centerPos, beamDir
+end
+
+local function drawLensMarker(x, y, z, r, g, b, alpha, scale)
+    scale = scale or (tonumber(Ec.flashMarkerScale) or 0.11)
     DrawMarker(
         28,
         x, y, z,
         0.0, 0.0, 0.0,
         0.0, 0.0, 0.0,
-        0.055, 0.055, 0.055,
+        scale, scale, scale,
         r, g, b, alpha,
         false, false, 2, false, false, false, false
     )
 end
 
+local function drawEmergencyBeam(origin, dir, r, g, b)
+    local spotR = tonumber(Ec.flashSpotRange) or 32.0
+    local spotI = tonumber(Ec.flashSpotIntensity) or 14.0
+    DrawSpotLight(origin.x, origin.y, origin.z, dir.x, dir.y, dir.z, r, g, b, spotR, spotI, 0.0, spotR * 0.82, 1.0)
+end
+
+local function drawAmbientGlow(x, y, z, r, g, b)
+    local lightRange = tonumber(Ec.flashLightRange) or 18.0
+    local lightPower = tonumber(Ec.flashLightIntensity) or 6.0
+    if lightRange <= 0 or lightPower <= 0 then return end
+    DrawLightWithRange(x, y, z, r, g, b, lightRange, lightPower)
+end
+
 local function drawScriptFlash(vehicle)
     if not DoesEntityExist(vehicle) then return end
 
-    local interval = tonumber(Ec.flashIntervalMs) or 560
+    local interval = tonumber(Ec.flashIntervalMs) or 480
     local phase = math.floor(GetGameTimer() / interval) % 2 == 0
-    local lightRange = tonumber(Ec.flashLightRange) or 2.2
-    local lightPower = tonumber(Ec.flashLightIntensity) or 3.5
-
-    local prop = LIGHTBARS[vehicle]
-    local barPos
-    local fwd = GetEntityForwardVector(vehicle)
-    local right = vector3(-fwd.y, fwd.x, 0.0)
-
-    if prop and DoesEntityExist(prop) then
-        barPos = GetEntityCoords(prop)
-    else
-        local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
-        local z = mx.z + 0.12
-        local yBias = mn.y + 0.35
-        local c = GetEntityCoords(vehicle)
-        barPos = vector3(c.x + fwd.x * yBias, c.y + fwd.y * yBias, c.z + z)
-    end
-
-    local leftPos = barPos + right * (-0.38)
-    local rightPos = barPos + right * 0.38
-    local centerPos = barPos + vector3(0.0, 0.0, 0.06)
+    local _, leftPos, rightPos, centerPos, beamDir = worldLightPoints(vehicle)
 
     if phase then
-        drawLensMarker(leftPos.x, leftPos.y, leftPos.z, 210, 36, 36, 110)
-        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 180, 44, 44, 75)
-        if lightRange > 0 and lightPower > 0 then
-            DrawLightWithRange(leftPos.x, leftPos.y, leftPos.z, 200, 40, 40, lightRange, lightPower)
-        end
+        drawLensMarker(leftPos.x, leftPos.y, leftPos.z, 255, 48, 48, 185)
+        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 220, 56, 56, 95)
+        drawAmbientGlow(leftPos.x, leftPos.y, leftPos.z, 255, 45, 45)
+        drawEmergencyBeam(leftPos, beamDir, 255, 42, 42)
+        drawEmergencyBeam(centerPos, beamDir, 255, 60, 60)
     else
-        drawLensMarker(rightPos.x, rightPos.y, rightPos.z, 36, 68, 210, 110)
-        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 44, 76, 190, 75)
-        if lightRange > 0 and lightPower > 0 then
-            DrawLightWithRange(rightPos.x, rightPos.y, rightPos.z, 40, 70, 200, lightRange, lightPower)
-        end
+        drawLensMarker(rightPos.x, rightPos.y, rightPos.z, 48, 110, 255, 185)
+        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 56, 96, 220, 95)
+        drawAmbientGlow(rightPos.x, rightPos.y, rightPos.z, 45, 95, 255)
+        drawEmergencyBeam(rightPos, beamDir, 42, 95, 255)
+        drawEmergencyBeam(centerPos, beamDir, 60, 110, 255)
     end
 end
 
@@ -408,28 +452,41 @@ end
 local function ingestFromEntity(vehicle)
     if not vehicle or vehicle == 0 or not IsEntityAVehicle(vehicle) or not DoesEntityExist(vehicle) then return end
     local mode, kit = readVehicleStateBag(vehicle)
+    local supportsNative = vehicleSupportsNativeEmergency(vehicle)
     TRACKED[vehicle] = TRACKED[vehicle] or {}
-    TRACKED[vehicle].supportsNative = vehicleSupportsNativeEmergency(vehicle)
+    TRACKED[vehicle].supportsNative = supportsNative
+    TRACKED[vehicle].mode = mode
     syncKitVisuals(vehicle)
 
     if mode == 'off' then
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
         if not kit then
-            TRACKED[vehicle] = nil
+            cleanupVehicleEmergency(vehicle)
         end
         return
     elseif mode == 'lights' then
         stopScriptSound(vehicle)
         applyNativeForEveryone(vehicle, mode)
     elseif mode == 'sound' then
-        --- Tik garsas – natyvus „siren“ išjungtas, nesinaudoja automatinėmis šviesomis (sceninė sirena žemiau).
         stopNativeSirenVisual(vehicle)
     elseif mode == 'full' then
-        if TRACKED[vehicle].supportsNative then
+        if supportsNative then
             applyNativeForEveryone(vehicle, 'full')
         end
     end
+end
+
+local function scheduleIngest(vehicle)
+    if not vehicle or vehicle == 0 then return end
+    if INGEST_SCHEDULED[vehicle] then return end
+    INGEST_SCHEDULED[vehicle] = true
+    SetTimeout(60, function()
+        INGEST_SCHEDULED[vehicle] = nil
+        if DoesEntityExist(vehicle) then
+            ingestFromEntity(vehicle)
+        end
+    end)
 end
 
 local function resolveEntityFromBagName(bagName)
@@ -450,10 +507,9 @@ local function resolveEntityFromBagName(bagName)
 end
 
 local function onAnyPdBag(_, bagName)
-    Wait(25)
     local ent = resolveEntityFromBagName(bagName)
     if ent ~= 0 and IsEntityAVehicle(ent) then
-        ingestFromEntity(ent)
+        scheduleIngest(ent)
     end
 end
 
@@ -465,26 +521,42 @@ AddStateBagChangeHandler('ltEmsKit', '', onAnyPdBag)
 AddStateBagChangeHandler('fpSirenMuted', '', onAnyPdBag)
 
 CreateThread(function()
-    --- Laikinai palaiko natyvias sirenas užrakinant „lights/full“ prieš GTA resetą
+    local drawDistance = tonumber(Ec.flashDrawDistance) or 95.0
     while true do
-        local hasTracked = next(TRACKED) ~= nil
-        if not hasTracked then
-            Wait(1500)
+        local drew = false
+        if next(TRACKED) ~= nil then
+            local ped = PlayerPedId()
+            local pCoords = GetEntityCoords(ped)
+            for veh, meta in pairs(TRACKED) do
+                if not DoesEntityExist(veh) then
+                    cleanupVehicleEmergency(veh)
+                else
+                    local mode = meta.mode or select(1, readVehicleStateBag(veh))
+                    meta.mode = mode
+                    if (mode == 'lights' or mode == 'full') and meta.supportsNative ~= true then
+                        if #(pCoords - GetEntityCoords(veh)) <= drawDistance then
+                            drawScriptFlash(veh)
+                            drew = true
+                        end
+                    end
+                end
+            end
+        end
+        Wait(drew and 0 or (next(TRACKED) and 350 or 1200))
+    end
+end)
+
+--- Retas natyvių sirenos šviesų palaikymas (GTA kartais resetina).
+CreateThread(function()
+    while true do
+        if next(TRACKED) == nil then
+            Wait(1800)
         else
-        Wait(500)
-        for veh, meta in pairs(TRACKED) do
-            if not DoesEntityExist(veh) then
-                stopScriptSound(veh)
-                removeLightbar(veh)
-                removeKitPerformance(veh)
-                TRACKED[veh] = nil
-            else
-                local mode = select(1, readVehicleStateBag(veh))
-                if mode ~= 'off' and meta.supportsNative then
-                    if mode == 'lights' then
-                        SetVehicleSiren(veh, true)
-                        SetVehicleHasMutedSirens(veh, true)
-                    elseif mode == 'full' then
+            Wait(1100)
+            for veh, meta in pairs(TRACKED) do
+                if DoesEntityExist(veh) and meta.supportsNative then
+                    local mode = meta.mode or select(1, readVehicleStateBag(veh))
+                    if mode == 'lights' or mode == 'full' then
                         SetVehicleSiren(veh, true)
                         SetVehicleHasMutedSirens(veh, true)
                     elseif mode == 'sound' then
@@ -493,62 +565,34 @@ CreateThread(function()
                 end
             end
         end
-        end
     end
 end)
 
-CreateThread(function()
-    while true do
-        local sleep = 100
-        local drew = false
-        for veh, meta in pairs(TRACKED) do
-            if not DoesEntityExist(veh) then
-                stopScriptSound(veh)
-                removeLightbar(veh)
-                removeKitPerformance(veh)
-                TRACKED[veh] = nil
-            else
-                local mode = select(1, readVehicleStateBag(veh))
-                local nat = meta.supportsNative
-                if (mode == 'lights' or mode == 'full') and (not nat) then
-                    drawScriptFlash(veh)
-                    drew = true
-                end
-            end
-        end
-        if not drew then sleep = 400 end
-        Wait(sleep)
-    end
-end)
-
---- Sceninė sirena – garsą valdo mrp_siren_controller (tonai WAIL/YELP/PRIORITY).
+--- Atsarginis garsas tik jei mrp_siren_controller neveikia.
 CreateThread(function()
     while true do
         if next(TRACKED) == nil then
             Wait(1500)
         elseif GetResourceState('mrp_siren_controller') == 'started' then
-            Wait(1200)
+            Wait(2000)
         else
-        Wait(900)
-        for veh, meta in pairs(TRACKED) do
-            if not DoesEntityExist(veh) then
-                stopScriptSound(veh)
-                removeLightbar(veh)
-                removeKitPerformance(veh)
-                TRACKED[veh] = nil
-            else
-                local mode = select(1, readVehicleStateBag(veh))
-                local nat = meta.supportsNative
-                local needSound = (mode == 'sound') or (mode == 'full' and (not nat))
-                if mode == 'off' then
-                    stopScriptSound(veh)
-                elseif needSound then
-                    playShortSirenBurst(veh)
+            Wait(950)
+            for veh, meta in pairs(TRACKED) do
+                if not DoesEntityExist(veh) then
+                    cleanupVehicleEmergency(veh)
                 else
-                    stopScriptSound(veh)
+                    local mode = meta.mode or select(1, readVehicleStateBag(veh))
+                    local nat = meta.supportsNative
+                    local needSound = (mode == 'sound') or (mode == 'full' and (not nat))
+                    if mode == 'off' then
+                        stopScriptSound(veh)
+                    elseif needSound then
+                        playShortSirenBurst(veh)
+                    else
+                        stopScriptSound(veh)
+                    end
                 end
             end
-        end
         end
     end
 end)
@@ -562,11 +606,7 @@ CreateThread(function()
         if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
             lastVehAsDriver = veh
             if emergencyOnDuty() then
-                ingestFromEntity(veh)
-                local _, kit = readVehicleStateBag(veh)
-                if kit and not vehicleSupportsNativeEmergency(veh) and performanceTuneEnabled() then
-                    syncKitPerformance(veh)
-                end
+                scheduleIngest(veh)
             end
         elseif lastVehAsDriver ~= 0 then
             if RESET_ON_EXIT and DoesEntityExist(lastVehAsDriver) then
@@ -685,11 +725,8 @@ end, false)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
-    for veh, prop in pairs(LIGHTBARS) do
-        if prop and DoesEntityExist(prop) then
-            DeleteEntity(prop)
-        end
-        LIGHTBARS[veh] = nil
+    for veh in pairs(LIGHTBARS) do
+        removeLightbar(veh)
     end
     for veh in pairs(KIT_PERF) do
         if veh and DoesEntityExist(veh) then
@@ -697,22 +734,5 @@ AddEventHandler('onResourceStop', function(res)
         else
             KIT_PERF[veh] = nil
         end
-    end
-end)
-
-CreateThread(function()
-    while true do
-        Wait(750)
-        local ped = PlayerPedId()
-        local veh = GetVehiclePedIsIn(ped, false)
-        if veh == 0 or GetPedInVehicleSeat(veh, -1) ~= ped then
-            goto continue
-        end
-        local _, kit = readVehicleStateBag(veh)
-        if kit ~= true or vehicleSupportsNativeEmergency(veh) or not performanceTuneEnabled() then
-            goto continue
-        end
-        syncKitPerformance(veh)
-        ::continue::
     end
 end)

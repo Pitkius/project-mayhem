@@ -127,7 +127,6 @@ local function ingestVehicle(veh)
 end
 
 local function onBagChange(_, bagName)
-    Wait(20)
     local ent = resolveEntityFromBagName(bagName)
     if ent ~= 0 and IsEntityAVehicle(ent) then
         ingestVehicle(ent)
@@ -154,7 +153,7 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(250)
+        Wait(420)
         local now = GetGameTimer()
         for veh, meta in pairs(TRACKED) do
             if not DoesEntityExist(veh) then
@@ -197,7 +196,7 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(500)
+        Wait(900)
         local ped = PlayerPedId()
         local veh = GetVehiclePedIsIn(ped, false)
         if veh and veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
