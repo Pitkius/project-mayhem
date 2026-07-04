@@ -158,7 +158,7 @@ RegisterNetEvent('qb-weapons:server:UpdateWeaponAmmo', function(CurrentWeaponDat
             end
         end
         if updated then
-            Player.Functions.SetInventory(Player.PlayerData.items, true)
+            Player.Functions.SetPlayerData('items', Player.PlayerData.items)
         end
     end
 end)

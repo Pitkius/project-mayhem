@@ -75,16 +75,23 @@ Config.EmergencyVehicle = {
     lightbarModel = 'prop_lightbar_01',
     lightbarYOffset = 0.12,
     lightbarZOffset = 0.04,
+    --- Mažos lempos ant švyturėlio (mirksėjimas iš jų pozicijos, ne po priekiu)
+    lensModel = 'prop_warninglight_01',
+    lensLeftOffset = { x = -0.26, y = 0.0, z = 0.07 },
+    lensRightOffset = { x = 0.26, y = 0.0, z = 0.07 },
     --- Mirksėjimo intervalas (ms)
     flashIntervalMs = 480,
-    --- Aplinkos šviesa (0 = tik markeriai, be spindulio)
-    flashLightRange = 18.0,
-    flashLightIntensity = 6.0,
-    --- Kryptiniai spinduliai (PD stiliaus „lempos“)
-    flashSpotRange = 32.0,
-    flashSpotIntensity = 14.0,
-    flashDrawDistance = 95.0,
-    flashMarkerScale = 0.11,
+    flashTickMs = 80,
+    --- Aplinkos šviesa prie lempų (maža – mažiau lag)
+    flashLightRange = 7.0,
+    flashLightIntensity = 2.2,
+    --- Kryptiniai spinduliai (DrawSpotLight – labai brangus, numatyta išjungta)
+    flashUseSpotBeams = false,
+    flashUseAmbientGlow = true,
+    flashSpotRange = 18.0,
+    flashSpotIntensity = 6.0,
+    flashDrawDistance = 55.0,
+    flashMarkerScale = 0.075,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
@@ -181,7 +188,8 @@ Config.HelipadBlipScale = 0.9
 
 --- 3D markeriai ant žemės MRPD / kituose postuose (ne žemėlapio blipai)
 Config.ShowPd3DMarkers = true
-Config.PdMarkerDrawDistance = 40.0
+Config.PdMarkerDrawDistance = 32.0
+Config.PdMarkerNearTickMs = 50
 Config.PdMarkerZOffset = 0.02
 --- Sandėliai: mažas trikampis (DrawMarker tipas 2)
 Config.PdStashMarkerType = 2
@@ -238,8 +246,8 @@ Config.Stations = {
             blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra' },
         },
         supply = {
-            coords = vector3(478.85, -996.25, 30.6896),
-            label = 'PD inventorius (žaliavos)',
+            coords = vector3(428.4538, -974.6989, 21.5596),
+            label = 'PD ginklinė / inventorius',
         },
         armory = {
             coords = vector3(480.32, -996.67, 30.6896),
@@ -282,7 +290,7 @@ Config.Stations = {
         },
         stashes = {
             {
-                coords = vector3(479.55, -995.24, 30.6896),
+                coords = vector3(429.7007, -978.3584, 21.5596),
                 stashId = 'ltpd_stash_public_ls',
                 label = 'PD sandėlis (bendras)',
                 minGrade = 0,
@@ -291,7 +299,7 @@ Config.Stations = {
                 slots = 60,
             },
             {
-                coords = vector3(481.45, -995.24, 30.6896),
+                coords = vector3(424.9205, -978.3719, 21.5596),
                 stashId = 'ltpd_stash_grade3_ls',
                 label = 'PD sandėlis (≥3 rango)',
                 minGrade = 3,
@@ -300,16 +308,7 @@ Config.Stations = {
                 slots = 70,
             },
             {
-                coords = vector3(483.35, -995.24, 30.6896),
-                stashId = 'ltpd_stash_criminal_ls',
-                label = 'Kriminalistų sandėlis',
-                minGrade = 4,
-                divisions = { 'ktd', 'admin' },
-                maxweight = 2500000,
-                slots = 70,
-            },
-            {
-                coords = vector3(485.25, -995.24, 30.6896),
+                coords = vector3(426.2207, -974.6854, 21.5596),
                 stashId = 'ltpd_stash_grade8_ls',
                 label = 'PD sandėlis (vadovų)',
                 minGrade = 8,
@@ -452,6 +451,11 @@ Config.MaxFineAmount = 50000
 
 --- PD durys / vartai (dt_19 MRPD LS + automatinis Sandy / Paleto MLO skenavimas)
 Config.PdDoorToggleReach = 6.0
+--- Spynos ikonos Z poslinkis nuo durų slab koord. (standartinės durys)
+Config.PdDoorLockIconZOffset = 0.38
+--- Spynos ikona: tik arti durų (ne visam MRPD spinduliu) · ms tarp piešimų (≥50)
+Config.PdDoorLockIconDrawDistance = 10.0
+Config.PdDoorLockIconTickMs = 50
 --- false = tik E mygtukas; true = papildomai qb-target (numatyta: tik E)
 Config.PdDoorUseQbTarget = false
 Config.PdDoorGroups = {

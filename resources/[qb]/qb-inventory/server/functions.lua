@@ -235,17 +235,15 @@ exports('SaveInventory', SaveInventory)
 --- @param reason string The reason for setting the items.
 function SetInventory(identifier, items, reason)
     local player = QBCore.Functions.GetPlayer(identifier)
-
-    print('Setting inventory for ' .. identifier)
+    local silent = reason == true or reason == 'silent' or reason == 'ammo-sync' or reason == 'ammo_sync'
 
     if not player and not Inventories[identifier] and not Drops[identifier] then
-        print('SetInventory: Inventory not found')
         return
     end
 
     if player then
         player.Functions.SetPlayerData('items', items)
-        if not player.Offline then
+        if not player.Offline and not silent then
             local logMessage = string.format('**%s (citizenid: %s | id: %s)** items set: %s', GetPlayerName(identifier), player.PlayerData.citizenid, identifier, json.encode(items))
             TriggerEvent('qb-log:server:CreateLog', 'playerinventory', 'SetInventory', 'blue', logMessage)
         end
@@ -254,6 +252,8 @@ function SetInventory(identifier, items, reason)
     elseif Inventories[identifier] then
         Inventories[identifier].items = items
     end
+
+    if silent then return end
 
     local invName = player and GetPlayerName(identifier) .. ' (' .. identifier .. ')' or identifier
     local setReason = reason or 'No reason specified'

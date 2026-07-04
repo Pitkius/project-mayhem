@@ -19,13 +19,18 @@ CreateThread(function()
     registerJobShops()
 end)
 
-local function nearNpc(src, coords, maxDist)
+local function nearCoords(src, coords, maxDist)
+    if not coords then return false end
     maxDist = tonumber(maxDist) or Config.JobNpcReach or 3.5
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return false end
     local p = GetEntityCoords(ped)
     local c = coords
-    return #(p - vector3(c.x, c.y, c.z)) <= maxDist + 2.0
+    return #(p - vector3(c.x, c.y, c.z)) <= maxDist
+end
+
+local function nearNpc(src, coords, maxDist)
+    return nearCoords(src, coords, (tonumber(maxDist) or Config.JobNpcReach or 3.5) + 2.0)
 end
 
 local function findNpcEntry(job, stationId, role)
@@ -35,6 +40,20 @@ local function findNpcEntry(job, stationId, role)
         end
     end
     return nil
+end
+
+local function nearSupplyPoint(src, jobName, stationId)
+    local reach = tonumber(Config.JobSupplyReach) or 5.5
+    local entry = findNpcEntry(jobName, stationId, 'supply')
+    if entry and nearCoords(src, entry.coords, reach) then
+        return true
+    end
+    for _, pt in ipairs(Config.JobSupplyPoints or {}) do
+        if pt.job == jobName and pt.stationId == stationId and nearCoords(src, pt.coords, reach) then
+            return true
+        end
+    end
+    return false
 end
 
 local function playerJobOk(src, jobName)
@@ -51,9 +70,8 @@ RegisterNetEvent('mrp_npcshops:server:openJobSupply', function(jobName, stationI
     if not playerJobOk(src, jobName) then
         return TriggerClientEvent('QBCore:Notify', src, 'Tik tarnyboje.', 'error')
     end
-    local entry = findNpcEntry(jobName, stationId, 'supply')
-    if not entry or not nearNpc(src, entry.coords) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo taško.', 'error')
+    if not nearSupplyPoint(src, jobName, stationId) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo PD ginklinės / inventoriaus.', 'error')
     end
     local shop
     if jobName == 'police' then

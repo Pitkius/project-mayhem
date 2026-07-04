@@ -91,8 +91,8 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
         ClearInventory(Player.PlayerData.source, filterItems)
     end)
 
-    QBCore.Functions.AddPlayerMethod(Player.PlayerData.source, 'SetInventory', function(items)
-        SetInventory(Player.PlayerData.source, items)
+    QBCore.Functions.AddPlayerMethod(Player.PlayerData.source, 'SetInventory', function(items, silentOrReason)
+        SetInventory(Player.PlayerData.source, items, silentOrReason == true and 'silent' or silentOrReason)
     end)
 end)
 
@@ -124,8 +124,8 @@ AddEventHandler('onResourceStart', function(resourceName)
             ClearInventory(k, filterItems)
         end)
 
-        QBCore.Functions.AddPlayerMethod(k, 'SetInventory', function(items)
-            SetInventory(k, items)
+        QBCore.Functions.AddPlayerMethod(k, 'SetInventory', function(items, silentOrReason)
+            SetInventory(k, items, silentOrReason == true and 'silent' or silentOrReason)
         end)
 
         Player(k).state.inv_busy = false

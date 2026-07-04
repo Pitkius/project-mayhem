@@ -41,7 +41,7 @@ local USE_RADIUS = {
     stash = 2.2,
     locker = 2.0,
     armory = 2.0,
-    supply = 2.0,
+    supply = 2.5,
     craft = 2.0,
     duty = 2.0,
 }
@@ -108,7 +108,7 @@ local function drawDistanceFor(kind)
     if kind == 'stash' then
         return Config.PdStashMarkerDrawDistance or 22.0
     end
-    return Config.PdMarkerDrawDistance or 80.0
+    return Config.PdMarkerDrawDistance or 32.0
 end
 
 local function textDistanceFor(kind)
@@ -304,7 +304,6 @@ end)
 
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
     forceAccessRefresh = true
-    scheduleRegister()
 end)
 
 RegisterNetEvent('mrp_ltpd:client:syncDivision', function()
@@ -372,6 +371,7 @@ end
 CreateThread(function()
     local accessCache = {}
     local lastAccessRefresh = 0
+    local nearTickMs = math.max(50, tonumber(Config.PdMarkerNearTickMs) or 50)
 
     local function refreshAccessCache()
         local now = GetGameTimer()
@@ -403,6 +403,10 @@ CreateThread(function()
         local ped = PlayerPedId()
         local pcoords = GetEntityCoords(ped)
         local nearInteract = false
+        local anyDrawn = false
+        local maxDrawDist = Config.PdMarkerDrawDistance or 32.0
+        local closestInteract = nil
+        local closestInteractDist = nil
 
         for i, zone in ipairs(pdZones) do
             if accessCache[i] == false then
@@ -410,54 +414,71 @@ CreateThread(function()
             end
 
             local dist = #(pcoords - zone.coords)
-            local drawDist = drawDistanceFor(zone.kind)
+            local drawDist = zone.kind == 'stash' and (Config.PdStashMarkerDrawDistance or 22.0) or maxDrawDist
             if dist >= drawDist then
                 goto continue_zone
             end
 
+            anyDrawn = true
             drawMarkerAt(zone.coords, zone.kind)
-            sleep = math.min(sleep, 120)
 
             local useR = USE_RADIUS[zone.kind] or 2.0
             local textR = textDistanceFor(zone.kind)
             if dist < useR then
-                nearInteract = true
                 local canUse = not zone.requireDuty or isPdOnDuty()
                 if canUse and dist < textR then
-                    local hint
-                    local pressed
-                    if zone.kind == 'stash' then
-                        hint = stashHint(zone.label)
-                        enableStashOpenControl()
-                        pressed = isStashOpenPressed()
-                    else
-                        EnableControlAction(0, 38, true)
-                        hint = ('[E] %s'):format(zone.label)
-                        pressed = IsControlJustPressed(0, 38)
-                    end
-                    QBCore.Functions.DrawText3D(
-                        zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
-                        hint
-                    )
-                    if pressed and (GetGameTimer() - lastInteractMs) > 450 then
-                        lastInteractMs = GetGameTimer()
-                        if zone.onPress then zone.onPress() end
+                    if not closestInteractDist or dist < closestInteractDist then
+                        closestInteractDist = dist
+                        closestInteract = zone
                     end
                 elseif zone.requireDuty and dist < textR then
-                    QBCore.Functions.DrawText3D(
-                        zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
-                        'Tik tarnyboje (policija)'
-                    )
+                    if not closestInteractDist or dist < closestInteractDist then
+                        closestInteractDist = dist
+                        closestInteract = { coords = zone.coords, kind = zone.kind, requireDutyBlock = true }
+                    end
                 end
             end
 
             ::continue_zone::
         end
 
+        if closestInteract and closestInteract.onPress then
+            nearInteract = true
+            local zone = closestInteract
+            if zone.requireDutyBlock then
+                QBCore.Functions.DrawText3D(
+                    zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
+                    'Tik tarnyboje (policija)'
+                )
+            else
+                local hint
+                local pressed
+                if zone.kind == 'stash' then
+                    hint = stashHint(zone.label)
+                    enableStashOpenControl()
+                    pressed = isStashOpenPressed()
+                else
+                    EnableControlAction(0, 38, true)
+                    hint = ('[E] %s'):format(zone.label)
+                    pressed = IsControlJustPressed(0, 38)
+                end
+                QBCore.Functions.DrawText3D(
+                    zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
+                    hint
+                )
+                if pressed and (GetGameTimer() - lastInteractMs) > 450 then
+                    lastInteractMs = GetGameTimer()
+                    if zone.onPress then zone.onPress() end
+                end
+            end
+        end
+
         if nearInteract then
-            sleep = 0
-        elseif sleep > 120 then
-            sleep = 400
+            sleep = nearTickMs
+        elseif anyDrawn then
+            sleep = 180
+        else
+            sleep = 800
         end
 
         Wait(sleep)

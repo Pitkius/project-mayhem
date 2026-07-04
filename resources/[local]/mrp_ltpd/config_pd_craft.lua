@@ -3,7 +3,7 @@ Config.PdWeaponCraft = {
     craftsPerLevel = { [1] = 6, [2] = 10 },
     maxLevel = 3,
     defaultLevel = 1,
-    interactDistance = 2.2,
+    interactDistance = 3.0,
 
     levelLabels = {
         [1] = '1 lygis · Bazinis',
@@ -15,8 +15,8 @@ Config.PdWeaponCraft = {
         {
             id = 'ls_main_craft',
             stationId = 'ls_main',
-            coords = vector3(481.50, -996.25, 30.6896),
-            heading = 90.0,
+            coords = vector3(427.15, -976.45, 21.5596),
+            heading = 355.6620,
             label = 'MRPD ginklų gamykla',
             minGrade = 0,
         },

@@ -98,6 +98,8 @@ Nauji nariai mato tik **oro-uostas** ir **pasitvirtinimas**. Reakcijos duoda jau
 | ✅ | Verified — mato visą serverį |
 | 🔔 | Ping — pranešimų rolė (įjungti/išjungti) |
 
+Jei reakcijos neveikia po senesnės formos: `/setupverify sync`
+
 ### Logų struktūra (auto-sukuriama)
 
 Po kategorijos **📋 Admin-logai**:

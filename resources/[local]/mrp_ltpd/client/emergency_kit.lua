@@ -2,9 +2,8 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local TRACKED = {} --- [vehicle] = { supportsNative, mode }
-local LIGHTBARS = {} --- [vehicle] = prop entity
+local LIGHTBARS = {} --- [vehicle] = { bar, leftLens, rightLens }
 local KIT_PERF = {} --- [vehicle] = { sig, orig }
-local LIGHT_LAYOUT = {} --- [vehicle] = layout cache
 local INGEST_SCHEDULED = {} --- [vehicle] = true
 
 local FLEET_HASHES = {}
@@ -142,11 +141,21 @@ local function playShortSirenBurst(vehicle)
     end)
 end
 
+local function deleteLightEntity(ent)
+    if ent and ent ~= 0 and DoesEntityExist(ent) then
+        DetachEntity(ent, true, true)
+        DeleteEntity(ent)
+    end
+end
+
 local function removeLightbar(vehicle)
-    local prop = LIGHTBARS[vehicle]
-    if prop and prop ~= 0 and DoesEntityExist(prop) then
-        DetachEntity(prop, true, true)
-        DeleteEntity(prop)
+    local rig = LIGHTBARS[vehicle]
+    if type(rig) == 'table' then
+        deleteLightEntity(rig.leftLens)
+        deleteLightEntity(rig.rightLens)
+        deleteLightEntity(rig.bar)
+    else
+        deleteLightEntity(rig)
     end
     LIGHTBARS[vehicle] = nil
 end
@@ -161,6 +170,38 @@ local function readVehicleStateBag(vehicle)
     return mode, kit
 end
 
+local function loadModel(hash)
+    if not hash or hash == 0 or not IsModelInCdimage(hash) then return false end
+    RequestModel(hash)
+    local tries = 0
+    while not HasModelLoaded(hash) and tries < 80 do
+        Wait(10)
+        tries = tries + 1
+    end
+    return HasModelLoaded(hash)
+end
+
+local function attachLensToBar(barEnt, vehicle, side)
+    local lensName = Ec.lensModel or 'prop_warninglight_01'
+    local hash = joaat(lensName)
+    if not loadModel(hash) then return nil end
+
+    local offCfg = side == 'left' and Ec.lensLeftOffset or Ec.lensRightOffset
+    local ox = tonumber(offCfg and offCfg.x) or (side == 'left' and -0.26 or 0.26)
+    local oy = tonumber(offCfg and offCfg.y) or 0.0
+    local oz = tonumber(offCfg and offCfg.z) or 0.07
+
+    local c = GetEntityCoords(barEnt)
+    local lens = CreateObject(hash, c.x, c.y, c.z, false, false, false)
+    SetModelAsNoLongerNeeded(hash)
+    if not lens or lens == 0 then return nil end
+
+    SetEntityCollision(lens, false, false)
+    SetEntityAsMissionEntity(lens, true, true)
+    AttachEntityToEntity(lens, barEnt, 0, ox, oy, oz, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+    return lens
+end
+
 local function ensureLightbar(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     local _, kit = readVehicleStateBag(vehicle)
@@ -168,28 +209,28 @@ local function ensureLightbar(vehicle)
         removeLightbar(vehicle)
         return
     end
-    if LIGHTBARS[vehicle] and DoesEntityExist(LIGHTBARS[vehicle]) then return end
+
+    local rig = LIGHTBARS[vehicle]
+    if type(rig) == 'table' and rig.bar and DoesEntityExist(rig.bar) then
+        if rig.leftLens and DoesEntityExist(rig.leftLens) and rig.rightLens and DoesEntityExist(rig.rightLens) then
+            return
+        end
+        removeLightbar(vehicle)
+    elseif rig and DoesEntityExist(rig) then
+        removeLightbar(vehicle)
+    end
 
     local modelName = Ec.lightbarModel or 'prop_lightbar_01'
     local hash = joaat(modelName)
-    if not IsModelInCdimage(hash) then return end
-    RequestModel(hash)
-    local tries = 0
-    while not HasModelLoaded(hash) and tries < 80 do
-        Wait(10)
-        tries = tries + 1
-    end
-    if not HasModelLoaded(hash) then return end
+    if not loadModel(hash) then return end
 
     local c = GetEntityCoords(vehicle)
-    local prop = CreateObject(hash, c.x, c.y, c.z + 1.0, false, false, false)
-    if not prop or prop == 0 then
-        SetModelAsNoLongerNeeded(hash)
-        return
-    end
-    SetEntityCollision(prop, false, false)
-    SetEntityAsMissionEntity(prop, true, true)
-    SetEntityCompletelyDisableCollision(prop, false, false)
+    local bar = CreateObject(hash, c.x, c.y, c.z + 1.0, false, false, false)
+    SetModelAsNoLongerNeeded(hash)
+    if not bar or bar == 0 then return end
+
+    SetEntityCollision(bar, false, false)
+    SetEntityAsMissionEntity(bar, true, true)
 
     local bone = GetEntityBoneIndexByName(vehicle, 'roof')
     if bone == -1 then bone = GetEntityBoneIndexByName(vehicle, 'bodyshell') end
@@ -197,9 +238,11 @@ local function ensureLightbar(vehicle)
     local spanY = mx.y - mn.y
     local yOff = mx.y - math.max(0.12, spanY * 0.07) + (tonumber(Ec.lightbarYOffset) or 0.0)
     local zOff = mx.z + 0.02 + (tonumber(Ec.lightbarZOffset) or 0.0)
-    AttachEntityToEntity(prop, vehicle, bone, 0.0, yOff, zOff, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
-    LIGHTBARS[vehicle] = prop
-    SetModelAsNoLongerNeeded(hash)
+    AttachEntityToEntity(bar, vehicle, bone, 0.0, yOff, zOff, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+
+    local leftLens = attachLensToBar(bar, vehicle, 'left')
+    local rightLens = attachLensToBar(bar, vehicle, 'right')
+    LIGHTBARS[vehicle] = { bar = bar, leftLens = leftLens, rightLens = rightLens }
 end
 
 local PERF_FIELDS = {
@@ -333,45 +376,48 @@ local function cleanupVehicleEmergency(vehicle)
     stopScriptSound(vehicle)
     removeLightbar(vehicle)
     removeKitPerformance(vehicle)
-    LIGHT_LAYOUT[vehicle] = nil
     INGEST_SCHEDULED[vehicle] = nil
     TRACKED[vehicle] = nil
 end
 
-local function getLightLayout(vehicle)
-    local now = GetGameTimer()
-    local entry = LIGHT_LAYOUT[vehicle]
-    if entry and (now - entry.at) < 240 then return entry end
+local function lensWorldPos(lensEnt, barEnt, vehicle, side)
+    if lensEnt and lensEnt ~= 0 and DoesEntityExist(lensEnt) then
+        return GetEntityCoords(lensEnt)
+    end
+    if barEnt and barEnt ~= 0 and DoesEntityExist(barEnt) then
+        local offCfg = side == 'left' and Ec.lensLeftOffset or Ec.lensRightOffset
+        local ox = tonumber(offCfg and offCfg.x) or (side == 'left' and -0.26 or 0.26)
+        local oy = tonumber(offCfg and offCfg.y) or 0.0
+        local oz = tonumber(offCfg and offCfg.z) or 0.07
+        return GetOffsetFromEntityInWorldCoords(barEnt, ox, oy, oz)
+    end
     local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
-    local spanX = mx.x - mn.x
-    local spanY = mx.y - mn.y
-    entry = {
-        at = now,
-        halfW = math.max(0.24, spanX * 0.36),
-        roofZ = mx.z - 0.05,
-        frontY = mx.y - math.max(0.14, spanY * 0.05),
-    }
-    LIGHT_LAYOUT[vehicle] = entry
-    return entry
+    local halfW = math.max(0.22, (mx.x - mn.x) * 0.22)
+    local roofZ = mx.z - 0.04
+    local xOff = side == 'left' and -halfW or halfW
+    return GetOffsetFromEntityInWorldCoords(vehicle, xOff, 0.0, roofZ)
+end
+
+local function vehicleBeamForward(vehicle)
+    local fwd = GetEntityForwardVector(vehicle)
+    local len = #(fwd)
+    if len < 0.01 then return vector3(0.0, 1.0, 0.0) end
+    return vector3(fwd.x / len, fwd.y / len, fwd.z / len)
 end
 
 local function worldLightPoints(vehicle)
-    local layout = getLightLayout(vehicle)
-    local prop = LIGHTBARS[vehicle]
-    local barPos
-    if prop and DoesEntityExist(prop) then
-        barPos = GetEntityCoords(prop)
+    local rig = LIGHTBARS[vehicle]
+    local barEnt = type(rig) == 'table' and rig.bar or rig
+    local leftPos = lensWorldPos(type(rig) == 'table' and rig.leftLens or nil, barEnt, vehicle, 'left')
+    local rightPos = lensWorldPos(type(rig) == 'table' and rig.rightLens or nil, barEnt, vehicle, 'right')
+    local centerPos
+    if barEnt and DoesEntityExist(barEnt) then
+        centerPos = GetEntityCoords(barEnt)
     else
-        barPos = GetOffsetFromEntityInWorldCoords(vehicle, 0.0, layout.frontY, layout.roofZ)
+        local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
+        centerPos = GetOffsetFromEntityInWorldCoords(vehicle, 0.0, 0.0, mx.z - 0.04)
     end
-    local leftPos = GetOffsetFromEntityInWorldCoords(vehicle, -layout.halfW, layout.frontY - 0.06, layout.roofZ)
-    local rightPos = GetOffsetFromEntityInWorldCoords(vehicle, layout.halfW, layout.frontY - 0.06, layout.roofZ)
-    local centerPos = GetOffsetFromEntityInWorldCoords(vehicle, 0.0, layout.frontY - 0.02, layout.roofZ + 0.04)
-    local fwd = GetEntityForwardVector(vehicle)
-    local beamDir = vector3(fwd.x * 0.94, fwd.y * 0.94, -0.22)
-    local len = #(beamDir)
-    if len > 0.01 then beamDir = beamDir / len end
-    return barPos, leftPos, rightPos, centerPos, beamDir
+    return centerPos, leftPos, rightPos, centerPos, vehicleBeamForward(vehicle)
 end
 
 local function drawLensMarker(x, y, z, r, g, b, alpha, scale)
@@ -405,20 +451,18 @@ local function drawScriptFlash(vehicle)
 
     local interval = tonumber(Ec.flashIntervalMs) or 480
     local phase = math.floor(GetGameTimer() / interval) % 2 == 0
-    local _, leftPos, rightPos, centerPos, beamDir = worldLightPoints(vehicle)
+    local _, leftPos, rightPos, _, beamDir = worldLightPoints(vehicle)
+    local useAmbient = Ec.flashUseAmbientGlow ~= false
+    local useSpot = Ec.flashUseSpotBeams == true
 
     if phase then
-        drawLensMarker(leftPos.x, leftPos.y, leftPos.z, 255, 48, 48, 185)
-        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 220, 56, 56, 95)
-        drawAmbientGlow(leftPos.x, leftPos.y, leftPos.z, 255, 45, 45)
-        drawEmergencyBeam(leftPos, beamDir, 255, 42, 42)
-        drawEmergencyBeam(centerPos, beamDir, 255, 60, 60)
+        drawLensMarker(leftPos.x, leftPos.y, leftPos.z, 255, 48, 48, 200)
+        if useAmbient then drawAmbientGlow(leftPos.x, leftPos.y, leftPos.z, 255, 45, 45) end
+        if useSpot then drawEmergencyBeam(leftPos, beamDir, 255, 42, 42) end
     else
-        drawLensMarker(rightPos.x, rightPos.y, rightPos.z, 48, 110, 255, 185)
-        drawLensMarker(centerPos.x, centerPos.y, centerPos.z, 56, 96, 220, 95)
-        drawAmbientGlow(rightPos.x, rightPos.y, rightPos.z, 45, 95, 255)
-        drawEmergencyBeam(rightPos, beamDir, 42, 95, 255)
-        drawEmergencyBeam(centerPos, beamDir, 60, 110, 255)
+        drawLensMarker(rightPos.x, rightPos.y, rightPos.z, 48, 110, 255, 200)
+        if useAmbient then drawAmbientGlow(rightPos.x, rightPos.y, rightPos.z, 45, 95, 255) end
+        if useSpot then drawEmergencyBeam(rightPos, beamDir, 42, 95, 255) end
     end
 end
 
@@ -521,7 +565,8 @@ AddStateBagChangeHandler('ltEmsKit', '', onAnyPdBag)
 AddStateBagChangeHandler('fpSirenMuted', '', onAnyPdBag)
 
 CreateThread(function()
-    local drawDistance = tonumber(Ec.flashDrawDistance) or 95.0
+    local drawDistance = tonumber(Ec.flashDrawDistance) or 55.0
+    local tickMs = math.max(50, tonumber(Ec.flashTickMs) or 80)
     while true do
         local drew = false
         if next(TRACKED) ~= nil then
@@ -542,7 +587,7 @@ CreateThread(function()
                 end
             end
         end
-        Wait(drew and 0 or (next(TRACKED) and 350 or 1200))
+        Wait(drew and tickMs or (next(TRACKED) and 400 or 1200))
     end
 end)
 

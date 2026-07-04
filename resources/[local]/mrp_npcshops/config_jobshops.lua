@@ -3,19 +3,40 @@ Config = Config or {}
 --- Tarnybinių daiktų parduotuvės (nemokamai / $0 — tik on duty)
 Config.PoliceSupplyShop = {
     name = 'mrp_pd_supply',
-    label = 'PD inventorius',
+    label = 'PD ginklinė / inventorius',
     items = {
         { name = 'radio', amount = 999, price = 0, slot = 1 },
         { name = 'handcuffs', amount = 999, price = 0, slot = 2 },
         { name = 'ziptie', amount = 999, price = 0, slot = 3 },
-        { name = 'armor', amount = 999, price = 0, slot = 4 },
-        { name = 'bandage', amount = 999, price = 0, slot = 5 },
-        { name = 'painkillers', amount = 999, price = 0, slot = 6 },
-        { name = 'vehicle_key_copy', amount = 999, price = 0, slot = 7 },
-        { name = 'lockpick', amount = 50, price = 25, slot = 8 },
-        { name = 'pd_emergency_kit', amount = 50, price = 0, slot = 9 },
+        { name = 'bandage', amount = 999, price = 0, slot = 4 },
+        { name = 'painkillers', amount = 999, price = 0, slot = 5 },
+        { name = 'vehicle_key_copy', amount = 999, price = 0, slot = 6 },
+        { name = 'lockpick', amount = 50, price = 25, slot = 7 },
+        { name = 'pd_emergency_kit', amount = 50, price = 0, slot = 8 },
+        { name = 'weapon_stungun', amount = 50, price = 0, slot = 9 },
+        { name = 'weapon_nightstick', amount = 50, price = 0, slot = 10 },
+        { name = 'weapon_flashlight', amount = 50, price = 0, slot = 11 },
+        { name = 'weapon_combatpistol', amount = 25, price = 0, slot = 12 },
+        { name = 'pistol_ammo', amount = 999, price = 0, slot = 13 },
+        { name = 'armor_police', amount = 50, price = 0, slot = 14 },
+        { name = 'armor_light', amount = 50, price = 0, slot = 15 },
+        { name = 'armor', amount = 999, price = 0, slot = 16 },
+        { name = 'metal_scrap', amount = 999, price = 0, slot = 17 },
+        { name = 'weapon_parts', amount = 999, price = 0, slot = 18 },
+        { name = 'gun_frame', amount = 999, price = 0, slot = 19 },
+        { name = 'gun_barrel', amount = 999, price = 0, slot = 20 },
+        { name = 'gun_spring', amount = 999, price = 0, slot = 21 },
+        { name = 'gun_trigger', amount = 999, price = 0, slot = 22 },
+        { name = 'electronickit', amount = 999, price = 0, slot = 23 },
+        { name = 'plastic', amount = 999, price = 0, slot = 24 },
     },
 }
+
+--- Marker taškai (mrp_ltpd 3D markeriai) — serverio atstumo patikra
+Config.JobSupplyPoints = {
+    { job = 'police', stationId = 'ls_main', coords = vector3(428.4538, -974.6989, 21.5596) },
+}
+Config.JobSupplyReach = 5.5
 
 Config.EmsSupplyShop = {
     name = 'mrp_ems_supply',
@@ -62,7 +83,7 @@ Config.JobStationNpcs = {
         coords = vector4(463.9745, -996.6197, 30.6895, 84.1146),
         label = 'PD pamaina (pradėti / baigti)',
     },
-    { job = 'police', stationId = 'ls_main', role = 'supply', model = 's_m_y_cop_01', coords = vector4(489.05, -997.1946, 30.6896, 268.0), label = 'PD inventorius (žaliavos)' },
+    { job = 'police', stationId = 'ls_main', role = 'supply', model = 's_m_y_cop_01', coords = vector4(428.4538, -974.6989, 21.5596, 355.6620), label = 'PD ginklinė / inventorius' },
 
     --- EMS Pillbox (Gabz MLO)
     { job = 'ambulance', stationId = 'ems_ls', role = 'duty', model = 's_m_m_doctor_01', coords = vector4(309.52, -595.29, 43.28, 71.0), label = 'EMS registratūra / tarnyba' },

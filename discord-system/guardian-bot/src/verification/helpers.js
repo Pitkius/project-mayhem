@@ -8,6 +8,43 @@ import {
 export const VERIFY_EMOJI_MEMBER = '✅';
 export const VERIFY_EMOJI_PING = '🔔';
 
+/** Discord API dažnai grąžina `:name:` vietoj unicode simbolio. */
+const UNICODE_EMOJI_ALIASES = {
+  '✅': ['white_check_mark', '✅', ':white_check_mark:'],
+  '🔔': ['bell', '🔔', ':bell:'],
+};
+
+export function getVerifyEmojis(verification = {}) {
+  return {
+    member: String(verification.memberEmoji || VERIFY_EMOJI_MEMBER).trim(),
+    ping: String(verification.pingEmoji || VERIFY_EMOJI_PING).trim(),
+  };
+}
+
+function normalizeEmojiToken(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^:+|:+$/g, '')
+    .toLowerCase();
+}
+
+function expandEmojiTokens(configEmoji) {
+  const raw = String(configEmoji || '').trim();
+  if (!raw) return [];
+
+  const tokens = new Set([raw, normalizeEmojiToken(raw)]);
+  for (const [canonical, aliases] of Object.entries(UNICODE_EMOJI_ALIASES)) {
+    if (raw === canonical || aliases.includes(raw) || aliases.includes(normalizeEmojiToken(raw))) {
+      tokens.add(canonical);
+      for (const alias of aliases) {
+        tokens.add(alias);
+        tokens.add(normalizeEmojiToken(alias));
+      }
+    }
+  }
+  return [...tokens];
+}
+
 export function normalizeChannelName(name) {
   return String(name || '')
     .toLowerCase()
@@ -60,15 +97,38 @@ export async function findChannelBySlug(guild, slug) {
 }
 
 export function emojiMatches(configEmoji, reactionEmoji) {
-  const cfg = String(configEmoji || '');
-  if (!cfg) return false;
+  const cfg = String(configEmoji || '').trim();
+  if (!cfg || !reactionEmoji) return false;
+
   if (reactionEmoji.id) {
-    return cfg === reactionEmoji.identifier || cfg === reactionEmoji.id || cfg === `<:${reactionEmoji.name}:${reactionEmoji.id}>`;
+    const customFormats = [
+      reactionEmoji.identifier,
+      reactionEmoji.id,
+      `<:${reactionEmoji.name}:${reactionEmoji.id}>`,
+      `<a:${reactionEmoji.name}:${reactionEmoji.id}>`,
+    ].filter(Boolean);
+    return customFormats.some((f) => cfg === f);
   }
-  return cfg === reactionEmoji.name || cfg === reactionEmoji.toString();
+
+  const reactionTokens = new Set([
+    reactionEmoji.toString(),
+    reactionEmoji.name,
+    normalizeEmojiToken(reactionEmoji.name),
+    normalizeEmojiToken(reactionEmoji.toString()),
+  ]);
+
+  for (const token of expandEmojiTokens(cfg)) {
+    if (reactionTokens.has(token)) return true;
+    if (normalizeEmojiToken(token) && reactionTokens.has(normalizeEmojiToken(token))) return true;
+  }
+
+  return false;
 }
 
-export function buildVerificationEmbed(guild) {
+export function buildVerificationEmbed(guild, emojis = getVerifyEmojis()) {
+  const memberEmoji = emojis.member || VERIFY_EMOJI_MEMBER;
+  const pingEmoji = emojis.ping || VERIFY_EMOJI_PING;
+
   return new EmbedBuilder()
     .setColor(Colors.Purple)
     .setTitle('Pasitvirtinimas')
@@ -76,8 +136,8 @@ export function buildVerificationEmbed(guild) {
       [
         `Sveiki atvykę į **${guild.name}**!`,
         '',
-        `Reakcija **${VERIFY_EMOJI_MEMBER}** — prisijungi prie serverio ir matai visus kanalus.`,
-        `Reakcija **${VERIFY_EMOJI_PING}** — gauni ping pranešimus (galima įjungti/išjungti).`,
+        `Reakcija **${memberEmoji}** — prisijungi prie serverio ir matai visus kanalus.`,
+        `Reakcija **${pingEmoji}** — gauni ping pranešimus (galima įjungti/išjungti).`,
         '',
         'Paspausk emoji žemiau šios žinutės.',
       ].join('\n'),

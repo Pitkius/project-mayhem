@@ -257,11 +257,27 @@ local function requestPdDoorToggle(groupId)
     TriggerServerEvent('mrp_ltpd:server:setPdDoorGroup', groupId, newLocked)
 end
 
+local serviceDoorAccessCache = { ok = false, at = 0 }
+
 local function canUseServiceDoorsClient()
+    local now = GetGameTimer()
+    if now - serviceDoorAccessCache.at < 600 then
+        return serviceDoorAccessCache.ok
+    end
     local P = QBCore.Functions.GetPlayerData()
-    if not P or not P.job or not P.job.onduty then return false end
-    return isPdJobName(P.job.name) or isEmsJobName(P.job.name) or isRangerJobName(P.job.name)
+    local ok = P and P.job and P.job.onduty == true
+        and (isPdJobName(P.job.name) or isEmsJobName(P.job.name) or isRangerJobName(P.job.name))
+    serviceDoorAccessCache = { ok = ok == true, at = now }
+    return serviceDoorAccessCache.ok
 end
+
+RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
+    serviceDoorAccessCache.at = 0
+end)
+
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    serviceDoorAccessCache.at = 0
+end)
 
 local function quantKey(x, y, z)
     return math.floor(x * 100 + 0.5), math.floor(y * 100 + 0.5), math.floor(z * 100 + 0.5)
@@ -290,6 +306,32 @@ end
 local function findDoorGroupById(id)
     for _, g in ipairs(doorGroups) do
         if g.id == id then return g end
+    end
+    return nil
+end
+
+local function doorLockZOffset(doorType)
+    if doorType == 'garage_roll' then return 0.85 end
+    if doorType == 'yard_gate' then return 0.9 end
+    if doorType == 'barrier' then return 0.75 end
+    if doorType == 'bollard' then return 0.5 end
+    return tonumber(Config.PdDoorLockIconZOffset) or 0.38
+end
+
+--- Spynos ikona ant durų centro (ne virš jų, ne ant E taško).
+local function resolveDoorLockPos(group)
+    if not group then return nil end
+    local slabs = group.slabs or {}
+    if #slabs > 0 then
+        local sum = vector3(0.0, 0.0, 0.0)
+        for _, s in ipairs(slabs) do
+            sum = sum + s.coords
+        end
+        local c = sum / #slabs
+        return vector3(c.x, c.y, c.z + doorLockZOffset(group.doorType))
+    end
+    if group.interact then
+        return vector3(group.interact.x, group.interact.y, group.interact.z + doorLockZOffset(group.doorType))
     end
     return nil
 end
@@ -329,13 +371,24 @@ local function getPdDoorProximityZones()
     return cachedDoorProximityZones
 end
 
+local nearDoorDistCache = { dist = 999999.0, at = 0, x = 0.0, y = 0.0, z = 0.0 }
+
 local function nearestPdDoorDist(pcoords)
+    local now = GetGameTimer()
+    local c = nearDoorDistCache
+    if now - c.at < 400 then
+        local dx, dy, dz = pcoords.x - c.x, pcoords.y - c.y, pcoords.z - c.z
+        if (dx * dx + dy * dy + dz * dz) < 2.25 then
+            return c.dist
+        end
+    end
     local minD = 999999.0
     for _, g in ipairs(doorGroups) do
         if g.interact then
             minD = math.min(minD, #(pcoords - g.interact))
         end
     end
+    nearDoorDistCache = { dist = minD, at = now, x = pcoords.x, y = pcoords.y, z = pcoords.z }
     return minD
 end
 
@@ -401,6 +454,7 @@ end
 
 local function refreshPdDoorProximityCache()
     cachedDoorProximityZones = buildPdDoorProximityZones()
+    nearDoorDistCache.at = 0
 end
 
 local function refreshPdDoorInteractZones()
@@ -609,8 +663,9 @@ local function drawGroupLockIcons(g, pcoords, locked)
     if not g.interact then return end
     local maxDist = (g.interactDist or 2.5) + 5.5
     if #(pcoords - g.interact) > maxDist then return end
-    local zOff = g.doorType == 'yard_gate' and 1.05 or (g.doorType == 'garage_roll' and 0.95 or 1.0)
-    drawPdDoorLock(g.interact.x, g.interact.y, g.interact.z + zOff, locked)
+    local lockPos = resolveDoorLockPos(g)
+    if not lockPos then return end
+    drawPdDoorLock(lockPos.x, lockPos.y, lockPos.z, locked)
 end
 
 local function applyGarageSlabDoorSystem(slab, locked)
@@ -1101,6 +1156,7 @@ local function scanDynamicForStation(dyn)
     end
     if #newGroupIds > 0 then
         refreshPdDoorInteractZones()
+        nearDoorDistCache.at = 0
     end
     if #found > 0 then
         dynStationDone[dyn.stationId] = true
@@ -1189,7 +1245,7 @@ CreateThread(function()
             ::next_group::
         end
         for _, g in ipairs(doorGroups) do
-            if g.interact and not g.entityScanDef and #(pc - g.interact) < 45.0 and not isDoorTogglePending(g.id) then
+            if g.interact and not g.entityScanDef and #(pc - g.interact) < 18.0 and not isDoorTogglePending(g.id) then
                 local aligned = false
                 for _, slab in ipairs(g.slabs or {}) do
                     local before = slab.coords
@@ -1286,34 +1342,23 @@ end
 local function findNearestToggleDoor(pcoords)
     if not canUseServiceDoorsClient() then return nil end
     local closestHit = nil
-    local zones = getPdDoorProximityZones()
-    for _, z in ipairs(zones) do
+    local preScan = (tonumber(Config.PdDoorToggleReach) or 6.0) + 2.5
+    for _, z in ipairs(getPdDoorProximityZones()) do
         if not canUseDoorGroupClient(z.groupId) then goto continue_zone end
         local d = #(pcoords - z.pos)
+        if d > preScan then goto continue_zone end
         local r = doorToggleReachFor(z.maxd)
         if d <= r and (not closestHit or d < closestHit.d) then
+            local g = findDoorGroupById(z.groupId)
             closestHit = {
                 gid = z.groupId,
                 d = d,
                 pos = z.pos,
-                label = (findDoorGroupById(z.groupId) or {}).label,
+                lockPos = resolveDoorLockPos(g),
+                label = (g or {}).label,
             }
         end
         ::continue_zone::
-    end
-    for _, g in ipairs(doorGroups) do
-        if g.interact and canUseDoorGroupClient(g.id) then
-            local d = #(pcoords - g.interact)
-            local r = doorToggleReachFor(g.interactDist)
-            if d <= r and (not closestHit or d < closestHit.d) then
-                closestHit = {
-                    gid = g.id,
-                    d = d,
-                    pos = g.interact,
-                    label = g.label,
-                }
-            end
-        end
     end
     return closestHit
 end
@@ -1324,31 +1369,32 @@ local function tryToggleNearestDoor(pcoords)
     requestPdDoorToggle(hit.gid)
 end
 
---- Spynos ikona + E – vienas ciklas (nebesmirksėtų dėl dviejų thread'ų).
+--- Spynos ikona + E (be teksto – tik ikona ant durų centro; ne Wait(0)).
 CreateThread(function()
+    local iconDrawDist = tonumber(Config.PdDoorLockIconDrawDistance) or 10.0
+    local iconTickMs = math.max(50, tonumber(Config.PdDoorLockIconTickMs) or 50)
     while true do
-        local waitMs = 900
+        local waitMs = 1200
         if canUseServiceDoorsClient() then
             local ped = PlayerPedId()
             local pcoords = GetEntityCoords(ped)
             local doorNear = nearestPdDoorDist(pcoords)
-            if doorNear < 40.0 then
-                waitMs = 0
+            if doorNear < iconDrawDist then
+                waitMs = iconTickMs
                 local hit = findNearestToggleDoor(pcoords)
-                if hit and hit.pos then
+                if hit then
                     local locked = stableDoorIconLocked(hit.gid)
-                    drawPdDoorLock(hit.pos.x, hit.pos.y, hit.pos.z + 1.0, locked)
-                    QBCore.Functions.DrawText3D(
-                        hit.pos.x,
-                        hit.pos.y,
-                        hit.pos.z + 0.92,
-                        locked and '[E] Atrakinti duris' or '[E] Užrakinti duris'
-                    )
+                    local lockPos = hit.lockPos or resolveDoorLockPos(findDoorGroupById(hit.gid))
+                    if lockPos then
+                        drawPdDoorLock(lockPos.x, lockPos.y, lockPos.z, locked)
+                    end
                     EnableControlAction(0, 38, true)
                     if IsControlJustPressed(0, 38) or IsDisabledControlJustPressed(0, 38) then
                         tryToggleNearestDoor(pcoords)
                     end
                 end
+            elseif doorNear < 45.0 then
+                waitMs = 450
             end
         end
         Wait(waitMs)

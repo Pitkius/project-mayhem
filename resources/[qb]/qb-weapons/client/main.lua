@@ -880,6 +880,9 @@ CreateThread(function()
                         local syncName = inventoryWeaponNameForPed(weapon, selectedWeaponData)
                         local weaponSwitched = lastSyncedWeapon ~= syncName
                         local ammoDelta = lastSyncedAmmo ~= ammo
+                        if type(ammo) == 'number' and type(lastSyncedAmmo) == 'number' then
+                            ammoDelta = math.abs(lastSyncedAmmo - ammo) >= 1
+                        end
                         local rareResync = (now - lastAmmoSyncAt) >= 120000
                         if weaponSwitched or ammoDelta or rareResync then
                             TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', CurrentWeaponData, tonumber(ammo))
@@ -899,7 +902,7 @@ CreateThread(function()
                 lastAmmoSyncAt = 0
             end
         end
-        Wait(isReloadBusy() and 150 or 100)
+        Wait(isReloadBusy() and 150 or 250)
     end
 end)
 

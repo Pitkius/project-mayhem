@@ -12,7 +12,9 @@ import {
   assertBotCanManageRoles,
   buildVerificationEmbed,
   findChannelBySlug,
+  getVerifyEmojis,
 } from '../verification/helpers.js';
+import { syncVerificationReactions } from '../verification/reactions.js';
 
 async function resolveTextChannelAsync(guild, provided, fallbackSlug) {
   if (provided) return provided;
@@ -42,13 +44,18 @@ export default {
       .addChannelOption((o) => o
         .setName('rules_channel')
         .setDescription('Taisyklių kanalas (embed nuoroda)')
-        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)))
+        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
+      .addStringOption((o) => o.setName('member_emoji').setDescription('Emoji verified rolei (numatyta ✅)'))
+      .addStringOption((o) => o.setName('ping_emoji').setDescription('Emoji ping rolei (numatyta 🔔)')))
     .addSubcommand((sc) => sc
       .setName('permissions')
       .setDescription('Nauji nariai mato tik oro-uostas + pasitvirtinimas'))
     .addSubcommand((sc) => sc
       .setName('post')
       .setDescription('Paskelbia pasitvirtinimo žinutę su ✅ ir 🔔'))
+    .addSubcommand((sc) => sc
+      .setName('sync')
+      .setDescription('Duoda roles visiems, kurie jau paliko reakcijas ant formos'))
     .addSubcommand((sc) => sc
       .setName('status')
       .setDescription('Rodo dabartinę pasitvirtinimo konfigūraciją')),
@@ -116,6 +123,8 @@ export default {
       }
 
       const existing = getVerificationSettings(interaction.guildId) || {};
+      const memberEmoji = interaction.options.getString('member_emoji') || existing.memberEmoji || VERIFY_EMOJI_MEMBER;
+      const pingEmoji = interaction.options.getString('ping_emoji') || existing.pingEmoji || VERIFY_EMOJI_PING;
       const verification = {
         enabled: true,
         verifiedRoleId: verifiedRole.id,
@@ -127,8 +136,8 @@ export default {
         welcomeTitle: existing.welcomeTitle || 'MRP',
         visibleChannelIds: [welcomeChannel.id, verificationChannel.id],
         verificationMessageId: existing.verificationMessageId || null,
-        memberEmoji: VERIFY_EMOJI_MEMBER,
-        pingEmoji: VERIFY_EMOJI_PING,
+        memberEmoji,
+        pingEmoji,
       };
       setVerificationSettings(interaction.guildId, verification);
 
@@ -172,10 +181,11 @@ export default {
       }
 
       try {
-        const embed = buildVerificationEmbed(interaction.guild);
+        const emojis = getVerifyEmojis(verification);
+        const embed = buildVerificationEmbed(interaction.guild, emojis);
         const message = await channel.send({ embeds: [embed] });
-        await message.react(VERIFY_EMOJI_MEMBER);
-        await message.react(VERIFY_EMOJI_PING);
+        await message.react(emojis.member);
+        await message.react(emojis.ping);
 
         setVerificationSettings(interaction.guildId, {
           ...verification,
@@ -186,6 +196,19 @@ export default {
       } catch (err) {
         console.error('[setupverify] post:', err);
         await interaction.editReply(`Nepavyko paskelbti: ${err.message}`);
+      }
+      return;
+    }
+
+    if (sub === 'sync') {
+      try {
+        const result = await syncVerificationReactions(interaction.guild, verification);
+        await interaction.editReply(
+          `Sinchronizuota: **${result.memberCount}** verified, **${result.pingCount}** ping rolės pritaikytos.`,
+        );
+      } catch (err) {
+        console.error('[setupverify] sync:', err);
+        await interaction.editReply(`Sync klaida: ${err.message}`);
       }
     }
   },
