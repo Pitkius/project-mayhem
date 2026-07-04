@@ -9,6 +9,83 @@ local function logAdmin(msg)
     print(('[^3mrp_drugs^7] %s'):format(msg))
 end
 
+local function payoutItemLabel()
+    local sellCfg = Config.Sell or {}
+    local itemName = tostring(sellCfg.payoutItem or 'markedbills'):lower()
+    local shared = QBCore.Shared.Items[itemName]
+    return (shared and shared.label) or 'Nešvarūs pinigai'
+end
+
+--- Nešvarūs pinigai (markedbills) vietoj grynais cash.
+local function giveDrugSalePayout(src, Player, amount, reason)
+    amount = math.floor(tonumber(amount) or 0)
+    if amount <= 0 then return true end
+
+    local sellCfg = Config.Sell or {}
+    local itemName = tostring(sellCfg.payoutItem or 'markedbills'):lower()
+    local shared = QBCore.Shared.Items[itemName]
+    if not shared then
+        Player.Functions.AddMoney('cash', amount, reason)
+        return true
+    end
+
+    local billWorth = tonumber(sellCfg.payoutBillWorth) or 0
+    local added = 0
+    local billCount = 0
+
+    local function addBill(worth)
+        worth = math.floor(tonumber(worth) or 0)
+        if worth <= 0 then return true end
+        local ok = Player.Functions.AddItem(itemName, 1, false, { worth = worth })
+        if not ok and GetResourceState('qb-inventory') == 'started' then
+            ok = exports['qb-inventory']:AddItem(src, itemName, 1, nil, { worth = worth }, reason)
+        end
+        if not ok then return false end
+        billCount = billCount + 1
+        added = added + worth
+        return true
+    end
+
+    local function finalizePayout()
+        if billCount <= 0 then return end
+        TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', billCount)
+        if GetResourceState('qb-inventory') == 'started' then
+            exports['qb-inventory']:SaveInventory(src)
+        end
+    end
+
+    if billWorth > 0 then
+        local left = amount
+        while left > 0 do
+            local chunk = math.min(left, billWorth)
+            if not addBill(chunk) then break end
+            left = left - chunk
+        end
+    elseif not addBill(amount) then
+        added = 0
+    end
+
+    if added >= amount then
+        finalizePayout()
+        return true
+    end
+
+    local remainder = amount - added
+    if remainder > 0 and sellCfg.payoutFallbackCash ~= false then
+        Player.Functions.AddMoney('cash', remainder, reason .. '-fallback')
+        if added > 0 then finalizePayout() end
+        return true
+    end
+
+    return false
+end
+
+exports('GiveDrugSalePayout', function(src, amount, reason)
+    local Player = QBCore.Functions.GetPlayer(tonumber(src) or 0)
+    if not Player then return false end
+    return giveDrugSalePayout(Player.PlayerData.source, Player, amount, reason or 'drug-sale')
+end)
+
 local function getProduct(id)
     if Config.Products and Config.Products[id] then return Config.Products[id] end
     return Config.WeaponProducts and Config.WeaponProducts[id]
@@ -504,7 +581,10 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:tryNpcSell', function(src, cb,
         price = math.floor(price * 1.08)
     end
     price = math.floor(price * (sellCfg.basePriceMultiplier or 1.0))
-    Player.Functions.AddMoney('cash', price, 'fivempro-drugs-sale')
+    if not giveDrugSalePayout(src, Player, price, 'fivempro-drugs-sale') then
+        Player.Functions.AddItem(itemName, 1)
+        return cb({ ok = false, reason = 'Inventorius pilnas — nėra vietos nešvariems pinigams.' })
+    end
     lastSellAt[src] = now
 
     local alertPolice = false
@@ -558,6 +638,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:tryNpcSell', function(src, cb,
         item = itemName,
         turfId = turfId,
         alertPolice = alertPolice,
+        payoutLabel = payoutItemLabel(),
     })
 end)
 
@@ -793,13 +874,15 @@ local function processProductSell(src, buyerId)
 
     local total = 0
     local sold = 0
+    local toSell = {}
     for itemName, price in pairs(prices) do
         itemName = tostring(itemName or ''):lower()
         local unit = tonumber(price) or 0
         if unit > 0 and Config.IsPackagedDrugItem(itemName) then
             local data = Player.Functions.GetItemByName(itemName)
             local amt = data and (tonumber(data.amount) or tonumber(data.count) or 0) or 0
-            if amt > 0 and Player.Functions.RemoveItem(itemName, amt, false) then
+            if amt > 0 then
+                toSell[#toSell + 1] = { name = itemName, amount = amt }
                 total = total + (unit * amt)
                 sold = sold + amt
             end
@@ -811,8 +894,30 @@ local function processProductSell(src, buyerId)
         return
     end
 
-    Player.Functions.AddMoney('cash', total, ('fivempro-drugs-buyer-%s'):format(buyerId))
-    TriggerClientEvent('QBCore:Notify', src, ('Parduota %s vnt. už $%s'):format(sold, total), 'success')
+    local payoutItem = tostring((Config.Sell or {}).payoutItem or 'markedbills'):lower()
+    if (Config.Sell or {}).payoutFallbackCash == false and GetResourceState('qb-inventory') == 'started' then
+        local canAdd = exports['qb-inventory']:CanAddItem(src, payoutItem, 1)
+        if not canAdd then
+            TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas — nėra vietos nešvariems pinigams.', 'error')
+            return
+        end
+    end
+
+    for _, row in ipairs(toSell) do
+        if not Player.Functions.RemoveItem(row.name, row.amount, false) then
+            TriggerClientEvent('QBCore:Notify', src, 'Nepavyko paimti produktų iš inventoriaus.', 'error')
+            return
+        end
+    end
+
+    if not giveDrugSalePayout(src, Player, total, ('fivempro-drugs-buyer-%s'):format(buyerId)) then
+        for _, row in ipairs(toSell) do
+            Player.Functions.AddItem(row.name, row.amount)
+        end
+        TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas — nėra vietos nešvariems pinigams.', 'error')
+        return
+    end
+    TriggerClientEvent('QBCore:Notify', src, ('Parduota %s vnt. · $%s (%s)'):format(sold, total, payoutItemLabel()), 'success')
 end
 
 RegisterNetEvent('mrp_drugs:server:sellProductAll', function(buyerId)

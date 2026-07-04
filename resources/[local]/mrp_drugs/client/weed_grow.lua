@@ -87,6 +87,24 @@ local function removeZone(plantId)
     pcall(function()
         exports['qb-target']:RemoveZone(zoneName(plantId))
     end)
+    local entry = activePlants[plantId]
+    if entry then
+        entry._zoneAttached = false
+        entry._targetMode = nil
+        entry._zoneCoords = nil
+    end
+end
+
+local function targetModeForPlant(plant)
+    if not plant or not plant.soiled then return 'soil' end
+    if not plant.plantedAt then return 'seed' end
+    if visualStageForPlant(plant) >= 3 then return 'harvest' end
+    return 'water'
+end
+
+local function coordsNear(a, b)
+    if not a or not b then return false end
+    return #(vector3(a.x, a.y, a.z) - vector3(b.x, b.y, b.z)) < 0.2
 end
 
 local function deletePlantEntities(entry)
@@ -291,14 +309,9 @@ local function attachZone(plantId, entry)
             end,
         }
     elseif stage < 3 then
-        local label = cfg.waterLabel or 'Laistyti'
-        local waterCd = computeWaterCooldownLeft(plant)
-        if plant and waterCd > 0 then
-            label = ('Laistyti (%s)'):format(formatTime(waterCd))
-        end
         options[#options + 1] = {
             icon = 'fas fa-fill-drip',
-            label = label,
+            label = cfg.waterLabel or 'Laistyti',
             action = function()
                 if busy then return end
                 local cd = computeWaterCooldownLeft(entry.plant)
@@ -353,16 +366,34 @@ local function attachZone(plantId, entry)
         }
     end
 
-    if #options == 0 then return end
+    if #options == 0 then
+        removeZone(plantId)
+        return
+    end
 
-    exports['qb-target']:AddCircleZone(zoneName(plantId), entry.coords, tonumber(cfg.zoneRadius) or 0.95, {
-        name = zoneName(plantId),
+    local mode = targetModeForPlant(plant)
+    local zname = zoneName(plantId)
+    local targetDistance = (cfg.pickDistance or 2.2) + 0.35
+    local targetPayload = { options = options, distance = targetDistance }
+
+    if entry._zoneAttached and entry._targetMode == mode and coordsNear(entry._zoneCoords, entry.coords) then
+        pcall(function()
+            exports['qb-target']:UpdateZoneData(zname, targetPayload)
+        end)
+        return
+    end
+
+    removeZone(plantId)
+
+    exports['qb-target']:AddCircleZone(zname, entry.coords, tonumber(cfg.zoneRadius) or 0.95, {
+        name = zname,
         debugPoly = false,
         useZ = true,
-    }, {
-        options = options,
-        distance = (cfg.pickDistance or 2.2) + 0.35,
-    })
+    }, targetPayload)
+
+    entry._zoneAttached = true
+    entry._targetMode = mode
+    entry._zoneCoords = vector3(entry.coords.x, entry.coords.y, entry.coords.z)
 end
 
 local function spawnPotAndPlant(plantId, entry)

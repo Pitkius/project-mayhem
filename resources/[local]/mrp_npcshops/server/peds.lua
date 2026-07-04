@@ -60,7 +60,7 @@ local function buildMeta(entry, x, y, z)
         index = entry.index,
         scenario = entry.scenario,
         blip = entry.blip,
-        coords = { x = x, y = y, z = z },
+        coords = { x = x, y = y, z = z, w = (entry.coords and entry.coords.w) or 0.0 },
     }
     if entry.chair then
         meta.chair = { x = entry.chair.x, y = entry.chair.y, z = entry.chair.z, w = entry.chair.w }
@@ -92,11 +92,41 @@ local function spawnEntry(entry)
 
     SetEntityCoords(ped, x, y, z, false, false, false)
     SetEntityHeading(ped, h)
-    FreezeEntityPosition(ped, true)
+    -- Freeze po kliento ground snap (mrp_npcshops:server:setPedPlacement)
 
     Entity(ped).state:set('npcShopMeta', buildMeta(entry, x, y, z), true)
     return ped
 end
+
+local function playerNearCoords(src, x, y, z, maxDist)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local p = GetEntityCoords(ped)
+    local dx, dy, dz = p.x - x, p.y - y, p.z - z
+    return (dx * dx + dy * dy + dz * dz) <= (maxDist * maxDist)
+end
+
+RegisterNetEvent('mrp_npcshops:server:setPedPlacement', function(netId, x, y, z, h)
+    local src = source
+    netId = tonumber(netId)
+    x, y, z, h = tonumber(x), tonumber(y), tonumber(z), tonumber(h)
+    if not netId or not x or not y or not z then return end
+
+    local ped = NetworkGetEntityFromNetworkId(netId)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
+
+    local meta = Entity(ped).state.npcShopMeta
+    if not meta then return end
+
+    if not playerNearCoords(src, x, y, z, 120.0) then return end
+
+    SetEntityCoords(ped, x, y, z, false, false, false)
+    SetEntityHeading(ped, h or 0.0)
+    FreezeEntityPosition(ped, true)
+
+    meta.coords = { x = x, y = y, z = z, w = h or 0.0 }
+    Entity(ped).state:set('npcShopMeta', meta, true)
+end)
 
 local function despawnKey(key)
     local row = activeByKey[key]

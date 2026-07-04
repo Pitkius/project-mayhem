@@ -24,7 +24,7 @@ local RELOAD_BY_AMMO = {
 }
 
 local RELOAD_BY_INVENTORY = {
-    weapon_fgc9 = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
+    weapon_fgc9 = { dict = 'weapons@pistol@', clips = { 'reload_aim', 'reload' } },
     weapon_machinepistol = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
     weapon_minismg = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
     weapon_microsmg = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
@@ -48,10 +48,10 @@ local function allowReloadMovement()
     return Config.ReloadAllowMovement ~= false
 end
 
---- 48 = viršutinė kūno dalis + leisti judėti (kaip weapdraw.lua).
+--- 49 = viršutinė kūno dalis + leisti judėti (1 + 16 + 32).
 local function reloadAnimFlags()
     if allowReloadMovement() then
-        return 48
+        return 49
     end
     return 2
 end
@@ -149,17 +149,31 @@ local function orderClipsForPed(ped, clips)
         or IsControlPressed(0, 25)
         or IsDisabledControlPressed(0, 25)
         or pedIsMoving(ped)
-    if not aiming then
-        return clips
+
+    if aiming then
+        local ordered = {}
+        for _, clip in ipairs(clips) do
+            if clip == 'reload_aim' then
+                ordered[#ordered + 1] = clip
+            end
+        end
+        for _, clip in ipairs(clips) do
+            if clip ~= 'reload_aim' then
+                ordered[#ordered + 1] = clip
+            end
+        end
+        return ordered
     end
+
+    -- Stovint be aim — reload_aim dažnai neveikia, pirmiausia standartinis reload.
     local ordered = {}
     for _, clip in ipairs(clips) do
-        if clip == 'reload_aim' then
+        if clip == 'reload' then
             ordered[#ordered + 1] = clip
         end
     end
     for _, clip in ipairs(clips) do
-        if clip ~= 'reload_aim' then
+        if clip ~= 'reload' then
             ordered[#ordered + 1] = clip
         end
     end
@@ -240,10 +254,10 @@ local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clip
     while DoesEntityExist(ped) and GetGameTimer() < deadline do
         ped = PlayerPedId()
         enableReloadMovementControls(ped)
-        pinClipDuringVisual(ped, weaponHash, clipNow)
 
         if not IsEntityPlayingAnim(ped, dict, clip, 3) and (GetGameTimer() + 700) < deadline then
             preparePedForReloadAnim(ped, weaponHash)
+            pinClipDuringVisual(ped, weaponHash, clipNow)
             clip = playClipFromList(ped, dict, clips, flags)
             activeReloadAnim.clip = clip
         end
@@ -257,7 +271,6 @@ end
 local function playNativeReload(ped, weaponHash, durationMs, clipNow)
     ped = ped or PlayerPedId()
     preparePedForReloadAnim(ped, weaponHash)
-    pinClipDuringVisual(ped, weaponHash, clipNow)
 
     MakePedReload(ped)
     if not IsPedReloading(ped) then
@@ -270,7 +283,6 @@ local function playNativeReload(ped, weaponHash, durationMs, clipNow)
 
     while DoesEntityExist(ped) and GetGameTimer() < deadline do
         ped = PlayerPedId()
-        pinClipDuringVisual(ped, weaponHash, clipNow)
         if IsPedReloading(ped) then
             sawReload = true
             Wait(0)
@@ -307,8 +319,8 @@ function WeaponReload.playVisual(ped, weaponHash, _bulletsToLoad, weaponData)
     local moving = allowReloadMovement() and pedIsMoving(ped)
     local usedNative = false
 
-    -- Judant arba su įjungtu movement — tik custom animacija (native užpildo apkabą be animacijos).
-    if Config.ReloadUseNativeFirst ~= false and not moving and not allowReloadMovement() then
+    -- Stovint — GTA native reload animacija (vizualiai geriausia).
+    if not moving and Config.ReloadUseNativeFirst ~= false then
         usedNative = playNativeReload(ped, weaponHash, durationMs, clipNow)
     end
 

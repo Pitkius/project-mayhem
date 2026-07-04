@@ -810,11 +810,13 @@ end)
 CreateThread(function()
     while true do
         Wait(150)
-        local ped = PlayerPedId()
-        if IsPedArmed(ped, 7) then
-            local w = GetSelectedPedWeapon(ped)
-            if w and w ~= 0 and w ~= `WEAPON_UNARMED` then
-                WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, w)
+        if not isReloading then
+            local ped = PlayerPedId()
+            if IsPedArmed(ped, 7) then
+                local w = GetSelectedPedWeapon(ped)
+                if w and w ~= 0 and w ~= `WEAPON_UNARMED` then
+                    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, w)
+                end
             end
         end
     end

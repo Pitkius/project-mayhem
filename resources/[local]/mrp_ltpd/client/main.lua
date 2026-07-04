@@ -586,49 +586,63 @@ local function clearDutyVest(ped)
     SetPedComponentVariation(ped, 9, 0, 0, 0)
 end
 
-local DUTY_CATEGORY_HEADERS = {
-    uniform_pants = 'Kelnės',
-    uniform_top = 'Viršutiniai drabužiai',
-    uniform = 'Uniformos',
-    vest = 'Liemenės',
-    belt = 'Diržai',
-    hat = 'Kepurės',
-}
-
 local function getDutyOutfitGenderKey(ped)
+    if GetResourceState('mrp_duty_locker') == 'started' then
+        return exports['mrp_duty_locker']:GetGenderKey(ped)
+    end
     return GetEntityModel(ped) == `mp_m_freemode_01` and 'male' or 'female'
 end
 
-local function buildDutyOutfitCategoryMenu(category, grade, lockerMode)
+local function inferOutfitCategory(outfit, genderKey)
+    if GetResourceState('mrp_duty_locker') == 'started' then
+        return exports['mrp_duty_locker']:InferCategory(outfit, genderKey)
+    end
+    return outfit.category or 'uniform_top'
+end
+
+local function buildPdDutyLockerItems(grade, lockerMode, genderKey)
+    local division = exports['mrp_ltpd']:GetPdDivision()
+    local items = {}
+    for idx, outfit in ipairs(Config.DutyOutfits or {}) do
+        if not outfit[genderKey] then goto continue_outfit end
+        if not PdDivisions.outfitAllowed(outfit, lockerMode, grade, division) then goto continue_outfit end
+        local cat = inferOutfitCategory(outfit, genderKey)
+        items[#items + 1] = {
+            id = tostring(idx),
+            category = cat,
+            label = outfit.label,
+            description = outfit.description or '',
+        }
+        ::continue_outfit::
+    end
+    return items
+end
+
+local function applyPdDutyOutfitIndex(idx)
+    if not isPdOnDutyClient() then return end
+    local outfit = Config.DutyOutfits and Config.DutyOutfits[idx]
+    if not outfit then return end
     local ped = PlayerPedId()
     local genderKey = getDutyOutfitGenderKey(ped)
-    local header = DUTY_CATEGORY_HEADERS[category] or 'Apranga'
-    local division = exports['mrp_ltpd']:GetPdDivision()
-    local menu = {
-        { header = header, isMenuHeader = true },
-    }
-    for idx, outfit in ipairs(Config.DutyOutfits or {}) do
-        if outfit.category == category and outfit[genderKey] then
-            if PdDivisions.outfitAllowed(outfit, lockerMode, grade, division) then
-                menu[#menu + 1] = {
-                    header = outfit.label,
-                    txt = outfit.description or '',
-                    params = {
-                        event = 'mrp_ltpd:client:applyDutyOutfit',
-                        args = { index = idx },
-                    },
-                }
-            end
-        end
+    local tbl = outfit[genderKey]
+    if not tbl then
+        return QBCore.Functions.Notify('Ši apranga netinka tavo personažo modeliui.', 'error')
     end
-    menu[#menu + 1] = {
-        header = '← Atgal',
-        params = {
-            event = 'mrp_ltpd:client:openDutyLockerMenu',
-            args = { lockerMode = lockerMode or 'standard' },
-        },
-    }
-    return menu
+    local category = inferOutfitCategory(outfit, genderKey)
+    if category == 'uniform' or category == 'uniform_top' then
+        clearDutyVest(ped)
+    end
+    if GetResourceState('mrp_duty_locker') == 'started' then
+        exports['mrp_duty_locker']:ApplyCategory(ped, tbl, category)
+    else
+        applyDutyOutfitTable(ped, tbl)
+    end
+    if category == 'vest' or (tonumber(outfit.armour) or 0) > 0 then
+        SetPedArmour(ped, 100)
+    elseif category == 'uniform' or category == 'uniform_top' then
+        SetPedArmour(ped, 0)
+    end
+    QBCore.Functions.Notify(outfit.label or 'Apranga uždėta.', 'success')
 end
 
 RegisterNetEvent('mrp_ltpd:client:toggleDuty', function()
@@ -648,10 +662,11 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
     if not isPdOnDutyClient() then
         return QBCore.Functions.Notify('Rūbinė – tik policijai tarnyboje.', 'error')
     end
-    if GetResourceState('qb-menu') ~= 'started' then
-        return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
+    if GetResourceState('mrp_duty_locker') ~= 'started' then
+        return QBCore.Functions.Notify('Rūbinės UI neaktyvus (mrp_duty_locker).', 'error')
     end
-    local lockerMode = (type(data) == 'table' and data.lockerMode) or 'standard'
+    data = type(data) == 'table' and data or {}
+    local lockerMode = data.lockerMode or 'standard'
     local title = (lockerMode == 'aro' or lockerMode == 'sor') and 'SOR rūbinė' or 'Tarnybinė apranga'
     if lockerMode == 'aro' or lockerMode == 'sor' then
         local eff = exports['mrp_ltpd']:GetPdEffectiveDivision()
@@ -662,101 +677,52 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
     local P = QBCore.Functions.GetPlayerData()
     local grade = (P.job and P.job.grade and P.job.grade.level) or 0
     local chooseMin = tonumber((Config.DivisionRules or {}).chooseMinGrade) or 4
-    local menu = {
-        { header = title, isMenuHeader = true },
-        {
-            header = 'Kelnės',
-            txt = 'Uniformos kelnės (atskirai nuo viršaus)',
-            params = {
-                event = 'mrp_ltpd:client:openDutyLockerCategory',
-                args = { category = 'uniform_pants', lockerMode = lockerMode },
-            },
-        },
-        {
-            header = 'Viršutiniai drabužiai',
-            txt = 'Striukės, marškinėliai, rankos suderintos',
-            params = {
-                event = 'mrp_ltpd:client:openDutyLockerCategory',
-                args = { category = 'uniform_top', lockerMode = lockerMode },
-            },
-        },
-        {
-            header = 'Liemenės',
-            txt = 'Balistinės liemenės – pilni šarvai',
-            params = {
-                event = 'mrp_ltpd:client:openDutyLockerCategory',
-                args = { category = 'vest', lockerMode = lockerMode },
-            },
-        },
-        {
-            header = 'Diržai',
-            txt = 'Diržai ir kiti aksesuarai',
-            params = {
-                event = 'mrp_ltpd:client:openDutyLockerCategory',
-                args = { category = 'belt', lockerMode = lockerMode },
-            },
-        },
-        {
-            header = 'Kepurės',
-            txt = 'Šalmai ir kepurės',
-            params = {
-                event = 'mrp_ltpd:client:openDutyLockerCategory',
-                args = { category = 'hat', lockerMode = lockerMode },
-            },
-        },
-    }
+    local ped = PlayerPedId()
+    local genderKey = getDutyOutfitGenderKey(ped)
+    local actions = {}
     if lockerMode ~= 'aro' and lockerMode ~= 'sor' and grade >= chooseMin then
-        menu[#menu + 1] = {
-            header = 'Keisti padalinį',
-            txt = 'MP, KPD, KTD, SOR, OPD, KD, VTD…',
-            params = { event = 'mrp_ltpd:client:openChooseDivisionMenu' },
-        }
+        actions[#actions + 1] = { id = 'division', label = 'Keisti padalinį' }
     end
     if lockerMode ~= 'aro' and lockerMode ~= 'sor' then
-        menu[#menu + 1] = {
-            header = 'Baigti tarnybą',
-            txt = 'Civilio apranga (pamainą baigti prie pamainos NPC rūbinėje)',
-            params = { event = 'mrp_ltpd:client:applyCivilianOutfit' },
-        }
+        actions[#actions + 1] = { id = 'civilian', label = 'Civilio apranga', danger = true }
     end
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+    exports['mrp_duty_locker']:Open({
+        title = title,
+        subtitle = lockerMode == 'standard' and 'PD uniformos' or 'Specialiųjų operacijų rinkinys',
+        anchor = data.anchor,
+        radius = data.radius or 2.6,
+        items = buildPdDutyLockerItems(grade, lockerMode, genderKey),
+        actions = actions,
+        onApply = function(itemId)
+            if type(itemId) == 'string' and itemId:sub(1, 7) == 'remove:' then
+                local cat = itemId:sub(8)
+                local p = PlayerPedId()
+                exports['mrp_duty_locker']:ClearCategory(p, cat)
+                if cat == 'vest' then SetPedArmour(p, 0) end
+                QBCore.Functions.Notify('Nuimta.', 'success')
+                return
+            end
+            applyPdDutyOutfitIndex(tonumber(itemId))
+        end,
+        onAction = function(actionId)
+            exports['mrp_duty_locker']:Close()
+            if actionId == 'civilian' then
+                TriggerEvent('mrp_ltpd:client:applyCivilianOutfit')
+            elseif actionId == 'division' then
+                TriggerEvent('mrp_ltpd:client:openChooseDivisionMenu')
+            end
+        end,
+    })
 end)
 
 RegisterNetEvent('mrp_ltpd:client:openDutyLockerCategory', function(data)
-    if not isPdOnDutyClient() then return end
-    if GetResourceState('qb-menu') ~= 'started' then return end
-    local P = QBCore.Functions.GetPlayerData()
-    local grade = (P.job and P.job.grade and P.job.grade.level) or 0
-    local category = type(data) == 'table' and data.category or 'uniform'
-    local lockerMode = type(data) == 'table' and data.lockerMode or 'standard'
-    local menu = buildDutyOutfitCategoryMenu(category, grade, lockerMode)
-    if #menu < 2 then
-        return QBCore.Functions.Notify('Nėra prieinamų aprangų šiai kategorijai.', 'error')
-    end
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+    TriggerEvent('mrp_ltpd:client:openDutyLockerMenu', data)
 end)
 
 RegisterNetEvent('mrp_ltpd:client:applyDutyOutfit', function(data)
-    if not isPdOnDutyClient() then return end
     local idx = tonumber(data and data.index)
-    local outfit = idx and Config.DutyOutfits and Config.DutyOutfits[idx]
-    if not outfit then return end
-    local ped = PlayerPedId()
-    local genderKey = getDutyOutfitGenderKey(ped)
-    local tbl = outfit[genderKey]
-    if not tbl then
-        return QBCore.Functions.Notify('Ši apranga netinka tavo personažo modeliui.', 'error')
-    end
-    if outfit.category == 'uniform' then
-        clearDutyVest(ped)
-    end
-    applyDutyOutfitTable(ped, tbl)
-    if outfit.category == 'vest' then
-        SetPedArmour(ped, 100)
-    elseif outfit.category == 'uniform' then
-        SetPedArmour(ped, 0)
-    end
-    QBCore.Functions.Notify(outfit.label or 'Apranga uždėta.', 'success')
+    if not idx then return end
+    applyPdDutyOutfitIndex(idx)
 end)
 
 RegisterNetEvent('mrp_ltpd:client:applyCivilianOutfit', function()

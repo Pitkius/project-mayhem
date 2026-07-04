@@ -22,7 +22,7 @@ const COMP_MAP = {
 };
 
 const TEX_LETTERS = 'abcdefghijklmnopqrstuvwxyz';
-const CATEGORY_ORDER = { uniform_pants: 0, uniform_top: 1, vest: 2, belt: 3, hat: 4 };
+const CATEGORY_ORDER = { hat: 0, uniform_top: 1, vest: 2, uniform_pants: 3, belt: 4, extra: 5 };
 
 function metaTag(block, name, def = '0') {
   const m = block.match(new RegExp(`<${name}\\s+value="([^"]*)"`));
@@ -141,6 +141,8 @@ function buildPackOutfits(packLabel, dlc, items, props, gender) {
   const upprItems = byComp[3] || [];
   const taskItems = (byComp[9] || []).sort((a, b) => a.draw - b.draw || a.tex - b.tex);
   const teefItems = (byComp[7] || []).sort((a, b) => a.draw - b.draw || a.tex - b.tex);
+  const declItems = (byComp[10] || []).sort((a, b) => a.draw - b.draw || a.tex - b.tex);
+  const handItems = (byComp[5] || []).sort((a, b) => a.draw - b.draw || a.tex - b.tex);
   const seenTop = new Set();
   const seenPants = new Set();
   const seenUndershirt = new Set();
@@ -200,11 +202,35 @@ function buildPackOutfits(packLabel, dlc, items, props, gender) {
   for (const t of teefItems) {
     outfits.push({
       label: `${packLabel} diržas #${t.draw + 1} (${texLabel(t.tex)})`,
-      description: `${gender} · diržas / aksesuaras (uždėk ant uniformos)`,
+      description: `${gender} · diržas (uždėk ant uniformos)`,
       category: 'belt',
       minGrade: 0,
       armour: 0,
       components: makeComponents(dlc, { 7: [t.draw, t.tex] }),
+      props: null,
+    });
+  }
+
+  for (const d of declItems) {
+    outfits.push({
+      label: `${packLabel} extra #${d.draw + 1} (${texLabel(d.tex)})`,
+      description: `${gender} · emblema / aksesuaras ant uniformos`,
+      category: 'extra',
+      minGrade: 0,
+      armour: 0,
+      components: makeComponents(dlc, { 10: [d.draw, d.tex] }),
+      props: null,
+    });
+  }
+
+  for (const h of handItems) {
+    outfits.push({
+      label: `${packLabel} extra krepšys #${h.draw + 1} (${texLabel(h.tex)})`,
+      description: `${gender} · krepšys / papildomas aksesuaras`,
+      category: 'extra',
+      minGrade: 0,
+      armour: 0,
+      components: makeComponents(dlc, { 5: [h.draw, h.tex] }),
       props: null,
     });
   }

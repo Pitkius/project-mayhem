@@ -90,12 +90,33 @@ local function loadAnimDict(dict)
     while not HasAnimDictLoaded(dict) do Wait(0) end
 end
 
+local function startPedScenario(ent, meta)
+    if meta.scenario and DoesEntityExist(ent) then
+        ClearPedTasksImmediately(ent)
+        TaskStartScenarioInPlace(ent, meta.scenario, 0, true)
+    end
+    if DoesEntityExist(ent) then
+        FreezeEntityPosition(ent, true)
+    end
+end
+
 local function setupPedEntity(ent, meta)
     SetEntityInvincible(ent, true)
     SetBlockingOfNonTemporaryEvents(ent, true)
-    FreezeEntityPosition(ent, true)
-    if meta.scenario then
-        TaskStartScenarioInPlace(ent, meta.scenario, 0, true)
+    SetPedCanRagdoll(ent, false)
+
+    local coords = meta.coords
+    if coords and NpcGround and NpcGround.snapShopPed then
+        NpcGround.snapShopPed(ent, {
+            x = coords.x,
+            y = coords.y,
+            z = coords.z,
+            w = coords.w or meta.heading,
+        }, function()
+            startPedScenario(ent, meta)
+        end)
+    else
+        startPedScenario(ent, meta)
     end
 end
 

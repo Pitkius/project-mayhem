@@ -613,6 +613,12 @@ Config.Sell = {
     requireGangForInfluence = true,
     allowSellWithoutGang = true,
     basePriceMultiplier = 1.0,
+    --- Pardavimo atlygis inventoriaus item (nešvarūs pinigai), ne grynieji cash.
+    payoutItem = 'markedbills',
+    --- 0 = vienas item su visa suma info.worth; >0 = skaidyti į kelis banknotus.
+    payoutBillWorth = 0,
+    --- Jei inventoriuje vietos nėra — ar leisti grynuosius kaip atsarginį variantą.
+    payoutFallbackCash = true,
 }
 
 --- Gatvės / NPC pardavimo animacija (rankų perdavimas)

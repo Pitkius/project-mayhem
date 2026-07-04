@@ -227,19 +227,39 @@ Config.TuningRecipes = {
     },
 }
 
---- Tarnybinė apranga (komponentai mp freemode – keisk pagal odę)
+--- Tarnybinė apranga — kategorijos atskirai (viršus / kelnės)
 Config.DutyOutfits = {
     {
-        label = 'Darbinė kombinezonas 1',
+        label = 'Kombinezonas 1 — viršus',
+        description = 'Darbinė striukė',
+        category = 'uniform_top',
         minGrade = 0,
-        male = { [4] = 39, [6] = 25, [8] = 59, [11] = 56, [9] = 0 },
-        female = { [4] = 39, [6] = 25, [8] = 36, [11] = 49, [9] = 0 },
+        male = { components = { [8] = 59, [11] = 56 } },
+        female = { components = { [8] = 36, [11] = 49 } },
     },
     {
-        label = 'Darbinė kombinezonas 2 + pirštinės',
+        label = 'Kombinezonas 1 — kelnės',
+        description = 'Darbinės kelnės ir batai',
+        category = 'uniform_pants',
+        minGrade = 0,
+        male = { components = { [4] = 39, [6] = 25 } },
+        female = { components = { [4] = 39, [6] = 25 } },
+    },
+    {
+        label = 'Kombinezonas 2 — viršus',
+        description = 'Darbinė striukė + pirštinės',
+        category = 'uniform_top',
         minGrade = 1,
-        male = { [4] = 39, [6] = 24, [8] = 59, [11] = 57, [9] = 0 },
-        female = { [4] = 39, [6] = 24, [8] = 36, [11] = 50, [9] = 0 },
+        male = { components = { [8] = 59, [11] = 57 } },
+        female = { components = { [8] = 36, [11] = 50 } },
+    },
+    {
+        label = 'Kombinezonas 2 — kelnės',
+        description = 'Darbinės kelnės ir batai',
+        category = 'uniform_pants',
+        minGrade = 1,
+        male = { components = { [4] = 39, [6] = 24 } },
+        female = { components = { [4] = 39, [6] = 24 } },
     },
 }
 

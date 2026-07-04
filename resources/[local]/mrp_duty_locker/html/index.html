@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rūbinė</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="root" class="hidden">
+    <aside class="dl-panel" role="dialog" aria-label="Darbo rūbinė">
+      <header class="dl-head">
+        <div>
+          <p class="dl-kicker">Mayhem RP</p>
+          <h1 id="dlTitle">Darbo apranga</h1>
+          <p id="dlSubtitle" class="dl-sub"></p>
+        </div>
+        <button type="button" id="dlClose" class="dl-close" title="Uždaryti (ESC)">×</button>
+      </header>
+
+      <nav id="dlTabs" class="dl-tabs"></nav>
+
+      <div class="dl-list-wrap">
+        <ul id="dlList" class="dl-list"></ul>
+      </div>
+
+      <footer class="dl-foot">
+        <div id="dlActions" class="dl-actions"></div>
+        <p id="dlHint" class="dl-hint">ESC — uždaryti</p>
+      </footer>
+    </aside>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -190,7 +190,10 @@ local function registerAllPdMarkers()
                     excludeDivisions = st.locker.excludeDivisions,
                 },
                 onPress = function()
-                    TriggerEvent('mrp_ltpd:client:openDutyLockerMenu', { lockerMode = 'standard' })
+                    TriggerEvent('mrp_ltpd:client:openDutyLockerMenu', {
+                        lockerMode = 'standard',
+                        anchor = st.locker.coords,
+                    })
                 end,
             })
         end
@@ -208,6 +211,7 @@ local function registerAllPdMarkers()
                 onPress = function()
                     TriggerEvent('mrp_ltpd:client:openDutyLockerMenu', {
                         lockerMode = st.locker2.lockerMode or 'aro',
+                        anchor = st.locker2.coords,
                     })
                 end,
             })

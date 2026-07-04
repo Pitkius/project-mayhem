@@ -134,10 +134,6 @@ RegisterNUICallback('carplayControl', function(data, cb)
     end
     QBCore.Functions.TriggerCallback('mrp_phone:server:carplayControl', function(res)
         if res and res.ok and res.session then
-            local audio = audioCmdForAction(data and data.action, res.session)
-            if audio then
-                sendUi('carplayAudio', audio)
-            end
             sendUi('carplayState', {
                 inVehicle = true,
                 netId = netId,
@@ -164,12 +160,6 @@ RegisterNUICallback('carplayEnded', function(_, cb)
     if netId == 0 then return cb({ ok = false }) end
     QBCore.Functions.TriggerCallback('mrp_phone:server:carplayControl', function(res)
         if res and res.ok and res.session then
-            local audio = audioCmdForAction('next', res.session)
-            if audio and audio.command == 'play' then
-                sendUi('carplayAudio', audio)
-            elseif audio then
-                sendUi('carplayAudio', audio)
-            end
             sendUi('carplayState', {
                 inVehicle = true,
                 netId = netId,

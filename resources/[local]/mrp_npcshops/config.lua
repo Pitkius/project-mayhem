@@ -8,6 +8,14 @@ Config.NpcProximity = {
     checkIntervalMs = 1800,
 }
 
+--- NPC pririšimas prie grindų (klientas koreguoja Z po serverio spawn)
+Config.NpcGround = {
+    enabled = true,
+    zOffset = 0.0,
+    maxGroundDelta = 2.5,
+    retryMs = 4500,
+}
+
 --- Kirpyklos — vanilla qb-clothing zonos + kasininkės pozicija
 --- chair = kliento kėdės vieta (Z turi sutapti su interjeru; barber.lua ieško artimiausio chair prop)
 Config.BarberPeds = {

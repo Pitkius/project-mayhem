@@ -32,6 +32,15 @@ local CheckOptions = CheckOptions
 local Bones = Load('bones')
 local listSprite = {}
 
+local function zoneIsUsable(zone)
+	return zone and not zone.destroyed and zone.name ~= nil and Zones[zone.name] == zone
+end
+
+local function safeZonePointInside(zone, point)
+	if not zoneIsUsable(zone) or not point then return false end
+	return zone:isPointInside(point)
+end
+
 ---------------------------------------
 --- Source: https://github.com/citizenfx/lua/blob/luaglm-dev/cfx/libs/scripts/examples/scripting_gta.lua
 --- Credits to gottfriedleibniz
@@ -74,7 +83,10 @@ local function DrawTarget()
 		local r, g, b, a
 		while targetActive do
 			sleep = 500
-			for _, zone in pairs(listSprite) do
+			for key, zone in pairs(listSprite) do
+				if not zoneIsUsable(zone) then
+					listSprite[key] = nil
+				else
 				sleep = 0
 
 				r = zone.targetoptions.drawColor?[1] or Config.DrawColor[1]
@@ -92,6 +104,7 @@ local function DrawTarget()
 				SetDrawOrigin(zone.center.x, zone.center.y, zone.center.z, 0)
 				DrawSprite('shared', 'emptydot_32', 0, 0, 0.01, 0.02, 0, r, g, b, a)
 				ClearDrawOrigin()
+				end
 			end
 			Wait(sleep)
 		end
@@ -376,8 +389,9 @@ end
 exports('CheckBones', CheckBones)
 
 local function zoneEffectiveDistance(zone, zoneCentre, playerCoords, rayDist)
+	if not zoneIsUsable(zone) then return rayDist, false, Config.MaxDistance end
 	local zoneReach = zone.targetoptions.distance or Config.MaxDistance
-	local playerInside = playerCoords and zone:isPointInside(playerCoords)
+	local playerInside = safeZonePointInside(zone, playerCoords)
 	if playerInside then
 		local playerZoneDist = #(playerCoords - zoneCentre)
 		return playerZoneDist, true, zoneReach
@@ -542,11 +556,15 @@ local function EnableTarget()
 				-- Zone targets
 				local closestDis, closestZone
 				for k, zone in pairs(Zones) do
+					if not zoneIsUsable(zone) then
+						Zones[k] = nil
+						listSprite[k] = nil
+					else
 					local zoneCentre = getZoneCentre(zone)
-					local insideZone = zone:isPointInside(coords)
-						or (playerCoords and zone:isPointInside(playerCoords))
+					local insideZone = safeZonePointInside(zone, coords)
+						or safeZonePointInside(zone, playerCoords)
 					local effectiveDist, playerInside, zoneReach = zoneEffectiveDistance(zone, zoneCentre, playerCoords, distance)
-					local losTarget = zone:isPointInside(coords) and coords or zoneCentre
+					local losTarget = safeZonePointInside(zone, coords) and coords or zoneCentre
 					local canSeeZone = playerInside
 						or not Config.RequireLineOfSight
 						or (eyeCoords and hasPointLineOfSight(eyeCoords, losTarget))
@@ -571,8 +589,9 @@ local function EnableTarget()
 							listSprite[k] = nil
 						end
 					end
+					end
 				end
-				if closestZone then
+				if closestZone and zoneIsUsable(closestZone) then
 					local zoneCentre = getZoneCentre(closestZone)
 					local zoneReach = closestZone.targetoptions.distance or Config.MaxDistance
 					local slot = SetupOptions(closestZone.targetoptions.options, entity, closestDis or distance, true)
@@ -591,15 +610,15 @@ local function EnableTarget()
 							local liveEyeCoords = getPlayerEyeCoords()
 							local newCoords, dist = RaycastCamera(flag, livePlayerCoords)
 							local liveCentre = getZoneCentre(closestZone)
-							local liveInsideZone = closestZone:isPointInside(newCoords)
-								or (livePlayerCoords and closestZone:isPointInside(livePlayerCoords))
+							local liveInsideZone = safeZonePointInside(closestZone, newCoords)
+								or safeZonePointInside(closestZone, livePlayerCoords)
 							local liveEffectiveDist, livePlayerInside = zoneEffectiveDistance(
 								closestZone,
 								liveCentre,
 								livePlayerCoords,
 								dist
 							)
-							local liveLosTarget = closestZone:isPointInside(newCoords) and newCoords or liveCentre
+							local liveLosTarget = safeZonePointInside(closestZone, newCoords) and newCoords or liveCentre
 							local liveCanSeeZone = livePlayerInside
 								or not Config.RequireLineOfSight
 								or (liveEyeCoords and hasPointLineOfSight(liveEyeCoords, liveLosTarget))
@@ -635,6 +654,11 @@ local function EnableTarget()
 end
 
 local function AddCircleZone(name, center, radius, options, targetoptions)
+	if Zones[name] then
+		if Zones[name].destroy then Zones[name]:destroy() end
+		Zones[name] = nil
+		listSprite[name] = nil
+	end
 	local centerType = type(center)
 	center = (centerType == 'table' or centerType == 'vector4') and vec3(center.x, center.y, center.z) or center
 	Zones[name] = CircleZone:Create(center, radius, options)
@@ -694,6 +718,7 @@ local function RemoveZone(name)
 	if not Zones[name] then return end
 	if Zones[name].destroy then Zones[name]:destroy() end
 	Zones[name] = nil
+	listSprite[name] = nil
 end
 
 exports('RemoveZone', RemoveZone)
@@ -1320,6 +1345,7 @@ local function UpdateGlobalTypeData(type, label, data) Types[type][label] = data
 exports('UpdateGlobalTypeData', UpdateGlobalTypeData)
 
 local function UpdateZoneData(name, data)
+	if not Zones[name] or not zoneIsUsable(Zones[name]) then return end
 	data.distance = data.distance or Config.MaxDistance
 	Zones[name].targetoptions = data
 end

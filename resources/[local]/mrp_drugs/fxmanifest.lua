@@ -55,6 +55,10 @@ client_exports {
     'RunScheduleMinigame',
 }
 
+server_exports {
+    'GiveDrugSalePayout',
+}
+
 dependencies {
     'qb-core',
     'qb-target',

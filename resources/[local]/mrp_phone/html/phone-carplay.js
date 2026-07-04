@@ -104,23 +104,7 @@
         carplay.session = res.session;
         const content = document.getElementById("appContent");
         if (content && document.getElementById("appTitle")?.textContent === "CarPlay") {
-          if (res.session.playing && res.session.stream) {
-            playAudio({
-              command: "play",
-              stream: res.session.stream,
-              url: res.session.url,
-              mediaType: res.session.mediaType,
-              volume: res.session.volume,
-              youtubeVideoId: res.session.youtubeVideoId,
-              youtubeListId: res.session.youtubeListId,
-              spotifyType: res.session.spotifyType,
-              spotifyId: res.session.spotifyId,
-              playlistKind: res.session.playlistKind,
-            });
-            syncSessionMeta(content, res.session);
-          } else {
-            updateCarPlaySession(content, res.session, { fullRender: true });
-          }
+          updateCarPlaySession(content, res.session);
         }
       }
     } catch (_) {}
@@ -303,12 +287,58 @@
     carplay.currentTime = 0;
   }
 
+  function sessionToPlayCmd(session) {
+    if (!session) return null;
+    return {
+      command: "play",
+      stream: session.stream,
+      url: session.url,
+      mediaType: session.mediaType,
+      volume: session.volume,
+      youtubeVideoId: session.youtubeVideoId,
+      youtubeListId: session.youtubeListId,
+      spotifyType: session.spotifyType,
+      spotifyId: session.spotifyId,
+      playlistKind: session.playlistKind,
+    };
+  }
+
+  function streamKeyFromCmd(cmd) {
+    if (!cmd) return "";
+    if (cmd.spotifyId) return `spotify:${cmd.spotifyType}:${cmd.spotifyId}`;
+    if (cmd.youtubeListId) return `ytlist:${cmd.youtubeListId}:${cmd.youtubeVideoId || ""}`;
+    if (cmd.youtubeVideoId) return `yt:${cmd.youtubeVideoId}`;
+    return cmd.stream || "";
+  }
+
+  function sessionStreamKey(session) {
+    return streamKeyFromCmd(sessionToPlayCmd(session));
+  }
+
+  function shouldStartPlayback(session) {
+    if (!session || !session.playing) return false;
+    if (session.mediaType === "youtube") return !!(session.youtubeVideoId || session.youtubeListId);
+    if (session.mediaType === "spotify") return !!session.spotifyId;
+    return !!(session.stream && String(session.stream).trim() !== "");
+  }
+
+  function applyYoutubeVolume(player, volume) {
+    if (!player || typeof player.setVolume !== "function") return;
+    const v = Math.max(0, Math.min(1, Number(volume) || 0));
+    if (v <= 0.001) {
+      if (typeof player.mute === "function") player.mute();
+    } else {
+      if (typeof player.unMute === "function") player.unMute();
+      player.setVolume(Math.round(v * 100));
+    }
+  }
+
   function applyVolume(volume) {
     const v = Math.max(0, Math.min(1, Number(volume) || 0));
     carplay.targetVolume = v;
     if (carplay.audioEl) carplay.audioEl.volume = v;
-    if (carplay.ytPlayer && carplay.ytReady && typeof carplay.ytPlayer.setVolume === "function") {
-      carplay.ytPlayer.setVolume(Math.round(v * 100));
+    if (carplay.ytPlayer && carplay.ytReady) {
+      applyYoutubeVolume(carplay.ytPlayer, v);
     }
     if (!carplay.isVolumeDragging) {
       const volInput = document.getElementById("cpVolume");
@@ -378,6 +408,8 @@
   function playYoutube(opts) {
     const videoId = opts.videoId || null;
     const listId = opts.listId || null;
+    carplay.mediaType = "youtube";
+    carplay.targetVolume = Math.max(0, Math.min(1, Number(opts.volume ?? carplay.targetVolume) || 0.65));
     const host = ensureAudioHost();
     host.innerHTML = '<div id="yt-player-node"></div>';
     carplay.ytReady = false;
@@ -403,7 +435,10 @@
           onReady: (e) => {
             carplay.ytReady = true;
             const vol = carplay.targetVolume ?? (Number(opts.volume) || 0.65);
-            e.target.setVolume(Math.round(vol * 100));
+            applyYoutubeVolume(e.target, vol);
+            if (typeof e.target.playVideo === "function") {
+              e.target.playVideo();
+            }
             carplay.duration = e.target.getDuration() || 0;
             startProgressLoop();
             updateProgressUi();
@@ -436,8 +471,15 @@
           },
         },
       };
-      if (videoId && !listId) config.videoId = videoId;
-      else if (videoId && listId) config.videoId = videoId;
+      if (videoId && listId) {
+        config.videoId = videoId;
+        playerVars.list = listId;
+      } else if (videoId) {
+        config.videoId = videoId;
+      } else if (listId) {
+        playerVars.listType = "playlist";
+        playerVars.list = listId;
+      }
       carplay.ytPlayer = new window.YT.Player("yt-player-node", config);
     });
   }
@@ -472,23 +514,21 @@
       if (carplay.ytPlayer && carplay.ytReady && typeof carplay.ytPlayer.nextVideo === "function") {
         carplay.ytPlayer.nextVideo();
         startProgressLoop();
+        setTimeout(() => syncYoutubeMeta(carplay.ytPlayer), 900);
       } else {
         handleTrackEnded();
       }
       return;
     }
     if (cmd.command === "play") {
-      const streamKey = cmd.spotifyId
-        ? `spotify:${cmd.spotifyType}:${cmd.spotifyId}`
-        : cmd.youtubeListId
-          ? `ytlist:${cmd.youtubeListId}:${cmd.youtubeVideoId || ""}`
-          : cmd.stream;
+      const streamKey = streamKeyFromCmd(cmd);
       if (streamKey && streamKey === carplay.activeStream && (carplay.audioEl || carplay.ytPlayer || carplay.spotifyIframe)) {
         applyVolume(cmd.volume);
         if (carplay.audioEl) {
           carplay.audioEl.play().catch(() => {});
           startProgressLoop();
         } else if (carplay.ytPlayer && carplay.ytReady) {
+          applyYoutubeVolume(carplay.ytPlayer, cmd.volume ?? carplay.targetVolume);
           carplay.ytPlayer.playVideo();
           startProgressLoop();
         }
@@ -563,24 +603,48 @@
   function syncPlaybackState(session) {
     const s = session || {};
     const playing = !!s.playing;
-    const hasPlayer = !!(carplay.audioEl || carplay.ytPlayer || carplay.spotifyIframe || carplay.activeStream);
+    const cmd = sessionToPlayCmd(s);
+    const key = sessionStreamKey(s);
+    const hasPlayer = !!(carplay.audioEl || carplay.ytPlayer || carplay.spotifyIframe);
+
     if (!hasPlayer) {
-      applyVolume(s.volume);
+      if (playing && shouldStartPlayback(s) && cmd) {
+        playAudio(cmd);
+      } else {
+        applyVolume(s.volume);
+      }
       return;
     }
-    if (playing && (s.stream || s.youtubeListId || s.spotifyId)) {
-      playAudio({
-        command: "play",
-        stream: s.stream,
-        url: s.url,
-        mediaType: s.mediaType,
-        volume: s.volume,
-        youtubeVideoId: s.youtubeVideoId,
-        youtubeListId: s.youtubeListId,
-        spotifyType: s.spotifyType,
-        spotifyId: s.spotifyId,
-        playlistKind: s.playlistKind,
-      });
+
+    if (key && key === carplay.activeStream) {
+      applyVolume(s.volume);
+      if (playing) {
+        if (carplay.audioEl) {
+          if (carplay.audioEl.paused) {
+            carplay.audioEl.play().catch(() => {});
+            startProgressLoop();
+          }
+        } else if (carplay.ytPlayer && carplay.ytReady) {
+          const ytState = typeof carplay.ytPlayer.getPlayerState === "function"
+            ? carplay.ytPlayer.getPlayerState()
+            : null;
+          const YT = window.YT;
+          const paused = YT && (ytState === YT.PlayerState.PAUSED || ytState === YT.PlayerState.CUED);
+          const unstarted = YT && ytState === YT.PlayerState.UNSTARTED;
+          if (paused || unstarted || ytState == null) {
+            applyYoutubeVolume(carplay.ytPlayer, s.volume);
+            carplay.ytPlayer.playVideo();
+            startProgressLoop();
+          }
+        }
+      } else {
+        playAudio({ command: "pause", volume: s.volume });
+      }
+      return;
+    }
+
+    if (playing && shouldStartPlayback(s) && cmd) {
+      playAudio(cmd);
     } else {
       playAudio({ command: "pause", volume: s.volume });
       applyVolume(s.volume);
@@ -752,20 +816,12 @@
 
     content.querySelector("#cpPlay").addEventListener("click", async () => {
       const url = urlInput?.value?.trim() || s.url;
-      const act = playing ? "pause" : s.stream ? "resume" : "play";
+      const hasMedia = !!(s.stream || s.youtubeListId || s.spotifyId);
+      const act = playing ? "pause" : hasMedia ? "resume" : "play";
 
       if (act === "pause") {
         playAudio({ command: "pause" });
         syncSessionMeta(content, { ...s, playing: false });
-      } else if (act === "resume") {
-        playAudio({
-          command: "play",
-          stream: s.stream,
-          url: s.url,
-          mediaType: s.mediaType,
-          volume: s.volume,
-        });
-        syncSessionMeta(content, { ...s, playing: true });
       }
 
       let res;
@@ -777,27 +833,8 @@
     });
 
     content.querySelector("#cpSkip").addEventListener("click", async () => {
-      if (carplay.ytPlayer && carplay.ytReady && typeof carplay.ytPlayer.nextVideo === "function") {
-        carplay.ytPlayer.nextVideo();
-      }
       const res = await window.PhoneNui("carplayControl", { action: "skip" });
-      if (res?.ok) {
-        if (res.session?.playing && res.session.stream) {
-          playAudio({
-            command: "play",
-            stream: res.session.stream,
-            url: res.session.url,
-            mediaType: res.session.mediaType,
-            volume: res.session.volume,
-            youtubeVideoId: res.session.youtubeVideoId,
-            youtubeListId: res.session.youtubeListId,
-            spotifyType: res.session.spotifyType,
-            spotifyId: res.session.spotifyId,
-            playlistKind: res.session.playlistKind,
-          });
-        }
-        updateCarPlaySession(content, res.session);
-      }
+      if (res?.ok) updateCarPlaySession(content, res.session);
     });
 
     content.querySelector("#cpStop").addEventListener("click", async () => {
@@ -829,16 +866,10 @@
       const title = document.getElementById("appTitle");
       if (!content || title?.textContent !== "CarPlay") return;
 
-      const sameStream =
-        payload.session.stream &&
-        (payload.session.stream === carplay.activeStream ||
-          (payload.session.spotifyId && carplay.activeStream.includes(payload.session.spotifyId)) ||
-          (payload.session.youtubeListId && carplay.activeStream.includes(payload.session.youtubeListId)));
-      if (sameStream) {
+      const sameStream = sessionStreamKey(payload.session) === carplay.activeStream;
+      if (sameStream && carplay.activeStream) {
         syncSessionMeta(content, payload.session);
-        if (!carplay.isVolumeDragging) {
-          applyVolume(payload.session.volume);
-        }
+        syncPlaybackState(payload.session);
         if (payload.session.duration) carplay.duration = payload.session.duration;
         updateProgressUi();
       } else {

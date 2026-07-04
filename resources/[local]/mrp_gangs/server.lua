@@ -465,7 +465,13 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:tryDrugSale', function(src, cb
 
     Player.Functions.RemoveItem(chosen.item, 1)
     local price = math.floor((chosen.base or 100) * (1.0 + ((tonumber(gang.reputation) or 0) * (Config.DrugSell.reputationPriceFactor or 0.005))))
-    Player.Functions.AddMoney('cash', price, 'gang-turf-sale')
+    local paid = false
+    if GetResourceState('mrp_drugs') == 'started' then
+        paid = exports['mrp_drugs']:GiveDrugSalePayout(src, price, 'gang-turf-sale')
+    end
+    if not paid then
+        Player.Functions.AddMoney('cash', price, 'gang-turf-sale')
+    end
 
     local salesCount = (tonumber(turf.sales_count) or 0) + 1
     local totalProfit = (tonumber(turf.total_profit) or 0) + price

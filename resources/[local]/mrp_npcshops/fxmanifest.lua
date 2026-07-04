@@ -17,6 +17,7 @@ shared_scripts {
 
 client_scripts {
     'client/stash_interact.lua',
+    'client/npc_ground.lua',
     'client/barber.lua',
     'client/peds.lua',
     'client/job_markers.lua',

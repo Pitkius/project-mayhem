@@ -174,44 +174,87 @@ local function applyOutfitTable(ped, tbl)
     end
 end
 
-RegisterNetEvent('mrp_mechanic:client:openLocker', function()
+local function getOutfitGenderKey(ped)
+    if GetResourceState('mrp_duty_locker') == 'started' then
+        return exports['mrp_duty_locker']:GetGenderKey(ped)
+    end
+    return GetEntityModel(ped) == `mp_m_freemode_01` and 'male' or 'female'
+end
+
+local function inferOutfitCategory(outfit, genderKey)
+    if GetResourceState('mrp_duty_locker') == 'started' then
+        return exports['mrp_duty_locker']:InferCategory(outfit, genderKey)
+    end
+    return outfit.category or 'uniform_top'
+end
+
+local function buildMechDutyLockerItems(grade, genderKey)
+    local items = {}
+    for idx, outfit in ipairs(Config.DutyOutfits or {}) do
+        if not outfit[genderKey] then goto continue_outfit end
+        if grade < (tonumber(outfit.minGrade) or 0) then goto continue_outfit end
+        items[#items + 1] = {
+            id = tostring(idx),
+            category = inferOutfitCategory(outfit, genderKey),
+            label = outfit.label,
+            description = outfit.description or '',
+        }
+        ::continue_outfit::
+    end
+    return items
+end
+
+local function applyMechOutfitIndex(idx)
+    if not isMechanicOnDuty() then return end
+    local outfit = Config.DutyOutfits and Config.DutyOutfits[idx]
+    if not outfit then return end
+    local ped = PlayerPedId()
+    local genderKey = getOutfitGenderKey(ped)
+    local tbl = outfit[genderKey]
+    if not tbl then return end
+    local category = inferOutfitCategory(outfit, genderKey)
+    if GetResourceState('mrp_duty_locker') == 'started' then
+        exports['mrp_duty_locker']:ApplyCategory(ped, tbl, category)
+    else
+        applyOutfitTable(ped, tbl.components or tbl)
+    end
+    QBCore.Functions.Notify(outfit.label or 'Apranga uždėta.', 'success')
+end
+
+RegisterNetEvent('mrp_mechanic:client:openLocker', function(data)
     if not isMechanicOnDuty() then
         return QBCore.Functions.Notify('Rūbinė – tik mechanikams tarnyboje.', 'error')
     end
-    if GetResourceState('qb-menu') ~= 'started' then
-        return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
+    if GetResourceState('mrp_duty_locker') ~= 'started' then
+        return QBCore.Functions.Notify('Rūbinės UI neaktyvus (mrp_duty_locker).', 'error')
     end
+    data = type(data) == 'table' and data or {}
     local P = QBCore.Functions.GetPlayerData()
     local grade = (P.job and P.job.grade and P.job.grade.level) or 0
-    local menu = { { header = 'Darbo apranga', isMenuHeader = true } }
-    for idx, outfit in ipairs(Config.DutyOutfits or {}) do
-        if grade >= (tonumber(outfit.minGrade) or 0) then
-            menu[#menu + 1] = {
-                header = outfit.label,
-                params = {
-                    event = 'mrp_mechanic:client:applyOutfit',
-                    args = { index = idx },
-                },
-            }
-        end
-    end
-    if #menu < 2 then
-        return QBCore.Functions.Notify('Nėra aprangų.', 'error')
-    end
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+    local genderKey = getOutfitGenderKey(PlayerPedId())
+    local lk = Config.Locker
+    exports['mrp_duty_locker']:Open({
+        title = 'Mechanikų rūbinė',
+        subtitle = 'Darbo apranga',
+        anchor = data.anchor or (lk and lk.coords) or GetEntityCoords(PlayerPedId()),
+        radius = data.radius or 2.6,
+        items = buildMechDutyLockerItems(grade, genderKey),
+        onApply = function(itemId)
+            if type(itemId) == 'string' and itemId:sub(1, 7) == 'remove:' then
+                local cat = itemId:sub(8)
+                exports['mrp_duty_locker']:ClearCategory(PlayerPedId(), cat)
+                QBCore.Functions.Notify('Nuimta.', 'success')
+                return
+            end
+            applyMechOutfitIndex(tonumber(itemId))
+        end,
+    })
 end)
 
 RegisterNetEvent('mrp_mechanic:client:applyOutfit', function(data)
-    if not isMechanicOnDuty() then return end
     local idx = tonumber(data and data.index)
-    local outfit = idx and Config.DutyOutfits and Config.DutyOutfits[idx]
-    if not outfit then return end
-    local ped = PlayerPedId()
-    local male = GetEntityModel(ped) == `mp_m_freemode_01`
-    local tbl = male and outfit.male or outfit.female
-    if not tbl then return end
-    applyOutfitTable(ped, tbl)
-    QBCore.Functions.Notify(outfit.label or 'Apranga uždėta.', 'success')
+    if not idx then return end
+    applyMechOutfitIndex(idx)
 end)
 
 CreateThread(function()

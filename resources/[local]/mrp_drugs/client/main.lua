@@ -493,7 +493,10 @@ local function trySellToNpcEntity(entity)
                 end
                 return QBCore.Functions.Notify((res and res.reason) or 'Pardavimas nepavyko.', 'error')
             end
-            QBCore.Functions.Notify(('Parduota už $%s'):format(res.price or 0), 'success')
+            QBCore.Functions.Notify(
+                ('Parduota už $%s (%s)'):format(res.price or 0, res.payoutLabel or 'Nešvarūs pinigai'),
+                'success'
+            )
             if res.alertPolice then
                 QBCore.Functions.Notify('Kažkas gali būti iškvietęs policiją…', 'error', 5500)
             end

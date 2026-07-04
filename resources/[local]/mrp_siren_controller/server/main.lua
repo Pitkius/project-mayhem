@@ -41,6 +41,19 @@ local function vehicleNearPlayer(src, veh, dist)
     return #(pcoords - vcoords) <= dist
 end
 
+local function resolveVehicleNetId(netId)
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return 0 end
+    if type(NetworkDoesNetworkIdExist) == 'function' and not NetworkDoesNetworkIdExist(netId) then
+        return 0
+    end
+    local ent = NetworkGetEntityFromNetworkId(netId)
+    if ent == 0 or not DoesEntityExist(ent) or GetEntityType(ent) ~= 2 then
+        return 0
+    end
+    return ent
+end
+
 local function safeVehicleNetId(veh)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return 0 end
     if NetworkGetEntityIsNetworked and not NetworkGetEntityIsNetworked(veh) then return 0 end
@@ -188,11 +201,9 @@ end)
 
 RegisterNetEvent('mrp_siren:server:clearEmsEmergencyOnExit', function(netId)
     local src = source
-    netId = tonumber(netId)
-    if not netId or not NetworkDoesNetworkIdExist(netId) then return end
+    local veh = resolveVehicleNetId(netId)
+    if veh == 0 then return end
     if not isEmsOnDuty(src) then return end
-    local veh = NetworkGetEntityFromNetworkId(netId)
-    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     if not vehicleNearPlayer(src, veh, (Config.ValidateDistance or 28.0) + 10.0) then return end
     Entity(veh).state:set('ltEmsSirenMode', 'off', true)
 end)

@@ -1379,13 +1379,23 @@ exports('ApplyVehicleEmergencyFromMods', function(veh, mods)
     end
 end)
 
+local function resolveVehicleNetId(netId)
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return 0 end
+    if type(NetworkDoesNetworkIdExist) == 'function' and not NetworkDoesNetworkIdExist(netId) then
+        return 0
+    end
+    local ent = NetworkGetEntityFromNetworkId(netId)
+    if ent == 0 or not DoesEntityExist(ent) or GetEntityType(ent) ~= 2 then
+        return 0
+    end
+    return ent
+end
+
 RegisterNetEvent('mrp_ltpd:server:restoreVehicleEmergency', function(netId)
     local src = source
-    netId = tonumber(netId)
-    if not netId or not NetworkDoesNetworkIdExist(netId) then return end
-
-    local veh = NetworkGetEntityFromNetworkId(netId)
-    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    local veh = resolveVehicleNetId(netId)
+    if veh == 0 then return end
 
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
@@ -1569,11 +1579,9 @@ end)
 
 RegisterNetEvent('mrp_ltpd:server:clearPdEmergencyOnExit', function(netId)
     local src = source
-    netId = tonumber(netId)
-    if not netId or not NetworkDoesNetworkIdExist(netId) then return end
+    local veh = resolveVehicleNetId(netId)
+    if veh == 0 then return end
     if not isLtpdOnDuty(src) then return end
-    local veh = NetworkGetEntityFromNetworkId(netId)
-    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     if not vehicleNearPlayer(src, veh, (Config.EmergencyVehicle and Config.EmergencyVehicle.validateDistance or 28.0) + 10.0) then
         return
     end
