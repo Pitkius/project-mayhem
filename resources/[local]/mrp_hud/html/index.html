@@ -506,7 +506,7 @@
                                 <option value="custom">Pasirinktinė</option>
                             </select>
                         </label>
-                        <p class="hm-panel-note">Pirminė spalva keičia rutuliukų progresą, antrinė — ikonas viduje.</p>
+                        <p class="hm-panel-note">Pirminė — progresas, antrinė — ikonos, akcentas — paryškinimai, tekstas — etiketės.</p>
                         <div class="hm-color-picks" id="hmColorPicks">
                             <label class="hm-color-pick hm-color-pick-btn">
                                 <span>Pirminė</span>
@@ -518,8 +518,16 @@
                                 <input type="color" id="hmInputSecondary" value="#c4b5fd" hidden />
                                 <i id="hmColSecondary" style="background:#c4b5fd"></i>
                             </label>
-                            <div class="hm-color-pick"><span>Akcentas</span><i id="hmColAccent" style="background:#e879f9"></i></div>
-                            <div class="hm-color-pick"><span>Tekstas</span><i id="hmColText" style="background:#f8fafc"></i></div>
+                            <label class="hm-color-pick hm-color-pick-btn">
+                                <span>Akcentas</span>
+                                <input type="color" id="hmInputAccent" value="#e879f9" hidden />
+                                <i id="hmColAccent" style="background:#e879f9"></i>
+                            </label>
+                            <label class="hm-color-pick hm-color-pick-btn">
+                                <span>Tekstas</span>
+                                <input type="color" id="hmInputText" value="#f8fafc" hidden />
+                                <i id="hmColText" style="background:#f8fafc"></i>
+                            </label>
                         </div>
                         <div class="hm-swatches" id="hmSwatches">
                             <span class="hm-swatch" data-c="violet" style="--sw:#a78bfa" title="Violetinė"></span>

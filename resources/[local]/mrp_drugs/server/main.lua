@@ -932,6 +932,15 @@ local function computePlantMoisture(cfg, plant)
     return math.max(0, math.min(100, moisture - decay))
 end
 
+local function computeWeedStage(cfg, plant)
+    if not plant or not plant.plantedAt then return 0 end
+    local bonus = (tonumber(plant.watered) or 0) * (tonumber(cfg.waterBonusSec) or 40)
+    local elapsed = os.time() - tonumber(plant.plantedAt) + bonus
+    if elapsed >= (tonumber(cfg.stage3Sec) or 240) then return 3 end
+    if elapsed >= (tonumber(cfg.stage2Sec) or 90) then return 2 end
+    return 1
+end
+
 local function computePlantStatus(cfg, plant)
     if not plant then return 'empty' end
     if not plant.soiled then return 'empty' end
@@ -962,15 +971,6 @@ end
 
 local function weedCoords(entry)
     return vector3(tonumber(entry.x) or 0.0, tonumber(entry.y) or 0.0, tonumber(entry.z) or 0.0)
-end
-
-local function computeWeedStage(cfg, plant)
-    if not plant or not plant.plantedAt then return 0 end
-    local bonus = (tonumber(plant.watered) or 0) * (tonumber(cfg.waterBonusSec) or 40)
-    local elapsed = os.time() - tonumber(plant.plantedAt) + bonus
-    if elapsed >= (tonumber(cfg.stage3Sec) or 240) then return 3 end
-    if elapsed >= (tonumber(cfg.stage2Sec) or 90) then return 2 end
-    return 1
 end
 
 local function weedGrowthRemaining(cfg, plant)

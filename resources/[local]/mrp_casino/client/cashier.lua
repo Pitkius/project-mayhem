@@ -30,44 +30,46 @@ local function openCashierMenu(status)
         {
             header = 'Pirkti žetonus',
             txt = 'Grynieji → žetonai (1:1)',
-            params = {
-                isAction = true,
-                event = function()
-                    if GetResourceState('qb-input') ~= 'started' then return notify('qb-input neįkeltas.', 'error') end
-                    local r = exports['qb-input']:ShowInput({
-                        header = 'Pirkti žetonus',
-                        submitText = 'Pirkti',
-                        inputs = { { text = 'Suma ($)', name = 'amount', type = 'number', isRequired = true } },
-                    })
-                    if not r or not r.amount then return end
-                    QBCore.Functions.TriggerCallback('mrp_casino:server:exchangeChips', function(res)
-                        notify(res and res.msg or 'Klaida.', res and res.ok and 'success' or 'error')
-                    end, 'buy', tonumber(r.amount))
-                end,
-            },
+            params = { event = 'mrp_casino:client:cashierBuy' },
         },
         {
             header = 'Keisti žetonus į grynuosius',
             txt = 'Žetonai → grynieji (1:1)',
-            params = {
-                isAction = true,
-                event = function()
-                    if GetResourceState('qb-input') ~= 'started' then return notify('qb-input neįkeltas.', 'error') end
-                    local r = exports['qb-input']:ShowInput({
-                        header = 'Keisti žetonus',
-                        submitText = 'Keisti',
-                        inputs = { { text = 'Žetonų kiekis', name = 'amount', type = 'number', isRequired = true } },
-                    })
-                    if not r or not r.amount then return end
-                    QBCore.Functions.TriggerCallback('mrp_casino:server:exchangeChips', function(res)
-                        notify(res and res.msg or 'Klaida.', res and res.ok and 'success' or 'error')
-                    end, 'sell', tonumber(r.amount))
-                end,
-            },
+            params = { event = 'mrp_casino:client:cashierSell' },
         },
     }
     exports['qb-menu']:openMenu(menu)
 end
+
+RegisterNetEvent('mrp_casino:client:showCashierMenu', function(status)
+    openCashierMenu(status)
+end)
+
+RegisterNetEvent('mrp_casino:client:cashierBuy', function()
+    if GetResourceState('qb-input') ~= 'started' then return notify('qb-input neįkeltas.', 'error') end
+    local r = exports['qb-input']:ShowInput({
+        header = 'Pirkti žetonus',
+        submitText = 'Pirkti',
+        inputs = { { text = 'Suma ($)', name = 'amount', type = 'number', isRequired = true } },
+    })
+    if not r or not r.amount then return end
+    QBCore.Functions.TriggerCallback('mrp_casino:server:exchangeChips', function(res)
+        notify(res and res.msg or 'Klaida.', res and res.ok and 'success' or 'error')
+    end, 'buy', tonumber(r.amount))
+end)
+
+RegisterNetEvent('mrp_casino:client:cashierSell', function()
+    if GetResourceState('qb-input') ~= 'started' then return notify('qb-input neįkeltas.', 'error') end
+    local r = exports['qb-input']:ShowInput({
+        header = 'Keisti žetonus',
+        submitText = 'Keisti',
+        inputs = { { text = 'Žetonų kiekis', name = 'amount', type = 'number', isRequired = true } },
+    })
+    if not r or not r.amount then return end
+    QBCore.Functions.TriggerCallback('mrp_casino:server:exchangeChips', function(res)
+        notify(res and res.msg or 'Klaida.', res and res.ok and 'success' or 'error')
+    end, 'sell', tonumber(r.amount))
+end)
 
 local function openCashier()
     if not Casino.isInside() then

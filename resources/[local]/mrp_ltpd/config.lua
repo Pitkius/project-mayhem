@@ -75,23 +75,35 @@ Config.EmergencyVehicle = {
     lightbarModel = 'prop_lightbar_01',
     lightbarYOffset = 0.12,
     lightbarZOffset = 0.04,
-    --- Mažos lempos ant švyturėlio (mirksėjimas iš jų pozicijos, ne po priekiu)
+    --- Mažos lempos ant švyturėlio (nematomos – šviesa piešiama scriptu)
     lensModel = 'prop_warninglight_01',
     lensLeftOffset = { x = -0.26, y = 0.0, z = 0.07 },
     lensRightOffset = { x = 0.26, y = 0.0, z = 0.07 },
+    --- Vizualas: standard | enhanced (dvigubas halo + bar pulse)
+    flashVisualPreset = 'enhanced',
+    flashColors = {
+        red = { r = 255, g = 48, b = 52 },
+        blue = { r = 58, g = 128, b = 255 },
+        white = { r = 248, g = 252, b = 255 },
+    },
     --- Mirksėjimo intervalas (ms)
     flashIntervalMs = 480,
     flashTickMs = 80,
-    --- Aplinkos šviesa prie lempų (maža – mažiau lag)
-    flashLightRange = 7.0,
-    flashLightIntensity = 2.2,
-    --- Kryptiniai spinduliai (DrawSpotLight – labai brangus, numatyta išjungta)
+    --- Šviesos prie lempų (švelnesnė, bet matomesnė enhanced režime)
+    flashLightRange = 9.5,
+    flashLightIntensity = 3.4,
+    flashUseLensGlow = true,
+    flashUseBarGlow = true,
+    flashMarkerScale = 0.048,
+    flashMarkerGlowScale = 0.115,
+    --- Kryptiniai spinduliai tik arti (gražiau, bet be lag toli)
     flashUseSpotBeams = false,
+    flashUseNearSpotBeams = true,
+    flashNearSpotDistance = 32.0,
+    flashSpotRange = 16.0,
+    flashSpotIntensity = 5.0,
     flashUseAmbientGlow = true,
-    flashSpotRange = 18.0,
-    flashSpotIntensity = 6.0,
     flashDrawDistance = 55.0,
-    flashMarkerScale = 0.075,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)

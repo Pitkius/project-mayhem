@@ -362,7 +362,7 @@ local function sendHudTheme()
         customColors = resolved.customColors or s.customColors,
         show = s.show,
         tileColors = tiles,
-        vehicleUiAccent = VEHICLE_PANEL_ACCENT,
+        vehicleUiAccent = (resolved.customColors and resolved.customColors.accent) or VEHICLE_PANEL_ACCENT,
     })
 end
 
@@ -617,7 +617,6 @@ local function openHudMenu()
         SendNUIMessage({ action = 'vehicleList', open = false })
     end
     hudMenuOpen = true
-    playHudMenuOpenAnim()
     SetNuiFocus(true, true)
     local payload = {
         action = 'openMenu',
@@ -638,7 +637,8 @@ local function closeHudMenu()
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
     SendNUIMessage({ action = 'closeMenu' })
-    playHudMenuCloseAnim()
+    deleteHudMenuProp()
+    ClearPedSecondaryTask(PlayerPedId())
     sendHudTheme()
 end
 

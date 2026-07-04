@@ -78,6 +78,8 @@ const menu = {
   colText: document.getElementById("hmColText"),
   inputPrimary: document.getElementById("hmInputPrimary"),
   inputSecondary: document.getElementById("hmInputSecondary"),
+  inputAccent: document.getElementById("hmInputAccent"),
+  inputText: document.getElementById("hmInputText"),
   swatches: document.getElementById("hmSwatches"),
   tabs: document.getElementById("hmTabs"),
 };
@@ -461,6 +463,16 @@ function applyThemeData(data) {
   if (data.glowColor) {
     document.documentElement.style.setProperty("--accent-glow", data.glowColor);
   }
+  const themeColors = data.customColors;
+  if (themeColors) {
+    if (themeColors.accent) {
+      document.documentElement.style.setProperty("--accent-highlight", themeColors.accent);
+      document.documentElement.style.setProperty("--vehicle-accent", themeColors.accent);
+    }
+    if (themeColors.text) {
+      document.documentElement.style.setProperty("--hud-text", themeColors.text);
+    }
+  }
   if (data.tileColors && typeof data.tileColors === "object") {
     const tc = data.tileColors;
     if (tc.health) document.documentElement.style.setProperty("--tile-health", tc.health);
@@ -580,6 +592,8 @@ function syncColorInputs(colors) {
   const pal = colors || paletteFromThemeKey("violet");
   if (menu.inputPrimary) menu.inputPrimary.value = pal.primary;
   if (menu.inputSecondary) menu.inputSecondary.value = pal.secondary;
+  if (menu.inputAccent) menu.inputAccent.value = pal.accent;
+  if (menu.inputText) menu.inputText.value = pal.text;
   if (menu.colPrimary) menu.colPrimary.style.background = pal.primary;
   if (menu.colSecondary) menu.colSecondary.style.background = pal.secondary;
   if (menu.colAccent) menu.colAccent.style.background = pal.accent;
@@ -705,13 +719,9 @@ function getMenuState() {
   const colorKey = menu.color ? menu.color.value : "violet";
   const primary = menu.inputPrimary ? menu.inputPrimary.value : THEME_PALETTE.violet.primary;
   const secondary = menu.inputSecondary ? menu.inputSecondary.value : THEME_PALETTE.violet.secondary;
-  const basePal = colorKey !== "custom" ? paletteFromThemeKey(colorKey) : null;
-  const customColors = {
-    primary,
-    secondary,
-    accent: basePal ? basePal.accent : secondary,
-    text: basePal ? basePal.text : THEME_PALETTE.violet.text,
-  };
+  const accent = menu.inputAccent ? menu.inputAccent.value : THEME_PALETTE.violet.accent;
+  const text = menu.inputText ? menu.inputText.value : THEME_PALETTE.violet.text;
+  const customColors = { primary, secondary, accent, text };
   return {
     preset: Number(menu.preset.value || 1),
     style: menu.style.value,
@@ -763,27 +773,16 @@ function fillMenuFromPreset(idx) {
   renderMenuPreview();
 }
 
-const HUD_MENU_CLOSE_MS = 380;
-
 function openHudMenuUi() {
   hudMenu.classList.remove("hidden", "is-closing");
-  void hudMenu.offsetWidth;
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      hudMenu.classList.add("is-open");
-    });
-  });
+  hudMenu.classList.add("is-open");
 }
 
 function closeHudMenuUi() {
-  hudMenu.classList.remove("is-open");
-  hudMenu.classList.add("is-closing");
-  window.setTimeout(() => {
-    unmountPreviewClusters();
-    hudMenu.classList.add("hidden");
-    hudMenu.classList.remove("is-closing");
-    body.classList.remove("hud-menu-open");
-  }, HUD_MENU_CLOSE_MS);
+  hudMenu.classList.remove("is-open", "is-closing");
+  unmountPreviewClusters();
+  hudMenu.classList.add("hidden");
+  body.classList.remove("hud-menu-open");
 }
 
 window.addEventListener("message", (event) => {
@@ -1124,18 +1123,16 @@ if (menu.color) {
 
 function onCustomColorInput() {
   if (menu.color) menu.color.value = "custom";
-  const primary = menu.inputPrimary ? menu.inputPrimary.value : THEME_PALETTE.violet.primary;
-  const secondary = menu.inputSecondary ? menu.inputSecondary.value : THEME_PALETTE.violet.secondary;
   syncColorInputs({
-    primary,
-    secondary,
-    accent: secondary,
-    text: THEME_PALETTE.violet.text,
+    primary: menu.inputPrimary ? menu.inputPrimary.value : THEME_PALETTE.violet.primary,
+    secondary: menu.inputSecondary ? menu.inputSecondary.value : THEME_PALETTE.violet.secondary,
+    accent: menu.inputAccent ? menu.inputAccent.value : THEME_PALETTE.violet.accent,
+    text: menu.inputText ? menu.inputText.value : THEME_PALETTE.violet.text,
   });
   applyMenuLive();
 }
 
-[menu.inputPrimary, menu.inputSecondary].forEach((el) => {
+[menu.inputPrimary, menu.inputSecondary, menu.inputAccent, menu.inputText].forEach((el) => {
   if (!el) return;
   el.addEventListener("input", onCustomColorInput);
   el.addEventListener("change", onCustomColorInput);

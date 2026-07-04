@@ -1,6 +1,31 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local lockpickBusy = false
+local busy = false
+
+local CFG = {
+    reach = 3.6,
+    serverReach = 6.0,
+    duration = { lockpick = 12000, advancedlockpick = 9000 },
+    anim = {
+        dict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@',
+        clip = 'machinic_loop_mechandplayer',
+        flag = 16,
+    },
+}
+
+local DISABLE = {
+    disableMovement = true,
+    disableCarMovement = true,
+    disableCombat = true,
+}
+
+local function notify(msg, ntype)
+    QBCore.Functions.Notify(msg, ntype or 'primary')
+end
+
+local function normalizePlate(plate)
+    return tostring(plate or ''):upper():gsub('%s+', '')
+end
 
 local function vehicleLabel(veh)
     local model = GetEntityModel(veh)
@@ -12,144 +37,267 @@ local function vehicleLabel(veh)
     return label
 end
 
+local function rotationToDirection(rot)
+    local z = math.rad(rot.z)
+    local x = math.rad(rot.x)
+    local cosX = math.abs(math.cos(x))
+    return vector3(-math.sin(z) * cosX, math.cos(z) * cosX, math.sin(x))
+end
+
+local function entityReach(ped, ent, maxDist)
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return false end
+    return #(GetEntityCoords(ped) - GetEntityCoords(ent)) <= (maxDist or CFG.reach)
+end
+
 local function isVehicleLocked(veh)
     local st = GetVehicleDoorLockStatus(veh)
-    return st == 2 or st == 4
+    return st == 2 or st == 3 or st == 4
 end
 
 local function playerHasKeys(veh)
-    local plate = QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh)
-    if GetResourceState('qb-vehiclekeys') == 'started' then
-        local ok, has = pcall(function()
-            return exports['qb-vehiclekeys']:HasKeys(plate)
-        end)
-        if ok then return has == true end
+    if GetResourceState('qb-vehiclekeys') ~= 'started' then
+        return false
     end
-    return false
+    local plate = QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh)
+    local ok, has = pcall(function()
+        return exports['qb-vehiclekeys']:HasKeys(plate)
+    end)
+    return ok and has == true
 end
 
-local function unlockVehicleDoors(veh)
+local function isNpcVehicle(veh)
+    if GetResourceState('mrp_basics') ~= 'started' then return false end
+    local ok, isNpc = pcall(function()
+        return exports['mrp_basics']:IsNaturalNpcVehicle(veh)
+    end)
+    return ok and isNpc == true
+end
+
+local function applyUnlockLocal(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     SetVehicleDoorsLocked(veh, 1)
     SetVehicleDoorsLockedForAllPlayers(veh, false)
     SetVehicleDoorsLockedForPlayer(veh, PlayerId(), false)
     SetVehicleAlarm(veh, false)
     SetVehicleAlarmTimeLeft(veh, 0)
-
-    if GetResourceState('mrp_basics') == 'started' then
+    if isNpcVehicle(veh) then
         pcall(function()
             exports['mrp_basics']:MarkNpcVehicleUnlocked(veh)
         end)
     end
-
-    local netId = NetworkGetNetworkIdFromEntity(veh)
-    if netId and netId > 0 then
-        TriggerServerEvent('mrp_hud:server:setVehicleLock', netId, false)
-    end
 end
 
-local function triggerVehicleAlarm(veh)
+local function triggerAlarmLocal(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     SetVehicleAlarm(veh, true)
     StartVehicleAlarm(veh)
     SetVehicleAlarmTimeLeft(veh, 45000)
 end
 
-local function loadAnimDict(dict)
-    RequestAnimDict(dict)
-    local t = GetGameTimer() + 5000
-    while not HasAnimDictLoaded(dict) do
-        if GetGameTimer() > t then return false end
-        Wait(10)
+local function getTargetVehicle()
+    local ped = PlayerPedId()
+    local pCoords = GetEntityCoords(ped)
+    local maxDist = CFG.reach
+
+    local camCoord = GetGameplayCamCoord()
+    local camRot = GetGameplayCamRot(2)
+    local dir = rotationToDirection(camRot)
+    local dest = camCoord + (dir * (maxDist + 1.0))
+    local ray = StartShapeTestRay(camCoord.x, camCoord.y, camCoord.z, dest.x, dest.y, dest.z, 10, ped, 0)
+    local _, hit, _, _, ent = GetShapeTestResult(ray)
+    if hit == 1 and ent ~= 0 and DoesEntityExist(ent) and IsEntityAVehicle(ent) then
+        if entityReach(ped, ent, maxDist + 0.4) then
+            return ent
+        end
     end
-    return true
+
+    local forward = GetEntityForwardVector(ped)
+    local best, bestDist = 0, maxDist
+    for _, veh in ipairs(GetGamePool('CVehicle')) do
+        if DoesEntityExist(veh) then
+            local dist = #(pCoords - GetEntityCoords(veh))
+            if dist <= maxDist then
+                local delta = GetEntityCoords(veh) - pCoords
+                local len = #(delta)
+                if len > 0.05 then
+                    delta = delta / len
+                    local dot = forward.x * delta.x + forward.y * delta.y + forward.z * delta.z
+                    if dot > 0.15 and dist < bestDist then
+                        best = veh
+                        bestDist = dist
+                    end
+                end
+            end
+        end
+    end
+    if best ~= 0 then return best end
+
+    local fallback = QBCore.Functions.GetClosestVehicle()
+    if fallback and fallback ~= 0 and fallback ~= -1 and DoesEntityExist(fallback) then
+        if entityReach(ped, fallback, maxDist) then
+            return fallback
+        end
+    end
+    return 0
 end
 
-local function runLockpickMinigame(advanced, onDone)
-    local ped = PlayerPedId()
-    local dict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@'
-    local anim = 'machinic_loop_mechandplayer'
-    if not loadAnimDict(dict) then
-        return onDone(false)
+local function loadAnimDict(dict)
+    if not dict or dict == '' then return false end
+    RequestAnimDict(dict)
+    local deadline = GetGameTimer() + 5000
+    while not HasAnimDictLoaded(dict) and GetGameTimer() < deadline do
+        Wait(10)
+    end
+    return HasAnimDictLoaded(dict)
+end
+
+local function applyDisableControls()
+    if DISABLE.disableMovement then
+        DisableControlAction(0, 30, true)
+        DisableControlAction(0, 31, true)
+        DisableControlAction(0, 36, true)
+        DisableControlAction(0, 21, true)
+    end
+    if DISABLE.disableCarMovement then
+        DisableControlAction(0, 63, true)
+        DisableControlAction(0, 64, true)
+        DisableControlAction(0, 71, true)
+        DisableControlAction(0, 72, true)
+    end
+    if DISABLE.disableCombat then
+        DisableControlAction(0, 24, true)
+        DisableControlAction(0, 25, true)
+        DisableControlAction(0, 47, true)
+        DisableControlAction(0, 58, true)
+        DisableControlAction(0, 140, true)
+        DisableControlAction(0, 141, true)
+        DisableControlAction(0, 142, true)
+        DisableControlAction(0, 143, true)
+    end
+end
+
+local function runLockpickProgress(advanced)
+    local itemKey = advanced and 'advancedlockpick' or 'lockpick'
+    local duration = CFG.duration[itemKey] or 12000
+    local label = advanced and 'Laužiate spyną (pažangus)…' or 'Laužiate spyną…'
+    local anim = CFG.anim
+
+    if GetResourceState('progressbar') == 'started' then
+        local finished, cancelled = false, false
+        QBCore.Functions.Progressbar('mrp_vehicle_lockpick', label, duration, false, true, DISABLE, {
+            animDict = anim.dict,
+            anim = anim.clip,
+            flags = anim.flag,
+        }, {}, {}, function()
+            finished = true
+        end, function()
+            cancelled = true
+        end)
+        local deadline = GetGameTimer() + duration + 1200
+        while GetGameTimer() < deadline do
+            if cancelled then return false end
+            if finished then return true end
+            Wait(50)
+        end
+        return finished
     end
 
-    TaskPlayAnim(ped, dict, anim, 3.0, 3.0, -1, 16, 0.0, false, false, false)
+    local ped = PlayerPedId()
+    if loadAnimDict(anim.dict) then
+        TaskPlayAnim(ped, anim.dict, anim.clip, 3.0, 3.0, -1, anim.flag, 0.0, false, false, false)
+    end
 
-    CreateThread(function()
-        while lockpickBusy do
-            if not IsEntityPlayingAnim(ped, dict, anim, 3) then
-                TaskPlayAnim(ped, dict, anim, 3.0, 3.0, -1, 16, 0.0, false, false, false)
-            end
-            Wait(400)
+    notify(label, 'primary')
+    local endAt = GetGameTimer() + duration
+    while GetGameTimer() < endAt do
+        applyDisableControls()
+        if anim.dict and anim.clip and not IsEntityPlayingAnim(ped, anim.dict, anim.clip, 3) then
+            TaskPlayAnim(ped, anim.dict, anim.clip, 3.0, 3.0, -1, anim.flag, 0.0, false, false, false)
         end
-    end)
-
-    QBCore.Functions.Progressbar('mrp_vehicle_lockpick', advanced and 'Laužiate spyną (pažangus)…' or 'Laužiate spyną…', advanced and 9000 or 12000, false, true, {
-        disableMovement = true,
-        disableCarMovement = true,
-        disableMouse = false,
-        disableCombat = true,
-    }, {}, {}, {}, function()
-        ClearPedTasks(ped)
-        onDone(true)
-    end, function()
-        ClearPedTasks(ped)
-        onDone(false)
-    end)
+        if IsControlJustReleased(0, 73) or IsControlJustReleased(0, 200) then
+            ClearPedTasks(ped)
+            return false
+        end
+        Wait(0)
+    end
+    ClearPedTasks(ped)
+    return true
 end
 
 RegisterNetEvent('mrp_basics:client:vehicleLockpickResult', function(data)
     data = data or {}
-    local veh = data.netId and NetworkGetEntityFromNetworkId(data.netId) or 0
+    local netId = tonumber(data.netId) or 0
+    if netId <= 0 then return end
+
+    local veh = NetworkGetEntityFromNetworkId(netId)
     if veh == 0 or not DoesEntityExist(veh) then return end
 
     if data.success then
-        unlockVehicleDoors(veh)
-        QBCore.Functions.Notify(data.msg or 'Spyna atrakinta.', 'success')
+        applyUnlockLocal(veh)
+        notify(data.msg or 'Spyna atrakinta.', 'success')
         return
     end
 
-    triggerVehicleAlarm(veh)
-    QBCore.Functions.Notify(data.msg or 'Nepavyko — įjungta signalizacija!', 'error')
+    triggerAlarmLocal(veh)
+    notify(data.msg or 'Nepavyko — įjungta signalizacija!', 'error')
 end)
 
 RegisterNetEvent('lockpicks:UseLockpick', function(advanced)
-    if lockpickBusy then return end
+    if busy then return end
 
     local ped = PlayerPedId()
     if IsPedInAnyVehicle(ped, false) then
-        return QBCore.Functions.Notify('Išlipk iš transporto.', 'error')
+        return notify('Išlipk iš transporto.', 'error')
     end
 
-    local veh = QBCore.Functions.GetClosestVehicle()
-    if not veh or veh == 0 or not DoesEntityExist(veh) then
-        return QBCore.Functions.Notify('Nėra transporto šalia.', 'error')
+    local veh = getTargetVehicle()
+    if veh == 0 then
+        return notify('Nėra transporto šalia.', 'error')
     end
 
-    if #(GetEntityCoords(ped) - GetEntityCoords(veh)) > 3.2 then
-        return QBCore.Functions.Notify('Per toli nuo transporto.', 'error')
+    if not entityReach(ped, veh, CFG.reach) then
+        return notify('Per toli nuo transporto.', 'error')
     end
 
     if not isVehicleLocked(veh) then
-        return QBCore.Functions.Notify('Transportas jau atrakintas.', 'primary')
+        return notify('Transportas jau atrakintas.', 'primary')
     end
 
     if playerHasKeys(veh) then
-        unlockVehicleDoors(veh)
-        return QBCore.Functions.Notify('Durys atrakintos (turite raktus).', 'success')
+        applyUnlockLocal(veh)
+        local netId = NetworkGetNetworkIdFromEntity(veh)
+        if netId and netId > 0 then
+            TriggerServerEvent('mrp_basics:server:syncVehicleUnlock', netId)
+        end
+        return notify('Durys atrakintos (turite raktus).', 'success')
     end
 
-    lockpickBusy = true
-    runLockpickMinigame(advanced == true, function(completed)
-        lockpickBusy = false
-        if not completed then
-            return QBCore.Functions.Notify('Atšaukta.', 'error')
-        end
+    if not NetworkGetEntityIsNetworked(veh) then
+        return notify('Šio transporto negalima atrakinti.', 'error')
+    end
 
-        local netId = NetworkGetNetworkIdFromEntity(veh)
-        if not netId or netId <= 0 then
-            return QBCore.Functions.Notify('Nepavyko nustatyti transporto.', 'error')
-        end
+    local netId = NetworkGetNetworkIdFromEntity(veh)
+    if not netId or netId <= 0 then
+        return notify('Nepavyko nustatyti transporto.', 'error')
+    end
 
-        local plate = QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or '???'
-        TriggerServerEvent('mrp_basics:server:vehicleLockpick', netId, plate, vehicleLabel(veh), advanced == true)
-    end)
+    busy = true
+    local completed = runLockpickProgress(advanced == true)
+    busy = false
+
+    if not completed then
+        return notify('Atšaukta.', 'error')
+    end
+
+    if not DoesEntityExist(veh) or not entityReach(PlayerPedId(), veh, CFG.reach + 0.5) then
+        return notify('Per toli nuo transporto.', 'error')
+    end
+
+    TriggerServerEvent(
+        'mrp_basics:server:vehicleLockpick',
+        netId,
+        normalizePlate(QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh)),
+        vehicleLabel(veh),
+        advanced == true
+    )
 end)

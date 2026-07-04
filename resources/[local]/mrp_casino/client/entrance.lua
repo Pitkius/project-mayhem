@@ -33,6 +33,11 @@ local function seamlessMove(dest, heading)
 
     Wait(100)
     transitioning = false
+    if Casino.isInside and Casino.isInside() then
+        TriggerServerEvent('mrp_casino:server:setPlayerInside', true)
+    else
+        TriggerServerEvent('mrp_casino:server:setPlayerInside', false)
+    end
 end
 
 local function tryEnter(cfg)

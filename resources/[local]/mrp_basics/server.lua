@@ -329,11 +329,48 @@ end)
 
 local LOCKPICK_SUCCESS_CHANCE = { lockpick = 68, advancedlockpick = 88 }
 local LOCKPICK_BREAK_CHANCE = { lockpick = 45, advancedlockpick = 20 }
+local LOCKPICK_REACH = 6.5
+
+local function resolveVehicleNetId(netId)
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return 0, 0 end
+    if type(NetworkDoesNetworkIdExist) == 'function' and not NetworkDoesNetworkIdExist(netId) then
+        return netId, 0
+    end
+    local ent = NetworkGetEntityFromNetworkId(netId)
+    if ent == 0 or not DoesEntityExist(ent) or GetEntityType(ent) ~= 2 then
+        return netId, 0
+    end
+    return netId, ent
+end
+
+local function playerNearEntity(src, ent, maxDist)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return false end
+    return #(GetEntityCoords(ped) - GetEntityCoords(ent)) <= (maxDist or LOCKPICK_REACH)
+end
+
+local function broadcastVehicleUnlock(netId)
+    TriggerClientEvent('mrp_hud:client:syncVehicleLock', -1, netId, false)
+    TriggerClientEvent('mrp_basics:client:markNpcVehicleUnlocked', -1, netId)
+end
+
+RegisterNetEvent('mrp_basics:server:syncVehicleUnlock', function(netId)
+    local src = source
+    local resolvedNetId, ent = resolveVehicleNetId(netId)
+    if resolvedNetId <= 0 then return end
+    if ent ~= 0 and not playerNearEntity(src, ent, LOCKPICK_REACH) then return end
+    broadcastVehicleUnlock(resolvedNetId)
+end)
 
 RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, vehicleLabel, advanced)
     local src = source
-    netId = tonumber(netId) or 0
-    if netId <= 0 then return end
+    local resolvedNetId, ent = resolveVehicleNetId(netId)
+    if resolvedNetId <= 0 then
+        TriggerClientEvent('QBCore:Notify', src, 'Transportas nerastas.', 'error')
+        return
+    end
 
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
@@ -344,31 +381,23 @@ RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, veh
         return
     end
 
-    local ped = GetPlayerPed(src)
-    if not ped or ped == 0 then return end
-    local coords = GetEntityCoords(ped)
-
-    local ent = NetworkGetEntityFromNetworkId(netId)
-    if ent == 0 or not DoesEntityExist(ent) or GetEntityType(ent) ~= 2 then
-        TriggerClientEvent('QBCore:Notify', src, 'Transportas nerastas.', 'error')
-        return
-    end
-
-    if #(coords - GetEntityCoords(ent)) > 6.0 then
+    if ent ~= 0 and not playerNearEntity(src, ent, LOCKPICK_REACH) then
         TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo transporto.', 'error')
         return
     end
 
-    plate = tostring(plate or GetVehicleNumberPlateText(ent) or '???'):upper():gsub('%s+', '')
+    plate = tostring(plate or (ent ~= 0 and GetVehicleNumberPlateText(ent) or '') or '???'):upper():gsub('%s+', '')
     vehicleLabel = tostring(vehicleLabel or 'Transportas')
+    local coords = GetEntityCoords(GetPlayerPed(src))
 
     local chance = LOCKPICK_SUCCESS_CHANCE[itemName] or 60
     local success = math.random(1, 100) <= chance
 
     if success then
+        broadcastVehicleUnlock(resolvedNetId)
         TriggerClientEvent('mrp_basics:client:vehicleLockpickResult', src, {
             success = true,
-            netId = netId,
+            netId = resolvedNetId,
             msg = 'Spyna sėkmingai atrakinta.',
         })
         return
@@ -386,7 +415,7 @@ RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, veh
 
     TriggerClientEvent('mrp_basics:client:vehicleLockpickResult', src, {
         success = false,
-        netId = netId,
+        netId = resolvedNetId,
         msg = 'Nepavyko atrakinti — signalizacija!',
     })
 end)

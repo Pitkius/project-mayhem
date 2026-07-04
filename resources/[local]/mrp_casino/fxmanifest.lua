@@ -17,6 +17,7 @@ client_scripts {
     'client/entrance.lua',
     'client/wheel_scene.lua',
     'client/main.lua',
+    'client/interactions.lua',
     'client/cashier.lua',
     'client/dice.lua',
     'client/wheel.lua',

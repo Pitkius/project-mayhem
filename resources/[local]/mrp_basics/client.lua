@@ -643,6 +643,18 @@ end
 
 exports('MarkNpcVehicleUnlocked', MarkNpcVehicleUnlocked)
 
+RegisterNetEvent('mrp_basics:client:markNpcVehicleUnlocked', function(netId)
+    netId = tonumber(netId)
+    if not netId or netId <= 0 then return end
+    unlockedNpcVehicles[netId] = true
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if veh and veh ~= 0 and DoesEntityExist(veh) then
+        lockedNpcVehicles[veh] = nil
+        SetVehicleDoorsLocked(veh, 1)
+        SetVehicleDoorsLockedForAllPlayers(veh, false)
+    end
+end)
+
 local function networkOwnerIsPlayer(veh)
     if not NetworkGetEntityIsNetworked(veh) then return false end
     local owner = NetworkGetEntityOwner(veh)

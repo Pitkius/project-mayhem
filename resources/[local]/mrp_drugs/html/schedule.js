@@ -449,6 +449,40 @@ function bindDropZone(zone, accept, onAccept) {
   });
 }
 
+function weedWorkspace() {
+  const el = document.createElement("div");
+  el.className = "sch-ws";
+  return el;
+}
+
+function wsRow(...children) {
+  const row = document.createElement("div");
+  row.className = "sch-ws-row";
+  children.forEach((c) => { if (c) row.appendChild(c); });
+  return row;
+}
+
+function wsMain(...children) {
+  const main = document.createElement("div");
+  main.className = "sch-ws-main";
+  children.forEach((c) => { if (c) main.appendChild(c); });
+  return main;
+}
+
+function stepDots(current, total) {
+  const wrap = document.createElement("div");
+  wrap.className = "sch-ws-dots";
+  wrap.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < total; i += 1) {
+    const dot = document.createElement("span");
+    dot.className = "sch-ws-dot";
+    if (i < current) dot.classList.add("done");
+    if (i === current) dot.classList.add("active");
+    wrap.appendChild(dot);
+  }
+  return wrap;
+}
+
 function runPlantGame(data) {
   let cuts = 0;
   const cutsNeeded = 4;
@@ -634,62 +668,69 @@ function runWeedSoilGame(data) {
 
   function renderCutBag() {
     schBoard.innerHTML = "";
-    setStep(1, 2, "Pasirink žirkles ir praskirk substrato maišą");
-    const row = document.createElement("div");
-    row.className = "sch-plant-stage";
-    const tools = document.createElement("div");
-    tools.className = "sch-tool-rail";
+    setStep(1, 2, "Pasirink žirkles, tada praskirk maišą");
+    const ws = weedWorkspace();
+    ws.appendChild(stepDots(0, 2));
+
     let scissorsActive = false;
     const scissorsBtn = toolCardSvg(SchIcons.trimScissors(), "Žirklės");
-    scissorsBtn.onclick = () => {
-      scissorsActive = true;
-      scissorsBtn.classList.add("active");
-      if (schHint) schHint.textContent = "Spausk punktyrinę liniją ant maišo";
-    };
-    tools.appendChild(scissorsBtn);
-    row.appendChild(tools);
-
-    const bagWrap = document.createElement("div");
-    bagWrap.className = "sch-bag-cut-wrap";
+    const bagPanel = document.createElement("div");
+    bagPanel.className = "sch-ws-item sch-ws-bag";
     const bagEl = document.createElement("div");
     bagEl.className = "sch-bag-visual";
     bagEl.innerHTML = SchIcons.soilBag(false);
-    bagWrap.appendChild(bagEl);
-    const seal = document.createElement("div");
-    seal.className = "sch-bag-seal";
-    [20, 45, 70].forEach((left) => {
-      const mark = document.createElement("button");
-      mark.type = "button";
-      mark.className = "sch-cut-mark";
-      mark.style.left = `${left}%`;
-      mark.onclick = () => {
-        if (!scissorsActive || mark.classList.contains("done")) return;
-        mark.classList.add("done");
-        cuts += 1;
-        if (cuts >= cutsNeeded) {
-          bagEl.innerHTML = SchIcons.soilBag(true);
-          bagEl.classList.add("sch-bag-open");
-          setTimeout(renderPourHold, 400);
-        }
-      };
-      seal.appendChild(mark);
-    });
-    bagWrap.appendChild(seal);
-    row.appendChild(bagWrap);
-    schBoard.appendChild(row);
+    bagPanel.appendChild(bagEl);
+
+    const cutBar = document.createElement("div");
+    cutBar.className = "sch-cut-progress";
+    for (let i = 0; i < cutsNeeded; i += 1) {
+      cutBar.appendChild(document.createElement("span"));
+    }
+    bagPanel.appendChild(cutBar);
+
+    const cutBtn = document.createElement("button");
+    cutBtn.type = "button";
+    cutBtn.className = "sch-btn sch-cut-btn";
+    cutBtn.textContent = "Praskirti";
+    cutBtn.disabled = true;
+    scissorsBtn.onclick = () => {
+      scissorsActive = true;
+      scissorsBtn.classList.add("active");
+      cutBtn.disabled = false;
+      if (schHint) schHint.textContent = "Spausk „Praskirti“ po maišu";
+    };
+    cutBtn.onclick = () => {
+      if (!scissorsActive || cuts >= cutsNeeded) return;
+      cuts += 1;
+      cutBar.children[cuts - 1]?.classList.add("done");
+      bagEl.classList.add("sch-bag-shake");
+      setTimeout(() => bagEl.classList.remove("sch-bag-shake"), 220);
+      if (cuts >= cutsNeeded) {
+        bagEl.innerHTML = SchIcons.soilBag(true);
+        bagEl.classList.add("sch-bag-open");
+        cutBtn.disabled = true;
+        setTimeout(renderPourHold, 450);
+      } else if (schHint) {
+        schHint.textContent = `Pjūviai ${cuts}/${cutsNeeded}`;
+      }
+    };
+    bagPanel.appendChild(cutBtn);
+
+    ws.appendChild(wsRow(scissorsBtn, bagPanel));
+    schBoard.appendChild(ws);
   }
 
   function renderPourHold() {
     schBoard.innerHTML = "";
     setStep(2, 2, "Laikyk PYLIMO — žalias greitis, sustok ties 100%");
-    const row = document.createElement("div");
-    row.className = "sch-plant-stage sch-pour-stage sch-soil-pour";
+    const ws = weedWorkspace();
+    ws.appendChild(stepDots(1, 2));
 
     const potZone = document.createElement("div");
     potZone.className = "sch-drop-pot sch-pour-pot";
     const speedWrap = document.createElement("div");
     speedWrap.className = "sch-pour-speed-meter";
-    speedWrap.innerHTML = `<div class="sch-pour-speed-track"><div class="sch-pour-speed-bar" id="schPourSpeed"></div><div class="sch-pour-speed-optimal"></div></div><small>Pylimo greitis</small>`;
+    speedWrap.innerHTML = `<small>Pylimo greitis</small><div class="sch-pour-speed-track"><div class="sch-pour-speed-bar" id="schPourSpeed"></div><div class="sch-pour-speed-optimal"></div></div>`;
     const pourBtn = document.createElement("button");
     pourBtn.type = "button";
     pourBtn.className = "sch-btn primary sch-pour-hold";
@@ -747,98 +788,109 @@ function runWeedSoilGame(data) {
     pourTimer = setInterval(tick, 70);
     scheduleTimer = pourTimer;
 
-    row.appendChild(potZone);
-    row.appendChild(speedWrap);
-    row.appendChild(pourBtn);
-    schBoard.appendChild(row);
+    ws.appendChild(wsMain(potZone, speedWrap, pourBtn));
+    schBoard.appendChild(ws);
   }
 
   renderCutBag();
 }
 
-/* --- WEED SEED: pirštinės → paspausk sėklų taškus --- */
+/* --- WEED SEED: pirštinės → sėklų vietos po vazonu --- */
 function runWeedSeedGame(data) {
   let glovesOn = false;
   let placed = 0;
   const need = 3;
-  const SEED_SPOTS = [
-    { top: "62%", left: "38%" },
-    { top: "58%", left: "52%" },
-    { top: "66%", left: "46%" },
-  ];
 
   function calcScore() {
     return Math.max(50, Math.min(100, 68 + placed * 10));
   }
 
-  schBoard.innerHTML = "";
-  setStep(1, 1, "Užsimaok pirštines ir paspausk sėklų vietas dėžėje");
-  const row = document.createElement("div");
-  row.className = "sch-plant-stage sch-seed-stage";
-
-  const gloves = toolCardSvg(SchIcons.gloves(), "Pirštinės", glovesOn ? "active" : "");
-  gloves.onclick = () => {
-    glovesOn = true;
-    gloves.classList.add("active");
-    if (schHint) schHint.textContent = "Paspausk žemės taškus dėžėje";
-  };
-
-  const potWrap = document.createElement("div");
-  potWrap.className = "sch-seed-pot-wrap";
-  potWrap.innerHTML = blackPotHtml("Paruošta žemė", 88);
-
-  SEED_SPOTS.forEach((spot, i) => {
-    const dot = document.createElement("button");
-    dot.type = "button";
-    dot.className = "sch-seed-spot";
-    dot.style.top = spot.top;
-    dot.style.left = spot.left;
-    dot.innerHTML = `<span class="sch-zone-ring"></span><small>Sėkla ${i + 1}</small>`;
-    dot.onclick = () => {
-      if (!glovesOn) {
-        if (schHint) schHint.textContent = "Pirma užsimaok pirštines!";
-        return;
-      }
-      if (dot.classList.contains("done")) return;
-      dot.classList.add("done");
-      dot.innerHTML = SchIcons.sprout();
-      placed += 1;
-      if (placed >= need) {
-        setTimeout(() => postSchedule(true, { score: calcScore(), quality: calcScore() }), 350);
-      } else if (schHint) {
-        schHint.textContent = `Sėklos ${placed}/${need}`;
-      }
+  function renderGloves() {
+    schBoard.innerHTML = "";
+    setStep(1, 2, "Užsimaok pirštines");
+    const ws = weedWorkspace();
+    ws.appendChild(stepDots(0, 2));
+    const gloves = toolCardSvg(SchIcons.gloves(), "Pirštinės");
+    gloves.onclick = () => {
+      glovesOn = true;
+      gloves.classList.add("active");
+      if (schHint) schHint.textContent = "Gerai — sodink sėklas";
+      setTimeout(renderSeeds, 400);
     };
-    potWrap.appendChild(dot);
-  });
+    ws.appendChild(wsMain(blackPotEl("Paruošta žemė", 88), gloves));
+    schBoard.appendChild(ws);
+  }
 
-  row.appendChild(gloves);
-  row.appendChild(potWrap);
-  schBoard.appendChild(row);
+  function renderSeeds() {
+    schBoard.innerHTML = "";
+    setStep(2, 2, "Paspausk aktyvias sėklų vietas po vazonu");
+    const ws = weedWorkspace();
+    ws.appendChild(stepDots(1, 2));
+
+    const pot = blackPotEl("Paruošta žemė", 88);
+    const slots = document.createElement("div");
+    slots.className = "sch-seed-slots";
+
+    function paintSlots() {
+      slots.querySelectorAll(".sch-seed-slot").forEach((slot, i) => {
+        slot.classList.toggle("active", i === placed && !slot.classList.contains("done"));
+      });
+    }
+
+    for (let i = 0; i < need; i += 1) {
+      const slot = document.createElement("button");
+      slot.type = "button";
+      slot.className = "sch-seed-slot";
+      slot.innerHTML = `<span class="sch-zone-ring"></span><small>Sėkla ${i + 1}</small>`;
+      slot.onclick = () => {
+        if (!glovesOn) {
+          if (schHint) schHint.textContent = "Pirma užsimaok pirštines!";
+          return;
+        }
+        if (slot.classList.contains("done") || i !== placed) return;
+        slot.classList.add("done");
+        slot.innerHTML = SchIcons.sprout();
+        placed += 1;
+        paintSlots();
+        if (placed >= need) {
+          setTimeout(() => postSchedule(true, { score: calcScore(), quality: calcScore() }), 350);
+        } else if (schHint) {
+          schHint.textContent = `Sėklos ${placed}/${need}`;
+        }
+      };
+      slots.appendChild(slot);
+    }
+    paintSlots();
+
+    ws.appendChild(wsMain(pot, slots));
+    schBoard.appendChild(ws);
+  }
+
+  renderGloves();
 }
 
-/* --- WATER: pripildyk laistytuvą → laistyk atsitiktines zonas --- */
+/* --- WATER: pripildyk laistytuvą → laistyk zonas (laikyk/atleisk) --- */
 function runWeedWaterGame(data) {
   let spoutOpen = false;
   let canFill = 0;
   const fillTarget = 100;
   const zonesNeeded = 3;
   const WATER_ZONES = [
-    { id: "soil", label: "Dirvožemis", top: "68%", left: "42%" },
-    { id: "stem", label: "Stiebas", top: "48%", left: "50%" },
-    { id: "leaves", label: "Lapai", top: "28%", left: "38%" },
-    { id: "roots", label: "Šaknys", top: "78%", left: "55%" },
-    { id: "rim", label: "Vazono briauna", top: "58%", left: "28%" },
+    { id: "soil", label: "Dirvožemis" },
+    { id: "stem", label: "Stiebas" },
+    { id: "leaves", label: "Lapai" },
+    { id: "roots", label: "Šaknys" },
+    { id: "rim", label: "Vazono briauna" },
   ];
 
   function renderFillCan() {
     schBoard.innerHTML = "";
-    setStep(1, 2, "Atidaryk laistytuvo snapą ir pripildyk vandeniu");
-    const row = document.createElement("div");
-    row.className = "sch-water-fill-stage";
+    setStep(1, 2, "Atidaryk snapą ir pripildyk laistytuvą");
+    const ws = weedWorkspace();
+    ws.appendChild(stepDots(0, 2));
 
     const canWrap = document.createElement("div");
-    canWrap.className = "sch-can-station";
+    canWrap.className = "sch-ws-item sch-can-station";
     const canEl = document.createElement("button");
     canEl.type = "button";
     canEl.className = "sch-can-unit";
@@ -847,18 +899,18 @@ function runWeedWaterGame(data) {
       if (!spoutOpen) {
         spoutOpen = true;
         canEl.innerHTML = SchIcons.wateringCan(canFill, true) + "<small>Snapas atidarytas</small>";
-        if (schHint) schHint.textContent = "Nutempk vandens butelį ant laistytuvo";
+        bottleBtn.disabled = false;
+        if (schHint) schHint.textContent = "Spausk vandens butelį";
       }
     };
     canWrap.appendChild(canEl);
 
-    const bottle = document.createElement("div");
-    bottle.className = "sch-draggable";
-    bottle.dataset.drag = "bottle";
-    bottle.innerHTML = SchIcons.waterBottle() + "<small>Vanduo</small>";
-    enableDrag(bottle);
-
-    bindDropZone(canWrap, "bottle", () => {
+    const bottleBtn = document.createElement("button");
+    bottleBtn.type = "button";
+    bottleBtn.className = "sch-tool-card sch-clickable sch-ws-item";
+    bottleBtn.disabled = true;
+    bottleBtn.innerHTML = `<span class="sch-tool-icon">${SchIcons.waterBottle()}</span><small>Pilti vandenį</small>`;
+    bottleBtn.onclick = () => {
       if (!spoutOpen) {
         if (schHint) schHint.textContent = "Pirma atidaryk laistytuvo snapą!";
         return;
@@ -868,22 +920,34 @@ function runWeedWaterGame(data) {
       canWrap.classList.add("sch-pour-flash");
       setTimeout(() => canWrap.classList.remove("sch-pour-flash"), 300);
       if (canFill >= fillTarget) {
-        setTimeout(() => renderWaterZones(), 450);
+        bottleBtn.disabled = true;
+        setTimeout(renderWaterZones, 450);
       }
-    });
+    };
 
-    row.appendChild(canWrap);
-    row.appendChild(bottle);
-    schBoard.appendChild(row);
+    ws.appendChild(wsRow(canWrap, bottleBtn));
+    schBoard.appendChild(ws);
   }
 
   function renderWaterZones() {
     schBoard.innerHTML = "";
-    setStep(2, 2, "Laistykl — palaikyk drėgmę žalioje zonoje (42–68%)");
+    setStep(2, 2, "Laistyk — laikyk mygtuką ir atleisk žalioje zonoje");
     const picked = WATER_ZONES.sort(() => Math.random() - 0.5).slice(0, zonesNeeded);
-    let watered = 0;
-    let moistureLevel = 38;
-    let moistureHits = [];
+    let zoneIdx = 0;
+    let moistureLevel = 22;
+    let hold = false;
+    let tickTimer = null;
+    const moistureHits = [];
+
+    const ws = weedWorkspace();
+    ws.appendChild(stepDots(1, 2));
+
+    const plantView = document.createElement("div");
+    plantView.className = "sch-plant-scene";
+    plantView.innerHTML = `<div class="sch-plant-scene__pot">${blackPotHtml("", 70)}</div><div class="sch-plant-scene__leaf">${SchIcons.sprout()}</div>`;
+
+    const zoneLabel = document.createElement("p");
+    zoneLabel.className = "sch-zone-label";
 
     const moistureBar = document.createElement("div");
     moistureBar.className = "sch-moisture-meter";
@@ -894,8 +958,13 @@ function runWeedWaterGame(data) {
         <div class="sch-moisture-fill" id="schMoistFill"></div>
         <div class="sch-moisture-needle" id="schMoistNeedle"></div>
       </div>
-      <b id="schMoistPct">38%</b>
+      <b id="schMoistPct">22%</b>
     `;
+
+    const waterBtn = document.createElement("button");
+    waterBtn.type = "button";
+    waterBtn.className = "sch-btn primary sch-pour-hold";
+    waterBtn.textContent = "Laistyti";
 
     function paintMoisture() {
       const fill = document.getElementById("schMoistFill");
@@ -905,69 +974,81 @@ function runWeedWaterGame(data) {
       if (needle) needle.style.left = `${moistureLevel}%`;
       if (pct) pct.textContent = `${Math.round(moistureLevel)}%`;
     }
-    paintMoisture();
 
-    const stage = document.createElement("div");
-    stage.className = "sch-water-plant-stage";
+    function finishWaterGame() {
+      if (tickTimer) clearInterval(tickTimer);
+      tickTimer = null;
+      const avg = moistureHits.reduce((a, b) => a + b, 0) / moistureHits.length;
+      const opt = avg >= 42 && avg <= 68;
+      const score = Math.max(45, Math.min(100, Math.round(70 + (opt ? 18 : -Math.abs(avg - 55) * 0.8))));
+      const done = document.createElement("div");
+      done.className = "sch-done";
+      done.innerHTML = `<p class="sch-water-done">${SchIcons.waterDrop()} Drėgmė ${Math.round(avg)}% · ${opt ? "Puiku!" : "Galėjo būti geriau"}</p>`;
+      done.appendChild(btn("Baigti laistymą", "primary", () => postSchedule(true, { moisture: Math.round(avg), score, quality: score })));
+      schBoard.innerHTML = "";
+      schBoard.appendChild(done);
+    }
 
-    const can = document.createElement("div");
-    can.className = "sch-draggable sch-can-drag";
-    can.dataset.drag = "can";
-    can.innerHTML = SchIcons.wateringCan(100, true) + "<small>Laistytuvas</small>";
-    enableDrag(can);
+    function nextZone() {
+      if (zoneIdx >= picked.length) {
+        finishWaterGame();
+        return;
+      }
+      moistureLevel = 18 + Math.random() * 12;
+      zoneLabel.textContent = `Zona ${zoneIdx + 1}/${zonesNeeded}: ${picked[zoneIdx].label}`;
+      paintMoisture();
+      if (schHint) schHint.textContent = "Laikyk „Laistyti“ ir atleisk kai drėgmė žalioje zonoje (42–68%)";
+    }
 
-    const plant = document.createElement("div");
-    plant.className = "sch-plant-target";
-    plant.innerHTML = `<div class="sch-plant-pot-mini">${blackPotHtml("", 70)}</div><div class="sch-plant-sprout-mini">${SchIcons.sprout()}</div>`;
+    function releaseWater() {
+      hold = false;
+      waterBtn.classList.remove("active");
+      const ok = moistureLevel >= 42 && moistureLevel <= 68;
+      moistureHits.push(moistureLevel);
+      zoneIdx += 1;
+      if (ok) {
+        plantView.classList.add("sch-pour-flash");
+        setTimeout(() => plantView.classList.remove("sch-pour-flash"), 350);
+      }
+      if (zoneIdx >= picked.length) {
+        finishWaterGame();
+      } else {
+        if (schHint) schHint.textContent = ok ? "Puiku! Kitas plotas…" : "Galėjo būti tiksliau — tęsk";
+        setTimeout(nextZone, ok ? 400 : 650);
+      }
+    }
 
-    picked.forEach((z) => {
-      const zone = document.createElement("div");
-      zone.className = "sch-water-zone";
-      zone.style.top = z.top;
-      zone.style.left = z.left;
-      zone.dataset.zone = z.id;
-      zone.innerHTML = `<span class="sch-zone-ring"></span><small>${z.label}</small><div class="sch-zone-progress"></div>`;
+    function tick() {
+      if (hold) {
+        moistureLevel = Math.min(100, moistureLevel + 2.4);
+      } else {
+        moistureLevel = Math.max(0, moistureLevel - 1.1);
+      }
+      paintMoisture();
+    }
 
-      bindDropZone(zone, "can", () => {
-        if (zone.classList.contains("done") || zone.classList.contains("sch-zone-active")) return;
-        zone.classList.add("sch-zone-active");
-        let progress = 0;
-        const tick = setInterval(() => {
-          progress += 7;
-          moistureLevel = Math.min(100, moistureLevel + (progress % 14 === 0 ? 2.2 : 0));
-          paintMoisture();
-          const bar = zone.querySelector(".sch-zone-progress");
-          if (bar) bar.style.width = `${Math.min(100, progress)}%`;
-          if (progress >= 100) {
-            clearInterval(tick);
-            zone.classList.add("done");
-            zone.classList.remove("sch-zone-active");
-            watered += 1;
-            moistureHits.push(moistureLevel);
-            if (schHint) schHint.textContent = `Laistyta ${watered}/${zonesNeeded} · drėgmė ${Math.round(moistureLevel)}%`;
-            if (watered >= zonesNeeded) {
-              const avg = moistureHits.reduce((a, b) => a + b, 0) / moistureHits.length;
-              const opt = avg >= 42 && avg <= 68;
-              const score = Math.max(45, Math.min(100, Math.round(70 + (opt ? 18 : -Math.abs(avg - 55) * 0.8))));
-              const done = document.createElement("div");
-              done.className = "sch-done";
-              done.innerHTML = `<p class="sch-water-done">${SchIcons.waterDrop()} Drėgmė ${Math.round(avg)}% · ${opt ? "Puiku!" : "Galėjo būti geriau"}</p>`;
-              done.appendChild(btn("Baigti laistymą", "primary", () => postSchedule(true, { moisture: Math.round(avg), score, quality: score })));
-              schBoard.innerHTML = "";
-              schBoard.appendChild(done);
-            }
-          }
-        }, 110);
-      });
+    const startHold = (ev) => {
+      if (ev) ev.preventDefault();
+      hold = true;
+      waterBtn.classList.add("active");
+    };
+    const endHold = () => {
+      if (!hold) return;
+      releaseWater();
+    };
+    waterBtn.addEventListener("mousedown", startHold);
+    waterBtn.addEventListener("mouseup", endHold);
+    waterBtn.addEventListener("mouseleave", endHold);
+    waterBtn.addEventListener("touchstart", startHold, { passive: false });
+    waterBtn.addEventListener("touchend", endHold);
 
-      plant.appendChild(zone);
-    });
+    if (tickTimer) clearInterval(tickTimer);
+    tickTimer = setInterval(tick, 80);
+    scheduleTimer = tickTimer;
 
-    stage.appendChild(can);
-    stage.appendChild(plant);
-    schBoard.appendChild(moistureBar);
-    schBoard.appendChild(stage);
-    if (schHint) schHint.textContent = `Laistykl: ${picked.map((z) => z.label).join(", ")}`;
+    ws.appendChild(wsMain(plantView, zoneLabel, moistureBar, waterBtn));
+    schBoard.appendChild(ws);
+    nextZone();
   }
 
   renderFillCan();
@@ -1009,16 +1090,30 @@ function runWeedHarvestGame(data) {
 
   function renderTrim() {
     schBoard.innerHTML = "";
-    setStep(2, 3, "Kirpk žirklėmis pažymėtus lapus — ne per greitai");
+    setStep(2, 3, "Kirpk žirklėmis pažymėtus lapus — po vieną");
     trimStart = Date.now();
+    const ws = weedWorkspace();
+    ws.appendChild(stepDots(1, 3));
+
+    const positions = [[38, 28], [62, 34], [48, 58], [70, 52]].slice(0, need);
+    let activeIdx = 0;
+    let lastCut = 0;
+
     const wrap = document.createElement("div");
-    wrap.className = "sch-trim-wrap";
-    wrap.innerHTML = `<div class="sch-leaf-big sch-svg-leaf">${SchIcons.cannabisLeaf()}</div><div class="sch-tool sch-tool-float">${SchIcons.trimScissors()}</div>`;
+    wrap.className = "sch-trim-wrap sch-trim-wrap--clean";
+    wrap.innerHTML = `<div class="sch-leaf-big sch-svg-leaf">${SchIcons.cannabisLeaf()}</div><div class="sch-tool sch-tool-badge">${SchIcons.trimScissors()}</div>`;
     const points = document.createElement("div");
     points.className = "sch-trim-points";
-    const positions = [[38, 28], [62, 34], [48, 58], [70, 52]];
-    let lastCut = 0;
-    positions.slice(0, need).forEach(([x, y]) => {
+
+    function paintPoints() {
+      points.querySelectorAll(".sch-trim-point").forEach((p, i) => {
+        p.classList.toggle("sch-trim-next", i === activeIdx && !p.classList.contains("done"));
+        p.style.opacity = p.classList.contains("done") ? "0.35" : i === activeIdx ? "1" : "0.2";
+        p.style.pointerEvents = i === activeIdx && !p.classList.contains("done") ? "auto" : "none";
+      });
+    }
+
+    positions.forEach(([x, y]) => {
       const p = document.createElement("button");
       p.type = "button";
       p.className = "sch-trim-point";
@@ -1031,6 +1126,8 @@ function runWeedHarvestGame(data) {
         lastCut = now;
         p.classList.add("done");
         trimmed += 1;
+        activeIdx += 1;
+        paintPoints();
         if (trimmed >= need) {
           phase = 2;
           renderScale();
@@ -1040,8 +1137,10 @@ function runWeedHarvestGame(data) {
       };
       points.appendChild(p);
     });
+    paintPoints();
     wrap.appendChild(points);
-    schBoard.appendChild(wrap);
+    ws.appendChild(wrap);
+    schBoard.appendChild(ws);
   }
 
   function renderScale() {

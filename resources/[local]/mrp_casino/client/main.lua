@@ -197,9 +197,24 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     refreshStatus()
 end)
 
+CreateThread(function()
+    local wasInside = false
+    while true do
+        local inside = Casino.isInside()
+        if inside ~= wasInside then
+            wasInside = inside
+            TriggerServerEvent('mrp_casino:server:setPlayerInside', inside)
+        end
+        Wait(inside and 1500 or 3000)
+    end
+end)
+
 AddEventHandler('onResourceStart', function(res)
     if res ~= GetCurrentResourceName() then return end
-    if LocalPlayer.state.isLoggedIn then refreshStatus() end
+    if LocalPlayer.state.isLoggedIn then
+        refreshStatus()
+        TriggerServerEvent('mrp_casino:server:setPlayerInside', Casino.isInside())
+    end
 end)
 
 exports('IsCasinoBanned', function()

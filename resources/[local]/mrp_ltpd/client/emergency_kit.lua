@@ -198,7 +198,11 @@ local function attachLensToBar(barEnt, vehicle, side)
 
     SetEntityCollision(lens, false, false)
     SetEntityAsMissionEntity(lens, true, true)
+    if Ec.lensHideProp ~= false then
+        SetEntityAlpha(lens, 0, false)
+    end
     AttachEntityToEntity(lens, barEnt, 0, ox, oy, oz, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+    SetEntityAlpha(lens, 0, false)
     return lens
 end
 
@@ -420,8 +424,19 @@ local function worldLightPoints(vehicle)
     return centerPos, leftPos, rightPos, centerPos, vehicleBeamForward(vehicle)
 end
 
+local function flashColor(name)
+    local palette = Ec.flashColors or {}
+    local c = palette[name]
+    if not c then
+        if name == 'red' then return 255, 48, 52 end
+        if name == 'blue' then return 58, 128, 255 end
+        return 248, 252, 255
+    end
+    return tonumber(c.r) or 255, tonumber(c.g) or 255, tonumber(c.b) or 255
+end
+
 local function drawLensMarker(x, y, z, r, g, b, alpha, scale)
-    scale = scale or (tonumber(Ec.flashMarkerScale) or 0.11)
+    scale = scale or (tonumber(Ec.flashMarkerScale) or 0.048)
     DrawMarker(
         28,
         x, y, z,
@@ -433,36 +448,62 @@ local function drawLensMarker(x, y, z, r, g, b, alpha, scale)
     )
 end
 
-local function drawEmergencyBeam(origin, dir, r, g, b)
-    local spotR = tonumber(Ec.flashSpotRange) or 32.0
-    local spotI = tonumber(Ec.flashSpotIntensity) or 14.0
-    DrawSpotLight(origin.x, origin.y, origin.z, dir.x, dir.y, dir.z, r, g, b, spotR, spotI, 0.0, spotR * 0.82, 1.0)
+local function drawLensLight(x, y, z, r, g, b, enhanced)
+    local coreScale = tonumber(Ec.flashMarkerScale) or 0.048
+    drawLensMarker(x, y, z, r, g, b, 235, coreScale)
+    if not enhanced or Ec.flashUseLensGlow == false then return end
+    local glowScale = tonumber(Ec.flashMarkerGlowScale) or 0.115
+    drawLensMarker(x, y, z, r, g, b, 95, glowScale)
+    drawLensMarker(x, y, z, r, g, b, 42, glowScale * 1.28)
+end
+
+local function drawEmergencyBeam(origin, dir, r, g, b, intensityMul)
+    local spotR = tonumber(Ec.flashSpotRange) or 16.0
+    local spotI = (tonumber(Ec.flashSpotIntensity) or 5.0) * (tonumber(intensityMul) or 1.0)
+    DrawSpotLight(origin.x, origin.y, origin.z, dir.x, dir.y, dir.z, r, g, b, spotR, spotI, 0.0, spotR * 0.78, 1.0)
 end
 
 local function drawAmbientGlow(x, y, z, r, g, b)
-    local lightRange = tonumber(Ec.flashLightRange) or 18.0
-    local lightPower = tonumber(Ec.flashLightIntensity) or 6.0
+    local lightRange = tonumber(Ec.flashLightRange) or 9.5
+    local lightPower = tonumber(Ec.flashLightIntensity) or 3.4
     if lightRange <= 0 or lightPower <= 0 then return end
     DrawLightWithRange(x, y, z, r, g, b, lightRange, lightPower)
 end
 
-local function drawScriptFlash(vehicle)
+local function drawBarPulse(centerPos, r, g, b)
+    if not centerPos or Ec.flashUseBarGlow == false then return end
+    local scale = (tonumber(Ec.flashMarkerScale) or 0.048) * 0.82
+    drawLensMarker(centerPos.x, centerPos.y, centerPos.z + 0.02, r, g, b, 110, scale)
+    local wr, wg, wb = flashColor('white')
+    drawLensMarker(centerPos.x, centerPos.y, centerPos.z + 0.02, wr, wg, wb, 55, scale * 0.65)
+end
+
+local function drawScriptFlash(vehicle, viewerDist)
     if not DoesEntityExist(vehicle) then return end
 
     local interval = tonumber(Ec.flashIntervalMs) or 480
     local phase = math.floor(GetGameTimer() / interval) % 2 == 0
-    local _, leftPos, rightPos, _, beamDir = worldLightPoints(vehicle)
+    local centerPos, leftPos, rightPos, _, beamDir = worldLightPoints(vehicle)
     local useAmbient = Ec.flashUseAmbientGlow ~= false
+    local enhanced = (Ec.flashVisualPreset or 'enhanced') ~= 'standard'
+    local nearDist = tonumber(Ec.flashNearSpotDistance) or 32.0
     local useSpot = Ec.flashUseSpotBeams == true
+        or (Ec.flashUseNearSpotBeams == true and (viewerDist or 999.0) <= nearDist)
+    local spotMul = (viewerDist or 999.0) <= (nearDist * 0.55) and 1.0 or 0.72
+
+    local rr, rg, rb = flashColor('red')
+    local br, bg, bb = flashColor('blue')
 
     if phase then
-        drawLensMarker(leftPos.x, leftPos.y, leftPos.z, 255, 48, 48, 200)
-        if useAmbient then drawAmbientGlow(leftPos.x, leftPos.y, leftPos.z, 255, 45, 45) end
-        if useSpot then drawEmergencyBeam(leftPos, beamDir, 255, 42, 42) end
+        drawLensLight(leftPos.x, leftPos.y, leftPos.z, rr, rg, rb, enhanced)
+        if useAmbient then drawAmbientGlow(leftPos.x, leftPos.y, leftPos.z, rr, rg, rb) end
+        if useSpot then drawEmergencyBeam(leftPos, beamDir, rr, rg, rb, spotMul) end
+        if enhanced then drawBarPulse(centerPos, rr, rg, rb) end
     else
-        drawLensMarker(rightPos.x, rightPos.y, rightPos.z, 48, 110, 255, 200)
-        if useAmbient then drawAmbientGlow(rightPos.x, rightPos.y, rightPos.z, 45, 95, 255) end
-        if useSpot then drawEmergencyBeam(rightPos, beamDir, 42, 95, 255) end
+        drawLensLight(rightPos.x, rightPos.y, rightPos.z, br, bg, bb, enhanced)
+        if useAmbient then drawAmbientGlow(rightPos.x, rightPos.y, rightPos.z, br, bg, bb) end
+        if useSpot then drawEmergencyBeam(rightPos, beamDir, br, bg, bb, spotMul) end
+        if enhanced then drawBarPulse(centerPos, br, bg, bb) end
     end
 end
 
@@ -579,8 +620,10 @@ CreateThread(function()
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     meta.mode = mode
                     if (mode == 'lights' or mode == 'full') and meta.supportsNative ~= true then
-                        if #(pCoords - GetEntityCoords(veh)) <= drawDistance then
-                            drawScriptFlash(veh)
+                        local vehCoords = GetEntityCoords(veh)
+                        local dist = #(pCoords - vehCoords)
+                        if dist <= drawDistance then
+                            drawScriptFlash(veh, dist)
                             drew = true
                         end
                     end

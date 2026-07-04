@@ -3,6 +3,9 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local function playerNearVehicle(src, netId, maxDist)
     netId = tonumber(netId)
     if not netId or netId < 1 then return false end
+    if type(NetworkDoesNetworkIdExist) == 'function' and not NetworkDoesNetworkIdExist(netId) then
+        return false
+    end
     local veh = NetworkGetEntityFromNetworkId(netId)
     if not veh or veh == 0 then return false end
     local ped = GetPlayerPed(src)

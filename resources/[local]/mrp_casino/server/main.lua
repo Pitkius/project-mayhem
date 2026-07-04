@@ -3,6 +3,21 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local statsCache = {}
 local blackjackSessions = {}
 local jackpotCar = nil
+local playersInside = {}
+
+RegisterNetEvent('mrp_casino:server:setPlayerInside', function(inside)
+    local src = source
+    if inside == true then
+        playersInside[src] = true
+    else
+        playersInside[src] = nil
+    end
+end)
+
+AddEventHandler('playerDropped', function()
+    playersInside[source] = nil
+    blackjackSessions[source] = nil
+end)
 
 CreateThread(function()
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS `casino_player_stats` (
@@ -71,13 +86,29 @@ local function removeChips(Player, amount)
 end
 
 local function isInCasino(src)
+    if playersInside[src] then return true end
+
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return false end
     local c = GetEntityCoords(ped)
     local casino = Config.Casino or {}
     local center = casino.center
     if not center then return false end
-    return #(vector3(c.x, c.y, c.z) - vector3(center.x, center.y, center.z)) <= (casino.radius or 90.0)
+
+    local centerVec = vector3(center.x, center.y, center.z)
+    if #(vector3(c.x, c.y, c.z) - centerVec) <= (casino.radius or 90.0) then
+        return true
+    end
+
+    local wheel = Config.Wheel
+    if wheel and wheel.coords then
+        if #(vector3(c.x, c.y, c.z) - wheel.coords) <= 25.0 then return true end
+    end
+    if wheel and wheel.movePos then
+        if #(vector3(c.x, c.y, c.z) - wheel.movePos) <= 25.0 then return true end
+    end
+
+    return false
 end
 
 local function defaultStats()
@@ -91,9 +122,11 @@ end
 
 local function loadStats(citizenid, cb)
     if statsCache[citizenid] then
-        return cb(statsCache[citizenid])
+        if cb then cb(statsCache[citizenid]) end
+        return statsCache[citizenid]
     end
-    MySQL.single('SELECT day_key, daily_wins, banned_until, wheel_at FROM casino_player_stats WHERE citizenid = ?', { citizenid }, function(row)
+
+    local function finalize(row)
         local stats = defaultStats()
         if row then
             stats.day_key = row.day_key or stats.day_key
@@ -109,8 +142,18 @@ local function loadStats(citizenid, cb)
             end
         end
         statsCache[citizenid] = stats
-        cb(stats)
-    end)
+        if cb then cb(stats) end
+        return stats
+    end
+
+    if cb then
+        MySQL.single('SELECT day_key, daily_wins, banned_until, wheel_at FROM casino_player_stats WHERE citizenid = ?', { citizenid }, function(row)
+            finalize(row)
+        end)
+        return
+    end
+
+    return finalize(MySQL.single.await('SELECT day_key, daily_wins, banned_until, wheel_at FROM casino_player_stats WHERE citizenid = ?', { citizenid }))
 end
 
 local function saveStats(citizenid, stats)
@@ -192,13 +235,12 @@ local function validateCasinoPlay(src, cb)
     if not Player then return cb(false, 'Klaida.') end
     if not isInCasino(src) then return cb(false, 'Turite būti kazino.') end
 
-    loadStats(Player.PlayerData.citizenid, function(stats)
-        if isCasinoBanned(stats) then
-            TriggerClientEvent('mrp_casino:client:casinoBanned', src, stats.banned_until)
-            return cb(false, 'Pasiekėte dienos laimėjimų limitą. Keiskite žetonus pas kasininkę.')
-        end
-        cb(true, Player, stats)
-    end)
+    local stats = loadStats(Player.PlayerData.citizenid)
+    if isCasinoBanned(stats) then
+        TriggerClientEvent('mrp_casino:client:casinoBanned', src, stats.banned_until)
+        return cb(false, 'Pasiekėte dienos laimėjimų limitą. Keiskite žetonus pas kasininkę.')
+    end
+    cb(true, Player, stats)
 end
 
 local function takeBet(Player, amount)
@@ -439,17 +481,16 @@ end)
 QBCore.Functions.CreateCallback('mrp_casino:server:getCashierStatus', function(src, cb)
     local Player = getPlayer(src)
     if not Player then return cb(nil) end
-    loadStats(Player.PlayerData.citizenid, function(stats)
-        cb({
-            chips = getChipCount(Player),
-            cash = tonumber(Player.PlayerData.money and Player.PlayerData.money.cash) or 0,
-            dailyWins = stats.daily_wins,
-            maxDailyWin = limits().maxDailyWin or 50000,
-            remaining = remainingDailyWin(stats),
-            banned = isCasinoBanned(stats),
-            bannedUntil = stats.banned_until,
-        })
-    end)
+    local stats = loadStats(Player.PlayerData.citizenid)
+    cb({
+        chips = getChipCount(Player),
+        cash = tonumber(Player.PlayerData.money and Player.PlayerData.money.cash) or 0,
+        dailyWins = stats.daily_wins,
+        maxDailyWin = limits().maxDailyWin or 50000,
+        remaining = remainingDailyWin(stats),
+        banned = isCasinoBanned(stats),
+        bannedUntil = stats.banned_until,
+    })
 end)
 
 QBCore.Functions.CreateCallback('mrp_casino:server:exchangeChips', function(src, cb, mode, amount)
@@ -484,67 +525,65 @@ end)
 QBCore.Functions.CreateCallback('mrp_casino:server:getStatus', function(src, cb)
     local Player = getPlayer(src)
     if not Player then return cb(nil) end
-    loadStats(Player.PlayerData.citizenid, function(stats)
-        cb({
-            chips = getChipCount(Player),
-            banned = isCasinoBanned(stats),
-            bannedUntil = stats.banned_until,
-            wheelCooldown = stats.wheel_at,
-        })
-    end)
+    local stats = loadStats(Player.PlayerData.citizenid)
+    cb({
+        chips = getChipCount(Player),
+        banned = isCasinoBanned(stats),
+        bannedUntil = stats.banned_until,
+        wheelCooldown = stats.wheel_at,
+    })
 end)
 
 QBCore.Functions.CreateCallback('mrp_casino:server:spinWheel', function(src, cb)
     local Player = getPlayer(src)
     if not Player then return cb({ ok = false, msg = 'Klaida.' }) end
-    if not isInCasino(src) then return cb({ ok = false, msg = 'Turite būti prie laimės rato.' }) end
+    if not isInCasino(src) then return cb({ ok = false, msg = 'Turite būti kazino interjere.' }) end
 
-    loadStats(Player.PlayerData.citizenid, function(stats)
-        if isCasinoBanned(stats) then
-            TriggerClientEvent('mrp_casino:client:casinoBanned', src, stats.banned_until)
-            return cb({ ok = false, msg = 'Pasiekėte dienos limitą.' })
+    local stats = loadStats(Player.PlayerData.citizenid)
+    if isCasinoBanned(stats) then
+        TriggerClientEvent('mrp_casino:client:casinoBanned', src, stats.banned_until)
+        return cb({ ok = false, msg = 'Pasiekėte dienos limitą.' })
+    end
+
+    local now = os.time()
+    local cooldown = (Config.Wheel and Config.Wheel.cooldownHours or 24) * 3600
+    if stats.wheel_at > 0 and (now - stats.wheel_at) < cooldown then
+        local left = cooldown - (now - stats.wheel_at)
+        local hrs = math.max(1, math.ceil(left / 3600))
+        return cb({ ok = false, msg = ('Ratas galimas po %s val.'):format(hrs) })
+    end
+
+    local prize = pickWeightedPrize(Config.Wheel and Config.Wheel.prizes or {})
+    stats.wheel_at = now
+    saveStats(Player.PlayerData.citizenid, stats)
+
+    local paid = 0
+    local carPlate, carModel, carLabel
+
+    if prize.type == 'chips' and prize.amount > 0 then
+        addChips(Player, prize.amount)
+        paid = prize.amount
+    elseif prize.type == 'vehicle' then
+        local ok, plate, model, label = giveJackpotVehicle(Player)
+        if ok then
+            carPlate, carModel, carLabel = plate, model, label
+            paid = 1
+        else
+            prize = { slot = prize.slot or 1, label = 'Nieko', type = 'none', amount = 0 }
         end
+    end
 
-        local now = os.time()
-        local cooldown = (Config.Wheel and Config.Wheel.cooldownHours or 24) * 3600
-        if stats.wheel_at > 0 and (now - stats.wheel_at) < cooldown then
-            local left = cooldown - (now - stats.wheel_at)
-            local hrs = math.ceil(left / 3600)
-            return cb({ ok = false, msg = ('Ratas galimas po %s val.'):format(hrs) })
-        end
-
-        local prize = pickWeightedPrize(Config.Wheel and Config.Wheel.prizes or {})
-        stats.wheel_at = now
-        saveStats(Player.PlayerData.citizenid, stats)
-
-        local paid = 0
-        local carPlate, carModel, carLabel
-
-        if prize.type == 'chips' and prize.amount > 0 then
-            addChips(Player, prize.amount)
-            paid = prize.amount
-        elseif prize.type == 'vehicle' then
-            local ok, plate, model, label = giveJackpotVehicle(Player)
-            if ok then
-                carPlate, carModel, carLabel = plate, model, label
-                paid = 1
-            else
-                prize = { slot = prize.slot or 1, label = 'Nieko', type = 'none', amount = 0 }
-            end
-        end
-
-        cb({
-            ok = true,
-            label = prize.label,
-            type = prize.type,
-            amount = prize.amount,
-            paid = paid,
-            slot = prize.slot or 1,
-            carPlate = carPlate,
-            carModel = carModel,
-            carLabel = carLabel,
-        })
-    end)
+    cb({
+        ok = true,
+        label = prize.label,
+        type = prize.type,
+        amount = prize.amount,
+        paid = paid,
+        slot = prize.slot or 1,
+        carPlate = carPlate,
+        carModel = carModel,
+        carLabel = carLabel,
+    })
 end)
 
 QBCore.Functions.CreateCallback('mrp_casino:server:startBlackjack', function(src, cb, bet)
@@ -612,67 +651,66 @@ QBCore.Functions.CreateCallback('mrp_casino:server:blackjackAction', function(sr
         return cb({ ok = false, msg = 'Palikote kazino.' })
     end
 
-    loadStats(Player.PlayerData.citizenid, function(stats)
-        local deck = session.deck
-        local player = session.player
-        local dealer = session.dealer
-        local bet = session.bet
+    local stats = loadStats(Player.PlayerData.citizenid)
+    local deck = session.deck
+    local player = session.player
+    local dealer = session.dealer
+    local bet = session.bet
 
-        if action == 'hit' then
-            player[#player + 1], deck = drawCard(deck)
-        elseif action == 'double' then
-            if #player ~= 2 then return cb({ ok = false, msg = 'Double negalimas.' }) end
-            if getChipCount(Player) < bet then return cb({ ok = false, msg = 'Nepakanka žetonų double.' }) end
-            removeChips(Player, bet)
-            bet = bet * 2
-            session.bet = bet
-            player[#player + 1], deck = drawCard(deck)
-            action = 'stand'
-        end
+    if action == 'hit' then
+        player[#player + 1], deck = drawCard(deck)
+    elseif action == 'double' then
+        if #player ~= 2 then return cb({ ok = false, msg = 'Double negalimas.' }) end
+        if getChipCount(Player) < bet then return cb({ ok = false, msg = 'Nepakanka žetonų double.' }) end
+        removeChips(Player, bet)
+        bet = bet * 2
+        session.bet = bet
+        player[#player + 1], deck = drawCard(deck)
+        action = 'stand'
+    end
 
-        local pVal = handValue(player)
-        if action == 'hit' and pVal <= 21 then
-            session.deck = deck
-            return cb({
-                ok = true,
-                finished = false,
-                playerHand = formatHand(player),
-                dealerHand = cardLabel(dealer[1]) .. ' ?',
-                playerValue = pVal,
-                canDouble = false,
-            })
-        end
-
-        while handValue(dealer) < 17 do
-            dealer[#dealer + 1], deck = drawCard(deck)
-        end
-
-        local dVal = handValue(dealer)
-        local payout = 0
-        local result = 'lose'
-        if pVal > 21 then
-            result = 'bust'
-        elseif dVal > 21 or pVal > dVal then
-            result = 'win'
-            payout = applyCasinoWin(src, Player, stats, bet * 2, true)
-        elseif pVal == dVal then
-            result = 'push'
-            addChips(Player, bet)
-            payout = bet
-        end
-
-        blackjackSessions[src] = nil
-        cb({
+    local pVal = handValue(player)
+    if action == 'hit' and pVal <= 21 then
+        session.deck = deck
+        return cb({
             ok = true,
-            finished = true,
+            finished = false,
             playerHand = formatHand(player),
-            dealerHand = formatHand(dealer),
+            dealerHand = cardLabel(dealer[1]) .. ' ?',
             playerValue = pVal,
-            dealerValue = dVal,
-            result = result,
-            payout = payout,
+            canDouble = false,
         })
-    end)
+    end
+
+    while handValue(dealer) < 17 do
+        dealer[#dealer + 1], deck = drawCard(deck)
+    end
+
+    local dVal = handValue(dealer)
+    local payout = 0
+    local result = 'lose'
+    if pVal > 21 then
+        result = 'bust'
+    elseif dVal > 21 or pVal > dVal then
+        result = 'win'
+        payout = applyCasinoWin(src, Player, stats, bet * 2, true)
+    elseif pVal == dVal then
+        result = 'push'
+        addChips(Player, bet)
+        payout = bet
+    end
+
+    blackjackSessions[src] = nil
+    cb({
+        ok = true,
+        finished = true,
+        playerHand = formatHand(player),
+        dealerHand = formatHand(dealer),
+        playerValue = pVal,
+        dealerValue = dVal,
+        result = result,
+        payout = payout,
+    })
 end)
 
 QBCore.Functions.CreateCallback('mrp_casino:server:playRoulette', function(src, cb, bet, betType, betValue)
@@ -750,10 +788,6 @@ RegisterNetEvent('mrp_casino:server:rollDice', function(count, sides)
             end
         end
     end
-end)
-
-AddEventHandler('playerDropped', function()
-    blackjackSessions[source] = nil
 end)
 
 AddEventHandler('onResourceStop', function(res)

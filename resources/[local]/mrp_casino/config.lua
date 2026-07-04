@@ -1,5 +1,7 @@
 Config = Config or {}
 
+Config.InteractKeyLabel = 'E'
+
 --- Diamond Casino (GTA Online vanilla MLO)
 Config.Casino = {
     center = vector3(1110.0, 220.0, -49.0),

@@ -16,6 +16,8 @@ body {
     --accent-fill: #a78bfa;
     --accent-soft: #c4b5fd;
     --accent-glow: rgba(167, 139, 250, 0.5);
+    --accent-highlight: #e879f9;
+    --hud-text: #f8fafc;
     --panel-alpha: 0.55;
     --cluster-right: 0.7vw;
     --cluster-bottom: 11vh;
@@ -150,7 +152,8 @@ body {
 .ring-pct {
     font-size: 9px;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--hud-text);
+    opacity: 0.72;
     font-variant-numeric: tabular-nums;
     line-height: 1;
     letter-spacing: 0.04em;
@@ -168,7 +171,7 @@ body {
 }
 
 .label {
-    color: #e5e7eb;
+    color: var(--hud-text);
     font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -191,7 +194,7 @@ body {
 }
 
 .health, .armor, .hunger, .thirst, .stamina {
-    background: linear-gradient(90deg, var(--accent-fill) 0%, #fdf4ff 100%);
+    background: linear-gradient(90deg, var(--accent-fill) 0%, var(--accent-highlight) 100%);
     box-shadow: 0 0 8px var(--accent-glow);
 }
 
@@ -290,7 +293,6 @@ body.shape-square .fill {
     opacity: 0;
     background: radial-gradient(ellipse 70% 55% at 50% 42%, rgba(124, 58, 237, 0.22), transparent 68%);
     pointer-events: none;
-    transition: opacity 0.55s ease;
 }
 
 .hudmenu.is-open .hm-backdrop-glow {
@@ -330,89 +332,20 @@ body.shape-square .fill {
         0 0 60px rgba(109, 40, 217, 0.14);
     color: #e5e7eb;
     overflow: hidden;
-    transform: scale(0.92) translateY(28px);
-    opacity: 0;
-    filter: blur(6px);
-    transition:
-        transform 0.52s cubic-bezier(0.22, 1.12, 0.36, 1),
-        opacity 0.38s ease,
-        filter 0.45s ease;
-}
-
-.hudmenu.is-open .hm-shell {
-    transform: scale(1) translateY(0);
+    transform: none;
     opacity: 1;
-    filter: blur(0);
+    filter: none;
 }
 
-.hudmenu.is-closing .hm-shell {
-    transform: scale(0.96) translateY(16px);
+.hudmenu:not(.is-open) .hm-shell {
     opacity: 0;
-    filter: blur(4px);
-    transition:
-        transform 0.34s cubic-bezier(0.4, 0, 0.85, 0.2),
-        opacity 0.3s ease,
-        filter 0.3s ease;
 }
 
-@keyframes hm-rise-in {
-    from {
-        opacity: 0;
-        transform: translateY(14px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.hudmenu.is-open .hm-header {
-    animation: hm-rise-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
-}
-
-.hudmenu.is-open .hm-sidebar {
-    animation: hm-rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
-}
-
-.hudmenu.is-open .hm-preview-wrap {
-    animation: hm-rise-in 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
-}
-
-.hudmenu.is-open .hm-panels.is-visible {
-    animation: hm-rise-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
-}
-
-.hudmenu.is-open .hm-panels .hm-panel.is-visible {
-    animation: hm-rise-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both;
-}
-
-.hudmenu.is-open .hm-el {
-    animation: hm-rise-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.hudmenu.is-open .hm-elements .hm-el:nth-child(1) { animation-delay: 0.22s; }
-.hudmenu.is-open .hm-elements .hm-el:nth-child(2) { animation-delay: 0.26s; }
-.hudmenu.is-open .hm-elements .hm-el:nth-child(3) { animation-delay: 0.3s; }
-.hudmenu.is-open .hm-elements .hm-el:nth-child(4) { animation-delay: 0.34s; }
-.hudmenu.is-open .hm-elements .hm-el:nth-child(5) { animation-delay: 0.38s; }
-.hudmenu.is-open .hm-elements .hm-el:nth-child(6) { animation-delay: 0.42s; }
-.hudmenu.is-open .hm-elements .hm-el:nth-child(7) { animation-delay: 0.46s; }
-.hudmenu.is-open .hm-elements .hm-el:nth-child(8) { animation-delay: 0.5s; }
-.hudmenu.is-open .hm-elements .hm-el:nth-child(9) { animation-delay: 0.54s; }
-
-.hudmenu.is-open .hm-brand-mark {
-    animation: hm-brand-pop 0.55s cubic-bezier(0.34, 1.45, 0.64, 1) 0.12s both;
-}
-
-@keyframes hm-brand-pop {
-    0% {
-        transform: scale(0.6) rotate(-8deg);
-        opacity: 0;
-    }
-    100% {
-        transform: scale(1) rotate(0);
-        opacity: 1;
-    }
+.hudmenu.is-open .hm-shell,
+.hudmenu.is-closing .hm-shell {
+    transform: none;
+    opacity: 1;
+    filter: none;
 }
 
 .hm-header {
@@ -1882,7 +1815,7 @@ body.shape-frame .hud-root {
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.02em;
-    color: #e2e8f0;
+    color: var(--hud-text);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
 }
 
@@ -1915,7 +1848,8 @@ body.shape-frame .hud-root {
     z-index: 4;
     font-size: 9px;
     font-weight: 700;
-    color: #94a3b8;
+    color: var(--hud-text);
+    opacity: 0.72;
     font-variant-numeric: tabular-nums;
 }
 
