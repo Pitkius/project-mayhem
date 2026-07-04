@@ -186,11 +186,10 @@ Config.PoliceDealership = {
     --- Peržiūra / spawn po pirkimo pagal stotį (mrp_ltpd Config.Stations.id)
     stations = {
         ls_main = {
-            spawn = vector4(441.64, -1013.14, 28.62, 175.52),
-            --- Šoninis spawnas — ne ant stulpo / ne prie UI
-            preview = vector4(437.85, -1018.35, 28.62, 90.0),
+            spawn = vector4(452.3017, -1001.141, 25.6928, 0.0),
+            preview = vector4(447.4821, -1001.14, 25.6882, 90.0),
             previewLateralM = 0.0,
-            camera = vector4(441.2, -1018.5, 30.05, 90.0),
+            camera = vector4(450.0, -1005.0, 27.5, 90.0),
         },
         davis = {
             spawn = vector4(397.85, -1607.09, 29.29, 230.0),

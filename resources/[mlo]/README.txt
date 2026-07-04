@@ -31,8 +31,9 @@ KUR DĖTI NAUJUS MLO (atsisiųstus)
      jei mapdata neveikia — pervadink į 00-cfx-gabz-mapdata arba ensure atskirai).
 
 4) Seni pack'ai (jau projekte):
-   [mlo_pack_1] — MRPD, Pillbox, Tuners, Davis, Bennys, Hayes, Diner...
+   [mlo_pack_1] — Pillbox, Tuners, Davis, Bennys, Hayes, Diner... (MRPD → dt_19_mrpd pack_3)
    [mlo_pack_2] — Park Ranger, Paleto/Sandy PD, Pacific, Hub, Prison, Pink Cage...
+   [mlo_pack_3] — dt_19_mrpd (Mission Row PD), druglabs, dynasty8, weapon_warehouse...
 
 5. Po įkėlimo (2026-05-24 iš Downloads):
    - [mlo_pack_3]/druglabs
@@ -41,6 +42,7 @@ KUR DĖTI NAUJUS MLO (atsisiųstus)
    - [mlo_pack_3]/sc_secret_drug
    - [mlo_pack_3]/sc1_29_motel (Davis Motel + 24/7)
    - [mlo_pack_3]/hid_weed_lab (Hidden Weed Lab — Davis id1_29; žolės supakavimas Cayo)
+   - [mlo_pack_3]/dt_19_mrpd (Mission Row PD — pakeitė cfx-gabz-mrpd)
    - [mlo_pack_3]/weapon_warehouse (Ginklų sandėlis — Grapeseed/Paleto kelias ~-1143, 4944)
    - Restart serveris arba: ensure [mlo]
    - Parašyk Cursor / dev'ui MLO aplankų pavadinimus (pvz. cfx-gabz-prison)

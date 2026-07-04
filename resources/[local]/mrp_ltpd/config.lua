@@ -216,7 +216,7 @@ Config.Reception = {
 
 --[[
   Postai: MDT + (pasirinktinai) ginklinė ir PD garažas.
-  Koordinates patikrink su savo MLO – ypač armory.coords ir garage.spawn.
+  ls_main – dt_19_mrpd (Breze Mission Row PD). Koordinates suderintos su interjeru.
 ]]
 Config.Stations = {
     {
@@ -225,21 +225,24 @@ Config.Stations = {
         coords = vector3(441.84, -982.05, 30.69),
         blipCoords = vector3(427.120, -979.559, 30.716),
         heading = 90.0,
+        duty = {
+            coords = vector3(453.85, -997.62, 30.69),
+        },
         --- Civilinė registratūra — qb-target (be NPC)
         reception = {
-            coords = vector3(441.2229, -982.0843, 30.6895),
-            heading = 275.0,
+            coords = vector3(440.8398, -994.5754, 30.6893),
+            heading = 180.0,
             length = 1.65,
             width = 1.45,
             label = 'PD registratūra',
             blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra' },
         },
         supply = {
-            coords = vector3(489.05, -997.1946, 30.6896),
+            coords = vector3(478.85, -996.25, 30.6896),
             label = 'PD inventorius (žaliavos)',
         },
         armory = {
-            coords = vector3(486.5664, -995.1992, 30.6791),
+            coords = vector3(480.32, -996.67, 30.6896),
             stashId = 'ltpd_armory_ls',
             label = 'ARO sandėlis (ginklinė)',
             minGrade = 2,
@@ -251,36 +254,35 @@ Config.Stations = {
         pdGarageId = 'pd_ls_main',
         --- Policijos salonas (mrp_dealership) – sujungta su garažu
         policeDealership = {
-            coords = vector3(460.1003, -986.7195, 25.6998),
-            heading = 269.0115,
+            coords = vector3(452.42, -1000.85, 25.7096),
+            heading = 0.0,
         },
         garage = {
-            coords = vector3(460.1003, -986.7195, 25.6998),
-            spawn = vector4(460.1003, -986.7195, 25.6998, 269.0115),
+            coords = vector3(452.42, -1000.85, 25.7096),
+            spawn = vector4(452.3017, -1001.141, 25.6928, 0.0),
         },
-        --- Vadovybės meniu (qb-target ant laptop propo)
+        --- Vadovybės meniu (qb-target ant laptop propo) – 2 aukštas
         boss = {
-            coords = vector4(462.1010, -985.5582, 30.7281, 169.0399),
+            coords = vector4(461.03, -985.58, 34.3725, 180.0),
             label = 'LTPD vadovybė',
             prop = 'prop_laptop_01a',
             spawnProp = true,
         },
-        --- Rūbinė 1 (palikta)
         locker = {
-            coords = vector3(461.85, -998.35, 30.69),
+            coords = vector3(453.85, -997.62, 30.69),
             heading = 90.0,
         },
         --- Rūbinė 2 – ARO uniforma
         locker2 = {
-            coords = vector3(460.1924, -998.6480, 30.6849),
-            heading = 0.3915,
+            coords = vector3(455.65, -997.62, 30.6896),
+            heading = 90.0,
             label = 'ARO rūbinė',
             lockerMode = 'aro',
             divisions = { 'sor' },
         },
         stashes = {
             {
-                coords = vector3(480.5729, -995.2401, 30.6896),
+                coords = vector3(479.55, -995.24, 30.6896),
                 stashId = 'ltpd_stash_public_ls',
                 label = 'PD sandėlis (bendras)',
                 minGrade = 0,
@@ -289,7 +291,7 @@ Config.Stations = {
                 slots = 60,
             },
             {
-                coords = vector3(482.4943, -995.2571, 30.6896),
+                coords = vector3(481.45, -995.24, 30.6896),
                 stashId = 'ltpd_stash_grade3_ls',
                 label = 'PD sandėlis (≥3 rango)',
                 minGrade = 3,
@@ -298,7 +300,7 @@ Config.Stations = {
                 slots = 70,
             },
             {
-                coords = vector3(484.20, -995.27, 30.6896),
+                coords = vector3(483.35, -995.24, 30.6896),
                 stashId = 'ltpd_stash_criminal_ls',
                 label = 'Kriminalistų sandėlis',
                 minGrade = 4,
@@ -307,7 +309,7 @@ Config.Stations = {
                 slots = 70,
             },
             {
-                coords = vector3(485.3315, -995.2804, 30.6896),
+                coords = vector3(485.25, -995.24, 30.6896),
                 stashId = 'ltpd_stash_grade8_ls',
                 label = 'PD sandėlis (vadovų)',
                 minGrade = 8,
@@ -316,7 +318,7 @@ Config.Stations = {
                 slots = 80,
             },
             {
-                coords = vector3(463.1892, -988.8655, 30.6897),
+                coords = vector3(459.85, -986.20, 34.3725),
                 stashId = 'ltpd_stash_boss_ls',
                 label = 'PD sandėlis (bosas / pavaduotojas)',
                 minGrade = 7,
@@ -325,10 +327,9 @@ Config.Stations = {
                 slots = 90,
             },
         },
-        --- Stogas: helipadas + sraigtasparnio „garažas“ (keisk Z pagal MLO)
         heliGarage = {
-            coords = vector3(449.32, -981.38, 43.69),
-            spawn = vector4(449.32, -981.38, 44.05, 90.0),
+            coords = vector3(464.06, -983.37, 43.8356),
+            spawn = vector4(464.06, -983.37, 44.05, 270.0),
         },
     },
     {
@@ -449,134 +450,178 @@ Config.Stations = {
 Config.TargetDistance = 2.5
 Config.MaxFineAmount = 50000
 
---- PD durys / vartai (Gabz MRPD LS + automatinis Sandy / Paleto MLO skenavimas)
+--- PD durys / vartai (dt_19 MRPD LS + automatinis Sandy / Paleto MLO skenavimas)
 Config.PdDoorToggleReach = 6.0
 --- false = tik E mygtukas; true = papildomai qb-target (numatyta: tik E)
 Config.PdDoorUseQbTarget = false
 Config.PdDoorGroups = {
     {
-        id = 'ls_mrpd_reception',
-        label = 'Registratūros įėjimas',
-        interact = vector3(434.81, -981.93, 30.89),
+        id = 'ls_mrpd_lobby',
+        label = 'Pagrindinės durys (fojė)',
+        interact = vector3(440.8398, -994.5754, 30.6893),
         interactDist = 2.5,
         defaultLocked = true,
         doors = {
-            { model = 'gabz_mrpd_reception_entrancedoor', coords = vector3(434.7, -983.0, 30.8) },
-            { model = 'gabz_mrpd_reception_entrancedoor', coords = vector3(434.7, -980.7, 30.8) },
+            { model = 'dt_19_door_small_window', coords = vector3(441.7664, -994.2772, 30.8187) },
         },
     },
     {
-        id = 'ls_mrpd_side',
-        label = 'Šoninis įėjimas',
-        interact = vector3(441.9, -998.7, 30.8),
+        id = 'ls_mrpd_side_a',
+        label = 'Šoninis įėjimas (A)',
+        interact = vector3(440.2476, -999.0399, 30.7257),
         interactDist = 2.5,
         defaultLocked = true,
         doors = {
-            { model = 'gabz_mrpd_reception_entrancedoor', coords = vector3(440.7, -998.7, 30.8) },
-            { model = 'gabz_mrpd_reception_entrancedoor', coords = vector3(443.0, -998.7, 30.8) },
+            { model = 'v_ilev_fib_doore_l', coords = vector3(441.2427, -998.6813, 30.7996) },
+            { model = 'v_ilev_fib_doore_r', coords = vector3(439.0086, -998.6813, 30.7996) },
+        },
+    },
+    {
+        id = 'ls_mrpd_side_b',
+        label = 'Šoninis įėjimas (B)',
+        interact = vector3(442.8256, -999.1414, 30.7245),
+        interactDist = 2.5,
+        defaultLocked = true,
+        doors = {
+            { model = 'v_ilev_fib_doore_l', coords = vector3(443.8397, -998.6813, 30.7996) },
+            { model = 'v_ilev_fib_doore_r', coords = vector3(441.5994, -998.6813, 30.7996) },
         },
     },
     {
         id = 'ls_mrpd_back',
         label = 'Galinis įėjimas',
-        interact = vector3(468.6, -1014.4, 26.4),
+        interact = vector3(468.8101, -1014.3331, 26.406),
         interactDist = 2.5,
         defaultLocked = true,
         doors = {
-            { model = 'gabz_mrpd_door_03', coords = vector3(469.7, -1014.4, 26.4) },
-            { model = 'gabz_mrpd_door_03', coords = vector3(467.3, -1014.4, 26.4) },
+            { model = 'dt_19_door_small_wth_window', coords = vector3(469.9525, -1014.552, 26.5373) },
+            { model = 'dt_19_door_small_wth_window', coords = vector3(467.3533, -1014.552, 26.5373) },
         },
     },
     {
         id = 'ls_mrpd_interview_1',
         label = 'Tardymo kambarys 1',
-        interact = vector3(486.1472, -987.6362, 26.2733),
+        interact = vector3(482.27, -988.60, 25.864),
         interactDist = 3.0,
         defaultLocked = false,
         doors = {
-            { model = 'gabz_mrpd_door_03', coords = vector3(485.0, -987.6362, 26.2733) },
+            { model = 'dt_19_garage_cell_door', coords = vector3(481.35, -988.60, 25.864) },
         },
     },
     {
         id = 'ls_mrpd_interview_2',
         label = 'Tardymo kambarys 2',
-        interact = vector3(486.1502, -995.6803, 26.2733),
+        interact = vector3(482.27, -996.15, 25.864),
         interactDist = 3.0,
         defaultLocked = false,
         doors = {
-            { model = 'gabz_mrpd_door_03', coords = vector3(485.0, -995.6803, 26.2733) },
+            { model = 'dt_19_garage_cell_door', coords = vector3(481.35, -996.15, 25.864) },
         },
     },
     {
         id = 'ls_mrpd_back_gate',
         label = 'Kiemo vartai',
-        interact = vector3(488.8, -1020.2, 30.0),
-        interactDist = 14.0,
+        doorType = 'barrier',
+        interact = vector3(488.8, -1020.2, 29.0),
+        interactDist = 12.0,
         defaultLocked = true,
         doors = {
             { model = 'hei_prop_station_gate', coords = vector3(488.8, -1017.2, 27.1) },
         },
+        entityScan = {
+            center = vector3(488.8, -1017.2, 27.1),
+            radius = 14.0,
+            models = { 'hei_prop_station_gate' },
+        },
     },
     {
         id = 'ls_mrpd_front_entry',
-        label = 'Priekinis kiemas (vartai + borteliai)',
-        doorType = 'yard_gate',
-        interact = vector3(416.2, -1024.0, 29.85),
+        label = 'Priekinis kiemas (vartai)',
+        doorType = 'barrier',
+        interact = vector3(410.223, -1021.4033, 29.2392),
         interactDist = 5.5,
         defaultLocked = true,
-        bollardRaiseZ = 0.38,
-        gateOpenHeadingDelta = 82.0,
         doors = {
-            { model = 'prop_facgate_07b', coords = vector3(419.99, -1025.0, 28.99), heading = 270.0 },
-            {
-                model = 'gabz_mrpd_bollards1',
-                coords = vector3(409.9059, -1020.1597, 28.98),
-                heading = 265.5023,
-                restZ = 28.98,
-            },
-            {
-                model = 'gabz_mrpd_bollards2',
-                coords = vector3(410.3823, -1028.5387, 28.98),
-                heading = 168.6483,
-                restZ = 28.98,
-            },
+            { model = 'prop_facgate_07b', coords = vector3(411.0243, -1025.059, 28.335), heading = 270.0 },
         },
         entityScan = {
-            center = vector3(416.2, -1024.0, 29.35),
-            radius = 14.0,
-            models = { 'prop_facgate_07b', 'gabz_mrpd_bollards1', 'gabz_mrpd_bollards2' },
+            center = vector3(411.0243, -1025.059, 28.335),
+            radius = 12.0,
+            models = { 'prop_facgate_07b' },
         },
     },
     {
-        id = 'ls_mrpd_garage_roll',
-        label = 'Garažo vartai (šonas)',
+        id = 'ls_mrpd_garage_roll_w',
+        label = 'Garažo vartai (vakarai)',
         doorType = 'garage_roll',
-        interact = vector3(431.45, -1001.15, 26.75),
+        interact = vector3(431.3349, -1001.5062, 25.7096),
         interactDist = 4.0,
         defaultLocked = true,
         doors = {
-            { model = 'gabz_mrpd_room13_parkingdoor', coords = vector3(431.45, -1001.15, 26.75), heading = 178.0 },
+            { model = 'dt_19_garage_doorst', coords = vector3(431.4082, -1001.261, 26.6799), heading = 0.0 },
         },
         entityScan = {
-            center = vector3(431.45, -1001.15, 26.75),
+            center = vector3(431.4082, -1001.261, 26.6799),
             radius = 10.0,
-            models = { 'gabz_mrpd_room13_parkingdoor' },
+            models = { 'dt_19_garage_doorst' },
         },
     },
     {
-        id = 'ls_mrpd_garage_park',
-        label = 'Garage (parking)',
+        id = 'ls_mrpd_garage_roll_c',
+        label = 'Garažo vartai (centras)',
         doorType = 'garage_roll',
-        interact = vector3(464.1, -997.5, 26.3),
-        interactDist = 2.0,
+        interact = vector3(436.2126, -1001.5596, 25.71),
+        interactDist = 4.0,
         defaultLocked = true,
         doors = {
-            { model = 'gabz_mrpd_room13_parkingdoor', coords = vector3(464.1, -997.5, 26.3), heading = 88.0 },
+            { model = 'dt_19_garage_doorst', coords = vector3(436.2234, -1001.262, 26.685), heading = 0.0 },
         },
         entityScan = {
-            center = vector3(464.1, -997.5, 26.3),
+            center = vector3(436.2234, -1001.262, 26.685),
             radius = 10.0,
-            models = { 'gabz_mrpd_room13_parkingdoor' },
+            models = { 'dt_19_garage_doorst' },
+        },
+    },
+    {
+        id = 'ls_mrpd_garage_roll_e',
+        label = 'Garažo vartai (rytai)',
+        doorType = 'garage_roll',
+        interact = vector3(447.4274, -1001.1773, 25.7098),
+        interactDist = 4.0,
+        defaultLocked = true,
+        doors = {
+            { model = 'dt_19_garage_doorst', coords = vector3(447.4821, -1001.14, 26.6882), heading = 0.0 },
+        },
+        entityScan = {
+            center = vector3(447.4821, -1001.14, 26.6882),
+            radius = 10.0,
+            models = { 'dt_19_garage_doorst' },
+        },
+    },
+    {
+        id = 'ls_mrpd_garage_roll_p',
+        label = 'Garažo vartai (parkas)',
+        doorType = 'garage_roll',
+        interact = vector3(452.4151, -1000.9858, 25.6466),
+        interactDist = 4.0,
+        defaultLocked = true,
+        doors = {
+            { model = 'dt_19_garage_doorst', coords = vector3(452.3017, -1001.141, 26.6928), heading = 0.0 },
+        },
+        entityScan = {
+            center = vector3(452.3017, -1001.141, 26.6928),
+            radius = 10.0,
+            models = { 'dt_19_garage_doorst' },
+        },
+    },
+    {
+        id = 'ls_mrpd_heli_door',
+        label = 'Stogo durys (helipadas)',
+        interact = vector3(464.062, -984.0073, 43.692),
+        interactDist = 2.5,
+        defaultLocked = true,
+        doors = {
+            { model = 'dt_19_garageintdoor', coords = vector3(464.2744, -983.3741, 43.8356) },
         },
     },
     {
@@ -651,17 +696,18 @@ Config.PdDoorGroups = {
     },
 }
 
---- Papildomi E taškai toms pačioms `PdDoorGroups` (be dubliavimo slabų) – Gabz MRPD.
+--- Papildomi E taškai toms pačioms `PdDoorGroups` (be dubliavimo slabų) – dt_19 MRPD.
 Config.PdDoorInteractExtras = {
-    { groupId = 'ls_mrpd_side', interact = vector3(441.28, -986.51, 30.71), interactDist = 3.2 },
-    { groupId = 'ls_mrpd_reception', interact = vector3(441.39, -977.68, 30.79), interactDist = 3.2 },
-    { groupId = 'ls_mrpd_reception', interact = vector3(457.03, -971.67, 30.71), interactDist = 3.2 },
+    { groupId = 'ls_mrpd_lobby', interact = vector3(441.42, -977.68, 30.79), interactDist = 3.2 },
+    { groupId = 'ls_mrpd_side_a', interact = vector3(441.28, -986.51, 30.71), interactDist = 3.2 },
     { groupId = 'ls_mrpd_back_gate', interact = vector3(488.8, -1017.2, 27.1), interactDist = 6.0 },
     { groupId = 'ls_mrpd_front_entry', interact = vector3(410.1, -1024.3, 29.75), interactDist = 5.0 },
+    { groupId = 'ls_mrpd_garage_roll_w', interact = vector3(428.5, -1001.5, 25.75), interactDist = 4.5 },
+    { groupId = 'ls_mrpd_garage_roll_p', interact = vector3(455.0, -1001.0, 25.75), interactDist = 4.5 },
     { groupId = 'davis_pd_main', interact = vector3(379.39, -1591.37, 29.76), interactDist = 3.0 },
 }
 
---- Automatinis durų radimas (objektai žemėlapyje pagal modelį ir dėžę) – Gabz Sandy / Paleto MLO
+--- Automatinis durų radimas (objektai žemėlapyje pagal modelį ir dėžę)
 Config.PdDoorDynamics = {
     {
         stationId = 'sandy',
@@ -675,22 +721,45 @@ Config.PdDoorDynamics = {
             'hedwig_sheriff_door05',
             'hedwig_sheriff_door06',
             'hedwig_sheriff_garage_gardoor',
-            -- Kai kuriuose paketuose būna typo pavadinime; laikom abu
             'hedwig_sheriif_garage_door',
             'hedwig_sheriff_garage_door',
         },
         pairDist = 4.35,
         interactDist = 2.85,
     },
-    --- Gabz MRPD LS: visos papildomos vidaus / tarnybinės durys ir vartai (nebendrinama su manual `PdDoorGroups` lokacijomis).
+    --- dt_19 MRPD LS: cele + vidaus durys (manual grupės – įėjimai, garažas, vartai)
     {
-        stationId = 'ls_mrpd_cells',
-        label = 'PD cele (LS MRPD)',
-        bounds = { min = vector3(460.0, -1012.0, 24.0), max = vector3(492.0, -982.0, 32.0) },
-        models = { 'gabz_mrpd_cells_door' },
-        pairDist = 0.75,
-        interactDist = 2.15,
-        interactOffset = vector3(0.0, 0.0, 0.92),
+        stationId = 'ls_mrpd_dt19',
+        label = 'PD durys (LS dt_19 – auto)',
+        bounds = {
+            min = vector3(400.0, -1060.0, 22.0),
+            max = vector3(505.0, -910.0, 58.0),
+        },
+        models = {
+            'dt_19_d_ent_hall_l',
+            'dt_19_d_ent_hall_r',
+            'v_ilev_fib_doore_l',
+            'v_ilev_fib_doore_r',
+            'dt_19_glass_door',
+            'dt_19_glass_door_detec',
+            'dt_19_door_small_window',
+            'dt_19_door_small_wth_window',
+            'dt_19_door_large_w_window',
+            'dt_19_door_stair',
+            'dt_19_garageintdoor',
+            'dt_19_garage_intdoor2',
+            'dt_19_garage_cell_door',
+            'hei_prop_station_door_lr',
+            'hei_prop_station_door_sl',
+            'hei_prop_station_door_ra',
+            'hei_prop_station_door_rb',
+            'hei_prop_station_door_lc',
+            'hei_prop_station_door_rc',
+        },
+        pairDist = 2.85,
+        interactDist = 2.85,
+        interactOffset = vector3(0.0, 0.0, 0.88),
+        defaultLocked = true,
     },
     {
         stationId = 'davis_cells',
@@ -708,50 +777,6 @@ Config.PdDoorDynamics = {
         models = { 'gabz_paletopd_cells_gate', 'gabz_paletopd_glassdoorway_cells' },
         pairDist = 0.85,
         interactDist = 2.25,
-        interactOffset = vector3(0.0, 0.0, 0.92),
-    },
-    {
-        stationId = 'ls_mrpd_gabz',
-        label = 'PD durys (LS Gabz – auto)',
-        bounds = {
-            min = vector3(395.0, -1060.0, -14.0),
-            max = vector3(522.0, -910.0, 72.0),
-        },
-        models = {
-            'gabz_mrpd_reception_entrancedoor',
-            'gabz_mrpd_door_03',
-            --- parkingdoor valdoma per `PdDoorGroups` (garage_roll) – ne auto-scan
-            'gabz_mrpd_cells_door',
-            'hei_prop_station_door_lr',
-            'hei_prop_station_door_sl',
-            'hei_prop_station_door_ra',
-            'hei_prop_station_door_rb',
-            'hei_prop_station_door_lc',
-            'hei_prop_station_door_rc',
-            'prop_facgate_07b',
-            'hei_prop_station_gate',
-        },
-        pairDist = 4.15,
-        interactDist = 2.95,
-        interactOffset = vector3(0.0, 0.0, 0.88),
-        defaultLocked = true,
-    },
-    --- Vanilla / ne-Gabz LS MRPD: tik Rockstar durų propai
-    {
-        stationId = 'ls_mrpd_dyn',
-        label = 'PD durys (LS – auto, vanilla)',
-        bounds = {
-            min = vector3(400.0, -1045.0, 23.5),
-            max = vector3(505.0, -928.0, 58.0),
-        },
-        models = {
-            'v_ilev_ph_gendoor004',
-            'v_ilev_ph_gendoor003',
-            'v_ilev_ph_gendoor002',
-            'hei_prop_station_gate',
-        },
-        pairDist = 2.95,
-        interactDist = 2.85,
         interactOffset = vector3(0.0, 0.0, 0.92),
     },
     {

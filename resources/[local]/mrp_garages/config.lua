@@ -35,7 +35,7 @@ Config.Garages = {
     { id = 'cayo_heli', label = 'Cayo Perico malūnsparnių garažas', garageType = 'heli', requireIsland = true, coords = vector3(4489.08, -4453.93, 4.22), heading = 200.0, spawn = vector4(4489.08, -4453.93, 6.50, 200.0), blipSprite = 43, blipColor = 3 },
     { id = 'cayo_boat', label = 'Cayo Perico laivų garažas', garageType = 'boat', requireIsland = true, coords = vector3(4930.77, -5145.10, 2.47), heading = 70.0, spawn = vector4(4933.00, -5135.00, 0.12, 65.0), blipSprite = 410, blipColor = 3 },
     --- Policijos garažai (tik police + tarnyba) – tas pats UI kaip kiti garažai
-    { id = 'pd_ls_main', label = 'Policijos garažas', coords = vector3(460.1003, -986.7195, 25.6998), heading = 269.0115, spawn = vector4(460.1003, -986.7195, 25.6998, 269.0115), policeOnly = true, hideBlip = true },
+    { id = 'pd_ls_main', label = 'Policijos garažas', coords = vector3(452.42, -1000.85, 25.7096), heading = 0.0, spawn = vector4(452.3017, -1001.141, 25.6928, 0.0), policeOnly = true, hideBlip = true },
     { id = 'pd_davis', label = 'Policijos garažas (Davis)', coords = vector3(383.0487, -1616.0627, 29.2921), heading = 52.1940, spawn = vector4(383.0487, -1616.0627, 29.2921, 52.1940), policeOnly = true, hideBlip = true },
     { id = 'pd_sandy', label = 'Policijos garažas (Sandy)', coords = vector3(1869.5, 3695.2, 33.53), heading = 210.0, spawn = vector4(1869.5, 3695.2, 33.53, 210.0), policeOnly = true, hideBlip = true },
     { id = 'pd_paleto', label = 'Policijos garažas (Paleto)', coords = vector3(-459.2, 6016.3, 31.49), heading = 45.0, spawn = vector4(-459.2, 6016.3, 31.49, 45.0), policeOnly = true, hideBlip = true },
