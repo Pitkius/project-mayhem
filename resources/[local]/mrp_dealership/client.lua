@@ -231,7 +231,7 @@ end
 
 local function getImageUrl(model)
     if REH_MODELS[model] then
-        return ('nui://%s/html/images/vehicles/%s.webp'):format(GetCurrentResourceName(), model)
+        return ('nui://%s/html/images/vehicles/%s.png'):format(GetCurrentResourceName(), model)
     end
     return ('https://docs.fivem.net/vehicles/%s.webp'):format(model)
 end

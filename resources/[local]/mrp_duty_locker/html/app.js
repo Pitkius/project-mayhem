@@ -13,6 +13,20 @@ let state = {
   activeCategory: null,
 };
 
+let applyLocked = false;
+
+function applyItem(payload) {
+  if (applyLocked) return;
+  applyLocked = true;
+  root.classList.add("dl-busy");
+  post("dutyLockerApply", payload).finally(() => {
+    setTimeout(() => {
+      applyLocked = false;
+      root.classList.remove("dl-busy");
+    }, 300);
+  });
+}
+
 function post(name, data = {}) {
   return fetch(`https://${GetParentResourceName()}/${name}`, {
     method: "POST",
@@ -48,7 +62,7 @@ function renderList() {
     rm.type = "button";
     rm.className = "dl-item remove";
     rm.innerHTML = "<strong>Nuimti</strong><small>Pašalinti šios kategorijos dalį</small>";
-    rm.onclick = () => post("dutyLockerApply", { id: `remove:${cat}` });
+    rm.onclick = () => applyItem({ id: `remove:${cat}` });
     dlList.appendChild(rm);
   }
 
@@ -66,7 +80,7 @@ function renderList() {
     btn.type = "button";
     btn.className = "dl-item";
     btn.innerHTML = `<strong>${item.label || "Apranga"}</strong>${item.description ? `<small>${item.description}</small>` : ""}`;
-    btn.onclick = () => post("dutyLockerApply", { id: item.id, category: item.category });
+    btn.onclick = () => applyItem({ id: item.id, category: item.category });
     li.appendChild(btn);
     dlList.appendChild(li);
   });

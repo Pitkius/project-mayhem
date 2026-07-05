@@ -12,10 +12,10 @@ DutyLocker.Categories = {
 --- Kuriuos slotus keičia kategorija (ne visi komponentai iš įrašo)
 DutyLocker.CategorySlots = {
     hat = { props = { 0 } },
-    uniform_top = { components = { 3, 8, 11 } },
+    uniform_top = { components = { 3, 11 } },
     vest = { components = { 9 } },
     uniform_pants = { components = { 4, 6 } },
-    belt = { components = { 7 } },
+    belt = { components = { 7, 8 } },
     extra = { components = { 1, 5, 10 }, props = { 1, 2, 6, 7 } },
 }
 
@@ -38,6 +38,7 @@ function DutyLocker.inferCategory(outfit, genderKey)
     if tbl.props and tbl.props[0] then return 'hat' end
     if has[9] and not has[11] and not has[4] then return 'vest' end
     if has[7] and not has[4] and not has[11] then return 'belt' end
+    if has[8] and not has[4] and not has[11] and not has[3] then return 'belt' end
     if has[4] or has[6] then
         if has[11] or has[3] or has[8] then return 'uniform_top' end
         return 'uniform_pants'

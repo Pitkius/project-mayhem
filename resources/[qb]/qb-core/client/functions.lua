@@ -189,28 +189,98 @@ function QBCore.Functions.Notify(text, texttype, length, icon)
     SendNUIMessage(message)
 end
 
-function QBCore.Functions.Progressbar(name, label, duration, useWhileDead, canCancel, disableControls, animation, prop, propTwo, onFinish, onCancel)
-    if GetResourceState('progressbar') ~= 'started' then error('progressbar needs to be started in order for QBCore.Functions.Progressbar to work') end
-    exports['progressbar']:Progress({
-        name = name:lower(),
-        duration = duration,
-        label = label,
-        useWhileDead = useWhileDead,
-        canCancel = canCancel,
-        controlDisables = disableControls,
-        animation = animation,
-        prop = prop,
-        propTwo = propTwo,
-    }, function(cancelled)
-        if not cancelled then
-            if onFinish then
-                onFinish()
-            end
-        else
-            if onCancel then
-                onCancel()
-            end
+local function runProgressFallback(name, label, duration, useWhileDead, canCancel, disableControls, animation, onFinish, onCancel)
+    local ped = PlayerPedId()
+    if not useWhileDead and (IsEntityDead(ped) or IsPedDeadOrDying(ped, true)) then
+        if onCancel then onCancel() end
+        return
+    end
+
+    local animDict = animation and (animation.animDict or animation.dict)
+    local animClip = animation and (animation.anim or animation.clip)
+    local animFlags = animation and (animation.flags or 49) or 49
+
+    if animDict and animDict ~= '' then
+        RequestAnimDict(animDict)
+        local deadline = GetGameTimer() + 5000
+        while not HasAnimDictLoaded(animDict) and GetGameTimer() < deadline do
+            Wait(10)
         end
+        if HasAnimDictLoaded(animDict) and animClip and animClip ~= '' then
+            TaskPlayAnim(ped, animDict, animClip, 4.0, 4.0, -1, animFlags, 0.0, false, false, false)
+        end
+    end
+
+    disableControls = disableControls or {}
+    local endAt = GetGameTimer() + (tonumber(duration) or 5000)
+    while GetGameTimer() < endAt do
+        if not useWhileDead and (IsEntityDead(ped) or IsPedDeadOrDying(ped, true)) then
+            ClearPedTasks(ped)
+            if onCancel then onCancel() end
+            return
+        end
+        if disableControls.disableMovement then
+            DisableControlAction(0, 30, true)
+            DisableControlAction(0, 31, true)
+            DisableControlAction(0, 36, true)
+            DisableControlAction(0, 21, true)
+        end
+        if disableControls.disableCarMovement then
+            DisableControlAction(0, 63, true)
+            DisableControlAction(0, 64, true)
+            DisableControlAction(0, 71, true)
+            DisableControlAction(0, 72, true)
+        end
+        if disableControls.disableCombat then
+            DisableControlAction(0, 24, true)
+            DisableControlAction(0, 25, true)
+            DisableControlAction(0, 47, true)
+            DisableControlAction(0, 58, true)
+            DisableControlAction(0, 140, true)
+            DisableControlAction(0, 141, true)
+            DisableControlAction(0, 142, true)
+            DisableControlAction(0, 143, true)
+        end
+        if canCancel and (IsControlJustReleased(0, 73) or IsControlJustReleased(0, 200) or IsControlJustReleased(0, 322)) then
+            ClearPedTasks(ped)
+            if onCancel then onCancel() end
+            return
+        end
+        Wait(0)
+    end
+
+    ClearPedTasks(ped)
+    if onFinish then onFinish() end
+end
+
+function QBCore.Functions.Progressbar(name, label, duration, useWhileDead, canCancel, disableControls, animation, prop, propTwo, onFinish, onCancel)
+    if GetResourceState('progressbar') == 'started' then
+        exports['progressbar']:Progress({
+            name = name:lower(),
+            duration = duration,
+            label = label,
+            useWhileDead = useWhileDead,
+            canCancel = canCancel,
+            controlDisables = disableControls,
+            animation = animation,
+            prop = prop,
+            propTwo = propTwo,
+        }, function(cancelled)
+            if not cancelled then
+                if onFinish then
+                    onFinish()
+                end
+            else
+                if onCancel then
+                    onCancel()
+                end
+            end
+        end)
+        return
+    end
+
+    CreateThread(function()
+        runProgressFallback(name, label, duration, useWhileDead, canCancel, disableControls, animation, onFinish, onCancel)
     end)
 end
 

@@ -82,8 +82,30 @@ end
 
 local gutBusy = false
 
-local function tryGutCorpse(entity, meat, extra)
+local function resolveLootForEntity(entity)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return nil, nil end
+    local model = GetEntityModel(entity)
+    local row = AnimalLoot.resolve(model)
+    if row then
+        return row.meat, row.extra
+    end
+    for _, zones in pairs(zoneAnimals) do
+        for _, spawnRow in ipairs(zones) do
+            if spawnRow.entity == entity then
+                return spawnRow.meat, spawnRow.extra
+            end
+        end
+    end
+    return nil, nil
+end
+
+local function tryGutCorpse(entity)
     if gutBusy or guttedCorpses[entity] then return end
+    local meat, extra = resolveLootForEntity(entity)
+    if not meat then
+        QBCore.Functions.Notify('Nežinomas gyvūnas — negalima skersti.', 'error')
+        return
+    end
     QBCore.Functions.TriggerCallback('mrp_outdoors:server:hasLicense', function(has)
         if not has then
             QBCore.Functions.Notify('Reikia medžioklės licencijos.', 'error')
@@ -100,7 +122,7 @@ local function tryGutCorpse(entity, meat, extra)
         local ok = exports['mrp_outdoors']:OpenMinigame('butcher', { label = 'Skerdimo minigame — rodyklės' })
         if ok then
             guttedCorpses[entity] = true
-            TriggerServerEvent('mrp_outdoors:server:gutAnimal', meat, extra)
+            TriggerServerEvent('mrp_outdoors:server:gutAnimal', GetEntityModel(entity))
             SetTimeout(Config.HuntGutCooldown * 1000, function()
                 if DoesEntityExist(entity) then DeleteEntity(entity) end
             end)
@@ -122,19 +144,14 @@ CreateThread(function()
                 action = function(entity)
                     if not IsEntityDead(entity) then return end
                     if not IsPedHuman(entity) then
-                        for _, zones in pairs(zoneAnimals) do
-                            for _, row in ipairs(zones) do
-                                if row.entity == entity then
-                                    tryGutCorpse(entity, row.meat, row.extra)
-                                    return
-                                end
-                            end
-                        end
-                        tryGutCorpse(entity, 'deer_meat_raw', 'deer_pelt')
+                        tryGutCorpse(entity)
                     end
                 end,
                 canInteract = function(entity)
-                    return IsEntityDead(entity) and not IsPedHuman(entity) and not IsPedAPlayer(entity) and not guttedCorpses[entity]
+                    if not (IsEntityDead(entity) and not IsPedHuman(entity) and not IsPedAPlayer(entity) and not guttedCorpses[entity]) then
+                        return false
+                    end
+                    return AnimalLoot.resolve(GetEntityModel(entity)) ~= nil
                 end,
             },
         },

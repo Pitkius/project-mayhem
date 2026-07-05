@@ -669,9 +669,29 @@ RegisterNetEvent('QBCore:Player:UpdatePlayerDataField', function(_, _)
     syncPlayerDataFromCore()
 end)
 
---- QB / consumables / mrp_basics siunčia po `hunger`/`thirst` pakeitimo (nebūtina klausytis argumentų – imam iš `GetPlayerData`).
-RegisterNetEvent('hud:client:UpdateNeeds', function()
+--- QB / consumables / mrp_basics siunčia po `hunger`/`thirst` pakeitimo.
+RegisterNetEvent('hud:client:UpdateNeeds', function(hunger, thirst)
     syncPlayerDataFromCore()
+    if hunger ~= nil or thirst ~= nil then
+        PlayerData.metadata = PlayerData.metadata or {}
+        if QBCore.PlayerData then
+            QBCore.PlayerData.metadata = QBCore.PlayerData.metadata or {}
+        end
+        if hunger ~= nil then
+            local h = clamp(tonumber(hunger) or 0, 0, 100)
+            PlayerData.metadata.hunger = h
+            if QBCore.PlayerData and QBCore.PlayerData.metadata then
+                QBCore.PlayerData.metadata.hunger = h
+            end
+        end
+        if thirst ~= nil then
+            local t = clamp(tonumber(thirst) or 0, 0, 100)
+            PlayerData.metadata.thirst = t
+            if QBCore.PlayerData and QBCore.PlayerData.metadata then
+                QBCore.PlayerData.metadata.thirst = t
+            end
+        end
+    end
     pushHud()
 end)
 

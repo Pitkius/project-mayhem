@@ -40,6 +40,7 @@ local COMMAND_DEFS = {
 for _, def in ipairs(COMMAND_DEFS) do
     local cmd, help = def[1], def[2]
     QBCore.Commands.Add(cmd, help, {}, false, function(source)
+        if type(source) ~= 'number' or source <= 0 then return end
         if cmd == 'drabuziai' then
             TriggerClientEvent('mrp_basics:client:openClothingMenu', source)
             return

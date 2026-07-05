@@ -63,6 +63,23 @@ Config.HuntingShop = {
     },
 }
 
+Config.ButcherMap = {
+    fish_raw = 'fish_clean',
+    deer_meat_raw = 'deer_meat_clean',
+    boar_meat_raw = 'boar_meat_clean',
+    rabbit_meat_raw = 'rabbit_meat_clean',
+    coyote_meat_raw = 'coyote_meat_clean',
+}
+
+--- Loot pagal GTA ped modelį (skerdimo metu nustatoma pagal negyvą gyvūną).
+Config.AnimalLoot = {
+    [`a_c_deer`] = { meat = 'deer_meat_raw', extra = 'deer_pelt' },
+    [`a_c_boar`] = { meat = 'boar_meat_raw', extra = 'boar_pelt' },
+    [`a_c_coyote`] = { meat = 'coyote_meat_raw', extra = 'coyote_pelt' },
+    [`a_c_rabbit_01`] = { meat = 'rabbit_meat_raw', extra = 'rabbit_fur' },
+    [`a_c_mtlion`] = { meat = 'coyote_meat_raw', extra = 'coyote_pelt' },
+}
+
 --- Supirkimo kainos
 Config.SellPrices = {
     fish_raw = 18,
@@ -76,13 +93,9 @@ Config.SellPrices = {
     rabbit_meat_raw = 14,
     rabbit_meat_clean = 28,
     rabbit_fur = 22,
-}
-
-Config.ButcherMap = {
-    fish_raw = 'fish_clean',
-    deer_meat_raw = 'deer_meat_clean',
-    boar_meat_raw = 'boar_meat_clean',
-    rabbit_meat_raw = 'rabbit_meat_clean',
+    coyote_meat_raw = 16,
+    coyote_meat_clean = 30,
+    coyote_pelt = 26,
 }
 
 --- Žvejybos zonos (prie vandens)
@@ -108,7 +121,7 @@ Config.AnimalSpawn = {
     models = {
         { model = `a_c_deer`, meat = 'deer_meat_raw', extra = 'deer_pelt', weight = 35 },
         { model = `a_c_boar`, meat = 'boar_meat_raw', extra = 'boar_pelt', weight = 30 },
-        { model = `a_c_coyote`, meat = 'rabbit_meat_raw', extra = 'rabbit_fur', weight = 15 },
+        { model = `a_c_coyote`, meat = 'coyote_meat_raw', extra = 'coyote_pelt', weight = 15 },
         { model = `a_c_rabbit_01`, meat = 'rabbit_meat_raw', extra = 'rabbit_fur', weight = 20 },
     },
 }

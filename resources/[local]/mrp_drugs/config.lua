@@ -97,8 +97,8 @@ end
 
 Config.Products = {
     --- L1
-    thc_process = drugProcess('THC · distiliacija', 1, 'weed_resin', 14000, 'low', 'schedule', 5, 3, 1, 35, 1),
-    thc_pack = drugPack('Vape buteliukas · supakavimas', 1, 'thc_cart', 95, 12000, 'low', 'schedule', 6, 4, 2, 35, 2),
+    thc_process = drugProcess('THC · distiliacija', 1, 'thc_resin', 14000, 'low', 'schedule', 5, 3, 1, 35, 1),
+    thc_pack = drugPack('THC kasetė · supakavimas', 1, 'thc_cart', 95, 12000, 'low', 'schedule', 6, 4, 2, 35, 2),
     alcohol_process = drugProcess('Samagonas · distiliacija', 1, 'moonshine_spirit', 13000, 'low', 'schedule', 4, 3, 1, 30, 3),
     alcohol_pack = drugPack('Nelegalus alkoholis · supakavimas', 1, 'illegal_alcohol', 75, 11000, 'low', 'schedule', 5, 3, 2, 30, 4),
     vape_process = drugProcess('Vape · paruošimas', 1, 'vape_mix', 12000, 'low', 'schedule', 4, 2, 1, 28, 5),
@@ -124,15 +124,14 @@ Config.Products = {
 Config.Recipes = {
     --- L1: žaliava → apdorota → supakuota
     thc_process = {
-        { item = 'weed_leaf', count = 4 },
-        { item = 'trimming_scissors', count = 1 },
+        { item = 'hemp_trim', count = 5 },
         { item = 'filter', count = 1 },
         { item = 'gloves', count = 1 },
     },
     thc_pack = {
-        { item = 'weed_resin', count = 1 },
+        { item = 'thc_resin', count = 1 },
+        { item = 'empty_cart', count = 1 },
         { item = 'empty_bottle', count = 1 },
-        { item = 'empty_bag', count = 1 },
     },
     alcohol_process = {
         { item = 'alcohol_base', count = 3 },
@@ -532,9 +531,9 @@ Config.MaterialShop = {
     label = 'Nelegalūs reikmenys',
     items = {
         -- Kiekvienas narkotikas: 1 → 2 → 3 etapas
-        -- THC / vape buteliukas
-        { name = 'weed_leaf', amount = 500, price = 22, slot = 1 },
-        { name = 'weed_resin', amount = 300, price = 48, slot = 2 },
+        -- THC (L1 — atskira linija, ne žolė)
+        { name = 'hemp_trim', amount = 500, price = 18, slot = 1 },
+        { name = 'thc_resin', amount = 300, price = 45, slot = 2 },
         { name = 'thc_cart', amount = 200, price = 75, slot = 3 },
         -- Samagonas
         { name = 'alcohol_base', amount = 500, price = 18, slot = 4 },
@@ -544,7 +543,7 @@ Config.MaterialShop = {
         { name = 'vape_liquid_base', amount = 500, price = 16, slot = 7 },
         { name = 'vape_mix', amount = 300, price = 38, slot = 8 },
         { name = 'vape_liquid', amount = 200, price = 52, slot = 9 },
-        -- Žolės apdorojimas (sėklos / vazonai — WeedSupplyShop prie Grapeseed)
+        -- Žolė L2 (lapai tik iš auginimo — WeedSupplyShop prie Grapeseed)
         { name = 'trimming_scissors', amount = 200, price = 95, slot = 10 },
         { name = 'gloves', amount = 200, price = 25, slot = 11 },
         { name = 'empty_bag', amount = 500, price = 11, slot = 12 },
@@ -1251,7 +1250,8 @@ Config.LsTestQuickBuy = {
     { item = 'lab_kit', amount = 2 },
     { item = 'burner', amount = 2 },
     { item = 'chemical_mix', amount = 15 },
-    { item = 'weed_leaf', amount = 25 },
+    { item = 'hemp_trim', amount = 25 },
+    { item = 'weed_leaf', amount = 15 },
     { item = 'poppy_flower', amount = 20 },
     { item = 'meth_ingredient', amount = 20 },
     { item = 'pill_powder', amount = 20 },
@@ -1265,9 +1265,9 @@ Config.LsTestQuickBuy = {
 --- Test meniu — duoda itemus / atidaro UI
 Config.TestKits = {
     level1 = {
-        weed_leaf = 20, alcohol_base = 10, vape_liquid_base = 10,
+        hemp_trim = 25, alcohol_base = 10, vape_liquid_base = 10,
         empty_cart = 10, empty_bottle = 10, filter = 10, empty_bag = 20,
-        trimming_scissors = 2, gloves = 5,
+        gloves = 5,
     },
     level2 = {
         weed_leaf = 30, poppy_flower = 20, meth_ingredient = 15, pill_powder = 15,

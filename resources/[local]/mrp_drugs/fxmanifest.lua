@@ -12,9 +12,11 @@ ui_page 'html/index.html'
 files {
     'html/index.html',
     'html/style.css',
+    'html/minigames.css',
     'html/app.js',
     'html/schedule-icons.js',
     'html/schedule.js',
+    'html/minigame-ui.js',
     'html/drug-games.js',
     'html/icons/grow_pot.png',
     'html/icons/watering_can.png',

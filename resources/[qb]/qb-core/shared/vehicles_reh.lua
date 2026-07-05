@@ -82,7 +82,7 @@ RehVehicleEntries = {
     { model = 'ubermachtsentinelk5', name = 'Sentinel K5', brand = 'Ubermacht', price = 125000, category = 'sedans', type = 'automobile', shop = 'pdm' },
     { model = 'ubermachtx6m', name = 'Ubermacht X6M', brand = 'Ubermacht', price = 245000, category = 'suvs', type = 'automobile', shop = 'pdm' },
     { model = 'ubermachtx7', name = 'Ubermacht X7M', brand = 'Ubermacht', price = 125000, category = 'suvs', type = 'automobile', shop = 'pdm' },
-    { model = 'vapiddurango', name = 'Vapid Durango', brand = 'Import', price = 125000, category = 'sedans', type = 'automobile', shop = 'pdm' },
+    { model = 'vapiddurango', name = 'Vapid Durango', brand = 'Vapid', price = 125000, category = 'suvs', type = 'automobile', shop = 'pdm' },
     { model = 'vapidfugitive', name = 'Vapid Fugitive', brand = 'Vapid', price = 245000, category = 'sedans', type = 'automobile', shop = 'pdm' },
     { model = 'vapidhawk', name = 'MoDre Customs Vapid Hawk', brand = 'MoDre Customs', price = 245000, category = 'suvs', type = 'automobile', shop = 'pdm' },
     { model = 'vapidsandkingdura', name = 'Vapid Sandking Dura', brand = 'Vapid', price = 348500, category = 'suvs', type = 'automobile', shop = 'pdm' },

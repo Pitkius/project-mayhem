@@ -160,7 +160,7 @@ local function getVehicleImageUrl(model)
     model = tostring(model or ''):lower()
     if model == '' then return nil end
     if REH_IMAGE_MODELS[model] and GetResourceState('mrp_dealership') == 'started' then
-        return ('nui://mrp_dealership/html/images/vehicles/%s.webp'):format(model)
+        return ('nui://mrp_dealership/html/images/vehicles/%s.png'):format(model)
     end
     return ('https://docs.fivem.net/vehicles/%s.webp'):format(model)
 end

@@ -18,8 +18,8 @@ end
 --- Stoties / grow profiliai (productId → profilis)
 MinigameRegistry.Profiles = {
     -- L1 THC / vape / alkoholis
-    thc_process = p('thc', 'process', 'thc_scrape', 'THC · dervos nuskynimas', 4, '🍃', 1),
-    thc_pack = p('thc', 'pack', 'thc_cartridge', 'Vape kasetės pildymas', 3, '💨', 1),
+    thc_process = p('thc', 'process', 'thc_scrape', 'THC · distiliato gavimas', 4, '🧪', 1),
+    thc_pack = p('thc', 'pack', 'thc_cartridge', 'THC kasetės pildymas', 3, '💨', 1),
     alcohol_process = p('alcohol', 'process', 'moonshine_still', 'Samagono distiliacija', 2, '🥃', 1),
     alcohol_pack = p('alcohol', 'pack', 'moonshine_jar', 'Stiklainio užkorkavimas', 3, '🍾', 1),
     vape_process = p('vape', 'process', 'vape_blend', 'Skysčio mišinio balansas', 2, '💨', 1),

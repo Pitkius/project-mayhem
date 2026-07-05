@@ -4,38 +4,80 @@ WeaponReload = WeaponReload or {}
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local activeReloadAnim = nil
+local reloadPedStateActive = false
 
-local RELOAD_BY_GROUP = {
-    [`GROUP_PISTOL`] = { dict = 'weapons@pistol@', clips = { 'reload_aim', 'reload' } },
-    [`GROUP_SMG`] = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
-    [`GROUP_RIFLE`] = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
-    [`GROUP_MG`] = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
-    [`GROUP_SHOTGUN`] = { dict = 'weapons@shotgun@', clips = { 'reload_aim', 'reload' } },
-    [`GROUP_SNIPER`] = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
-}
+local function animRow(dict, clips, fallbacks)
+    return {
+        dict = dict,
+        clips = clips or { 'w_reload_aim', 'reload_aim' },
+        fallbacks = fallbacks or {},
+    }
+end
 
-local RELOAD_BY_AMMO = {
-    AMMO_SHOTGUN = { dict = 'weapons@shotgun@', clips = { 'reload_aim', 'reload' } },
-    AMMO_SMG = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
-    AMMO_MG = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
-    AMMO_RIFLE = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
-    AMMO_SNIPER = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
-    AMMO_PISTOL = { dict = 'weapons@pistol@', clips = { 'reload_aim', 'reload' } },
+local CLIPS = {
+    rifle = { 'w_reload_aim', 'reload_aim', 'reload_aim_xl', 'reload_low_left_xl' },
+    pistol = { 'w_reload_aim', 'reload_aim', 'reload_aim_l' },
+    smg = { 'w_reload_aim', 'reload_aim', 'reload_aim_xl' },
+    shotgun = { 'w_reload_aim', 'reload_aim', 'reload_aim_l' },
+    sniper = { 'w_reload_aim', 'reload_aim' },
 }
 
 local RELOAD_BY_INVENTORY = {
-    weapon_fgc9 = { dict = 'weapons@pistol@', clips = { 'reload_aim', 'reload' } },
-    weapon_machinepistol = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
-    weapon_minismg = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
-    weapon_microsmg = { dict = 'weapons@smg@', clips = { 'reload_aim', 'reload' } },
-    weapon_combatpistol = { dict = 'weapons@pistol@', clips = { 'reload_aim', 'reload' } },
-    weapon_pistol = { dict = 'weapons@pistol@', clips = { 'reload_aim', 'reload' } },
-    weapon_pistol_mk2 = { dict = 'weapons@pistol@', clips = { 'reload_aim', 'reload' } },
-    weapon_carbinerifle = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
-    weapon_assaultrifle = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
-    weapon_specialcarbine = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
-    weapon_specialcarbine_mk2 = { dict = 'weapons@rifle@lo@', clips = { 'reload_aim', 'reload' } },
-    weapon_pumpshotgun = { dict = 'weapons@shotgun@', clips = { 'reload_aim', 'reload' } },
+    weapon_fgc9 = animRow('weapons@pistol@combat_pistol_str', CLIPS.pistol, { 'weapons@pistol@pistol_str' }),
+    weapon_combatpistol = animRow('weapons@pistol@combat_pistol_str', CLIPS.pistol, { 'weapons@pistol@pistol_str' }),
+    weapon_pistol = animRow('weapons@pistol@pistol_str', CLIPS.pistol),
+    weapon_pistol_mk2 = animRow('weapons@pistol@pistol_str', CLIPS.pistol),
+    weapon_appistol = animRow('weapons@pistol@ap_pistol_str', CLIPS.pistol, { 'weapons@pistol@pistol_str' }),
+    weapon_pistol50 = animRow('weapons@pistol@pistol_50_str', CLIPS.pistol, { 'weapons@pistol@pistol_str' }),
+    weapon_microsmg = animRow('weapons@rifle@lo@smg_str', CLIPS.smg),
+    weapon_smg = animRow('weapons@rifle@lo@smg_str', CLIPS.smg),
+    weapon_smg_mk2 = animRow('weapons@rifle@lo@smg_str', CLIPS.smg),
+    weapon_assaultsmg = animRow('weapons@rifle@lo@smg_str', CLIPS.smg),
+    weapon_combatpdw = animRow('weapons@rifle@lo@smg_str', CLIPS.smg),
+    weapon_minismg = animRow('anim@weapons@pistol@minismg_str', CLIPS.smg, { 'weapons@rifle@lo@smg_str' }),
+    weapon_machinepistol = animRow('anim@weapons@pistol@machine_str', CLIPS.smg, { 'weapons@rifle@lo@smg_str' }),
+    weapon_carbinerifle = animRow('weapons@rifle@lo@carbine_str', CLIPS.rifle),
+    weapon_carbinerifle_mk2 = animRow('weapons@rifle@lo@carbine_str', CLIPS.rifle),
+    weapon_assaultrifle = animRow('weapons@rifle@hi@assault_rifle_str', CLIPS.rifle, { 'weapons@rifle@lo@carbine_str' }),
+    weapon_assaultrifle_mk2 = animRow('weapons@rifle@hi@assault_rifle_str', CLIPS.rifle, { 'weapons@rifle@lo@carbine_str' }),
+    weapon_advancedrifle = animRow('weapons@rifle@hi@assault_rifle_str', CLIPS.rifle, { 'weapons@rifle@lo@carbine_str' }),
+    weapon_specialcarbine = animRow('anim@weapons@rifle@lo@spcarbine_str', CLIPS.rifle, { 'weapons@rifle@lo@carbine_str' }),
+    weapon_specialcarbine_mk2 = animRow('anim@weapons@rifle@lo@spcarbine_str', CLIPS.rifle, { 'weapons@rifle@lo@carbine_str' }),
+    weapon_bullpuprifle = animRow('weapons@rifle@hi@assault_rifle_str', CLIPS.rifle, { 'weapons@rifle@lo@carbine_str' }),
+    weapon_compactrifle = animRow('weapons@rifle@lo@smg_str', CLIPS.smg),
+    weapon_militaryrifle = animRow('weapons@rifle@lo@carbine_str', CLIPS.rifle),
+    weapon_heavyrifle = animRow('weapons@rifle@lo@carbine_str', CLIPS.rifle),
+    weapon_tacticalrifle = animRow('weapons@rifle@lo@carbine_str', CLIPS.rifle),
+    weapon_pumpshotgun = animRow('weapons@rifle@lo@pump_str', CLIPS.shotgun),
+    weapon_pumpshotgun_mk2 = animRow('weapons@rifle@lo@pump_str', CLIPS.shotgun),
+    weapon_sawnoffshotgun = animRow('weapons@rifle@lo@sawnoff_str', CLIPS.shotgun),
+    weapon_assaultshotgun = animRow('weapons@rifle@lo@shotgun_assault_str', CLIPS.shotgun),
+    weapon_bullpupshotgun = animRow('weapons@rifle@lo@shotgun_bullpup_str', CLIPS.shotgun, { 'weapons@rifle@lo@shotgun_assault_str' }),
+    weapon_heavyshotgun = animRow('weapons@rifle@lo@shotgun_assault_str', CLIPS.shotgun),
+    weapon_sniperrifle = animRow('weapons@rifle@hi@sniper_rifle_str', CLIPS.sniper, { 'weapons@rifle@lo@sniper_heavy_str' }),
+    weapon_heavysniper = animRow('weapons@rifle@lo@sniper_heavy_str', CLIPS.sniper),
+    weapon_marksmanrifle = animRow('weapons@rifle@hi@sniper_rifle_str', CLIPS.sniper),
+    weapon_mg = animRow('weapons@rifle@lo@smg_str', CLIPS.rifle, { 'weapons@rifle@lo@carbine_str' }),
+    weapon_combatmg = animRow('weapons@rifle@lo@smg_str', CLIPS.rifle, { 'weapons@rifle@lo@carbine_str' }),
+    weapon_gusenberg = animRow('weapons@rifle@lo@smg_str', CLIPS.smg),
+}
+
+local RELOAD_BY_GROUP = {
+    [`GROUP_PISTOL`] = animRow('weapons@pistol@pistol_str', CLIPS.pistol),
+    [`GROUP_SMG`] = animRow('weapons@rifle@lo@smg_str', CLIPS.smg),
+    [`GROUP_RIFLE`] = animRow('weapons@rifle@lo@carbine_str', CLIPS.rifle),
+    [`GROUP_MG`] = animRow('weapons@rifle@lo@smg_str', CLIPS.rifle, { 'weapons@rifle@lo@carbine_str' }),
+    [`GROUP_SHOTGUN`] = animRow('weapons@rifle@lo@pump_str', CLIPS.shotgun),
+    [`GROUP_SNIPER`] = animRow('weapons@rifle@hi@sniper_rifle_str', CLIPS.sniper),
+}
+
+local RELOAD_BY_AMMO = {
+    AMMO_SHOTGUN = animRow('weapons@rifle@lo@pump_str', CLIPS.shotgun),
+    AMMO_SMG = animRow('weapons@rifle@lo@smg_str', CLIPS.smg),
+    AMMO_MG = animRow('weapons@rifle@lo@smg_str', CLIPS.rifle, { 'weapons@rifle@lo@carbine_str' }),
+    AMMO_RIFLE = animRow('weapons@rifle@lo@carbine_str', CLIPS.rifle),
+    AMMO_SNIPER = animRow('weapons@rifle@hi@sniper_rifle_str', CLIPS.sniper),
+    AMMO_PISTOL = animRow('weapons@pistol@pistol_str', CLIPS.pistol),
 }
 
 local function getReloadWaitMs()
@@ -48,12 +90,12 @@ local function allowReloadMovement()
     return Config.ReloadAllowMovement ~= false
 end
 
---- 49 = viršutinė kūno dalis + leisti judėti (1 + 16 + 32).
+--- 48 = viršutinė kūno dalis + leisti judėti (be loop). 16 = stovint be judėjimo.
 local function reloadAnimFlags()
     if allowReloadMovement() then
-        return 49
+        return 48
     end
-    return 2
+    return 16
 end
 
 local function loadAnimDict(dict)
@@ -95,23 +137,52 @@ end
 local function getReloadAnim(weaponHash, weaponData)
     local invName = resolveInventoryWeaponName(weaponHash, weaponData)
     if invName and RELOAD_BY_INVENTORY[invName] then
-        local row = RELOAD_BY_INVENTORY[invName]
-        return row.dict, row.clips
+        return RELOAD_BY_INVENTORY[invName]
     end
 
     local group = GetWeapontypeGroup(weaponHash)
     local byGroup = RELOAD_BY_GROUP[group]
     if byGroup then
-        return byGroup.dict, byGroup.clips
+        return byGroup
     end
 
     local ammoType = weaponAmmoType(weaponHash, weaponData)
     local byAmmo = RELOAD_BY_AMMO[ammoType]
     if byAmmo then
-        return byAmmo.dict, byAmmo.clips
+        return byAmmo
     end
 
-    return 'weapons@pistol@', { 'reload_aim', 'reload' }
+    return animRow('weapons@pistol@pistol_str', CLIPS.pistol)
+end
+
+local function orderByPriority(clips, priority)
+    local ordered = {}
+    local used = {}
+
+    for _, pref in ipairs(priority) do
+        for _, clip in ipairs(clips) do
+            if clip == pref and not used[clip] then
+                ordered[#ordered + 1] = clip
+                used[clip] = true
+            end
+        end
+    end
+
+    for _, clip in ipairs(clips) do
+        if not used[clip] then
+            ordered[#ordered + 1] = clip
+        end
+    end
+
+    return ordered
+end
+
+local function dictsToTry(animRowData)
+    local list = { animRowData.dict }
+    for _, fb in ipairs(animRowData.fallbacks or {}) do
+        list[#list + 1] = fb
+    end
+    return list
 end
 
 local function pedIsMoving(ped)
@@ -133,14 +204,28 @@ local function preparePedForReloadAnim(ped, weaponHash)
     SetCurrentPedWeapon(ped, weaponHash, true)
 end
 
-local function pinClipDuringVisual(ped, weaponHash, clipNow)
+local function pinClipOnce(ped, weaponHash, clipNow)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return end
     clipNow = math.max(0, tonumber(clipNow) or 0)
-    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
-    SetPedCurrentWeaponVisible(ped, true, false, false, false)
-    SetCurrentPedWeapon(ped, weaponHash, true)
     SetPedAmmo(ped, weaponHash, clipNow)
     SetAmmoInClip(ped, weaponHash, clipNow)
+end
+
+local function beginReloadPedState(ped, weaponHash, clipNow)
+    if not ped or ped == 0 then return end
+    reloadPedStateActive = true
+    SetPedCanSwitchWeapon(ped, false)
+    preparePedForReloadAnim(ped, weaponHash)
+    pinClipOnce(ped, weaponHash, clipNow)
+end
+
+local function endReloadPedState(ped)
+    if not reloadPedStateActive then return end
+    reloadPedStateActive = false
+    ped = ped or PlayerPedId()
+    if ped and ped ~= 0 and DoesEntityExist(ped) then
+        SetPedCanSwitchWeapon(ped, true)
+    end
 end
 
 local function orderClipsForPed(ped, clips)
@@ -148,36 +233,27 @@ local function orderClipsForPed(ped, clips)
     local aiming = IsPlayerFreeAiming(PlayerId())
         or IsControlPressed(0, 25)
         or IsDisabledControlPressed(0, 25)
-        or pedIsMoving(ped)
+    local moving = pedIsMoving(ped)
 
-    if aiming then
-        local ordered = {}
-        for _, clip in ipairs(clips) do
-            if clip == 'reload_aim' then
-                ordered[#ordered + 1] = clip
-            end
-        end
-        for _, clip in ipairs(clips) do
-            if clip ~= 'reload_aim' then
-                ordered[#ordered + 1] = clip
-            end
-        end
-        return ordered
+    if aiming or moving then
+        return orderByPriority(clips, {
+            'reload_aim',
+            'w_reload_aim',
+            'reload_aim_xl',
+            'w_reload_aim_xl',
+            'reload_aim_l',
+            'reload_low_left_xl',
+        })
     end
 
-    -- Stovint be aim — reload_aim dažnai neveikia, pirmiausia standartinis reload.
-    local ordered = {}
-    for _, clip in ipairs(clips) do
-        if clip == 'reload' then
-            ordered[#ordered + 1] = clip
-        end
-    end
-    for _, clip in ipairs(clips) do
-        if clip ~= 'reload' then
-            ordered[#ordered + 1] = clip
-        end
-    end
-    return ordered
+    return orderByPriority(clips, {
+        'w_reload_aim',
+        'reload_aim',
+        'reload_aim_l',
+        'reload_aim_xl',
+        'w_reload_aim_xl',
+        'reload_low_left_xl',
+    })
 end
 
 local function playClipFromList(ped, dict, clips, flags)
@@ -199,16 +275,28 @@ local function playClipFromList(ped, dict, clips, flags)
             )
         end
 
-        local started = GetGameTimer() + 1200
-        while GetGameTimer() < started do
+        local deadline = GetGameTimer() + 900
+        while GetGameTimer() < deadline do
             if IsEntityPlayingAnim(ped, dict, clip, 3) then
-                return clip
+                return clip, true
             end
             Wait(0)
         end
     end
 
-    return clips[1]
+    return clips[1], false
+end
+
+local function tryPlayReloadAnim(ped, animRowData, flags)
+    for _, dict in ipairs(dictsToTry(animRowData)) do
+        if loadAnimDict(dict) then
+            local clip, started = playClipFromList(ped, dict, animRowData.clips, flags)
+            if started then
+                return dict, clip, true
+            end
+        end
+    end
+    return animRowData.dict, animRowData.clips[1], false
 end
 
 local function stopReloadAnimation(ped)
@@ -236,30 +324,31 @@ local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clip
     ped = ped or PlayerPedId()
     if not ped or ped == 0 then return false end
 
-    local dict, clips = getReloadAnim(weaponHash, weaponData)
-    if not loadAnimDict(dict) then
+    local animRowData = getReloadAnim(weaponHash, weaponData)
+    local flags = reloadAnimFlags()
+    local dict, clip, started = tryPlayReloadAnim(ped, animRowData, flags)
+
+    if not started then
         Wait(math.min(900, durationMs))
         return false
     end
 
-    preparePedForReloadAnim(ped, weaponHash)
-    pinClipDuringVisual(ped, weaponHash, clipNow)
-
-    local flags = reloadAnimFlags()
-    local clip = playClipFromList(ped, dict, clips, flags)
     activeReloadAnim = { dict = dict, clip = clip }
+    local retriesLeft = 1
+    local deadline = GetGameTimer() + durationMs
 
-    local startedAt = GetGameTimer()
-    local deadline = startedAt + durationMs
     while DoesEntityExist(ped) and GetGameTimer() < deadline do
         ped = PlayerPedId()
         enableReloadMovementControls(ped)
 
-        if not IsEntityPlayingAnim(ped, dict, clip, 3) and (GetGameTimer() + 700) < deadline then
-            preparePedForReloadAnim(ped, weaponHash)
-            pinClipDuringVisual(ped, weaponHash, clipNow)
-            clip = playClipFromList(ped, dict, clips, flags)
-            activeReloadAnim.clip = clip
+        if not IsEntityPlayingAnim(ped, dict, clip, 3) and retriesLeft > 0 then
+            retriesLeft = retriesLeft - 1
+            SetCurrentPedWeapon(ped, weaponHash, true)
+            local retryClip, retryStarted = playClipFromList(ped, dict, animRowData.clips, flags)
+            if retryStarted then
+                clip = retryClip
+                activeReloadAnim.clip = clip
+            end
         end
         Wait(0)
     end
@@ -294,7 +383,7 @@ local function playNativeReload(ped, weaponHash, durationMs, clipNow)
         end
     end
 
-    pinClipDuringVisual(ped, weaponHash, clipNow)
+    pinClipOnce(ped, weaponHash, clipNow)
     return sawReload
 end
 
@@ -308,25 +397,28 @@ function WeaponReload.playVisual(ped, weaponHash, _bulletsToLoad, weaponData)
 
     local durationMs = getReloadWaitMs()
     local startedAt = GetGameTimer()
-    preparePedForReloadAnim(ped, weaponHash)
+    local clipNow = select(1, WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData))
+
+    beginReloadPedState(ped, weaponHash, clipNow)
 
     if IsPedInAnyVehicle(ped, false) then
+        endReloadPedState(ped)
         Wait(math.min(1100, durationMs))
         return
     end
 
-    local clipNow = select(1, WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData))
     local moving = allowReloadMovement() and pedIsMoving(ped)
     local usedNative = false
 
-    -- Stovint — GTA native reload animacija (vizualiai geriausia).
-    if not moving and Config.ReloadUseNativeFirst ~= false then
+    if not moving and Config.ReloadUseNativeFirst == true then
         usedNative = playNativeReload(ped, weaponHash, durationMs, clipNow)
     end
 
     if not usedNative then
         playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clipNow)
     end
+
+    endReloadPedState(ped)
 
     local elapsed = GetGameTimer() - startedAt
     if elapsed < durationMs then
@@ -336,4 +428,5 @@ end
 
 function WeaponReload.cancel(ped)
     stopReloadAnimation(ped or PlayerPedId())
+    endReloadPedState(ped or PlayerPedId())
 end

@@ -1,5 +1,17 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local function isReloadBusy()
+    local ok, busy = pcall(function()
+        return exports['qb-weapons']:IsReloadBusy()
+    end)
+    return ok and busy == true
+end
+
+local function clearPedTasksSafe(ped)
+    if isReloadBusy() then return end
+    clearPedTasksSafe(ped)
+end
+
 local weapons = {
     'WEAPON_KNIFE',
     'WEAPON_NIGHTSTICK',
@@ -264,7 +276,9 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                 newWeap = pendingEquipHash
                 pendingEquipHash = nil
             end
-            if currWeap ~= newWeap then
+            if isReloadBusy() then
+                sleep = 50
+            elseif currWeap ~= newWeap then
                 local pos = GetEntityCoords(ped, true)
                 local rot = GetEntityHeading(ped)
 
@@ -292,7 +306,7 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                             end
                             currWeap = newWeap
                             Wait(300)
-                            ClearPedTasks(ped)
+                            clearPedTasksSafe(ped)
                             holstered = false
                             canFire = true
                         else
@@ -304,7 +318,7 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                             SetPedCurrentWeaponVisible(ped, true, false, false, false)
                             currWeap = newWeap
                             Wait(wearingHolster and not isLongWeapon(newWeap) and 300 or (isLongWeapon(newWeap) and 400 or 1400))
-                            ClearPedTasks(ped)
+                            clearPedTasksSafe(ped)
                             holstered = false
                             canFire = true
                         end
@@ -334,7 +348,7 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
 
                             Wait(500)
                             currWeap = newWeap
-                            ClearPedTasks(ped)
+                            clearPedTasksSafe(ped)
                             holstered = false
                             canFire = true
                         else
@@ -349,7 +363,7 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                             SetPedCurrentWeaponVisible(ped, true, false, false, false)
                             currWeap = newWeap
                             Wait(isLongWeapon(newWeap) and 400 or 1400)
-                            ClearPedTasks(ped)
+                            clearPedTasksSafe(ped)
                             holstered = false
                             canFire = true
                         end
@@ -368,7 +382,7 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
 
                             currWeap = newWeap
                             Wait(300)
-                            ClearPedTasks(ped)
+                            clearPedTasksSafe(ped)
                             holstered = false
                             canFire = true
                         else
@@ -379,7 +393,7 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                             SetPedCurrentWeaponVisible(ped, true, false, false, false)
                             currWeap = newWeap
                             Wait(wearingHolster and not isLongWeapon(newWeap) and 300 or (isLongWeapon(newWeap) and 400 or 1400))
-                            ClearPedTasks(ped)
+                            clearPedTasksSafe(ped)
                             holstered = false
                             canFire = true
                         end
@@ -397,7 +411,7 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                             end
 
                             SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
-                            ClearPedTasks(ped)
+                            clearPedTasksSafe(ped)
                             SetCurrentPedWeapon(ped, newWeap, true)
                             holstered = true
                             canFire = true
@@ -408,7 +422,7 @@ RegisterNetEvent('qb-weapons:client:DrawWeapon', function(targetWeaponName)
                             local outroMs = playDrawOutro(ped, pos, rot, wearingHolster, currWeap)
                             Wait(outroMs)
                             SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
-                            ClearPedTasks(ped)
+                            clearPedTasksSafe(ped)
                             SetCurrentPedWeapon(ped, newWeap, true)
                             holstered = true
                             canFire = true

@@ -18,6 +18,8 @@ function postSchedule(success, extra = {}) {
   }
   if (mgSchedule) mgSchedule.classList.add("hidden");
   if (schBoard) schBoard.innerHTML = "";
+  const dots = document.getElementById("schStepDots");
+  if (dots) dots.innerHTML = "";
   setScheduleBadge(null, null, null);
   fetch(`https://${GetParentResourceName()}/scheduleResult`, {
     method: "POST",
@@ -27,8 +29,13 @@ function postSchedule(success, extra = {}) {
 }
 
 function setStep(current, total, hint) {
-  if (schStep) schStep.textContent = `Žingsnis ${current}/${total}`;
+  if (schStep) schStep.textContent = `${current}/${total}`;
   if (schHint) schHint.textContent = hint || "";
+  const progFill = document.getElementById("schProgressFill");
+  if (progFill && total > 0) {
+    progFill.style.width = `${Math.min(100, Math.round((current / total) * 100))}%`;
+  }
+  if (window.MiniGameUI) MiniGameUI.renderStepDots(current, total);
 }
 
 const SCHEDULE_ACTION_LABELS = {
@@ -57,6 +64,10 @@ function failSchedule() {
 }
 
 function btn(label, cls, onClick) {
+  if (window.MiniGameUI) {
+    const variant = cls === "primary" ? "primary" : "secondary";
+    return MiniGameUI.actionBtn(label, { variant, onClick });
+  }
   const b = document.createElement("button");
   b.type = "button";
   b.className = `sch-btn ${cls || ""}`.trim();
@@ -168,6 +179,13 @@ function runTrimGame(data) {
 
 /* --- PACK BAG: sverti → į maišelį → užlydinti --- */
 function runPackBagGame(data) {
+  if (window.MiniGameUI) {
+    MiniGameUI.packBagFlow({
+      icon: data.icon || "🌿",
+      onDone: () => postSchedule(true, { mistakes: 0 }),
+    });
+    return;
+  }
   let step = 1;
   const icon = data.icon || "🌿";
 
@@ -272,6 +290,17 @@ function runPackBottleGame(data) {
 
 /* --- DISTILL / COOK: laikyk indikatorių žalioje zonoje --- */
 function runGaugeGame(data, label) {
+  if (window.MiniGameUI) {
+    setStep(1, 1, label || "Laikyk temperatūrą spalvotoje zonoje");
+    MiniGameUI.gaugeHold({
+      label: label || "Stabilizacija",
+      speed: 1.6,
+      need: 55 + (data.difficulty || 1) * 8,
+      hintEl: schHint,
+      onSuccess: () => postSchedule(true),
+    });
+    return;
+  }
   schBoard.innerHTML = "";
   setStep(1, 1, label || "Laikyk temperatūrą žalioje zonoje ir spausk SPACE");
   const track = document.createElement("div");
@@ -326,6 +355,16 @@ function runGaugeGame(data, label) {
 
 /* --- CRYSTAL: paspaudimų seka --- */
 function runCrystalGame(data) {
+  if (window.MiniGameUI) {
+    const rounds = 3 + (data.difficulty || 1);
+    setStep(1, 1, "Stabilizuok kristalizaciją — sek seką");
+    MiniGameUI.keySequence({
+      rounds,
+      onSuccess: () => postSchedule(true),
+      onFail: () => failSchedule(),
+    });
+    return;
+  }
   const rounds = 3 + (data.difficulty || 1);
   const keys = ["Q", "W", "E"];
   const seq = [];
@@ -352,6 +391,17 @@ function runCrystalGame(data) {
 
 /* --- PRESS: tabletės presas --- */
 function runPressGame(data) {
+  if (window.MiniGameUI) {
+    const need = data.steps || 4;
+    setStep(1, 1, "Presuok tabletes — spausk svirtį");
+    MiniGameUI.pressMachine({
+      need,
+      icon: "💊",
+      label: "Presas",
+      onDone: () => postSchedule(true),
+    });
+    return;
+  }
   let presses = 0;
   const need = data.steps || 4;
   schBoard.innerHTML = "";
@@ -372,6 +422,15 @@ function runPressGame(data) {
 
 /* --- WASH: kokaino lapų plovimas --- */
 function runWashGame(data) {
+  if (window.MiniGameUI) {
+    const need = data.steps || 4;
+    setStep(1, 2, "Suberk lapus į cheminį tirpalą");
+    MiniGameUI.washStation({
+      need,
+      onDone: () => postSchedule(true),
+    });
+    return;
+  }
   let washed = 0;
   const need = data.steps || 4;
   schBoard.innerHTML = "";
@@ -451,7 +510,7 @@ function bindDropZone(zone, accept, onAccept) {
 
 function weedWorkspace() {
   const el = document.createElement("div");
-  el.className = "sch-ws";
+  el.className = "mg-workbench sch-ws";
   return el;
 }
 
@@ -1371,6 +1430,17 @@ function runScheduleGame(data) {
   scheduleActive = true;
   if (schTitle) schTitle.textContent = data.title || "Gamyba";
   setScheduleBadge(data.drug, data.action, data.icon);
+  if (window.MiniGameUI) MiniGameUI.applyTheme(data.drug, data.difficulty);
+  const tierEl = document.getElementById("schTier");
+  if (tierEl && window.MiniGameUI) {
+    const lvl = Math.min(3, Math.max(1, Number(data.difficulty) || 1));
+    tierEl.textContent = `${lvl} lygis · ${MiniGameUI.themeFor(data.drug).label}`;
+  }
+  const orb = document.getElementById("schDrugIcon");
+  if (orb) orb.textContent = data.icon || (window.MiniGameUI ? MiniGameUI.themeFor(data.drug).icon : "⚗️");
+  const progFill = document.getElementById("schProgressFill");
+  if (progFill) progFill.style.width = "6%";
+  if (window.MiniGameUI) MiniGameUI.renderStepDots(1, data.steps || 3);
   mgSchedule.classList.remove("hidden");
 
   const mode = data.mode || "trim";

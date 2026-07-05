@@ -14,7 +14,7 @@ Config.RehModels = {
     'karinstinger', 'karinsupra', 'obeyttrs', 'ocelotintruder', 'ocelotvanquish', 'overflodjesko',
     'overflodjesko2', 'pegassiurus', 'pfister911', 'progen600', 'progenartura', 'ubermachtg20',
     'ubermachtm3cs', 'ubermachtm4', 'ubermachtm4gts', 'ubermachtm4q', 'ubermachtm5',
-    'ubermachtsentinelk5', 'ubermachtx6m', 'ubermachtx7', 'vapidfugitive',
+    'ubermachtsentinelk5', 'ubermachtx6m', 'ubermachtx7', 'vapiddurango', 'vapidfugitive',
     'vapidhawk', 'vapidsandkingdura', 'vapidstanier', 'vapidtrx', 'vapidtrxc',
 }
 

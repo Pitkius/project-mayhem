@@ -167,7 +167,6 @@ RegisterNetEvent('consumables:client:Eat', function(itemName)
         coords = vec3(0.0, 0.0, -0.02),
         rotation = vec3(30, 0.0, 0.0),
     }, {}, function() -- Done
-        TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
         local playerData = QBCore.Functions.GetPlayerData()
         local metadata = playerData.metadata or {}
         local hunger = tonumber(metadata.hunger) or 0
@@ -198,7 +197,6 @@ RegisterNetEvent('consumables:client:Drink', function(itemName)
         coords = vec3(0.0, 0.0, -0.05),
         rotation = vec3(0.0, 0.0, -40),
     }, {}, function() -- Done
-        TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
         local playerData = QBCore.Functions.GetPlayerData()
         local metadata = playerData.metadata or {}
         local thirst = tonumber(metadata.thirst) or 0

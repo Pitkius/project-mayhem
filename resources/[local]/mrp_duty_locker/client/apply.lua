@@ -12,6 +12,7 @@ local function applyComponent(ped, compId, val)
     end
     if collection and collection ~= '' then
         SetPedCollectionComponentVariation(ped, compId, collection, draw, tex, 0)
+        Wait(0)
     else
         SetPedComponentVariation(ped, compId, draw, tex, 0)
     end
@@ -39,19 +40,7 @@ local function applyProp(ped, propSlot, val)
     end
 end
 
-local function syncArmsWithTorso(ped, comps)
-    if not ped or type(comps) ~= 'table' then return end
-    local torso = comps[11]
-    if type(torso) ~= 'table' or not torso.collection then return end
-    if comps[3] then return end
-    applyComponent(ped, 3, {
-        collection = torso.collection,
-        draw = tonumber(torso.draw) or 0,
-        tex = tonumber(torso.tex) or 0,
-    })
-end
-
-local function slotAllowed(category, compId, propId)
+local function applyProp(ped, propSlot, val)
     local slots = DutyLocker.CategorySlots[category]
     if not slots then return true end
     if compId then
@@ -77,6 +66,7 @@ function DutyApply.clearCategory(ped, category)
         SetPedComponentVariation(ped, 9, 0, 0, 0)
     elseif category == 'belt' then
         SetPedComponentVariation(ped, 7, 0, 0, 0)
+        SetPedComponentVariation(ped, 8, 0, 0, 0)
     elseif category == 'extra' then
         for _, compId in ipairs({ 1, 5, 10 }) do
             SetPedComponentVariation(ped, compId, 0, 0, 0)
@@ -107,9 +97,6 @@ function DutyApply.applyPartial(ped, tbl, category)
             if filtered[compId] ~= nil then
                 applyComponent(ped, compId, filtered[compId])
             end
-        end
-        if category == 'uniform_top' then
-            syncArmsWithTorso(ped, filtered)
         end
     end
 

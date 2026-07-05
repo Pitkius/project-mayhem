@@ -1,6 +1,28 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local session = nil
+local applyBusy = false
+local applyPending = nil
+
+local function runApplyJob(itemId, data)
+    if applyBusy then
+        applyPending = { id = itemId, data = data }
+        return
+    end
+    applyBusy = true
+    CreateThread(function()
+        if session and session.onApply and itemId ~= nil then
+            session.onApply(itemId, data)
+        end
+        Wait(280)
+        applyBusy = false
+        if applyPending and session then
+            local nextJob = applyPending
+            applyPending = nil
+            runApplyJob(nextJob.id, nextJob.data)
+        end
+    end)
+end
 
 local function notify(msg, ntype)
     QBCore.Functions.Notify(msg, ntype or 'primary')
@@ -8,6 +30,8 @@ end
 
 local function closeLocker(reason)
     if not session then return end
+    applyPending = nil
+    applyBusy = false
     session = nil
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
@@ -120,12 +144,12 @@ RegisterNUICallback('dutyLockerClose', function(_, cb)
 end)
 
 RegisterNUICallback('dutyLockerApply', function(data, cb)
-    if not session then cb({ ok = false }) return end
+    cb({ ok = true })
+    if not session then return end
     local itemId = data and data.id
     if session.onApply and itemId ~= nil then
-        session.onApply(itemId, data)
+        runApplyJob(itemId, data)
     end
-    cb({ ok = true })
 end)
 
 RegisterNUICallback('dutyLockerAction', function(data, cb)

@@ -10,6 +10,7 @@ ui_page 'html/index.html'
 
 shared_scripts {
     'config.lua',
+    'shared/animal_loot.lua',
 }
 
 client_scripts {

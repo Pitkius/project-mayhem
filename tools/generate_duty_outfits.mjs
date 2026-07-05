@@ -117,15 +117,13 @@ function makeProps(dlc, spec) {
 }
 
 function pickArmsForJbib(j, upprItems) {
+  if (!upprItems.length) return null;
   const match = upprItems.find((i) => i.draw === j.draw && i.tex === j.tex);
   if (match) return [match.draw, match.tex];
   const matchDraw = upprItems.find((i) => i.draw === j.draw);
   if (matchDraw) return [matchDraw.draw, matchDraw.tex];
-  if (upprItems.length) {
-    const u = [...upprItems].sort((a, b) => a.draw - b.draw || a.tex - b.tex)[0];
-    return [u.draw, u.tex];
-  }
-  return [j.draw, j.tex];
+  const u = [...upprItems].sort((a, b) => a.draw - b.draw || a.tex - b.tex)[0];
+  return [u.draw, u.tex];
 }
 
 function buildPackOutfits(packLabel, dlc, items, props, gender) {
@@ -146,13 +144,18 @@ function buildPackOutfits(packLabel, dlc, items, props, gender) {
   const seenTop = new Set();
   const seenPants = new Set();
   const seenUndershirt = new Set();
+  const POLICE_PACKS = new Set(['PD V2', 'PD Vyrai', 'PD Moterys']);
+  const accsAsBelt = POLICE_PACKS.has(packLabel);
 
   for (const j of jbibItems) {
-    const [ad, at] = pickArmsForJbib(j, upprItems);
-    const spec = { 11: [j.draw, j.tex], 3: [ad, at] };
-    const acc = pickAccs(accsItems, j.tex);
-    if (acc) spec[8] = acc;
-    const key = `top-${j.draw}-${j.tex}-${ad}-${at}`;
+    const spec = { 11: [j.draw, j.tex] };
+    const arms = pickArmsForJbib(j, upprItems);
+    if (arms) spec[3] = arms;
+    if (!accsAsBelt) {
+      const acc = pickAccs(accsItems, j.tex);
+      if (acc) spec[8] = acc;
+    }
+    const key = `top-${j.draw}-${j.tex}-${spec[3] ? spec[3].join('-') : 'noarms'}`;
     if (seenTop.has(key)) continue;
     seenTop.add(key);
     outfits.push({
@@ -189,9 +192,13 @@ function buildPackOutfits(packLabel, dlc, items, props, gender) {
     if (seenUndershirt.has(key)) continue;
     seenUndershirt.add(key);
     outfits.push({
-      label: `${packLabel} marškinėliai #${a.draw + 1} (${texLabel(a.tex)})`,
-      description: `${gender} · po uniforma (tik marškinėliai)`,
-      category: 'uniform_top',
+      label: accsAsBelt
+        ? `${packLabel} diržas #${a.draw + 1} (${texLabel(a.tex)})`
+        : `${packLabel} marškinėliai #${a.draw + 1} (${texLabel(a.tex)})`,
+      description: accsAsBelt
+        ? `${gender} · diržinė / holsteris (uždėk ant uniformos)`
+        : `${gender} · po uniforma (tik marškinėliai)`,
+      category: accsAsBelt ? 'belt' : 'uniform_top',
       minGrade: 0,
       armour: 0,
       components: makeComponents(dlc, { 8: [a.draw, a.tex] }),

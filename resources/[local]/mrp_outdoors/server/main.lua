@@ -180,7 +180,7 @@ RegisterNetEvent('mrp_outdoors:server:fishReward', function()
     end
 end)
 
-RegisterNetEvent('mrp_outdoors:server:gutAnimal', function(meatItem, extraItem)
+RegisterNetEvent('mrp_outdoors:server:gutAnimal', function(modelHash)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
@@ -189,6 +189,14 @@ RegisterNetEvent('mrp_outdoors:server:gutAnimal', function(meatItem, extraItem)
         TriggerClientEvent('QBCore:Notify', src, 'Reikia medžioklinio peilio.', 'error')
         return
     end
+    modelHash = tonumber(modelHash)
+    local loot = AnimalLoot.resolve(modelHash)
+    if not loot or not loot.meat then
+        TriggerClientEvent('QBCore:Notify', src, 'Nežinomas gyvūnas.', 'error')
+        return
+    end
+    local meatItem = loot.meat
+    local extraItem = loot.extra
     local meatAmt = math.random(1, 3)
     local extraAmt = extraItem and math.random(1, 2) or 0
     if not Player.Functions.AddItem(meatItem, meatAmt) then
@@ -201,7 +209,8 @@ RegisterNetEvent('mrp_outdoors:server:gutAnimal', function(meatItem, extraItem)
             TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[extraItem], 'add')
         end
     end
-    TriggerClientEvent('QBCore:Notify', src, 'Gavai mėsą ir odą.', 'success')
+    local meatLabel = QBCore.Shared.Items[meatItem] and QBCore.Shared.Items[meatItem].label or 'mėsą'
+    TriggerClientEvent('QBCore:Notify', src, ('Gavai %s ir odą.'):format(meatLabel), 'success')
 end)
 
 RegisterNetEvent('mrp_outdoors:server:butcherItem', function(rawItem)

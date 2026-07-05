@@ -79,6 +79,7 @@ function vehicleImageCandidates(model, image) {
   const base = `nui://${resName}/html/assets/vehicles`;
   const urls = [
     `https://docs.fivem.net/vehicles/${slug}.webp`,
+    `nui://mrp_dealership/html/images/vehicles/${slug}.png`,
     `nui://mrp_dealership/html/images/vehicles/${slug}.webp`,
     `${base}/${slug}.webp`,
     `${base}/${slug}.png`,

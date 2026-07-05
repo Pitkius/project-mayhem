@@ -5,7 +5,7 @@ html, body {
   overflow: hidden;
   background: transparent;
   font-family: "Segoe UI", system-ui, sans-serif;
-  color: #ecfdf5;
+  color: #ede9fe;
 }
 .hidden { display: none !important; }
 
@@ -25,8 +25,8 @@ html, body {
   display: flex;
   flex-direction: column;
   border-radius: 16px;
-  border: 1px solid rgba(74, 222, 128, 0.28);
-  background: linear-gradient(165deg, rgba(10, 16, 14, 0.96) 0%, rgba(6, 10, 18, 0.98) 100%);
+  border: 1px solid rgba(167, 139, 250, 0.32);
+  background: linear-gradient(165deg, rgba(20, 22, 37, 0.97) 0%, rgba(12, 14, 24, 0.99) 100%);
   box-shadow: -12px 0 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
   overflow: hidden;
 }
@@ -37,21 +37,21 @@ html, body {
   align-items: flex-start;
   gap: 10px;
   padding: 16px 16px 12px;
-  border-bottom: 1px solid rgba(74, 222, 128, 0.15);
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.08), transparent);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.18);
+  background: linear-gradient(180deg, rgba(124, 58, 237, 0.12), transparent);
 }
 .dl-kicker {
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #86efac;
+  color: #c4b5fd;
   margin-bottom: 4px;
 }
 .dl-head h1 {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #f0fdf4;
+  color: #f5f3ff;
 }
 .dl-sub {
   margin-top: 4px;
@@ -87,7 +87,7 @@ html, body {
   min-width: 0;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(74, 222, 128, 0.18);
+  border: 1px solid rgba(167, 139, 250, 0.22);
   background: rgba(0, 0, 0, 0.28);
   color: #cbd5e1;
   font-size: 11px;
@@ -97,12 +97,12 @@ html, body {
   text-align: center;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.dl-tab:hover { border-color: rgba(74, 222, 128, 0.45); color: #ecfdf5; }
+.dl-tab:hover { border-color: rgba(167, 139, 250, 0.5); color: #ede9fe; }
 .dl-tab.active {
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.35), rgba(16, 185, 129, 0.18));
-  border-color: rgba(74, 222, 128, 0.55);
-  color: #ecfdf5;
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.15);
+  background: linear-gradient(135deg, rgba(91, 33, 182, 0.45), rgba(124, 58, 237, 0.22));
+  border-color: rgba(167, 139, 250, 0.6);
+  color: #f5f3ff;
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.2);
 }
 
 .dl-list-wrap {
@@ -113,7 +113,7 @@ html, body {
 }
 .dl-list-wrap::-webkit-scrollbar { width: 6px; }
 .dl-list-wrap::-webkit-scrollbar-thumb {
-  background: rgba(74, 222, 128, 0.25);
+  background: rgba(167, 139, 250, 0.3);
   border-radius: 999px;
 }
 .dl-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
@@ -131,8 +131,8 @@ html, body {
 }
 .dl-item:hover {
   transform: translateX(-2px);
-  border-color: rgba(74, 222, 128, 0.4);
-  background: rgba(6, 78, 59, 0.22);
+  border-color: rgba(167, 139, 250, 0.45);
+  background: rgba(76, 29, 149, 0.22);
 }
 .dl-item:active { transform: scale(0.99); }
 .dl-item.remove {
@@ -148,13 +148,13 @@ html, body {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: #f0fdf4;
+  color: #f5f3ff;
   margin-bottom: 2px;
 }
 .dl-item small {
   display: block;
   font-size: 11px;
-  color: #86efac;
+  color: #c4b5fd;
   opacity: 0.85;
   line-height: 1.35;
 }
@@ -203,4 +203,11 @@ html, body {
   color: #64748b;
   text-align: center;
   letter-spacing: 0.02em;
+}
+
+.dl-busy .dl-item,
+.dl-busy .dl-tab,
+.dl-busy .dl-action {
+  pointer-events: none;
+  opacity: 0.6;
 }

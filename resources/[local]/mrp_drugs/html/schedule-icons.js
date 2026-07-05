@@ -71,6 +71,10 @@ const SchIcons = (() => {
       return pngImg('weed_leaf', 'sch-png-leaf');
     },
 
+    hempTrim() {
+      return pngImg('weed_leaf', 'sch-png-leaf sch-png-hemp');
+    },
+
     seedPacket() {
       return `<svg class="sch-svg sch-icon-seed" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
         <rect x="18" y="12" width="28" height="40" rx="4" fill="#14532d" stroke="#4ade80" stroke-width="1.2"/>

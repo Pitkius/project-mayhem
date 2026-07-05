@@ -2,6 +2,31 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 print("^2[mrp_basics]^7 Resource paleistas sekmingai.")
 
+local function isValidPlayerSource(src)
+    return type(src) == 'number' and src > 0
+end
+
+local function playerSource(player)
+    if not player or not player.PlayerData then return nil end
+    local src = tonumber(player.PlayerData.source)
+    if not isValidPlayerSource(src) then return nil end
+    return src
+end
+
+local function notifyPlayer(src, msg, ntype)
+    if not isValidPlayerSource(src) then
+        print(('[mrp_basics] %s'):format(msg))
+        return
+    end
+    TriggerClientEvent('QBCore:Notify', src, msg, ntype or 'primary')
+end
+
+local function triggerClient(src, event, ...)
+    if not isValidPlayerSource(src) then return false end
+    TriggerClientEvent(event, src, ...)
+    return true
+end
+
 local function playerDisplayName(src, Player)
     if Player and Player.PlayerData and Player.PlayerData.charinfo then
         local c = Player.PlayerData.charinfo
@@ -19,7 +44,8 @@ end)
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
     if not Player or not Player.PlayerData then return end
-    local src = Player.PlayerData.source
+    local src = playerSource(Player)
+    if not src then return end
     local name = playerDisplayName(src, Player)
     TriggerClientEvent('chat:addMessage', src, {
         color = { 0, 200, 120 },
@@ -29,17 +55,20 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
 end)
 
 QBCore.Commands.Add('register', 'Personažo kūrimas / redagavimas (admin)', {}, false, function(source)
+    if not isValidPlayerSource(source) then return end
     if GetResourceState('mrp_charcreator') ~= 'started' then
-        TriggerClientEvent('QBCore:Notify', source, 'mrp_charcreator nėra paleistas.', 'error')
+        notifyPlayer(source, 'mrp_charcreator nėra paleistas.', 'error')
         return
     end
-    TriggerClientEvent('mrp_charcreator:client:openWizard', source, true)
+    triggerClient(source, 'mrp_charcreator:client:openWizard', true)
 end, 'admin')
 
 local function setNeedsFull(player)
+    local src = playerSource(player)
+    if not src then return end
     player.Functions.SetMetaData('hunger', 100)
     player.Functions.SetMetaData('thirst', 100)
-    TriggerClientEvent('hud:client:UpdateNeeds', player.PlayerData.source, 100, 100)
+    TriggerClientEvent('hud:client:UpdateNeeds', src, 100, 100)
 end
 
 local function resolveTarget(source, argValue)
@@ -76,19 +105,22 @@ QBCore.Commands.Add('revive', 'Admin revive su max maistu/vandeniu', {
 }, false, function(source, args)
     local target = resolveTarget(source, args[1])
     if not target then
-        TriggerClientEvent('QBCore:Notify', source, 'Zaidejas nerastas', 'error')
+        notifyPlayer(source, 'Zaidejas nerastas', 'error')
         return
     end
+
+    local targetSrc = playerSource(target)
+    if not targetSrc then return end
 
     target.Functions.SetMetaData('isdead', false)
     target.Functions.SetMetaData('inlaststand', false)
     setNeedsFull(target)
-    TriggerClientEvent('mrp_basics:client:adminRevive', target.PlayerData.source)
-    TriggerClientEvent('QBCore:Notify', target.PlayerData.source, reviveNotifyText(target), 'success')
+    triggerClient(targetSrc, 'mrp_basics:client:adminRevive')
+    notifyPlayer(targetSrc, reviveNotifyText(target), 'success')
     if GetResourceState('server_logs') == 'started' then
         pcall(function()
-            exports['server_logs']:LogAdminAction(source, 'revive', ('Atgaivintas **%s**'):format(GetPlayerName(target.PlayerData.source) or target.PlayerData.source), {
-                { name = 'Žaidėjas', value = ('%s [%s]'):format(GetPlayerName(target.PlayerData.source) or '?', target.PlayerData.source), inline = true },
+            exports['server_logs']:LogAdminAction(source, 'revive', ('Atgaivintas **%s**'):format(GetPlayerName(targetSrc) or targetSrc), {
+                { name = 'Žaidėjas', value = ('%s [%s]'):format(GetPlayerName(targetSrc) or '?', targetSrc), inline = true },
             })
         end)
     end
@@ -99,17 +131,20 @@ QBCore.Commands.Add('heal', 'Admin heal su max maistu/vandeniu', {
 }, false, function(source, args)
     local target = resolveTarget(source, args[1])
     if not target then
-        TriggerClientEvent('QBCore:Notify', source, 'Zaidejas nerastas', 'error')
+        notifyPlayer(source, 'Zaidejas nerastas', 'error')
         return
     end
 
+    local targetSrc = playerSource(target)
+    if not targetSrc then return end
+
     setNeedsFull(target)
-    TriggerClientEvent('mrp_basics:client:adminHeal', target.PlayerData.source)
-    TriggerClientEvent('QBCore:Notify', target.PlayerData.source, healNotifyText(target), 'success')
+    triggerClient(targetSrc, 'mrp_basics:client:adminHeal')
+    notifyPlayer(targetSrc, healNotifyText(target), 'success')
     if GetResourceState('server_logs') == 'started' then
         pcall(function()
-            exports['server_logs']:LogAdminAction(source, 'heal', ('Pagydytas **%s**'):format(GetPlayerName(target.PlayerData.source) or target.PlayerData.source), {
-                { name = 'Žaidėjas', value = ('%s [%s]'):format(GetPlayerName(target.PlayerData.source) or '?', target.PlayerData.source), inline = true },
+            exports['server_logs']:LogAdminAction(source, 'heal', ('Pagydytas **%s**'):format(GetPlayerName(targetSrc) or targetSrc), {
+                { name = 'Žaidėjas', value = ('%s [%s]'):format(GetPlayerName(targetSrc) or '?', targetSrc), inline = true },
             })
         end)
     end
@@ -132,24 +167,24 @@ QBCore.Commands.Add('goto', 'Admin: nueiti pas žaidėją', {
 }, true, function(source, args)
     local targetId = tonumber(args[1])
     if not targetId then
-        TriggerClientEvent('QBCore:Notify', source, 'Naudojimas: /goto [id]', 'error')
+        notifyPlayer(source, 'Naudojimas: /goto [id]', 'error')
         return
     end
 
-    if targetId == source then
-        TriggerClientEvent('QBCore:Notify', source, 'Negalite nueiti pas save.', 'error')
+    if isValidPlayerSource(source) and targetId == source then
+        notifyPlayer(source, 'Negalite nueiti pas save.', 'error')
         return
     end
 
     local targetPed = GetPlayerPed(targetId)
     if not targetPed or targetPed == 0 then
-        TriggerClientEvent('QBCore:Notify', source, 'Žaidėjas nerastas.', 'error')
+        notifyPlayer(source, 'Žaidėjas nerastas.', 'error')
         return
     end
 
     local coords = GetEntityCoords(targetPed)
-    TriggerClientEvent('QBCore:Command:TeleportToPlayer', source, coords)
-    TriggerClientEvent('QBCore:Notify', source, ('Nueita pas %s [%s]'):format(GetPlayerName(targetId) or '?', targetId), 'success')
+    if not triggerClient(source, 'QBCore:Command:TeleportToPlayer', coords) then return end
+    notifyPlayer(source, ('Nueita pas %s [%s]'):format(GetPlayerName(targetId) or '?', targetId), 'success')
     logAdminTeleport(source, 'goto', targetId, coords)
 end, 'admin')
 
@@ -158,18 +193,23 @@ QBCore.Commands.Add('bring', 'Admin: atvesti žaidėją pas save', {
 }, true, function(source, args)
     local targetId = tonumber(args[1])
     if not targetId then
-        TriggerClientEvent('QBCore:Notify', source, 'Naudojimas: /bring [id]', 'error')
+        notifyPlayer(source, 'Naudojimas: /bring [id]', 'error')
         return
     end
 
-    if targetId == source then
-        TriggerClientEvent('QBCore:Notify', source, 'Negalite atvesti savęs.', 'error')
+    if isValidPlayerSource(source) and targetId == source then
+        notifyPlayer(source, 'Negalite atvesti savęs.', 'error')
         return
     end
 
     local targetPed = GetPlayerPed(targetId)
     if not targetPed or targetPed == 0 then
-        TriggerClientEvent('QBCore:Notify', source, 'Žaidėjas nerastas.', 'error')
+        notifyPlayer(source, 'Žaidėjas nerastas.', 'error')
+        return
+    end
+
+    if not isValidPlayerSource(source) then
+        notifyPlayer(source, 'Bring reikia vykdyti žaidime, ne konsolėje.', 'error')
         return
     end
 
@@ -178,39 +218,41 @@ QBCore.Commands.Add('bring', 'Admin: atvesti žaidėją pas save', {
 
     local coords = GetEntityCoords(adminPed)
     local heading = GetEntityHeading(adminPed)
-    TriggerClientEvent('QBCore:Command:TeleportToCoords', targetId, coords.x, coords.y, coords.z, heading)
-    TriggerClientEvent('QBCore:Notify', source, ('Atvestas %s [%s]'):format(GetPlayerName(targetId) or '?', targetId), 'success')
-    TriggerClientEvent('QBCore:Notify', targetId, 'Administratorius jus perkėlė.', 'primary')
+    triggerClient(targetId, 'QBCore:Command:TeleportToCoords', coords.x, coords.y, coords.z, heading)
+    notifyPlayer(source, ('Atvestas %s [%s]'):format(GetPlayerName(targetId) or '?', targetId), 'success')
+    notifyPlayer(targetId, 'Administratorius jus perkėlė.', 'primary')
     logAdminTeleport(source, 'bring', targetId, coords)
 end, 'admin')
 
 QBCore.Commands.Add('coords', 'Ijungti/isjungti savo koordinates ekrano virsuje (admin)', {}, false, function(source)
-    TriggerClientEvent('mrp_basics:client:toggleCoords', source)
+    triggerClient(source, 'mrp_basics:client:toggleCoords')
 end, 'admin')
 
 QBCore.Commands.Add('addmoney', 'Admin: prideti pinigu sau (cash/bank)', {
     { name = 'type', help = 'cash arba bank' },
     { name = 'amount', help = 'suma' }
 }, true, function(source, args)
+    if not isValidPlayerSource(source) then return end
     local player = QBCore.Functions.GetPlayer(source)
     if not player then return end
 
     local moneyType = tostring(args[1] or ''):lower()
     local amount = tonumber(args[2]) or 0
     if (moneyType ~= 'cash' and moneyType ~= 'bank') or amount <= 0 then
-        TriggerClientEvent('QBCore:Notify', source, 'Naudojimas: /addmoney cash 1000 arba /addmoney bank 1000', 'error')
+        notifyPlayer(source, 'Naudojimas: /addmoney cash 1000 arba /addmoney bank 1000', 'error')
         return
     end
 
     player.Functions.AddMoney(moneyType, amount, 'fivempro-basics-admin-addmoney')
-    TriggerClientEvent('QBCore:Notify', source, ('Prideta $%s i %s'):format(amount, moneyType), 'success')
+    notifyPlayer(source, ('Prideta $%s i %s'):format(amount, moneyType), 'success')
 end, 'admin')
 
 QBCore.Commands.Add('s', 'Sukti — matoma chate ir virš galvos', {
     { name = 'žinutė', help = 'Tekstas kurį nori sukti' },
 }, false, function(source, args)
+    if not isValidPlayerSource(source) then return end
     if #args < 1 then
-        TriggerClientEvent('QBCore:Notify', source, 'Naudojimas: /s tekstas', 'error')
+        notifyPlayer(source, 'Naudojimas: /s tekstas', 'error')
         return
     end
 
@@ -222,7 +264,7 @@ QBCore.Commands.Add('s', 'Sukti — matoma chate ir virš galvos', {
     local pCoords = GetEntityCoords(ped)
     local msg = table.concat(args, ' '):gsub('[~<].-[>~]', '')
     if msg == '' then
-        TriggerClientEvent('QBCore:Notify', source, 'Tuščia žinutė.', 'error')
+        notifyPlayer(source, 'Tuščia žinutė.', 'error')
         return
     end
 
@@ -232,13 +274,14 @@ QBCore.Commands.Add('s', 'Sukti — matoma chate ir virš galvos', {
         if targetPed and targetPed ~= 0 then
             local tCoords = GetEntityCoords(targetPed)
             if targetPed == ped or #(pCoords - tCoords) <= range then
-                TriggerClientEvent('mrp_basics:client:showShout', playerId, source, name, msg)
+                triggerClient(playerId, 'mrp_basics:client:showShout', source, name, msg)
             end
         end
     end
 end, 'user')
 
 local function broadcastHeadText(source, eventName, args, range)
+    if not isValidPlayerSource(source) then return end
     local ped = GetPlayerPed(source)
     if not ped or ped == 0 then return end
 
@@ -248,21 +291,22 @@ local function broadcastHeadText(source, eventName, args, range)
         if targetPed and targetPed ~= 0 then
             local tCoords = GetEntityCoords(targetPed)
             if targetPed == ped or #(pCoords - tCoords) <= range then
-                TriggerClientEvent(eventName, playerId, table.unpack(args))
+                triggerClient(playerId, eventName, table.unpack(args))
             end
         end
     end
 end
 
 local function sendTadText(source, args)
+    if not isValidPlayerSource(source) then return end
     if #args < 1 then
-        TriggerClientEvent('QBCore:Notify', source, 'Naudojimas: /tad tekstas', 'error')
+        notifyPlayer(source, 'Naudojimas: /tad tekstas', 'error')
         return
     end
 
     local msg = table.concat(args, ' '):gsub('[~<].-[>~]', '')
     if msg == '' then
-        TriggerClientEvent('QBCore:Notify', source, 'Tuščias tekstas.', 'error')
+        notifyPlayer(source, 'Tuščias tekstas.', 'error')
         return
     end
 
@@ -294,22 +338,27 @@ local function getStaffTagInfo(src)
 end
 
 local function syncStaffTags(target)
-    TriggerClientEvent('mrp_basics:client:syncStaffTags', target or -1, staffTags)
+    if isValidPlayerSource(target) then
+        triggerClient(target, 'mrp_basics:client:syncStaffTags', staffTags)
+        return
+    end
+    TriggerClientEvent('mrp_basics:client:syncStaffTags', -1, staffTags)
 end
 
 QBCore.Commands.Add('tag', 'Staff žymė virš galvos (įjungti/išjungti)', {}, false, function(source)
+    if not isValidPlayerSource(source) then return end
     local label, color = getStaffTagInfo(source)
     if not label then
-        TriggerClientEvent('QBCore:Notify', source, 'Neturi staff teisių.', 'error')
+        notifyPlayer(source, 'Neturi staff teisių.', 'error')
         return
     end
 
     if staffTags[source] then
         staffTags[source] = nil
-        TriggerClientEvent('QBCore:Notify', source, 'Staff žymė išjungta.', 'primary')
+        notifyPlayer(source, 'Staff žymė išjungta.', 'primary')
     else
         staffTags[source] = { label = label, color = color }
-        TriggerClientEvent('QBCore:Notify', source, ('Staff žymė įjungta: %s'):format(label), 'success')
+        notifyPlayer(source, ('Staff žymė įjungta: %s'):format(label), 'success')
     end
     syncStaffTags()
 end, 'mod')
@@ -324,7 +373,9 @@ end)
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
     if not Player or not Player.PlayerData then return end
-    syncStaffTags(Player.PlayerData.source)
+    local src = playerSource(Player)
+    if not src then return end
+    syncStaffTags(src)
 end)
 
 local LOCKPICK_SUCCESS_CHANCE = { lockpick = 68, advancedlockpick = 88 }
@@ -366,9 +417,10 @@ end)
 
 RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, vehicleLabel, advanced)
     local src = source
+    if not isValidPlayerSource(src) then return end
     local resolvedNetId, ent = resolveVehicleNetId(netId)
     if resolvedNetId <= 0 then
-        TriggerClientEvent('QBCore:Notify', src, 'Transportas nerastas.', 'error')
+        notifyPlayer(src, 'Transportas nerastas.', 'error')
         return
     end
 
@@ -377,12 +429,12 @@ RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, veh
 
     local itemName = advanced and 'advancedlockpick' or 'lockpick'
     if not Player.Functions.GetItemByName(itemName) then
-        TriggerClientEvent('QBCore:Notify', src, 'Neturi visrakčio.', 'error')
+        notifyPlayer(src, 'Neturi visrakčio.', 'error')
         return
     end
 
     if ent ~= 0 and not playerNearEntity(src, ent, LOCKPICK_REACH) then
-        TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo transporto.', 'error')
+        notifyPlayer(src, 'Per toli nuo transporto.', 'error')
         return
     end
 
@@ -395,7 +447,7 @@ RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, veh
 
     if success then
         broadcastVehicleUnlock(resolvedNetId)
-        TriggerClientEvent('mrp_basics:client:vehicleLockpickResult', src, {
+        triggerClient(src, 'mrp_basics:client:vehicleLockpickResult', {
             success = true,
             netId = resolvedNetId,
             msg = 'Spyna sėkmingai atrakinta.',
@@ -405,7 +457,7 @@ RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, veh
 
     if math.random(1, 100) <= (LOCKPICK_BREAK_CHANCE[itemName] or 40) then
         Player.Functions.RemoveItem(itemName, 1)
-        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[itemName], 'remove', 1)
+        triggerClient(src, 'inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove', 1)
     end
 
     local alertText = ('Signalizacija: %s, numeriai %s'):format(vehicleLabel, plate)
@@ -413,7 +465,7 @@ RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, veh
         exports['mrp_dispatch']:CreateDispatchCall('police', 'vehicle_alarm', coords, alertText, src)
     end
 
-    TriggerClientEvent('mrp_basics:client:vehicleLockpickResult', src, {
+    triggerClient(src, 'mrp_basics:client:vehicleLockpickResult', {
         success = false,
         netId = resolvedNetId,
         msg = 'Nepavyko atrakinti — signalizacija!',
