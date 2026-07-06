@@ -368,14 +368,13 @@ local function drawMarkerAt(pos, kind)
         0.0, 0.0, 0.0,
         sc.x, sc.y, sc.z,
         col[1], col[2], col[3], col[4],
-        false, false, 2, mType == 36, nil, nil, false
+        false, false, 2, false, nil, nil, false
     )
 end
 
 CreateThread(function()
     local accessCache = {}
     local lastAccessRefresh = 0
-    local nearTickMs = math.max(50, tonumber(Config.PdMarkerNearTickMs) or 50)
 
     local function refreshAccessCache()
         local now = GetGameTimer()
@@ -477,10 +476,8 @@ CreateThread(function()
             end
         end
 
-        if nearInteract then
-            sleep = nearTickMs
-        elseif anyDrawn then
-            sleep = 180
+        if nearInteract or anyDrawn then
+            sleep = 0
         else
             sleep = 800
         end

@@ -3,6 +3,7 @@ local lastWeather = nil
 local lastRegion = nil
 local lastHourKey = nil
 local transitioning = false
+local weatherPaused = false
 
 local function weatherCfg()
     return Config.Weather or {}
@@ -85,11 +86,23 @@ CreateThread(function()
     Wait(1500)
     TriggerServerEvent('qb-weathersync:server:RequestStateSync')
     while true do
-        if not transitioning then
+        if not weatherPaused and not transitioning then
             refreshRegionalWeather(false)
         end
         Wait(100)
     end
+end)
+
+exports('SetWeatherPaused', function(paused)
+    weatherPaused = paused == true
+end)
+
+exports('IsWeatherPaused', function()
+    return weatherPaused
+end)
+
+exports('RefreshNow', function()
+    refreshRegionalWeather(true)
 end)
 
 exports('getCurrentSlot', function(regionId)

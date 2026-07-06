@@ -242,23 +242,59 @@ local function stagePedAmmoForNativeReload(ped, weaponHash, clipNow, bulletsToLo
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
 end
 
+local AUDIO_REF_OVERRIDES = {
+    weapon_fgc9 = 'WEP_COMBATPISTOL',
+}
+
+local AUDIO_BY_AMMO = {
+    AMMO_PISTOL = 'WEP_PISTOL',
+    AMMO_SMG = 'WEP_SMG',
+    AMMO_RIFLE = 'WEP_CARBINERIFLE',
+    AMMO_MG = 'WEP_MG',
+    AMMO_SHOTGUN = 'WEP_PUMPSHOTGUN',
+    AMMO_SNIPER = 'WEP_SNIPERRIFLE',
+    AMMO_MUSKET = 'WEP_MUSKET',
+}
+
+local AUDIO_BY_GROUP = {
+    [`GROUP_PISTOL`] = 'WEP_PISTOL',
+    [`GROUP_SMG`] = 'WEP_SMG',
+    [`GROUP_RIFLE`] = 'WEP_CARBINERIFLE',
+    [`GROUP_MG`] = 'WEP_MG',
+    [`GROUP_SHOTGUN`] = 'WEP_PUMPSHOTGUN',
+    [`GROUP_SNIPER`] = 'WEP_SNIPERRIFLE',
+}
+
+local function getWeaponAudioRef(weaponHash, weaponData)
+    local invName = resolveInventoryWeaponName(weaponHash, weaponData)
+    if invName and AUDIO_REF_OVERRIDES[invName] then
+        return AUDIO_REF_OVERRIDES[invName]
+    end
+
+    if invName and invName:match('^weapon_') then
+        return 'WEP_' .. invName:gsub('^weapon_', ''):upper()
+    end
+
+    local ammoType = weaponAmmoType(weaponHash, weaponData)
+    if ammoType ~= '' and AUDIO_BY_AMMO[ammoType] then
+        return AUDIO_BY_AMMO[ammoType]
+    end
+
+    local group = GetWeapontypeGroup(weaponHash)
+    if AUDIO_BY_GROUP[group] then
+        return AUDIO_BY_GROUP[group]
+    end
+
+    return 'WEP_PISTOL'
+end
+
 local function playReloadSound(ped, weaponHash, weaponData)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return end
     local soundId = GetSoundId()
     if not soundId or soundId == -1 then return end
 
-    local audioRef = 'WEP_PISTOL'
-    local invName = resolveInventoryWeaponName(weaponHash, weaponData)
-    if invName and invName ~= '' then
-        audioRef = invName:upper()
-    else
-        local shared = QBCore.Shared.Weapons[weaponHash]
-        if shared and shared.name then
-            audioRef = tostring(shared.name):upper()
-        end
-    end
-
-    PlaySoundFromEntity(soundId, 'Reload', ped, audioRef, false, 0)
+    local audioRef = getWeaponAudioRef(weaponHash, weaponData)
+    PlaySoundFromEntity(soundId, 'Reload', ped, audioRef, true, 0)
     CreateThread(function()
         Wait(1400)
         StopSound(soundId)
@@ -371,8 +407,6 @@ local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clip
     ped = ped or PlayerPedId()
     if not ped or ped == 0 then return false end
 
-    playReloadSound(ped, weaponHash, weaponData)
-
     local animRowData = getReloadAnim(weaponHash, weaponData)
     local flags = reloadAnimFlags()
     local dict, clip, started = tryPlayReloadAnim(ped, animRowData, flags)
@@ -462,6 +496,7 @@ function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
     local usedNative = false
 
     beginReloadPedState(ped, weaponHash, clipNow, false)
+    playReloadSound(ped, weaponHash, weaponData)
 
     if not moving and Config.ReloadUseNativeFirst ~= false and bulletsToLoad > 0 then
         usedNative = playNativeReload(ped, weaponHash, durationMs, clipNow, bulletsToLoad, weaponData)

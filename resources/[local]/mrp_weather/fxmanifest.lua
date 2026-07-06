@@ -29,6 +29,9 @@ exports {
     'getCurrentSlot',
     'getRegionAtCoords',
     'getRegions',
+    'SetWeatherPaused',
+    'IsWeatherPaused',
+    'RefreshNow',
 }
 
 server_exports {
