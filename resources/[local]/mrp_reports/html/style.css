@@ -20,6 +20,10 @@ button:focus-visible {
 
 .hidden { display: none !important; }
 
+.staff-controls.hidden {
+  display: none !important;
+}
+
 #app {
   --purple: #a855f7;
   --purple-bright: #c084fc;

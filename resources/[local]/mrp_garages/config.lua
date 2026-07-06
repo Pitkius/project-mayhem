@@ -55,6 +55,9 @@ Config.PoliceVehicleModels = {
     riot = true, fbi = true, fbi2 = true, pranger = true,
     policeold1 = true, policeold2 = true,
     polmav = true, buzzard2 = true,
+    gcpd1 = true, gcpd2 = true, gcpd3 = true, gcpd4 = true, gcpd5 = true, gcpd6 = true, gcpd10 = true,
+    gcpd20 = true, gcpd21 = true, gcpd22 = true, gcpd23 = true,
+    gcapd1 = true, gcapd2 = true, gcapd3 = true, gcapd4 = true, gcapd5 = true, gcapd6 = true, gcapd10 = true, gcapd11 = true,
 }
 
 Config.MechanicVehicleModels = {

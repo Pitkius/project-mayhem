@@ -9,6 +9,8 @@ Config.Reports = {
     MaxAttachments = 5,
     MaxStoredReports = 120,
     StaffPerms = { 'mod', 'admin', 'god' },
+    --- F7 UI: „Admin panelė“ mygtukas (staff be šių teisių mato tik žaidėjo formą)
+    AdminPanelPerms = { 'mod', 'admin', 'god' },
 
     OpenKey = 'F7',
     OpenKeyDescription = 'Atidaryti pagalbos centrą',

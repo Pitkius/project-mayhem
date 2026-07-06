@@ -31,9 +31,11 @@
           <button class="nav-btn" data-admin-filter="closed"><span class="nav-ico" data-icon="check"></span> Uždaryti</button>
         </nav>
         <div class="sidebar-foot">
-          <div class="hint" id="staffBadge" hidden><span class="nav-ico" data-icon="shield"></span> Admin režimas</div>
-          <button class="ghost-btn hidden" id="openAdminBtn"><span class="nav-ico" data-icon="shield"></span> Admin panelė</button>
-          <button class="ghost-btn hidden" id="openPlayerBtn"><span class="nav-ico" data-icon="headset"></span> Žaidėjo režimas</button>
+          <div id="staffControls" class="staff-controls hidden">
+            <div class="hint" id="staffBadge" hidden><span class="nav-ico" data-icon="shield"></span> Admin režimas</div>
+            <button type="button" class="ghost-btn hidden" id="openAdminBtn"><span class="nav-ico" data-icon="shield"></span> Admin panelė</button>
+            <button type="button" class="ghost-btn hidden" id="openPlayerBtn"><span class="nav-ico" data-icon="headset"></span> Žaidėjo režimas</button>
+          </div>
           <button class="ghost-btn" id="closeBtn">Uždaryti <kbd>ESC</kbd></button>
         </div>
       </aside>

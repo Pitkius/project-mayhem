@@ -219,6 +219,28 @@ Config.FleetVehicles = {
     { model = 'sheriff', label = 'Šerifų patrulinis' },
     { model = 'sheriff2', label = 'Šerifų visureigis' },
     { model = 'riot', label = 'Antiriot' },
+    --- Old style pack
+    { model = 'gcpd1', label = 'PD senas stilius 1' },
+    { model = 'gcpd2', label = 'PD senas stilius 2' },
+    { model = 'gcpd3', label = 'PD senas stilius 3' },
+    { model = 'gcpd4', label = 'PD senas stilius 4' },
+    { model = 'gcpd5', label = 'PD senas stilius 5' },
+    { model = 'gcpd6', label = 'PD senas stilius 6' },
+    { model = 'gcpd10', label = 'PD senas stilius 10' },
+    --- Undercover pack
+    { model = 'gcpd20', label = 'PD undercover 20' },
+    { model = 'gcpd21', label = 'PD undercover 21' },
+    { model = 'gcpd22', label = 'PD undercover 22' },
+    { model = 'gcpd23', label = 'PD undercover 23' },
+    --- Animuotu pack
+    { model = 'gcapd1', label = 'PD animuotas 1' },
+    { model = 'gcapd2', label = 'PD animuotas 2' },
+    { model = 'gcapd3', label = 'PD animuotas 3' },
+    { model = 'gcapd4', label = 'PD animuotas 4' },
+    { model = 'gcapd5', label = 'PD animuotas 5' },
+    { model = 'gcapd6', label = 'PD animuotas 6' },
+    { model = 'gcapd10', label = 'PD animuotas 10' },
+    { model = 'gcapd11', label = 'PD animuotas 11' },
 }
 
 --- Sraigtasparniai (stogas / helipadas) – spawn ant `heliGarage.spawn`

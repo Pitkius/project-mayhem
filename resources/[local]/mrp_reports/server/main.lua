@@ -24,6 +24,15 @@ local function isStaff(src)
     return false
 end
 
+local function canShowAdminModeButton(src)
+    for _, perm in ipairs(cfg.AdminPanelPerms or cfg.StaffPerms or {}) do
+        if QBCore.Functions.HasPermission(src, perm) then
+            return true
+        end
+    end
+    return false
+end
+
 local function sanitizeText(text, maxLen)
     text = tostring(text or ''):gsub('[~<].-[>~]', ''):gsub('\r\n', '\n'):gsub('^%s+', ''):gsub('%s+$', '')
     if maxLen and #text > maxLen then
@@ -304,13 +313,16 @@ local function replyToReport(source, reportId, text)
 end
 
 QBCore.Functions.CreateCallback('mrp_reports:server:getBootstrap', function(source, cb)
+    local staff = isStaff(source)
+    local showAdmin = canShowAdminModeButton(source)
     cb({
         categories = cfg.Categories or {},
         priorityLabels = cfg.PriorityLabels or {},
         statusLabels = cfg.StatusLabels or {},
-        isStaff = isStaff(source),
+        isStaff = staff,
+        showAdminModeButton = showAdmin,
         myReports = getReportsForPlayer(source),
-        adminReports = getReportsForStaff(source),
+        adminReports = staff and getReportsForStaff(source) or {},
     })
 end)
 

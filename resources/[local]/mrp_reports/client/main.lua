@@ -13,6 +13,9 @@ local function openReports(view)
     if isOpen then return end
     QBCore.Functions.TriggerCallback('mrp_reports:server:getBootstrap', function(data)
         if not data then return end
+        if view == 'admin' and not data.showAdminModeButton then
+            view = 'create'
+        end
         setNui(true)
         SendNUIMessage({
             action = 'open',

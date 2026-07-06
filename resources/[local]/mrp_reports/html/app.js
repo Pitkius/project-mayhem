@@ -11,6 +11,7 @@ const state = {
   selectedAdminId: null,
   pendingAttachType: 'link',
   isStaff: false,
+  showAdminModeButton: false,
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -82,6 +83,9 @@ function closeUi() {
 }
 
 function setView(name) {
+  if (name === 'admin' && !state.showAdminModeButton) {
+    name = 'create';
+  }
   $$('.view').forEach((v) => v.classList.remove('active'));
   if (name === 'create') $('#viewCreate').classList.add('active');
   if (name === 'mine') $('#viewMine').classList.add('active');
@@ -385,23 +389,45 @@ function renderAdminReports(rows) {
   }
 }
 
+function setStaffControlsVisible(visible) {
+  const wrap = $('#staffControls');
+  if (wrap) wrap.classList.toggle('hidden', !visible);
+  if (!visible) {
+    $('#openAdminBtn')?.classList.add('hidden');
+    $('#openPlayerBtn')?.classList.add('hidden');
+    $('#adminNav')?.classList.add('hidden');
+    const badge = $('#staffBadge');
+    if (badge) badge.hidden = true;
+  }
+}
+
 function showStaffNav(mode) {
-  const isAdmin = mode === 'admin';
-  $('#openAdminBtn').classList.toggle('hidden', isAdmin || !state.isStaff);
-  $('#openPlayerBtn').classList.toggle('hidden', !isAdmin || !state.isStaff);
-  $('#playerNav').classList.toggle('hidden', isAdmin);
-  $('#adminNav').classList.toggle('hidden', !isAdmin);
-  $('#staffBadge').hidden = !isAdmin;
+  if (!state.showAdminModeButton) {
+    setStaffControlsVisible(false);
+    $('#playerNav')?.classList.remove('hidden');
+    $('#adminNav')?.classList.add('hidden');
+    return;
+  }
+  setStaffControlsVisible(true);
+  const isAdminView = mode === 'admin';
+  $('#openAdminBtn').classList.toggle('hidden', isAdminView);
+  $('#openPlayerBtn').classList.toggle('hidden', !isAdminView);
+  $('#playerNav').classList.toggle('hidden', isAdminView);
+  $('#adminNav').classList.toggle('hidden', !isAdminView);
+  const badge = $('#staffBadge');
+  if (badge) badge.hidden = !isAdminView;
 }
 
 function openBootstrap(data, view) {
   state.bootstrap = data;
   state.isStaff = !!data.isStaff;
+  state.showAdminModeButton = !!data.showAdminModeButton;
+  setStaffControlsVisible(state.showAdminModeButton);
   renderCategories();
   renderMyReports(data.myReports || []);
-  if (data.isStaff) {
+  if (state.showAdminModeButton) {
     renderAdminReports(data.adminReports || []);
-    if (view === 'admin') {
+    if (view === 'admin' && state.isStaff) {
       showStaffNav('admin');
       setView('admin');
     } else {
@@ -433,6 +459,7 @@ document.addEventListener('keydown', (e) => {
 $('#closeBtn').addEventListener('click', closeUi);
 
 $('#openAdminBtn').addEventListener('click', () => {
+  if (!state.showAdminModeButton || !state.isStaff) return;
   showStaffNav('admin');
   setView('admin');
   renderAdminReports(state.bootstrap?.adminReports || []);
