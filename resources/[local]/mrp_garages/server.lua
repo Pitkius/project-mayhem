@@ -320,7 +320,7 @@ QBCore.Functions.CreateCallback('mrp_garages:server:parkVehicle', function(sourc
     end
 
     plate = tostring(plate or ''):upper()
-    local rowPark = MySQL.single.await('SELECT vehicle FROM player_vehicles WHERE citizenid = ? AND plate = ? LIMIT 1', {
+    local rowPark = MySQL.single.await('SELECT vehicle, mods FROM player_vehicles WHERE citizenid = ? AND plate = ? LIMIT 1', {
         Player.PlayerData.citizenid,
         plate
     })
@@ -354,12 +354,25 @@ QBCore.Functions.CreateCallback('mrp_garages:server:parkVehicle', function(sourc
         fuelPct = math.floor(math.max(0, math.min(100, tonumber(props.fuelLevel) or 100)) + 0.5)
     end
 
+    local saveProps = props or {}
+    if rowPark and rowPark.mods and rowPark.mods ~= '' then
+        local ok, existingMods = pcall(json.decode, rowPark.mods)
+        if ok and type(existingMods) == 'table' then
+            if saveProps.mrpPdKit ~= true and existingMods.mrpPdKit == true then
+                saveProps.mrpPdKit = true
+            end
+            if saveProps.mrpEmsKit ~= true and existingMods.mrpEmsKit == true then
+                saveProps.mrpEmsKit = true
+            end
+        end
+    end
+
     MySQL.update.await([[
         UPDATE player_vehicles
         SET mods = ?, fuel = ?, state = 1, garage = ?
         WHERE citizenid = ? AND plate = ?
     ]], {
-        json.encode(props or {}),
+        json.encode(saveProps),
         fuelPct,
         garageId,
         Player.PlayerData.citizenid,

@@ -1107,6 +1107,7 @@ local function getCanWater(item, cfg)
     cfg = cfg or weedGrowCfg()
     local cap = tonumber(cfg.waterCanCapacity) or 100
     local w = item.info and item.info.water
+    if w == nil then w = item.water end
     if w == nil then return cap end
     return math.max(0, math.min(cap, tonumber(w) or 0))
 end
@@ -1115,7 +1116,16 @@ local function setCanWater(src, slot, amount, cfg)
     cfg = cfg or weedGrowCfg()
     local cap = tonumber(cfg.waterCanCapacity) or 100
     amount = math.max(0, math.min(cap, math.floor(tonumber(amount) or 0)))
-    exports['qb-inventory']:SetItemData(src, cfg.waterCanItem or 'watering_can', 'water', amount, slot)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player or not slot then return amount end
+    local item = Player.PlayerData.items[tonumber(slot)]
+    if not item then return amount end
+    item.info = item.info or {}
+    item.info.water = amount
+    item.info.description = ('Vanduo: %d/%d'):format(amount, cap)
+    Player.PlayerData.items[item.slot] = item
+    Player.Functions.SetPlayerData('items', Player.PlayerData.items)
+    TriggerClientEvent('qb-inventory:client:updateInventory', src, Player.PlayerData.items)
     return amount
 end
 
@@ -1126,7 +1136,7 @@ local function useWaterFromCan(src, Player)
     local need = tonumber(cfg.waterPerUse) or 8
     local current = getCanWater(item, cfg)
     if current < need then
-        return false, ('Laistytuve liko %d/%d vandens — papildyk buteliu.'):format(current, cfg.waterCanCapacity or 100)
+        return false, ('Laistytuve liko %d/%d vandens — papildyk prie ežero ar jūros.'):format(current, cfg.waterCanCapacity or 100)
     end
     setCanWater(src, slot, current - need, cfg)
     return true
@@ -1417,7 +1427,7 @@ RegisterNetEvent('mrp_drugs:server:waterWeed', function(plantId, moistureHit, wa
     TriggerClientEvent('mrp_drugs:client:weedPlantUpdate', -1, plantId, plantPayload(cfg, plant))
 end)
 
-local function doRefillWateringCan(src)
+local function refillWateringCanFromNatural(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
     local cfg = weedGrowCfg()
@@ -1425,21 +1435,17 @@ local function doRefillWateringCan(src)
     if not canItem or not canSlot then
         return TriggerClientEvent('QBCore:Notify', src, 'Reikia laistytuvo inventoriuje.', 'error')
     end
-    local refillItem = cfg.waterRefillItem or 'water_bottle'
-    if not exports['qb-inventory']:RemoveItem(src, refillItem, 1, false, 'mrp_drugs:refillCan') then
-        return TriggerClientEvent('QBCore:Notify', src, 'Reikia vandens butelio papildymui.', 'error')
-    end
     local cap = tonumber(cfg.waterCanCapacity) or 100
-    local add = tonumber(cfg.waterRefillAmount) or 30
     local current = getCanWater(canItem, cfg)
-    local nextVal = math.min(cap, current + add)
-    setCanWater(src, canSlot, nextVal, cfg)
-    TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[refillItem], 'remove', 1)
-    TriggerClientEvent('QBCore:Notify', src, ('Laistytuvas: %d/%d vandens.'):format(nextVal, cap), 'success')
+    if current >= cap then
+        return TriggerClientEvent('QBCore:Notify', src, ('Laistytuvas jau pilnas (%d/%d).'):format(current, cap), 'error')
+    end
+    setCanWater(src, canSlot, cap, cfg)
+    TriggerClientEvent('QBCore:Notify', src, ('Laistytuvas pripildytas: %d/%d vandens.'):format(cap, cap), 'success')
 end
 
-RegisterNetEvent('mrp_drugs:server:refillWateringCan', function()
-    doRefillWateringCan(source)
+RegisterNetEvent('mrp_drugs:server:refillWateringCanFromWater', function()
+    refillWateringCanFromNatural(source)
 end)
 
 RegisterNetEvent('mrp_drugs:server:harvestWeed', function(plantId, px, py, pz, harvestScore)
@@ -1590,20 +1596,8 @@ QBCore.Functions.CreateUseableItem('watering_can', function(source)
     if not item or not slot then return end
     local cap = tonumber(cfg.waterCanCapacity) or 100
     local w = getCanWater(item, cfg)
-    TriggerClientEvent('QBCore:Notify', source, ('Laistytuvas: %d/%d vandens. Papildyk vandens buteliu.'):format(w, cap), 'primary')
-end)
-
-CreateThread(function()
-    Wait(2500)
-    QBCore.Functions.CreateUseableItem('water_bottle', function(source, item)
-        local Player = QBCore.Functions.GetPlayer(source)
-        if not Player then return end
-        local canItem, canSlot = findWateringCan(Player)
-        if canItem and canSlot then
-            return doRefillWateringCan(source)
-        end
-        TriggerClientEvent('consumables:client:Drink', source, item.name, item.slot)
-    end)
+    setCanWater(source, slot, w, cfg)
+    TriggerClientEvent('QBCore:Notify', source, ('Laistytuvas: %d/%d vandens. Papildyk prie ežero ar jūros.'):format(w, cap), 'primary')
 end)
 
 AddEventHandler('playerDropped', function()

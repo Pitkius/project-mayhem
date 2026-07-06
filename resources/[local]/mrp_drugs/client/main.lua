@@ -456,6 +456,12 @@ local function canStreetSellToPed(entity)
     if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
     if entity == PlayerPedId() or IsPedAPlayer(entity) or IsEntityDead(entity) then return false end
     if streetSellExcludedPeds[entity] then return false end
+    if GetResourceState('mrp_npcshops') == 'started' then
+        local ok, isShop = pcall(function()
+            return exports['mrp_npcshops']:IsShopNpc(entity)
+        end)
+        if ok and isShop then return false end
+    end
     if IsPedInAnyVehicle(PlayerPedId(), false) then return false end
     return getFirstSellableDrugItem() ~= nil
 end

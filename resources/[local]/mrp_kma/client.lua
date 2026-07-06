@@ -54,7 +54,19 @@ local function getVehicleStats(model)
     }
 end
 
+local REH_IMAGE_MODELS = {}
+if Config.RehModels then
+    for _, m in ipairs(Config.RehModels) do
+        REH_IMAGE_MODELS[tostring(m):lower()] = true
+    end
+end
+
 local function getImageUrl(model)
+    model = tostring(model or ''):lower()
+    if model == '' then return nil end
+    if REH_IMAGE_MODELS[model] and GetResourceState('mrp_dealership') == 'started' then
+        return ('nui://mrp_dealership/html/images/vehicles/%s.png'):format(model)
+    end
     return ('https://docs.fivem.net/vehicles/%s.webp'):format(model)
 end
 

@@ -41,6 +41,7 @@ client_scripts {
     'client/printer.lua',
     'client/mushrooms.lua',
     'client/weed_grow.lua',
+    'client/water_refill.lua',
     'client/amp_lab.lua',
 }
 

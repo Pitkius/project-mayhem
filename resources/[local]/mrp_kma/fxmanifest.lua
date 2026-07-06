@@ -11,6 +11,7 @@ ui_page 'html/index.html'
 shared_scripts {
     '@qb-core/shared/locale.lua',
     'config.lua',
+    '@mrp_dealership/config_reh_prices.lua',
 }
 
 client_scripts {
@@ -21,6 +22,11 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+}
+
+dependencies {
+    'qb-core',
+    'mrp_dealership',
 }
 
 server_scripts {

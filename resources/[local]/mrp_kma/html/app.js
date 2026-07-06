@@ -67,6 +67,43 @@ function applySelectedToDom() {
   post('selectVehicle', { plate: v.plate, model: v.model });
 }
 
+function vehicleImageCandidates(model, image) {
+  const m = String(model || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^[\s\S]*\//g, '')
+    .replace(/\s+/g, '');
+  const slug = /^[a-z0-9_]+$/.test(m) ? m : 'sultan';
+  const urls = [
+    `nui://mrp_dealership/html/images/vehicles/${slug}.png`,
+    `nui://mrp_dealership/html/images/vehicles/${slug}.webp`,
+    `https://docs.fivem.net/vehicles/${slug}.webp`,
+  ];
+  if (image && typeof image === 'string') {
+    const rest = urls.filter((u) => u !== image);
+    return [image, ...rest];
+  }
+  return urls;
+}
+
+function bindVehicleThumbnail(imgEl, model, image) {
+  const urls = vehicleImageCandidates(model, image);
+  let attempt = 0;
+  imgEl.style.opacity = '1';
+  imgEl.onerror = () => {
+    attempt += 1;
+    if (attempt < urls.length) {
+      imgEl.src = urls[attempt];
+      return;
+    }
+    imgEl.onerror = null;
+    imgEl.style.opacity = '0.75';
+    imgEl.src =
+      'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="480" height="180"><rect width="100%" height="100%" fill="%2320262b"/><text x="50%" y="50%" fill="%23b3c1c8" font-family="Arial" font-size="20" dominant-baseline="middle" text-anchor="middle">Nėra nuotraukos</text></svg>';
+  };
+  imgEl.src = urls[0];
+}
+
 function setSelected(vehicle) {
   state.selected = vehicle;
   applySelectedToDom();
@@ -104,12 +141,8 @@ function renderCars() {
 
     const img = document.createElement('img');
     img.className = 'car-img';
-    img.src = veh.image;
     img.alt = veh.model;
-    img.onerror = () => {
-      img.src =
-        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="480" height="180"><rect width="100%" height="100%" fill="%2320262b"/><text x="50%" y="50%" fill="%23b3c1c8" font-family="Arial" font-size="20" dominant-baseline="middle" text-anchor="middle">Nėra nuotraukos</text></svg>';
-    };
+    bindVehicleThumbnail(img, veh.model, veh.image);
     card.appendChild(img);
 
     const info = document.createElement('div');

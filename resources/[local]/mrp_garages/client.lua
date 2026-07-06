@@ -443,17 +443,24 @@ local function captureEmergencyProps(veh, props)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return props end
     local bag = Entity(veh).state
     if not bag then return props end
-    props.mrpPdKit = bag.ltPdKit == true or nil
-    props.mrpEmsKit = bag.ltEmsKit == true or nil
+    -- Tik įrašom true – niekada nenaikinam flagų čia (RR gali ištrinti statebag).
+    if bag.ltPdKit == true then props.mrpPdKit = true end
+    if bag.ltEmsKit == true then props.mrpEmsKit = true end
     return props
 end
 
 local function restoreEmergencyProps(veh, mods)
     if not veh or veh == 0 or not DoesEntityExist(veh) or type(mods) ~= 'table' then return end
     if mods.mrpPdKit ~= true and mods.mrpEmsKit ~= true then return end
-    local netId = NetworkGetNetworkIdFromEntity(veh)
-    if not netId or netId == 0 then return end
-    TriggerServerEvent('mrp_ltpd:server:restoreVehicleEmergency', netId)
+    local delays = { 100, 400, 900, 1800, 3500 }
+    for i = 1, #delays do
+        SetTimeout(delays[i], function()
+            if not DoesEntityExist(veh) then return end
+            local netId = NetworkGetNetworkIdFromEntity(veh)
+            if not netId or netId == 0 then return end
+            TriggerServerEvent('mrp_ltpd:server:restoreVehicleEmergency', netId)
+        end)
+    end
 end
 
 local function doGarageVehicleSpawn(data)
@@ -489,11 +496,7 @@ local function doGarageVehicleSpawn(data)
             end
         end
         if decodedMods then
-            SetTimeout(150, function()
-                if DoesEntityExist(veh) then
-                    restoreEmergencyProps(veh, decodedMods)
-                end
-            end)
+            restoreEmergencyProps(veh, decodedMods)
         end
         if GetResourceState('mrp_plates') == 'started' then
             exports['mrp_plates']:ApplyPlateStyle(veh)

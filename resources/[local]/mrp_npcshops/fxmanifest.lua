@@ -25,6 +25,10 @@ client_scripts {
     'client_jobshops.lua',
 }
 
+exports {
+    'IsShopNpc',
+}
+
 server_scripts {
     'server.lua',
     'server_jobshops.lua',

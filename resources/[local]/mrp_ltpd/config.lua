@@ -73,12 +73,13 @@ Config.EmergencyVehicle = {
     validateDistance = 28.0,
     --- Laikina švyturėlių juosta civilinei TP (prop ant stogo)
     lightbarModel = 'prop_lightbar_01',
-    lightbarYOffset = 0.12,
-    lightbarZOffset = 0.04,
-    --- Mažos lempos ant švyturėlio (nematomos – šviesa piešiama scriptu)
+    lightbarYOffset = -0.10,
+    lightbarZOffset = 0.06,
+    --- Mažos matomos lempos ant švyturėlio (šviesa papildomai piešiama scriptu)
     lensModel = 'prop_warninglight_01',
-    lensLeftOffset = { x = -0.26, y = 0.0, z = 0.07 },
-    lensRightOffset = { x = 0.26, y = 0.0, z = 0.07 },
+    lensHideProp = false,
+    lensLeftOffset = { x = -0.26, y = 0.0, z = 0.08 },
+    lensRightOffset = { x = 0.26, y = 0.0, z = 0.08 },
     --- Vizualas: standard | enhanced (dvigubas halo + bar pulse)
     flashVisualPreset = 'enhanced',
     flashColors = {
@@ -87,23 +88,23 @@ Config.EmergencyVehicle = {
         white = { r = 248, g = 252, b = 255 },
     },
     --- Mirksėjimo intervalas (ms)
-    flashIntervalMs = 480,
-    flashTickMs = 80,
-    --- Šviesos prie lempų (švelnesnė, bet matomesnė enhanced režime)
-    flashLightRange = 9.5,
-    flashLightIntensity = 3.4,
+    flashIntervalMs = 420,
+    flashTickMs = 65,
+    --- Šviesos prie lempų – ryškesnės, panašiau į tikrą policijos signalą
+    flashLightRange = 13.5,
+    flashLightIntensity = 5.2,
     flashUseLensGlow = true,
     flashUseBarGlow = true,
-    flashMarkerScale = 0.048,
-    flashMarkerGlowScale = 0.115,
-    --- Kryptiniai spinduliai tik arti (gražiau, bet be lag toli)
-    flashUseSpotBeams = false,
+    flashMarkerScale = 0.058,
+    flashMarkerGlowScale = 0.145,
+    --- Kryptiniai spinduliai (matomi ir toliau)
+    flashUseSpotBeams = true,
     flashUseNearSpotBeams = true,
-    flashNearSpotDistance = 32.0,
-    flashSpotRange = 16.0,
-    flashSpotIntensity = 5.0,
+    flashNearSpotDistance = 48.0,
+    flashSpotRange = 24.0,
+    flashSpotIntensity = 9.5,
     flashUseAmbientGlow = true,
-    flashDrawDistance = 55.0,
+    flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)

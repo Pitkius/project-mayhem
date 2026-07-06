@@ -198,11 +198,12 @@ local function attachLensToBar(barEnt, vehicle, side)
 
     SetEntityCollision(lens, false, false)
     SetEntityAsMissionEntity(lens, true, true)
-    if Ec.lensHideProp ~= false then
+    if Ec.lensHideProp == false then
+        SetEntityAlpha(lens, 255, false)
+    else
         SetEntityAlpha(lens, 0, false)
     end
     AttachEntityToEntity(lens, barEnt, 0, ox, oy, oz, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
-    SetEntityAlpha(lens, 0, false)
     return lens
 end
 
@@ -237,11 +238,13 @@ local function ensureLightbar(vehicle)
     SetEntityAsMissionEntity(bar, true, true)
 
     local bone = GetEntityBoneIndexByName(vehicle, 'roof')
-    if bone == -1 then bone = GetEntityBoneIndexByName(vehicle, 'bodyshell') end
-    local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
-    local spanY = mx.y - mn.y
-    local yOff = mx.y - math.max(0.12, spanY * 0.07) + (tonumber(Ec.lightbarYOffset) or 0.0)
-    local zOff = mx.z + 0.02 + (tonumber(Ec.lightbarZOffset) or 0.0)
+    local yOff = tonumber(Ec.lightbarYOffset) or -0.10
+    local zOff = tonumber(Ec.lightbarZOffset) or 0.06
+    if bone == -1 then
+        bone = GetEntityBoneIndexByName(vehicle, 'bodyshell')
+        local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
+        zOff = mx.z + 0.02 + zOff
+    end
     AttachEntityToEntity(bar, vehicle, bone, 0.0, yOff, zOff, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
 
     local leftLens = attachLensToBar(bar, vehicle, 'left')
@@ -478,6 +481,12 @@ local function drawBarPulse(centerPos, r, g, b)
     drawLensMarker(centerPos.x, centerPos.y, centerPos.z + 0.02, wr, wg, wb, 55, scale * 0.65)
 end
 
+local function pulseVisibleLensEntity(lensEnt, active)
+    if not lensEnt or lensEnt == 0 or not DoesEntityExist(lensEnt) then return end
+    if Ec.lensHideProp ~= false then return end
+    SetEntityAlpha(lensEnt, active and 255 or 120, false)
+end
+
 local function drawScriptFlash(vehicle, viewerDist)
     if not DoesEntityExist(vehicle) then return end
 
@@ -489,17 +498,26 @@ local function drawScriptFlash(vehicle, viewerDist)
     local nearDist = tonumber(Ec.flashNearSpotDistance) or 32.0
     local useSpot = Ec.flashUseSpotBeams == true
         or (Ec.flashUseNearSpotBeams == true and (viewerDist or 999.0) <= nearDist)
-    local spotMul = (viewerDist or 999.0) <= (nearDist * 0.55) and 1.0 or 0.72
+    local spotMul = (viewerDist or 999.0) <= (nearDist * 0.55) and 1.0 or 0.82
 
     local rr, rg, rb = flashColor('red')
     local br, bg, bb = flashColor('blue')
+    local rig = LIGHTBARS[vehicle]
 
     if phase then
+        if type(rig) == 'table' then
+            pulseVisibleLensEntity(rig.leftLens, true)
+            pulseVisibleLensEntity(rig.rightLens, false)
+        end
         drawLensLight(leftPos.x, leftPos.y, leftPos.z, rr, rg, rb, enhanced)
         if useAmbient then drawAmbientGlow(leftPos.x, leftPos.y, leftPos.z, rr, rg, rb) end
         if useSpot then drawEmergencyBeam(leftPos, beamDir, rr, rg, rb, spotMul) end
         if enhanced then drawBarPulse(centerPos, rr, rg, rb) end
     else
+        if type(rig) == 'table' then
+            pulseVisibleLensEntity(rig.leftLens, false)
+            pulseVisibleLensEntity(rig.rightLens, true)
+        end
         drawLensLight(rightPos.x, rightPos.y, rightPos.z, br, bg, bb, enhanced)
         if useAmbient then drawAmbientGlow(rightPos.x, rightPos.y, rightPos.z, br, bg, bb) end
         if useSpot then drawEmergencyBeam(rightPos, beamDir, br, bg, bb, spotMul) end
@@ -560,6 +578,15 @@ local function ingestFromEntity(vehicle)
             applyNativeForEveryone(vehicle, 'full')
         end
     end
+end
+
+local function requestEmergencyRestoreIfNeeded(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    local _, kit = readVehicleStateBag(vehicle)
+    if kit then return end
+    local netId = safeVehicleNetId(vehicle)
+    if netId == 0 then return end
+    TriggerServerEvent('mrp_ltpd:server:restoreVehicleEmergency', netId)
 end
 
 local function scheduleIngest(vehicle)
@@ -694,6 +721,7 @@ CreateThread(function()
         if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
             lastVehAsDriver = veh
             if emergencyOnDuty() then
+                requestEmergencyRestoreIfNeeded(veh)
                 scheduleIngest(veh)
             end
         elseif lastVehAsDriver ~= 0 then
@@ -810,6 +838,16 @@ end, false)
 RegisterCommand(cmdKit, function()
     runIfAdminCommand(openKitMenu)
 end, false)
+
+RegisterNetEvent('mrp_ltpd:client:vehicleEmergencyRestored', function(netId)
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return end
+    if type(NetworkDoesNetworkIdExist) == 'function' and not NetworkDoesNetworkIdExist(netId) then return end
+    local ent = NetworkGetEntityFromNetworkId(netId)
+    if ent ~= 0 and IsEntityAVehicle(ent) then
+        scheduleIngest(ent)
+    end
+end)
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end

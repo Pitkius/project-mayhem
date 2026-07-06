@@ -455,3 +455,20 @@ AddEventHandler('onResourceStop', function(resourceName)
         end
     end
 end)
+
+local SHOP_NPC_CATEGORIES = {
+    food = true,
+    pharmacy = true,
+    junk = true,
+    barber = true,
+    clothing = true,
+    tattoo = true,
+    job = true,
+}
+
+exports('IsShopNpc', function(entity)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
+    local meta = Entity(entity).state.npcShopMeta
+    if not meta or not meta.category then return false end
+    return SHOP_NPC_CATEGORIES[meta.category] == true
+end)

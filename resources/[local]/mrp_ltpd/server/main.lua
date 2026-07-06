@@ -1410,6 +1410,7 @@ RegisterNetEvent('mrp_ltpd:server:restoreVehicleEmergency', function(netId)
     if not row then return end
 
     exports['mrp_ltpd']:ApplyVehicleEmergencyFromMods(veh, row.mods)
+    TriggerClientEvent('mrp_ltpd:client:vehicleEmergencyRestored', -1, netId)
 end)
 
 local function normalizeEmergencyMode(mode)
