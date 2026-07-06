@@ -1,17 +1,48 @@
 QBCore = exports['qb-core']:GetCoreObject()
 PlayerData = nil
 local hotbarShown = false
+local nuiReady = false
 
 -- Handlers
 
+local function releaseInventoryFocus()
+    SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
+    if GetResourceState('mrp_hud') == 'started' then
+        TriggerEvent('mrp_hud:client:inventoryFocus', false)
+    end
+end
+
+local function resetInventoryUi()
+    releaseInventoryFocus()
+    if nuiReady then
+        SendNUIMessage({ action = 'close' })
+    end
+end
+
+RegisterNUICallback('nuiReady', function(_, cb)
+    nuiReady = true
+    cb('ok')
+end)
+
+RegisterNUICallback('nuiFailed', function(_, cb)
+    nuiReady = false
+    releaseInventoryFocus()
+    LocalPlayer.state:set('inv_busy', false, true)
+    TriggerServerEvent('qb-inventory:server:resetBusy')
+    cb('ok')
+end)
+
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     LocalPlayer.state:set('inv_busy', false, true)
+    resetInventoryUi()
     PlayerData = QBCore.Functions.GetPlayerData()
     GetDrops()
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     LocalPlayer.state:set('inv_busy', true, true)
+    resetInventoryUi()
     PlayerData = nil
 end)
 
@@ -25,6 +56,8 @@ end)
 
 AddEventHandler('onResourceStart', function(resourceName)
     if resourceName == GetCurrentResourceName() then
+        nuiReady = false
+        releaseInventoryFocus()
         PlayerData = QBCore.Functions.GetPlayerData()
     end
 end)
@@ -175,6 +208,17 @@ local function setInventoryHudFocus(active)
 end
 
 RegisterNetEvent('qb-inventory:client:openInventory', function(items, other)
+    if not nuiReady then
+        local deadline = GetGameTimer() + 8000
+        while not nuiReady and GetGameTimer() < deadline do
+            Wait(100)
+        end
+    end
+    if not nuiReady then
+        QBCore.Functions.Notify('Inventoriaus UI neužsikrovė. Bandyk /fixinv arba restart qb-inventory', 'error', 7000)
+        TriggerServerEvent('qb-inventory:server:resetBusy')
+        return
+    end
     if InventoryAnim and InventoryAnim.playOpen then InventoryAnim.playOpen() end
     setInventoryHudFocus(true)
     SetNuiFocus(true, true)
@@ -328,6 +372,13 @@ end)
 RegisterCommand('openInv', function()
     if IsNuiFocused() or IsPauseMenuActive() then return end
     ExecuteCommand('inventory')
+end, false)
+
+RegisterCommand('fixinv', function()
+    resetInventoryUi()
+    LocalPlayer.state:set('inv_busy', false, true)
+    TriggerServerEvent('qb-inventory:server:resetBusy')
+    QBCore.Functions.Notify('Inventorius atstatytas.', 'success')
 end, false)
 
 RegisterCommand('toggleHotbar', function()

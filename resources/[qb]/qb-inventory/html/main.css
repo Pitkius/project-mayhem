@@ -794,3 +794,8 @@ body {
     color: var(--on-primary-container);
     font-size: 0.78rem;
 }
+
+[v-cloak],
+#app:not(.nui-ready) {
+    display: none !important;
+}

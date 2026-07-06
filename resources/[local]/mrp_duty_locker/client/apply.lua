@@ -40,7 +40,7 @@ local function applyProp(ped, propSlot, val)
     end
 end
 
-local function applyProp(ped, propSlot, val)
+local function slotAllowed(category, compId, propId)
     local slots = DutyLocker.CategorySlots[category]
     if not slots then return true end
     if compId then

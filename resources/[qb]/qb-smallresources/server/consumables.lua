@@ -3,7 +3,7 @@
 
 for k, _ in pairs(Config.Consumables.alcohol) do
     QBCore.Functions.CreateUseableItem(k, function(source, item)
-        TriggerClientEvent('consumables:client:DrinkAlcohol', source, item.name)
+        TriggerClientEvent('consumables:client:DrinkAlcohol', source, item.name, item.slot)
     end)
 end
 
@@ -11,16 +11,14 @@ end
 
 for k, _ in pairs(Config.Consumables.eat) do
     QBCore.Functions.CreateUseableItem(k, function(source, item)
-        if not exports['qb-inventory']:RemoveItem(source, item.name, 1, item.slot, 'qb-smallresources:consumables:eat') then return end
-        TriggerClientEvent('consumables:client:Eat', source, item.name)
+        TriggerClientEvent('consumables:client:Eat', source, item.name, item.slot)
     end)
 end
 
 ----------- / Drink
 for k, _ in pairs(Config.Consumables.drink) do
     QBCore.Functions.CreateUseableItem(k, function(source, item)
-        if not exports['qb-inventory']:RemoveItem(source, item.name, 1, item.slot, 'qb-smallresources:consumables:drink') then return end
-        TriggerClientEvent('consumables:client:Drink', source, item.name)
+        TriggerClientEvent('consumables:client:Drink', source, item.name, item.slot)
     end)
 end
 
@@ -214,6 +212,53 @@ RegisterNetEvent('consumables:server:UseFirework', function(item)
 
     if not foundItem then return end
     exports['qb-inventory']:RemoveItem(source, foundItem, 1, false, 'consumables:server:UseFirework')
+end)
+
+local function clampNeed(value)
+    return math.max(0, math.min(100, tonumber(value) or 0))
+end
+
+local function applyNeeds(src, Player, hungerDelta, thirstDelta)
+    local hunger = clampNeed((tonumber(Player.PlayerData.metadata.hunger) or 0) + (hungerDelta or 0))
+    local thirst = clampNeed((tonumber(Player.PlayerData.metadata.thirst) or 0) + (thirstDelta or 0))
+    Player.Functions.SetMetaData('hunger', hunger)
+    Player.Functions.SetMetaData('thirst', thirst)
+    TriggerClientEvent('hud:client:UpdateNeeds', src, hunger, thirst)
+end
+
+RegisterNetEvent('consumables:server:finishEat', function(itemName, slot)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    itemName = type(itemName) == 'string' and itemName:lower() or ''
+    local hungerAdd = Config.Consumables.eat[itemName]
+    if not hungerAdd then return end
+    if not exports['qb-inventory']:RemoveItem(src, itemName, 1, slot, 'qb-smallresources:consumables:eat') then return end
+    local thirstAdd = (Config.Consumables.dualFoodBoost or {})[itemName] or 0
+    applyNeeds(src, Player, hungerAdd, thirstAdd)
+end)
+
+RegisterNetEvent('consumables:server:finishDrink', function(itemName, slot)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    itemName = type(itemName) == 'string' and itemName:lower() or ''
+    local thirstAdd = Config.Consumables.drink[itemName]
+    if not thirstAdd then return end
+    if not exports['qb-inventory']:RemoveItem(src, itemName, 1, slot, 'qb-smallresources:consumables:drink') then return end
+    local hungerAdd = (Config.Consumables.dualDrinkBoost or {})[itemName] or 0
+    applyNeeds(src, Player, hungerAdd, thirstAdd)
+end)
+
+RegisterNetEvent('consumables:server:finishDrinkAlcohol', function(itemName, slot)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    itemName = type(itemName) == 'string' and itemName:lower() or ''
+    local thirstAdd = Config.Consumables.alcohol[itemName]
+    if not thirstAdd then return end
+    if not exports['qb-inventory']:RemoveItem(src, itemName, 1, slot, 'qb-smallresources:consumables:drinkAlcohol') then return end
+    applyNeeds(src, Player, 0, thirstAdd)
 end)
 
 RegisterNetEvent('consumables:server:addThirst', function(amount)

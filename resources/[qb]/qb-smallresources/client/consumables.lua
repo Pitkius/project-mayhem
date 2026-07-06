@@ -5,24 +5,141 @@ local healing, parachuteEquipped = false, false
 local currVest, currVestTexture = nil, nil
 local currVestComponent = 9
 local lastEquippedVestItem = nil
-local DualNeedFoodBoost = {
-    burger = 10,
-}
-local DualNeedDrinkBoost = {
-    water_bottle = 8,
+local consumableProgressToken = 0
+
+local CONSUMABLE_DISABLE = {
+    disableMovement = false,
+    disableCarMovement = false,
+    disableMouse = false,
+    disableCombat = true,
 }
 
--- Functions
-RegisterNetEvent('QBCore:Client:UpdateObject', function()
-    QBCore = exports['qb-core']:GetCoreObject()
-end)
+local function applyConsumableDisables(disableControls)
+    disableControls = disableControls or CONSUMABLE_DISABLE
+    if disableControls.disableCombat then
+        DisableControlAction(0, 24, true)
+        DisableControlAction(0, 25, true)
+        DisableControlAction(0, 47, true)
+        DisableControlAction(0, 58, true)
+        DisableControlAction(0, 140, true)
+        DisableControlAction(0, 141, true)
+        DisableControlAction(0, 142, true)
+        DisableControlAction(0, 143, true)
+    end
+end
 
 local function loadAnimDict(dict)
-    if HasAnimDictLoaded(dict) then return end
+    if not dict or dict == '' or HasAnimDictLoaded(dict) then return true end
     RequestAnimDict(dict)
-    while not HasAnimDictLoaded(dict) do
+    local deadline = GetGameTimer() + 5000
+    while not HasAnimDictLoaded(dict) and GetGameTimer() < deadline do
         Wait(10)
     end
+    return HasAnimDictLoaded(dict)
+end
+
+local function attachConsumableProp(prop)
+    if not prop or not prop.model then return nil end
+    local ped = PlayerPedId()
+    local model = type(prop.model) == 'number' and prop.model or joaat(prop.model)
+    RequestModel(model)
+    local deadline = GetGameTimer() + 5000
+    while not HasModelLoaded(model) and GetGameTimer() < deadline do
+        Wait(10)
+    end
+    if not HasModelLoaded(model) then return nil end
+    local coords = GetEntityCoords(ped)
+    local obj = CreateObject(model, coords.x, coords.y, coords.z, true, true, false)
+    local bone = prop.bone or 60309
+    local offset = prop.coords or vec3(0.0, 0.0, 0.0)
+    local rotation = prop.rotation or vec3(0.0, 0.0, 0.0)
+    AttachEntityToEntity(
+        obj, ped, GetPedBoneIndex(ped, bone),
+        offset.x, offset.y, offset.z,
+        rotation.x, rotation.y, rotation.z,
+        true, true, false, true, 1, true
+    )
+    SetModelAsNoLongerNeeded(model)
+    return obj
+end
+
+local function clearConsumableProp(propObj)
+    if propObj and DoesEntityExist(propObj) then
+        DeleteEntity(propObj)
+    end
+end
+
+local function runConsumableProgress(opts)
+    opts = opts or {}
+    consumableProgressToken = consumableProgressToken + 1
+    local token = consumableProgressToken
+    local duration = tonumber(opts.duration) or 5000
+    local label = opts.label or 'Vykdoma…'
+    local animation = opts.animation or {}
+    local prop = opts.prop
+    local disableControls = opts.disableControls or CONSUMABLE_DISABLE
+    local canCancel = opts.canCancel ~= false
+    local animDict = animation.animDict or animation.dict
+    local animClip = animation.anim or animation.clip
+    local animFlags = animation.flags or 49
+
+    CreateThread(function()
+        Wait(350)
+        if token ~= consumableProgressToken then return end
+
+        local ped = PlayerPedId()
+        if IsEntityDead(ped) or IsPedDeadOrDying(ped, true) then
+            if opts.onCancel then opts.onCancel() end
+            return
+        end
+
+        if animDict then loadAnimDict(animDict) end
+        local propObj = attachConsumableProp(prop)
+        if animDict and animClip and HasAnimDictLoaded(animDict) then
+            TaskPlayAnim(ped, animDict, animClip, 4.0, 4.0, -1, animFlags, 0.0, false, false, false)
+        end
+
+        QBCore.Functions.Notify(label, 'primary', duration)
+
+        local endAt = GetGameTimer() + duration
+        local cancelAfter = GetGameTimer() + 800
+
+        while GetGameTimer() < endAt do
+            if token ~= consumableProgressToken then
+                clearConsumableProp(propObj)
+                ClearPedTasks(ped)
+                return
+            end
+
+            ped = PlayerPedId()
+            applyConsumableDisables(disableControls)
+
+            if animDict and animClip and HasAnimDictLoaded(animDict) and not IsEntityPlayingAnim(ped, animDict, animClip, 3) then
+                TaskPlayAnim(ped, animDict, animClip, 4.0, 4.0, -1, animFlags, 0.0, false, false, false)
+            end
+
+            if canCancel and GetGameTimer() > cancelAfter then
+                if IsControlJustReleased(0, 73) or IsControlJustReleased(0, 200) or IsControlJustReleased(0, 322) then
+                    clearConsumableProp(propObj)
+                    ClearPedTasks(ped)
+                    if opts.onCancel then opts.onCancel() end
+                    return
+                end
+            end
+
+            Wait(0)
+        end
+
+        if token ~= consumableProgressToken then
+            clearConsumableProp(propObj)
+            ClearPedTasks(ped)
+            return
+        end
+
+        clearConsumableProp(propObj)
+        ClearPedTasks(ped)
+        if opts.onFinish then opts.onFinish() end
+    end)
 end
 
 local function equipParachuteAnim()
@@ -151,95 +268,89 @@ end
 
 -- Events
 
-RegisterNetEvent('consumables:client:Eat', function(itemName)
-    QBCore.Functions.Progressbar('eat_something', Lang:t('consumables.eat_progress'), 5000, false, true, {
-        disableMovement = false,
-        disableCarMovement = false,
-        disableMouse = false,
-        disableCombat = true
-    }, {
-        animDict = 'mp_player_inteat@burger',
-        anim = 'mp_player_int_eat_burger',
-        flags = 49
-    }, {
-        model = 'prop_cs_burger_01',
-        bone = 60309,
-        coords = vec3(0.0, 0.0, -0.02),
-        rotation = vec3(30, 0.0, 0.0),
-    }, {}, function() -- Done
-        local playerData = QBCore.Functions.GetPlayerData()
-        local metadata = playerData.metadata or {}
-        local hunger = tonumber(metadata.hunger) or 0
-        local thirst = tonumber(metadata.thirst) or 0
-        local hungerAdd = Config.Consumables.eat[itemName] or 0
-        local thirstAdd = DualNeedFoodBoost[itemName] or 0
-        TriggerServerEvent('consumables:server:addHunger', math.min(100, hunger + hungerAdd))
-        if thirstAdd > 0 then
-            TriggerServerEvent('consumables:server:addThirst', math.min(100, thirst + thirstAdd))
-        end
-        TriggerServerEvent('hud:server:RelieveStress', math.random(2, 4))
-    end)
+RegisterNetEvent('QBCore:Client:UpdateObject', function()
+    QBCore = exports['qb-core']:GetCoreObject()
 end)
 
-RegisterNetEvent('consumables:client:Drink', function(itemName)
-    QBCore.Functions.Progressbar('drink_something', Lang:t('consumables.drink_progress'), 5000, false, true, {
-        disableMovement = false,
-        disableCarMovement = false,
-        disableMouse = false,
-        disableCombat = true
-    }, {
-        animDict = 'mp_player_intdrink',
-        anim = 'loop_bottle',
-        flags = 49
-    }, {
-        model = 'vw_prop_casino_water_bottle_01a',
-        bone = 60309,
-        coords = vec3(0.0, 0.0, -0.05),
-        rotation = vec3(0.0, 0.0, -40),
-    }, {}, function() -- Done
-        local playerData = QBCore.Functions.GetPlayerData()
-        local metadata = playerData.metadata or {}
-        local thirst = tonumber(metadata.thirst) or 0
-        local hunger = tonumber(metadata.hunger) or 0
-        local thirstAdd = Config.Consumables.drink[itemName] or 0
-        local hungerAdd = DualNeedDrinkBoost[itemName] or 0
-        TriggerServerEvent('consumables:server:addThirst', math.min(100, thirst + thirstAdd))
-        if hungerAdd > 0 then
-            TriggerServerEvent('consumables:server:addHunger', math.min(100, hunger + hungerAdd))
-        end
-    end)
+RegisterNetEvent('consumables:client:Eat', function(itemName, slot)
+    runConsumableProgress({
+        label = Lang:t('consumables.eat_progress'),
+        duration = 5000,
+        animation = {
+            animDict = 'mp_player_inteat@burger',
+            anim = 'mp_player_int_eat_burger',
+            flags = 49,
+        },
+        prop = {
+            model = 'prop_cs_burger_01',
+            bone = 60309,
+            coords = vec3(0.0, 0.0, -0.02),
+            rotation = vec3(30.0, 0.0, 0.0),
+        },
+        onFinish = function()
+            TriggerServerEvent('consumables:server:finishEat', itemName, slot)
+            TriggerServerEvent('hud:server:RelieveStress', math.random(2, 4))
+        end,
+        onCancel = function()
+            QBCore.Functions.Notify(Lang:t('consumables.canceled'), 'error')
+        end,
+    })
 end)
 
-RegisterNetEvent('consumables:client:DrinkAlcohol', function(itemName)
-    QBCore.Functions.Progressbar('drink_alcohol', Lang:t('consumables.liqour_progress'), math.random(3000, 6000), false, true, {
-        disableMovement = false,
-        disableCarMovement = false,
-        disableMouse = false,
-        disableCombat = true
-    }, {
-        animDict = 'mp_player_intdrink',
-        anim = 'loop_bottle',
-        flags = 49
-    }, {
-        model = 'prop_cs_beer_bot_40oz',
-        bone = 60309,
-        coords = vec3(0.0, 0.0, -0.05),
-        rotation = vec3(0.0, 0.0, -40),
-    }, {}, function() -- Done
-        TriggerEvent('qb-inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove')
-        TriggerServerEvent('consumables:server:drinkAlcohol', itemName)
-        TriggerServerEvent('consumables:server:addThirst', QBCore.Functions.GetPlayerData().metadata.thirst + Config.Consumables.alcohol[itemName])
-        TriggerServerEvent('hud:server:RelieveStress', math.random(2, 4))
-        alcoholCount += 1
-        AlcoholLoop()
-        if alcoholCount > 1 and alcoholCount < 4 then
-            TriggerEvent('evidence:client:SetStatus', 'alcohol', 200)
-        elseif alcoholCount >= 4 then
-            TriggerEvent('evidence:client:SetStatus', 'heavyalcohol', 200)
-        end
-    end, function() -- Cancel
-        QBCore.Functions.Notify(Lang:t('consumables.canceled'), 'error')
-    end)
+RegisterNetEvent('consumables:client:Drink', function(itemName, slot)
+    runConsumableProgress({
+        label = Lang:t('consumables.drink_progress'),
+        duration = 5000,
+        animation = {
+            animDict = 'mp_player_intdrink',
+            anim = 'loop_bottle',
+            flags = 49,
+        },
+        prop = {
+            model = 'vw_prop_casino_water_bottle_01a',
+            bone = 60309,
+            coords = vec3(0.0, 0.0, -0.05),
+            rotation = vec3(0.0, 0.0, -40.0),
+        },
+        onFinish = function()
+            TriggerServerEvent('consumables:server:finishDrink', itemName, slot)
+        end,
+        onCancel = function()
+            QBCore.Functions.Notify(Lang:t('consumables.canceled'), 'error')
+        end,
+    })
+end)
+
+RegisterNetEvent('consumables:client:DrinkAlcohol', function(itemName, slot)
+    runConsumableProgress({
+        label = Lang:t('consumables.liqour_progress'),
+        duration = math.random(3000, 6000),
+        animation = {
+            animDict = 'mp_player_intdrink',
+            anim = 'loop_bottle',
+            flags = 49,
+        },
+        prop = {
+            model = 'prop_cs_beer_bot_40oz',
+            bone = 60309,
+            coords = vec3(0.0, 0.0, -0.05),
+            rotation = vec3(0.0, 0.0, -40.0),
+        },
+        onFinish = function()
+            TriggerServerEvent('consumables:server:finishDrinkAlcohol', itemName, slot)
+            TriggerServerEvent('hud:server:RelieveStress', math.random(2, 4))
+            alcoholCount += 1
+            AlcoholLoop()
+            if alcoholCount > 1 and alcoholCount < 4 then
+                TriggerEvent('evidence:client:SetStatus', 'alcohol', 200)
+            elseif alcoholCount >= 4 then
+                TriggerEvent('evidence:client:SetStatus', 'heavyalcohol', 200)
+            end
+        end,
+        onCancel = function()
+            QBCore.Functions.Notify(Lang:t('consumables.canceled'), 'error')
+        end,
+    })
 end)
 
 RegisterNetEvent('consumables:client:Custom', function(itemName)

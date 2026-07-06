@@ -5,16 +5,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>QB Inventory</title>
         <link rel="stylesheet" href="main.css" />
-        <link rel="stylesheet" href="https://unpkg.com/floating-vue@5.2.2/dist/style.css" />
-        <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.6.0"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.6.1"></script>
-        <script src="https://unpkg.com/floating-vue@5.2.2/dist/floating-vue.umd.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+        <link rel="stylesheet" href="vendor/floating-vue.css" />
+        <script src="vendor/vue.global.prod.js"></script>
+        <script src="vendor/floating-ui.core.umd.min.js"></script>
+        <script src="vendor/floating-ui.dom.umd.min.js"></script>
+        <script src="vendor/floating-vue.umd.js"></script>
+        <script src="vendor/axios.min.js"></script>
         <script src="app.js" defer></script>
     </head>
     <body>
-        <div id="app">
+        <div id="app" v-cloak>
             <div
                 class="inventory-root"
                 v-if="isInventoryOpen || isInventoryClosing"

@@ -164,6 +164,13 @@ Config.Consumables = {
         ['beer'] = math.random(30, 40),
         ['vodka'] = math.random(20, 40),
     },
+    -- Papildomas alkio/s troškulio boost valgant / geriant (server-side)
+    dualFoodBoost = {
+        burger = 10,
+    },
+    dualDrinkBoost = {
+        water_bottle = 8,
+    },
     custom = { -- put any custom items here
         -- ['newitem'] = {
         --     progress = {

@@ -80,7 +80,9 @@ function NpcGround.snapShopPed(ent, coords, onDone)
         FreezeEntityPosition(ent, false)
         SetEntityCoordsNoOffset(ent, x, y, finalZ, false, false, false)
         SetEntityHeading(ent, heading)
-        PlaceEntityOnGroundProperly(ent)
+        if type(PlaceEntityOnGroundProperly) == 'function' then
+            PlaceEntityOnGroundProperly(ent)
+        end
 
         local placed = GetEntityCoords(ent)
         local netId = NetworkGetNetworkIdFromEntity(ent)

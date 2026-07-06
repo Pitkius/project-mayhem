@@ -161,6 +161,10 @@ RegisterNetEvent('qb-inventory:server:openVending', function(data)
     OpenShop(src, 'vending')
 end)
 
+RegisterNetEvent('qb-inventory:server:resetBusy', function()
+    Player(source).state.inv_busy = false
+end)
+
 RegisterNetEvent('qb-inventory:server:closeInventory', function(inventory)
     local src = source
     local QBPlayer = QBCore.Functions.GetPlayer(src)

@@ -32,6 +32,8 @@ files {
     'html/index.html',
     'html/main.css',
     'html/app.js',
+    'html/vendor/*.js',
+    'html/vendor/*.css',
     'html/images/*.png',
 }
 

@@ -1,3 +1,14 @@
+(function bootInventoryNui() {
+    if (typeof Vue === "undefined" || typeof axios === "undefined") {
+        console.error("[qb-inventory] UI libraries failed to load");
+        fetch("https://qb-inventory/nuiFailed", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+        }).catch(() => {});
+        return;
+    }
+
 const InventoryContainer = Vue.createApp({
     data() {
         return this.getInitialState();
@@ -1093,6 +1104,17 @@ const InventoryContainer = Vue.createApp({
                     console.warn(`Unexpected action: ${event.data.action}`);
             }
         });
+
+        const appRoot = document.getElementById("app");
+        if (appRoot) {
+            appRoot.classList.add("nui-ready");
+        }
+
+        fetch("https://qb-inventory/nuiReady", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+        }).catch(() => {});
     },
     beforeUnmount() {
         window.removeEventListener("mousemove", () => {});
@@ -1101,5 +1123,19 @@ const InventoryContainer = Vue.createApp({
     },
 });
 
-InventoryContainer.use(FloatingVue);
-InventoryContainer.mount("#app");
+const floatingPlugin = typeof FloatingVue !== "undefined" ? FloatingVue.default || FloatingVue : null;
+if (floatingPlugin) {
+    InventoryContainer.use(floatingPlugin);
+}
+
+try {
+    InventoryContainer.mount("#app");
+} catch (error) {
+    console.error("[qb-inventory] Vue mount failed", error);
+    fetch("https://qb-inventory/nuiFailed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+    }).catch(() => {});
+}
+})();

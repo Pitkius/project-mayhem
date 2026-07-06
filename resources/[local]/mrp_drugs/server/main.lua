@@ -1602,8 +1602,7 @@ CreateThread(function()
         if canItem and canSlot then
             return doRefillWateringCan(source)
         end
-        if not exports['qb-inventory']:RemoveItem(source, item.name, 1, item.slot, 'qb-smallresources:consumables:drink') then return end
-        TriggerClientEvent('consumables:client:Drink', source, item.name)
+        TriggerClientEvent('consumables:client:Drink', source, item.name, item.slot)
     end)
 end)
 

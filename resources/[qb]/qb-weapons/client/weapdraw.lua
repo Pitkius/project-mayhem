@@ -9,7 +9,7 @@ end
 
 local function clearPedTasksSafe(ped)
     if isReloadBusy() then return end
-    clearPedTasksSafe(ped)
+    ClearPedTasks(ped)
 end
 
 local weapons = {

@@ -213,11 +213,16 @@ local function runProgressFallback(name, label, duration, useWhileDead, canCance
 
     disableControls = disableControls or {}
     local endAt = GetGameTimer() + (tonumber(duration) or 5000)
+    local cancelAfter = GetGameTimer() + 800
     while GetGameTimer() < endAt do
+        ped = PlayerPedId()
         if not useWhileDead and (IsEntityDead(ped) or IsPedDeadOrDying(ped, true)) then
             ClearPedTasks(ped)
             if onCancel then onCancel() end
             return
+        end
+        if animDict and animClip and HasAnimDictLoaded(animDict) and not IsEntityPlayingAnim(ped, animDict, animClip, 3) then
+            TaskPlayAnim(ped, animDict, animClip, 4.0, 4.0, -1, animFlags, 0.0, false, false, false)
         end
         if disableControls.disableMovement then
             DisableControlAction(0, 30, true)
@@ -241,7 +246,7 @@ local function runProgressFallback(name, label, duration, useWhileDead, canCance
             DisableControlAction(0, 142, true)
             DisableControlAction(0, 143, true)
         end
-        if canCancel and (IsControlJustReleased(0, 73) or IsControlJustReleased(0, 200) or IsControlJustReleased(0, 322)) then
+        if canCancel and GetGameTimer() > cancelAfter and (IsControlJustReleased(0, 73) or IsControlJustReleased(0, 200) or IsControlJustReleased(0, 322)) then
             ClearPedTasks(ped)
             if onCancel then onCancel() end
             return
