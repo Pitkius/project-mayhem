@@ -639,16 +639,12 @@ function renderStep() {
     stepBody.innerHTML = html;
     bindSliders(stepBody, state.body);
   } else if (step.id === 'clothes') {
-    const items = session.clothingItems || [];
-    if (isShop() && session.shopMode === 'clothing') {
-      renderClothingShop(items);
-    } else {
-      stepBody.innerHTML = '<p class="muted">Kraunami drabužių variantai...</p>';
-      post('getClothingLimits').then((limits) => {
-        session.clothingItems = limits && limits.length ? limits : items;
-        renderClothingShop(session.clothingItems);
-      });
-    }
+    const fallbackItems = session.clothingItems || [];
+    stepBody.innerHTML = '<p class="muted">Kraunami drabužių variantai...</p>';
+    post('getClothingLimits').then((limits) => {
+      session.clothingItems = limits && limits.length ? limits : fallbackItems;
+      renderClothingShop(session.clothingItems);
+    });
     finishStepButtons(steps);
     return;
   } else if (step.id === 'tattoos') {

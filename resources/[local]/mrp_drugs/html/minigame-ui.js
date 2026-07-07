@@ -98,6 +98,7 @@ window.MiniGameUI = (() => {
     } = opts;
 
     const root = scene('mg-scene-gauge');
+    if (opts.prepend) root.appendChild(opts.prepend);
     const wrap = panel('mg-gauge-wrap');
     const track = document.createElement('div');
     track.className = 'mg-gauge-track';
@@ -478,10 +479,331 @@ window.MiniGameUI = (() => {
     mount(root);
   }
 
+  /** Schedule-1: laikyk mygtuką — optimalus greitis, pildyk indą iki tikslo */
+  function pourHold(opts) {
+    const {
+      label = 'Pilti', target = 100, tolerance = 6, icon = '🫙',
+      onSuccess, onFail, hintEl,
+    } = opts;
+    const root = scene('mg-scene-pour');
+    let fill = 0;
+    let speed = 0;
+    let hold = false;
+    let overflows = 0;
+
+    const vessel = panel('mg-pour-vessel');
+    vessel.innerHTML = `
+      <div class="mg-pour-icon">${icon}</div>
+      <div class="mg-pour-fill-track"><div class="mg-pour-fill" id="mgPourFill"></div></div>
+      <p class="mg-pour-pct" id="mgPourPct">0%</p>
+    `;
+    const speedWrap = document.createElement('div');
+    speedWrap.className = 'mg-pour-speed';
+    speedWrap.innerHTML = `
+      <small>Greitis</small>
+      <div class="mg-pour-speed-track"><div class="mg-pour-speed-bar" id="mgPourSpeed"></div><div class="mg-pour-speed-zone"></div></div>
+    `;
+    const btn = actionBtn(label, { variant: 'primary', large: true });
+    root.append(vessel, speedWrap, btn);
+    mount(root);
+
+    const paint = () => {
+      const el = document.getElementById('mgPourFill');
+      const pct = document.getElementById('mgPourPct');
+      if (el) el.style.height = `${Math.min(100, fill)}%`;
+      if (pct) pct.textContent = `${Math.round(fill)}%`;
+    };
+
+    const finish = (ok) => {
+      clearInterval(iv);
+      btn.onmousedown = null;
+      btn.onmouseup = null;
+      btn.onmouseleave = null;
+      if (ok && onSuccess) onSuccess();
+      else if (!ok && onFail) onFail();
+      else if (!ok && typeof failSchedule === 'function') failSchedule();
+    };
+
+    const start = (ev) => { if (ev) ev.preventDefault(); hold = true; btn.classList.add('mg-action--pulse'); };
+    const end = () => { hold = false; btn.classList.remove('mg-action--pulse'); };
+    btn.onmousedown = start;
+    btn.onmouseup = end;
+    btn.onmouseleave = end;
+    btn.ontouchstart = (ev) => { start(ev); };
+    btn.ontouchend = end;
+
+    const iv = setInterval(() => {
+      speed = hold ? Math.min(100, speed + 5) : Math.max(0, speed - 4);
+      const bar = document.getElementById('mgPourSpeed');
+      if (bar) {
+        bar.style.width = `${speed}%`;
+        bar.classList.toggle('ok', speed >= 32 && speed <= 68);
+        bar.classList.toggle('hot', speed > 72);
+      }
+      if (hold && speed > 8) {
+        const rate = speed > 72 ? 2.4 : speed > 38 ? 1.2 : 0.5;
+        fill += rate;
+        paint();
+        if (fill > target + 12) {
+          overflows += 1;
+          fill = target + 8;
+          hold = false;
+          end();
+          if (hintEl) hintEl.textContent = 'Perpylė! Bandyk lėčiau';
+        } else if (fill >= target - tolerance && fill <= target + tolerance && speed <= 70) {
+          finish(true);
+        } else if (hintEl) {
+          hintEl.textContent = `Tikslas ~${target}% · ${Math.round(fill)}%`;
+        }
+      }
+    }, 55);
+    if (typeof scheduleTimer !== 'undefined') scheduleTimer = iv;
+    return { cleanup: () => clearInterval(iv) };
+  }
+
+  /** Schedule-1: užlydimo zonos — spausk iš eilės */
+  function sealZones(opts) {
+    const { need = 3, onDone } = opts;
+    const root = scene('mg-scene-seal');
+    const wrap = panel('mg-seal-wrap');
+    wrap.innerHTML = `<div class="mg-seal-bag">📦</div><div class="mg-seal-bar" id="mgSealBar"></div><p class="mg-seal-count">0 / ${need}</p>`;
+    const bar = wrap.querySelector('#mgSealBar');
+    let done = 0;
+    for (let i = 0; i < need; i += 1) {
+      const z = document.createElement('button');
+      z.type = 'button';
+      z.className = 'mg-seal-zone';
+      z.dataset.i = String(i);
+      z.onclick = () => {
+        if (z.classList.contains('done') || Number(z.dataset.i) !== done) return;
+        z.classList.add('done');
+        done += 1;
+        wrap.querySelector('.mg-seal-count').textContent = `${done} / ${need}`;
+        if (done >= need && onDone) onDone();
+      };
+      bar.appendChild(z);
+    }
+    root.appendChild(wrap);
+    mount(root);
+  }
+
+  /** Distiliatorius + temperatūros gauge */
+  function stillGauge(opts) {
+    gaugeHold({
+      ...opts,
+      label: opts.label || 'Distiliacija',
+      prepend: panel('mg-still-visual', '<div class="mg-still-tower">🥃<span class="mg-still-steam"></span></div>'),
+    });
+  }
+
+  /** Metas: kaitinimas → seka → kristalai */
+  function crystalPipeline(opts) {
+    const { onSuccess, onFail, hintEl } = opts;
+    gaugeHold({
+      label: 'Kaitinimas',
+      speed: 1.6,
+      need: 52,
+      zoneWidth: 20,
+      hintEl,
+      onSuccess: () => {
+        keySequence({
+          keys: ['Q', 'W', 'E', 'R'],
+          rounds: 4 + (opts.difficulty || 1),
+          onSuccess: () => {
+            multiTap({
+              icon: '💎',
+              label: 'Kristalizuoti',
+              need: 3,
+              onDone: () => { if (onSuccess) onSuccess(); },
+            });
+          },
+          onFail,
+        });
+      },
+      onFail,
+    });
+  }
+
+  /** Presas su ritmu — spausk kai indikatorius žalioje zonoje */
+  function pressRhythm(opts) {
+    const { need = 4, icon = '💊', label = 'Presuoti', onDone, onFail } = opts;
+    let hits = 0;
+    let pos = 8;
+    let dir = 2.2;
+    const root = scene('mg-scene-rhythm');
+    const track = panel('mg-rhythm-track');
+    track.innerHTML = `
+      <div class="mg-rhythm-zone"></div>
+      <div class="mg-rhythm-needle" id="mgRhythmNeedle"></div>
+      <p class="mg-rhythm-count">${hits}/${need}</p>
+    `;
+    const btn = actionBtn(label, { icon, variant: 'primary', large: true });
+    root.append(track, btn);
+    mount(root);
+
+    const zoneLeft = 38;
+    const zoneWidth = 24;
+    const iv = setInterval(() => {
+      pos += dir;
+      if (pos >= 94) dir = -2.2;
+      if (pos <= 4) dir = 2.2;
+      const n = document.getElementById('mgRhythmNeedle');
+      if (n) n.style.left = `${pos}%`;
+    }, 35);
+
+    btn.onclick = () => {
+      const inZone = pos >= zoneLeft && pos <= zoneLeft + zoneWidth;
+      if (!inZone) {
+        clearInterval(iv);
+        if (onFail) onFail();
+        else if (typeof failSchedule === 'function') failSchedule();
+        return;
+      }
+      hits += 1;
+      track.querySelector('.mg-rhythm-count').textContent = `${hits}/${need}`;
+      btn.classList.add('mg-action--pulse');
+      setTimeout(() => btn.classList.remove('mg-action--pulse'), 100);
+      if (hits >= need) {
+        clearInterval(iv);
+        if (onDone) onDone();
+      }
+    };
+  }
+
+  /** Kokaino plovimas: lapai → maišymo gauge */
+  function chemistryWash(opts) {
+    const { need = 4, onDone, hintEl } = opts;
+    washStation({
+      need,
+      onDone: () => {
+        gaugeHold({
+          label: 'Maišyti tirpalą',
+          speed: 1.4,
+          need: 45,
+          hintEl,
+          onSuccess: () => { if (onDone) onDone(); },
+        });
+      },
+    });
+  }
+
+  /** Pasirink įrankį → kirpk taškus */
+  function scrapeTrim(opts) {
+    const { toolIcon = '✂️', targetIcon = '🌿', cuts = 5, positions, onComplete } = opts;
+    let toolReady = false;
+    let cut = 0;
+    const root = scene('mg-scene-scrape');
+    const row = panel('mg-scrape-tools');
+    const tool = actionBtn('Pasirink įrankį', { icon: toolIcon, variant: 'secondary' });
+    const board = document.createElement('div');
+    board.className = 'mg-scrape-board';
+    board.innerHTML = `<div class="mg-scrape-target">${targetIcon}</div>`;
+    const pts = document.createElement('div');
+    pts.className = 'mg-click-points';
+    const spots = positions || [
+      { top: '20%', left: '40%' }, { top: '35%', left: '55%' },
+      { top: '50%', left: '38%' }, { top: '65%', left: '52%' }, { top: '45%', left: '62%' },
+    ];
+    spots.slice(0, cuts).forEach((pos, i) => {
+      const p = document.createElement('button');
+      p.type = 'button';
+      p.className = 'mg-click-spot';
+      p.style.top = pos.top;
+      p.style.left = pos.left;
+      p.innerHTML = `<span>${i + 1}</span>`;
+      p.onclick = () => {
+        if (!toolReady || p.classList.contains('done')) return;
+        p.classList.add('done');
+        cut += 1;
+        if (cut >= cuts && onComplete) onComplete();
+      };
+      pts.appendChild(p);
+    });
+    board.appendChild(pts);
+    tool.onclick = () => {
+      toolReady = true;
+      tool.classList.add('mg-action--pulse');
+      tool.textContent = 'Įrankis paruoštas';
+    };
+    row.append(tool);
+    root.append(row, board);
+    mount(root);
+  }
+
+  /** Lašai — spausk kai žymeklis zonoje */
+  function timedDrops(opts) {
+    const { need = 3, icon = '💧', onComplete, onFail } = opts;
+    let drops = 0;
+    let pos = 10;
+    let dir = 2.5;
+    const root = scene('mg-scene-drops');
+    const track = panel('mg-drop-track');
+    track.innerHTML = `
+      <div class="mg-drop-zone"></div>
+      <div class="mg-drop-marker" id="mgDropMarker"></div>
+      <div class="mg-drop-vial">${icon}</div>
+      <p class="mg-drop-count">0 / ${need}</p>
+    `;
+    const btn = actionBtn('Lašinti', { variant: 'primary' });
+    root.append(track, btn);
+    mount(root);
+
+    const zoneL = 42;
+    const zoneW = 18;
+    const iv = setInterval(() => {
+      pos += dir;
+      if (pos >= 92) dir = -2.5;
+      if (pos <= 6) dir = 2.5;
+      const m = document.getElementById('mgDropMarker');
+      if (m) m.style.left = `${pos}%`;
+    }, 40);
+
+    btn.onclick = () => {
+      const ok = pos >= zoneL && pos <= zoneL + zoneW;
+      if (!ok) {
+        clearInterval(iv);
+        if (onFail) onFail();
+        else if (typeof failSchedule === 'function') failSchedule();
+        return;
+      }
+      drops += 1;
+      track.querySelector('.mg-drop-count').textContent = `${drops} / ${need}`;
+      if (drops >= need) {
+        clearInterval(iv);
+        if (onComplete) onComplete();
+      }
+    };
+  }
+
+  /** Džiovinimo lentyna — pakabink ant kabyklų */
+  function dryRack(opts) {
+    const { need = 3, icon = '🍃', onComplete } = opts;
+    let hung = 0;
+    const root = scene('mg-scene-dry');
+    const rack = panel('mg-dry-rack');
+    for (let i = 0; i < need; i += 1) {
+      const hook = document.createElement('button');
+      hook.type = 'button';
+      hook.className = 'mg-dry-hook';
+      hook.innerHTML = `<span>${icon}</span><small>Kabliukas ${i + 1}</small>`;
+      hook.onclick = () => {
+        if (hook.classList.contains('hung')) return;
+        hook.classList.add('hung');
+        hung += 1;
+        if (hung >= need && onComplete) onComplete();
+      };
+      rack.appendChild(hook);
+    }
+    root.appendChild(rack);
+    mount(root);
+  }
+
   return {
     THEMES, themeFor, applyTheme, renderStepDots, clearBoard, scene, panel, mount,
     iconHero, actionBtn, gaugeHold, clickBoard, multiTap, sliderBlend, vesselFill,
     spawnCatcher, stripRow, blisterPack, keySequence, pressMachine, washStation,
     packBagFlow, foilFold, successScreen,
+    pourHold, sealZones, stillGauge, crystalPipeline, pressRhythm, chemistryWash,
+    scrapeTrim, timedDrops, dryRack,
   };
 })();

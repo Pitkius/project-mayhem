@@ -8,6 +8,8 @@ local supplyShopPed = 0
 local weedSupplyShopPed = 0
 local supplyShopBlip = nil
 local productBuyerPeds = {}
+local drugNpcsSpawning = false
+local drugNpcsSpawned = false
 local productBuyerBlips = {}
 local mapBlips = {}
 local streetSellExcludedPeds = {}
@@ -29,6 +31,12 @@ local function closeUi()
     SetNuiFocus(false, false)
     nui('close')
 end
+
+RegisterNetEvent('mrp_drugs:client:forceCloseUi', function()
+    closeUi()
+end)
+
+exports('ForceCloseUi', closeUi)
 
 local function openStationUi(stationId)
     QBCore.Functions.TriggerCallback('mrp_drugs:server:getStationUi', function(res)
@@ -1449,6 +1457,8 @@ CreateThread(function()
 end)
 
 local function spawnAllDrugNpcs()
+    if drugNpcsSpawning then return end
+    drugNpcsSpawning = true
     spawnTestNpc()
     Wait(200)
     spawnSupplyShopNpc()
@@ -1458,10 +1468,12 @@ local function spawnAllDrugNpcs()
     spawnTestSupplyShopNpc()
     Wait(200)
     spawnProductBuyerNpcs()
+    drugNpcsSpawning = false
+    drugNpcsSpawned = true
 end
 
 local function ensureDrugNpcsAlive()
-    if not LocalPlayer.state.isLoggedIn then return end
+    if not LocalPlayer.state.isLoggedIn or drugNpcsSpawning then return end
 
     local supply = Config.SupplyShopNPC
     if supply and supply.enabled ~= false and (supplyShopPed == 0 or not DoesEntityExist(supplyShopPed)) then
@@ -1486,6 +1498,10 @@ local function ensureDrugNpcsAlive()
         if cfg and cfg.enabled ~= false then
             local ped = productBuyerPeds[buyerId]
             if not ped or ped == 0 or not DoesEntityExist(ped) then
+                if productBuyerPeds[buyerId] and productBuyerPeds[buyerId] ~= 0 then
+                    safeDeleteHubPed(productBuyerPeds[buyerId])
+                    productBuyerPeds[buyerId] = 0
+                end
                 local id = buyerId
                 productBuyerPeds[id] = spawnHubPed(cfg, function(entity)
                     exports['qb-target']:AddTargetEntity(entity, {
@@ -1524,6 +1540,7 @@ end)
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     CreateThread(function()
         Wait(2500)
+        if drugNpcsSpawned then return end
         setupNpcTargetZones()
         spawnAllDrugNpcs()
     end)

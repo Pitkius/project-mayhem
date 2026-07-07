@@ -273,12 +273,21 @@ local function DisableTarget(forcedisable)
 	if (not targetActive and hasFocus and not Config.Toggle) or not forcedisable then return end
 	SetNuiFocus(false, false)
 	SetNuiFocusKeepInput(false)
-	Wait(100)
 	targetActive, success, hasFocus = false, false, false
 	SendNUIMessage({ response = 'closeTarget' })
 end
 
 exports('DisableTarget', DisableTarget)
+
+local function ForceCloseTarget()
+	SetNuiFocus(false, false)
+	SetNuiFocusKeepInput(false)
+	targetActive, success, hasFocus = false, false, false
+	table_wipe(sendData)
+	SendNUIMessage({ response = 'closeTarget' })
+end
+
+exports('ForceCloseTarget', ForceCloseTarget)
 
 local function DrawOutlineEntity(entity, bool)
 	if not Config.EnableOutline or not isValidEntity(entity) then return end
@@ -1390,15 +1399,18 @@ exports('AllowTargeting', AllowTargeting)
 -- NUI Callbacks
 
 RegisterNUICallback('selectTarget', function(option, cb)
+	cb('ok')
 	option = tonumber(option) or option
 	SetNuiFocus(false, false)
 	SetNuiFocusKeepInput(false)
-	Wait(100)
 	targetActive, success, hasFocus = false, false, false
-	if not next(sendData) then return end
+	if not sendData or not next(sendData) then
+		table_wipe(sendData)
+		return
+	end
 	local data = sendData[option]
-	if not data then return end
 	table_wipe(sendData)
+	if not data then return end
 	CreateThread(function()
 		Wait(0)
 		if data.entity ~= nil and data.entity ~= 0 and isValidEntity(data.entity) then
@@ -1423,28 +1435,25 @@ RegisterNUICallback('selectTarget', function(option, cb)
 			error('No trigger setup')
 		end
 	end)
-	cb('ok')
 end)
 
 RegisterNUICallback('closeTarget', function(_, cb)
+	cb('ok')
 	SetNuiFocus(false, false)
 	SetNuiFocusKeepInput(false)
-	Wait(100)
 	targetActive, success, hasFocus = false, false, false
-	cb('ok')
 end)
 
 RegisterNUICallback('leftTarget', function(_, cb)
+	cb('ok')
 	if Config.Toggle then
 		SetNuiFocus(false, false)
 		SetNuiFocusKeepInput(false)
-		Wait(100)
 		table_wipe(sendData)
 		success, hasFocus = false, false
 	else
 		DisableTarget(true)
 	end
-	cb('ok')
 end)
 
 -- Startup thread

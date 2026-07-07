@@ -42,7 +42,19 @@ Config.BlipScale = 0.75
 Config.BlipLabel = 'Degalinė'
 
 Config.PricePerLiter = 7
-Config.MaxDistanceToPump = 2.8
+Config.MaxDistanceToPump = 4.5
+Config.FuelTickMs = 450
+Config.LitersPerTick = 1.2
+
+Config.PumpModels = {
+    `prop_gas_pump_1a`,
+    `prop_gas_pump_1b`,
+    `prop_gas_pump_1c`,
+    `prop_gas_pump_1d`,
+    `prop_vintage_pump`,
+    `prop_gas_pump_old2`,
+    `prop_gas_pump_old3`,
+}
 
 Config.Stations = {
     { x = 49.41,   y = 2778.79,  z = 58.04 },

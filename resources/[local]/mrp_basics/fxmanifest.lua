@@ -37,4 +37,5 @@ exports {
     'ToggleClothingSlot',
     'OpenClothingMenu',
     'RestoreAllClothing',
+    'ForceCloseAllUi',
 }

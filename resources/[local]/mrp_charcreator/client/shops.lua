@@ -131,7 +131,6 @@ function ShopSession.Open(kind, camLoc)
             data.tattooZones = Config.TattooZones or {}
         else
             data.shopSteps = Config.ClothingShopSteps or { 'clothes' }
-            data.clothingItems = Config.ClothingShopItems or {}
         end
 
         local gender = getSessionGender(data)
@@ -144,6 +143,11 @@ function ShopSession.Open(kind, camLoc)
 
         unlockPlayerMovement()
         setupShopPed(data.current and data.current.skin, gender, kind)
+
+        if kind == 'clothing' then
+            local ped = ShopSession.previewPed or PlayerPedId()
+            data.clothingItems = CharAppearance.getClothingLimits(ped, Config.ClothingShopItems or {})
+        end
 
         SetNuiFocus(true, true)
         SetNuiFocusKeepInput(false)

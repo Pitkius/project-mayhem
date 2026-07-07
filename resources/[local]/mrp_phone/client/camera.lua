@@ -154,7 +154,6 @@ function PhoneCamera.capture()
             if res and res.ok then
                 QBCore.Functions.Notify('Nuotrauka išsaugota galerijoje.', 'success')
                 sendUi('photoSaved', { id = res.id, count = res.count })
-                TriggerEvent('mrp_phone:client:refreshData')
             else
                 QBCore.Functions.Notify(res and res.message or 'Nepavyko išsaugoti nuotraukos.', 'error')
             end

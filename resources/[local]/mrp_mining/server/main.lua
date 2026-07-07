@@ -24,6 +24,17 @@ local function playerHasMiningPickaxe(src)
     return QBCore.Functions.HasItem(src, PICKAXE_ITEM, 1)
 end
 
+local function nearMiningWall(src, wallIdx)
+    wallIdx = tonumber(wallIdx)
+    local wall = wallIdx and Config.MiningWalls and Config.MiningWalls[wallIdx]
+    if not wall then return false end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local p = GetEntityCoords(ped)
+    local maxDist = math.max((tonumber(wall.length) or 40.0) * 0.55, (tonumber(wall.width) or 6.0) * 2.0) + 6.0
+    return #(p - wall.center) <= maxDist
+end
+
 local function nearMiningSite(src, siteIdx)
     siteIdx = tonumber(siteIdx)
     if not siteIdx or not Config.MiningSites[siteIdx] then return false end
@@ -32,6 +43,10 @@ local function nearMiningSite(src, siteIdx)
     local p = GetEntityCoords(ped)
     local s = Config.MiningSites[siteIdx]
     return #(p - s.coords) <= (tonumber(s.radius) or 80.0) + 12.0
+end
+
+local function nearMiningArea(src, wallIdx)
+    return nearMiningWall(src, wallIdx) or nearMiningSite(src, 1)
 end
 
 local function nearProcess(src)
@@ -100,10 +115,10 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
     end)
 end)
 
-RegisterNetEvent('mrp_mining:server:mineAttempt', function(siteIdx)
+RegisterNetEvent('mrp_mining:server:mineAttempt', function(wallIdx)
     local src = source
-    siteIdx = tonumber(siteIdx)
-    if not siteIdx or not nearMiningSite(src, siteIdx) then
+    wallIdx = tonumber(wallIdx)
+    if not wallIdx or not nearMiningArea(src, wallIdx) then
         return TriggerClientEvent('QBCore:Notify', src, 'Netinkama vieta.', 'error')
     end
     local Player = QBCore.Functions.GetPlayer(src)
@@ -177,6 +192,59 @@ RegisterNetEvent('mrp_mining:server:makeSteel', function()
         Player.Functions.AddItem(R.iron, needI, false)
         Player.Functions.AddItem(R.coal, needC, false)
         TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
+    end
+end)
+
+QBCore.Functions.CreateCallback('mrp_mining:server:getSellInventory', function(source, cb)
+    local src = source
+    if not nearSell(src) then
+        return cb({ ok = false, message = 'Per toli nuo supirkėjo.' })
+    end
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false, message = 'Žaidėjas nerastas.' }) end
+
+    local items = {}
+    local total = 0
+    for itemName, price in pairs(Config.SellPrices or {}) do
+        local data = getPlayerItem(src, itemName)
+        local count = itemAmount(data)
+        local p = tonumber(price) or 0
+        if p > 0 and count > 0 then
+            local it = QBCore.Shared.Items[itemName]
+            local rowTotal = p * count
+            total = total + rowTotal
+            items[#items + 1] = {
+                item = itemName,
+                label = it and it.label or itemName,
+                count = count,
+                price = p,
+                total = rowTotal,
+            }
+        end
+    end
+    table.sort(items, function(a, b) return a.label < b.label end)
+    cb({ ok = true, items = items, grandTotal = total })
+end)
+
+RegisterNetEvent('mrp_mining:server:sellItem', function(itemName)
+    local src = source
+    if not nearSell(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo supirkėjo.', 'error')
+    end
+    itemName = tostring(itemName or '')
+    local price = tonumber(Config.SellPrices and Config.SellPrices[itemName]) or 0
+    if price <= 0 then return end
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    local data = getPlayerItem(src, itemName)
+    local amt = itemAmount(data)
+    if amt < 1 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Neturi šio daikto.', 'error')
+    end
+    if Player.Functions.RemoveItem(itemName, amt, false) then
+        local total = price * amt
+        Player.Functions.AddMoney('cash', total, 'mining-scrap-sell')
+        TriggerClientEvent('QBCore:Notify', src, ('Parduota už $%s'):format(total), 'success')
     end
 end)
 

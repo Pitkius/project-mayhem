@@ -1,4 +1,5 @@
 local properties = nil
+local inputBusy = false
 
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then
@@ -19,24 +20,37 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
 end)
 
 RegisterNUICallback('buttonSubmit', function(data, cb)
-    SetNuiFocus(false)
-    properties:resolve(data.data)
-    properties = nil
     cb('ok')
+    if not properties then
+        SetNuiFocus(false, false)
+        return
+    end
+    SetNuiFocus(false, false)
+    local pending = properties
+    properties = nil
+    inputBusy = false
+    pending:resolve(data.data)
 end)
 
 RegisterNUICallback('closeMenu', function(_, cb)
-    SetNuiFocus(false)
-    properties:resolve(nil)
-    properties = nil
     cb('ok')
+    if not properties then
+        SetNuiFocus(false, false)
+        return
+    end
+    SetNuiFocus(false, false)
+    local pending = properties
+    properties = nil
+    inputBusy = false
+    pending:resolve(nil)
 end)
 
 local function ShowInput(data)
     Wait(150)
     if not data then return end
-    if properties then return end
+    if properties or inputBusy then return end
 
+    inputBusy = true
     properties = promise.new()
 
     SetNuiFocus(true, true)
@@ -45,7 +59,21 @@ local function ShowInput(data)
         data = data
     })
 
-    return Citizen.Await(properties)
+    local result = Citizen.Await(properties)
+    inputBusy = false
+    return result
 end
+
+exports('ForceClose', function()
+    if properties then
+        local pending = properties
+        properties = nil
+        inputBusy = false
+        pending:resolve(nil)
+    else
+        inputBusy = false
+    end
+    SetNuiFocus(false, false)
+end)
 
 exports('ShowInput', ShowInput)

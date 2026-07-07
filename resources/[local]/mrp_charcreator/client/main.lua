@@ -345,11 +345,11 @@ end)
 
 RegisterNUICallback('getClothingLimits', function(_, cb)
     local items = Config.CreatorClothingItems or Config.ClothingShopItems or {}
-    cb(CharAppearance.getClothingLimits(previewPed, items))
+    cb(CharAppearance.getClothingLimits(nil, items))
 end)
 
 RegisterNUICallback('getTextureLimit', function(data, cb)
-    cb({ maxTex = CharAppearance.getTextureLimit(previewPed, data.key, data.item) })
+    cb({ maxTex = CharAppearance.getTextureLimit(nil, data.key, data.item) })
 end)
 
 RegisterNUICallback('setCamera', function(data, cb)

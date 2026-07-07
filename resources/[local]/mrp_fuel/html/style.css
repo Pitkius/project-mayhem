@@ -1,0 +1,55 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+.hidden { display: none !important; }
+
+#fuelUi {
+  position: fixed; inset: 0; display: grid; place-items: end center;
+  padding-bottom: 8vh; pointer-events: none;
+}
+.fuel-box {
+  pointer-events: auto;
+  width: min(380px, 94vw);
+  background: linear-gradient(165deg, rgba(12, 18, 28, 0.96), rgba(6, 10, 18, 0.98));
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 20px;
+  padding: 20px 22px 18px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.65), 0 0 40px rgba(56,189,248,0.12);
+  animation: slideUp .25s ease;
+}
+@keyframes slideUp { from { opacity:0; transform: translateY(16px);} to { opacity:1; transform:none;} }
+.fuel-head { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+.fuel-icon { font-size: 34px; filter: drop-shadow(0 4px 12px rgba(56,189,248,0.4)); }
+.fuel-head h2 { color: #f0f9ff; font-size: 18px; }
+.fuel-head p { color: #94a3b8; font-size: 12px; margin-top: 2px; }
+.fuel-bar-wrap { margin-bottom: 14px; }
+.fuel-bar {
+  height: 14px; border-radius: 999px; background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(56,189,248,0.25); overflow: hidden;
+}
+#fuelBarFill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #0284c7, #38bdf8, #7dd3fc);
+  transition: width .15s linear;
+}
+#fuelPct { text-align: right; font-size: 12px; color: #7dd3fc; margin-top: 6px; font-weight: 700; }
+.fuel-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;
+}
+.fuel-stats div {
+  background: rgba(255,255,255,0.04); border-radius: 12px; padding: 10px 8px; text-align: center;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.fuel-stats small { display: block; color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.fuel-stats strong { color: #f8fafc; font-size: 14px; margin-top: 4px; display: block; }
+.fuel-pay { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.fuel-pay .pay {
+  border: none; border-radius: 12px; padding: 12px; font-weight: 700; cursor: pointer;
+  color: #0f172a; transition: transform .12s;
+}
+.fuel-pay .pay:hover { transform: translateY(-1px); }
+.fuel-pay .cash { background: linear-gradient(135deg, #4ade80, #16a34a); }
+.fuel-pay .card { background: linear-gradient(135deg, #38bdf8, #0284c7); color: #fff; }
+.fuel-cancel {
+  width: 100%; border: 1px solid rgba(148,163,184,0.35); background: transparent;
+  color: #cbd5e1; border-radius: 12px; padding: 10px; cursor: pointer; font-weight: 600;
+}

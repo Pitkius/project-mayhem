@@ -222,7 +222,17 @@
       setTimeout(() => el.classList.remove("on"), 120);
     }
     if (action === "photoSaved") {
-      window.refreshState?.();
+      if (payload?.id && window.PhoneState) {
+        const photos = window.PhoneState.photos || [];
+        if (!photos.some((p) => Number(p.id) === Number(payload.id))) {
+          photos.unshift({ id: payload.id, created_at: new Date().toISOString() });
+          window.PhoneState.photos = photos;
+        }
+      }
+      const gal = document.getElementById("camGalleryHost");
+      if (gal) renderGalleryGrid(gal);
+      const cnt = document.getElementById("camGalleryCount");
+      if (cnt && payload?.count != null) cnt.textContent = String(payload.count);
     }
   });
 })();

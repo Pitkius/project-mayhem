@@ -3,8 +3,16 @@ game 'gta5'
 lua54 'yes'
 
 name 'mrp_fuel'
-description 'Degalinės, kuro suvartojimas važiuojant, pildymas'
-version '1.1.0'
+description 'Degalinės, kuro suvartojimas, qb-target pildymas'
+version '2.0.0'
+
+ui_page 'html/index.html'
+
+files {
+    'html/index.html',
+    'html/style.css',
+    'html/app.js',
+}
 
 exports {
     'GetFuel',
@@ -24,4 +32,3 @@ server_scripts {
 }
 
 dependency 'qb-core'
-

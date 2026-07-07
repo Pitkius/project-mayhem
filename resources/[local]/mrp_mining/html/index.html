@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kasykla</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="mining-root" class="hidden">
+    <div class="mining-panel" id="mining-panel">
+      <div class="mining-header">
+        <span class="mining-badge">⛏ KASYKLA</span>
+        <button type="button" class="mining-close" id="mining-close">✕</button>
+      </div>
+      <p class="mining-sub" id="mining-sub">Laiku smogk į taikinius</p>
+      <div class="mining-track" id="mining-track">
+        <div class="mining-zone" id="mining-zone"></div>
+        <div class="mining-marker" id="mining-marker"></div>
+      </div>
+      <div class="mining-stats">
+        <span>Smūgiai: <b id="mining-hits">0</b>/<b id="mining-needed">5</b></span>
+        <span>Laikas: <b id="mining-time">12</b>s</span>
+      </div>
+      <p class="mining-hint">SPACE arba kairysis pelės — smūgis</p>
+    </div>
+
+    <div class="sell-panel hidden" id="sell-panel">
+      <div class="mining-header">
+        <span class="mining-badge sell">💰 PARDAVIMAS</span>
+        <button type="button" class="mining-close" id="sell-close">✕</button>
+      </div>
+      <p class="mining-sub">Pasirink ką parduoti rūdų supirkėjui</p>
+      <div class="sell-list" id="sell-list"></div>
+      <div class="sell-footer">
+        <span class="sell-total">Viso: <b id="sell-total">$0</b></span>
+        <button type="button" class="sell-all-btn" id="sell-all-btn">Parduoti viską</button>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

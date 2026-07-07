@@ -3,6 +3,26 @@ local QBCore = exports['qb-core']:GetCoreObject()
 Bank = Bank or {}
 
 local transferCooldown = {}
+local dwCooldown = {}
+
+local function parseAmount(data)
+    if type(data) == 'number' or type(data) == 'string' then
+        return math.floor(tonumber(data) or 0)
+    end
+    if type(data) == 'table' then
+        return math.floor(tonumber(data.amount or data.value) or 0)
+    end
+    return 0
+end
+
+local function dwBusy(src, action)
+    local now = os.time()
+    dwCooldown[src] = dwCooldown[src] or {}
+    local last = dwCooldown[src][action] or 0
+    if now - last < 1 then return true end
+    dwCooldown[src][action] = now
+    return false
+end
 
 local function cfg()
     return Config.Bank or {}
@@ -291,10 +311,14 @@ function Bank.LogTransaction(citizenid, txType, amount, title, opts)
 end
 
 local function getBalances(P)
-    if not P or not P.PlayerData or not P.PlayerData.money then
+    if not P or not P.PlayerData then
         return 0, 0
     end
-    return tonumber(P.PlayerData.money.cash) or 0, tonumber(P.PlayerData.money.bank) or 0
+    if P.Functions and P.Functions.GetMoney then
+        return math.floor(P.Functions.GetMoney('cash') or 0), math.floor(P.Functions.GetMoney('bank') or 0)
+    end
+    local money = P.PlayerData.money or {}
+    return math.floor(tonumber(money.cash) or 0), math.floor(tonumber(money.bank) or 0)
 end
 
 local function resolveRecipient(query)
@@ -486,12 +510,17 @@ function Bank.Transfer(src, data)
 end
 
 function Bank.Deposit(src, amount)
+    if dwBusy(src, 'deposit') then return { ok = false, message = 'Palaukite akimirką.' } end
     local citizenid, P = citizenFromSrc(src)
     if not citizenid then return { ok = false, message = 'Žaidėjas nerastas.' } end
     amount = math.floor(tonumber(amount) or 0)
     local maxA = (cfg().maxDepositWithdraw) or 500000
     if amount < 1 then return { ok = false, message = 'Įveskite sumą.' } end
     if amount > maxA then return { ok = false, message = ('Maksimali suma: %s €'):format(maxA) } end
+    local cash, _ = getBalances(P)
+    if cash < amount then
+        return { ok = false, message = ('Nepakanka grynais. Turite %s €.'):format(cash) }
+    end
 
     local okRemove, removeMsg = removeMoneyFromPlayer(P, 'cash', amount, 'phone-bank-deposit')
     if not okRemove then return { ok = false, message = removeMsg } end
@@ -505,12 +534,17 @@ function Bank.Deposit(src, amount)
 end
 
 function Bank.Withdraw(src, amount)
+    if dwBusy(src, 'withdraw') then return { ok = false, message = 'Palaukite akimirką.' } end
     local citizenid, P = citizenFromSrc(src)
     if not citizenid then return { ok = false, message = 'Žaidėjas nerastas.' } end
     amount = math.floor(tonumber(amount) or 0)
     local maxA = (cfg().maxDepositWithdraw) or 500000
     if amount < 1 then return { ok = false, message = 'Įveskite sumą.' } end
     if amount > maxA then return { ok = false, message = ('Maksimali suma: %s €'):format(maxA) } end
+    local _, bank = getBalances(P)
+    if bank < amount then
+        return { ok = false, message = ('Nepakanka banke. Turite %s €.'):format(bank) }
+    end
 
     local okRemove, removeMsg = removeMoneyFromPlayer(P, 'bank', amount, 'phone-bank-withdraw')
     if not okRemove then return { ok = false, message = removeMsg } end
@@ -564,7 +598,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:bankTransfer', function(source
 end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:bankDeposit', function(source, cb, data)
-    local res = Bank.Deposit(source, data and data.amount)
+    local res = Bank.Deposit(source, parseAmount(data))
     if res.ok then
         TriggerClientEvent('mrp_phone:client:refreshData', source)
     end
@@ -572,7 +606,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:bankDeposit', function(source,
 end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:bankWithdraw', function(source, cb, data)
-    local res = Bank.Withdraw(source, data and data.amount)
+    local res = Bank.Withdraw(source, parseAmount(data))
     if res.ok then
         TriggerClientEvent('mrp_phone:client:refreshData', source)
     end
@@ -603,7 +637,9 @@ AddEventHandler('QBCore:Server:OnMoneyChange', function(src, moneyType, amount, 
 end)
 
 AddEventHandler('playerDropped', function()
-    transferCooldown[source] = nil
+    local src = source
+    transferCooldown[src] = nil
+    dwCooldown[src] = nil
 end)
 
 CreateThread(function()

@@ -8,8 +8,16 @@ local CASINO_BUILD = 2060
 local CASINO_IPLS_REMOVE = {
     'hei_dlc_casino_door_broken',
     'hei_dlc_casino_door_broken2',
-    'hei_dlc_vw_roofdoors_locked',
 }
+
+local function getIplsToRemove()
+    local list = {}
+    for _, ipl in ipairs(CASINO_IPLS_REMOVE) do list[#list + 1] = ipl end
+    if not (Config.Casino and Config.Casino.useStreamMlo) then
+        list[#list + 1] = 'hei_dlc_vw_roofdoors_locked'
+    end
+    return list
+end
 
 --- Pilnas Diamond Casino & Resort IPL sąrašas (GTA Online mpvinewood).
 local CASINO_IPLS = {
@@ -150,7 +158,7 @@ function Casino.loadIpl(forceRefresh)
 
     ensureMpDlcMaps()
 
-    for _, ipl in ipairs(CASINO_IPLS_REMOVE) do
+    for _, ipl in ipairs(getIplsToRemove()) do
         enableIpl(ipl, false)
     end
     for _, ipl in ipairs(CASINO_IPLS) do

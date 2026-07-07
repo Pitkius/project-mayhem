@@ -3,6 +3,7 @@ RegisterNetEvent('QBCore:Client:UpdateObject', function() QBCore = exports['qb-c
 
 local headerShown = false
 local sendData = nil
+local menuBusy = false
 
 -- Functions
 
@@ -39,6 +40,7 @@ end
 local function closeMenu()
     sendData = nil
     headerShown = false
+    menuBusy = false
     SetNuiFocus(false, false)
     SendNUIMessage({
         action = 'CLOSE_MENU'
@@ -68,15 +70,18 @@ end)
 -- NUI Callbacks
 
 RegisterNUICallback('clickedButton', function(option, cb)
+    cb('ok')
+    if menuBusy then return end
+    menuBusy = true
     if headerShown then headerShown = false end
     PlaySoundFrontend(-1, 'Highlight_Cancel', 'DLC_HEIST_PLANNING_BOARD_SOUNDS', 1)
     SetNuiFocus(false, false)
     if sendData then
         local data = sendData[tonumber(option)]
         sendData = nil
-        if data.action ~= nil then
+        if data and data.action ~= nil then
             data.action()
-            cb('ok')
+            SetTimeout(350, function() menuBusy = false end)
             return
         end
         if data and data.params then
@@ -95,15 +100,16 @@ RegisterNUICallback('clickedButton', function(option, cb)
             end
         end
     end
-    cb('ok')
+    SetTimeout(350, function() menuBusy = false end)
 end)
 
 
 RegisterNUICallback('closeMenu', function(_, cb)
+    cb('ok')
     headerShown = false
     sendData = nil
+    menuBusy = false
     SetNuiFocus(false, false)
-    cb('ok')
     TriggerEvent("qb-menu:client:menuClosed")
 end)
 

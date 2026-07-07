@@ -1,0 +1,187 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Segoe UI", system-ui, sans-serif; background: transparent; overflow: hidden; }
+
+.hidden { display: none !important; }
+
+#mining-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+#mining-root.active { pointer-events: auto; }
+
+.mining-panel,
+.sell-panel {
+  width: min(420px, 92vw);
+  background: linear-gradient(165deg, rgba(18, 22, 32, 0.97), rgba(10, 12, 18, 0.98));
+  border: 1px solid rgba(255, 200, 80, 0.25);
+  border-radius: 16px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  color: #e8ecf4;
+}
+
+.mining-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mining-badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ffc850;
+  background: rgba(255, 200, 80, 0.12);
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+
+.mining-badge.sell { color: #7ee8a0; background: rgba(80, 220, 120, 0.12); }
+
+.mining-close {
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  color: #9aa4b8;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.mining-close:hover { background: rgba(255, 80, 80, 0.2); color: #ff8888; }
+
+.mining-sub {
+  font-size: 13px;
+  color: #8b95a8;
+  margin-bottom: 14px;
+}
+
+.mining-track {
+  position: relative;
+  height: 52px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.mining-zone {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  width: 18%;
+  left: 40%;
+  background: linear-gradient(180deg, rgba(255, 200, 80, 0.5), rgba(255, 140, 40, 0.35));
+  border-radius: 6px;
+  border: 1px solid rgba(255, 220, 120, 0.6);
+  box-shadow: 0 0 20px rgba(255, 180, 60, 0.35);
+}
+
+.mining-marker {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  left: 0;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 12px #fff;
+  transition: left 0.016s linear;
+}
+
+.mining-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #a8b0c0;
+  margin-bottom: 8px;
+}
+
+.mining-stats b { color: #ffc850; }
+
+.mining-hint {
+  font-size: 11px;
+  color: #6b7588;
+  text-align: center;
+}
+
+.sell-list {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sell-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sell-row-info { flex: 1; }
+.sell-row-name { font-size: 14px; font-weight: 600; }
+.sell-row-meta { font-size: 11px; color: #7a8498; margin-top: 2px; }
+
+.sell-row-btn {
+  background: linear-gradient(135deg, #3d8f5a, #2d6b44);
+  border: none;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.sell-row-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.sell-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sell-total b { color: #7ee8a0; font-size: 18px; }
+
+.sell-all-btn {
+  background: linear-gradient(135deg, #c9a227, #a67c00);
+  border: none;
+  color: #1a1408;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sell-all-btn:hover { filter: brightness(1.08); }
+
+.mining-panel.fail .mining-zone {
+  background: rgba(255, 60, 60, 0.35);
+  border-color: rgba(255, 100, 100, 0.5);
+}
+
+.mining-panel.success .mining-zone {
+  background: rgba(80, 220, 120, 0.4);
+  border-color: rgba(120, 255, 160, 0.6);
+}

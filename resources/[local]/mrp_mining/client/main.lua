@@ -1,5 +1,8 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local sellPed = nil
+local miningBusy = false
+local sellUiOpen = false
+local pendingWallIdx = nil
 
 local function playerHasMiningPickaxe()
     return QBCore.Functions.HasItem('mining_pickaxe', 1)
@@ -10,44 +13,68 @@ local function loadModel(hash)
     while not HasModelLoaded(hash) do Wait(10) end
 end
 
+local function loadAnimDict(dict)
+    RequestAnimDict(dict)
+    while not HasAnimDictLoaded(dict) do Wait(10) end
+end
+
+local function playMiningAnim(ms)
+    local ped = PlayerPedId()
+    loadAnimDict('melee@large_wpn@streamed_core')
+    TaskPlayAnim(ped, 'melee@large_wpn@streamed_core', 'ground_attack_on_spot', 8.0, -8.0, ms or 3000, 1, 0, false, false, false)
+end
+
+local function playSellAnim(ms)
+    local ped = PlayerPedId()
+    loadAnimDict('mp_common')
+    TaskPlayAnim(ped, 'mp_common', 'givetake1_a', 8.0, -8.0, ms or 2500, 49, 0, false, false, false)
+end
+
+local function setMiningUi(open)
+    SetNuiFocus(open, open)
+    if open then
+        local mg = Config.Minigame or {}
+        SendNUIMessage({
+            action = 'startMining',
+            hits = mg.hits or 5,
+            time = mg.time or 12,
+            speed = mg.speed or 0.88,
+        })
+    else
+        SendNUIMessage({ action = 'close' })
+    end
+end
+
+local function setSellUi(open, items)
+    sellUiOpen = open
+    SetNuiFocus(open, open)
+    if open then
+        SendNUIMessage({ action = 'openSell', items = items or {} })
+    else
+        SendNUIMessage({ action = 'close' })
+    end
+end
+
+local function refreshSellUi()
+    QBCore.Functions.TriggerCallback('mrp_mining:server:getSellInventory', function(res)
+        if res and res.ok and sellUiOpen then
+            SendNUIMessage({ action = 'sellRefresh', items = res.items or {} })
+        end
+    end)
+end
+
 local function openSellMenu()
-    local rows = {
-        { header = 'Metalų supirkimas', txt = 'Kainos už 1 vnt. — apačioje „Parduoti viską“.', isMenuHeader = true },
-    }
-    local sorted = {}
-    for item, price in pairs(Config.SellPrices or {}) do
-        sorted[#sorted + 1] = { item = item, price = price }
-    end
-    table.sort(sorted, function(a, b) return tostring(a.item) < tostring(b.item) end)
-    for _, row in ipairs(sorted) do
-        local it = QBCore.Shared.Items[row.item]
-        local label = it and it.label or row.item
-        rows[#rows + 1] = {
-            header = ('%s — $%s / vnt.'):format(label, row.price),
-            txt = row.item,
-            isMenuHeader = true,
-        }
-    end
-    rows[#rows + 1] = {
-        header = 'Parduoti viską',
-        txt = 'Visus šių žaliavų stackus iškart',
-        params = {
-            isAction = true,
-            event = function()
-                TriggerServerEvent('mrp_mining:server:sellAll')
-            end,
-        },
-    }
-    TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+    QBCore.Functions.TriggerCallback('mrp_mining:server:getSellInventory', function(res)
+        if not res or not res.ok then
+            return QBCore.Functions.Notify(res and res.message or 'Klaida.', 'error')
+        end
+        setSellUi(true, res.items or {})
+    end)
 end
 
 local function openProcessMenu()
     local rows = {
-        {
-            header = 'Rūdų perdirbimas',
-            txt = 'Žalia → švari (pagal sąrašą)',
-            isMenuHeader = true,
-        },
+        { header = 'Rūdų perdirbimas', txt = 'Žalia → švari (pagal sąrašą)', isMenuHeader = true },
         {
             header = 'Perdirbti visas žalias rūdas',
             txt = 'Vienetuose pagal inventorių',
@@ -73,25 +100,86 @@ local function openProcessMenu()
 end
 
 RegisterNetEvent('mrp_mining:client:startMining', function(data)
-    local siteIdx = data and tonumber(data.siteIndex)
-    if not siteIdx then return end
+    if miningBusy then return end
+    local wallIdx = data and tonumber(data.wallIndex)
+    if not wallIdx then return end
     if not playerHasMiningPickaxe() then
-        return QBCore.Functions.Notify('Reikia kirtiklio.', 'error')
+        return QBCore.Functions.Notify('Reikia kasyklos kirtiklio.', 'error')
     end
 
-    QBCore.Functions.Progressbar('mrp_mining', 'Skaldai akmenį…', Config.MineDuration or 8500, false, true, {
+    pendingWallIdx = wallIdx
+    miningBusy = true
+    setMiningUi(true)
+end)
+
+RegisterNUICallback('miningResult', function(data, cb)
+    cb({ ok = true })
+    local wallIdx = pendingWallIdx
+    pendingWallIdx = nil
+    SetNuiFocus(false, false)
+
+    if not data or not data.success or not wallIdx then
+        miningBusy = false
+        ClearPedTasks(PlayerPedId())
+        return QBCore.Functions.Notify('Kasimas nepavyko.', 'error')
+    end
+
+    playMiningAnim(Config.MineAnimDuration or 3200)
+    QBCore.Functions.Progressbar('mrp_mining', 'Kasi uolą…', Config.MineAnimDuration or 3200, false, false, {
         disableMovement = true,
         disableCarMovement = true,
         disableMouse = false,
         disableCombat = true,
-    }, {
-        animDict = 'amb@world_human_hammering@male@base',
-        anim = 'hammer_loop',
-        flags = 49,
-    }, {}, {}, function()
-        TriggerServerEvent('mrp_mining:server:mineAttempt', siteIdx)
+    }, {}, {}, {}, function()
+        TriggerServerEvent('mrp_mining:server:mineAttempt', wallIdx)
+        miningBusy = false
+        ClearPedTasks(PlayerPedId())
     end, function()
-        QBCore.Functions.Notify('Atšaukta.', 'error')
+        miningBusy = false
+        ClearPedTasks(PlayerPedId())
+    end)
+end)
+
+RegisterNUICallback('closeUi', function(_, cb)
+    cb({ ok = true })
+    miningBusy = false
+    sellUiOpen = false
+    pendingWallIdx = nil
+    SetNuiFocus(false, false)
+end)
+
+RegisterNUICallback('sellItem', function(data, cb)
+    cb({ ok = true })
+    local item = data and data.item
+    if not item then return end
+    playSellAnim(Config.SellAnimDuration or 2800)
+    QBCore.Functions.Progressbar('mrp_mining_sell', 'Parduodi…', Config.SellAnimDuration or 2800, false, false, {
+        disableMovement = true,
+        disableCombat = true,
+    }, {}, {}, {}, function()
+        TriggerServerEvent('mrp_mining:server:sellItem', item)
+        SetTimeout(400, refreshSellUi)
+        ClearPedTasks(PlayerPedId())
+    end, function()
+        ClearPedTasks(PlayerPedId())
+    end)
+end)
+
+RegisterNUICallback('sellAll', function(_, cb)
+    cb({ ok = true })
+    playSellAnim(Config.SellAnimDuration or 2800)
+    QBCore.Functions.Progressbar('mrp_mining_sell_all', 'Parduodi viską…', Config.SellAnimDuration or 2800, false, false, {
+        disableMovement = true,
+        disableCombat = true,
+    }, {}, {}, {}, function()
+        TriggerServerEvent('mrp_mining:server:sellAll')
+        SetTimeout(500, function()
+            refreshSellUi()
+            setSellUi(false)
+        end)
+        ClearPedTasks(PlayerPedId())
+    end, function()
+        ClearPedTasks(PlayerPedId())
     end)
 end)
 
@@ -133,25 +221,27 @@ end)
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do Wait(300) end
 
-    for i, site in ipairs(Config.MiningSites or {}) do
-        exports['qb-target']:AddCircleZone(('mrp_mine_%s'):format(i), site.coords, site.radius or 85.0, {
-            name = ('mrp_mine_%s'):format(i),
+    for i, wall in ipairs(Config.MiningWalls or {}) do
+        exports['qb-target']:AddBoxZone(('mrp_mine_wall_%s'):format(i), wall.center, wall.length or 40.0, wall.width or 6.0, {
+            name = ('mrp_mine_wall_%s'):format(i),
+            heading = wall.heading or 0.0,
             debugPoly = false,
-            useZ = true,
+            minZ = wall.minZ or (wall.center.z - 3.0),
+            maxZ = wall.maxZ or (wall.center.z + 4.0),
         }, {
             options = {
                 {
                     type = 'client',
                     event = 'mrp_mining:client:startMining',
                     icon = 'fas fa-hammer',
-                    label = site.label or 'Skaldyti / kasti',
-                    siteIndex = i,
+                    label = wall.label or 'Kasti uolą',
+                    wallIndex = i,
                     canInteract = function()
-                        return playerHasMiningPickaxe()
+                        return playerHasMiningPickaxe() and not miningBusy
                     end,
                 },
             },
-            distance = 3.2,
+            distance = 2.8,
         })
     end
 
@@ -199,7 +289,7 @@ CreateThread(function()
                 type = 'client',
                 event = 'mrp_mining:client:openSellMenu',
                 icon = 'fas fa-dollar-sign',
-                label = 'Supirkėjas — kainos ir pardavimas',
+                label = 'Rūdų supirkėjas',
             },
         },
         distance = 2.5,

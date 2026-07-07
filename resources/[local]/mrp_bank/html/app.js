@@ -668,8 +668,9 @@
         const done = async () => {
             $("#successOverlay").classList.add("atm-hidden");
             $("#successOk").removeEventListener("click", done);
-            await refreshBalances(true);
             if (thenTab) switchTab(thenTab);
+            renderContent();
+            await loadHistory("all");
         };
         $("#successOk").addEventListener("click", done);
     }
@@ -686,17 +687,26 @@
         showConfirm("Patvirtinimas", `Ar tikrai norite įnešti ${fmtMoney(amount)}?`, () => doDeposit(amount));
     }
 
+    function applyBalances(res) {
+        if (!res || res.cash == null || res.bank == null) return;
+        state.data = { ...(state.data || {}), cash: res.cash, bank: res.bank };
+    }
+
     async function doWithdraw(amount) {
         const res = await nui("bankWithdraw", { amount });
         if (!res?.ok) return showToast(res?.message || "Nepavyko.");
+        applyBalances(res);
         state.withdrawAmount = "";
+        renderContent();
         showSuccess("Sėkmingai!", `Sėkmingai išimta ${fmtMoney(amount)}`, "home");
     }
 
     async function doDeposit(amount) {
         const res = await nui("bankDeposit", { amount });
         if (!res?.ok) return showToast(res?.message || "Nepavyko.");
+        applyBalances(res);
         state.depositAmount = "";
+        renderContent();
         showSuccess("Sėkmingai!", `Sėkmingai įnešta ${fmtMoney(amount)}`, "home");
     }
 

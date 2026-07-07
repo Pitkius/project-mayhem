@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kuras</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="fuelUi" class="hidden">
+    <div class="fuel-box">
+      <header class="fuel-head">
+        <span class="fuel-icon">⛽</span>
+        <div>
+          <h2>Degalinė</h2>
+          <p id="fuelSub">Pildomas kuras…</p>
+        </div>
+      </header>
+      <div class="fuel-bar-wrap">
+        <div class="fuel-bar"><div id="fuelBarFill"></div></div>
+        <p id="fuelPct">0%</p>
+      </div>
+      <div class="fuel-stats">
+        <div><small>Pripilta</small><strong id="fuelLiters">0.0 L</strong></div>
+        <div><small>Kaina</small><strong id="fuelCost">0 €</strong></div>
+        <div><small>Liko bakas</small><strong id="fuelTarget">100%</strong></div>
+      </div>
+      <div id="fuelPayRow" class="fuel-pay hidden">
+        <button type="button" class="pay cash" data-pay="cash">Grynais</button>
+        <button type="button" class="pay card" data-pay="bank">Kortele</button>
+      </div>
+      <button type="button" id="fuelCancel" class="fuel-cancel">Atšaukti</button>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

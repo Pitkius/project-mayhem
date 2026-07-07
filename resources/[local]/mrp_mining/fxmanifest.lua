@@ -4,7 +4,15 @@ lua54 'yes'
 
 name 'mrp_mining'
 description 'Skaldakasys — freelance kasimas, perdirbimas, supirkimas'
-version '1.0.0'
+version '1.1.0'
+
+ui_page 'html/index.html'
+
+files {
+    'html/index.html',
+    'html/style.css',
+    'html/app.js',
+}
 
 shared_scripts {
     '@qb-core/shared/locale.lua',

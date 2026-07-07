@@ -9,6 +9,11 @@ client_scripts {
     'client/*.lua'
 }
 
+exports {
+    'ShowInput',
+    'ForceClose',
+}
+
 ui_page 'html/index.html'
 
 files {

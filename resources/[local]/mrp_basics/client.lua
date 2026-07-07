@@ -290,13 +290,37 @@ local function fivemproForceCloseAllUi()
     TriggerEvent('mrp_service_mdt:client:forceClose')
     TriggerEvent('mrp_emotes:client:forceClose')
     TriggerEvent('mrp_hud:client:forceClose')
+    TriggerEvent('mrp_phone:client:closePhone')
     TriggerEvent('qb-menu:client:closeMenu')
+    TriggerEvent('qb-inventory:client:closeInv')
     if GetResourceState('qb-menu') == 'started' then
         pcall(function()
             exports['qb-menu']:closeMenu()
         end)
     end
-    TriggerEvent('qb-inventory:client:closeInv')
+    if GetResourceState('qb-input') == 'started' then
+        pcall(function()
+            exports['qb-input']:ForceClose()
+        end)
+    end
+    if GetResourceState('mrp_bossmenu') == 'started' then
+        pcall(function()
+            exports['mrp_bossmenu']:CloseBossMenu()
+        end)
+    end
+    if GetResourceState('mrp_duty_locker') == 'started' then
+        pcall(function()
+            exports['mrp_duty_locker']:Close()
+        end)
+    end
+    if GetResourceState('mrp_drugs') == 'started' then
+        pcall(function()
+            TriggerEvent('mrp_drugs:client:forceCloseUi')
+        end)
+    end
+    if GetResourceState('mrp_reports') == 'started' then
+        TriggerEvent('mrp_reports:client:forceClose')
+    end
     pcall(function()
         if GetResourceState('ox_lib') == 'started' and exports.ox_lib and exports.ox_lib.hideContext then
             exports.ox_lib:hideContext()
@@ -305,9 +329,24 @@ local function fivemproForceCloseAllUi()
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
     if GetResourceState('qb-target') == 'started' then
-        exports['qb-target']:DisableTarget(false)
+        pcall(function()
+            if exports['qb-target'].ForceCloseTarget then
+                exports['qb-target']:ForceCloseTarget()
+            else
+                exports['qb-target']:DisableTarget(true)
+            end
+        end)
     end
 end
+
+exports('ForceCloseAllUi', fivemproForceCloseAllUi)
+
+RegisterCommand('unui', function()
+    fivemproForceCloseAllUi()
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName('UI uždarytas. Jei vis dar užstrigęs — ESC dar kartą.')
+    EndTextCommandThefeedPostTicker(false, false)
+end, false)
 
 RegisterNetEvent('mrp_basics:client:globalEscClose', fivemproForceCloseAllUi)
 
@@ -352,7 +391,7 @@ CreateThread(function()
                 break
             end
         end
-        if pressed and type(IsNuiFocused) == 'function' and IsNuiFocused() then
+        if pressed and type(IsNuiFocused) == 'function' and (IsNuiFocused() or IsNuiFocusKeepingInput()) then
             fivemproForceCloseAllUi()
         end
 

@@ -15,6 +15,8 @@ Config.Casino = {
     },
     interiorSpawn = vector4(1089.1294, 207.2294, -48.9997, 320.0139),
     loadVanillaIpl = true,
+    --- Stream MLO: resources/[mlo]/[mlo_pack_3]/diamond-casino-{exterior,interior}
+    useStreamMlo = true,
     --- Įėjimas be juodo ekrano — žingsnis pro duris (IPL turi būti užkrautas)
     walkIn = true,
 }

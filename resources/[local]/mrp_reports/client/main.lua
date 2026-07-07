@@ -31,6 +31,10 @@ local function closeReports()
     SendNUIMessage({ action = 'close' })
 end
 
+RegisterNetEvent('mrp_reports:client:forceClose', function()
+    closeReports()
+end)
+
 RegisterNetEvent('mrp_reports:client:open', function(view)
     openReports(view)
 end)

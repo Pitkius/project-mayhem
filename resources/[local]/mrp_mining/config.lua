@@ -1,13 +1,31 @@
 Config = {}
 
---- Davis Quartz ir apylinkės — keisk koordinates pagal savo MLO / nuotrauką.
-Config.MiningSites = {
-    { coords = vector3(2948.5, 2794.2, 41.05), radius = 110.0, label = 'Karjeras — kasimas' },
-    { coords = vector3(2976.8, 2746.5, 44.85), radius = 65.0, label = 'Karjeras — šoninis laukas' },
-    { coords = vector3(2918.2, 2810.5, 42.9), radius = 55.0, label = 'Karjeras — vakarai' },
+--- Karjero sienos — kasimas palei perimetrą (box zonos, ne vienas didelis apskritimas)
+Config.MiningWalls = {
+    { center = vector3(2954.0, 2852.0, 42.5), length = 95.0, width = 7.5, heading = 90.0, minZ = 38.0, maxZ = 52.0, label = 'Šiaurinė siena' },
+    { center = vector3(2954.0, 2736.0, 42.5), length = 95.0, width = 7.5, heading = 90.0, minZ = 38.0, maxZ = 52.0, label = 'Pietinė siena' },
+    { center = vector3(3008.0, 2794.0, 42.5), length = 110.0, width = 7.5, heading = 0.0, minZ = 38.0, maxZ = 52.0, label = 'Rytinė siena' },
+    { center = vector3(2900.0, 2794.0, 42.5), length = 110.0, width = 7.5, heading = 0.0, minZ = 38.0, maxZ = 52.0, label = 'Vakarų siena' },
+    { center = vector3(2922.0, 2842.0, 44.0), length = 55.0, width = 7.0, heading = 135.0, minZ = 38.0, maxZ = 52.0, label = 'ŠV kampas' },
+    { center = vector3(2986.0, 2842.0, 44.0), length = 55.0, width = 7.0, heading = 45.0, minZ = 38.0, maxZ = 52.0, label = 'ŠR kampas' },
+    { center = vector3(2922.0, 2746.0, 44.0), length = 55.0, width = 7.0, heading = 45.0, minZ = 38.0, maxZ = 52.0, label = 'PV kampas' },
+    { center = vector3(2986.0, 2746.0, 44.0), length = 55.0, width = 7.0, heading = 135.0, minZ = 38.0, maxZ = 52.0, label = 'PR kampas' },
 }
 
---- Perdirbimo stalas (tavo koordinatės)
+--- Senos didelės zonos (palikta serverio validacijai / blipui)
+Config.MiningSites = {
+    { coords = vector3(2954.0, 2794.0, 41.05), radius = 130.0, label = 'Karjeras — kasimas' },
+}
+
+--- Minigame nustatymai
+Config.Minigame = {
+    hits = 5,
+    time = 12,
+    speed = 0.88,
+}
+
+--- Kasimo animacija po sėkmingo minigame (ms)
+Config.MineAnimDuration = 3200
 Config.ProcessCoords = vector4(1087.67, -2004.92, 31.16, 54.20)
 
 --- Supirkėjas (NPC) — šalia pramonės / laužo (galima keisti)
@@ -26,9 +44,10 @@ Config.Blips = {
 
 --- Kasimo laikas (ms), cooldown (s)
 Config.MineDuration = 8500
-Config.MineCooldown = 10
+Config.MineCooldown = 8
+Config.SellAnimDuration = 2800
 
---- Drop šansai (svoriai, ne % — santykis tarp visų)
+--- Drop šansai
 Config.MineLoot = {
     { item = 'stone_raw', weight = 28 },
     { item = 'coal_raw', weight = 22 },

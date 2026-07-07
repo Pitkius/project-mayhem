@@ -72,13 +72,35 @@ local function previewApplyShowroomVisuals()
         SetWeatherTypeNow('EXTRASUNNY')
         SetWeatherTypeNowPersist('EXTRASUNNY')
         SetRainLevel(0.0)
-        SetArtificialLightsState(false)
+        --- Priverstinis apšvietimas salone (oras sustabdytas — nebekovoja su mrp_weather)
+        SetArtificialLightsState(true)
         SetArtificialLightsStateAffectsVehicles(false)
     end)
     pcall(function()
         SetBlackout(false)
         ClearTimecycleModifier()
     end)
+end
+
+local function getShowroomLightCenter()
+    local spawn = getPreviewSpawnPos()
+    if not spawn then return nil end
+    return vector3(spawn.x, spawn.y, spawn.z)
+end
+
+local function drawShowroomLights(center)
+    if not center then return end
+    DrawSpotLight(
+        center.x + 3.2, center.y + 2.8, center.z + 6.5,
+        -0.2, -0.18, -1.0,
+        255, 250, 230, 48.0, 32.0, 0.0, 36.0, 1.12
+    )
+    DrawSpotLight(
+        center.x - 2.6, center.y - 2.2, center.z + 5.8,
+        0.22, 0.2, -1.0,
+        230, 245, 255, 40.0, 26.0, 0.0, 28.0, 0.95
+    )
+    DrawLightWithRange(center.x, center.y, center.z + 1.05, 255, 250, 235, 18.0, 24.0)
 end
 
 local function previewBeginShowroom()
@@ -292,6 +314,7 @@ local function spawnPreviewVehicle(model)
         local timeout = 0
         local maxWait = model == 'yosemite4' and 15000 or 8000
         while not HasModelLoaded(hash) do
+            previewApplyShowroomVisuals()
             Wait(0)
             timeout = timeout + 1
             if gen ~= previewSpawnGen then
@@ -339,6 +362,7 @@ local function spawnPreviewVehicle(model)
 
         local cWait = 0
         while not HasCollisionLoadedAroundEntity(previewVehicle) and cWait < 120 do
+            previewApplyShowroomVisuals()
             RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
             Wait(0)
             cWait = cWait + 1
@@ -661,23 +685,10 @@ CreateThread(function()
     while true do
         if uiOpen then
             previewApplyShowroomVisuals()
-            Wait(2500)
-        else
-            Wait(800)
-        end
-    end
-end)
-
-CreateThread(function()
-    while true do
-        if uiOpen and previewVehicle and previewVehicle ~= 0 and DoesEntityExist(previewVehicle) then
-            local c = GetEntityCoords(previewVehicle)
-            DrawSpotLight(c.x + 3.2, c.y + 2.8, c.z + 6.5, -0.2, -0.18, -1.0, 255, 250, 230, 48.0, 32.0, 0.0, 36.0, 1.12)
-            DrawSpotLight(c.x - 2.6, c.y - 2.2, c.z + 5.8, 0.22, 0.2, -1.0, 230, 245, 255, 40.0, 26.0, 0.0, 28.0, 0.95)
-            DrawLightWithRange(c.x, c.y, c.z + 1.05, 255, 250, 235, 18.0, 24.0)
+            drawShowroomLights(getShowroomLightCenter())
             Wait(0)
         else
-            Wait(400)
+            Wait(800)
         end
     end
 end)

@@ -369,7 +369,9 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 }
 .sch-leaf.picked { border-style: solid; background: rgba(16, 185, 129, 0.35); box-shadow: 0 0 16px rgba(52, 211, 153, 0.35); }
 .sch-trim-wrap { position: relative; width: 280px; height: 200px; }
-.sch-leaf-big { font-size: 64px; text-align: center; margin-top: 20px; }
+.sch-leaf-big { font-size: 64px; text-align: center; margin-top: 20px; background: transparent; }
+.sch-leaf-big .sch-png-leaf,
+.sch-svg-leaf .sch-png-leaf { background: transparent; }
 .sch-tool { position: absolute; top: 0; right: 0; font-size: 13px; color: #fef3c7; background: rgba(0,0,0,0.35); padding: 6px 10px; border-radius: 8px; }
 .sch-trim-points { position: absolute; inset: 0; }
 .sch-trim-point {
@@ -381,7 +383,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .sch-scale, .sch-product, .sch-bag, .sch-bottle {
   width: 120px; height: 120px; border-radius: 14px; border: 1px solid rgba(167, 139, 250, 0.3);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  background: rgba(0,0,0,0.3); color: #f5f3ff; font-size: 36px;
+  background: transparent; color: #f5f3ff; font-size: 36px;
 }
 .sch-clickable { cursor: pointer; }
 .sch-clickable.active { outline: 2px solid #4ade80; }
@@ -506,6 +508,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   height: 72px;
   display: grid;
   place-items: center;
+  background: transparent;
 }
 .sch-png-icon,
 .sch-png-pot__img,
@@ -518,9 +521,11 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   height: 72px;
   object-fit: contain;
   display: block;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
+  background: transparent;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45));
   pointer-events: none;
   user-select: none;
+  image-rendering: auto;
 }
 .sch-png-hemp { filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5)) saturate(0.55) brightness(0.92); }
 .sch-png-pot__fill,
@@ -599,11 +604,11 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 }
 .sch-tool-card {
   min-width: 96px; min-height: 108px; padding: 12px;
-  border-radius: 14px; border: 1px solid rgba(74, 222, 128, 0.35);
-  background: rgba(6, 78, 59, 0.28); color: #ecfdf5;
+  border-radius: 14px; border: 1px solid rgba(167, 139, 250, 0.28);
+  background: transparent; color: #ecfdf5;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
 }
-.sch-tool-icon { font-size: 38px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45)); }
+.sch-tool-icon { font-size: 38px; line-height: 1; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45)); background: transparent; }
 .sch-tool-float { top: 8px; right: 8px; }
 .sch-scale.pulse { animation: schPulse 0.35s ease infinite alternate; }
 @keyframes schPulse { 0% { transform: scale(1); } 100% { transform: scale(1.06); } }
@@ -647,8 +652,8 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 }
 .sch-weed-scale {
   width: 130px; min-height: 130px; border-radius: 14px;
-  border: 1px solid rgba(74, 222, 128, 0.35);
-  background: rgba(0,0,0,0.35); color: #ecfdf5;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  background: transparent; color: #ecfdf5;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
 }
 .sch-weed-scale span { font-size: 34px; }
@@ -1007,8 +1012,8 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   width: 100%;
   padding: 18px 16px;
   border-radius: 16px;
-  border: 1px solid rgba(74, 222, 128, 0.22);
-  background: linear-gradient(180deg, rgba(6, 78, 59, 0.12), rgba(0, 0, 0, 0.32));
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1023,8 +1028,8 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   min-width: 130px;
   padding: 14px;
   border-radius: 14px;
-  border: 1px solid rgba(74, 222, 128, 0.2);
-  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(167, 139, 250, 0.18);
+  background: transparent;
 }
 .sch-ws-bag { min-width: 180px; }
 .sch-ws-dots {
@@ -1046,9 +1051,9 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 }
 .sch-ws-dot.done { background: #22c55e; }
 .sch-tool-card.active {
-  border-color: #4ade80;
-  background: rgba(16, 185, 129, 0.28);
-  box-shadow: 0 0 18px rgba(74, 222, 128, 0.25);
+  border-color: var(--mg-accent, #4ade80);
+  background: transparent;
+  box-shadow: 0 0 18px var(--mg-glow, rgba(74, 222, 128, 0.25));
 }
 .sch-tool-card:disabled {
   opacity: 0.45;

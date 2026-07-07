@@ -288,7 +288,14 @@ function bindHomeSwipe(pagesEl, pageCount) {
   }, { passive: true });
 }
 
+function stopCameraUi() {
+  nui("cameraStopLive", {}).catch(() => {});
+  document.getElementById("phone")?.classList.remove("camera-live-mode");
+}
+
 function openHome() {
+  stopCameraUi();
+  state.currentApp = null;
   if (!state.account?.hasAccount) {
     showScreen("accountSetup");
     setLockUiState(false);
@@ -380,7 +387,8 @@ function hydrate(payload = {}) {
   if (pn) pn.textContent = `Sveiki, ${name}`;
   applyWallpaper();
   syncPendingIncomingCall(payload);
-  if (!state.activeCallId) openHome();
+  const onCamera = state.currentApp === "camera" || document.getElementById("cameraScreen")?.classList.contains("active");
+  if (!state.activeCallId && !onCamera) openHome();
 }
 
 window.PhoneHydrate = hydrate;
@@ -420,9 +428,9 @@ function openAppStore() {
 }
 
 async function openApp(appId) {
+  state.currentApp = appId;
   if (appId !== "camera") {
-    nui("cameraStopLive", {}).catch(() => {});
-    document.getElementById("phone")?.classList.remove("camera-live-mode");
+    stopCameraUi();
   }
   if (appId === "appstore") {
     openAppStore();
