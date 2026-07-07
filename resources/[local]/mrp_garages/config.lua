@@ -48,12 +48,8 @@ Config.Garages = {
     { id = 'ranger_main', label = 'Gamtos apsaugos garažas', coords = vector3(371.33, 791.31, 187.47), heading = 261.0, spawn = vector4(371.33, 791.31, 187.47, 261.0), rangerOnly = true, hideBlip = true },
 }
 
---- Tik šie modeliai rodomi / priimami PD garažuose (`pd_*`).
+--- Tik addon PD packai + sraigtasparniai (`pd_*` garažai).
 Config.PoliceVehicleModels = {
-    police = true, police2 = true, police3 = true, police4 = true, police5 = true,
-    policeb = true, policet = true, sheriff = true, sheriff2 = true,
-    riot = true, fbi = true, fbi2 = true, pranger = true,
-    policeold1 = true, policeold2 = true,
     polmav = true, buzzard2 = true,
     gcpd1 = true, gcpd2 = true, gcpd3 = true, gcpd4 = true, gcpd5 = true, gcpd6 = true, gcpd10 = true,
     gcpd20 = true, gcpd21 = true, gcpd22 = true, gcpd23 = true,

@@ -210,29 +210,22 @@ Config.PdStashMarkerScale = { x = 0.34, y = 0.34, z = 0.34 }
 Config.PdStashMarkerDrawDistance = 32.0
 Config.PdMarkerTextDistance = 2.2
 
---- Tarnybinis transportas (modeliai turi būti whitelist – žr. server spawnFleet)
+--- Tarnybinis transportas (addon PD packai – žr. server spawnFleet)
 Config.FleetVehicles = {
-    { model = 'police', label = 'Patrulinis' },
-    { model = 'police2', label = 'Buffalo patrulinis' },
-    { model = 'police3', label = 'Interceptoria' },
-    { model = 'policeb', label = 'Motociklas' },
-    { model = 'sheriff', label = 'Šerifų patrulinis' },
-    { model = 'sheriff2', label = 'Šerifų visureigis' },
-    { model = 'riot', label = 'Antiriot' },
-    --- Old style pack
-    { model = 'gcpd1', label = 'PD senas stilius 1' },
-    { model = 'gcpd2', label = 'PD senas stilius 2' },
-    { model = 'gcpd3', label = 'PD senas stilius 3' },
-    { model = 'gcpd4', label = 'PD senas stilius 4' },
-    { model = 'gcpd5', label = 'PD senas stilius 5' },
-    { model = 'gcpd6', label = 'PD senas stilius 6' },
-    { model = 'gcpd10', label = 'PD senas stilius 10' },
-    --- Undercover pack
+    --- Old style pack (mrp_pd_oldstyle)
+    { model = 'gcpd1', label = 'PD patrulis 1' },
+    { model = 'gcpd2', label = 'PD patrulis 2' },
+    { model = 'gcpd3', label = 'PD patrulis 3' },
+    { model = 'gcpd4', label = 'PD patrulis 4' },
+    { model = 'gcpd5', label = 'PD patrulis 5' },
+    { model = 'gcpd6', label = 'PD patrulis 6' },
+    { model = 'gcpd10', label = 'PD patrulis 10' },
+    --- Undercover pack (mrp_pd_undercover)
     { model = 'gcpd20', label = 'PD undercover 20' },
     { model = 'gcpd21', label = 'PD undercover 21' },
     { model = 'gcpd22', label = 'PD undercover 22' },
     { model = 'gcpd23', label = 'PD undercover 23' },
-    --- Animuotu pack
+    --- Animated lights pack (mrp_pd_animuotu)
     { model = 'gcapd1', label = 'PD animuotas 1' },
     { model = 'gcapd2', label = 'PD animuotas 2' },
     { model = 'gcapd3', label = 'PD animuotas 3' },

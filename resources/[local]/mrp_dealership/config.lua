@@ -209,18 +209,32 @@ Config.PoliceDealership = {
     },
     PoliceCategoryLabels = {
         patrol = 'Patrulis',
-        interceptor = 'Interceptoria',
-        spec = 'Specialus',
-        air = 'Oro tarnyba',
+        undercover = 'Undercover',
+        anim = 'Animuotos šviesos',
     },
     vehicles = {
-        { model = 'police', name = 'Policijos patrulinis', brand = 'Vapid', category = 'patrol', price = 18000 },
-        { model = 'police2', name = 'Policijos Buffalo', brand = 'Bravado', category = 'patrol', price = 22000 },
-        { model = 'police3', name = 'Interceptoria', brand = 'Vapid', category = 'interceptor', price = 26000 },
-        { model = 'policeb', name = 'Policijos motociklas', brand = 'Western', category = 'patrol', price = 12000 },
-        { model = 'sheriff', name = 'Šerifų patrulinis', brand = 'Declasse', category = 'patrol', price = 16000 },
-        { model = 'sheriff2', name = 'Šerifų visureigis', brand = 'Declasse', category = 'patrol', price = 20000 },
-        { model = 'riot', name = 'Antiriot', brand = 'Brute', category = 'spec', price = 45000 },
+        -- Old style pack (mrp_pd_oldstyle)
+        { model = 'gcpd1', name = 'PD patrulis 1', brand = 'PD', category = 'patrol', price = 18000 },
+        { model = 'gcpd2', name = 'PD patrulis 2', brand = 'PD', category = 'patrol', price = 19000 },
+        { model = 'gcpd3', name = 'PD patrulis 3', brand = 'PD', category = 'patrol', price = 20000 },
+        { model = 'gcpd4', name = 'PD patrulis 4', brand = 'PD', category = 'patrol', price = 20000 },
+        { model = 'gcpd5', name = 'PD patrulis 5', brand = 'PD', category = 'patrol', price = 21000 },
+        { model = 'gcpd6', name = 'PD patrulis 6', brand = 'PD', category = 'patrol', price = 21000 },
+        { model = 'gcpd10', name = 'PD patrulis 10', brand = 'PD', category = 'patrol', price = 22000 },
+        -- Undercover pack (mrp_pd_undercover)
+        { model = 'gcpd20', name = 'PD undercover 20', brand = 'PD', category = 'undercover', price = 24000 },
+        { model = 'gcpd21', name = 'PD undercover 21', brand = 'PD', category = 'undercover', price = 25000 },
+        { model = 'gcpd22', name = 'PD undercover 22', brand = 'PD', category = 'undercover', price = 26000 },
+        { model = 'gcpd23', name = 'PD undercover 23', brand = 'PD', category = 'undercover', price = 27000 },
+        -- Animated lights pack (mrp_pd_animuotu)
+        { model = 'gcapd1', name = 'PD animuotas 1', brand = 'PD', category = 'anim', price = 26000 },
+        { model = 'gcapd2', name = 'PD animuotas 2', brand = 'PD', category = 'anim', price = 27000 },
+        { model = 'gcapd3', name = 'PD animuotas 3', brand = 'PD', category = 'anim', price = 28000 },
+        { model = 'gcapd4', name = 'PD animuotas 4', brand = 'PD', category = 'anim', price = 28000 },
+        { model = 'gcapd5', name = 'PD animuotas 5', brand = 'PD', category = 'anim', price = 29000 },
+        { model = 'gcapd6', name = 'PD animuotas 6', brand = 'PD', category = 'anim', price = 30000 },
+        { model = 'gcapd10', name = 'PD animuotas 10', brand = 'PD', category = 'anim', price = 31000 },
+        { model = 'gcapd11', name = 'PD animuotas 11', brand = 'PD', category = 'anim', price = 32000 },
     },
 }
 
