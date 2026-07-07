@@ -1,0 +1,213 @@
+/* Unikalūs minigame ekranai — kiekviena rūšis turi savo atmosferą */
+
+.sch-screen-deco {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.sch-box[class*="sch-screen-"] .sch-box-inner { position: relative; z-index: 2; }
+
+/* ── SVG ikonos ── */
+.di { display: block; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45)); }
+.mg-hero-icon .di,
+.sch-drug-orb .di,
+.mg-action-icon .di,
+.mg-vessel-icon .di,
+.mg-pour-icon .di { margin: 0 auto; }
+
+.sch-drug-orb {
+  width: 56px; height: 56px;
+  display: grid; place-items: center;
+  font-size: 0 !important;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+}
+
+.mg-hero-icon { min-height: 72px; display: grid; place-items: center; }
+.mg-action-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; }
+.mg-action-icon .di { width: 28px !important; height: 28px !important; filter: none; }
+
+.sch-tool-icon .di { width: 52px !important; height: 52px !important; }
+
+/* ── THC: violetinė laboratorija, garai ── */
+.sch-screen-thc {
+  --mg-accent: #a78bfa; --mg-accent-2: #6d28d9; --mg-glow: rgba(167, 139, 250, 0.4);
+}
+.sch-deco-thc::before {
+  content: '';
+  position: absolute;
+  width: 120%; height: 60%;
+  left: -10%; top: -20%;
+  background: radial-gradient(ellipse, rgba(124, 58, 237, 0.25) 0%, transparent 65%);
+  animation: decoPulse 4s ease-in-out infinite;
+}
+.sch-deco-thc::after {
+  content: '';
+  position: absolute;
+  bottom: 10%; left: 20%; right: 20%; height: 40%;
+  background: repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(167,139,250,0.04) 8px, rgba(167,139,250,0.04) 9px);
+  mask-image: linear-gradient(to top, black, transparent);
+}
+
+/* ── Alkoholis: vario / gintaro distiliatorius ── */
+.sch-screen-alcohol {
+  --mg-accent: #fbbf24; --mg-accent-2: #b45309; --mg-glow: rgba(251, 191, 36, 0.35);
+}
+.sch-deco-alcohol::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 70% 30%, rgba(251, 191, 36, 0.18), transparent 50%),
+              radial-gradient(circle at 20% 80%, rgba(180, 83, 9, 0.12), transparent 45%);
+}
+.sch-deco-alcohol::after {
+  content: '';
+  position: absolute; bottom: 0; left: 30%; width: 40%; height: 55%;
+  background: linear-gradient(to top, rgba(251,191,36,0.12), transparent);
+  border-radius: 50% 50% 0 0;
+  animation: steamRise 3s ease-in-out infinite;
+}
+
+/* ── Vape: šaltas cyan neon ── */
+.sch-screen-vape {
+  --mg-accent: #67e8f9; --mg-accent-2: #0891b2; --mg-glow: rgba(103, 232, 249, 0.32);
+}
+.sch-deco-vape::before {
+  content: '';
+  position: absolute; width: 200%; height: 200%;
+  top: -50%; left: -50%;
+  background: conic-gradient(from 180deg, transparent, rgba(103,232,249,0.06), transparent, rgba(8,145,178,0.08), transparent);
+  animation: decoSpin 18s linear infinite;
+}
+
+/* ── Kanapės: žalias augalas ── */
+.sch-screen-weed {
+  --mg-accent: #4ade80; --mg-accent-2: #15803d; --mg-glow: rgba(74, 222, 128, 0.35);
+}
+.sch-deco-weed::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(34, 197, 94, 0.15), transparent);
+}
+
+/* ── Heroinas: raudona medicininė ── */
+.sch-screen-heroin {
+  --mg-accent: #f87171; --mg-accent-2: #b91c1c; --mg-glow: rgba(248, 113, 113, 0.3);
+}
+.sch-deco-heroin::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, #f87171, transparent);
+  animation: scanLine 2.5s ease-in-out infinite;
+}
+
+/* ── Metas: ledinis kristalas ── */
+.sch-screen-meth {
+  --mg-accent: #38bdf8; --mg-accent-2: #0369a1; --mg-glow: rgba(56, 189, 248, 0.38);
+}
+.sch-deco-meth::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent, transparent 12px,
+    rgba(56, 189, 248, 0.03) 12px, rgba(56, 189, 248, 0.03) 13px
+  );
+  animation: crystalShimmer 5s linear infinite;
+}
+
+/* ── Tabletės: oranžinė farmacija ── */
+.sch-screen-pills {
+  --mg-accent: #fb923c; --mg-accent-2: #c2410c; --mg-glow: rgba(251, 146, 60, 0.3);
+}
+
+/* ── Grybai: violetinė miška ── */
+.sch-screen-mushroom {
+  --mg-accent: #c084fc; --mg-accent-2: #7e22ce; --mg-glow: rgba(192, 132, 252, 0.32);
+}
+.sch-deco-mushroom::before {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 35%;
+  background: radial-gradient(ellipse at 30% 100%, rgba(126,34,206,0.2), transparent 60%),
+              radial-gradient(ellipse at 70% 100%, rgba(192,132,252,0.15), transparent 55%);
+}
+
+/* ── Kokainas: šaltas baltas lux ── */
+.sch-screen-cocaine {
+  --mg-accent: #e2e8f0; --mg-accent-2: #64748b; --mg-glow: rgba(226, 232, 240, 0.15);
+}
+.sch-deco-cocaine::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 40%, rgba(255,255,255,0.02) 100%);
+}
+
+/* ── Amfetaminas: geltona energija ── */
+.sch-screen-amp {
+  --mg-accent: #fde047; --mg-accent-2: #ca8a04; --mg-glow: rgba(253, 224, 71, 0.28);
+}
+
+/* ── Animacijos ── */
+@keyframes decoPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+@keyframes steamRise {
+  0%, 100% { opacity: 0.3; transform: translateY(0) scaleX(1); }
+  50% { opacity: 0.7; transform: translateY(-8px) scaleX(1.1); }
+}
+@keyframes decoSpin { to { transform: rotate(360deg); } }
+@keyframes scanLine {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+@keyframes crystalShimmer {
+  0% { background-position: 0 0; }
+  100% { background-position: 100px 100px; }
+}
+
+/* Unikalūs scene wrapperiai */
+.mg-scene-thc .mg-panel { border-color: rgba(167, 139, 250, 0.35); }
+.mg-scene-alcohol .mg-still-tube { background: linear-gradient(180deg, #fbbf24, #b45309); }
+.mg-scene-meth .mg-crystal-display { box-shadow: 0 0 30px rgba(56, 189, 248, 0.5); }
+.mg-scene-cocaine .mg-wash-tub { border-color: rgba(226, 232, 240, 0.3); }
+
+/* Spawn catcher / click targets su ikona */
+.mg-spawn-item .di,
+.mg-click-spot .di,
+.mg-strip-leaf .di,
+.mg-dry-hook .di {
+  width: 36px !important;
+  height: 36px !important;
+  margin: 0 auto 4px;
+}
+
+.mg-success .di { width: 56px !important; height: 56px !important; margin: 0 auto 12px; }
+
+/* Blister / seal pulse */
+.mg-seal-zone.active {
+  animation: sealPulse 0.35s ease;
+}
+@keyframes sealPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); box-shadow: 0 0 20px var(--mg-glow); }
+  100% { transform: scale(1); }
+}
+
+/* Gauge marker glow */
+.mg-gauge-marker {
+  box-shadow: 0 0 16px #fff, 0 0 8px var(--mg-accent);
+}
+
+/* Pour stream */
+.mg-pour-stream {
+  background: linear-gradient(180deg, var(--mg-accent), transparent);
+  animation: pourFlow 0.8s ease-in-out infinite alternate;
+}
+@keyframes pourFlow {
+  from { opacity: 0.5; height: 30%; }
+  to { opacity: 1; height: 55%; }
+}

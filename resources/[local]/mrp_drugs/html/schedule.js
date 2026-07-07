@@ -9,6 +9,10 @@ const schHint = document.getElementById("schHint");
 let scheduleActive = false;
 let scheduleTimer = null;
 
+function diIcon(name) {
+  return window.DrugIcons && typeof DrugIcons[name] === "function" ? DrugIcons[name]() : "";
+}
+
 function postSchedule(success, extra = {}) {
   if (!scheduleActive) return;
   scheduleActive = false;
@@ -93,7 +97,7 @@ function runTrimGame(data) {
       const leaf = document.createElement("button");
       leaf.type = "button";
       leaf.className = "sch-leaf";
-      leaf.innerHTML = `<span>🍃</span><small>Lapas ${i + 1}</small>`;
+      leaf.innerHTML = `${diIcon("cannabisLeaf")}<small>Lapas ${i + 1}</small>`;
       leaf.onclick = () => {
         if (leaf.classList.contains("picked")) return;
         leaf.classList.add("picked");
@@ -115,12 +119,12 @@ function runTrimGame(data) {
     wrap.className = "sch-trim-wrap";
     const leaf = document.createElement("div");
     leaf.className = "sch-leaf-big";
-    leaf.innerHTML = "<span>🌿</span>";
+    leaf.innerHTML = window.DrugIcons ? DrugIcons.cannabisLeaf() : '';
     wrap.appendChild(leaf);
 
     const scissors = document.createElement("div");
     scissors.className = "sch-tool";
-    scissors.textContent = "✂️ Žirklės";
+    scissors.innerHTML = `${diIcon("scissors")}<span>Žirklės</span>`;
     wrap.appendChild(scissors);
 
     const points = document.createElement("div");
@@ -167,7 +171,7 @@ function runTrimGame(data) {
     setStep(3, 3, "Surink apdorotus žiedus");
     const done = document.createElement("div");
     done.className = "sch-done";
-    done.innerHTML = "<p>🌸 Žiedai paruošti</p>";
+    done.innerHTML = `<p>${diIcon("cannabisLeaf")} Žiedai paruošti</p>`;
     done.appendChild(
       btn("Baigti", "primary", () => postSchedule(true, { mistakes: Math.max(0, cutsNeeded - cuts) }))
     );
@@ -181,13 +185,13 @@ function runTrimGame(data) {
 function runPackBagGame(data) {
   if (window.MiniGameUI) {
     MiniGameUI.packBagFlow({
-      icon: data.icon || "🌿",
+      icon: data.icon || 'cannabisLeaf',
       onDone: () => postSchedule(true, { mistakes: 0 }),
     });
     return;
   }
   let step = 1;
-  const icon = data.icon || "🌿";
+  const iconHtml = window.DrugIcons ? DrugIcons.cannabisLeaf() : '';
 
   function renderWeigh() {
     schBoard.innerHTML = "";
@@ -195,8 +199,8 @@ function runPackBagGame(data) {
     const row = document.createElement("div");
     row.className = "sch-pack-row";
     row.innerHTML = `
-      <div class="sch-scale"><span>⚖️</span><p id="schWeight">0.00 g</p></div>
-      <div class="sch-product">${icon}</div>
+      <div class="sch-scale">${window.DrugIcons ? DrugIcons.scale() : ''}<p id="schWeight">0.00 g</p></div>
+      <div class="sch-product">${iconHtml}</div>
     `;
     schBoard.appendChild(row);
     schBoard.appendChild(
@@ -219,7 +223,7 @@ function runPackBagGame(data) {
     const prod = document.createElement("button");
     prod.type = "button";
     prod.className = "sch-product sch-clickable";
-    prod.textContent = icon;
+    prod.innerHTML = iconHtml;
     prod.onclick = () => {
       picked = true;
       prod.classList.add("active");
@@ -228,7 +232,7 @@ function runPackBagGame(data) {
     const bag = document.createElement("button");
     bag.type = "button";
     bag.className = "sch-bag open";
-    bag.innerHTML = "<span>👜</span><small>Atidarytas maišelis</small>";
+    bag.innerHTML = `${diIcon("bag")}<small>Atidarytas maišelis</small>`;
     bag.onclick = () => {
       if (!picked) {
         if (schHint) schHint.textContent = "Pirma pasirink produktą!";
@@ -250,7 +254,7 @@ function runPackBagGame(data) {
     const bag = document.createElement("button");
     bag.type = "button";
     bag.className = "sch-bag seal";
-    bag.innerHTML = `<span>👜</span><small>Užlydinimas ${seals}/3</small>`;
+    bag.innerHTML = `${diIcon("bag")}<small>Užlydinimas ${seals}/3</small>`;
     bag.onclick = () => {
       seals += 1;
       bag.querySelector("small").textContent = `Užlydinimas ${seals}/3`;
@@ -273,7 +277,7 @@ function runPackBottleGame(data) {
   row.className = "sch-pack-row";
   const bottle = document.createElement("div");
   bottle.className = "sch-bottle";
-  bottle.innerHTML = "<span>🍾</span><div class='sch-fill'></div>";
+  bottle.innerHTML = `${diIcon("moonshineJar")}<div class='sch-fill'></div>`;
   row.appendChild(bottle);
   schBoard.appendChild(row);
   schBoard.appendChild(
@@ -396,7 +400,7 @@ function runPressGame(data) {
     setStep(1, 1, "Presuok tabletes — spausk svirtį");
     MiniGameUI.pressMachine({
       need,
-      icon: "💊",
+      icon: "pill",
       label: "Presas",
       onDone: () => postSchedule(true),
     });
@@ -409,7 +413,7 @@ function runPressGame(data) {
   const press = document.createElement("button");
   press.type = "button";
   press.className = "sch-press";
-  press.innerHTML = `<span>💊</span><small>Presas ${presses}/${need}</small>`;
+  press.innerHTML = `${diIcon("pillPress")}<small>Presas ${presses}/${need}</small>`;
   press.onclick = () => {
     presses += 1;
     press.querySelector("small").textContent = `Presas ${presses}/${need}`;
@@ -437,12 +441,12 @@ function runWashGame(data) {
   setStep(1, 2, "Suberk lapus į tirpalą");
   const tub = document.createElement("div");
   tub.className = "sch-tub";
-  tub.innerHTML = "<span>🧪</span>";
+  tub.innerHTML = diIcon("beaker");
   for (let i = 0; i < need; i++) {
     const leaf = document.createElement("button");
     leaf.type = "button";
     leaf.className = "sch-wash-leaf";
-    leaf.textContent = "🍃";
+    leaf.innerHTML = diIcon("cocaLeaf");
     leaf.onclick = () => {
       if (leaf.classList.contains("done")) return;
       leaf.classList.add("done");
@@ -1248,8 +1252,8 @@ function runWeedDryGame(data) {
     rack.innerHTML = `
       <div class="sch-dry-frame"></div>
       <div class="sch-dry-hooks">
-        <button type="button" class="sch-dry-hook" data-i="0"><span>🍃</span><small>Lapas 1</small></button>
-        <button type="button" class="sch-dry-hook" data-i="1"><span>🍃</span><small>Lapas 2</small></button>
+        <button type="button" class="sch-dry-hook" data-i="0">${diIcon("cannabisLeaf")}<small>Lapas 1</small></button>
+        <button type="button" class="sch-dry-hook" data-i="1">${diIcon("cannabisLeaf")}<small>Lapas 2</small></button>
       </div>
       <div class="sch-dry-tray"><small>Surinkti lapai: <b id="schHung">0</b>/2</small></div>
     `;
@@ -1272,10 +1276,10 @@ function runWeedDryGame(data) {
     const wrap = document.createElement("div");
     wrap.className = "sch-dry-control";
     wrap.innerHTML = `
-      <div class="sch-dry-fan">💨 Oro srautas</div>
+      <div class="sch-dry-fan">Oro srautas</div>
       <div class="sch-gauge-track"><div class="sch-gauge-zone" style="left:38%"></div><div class="sch-gauge-needle" id="schDryNeedle"></div></div>
       <div class="sch-dry-meter">Džiovinimas: <b id="schDryPct">0</b>%</div>
-      <div class="sch-dry-leaves-preview">🍃🍃 → 🌸</div>
+      <div class="sch-dry-leaves-preview">${diIcon("cannabisLeaf")}${diIcon("cannabisLeaf")}</div>
     `;
     schBoard.appendChild(wrap);
     schBoard.appendChild(btn("Mažinti", "", () => adjust(-4)));
@@ -1317,7 +1321,7 @@ function runWeedDryGame(data) {
     const done = document.createElement("div");
     done.className = "sch-done sch-dry-done";
     done.innerHTML = `
-      <div class="sch-dry-result">🌸</div>
+      <div class="sch-dry-result">${diIcon("cannabisLeaf")}</div>
       <p>Išdžiovintas kanapių žiedas</p>
     `;
     done.appendChild(btn("Surinkti žiedą", "primary", () => postSchedule(true)));
@@ -1340,7 +1344,7 @@ function runWeedPackGame(data) {
         <p id="schPackWeight">0.00 g</p>
         <small>Skaitmeninės svarstyklės</small>
       </div>
-      <button type="button" class="sch-weed-bud sch-clickable" id="schPackBud">🌸</button>
+      <button type="button" class="sch-weed-bud sch-clickable" id="schPackBud">${diIcon("cannabisLeaf")}</button>
     `;
     schBoard.appendChild(row);
     const bud = document.getElementById("schPackBud");
@@ -1364,7 +1368,7 @@ function runWeedPackGame(data) {
     const bud = document.createElement("button");
     bud.type = "button";
     bud.className = "sch-weed-bud sch-clickable";
-    bud.textContent = "🌸";
+    bud.innerHTML = diIcon("cannabisLeaf");
     bud.onclick = () => {
       picked = true;
       bud.classList.add("active");
@@ -1373,7 +1377,7 @@ function runWeedPackGame(data) {
     const bag = document.createElement("button");
     bag.type = "button";
     bag.className = "sch-weed-mylar";
-    bag.innerHTML = "<span>📦</span><small>Mylar maišelis</small>";
+    bag.innerHTML = `${diIcon("bag")}<small>Mylar maišelis</small>`;
     bag.onclick = () => {
       if (!picked) {
         if (schHint) schHint.textContent = "Pirma pasirink žiedą!";
@@ -1395,7 +1399,7 @@ function runWeedPackGame(data) {
     const wrap = document.createElement("div");
     wrap.className = "sch-seal-wrap";
     wrap.innerHTML = `
-      <div class="sch-weed-mylar filled seal-mode"><span>📦</span><small>Paruošta užlydinimui</small></div>
+      <div class="sch-weed-mylar filled seal-mode">${diIcon("bag")}<small>Paruošta užlydinimui</small></div>
       <div class="sch-seal-bar">
         <button type="button" class="sch-seal-zone" data-i="0"></button>
         <button type="button" class="sch-seal-zone" data-i="1"></button>
@@ -1414,7 +1418,7 @@ function runWeedPackGame(data) {
         if (seals >= 3) {
           const done = document.createElement("div");
           done.className = "sch-done";
-          done.innerHTML = "<p>✅ Supakuota žolė paruošta</p>";
+          done.innerHTML = `<p>${window.DrugIcons ? DrugIcons.check() : ''} Supakuota žolė paruošta</p>`;
           done.appendChild(btn("Baigti", "primary", () => postSchedule(true)));
           schBoard.appendChild(done);
         }
@@ -1430,14 +1434,15 @@ function runScheduleGame(data) {
   scheduleActive = true;
   if (schTitle) schTitle.textContent = data.title || "Gamyba";
   setScheduleBadge(data.drug, data.action, data.icon);
-  if (window.MiniGameUI) MiniGameUI.applyTheme(data.drug, data.difficulty);
+  if (window.MiniGameUI) MiniGameUI.prepareDrugScreen(data.drug);
+  else if (window.MiniGameUI) MiniGameUI.applyTheme(data.drug, data.difficulty);
   const tierEl = document.getElementById("schTier");
   if (tierEl && window.MiniGameUI) {
     const lvl = Math.min(3, Math.max(1, Number(data.difficulty) || 1));
     tierEl.textContent = `${lvl} lygis · ${MiniGameUI.themeFor(data.drug).label}`;
   }
   const orb = document.getElementById("schDrugIcon");
-  if (orb) orb.textContent = data.icon || (window.MiniGameUI ? MiniGameUI.themeFor(data.drug).icon : "⚗️");
+  if (orb && window.DrugIcons) orb.innerHTML = DrugIcons.drug(data.drug, 48);
   const progFill = document.getElementById("schProgressFill");
   if (progFill) progFill.style.width = "6%";
   if (window.MiniGameUI) MiniGameUI.renderStepDots(1, data.steps || 3);

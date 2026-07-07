@@ -106,56 +106,10 @@ local function getRecipe(productId, st)
 end
 
 local function getAllStations()
-    local list = {}
-    for _, st in ipairs(Config.Stations or {}) do
-        list[#list + 1] = st
+    if Config.GetAllCraftStations then
+        return Config.GetAllCraftStations()
     end
-    local lab = Config.HeroinLab
-    if lab and lab.stations then
-        for _, st in ipairs(lab.stations) do
-            list[#list + 1] = st
-        end
-    end
-    local thcLab = Config.ThcLab
-    if thcLab and thcLab.stations then
-        for _, st in ipairs(thcLab.stations) do
-            list[#list + 1] = st
-        end
-    end
-    local weedCayo = Config.WeedCayoLab
-    if weedCayo and weedCayo.stations then
-        for _, st in ipairs(weedCayo.stations) do
-            list[#list + 1] = st
-        end
-    end
-    if weedCayo and weedCayo.packStations then
-        for _, st in ipairs(weedCayo.packStations) do
-            list[#list + 1] = st
-        end
-    end
-    local methLab = Config.MethLab
-    if methLab and methLab.stations then
-        for _, st in ipairs(methLab.stations) do
-            list[#list + 1] = st
-        end
-    end
-    local pillsLab = Config.PillsLab
-    if pillsLab and pillsLab.stations then
-        for _, st in ipairs(pillsLab.stations) do
-            list[#list + 1] = st
-        end
-    end
-    local ampLab = Config.AmpMobileLab
-    if ampLab and ampLab.packStation then
-        list[#list + 1] = ampLab.packStation
-    end
-    local weaponL1 = Config.WeaponBenchL1
-    if weaponL1 and weaponL1.stations then
-        for _, st in ipairs(weaponL1.stations) do
-            list[#list + 1] = st
-        end
-    end
-    return list
+    return {}
 end
 
 local function stationProductAllowed(st, productId)

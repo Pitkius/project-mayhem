@@ -6,6 +6,7 @@
   <title>Drugs Craft</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="minigames.css" />
+  <link rel="stylesheet" href="minigame-screens.css" />
 </head>
 <body>
   <div id="app" class="hidden">
@@ -95,10 +96,11 @@
 
   <div id="mgSchedule" class="mg hidden">
     <div class="sch-box">
+      <div class="sch-screen-deco" id="schScreenDeco" aria-hidden="true"></div>
       <div class="sch-mesh" aria-hidden="true"></div>
       <div class="sch-box-inner">
         <header class="sch-head">
-          <div class="sch-drug-orb" id="schDrugIcon" aria-hidden="true">⚗️</div>
+          <div class="sch-drug-orb" id="schDrugIcon" aria-hidden="true"></div>
           <div class="sch-head-main">
             <p class="sch-tier" id="schTier">1 lygis</p>
             <h2 id="schTitle">Gamyba</h2>
@@ -117,6 +119,7 @@
     </div>
   </div>
 
+  <script src="drug-icons.js"></script>
   <script src="schedule-icons.js"></script>
   <script src="minigame-ui.js"></script>
   <script src="schedule.js"></script>

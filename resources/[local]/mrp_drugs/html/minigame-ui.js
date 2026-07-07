@@ -1,23 +1,46 @@
 /* MRP narkotikų mini-žaidimų UI — modernus komponentų rinkinys */
 window.MiniGameUI = (() => {
+  const DI = () => window.DrugIcons;
+
+  function resolveIcon(icon, fallback = 'beaker') {
+    const lib = DI();
+    if (!lib) return '';
+    if (!icon) return lib.render(fallback);
+    if (typeof icon === 'string' && icon.includes('<svg')) return icon;
+    if (typeof lib[icon] === 'function') return lib[icon]();
+    return lib.render(icon, 48);
+  }
+
   const THEMES = {
-    thc:      { accent: '#a78bfa', accent2: '#7c3aed', glow: 'rgba(167,139,250,0.38)', label: 'THC', icon: '🧪' },
-    alcohol:  { accent: '#fbbf24', accent2: '#d97706', glow: 'rgba(251,191,36,0.32)', label: 'Samagonas', icon: '🥃' },
-    vape:     { accent: '#67e8f9', accent2: '#0891b2', glow: 'rgba(103,232,249,0.3)', label: 'Vape', icon: '💨' },
-    weed:     { accent: '#4ade80', accent2: '#16a34a', glow: 'rgba(74,222,128,0.35)', label: 'Kanapės', icon: '🌿' },
-    heroin:   { accent: '#f87171', accent2: '#dc2626', glow: 'rgba(248,113,113,0.3)', label: 'Heroinas', icon: '💉' },
-    meth:     { accent: '#38bdf8', accent2: '#0284c7', glow: 'rgba(56,189,248,0.32)', label: 'Metamfetaminas', icon: '💎' },
-    pills:    { accent: '#fb923c', accent2: '#ea580c', glow: 'rgba(251,146,60,0.3)', label: 'Tabletės', icon: '💊' },
-    mushroom: { accent: '#c084fc', accent2: '#9333ea', glow: 'rgba(192,132,252,0.3)', label: 'Grybai', icon: '🍄' },
-    cocaine:  { accent: '#e2e8f0', accent2: '#64748b', glow: 'rgba(226,232,240,0.2)', label: 'Kokainas', icon: '❄️' },
-    amp:      { accent: '#fde047', accent2: '#ca8a04', glow: 'rgba(253,224,71,0.28)', label: 'Amfetaminas', icon: '⚡' },
-    default:  { accent: '#c084fc', accent2: '#7c3aed', glow: 'rgba(192,132,252,0.32)', label: 'Gamyba', icon: '⚗️' },
+    thc:      { accent: '#a78bfa', accent2: '#7c3aed', glow: 'rgba(167,139,250,0.38)', label: 'THC', icon: 'thcVial' },
+    alcohol:  { accent: '#fbbf24', accent2: '#d97706', glow: 'rgba(251,191,36,0.32)', label: 'Samagonas', icon: 'still' },
+    vape:     { accent: '#67e8f9', accent2: '#0891b2', glow: 'rgba(103,232,249,0.3)', label: 'Vape', icon: 'vapeDevice' },
+    weed:     { accent: '#4ade80', accent2: '#16a34a', glow: 'rgba(74,222,128,0.35)', label: 'Kanapės', icon: 'cannabisLeaf' },
+    heroin:   { accent: '#f87171', accent2: '#dc2626', glow: 'rgba(248,113,113,0.3)', label: 'Heroinas', icon: 'syringe' },
+    meth:     { accent: '#38bdf8', accent2: '#0284c7', glow: 'rgba(56,189,248,0.32)', label: 'Metamfetaminas', icon: 'methCrystal' },
+    pills:    { accent: '#fb923c', accent2: '#ea580c', glow: 'rgba(251,146,60,0.3)', label: 'Tabletės', icon: 'pill' },
+    mushroom: { accent: '#c084fc', accent2: '#9333ea', glow: 'rgba(192,132,252,0.3)', label: 'Grybai', icon: 'mushroom' },
+    cocaine:  { accent: '#e2e8f0', accent2: '#64748b', glow: 'rgba(226,232,240,0.2)', label: 'Kokainas', icon: 'cocaineBrick' },
+    amp:      { accent: '#fde047', accent2: '#ca8a04', glow: 'rgba(253,224,71,0.28)', label: 'Amfetaminas', icon: 'pillPress' },
+    default:  { accent: '#c084fc', accent2: '#7c3aed', glow: 'rgba(192,132,252,0.32)', label: 'Gamyba', icon: 'beaker' },
   };
 
   const LEVEL_RING = { 1: '#a78bfa', 2: '#4ade80', 3: '#f87171' };
 
   function themeFor(drug) {
     return THEMES[String(drug || 'default').toLowerCase()] || THEMES.default;
+  }
+
+  function prepareDrugScreen(drug) {
+    applyTheme(drug);
+    const key = String(drug || 'default').toLowerCase();
+    const box = document.querySelector('#mgSchedule .sch-box');
+    if (box) {
+      box.className = 'sch-box';
+      box.classList.add(`sch-screen-${key}`);
+    }
+    const deco = document.getElementById('schScreenDeco');
+    if (deco) deco.className = `sch-screen-deco sch-deco-${key}`;
   }
 
   function applyTheme(drug, difficulty) {
@@ -31,7 +54,7 @@ window.MiniGameUI = (() => {
     box.style.setProperty('--mg-level', LEVEL_RING[lvl] || LEVEL_RING[1]);
     box.dataset.drugTheme = String(drug || 'default').toLowerCase();
     const orb = document.getElementById('schDrugIcon');
-    if (orb) orb.textContent = t.icon;
+    if (orb) orb.innerHTML = DI() ? DI().drug(drug, 48) : resolveIcon(t.icon);
   }
 
   function renderStepDots(current, total) {
@@ -73,7 +96,7 @@ window.MiniGameUI = (() => {
   function iconHero(icon, subtitle) {
     const wrap = panel('mg-hero');
     wrap.innerHTML = `
-      <div class="mg-hero-icon">${icon || '⚗️'}</div>
+      <div class="mg-hero-icon">${resolveIcon(icon)}</div>
       ${subtitle ? `<p class="mg-hero-sub">${subtitle}</p>` : ''}
     `;
     return wrap;
@@ -83,8 +106,9 @@ window.MiniGameUI = (() => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = `mg-action ${opts.variant || 'primary'} ${opts.large ? 'mg-action--lg' : ''}`.trim();
-    b.innerHTML = opts.icon
-      ? `<span class="mg-action-icon">${opts.icon}</span><span class="mg-action-label">${label}</span>`
+    const iconHtml = opts.icon ? `<span class="mg-action-icon">${resolveIcon(opts.icon, 'target')}</span>` : '';
+    b.innerHTML = iconHtml
+      ? `${iconHtml}<span class="mg-action-label">${label}</span>`
       : label;
     if (opts.onClick) b.onclick = opts.onClick;
     return b;
@@ -155,7 +179,7 @@ window.MiniGameUI = (() => {
     const { title, total, positions, icon, onComplete } = opts;
     const root = scene('mg-scene-click');
     const board = panel('mg-click-board');
-    board.appendChild(iconHero(icon || '🎯', title));
+    board.appendChild(iconHero(icon || 'target', title));
     const points = document.createElement('div');
     points.className = 'mg-click-points';
     let done = 0;
@@ -226,7 +250,7 @@ window.MiniGameUI = (() => {
     const root = scene('mg-scene-vessel');
     let step = 0;
     const vessel = panel('mg-vessel');
-    vessel.innerHTML = `<span class="mg-vessel-icon">${icon || '🫙'}</span><div class="mg-vessel-fill" id="mgVesselFill"></div>`;
+    vessel.innerHTML = `<span class="mg-vessel-icon">${resolveIcon(icon, 'moonshineJar')}</span><div class="mg-vessel-fill" id="mgVesselFill"></div>`;
     const btn = actionBtn(label || 'Pildyti', {
       variant: 'primary',
       onClick: () => {
@@ -254,7 +278,7 @@ window.MiniGameUI = (() => {
       const m = document.createElement('button');
       m.type = 'button';
       m.className = 'mg-spawn-item';
-      m.textContent = icon || '●';
+      m.innerHTML = resolveIcon(icon, 'target');
       m.style.left = `${12 + Math.random() * 76}%`;
       m.style.top = `${15 + Math.random() * 65}%`;
       m.onclick = () => {
@@ -279,7 +303,7 @@ window.MiniGameUI = (() => {
       leaf.type = 'button';
       leaf.className = 'mg-branch-leaf';
       leaf.style.left = left;
-      leaf.textContent = icon || '🍃';
+      leaf.innerHTML = resolveIcon(icon, 'cocaLeaf');
       leaf.onclick = () => {
         if (leaf.classList.contains('done')) return;
         leaf.classList.add('done');
@@ -301,7 +325,7 @@ window.MiniGameUI = (() => {
       const slot = document.createElement('button');
       slot.type = 'button';
       slot.className = 'mg-blister-slot';
-      slot.textContent = '💊';
+      slot.innerHTML = resolveIcon('pill');
       slot.onclick = () => {
         if (slot.classList.contains('done')) return;
         slot.classList.add('done');
@@ -343,7 +367,7 @@ window.MiniGameUI = (() => {
       };
       keysRow.appendChild(b);
     });
-    panelEl.append(iconHero('💎', 'Stabilizuok kristalizaciją — sek seką'), display, keysRow);
+    panelEl.append(iconHero('methCrystal', 'Stabilizuok kristalizaciją — sek seką'), display, keysRow);
     root.appendChild(panelEl);
     mount(root);
   }
@@ -355,7 +379,7 @@ window.MiniGameUI = (() => {
     const press = document.createElement('button');
     press.type = 'button';
     press.className = 'mg-press-machine';
-    press.innerHTML = `<span>${icon || '💊'}</span><small>${label || 'Presuoti'} ${presses}/${need}</small>`;
+    press.innerHTML = `${resolveIcon(icon, 'pillPress')}<small>${label || 'Presuoti'} ${presses}/${need}</small>`;
     press.onclick = () => {
       presses += 1;
       press.querySelector('small').textContent = `${label || 'Presuoti'} ${presses}/${need}`;
@@ -370,19 +394,19 @@ window.MiniGameUI = (() => {
     let washed = 0;
     const root = scene('mg-scene-wash');
     const tub = panel('mg-wash-tub');
-    tub.innerHTML = '<div class="mg-wash-tub-icon">🧪 Cheminis tirpalas</div>';
+    tub.innerHTML = `<div class="mg-wash-tub-icon">${resolveIcon('beaker')}<span>Cheminis tirpalas</span></div>`;
     for (let i = 0; i < need; i += 1) {
       const leaf = document.createElement('button');
       leaf.type = 'button';
       leaf.className = 'mg-wash-leaf';
-      leaf.textContent = '🍃';
+      leaf.innerHTML = resolveIcon('cocaLeaf');
       leaf.onclick = () => {
         if (leaf.classList.contains('done')) return;
         leaf.classList.add('done');
         washed += 1;
         if (washed >= need) {
           tub.appendChild(actionBtn('Maišyti tirpalą', {
-            icon: '⚗️', variant: 'primary', large: true,
+            icon: 'beaker', variant: 'primary', large: true,
             onClick: () => { if (onDone) onDone(); },
           }));
         }
@@ -402,10 +426,10 @@ window.MiniGameUI = (() => {
       const row = panel('mg-pack-row');
       const scale = document.createElement('div');
       scale.className = 'mg-pack-slot';
-      scale.innerHTML = `<span>⚖️</span><small id="mgWeight">0.00 g</small>`;
+      scale.innerHTML = `${resolveIcon('scale')}<small id="mgWeight">0.00 g</small>`;
       const prod = document.createElement('div');
       prod.className = 'mg-pack-slot';
-      prod.innerHTML = `<span>${icon || '🌿'}</span><small>Produktas</small>`;
+      prod.innerHTML = `${resolveIcon(icon, 'cannabisLeaf')}<small>Produktas</small>`;
       row.append(scale, prod);
       root.append(row, actionBtn('Sverti', { variant: 'primary', onClick: () => {
         const w = document.getElementById('mgWeight');
@@ -423,12 +447,12 @@ window.MiniGameUI = (() => {
       const prod = document.createElement('button');
       prod.type = 'button';
       prod.className = 'mg-pack-slot';
-      prod.innerHTML = `<span>${icon || '🌿'}</span><small>Pasirink</small>`;
+      prod.innerHTML = `${resolveIcon(icon, 'cannabisLeaf')}<small>Pasirink</small>`;
       prod.onclick = () => { picked = true; prod.classList.add('active'); };
       const bag = document.createElement('button');
       bag.type = 'button';
       bag.className = 'mg-pack-slot';
-      bag.innerHTML = '<span>👜</span><small>Maišelis</small>';
+      bag.innerHTML = `${resolveIcon('bag')}<small>Maišelis</small>`;
       bag.onclick = () => {
         if (!picked) { if (schHint) schHint.textContent = 'Pirma pasirink produktą!'; return; }
         renderSeal();
@@ -440,9 +464,9 @@ window.MiniGameUI = (() => {
 
     function renderSeal() {
       step = 3;
-      multiTap({ icon: '👜', label: 'Užlydinti maišelį', need: 3, onDone: () => {
+      multiTap({ icon: 'bag', label: 'Užlydinti maišelį', need: 3, onDone: () => {
         const root = scene('mg-scene-success');
-        root.innerHTML = '<div class="mg-success"><div class="mg-success-icon">✓</div><p>Supakuota sėkmingai</p></div>';
+        root.innerHTML = `<div class="mg-success"><div class="mg-success-icon">${resolveIcon('check')}</div><p>Supakuota sėkmingai</p></div>`;
         root.appendChild(actionBtn('Baigti', { variant: 'primary', onClick: () => {
           if (onDone) onDone();
           else if (typeof postSchedule === 'function') postSchedule(true, { mistakes: 0 });
@@ -461,20 +485,20 @@ window.MiniGameUI = (() => {
     const foil = document.createElement('button');
     foil.type = 'button';
     foil.className = 'mg-foil-card';
-    foil.innerHTML = `<span>📄</span><small>Sulankstyti 0/${need}</small>`;
+    foil.innerHTML = `${resolveIcon('foil')}<small>Sulankstyti 0/${need}</small>`;
     foil.onclick = () => {
       folds += 1;
       foil.style.transform = `rotate(${folds * 5}deg) scale(${1 - folds * 0.035})`;
       foil.querySelector('small').textContent = `Sulankstyti ${folds}/${need}`;
       if (folds >= need && onFolded) onFolded();
     };
-    root.append(iconHero('📄', 'Sulankstyk foliją su produktu'), foil);
+    root.append(iconHero('foil', 'Sulankstyk foliją su produktu'), foil);
     mount(root);
   }
 
   function successScreen(message, onDone) {
     const root = scene('mg-scene-success');
-    root.innerHTML = `<div class="mg-success"><div class="mg-success-icon">✓</div><p>${message || 'Atlikta'}</p></div>`;
+    root.innerHTML = `<div class="mg-success"><div class="mg-success-icon">${resolveIcon('check')}</div><p>${message || 'Atlikta'}</p></div>`;
     root.appendChild(actionBtn('Baigti', { variant: 'primary', onClick: onDone }));
     mount(root);
   }
@@ -482,7 +506,7 @@ window.MiniGameUI = (() => {
   /** Schedule-1: laikyk mygtuką — optimalus greitis, pildyk indą iki tikslo */
   function pourHold(opts) {
     const {
-      label = 'Pilti', target = 100, tolerance = 6, icon = '🫙',
+      label = 'Pilti', target = 100, tolerance = 6, icon = 'moonshineJar',
       onSuccess, onFail, hintEl,
     } = opts;
     const root = scene('mg-scene-pour');
@@ -493,7 +517,7 @@ window.MiniGameUI = (() => {
 
     const vessel = panel('mg-pour-vessel');
     vessel.innerHTML = `
-      <div class="mg-pour-icon">${icon}</div>
+      <div class="mg-pour-icon">${resolveIcon(icon, 'moonshineJar')}</div>
       <div class="mg-pour-fill-track"><div class="mg-pour-fill" id="mgPourFill"></div></div>
       <p class="mg-pour-pct" id="mgPourPct">0%</p>
     `;
@@ -566,7 +590,7 @@ window.MiniGameUI = (() => {
     const { need = 3, onDone } = opts;
     const root = scene('mg-scene-seal');
     const wrap = panel('mg-seal-wrap');
-    wrap.innerHTML = `<div class="mg-seal-bag">📦</div><div class="mg-seal-bar" id="mgSealBar"></div><p class="mg-seal-count">0 / ${need}</p>`;
+    wrap.innerHTML = `<div class="mg-seal-bag">${resolveIcon('bag')}</div><div class="mg-seal-bar" id="mgSealBar"></div><p class="mg-seal-count">0 / ${need}</p>`;
     const bar = wrap.querySelector('#mgSealBar');
     let done = 0;
     for (let i = 0; i < need; i += 1) {
@@ -592,7 +616,7 @@ window.MiniGameUI = (() => {
     gaugeHold({
       ...opts,
       label: opts.label || 'Distiliacija',
-      prepend: panel('mg-still-visual', '<div class="mg-still-tower">🥃<span class="mg-still-steam"></span></div>'),
+      prepend: panel('mg-still-visual', `<div class="mg-still-tower">${resolveIcon('still')}<span class="mg-still-steam"></span></div>`),
     });
   }
 
@@ -611,7 +635,7 @@ window.MiniGameUI = (() => {
           rounds: 4 + (opts.difficulty || 1),
           onSuccess: () => {
             multiTap({
-              icon: '💎',
+              icon: 'methCrystal',
               label: 'Kristalizuoti',
               need: 3,
               onDone: () => { if (onSuccess) onSuccess(); },
@@ -626,7 +650,7 @@ window.MiniGameUI = (() => {
 
   /** Presas su ritmu — spausk kai indikatorius žalioje zonoje */
   function pressRhythm(opts) {
-    const { need = 4, icon = '💊', label = 'Presuoti', onDone, onFail } = opts;
+    const { need = 4, icon = 'pill', label = 'Presuoti', onDone, onFail } = opts;
     let hits = 0;
     let pos = 8;
     let dir = 2.2;
@@ -689,7 +713,7 @@ window.MiniGameUI = (() => {
 
   /** Pasirink įrankį → kirpk taškus */
   function scrapeTrim(opts) {
-    const { toolIcon = '✂️', targetIcon = '🌿', cuts = 5, positions, onComplete } = opts;
+    const { toolIcon = 'scissors', targetIcon = 'cannabisLeaf', cuts = 5, positions, onComplete } = opts;
     let toolReady = false;
     let cut = 0;
     const root = scene('mg-scene-scrape');
@@ -697,7 +721,7 @@ window.MiniGameUI = (() => {
     const tool = actionBtn('Pasirink įrankį', { icon: toolIcon, variant: 'secondary' });
     const board = document.createElement('div');
     board.className = 'mg-scrape-board';
-    board.innerHTML = `<div class="mg-scrape-target">${targetIcon}</div>`;
+    board.innerHTML = `<div class="mg-scrape-target">${resolveIcon(targetIcon, 'cannabisLeaf')}</div>`;
     const pts = document.createElement('div');
     pts.className = 'mg-click-points';
     const spots = positions || [
@@ -732,7 +756,7 @@ window.MiniGameUI = (() => {
 
   /** Lašai — spausk kai žymeklis zonoje */
   function timedDrops(opts) {
-    const { need = 3, icon = '💧', onComplete, onFail } = opts;
+    const { need = 3, icon = 'waterDrop', onComplete, onFail } = opts;
     let drops = 0;
     let pos = 10;
     let dir = 2.5;
@@ -777,7 +801,7 @@ window.MiniGameUI = (() => {
 
   /** Džiovinimo lentyna — pakabink ant kabyklų */
   function dryRack(opts) {
-    const { need = 3, icon = '🍃', onComplete } = opts;
+    const { need = 3, icon = 'cocaLeaf', onComplete } = opts;
     let hung = 0;
     const root = scene('mg-scene-dry');
     const rack = panel('mg-dry-rack');
@@ -785,7 +809,7 @@ window.MiniGameUI = (() => {
       const hook = document.createElement('button');
       hook.type = 'button';
       hook.className = 'mg-dry-hook';
-      hook.innerHTML = `<span>${icon}</span><small>Kabliukas ${i + 1}</small>`;
+      hook.innerHTML = `${resolveIcon(icon, 'cannabisLeaf')}<small>Kabliukas ${i + 1}</small>`;
       hook.onclick = () => {
         if (hook.classList.contains('hung')) return;
         hook.classList.add('hung');
@@ -799,8 +823,8 @@ window.MiniGameUI = (() => {
   }
 
   return {
-    THEMES, themeFor, applyTheme, renderStepDots, clearBoard, scene, panel, mount,
-    iconHero, actionBtn, gaugeHold, clickBoard, multiTap, sliderBlend, vesselFill,
+    THEMES, themeFor, applyTheme, prepareDrugScreen, renderStepDots, clearBoard, scene, panel, mount,
+    resolveIcon, iconHero, actionBtn, gaugeHold, clickBoard, multiTap, sliderBlend, vesselFill,
     spawnCatcher, stripRow, blisterPack, keySequence, pressMachine, washStation,
     packBagFlow, foilFold, successScreen,
     pourHold, sealZones, stillGauge, crystalPipeline, pressRhythm, chemistryWash,

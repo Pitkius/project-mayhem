@@ -288,7 +288,7 @@ LT = {
     "casinochips": ("Kazino žetonai", "Žetonai lošimams kazino."),
     "stickynote": ("Lipni užrašų lapelis", "Trumpiems užrašams."),
     "moneybag": ("Pinigų maišas", "Maišas su grynaisiais."),
-    "cash_bundle": ("Grynieji pinigai", "Grynieji, sinchronizuoti su pinigine."),
+    "cash": ("Pinigai", "Grynieji pinigai. 1 vnt. = $1, sinchronizuota su pinigine."),
     "parachute": ("Parašiutas", "Šuoliui iš aukščio."),
     "binoculars": ("Žiūronai", "Toli matymui."),
     "lighter": ("Žiebtuvėlis", "Ugniai uždegti."),

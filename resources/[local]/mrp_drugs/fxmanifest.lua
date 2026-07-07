@@ -13,6 +13,8 @@ files {
     'html/index.html',
     'html/style.css',
     'html/minigames.css',
+    'html/minigame-screens.css',
+    'html/drug-icons.js',
     'html/app.js',
     'html/schedule-icons.js',
     'html/schedule.js',
@@ -29,6 +31,7 @@ files {
 
 shared_scripts {
     'config.lua',
+    'shared/stations.lua',
     'shared/minigame_registry.lua',
 }
 

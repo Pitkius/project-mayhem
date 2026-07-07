@@ -558,7 +558,16 @@
   justify-content: center;
   align-items: center;
 }
-.mg-wash-tub-icon { font-size: 42px; width: 100%; text-align: center; margin-bottom: 8px; }
+.mg-wash-tub-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #a8b0c0;
+  margin-bottom: 8px;
+}
+.mg-wash-tub-icon .di { width: 42px !important; height: 42px !important; }
 .mg-wash-leaf {
   width: 44px;
   height: 44px;
@@ -738,7 +747,14 @@
   background: linear-gradient(145deg, rgba(34, 197, 94, 0.25), rgba(0, 0, 0, 0.3));
   box-shadow: 0 0 24px rgba(34, 197, 94, 0.35);
 }
-.mg-seal-zone.done::after { content: '✓'; color: #86efac; opacity: 1; font-weight: 800; }
+.mg-seal-zone.done::after {
+  content: '';
+  width: 10px; height: 6px;
+  border-left: 2px solid #86efac;
+  border-bottom: 2px solid #86efac;
+  transform: rotate(-45deg);
+  opacity: 1;
+}
 .mg-seal-count { font-size: 14px; font-weight: 700; color: var(--mg-accent); letter-spacing: 0.06em; }
 
 .mg-still-visual { margin-bottom: 4px; }

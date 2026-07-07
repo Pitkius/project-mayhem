@@ -747,6 +747,66 @@ Config.ProductBuyerNPCs = {
             cartel_pack = 195,
         },
     },
+    heroin = {
+        enabled = true,
+        model = 's_m_y_dealer_01',
+        coords = vector4(357.24, -2055.82, 22.09, 140.0),
+        scenario = 'WORLD_HUMAN_SMOKING',
+        label = 'Heroino supirkėjas',
+        sellAllLabel = 'Parduoti supakuotą heroiną',
+        targetIcon = 'fas fa-syringe',
+        maxDistance = 3.5,
+        blip = { enabled = true, sprite = 51, color = 1, scale = 0.75, label = 'Heroino supirkėjas' },
+        prices = { heroin_bag = 220 },
+    },
+    meth = {
+        enabled = true,
+        model = 's_m_y_dealer_01',
+        coords = vector4(1981.52, 5177.18, 47.98, 270.0),
+        scenario = 'WORLD_HUMAN_SMOKING',
+        label = 'Metamfetamino supirkėjas',
+        sellAllLabel = 'Parduoti supakuotą metą',
+        targetIcon = 'fas fa-flask',
+        maxDistance = 3.5,
+        blip = { enabled = true, sprite = 499, color = 3, scale = 0.75, label = 'Metamfetamino supirkėjas' },
+        prices = { meth_bag = 260 },
+    },
+    pills = {
+        enabled = true,
+        model = 's_m_m_dockwork_01',
+        coords = vector4(-661.18, -857.82, 24.48, 0.0),
+        scenario = 'WORLD_HUMAN_SMOKING',
+        label = 'Tablečių supirkėjas',
+        sellAllLabel = 'Parduoti supakuotas tabletes',
+        targetIcon = 'fas fa-pills',
+        maxDistance = 3.5,
+        blip = { enabled = true, sprite = 51, color = 17, scale = 0.75, label = 'Tablečių supirkėjas' },
+        prices = { pills_pack = 180 },
+    },
+    mushroom = {
+        enabled = true,
+        model = 's_m_y_barman_01',
+        coords = vector4(-103.52, 6346.18, 31.48, 45.0),
+        scenario = 'WORLD_HUMAN_SMOKING',
+        label = 'Grybų supirkėjas',
+        sellAllLabel = 'Parduoti supakuotus grybus',
+        targetIcon = 'fas fa-seedling',
+        maxDistance = 3.5,
+        blip = { enabled = true, sprite = 469, color = 7, scale = 0.75, label = 'Grybų supirkėjas' },
+        prices = { mushroom_pack = 150 },
+    },
+    amp = {
+        enabled = true,
+        model = 's_m_y_dealer_01',
+        coords = vector4(1905.02, 4918.04, 48.86, 225.0),
+        scenario = 'WORLD_HUMAN_SMOKING',
+        label = 'Amfetamino supirkėjas',
+        sellAllLabel = 'Parduoti supakuotą amfetaminą',
+        targetIcon = 'fas fa-bolt',
+        maxDistance = 3.5,
+        blip = { enabled = true, sprite = 499, color = 5, scale = 0.75, label = 'Amfetamino supirkėjas' },
+        prices = { amphetamine_bag = 380 },
+    },
 }
 
 --- @deprecated naudok Config.ProductBuyerNPCs.alcohol
@@ -1161,7 +1221,7 @@ Config.PillsLab = {
     },
 }
 
---- Metamfetamino laboratorija — supakavimo stalas (Grapeseed)
+--- Metamfetamino laboratorija — kristalizacija + supakavimas (Grapeseed)
 Config.MethLab = {
     blip = {
         enabled = true,
@@ -1173,6 +1233,15 @@ Config.MethLab = {
     },
     stations = {
         {
+            id = 'meth_lab_process',
+            label = 'Metas · kristalizacija',
+            level = 2,
+            coords = vector3(2712.4521, 5238.1844, 49.3645),
+            heading = 286.5156,
+            radius = 1.5,
+            products = { 'meth_process' },
+        },
+        {
             id = 'meth_lab_pack',
             label = 'Metas · supakavimas',
             level = 2,
@@ -1180,6 +1249,136 @@ Config.MethLab = {
             heading = 286.5156,
             radius = 1.5,
             products = { 'meth_pack' },
+        },
+    },
+}
+
+--- Samagono distiliatorius — Paleto Bay šiaurė (L1)
+Config.AlcoholLab = {
+    blip = {
+        enabled = true,
+        coords = vector3(2434.18, 4968.52, 46.82),
+        sprite = 93,
+        color = 46,
+        scale = 0.8,
+        label = 'Samagono distiliatorius',
+    },
+    stations = {
+        {
+            id = 'alcohol_lab_process',
+            label = 'Samagonas · distiliacija',
+            level = 1,
+            coords = vector3(2434.18, 4968.52, 46.82),
+            heading = 45.0,
+            radius = 1.6,
+            products = { 'alcohol_process' },
+        },
+        {
+            id = 'alcohol_lab_pack',
+            label = 'Samagonas · supakavimas',
+            level = 1,
+            coords = vector3(2436.84, 4970.18, 46.82),
+            heading = 45.0,
+            radius = 1.6,
+            products = { 'alcohol_pack' },
+        },
+    },
+}
+
+--- Vape skysčio laboratorija — uostas (L1)
+Config.VapeLab = {
+    blip = {
+        enabled = true,
+        coords = vector3(1175.52, -3113.84, 6.03),
+        sprite = 52,
+        color = 26,
+        scale = 0.78,
+        label = 'Vape laboratorija',
+    },
+    stations = {
+        {
+            id = 'vape_lab_process',
+            label = 'Vape · paruošimas',
+            level = 1,
+            coords = vector3(1175.52, -3113.84, 6.03),
+            heading = 90.0,
+            radius = 1.6,
+            products = { 'vape_process' },
+        },
+        {
+            id = 'vape_lab_pack',
+            label = 'Vape · supakavimas',
+            level = 1,
+            coords = vector3(1178.10, -3115.40, 6.03),
+            heading = 90.0,
+            radius = 1.6,
+            products = { 'vape_pack' },
+        },
+    },
+}
+
+--- Grybų perdirbimas — šalia rinkimo lauko (Mount Chiliad)
+Config.MushroomLab = {
+    blip = {
+        enabled = true,
+        coords = vector3(2138.52, 6405.18, 153.07),
+        sprite = 469,
+        color = 7,
+        scale = 0.78,
+        label = 'Grybų perdirbimas',
+    },
+    stations = {
+        {
+            id = 'mushroom_lab_process',
+            label = 'Grybai · džiovinimas',
+            level = 2,
+            coords = vector3(2138.52, 6405.18, 153.07),
+            heading = 120.0,
+            radius = 1.6,
+            products = { 'mushroom_process' },
+        },
+        {
+            id = 'mushroom_lab_pack',
+            label = 'Grybai · supakavimas',
+            level = 2,
+            coords = vector3(2141.20, 6407.05, 153.07),
+            heading = 120.0,
+            radius = 1.6,
+            products = { 'mushroom_pack' },
+        },
+    },
+}
+
+--- Kokaino virimas — Cayo Perico (L3)
+Config.CocaineLab = {
+    requireIsland = true,
+    blip = {
+        enabled = true,
+        coords = vector3(4987.12, -5128.44, 2.52),
+        sprite = 501,
+        color = 0,
+        scale = 0.78,
+        label = 'Kokaino laboratorija (Cayo)',
+        requireIsland = true,
+    },
+    stations = {
+        {
+            id = 'cocaine_lab_process',
+            label = 'Kokainas · virimas',
+            level = 3,
+            coords = vector3(4987.12, -5128.44, 2.52),
+            heading = 57.0,
+            radius = 1.6,
+            products = { 'cocaine_process' },
+        },
+        {
+            id = 'cocaine_lab_pack',
+            label = 'Kokainas · supakavimas',
+            level = 3,
+            coords = vector3(4989.80, -5130.20, 2.52),
+            heading = 57.0,
+            radius = 1.6,
+            products = { 'cocaine_pack' },
         },
     },
 }
@@ -1294,3 +1493,49 @@ function Config.IsPackagedDrugItem(itemName)
 end
 
 --- Schedule mini-žaidimai — žr. shared/minigame_registry.lua (unikalūs per narkotiko liniją).
+
+--[[
+  ═══════════════════════════════════════════════════════════════════
+  VISŲ LOKACIJŲ REGISTRAS (koordinatės + aprašymas)
+  Blipai kuriami client/main.lua → setupStationBlips()
+  Koordinates galima perkelti vėliau — keisk atitinkamą Config.* bloką.
+  ═══════════════════════════════════════════════════════════════════
+]]
+Config.WorldSiteIndex = {
+    -- Parduotuvės
+    { id = 'supply_grove',       category = 'shop',    label = 'Nelegalūs reikmenys',           coords = '124.15, -1930.62, 21.38',   desc = 'L1 ingredientai, maišeliai, filtrai, pirštinės' },
+    { id = 'weed_supply',        category = 'shop',    label = 'Kanapių auginimo reikmenys',    coords = '2221.86, 5614.80, 54.90',   desc = 'Sėklos, vazonai, laistytuvai, žirklės' },
+    -- Rinkimas
+    { id = 'mushroom_field',     category = 'harvest', label = 'Grybų rinkimas',                coords = '2145.94, 6418.35, 153.07',  desc = 'Laukiniai grybai — Mount Chiliad' },
+    { id = 'coca_field',         category = 'harvest', label = 'Kokainmedžio lapai (Cayo)',     coords = '4715.03, -4529.36, 26.82',  desc = 'Reikia Cayo Perico salos' },
+    -- L1 laboratorijos
+    { id = 'thc_lab',            category = 'lab',     label = 'THC distiliacija',              coords = '1391.13, 3603.61, 38.94',   desc = 'THC process + pack stotelės' },
+    { id = 'alcohol_lab',        category = 'lab',     label = 'Samagono distiliatorius',       coords = '2434.18, 4968.52, 46.82',   desc = 'Alkoholio distiliacija ir supakavimas' },
+    { id = 'vape_lab',           category = 'lab',     label = 'Vape laboratorija',             coords = '1175.52, -3113.84, 6.03',   desc = 'Vape skysčio paruošimas ir supakavimas' },
+    -- L2 laboratorijos
+    { id = 'weed_dry',           category = 'lab',     label = 'Žolės džiovinimas',             coords = '1144.82, -1659.86, 36.61',   desc = 'Weed process — Davis' },
+    { id = 'weed_pack_cayo',     category = 'lab',     label = 'Žolės supakavimas (Cayo)',      coords = '5195.83, -5134.91, 3.35',    desc = 'Weed pack — Cayo Perico' },
+    { id = 'heroin_lab',         category = 'lab',     label = 'Heroino laboratorija',          coords = '1953.00, 5180.00, 47.98',   desc = 'Heroin process + pack' },
+    { id = 'meth_lab',           category = 'lab',     label = 'Metamfetamino laboratorija',    coords = '2709.10, 5235.05, 49.36',   desc = 'Kristalizacija + supakavimas' },
+    { id = 'pills_lab',          category = 'lab',     label = 'Tablečių gamyba',               coords = '1953.00, 5180.00, 47.98',   desc = 'Pills process + pack (šalia heroino)' },
+    { id = 'mushroom_lab',       category = 'lab',     label = 'Grybų perdirbimas',             coords = '2138.52, 6405.18, 153.07',  desc = 'Džiovinimas + supakavimas' },
+    -- L3
+    { id = 'cocaine_lab',        category = 'lab',     label = 'Kokaino laboratorija (Cayo)',   coords = '4987.12, -5128.44, 2.52',   desc = 'Virimas + supakavimas — Cayo' },
+    { id = 'amp_lab',            category = 'lab',     label = 'Amfetamino laboratorija',       coords = '1903.48, 4922.55, 48.86',   desc = 'Journey autobusas + quiz sintezė' },
+    { id = 'amp_pack',           category = 'lab',     label = 'Amfetamino supakavimas',      coords = '1908.20, 4926.80, 48.86',   desc = 'Amp pack stotelė' },
+    { id = 'weapon_bench',       category = 'weapon',  label = 'Ginklų dirbtuvė L1',            coords = '-1142.73, 4941.63, 222.30', desc = 'Ginklų crafting — Chiliad' },
+    -- Supirkėjai
+    { id = 'buyer_alcohol',      category = 'buyer',   label = 'Alkoholio supirkėjas',          coords = '186.47, -1273.15, 29.20',    desc = 'Perka illegal_alcohol' },
+    { id = 'buyer_thc',          category = 'buyer',   label = 'THC supirkėjas',                coords = '-1164.44, -1567.76, 4.45',   desc = 'Perka thc_cart' },
+    { id = 'buyer_vape',         category = 'buyer',   label = 'Vape supirkėjas',               coords = '-1724.61, 234.15, 58.47',    desc = 'Perka vape_liquid' },
+    { id = 'buyer_weed',         category = 'buyer',   label = 'Žolės supirkėjas',              coords = '-3.45, -1820.93, 29.54',     desc = 'Perka weed_bag' },
+    { id = 'buyer_cocaine',      category = 'buyer',   label = 'Kokaino supirkėjas',            coords = '5587.65, -5220.64, 14.62',   desc = 'Perka cartel_pack — Cayo' },
+    { id = 'buyer_heroin',       category = 'buyer',   label = 'Heroino supirkėjas',            coords = '357.24, -2055.82, 22.09',    desc = 'Perka heroin_bag' },
+    { id = 'buyer_meth',         category = 'buyer',   label = 'Metamfetamino supirkėjas',      coords = '1981.52, 5177.18, 47.98',   desc = 'Perka meth_bag' },
+    { id = 'buyer_pills',        category = 'buyer',   label = 'Tablečių supirkėjas',           coords = '-661.18, -857.82, 24.48',    desc = 'Perka pills_pack' },
+    { id = 'buyer_mushroom',     category = 'buyer',   label = 'Grybų supirkėjas',              coords = '-103.52, 6346.18, 31.48',    desc = 'Perka mushroom_pack' },
+    { id = 'buyer_amp',          category = 'buyer',   label = 'Amfetamino supirkėjas',         coords = '1905.02, 4918.04, 48.86',    desc = 'Perka amphetamine_bag' },
+    -- Test zona (LS airport)
+    { id = 'dev_hub',            category = 'test',    label = 'Test: narkotikai ir ginklai',   coords = '-886.92, -3208.01, 13.94',  desc = 'Dev eilė — tik kai EnableDrugTestNPC' },
+    { id = 'lsd_planned',        category = 'planned', label = 'LSD planuojama',                coords = 'nil',                         desc = 'Įrašyk coords į Config.PlannedSites.lsd_tablet' },
+}

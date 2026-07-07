@@ -14,32 +14,120 @@ MySQL.ready(function()
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 end)
 
---- Seniems žaidėjams: cash_bundle inventoriuje → paprasti cash pinigai.
-local function migrateCashBundleItems(src, player)
-    if not player or not player.PlayerData then return end
+local SYNC_REASON = 'mrp-bank-cash-sync'
+local CASH_ITEM = 'cash'
+local syncingPlayers = {}
+
+QBCore.Functions.CreateUseableItem(CASH_ITEM, function(source)
+    TriggerClientEvent('QBCore:Notify', source, 'Pinigai automatiškai sinchronizuojami su inventoriaus kiekiu.', 'primary')
+end)
+
+local function getCashItemAmount(player)
+    if not player or not player.PlayerData or not player.PlayerData.items then return 0 end
     local total = 0
-    local toRemove = {}
-    for slot, item in pairs(player.PlayerData.items or {}) do
-        if item and item.name == 'cash_bundle' and (tonumber(item.amount) or 0) > 0 then
+    for _, item in pairs(player.PlayerData.items) do
+        if item and item.name == CASH_ITEM then
             total = total + (tonumber(item.amount) or 0)
-            toRemove[#toRemove + 1] = {
-                slot = tonumber(item.slot) or tonumber(slot),
-                amount = tonumber(item.amount) or 0,
-            }
         end
     end
-    if total <= 0 then return end
-    for _, entry in ipairs(toRemove) do
-        exports['qb-inventory']:RemoveItem(src, 'cash_bundle', entry.amount, entry.slot, 'cash-bundle-migrated-to-wallet')
-    end
-    local walletCash = math.max(0, math.floor(tonumber(player.PlayerData.money.cash) or 0))
-    if walletCash < total then
-        player.Functions.AddMoney('cash', total - walletCash, 'cash-bundle-migrated-to-wallet')
-    end
+    return total
 end
 
+local function removeCashItemAmount(src, player, amount)
+    local remaining = tonumber(amount) or 0
+    if remaining <= 0 then return true end
+    for slot, item in pairs(player.PlayerData.items or {}) do
+        if remaining <= 0 then break end
+        if item and item.name == CASH_ITEM and (tonumber(item.amount) or 0) > 0 then
+            local take = math.min(tonumber(item.amount) or 0, remaining)
+            local itemSlot = tonumber(item.slot) or tonumber(slot) or false
+            if take > 0 and exports['qb-inventory']:RemoveItem(src, CASH_ITEM, take, itemSlot, SYNC_REASON) then
+                remaining = remaining - take
+            end
+        end
+    end
+    return remaining <= 0
+end
+
+--- Senas cash_bundle inventoriuje → cash (1:1), be cash_bundle itemo shared sąraše.
+local function migrateLegacyCashItems(src, player)
+    if not player or not player.PlayerData then return end
+    local items = player.PlayerData.items
+    if not items then return end
+
+    local legacyTotal = 0
+    local changed = false
+    for slot, item in pairs(items) do
+        if item and item.name == 'cash_bundle' then
+            local amount = tonumber(item.amount) or 0
+            if amount > 0 then
+                legacyTotal = legacyTotal + amount
+            end
+            items[slot] = nil
+            changed = true
+        end
+    end
+    if not changed or legacyTotal <= 0 then return end
+
+    player.Functions.SetPlayerData('items', items)
+    exports['qb-inventory']:AddItem(src, CASH_ITEM, legacyTotal, false, false, 'legacy-cash-migrate')
+end
+
+local function syncCashWithInventory(src, player)
+    if not player or syncingPlayers[src] then return end
+    local cash = math.max(0, math.floor(tonumber(player.PlayerData.money.cash) or 0))
+    local itemCash = getCashItemAmount(player)
+    if itemCash == cash then return end
+
+    syncingPlayers[src] = true
+    if itemCash < cash then
+        exports['qb-inventory']:AddItem(src, CASH_ITEM, cash - itemCash, false, false, SYNC_REASON)
+    else
+        removeCashItemAmount(src, player, itemCash - cash)
+    end
+    syncingPlayers[src] = nil
+end
+
+local function syncMoneyFromInventory(src, player)
+    if not player or syncingPlayers[src] then return end
+    local itemCash = getCashItemAmount(player)
+    if itemCash <= 0 then return end
+    local cash = math.max(0, math.floor(tonumber(player.PlayerData.money.cash) or 0))
+    if itemCash >= cash then return end
+
+    syncingPlayers[src] = true
+    player.Functions.SetMoney('cash', itemCash, SYNC_REASON)
+    syncingPlayers[src] = nil
+end
+
+AddEventHandler('QBCore:Server:OnMoneyChange', function(source, moneytype, _amount, _action, reason)
+    if moneytype ~= 'cash' or reason == SYNC_REASON then return end
+    local player = QBCore.Functions.GetPlayer(source)
+    if not player then return end
+    syncCashWithInventory(source, player)
+end)
+
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-    if player then migrateCashBundleItems(player.PlayerData.source, player) end
+    if not player then return end
+    local src = player.PlayerData.source
+    migrateLegacyCashItems(src, player)
+    syncCashWithInventory(src, player)
+end)
+
+CreateThread(function()
+    Wait(3000)
+    for src, player in pairs(QBCore.Functions.GetQBPlayers()) do
+        syncCashWithInventory(src, player)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        for src, player in pairs(QBCore.Functions.GetQBPlayers()) do
+            syncMoneyFromInventory(src, player)
+        end
+        Wait(2500)
+    end
 end)
 
 local function addHistory(citizenid, txType, amount, balanceAfter, targetCitizenid)
