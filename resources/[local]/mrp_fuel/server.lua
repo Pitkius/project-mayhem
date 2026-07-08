@@ -25,8 +25,12 @@ RegisterNetEvent('mrp_fuel:server:payTick', function(method)
     method = method == 'bank' and 'bank' or 'cash'
 
     local money = Player.PlayerData.money or {}
-    if (tonumber(money[method]) or 0) >= cost then
-        Player.Functions.RemoveMoney(method, cost, 'fuel-pump')
+    local balance = math.floor(tonumber(money[method]) or 0)
+    if balance >= cost then
+        if not Player.Functions.RemoveMoney(method, cost, 'fuel-pump') then
+            TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = false })
+            return
+        end
         TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = true })
         return
     end

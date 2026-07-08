@@ -121,7 +121,7 @@
       state.products = d.products || [];
       state.stationKey = d.stationKey;
       state.selectedId = (state.products[0] && state.products[0].id) || null;
-      if (stationLabel) stationLabel.textContent = d.stationLabel || "MRPD ginklinė";
+      if (stationLabel) stationLabel.textContent = d.stationLabel || "Sandy PD ginklinė";
       if (levelBar) {
         let txt = `Gamybos lygis ${d.craftLevel || 1} / ${d.maxLevel || 3}`;
         if (d.craftsNeeded && (d.craftLevel || 1) < (d.maxLevel || 3)) {

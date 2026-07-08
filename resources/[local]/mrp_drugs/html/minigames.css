@@ -1,11 +1,14 @@
 /* ═══ MRP Drugs — Modern Minigame UI (2026) ═══ */
 
 #mgSchedule.mg {
-  background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(88, 28, 135, 0.18), rgba(2, 0, 8, 0.88));
-  backdrop-filter: blur(10px);
-  animation: mgFadeIn 0.22s ease;
+  background: radial-gradient(ellipse 85% 65% at 50% 38%, rgba(88, 28, 135, 0.22), rgba(0, 0, 4, 0.92));
+  backdrop-filter: blur(14px) saturate(1.2);
+  animation: mgFadeIn 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
-@keyframes mgFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mgFadeIn {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to { opacity: 1; backdrop-filter: blur(14px) saturate(1.2); }
+}
 
 .sch-box {
   --mg-accent: #a78bfa;
@@ -16,15 +19,17 @@
   --mg-border: color-mix(in srgb, var(--mg-accent) 38%, transparent);
   position: relative;
   overflow: hidden;
-  width: min(720px, 97vw);
+  width: min(740px, 97vw);
   background: linear-gradient(165deg, rgba(20, 12, 38, 0.98) 0%, rgba(8, 4, 18, 0.99) 55%, rgba(12, 6, 24, 0.98) 100%);
   border: 1px solid var(--mg-border);
-  border-radius: 22px;
+  border-radius: 24px;
   padding: 0;
   box-shadow:
-    0 32px 90px rgba(0, 0, 0, 0.75),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-    0 0 60px var(--mg-glow);
+    0 40px 100px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 0 80px var(--mg-glow);
+  transform-origin: center center;
+  transition: box-shadow 0.4s ease, border-color 0.4s ease;
 }
 
 .sch-mesh {
@@ -733,12 +738,26 @@
   position: relative;
 }
 .mg-seal-zone::after {
-  content: '🔥';
+  content: '';
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  opacity: 0.5;
+  opacity: 0.55;
+  background: radial-gradient(circle at 50% 60%, rgba(251, 146, 60, 0.35), transparent 65%);
+  border-radius: inherit;
+}
+.mg-seal-zone::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(251, 191, 36, 0.6);
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.4);
 }
 .mg-seal-zone:not(.done):hover { transform: scale(1.05); border-color: var(--mg-accent); box-shadow: 0 0 20px var(--mg-glow); }
 .mg-seal-zone.done {

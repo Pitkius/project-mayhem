@@ -169,7 +169,7 @@ local function getFleetStationPreviewCfg()
     if uiFleetMode == 'boat' or uiFleetMode == 'heli' then
         stationId = stationId or 'ls'
     else
-        stationId = stationId or 'ls_main'
+        stationId = stationId or 'sandy'
     end
     return d.stations[stationId]
 end
@@ -492,7 +492,7 @@ local function openDealershipUi()
 end
 
 local function openFleetDealershipUi(mode, stationId, catalogCbName)
-    stationId = tostring(stationId or ((mode == 'boat' or mode == 'heli') and 'ls' or 'ls_main'))
+    stationId = tostring(stationId or ((mode == 'boat' or mode == 'heli') and 'ls' or 'sandy'))
     QBCore.Functions.TriggerCallback(catalogCbName, function(data)
         safeDeletePreviewVehicle()
         destroyPreviewCam()

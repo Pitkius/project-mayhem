@@ -31,16 +31,31 @@ window.MiniGameUI = (() => {
     return THEMES[String(drug || 'default').toLowerCase()] || THEMES.default;
   }
 
-  function prepareDrugScreen(drug) {
+  function prepareDrugScreen(drug, mode) {
     applyTheme(drug);
     const key = String(drug || 'default').toLowerCase();
+    const modeKey = mode ? String(mode).toLowerCase().replace(/[^a-z0-9_]/g, '') : '';
     const box = document.querySelector('#mgSchedule .sch-box');
     if (box) {
       box.className = 'sch-box';
       box.classList.add(`sch-screen-${key}`);
+      if (modeKey) box.classList.add(`sch-mode-${modeKey}`);
     }
     const deco = document.getElementById('schScreenDeco');
-    if (deco) deco.className = `sch-screen-deco sch-deco-${key}`;
+    if (deco) {
+      deco.className = `sch-screen-deco sch-deco-${key}`;
+      if (modeKey) deco.classList.add(`sch-deco-mode-${modeKey}`);
+    }
+    if (window.MgFx) MgFx.prepareScreen(key, modeKey);
+    if (window.MgAudio) MgAudio.ambientFor(key);
+  }
+
+  function sfx(name) {
+    if (window.MgAudio) MgAudio.play(name);
+  }
+
+  function fxBurst(type) {
+    if (window.MgFx) MgFx.burst(type);
   }
 
   function applyTheme(drug, difficulty) {
@@ -76,7 +91,8 @@ window.MiniGameUI = (() => {
 
   function scene(className) {
     const el = document.createElement('div');
-    el.className = `mg-scene ${className || ''}`.trim();
+    const drug = document.querySelector('#mgSchedule .sch-box')?.dataset?.drugTheme || '';
+    el.className = `mg-scene ${drug ? `mg-scene-${drug}` : ''} ${className || ''}`.trim();
     return el;
   }
 
@@ -110,7 +126,12 @@ window.MiniGameUI = (() => {
     b.innerHTML = iconHtml
       ? `${iconHtml}<span class="mg-action-label">${label}</span>`
       : label;
-    if (opts.onClick) b.onclick = opts.onClick;
+    if (opts.onClick) {
+      b.onclick = (...args) => {
+        sfx('tap');
+        opts.onClick(...args);
+      };
+    }
     return b;
   }
 
@@ -152,7 +173,7 @@ window.MiniGameUI = (() => {
       if (inZone) hold += 1;
       const pct = Math.min(100, Math.floor((hold / need) * 100));
       if (hintEl) hintEl.textContent = `${label || 'Stabilizacija'} — ${pct}%`;
-      if (hold >= need) { cleanup(); if (onSuccess) onSuccess(); }
+      if (hold >= need) { cleanup(); sfx('synth'); if (onSuccess) onSuccess(); }
     }, 40);
 
     function cleanup() {
@@ -162,6 +183,7 @@ window.MiniGameUI = (() => {
     }
     function fail() {
       cleanup();
+      if (window.MgFx) MgFx.shake(1.2);
       if (onFail) onFail();
       else if (typeof failSchedule === 'function') failSchedule();
     }
@@ -192,6 +214,7 @@ window.MiniGameUI = (() => {
       p.innerHTML = `<span>${i + 1}</span>`;
       p.onclick = () => {
         if (p.classList.contains('done')) return;
+        sfx('click');
         p.classList.add('done');
         done += 1;
         if (done >= total && onComplete) onComplete();
@@ -213,6 +236,7 @@ window.MiniGameUI = (() => {
     const btn = actionBtn(label || 'Tęsti', { icon, large: true, variant: 'primary' });
     btn.onclick = () => {
       count += 1;
+      sfx('tap');
       counter.textContent = `${count} / ${need}`;
       btn.classList.add('mg-action--pulse');
       setTimeout(() => btn.classList.remove('mg-action--pulse'), 120);
@@ -282,6 +306,7 @@ window.MiniGameUI = (() => {
       m.style.left = `${12 + Math.random() * 76}%`;
       m.style.top = `${15 + Math.random() * 65}%`;
       m.onclick = () => {
+        sfx('click');
         m.remove();
         picked += 1;
         if (typeof schHint !== 'undefined' && schHint) schHint.textContent = `Surinkta ${picked}/${need}`;
@@ -497,6 +522,8 @@ window.MiniGameUI = (() => {
   }
 
   function successScreen(message, onDone) {
+    sfx('success');
+    fxBurst('success');
     const root = scene('mg-scene-success');
     root.innerHTML = `<div class="mg-success"><div class="mg-success-icon">${resolveIcon('check')}</div><p>${message || 'Atlikta'}</p></div>`;
     root.appendChild(actionBtn('Baigti', { variant: 'primary', onClick: onDone }));
@@ -565,6 +592,7 @@ window.MiniGameUI = (() => {
         bar.classList.toggle('hot', speed > 72);
       }
       if (hold && speed > 8) {
+        if (Math.random() < 0.15) sfx('pour');
         const rate = speed > 72 ? 2.4 : speed > 38 ? 1.2 : 0.5;
         fill += rate;
         paint();
@@ -575,6 +603,7 @@ window.MiniGameUI = (() => {
           end();
           if (hintEl) hintEl.textContent = 'Perpylė! Bandyk lėčiau';
         } else if (fill >= target - tolerance && fill <= target + tolerance && speed <= 70) {
+          sfx('success');
           finish(true);
         } else if (hintEl) {
           hintEl.textContent = `Tikslas ~${target}% · ${Math.round(fill)}%`;
@@ -600,7 +629,10 @@ window.MiniGameUI = (() => {
       z.dataset.i = String(i);
       z.onclick = () => {
         if (z.classList.contains('done') || Number(z.dataset.i) !== done) return;
-        z.classList.add('done');
+        sfx('seal');
+        z.classList.add('done', 'active');
+        setTimeout(() => z.classList.remove('active'), 350);
+        if (window.MgFx) MgFx.flash('rgba(251,146,60,0.25)');
         done += 1;
         wrap.querySelector('.mg-seal-count').textContent = `${done} / ${need}`;
         if (done >= need && onDone) onDone();
@@ -679,11 +711,13 @@ window.MiniGameUI = (() => {
       const inZone = pos >= zoneLeft && pos <= zoneLeft + zoneWidth;
       if (!inZone) {
         clearInterval(iv);
+        if (window.MgFx) MgFx.shake(1);
         if (onFail) onFail();
         else if (typeof failSchedule === 'function') failSchedule();
         return;
       }
       hits += 1;
+      sfx('press');
       track.querySelector('.mg-rhythm-count').textContent = `${hits}/${need}`;
       btn.classList.add('mg-action--pulse');
       setTimeout(() => btn.classList.remove('mg-action--pulse'), 100);
@@ -737,6 +771,7 @@ window.MiniGameUI = (() => {
       p.innerHTML = `<span>${i + 1}</span>`;
       p.onclick = () => {
         if (!toolReady || p.classList.contains('done')) return;
+        sfx('scrape');
         p.classList.add('done');
         cut += 1;
         if (cut >= cuts && onComplete) onComplete();
@@ -765,7 +800,7 @@ window.MiniGameUI = (() => {
     track.innerHTML = `
       <div class="mg-drop-zone"></div>
       <div class="mg-drop-marker" id="mgDropMarker"></div>
-      <div class="mg-drop-vial">${icon}</div>
+      <div class="mg-drop-vial">${resolveIcon(icon, 'beaker')}</div>
       <p class="mg-drop-count">0 / ${need}</p>
     `;
     const btn = actionBtn('Lašinti', { variant: 'primary' });
@@ -791,6 +826,7 @@ window.MiniGameUI = (() => {
         return;
       }
       drops += 1;
+      sfx('drop');
       track.querySelector('.mg-drop-count').textContent = `${drops} / ${need}`;
       if (drops >= need) {
         clearInterval(iv);
@@ -826,7 +862,7 @@ window.MiniGameUI = (() => {
     THEMES, themeFor, applyTheme, prepareDrugScreen, renderStepDots, clearBoard, scene, panel, mount,
     resolveIcon, iconHero, actionBtn, gaugeHold, clickBoard, multiTap, sliderBlend, vesselFill,
     spawnCatcher, stripRow, blisterPack, keySequence, pressMachine, washStation,
-    packBagFlow, foilFold, successScreen,
+    packBagFlow, foilFold, successScreen, sfx, fxBurst,
     pourHold, sealZones, stillGauge, crystalPipeline, pressRhythm, chemistryWash,
     scrapeTrim, timedDrops, dryRack,
   };

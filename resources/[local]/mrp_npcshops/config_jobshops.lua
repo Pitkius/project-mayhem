@@ -34,7 +34,8 @@ Config.PoliceSupplyShop = {
 
 --- Marker taškai (mrp_ltpd 3D markeriai) — serverio atstumo patikra
 Config.JobSupplyPoints = {
-    { job = 'police', stationId = 'ls_main', coords = vector3(428.4538, -974.6989, 21.5596) },
+    { job = 'police', stationId = 'ls_main', coords = vector3(462.23, -981.12, 30.68) },
+    { job = 'police', stationId = 'sandy', coords = vector3(1849.12, 3690.04, 34.27) },
 }
 Config.JobSupplyReach = 5.5
 
@@ -74,16 +75,27 @@ Config.RangerSupplyShop = {
 --- role: supply | garage | locker | stash | duty | boss
 --- PD registratūra — tik qb-target (mrp_ltpd/client/reception.lua)
 Config.JobStationNpcs = {
-    --- Pamainos pradžia / pabaiga (tik policijai)
+    --- Pamainos pradžia / pabaiga — Mission Row (NTeam MRPD)
     {
         job = 'police',
         stationId = 'ls_main',
         role = 'duty',
         model = 's_m_y_cop_01',
-        coords = vector4(463.9745, -996.6197, 30.6895, 84.1146),
+        coords = vector4(440.085, -974.924, 30.689, 90.654),
         label = 'PD pamaina (pradėti / baigti)',
     },
-    { job = 'police', stationId = 'ls_main', role = 'supply', model = 's_m_y_cop_01', coords = vector4(428.4538, -974.6989, 21.5596, 355.6620), label = 'PD ginklinė / inventorius' },
+    { job = 'police', stationId = 'ls_main', role = 'supply', model = 's_m_y_cop_01', coords = vector4(462.23, -981.12, 30.68, 90.654), label = 'PD ginklinė / inventorius' },
+
+    --- Pamainos pradžia / pabaiga (tik policijai) — Sandy Shores
+    {
+        job = 'police',
+        stationId = 'sandy',
+        role = 'duty',
+        model = 's_m_y_cop_01',
+        coords = vector4(1853.2, 3686.5, 34.27, 210.0),
+        label = 'PD pamaina (pradėti / baigti)',
+    },
+    { job = 'police', stationId = 'sandy', role = 'supply', model = 's_m_y_cop_01', coords = vector4(1849.12, 3690.04, 34.27, 210.0), label = 'PD ginklinė / inventorius' },
 
     --- EMS Pillbox (Gabz MLO)
     { job = 'ambulance', stationId = 'ems_ls', role = 'duty', model = 's_m_m_doctor_01', coords = vector4(309.52, -595.29, 43.28, 71.0), label = 'EMS registratūra / tarnyba' },

@@ -149,7 +149,7 @@ local function registerAllPdMarkers()
             RegisterPdGroundMarker({
                 coords = dutyPos,
                 kind = 'duty',
-                label = stationId == 'ls_main' and 'PD pamaina' or 'PD pamaina (pradėti / baigti)',
+                label = 'PD pamaina (pradėti / baigti)',
                 requireDuty = false,
                 onPress = function()
                     TriggerEvent('mrp_ltpd:client:toggleDuty')

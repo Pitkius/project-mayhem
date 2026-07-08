@@ -32,3 +32,4 @@ server_scripts {
 }
 
 dependency 'qb-core'
+dependency 'mrp_fonts'

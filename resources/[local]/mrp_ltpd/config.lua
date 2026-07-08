@@ -199,7 +199,7 @@ Config.ShowHelipadBlip = false
 Config.HelipadBlipSprite = 43
 Config.HelipadBlipScale = 0.9
 
---- 3D markeriai ant žemės MRPD / kituose postuose (ne žemėlapio blipai)
+--- 3D markeriai ant žemės MRPD / Sandy Shores PD (ne žemėlapio blipai)
 Config.ShowPd3DMarkers = true
 Config.PdMarkerDrawDistance = 32.0
 Config.PdMarkerNearTickMs = 50
@@ -251,8 +251,9 @@ Config.Reception = {
 }
 
 --[[
-  Postai: MDT + (pasirinktinai) ginklinė ir PD garažas.
-  ls_main – dt_19_mrpd (Breze Mission Row PD). Koordinates suderintos su interjeru.
+  Postai: MDT + ginklinė + PD garažas.
+  ls_main – cfx-nteam-mrpd (NTeam Mission Row). Koordinates reikia tikslinti žaidime.
+  sandy – cfx-gabz-sandypd.
 ]]
 Config.Stations = {
     {
@@ -262,11 +263,10 @@ Config.Stations = {
         blipCoords = vector3(427.120, -979.559, 30.716),
         heading = 90.0,
         duty = {
-            coords = vector3(453.85, -997.62, 30.69),
+            coords = vector3(440.085, -974.924, 30.689),
         },
-        --- Civilinė registratūra — qb-target (be NPC)
         reception = {
-            coords = vector3(440.8398, -994.5754, 30.6893),
+            coords = vector3(431.06, -988.37, 31.39),
             heading = 180.0,
             length = 1.65,
             width = 1.45,
@@ -274,7 +274,7 @@ Config.Stations = {
             blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra' },
         },
         supply = {
-            coords = vector3(428.4538, -974.6989, 21.5596),
+            coords = vector3(462.23, -981.12, 30.68),
             label = 'PD ginklinė / inventorius',
         },
         armory = {
@@ -286,18 +286,15 @@ Config.Stations = {
             maxweight = 5000000,
             slots = 90,
         },
-        --- PD asmeninis garažas (mrp_garages id – mašinos perkamos salone)
         pdGarageId = 'pd_ls_main',
-        --- Policijos salonas (mrp_dealership) – sujungta su garažu
         policeDealership = {
-            coords = vector3(452.42, -1000.85, 25.7096),
-            heading = 0.0,
+            coords = vector3(460.57, -1006.34, 21.34),
+            heading = 90.0,
         },
         garage = {
-            coords = vector3(452.42, -1000.85, 25.7096),
-            spawn = vector4(452.3017, -1001.141, 25.6928, 0.0),
+            coords = vector3(460.57, -1006.34, 21.34),
+            spawn = vector4(460.57, -1006.34, 21.34, 90.0),
         },
-        --- Vadovybės meniu (qb-target ant laptop propo) – 2 aukštas
         boss = {
             coords = vector4(461.03, -985.58, 34.3725, 180.0),
             label = 'LTPD vadovybė',
@@ -305,10 +302,9 @@ Config.Stations = {
             spawnProp = true,
         },
         locker = {
-            coords = vector3(453.85, -997.62, 30.69),
+            coords = vector3(453.075, -980.124, 30.889),
             heading = 90.0,
         },
-        --- Rūbinė 2 – ARO uniforma
         locker2 = {
             coords = vector3(455.65, -997.62, 30.6896),
             heading = 90.0,
@@ -318,7 +314,7 @@ Config.Stations = {
         },
         stashes = {
             {
-                coords = vector3(429.7007, -978.3584, 21.5596),
+                coords = vector3(453.075, -980.124, 30.889),
                 stashId = 'ltpd_stash_public_ls',
                 label = 'PD sandėlis (bendras)',
                 minGrade = 0,
@@ -327,7 +323,7 @@ Config.Stations = {
                 slots = 60,
             },
             {
-                coords = vector3(424.9205, -978.3719, 21.5596),
+                coords = vector3(451.7031, -973.232, 30.689),
                 stashId = 'ltpd_stash_grade3_ls',
                 label = 'PD sandėlis (≥3 rango)',
                 minGrade = 3,
@@ -336,7 +332,7 @@ Config.Stations = {
                 slots = 70,
             },
             {
-                coords = vector3(426.2207, -974.6854, 21.5596),
+                coords = vector3(455.1456, -985.462, 30.689),
                 stashId = 'ltpd_stash_grade8_ls',
                 label = 'PD sandėlis (vadovų)',
                 minGrade = 8,
@@ -355,54 +351,25 @@ Config.Stations = {
             },
         },
         heliGarage = {
-            coords = vector3(464.06, -983.37, 43.8356),
-            spawn = vector4(464.06, -983.37, 44.05, 270.0),
-        },
-    },
-    {
-        id = 'davis',
-        label = 'Davis PD (Gabz)',
-        coords = vector3(379.39, -1591.37, 29.76),
-        blipCoords = vector3(383.423, -1590.407, 29.276),
-        heading = 320.0,
-        duty = true,
-        supply = {
-            coords = vector3(374.04, -1608.08, 29.29),
-            label = 'PD inventorius',
-        },
-        armory = {
-            coords = vector3(374.04, -1608.08, 29.29),
-            stashId = 'ltpd_armory_davis',
-            label = 'Policijos ginklinė (Davis)',
-            maxweight = 5000000,
-            slots = 90,
-        },
-        pdGarageId = 'pd_davis',
-        policeDealership = {
-            coords = vector3(383.0487, -1616.0627, 29.2921),
-            heading = 52.1940,
-        },
-        garage = {
-            coords = vector3(383.0487, -1616.0627, 29.2921),
-            spawn = vector4(383.0487, -1616.0627, 29.2921, 52.1940),
-        },
-        locker = {
-            coords = vector3(365.13, -1598.32, 25.45),
-            heading = 320.0,
-        },
-        stashes = {
-            { coords = vector3(373.2, -1606.5, 29.29), stashId = 'ltpd_stash_public_davis', label = 'PD sandėlis (bendras)', minGrade = 0, maxweight = 2000000, slots = 60 },
-            { coords = vector3(373.2, -1605.4, 29.29), stashId = 'ltpd_stash_grade3_davis', label = 'PD sandėlis (nuo 3 rango)', minGrade = 3, maxweight = 2500000, slots = 70 },
-            { coords = vector3(373.2, -1604.3, 29.29), stashId = 'ltpd_stash_grade8_davis', label = 'PD sandėlis (nuo 8 rango)', minGrade = 8, maxweight = 3000000, slots = 80 },
+            coords = vector3(449.168, -981.325, 43.691),
+            spawn = vector4(449.168, -981.325, 43.691, 87.234),
         },
     },
     {
         id = 'sandy',
-        label = 'Sandy Shores',
+        label = 'Sandy Shores PD',
         coords = vector3(1853.2, 3686.5, 34.27),
         blipCoords = vector3(1871.453, 3664.964, 33.687),
         heading = 210.0,
         duty = true,
+        reception = {
+            coords = vector3(1859.75, 3689.12, 33.99),
+            heading = 210.0,
+            length = 1.65,
+            width = 1.45,
+            label = 'PD registratūra',
+            blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra' },
+        },
         supply = {
             coords = vector3(1849.12, 3690.04, 34.27),
             label = 'PD inventorius',
@@ -423,6 +390,12 @@ Config.Stations = {
             coords = vector3(1869.5, 3695.2, 33.53),
             spawn = vector4(1869.5, 3695.2, 33.53, 210.0),
         },
+        boss = {
+            coords = vector4(1852.0, 3688.5, 34.27, 210.0),
+            label = 'LTPD vadovybė',
+            prop = 'prop_laptop_01a',
+            spawnProp = true,
+        },
         locker = {
             coords = vector3(1851.2, 3689.1, 34.27),
             heading = 210.0,
@@ -433,43 +406,6 @@ Config.Stations = {
             { coords = vector3(1852.5, 3691.5, 34.27), stashId = 'ltpd_stash_grade8_sandy', label = 'PD sandėlis (nuo 8 rango)', minGrade = 8, maxweight = 3000000, slots = 80 },
         },
     },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        coords = vector3(-448.15, 6012.0, 31.72),
-        blipCoords = vector3(-432.177, 6019.605, 31.490),
-        heading = 45.0,
-        duty = true,
-        supply = {
-            coords = vector3(-449.38, 6014.12, 31.72),
-            label = 'PD inventorius',
-        },
-        armory = {
-            coords = vector3(-449.38, 6014.12, 31.72),
-            stashId = 'ltpd_armory_paleto',
-            label = 'Policijos ginklinė (Paleto)',
-            maxweight = 4000000,
-            slots = 70,
-        },
-        pdGarageId = 'pd_paleto',
-        policeDealership = {
-            coords = vector3(-459.2, 6016.3, 31.49),
-            heading = 45.0,
-        },
-        garage = {
-            coords = vector3(-459.2, 6016.3, 31.49),
-            spawn = vector4(-459.2, 6016.3, 31.49, 45.0),
-        },
-        locker = {
-            coords = vector3(-448.9, 6013.2, 31.72),
-            heading = 45.0,
-        },
-        stashes = {
-            { coords = vector3(-450.5, 6015.2, 31.72), stashId = 'ltpd_stash_public_paleto', label = 'PD sandėlis (bendras)', minGrade = 0, maxweight = 2000000, slots = 60 },
-            { coords = vector3(-451.5, 6015.2, 31.72), stashId = 'ltpd_stash_grade3_paleto', label = 'PD sandėlis (nuo 3 rango)', minGrade = 3, maxweight = 2500000, slots = 70 },
-            { coords = vector3(-452.5, 6015.2, 31.72), stashId = 'ltpd_stash_grade8_paleto', label = 'PD sandėlis (nuo 8 rango)', minGrade = 8, maxweight = 3000000, slots = 80 },
-        },
-    },
 }
 
 --- Tarnybinė PD apranga – žr. config_duty_outfits.lua (addon kolekcijos mrp_pd_uniforms)
@@ -477,93 +413,28 @@ Config.Stations = {
 Config.TargetDistance = 2.5
 Config.MaxFineAmount = 50000
 
---- PD durys / vartai (dt_19 MRPD LS + automatinis Sandy / Paleto MLO skenavimas)
+--- PD durys / vartai — NTeam MRPD (LS) + Sandy Shores MLO
 Config.PdDoorToggleReach = 6.0
 --- Spynos ikonos Z poslinkis nuo durų slab koord. (standartinės durys)
 Config.PdDoorLockIconZOffset = 0.38
---- Spynos ikona: tik arti durų (ne visam MRPD spinduliu) · ms tarp piešimų (≥50)
+--- Spynos ikona: tik arti durų · ms tarp piešimų (≥50)
 Config.PdDoorLockIconDrawDistance = 10.0
 Config.PdDoorLockIconTickMs = 50
 --- false = tik E mygtukas; true = papildomai qb-target (numatyta: tik E)
 Config.PdDoorUseQbTarget = false
 Config.PdDoorGroups = {
     {
-        id = 'ls_mrpd_lobby',
-        label = 'Pagrindinės durys (fojė)',
-        interact = vector3(440.8398, -994.5754, 30.6893),
-        interactDist = 2.5,
+        id = 'ls_mrpd_garage_roll',
+        label = 'Garažo vartai (MRPD)',
+        doorType = 'garage_roll',
+        interact = vector3(460.57, -1006.34, 21.34),
+        interactDist = 5.0,
         defaultLocked = true,
-        doors = {
-            { model = 'dt_19_door_small_window', coords = vector3(441.7664, -994.2772, 30.8187) },
-        },
-    },
-    {
-        id = 'ls_mrpd_side_a',
-        label = 'Šoninis įėjimas (A)',
-        interact = vector3(440.2476, -999.0399, 30.7257),
-        interactDist = 2.5,
-        defaultLocked = true,
-        doors = {
-            { model = 'v_ilev_fib_doore_l', coords = vector3(441.2427, -998.6813, 30.7996) },
-            { model = 'v_ilev_fib_doore_r', coords = vector3(439.0086, -998.6813, 30.7996) },
-        },
-    },
-    {
-        id = 'ls_mrpd_side_b',
-        label = 'Šoninis įėjimas (B)',
-        interact = vector3(442.8256, -999.1414, 30.7245),
-        interactDist = 2.5,
-        defaultLocked = true,
-        doors = {
-            { model = 'v_ilev_fib_doore_l', coords = vector3(443.8397, -998.6813, 30.7996) },
-            { model = 'v_ilev_fib_doore_r', coords = vector3(441.5994, -998.6813, 30.7996) },
-        },
-    },
-    {
-        id = 'ls_mrpd_back',
-        label = 'Galinis įėjimas',
-        interact = vector3(468.8101, -1014.3331, 26.406),
-        interactDist = 2.5,
-        defaultLocked = true,
-        doors = {
-            { model = 'dt_19_door_small_wth_window', coords = vector3(469.9525, -1014.552, 26.5373) },
-            { model = 'dt_19_door_small_wth_window', coords = vector3(467.3533, -1014.552, 26.5373) },
-        },
-    },
-    {
-        id = 'ls_mrpd_interview_1',
-        label = 'Tardymo kambarys 1',
-        interact = vector3(482.27, -988.60, 25.864),
-        interactDist = 3.0,
-        defaultLocked = false,
-        doors = {
-            { model = 'dt_19_garage_cell_door', coords = vector3(481.35, -988.60, 25.864) },
-        },
-    },
-    {
-        id = 'ls_mrpd_interview_2',
-        label = 'Tardymo kambarys 2',
-        interact = vector3(482.27, -996.15, 25.864),
-        interactDist = 3.0,
-        defaultLocked = false,
-        doors = {
-            { model = 'dt_19_garage_cell_door', coords = vector3(481.35, -996.15, 25.864) },
-        },
-    },
-    {
-        id = 'ls_mrpd_back_gate',
-        label = 'Kiemo vartai',
-        doorType = 'barrier',
-        interact = vector3(488.8, -1020.2, 29.0),
-        interactDist = 12.0,
-        defaultLocked = true,
-        doors = {
-            { model = 'hei_prop_station_gate', coords = vector3(488.8, -1017.2, 27.1) },
-        },
+        doors = {},
         entityScan = {
-            center = vector3(488.8, -1017.2, 27.1),
-            radius = 14.0,
-            models = { 'hei_prop_station_gate' },
+            center = vector3(452.0, -1001.0, 24.0),
+            radius = 18.0,
+            models = { 'nteam_mrpd_garagedoors', 'nteam_mrpd_shut' },
         },
     },
     {
@@ -583,77 +454,19 @@ Config.PdDoorGroups = {
         },
     },
     {
-        id = 'ls_mrpd_garage_roll_w',
-        label = 'Garažo vartai (vakarai)',
-        doorType = 'garage_roll',
-        interact = vector3(431.3349, -1001.5062, 25.7096),
-        interactDist = 4.0,
+        id = 'ls_mrpd_back_gate',
+        label = 'Kiemo vartai',
+        doorType = 'barrier',
+        interact = vector3(488.8, -1020.2, 29.0),
+        interactDist = 12.0,
         defaultLocked = true,
         doors = {
-            { model = 'dt_19_garage_doorst', coords = vector3(431.4082, -1001.261, 26.6799), heading = 0.0 },
+            { model = 'hei_prop_station_gate', coords = vector3(488.8, -1017.2, 27.1) },
         },
         entityScan = {
-            center = vector3(431.4082, -1001.261, 26.6799),
-            radius = 10.0,
-            models = { 'dt_19_garage_doorst' },
-        },
-    },
-    {
-        id = 'ls_mrpd_garage_roll_c',
-        label = 'Garažo vartai (centras)',
-        doorType = 'garage_roll',
-        interact = vector3(436.2126, -1001.5596, 25.71),
-        interactDist = 4.0,
-        defaultLocked = true,
-        doors = {
-            { model = 'dt_19_garage_doorst', coords = vector3(436.2234, -1001.262, 26.685), heading = 0.0 },
-        },
-        entityScan = {
-            center = vector3(436.2234, -1001.262, 26.685),
-            radius = 10.0,
-            models = { 'dt_19_garage_doorst' },
-        },
-    },
-    {
-        id = 'ls_mrpd_garage_roll_e',
-        label = 'Garažo vartai (rytai)',
-        doorType = 'garage_roll',
-        interact = vector3(447.4274, -1001.1773, 25.7098),
-        interactDist = 4.0,
-        defaultLocked = true,
-        doors = {
-            { model = 'dt_19_garage_doorst', coords = vector3(447.4821, -1001.14, 26.6882), heading = 0.0 },
-        },
-        entityScan = {
-            center = vector3(447.4821, -1001.14, 26.6882),
-            radius = 10.0,
-            models = { 'dt_19_garage_doorst' },
-        },
-    },
-    {
-        id = 'ls_mrpd_garage_roll_p',
-        label = 'Garažo vartai (parkas)',
-        doorType = 'garage_roll',
-        interact = vector3(452.4151, -1000.9858, 25.6466),
-        interactDist = 4.0,
-        defaultLocked = true,
-        doors = {
-            { model = 'dt_19_garage_doorst', coords = vector3(452.3017, -1001.141, 26.6928), heading = 0.0 },
-        },
-        entityScan = {
-            center = vector3(452.3017, -1001.141, 26.6928),
-            radius = 10.0,
-            models = { 'dt_19_garage_doorst' },
-        },
-    },
-    {
-        id = 'ls_mrpd_heli_door',
-        label = 'Stogo durys (helipadas)',
-        interact = vector3(464.062, -984.0073, 43.692),
-        interactDist = 2.5,
-        defaultLocked = true,
-        doors = {
-            { model = 'dt_19_garageintdoor', coords = vector3(464.2744, -983.3741, 43.8356) },
+            center = vector3(488.8, -1017.2, 27.1),
+            radius = 14.0,
+            models = { 'hei_prop_station_gate' },
         },
     },
     {
@@ -683,64 +496,37 @@ Config.PdDoorGroups = {
             models = { 'hedwig_sheriff_garage_gardoor', 'hedwig_sheriff_garage_door', 'hedwig_sheriif_garage_door' },
         },
     },
-    {
-        id = 'davis_pd_main',
-        label = 'Davis PD pagrindinės durys',
-        interact = vector3(380.15, -1591.25, 29.76),
-        interactDist = 3.0,
-        defaultLocked = true,
-        doors = {
-            { model = 'gabz_davispd_maindoor_left', coords = vector3(379.85, -1591.55, 29.76) },
-            { model = 'gabz_davispd_maindoor_right', coords = vector3(380.45, -1590.85, 29.76) },
-        },
-    },
-    {
-        id = 'davis_pd_fence_gate',
-        label = 'Davis PD kiemo vartai',
-        doorType = 'barrier',
-        interact = vector3(397.85, -1607.09, 29.29),
-        interactDist = 5.5,
-        defaultLocked = true,
-        doors = {
-            { model = 'gabz_davispd_fancegate', coords = vector3(397.2, -1606.5, 29.35), heading = 320.0 },
-        },
-        entityScan = {
-            center = vector3(397.2, -1606.5, 29.35),
-            radius = 12.0,
-            models = { 'gabz_davispd_fancegate' },
-        },
-    },
-    {
-        id = 'paleto_pd_yard_gate',
-        label = 'Paleto PD kiemo vartai',
-        doorType = 'barrier',
-        interact = vector3(-459.2, 6016.3, 31.49),
-        interactDist = 5.5,
-        defaultLocked = true,
-        doors = {
-            { model = 'gabz_paletopd_gate_fence', coords = vector3(-453.5, 6025.0, 31.35) },
-        },
-        entityScan = {
-            center = vector3(-453.5, 6025.0, 31.35),
-            radius = 14.0,
-            models = { 'gabz_paletopd_gate_fence', 'gabz_paletopd_gate_fence_01' },
-        },
-    },
 }
 
---- Papildomi E taškai toms pačioms `PdDoorGroups` (be dubliavimo slabų) – dt_19 MRPD.
 Config.PdDoorInteractExtras = {
-    { groupId = 'ls_mrpd_lobby', interact = vector3(441.42, -977.68, 30.79), interactDist = 3.2 },
-    { groupId = 'ls_mrpd_side_a', interact = vector3(441.28, -986.51, 30.71), interactDist = 3.2 },
-    { groupId = 'ls_mrpd_back_gate', interact = vector3(488.8, -1017.2, 27.1), interactDist = 6.0 },
+    { groupId = 'ls_mrpd_garage_roll', interact = vector3(455.0, -1001.0, 22.0), interactDist = 5.0 },
     { groupId = 'ls_mrpd_front_entry', interact = vector3(410.1, -1024.3, 29.75), interactDist = 5.0 },
-    { groupId = 'ls_mrpd_garage_roll_w', interact = vector3(428.5, -1001.5, 25.75), interactDist = 4.5 },
-    { groupId = 'ls_mrpd_garage_roll_p', interact = vector3(455.0, -1001.0, 25.75), interactDist = 4.5 },
-    { groupId = 'davis_pd_main', interact = vector3(379.39, -1591.37, 29.76), interactDist = 3.0 },
+    { groupId = 'ls_mrpd_back_gate', interact = vector3(488.8, -1017.2, 27.1), interactDist = 6.0 },
 }
 
 --- Automatinis durų radimas (objektai žemėlapyje pagal modelį ir dėžę)
 Config.PdDoorDynamics = {
+    {
+        stationId = 'ls_main',
+        label = 'PD durys (NTeam MRPD – auto)',
+        bounds = {
+            min = vector3(400.0, -1060.0, 18.0),
+            max = vector3(505.0, -910.0, 58.0),
+        },
+        models = {
+            'nteam_mrpd_metaldoor',
+            'nteam_mrpd_garagedoors',
+            'nteam_mrpd_bathroomdoor',
+            'nteam_mrpd_tamdoor',
+            'nteam_mrpd_shut',
+            'xm3_prop_xm3_glass_door_02a',
+            'v_ilev_ph_gendoor',
+            'v_ilev_fib_doore_l',
+            'v_ilev_fib_doore_r',
+        },
+        pairDist = 4.35,
+        interactDist = 2.85,
+    },
     {
         stationId = 'sandy',
         label = 'PD durys (Sandy)',
@@ -758,95 +544,6 @@ Config.PdDoorDynamics = {
         },
         pairDist = 4.35,
         interactDist = 2.85,
-    },
-    --- dt_19 MRPD LS: cele + vidaus durys (manual grupės – įėjimai, garažas, vartai)
-    {
-        stationId = 'ls_mrpd_dt19',
-        label = 'PD durys (LS dt_19 – auto)',
-        bounds = {
-            min = vector3(400.0, -1060.0, 22.0),
-            max = vector3(505.0, -910.0, 58.0),
-        },
-        models = {
-            'dt_19_d_ent_hall_l',
-            'dt_19_d_ent_hall_r',
-            'v_ilev_fib_doore_l',
-            'v_ilev_fib_doore_r',
-            'dt_19_glass_door',
-            'dt_19_glass_door_detec',
-            'dt_19_door_small_window',
-            'dt_19_door_small_wth_window',
-            'dt_19_door_large_w_window',
-            'dt_19_door_stair',
-            'dt_19_garageintdoor',
-            'dt_19_garage_intdoor2',
-            'dt_19_garage_cell_door',
-            'hei_prop_station_door_lr',
-            'hei_prop_station_door_sl',
-            'hei_prop_station_door_ra',
-            'hei_prop_station_door_rb',
-            'hei_prop_station_door_lc',
-            'hei_prop_station_door_rc',
-        },
-        pairDist = 2.85,
-        interactDist = 2.85,
-        interactOffset = vector3(0.0, 0.0, 0.88),
-        defaultLocked = true,
-    },
-    {
-        stationId = 'davis_cells',
-        label = 'PD cele (Davis)',
-        bounds = { min = vector3(358.0, -1610.0, 24.0), max = vector3(392.0, -1575.0, 36.0) },
-        models = { 'gabz_davispd_cell_door' },
-        pairDist = 0.75,
-        interactDist = 2.15,
-        interactOffset = vector3(0.0, 0.0, 0.92),
-    },
-    {
-        stationId = 'paleto_cells',
-        label = 'PD cele (Paleto)',
-        bounds = { min = vector3(-448.0, 6005.0, 30.0), max = vector3(-418.0, 6035.0, 36.0) },
-        models = { 'gabz_paletopd_cells_gate', 'gabz_paletopd_glassdoorway_cells' },
-        pairDist = 0.85,
-        interactDist = 2.25,
-        interactOffset = vector3(0.0, 0.0, 0.92),
-    },
-    {
-        stationId = 'davis',
-        label = 'PD durys (Davis Gabz)',
-        bounds = { min = vector3(348.0, -1628.0, 20.0), max = vector3(412.0, -1562.0, 48.0) },
-        models = {
-            'gabz_davispd_maindoor_left',
-            'gabz_davispd_maindoor_right',
-            'gabz_davispd_singledoor_01',
-            'gabz_davispd_singledoor_02',
-            'gabz_davispd_singledoor_03',
-            --- fancegate ir cele – valdomos per `PdDoorGroups` / `davis_cells`
-        },
-        pairDist = 3.85,
-        interactDist = 2.85,
-        interactOffset = vector3(0.0, 0.0, 0.88),
-        defaultLocked = true,
-    },
-    {
-        stationId = 'paleto',
-        label = 'PD durys (Paleto)',
-        bounds = { min = vector3(-470.0, 5975.0, 24.0), max = vector3(-395.0, 6055.0, 38.0) },
-        models = {
-            'gabz_paletopd_doors01',
-            'gabz_paletopd_doors02',
-            'gabz_paletopd_doors03',
-            'gabz_paletopd_doors04',
-            'gabz_paletopd_doors05',
-            'gabz_paletopd_doors06',
-            'gabz_paletopd_glassdoorway',
-            'gabz_paletopd_glassdoorway_cells',
-            'gabz_paletopd_gate_fence',
-            'gabz_paletopd_gate_fence_01',
-            'gabz_paletopd_cells_gate',
-        },
-        pairDist = 2.35,
-        interactDist = 2.5,
     },
 }
 

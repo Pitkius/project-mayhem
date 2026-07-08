@@ -571,7 +571,7 @@ QBCore.Functions.CreateCallback('mrp_dealership:server:buyPoliceVehicle', functi
     end
 
     model = string.lower(tostring(model or ''))
-    stationId = tostring(stationId or 'ls_main')
+    stationId = tostring(stationId or 'sandy')
     local pd = Config.PoliceDealership
     local garageId = pd.garageByStation and pd.garageByStation[stationId]
     local stSpawn = pd.stations and pd.stations[stationId]

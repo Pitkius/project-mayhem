@@ -13,9 +13,7 @@ Config.Surveillance.BodycamItem = 'police_bodycam'
 --- CCTV per MDT: leidžiama su mdt_cctv. Fizinis terminalas – tik prie stoties.
 Config.Surveillance.CctvWatchStations = {
     { coords = vector3(441.2, -981.0, 31.25), radius = 55.0, label = 'MRPD' },
-    { coords = vector3(379.5, -1591.5, 30.5), radius = 48.0, label = 'Davis PD' },
     { coords = vector3(1852.5, 3688.0, 34.75), radius = 40.0, label = 'Sandy PD' },
-    { coords = vector3(-447.5, 6012.0, 32.75), radius = 40.0, label = 'Paleto PD' },
 }
 
 --- Po apiplėšimo/hack: min. sekundės tarp CCTV sabotavimo bangų
@@ -42,7 +40,6 @@ Config.Surveillance.CctvSites = {
     casino = { label = 'Diamond Casino', zone = 'casino' },
     mrpd = { label = 'Mission Row PD', zone = 'police' },
     sandy_pd = { label = 'Sandy Shores PD', zone = 'police' },
-    paleto_pd = { label = 'Paleto Bay PD', zone = 'police' },
 }
 
 --- Kategorijos MDT filtre
@@ -85,7 +82,6 @@ Config.Surveillance.CctvCameras = {
     { id = 'mrpd_parking', label = 'Parkavimas', zone = 'police', siteId = 'mrpd', propModel = `prop_cctv_cam_02a`, propCoords = vector4(458.5, -1003.0, 28.75, 225.0), lookAt = vector3(454.0, -1000.5, 28.2), lookDistance = 13.0, pitchOffset = -16.0, yawMax = 50.0, pitchMax = 16.0, fov = 58.0, audio = true, spawnProp = false, propSearchRadius = 22.0 },
     { id = 'mrpd_roof', label = 'Stogas', zone = 'police', siteId = 'mrpd', propModel = `prop_cctv_cam_03a`, propCoords = vector4(463.0, -984.0, 44.5, 210.0), lookAt = vector3(459.0, -988.0, 42.5), lookDistance = 14.0, pitchOffset = -14.0, yawMax = 52.0, pitchMax = 18.0, fov = 60.0, audio = false, spawnProp = false, propSearchRadius = 22.0 },
     { id = 'sandy_pd', label = 'Sandy Shores PD', zone = 'police', coords = vector3(1852.5, 3688.0, 34.75), lookAt = vector3(1846.0, 3692.0, 34.2), fov = 55.0, audio = true },
-    { id = 'paleto_pd', label = 'Paleto Bay PD', zone = 'police', coords = vector3(-447.5, 6012.0, 32.75), lookAt = vector3(-441.0, 6016.0, 32.2), fov = 55.0, audio = true },
 
     -- Parduotuvės (24/7 / LTD)
     { id = '247_grove', label = '24/7 – Grove St', zone = 'store', coords = vector3(-48.2, -1757.8, 30.4), lookAt = vector3(-47.0, -1758.0, 29.4), fov = 54.0, audio = true, spawnProp = false },

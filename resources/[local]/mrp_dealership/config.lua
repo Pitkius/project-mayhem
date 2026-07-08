@@ -178,33 +178,20 @@ Config.PoliceDealership = {
     --- Kokį `garage` įrašyti į DB pagal mrp_ltpd stoties id
     garageByStation = {
         ls_main = 'pd_ls_main',
-        davis = 'pd_davis',
         sandy = 'pd_sandy',
-        paleto = 'pd_paleto',
     },
-    --- Peržiūra / spawn po pirkimo pagal stotį (mrp_ltpd Config.Stations.id)
+    --- Peržiūra / spawn po pirkimo (MRPD + Sandy Shores PD)
     stations = {
         ls_main = {
-            spawn = vector4(452.3017, -1001.141, 25.6928, 0.0),
-            preview = vector4(447.4821, -1001.14, 25.6882, 90.0),
+            spawn = vector4(460.57, -1006.34, 21.34, 90.0),
+            preview = vector4(456.0, -1004.0, 21.34, 90.0),
             previewLateralM = 0.0,
-            camera = vector4(450.0, -1005.0, 27.5, 90.0),
-        },
-        davis = {
-            spawn = vector4(397.85, -1607.09, 29.29, 230.0),
-            preview = vector4(392.4, -1609.85, 29.29, 50.0),
-            previewLateralM = 0.0,
-            camera = vector4(395.8, -1608.2, 30.85, 50.0),
+            camera = vector4(462.0, -1010.0, 23.5, 90.0),
         },
         sandy = {
             spawn = vector4(1869.5, 3695.2, 33.53, 210.0),
             preview = vector4(1872.0, 3693.5, 33.53, 120.0),
             camera = vector4(1875.2, 3694.5, 35.0, 120.0),
-        },
-        paleto = {
-            spawn = vector4(-459.2, 6016.3, 31.49, 45.0),
-            preview = vector4(-456.5, 6015.0, 31.49, 225.0),
-            camera = vector4(-453.5, 6015.5, 33.2, 225.0),
         },
     },
     PoliceCategoryLabels = {

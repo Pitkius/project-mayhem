@@ -5,8 +5,9 @@ window.DrugGameModes = (() => {
   const win = (extra) => postSchedule(true, extra || { score: 88 });
   const fail = () => failSchedule();
 
-  function screen(drug) {
-    if (U() && U().prepareDrugScreen) U().prepareDrugScreen(drug);
+  function screen(drug, mode) {
+    const m = mode || window.__schCurrentMode;
+    if (U() && U().prepareDrugScreen) U().prepareDrugScreen(drug, m);
   }
 
   const SPOTS = {

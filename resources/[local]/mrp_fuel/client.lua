@@ -126,6 +126,12 @@ local function closeFuelUi()
     stopFuelAnim()
 end
 
+local function openFuelUi(data)
+    local choosePay = data and data.choosePay == true
+    SetNuiFocus(choosePay, choosePay)
+    sendUi('open', data or {})
+end
+
 local function updateFuelUi()
     if not fuelSession then return end
     sendUi('update', {
@@ -170,8 +176,7 @@ local function startFuelSession(veh)
         cost = 0.0,
     }
 
-    SetNuiFocus(false, false)
-    sendUi('open', {
+    openFuelUi({
         fuel = fuelSession.currentFuel,
         liters = 0,
         cost = 0,
@@ -197,6 +202,7 @@ end
 RegisterNUICallback('fuelChoosePay', function(data, cb)
     payMethod = (data and data.method == 'bank') and 'bank' or 'cash'
     if not fuelSession then cb({ ok = false }) return end
+    SetNuiFocus(false, false)
     sendUi('update', {
         fuel = fuelSession.currentFuel,
         liters = fuelSession.liters,
@@ -220,7 +226,7 @@ RegisterNUICallback('fuelChoosePay', function(data, cb)
             local paid = false
             lastPayResult = { ok = false }
             TriggerServerEvent('mrp_fuel:server:payTick', payMethod)
-            local deadline = GetGameTimer() + 700
+            local deadline = GetGameTimer() + 1500
             while GetGameTimer() < deadline do
                 if lastPayResult and lastPayResult.ok then paid = true break end
                 Wait(30)

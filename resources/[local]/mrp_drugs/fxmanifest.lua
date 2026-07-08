@@ -15,6 +15,8 @@ files {
     'html/minigames.css',
     'html/minigame-screens.css',
     'html/drug-icons.js',
+    'html/mg-audio.js',
+    'html/mg-fx.js',
     'html/app.js',
     'html/schedule-icons.js',
     'html/schedule.js',

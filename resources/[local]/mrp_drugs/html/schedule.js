@@ -20,6 +20,14 @@ function postSchedule(success, extra = {}) {
     clearInterval(scheduleTimer);
     scheduleTimer = null;
   }
+  if (window.MgAudio) {
+    MgAudio.play(success ? 'success' : 'fail');
+    MgAudio.stopAmbient();
+  }
+  if (window.MgFx) {
+    if (!success) MgFx.shake(1.3);
+    MgFx.cleanup();
+  }
   if (mgSchedule) mgSchedule.classList.add("hidden");
   if (schBoard) schBoard.innerHTML = "";
   const dots = document.getElementById("schStepDots");
@@ -1432,10 +1440,13 @@ function runWeedPackGame(data) {
 function runScheduleGame(data) {
   if (!mgSchedule) return;
   scheduleActive = true;
+  window.__schCurrentMode = data.mode || "trim";
   if (schTitle) schTitle.textContent = data.title || "Gamyba";
   setScheduleBadge(data.drug, data.action, data.icon);
-  if (window.MiniGameUI) MiniGameUI.prepareDrugScreen(data.drug);
+  const mode = data.mode || "trim";
+  if (window.MiniGameUI) MiniGameUI.prepareDrugScreen(data.drug, mode);
   else if (window.MiniGameUI) MiniGameUI.applyTheme(data.drug, data.difficulty);
+  if (window.MgAudio) MgAudio.play('open');
   const tierEl = document.getElementById("schTier");
   if (tierEl && window.MiniGameUI) {
     const lvl = Math.min(3, Math.max(1, Number(data.difficulty) || 1));
@@ -1448,7 +1459,6 @@ function runScheduleGame(data) {
   if (window.MiniGameUI) MiniGameUI.renderStepDots(1, data.steps || 3);
   mgSchedule.classList.remove("hidden");
 
-  const mode = data.mode || "trim";
   const drugMode = window.DrugGameModes && window.DrugGameModes[mode];
   if (drugMode) return drugMode(data);
 
