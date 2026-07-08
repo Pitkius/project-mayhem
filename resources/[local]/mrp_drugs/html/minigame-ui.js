@@ -319,11 +319,11 @@ window.MiniGameUI = (() => {
   }
 
   const COCA_LEAF_SLOTS = [
-    { left: '53.3%', top: '14.6%' },  /* viršus — centrinė šakelė */
-    { left: '7.5%', top: '26.2%' },   /* kairė — tolimiausia šakelė */
-    { left: '92.5%', top: '26.2%' },  /* dešinė — tolimiausia šakelė */
-    { left: '13.3%', top: '33.8%' },  /* viršutinė kairė */
-    { left: '86.7%', top: '33.8%' },  /* viršutinė dešinė */
+    { left: '50%', top: '0%' },  /* viršus — centrinė šakelė */
+    { left: '20%', top: '26.2%' },   /* kairė — tolimiausia šakelė */
+    { left: '80%', top: '26.2%' },  /* dešinė — tolimiausia šakelė */
+    { left: '35%', top: '33.8%' },  /* viršutinė kairė */
+    { left: '65%', top: '33.8%' },  /* viršutinė dešinė */
   ];
 
   function buildCocaTreeSvg() {
