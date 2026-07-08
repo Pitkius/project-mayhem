@@ -334,14 +334,6 @@ window.MiniGameUI = (() => {
         <stop offset="42%" stop-color="#b8895a"/>
         <stop offset="100%" stop-color="#6b4423"/>
       </linearGradient>
-      <linearGradient id="mgCocaSoil" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#c49a6c"/>
-        <stop offset="100%" stop-color="#7a5535"/>
-      </linearGradient>
-      <radialGradient id="mgCocaGrass" cx="50%" cy="30%" r="70%">
-        <stop offset="0%" stop-color="#72c35a"/>
-        <stop offset="100%" stop-color="#4d9a42"/>
-      </radialGradient>
     </defs>
 
     <ellipse cx="120" cy="252" rx="54" ry="5" fill="rgba(0,0,0,0.22)"/>
