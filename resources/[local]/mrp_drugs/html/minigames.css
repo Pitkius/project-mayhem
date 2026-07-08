@@ -446,30 +446,195 @@
 }
 @keyframes mgPop { from { transform: translate(-50%, -50%) scale(0.4); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
 
-/* Branch / coca */
-.mg-branch {
+/* Coca tree — kamienas, šakos, lapai */
+.mg-coca-tree {
   position: relative;
   width: min(400px, 92vw);
-  height: 52px;
-  background: linear-gradient(90deg, #5c3d1e, #8b5a2b, #5c3d1e);
-  border-radius: 999px;
-  margin: 48px 0;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  height: 230px;
+  margin: 28px auto 20px;
 }
-.mg-branch-leaf {
+
+.mg-coca-ground {
   position: absolute;
-  top: -32px;
+  bottom: 0;
+  left: 50%;
   transform: translateX(-50%);
-  width: 44px;
-  height: 44px;
+  width: 78%;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(34, 24, 14, 0.75) 0%, rgba(34, 24, 14, 0.2) 55%, transparent 72%);
+  filter: blur(1px);
+}
+
+.mg-coca-roots {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  z-index: 1;
+}
+.mg-coca-roots span {
+  display: block;
+  width: 22px;
+  height: 10px;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(180deg, #3d2817, #2a1a0f);
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.35);
+}
+.mg-coca-roots span:nth-child(1) { transform: rotate(-28deg) translateY(2px); width: 18px; }
+.mg-coca-roots span:nth-child(2) { height: 12px; width: 26px; }
+.mg-coca-roots span:nth-child(3) { transform: rotate(28deg) translateY(2px); width: 18px; }
+
+.mg-coca-trunk {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38px;
+  height: 108px;
+  border-radius: 10px 10px 6px 6px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 4px,
+      rgba(0, 0, 0, 0.14) 4px,
+      rgba(0, 0, 0, 0.14) 6px
+    ),
+    linear-gradient(180deg, #6b4a2e 0%, #4a3220 28%, #3d2817 58%, #2a1a0f 100%);
+  box-shadow:
+    inset 5px 0 14px rgba(255, 255, 255, 0.07),
+    inset -6px 0 16px rgba(0, 0, 0, 0.35),
+    0 10px 28px rgba(0, 0, 0, 0.45);
+  z-index: 2;
+  overflow: hidden;
+}
+
+.mg-coca-bark {
+  position: absolute;
+  inset: 8% 18% 12% 22%;
+  border-radius: 40% 30% 35% 45%;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.1), transparent 55%);
+  pointer-events: none;
+}
+
+.mg-coca-knot {
+  position: absolute;
+  top: 38%;
+  right: 8%;
+  width: 14px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #5c4030, #2a1a0f);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
+}
+
+.mg-coca-moss {
+  position: absolute;
+  bottom: 18%;
+  left: 6%;
+  width: 18px;
+  height: 10px;
+  border-radius: 40% 60% 50% 50%;
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.45), rgba(22, 101, 52, 0.55));
+  filter: blur(0.2px);
+}
+
+.mg-coca-crown {
+  position: absolute;
+  bottom: 110px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: 3;
+}
+
+.mg-coca-branch {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--branch-len, 60px);
+  height: 7px;
+  transform-origin: left center;
+  transform: rotate(var(--branch-rot, -30deg));
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3d2817 0%, #6b4423 35%, #8b6914 68%, #5c4030 100%);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.mg-coca-branch::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #7a5535, #3d2817);
+}
+
+.mg-coca-subbranch {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 30px;
+  height: 5px;
+  transform-origin: left center;
+  transform: translateY(-50%) rotate(var(--sub-rot, 20deg));
+  border-radius: 999px;
+  background: linear-gradient(90deg, #5c4030, #7a5535 60%, #6b4423);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.mg-coca-branch--1 { --branch-rot: -62deg; --branch-len: 72px; }
+.mg-coca-branch--2 { --branch-rot: -34deg; --branch-len: 62px; height: 6px; }
+.mg-coca-branch--3 { --branch-rot: -6deg; --branch-len: 54px; height: 6px; }
+.mg-coca-branch--4 { --branch-rot: 30deg; --branch-len: 64px; }
+.mg-coca-branch--5 { --branch-rot: 58deg; --branch-len: 74px; }
+
+.mg-branch-leaf,
+.mg-coca-leaf {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   border: 2px solid #4ade80;
-  background: rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.22);
   cursor: pointer;
   font-size: 22px;
-  transition: opacity 0.2s, transform 0.2s;
+  z-index: 5;
+  transition: opacity 0.25s, transform 0.25s, box-shadow 0.25s;
+  box-shadow: 0 0 18px rgba(74, 222, 128, 0.25);
+  animation: mgCocaLeafPulse 2.4s ease-in-out infinite;
 }
-.mg-branch-leaf.done { opacity: 0.2; transform: translateX(-50%) scale(0.75); }
+.mg-coca-tree > .mg-coca-leaf:nth-child(even) { animation-delay: 0.4s; }
+
+@keyframes mgCocaLeafPulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(74, 222, 128, 0.2); }
+  50% { box-shadow: 0 0 22px rgba(74, 222, 128, 0.42); }
+}
+
+.mg-branch-leaf:hover,
+.mg-coca-leaf:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+  border-color: #86efac;
+}
+
+.mg-branch-leaf.done,
+.mg-coca-leaf.done {
+  opacity: 0.18;
+  transform: translate(-50%, -50%) scale(0.7);
+  animation: none;
+  box-shadow: none;
+  pointer-events: none;
+}
 
 /* Blister */
 .mg-blister {

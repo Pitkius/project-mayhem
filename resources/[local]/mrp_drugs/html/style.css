@@ -444,12 +444,14 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   animation: mgPop 0.35s ease;
 }
 @keyframes mgPop { from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
-.mg-branch { position: relative; width: min(380px, 92vw); height: 48px; background: linear-gradient(90deg, #78350f, #92400e); border-radius: 999px; margin: 40px 0; box-shadow: 0 6px 16px rgba(0,0,0,0.4); }
-.mg-branch-leaf {
-  position: absolute; top: -28px; transform: translateX(-50%); width: 40px; height: 40px; border-radius: 50%;
-  border: 2px solid #4ade80; background: rgba(16,185,129,0.25); cursor: pointer; font-size: 20px;
+.mg-coca-tree { position: relative; width: min(400px, 92vw); height: 230px; margin: 28px auto 20px; }
+.mg-branch-leaf,
+.mg-coca-leaf {
+  position: absolute; transform: translate(-50%, -50%); width: 46px; height: 46px; border-radius: 50%;
+  border: 2px solid #4ade80; background: rgba(16,185,129,0.22); cursor: pointer; font-size: 22px;
 }
-.mg-branch-leaf.done { opacity: 0.25; transform: translateX(-50%) scale(0.8); }
+.mg-branch-leaf.done,
+.mg-coca-leaf.done { opacity: 0.18; transform: translate(-50%, -50%) scale(0.7); }
 .mg-blister { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 16px; border-radius: 14px; background: rgba(0,0,0,0.35); border: 1px solid color-mix(in srgb, var(--mg-accent) 30%, transparent); }
 .mg-blister-slot {
   width: 52px; height: 52px; border-radius: 10px; border: 2px dashed color-mix(in srgb, var(--mg-accent) 45%, transparent);

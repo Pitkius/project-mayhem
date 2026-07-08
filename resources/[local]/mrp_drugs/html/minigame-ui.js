@@ -318,27 +318,80 @@ window.MiniGameUI = (() => {
     spawn();
   }
 
+  const COCA_LEAF_SLOTS = [
+    { left: '13%', top: '32%' },
+    { left: '29%', top: '11%' },
+    { left: '50%', top: '5%' },
+    { left: '73%', top: '13%' },
+    { left: '87%', top: '30%' },
+  ];
+
+  const COCA_BRANCH_DEFS = [
+    { rot: -62, len: 72, sub: -18 },
+    { rot: -34, len: 62, sub: 14 },
+    { rot: -6, len: 54, sub: 0 },
+    { rot: 30, len: 64, sub: -10 },
+    { rot: 58, len: 74, sub: 16 },
+  ];
+
   function stripRow(opts) {
     const { icon, need, onComplete } = opts;
     const root = scene('mg-scene-branch');
     let stripped = 0;
-    const branch = panel('mg-branch');
-    ['10%', '26%', '42%', '58%', '74%', '90%'].slice(0, need).forEach((left) => {
+
+    const tree = document.createElement('div');
+    tree.className = 'mg-coca-tree';
+
+    const ground = document.createElement('div');
+    ground.className = 'mg-coca-ground';
+    tree.appendChild(ground);
+
+    const roots = document.createElement('div');
+    roots.className = 'mg-coca-roots';
+    roots.innerHTML = '<span></span><span></span><span></span>';
+    tree.appendChild(roots);
+
+    const trunk = document.createElement('div');
+    trunk.className = 'mg-coca-trunk';
+    trunk.innerHTML = '<div class="mg-coca-bark"></div><div class="mg-coca-knot"></div><div class="mg-coca-moss"></div>';
+    tree.appendChild(trunk);
+
+    const crown = document.createElement('div');
+    crown.className = 'mg-coca-crown';
+    COCA_BRANCH_DEFS.forEach((def, i) => {
+      const branch = document.createElement('div');
+      branch.className = `mg-coca-branch mg-coca-branch--${i + 1}`;
+      branch.style.setProperty('--branch-rot', `${def.rot}deg`);
+      branch.style.setProperty('--branch-len', `${def.len}px`);
+      if (def.sub) {
+        const sub = document.createElement('div');
+        sub.className = 'mg-coca-subbranch';
+        sub.style.setProperty('--sub-rot', `${def.sub}deg`);
+        branch.appendChild(sub);
+      }
+      crown.appendChild(branch);
+    });
+    tree.appendChild(crown);
+
+    COCA_LEAF_SLOTS.slice(0, need).forEach((slot) => {
       const leaf = document.createElement('button');
       leaf.type = 'button';
-      leaf.className = 'mg-branch-leaf';
-      leaf.style.left = left;
+      leaf.className = 'mg-branch-leaf mg-coca-leaf';
+      leaf.style.left = slot.left;
+      leaf.style.top = slot.top;
       leaf.innerHTML = resolveIcon(icon, 'cocaLeaf');
       leaf.onclick = () => {
         if (leaf.classList.contains('done')) return;
+        sfx('click');
         leaf.classList.add('done');
         stripped += 1;
+        if (typeof schHint !== 'undefined' && schHint) schHint.textContent = `${stripped}/${need}`;
         if (stripped >= need && onComplete) onComplete();
-        else if (typeof schHint !== 'undefined' && schHint) schHint.textContent = `${stripped}/${need}`;
       };
-      branch.appendChild(leaf);
+      tree.appendChild(leaf);
     });
-    root.appendChild(branch);
+
+    root.appendChild(tree);
     mount(root);
   }
 
