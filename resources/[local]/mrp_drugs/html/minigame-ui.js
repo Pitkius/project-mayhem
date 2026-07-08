@@ -340,14 +340,6 @@ window.MiniGameUI = (() => {
 
     <path d="M64 236 C64 218, 96 210, 120 210 C144 210, 176 218, 176 236 C176 248, 152 254, 120 254 C88 254, 64 248, 64 236 Z" fill="url(#mgCocaSoil)"/>
     <path d="M70 228 C92 218, 110 214, 120 213 C130 214, 148 218, 170 228 C160 220, 140 216, 120 216 C100 216, 80 220, 70 228 Z" fill="url(#mgCocaGrass)"/>
-    <path d="M82 221 Q84 212 87 221" stroke="#3d8a35" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M153 221 Q155 212 158 221" stroke="#3d8a35" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-
-    <path d="M106 238 L90 256" stroke="#3d2817" stroke-width="5" stroke-linecap="round"/>
-    <path d="M120 240 L118 259" stroke="#3d2817" stroke-width="6" stroke-linecap="round"/>
-    <path d="M134 238 L150 256" stroke="#3d2817" stroke-width="5" stroke-linecap="round"/>
-    <path d="M98 236 L80 249" stroke="#4a3220" stroke-width="3.5" stroke-linecap="round"/>
-    <path d="M142 236 L160 249" stroke="#4a3220" stroke-width="3.5" stroke-linecap="round"/>
 
     <path d="M120 226 L120 185" stroke="url(#mgCocaWood)" stroke-width="16" stroke-linecap="round" fill="none"/>
 
