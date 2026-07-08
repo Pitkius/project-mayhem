@@ -493,8 +493,8 @@
   bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 38px;
-  height: 108px;
+  width: 19px;
+  height: 158px;
   border-radius: 10px 10px 6px 6px;
   background:
     repeating-linear-gradient(
@@ -528,7 +528,7 @@
   width: 14px;
   height: 12px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #5c4030, #2a1a0f);
+  background: radial-gradient(circle at 35% 35%, #00ff95, #2a1a0f);
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
 }
 
@@ -555,7 +555,7 @@
 .mg-coca-branch {
   position: absolute;
   left: 0;
-  bottom: 0;
+  bottom: var(--branch-bottom, 0px);
   width: var(--branch-len, 60px);
   height: 7px;
   transform-origin: left center;
@@ -566,6 +566,12 @@
     0 2px 8px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
+
+.mg-coca-branch:nth-child(1) { --branch-rot: -150deg; --branch-bottom: 5px; }
+.mg-coca-branch:nth-child(2) { --branch-rot: -120deg; --branch-bottom: 25px; }
+.mg-coca-branch:nth-child(3) { --branch-rot: -90deg;  --branch-bottom: 40px; }
+.mg-coca-branch:nth-child(4) { --branch-rot: -60deg;  --branch-bottom: 15px; }
+.mg-coca-branch:nth-child(5) { --branch-rot: -30deg;  --branch-bottom: 30px; }
 
 .mg-coca-branch::after {
   content: '';
