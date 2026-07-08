@@ -319,20 +319,68 @@ window.MiniGameUI = (() => {
   }
 
   const COCA_LEAF_SLOTS = [
-    { left: '13%', top: '32%' },
-    { left: '29%', top: '11%' },
-    { left: '50%', top: '5%' },
-    { left: '73%', top: '13%' },
-    { left: '87%', top: '30%' },
+    { left: '53.3%', top: '14.6%' },  /* viršus — centrinė šakelė */
+    { left: '7.5%', top: '26.2%' },   /* kairė — tolimiausia šakelė */
+    { left: '92.5%', top: '26.2%' },  /* dešinė — tolimiausia šakelė */
+    { left: '13.3%', top: '33.8%' },  /* viršutinė kairė */
+    { left: '86.7%', top: '33.8%' },  /* viršutinė dešinė */
   ];
 
-  const COCA_BRANCH_DEFS = [
-    { rot: -62, len: 72, sub: -18 },
-    { rot: -34, len: 62, sub: 14 },
-    { rot: -6, len: 54, sub: 0 },
-    { rot: 30, len: 64, sub: -10 },
-    { rot: 58, len: 74, sub: 16 },
-  ];
+  function buildCocaTreeSvg() {
+    return `<svg viewBox="0 0 240 260" xmlns="http://www.w3.org/2000/svg" class="mg-coca-svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="mgCocaWood" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#5c3d1e"/>
+          <stop offset="42%" stop-color="#b8895a"/>
+          <stop offset="100%" stop-color="#6b4423"/>
+        </linearGradient>
+        <linearGradient id="mgCocaSoil" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#c49a6c"/>
+          <stop offset="100%" stop-color="#7a5535"/>
+        </linearGradient>
+        <radialGradient id="mgCocaGrass" cx="50%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#72c35a"/>
+          <stop offset="100%" stop-color="#4d9a42"/>
+        </radialGradient>
+      </defs>
+
+      <ellipse cx="120" cy="252" rx="54" ry="5" fill="rgba(0,0,0,0.22)"/>
+
+      <path d="M64 236 C64 218, 96 210, 120 210 C144 210, 176 218, 176 236 C176 248, 152 254, 120 254 C88 254, 64 248, 64 236 Z" fill="url(#mgCocaSoil)"/>
+      <path d="M70 228 C92 218, 110 214, 120 213 C130 214, 148 218, 170 228 C160 220, 140 216, 120 216 C100 216, 80 220, 70 228 Z" fill="url(#mgCocaGrass)"/>
+      <path d="M82 221 Q84 212 87 221" stroke="#3d8a35" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <path d="M153 221 Q155 212 158 221" stroke="#3d8a35" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+
+      <path d="M106 238 L90 256" stroke="#3d2817" stroke-width="5" stroke-linecap="round"/>
+      <path d="M120 240 L118 259" stroke="#3d2817" stroke-width="6" stroke-linecap="round"/>
+      <path d="M134 238 L150 256" stroke="#3d2817" stroke-width="5" stroke-linecap="round"/>
+      <path d="M98 236 L80 249" stroke="#4a3220" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M142 236 L160 249" stroke="#4a3220" stroke-width="3.5" stroke-linecap="round"/>
+
+      <path d="M120 226 L120 154" stroke="url(#mgCocaWood)" stroke-width="17" stroke-linecap="round" fill="none"/>
+
+      <path d="M120 152 L122 74" stroke="#b8895a" stroke-width="10" stroke-linecap="round"/>
+      <path d="M122 98 L124 52" stroke="#9a7048" stroke-width="6.5" stroke-linecap="round"/>
+      <path d="M124 68 L128 38" stroke="#7a5535" stroke-width="4" stroke-linecap="round"/>
+
+      <path d="M118 152 Q82 140 46 104" stroke="#b8895a" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M62 120 Q36 102 18 78" stroke="#9a7048" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      <path d="M38 92 L18 68" stroke="#7a5535" stroke-width="3.8" stroke-linecap="round"/>
+      <path d="M52 108 L32 88" stroke="#6b4423" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M88 126 Q68 112 52 96" stroke="#7a5535" stroke-width="4" stroke-linecap="round" fill="none"/>
+
+      <path d="M122 152 Q158 140 194 104" stroke="#b8895a" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M178 120 Q204 102 222 78" stroke="#9a7048" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      <path d="M202 92 L222 68" stroke="#7a5535" stroke-width="3.8" stroke-linecap="round"/>
+      <path d="M188 108 L208 88" stroke="#6b4423" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M152 126 Q172 112 188 96" stroke="#7a5535" stroke-width="4" stroke-linecap="round" fill="none"/>
+
+      <path d="M108 132 Q94 118 78 100" stroke="#6b4423" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M132 132 Q146 118 162 100" stroke="#6b4423" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M114 118 L108 96" stroke="#7a5535" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M126 118 L132 96" stroke="#7a5535" stroke-width="3.5" stroke-linecap="round"/>
+    </svg>`;
+  }
 
   function stripRow(opts) {
     const { icon, need, onComplete } = opts;
@@ -341,37 +389,7 @@ window.MiniGameUI = (() => {
 
     const tree = document.createElement('div');
     tree.className = 'mg-coca-tree';
-
-    const ground = document.createElement('div');
-    ground.className = 'mg-coca-ground';
-    tree.appendChild(ground);
-
-    const roots = document.createElement('div');
-    roots.className = 'mg-coca-roots';
-    roots.innerHTML = '<span></span><span></span><span></span>';
-    tree.appendChild(roots);
-
-    const trunk = document.createElement('div');
-    trunk.className = 'mg-coca-trunk';
-    trunk.innerHTML = '<div class="mg-coca-bark"></div><div class="mg-coca-knot"></div><div class="mg-coca-moss"></div>';
-    tree.appendChild(trunk);
-
-    const crown = document.createElement('div');
-    crown.className = 'mg-coca-crown';
-    COCA_BRANCH_DEFS.forEach((def, i) => {
-      const branch = document.createElement('div');
-      branch.className = `mg-coca-branch mg-coca-branch--${i + 1}`;
-      branch.style.setProperty('--branch-rot', `${def.rot}deg`);
-      branch.style.setProperty('--branch-len', `${def.len}px`);
-      if (def.sub) {
-        const sub = document.createElement('div');
-        sub.className = 'mg-coca-subbranch';
-        sub.style.setProperty('--sub-rot', `${def.sub}deg`);
-        branch.appendChild(sub);
-      }
-      crown.appendChild(branch);
-    });
-    tree.appendChild(crown);
+    tree.innerHTML = buildCocaTreeSvg();
 
     COCA_LEAF_SLOTS.slice(0, need).forEach((slot) => {
       const leaf = document.createElement('button');
