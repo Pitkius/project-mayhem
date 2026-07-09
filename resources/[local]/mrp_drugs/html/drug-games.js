@@ -305,7 +305,7 @@ window.DrugGameModes = (() => {
   /* ═══ Kokainas — cheminis plovimas ═══ */
   modes.coca_harvest = (data) => {
     screen('cocaine');
-    setStep(1, 1, 'Nuimk lapus nuo šakos');
+    setStep(1, 1, 'Nuimk lapus nuo šakų.');
     U().stripRow({
       icon: 'cocaLeaf',
       need: data.steps || 5,
