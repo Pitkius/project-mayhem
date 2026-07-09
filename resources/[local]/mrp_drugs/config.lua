@@ -846,11 +846,13 @@ Config.MushroomFields = {
 Config.CocaFields = {
     {
         id = 'cayo_coca_grove',
-        center = vector3(4715.0337, -4529.3638, 26.8199),
-        center = vector3(4702.4941, -4533.8853, 25.7829),
-        center = vector3(4732.4419, -4531.6499, 26.6016),
-        center = vector3(4709.5444, -4512.1152, 25.3817),
-        center = vector3(4718.2935, -4545.4463, 24.4074),
+        center = {
+            vector3(4715.0337, -4529.3638, 26.8199),
+            vector3(4702.4941, -4533.8853, 25.7829),
+            vector3(4732.4419, -4531.6499, 26.6016),
+            vector3(4709.5444, -4512.1152, 25.3817),
+            vector3(4718.2935, -4545.4463, 24.4074),
+        }
         radius = 12,
         spawnCount = 5,
         respawnSec = 120,
