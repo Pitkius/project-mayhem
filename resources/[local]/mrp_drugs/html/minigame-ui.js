@@ -319,9 +319,9 @@ window.MiniGameUI = (() => {
   }
 
   const COCA_LEAF_SLOTS = [
-    { left: '50%', top: '50%' },  /* viršus — centrinė šakelė */
-    { left: '25%', top: '35%' },   /* kairė — tolimiausia šakelė */
-    { left: '75%', top: '35%' },  /* dešinė — tolimiausia šakelė */
+    { left: '50%', top: '20%' },  /* viršus — centrinė šakelė */
+    { left: '25%', top: '60%' },   /* kairė — tolimiausia šakelė */
+    { left: '75%', top: '60%' },  /* dešinė — tolimiausia šakelė */
     { left: '35%', top: '45%' },  /* viršutinė kairė */
     { left: '65%', top: '45%' },  /* viršutinė dešinė */
   ];
