@@ -864,7 +864,7 @@ Config.CocaFields = {
             enabled = true,
             sprite = 140,
             color = 2,
-            scale = 0.76,
+            scale = 0.5,
             label = 'Kokainmedžio lapai 1 (Cayo)',
         },
     }
