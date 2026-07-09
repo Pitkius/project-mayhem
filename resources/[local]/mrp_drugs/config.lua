@@ -847,8 +847,8 @@ Config.CocaFields = {
     {
         id = 'cayo_coca_grove',
         center = vector3(4715.0337, -4529.3638, 26.8199),
-        radius = 12,
-        spawnCount = 5,
+        radius = 48.0,
+        spawnCount = 18,
         respawnSec = 120,
         item = 'cartel_raw',
         amountMin = 1,
@@ -858,7 +858,7 @@ Config.CocaFields = {
         pickLabel = 'Rinkti kokainmedžio lapus',
         zoneRadius = 1.05,
         prop = 'prop_plant_paradise_b',
-        propScale = 1,
+        propScale = 0.7,
         requireIsland = true,
         blip = {
             enabled = true,
@@ -869,58 +869,6 @@ Config.CocaFields = {
         },
     }
 }    
-Config.CocaFields = {
-    {
-         id = 'cayo_coca_grove',
-        center = vector3(4685.5059, -4544.0630, 24.1930),
-        radius = 12,
-        spawnCount = 5,
-        respawnSec = 120,
-        item = 'cartel_raw',
-        amountMin = 1,
-        amountMax = 3,
-        pickDurationMs = 5400,
-        pickDistance = 2.5,
-        pickLabel = 'Rinkti kokainmedžio lapus',
-        zoneRadius = 1.05,
-        prop = 'prop_plant_paradise_b',
-        propScale = 1,
-        requireIsland = true,
-        blip = {
-            enabled = true,
-            sprite = 140,
-            color = 2,
-            scale = 0.76,
-            label = 'Kokainmedžio lapai 2 (Cayo)',
-        },
-    }
-}        
-Config.CocaFields = {
-    {
-        id = 'cayo_coca_grove',
-        center = vector3(4760.5225, -4531.9341, 23.5532),
-        radius = 12,
-        spawnCount = 5,
-        respawnSec = 120,
-        item = 'cartel_raw',
-        amountMin = 1,
-        amountMax = 3,
-        pickDurationMs = 5400,
-        pickDistance = 2.5,
-        pickLabel = 'Rinkti kokainmedžio lapus',
-        zoneRadius = 1.05,
-        prop = 'prop_plant_paradise_b',
-        propScale = 1,
-        requireIsland = true,
-        blip = {
-            enabled = true,
-            sprite = 140,
-            color = 2,
-            scale = 0.76,
-            label = 'Kokainmedžio lapai 3 (Cayo)',
-        },
-    }    
-}
 
 --- Kanapių auginimo reikmenys — Grapeseed kalnai (sėklos, vazonai; ne paruošta žolė)
 Config.WeedSupplyShop = {
