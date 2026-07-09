@@ -1,4 +1,6 @@
---- PD 3D markeriai ant žemės (garažas, rūbinė, sandėliai…)
+--- PD 3D markeriai ant žemės — registruojami iš Config.Stations (mrp_ltpd/config.lua).
+--- Interakcijos: duty/garage/locker [E] · stash [F2] · supply [E]
+--- Komanda debug: /pdmarkers
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local pdZones = {}
@@ -172,48 +174,49 @@ local function registerAllPdMarkers()
             RegisterPdGroundMarker({
                 coords = st.garage.coords,
                 kind = 'garage',
-                label = 'PD garažas / transportas',
+                label = 'PD garažas / salonas',
                 onPress = function()
                     TriggerEvent('mrp_ltpd:client:markerGarage', stationId)
                 end,
             })
         end
 
-        if st.locker and st.locker.coords then
+        local function registerLockerMarker(lockerDef)
+            if not lockerDef or not lockerDef.coords then return end
             RegisterPdGroundMarker({
-                coords = st.locker.coords,
+                coords = lockerDef.coords,
                 kind = 'locker',
-                label = st.locker.label or 'PD rūbinė',
+                label = lockerDef.label or 'PD rūbinė',
                 access = {
-                    minGrade = st.locker.minGrade or 0,
-                    divisions = st.locker.divisions,
-                    excludeDivisions = st.locker.excludeDivisions,
+                    minGrade = lockerDef.minGrade or 0,
+                    divisions = lockerDef.divisions,
+                    excludeDivisions = lockerDef.excludeDivisions,
                 },
                 onPress = function()
                     TriggerEvent('mrp_ltpd:client:openDutyLockerMenu', {
-                        lockerMode = 'standard',
-                        anchor = st.locker.coords,
+                        lockerMode = lockerDef.lockerMode or 'standard',
+                        anchor = lockerDef.coords,
                     })
                 end,
             })
         end
 
+        for _, lockerDef in ipairs(st.lockers or {}) do
+            registerLockerMarker(lockerDef)
+        end
+
+        if st.locker and st.locker.coords then
+            registerLockerMarker(st.locker)
+        end
+
         if st.locker2 and st.locker2.coords then
-            RegisterPdGroundMarker({
+            registerLockerMarker({
                 coords = st.locker2.coords,
-                kind = 'locker',
                 label = st.locker2.label or 'ARO rūbinė',
-                access = {
-                    minGrade = st.locker2.minGrade or 0,
-                    divisions = st.locker2.divisions or { 'sor' },
-                    excludeDivisions = st.locker2.excludeDivisions,
-                },
-                onPress = function()
-                    TriggerEvent('mrp_ltpd:client:openDutyLockerMenu', {
-                        lockerMode = st.locker2.lockerMode or 'aro',
-                        anchor = st.locker2.coords,
-                    })
-                end,
+                minGrade = st.locker2.minGrade,
+                divisions = st.locker2.divisions or { 'sor' },
+                excludeDivisions = st.locker2.excludeDivisions,
+                lockerMode = st.locker2.lockerMode or 'aro',
             })
         end
 

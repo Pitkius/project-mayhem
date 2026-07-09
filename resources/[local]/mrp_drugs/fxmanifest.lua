@@ -51,6 +51,7 @@ files {
 
 shared_scripts {
     'config.lua',
+    'config_equipment.lua',
     'shared/stations.lua',
     'shared/minigame_registry.lua',
 }
@@ -65,11 +66,13 @@ client_scripts {
     'client/mushrooms.lua',
     'client/weed_grow.lua',
     'client/water_refill.lua',
+    'client/equipment.lua',
     'client/amp_lab.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'server/equipment.lua',
     'server/main.lua',
     'server/printer.lua',
     'server/amp_lab.lua',

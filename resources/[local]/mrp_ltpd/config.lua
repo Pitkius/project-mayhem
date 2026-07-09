@@ -1,5 +1,31 @@
 Config = {}
 
+--[[
+  ═══════════════════════════════════════════════════════════════════
+  mrp_ltpd — pagrindinė policijos sistemos konfigūracija
+  ═══════════════════════════════════════════════════════════════════
+
+  Susiję resursai:
+    · mrp_garages      — pdGarageId → Config.Garages (asmeninis PD transportas)
+    · mrp_dealership   — policijos salonas (per garage marker meniu)
+    · mrp_duty_locker  — uniformos (lockers / locker2)
+    · mrp_bossmenu     — vadovybės meniu (boss laptop, jei įjungta)
+    · mrp_npcshops     — supply (darbo reikmenys)
+    · qb-inventory     — armory + stashes (stashId unikalus DB)
+    · mrp_siren_controller — F6 sirenos (Config.FleetVehicles)
+
+  Žemėlapio taškai (client/pd_markers.lua):
+    · duty      — [E] pradėti / baigti pamainą
+    · garage    — [E] garažas + transporto pirkimas
+    · locker    — [E] tarnybinė apranga (mrp_duty_locker)
+    · armory    — [E] SOR / ginklinė (divisions + minGrade)
+    · stash     — [F2] sandėlis (divisions + minGrade)
+    · supply    — [E] inventorius (mrp_npcshops)
+    · craft     — ginklų gamyba (config_pd_craft.lua)
+
+  Koordinates: /coords arba txAdmin — atnaujink čia, tada restart mrp_ltpd.
+]]
+
 --- Darbo pavadinimas turi sutapti su `qb-core/shared/jobs.lua` įrašu `police`.
 Config.JobName = 'police'
 
@@ -189,7 +215,7 @@ Config.ArmoryGarageDistance = 38.0
 --- (Rezervas) vadovybės veiksmų atstumo patikra serveryje
 Config.ManagementRadius = 18.0
 
---- Blipai žemėlapyje (komisariatai)
+--- Blipai žemėlapyje (komisariatai) — naudoja Config.Stations[].blipCoords arba coords
 Config.ShowStationBlips = true
 Config.BlipSprite = 60
 Config.BlipColour = 38
@@ -199,7 +225,7 @@ Config.ShowHelipadBlip = false
 Config.HelipadBlipSprite = 43
 Config.HelipadBlipScale = 0.9
 
---- 3D markeriai ant žemės MRPD / Sandy Shores PD (ne žemėlapio blipai)
+--- 3D markeriai ant žemės (MRPD / Sandy) — ne blipai; žr. client/pd_markers.lua
 Config.ShowPd3DMarkers = true
 Config.PdMarkerDrawDistance = 32.0
 Config.PdMarkerNearTickMs = 50
@@ -245,20 +271,42 @@ Config.Reception = {
 }
 
 --[[
-  Postai: MDT + ginklinė + PD garažas.
-  ls_main – cfx-nteam-mrpd (NTeam Mission Row). Koordinates reikia tikslinti žaidime.
-  sandy – cfx-gabz-sandypd.
+  ═══════════════════════════════════════════════════════════════════
+  PD STOČIOS (Config.Stations)
+  ═══════════════════════════════════════════════════════════════════
+
+  Kiekvienos stoties laukai:
+    id            — unikalus ID (server eventai, pdGarageId nuoroda)
+    coords        — stoties centras (duty = true naudoja čia pamainai)
+    blipCoords    — policijos blipas žemėlapyje (ShowStationBlips)
+    duty          — { coords } arba true (= coords)
+    reception     — civiliai; atskiras blip (client/reception.lua)
+    supply        — darbo reikmenys (mrp_npcshops job supply)
+    armory        — SOR / ginklinė; divisions + minGrade; [E]
+    pdGarageId    — mrp_garages Config.Garages.id (pvz. pd_ls_main)
+    garage        — 3D markeris: garažas + salonas; spawn = fleet spawn
+    boss          — laptop qb-target; vadovybė (≥ Config.Permissions.boss_menu)
+    lockers[]     — kelios standartinės rūbinės (uniformos)
+    locker2       — ARO/SOR rūbinė (lockerMode = 'aro', divisions = sor)
+    stashes[]     — sandėliai; [F2]; minGrade didėja; stashId → qb-inventory
+    heliGarage    — sraigtasparniai (Config.FleetHelicopters)
+
+  ls_main — NTeam MRPD (cfx-nteam-mrpd)
+  sandy   — Sandy Shores PD MLO
 ]]
 Config.Stations = {
+    --- ─── Los Santos · Mission Row (MRPD) ───────────────────────────
     {
         id = 'ls_main',
         label = 'Los Santos – pagrindinė komisariatas',
         coords = vector3(441.84, -982.05, 30.69),
         blipCoords = vector3(427.120, -979.559, 30.716),
         heading = 90.0,
+        --- Pamaina — violetinis markeris
         duty = {
             coords = vector3(440.085, -974.924, 30.689),
         },
+        --- Civiliai — atskiras registratūros blipas
         reception = {
             coords = vector3(431.06, -988.37, 31.39),
             heading = 180.0,
@@ -267,38 +315,48 @@ Config.Stations = {
             label = 'PD registratūra',
             blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra' },
         },
+        --- Darbo reikmenys (taisyklės, radijas ir t. t.)
         supply = {
             coords = vector3(462.23, -981.12, 30.68),
             label = 'PD ginklinė / inventorius',
         },
+        --- SOR padalinio sandėlis / ginklinė (tik divisions.sor)
         armory = {
-            coords = vector3(480.32, -996.67, 30.6896),
+            coords = vector3(472.5499, -945.3289, 38.2497),
             stashId = 'ltpd_armory_ls',
-            label = 'ARO sandėlis (ginklinė)',
+            label = 'SOR / ARO sandėlis',
             minGrade = 2,
             divisions = { 'sor' },
             maxweight = 5000000,
             slots = 90,
         },
+        --- Nuoroda į mrp_garages — asmeninis PD transporto garažas DB
         pdGarageId = 'pd_ls_main',
+        --- Peržiūros taškas (salonas atidaromas per garage marker meniu)
         policeDealership = {
-            coords = vector3(460.57, -1006.34, 21.34),
-            heading = 90.0,
+            coords = vector3(447.9836, -967.4344, 22.8469),
+            heading = 84.1690,
         },
+        --- 3D markeris [E]: garažas + „Transporto pirkimas“ → mrp_dealership
         garage = {
-            coords = vector3(460.57, -1006.34, 21.34),
-            spawn = vector4(460.57, -1006.34, 21.34, 90.0),
+            coords = vector3(447.9836, -967.4344, 22.8469),
+            spawn = vector4(447.9836, -967.4344, 22.8469, 84.1690),
         },
+        --- qb-target ant laptopo — įdarb./atleisti/rangas (client/boss.lua)
         boss = {
-            coords = vector4(461.03, -985.58, 34.3725, 180.0),
+            coords = vector4(454.8502, -931.5825, 34.2503, 350.3920),
             label = 'LTPD vadovybė',
             prop = 'prop_laptop_01a',
             spawnProp = true,
         },
-        locker = {
-            coords = vector3(453.075, -980.124, 30.889),
-            heading = 90.0,
+        --- Standartinės rūbinės — mrp_duty_locker, lockerMode = standard
+        lockers = {
+            { coords = vector3(449.5441, -979.1705, 30.2503), heading = 269.1113, label = 'PD rūbinė 1' },
+            { coords = vector3(448.1797, -976.9896, 30.2503), heading = 93.1164, label = 'PD rūbinė 2' },
+            { coords = vector3(444.9413, -979.2111, 30.2503), heading = 87.7559, label = 'PD rūbinė 3' },
+            { coords = vector3(446.3055, -976.9395, 30.2503), heading = 273.1330, label = 'PD rūbinė 4' },
         },
+        --- ARO/SOR specialioji rūbinė (atskirai nuo lockers[])
         locker2 = {
             coords = vector3(455.65, -997.62, 30.6896),
             heading = 90.0,
@@ -306,6 +364,7 @@ Config.Stations = {
             lockerMode = 'aro',
             divisions = { 'sor' },
         },
+        --- Sandėliai — [F2] prie markerio; stashId unikalus visam serveriui
         stashes = {
             {
                 coords = vector3(453.075, -980.124, 30.889),
@@ -335,7 +394,7 @@ Config.Stations = {
                 slots = 80,
             },
             {
-                coords = vector3(459.85, -986.20, 34.3725),
+                coords = vector3(472.5426, -933.1423, 34.2504),
                 stashId = 'ltpd_stash_boss_ls',
                 label = 'PD sandėlis (bosas / pavaduotojas)',
                 minGrade = 7,
@@ -344,25 +403,27 @@ Config.Stations = {
                 slots = 90,
             },
         },
+        --- Stogo helipadas — Config.FleetHelicopters spawn
         heliGarage = {
             coords = vector3(449.168, -981.325, 43.691),
             spawn = vector4(449.168, -981.325, 43.691, 87.234),
         },
     },
+    --- ─── Sandy Shores PD (antra stotis / blip kopija) ───────────────
     {
         id = 'sandy',
         label = 'Sandy Shores PD',
-        coords = vector3(1853.2, 3686.5, 34.27),
-        blipCoords = vector3(1871.453, 3664.964, 33.687),
-        heading = 210.0,
-        duty = true,
+        coords = vector3(1853.7436, 3688.6435, 29.8185),
+        blipCoords = vector3(1853.7436, 3688.6435, 29.8185),
+        heading = 206.0,
+        duty = true, --- pamaina ties coords
         reception = {
             coords = vector3(1859.75, 3689.12, 33.99),
             heading = 210.0,
             length = 1.65,
             width = 1.45,
             label = 'PD registratūra',
-            blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra' },
+            blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra (Sandy)' },
         },
         supply = {
             coords = vector3(1849.12, 3690.04, 34.27),
@@ -390,14 +451,49 @@ Config.Stations = {
             prop = 'prop_laptop_01a',
             spawnProp = true,
         },
-        locker = {
-            coords = vector3(1851.2, 3689.1, 34.27),
-            heading = 210.0,
+        --- Sandy rūbinės (2 vnt.) — tas pats mrp_duty_locker flow kaip MRPD
+        lockers = {
+            { coords = vector3(1854.1200, 3687.8689, 29.8185), heading = 206.7797, label = 'PD rūbinė 1' },
+            { coords = vector3(1853.3671, 3689.4180, 29.8185), heading = 41.1066, label = 'PD rūbinė 2' },
         },
+        --- Sandy sandėliai — [F2]; sandėlis 3 koord. tikslinti jei reikia
         stashes = {
-            { coords = vector3(1850.5, 3691.5, 34.27), stashId = 'ltpd_stash_public_sandy', label = 'PD sandėlis (bendras)', minGrade = 0, maxweight = 2000000, slots = 60 },
-            { coords = vector3(1851.5, 3691.5, 34.27), stashId = 'ltpd_stash_grade3_sandy', label = 'PD sandėlis (nuo 3 rango)', minGrade = 3, maxweight = 2500000, slots = 70 },
-            { coords = vector3(1852.5, 3691.5, 34.27), stashId = 'ltpd_stash_grade8_sandy', label = 'PD sandėlis (nuo 8 rango)', minGrade = 8, maxweight = 3000000, slots = 80 },
+            {
+                coords = vector3(1861.8282, 3688.3879, 34.2194),
+                stashId = 'ltpd_stash_public_sandy',
+                label = 'PD sandėlis 1',
+                minGrade = 0,
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                maxweight = 2000000,
+                slots = 60,
+            },
+            {
+                coords = vector3(1859.6638, 3688.9521, 34.2194),
+                stashId = 'ltpd_stash_grade3_sandy',
+                label = 'PD sandėlis 2',
+                minGrade = 3,
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                maxweight = 2500000,
+                slots = 70,
+            },
+            {
+                coords = vector3(1860.7460, 3688.6700, 34.2194),
+                stashId = 'ltpd_stash_grade8_sandy',
+                label = 'PD sandėlis 3',
+                minGrade = 8,
+                divisions = { 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                maxweight = 3000000,
+                slots = 80,
+            },
+            {
+                coords = vector3(1849.2041, 3695.5696, 38.2205),
+                stashId = 'ltpd_stash_boss_sandy',
+                label = 'PD boso sandėlis',
+                minGrade = 7,
+                divisions = { 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                maxweight = 3500000,
+                slots = 90,
+            },
         },
     },
 }
@@ -407,7 +503,8 @@ Config.Stations = {
 Config.TargetDistance = 2.5
 Config.MaxFineAmount = 50000
 
---- PD durys / vartai — NTeam MRPD (LS) + Sandy Shores MLO
+--- PD durys / vartai — client/pd_doors.lua; [E] arba qb-target (PdDoorUseQbTarget)
+--- NTeam MRPD (LS) + Sandy Shores MLO — entityScan randa prop modelius zonoje
 Config.PdDoorToggleReach = 6.0
 --- Spynos ikonos Z poslinkis nuo durų slab koord. (standartinės durys)
 Config.PdDoorLockIconZOffset = 0.38
@@ -421,12 +518,12 @@ Config.PdDoorGroups = {
         id = 'ls_mrpd_garage_roll',
         label = 'Garažo vartai (MRPD)',
         doorType = 'garage_roll',
-        interact = vector3(460.57, -1006.34, 21.34),
+        interact = vector3(447.9836, -967.4344, 22.8469),
         interactDist = 5.0,
         defaultLocked = true,
         doors = {},
         entityScan = {
-            center = vector3(452.0, -1001.0, 24.0),
+            center = vector3(447.5, -967.0, 23.5),
             radius = 18.0,
             models = { 'nteam_mrpd_garagedoors', 'nteam_mrpd_shut' },
         },
@@ -493,7 +590,7 @@ Config.PdDoorGroups = {
 }
 
 Config.PdDoorInteractExtras = {
-    { groupId = 'ls_mrpd_garage_roll', interact = vector3(455.0, -1001.0, 22.0), interactDist = 5.0 },
+    { groupId = 'ls_mrpd_garage_roll', interact = vector3(447.9836, -967.4344, 22.8469), interactDist = 5.0 },
     { groupId = 'ls_mrpd_front_entry', interact = vector3(410.1, -1024.3, 29.75), interactDist = 5.0 },
     { groupId = 'ls_mrpd_back_gate', interact = vector3(488.8, -1017.2, 27.1), interactDist = 6.0 },
 }

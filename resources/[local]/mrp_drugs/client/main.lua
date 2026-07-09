@@ -1568,6 +1568,12 @@ AddEventHandler('onResourceStop', function(res)
     productBuyerBlips = {}
 end)
 
-exports('RunScheduleMinigame', function(profile, onDone)
-    runScheduleMinigame(nil, profile, nil, onDone)
+exports('RunScheduleMinigame', function(productId, profile, prod, onDone)
+    if type(productId) == 'table' and onDone == nil then
+        onDone = profile
+        profile = productId
+        productId = nil
+        prod = nil
+    end
+    runScheduleMinigame(productId, profile, prod, onDone)
 end)

@@ -24,31 +24,6 @@ local function setDiscoveredMap(map)
     end
 end
 
-RegisterNetEvent('mrp_hacking:client:discoveredLocsUpdated', function(map, tierId, locId, label)
-    setDiscoveredMap(map)
-    if tierId and locId and label then
-        QBCore.Functions.Notify(('Nuskanuota: %s — dabar gali pradėti apiplėšimą.'):format(label), 'success', 7000)
-    end
-    registerRobberyTargets()
-end)
-
-RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    QBCore.Functions.TriggerCallback('mrp_hacking:server:getDiscoveredRobberyLocs', function(map)
-        setDiscoveredMap(map)
-        registerRobberyTargets()
-    end)
-end)
-
-AddEventHandler('onResourceStart', function(res)
-    if res ~= GetCurrentResourceName() then return end
-    if LocalPlayer.state.isLoggedIn then
-        QBCore.Functions.TriggerCallback('mrp_hacking:server:getDiscoveredRobberyLocs', function(map)
-            setDiscoveredMap(map)
-            registerRobberyTargets()
-        end)
-    end
-end)
-
 local TIER_META = {
     store = { level = 2, action = 'Pradėti apiplėšimą' },
     bank_fleeca = { level = 3, action = 'Fleeca vault hack' },
@@ -299,6 +274,31 @@ local function registerRobberyTargets()
         end
     end
 end
+
+RegisterNetEvent('mrp_hacking:client:discoveredLocsUpdated', function(map, tierId, locId, label)
+    setDiscoveredMap(map)
+    if tierId and locId and label then
+        QBCore.Functions.Notify(('Nuskanuota: %s — dabar gali pradėti apiplėšimą.'):format(label), 'success', 7000)
+    end
+    registerRobberyTargets()
+end)
+
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    QBCore.Functions.TriggerCallback('mrp_hacking:server:getDiscoveredRobberyLocs', function(map)
+        setDiscoveredMap(map)
+        registerRobberyTargets()
+    end)
+end)
+
+AddEventHandler('onResourceStart', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if LocalPlayer.state.isLoggedIn then
+        QBCore.Functions.TriggerCallback('mrp_hacking:server:getDiscoveredRobberyLocs', function(map)
+            setDiscoveredMap(map)
+            registerRobberyTargets()
+        end)
+    end
+end)
 
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do

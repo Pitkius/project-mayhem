@@ -530,6 +530,7 @@ QBShared.Items = {
     scale                        = { name = 'scale', label = 'Svarstyklės', weight = 250, type = 'item', image = 'drug_scale.png', unique = false, useable = false, shouldClose = false, description = 'Tikslus svoris.' },
     trimming_scissors            = { name = 'trimming_scissors', label = 'Lapų kirpimo žirklės', weight = 180, type = 'item', image = 'trimming_scissors.png', unique = false, useable = false, shouldClose = false, description = 'Žolės derliui ir apdorojimui.' },
     pill_press                   = { name = 'pill_press', label = 'Tablečių presas', weight = 1200, type = 'item', image = 'lab_kit.png', unique = false, useable = false, shouldClose = false, description = 'Tablečių gamybai.' },
+    bagging_table                = { name = 'bagging_table', label = 'Pakavimo stalas', weight = 950, type = 'item', image = 'lab_kit.png', unique = false, useable = false, shouldClose = false, description = 'Padėk ir supakuok produktus (Schedule stilius).' },
     gloves                       = { name = 'gloves', label = 'Pirštinės', weight = 50, type = 'item', image = 'gloves_item.png', unique = false, useable = false, shouldClose = false, description = 'Apsauga.' },
     -- mrp_drugs — 3 etapas: supakuota (pardavimas)
     weed_bag                     = { name = 'weed_bag', label = 'Supakuota žolė', weight = 120, type = 'item', image = 'weed_baggy.png', unique = false, useable = false, shouldClose = false, description = 'Supakuota · 3/3 etapas.' },

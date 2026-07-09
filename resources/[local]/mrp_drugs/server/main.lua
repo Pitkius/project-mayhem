@@ -204,11 +204,35 @@ local function countItem(Player, item, amount)
     return it.amount >= amount
 end
 
-local function removeItems(Player, list)
+local function recipeRowSatisfied(Player, row, st)
+    if st and st.equipmentType and row.item == st.equipmentType then
+        return true
+    end
+    if st and st.equipmentId and Equipment and Equipment.rowSatisfiedByNearby(st.equipmentId, row.item) then
+        return true
+    end
+    return countItem(Player, row.item, row.count)
+end
+
+local function skipRecipeConsumable(row, st)
+    if st and st.equipmentType and row.item == st.equipmentType then
+        return true
+    end
+    if st and st.equipmentId and Equipment and Equipment.rowSatisfiedByNearby(st.equipmentId, row.item) then
+        return true
+    end
+    return false
+end
+
+local function removeItems(Player, list, st)
     for _, row in ipairs(list) do
+        if skipRecipeConsumable(row, st) then
+            goto continue
+        end
         if not Player.Functions.RemoveItem(row.item, row.count) then
             return false
         end
+        ::continue::
     end
     return true
 end
@@ -228,8 +252,13 @@ local function buildRecipeStatus(Player, productId, st, src)
     local recipe = getEffectiveRecipe(productId, st, src)
     local rows = {}
     for _, row in ipairs(recipe) do
-        local it = Player.Functions.GetItemByName(row.item)
-        local have = it and it.amount or 0
+        local have
+        if skipRecipeConsumable(row, st) then
+            have = row.count
+        else
+            local it = Player.Functions.GetItemByName(row.item)
+            have = it and it.amount or 0
+        end
         rows[#rows + 1] = {
             item = row.item,
             label = (resolveSharedItem(row.item) or {}).label or row.item,
@@ -243,7 +272,7 @@ end
 
 local function hasAllIngredients(Player, productId, st, src)
     for _, row in ipairs(getEffectiveRecipe(productId, st, src)) do
-        if not countItem(Player, row.item, row.count) then
+        if not recipeRowSatisfied(Player, row, st) then
             return false
         end
     end
@@ -382,7 +411,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraft', function(src, cb,
     end
 
     local recipe = getEffectiveRecipe(productId, st, src)
-    if not removeItems(Player, recipe) then
+    if not removeItems(Player, recipe, st) then
         return cb({ ok = false, reason = 'Nepavyko paimti ingredientų.' })
     end
 
@@ -410,12 +439,95 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraft', function(src, cb,
     })
 end)
 
+local function equipmentVirtualStation(e, prod)
+    return {
+        id = ('eq_%s'):format(e.id),
+        label = Equipment and Equipment.labelFor(e) or 'Įranga',
+        level = prod and prod.level or 1,
+        coords = vector3(e.x, e.y, e.z),
+        radius = (Config.DrugEquipment and Config.DrugEquipment.interactDist) or 2.5,
+        mode = 'drugs',
+        equipmentType = e.itemType,
+        equipmentId = e.id,
+    }
+end
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', function(src, cb, equipmentId, productId)
+    if not Equipment or not Config.DrugEquipment or not Config.DrugEquipment.enabled then
+        return cb({ ok = false, reason = 'Įrangos režimas išjungtas.' })
+    end
+    local e = Equipment.get(equipmentId)
+    local prod = getProduct(productId)
+    if not e or not prod then return cb({ ok = false, reason = 'Netinkami duomenys.' }) end
+    if not Equipment.playerNear(src, equipmentId) then
+        return cb({ ok = false, reason = 'Per toli nuo įrangos.' })
+    end
+    if not Equipment.productAllowedAt(e.itemType, productId) then
+        return cb({ ok = false, reason = 'Ši įranga netinka šiam receptui.' })
+    end
+
+    local st = equipmentVirtualStation(e, prod)
+    if prod.level ~= st.level then
+        return cb({ ok = false, reason = 'Netinkamas lygis.' })
+    end
+
+    local now = GetGameTimer()
+    if (lastCraftAt[src] or 0) + (Config.CraftCooldownMs or 4500) > now then
+        return cb({ ok = false, reason = 'Palauk prieš kitą gamybą.' })
+    end
+    if activeCrafts[src] then
+        return cb({ ok = false, reason = 'Jau vyksta gamyba.' })
+    end
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false }) end
+    if not hasAllIngredients(Player, productId, st, src) then
+        return cb({ ok = false, reason = 'Trūksta ingredientų.' })
+    end
+
+    local recipe = getEffectiveRecipe(productId, st, src)
+    if not removeItems(Player, recipe, st) then
+        return cb({ ok = false, reason = 'Nepavyko paimti ingredientų.' })
+    end
+
+    local token = ('%s-eq-%s-%s'):format(src, equipmentId, now)
+    activeCrafts[src] = {
+        token = token,
+        stationId = st.id,
+        productId = productId,
+        startedAt = now,
+        recipe = recipe,
+        isWeapon = false,
+        equipmentId = equipmentId,
+        virtualStation = st,
+    }
+    lastCraftAt[src] = now
+
+    cb({
+        ok = true,
+        token = token,
+        craftTimeMs = prod.craftTimeMs,
+        minigame = prod.minigame,
+        label = prod.label,
+        failChance = prod.failChance,
+        level = prod.level,
+        isWeapon = false,
+        usesPrinter = false,
+        equipmentCraft = true,
+    })
+end)
+
 QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb, token, minigameSuccess)
     local active = activeCrafts[src]
     if not active or active.token ~= token then
         return cb({ ok = false, reason = 'Gamyba neaktyvi.' })
     end
-    if not playerNearStation(src, active.stationId) then
+    if active.equipmentId then
+        if not Equipment or not Equipment.playerNear(src, active.equipmentId) then
+            activeCrafts[src] = nil
+            return cb({ ok = false, reason = 'Per toli nuo įrangos.' })
+        end
+    elseif not playerNearStation(src, active.stationId) then
         activeCrafts[src] = nil
         return cb({ ok = false, reason = 'Per toli nuo stoties.' })
     end

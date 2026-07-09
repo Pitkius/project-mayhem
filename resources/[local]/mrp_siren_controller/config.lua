@@ -1,5 +1,16 @@
 Config = {}
 
+--[[
+  mrp_siren_controller — F6 sirenos ir emergency kit (police / EMS).
+
+  Integracija:
+    · police — leidimai per mrp_ltpd Config.Permissions (useLtpdPerms)
+    · Config.FleetVehicles — modeliai, kuriems leidžiama F6 (mrpd*, polmav…)
+    · statebag sinchronizacija — matoma visiems klientams
+
+  Itemai: pd_emergency_kit (police), ems_emergency_kit (EMS)
+]]
+
 Config.OpenKey = 'F6'
 Config.ValidateDistance = 28.0
 --- F6 meniu: vairuotojas gali vairuoti kol pultas atidarytas

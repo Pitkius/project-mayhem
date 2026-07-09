@@ -82,6 +82,45 @@ local function previewApplyShowroomVisuals()
     end)
 end
 
+local function getFleetSubConfig()
+    if uiFleetMode == 'police' then return Config.PoliceDealership end
+    if uiFleetMode == 'mechanic' then return Config.MechanicDealership end
+    if uiFleetMode == 'ems' then return Config.EmsDealership end
+    if uiFleetMode == 'taxi' then return Config.TaxiDealership end
+    if uiFleetMode == 'ranger' then return Config.RangerDealership end
+    if uiFleetMode == 'boat' then return Config.BoatDealership end
+    if uiFleetMode == 'heli' then return Config.HeliDealership end
+    return nil
+end
+
+local function getFleetStationPreviewCfg()
+    local d = getFleetSubConfig()
+    if not d or not d.stations then return nil end
+    local stationId = activeFleetStationId
+    if uiFleetMode == 'boat' or uiFleetMode == 'heli' then
+        stationId = stationId or 'ls'
+    else
+        stationId = stationId or 'sandy'
+    end
+    return d.stations[stationId]
+end
+
+local function getPreviewSpawnPos()
+    if uiFleetMode then
+        local sc = getFleetStationPreviewCfg()
+        if sc and sc.preview then return sc.preview end
+    end
+    return Config.Dealership.preview
+end
+
+local function getPreviewCamPos()
+    if uiFleetMode then
+        local sc = getFleetStationPreviewCfg()
+        if sc and sc.camera then return sc.camera end
+    end
+    return Config.Dealership.camera
+end
+
 local function getShowroomLightCenter()
     local spawn = getPreviewSpawnPos()
     if not spawn then return nil end
@@ -149,45 +188,6 @@ local function safeDeletePreviewVehicle()
         forceDeleteVehicleEntity(previewVehicle)
     end
     previewVehicle = nil
-end
-
-local function getFleetSubConfig()
-    if uiFleetMode == 'police' then return Config.PoliceDealership end
-    if uiFleetMode == 'mechanic' then return Config.MechanicDealership end
-    if uiFleetMode == 'ems' then return Config.EmsDealership end
-    if uiFleetMode == 'taxi' then return Config.TaxiDealership end
-    if uiFleetMode == 'ranger' then return Config.RangerDealership end
-    if uiFleetMode == 'boat' then return Config.BoatDealership end
-    if uiFleetMode == 'heli' then return Config.HeliDealership end
-    return nil
-end
-
-local function getFleetStationPreviewCfg()
-    local d = getFleetSubConfig()
-    if not d or not d.stations then return nil end
-    local stationId = activeFleetStationId
-    if uiFleetMode == 'boat' or uiFleetMode == 'heli' then
-        stationId = stationId or 'ls'
-    else
-        stationId = stationId or 'sandy'
-    end
-    return d.stations[stationId]
-end
-
-local function getPreviewSpawnPos()
-    if uiFleetMode then
-        local sc = getFleetStationPreviewCfg()
-        if sc and sc.preview then return sc.preview end
-    end
-    return Config.Dealership.preview
-end
-
-local function getPreviewCamPos()
-    if uiFleetMode then
-        local sc = getFleetStationPreviewCfg()
-        if sc and sc.camera then return sc.camera end
-    end
-    return Config.Dealership.camera
 end
 
 --- Pašalina visus auto prie preview taško (kai lieka „užstrigę“ po nepavykusio Delete).
@@ -304,15 +304,14 @@ local function spawnPreviewVehicle(model)
         local usedFocus = beginPreviewStreaming(spawn)
 
         local hash = joaat(model)
-        if not IsModelInCdimage(hash) or not IsModelAVehicle(hash) then
-            endPreviewStreaming(usedFocus)
-            QBCore.Functions.Notify(('Auto "%s" neprieinamas (trūksta DLC / modelio).'):format(model), 'error')
-            return
-        end
-
         RequestModel(hash)
         local timeout = 0
-        local maxWait = model == 'yosemite4' and 15000 or 8000
+        local maxWait = 8000
+        if model == 'yosemite4' then
+            maxWait = 15000
+        elseif type(model) == 'string' and model:match('^mrpd%d+') then
+            maxWait = 12000
+        end
         while not HasModelLoaded(hash) do
             previewApplyShowroomVisuals()
             Wait(0)
@@ -323,7 +322,11 @@ local function spawnPreviewVehicle(model)
             end
             if timeout > maxWait then
                 endPreviewStreaming(usedFocus)
-                QBCore.Functions.Notify(('Nepavyko užkrauti "%s" peržiūrai.'):format(model), 'error')
+                if not IsModelInCdimage(hash) or not IsModelAVehicle(hash) then
+                    QBCore.Functions.Notify(('Auto "%s" neprieinamas (trūksta DLC / modelio).'):format(model), 'error')
+                else
+                    QBCore.Functions.Notify(('Nepavyko užkrauti "%s" peržiūrai.'):format(model), 'error')
+                end
                 return
             end
         end

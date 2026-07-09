@@ -1,5 +1,18 @@
 Config = {}
 
+--[[
+  mrp_drugs — pagrindinė konfigūracija.
+
+  Architektūra:
+    · Config.Products / Config.Recipes — 3 etapai: process → pack → pardavimas
+    · Config.Stations + lab MLO — klasikinė gamyba stotyje
+    · config_equipment.lua — tk_drugs stiliaus prop įranga (portable + fixed)
+    · html/mg-*.js — Schedule minigame moduliai per narkotiko liniją
+    · shared/minigame_registry.lua — productId → minigame profilis
+
+  Test režimas: Config.EnableDrugTestNPC + Config.DevHub (LS airport eilė)
+]]
+
 --- LS oro uostas — testų eilė statmena žaidėjo krypčiai (kairė–dešinė)
 local DEV_CENTER = vector3(-886.92, -3208.01, 13.94)
 local DEV_ROW_H = 239.51
@@ -581,6 +594,7 @@ Config.MaterialShop = {
         { name = 'filter', amount = 500, price = 8, slot = 37 },
         { name = 'lab_kit', amount = 50, price = 220, slot = 38 },
         { name = 'burner', amount = 100, price = 120, slot = 39 },
+        { name = 'bagging_table', amount = 80, price = 195, slot = 55 },
         { name = 'empty_cart', amount = 500, price = 12, slot = 40 },
         { name = 'empty_bottle', amount = 500, price = 10, slot = 41 },
         -- 3D spausdinimas
@@ -881,6 +895,7 @@ Config.WeedSupplyShop = {
         { name = 'trimming_scissors', amount = 200, price = 95, slot = 4 },
         { name = 'gloves', amount = 200, price = 25, slot = 5 },
         { name = 'scale', amount = 100, price = 85, slot = 6 },
+        { name = 'bagging_table', amount = 80, price = 175, slot = 8 },
         { name = 'watering_can', amount = 150, price = 65, slot = 7, info = { water = 100 } },
         { name = 'empty_bag', amount = 500, price = 11, slot = 9 },
     },
@@ -1447,6 +1462,7 @@ Config.LsTestQuickBuy = {
     { item = 'filter', amount = 15 },
     { item = 'lab_kit', amount = 2 },
     { item = 'burner', amount = 2 },
+    { item = 'bagging_table', amount = 1 },
     { item = 'chemical_mix', amount = 15 },
     { item = 'hemp_trim', amount = 25 },
     { item = 'weed_leaf', amount = 15 },

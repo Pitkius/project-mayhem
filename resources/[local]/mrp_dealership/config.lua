@@ -170,7 +170,9 @@ if Config.ManualPriceOverrides then
     end
 end
 
---- Policijos salonas – tas pats NUI kaip Simion; mašinos įrašomos į `pd_*` garažą pagal stotį.
+--- Policijos salonas — tas pats NUI kaip Simion; TP → pd_* garažas pagal stotį.
+--- Atidaroma: mrp_ltpd garage marker → „Transporto pirkimas“
+--- stations.*.preview/spawn/camera — peržiūra salone (client.lua getPreviewSpawnPos)
 Config.PoliceDealership = {
     label = 'Policijos transporto skyrius',
     targetSize = vec3(1.4, 1.4, 2.0),
@@ -183,10 +185,10 @@ Config.PoliceDealership = {
     --- Peržiūra / spawn po pirkimo (MRPD + Sandy Shores PD)
     stations = {
         ls_main = {
-            spawn = vector4(460.57, -1006.34, 21.34, 90.0),
-            preview = vector4(456.0, -1004.0, 21.34, 90.0),
+            spawn = vector4(447.9836, -967.4344, 22.8469, 84.1690),
+            preview = vector4(450.2, -966.8, 22.8469, 84.1690),
             previewLateralM = 0.0,
-            camera = vector4(462.0, -1010.0, 23.5, 90.0),
+            camera = vector4(444.5, -970.5, 24.8, 84.1690),
         },
         sandy = {
             spawn = vector4(1869.5, 3695.2, 33.53, 210.0),

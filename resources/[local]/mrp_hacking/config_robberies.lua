@@ -1,6 +1,20 @@
 Config.Robberies = Config.Robberies or {}
 
---- Bendri cooldown (sek.)
+--[[
+  mrp_hacking — apiplėšimų (robberies) konfigūracija.
+
+  Srautas (client/robberies.lua):
+    qb-target zonoje → startRobbery → fazės pagal Flow → hack/minigame → loot
+
+  Failai:
+    · config_robberies.lua — cooldown, loot, flow, lokacijos
+    · client/robberies.lua — target, fazės, session
+    · server/* — claim, payout, cooldown DB
+
+  tierId: store | bank_fleeca | bank_main | casino | vault
+]]
+
+--- Bendri cooldown (sek.) — per žaidėją
 Config.Robberies.PlayerCooldown = {
     store = 600,
     bank_fleeca = 1800,
