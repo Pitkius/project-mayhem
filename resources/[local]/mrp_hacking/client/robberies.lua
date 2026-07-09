@@ -1,6 +1,53 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local session = nil
+local discoveredLocs = {}
+
+local function locKey(tierId, locId)
+    return ('%s:%s'):format(tostring(tierId), tostring(locId))
+end
+
+local function discoveryRequired(tierId)
+    return Config.RobberyDiscoveryTiers and Config.RobberyDiscoveryTiers[tierId] == true
+end
+
+local function isLocDiscovered(tierId, locId)
+    if not discoveryRequired(tierId) then return true end
+    return discoveredLocs[locKey(tierId, locId)] == true
+end
+
+local function setDiscoveredMap(map)
+    discoveredLocs = {}
+    if type(map) ~= 'table' then return end
+    for key, val in pairs(map) do
+        if val then discoveredLocs[key] = true end
+    end
+end
+
+RegisterNetEvent('mrp_hacking:client:discoveredLocsUpdated', function(map, tierId, locId, label)
+    setDiscoveredMap(map)
+    if tierId and locId and label then
+        QBCore.Functions.Notify(('Nuskanuota: %s — dabar gali pradėti apiplėšimą.'):format(label), 'success', 7000)
+    end
+    registerRobberyTargets()
+end)
+
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    QBCore.Functions.TriggerCallback('mrp_hacking:server:getDiscoveredRobberyLocs', function(map)
+        setDiscoveredMap(map)
+        registerRobberyTargets()
+    end)
+end)
+
+AddEventHandler('onResourceStart', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if LocalPlayer.state.isLoggedIn then
+        QBCore.Functions.TriggerCallback('mrp_hacking:server:getDiscoveredRobberyLocs', function(map)
+            setDiscoveredMap(map)
+            registerRobberyTargets()
+        end)
+    end
+end)
 
 local TIER_META = {
     store = { level = 2, action = 'Pradėti apiplėšimą' },
@@ -224,6 +271,9 @@ local function registerRobberyTargets()
     local locations = Config.Robberies and Config.Robberies.Locations or {}
     for tierId, list in pairs(locations) do
         for _, loc in ipairs(list) do
+            if not isLocDiscovered(tierId, loc.id) then
+                goto continue_rob_zone
+            end
             local zoneName = ('hack_rob_%s_%s'):format(tierId, loc.id)
             robberyZones[zoneName] = true
             exports['qb-target']:AddCircleZone(zoneName, loc.coords, loc.radius or 1.6, {
@@ -245,6 +295,7 @@ local function registerRobberyTargets()
                 },
                 distance = 2.5,
             })
+            ::continue_rob_zone::
         end
     end
 end

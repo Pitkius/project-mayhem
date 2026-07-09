@@ -28,6 +28,15 @@ function postSchedule(success, extra = {}) {
     if (!success) MgFx.shake(1.3);
     MgFx.cleanup();
   }
+  if (window.MgVape) MgVape.cleanup();
+  if (window.MgThc) MgThc.cleanup();
+  if (window.MgWeed) MgWeed.cleanup();
+  if (window.MgHeroin) MgHeroin.cleanup();
+  if (window.MgMeth) MgMeth.cleanup();
+  if (window.MgPills) MgPills.cleanup();
+  if (window.MgMushroom) MgMushroom.cleanup();
+  if (window.MgCocaine) MgCocaine.cleanup();
+  if (window.MgAmp) MgAmp.cleanup();
   if (mgSchedule) mgSchedule.classList.add("hidden");
   if (schBoard) schBoard.innerHTML = "";
   const dots = document.getElementById("schStepDots");

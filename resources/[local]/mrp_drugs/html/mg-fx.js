@@ -23,11 +23,29 @@ window.MgFx = (() => {
 
   const MODE_BOOST = {
     meth_crystal: { count: 18, shape: 'crystal' },
+    meth_crush_pack: { count: 12, shape: 'crystal' },
+    pills_press: { count: 10, shape: 'dot' },
+    pills_blister: { count: 8, shape: 'dot' },
+    mushroom_brush: { count: 12, shape: 'spore' },
+    mushroom_jar: { count: 10, shape: 'spore' },
+    mushroom_harvest: { count: 14, shape: 'spore' },
     moonshine_still: { count: 12, shape: 'steam' },
+    vape_blend: { count: 14, shape: 'mist' },
     vape_dropper: { count: 10, shape: 'mist' },
+    thc_scrape: { count: 16, shape: 'orb' },
+    thc_cartridge: { count: 14, shape: 'orb' },
+    weed_soil: { count: 12, shape: 'leaf' },
+    weed_seed: { count: 10, shape: 'leaf' },
+    weed_water: { count: 14, shape: 'mist' },
+    weed_harvest: { count: 11, shape: 'leaf' },
+    weed_dry: { count: 10, shape: 'dust' },
+    weed_pack: { count: 8, shape: 'leaf' },
     cocaine_wash: { count: 14, shape: 'dust' },
-    mushroom_harvest: { count: 8, shape: 'spore' },
+    coca_harvest: { count: 10, shape: 'dust' },
+    cocaine_brick: { count: 12, shape: 'dust' },
+    amp_stamp: { count: 16, shape: 'spark' },
     heroin_cook: { count: 10, shape: 'steam' },
+    heroin_fold: { count: 8, shape: 'dot' },
   };
 
   function getCanvas() {

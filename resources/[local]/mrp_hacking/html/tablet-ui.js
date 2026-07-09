@@ -87,6 +87,25 @@ window.TabletUI = (function () {
     if (window.HackPost) await window.HackPost("installDrive", { slot });
   }
 
+  function tierRequiresDiscovery(tierId) {
+    const tiers = { store: true };
+    return tiers[tierId] === true;
+  }
+
+  function hasDiscoveredTier(tierId) {
+    const d = data.discoveredRobberyLocs || {};
+    const prefix = `${tierId}:`;
+    return Object.keys(d).some((k) => k.indexOf(prefix) === 0 && d[k]);
+  }
+
+  function filterDiscoverableTargets(targets) {
+    return (targets || []).filter((t) => {
+      const tierId = t.tierId || t.id;
+      if (!tierRequiresDiscovery(tierId)) return true;
+      return hasDiscoveredTier(tierId);
+    });
+  }
+
   function sortTargetsByLevel(targets) {
     return [...(targets || [])].sort((a, b) => (b.security || 0) - (a.security || 0));
   }
@@ -129,8 +148,10 @@ window.TabletUI = (function () {
     hideMapTooltip(tooltip);
 
     if (atmNote) {
-      atmNote.textContent =
-        data.atmMapNote || "Galima apiplėšti bet kurį bankomatą mieste (LVL 1).";
+      const storeHint = hasDiscoveredTier("store")
+        ? ""
+        : " Parduotuvių taikinius atskleisk planšete būdamas parduotuvėje.";
+      atmNote.textContent = (data.atmMapNote || "Galima apiplėšti bet kurį bankomatą mieste (LVL 1).") + storeHint;
     }
 
     const sites = data.robberyMapSites || [];
@@ -198,7 +219,7 @@ window.TabletUI = (function () {
     const list = $("networkList");
     if (!list) return;
     list.innerHTML = "";
-    sortTargetsByLevel(data.networkTargets).forEach((t) => list.appendChild(buildTargetCard(t)));
+    sortTargetsByLevel(filterDiscoverableTargets(data.networkTargets)).forEach((t) => list.appendChild(buildTargetCard(t)));
   }
 
   function renderTargets() {
@@ -216,7 +237,7 @@ window.TabletUI = (function () {
         tierId: k,
       };
     });
-    sortTargetsByLevel(entries).forEach((entry) => list.appendChild(buildTargetCard(entry)));
+    sortTargetsByLevel(filterDiscoverableTargets(entries)).forEach((entry) => list.appendChild(buildTargetCard(entry)));
   }
 
   function renderExploits() {

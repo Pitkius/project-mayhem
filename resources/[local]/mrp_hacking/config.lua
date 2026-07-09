@@ -201,6 +201,13 @@ Config.ChainItem = 'tow_chain'
 Config.DrillItem = 'drill'
 
 --- HackOS planšetės NETWORK vaizdas (UI) — LVL 5 viršuje, LVL 1 apačioje
+--- Parduotuvės (ir kiti tieriai) matomi tik po planšetės skenavimo vietoje.
+Config.RobberyDiscoveryTiers = {
+    store = true,
+}
+
+Config.RobberyDiscoverRadius = 20.0
+
 Config.NetworkTargets = {
     { id = 'vault', label = 'Federal vault', security = 5, status = 'Užrakinta', tierId = 'vault' },
     { id = 'bank_main', label = 'Pacific Standard', security = 4, status = 'Apsaugota', tierId = 'bank_main' },

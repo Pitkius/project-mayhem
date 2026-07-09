@@ -47,9 +47,15 @@ local function setDrawText(active, text)
 end
 
 local function startWaterRefill()
-    if refillBusy or not hasWateringCan() or not isNearNaturalWater() then return end
+    if refillBusy or not isNearNaturalWater() then return end
     refillBusy = true
     setDrawText(false)
+
+    QBCore.Functions.TriggerCallback('mrp_drugs:server:canRefillWateringCan', function(ok, reason)
+        if not ok then
+            refillBusy = false
+            return QBCore.Functions.Notify(reason or 'Negalima pripildyti.', 'error')
+        end
 
     local cfg = weedGrowCfg()
     local duration = tonumber(cfg.waterNaturalRefillMs) or 6000
@@ -81,16 +87,21 @@ local function startWaterRefill()
             QBCore.Functions.Notify('Atšaukta.', 'error')
         end
     )
+    end)
 end
 
 CreateThread(function()
     while true do
         local sleep = 1000
-        if not refillBusy and hasWateringCan() and isNearNaturalWater() then
+        if not refillBusy and isNearNaturalWater() then
             sleep = 0
-            setDrawText(true, '[E] Pripildyti laistytuvą')
-            if IsControlJustReleased(0, 38) then
-                startWaterRefill()
+            if hasWateringCan() then
+                setDrawText(true, '[E] Pripildyti laistytuvą')
+                if IsControlJustReleased(0, 38) then
+                    startWaterRefill()
+                end
+            else
+                setDrawText(false)
             end
         else
             setDrawText(false)

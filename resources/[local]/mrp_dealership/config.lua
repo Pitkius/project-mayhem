@@ -195,33 +195,29 @@ Config.PoliceDealership = {
         },
     },
     PoliceCategoryLabels = {
-        patrol = 'Patrulis',
         undercover = 'Undercover',
         anim = 'Animuotos šviesos',
     },
     vehicles = {
-        -- Old style pack (mrp_pd_oldstyle)
-        { model = 'gcpd1', name = 'PD patrulis 1', brand = 'PD', category = 'patrol', price = 18000 },
-        { model = 'gcpd2', name = 'PD patrulis 2', brand = 'PD', category = 'patrol', price = 19000 },
-        { model = 'gcpd3', name = 'PD patrulis 3', brand = 'PD', category = 'patrol', price = 20000 },
-        { model = 'gcpd4', name = 'PD patrulis 4', brand = 'PD', category = 'patrol', price = 20000 },
-        { model = 'gcpd5', name = 'PD patrulis 5', brand = 'PD', category = 'patrol', price = 21000 },
-        { model = 'gcpd6', name = 'PD patrulis 6', brand = 'PD', category = 'patrol', price = 21000 },
-        { model = 'gcpd10', name = 'PD patrulis 10', brand = 'PD', category = 'patrol', price = 22000 },
-        -- Undercover pack (mrp_pd_undercover)
-        { model = 'gcpd20', name = 'PD undercover 20', brand = 'PD', category = 'undercover', price = 24000 },
-        { model = 'gcpd21', name = 'PD undercover 21', brand = 'PD', category = 'undercover', price = 25000 },
-        { model = 'gcpd22', name = 'PD undercover 22', brand = 'PD', category = 'undercover', price = 26000 },
-        { model = 'gcpd23', name = 'PD undercover 23', brand = 'PD', category = 'undercover', price = 27000 },
-        -- Animated lights pack (mrp_pd_animuotu)
-        { model = 'gcapd1', name = 'PD animuotas 1', brand = 'PD', category = 'anim', price = 26000 },
-        { model = 'gcapd2', name = 'PD animuotas 2', brand = 'PD', category = 'anim', price = 27000 },
-        { model = 'gcapd3', name = 'PD animuotas 3', brand = 'PD', category = 'anim', price = 28000 },
-        { model = 'gcapd4', name = 'PD animuotas 4', brand = 'PD', category = 'anim', price = 28000 },
-        { model = 'gcapd5', name = 'PD animuotas 5', brand = 'PD', category = 'anim', price = 29000 },
-        { model = 'gcapd6', name = 'PD animuotas 6', brand = 'PD', category = 'anim', price = 30000 },
-        { model = 'gcapd10', name = 'PD animuotas 10', brand = 'PD', category = 'anim', price = 31000 },
-        { model = 'gcapd11', name = 'PD animuotas 11', brand = 'PD', category = 'anim', price = 32000 },
+        -- MRPD pack (mrp_pd_mrpd) — undercover
+        { model = 'mrpd1', name = 'MRPD 1', brand = 'MRPD', category = 'undercover', price = 24000 },
+        { model = 'mrpd2', name = 'MRPD 2', brand = 'MRPD', category = 'undercover', price = 25000 },
+        { model = 'mrpd3', name = 'MRPD 3', brand = 'MRPD', category = 'undercover', price = 26000 },
+        { model = 'mrpd4', name = 'MRPD 4', brand = 'MRPD', category = 'undercover', price = 27000 },
+        -- MRPD pack — animuotos šviesos
+        { model = 'mrpd5', name = 'MRPD 5', brand = 'MRPD', category = 'anim', price = 26000 },
+        { model = 'mrpd6', name = 'MRPD 6', brand = 'MRPD', category = 'anim', price = 27000 },
+        { model = 'mrpd7', name = 'MRPD 7', brand = 'MRPD', category = 'anim', price = 28000 },
+        { model = 'mrpd8', name = 'MRPD 8', brand = 'MRPD', category = 'anim', price = 28000 },
+        { model = 'mrpd9', name = 'MRPD 9', brand = 'MRPD', category = 'anim', price = 29000 },
+        { model = 'mrpd10', name = 'MRPD 10', brand = 'MRPD', category = 'anim', price = 30000 },
+        { model = 'mrpd11', name = 'MRPD 11', brand = 'MRPD', category = 'anim', price = 31000 },
+        { model = 'mrpd12', name = 'MRPD 12', brand = 'MRPD', category = 'anim', price = 32000 },
+        -- MPRPD pack (papildomos markės)
+        { model = 'mrpd13', name = 'MRPD 13 — Audi RS6', brand = 'Audi', category = 'anim', price = 34000 },
+        { model = 'mrpd14', name = 'MRPD 14 — Kia Stinger', brand = 'Kia', category = 'anim', price = 33000 },
+        { model = 'mrpd15', name = 'MRPD 15 — Hyundai', brand = 'Hyundai', category = 'anim', price = 30000 },
+        { model = 'mrpd16', name = 'MRPD 16 — Alfa Romeo', brand = 'Alfa Romeo', category = 'anim', price = 35000 },
     },
 }
 

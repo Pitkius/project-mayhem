@@ -25,9 +25,29 @@ window.DrugGameModes = (() => {
     U().successScreen(msg || 'Etapas baigtas', () => win({ score: 92 }));
   }
 
-  /* ═══ THC — violetinė distiliacijos laboratorija ═══ */
-  modes.thc_scrape = (data) => {
-    screen('thc');
+  /* ═══ THC — premium Canvas distiliacija + kasetė ═══ */
+  function thcHooks() {
+    return {
+      setStep,
+      hint: schHint,
+      onWin: (extra) => win(extra || { score: 90 }),
+      onFail: fail,
+    };
+  }
+
+  function thcMode(runFn, fallback) {
+    return (data) => {
+      screen('thc');
+      if (window.MgThc && typeof MgThc[runFn] === 'function') {
+        MgThc[runFn](data, thcHooks());
+        return;
+      }
+      if (typeof fallback === 'function') return fallback(data);
+      fail();
+    };
+  }
+
+  modes.thc_scrape = thcMode('runScrape', (data) => {
     const steps = data.steps || 4;
     setStep(1, 3, 'Paruošk trim medžiagą');
     U().scrapeTrim({
@@ -56,10 +76,9 @@ window.DrugGameModes = (() => {
         });
       },
     });
-  };
+  });
 
-  modes.thc_cartridge = (data) => {
-    screen('thc');
+  modes.thc_cartridge = thcMode('runCartridge', (data) => {
     setStep(1, 2, 'Užpildyk kasetę — laikyk slėgį');
     U().gaugeHold({
       label: 'Kasetės pildymas',
@@ -72,7 +91,7 @@ window.DrugGameModes = (() => {
       },
       onFail: fail,
     });
-  };
+  });
 
   /* ═══ Alkoholis — varinis distiliatorius ═══ */
   modes.moonshine_still = (data) => {
@@ -122,9 +141,21 @@ window.DrugGameModes = (() => {
     });
   };
 
-  /* ═══ Vape — neon skysčio mišinys ═══ */
+  /* ═══ Vape — premium Canvas laboratorija ═══ */
   modes.vape_blend = (data) => {
     screen('vape');
+    if (window.MgVape) {
+      MgVape.runBlend(data, {
+        setStep,
+        hint: schHint,
+        onWin: (extra) => {
+          finishSuccess('Vape mišinys stabilizuotas');
+          win(extra || { score: 88 });
+        },
+        onFail: fail,
+      });
+      return;
+    }
     const target = 35 + Math.floor(Math.random() * 30);
     setStep(1, 2, 'Sulygink skysčio mišinį');
     U().sliderBlend({
@@ -145,6 +176,15 @@ window.DrugGameModes = (() => {
 
   modes.vape_dropper = (data) => {
     screen('vape');
+    if (window.MgVape) {
+      MgVape.runDropper(data, {
+        setStep,
+        hint: schHint,
+        onWin: (extra) => win(extra || { score: 90 }),
+        onFail: fail,
+      });
+      return;
+    }
     const need = data.steps || 3;
     setStep(1, need + 1, 'Lašink tiksliai į buteliuką');
     U().timedDrops({
@@ -158,9 +198,29 @@ window.DrugGameModes = (() => {
     });
   };
 
-  /* ═══ Heroinas — medicininė virtuvė ═══ */
-  modes.heroin_cook = (data) => {
-    screen('heroin');
+  /* ═══ Heroinas — premium Canvas medicininė virtuvė ═══ */
+  function heroinHooks() {
+    return {
+      setStep,
+      hint: schHint,
+      onWin: (extra) => win(extra || { score: 86 }),
+      onFail: fail,
+    };
+  }
+
+  function heroinMode(runFn, fallback) {
+    return (data) => {
+      screen('heroin');
+      if (window.MgHeroin && typeof MgHeroin[runFn] === 'function') {
+        MgHeroin[runFn](data, heroinHooks());
+        return;
+      }
+      if (typeof fallback === 'function') return fallback(data);
+      fail();
+    };
+  }
+
+  modes.heroin_cook = heroinMode('runCook', (data) => {
     setStep(1, 3, 'Kaitink tirpalą');
     U().gaugeHold({
       label: 'Kaitinimas',
@@ -181,10 +241,9 @@ window.DrugGameModes = (() => {
       },
       onFail: fail,
     });
-  };
+  });
 
-  modes.heroin_fold = (data) => {
-    screen('heroin');
+  modes.heroin_fold = heroinMode('runFold', (data) => {
     const need = data.steps || 3;
     setStep(1, need + 1, 'Sulankstyk foliją');
     U().foilFold({
@@ -194,11 +253,31 @@ window.DrugGameModes = (() => {
         U().sealZones({ need: 3, onDone: () => win({ score: 86 }) });
       },
     });
-  };
+  });
 
-  /* ═══ Metas — kristalų linija ═══ */
-  modes.meth_crystal = (data) => {
-    screen('meth');
+  /* ═══ Metas — premium Canvas kristalų laboratorija ═══ */
+  function methHooks() {
+    return {
+      setStep,
+      hint: schHint,
+      onWin: (extra) => win(extra || { score: 90 }),
+      onFail: fail,
+    };
+  }
+
+  function methMode(runFn, fallback) {
+    return (data) => {
+      screen('meth');
+      if (window.MgMeth && typeof MgMeth[runFn] === 'function') {
+        MgMeth[runFn](data, methHooks());
+        return;
+      }
+      if (typeof fallback === 'function') return fallback(data);
+      fail();
+    };
+  }
+
+  modes.meth_crystal = methMode('runCrystal', (data) => {
     setStep(1, 3, 'Kristalizacijos procesas');
     U().crystalPipeline({
       difficulty: data.difficulty || 2,
@@ -206,10 +285,9 @@ window.DrugGameModes = (() => {
       onSuccess: () => finishSuccess('Kristalai suformuoti'),
       onFail: fail,
     });
-  };
+  });
 
-  modes.meth_crush_pack = (data) => {
-    screen('meth');
+  modes.meth_crush_pack = methMode('runCrushPack', (data) => {
     setStep(1, 3, 'Sutraišk kristalus');
     U().multiTap({
       icon: 'hammer',
@@ -223,11 +301,31 @@ window.DrugGameModes = (() => {
         });
       },
     });
-  };
+  });
 
-  /* ═══ Tabletės — farmacijos presas ═══ */
-  modes.pills_press = (data) => {
-    screen('pills');
+  /* ═══ Tabletės — premium Canvas farmacijos linija ═══ */
+  function pillsHooks() {
+    return {
+      setStep,
+      hint: schHint,
+      onWin: (extra) => win(extra || { score: 88 }),
+      onFail: fail,
+    };
+  }
+
+  function pillsMode(runFn, fallback) {
+    return (data) => {
+      screen('pills');
+      if (window.MgPills && typeof MgPills[runFn] === 'function') {
+        MgPills[runFn](data, pillsHooks());
+        return;
+      }
+      if (typeof fallback === 'function') return fallback(data);
+      fail();
+    };
+  }
+
+  modes.pills_press = pillsMode('runPress', (data) => {
     const need = data.steps || 4;
     setStep(1, 2, 'Presuok tabletes — tikslus ritmas');
     U().pressRhythm({
@@ -240,21 +338,40 @@ window.DrugGameModes = (() => {
       },
       onFail: fail,
     });
-  };
+  });
 
-  modes.pills_blister = (data) => {
-    screen('pills');
+  modes.pills_blister = pillsMode('runBlister', (data) => {
     const slots = data.steps || 3;
     setStep(1, 2, 'Įspausk tabletes į blisterį');
     U().blisterPack(slots, () => {
       setStep(2, 2, 'Užlenk apsauginę plėvelę');
       U().sealZones({ need: 3, onDone: () => win({ score: 89 }) });
     });
-  };
+  });
 
-  /* ═══ Grybai — miško džiovykla ═══ */
-  modes.mushroom_brush = (data) => {
-    screen('mushroom');
+  /* ═══ Grybai — premium Canvas miško laboratorija ═══ */
+  function mushroomHooks() {
+    return {
+      setStep,
+      hint: schHint,
+      onWin: (extra) => win(extra || { score: 88 }),
+      onFail: fail,
+    };
+  }
+
+  function mushroomMode(runFn, fallback) {
+    return (data) => {
+      screen('mushroom');
+      if (window.MgMushroom && typeof MgMushroom[runFn] === 'function') {
+        MgMushroom[runFn](data, mushroomHooks());
+        return;
+      }
+      if (typeof fallback === 'function') return fallback(data);
+      fail();
+    };
+  }
+
+  modes.mushroom_brush = mushroomMode('runBrush', (data) => {
     setStep(1, 2, 'Nuvalyk grybus');
     U().clickBoard({
       title: 'Nušveisk purvą nuo grybo',
@@ -270,10 +387,9 @@ window.DrugGameModes = (() => {
         });
       },
     });
-  };
+  });
 
-  modes.mushroom_jar = (data) => {
-    screen('mushroom');
+  modes.mushroom_jar = mushroomMode('runJar', (data) => {
     setStep(1, 3, 'Supilk į stiklainį');
     U().pourHold({
       label: 'Supilti grybus',
@@ -289,10 +405,9 @@ window.DrugGameModes = (() => {
       },
       onFail: fail,
     });
-  };
+  });
 
-  modes.mushroom_harvest = (data) => {
-    screen('mushroom');
+  modes.mushroom_harvest = mushroomMode('runHarvest', (data) => {
     setStep(1, 1, 'Surink grybus laiku');
     U().spawnCatcher({
       icon: 'mushroom',
@@ -300,31 +415,49 @@ window.DrugGameModes = (() => {
       spawnInterval: 400,
       onComplete: () => win({ score: 90 }),
     });
-  };
+  });
 
-  /* ═══ Kokainas — cheminis plovimas ═══ */
-  modes.coca_harvest = (data) => {
-    screen('cocaine');
-    setStep(1, 1, 'Nuimk lapus nuo šakų.');
+  /* ═══ Kokainas — premium Canvas lux lab + džiunglės ═══ */
+  function cocaineHooks() {
+    return {
+      setStep,
+      hint: schHint,
+      onWin: (extra) => win(extra || { score: 88 }),
+      onFail: fail,
+    };
+  }
+
+  function cocaineMode(runFn, fallback) {
+    return (data) => {
+      screen('cocaine');
+      if (window.MgCocaine && typeof MgCocaine[runFn] === 'function') {
+        MgCocaine[runFn](data, cocaineHooks());
+        return;
+      }
+      if (typeof fallback === 'function') return fallback(data);
+      fail();
+    };
+  }
+
+  modes.coca_harvest = cocaineMode('runHarvest', (data) => {
+    setStep(1, 1, 'Nuimk lapus nuo šakos');
     U().stripRow({
       icon: 'cocaLeaf',
       need: data.steps || 5,
       onComplete: () => win({ score: 88 }),
     });
-  };
+  });
 
-  modes.cocaine_wash = (data) => {
-    screen('cocaine');
+  modes.cocaine_wash = cocaineMode('runWash', (data) => {
     setStep(1, 2, 'Cheminis plovimas');
     U().chemistryWash({
       need: data.steps || 4,
       hintEl: schHint,
       onDone: () => win({ score: 86 }),
     });
-  };
+  });
 
-  modes.cocaine_brick = (data) => {
-    screen('cocaine');
+  modes.cocaine_brick = cocaineMode('runBrick', (data) => {
     setStep(1, 3, 'Presuok į bloką');
     U().pressRhythm({
       need: 4,
@@ -339,11 +472,31 @@ window.DrugGameModes = (() => {
       },
       onFail: fail,
     });
-  };
+  });
 
-  /* ═══ Amfetaminas — antspaudas ═══ */
-  modes.amp_stamp = (data) => {
-    screen('amp');
+  /* ═══ Amfetaminas — premium Canvas pakavimo stalas ═══ */
+  function ampHooks() {
+    return {
+      setStep,
+      hint: schHint,
+      onWin: (extra) => win(extra || { score: 90 }),
+      onFail: fail,
+    };
+  }
+
+  function ampMode(runFn, fallback) {
+    return (data) => {
+      screen('amp');
+      if (window.MgAmp && typeof MgAmp[runFn] === 'function') {
+        MgAmp[runFn](data, ampHooks());
+        return;
+      }
+      if (typeof fallback === 'function') return fallback(data);
+      fail();
+    };
+  }
+
+  modes.amp_stamp = ampMode('runStamp', (data) => {
     setStep(1, 3, 'Užlydink maišelį');
     U().multiTap({
       icon: 'bag',
@@ -363,20 +516,36 @@ window.DrugGameModes = (() => {
         });
       },
     });
-  };
+  });
 
-  /* ═══ Kanapės — grow workbench ═══ */
-  const weed = (drug, fn) => (data) => {
-    screen(drug || 'weed');
-    if (typeof fn === 'function') return fn(data);
-    fail();
-  };
-  modes.weed_soil = weed('weed', typeof runWeedSoilGame === 'function' ? runWeedSoilGame : null);
-  modes.weed_seed = weed('weed', typeof runWeedSeedGame === 'function' ? runWeedSeedGame : null);
-  modes.weed_water = weed('weed', typeof runWeedWaterGame === 'function' ? runWeedWaterGame : null);
-  modes.weed_harvest = weed('weed', typeof runWeedHarvestGame === 'function' ? runWeedHarvestGame : null);
-  modes.weed_dry = weed('weed', typeof runWeedDryGame === 'function' ? runWeedDryGame : null);
-  modes.weed_pack = weed('weed', typeof runWeedPackGame === 'function' ? runWeedPackGame : null);
+  /* ═══ Kanapės — premium Canvas grow + lab ═══ */
+  function weedHooks() {
+    return {
+      setStep,
+      hint: schHint,
+      onWin: (extra) => win(extra || { score: 88 }),
+      onFail: fail,
+    };
+  }
+
+  function weedMode(runFn, fallbackFn) {
+    return (data) => {
+      screen('weed');
+      if (window.MgWeed && typeof MgWeed[runFn] === 'function') {
+        MgWeed[runFn](data, weedHooks());
+        return;
+      }
+      if (typeof fallbackFn === 'function') return fallbackFn(data);
+      fail();
+    };
+  }
+
+  modes.weed_soil = weedMode('runSoil', typeof runWeedSoilGame === 'function' ? runWeedSoilGame : null);
+  modes.weed_seed = weedMode('runSeed', typeof runWeedSeedGame === 'function' ? runWeedSeedGame : null);
+  modes.weed_water = weedMode('runWater', typeof runWeedWaterGame === 'function' ? runWeedWaterGame : null);
+  modes.weed_harvest = weedMode('runHarvest', typeof runWeedHarvestGame === 'function' ? runWeedHarvestGame : null);
+  modes.weed_dry = weedMode('runDry', typeof runWeedDryGame === 'function' ? runWeedDryGame : null);
+  modes.weed_pack = weedMode('runPack', typeof runWeedPackGame === 'function' ? runWeedPackGame : null);
 
   return modes;
 })();

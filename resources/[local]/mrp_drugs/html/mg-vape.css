@@ -1,0 +1,150 @@
+/* Vape minigame — tik layout / responsive (vizualas Canvas) */
+.mg-vape-root {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 18px);
+  width: 100%;
+  max-width: min(920px, 96vw);
+  margin: 0 auto;
+}
+
+.mg-vape-stage-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: clamp(200px, 32vh, 380px);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(103, 232, 249, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(8, 145, 178, 0.12) inset,
+    0 18px 50px rgba(0, 0, 0, 0.45),
+    0 0 40px rgba(103, 232, 249, 0.08);
+}
+
+.mg-vape-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.mg-vape-hud {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: clamp(8px, 1.2vw, 16px);
+  align-items: end;
+}
+
+.mg-vape-hud-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mg-vape-hud-col label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(224, 242, 254, 0.65);
+}
+
+.mg-vape-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(8, 47, 73, 0.85);
+  outline: none;
+}
+
+.mg-vape-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #a5f3fc, #0891b2);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 12px rgba(103, 232, 249, 0.55);
+  cursor: grab;
+}
+
+.mg-vape-meter {
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(4, 20, 30, 0.72);
+  border: 1px solid rgba(103, 232, 249, 0.2);
+  min-width: 120px;
+}
+
+.mg-vape-meter strong {
+  display: block;
+  font-size: 22px;
+  color: #e0f2fe;
+  font-variant-numeric: tabular-nums;
+}
+
+.mg-vape-meter small {
+  color: rgba(186, 230, 253, 0.6);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mg-vape-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.mg-vape-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 22px;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  font-family: inherit;
+}
+
+.mg-vape-btn:active {
+  transform: scale(0.97);
+}
+
+.mg-vape-btn--primary {
+  color: #042f3a;
+  background: linear-gradient(135deg, #a5f3fc 0%, #22d3ee 45%, #0891b2 100%);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.35);
+}
+
+.mg-vape-btn--ghost {
+  color: #bae6fd;
+  background: rgba(8, 47, 73, 0.55);
+  border: 1px solid rgba(103, 232, 249, 0.25);
+}
+
+.mg-vape-status {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(186, 230, 253, 0.75);
+  min-height: 18px;
+}
+
+.mg-vape-status.ok { color: #67e8f9; }
+.mg-vape-status.warn { color: #fcd34d; }
+.mg-vape-status.bad { color: #f87171; }
+
+@media (max-width: 720px) {
+  .mg-vape-hud {
+    grid-template-columns: 1fr;
+  }
+  .mg-vape-meter {
+    order: -1;
+  }
+}

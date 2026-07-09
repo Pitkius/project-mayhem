@@ -1,0 +1,140 @@
+.mg-heroin-root {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 18px);
+  width: 100%;
+  max-width: min(920px, 96vw);
+  margin: 0 auto;
+}
+
+.mg-heroin-stage-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: clamp(200px, 32vh, 380px);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(248, 113, 113, 0.24);
+  box-shadow:
+    0 0 0 1px rgba(185, 28, 28, 0.14) inset,
+    0 18px 50px rgba(0, 0, 0, 0.5),
+    0 0 42px rgba(248, 113, 113, 0.09);
+}
+
+.mg-heroin-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.mg-heroin-hud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.mg-heroin-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 20px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.mg-heroin-btn:active { transform: scale(0.97); }
+
+.mg-heroin-btn--primary {
+  color: #450a0a;
+  background: linear-gradient(135deg, #fecaca, #f87171 45%, #dc2626);
+  box-shadow: 0 0 22px rgba(248, 113, 113, 0.38);
+}
+
+.mg-heroin-btn--ghost {
+  color: #fecaca;
+  background: rgba(40, 8, 8, 0.72);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+}
+
+.mg-heroin-btn.hit {
+  background: linear-gradient(135deg, #f87171, #b91c1c);
+  color: #fff;
+}
+
+.mg-heroin-status {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(254, 202, 202, 0.8);
+  min-height: 18px;
+  flex: 1 1 100%;
+}
+
+.mg-heroin-meter {
+  flex: 1;
+  min-width: 140px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(28, 6, 6, 0.78);
+  border: 1px solid rgba(248, 113, 113, 0.22);
+}
+
+.mg-heroin-meter label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(254, 202, 202, 0.55);
+}
+
+.mg-heroin-meter-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.mg-heroin-meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #b91c1c, #f87171);
+  transition: width 0.08s linear;
+}
+
+.mg-heroin-keys {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mg-heroin-key {
+  min-width: 44px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(28, 6, 6, 0.85);
+  color: #fecaca;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mg-heroin-key.done {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.sch-mode-heroin_cook .mg-heroin-stage-wrap {
+  box-shadow: 0 0 55px rgba(248, 113, 113, 0.12);
+}
+
+.sch-mode-heroin_fold .mg-heroin-stage-wrap {
+  box-shadow: 0 0 48px rgba(239, 68, 68, 0.1);
+}

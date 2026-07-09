@@ -1,0 +1,107 @@
+.mg-weed-root {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 18px);
+  width: 100%;
+  max-width: min(920px, 96vw);
+  margin: 0 auto;
+}
+
+.mg-weed-stage-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: clamp(200px, 32vh, 380px);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(74, 222, 128, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(22, 163, 74, 0.12) inset,
+    0 18px 50px rgba(0, 0, 0, 0.45),
+    0 0 40px rgba(74, 222, 128, 0.08);
+}
+
+.mg-weed-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.mg-weed-hud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.mg-weed-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 20px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.12s;
+}
+
+.mg-weed-btn:active { transform: scale(0.97); }
+
+.mg-weed-btn--primary {
+  color: #052e16;
+  background: linear-gradient(135deg, #86efac, #4ade80 45%, #16a34a);
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.35);
+}
+
+.mg-weed-btn--ghost {
+  color: #bbf7d0;
+  background: rgba(6, 40, 20, 0.65);
+  border: 1px solid rgba(74, 222, 128, 0.28);
+}
+
+.mg-weed-status {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(187, 247, 208, 0.78);
+  min-height: 18px;
+  flex: 1 1 100%;
+}
+
+.mg-weed-meter {
+  flex: 1;
+  min-width: 140px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(4, 20, 12, 0.72);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.mg-weed-meter label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(187, 247, 208, 0.55);
+}
+
+.mg-weed-meter-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.mg-weed-meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #16a34a, #4ade80);
+  transition: width 0.08s linear;
+}
+
+.sch-mode-weed_dry .mg-weed-stage-wrap,
+.sch-mode-weed_pack .mg-weed-stage-wrap {
+  box-shadow: 0 0 50px rgba(74, 222, 128, 0.1);
+}

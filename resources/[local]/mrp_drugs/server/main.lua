@@ -1083,15 +1083,25 @@ local function setCanWater(src, slot, amount, cfg)
     return amount
 end
 
-local function useWaterFromCan(src, Player)
+local function canUseWaterFromCan(Player)
     local cfg = weedGrowCfg()
-    local item, slot = findWateringCan(Player)
-    if not item or not slot then return false, 'Reikia laistytuvo.' end
+    local item = findWateringCan(Player)
+    if not item then return false, 'Reikia laistytuvo.' end
     local need = tonumber(cfg.waterPerUse) or 8
     local current = getCanWater(item, cfg)
     if current < need then
         return false, ('Laistytuve liko %d/%d vandens — papildyk prie ežero ar jūros.'):format(current, cfg.waterCanCapacity or 100)
     end
+    return true
+end
+
+local function useWaterFromCan(src, Player)
+    local ok, err = canUseWaterFromCan(Player)
+    if not ok then return false, err end
+    local cfg = weedGrowCfg()
+    local item, slot = findWateringCan(Player)
+    local need = tonumber(cfg.waterPerUse) or 8
+    local current = getCanWater(item, cfg)
     setCanWater(src, slot, current - need, cfg)
     return true
 end
@@ -1217,8 +1227,57 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:canHarvestWeed', function(src,
     if computeWeedStage(cfg, plant) < 3 then
         return cb(false, 'Augalas dar nebrandus.')
     end
+    local scissors = cfg.scissorsItem or 'trimming_scissors'
+    local gloves = cfg.glovesItem or 'gloves'
+    if not Player.Functions.GetItemByName(scissors) then
+        return cb(false, 'Reikia lapų kirpimo žirklčių.')
+    end
+    if not Player.Functions.GetItemByName(gloves) then
+        return cb(false, 'Reikia pirštinių.')
+    end
     if not playerNearWeedPlant(src, plant) then
         return cb(false, 'Per toli.')
+    end
+    cb(true)
+end)
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:canWaterWeed', function(src, cb, plantId)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb(false, 'Klaida.') end
+    plantId = tostring(plantId or '')
+    local plant = weedPlants[plantId]
+    local cfg = weedGrowCfg()
+    if not plant or not plant.plantedAt then return cb(false, 'Čia nieko neauga.') end
+    if computeWeedStage(cfg, plant) >= 3 then
+        return cb(false, 'Augalas jau brandus — skink lapus.')
+    end
+    if (plant.watered or 0) >= (tonumber(cfg.maxWaters) or 4) then
+        return cb(false, 'Augalas jau pakankamai palaistas.')
+    end
+    local canW, cdLeft = canWaterPlantNow(cfg, plant)
+    if not canW then
+        return cb(false, ('Palauk %s s prieš kitą laistymą.'):format(cdLeft))
+    end
+    if not playerNearWeedPlant(src, plant) then
+        return cb(false, 'Per toli.')
+    end
+    local ok, err = canUseWaterFromCan(Player)
+    if not ok then return cb(false, err) end
+    cb(true)
+end)
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:canRefillWateringCan', function(src, cb)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb(false, 'Klaida.') end
+    local cfg = weedGrowCfg()
+    local canItem = findWateringCan(Player)
+    if not canItem then
+        return cb(false, 'Reikia laistytuvo inventoriuje.')
+    end
+    local cap = tonumber(cfg.waterCanCapacity) or 100
+    local current = getCanWater(canItem, cfg)
+    if current >= cap then
+        return cb(false, ('Laistytuvas jau pilnas (%d/%d).'):format(current, cap))
     end
     cb(true)
 end)

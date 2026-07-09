@@ -149,9 +149,12 @@
 }
 .sch-mode-thc_scrape .sch-scanlines { opacity: 0.05; }
 .sch-mode-thc_cartridge .sch-deco-thc::before {
+  animation: decoPulse 2.4s ease-in-out infinite;
   background: radial-gradient(ellipse at 60% 30%, rgba(103, 232, 249, 0.12), transparent 50%),
               radial-gradient(ellipse, rgba(124, 58, 237, 0.25) 0%, transparent 62%);
 }
+.sch-mode-thc_scrape .mg-thc-stage-wrap { box-shadow: 0 0 56px rgba(124, 58, 237, 0.14); }
+.sch-mode-thc_cartridge .mg-thc-stage-wrap { box-shadow: 0 0 58px rgba(167, 139, 250, 0.16); }
 
 /* ══════════════════════════════════════════
    Alkoholis — vario distiliatorius, garai
@@ -202,6 +205,8 @@
   0%, 100% { opacity: 0.4; transform: translateY(0) scaleX(1); }
   50% { opacity: 0.85; transform: translateY(-14px) scaleX(1.25); }
 }
+.sch-mode-vape_blend .sch-deco-vape::after { animation-duration: 2.2s; }
+.sch-mode-vape_dropper .mg-vape-stage-wrap { box-shadow: 0 0 55px rgba(103, 232, 249, 0.12); }
 
 /* ══════════════════════════════════════════
    Kanapės — žalias grow room
@@ -226,6 +231,10 @@
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
+.sch-mode-weed_soil .mg-weed-stage-wrap,
+.sch-mode-weed_seed .mg-weed-stage-wrap,
+.sch-mode-weed_water .mg-weed-stage-wrap { box-shadow: 0 0 48px rgba(74, 222, 128, 0.1); }
+.sch-mode-weed_harvest .mg-weed-stage-wrap { box-shadow: 0 0 52px rgba(34, 197, 94, 0.12); }
 
 /* ══════════════════════════════════════════
    Heroinas — raudona medicininė virtuvė
@@ -247,6 +256,8 @@
   background: repeating-linear-gradient(0deg, transparent, transparent 48px, rgba(248,113,113,0.02) 48px, rgba(248,113,113,0.02) 49px);
 }
 .sch-mode-heroin_fold .sch-deco-heroin::before { animation-duration: 3.5s; }
+.sch-mode-heroin_cook .mg-heroin-stage-wrap { box-shadow: 0 0 55px rgba(248, 113, 113, 0.12); }
+.sch-mode-heroin_fold .mg-heroin-stage-wrap { box-shadow: 0 0 48px rgba(239, 68, 68, 0.1); }
 
 /* ══════════════════════════════════════════
    Metas — ledinis kristalų lab
@@ -273,6 +284,8 @@
   animation: decoPulse 3s ease-in-out infinite;
 }
 .sch-mode-meth_crystal .sch-scanlines { opacity: 0.06; }
+.sch-mode-meth_crystal .mg-meth-stage-wrap { box-shadow: 0 0 58px rgba(56, 189, 248, 0.14); }
+.sch-mode-meth_crush_pack .mg-meth-stage-wrap { box-shadow: 0 0 50px rgba(34, 211, 238, 0.12); }
 
 /* ══════════════════════════════════════════
    Tabletės — oranžinė farmacija
@@ -293,6 +306,8 @@
   position: absolute; bottom: 12%; left: 20%; right: 20%; height: 30%;
   background: repeating-linear-gradient(90deg, transparent, transparent 24px, rgba(251,146,60,0.04) 24px, rgba(251,146,60,0.04) 25px);
 }
+.sch-mode-pills_press .mg-pills-stage-wrap { box-shadow: 0 0 52px rgba(251, 146, 60, 0.12); }
+.sch-mode-pills_blister .mg-pills-stage-wrap { box-shadow: 0 0 48px rgba(234, 88, 12, 0.1); }
 
 /* ══════════════════════════════════════════
    Grybai — violetinė miško atmosfera
@@ -324,6 +339,9 @@
   0%, 100% { transform: translateY(0); opacity: 0.5; }
   50% { transform: translateY(-12px); opacity: 0.9; }
 }
+.sch-mode-mushroom_brush .mg-mushroom-stage-wrap { box-shadow: 0 0 54px rgba(192, 132, 252, 0.12); }
+.sch-mode-mushroom_jar .mg-mushroom-stage-wrap { box-shadow: 0 0 48px rgba(168, 85, 247, 0.1); }
+.sch-mode-mushroom_harvest .mg-mushroom-stage-wrap { box-shadow: 0 0 56px rgba(126, 34, 206, 0.14); }
 
 /* ══════════════════════════════════════════
    Kokainas — šaltas baltas lux
@@ -348,6 +366,10 @@
   0%, 100% { transform: translateY(0); opacity: 0.3; }
   50% { transform: translateY(180px); opacity: 0.8; }
 }
+.sch-mode-coca_harvest .mg-cocaine-stage-wrap { box-shadow: 0 0 50px rgba(34, 197, 94, 0.08); }
+.sch-mode-cocaine_wash .mg-cocaine-stage-wrap { box-shadow: 0 0 52px rgba(148, 163, 184, 0.1); }
+.sch-mode-cocaine_brick .mg-cocaine-stage-wrap { box-shadow: 0 0 54px rgba(226, 232, 240, 0.1); }
+.sch-mode-amp_stamp .mg-amp-stage-wrap { box-shadow: 0 0 56px rgba(253, 224, 71, 0.14); }
 
 /* ══════════════════════════════════════════
    Amfetaminas — geltona energija

@@ -210,30 +210,24 @@ Config.PdStashMarkerScale = { x = 0.34, y = 0.34, z = 0.34 }
 Config.PdStashMarkerDrawDistance = 32.0
 Config.PdMarkerTextDistance = 2.2
 
---- Tarnybinis transportas (addon PD packai – žr. server spawnFleet)
+--- Tarnybinis transportas (MRPD pack — žr. server spawnFleet)
 Config.FleetVehicles = {
-    --- Old style pack (mrp_pd_oldstyle)
-    { model = 'gcpd1', label = 'PD patrulis 1' },
-    { model = 'gcpd2', label = 'PD patrulis 2' },
-    { model = 'gcpd3', label = 'PD patrulis 3' },
-    { model = 'gcpd4', label = 'PD patrulis 4' },
-    { model = 'gcpd5', label = 'PD patrulis 5' },
-    { model = 'gcpd6', label = 'PD patrulis 6' },
-    { model = 'gcpd10', label = 'PD patrulis 10' },
-    --- Undercover pack (mrp_pd_undercover)
-    { model = 'gcpd20', label = 'PD undercover 20' },
-    { model = 'gcpd21', label = 'PD undercover 21' },
-    { model = 'gcpd22', label = 'PD undercover 22' },
-    { model = 'gcpd23', label = 'PD undercover 23' },
-    --- Animated lights pack (mrp_pd_animuotu)
-    { model = 'gcapd1', label = 'PD animuotas 1' },
-    { model = 'gcapd2', label = 'PD animuotas 2' },
-    { model = 'gcapd3', label = 'PD animuotas 3' },
-    { model = 'gcapd4', label = 'PD animuotas 4' },
-    { model = 'gcapd5', label = 'PD animuotas 5' },
-    { model = 'gcapd6', label = 'PD animuotas 6' },
-    { model = 'gcapd10', label = 'PD animuotas 10' },
-    { model = 'gcapd11', label = 'PD animuotas 11' },
+  { model = 'mrpd1', label = 'MRPD 1 (undercover)' },
+  { model = 'mrpd2', label = 'MRPD 2 (undercover)' },
+  { model = 'mrpd3', label = 'MRPD 3 (undercover)' },
+  { model = 'mrpd4', label = 'MRPD 4 (undercover)' },
+  { model = 'mrpd5', label = 'MRPD 5 (animuotas)' },
+  { model = 'mrpd6', label = 'MRPD 6 (animuotas)' },
+  { model = 'mrpd7', label = 'MRPD 7 (animuotas)' },
+  { model = 'mrpd8', label = 'MRPD 8 (animuotas)' },
+  { model = 'mrpd9', label = 'MRPD 9 (animuotas)' },
+  { model = 'mrpd10', label = 'MRPD 10 (animuotas)' },
+  { model = 'mrpd11', label = 'MRPD 11 (animuotas)' },
+  { model = 'mrpd12', label = 'MRPD 12 (animuotas)' },
+  { model = 'mrpd13', label = 'MRPD 13 — Audi RS6 Avant' },
+  { model = 'mrpd14', label = 'MRPD 14 — Kia Stinger' },
+  { model = 'mrpd15', label = 'MRPD 15 — Hyundai' },
+  { model = 'mrpd16', label = 'MRPD 16 — Alfa Romeo' },
 }
 
 --- Sraigtasparniai (stogas / helipadas) – spawn ant `heliGarage.spawn`

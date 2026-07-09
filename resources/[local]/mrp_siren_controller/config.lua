@@ -51,13 +51,9 @@ Config.Jobs = {
 
 Config.FleetVehicles = {
     police = {
-        --- Old style pack
-        'gcpd1', 'gcpd2', 'gcpd3', 'gcpd4', 'gcpd5', 'gcpd6', 'gcpd10',
-        --- Undercover pack
-        'gcpd20', 'gcpd21', 'gcpd22', 'gcpd23',
-        --- Animated lights pack
-        'gcapd1', 'gcapd2', 'gcapd3', 'gcapd4', 'gcapd5', 'gcapd6', 'gcapd10', 'gcapd11',
-        --- Oro tarnyba (vanilla heliai)
+        'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4',
+        'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8', 'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12',
+        'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16',
         'polmav', 'buzzard2',
     },
     ambulance = { 'ambulance', 'ambulance2', 'lguard' },

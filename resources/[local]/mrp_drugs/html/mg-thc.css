@@ -1,0 +1,99 @@
+.mg-thc-root {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 18px);
+  width: 100%;
+  max-width: min(920px, 96vw);
+  margin: 0 auto;
+}
+
+.mg-thc-stage-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: clamp(200px, 32vh, 380px);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(167, 139, 250, 0.32);
+  box-shadow:
+    0 0 0 1px rgba(124, 58, 237, 0.14) inset,
+    0 18px 50px rgba(0, 0, 0, 0.52),
+    0 0 48px rgba(124, 58, 237, 0.12);
+}
+
+.mg-thc-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.mg-thc-hud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.mg-thc-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 20px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.12s, box-shadow 0.12s;
+  user-select: none;
+}
+
+.mg-thc-btn:active { transform: scale(0.97); }
+
+.mg-thc-btn--primary {
+  color: #1e1033;
+  background: linear-gradient(135deg, #e9d5ff, #c4b5fd 45%, #a78bfa);
+  box-shadow: 0 0 24px rgba(167, 139, 250, 0.45);
+}
+
+.mg-thc-btn--primary.holding {
+  box-shadow: 0 0 36px rgba(192, 132, 252, 0.65);
+}
+
+.mg-thc-btn--ghost {
+  color: #ede9fe;
+  background: rgba(30, 16, 51, 0.78);
+  border: 1px solid rgba(167, 139, 250, 0.28);
+}
+
+.mg-thc-status {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(221, 214, 254, 0.86);
+  min-height: 18px;
+  flex: 1 1 100%;
+}
+
+.mg-thc-meter {
+  flex: 1 1 200px;
+  max-width: 280px;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(196, 181, 253, 0.75);
+}
+
+.mg-thc-meter strong {
+  display: block;
+  font-size: 22px;
+  color: #ddd6fe;
+  font-variant-numeric: tabular-nums;
+}
+
+.sch-mode-thc_scrape .mg-thc-stage-wrap {
+  box-shadow: 0 0 56px rgba(124, 58, 237, 0.14);
+}
+
+.sch-mode-thc_cartridge .mg-thc-stage-wrap {
+  box-shadow: 0 0 58px rgba(167, 139, 250, 0.16);
+}

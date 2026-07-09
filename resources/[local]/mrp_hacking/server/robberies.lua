@@ -129,6 +129,10 @@ QBCore.Functions.CreateCallback('mrp_hacking:server:robberyCanStart', function(s
     if cd then return cb({ ok = false, msg = cdMsg }) end
     local ok, msg = exports['mrp_hacking']:CanAccessRobbery(src, tierId)
     if not ok then return cb({ ok = false, msg = msg }) end
+    local Player = QBCore.Functions.GetPlayer(src)
+    if Player and not exports['mrp_hacking']:IsRobberyLocDiscovered(src, tierId, locId) then
+        return cb({ ok = false, msg = 'Pirmiau nuskanuok šią vietą planšete (būk parduotuvėje su atidaryta planšete).' })
+    end
     local key = locKey(tierId, locId)
     if Busy[key] and Busy[key] ~= src then
         return cb({ ok = false, msg = 'Kažkas jau apiplėšinėja šią vietą.' })

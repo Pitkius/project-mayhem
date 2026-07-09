@@ -107,6 +107,15 @@ RegisterNetEvent('mrp_hacking:client:openTablet', function(opts)
         playTabletAnim()
         SetNuiFocus(true, true)
         SendNUIMessage({ action = 'openTablet', data = data, flashTab = opts and opts.flashTab, driveSlot = opts and opts.driveSlot })
+        QBCore.Functions.TriggerCallback('mrp_hacking:server:discoverNearbyRobbery', function(res)
+            if res and res.new and tabletOpen and res.robberyMapSites then
+                SendNUIMessage({
+                    action = 'tabletMapRefresh',
+                    robberyMapSites = res.robberyMapSites,
+                    discoveredRobberyLocs = res.discovered,
+                })
+            end
+        end)
     end)
 end)
 

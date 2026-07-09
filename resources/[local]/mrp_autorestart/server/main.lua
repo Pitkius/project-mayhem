@@ -15,23 +15,45 @@ local function broadcastNotify(msg, nType, duration)
     TriggerClientEvent('QBCore:Notify', -1, msg, nType or 'primary', duration or 8000)
 end
 
+local function tzOffsetSeconds()
+    return (tonumber(Config.TimezoneOffsetHours) or 0) * 3600
+end
+
+--- Planinis laikas: offset 0 = OS laikas, kitaip UTC + offset (pvz. 3 = LT ant UTC VPS).
+local function wallClockNow()
+    local offset = tzOffsetSeconds()
+    if offset == 0 then
+        return os.date('*t', os.time())
+    end
+    return os.date('!*t', os.time() + offset)
+end
+
+local function wallClockToUnix(year, month, day, hour, min, sec)
+    local offset = tzOffsetSeconds()
+    local tbl = {
+        year = year,
+        month = month,
+        day = day,
+        hour = hour,
+        min = min or 0,
+        sec = sec or 0,
+    }
+    if offset == 0 then
+        return os.time(tbl)
+    end
+    return os.time(tbl) - offset
+end
+
 local function nextRestartUnix()
     local now = os.time()
-    local restartMin = Config.RestartAtMinute or 0
+    local restartMin = tonumber(Config.RestartAtMinute) or 0
     local hours = Config.RestartHours or { 0, 4, 8, 12, 16, 20 }
-    local t = os.date('*t', now)
+    local t = wallClockNow()
     local best = nil
 
     for dayOffset = 0, 1 do
         for _, hour in ipairs(hours) do
-            local target = os.time({
-                year = t.year,
-                month = t.month,
-                day = t.day + dayOffset,
-                hour = hour,
-                min = restartMin,
-                sec = 0,
-            })
+            local target = wallClockToUnix(t.year, t.month, t.day + dayOffset, hour, restartMin, 0)
             if target > now and (not best or target < best) then
                 best = target
             end
@@ -45,12 +67,47 @@ local function secondsUntilRestart()
     return nextRestartUnix() - os.time()
 end
 
+local function formatRestartLabel(unix)
+    local offset = tzOffsetSeconds()
+    if offset == 0 then
+        return os.date('%H:%M', unix)
+    end
+    return os.date('!%H:%M', unix + offset)
+end
+
 local function resetWarningsIfNewCycle()
     local id = nextRestartUnix()
     if id ~= cycleId then
         cycleId = id
         warned = {}
     end
+end
+
+local function shutdownServer(reason)
+    reason = tostring(reason or Config.QuitReason or 'Planned restart')
+    print(('^1[mrp_autorestart]^0 Stabdome serverį: %s'):format(reason))
+
+    -- Pirmas bandymas (su priežastimi)
+    ExecuteCommand(('quit "%s"'):format(reason:gsub('"', '')))
+
+    -- Antras bandymas (be argumentų — kai kur ACE blokuoja su tekstu)
+    SetTimeout(2000, function()
+        ExecuteCommand('quit')
+    end)
+
+    -- Paskutinis bandymas
+    SetTimeout(5000, function()
+        ExecuteCommand('quit')
+    end)
+end
+
+local function scheduleRestartLockReset()
+    SetTimeout(tonumber(Config.RestartLockResetMs) or 60000, function()
+        if not restartLock then return end
+        restartLock = false
+        warned = {}
+        print('^1[mrp_autorestart]^0 Quit nepavyko — bandysime vėl kitame cikle. Patikrink txAdmin Auto Start ir ACE (command.quit).')
+    end)
 end
 
 local function performRestart()
@@ -61,7 +118,9 @@ local function performRestart()
     broadcastChat(msg, { 255, 90, 90 })
     broadcastNotify(msg, 'error', 12000)
 
-    SetTimeout(Config.KickDelayMs or Config.QuitDelayMs or 4000, function()
+    local kickDelay = tonumber(Config.KickDelayMs or Config.QuitDelayMs) or 4000
+
+    SetTimeout(kickDelay, function()
         for _, pid in ipairs(GetPlayers()) do
             local id = tonumber(pid)
             if id then
@@ -70,8 +129,8 @@ local function performRestart()
         end
 
         SetTimeout(1500, function()
-            print('^3[mrp_autorestart]^0 Planinis restartas — quit')
-            ExecuteCommand(('quit "%s"'):format(Config.QuitReason or 'Planned restart'))
+            shutdownServer(Config.QuitReason)
+            scheduleRestartLockReset()
         end)
     end)
 end
@@ -83,11 +142,13 @@ CreateThread(function()
     for _, h in ipairs(hours) do
         labels[#labels + 1] = string.format('%02d:%02d', h, Config.RestartAtMinute or 0)
     end
-    print('^2[mrp_autorestart]^0 Planinis restartas kas 4 val. — '
-        .. table.concat(labels, ', ')
-        .. ' | perspėjimai likus: '
-        .. table.concat(Config.WarningMinutes or {}, ', ')
-        .. ' min.')
+    local nextAt = formatRestartLabel(nextRestartUnix())
+    print(('^2[mrp_autorestart]^0 Planinis restartas — %s (kitas: %s, TZ offset %+d h)'):format(
+        table.concat(labels, ', '),
+        nextAt,
+        tonumber(Config.TimezoneOffsetHours) or 0
+    ))
+    print('^2[mrp_autorestart]^0 Perspėjimai likus: ' .. table.concat(Config.WarningMinutes or {}, ', ') .. ' min.')
 
     while true do
         Wait(Config.CheckIntervalMs or 15000)
@@ -95,10 +156,11 @@ CreateThread(function()
 
         local secsLeft = secondsUntilRestart()
         local minsLeft = secsLeft / 60.0
+        local warnWindow = (tonumber(Config.CheckIntervalMs) or 15000) / 60000.0 + 0.35
 
         for _, warnMin in ipairs(Config.WarningMinutes or {}) do
             local key = tostring(warnMin)
-            if not warned[key] and minsLeft <= warnMin and minsLeft > (warnMin - 0.6) then
+            if not warned[key] and minsLeft <= warnMin and minsLeft > (warnMin - warnWindow) then
                 warned[key] = true
                 local text = (Config.Messages.warning or 'Restart po %s min.'):format(warnMin)
                 broadcastChat(text)
@@ -107,7 +169,8 @@ CreateThread(function()
             end
         end
 
-        if not restartLock and secsLeft <= 5 then
+        local triggerSec = tonumber(Config.RestartTriggerSeconds) or 8
+        if not restartLock and secsLeft <= triggerSec then
             performRestart()
         end
     end
@@ -116,4 +179,6 @@ end)
 AddEventHandler('onResourceStart', function(res)
     if res ~= GetCurrentResourceName() then return end
     restartLock = false
+    warned = {}
+    cycleId = nil
 end)

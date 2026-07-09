@@ -1,0 +1,75 @@
+.mg-amp-root {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 18px);
+  width: 100%;
+  max-width: min(920px, 96vw);
+  margin: 0 auto;
+}
+
+.mg-amp-stage-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: clamp(200px, 32vh, 380px);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(253, 224, 71, 0.28);
+  box-shadow:
+    0 0 0 1px rgba(202, 138, 4, 0.16) inset,
+    0 18px 50px rgba(0, 0, 0, 0.52),
+    0 0 46px rgba(253, 224, 71, 0.1);
+}
+
+.mg-amp-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.mg-amp-hud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.mg-amp-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 20px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.12s;
+}
+
+.mg-amp-btn:active { transform: scale(0.97); }
+
+.mg-amp-btn--primary {
+  color: #422006;
+  background: linear-gradient(135deg, #fef08a, #fde047 45%, #eab308);
+  box-shadow: 0 0 24px rgba(253, 224, 71, 0.42);
+}
+
+.mg-amp-btn--ghost {
+  color: #fef9c3;
+  background: rgba(40, 32, 6, 0.78);
+  border: 1px solid rgba(253, 224, 71, 0.28);
+}
+
+.mg-amp-status {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(254, 240, 138, 0.84);
+  min-height: 18px;
+  flex: 1 1 100%;
+}
+
+.sch-mode-amp_stamp .mg-amp-stage-wrap {
+  box-shadow: 0 0 56px rgba(253, 224, 71, 0.14);
+}

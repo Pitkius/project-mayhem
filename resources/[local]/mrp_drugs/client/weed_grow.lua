@@ -319,20 +319,28 @@ local function attachZone(plantId, entry)
                     return QBCore.Functions.Notify(('Palauk %s prieš laistymą.'):format(formatTime(cd)), 'error')
                 end
                 busy = true
-                local profile = Config.GetScheduleMinigame('weed_water')
-                runSchedule(profile, function(success, result)
-                    if not success then
+                QBCore.Functions.TriggerCallback('mrp_drugs:server:canWaterWeed', function(ok, reason)
+                    if not ok then
                         busy = false
-                        return QBCore.Functions.Notify('Laistymas nepavyko.', 'error')
+                        return QBCore.Functions.Notify(reason or 'Negalima laistyti.', 'error')
                     end
-                    TriggerServerEvent('mrp_drugs:server:waterWeed', plantId, result.moisture or 55, result.score or result.quality)
-                    busy = false
-                end)
+                    local profile = Config.GetScheduleMinigame('weed_water')
+                    runSchedule(profile, function(success, result)
+                        if not success then
+                            busy = false
+                            return QBCore.Functions.Notify('Laistymas nepavyko.', 'error')
+                        end
+                        TriggerServerEvent('mrp_drugs:server:waterWeed', plantId, result.moisture or 55, result.score or result.quality)
+                        busy = false
+                    end)
+                end, plantId)
             end,
             canInteract = function()
                 if busy or not entry.plant or not entry.plant.plantedAt then return false end
                 if visualStageForPlant(entry.plant) >= 3 then return false end
-                return (tonumber(entry.plant.watersLeft) or 0) > 0
+                if (tonumber(entry.plant.watersLeft) or 0) <= 0 then return false end
+                local itemName = growCfg().waterCanItem or 'watering_can'
+                return QBCore.Functions.HasItem(itemName, 1)
             end,
         }
     else
@@ -361,7 +369,12 @@ local function attachZone(plantId, entry)
                 end, plantId)
             end,
             canInteract = function()
-                return not busy and entry.plant and entry.plant.plantedAt and visualStageForPlant(entry.plant) >= 3
+                if busy or not entry.plant or not entry.plant.plantedAt then return false end
+                if visualStageForPlant(entry.plant) < 3 then return false end
+                local cfg = growCfg()
+                local scissors = cfg.scissorsItem or 'trimming_scissors'
+                local gloves = cfg.glovesItem or 'gloves'
+                return QBCore.Functions.HasItem(scissors, 1) and QBCore.Functions.HasItem(gloves, 1)
             end,
         }
     end

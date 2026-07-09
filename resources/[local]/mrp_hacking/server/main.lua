@@ -200,7 +200,57 @@ local function applyCctvTamper(src, coords, ctx)
     exports['mrp_ltpd']:TamperCctvRadius(coords, ex.cctvRadius or 30, ex.cctvSeconds or 120)
 end
 
-local function buildRobberyMapSites()
+local function locDiscoveryKey(tierId, locId)
+    return ('%s:%s'):format(tostring(tierId), tostring(locId))
+end
+
+local function discoveryRequired(tierId)
+    return Config.RobberyDiscoveryTiers and Config.RobberyDiscoveryTiers[tierId] == true
+end
+
+local function getDiscoveredLocs(Player)
+    local meta = Player.PlayerData.metadata or {}
+    local raw = meta.hack_discovered_locs
+    if type(raw) ~= 'table' then return {} end
+    return raw
+end
+
+local function isRobberyLocDiscovered(Player, tierId, locId)
+    if not discoveryRequired(tierId) then return true end
+    local key = locDiscoveryKey(tierId, locId)
+    local discovered = getDiscoveredLocs(Player)
+    return discovered[key] == true
+end
+
+local function setRobberyLocDiscovered(Player, tierId, locId)
+    local key = locDiscoveryKey(tierId, locId)
+    local discovered = getDiscoveredLocs(Player)
+    if discovered[key] then return false end
+    discovered[key] = true
+    Player.Functions.SetMetaData('hack_discovered_locs', discovered)
+    return true
+end
+
+local function playerNearRobberyLoc(src, loc)
+    if not loc or not loc.coords then return false end
+    local ped = GetPlayerPed(src)
+    if ped == 0 then return false end
+    local pcoords = GetEntityCoords(ped)
+    local radius = tonumber(loc.discoverRadius) or tonumber(Config.RobberyDiscoverRadius) or 20.0
+    return #(pcoords - loc.coords) <= radius
+end
+
+local function findNearbyRobberyLoc(src, tierId)
+    local list = Config.Robberies and Config.Robberies.Locations and Config.Robberies.Locations[tierId]
+    if not list then return nil end
+    for _, loc in ipairs(list) do
+        if playerNearRobberyLoc(src, loc) then
+            return loc
+        end
+    end
+end
+
+local function buildRobberyMapSites(discovered)
     local sites = {}
     local tiers = Config.RobberyTiers or {}
     local locations = Config.Robberies and Config.Robberies.Locations or {}
@@ -210,6 +260,9 @@ local function buildRobberyMapSites()
             local tierCfg = tiers[tierId] or {}
             local level = tonumber(tierCfg.level) or 1
             for _, loc in ipairs(list) do
+                if discoveryRequired(tierId) and not (discovered and discovered[locDiscoveryKey(tierId, loc.id)]) then
+                    goto continue_site
+                end
                 local c = loc.coords
                 if c then
                     sites[#sites + 1] = {
@@ -222,6 +275,7 @@ local function buildRobberyMapSites()
                         z = c.z,
                     }
                 end
+                ::continue_site::
             end
         end
     end
@@ -275,9 +329,43 @@ QBCore.Functions.CreateCallback('mrp_hacking:server:getTabletData', function(src
             crypto = Player.PlayerData.money.crypto or 0,
         },
         cryptoExchange = Config.CryptoExchange or {},
-        robberyMapSites = buildRobberyMapSites(),
+        robberyMapSites = buildRobberyMapSites(getDiscoveredLocs(Player)),
+        discoveredRobberyLocs = getDiscoveredLocs(Player),
         atmMapNote = 'Galima apiplėšti bet kurį bankomatą mieste (LVL 1).',
     })
+end)
+
+QBCore.Functions.CreateCallback('mrp_hacking:server:getDiscoveredRobberyLocs', function(src, cb)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({}) end
+    cb(getDiscoveredLocs(Player))
+end)
+
+QBCore.Functions.CreateCallback('mrp_hacking:server:discoverNearbyRobbery', function(src, cb)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false }) end
+
+    for tierId, required in pairs(Config.RobberyDiscoveryTiers or {}) do
+        if required then
+            local loc = findNearbyRobberyLoc(src, tierId)
+            if loc and not isRobberyLocDiscovered(Player, tierId, loc.id) then
+                setRobberyLocDiscovered(Player, tierId, loc.id)
+                local discovered = getDiscoveredLocs(Player)
+                TriggerClientEvent('mrp_hacking:client:discoveredLocsUpdated', src, discovered, tierId, loc.id, loc.label)
+                return cb({
+                    ok = true,
+                    new = true,
+                    tierId = tierId,
+                    locId = loc.id,
+                    label = loc.label or loc.id,
+                    discovered = discovered,
+                    robberyMapSites = buildRobberyMapSites(discovered),
+                })
+            end
+        end
+    end
+
+    cb({ ok = true, new = false, discovered = getDiscoveredLocs(Player) })
 end)
 
 QBCore.Functions.CreateCallback('mrp_hacking:server:installFromDrive', function(src, cb, slot)
@@ -458,6 +546,12 @@ RegisterNetEvent('mrp_hacking:server:exchangeBankToCrypto', function(amount)
     local label = cfg.currencyLabel or 'Crypto'
     TriggerClientEvent('QBCore:Notify', src,
         ('$%s → %s %s (mokestis $%s)'):format(amount, receive, label, fee), 'success')
+end)
+
+exports('IsRobberyLocDiscovered', function(src, tierId, locId)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return false end
+    return isRobberyLocDiscovered(Player, tierId, locId)
 end)
 
 exports('CanAccessRobbery', function(src, tierId)

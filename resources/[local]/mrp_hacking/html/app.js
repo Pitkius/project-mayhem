@@ -55,6 +55,11 @@ window.addEventListener("message", (e) => {
     }
     if (window.TabletUI) TabletUI.refresh(tabletData);
   }
+  if (d.action === "tabletMapRefresh" && tabletData) {
+    if (d.robberyMapSites) tabletData.robberyMapSites = d.robberyMapSites;
+    if (d.discoveredRobberyLocs) tabletData.discoveredRobberyLocs = d.discoveredRobberyLocs;
+    if (window.TabletUI) TabletUI.refresh(tabletData);
+  }
   if (d.action === "hackOpen") {
     tablet.classList.add("hidden");
     document.getElementById("physical")?.classList.add("hidden");
