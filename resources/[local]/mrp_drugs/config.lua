@@ -867,7 +867,7 @@ Config.CocaFields = {
             scale = 0.76,
             label = 'Kokainmedžio lapai 1 (Cayo)',
         },
-
+    }
          id = 'cayo_coca_grove',
         center = vector3(4685.5059, -4544.0630, 24.1930),
         radius = 12,
@@ -890,6 +890,7 @@ Config.CocaFields = {
             scale = 0.76,
             label = 'Kokainmedžio lapai 2 (Cayo)',
         },
+    }    
          id = 'cayo_coca_grove',
         center = vector3(4760.5225, -4531.9341, 23.5532),
         radius = 12,
