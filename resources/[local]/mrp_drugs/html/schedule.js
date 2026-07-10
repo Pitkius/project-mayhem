@@ -1448,6 +1448,21 @@ function runWeedPackGame(data) {
 
 function runScheduleGame(data) {
   if (!mgSchedule) return;
+  // Perkelti narkotikai paleidžiami naujoje React/Pixi darbo stotyje (iframe).
+  if (window.MrpWebStation && data.drug && MrpWebStation.isMigrated(data.drug)) {
+    if (window.MgAudio && MgAudio.stopAmbient) MgAudio.stopAmbient();
+    MrpWebStation.run({
+      drug: data.drug,
+      mode: data.mode,
+      productId: data.productId,
+      label: data.label || data.title,
+      level: data.level || data.difficulty || 1,
+      quantity: data.quantity || 1,
+      difficulty: data.difficulty || 1,
+      cancelable: data.cancelable !== false,
+    });
+    return;
+  }
   scheduleActive = true;
   window.__schCurrentMode = data.mode || "trim";
   if (schTitle) schTitle.textContent = data.title || "Gamyba";

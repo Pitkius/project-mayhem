@@ -517,7 +517,46 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
     })
 end)
 
-QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb, token, minigameSuccess)
+-- ── Kokybės sistema ──────────────────────────────────────────────────────
+-- Serveris pats išveda kokybę iš minigame score (0..100). Kliento atsiųsta
+-- 'quality' eilutė NEnaudojama (nepasitikima) — tik score, kuris apkarpomas.
+-- Kokybė rašoma į item.info.quality metadata (item struktūra NEkeičiama).
+-- Pardavime kokybė veikia kainą per daugiklį; seni daiktai be kokybės = 1.0.
+local QUALITY_TIERS = {
+    { key = 'poor', label = 'Prasta', min = 0, mult = 0.72 },
+    { key = 'medium', label = 'Vidutinė', min = 40, mult = 0.92 },
+    { key = 'good', label = 'Gera', min = 65, mult = 1.12 },
+    { key = 'excellent', label = 'Puiki', min = 85, mult = 1.35 },
+}
+
+local function qualityFromScore(score)
+    if type(score) ~= 'number' then return nil end
+    local s = math.max(0, math.min(100, math.floor(score)))
+    local chosen = QUALITY_TIERS[1]
+    for _, t in ipairs(QUALITY_TIERS) do
+        if s >= t.min then chosen = t end
+    end
+    return chosen, s
+end
+
+local function qualityMult(key)
+    if not key then return 1.0 end
+    for _, t in ipairs(QUALITY_TIERS) do
+        if t.key == key then return t.mult end
+    end
+    return 1.0
+end
+
+local function findItemSlot(Player, itemName)
+    for _, it in pairs(Player.PlayerData.items or {}) do
+        if it and it.name == itemName and (it.amount or 0) > 0 then
+            return it
+        end
+    end
+    return nil
+end
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb, token, minigameSuccess, extra)
     local active = activeCrafts[src]
     if not active or active.token ~= token then
         return cb({ ok = false, reason = 'Gamyba neaktyvi.' })
@@ -561,7 +600,18 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
 
     local outItem = prod.output
     local outAmt = prod.outputAmount or 1
-    if not Player.Functions.AddItem(outItem, outAmt) then
+
+    -- Kokybė iš minigame score (serverio autoritetas, apkarpyta 0..100).
+    local qTier, qScore = qualityFromScore(extra and extra.score)
+    local addInfo = false
+    local qualityLabel = nil
+    if qTier and Config.UseQuality ~= false then
+        addInfo = { quality = qTier.key, quality_score = qScore }
+        qualityLabel = qTier.label
+        logAdmin(('QUALITY %s=%s score=%d cid=%s'):format(outItem, qTier.key, qScore or 0, Player.PlayerData.citizenid))
+    end
+
+    if not Player.Functions.AddItem(outItem, outAmt, false, addInfo) then
         refundPartial(Player, active.recipe, 80)
         return cb({ ok = false, reason = 'Inventorius pilnas.' })
     end
@@ -586,6 +636,8 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
         item = outItem,
         amount = outAmt,
         label = prod.label,
+        quality = qTier and qTier.key or nil,
+        qualityLabel = qualityLabel,
     })
 end)
 
@@ -635,11 +687,19 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:tryNpcSell', function(src, cb,
         return cb({ ok = false, panic = true, reason = 'NPC panikuoja ir bėga!' })
     end
 
-    Player.Functions.RemoveItem(itemName, 1)
+    -- Kokybės daugiklis: parduodam konkretų slotą ir skaitom jo info.quality.
+    local sellSlot = findItemSlot(Player, itemName)
+    local sellQuality = sellSlot and sellSlot.info and sellSlot.info.quality or nil
+    if sellSlot and sellSlot.slot then
+        Player.Functions.RemoveItem(itemName, 1, sellSlot.slot)
+    else
+        Player.Functions.RemoveItem(itemName, 1)
+    end
 
     local gang = getPlayerGang(src)
     local turfId = findTurfAtPlayer(src)
     local price = prod.sellBase or 100
+    price = math.floor(price * qualityMult(sellQuality))
     if gang then
         price = math.floor(price * (1.0 + ((tonumber(gang.reputation) or 0) * (sellCfg.reputationPriceFactor or 0.004))))
     end

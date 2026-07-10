@@ -155,6 +155,7 @@ window.addEventListener("message", (e) => {
     mgAdvanced.classList.add("hidden");
     const mgSchedule = document.getElementById("mgSchedule");
     if (mgSchedule) mgSchedule.classList.add("hidden");
+    if (window.MrpWebStation) MrpWebStation.close();
   }
   if (msg.action === "craftProgress") {
     showCraftProgress(msg.data);

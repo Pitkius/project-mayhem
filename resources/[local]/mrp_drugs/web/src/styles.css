@@ -1,0 +1,202 @@
+:root {
+  --text: #e8eef6;
+  --text-dim: #8b96a6;
+  --neon: #22d3ee;
+  --drug-accent: var(--neon);
+  --panel: rgba(15, 20, 28, 0.86);
+  --border: rgba(86, 94, 104, 0.4);
+  font-family: Inter, 'Segoe UI', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.stage-root {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.stage-root.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pixi-host {
+  position: absolute;
+  inset: 0;
+}
+.pixi-host canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── HUD (small, never covers the scene) ── */
+.hud {
+  position: absolute;
+  left: 50%;
+  top: 3vh;
+  transform: translateX(-50%);
+  width: min(560px, 80vw);
+  color: var(--text);
+  text-align: center;
+  pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+.hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.hud-tier {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--drug-accent);
+}
+.hud-title h2 {
+  margin: 2px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+.hud-step {
+  font-size: 14px;
+  color: var(--text-dim);
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.hud-bar {
+  margin: 10px auto 0;
+  height: 6px;
+  width: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.hud-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--drug-accent) 55%, #0a0a0a), var(--drug-accent));
+  transition: width 0.35s ease;
+}
+.hud-hint {
+  margin: 10px 0 0;
+  font-size: 15px;
+  color: var(--text);
+}
+.hud-quality {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.hud-footer {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+kbd {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 11px;
+}
+
+/* ── Overlays ── */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 6, 10, 0.45);
+  backdrop-filter: blur(2px);
+}
+.card {
+  min-width: 300px;
+  padding: 28px 32px;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+.card h3 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+.card.success {
+  border-color: rgba(132, 204, 22, 0.5);
+}
+.card.fail {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+.muted {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin: 6px 0 0;
+}
+.row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+}
+.btn {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+.btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.btn.danger {
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #fca5a5;
+}
+.quality-badge {
+  display: inline-block;
+  margin: 6px 0;
+  padding: 8px 22px;
+  border: 2px solid;
+  border-radius: 999px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.spinner {
+  width: 34px;
+  height: 34px;
+  margin: 0 auto 14px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--neon);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

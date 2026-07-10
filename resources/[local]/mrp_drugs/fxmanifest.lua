@@ -40,6 +40,9 @@ files {
     'html/schedule.js',
     'html/minigame-ui.js',
     'html/drug-games.js',
+    'html/web-bridge.js',
+    -- Nauja React + PixiJS darbo stotis (Vite single-file build, kraunama per iframe)
+    'web/dist/index.html',
     'html/icons/grow_pot.png',
     'html/icons/watering_can.png',
     'html/icons/drug_scale.png',

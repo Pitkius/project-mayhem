@@ -252,9 +252,15 @@ local function runScheduleMinigame(productId, profile, prod, onDone)
         action = profile and profile.action,
         mode = profile and profile.mode or 'trim',
         title = profile and profile.title or (prod and prod.label) or 'Gamyba',
+        label = (prod and prod.label) or (profile and profile.title) or 'Gamyba',
         steps = profile and profile.steps or 3,
         icon = profile and profile.icon or '🌿',
         difficulty = profile and profile.difficulty or (prod and prod.level) or 1,
+        level = (prod and prod.level) or (profile and profile.difficulty) or 1,
+        -- Kiek vienetų šioje partijoje (naudojama dinaminiam pakavimui naujose React stotyse)
+        quantity = (prod and prod.outputAmount) or 1,
+        -- Ar procesą galima atšaukti (ESC patvirtinimas naujose stotyse)
+        cancelable = true,
     })
     SetNuiFocus(true, true)
 end
@@ -367,7 +373,7 @@ local function startCraftFlow(productId)
             return QBCore.Functions.Notify((res and res.reason) or 'Gamyba negalima.', 'error')
         end
 
-        local function afterMinigame(success)
+        local function afterMinigame(success, extra)
             stopCraftAnim()
             QBCore.Functions.TriggerCallback('mrp_drugs:server:finishCraft', function(done)
                 if not done or not done.ok then
@@ -375,9 +381,10 @@ local function startCraftFlow(productId)
                     if currentStationId then openStationUi(currentStationId) end
                     return
                 end
-                QBCore.Functions.Notify(('Pagaminta: %s x%d'):format(done.label or done.item, done.amount or 1), 'success')
+                local qLabel = done.qualityLabel and (' · ' .. done.qualityLabel) or ''
+                QBCore.Functions.Notify(('Pagaminta: %s x%d%s'):format(done.label or done.item, done.amount or 1, qLabel), 'success')
                 if currentStationId then openStationUi(currentStationId) end
-            end, res.token, success)
+            end, res.token, success, extra)
         end
 
         if res.isWeapon then

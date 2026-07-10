@@ -81,7 +81,7 @@ local function runEquipmentCraftFlow(productId, equipmentId)
             return notify((res and res.reason) or 'Gamyba negalima.', 'error')
         end
 
-        local function afterMinigame(success)
+        local function afterMinigame(success, extra)
             if ScheduleAnimStop then ScheduleAnimStop() end
             QBCore.Functions.TriggerCallback('mrp_drugs:server:finishCraft', function(done)
                 crafting = false
@@ -89,8 +89,9 @@ local function runEquipmentCraftFlow(productId, equipmentId)
                     notify((done and done.reason) or 'Gamyba nepavyko.', 'error')
                     return
                 end
-                notify(('Pagaminta: %s x%d'):format(done.label or done.item, done.amount or 1), 'success')
-            end, res.token, success)
+                local qLabel = done.qualityLabel and (' · ' .. done.qualityLabel) or ''
+                notify(('Pagaminta: %s x%d%s'):format(done.label or done.item, done.amount or 1, qLabel), 'success')
+            end, res.token, success, extra)
         end
 
         notify('Gamyba prie įrangos — neuždaryk proceso.', 'primary', 5000)
