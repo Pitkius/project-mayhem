@@ -44,3 +44,9 @@ _MRPD_BACKUP/
 
 # Nenaudojamas MRPD MLO (stop dt_19_mrpd) - pašalintas iš repo, backup lokaliai
 resources/[[]mlo]/[[]mlo_pack_3]/dt_19_mrpd/
+
+# MRPD tekstūrų resize backup ir build artefaktai
+resources/[[]mlo]/[[]mlo_pack_3]/cfx-nteam-mrpd/stream/_backup_before_resize/
+_tools/YtdResize/bin/
+_tools/YtdResize/obj/
+_tools/YtdResize/test-out.ytd
