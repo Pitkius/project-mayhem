@@ -530,6 +530,9 @@ local function movePackObject(session, entity, target, durationMs, onDone)
     end)
 end
 
+-- Forward declaration: pack setup/spawn run before screen helpers are defined.
+local cachePackScreenAnchors
+
 local function spawnPackBud(session)
     if active ~= session or session.packedCount >= session.packTarget then return end
     local entity = registerEntity(session, createLocalObject(session.packBudHash, session.budSide, session.heading))
@@ -718,7 +721,7 @@ local function projectToScreen(coords)
     return false, nil, nil
 end
 
-local function cachePackScreenAnchors(session)
+cachePackScreenAnchors = function(session)
     session.packAnchors = session.packAnchors or {}
     if session.bag and session.bag.entity and DoesEntityExist(session.bag.entity) then
         local visible, x, y = projectToScreen(GetEntityCoords(session.bag.entity))
@@ -976,7 +979,7 @@ function WeedProduction.Start(payload, onDone)
     })
     if mode == 'pack' then
         SetNuiFocus(true, true)
-        SetNuiFocusKeepInput(true)
+        SetNuiFocusKeepInput(false)
         CreateThread(function()
             Wait(250)
             if active == session then cachePackScreenAnchors(session) end

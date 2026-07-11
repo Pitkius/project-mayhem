@@ -60,12 +60,6 @@ function sendWeedPackClick(target) {
 
 weedPackCursor.querySelectorAll(".weed-pack-target").forEach((button) => {
   const target = button.dataset.target;
-  button.addEventListener("pointerdown", (event) => {
-    if (!weedPackActive || button.classList.contains("hidden")) return;
-    event.preventDefault();
-    event.stopPropagation();
-    sendWeedPackClick(target);
-  });
   button.addEventListener("click", (event) => {
     if (!weedPackActive || button.classList.contains("hidden")) return;
     event.preventDefault();
