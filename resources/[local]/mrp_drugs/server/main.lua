@@ -3,6 +3,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local activeCrafts = {}
 local activeStations = {}
 local lastCraftAt = {}
+local weedPackCooldownUntil = {}
 local lastSellAt = {}
 local zoneHeat = {}
 
@@ -284,9 +285,8 @@ local WEED_STAGE_SEQUENCES = {
         { name = 'dried', minMs = 8500 },
     },
     weed_pack = {
-        { name = 'weighed', minMs = 3000 },
-        { name = 'bagged', minMs = 300 },
-        { name = 'sealed', minMs = 300 },
+        { name = 'bag_ready', minMs = 300 },
+        { name = 'packed_five', minMs = 2500 },
     },
 }
 
@@ -459,6 +459,10 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraft', function(src, cb,
     end
 
     local now = GetGameTimer()
+    if productId == 'weed_pack' and (weedPackCooldownUntil[src] or 0) > now then
+        local seconds = math.ceil(((weedPackCooldownUntil[src] or 0) - now) / 1000)
+        return cb({ ok = false, reason = ('Palauk %d sek. prieš kitą 5 vnt. pakavimą.'):format(seconds) })
+    end
     if (lastCraftAt[src] or 0) + (Config.CraftCooldownMs or 4500) > now then
         return cb({ ok = false, reason = 'Palauk prieš kitą gamybą.' })
     end
@@ -549,6 +553,10 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
     end
 
     local now = GetGameTimer()
+    if productId == 'weed_pack' and (weedPackCooldownUntil[src] or 0) > now then
+        local seconds = math.ceil(((weedPackCooldownUntil[src] or 0) - now) / 1000)
+        return cb({ ok = false, reason = ('Palauk %d sek. prieš kitą 5 vnt. pakavimą.'):format(seconds) })
+    end
     if (lastCraftAt[src] or 0) + (Config.CraftCooldownMs or 4500) > now then
         return cb({ ok = false, reason = 'Palauk prieš kitą gamybą.' })
     end
@@ -762,6 +770,9 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
         rollPolice(prod.policeChance, src, 'craft_high')
     end
     logAdmin(('OK craft %s x%d cid=%s'):format(outItem, outAmt, Player.PlayerData.citizenid))
+    if active.productId == 'weed_pack' then
+        weedPackCooldownUntil[src] = GetGameTimer() + (Config.WeedPackCooldownMs or 10000)
+    end
 
     cb({
         ok = true,
@@ -2038,6 +2049,7 @@ AddEventHandler('playerDropped', function()
         refundPartial(Player, active.recipe, 100)
     end
     lastCraftAt[src] = nil
+    weedPackCooldownUntil[src] = nil
     lastSellAt[src] = nil
     mushroomPlayerCd[src] = nil
     weedPlayerCd[src] = nil

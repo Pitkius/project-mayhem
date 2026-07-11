@@ -100,6 +100,7 @@ local function cleanupSession(session)
     for _, entity in ipairs(session.entities or {}) do
         if DoesEntityExist(entity) then DeleteEntity(entity) end
     end
+    if session.packBudHash then SetModelAsNoLongerNeeded(session.packBudHash) end
     if session.cam and DoesCamExist(session.cam) then
         RenderScriptCams(false, true, 350, true, true)
         DestroyCam(session.cam, false)
@@ -108,6 +109,8 @@ local function cleanupSession(session)
     FreezeEntityPosition(ped, false)
     ClearPedTasks(ped)
     SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
+    hud('weedPackClose')
     hud('weed3dClose')
 end
 
@@ -130,8 +133,12 @@ local function reportServerStage(session, stage, onAccepted)
         if onAccepted then onAccepted() end
         return
     end
+    session.stageRequestId = (session.stageRequestId or 0) + 1
+    local requestId = session.stageRequestId
     QBCore.Functions.TriggerCallback('mrp_drugs:server:weedProductionStage', function(response)
         if active ~= session or session.finished then return end
+        if session.stageRequestId ~= requestId then return end
+        session.stageRequestId = requestId + 1
         if not response or not response.ok then
             finishSession(false, {
                 score = math.floor(session.score or 0),
@@ -142,6 +149,16 @@ local function reportServerStage(session, stage, onAccepted)
         end
         if onAccepted then onAccepted(response) end
     end, session.craftToken, stage)
+    CreateThread(function()
+        Wait(30000)
+        if active ~= session or session.finished or session.stageRequestId ~= requestId then return end
+        session.stageRequestId = requestId + 1
+        finishSession(false, {
+            score = math.floor(session.score or 0),
+            mistakes = (session.mistakes or 0) + 1,
+            reason = 'stage_timeout',
+        })
+    end)
 end
 
 local function finishAfterServerStage(session, stage, success, extra)
@@ -152,18 +169,27 @@ local function finishAfterServerStage(session, stage, success, extra)
 end
 
 local function createCamera(session)
-    session.camYaw = session.heading + 180.0
-    session.camPitch = -22.0
-    session.camDistance = 3.5
     session.cam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
     if not session.cam or session.cam == 0 then return false end
+    if session.mode == 'pack' then
+        local height = session.tableTop - session.tableOrigin.z
+        local cameraPos = offsetPoint(session.tableOrigin, session.heading, 0.0, -2.15, height + 1.45)
+        SetCamCoord(session.cam, cameraPos.x, cameraPos.y, cameraPos.z)
+        PointCamAtCoord(session.cam, session.lookAt.x, session.lookAt.y, session.lookAt.z)
+        SetCamFov(session.cam, 42.0)
+    else
+        session.camYaw = session.heading + 180.0
+        session.camPitch = -22.0
+        session.camDistance = 3.5
+        SetCamFov(session.cam, 45.0)
+    end
     SetCamActive(session.cam, true)
-    SetCamFov(session.cam, 45.0)
     RenderScriptCams(true, true, 350, true, true)
     return true
 end
 
 local function updateCamera(session)
+    if session.mode == 'pack' then return end
     local lookX = GetDisabledControlNormal(0, 1)
     local lookY = GetDisabledControlNormal(0, 2)
     session.camYaw = session.camYaw - lookX * 3.2
@@ -323,7 +349,6 @@ local function controls(session)
     DisableControlAction(0, 241, true)
     DisableControlAction(0, 242, true)
 
-    if session.stage == 'stage_pending' then return true end
     if IsDisabledControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 73) then
         finishSession(false, { score = math.floor(session.score or 0), mistakes = (session.mistakes or 0) + 1, reason = 'cancelled' })
         return false
@@ -423,110 +448,141 @@ local function setupProcess(session)
     return true
 end
 
+local function startPackingAnimation(session)
+    local dict = 'anim@amb@business@weed@weed_sorting_seated@'
+    local clip = 'sorter_right_sort_v3_weeddry01c'
+    RequestAnimDict(dict)
+    local deadline = GetGameTimer() + 5000
+    while not HasAnimDictLoaded(dict) and GetGameTimer() < deadline do Wait(10) end
+    if not HasAnimDictLoaded(dict) then return end
+    TaskPlayAnim(PlayerPedId(), dict, clip, 2.0, 2.0, -1, 1, 0.0, false, false, false)
+    session.animDict = dict
+end
+
+local function movePackObject(session, entity, target, durationMs, onDone)
+    if not entity or not DoesEntityExist(entity) then
+        if onDone then onDone() end
+        return
+    end
+    local start = GetEntityCoords(entity)
+    local startedAt = GetGameTimer()
+    CreateThread(function()
+        while active == session and DoesEntityExist(entity) do
+            local progress = clamp((GetGameTimer() - startedAt) / durationMs, 0.0, 1.0)
+            local eased = 1.0 - ((1.0 - progress) * (1.0 - progress))
+            local point = start + (target - start) * eased
+            SetEntityCoordsNoOffset(entity, point.x, point.y, point.z, false, false, false)
+            if progress >= 1.0 then break end
+            Wait(0)
+        end
+        if active == session and onDone then onDone() end
+    end)
+end
+
+local function spawnPackBud(session)
+    if active ~= session or session.packedCount >= session.packTarget then return end
+    local entity = registerEntity(session, createLocalObject(session.packBudHash, session.budSide, session.heading))
+    if not entity then
+        return finishSession(false, {
+            score = math.floor(session.score),
+            mistakes = session.mistakes + 1,
+            reason = 'bud_spawn_failed',
+        })
+    end
+    session.currentBud = entity
+    session.stage = 'packing'
+    session.packBusy = false
+    hud('weed3dUpdate', {
+        title = 'Žolė · pakavimas',
+        stage = '2/2',
+        hint = 'Paspausk ant žolės gabaliuko.',
+        packed = session.packedCount,
+        targetCount = session.packTarget,
+        score = math.floor(session.score),
+    })
+end
+
+local function handlePackClick(session, target)
+    if active ~= session or session.mode ~= 'pack' or session.packBusy then return false end
+    if target == 'bag' and session.stage == 'bag_select' then
+        session.packBusy = true
+        session.stage = 'moving'
+        movePackObject(session, session.bag.entity, session.bagCenter, 450, function()
+            session.stage = 'stage_pending'
+            reportServerStage(session, 'bag_ready', function()
+                session.packBusy = false
+                spawnPackBud(session)
+            end)
+        end)
+        return true
+    end
+    if target == 'bud' and session.stage == 'packing' and session.currentBud then
+        session.packBusy = true
+        session.stage = 'moving'
+        local bud = session.currentBud
+        session.currentBud = nil
+        movePackObject(session, bud, session.bagCenter + vector3(0.0, 0.0, 0.08), 500, function()
+            if DoesEntityExist(bud) then DeleteEntity(bud) end
+            session.packedCount = session.packedCount + 1
+            session.score = clamp(session.packedCount * 20, 0, 100)
+            hud('weed3dUpdate', {
+                title = 'Žolė · pakavimas',
+                stage = '2/2',
+                hint = session.packedCount >= session.packTarget
+                    and 'Supakuoti visi 5 žolės gabaliukai.'
+                    or 'Gabaliukas supakuotas. Pakuok kitą.',
+                packed = session.packedCount,
+                targetCount = session.packTarget,
+                score = math.floor(session.score),
+            })
+            if session.packedCount >= session.packTarget then
+                finishAfterServerStage(session, 'packed_five', true, {
+                    score = math.floor(session.score),
+                    mistakes = session.mistakes,
+                    packed = session.packedCount,
+                })
+            else
+                CreateThread(function()
+                    Wait(250)
+                    if active == session then spawnPackBud(session) end
+                end)
+            end
+        end)
+        return true
+    end
+    return false
+end
+
 local function setupPack(session)
-    session.stage = 'weighing'
+    session.stage = 'bag_select'
     session.score = 0
     session.mistakes = 0
-
+    session.packedCount = 0
+    session.packTarget = 5
+    session.packBusy = false
     local leafHash = loadFirstModel(MODELS.leaf)
-    local scaleHash = loadFirstModel(MODELS.scale)
     local bagHash = loadFirstModel(MODELS.bag)
-    if not leafHash or not scaleHash or not bagHash then
+    if not leafHash or not bagHash then
         return false, 'Nerasti pakavimui reikalingi objektų modeliai.'
     end
+    local surfaceHeight = session.tableTop - session.tableOrigin.z
+    session.bagSide = offsetPoint(session.tableOrigin, session.heading, -0.62, 0.0, surfaceHeight + 0.06)
+    session.bagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.10, surfaceHeight + 0.06)
+    session.budSide = offsetPoint(session.tableOrigin, session.heading, 0.62, 0.0, surfaceHeight + 0.08)
+    session.packBudHash = leafHash
 
-    local scalePos = offsetPoint(session.tableOrigin, session.heading, -0.52, 0.32, session.tableTop - session.tableOrigin.z + 0.04)
-    registerEntity(session, createLocalObject(scaleHash, scalePos, session.heading))
-
-    local bagPos = offsetPoint(session.tableOrigin, session.heading, 0.62, 0.32, session.tableTop - session.tableOrigin.z + 0.08)
+    local bagPos = session.bagSide
     local bagEntity = registerEntity(session, createLocalObject(bagHash, bagPos, session.heading))
+    if not bagEntity then return false, 'Nepavyko sukurti pakavimo maišelio.' end
     session.bag = {
         entity = bagEntity,
         kind = 'bag',
-        label = 'Pripildytas maišelis',
-        movable = false,
+        label = 'Tuščias maišelis',
     }
     session.items[#session.items + 1] = session.bag
-
-    for i = 1, 5 do
-        local pos = offsetPoint(session.tableOrigin, session.heading, -0.70 + (i - 1) * 0.35, -0.30, session.tableTop - session.tableOrigin.z + 0.10)
-        local entity = registerEntity(session, createLocalObject(leafHash, pos, session.heading + i * 11.0))
-        if not entity then return false, 'Nepavyko sukurti džiovintų žiedų.' end
-        session.items[#session.items + 1] = {
-            entity = entity,
-            kind = 'bud',
-            label = ('Džiovintas žiedas %d'):format(i),
-            weight = ({ 1.04, 0.93, 1.08, 0.97, 0.98 })[i],
-        }
-    end
-    SetModelAsNoLongerNeeded(leafHash)
-    SetModelAsNoLongerNeeded(scaleHash)
     SetModelAsNoLongerNeeded(bagHash)
-
-    local scaleSnap = {
-        id = 'scale',
-        coords = scalePos + vector3(0.0, 0.0, 0.16),
-        heading = session.heading,
-        radius = 0.28,
-        color = { 70, 170, 235 },
-        accept = function(entry) return entry.kind == 'bud' end,
-    }
-    scaleSnap.onPlace = function(entry, _, distance)
-        session.totalWeight = (session.totalWeight or 0) + entry.weight
-        session.score = session.score + math.floor(math.max(8, 16 - distance * 20))
-        SetEntityVisible(entry.entity, false, false)
-        SetEntityCollision(entry.entity, false, false)
-        hud('weed3dUpdate', {
-            title = 'Žolė · svėrimas',
-            stage = '1/3',
-            hint = 'Dėk likusius žiedus ant svarstyklių.',
-            weight = session.totalWeight,
-            target = '4.90–5.10 g',
-            score = math.floor(session.score),
-        })
-        if allPlaced(session, 'bud') then
-            session.stage = 'stage_pending'
-            reportServerStage(session, 'weighed', function()
-                session.stage = 'bagging'
-                session.bag.movable = true
-                session.bag.placed = false
-                session.snaps = {
-                    {
-                        id = 'sealer',
-                        coords = offsetPoint(session.tableOrigin, session.heading, 0.48, -0.05, session.tableTop - session.tableOrigin.z + 0.09),
-                        heading = session.heading,
-                        radius = 0.30,
-                        color = { 180, 100, 235 },
-                        accept = function(item) return item.kind == 'bag' end,
-                        onPlace = function()
-                            session.stage = 'stage_pending'
-                            reportServerStage(session, 'bagged', function()
-                                session.stage = 'sealing'
-                                session.stageStartedAt = GetGameTimer()
-                                session.snaps = {}
-                                local weightAccuracy = math.max(0, 20 - math.abs((session.totalWeight or 0) - 5.0) * 80)
-                                session.score = session.score + weightAccuracy
-                                hud('weed3dUpdate', {
-                                    title = 'Žolė · sandarinimas',
-                                    stage = '3/3',
-                                    hint = 'Spausk E, kai slėgio indikatorius bus žalioje zonoje.',
-                                    seal = 0,
-                                    score = math.floor(session.score),
-                                })
-                            end)
-                        end,
-                    },
-                }
-                hud('weed3dUpdate', {
-                    title = 'Žolė · pakavimas',
-                    stage = '2/3',
-                    hint = 'Paimk maišelį ir įstatyk į violetinį sandarinimo tašką.',
-                    weight = session.totalWeight,
-                })
-            end)
-        end
-    end
-    session.snaps = { scaleSnap }
+    startPackingAnimation(session)
+    hud('weedPackOpen', { packed = 0, targetCount = session.packTarget })
     return true
 end
 
@@ -590,15 +646,42 @@ local function updateSealing(session)
     end
 end
 
+local function screenTarget(coords)
+    local visible, x, y = GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z)
+    return {
+        visible = visible == true,
+        x = x,
+        y = y,
+    }
+end
+
+local function updatePackTargets(session)
+    if GetGameTimer() - (session.lastTargetHudAt or 0) < 100 then return end
+    session.lastTargetHudAt = GetGameTimer()
+    local bagVisible = session.stage == 'bag_select' and not session.packBusy
+    local budVisible = session.stage == 'packing' and not session.packBusy
+        and session.currentBud and DoesEntityExist(session.currentBud)
+    hud('weedPackTargets', {
+        bag = bagVisible and screenTarget(GetEntityCoords(session.bag.entity)) or { visible = false },
+        bud = budVisible and screenTarget(GetEntityCoords(session.currentBud)) or { visible = false },
+        packed = session.packedCount,
+        targetCount = session.packTarget,
+    })
+end
+
 local function runSession(session)
     CreateThread(function()
         while active == session and not session.finished do
             Wait(0)
             if not controls(session) then return end
             updateCamera(session)
+            if session.mode == 'pack' then
+                updatePackTargets(session)
+            end
             drawSnapPoints(session)
 
-            if session.stage == 'sorting' or session.stage == 'weighing' or session.stage == 'bagging' then
+            if session.mode ~= 'pack'
+                and (session.stage == 'sorting' or session.stage == 'weighing' or session.stage == 'bagging') then
                 updateSelection(session)
                 updateHeld(session)
                 if IsDisabledControlJustPressed(0, 38) then
@@ -629,6 +712,24 @@ local function runSession(session)
     end)
 end
 
+RegisterNUICallback('weedPackClick', function(data, cb)
+    local session = active
+    local accepted = session and handlePackClick(session, tostring(data and data.target or ''))
+    cb(accepted and 'ok' or 'ignored')
+end)
+
+RegisterNUICallback('weedPackCancel', function(_, cb)
+    local session = active
+    if session and session.mode == 'pack' then
+        finishSession(false, {
+            score = math.floor(session.score or 0),
+            mistakes = (session.mistakes or 0) + 1,
+            reason = 'cancelled',
+        })
+    end
+    cb('ok')
+end)
+
 function WeedProduction.Start(payload, onDone)
     if active then
         if onDone then onDone(false, { score = 0, mistakes = 1, reason = 'busy' }) end
@@ -644,11 +745,10 @@ function WeedProduction.Start(payload, onDone)
     local pedCoords = GetEntityCoords(ped)
     local heading = GetEntityHeading(ped)
     local origin = pedCoords + directionFromHeading(heading) * 1.35
-
-    local tableHash = loadFirstModel(MODELS.table)
-    if not tableHash then
-        if onDone then onDone(false, { score = 0, mistakes = 1, reason = 'table_model_missing' }) end
-        return false
+    local workspace = payload.workspace
+    if mode == 'pack' and workspace and workspace.x and workspace.y and workspace.z then
+        origin = vector3(workspace.x + 0.0, workspace.y + 0.0, workspace.z + 0.0)
+        heading = tonumber(workspace.w) or heading
     end
 
     local session = {
@@ -667,17 +767,50 @@ function WeedProduction.Start(payload, onDone)
     }
     active = session
 
-    local tableEntity = registerEntity(session, createLocalObject(tableHash, origin, heading))
-    if not tableEntity then
-        finishSession(false, { score = 0, mistakes = 1, reason = 'table_spawn_failed' })
-        return false
+    if mode == 'pack' then
+        local existingTable, existingTableHash
+        local findDeadline = GetGameTimer() + 8000
+        repeat
+            RequestCollisionAtCoord(origin.x, origin.y, origin.z)
+            local hash = joaat(MODELS.table[1])
+            local entity = GetClosestObjectOfType(origin.x, origin.y, origin.z, 5.0, hash, false, false, false)
+            if entity and entity ~= 0 and DoesEntityExist(entity) then
+                existingTable = entity
+                existingTableHash = hash
+            end
+            if not existingTable then Wait(100) end
+        until existingTable or GetGameTimer() >= findDeadline
+        if not existingTable then
+            finishSession(false, {
+                score = 0,
+                mistakes = 1,
+                reason = 'existing_table_not_found',
+            })
+            QBCore.Functions.Notify('Nerastas esamas pakavimo stalas.', 'error')
+            return false
+        end
+        session.tableOrigin = GetEntityCoords(existingTable)
+        session.heading = GetEntityHeading(existingTable)
+        local _, maxDim = GetModelDimensions(existingTableHash)
+        session.tableTop = session.tableOrigin.z + math.max(0.65, maxDim.z) + 0.03
+    else
+        local tableHash = loadFirstModel(MODELS.table)
+        if not tableHash then
+            finishSession(false, { score = 0, mistakes = 1, reason = 'table_model_missing' })
+            return false
+        end
+        local tableEntity = registerEntity(session, createLocalObject(tableHash, origin, heading))
+        if not tableEntity then
+            finishSession(false, { score = 0, mistakes = 1, reason = 'table_spawn_failed' })
+            return false
+        end
+        PlaceObjectOnGroundProperly(tableEntity)
+        FreezeEntityPosition(tableEntity, true)
+        session.tableOrigin = GetEntityCoords(tableEntity)
+        local _, maxDim = GetModelDimensions(tableHash)
+        session.tableTop = session.tableOrigin.z + math.max(0.65, maxDim.z) + 0.03
+        SetModelAsNoLongerNeeded(tableHash)
     end
-    PlaceObjectOnGroundProperly(tableEntity)
-    FreezeEntityPosition(tableEntity, true)
-    SetModelAsNoLongerNeeded(tableHash)
-    session.tableOrigin = GetEntityCoords(tableEntity)
-    local _, maxDim = GetModelDimensions(tableHash)
-    session.tableTop = session.tableOrigin.z + math.max(0.65, maxDim.z) + 0.03
     session.lookAt = vector3(session.tableOrigin.x, session.tableOrigin.y, session.tableTop + 0.08)
 
     if not createCamera(session) then
@@ -685,6 +818,10 @@ function WeedProduction.Start(payload, onDone)
         return false
     end
 
+    if mode == 'pack' then
+        TaskTurnPedToFaceCoord(ped, session.tableOrigin.x, session.tableOrigin.y, session.tableTop, 600)
+        Wait(600)
+    end
     FreezeEntityPosition(ped, true)
     SetNuiFocus(false, false)
     local ok, reason = mode == 'process' and setupProcess(session) or setupPack(session)
@@ -694,10 +831,18 @@ function WeedProduction.Start(payload, onDone)
     end
 
     hud('weed3dOpen', {
-        title = mode == 'process' and 'Žolė · rūšiavimas' or 'Žolė · svėrimas',
-        stage = mode == 'process' and '1/2' or '1/3',
-        hint = 'Pelė – kamera · E – paimti/padėti · ratukas – sukti · ESC – atšaukti',
+        title = mode == 'process' and 'Žolė · rūšiavimas' or 'Žolė · pakavimas',
+        stage = mode == 'process' and '1/2' or '1/2',
+        hint = mode == 'process'
+            and 'Pelė – kamera · E – paimti/padėti · ratukas – sukti · ESC – atšaukti'
+            or 'Kursoriumi paspausk ant maišelio, tada ant žolės gabaliukų.',
+        packed = mode == 'pack' and 0 or nil,
+        targetCount = mode == 'pack' and 5 or nil,
     })
+    if mode == 'pack' then
+        SetNuiFocus(true, true)
+        SetNuiFocusKeepInput(false)
+    end
     runSession(session)
     return true
 end

@@ -50,6 +50,7 @@ Config.DevHub = {
     spacing = 3.5,
 }
 Config.CraftCooldownMs = 4500
+Config.WeedPackCooldownMs = 10000
 Config.SellCooldownMs = 6000
 
 -- Laikinai išjungta, kol serverio etapų protokolas galės autoritetingai
@@ -1157,6 +1158,7 @@ Config.WeedCayoLab = {
             level = 2,
             coords = vector3(5196.0693, -5133.6929, 3.3579),
             heading = 255.6201,
+            workspace = vector4(5196.40, -5133.20, 3.35, 180.0),
             radius = 1.5,
             products = { 'weed_pack' },
         },
@@ -1166,6 +1168,7 @@ Config.WeedCayoLab = {
             level = 2,
             coords = vector3(5195.5938, -5136.1323, 3.3498),
             heading = 269.6169,
+            workspace = vector4(5196.40, -5133.20, 3.35, 180.0),
             radius = 1.5,
             products = { 'weed_pack' },
         },

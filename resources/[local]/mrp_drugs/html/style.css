@@ -1430,3 +1430,54 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   font-size: 12px;
   font-weight: 700;
 }
+
+.weed-pack-cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+}
+
+.weed-pack-target {
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  color: #f0fff4;
+  background: rgba(18, 35, 24, 0.28);
+  border: 2px solid rgba(154, 230, 180, 0.82);
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 0 0 8px rgba(104, 211, 145, 0.10), 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.weed-pack-target:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+  background: rgba(54, 105, 70, 0.52);
+}
+
+.weed-pack-target span {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  padding: 4px 8px;
+  transform: translateX(-50%);
+  color: #f0fff4;
+  background: rgba(8, 18, 12, 0.9);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.weed-pack-bud {
+  border-color: rgba(104, 211, 145, 0.95);
+}
+
+.weed-pack-bag {
+  border-color: rgba(246, 224, 94, 0.95);
+  box-shadow: 0 0 0 8px rgba(246, 224, 94, 0.10), 0 8px 24px rgba(0, 0, 0, 0.35);
+}

@@ -68,8 +68,8 @@ local function spawnEquipment(e)
     SetModelAsNoLongerNeeded(joaat(model))
 end
 
-local function runSchedule(productId, profile, prod, onDone, craftToken)
-    exports[GetCurrentResourceName()]:RunScheduleMinigame(productId, profile, prod, onDone, craftToken)
+local function runSchedule(productId, profile, prod, onDone, craftToken, workspace)
+    exports[GetCurrentResourceName()]:RunScheduleMinigame(productId, profile, prod, onDone, craftToken, workspace)
 end
 
 local function runEquipmentCraftFlow(productId, equipmentId)
@@ -107,7 +107,14 @@ local function runEquipmentCraftFlow(productId, equipmentId)
                 disableCombat = true,
             }, nil, function(ok)
                 if not ok then return afterMinigame(false) end
-                runSchedule(productId, profile, prod, afterMinigame, res.token)
+                local equipment = EquipmentMeta[equipmentId]
+                local workspace = equipment and {
+                    x = equipment.x,
+                    y = equipment.y,
+                    z = equipment.z,
+                    w = equipment.heading or 0.0,
+                } or nil
+                runSchedule(productId, profile, prod, afterMinigame, res.token, workspace)
             end, function()
                 afterMinigame(false)
             end)

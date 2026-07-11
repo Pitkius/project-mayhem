@@ -38,6 +38,28 @@ const weed3dMetrics = document.getElementById("weed3dMetrics");
 const weed3dScore = document.getElementById("weed3dScore");
 const weed3dMistakes = document.getElementById("weed3dMistakes");
 
+const weedPackCursor = document.createElement("div");
+weedPackCursor.id = "weedPackCursor";
+weedPackCursor.className = "weed-pack-cursor hidden";
+weedPackCursor.innerHTML = `
+  <button type="button" class="weed-pack-target weed-pack-bag hidden" data-target="bag">
+    <span>Maišelis</span>
+  </button>
+  <button type="button" class="weed-pack-target weed-pack-bud hidden" data-target="bud">
+    <span>Žolė</span>
+  </button>`;
+document.body.appendChild(weedPackCursor);
+const weedPackBag = weedPackCursor.querySelector('[data-target="bag"]');
+const weedPackBud = weedPackCursor.querySelector('[data-target="bud"]');
+let weedPackActive = false;
+
+weedPackCursor.querySelectorAll(".weed-pack-target").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (!weedPackActive || button.classList.contains("hidden")) return;
+    post("weedPackClick", { target: button.dataset.target });
+  });
+});
+
 let state = { products: [], selectedId: null, isWeaponMode: false };
 
 function updateWeed3dHud(data, reset = false) {
@@ -57,6 +79,7 @@ function updateWeed3dHud(data, reset = false) {
   if (d.target !== undefined) rows.push(["Tikslas", String(d.target)]);
   if (d.remaining !== undefined) rows.push(["Liko", `${Math.ceil(Number(d.remaining) / 1000)} s`]);
   if (d.seal !== undefined) rows.push(["Slėgis", `${Math.round(Number(d.seal) * 100)}%`]);
+  if (d.packed !== undefined) rows.push(["Supakuota", `${Number(d.packed) || 0}/${Number(d.targetCount) || 5}`]);
   if (rows.length > 0) {
     weed3dMetrics.replaceChildren(...rows.map(([label, value]) => {
       const row = document.createElement("span");
@@ -67,6 +90,16 @@ function updateWeed3dHud(data, reset = false) {
       return row;
     }));
   }
+}
+
+function positionWeedPackTarget(button, target) {
+  const visible = target && target.visible && Number.isFinite(target.x) && Number.isFinite(target.y);
+  button.classList.toggle("hidden", !visible);
+  if (!visible) return;
+  const x = Math.min(0.96, Math.max(0.04, target.x));
+  const y = Math.min(0.94, Math.max(0.06, target.y));
+  button.style.left = `${x * 100}%`;
+  button.style.top = `${y * 100}%`;
 }
 
 function post(name, data = {}) {
@@ -208,6 +241,8 @@ window.addEventListener("message", (e) => {
     if (cancelSkillGame) cancelSkillGame(false);
     if (cancelAdvancedGame) cancelAdvancedGame(false);
     weed3dHud.classList.add("hidden");
+    weedPackActive = false;
+    weedPackCursor.classList.add("hidden");
     app.classList.add("hidden");
     mgSkill.classList.add("hidden");
     mgAdvanced.classList.add("hidden");
@@ -225,6 +260,21 @@ window.addEventListener("message", (e) => {
   if (msg.action === "weed3dClose") {
     weed3dHud.classList.add("hidden");
     if (weed3dMetrics) weed3dMetrics.innerHTML = "";
+  }
+  if (msg.action === "weedPackOpen") {
+    weedPackActive = true;
+    weedPackCursor.classList.remove("hidden");
+  }
+  if (msg.action === "weedPackTargets") {
+    const data = msg.data || {};
+    positionWeedPackTarget(weedPackBag, data.bag);
+    positionWeedPackTarget(weedPackBud, data.bud);
+  }
+  if (msg.action === "weedPackClose") {
+    weedPackActive = false;
+    weedPackCursor.classList.add("hidden");
+    weedPackBag.classList.add("hidden");
+    weedPackBud.classList.add("hidden");
   }
   if (msg.action === "craftProgress") {
     showCraftProgress(msg.data);
@@ -339,6 +389,11 @@ function runAdvancedGame(rounds) {
 
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
+  if (weedPackActive) {
+    e.preventDefault();
+    post("weedPackCancel");
+    return;
+  }
   if (cancelSkillGame && !mgSkill.classList.contains("hidden")) {
     cancelSkillGame(false);
   }

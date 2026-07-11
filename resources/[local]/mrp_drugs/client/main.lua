@@ -275,7 +275,7 @@ local function runAdvancedMinigame(onDone)
     SetNuiFocus(true, true)
 end
 
-local function runScheduleMinigame(productId, profile, prod, onDone, craftToken)
+local function runScheduleMinigame(productId, profile, prod, onDone, craftToken, workspace)
     closeUi()
     Wait(200)
     local sessionId = beginMinigame(onDone)
@@ -291,12 +291,29 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken)
     local weed3dMode = profile.drug == 'weed'
         and (profile.mode == 'weed_dry' or profile.mode == 'weed_pack')
     if weed3dMode and WeedProduction and WeedProduction.Start then
+        if not workspace and currentStationId and Config.GetAllCraftStations then
+            for _, station in ipairs(Config.GetAllCraftStations()) do
+                if station.id == currentStationId then
+                    local point = station.workspace or station.coords
+                    if point then
+                        workspace = {
+                            x = point.x,
+                            y = point.y,
+                            z = point.z,
+                            w = point.w or station.heading or 0.0,
+                        }
+                    end
+                    break
+                end
+            end
+        end
         WeedProduction.Start({
             sessionId = sessionId,
             craftToken = craftToken,
             productId = productId,
             mode = profile.mode,
             quantity = (prod and prod.outputAmount) or 1,
+            workspace = workspace,
         }, function(success, extra)
             closeActiveMinigame(success, extra or {}, sessionId)
         end)
@@ -428,6 +445,7 @@ end
 
 local function startCraftFlow(productId)
     if not currentStationId then return end
+    local craftStationId = currentStationId
     QBCore.Functions.TriggerCallback('mrp_drugs:server:startCraft', function(res)
         if not res or not res.ok then
             return QBCore.Functions.Notify((res and res.reason) or 'Gamyba negalima.', 'error')
@@ -453,9 +471,17 @@ local function startCraftFlow(productId)
         if mg == 'schedule' then
             local profile = Config.GetScheduleMinigame and Config.GetScheduleMinigame(productId)
             local prod = Config.Products and Config.Products[productId]
+            local station = getStationById(craftStationId)
+            local point = station and (station.workspace or station.coords)
+            local workspace = point and {
+                x = point.x,
+                y = point.y,
+                z = point.z,
+                w = point.w or station.heading or 0.0,
+            } or nil
             runProgress(res.label, math.floor((res.craftTimeMs or 20000) * 0.25), function(ok)
                 if not ok then return afterMinigame(false) end
-                runScheduleMinigame(productId, profile, prod, afterMinigame, res.token)
+                runScheduleMinigame(productId, profile, prod, afterMinigame, res.token, workspace)
             end)
         elseif mg == 'progress' then
             runProgress(res.label, res.craftTimeMs or 25000, afterMinigame)
@@ -1752,12 +1778,12 @@ AddEventHandler('baseevents:onPlayerKilled', function()
     cancelPlayerProduction('player_killed')
 end)
 
-exports('RunScheduleMinigame', function(productId, profile, prod, onDone, craftToken)
+exports('RunScheduleMinigame', function(productId, profile, prod, onDone, craftToken, workspace)
     if type(productId) == 'table' and onDone == nil then
         onDone = profile
         profile = productId
         productId = nil
         prod = nil
     end
-    runScheduleMinigame(productId, profile, prod, onDone, craftToken)
+    runScheduleMinigame(productId, profile, prod, onDone, craftToken, workspace)
 end)
