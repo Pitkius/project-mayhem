@@ -785,14 +785,13 @@ cachePackScreenAnchors = function(session)
 end
 
 local function screenTargetForPack(session, coords, anchorKey, active)
-    local visible, x, y = projectToScreen(coords)
-    if not visible and session.packAnchors and session.packAnchors[anchorKey] then
+    local projected, x, y = projectToScreen(coords)
+    if not projected and session.packAnchors and session.packAnchors[anchorKey] then
         local anchor = session.packAnchors[anchorKey]
         x = anchor.x
         y = anchor.y
-        visible = true
     end
-    if not visible then
+    if not x or not y then
         if anchorKey == 'bag' then
             x, y = 0.40, 0.56
         else
@@ -802,6 +801,7 @@ local function screenTargetForPack(session, coords, anchorKey, active)
     return {
         visible = active == true,
         active = active == true,
+        projected = projected == true,
         x = x,
         y = y,
     }

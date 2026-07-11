@@ -53,27 +53,35 @@ const weedPackBag = weedPackCursor.querySelector('[data-target="bag"]');
 const weedPackBud = weedPackCursor.querySelector('[data-target="bud"]');
 let weedPackActive = false;
 let weedPackTargets = { bag: null, bud: null };
+let weedPackClickLocked = false;
 
 function sendWeedPackClick(target) {
-  if (!weedPackActive || !target) return;
+  if (!weedPackActive || !target || weedPackClickLocked) return;
+  weedPackClickLocked = true;
   post("weedPackClick", { target });
+  window.setTimeout(() => {
+    weedPackClickLocked = false;
+  }, 350);
 }
 
-weedPackCursor.addEventListener("mousedown", (event) => {
+function handleWeedPackPointer(event) {
   if (!weedPackActive || event.button !== 0) return;
+  // Only one pack object is active at a time. GTA's world-to-screen native can
+  // fail with a scripted camera, so a stale fallback coordinate must never
+  // make the highlighted object unclickable.
   const activeTarget = ["bag", "bud"].find((name) => {
     const target = weedPackTargets[name];
-    if (!target || target.active !== true || target.visible === false) return false;
-    const x = Number(target.x) * window.innerWidth;
-    const y = Number(target.y) * window.innerHeight;
-    const radius = name === "bag" ? 72 : 64;
-    return Math.hypot(event.clientX - x, event.clientY - y) <= radius;
+    return target && target.active === true && target.visible !== false;
   });
   if (!activeTarget) return;
   event.preventDefault();
   event.stopPropagation();
   sendWeedPackClick(activeTarget);
-});
+}
+
+weedPackCursor.addEventListener("pointerdown", handleWeedPackPointer);
+weedPackCursor.addEventListener("mousedown", handleWeedPackPointer);
+weedPackCursor.addEventListener("click", handleWeedPackPointer);
 
 let state = { products: [], selectedId: null, isWeaponMode: false };
 
@@ -280,6 +288,7 @@ window.addEventListener("message", (e) => {
   }
   if (msg.action === "weedPackOpen") {
     weedPackActive = true;
+    weedPackClickLocked = false;
     weedPackTargets = { bag: null, bud: null };
     weedPackCursor.classList.remove("hidden");
   }
@@ -294,6 +303,7 @@ window.addEventListener("message", (e) => {
   }
   if (msg.action === "weedPackClose") {
     weedPackActive = false;
+    weedPackClickLocked = false;
     weedPackTargets = { bag: null, bud: null };
     weedPackCursor.classList.add("hidden");
     weedPackBag.classList.add("hidden");
