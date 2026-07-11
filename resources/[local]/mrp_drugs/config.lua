@@ -661,6 +661,89 @@ Config.TestSupplyShopNPC = {
     label = 'Nelegalūs reikmenys (test)',
 }
 
+--- Nemokama QA parduotuvė — visi narkotikai / skysčiai / cart visiems lygiams (LS airport)
+Config.FreeDrugShopNPC = {
+    enabled = true,
+    model = 's_m_y_dealer_01',
+    coords = vector4(-892.3434, -3178.8337, 13.9443, 240.0),
+    scenario = 'WORLD_HUMAN_SMOKING',
+    label = 'Nemokami narkotikai (test)',
+    maxDistance = 3.5,
+    targetIcon = 'fas fa-gift',
+    --- Atidarius parduotuvę automatiškai atrakina L1–L3 gamybos lygius.
+    unlockAllLevels = true,
+    blip = {
+        enabled = true,
+        sprite = 496,
+        color = 2,
+        scale = 0.85,
+        shortRange = true,
+        label = 'Nemokami narkotikai (test)',
+    },
+}
+
+Config.FreeDrugShop = {
+    name = 'fivempro-free-drug-shop',
+    label = 'Nemokami narkotikai (test)',
+    items = {
+        -- L1 žaliava
+        { name = 'hemp_trim', amount = 999, price = 0, slot = 1 },
+        { name = 'alcohol_base', amount = 999, price = 0, slot = 2 },
+        { name = 'vape_liquid_base', amount = 999, price = 0, slot = 3 },
+        -- L1 tarpiniai
+        { name = 'thc_resin', amount = 999, price = 0, slot = 4 },
+        { name = 'moonshine_spirit', amount = 999, price = 0, slot = 5 },
+        { name = 'vape_mix', amount = 999, price = 0, slot = 6 },
+        -- L1 galutiniai
+        { name = 'thc_cart', amount = 999, price = 0, slot = 7 },
+        { name = 'illegal_alcohol', amount = 999, price = 0, slot = 8 },
+        { name = 'vape_liquid', amount = 999, price = 0, slot = 9 },
+        -- L2 žaliava
+        { name = 'weed_leaf', amount = 999, price = 0, slot = 10 },
+        { name = 'poppy_flower', amount = 999, price = 0, slot = 11 },
+        { name = 'meth_ingredient', amount = 999, price = 0, slot = 12 },
+        { name = 'pill_powder', amount = 999, price = 0, slot = 13 },
+        { name = 'mushroom_raw', amount = 999, price = 0, slot = 14 },
+        -- L2 tarpiniai
+        { name = 'weed_buds', amount = 999, price = 0, slot = 15 },
+        { name = 'heroin_paste', amount = 999, price = 0, slot = 16 },
+        { name = 'meth_crystal', amount = 999, price = 0, slot = 17 },
+        { name = 'pill_tablets', amount = 999, price = 0, slot = 18 },
+        { name = 'mushroom_dried', amount = 999, price = 0, slot = 19 },
+        -- L2 galutiniai
+        { name = 'weed_bag', amount = 999, price = 0, slot = 20 },
+        { name = 'heroin_bag', amount = 999, price = 0, slot = 21 },
+        { name = 'meth_bag', amount = 999, price = 0, slot = 22 },
+        { name = 'pills_pack', amount = 999, price = 0, slot = 23 },
+        { name = 'mushroom_pack', amount = 999, price = 0, slot = 24 },
+        -- L3 žaliava / tarpiniai / galutiniai
+        { name = 'cartel_raw', amount = 999, price = 0, slot = 25 },
+        { name = 'chemical_mix', amount = 999, price = 0, slot = 26 },
+        { name = 'amp_precursor', amount = 999, price = 0, slot = 27 },
+        { name = 'cartel_blend', amount = 999, price = 0, slot = 28 },
+        { name = 'amp_paste', amount = 999, price = 0, slot = 29 },
+        { name = 'cartel_pack', amount = 999, price = 0, slot = 30 },
+        { name = 'amphetamine_bag', amount = 999, price = 0, slot = 31 },
+        -- Bendri gamybos reikmenys
+        { name = 'empty_bag', amount = 999, price = 0, slot = 32 },
+        { name = 'empty_cart', amount = 999, price = 0, slot = 33 },
+        { name = 'empty_bottle', amount = 999, price = 0, slot = 34 },
+        { name = 'filter', amount = 999, price = 0, slot = 35 },
+        { name = 'gloves', amount = 999, price = 0, slot = 36 },
+        { name = 'scale', amount = 999, price = 0, slot = 37 },
+        { name = 'lab_kit', amount = 999, price = 0, slot = 38 },
+        { name = 'burner', amount = 999, price = 0, slot = 39 },
+        { name = 'pill_press', amount = 999, price = 0, slot = 40 },
+        { name = 'bagging_table', amount = 999, price = 0, slot = 41 },
+        { name = 'trimming_scissors', amount = 999, price = 0, slot = 42 },
+        -- Žolės auginimas
+        { name = 'weed_seed', amount = 999, price = 0, slot = 43 },
+        { name = 'grow_pot', amount = 999, price = 0, slot = 44 },
+        { name = 'weed_nutrition', amount = 999, price = 0, slot = 45 },
+        { name = 'watering_can', amount = 999, price = 0, slot = 46, info = { water = 100 } },
+    },
+}
+
 --- Produktų supirkėjai (production) — NPC perka tik supakuotus galutinius produktus
 Config.ProductBuyerNPCs = {
     alcohol = {
@@ -1534,5 +1617,6 @@ Config.WorldSiteIndex = {
     { id = 'buyer_amp',          category = 'buyer',   label = 'Amfetamino supirkėjas',         coords = '1905.02, 4918.04, 48.86',    desc = 'Perka amphetamine_bag' },
     -- Test zona (LS airport)
     { id = 'dev_hub',            category = 'test',    label = 'Test: narkotikai ir ginklai',   coords = '-886.92, -3208.01, 13.94',  desc = 'Dev eilė — tik kai EnableDrugTestNPC' },
+    { id = 'free_drug_shop',     category = 'test',    label = 'Nemokami narkotikai (test)',    coords = '-892.34, -3178.83, 13.94',  desc = 'Visi narkotikai / skysčiai / cart nemokamai' },
     { id = 'lsd_planned',        category = 'planned', label = 'LSD planuojama',                coords = 'nil',                         desc = 'Įrašyk coords į Config.PlannedSites.lsd_tablet' },
 }

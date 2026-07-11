@@ -6,6 +6,7 @@ local testPed = 0
 local testSupplyShopPed = 0
 local supplyShopPed = 0
 local weedSupplyShopPed = 0
+local freeDrugShopPed = 0
 local supplyShopBlip = nil
 local productBuyerPeds = {}
 local drugNpcsSpawning = false
@@ -19,7 +20,7 @@ local npcModelLoading = {}
 local npcSpawnRetryAt = {}
 local closeActiveMinigame
 
-local openMaterialShop, openWeaponPartsMenu, openWeedSupplyShop, openLsQuickBuyMenu, openTestMenu
+local openMaterialShop, openWeaponPartsMenu, openWeedSupplyShop, openFreeDrugShop, openLsQuickBuyMenu, openTestMenu
 
 local function nui(msg, data)
     SendNUIMessage({ action = msg, data = data or {} })
@@ -853,6 +854,15 @@ local function setupStationBlips()
         end
     end
 
+    local freeShop = Config.FreeDrugShopNPC
+    if freeShop and freeShop.enabled ~= false and freeShop.coords then
+        addCfgBlip(
+            vector3(freeShop.coords.x, freeShop.coords.y, freeShop.coords.z),
+            freeShop.blip or { enabled = true, sprite = 496, color = 2, scale = 0.85, label = freeShop.label },
+            freeShop.label
+        )
+    end
+
     if not Config.ShowStationBlips then return end
     local hub = Config.DevHub
     local def = Config.StationBlip or {}
@@ -991,6 +1001,16 @@ openWeedSupplyShop = function()
     QBCore.Functions.TriggerCallback('mrp_drugs:server:openWeedSupplyShop', function(res)
         if res and res.ok then
             QBCore.Functions.Notify('Pirk sėklas ir vazonus — sodink kur nori.', 'primary', 4500)
+            return
+        end
+        QBCore.Functions.Notify((res and res.reason) or 'Parduotuvė neprieinama.', 'error')
+    end)
+end
+
+openFreeDrugShop = function()
+    QBCore.Functions.TriggerCallback('mrp_drugs:server:openFreeDrugShop', function(res)
+        if res and res.ok then
+            QBCore.Functions.Notify('Visi narkotikai nemokami — tempk į inventorių.', 'success', 4500)
             return
         end
         QBCore.Functions.Notify((res and res.reason) or 'Parduotuvė neprieinama.', 'error')
@@ -1254,6 +1274,11 @@ local function setupNpcTargetZones()
         addNpcCircleZone('mrp_drugs_weed_supply', weedShop, openWeedSupplyShop, weedShop.label)
     end
 
+    local freeShop = Config.FreeDrugShopNPC
+    if freeShop and freeShop.enabled ~= false then
+        addNpcCircleZone('mrp_drugs_free_drug_shop', freeShop, openFreeDrugShop, freeShop.label)
+    end
+
     if Config.EnableDrugTestNPC then
         if Config.TestSupplyShopNPC then
             addNpcCircleZone('mrp_drugs_test_supply', Config.TestSupplyShopNPC, openMaterialShop)
@@ -1375,6 +1400,24 @@ local function spawnSupplyShopNpc()
     createSupplyShopBlip()
 end
 
+local function spawnFreeDrugShopNpc()
+    local cfg = Config.FreeDrugShopNPC
+    if not cfg or cfg.enabled == false or not cfg.coords then return end
+    if freeDrugShopPed ~= 0 then safeDeleteHubPed(freeDrugShopPed) end
+    freeDrugShopPed = spawnHubPed(cfg, function(ped)
+        exports['qb-target']:AddTargetEntity(ped, {
+            options = {
+                {
+                    icon = cfg.targetIcon or 'fas fa-gift',
+                    label = cfg.label or 'Nemokami narkotikai (test)',
+                    action = openFreeDrugShop,
+                },
+            },
+            distance = (cfg.maxDistance or Config.InteractDistance or 2.5) + 1.0,
+        })
+    end)
+end
+
 local function spawnTestSupplyShopNpc()
     if not Config.EnableDrugTestNPC or not Config.TestSupplyShopNPC then return end
     local cfg = Config.TestSupplyShopNPC
@@ -1494,6 +1537,11 @@ CreateThread(function()
             checkNpc(weedShop.coords)
         end
 
+        local freeShop = Config.FreeDrugShopNPC
+        if freeShop and freeShop.enabled ~= false then
+            checkNpc(freeShop.coords)
+        end
+
         for _, key in ipairs({ 'TestNPC', 'TestSupplyShopNPC' }) do
             local npc = Config[key]
             if Config.EnableDrugTestNPC and npc then
@@ -1550,6 +1598,8 @@ local function spawnAllDrugNpcs()
     Wait(200)
     spawnWeedSupplyShopNpc()
     Wait(200)
+    spawnFreeDrugShopNpc()
+    Wait(200)
     spawnTestSupplyShopNpc()
     Wait(200)
     spawnProductBuyerNpcs()
@@ -1568,6 +1618,11 @@ local function ensureDrugNpcsAlive()
     local weedShop = Config.WeedSupplyShopNPC
     if weedShop and weedShop.enabled ~= false and (weedSupplyShopPed == 0 or not DoesEntityExist(weedSupplyShopPed)) then
         spawnWeedSupplyShopNpc()
+    end
+
+    local freeShop = Config.FreeDrugShopNPC
+    if freeShop and freeShop.enabled ~= false and (freeDrugShopPed == 0 or not DoesEntityExist(freeDrugShopPed)) then
+        spawnFreeDrugShopNpc()
     end
 
     if Config.EnableDrugTestNPC then

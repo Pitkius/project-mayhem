@@ -923,9 +923,9 @@ local function playerNearSupplyShop(src)
             return true
         end
     end
-    for _, key in ipairs({ 'TestSupplyShopNPC', 'TestNPC' }) do
+    for _, key in ipairs({ 'TestSupplyShopNPC', 'TestNPC', 'FreeDrugShopNPC' }) do
         local cfg = Config[key]
-        if cfg and cfg.coords then
+        if cfg and cfg.coords and cfg.enabled ~= false then
             local c = cfg.coords
             if #(p - vector3(c.x, c.y, c.z)) <= maxD then
                 return true
@@ -1923,9 +1923,86 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:openWeedSupplyShop', function(
     cb({ ok = ok, reason = reason })
 end)
 
+local function registerFreeDrugShop()
+    if GetResourceState('qb-inventory') ~= 'started' then return false end
+    local cfg = Config.FreeDrugShop
+    local npc = Config.FreeDrugShopNPC
+    if not cfg or not cfg.name or not cfg.items or not npc or npc.enabled == false then return false end
+    local validItems = {}
+    for _, row in ipairs(cfg.items) do
+        if resolveSharedItem(row.name) then
+            validItems[#validItems + 1] = row
+        else
+            logAdmin(('FreeDrugShop praleidžia nežinomą item: %s'):format(tostring(row.name)))
+        end
+    end
+    if #validItems == 0 then return false end
+    local maxSlot = 0
+    for _, row in ipairs(validItems) do
+        maxSlot = math.max(maxSlot, tonumber(row.slot) or 0)
+    end
+    local shopCoords = npc.coords and vector3(npc.coords.x, npc.coords.y, npc.coords.z) or nil
+    exports['qb-inventory']:CreateShop({
+        name = cfg.name,
+        label = cfg.label or 'Nemokami narkotikai (test)',
+        coords = shopCoords,
+        slots = math.max(maxSlot, #validItems),
+        items = validItems,
+    })
+    return true
+end
+
+local function playerNearFreeDrugShop(src)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local p = GetEntityCoords(ped)
+    local cfg = Config.FreeDrugShopNPC
+    if not cfg or cfg.enabled == false or not cfg.coords then return false end
+    local c = cfg.coords
+    return #(p - vector3(c.x, c.y, c.z)) <= (cfg.maxDistance or (Config.InteractDistance or 2.5) + 3.0)
+end
+
+local function tryOpenFreeDrugShop(src)
+    if not playerNearFreeDrugShop(src) then
+        return false, 'Per toli nuo parduotuvės.'
+    end
+    local npc = Config.FreeDrugShopNPC
+    if npc and npc.unlockAllLevels and DrugPlayer and DrugPlayer.unlockAllLevels then
+        local ok, changed = DrugPlayer.unlockAllLevels(src, 3)
+        if ok and changed then
+            TriggerClientEvent('QBCore:Notify', src, 'Test režimas: atrakinti visi gamybos lygiai (L1–L3).', 'success')
+        end
+    end
+    if GetResourceState('qb-inventory') ~= 'started' then
+        return false, 'Inventoriaus sistema nepasiekiama.'
+    end
+    if not registerFreeDrugShop() then
+        return false, 'Parduotuvė nepasiekiama (prekės neįkeltos).'
+    end
+    local opened = exports['qb-inventory']:OpenShop(src, Config.FreeDrugShop.name)
+    if not opened then
+        return false, 'Nepavyko atidaryti parduotuvės.'
+    end
+    return true
+end
+
+RegisterNetEvent('mrp_drugs:server:openFreeDrugShop', function()
+    local src = source
+    local ok, reason = tryOpenFreeDrugShop(src)
+    if not ok then
+        TriggerClientEvent('QBCore:Notify', src, reason or 'Parduotuvė neprieinama.', 'error')
+    end
+end)
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:openFreeDrugShop', function(src, cb)
+    local ok, reason = tryOpenFreeDrugShop(src)
+    cb({ ok = ok, reason = reason })
+end)
+
 CreateThread(function()
     Wait(1700)
     registerWeedSupplyShop()
+    registerFreeDrugShop()
 end)
 
 AddEventHandler('onResourceStart', function(res)
@@ -1933,6 +2010,7 @@ AddEventHandler('onResourceStart', function(res)
     CreateThread(function()
         Wait(900)
         registerWeedSupplyShop()
+        registerFreeDrugShop()
     end)
 end)
 

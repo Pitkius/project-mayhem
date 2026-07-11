@@ -252,6 +252,22 @@ function DrugPlayer.levelUnlocked(src, level)
     return (row.level_unlocked or 1) >= level
 end
 
+--- Test QA: atrakina L1–L3 gamybos lygius (naudojama nemokamos parduotuvės NPC).
+function DrugPlayer.unlockAllLevels(src, maxLevel)
+    if not (Config.DrugProgression and Config.DrugProgression.enabled) then return true, false end
+    local citizenid = citizenOf(src)
+    if not citizenid then return false, false end
+    local row = DrugPlayer.getByCitizen(citizenid)
+    if not row then return false, false end
+    maxLevel = math.max(1, math.min(3, tonumber(maxLevel) or 3))
+    local previous = row.level_unlocked or 1
+    if previous >= maxLevel then return true, false end
+    row.level_unlocked = maxLevel
+    persist(citizenid)
+    DrugPlayer.syncClient(src)
+    return true, true
+end
+
 -- ── Pardavimo progresas ────────────────────────────────────────────
 --- Iškviečiama serverio pusėje po SĖKMINGO pardavimo (parduota `amount` vnt. `itemName`).
 --- Prideda realų kiekį prie atitinkamo lygio, tikrina atrakinimus, siunčia SMS,
