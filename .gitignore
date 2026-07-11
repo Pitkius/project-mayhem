@@ -33,3 +33,14 @@ citizen/system_resources/
 
 # Vietinis šrifto konvertavimas (GFX build)
 _font_build/
+
+# Laikini išarchyvavimo/darbo aplankai
+_tmp_mrpd_extract/
+_tmp_vehicle_packs/
+_MRPD_BACKUP/
+
+# TypeScript build cache (mrp_drugs web)
+**/tsconfig.tsbuildinfo
+
+# Nenaudojamas MRPD MLO (stop dt_19_mrpd) - pašalintas iš repo, backup lokaliai
+resources/[[]mlo]/[[]mlo_pack_3]/dt_19_mrpd/
