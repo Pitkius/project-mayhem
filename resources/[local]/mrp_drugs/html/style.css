@@ -1440,66 +1440,22 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 
 .weed-pack-target {
   position: absolute;
-  width: 110px;
-  height: 110px;
+  width: 88px;
+  height: 88px;
   padding: 0;
   transform: translate(-50%, -50%);
-  color: #f0fff4;
-  background: rgba(18, 35, 24, 0.28);
-  border: 2px solid rgba(154, 230, 180, 0.82);
+  background: transparent;
+  border: 0;
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
-  box-shadow: 0 0 0 8px rgba(104, 211, 145, 0.10), 0 8px 24px rgba(0, 0, 0, 0.35);
-  transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
-}
-
-.weed-pack-target.active {
-  border-color: rgba(72, 255, 120, 0.98);
-  background: rgba(34, 92, 52, 0.42);
-  animation: weed-pack-pulse 1.15s ease-in-out infinite;
-}
-
-@keyframes weed-pack-pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 0 10px rgba(72, 255, 120, 0.18),
-      0 0 28px rgba(72, 255, 120, 0.45),
-      0 8px 24px rgba(0, 0, 0, 0.35);
-    transform: translate(-50%, -50%) scale(1);
-  }
-  50% {
-    box-shadow:
-      0 0 0 18px rgba(72, 255, 120, 0.30),
-      0 0 42px rgba(72, 255, 120, 0.62),
-      0 8px 24px rgba(0, 0, 0, 0.35);
-    transform: translate(-50%, -50%) scale(1.06);
-  }
+  box-shadow: none;
 }
 
 .weed-pack-target:hover {
-  transform: translate(-50%, -50%) scale(1.08);
-  background: rgba(54, 105, 70, 0.52);
+  background: transparent;
 }
 
 .weed-pack-target span {
-  position: absolute;
-  top: calc(100% + 7px);
-  left: 50%;
-  padding: 4px 8px;
-  transform: translateX(-50%);
-  color: #f0fff4;
-  background: rgba(8, 18, 12, 0.9);
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.weed-pack-bud {
-  border-color: rgba(104, 211, 145, 0.95);
-}
-
-.weed-pack-bag {
-  border-color: rgba(72, 255, 120, 0.95);
+  display: none;
 }

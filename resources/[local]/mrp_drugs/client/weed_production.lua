@@ -10,7 +10,8 @@ local MODELS = {
     leaf = { 'bkr_prop_weed_bud_02b', 'bkr_prop_weed_leaf_01a', 'prop_meth_bag_01' },
     rack = { 'bkr_prop_weed_drying_01a', 'bkr_prop_weed_table_01a' },
     scale = { 'bkr_prop_coke_scale_01', 'prop_tool_bench02' },
-    bag = { 'prop_meth_bag_01', 'prop_cs_package_01' },
+    emptyBag = { 'bkr_prop_weed_bag_01a', 'prop_meth_bag_01' },
+    packedBag = { 'bkr_prop_weed_smallbag_01a', 'prop_meth_bag_01' },
 }
 
 local function hud(action, data)
@@ -105,7 +106,6 @@ local function clearPackHighlights(session)
     if session.currentBud then
         setPackHighlight(session.currentBud, false)
     end
-    session.packAuraEntity = nil
 end
 
 local function updatePackHighlights(session)
@@ -115,28 +115,11 @@ local function updatePackHighlights(session)
     end
     if session.stage == 'bag_select' and session.bag and session.bag.entity then
         setPackHighlight(session.bag.entity, true)
-        session.packAuraEntity = session.bag.entity
         return
     end
     if session.stage == 'packing' and session.currentBud and DoesEntityExist(session.currentBud) then
         setPackHighlight(session.currentBud, true)
-        session.packAuraEntity = session.currentBud
     end
-end
-
-local function drawPackAura(entity)
-    if not entity or not DoesEntityExist(entity) then return end
-    local coords = GetEntityCoords(entity)
-    local pulse = 0.82 + math.sin(GetGameTimer() / 170.0) * 0.18
-    DrawMarker(
-        28,
-        coords.x, coords.y, coords.z + 0.05,
-        0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0,
-        0.20 * pulse, 0.20 * pulse, 0.07,
-        72, 255, 120, 175,
-        false, false, 2, false, nil, nil, false
-    )
 end
 
 local function cleanupSession(session)
@@ -152,6 +135,8 @@ local function cleanupSession(session)
         if DoesEntityExist(entity) then DeleteEntity(entity) end
     end
     if session.packBudHash then SetModelAsNoLongerNeeded(session.packBudHash) end
+    if session.emptyBagHash then SetModelAsNoLongerNeeded(session.emptyBagHash) end
+    if session.packedBagHash then SetModelAsNoLongerNeeded(session.packedBagHash) end
     if session.cam and DoesCamExist(session.cam) then
         RenderScriptCams(false, true, 350, true, true)
         DestroyCam(session.cam, false)
@@ -533,6 +518,41 @@ end
 -- Forward declaration: pack setup/spawn run before screen helpers are defined.
 local cachePackScreenAnchors
 
+local function showPackedBagPreview(session, onDone)
+    if active ~= session then return end
+    session.stage = 'packed_preview'
+    session.packBusy = true
+    clearPackHighlights(session)
+
+    if session.bag and session.bag.entity and DoesEntityExist(session.bag.entity) then
+        SetEntityVisible(session.bag.entity, false, false)
+        SetEntityCollision(session.bag.entity, false, false)
+    end
+    if session.packedBagEntity and DoesEntityExist(session.packedBagEntity) then
+        SetEntityCoordsNoOffset(
+            session.packedBagEntity,
+            session.bagCenter.x, session.bagCenter.y, session.bagCenter.z,
+            false, false, false
+        )
+        SetEntityVisible(session.packedBagEntity, true, false)
+    end
+
+    CreateThread(function()
+        Wait(1000)
+        if active ~= session or session.finished then return end
+
+        if session.packedBagEntity and DoesEntityExist(session.packedBagEntity) then
+            SetEntityVisible(session.packedBagEntity, false, false)
+        end
+        if session.bag and session.bag.entity and DoesEntityExist(session.bag.entity) then
+            SetEntityVisible(session.bag.entity, true, false)
+            SetEntityCollision(session.bag.entity, true, true)
+        end
+        session.packBusy = false
+        if onDone then onDone() end
+    end)
+end
+
 local function spawnPackBud(session)
     if active ~= session or session.packedCount >= session.packTarget then return end
     local entity = registerEntity(session, createLocalObject(session.packBudHash, session.budSide, session.heading))
@@ -593,18 +613,17 @@ local function handlePackClick(session, target)
                 targetCount = session.packTarget,
                 score = math.floor(session.score),
             })
-            if session.packedCount >= session.packTarget then
-                finishAfterServerStage(session, 'packed_five', true, {
-                    score = math.floor(session.score),
-                    mistakes = session.mistakes,
-                    packed = session.packedCount,
-                })
-            else
-                CreateThread(function()
-                    Wait(250)
-                    if active == session then spawnPackBud(session) end
-                end)
-            end
+            showPackedBagPreview(session, function()
+                if session.packedCount >= session.packTarget then
+                    finishAfterServerStage(session, 'packed_five', true, {
+                        score = math.floor(session.score),
+                        mistakes = session.mistakes,
+                        packed = session.packedCount,
+                    })
+                else
+                    spawnPackBud(session)
+                end
+            end)
         end)
         return true
     end
@@ -619,8 +638,9 @@ local function setupPack(session)
     session.packTarget = 5
     session.packBusy = false
     local leafHash = loadFirstModel(MODELS.leaf)
-    local bagHash = loadFirstModel(MODELS.bag)
-    if not leafHash or not bagHash then
+    local emptyBagHash = loadFirstModel(MODELS.emptyBag)
+    local packedBagHash = loadFirstModel(MODELS.packedBag)
+    if not leafHash or not emptyBagHash or not packedBagHash then
         return false, 'Nerasti pakavimui reikalingi objektų modeliai.'
     end
     local surfaceHeight = session.tableTop - session.tableOrigin.z
@@ -628,17 +648,23 @@ local function setupPack(session)
     session.bagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.10, surfaceHeight + 0.06)
     session.budSide = offsetPoint(session.tableOrigin, session.heading, 0.62, 0.0, surfaceHeight + 0.08)
     session.packBudHash = leafHash
+    session.emptyBagHash = emptyBagHash
+    session.packedBagHash = packedBagHash
 
     local bagPos = session.bagSide
-    local bagEntity = registerEntity(session, createLocalObject(bagHash, bagPos, session.heading))
+    local bagEntity = registerEntity(session, createLocalObject(emptyBagHash, bagPos, session.heading))
     if not bagEntity then return false, 'Nepavyko sukurti pakavimo maišelio.' end
+    local packedBagEntity = registerEntity(session, createLocalObject(packedBagHash, session.bagCenter, session.heading))
+    if not packedBagEntity then return false, 'Nepavyko sukurti supakuoto maišelio peržiūros.' end
+    SetEntityVisible(packedBagEntity, false, false)
+    SetEntityCollision(packedBagEntity, false, false)
+    session.packedBagEntity = packedBagEntity
     session.bag = {
         entity = bagEntity,
         kind = 'bag',
         label = 'Tuščias maišelis',
     }
     session.items[#session.items + 1] = session.bag
-    SetModelAsNoLongerNeeded(bagHash)
     startPackingAnimation(session)
     cachePackScreenAnchors(session)
     updatePackHighlights(session)
@@ -812,9 +838,6 @@ local function runSession(session)
             if session.mode == 'pack' then
                 updatePackTargets(session)
                 tryPackRayClick(session)
-                if session.packAuraEntity then
-                    drawPackAura(session.packAuraEntity)
-                end
             end
             drawSnapPoints(session)
 
