@@ -89,8 +89,59 @@ local function clearSelection(session)
     session.selected = nil
 end
 
+local function setPackHighlight(entity, enabled)
+    if not entity or not DoesEntityExist(entity) then return end
+    SetEntityDrawOutline(entity, enabled == true)
+    if enabled then
+        SetEntityDrawOutlineColor(72, 255, 120, 255)
+        pcall(SetEntityDrawOutlineShader, 1)
+    end
+end
+
+local function clearPackHighlights(session)
+    if session.bag and session.bag.entity then
+        setPackHighlight(session.bag.entity, false)
+    end
+    if session.currentBud then
+        setPackHighlight(session.currentBud, false)
+    end
+    session.packAuraEntity = nil
+end
+
+local function updatePackHighlights(session)
+    clearPackHighlights(session)
+    if session.packBusy or session.stage == 'moving' or session.stage == 'stage_pending' then
+        return
+    end
+    if session.stage == 'bag_select' and session.bag and session.bag.entity then
+        setPackHighlight(session.bag.entity, true)
+        session.packAuraEntity = session.bag.entity
+        return
+    end
+    if session.stage == 'packing' and session.currentBud and DoesEntityExist(session.currentBud) then
+        setPackHighlight(session.currentBud, true)
+        session.packAuraEntity = session.currentBud
+    end
+end
+
+local function drawPackAura(entity)
+    if not entity or not DoesEntityExist(entity) then return end
+    local coords = GetEntityCoords(entity)
+    local pulse = 0.82 + math.sin(GetGameTimer() / 170.0) * 0.18
+    DrawMarker(
+        28,
+        coords.x, coords.y, coords.z + 0.05,
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0,
+        0.20 * pulse, 0.20 * pulse, 0.07,
+        72, 255, 120, 175,
+        false, false, 2, false, nil, nil, false
+    )
+end
+
 local function cleanupSession(session)
     if not session then return end
+    clearPackHighlights(session)
     clearSelection(session)
     for _, entry in ipairs(session.items or {}) do
         if entry.entity and DoesEntityExist(entry.entity) then
@@ -492,6 +543,8 @@ local function spawnPackBud(session)
     session.currentBud = entity
     session.stage = 'packing'
     session.packBusy = false
+    cachePackScreenAnchors(session)
+    updatePackHighlights(session)
     hud('weed3dUpdate', {
         title = 'Žolė · pakavimas',
         stage = '2/2',
@@ -507,6 +560,7 @@ local function handlePackClick(session, target)
     if target == 'bag' and session.stage == 'bag_select' then
         session.packBusy = true
         session.stage = 'moving'
+        clearPackHighlights(session)
         movePackObject(session, session.bag.entity, session.bagCenter, 450, function()
             session.stage = 'stage_pending'
             reportServerStage(session, 'bag_ready', function()
@@ -519,6 +573,7 @@ local function handlePackClick(session, target)
     if target == 'bud' and session.stage == 'packing' and session.currentBud then
         session.packBusy = true
         session.stage = 'moving'
+        clearPackHighlights(session)
         local bud = session.currentBud
         session.currentBud = nil
         movePackObject(session, bud, session.bagCenter + vector3(0.0, 0.0, 0.08), 500, function()
@@ -582,6 +637,8 @@ local function setupPack(session)
     session.items[#session.items + 1] = session.bag
     SetModelAsNoLongerNeeded(bagHash)
     startPackingAnimation(session)
+    cachePackScreenAnchors(session)
+    updatePackHighlights(session)
     hud('weedPackOpen', { packed = 0, targetCount = session.packTarget })
     return true
 end
@@ -646,24 +703,98 @@ local function updateSealing(session)
     end
 end
 
-local function screenTarget(coords)
-    local visible, x, y = GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z)
+local function screenCoordVisible(value)
+    return value == true or value == 1
+end
+
+local function projectToScreen(coords)
+    if not coords then return false, nil, nil end
+    for _, offset in ipairs({ 0.14, 0.08, 0.0, 0.22 }) do
+        local visible, x, y = GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z + offset)
+        if screenCoordVisible(visible) and x and y then
+            return true, x, y
+        end
+    end
+    return false, nil, nil
+end
+
+local function cachePackScreenAnchors(session)
+    session.packAnchors = session.packAnchors or {}
+    if session.bag and session.bag.entity and DoesEntityExist(session.bag.entity) then
+        local visible, x, y = projectToScreen(GetEntityCoords(session.bag.entity))
+        session.packAnchors.bag = {
+            x = visible and x or 0.40,
+            y = visible and y or 0.56,
+        }
+    end
+    if session.budSide then
+        local visible, x, y = projectToScreen(session.budSide)
+        session.packAnchors.bud = {
+            x = visible and x or 0.60,
+            y = visible and y or 0.56,
+        }
+    end
+end
+
+local function screenTargetForPack(session, coords, anchorKey, active)
+    local visible, x, y = projectToScreen(coords)
+    if not visible and session.packAnchors and session.packAnchors[anchorKey] then
+        local anchor = session.packAnchors[anchorKey]
+        x = anchor.x
+        y = anchor.y
+        visible = true
+    end
+    if not visible then
+        if anchorKey == 'bag' then
+            x, y = 0.40, 0.56
+        else
+            x, y = 0.60, 0.56
+        end
+    end
     return {
-        visible = visible == true,
+        visible = active == true,
+        active = active == true,
         x = x,
         y = y,
     }
 end
 
+local function getPackRayTarget(session)
+    if not session.cam or not DoesCamExist(session.cam) or session.packBusy then return nil end
+    local from = GetCamCoord(session.cam)
+    local direction = rotationToDirection(GetCamRot(session.cam, 2))
+    local to = from + direction * 10.0
+    local ray = StartShapeTestRay(from.x, from.y, from.z, to.x, to.y, to.z, 16, PlayerPedId(), 0)
+    local _, hit, _, _, entity = GetShapeTestResult(ray)
+    if hit ~= 1 or not entity or entity == 0 then return nil end
+    if session.stage == 'bag_select' and session.bag and entity == session.bag.entity then
+        return 'bag'
+    end
+    if session.stage == 'packing' and session.currentBud and entity == session.currentBud then
+        return 'bud'
+    end
+    return nil
+end
+
+local function tryPackRayClick(session)
+    if session.mode ~= 'pack' or session.packBusy then return end
+    if not (IsControlJustPressed(0, 24) or IsDisabledControlJustPressed(0, 24)) then return end
+    local target = getPackRayTarget(session)
+    if target then handlePackClick(session, target) end
+end
+
 local function updatePackTargets(session)
-    if GetGameTimer() - (session.lastTargetHudAt or 0) < 100 then return end
+    if GetGameTimer() - (session.lastTargetHudAt or 0) < 50 then return end
     session.lastTargetHudAt = GetGameTimer()
-    local bagVisible = session.stage == 'bag_select' and not session.packBusy
-    local budVisible = session.stage == 'packing' and not session.packBusy
+    updatePackHighlights(session)
+    local bagActive = session.stage == 'bag_select' and not session.packBusy
+    local budActive = session.stage == 'packing' and not session.packBusy
         and session.currentBud and DoesEntityExist(session.currentBud)
+    local bagCoords = session.bag and session.bag.entity and GetEntityCoords(session.bag.entity) or nil
+    local budCoords = budActive and GetEntityCoords(session.currentBud) or session.budSide
     hud('weedPackTargets', {
-        bag = bagVisible and screenTarget(GetEntityCoords(session.bag.entity)) or { visible = false },
-        bud = budVisible and screenTarget(GetEntityCoords(session.currentBud)) or { visible = false },
+        bag = screenTargetForPack(session, bagCoords, 'bag', bagActive),
+        bud = screenTargetForPack(session, budCoords, 'bud', budActive),
         packed = session.packedCount,
         targetCount = session.packTarget,
     })
@@ -677,6 +808,10 @@ local function runSession(session)
             updateCamera(session)
             if session.mode == 'pack' then
                 updatePackTargets(session)
+                tryPackRayClick(session)
+                if session.packAuraEntity then
+                    drawPackAura(session.packAuraEntity)
+                end
             end
             drawSnapPoints(session)
 
@@ -841,7 +976,11 @@ function WeedProduction.Start(payload, onDone)
     })
     if mode == 'pack' then
         SetNuiFocus(true, true)
-        SetNuiFocusKeepInput(false)
+        SetNuiFocusKeepInput(true)
+        CreateThread(function()
+            Wait(250)
+            if active == session then cachePackScreenAnchors(session) end
+        end)
     end
     runSession(session)
     return true

@@ -53,10 +53,24 @@ const weedPackBag = weedPackCursor.querySelector('[data-target="bag"]');
 const weedPackBud = weedPackCursor.querySelector('[data-target="bud"]');
 let weedPackActive = false;
 
+function sendWeedPackClick(target) {
+  if (!weedPackActive || !target) return;
+  post("weedPackClick", { target });
+}
+
 weedPackCursor.querySelectorAll(".weed-pack-target").forEach((button) => {
-  button.addEventListener("click", () => {
+  const target = button.dataset.target;
+  button.addEventListener("pointerdown", (event) => {
     if (!weedPackActive || button.classList.contains("hidden")) return;
-    post("weedPackClick", { target: button.dataset.target });
+    event.preventDefault();
+    event.stopPropagation();
+    sendWeedPackClick(target);
+  });
+  button.addEventListener("click", (event) => {
+    if (!weedPackActive || button.classList.contains("hidden")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    sendWeedPackClick(target);
   });
 });
 
@@ -93,11 +107,13 @@ function updateWeed3dHud(data, reset = false) {
 }
 
 function positionWeedPackTarget(button, target) {
-  const visible = target && target.visible && Number.isFinite(target.x) && Number.isFinite(target.y);
+  const data = target || {};
+  const visible = data.visible !== false && data.active === true;
   button.classList.toggle("hidden", !visible);
+  button.classList.toggle("active", visible);
   if (!visible) return;
-  const x = Math.min(0.96, Math.max(0.04, target.x));
-  const y = Math.min(0.94, Math.max(0.06, target.y));
+  const x = Math.min(0.96, Math.max(0.04, Number(data.x) || 0.5));
+  const y = Math.min(0.94, Math.max(0.06, Number(data.y) || 0.5));
   button.style.left = `${x * 100}%`;
   button.style.top = `${y * 100}%`;
 }
