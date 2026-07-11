@@ -17,6 +17,7 @@ local failedNpcModels = {}
 local npcModelRefCount = {}
 local npcModelLoading = {}
 local npcSpawnRetryAt = {}
+local closeActiveMinigame
 
 local openMaterialShop, openWeaponPartsMenu, openWeedSupplyShop, openLsQuickBuyMenu, openTestMenu
 
@@ -25,7 +26,11 @@ local function nui(msg, data)
 end
 
 local function closeUi()
-    if not uiOpen then return end
+    if WeedProduction and WeedProduction.IsActive and WeedProduction.IsActive() then
+        WeedProduction.Close('ui_closed')
+    elseif closeActiveMinigame then
+        closeActiveMinigame(false, { reason = 'ui_closed' })
+    end
     uiOpen = false
     currentStationId = nil
     SetNuiFocus(false, false)
@@ -217,23 +222,62 @@ local function runProgress(label, durationMs, onDone, anim, propCfg, meta)
 end
 
 local pendingMinigame = nil
+local minigameSessionCounter = 0
+
+local function beginMinigame(onDone)
+    if pendingMinigame and closeActiveMinigame then
+        closeActiveMinigame(false, { reason = 'replaced' })
+    end
+    minigameSessionCounter = minigameSessionCounter + 1
+    local sessionId = ('%s-%s'):format(GetGameTimer(), minigameSessionCounter)
+    pendingMinigame = {
+        id = sessionId,
+        onDone = onDone,
+    }
+    CreateThread(function()
+        Wait(180000)
+        if pendingMinigame and pendingMinigame.id == sessionId and closeActiveMinigame then
+            if WeedProduction and WeedProduction.IsActive and WeedProduction.IsActive() then
+                WeedProduction.Close('timeout')
+            else
+                closeActiveMinigame(false, { reason = 'timeout' }, sessionId)
+            end
+            nui('close')
+            QBCore.Functions.Notify('Gamybos minigame laikas baigėsi.', 'error')
+        end
+    end)
+    return sessionId
+end
+
+closeActiveMinigame = function(success, extra, sessionId)
+    local pending = pendingMinigame
+    if not pending then return false end
+    if sessionId and pending.id ~= tostring(sessionId) then return false end
+    pendingMinigame = nil
+    SetNuiFocus(uiOpen, uiOpen)
+    if ScheduleAnimStop then ScheduleAnimStop() end
+    if pending.onDone then
+        pending.onDone(success == true, extra or {})
+    end
+    return true
+end
 
 local function runSkillMinigame(onDone)
-    pendingMinigame = onDone
-    nui('minigameSkill', { durationMs = 4200 })
+    local sessionId = beginMinigame(onDone)
+    nui('minigameSkill', { durationMs = 4200, sessionId = sessionId })
     SetNuiFocus(true, true)
 end
 
 local function runAdvancedMinigame(onDone)
-    pendingMinigame = onDone
-    nui('minigameAdvanced', { rounds = 3 })
+    local sessionId = beginMinigame(onDone)
+    nui('minigameAdvanced', { rounds = 3, sessionId = sessionId })
     SetNuiFocus(true, true)
 end
 
-local function runScheduleMinigame(productId, profile, prod, onDone)
-    pendingMinigame = onDone
+local function runScheduleMinigame(productId, profile, prod, onDone, craftToken)
     closeUi()
     Wait(200)
+    local sessionId = beginMinigame(onDone)
     if not profile then
         profile = {
             mode = 'trim',
@@ -243,10 +287,25 @@ local function runScheduleMinigame(productId, profile, prod, onDone)
             difficulty = (prod and prod.level) or 1,
         }
     end
+    local weed3dMode = profile.drug == 'weed'
+        and (profile.mode == 'weed_dry' or profile.mode == 'weed_pack')
+    if weed3dMode and WeedProduction and WeedProduction.Start then
+        WeedProduction.Start({
+            sessionId = sessionId,
+            craftToken = craftToken,
+            productId = productId,
+            mode = profile.mode,
+            quantity = (prod and prod.outputAmount) or 1,
+        }, function(success, extra)
+            closeActiveMinigame(success, extra or {}, sessionId)
+        end)
+        return
+    end
     if ScheduleAnimStart and profile.mode then
         ScheduleAnimStart(profile.mode)
     end
     nui('minigameSchedule', {
+        sessionId = sessionId,
         productId = productId,
         drug = profile and profile.drug,
         action = profile and profile.action,
@@ -395,7 +454,7 @@ local function startCraftFlow(productId)
             local prod = Config.Products and Config.Products[productId]
             runProgress(res.label, math.floor((res.craftTimeMs or 20000) * 0.25), function(ok)
                 if not ok then return afterMinigame(false) end
-                runScheduleMinigame(productId, profile, prod, afterMinigame)
+                runScheduleMinigame(productId, profile, prod, afterMinigame, res.token)
             end)
         elseif mg == 'progress' then
             runProgress(res.label, res.craftTimeMs or 25000, afterMinigame)
@@ -559,23 +618,21 @@ RegisterNUICallback('refresh', function(_, cb)
 end)
 
 local function finishMinigame(success, extra)
-    SetNuiFocus(uiOpen, uiOpen)
-    if ScheduleAnimStop then ScheduleAnimStop() end
-    local cb = pendingMinigame
-    pendingMinigame = nil
-    if cb then cb(success == true, extra or {}) end
+    local sessionId = extra and extra.sessionId
+    return closeActiveMinigame(success, extra, sessionId)
 end
 
 RegisterNUICallback('scheduleResult', function(data, cb)
     local extra = {}
     if data then
+        if data.sessionId ~= nil then extra.sessionId = tostring(data.sessionId) end
         if data.quality ~= nil then extra.quality = data.quality end
         if data.moisture ~= nil then extra.moisture = data.moisture end
         if data.score ~= nil then extra.score = data.score end
         if data.mistakes ~= nil then extra.mistakes = data.mistakes end
     end
-    finishMinigame(data and data.success, extra)
-    cb('ok')
+    local accepted = finishMinigame(data and data.success, extra)
+    cb(accepted and 'ok' or 'stale')
 end)
 
 RegisterNUICallback('skillResult', function(data, cb)
@@ -1584,6 +1641,7 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     stopCraftAnim()
+    if ScheduleAnimStop then ScheduleAnimStop() end
     closeUi()
     for _, bl in ipairs(mapBlips) do
         if bl and DoesBlipExist(bl) then RemoveBlip(bl) end
@@ -1618,12 +1676,33 @@ AddEventHandler('onResourceStop', function(res)
     productBuyerBlips = {}
 end)
 
-exports('RunScheduleMinigame', function(productId, profile, prod, onDone)
+local function cancelPlayerProduction(reason)
+    stopCraftAnim()
+    if ScheduleAnimStop then ScheduleAnimStop() end
+    if pendingMinigame then
+        closeActiveMinigame(false, { reason = reason or 'player_unavailable' })
+    end
+    closeUi()
+end
+
+RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
+    cancelPlayerProduction('player_unload')
+end)
+
+AddEventHandler('baseevents:onPlayerDied', function()
+    cancelPlayerProduction('player_died')
+end)
+
+AddEventHandler('baseevents:onPlayerKilled', function()
+    cancelPlayerProduction('player_killed')
+end)
+
+exports('RunScheduleMinigame', function(productId, profile, prod, onDone, craftToken)
     if type(productId) == 'table' and onDone == nil then
         onDone = profile
         profile = productId
         productId = nil
         prod = nil
     end
-    runScheduleMinigame(productId, profile, prod, onDone)
+    runScheduleMinigame(productId, profile, prod, onDone, craftToken)
 end)

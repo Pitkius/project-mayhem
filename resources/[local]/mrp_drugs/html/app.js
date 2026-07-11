@@ -12,7 +12,62 @@ const craftProgressLabel = document.getElementById("craftProgressLabel");
 const craftProgressBar = document.getElementById("craftProgressBar");
 const craftProgressTime = document.getElementById("craftProgressTime");
 
+const weed3dHud = document.createElement("section");
+weed3dHud.id = "weed3dHud";
+weed3dHud.className = "weed3d-hud hidden";
+weed3dHud.innerHTML = `
+  <div class="weed3d-head">
+    <div>
+      <span class="weed3d-kicker">3D WORKSTATION</span>
+      <h2 id="weed3dTitle">Žolė</h2>
+    </div>
+    <span id="weed3dStage" class="weed3d-stage">1/1</span>
+  </div>
+  <p id="weed3dHint" class="weed3d-hint"></p>
+  <div id="weed3dMetrics" class="weed3d-metrics"></div>
+  <div class="weed3d-footer">
+    <span id="weed3dScore">Kokybė: 0</span>
+    <span id="weed3dMistakes">Klaidos: 0</span>
+  </div>`;
+document.body.appendChild(weed3dHud);
+
+const weed3dTitle = document.getElementById("weed3dTitle");
+const weed3dStage = document.getElementById("weed3dStage");
+const weed3dHint = document.getElementById("weed3dHint");
+const weed3dMetrics = document.getElementById("weed3dMetrics");
+const weed3dScore = document.getElementById("weed3dScore");
+const weed3dMistakes = document.getElementById("weed3dMistakes");
+
 let state = { products: [], selectedId: null, isWeaponMode: false };
+
+function updateWeed3dHud(data, reset = false) {
+  const d = data || {};
+  if (reset && weed3dMetrics) weed3dMetrics.innerHTML = "";
+  if (d.title !== undefined && weed3dTitle) weed3dTitle.textContent = d.title;
+  if (d.stage !== undefined && weed3dStage) weed3dStage.textContent = d.stage;
+  if (d.hint !== undefined && weed3dHint) weed3dHint.textContent = d.hint;
+  if (d.score !== undefined && weed3dScore) weed3dScore.textContent = `Kokybė: ${Math.round(Number(d.score) || 0)}`;
+  if (d.mistakes !== undefined && weed3dMistakes) weed3dMistakes.textContent = `Klaidos: ${Number(d.mistakes) || 0}`;
+  if (!weed3dMetrics) return;
+
+  const rows = [];
+  if (d.temperature !== undefined) rows.push(["Temperatūra", `${Number(d.temperature).toFixed(1)}°C`]);
+  if (d.airflow !== undefined) rows.push(["Oro srautas", `${Math.round(Number(d.airflow))}%`]);
+  if (d.weight !== undefined) rows.push(["Svoris", `${Number(d.weight).toFixed(2)} g`]);
+  if (d.target !== undefined) rows.push(["Tikslas", String(d.target)]);
+  if (d.remaining !== undefined) rows.push(["Liko", `${Math.ceil(Number(d.remaining) / 1000)} s`]);
+  if (d.seal !== undefined) rows.push(["Slėgis", `${Math.round(Number(d.seal) * 100)}%`]);
+  if (rows.length > 0) {
+    weed3dMetrics.replaceChildren(...rows.map(([label, value]) => {
+      const row = document.createElement("span");
+      const strong = document.createElement("b");
+      row.textContent = `${label} `;
+      strong.textContent = value;
+      row.appendChild(strong);
+      return row;
+    }));
+  }
+}
 
 function post(name, data = {}) {
   return fetch(`https://${GetParentResourceName()}/${name}`, {
@@ -150,12 +205,26 @@ window.addEventListener("message", (e) => {
     }
   }
   if (msg.action === "close") {
+    if (cancelSkillGame) cancelSkillGame(false);
+    if (cancelAdvancedGame) cancelAdvancedGame(false);
+    weed3dHud.classList.add("hidden");
     app.classList.add("hidden");
     mgSkill.classList.add("hidden");
     mgAdvanced.classList.add("hidden");
     const mgSchedule = document.getElementById("mgSchedule");
     if (mgSchedule) mgSchedule.classList.add("hidden");
     if (window.MrpWebStation) MrpWebStation.close();
+  }
+  if (msg.action === "weed3dOpen") {
+    updateWeed3dHud(msg.data, true);
+    weed3dHud.classList.remove("hidden");
+  }
+  if (msg.action === "weed3dUpdate") {
+    updateWeed3dHud(msg.data);
+  }
+  if (msg.action === "weed3dClose") {
+    weed3dHud.classList.add("hidden");
+    if (weed3dMetrics) weed3dMetrics.innerHTML = "";
   }
   if (msg.action === "craftProgress") {
     showCraftProgress(msg.data);
@@ -192,7 +261,11 @@ btnCraft.onclick = () => {
   post("craft", { productId: state.selectedId });
 };
 
+let cancelSkillGame = null;
+let cancelAdvancedGame = null;
+
 function runSkillGame() {
+  if (cancelSkillGame) cancelSkillGame(false);
   mgSkill.classList.remove("hidden");
   const zone = document.getElementById("mgZone");
   const needle = document.getElementById("mgNeedle");
@@ -207,21 +280,27 @@ function runSkillGame() {
     if (pos <= 0) dir = 1.4;
     needle.style.left = `${pos}%`;
   }, 16);
-  const onKey = (ev) => {
-    if (done || ev.code !== "Space") return;
+  const finish = (success) => {
+    if (done) return;
     done = true;
     clearInterval(iv);
     window.removeEventListener("keydown", onKey);
     mgSkill.classList.add("hidden");
+    cancelSkillGame = null;
+    post("skillResult", { success: !!success });
+  };
+  const onKey = (ev) => {
+    if (done || ev.code !== "Space") return;
     const zl = zoneLeft;
     const zh = zl + 28;
-    const success = pos >= zl && pos <= zh;
-    post("skillResult", { success });
+    finish(pos >= zl && pos <= zh);
   };
+  cancelSkillGame = finish;
   window.addEventListener("keydown", onKey);
 }
 
 function runAdvancedGame(rounds) {
+  if (cancelAdvancedGame) cancelAdvancedGame(false);
   mgAdvanced.classList.remove("hidden");
   const seqEl = document.getElementById("mgSeq");
   const keys = ["W", "A", "S", "D"];
@@ -232,18 +311,26 @@ function runAdvancedGame(rounds) {
   document.getElementById("mgAdvLabel").textContent = `Įvesk seką (${idx + 1}/${rounds})`;
 
   const buttons = mgAdvanced.querySelectorAll(".mg-keys button");
+  let done = false;
+  const finish = (success) => {
+    if (done) return;
+    done = true;
+    buttons.forEach((button) => { button.onclick = null; });
+    mgAdvanced.classList.add("hidden");
+    cancelAdvancedGame = null;
+    post("advancedResult", { success: !!success });
+  };
+  cancelAdvancedGame = finish;
   buttons.forEach((b) => {
     b.classList.remove("hit");
     b.onclick = () => {
       if (b.dataset.key !== seq[idx]) {
-        mgAdvanced.classList.add("hidden");
-        return post("advancedResult", { success: false });
+        return finish(false);
       }
       b.classList.add("hit");
       idx += 1;
       if (idx >= seq.length) {
-        mgAdvanced.classList.add("hidden");
-        return post("advancedResult", { success: true });
+        return finish(true);
       }
       document.getElementById("mgAdvLabel").textContent = `Įvesk seką (${idx + 1}/${rounds})`;
     };
@@ -251,9 +338,12 @@ function runAdvancedGame(rounds) {
 }
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !mgSkill.classList.contains("hidden")) {
-    mgSkill.classList.add("hidden");
-    post("skillResult", { success: false });
+  if (e.key !== "Escape") return;
+  if (cancelSkillGame && !mgSkill.classList.contains("hidden")) {
+    cancelSkillGame(false);
+  }
+  if (cancelAdvancedGame && !mgAdvanced.classList.contains("hidden")) {
+    cancelAdvancedGame(false);
   }
 });
 

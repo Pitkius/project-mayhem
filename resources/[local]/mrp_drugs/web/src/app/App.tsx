@@ -39,14 +39,12 @@ export function App() {
   const startSession = useCallback(
     async (payload: StationPayload) => {
       // Clean any previous session first (never allow two at once).
-      stationRef.current?.destroy();
-      stationRef.current = null;
-      stageRef.current?.destroy();
-      stageRef.current = null;
+      teardown();
 
       const factory = getStation(payload.drug);
       if (!factory) {
         useMachine.getState().setError(`Nepalaikoma stotis: ${payload.drug}`);
+        sendResult({ success: false, score: 0, quality: 'poor', mistakes: 0 });
         return;
       }
 
@@ -61,6 +59,7 @@ export function App() {
       const host = hostRef.current;
       if (!host) {
         useMachine.getState().setError('Nėra scenos konteinerio.');
+        sendResult({ success: false, score: 0, quality: 'poor', mistakes: 0 });
         return;
       }
 
@@ -72,6 +71,8 @@ export function App() {
         // eslint-disable-next-line no-console
         console.error('[App] pixi init failed', err);
         useMachine.getState().setError('Nepavyko paleisti scenos.');
+        sendResult({ success: false, score: 0, quality: 'poor', mistakes: 0 });
+        teardown();
         return;
       }
       // Session may have been closed while awaiting init.
@@ -105,7 +106,7 @@ export function App() {
         },
       });
     },
-    [finishAndClose],
+    [finishAndClose, teardown],
   );
 
   // Parent message subscription.

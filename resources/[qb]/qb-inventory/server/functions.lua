@@ -807,6 +807,22 @@ exports('RemoveInventory', RemoveInventory)
 --- @param info table (optional) Additional information about the item.
 --- @param reason string (optional) The reason for adding the item.
 --- @return boolean Returns true if the item was successfully added, false otherwise.
+local function itemInfoEqual(a, b)
+    a = type(a) == 'table' and a or {}
+    b = type(b) == 'table' and b or {}
+    for key, value in pairs(a) do
+        if type(value) == 'table' then
+            if not itemInfoEqual(value, b[key]) then return false end
+        elseif b[key] ~= value then
+            return false
+        end
+    end
+    for key in pairs(b) do
+        if a[key] == nil then return false end
+    end
+    return true
+end
+
 function AddItem(identifier, item, amount, slot, info, reason)
     local itemInfo = resolveSharedItem(item)
     if not itemInfo then
@@ -843,9 +859,22 @@ function AddItem(identifier, item, amount, slot, info, reason)
 
     amount = tonumber(amount) or 1
     local updated = false
+    local desiredInfo = type(info) == 'table' and info or {}
 
     if not itemInfo.unique then
-        slot = slot or GetFirstSlotByItem(inventory, item)
+        if slot then
+            local existing = inventory[tonumber(slot)]
+            if not existing or existing.name:lower() ~= item:lower() or not itemInfoEqual(existing.info, desiredInfo) then
+                slot = nil
+            end
+        else
+            for existingSlot, existing in pairs(inventory) do
+                if existing.name:lower() == item:lower() and itemInfoEqual(existing.info, desiredInfo) then
+                    slot = tonumber(existingSlot)
+                    break
+                end
+            end
+        end
         if slot then
             for _, invItem in pairs(inventory) do
                 if invItem.slot == slot then
@@ -867,7 +896,7 @@ function AddItem(identifier, item, amount, slot, info, reason)
         inventory[slot] = {
             name = itemInfo.name,
             amount = amount,
-            info = info or {},
+            info = desiredInfo,
             label = itemInfo.label,
             description = itemInfo.description or '',
             weight = itemInfo.weight,

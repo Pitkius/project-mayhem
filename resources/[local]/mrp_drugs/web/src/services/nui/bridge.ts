@@ -11,6 +11,7 @@ type Handler = (msg: ParentMessage) => void;
 const handlers = new Set<Handler>();
 
 function onWindowMessage(ev: MessageEvent) {
+  if (window.parent !== window && ev.source !== window.parent) return;
   const msg = ev.data as ParentMessage | undefined;
   if (!msg || (msg as { source?: string }).source !== PARENT_SOURCE) return;
   handlers.forEach((h) => {

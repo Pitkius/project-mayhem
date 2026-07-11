@@ -258,6 +258,16 @@ RegisterNetEvent('mrp_drugs:server:placeEquipment', function(itemType, x, y, z, 
     if not t then return end
     local P = QBCore.Functions.GetPlayer(src)
     if not P then return end
+    x, y, z, heading = tonumber(x), tonumber(y), tonumber(z), tonumber(heading) or 0.0
+    if not x or not y or not z or x ~= x or y ~= y or z ~= z then return end
+    if math.abs(x) > 10000 or math.abs(y) > 10000 or math.abs(z) > 2000 then return end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return end
+    local playerPos = GetEntityCoords(ped)
+    local maxPlaceDistance = (tonumber(cfg().placeForwardM) or 1.35) + 2.0
+    if #(playerPos - vector3(x, y, z)) > maxPlaceDistance then
+        return TriggerClientEvent('QBCore:Notify', src, 'Įrangos vieta per toli.', 'error')
+    end
 
     local maxP = cfg().maxPerPlayer or 3
     if countPlayer(P.PlayerData.citizenid) >= maxP then
@@ -307,10 +317,27 @@ RegisterNetEvent('mrp_drugs:server:pickupEquipment', function(equipmentId)
 
     local P = QBCore.Functions.GetPlayer(src)
     if not P then return end
+    if GetResourceState('qb-inventory') == 'started' then
+        local canAdd = exports['qb-inventory']:CanAddItem(src, e.itemType, 1)
+        if not canAdd then
+            return TriggerClientEvent('QBCore:Notify', src, 'Inventoriuje nėra vietos įrangai.', 'error')
+        end
+    end
 
     MySQL.update.await('DELETE FROM fivempro_drugs_equipment WHERE id = ?', { e.id })
     Equipment.byId[e.id] = nil
-    exports['qb-inventory']:AddItem(src, e.itemType, 1, false, false, 'mrp_drugs:pickupEquipment')
+    if not exports['qb-inventory']:AddItem(src, e.itemType, 1, false, false, 'mrp_drugs:pickupEquipment') then
+        local id = MySQL.insert.await(
+            'INSERT INTO fivempro_drugs_equipment (citizenid, item_type, x, y, z, heading) VALUES (?, ?, ?, ?, ?, ?)',
+            { e.citizenid, e.itemType, e.x, e.y, e.z, e.heading or 0.0 }
+        )
+        if id then
+            e.id = tonumber(id)
+            Equipment.byId[e.id] = e
+        end
+        Equipment.syncAll()
+        return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko paimti įrangos į inventorių.', 'error')
+    end
     Equipment.syncAll()
     TriggerClientEvent('QBCore:Notify', src, 'Įranga surinkta.', 'success')
 end)
@@ -327,7 +354,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getEquipmentMenu', function(sr
     local rows = {}
     for _, productId in ipairs(Equipment.productsForEntity(e)) do
         local prod = Config.Products and Config.Products[productId]
-        if prod and prod.minigame == 'schedule' then
+        if prod and prod.minigame == 'schedule' and productId ~= 'amp_process' then
             local can, missing = Equipment.canCraftProduct(P, equipmentId, productId)
             rows[#rows + 1] = {
                 id = productId,

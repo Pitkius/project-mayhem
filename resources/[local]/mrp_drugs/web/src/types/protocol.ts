@@ -27,6 +27,8 @@ export interface StartStationMessage {
 }
 
 export interface StationPayload {
+  /** Correlates this UI instance with the active Lua minigame callback. */
+  sessionId: string;
   drug: DrugId;
   /** Registry mode id, e.g. 'thc_scrape' / 'thc_cartridge'. */
   mode: string;
@@ -54,6 +56,7 @@ export interface ResultMessage {
   source: typeof WEB_SOURCE;
   action: 'result';
   data: {
+    sessionId?: string;
     success: boolean;
     score: number; // 0..100
     quality: QualityTier;

@@ -66,6 +66,7 @@ client_scripts {
     'client/progress.lua',
     'client/drug_sell_anim.lua',
     'client/schedule_anim.lua',
+    'client/weed_production.lua',
     'client/main.lua',
     'client/planned.lua',
     'client/printer.lua',

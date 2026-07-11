@@ -1343,3 +1343,90 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 }
 .dg-brick-press, .dg-stamp, .dg-cork { margin: 0 auto; }
 .dg-spot { background: rgba(74, 222, 128, 0.25); border-color: #4ade80; }
+
+/* Žolės GTA pasaulio 3D darbo stoties informacinis HUD */
+.weed3d-hud {
+  position: fixed;
+  top: clamp(24px, 4vh, 58px);
+  left: clamp(24px, 3vw, 64px);
+  width: min(390px, calc(100vw - 48px));
+  padding: 18px;
+  color: #eefcf2;
+  background: rgba(8, 18, 12, 0.94);
+  border: 1px solid rgba(104, 211, 145, 0.5);
+  border-left: 4px solid #68d391;
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 9997;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
+}
+
+.weed3d-head,
+.weed3d-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.weed3d-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: #68d391;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.weed3d-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.weed3d-stage {
+  padding: 5px 9px;
+  color: #c6f6d5;
+  background: rgba(104, 211, 145, 0.14);
+  border: 1px solid rgba(104, 211, 145, 0.32);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.weed3d-hint {
+  min-height: 38px;
+  margin: 14px 0 12px;
+  color: rgba(238, 252, 242, 0.78);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.weed3d-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 13px;
+}
+
+.weed3d-metrics span {
+  padding: 8px;
+  color: rgba(238, 252, 242, 0.66);
+  background: rgba(255, 255, 255, 0.045);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.weed3d-metrics b {
+  display: block;
+  margin-top: 2px;
+  color: #f0fff4;
+  font-size: 13px;
+}
+
+.weed3d-footer {
+  padding-top: 11px;
+  color: #9ae6b4;
+  border-top: 1px solid rgba(104, 211, 145, 0.2);
+  font-size: 12px;
+  font-weight: 700;
+}

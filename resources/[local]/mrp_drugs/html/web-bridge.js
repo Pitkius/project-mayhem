@@ -34,6 +34,7 @@
   let ready = false;
   let pending = null; // laukianti payload kol iframe užsikraus
   let active = false;
+  let activeSessionId = null;
 
   function ensureIframe() {
     if (iframe) return iframe;
@@ -84,13 +85,17 @@
   // Rezultatas iš iframe -> perduodam Lua per esamą scheduleResult callback.
   function reportResult(data) {
     if (!active) return;
+    const sessionId = activeSessionId;
     active = false;
+    activeSessionId = null;
+    pending = null;
     hide();
     try {
       fetch(`https://${GetParentResourceName()}/scheduleResult`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          sessionId,
           success: !!(data && data.success),
           score: data && typeof data.score === 'number' ? data.score : undefined,
           quality: data && data.quality,
@@ -104,6 +109,7 @@
 
   // Klausom iframe pranešimų (rezultatas / ready).
   window.addEventListener('message', (e) => {
+    if (!iframe || e.source !== iframe.contentWindow) return;
     const msg = e.data || {};
     if (msg.source !== 'mrp_drugs_web') return;
     if (msg.action === 'ready') {
@@ -132,17 +138,23 @@
     },
     run(payload) {
       active = true;
+      activeSessionId = payload && payload.sessionId ? String(payload.sessionId) : null;
       ensureIframe();
-      // iframe užkrautas iš karto; jei dar ne "ready", pranešam kai bus.
-      // Bet startStation veikia ir prieš ready (App klausosi message iškart po mount),
-      // todėl siunčiam iškart ir pakartotinai per pending, jei prireiktų.
       show();
-      startStation(payload);
-      if (!ready) pending = payload;
+      if (ready) {
+        pending = null;
+        startStation(payload);
+      } else {
+        pending = payload;
+      }
     },
     close() {
       if (iframe) postToIframe({ source: 'mrp_drugs', action: 'close' });
-      hide();
+      if (active) {
+        reportResult({ success: false, score: 0, quality: 'poor', mistakes: 0 });
+      } else {
+        hide();
+      }
     },
   };
 })();

@@ -27,7 +27,7 @@ local function devRow(offset)
 end
 
 --- Production: false. Test NPC + nemokami itemai tik testavimui.
-Config.EnableDrugTestNPC = true
+Config.EnableDrugTestNPC = false
 
 Config.DrawDistance = 28.0
 Config.InteractDistance = 2.0
@@ -52,10 +52,9 @@ Config.DevHub = {
 Config.CraftCooldownMs = 4500
 Config.SellCooldownMs = 6000
 
--- Kokybės sistema: kai true, pagamintų produktų kokybė (iš minigame score)
--- rašoma į item.info.quality metadata ir veikia pardavimo kainą.
--- Item struktūra NEkeičiama; seni daiktai be kokybės parduodami įprastai (x1.0).
-Config.UseQuality = true
+-- Laikinai išjungta, kol serverio etapų protokolas galės autoritetingai
+-- patvirtinti score. Kliento atsiųstas score vienas pats nėra patikimas.
+Config.UseQuality = false
 
 --- Minigame tipai: progress | skill | advanced | schedule
 Config.LevelLabels = {
