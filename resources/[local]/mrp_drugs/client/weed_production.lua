@@ -515,6 +515,16 @@ local function movePackObject(session, entity, target, durationMs, onDone)
     end)
 end
 
+local function facePackBagToCamera(session, entity)
+    if not entity or not DoesEntityExist(entity) or not session.cam or not DoesCamExist(session.cam) then return end
+    local coords = GetEntityCoords(entity)
+    local camera = GetCamCoord(session.cam)
+    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y)
+    -- The empty/filled weed bag models are flat by default. Pitching them
+    -- 90 degrees keeps them upright while the heading faces the fixed camera.
+    SetEntityRotation(entity, 90.0, 0.0, heading, 2, true)
+end
+
 -- Forward declaration: pack setup/spawn run before screen helpers are defined.
 local cachePackScreenAnchors
 
@@ -531,9 +541,10 @@ local function showPackedBagPreview(session, onDone)
     if session.packedBagEntity and DoesEntityExist(session.packedBagEntity) then
         SetEntityCoordsNoOffset(
             session.packedBagEntity,
-            session.bagCenter.x, session.bagCenter.y, session.bagCenter.z,
+            session.packedBagCenter.x, session.packedBagCenter.y, session.packedBagCenter.z,
             false, false, false
         )
+        facePackBagToCamera(session, session.packedBagEntity)
         SetEntityVisible(session.packedBagEntity, true, false)
     end
 
@@ -585,6 +596,7 @@ local function handlePackClick(session, target)
         session.stage = 'moving'
         clearPackHighlights(session)
         movePackObject(session, session.bag.entity, session.bagCenter, 450, function()
+            facePackBagToCamera(session, session.bag.entity)
             session.stage = 'stage_pending'
             reportServerStage(session, 'bag_ready', function()
                 session.packBusy = false
@@ -644,9 +656,14 @@ local function setupPack(session)
         return false, 'Nerasti pakavimui reikalingi objektų modeliai.'
     end
     local surfaceHeight = session.tableTop - session.tableOrigin.z
-    session.bagSide = offsetPoint(session.tableOrigin, session.heading, -0.62, 0.0, surfaceHeight + 0.06)
-    session.bagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.10, surfaceHeight + 0.06)
-    session.budSide = offsetPoint(session.tableOrigin, session.heading, 0.62, 0.0, surfaceHeight + 0.08)
+    local emptyMin, emptyMax = GetModelDimensions(emptyBagHash)
+    local packedMin, packedMax = GetModelDimensions(packedBagHash)
+    local emptyHeight = clamp(math.abs(emptyMax.y - emptyMin.y), 0.12, 0.36)
+    local packedHeight = clamp(math.abs(packedMax.y - packedMin.y), 0.12, 0.36)
+    session.bagSide = offsetPoint(session.tableOrigin, session.heading, -0.58, -0.22, surfaceHeight + emptyHeight * 0.5 + 0.01)
+    session.bagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.0, surfaceHeight + emptyHeight * 0.5 + 0.01)
+    session.packedBagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.0, surfaceHeight + packedHeight * 0.5 + 0.01)
+    session.budSide = offsetPoint(session.tableOrigin, session.heading, 0.58, -0.22, surfaceHeight + 0.08)
     session.packBudHash = leafHash
     session.emptyBagHash = emptyBagHash
     session.packedBagHash = packedBagHash
@@ -654,8 +671,10 @@ local function setupPack(session)
     local bagPos = session.bagSide
     local bagEntity = registerEntity(session, createLocalObject(emptyBagHash, bagPos, session.heading))
     if not bagEntity then return false, 'Nepavyko sukurti pakavimo maišelio.' end
-    local packedBagEntity = registerEntity(session, createLocalObject(packedBagHash, session.bagCenter, session.heading))
+    facePackBagToCamera(session, bagEntity)
+    local packedBagEntity = registerEntity(session, createLocalObject(packedBagHash, session.packedBagCenter, session.heading))
     if not packedBagEntity then return false, 'Nepavyko sukurti supakuoto maišelio peržiūros.' end
+    facePackBagToCamera(session, packedBagEntity)
     SetEntityVisible(packedBagEntity, false, false)
     SetEntityCollision(packedBagEntity, false, false)
     session.packedBagEntity = packedBagEntity

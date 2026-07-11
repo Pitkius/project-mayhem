@@ -1435,7 +1435,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   position: fixed;
   inset: 0;
   z-index: 9998;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .weed-pack-target {
@@ -1448,7 +1448,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   border: 0;
   border-radius: 50%;
   cursor: pointer;
-  pointer-events: auto;
+  pointer-events: none;
   box-shadow: none;
 }
 

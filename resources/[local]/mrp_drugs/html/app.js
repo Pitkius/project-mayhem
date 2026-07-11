@@ -52,20 +52,27 @@ document.body.appendChild(weedPackCursor);
 const weedPackBag = weedPackCursor.querySelector('[data-target="bag"]');
 const weedPackBud = weedPackCursor.querySelector('[data-target="bud"]');
 let weedPackActive = false;
+let weedPackTargets = { bag: null, bud: null };
 
 function sendWeedPackClick(target) {
   if (!weedPackActive || !target) return;
   post("weedPackClick", { target });
 }
 
-weedPackCursor.querySelectorAll(".weed-pack-target").forEach((button) => {
-  const target = button.dataset.target;
-  button.addEventListener("click", (event) => {
-    if (!weedPackActive || button.classList.contains("hidden")) return;
-    event.preventDefault();
-    event.stopPropagation();
-    sendWeedPackClick(target);
+weedPackCursor.addEventListener("mousedown", (event) => {
+  if (!weedPackActive || event.button !== 0) return;
+  const activeTarget = ["bag", "bud"].find((name) => {
+    const target = weedPackTargets[name];
+    if (!target || target.active !== true || target.visible === false) return false;
+    const x = Number(target.x) * window.innerWidth;
+    const y = Number(target.y) * window.innerHeight;
+    const radius = name === "bag" ? 72 : 64;
+    return Math.hypot(event.clientX - x, event.clientY - y) <= radius;
   });
+  if (!activeTarget) return;
+  event.preventDefault();
+  event.stopPropagation();
+  sendWeedPackClick(activeTarget);
 });
 
 let state = { products: [], selectedId: null, isWeaponMode: false };
@@ -273,15 +280,21 @@ window.addEventListener("message", (e) => {
   }
   if (msg.action === "weedPackOpen") {
     weedPackActive = true;
+    weedPackTargets = { bag: null, bud: null };
     weedPackCursor.classList.remove("hidden");
   }
   if (msg.action === "weedPackTargets") {
     const data = msg.data || {};
+    weedPackTargets = {
+      bag: data.bag || null,
+      bud: data.bud || null,
+    };
     positionWeedPackTarget(weedPackBag, data.bag);
     positionWeedPackTarget(weedPackBud, data.bud);
   }
   if (msg.action === "weedPackClose") {
     weedPackActive = false;
+    weedPackTargets = { bag: null, bud: null };
     weedPackCursor.classList.add("hidden");
     weedPackBag.classList.add("hidden");
     weedPackBud.classList.add("hidden");
