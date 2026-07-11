@@ -378,12 +378,10 @@ local function startCraftFlow(productId)
             QBCore.Functions.TriggerCallback('mrp_drugs:server:finishCraft', function(done)
                 if not done or not done.ok then
                     QBCore.Functions.Notify((done and done.reason) or 'Gamyba nepavyko.', 'error')
-                    if currentStationId then openStationUi(currentStationId) end
                     return
                 end
                 local qLabel = done.qualityLabel and (' · ' .. done.qualityLabel) or ''
                 QBCore.Functions.Notify(('Pagaminta: %s x%d%s'):format(done.label or done.item, done.amount or 1, qLabel), 'success')
-                if currentStationId then openStationUi(currentStationId) end
             end, res.token, success, extra)
         end
 
@@ -411,6 +409,44 @@ local function startCraftFlow(productId)
             end)
         end
     end, currentStationId, productId)
+end
+
+local function stationIngredientsReady(ingredients)
+    for _, ing in ipairs(ingredients or {}) do
+        if (ing.missing or 0) > 0 then return false end
+    end
+    return true
+end
+
+local function pickStationProduct(products)
+    if not products or #products == 0 then return nil end
+    for _, row in ipairs(products) do
+        if stationIngredientsReady(row.ingredients) then return row end
+    end
+    return products[1]
+end
+
+local function startStationCraftDirect(stationId)
+    local st = getStationById(stationId)
+    if st and st.mode == 'weapon' then
+        return openStationUi(stationId)
+    end
+
+    QBCore.Functions.TriggerCallback('mrp_drugs:server:getStationUi', function(res)
+        if not res or not res.ok then
+            return QBCore.Functions.Notify((res and res.reason) or 'Nepavyko pradėti gamybos.', 'error')
+        end
+        if #res.products == 0 then
+            return QBCore.Functions.Notify('Nėra receptų šioje stotyje.', 'error')
+        end
+        local row = pickStationProduct(res.products)
+        if not row then return end
+        if not stationIngredientsReady(row.ingredients) then
+            return QBCore.Functions.Notify('Trūksta ingredientų.', 'error')
+        end
+        currentStationId = stationId
+        startCraftFlow(row.id)
+    end, stationId)
 end
 
 local function getFirstSellableDrugItem()
@@ -652,6 +688,13 @@ local function setupStationBlips()
         addFieldBlip(field, 'Kokos lapai')
     end
 
+    -- Aguonų laukas (heroino žaliava)
+    for _, field in ipairs(Config.PoppyFields or {}) do
+        if field.center then
+            addCfgBlip(field.center, field.blip, field.blip and field.blip.label or 'Aguonų laukas')
+        end
+    end
+
     -- Heroino laboratorija
     local heroinLab = Config.HeroinLab
     if heroinLab and heroinLab.blip then
@@ -785,7 +828,7 @@ local function setupStations()
                 icon = isWeapon and 'fas fa-tools' or 'fas fa-flask',
                 label = targetLabel,
                 action = function()
-                    openStationUi(st.id)
+                    startStationCraftDirect(st.id)
                 end,
             },
         }

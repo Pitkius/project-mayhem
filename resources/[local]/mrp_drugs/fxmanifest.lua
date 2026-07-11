@@ -41,6 +41,8 @@ files {
     'html/minigame-ui.js',
     'html/drug-games.js',
     'html/web-bridge.js',
+    'html/darknet.css',
+    'html/darknet.js',
     -- Nauja React + PixiJS darbo stotis (Vite single-file build, kraunama per iframe)
     'web/dist/index.html',
     'html/icons/grow_pot.png',
@@ -55,6 +57,7 @@ files {
 shared_scripts {
     'config.lua',
     'config_equipment.lua',
+    'config_darknet.lua',
     'shared/stations.lua',
     'shared/minigame_registry.lua',
 }
@@ -71,14 +74,21 @@ client_scripts {
     'client/water_refill.lua',
     'client/equipment.lua',
     'client/amp_lab.lua',
+    'client/darknet.lua',
+    'client/intro_mission.lua',
+    'client/world_sources.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'server/progression.lua',
     'server/equipment.lua',
     'server/main.lua',
     'server/printer.lua',
     'server/amp_lab.lua',
+    'server/darknet.lua',
+    'server/world_sources.lua',
+    'server/intro_mission.lua',
 }
 
 client_exports {

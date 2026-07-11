@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="vendor/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="org.css" />
 </head>
 <body>
   <div id="tablet" class="tablet hidden">
@@ -237,10 +238,36 @@
     <div id="gaToast" class="ga-toast" role="status"></div>
   </div>
 
+  <div id="gangOrg" class="org hidden" aria-hidden="true">
+    <div class="org-shell">
+      <aside class="org-sidebar">
+        <div class="org-brand" id="orgBrand"></div>
+        <nav class="org-nav" id="orgNav"></nav>
+        <div class="org-side-foot" id="orgSideFoot"></div>
+      </aside>
+      <main class="org-main">
+        <header class="org-topbar">
+          <div class="org-topbar-title">
+            <h1 id="orgViewTitle">Organizacija</h1>
+            <p id="orgViewSub"></p>
+          </div>
+          <div class="org-topbar-tools" id="orgTools"></div>
+        </header>
+        <div class="org-content" id="orgContent"></div>
+      </main>
+    </div>
+    <div class="org-drawer-backdrop hidden" id="orgDrawerBackdrop"></div>
+    <aside class="org-drawer hidden" id="orgDrawer"></aside>
+    <div class="org-modal-layer hidden" id="orgModal"></div>
+    <div class="org-toast" id="orgToast" role="status"></div>
+    <div class="org-invite-layer hidden" id="orgInvite"></div>
+  </div>
+
   <script src="vendor/leaflet.js"></script>
   <script src="gtav_map_core.js"></script>
   <script src="map.js"></script>
   <script src="app.js"></script>
   <script src="admin.js"></script>
+  <script src="org.js"></script>
 </body>
 </html>

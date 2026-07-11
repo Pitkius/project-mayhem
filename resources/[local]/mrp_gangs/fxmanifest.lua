@@ -12,8 +12,10 @@ files {
     'html/index.html',
     'html/style.css',
     'html/admin.css',
+    'html/org.css',
     'html/app.js',
     'html/admin.js',
+    'html/org.js',
     'html/gtav_map_core.js',
     'html/map.js',
     'html/asset/gtav_satellite.jpg',
@@ -27,6 +29,7 @@ files {
 
 shared_scripts {
     'config.lua',
+    'shared/permissions.lua',
     'config_turf_cells.lua',
     'config_missions.lua',
 }
@@ -36,6 +39,7 @@ client_scripts {
     'client.lua',
     'client_missions.lua',
     'client_graffiti.lua',
+    'client_org.lua',
 }
 
 server_scripts {
@@ -43,6 +47,13 @@ server_scripts {
     'server_admin.lua',
     'server.lua',
     'server_missions.lua',
+    'server_org.lua',
+    'server_org_invites.lua',
+    'server_org_ranks.lua',
+    'server_org_members.lua',
+    'server_org_associates.lua',
+    'server_org_diplomacy.lua',
+    'server_org_menu.lua',
 }
 
 exports {
@@ -52,6 +63,20 @@ exports {
     'OnHackSuccess',
     'OnHackFailed',
     'FindTurfAt',
+    'IsInGang',
+    'IsCitizenInGang',
+    -- Organizacijos valdymas (server_org.lua)
+    'IsGangMember',
+    'IsGangAssociate',
+    'GetPlayerGang',
+    'GetGangRank',
+    'HasGangPermission',
+    'GetGangResponsibilities',
+    'GetGangOwner',
+    'GetGangMembersEx',
+    'GetGangAssociates',
+    'GetGangRelation',
+    'AreGangsAllied',
 }
 
 dependencies {

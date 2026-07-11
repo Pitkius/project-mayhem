@@ -493,6 +493,9 @@ QBShared.Items = {
     coyote_meat_clean            = { name = 'coyote_meat_clean', label = 'Kojoto mėsa', weight = 320, type = 'item', image = 'coyote_meat_clean.png', unique = false, useable = false, shouldClose = false, description = 'Apdorota kojoto mėsa pardavimui.' },
     coyote_pelt                  = { name = 'coyote_pelt', label = 'Kojoto kailis', weight = 420, type = 'item', image = 'coyote_pelt.png', unique = false, useable = false, shouldClose = false, description = 'Pilkas kojoto kailis.' },
 
+    -- mrp_drugs — Dark Net nelegalus telefonas
+    darknet_phone                = { name = 'darknet_phone', label = 'Dark Net telefonas', weight = 400, type = 'item', image = 'phone.png', unique = false, useable = true, shouldClose = true, description = 'Šifruotas nelegalus įrenginys. Užsakymai tik naktį.' },
+
     -- mrp_drugs — 1 etapas: žaliava (nuskinta / gryna)
     hemp_trim                    = { name = 'hemp_trim', label = 'Techninės kanapės trim', weight = 40, type = 'item', image = 'weed_leaf.png', unique = false, useable = false, shouldClose = false, description = 'L1 THC žaliava · 1/3 etapas. Ne aukštos kokybės žolė.' },
     weed_seed                    = { name = 'weed_seed', label = 'Kanapių sėkla', weight = 5, type = 'item', image = 'weed_seed.png', unique = false, useable = false, shouldClose = true, description = 'Sodink į vazoną po substrato pylimo.' },
@@ -554,5 +557,26 @@ QBShared.Items = {
     weapon_parts                 = { name = 'weapon_parts', label = 'Ginklo komponentai', weight = 180, type = 'item', image = 'weapon_parts.png', unique = false, useable = false, shouldClose = false, description = 'Sudėtinės ginklo dalys.' },
     weapon_prototype             = { name = 'weapon_prototype', label = 'Ginklo prototipas', weight = 120, type = 'item', image = 'weapon_prototype.png', unique = false, useable = false, shouldClose = false, description = '3D spausdinimo šablonas ginklų dalims.' },
     printer_3d                   = { name = 'printer_3d', label = '3D spausdintuvas', weight = 8500, type = 'item', image = '3d_printer.png', unique = false, useable = true, shouldClose = true, description = 'Nešiojamas 3D spausdintuvas — padėk žemėje ir spausdink specialias dalis.' },
+
+    -- ── mrp_jobs — legalūs darbai ─────────────────────────────────────
+    -- Nafta
+    crude_oil_barrel             = { name = 'crude_oil_barrel', label = 'Naftos statinė', weight = 6000, type = 'item', image = 'crude_oil_barrel.png', unique = false, useable = false, shouldClose = false, description = 'Neapdorotos naftos statinė. Pristatoma į elektrinę.' },
+    -- Burger Joint produktai (useable — valgomi; apdorojama mrp_jobs serveryje)
+    burger_basic                 = { name = 'burger_basic', label = 'Paprastas burgeris', weight = 250, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · paprastas burgeris.' },
+    burger_double                = { name = 'burger_double', label = 'Dvigubas burgeris', weight = 350, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · dvigubas burgeris.' },
+    burger_chicken               = { name = 'burger_chicken', label = 'Vištienos burgeris', weight = 280, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · vištienos burgeris.' },
+    burger_fries                 = { name = 'burger_fries', label = 'Bulvytės', weight = 150, type = 'item', image = 'fries.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · bulvytės.' },
+    burger_softdrink             = { name = 'burger_softdrink', label = 'Gėrimas', weight = 120, type = 'item', image = 'softdrink.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · gaivusis gėrimas.' },
+    burger_meal                  = { name = 'burger_meal', label = 'Burgerio meniu', weight = 500, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · burgeris + bulvytės + gėrimas.' },
+    -- Vaisiai
+    apple                        = { name = 'apple', label = 'Obuolys', weight = 120, type = 'item', image = 'apple.png', unique = false, useable = true, shouldClose = true, description = 'Šviežias obuolys.' },
+    strawberry                   = { name = 'strawberry', label = 'Braškė', weight = 60, type = 'item', image = 'strawberry.png', unique = false, useable = true, shouldClose = true, description = 'Šviežia braškė.' },
+    apple_crate                  = { name = 'apple_crate', label = 'Obuolių dėžė', weight = 4000, type = 'item', image = 'apple_crate.png', unique = false, useable = false, shouldClose = false, description = 'Pilna obuolių dėžė. Pristatoma į supirkimą.' },
+    strawberry_crate             = { name = 'strawberry_crate', label = 'Braškių dėžė', weight = 4000, type = 'item', image = 'strawberry_crate.png', unique = false, useable = false, shouldClose = false, description = 'Pilna braškių dėžė. Pristatoma į supirkimą.' },
+    -- Vaisinis vape (rišasi su mrp_drugs vape_liquid_base / empty_bottle)
+    apple_concentrate            = { name = 'apple_concentrate', label = 'Obuolių koncentratas', weight = 150, type = 'item', image = 'apple_concentrate.png', unique = false, useable = false, shouldClose = false, description = 'Perdirbtas obuolių koncentratas vape skysčiui.' },
+    strawberry_concentrate       = { name = 'strawberry_concentrate', label = 'Braškių koncentratas', weight = 150, type = 'item', image = 'strawberry_concentrate.png', unique = false, useable = false, shouldClose = false, description = 'Perdirbtas braškių koncentratas vape skysčiui.' },
+    apple_vape_liquid            = { name = 'apple_vape_liquid', label = 'Obuolių vape skystis', weight = 110, type = 'item', image = 'vape_liquid.png', unique = false, useable = false, shouldClose = false, description = 'Vaisinis vape skystis · obuolių skonio.' },
+    strawberry_vape_liquid       = { name = 'strawberry_vape_liquid', label = 'Braškių vape skystis', weight = 110, type = 'item', image = 'vape_liquid.png', unique = false, useable = false, shouldClose = false, description = 'Vaisinis vape skystis · braškių skonio.' },
 
 }

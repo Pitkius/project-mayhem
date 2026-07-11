@@ -42,52 +42,90 @@ Config.DrugEquipment.minPlaceDist = 2.0
 Config.DrugEquipment.labAssistRadius = 5.0
 
 --- itemName (qb-core) → pasaulio prop + meniu produktai
---- products: receptai, kuriuose reikia šio itemo; arba packOnly sąrašas
+--- products: portable tipui (dažniausiai tuščia — tik pagalbinis įrankis receptuose)
+--- fixedLocations.products: konkretūs receptai tik toje lokacijoje (vienas narkotikas = viena vieta)
 Config.DrugEquipment.types = {
     lab_kit = {
         label = 'Laboratorijos stalas',
         prop = 'bkr_prop_meth_table01a',
         icon = 'flask',
-        products = { 'meth_process', 'cocaine_process', 'pills_process', 'amp_process' },
+        products = {},
     },
     burner = {
         label = 'Degiklis / kaitinilis',
         prop = 'prop_cooker_03',
         icon = 'flame',
-        products = { 'meth_process', 'cocaine_process' },
+        products = {},
     },
     pill_press = {
         label = 'Tablečių presas',
         prop = 'prop_tool_bench02',
         icon = 'pill',
-        products = { 'pills_process' },
+        products = {},
     },
     scale = {
         label = 'Elektroninės svarstyklės',
         prop = 'bkr_prop_coke_scale_01',
         icon = 'scale',
-        products = { 'meth_pack', 'heroin_pack', 'amp_pack' },
+        products = {},
     },
     bagging_table = {
         label = 'Pakavimo stalas',
         prop = 'bkr_prop_weed_table_01a',
         icon = 'bag',
-        packOnly = true, --- pack etapai be įrankio recepte
-        products = {
-            'weed_pack', 'mushroom_pack', 'cocaine_pack', 'pills_pack',
-            'thc_pack', 'vape_pack', 'alcohol_pack',
-        },
+        packOnly = true,
+        products = {},
+    },
+    thc_still = {
+        label = 'THC distiliatorius',
+        prop = 'bkr_prop_weed_table_01a',
+        icon = 'flask',
+        packOnly = true,
+        products = { 'thc_process' },
+    },
+    alcohol_still = {
+        label = 'Samagono distiliatorius',
+        prop = 'prop_cooker_03',
+        icon = 'flame',
+        packOnly = true,
+        products = { 'alcohol_process' },
+    },
+    vape_still = {
+        label = 'Vape paruošimo stalas',
+        prop = 'bkr_prop_weed_table_01a',
+        icon = 'flask',
+        packOnly = true,
+        products = { 'vape_process' },
     },
 }
 
 --- Fiksuota įranga labuose — nemokamas spawn, negali surinkti (fixed = true)
+--- Kiekviena eilutė = viena gamybos vieta, vienas narkotiko tipas
 Config.DrugEquipment.fixedLocations = {
-    { itemType = 'lab_kit', coords = vector4(1391.13, 3603.61, 38.94, 200.0), label = 'THC lab stalas' },
-    { itemType = 'lab_kit', coords = vector4(1175.52, -3113.84, 6.03, 90.0), label = 'Vape lab stalas' },
-    { itemType = 'lab_kit', coords = vector4(1005.72, -3200.12, -38.99, 0.0), label = 'Meto lab stalas' },
-    { itemType = 'burner', coords = vector4(1007.2, -3198.5, -38.99, 180.0), label = 'Meto degiklis' },
-    { itemType = 'pill_press', coords = vector4(353.6, -2055.2, 21.24, 140.0), label = 'Tablečių presas' },
-    { itemType = 'scale', coords = vector4(1009.1, -3199.8, -38.99, 270.0), label = 'Meto svarstyklės' },
-    { itemType = 'bagging_table', coords = vector4(5196.4, -5133.2, 3.35, 180.0), label = 'Žolės pakavimo stalas' },
-    { itemType = 'bagging_table', coords = vector4(1177.0, -3115.5, 6.03, 0.0), label = 'Vape pakavimo stalas' },
+    -- L1 · THC (Sandy Shores)
+    { itemType = 'thc_still', coords = vector4(1391.13, 3603.61, 38.94, 200.0), label = 'THC distiliatorius' },
+    { itemType = 'bagging_table', coords = vector4(1393.85, 3601.20, 38.94, 200.0), label = 'THC pakavimo stalas', products = { 'thc_pack' } },
+    -- L1 · Samagonas (Paleto)
+    { itemType = 'alcohol_still', coords = vector4(2381.75, 4953.01, 42.93, 45.0), label = 'Samagono distiliatorius' },
+    { itemType = 'bagging_table', coords = vector4(2377.54, 4938.41, 43.02, 45.0), label = 'Samagono pakavimo stalas', products = { 'alcohol_pack' } },
+    -- L1 · Vape (uostas)
+    { itemType = 'vape_still', coords = vector4(-805.86, -3242.86, 14.08, 90.0), label = 'Vape paruošimo stalas' },
+    { itemType = 'bagging_table', coords = vector4(-815.17, -3237.53, 14.15, 90.0), label = 'Vape pakavimo stalas', products = { 'vape_pack' } },
+    -- L2 · Metas (Grapeseed)
+    { itemType = 'lab_kit', coords = vector4(2712.45, 5238.18, 49.36, 286.5), label = 'Meto lab stalas', products = { 'meth_process' } },
+    { itemType = 'burner', coords = vector4(2710.80, 5237.00, 49.36, 286.5), label = 'Meto degiklis' },
+    { itemType = 'scale', coords = vector4(2709.10, 5235.05, 49.36, 286.5), label = 'Meto svarstyklės', products = { 'meth_pack' } },
+    -- L2 · Tabletės (Davis — atskirai nuo heroino)
+    { itemType = 'lab_kit', coords = vector4(345.00, -2064.50, 21.24, 140.0), label = 'Tablečių lab stalas' },
+    { itemType = 'pill_press', coords = vector4(348.50, -2062.00, 21.24, 140.0), label = 'Tablečių presas', products = { 'pills_process' } },
+    { itemType = 'bagging_table', coords = vector4(351.20, -2058.40, 21.24, 140.0), label = 'Tablečių pakavimo stalas', products = { 'pills_pack' } },
+    -- L3 · Kokainas (Cayo Perico)
+    { itemType = 'lab_kit', coords = vector4(4987.12, -5128.44, 2.52, 57.0), label = 'Kokaino lab stalas', products = { 'cocaine_process' } },
+    { itemType = 'burner', coords = vector4(4989.20, -5126.80, 2.52, 57.0), label = 'Kokaino degiklis' },
+    { itemType = 'bagging_table', coords = vector4(4989.80, -5130.20, 2.52, 57.0), label = 'Kokaino pakavimo stalas', products = { 'cocaine_pack' } },
+    -- L3 · Amfetaminas (Grapeseed dykuma)
+    { itemType = 'lab_kit', coords = vector4(1903.48, 4922.55, 48.86, 225.0), label = 'Amfetamino lab stalas', products = { 'amp_process' } },
+    { itemType = 'scale', coords = vector4(1908.20, 4926.80, 48.86, 225.0), label = 'Amfetamino svarstyklės', products = { 'amp_pack' } },
+    -- L2 · Žolė (Cayo pakavimas)
+    { itemType = 'bagging_table', coords = vector4(5196.40, -5133.20, 3.35, 180.0), label = 'Žolės pakavimo stalas', products = { 'weed_pack' } },
 }

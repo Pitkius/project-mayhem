@@ -125,59 +125,29 @@ local function runEquipmentCraftFlow(productId, equipmentId)
     end, equipmentId, productId)
 end
 
-local function openEquipmentMenu(equipmentId)
+local function pickEquipmentProduct(products)
+    if not products or #products == 0 then return nil end
+    for _, row in ipairs(products) do
+        if row.canCraft then return row end
+    end
+    return products[1]
+end
+
+local function useEquipmentDirect(equipmentId)
     if crafting or placing then return end
     QBCore.Functions.TriggerCallback('mrp_drugs:server:getEquipmentMenu', function(res)
         if not res or not res.ok then
-            return notify((res and res.reason) or 'Meniu nepasiekiama.', 'error')
+            return notify((res and res.reason) or 'Gamyba nepasiekiama.', 'error')
         end
-        local menu = {
-            { header = res.equipment.label or 'Įranga', isMenuHeader = true },
-        }
         if #res.products == 0 then
-            menu[#menu + 1] = {
-                header = 'Nėra receptų šiai įrangai',
-                txt = 'Patikrink ingredientus ar lygį',
-                disabled = true,
-            }
+            return notify('Čia negalima gaminti — naudok fiksuotą laboratoriją.', 'error')
         end
-        for _, row in ipairs(res.products) do
-            local txt = row.canCraft and 'Pradėti gamybą' or 'Trūksta ingredientų'
-            menu[#menu + 1] = {
-                header = row.label,
-                txt = txt,
-                disabled = not row.canCraft,
-                params = {
-                    isAction = true,
-                    event = function()
-                        TriggerEvent('qb-menu:client:closeMenu')
-                        runEquipmentCraftFlow(row.id, equipmentId)
-                    end,
-                },
-            }
+        local row = pickEquipmentProduct(res.products)
+        if not row then return end
+        if not row.canCraft then
+            return notify('Trūksta ingredientų.', 'error')
         end
-        if not res.equipment.fixed then
-            menu[#menu + 1] = {
-                header = 'Surinkti įrangą',
-                txt = 'Grąžina itemą į inventorių',
-                params = {
-                    isAction = true,
-                    event = function()
-                        TriggerEvent('qb-menu:client:closeMenu')
-                        TriggerServerEvent('mrp_drugs:server:pickupEquipment', equipmentId)
-                    end,
-                },
-            }
-        end
-        menu[#menu + 1] = {
-            header = 'Uždaryti',
-            params = { isAction = true, event = function() TriggerEvent('qb-menu:client:closeMenu') end },
-        }
-        if GetResourceState('qb-menu') == 'started' then
-            TriggerEvent('qb-menu:client:openMenu', menu, false, true)
-        else
-            notify('qb-menu neįkeltas.', 'error')
-        end
+        runEquipmentCraftFlow(row.id, equipmentId)
     end, equipmentId)
 end
 
@@ -191,17 +161,28 @@ end
 local function refreshTargets()
     for id, obj in pairs(EquipmentProps) do
         if obj and DoesEntityExist(obj) then
+            local meta = EquipmentMeta[id]
+            local options = {
+                {
+                    icon = targetIconFor(id),
+                    label = (meta and meta.label) or 'Gaminti',
+                    action = function()
+                        useEquipmentDirect(id)
+                    end,
+                },
+            }
+            if meta and not meta.fixed then
+                options[#options + 1] = {
+                    icon = 'fas fa-box',
+                    label = 'Surinkti įrangą',
+                    action = function()
+                        TriggerServerEvent('mrp_drugs:server:pickupEquipment', id)
+                    end,
+                }
+            end
             exports['qb-target']:RemoveTargetEntity(obj)
             exports['qb-target']:AddTargetEntity(obj, {
-                options = {
-                    {
-                        icon = targetIconFor(id),
-                        label = 'Naudoti įrangą',
-                        action = function()
-                            openEquipmentMenu(id)
-                        end,
-                    },
-                },
+                options = options,
                 distance = cfg().interactDist or 2.5,
             })
         end

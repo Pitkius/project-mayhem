@@ -61,38 +61,66 @@ end
 
 CreateThread(function()
     local cfg = markerCfg()
-    local drawD = cfg.drawDistance or 32.0
+    local drawD = cfg.drawDistance or 22.0
     local useR = cfg.useRadius or 2.4
+    local farSleep = 1200
+    local drawSleep = 150
 
     while true do
-        local sleep = 500
-        local ped = PlayerPedId()
-        local pcoords = GetEntityCoords(ped)
+        if #zones == 0 then
+            Wait(farSleep)
+            goto continue
+        end
 
-        if not IsNuiFocused() then
-            for _, zone in ipairs(zones) do
-                local dist = #(pcoords - zone.coords)
-                if dist < drawD then
-                    sleep = 0
-                    drawJunkMarker(zone.coords)
-                    if dist < useR then
-                        EnableControlAction(0, 38, true)
-                        QBCore.Functions.DrawText3D(
-                            zone.coords.x,
-                            zone.coords.y,
-                            zone.coords.z + 0.72,
-                            ('[E] %s'):format(zone.label)
-                        )
-                        if IsControlJustPressed(0, 38) and (GetGameTimer() - lastInteractMs) > 450 then
-                            lastInteractMs = GetGameTimer()
-                            TriggerServerEvent('mrp_npcshops:server:openJunkShop')
-                        end
-                    end
+        if IsNuiFocused() then
+            Wait(400)
+            goto continue
+        end
+
+        local pcoords = GetEntityCoords(PlayerPedId())
+        local nearestDist = math.huge
+        local interactZone = nil
+        local interactDist = math.huge
+        local drawCount = 0
+
+        for i = 1, #zones do
+            local zone = zones[i]
+            local dist = #(pcoords - zone.coords)
+            if dist < nearestDist then nearestDist = dist end
+
+            if dist < drawD then
+                drawCount = drawCount + 1
+                drawJunkMarker(zone.coords)
+                if dist < useR and dist < interactDist then
+                    interactZone = zone
+                    interactDist = dist
                 end
             end
         end
 
-        Wait(sleep)
+        if nearestDist > drawD then
+            Wait(farSleep)
+            goto continue
+        end
+
+        if interactZone then
+            EnableControlAction(0, 38, true)
+            QBCore.Functions.DrawText3D(
+                interactZone.coords.x,
+                interactZone.coords.y,
+                interactZone.coords.z + 0.72,
+                ('[E] %s'):format(interactZone.label)
+            )
+            if IsControlJustPressed(0, 38) and (GetGameTimer() - lastInteractMs) > 450 then
+                lastInteractMs = GetGameTimer()
+                TriggerServerEvent('mrp_npcshops:server:openJunkShop')
+            end
+            Wait(0)
+        else
+            Wait(drawCount > 0 and drawSleep or farSleep)
+        end
+
+        ::continue::
     end
 end)
 

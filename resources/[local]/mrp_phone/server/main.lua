@@ -306,6 +306,35 @@ local function sourceByCitizen(citizenid)
     return nil, nil
 end
 
+--- Sistemos / „nežinomo numerio" SMS iš kito resurso (pvz. mrp_drugs Dark Net).
+--- Įrašo žinutę į veikėjo pokalbių istoriją ir notifikuoja, jei žaidėjas online.
+--- @param toCitizenid string   Gavėjo citizenid
+--- @param fromNumber  string   Rodyti kaip siuntėjo numerį (pvz. '000000')
+--- @param body        string   Žinutės tekstas
+--- @return boolean ok
+exports('SendSystemSMS', function(toCitizenid, fromNumber, body)
+    toCitizenid = tostring(toCitizenid or '')
+    fromNumber = digitsOnly(fromNumber or '') 
+    if fromNumber == '' then fromNumber = '000000' end
+    body = clampStr(body or '', (Config.Phone and Config.Phone.maxMessageLength) or 320)
+    if toCitizenid == '' or body == '' then return false end
+
+    local toNumber = getNumberByCitizen(toCitizenid) or ''
+
+    MySQL.insert.await([[
+        INSERT INTO fivempro_phone_messages
+        (from_citizenid, to_citizenid, from_number, to_number, body)
+        VALUES (?, ?, ?, ?, ?)
+    ]], { 'SYSTEM', toCitizenid, fromNumber, toNumber, body })
+
+    local targetSrc = sourceByCitizen(toCitizenid)
+    if targetSrc then
+        TriggerClientEvent('mrp_phone:client:newMessageNotify', targetSrc, fromNumber)
+        TriggerClientEvent('mrp_phone:client:refreshData', targetSrc)
+    end
+    return true
+end)
+
 local function jobMatchesPolice(jobName)
     jobName = tostring(jobName or ''):lower()
     for _, n in ipairs((Config.Emergency and Config.Emergency.policeJobs) or { 'police' }) do

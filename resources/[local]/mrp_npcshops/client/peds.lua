@@ -290,9 +290,6 @@ local function configureShopPed(ent, meta, key)
     if targetData then
         queueTarget(ent, targetData, isJob)
     end
-    if meta.category == 'job' and not isJobMarkerRole(meta.role) then
-        addJobBoxZone(meta)
-    end
 end
 
 AddStateBagChangeHandler('npcShopMeta', nil, function(bagName, _, value)
@@ -317,24 +314,6 @@ end)
 
 --- Jau egzistuojantys serverio NPC (state bag handler ne visada suveikia prisijungus vėliau)
 CreateThread(function()
-    Wait(3000)
-    while GetResourceState('qb-target') ~= 'started' do Wait(250) end
-    for _, entry in ipairs(Config.JobStationNpcs or {}) do
-        if not isJobMarkerRole(entry.role) then
-            addJobBoxZone({
-                category = 'job',
-                job = entry.job,
-                stationId = entry.stationId,
-                role = entry.role,
-                label = entry.label,
-                coords = entry.coords,
-            })
-        end
-    end
-end)
-
---- Retas atsarginis sync tik arti esantiems NPC (ne visam ped pool)
-CreateThread(function()
     Wait(12000)
     while GetResourceState('qb-target') ~= 'started' do Wait(500) end
     local ped = PlayerPedId()
@@ -355,7 +334,10 @@ end)
 
 CreateThread(function()
     while true do
-        if GetResourceState('qb-target') == 'started' then
+        local pending = #pendingTargets + #pendingJobTargets
+        if pending == 0 then
+            Wait(1500)
+        elseif GetResourceState('qb-target') == 'started' then
             for i = #pendingTargets, 1, -1 do
                 local entry = pendingTargets[i]
                 if entry and DoesEntityExist(entry.ped) and IsEntityAPed(entry.ped) then
@@ -380,8 +362,10 @@ CreateThread(function()
                 end
                 table.remove(pendingJobTargets, i)
             end
+            Wait(250)
+        else
+            Wait(500)
         end
-        Wait(500)
     end
 end)
 
@@ -417,19 +401,6 @@ end)
 
 local function refreshShopTargetsAfterTargetRestart()
     if GetResourceState('qb-target') ~= 'started' then return end
-    jobBoxZones = {}
-    for _, entry in ipairs(Config.JobStationNpcs or {}) do
-        if not isJobMarkerRole(entry.role) then
-            addJobBoxZone({
-                category = 'job',
-                job = entry.job,
-                stationId = entry.stationId,
-                role = entry.role,
-                label = entry.label,
-                coords = entry.coords,
-            })
-        end
-    end
     for _, ped in ipairs(GetGamePool('CPed')) do
         if DoesEntityExist(ped) and not IsPedAPlayer(ped) then
             local meta = Entity(ped).state.npcShopMeta

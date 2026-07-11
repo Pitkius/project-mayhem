@@ -3,9 +3,9 @@ Config = Config or {}
 --- Shop NPC: spawn tik kai žaidėjas arti; kiti lieka išjungti (mažesnis load).
 Config.NpcProximity = {
     enabled = true,
-    spawnDistance = 72.0,
-    despawnDistance = 92.0,
-    checkIntervalMs = 1800,
+    spawnDistance = 55.0,
+    despawnDistance = 70.0,
+    checkIntervalMs = 2500,
 }
 
 --- NPC pririšimas prie grindų (klientas koreguoja Z po serverio spawn)
@@ -13,7 +13,9 @@ Config.NpcGround = {
     enabled = true,
     zOffset = 0.0,
     maxGroundDelta = 2.5,
-    retryMs = 4500,
+    retryMs = 2500,
+    --- Interjerų shop'ai — Z jau teisingas config'e, nereikia collision loop
+    skipCategories = { 'food', 'pharmacy', 'barber', 'clothing', 'tattoo', 'job' },
 }
 
 --- Kirpyklos — vanilla qb-clothing zonos + kasininkės pozicija
@@ -100,7 +102,7 @@ Config.JunkShopBlip = {
 }
 
 Config.JunkShopMarker = {
-    drawDistance = 32.0,
+    drawDistance = 22.0,
     useRadius = 2.4,
     type = 27,
     scale = { x = 1.15, y = 1.15, z = 0.32 },

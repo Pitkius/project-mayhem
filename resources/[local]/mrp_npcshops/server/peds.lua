@@ -40,11 +40,12 @@ local function playerCoordsList()
     return out
 end
 
-local function anyPlayerWithin(coords, dist)
+local function anyPlayerWithin(coords, dist, players)
     if not coords then return false end
+    players = players or playerCoordsList()
     local cx, cy, cz = coords.x + 0.0, coords.y + 0.0, coords.z + 0.0
     local d2 = dist * dist
-    for _, p in ipairs(playerCoordsList()) do
+    for _, p in ipairs(players) do
         local dx, dy, dz = p.x - cx, p.y - cy, p.z - cz
         if (dx * dx + dy * dy + dz * dz) <= d2 then
             return true
@@ -157,12 +158,13 @@ end
 local function tickProximity()
     local spawnDist = spawnDistance()
     local despawnDist = math.max(despawnDistance(), spawnDist + 5.0)
+    local players = playerCoordsList()
 
     for _, entry in ipairs(registry) do
         local key = NpcRegistry.entryKey(entry)
         local active = activeByKey[key]
-        local nearSpawn = anyPlayerWithin(entry.coords, spawnDist)
-        local nearKeep = anyPlayerWithin(entry.coords, despawnDist)
+        local nearSpawn = anyPlayerWithin(entry.coords, spawnDist, players)
+        local nearKeep = anyPlayerWithin(entry.coords, despawnDist, players)
 
         if nearSpawn and not active then
             local ped = spawnEntry(entry)

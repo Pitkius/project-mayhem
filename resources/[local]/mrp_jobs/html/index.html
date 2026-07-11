@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mrp_jobs</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div id="burger" class="panel hidden">
+        <div class="panel__head">
+            <div class="panel__title">
+                <span id="burgerIcon" class="mi">🍔</span>
+                <div>
+                    <h1 id="burgerHeading">Burger Shot</h1>
+                    <p id="burgerSub">Kasa</p>
+                </div>
+            </div>
+            <button id="burgerClose" class="btn btn--ghost">Uždaryti (ESC)</button>
+        </div>
+
+        <div id="burgerEmpty" class="empty">Nėra aktyvių užsakymų.</div>
+        <div id="burgerList" class="orders"></div>
+    </div>
+
+    <audio id="voice" preload="none"></audio>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -121,6 +121,7 @@ function Equipment.loadFixed()
                 heading = c.w or 0.0,
                 fixed = true,
                 label = loc.label,
+                products = loc.products,
             }
         end
     end
@@ -182,9 +183,18 @@ function Equipment.rowSatisfiedByNearby(primaryId, itemType)
     return Equipment.nearbyTypeAt(primary.x, primary.y, primary.z, itemType, Equipment.assistRadius())
 end
 
-function Equipment.productAllowedAt(itemType, productId)
+function Equipment.productAllowedAt(eOrType, productId)
+    if not productId then return false end
+    local e = type(eOrType) == 'table' and eOrType or nil
+    local itemType = e and e.itemType or eOrType
+    if e and e.products then
+        for _, pid in ipairs(e.products) do
+            if pid == productId then return true end
+        end
+        return false
+    end
     local t = typeCfg(itemType)
-    if not t or not productId then return false end
+    if not t then return false end
     if t.packOnly then
         for _, pid in ipairs(t.products or {}) do
             if pid == productId then return true end
@@ -204,6 +214,12 @@ function Equipment.productsForType(itemType)
         end
     end
     return out
+end
+
+function Equipment.productsForEntity(e)
+    if not e then return {} end
+    if e.products then return e.products end
+    return Equipment.productsForType(e.itemType)
 end
 
 function Equipment.canCraftProduct(Player, equipmentId, productId)
@@ -309,7 +325,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getEquipmentMenu', function(sr
     if not P then return cb({ ok = false }) end
 
     local rows = {}
-    for _, productId in ipairs(Equipment.productsForType(e.itemType)) do
+    for _, productId in ipairs(Equipment.productsForEntity(e)) do
         local prod = Config.Products and Config.Products[productId]
         if prod and prod.minigame == 'schedule' then
             local can, missing = Equipment.canCraftProduct(P, equipmentId, productId)

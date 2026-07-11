@@ -12,6 +12,9 @@ local function allHarvestFields()
     for _, field in ipairs(Config.CocaFields or {}) do
         out[#out + 1] = field
     end
+    for _, field in ipairs(Config.PoppyFields or {}) do
+        out[#out + 1] = field
+    end
     return out
 end
 

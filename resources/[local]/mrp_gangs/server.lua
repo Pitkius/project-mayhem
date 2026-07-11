@@ -693,3 +693,29 @@ exports('FindTurfAt', function(x, y)
         return Config.FindTurfAt(x, y)
     end
 end)
+
+--- Lengvas gaujos narystės patikrinimas kitiems resursams (pvz. mrp_drugs Dark Net).
+--- Grąžina: isInGang(boolean), gangName(string|nil), gangRank(number|nil), gangId(number|nil)
+exports('IsInGang', function(src)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return false end
+    local row = MySQL.single.await([[
+        SELECT gm.gang_id, gm.rank, g.name
+        FROM fivempro_gang_members gm
+        JOIN fivempro_gangs g ON g.id = gm.gang_id
+        WHERE gm.citizenid = ?
+        LIMIT 1
+    ]], { Player.PlayerData.citizenid })
+    if not row then return false end
+    return true, row.name, tonumber(row.rank), tonumber(row.gang_id)
+end)
+
+--- Ta pati patikra pagal citizenid (veikia ir offline).
+exports('IsCitizenInGang', function(citizenid)
+    if not citizenid then return false end
+    local row = MySQL.scalar.await(
+        'SELECT gang_id FROM fivempro_gang_members WHERE citizenid = ? LIMIT 1',
+        { citizenid }
+    )
+    return row ~= nil
+end)

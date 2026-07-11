@@ -547,76 +547,44 @@ Config.WeaponRecipes = {
 Config.MaterialShop = {
     name = 'fivempro-illegal-supply',
     label = 'Nelegalūs reikmenys',
+    --[[
+      SVARBU (žaliavų gavimo principas):
+        · MaterialShop parduoda TIK bendrus gamybos reikmenis (maišeliai, filtrai,
+          pirštinės, svarstyklės, buteliai, kasetės, lab įranga).
+        · NARKOTIKŲ ŽALIAVOS, apdoroti ir galutiniai produktai ČIA NEPARDUODAMI.
+          Žaliavos gaunamos: pasaulyje (auginimas, rinkimas, aguonų laukas),
+          per NPC (alkoholio fermentacija, vape chemikas, tablečių kontaktas)
+          arba per Dark Net (hemp_trim, meth precursor, amp precursor, chemical_mix).
+        · Žr. config_darknet.lua → Config.WorldSources ir Config.DarkNet.products.
+    ]]
     items = {
-        -- Kiekvienas narkotikas: 1 → 2 → 3 etapas
-        -- THC (L1 — atskira linija, ne žolė)
-        { name = 'hemp_trim', amount = 500, price = 18, slot = 1 },
-        { name = 'thc_resin', amount = 300, price = 45, slot = 2 },
-        { name = 'thc_cart', amount = 200, price = 75, slot = 3 },
-        -- Samagonas
-        { name = 'alcohol_base', amount = 500, price = 18, slot = 4 },
-        { name = 'moonshine_spirit', amount = 300, price = 42, slot = 5 },
-        { name = 'illegal_alcohol', amount = 200, price = 58, slot = 6 },
-        -- Vape skystis
-        { name = 'vape_liquid_base', amount = 500, price = 16, slot = 7 },
-        { name = 'vape_mix', amount = 300, price = 38, slot = 8 },
-        { name = 'vape_liquid', amount = 200, price = 52, slot = 9 },
-        -- Žolė L2 (lapai tik iš auginimo — WeedSupplyShop prie Grapeseed)
-        { name = 'trimming_scissors', amount = 200, price = 95, slot = 10 },
-        { name = 'gloves', amount = 200, price = 25, slot = 11 },
-        { name = 'empty_bag', amount = 500, price = 11, slot = 12 },
-        { name = 'scale', amount = 100, price = 85, slot = 13 },
-        { name = 'weed_buds', amount = 300, price = 55, slot = 14 },
-        { name = 'weed_bag', amount = 200, price = 110, slot = 15 },
-        -- Heroinas
-        { name = 'poppy_flower', amount = 500, price = 28, slot = 16 },
-        { name = 'heroin_paste', amount = 300, price = 72, slot = 18 },
-        { name = 'heroin_bag', amount = 200, price = 175, slot = 19 },
-        -- Metas
-        { name = 'meth_ingredient', amount = 500, price = 35, slot = 20 },
-        { name = 'meth_crystal', amount = 300, price = 85, slot = 21 },
-        { name = 'meth_bag', amount = 200, price = 195, slot = 22 },
-        -- Tabletės
-        { name = 'pill_powder', amount = 500, price = 30, slot = 23 },
-        { name = 'pill_tablets', amount = 300, price = 58, slot = 24 },
-        { name = 'pills_pack', amount = 200, price = 145, slot = 25 },
-        -- Grybai
-        { name = 'mushroom_raw', amount = 500, price = 24, slot = 26 },
-        { name = 'mushroom_dried', amount = 300, price = 50, slot = 27 },
-        { name = 'mushroom_pack', amount = 200, price = 125, slot = 28 },
-        -- Kokainas (lapai → nesupakuotas → supakuotas)
-        { name = 'cartel_raw', amount = 500, price = 52, slot = 29 },
-        { name = 'cartel_blend', amount = 300, price = 105, slot = 30 },
-        { name = 'cartel_pack', amount = 200, price = 320, slot = 31 },
-        -- Amfetaminas
-        { name = 'amp_precursor', amount = 500, price = 38, slot = 32 },
-        { name = 'amp_paste', amount = 300, price = 88, slot = 33 },
-        { name = 'amphetamine_bag', amount = 200, price = 250, slot = 34 },
-        -- Kiti mini-žaidimų įrankiai
-        { name = 'pill_press', amount = 100, price = 280, slot = 35 },
-        -- Ekstra: reagentai ir įrankiai
-        { name = 'chemical_mix', amount = 500, price = 40, slot = 36 },
-        { name = 'filter', amount = 500, price = 8, slot = 37 },
-        { name = 'lab_kit', amount = 50, price = 220, slot = 38 },
-        { name = 'burner', amount = 100, price = 120, slot = 39 },
-        { name = 'bagging_table', amount = 80, price = 195, slot = 55 },
-        { name = 'empty_cart', amount = 500, price = 12, slot = 40 },
-        { name = 'empty_bottle', amount = 500, price = 10, slot = 41 },
-        -- 3D spausdinimas
-        { name = 'weapon_prototype', amount = 200, price = 380, slot = 42 },
-        { name = 'printer_3d', amount = 25, price = 7500, slot = 43 },
-        { name = 'plastic', amount = 500, price = 22, slot = 44 },
-        -- Ginklų dalys
-        { name = 'metal_scrap', amount = 500, price = 55, slot = 45 },
-        { name = 'gun_frame', amount = 200, price = 220, slot = 46 },
-        { name = 'gun_barrel', amount = 200, price = 260, slot = 47 },
-        { name = 'gun_spring', amount = 500, price = 45, slot = 48 },
-        { name = 'gun_trigger', amount = 300, price = 85, slot = 49 },
-        { name = 'weapon_parts', amount = 300, price = 150, slot = 50 },
-        { name = 'pistol_ammo', amount = 500, price = 18, slot = 51 },
-        { name = 'smg_ammo', amount = 500, price = 28, slot = 52 },
-        { name = 'rifle_ammo', amount = 500, price = 35, slot = 53 },
-        { name = 'shotgun_ammo', amount = 500, price = 32, slot = 54 },
+        -- Bendri pakavimo / gamybos reikmenys
+        { name = 'trimming_scissors', amount = 200, price = 110, slot = 1 },
+        { name = 'gloves', amount = 200, price = 30, slot = 2 },
+        { name = 'empty_bag', amount = 500, price = 14, slot = 3 },
+        { name = 'empty_cart', amount = 500, price = 15, slot = 4 },
+        { name = 'empty_bottle', amount = 500, price = 13, slot = 5 },
+        { name = 'filter', amount = 500, price = 10, slot = 6 },
+        { name = 'scale', amount = 100, price = 95, slot = 7 },
+        { name = 'lab_kit', amount = 50, price = 260, slot = 8 },
+        { name = 'burner', amount = 100, price = 140, slot = 9 },
+        { name = 'pill_press', amount = 100, price = 320, slot = 10 },
+        { name = 'bagging_table', amount = 80, price = 220, slot = 11 },
+        -- 3D spausdinimas (atskira ginklų sistema — ne narkotikai)
+        { name = 'weapon_prototype', amount = 200, price = 380, slot = 12 },
+        { name = 'printer_3d', amount = 25, price = 7500, slot = 13 },
+        { name = 'plastic', amount = 500, price = 22, slot = 14 },
+        -- Ginklų dalys (atskira ginklų sistema — ne narkotikai)
+        { name = 'metal_scrap', amount = 500, price = 55, slot = 15 },
+        { name = 'gun_frame', amount = 200, price = 220, slot = 16 },
+        { name = 'gun_barrel', amount = 200, price = 260, slot = 17 },
+        { name = 'gun_spring', amount = 500, price = 45, slot = 18 },
+        { name = 'gun_trigger', amount = 300, price = 85, slot = 19 },
+        { name = 'weapon_parts', amount = 300, price = 150, slot = 20 },
+        { name = 'pistol_ammo', amount = 500, price = 18, slot = 21 },
+        { name = 'smg_ammo', amount = 500, price = 28, slot = 22 },
+        { name = 'rifle_ammo', amount = 500, price = 35, slot = 23 },
+        { name = 'shotgun_ammo', amount = 500, price = 32, slot = 24 },
     },
 }
 
@@ -707,7 +675,7 @@ Config.ProductBuyerNPCs = {
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 93, color = 5, scale = 0.75, label = 'Alkoholio supirkėjas' },
         prices = {
-            illegal_alcohol = 75,
+            illegal_alcohol = 120,
         },
     },
     thc = {
@@ -721,7 +689,7 @@ Config.ProductBuyerNPCs = {
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 140, color = 25, scale = 0.75, label = 'THC supirkėjas' },
         prices = {
-            thc_cart = 95,
+            thc_cart = 170,
         },
     },
     vape = {
@@ -735,7 +703,7 @@ Config.ProductBuyerNPCs = {
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 52, color = 27, scale = 0.75, label = 'Vape supirkėjas' },
         prices = {
-            vape_liquid = 65,
+            vape_liquid = 190,
         },
     },
     weed = {
@@ -749,7 +717,7 @@ Config.ProductBuyerNPCs = {
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 140, color = 2, scale = 0.75, label = 'Žolės supirkėjas' },
         prices = {
-            weed_bag = 140,
+            weed_bag = 260,
         },
     },
     cocaine = {
@@ -763,7 +731,7 @@ Config.ProductBuyerNPCs = {
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 501, color = 0, scale = 0.75, label = 'Kokaino supirkėjas' },
         prices = {
-            cartel_pack = 195,
+            cartel_pack = 620,
         },
     },
     heroin = {
@@ -776,7 +744,7 @@ Config.ProductBuyerNPCs = {
         targetIcon = 'fas fa-syringe',
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 51, color = 1, scale = 0.75, label = 'Heroino supirkėjas' },
-        prices = { heroin_bag = 220 },
+        prices = { heroin_bag = 320 },
     },
     meth = {
         enabled = true,
@@ -788,7 +756,7 @@ Config.ProductBuyerNPCs = {
         targetIcon = 'fas fa-flask',
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 499, color = 3, scale = 0.75, label = 'Metamfetamino supirkėjas' },
-        prices = { meth_bag = 260 },
+        prices = { meth_bag = 420 },
     },
     pills = {
         enabled = true,
@@ -800,7 +768,7 @@ Config.ProductBuyerNPCs = {
         targetIcon = 'fas fa-pills',
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 51, color = 17, scale = 0.75, label = 'Tablečių supirkėjas' },
-        prices = { pills_pack = 180 },
+        prices = { pills_pack = 300 },
     },
     mushroom = {
         enabled = true,
@@ -812,7 +780,7 @@ Config.ProductBuyerNPCs = {
         targetIcon = 'fas fa-seedling',
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 469, color = 7, scale = 0.75, label = 'Grybų supirkėjas' },
-        prices = { mushroom_pack = 150 },
+        prices = { mushroom_pack = 250 },
     },
     amp = {
         enabled = true,
@@ -824,7 +792,7 @@ Config.ProductBuyerNPCs = {
         targetIcon = 'fas fa-bolt',
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 499, color = 5, scale = 0.75, label = 'Amfetamino supirkėjas' },
-        prices = { amphetamine_bag = 380 },
+        prices = { amphetamine_bag = 700 },
     },
 }
 
@@ -1018,6 +986,15 @@ Config.ThcLab = {
             radius = 1.5,
             products = { 'thc_process' },
         },
+        {
+            id = 'thc_lab_pack_1',
+            label = 'THC · supakavimas',
+            level = 1,
+            coords = vector3(1393.85, 3601.20, 38.9419),
+            heading = 200.0,
+            radius = 1.5,
+            products = { 'thc_pack' },
+        },
     },
 }
 
@@ -1181,11 +1158,11 @@ Config.HeroinLab = {
     },
 }
 
---- Tablečių presavimas — 2 etapas (production) · ta pati lab. zona kaip heroinas
+--- Tablečių presavimas — 2 etapas (production) · Davis (atskirai nuo heroino)
 Config.PillsLab = {
     blip = {
         enabled = true,
-        coords = vector3(1953.0, 5180.0, 47.9838),
+        coords = vector3(348.50, -2062.00, 21.24),
         sprite = 499,
         color = 38,
         scale = 0.78,
@@ -1197,8 +1174,8 @@ Config.PillsLab = {
             id = 'pills_lab_process_1',
             label = 'Tabletės · presavimas',
             level = 2,
-            coords = vector3(1951.2238, 5179.1294, 47.9838),
-            heading = 5.9604,
+            coords = vector3(346.80, -2063.50, 21.24),
+            heading = 140.0,
             radius = 1.4,
             products = { 'pills_process' },
         },
@@ -1206,8 +1183,8 @@ Config.PillsLab = {
             id = 'pills_lab_process_2',
             label = 'Tabletės · presavimas',
             level = 2,
-            coords = vector3(1955.4041, 5179.1353, 47.9838),
-            heading = 359.5552,
+            coords = vector3(348.50, -2062.00, 21.24),
+            heading = 140.0,
             radius = 1.4,
             products = { 'pills_process' },
         },
@@ -1215,28 +1192,28 @@ Config.PillsLab = {
             id = 'pills_lab_process_3',
             label = 'Tabletės · presavimas',
             level = 2,
-            coords = vector3(1951.1562, 5180.8154, 47.9838),
-            heading = 172.7080,
+            coords = vector3(350.20, -2060.50, 21.24),
+            heading = 140.0,
             radius = 1.4,
             products = { 'pills_process' },
         },
         {
-            id = 'pills_lab_process_4',
-            label = 'Tabletės · presavimas',
+            id = 'pills_lab_pack_1',
+            label = 'Tabletės · supakavimas',
             level = 2,
-            coords = vector3(1955.4730, 5180.8521, 47.9838),
-            heading = 176.3169,
+            coords = vector3(351.20, -2058.40, 21.24),
+            heading = 140.0,
             radius = 1.4,
-            products = { 'pills_process' },
+            products = { 'pills_pack' },
         },
         {
-            id = 'pills_lab_process_5',
-            label = 'Tabletės · presavimas',
+            id = 'pills_lab_pack_2',
+            label = 'Tabletės · supakavimas',
             level = 2,
-            coords = vector3(1943.0104, 5182.9053, 47.9838),
-            heading = 3.1554,
-            radius = 1.6,
-            products = { 'pills_process' },
+            coords = vector3(353.00, -2056.80, 21.24),
+            heading = 140.0,
+            radius = 1.4,
+            products = { 'pills_pack' },
         },
     },
 }
@@ -1538,7 +1515,7 @@ Config.WorldSiteIndex = {
     { id = 'weed_pack_cayo',     category = 'lab',     label = 'Žolės supakavimas (Cayo)',      coords = '5195.83, -5134.91, 3.35',    desc = 'Weed pack — Cayo Perico' },
     { id = 'heroin_lab',         category = 'lab',     label = 'Heroino laboratorija',          coords = '1953.00, 5180.00, 47.98',   desc = 'Heroin process + pack' },
     { id = 'meth_lab',           category = 'lab',     label = 'Metamfetamino laboratorija',    coords = '2709.10, 5235.05, 49.36',   desc = 'Kristalizacija + supakavimas' },
-    { id = 'pills_lab',          category = 'lab',     label = 'Tablečių gamyba',               coords = '1953.00, 5180.00, 47.98',   desc = 'Pills process + pack (šalia heroino)' },
+    { id = 'pills_lab',          category = 'lab',     label = 'Tablečių gamyba',               coords = '348.50, -2062.00, 21.24',   desc = 'Pills process + pack — Davis' },
     { id = 'mushroom_lab',       category = 'lab',     label = 'Grybų perdirbimas',             coords = '2138.52, 6405.18, 153.07',  desc = 'Džiovinimas + supakavimas' },
     -- L3
     { id = 'cocaine_lab',        category = 'lab',     label = 'Kokaino laboratorija (Cayo)',   coords = '4987.12, -5128.44, 2.52',   desc = 'Virimas + supakavimas — Cayo' },

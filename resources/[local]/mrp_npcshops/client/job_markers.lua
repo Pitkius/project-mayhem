@@ -1,7 +1,9 @@
 --- 3D markeriai ant žemės — job garažai ir sandėliai (vietoj NPC / qb-target)
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local zones = {}
+local zonesByJob = {}
+local activeZones = {}
+local activeJob = nil
 local lastInteractMs = 0
 
 local COLORS = {
@@ -61,10 +63,18 @@ local function useRadiusFor(kind)
     return Config.JobMarkerUseRadius or 2.2
 end
 
+local function refreshActiveJobZones()
+    local P = QBCore.Functions.GetPlayerData()
+    local jobName = P and P.job and P.job.name or nil
+    if jobName == activeJob then return end
+    activeJob = jobName
+    activeZones = (jobName and zonesByJob[jobName]) or {}
+end
+
 local function registerZone(data)
     if not data or not data.coords then return end
     local c = data.coords
-    zones[#zones + 1] = {
+    local zone = {
         coords = vector3(c.x + 0.0, c.y + 0.0, c.z + 0.0),
         kind = data.kind or 'stash',
         label = data.label or 'Tarnyba',
@@ -74,22 +84,15 @@ local function registerZone(data)
         onPress = data.onPress,
         canUse = data.canUse,
     }
-end
 
-local function playerHasJob(jobName)
-    if not jobName or jobName == '' then return false end
-    local P = QBCore.Functions.GetPlayerData()
-    return P and P.job and P.job.name == jobName
-end
+    if data.job then
+        zonesByJob[data.job] = zonesByJob[data.job] or {}
+        zonesByJob[data.job][#zonesByJob[data.job] + 1] = zone
+    end
 
-local function zoneVisible(zone)
-    if zone.visible then
-        return zone.visible()
+    if activeJob and data.job == activeJob then
+        activeZones[#activeZones + 1] = zone
     end
-    if zone.job then
-        return playerHasJob(zone.job)
-    end
-    return false
 end
 
 exports('AddJobGroundMarker', registerZone)
@@ -116,57 +119,99 @@ for _, entry in ipairs(Config.JobStationNpcs or {}) do
     end
 end
 
-CreateThread(function()
-    local drawD = Config.JobMarkerDrawDistance or 28.0
-    while true do
-        local sleep = 500
-        local ped = PlayerPedId()
-        local pcoords = GetEntityCoords(ped)
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    refreshActiveJobZones()
+end)
 
-        if not IsNuiFocused() then
-            for _, zone in ipairs(zones) do
-                if not zoneVisible(zone) then
-                    goto continue_zone
-                end
-                local dist = #(pcoords - zone.coords)
-                local useR = useRadiusFor(zone.kind)
-                if dist < drawD then
-                    if dist < useR then
-                        sleep = math.min(sleep, 0)
-                    else
-                        sleep = math.min(sleep, 120)
-                    end
-                    drawJobMarker(zone.coords, zone.kind, zone.scale)
-                    if dist < useR then
-                        local canUse = true
-                        if zone.canUse then
-                            canUse = zone.canUse()
-                        end
-                        if canUse then
-                            local hint
-                            if zone.kind == 'stash' then
-                                hint = exports['mrp_npcshops']:StashInteractHint(zone.label)
-                                exports['mrp_npcshops']:EnableStashOpenControl()
-                            else
-                                EnableControlAction(0, 38, true)
-                                hint = ('[E] %s'):format(zone.label)
-                            end
-                            local hintZ = zone.kind == 'stash' and 0.55 or 0.75
-                            QBCore.Functions.DrawText3D(zone.coords.x, zone.coords.y, zone.coords.z + hintZ, hint)
-                            local pressed = zone.kind == 'stash'
-                                and exports['mrp_npcshops']:IsStashOpenPressed()
-                                or IsControlJustPressed(0, 38)
-                            if pressed and (GetGameTimer() - lastInteractMs) > 450 then
-                                lastInteractMs = GetGameTimer()
-                                if zone.onPress then zone.onPress() end
-                            end
-                        end
-                    end
-                end
-                ::continue_zone::
-            end
+RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
+    refreshActiveJobZones()
+end)
+
+CreateThread(function()
+    Wait(800)
+    refreshActiveJobZones()
+
+    local drawD = Config.JobMarkerDrawDistance or 22.0
+    local farSleep = 1200
+    local drawSleep = 150
+
+    while true do
+        if #activeZones == 0 then
+            Wait(farSleep)
+            goto continue
         end
 
-        Wait(sleep)
+        if IsNuiFocused() then
+            Wait(400)
+            goto continue
+        end
+
+        local pcoords = GetEntityCoords(PlayerPedId())
+        local nearestDist = math.huge
+        local interactZone = nil
+        local interactDist = math.huge
+        local drawCount = 0
+
+        for i = 1, #activeZones do
+            local zone = activeZones[i]
+            if zone.visible and not zone.visible() then
+                goto next_zone
+            end
+
+            local dist = #(pcoords - zone.coords)
+            if dist < nearestDist then nearestDist = dist end
+
+            if dist < drawD then
+                drawCount = drawCount + 1
+                drawJobMarker(zone.coords, zone.kind, zone.scale)
+
+                local useR = useRadiusFor(zone.kind)
+                if dist < useR and dist < interactDist then
+                    local canUse = true
+                    if zone.canUse then canUse = zone.canUse() end
+                    if canUse then
+                        interactZone = zone
+                        interactDist = dist
+                    end
+                end
+            end
+
+            ::next_zone::
+        end
+
+        if nearestDist > drawD then
+            Wait(farSleep)
+            goto continue
+        end
+
+        if interactZone then
+            local hint
+            if interactZone.kind == 'stash' then
+                hint = exports['mrp_npcshops']:StashInteractHint(interactZone.label)
+                exports['mrp_npcshops']:EnableStashOpenControl()
+            else
+                EnableControlAction(0, 38, true)
+                hint = ('[E] %s'):format(interactZone.label)
+            end
+            local hintZ = interactZone.kind == 'stash' and 0.55 or 0.75
+            QBCore.Functions.DrawText3D(
+                interactZone.coords.x,
+                interactZone.coords.y,
+                interactZone.coords.z + hintZ,
+                hint
+            )
+            local pressed = interactZone.kind == 'stash'
+                and exports['mrp_npcshops']:IsStashOpenPressed()
+                or IsControlJustPressed(0, 38)
+            if pressed and (GetGameTimer() - lastInteractMs) > 450 then
+                lastInteractMs = GetGameTimer()
+                if interactZone.onPress then interactZone.onPress() end
+            end
+            Wait(0)
+        else
+            Wait(drawCount > 0 and drawSleep or farSleep)
+        end
+
+        ::continue::
     end
 end)

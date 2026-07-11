@@ -462,7 +462,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
     if not Equipment.playerNear(src, equipmentId) then
         return cb({ ok = false, reason = 'Per toli nuo įrangos.' })
     end
-    if not Equipment.productAllowedAt(e.itemType, productId) then
+    if not Equipment.productAllowedAt(e, productId) then
         return cb({ ok = false, reason = 'Ši įranga netinka šiam receptui.' })
     end
 
@@ -757,6 +757,9 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:tryNpcSell', function(src, cb,
         MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + 1 WHERE id = ?', { gang.gang_id })
     end
 
+    -- Narkotikų progresija: realus parduotų galutinių produktų kiekis (gatvė = 1 vnt.).
+    if DrugPlayer then DrugPlayer.addSale(src, itemName, 1) end
+
     logAdmin(('SELL %s $%s cid=%s turf=%s'):format(itemName, price, Player.PlayerData.citizenid, tostring(turfId)))
     cb({
         ok = true,
@@ -986,6 +989,25 @@ RegisterNetEvent('mrp_drugs:server:testTriggerAlert', function()
     TriggerClientEvent('QBCore:Notify', source, 'Test policijos alert išsiųstas.', 'primary')
 end)
 
+--- Taiko konfigūruojamą kainų svyravimą bazinei kainai (serverio pusėje).
+local function applyPriceFluctuation(base)
+    base = tonumber(base) or 0
+    local f = Config.Economy and Config.Economy.priceFluctuation
+    if not f or f.enabled == false or base <= 0 then return base end
+    local minPct = tonumber(f.minPct) or 100
+    local maxPct = tonumber(f.maxPct) or 100
+    if maxPct < minPct then minPct, maxPct = maxPct, minPct end
+    local pct = math.random(minPct, maxPct)
+    local price = base * (pct / 100.0)
+    local roundTo = tonumber(f.roundTo) or 1
+    if roundTo > 1 then
+        price = math.floor((price / roundTo) + 0.5) * roundTo
+    else
+        price = math.floor(price + 0.5)
+    end
+    return math.max(1, price)
+end
+
 local function processProductSell(src, buyerId)
     buyerId = tostring(buyerId or '')
     if not playerNearProductBuyer(src, buyerId) then
@@ -1003,11 +1025,13 @@ local function processProductSell(src, buyerId)
     local toSell = {}
     for itemName, price in pairs(prices) do
         itemName = tostring(itemName or ''):lower()
-        local unit = tonumber(price) or 0
-        if unit > 0 and Config.IsPackagedDrugItem(itemName) then
+        local base = tonumber(price) or 0
+        if base > 0 and Config.IsPackagedDrugItem(itemName) then
             local data = Player.Functions.GetItemByName(itemName)
             local amt = data and (tonumber(data.amount) or tonumber(data.count) or 0) or 0
             if amt > 0 then
+                -- Svyravimas vienam vienetui (bendra suma × dabartinė rinkos kaina).
+                local unit = applyPriceFluctuation(base)
                 toSell[#toSell + 1] = { name = itemName, amount = amt }
                 total = total + (unit * amt)
                 sold = sold + amt
@@ -1043,6 +1067,14 @@ local function processProductSell(src, buyerId)
         TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas — nėra vietos nešvariems pinigams.', 'error')
         return
     end
+
+    -- Narkotikų progresija: realus parduotų galutinių produktų kiekis (visi vnt.).
+    if DrugPlayer then
+        for _, row in ipairs(toSell) do
+            DrugPlayer.addSale(src, row.name, row.amount)
+        end
+    end
+
     TriggerClientEvent('QBCore:Notify', src, ('Parduota %s vnt. · $%s (%s)'):format(sold, total, payoutItemLabel()), 'success')
 end
 
@@ -1062,6 +1094,9 @@ local function getMushroomField(id)
         if field.id == id then return field end
     end
     for _, field in ipairs(Config.CocaFields or {}) do
+        if field.id == id then return field end
+    end
+    for _, field in ipairs(Config.PoppyFields or {}) do
         if field.id == id then return field end
     end
 end

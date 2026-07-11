@@ -36,6 +36,19 @@ function NpcGround.snapShopPed(ent, coords, onDone)
         if onDone then onDone() end
         return
     end
+    local skip = cfg().skipCategories
+    if skip and type(skip) == 'table' then
+        local meta = Entity(ent).state.npcShopMeta
+        local category = meta and meta.category
+        if category then
+            for i = 1, #skip do
+                if skip[i] == category then
+                    if onDone then onDone() end
+                    return
+                end
+            end
+        end
+    end
     if not ent or ent == 0 or not coords then
         if onDone then onDone() end
         return
