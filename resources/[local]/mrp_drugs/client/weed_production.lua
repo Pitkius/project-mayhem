@@ -519,7 +519,7 @@ local function setPackBagTransform(session, entity, scale)
     if not entity or not DoesEntityExist(entity) or not session.cam or not DoesCamExist(session.cam) then return end
     local coords = GetEntityCoords(entity)
     local camera = GetCamCoord(session.cam)
-    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 0
+    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 90 + 90
     local radians = math.rad(heading)
     local entityScale = scale or 1.0
 
