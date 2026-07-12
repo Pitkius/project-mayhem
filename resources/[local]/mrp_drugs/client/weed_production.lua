@@ -527,6 +527,7 @@ end
 
 -- Forward declaration: pack setup/spawn run before screen helpers are defined.
 local cachePackScreenAnchors
+local updatePackTargets
 
 local function showPackedBagPreview(session, onDone)
     if active ~= session then return end
@@ -579,6 +580,8 @@ local function spawnPackBud(session)
     session.packBusy = false
     cachePackScreenAnchors(session)
     updatePackHighlights(session)
+    session.lastTargetHudAt = 0
+    if updatePackTargets then updatePackTargets(session) end
     hud('weed3dUpdate', {
         title = 'Žolė · pakavimas',
         stage = '2/2',
@@ -755,7 +758,45 @@ local function screenCoordVisible(value)
     return value == true or value == 1
 end
 
-local function projectToScreen(coords)
+local function projectToScreenWithCamera(session, coords)
+    if not coords or not session or not session.cam or not DoesCamExist(session.cam) then
+        return false, nil, nil
+    end
+
+    local camPos = GetCamCoord(session.cam)
+    local camRot = GetCamRot(session.cam, 2)
+    local forward = rotationToDirection(camRot)
+    local right = vector3(forward.y, -forward.x, 0.0)
+    local rightLen = math.sqrt(right.x * right.x + right.y * right.y)
+    if rightLen < 0.0001 then return false, nil, nil end
+    right = vector3(right.x / rightLen, right.y / rightLen, 0.0)
+    local up = vector3(
+        forward.y * right.z - forward.z * right.y,
+        forward.z * right.x - forward.x * right.z,
+        forward.x * right.y - forward.y * right.x
+    )
+
+    local delta = vector3(coords.x - camPos.x, coords.y - camPos.y, coords.z - camPos.z)
+    local depth = delta.x * forward.x + delta.y * forward.y + delta.z * forward.z
+    if depth < 0.05 then return false, nil, nil end
+
+    local planeX = delta.x * right.x + delta.y * right.y + delta.z * right.z
+    local planeY = delta.x * up.x + delta.y * up.y + delta.z * up.z
+    local fov = GetCamFov(session.cam)
+    local aspect = GetAspectRatio(false)
+    local tanHalf = math.tan(math.rad(fov * 0.5))
+    local ndcX = planeX / (depth * tanHalf * aspect)
+    local ndcY = -planeY / (depth * tanHalf)
+    local screenX = 0.5 + ndcX * 0.5
+    local screenY = 0.5 + ndcY * 0.5
+
+    if screenX < -0.05 or screenX > 1.05 or screenY < -0.05 or screenY > 1.05 then
+        return false, screenX, screenY
+    end
+    return true, screenX, screenY
+end
+
+local function projectToScreen(session, coords)
     if not coords then return false, nil, nil end
     for _, offset in ipairs({ 0.14, 0.08, 0.0, 0.22 }) do
         local visible, x, y = GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z + offset)
@@ -763,30 +804,45 @@ local function projectToScreen(coords)
             return true, x, y
         end
     end
+    if session then
+        return projectToScreenWithCamera(session, coords)
+    end
     return false, nil, nil
+end
+
+local function packAnchorCoords(session, anchorKey)
+    if anchorKey == 'bag' then
+        if session.bag and session.bag.entity and DoesEntityExist(session.bag.entity) then
+            return GetEntityCoords(session.bag.entity)
+        end
+        return session.bagSide
+    end
+    if session.currentBud and DoesEntityExist(session.currentBud) then
+        return GetEntityCoords(session.currentBud)
+    end
+    return session.budSide
 end
 
 cachePackScreenAnchors = function(session)
     session.packAnchors = session.packAnchors or {}
-    if session.bag and session.bag.entity and DoesEntityExist(session.bag.entity) then
-        local visible, x, y = projectToScreen(GetEntityCoords(session.bag.entity))
-        session.packAnchors.bag = {
-            x = visible and x or 0.40,
-            y = visible and y or 0.56,
-        }
-    end
-    if session.budSide then
-        local visible, x, y = projectToScreen(session.budSide)
-        session.packAnchors.bud = {
-            x = visible and x or 0.60,
-            y = visible and y or 0.56,
-        }
+    for _, anchorKey in ipairs({ 'bag', 'bud' }) do
+        local coords = packAnchorCoords(session, anchorKey)
+        if coords then
+            local projected, x, y = projectToScreen(session, coords)
+            session.packAnchors[anchorKey] = {
+                x = projected and x or (anchorKey == 'bag' and 0.40 or 0.68),
+                y = projected and y or 0.52,
+            }
+        end
     end
 end
 
 local function screenTargetForPack(session, coords, anchorKey, active)
-    local projected, x, y = projectToScreen(coords)
-    if not projected and session.packAnchors and session.packAnchors[anchorKey] then
+    local projected, x, y = projectToScreen(session, coords)
+    if projected and active == true then
+        session.packAnchors = session.packAnchors or {}
+        session.packAnchors[anchorKey] = { x = x, y = y }
+    elseif session.packAnchors and session.packAnchors[anchorKey] then
         local anchor = session.packAnchors[anchorKey]
         x = anchor.x
         y = anchor.y
@@ -795,7 +851,7 @@ local function screenTargetForPack(session, coords, anchorKey, active)
         if anchorKey == 'bag' then
             x, y = 0.40, 0.56
         else
-            x, y = 0.60, 0.56
+            x, y = 0.68, 0.52
         end
     end
     return {
@@ -831,15 +887,15 @@ local function tryPackRayClick(session)
     if target then handlePackClick(session, target) end
 end
 
-local function updatePackTargets(session)
+updatePackTargets = function(session)
     if GetGameTimer() - (session.lastTargetHudAt or 0) < 50 then return end
     session.lastTargetHudAt = GetGameTimer()
     updatePackHighlights(session)
     local bagActive = session.stage == 'bag_select' and not session.packBusy
     local budActive = session.stage == 'packing' and not session.packBusy
         and session.currentBud and DoesEntityExist(session.currentBud)
-    local bagCoords = session.bag and session.bag.entity and GetEntityCoords(session.bag.entity) or nil
-    local budCoords = budActive and GetEntityCoords(session.currentBud) or session.budSide
+    local bagCoords = packAnchorCoords(session, 'bag')
+    local budCoords = packAnchorCoords(session, 'bud')
     hud('weedPackTargets', {
         bag = screenTargetForPack(session, bagCoords, 'bag', bagActive),
         bud = screenTargetForPack(session, budCoords, 'bud', budActive),

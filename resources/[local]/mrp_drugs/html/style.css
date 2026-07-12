@@ -1435,13 +1435,15 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   position: fixed;
   inset: 0;
   z-index: 9998;
-  pointer-events: none;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.001);
+  touch-action: none;
 }
 
 .weed-pack-target {
   position: absolute;
-  width: clamp(130px, 12vw, 190px);
-  height: clamp(130px, 12vw, 190px);
+  width: clamp(150px, 14vw, 220px);
+  height: clamp(150px, 14vw, 220px);
   padding: 0;
   transform: translate(-50%, -50%);
   background: rgba(0, 0, 0, 0.001);

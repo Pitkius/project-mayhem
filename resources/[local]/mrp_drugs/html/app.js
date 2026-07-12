@@ -67,18 +67,50 @@ async function sendWeedPackClick(target) {
   }
 }
 
+function weedPackHitRadius() {
+  return Math.max(110, Math.min(window.innerWidth, window.innerHeight) * 0.18);
+}
+
+function findWeedPackTargetAt(clientX, clientY) {
+  let best = null;
+  let bestDist = Infinity;
+  for (const name of ["bag", "bud"]) {
+    const target = weedPackTargets[name];
+    if (!target || target.active !== true || target.visible === false) continue;
+    const px = (Number(target.x) || 0.5) * window.innerWidth;
+    const py = (Number(target.y) || 0.5) * window.innerHeight;
+    const dist = Math.hypot(clientX - px, clientY - py);
+    if (dist <= weedPackHitRadius() && dist < bestDist) {
+      best = name;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+
 function handleWeedPackButton(event) {
   if (!weedPackActive || (event.button !== undefined && event.button !== 0)) return;
-  const target = event.currentTarget.dataset.target;
+  const target = event.currentTarget?.dataset?.target
+    || findWeedPackTargetAt(event.clientX, event.clientY);
   const state = weedPackTargets[target];
-  if (!state || state.active !== true || state.visible === false) return;
+  if (!target || !state || state.active !== true || state.visible === false) return;
   event.preventDefault();
   event.stopPropagation();
   sendWeedPackClick(target);
 }
 
-weedPackBag.addEventListener("click", handleWeedPackButton);
-weedPackBud.addEventListener("click", handleWeedPackButton);
+function handleWeedPackOverlay(event) {
+  if (!weedPackActive || (event.button !== undefined && event.button !== 0)) return;
+  const target = findWeedPackTargetAt(event.clientX, event.clientY);
+  if (!target) return;
+  event.preventDefault();
+  event.stopPropagation();
+  sendWeedPackClick(target);
+}
+
+weedPackCursor.addEventListener("pointerdown", handleWeedPackOverlay);
+weedPackBag.addEventListener("pointerdown", handleWeedPackButton);
+weedPackBud.addEventListener("pointerdown", handleWeedPackButton);
 
 let state = { products: [], selectedId: null, isWeaponMode: false };
 
