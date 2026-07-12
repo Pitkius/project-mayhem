@@ -704,7 +704,7 @@ local function setupPack(session)
     local packedMin, packedMax = GetModelDimensions(packedBagHash)
     local emptyHeight = clamp(math.abs(emptyMax.y - emptyMin.y), 0.12, 0.36)
     local packedHeight = clamp(math.abs(packedMax.y - packedMin.y), 0.12, 0.36)
-    session.packedBagScale = 0.20
+    session.packedBagScale = 0.25
     session.bagSide = offsetPoint(session.tableOrigin, session.heading, -0.58, -0.22, surfaceHeight + emptyHeight * 0.5 + 0.01)
     session.bagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.0, surfaceHeight + emptyHeight * 0.5 + 0.01)
     session.packedBagCenter = offsetPoint(
