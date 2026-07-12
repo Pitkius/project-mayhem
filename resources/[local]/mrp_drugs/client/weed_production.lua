@@ -519,19 +519,24 @@ local function setPackBagTransform(session, entity, scale)
     if not entity or not DoesEntityExist(entity) or not session.cam or not DoesCamExist(session.cam) then return end
     local coords = GetEntityCoords(entity)
     local camera = GetCamCoord(session.cam)
-    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 90 + 90
-    local radians = math.rad(heading)
+    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y)
     local entityScale = scale or 1.0
 
-    -- Keep the bag upright and turn its flat face toward the scripted camera.
-    -- Scaled basis vectors make the one-second packed preview less oversized.
-    SetEntityMatrix(
-        entity,
-        -math.sin(radians) * entityScale, math.cos(radians) * entityScale, 0.0,
-        math.cos(radians) * entityScale, math.sin(radians) * entityScale, 0.0,
-        0.0, 0.0, entityScale,
-        coords.x, coords.y, coords.z
-    )
+    -- pitch 90° up, roll 90° sideways, yaw toward camera
+    SetEntityRotation(entity, 90.0, 90.0, heading, 2, true)
+
+    if entityScale ~= 1.0 then
+        local right = GetEntityRightVector(entity)
+        local forward = GetEntityForwardVector(entity)
+        local up = GetEntityUpVector(entity)
+        SetEntityMatrix(
+            entity,
+            right.x * entityScale, right.y * entityScale, right.z * entityScale,
+            forward.x * entityScale, forward.y * entityScale, forward.z * entityScale,
+            up.x * entityScale, up.y * entityScale, up.z * entityScale,
+            coords.x, coords.y, coords.z
+        )
+    end
 end
 
 -- Forward declaration: pack setup/spawn run before screen helpers are defined.
@@ -704,7 +709,7 @@ local function setupPack(session)
     local packedMin, packedMax = GetModelDimensions(packedBagHash)
     local emptyHeight = clamp(math.abs(emptyMax.y - emptyMin.y), 0.12, 0.36)
     local packedHeight = clamp(math.abs(packedMax.y - packedMin.y), 0.12, 0.36)
-    session.packedBagScale = 0.35
+    session.packedBagScale = 0.20
     session.bagSide = offsetPoint(session.tableOrigin, session.heading, -0.58, -0.22, surfaceHeight + emptyHeight * 0.5 + 0.01)
     session.bagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.0, surfaceHeight + emptyHeight * 0.5 + 0.01)
     session.packedBagCenter = offsetPoint(
