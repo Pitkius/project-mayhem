@@ -290,6 +290,7 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
     end
     local weed3dMode = profile.drug == 'weed'
         and (profile.mode == 'weed_dry' or profile.mode == 'weed_pack')
+    -- PAKAVIMAS: weed_pack paleidžia 3D WeedProduction sceną (ne schedule minigame).
     if weed3dMode and WeedProduction and WeedProduction.Start then
         if not workspace and currentStationId and Config.GetAllCraftStations then
             for _, station in ipairs(Config.GetAllCraftStations()) do

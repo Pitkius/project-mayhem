@@ -8,10 +8,13 @@ local active = nil
 local MODELS = {
     table = { 'bkr_prop_weed_table_01a', 'prop_tool_bench02' },
     leaf = { 'bkr_prop_weed_bud_02b', 'bkr_prop_weed_leaf_01a', 'prop_meth_bag_01' },
+    -- PAKAVIMAS: leaf naudojamas kaip žolės gabaliukas (packBudHash). Pirmas modelis = 3D gabaliuko forma.
     rack = { 'bkr_prop_weed_drying_01a', 'bkr_prop_weed_table_01a' },
     scale = { 'bkr_prop_coke_scale_01', 'prop_tool_bench02' },
-    emptyBag = { 'bkr_prop_weed_bag_01a', 'prop_meth_bag_01' },
-    packedBag = { 'bkr_prop_weed_smallbag_01a', 'prop_meth_bag_01' },
+    -- PAKAVIMAS: 3D maišelių modeliai. Pirmas sąraše — pagrindinis, antras — atsarginis.
+    -- Pakeitus pavadinimą, pasikeis objekto forma/dydis 3D scenoje.
+    emptyBag = { 'bkr_prop_weed_bag_01a', 'prop_meth_bag_01' },       -- tuščias plastikinis maišelis
+    packedBag = { 'bkr_prop_weed_smallbag_01a', 'prop_meth_bag_01' }, -- supakuotos žolės peržiūra (1 sek.)
 }
 
 local function hud(action, data)
@@ -50,6 +53,7 @@ local function rightFromHeading(heading)
 end
 
 local function offsetPoint(origin, heading, x, y, z)
+    -- PAKAVIMAS: x = kairė/dešinė, y = pirmyn/atgal, z = aukštis nuo stalo. Naudojama bagSide/budSide pozicijoms.
     local right = rightFromHeading(heading)
     local forward = directionFromHeading(heading)
     return vector3(
@@ -94,6 +98,7 @@ local function setPackHighlight(entity, enabled)
     if not entity or not DoesEntityExist(entity) then return end
     SetEntityDrawOutline(entity, enabled == true)
     if enabled then
+        -- PAKAVIMAS: žalios apvado spalva (R,G,B,A). Keisk skaičius — pasikeis paryškinto objekto spalva.
         SetEntityDrawOutlineColor(72, 255, 120, 255)
         pcall(SetEntityDrawOutlineShader, 1)
     end
@@ -110,6 +115,7 @@ end
 
 local function updatePackHighlights(session)
     clearPackHighlights(session)
+    -- PAKAVIMAS: šie etapai neturi paryškinto objekto (judėjimas / serverio laukimas).
     if session.packBusy or session.stage == 'moving' or session.stage == 'stage_pending' then
         return
     end
@@ -209,9 +215,12 @@ local function createCamera(session)
     if not session.cam or session.cam == 0 then return false end
     if session.mode == 'pack' then
         local height = session.tableTop - session.tableOrigin.z
+        -- PAKAVIMAS: fiksuotos kameros pozicija. -2.15 = atstumas atgal, 1.45 = aukštis virš stalo.
+        -- Mažesnis -2.15 = arčiau stalo. Didesnis 1.45 = aukščiau. Keičia visą 3D vaizdą.
         local cameraPos = offsetPoint(session.tableOrigin, session.heading, 0.0, -2.15, height + 1.45)
         SetCamCoord(session.cam, cameraPos.x, cameraPos.y, cameraPos.z)
         PointCamAtCoord(session.cam, session.lookAt.x, session.lookAt.y, session.lookAt.z)
+        -- PAKAVIMAS: FOV (lauko plotis). Mažesnis = zoom in, didesnis = zoom out, matosi daugiau stalo.
         SetCamFov(session.cam, 42.0)
     else
         session.camYaw = session.heading + 180.0
@@ -504,6 +513,7 @@ local function movePackObject(session, entity, target, durationMs, onDone)
     local startedAt = GetGameTimer()
     CreateThread(function()
         while active == session and DoesEntityExist(entity) do
+            -- PAKAVIMAS: durationMs = judėjimo trukmė ms. Mažiau = greičiau, daugiau = lėčiau.
             local progress = clamp((GetGameTimer() - startedAt) / durationMs, 0.0, 1.0)
             local eased = 1.0 - ((1.0 - progress) * (1.0 - progress))
             local point = start + (target - start) * eased
@@ -519,12 +529,14 @@ local function setPackBagTransform(session, entity, scale)
     if not entity or not DoesEntityExist(entity) or not session.cam or not DoesCamExist(session.cam) then return end
     local coords = GetEntityCoords(entity)
     local camera = GetCamCoord(session.cam)
+    -- PAKAVIMAS: maišelio pasukimas link kameros. +90+90 = 180° papildomas posūkis.
+    -- Keisk šiuos skaičius — pasikeis kaip maišelis guli (šonu / priekiu / plokščiai).
     local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 90 + 90
     local radians = math.rad(heading)
+    -- PAKAVIMAS: scale = dydis. 1.0 = pilnas tuščias maišelis. packedBagScale (pvz. 0.25) = mažesnis preview.
     local entityScale = scale or 1.0
 
-    -- Keep the bag upright and turn its flat face toward the scripted camera.
-    -- Scaled basis vectors make the one-second packed preview less oversized.
+    -- SetEntityMatrix: pirmi 6 skaičiai = pasukimas, paskutinis stulpelis (0,0,entityScale) = mastelis.
     SetEntityMatrix(
         entity,
         -math.sin(radians) * entityScale, math.cos(radians) * entityScale, 0.0,
@@ -539,6 +551,7 @@ local cachePackScreenAnchors
 local updatePackTargets
 
 local function showPackedBagPreview(session, onDone)
+    -- PAKAVIMAS: po kiekvieno gabaliuko rodomas supakuotas maišas centre 1 sek.
     if active ~= session then return end
     session.stage = 'packed_preview'
     session.packBusy = true
@@ -559,6 +572,7 @@ local function showPackedBagPreview(session, onDone)
     end
 
     CreateThread(function()
+        -- PAKAVIMAS: kiek ms rodomas supakuotas maišas. 1000 = 1 sek. Daugiau = ilgesnė peržiūra.
         Wait(1000)
         if active ~= session or session.finished then return end
 
@@ -570,6 +584,7 @@ local function showPackedBagPreview(session, onDone)
 end
 
 local function spawnPackBud(session)
+    -- PAKAVIMAS: sukuria naują žolės gabaliuką dešinėje (budSide) ir perjungia į etapą 'packing'.
     if active ~= session or session.packedCount >= session.packTarget then return end
     local entity = registerEntity(session, createLocalObject(session.packBudHash, session.budSide, session.heading))
     if not entity then
@@ -597,6 +612,7 @@ local function spawnPackBud(session)
 end
 
 local function resetPackBag(session)
+    -- PAKAVIMAS: po preview grąžina tuščią maišelį į bagSide ir vėl laukia paspaudimo.
     if active ~= session or session.finished or not session.bag
         or not session.bag.entity or not DoesEntityExist(session.bag.entity) then
         return
@@ -627,15 +643,18 @@ local function resetPackBag(session)
 end
 
 local function handlePackClick(session, target)
+    -- PAKAVIMAS: target = 'bag' arba 'bud'. packBusy blokuoja dvigubus paspaudimus.
     if active ~= session or session.mode ~= 'pack' or session.packBusy then return false end
     if target == 'bag' and session.stage == 'bag_select' then
         session.packBusy = true
         session.stage = 'moving'
         clearPackHighlights(session)
         movePackObject(session, session.bag.entity, session.bagCenter, 450, function()
+            -- 450 ms — maišelio judėjimo trukmė į centrą
             setPackBagTransform(session, session.bag.entity, 1.0)
             if not session.bagReadyReported then
                 session.stage = 'stage_pending'
+                -- PAKAVIMAS: pirmą kartą praneša serveriui 'bag_ready' (min 300 ms pagal serverį).
                 reportServerStage(session, 'bag_ready', function()
                     session.bagReadyReported = true
                     session.packBusy = false
@@ -655,8 +674,10 @@ local function handlePackClick(session, target)
         local bud = session.currentBud
         session.currentBud = nil
         movePackObject(session, bud, session.bagCenter + vector3(0.0, 0.0, 0.08), 500, function()
+            -- 500 ms — gabaliuko judėjimo trukmė. 0.08 = Z pakėlimas virš maišelio centre.
             if DoesEntityExist(bud) then DeleteEntity(bud) end
             session.packedCount = session.packedCount + 1
+            -- Kiekvienas supakuotas gabaliukas +20 taškų kokybei (max 100)
             session.score = clamp(session.packedCount * 20, 0, 100)
             hud('weed3dUpdate', {
                 title = 'Žolė · pakavimas',
@@ -670,6 +691,7 @@ local function handlePackClick(session, target)
             })
             showPackedBagPreview(session, function()
                 if session.packedCount >= session.packTarget then
+                    -- PAKAVIMAS: 5/5 — serverio etapas 'packed_five', duoda weed_bag x5.
                     finishAfterServerStage(session, 'packed_five', true, {
                         score = math.floor(session.score),
                         mistakes = session.mistakes,
@@ -690,6 +712,7 @@ local function setupPack(session)
     session.score = 0
     session.mistakes = 0
     session.packedCount = 0
+    -- PAKAVIMAS: kiek gabaliukų reikia supakuoti per vieną sesiją. Turi sutapti su config receptu.
     session.packTarget = 5
     session.packBusy = false
     session.bagReadyReported = false
@@ -704,7 +727,13 @@ local function setupPack(session)
     local packedMin, packedMax = GetModelDimensions(packedBagHash)
     local emptyHeight = clamp(math.abs(emptyMax.y - emptyMin.y), 0.12, 0.36)
     local packedHeight = clamp(math.abs(packedMax.y - packedMin.y), 0.12, 0.36)
+    -- PAKAVIMAS: supakuoto maišo preview dydis. Mažiau (pvz. 0.15) = mažesnis, daugiau (1.0) = pilnas dydis.
     session.packedBagScale = 0.25
+    -- PAKAVIMAS: objektų pozicijos ant stalo (x, y, z per offsetPoint).
+    -- bagSide: -0.58 kairėn, -0.22 atgal — tuščias maišelis pradžioje.
+    -- bagCenter: 0, 0 — maišelis centre po paspaudimo.
+    -- budSide: 0.58 dešinėn — žolės gabaliukas.
+    -- Keisk ±0.58 / ±0.22 — objektai persikels kairėn/dešinėn/pirmyn/atgal.
     session.bagSide = offsetPoint(session.tableOrigin, session.heading, -0.58, -0.22, surfaceHeight + emptyHeight * 0.5 + 0.01)
     session.bagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.0, surfaceHeight + emptyHeight * 0.5 + 0.01)
     session.packedBagCenter = offsetPoint(
@@ -712,9 +741,11 @@ local function setupPack(session)
         session.heading,
         0.0,
         0.0,
+        -- Z aukštis priklauso nuo packedBagScale — mažesnis scale = žemesnė preview pozicija
         surfaceHeight + packedHeight * session.packedBagScale * 0.5 + 0.01
     )
     session.budSide = offsetPoint(session.tableOrigin, session.heading, 0.58, -0.22, surfaceHeight + 0.08)
+    -- PAKAVIMAS: 0.08 = gabaliuko aukštis ant stalo. Didesnis = aukščiau.
     session.packBudHash = leafHash
     session.emptyBagHash = emptyBagHash
     session.packedBagHash = packedBagHash
@@ -830,6 +861,7 @@ local function projectToScreenWithCamera(session, coords)
     local planeX = delta.x * right.x + delta.y * right.y + delta.z * right.z
     local planeY = delta.x * up.x + delta.y * up.y + delta.z * up.z
     local fov = GetCamFov(session.cam)
+    -- PAKAVIMAS: FOV iš kameros (42.0 createCamera). Mažesnis FOV = didesnis ekrano taškas objektui.
     local aspect = GetAspectRatio(false)
     local tanHalf = math.tan(math.rad(fov * 0.5))
     local ndcX = planeX / (depth * tanHalf * aspect)
@@ -846,6 +878,7 @@ end
 local function projectToScreen(session, coords)
     if not coords then return false, nil, nil end
     for _, offset in ipairs({ 0.14, 0.08, 0.0, 0.22 }) do
+        -- PAKAVIMAS: Z offset bandymai projekcijai į ekraną. Keisk — gali pataikyti geriau ant mažų objektų.
         local visible, x, y = GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z + offset)
         if screenCoordVisible(visible) and x and y then
             return true, x, y
@@ -877,6 +910,7 @@ cachePackScreenAnchors = function(session)
         if coords then
             local projected, x, y = projectToScreen(session, coords)
             session.packAnchors[anchorKey] = {
+                -- Fallback ekrano koordinatės (0–1), jei projekcija nepavyksta. 0.40=kairė, 0.68=dešinė.
                 x = projected and x or (anchorKey == 'bag' and 0.40 or 0.68),
                 y = projected and y or 0.52,
             }
@@ -896,9 +930,9 @@ local function screenTargetForPack(session, coords, anchorKey, active)
     end
     if not x or not y then
         if anchorKey == 'bag' then
-            x, y = 0.40, 0.56
+            x, y = 0.40, 0.56  -- numatytas maišelio taškas ekrane (40% iš kairės, 56% iš viršaus)
         else
-            x, y = 0.68, 0.52
+            x, y = 0.68, 0.52  -- numatytas gabaliuko taškas ekrane (68% iš kairės)
         end
     end
     return {
@@ -910,6 +944,7 @@ local function screenTargetForPack(session, coords, anchorKey, active)
     }
 end
 
+-- PAKAVIMAS: kiek toli nuo objekto ekrano taško galima paspausti (0–1 skalė). Didesnis = lengviau pataikyti.
 local PACK_CLICK_RADIUS = 0.22
 
 local function getPackCursorNorm()
@@ -992,6 +1027,7 @@ local function getPackTargetFromCursor(session, normX, normY)
 end
 
 local function tryPackCursorClick(session)
+    -- PAKAVIMAS: kairys pelės (control 24). Pagrindinis paspaudimų kelias — ne per NUI.
     if session.mode ~= 'pack' or session.packBusy then return end
     if not (IsControlJustPressed(0, 24) or IsDisabledControlJustPressed(0, 24)) then return end
 
@@ -1013,6 +1049,7 @@ local function tryPackCursorClick(session)
 end
 
 updatePackTargets = function(session)
+    -- PAKAVIMAS: kaip dažnai atnaujinamos ekrano pozicijos (ms). Mažiau = sklandžiau, daugiau = mažiau apkrovos.
     if GetGameTimer() - (session.lastTargetHudAt or 0) < 50 then return end
     session.lastTargetHudAt = GetGameTimer()
     updatePackHighlights(session)
@@ -1074,6 +1111,7 @@ local function runSession(session)
 end
 
 RegisterNUICallback('weedPackClick', function(data, cb)
+    -- PAKAVIMAS: atsarginis NUI kelias (dabar paspaudimai eina per Lua tryPackCursorClick).
     local session = active
     local target = tostring(data and data.target or '')
     if session and session.mode == 'pack' and not session.packBusy then
@@ -1111,12 +1149,14 @@ function WeedProduction.Start(payload, onDone)
         return false
     end
     local mode = payload.mode == 'weed_pack' and 'pack' or 'process'
+    -- PAKAVIMAS: weed_pack režimas → 3D pakavimas ant stalo (ne Canvas minigame).
     local ped = PlayerPedId()
     local pedCoords = GetEntityCoords(ped)
     local heading = GetEntityHeading(ped)
     local origin = pedCoords + directionFromHeading(heading) * 1.35
     local workspace = payload.workspace
     if mode == 'pack' and workspace and workspace.x and workspace.y and workspace.z then
+        -- PAKAVIMAS: stalo koordinatės iš config_equipment. workspace.w = stalo pasukimas.
         origin = vector3(workspace.x + 0.0, workspace.y + 0.0, workspace.z + 0.0)
         heading = tonumber(workspace.w) or heading
     end
@@ -1138,6 +1178,7 @@ function WeedProduction.Start(payload, onDone)
     active = session
 
     if mode == 'pack' then
+        -- PAKAVIMAS: ieško esamo stalo žemėlapyje (5.0 m spindulys). Neradus — klaida.
         local existingTable, existingTableHash
         local findDeadline = GetGameTimer() + 8000
         repeat
@@ -1163,6 +1204,7 @@ function WeedProduction.Start(payload, onDone)
         session.heading = GetEntityHeading(existingTable)
         local _, maxDim = GetModelDimensions(existingTableHash)
         session.tableTop = session.tableOrigin.z + math.max(0.65, maxDim.z) + 0.03
+        -- PAKAVIMAS: 0.65 / 0.03 = stalo aukščio korekcija. Keisk — objektai pakils/nukris.
     else
         local tableHash = loadFirstModel(MODELS.table)
         if not tableHash then
@@ -1210,11 +1252,12 @@ function WeedProduction.Start(payload, onDone)
         targetCount = mode == 'pack' and 5 or nil,
     })
     if mode == 'pack' then
-        -- Keep the HUD visible but let GTA receive mouse clicks directly.
+        -- PAKAVIMAS: NUI overlay išjungtas — pelės paspaudimai eina į GTA, ne į CEF.
         SetNuiFocus(false, false)
         SetNuiFocusKeepInput(false)
         hud('weedPackClose')
         CreateThread(function()
+            -- 250 ms — laukiama kol kamera užsikrauna, tada perskaičiuojamos ekrano pozicijos.
             Wait(250)
             if active == session then cachePackScreenAnchors(session) end
         end)

@@ -123,6 +123,7 @@ Config.Products = {
     vape_pack = drugPack('Vape skystis · supakavimas', 1, 'vape_liquid', 65, 10000, 'low', 'schedule', 5, 3, 1, 28, 6, 2),
     --- L2
     weed_process = drugProcess('Žolė · džiovinimas', 2, 'weed_buds', 18000, 'medium', 'schedule', 10, 6, 3, 45, 7),
+    -- PAKAVIMAS: paskutinis skaičius (5) = outputAmount — kiek weed_bag gauna po sėkmės. Turi sutapti su packTarget.
     weed_pack = drugPack('Žolė · supakavimas', 2, 'weed_bag', 140, 15000, 'medium', 'schedule', 12, 8, 4, 50, 8, 5),
     heroin_process = drugProcess('Heroinas · virimas', 2, 'heroin_paste', 22000, 'medium', 'schedule', 12, 8, 4, 50, 9),
     heroin_pack = drugPack('Heroinas · supakavimas', 2, 'heroin_bag', 220, 16000, 'medium', 'schedule', 14, 10, 5, 55, 10),
@@ -174,6 +175,7 @@ Config.Recipes = {
         { item = 'weed_leaf', count = 2 },
     },
     weed_pack = {
+        -- PAKAVIMAS: sunaudojama per vieną sesiją. count turi sutapti su session.packTarget (5).
         { item = 'weed_buds', count = 5 },
         { item = 'empty_bag', count = 5 },
     },

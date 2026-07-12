@@ -12,6 +12,7 @@ const craftProgressLabel = document.getElementById("craftProgressLabel");
 const craftProgressBar = document.getElementById("craftProgressBar");
 const craftProgressTime = document.getElementById("craftProgressTime");
 
+// PAKAVIMAS: 3D informacinis HUD (kairėje). Tekstas rodomas, bet neima paspaudimų.
 const weed3dHud = document.createElement("section");
 weed3dHud.id = "weed3dHud";
 weed3dHud.className = "weed3d-hud hidden";
@@ -38,6 +39,8 @@ const weed3dMetrics = document.getElementById("weed3dMetrics");
 const weed3dScore = document.getElementById("weed3dScore");
 const weed3dMistakes = document.getElementById("weed3dMistakes");
 
+// PAKAVIMAS: nematomi paspaudimo taškai virš maišelio/gabaliuko ekrane.
+// pointer-events: none (CSS) — paspaudimai eina per GTA Lua, ne per šiuos mygtukus.
 const weedPackCursor = document.createElement("div");
 weedPackCursor.id = "weedPackCursor";
 weedPackCursor.className = "weed-pack-cursor hidden";
@@ -68,6 +71,7 @@ async function sendWeedPackClick(target) {
 }
 
 function weedPackHitRadius() {
+  // PAKAVIMAS: paspaudimo spindulys px. 0.18 = 18% ekrano. Didesnis = lengviau pataikyti NUI režime.
   return Math.max(110, Math.min(window.innerWidth, window.innerHeight) * 0.18);
 }
 
@@ -132,6 +136,7 @@ function updateWeed3dHud(data, reset = false) {
   if (d.remaining !== undefined) rows.push(["Liko", `${Math.ceil(Number(d.remaining) / 1000)} s`]);
   if (d.seal !== undefined) rows.push(["Slėgis", `${Math.round(Number(d.seal) * 100)}%`]);
   if (d.packed !== undefined) rows.push(["Supakuota", `${Number(d.packed) || 0}/${Number(d.targetCount) || 5}`]);
+  // PAKAVIMAS: targetCount numatytas 5 — turi sutapti su session.packTarget Lua faile.
   if (rows.length > 0) {
     weed3dMetrics.replaceChildren(...rows.map(([label, value]) => {
       const row = document.createElement("span");
@@ -145,6 +150,7 @@ function updateWeed3dHud(data, reset = false) {
 }
 
 function positionWeedPackTarget(button, target) {
+  // PAKAVIMAS: x/y (0–1) iš Lua → mygtuko pozicija %. 0.04–0.96 riboja nuo kraštų.
   const data = target || {};
   const visible = data.visible !== false && data.active === true;
   button.classList.toggle("hidden", !visible);
@@ -316,12 +322,14 @@ window.addEventListener("message", (e) => {
     if (weed3dMetrics) weed3dMetrics.innerHTML = "";
   }
   if (msg.action === "weedPackOpen") {
+    // PAKAVIMAS: įjungia overlay (dabar dažniausiai iškart uždaromas iš Lua).
     weedPackActive = true;
     weedPackClickLocked = false;
     weedPackTargets = { bag: null, bud: null };
     weedPackCursor.classList.remove("hidden");
   }
   if (msg.action === "weedPackTargets") {
+    // PAKAVIMAS: Lua siunčia bag/bud ekrano koordinates (x, y 0–1) ir active būseną.
     const data = msg.data || {};
     weedPackTargets = {
       bag: data.bag || null,

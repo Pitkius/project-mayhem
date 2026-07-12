@@ -285,6 +285,7 @@ local WEED_STAGE_SEQUENCES = {
         { name = 'dried', minMs = 8500 },
     },
     weed_pack = {
+        -- PAKAVIMAS: serverio etapų seka. bag_ready po pirmo maišelio (min 300 ms), packed_five po 5 vnt. (min 2500 ms).
         { name = 'bag_ready', minMs = 300 },
         { name = 'packed_five', minMs = 2500 },
     },

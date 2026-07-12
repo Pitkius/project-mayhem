@@ -127,5 +127,6 @@ Config.DrugEquipment.fixedLocations = {
     { itemType = 'lab_kit', coords = vector4(1903.48, 4922.55, 48.86, 225.0), label = 'Amfetamino lab stalas', products = { 'amp_process' } },
     { itemType = 'scale', coords = vector4(1908.20, 4926.80, 48.86, 225.0), label = 'Amfetamino svarstyklės', products = { 'amp_pack' } },
     -- L2 · Žolė (Cayo pakavimas)
+    -- PAKAVIMAS: coords vector4(x, y, z, heading). w (180.0) = stalo pasukimas — keičia visų objektų orientaciją.
     { itemType = 'bagging_table', coords = vector4(5196.40, -5133.20, 3.35, 180.0), label = 'Žolės pakavimo stalas', products = { 'weed_pack' } },
 }
