@@ -894,7 +894,16 @@ end
 
 RegisterNUICallback('weedPackClick', function(data, cb)
     local session = active
-    local accepted = session and handlePackClick(session, tostring(data and data.target or ''))
+    local target = tostring(data and data.target or '')
+    if session and session.mode == 'pack' and not session.packBusy then
+        if session.stage == 'bag_select' then
+            target = 'bag'
+        elseif session.stage == 'packing' and session.currentBud
+            and DoesEntityExist(session.currentBud) then
+            target = 'bud'
+        end
+    end
+    local accepted = session and handlePackClick(session, target)
     cb(accepted and 'ok' or 'ignored')
 end)
 

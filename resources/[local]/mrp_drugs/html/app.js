@@ -67,27 +67,18 @@ async function sendWeedPackClick(target) {
   }
 }
 
-function activeWeedPackTarget() {
-  // Only one pack object is active at a time. GTA's world-to-screen native can
-  // fail with a scripted camera, so a stale fallback coordinate must never
-  // make the highlighted object unclickable.
-  return ["bag", "bud"].find((name) => {
-    const target = weedPackTargets[name];
-    return target && target.active === true && target.visible !== false;
-  });
-}
-
-function handleWeedPackPointer(event) {
+function handleWeedPackButton(event) {
   if (!weedPackActive || (event.button !== undefined && event.button !== 0)) return;
-  const buttonTarget = event.target.closest?.("[data-target]")?.dataset.target;
-  const activeTarget = buttonTarget || activeWeedPackTarget();
-  if (!activeTarget) return;
+  const target = event.currentTarget.dataset.target;
+  const state = weedPackTargets[target];
+  if (!state || state.active !== true || state.visible === false) return;
   event.preventDefault();
   event.stopPropagation();
-  sendWeedPackClick(activeTarget);
+  sendWeedPackClick(target);
 }
 
-weedPackCursor.addEventListener("pointerdown", handleWeedPackPointer);
+weedPackBag.addEventListener("click", handleWeedPackButton);
+weedPackBud.addEventListener("click", handleWeedPackButton);
 
 let state = { products: [], selectedId: null, isWeaponMode: false };
 
