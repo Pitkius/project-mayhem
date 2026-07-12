@@ -515,14 +515,23 @@ local function movePackObject(session, entity, target, durationMs, onDone)
     end)
 end
 
-local function facePackBagToCamera(session, entity)
+local function setPackBagTransform(session, entity, scale)
     if not entity or not DoesEntityExist(entity) or not session.cam or not DoesCamExist(session.cam) then return end
     local coords = GetEntityCoords(entity)
     local camera = GetCamCoord(session.cam)
-    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y)
-    -- The empty/filled weed bag models are flat by default. Pitching them
-    -- 90 degrees keeps them upright while the heading faces the fixed camera.
-    SetEntityRotation(entity, 90.0, 0.0, heading, 2, true)
+    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 90.0
+    local radians = math.rad(heading)
+    local entityScale = scale or 1.0
+
+    -- Keep the bag upright and turn its flat face toward the scripted camera.
+    -- Scaled basis vectors make the one-second packed preview less oversized.
+    SetEntityMatrix(
+        entity,
+        -math.sin(radians) * entityScale, math.cos(radians) * entityScale, 0.0,
+        math.cos(radians) * entityScale, math.sin(radians) * entityScale, 0.0,
+        0.0, 0.0, entityScale,
+        coords.x, coords.y, coords.z
+    )
 end
 
 -- Forward declaration: pack setup/spawn run before screen helpers are defined.
@@ -545,7 +554,7 @@ local function showPackedBagPreview(session, onDone)
             session.packedBagCenter.x, session.packedBagCenter.y, session.packedBagCenter.z,
             false, false, false
         )
-        facePackBagToCamera(session, session.packedBagEntity)
+        setPackBagTransform(session, session.packedBagEntity, session.packedBagScale)
         SetEntityVisible(session.packedBagEntity, true, false)
     end
 
@@ -556,11 +565,6 @@ local function showPackedBagPreview(session, onDone)
         if session.packedBagEntity and DoesEntityExist(session.packedBagEntity) then
             SetEntityVisible(session.packedBagEntity, false, false)
         end
-        if session.bag and session.bag.entity and DoesEntityExist(session.bag.entity) then
-            SetEntityVisible(session.bag.entity, true, false)
-            SetEntityCollision(session.bag.entity, true, true)
-        end
-        session.packBusy = false
         if onDone then onDone() end
     end)
 end
@@ -592,6 +596,36 @@ local function spawnPackBud(session)
     })
 end
 
+local function resetPackBag(session)
+    if active ~= session or session.finished or not session.bag
+        or not session.bag.entity or not DoesEntityExist(session.bag.entity) then
+        return
+    end
+
+    SetEntityCoordsNoOffset(
+        session.bag.entity,
+        session.bagSide.x, session.bagSide.y, session.bagSide.z,
+        false, false, false
+    )
+    setPackBagTransform(session, session.bag.entity, 1.0)
+    SetEntityVisible(session.bag.entity, true, false)
+    SetEntityCollision(session.bag.entity, true, true)
+    session.stage = 'bag_select'
+    session.packBusy = false
+    session.lastTargetHudAt = 0
+    cachePackScreenAnchors(session)
+    updatePackHighlights(session)
+    if updatePackTargets then updatePackTargets(session) end
+    hud('weed3dUpdate', {
+        title = 'Žolė · pakavimas',
+        stage = '1/2',
+        hint = 'Paspausk kairį pelės mygtuką ant maišelio.',
+        packed = session.packedCount,
+        targetCount = session.packTarget,
+        score = math.floor(session.score),
+    })
+end
+
 local function handlePackClick(session, target)
     if active ~= session or session.mode ~= 'pack' or session.packBusy then return false end
     if target == 'bag' and session.stage == 'bag_select' then
@@ -599,12 +633,18 @@ local function handlePackClick(session, target)
         session.stage = 'moving'
         clearPackHighlights(session)
         movePackObject(session, session.bag.entity, session.bagCenter, 450, function()
-            facePackBagToCamera(session, session.bag.entity)
-            session.stage = 'stage_pending'
-            reportServerStage(session, 'bag_ready', function()
+            setPackBagTransform(session, session.bag.entity, 1.0)
+            if not session.bagReadyReported then
+                session.stage = 'stage_pending'
+                reportServerStage(session, 'bag_ready', function()
+                    session.bagReadyReported = true
+                    session.packBusy = false
+                    spawnPackBud(session)
+                end)
+            else
                 session.packBusy = false
                 spawnPackBud(session)
-            end)
+            end
         end)
         return true
     end
@@ -636,7 +676,7 @@ local function handlePackClick(session, target)
                         packed = session.packedCount,
                     })
                 else
-                    spawnPackBud(session)
+                    resetPackBag(session)
                 end
             end)
         end)
@@ -652,6 +692,7 @@ local function setupPack(session)
     session.packedCount = 0
     session.packTarget = 5
     session.packBusy = false
+    session.bagReadyReported = false
     local leafHash = loadFirstModel(MODELS.leaf)
     local emptyBagHash = loadFirstModel(MODELS.emptyBag)
     local packedBagHash = loadFirstModel(MODELS.packedBag)
@@ -663,9 +704,16 @@ local function setupPack(session)
     local packedMin, packedMax = GetModelDimensions(packedBagHash)
     local emptyHeight = clamp(math.abs(emptyMax.y - emptyMin.y), 0.12, 0.36)
     local packedHeight = clamp(math.abs(packedMax.y - packedMin.y), 0.12, 0.36)
+    session.packedBagScale = 0.55
     session.bagSide = offsetPoint(session.tableOrigin, session.heading, -0.58, -0.22, surfaceHeight + emptyHeight * 0.5 + 0.01)
     session.bagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.0, surfaceHeight + emptyHeight * 0.5 + 0.01)
-    session.packedBagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.0, surfaceHeight + packedHeight * 0.5 + 0.01)
+    session.packedBagCenter = offsetPoint(
+        session.tableOrigin,
+        session.heading,
+        0.0,
+        0.0,
+        surfaceHeight + packedHeight * session.packedBagScale * 0.5 + 0.01
+    )
     session.budSide = offsetPoint(session.tableOrigin, session.heading, 0.58, -0.22, surfaceHeight + 0.08)
     session.packBudHash = leafHash
     session.emptyBagHash = emptyBagHash
@@ -674,10 +722,10 @@ local function setupPack(session)
     local bagPos = session.bagSide
     local bagEntity = registerEntity(session, createLocalObject(emptyBagHash, bagPos, session.heading))
     if not bagEntity then return false, 'Nepavyko sukurti pakavimo maišelio.' end
-    facePackBagToCamera(session, bagEntity)
+    setPackBagTransform(session, bagEntity, 1.0)
     local packedBagEntity = registerEntity(session, createLocalObject(packedBagHash, session.packedBagCenter, session.heading))
     if not packedBagEntity then return false, 'Nepavyko sukurti supakuoto maišelio peržiūros.' end
-    facePackBagToCamera(session, packedBagEntity)
+    setPackBagTransform(session, packedBagEntity, session.packedBagScale)
     SetEntityVisible(packedBagEntity, false, false)
     SetEntityCollision(packedBagEntity, false, false)
     session.packedBagEntity = packedBagEntity
