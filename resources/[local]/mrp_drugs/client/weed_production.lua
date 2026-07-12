@@ -519,7 +519,7 @@ local function setPackBagTransform(session, entity, scale)
     if not entity or not DoesEntityExist(entity) or not session.cam or not DoesCamExist(session.cam) then return end
     local coords = GetEntityCoords(entity)
     local camera = GetCamCoord(session.cam)
-    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 90.0
+    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 0
     local radians = math.rad(heading)
     local entityScale = scale or 1.0
 
@@ -704,7 +704,7 @@ local function setupPack(session)
     local packedMin, packedMax = GetModelDimensions(packedBagHash)
     local emptyHeight = clamp(math.abs(emptyMax.y - emptyMin.y), 0.12, 0.36)
     local packedHeight = clamp(math.abs(packedMax.y - packedMin.y), 0.12, 0.36)
-    session.packedBagScale = 0.55
+    session.packedBagScale = 0.35
     session.bagSide = offsetPoint(session.tableOrigin, session.heading, -0.58, -0.22, surfaceHeight + emptyHeight * 0.5 + 0.01)
     session.bagCenter = offsetPoint(session.tableOrigin, session.heading, 0.0, 0.0, surfaceHeight + emptyHeight * 0.5 + 0.01)
     session.packedBagCenter = offsetPoint(
