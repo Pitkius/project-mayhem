@@ -177,7 +177,6 @@
         <span class="ga-type-pill">${safe(g.gang_type)}</span>
         <div class="ga-stat-row">
           <div class="ga-stat"><span>Reputacija</span><strong id="gaStatRep">${g.reputation ?? 0}</strong></div>
-          <div class="ga-stat"><span>Heat</span><strong id="gaStatHeat">${g.heat ?? 0}</strong></div>
           <div class="ga-stat"><span>Nariai</span><strong>${g.member_count ?? 0}</strong></div>
           <div class="ga-stat${wStatClass}"><span>Įspėjimai</span><strong>${wCount}/${wMax}</strong></div>
         </div>
@@ -201,9 +200,6 @@
         <div class="ga-form-grid">
           <label>Reputacija
             <input type="number" id="gaRep" value="${Number(g.reputation) || 0}" min="0" step="1" />
-          </label>
-          <label>Heat
-            <input type="number" id="gaHeat" value="${Number(g.heat) || 0}" min="0" step="1" />
           </label>
         </div>
         <div class="ga-actions">
@@ -242,8 +238,7 @@
 
     document.getElementById("gaSaveGang").onclick = () => {
       const reputation = Number(document.getElementById("gaRep").value) || 0;
-      const heat = Number(document.getElementById("gaHeat").value) || 0;
-      post("gangs:adminSaveGang", { gangId: g.id, reputation, heat }).then((res) => {
+      post("gangs:adminSaveGang", { gangId: g.id, reputation }).then((res) => {
         if (res && res.ok) {
           toast("Gauja atnaujinta.", "ok");
           mergeState(res);
@@ -287,7 +282,6 @@
         <div class="ga-stat-row">
           <div class="ga-stat"><span>Savininkas</span><strong style="font-size:14px">${safe(t.owner_name || "Laisva")}</strong></div>
           <div class="ga-stat"><span>Progresas</span><strong id="gaProgLbl">${prog}%</strong></div>
-          <div class="ga-stat"><span>Heat</span><strong>${t.heat ?? 0}</strong></div>
         </div>
         <div class="ga-form-grid">
           <label>Savininko gauja

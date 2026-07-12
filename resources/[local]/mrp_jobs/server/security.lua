@@ -44,11 +44,14 @@ function Security.isNear(src, coords, maxDist)
     return dist <= maxDist, dist
 end
 
--- Ar žaidėjas gyvas (kad negalėtų vykdyti darbo miręs).
+-- Ar žaidėjas gyvas (serverio pusėje — per QBCore metadata, nes
+-- IsEntityDead / IsPedFatallyInjured yra tik kliento native'ai).
 function Security.isAlive(src)
-    local ped = GetPlayerPed(src)
-    if not ped or ped == 0 then return false end
-    return not IsEntityDead(ped) and not IsPedFatallyInjured(ped)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return false end
+    local meta = Player.PlayerData.metadata
+    if meta and (meta.isdead or meta.inlaststand) then return false end
+    return true
 end
 
 -- Valymas atsijungus.

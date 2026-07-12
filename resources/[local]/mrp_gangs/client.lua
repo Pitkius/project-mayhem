@@ -295,12 +295,18 @@ RegisterNUICallback('gangs:adminClearWarnings', function(data, cb)
     end)
 end)
 
+RegisterNUICallback('gangs:openOrg', function(_, cb)
+    closeTabletUi()
+    TriggerServerEvent('mrp_gangs:server:org:requestOpen')
+    cb({ ok = true })
+end)
+
 RegisterNUICallback('gangs:adminSaveGang', function(data, cb)
     if not data or not data.gangId then
         cb({ ok = false })
         return
     end
-    TriggerServerEvent('mrp_gangs:server:adminSetGangStats', data.gangId, tonumber(data.reputation), tonumber(data.heat))
+    TriggerServerEvent('mrp_gangs:server:adminSetGangStats', data.gangId, tonumber(data.reputation))
     SetTimeout(150, function()
         refreshAdminSnapshot(cb)
     end)

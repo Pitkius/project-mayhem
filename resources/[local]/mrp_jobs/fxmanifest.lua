@@ -30,6 +30,7 @@ client_scripts {
     'client/cleaner.lua',
     'client/fruit.lua',
     'client/vape.lua',
+    'client/career.lua',
 }
 
 server_scripts {

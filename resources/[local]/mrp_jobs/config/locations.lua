@@ -119,3 +119,14 @@ Config.Locations.fruit = {
     },
     blip = { sprite = 85, color = 2, scale = 0.7, name = 'Vaisių ūkis' },
 }
+
+-- ── KARJEROS SPECIALISTAS (bendras darbo meniu NPC) ──────────────
+Config.Locations.career = {
+    npc = {
+        model = 'a_m_y_business_01',
+        coords = vector4(-551.3856, -191.2355, 38.2193, 208.4912),
+        label = 'Laurynas · Karjeros specialistas',
+        scenario = 'WORLD_HUMAN_CLIPBOARD',
+    },
+    blip = { sprite = 480, color = 46, scale = 0.78, name = 'Karjeros centras' },
+}

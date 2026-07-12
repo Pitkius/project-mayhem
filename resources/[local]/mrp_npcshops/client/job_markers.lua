@@ -26,8 +26,16 @@ local DEFAULT_MARKER_TYPES = {
     duty = 2,
 }
 
+-- PD supply/duty markeriai piešiami mrp_ltpd/pd_markers.lua — čia juos praleidžiam,
+-- kad nebūtų dvigubų piešimų ir z-fighting.
+local PD_MARKER_SKIP = { police = { supply = true, duty = true } }
+
 local function isMarkerRole(role)
     return role == 'garage' or role == 'stash' or role == 'locker' or role == 'supply'
+end
+
+local function isSkippedForJob(job, role)
+    return PD_MARKER_SKIP[job] and PD_MARKER_SKIP[job][role]
 end
 
 local function markerTypeFor(kind)
@@ -98,7 +106,7 @@ end
 exports('AddJobGroundMarker', registerZone)
 
 for _, entry in ipairs(Config.JobStationNpcs or {}) do
-    if isMarkerRole(entry.role) and entry.coords then
+    if isMarkerRole(entry.role) and entry.coords and not isSkippedForJob(entry.job, entry.role) then
         local captured = {
             job = entry.job,
             stationId = entry.stationId,
@@ -133,7 +141,7 @@ CreateThread(function()
 
     local drawD = Config.JobMarkerDrawDistance or 22.0
     local farSleep = 1200
-    local drawSleep = 150
+    local drawSleep = 0
 
     while true do
         if #activeZones == 0 then

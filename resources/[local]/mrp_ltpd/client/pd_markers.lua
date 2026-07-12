@@ -414,6 +414,11 @@ CreateThread(function()
         local closestInteract = nil
         local closestInteractDist = nil
 
+        if IsNuiFocused() then
+            Wait(400)
+            goto continue
+        end
+
         for i, zone in ipairs(pdZones) do
             if accessCache[i] == false then
                 goto continue_zone

@@ -430,7 +430,7 @@ Config.Stations = {
             label = 'PD inventorius',
         },
         armory = {
-            coords = vector3(1849.12, 3690.04, 34.27),
+            coords = vector3(1847.0, 3691.5, 34.27),
             stashId = 'ltpd_armory_sandy',
             label = 'Policijos ginklinė (Sandy)',
             maxweight = 4000000,
@@ -584,7 +584,7 @@ Config.PdDoorGroups = {
         entityScan = {
             center = vector3(1854.92, 3701.15, 33.73),
             radius = 12.0,
-            models = { 'hedwig_sheriff_garage_gardoor', 'hedwig_sheriff_garage_door', 'hedwig_sheriif_garage_door' },
+            models = { 'hedwig_sheriff_garage_gardoor', 'hedwig_sheriff_garage_door' },
         },
     },
 }
@@ -630,7 +630,6 @@ Config.PdDoorDynamics = {
             'hedwig_sheriff_door05',
             'hedwig_sheriff_door06',
             'hedwig_sheriff_garage_gardoor',
-            'hedwig_sheriif_garage_door',
             'hedwig_sheriff_garage_door',
         },
         pairDist = 4.35,

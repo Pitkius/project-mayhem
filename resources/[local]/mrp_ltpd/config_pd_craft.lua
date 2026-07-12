@@ -15,7 +15,7 @@ Config.PdWeaponCraft = {
         {
             id = 'ls_main_craft',
             stationId = 'ls_main',
-            coords = vector3(462.23, -981.12, 30.68),
+            coords = vector3(464.35, -981.12, 30.68),
             heading = 90.654,
             label = 'MRPD ginklų gamykla',
             minGrade = 0,
@@ -23,7 +23,7 @@ Config.PdWeaponCraft = {
         {
             id = 'sandy_craft',
             stationId = 'sandy',
-            coords = vector3(1849.12, 3690.04, 34.27),
+            coords = vector3(1851.20, 3690.04, 34.27),
             heading = 210.0,
             label = 'Sandy PD ginklų gamykla',
             minGrade = 0,

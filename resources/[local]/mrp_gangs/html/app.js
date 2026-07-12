@@ -342,6 +342,10 @@ function updatePrimaryTabs(state) {
   const hasGang = !!state.hasGang;
   if (tabBtnRegister) tabBtnRegister.classList.toggle("hidden", hasGang);
   if (tabBtnGangInfo) tabBtnGangInfo.classList.toggle("hidden", !hasGang);
+  const btnOrg = document.getElementById("btnOpenOrg");
+  const btnOrgInfo = document.getElementById("btnOpenOrgInfo");
+  if (btnOrg) btnOrg.classList.toggle("hidden", !hasGang);
+  if (btnOrgInfo) btnOrgInfo.classList.toggle("hidden", !hasGang);
   if (activeTab === "register" && hasGang) activeTab = "ganginfo";
   if (activeTab === "ganginfo" && !hasGang) activeTab = "register";
 }
@@ -369,7 +373,6 @@ function renderGangInfoTab(state) {
   if (stats) {
     stats.innerHTML = `
       <div class="gang-info-stat"><span>Reputacija</span><strong>${gang.reputation ?? 0}</strong></div>
-      <div class="gang-info-stat"><span>Heat</span><strong>${gang.heat ?? 0}</strong></div>
       <div class="gang-info-stat"><span>Nariai</span><strong>${members}</strong></div>
       <div class="gang-info-stat"><span>Sukurta</span><strong class="small-strong">${safe(formatWhen(gang.created_at))}</strong></div>`;
   }
@@ -549,6 +552,16 @@ if (btnDockGang) {
 bindTabletDrag();
 
 document.getElementById("btnClose").onclick = () => post("gangs:close", {});
+
+function openOrgMenu() {
+  post("gangs:openOrg", {});
+}
+
+const btnOpenOrg = document.getElementById("btnOpenOrg");
+const btnOpenOrgInfo = document.getElementById("btnOpenOrgInfo");
+if (btnOpenOrg) btnOpenOrg.onclick = openOrgMenu;
+if (btnOpenOrgInfo) btnOpenOrgInfo.onclick = openOrgMenu;
+
 document.getElementById("btnRefresh").onclick = () =>
   post("gangs:refresh", {}).then((res) => {
     mergeTabletMap(res);

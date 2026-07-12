@@ -1360,10 +1360,6 @@ select.color-select-native {
   border-radius: 999px;
 }
 
-.turf-row .bar-heat i {
-  background: linear-gradient(90deg, #f59e0b, #ef4444);
-}
-
 .turf-row .ok {
   color: #22c55e;
 }

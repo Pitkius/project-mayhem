@@ -98,7 +98,7 @@ end
 
 local function getActiveTurfWars()
     local rows = MySQL.query.await([[
-        SELECT t.turf_id, t.owner_name, t.influence, t.heat, g.color_hex
+        SELECT t.turf_id, t.owner_name, t.influence, g.color_hex
         FROM fivempro_gang_turfs t
         LEFT JOIN fivempro_gangs g ON g.id = t.owner_gang_id
         WHERE t.owner_gang_id IS NOT NULL AND t.influence > 0 AND t.influence < 100
@@ -114,9 +114,8 @@ local function getActiveTurfWars()
             label = cfg and (cfg.district or cfg.label) or r.turf_id,
             owner = r.owner_name or '—',
             influence = tonumber(r.influence) or 0,
-            heat = tonumber(r.heat) or 0,
             color_hex = r.color_hex or '#f87171',
-            timeLabel = (tonumber(r.heat) or 0) > 50 and 'Karštas' or 'Aktyvus',
+            timeLabel = 'Aktyvus',
         }
     end
     return out
@@ -503,14 +502,13 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:getAdminSnapshot', function(sr
     cb({ ok = true, gangs = gangs, turfs = turfs, maxWarnings = tonumber(Config.MaxGangWarnings) or 5 })
 end)
 
-RegisterNetEvent('mrp_gangs:server:adminSetGangStats', function(gangId, reputation, heat)
+RegisterNetEvent('mrp_gangs:server:adminSetGangStats', function(gangId, reputation)
     local src = source
     if not HasGangAdminPermission(src) then return end
     gangId = tonumber(gangId)
     if not gangId then return end
-    MySQL.update.await('UPDATE fivempro_gangs SET reputation = ?, heat = ? WHERE id = ?', {
+    MySQL.update.await('UPDATE fivempro_gangs SET reputation = ? WHERE id = ?', {
         tonumber(reputation) or 0,
-        tonumber(heat) or 0,
         gangId,
     })
     TriggerClientEvent('QBCore:Notify', src, 'Gaujos statistika atnaujinta.', 'success')

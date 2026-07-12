@@ -64,7 +64,7 @@ CreateThread(function()
     local drawD = cfg.drawDistance or 22.0
     local useR = cfg.useRadius or 2.4
     local farSleep = 1200
-    local drawSleep = 150
+    local drawSleep = 0
 
     while true do
         if #zones == 0 then
