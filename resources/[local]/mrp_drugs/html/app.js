@@ -55,24 +55,32 @@ let weedPackActive = false;
 let weedPackTargets = { bag: null, bud: null };
 let weedPackClickLocked = false;
 
-function sendWeedPackClick(target) {
+async function sendWeedPackClick(target) {
   if (!weedPackActive || !target || weedPackClickLocked) return;
   weedPackClickLocked = true;
-  post("weedPackClick", { target });
-  window.setTimeout(() => {
+  try {
+    await post("weedPackClick", { target });
+  } catch (_) {
+    // A failed NUI request must not permanently block later pack clicks.
+  } finally {
     weedPackClickLocked = false;
-  }, 350);
+  }
 }
 
-function handleWeedPackPointer(event) {
-  if (!weedPackActive || event.button !== 0) return;
+function activeWeedPackTarget() {
   // Only one pack object is active at a time. GTA's world-to-screen native can
   // fail with a scripted camera, so a stale fallback coordinate must never
   // make the highlighted object unclickable.
-  const activeTarget = ["bag", "bud"].find((name) => {
+  return ["bag", "bud"].find((name) => {
     const target = weedPackTargets[name];
     return target && target.active === true && target.visible !== false;
   });
+}
+
+function handleWeedPackPointer(event) {
+  if (!weedPackActive || (event.button !== undefined && event.button !== 0)) return;
+  const buttonTarget = event.target.closest?.("[data-target]")?.dataset.target;
+  const activeTarget = buttonTarget || activeWeedPackTarget();
   if (!activeTarget) return;
   event.preventDefault();
   event.stopPropagation();
@@ -80,8 +88,6 @@ function handleWeedPackPointer(event) {
 }
 
 weedPackCursor.addEventListener("pointerdown", handleWeedPackPointer);
-weedPackCursor.addEventListener("mousedown", handleWeedPackPointer);
-weedPackCursor.addEventListener("click", handleWeedPackPointer);
 
 let state = { products: [], selectedId: null, isWeaponMode: false };
 
