@@ -585,7 +585,7 @@ local function spawnPackBud(session)
     hud('weed3dUpdate', {
         title = 'Žolė · pakavimas',
         stage = '2/2',
-        hint = 'Paspausk ant žolės gabaliuko.',
+        hint = 'Paspausk kairį pelės mygtuką ant žolės gabaliuko.',
         packed = session.packedCount,
         targetCount = session.packTarget,
         score = math.floor(session.score),
@@ -690,7 +690,6 @@ local function setupPack(session)
     startPackingAnimation(session)
     cachePackScreenAnchors(session)
     updatePackHighlights(session)
-    hud('weedPackOpen', { packed = 0, targetCount = session.packTarget })
     return true
 end
 
@@ -863,14 +862,78 @@ local function screenTargetForPack(session, coords, anchorKey, active)
     }
 end
 
-local function getPackRayTarget(session)
-    if not session.cam or not DoesCamExist(session.cam) or session.packBusy then return nil end
-    local from = GetCamCoord(session.cam)
-    local direction = rotationToDirection(GetCamRot(session.cam, 2))
-    local to = from + direction * 10.0
-    local ray = StartShapeTestRay(from.x, from.y, from.z, to.x, to.y, to.z, 16, PlayerPedId(), 0)
+local PACK_CLICK_RADIUS = 0.22
+
+local function getPackCursorNorm()
+    if IsNuiFocused() then
+        local resX, resY = GetActiveScreenResolution()
+        local cx, cy = GetNuiCursorPosition()
+        if resX and resX > 0 and cx and cy then
+            return cx / resX, cy / resY
+        end
+    end
+
+    local normX = GetDisabledControlNormal(0, 239)
+    local normY = GetDisabledControlNormal(0, 240)
+    if normX and normY and normX >= 0.0 and normX <= 1.0 and normY >= 0.0 and normY <= 1.0 then
+        return normX, normY
+    end
+    return nil, nil
+end
+
+local function getPackScreenPoint(session, anchorKey)
+    local coords = packAnchorCoords(session, anchorKey)
+    local projected, x, y = projectToScreen(session, coords)
+    if projected and x and y then
+        session.packAnchors = session.packAnchors or {}
+        session.packAnchors[anchorKey] = { x = x, y = y }
+        return x, y
+    end
+    if session.packAnchors and session.packAnchors[anchorKey] then
+        return session.packAnchors[anchorKey].x, session.packAnchors[anchorKey].y
+    end
+    if anchorKey == 'bag' then return 0.40, 0.56 end
+    return 0.68, 0.52
+end
+
+local function entityFromCursorRay(session, normX, normY)
+    if not session.cam or not DoesCamExist(session.cam) then return nil end
+    local camPos = GetCamCoord(session.cam)
+    local worldCoord, normalDir = GetWorldCoordFromScreenCoord(normX, normY)
+    if not worldCoord or not normalDir then return nil end
+    local target = worldCoord + normalDir * 12.0
+    local ray = StartShapeTestRay(camPos.x, camPos.y, camPos.z, target.x, target.y, target.z, -1, PlayerPedId(), 0)
     local _, hit, _, _, entity = GetShapeTestResult(ray)
     if hit ~= 1 or not entity or entity == 0 then return nil end
+    return entity
+end
+
+local function getPackTargetFromCursor(session, normX, normY)
+    local bestTarget = nil
+    local bestDist = PACK_CLICK_RADIUS
+
+    if session.stage == 'bag_select' and session.bag and session.bag.entity then
+        local x, y = getPackScreenPoint(session, 'bag')
+        local dist = math.sqrt((normX - x) * (normX - x) + (normY - y) * (normY - y))
+        if dist <= bestDist then
+            bestTarget = 'bag'
+            bestDist = dist
+        end
+    end
+
+    if session.stage == 'packing' and session.currentBud and DoesEntityExist(session.currentBud) then
+        local x, y = getPackScreenPoint(session, 'bud')
+        local dist = math.sqrt((normX - x) * (normX - x) + (normY - y) * (normY - y))
+        if dist <= bestDist then
+            bestTarget = 'bud'
+            bestDist = dist
+        end
+    end
+
+    if bestTarget then return bestTarget end
+
+    local entity = entityFromCursorRay(session, normX, normY)
+    if not entity then return nil end
     if session.stage == 'bag_select' and session.bag and entity == session.bag.entity then
         return 'bag'
     end
@@ -880,10 +943,24 @@ local function getPackRayTarget(session)
     return nil
 end
 
-local function tryPackRayClick(session)
+local function tryPackCursorClick(session)
     if session.mode ~= 'pack' or session.packBusy then return end
     if not (IsControlJustPressed(0, 24) or IsDisabledControlJustPressed(0, 24)) then return end
-    local target = getPackRayTarget(session)
+
+    -- Each pack step only has one valid action. Any left-click should trigger it
+    -- instead of relying on brittle screen hitboxes or CEF overlays.
+    if session.stage == 'bag_select' and session.bag and session.bag.entity then
+        handlePackClick(session, 'bag')
+        return
+    end
+    if session.stage == 'packing' and session.currentBud and DoesEntityExist(session.currentBud) then
+        handlePackClick(session, 'bud')
+        return
+    end
+
+    local normX, normY = getPackCursorNorm()
+    if not normX then return end
+    local target = getPackTargetFromCursor(session, normX, normY)
     if target then handlePackClick(session, target) end
 end
 
@@ -912,7 +989,7 @@ local function runSession(session)
             updateCamera(session)
             if session.mode == 'pack' then
                 updatePackTargets(session)
-                tryPackRayClick(session)
+                tryPackCursorClick(session)
             end
             drawSnapPoints(session)
 
@@ -1080,13 +1157,15 @@ function WeedProduction.Start(payload, onDone)
         stage = mode == 'process' and '1/2' or '1/2',
         hint = mode == 'process'
             and 'Pelė – kamera · E – paimti/padėti · ratukas – sukti · ESC – atšaukti'
-            or 'Kursoriumi paspausk ant maišelio, tada ant žolės gabaliukų.',
+            or 'Spausk kairį pelės mygtuką ant maišelio, tada ant žolės gabaliukų.',
         packed = mode == 'pack' and 0 or nil,
         targetCount = mode == 'pack' and 5 or nil,
     })
     if mode == 'pack' then
-        SetNuiFocus(true, true)
+        -- Keep the HUD visible but let GTA receive mouse clicks directly.
+        SetNuiFocus(false, false)
         SetNuiFocusKeepInput(false)
+        hud('weedPackClose')
         CreateThread(function()
             Wait(250)
             if active == session then cachePackScreenAnchors(session) end

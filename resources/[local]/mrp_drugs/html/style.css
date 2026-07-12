@@ -1435,9 +1435,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   position: fixed;
   inset: 0;
   z-index: 9998;
-  pointer-events: auto;
-  background: rgba(0, 0, 0, 0.001);
-  touch-action: none;
+  pointer-events: none;
 }
 
 .weed-pack-target {
@@ -1446,12 +1444,11 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   height: clamp(150px, 14vw, 220px);
   padding: 0;
   transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.001);
+  background: transparent;
   border: 0;
   border-radius: 50%;
-  cursor: pointer;
-  pointer-events: auto;
-  touch-action: none;
+  cursor: default;
+  pointer-events: none;
   box-shadow: none;
 }
 
