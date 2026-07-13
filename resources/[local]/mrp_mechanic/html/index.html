@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LS Customs</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="root" class="hidden">
+        <div class="workshop">
+            <header class="workshop__head">
+                <div class="workshop__brand">
+                    <div class="workshop__logo">⚙</div>
+                    <div>
+                        <h1>Los Santos Customs</h1>
+                        <p id="plateLabel">—</p>
+                    </div>
+                </div>
+                <div class="workshop__actions">
+                    <button type="button" class="btn btn--ghost" id="btnRepair">Remontas</button>
+                    <button type="button" class="btn btn--green" id="btnSave">Išsaugoti klientui</button>
+                    <button type="button" class="btn btn--close" id="btnClose" title="Uždaryti">✕</button>
+                </div>
+            </header>
+
+            <div class="workshop__body">
+                <nav class="workshop__nav" id="nav"></nav>
+                <main class="workshop__main" id="panel"></main>
+            </div>
+
+            <footer class="workshop__foot">
+                <span id="hintText">Peržiūra ant transporto — išsaugok tik užbaigus darbą.</span>
+            </footer>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

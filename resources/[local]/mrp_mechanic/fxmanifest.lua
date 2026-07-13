@@ -6,6 +6,14 @@ name 'mrp_mechanic'
 description 'LS mechanikų bazė – sandėlis, rūbinė, remonto vietos, garažas/salonas'
 version '1.0.0'
 
+ui_page 'html/index.html'
+
+files {
+    'html/index.html',
+    'html/style.css',
+    'html/app.js',
+}
+
 shared_scripts {
     'config.lua',
 }

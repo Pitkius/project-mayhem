@@ -23,6 +23,7 @@ client_scripts {
     'client/pd_markers.lua',
     'client/reception.lua',
     'client/divisions.lua',
+    'client/fleet_spawn.lua',
     'client/main.lua',
     'client/pd_craft.lua',
     'client/cctv_props.lua',
@@ -63,7 +64,6 @@ dependencies {
     'qb-inventory',
     'qb-target',
     'mrp_dispatch',
-    'mrp_siren_controller',
 }
 
 server_exports {
