@@ -538,7 +538,7 @@ local function setPackBagTransform(session, entity, scale, isPackedPreview)
     --   + 180 → apverstas 180° (kita pusė į kamerą)
     --   + 45  → pasuktas įstrižai 45°
     --   - 90  → pasuktas kita kryptimi 90°
-    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 90
+    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + (isPackedPreview and 180 or 90)
     local radians = math.rad(heading)
     local entityScale = scale or 1.0
 
