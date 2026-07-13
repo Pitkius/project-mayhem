@@ -525,7 +525,7 @@ local function movePackObject(session, entity, target, durationMs, onDone)
     end)
 end
 
-local function setPackBagTransform(session, entity, scale)
+local function setPackBagTransform(session, entity, scale, isPackedPreview)
     if not entity or not DoesEntityExist(entity) or not session.cam or not DoesCamExist(session.cam) then return end
     local coords = GetEntityCoords(entity)
     local camera = GetCamCoord(session.cam)
@@ -534,13 +534,23 @@ local function setPackBagTransform(session, entity, scale)
     local radians = math.rad(heading)
     local entityScale = scale or 1.0
 
-    SetEntityMatrix(
-        entity,
-        -math.sin(radians) * entityScale, math.cos(radians) * entityScale, 0.0,
-        0.0, 0.0, entityScale,
-        math.cos(radians) * entityScale, math.sin(radians) * entityScale, 0.0,
-        coords.x, coords.y, coords.z
-    )
+    if isPackedPreview then
+        SetEntityMatrix(
+            entity,
+            -math.sin(radians) * entityScale, math.cos(radians) * entityScale, 0.0,
+            math.cos(radians) * entityScale, math.sin(radians) * entityScale, 0.0,
+            0.0, 0.0, entityScale,
+            coords.x, coords.y, coords.z
+        )
+    else
+        SetEntityMatrix(
+            entity,
+            -math.sin(radians) * entityScale, math.cos(radians) * entityScale, 0.0,
+            0.0, 0.0, entityScale,
+            math.cos(radians) * entityScale, math.sin(radians) * entityScale, 0.0,
+            coords.x, coords.y, coords.z
+        )
+    end
 end
 
 -- Forward declaration: pack setup/spawn run before screen helpers are defined.
@@ -564,7 +574,7 @@ local function showPackedBagPreview(session, onDone)
             session.packedBagCenter.x, session.packedBagCenter.y, session.packedBagCenter.z,
             false, false, false
         )
-        setPackBagTransform(session, session.packedBagEntity, session.packedBagScale)
+        setPackBagTransform(session, session.packedBagEntity, session.packedBagScale, true)
         SetEntityVisible(session.packedBagEntity, true, false)
     end
 
@@ -753,7 +763,7 @@ local function setupPack(session)
     setPackBagTransform(session, bagEntity, 1.0)
     local packedBagEntity = registerEntity(session, createLocalObject(packedBagHash, session.packedBagCenter, session.heading))
     if not packedBagEntity then return false, 'Nepavyko sukurti supakuoto maišelio peržiūros.' end
-    setPackBagTransform(session, packedBagEntity, session.packedBagScale)
+    setPackBagTransform(session, packedBagEntity, session.packedBagScale, true)
     SetEntityVisible(packedBagEntity, false, false)
     SetEntityCollision(packedBagEntity, false, false)
     session.packedBagEntity = packedBagEntity
