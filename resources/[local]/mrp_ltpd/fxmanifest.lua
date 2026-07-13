@@ -64,8 +64,6 @@ dependencies {
     'qb-inventory',
     'qb-target',
     'mrp_dispatch',
-    'mrp_siren_controller',
-    'mrp_pd_mrpd',
 }
 
 server_exports {

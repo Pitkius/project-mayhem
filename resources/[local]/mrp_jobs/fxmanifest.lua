@@ -55,7 +55,6 @@ files {
     'html/index.html',
     'html/app.js',
     'html/styles.css',
-    'html/audio/*.ogg',
 }
 
 dependencies {

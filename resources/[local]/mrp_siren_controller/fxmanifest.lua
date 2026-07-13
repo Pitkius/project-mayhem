@@ -31,5 +31,4 @@ files {
 dependencies {
     'qb-core',
     'qb-menu',
-    'mrp_ltpd',
 }
