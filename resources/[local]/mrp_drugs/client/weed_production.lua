@@ -529,19 +529,16 @@ local function setPackBagTransform(session, entity, scale)
     if not entity or not DoesEntityExist(entity) or not session.cam or not DoesCamExist(session.cam) then return end
     local coords = GetEntityCoords(entity)
     local camera = GetCamCoord(session.cam)
-    -- PAKAVIMAS: maišelio pasukimas link kameros. +90+90 = 180° papildomas posūkis.
-    -- Keisk šiuos skaičius — pasikeis kaip maišelis guli (šonu / priekiu / plokščiai).
-    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 90 + 90
+    -- PAKAVIMAS: +90 = pasuktas šonu 90°. Matrix antroji eilutė (0,0,scale) = vertikalus (stovi).
+    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 90
     local radians = math.rad(heading)
-    -- PAKAVIMAS: scale = dydis. 1.0 = pilnas tuščias maišelis. packedBagScale (pvz. 0.25) = mažesnis preview.
     local entityScale = scale or 1.0
 
-    -- SetEntityMatrix: pirmi 6 skaičiai = pasukimas, paskutinis stulpelis (0,0,entityScale) = mastelis.
     SetEntityMatrix(
         entity,
         -math.sin(radians) * entityScale, math.cos(radians) * entityScale, 0.0,
-        math.cos(radians) * entityScale, math.sin(radians) * entityScale, 0.0,
         0.0, 0.0, entityScale,
+        math.cos(radians) * entityScale, math.sin(radians) * entityScale, 0.0,
         coords.x, coords.y, coords.z
     )
 end
