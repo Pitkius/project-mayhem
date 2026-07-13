@@ -215,16 +215,16 @@ local function createCamera(session)
     if not session.cam or session.cam == 0 then return false end
     if session.mode == 'pack' then
         local height = session.tableTop - session.tableOrigin.z
-        -- PAKAVIMAS: fiksuotos kameros pozicija. -2.15 = atstumas atgal, 1.45 = aukštis virš stalo.
-        -- Mažesnis -2.15 = arčiau stalo. Didesnis 1.45 = aukščiau. Keičia visą 3D vaizdą.
-        local cameraPos = offsetPoint(session.tableOrigin, session.heading, 0.0, -2.15, height + 1.45)
+        -- PAKAVIMAS: fiksuotos kameros pozicija. -2.15 = atstumas atgal, 1.3 = aukštis virš stalo.
+        -- Mažesnis -2.15 = arčiau stalo. Didesnis 1.3 = aukščiau. Keičia visą 3D vaizdą.
+        local cameraPos = offsetPoint(session.tableOrigin, session.heading, 0.0, -2.15, height + 1.3)
         SetCamCoord(session.cam, cameraPos.x, cameraPos.y, cameraPos.z)
         PointCamAtCoord(session.cam, session.lookAt.x, session.lookAt.y, session.lookAt.z)
         -- PAKAVIMAS: FOV (lauko plotis). Mažesnis = zoom in, didesnis = zoom out, matosi daugiau stalo.
         SetCamFov(session.cam, 42.0)
     else
         session.camYaw = session.heading + 180.0
-        session.camPitch = -22.0
+        session.camPitch = -20.0
         session.camDistance = 3.5
         SetCamFov(session.cam, 45.0)
     end
