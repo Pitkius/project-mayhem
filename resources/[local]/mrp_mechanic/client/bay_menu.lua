@@ -2,6 +2,51 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local mechanicUiOpen = false
 local mechanicUiVeh = nil
+local mechanicBayIndex = nil
+local mechanicPlate = nil
+local vehWasFrozen = false
+
+local PAINT_TYPES = {
+    { paintType = 0, label = 'Klasikinės', txt = 'Standartinis korpusinis dažymas' },
+    { paintType = 1, label = 'Metinės', txt = 'Metalizuotas blizgesys' },
+    { paintType = 2, label = 'Perlmutrinės', txt = 'Perlų / multicoat efektas' },
+    { paintType = 3, label = 'Matinės', txt = 'Nebliškantis matinis' },
+    { paintType = 4, label = 'Metalas', txt = 'Šiurkštus anoduotas metalas' },
+    { paintType = 5, label = 'Chromas', txt = 'Veidrodinis chromas' },
+}
+
+local WINDOW_TINTS = {
+    { idx = -1, label = 'Gamyklinis (be tamsinimo)' },
+    { idx = 0, label = 'Skaidrus' },
+    { idx = 1, label = 'Visiškai juodas' },
+    { idx = 2, label = 'Tamsus dūmas' },
+    { idx = 3, label = 'Šviesus dūmas' },
+    { idx = 4, label = 'Gamyklinis' },
+    { idx = 5, label = 'Limuzinas' },
+    { idx = 6, label = 'Žalias' },
+}
+
+local BODY_MODS = {
+    { id = 0, label = 'Spoileriai' },
+    { id = 1, label = 'Priekinis buferis' },
+    { id = 2, label = 'Galinis buferis' },
+    { id = 3, label = 'Šonai (sijonai)' },
+    { id = 4, label = 'Išmetimas' },
+    { id = 5, label = 'Rėmas / kėbulas' },
+    { id = 6, label = 'Grotelės' },
+    { id = 7, label = 'Gaubtas' },
+    { id = 8, label = 'Sparnai (priek.)' },
+    { id = 9, label = 'Sparnai (gal.)' },
+    { id = 10, label = 'Stogas' },
+}
+
+local PERF_MODS = {
+    { id = 11, label = 'Variklis' },
+    { id = 12, label = 'Stabdžiai' },
+    { id = 13, label = 'Pavarų dėžė' },
+    { id = 15, label = 'Pakaba' },
+    { id = 16, label = 'Šarvai' },
+}
 
 local function isMechanicOnDuty()
     local P = QBCore.Functions.GetPlayerData()
@@ -26,38 +71,10 @@ local function getVehicleInBay(bay)
     return best
 end
 
-local function doQuickRepair(veh)
-    if veh == 0 or not DoesEntityExist(veh) then return end
-    SetVehicleEngineHealth(veh, 1000.0)
-    SetVehicleBodyHealth(veh, 1000.0)
-    SetVehiclePetrolTankHealth(veh, 1000.0)
-    SetVehicleFixed(veh)
-    SetVehicleDeformationFixed(veh)
-    QBCore.Functions.Notify('Transportas suremontuotas.', 'success')
-end
-
 local function ensureModKit(veh)
     if veh == 0 then return end
     SetVehicleModKit(veh, 0)
 end
-
---- qb-menu visada užsidaro paspaudus eilutę — vėl atidarome tą patį meniu, kol mechanikas neišsaugos ar neuždarys.
-local function scheduleReopen(fn)
-    CreateThread(function()
-        Wait(100)
-        fn()
-    end)
-end
-
---- GTA dažų tipai (Los Santos Customs): 0 klasikinės … 5 chromas
-local PAINT_TYPES = {
-    { paintType = 0, label = 'Klasikinės (Classic)', txt = 'Standartinis korpusinis dažymas' },
-    { paintType = 1, label = 'Metinės (Metallic)', txt = 'Metalizuotas blizgesys' },
-    { paintType = 2, label = 'Perlmutrinės (Pearl)', txt = 'Perlų / multicoat efektas' },
-    { paintType = 3, label = 'Matinės (Matte)', txt = 'Nebliškantis matinis' },
-    { paintType = 4, label = 'Metalas (Metal)', txt = 'Šiurkštus anoduotas metalas' },
-    { paintType = 5, label = 'Chromas (Chrome)', txt = 'Veidrodinis chromas' },
-}
 
 local function applyUniformPaint(veh, paintType, colorIndex)
     if veh == 0 or not DoesEntityExist(veh) then return end
@@ -72,444 +89,96 @@ local function applyUniformPaint(veh, paintType, colorIndex)
     SetVehicleExtraColours(veh, pearl, wheelCol)
 end
 
-local WINDOW_TINTS = {
-    { idx = -1, label = 'Gamyklinis (be tamsinimo)' },
-    { idx = 0, label = 'Skaidrus' },
-    { idx = 1, label = 'Visiškai juodas' },
-    { idx = 2, label = 'Tamsus dūmas' },
-    { idx = 3, label = 'Šviesus dūmas' },
-    { idx = 4, label = 'Gamyklinis' },
-    { idx = 5, label = 'Limuzinas' },
-    { idx = 6, label = 'Žalias' },
-}
-
-local openPaintCategoryMenu
-
---- 2 žingsnis: galutinė spalva (indeksas tame GTA tipe)
-local function openPaintColorMenu(veh, bayIndex, paintType, typeLabel)
-    typeLabel = typeLabel or 'Spalva'
-    local menu = {
-        {
-            header = ('%s — pasirink spalvą'):format(typeLabel),
-            txt = 'Indeksai kaip GTA LSC. Peržiūra ant mašinos; DB tik paspaudus „Užbaigti darbą — išsaugoti klientui“ pagrindiniame meniu.',
-            isMenuHeader = true,
-        },
-    }
-    for ci = 0, 159 do
-        local colorIndex = ci
-        menu[#menu + 1] = {
-            header = ('Indeksas %s / 159'):format(colorIndex),
-            txt = ('Tipas %s — pritaikyti pagrindinę ir antrinę'):format(paintType),
-            params = {
-                isAction = true,
-                event = function()
-                    local b = bayIndex
-                    local pt = paintType
-                    local tl = typeLabel
-                    applyUniformPaint(veh, pt, colorIndex)
-                    QBCore.Functions.Notify(('Peržiūra: %s, indeksas %s'):format(tl, colorIndex), 'primary')
-                    scheduleReopen(function()
-                        local bay = b and Config.RepairBays and Config.RepairBays[b]
-                        local v = bay and getVehicleInBay(bay) or 0
-                        if v ~= 0 then openPaintColorMenu(v, b, pt, tl) end
-                    end)
-                end,
-            },
-        }
-    end
-    menu[#menu + 1] = {
-        header = 'Atgal į dažų kategorijas',
-        params = {
-            isAction = true,
-            event = function()
-                local b = bayIndex
-                scheduleReopen(function()
-                    local bay = b and Config.RepairBays and Config.RepairBays[b]
-                    local v = bay and getVehicleInBay(bay) or 0
-                    if v ~= 0 then openPaintCategoryMenu(v, b) end
-                end)
-            end,
-        },
-    }
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+local function doQuickRepair(veh)
+    if veh == 0 or not DoesEntityExist(veh) then return end
+    SetVehicleEngineHealth(veh, 1000.0)
+    SetVehicleBodyHealth(veh, 1000.0)
+    SetVehiclePetrolTankHealth(veh, 1000.0)
+    SetVehicleFixed(veh)
+    SetVehicleDeformationFixed(veh)
+    QBCore.Functions.Notify('Transportas suremontuotas.', 'success')
 end
 
---- 1 žingsnis: GTA dažų kategorija (Classic, Metallic, …)
-openPaintCategoryMenu = function(veh, bayIndex)
-    local menu = {
-        {
-            header = 'Dažymas — kategorija',
-            txt = 'Pasirink Los Santos Customs tipą, tada konkretų spalvos indeksą (0–159). Pagrindinė = antrinė.',
-            isMenuHeader = true,
-        },
-    }
-    for _, pt in ipairs(PAINT_TYPES) do
-        local pType = pt.paintType
-        local lab = pt.label
-        local desc = pt.txt
-        menu[#menu + 1] = {
-            header = lab,
-            txt = desc,
-            params = {
-                isAction = true,
-                event = function()
-                    local bay = bayIndex and Config.RepairBays and Config.RepairBays[bayIndex]
-                    local v = bay and getVehicleInBay(bay) or 0
-                    if v == 0 then
-                        return QBCore.Functions.Notify('Remonto zonoje nėra transporto.', 'error')
-                    end
-                    openPaintColorMenu(v, bayIndex, pType, lab)
-                end,
-            },
-        }
-    end
-    menu[#menu + 1] = {
-        header = 'Atgal į dirbtuves',
-        params = {
-            isAction = true,
-            event = function()
-                scheduleReopen(function()
-                    TriggerEvent('mrp_mechanic:client:openBayWorkshop', { bayIndex = bayIndex })
-                end)
-            end,
-        },
-    }
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
-end
-
---- Kėbulo kategorijos (LSC stilius)
-local BODY_MODS = {
-    { id = 0, label = 'Spoileriai' },
-    { id = 1, label = 'Priekinis buferis' },
-    { id = 2, label = 'Galinis buferis' },
-    { id = 3, label = 'Šonai (sijonai)' },
-    { id = 4, label = 'Išmetimas' },
-    { id = 5, label = 'Rėmas / kėbulas' },
-    { id = 6, label = 'Grotelės' },
-    { id = 7, label = 'Gaubtas' },
-    { id = 8, label = 'Sparnai (priek.)' },
-    { id = 9, label = 'Sparnai (gal.)' },
-    { id = 10, label = 'Stogas' },
-}
-
---- Variklis / važiuoklė (patobulinimai)
-local PERF_MODS = {
-    { id = 11, label = 'Variklis' },
-    { id = 12, label = 'Stabdžiai' },
-    { id = 13, label = 'Pavarų dėžė' },
-    { id = 15, label = 'Pakaba' },
-    { id = 16, label = 'Šarvai' },
-}
-
-local function openParentModShop(bayIndex, returnTo)
-    if returnTo == 'performance' then
-        TriggerEvent('mrp_mechanic:client:openPerformanceWorkshop', { bayIndex = bayIndex })
-    else
-        TriggerEvent('mrp_mechanic:client:openBodyWorkshop', { bayIndex = bayIndex })
-    end
-end
-
---- Visi GTA variantai sąraše — paspaudus iškart matai ant mašinos (kaip LSC pasirinkimas).
-local function openModVariantMenu(veh, modType, categoryLabel, bayIndex, returnTo)
-    returnTo = returnTo or 'body'
+local function getModCategories(veh, defs)
     ensureModKit(veh)
-    local n = GetNumVehicleMods(veh, modType)
-    local menu = {
-        {
-            header = categoryLabel,
-            txt = 'Pasirink dalį — iškart rodoma ant transporto. qb-menu neturi hover.',
-            isMenuHeader = true,
-        },
-    }
-
-    if n <= 0 then
-        menu[#menu + 1] = {
-            header = 'Nėra variantų',
-            txt = 'Šiai mašinai ši kategorija netinka.',
-            params = {
-                isAction = true,
-                event = function()
-                    local b, rt = bayIndex, returnTo
-                    scheduleReopen(function()
-                        openParentModShop(b, rt)
-                    end)
-                end,
-            },
-        }
-        TriggerEvent('qb-menu:client:openMenu', menu, false, true)
-        return
-    end
-
-    menu[#menu + 1] = {
-        header = 'Gamyklinis (nuimti)',
-        txt = 'Standartinė dalis',
-        params = {
-            isAction = true,
-            event = function()
-                local b = bayIndex
-                local m = modType
-                local lab = categoryLabel
-                local rt = returnTo
-                SetVehicleMod(veh, modType, -1, false)
-                QBCore.Functions.Notify('Gamyklinis variantas.', 'primary')
-                scheduleReopen(function()
-                    local bay = b and Config.RepairBays and Config.RepairBays[b]
-                    local v = bay and getVehicleInBay(bay) or 0
-                    if v ~= 0 then openModVariantMenu(v, m, lab, b, rt) end
-                end)
-            end,
-        },
-    }
-
-    for i = 0, n - 1 do
-        local idx = i
-        menu[#menu + 1] = {
-            header = ('%s — variantas %s / %s'):format(categoryLabel, idx + 1, n),
-            txt = 'Pritaikyti ir peržiūrėti',
-            params = {
-                isAction = true,
-                event = function()
-                    local b = bayIndex
-                    local m = modType
-                    local lab = categoryLabel
-                    local rt = returnTo
-                    QBCore.Functions.TriggerCallback('mrp_mechanic:server:canInstallUpgrade', function(res)
-                        if not res or not res.ok then
-                            return QBCore.Functions.Notify((res and res.reason) or 'Negalima įdiegti detalės.', 'error')
-                        end
-                        SetVehicleMod(veh, modType, idx, false)
-                        if res.requiredItem then
-                            TriggerServerEvent('mrp_mechanic:server:consumeUpgradeItem', res.requiredItem)
-                        end
-                        QBCore.Functions.Notify(('Įdiegta: %s #%s'):format(categoryLabel, idx + 1), 'success')
-                        scheduleReopen(function()
-                            local bay = b and Config.RepairBays and Config.RepairBays[b]
-                            local v = bay and getVehicleInBay(bay) or 0
-                            if v ~= 0 then openModVariantMenu(v, m, lab, b, rt) end
-                        end)
-                    end, modType, idx, bayIndex)
-                end,
-            },
+    local out = {}
+    for _, g in ipairs(defs) do
+        out[#out + 1] = {
+            id = g.id,
+            label = g.label,
+            count = GetNumVehicleMods(veh, g.id),
         }
     end
-
-    menu[#menu + 1] = {
-        header = 'Atgal',
-        params = {
-            isAction = true,
-            event = function()
-                local b, rt = bayIndex, returnTo
-                scheduleReopen(function()
-                    openParentModShop(b, rt)
-                end)
-            end,
-        },
-    }
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+    return out
 end
 
-local function openTurboMenu(veh, bayIndex)
-    local menu = {
-        { header = 'Turbo', txt = 'Įjungti ar išjungti', isMenuHeader = true },
-        {
-            header = 'Perjungti turbo',
-            txt = 'Įdėtas / nuimtas',
-            params = {
-                isAction = true,
-                event = function()
-                    local b = bayIndex
-                    ensureModKit(veh)
-                    local on = IsToggleModOn(veh, 18)
-                    local nextState = not on
-                    if nextState then
-                        QBCore.Functions.TriggerCallback('mrp_mechanic:server:canInstallUpgrade', function(res)
-                            if not res or not res.ok then
-                                return QBCore.Functions.Notify((res and res.reason) or 'Negalima įdiegti turbo.', 'error')
-                            end
-                            ToggleVehicleMod(veh, 18, true)
-                            if res.requiredItem then
-                                TriggerServerEvent('mrp_mechanic:server:consumeUpgradeItem', res.requiredItem)
-                            end
-                            QBCore.Functions.Notify('Turbo įdiegtas.', 'success')
-                            scheduleReopen(function()
-                                local bay = b and Config.RepairBays and Config.RepairBays[b]
-                                local v = bay and getVehicleInBay(bay) or 0
-                                if v ~= 0 then openTurboMenu(v, b) end
-                            end)
-                        end, 18, 0, bayIndex)
-                    else
-                        ToggleVehicleMod(veh, 18, false)
-                        QBCore.Functions.Notify('Turbo nuimtas.', 'primary')
-                        scheduleReopen(function()
-                            local bay = b and Config.RepairBays and Config.RepairBays[b]
-                            local v = bay and getVehicleInBay(bay) or 0
-                            if v ~= 0 then openTurboMenu(v, b) end
-                        end)
-                    end
-                end,
-            },
-        },
-        {
-            header = 'Atgal',
-            params = {
-                isAction = true,
-                event = function()
-                    scheduleReopen(function()
-                        TriggerEvent('mrp_mechanic:client:openPerformanceWorkshop', { bayIndex = bayIndex })
-                    end)
-                end,
-            },
-        },
-    }
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+local function getBayVehicle()
+    local bay = mechanicBayIndex and Config.RepairBays and Config.RepairBays[mechanicBayIndex]
+    if not bay then return 0 end
+    return getVehicleInBay(bay)
 end
 
-local function openWindowTintMenu(veh, bayIndex)
-    local menu = {
-        {
-            header = 'Langų tamsinimas',
-            txt = 'Pasirink tamsinimo lygį transporto priemonei',
-            isMenuHeader = true,
-        },
-    }
-    for _, tint in ipairs(WINDOW_TINTS) do
-        local t = tint.idx
-        menu[#menu + 1] = {
-            header = tint.label,
-            txt = ('Tint ID: %s'):format(t),
-            params = {
-                isAction = true,
-                event = function()
-                    local b = bayIndex
-                    SetVehicleWindowTint(veh, t)
-                    QBCore.Functions.Notify(('Langų tamsinimas: %s'):format(tint.label), 'success')
-                    scheduleReopen(function()
-                        local bay = b and Config.RepairBays and Config.RepairBays[b]
-                        local v = bay and getVehicleInBay(bay) or 0
-                        if v ~= 0 then openWindowTintMenu(v, b) end
-                    end)
-                end,
-            },
-        }
+local function closeMechanicUi()
+    if mechanicUiVeh and DoesEntityExist(mechanicUiVeh) and vehWasFrozen then
+        FreezeEntityPosition(mechanicUiVeh, false)
     end
-    menu[#menu + 1] = {
-        header = 'Atgal į dirbtuves',
-        params = {
-            isAction = true,
-            event = function()
-                scheduleReopen(function()
-                    TriggerEvent('mrp_mechanic:client:openBayWorkshop', { bayIndex = bayIndex })
-                end)
-            end,
-        },
-    }
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+    vehWasFrozen = false
+    mechanicUiOpen = false
+    mechanicUiVeh = nil
+    mechanicBayIndex = nil
+    mechanicPlate = nil
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
 end
 
-RegisterNetEvent('mrp_mechanic:client:openPerformanceWorkshop', function(data)
-    local bayIndex = data and tonumber(data.bayIndex)
-    local bay = bayIndex and Config.RepairBays and Config.RepairBays[bayIndex]
-    if not bay then return end
-    local veh = getVehicleInBay(bay)
-    if veh == 0 then return QBCore.Functions.Notify('Remonto zonoje nėra transporto.', 'error') end
+local function saveTune()
+    local vNow = getBayVehicle()
+    if vNow == 0 then
+        QBCore.Functions.Notify('Remonto zonoje nebėra transporto — neišsaugota.', 'error')
+        return false
+    end
+    local plateNow = QBCore.Functions.GetPlate(vNow)
+    if not plateNow or plateNow ~= mechanicPlate then
+        QBCore.Functions.Notify('Kita mašina zonoje — patikrink numerius ir bandyk dar kartą.', 'error')
+        return false
+    end
+    ensureModKit(vNow)
+    local props = QBCore.Functions.GetVehicleProperties(vNow)
+    if props then props.plate = mechanicPlate end
+    TriggerServerEvent('mrp_mechanic:server:saveBayVehicleTune', mechanicBayIndex, props)
+    QBCore.Functions.Notify('Pakeitimai užfiksuoti — klientas gaus atnaujintą mašiną iš garažo.', 'success')
+    return true
+end
 
+local function openWorkshopNui(bayIndex, veh, plate)
     mechanicUiOpen = true
     mechanicUiVeh = veh
+    mechanicBayIndex = bayIndex
+    mechanicPlate = plate
 
-    local menu = {
-        {
-            header = 'Patobulinimai',
-            txt = 'Variklis, stabdžiai, pavarų dėžė, pakaba, šarvai, turbo',
-            isMenuHeader = true,
-        },
-    }
-    for _, g in ipairs(PERF_MODS) do
-        local mid = g.id
-        menu[#menu + 1] = {
-            header = g.label,
-            txt = 'Atidaryti visus variantus',
-            params = {
-                isAction = true,
-                event = function()
-                    openModVariantMenu(veh, mid, g.label, bayIndex, 'performance')
-                end,
-            },
-        }
+    if DoesEntityExist(veh) then
+        vehWasFrozen = IsEntityPositionFrozen(veh)
+        FreezeEntityPosition(veh, true)
+        SetVehicleEngineOn(veh, false, true, true)
     end
-    menu[#menu + 1] = {
-        header = 'Turbo (įjungti / išjungti)',
-        txt = 'Atskiras įrengimas',
-        params = {
-            isAction = true,
-            event = function()
-                openTurboMenu(veh, bayIndex)
-            end,
-        },
-    }
-    menu[#menu + 1] = {
-        header = 'Atgal į dirbtuves',
-        params = {
-            isAction = true,
-            event = function()
-                scheduleReopen(function()
-                    TriggerEvent('mrp_mechanic:client:openBayWorkshop', { bayIndex = bayIndex })
-                end)
-            end,
-        },
-    }
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
-end)
 
-RegisterNetEvent('mrp_mechanic:client:openBodyWorkshop', function(data)
-    local bayIndex = data and tonumber(data.bayIndex)
-    local bay = bayIndex and Config.RepairBays and Config.RepairBays[bayIndex]
-    if not bay then return end
-    local veh = getVehicleInBay(bay)
-    if veh == 0 then return QBCore.Functions.Notify('Remonto zonoje nėra transporto.', 'error') end
-
-    mechanicUiOpen = true
-    mechanicUiVeh = veh
-
-    local menu = {
-        {
-            header = 'Kėbulo detalės',
-            txt = 'Pasirink kategoriją — tada konkretų spoilerį/buferį ir t. t.',
-            isMenuHeader = true,
-        },
-    }
-    for _, g in ipairs(BODY_MODS) do
-        local mid = g.id
-        menu[#menu + 1] = {
-            header = g.label,
-            txt = 'Rodyti visus variantus šiai daliai',
-            params = {
-                isAction = true,
-                event = function()
-                    openModVariantMenu(veh, mid, g.label, bayIndex, 'body')
-                end,
-            },
-        }
-    end
-    menu[#menu + 1] = {
-        header = 'Atgal į dirbtuves',
-        params = {
-            isAction = true,
-            event = function()
-                scheduleReopen(function()
-                    TriggerEvent('mrp_mechanic:client:openBayWorkshop', { bayIndex = bayIndex })
-                end)
-            end,
-        },
-    }
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
-end)
+    ensureModKit(veh)
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'open',
+        bayIndex = bayIndex,
+        plate = plate,
+        paintTypes = PAINT_TYPES,
+        windowTints = WINDOW_TINTS,
+        bodyMods = getModCategories(veh, BODY_MODS),
+        perfMods = getModCategories(veh, PERF_MODS),
+        turboOn = IsToggleModOn(veh, 18),
+    })
+end
 
 RegisterNetEvent('mrp_mechanic:client:openBayWorkshop', function(data)
     if not isMechanicOnDuty() then
         return QBCore.Functions.Notify('Tik mechanikams tarnyboje.', 'error')
-    end
-    if GetResourceState('qb-menu') ~= 'started' then
-        return QBCore.Functions.Notify('Reikia qb-menu.', 'error')
     end
 
     local bayIndex = data and tonumber(data.bayIndex)
@@ -526,126 +195,144 @@ RegisterNetEvent('mrp_mechanic:client:openBayWorkshop', function(data)
         return QBCore.Functions.Notify('Nerasta valstybinė numeracija.', 'error')
     end
 
-    mechanicUiOpen = true
-    mechanicUiVeh = veh
+    openWorkshopNui(bayIndex, veh, plate)
+end)
 
-    local function saveTune()
-        local bayNow = bayIndex and Config.RepairBays and Config.RepairBays[bayIndex]
-        local vNow = bayNow and getVehicleInBay(bayNow) or 0
-        if vNow == 0 then
-            return QBCore.Functions.Notify('Remonto zonoje nebėra transporto — neišsaugota.', 'error')
-        end
-        local plateNow = QBCore.Functions.GetPlate(vNow)
-        if not plateNow or plateNow ~= plate then
-            return QBCore.Functions.Notify('Kita mašina zonoje — patikrink numerius ir bandyk dar kartą.', 'error')
-        end
-        ensureModKit(vNow)
-        local props = QBCore.Functions.GetVehicleProperties(vNow)
-        if props then
-            props.plate = plate
-        end
-        TriggerServerEvent('mrp_mechanic:server:saveBayVehicleTune', bayIndex, props)
+-- Seni įvykiai paliekami suderinamumui — atidaro tą patį NUI.
+RegisterNetEvent('mrp_mechanic:client:openPerformanceWorkshop', function(data)
+    TriggerEvent('mrp_mechanic:client:openBayWorkshop', data)
+end)
+
+RegisterNetEvent('mrp_mechanic:client:openBodyWorkshop', function(data)
+    TriggerEvent('mrp_mechanic:client:openBayWorkshop', data)
+end)
+
+RegisterNUICallback('close', function(_, cb)
+    closeMechanicUi()
+    cb('ok')
+end)
+
+RegisterNUICallback('save', function(_, cb)
+    if saveTune() then closeMechanicUi() end
+    cb('ok')
+end)
+
+RegisterNUICallback('repair', function(_, cb)
+    local veh = getBayVehicle()
+    if veh ~= 0 then doQuickRepair(veh) end
+    cb('ok')
+end)
+
+RegisterNUICallback('applyPaint', function(data, cb)
+    local veh = getBayVehicle()
+    if veh == 0 then return cb('ok') end
+    local pt = tonumber(data.paintType) or 0
+    local ci = tonumber(data.colorIndex) or 0
+    applyUniformPaint(veh, pt, ci)
+    cb('ok')
+end)
+
+RegisterNUICallback('applyTint', function(data, cb)
+    local veh = getBayVehicle()
+    if veh == 0 then return cb('ok') end
+    SetVehicleWindowTint(veh, tonumber(data.idx) or 0)
+    cb('ok')
+end)
+
+RegisterNUICallback('requestVariants', function(data, cb)
+    local veh = getBayVehicle()
+    local modType = tonumber(data.modType)
+    local label = tostring(data.label or 'Mod')
+    local returnTab = tostring(data.returnTab or 'body')
+    if veh == 0 or not modType then return cb('ok') end
+
+    ensureModKit(veh)
+    local n = GetNumVehicleMods(veh, modType)
+    local variants = {}
+    for i = 0, n - 1 do
+        variants[#variants + 1] = { idx = i, label = ('Variantas %s / %s'):format(i + 1, n) }
+    end
+    SendNUIMessage({
+        action = 'variants',
+        modType = modType,
+        label = label,
+        returnTab = returnTab,
+        variants = variants,
+    })
+    cb('ok')
+end)
+
+RegisterNUICallback('installMod', function(data, cb)
+    local veh = getBayVehicle()
+    local modType = tonumber(data.modType)
+    local idx = tonumber(data.idx)
+    local label = tostring(data.label or 'Detalė')
+    if veh == 0 or not modType or idx == nil then return cb('ok') end
+
+    if idx < 0 then
+        SetVehicleMod(veh, modType, -1, false)
+        QBCore.Functions.Notify('Gamyklinis variantas.', 'primary')
+        return cb('ok')
     end
 
-    local menu = {
-        {
-            header = ('Los Santos Customs — %s'):format(plate),
-            txt = 'Pasirink skyrių',
-            isMenuHeader = true,
-        },
-        {
-            header = 'Remontas',
-            txt = 'Korpusas, variklis, deformacija',
-            params = {
-                isAction = true,
-                event = function()
-                    local b = bayIndex
-                    doQuickRepair(veh)
-                    scheduleReopen(function()
-                        TriggerEvent('mrp_mechanic:client:openBayWorkshop', { bayIndex = b })
-                    end)
-                end,
-            },
-        },
-        {
-            header = 'Dažymas',
-            txt = 'Dažymas – pakeisk transporto priemonės spalvą',
-            params = {
-                isAction = true,
-                event = function()
-                    openPaintCategoryMenu(veh, bayIndex)
-                end,
-            },
-        },
-        {
-            header = 'Patobulinimai',
-            txt = 'Variklis, stabdžiai, pavarų dėžė, pakaba, šarvai, turbo',
-            params = {
-                isAction = true,
-                event = function()
-                    TriggerEvent('mrp_mechanic:client:openPerformanceWorkshop', { bayIndex = bayIndex })
-                end,
-            },
-        },
-        {
-            header = 'Langų tamsinimas',
-            txt = 'Užtamsink arba nuimk langų tint',
-            params = {
-                isAction = true,
-                event = function()
-                    openWindowTintMenu(veh, bayIndex)
-                end,
-            },
-        },
-        {
-            header = 'Kėbulo detalės',
-            txt = 'Spoileriai, buferiai, gaubtas…',
-            params = {
-                isAction = true,
-                event = function()
-                    TriggerEvent('mrp_mechanic:client:openBodyWorkshop', { bayIndex = bayIndex })
-                end,
-            },
-        },
-        {
-            header = 'Užbaigti darbą — išsaugoti klientui',
-            txt = 'Įrašoma į savininko transporto kortelę (duomenų bazėje). Meniu užsidarys.',
-            params = {
-                isAction = true,
-                event = function()
-                    saveTune()
-                    QBCore.Functions.Notify('Pakeitimai užfiksuoti — klientas gaus atnaujintą mašiną iš garažo.', 'success')
-                    TriggerEvent('qb-menu:client:closeMenu')
-                end,
-            },
-        },
-    }
-    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+    QBCore.Functions.TriggerCallback('mrp_mechanic:server:canInstallUpgrade', function(res)
+        if not res or not res.ok then
+            QBCore.Functions.Notify((res and res.reason) or 'Negalima įdiegti detalės.', 'error')
+            return
+        end
+        SetVehicleMod(veh, modType, idx, false)
+        if res.requiredItem then
+            TriggerServerEvent('mrp_mechanic:server:consumeUpgradeItem', res.requiredItem)
+        end
+        QBCore.Functions.Notify(('Įdiegta: %s #%s'):format(label, idx + 1), 'success')
+    end, modType, idx, mechanicBayIndex)
+    cb('ok')
 end)
 
-AddEventHandler('qb-menu:client:menuClosed', function()
-    mechanicUiOpen = false
-    mechanicUiVeh = nil
+RegisterNUICallback('toggleTurbo', function(_, cb)
+    local veh = getBayVehicle()
+    if veh == 0 then return cb('ok') end
+    ensureModKit(veh)
+    local on = IsToggleModOn(veh, 18)
+    local nextState = not on
+
+    if nextState then
+        QBCore.Functions.TriggerCallback('mrp_mechanic:server:canInstallUpgrade', function(res)
+            if not res or not res.ok then
+                QBCore.Functions.Notify((res and res.reason) or 'Negalima įdiegti turbo.', 'error')
+                return
+            end
+            ToggleVehicleMod(veh, 18, true)
+            if res.requiredItem then
+                TriggerServerEvent('mrp_mechanic:server:consumeUpgradeItem', res.requiredItem)
+            end
+            QBCore.Functions.Notify('Turbo įdiegtas.', 'success')
+            SendNUIMessage({ action = 'turboState', on = true })
+        end, 18, 0, mechanicBayIndex)
+    else
+        ToggleVehicleMod(veh, 18, false)
+        QBCore.Functions.Notify('Turbo nuimtas.', 'primary')
+        SendNUIMessage({ action = 'turboState', on = false })
+    end
+    cb('ok')
 end)
 
+-- Toninimo metu: užšaldytas transportas, išjungti vairavimo valdikliai (A/D ir kt.).
 CreateThread(function()
     while true do
         if mechanicUiOpen and mechanicUiVeh and DoesEntityExist(mechanicUiVeh) then
-            local ped = PlayerPedId()
-            if IsPedInAnyVehicle(ped, false) then
-                mechanicUiVeh = GetVehiclePedIsIn(ped, false)
-            end
-            local veh = mechanicUiVeh
-            if DoesEntityExist(veh) then
-                local rotSpeed = 0.9
-                if IsControlPressed(0, 34) or IsDisabledControlPressed(0, 34)
-                    or IsControlPressed(0, 174) or IsDisabledControlPressed(0, 174) then
-                    SetEntityHeading(veh, GetEntityHeading(veh) + rotSpeed)
-                elseif IsControlPressed(0, 35) or IsDisabledControlPressed(0, 35)
-                    or IsControlPressed(0, 175) or IsDisabledControlPressed(0, 175) then
-                    SetEntityHeading(veh, GetEntityHeading(veh) - rotSpeed)
-                end
-            end
+            FreezeEntityPosition(mechanicUiVeh, true)
+            DisableControlAction(0, 34, true)  -- A / kairė
+            DisableControlAction(0, 35, true)  -- D / dešinė
+            DisableControlAction(0, 174, true) -- kairė (alternatyva)
+            DisableControlAction(0, 175, true) -- dešinė (alternatyva)
+            DisableControlAction(0, 59, true)  -- vairavimas transporte
+            DisableControlAction(0, 60, true)
+            DisableControlAction(0, 71, true)  -- akseleratorius
+            DisableControlAction(0, 72, true)  -- stabdis
+            DisableControlAction(0, 63, true)
+            DisableControlAction(0, 64, true)
+            DisableControlAction(0, 75, true)  -- išlipti
             Wait(0)
         else
             Wait(400)

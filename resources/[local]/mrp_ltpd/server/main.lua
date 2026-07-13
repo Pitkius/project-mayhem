@@ -1110,19 +1110,10 @@ RegisterNetEvent('mrp_ltpd:server:spawnFleet', function(stationId, modelName)
         TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo PD transporto vietos.', 'error')
         return
     end
-    local hash = joaat(modelName)
-    local veh = QBCore.Functions.SpawnVehicle(src, hash, sp, true)
-    if not veh or veh == 0 then
-        TriggerClientEvent('QBCore:Notify', src, 'Nepavyko sukurti transporto.', 'error')
-        return
-    end
-    local plateRaw = ('PD%s'):format(math.random(1000, 9999))
-    SetVehicleNumberPlateText(veh, plateRaw)
-    local plate = QBCore.Shared.Trim(GetVehicleNumberPlateText(veh))
-    if plate == nil or plate == '' then plate = plateRaw end
-    SetVehicleEngineOn(veh, true, true, false)
-    TriggerClientEvent('mrp_ltpd:client:fleetVehicleReady', src, plate)
-    TriggerClientEvent('QBCore:Notify', src, 'Transportas paruoštas.', 'success')
+    local plate = ('PD%s'):format(math.random(1000, 9999))
+    TriggerClientEvent('mrp_ltpd:client:spawnFleetVehicle', src, modelName, {
+        x = sp.x, y = sp.y, z = sp.z, w = sp.w or 0.0,
+    }, plate)
 end)
 
 local function fleetHeliModelAllowed(modelName)
@@ -1149,21 +1140,10 @@ RegisterNetEvent('mrp_ltpd:server:spawnFleetHeli', function(stationId, modelName
     if not officerNearCoords(src, checkVec, maxD) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo helipado.', 'error')
     end
-    local hash = joaat(modelName)
-    local veh = QBCore.Functions.SpawnVehicle(src, hash, sp, true)
-    if not veh or veh == 0 then
-        veh = QBCore.Functions.CreateVehicle(src, hash, 'heli', sp, true)
-    end
-    if not veh or veh == 0 then
-        return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko sukurti sraigtasparnio.', 'error')
-    end
-    local plateRaw = ('PD%s'):format(math.random(1000, 9999))
-    SetVehicleNumberPlateText(veh, plateRaw)
-    local plate = QBCore.Shared.Trim(GetVehicleNumberPlateText(veh))
-    if plate == nil or plate == '' then plate = plateRaw end
-    SetVehicleEngineOn(veh, true, true, false)
-    TriggerClientEvent('mrp_ltpd:client:fleetVehicleReady', src, plate)
-    TriggerClientEvent('QBCore:Notify', src, 'Sraigtasparnis paruoštas.', 'success')
+    local plate = ('PD%s'):format(math.random(1000, 9999))
+    TriggerClientEvent('mrp_ltpd:client:spawnFleetHeli', src, modelName, {
+        x = sp.x, y = sp.y, z = sp.z, w = sp.w or 0.0,
+    }, plate)
 end)
 
 local function canBossAction(src)

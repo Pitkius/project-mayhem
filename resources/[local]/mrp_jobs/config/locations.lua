@@ -60,12 +60,19 @@ Config.Locations.burger = {
             kitchen = {
                 { id = 'grill_1', coords = vector4(-1200.3, -896.6, 13.98, 34.0) },
             },
-            -- NPC klientų eilės kelias
+            -- NPC klientų eilės kelias (uniqx_burgershot — palei sieną, ne per stalus)
             queue = {
-                anchor = vector4(-1193.3, -889.9, 13.98, 214.0),   -- pirmas eilės taškas (prie kasos)
-                step = vector3(0.0, 1.0, 0.0),                     -- kryptis tolyn nuo kasos
-                spawn = vector4(-1188.0, -885.0, 13.98, 214.0),    -- kur NPC pasirodo/išnyksta
-                exit = vector4(-1183.0, -880.0, 13.5, 30.0),
+                register = vector4(-1195.2, -892.9, 13.98, 214.0),  -- prie kasos (klientas)
+                anchor = vector4(-1195.9, -892.1, 13.98, 214.0),   -- 2-as eilėje
+                step = vector3(-0.55, 0.65, 0.0),                    -- atgal link įėjimo
+                spawn = vector4(-1199.0, -882.5, 13.98, 125.0),     -- prie įėjimo durų
+                exit = vector4(-1201.0, -879.5, 13.98, 125.0),
+                waypoints = {
+                    vector3(-1199.0, -882.5, 13.98),  -- durys
+                    vector3(-1198.8, -887.5, 13.98),  -- vakarinė siena (apeina stalus)
+                    vector3(-1197.2, -890.2, 13.98),  -- prie kasos kampo
+                    vector3(-1196.2, -891.8, 13.98),  -- prie counter
+                },
             },
             blip = { sprite = 106, color = 47, scale = 0.7, name = 'Burger Shot' },
         },
@@ -79,10 +86,17 @@ Config.Locations.burger = {
                 { id = 'grill_1', coords = vector4(-1482.4, -648.6, 29.5, 140.0) },
             },
             queue = {
-                anchor = vector4(-1475.2, -648.0, 29.5, 45.0),
-                step = vector3(0.7, 0.7, 0.0),
-                spawn = vector4(-1470.0, -643.0, 29.5, 45.0),
-                exit = vector4(-1465.0, -639.0, 29.5, 45.0),
+                register = vector4(-1478.4, -652.4, 29.5, 320.0),
+                anchor = vector4(-1477.6, -651.6, 29.5, 320.0),
+                step = vector3(0.55, 0.55, 0.0),
+                spawn = vector4(-1472.5, -646.0, 29.5, 320.0),
+                exit = vector4(-1468.5, -642.0, 29.5, 320.0),
+                waypoints = {
+                    vector3(-1472.5, -646.0, 29.5),
+                    vector3(-1474.8, -648.2, 29.5),
+                    vector3(-1476.8, -650.2, 29.5),
+                    vector3(-1478.0, -651.8, 29.5),
+                },
             },
             blip = { sprite = 106, color = 47, scale = 0.7, name = 'Burger Shot' },
         },
