@@ -88,12 +88,12 @@ Config.ChopShop = {
         {
             id = 'ls_docks',
             label = 'Ardymo aikštelė · LS dokai',
-            coords = vector3(1175.55, -3196.67, 6.03),
-            heading = 90.0,
+            coords = vector3(1204.1821, -3117.7207, 5.2528),
+            heading = 177.8636,
             zoneRadius = 20.0,
-            scrapCoords = vector3(1175.55, -3196.67, 6.03),
+            scrapCoords = vector3(1204.1821, -3117.7207, 5.2528),
             buyer = {
-                coords = vector4(1182.40, -3198.20, 6.03, 90.0),
+                coords = vector4(1211.0321, -3119.2507, 5.2528, 90.0),
                 model = 's_m_y_construct_02',
                 label = 'Laužo supirkėjas',
             },

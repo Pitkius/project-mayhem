@@ -19,16 +19,6 @@ html, body, #root {
 
 .ws-root { position: fixed; inset: 0; pointer-events: auto; opacity: 0; }
 
-.ws-vignette {
-  position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(
-    circle at 50% 42%,
-    var(--primary-soft) 0%,
-    var(--background) 50%,
-    var(--surface-active) 100%
-  );
-}
-
 .ui-panel {
   position: absolute;
   background: var(--ws-panel-bg);

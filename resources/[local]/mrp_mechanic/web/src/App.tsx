@@ -245,8 +245,6 @@ export default function App() {
     <div className="ws-root" ref={rootRef} onMouseDown={onMouseDown} onMouseMove={onMouseMove}
       onMouseUp={() => { dragging.current = false; }} onMouseLeave={() => { dragging.current = false; }}
       onWheel={onWheel}>
-      <div className="ws-vignette" aria-hidden="true" />
-
       <aside className="ui-panel ui-panel--left" ref={leftRef}>
         <header className="ws-header">
           <div>

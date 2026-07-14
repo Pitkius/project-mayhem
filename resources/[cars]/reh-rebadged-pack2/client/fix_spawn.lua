@@ -53,8 +53,6 @@ local function applySpawnFix(vehicle)
             local modCount = GetNumVehicleMods(vehicle, slot)
             if modCount > 0 and GetVehicleMod(vehicle, slot) < 0 then
                 SetVehicleMod(vehicle, slot, 0, false)
-            elseif modCount == 0 then
-                SetVehicleMod(vehicle, slot, 0, false)
             end
 
             if GetVehicleMod(vehicle, slot) >= 0 then

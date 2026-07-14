@@ -38,19 +38,64 @@ local WINDOW_TINTS = {
     { idx = 6, label = 'Žalias' },
 }
 
-local BODY_MODS = {
-    { id = 0, label = 'Spoileriai' },
-    { id = 1, label = 'Priekinis buferis' },
-    { id = 2, label = 'Galinis buferis' },
-    { id = 3, label = 'Šonai (sijonai)' },
-    { id = 4, label = 'Išmetimas' },
-    { id = 5, label = 'Rėmas / kėbulas' },
-    { id = 6, label = 'Grotelės' },
-    { id = 7, label = 'Gaubtas' },
-    { id = 8, label = 'Sparnai (priek.)' },
-    { id = 9, label = 'Sparnai (gal.)' },
-    { id = 10, label = 'Stogas' },
+--- Performance mod tipai — rodomi atskirame „Performance“ skirtuke, ne kėbule.
+local PERF_MOD_TYPES = {
+    [11] = true, [12] = true, [13] = true, [15] = true, [16] = true, [18] = true,
 }
+
+--- GTA mod slot etiketės (0–48). Addon auto dažnai naudoja 5, 25–48 ir kt.
+local MOD_SLOT_LABELS = {
+    [0] = 'Spoileriai',
+    [1] = 'Priekinis buferis',
+    [2] = 'Galinis buferis',
+    [3] = 'Šonai (sijonai)',
+    [4] = 'Išmetimas',
+    [5] = 'Rėmas / kėbulas',
+    [6] = 'Grotelės',
+    [7] = 'Gaubtas',
+    [8] = 'Sparnai (priek.)',
+    [9] = 'Sparnai (gal.)',
+    [10] = 'Stogas',
+    [14] = 'Signalas',
+    [23] = 'Priekinės ratlankės',
+    [24] = 'Galinės ratlankės',
+    [25] = 'Numerio laikiklis',
+    [26] = 'Dekoratyvinė numerio plokštė',
+    [27] = 'Apdaila A',
+    [28] = 'Ornamentai',
+    [29] = 'Prietaisų skydas',
+    [30] = 'Ciferblatas',
+    [31] = 'Durų garsiakalbiai',
+    [32] = 'Sėdynės',
+    [33] = 'Vairas',
+    [34] = 'Pavarų svirtis',
+    [35] = 'Plokštelė A',
+    [36] = 'Garsiakalbiai',
+    [37] = 'Bagažinė',
+    [38] = 'Hidraulika',
+    [39] = 'Variklio blokas (vizual.)',
+    [40] = 'Oro filtras',
+    [41] = 'Striutai',
+    [42] = 'Arkos',
+    [43] = 'Antenos',
+    [44] = 'Apdaila B',
+    [45] = 'Kuro bakas',
+    [46] = 'Langai',
+    [48] = 'Lipdukas / livreja',
+}
+
+--- Addon auto, kurių bazinis kėbulas yra mod slot'e (be jo — permatomumas / trūkstamos dalys).
+--- Sutampa su reh-rebadged-pack2/3 client/fix_spawn.lua.
+local ADDON_BODY_FIXES = {
+    [`benefactorcle53`] = { slots = { 8 }, extras = { 5, 6, 7, 8 } },
+    [`benefactors65`] = { slots = { 8 } },
+    [`coquettezl1`] = { slots = { 10 } },
+    [`karinsupra`] = { slots = { 1, 5 } },
+    [`benefactors600b`] = { slots = { 8 } },
+    [`declasseimpala`] = { slots = { 10 } },
+}
+
+local wsModKitReady = false
 
 local PERF_CATEGORIES = {
     { modType = 11, id = 'engine', label = 'Variklis', statKeys = { 'acceleration', 'topSpeed' } },
@@ -118,9 +163,51 @@ local function getBayVehicle()
     return getVehicleInBay(bay)
 end
 
-local function ensureModKit(veh)
-    if veh == 0 then return end
+--- SetVehicleModKit resetina VISAS modifikacijas — snapshot + restore apsaugo esamą tuningą.
+local function initWorkshopModKit(veh)
+    if veh == 0 or wsModKitReady then return end
+    local props = QBCore.Functions.GetVehicleProperties(veh)
     SetVehicleModKit(veh, 0)
+    if props then
+        QBCore.Functions.SetVehicleProperties(veh, props)
+    end
+    wsModKitReady = true
+end
+
+local function resetWorkshopModKit()
+    wsModKitReady = false
+end
+
+local function modLabelFromGame(veh, modType, modIndex)
+    local textLabel = GetModTextLabel(veh, modType, modIndex)
+    if textLabel and textLabel ~= '' then
+        local label = GetLabelText(textLabel)
+        if label and label ~= '' and label ~= 'NULL' then return label end
+    end
+    return nil
+end
+
+local function reapplyAddonBodyFixes(veh, skipSlot)
+    if veh == 0 or not DoesEntityExist(veh) then return end
+    local cfg = ADDON_BODY_FIXES[GetEntityModel(veh)]
+    if not cfg then return end
+
+    for _, slot in ipairs(cfg.slots or {}) do
+        if slot ~= skipSlot then
+            local modCount = GetNumVehicleMods(veh, slot)
+            if modCount > 0 and GetVehicleMod(veh, slot) < 0 then
+                SetVehicleMod(veh, slot, 0, false)
+            end
+        end
+    end
+
+    if cfg.extras then
+        for _, extra in ipairs(cfg.extras) do
+            if DoesExtraExist(veh, extra) then
+                SetVehicleExtra(veh, extra, false)
+            end
+        end
+    end
 end
 
 local function requiredItemForLevel(modType, idx)
@@ -161,11 +248,20 @@ local function buildStatsForLevel(modType, level, maxLevel)
     return out
 end
 
-local function getModCategories(veh, defs)
-    ensureModKit(veh)
+local function getBodyModCategories(veh)
+    initWorkshopModKit(veh)
     local out = {}
-    for _, g in ipairs(defs) do
-        out[#out + 1] = { id = g.id, label = g.label, count = GetNumVehicleMods(veh, g.id) }
+    for slot = 0, 48 do
+        if not PERF_MOD_TYPES[slot] then
+            local count = GetNumVehicleMods(veh, slot)
+            if count > 0 then
+                out[#out + 1] = {
+                    id = slot,
+                    label = MOD_SLOT_LABELS[slot] or ('Modifikacija %d'):format(slot),
+                    count = count,
+                }
+            end
+        end
     end
     return out
 end
@@ -235,6 +331,7 @@ end
 local function closeWorkshopUi()
     if not wsOpen then return end
     wsOpen = false
+    resetWorkshopModKit()
     destroyWsCam()
     restoreVehicleState()
     SetNuiFocus(false, false)
@@ -244,7 +341,7 @@ local function closeWorkshopUi()
 end
 
 local function buildPerfCategories(veh, inventory, labels)
-    ensureModKit(veh)
+    initWorkshopModKit(veh)
     local categories = {}
     for _, cat in ipairs(PERF_CATEGORIES) do
         local modType = cat.modType
@@ -300,7 +397,6 @@ end
 
 local function applyUniformPaint(veh, paintType, colorIndex)
     if veh == 0 or not DoesEntityExist(veh) then return end
-    ensureModKit(veh)
     ClearVehicleCustomPrimaryColour(veh)
     ClearVehicleCustomSecondaryColour(veh)
     local pearl, wheelCol = GetVehicleExtraColours(veh)
@@ -331,7 +427,8 @@ local function openWorkshopUi(bayIndex, veh, plate, uiData)
     end
     applyCamPreset('paint')
     createWsCam()
-    ensureModKit(veh)
+    initWorkshopModKit(veh)
+    reapplyAddonBodyFixes(veh)
 
     local model = GetEntityModel(veh)
     local displayName = GetLabelText(GetDisplayNameFromVehicleModel(model))
@@ -348,7 +445,7 @@ local function openWorkshopUi(bayIndex, veh, plate, uiData)
         statLabels = STAT_LABELS,
         paintTypes = PAINT_TYPES,
         windowTints = WINDOW_TINTS,
-        bodyMods = getModCategories(veh, BODY_MODS),
+        bodyMods = getBodyModCategories(veh),
         turboOn = IsToggleModOn(veh, 18),
     })
 end
@@ -387,7 +484,7 @@ local function runInstallProgress(label, onDone)
 end
 
 local function applyPerfMod(veh, modType, idx, isToggle)
-    ensureModKit(veh)
+    initWorkshopModKit(veh)
     if isToggle then ToggleVehicleMod(veh, 18, true) return end
     if idx < 0 then SetVehicleMod(veh, modType, -1, false) else SetVehicleMod(veh, modType, idx, false) end
 end
@@ -420,7 +517,6 @@ RegisterNUICallback('wsSave', function(_, cb)
     local v = getBayVehicle()
     if v == 0 then QBCore.Functions.Notify('Nėra transporto.', 'error') return cb('ok') end
     if QBCore.Functions.GetPlate(v) ~= wsPlate then QBCore.Functions.Notify('Kita mašina.', 'error') return cb('ok') end
-    ensureModKit(v)
     local props = QBCore.Functions.GetVehicleProperties(v)
     if props then props.plate = wsPlate end
     TriggerServerEvent('mrp_mechanic:server:saveBayVehicleTune', wsBayIndex, props)
@@ -484,10 +580,13 @@ RegisterNUICallback('wsRequestVariants', function(data, cb)
     local v = getBayVehicle()
     local modType = tonumber(data.modType)
     if v == 0 or not modType then return cb('ok') end
-    ensureModKit(v)
+    initWorkshopModKit(v)
     local n = GetNumVehicleMods(v, modType)
     local variants = {}
-    for i = 0, n - 1 do variants[#variants + 1] = { idx = i, label = ('Variantas %s / %s'):format(i + 1, n) } end
+    for i = 0, n - 1 do
+        local label = modLabelFromGame(v, modType, i) or ('Variantas %s / %s'):format(i + 1, n)
+        variants[#variants + 1] = { idx = i, label = label }
+    end
     SendNUIMessage({ action = 'bodyVariants', modType = modType, label = data.label, variants = variants })
     cb('ok')
 end)
@@ -496,13 +595,18 @@ RegisterNUICallback('wsInstallBody', function(data, cb)
     local v = getBayVehicle()
     local modType, idx = tonumber(data.modType), tonumber(data.idx)
     if v == 0 or not modType or idx == nil then return cb('ok') end
+    initWorkshopModKit(v)
     if idx < 0 then
         SetVehicleMod(v, modType, -1, false)
-        QBCore.Functions.Notify('Gamyklinis variantas.', 'primary')
-        return cb('ok')
+    else
+        SetVehicleMod(v, modType, idx, false)
     end
-    SetVehicleMod(v, modType, idx, false)
-    QBCore.Functions.Notify(('Įdiegta: %s #%s'):format(data.label or 'Detalė', idx + 1), 'success')
+    reapplyAddonBodyFixes(v, modType)
+    if idx < 0 then
+        QBCore.Functions.Notify('Gamyklinis variantas.', 'primary')
+    else
+        QBCore.Functions.Notify(('Įdiegta: %s #%s'):format(data.label or 'Detalė', idx + 1), 'success')
+    end
     cb('ok')
 end)
 

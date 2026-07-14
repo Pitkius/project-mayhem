@@ -1100,6 +1100,16 @@ const InventoryContainer = Vue.createApp({
                 case "requiredItem":
                     this.showRequiredItem(event.data);
                     break;
+                case "applyTheme":
+                    if (typeof applyPlayerTheme === "function" && event.data.theme) {
+                        applyPlayerTheme(event.data.theme);
+                    }
+                    break;
+                case "resetTheme":
+                    if (typeof resetPlayerTheme === "function") {
+                        resetPlayerTheme();
+                    }
+                    break;
                 default:
                     console.warn(`Unexpected action: ${event.data.action}`);
             }
