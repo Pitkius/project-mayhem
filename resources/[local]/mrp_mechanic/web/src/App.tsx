@@ -10,7 +10,12 @@ import { mergeStatKeys, statsForPart } from './stats';
 import './styles.css';
 
 const PERF_ICONS: Record<string, string> = {
-  engine: '⚙', brakes: '🛑', transmission: '⚡', suspension: '🔩', armor: '🛡', turbo: '💨',
+  engine: 'fa-gear',
+  brakes: 'fa-compact-disc',
+  transmission: 'fa-gears',
+  suspension: 'fa-arrows-up-down',
+  armor: 'fa-shield-halved',
+  turbo: 'fa-fan',
 };
 
 function colorForIndex(i: number) {
@@ -209,7 +214,9 @@ export default function App() {
             <h1>{payload.vehicle.model}</h1>
             <p className="ws-plate">{payload.vehicle.plate}</p>
           </div>
-          <button type="button" className="btn-icon" onClick={close}>✕</button>
+          <button type="button" className="btn-icon" onClick={close} aria-label="Uždaryti">
+            <i className="fas fa-xmark" aria-hidden="true" />
+          </button>
         </header>
 
         <nav className="section-nav">
@@ -217,7 +224,7 @@ export default function App() {
             <button key={s.id} type="button"
               className={`section-btn ${section === s.id ? 'active' : ''}`}
               onClick={() => selectSection(s.id)}>
-              <span className="section-btn__icon">{s.icon}</span>
+              <span className="section-btn__icon"><i className={`fas ${s.icon}`} aria-hidden="true" /></span>
               <span>{s.label}</span>
             </button>
           ))}
@@ -230,7 +237,7 @@ export default function App() {
               <button key={cat.id} type="button"
                 className={`sub-btn ${perfCat?.id === cat.id ? 'active' : ''}`}
                 onClick={() => selectPerfCat(cat)}>
-                <span>{PERF_ICONS[cat.id] ?? '🔧'}</span>
+                <span className="sub-btn__icon"><i className={`fas ${PERF_ICONS[cat.id] ?? 'fa-wrench'}`} aria-hidden="true" /></span>
                 <span className="sub-btn__text">{cat.label}</span>
                 <span className={`cat-dot ${cat.hasInventory ? 'has-item' : ''}`} />
               </button>

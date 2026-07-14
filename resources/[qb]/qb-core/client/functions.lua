@@ -182,11 +182,23 @@ function QBCore.Functions.Notify(text, texttype, length, icon)
         message.text = text
     end
 
+    if not message.text or message.text == '' then return end
+    if type(message.text) == 'string' and #message.text > 320 then
+        message.text = message.text:sub(1, 317) .. '...'
+    end
+    if message.caption and type(message.caption) == 'string' and #message.caption > 320 then
+        message.caption = message.caption:sub(1, 317) .. '...'
+    end
+
     if icon then
         message.icon = icon
     end
 
     SendNUIMessage(message)
+end
+
+function QBCore.Functions.ClearNotify()
+    SendNUIMessage({ action = 'notifyClear' })
 end
 
 local function runProgressFallback(name, label, duration, useWhileDead, canCancel, disableControls, animation, onFinish, onCancel)

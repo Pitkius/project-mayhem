@@ -13,18 +13,21 @@ html, body, #root {
 
 .ws-vignette {
   position: absolute; inset: 0; pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(6, 8, 12, 0.78) 0%, transparent 24%, transparent 76%, rgba(6, 8, 12, 0.6) 100%),
-    linear-gradient(180deg, rgba(6, 8, 12, 0.4) 0%, transparent 20%, transparent 80%, rgba(6, 8, 12, 0.7) 100%);
+  background: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in srgb, var(--primary) 4%, transparent) 0%,
+    color-mix(in srgb, var(--primary) 14%, rgba(15, 8, 28, 0.18)) 55%,
+    color-mix(in srgb, var(--primary) 22%, rgba(12, 6, 24, 0.28)) 100%
+  );
 }
 
 .ui-panel {
   position: absolute;
   backdrop-filter: blur(16px);
-  background: rgba(10, 13, 18, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: color-mix(in srgb, var(--primary) 10%, rgba(12, 8, 22, 0.58));
+  border: 1px solid var(--primary-border);
   border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35), 0 0 24px color-mix(in srgb, var(--primary) 12%, transparent);
   pointer-events: auto;
 }
 
@@ -79,7 +82,21 @@ html, body, #root {
   border-color: color-mix(in srgb, var(--primary) 35%, transparent);
 }
 .section-btn.active { color: var(--primary-hover); }
-.section-btn__icon { font-size: 1.05rem; width: 1.4rem; text-align: center; }
+.section-btn__icon {
+  width: 1.4rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--primary-hover);
+}
+.section-btn.active .section-btn__icon { color: var(--primary); }
+
+.sub-btn__icon {
+  width: 1.1rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--primary-hover);
+  flex-shrink: 0;
+}
 
 .sub-nav {
   display: flex; flex-direction: column; gap: 0.25rem;

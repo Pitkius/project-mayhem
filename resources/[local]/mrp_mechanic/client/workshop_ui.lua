@@ -178,12 +178,31 @@ local function destroyWsCam()
     wsCam = nil
 end
 
+local function resolveCamPosition(tx, ty, tz, cx, cy, cz)
+    local ray = StartExpensiveSynchronousShapeTestLosProbe(tx, ty, tz, cx, cy, cz, -1, wsVeh, 7)
+    local _, hit, endCoords = GetShapeTestResult(ray)
+    if hit == 1 and endCoords then
+        local dx, dy, dz = cx - tx, cy - ty, cz - tz
+        local len = math.sqrt(dx * dx + dy * dy + dz * dz)
+        if len > 0.05 then
+            local pull = 0.42
+            return endCoords.x - (dx / len) * pull, endCoords.y - (dy / len) * pull, endCoords.z - (dz / len) * pull
+        end
+    end
+    return cx, cy, cz
+end
+
 local function updateWsCam()
     if not wsVeh or not DoesEntityExist(wsVeh) or not wsCam or not DoesCamExist(wsCam) then return end
     local vc = GetEntityCoords(wsVeh)
     local rad = math.rad(camAngle)
-    SetCamCoord(wsCam, vc.x + math.cos(rad) * camDist, vc.y + math.sin(rad) * camDist, vc.z + camHeight)
-    PointCamAtCoord(wsCam, vc.x, vc.y, vc.z + camTargetHeight)
+    local tx, ty, tz = vc.x, vc.y, vc.z + camTargetHeight
+    local cx = vc.x + math.cos(rad) * camDist
+    local cy = vc.y + math.sin(rad) * camDist
+    local cz = vc.z + camHeight
+    cx, cy, cz = resolveCamPosition(tx, ty, tz, cx, cy, cz)
+    SetCamCoord(wsCam, cx, cy, cz)
+    PointCamAtCoord(wsCam, tx, ty, tz)
 end
 
 local function createWsCam()
@@ -434,7 +453,7 @@ end)
 
 RegisterNUICallback('wsCameraOrbit', function(data, cb)
     camAngle = camAngle + (tonumber(data.deltaX) or 0) * 0.35
-    camHeight = math.max(0.15, math.min(2.8, camHeight - (tonumber(data.deltaY) or 0) * 0.012))
+    camHeight = math.max(0.15, math.min(2.8, camHeight + (tonumber(data.deltaY) or 0) * 0.012))
     updateWsCam()
     cb('ok')
 end)

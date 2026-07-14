@@ -45,8 +45,8 @@ export type OpenWorkshopPayload = {
 export type InstallState = 'install' | 'installed' | 'missing' | 'incompatible';
 
 export const SECTIONS: { id: WorkshopSection; icon: string; label: string; cam: string }[] = [
-  { id: 'performance', icon: '⚡', label: 'Performance', cam: 'body' },
-  { id: 'paint', icon: '🎨', label: 'Dažymas', cam: 'paint' },
-  { id: 'tint', icon: '🪟', label: 'Langai', cam: 'tint' },
-  { id: 'body', icon: '🔧', label: 'Kėbulas', cam: 'body' },
+  { id: 'performance', icon: 'fa-gauge-high', label: 'Performance', cam: 'body' },
+  { id: 'paint', icon: 'fa-spray-can', label: 'Dažymas', cam: 'paint' },
+  { id: 'tint', icon: 'fa-car-side', label: 'Langai', cam: 'tint' },
+  { id: 'body', icon: 'fa-screwdriver-wrench', label: 'Kėbulas', cam: 'body' },
 ];
