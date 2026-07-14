@@ -501,44 +501,6 @@ local function startCraftFlow(productId)
     end, currentStationId, productId)
 end
 
-local function stationIngredientsReady(ingredients)
-    for _, ing in ipairs(ingredients or {}) do
-        if (ing.missing or 0) > 0 then return false end
-    end
-    return true
-end
-
-local function pickStationProduct(products)
-    if not products or #products == 0 then return nil end
-    for _, row in ipairs(products) do
-        if stationIngredientsReady(row.ingredients) then return row end
-    end
-    return products[1]
-end
-
-local function startStationCraftDirect(stationId)
-    local st = getStationById(stationId)
-    if st and st.mode == 'weapon' then
-        return openStationUi(stationId)
-    end
-
-    QBCore.Functions.TriggerCallback('mrp_drugs:server:getStationUi', function(res)
-        if not res or not res.ok then
-            return QBCore.Functions.Notify((res and res.reason) or 'Nepavyko pradėti gamybos.', 'error')
-        end
-        if #res.products == 0 then
-            return QBCore.Functions.Notify('Nėra receptų šioje stotyje.', 'error')
-        end
-        local row = pickStationProduct(res.products)
-        if not row then return end
-        if not stationIngredientsReady(row.ingredients) then
-            return QBCore.Functions.Notify('Trūksta ingredientų.', 'error')
-        end
-        currentStationId = stationId
-        startCraftFlow(row.id)
-    end, stationId)
-end
-
 local function getFirstSellableDrugItem()
     for _, prod in pairs(Config.Products or {}) do
         if (prod.sellBase or 0) > 0 and prod.output and QBCore.Functions.HasItem(prod.output, 1) then
@@ -925,7 +887,7 @@ local function setupStations()
                 icon = isWeapon and 'fas fa-tools' or 'fas fa-flask',
                 label = targetLabel,
                 action = function()
-                    startStationCraftDirect(st.id)
+                    openStationUi(st.id)
                 end,
             },
         }

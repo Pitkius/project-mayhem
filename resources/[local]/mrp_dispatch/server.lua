@@ -507,6 +507,30 @@ RegisterNetEvent('mrp_dispatch:server:panic', function(clientPos)
     end
 end)
 
+AddEventHandler('mrp_dispatch:server:chopshopAlert', function(src, locationId, plate)
+    src = tonumber(src) or 0
+    local ped = src > 0 and GetPlayerPed(src) or 0
+    local c
+    if ped and ped ~= 0 then
+        c = GetEntityCoords(ped)
+    end
+    if not c and GetResourceState('mrp_chopshop') == 'started' then
+        for _, loc in ipairs((exports['mrp_chopshop']:GetLocations and exports['mrp_chopshop']:GetLocations()) or {}) do
+            if loc.id == locationId then c = loc.coords break end
+        end
+    end
+    if not c then return end
+    createCall('police', 'theft', { x = c.x, y = c.y, z = c.z },
+        ('Galimas transporto ardymas (%s) — %s'):format(tostring(plate or '?'), tostring(locationId or '?')),
+        src > 0 and src or nil)
+end)
+
+AddEventHandler('mrp_dispatch:server:burglaryAlert', function(src, text, coords)
+    src = tonumber(src) or 0
+    if not coords or not coords.x then return end
+    createCall('police', 'robbery', coords, text or 'Galimas namų plėšimas', src > 0 and src or nil)
+end)
+
 RegisterNetEvent('mrp_dispatch:server:createServiceCall', function(service, callType, text, coords)
     local src = source
     local cfg = Config or {}

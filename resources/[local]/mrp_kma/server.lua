@@ -15,22 +15,32 @@ QBCore.Functions.CreateCallback('mrp_kma:server:getVehicles', function(source, c
     if not Player then return cb({}) end
 
     local rows = MySQL.query.await([[
-        SELECT vehicle, plate, mods, state, garage, fuel
+        SELECT vehicle, plate, mods, state, garage, fuel, depotprice
         FROM player_vehicles
-        WHERE citizenid = ? AND state IN (0, 2)
+        WHERE citizenid = ? AND state IN (0, 2, 3)
         ORDER BY state DESC, vehicle ASC
     ]], { Player.PlayerData.citizenid })
 
     local vehicles = {}
     for i = 1, #(rows or {}) do
         local r = rows[i]
+        local state = tonumber(r.state) or 0
+        local scrapInfo = nil
+        if state == 3 and GetResourceState('mrp_chopshop') == 'started' then
+            local ok, info = pcall(function()
+                return exports['mrp_chopshop']:GetScrapInfo(r.mods, r.depotprice)
+            end)
+            if ok then scrapInfo = info end
+        end
         vehicles[#vehicles + 1] = {
             model = r.vehicle,
             plate = r.plate,
-            state = tonumber(r.state) or 0,
+            state = state,
             garage = r.garage,
             mods = r.mods,
             fuel = tonumber(r.fuel) or 0,
+            depotprice = tonumber(r.depotprice) or 0,
+            scrapInfo = scrapInfo,
         }
     end
 
@@ -47,7 +57,7 @@ QBCore.Functions.CreateCallback('mrp_kma:server:reclaim', function(source, cb, p
     local garageId = tostring((location and location.defaultGarage) or 'pillboxgarage')
 
     local row = MySQL.single.await([[
-        SELECT vehicle, plate, state
+        SELECT vehicle, plate, state, mods, depotprice
         FROM player_vehicles
         WHERE citizenid = ? AND plate = ?
         LIMIT 1
@@ -58,7 +68,21 @@ QBCore.Functions.CreateCallback('mrp_kma:server:reclaim', function(source, cb, p
     end
 
     local state = tonumber(row.state) or 0
-    if state ~= 0 and state ~= 2 then
+    local scrapInfo = nil
+    if state == 3 and GetResourceState('mrp_chopshop') == 'started' then
+        local ok, info = pcall(function()
+            return exports['mrp_chopshop']:GetScrapInfo(row.mods, row.depotprice)
+        end)
+        if ok then scrapInfo = info end
+    end
+
+    if state == 3 then
+        if not scrapInfo or not scrapInfo.canRecover then
+            local hrs = scrapInfo and math.ceil((scrapInfo.lockRemaining or 0) / 3600) or 48
+            return cb({ ok = false, message = ('Mašina ardyta — atgauti galėsi po ~%dh'):format(hrs) })
+        end
+        fee = math.max(fee, tonumber(scrapInfo.recoveryFee) or tonumber(row.depotprice) or fee)
+    elseif state ~= 0 and state ~= 2 then
         return cb({ ok = false, message = 'Si masina jau garaze arba neatitinka KMA' })
     end
 
@@ -71,12 +95,20 @@ QBCore.Functions.CreateCallback('mrp_kma:server:reclaim', function(source, cb, p
         return cb({ ok = false, message = ('Nepakanka pinigu (%s)'):format(fee) })
     end
 
-    -- Release from impound and prepare immediate spawn.
+    local modsStr = row.mods
+    if state == 3 and modsStr and modsStr ~= '' then
+        local ok, mods = pcall(json.decode, modsStr)
+        if ok and type(mods) == 'table' then
+            mods._chopshop = nil
+            modsStr = json.encode(mods)
+        end
+    end
+
     MySQL.update.await([[
         UPDATE player_vehicles
-        SET state = 0, garage = ?
-        WHERE citizenid = ? AND plate = ? AND state IN (0, 2)
-    ]], { garageId, Player.PlayerData.citizenid, plate })
+        SET state = 0, garage = ?, depotprice = 0, mods = ?
+        WHERE citizenid = ? AND plate = ? AND state IN (0, 2, 3)
+    ]], { garageId, modsStr, Player.PlayerData.citizenid, plate })
 
     local verify = MySQL.single.await([[
         SELECT state, garage FROM player_vehicles

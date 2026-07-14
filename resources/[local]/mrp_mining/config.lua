@@ -86,6 +86,30 @@ Config.ProcessMap = {
 --- Plienas: geležies rūda x2 + anglis x1 → plienas x1 (perdirbimo meniu)
 Config.SteelRecipe = { iron = 'iron_ore', coal = 'coal', steel = 'steel', ironCount = 2, coalCount = 1 }
 
+--- Rūdų liejimas → mechanikų craft medžiagos
+Config.SmeltingRecipes = {
+    iron = { label = 'Geležis', input = 'iron_ore', inputCount = 2, output = 'iron', outputCount = 1 },
+    copper = { label = 'Varis', input = 'copper_ore', inputCount = 2, output = 'copper', outputCount = 1 },
+    aluminum = { label = 'Aliuminis', input = 'aluminum_ore', inputCount = 2, output = 'aluminum', outputCount = 1 },
+}
+
+--- Šalutiniai mechanikų komponentai iš kasimo produktų
+Config.RubberRecipe = {
+    label = 'Guma',
+    gravel = 'gravel', gravelCount = 3,
+    coal = 'coal', coalCount = 1,
+    output = 'rubber', outputCount = 1,
+}
+Config.GlassRecipe = {
+    label = 'Stiklas',
+    stone = 'stone', stoneCount = 2,
+    gravel = 'gravel', gravelCount = 1,
+    output = 'glass', outputCount = 1,
+}
+
+--- Itemai, kuriuos kasėjai gali parduoti mechanikų žaliavų punkte (žr. mrp_mechanic)
+Config.MechanicSupplyHint = 'Geležį, varį, plieną ir kitas žaliavas gali parduoti ir mechanikų dirbtuvėse (LS dokai).'
+
 --- Kainos už vieną vienetą ($) — supirkėjas
 Config.SellPrices = {
     stone = 3,

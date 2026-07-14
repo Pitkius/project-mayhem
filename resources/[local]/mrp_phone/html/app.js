@@ -135,6 +135,7 @@ function applyWallpaper() {
     default: "radial-gradient(120% 80% at 20% 0%, rgba(191,95,255,.42), transparent 55%), radial-gradient(90% 70% at 90% 20%, rgba(157,78,221,.28), transparent 50%), linear-gradient(165deg,#0c0c12,#12121c,#08080e)",
     midnight: "linear-gradient(160deg,#050508,#0f0f18 50%,#1a1030)",
     sunset: "linear-gradient(165deg,#1a0a12,#3d1a28 45%,#5c2d14)",
+    violet: "radial-gradient(100% 80% at 50% 0%, rgba(168,85,247,.35), transparent 60%), linear-gradient(165deg,#0a0612,#140a22,#080510)",
   };
   el.style.background = presets[wp] || presets.default;
 }
@@ -149,6 +150,7 @@ function renderLockNotifs() {
 }
 
 function pushLockNotif(title, body) {
+  if (localStorage.getItem("mrp_phone_notifs") === "0") return;
   state.lockNotifs.unshift({ title, body, at: Date.now() });
   state.lockNotifs = state.lockNotifs.slice(0, 8);
   renderLockNotifs();
@@ -296,6 +298,7 @@ function stopCameraUi() {
 function openHome() {
   stopCameraUi();
   state.currentApp = null;
+  document.getElementById("appScreen")?.classList.remove("app-fullscreen", "app-insta-full");
   if (!state.account?.hasAccount) {
     showScreen("accountSetup");
     setLockUiState(false);
@@ -437,7 +440,9 @@ async function openApp(appId) {
     return;
   }
   showScreen("appScreen");
-  document.getElementById("appScreen")?.classList.toggle("app-fullscreen", appId === "ads" || appId === "bank");
+  const appScreen = document.getElementById("appScreen");
+  appScreen?.classList.toggle("app-fullscreen", appId === "ads" || appId === "bank" || appId === "insta");
+  appScreen?.classList.toggle("app-insta-full", appId === "insta");
   document.getElementById("appTitle").textContent =
     installedApps().find((a) => a.id === appId)?.label || appId;
   const content = document.getElementById("appContent");
@@ -458,45 +463,205 @@ async function openApp(appId) {
 
 window.PhoneOpenApp = openApp;
 
-window.renderSocialApp = (content) => {
+const lgUi = { tab: "feed", draftPhotoId: null };
+
+function phoneIco(name) {
+  return window.PhoneIco ? window.PhoneIco(name) : "";
+}
+
+function parsePostImageRef(raw) {
+  const img = String(raw || "").trim();
+  if (!img) return { url: "", photoId: 0 };
+  if (img.startsWith("p:")) {
+    const photoId = Number(img.replace("p:", ""));
+    return { url: "", photoId: Number.isFinite(photoId) ? photoId : 0 };
+  }
+  if (img.startsWith("http") || img.startsWith("data:")) return { url: img, photoId: 0 };
+  return { url: img, photoId: 0 };
+}
+
+async function resolvePostImage(raw) {
+  const ref = parsePostImageRef(raw);
+  if (ref.url) return ref.url;
+  if (!ref.photoId) return "";
+  const res = await nui("getPhoto", { id: ref.photoId });
+  if (res?.ok && res.photo?.image) {
+    return window.PhoneNormalizeImageSrc
+      ? window.PhoneNormalizeImageSrc(res.photo.image)
+      : res.photo.image;
+  }
+  return "";
+}
+
+function lgInitials(name) {
+  const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+window.renderSocialApp = async (content) => {
   content.className = "scroll-body insta-body";
-  const postsHtml = (state.posts || []).length
-    ? state.posts
-        .map((p) => {
-          const img = p.image_url
-            ? `<div class="lg-post-media"><img src="${esc(p.image_url)}" alt="" loading="lazy" /></div>`
-            : "";
-          return `<article class="lg-post">
-            <header class="lg-post-head"><strong>${esc(p.author_name)}</strong></header>
-            ${img}
-            <p class="lg-post-caption">${esc(p.caption || "")}</p>
-            <footer class="lg-post-actions">
-              <button type="button" class="lg-like-btn" data-like="${Number(p.id)}">♥ Patinka ${Number(p.likes || 0)}</button>
-            </footer>
-          </article>`;
-        })
-        .join("")
-    : `<div class="lg-empty muted">Dar nėra įrašų. Būk pirmas!</div>`;
+  const tab = lgUi.tab || "feed";
+  const accountName = state.account.username || state.me.name || "Tu";
+  const myPosts = (state.posts || []).filter((p) => p.author_name === state.me.name);
+
+  const renderFeed = async () => {
+    const posts = state.posts || [];
+    if (!posts.length) return `<div class="lg-empty muted">Dar nėra įrašų. Būk pirmas!</div>`;
+    const cards = await Promise.all(
+      posts.map(async (p) => {
+        const imgSrc = p.image_url ? await resolvePostImage(p.image_url) : "";
+        const img = imgSrc
+          ? `<div class="lg-post-media"><img src="${esc(imgSrc)}" alt="" loading="lazy" /></div>`
+          : "";
+        return `<article class="lg-post-card">
+          <header class="lg-post-head">
+            <div class="core-avatar sm">${esc(lgInitials(p.author_name))}</div>
+            <strong>${esc(p.author_name)}</strong>
+          </header>
+          ${img}
+          <p class="lg-post-caption">${esc(p.caption || "")}</p>
+          <footer class="lg-post-actions">
+            <button type="button" class="lg-like-btn" data-like="${Number(p.id)}">${phoneIco("heart")} Patinka · ${Number(p.likes || 0)}</button>
+          </footer>
+        </article>`;
+      }),
+    );
+    return `<div class="lg-feed">${cards.join("")}</div>`;
+  };
+
+  const renderCreate = () => {
+    const photos = state.photos || [];
+    const photoPick = photos.length
+      ? `<div class="lg-photo-pick" id="lgPhotoPick">${photos
+          .slice(0, 8)
+          .map(
+            (ph) =>
+              `<button type="button" data-photo="${Number(ph.id)}" class="${lgUi.draftPhotoId === Number(ph.id) ? "selected" : ""}" style="background-image:url('')"></button>`,
+          )
+          .join("")}</div>`
+      : `<p class="muted small">Nėra nuotraukų — naudokite Kamerą arba įklijuokite nuorodą.</p>`;
+
+    return `<section class="lg-compose neon-card" style="margin:12px 14px">
+      <h3 class="lg-compose-title">Naujas įrašas</h3>
+      <textarea id="postCaption" placeholder="Ką norite pasakyti?" rows="3" style="width:100%;resize:vertical"></textarea>
+      <label class="small muted" style="display:block;margin-top:10px">Nuotrauka iš galerijos</label>
+      ${photoPick}
+      <input id="postImageUrl" placeholder="Arba nuotraukos nuoroda (URL)" style="margin-top:10px" />
+      <button type="button" id="btnPostInsta" class="neon-btn primary">Kelti įrašą</button>
+    </section>`;
+  };
+
+  const renderProfile = () => {
+    return `<div class="lg-profile-hero">
+      <div class="core-avatar">${esc(lgInitials(accountName))}</div>
+      <b>${esc(accountName)}</b>
+      <div class="muted small">@${esc(state.account.username || "vartotojas")}</div>
+      <div class="lg-post-stats"><span><b>${myPosts.length}</b> įrašai</span><span><b>${myPosts.reduce((s, p) => s + Number(p.likes || 0), 0)}</b> patinka</span></div>
+    </div>
+    <div class="core-section-label" style="padding:0 14px">Mano įrašai</div>
+    <div id="lgProfileFeed" class="lg-feed"><div class="muted small" style="padding:16px">${window.t ? window.t("common.loading") : "Kraunama…"}</div></div>`;
+  };
 
   content.innerHTML = `
     <div class="lg-app">
-      <section class="lg-compose neon-card">
-        <h3 class="lg-compose-title">Naujas įrašas</h3>
-        <input id="postCaption" placeholder="Aprašymas" />
-        <input id="postImageUrl" placeholder="Nuotraukos nuoroda" />
-        <button type="button" id="btnPostInsta" class="neon-btn primary">Kelti</button>
-      </section>
-      <div class="lg-feed">${postsHtml}</div>
+      <div class="lg-header-bar"><span class="lg-brand">LifeGram</span></div>
+      <div id="lgPanel"></div>
+      <nav class="lg-tabbar">
+        <button type="button" data-lg-tab="feed" class="${tab === "feed" ? "active" : ""}"><span class="ico">${phoneIco("home")}</span>Feed</button>
+        <button type="button" data-lg-tab="search" class="${tab === "search" ? "active" : ""}"><span class="ico">${phoneIco("search")}</span>Paieška</button>
+        <button type="button" data-lg-tab="create" class="${tab === "create" ? "active" : ""}"><span class="ico">${phoneIco("plus")}</span>Kurti</button>
+        <button type="button" data-lg-tab="profile" class="${tab === "profile" ? "active" : ""}"><span class="ico">${phoneIco("user")}</span>Profilis</button>
+      </nav>
     </div>`;
 
-  document.getElementById("btnPostInsta").addEventListener("click", async () => {
-    await nui("createPost", {
-      caption: document.getElementById("postCaption").value,
-      imageUrl: document.getElementById("postImageUrl").value,
+  const panel = content.querySelector("#lgPanel");
+
+  if (tab === "feed") {
+    panel.innerHTML = `<div class="muted small" style="padding:16px">${window.t ? window.t("common.loading") : "Kraunama…"}</div>`;
+    panel.innerHTML = await renderFeed();
+  } else if (tab === "create") {
+    panel.innerHTML = renderCreate();
+    const pick = content.querySelector("#lgPhotoPick");
+    if (pick) {
+      pick.querySelectorAll("[data-photo]").forEach((btn) => {
+        nui("getPhoto", { id: Number(btn.dataset.photo) }).then((res) => {
+          if (res?.ok && res.photo?.image) {
+            const src = window.PhoneNormalizeImageSrc
+              ? window.PhoneNormalizeImageSrc(res.photo.image)
+              : res.photo.image;
+            btn.style.backgroundImage = `url('${src}')`;
+          }
+        });
+        btn.addEventListener("click", () => {
+          lgUi.draftPhotoId = Number(btn.dataset.photo);
+          pick.querySelectorAll("[data-photo]").forEach((b) => b.classList.toggle("selected", Number(b.dataset.photo) === lgUi.draftPhotoId));
+        });
+      });
+    }
+    content.querySelector("#btnPostInsta")?.addEventListener("click", async () => {
+      const caption = content.querySelector("#postCaption")?.value || "";
+      const urlField = content.querySelector("#postImageUrl")?.value || "";
+      const imageUrl = lgUi.draftPhotoId ? `p:${lgUi.draftPhotoId}` : urlField;
+      await nui("createPost", { caption, imageUrl });
+      lgUi.draftPhotoId = null;
+      hydrate(await nui("refresh"));
+      lgUi.tab = "feed";
+      openApp("insta");
     });
-    hydrate(await nui("refresh"));
-    openApp("insta");
+  } else if (tab === "profile") {
+    panel.innerHTML = renderProfile();
+    const feedEl = content.querySelector("#lgProfileFeed");
+    if (feedEl) {
+      if (!myPosts.length) {
+        feedEl.innerHTML = `<div class="lg-empty muted">Dar neturite įrašų.</div>`;
+      } else {
+        const cards = await Promise.all(
+          myPosts.map(async (p) => {
+            const imgSrc = p.image_url ? await resolvePostImage(p.image_url) : "";
+            const img = imgSrc ? `<div class="lg-post-media"><img src="${esc(imgSrc)}" alt="" loading="lazy" /></div>` : "";
+            return `<article class="lg-post-card">${img}<p class="lg-post-caption">${esc(p.caption || "")}</p><div class="lg-post-stats">♥ ${Number(p.likes || 0)}</div></article>`;
+          }),
+        );
+        feedEl.innerHTML = cards.join("");
+      }
+    }
+  } else {
+    panel.innerHTML = `<div class="core-app-panel">
+      <div class="core-search-bar">${phoneIco("search")}<input type="search" id="lgSearch" placeholder="Ieškoti pagal autorių" /></div>
+      <div id="lgSearchResults" class="core-list-stack"></div>
+    </div>`;
+    const renderSearch = (q) => {
+      const query = String(q || "").toLowerCase();
+      const authors = [...new Set((state.posts || []).map((p) => p.author_name))].filter((name) =>
+        !query ? true : String(name).toLowerCase().includes(query),
+      );
+      const box = content.querySelector("#lgSearchResults");
+      if (!authors.length) {
+        box.innerHTML = `<div class="empty-state">Nieko nerasta</div>`;
+        return;
+      }
+      box.innerHTML = authors
+        .map(
+          (name) => `<div class="core-list-item">
+            <div class="core-avatar sm">${esc(lgInitials(name))}</div>
+            <div class="core-list-body"><b>${esc(name)}</b><div class="sub">${(state.posts || []).filter((p) => p.author_name === name).length} įrašai</div></div>
+          </div>`,
+        )
+        .join("");
+    };
+    renderSearch("");
+    content.querySelector("#lgSearch")?.addEventListener("input", (e) => renderSearch(e.target.value));
+  }
+
+  content.querySelectorAll("[data-lg-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      lgUi.tab = btn.dataset.lgTab || "feed";
+      openApp("insta");
+    });
   });
+
   content.querySelectorAll("[data-like]").forEach((b) =>
     b.addEventListener("click", async () => {
       await nui("likePost", { postId: Number(b.dataset.like) });
@@ -507,24 +672,69 @@ window.renderSocialApp = (content) => {
 };
 
 window.renderSettingsApp = (content) => {
+  content.className = "scroll-body core-app-body settings-app";
   const wp = localStorage.getItem("mrp_phone_wp") || "default";
+  const soundsOn = localStorage.getItem("mrp_phone_sounds") !== "0";
+  const notifsOn = localStorage.getItem("mrp_phone_notifs") !== "0";
+
+  const wpPresets = [
+    { id: "default", label: "Numatyta", bg: "radial-gradient(120% 80% at 20% 0%, rgba(191,95,255,.55), transparent 55%), linear-gradient(165deg,#0c0c12,#12121c)" },
+    { id: "violet", label: "Violetinė", bg: "radial-gradient(100% 80% at 50% 0%, rgba(168,85,247,.5), transparent 60%), linear-gradient(165deg,#0a0612,#140a22)" },
+    { id: "midnight", label: "Vidurnaktis", bg: "linear-gradient(160deg,#050508,#0f0f18 50%,#1a1030)" },
+    { id: "sunset", label: "Saulėlydis", bg: "linear-gradient(165deg,#1a0a12,#3d1a28 45%,#5c2d14)" },
+  ];
+
   content.innerHTML = `
-    <div class="card">
-      <div class="settings-row"><span>Numeris</span><span>${esc(state.me.number)}</span></div>
-      <div class="settings-row"><span>Paskyra</span><span>${esc(state.account.username || "—")}</span></div>
+    <div class="neon-card settings-group">
+      <h3>Paskyra</h3>
+      <div class="settings-row-modern"><span>Telefono numeris</span><span class="val">${esc(state.me.number)}</span></div>
+      <div class="settings-row-modern"><span>Vartotojo vardas</span><span class="val">${esc(state.account.username || "—")}</span></div>
+      <div class="settings-row-modern"><span>Vardas</span><span class="val">${esc(state.me.name || "—")}</span></div>
     </div>
-    <div class="card">
-      <label class="small muted">Fonas</label>
-      <select id="wpSelect">
-        <option value="default"${wp === "default" ? " selected" : ""}>Numatyta</option>
-        <option value="midnight"${wp === "midnight" ? " selected" : ""}>Vidurnaktis</option>
-        <option value="sunset"${wp === "sunset" ? " selected" : ""}>Saulėlydis</option>
-      </select>
+    <div class="neon-card settings-group">
+      <h3>Ekranas</h3>
+      <div class="wp-grid" id="wpGrid">${wpPresets
+        .map(
+          (p) =>
+            `<button type="button" class="wp-tile${wp === p.id ? " active" : ""}" data-wp="${p.id}" style="background:${p.bg}"><span>${esc(p.label)}</span></button>`,
+        )
+        .join("")}</div>
+    </div>
+    <div class="neon-card settings-group">
+      <h3>Garsai ir pranešimai</h3>
+      <div class="settings-row-modern">
+        <span>Skambučių garsai</span>
+        <button type="button" class="toggle-switch${soundsOn ? " on" : ""}" id="toggleSounds" aria-pressed="${soundsOn}"></button>
+      </div>
+      <div class="settings-row-modern">
+        <span>Pranešimai užrakintame ekrane</span>
+        <button type="button" class="toggle-switch${notifsOn ? " on" : ""}" id="toggleNotifs" aria-pressed="${notifsOn}"></button>
+      </div>
+    </div>
+    <div class="neon-card settings-group">
+      <h3>Apie</h3>
+      <div class="settings-row-modern"><span>Telefono tema</span><span class="val">Sinchronizuojama su /hud</span></div>
     </div>`;
-  document.getElementById("wpSelect").addEventListener("change", (e) => {
-    localStorage.setItem("mrp_phone_wp", e.target.value);
-    applyWallpaper();
+
+  content.querySelectorAll("[data-wp]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      localStorage.setItem("mrp_phone_wp", btn.dataset.wp);
+      applyWallpaper();
+      openApp("settings");
+    });
   });
+
+  const bindToggle = (id, key) => {
+    content.querySelector(id)?.addEventListener("click", (e) => {
+      const el = e.currentTarget;
+      const on = !el.classList.contains("on");
+      el.classList.toggle("on", on);
+      el.setAttribute("aria-pressed", on ? "true" : "false");
+      localStorage.setItem(key, on ? "1" : "0");
+    });
+  };
+  bindToggle("#toggleSounds", "mrp_phone_sounds");
+  bindToggle("#toggleNotifs", "mrp_phone_notifs");
 };
 
 window.renderCargoNetApp = (content) => {

@@ -242,13 +242,31 @@ local function buildKmaRows(vehicles)
     local rows = {}
     for _, v in ipairs(vehicles or {}) do
         local st = getVehicleStats(v.model)
+        local state = tonumber(v.state) or 0
+        local statusLabel = 'Lauke / konfiskuota'
+        local canReclaim = true
+        local feeOverride = nil
+
+        if state == 3 then
+            local info = v.scrapInfo
+            if info and not info.canRecover then
+                local hrs = math.ceil((info.lockRemaining or 0) / 3600)
+                statusLabel = ('Ardyta — liko ~%dh'):format(hrs)
+                canReclaim = false
+            else
+                statusLabel = 'Ardyta — galima atgauti'
+                feeOverride = info and info.recoveryFee or tonumber(v.depotprice)
+            end
+        end
+
         rows[#rows + 1] = {
             model = v.model,
             plate = v.plate,
             displayName = getVehicleDisplayName(v.model),
             fuel = math.floor(math.max(0, math.min(100, tonumber(v.fuel) or 0)) + 0.5),
-            statusLabel = 'Lauke / konfiskuota',
-            canReclaim = true,
+            statusLabel = statusLabel,
+            canReclaim = canReclaim,
+            recoveryFee = feeOverride,
             image = getImageUrl(v.model),
             stats = {
                 maxKmh = math.floor(st.maxKmh + 0.5),

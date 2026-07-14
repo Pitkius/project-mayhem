@@ -377,8 +377,8 @@ body.shape-square .fill {
     display: grid;
     place-items: center;
     color: #ede9fe;
-    background: linear-gradient(145deg, #c4b5fd 0%, #7c3aed 55%, #5b21b6 100%);
-    box-shadow: 0 0 22px rgba(167, 139, 250, 0.5);
+    background: var(--btn-grad);
+    box-shadow: 0 0 22px var(--accent-glow);
 }
 
 .hm-brand-mark svg,
@@ -745,9 +745,9 @@ body.shape-square .fill {
 }
 
 .hm-btn-primary {
-    background: linear-gradient(135deg, #a78bfa, #7c3aed);
-    color: #0f0a1e;
-    border-color: rgba(196, 181, 253, 0.5);
+    background: var(--accent-grad);
+    color: var(--primary-text, #0f0a1e);
+    border-color: var(--primary-border);
 }
 
 .hm-btn-primary:hover {
@@ -1919,11 +1919,11 @@ body.shape-frame .hud-root {
 }
 
 .car-mv-motor .car-mv-fill {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), #8b5cf6);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), var(--primary-active));
 }
 
 .car-mv-fuelcell .car-mv-fill {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), #a78bfa);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), var(--primary));
 }
 
 .car-mv-ico {
@@ -2721,7 +2721,7 @@ body.shape-frame .hud-root {
     height: 100%;
     width: 0%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
+    background: var(--accent-grad);
     transition: width 0.2s ease;
 }
 

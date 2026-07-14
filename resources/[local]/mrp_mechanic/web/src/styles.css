@@ -3,11 +3,11 @@
 *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --ws-violet: #7c3aed;
-  --ws-violet-soft: rgba(124, 58, 237, 0.28);
-  --ws-violet-border: rgba(196, 181, 253, 0.42);
-  --ws-panel-bg: rgba(109, 40, 217, 0.38);
-  --ws-panel-bg-strong: rgba(91, 33, 182, 0.48);
+  --ws-violet: var(--primary-active);
+  --ws-violet-soft: var(--primary-soft);
+  --ws-violet-border: var(--primary-border);
+  --ws-panel-bg: var(--background);
+  --ws-panel-bg-strong: var(--surface-active);
 }
 
 html, body, #root {
@@ -23,9 +23,9 @@ html, body, #root {
   position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(
     circle at 50% 42%,
-    rgba(124, 58, 237, 0.06) 0%,
-    rgba(88, 28, 135, 0.14) 50%,
-    rgba(59, 7, 100, 0.2) 100%
+    var(--primary-soft) 0%,
+    var(--background) 50%,
+    var(--surface-active) 100%
   );
 }
 
@@ -36,7 +36,7 @@ html, body, #root {
   border-radius: 14px;
   box-shadow:
     0 10px 28px rgba(0, 0, 0, 0.22),
-    0 0 18px rgba(124, 58, 237, 0.18),
+    0 0 18px var(--primary-soft),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   pointer-events: auto;
 }
@@ -68,14 +68,14 @@ html, body, #root {
 }
 
 .ws-header { display: flex; justify-content: space-between; gap: 0.5rem; }
-.ws-kicker { font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(196, 181, 253, 0.75); }
+.ws-kicker { font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-text); }
 .ws-header h1 { font-size: 1.08rem; font-weight: 600; }
-.ws-plate { font-size: 0.78rem; color: rgba(216, 180, 254, 0.8); margin-top: 0.1rem; }
+.ws-plate { font-size: 0.78rem; color: var(--primary-hover); margin-top: 0.1rem; }
 
 .btn-icon {
   width: 2rem; height: 2rem; border-radius: 8px;
-  border: 1px solid rgba(196, 181, 253, 0.25);
-  background: rgba(124, 58, 237, 0.15); color: #ede9fe; cursor: pointer;
+  border: 1px solid var(--primary-border);
+  background: var(--primary-soft); color: var(--text); cursor: pointer;
 }
 
 .section-nav { display: flex; flex-direction: column; gap: 0.3rem; }
@@ -231,14 +231,14 @@ h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.2rem; }
 .stat-bar { position: relative; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
 .stat-bar__current, .stat-bar__next { position: absolute; inset: 0 auto 0 0; height: 100%; border-radius: 999px; }
 .stat-bar__current { background: rgba(148,163,184,0.5); z-index: 1; }
-.stat-bar__next { background: linear-gradient(90deg, #6d28d9, #a78bfa); z-index: 2; }
+.stat-bar__next { background: var(--accent-grad); z-index: 2; }
 .stat-values { display: flex; justify-content: space-between; font-size: 0.67rem; color: rgba(196, 181, 253, 0.75); margin-top: 0.15rem; }
 
 .btn-install {
   width: 100%; padding: 0.72rem; border: none; border-radius: 10px;
   font-weight: 600; font-size: 0.86rem; cursor: pointer;
 }
-.btn-install.install { background: linear-gradient(135deg, #6d28d9, #a78bfa); color: #fff; }
+.btn-install.install { background: var(--accent-grad); color: var(--primary-text, #fff); }
 .btn-install.installed, .btn-install.missing, .btn-install.incompatible {
   background: rgba(124, 58, 237, 0.12); color: rgba(196, 181, 253, 0.7); cursor: not-allowed;
 }

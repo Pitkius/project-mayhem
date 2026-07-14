@@ -74,7 +74,7 @@ end
 
 local function openProcessMenu()
     local rows = {
-        { header = 'Rūdų perdirbimas', txt = 'Žalia → švari (pagal sąrašą)', isMenuHeader = true },
+        { header = 'Rūdų perdirbimas', txt = 'Žalia → švari / liejimas', isMenuHeader = true },
         {
             header = 'Perdirbti visas žalias rūdas',
             txt = 'Vienetuose pagal inventorių',
@@ -91,11 +91,53 @@ local function openProcessMenu()
             params = {
                 isAction = true,
                 event = function()
-                    TriggerServerEvent('mrp_mining:server:makeSteel')
+                    TriggerServerEvent('mrp_mining:server:processRecipe', 'steel')
                 end,
             },
         },
     }
+
+    for key, recipe in pairs(Config.SmeltingRecipes or {}) do
+        rows[#rows + 1] = {
+            header = ('Lieti: %s'):format(recipe.label or key),
+            txt = ('%sx %s → %sx %s'):format(recipe.inputCount or 1, recipe.input or '?', recipe.outputCount or 1, recipe.output or '?'),
+            params = {
+                isAction = true,
+                event = function()
+                    TriggerServerEvent('mrp_mining:server:processRecipe', key)
+                end,
+            },
+        }
+    end
+
+    local rubber = Config.RubberRecipe
+    if rubber then
+        rows[#rows + 1] = {
+            header = 'Gaminti gumą',
+            txt = ('%sx žvyras + %sx anglis → %sx guma'):format(rubber.gravelCount or 3, rubber.coalCount or 1, rubber.outputCount or 1),
+            params = {
+                isAction = true,
+                event = function()
+                    TriggerServerEvent('mrp_mining:server:processRecipe', 'rubber')
+                end,
+            },
+        }
+    end
+
+    local glass = Config.GlassRecipe
+    if glass then
+        rows[#rows + 1] = {
+            header = 'Gaminti stiklą',
+            txt = ('%sx akmuo + %sx žvyras → %sx stiklas'):format(glass.stoneCount or 2, glass.gravelCount or 1, glass.outputCount or 1),
+            params = {
+                isAction = true,
+                event = function()
+                    TriggerServerEvent('mrp_mining:server:processRecipe', 'glass')
+                end,
+            },
+        }
+    end
+
     TriggerEvent('qb-menu:client:openMenu', rows, false, true)
 end
 

@@ -13,6 +13,11 @@
     --text: #f8f4ff;
     --muted-text: #c4b5fd;
 
+    /* Bendri gradientai ir panelės */
+    --accent-grad: linear-gradient(135deg, var(--primary-active), var(--primary));
+    --btn-grad: linear-gradient(145deg, var(--primary-hover), var(--primary));
+    --card-grad: linear-gradient(135deg, var(--primary-active) 0%, var(--primary) 45%, var(--primary-hover) 100%);
+
     /* Suderinamumas su mrp_hud kintamaisiais */
     --accent-fill: var(--primary);
     --accent-soft: var(--muted-text);
@@ -25,6 +30,11 @@
     --fp-accent-dim: var(--primary-soft);
     --fp-accent-glow: var(--primary-glow);
     --fp-accent-deep: var(--primary-active);
+    --fp-primary: var(--primary);
+    --fp-primary-soft: var(--primary-hover);
+    --fp-primary-deep: var(--primary-active);
+    --fp-primary-glow: var(--primary-glow);
+    --fp-primary-dim: var(--primary-soft);
     --neon-purple: var(--primary-hover);
     --neon-purple-soft: var(--primary-border);
     --neon-purple-glow: var(--primary-glow);
@@ -32,11 +42,29 @@
     --bm-accent: var(--primary);
     --bm-accent-deep: var(--primary-active);
     --sc-purple: var(--primary);
-    --sc-purple-soft: var(--primary-soft);
+    --sc-purple-soft: var(--primary-hover);
     --sc-purple-deep: var(--primary-active);
+    --sc-purple-glow: var(--primary-glow);
     --purple-dim: var(--primary-active);
     --mg-accent: var(--primary);
     --mg-accent-2: var(--primary-active);
     --mg-glow: var(--primary-glow);
     --vehicle-accent: var(--primary-active);
+    --glass-bg: var(--surface);
+    --glass-border: var(--primary-border);
+    --glass-hover: var(--primary-soft);
+    --app-bg: var(--surface);
+    --cc-violet: var(--primary);
+    --cc-violet-lit: var(--primary-hover);
+    --cc-violet-dim: var(--primary-soft);
+    --cc-border: var(--primary-border);
+    --cc-glass: var(--surface);
+    --ho-violet-bright: var(--primary-hover);
+    --drug-accent: var(--primary);
+    --ws-violet: var(--primary-active);
+    --ws-violet-soft: var(--primary-soft);
+    --ws-violet-border: var(--primary-border);
+    --ws-panel-bg: var(--background);
+    --ws-panel-bg-strong: var(--surface-active);
+    --panel-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 60px var(--primary-soft);
 }

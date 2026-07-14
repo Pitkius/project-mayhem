@@ -62,7 +62,7 @@ body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; 
   padding: 12px;
   overflow-y: auto;
 }
-.list-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #a78bfa; margin-bottom: 10px; }
+.list-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); margin-bottom: 10px; }
 
 .prod-item {
   width: 100%;
@@ -76,14 +76,14 @@ body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; 
   cursor: pointer;
 }
 .prod-item:hover, .prod-item.active {
-  border-color: #a855f7;
+  border-color: var(--primary-hover);
   background: rgba(168, 85, 247, 0.15);
 }
 .prod-item strong { display: block; font-size: 14px; }
 .prod-item small { color: #c4b5fd; }
 
 .detail { flex: 1; padding: 18px 20px; overflow-y: auto; }
-.empty { color: #a78bfa; margin-top: 40px; text-align: center; }
+.empty { color: var(--primary); margin-top: 40px; text-align: center; }
 .meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 16px; }
 .pill {
   font-size: 11px;
@@ -137,7 +137,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .action-row .btn { flex: 1; margin-top: 0; }
 .btn.primary {
   width: 100%;
-  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  background: var(--accent-grad);
   color: #fff;
   margin-top: 8px;
 }
@@ -243,7 +243,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .craft-bar {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+  background: var(--accent-grad);
   border-radius: 999px;
   transition: width 0.12s linear;
 }
@@ -401,7 +401,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .sch-bag.seal { cursor: pointer; width: 160px; height: 140px; }
 .sch-bag.pulse { animation: schPulse 0.2s ease; }
 .sch-bottle { position: relative; overflow: hidden; }
-.sch-fill { position: absolute; bottom: 0; left: 10%; width: 80%; height: 0; background: linear-gradient(0deg, #a78bfa, #7c3aed); border-radius: 6px 6px 0 0; transition: height 0.6s ease; }
+.sch-fill { position: absolute; bottom: 0; left: 10%; width: 80%; height: 0; background: var(--accent-grad); border-radius: 6px 6px 0 0; transition: height 0.6s ease; }
 .sch-gauge-track { position: relative; width: min(360px, 92vw); height: 32px; background: rgba(0,0,0,0.5); border-radius: 999px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--mg-accent) 40%, transparent); }
 .sch-gauge-zone { position: absolute; top: 0; height: 100%; width: 22%; background: color-mix(in srgb, var(--mg-accent) 55%, #22c55e 45%); opacity: 0.85; }
 .sch-gauge-needle { position: absolute; top: -4px; width: 4px; height: 40px; background: #fef08a; box-shadow: 0 0 10px #facc15; border-radius: 2px; }

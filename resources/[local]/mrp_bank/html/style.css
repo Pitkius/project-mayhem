@@ -1,14 +1,14 @@
 @import url("nui://mrp_fonts/html/ui.css");
 
 :root {
-    --neon-purple: #bf5fff;
-    --neon-purple-soft: rgba(191, 95, 255, 0.35);
-    --neon-purple-glow: rgba(191, 95, 255, 0.55);
-    --neon-purple-dim: #7c3aed;
-    --app-bg: #0a0812;
-    --glass-bg: rgba(18, 12, 28, 0.78);
-    --glass-border: rgba(191, 95, 255, 0.22);
-    --glass-hover: rgba(191, 95, 255, 0.12);
+    --neon-purple: var(--primary-hover);
+    --neon-purple-soft: var(--primary-border);
+    --neon-purple-glow: var(--primary-glow);
+    --neon-purple-dim: var(--primary-active);
+    --app-bg: var(--surface);
+    --glass-bg: var(--surface);
+    --glass-border: var(--primary-border);
+    --glass-hover: var(--primary-soft);
     --text: #f4efff;
     --text-muted: rgba(244, 239, 255, 0.62);
     --text-dim: rgba(244, 239, 255, 0.42);
@@ -17,10 +17,9 @@
     --danger: #f87171;
     --danger-bg: rgba(248, 113, 113, 0.12);
     --neutral: rgba(255, 255, 255, 0.08);
-    --card-grad: linear-gradient(135deg, #4c1d95 0%, #7c3aed 45%, #bf5fff 100%);
     --radius: 16px;
     --radius-sm: 10px;
-    --shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 60px rgba(124, 58, 237, 0.18);
+    --shadow: var(--panel-shadow);
     --font: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
 }
 
@@ -759,7 +758,7 @@ html, body {
 }
 
 .atm-btn.primary {
-    background: linear-gradient(135deg, #7c3aed, #bf5fff);
+    background: var(--accent-grad);
     color: #fff;
     box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
 }

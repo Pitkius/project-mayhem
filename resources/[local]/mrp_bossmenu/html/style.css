@@ -1,8 +1,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-    --bm-accent: #a78bfa;
-    --bm-accent-deep: #7c3aed;
+    --bm-accent: var(--primary);
+    --bm-accent-deep: var(--primary-active);
     --bm-bg: rgba(8, 6, 18, 0.92);
     --bm-panel: rgba(14, 11, 28, 0.96);
     --bm-muted: #94a3b8;

@@ -67,7 +67,7 @@
 .ads-top-title svg {
   width: 22px;
   height: 22px;
-  color: #9d50ff;
+  color: var(--neon-purple);
 }
 .ads-bell {
   position: relative;
@@ -89,7 +89,7 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: #9d50ff;
+  background: var(--neon-purple);
   color: #fff;
   font-size: 9px;
   font-weight: 800;
@@ -127,7 +127,7 @@
 .ads-header-action {
   border: none;
   background: transparent;
-  color: #9d50ff;
+  color: var(--neon-purple);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -174,7 +174,7 @@
   border: none;
   border-radius: 10px;
   background: rgba(157, 80, 255, 0.12);
-  color: #9d50ff;
+  color: var(--neon-purple);
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -203,7 +203,7 @@
   white-space: nowrap;
 }
 .ads-cat-chip.active {
-  background: linear-gradient(135deg, #7c3aed, #9d50ff);
+  background: var(--accent-grad);
   border-color: transparent;
   color: #fff;
   box-shadow: 0 4px 16px rgba(157, 80, 255, 0.35);
@@ -223,7 +223,7 @@
 .ads-link {
   border: none;
   background: transparent;
-  color: #9d50ff;
+  color: var(--neon-purple);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -272,7 +272,7 @@
 .ads-feed-price {
   font-size: 15px;
   font-weight: 800;
-  color: #9d50ff;
+  color: var(--neon-purple);
   margin-bottom: 4px;
 }
 .ads-feed-meta {
@@ -327,7 +327,7 @@
   background: rgba(255, 255, 255, 0.35);
 }
 .ads-detail-dot.active {
-  background: #9d50ff;
+  background: var(--neon-purple);
   width: 18px;
   border-radius: 999px;
 }
@@ -343,7 +343,7 @@
 .ads-detail-price {
   font-size: 24px;
   font-weight: 800;
-  color: #9d50ff;
+  color: var(--neon-purple);
   margin-bottom: 10px;
 }
 .ads-detail-stats {
@@ -409,7 +409,7 @@
   padding: 14px;
   border: none;
   border-radius: 14px;
-  background: linear-gradient(135deg, #7c3aed, #9d50ff);
+  background: var(--accent-grad);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
@@ -422,7 +422,7 @@
   border-radius: 14px;
   border: 1px solid rgba(157, 80, 255, 0.25);
   background: rgba(157, 80, 255, 0.12);
-  color: #9d50ff;
+  color: var(--neon-purple);
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -500,7 +500,7 @@
 .ads-photo-slot.add {
   display: grid;
   place-items: center;
-  color: #9d50ff;
+  color: var(--neon-purple);
   font-size: 24px;
 }
 .ads-photo-del {
@@ -542,14 +542,14 @@
   text-align: center;
 }
 .ads-cat-tile.active {
-  border-color: #9d50ff;
+  border-color: var(--neon-purple);
   background: rgba(157, 80, 255, 0.15);
   color: #fff;
 }
 .ads-cat-tile svg {
   width: 22px;
   height: 22px;
-  color: #9d50ff;
+  color: var(--neon-purple);
 }
 
 .ads-price-range {
@@ -571,7 +571,7 @@
 }
 .ads-range-slider {
   width: 100%;
-  accent-color: #9d50ff;
+  accent-color: var(--neon-purple);
 }
 
 .ads-sort-row {
@@ -597,7 +597,7 @@
   gap: 6px;
 }
 .ads-sort-btn.active {
-  border-color: #9d50ff;
+  border-color: var(--neon-purple);
   background: rgba(157, 80, 255, 0.15);
   color: #fff;
 }
@@ -629,7 +629,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3b1d6e, #7c3aed);
+  background: linear-gradient(135deg, var(--primary-active), var(--primary));
   display: grid;
   place-items: center;
   font-size: 14px;
@@ -663,7 +663,7 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #9d50ff;
+  background: var(--neon-purple);
   color: #fff;
   font-size: 10px;
   font-weight: 800;
@@ -683,7 +683,7 @@
   border-radius: 50%;
   margin: 0 auto 12px;
   background: #1a1028 center/cover no-repeat;
-  border: 3px solid #9d50ff;
+  border: 3px solid var(--neon-purple);
   box-shadow: 0 0 24px rgba(157, 80, 255, 0.45);
 }
 .ads-profile-name {
@@ -696,7 +696,7 @@
   gap: 6px;
 }
 .ads-profile-verified {
-  color: #9d50ff;
+  color: var(--neon-purple);
   font-size: 14px;
 }
 .ads-profile-since {
@@ -720,7 +720,7 @@
 .ads-stat-num {
   font-size: 18px;
   font-weight: 800;
-  color: #9d50ff;
+  color: var(--neon-purple);
 }
 .ads-stat-label {
   font-size: 10px;
@@ -751,7 +751,7 @@
 .ads-menu-item svg {
   width: 18px;
   height: 18px;
-  color: #9d50ff;
+  color: var(--neon-purple);
   flex-shrink: 0;
 }
 .ads-menu-item span { flex: 1; }
@@ -793,14 +793,14 @@
   height: 20px;
 }
 .ads-nav-btn.active {
-  color: #9d50ff;
+  color: var(--neon-purple);
 }
 .ads-nav-fab {
   width: 48px;
   height: 48px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #7c3aed, #9d50ff);
+  background: var(--accent-grad);
   color: #fff;
   font-size: 26px;
   font-weight: 300;
@@ -873,7 +873,7 @@
   cursor: pointer;
 }
 .ads-picker-item.selected {
-  border-color: #9d50ff;
+  border-color: var(--neon-purple);
   box-shadow: 0 0 12px rgba(157, 80, 255, 0.5);
 }
 

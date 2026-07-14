@@ -493,6 +493,16 @@ function applyThemeData(data) {
   if (data.vehicleUiAccent) {
     document.documentElement.style.setProperty("--vehicle-accent", data.vehicleUiAccent);
   }
+  if (typeof window.applyPlayerTheme === "function" && data.fillColor) {
+    window.applyPlayerTheme({
+      primary: data.fillColor,
+      primaryHover: data.customColors?.accent || data.softColor || data.fillColor,
+      primaryActive: data.softColor || data.customColors?.secondary || data.fillColor,
+      primaryGlow: data.glowColor,
+      text: data.customColors?.text,
+      mutedText: data.softColor || data.customColors?.secondary,
+    });
+  }
   document.documentElement.style.setProperty("--panel-alpha", String(currentSettings.alpha || 0.55));
   document.documentElement.style.setProperty("--hud-scale", String(currentSettings.scale || 1));
   body.classList.toggle("hud-compact", currentSettings.compact === true);

@@ -503,7 +503,7 @@ local function spawnMissionVehicle(model, x, y, z, heading)
     SetVehicleHasBeenOwnedByPlayer(veh, true)
     SetVehicleOnGroundProperly(veh)
     SetVehicleEngineOn(veh, true, true, false)
-    SetVehicleDoorsLocked(veh, 1)
+    SetVehicleDoorsLocked(veh, 2)
     SetVehicleNumberPlateText(veh, 'GANG' .. math.random(100, 999))
     if missionData then
         missionData.missionVehicle = veh

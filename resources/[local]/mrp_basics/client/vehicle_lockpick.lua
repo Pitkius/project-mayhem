@@ -6,6 +6,10 @@ local CFG = {
     reach = 3.6,
     serverReach = 6.0,
     duration = { lockpick = 12000, advancedlockpick = 9000 },
+    minigame = {
+        lockpick = { mode = 'sequence', label = 'Atrakink spyną — rodyklės', length = 4 },
+        advancedlockpick = { mode = 'sequence', label = 'Pažangus atrakinimas — rodyklės', length = 3 },
+    },
     anim = {
         dict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@',
         clip = 'machinic_loop_mechandplayer',
@@ -176,6 +180,27 @@ local function applyDisableControls()
     end
 end
 
+local function runLockpickMinigame(advanced)
+    local itemKey = advanced and 'advancedlockpick' or 'lockpick'
+    local mg = CFG.minigame[itemKey] or CFG.minigame.lockpick
+    local anim = CFG.anim
+
+    if GetResourceState('mrp_hacking') == 'started' then
+        local ok, result = pcall(function()
+            return exports['mrp_hacking']:RunPhysicalMinigame(mg.mode, {
+                label = mg.label,
+                anim = { dict = anim.dict, name = anim.clip, flags = anim.flag },
+                data = { length = mg.length },
+            })
+        end)
+        if ok then
+            return result == true
+        end
+    end
+
+    return runLockpickProgress(advanced)
+end
+
 local function runLockpickProgress(advanced)
     local itemKey = advanced and 'advancedlockpick' or 'lockpick'
     local duration = CFG.duration[itemKey] or 12000
@@ -282,11 +307,11 @@ RegisterNetEvent('lockpicks:UseLockpick', function(advanced)
     end
 
     busy = true
-    local completed = runLockpickProgress(advanced == true)
+    local completed = runLockpickMinigame(advanced == true)
     busy = false
 
     if not completed then
-        return notify('Atšaukta.', 'error')
+        return notify('Nepavyko atrakinti spynos.', 'error')
     end
 
     if not DoesEntityExist(veh) or not entityReach(PlayerPedId(), veh, CFG.reach + 0.5) then

@@ -15,11 +15,26 @@ local function normalizeShopValue(shop)
 end
 
 local CIVILIAN_CORE_BLOCKED = {
-    rhino = true, khanjali = true, insurgent = true, insurgent2 = true, insurgent3 = true,
+    rhino = true, khanjali = true, minitank = true, chernobog = true, barrage = true,
+    insurgent = true, insurgent2 = true, insurgent3 = true,
     apc = true, scarab = true, scarab2 = true, scarab3 = true, halftrack = true,
-    nightshark = true, barrage = true, menacer = true, oppressor = true, oppressor2 = true,
+    nightshark = true, menacer = true, oppressor = true, oppressor2 = true,
     deluxo = true, ruiner2 = true, ruiner3 = true, tank = true, wastelander = true,
     technical = true, technical2 = true, technical3 = true,
+    vigilante = true, scramjet = true, toreador = true, stromberg = true,
+    voltic2 = true, thruster = true, rcbandito = true, kuruma2 = true,
+    tampa3 = true, caracara2 = true, dune3 = true, dune4 = true, dune5 = true,
+    jb7002 = true, boxville5 = true, stockade4 = true, caracara3 = true,
+    deathbike = true, deathbike2 = true, deathbike3 = true,
+    baller5 = true, baller6 = true,
+    issi4 = true, issi5 = true, issi6 = true,
+    dominator4 = true, impaler2 = true, impaler3 = true, impaler4 = true,
+    imperator = true, imperator2 = true, imperator3 = true,
+    zr380 = true, zr3802 = true, zr3803 = true,
+    bruiser = true, bruiser2 = true, bruiser3 = true,
+    brutus = true, brutus2 = true, brutus3 = true,
+    cerberus = true, cerberus2 = true, cerberus3 = true,
+    slamvan4 = true, slamvan5 = true, slamvan6 = true,
 }
 
 local function civilianCategoryAllowed(cat)
@@ -136,9 +151,6 @@ local function isModelBlockedForCivilianShop(model, baseCategory)
         return true
     end
     if lower:find('weapon', 1, true) or lower:find('gun', 1, true) then
-        return true
-    end
-    if lower:find('widebody', 1, true) then
         return true
     end
 

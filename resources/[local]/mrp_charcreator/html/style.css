@@ -1,10 +1,10 @@
 :root {
-  --cc-glass: rgba(18, 12, 32, 0.48);
-  --cc-glass-strong: rgba(22, 14, 38, 0.62);
-  --cc-border: rgba(168, 85, 247, 0.34);
-  --cc-violet: #a855f7;
-  --cc-violet-lit: #c084fc;
-  --cc-violet-dim: rgba(168, 85, 247, 0.16);
+  --cc-glass: var(--surface);
+  --cc-glass-strong: var(--surface-active);
+  --cc-border: var(--primary-border);
+  --cc-violet: var(--primary);
+  --cc-violet-lit: var(--primary-hover);
+  --cc-violet-dim: var(--primary-soft);
   --cc-text: #f4efff;
   --cc-muted: #a89bc8;
   --cc-radius: 16px;
@@ -43,7 +43,7 @@ html, body {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 55% 80% at 18% 50%, rgba(124, 58, 237, 0.14), transparent 72%),
+    radial-gradient(ellipse 55% 80% at 18% 50%, var(--primary-soft), transparent 72%),
     linear-gradient(
       100deg,
       rgba(10, 6, 20, 0.42) 0%,
@@ -442,7 +442,7 @@ input[type="range"]::-moz-range-thumb {
 }
 .btn:hover { transform: translateY(-1px); }
 .btn.primary {
-  background: linear-gradient(135deg, #9333ea, #7c3aed);
+  background: var(--accent-grad);
   color: #fff;
   box-shadow: 0 4px 24px rgba(124, 58, 237, 0.45);
 }

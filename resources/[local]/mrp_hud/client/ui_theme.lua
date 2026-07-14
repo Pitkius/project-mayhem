@@ -51,6 +51,17 @@ local function contrastText(primary)
     return relativeLuminance(primary) > 0.58 and '#0f0720' or '#ffffff'
 end
 
+local function surfaceFromPrimary(hex, alpha)
+    local r, g, b = hexToRgb(hex)
+    alpha = alpha or 0.72
+    return ('rgba(%d,%d,%d,%.3f)'):format(
+        clamp(math.floor(r * 0.07 + 8), 0, 255),
+        clamp(math.floor(g * 0.05 + 6), 0, 255),
+        clamp(math.floor(b * 0.12 + 10), 0, 255),
+        alpha
+    )
+end
+
 --- @param resolved table resolveHudColors() rezultatas
 --- @param colorKey string
 function BuildPlayerTheme(resolved, colorKey)
@@ -68,8 +79,8 @@ function BuildPlayerTheme(resolved, colorKey)
         primaryGlow = resolved.glow or hexAlpha(primary, 0.52),
         primaryText = contrastText(primary),
         background = hexAlpha(primary, 0.14),
-        surface = 'rgba(18, 10, 32, 0.72)',
-        surfaceActive = hexAlpha(primary, 0.82),
+        surface = surfaceFromPrimary(primary, 0.72),
+        surfaceActive = hexAlpha(darken(primary, 0.22), 0.82),
         text = textColor,
         mutedText = secondary,
         colorKey = colorKey or 'violet',
