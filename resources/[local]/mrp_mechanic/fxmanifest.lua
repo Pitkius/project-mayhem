@@ -4,15 +4,11 @@ lua54 'yes'
 
 name 'mrp_mechanic'
 description 'LS mechanikų bazė – sandėlis, rūbinė, remonto vietos, garažas/salonas'
-version '1.0.0'
+version '1.1.0'
 
-ui_page 'html/index.html'
+ui_page 'web/dist/index.html'
 
 files {
-    'html/index.html',
-    'html/style.css',
-    'html/app.js',
-    'html/shell.js',
     'web/dist/index.html',
 }
 
@@ -21,10 +17,10 @@ shared_scripts {
 }
 
 client_scripts {
+    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/main.lua',
     'client/doors.lua',
-    'client/bay_menu.lua',
-    'client/performance_ui.lua',
+    'client/workshop_ui.lua',
     'client/boss.lua',
     'client/vendor_debug.lua',
 }
@@ -36,3 +32,4 @@ server_scripts {
 }
 
 dependency 'qb-core'
+dependency 'mrp_hud'

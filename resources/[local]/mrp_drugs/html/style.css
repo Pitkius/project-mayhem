@@ -1,12 +1,22 @@
+@import url("nui://mrp_fonts/html/ui.css");
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+
+:root, .sch-box, .mg {
+  --mg-accent: var(--primary);
+  --mg-accent-2: var(--primary-active);
+  --mg-glow: var(--primary-glow);
+  --mg-level: var(--primary-hover);
+}
+
+body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; color: var(--text, #e9e4ff); }
 .hidden { display: none !important; }
 
 #app {
   position: fixed;
   inset: 5% 8%;
   background: linear-gradient(145deg, rgba(12, 8, 24, 0.97), rgba(20, 10, 35, 0.96));
-  border: 1px solid rgba(167, 139, 250, 0.45);
+  border: 1px solid var(--primary-border);
   border-radius: 14px;
   color: #e9e4ff;
   display: flex;
@@ -43,7 +53,7 @@ body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; 
 }
 .head h1 { font-size: 20px; letter-spacing: 0.14em; font-weight: 700; }
 .head h1 span { color: #c084fc; }
-.sub { color: #a78bfa; font-size: 13px; margin-top: 4px; }
+.sub { color: var(--primary); font-size: 13px; margin-top: 4px; }
 
 .layout { display: flex; flex: 1; min-height: 0; }
 .list {
@@ -134,7 +144,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .btn.secondary {
   background: rgba(30, 27, 46, 0.95);
   color: #e9d5ff;
-  border: 1px solid rgba(167, 139, 250, 0.45);
+  border: 1px solid var(--primary-border);
 }
 .btn.primary:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn.ghost { background: transparent; color: #c4b5fd; border: 1px solid rgba(167, 139, 250, 0.35); }
@@ -306,10 +316,10 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   backdrop-filter: blur(6px);
 }
 .sch-box {
-  --mg-accent: #a78bfa;
-  --mg-accent-2: #7c3aed;
-  --mg-glow: rgba(167, 139, 250, 0.35);
-  --mg-level: #a78bfa;
+  --mg-accent: var(--primary);
+  --mg-accent-2: var(--primary-active);
+  --mg-glow: var(--primary-glow);
+  --mg-level: var(--primary-hover);
   width: min(680px, 96vw);
   background: linear-gradient(155deg, rgba(18, 10, 32, 0.98) 0%, rgba(8, 4, 18, 0.99) 100%);
   border: 1px solid color-mix(in srgb, var(--mg-accent) 45%, transparent);

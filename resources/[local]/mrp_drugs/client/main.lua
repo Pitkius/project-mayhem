@@ -23,6 +23,9 @@ local closeActiveMinigame
 local openMaterialShop, openWeaponPartsMenu, openWeedSupplyShop, openFreeDrugShop, openLsQuickBuyMenu, openTestMenu
 
 local function nui(msg, data)
+    if msg == 'open' or msg == 'darknetOpen' or msg == 'ampQuizShow' or msg == 'minigameSchedule' then
+        if PushPlayerThemeToNui then PushPlayerThemeToNui() end
+    end
     SendNUIMessage({ action = msg, data = data or {} })
 end
 

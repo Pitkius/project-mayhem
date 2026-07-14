@@ -1,87 +1,245 @@
-@import url("nui://mrp_fonts/html/ui.css");
-
-:root {
-    /* Colors */
-    --md-primary: #f44336;
-    --md-on-primary: #ffffff;
-    --md-error: #b3261e;
-    --md-on-error: #ffffff;
-    --md-success: #386a20;
-    --md-on-success: #ffffff;
-    --md-success-container: #b6f397;
-    --md-on-success-container: #0c2000;
-    --md-surface: #1c1b1f;
-    --md-on-surface: #e6e1e5;
-    --md-surface-container: #211f26;
-    --md-surface-container-high: #2b2930;
-    --md-surface-container-highest: #36343b;
-    --md-shadow: rgba(0, 0, 0, 0.15);
-    --md-radius-small: 8px;
-
-    /* Typography */
-    --md-typescale-label-medium-size: 12px;
-    --font-primary: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
-    --font-weight-regular: 400;
-    --font-weight-medium: 500;
-    --font-weight-bold: 700;
-
-    /* Elevation */
-    --md-elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
-}
-
-body {
-    overflow: hidden;
-    font-family: var(--font-primary);
-}
-
-#target-eye {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    display: none;
-    transform: translateY(-50%) translateX(-50%);
-    font-size: 2vh;
-    text-shadow: 0 2px 4px var(--md-shadow);
-    transition: color 0.3s ease;
-}
-
-#target-label-wrapper {
-    position: absolute;
-    display: flex;
-    align-content: center;
-    justify-content: center;
-    flex-direction: row;
-    left: 51.5%;
-    width: fit-content;
-    height: 100%;
-    top: 49.25%;
-}
-
-#target-label {
-    list-style: none;
-    font-size: var(--md-typescale-label-medium-size, 1vh);
-    font-weight: var(--font-weight-medium, bold);
-    font-family: var(--font-primary, Arial, sans-serif);
-    color: var(--md-on-surface);
-    user-select: none;
-    white-space: nowrap;
-    text-shadow: 0 2px 4px var(--md-shadow);
-}
-
-[id^="target-option-"] {
-    margin-bottom: 0.2vh;
-    padding: 0.45rem;
-    background: var(--md-surface-container-high);
-    color: var(--md-on-surface);
-    box-shadow: var(--md-elevation-1);
-    transition: transform 0.3s ease, background-color 0.2s ease;
-}
-
-[id^="target-option-"]:hover {
-    background: var(--md-surface-container-highest);
-    transform: translateX(10px);
-}
-
-.target-success {
-    color: var(--md-success, #386a20) !important;
-}
+@import url("nui://mrp_fonts/html/ui.css");
+
+:root {
+    --font-primary: "Noto Sans LT", "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: var(--font-primary);
+    user-select: none;
+    color: var(--text);
+}
+
+.hidden { display: none !important; }
+
+#radial-root {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+}
+
+#radial-root.interactive {
+    pointer-events: auto;
+}
+
+.radial-backdrop {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(8, 4, 16, 0.18) 0%, var(--background) 100%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+#radial-root.visible .radial-backdrop {
+    opacity: 1;
+}
+
+#radial-stage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2vh;
+}
+
+#radial-wheel {
+    position: relative;
+    width: min(42vmin, 420px);
+    height: min(42vmin, 420px);
+}
+
+#radial-segments {
+    position: absolute;
+    inset: 0;
+}
+
+.radial-seg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 108px;
+    height: 108px;
+    margin: -54px 0 0 -54px;
+    transform-origin: 54px 54px;
+    border: none;
+    background: transparent;
+    cursor: default;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+#radial-root.visible .radial-seg {
+    opacity: 1;
+}
+
+.radial-seg__inner {
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    width: 92px;
+    margin-left: -46px;
+    padding: 0.55rem 0.4rem;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--primary-border);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.radial-seg__icon {
+    font-size: 1.15rem;
+    color: var(--primary-hover);
+}
+
+.radial-seg__label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--text);
+    text-align: center;
+    line-height: 1.2;
+    max-width: 84px;
+    word-wrap: break-word;
+}
+
+.radial-seg__sub {
+    font-size: 0.52rem;
+    color: var(--muted-text);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+#radial-root.interactive .radial-seg {
+    cursor: pointer;
+}
+
+#radial-root.interactive .radial-seg:hover .radial-seg__inner,
+#radial-root.interactive .radial-seg.active .radial-seg__inner {
+    background: var(--surface-active);
+    border-color: var(--primary-hover);
+    box-shadow: 0 0 18px var(--primary-glow), 0 0 4px var(--primary-glow);
+    transform: scale(1.08);
+}
+
+#radial-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 96px;
+    height: 96px;
+    margin: -48px 0 0 -48px;
+    border-radius: 50%;
+    border: 2px solid var(--primary-hover);
+    background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--primary) 92%, white), color-mix(in srgb, var(--primary-active) 88%, black));
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    cursor: default;
+    z-index: 5;
+    box-shadow: 0 0 24px var(--primary-glow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#radial-root.interactive #radial-center {
+    cursor: pointer;
+}
+
+#radial-root.visible #radial-center {
+    animation: centerPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes centerPulse {
+    0%, 100% { box-shadow: 0 0 20px var(--primary-glow); }
+    50% { box-shadow: 0 0 32px var(--primary-glow); }
+}
+
+.radial-center__ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 1px solid var(--primary-border);
+    pointer-events: none;
+}
+
+#radial-center-icon {
+    font-size: 1.35rem;
+    color: var(--primary-text);
+}
+
+#radial-center-label {
+    font-size: 0.58rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.15;
+    max-width: 72px;
+    color: var(--muted-text);
+}
+
+#radial-center-action {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.7rem;
+    opacity: 0.85;
+    color: var(--primary-text);
+}
+
+.radial-hint {
+    margin: 0;
+    font-size: 0.72rem;
+    color: color-mix(in srgb, var(--muted-text) 75%, transparent);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+#radial-root.interactive .radial-hint {
+    opacity: 1;
+}
+
+#radial-root.opening #radial-wheel {
+    animation: wheelIn 0.22s ease-out;
+}
+
+#radial-root.closing #radial-wheel {
+    animation: wheelOut 0.18s ease-in forwards;
+}
+
+@keyframes wheelIn {
+    from { opacity: 0; transform: scale(0.82); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes wheelOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.88); }
+}
+
+#radial-root.visible:not(.interactive) .radial-seg__inner {
+    opacity: 0.72;
+}
+
+#radial-root.visible:not(.interactive) .radial-seg {
+    pointer-events: none;
+}
+
+@media (max-width: 1366px) {
+    .radial-seg { width: 96px; height: 96px; margin: -48px 0 0 -48px; transform-origin: 48px 48px; }
+    .radial-seg__inner { width: 84px; margin-left: -42px; }
+    #radial-center { width: 84px; height: 84px; margin: -42px 0 0 -42px; }
+}
+

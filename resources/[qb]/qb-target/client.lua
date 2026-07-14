@@ -31,6 +31,72 @@ local pcall = pcall
 local CheckOptions = CheckOptions
 local Bones = Load('bones')
 local listSprite = {}
+local currentTargetEntity = nil
+local currentTargetZoneName = nil
+
+local function jobHintFromOption(data)
+	if not data or not data.job then return nil end
+	if type(data.job) == 'string' then return data.job end
+	if type(data.job) == 'table' then
+		for k in pairs(data.job) do return tostring(k) end
+	end
+	return nil
+end
+
+local function inferZoneTitle(zoneName)
+	if not zoneName or zoneName == '' then return 'Sąveika', 'fas fa-hand-pointer' end
+	local l = zoneName:lower()
+	if l:find('atm') or l:find('bankomat') then return 'Bankomatas', 'fas fa-credit-card' end
+	if l:find('bank') then return 'Bankas', 'fas fa-university' end
+	if l:find('shop') or l:find('store') or l:find('parduotuv') then return 'Parduotuvė', 'fas fa-store' end
+	if l:find('garage') or l:find('garaz') or l:find('garaž') then return 'Garažas', 'fas fa-warehouse' end
+	if l:find('stash') or l:find('sand') then return 'Sandėlis', 'fas fa-box' end
+	if l:find('door') or l:find('dur') or l:find('vart') then return 'Durys', 'fas fa-door-open' end
+	if l:find('craft') or l:find('stakl') then return 'Darbo stotis', 'fas fa-hammer' end
+	if l:find('mech') or l:find('tuning') or l:find('repair') then return 'Mechaniko įranga', 'fas fa-wrench' end
+	if l:find('police') or l:find('ltpd') or l:find('pd_') then return 'Policijos įranga', 'fas fa-shield-halved' end
+	if l:find('ambulance') or l:find('ems') or l:find('medic') then return 'Medicinos įranga', 'fas fa-kit-medical' end
+	return zoneName, 'fas fa-map-marker-alt'
+end
+
+local function safeIsPedAPlayer(entity)
+	if not isValidEntity(entity) then return false end
+	local ok, result = pcall(IsPedAPlayer, entity)
+	return ok and result == true
+end
+
+local function BuildTargetContext(entity, zoneName)
+	local ctx = {
+		title = 'Sąveika',
+		icon = 'fas fa-hand-pointer',
+		entityType = 0,
+		isPlayer = false,
+		zoneName = zoneName,
+	}
+	if zoneName then
+		ctx.title, ctx.icon = inferZoneTitle(zoneName)
+		return ctx
+	end
+	if entity and isValidEntity(entity) then
+		local ok, et = pcall(GetEntityType, entity)
+		ctx.entityType = ok and et or 0
+		ctx.isPlayer = safeIsPedAPlayer(entity)
+		if ctx.isPlayer then
+			ctx.title = 'Bendrauti su žaidėju'
+			ctx.icon = 'fas fa-user'
+		elseif ctx.entityType == 2 then
+			ctx.title = 'Transporto priemonė'
+			ctx.icon = 'fas fa-car'
+		elseif ctx.entityType == 1 then
+			ctx.title = 'NPC'
+			ctx.icon = 'fas fa-user'
+		else
+			ctx.title = 'Objektas'
+			ctx.icon = 'fas fa-cube'
+		end
+	end
+	return ctx
+end
 
 local function zoneIsUsable(zone)
 	return zone and not zone.destroyed and zone.name ~= nil and Zones[zone.name] == zone
@@ -143,12 +209,6 @@ local function safeGetEntityModel(entity)
 	return (ok and model) or 0
 end
 
-local function safeIsPedAPlayer(entity)
-	if not isValidEntity(entity) then return false end
-	local ok, result = pcall(IsPedAPlayer, entity)
-	return ok and result == true
-end
-
 local function getZoneCentre(zone)
 	if type(zone.center) == 'vector2' then
 		return vector3(zone.center.x, zone.center.y, zone.maxZ or 0.0)
@@ -254,7 +314,11 @@ local function EnableNUI(options)
 	SetNuiFocus(true, true)
 	SetNuiFocusKeepInput(true)
 	hasFocus = true
-	SendNUIMessage({ response = 'validTarget', data = options })
+	SendNUIMessage({
+		response = 'validTarget',
+		data = options,
+		context = BuildTargetContext(currentTargetEntity, currentTargetZoneName),
+	})
 end
 
 exports('EnableNUI', EnableNUI)
@@ -312,7 +376,9 @@ local function SetupOptions(datatable, entity, distance, isZone)
 			nuiData[slot] = {
 				icon = data.icon,
 				targeticon = data.targeticon,
-				label = data.label
+				label = data.label,
+				category = data.category,
+				jobHint = jobHintFromOption(data),
 			}
 			if not isZone then
 				sendDistance[data.distance] = true
@@ -337,7 +403,14 @@ local function CheckEntity(flag, datatable, entity, distance)
 		return
 	end
 	success = true
-	SendNUIMessage({ response = 'foundTarget', data = nuiData[slot].targeticon, options = nuiData })
+	currentTargetEntity = entity
+	currentTargetZoneName = nil
+	SendNUIMessage({
+		response = 'foundTarget',
+		data = nuiData[slot].targeticon,
+		options = nuiData,
+		context = BuildTargetContext(entity, nil),
+	})
 	DrawOutlineEntity(entity, true)
 	while targetActive and success do
 		if not isValidEntity(entity) then
@@ -503,7 +576,14 @@ local function EnableTarget()
 						local slot = SetupOptions(datatable, entity, distance)
 						if next(nuiData) then
 							success = true
-							SendNUIMessage({ response = 'foundTarget', data = nuiData[slot].targeticon, options = nuiData })
+							currentTargetEntity = entity
+							currentTargetZoneName = nil
+							SendNUIMessage({
+								response = 'foundTarget',
+								data = nuiData[slot].targeticon,
+								options = nuiData,
+								context = BuildTargetContext(entity, nil),
+							})
 							DrawOutlineEntity(entity, true)
 							while targetActive and success do
 								local coords2, dist, entity2 = RaycastCamera(flag)
@@ -606,7 +686,14 @@ local function EnableTarget()
 					local slot = SetupOptions(closestZone.targetoptions.options, entity, closestDis or distance, true)
 					if next(nuiData) then
 						success = true
-						SendNUIMessage({ response = 'foundTarget', data = nuiData[slot].targeticon, options = nuiData })
+						currentTargetEntity = entity
+						currentTargetZoneName = closestZone.name
+						SendNUIMessage({
+							response = 'foundTarget',
+							data = nuiData[slot].targeticon,
+							options = nuiData,
+							context = BuildTargetContext(entity, closestZone.name),
+						})
 						if Config.DrawSprite then
 							listSprite[closestZone.name].success = true
 						end
@@ -1404,6 +1491,7 @@ RegisterNUICallback('selectTarget', function(option, cb)
 	SetNuiFocus(false, false)
 	SetNuiFocusKeepInput(false)
 	targetActive, success, hasFocus = false, false, false
+	SendNUIMessage({ response = 'closeTarget' })
 	if not sendData or not next(sendData) then
 		table_wipe(sendData)
 		return

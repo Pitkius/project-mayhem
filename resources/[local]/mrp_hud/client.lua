@@ -273,6 +273,17 @@ local function loadPresetSettings()
                 for k, v in pairs(p.show) do
                     p.show[k] = decoded.show[k] == nil and v or (decoded.show[k] == true)
                 end
+                if decoded.customColors and type(decoded.customColors) == 'table' then
+                    local cc = decoded.customColors
+                    if cc.primary and cc.primary ~= '' then
+                        p.customColors = {
+                            primary = tostring(cc.primary),
+                            secondary = tostring(cc.secondary or cc.primary),
+                            accent = tostring(cc.accent or cc.primary),
+                            text = tostring(cc.text or '#f8fafc'),
+                        }
+                    end
+                end
                 presetSettings[i] = p
             else
                 presetSettings[i] = deepCopy(DEFAULT_PRESET)
@@ -347,6 +358,8 @@ local function sendHudTheme()
     local resolved = resolveHudColors(s)
     local colorKey = s.color or 'violet'
     local tiles = TILE_COLORS[colorKey == 'custom' and 'violet' or colorKey] or TILE_COLORS.violet
+    local playerTheme = BuildPlayerTheme(resolved, colorKey)
+    SetPlayerTheme(playerTheme)
     SendNUIMessage({
         action = 'theme',
         preset = hudPreset,
@@ -364,6 +377,7 @@ local function sendHudTheme()
         tileColors = tiles,
         vehicleUiAccent = (resolved.customColors and resolved.customColors.accent) or VEHICLE_PANEL_ACCENT,
     })
+    SendNUIMessage({ action = 'applyTheme', theme = playerTheme })
 end
 
 local function pushHud()

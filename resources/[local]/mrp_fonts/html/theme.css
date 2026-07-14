@@ -1,0 +1,21 @@
+/* Numatytoji žaidėjo UI tema (violetinė) — perrašoma per applyPlayerTheme() */
+:root {
+    --primary: #a78bfa;
+    --primary-hover: #c4b5fd;
+    --primary-active: #7c3aed;
+    --primary-soft: rgba(167, 139, 250, 0.18);
+    --primary-border: rgba(192, 132, 252, 0.35);
+    --primary-glow: rgba(167, 139, 250, 0.52);
+    --primary-text: #ffffff;
+    --background: rgba(4, 2, 10, 0.42);
+    --surface: rgba(18, 10, 32, 0.72);
+    --surface-active: rgba(88, 28, 135, 0.82);
+    --text: #f8f4ff;
+    --muted-text: #c4b5fd;
+
+    /* Suderinamumas su mrp_hud kintamaisiais */
+    --accent-fill: var(--primary);
+    --accent-soft: var(--muted-text);
+    --accent-glow: var(--primary-glow);
+    --accent-highlight: var(--primary-active);
+}

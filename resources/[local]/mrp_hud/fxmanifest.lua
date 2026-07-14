@@ -22,7 +22,9 @@ files {
 }
 
 client_scripts {
+    'client/ui_theme.lua',
     'client.lua',
+    'client/theme_nui_consumer.lua',
 }
 
 server_scripts {
@@ -32,5 +34,7 @@ server_scripts {
 exports {
     'OpenVehicleQuickMenu',
     'ToggleVehicleControlPanel',
+    'GetPlayerTheme',
+    'BuildPlayerTheme',
 }
 

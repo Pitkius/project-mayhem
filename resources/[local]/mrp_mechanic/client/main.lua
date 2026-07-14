@@ -418,19 +418,9 @@ CreateThread(function()
             options = {
                 {
                     type = 'client',
-                    event = 'mrp_mechanic:client:openPerformanceWorkshop',
-                    icon = 'fas fa-gauge-high',
-                    label = ('Performance dalys #%s'):format(i),
-                    bayIndex = i,
-                    canInteract = function()
-                        return isMechanicOnDuty()
-                    end,
-                },
-                {
-                    type = 'client',
                     event = 'mrp_mechanic:client:openBayWorkshop',
                     icon = 'fas fa-wrench',
-                    label = ('Kosmetika / kėbulas #%s'):format(i),
+                    label = ('Dirbtuvės #%s (tuningas / kėbulas)'):format(i),
                     bayIndex = i,
                     canInteract = function()
                         return isMechanicOnDuty()

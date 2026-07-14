@@ -53,7 +53,8 @@ export function App() {
       const drugTheme = themeFor(payload.drug);
       document.documentElement.style.setProperty(
         '--drug-accent',
-        `#${drugTheme.accent.toString(16).padStart(6, '0')}`,
+        getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()
+          || `#${drugTheme.accent.toString(16).padStart(6, '0')}`,
       );
 
       const host = hostRef.current;
@@ -116,6 +117,12 @@ export function App() {
         void startSession(msg.data);
       } else if (msg.action === 'close') {
         teardown();
+      } else if (msg.action === 'applyTheme') {
+        const w = window as Window & { applyPlayerTheme?: (theme: unknown) => void };
+        w.applyPlayerTheme?.(msg.theme);
+        if (msg.theme?.primary) {
+          document.documentElement.style.setProperty('--drug-accent', msg.theme.primary);
+        }
       }
     });
     // Tell the parent bridge the listener is installed so any payload posted

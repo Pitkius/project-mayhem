@@ -2,7 +2,7 @@
   --text: #e8eef6;
   --text-dim: #8b96a6;
   --neon: #22d3ee;
-  --drug-accent: var(--neon);
+  --drug-accent: var(--primary, var(--neon));
   --panel: rgba(15, 20, 28, 0.86);
   --border: rgba(86, 94, 104, 0.4);
   font-family: Inter, 'Segoe UI', system-ui, sans-serif;
@@ -191,7 +191,7 @@ kbd {
   height: 34px;
   margin: 0 auto 14px;
   border: 3px solid rgba(255, 255, 255, 0.15);
-  border-top-color: var(--neon);
+  border-top-color: var(--primary, var(--neon));
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

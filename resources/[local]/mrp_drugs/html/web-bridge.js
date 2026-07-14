@@ -107,6 +107,14 @@
     }
   }
 
+  // Perduodame žaidėjo temą į React/Pixi iframe.
+  window.addEventListener('message', (e) => {
+    const msg = e.data || {};
+    if (msg.action === 'applyTheme' && msg.theme) {
+      postToIframe({ source: 'mrp_drugs', action: 'applyTheme', theme: msg.theme });
+    }
+  });
+
   // Klausom iframe pranešimų (rezultatas / ready).
   window.addEventListener('message', (e) => {
     if (!iframe || e.source !== iframe.contentWindow) return;

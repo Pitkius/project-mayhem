@@ -63,6 +63,7 @@ shared_scripts {
 }
 
 client_scripts {
+    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/progress.lua',
     'client/drug_sell_anim.lua',
     'client/schedule_anim.lua',
@@ -110,4 +111,5 @@ dependencies {
     'oxmysql',
     'mrp_gangs',
     'mrp_dispatch',
+    'mrp_hud',
 }
