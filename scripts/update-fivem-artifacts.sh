@@ -9,10 +9,20 @@ ARTIFACTS_BASE="https://runtime.fivem.net/artifacts/fivem/build_proot_linux/mast
 echo "[artifacts] server dir: ${SERVER_DIR}"
 test -d "${SERVER_DIR}"
 
-if pgrep -f "FXServer" >/dev/null 2>&1; then
-  echo "[artifacts] FXServer veikia — sustabdyk serverį prieš atnaujinimą."
-  exit 1
-fi
+wait_for_fx_stop() {
+  local i
+  for i in $(seq 1 30); do
+    if ! pgrep -f "FXServer" >/dev/null 2>&1; then
+      return 0
+    fi
+    echo "[artifacts] Laukiama kol FXServer sustos (${i}/30)..."
+    sleep 2
+  done
+  echo "[artifacts] FXServer vis dar veikia po 60s — bandome tęsti."
+  return 0
+}
+
+wait_for_fx_stop
 
 html="$(curl -fsSL "${ARTIFACTS_BASE}")"
 build_folder="$(printf '%s' "${html}" | grep -oE 'panel-block is-active[^>]*href="\./([0-9]+-[a-f0-9]+)/fx\.tar\.xz"' | head -1 | grep -oE '[0-9]+-[a-f0-9]+' || true)"
@@ -38,9 +48,7 @@ tar -xf "${archive}" -C "${extract_dir}"
 artifact_root="${extract_dir}"
 if [ -f "${extract_dir}/alpine/opt/cfx-server/FXServer" ]; then
   artifact_root="${extract_dir}"
-elif fx_path="$(find "${extract_dir}" -name FXServer -type f 2>/dev/null | head -1)"; then
-  artifact_root="$(dirname "${fx_path}")"
-  # proot layout: copy whole extract root
+elif find "${extract_dir}" -name FXServer -type f 2>/dev/null | head -1 | grep -q .; then
   artifact_root="${extract_dir}"
 fi
 

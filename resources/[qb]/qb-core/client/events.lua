@@ -126,7 +126,14 @@ RegisterNetEvent('QBCore:Command:SpawnVehicle', function(vehName)
     local ped = PlayerPedId()
     local hash = joaat(vehName)
     local veh = GetVehiclePedIsUsing(ped)
-    if not IsModelInCdimage(hash) then return end
+    if not IsModelInCdimage(hash) then
+        QBCore.Functions.Notify(
+            ('Modelis „%s“ neprieinamas. Tavo GTA build: %s (reikia 3788 + Title Update 1.73).'):format(vehName or '?', GetGameBuildNumber()),
+            'error',
+            9000
+        )
+        return
+    end
     RequestModel(hash)
     while not HasModelLoaded(hash) do
         Wait(0)

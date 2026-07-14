@@ -35,13 +35,33 @@ jobs:
 
           echo "[deploy] Atnaujinami FXServer artifacts (3788 palaikymui)..."
           sudo -n systemctl stop fivem-txadmin || true
-          sleep 2
-          bash "$REPO_DIR/scripts/update-fivem-artifacts.sh" "$SERVER_DIR" || echo "[deploy] WARNING: artifact update failed — rankiniu būdu atnaujink FXServer"
+          sleep 5
+          if ! bash "$REPO_DIR/scripts/update-fivem-artifacts.sh" "$SERVER_DIR"; then
+            echo "[deploy] ERROR: artifact atnaujinimas nepavyko — Kortz auto neveiks be naujausio FXServer!"
+          fi
+          if [ "$SERVER_DIR" != "$REPO_DIR" ] && [ -d "$REPO_DIR/alpine" ]; then
+            bash "$REPO_DIR/scripts/update-fivem-artifacts.sh" "$REPO_DIR" || echo "[deploy] REPO artifact update skipped/failed"
+          fi
 
-          sudo -n mkdir -p "$SERVER_DIR/resources" "$SERVER_DIR/cfg"
-          sudo -n rsync -a --delete "$REPO_DIR/resources/" "$SERVER_DIR/resources/"
-          sudo -n rsync -a --delete --exclude '00_base.cfg' "$REPO_DIR/cfg/" "$SERVER_DIR/cfg/"
-          sudo -n cp "$REPO_DIR/server.cfg" "$SERVER_DIR/server.cfg"
+          deploy_to() {
+            local target="$1"
+            [ -d "$target" ] || return 0
+            echo "[deploy] Sync -> $target"
+            sudo -n mkdir -p "$target/resources" "$target/cfg"
+            sudo -n rsync -a --delete "$REPO_DIR/resources/" "$target/resources/"
+            sudo -n rsync -a --delete --exclude '00_base.cfg' "$REPO_DIR/cfg/" "$target/cfg/"
+            sudo -n cp "$REPO_DIR/server.cfg" "$target/server.cfg"
+          }
+
+          deploy_to "$SERVER_DIR"
+          if [ "$SERVER_DIR" != "$REPO_DIR" ]; then
+            deploy_to "$REPO_DIR"
+          fi
+
+          if ! grep -q 'sv_enforceGameBuild 3788' "$SERVER_DIR/server.cfg"; then
+            echo "[deploy] ERROR: server.cfg neturi sv_enforceGameBuild 3788!"
+            exit 1
+          fi
 
           # Keep runtime C++ libs discoverable for FXServer on Debian hosts.
           sudo -n mkdir -p "$SERVER_DIR/alpine/lib"
