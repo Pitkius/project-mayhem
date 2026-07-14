@@ -5,6 +5,7 @@ local mechanicUiVeh = nil
 local mechanicBayIndex = nil
 local mechanicPlate = nil
 local vehWasFrozen = false
+local vehEngineWasOn = false
 
 local PAINT_TYPES = {
     { paintType = 0, label = 'Klasikinės', txt = 'Standartinis korpusinis dažymas' },
@@ -119,10 +120,13 @@ local function getBayVehicle()
 end
 
 local function closeMechanicUi()
-    if mechanicUiVeh and DoesEntityExist(mechanicUiVeh) and vehWasFrozen then
-        FreezeEntityPosition(mechanicUiVeh, false)
+    if mechanicUiVeh and DoesEntityExist(mechanicUiVeh) then
+        -- Atstatome būseną prieš atidarant meniu (mes visada užšaldome atidarymo metu).
+        FreezeEntityPosition(mechanicUiVeh, vehWasFrozen)
+        SetVehicleEngineOn(mechanicUiVeh, vehEngineWasOn, true, false)
     end
     vehWasFrozen = false
+    vehEngineWasOn = false
     mechanicUiOpen = false
     mechanicUiVeh = nil
     mechanicBayIndex = nil
@@ -158,6 +162,7 @@ local function openWorkshopNui(bayIndex, veh, plate)
 
     if DoesEntityExist(veh) then
         vehWasFrozen = IsEntityPositionFrozen(veh)
+        vehEngineWasOn = GetIsVehicleEngineRunning(veh)
         FreezeEntityPosition(veh, true)
         SetVehicleEngineOn(veh, false, true, true)
     end
@@ -198,11 +203,7 @@ RegisterNetEvent('mrp_mechanic:client:openBayWorkshop', function(data)
     openWorkshopNui(bayIndex, veh, plate)
 end)
 
--- Seni įvykiai paliekami suderinamumui — atidaro tą patį NUI.
-RegisterNetEvent('mrp_mechanic:client:openPerformanceWorkshop', function(data)
-    TriggerEvent('mrp_mechanic:client:openBayWorkshop', data)
-end)
-
+-- Seni įvykiai paliekami suderinamumui.
 RegisterNetEvent('mrp_mechanic:client:openBodyWorkshop', function(data)
     TriggerEvent('mrp_mechanic:client:openBayWorkshop', data)
 end)
@@ -338,4 +339,9 @@ CreateThread(function()
             Wait(400)
         end
     end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if mechanicUiOpen then closeMechanicUi() end
 end)

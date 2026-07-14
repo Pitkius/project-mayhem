@@ -7,10 +7,16 @@ local KIT_PERF = {} --- [vehicle] = { sig, orig }
 local INGEST_SCHEDULED = {} --- [vehicle] = true
 
 local FLEET_HASHES = {}
+local FLEET_CAR_HASHES = {}
 local function rebuildFleetHashes()
     FLEET_HASHES = {}
+    FLEET_CAR_HASHES = {}
     for _, v in ipairs(Config.FleetVehicles or {}) do
-        if v and v.model then FLEET_HASHES[joaat(v.model)] = true end
+        if v and v.model then
+            local h = joaat(v.model)
+            FLEET_HASHES[h] = true
+            FLEET_CAR_HASHES[h] = true
+        end
     end
     for _, v in ipairs(Config.FleetHelicopters or {}) do
         if v and v.model then FLEET_HASHES[joaat(v.model)] = true end
@@ -85,9 +91,15 @@ local function modelIsFleet(hash)
     return FLEET_HASHES[hash] == true
 end
 
+local function modelIsFleetCar(hash)
+    return FLEET_CAR_HASHES[hash] == true
+end
+
 local function vehicleSupportsNativeEmergency(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     local hash = GetEntityModel(vehicle)
+    -- MRPD addon automobiliai turi carcols, bet SetVehicleSiren dažnai neveikia — šviesas piešia scriptas.
+    if modelIsFleetCar(hash) then return false end
     -- Kai kuriuose artefaktuose native neeksportuotas – nekrentam į nil call.
     for _, name in ipairs({ 'IsThisModelEmergencyVehicle', 'IsThisModelAnEmergencyVehicle' }) do
         local fn = rawget(_G, name)
@@ -99,7 +111,7 @@ local function vehicleSupportsNativeEmergency(vehicle)
     if Ec.trustVehicleClassEmergency == true and GetVehicleClass(vehicle) == 18 then
         return true
     end
-    return modelIsFleet(hash)
+    return modelIsFleet(hash) and not modelIsFleetCar(hash)
 end
 
 local function getDriverVehicleLocal()
@@ -168,6 +180,21 @@ local function readVehicleStateBag(vehicle)
     mode = mode:lower()
     local kit = bag.ltPdKit == true or bag.ltEmsKit == true
     return mode, kit
+end
+
+local function vehicleCanUseSirenMenu(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    if modelIsFleet(GetEntityModel(vehicle)) then return true end
+    if vehicleSupportsNativeEmergency(vehicle) then return true end
+    local _, kit = readVehicleStateBag(vehicle)
+    return kit == true
+end
+
+local function vehicleUsesScriptFlash(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    if modelIsFleetCar(GetEntityModel(vehicle)) then return true end
+    local _, kit = readVehicleStateBag(vehicle)
+    return kit == true and not vehicleSupportsNativeEmergency(vehicle)
 end
 
 local function loadModel(hash)
@@ -556,8 +583,10 @@ local function ingestFromEntity(vehicle)
     if not vehicle or vehicle == 0 or not IsEntityAVehicle(vehicle) or not DoesEntityExist(vehicle) then return end
     local mode, kit = readVehicleStateBag(vehicle)
     local supportsNative = vehicleSupportsNativeEmergency(vehicle)
+    local scriptFlash = vehicleUsesScriptFlash(vehicle)
     TRACKED[vehicle] = TRACKED[vehicle] or {}
     TRACKED[vehicle].supportsNative = supportsNative
+    TRACKED[vehicle].scriptFlash = scriptFlash
     TRACKED[vehicle].mode = mode
     syncKitVisuals(vehicle)
 
@@ -646,7 +675,7 @@ CreateThread(function()
                 else
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     meta.mode = mode
-                    if (mode == 'lights' or mode == 'full') and meta.supportsNative ~= true then
+                    if (mode == 'lights' or mode == 'full') and meta.scriptFlash == true then
                         local vehCoords = GetEntityCoords(veh)
                         local dist = #(pCoords - vehCoords)
                         if dist <= drawDistance then
@@ -757,8 +786,7 @@ local function openSirenModesMenu()
     if not veh then
         return QBCore.Functions.Notify('Turi būti transporto salėje.', 'error')
     end
-    local _, kit = readVehicleStateBag(veh)
-    if (not vehicleSupportsNativeEmergency(veh)) and kit ~= true then
+    if not vehicleCanUseSirenMenu(veh) then
         local item = (Config.EmergencyVehicle or {}).kitItem or 'pd_emergency_kit'
         return QBCore.Functions.Notify(
             ('Ant įprastos TP pirmiau įdėk avarinę įrangą (itemas „%s“).'):format(item),
@@ -789,7 +817,7 @@ local function openKitMenu()
     if not veh then
         return QBCore.Functions.Notify('Turi būti vairo vietoje.', 'error')
     end
-    if vehicleSupportsNativeEmergency(veh) then
+    if vehicleSupportsNativeEmergency(veh) or modelIsFleet(GetEntityModel(veh)) then
         return QBCore.Functions.Notify('Šiai mašinai nereikia – jau tarnybinė arba turi sirenas.', 'error')
     end
     if GetResourceState('qb-menu') ~= 'started' then

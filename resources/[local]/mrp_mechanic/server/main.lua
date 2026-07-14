@@ -214,6 +214,49 @@ QBCore.Functions.CreateCallback('mrp_mechanic:server:canInstallUpgrade', functio
     cb({ ok = true, requiredItem = item })
 end)
 
+--- Performance UI: inventoriaus kiekiai montavimo panelėje
+QBCore.Functions.CreateCallback('mrp_mechanic:server:getPerformanceUiData', function(src, cb, bayIdx)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb(nil) end
+    local j = Player.PlayerData.job
+    if j.name ~= Config.JobName or not j.onduty then
+        return cb(nil)
+    end
+    if not nearRepairBay(src, bayIdx) then
+        return cb(nil)
+    end
+
+    local inventory = {}
+    local function addCount(itemName)
+        if not itemName or itemName == '' then return end
+        local it = Player.Functions.GetItemByName(itemName)
+        inventory[itemName] = (it and it.amount) or 0
+    end
+
+    for modType, tiered in pairs(Config.TuningUpgradeItems or {}) do
+        if tiered.item then
+            addCount(tiered.item)
+        elseif tiered.prefix and tiered.maxLevel then
+            for lvl = 1, tiered.maxLevel do
+                addCount(('%s_%d'):format(tiered.prefix, lvl))
+            end
+        end
+        local legacy = PerfKitByModType[modType]
+        if legacy then addCount(legacy) end
+    end
+
+    local labels = {}
+    for itemName, count in pairs(inventory) do
+        local shared = QBCore.Shared.Items[itemName]
+        labels[itemName] = {
+            label = shared and shared.label or itemName,
+            image = shared and shared.image or 'box.png',
+        }
+    end
+
+    cb({ inventory = inventory, labels = labels })
+end)
+
 RegisterNetEvent('mrp_mechanic:server:consumeUpgradeItem', function(itemName)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)

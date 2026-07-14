@@ -12,6 +12,8 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/shell.js',
+    'web/dist/index.html',
 }
 
 shared_scripts {
@@ -22,6 +24,7 @@ client_scripts {
     'client/main.lua',
     'client/doors.lua',
     'client/bay_menu.lua',
+    'client/performance_ui.lua',
     'client/boss.lua',
     'client/vendor_debug.lua',
 }
