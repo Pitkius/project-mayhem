@@ -96,6 +96,33 @@ Config.Interiors = {
         stash = vector3(-169.88, 491.82, 130.04),
         wardrobe = vector3(-167.47, 487.90, 133.84),
     },
+    --- DLC „A Safehouse in the Hills“ (build 3717+, bob74_ipl Mansion1/2)
+    mansion_richman = {
+        label = 'Richman Villa',
+        qualityLabel = 'Mansion DLC',
+        tier = 5,
+        description = 'GTA Online Richman Villa — pilnas mansion interjeras su garažu ir rūsiu.',
+        priceMult = 4.2,
+        hasWardrobe = true,
+        stashCapacity = { maxweight = 750000, slots = 80 },
+        enter = vector4(-1666.36, 478.92, 128.22, 135.0),
+        exitOffset = vector3(0.0, -2.5, 0.0),
+        stash = vector3(-1649.63, 480.97, 117.36),
+        wardrobe = vector3(-1660.50, 485.20, 128.22),
+    },
+    mansion_vinewood = {
+        label = 'Vinewood Residence',
+        qualityLabel = 'Mansion DLC',
+        tier = 5,
+        description = 'GTA Online Vinewood Residence — rytinis Vinewood Hills mansion.',
+        priceMult = 4.0,
+        hasWardrobe = true,
+        stashCapacity = { maxweight = 750000, slots = 80 },
+        enter = vector4(539.70, 749.09, 201.36, 180.0),
+        exitOffset = vector3(0.0, -2.5, 0.0),
+        stash = vector3(547.50, 734.14, 190.50),
+        wardrobe = vector3(535.20, 745.80, 201.36),
+    },
 }
 
 --- Unikalūs objektai (vienas savininkas visam serveriui)
@@ -206,5 +233,22 @@ Config.Properties = {
         district = 'downtown',
         door = vector4(-47.52, -585.86, 37.95, 70.0),
         allowedInteriors = { 'luxury' },
+    },
+    --- DLC mansions (reikia bob74_ipl + build 3788)
+    {
+        id = 'richman_villa',
+        label = 'Richman Villa — mansion',
+        type = 'mansion',
+        district = 'vinewood',
+        door = vector4(-1585.20, 448.80, 108.50, 230.0),
+        allowedInteriors = { 'mansion_richman' },
+    },
+    {
+        id = 'vinewood_residence',
+        label = 'Vinewood Residence — mansion',
+        type = 'mansion',
+        district = 'vinewood',
+        door = vector4(525.40, 700.20, 168.00, 180.0),
+        allowedInteriors = { 'mansion_vinewood' },
     },
 }
