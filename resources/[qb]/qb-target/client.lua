@@ -34,6 +34,12 @@ local listSprite = {}
 local currentTargetEntity = nil
 local currentTargetZoneName = nil
 
+local function isValidEntity(entity)
+	if not entity or entity == 0 then return false end
+	local ok, exists = pcall(DoesEntityExist, entity)
+	return ok and exists == true
+end
+
 local function jobHintFromOption(data)
 	if not data or not data.job then return nil end
 	if type(data.job) == 'string' then return data.job end
@@ -176,12 +182,6 @@ local function DrawTarget()
 		end
 		listSprite = {}
 	end)
-end
-
-local function isValidEntity(entity)
-	if not entity or entity == 0 then return false end
-	local ok, exists = pcall(DoesEntityExist, entity)
-	return ok and exists == true
 end
 
 --- Saugi entity rakto rezoliucija (nebekviesti native ant mirusio handle)

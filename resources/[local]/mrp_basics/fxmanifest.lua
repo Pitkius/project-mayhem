@@ -19,6 +19,7 @@ shared_scripts {
 }
 
 client_scripts {
+    '@mrp_hud/client/theme_nui_consumer.lua',
     'client.lua',
     'client/vehicle_lockpick.lua',
     'client/clothing_toggle.lua',

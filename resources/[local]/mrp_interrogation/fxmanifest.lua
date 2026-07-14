@@ -27,6 +27,7 @@ server_scripts {
 }
 
 client_scripts {
+    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/scene.lua',
     'client/gang_kit.lua',
     'client/police.lua',

@@ -20,6 +20,7 @@ shared_scripts {
 }
 
 client_scripts {
+    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/pd_markers.lua',
     'client/reception.lua',
     'client/divisions.lua',

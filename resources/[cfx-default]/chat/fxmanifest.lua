@@ -25,3 +25,5 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 dependency 'mrp_fonts'
 
 -- Naudoja dist/ (be webpack build ciklo).
+
+client_script '@mrp_hud/client/theme_nui_consumer.lua'

@@ -13,6 +13,7 @@ shared_scripts {
 }
 
 client_scripts {
+    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/animations.lua',
     'client/main.lua',
     'client/drops.lua',

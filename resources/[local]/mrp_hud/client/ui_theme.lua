@@ -67,7 +67,7 @@ function BuildPlayerTheme(resolved, colorKey)
         primaryBorder = hexAlpha(primary, 0.38),
         primaryGlow = resolved.glow or hexAlpha(primary, 0.52),
         primaryText = contrastText(primary),
-        background = 'rgba(124, 58, 237, 0.14)',
+        background = hexAlpha(primary, 0.14),
         surface = 'rgba(18, 10, 32, 0.72)',
         surfaceActive = hexAlpha(primary, 0.82),
         text = textColor,

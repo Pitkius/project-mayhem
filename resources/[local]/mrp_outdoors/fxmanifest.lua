@@ -14,6 +14,7 @@ shared_scripts {
 }
 
 client_scripts {
+    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/main.lua',
     'client/animals.lua',
     'client/musket.lua',

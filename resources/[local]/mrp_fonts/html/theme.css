@@ -18,4 +18,25 @@
     --accent-soft: var(--muted-text);
     --accent-glow: var(--primary-glow);
     --accent-highlight: var(--primary-active);
+
+    /* Dažni serverio UI alias (perrašomi per applyPlayerTheme) */
+    --fp-accent: var(--primary);
+    --fp-accent-soft: var(--primary-hover);
+    --fp-accent-dim: var(--primary-soft);
+    --fp-accent-glow: var(--primary-glow);
+    --fp-accent-deep: var(--primary-active);
+    --neon-purple: var(--primary-hover);
+    --neon-purple-soft: var(--primary-border);
+    --neon-purple-glow: var(--primary-glow);
+    --neon-purple-dim: var(--primary-active);
+    --bm-accent: var(--primary);
+    --bm-accent-deep: var(--primary-active);
+    --sc-purple: var(--primary);
+    --sc-purple-soft: var(--primary-soft);
+    --sc-purple-deep: var(--primary-active);
+    --purple-dim: var(--primary-active);
+    --mg-accent: var(--primary);
+    --mg-accent-2: var(--primary-active);
+    --mg-glow: var(--primary-glow);
+    --vehicle-accent: var(--primary-active);
 }

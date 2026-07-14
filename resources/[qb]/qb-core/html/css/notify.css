@@ -59,8 +59,8 @@ body {
 }
 
 .fp-toast {
-    --fp-accent: #a78bfa;
-    --fp-accent-soft: rgba(167, 139, 250, 0.18);
+    --fp-accent: var(--primary, #a78bfa);
+    --fp-accent-soft: var(--primary-soft, rgba(167, 139, 250, 0.18));
     pointer-events: auto;
     position: relative;
     display: grid;

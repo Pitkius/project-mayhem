@@ -454,20 +454,28 @@ function applyThemeData(data) {
   if (data.anim != null) currentSettings.anim = data.anim !== false;
   if (data.fillColor) {
     document.documentElement.style.setProperty("--accent-fill", data.fillColor);
+    document.documentElement.style.setProperty("--car-fuel-stroke", data.softColor || data.fillColor);
   }
   if (data.softColor) {
     document.documentElement.style.setProperty("--accent-soft", data.softColor);
+    if (!data.fillColor) {
+      document.documentElement.style.setProperty("--car-fuel-stroke", data.softColor);
+    }
   } else if (data.customColors && data.customColors.secondary) {
     document.documentElement.style.setProperty("--accent-soft", data.customColors.secondary);
+    document.documentElement.style.setProperty("--car-fuel-stroke", data.customColors.secondary);
   }
   if (data.glowColor) {
     document.documentElement.style.setProperty("--accent-glow", data.glowColor);
+    document.documentElement.style.setProperty("--car-shell-glow", data.glowColor);
+    document.documentElement.style.setProperty("--car-stat-on-glow", data.glowColor);
   }
   const themeColors = data.customColors;
   if (themeColors) {
     if (themeColors.accent) {
       document.documentElement.style.setProperty("--accent-highlight", themeColors.accent);
       document.documentElement.style.setProperty("--vehicle-accent", themeColors.accent);
+      document.documentElement.style.setProperty("--car-stat-on-border", themeColors.accent);
     }
     if (themeColors.text) {
       document.documentElement.style.setProperty("--hud-text", themeColors.text);
@@ -1062,13 +1070,12 @@ if (menu.btnApplyPreset) {
 if (menu.btnResetDefaults) {
   menu.btnResetDefaults.addEventListener("click", () => {
     const idx = Number(menu.preset.value || 1);
-    menuPresets[idx] = {
-      ...DEFAULT_MENU_STATE,
-      preset: idx,
-      customColors: { ...THEME_PALETTE.violet },
-    };
-    fillMenuFromPreset(idx);
-    applyMenuLive();
+    nuiPost("hud:resetPreset", { preset: idx }).then((res) => {
+      if (res && res.presets) menuPresets = normalizePresets(res.presets);
+      fillMenuFromPreset(idx);
+      applyMenuLive();
+      flashSavedBadge();
+    });
   });
 }
 

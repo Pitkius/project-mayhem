@@ -9,7 +9,7 @@
         primaryBorder: "rgba(192, 132, 252, 0.35)",
         primaryGlow: "rgba(167, 139, 250, 0.52)",
         primaryText: "#ffffff",
-        background: "rgba(4, 2, 10, 0.42)",
+        background: "rgba(124, 58, 237, 0.14)",
         surface: "rgba(18, 10, 32, 0.72)",
         surfaceActive: "rgba(88, 28, 135, 0.82)",
         text: "#f8f4ff",
@@ -43,38 +43,94 @@
     }
 
     function withAlpha(color, alpha) {
+        if (!color) return null;
+        if (String(color).indexOf("rgba(") === 0) return color;
         var rgb = hexToRgb(color);
         if (!rgb) return color;
         return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", " + alpha + ")";
     }
 
+    function applyResourceAliases(t) {
+        var root = document.documentElement;
+        var primary = t.primary;
+        var hover = t.primaryHover || primary;
+        var active = t.primaryActive || primary;
+        var soft = t.primarySoft;
+        var border = t.primaryBorder;
+        var glow = t.primaryGlow;
+        var muted = t.mutedText || hover;
+
+        var aliases = {
+            "--accent-fill": primary,
+            "--accent-soft": muted,
+            "--accent-glow": glow,
+            "--accent-highlight": active,
+            "--fp-accent": primary,
+            "--fp-accent-soft": hover,
+            "--fp-accent-dim": soft,
+            "--fp-accent-glow": glow,
+            "--fp-accent-deep": active,
+            "--neon-purple": hover,
+            "--neon-purple-soft": border,
+            "--neon-purple-glow": glow,
+            "--neon-purple-dim": active,
+            "--bm-accent": primary,
+            "--bm-accent-deep": active,
+            "--sc-purple": primary,
+            "--sc-purple-soft": soft,
+            "--sc-purple-deep": active,
+            "--purple-dim": active,
+            "--mg-accent": primary,
+            "--mg-accent-2": active,
+            "--mg-glow": glow,
+            "--mg-level": hover,
+            "--vehicle-accent": active,
+            "--glass-border": border,
+            "--ws-violet": active,
+            "--ws-violet-soft": withAlpha(active, 0.28),
+            "--ws-violet-border": border,
+            "--ws-panel-bg": withAlpha(active, 0.38),
+            "--ws-panel-bg-strong": withAlpha(active, 0.48),
+            "--car-shell-border": border,
+            "--car-shell-glow": withAlpha(primary, 0.12),
+            "--car-fuel-stroke": hover,
+            "--car-stat-on-color": hover,
+            "--car-stat-on-bg": soft,
+            "--car-stat-on-border": border,
+            "--car-stat-on-glow": glow,
+        };
+
+        Object.keys(aliases).forEach(function (key) {
+            if (aliases[key]) root.style.setProperty(key, aliases[key]);
+        });
+    }
+
     function applyPlayerTheme(theme) {
         var t = Object.assign({}, DEFAULT_THEME, theme || {});
         var root = document.documentElement;
-        var accent = t.primaryActive || t.primary;
 
         Object.keys(VAR_MAP).forEach(function (key) {
             if (t[key]) root.style.setProperty(VAR_MAP[key], t[key]);
         });
 
-        root.style.setProperty("--accent-fill", t.primary);
-        root.style.setProperty("--accent-soft", t.mutedText || t.primaryHover);
-        root.style.setProperty("--accent-glow", t.primaryGlow);
-        root.style.setProperty("--accent-highlight", t.primaryActive);
-        root.style.setProperty("--ws-violet", accent);
-        root.style.setProperty("--ws-violet-soft", withAlpha(accent, 0.28));
-        root.style.setProperty("--ws-violet-border", t.primaryBorder || withAlpha(t.primaryHover || accent, 0.42));
-        root.style.setProperty("--ws-panel-bg", withAlpha(accent, 0.38));
-        root.style.setProperty("--ws-panel-bg-strong", withAlpha(accent, 0.48));
+        applyResourceAliases(t);
+    }
+
+    function resetPlayerTheme() {
+        applyPlayerTheme(DEFAULT_THEME);
     }
 
     global.applyPlayerTheme = applyPlayerTheme;
+    global.resetPlayerTheme = resetPlayerTheme;
 
     window.addEventListener("message", function (event) {
         var data = event.data;
         if (!data) return;
         if (data.action === "applyTheme" && data.theme) {
             applyPlayerTheme(data.theme);
+        }
+        if (data.action === "resetTheme") {
+            resetPlayerTheme();
         }
     });
 })(typeof window !== "undefined" ? window : globalThis);

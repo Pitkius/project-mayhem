@@ -14,6 +14,7 @@ lua54 'yes'
 shared_script 'shared.lua'
 
 client_scripts {
+    '@mrp_hud/client/theme_nui_consumer.lua',
 	'client/utils/*',
 	'client/init/proximity.lua',
 	'client/init/init.lua',

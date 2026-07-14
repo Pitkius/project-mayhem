@@ -723,6 +723,19 @@ RegisterCommand('mrp_seatbelt', function()
     EndTextCommandThefeedPostTicker(false, false)
 end, false)
 
+local function resetHudPresets(scope)
+    if scope == 'all' then
+        for i = 1, HUD_PRESET_COUNT do
+            presetSettings[i] = deepCopy(DEFAULT_PRESET)
+            savePresetSettings(i)
+        end
+    else
+        presetSettings[hudPreset] = deepCopy(DEFAULT_PRESET)
+        savePresetSettings(hudPreset)
+    end
+    sendHudTheme()
+end
+
 RegisterCommand('hud', function(_, args)
     local arg = args and args[1] and tostring(args[1]) or ''
     if arg == '+' then
@@ -731,6 +744,12 @@ RegisterCommand('hud', function(_, args)
     end
     if arg == '-' then
         setHudPreset(hudPreset - 1)
+        return
+    end
+    if arg == 'reset' then
+        local scope = args and args[2] and tostring(args[2]) or ''
+        resetHudPresets(scope == 'all' and 'all' or nil)
+        QBCore.Functions.Notify('HUD atstatytas į numatytuosius.', 'primary')
         return
     end
     local asNum = tonumber(arg)
@@ -750,6 +769,22 @@ RegisterNUICallback('hud:applyPreset', function(data, cb)
     local idx = tonumber(data and data.preset) or 1
     setHudPreset(idx, data and data.silent == true)
     cb({ ok = true })
+end)
+
+RegisterNUICallback('hud:resetPreset', function(data, cb)
+    local idx = tonumber(data and data.preset) or hudPreset
+    idx = math.max(1, math.min(HUD_PRESET_COUNT, idx))
+    local resetAll = data and data.all == true
+    if resetAll then
+        resetHudPresets('all')
+    else
+        presetSettings[idx] = deepCopy(DEFAULT_PRESET)
+        savePresetSettings(idx)
+        if idx == hudPreset then
+            sendHudTheme()
+        end
+    end
+    cb({ ok = true, presets = presetsForNui(), activePreset = hudPreset })
 end)
 
 RegisterNUICallback('hud:savePreset', function(data, cb)
