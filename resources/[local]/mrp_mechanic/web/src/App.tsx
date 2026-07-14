@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import gsap from 'gsap';
 import type {
   BodyModCategory, BodyVariant, InstallState, OpenWorkshopPayload,
@@ -7,6 +8,7 @@ import type {
 import { SECTIONS } from './types';
 import { fetchNui, itemImageUrl } from './nui';
 import { mergeStatKeys, statsForPart } from './stats';
+import { colorForIndex, colorNameForIndex } from './vehicleColors';
 import './styles.css';
 
 const PERF_ICONS: Record<string, string> = {
@@ -18,11 +20,27 @@ const PERF_ICONS: Record<string, string> = {
   turbo: 'fa-fan',
 };
 
-function colorForIndex(i: number) {
-  const h = (i * 2.27) % 360;
-  const s = i < 20 ? 8 : i < 40 ? 15 : 55 + (i % 30);
-  const l = i < 10 ? 92 : i < 20 ? 18 : 35 + (i % 25);
-  return `hsl(${h}, ${s}%, ${l}%)`;
+function swatchStyle(index: number, paintType: number): CSSProperties {
+  const hex = colorForIndex(index);
+  if (paintType === 3) {
+    return { background: hex, filter: 'saturate(0.82) brightness(0.94)' };
+  }
+  if (paintType === 5) {
+    return {
+      background: `linear-gradient(135deg, #f5f5f5 0%, ${hex} 35%, #ffffff 55%, ${hex} 75%, #c0c0c0 100%)`,
+    };
+  }
+  if (paintType === 1 || paintType === 4) {
+    return {
+      background: `linear-gradient(145deg, ${hex} 0%, #ffffff55 45%, ${hex} 100%)`,
+    };
+  }
+  if (paintType === 2) {
+    return {
+      background: `linear-gradient(160deg, ${hex} 0%, #ffffff88 50%, ${hex} 100%)`,
+    };
+  }
+  return { background: hex };
 }
 
 function installState(_cat: PerformanceCategory, part: PerformancePart): InstallState {
@@ -326,7 +344,10 @@ export default function App() {
         {section === 'paint' && (
           <>
             <h2>Dažymas</h2>
-            <p className="panel-sub">{activePaint?.txt ?? 'Pasirink spalvą'}</p>
+            <p className="panel-sub">
+              {activePaint?.txt ?? 'Pasirink spalvą'}
+              {paintType !== 0 && ' — peržiūroje rodoma bazinė GTA spalva pagal indeksą.'}
+            </p>
             <div className="pills">
               {payload.paintTypes.map((pt) => (
                 <button key={pt.paintType} type="button"
@@ -336,8 +357,8 @@ export default function App() {
             </div>
             <div className="color-grid">
               {Array.from({ length: 160 }, (_, i) => (
-                <button key={i} type="button" className="swatch" style={{ background: colorForIndex(i) }}
-                  title={`Indeksas ${i}`}
+                <button key={i} type="button" className="swatch" style={swatchStyle(i, paintType)}
+                  title={`${colorNameForIndex(i)} (${i})`}
                   onClick={() => fetchNui('wsApplyPaint', { paintType, colorIndex: i })}>
                   <span>{i}</span>
                 </button>
