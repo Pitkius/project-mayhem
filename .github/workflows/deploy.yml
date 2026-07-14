@@ -30,6 +30,8 @@ jobs:
           git checkout main
           git reset --hard origin/main
           git clean -fd
+          git submodule sync --recursive
+          git submodule update --init --recursive
 
           sudo -n mkdir -p "$SERVER_DIR/resources" "$SERVER_DIR/cfg"
           sudo -n rsync -a --delete "$REPO_DIR/resources/" "$SERVER_DIR/resources/"
