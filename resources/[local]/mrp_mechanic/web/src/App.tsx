@@ -148,11 +148,51 @@ export default function App() {
     slideIn(contentRef.current, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.28 });
   }, [open, section, perfCatId, bodyCat]);
 
+  const camKeysRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && open) close(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && open) {
+        close();
+        return;
+      }
+      const k = e.key.toLowerCase();
+      if (!open || !['w', 'a', 's', 'd'].includes(k)) return;
+      e.preventDefault();
+      camKeysRef.current.add(k);
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      camKeysRef.current.delete(e.key.toLowerCase());
+    };
+    const onBlur = () => camKeysRef.current.clear();
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+      camKeysRef.current.clear();
+    };
   }, [open, close]);
+
+  useEffect(() => {
+    if (!open) return;
+    const tick = () => {
+      const keys = camKeysRef.current;
+      if (!keys.size) return;
+      let angleDelta = 0;
+      let distDelta = 0;
+      if (keys.has('a')) angleDelta -= 0.85;
+      if (keys.has('d')) angleDelta += 0.85;
+      if (keys.has('w')) distDelta -= 0.05;
+      if (keys.has('s')) distDelta += 0.05;
+      if (angleDelta || distDelta) fetchNui('wsCameraKeys', { angleDelta, distDelta });
+    };
+    const id = window.setInterval(tick, 16);
+    return () => window.clearInterval(id);
+  }, [open]);
 
   const selectSection = (s: WorkshopSection) => {
     setSection(s);
@@ -260,7 +300,7 @@ export default function App() {
         )}
 
         <div className="cam-hint">
-          <span>Pelė: sukti · Ratukas: zoom</span>
+          <span>WASD: sukti / priartinti · Pelė: kampas · Ratukas: zoom</span>
           <button type="button" className="btn-ghost-sm" onClick={() => fetchNui('wsCameraReset')}>Atstatyti kamerą</button>
         </div>
       </aside>

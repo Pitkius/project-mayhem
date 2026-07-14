@@ -238,6 +238,7 @@ local function closeWorkshopUi()
     destroyWsCam()
     restoreVehicleState()
     SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
     SendNUIMessage({ action = 'closeWorkshop' })
     wsVeh, wsBayIndex, wsPlate = nil, nil, nil
 end
@@ -337,6 +338,7 @@ local function openWorkshopUi(bayIndex, veh, plate, uiData)
     if not displayName or displayName == 'NULL' then displayName = GetDisplayNameFromVehicleModel(model) end
 
     SetNuiFocus(true, true)
+    SetNuiFocusKeepInput(true)
     PushPlayerThemeToNui()
     SendNUIMessage({
         action = 'openWorkshop',
@@ -471,6 +473,13 @@ RegisterNUICallback('wsCameraReset', function(_, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('wsCameraKeys', function(data, cb)
+    camAngle = camAngle + (tonumber(data.angleDelta) or 0)
+    camDist = math.max(2.2, math.min(9.5, camDist + (tonumber(data.distDelta) or 0)))
+    updateWsCam()
+    cb('ok')
+end)
+
 RegisterNUICallback('wsRequestVariants', function(data, cb)
     local v = getBayVehicle()
     local modType = tonumber(data.modType)
@@ -527,10 +536,14 @@ CreateThread(function()
     while true do
         if wsOpen and wsVeh and DoesEntityExist(wsVeh) then
             FreezeEntityPosition(wsVeh, true)
-            for _, c in ipairs({ 34, 35, 59, 60, 71, 72, 63, 64, 75 }) do DisableControlAction(0, c, true) end
-            updateWsCam()
+            for _, c in ipairs({ 1, 2, 24, 25, 59, 60, 71, 72, 63, 64, 75, 21, 22 }) do
+                DisableControlAction(0, c, true)
+            end
+
             Wait(0)
-        else Wait(400) end
+        else
+            Wait(400)
+        end
     end
 end)
 
