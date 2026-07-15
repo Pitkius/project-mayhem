@@ -37,29 +37,45 @@ jobs:
           sudo -n systemctl stop fivem-txadmin || true
           sleep 5
           if ! bash "$REPO_DIR/scripts/update-fivem-artifacts.sh" "$SERVER_DIR"; then
-            echo "[deploy] ERROR: artifact atnaujinimas nepavyko — Kortz auto neveiks be naujausio FXServer!"
+            echo "[deploy] WARNING: artifact atnaujinimas nepavyko — tęsiame deploy be artifact update"
           fi
           if [ "$SERVER_DIR" != "$REPO_DIR" ] && [ -d "$REPO_DIR/alpine" ]; then
             bash "$REPO_DIR/scripts/update-fivem-artifacts.sh" "$REPO_DIR" || echo "[deploy] REPO artifact update skipped/failed"
           fi
 
-          deploy_to() {
+          sync_resources() {
+            local target="$1"
+            local use_sudo="${2:-1}"
+            [ -d "$target" ] || return 0
+            echo "[deploy] Sync resources/cfg -> $target"
+            if [ "$use_sudo" = "1" ]; then
+              sudo -n mkdir -p "$target/resources" "$target/cfg"
+              sudo -n rsync -a --delete "$REPO_DIR/resources/" "$target/resources/"
+              sudo -n rsync -a --delete --exclude '00_base.cfg' "$REPO_DIR/cfg/" "$target/cfg/"
+            else
+              mkdir -p "$target/resources" "$target/cfg"
+              rsync -a --delete "$REPO_DIR/resources/" "$target/resources/"
+              rsync -a --delete --exclude '00_base.cfg' "$REPO_DIR/cfg/" "$target/cfg/"
+            fi
+          }
+
+          # Tik runtime serverio katalogui — ne repo (git reset jau atnaujina server.cfg).
+          sync_server_cfg() {
             local target="$1"
             [ -d "$target" ] || return 0
-            echo "[deploy] Sync -> $target"
-            sudo -n mkdir -p "$target/resources" "$target/cfg"
-            sudo -n rsync -a --delete "$REPO_DIR/resources/" "$target/resources/"
-            sudo -n rsync -a --delete --exclude '00_base.cfg' "$REPO_DIR/cfg/" "$target/cfg/"
+            echo "[deploy] Sync server.cfg -> $target"
             sudo -n cp "$REPO_DIR/server.cfg" "$target/server.cfg"
           }
 
-          deploy_to "$SERVER_DIR"
+          sync_resources "$SERVER_DIR" 1
+          sync_server_cfg "$SERVER_DIR"
           if [ "$SERVER_DIR" != "$REPO_DIR" ]; then
-            deploy_to "$REPO_DIR"
+            # Repo: tik resources/cfg (be sudo cp server.cfg — kitaip root ownership sulaužo txAdmin).
+            sync_resources "$REPO_DIR" 0
           fi
 
           if ! grep -q 'sv_enforceGameBuild 3788' "$SERVER_DIR/server.cfg"; then
-            echo "[deploy] ERROR: server.cfg neturi sv_enforceGameBuild 3788!"
+            echo "[deploy] ERROR: $SERVER_DIR/server.cfg neturi sv_enforceGameBuild 3788!"
             exit 1
           fi
 
@@ -75,6 +91,19 @@ jobs:
           fi
 
           sudo -n systemctl restart fivem-txadmin
-          sleep 3
-          sudo -n systemctl is-active --quiet fivem-txadmin
-          echo "[deploy] done"
+          echo "[deploy] Laukiama fivem-txadmin..."
+          ok=0
+          for i in $(seq 1 20); do
+            if sudo -n systemctl is-active --quiet fivem-txadmin; then
+              ok=1
+              break
+            fi
+            sleep 3
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "[deploy] ERROR: fivem-txadmin nepasileido per 60s"
+            sudo -n systemctl status fivem-txadmin --no-pager || true
+            sudo -n journalctl -u fivem-txadmin -n 50 --no-pager || true
+            exit 1
+          fi
+          echo "[deploy] done — fivem-txadmin active"
