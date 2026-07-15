@@ -395,16 +395,45 @@ local function buildPerfCategories(veh, inventory, labels)
     return categories
 end
 
-local function applyUniformPaint(veh, paintType, colorIndex)
+local function getVehiclePaintState(veh)
+    if veh == 0 or not DoesEntityExist(veh) then
+        return { paintType = 0, primary = 0, secondary = 0, pearlescent = 0 }
+    end
+    local primary, secondary = GetVehicleColours(veh)
+    local pearlescent, _wheel = GetVehicleExtraColours(veh)
+    local paintType = 0
+    if GetIsVehiclePrimaryColourCustom(veh) then
+        ClearVehicleCustomPrimaryColour(veh)
+        ClearVehicleCustomSecondaryColour(veh)
+        primary, secondary = GetVehicleColours(veh)
+    end
+    local pt = select(1, GetVehicleModColor_1(veh))
+    if pt then paintType = pt end
+    return {
+        paintType = paintType,
+        primary = primary or 0,
+        secondary = secondary or 0,
+        pearlescent = pearlescent or 0,
+    }
+end
+
+local function applyVehiclePaint(veh, paintType, primary, secondary, pearlescent)
     if veh == 0 or not DoesEntityExist(veh) then return end
     ClearVehicleCustomPrimaryColour(veh)
     ClearVehicleCustomSecondaryColour(veh)
-    local pearl, wheelCol = GetVehicleExtraColours(veh)
-    pearl = pearl or 0
-    SetVehicleColours(veh, colorIndex, colorIndex)
-    SetVehicleModColor_1(veh, paintType, colorIndex, pearl)
-    SetVehicleModColor_2(veh, paintType, colorIndex)
-    SetVehicleExtraColours(veh, pearl, wheelCol)
+    local _pearl, wheelCol = GetVehicleExtraColours(veh)
+    primary = math.max(0, math.min(159, tonumber(primary) or 0))
+    secondary = math.max(0, math.min(159, tonumber(secondary) or 0))
+    pearlescent = math.max(0, math.min(159, tonumber(pearlescent) or 0))
+    paintType = math.max(0, math.min(5, tonumber(paintType) or 0))
+    SetVehicleColours(veh, primary, secondary)
+    SetVehicleModColor_1(veh, paintType, primary, pearlescent)
+    SetVehicleModColor_2(veh, paintType, secondary)
+    SetVehicleExtraColours(veh, pearlescent, wheelCol or 0)
+end
+
+local function applyUniformPaint(veh, paintType, colorIndex)
+    applyVehiclePaint(veh, paintType, colorIndex, colorIndex, colorIndex)
 end
 
 local function doQuickRepair(veh)
@@ -444,6 +473,7 @@ local function openWorkshopUi(bayIndex, veh, plate, uiData)
         categories = buildPerfCategories(veh, uiData.inventory or {}, uiData.labels or {}),
         statLabels = STAT_LABELS,
         paintTypes = PAINT_TYPES,
+        paintState = getVehiclePaintState(veh),
         windowTints = WINDOW_TINTS,
         bodyMods = getBodyModCategories(veh),
         turboOn = IsToggleModOn(veh, 18),
@@ -533,7 +563,15 @@ end)
 
 RegisterNUICallback('wsApplyPaint', function(data, cb)
     local v = getBayVehicle()
-    if v ~= 0 then applyUniformPaint(v, tonumber(data.paintType) or 0, tonumber(data.colorIndex) or 0) end
+    if v ~= 0 then
+        applyVehiclePaint(
+            v,
+            tonumber(data.paintType) or 0,
+            tonumber(data.primary) or 0,
+            tonumber(data.secondary) or 0,
+            tonumber(data.pearlescent) or 0
+        )
+    end
     cb('ok')
 end)
 

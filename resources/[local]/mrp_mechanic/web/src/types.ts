@@ -26,6 +26,15 @@ export type PerformanceCategory = {
 };
 
 export type PaintType = { paintType: number; label: string; txt: string };
+
+export type PaintState = {
+  paintType: number;
+  primary: number;
+  secondary: number;
+  pearlescent: number;
+};
+
+export type PaintTarget = 'primary' | 'secondary' | 'pearl';
 export type WindowTint = { idx: number; label: string };
 export type BodyModCategory = { id: number; label: string; count: number };
 export type BodyVariant = { idx: number; label: string };
@@ -37,6 +46,7 @@ export type OpenWorkshopPayload = {
   categories: PerformanceCategory[];
   statLabels: Record<StatKey, string>;
   paintTypes: PaintType[];
+  paintState?: PaintState;
   windowTints: WindowTint[];
   bodyMods: BodyModCategory[];
   turboOn: boolean;

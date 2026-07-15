@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 import gsap from 'gsap';
 import type {
   BodyModCategory, BodyVariant, InstallState, OpenWorkshopPayload,
-  PerformanceCategory, PerformancePart, StatKey, WorkshopSection,
+  PaintState, PaintTarget, PerformanceCategory, PerformancePart, StatKey, WorkshopSection,
 } from './types';
 import { SECTIONS } from './types';
 import { fetchNui, itemImageUrl } from './nui';
@@ -20,8 +20,22 @@ const PERF_ICONS: Record<string, string> = {
   turbo: 'fa-fan',
 };
 
-function swatchStyle(index: number, paintType: number): CSSProperties {
+const DEFAULT_PAINT: PaintState = { paintType: 0, primary: 0, secondary: 0, pearlescent: 0 };
+
+const PAINT_TARGETS: { id: PaintTarget; label: string; hint: string }[] = [
+  { id: 'primary', label: 'Pagrindinė', hint: 'Kėbulo pagrindinė spalva' },
+  { id: 'secondary', label: 'Antrinė', hint: 'Antrinė / accent spalva' },
+  { id: 'pearl', label: 'Atspalvis', hint: 'Perlamutrinis atspalvis (perl)' },
+];
+
+function swatchStyle(index: number, paintType: number, isPearl = false): CSSProperties {
   const hex = colorForIndex(index);
+  if (isPearl) {
+    return {
+      background: `linear-gradient(160deg, ${hex} 0%, #ffffffaa 40%, ${hex} 100%)`,
+      boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.25)',
+    };
+  }
   if (paintType === 3) {
     return { background: hex, filter: 'saturate(0.82) brightness(0.94)' };
   }
@@ -100,7 +114,8 @@ export default function App() {
   const [section, setSection] = useState<WorkshopSection>('performance');
   const [perfCatId, setPerfCatId] = useState<string | null>(null);
   const [perfPartIdx, setPerfPartIdx] = useState<number | null>(null);
-  const [paintType, setPaintType] = useState(0);
+  const [paintState, setPaintState] = useState<PaintState>(DEFAULT_PAINT);
+  const [paintTarget, setPaintTarget] = useState<PaintTarget>('primary');
   const [bodyCat, setBodyCat] = useState<BodyModCategory | null>(null);
   const [bodyVariants, setBodyVariants] = useState<BodyVariant[]>([]);
 
@@ -123,6 +138,8 @@ export default function App() {
     setPerfPartIdx(null);
     setBodyCat(null);
     setBodyVariants([]);
+    setPaintState(DEFAULT_PAINT);
+    setPaintTarget('primary');
   }, []);
 
   const close = useCallback(() => {
@@ -139,7 +156,11 @@ export default function App() {
         modType?: number; label?: string; variants?: BodyVariant[]; on?: boolean;
       };
       if (msg.action === 'openWorkshop') {
-        setPayload(msg as OpenWorkshopPayload);
+        const p = msg as OpenWorkshopPayload;
+        const ps = p.paintState ?? DEFAULT_PAINT;
+        setPayload(p);
+        setPaintState(ps);
+        setPaintTarget('primary');
         setPerfCatId(msg.categories?.[0]?.id ?? null);
         setPerfPartIdx(null);
         setSection('performance');
@@ -252,12 +273,26 @@ export default function App() {
     fetchNui('wsCameraZoom', { delta: e.deltaY > 0 ? 1 : -1 });
   };
 
+  const applyPaint = useCallback((patch: Partial<PaintState>) => {
+    setPaintState((prev) => {
+      const next = { ...prev, ...patch };
+      fetchNui('wsApplyPaint', next);
+      return next;
+    });
+  }, []);
+
   if (!open || !payload) return null;
 
   const previewStats = perfCat && perfPart ? statsForPart(perfCat, perfPart) : perfCat?.currentStats ?? {};
   const currentStats = perfCat?.currentStats ?? {};
   const installBtn = perfPart ? installState(perfCat!, perfPart) : 'missing';
-  const activePaint = payload.paintTypes.find((p) => p.paintType === paintType) ?? payload.paintTypes[0];
+  const activePaint = payload.paintTypes.find((p) => p.paintType === paintState.paintType) ?? payload.paintTypes[0];
+  const activeTargetMeta = PAINT_TARGETS.find((t) => t.id === paintTarget) ?? PAINT_TARGETS[0];
+  const activeColorIndex = paintTarget === 'primary'
+    ? paintState.primary
+    : paintTarget === 'secondary'
+      ? paintState.secondary
+      : paintState.pearlescent;
 
   return (
     <div className="ws-root" ref={rootRef} onMouseDown={onMouseDown} onMouseMove={onMouseMove}
@@ -344,22 +379,60 @@ export default function App() {
         {section === 'paint' && (
           <>
             <h2>Dažymas</h2>
-            <p className="panel-sub">
-              {activePaint?.txt ?? 'Pasirink spalvą'}
-              {paintType !== 0 && ' — peržiūroje rodoma bazinė GTA spalva pagal indeksą.'}
-            </p>
+            <p className="panel-sub">{activePaint?.txt ?? 'Pasirink dažų tipą ir spalvas'}</p>
+
+            <p className="panel-label">Dažų tipas</p>
             <div className="pills">
               {payload.paintTypes.map((pt) => (
                 <button key={pt.paintType} type="button"
-                  className={`pill ${paintType === pt.paintType ? 'active' : ''}`}
-                  onClick={() => setPaintType(pt.paintType)}>{pt.label}</button>
+                  className={`pill ${paintState.paintType === pt.paintType ? 'active' : ''}`}
+                  onClick={() => applyPaint({ paintType: pt.paintType })}>{pt.label}</button>
               ))}
             </div>
+
+            <p className="panel-label">Ką dažai</p>
+            <div className="paint-targets">
+              {PAINT_TARGETS.map((t) => (
+                <button key={t.id} type="button"
+                  className={`paint-target ${paintTarget === t.id ? 'active' : ''}`}
+                  onClick={() => setPaintTarget(t.id)}>
+                  <span className="paint-target__swatch" style={swatchStyle(
+                    t.id === 'primary' ? paintState.primary : t.id === 'secondary' ? paintState.secondary : paintState.pearlescent,
+                    paintState.paintType,
+                    t.id === 'pearl',
+                  )} />
+                  <span className="paint-target__label">{t.label}</span>
+                  <span className="paint-target__idx">
+                    {t.id === 'primary' ? paintState.primary : t.id === 'secondary' ? paintState.secondary : paintState.pearlescent}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <p className="panel-sub paint-target-hint">{activeTargetMeta.hint}</p>
+
+            <div className="paint-actions">
+              <button type="button" className="btn-ghost-sm"
+                onClick={() => applyPaint({ secondary: paintState.primary })}>
+                Antrinė = pagrindinė
+              </button>
+              <button type="button" className="btn-ghost-sm"
+                onClick={() => applyPaint({ pearlescent: paintState.primary })}>
+                Atspalvis = pagrindinė
+              </button>
+            </div>
+
             <div className="color-grid">
               {Array.from({ length: 160 }, (_, i) => (
-                <button key={i} type="button" className="swatch" style={swatchStyle(i, paintType)}
+                <button key={i} type="button"
+                  className={`swatch ${activeColorIndex === i ? 'active' : ''}`}
+                  style={swatchStyle(i, paintState.paintType, paintTarget === 'pearl')}
                   title={`${colorNameForIndex(i)} (${i})`}
-                  onClick={() => fetchNui('wsApplyPaint', { paintType, colorIndex: i })}>
+                  onClick={() => {
+                    if (paintTarget === 'primary') applyPaint({ primary: i });
+                    else if (paintTarget === 'secondary') applyPaint({ secondary: i });
+                    else applyPaint({ pearlescent: i });
+                  }}>
                   <span>{i}</span>
                 </button>
               ))}
