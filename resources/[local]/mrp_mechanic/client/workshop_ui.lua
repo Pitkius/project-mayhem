@@ -43,6 +43,25 @@ local PERF_MOD_TYPES = {
     [11] = true, [12] = true, [13] = true, [15] = true, [16] = true, [18] = true,
 }
 
+--- Ratlankių tipai (SetVehicleWheelType 0–12) — kiekvienam reikia atskirai enumeruoti mod 23/24.
+local WHEEL_TYPES = {
+    { id = 0, label = 'Sportiniai' },
+    { id = 1, label = 'Muscle' },
+    { id = 2, label = 'Lowrider' },
+    { id = 3, label = 'SUV' },
+    { id = 4, label = 'Bekelė' },
+    { id = 5, label = 'Tuner' },
+    { id = 6, label = 'Moto' },
+    { id = 7, label = 'Premium' },
+    { id = 8, label = "Benny's Original" },
+    { id = 9, label = "Benny's Bespoke" },
+    { id = 10, label = 'Open Wheel' },
+    { id = 11, label = 'Gatvės' },
+    { id = 12, label = 'Track' },
+}
+
+local WHEEL_MOD_SLOTS = { front = 23, rear = 24 }
+
 --- GTA mod slot etiketės (0–48). Addon auto dažnai naudoja 5, 25–48 ir kt.
 local MOD_SLOT_LABELS = {
     [0] = 'Spoileriai',
@@ -118,6 +137,7 @@ local CAM_PRESETS = {
     paint = { dist = 5.8, height = 1.2, targetH = 0.4, angle = 35.0 },
     tint = { dist = 4.8, height = 1.0, targetH = 0.55, angle = 50.0 },
     body = { dist = 5.2, height = 1.05, targetH = 0.35, angle = 40.0 },
+    wheels = { dist = 4.6, height = 0.55, targetH = 0.12, angle = 72.0 },
     [0] = { dist = 5.5, height = 1.3, targetH = 0.5, angle = 155.0 },
     [1] = { dist = 4.2, height = 0.7, targetH = 0.3, angle = 15.0 },
     [2] = { dist = 4.8, height = 0.75, targetH = 0.25, angle = 165.0 },
@@ -248,11 +268,48 @@ local function buildStatsForLevel(modType, level, maxLevel)
     return out
 end
 
+local function snapshotWheelState(veh)
+    return {
+        wheelType = GetVehicleWheelType(veh),
+        front = GetVehicleMod(veh, WHEEL_MOD_SLOTS.front),
+        rear = GetVehicleMod(veh, WHEEL_MOD_SLOTS.rear),
+    }
+end
+
+local function restoreWheelState(veh, snap)
+    if not snap or veh == 0 then return end
+    SetVehicleWheelType(veh, snap.wheelType or 0)
+    SetVehicleMod(veh, WHEEL_MOD_SLOTS.front, snap.front or -1, false)
+    SetVehicleMod(veh, WHEEL_MOD_SLOTS.rear, snap.rear or -1, false)
+end
+
+local function getWheelTypeCategories(veh)
+    initWorkshopModKit(veh)
+    local snap = snapshotWheelState(veh)
+    local isBike = IsThisModelABike(GetEntityModel(veh))
+    local out = {}
+    for _, wt in ipairs(WHEEL_TYPES) do
+        SetVehicleWheelType(veh, wt.id)
+        local frontCount = GetNumVehicleMods(veh, WHEEL_MOD_SLOTS.front)
+        if frontCount > 0 then
+            local rearCount = isBike and GetNumVehicleMods(veh, WHEEL_MOD_SLOTS.rear) or 0
+            out[#out + 1] = {
+                id = wt.id,
+                label = wt.label,
+                count = frontCount,
+                rearCount = rearCount,
+            }
+        end
+    end
+    restoreWheelState(veh, snap)
+    return out
+end
+
 local function getBodyModCategories(veh)
     initWorkshopModKit(veh)
     local out = {}
     for slot = 0, 48 do
-        if not PERF_MOD_TYPES[slot] then
+        if not PERF_MOD_TYPES[slot] and slot ~= WHEEL_MOD_SLOTS.front and slot ~= WHEEL_MOD_SLOTS.rear then
             local count = GetNumVehicleMods(veh, slot)
             if count > 0 then
                 out[#out + 1] = {
@@ -476,6 +533,9 @@ local function openWorkshopUi(bayIndex, veh, plate, uiData)
         paintState = getVehiclePaintState(veh),
         windowTints = WINDOW_TINTS,
         bodyMods = getBodyModCategories(veh),
+        wheelTypes = getWheelTypeCategories(veh),
+        installedWheelType = GetVehicleWheelType(veh),
+        isBike = IsThisModelABike(model),
         turboOn = IsToggleModOn(veh, 18),
     })
 end
@@ -617,30 +677,59 @@ end)
 RegisterNUICallback('wsRequestVariants', function(data, cb)
     local v = getBayVehicle()
     local modType = tonumber(data.modType)
+    local wheelType = data.wheelType ~= nil and tonumber(data.wheelType) or nil
     if v == 0 or not modType then return cb('ok') end
     initWorkshopModKit(v)
+    if wheelType ~= nil then
+        SetVehicleWheelType(v, wheelType)
+    end
     local n = GetNumVehicleMods(v, modType)
     local variants = {}
     for i = 0, n - 1 do
         local label = modLabelFromGame(v, modType, i) or ('Variantas %s / %s'):format(i + 1, n)
         variants[#variants + 1] = { idx = i, label = label }
     end
-    SendNUIMessage({ action = 'bodyVariants', modType = modType, label = data.label, variants = variants })
+    SendNUIMessage({
+        action = 'bodyVariants',
+        modType = modType,
+        wheelType = wheelType,
+        label = data.label,
+        variants = variants,
+    })
+    cb('ok')
+end)
+
+RegisterNUICallback('wsPreviewWheelType', function(data, cb)
+    local v = getBayVehicle()
+    local wheelType = tonumber(data.wheelType)
+    if v == 0 or wheelType == nil then return cb('ok') end
+    initWorkshopModKit(v)
+    SetVehicleWheelType(v, wheelType)
     cb('ok')
 end)
 
 RegisterNUICallback('wsInstallBody', function(data, cb)
     local v = getBayVehicle()
     local modType, idx = tonumber(data.modType), tonumber(data.idx)
+    local wheelType = data.wheelType ~= nil and tonumber(data.wheelType) or nil
     if v == 0 or not modType or idx == nil then return cb('ok') end
     initWorkshopModKit(v)
+    if wheelType ~= nil then
+        SetVehicleWheelType(v, wheelType)
+    end
     if idx < 0 then
         SetVehicleMod(v, modType, -1, false)
     else
         SetVehicleMod(v, modType, idx, false)
     end
     reapplyAddonBodyFixes(v, modType)
-    if idx < 0 then
+    if wheelType ~= nil then
+        if idx < 0 then
+            QBCore.Functions.Notify(('Gamykliniai %s ratlankiai'):format(data.label or 'ratlankiai'), 'primary')
+        else
+            QBCore.Functions.Notify(('Įdiegta: %s #%s'):format(data.label or 'Ratlankiai', idx + 1), 'success')
+        end
+    elseif idx < 0 then
         QBCore.Functions.Notify('Gamyklinis variantas.', 'primary')
     else
         QBCore.Functions.Notify(('Įdiegta: %s #%s'):format(data.label or 'Detalė', idx + 1), 'success')

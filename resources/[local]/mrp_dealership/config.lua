@@ -54,7 +54,63 @@ Config.CategoryLabels = {
 Config.UsePerformancePricing = true
 
 --- Rankinės išimtys (darbo transportas ir pan.) — ne performance formulė.
-Config.ManualPriceOverrides = {}
+--- Motociklai: sumažintos kainos (35–40% pigesni, brangesni — ~25–30%).
+Config.ManualPriceOverrides = {
+    akuma = 41000,
+    avarus = 14500,
+    bagger = 9500,
+    bati = 17500,
+    bati2 = 13500,
+    bf400 = 16000,
+    carbonrs = 16000,
+    chimera = 15000,
+    cliffhanger = 20500,
+    daemon = 10000,
+    daemon2 = 16500,
+    defiler = 21500,
+    diablous = 21500,
+    diablous2 = 28500,
+    double = 20000,
+    enduro = 4000,
+    esskey = 8500,
+    faggio = 1300,
+    faggio2 = 1200,
+    faggio3 = 1600,
+    fcr = 3300,
+    fcr2 = 13500,
+    gargoyle = 23000,
+    hakuchou = 12000,
+    hakuchou2 = 34000,
+    hexer = 11000,
+    innovation = 24000,
+    lectro = 20000,
+    manchez = 6000,
+    manchez2 = 10000,
+    manchez3 = 10500,
+    nemesis = 14500,
+    nightblade = 16500,
+    pcj = 10500,
+    pizzaboy = 37500,
+    powersurge = 5000,
+    ratbike = 2000,
+    reever = 18000,
+    rrocket = 20000,
+    ruffian = 18000,
+    sanchez = 3500,
+    sanchez2 = 3500,
+    sanctus = 26000,
+    shinobi = 18000,
+    shotaro = 224000,
+    sovereign = 5500,
+    stryder = 37500,
+    thrust = 16000,
+    vader = 5000,
+    vindicator = 13500,
+    vortex = 22500,
+    wolfsbane = 10000,
+    zombiea = 20000,
+    zombieb = 19500,
+}
 
 --- Seni rankiniai override (naudojami tik jei UsePerformancePricing = false).
 Config.PriceOverrides = {
@@ -78,10 +134,12 @@ Config.PriceOverrides = {
     infernus = 500000, nero = 1200000, osiris = 1100000, reaper = 950000, t20 = 1300000,
     tempesta = 1000000, turismor = 700000, tyrus = 1200000, vacca = 450000, voltic = 300000, zentorno = 900000,
 
-    -- Motorcycles
-    akuma = 45000, bagger = 30000, bati = 60000, carbonrs = 70000, daemon = 28000, double = 55000,
-    hakuchou = 80000, hexer = 25000, innovation = 35000, nemesis = 40000, pcj = 30000,
-    ruffian = 35000, sanchez = 20000, sovereign = 50000, vader = 32000,
+    -- Motorcycles (legacy fallback)
+    akuma = 41000, avarus = 14500, bagger = 9500, bati = 17500, bati2 = 13500, bf400 = 16000,
+    carbonrs = 16000, chimera = 15000, daemon = 10000, double = 20000, enduro = 4000,
+    hakuchou = 12000, hakuchou2 = 34000, hexer = 11000, innovation = 24000, nemesis = 14500,
+    pcj = 10500, rrocket = 20000, ruffian = 18000, sanchez = 3500, shinobi = 18000,
+    sovereign = 5500, vader = 5000,
 
     -- Compact
     blista = 12000, brioso = 18000, dilettante = 10000, issi2 = 14000, panto = 9000,
@@ -129,7 +187,7 @@ Config.CivilianPriceBands = {
     offroad = { min = 35000, max = 280000 },
     utility = { min = 25000, max = 120000 },
     vans = { min = 25000, max = 120000 },
-    motorcycles = { min = 15000, max = 180000 },
+    motorcycles = { min = 1200, max = 115000 },
     _default = { min = 8000, max = 4500000 },
 }
 

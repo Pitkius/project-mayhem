@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 import gsap from 'gsap';
 import type {
   BodyModCategory, BodyVariant, InstallState, OpenWorkshopPayload,
-  PaintState, PaintTarget, PerformanceCategory, PerformancePart, StatKey, WorkshopSection,
+  PaintState, PaintTarget, PerformanceCategory, PerformancePart, StatKey, WheelTypeCategory, WorkshopSection,
 } from './types';
 import { SECTIONS } from './types';
 import { fetchNui, itemImageUrl } from './nui';
@@ -118,6 +118,9 @@ export default function App() {
   const [paintTarget, setPaintTarget] = useState<PaintTarget>('primary');
   const [bodyCat, setBodyCat] = useState<BodyModCategory | null>(null);
   const [bodyVariants, setBodyVariants] = useState<BodyVariant[]>([]);
+  const [wheelTypeCat, setWheelTypeCat] = useState<WheelTypeCategory | null>(null);
+  const [wheelModSlot, setWheelModSlot] = useState<23 | 24>(23);
+  const [wheelVariants, setWheelVariants] = useState<BodyVariant[]>([]);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLElement>(null);
@@ -138,6 +141,9 @@ export default function App() {
     setPerfPartIdx(null);
     setBodyCat(null);
     setBodyVariants([]);
+    setWheelTypeCat(null);
+    setWheelModSlot(23);
+    setWheelVariants([]);
     setPaintState(DEFAULT_PAINT);
     setPaintTarget('primary');
   }, []);
@@ -153,7 +159,7 @@ export default function App() {
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
       const msg = e.data as { action?: string } & Partial<OpenWorkshopPayload> & {
-        modType?: number; label?: string; variants?: BodyVariant[]; on?: boolean;
+        modType?: number; label?: string; variants?: BodyVariant[]; on?: boolean; wheelType?: number;
       };
       if (msg.action === 'openWorkshop') {
         const p = msg as OpenWorkshopPayload;
@@ -169,7 +175,8 @@ export default function App() {
       }
       if (msg.action === 'closeWorkshop') { reset(); return; }
       if (msg.action === 'bodyVariants') {
-        setBodyVariants(msg.variants ?? []);
+        if (msg.wheelType != null) setWheelVariants(msg.variants ?? []);
+        else setBodyVariants(msg.variants ?? []);
       }
     };
     window.addEventListener('message', onMsg);
@@ -185,7 +192,7 @@ export default function App() {
   useLayoutEffect(() => {
     if (!open) return;
     slideIn(contentRef.current, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.28 });
-  }, [open, section, perfCatId, bodyCat]);
+  }, [open, section, perfCatId, bodyCat, wheelTypeCat]);
 
   const camKeysRef = useRef<Set<string>>(new Set());
 
@@ -237,9 +244,12 @@ export default function App() {
     setSection(s);
     setBodyCat(null);
     setBodyVariants([]);
+    setWheelTypeCat(null);
+    setWheelModSlot(23);
+    setWheelVariants([]);
     setPerfPartIdx(null);
     const sec = SECTIONS.find((x) => x.id === s);
-    fetchNui('wsSelectCam', { section: sec?.cam ?? 'body' });
+    fetchNui('wsSelectCam', { section: s === 'wheels' ? 'wheels' : (sec?.cam ?? 'body') });
   };
 
   const selectPerfCat = (cat: PerformanceCategory) => {
@@ -253,6 +263,39 @@ export default function App() {
     setBodyVariants([]);
     fetchNui('wsSelectCam', { modType: cat.id });
     if (cat.count > 0) fetchNui('wsRequestVariants', { modType: cat.id, label: cat.label });
+  };
+
+  const loadWheelVariants = (wt: WheelTypeCategory, modType: 23 | 24) => {
+    const slotLabel = modType === 24 ? 'Galinės ratlankės' : 'Priekinės ratlankės';
+    fetchNui('wsRequestVariants', { modType, wheelType: wt.id, label: `${wt.label} — ${slotLabel}` });
+  };
+
+  const selectWheelType = (wt: WheelTypeCategory) => {
+    setWheelTypeCat(wt);
+    setWheelModSlot(23);
+    setWheelVariants([]);
+    fetchNui('wsPreviewWheelType', { wheelType: wt.id });
+    fetchNui('wsSelectCam', { section: 'wheels' });
+    loadWheelVariants(wt, 23);
+  };
+
+  const selectWheelSlot = (modType: 23 | 24) => {
+    if (!wheelTypeCat) return;
+    setWheelModSlot(modType);
+    setWheelVariants([]);
+    fetchNui('wsSelectCam', { modType });
+    loadWheelVariants(wheelTypeCat, modType);
+  };
+
+  const installWheel = (idx: number) => {
+    if (!wheelTypeCat) return;
+    const slotLabel = wheelModSlot === 24 ? 'Galinės ratlankės' : 'Priekinės ratlankės';
+    fetchNui('wsInstallBody', {
+      modType: wheelModSlot,
+      wheelType: wheelTypeCat.id,
+      idx,
+      label: `${wheelTypeCat.label} — ${slotLabel}`,
+    });
   };
 
   const onMouseDown = (e: React.MouseEvent) => {
@@ -345,6 +388,21 @@ export default function App() {
                 onClick={() => selectBodyCat(b)}>
                 <span className="sub-btn__text">{b.label}</span>
                 <span className="sub-meta">{b.count}</span>
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {section === 'wheels' && (
+          <nav className="sub-nav">
+            <p className="panel-label">Ratlankių tipai</p>
+            {(payload.wheelTypes ?? []).map((wt) => (
+              <button key={wt.id} type="button"
+                className={`sub-btn ${wheelTypeCat?.id === wt.id ? 'active' : ''}`}
+                onClick={() => selectWheelType(wt)}>
+                <span className="sub-btn__text">{wt.label}</span>
+                <span className="sub-meta">{wt.count}{wt.rearCount ? `+${wt.rearCount}` : ''}</span>
+                {payload.installedWheelType === wt.id && <span className="cat-dot has-item" />}
               </button>
             ))}
           </nav>
@@ -478,6 +536,48 @@ export default function App() {
         {section === 'body' && !bodyCat && (
           <div className="empty-state">
             <p>Pasirink kėbulo kategoriją iš kairės</p>
+          </div>
+        )}
+
+        {section === 'wheels' && wheelTypeCat && (
+          <>
+            <h2>{wheelTypeCat.label}</h2>
+            <p className="panel-sub">Pasirink ratlankių variantą — peržiūra iškart</p>
+            {payload.isBike && (wheelTypeCat.rearCount ?? 0) > 0 && (
+              <>
+                <p className="panel-label">Ratų ašis</p>
+                <div className="pills">
+                  <button type="button"
+                    className={`pill ${wheelModSlot === 23 ? 'active' : ''}`}
+                    onClick={() => selectWheelSlot(23)}>
+                    Priekinės ({wheelTypeCat.count})
+                  </button>
+                  <button type="button"
+                    className={`pill ${wheelModSlot === 24 ? 'active' : ''}`}
+                    onClick={() => selectWheelSlot(24)}>
+                    Galinės ({wheelTypeCat.rearCount})
+                  </button>
+                </div>
+              </>
+            )}
+            <div className="variant-grid">
+              <button type="button" className="variant-btn variant-btn--stock"
+                onClick={() => installWheel(-1)}>
+                Gamyklinis
+              </button>
+              {wheelVariants.map((v) => (
+                <button key={v.idx} type="button" className="variant-btn"
+                  onClick={() => installWheel(v.idx)}>
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {section === 'wheels' && !wheelTypeCat && (
+          <div className="empty-state">
+            <p>Pasirink ratlankių tipą iš kairės</p>
           </div>
         )}
       </section>

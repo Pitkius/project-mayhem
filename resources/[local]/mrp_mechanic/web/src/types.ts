@@ -1,6 +1,6 @@
 export type StatKey = 'acceleration' | 'topSpeed' | 'braking' | 'handling' | 'traction';
 
-export type WorkshopSection = 'performance' | 'paint' | 'tint' | 'body';
+export type WorkshopSection = 'performance' | 'paint' | 'tint' | 'body' | 'wheels';
 
 export type PerformancePart = {
   idx: number;
@@ -38,6 +38,7 @@ export type PaintTarget = 'primary' | 'secondary' | 'pearl';
 export type WindowTint = { idx: number; label: string };
 export type BodyModCategory = { id: number; label: string; count: number };
 export type BodyVariant = { idx: number; label: string };
+export type WheelTypeCategory = { id: number; label: string; count: number; rearCount?: number };
 
 export type OpenWorkshopPayload = {
   action: 'openWorkshop';
@@ -49,6 +50,9 @@ export type OpenWorkshopPayload = {
   paintState?: PaintState;
   windowTints: WindowTint[];
   bodyMods: BodyModCategory[];
+  wheelTypes: WheelTypeCategory[];
+  installedWheelType: number;
+  isBike: boolean;
   turboOn: boolean;
 };
 
@@ -59,4 +63,5 @@ export const SECTIONS: { id: WorkshopSection; icon: string; label: string; cam: 
   { id: 'paint', icon: 'fa-spray-can', label: 'Dažymas', cam: 'paint' },
   { id: 'tint', icon: 'fa-car-side', label: 'Langai', cam: 'tint' },
   { id: 'body', icon: 'fa-screwdriver-wrench', label: 'Kėbulas', cam: 'body' },
+  { id: 'wheels', icon: 'fa-circle-dot', label: 'Ratlankiai', cam: 'body' },
 ];
