@@ -9,6 +9,8 @@ WeaponCarry.ForceBack = {
 --- Inventoriaus pavadinimas → GTA native (addon ginklams).
 WeaponCarry.NativeHashName = {
     weapon_fgc9 = 'weapon_combatpistol',
+    weapon_tacticalsmg = 'weapon_tecpistol',
+    weapon_servicecarbine = 'weapon_tacticalrifle',
 }
 
 function WeaponCarry.resolveHash(name)
@@ -43,6 +45,8 @@ WeaponCarry.FallbackModels = {
     weapon_militaryrifle = 'w_ar_bullpuprifle',
     weapon_heavyrifle = 'w_ar_specialcarbine',
     weapon_tacticalrifle = 'w_ar_carbinerifle',
+    weapon_servicecarbine = 'w_ar_carbinerifle',
+    weapon_tacticalsmg = 'w_pi_pistolsmg_m31',
     weapon_mg = 'w_mg_mg',
     weapon_combatmg = 'w_mg_combatmg',
     weapon_combatmg_mk2 = 'w_mg_combatmg',

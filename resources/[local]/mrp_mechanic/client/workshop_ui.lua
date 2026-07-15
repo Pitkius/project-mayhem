@@ -230,6 +230,12 @@ local function reapplyAddonBodyFixes(veh, skipSlot)
     end
 end
 
+local function recipeLabelForItem(itemName)
+    if not itemName or itemName == '' then return nil end
+    local recipe = Config.TuningRecipes and Config.TuningRecipes[itemName]
+    return recipe and recipe.label or nil
+end
+
 local function requiredItemForLevel(modType, idx)
     modType = tonumber(modType)
     idx = tonumber(idx)
@@ -403,7 +409,18 @@ local function buildPerfCategories(veh, inventory, labels)
     for _, cat in ipairs(PERF_CATEGORIES) do
         local modType = cat.modType
         local tiered = Config.TuningUpgradeItems and Config.TuningUpgradeItems[modType]
-        local maxLevel = tiered and tiered.maxLevel or GetNumVehicleMods(veh, modType)
+        local maxLevel
+        if tiered then
+            if tiered.maxLevel then
+                maxLevel = tiered.maxLevel
+            elseif tiered.item then
+                maxLevel = 1
+            else
+                maxLevel = GetNumVehicleMods(veh, modType)
+            end
+        else
+            maxLevel = GetNumVehicleMods(veh, modType)
+        end
         if cat.isToggle then maxLevel = 1 elseif maxLevel <= 0 then goto continue end
 
         local installedLevel = cat.isToggle and (IsToggleModOn(veh, 18) and 0 or -1) or GetVehicleMod(veh, modType)
@@ -414,7 +431,8 @@ local function buildPerfCategories(veh, inventory, labels)
             local meta = labels[itemName] or {}
             parts[#parts + 1] = {
                 idx = 0, level = 1, itemName = itemName,
-                label = meta.label or 'Turbo', image = meta.image or 'veh_turbo.png',
+                label = recipeLabelForItem(itemName) or meta.label or 'Turbo',
+                image = meta.image or 'veh_turbo.png',
                 inventoryCount = inventory[itemName] or 0, installed = installedLevel >= 0,
             }
         else
@@ -423,7 +441,7 @@ local function buildPerfCategories(veh, inventory, labels)
                 local meta = itemName and (labels[itemName] or {}) or {}
                 parts[#parts + 1] = {
                     idx = idx, level = idx + 1, itemName = itemName,
-                    label = meta.label or ('Lygis %d'):format(idx + 1),
+                    label = recipeLabelForItem(itemName) or meta.label or ('Lygis %d'):format(idx + 1),
                     image = meta.image or 'box.png',
                     inventoryCount = itemName and (inventory[itemName] or 0) or 0,
                     installed = installedLevel == idx,
@@ -433,6 +451,11 @@ local function buildPerfCategories(veh, inventory, labels)
                 idx = -1, level = 0, itemName = nil, label = 'Gamyklinis',
                 image = 'box.png', inventoryCount = -1, installed = installedLevel < 0,
             }
+            table.sort(parts, function(a, b)
+                if a.idx < 0 then return true end
+                if b.idx < 0 then return false end
+                return a.idx < b.idx
+            end)
         end
 
         categories[#categories + 1] = {

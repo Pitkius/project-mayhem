@@ -323,12 +323,9 @@ Config.Stations = {
         --- SOR padalinio sandėlis / ginklinė (tik divisions.sor)
         armory = {
             coords = vector3(472.5499, -945.3289, 38.2497),
-            stashId = 'ltpd_armory_ls',
-            label = 'SOR / ARO sandėlis',
+            label = 'ARO ginklinė',
             minGrade = 2,
             divisions = { 'sor' },
-            maxweight = 5000000,
-            slots = 90,
         },
         --- Nuoroda į mrp_garages — asmeninis PD transporto garažas DB
         pdGarageId = 'pd_ls_main',
@@ -431,10 +428,9 @@ Config.Stations = {
         },
         armory = {
             coords = vector3(1847.0, 3691.5, 34.27),
-            stashId = 'ltpd_armory_sandy',
-            label = 'Policijos ginklinė (Sandy)',
-            maxweight = 4000000,
-            slots = 70,
+            label = 'ARO ginklinė (Sandy)',
+            minGrade = 2,
+            divisions = { 'sor' },
         },
         pdGarageId = 'pd_sandy',
         policeDealership = {

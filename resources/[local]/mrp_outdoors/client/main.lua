@@ -163,6 +163,52 @@ RegisterNetEvent('mrp_outdoors:client:tryFish', function()
     end, 'fishing_license')
 end)
 
+--- Po vandeniu — paieška (retas Service Carbine)
+local salvageBusy = false
+CreateThread(function()
+    local cfg = Config.UnderwaterSalvage or {}
+    while true do
+        local waitMs = 1000
+        local ped = PlayerPedId()
+        if not salvageBusy and IsPedSwimmingUnderWater(ped) then
+            local pos = GetEntityCoords(ped)
+            local inZone = false
+            for _, z in ipairs(cfg.zones or {}) do
+                if #(pos - z.coords) <= (z.radius or 40.0) then
+                    inZone = true
+                    break
+                end
+            end
+            if inZone then
+                waitMs = 0
+                BeginTextCommandDisplayHelp('STRING')
+                AddTextComponentSubstringPlayerName('~INPUT_CONTEXT~ Ieškoti po vandeniu')
+                EndTextCommandDisplayHelp(0, false, true, -1)
+                if IsControlJustReleased(0, 38) then
+                    salvageBusy = true
+                    local searchMs = tonumber(cfg.searchTimeMs) or 8500
+                    TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_WELDING', 0, true)
+                    QBCore.Functions.Progressbar('underwater_salvage', 'Ieškoma po vandeniu…', searchMs, false, true, {
+                        disableMovement = true,
+                        disableCarMovement = true,
+                        disableMouse = false,
+                        disableCombat = true,
+                    }, {}, {}, {}, function()
+                        ClearPedTasks(ped)
+                        TriggerServerEvent('mrp_outdoors:server:underwaterSalvage')
+                        SetTimeout((tonumber(cfg.cooldownSec) or 45) * 1000, function() salvageBusy = false end)
+                    end, function()
+                        ClearPedTasks(ped)
+                        salvageBusy = false
+                        notify('Paieška nutraukta.', 'error')
+                    end)
+                end
+            end
+        end
+        Wait(waitMs)
+    end
+end)
+
 --- Skerdimas (butcher stotis ranger)
 local function openButcherMenu()
     local menu = {

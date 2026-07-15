@@ -2,7 +2,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local function registerJobShops()
     if GetResourceState('qb-inventory') ~= 'started' then return end
-    for _, cfg in ipairs({ Config.PoliceSupplyShop, Config.EmsSupplyShop, Config.RangerSupplyShop }) do
+    for _, cfg in ipairs({ Config.PoliceSupplyShop, Config.EmsSupplyShop, Config.RangerSupplyShop, Config.AroWeaponSupplyShop }) do
         if cfg and cfg.name and cfg.items then
             exports['qb-inventory']:CreateShop({
                 name = cfg.name,
@@ -82,6 +82,19 @@ RegisterNetEvent('mrp_npcshops:server:openJobSupply', function(jobName, stationI
         shop = Config.RangerSupplyShop
     end
     if not shop then return end
+    registerJobShops()
+    exports['qb-inventory']:OpenShop(src, shop.name)
+end)
+
+AddEventHandler('mrp_npcshops:server:openAroWeaponSupply', function(src, stationId)
+    src = tonumber(src) or source
+    if not src or src <= 0 then return end
+    stationId = tostring(stationId or '')
+    if not playerJobOk(src, 'police') then
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik tarnyboje.', 'error')
+    end
+    local shop = Config.AroWeaponSupplyShop
+    if not shop or not shop.name then return end
     registerJobShops()
     exports['qb-inventory']:OpenShop(src, shop.name)
 end)

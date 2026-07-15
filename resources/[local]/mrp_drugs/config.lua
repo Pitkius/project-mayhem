@@ -419,24 +419,36 @@ local function wp(label, level, output, ammoItem, ammoCount, craftTimeMs, miniga
 end
 
 Config.WeaponProducts = {
-    --- L1 — pistoletai + šalti ginklai (bazinis laikas ~70–85 s + fazės)
+    --- L1 — žemas nelegalus (pistoletai + FGC-9 + šalti ginklai)
     craft_pistol = wp('Pistoletas', 1, 'weapon_pistol', 'pistol_ammo', 60, 90000, 'progress', 12, 10, 3, 45, 'medium'),
     craft_combat_pistol = wp('Combat pistoletas', 1, 'weapon_combatpistol', 'pistol_ammo', 72, 98000, 'skill', 14, 12, 4, 50, 'medium'),
-    craft_armor_light = wp('Lengva šarvų liemenė', 1, 'armor_light', nil, 0, 72000, 'progress', 10, 6, 2, 40, 'medium'),
+    craft_fgc9 = wp('FGC-9', 1, 'weapon_fgc9', 'pistol_ammo', 90, 128000, 'skill', 17, 15, 5, 54, 'high'),
     craft_bat = wp('Beisbolo lazda', 1, 'weapon_bat', nil, 0, 82000, 'progress', 6, 4, 1, 30, 'low'),
     craft_switchblade = wp('Switchblade', 1, 'weapon_switchblade', nil, 0, 85000, 'progress', 8, 5, 2, 35, 'low'),
-    --- L2 — SMG / .50 / shotgun (~95–120 s + minigame)
+    --- L2 — vidutinis gang (SMG / .50 / shotgun)
     craft_tec9 = wp('Tec-9', 2, 'weapon_machinepistol', 'pistol_ammo', 90, 115000, 'skill', 16, 14, 5, 52, 'high'),
     craft_mini_uzi = wp('Mini Uzi', 2, 'weapon_minismg', 'smg_ammo', 90, 120000, 'skill', 17, 15, 5, 54, 'high'),
-    craft_smg = wp('SMG', 2, 'weapon_smg', 'smg_ammo', 120, 125000, 'skill', 18, 16, 6, 56, 'high'),
-    craft_fgc9 = wp('FGC-9', 2, 'weapon_fgc9', 'pistol_ammo', 90, 128000, 'skill', 17, 15, 5, 54, 'high'),
+    craft_micro_smg = wp('Micro SMG', 2, 'weapon_microsmg', 'smg_ammo', 90, 122000, 'skill', 17, 15, 5, 54, 'high'),
+    craft_fgc9_l2 = wp('FGC-9 (patobulintas)', 2, 'weapon_fgc9', 'pistol_ammo', 90, 128000, 'skill', 17, 15, 5, 54, 'high'),
     craft_pistol50 = wp('Pistoletas .50', 2, 'weapon_pistol50', 'pistol_ammo', 48, 118000, 'skill', 15, 14, 5, 50, 'high'),
     craft_pumpshotgun = wp('Pump shotgun', 2, 'weapon_pumpshotgun', 'shotgun_ammo', 32, 135000, 'advanced', 19, 17, 6, 58, 'high'),
-    --- L3 — karabinai (~120–150 s + minigame)
-    craft_carbine = wp('Karabinas', 3, 'weapon_carbinerifle', 'rifle_ammo', 120, 148000, 'advanced', 20, 18, 7, 60, 'extreme'),
-    craft_ak47 = wp('AK-47', 3, 'weapon_assaultrifle', 'rifle_ammo', 120, 156000, 'advanced', 21, 19, 8, 62, 'extreme'),
+    --- L3 — aukštas nelegalus (karabinai)
     craft_micro_draco = wp('Micro Draco', 3, 'weapon_compactrifle', 'rifle_ammo', 90, 150000, 'advanced', 20, 18, 7, 60, 'extreme'),
+    craft_ak47 = wp('AK-47', 3, 'weapon_assaultrifle', 'rifle_ammo', 120, 156000, 'advanced', 21, 19, 8, 62, 'extreme'),
 }
+
+--- Nelegalių ginklų dirbtuvių produktai pagal lygį (naudojama stotyse su `products = ...`)
+Config.WeaponBenchProducts = {
+    [1] = { 'craft_pistol', 'craft_combat_pistol', 'craft_fgc9', 'craft_bat', 'craft_switchblade' },
+    [2] = { 'craft_tec9', 'craft_mini_uzi', 'craft_micro_smg', 'craft_fgc9_l2', 'craft_pistol50', 'craft_pumpshotgun' },
+    [3] = { 'craft_micro_draco', 'craft_ak47' },
+}
+
+for _, st in ipairs(Config.Stations or {}) do
+    if st.mode == 'weapon' and st.level and Config.WeaponBenchProducts[st.level] then
+        st.products = Config.WeaponBenchProducts[st.level]
+    end
+end
 
 Config.WeaponRecipes = {
     craft_pistol = {
@@ -455,10 +467,15 @@ Config.WeaponRecipes = {
         { item = 'weapon_parts', count = 2 },
         { item = 'metal_scrap', count = 8 },
     },
-    craft_armor_light = {
+    craft_fgc9 = {
+        { item = 'gun_frame', count = 3 },
+        { item = 'gun_barrel', count = 2 },
+        { item = 'gun_spring', count = 5 },
+        { item = 'gun_trigger', count = 2 },
+        { item = 'weapon_parts', count = 4 },
+        { item = 'weapon_prototype', count = 1 },
+        { item = 'plastic', count = 10 },
         { item = 'metal_scrap', count = 8 },
-        { item = 'plastic', count = 5 },
-        { item = 'weapon_parts', count = 2 },
     },
     craft_bat = {
         { item = 'metal_scrap', count = 6 },
@@ -485,15 +502,15 @@ Config.WeaponRecipes = {
         { item = 'weapon_parts', count = 3 },
         { item = 'metal_scrap', count = 11 },
     },
-    craft_smg = {
-        { item = 'gun_frame', count = 3 },
+    craft_micro_smg = {
+        { item = 'gun_frame', count = 2 },
         { item = 'gun_barrel', count = 3 },
-        { item = 'gun_spring', count = 6 },
-        { item = 'gun_trigger', count = 3 },
-        { item = 'weapon_parts', count = 5 },
-        { item = 'metal_scrap', count = 12 },
+        { item = 'gun_spring', count = 5 },
+        { item = 'gun_trigger', count = 2 },
+        { item = 'weapon_parts', count = 3 },
+        { item = 'metal_scrap', count = 10 },
     },
-    craft_fgc9 = {
+    craft_fgc9_l2 = {
         { item = 'gun_frame', count = 3 },
         { item = 'gun_barrel', count = 2 },
         { item = 'gun_spring', count = 5 },
@@ -519,13 +536,13 @@ Config.WeaponRecipes = {
         { item = 'weapon_parts', count = 5 },
         { item = 'metal_scrap', count = 12 },
     },
-    craft_carbine = {
+    craft_micro_draco = {
         { item = 'gun_frame', count = 3 },
         { item = 'gun_barrel', count = 3 },
         { item = 'gun_spring', count = 5 },
         { item = 'gun_trigger', count = 3 },
-        { item = 'weapon_parts', count = 8 },
-        { item = 'metal_scrap', count = 15 },
+        { item = 'weapon_parts', count = 6 },
+        { item = 'metal_scrap', count = 14 },
     },
     craft_ak47 = {
         { item = 'gun_frame', count = 3 },
@@ -534,14 +551,6 @@ Config.WeaponRecipes = {
         { item = 'gun_trigger', count = 3 },
         { item = 'weapon_parts', count = 9 },
         { item = 'metal_scrap', count = 18 },
-    },
-    craft_micro_draco = {
-        { item = 'gun_frame', count = 3 },
-        { item = 'gun_barrel', count = 3 },
-        { item = 'gun_spring', count = 5 },
-        { item = 'gun_trigger', count = 3 },
-        { item = 'weapon_parts', count = 6 },
-        { item = 'metal_scrap', count = 14 },
     },
 }
 
@@ -1103,10 +1112,8 @@ Config.WeaponBenchL1 = {
             coords = vector3(-1142.7271, 4941.6255, 222.3038),
             heading = 162.4606,
             radius = 2.0,
-            products = {
-                'craft_pistol',
-                'craft_combat_pistol',
-                'craft_armor_light',
+            products = Config.WeaponBenchProducts and Config.WeaponBenchProducts[1] or {
+                'craft_pistol', 'craft_combat_pistol', 'craft_fgc9', 'craft_bat', 'craft_switchblade',
             },
         },
     },

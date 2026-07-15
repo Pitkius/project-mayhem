@@ -156,6 +156,57 @@ RegisterNetEvent('mrp_outdoors:server:sellItem', function(itemName, amount)
     TriggerClientEvent('QBCore:Notify', src, ('Parduota už $%s.'):format(payout), 'success')
 end)
 
+RegisterNetEvent('mrp_outdoors:server:underwaterSalvage', function()
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    local cfg = Config.UnderwaterSalvage or {}
+    local loot = cfg.loot or {}
+    if #loot < 1 then return end
+    local roll = math.random(1, 100)
+    local acc = 0
+    local picked = loot[1]
+    for _, row in ipairs(loot) do
+        acc = acc + (tonumber(row.weight) or 0)
+        if roll <= acc then
+            picked = row
+            break
+        end
+    end
+    if picked.kind == 'money' then
+        local payout = math.random(tonumber(picked.min) or 50, tonumber(picked.max) or 200)
+        Player.Functions.AddMoney('cash', payout, 'underwater-salvage')
+        TriggerClientEvent('QBCore:Notify', src, ('Radote $%s po vandeniu.'):format(payout), 'success')
+        return
+    end
+    if picked.kind == 'weapon' and picked.item then
+        local rusty = cfg.rustyWeapon or {}
+        local quality = math.random(tonumber(rusty.qualityMin) or 20, tonumber(rusty.qualityMax) or 45)
+        local info = {
+            quality = quality,
+            rusted = true,
+            jamChance = tonumber(rusty.jamChance) or 0.12,
+            serie = tostring(math.random(100000, 999999)),
+        }
+        if not Player.Functions.AddItem(picked.item, 1, false, info) then
+            TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
+            return
+        end
+        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[picked.item], 'add')
+        TriggerClientEvent('QBCore:Notify', src, 'Retas radinys — rūdijęs tarnybinis karabinas!', 'success', 7000)
+        return
+    end
+    if picked.kind == 'item' and picked.item then
+        local count = math.max(1, tonumber(picked.count) or 1)
+        if Player.Functions.AddItem(picked.item, count) then
+            TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[picked.item], 'add')
+            TriggerClientEvent('QBCore:Notify', src, 'Radote po vandeniu.', 'success')
+        else
+            TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
+        end
+    end
+end)
+
 RegisterNetEvent('mrp_outdoors:server:fishReward', function()
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)

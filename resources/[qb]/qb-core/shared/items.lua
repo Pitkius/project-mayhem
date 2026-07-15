@@ -57,6 +57,7 @@ QBShared.Items = {
     weapon_combatpdw             = { name = 'weapon_combatpdw', label = 'Kovinis PDW', weight = 1000, type = 'weapon', ammotype = 'AMMO_SMG', image = 'weapon_combatpdw.png', unique = true, useable = false, description = 'Asmeninis gynybos ginklas.' },
     weapon_machinepistol         = { name = 'weapon_machinepistol', label = 'Tec-9', weight = 1000, type = 'weapon', ammotype = 'AMMO_PISTOL', image = 'weapon_machinepistol.png', unique = true, useable = false, description = 'Automatinis pistoletas.' },
     weapon_minismg               = { name = 'weapon_minismg', label = 'Mini SMG', weight = 1000, type = 'weapon', ammotype = 'AMMO_SMG', image = 'weapon_minismg.png', unique = true, useable = false, description = 'Labai kompaktiškas SMG.' },
+    weapon_tacticalsmg           = { name = 'weapon_tacticalsmg', label = 'Taktinis SMG', weight = 1000, type = 'weapon', ammotype = 'AMMO_SMG', image = 'weapon_tacticalsmg.png', unique = true, useable = false, description = 'Taktinis automatinis ginklas.' },
     weapon_raycarbine            = { name = 'weapon_raycarbine', label = 'Unholy Hellbringer', weight = 1000, type = 'weapon', ammotype = 'AMMO_SMG', image = 'weapon_raycarbine.png', unique = true, useable = true, description = 'Eksperimentinis energijos karabinas.' },
     weapon_fgc9                  = { name = 'weapon_fgc9', label = 'FGC-9', weight = 3200, type = 'weapon', ammotype = 'AMMO_PISTOL', image = 'weapon_fgc9.png', unique = true, useable = true, description = '3D spausdintas 9 mm pistoletinio kalibro karabinas.' },
 
@@ -84,6 +85,8 @@ QBShared.Items = {
     weapon_specialcarbine_mk2    = { name = 'weapon_specialcarbine_mk2', label = 'Specialus karabinas Mk II', weight = 1000, type = 'weapon', ammotype = 'AMMO_RIFLE', image = 'weapon_specialcarbine_mk2.png', unique = true, useable = true, description = 'Patobulintas karabinas.' },
     weapon_bullpuprifle_mk2      = { name = 'weapon_bullpuprifle_mk2', label = 'Bullpup šautuvas Mk II', weight = 1000, type = 'weapon', ammotype = 'AMMO_RIFLE', image = 'weapon_bullpuprifle_mk2.png', unique = true, useable = true, description = 'Patobulintas bullpup šautuvas.' },
     weapon_militaryrifle         = { name = 'weapon_militaryrifle', label = 'Karinis šautuvas', weight = 1000, type = 'weapon', ammotype = 'AMMO_RIFLE', image = 'weapon_militaryrifle.png', unique = true, useable = true, description = 'Karinis automatinis šautuvas.' },
+    weapon_heavyrifle            = { name = 'weapon_heavyrifle', label = 'Sunkusis šautuvas', weight = 1000, type = 'weapon', ammotype = 'AMMO_RIFLE', image = 'weapon_heavyrifle.png', unique = true, useable = false, description = 'Sunkus kovinis šautuvas.' },
+    weapon_servicecarbine        = { name = 'weapon_servicecarbine', label = 'Tarnybinis karabinas', weight = 1000, type = 'weapon', ammotype = 'AMMO_RIFLE', image = 'weapon_servicecarbine.png', unique = true, useable = false, description = 'Rūdijęs po vandeniu rastas karabinas — reikia remonto.' },
 
     -- Light Machine Guns
     weapon_mg                    = { name = 'weapon_mg', label = 'Kulkosvaidis', weight = 1000, type = 'weapon', ammotype = 'AMMO_MG', image = 'weapon_mg.png', unique = true, useable = false, description = 'Automatinis kulkosvaidis.' },

@@ -159,12 +159,22 @@ local function refundIngredients(Player, recipe)
     end
 end
 
+local function recipeAllowedForDivision(recipe, division)
+    if not recipe or not recipe.divisions or #recipe.divisions == 0 then return true end
+    division = PdDivisions.normalize(division or 'mp')
+    for _, d in ipairs(recipe.divisions) do
+        if PdDivisions.normalize(d) == division then return true end
+    end
+    return false
+end
+
 local function buildProductRows(Player, craftLevel)
     local labels = cfg().levelLabels or {}
+    local division = getDivisionForCitizenid(Player.PlayerData.citizenid)
     local rows = {}
     for id, recipe in pairs(cfg().recipes or {}) do
         local needLv = tonumber(recipe.craftLevel) or 1
-        if craftLevel >= needLv then
+        if craftLevel >= needLv and recipeAllowedForDivision(recipe, division) then
             local out = recipe.output
             local outLabel = QBCore.Shared.Items[out] and QBCore.Shared.Items[out].label or out
             local timeSec = math.ceil((tonumber(recipe.timeMs) or 10000) / 1000)
@@ -256,6 +266,9 @@ RegisterNetEvent('mrp_ltpd:server:pdWeaponCraft', function(stationKey, recipeId)
     local needLv = tonumber(recipe.craftLevel) or 1
     if profile.craft_level < needLv then
         return TriggerClientEvent('QBCore:Notify', src, ('Reikia gamybos %d lygio.'):format(needLv), 'error')
+    end
+    if not recipeAllowedForDivision(recipe, getDivisionForCitizenid(P.PlayerData.citizenid)) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Šis receptas nepriklauso tavo padaliniui.', 'error')
     end
 
     if not hasAllIngredients(P, recipe) then

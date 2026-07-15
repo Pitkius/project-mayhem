@@ -72,6 +72,22 @@ function installLabel(s: InstallState) {
   return 'Montuoti';
 }
 
+function defaultPerfPartIdx(cat: PerformanceCategory): number | null {
+  const installed = cat.parts.find((p) => p.installed);
+  if (installed) return installed.idx;
+  const stock = cat.parts.find((p) => p.idx < 0);
+  if (stock) return stock.idx;
+  return cat.parts[0]?.idx ?? null;
+}
+
+function sortPerfParts(parts: PerformanceCategory['parts']) {
+  return [...parts].sort((a, b) => {
+    if (a.idx < 0) return -1;
+    if (b.idx < 0) return 1;
+    return a.idx - b.idx;
+  });
+}
+
 function fadeIn(el: Element | null | undefined, vars: gsap.TweenVars = {}) {
   if (!el) return;
   gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power2.out', ...vars });
@@ -168,7 +184,7 @@ export default function App() {
         setPaintState(ps);
         setPaintTarget('primary');
         setPerfCatId(msg.categories?.[0]?.id ?? null);
-        setPerfPartIdx(null);
+        setPerfPartIdx(msg.categories?.[0] ? defaultPerfPartIdx(msg.categories[0]) : null);
         setSection('performance');
         setOpen(true);
         return;
@@ -254,7 +270,7 @@ export default function App() {
 
   const selectPerfCat = (cat: PerformanceCategory) => {
     setPerfCatId(cat.id);
-    setPerfPartIdx(null);
+    setPerfPartIdx(defaultPerfPartIdx(cat));
     fetchNui('wsSelectCam', { modType: cat.modType });
   };
 
@@ -365,18 +381,37 @@ export default function App() {
         </nav>
 
         {section === 'performance' && (
-          <nav className="sub-nav">
-            <p className="panel-label">Performance dalys</p>
-            {categories.map((cat) => (
-              <button key={cat.id} type="button"
-                className={`sub-btn ${perfCat?.id === cat.id ? 'active' : ''}`}
-                onClick={() => selectPerfCat(cat)}>
-                <span className="sub-btn__icon"><i className={`fas ${PERF_ICONS[cat.id] ?? 'fa-wrench'}`} aria-hidden="true" /></span>
-                <span className="sub-btn__text">{cat.label}</span>
-                <span className={`cat-dot ${cat.hasInventory ? 'has-item' : ''}`} />
-              </button>
-            ))}
-          </nav>
+          <div className="sub-nav-wrap">
+            <nav className="sub-nav sub-nav--cats">
+              <p className="panel-label">Performance dalys</p>
+              {categories.map((cat) => (
+                <button key={cat.id} type="button"
+                  className={`sub-btn ${perfCat?.id === cat.id ? 'active' : ''}`}
+                  onClick={() => selectPerfCat(cat)}>
+                  <span className="sub-btn__icon"><i className={`fas ${PERF_ICONS[cat.id] ?? 'fa-wrench'}`} aria-hidden="true" /></span>
+                  <span className="sub-btn__text">{cat.label}</span>
+                  <span className={`cat-dot ${cat.hasInventory ? 'has-item' : ''}`} />
+                </button>
+              ))}
+            </nav>
+
+            {perfCat && (
+              <nav className="sub-nav sub-nav--levels">
+                <p className="panel-label">{perfCat.label} — lygiai</p>
+                {sortPerfParts(perfCat.parts).map((part) => (
+                  <button key={`${perfCat.id}-lvl-${part.idx}`} type="button"
+                    className={`sub-btn ${perfPartIdx === part.idx ? 'active' : ''} ${part.installed ? 'installed' : ''}`}
+                    onClick={() => setPerfPartIdx(part.idx)}>
+                    <span className="sub-btn__text">{part.label}</span>
+                    {part.installed && <span className="cat-dot has-item" title="Sumontuota" />}
+                    {part.itemName && part.inventoryCount > 0 && !part.installed && (
+                      <span className="sub-meta">x{part.inventoryCount}</span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+            )}
+          </div>
         )}
 
         {section === 'body' && (
@@ -418,15 +453,19 @@ export default function App() {
         {section === 'performance' && perfCat && (
           <>
             <h2>{perfCat.label}</h2>
-            <p className="panel-sub">Pasirink detalę — performance montavimui reikia itemo</p>
-            <div className="parts-grid">
-              {perfCat.parts.map((part) => (
+            <p className="panel-sub">Pasirink lygį kairėje arba sąraše — montavimui reikia detalės inventoriuje</p>
+            <div className="parts-list">
+              {sortPerfParts(perfCat.parts).map((part) => (
                 <button key={`${perfCat.id}-${part.idx}`} type="button"
                   className={`part-card ${perfPartIdx === part.idx ? 'active' : ''} ${part.installed ? 'installed' : ''}`}
                   onClick={() => setPerfPartIdx(part.idx)}>
                   <img src={itemImageUrl(part.image)} alt="" />
-                  <span className="part-card__label">{part.label}</span>
-                  {part.itemName && part.inventoryCount >= 0 && <span className="part-card__qty">x{part.inventoryCount}</span>}
+                  <div className="part-card__body">
+                    <span className="part-card__label">{part.label}</span>
+                    {part.itemName && part.inventoryCount >= 0 && (
+                      <span className="part-card__qty">Inventoriuje: {part.inventoryCount}</span>
+                    )}
+                  </div>
                   {part.installed && <span className="part-badge">Sumontuota</span>}
                 </button>
               ))}

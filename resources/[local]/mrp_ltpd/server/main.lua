@@ -1078,21 +1078,20 @@ RegisterNetEvent('mrp_ltpd:server:openArmory', function(stationId)
     end
     stationId = tostring(stationId or '')
     local st = getStationById(stationId)
-    if not st or not st.armory or not st.armory.coords or not st.armory.stashId then return end
+    if not st or not st.armory or not st.armory.coords then return end
     local P = QBCore.Functions.GetPlayer(src)
     local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
     if not PdDivisions.canAccessPoint(getGrade(src), div, st.armory) then
-        return TriggerClientEvent('QBCore:Notify', src, 'ARO sandėlis – tik ARO padaliniui.', 'error')
+        return TriggerClientEvent('QBCore:Notify', src, 'ARO ginklinė – tik ARO padaliniui.', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
     if not officerNearCoords(src, st.armory.coords, maxD) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo ginklinės (rūbinės). Priartėk arba patikrink koordinates.', 'error')
     end
-    exports['qb-inventory']:OpenInventory(src, st.armory.stashId, {
-        maxweight = st.armory.maxweight or 4000000,
-        slots = st.armory.slots or 80,
-        label = st.armory.label or 'Policijos ginklinė',
-    })
+    if GetResourceState('mrp_npcshops') ~= 'started' then
+        return TriggerClientEvent('QBCore:Notify', src, 'ARO ginklinė neprieinama.', 'error')
+    end
+    TriggerEvent('mrp_npcshops:server:openAroWeaponSupply', src, stationId)
 end)
 
 RegisterNetEvent('mrp_ltpd:server:spawnFleet', function(stationId, modelName)

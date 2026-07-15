@@ -57,6 +57,8 @@ Config.DefaultBulletDamage = {}
 --- Inventoriaus ginklas → GTA native hash (replace/stream modai be atskiro WEAPON_ entry).
 Config.WeaponNativeHash = {
     weapon_fgc9 = 'weapon_combatpistol',
+    weapon_tacticalsmg = 'weapon_tecpistol',
+    weapon_servicecarbine = 'weapon_tacticalrifle',
 }
 
 Config.DurabilityBlockedWeapons = {
