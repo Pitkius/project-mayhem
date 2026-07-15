@@ -63,6 +63,8 @@ jobs:
             exit 1
           fi
 
+          bash "$REPO_DIR/scripts/patch-txadmin-build.sh" /home/fivem || echo "[deploy] txAdmin build patch skipped"
+
           # Keep runtime C++ libs discoverable for FXServer on Debian hosts.
           sudo -n mkdir -p "$SERVER_DIR/alpine/lib"
           if [ -f "$SERVER_DIR/alpine/usr/lib/libstdc++.so.6" ]; then

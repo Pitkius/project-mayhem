@@ -25,8 +25,19 @@ RegisterCommand('checkmodels', function()
         local model, label = entry[1], entry[2]
         local hash = joaat(model)
         local ok = IsModelInCdimage(hash) and IsModelAVehicle(hash)
-        lines[#lines + 1] = ('%s %s — %s'):format(ok and '✓' or '✗', model, label)
+        lines[#lines + 1] = ('%s %s — %s'):format(ok and 'OK' or 'NE', model, label)
     end
-    notify(table.concat(lines, '\n'), 'primary')
-    print('[mrp_buildcheck]\n' .. table.concat(lines, '\n'))
+    notify(table.concat(lines, ' | '), 'primary')
+    print('[mrp_buildcheck] ' .. table.concat(lines, '\n'))
 end, false)
+
+CreateThread(function()
+    Wait(8000)
+    local build = GetGameBuildNumber()
+    if build < 3788 then
+        notify(
+            ('Tavo GTA build %s — nauji auto (Kortz) reikalauja 3788. Atnaujink GTA V per Rockstar Launcher.'):format(build),
+            'error'
+        )
+    end
+end)

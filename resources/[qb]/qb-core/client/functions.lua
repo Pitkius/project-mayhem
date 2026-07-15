@@ -454,7 +454,14 @@ end
 function QBCore.Functions.SpawnVehicle(model, cb, coords, isnetworked, teleportInto)
     local ped = PlayerPedId()
     model = type(model) == 'string' and joaat(model) or model
-    if not IsModelInCdimage(model) then return end
+    if not IsModelInCdimage(model) then
+        QBCore.Functions.Notify(
+            ('Modelis neprieinamas (build %s, reikia 3788).'):format(GetGameBuildNumber()),
+            'error',
+            8000
+        )
+        return
+    end
     if coords then
         coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords
     else
