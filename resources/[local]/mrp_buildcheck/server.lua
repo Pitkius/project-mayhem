@@ -1,3 +1,4 @@
+local QBCore = exports['qb-core']:GetCoreObject()
 local REQUIRED_BUILD = 3788
 
 AddEventHandler('onResourceStart', function(res)
@@ -7,6 +8,10 @@ AddEventHandler('onResourceStart', function(res)
     if enforced ~= tostring(REQUIRED_BUILD) then
         print('^1[mrp_buildcheck]^0 DĖMESIO: serveris neprivers build 3788 — patikrink server.cfg / txAdmin Additional Arguments.')
     end
+end)
+
+QBCore.Functions.CreateCallback('mrp_buildcheck:server:getEnforcedBuild', function(_, cb)
+    cb(GetConvar('sv_enforceGameBuild', '0'))
 end)
 
 RegisterCommand('serverbuild', function(source)
