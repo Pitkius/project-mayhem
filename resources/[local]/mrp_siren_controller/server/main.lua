@@ -205,6 +205,11 @@ RegisterNetEvent('mrp_siren:server:clearEmsEmergencyOnExit', function(netId)
     if veh == 0 then return end
     if not isEmsOnDuty(src) then return end
     if not vehicleNearPlayer(src, veh, (Config.ValidateDistance or 28.0) + 10.0) then return end
+    -- Neišjungti, jei klientas klaidingai pranešė išlipimą, bet vis dar vairuoja
+    local ped = GetPlayerPed(src)
+    if ped and ped ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
+        return
+    end
     Entity(veh).state:set('ltEmsSirenMode', 'off', true)
 end)
 

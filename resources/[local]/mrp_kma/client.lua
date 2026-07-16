@@ -233,6 +233,16 @@ local function spawnReleasedVehicle(result)
         end
     end
 
+    --- PD mrpd* lightbar extras — senas mods extras=false juos išjungdavo
+    local modelName = tostring(result.model or ''):lower()
+    if modelName:match('^mrpd%d+$') or modelName == 'polmav' or modelName == 'buzzard2' then
+        for i = 0, 20 do
+            if DoesExtraExist(veh, i) then
+                SetVehicleExtra(veh, i, 0)
+            end
+        end
+    end
+
     SetModelAsNoLongerNeeded(modelHash)
     TriggerEvent('vehiclekeys:client:SetOwner', result.plate)
     TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)

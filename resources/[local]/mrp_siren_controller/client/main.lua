@@ -351,26 +351,37 @@ end)
 
 CreateThread(function()
     local lastDriverVeh = 0
+    local exitMissTicks = 0
+    local EXIT_CONFIRM_TICKS = 4 -- ~1.4s — išvengti klaidingo clear, kai GetVehiclePedIsIn trumpam grąžina 0
     while true do
         Wait(350)
         local ped = PlayerPedId()
         local inVeh = GetVehiclePedIsIn(ped, false)
         local driverVeh = getDriverVehicle()
+        if (not driverVeh or driverVeh == 0) and lastDriverVeh ~= 0 and DoesEntityExist(lastDriverVeh)
+            and GetPedInVehicleSeat(lastDriverVeh, -1) == ped then
+            driverVeh = lastDriverVeh
+        end
 
         if driverVeh and driverVeh ~= 0 then
             lastDriverVeh = driverVeh
+            exitMissTicks = 0
         elseif lastDriverVeh ~= 0 then
-            local jt = detectActiveJobType()
-            if jt and DoesEntityExist(lastDriverVeh) then
-                local cfg = getJobCfg(jt)
-                if cfg and cfg.clearOnExitEvent then
-                    local netId = safeVehicleNetId(lastDriverVeh)
-                    if netId ~= 0 then
-                        TriggerServerEvent(cfg.clearOnExitEvent, netId)
+            exitMissTicks = exitMissTicks + 1
+            if exitMissTicks >= EXIT_CONFIRM_TICKS then
+                local jt = detectActiveJobType()
+                if jt and DoesEntityExist(lastDriverVeh) then
+                    local cfg = getJobCfg(jt)
+                    if cfg and cfg.clearOnExitEvent then
+                        local netId = safeVehicleNetId(lastDriverVeh)
+                        if netId ~= 0 then
+                            TriggerServerEvent(cfg.clearOnExitEvent, netId)
+                        end
                     end
                 end
+                lastDriverVeh = 0
+                exitMissTicks = 0
             end
-            lastDriverVeh = 0
         end
 
         if uiOpen and (not inVeh or inVeh == 0) then

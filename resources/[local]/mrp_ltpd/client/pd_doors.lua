@@ -311,8 +311,14 @@ local function doorLockZOffset(doorType)
 end
 
 --- Spynos ikona ant durų centro (ne virš jų, ne ant E taško).
-local function resolveDoorLockPos(group)
+--- Slabai nestovi judantys — cache'inam. Entity tik kai nėra slabų.
+local function resolveDoorLockPos(group, forceRefresh)
     if not group then return nil end
+    if not forceRefresh and group.lockPosCache then
+        return group.lockPosCache
+    end
+
+    local zOff = doorLockZOffset(group.doorType)
     local slabs = group.slabs or {}
     if #slabs > 0 then
         local sum = vector3(0.0, 0.0, 0.0)
@@ -320,8 +326,10 @@ local function resolveDoorLockPos(group)
             sum = sum + s.coords
         end
         local c = sum / #slabs
-        return vector3(c.x, c.y, c.z + doorLockZOffset(group.doorType))
+        group.lockPosCache = vector3(c.x, c.y, c.z + zOff)
+        return group.lockPosCache
     end
+
     local count = 0
     local sum = vector3(0.0, 0.0, 0.0)
     for _, ent in ipairs(group.entities or {}) do
@@ -332,10 +340,14 @@ local function resolveDoorLockPos(group)
     end
     if count > 0 then
         local c = sum / count
-        return vector3(c.x, c.y, c.z + doorLockZOffset(group.doorType))
+        --- Entity gali judėti (garažas) — cache trumpesnis, bet vis tiek naudingas frame'ams
+        group.lockPosCache = vector3(c.x, c.y, c.z + zOff)
+        return group.lockPosCache
     end
+
     if group.interact then
-        return vector3(group.interact.x, group.interact.y, group.interact.z + doorLockZOffset(group.doorType))
+        group.lockPosCache = vector3(group.interact.x, group.interact.y, group.interact.z + zOff)
+        return group.lockPosCache
     end
     return nil
 end
@@ -380,18 +392,15 @@ local nearDoorDistCache = { dist = 999999.0, at = 0, x = 0.0, y = 0.0, z = 0.0 }
 local function nearestPdDoorDist(pcoords)
     local now = GetGameTimer()
     local c = nearDoorDistCache
-    if now - c.at < 400 then
+    if now - c.at < 500 then
         local dx, dy, dz = pcoords.x - c.x, pcoords.y - c.y, pcoords.z - c.z
-        if (dx * dx + dy * dy + dz * dz) < 2.25 then
+        if (dx * dx + dy * dy + dz * dz) < 4.0 then
             return c.dist
         end
     end
+    --- Tik interact taškai — greita. Spynos pozicija naudojama tik E/ikona thread'e.
     local minD = 999999.0
     for _, g in ipairs(doorGroups) do
-        local lockPos = resolveDoorLockPos(g)
-        if lockPos then
-            minD = math.min(minD, #(pcoords - lockPos))
-        end
         if g.interact then
             minD = math.min(minD, #(pcoords - g.interact))
         end
@@ -1207,6 +1216,7 @@ CreateThread(function()
                 local newSig = doorGroupEntitySig({ slabs = g.slabs, entities = ents })
                 local entitiesChanged = entitiesScanMeaningfullyChanged(g.id, newSig)
                 g.entities = ents
+                g.lockPosCache = nil
                 if not entitiesChanged then goto next_group end
                 if g.doorType == 'garage_roll' then
                     for _, ent in ipairs(g.entities) do
@@ -1265,6 +1275,7 @@ CreateThread(function()
                     end
                 end
                 if aligned then
+                    g.lockPosCache = nil
                     applyGroupLocked(g.id, doorLocked[g.id] ~= false)
                 end
             end
@@ -1362,25 +1373,8 @@ local function findNearestToggleDoor(pcoords)
     if not canUseServiceDoorsClient() then return nil end
     local closestHit = nil
     local preScan = (tonumber(Config.PdDoorToggleReach) or 6.0) + 2.5
-    -- Pagrindinis taikinys yra pati spyna durų centre, ne nematomas config taškas.
-    for _, g in ipairs(doorGroups) do
-        if canUseDoorGroupClient(g.id) then
-            local lockPos = resolveDoorLockPos(g)
-            if lockPos then
-                local d = #(pcoords - lockPos)
-                local r = doorToggleReachFor(g.interactDist)
-                if d <= math.max(preScan, r) and d <= r and (not closestHit or d < closestHit.d) then
-                    closestHit = {
-                        gid = g.id,
-                        d = d,
-                        pos = lockPos,
-                        lockPos = lockPos,
-                        label = g.label,
-                    }
-                end
-            end
-        end
-    end
+
+    --- Pirma greiti interact zonų kandidatai (be entity scan).
     for _, z in ipairs(getPdDoorProximityZones()) do
         if not canUseDoorGroupClient(z.groupId) then goto continue_zone end
         local d = #(pcoords - z.pos)
@@ -1388,13 +1382,26 @@ local function findNearestToggleDoor(pcoords)
         local r = doorToggleReachFor(z.maxd)
         if d <= r and (not closestHit or d < closestHit.d) then
             local g = findDoorGroupById(z.groupId)
-            closestHit = {
-                gid = z.groupId,
-                d = d,
-                pos = z.pos,
-                lockPos = resolveDoorLockPos(g),
-                label = (g or {}).label,
-            }
+            local lockPos = resolveDoorLockPos(g)
+            local lockD = lockPos and #(pcoords - lockPos) or d
+            --- Jei spyna arčiau / tame pačiame reach — prioritetas spynai.
+            if lockPos and lockD <= r then
+                closestHit = {
+                    gid = z.groupId,
+                    d = lockD,
+                    pos = lockPos,
+                    lockPos = lockPos,
+                    label = (g or {}).label,
+                }
+            elseif not closestHit or d < closestHit.d then
+                closestHit = {
+                    gid = z.groupId,
+                    d = d,
+                    pos = z.pos,
+                    lockPos = lockPos,
+                    label = (g or {}).label,
+                }
+            end
         end
         ::continue_zone::
     end
@@ -1407,36 +1414,55 @@ local function tryToggleNearestDoor(pcoords)
     requestPdDoorToggle(hit.gid)
 end
 
---- Spynos ikona + E. DrawSprite turi būti piešiamas kiekvieną kadrą, kitaip mirga.
+--- Cache: sunki paieška retai, piešimas — tik iš cache (pigus DrawSprite).
+local doorIconTarget = {
+    hit = nil,
+    at = 0,
+    near = 999999.0,
+}
+
 CreateThread(function()
     local iconDrawDist = tonumber(Config.PdDoorLockIconDrawDistance) or 10.0
     while true do
-        local waitMs = 1200
+        local waitMs = 900
         if canUseServiceDoorsClient() then
-            local ped = PlayerPedId()
-            local pcoords = GetEntityCoords(ped)
+            local pcoords = GetEntityCoords(PlayerPedId())
             local doorNear = nearestPdDoorDist(pcoords)
-            if doorNear < iconDrawDist then
-                local hit = findNearestToggleDoor(pcoords)
-                if hit then
-                    waitMs = 0
-                    local locked = stableDoorIconLocked(hit.gid)
-                    local lockPos = hit.lockPos or resolveDoorLockPos(findDoorGroupById(hit.gid))
-                    if lockPos then
-                        drawPdDoorLock(lockPos.x, lockPos.y, lockPos.z, locked)
-                    end
-                    EnableControlAction(0, 38, true)
-                    if IsControlJustPressed(0, 38) or IsDisabledControlJustPressed(0, 38) then
-                        tryToggleNearestDoor(pcoords)
-                    end
-                else
-                    waitMs = 80
-                end
-            elseif doorNear < 45.0 then
-                waitMs = 450
+            doorIconTarget.near = doorNear
+            if doorNear < iconDrawDist + 8.0 then
+                waitMs = 150
+                doorIconTarget.hit = findNearestToggleDoor(pcoords)
+                doorIconTarget.at = GetGameTimer()
+            else
+                doorIconTarget.hit = nil
+                if doorNear < 45.0 then waitMs = 400 end
             end
+        else
+            doorIconTarget.hit = nil
         end
         Wait(waitMs)
+    end
+end)
+
+--- Spynos ikona + E. DrawSprite kiekvieną kadrą TIK kai yra cache hit — be sunkių loop'ų.
+CreateThread(function()
+    local iconDrawDist = tonumber(Config.PdDoorLockIconDrawDistance) or 10.0
+    while true do
+        local hit = doorIconTarget.hit
+        if hit and canUseServiceDoorsClient() and doorIconTarget.near < iconDrawDist then
+            local locked = isGroupLocked(hit.gid)
+            local lockPos = hit.lockPos
+            if lockPos then
+                drawPdDoorLock(lockPos.x, lockPos.y, lockPos.z, locked)
+            end
+            EnableControlAction(0, 38, true)
+            if IsControlJustPressed(0, 38) or IsDisabledControlJustPressed(0, 38) then
+                requestPdDoorToggle(hit.gid)
+            end
+            Wait(0)
+        else
+            Wait(doorIconTarget.near < 45.0 and 250 or 800)
+        end
     end
 end)
 
@@ -1455,30 +1481,36 @@ AddEventHandler('onResourceStop', function(res)
     end
 end)
 
---- Užrakinti garažo / kiemo vartai: retas patikrinimas (ne kas 5 s).
+--- Užrakinti garažo / kiemo vartai: retas patikrinimas.
+--- force=true tik specialioms tipams (garažas/vartai) — standartioms DoorSystem užtenka be force.
 CreateThread(function()
     while true do
         local ped = PlayerPedId()
         local pc = GetEntityCoords(ped)
         if nearestPdDoorDist(pc) > 130.0 then
-            Wait(6000)
+            Wait(8000)
         else
             local anyNear = false
             for _, g in ipairs(doorGroups) do
                 if isDoorTogglePending(g.id) then goto continue_maint end
                 if not isGroupLocked(g.id) then goto continue_maint end
                 local near = g.interact and #(pc - g.interact) < 55.0
+                local special = g.doorType == 'garage_roll' or g.doorType == 'barrier'
+                    or g.doorType == 'yard_gate' or g.doorType == 'bollard'
                 if g.doorType == 'garage_roll' then
                     near = g.interact and #(pc - g.interact) < 90.0
                 end
                 if near then
                     anyNear = true
-                    -- force=true: priežiūra turi iš tikrųjų vėl pritaikyti native lock.
-                    applyGroupLocked(g.id, true, true)
+                    if special then
+                        applyGroupLocked(g.id, true, true)
+                    else
+                        applyGroupLocked(g.id, true, false)
+                    end
                 end
                 ::continue_maint::
             end
-            Wait(anyNear and 12000 or 15000)
+            Wait(anyNear and 14000 or 18000)
         end
     end
 end)
@@ -1507,26 +1539,40 @@ end
 --- kai bent kartą buvo atidarytos ir grįžo į uždarytą poziciją.
 CreateThread(function()
     while true do
-        local waitMs = 700
-        if canUseServiceDoorsClient() then
+        local waitMs = 900
+        local hasPending = false
+        for _ in pairs(autoRelockState) do
+            hasPending = true
+            break
+        end
+        if hasPending and canUseServiceDoorsClient() then
             local pc = GetEntityCoords(PlayerPedId())
-            for _, group in ipairs(doorGroups) do
-                local state = autoRelockState[group.id]
-                local lockPos = state and resolveDoorLockPos(group) or nil
-                if state and not isGroupLocked(group.id) and lockPos and #(pc - lockPos) < 18.0 then
-                    waitMs = 100
-                    local anyOpen, allClosed = standardGroupPhysicalState(group)
-                    if anyOpen then state.opened = true end
-                    if state.opened and allClosed and GetGameTimer() - (state.requestedAt or 0) > 1200 then
-                        state.requestedAt = GetGameTimer()
-                        doorLocked[group.id] = true
-                        autoRelockState[group.id] = nil
-                        lastAppliedLockState[group.id] = nil
-                        lastAppliedEntitySig[group.id] = nil
-                        applyGroupLocked(group.id, true, true)
-                        TriggerServerEvent('mrp_ltpd:server:setPdDoorGroup', group.id, true)
-                    end
+            waitMs = 250
+            for groupId, state in pairs(autoRelockState) do
+                if isGroupLocked(groupId) then
+                    autoRelockState[groupId] = nil
+                    goto continue_ar
                 end
+                local group = findDoorGroupById(groupId)
+                if not group then
+                    autoRelockState[groupId] = nil
+                    goto continue_ar
+                end
+                local lockPos = resolveDoorLockPos(group)
+                if not lockPos or #(pc - lockPos) > 18.0 then goto continue_ar end
+                waitMs = 150
+                local anyOpen, allClosed = standardGroupPhysicalState(group)
+                if anyOpen then state.opened = true end
+                if state.opened and allClosed and GetGameTimer() - (state.requestedAt or 0) > 1200 then
+                    state.requestedAt = GetGameTimer()
+                    doorLocked[groupId] = true
+                    autoRelockState[groupId] = nil
+                    lastAppliedLockState[groupId] = nil
+                    lastAppliedEntitySig[groupId] = nil
+                    applyGroupLocked(groupId, true, true)
+                    TriggerServerEvent('mrp_ltpd:server:setPdDoorGroup', groupId, true)
+                end
+                ::continue_ar::
             end
         end
         Wait(waitMs)

@@ -25,7 +25,13 @@ end
 rebuildFleetHashes()
 
 local Ec = Config.EmergencyVehicle or {}
-local RESET_ON_EXIT = Ec.resetWhenLeaveDriverSeat ~= false
+-- Teisingas raktas: resetModeWhenLeaveDriverSeat (alias: resetWhenLeaveDriverSeat)
+local RESET_ON_EXIT = true
+if Ec.resetModeWhenLeaveDriverSeat ~= nil then
+    RESET_ON_EXIT = Ec.resetModeWhenLeaveDriverSeat ~= false
+elseif Ec.resetWhenLeaveDriverSeat ~= nil then
+    RESET_ON_EXIT = Ec.resetWhenLeaveDriverSeat ~= false
+end
 
 local EMS_JOB = 'ambulance'
 
@@ -579,8 +585,20 @@ local function applyNativeForEveryone(vehicle, mode)
     end
 end
 
+--- MRPD pack lightbar = vehicle extras (ne prop). Garažas anksčiau išsaugodavo extras=false.
+local function enableFleetLightbarExtras(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    if not modelIsFleet(GetEntityModel(vehicle)) then return end
+    for i = 0, 20 do
+        if DoesExtraExist(vehicle, i) then
+            SetVehicleExtra(vehicle, i, 0) --- 0 = įjungta
+        end
+    end
+end
+
 local function ingestFromEntity(vehicle)
     if not vehicle or vehicle == 0 or not IsEntityAVehicle(vehicle) or not DoesEntityExist(vehicle) then return end
+    enableFleetLightbarExtras(vehicle)
     local mode, kit = readVehicleStateBag(vehicle)
     local supportsNative = vehicleSupportsNativeEmergency(vehicle)
     local scriptFlash = vehicleUsesScriptFlash(vehicle)
@@ -712,6 +730,22 @@ CreateThread(function()
     end
 end)
 
+--- Grąžina lightbar extras ant visų netoliese esančių PD fleet mašinų (net jei jos jau buvo išleistos su blogais mods).
+CreateThread(function()
+    while true do
+        Wait(2800)
+        local ped = PlayerPedId()
+        local pCoords = GetEntityCoords(ped)
+        local pool = GetGamePool('CVehicle')
+        for i = 1, #pool do
+            local veh = pool[i]
+            if DoesEntityExist(veh) and #(GetEntityCoords(veh) - pCoords) <= 140.0 then
+                enableFleetLightbarExtras(veh)
+            end
+        end
+    end
+end)
+
 --- Atsarginis garsas tik jei mrp_siren_controller neveikia.
 CreateThread(function()
     while true do
@@ -743,30 +777,45 @@ end)
 
 CreateThread(function()
     local lastVehAsDriver = 0
+    local exitMissTicks = 0
+    -- ~1.1s patvirtinimas — GetVehiclePedIsIn kartais trumpam grąžina 0 ir anksčiau išjungdavo sirenas
+    local EXIT_CONFIRM_TICKS = 4
     while true do
         Wait(275)
         local ped = PlayerPedId()
         local veh = GetVehiclePedIsIn(ped, false)
-        if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
+        local isDriver = veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped
+        -- Atsarginis check: jei GetVehiclePedIsIn „mirktelėjo“, bet ped vis dar vairuotojo sėdynėje
+        if not isDriver and lastVehAsDriver ~= 0 and DoesEntityExist(lastVehAsDriver)
+            and GetPedInVehicleSeat(lastVehAsDriver, -1) == ped then
+            isDriver = true
+            veh = lastVehAsDriver
+        end
+        if isDriver then
             lastVehAsDriver = veh
+            exitMissTicks = 0
             if emergencyOnDuty() then
                 requestEmergencyRestoreIfNeeded(veh)
                 scheduleIngest(veh)
             end
         elseif lastVehAsDriver ~= 0 then
-            if RESET_ON_EXIT and DoesEntityExist(lastVehAsDriver) then
-                local netId = safeVehicleNetId(lastVehAsDriver)
-                if netId ~= 0 then
-                    if pdOnDuty() then
-                        TriggerServerEvent('mrp_ltpd:server:clearPdEmergencyOnExit', netId)
-                    end
-                    if emsOnDuty() then
-                        TriggerServerEvent('mrp_siren:server:clearEmsEmergencyOnExit', netId)
+            exitMissTicks = exitMissTicks + 1
+            if exitMissTicks >= EXIT_CONFIRM_TICKS then
+                if RESET_ON_EXIT and DoesEntityExist(lastVehAsDriver) then
+                    local netId = safeVehicleNetId(lastVehAsDriver)
+                    if netId ~= 0 then
+                        if pdOnDuty() then
+                            TriggerServerEvent('mrp_ltpd:server:clearPdEmergencyOnExit', netId)
+                        end
+                        if emsOnDuty() then
+                            TriggerServerEvent('mrp_siren:server:clearEmsEmergencyOnExit', netId)
+                        end
                     end
                 end
+                if DoesEntityExist(lastVehAsDriver) then ingestFromEntity(lastVehAsDriver) end
+                lastVehAsDriver = 0
+                exitMissTicks = 0
             end
-            if DoesEntityExist(lastVehAsDriver) then ingestFromEntity(lastVehAsDriver) end
-            lastVehAsDriver = 0
         end
     end
 end)

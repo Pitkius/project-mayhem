@@ -236,6 +236,7 @@ local lastToggle = 0
 
 local function resolveDoorLockPos(group)
     if not group then return nil end
+    if group.lockPosCache then return group.lockPosCache end
     local count = 0
     local sum = vector3(0.0, 0.0, 0.0)
     for _, ent in ipairs(group.entities or {}) do
@@ -247,10 +248,12 @@ local function resolveDoorLockPos(group)
     if count > 0 then
         local center = sum / count
         local zOff = group.doorType == 'garage_roll' and 0.55 or 0.45
-        return vector3(center.x, center.y, center.z + zOff)
+        group.lockPosCache = vector3(center.x, center.y, center.z + zOff)
+        return group.lockPosCache
     end
     if group.interact then
-        return vector3(group.interact.x, group.interact.y, group.interact.z + 0.45)
+        group.lockPosCache = vector3(group.interact.x, group.interact.y, group.interact.z + 0.45)
+        return group.lockPosCache
     end
     return nil
 end
@@ -344,6 +347,7 @@ CreateThread(function()
                 local ents = scanEntitiesForDef(g.entityScanDef, pc)
                 if #ents > 0 then
                     g.entities = ents
+                    g.lockPosCache = nil
                     applyGroupLocked(g.id, isGroupLocked(g.id))
                 end
             end
@@ -405,12 +409,16 @@ AddEventHandler('onResourceStop', function(res)
     end
 end)
 
+local cachedMechDoorTarget = { group = nil, pos = nil, dist = 9999.0 }
+
 CreateThread(function()
     while true do
         local waitMs = 900
         if isMechanicOnDuty() then
             local pcoords = GetEntityCoords(PlayerPedId())
-            if nearestDoorDist(pcoords) < 28.0 then
+            local near = nearestDoorDist(pcoords)
+            if near < 28.0 then
+                waitMs = 150
                 local nearest, nearestDist = nil, 9999.0
                 for _, g in ipairs(doorGroups) do
                     local lockPos = resolveDoorLockPos(g)
@@ -422,19 +430,35 @@ CreateThread(function()
                     end
                 end
                 if nearest and nearestDist <= (Config.DoorToggleReach or 5.0) then
-                    -- Sprite turi būti piešiamas kiekvieną kadrą, kitaip mirga.
-                    waitMs = 0
-                    drawDoorLock(nearest.pos.x, nearest.pos.y, nearest.pos.z, isGroupLocked(nearest.group.id))
-                    EnableControlAction(0, 38, true)
-                    if IsControlJustPressed(0, 38) or IsDisabledControlJustPressed(0, 38) then
-                        tryToggleNearestDoor(pcoords)
-                    end
+                    cachedMechDoorTarget = { group = nearest.group, pos = nearest.pos, dist = nearestDist }
                 else
-                    waitMs = 120
+                    cachedMechDoorTarget = { group = nil, pos = nil, dist = 9999.0 }
                 end
+            else
+                cachedMechDoorTarget = { group = nil, pos = nil, dist = 9999.0 }
             end
+        else
+            cachedMechDoorTarget = { group = nil, pos = nil, dist = 9999.0 }
         end
         Wait(waitMs)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        local target = cachedMechDoorTarget
+        if isMechanicOnDuty() and target and target.pos and target.group then
+            local g = target.group
+            local pos = target.pos
+            drawDoorLock(pos.x, pos.y, pos.z, isGroupLocked(g.id))
+            EnableControlAction(0, 38, true)
+            if IsControlJustPressed(0, 38) or IsDisabledControlJustPressed(0, 38) then
+                tryToggleNearestDoor(GetEntityCoords(PlayerPedId()))
+            end
+            Wait(0)
+        else
+            Wait(400)
+        end
     end
 end)
 

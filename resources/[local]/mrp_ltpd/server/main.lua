@@ -1603,6 +1603,11 @@ RegisterNetEvent('mrp_ltpd:server:clearPdEmergencyOnExit', function(netId)
     if not vehicleNearPlayer(src, veh, (Config.EmergencyVehicle and Config.EmergencyVehicle.validateDistance or 28.0) + 10.0) then
         return
     end
+    -- Klientas kartais klaidingai praneša „išlipimą“ — neišjungti, kol vis dar vairuotojas
+    local ped = GetPlayerPed(src)
+    if ped and ped ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
+        return
+    end
     Entity(veh).state:set('ltPdSirenMode', 'off', true)
 end)
 

@@ -345,6 +345,9 @@ local function spawnGaragePreviewVehicle(model, plate)
                 QBCore.Functions.SetVehicleProperties(previewVehicle, mods)
             end
         end
+        if isPoliceVehicleModelName(model) then
+            enableAllVehicleExtras(previewVehicle)
+        end
 
         local fuel = plate and garagePreviewFuel[plate]
         if fuel ~= nil and SetVehicleFuelLevel then
@@ -478,6 +481,20 @@ local function captureEmergencyProps(veh, props)
     return props
 end
 
+--- PD lightbar extras visada true DB — senas qb-core bug'as įrašydavo visus false.
+local function forcePoliceExtrasInProps(veh, props)
+    props = props or {}
+    if not isPoliceVehicleEntity(veh) then return props end
+    enableAllVehicleExtras(veh)
+    props.extras = props.extras or {}
+    for i = 0, 20 do
+        if DoesExtraExist(veh, i) then
+            props.extras[tostring(i)] = true
+        end
+    end
+    return props
+end
+
 local function restoreEmergencyProps(veh, mods)
     if not veh or veh == 0 or not DoesEntityExist(veh) or type(mods) ~= 'table' then return end
     if mods.mrpPdKit ~= true and mods.mrpEmsKit ~= true then return end
@@ -601,7 +618,7 @@ RegisterNetEvent('mrp_garages:client:parkVehicle', function(data)
     end
 
     local plate = QBCore.Functions.GetPlate(veh)
-    local props = captureEmergencyProps(veh, QBCore.Functions.GetVehicleProperties(veh))
+    local props = forcePoliceExtrasInProps(veh, captureEmergencyProps(veh, QBCore.Functions.GetVehicleProperties(veh)))
     QBCore.Functions.TriggerCallback('mrp_garages:server:parkVehicle', function(result)
         if not result or not result.ok then
             return QBCore.Functions.Notify((result and result.message) or 'Nepavyko pastatyti mašinos', 'error')
