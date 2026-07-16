@@ -18,7 +18,7 @@ Config = {}
     · duty      — [E] pradėti / baigti pamainą
     · garage    — [E] garažas + transporto pirkimas
     · locker    — [E] tarnybinė apranga (mrp_duty_locker)
-    · armory    — [E] SOR / ginklinė (divisions + minGrade)
+    · armory    — [E] ARAS / ginklinė (divisions + minGrade)
     · stash     — [F2] sandėlis (divisions + minGrade)
     · supply    — [E] inventorius (mrp_npcshops)
     · craft     — ginklų gamyba (config_pd_craft.lua)
@@ -43,14 +43,14 @@ Config.Divisions = {
     mp = { label = 'Miesto patrulių divizija', abbr = 'MP', minGrade = 4, choosable = true },
     kpd = { label = 'Kelių policijos divizija', abbr = 'KPD', minGrade = 4, choosable = true },
     ktd = { label = 'Kriminalinių tyrimų divizija', abbr = 'KTD', minGrade = 4, choosable = true },
-    sor = { label = 'Specialiųjų operacijų rinktinė', abbr = 'SOR', minGrade = 4, choosable = true },
+    aras = { label = 'Antiteroristinių operacijų rinktinė', abbr = 'ARAS', minGrade = 4, choosable = true },
     opd = { label = 'Oro paramos divizija', abbr = 'OPD', minGrade = 4, choosable = true },
     kd = { label = 'Kinologų divizija', abbr = 'KD', minGrade = 4, choosable = true },
     vtd = { label = 'Vidaus tyrimų divizija', abbr = 'VTD', minGrade = 4, choosable = true },
     admin = { label = 'Administracija', abbr = 'ADM', minGrade = 7, choosable = false },
 }
 
---- Kol nėra atskirų ARO aprangų įrašų su `divisions = {'aro'}`, ARO rūbinė rodo tas pačias uniformas
+--- Kol nėra atskirų ARAS aprangų įrašų su `divisions = {'aras'}`, ARAS rūbinė rodo tas pačias uniformas
 Config.AroLockerShowsAllUniforms = true
 
 --- Minimalus grade (0 = Kursantas) veiksmui
@@ -282,12 +282,13 @@ Config.Reception = {
     duty          — { coords } arba true (= coords)
     reception     — civiliai; atskiras blip (client/reception.lua)
     supply        — darbo reikmenys (mrp_npcshops job supply)
-    armory        — SOR / ginklinė; divisions + minGrade; [E]
+    armory        — ARAS / ginklinė; divisions + minGrade; [E]
     pdGarageId    — mrp_garages Config.Garages.id (pvz. pd_ls_main)
     garage        — 3D markeris: garažas + salonas; spawn = fleet spawn
     boss          — laptop qb-target; vadovybė (≥ Config.Permissions.boss_menu)
+    bossAro       — papildomas ARAS aukšto vadovybės laptopas (tas pats meniu)
     lockers[]     — kelios standartinės rūbinės (uniformos)
-    locker2       — ARO/SOR rūbinė (lockerMode = 'aro', divisions = sor)
+    locker2       — ARAS rūbinė (lockerMode = 'aro', divisions = aras)
     stashes[]     — sandėliai; [F2]; minGrade didėja; stashId → qb-inventory
     heliGarage    — sraigtasparniai (Config.FleetHelicopters)
 
@@ -320,12 +321,13 @@ Config.Stations = {
             coords = vector3(462.23, -981.12, 30.68),
             label = 'PD ginklinė / inventorius',
         },
-        --- SOR padalinio sandėlis / ginklinė (tik divisions.sor)
+        --- ARAS ginklų pirkimas (ARAS padalinys + vadas/pavaduotojas)
         armory = {
-            coords = vector3(472.5499, -945.3289, 38.2497),
-            label = 'ARO ginklinė',
+            coords = vector3(472.5475, -947.7100, 38.2497),
+            heading = 272.8297,
+            label = 'ARAS ginklų pirkimas',
             minGrade = 2,
-            divisions = { 'sor' },
+            divisions = { 'aras' },
         },
         --- Nuoroda į mrp_garages — asmeninis PD transporto garažas DB
         pdGarageId = 'pd_ls_main',
@@ -346,6 +348,13 @@ Config.Stations = {
             prop = 'prop_laptop_01a',
             spawnProp = true,
         },
+        --- ARAS aukštas — atskiras vadovybės laptopas
+        bossAro = {
+            coords = vector4(466.7161, -928.0859, 38.2496, 188.3563),
+            label = 'ARAS vadovybė',
+            prop = 'prop_laptop_01a',
+            spawnProp = true,
+        },
         --- Standartinės rūbinės — mrp_duty_locker, lockerMode = standard
         lockers = {
             { coords = vector3(449.5441, -979.1705, 30.2503), heading = 269.1113, label = 'PD rūbinė 1' },
@@ -353,13 +362,13 @@ Config.Stations = {
             { coords = vector3(444.9413, -979.2111, 30.2503), heading = 87.7559, label = 'PD rūbinė 3' },
             { coords = vector3(446.3055, -976.9395, 30.2503), heading = 273.1330, label = 'PD rūbinė 4' },
         },
-        --- ARO/SOR specialioji rūbinė (atskirai nuo lockers[])
+        --- ARAS specialioji rūbinė (atskirai nuo lockers[])
         locker2 = {
             coords = vector3(455.65, -997.62, 30.6896),
             heading = 90.0,
-            label = 'ARO rūbinė',
+            label = 'ARAS rūbinė',
             lockerMode = 'aro',
-            divisions = { 'sor' },
+            divisions = { 'aras' },
         },
         --- Sandėliai — [F2] prie markerio; stashId unikalus visam serveriui
         stashes = {
@@ -368,7 +377,7 @@ Config.Stations = {
                 stashId = 'ltpd_stash_public_ls',
                 label = 'PD sandėlis (bendras)',
                 minGrade = 0,
-                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 2000000,
                 slots = 60,
             },
@@ -377,7 +386,7 @@ Config.Stations = {
                 stashId = 'ltpd_stash_grade3_ls',
                 label = 'PD sandėlis (≥3 rango)',
                 minGrade = 3,
-                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 2500000,
                 slots = 70,
             },
@@ -386,7 +395,7 @@ Config.Stations = {
                 stashId = 'ltpd_stash_grade8_ls',
                 label = 'PD sandėlis (vadovų)',
                 minGrade = 8,
-                divisions = { 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                divisions = { 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 3000000,
                 slots = 80,
             },
@@ -395,9 +404,50 @@ Config.Stations = {
                 stashId = 'ltpd_stash_boss_ls',
                 label = 'PD sandėlis (bosas / pavaduotojas)',
                 minGrade = 7,
-                divisions = { 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                divisions = { 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 3500000,
                 slots = 90,
+            },
+            --- ARAS daiktų dėžė — ginklai / daiktai (tik ARAS; vadas/pavaduotojas apeina padalinį)
+            {
+                coords = vector3(472.5499, -945.3289, 38.2497),
+                stashId = 'ltpd_stash_aro_ls',
+                label = 'ARAS daiktų sandėlis',
+                minGrade = 2,
+                divisions = { 'aras' },
+                maxweight = 4000000,
+                slots = 100,
+            },
+            --- Konfiskuoti daiktai (MRPD rūsys z≈22.85) — [F2]
+            {
+                coords = vector3(455.0941, -1004.6840, 22.8469),
+                heading = 273.5348,
+                stashId = 'ltpd_stash_confisc_pd_ls',
+                label = 'Konfiskuotų policijos daiktų sandėlis',
+                minGrade = 0,
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
+                maxweight = 5000000,
+                slots = 120,
+            },
+            {
+                coords = vector3(455.1414, -1001.9164, 22.8469),
+                heading = 263.0187,
+                stashId = 'ltpd_stash_confisc_aro_ls',
+                label = 'Konfiskuotų ARAS daiktų sandėlis',
+                minGrade = 0,
+                divisions = { 'aras' },
+                maxweight = 5000000,
+                slots = 120,
+            },
+            {
+                coords = vector3(457.9408, -1002.8630, 22.8469),
+                heading = 272.9747,
+                stashId = 'ltpd_stash_confisc_weapons_ls',
+                label = 'Konfiskuotų ginklų sandėlis',
+                minGrade = 0,
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
+                maxweight = 5000000,
+                slots = 120,
             },
         },
         --- Stogo helipadas — Config.FleetHelicopters spawn
@@ -428,9 +478,9 @@ Config.Stations = {
         },
         armory = {
             coords = vector3(1847.0, 3691.5, 34.27),
-            label = 'ARO ginklinė (Sandy)',
+            label = 'ARAS ginklinė (Sandy)',
             minGrade = 2,
-            divisions = { 'sor' },
+            divisions = { 'aras' },
         },
         pdGarageId = 'pd_sandy',
         policeDealership = {
@@ -459,7 +509,7 @@ Config.Stations = {
                 stashId = 'ltpd_stash_public_sandy',
                 label = 'PD sandėlis 1',
                 minGrade = 0,
-                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 2000000,
                 slots = 60,
             },
@@ -468,7 +518,7 @@ Config.Stations = {
                 stashId = 'ltpd_stash_grade3_sandy',
                 label = 'PD sandėlis 2',
                 minGrade = 3,
-                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 2500000,
                 slots = 70,
             },
@@ -477,7 +527,7 @@ Config.Stations = {
                 stashId = 'ltpd_stash_grade8_sandy',
                 label = 'PD sandėlis 3',
                 minGrade = 8,
-                divisions = { 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                divisions = { 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 3000000,
                 slots = 80,
             },
@@ -486,7 +536,7 @@ Config.Stations = {
                 stashId = 'ltpd_stash_boss_sandy',
                 label = 'PD boso sandėlis',
                 minGrade = 7,
-                divisions = { 'mp', 'kpd', 'ktd', 'sor', 'opd', 'kd', 'vtd', 'admin' },
+                divisions = { 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 3500000,
                 slots = 90,
             },

@@ -8,6 +8,7 @@ Config.AutoLoginExistingCharacter = true
 --- Scena (tik pirmam personažo kūrimui prisijungus) — apšviestas bunkerio kambarys
 Config.Interior = vector3(404.9589, -957.7651, -99.0042)
 Config.HiddenCoords = vector4(397.0, -965.0, -99.0042, 0.0)
+--- w = heading: veikėjas žiūri į kamerą (be papildomo rankinio sukimo)
 Config.PedCoords = vector4(404.9589, -957.7651, -99.0042, 180.0)
 Config.DefaultSpawn = vector4(-1037.9487, -2738.0669, 20.1693, 330.3262)
 
@@ -64,12 +65,13 @@ Config.CreatorClothingItems = {
     { key = 'bracelet', label = 'Apyrankė', maxItem = 20, maxTex = 15, propMin = -1 },
 }
 
---- distance = atstumas nuo ped; camHeight / lookAt = Z offset nuo ped kojų; fov = lauko kampas
+--- distance = atstumas nuo ped (mažesnis = arčiau); camHeight / lookAt = Z offset; fov = lauko kampas
+--- lateral = teigiamas = personažas ekrane dešiniau (kamera šiek tiek į kairę nuo centro)
 Config.Cameras = {
-    default = { distance = 2.85, camHeight = 0.45, lookAt = 0.55, fov = 46.0 },
-    face = { distance = 1.45, camHeight = 0.62, lookAt = 0.62, fov = 38.0 },
-    hair = { distance = 1.55, camHeight = 0.72, lookAt = 0.68, fov = 38.0 },
-    body = { distance = 4.0, camHeight = 0.15, lookAt = -0.08, fov = 56.0 },
+    default = { distance = 2.15, camHeight = 0.48, lookAt = 0.58, fov = 44.0, lateral = 0.42 },
+    face = { distance = 1.12, camHeight = 0.64, lookAt = 0.64, fov = 36.0, lateral = 0.28 },
+    hair = { distance = 1.22, camHeight = 0.74, lookAt = 0.70, fov = 36.0, lateral = 0.28 },
+    body = { distance = 3.15, camHeight = 0.18, lookAt = -0.02, fov = 52.0, lateral = 0.55 },
 }
 
 --- Pilietybės — visas sąrašas iš shared/countries.lua

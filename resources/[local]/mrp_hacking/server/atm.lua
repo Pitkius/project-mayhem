@@ -113,7 +113,9 @@ RegisterNetEvent('mrp_hacking:server:atmCrackResult', function(success, wrongSte
 
     Player.Functions.AddMoney('cash', cash, 'atm-robbery')
     if bills > 0 then
-        Player.Functions.AddItem('markedbills', bills, false, { worth = worth })
+        local dirty = bills * worth
+        Player.Functions.AddItem('markedbills', dirty, false, {})
+        TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items['markedbills'], 'add', dirty)
     end
     if math.random() < 0.12 then
         Player.Functions.AddItem('rolex', 1)

@@ -29,6 +29,12 @@ local function finalizeFleetVehicle(veh, plate)
     SetVehicleOnGroundProperly(veh)
     SetVehicleEngineOn(veh, true, true, false)
     SetVehicleDirtLevel(veh, 0.0)
+    --- Policijos lightbar / extras (mrpd* pack)
+    for i = 0, 20 do
+        if DoesExtraExist(veh, i) then
+            SetVehicleExtra(veh, i, 0)
+        end
+    end
     if plate and plate ~= '' then
         SetVehicleNumberPlateText(veh, plate)
         if GetResourceState('mrp_plates') == 'started' then

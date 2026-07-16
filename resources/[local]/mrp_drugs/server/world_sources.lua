@@ -88,7 +88,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:worldGather', function(src, cb
     end
 
     if not Player.Functions.AddItem(item, amount, false) then
-        if cost > 0 then Player.Functions.AddItem('markedbills', 1, false, { worth = cost }) end
+        if cost > 0 then Player.Functions.AddItem('markedbills', cost, false, {}) end
         busy[citizenid] = nil
         return cb({ ok = false, reason = 'Inventorius pilnas.' })
     end

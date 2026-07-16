@@ -128,7 +128,7 @@ RegisterNetEvent('QBCore:Command:SpawnVehicle', function(vehName)
     local veh = GetVehiclePedIsUsing(ped)
     if not IsModelInCdimage(hash) then
         QBCore.Functions.Notify(
-            ('Modelis „%s“ neprieinamas. Tavo GTA build: %s (reikia 3788 + Title Update 1.73).'):format(vehName or '?', GetGameBuildNumber()),
+            ('Modelis „%s“ neprieinamas. Tavo GTA build: %s (reikia 3717+ Safehouse mansion).'):format(vehName or '?', GetGameBuildNumber()),
             'error',
             9000
         )

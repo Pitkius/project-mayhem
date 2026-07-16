@@ -123,20 +123,66 @@ function DrugPlayer.sendSms(citizenid, body)
     end)
 end
 
--- ── Nešvarūs pinigai (markedbills su info.worth) ───────────────────
+-- ── Nešvarūs pinigai (1 markedbills = $1; legacy info.worth palaikomas) ──
+local function slotDirtyValue(it)
+    local count = math.floor(tonumber(it.amount) or 0)
+    if count <= 0 then return 0, false end
+    local worth = tonumber(it.info and it.info.worth)
+    if worth and worth > 0 then
+        return worth * count, true -- senas formatas: x1 banknotas su worth
+    end
+    return count, false -- naujas: kiekis = doleriai
+end
+
 local function collectMarkedBills(Player)
     local slots = Player.Functions.GetItemsByName('markedbills') or {}
     local list, total = {}, 0
+    local hasLegacy = false
     for _, it in ipairs(slots) do
-        local worth = tonumber(it.info and it.info.worth) or 0
-        local count = tonumber(it.amount) or 0
-        if worth > 0 and count > 0 then
-            list[#list + 1] = { slot = it.slot, worth = worth, count = count }
-            total = total + (worth * count)
+        local value, legacy = slotDirtyValue(it)
+        if value > 0 then
+            list[#list + 1] = { slot = it.slot, count = math.floor(tonumber(it.amount) or 0), value = value, legacy = legacy }
+            total = total + value
+            if legacy then hasLegacy = true end
         end
     end
-    table.sort(list, function(a, b) return a.worth < b.worth end)
-    return list, total
+    return list, total, hasLegacy
+end
+
+--- Surenka visus markedbills į vieną stacką be info.worth (1 = $1).
+local function normalizeDirtyMoney(Player)
+    local list, total, hasLegacy = collectMarkedBills(Player)
+    if total <= 0 then return 0 end
+    if not hasLegacy and #list <= 1 then return total end
+
+    for _, b in ipairs(list) do
+        Player.Functions.RemoveItem('markedbills', b.count, b.slot)
+    end
+    if total > 0 then
+        Player.Functions.AddItem('markedbills', total, false, {})
+    end
+    return total
+end
+
+function DrugPlayer.getDirtyTotal(Player)
+    local _, total = collectMarkedBills(Player)
+    return total
+end
+
+function DrugPlayer.normalizeDirty(Player)
+    return normalizeDirtyMoney(Player)
+end
+
+--- Prideda nešvarių pinigų kaip inventorius kiekį (x suma).
+function DrugPlayer.addDirty(src, Player, amount, reason)
+    amount = math.floor(tonumber(amount) or 0)
+    if amount <= 0 then return true end
+    normalizeDirtyMoney(Player)
+    local ok = Player.Functions.AddItem('markedbills', amount, false, {})
+    if not ok and GetResourceState('qb-inventory') == 'started' then
+        ok = exports['qb-inventory']:AddItem(src, 'markedbills', amount, nil, {}, reason or 'dirty-money')
+    end
+    return ok == true
 end
 
 --- Ar žaidėjas turi bent `amount` nešvarių pinigų.
@@ -147,47 +193,18 @@ function DrugPlayer.canAffordDirty(Player, amount)
     return total >= amount
 end
 
---- Nurašo `amount` nešvarių pinigų (markedbills). Grąžina grąžą banknotu, jei permokama.
+--- Nurašo `amount` nešvarių pinigų (markedbills). Grąža lieka kaip x kiekis.
 --- @return boolean ok
 function DrugPlayer.chargeDirty(src, Player, amount, reason)
     amount = math.floor(tonumber(amount) or 0)
     if amount <= 0 then return true end
     reason = reason or 'mrp_drugs:charge'
 
-    local list, total = collectMarkedBills(Player)
+    local total = normalizeDirtyMoney(Player)
     if total < amount then return false end
 
-    local remaining = amount
-    local removals = {}
-    local collected = 0
-    for _, b in ipairs(list) do
-        if remaining <= 0 then break end
-        local needBills = math.ceil(remaining / b.worth)
-        local take = math.min(b.count, needBills)
-        if take > 0 then
-            removals[#removals + 1] = { slot = b.slot, count = take, worth = b.worth }
-            collected = collected + (take * b.worth)
-            remaining = remaining - (take * b.worth)
-        end
-    end
-
-    if collected < amount then return false end
-
-    local removed = {}
-    for _, r in ipairs(removals) do
-        if not Player.Functions.RemoveItem('markedbills', r.count, r.slot) then
-            -- Atmetimas: grąžinam jau nuimtus banknotus jų tikra verte.
-            for _, done in ipairs(removed) do
-                Player.Functions.AddItem('markedbills', done.count, false, { worth = done.worth })
-            end
-            return false
-        end
-        removed[#removed + 1] = r
-    end
-
-    local change = collected - amount
-    if change > 0 then
-        Player.Functions.AddItem('markedbills', 1, false, { worth = change })
+    if not Player.Functions.RemoveItem('markedbills', amount) then
+        return false
     end
     return true
 end

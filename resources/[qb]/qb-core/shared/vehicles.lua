@@ -793,13 +793,6 @@ local Vehicles = {
     { model = 'luiva',           name = 'Luiva',                         brand = 'Progen',          price = 2100000, category = 'super',          type = 'automobile', shop = 'luxury' },
     { model = 'sentinel6',       name = 'Sentinel XS4',                  brand = 'Übermacht',       price = 175000,  category = 'sedans',         type = 'automobile', shop = 'luxury' },
     { model = 'xtreme',          name = 'X-Treme',                       brand = 'Pfister',         price = 1950000, category = 'super',          type = 'automobile', shop = 'luxury' },
-    --- The Kortz Center Heist DLC (build 3788 / mp2026_patch_01)
-    { model = 'merula',          name = 'Merula',                        brand = 'Albany',          price = 175000,  category = 'sedans',         type = 'automobile', shop = 'pdm' },
-    { model = 'laufer',          name = 'Läufer',                        brand = 'Benefactor',      price = 95000,   category = 'vans',           type = 'automobile', shop = 'pdm' },
-    { model = 'lrcgt',           name = 'LRC GT',                        brand = 'Benefactor',      price = 650000,  category = 'sports',         type = 'automobile', shop = 'luxury' },
-    { model = 'cartucciagt',     name = 'Cartuccia GT',                  brand = 'Grotti',          price = 585000,  category = 'sportsclassics', type = 'automobile', shop = 'luxury' },
-    { model = 'velenogt',        name = 'Veleno GT',                     brand = 'Grotti',          price = 750000,  category = 'super',          type = 'automobile', shop = 'luxury' },
-    { model = 'estride',         name = 'E-Stride',                      brand = 'Ocelot',          price = 320000,  category = 'sports',         type = 'automobile', shop = 'luxury' },
 }
 
 -- REH Rebadged Car Pack (shared/vehicles_reh.lua → RehVehicleEntries)

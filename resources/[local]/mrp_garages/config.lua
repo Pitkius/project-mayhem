@@ -51,7 +51,7 @@ Config.Garages = {
     { id = 'cayo_boat', label = 'Cayo Perico laivų garažas', garageType = 'boat', requireIsland = true, coords = vector3(4930.77, -5145.10, 2.47), heading = 70.0, spawn = vector4(4933.00, -5135.00, 0.12, 65.0), blipSprite = 410, blipColor = 3 },
     --- Policijos garažai — susieta su mrp_ltpd pdGarageId + mrp_dealership salonu
     --- coords = interakcija; spawn = kur atsiranda išimtas / nupirktas TP
-    { id = 'pd_ls_main', label = 'Policijos garažas (MRPD)', coords = vector3(447.9836, -967.4344, 22.8469), heading = 84.1690, spawn = vector4(447.9836, -967.4344, 22.8469, 84.1690), policeOnly = true, hideBlip = true },
+    { id = 'pd_ls_main', label = 'Policijos garažas (MRPD)', coords = vector3(447.9836, -967.4344, 22.8469), heading = 84.1690, spawn = vector4(472.4337, -967.5765, 22.6502, 180.2519), policeOnly = true, hideBlip = true },
     { id = 'pd_sandy', label = 'Policijos garažas (Sandy)', coords = vector3(1869.5, 3695.2, 33.53), heading = 210.0, spawn = vector4(1869.5, 3695.2, 33.53, 210.0), policeOnly = true, hideBlip = true },
     --- Mechanikas / EMS (job: mechanic, ambulance) – tik qb-target iš darbo resursų
     { id = 'mech_ls', label = 'Mechanikų garažas', coords = vector3(128.5848, -3013.5708, 7.0409), heading = 178.1475, spawn = vector4(125.9513, -3023.2095, 7.0409, 87.3217), mechanicOnly = true, hideBlip = true },

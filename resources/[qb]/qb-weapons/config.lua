@@ -15,20 +15,23 @@ Config.ReloadAllowMovement = true
 Config.ReloadMoveRate = 0.72
 
 --[[
-  Recoil: client/recoil.lua kelia kamerą + šoninį išsisklaidymą.
+  Recoil: client/recoil.lua kelia kamerą (tik aukštyn). Bloom / išsisklaidymas išjungtas —
+  kulka visada skrenda į taikiklį; recoil tik pakelia ginklą/kamerą po šūvio.
   RecoilMultiplier – bendras vertikalus stiprinimas.
   RecoilBaseScale – papildomas daugiklis bazinėms reikšmėms (recoils lentelė).
-  RecoilShakeAmplitude – GTA ginklo drebulė (0 = be native drebulės; ~1.0+ aiškiai juntama).
-  RecoilHorizontalSpread – atsitiktinis krypties „išsisklaidymas“ (0–1, ~0.4–0.5 RP).
-  RecoilPitchVariance – papildomas vertikalus jitter kiekvienam šūviui.
+  RecoilShakeAmplitude – GTA native drebulė (0 = be bloom/drebėjimo; kilimą daro skriptas).
+  RecoilHorizontalSpread – šoninis atsitiktinis kick (0 = nėra nukrypimo).
+  RecoilPitchVariance – vertikalus jitter (0 = tik švarus kilimas).
+  ZeroWeaponBloom – SetWeaponAccuracySpread(0) kiekvienam ginklui.
 ]]
-Config.RecoilMultiplier = 5.25
-Config.RecoilBaseScale = 1.02
-Config.RecoilShakeAmplitude = 0.98
-Config.RecoilHorizontalSpread = 0.40
-Config.RecoilPitchVariance = 0.078
+Config.RecoilMultiplier = 8.4
+Config.RecoilBaseScale = 1.08
+Config.RecoilShakeAmplitude = 0.0
+Config.RecoilHorizontalSpread = 0.0
+Config.RecoilPitchVariance = 0.0
+Config.ZeroWeaponBloom = true
 --- Jei ginklas recoils lentelėje turi 0 arba beveik 0 – vis tiek šiek tiek spyris (ne „lazeris“).
-Config.RecoilMinimumBase = 0.17
+Config.RecoilMinimumBase = 0.22
 
 --[[
   Ginklo žalos daugiklis (client/damage.lua → SetWeaponDamageModifier).

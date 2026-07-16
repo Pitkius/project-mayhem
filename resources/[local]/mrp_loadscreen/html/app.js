@@ -124,16 +124,16 @@ function initLoadscreenMusic() {
   };
 
   const playNuiAudio = () => {
-    if (nuiStarted || muted || !MUSIC.enabled) return;
-    const src = MUSIC.track || audio.getAttribute('src');
-    if (!src) return;
-    nuiStarted = true;
-    if (!audio.getAttribute('src')) {
+    if (muted || !MUSIC.enabled) return;
+    const src = MUSIC.track || audio.getAttribute('src') || 'assets/gta_theme.mp3';
+    if (!audio.getAttribute('src') || audio.getAttribute('src') !== src) {
       audio.src = src;
       audio.load();
     }
+    audio.volume = Number(volume.value) / 100 || MUSIC.volume || 0.28;
     audio.play().then(() => {
       hasFile = true;
+      nuiStarted = true;
     }).catch(() => {
       hasFile = false;
       nuiStarted = false;

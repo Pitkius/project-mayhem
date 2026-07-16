@@ -422,13 +422,17 @@ body {
 
 .scroll-body {
   flex: 1;
+  min-height: 0;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 14px;
 }
 
 .app-screen-layer .scroll-body {
   flex: 1;
   min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 0 0 22px;
   background: var(--app-bg, #0a0812);
 }

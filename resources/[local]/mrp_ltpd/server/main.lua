@@ -407,7 +407,7 @@ end
 MySQL.ready(function()
     ensureTables()
     migrateLtpdJobToPolice()
-    MySQL.update.await("UPDATE ltpd_profiles SET division = 'sor' WHERE division IN ('aro', 'aras', 'ARAS')")
+    MySQL.update.await("UPDATE ltpd_profiles SET division = 'aras' WHERE division IN ('sor', 'SOR', 'aro', 'ARO', 'ARAS')")
     MySQL.update.await("UPDATE ltpd_profiles SET division = 'mp' WHERE division = 'patrol'")
     MySQL.update.await("UPDATE ltpd_profiles SET division = 'kpd' WHERE division = 'traffic'")
     MySQL.update.await("UPDATE ltpd_profiles SET division = 'ktd' WHERE division = 'criminal'")
@@ -423,7 +423,7 @@ local function jobIsPd(j)
     return j and j.name == Config.JobName
 end
 
---- Vadas / pavaduotojas – SOR (ARO) sandėliai / rūbinė be padalinio
+--- Vadas / pavaduotojas – ARAS sandėliai / rūbinė be padalinio
 local function isPdLeadership(src)
     local P = QBCore.Functions.GetPlayer(src)
     if not P or not jobIsPd(P.PlayerData.job) then return false end
@@ -588,7 +588,7 @@ local function mdtFullAccess(src)
     if not Player then return false end
     local g = getGrade(src)
     local div = getDivisionForCitizenid(Player.PlayerData.citizenid)
-    if (div == 'sor' or div == 'aro') and g < 5 then
+    if PdDivisions.isAras(div) and g < 5 then
         return false
     end
     local divCfg = Config.Divisions[div]
@@ -1085,7 +1085,11 @@ RegisterNetEvent('mrp_ltpd:server:openPoliceStash', function(stationId, stashInd
     if not entry or not entry.coords or not entry.stashId then return end
     local P = QBCore.Functions.GetPlayer(src)
     local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
-    if not PdDivisions.canAccessPoint(getGrade(src), div, entry, isPdLeadership(src)) then
+    local leadership = isPdLeadership(src)
+    if entry.leadershipOnly and not leadership then
+        return TriggerClientEvent('QBCore:Notify', src, 'Prieinama tik vadui / pavaduotojui.', 'error')
+    end
+    if not PdDivisions.canAccessPoint(getGrade(src), div, entry, leadership) then
         return TriggerClientEvent('QBCore:Notify', src, 'Neturi prieigos prie šio sandėlio (rangas / padalinys).', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
@@ -1116,14 +1120,14 @@ RegisterNetEvent('mrp_ltpd:server:openArmory', function(stationId)
     local P = QBCore.Functions.GetPlayer(src)
     local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
     if not PdDivisions.canAccessPoint(getGrade(src), div, st.armory, isPdLeadership(src)) then
-        return TriggerClientEvent('QBCore:Notify', src, 'ARO ginklinė – tik ARO padaliniui.', 'error')
+        return TriggerClientEvent('QBCore:Notify', src, 'ARAS ginklų pirkimas – tik ARAS padaliniui.', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
     if not officerNearCoords(src, st.armory.coords, maxD) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo ginklinės (rūbinės). Priartėk arba patikrink koordinates.', 'error')
     end
     if GetResourceState('mrp_npcshops') ~= 'started' then
-        return TriggerClientEvent('QBCore:Notify', src, 'ARO ginklinė neprieinama.', 'error')
+        return TriggerClientEvent('QBCore:Notify', src, 'ARAS ginklinė neprieinama.', 'error')
     end
     TriggerEvent('mrp_npcshops:server:openAroWeaponSupply', src, stationId)
 end)

@@ -68,7 +68,7 @@ local function openStashMenu(jobName, stationId)
                 params = { event = 'mrp_ltpd:client:tryOpenStash', args = { stationId = stationId, stashIndex = 4 } },
             },
             {
-                header = 'ARO ginklinė',
+                header = 'ARAS ginklinė',
                 params = { event = 'mrp_ltpd:client:tryOpenArmory', args = { stationId = stationId } },
             },
         }

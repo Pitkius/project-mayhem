@@ -88,9 +88,12 @@ local function giveMarkedBills(src, Player, amount, reason)
         return true
     end
 
-    local ok = Player.Functions.AddItem(itemName, 1, false, { worth = amount })
+    local ok = Player.Functions.AddItem(itemName, amount, false, {})
     if not ok and GetResourceState('qb-inventory') == 'started' then
-        ok = exports['qb-inventory']:AddItem(src, itemName, 1, nil, { worth = amount }, reason)
+        ok = exports['qb-inventory']:AddItem(src, itemName, amount, nil, {}, reason)
+    end
+    if ok then
+        TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', amount)
     end
     return ok
 end

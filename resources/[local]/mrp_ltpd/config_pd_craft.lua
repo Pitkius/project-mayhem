@@ -233,14 +233,14 @@ Config.PdWeaponCraft = {
             },
         },
 
-        --- ARO / SOR padalinys (tik division = sor)
+        --- ARAS padalinys (tik division = aras)
         pd_craft_heavy_pistol = {
-            label = 'Sunkusis pistoletas (ARO)',
+            label = 'Sunkusis pistoletas (ARAS)',
             craftLevel = 1,
             output = 'weapon_heavypistol',
             count = 1,
             timeMs = 28000,
-            divisions = { 'sor' },
+            divisions = { 'aras' },
             ingredients = {
                 { item = 'gun_frame', count = 2 },
                 { item = 'gun_barrel', count = 2 },
@@ -251,12 +251,12 @@ Config.PdWeaponCraft = {
             },
         },
         pd_craft_tactical_smg = {
-            label = 'Taktinis SMG (ARO)',
+            label = 'Taktinis SMG (ARAS)',
             craftLevel = 2,
             output = 'weapon_tacticalsmg',
             count = 1,
             timeMs = 40000,
-            divisions = { 'sor' },
+            divisions = { 'aras' },
             ingredients = {
                 { item = 'gun_frame', count = 3 },
                 { item = 'gun_barrel', count = 3 },
@@ -268,12 +268,12 @@ Config.PdWeaponCraft = {
             },
         },
         pd_craft_aro_shotgun = {
-            label = 'Pompinis šratinis (ARO)',
+            label = 'Pompinis šratinis (ARAS)',
             craftLevel = 2,
             output = 'weapon_pumpshotgun',
             count = 1,
             timeMs = 42000,
-            divisions = { 'sor' },
+            divisions = { 'aras' },
             ingredients = {
                 { item = 'gun_frame', count = 3 },
                 { item = 'gun_barrel', count = 3 },
@@ -284,12 +284,12 @@ Config.PdWeaponCraft = {
             },
         },
         pd_craft_special_carbine = {
-            label = 'Specialus karabinas (ARO)',
+            label = 'Specialus karabinas (ARAS)',
             craftLevel = 3,
             output = 'weapon_specialcarbine',
             count = 1,
             timeMs = 52000,
-            divisions = { 'sor' },
+            divisions = { 'aras' },
             ingredients = {
                 { item = 'gun_frame', count = 3 },
                 { item = 'gun_barrel', count = 3 },
@@ -300,12 +300,12 @@ Config.PdWeaponCraft = {
             },
         },
         pd_craft_heavy_rifle = {
-            label = 'Sunkusis šautuvas (ARO)',
+            label = 'Sunkusis šautuvas (ARAS)',
             craftLevel = 3,
             output = 'weapon_heavyrifle',
             count = 1,
             timeMs = 54000,
-            divisions = { 'sor' },
+            divisions = { 'aras' },
             ingredients = {
                 { item = 'gun_frame', count = 3 },
                 { item = 'gun_barrel', count = 3 },
@@ -316,12 +316,12 @@ Config.PdWeaponCraft = {
             },
         },
         pd_craft_sniper_rifle = {
-            label = 'Snaiperio šautuvas (ARO)',
+            label = 'Snaiperio šautuvas (ARAS)',
             craftLevel = 3,
             output = 'weapon_sniperrifle',
             count = 1,
             timeMs = 58000,
-            divisions = { 'sor' },
+            divisions = { 'aras' },
             ingredients = {
                 { item = 'gun_frame', count = 3 },
                 { item = 'gun_barrel', count = 4 },
@@ -338,7 +338,7 @@ Config.PdWeaponCraft = {
             output = 'snp_ammo',
             count = 20,
             timeMs = 14000,
-            divisions = { 'sor' },
+            divisions = { 'aras' },
             ingredients = {
                 { item = 'metal_scrap', count = 12 },
                 { item = 'weapon_parts', count = 4 },

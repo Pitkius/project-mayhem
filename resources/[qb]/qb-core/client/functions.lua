@@ -456,7 +456,7 @@ function QBCore.Functions.SpawnVehicle(model, cb, coords, isnetworked, teleportI
     model = type(model) == 'string' and joaat(model) or model
     if not IsModelInCdimage(model) then
         QBCore.Functions.Notify(
-            ('Modelis neprieinamas (build %s, reikia 3788).'):format(GetGameBuildNumber()),
+            ('Modelis neprieinamas (build %s, reikia 3717+).'):format(GetGameBuildNumber()),
             'error',
             8000
         )
@@ -512,10 +512,11 @@ function QBCore.Functions.GetVehicleProperties(vehicle)
         end
 
         local extras = {}
-        for extraId = 0, 12 do
+        for extraId = 0, 20 do
             if DoesExtraExist(vehicle, extraId) then
-                local state = IsVehicleExtraTurnedOn(vehicle, extraId) == 1
-                extras[tostring(extraId)] = state
+                --- FiveM Lua grąžina boolean; `== 1` visada false → garažas išjungdavo visas lempas
+                local on = IsVehicleExtraTurnedOn(vehicle, extraId)
+                extras[tostring(extraId)] = on == true or on == 1
             end
         end
 
@@ -653,16 +654,6 @@ end
 
 function QBCore.Functions.SetVehicleProperties(vehicle, props)
     if DoesEntityExist(vehicle) then
-        if props.extras then
-            for id, enabled in pairs(props.extras) do
-                if enabled then
-                    SetVehicleExtra(vehicle, tonumber(id), 0)
-                else
-                    SetVehicleExtra(vehicle, tonumber(id), 1)
-                end
-            end
-        end
-
         local colorPrimary, colorSecondary = GetVehicleColours(vehicle)
         local pearlescentColor, wheelColor = GetVehicleExtraColours(vehicle)
         SetVehicleModKit(vehicle, 0)
@@ -942,6 +933,19 @@ function QBCore.Functions.SetVehicleProperties(vehicle, props)
         end
         if props.liveryRoof then
             SetVehicleRoofLivery(vehicle, props.liveryRoof)
+        end
+        --- Extras po SetVehicleModKit / modų — kitaip lightbar'ai vėl išsijungia
+        if props.extras then
+            for id, enabled in pairs(props.extras) do
+                local extraId = tonumber(id)
+                if extraId and DoesExtraExist(vehicle, extraId) then
+                    if enabled then
+                        SetVehicleExtra(vehicle, extraId, 0)
+                    else
+                        SetVehicleExtra(vehicle, extraId, 1)
+                    end
+                end
+            end
         end
     end
 end

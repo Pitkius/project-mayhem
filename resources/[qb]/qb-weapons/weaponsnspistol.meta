@@ -57,11 +57,11 @@
           <AmmoInfo ref="AMMO_PISTOL" />
           <AimingInfo ref="PISTOL_2H_BASE_STRAFE" />
           <ClipSize value="6" />
-          <AccuracySpread value="1.750000" />
+          <AccuracySpread value="0.000000" />
           <AccurateModeAccuracyModifier value="0.500000" />
-          <RunAndGunAccuracyModifier value="2.000000" />
-          <RunAndGunAccuracyMaxModifier value="1.000000" />
-          <RecoilAccuracyMax value="1.000000" />
+          <RunAndGunAccuracyModifier value="0.000000" />
+          <RunAndGunAccuracyMaxModifier value="0.000000" />
+          <RecoilAccuracyMax value="0.000000" />
           <RecoilErrorTime value="2.000000" />
           <RecoilRecoveryRate value="1.000000" />
           <RecoilAccuracyToAllowHeadShotAI value="1000.000000" />

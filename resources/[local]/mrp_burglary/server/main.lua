@@ -48,9 +48,12 @@ local function grantLoot(src, Player, tierId)
         local pick = weightedLootPick()
         if pick then
             if pick.item == 'markedbills' and pick.worth then
-                local ok = Player.Functions.AddItem('markedbills', 1, false, { worth = pick.worth })
-                if ok then
-                    granted[#granted + 1] = { type = 'item', item = 'markedbills', count = 1, worth = pick.worth }
+                local dollars = math.floor(tonumber(pick.worth) or 0)
+                if dollars > 0 then
+                    local ok = Player.Functions.AddItem('markedbills', dollars, false, {})
+                    if ok then
+                        granted[#granted + 1] = { type = 'item', item = 'markedbills', count = dollars }
+                    end
                 end
             else
                 local ok = Player.Functions.AddItem(pick.item, pick.count)

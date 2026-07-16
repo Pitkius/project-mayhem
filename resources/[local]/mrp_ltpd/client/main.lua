@@ -668,12 +668,13 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
     end
     data = type(data) == 'table' and data or {}
     local lockerMode = data.lockerMode or 'standard'
-    local title = (lockerMode == 'aro' or lockerMode == 'sor') and 'SOR rūbinė' or 'Tarnybinė apranga'
-    if lockerMode == 'aro' or lockerMode == 'sor' then
+    local arasLocker = lockerMode == 'aro' or lockerMode == 'sor' or lockerMode == 'aras'
+    local title = arasLocker and 'ARAS rūbinė' or 'Tarnybinė apranga'
+    if arasLocker then
         local leadership = exports['mrp_ltpd']:IsPdLeadership()
         local eff = exports['mrp_ltpd']:GetPdEffectiveDivision()
-        if not leadership and eff ~= 'sor' and eff ~= 'aro' then
-            return QBCore.Functions.Notify('SOR rūbinė – tik SOR padaliniui (/pddept).', 'error')
+        if not leadership and not PdDivisions.isAras(eff) then
+            return QBCore.Functions.Notify('ARAS rūbinė – tik ARAS padaliniui (/pddept).', 'error')
         end
     end
     local P = QBCore.Functions.GetPlayerData()
@@ -682,15 +683,15 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
     local ped = PlayerPedId()
     local genderKey = getDutyOutfitGenderKey(ped)
     local actions = {}
-    if lockerMode ~= 'aro' and lockerMode ~= 'sor' and grade >= chooseMin then
+    if not arasLocker and grade >= chooseMin then
         actions[#actions + 1] = { id = 'division', label = 'Keisti padalinį' }
     end
-    if lockerMode ~= 'aro' and lockerMode ~= 'sor' then
+    if not arasLocker then
         actions[#actions + 1] = { id = 'civilian', label = 'Civilio apranga', danger = true }
     end
     exports['mrp_duty_locker']:Open({
         title = title,
-        subtitle = lockerMode == 'standard' and 'PD uniformos' or 'Specialiųjų operacijų rinkinys',
+        subtitle = lockerMode == 'standard' and 'PD uniformos' or 'ARAS rinkinys',
         anchor = data.anchor,
         radius = data.radius or 2.6,
         items = buildPdDutyLockerItems(grade, lockerMode, genderKey),

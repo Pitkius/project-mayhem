@@ -1,6 +1,10 @@
 .scroll-body.weather-body {
   padding: 0 !important;
   background: var(--app-bg, #0a0812);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .wx-app {

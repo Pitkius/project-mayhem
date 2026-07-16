@@ -1,6 +1,10 @@
 .scroll-body.notes-body {
   padding: 0 !important;
   background: var(--app-bg, #0a0812);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .notes-app {

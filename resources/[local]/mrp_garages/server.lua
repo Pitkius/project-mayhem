@@ -161,7 +161,8 @@ QBCore.Functions.CreateCallback('mrp_garages:server:getPlayerVehicles', function
         local modelLower = tostring(r.vehicle or ''):lower()
         local include = true
         if pdGarage then
-            include = isPoliceVehicleModel(modelLower) and tostring(r.garage or '') == garageId
+            --- Visos PD mašinos — tik PD garaže (net jei DB garage buvo viešas)
+            include = isPoliceVehicleModel(modelLower)
         elseif mechGarage then
             include = isMechanicVehicleModel(modelLower) and tostring(r.garage or '') == garageId
         elseif emsgGarage then
@@ -170,8 +171,13 @@ QBCore.Functions.CreateCallback('mrp_garages:server:getPlayerVehicles', function
             include = isTaxiVehicleModel(modelLower) and tostring(r.garage or '') == garageId
         elseif rangerGarage then
             include = isRangerVehicleModel(modelLower) and tostring(r.garage or '') == garageId
-        elseif garageType then
-            include = matchesGarageType(garageType, getVehicleDbType(modelLower))
+        else
+            --- Viešas / tipinis garažas — be tarnybinių PD mašinų
+            if isPoliceVehicleModel(modelLower) then
+                include = false
+            elseif garageType then
+                include = matchesGarageType(garageType, getVehicleDbType(modelLower))
+            end
         end
         if include then
             vehicles[#vehicles + 1] = {
@@ -225,9 +231,7 @@ QBCore.Functions.CreateCallback('mrp_garages:server:spawnVehicle', function(sour
         if not isPoliceVehicleModel(row.vehicle) then
             return cb({ ok = false, message = 'Tai ne policijos transportas.' })
         end
-        if tostring(row.garage or '') ~= garageId then
-            return cb({ ok = false, message = 'Masina saugoma kitame garaže.' })
-        end
+        --- PD mašinas galima imti iš bet kurio PD garažo (perkeliam į šį)
     elseif isMechanicGarageId(garageId) then
         if not isMechanicVehicleModel(row.vehicle) then
             return cb({ ok = false, message = 'Tai ne mechanikų tarnybinis transportas.' })
@@ -257,9 +261,15 @@ QBCore.Functions.CreateCallback('mrp_garages:server:spawnVehicle', function(sour
             return cb({ ok = false, message = 'Masina saugoma kitame garaže.' })
         end
     else
+        if isPoliceVehicleModel(row.vehicle) then
+            return cb({ ok = false, message = 'Policijos transportą imkite iš PD garažo.' })
+        end
         local garageType = getGarageTypeFilter(garageId)
         if garageType and not matchesGarageType(garageType, getVehicleDbType(row.vehicle)) then
             return cb({ ok = false, message = garageTypeMismatchMessage(garageType) })
+        end
+        if tostring(row.garage or '') ~= garageId then
+            return cb({ ok = false, message = 'Masina saugoma kitame garaže.' })
         end
     end
 
@@ -330,6 +340,9 @@ QBCore.Functions.CreateCallback('mrp_garages:server:parkVehicle', function(sourc
 
     if isPdGarageId(garageId) and not isPoliceVehicleModel(rowPark.vehicle) then
         return cb({ ok = false, message = 'Į PD garažą galima tik policijos transportą.' })
+    end
+    if not isPdGarageId(garageId) and isPoliceVehicleModel(rowPark.vehicle) then
+        return cb({ ok = false, message = 'Policijos transportą statykite tik PD garaže.' })
     end
     if isMechanicGarageId(garageId) and not isMechanicVehicleModel(rowPark.vehicle) then
         return cb({ ok = false, message = 'Į šį garažą tik mechanikų tarnybinis transportas.' })

@@ -17,7 +17,9 @@ Config.LoadscreenMusic = {
     audioScene = 'MP_LEADERBOARD_SCENE',
 }
 
---- NUI mp3 (nebūtina) — įdėk html/assets/gta_theme.mp3 jei nori savo takelio
+--- NUI mp3 — paleidžiama kai atsiranda loadscreen (rekomenduojama).
+--- Įdėk failą: resources/[local]/mrp_loadscreen/html/assets/gta_theme.mp3
+--- Palaikoma: .mp3 (geriausiai), kartais .ogg
 Config.LoadscreenNuiMusic = {
     enabled = true,
     volume = 0.28,

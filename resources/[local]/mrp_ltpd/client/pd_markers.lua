@@ -212,9 +212,9 @@ local function registerAllPdMarkers()
         if st.locker2 and st.locker2.coords then
             registerLockerMarker({
                 coords = st.locker2.coords,
-                label = st.locker2.label or 'ARO rūbinė',
+                label = st.locker2.label or 'ARAS rūbinė',
                 minGrade = st.locker2.minGrade,
-                divisions = st.locker2.divisions or { 'sor' },
+                divisions = st.locker2.divisions or { 'aras' },
                 excludeDivisions = st.locker2.excludeDivisions,
                 lockerMode = st.locker2.lockerMode or 'aro',
             })
@@ -247,6 +247,7 @@ local function registerAllPdMarkers()
                         minGrade = stash.minGrade or 0,
                         divisions = stash.divisions,
                         excludeDivisions = stash.excludeDivisions,
+                        leadershipOnly = stash.leadershipOnly,
                     },
                     onPress = function()
                         TriggerEvent('mrp_ltpd:client:tryOpenStash', { stationId = stationId, stashIndex = index })

@@ -33,7 +33,7 @@ jobs:
           git submodule sync --recursive
           git submodule update --init --recursive
 
-          echo "[deploy] Atnaujinami FXServer artifacts (3788 palaikymui)..."
+          echo "[deploy] Atnaujinami FXServer artifacts (3717 palaikymui)..."
           sudo -n systemctl stop fivem-txadmin || true
           sleep 5
           if ! bash "$REPO_DIR/scripts/update-fivem-artifacts.sh" "$SERVER_DIR"; then
@@ -74,8 +74,8 @@ jobs:
             sync_resources "$REPO_DIR" 0
           fi
 
-          if ! grep -q 'sv_enforceGameBuild 3788' "$SERVER_DIR/server.cfg"; then
-            echo "[deploy] ERROR: $SERVER_DIR/server.cfg neturi sv_enforceGameBuild 3788!"
+          if ! grep -q 'sv_enforceGameBuild 3717' "$SERVER_DIR/server.cfg"; then
+            echo "[deploy] ERROR: $SERVER_DIR/server.cfg neturi sv_enforceGameBuild 3717!"
             exit 1
           fi
 

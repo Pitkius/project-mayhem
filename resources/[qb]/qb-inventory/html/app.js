@@ -1032,13 +1032,14 @@ const InventoryContainer = Vue.createApp({
             const description = item.info && item.info.description ? item.info.description.replace(/\n/g, "<br>") : item.description ? item.description.replace(/\n/g, "<br>") : "No description available.";
             if (item.info && Object.keys(item.info).length > 0 && item.info.display !== false) {
                 for (const [key, value] of Object.entries(item.info)) {
-                    if (key !== "description" && key !== "display") {
-                        let valueStr = value;
-                        if (key === "attachments") {
-                            valueStr = Object.keys(value).length > 0 ? "true" : "false";
-                        }
-                        content += `<div class="tooltip-info"><span class="tooltip-info-key">${this.formatKey(key)}:</span> ${valueStr}</div>`;
+                    if (key === "description" || key === "display" || key === "worth") {
+                        continue;
                     }
+                    let valueStr = value;
+                    if (key === "attachments") {
+                        valueStr = Object.keys(value).length > 0 ? "true" : "false";
+                    }
+                    content += `<div class="tooltip-info"><span class="tooltip-info-key">${this.formatKey(key)}:</span> ${valueStr}</div>`;
                 }
             }
             content += `<div class="tooltip-description">${description}</div>`;

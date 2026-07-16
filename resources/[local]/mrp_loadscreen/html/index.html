@@ -27,7 +27,9 @@
         var a = document.getElementById('themeAudio');
         if (!a) return;
         a.volume = 0.28;
-        a.play().catch(function () {});
+        if (!a.getAttribute('src')) a.src = 'assets/gta_theme.mp3';
+        var p = a.play();
+        if (p && p.catch) p.catch(function () {});
       }
 
       pingNative();
@@ -35,6 +37,9 @@
 
       function onDom() {
         playNuiAudio();
+        // CEF kartais blokuoja autoplay — pirmas bet koks paspaudimas atrakina garsą
+        document.addEventListener('pointerdown', playNuiAudio, { once: false });
+        document.addEventListener('keydown', playNuiAudio, { once: false });
       }
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', onDom);
@@ -100,7 +105,7 @@
     <span id="musicLabel" class="music-label">Mayhem Roleplay</span>
     <input type="range" id="musicVolume" class="music-volume" min="0" max="100" value="28" />
   </div>
-  <audio id="themeAudio" preload="auto" loop playsinline src="nui://mrp_loadscreen/html/assets/gta_theme.mp3"></audio>
+  <audio id="themeAudio" preload="auto" loop playsinline src="assets/gta_theme.mp3"></audio>
 
   <script src="app.js"></script>
 </body>

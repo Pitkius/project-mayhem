@@ -14,6 +14,7 @@ local drugNpcsSpawned = false
 local productBuyerBlips = {}
 local mapBlips = {}
 local streetSellExcludedPeds = {}
+local streetSellSoldNetIds = {}
 local failedNpcModels = {}
 local npcModelRefCount = {}
 local npcModelLoading = {}
@@ -509,10 +510,45 @@ local function getFirstSellableDrugItem()
     end
 end
 
+local function isStreetNpcAlreadySold(entity)
+    if not entity or entity == 0 then return true end
+    if streetSellExcludedPeds[entity] then return true end
+    local netId = NetworkGetNetworkIdFromEntity(entity)
+    if netId and streetSellSoldNetIds[netId] then return true end
+    local ok, sold = pcall(function()
+        return Entity(entity).state.mrpDrugSold == true
+    end)
+    return ok and sold == true
+end
+
+local function markStreetNpcSoldLocal(entity, netId)
+    netId = tonumber(netId) or 0
+    if netId > 0 then
+        streetSellSoldNetIds[netId] = true
+    end
+    if entity and entity ~= 0 and DoesEntityExist(entity) then
+        streetSellExcludedPeds[entity] = true
+        if netId <= 0 then
+            netId = NetworkGetNetworkIdFromEntity(entity) or 0
+            if netId > 0 then streetSellSoldNetIds[netId] = true end
+        end
+    end
+end
+
+RegisterNetEvent('mrp_drugs:client:markNpcSold', function(netId)
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return end
+    streetSellSoldNetIds[netId] = true
+    local ent = NetworkGetEntityFromNetworkId(netId)
+    if ent ~= 0 and DoesEntityExist(ent) then
+        streetSellExcludedPeds[ent] = true
+    end
+end)
+
 local function canStreetSellToPed(entity)
     if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
     if entity == PlayerPedId() or IsPedAPlayer(entity) or IsEntityDead(entity) then return false end
-    if streetSellExcludedPeds[entity] then return false end
+    if isStreetNpcAlreadySold(entity) then return false end
     if GetResourceState('mrp_npcshops') == 'started' then
         local ok, isShop = pcall(function()
             return exports['mrp_npcshops']:IsShopNpc(entity)
@@ -531,6 +567,9 @@ local function trySellToNpcEntity(entity)
     if not entity or entity == 0 or not DoesEntityExist(entity) then
         return QBCore.Functions.Notify('Netinkamas NPC.', 'error')
     end
+    if isStreetNpcAlreadySold(entity) then
+        return QBCore.Functions.Notify('Šis asmuo jau nusipirko — daugiau neparduos.', 'error')
+    end
     if DrugSellAnim.isBusy() then return end
     local maxDist = (Config.Sell and Config.Sell.maxDistanceToPed or 3.0) + 0.5
     if #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(entity)) > maxDist then
@@ -546,7 +585,11 @@ local function trySellToNpcEntity(entity)
             return QBCore.Functions.Notify('NPC per toli.', 'error')
         end
 
+        local netId = NetworkGetNetworkIdFromEntity(entity)
         QBCore.Functions.TriggerCallback('mrp_drugs:server:tryNpcSell', function(res)
+            if res and (res.ok or res.refused or res.panic or res.alreadySold) then
+                markStreetNpcSoldLocal(entity, netId)
+            end
             if not res or not res.ok then
                 if res and res.panic then
                     return QBCore.Functions.Notify(res.reason or 'NPC panikuoja!', 'error')
@@ -556,14 +599,15 @@ local function trySellToNpcEntity(entity)
                 end
                 return QBCore.Functions.Notify((res and res.reason) or 'Pardavimas nepavyko.', 'error')
             end
+            local amt = tonumber(res.amount) or 1
             QBCore.Functions.Notify(
-                ('Parduota už $%s (%s)'):format(res.price or 0, res.payoutLabel or 'Nešvarūs pinigai'),
+                ('Parduota x%d už $%s (%s)'):format(amt, res.price or 0, res.payoutLabel or 'Nešvarūs pinigai'),
                 'success'
             )
             if res.alertPolice then
                 QBCore.Functions.Notify('Kažkas gali būti iškvietęs policiją…', 'error', 5500)
             end
-        end, itemName, NetworkGetNetworkIdFromEntity(entity))
+        end, itemName, netId)
     end)
 end
 

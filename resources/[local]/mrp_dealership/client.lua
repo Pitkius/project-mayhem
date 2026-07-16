@@ -571,14 +571,29 @@ local function spawnPurchasedVehicle(result, colorIdx, successMsg, spawnFailMsg)
     SetModelAsNoLongerNeeded(modelHash)
     if veh and veh ~= 0 then
         SetVehicleNumberPlateText(veh, result.plate)
+        SetEntityAsMissionEntity(veh, true, true)
+        SetVehicleOnGroundProperly(veh)
         if GetResourceState('mrp_plates') == 'started' then
             exports['mrp_plates']:ApplyPlateStyle(veh)
         end
         applyPurchasedVehicleColor(veh, colorIdx)
+        --- PD lightbar extras (mrpd*)
+        local modelName = tostring(result.model or ''):lower()
+        if modelName:match('^mrpd%d+$') or modelName == 'polmav' or modelName == 'buzzard2' then
+            for i = 0, 20 do
+                if DoesExtraExist(veh, i) then
+                    SetVehicleExtra(veh, i, 0)
+                end
+            end
+        end
         SetVehicleEngineOn(veh, true, true, false)
-        SetEntityAsMissionEntity(veh, true, true)
         TriggerEvent('vehiclekeys:client:SetOwner', result.plate)
-        TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
+        local ped = PlayerPedId()
+        TaskWarpPedIntoVehicle(ped, veh, -1)
+        Wait(0)
+        if GetVehiclePedIsIn(ped, false) ~= veh then
+            SetPedIntoVehicle(ped, veh, -1)
+        end
         QBCore.Functions.Notify(successMsg:format(result.plate), 'success')
         return true
     end

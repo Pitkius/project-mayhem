@@ -18,7 +18,7 @@ local function payoutItemLabel()
     return (shared and shared.label) or 'Nešvarūs pinigai'
 end
 
---- Nešvarūs pinigai (markedbills) vietoj grynais cash.
+--- Nešvarūs pinigai (markedbills) — 1 vnt. = $1, inventorius rodo x suma.
 local function giveDrugSalePayout(src, Player, amount, reason)
     amount = math.floor(tonumber(amount) or 0)
     if amount <= 0 then return true end
@@ -31,51 +31,26 @@ local function giveDrugSalePayout(src, Player, amount, reason)
         return true
     end
 
-    local billWorth = tonumber(sellCfg.payoutBillWorth) or 0
-    local added = 0
-    local billCount = 0
-
-    local function addBill(worth)
-        worth = math.floor(tonumber(worth) or 0)
-        if worth <= 0 then return true end
-        local ok = Player.Functions.AddItem(itemName, 1, false, { worth = worth })
+    local ok = false
+    if itemName == 'markedbills' and DrugPlayer and DrugPlayer.addDirty then
+        ok = DrugPlayer.addDirty(src, Player, amount, reason)
+    else
+        ok = Player.Functions.AddItem(itemName, amount, false, {})
         if not ok and GetResourceState('qb-inventory') == 'started' then
-            ok = exports['qb-inventory']:AddItem(src, itemName, 1, nil, { worth = worth }, reason)
+            ok = exports['qb-inventory']:AddItem(src, itemName, amount, nil, {}, reason)
         end
-        if not ok then return false end
-        billCount = billCount + 1
-        added = added + worth
-        return true
     end
 
-    local function finalizePayout()
-        if billCount <= 0 then return end
-        TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', billCount)
+    if ok then
+        TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', amount)
         if GetResourceState('qb-inventory') == 'started' then
             exports['qb-inventory']:SaveInventory(src)
         end
-    end
-
-    if billWorth > 0 then
-        local left = amount
-        while left > 0 do
-            local chunk = math.min(left, billWorth)
-            if not addBill(chunk) then break end
-            left = left - chunk
-        end
-    elseif not addBill(amount) then
-        added = 0
-    end
-
-    if added >= amount then
-        finalizePayout()
         return true
     end
 
-    local remainder = amount - added
-    if remainder > 0 and sellCfg.payoutFallbackCash ~= false then
-        Player.Functions.AddMoney('cash', remainder, reason .. '-fallback')
-        if added > 0 then finalizePayout() end
+    if sellCfg.payoutFallbackCash ~= false then
+        Player.Functions.AddMoney('cash', amount, reason .. '-fallback')
         return true
     end
 
@@ -204,6 +179,23 @@ local function countItem(Player, item, amount)
     local it = Player.Functions.GetItemByName(item)
     if not it or not it.amount then return false end
     return it.amount >= amount
+end
+
+local function countItemAmount(Player, item)
+    local total = 0
+    local byName = Player.Functions.GetItemsByName and Player.Functions.GetItemsByName(item)
+    if type(byName) == 'table' and #byName > 0 then
+        for _, it in ipairs(byName) do
+            total = total + (tonumber(it.amount) or 0)
+        end
+        return total
+    end
+    for _, it in pairs(Player.PlayerData.items or {}) do
+        if it and it.name == item then
+            total = total + (tonumber(it.amount) or 0)
+        end
+    end
+    return total
 end
 
 local function recipeRowSatisfied(Player, row, st)
@@ -651,6 +643,66 @@ local function findItemSlot(Player, itemName)
     return nil
 end
 
+local function removeSellItems(Player, itemName, amount)
+    amount = math.floor(tonumber(amount) or 0)
+    if amount <= 0 then return 0, nil end
+    local removed = 0
+    local sellQuality = nil
+    while removed < amount do
+        local slot = findItemSlot(Player, itemName)
+        if not slot or not slot.slot then break end
+        local avail = math.floor(tonumber(slot.amount) or 0)
+        if avail <= 0 then break end
+        local take = math.min(amount - removed, avail)
+        if not sellQuality and slot.info and slot.info.quality ~= nil then
+            sellQuality = slot.info.quality
+        end
+        if not Player.Functions.RemoveItem(itemName, take, slot.slot) then
+            break
+        end
+        removed = removed + take
+    end
+    return removed, sellQuality
+end
+
+--- Gatvės NPC: po vieno pirkimo nebegali pirkti iš nieko (visiems žaidėjams).
+local soldStreetNpcs = {}
+
+local function isStreetNpcSold(netId)
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return false end
+    if soldStreetNpcs[netId] then
+        local ent = NetworkGetEntityFromNetworkId(netId)
+        if ent == 0 or not DoesEntityExist(ent) then
+            soldStreetNpcs[netId] = nil
+            return false
+        end
+        return true
+    end
+    local ent = NetworkGetEntityFromNetworkId(netId)
+    if ent ~= 0 and DoesEntityExist(ent) then
+        local st = Entity(ent).state
+        if st and st.mrpDrugSold then
+            soldStreetNpcs[netId] = true
+            return true
+        end
+    end
+    return false
+end
+
+local function markStreetNpcSold(netId)
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return end
+    soldStreetNpcs[netId] = true
+    local ent = NetworkGetEntityFromNetworkId(netId)
+    if ent ~= 0 and DoesEntityExist(ent) then
+        pcall(function()
+            Entity(ent).state:set('mrpDrugSold', true, true)
+        end)
+    end
+    TriggerClientEvent('mrp_drugs:client:markNpcSold', -1, netId)
+end
+
 QBCore.Functions.CreateCallback('mrp_drugs:server:weedProductionStage', function(src, cb, token, stageName)
     local active = activeCrafts[src]
     if not active or active.token ~= token or not active.weedStages then
@@ -803,59 +855,73 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:tryNpcSell', function(src, cb,
 
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return cb({ ok = false }) end
-    if not countItem(Player, itemName, 1) then
-        return cb({ ok = false, reason = 'Neturi šio produkto.' })
-    end
 
     local netId = tonumber(npcNetId) or 0
-    if netId > 0 then
-        local ent = NetworkGetEntityFromNetworkId(netId)
-        if ent ~= 0 and DoesEntityExist(ent) then
-            local p = GetEntityCoords(GetPlayerPed(src))
-            local n = GetEntityCoords(ent)
-            if #(p - n) > (sellCfg.maxDistanceToPed or 3.0) + 1.5 then
-                return cb({ ok = false, reason = 'NPC per toli.' })
-            end
-            if IsPedAPlayer(ent) then
-                return cb({ ok = false, reason = 'Netinkamas tikslas.' })
-            end
-        end
+    if netId <= 0 then
+        return cb({ ok = false, reason = 'Netinkamas NPC.' })
+    end
+    if isStreetNpcSold(netId) then
+        return cb({ ok = false, reason = 'Šis asmuo jau nusipirko — daugiau neparduos.', alreadySold = true })
     end
 
+    local ent = NetworkGetEntityFromNetworkId(netId)
+    if ent == 0 or not DoesEntityExist(ent) then
+        return cb({ ok = false, reason = 'NPC nebepasiekiamas.' })
+    end
+    local p = GetEntityCoords(GetPlayerPed(src))
+    local n = GetEntityCoords(ent)
+    if #(p - n) > (sellCfg.maxDistanceToPed or 3.0) + 1.5 then
+        return cb({ ok = false, reason = 'NPC per toli.' })
+    end
+    if IsPedAPlayer(ent) then
+        return cb({ ok = false, reason = 'Netinkamas tikslas.' })
+    end
+
+    local have = countItemAmount(Player, itemName)
+    local minBuy = math.max(1, math.floor(tonumber(sellCfg.minUnitsPerNpc) or 1))
+    local maxBuy = math.max(minBuy, math.floor(tonumber(sellCfg.maxUnitsPerNpc) or 5))
+    if have < minBuy then
+        return cb({ ok = false, reason = 'Neturi šio produkto.' })
+    end
+    local qty = math.random(minBuy, math.min(maxBuy, have))
+
     if math.random(1, 100) <= (sellCfg.refuseChance or 18) then
+        markStreetNpcSold(netId)
         return cb({ ok = false, refused = true, reason = 'NPC atsisakė pirkti.' })
     end
 
     if math.random(1, 100) <= (sellCfg.panicChance or 8) then
+        markStreetNpcSold(netId)
         rollPolice(85, src, 'npc_panic')
         return cb({ ok = false, panic = true, reason = 'NPC panikuoja ir bėga!' })
     end
 
-    -- Kokybės daugiklis: parduodam konkretų slotą ir skaitom jo info.quality.
-    local sellSlot = findItemSlot(Player, itemName)
-    local sellQuality = sellSlot and sellSlot.info and sellSlot.info.quality or nil
-    if sellSlot and sellSlot.slot then
-        Player.Functions.RemoveItem(itemName, 1, sellSlot.slot)
-    else
-        Player.Functions.RemoveItem(itemName, 1)
+    local removed, sellQuality = removeSellItems(Player, itemName, qty)
+    if removed < qty then
+        if removed > 0 then
+            Player.Functions.AddItem(itemName, removed)
+        end
+        return cb({ ok = false, reason = 'Nepavyko paimti produkto iš inventoriaus.' })
     end
 
     local gang = getPlayerGang(src)
     local turfId = findTurfAtPlayer(src)
-    local price = prod.sellBase or 100
-    price = math.floor(price * qualityMult(sellQuality))
+    local unitPrice = prod.sellBase or 100
+    unitPrice = math.floor(unitPrice * qualityMult(sellQuality))
     if gang then
-        price = math.floor(price * (1.0 + ((tonumber(gang.reputation) or 0) * (sellCfg.reputationPriceFactor or 0.004))))
+        unitPrice = math.floor(unitPrice * (1.0 + ((tonumber(gang.reputation) or 0) * (sellCfg.reputationPriceFactor or 0.004))))
     end
     if turfId and zoneHeat[turfId] and zoneHeat[turfId] > 40 then
-        price = math.floor(price * 1.08)
+        unitPrice = math.floor(unitPrice * 1.08)
     end
-    price = math.floor(price * (sellCfg.basePriceMultiplier or 1.0))
+    unitPrice = math.floor(unitPrice * (sellCfg.basePriceMultiplier or 1.0))
+    local price = unitPrice * qty
     if not giveDrugSalePayout(src, Player, price, 'fivempro-drugs-sale') then
-        Player.Functions.AddItem(itemName, 1)
+        Player.Functions.AddItem(itemName, qty)
         return cb({ ok = false, reason = 'Inventorius pilnas — nėra vietos nešvariems pinigams.' })
     end
     lastSellAt[src] = now
+    markStreetNpcSold(netId)
 
     local alertPolice = false
     if math.random(1, 100) <= (sellCfg.policeCallChance or 12) then
@@ -875,7 +941,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:tryNpcSell', function(src, cb,
                     salesCount, totalProfit, turfId,
                 })
                 MySQL.insert.await('INSERT INTO fivempro_gang_sales_logs (gang_id, turf_id, item_name, amount, profit) VALUES (?, ?, ?, ?, ?)', {
-                    gang.gang_id, turfId, itemName, 1, price,
+                    gang.gang_id, turfId, itemName, qty, price,
                 })
                 exports['mrp_gangs']:AddTurfInfluence(src, turfId, 'drug_sale', {
                     amount = inf,
@@ -901,13 +967,13 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:tryNpcSell', function(src, cb,
         MySQL.update.await('UPDATE fivempro_gangs SET reputation = reputation + 1 WHERE id = ?', { gang.gang_id })
     end
 
-    -- Narkotikų progresija: realus parduotų galutinių produktų kiekis (gatvė = 1 vnt.).
-    if DrugPlayer then DrugPlayer.addSale(src, itemName, 1) end
+    if DrugPlayer then DrugPlayer.addSale(src, itemName, qty) end
 
-    logAdmin(('SELL %s $%s cid=%s turf=%s'):format(itemName, price, Player.PlayerData.citizenid, tostring(turfId)))
+    logAdmin(('SELL %sx%d $%s cid=%s turf=%s'):format(itemName, qty, price, Player.PlayerData.citizenid, tostring(turfId)))
     cb({
         ok = true,
         price = price,
+        amount = qty,
         item = itemName,
         turfId = turfId,
         alertPolice = alertPolice,

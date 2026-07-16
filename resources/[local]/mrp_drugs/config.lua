@@ -610,9 +610,13 @@ Config.Sell = {
     requireGangForInfluence = true,
     allowSellWithoutGang = true,
     basePriceMultiplier = 1.0,
+    --- Gatvės NPC: kiek vienetas per sandorį (random tarp min–max, ne daugiau nei turi).
+    minUnitsPerNpc = 1,
+    maxUnitsPerNpc = 5,
     --- Pardavimo atlygis inventoriaus item (nešvarūs pinigai), ne grynieji cash.
+    --- 1 markedbills = $1 — inventorius rodo x suma.
     payoutItem = 'markedbills',
-    --- 0 = vienas item su visa suma info.worth; >0 = skaidyti į kelis banknotus.
+    --- Senas nustatymas (nebenaudojamas): anksčiau skaidė į banknotus su info.worth.
     payoutBillWorth = 0,
     --- Jei inventoriuje vietos nėra — ar leisti grynuosius kaip atsarginį variantą.
     payoutFallbackCash = true,

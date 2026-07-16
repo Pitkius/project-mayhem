@@ -62,8 +62,9 @@ local function giveLootSlice(src, tierId, step, total, finalSlice)
     if loot.markedbills then
         local count = scaleAmount(loot.markedbills.min, loot.markedbills.max, step, total)
         local worth = loot.markedbills.worth or 400
-        if count > 0 then
-            Player.Functions.AddItem('markedbills', count, false, { worth = worth })
+        local dirty = count * worth
+        if dirty > 0 then
+            Player.Functions.AddItem('markedbills', dirty, false, {})
         end
     end
     if loot.casinochips then

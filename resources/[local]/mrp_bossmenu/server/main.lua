@@ -167,6 +167,34 @@ local function migrateDivisionIds()
     for oldId, newId in pairs(Config.DivisionAliases or {}) do
         MySQL.update.await('UPDATE ltpd_profiles SET division = ? WHERE division = ?', { newId, oldId })
     end
+    --- SOR → ARAS faction divisions eilutė (PK: job_name + division_id)
+    local hasAras = MySQL.scalar.await(
+        "SELECT 1 FROM mrp_faction_divisions WHERE job_name = 'police' AND division_id = 'aras' LIMIT 1"
+    )
+    local hasSor = MySQL.scalar.await(
+        "SELECT 1 FROM mrp_faction_divisions WHERE job_name = 'police' AND division_id = 'sor' LIMIT 1"
+    )
+    if hasSor and not hasAras then
+        MySQL.update.await([[
+            UPDATE mrp_faction_divisions
+            SET division_id = 'aras',
+                label = 'Antiteroristinių operacijų rinktinė',
+                abbr = 'ARAS',
+                description = 'Elitinis taktinis padalinys'
+            WHERE job_name = 'police' AND division_id = 'sor'
+        ]])
+    elseif hasSor and hasAras then
+        MySQL.update.await("DELETE FROM mrp_faction_divisions WHERE job_name = 'police' AND division_id = 'sor'")
+    elseif hasAras then
+        MySQL.update.await([[
+            UPDATE mrp_faction_divisions
+            SET label = 'Antiteroristinių operacijų rinktinė',
+                abbr = 'ARAS',
+                description = 'Elitinis taktinis padalinys'
+            WHERE job_name = 'police' AND division_id = 'aras'
+              AND (abbr = 'SOR' OR abbr = 'ARO' OR label LIKE '%Specialiųjų operacijų%')
+        ]])
+    end
 end
 
 CreateThread(function()

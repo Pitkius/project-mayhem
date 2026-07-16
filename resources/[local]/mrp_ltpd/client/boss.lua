@@ -17,7 +17,7 @@ local function canOpenBoss()
     if not P or not P.job or not isPdJobName(P.job.name) or not P.job.onduty then
         return false
     end
-    if P.job.isboss then return true end
+    if P.job.isboss or P.job.isdeputy then return true end
     return (P.job.grade and P.job.grade.level or 0) >= (Config.Permissions.boss_menu or 7)
 end
 
@@ -155,34 +155,50 @@ local function ensureBossLaptop(bossCfg)
     return ent, true
 end
 
+local function stationBossConfigs(st)
+    local list = {}
+    if st.boss and st.boss.coords then
+        list[#list + 1] = st.boss
+    end
+    if st.bossAro and st.bossAro.coords then
+        list[#list + 1] = st.bossAro
+    end
+    if type(st.bosses) == 'table' then
+        for _, cfg in ipairs(st.bosses) do
+            if cfg and cfg.coords then
+                list[#list + 1] = cfg
+            end
+        end
+    end
+    return list
+end
+
 local function setupBossTargets()
     if GetResourceState('qb-target') ~= 'started' then return false end
 
     for _, st in ipairs(Config.Stations or {}) do
-        local bossCfg = st.boss
-        if not bossCfg or not bossCfg.coords then goto continue end
+        for _, bossCfg in ipairs(stationBossConfigs(st)) do
+            local ent, weSpawned = ensureBossLaptop(bossCfg)
+            if ent ~= 0 then
+                if weSpawned then bossLaptops[#bossLaptops + 1] = ent end
 
-        local ent, weSpawned = ensureBossLaptop(bossCfg)
-        if ent == 0 then goto continue end
-        if weSpawned then bossLaptops[#bossLaptops + 1] = ent end
-
-        exports['qb-target']:AddTargetEntity(ent, {
-            options = {
-                {
-                    type = 'client',
-                    event = 'mrp_ltpd:client:bossOpenMenu',
-                    icon = 'fas fa-user-shield',
-                    label = bossCfg.label or 'LTPD vadovybė',
-                    job = Config.JobName or 'police',
-                    canInteract = function()
-                        return canOpenBoss()
-                    end,
-                },
-            },
-            distance = 2.2,
-        })
-
-        ::continue::
+                exports['qb-target']:AddTargetEntity(ent, {
+                    options = {
+                        {
+                            type = 'client',
+                            event = 'mrp_ltpd:client:bossOpenMenu',
+                            icon = 'fas fa-user-shield',
+                            label = bossCfg.label or 'LTPD vadovybė',
+                            job = Config.JobName or 'police',
+                            canInteract = function()
+                                return canOpenBoss()
+                            end,
+                        },
+                    },
+                    distance = 2.2,
+                })
+            end
+        end
     end
     return true
 end

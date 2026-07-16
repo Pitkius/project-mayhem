@@ -319,7 +319,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:darknetPlaceOrder', function(s
 
         if not orderId then
             -- Grąžinam pinigus, jei nepavyko išsaugoti.
-            Player.Functions.AddItem('markedbills', 1, false, { worth = total })
+            Player.Functions.AddItem('markedbills', total, false, {})
             return { ok = false, reason = 'Serverio klaida — pinigai grąžinti.' }
         end
 

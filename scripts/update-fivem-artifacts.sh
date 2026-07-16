@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Atnaujina FXServer artifact (Linux/proot) — reikalinga naujiems game build (pvz. 3788).
+# Atnaujina FXServer artifact (Linux/proot) — reikalinga game build palaikymui (pvz. 3717).
 # NELIEČIA: resources/, cfg/, cache/, server.cfg, txData/
 set -euo pipefail
 

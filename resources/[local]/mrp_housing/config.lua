@@ -234,7 +234,7 @@ Config.Properties = {
         door = vector4(-47.52, -585.86, 37.95, 70.0),
         allowedInteriors = { 'luxury' },
     },
-    --- DLC mansions (reikia bob74_ipl + build 3788)
+    --- DLC mansions (reikia bob74_ipl + build 3717+)
     {
         id = 'richman_villa',
         label = 'Richman Villa — mansion',

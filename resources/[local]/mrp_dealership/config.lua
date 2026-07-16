@@ -254,10 +254,12 @@ Config.PoliceDealership = {
     --- Peržiūra / spawn po pirkimo (MRPD + Sandy Shores PD)
     stations = {
         ls_main = {
-            spawn = vector4(447.9836, -967.4344, 22.8469, 84.1690),
-            preview = vector4(450.2, -966.8, 22.8469, 84.1690),
+            --- Po pirkimo — sėdi mašinoje čia
+            spawn = vector4(472.4337, -967.5765, 22.6502, 180.2519),
+            --- Katalogo peržiūra
+            preview = vector4(437.0018, -966.0881, 22.6499, 356.1277),
             previewLateralM = 0.0,
-            camera = vector4(444.5, -970.5, 24.8, 84.1690),
+            camera = vector4(437.2, -971.8, 24.6, 356.0),
         },
         sandy = {
             spawn = vector4(1869.5, 3695.2, 33.53, 210.0),

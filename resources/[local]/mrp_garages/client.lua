@@ -1,5 +1,29 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local function enableAllVehicleExtras(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    for i = 0, 20 do
+        if DoesExtraExist(veh, i) then
+            SetVehicleExtra(veh, i, 0) --- 0 = įjungta (lightbar ir pan.)
+        end
+    end
+end
+
+local function isPoliceVehicleModelName(modelName)
+    modelName = tostring(modelName or ''):lower()
+    local t = Config.PoliceVehicleModels or {}
+    return t[modelName] == true
+end
+
+local function isPoliceVehicleEntity(veh)
+    if not veh or veh == 0 then return false end
+    local hash = GetEntityModel(veh)
+    for name in pairs(Config.PoliceVehicleModels or {}) do
+        if joaat(name) == hash then return true end
+    end
+    return false
+end
+
 local function isPoliceOfficerOnDuty()
     local P = QBCore.Functions.GetPlayerData()
     if not P or not P.job or not P.job.onduty then return false end
@@ -357,10 +381,15 @@ end
 
 local function buildGarageRows(vehicles, garageId)
     local rows = {}
+    local pdGarage = tostring(garageId or ''):sub(1, 3) == 'pd_'
     for _, v in ipairs(vehicles or {}) do
         local state = tonumber(v.state) or 0
         local g = tostring(v.garage or '')
         local canTake = (state == 1) and (g == garageId)
+        --- PD garaže — visas PD parkas, net jei anksčiau buvo įrašytas viešame
+        if pdGarage and state == 1 and isPoliceVehicleModelName(v.model) then
+            canTake = true
+        end
         local statusLabel = 'Lauke'
         if state == 1 then
             statusLabel = canTake and 'Šiame garaže' or 'Kitame garaže'
@@ -498,6 +527,10 @@ local function doGarageVehicleSpawn(data)
         if decodedMods then
             restoreEmergencyProps(veh, decodedMods)
         end
+        --- Seniau išsaugoti mods extras buvo visi false (qb-core bug) — grąžinam PD lempas
+        if isPoliceVehicleModelName(result.model) then
+            enableAllVehicleExtras(veh)
+        end
         if GetResourceState('mrp_plates') == 'started' then
             exports['mrp_plates']:ApplyPlateStyle(veh)
         end
@@ -555,6 +588,13 @@ RegisterNetEvent('mrp_garages:client:parkVehicle', function(data)
     local veh = GetVehiclePedIsIn(ped, false)
     if garageCfg and garageCfg.garageType and not vehicleMatchesGarageType(veh, garageCfg.garageType) then
         return garageTypeMismatchNotify(garageCfg.garageType)
+    end
+    local isPdVeh = isPoliceVehicleEntity(veh)
+    if isPdVeh and (not garageCfg or not garageCfg.policeOnly) then
+        return QBCore.Functions.Notify('Policijos transportą statykite tik PD garaže.', 'error')
+    end
+    if garageCfg and garageCfg.policeOnly and not isPdVeh then
+        return QBCore.Functions.Notify('Į PD garažą galima tik policijos transportą.', 'error')
     end
     if GetPedInVehicleSeat(veh, -1) ~= ped then
         return QBCore.Functions.Notify('Tu turi būti vairuotojas', 'error')
