@@ -22,7 +22,7 @@
 .wx-days,
 .notes-editor textarea {
   scrollbar-width: thin;
-  scrollbar-color: rgba(191, 95, 255, 0.6) var(--phone-scroll-track);
+  scrollbar-color: var(--phone-scroll) var(--phone-scroll-track);
 }
 
 .phone-scroll::-webkit-scrollbar,
@@ -82,7 +82,7 @@
 .bank-scroll-x::-webkit-scrollbar-thumb:hover,
 .wx-hourly::-webkit-scrollbar-thumb:hover,
 .wx-days::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(207, 160, 255, 1) 0%, rgba(157, 80, 255, 0.95) 100%);
+  background: var(--phone-scroll-thumb);
 }
 
 .scroll-body.camera-body,
@@ -132,7 +132,7 @@
 
 .lg-post {
   padding: 14px;
-  border-bottom: 1px solid rgba(191, 95, 255, 0.12);
+  border-bottom: 1px solid var(--phone-line-soft);
   background: rgba(255, 255, 255, 0.02);
 }
 
@@ -167,8 +167,8 @@
 }
 
 .lg-like-btn {
-  border: 1px solid rgba(191, 95, 255, 0.28);
-  background: rgba(191, 95, 255, 0.1);
+  border: 1px solid var(--phone-border);
+  background: var(--phone-fill-soft);
   color: #f0e8ff;
   border-radius: 999px;
   padding: 8px 14px;
@@ -186,7 +186,7 @@
 }
 
 .lg-like-btn:hover {
-  background: rgba(191, 95, 255, 0.18);
+  background: var(--phone-fill);
 }
 
 .lg-empty {
@@ -204,7 +204,7 @@
 
 .neon-btn {
   border: 1px solid var(--glass-border);
-  background: rgba(191, 95, 255, 0.12);
+  background: var(--phone-line-soft);
   color: #f5f0ff;
   border-radius: 14px;
   padding: 10px 14px;
@@ -212,7 +212,7 @@
   cursor: pointer;
 }
 .neon-btn.primary {
-  background: linear-gradient(135deg, #9d4edd, #bf5fff);
+  background: var(--phone-btn-grad);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 24px var(--neon-purple-soft);
 }
@@ -232,7 +232,7 @@
 }
 #phone.camera-live-mode .device {
   background: transparent;
-  border-color: rgba(191, 95, 255, 0.25);
+  border-color: var(--phone-border);
   box-shadow: 0 0 40px var(--neon-purple-soft);
 }
 #phone.camera-live-mode #appScreen {
@@ -323,7 +323,7 @@
   border-radius: 50%;
   border: 4px solid #fff;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 0 0 4px rgba(191, 95, 255, 0.35);
+  box-shadow: 0 0 0 4px var(--phone-ring);
   cursor: pointer;
   justify-self: center;
 }
@@ -552,7 +552,7 @@
   border-radius: 50%;
   background: #e9d5ff;
   border: 2px solid #fff;
-  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.35);
+  box-shadow: 0 0 0 1px var(--phone-ring);
   cursor: pointer;
 }
 
@@ -565,7 +565,7 @@
 .carplay-range::-moz-range-progress {
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #9d4edd, #c084fc);
+  background: var(--phone-btn-grad);
 }
 
 .carplay-range::-moz-range-thumb {
@@ -574,7 +574,7 @@
   border-radius: 50%;
   background: #e9d5ff;
   border: 2px solid #fff;
-  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.35);
+  box-shadow: 0 0 0 1px var(--phone-ring);
   cursor: pointer;
 }
 
@@ -589,7 +589,7 @@
 .carplay-progress > span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #9d4edd, #c084fc);
+  background: var(--phone-btn-grad);
   border-radius: inherit;
   transition: width 0.35s ease;
 }
@@ -724,8 +724,8 @@
 .carplay-url-box input:focus,
 .carplay-url-box textarea:focus {
   outline: none;
-  border-color: rgba(168, 85, 247, 0.55);
-  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.15);
+  border-color: var(--phone-ring-strong);
+  box-shadow: 0 0 0 2px var(--phone-fill-soft);
 }
 
 .carplay-chip-row {
@@ -746,7 +746,7 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  background: rgba(191, 95, 255, 0.1);
+  background: var(--phone-fill-soft);
   border: 1px solid rgba(196, 181, 253, 0.18);
   color: #f5f3ff;
   cursor: pointer;
@@ -919,7 +919,7 @@
   cursor: pointer;
 }
 .ads-sort-chips button.active {
-  background: rgba(191, 95, 255, 0.2);
+  background: var(--phone-fill-mid);
   color: var(--neon-purple);
   border-color: var(--neon-purple-soft);
 }
@@ -964,8 +964,8 @@
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  border: 1px solid rgba(191, 95, 255, 0.14);
-  background: rgba(191, 95, 255, 0.08);
+  border: 1px solid var(--phone-line);
+  background: var(--phone-fill-faint);
   color: #e9d5ff;
   display: grid;
   place-items: center;
@@ -981,8 +981,8 @@
 }
 
 .core-icon-btn:hover {
-  background: rgba(191, 95, 255, 0.16);
-  border-color: rgba(191, 95, 255, 0.28);
+  background: var(--phone-fill);
+  border-color: var(--phone-border);
 }
 
 .core-icon-btn.danger {
@@ -1046,7 +1046,7 @@
   width: 100%;
   padding: 12px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(191, 95, 255, 0.1);
+  border: 1px solid var(--phone-fill-soft);
   background: rgba(18, 12, 28, 0.65);
   color: inherit;
   text-align: left;
@@ -1056,8 +1056,8 @@
 
 .core-list-item:hover,
 .core-list-item:active {
-  background: rgba(191, 95, 255, 0.1);
-  border-color: rgba(191, 95, 255, 0.22);
+  background: var(--phone-fill-soft);
+  border-color: var(--phone-border);
 }
 
 .core-list-item.system {
@@ -1129,7 +1129,7 @@
   height: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #9d4edd, #bf5fff);
+  background: var(--phone-btn-grad);
   color: #fff;
   font-size: 0.68rem;
   font-weight: 700;
@@ -1172,7 +1172,7 @@
 .contacts-az button:hover,
 .contacts-az button.active {
   color: var(--neon-purple);
-  background: rgba(191, 95, 255, 0.12);
+  background: var(--phone-line-soft);
 }
 
 .contacts-form-card {
@@ -1254,7 +1254,7 @@
 .calls-pad button {
   aspect-ratio: 1;
   border-radius: 50%;
-  border: 1px solid rgba(191, 95, 255, 0.14);
+  border: 1px solid var(--phone-line);
   background: rgba(255, 255, 255, 0.05);
   color: #f5f0ff;
   font-size: 1.25rem;
@@ -1263,7 +1263,7 @@
 }
 
 .calls-pad button:active {
-  background: rgba(191, 95, 255, 0.18);
+  background: var(--phone-fill);
 }
 
 .calls-action-row {
@@ -1307,7 +1307,7 @@
 }
 
 .chat-app .chat-header {
-  border-bottom-color: rgba(191, 95, 255, 0.12);
+  border-bottom-color: var(--phone-line-soft);
   margin-bottom: 8px;
 }
 
@@ -1318,7 +1318,7 @@
 
 .chat-app .bubble-row.in .bubble {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(191, 95, 255, 0.1);
+  border: 1px solid var(--phone-fill-soft);
   border-bottom-left-radius: 6px;
 }
 
@@ -1327,7 +1327,7 @@
   gap: 8px;
   align-items: flex-end;
   padding: 10px 0 4px;
-  border-top: 1px solid rgba(191, 95, 255, 0.12);
+  border-top: 1px solid var(--phone-line-soft);
 }
 
 .chat-compose-modern input {
@@ -1336,7 +1336,7 @@
   border-radius: 20px;
   padding: 10px 14px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(191, 95, 255, 0.14);
+  border: 1px solid var(--phone-line);
 }
 
 .settings-app {
@@ -1365,7 +1365,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(191, 95, 255, 0.08);
+  border-bottom: 1px solid var(--phone-fill-faint);
 }
 
 .settings-row-modern:last-child {
@@ -1402,7 +1402,7 @@
 
 .wp-tile.active {
   border-color: var(--neon-purple);
-  box-shadow: 0 0 0 2px rgba(191, 95, 255, 0.25);
+  box-shadow: 0 0 0 2px var(--phone-border);
 }
 
 .wp-tile span {
@@ -1419,7 +1419,7 @@
   width: 46px;
   height: 26px;
   border-radius: 999px;
-  border: 1px solid rgba(191, 95, 255, 0.2);
+  border: 1px solid var(--phone-fill-mid);
   background: rgba(255, 255, 255, 0.08);
   position: relative;
   cursor: pointer;
@@ -1439,7 +1439,7 @@
 }
 
 .toggle-switch.on {
-  background: rgba(191, 95, 255, 0.35);
+  background: var(--phone-ring);
   border-color: var(--neon-purple);
 }
 
@@ -1458,7 +1458,7 @@
 .lg-brand {
   font-size: 1.15rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #c084fc, #bf5fff);
+  background: var(--phone-btn-grad);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1494,12 +1494,12 @@
 
 .lg-photo-pick button.selected {
   border-color: var(--neon-purple);
-  box-shadow: 0 0 0 2px rgba(191, 95, 255, 0.3);
+  box-shadow: 0 0 0 2px var(--phone-border-strong);
 }
 
 .lg-post-card {
   margin-bottom: 2px;
-  border-bottom: 1px solid rgba(191, 95, 255, 0.1);
+  border-bottom: 1px solid var(--phone-fill-soft);
 }
 
 .lg-post-card .lg-post-head {

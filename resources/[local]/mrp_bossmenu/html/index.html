@@ -22,7 +22,8 @@
                 </div>
                 <div class="bm-head-stats">
                     <div class="bm-stat"><span>Fondas</span><strong id="fundBalance">$0</strong></div>
-                    <div class="bm-stat"><span>Tarnyboje</span><strong id="onlineCount">0</strong></div>
+                    <div class="bm-stat"><span>Įdarbinta</span><strong id="memberTotal">0</strong></div>
+                    <div class="bm-stat"><span>Online</span><strong id="onlineCount">0</strong></div>
                 </div>
                 <button type="button" class="bm-close" id="btnClose" aria-label="Uždaryti">✕</button>
             </header>
@@ -49,9 +50,9 @@
                             <p class="bm-muted" id="overviewSalaryNote">Mokamos automatiškai iš fondo.</p>
                         </article>
                         <article class="bm-card">
-                            <h3>Prisijungę</h3>
-                            <p class="bm-big" id="overviewOnline">0</p>
-                            <p class="bm-muted">Tavo rangas: <span id="overviewGrade">—</span></p>
+                            <h3>Darbuotojai</h3>
+                            <p class="bm-big" id="overviewMembers">0</p>
+                            <p class="bm-muted">Online: <span id="overviewOnline">0</span> · Tavo rangas: <span id="overviewGrade">—</span></p>
                         </article>
                     </div>
                     <div class="bm-actions-row">
@@ -62,13 +63,19 @@
 
                 <section class="bm-panel" data-panel="members">
                     <div class="bm-split">
-                        <div class="bm-list-wrap">
-                            <h3>Prisijungę nariai</h3>
+                        <div class="bm-list-wrap bm-scroll">
+                            <div class="bm-toolbar">
+                                <h3>Visi įdarbinti</h3>
+                                <span class="bm-muted" id="membersListMeta"></span>
+                            </div>
+                            <input type="search" id="memberSearch" class="bm-search" placeholder="Paieška pagal vardą, ID ar citizenid…" />
                             <div class="bm-list" id="membersList"></div>
                         </div>
                         <div class="bm-form-wrap">
                             <h3>Personalo veiksmai</h3>
-                            <label>Serverio ID<input type="number" id="memberId" min="1" placeholder="ID" /></label>
+                            <p class="bm-muted bm-note">Pasirink iš sąrašo arba įvesk. Offline veiksmams pakanka citizenid.</p>
+                            <label>Serverio ID (tik online / įdarbinti)<input type="number" id="memberId" min="1" placeholder="Online ID" /></label>
+                            <label>Citizen ID<input type="text" id="memberCitizenId" placeholder="pvz. ABC12345" /></label>
                             <label>Rangas<select id="memberGrade"></select></label>
                             <label class="hidden" id="memberDivisionWrap">Divizija<select id="memberDivision"></select></label>
                             <div class="bm-actions-row">
@@ -132,8 +139,10 @@
                                 <label>Aprašymas<input type="text" id="divDesc" /></label>
                                 <label>Min. rangas<input type="number" id="divMinGrade" min="0" /></label>
                                 <label><input type="checkbox" id="divChoosable" checked /> Galima pasirinkti pareigūnui</label>
+                                <p class="bm-muted bm-note" id="divBuiltinNote"></p>
                                 <div class="bm-actions-row">
                                     <button type="button" class="bm-btn" id="btnSaveDivision">Išsaugoti</button>
+                                    <button type="button" class="bm-btn danger hidden" id="btnDeleteDivision">Ištrinti</button>
                                     <button type="button" class="bm-btn secondary" id="btnCancelDivision">Atšaukti</button>
                                 </div>
                             </div>

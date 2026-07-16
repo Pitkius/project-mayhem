@@ -42,7 +42,7 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(120% 80% at 20% 0%, rgba(88, 86, 214, 0.45), transparent 55%),
+    radial-gradient(120% 80% at 20% 0%, var(--phone-wall-glow), transparent 55%),
     radial-gradient(90% 70% at 90% 20%, rgba(10, 132, 255, 0.35), transparent 50%),
     linear-gradient(165deg, #0c0c12 0%, #12121c 40%, #08080e 100%);
   transition: filter 0.35s ease;
@@ -136,7 +136,7 @@ body {
   overflow: auto;
   padding-right: 2px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(191, 95, 255, 0.5) transparent;
+  scrollbar-color: var(--phone-scroll) transparent;
 }
 
 .lock-notifs::-webkit-scrollbar {
@@ -144,7 +144,7 @@ body {
 }
 
 .lock-notifs::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(191, 95, 255, 0.75), rgba(157, 80, 255, 0.55));
+  background: var(--phone-scroll-thumb);
   border-radius: 999px;
 }
 
@@ -381,7 +381,7 @@ body {
   padding: 48px 16px 10px;
   border-radius: 0;
   border: none;
-  border-bottom: 1px solid rgba(191, 95, 255, 0.14);
+  border-bottom: 1px solid var(--phone-line);
   background: rgba(8, 6, 14, 0.94);
   backdrop-filter: blur(22px) saturate(1.25);
   -webkit-backdrop-filter: blur(22px) saturate(1.25);
@@ -682,7 +682,7 @@ input, textarea {
   place-items: center;
   font-size: 0.82rem;
   font-weight: 700;
-  background: linear-gradient(145deg, #5856d6, #0a84ff);
+  background: var(--phone-btn-grad);
   color: #fff;
   flex-shrink: 0;
 }
@@ -787,7 +787,7 @@ input, textarea {
   padding: 4px 2px 12px;
   padding-right: 4px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(191, 95, 255, 0.5) transparent;
+  scrollbar-color: var(--phone-scroll) transparent;
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -795,7 +795,7 @@ input, textarea {
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(191, 95, 255, 0.75), rgba(157, 80, 255, 0.55));
+  background: var(--phone-scroll-thumb);
   border-radius: 999px;
 }
 
@@ -953,7 +953,7 @@ input, textarea {
   height: 100%;
   min-width: 36px;
   border-radius: 99px;
-  background: linear-gradient(90deg, rgba(10, 132, 255, 0.95), rgba(88, 86, 214, 0.95));
+  background: var(--phone-progress-grad);
   box-shadow: 0 0 10px rgba(10, 132, 255, 0.35);
   will-change: transform, width;
 }

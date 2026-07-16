@@ -2,6 +2,7 @@ const root = document.getElementById('root');
 let state = null;
 let editingRank = null;
 let editingDivision = null;
+let memberFilter = '';
 
 function post(name, data = {}) {
     return fetch(`https://${GetParentResourceName()}/${name}`, {
@@ -13,6 +14,14 @@ function post(name, data = {}) {
 
 function money(n) {
     return '$' + (Number(n) || 0).toLocaleString('lt-LT');
+}
+
+function escapeHtml(s) {
+    return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
 function setTab(tab) {
@@ -32,33 +41,90 @@ function fillGradeSelect(sel, grades) {
 
 function fillDivisionSelect(sel, divisions) {
     sel.innerHTML = '';
-    (divisions || []).filter((d) => d.choosable).forEach((d) => {
+    const list = [...(divisions || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    list.forEach((d) => {
         const o = document.createElement('option');
         o.value = d.id;
-        o.textContent = `${d.abbr} — ${d.label}`;
+        o.textContent = `${d.abbr || d.id} — ${d.label}${d.choosable ? '' : ' (ribojama)'}`;
         sel.appendChild(o);
+    });
+}
+
+function selectMember(m) {
+    document.getElementById('memberId').value = m.online && m.id != null ? m.id : '';
+    document.getElementById('memberCitizenId').value = m.citizenid || '';
+    if (m.grade != null) {
+        const gradeSel = document.getElementById('memberGrade');
+        if ([...gradeSel.options].some((o) => Number(o.value) === Number(m.grade))) {
+            gradeSel.value = String(m.grade);
+        }
+    }
+    if (m.divisionId) {
+        const divSel = document.getElementById('memberDivision');
+        if ([...divSel.options].some((o) => o.value === m.divisionId)) {
+            divSel.value = m.divisionId;
+        }
+    }
+}
+
+function filteredMembers() {
+    const q = memberFilter.trim().toLowerCase();
+    const list = state.members || [];
+    if (!q) return list;
+    return list.filter((m) => {
+        const hay = [
+            m.name,
+            m.citizenid,
+            m.id,
+            m.gradeName,
+            m.divisionLabel,
+            m.divisionId,
+        ]
+            .map((v) => String(v ?? '').toLowerCase())
+            .join(' ');
+        return hay.includes(q);
     });
 }
 
 function renderMembers() {
     const list = document.getElementById('membersList');
+    const meta = document.getElementById('membersListMeta');
     list.innerHTML = '';
-    (state.members || []).forEach((m) => {
+    const members = filteredMembers();
+    const total = (state.members || []).length;
+    const online = (state.members || []).filter((m) => m.online).length;
+    if (meta) {
+        meta.textContent = `${total} iš viso · ${online} online`;
+    }
+
+    members.forEach((m) => {
         const row = document.createElement('div');
-        row.className = 'bm-row';
+        row.className = 'bm-row bm-row-editable' + (m.online ? '' : ' bm-row-offline');
+        const status = m.online
+            ? m.onduty
+                ? 'Tarnyboje'
+                : 'Online'
+            : 'Offline';
+        const statusClass = m.online ? (m.onduty ? 'on' : 'off') : 'offline';
+        const idLine = m.online && m.id != null
+            ? `ID ${m.id}`
+            : 'Offline';
+        const divLine = m.divisionLabel ? ` · ${m.divisionLabel}` : '';
         row.innerHTML = `
             <div class="bm-row-main">
-                <div class="bm-row-title">${m.name.trim() || 'Nežinomas'}</div>
-                <div class="bm-row-sub">ID ${m.id} · [${m.grade}] ${m.gradeName}</div>
+                <div class="bm-row-title">${escapeHtml(m.name || 'Nežinomas')}</div>
+                <div class="bm-row-sub">${escapeHtml(idLine)} · [${m.grade}] ${escapeHtml(m.gradeName || '')}${escapeHtml(divLine)}</div>
+                <div class="bm-row-sub bm-cid">${escapeHtml(m.citizenid || '')}</div>
             </div>
-            <span class="bm-badge ${m.onduty ? 'on' : 'off'}">${m.onduty ? 'Tarnyboje' : 'Ne tarnyboje'}</span>`;
-        row.addEventListener('click', () => {
-            document.getElementById('memberId').value = m.id;
-        });
+            <span class="bm-badge ${statusClass}">${status}</span>`;
+        row.addEventListener('click', () => selectMember(m));
         list.appendChild(row);
     });
-    if (!state.members.length) {
-        list.innerHTML = '<p class="bm-muted">Nėra prisijungusių narių.</p>';
+
+    if (!total) {
+        list.innerHTML = '<p class="bm-muted">Nėra įdarbintų narių šioje frakcijoje.</p>';
+    } else if (!members.length) {
+        list.innerHTML = '<p class="bm-muted">Pagal paiešką nieko nerasta.</p>';
     }
 }
 
@@ -81,7 +147,7 @@ function renderRanks() {
         if (g.isdeputy) tags.push('Pavad.');
         row.innerHTML = `
             <div class="bm-row-main">
-                <div class="bm-row-title">[${g.level}] ${g.name}</div>
+                <div class="bm-row-title">[${g.level}] ${escapeHtml(g.name)}</div>
                 <div class="bm-row-sub">${money(g.payment)} ${tags.length ? '· ' + tags.join(', ') : ''}</div>
             </div>
             <span class="bm-badge">${g.level}</span>`;
@@ -103,17 +169,17 @@ function renderDivisions() {
         row.className = 'bm-row' + (state.canManageRanks ? ' bm-row-editable' : '');
         row.innerHTML = `
             <div class="bm-row-main">
-                <div class="bm-row-title">${d.abbr} — ${d.label}</div>
-                <div class="bm-row-sub">${d.description || ''} · min. rangas ${d.minGrade}</div>
+                <div class="bm-row-title">${escapeHtml(d.abbr)} — ${escapeHtml(d.label)}</div>
+                <div class="bm-row-sub">${escapeHtml(d.description || '')} · min. rangas ${d.minGrade}${d.builtin ? ' · standartinė' : ''}</div>
             </div>
-            <span class="bm-badge">${d.id}</span>`;
+            <span class="bm-badge">${escapeHtml(d.id)}</span>`;
         if (state.canManageRanks) {
             row.addEventListener('click', () => openDivisionEditor(d));
         }
         list.appendChild(row);
     });
     if (!(state.divisions || []).length) {
-        list.innerHTML = '<p class="bm-muted">Divizijų nėra.</p>';
+        list.innerHTML = '<p class="bm-muted">Divizijų nėra. Spausk „+ Nauja divizija“.</p>';
     }
 }
 
@@ -135,7 +201,7 @@ function openRankEditor(grade) {
         const val = grade.permissions && grade.permissions[p.key] != null ? grade.permissions[p.key] : '';
         const row = document.createElement('div');
         row.className = 'bm-perm-row';
-        row.innerHTML = `<span>${p.label}</span>`;
+        row.innerHTML = `<span>${escapeHtml(p.label)}</span>`;
         const inp = document.createElement('input');
         inp.type = 'number';
         inp.min = 0;
@@ -158,16 +224,35 @@ function openDivisionEditor(div) {
     document.getElementById('divDesc').value = div?.description || '';
     document.getElementById('divMinGrade').value = div?.minGrade ?? 4;
     document.getElementById('divChoosable').checked = div?.choosable !== false;
+    const note = document.getElementById('divBuiltinNote');
+    const delBtn = document.getElementById('btnDeleteDivision');
+    if (div?.builtin) {
+        note.textContent = 'Standartinė divizija — galima pervadinti, bet negalima ištrinti.';
+        delBtn.classList.add('hidden');
+    } else if (div?.id) {
+        note.textContent = 'Custom divizija — galima ištrinti (nariai keliami į MP).';
+        delBtn.classList.toggle('hidden', !state.canManageRanks);
+    } else {
+        note.textContent = 'Nauja divizija — pasirink trumpą ID (pvz. ct, csu).';
+        delBtn.classList.add('hidden');
+    }
 }
 
 function applyState(data) {
     state = data;
+    const total = data.memberCount != null ? data.memberCount : (data.members || []).length;
+    const online = data.onlineCount != null
+        ? data.onlineCount
+        : (data.members || []).filter((m) => m.online).length;
+
     document.getElementById('jobLabel').textContent = data.jobLabel || 'Frakcijos vadovybė';
     document.getElementById('jobSub').textContent = data.jobName || '';
     document.getElementById('fundBalance').textContent = money(data.balance);
     document.getElementById('overviewFund').textContent = money(data.balance);
-    document.getElementById('onlineCount').textContent = String((data.members || []).length);
-    document.getElementById('overviewOnline').textContent = String((data.members || []).length);
+    document.getElementById('memberTotal').textContent = String(total);
+    document.getElementById('onlineCount').textContent = String(online);
+    document.getElementById('overviewMembers').textContent = String(total);
+    document.getElementById('overviewOnline').textContent = String(online);
     document.getElementById('overviewSalary').textContent = data.salaryEnabled ? 'Aktyvios' : 'Išjungtos';
     document.getElementById('overviewSalaryNote').textContent = data.salaryEnabled
         ? 'Mokamos automatiškai iš fondo (pilna alga).'
@@ -210,6 +295,13 @@ function applyState(data) {
     if (data.divisionsEnabled) renderDivisions();
 }
 
+function memberPayloadExtras() {
+    return {
+        targetId: document.getElementById('memberId').value || null,
+        citizenid: document.getElementById('memberCitizenId').value.trim() || null,
+    };
+}
+
 document.querySelectorAll('.bm-tab').forEach((btn) => {
     btn.addEventListener('click', () => setTab(btn.dataset.tab));
 });
@@ -217,6 +309,11 @@ document.querySelectorAll('.bm-tab').forEach((btn) => {
 document.getElementById('btnClose').addEventListener('click', () => post('close'));
 document.getElementById('btnRefresh').addEventListener('click', () => post('refresh'));
 document.getElementById('btnDuty').addEventListener('click', () => post('toggleDuty'));
+
+document.getElementById('memberSearch').addEventListener('input', (e) => {
+    memberFilter = e.target.value || '';
+    renderMembers();
+});
 
 document.getElementById('btnDeposit').addEventListener('click', () => {
     post('fundDeposit', { amount: document.getElementById('fundAmount').value });
@@ -238,17 +335,17 @@ document.getElementById('btnHire').addEventListener('click', () => {
     });
 });
 document.getElementById('btnFire').addEventListener('click', () => {
-    post('fire', { targetId: document.getElementById('memberId').value });
+    post('fire', memberPayloadExtras());
 });
 document.getElementById('btnSetGrade').addEventListener('click', () => {
     post('setGrade', {
-        targetId: document.getElementById('memberId').value,
+        ...memberPayloadExtras(),
         grade: document.getElementById('memberGrade').value,
     });
 });
 document.getElementById('btnSetDivision').addEventListener('click', () => {
     post('setMemberDivision', {
-        targetId: document.getElementById('memberId').value,
+        ...memberPayloadExtras(),
         divisionId: document.getElementById('memberDivision').value,
     });
 });
@@ -301,6 +398,14 @@ document.getElementById('btnSaveDivision').addEventListener('click', () => {
     document.getElementById('divisionEditorHint').classList.remove('hidden');
     editingDivision = null;
 });
+document.getElementById('btnDeleteDivision').addEventListener('click', () => {
+    const id = document.getElementById('divId').value;
+    if (!id || editingDivision?.builtin) return;
+    post('deleteDivision', { id });
+    document.getElementById('divisionEditor').classList.add('hidden');
+    document.getElementById('divisionEditorHint').classList.remove('hidden');
+    editingDivision = null;
+});
 document.getElementById('btnCancelDivision').addEventListener('click', () => {
     document.getElementById('divisionEditor').classList.add('hidden');
     document.getElementById('divisionEditorHint').classList.remove('hidden');
@@ -315,6 +420,9 @@ window.addEventListener('message', (ev) => {
     const msg = ev.data;
     if (msg.action === 'open') {
         root.classList.remove('hidden');
+        memberFilter = '';
+        const search = document.getElementById('memberSearch');
+        if (search) search.value = '';
         applyState(msg.data);
         setTab('overview');
     } else if (msg.action === 'sync') {

@@ -4,11 +4,17 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local pdGrade = 0
 local pdDivision = 'mp'
 local pdEffective = 'lpm'
+local pdLeadership = false
 
 local function refreshFromPlayer()
     local P = QBCore.Functions.GetPlayerData()
     if not P or not P.job then return end
     pdGrade = tonumber(P.job.grade and P.job.grade.level) or 0
+    if P.job.name == (Config.JobName or 'police') then
+        pdLeadership = PdDivisions.isLeadership(P.job)
+    else
+        pdLeadership = false
+    end
 end
 
 local function applySync(data)
@@ -16,6 +22,12 @@ local function applySync(data)
     pdGrade = tonumber(data.grade) or pdGrade
     pdDivision = PdDivisions.normalize(data.division or pdDivision)
     pdEffective = PdDivisions.effectiveDivision(pdGrade, pdDivision)
+    if data.isLeadership ~= nil then
+        pdLeadership = data.isLeadership == true
+    else
+        local P = QBCore.Functions.GetPlayerData()
+        pdLeadership = P and P.job and PdDivisions.isLeadership(P.job) or false
+    end
 end
 
 function SyncPdDivisionState()
@@ -36,8 +48,12 @@ exports('GetPdEffectiveDivision', function()
     return pdEffective
 end)
 
+exports('IsPdLeadership', function()
+    return pdLeadership
+end)
+
 exports('CanAccessPdPoint', function(entry)
-    return PdDivisions.canAccessPoint(pdGrade, pdDivision, entry)
+    return PdDivisions.canAccessPoint(pdGrade, pdDivision, entry, pdLeadership)
 end)
 
 RegisterNetEvent('mrp_ltpd:client:syncDivision', function(data)
@@ -52,7 +68,10 @@ end)
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
     if job and job.name == (Config.JobName or 'police') then
         pdGrade = tonumber(job.grade and job.grade.level) or pdGrade
+        pdLeadership = PdDivisions.isLeadership(job)
         SyncPdDivisionState()
+    else
+        pdLeadership = false
     end
 end)
 

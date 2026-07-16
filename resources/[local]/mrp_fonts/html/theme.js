@@ -141,7 +141,25 @@
             "--glass-border": border,
             "--glass-hover": soft,
             "--app-bg": surfaceTint(primary, 0.96),
+            "--phone-line-soft": withAlpha(primary, 0.12),
+            "--phone-line": withAlpha(primary, 0.14),
+            "--phone-fill-faint": withAlpha(primary, 0.08),
+            "--phone-fill-soft": withAlpha(primary, 0.1),
+            "--phone-fill": withAlpha(primary, 0.18),
+            "--phone-fill-mid": withAlpha(primary, 0.2),
+            "--phone-border": withAlpha(primary, 0.22),
+            "--phone-border-strong": withAlpha(primary, 0.3),
+            "--phone-ring": withAlpha(primary, 0.35),
+            "--phone-ring-strong": withAlpha(primary, 0.45),
+            "--phone-scroll": withAlpha(hover, 0.5),
+            "--phone-btn-grad": "linear-gradient(135deg, " + active + ", " + hover + ")",
+            "--phone-card-grad": "linear-gradient(135deg, " + darken(active, 0.2) + " 0%, " + active + " 45%, " + hover + " 100%)",
+            "--phone-card-grad-soft": "linear-gradient(135deg, " + withAlpha(active, 0.5) + ", " + withAlpha(hover, 0.35) + ")",
+            "--phone-wall-glow": withAlpha(active, 0.45),
+            "--phone-wall-accent": withAlpha(active, 0.95),
+            "--phone-progress-grad": "linear-gradient(90deg, " + withAlpha(hover, 0.95) + ", " + withAlpha(active, 0.95) + ")",
             "--phone-scroll-thumb": "linear-gradient(180deg, " + withAlpha(hover, 0.95) + " 0%, " + withAlpha(active, 0.85) + " 100%)",
+            "--phone-scroll-track": "rgba(255, 255, 255, 0.04)",
             "--cc-violet": primary,
             "--cc-violet-lit": hover,
             "--cc-violet-dim": soft,
@@ -179,6 +197,9 @@
         });
 
         applyResourceAliases(t);
+        try {
+            window.dispatchEvent(new CustomEvent("mrpThemeChanged", { detail: t }));
+        } catch (e) { /* ignore */ }
     }
 
     function resetPlayerTheme() {

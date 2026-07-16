@@ -602,10 +602,11 @@ end
 
 local function buildPdDutyLockerItems(grade, lockerMode, genderKey)
     local division = exports['mrp_ltpd']:GetPdDivision()
+    local leadership = exports['mrp_ltpd']:IsPdLeadership()
     local items = {}
     for idx, outfit in ipairs(Config.DutyOutfits or {}) do
         if not outfit[genderKey] then goto continue_outfit end
-        if not PdDivisions.outfitAllowed(outfit, lockerMode, grade, division) then goto continue_outfit end
+        if not PdDivisions.outfitAllowed(outfit, lockerMode, grade, division, leadership) then goto continue_outfit end
         local cat = inferOutfitCategory(outfit, genderKey)
         items[#items + 1] = {
             id = tostring(idx),
@@ -669,8 +670,9 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
     local lockerMode = data.lockerMode or 'standard'
     local title = (lockerMode == 'aro' or lockerMode == 'sor') and 'SOR rūbinė' or 'Tarnybinė apranga'
     if lockerMode == 'aro' or lockerMode == 'sor' then
+        local leadership = exports['mrp_ltpd']:IsPdLeadership()
         local eff = exports['mrp_ltpd']:GetPdEffectiveDivision()
-        if eff ~= 'sor' and eff ~= 'aro' then
+        if not leadership and eff ~= 'sor' and eff ~= 'aro' then
             return QBCore.Functions.Notify('SOR rūbinė – tik SOR padaliniui (/pddept).', 'error')
         end
     end

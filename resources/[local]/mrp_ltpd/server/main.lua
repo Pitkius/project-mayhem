@@ -423,6 +423,19 @@ local function jobIsPd(j)
     return j and j.name == Config.JobName
 end
 
+--- Vadas / pavaduotojas – SOR (ARO) sandėliai / rūbinė be padalinio
+local function isPdLeadership(src)
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P or not jobIsPd(P.PlayerData.job) then return false end
+    if GetResourceState('mrp_bossmenu') == 'started' then
+        local ok, result = pcall(function()
+            return exports['mrp_bossmenu']:HasLeadershipGrade(src, Config.JobName or 'police')
+        end)
+        if ok and result then return true end
+    end
+    return PdDivisions.isLeadership(P.PlayerData.job)
+end
+
 local function isLtpdOnDuty(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return false end
@@ -469,7 +482,26 @@ end
 
 local function setDivisionForCitizenid(citizenid, division)
     division = PdDivisions.normalize(division)
-    if not Config.Divisions[division] then return false end
+    if not Config.Divisions[division] then
+        --- Custom divizijos iš mrp_bossmenu DB — priimti ir įrašyti į Config
+        if GetResourceState('mrp_bossmenu') == 'started' then
+            local map = exports['mrp_bossmenu']:GetDivisionsMap('police')
+            local div = map and map[division]
+            if div then
+                Config.Divisions[division] = {
+                    label = div.label,
+                    abbr = div.abbr,
+                    minGrade = div.minGrade,
+                    choosable = div.choosable,
+                    description = div.description,
+                }
+            else
+                return false
+            end
+        else
+            return false
+        end
+    end
     MySQL.query.await(
         'INSERT INTO ltpd_profiles (citizenid, division) VALUES (?, ?) ON DUPLICATE KEY UPDATE division = VALUES(division)',
         { citizenid, division }
@@ -516,6 +548,7 @@ local function syncDivisionClient(src)
         storedDivision = getDivisionForCitizenid(P.PlayerData.citizenid),
         grade = grade,
         effective = PdDivisions.effectiveDivision(grade, div),
+        isLeadership = isPdLeadership(src),
     })
 end
 
@@ -544,6 +577,7 @@ local function pdAccessPayload(src)
         division = stored,
         grade = grade,
         effective = PdDivisions.effectiveDivision(grade, stored),
+        isLeadership = isPdLeadership(src),
     }
 end
 
@@ -1051,7 +1085,7 @@ RegisterNetEvent('mrp_ltpd:server:openPoliceStash', function(stationId, stashInd
     if not entry or not entry.coords or not entry.stashId then return end
     local P = QBCore.Functions.GetPlayer(src)
     local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
-    if not PdDivisions.canAccessPoint(getGrade(src), div, entry) then
+    if not PdDivisions.canAccessPoint(getGrade(src), div, entry, isPdLeadership(src)) then
         return TriggerClientEvent('QBCore:Notify', src, 'Neturi prieigos prie šio sandėlio (rangas / padalinys).', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
@@ -1081,7 +1115,7 @@ RegisterNetEvent('mrp_ltpd:server:openArmory', function(stationId)
     if not st or not st.armory or not st.armory.coords then return end
     local P = QBCore.Functions.GetPlayer(src)
     local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
-    if not PdDivisions.canAccessPoint(getGrade(src), div, st.armory) then
+    if not PdDivisions.canAccessPoint(getGrade(src), div, st.armory, isPdLeadership(src)) then
         return TriggerClientEvent('QBCore:Notify', src, 'ARO ginklinė – tik ARO padaliniui.', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
@@ -1883,10 +1917,21 @@ AddEventHandler('mrp_bossmenu:internal:setPdDivision', function(targetId, divisi
     if not targetId or targetId < 1 then return end
     local T = QBCore.Functions.GetPlayer(targetId)
     if not T or not jobIsPd(T.PlayerData.job) then return end
-    divisionId = PdDivisions.normalize(divisionId)
-    if not Config.Divisions[divisionId] then return end
-    setDivisionForCitizenid(T.PlayerData.citizenid, divisionId)
+    if not setDivisionForCitizenid(T.PlayerData.citizenid, divisionId) then return end
     syncDivisionClient(targetId)
+end)
+
+AddEventHandler('mrp_bossmenu:internal:setPdDivisionByCitizenId', function(citizenid, divisionId, grade)
+    citizenid = tostring(citizenid or '')
+    if citizenid == '' then return end
+    if grade ~= nil then
+        divisionId = defaultDivisionForGrade(grade)
+    end
+    if not setDivisionForCitizenid(citizenid, divisionId) then return end
+    local Online = QBCore.Functions.GetPlayerByCitizenId(citizenid)
+    if Online then
+        syncDivisionClient(Online.PlayerData.source)
+    end
 end)
 
 AddEventHandler('mrp_bossmenu:internal:setPdDivisionByGrade', function(targetId, grade)

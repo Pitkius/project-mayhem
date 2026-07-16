@@ -127,16 +127,27 @@ function tickClock() {
   if (ld) ld.textContent = d.charAt(0).toUpperCase() + d.slice(1);
 }
 
+function themeCssVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback || "";
+}
+
+function themedWallpaperPresets() {
+  const glow = themeCssVar("--phone-wall-glow", "rgba(124, 58, 237, 0.45)");
+  const soft = themeCssVar("--primary-soft", "rgba(167, 139, 250, 0.28)");
+  return {
+    default: `radial-gradient(120% 80% at 20% 0%, ${glow}, transparent 55%), radial-gradient(90% 70% at 90% 20%, rgba(10, 132, 255, 0.35), transparent 50%), linear-gradient(165deg, #0c0c12 0%, #12121c 40%, #08080e 100%)`,
+    midnight: "linear-gradient(160deg, #050508, #0f0f18 50%, #1a1030)",
+    sunset: "linear-gradient(165deg, #1a0a12, #3d1a28 45%, #5c2d14)",
+    violet: `radial-gradient(100% 80% at 50% 0%, ${soft}, transparent 60%), linear-gradient(165deg, #0a0612, #140a22, #080510)`,
+  };
+}
+
 function applyWallpaper() {
   const wp = localStorage.getItem("mrp_phone_wp") || "default";
   const el = document.getElementById("deviceWallpaper");
   if (!el) return;
-  const presets = {
-    default: "radial-gradient(120% 80% at 20% 0%, rgba(191,95,255,.42), transparent 55%), radial-gradient(90% 70% at 90% 20%, rgba(157,78,221,.28), transparent 50%), linear-gradient(165deg,#0c0c12,#12121c,#08080e)",
-    midnight: "linear-gradient(160deg,#050508,#0f0f18 50%,#1a1030)",
-    sunset: "linear-gradient(165deg,#1a0a12,#3d1a28 45%,#5c2d14)",
-    violet: "radial-gradient(100% 80% at 50% 0%, rgba(168,85,247,.35), transparent 60%), linear-gradient(165deg,#0a0612,#140a22,#080510)",
-  };
+  const presets = themedWallpaperPresets();
   el.style.background = presets[wp] || presets.default;
 }
 
@@ -678,10 +689,10 @@ window.renderSettingsApp = (content) => {
   const notifsOn = localStorage.getItem("mrp_phone_notifs") !== "0";
 
   const wpPresets = [
-    { id: "default", label: "Numatyta", bg: "radial-gradient(120% 80% at 20% 0%, rgba(191,95,255,.55), transparent 55%), linear-gradient(165deg,#0c0c12,#12121c)" },
-    { id: "violet", label: "Violetinė", bg: "radial-gradient(100% 80% at 50% 0%, rgba(168,85,247,.5), transparent 60%), linear-gradient(165deg,#0a0612,#140a22)" },
-    { id: "midnight", label: "Vidurnaktis", bg: "linear-gradient(160deg,#050508,#0f0f18 50%,#1a1030)" },
-    { id: "sunset", label: "Saulėlydis", bg: "linear-gradient(165deg,#1a0a12,#3d1a28 45%,#5c2d14)" },
+    { id: "default", label: "Numatyta", bg: themedWallpaperPresets().default },
+    { id: "violet", label: "Violetinė", bg: themedWallpaperPresets().violet },
+    { id: "midnight", label: "Vidurnaktis", bg: themedWallpaperPresets().midnight },
+    { id: "sunset", label: "Saulėlydis", bg: themedWallpaperPresets().sunset },
   ];
 
   content.innerHTML = `
@@ -851,6 +862,7 @@ setInterval(tickClock, 15000);
 tickClock();
 bindLockSwipe();
 applyWallpaper();
+window.addEventListener("mrpThemeChanged", applyWallpaper);
 setLockUiState(true);
 
 const phoneRoot = document.getElementById("phone");

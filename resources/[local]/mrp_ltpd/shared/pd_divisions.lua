@@ -42,13 +42,51 @@ function PdDivisions.isChoosable(divisionId)
     return cfg and cfg.choosable == true
 end
 
-function PdDivisions.canAccessPoint(grade, storedDivision, entry)
+--- Policijos vadas (`isboss`) arba pavaduotojas (`isdeputy`).
+--- Priima job lentelę arba boolean (jau apskaičiuota vėliava).
+function PdDivisions.isLeadership(jobOrFlag)
+    if type(jobOrFlag) == 'boolean' then
+        return jobOrFlag
+    end
+    if type(jobOrFlag) ~= 'table' then
+        return false
+    end
+    if jobOrFlag.isboss == true or jobOrFlag.isdeputy == true then
+        return true
+    end
+    local grade = jobOrFlag.grade
+    if type(grade) == 'table' and (grade.isboss == true or grade.isdeputy == true) then
+        return true
+    end
+    return false
+end
+
+--- Taškas ribojamas tik SOR/ARO padaliniui (ginklinė, ARO rūbinė).
+function PdDivisions.entryIsSorRestricted(entry)
+    if not entry or type(entry.divisions) ~= 'table' or #entry.divisions == 0 then
+        return false
+    end
+    for _, d in ipairs(entry.divisions) do
+        local nd = PdDivisions.normalize(d)
+        if nd ~= 'sor' and nd ~= 'aro' then
+            return false
+        end
+    end
+    return true
+end
+
+--- @param leadershipOrJob boolean|table|nil  vadas/pavaduotojas – SOR taškuose apeina padalinį (rangas lieka)
+function PdDivisions.canAccessPoint(grade, storedDivision, entry, leadershipOrJob)
     if not entry then return false end
     grade = tonumber(grade) or 0
     local div = PdDivisions.effectiveDivision(grade, storedDivision)
     local minG = tonumber(entry.minGrade) or 0
     if grade < minG then
         return false
+    end
+    local leadership = PdDivisions.isLeadership(leadershipOrJob)
+    if leadership and PdDivisions.entryIsSorRestricted(entry) then
+        return true
     end
     if entry.divisions and type(entry.divisions) == 'table' and #entry.divisions > 0 then
         local ok = false
@@ -90,7 +128,7 @@ function PdDivisions.listChoosable(grade)
     return out
 end
 
-function PdDivisions.outfitAllowed(outfit, lockerMode, grade, storedDivision)
+function PdDivisions.outfitAllowed(outfit, lockerMode, grade, storedDivision, leadershipOrJob)
     if not outfit then return false end
     grade = tonumber(grade) or 0
     if grade < (tonumber(outfit.minGrade) or 0) then
@@ -99,6 +137,9 @@ function PdDivisions.outfitAllowed(outfit, lockerMode, grade, storedDivision)
     local mode = tostring(lockerMode or 'standard'):lower()
     local divs = outfit.divisions
     if mode == 'aro' or mode == 'sor' then
+        if PdDivisions.isLeadership(leadershipOrJob) then
+            return true
+        end
         if Config.AroLockerShowsAllUniforms then
             local eff = PdDivisions.effectiveDivision(grade, storedDivision)
             return eff == 'sor' or eff == 'aro'
