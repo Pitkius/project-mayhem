@@ -160,7 +160,7 @@ function WeaponAmmo.applyWeaponAmmoState(ped, weaponHash, ammo, weaponData)
 end
 
 function WeaponAmmo.loadBulletsIntoClip(ped, weaponHash, weaponData, bulletsToLoad)
-    bulletsToLoad = math.max(0, tonumber(bulletsToLoad) or 0)
+    bulletsToLoad = math.max(0, math.floor(tonumber(bulletsToLoad) or 0))
     if bulletsToLoad <= 0 or not ped or ped == 0 or not weaponHash or weaponHash == 0 then return 0 end
 
     SetCurrentPedWeapon(ped, weaponHash, true)
@@ -172,42 +172,43 @@ function WeaponAmmo.loadBulletsIntoClip(ped, weaponHash, weaponData, bulletsToLo
     local toLoad = math.min(bulletsToLoad, math.max(0, maxClip - curClip))
     if toLoad <= 0 then return 0 end
 
-    local function clipDelta()
-        local _, clipAfter = GetAmmoInClip(ped, weaponHash)
-        return math.max(0, (tonumber(clipAfter) or 0) - curClip)
-    end
-
     local newClip = curClip + toLoad
     SetPedAmmo(ped, weaponHash, newClip)
     SetAmmoInClip(ped, weaponHash, newClip)
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
 
-    local loaded = clipDelta()
+    local _, clipCheck = GetAmmoInClip(ped, weaponHash)
+    local loaded = math.max(0, (tonumber(clipCheck) or 0) - curClip)
+
+    if loaded < toLoad then
+        --- Antras bandymas — kai kurie ginklai po native reload „prilimpa“
+        Wait(0)
+        SetPedAmmo(ped, weaponHash, newClip)
+        SetAmmoInClip(ped, weaponHash, newClip)
+        WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+        _, clipCheck = GetAmmoInClip(ped, weaponHash)
+        loaded = math.max(0, (tonumber(clipCheck) or 0) - curClip)
+    end
+
     if loaded <= 0 then
         local totalBefore = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
         AddAmmoToPed(ped, weaponHash, toLoad)
         WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
-        loaded = math.max(clipDelta(), math.max(0, (tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0) - totalBefore))
-        if loaded > 0 then
-            local targetClip = math.min(maxClip, curClip + loaded)
-            SetPedAmmo(ped, weaponHash, targetClip)
-            SetAmmoInClip(ped, weaponHash, targetClip)
-        end
-    end
-
-    if loaded <= 0 then
-        SetPedAmmo(ped, weaponHash, newClip)
-        SetAmmoInClip(ped, weaponHash, newClip)
-        loaded = math.min(toLoad, clipDelta())
+        local targetClip = math.min(maxClip, curClip + toLoad)
+        SetPedAmmo(ped, weaponHash, targetClip)
+        SetAmmoInClip(ped, weaponHash, targetClip)
+        _, clipCheck = GetAmmoInClip(ped, weaponHash)
+        loaded = math.max(0, (tonumber(clipCheck) or 0) - curClip)
         if loaded <= 0 then
-            loaded = toLoad
+            loaded = math.max(0, (tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0) - totalBefore)
         end
     end
 
     WeaponAmmo.normalizePedAmmo(ped, weaponHash, weaponData)
     local _, clipFinal = GetAmmoInClip(ped, weaponHash)
-    loaded = math.max(loaded, math.max(0, (tonumber(clipFinal) or 0) - curClip))
-    return math.min(loaded, toLoad)
+    local finalDelta = math.max(0, (tonumber(clipFinal) or 0) - curClip)
+    --- Grąžinam TIK realų delta — niekada „fake“ toLoad (tai sukeldavo 1 kulkos klaidas)
+    return math.min(math.max(loaded, finalDelta), toLoad)
 end
 
 function WeaponAmmo.getSyncedAmmoAmount(ped, weaponHash, weaponData)

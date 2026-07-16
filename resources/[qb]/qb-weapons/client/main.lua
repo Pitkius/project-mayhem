@@ -7,6 +7,7 @@ local lastSyncedAmmo = nil
 local lastAmmoSyncAt = 0
 local reloadGuardUntil = 0
 local isReloading = false
+local pendingQuickReload = false
 
 local AmmoItemByType = {
     AMMO_PISTOL = { 'pistol_ammo', 'pistolammo' },
@@ -137,6 +138,7 @@ end
 
 local function releaseReloadLock(extraMs)
     isReloading = false
+    pendingQuickReload = false
     reloadGuardUntil = GetGameTimer() + (tonumber(extraMs) or 1200)
     local ped = PlayerPedId()
     if ped and ped ~= 0 then
@@ -171,6 +173,7 @@ local function cancelActiveReload()
         WeaponReload.cancel(PlayerPedId())
     end
     isReloading = false
+    pendingQuickReload = false
     reloadGuardUntil = 0
     local ped = PlayerPedId()
     if ped and ped ~= 0 then
@@ -266,6 +269,11 @@ local function attemptQuickReload(ped)
     for _, ammoItemName in ipairs(ammoNames) do
         for _, item in pairs(items) do
             if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
+                --- Užrakinti IŠKARTO — kol serveris atsako, antras R nepraeis
+                pendingQuickReload = true
+                isReloading = true
+                reloadGuardUntil = GetGameTimer() + getReloadWaitMs() + 2500
+                setReloadMoveRate(ped)
                 TriggerServerEvent('qb-weapons:server:requestQuickReload', ammoItemName, ammoType, tonumber(item.slot))
                 return true
             end
@@ -548,6 +556,8 @@ RegisterNetEvent('qb-weapons:client:SetCurrentWeapon', function(data, bool)
 end)
 
 RegisterNetEvent('qb-weapons:client:QuickReloadDenied', function(reason)
+    pendingQuickReload = false
+    releaseReloadLock(250)
     if reason and reason ~= '' then
         QBCore.Functions.Notify(reason, 'error')
     end
@@ -560,17 +570,21 @@ RegisterNetEvent('qb-weapons:client:SetWeaponQuality', function(amount)
 end)
 
 RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemData)
-    if isReloadBusy() then return end
+    --- pendingQuickReload = jau užrakinta iš R; kitas kelias (item use) — tik jei laisva
+    if isReloadBusy() and not pendingQuickReload then return end
+    pendingQuickReload = false
 
     local ped = PlayerPedId()
     local weapon = GetSelectedPedWeapon(ped)
     local selectedWeaponData = resolveSelectedWeaponData(weapon)
     if not selectedWeaponData then
+        releaseReloadLock(200)
         QBCore.Functions.Notify(Lang:t('error.no_weapon'), 'error')
         return
     end
 
     if selectedWeaponData.name == 'weapon_unarmed' then
+        releaseReloadLock(200)
         QBCore.Functions.Notify(Lang:t('error.no_weapon_in_hand'), 'error')
         return
     end
@@ -581,6 +595,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         weaponAmmoNorm = 'AMMO_RIFLE'
     end
     if weaponAmmoNorm ~= normalizedAmmoType then
+        releaseReloadLock(200)
         QBCore.Functions.Notify(Lang:t('error.wrong_ammo'), 'error')
         return
     end
@@ -590,6 +605,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
     local curInClip, maxC, clipMissing = WeaponAmmo.getClipAmmoState(ped, weapon, CurrentWeaponData or selectedWeaponData)
 
     if clipMissing <= 0 then
+        releaseReloadLock(200)
         QBCore.Functions.Notify(Lang:t('error.max_ammo') or 'Apkaba pilna.', 'error')
         return
     end
@@ -611,6 +627,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         ammoItemName = preferredAmmoItem
     end
     if availableBullets <= 0 then
+        releaseReloadLock(200)
         QBCore.Functions.Notify('No ammo in inventory.', 'error')
         return
     end
@@ -620,11 +637,14 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
         bulletsToLoad = math.min(bulletsToLoad, maxC - curInClip)
     end
     if bulletsToLoad <= 0 then
+        releaseReloadLock(200)
         return
     end
 
-    local cachedInventoryBullets = availableBullets
+    --- Snapshot PRIEŠ vizualą — inventoriaus pašalinimas remiasi TIK šiuo planu (ne native delta)
+    local clipAtStart = curInClip
     local plannedBullets = bulletsToLoad
+    local targetClip = math.min(maxC, clipAtStart + plannedBullets)
 
     local function applyInventoryReload()
         ped = PlayerPedId()
@@ -640,7 +660,7 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             weaponPayload = resolveCurrentWeaponDataByName(current.name) or selectedWeaponData
         end
 
-        local bulletsAvailable = math.max(getTotalAmmoItems(ammoItemName), cachedInventoryBullets)
+        local bulletsAvailable = math.max(getTotalAmmoItems(ammoItemName), plannedBullets)
         if preferredAmmoItem then
             bulletsAvailable = math.max(bulletsAvailable, getTotalAmmoItems(preferredAmmoItem))
         end
@@ -651,30 +671,46 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             return false, 'No ammo in inventory.'
         end
 
-        local bulletsNow = math.min(plannedBullets, bulletsAvailable)
-        if bulletsNow <= 0 then
+        local unitsToRemove = math.min(plannedBullets, bulletsAvailable)
+        if unitsToRemove <= 0 then
             return false, nil
         end
 
         SetCurrentPedWeapon(ped, weapon, true)
         WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weapon)
 
-        local clipBefore = select(1, WeaponAmmo.getClipAmmoState(ped, weapon, weaponPayload or current))
-        local reallyLoaded = WeaponAmmo.loadBulletsIntoClip(ped, weapon, weaponPayload or current, bulletsNow)
-        if reallyLoaded <= 0 then
-            WeaponAmmo.normalizePedAmmo(ped, weapon, weaponPayload or current)
-            reallyLoaded = WeaponAmmo.loadBulletsIntoClip(ped, weapon, weaponPayload or current, bulletsNow)
+        --- Visada uždedam tikslų targetClip (ne „kiek native pridėjo“)
+        local applied = WeaponAmmo.applyWeaponAmmoState(ped, weapon, targetClip, weaponPayload or current)
+        if applied < targetClip then
+            --- Retry jei native atsisakė
+            Wait(0)
+            applied = WeaponAmmo.applyWeaponAmmoState(ped, weapon, targetClip, weaponPayload or current)
         end
-        if reallyLoaded <= 0 then
-            local clipAfter = select(1, WeaponAmmo.getClipAmmoState(ped, weapon, weaponPayload or current))
-            reallyLoaded = math.max(0, clipAfter - clipBefore)
-        end
-        if reallyLoaded <= 0 then
-            return false, 'Nepavyko užpildyti apkabos.'
+
+        local clipAfter = select(1, WeaponAmmo.getClipAmmoState(ped, weapon, weaponPayload or current))
+        if clipAfter < math.min(targetClip, clipAtStart + 1) then
+            --- Paskutinis bandymas per loadBullets
+            WeaponAmmo.applyWeaponAmmoState(ped, weapon, clipAtStart, weaponPayload or current)
+            local loaded = WeaponAmmo.loadBulletsIntoClip(ped, weapon, weaponPayload or current, unitsToRemove)
+            if loaded <= 0 then
+                return false, 'Nepavyko užpildyti apkabos.'
+            end
+            unitsToRemove = math.min(unitsToRemove, loaded)
+            clipAfter = select(1, WeaponAmmo.getClipAmmoState(ped, weapon, weaponPayload or current))
         end
 
         local refreshedAmmo = WeaponAmmo.getSyncedAmmoAmount(ped, weapon, weaponPayload or current)
-        local unitsToRemove = math.min(reallyLoaded, bulletsNow, bulletsAvailable)
+        --- Pašalinam tiksliai kiek planavom (arba kiek tikrai įdėjom jei fallback)
+        unitsToRemove = math.min(unitsToRemove, math.max(0, clipAfter - clipAtStart), bulletsAvailable)
+        if unitsToRemove <= 0 then
+            --- Jei apkaba pasiekė target bet delta 0 dėl dirty state — vis tiek imam planned
+            if clipAfter >= targetClip then
+                unitsToRemove = math.min(plannedBullets, bulletsAvailable)
+            else
+                return false, 'Nepavyko užpildyti apkabos.'
+            end
+        end
+
         local payload = CurrentWeaponData
         if not payload or not payload.name then
             payload = resolveCurrentWeaponDataByName(current.name)
@@ -724,6 +760,8 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
                 WeaponReload.cancel(PlayerPedId())
             end
 
+            --- Po vizualo dar kartą pin'inam pradinę apkaba prieš apply
+            WeaponAmmo.applyWeaponAmmoState(PlayerPedId(), reloadWeapon, clipAtStart, reloadPayload)
             ok, errMsg = applyInventoryReload()
         end)
 
@@ -732,12 +770,13 @@ RegisterNetEvent('qb-weapons:client:AddAmmo', function(ammoType, amount, itemDat
             ok, errMsg = false, 'Perkrovos klaida.'
         end
 
-        releaseReloadLock(ok and 1500 or 400)
+        releaseReloadLock(ok and 1800 or 500)
 
         if ok then
             local p = PlayerPedId()
             local w = GetSelectedPedWeapon(p)
             if p and p ~= 0 and w and w ~= 0 and CurrentWeaponData and CurrentWeaponData.name then
+                WeaponAmmo.applyWeaponAmmoState(p, w, targetClip, CurrentWeaponData)
                 WeaponAmmo.normalizePedAmmo(p, w, CurrentWeaponData)
             end
         elseif errMsg then

@@ -544,7 +544,11 @@ end)
 local rateStore = {} -- [src..key] = os.clock()
 
 --- Paprasta rate limit apsauga jautriems veiksmams. true = leidžiama.
+--- Taip pat blokuoja rašymą, kai atidaryta svetimos gaujos planšetė (read-only).
 function GangOrg.rateLimit(src, key, seconds)
+    if GangOrg.isOrgWriteBlocked and GangOrg.isOrgWriteBlocked(src) then
+        return false
+    end
     local id = tostring(src) .. ':' .. tostring(key)
     local t = os.clock()
     if rateStore[id] and (t - rateStore[id]) < (seconds or 0.75) then
@@ -552,6 +556,13 @@ function GangOrg.rateLimit(src, key, seconds)
     end
     rateStore[id] = t
     return true
+end
+
+function GangOrg.rateLimitFailMsg(src)
+    if GangOrg.isOrgWriteBlocked and GangOrg.isOrgWriteBlocked(src) then
+        return GangOrg.writeBlockedMsg()
+    end
+    return 'Per greitai.'
 end
 
 --- Aktoriaus info žurnalui iš konteksto + Player.

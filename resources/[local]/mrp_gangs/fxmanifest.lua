@@ -49,6 +49,7 @@ server_scripts {
     'server.lua',
     'server_missions.lua',
     'server_org.lua',
+    'server_tablet.lua',
     'server_org_invites.lua',
     'server_org_ranks.lua',
     'server_org_members.lua',

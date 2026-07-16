@@ -53,6 +53,7 @@ end)
 -- ── NUI callback'ai ────────────────────────────────────────────────
 RegisterNUICallback('org:close', function(_, cb)
     closeOrg()
+    TriggerServerEvent('mrp_gangs:server:clearTabletSession')
     cb({ ok = true })
 end)
 

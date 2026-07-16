@@ -39,7 +39,7 @@ end
 
 -- ── Siųsti / nustatyti santykį ─────────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:setRelation', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'relSet', 0.75) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'relSet', 0.75) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
 
@@ -98,7 +98,7 @@ end)
 
 -- ── Priimti pasiūlymą ──────────────────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:acceptRelation', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'relAccept', 0.75) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'relAccept', 0.75) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['diplomacy.accept_offer']) then return cb({ ok = false, msg = 'Nėra teisės priimti.' }) end
@@ -133,7 +133,7 @@ end)
 
 -- ── Atmesti pasiūlymą ──────────────────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:declineRelation', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'relDecline', 0.75) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'relDecline', 0.75) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['diplomacy.accept_offer']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -150,7 +150,7 @@ end)
 
 -- ── Nutraukti santykį (abi kryptys) ────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:breakRelation', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'relBreak', 0.75) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'relBreak', 0.75) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['diplomacy.break']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end

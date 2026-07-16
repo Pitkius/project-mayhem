@@ -17,7 +17,7 @@
       <header class="tablet-head">
         <div class="head-brand">
           <span class="brand-dot"></span>
-          <h2>Gaujų planšetė</h2>
+          <h2 id="tabletBrandTitle">Gaujų planšetė</h2>
         </div>
         <div class="head-actions row">
           <button type="button" id="btnOpenOrg" class="btn btn-primary hidden" title="Rangai, nariai, teisės">Organizacija</button>
@@ -26,6 +26,10 @@
           <button type="button" id="btnClose" class="btn btn-close">✕</button>
         </div>
       </header>
+
+      <div id="tabletReadOnlyBanner" class="tablet-readonly-banner hidden" role="status">
+        Tik peržiūra — ši planšetė priklauso kitai gaujai. Gali matyti narius, turfus ir hierarchiją, bet nieko keisti negali.
+      </div>
 
       <nav class="tablet-tabs" role="tablist">
         <button type="button" class="tab-btn" data-tab="register" id="tabBtnRegister" role="tab">Registracija</button>
@@ -96,7 +100,7 @@
           <div id="gangPanelContent" class="rail-card hidden">
             <h3 id="gangTitle">—</h3>
             <div id="gangMeta" class="muted small"></div>
-            <div class="gang-manage-grid">
+            <div id="gangManageActions" class="gang-manage-grid">
               <label>Nario server ID
                 <input id="memberTargetId" type="number" min="1" placeholder="Pvz. 12" />
               </label>
@@ -110,6 +114,7 @@
               <button type="button" id="btnSetRank" class="btn btn-ghost">Keisti rangą</button>
               <button type="button" id="btnKickMember" class="btn btn-ghost">Išmesti narį</button>
             </div>
+            <p id="gangManageReadOnlyHint" class="small muted hidden">Valdymas išjungtas — svetimos gaujos planšetė. Atidaryk <strong>Organizacija</strong>, kad pamatytum hierarchiją ir turfus.</p>
             <div id="gangMemberList" class="gang-member-list"></div>
           </div>
           <div class="rail-card hints">

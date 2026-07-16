@@ -37,12 +37,14 @@
   const NAV = [
     { id: 'structure', label: 'Struktūra', ico: '⛬' },
     { id: 'members', label: 'Nariai', ico: '👤' },
+    { id: 'turfs', label: 'Turfai', ico: '⌖' },
     { id: 'ranks', label: 'Rangai ir teisės', ico: '⛨' },
     { id: 'associates', label: 'Asocijuoti', ico: '🤝' },
     { id: 'relations', label: 'Santykiai', ico: '⚔' },
     { id: 'logs', label: 'Veiklos žurnalas', ico: '🗒' },
     { id: 'settings', label: 'Nustatymai', ico: '⚙' },
   ];
+  const NAV_READONLY = new Set(['structure', 'members', 'turfs', 'ranks']);
 
   const LOG_ACTIONS = {
     member_joined: 'Narys priimtas', member_kicked: 'Narys išmestas', member_rank_changed: 'Pakeistas rangas',
@@ -62,6 +64,7 @@
   function initials(name) { const p = String(name || '?').trim().split(/\s+/); return ((p[0]||'?')[0] + (p[1]||'')[0] || '?').toUpperCase(); }
   function fmtDate(v) { if (!v) return '—'; const d = new Date(String(v).replace(' ', 'T')); return isNaN(d) ? String(v) : d.toLocaleString('lt-LT'); }
   function hasPerm(k) { return !!(S && S.me && (S.me.wildcard || (S.me.permissions || []).indexOf(k) >= 0)); }
+  function isReadOnly() { return !!(S && S.me && S.me.readOnly); }
 
   async function post(cb, data) {
     try {
@@ -103,27 +106,41 @@
 
   function renderShell() {
     const g = S.gang;
+    const ro = isReadOnly();
     elBrand.innerHTML = '';
     const em = el('div', 'org-emblem'); em.style.background = `linear-gradient(135deg, ${g.color||'#e11d48'}, ${g.secondaryColor||g.color||'#7c3aed'})`;
     em.textContent = initials(g.label || g.name);
-    const bt = el('div', 'org-brand-text', `<h3>${esc(g.label || g.name)}</h3><span>${esc(g.gangType || '')} · ${S.members.length} narių</span>`);
+    const brandSub = ro
+      ? `Tik peržiūra · ${S.members.length} narių`
+      : `${esc(g.gangType || '')} · ${S.members.length} narių`;
+    const bt = el('div', 'org-brand-text', `<h3>${esc(g.label || g.name)}</h3><span>${brandSub}</span>`);
     elBrand.append(em, bt);
 
     elNav.innerHTML = '';
     NAV.forEach(n => {
+      if (ro && !NAV_READONLY.has(n.id)) return;
+      if (!ro && n.id === 'turfs' && !(S.turfs && S.turfs.length)) {
+        /* turfų skirtuką rodome visada read-only; savo gaujai — jei yra turfų arba visada */
+      }
       if (n.id === 'logs' && !hasPerm('gang.view_logs')) return;
       if (n.id === 'relations' && !hasPerm('diplomacy.view')) return;
       const item = el('div', 'org-nav-item' + (view === n.id ? ' active' : ''));
       item.innerHTML = `<span class="ico">${n.ico}</span><span>${n.label}</span>`;
-      const cnt = n.id === 'members' ? S.members.length : n.id === 'associates' ? S.associates.length : n.id === 'ranks' ? S.ranks.length : null;
+      const cnt = n.id === 'members' ? S.members.length
+        : n.id === 'associates' ? S.associates.length
+        : n.id === 'ranks' ? S.ranks.length
+        : n.id === 'turfs' ? (S.turfs || []).length
+        : null;
       if (cnt != null) item.append(el('span', 'badge', String(cnt)));
       item.onclick = () => { view = n.id; renderShell(); renderView(); };
       elNav.append(item);
     });
 
+    if (ro && !NAV_READONLY.has(view)) view = 'structure';
+
     elFoot.innerHTML = '';
     const me = el('div', 'org-me');
-    me.innerHTML = `<span class="org-me-dot"></span><div><div style="font-size:12.5px">${esc(S.me.rankLabel || 'Narys')}</div><small>${S.me.isOwner ? 'Savininkas' : 'Tavo rangas'}</small></div>`;
+    me.innerHTML = `<span class="org-me-dot"></span><div><div style="font-size:12.5px">${esc(S.me.rankLabel || 'Narys')}</div><small>${ro ? 'Svetima planšetė' : (S.me.isOwner ? 'Savininkas' : 'Tavo rangas')}</small></div>`;
     const close = el('button', 'obtn obtn-ghost', 'Uždaryti (ESC)'); close.style.marginTop = '4px'; close.onclick = closeMenu;
     elFoot.append(me, close);
   }
@@ -133,15 +150,17 @@
   function renderView() {
     const meta = NAV.find(n => n.id === view) || {};
     elTitle.textContent = meta.label || '';
-    elSub.textContent = '';
+    elSub.textContent = isReadOnly() ? 'Tik peržiūra — keisti negalima' : '';
     elContent.innerHTML = '';
     setTools([]);
-    ({ structure: viewStructure, members: viewMembers, ranks: viewRanks, associates: viewAssociates, relations: viewRelations, logs: viewLogs, settings: viewSettings }[view] || viewStructure)();
+    ({ structure: viewStructure, members: viewMembers, turfs: viewTurfs, ranks: viewRanks, associates: viewAssociates, relations: viewRelations, logs: viewLogs, settings: viewSettings }[view] || viewStructure)();
   }
 
   // ═══ STRUCTURE (hierarchy tree) ═══
   function viewStructure() {
-    elSub.textContent = 'Vizuali organizacijos hierarchija';
+    elSub.textContent = isReadOnly()
+      ? 'Hierarchija (tik peržiūra)'
+      : 'Vizuali organizacijos hierarchija';
     const btnExpand = el('button', 'obtn obtn-ghost sm', 'Išskleisti'); btnExpand.onclick = () => { collapsed.clear(); viewStructure(); };
     const btnCollapse = el('button', 'obtn obtn-ghost sm', 'Suskleisti'); btnCollapse.onclick = () => { S.ranks.forEach(r => { if (childrenOf(r.id).length) collapsed.add(r.id); }); viewStructure(); };
     const zi = el('button', 'obtn obtn-ghost sm', '＋'); zi.onclick = () => { tree.scale = Math.min(1.8, tree.scale + 0.15); applyTree(); };
@@ -174,13 +193,15 @@
     const bar = el('div', 'rn-bar'); bar.style.background = rank.color; node.append(bar);
     const body = el('div', 'rn-body');
     const perms = (rank.permissions || []);
-    const permTxt = perms[0] === '*' ? 'Visos teisės' : perms.slice(0, 3).map(p => permByKey[p] || p).join(', ') + (perms.length > 3 ? ` +${perms.length - 3}` : '');
+    const permTxt = isReadOnly()
+      ? `${rank.memberCount} narių`
+      : (perms[0] === '*' ? 'Visos teisės' : perms.slice(0, 3).map(p => permByKey[p] || p).join(', ') + (perms.length > 3 ? ` +${perms.length - 3}` : ''));
     body.innerHTML =
       `<div class="rn-top"><span class="rn-name">${ICONS[rank.icon] || '◆'} ${esc(rank.label)}</span><span class="rn-prio">P${rank.priority}</span></div>` +
       `<div class="rn-meta"><span>${rank.memberCount} narių</span>${rank.canHaveChildren ? '<span>· gali turėti pavaldžių</span>' : ''}</div>` +
-      `<div class="rn-perms"><span class="miniperm">${esc(permTxt || 'Nėra teisių')}</span></div>`;
+      `<div class="rn-perms"><span class="miniperm">${esc(permTxt || '—')}</span></div>`;
     node.append(body);
-    node.onclick = (e) => { e.stopPropagation(); openRankDrawer(rank); };
+    node.onclick = (e) => { e.stopPropagation(); if (isReadOnly()) openRankDrawerView(rank); else openRankDrawer(rank); };
     li.append(node);
 
     // Nariai + asocijuoti (dashed) po rangu.
@@ -240,7 +261,7 @@
     statSel.innerHTML = '<option value="all">Visi statusai</option><option value="online">Prisijungę</option>' + (S.catalog.memberStatuses || []).map(s => `<option value="${s}">${s}</option>`).join('');
     statSel.value = memberFilter.status; statSel.onchange = () => { memberFilter.status = statSel.value; renderMemberCards(grid); };
     const tools = [search, rankSel, statSel];
-    if (hasPerm('members.invite')) { const b = el('button', 'obtn obtn-primary sm', '＋ Pakviesti'); b.onclick = openInviteForm; tools.push(b); }
+    if (!isReadOnly() && hasPerm('members.invite')) { const b = el('button', 'obtn obtn-primary sm', '＋ Pakviesti'); b.onclick = openInviteForm; tools.push(b); }
     setTools(tools);
     const grid = el('div', 'org-cards');
     elContent.append(grid);
@@ -273,6 +294,16 @@
   }
 
   function openMemberDrawer(m) {
+    if (isReadOnly()) {
+      const body = el('div');
+      body.innerHTML =
+        row('Citizen ID', m.citizenid) + row('Statusas', m.status) +
+        row('Būsena', m.online ? 'Prisijungęs · ID ' + m.serverId : 'Atsijungęs') +
+        row('Rangas', m.rankLabel) + row('Prisijungė', fmtDate(m.joinedAt)) +
+        row('Pask. aktyvumas', fmtDate(m.lastActive));
+      openDrawer(`${m.name}${m.isOwner ? ' ♛' : ''}`, body, []);
+      return;
+    }
     const body = el('div');
     const dl = el('div');
     dl.innerHTML =
@@ -332,22 +363,55 @@
     openDrawer(`${m.name}${m.isOwner ? ' ♛' : ''}`, body, foot);
   }
 
+  // ═══ TURFS ═══
+  function viewTurfs() {
+    const list = S.turfs || [];
+    elSub.textContent = list.length ? `${list.length} užimtų teritorijų` : 'Nėra užimtų teritorijų';
+    if (!list.length) {
+      elContent.append(el('div', 'org-empty', 'Ši gauja šiuo metu nekontroliuoja jokių turfų.'));
+      return;
+    }
+    const tbl = el('table', 'org-table');
+    tbl.innerHTML = '<thead><tr><th>Teritorija</th><th>Įtaka</th><th>Heat</th><th>Pardavimai</th><th>Pelnas</th></tr></thead>';
+    const tb = el('tbody');
+    list.forEach(t => {
+      const tr = el('tr');
+      tr.innerHTML = `<td>${esc(t.label || t.id)}</td><td>${Number(t.influence || 0)}%</td><td>${Number(t.heat || 0)}</td><td>${Number(t.salesCount || 0)}</td><td>$${Number(t.profit || 0).toLocaleString()}</td>`;
+      tb.append(tr);
+    });
+    tbl.append(tb);
+    elContent.append(tbl);
+  }
+
   // ═══ RANKS ═══
   function viewRanks() {
-    elSub.textContent = `${S.ranks.length} / ${S.catalog.maxRanks} rangų`;
-    if (hasPerm('ranks.create')) { const b = el('button', 'obtn obtn-primary sm', '＋ Naujas rangas'); b.onclick = () => openRankDrawer(null); setTools([b]); }
+    elSub.textContent = isReadOnly()
+      ? `${S.ranks.length} rangų (tik peržiūra)`
+      : `${S.ranks.length} / ${S.catalog.maxRanks} rangų`;
+    if (!isReadOnly() && hasPerm('ranks.create')) { const b = el('button', 'obtn obtn-primary sm', '＋ Naujas rangas'); b.onclick = () => openRankDrawer(null); setTools([b]); }
     const tbl = el('table', 'org-table');
-    tbl.innerHTML = '<thead><tr><th>Rangas</th><th>Prioritetas</th><th>Viršesnis</th><th>Nariai</th><th>Teisės</th></tr></thead>';
+    tbl.innerHTML = '<thead><tr><th>Rangas</th><th>Prioritetas</th><th>Viršesnis</th><th>Nariai</th>' + (isReadOnly() ? '' : '<th>Teisės</th>') + '</tr></thead>';
     const tb = el('tbody');
     S.ranks.slice().sort((a,b)=>b.priority-a.priority).forEach(r => {
       const tr = el('tr'); tr.style.cursor = 'pointer';
       const parent = S.ranks.find(x => x.id === r.parentRankId);
       const permCount = (r.permissions||[])[0] === '*' ? 'Visos' : (r.permissions||[]).length;
-      tr.innerHTML = `<td><span style="color:${r.color}">${ICONS[r.icon]||'◆'}</span> ${esc(r.label)}${r.isOwnerRank?' <span class="chip owner">owner</span>':''}</td><td>P${r.priority}</td><td>${parent?esc(parent.label):'—'}</td><td>${r.memberCount}</td><td>${permCount}</td>`;
-      tr.onclick = () => openRankDrawer(r);
+      tr.innerHTML = `<td><span style="color:${r.color}">${ICONS[r.icon]||'◆'}</span> ${esc(r.label)}${r.isOwnerRank?' <span class="chip owner">owner</span>':''}</td><td>P${r.priority}</td><td>${parent?esc(parent.label):'—'}</td><td>${r.memberCount}</td>` + (isReadOnly() ? '' : `<td>${permCount}</td>`);
+      tr.onclick = () => { if (isReadOnly()) openRankDrawerView(r); else openRankDrawer(r); };
       tb.append(tr);
     });
     tbl.append(tb); elContent.append(tbl);
+  }
+
+  function openRankDrawerView(rank) {
+    const body = el('div');
+    body.innerHTML =
+      row('Rangas', rank.label) +
+      row('Prioritetas', 'P' + rank.priority) +
+      row('Nariai', String(rank.memberCount || 0)) +
+      row('Savininko rangas', rank.isOwnerRank ? 'Taip' : 'Ne') +
+      row('Gali turėti pavaldžių', rank.canHaveChildren ? 'Taip' : 'Ne');
+    openDrawer(rank.label, body, []);
   }
 
   function openRankDrawer(rank) {

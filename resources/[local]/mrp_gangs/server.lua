@@ -253,6 +253,9 @@ local function createGang(src, name, gangType, colorHex, secondaryColorHex)
         (Player.PlayerData.charinfo.firstname or '') .. ' ' .. (Player.PlayerData.charinfo.lastname or ''),
         4
     })
+    if GangOrg and GangOrg.giveRegisteredTablet then
+        GangOrg.giveRegisteredTablet(src, gangId)
+    end
     return true, gangId
 end
 
@@ -290,14 +293,51 @@ local function getMissionCatalog(gangType)
     return out
 end
 
-QBCore.Functions.CreateCallback('mrp_gangs:server:getTabletState', function(src, cb)
+QBCore.Functions.CreateCallback('mrp_gangs:server:getTabletState', function(src, cb, data)
     local ok, err = pcall(function()
-        local gang = getPlayerGang(src)
+        data = type(data) == 'table' and data or {}
+        local plateGangId = tonumber(data.gangId)
+        --- Refresh be gangId — naudoti aktyvią planšetės sesiją
+        if not plateGangId and GangOrg and GangOrg.getTabletSession then
+            local sess = GangOrg.getTabletSession(src)
+            if sess then plateGangId = tonumber(sess.gangId) end
+        end
+        local playerGang = getPlayerGang(src)
         local claimThreshold = tonumber(Config.TurfCapture and Config.TurfCapture.claimThreshold) or tonumber(Config.TurfClaimThreshold) or 100
-        if not gang then
+
+        --- Planšetės gauja (metadata) — jei nėra, žaidėjo gauja
+        local viewGangId = plateGangId
+        if not viewGangId and playerGang then
+            viewGangId = tonumber(playerGang.gang_id)
+        end
+
+        local readOnly = false
+        local viewGang = nil
+        if viewGangId then
+            viewGang = getGangById(viewGangId)
+            if viewGang then
+                viewGang.gang_id = tonumber(viewGang.id)
+                --- Svetima planšetė = tik peržiūra
+                if not playerGang or tonumber(playerGang.gang_id) ~= tonumber(viewGangId) then
+                    readOnly = true
+                end
+            end
+        end
+
+        if GangOrg and GangOrg.setTabletSession then
+            if viewGangId and viewGang then
+                GangOrg.setTabletSession(src, viewGangId, readOnly)
+            else
+                GangOrg.clearTabletSession(src)
+            end
+        end
+
+        if not viewGang then
             cb({
                 ok = true,
                 hasGang = false,
+                readOnly = false,
+                plateGangId = nil,
                 gangTypes = Config.GangTypes,
                 palette = Config.GangColors or {},
                 colorUsage = getColorUsage(),
@@ -312,12 +352,30 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:getTabletState', function(src,
             })
             return
         end
+
+        --- Tablet UI naudoja gang.gang_id / name laukus
+        local gangPayload = {
+            gang_id = tonumber(viewGang.id),
+            name = viewGang.name,
+            label = viewGang.label or viewGang.name,
+            gang_type = viewGang.gang_type,
+            color_hex = viewGang.color_hex,
+            secondary_color_hex = viewGang.secondary_color_hex,
+            reputation = viewGang.reputation,
+            heat = viewGang.heat,
+            warnings = viewGang.warnings,
+            created_at = viewGang.created_at,
+            rank = (not readOnly and playerGang and playerGang.rank) or 0,
+        }
+
         cb({
             ok = true,
             hasGang = true,
-            gang = gang,
-            members = getGangMembers(gang.gang_id),
-            warnings = getGangWarnings(gang.gang_id, 8),
+            readOnly = readOnly,
+            plateGangId = tonumber(viewGang.id),
+            gang = gangPayload,
+            members = getGangMembers(viewGang.id),
+            warnings = readOnly and {} or getGangWarnings(viewGang.id, 8),
             maxWarnings = tonumber(Config.MaxGangWarnings) or 5,
             turfs = getTurfs(),
             gangTypes = Config.GangTypes,
@@ -329,7 +387,7 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:getTabletState', function(src,
             activeWars = getActiveTurfWars(),
             recentActivities = getRecentGangActivities(6),
             claimThreshold = claimThreshold,
-            missions = getMissionCatalog(gang.gang_type),
+            missions = readOnly and {} or getMissionCatalog(viewGang.gang_type),
         })
     end)
     if not ok then
@@ -351,6 +409,10 @@ RegisterNetEvent('mrp_gangs:server:buyTablet', function()
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
+    local gang = getPlayerGang(src)
+    if not gang then
+        return TriggerClientEvent('QBCore:Notify', src, 'Planšetę gali pirkti tik gaujos narys — ji registruojama tavo gaujai.', 'error')
+    end
     local price = tonumber(Config.TabletVendor and Config.TabletVendor.tabletPrice) or 5000
     local hasCash = (Player.PlayerData.money and Player.PlayerData.money.cash or 0) >= price
     local hasBank = (Player.PlayerData.money and Player.PlayerData.money.bank or 0) >= price
@@ -362,13 +424,24 @@ RegisterNetEvent('mrp_gangs:server:buyTablet', function()
     else
         Player.Functions.RemoveMoney('bank', price, 'gang-tablet-purchase')
     end
-    Player.Functions.AddItem(Config.TabletItem, 1)
-    TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[Config.TabletItem], 'add', 1)
-    TriggerClientEvent('QBCore:Notify', src, ('Nupirkta gang planšetė už $%s.'):format(price), 'success')
+    local ok, nameOrErr = GangOrg.giveRegisteredTablet(src, gang.gang_id)
+    if not ok then
+        --- Grąžinti pinigus jei nepavyko
+        if hasCash then
+            Player.Functions.AddMoney('cash', price, 'gang-tablet-refund')
+        else
+            Player.Functions.AddMoney('bank', price, 'gang-tablet-refund')
+        end
+        return TriggerClientEvent('QBCore:Notify', src, tostring(nameOrErr or 'Nepavyko duoti planšetės.'), 'error')
+    end
+    TriggerClientEvent('QBCore:Notify', src, ('Nupirkta „%s“ planšetė už $%s.'):format(nameOrErr, price), 'success')
 end)
 
 RegisterNetEvent('mrp_gangs:server:inviteMember', function(targetId)
     local src = source
+    if GangOrg and GangOrg.isOrgWriteBlocked and GangOrg.isOrgWriteBlocked(src) then
+        return TriggerClientEvent('QBCore:Notify', src, GangOrg.writeBlockedMsg(), 'error')
+    end
     local canManage, gang = canManageMembers(src)
     if not canManage then return TriggerClientEvent('QBCore:Notify', src, 'Reikia aukštesnio rango (3+).', 'error') end
     targetId = tonumber(targetId)
@@ -387,6 +460,9 @@ end)
 
 RegisterNetEvent('mrp_gangs:server:setMemberRank', function(citizenid, rank)
     local src = source
+    if GangOrg and GangOrg.isOrgWriteBlocked and GangOrg.isOrgWriteBlocked(src) then
+        return TriggerClientEvent('QBCore:Notify', src, GangOrg.writeBlockedMsg(), 'error')
+    end
     local canManage, gang = canManageMembers(src)
     if not canManage then return TriggerClientEvent('QBCore:Notify', src, 'Reikia aukštesnio rango (3+).', 'error') end
     if tostring(citizenid or '') == '' then return end
@@ -406,6 +482,9 @@ end)
 
 RegisterNetEvent('mrp_gangs:server:kickMember', function(citizenid)
     local src = source
+    if GangOrg and GangOrg.isOrgWriteBlocked and GangOrg.isOrgWriteBlocked(src) then
+        return TriggerClientEvent('QBCore:Notify', src, GangOrg.writeBlockedMsg(), 'error')
+    end
     local canManage, gang = canManageMembers(src)
     if not canManage then return TriggerClientEvent('QBCore:Notify', src, 'Reikia aukštesnio rango (3+).', 'error') end
     local me = QBCore.Functions.GetPlayer(src)
@@ -675,8 +754,13 @@ MySQL.ready(function()
         MySQL.insert.await('INSERT IGNORE INTO fivempro_gang_turfs (turf_id) VALUES (?)', { turfId })
     end
 
-    QBCore.Functions.CreateUseableItem(Config.TabletItem, function(source)
-        TriggerClientEvent('mrp_gangs:client:openTablet', source)
+    QBCore.Functions.CreateUseableItem(Config.TabletItem, function(source, item)
+        item = GangOrg.ensureTabletBound(source, item) or item
+        local info = item and item.info or {}
+        TriggerClientEvent('mrp_gangs:client:openTablet', source, {
+            gangId = tonumber(info.gang_id),
+            gangLabel = info.gang_label or info.gang_name,
+        })
     end)
 
     QBCore.Functions.CreateUseableItem((Config.Graffiti and Config.Graffiti.item) or 'spray_can', function(source)

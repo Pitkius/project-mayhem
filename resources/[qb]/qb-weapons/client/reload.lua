@@ -1,10 +1,12 @@
---- Perkrovos animacija. Kulkos kraunamos PO animacijos — main.lua.
+--- Perkrovos animacija + garsas. Kulkas inventoriui krauna TIK main.lua po vizualo.
+--- SVARBU: vizualas NETURI palikti pakeisto apkabos skaičiaus (tai sukeldavo 2× reload → 1 kulka).
 WeaponReload = WeaponReload or {}
 
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local activeReloadAnim = nil
 local reloadPedStateActive = false
+local activeSoundId = nil
 
 local function animRow(dict, clips, fallbacks)
     return {
@@ -92,10 +94,9 @@ local function allowReloadMovement()
     return Config.ReloadAllowMovement ~= false
 end
 
---- 48 = viršutinė kūno dalis + leisti judėti (be loop). 16 = stovint be judėjimo.
 local function reloadAnimFlags()
     if allowReloadMovement() then
-        return 48
+        return 48 -- upper body + move
     end
     return 16
 end
@@ -199,6 +200,28 @@ local function pedIsMoving(ped)
     return false
 end
 
+local function hardPinClip(ped, weaponHash, clipNow)
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return end
+    clipNow = math.max(0, math.floor(tonumber(clipNow) or 0))
+    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    SetPedAmmo(ped, weaponHash, clipNow)
+    SetAmmoInClip(ped, weaponHash, clipNow)
+    SetPedAmmo(ped, weaponHash, clipNow)
+    SetAmmoInClip(ped, weaponHash, clipNow)
+end
+
+--- Užfiksuoja apkaba keliems kadrų — native MakePedReload kitaip palieka „nešvarią“ būseną.
+local function forceRestoreClip(ped, weaponHash, clipNow, frames)
+    frames = math.max(3, tonumber(frames) or 8)
+    for _ = 1, frames do
+        ped = PlayerPedId()
+        if not ped or ped == 0 then break end
+        hardPinClip(ped, weaponHash, clipNow)
+        Wait(0)
+    end
+    hardPinClip(PlayerPedId(), weaponHash, clipNow)
+end
+
 local function preparePedForReloadAnim(ped, weaponHash)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return end
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
@@ -206,102 +229,11 @@ local function preparePedForReloadAnim(ped, weaponHash)
     SetCurrentPedWeapon(ped, weaponHash, true)
 end
 
-local function pinClipOnce(ped, weaponHash, clipNow)
-    if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return end
-    clipNow = math.max(0, tonumber(clipNow) or 0)
-    SetPedAmmo(ped, weaponHash, clipNow)
-    SetAmmoInClip(ped, weaponHash, clipNow)
-end
-
-local function beginReloadPedState(ped, weaponHash, clipNow, pinClip)
+local function beginReloadPedState(ped, weaponHash)
     if not ped or ped == 0 then return end
     reloadPedStateActive = true
     SetPedCanSwitchWeapon(ped, false)
     preparePedForReloadAnim(ped, weaponHash)
-    if pinClip then
-        pinClipOnce(ped, weaponHash, clipNow)
-    end
-end
-
-local function restoreClipState(ped, weaponHash, clipNow)
-    if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return end
-    clipNow = math.max(0, tonumber(clipNow) or 0)
-    SetPedAmmo(ped, weaponHash, clipNow)
-    SetAmmoInClip(ped, weaponHash, clipNow)
-    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
-end
-
-local function stagePedAmmoForNativeReload(ped, weaponHash, clipNow, bulletsToLoad, weaponData)
-    clipNow = math.max(0, tonumber(clipNow) or 0)
-    local load = math.max(1, tonumber(bulletsToLoad) or 1)
-    local maxClip = WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
-    local targetTotal = math.min(maxClip, clipNow + load)
-    if targetTotal <= clipNow then
-        targetTotal = math.min(maxClip, clipNow + 1)
-    end
-    SetPedAmmo(ped, weaponHash, targetTotal)
-    SetAmmoInClip(ped, weaponHash, clipNow)
-    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
-end
-
-local AUDIO_REF_OVERRIDES = {
-    weapon_fgc9 = 'WEP_COMBATPISTOL',
-}
-
-local AUDIO_BY_AMMO = {
-    AMMO_PISTOL = 'WEP_PISTOL',
-    AMMO_SMG = 'WEP_SMG',
-    AMMO_RIFLE = 'WEP_CARBINERIFLE',
-    AMMO_MG = 'WEP_MG',
-    AMMO_SHOTGUN = 'WEP_PUMPSHOTGUN',
-    AMMO_SNIPER = 'WEP_SNIPERRIFLE',
-    AMMO_MUSKET = 'WEP_MUSKET',
-}
-
-local AUDIO_BY_GROUP = {
-    [`GROUP_PISTOL`] = 'WEP_PISTOL',
-    [`GROUP_SMG`] = 'WEP_SMG',
-    [`GROUP_RIFLE`] = 'WEP_CARBINERIFLE',
-    [`GROUP_MG`] = 'WEP_MG',
-    [`GROUP_SHOTGUN`] = 'WEP_PUMPSHOTGUN',
-    [`GROUP_SNIPER`] = 'WEP_SNIPERRIFLE',
-}
-
-local function getWeaponAudioRef(weaponHash, weaponData)
-    local invName = resolveInventoryWeaponName(weaponHash, weaponData)
-    if invName and AUDIO_REF_OVERRIDES[invName] then
-        return AUDIO_REF_OVERRIDES[invName]
-    end
-
-    if invName and invName:match('^weapon_') then
-        return 'WEP_' .. invName:gsub('^weapon_', ''):upper()
-    end
-
-    local ammoType = weaponAmmoType(weaponHash, weaponData)
-    if ammoType ~= '' and AUDIO_BY_AMMO[ammoType] then
-        return AUDIO_BY_AMMO[ammoType]
-    end
-
-    local group = GetWeapontypeGroup(weaponHash)
-    if AUDIO_BY_GROUP[group] then
-        return AUDIO_BY_GROUP[group]
-    end
-
-    return 'WEP_PISTOL'
-end
-
-local function playReloadSound(ped, weaponHash, weaponData)
-    if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return end
-    local soundId = GetSoundId()
-    if not soundId or soundId == -1 then return end
-
-    local audioRef = getWeaponAudioRef(weaponHash, weaponData)
-    PlaySoundFromEntity(soundId, 'Reload', ped, audioRef, true, 0)
-    CreateThread(function()
-        Wait(1400)
-        StopSound(soundId)
-        ReleaseSoundId(soundId)
-    end)
 end
 
 local function endReloadPedState(ped)
@@ -311,6 +243,122 @@ local function endReloadPedState(ped)
     if ped and ped ~= 0 and DoesEntityExist(ped) then
         SetPedCanSwitchWeapon(ped, true)
     end
+end
+
+local function stopActiveSound()
+    if activeSoundId then
+        StopSound(activeSoundId)
+        ReleaseSoundId(activeSoundId)
+        activeSoundId = nil
+    end
+end
+
+--- Trumpas native reload tik garsui (custom anim atveju). Po to VISADA restore.
+local function playNativeReloadAudioBurst(ped, weaponHash, clipSnapshot, weaponData)
+    ped = ped or PlayerPedId()
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return false end
+
+    clipSnapshot = math.max(0, math.floor(tonumber(clipSnapshot) or 0))
+    local maxClip = WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
+    local stagedTotal = math.min(maxClip, clipSnapshot + 1)
+    if stagedTotal <= clipSnapshot and maxClip > clipSnapshot then
+        stagedTotal = clipSnapshot + 1
+    elseif stagedTotal <= clipSnapshot then
+        --- Apkaba jau pilna — native garsas nepasileis
+        return false
+    end
+
+    SetCurrentPedWeapon(ped, weaponHash, true)
+    SetPedAmmo(ped, weaponHash, stagedTotal)
+    SetAmmoInClip(ped, weaponHash, clipSnapshot)
+    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+
+    MakePedReload(ped)
+    if not IsPedReloading(ped) then
+        TaskReloadWeapon(ped, true)
+    end
+
+    local deadline = GetGameTimer() + 700
+    local saw = false
+    while GetGameTimer() < deadline do
+        ped = PlayerPedId()
+        if IsPedReloading(ped) then
+            saw = true
+        elseif saw then
+            break
+        end
+        Wait(0)
+    end
+
+    ClearPedTasks(ped)
+    forceRestoreClip(PlayerPedId(), weaponHash, clipSnapshot, 8)
+    return saw
+end
+
+--- Fallback garsas jei native audio burst nepavyko.
+local function playFallbackReloadClicks()
+    CreateThread(function()
+        Wait(90)
+        PlaySoundFrontend(-1, 'PICK_UP', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+        Wait(380)
+        if reloadPedStateActive or activeReloadAnim then
+            PlaySoundFrontend(-1, 'PICK_UP_WEAPON', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+        end
+        Wait(420)
+        if reloadPedStateActive or activeReloadAnim then
+            PlaySoundFrontend(-1, 'PICK_UP', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+        end
+    end)
+end
+
+--- Native reload duoda tikrus apkabos garsus. Po jo VISADA grąžinam pradinę apkaba.
+local function playNativeReloadVisual(ped, weaponHash, durationMs, clipSnapshot, bulletsToLoad, weaponData)
+    ped = ped or PlayerPedId()
+    preparePedForReloadAnim(ped, weaponHash)
+    SetCurrentPedWeapon(ped, weaponHash, true)
+
+    clipSnapshot = math.max(0, math.floor(tonumber(clipSnapshot) or 0))
+    local maxClip = WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
+    local need = math.max(1, math.min(tonumber(bulletsToLoad) or 1, math.max(1, maxClip - clipSnapshot)))
+    --- Laikinas „reserve“, kad MakePedReload paleistų garsą/animaciją.
+    local stagedTotal = math.min(maxClip, clipSnapshot + need)
+    if stagedTotal <= clipSnapshot then
+        stagedTotal = math.min(maxClip, clipSnapshot + 1)
+    end
+
+    SetPedAmmo(ped, weaponHash, stagedTotal)
+    SetAmmoInClip(ped, weaponHash, clipSnapshot)
+    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+
+    MakePedReload(ped)
+    if not IsPedReloading(ped) then
+        TaskReloadWeapon(ped, true)
+    end
+
+    local deadline = GetGameTimer() + durationMs
+    local startedAt = GetGameTimer()
+    local sawReload = false
+
+    while DoesEntityExist(ped) and GetGameTimer() < deadline do
+        ped = PlayerPedId()
+        SetCurrentPedWeapon(ped, weaponHash, true)
+        if IsPedReloading(ped) then
+            sawReload = true
+            Wait(0)
+        elseif sawReload then
+            --- Animacija baigėsi — greitai pin'inam, kad native nebeliktų klaidingų kulkų
+            break
+        elseif GetGameTimer() - startedAt > 900 then
+            break
+        else
+            TaskReloadWeapon(ped, true)
+            Wait(0)
+        end
+    end
+
+    ClearPedTasks(ped)
+    forceRestoreClip(ped, weaponHash, clipSnapshot, 10)
+    return sawReload or (GetGameTimer() - startedAt) > 280
 end
 
 local function orderClipsForPed(ped, clips)
@@ -405,9 +453,11 @@ local function enableReloadMovementControls(ped)
     SetPedCanPlayAmbientAnims(ped, true)
 end
 
-local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clipNow)
+local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clipSnapshot)
     ped = ped or PlayerPedId()
     if not ped or ped == 0 then return false end
+
+    hardPinClip(ped, weaponHash, clipSnapshot)
 
     local animRowData = getReloadAnim(weaponHash, weaponData)
     local flags = reloadAnimFlags()
@@ -415,16 +465,33 @@ local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clip
 
     if not started then
         Wait(math.min(900, durationMs))
+        hardPinClip(PlayerPedId(), weaponHash, clipSnapshot)
         return false
     end
 
     activeReloadAnim = { dict = dict, clip = clip }
+    --- Tikras apkabos garsas (trumpas native); jei nepavyksta — frontend click
+    if not playNativeReloadAudioBurst(ped, weaponHash, clipSnapshot, weaponData) then
+        playFallbackReloadClicks()
+    else
+        --- Po audio burst vėl paleisti custom anim (ClearPedTasks ją nutraukė)
+        SetCurrentPedWeapon(ped, weaponHash, true)
+        hardPinClip(ped, weaponHash, clipSnapshot)
+        local retryClip, retryStarted = playClipFromList(ped, dict, animRowData.clips, flags)
+        if retryStarted then
+            clip = retryClip
+            activeReloadAnim.clip = clip
+        end
+    end
+
     local retriesLeft = 1
+    --- Deadline po audio burst — animacija gauna pilną ReloadTime
     local deadline = GetGameTimer() + durationMs
 
     while DoesEntityExist(ped) and GetGameTimer() < deadline do
         ped = PlayerPedId()
         enableReloadMovementControls(ped)
+        hardPinClip(ped, weaponHash, clipSnapshot)
 
         if not IsEntityPlayingAnim(ped, dict, clip, 3) and retriesLeft > 0 then
             retriesLeft = retriesLeft - 1
@@ -439,44 +506,12 @@ local function playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clip
     end
 
     stopReloadAnimation(ped)
+    forceRestoreClip(PlayerPedId(), weaponHash, clipSnapshot, 4)
     return true
 end
 
-local function playNativeReload(ped, weaponHash, durationMs, clipNow, bulletsToLoad, weaponData)
-    ped = ped or PlayerPedId()
-    preparePedForReloadAnim(ped, weaponHash)
-    SetCurrentPedWeapon(ped, weaponHash, true)
-
-    stagePedAmmoForNativeReload(ped, weaponHash, clipNow, bulletsToLoad, weaponData)
-
-    MakePedReload(ped)
-    if not IsPedReloading(ped) then
-        TaskReloadWeapon(ped, false)
-    end
-
-    local deadline = GetGameTimer() + durationMs
-    local startedAt = GetGameTimer()
-    local sawReload = false
-
-    while DoesEntityExist(ped) and GetGameTimer() < deadline do
-        ped = PlayerPedId()
-        SetCurrentPedWeapon(ped, weaponHash, true)
-        if IsPedReloading(ped) then
-            sawReload = true
-            Wait(0)
-        elseif sawReload or GetGameTimer() - startedAt > 1200 then
-            break
-        else
-            TaskReloadWeapon(ped, false)
-            Wait(0)
-        end
-    end
-
-    restoreClipState(ped, weaponHash, clipNow)
-    return sawReload or (GetGameTimer() - startedAt) > 350
-end
-
 --- Vizualinė animacija prieš inventoriaus užtaisymą.
+--- Grąžina pradinę apkaba — main.lua paskui uždeda tikslų plannedBullets kiekį.
 function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
     ped = PlayerPedId()
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then
@@ -487,7 +522,8 @@ function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
     bulletsToLoad = math.max(0, tonumber(bulletsToLoad) or 0)
     local durationMs = getReloadWaitMs()
     local startedAt = GetGameTimer()
-    local clipNow = select(1, WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData))
+    local clipSnapshot = select(1, WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData))
+    clipSnapshot = math.max(0, math.floor(tonumber(clipSnapshot) or 0))
 
     if IsPedInAnyVehicle(ped, false) then
         Wait(math.min(1100, durationMs))
@@ -497,27 +533,33 @@ function WeaponReload.playVisual(ped, weaponHash, bulletsToLoad, weaponData)
     local moving = allowReloadMovement() and pedIsMoving(ped)
     local usedNative = false
 
-    beginReloadPedState(ped, weaponHash, clipNow, false)
-    playReloadSound(ped, weaponHash, weaponData)
+    beginReloadPedState(ped, weaponHash)
+    hardPinClip(ped, weaponHash, clipSnapshot)
 
+    --- Native = tikri apkabos garsai. Tik stovint ir kai yra ką krauti.
     if not moving and Config.ReloadUseNativeFirst ~= false and bulletsToLoad > 0 then
-        usedNative = playNativeReload(ped, weaponHash, durationMs, clipNow, bulletsToLoad, weaponData)
+        usedNative = playNativeReloadVisual(ped, weaponHash, durationMs, clipSnapshot, bulletsToLoad, weaponData)
     end
 
     if not usedNative then
-        pinClipOnce(ped, weaponHash, clipNow)
-        playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clipNow)
+        playUpperBodyReload(ped, weaponHash, weaponData, durationMs, clipSnapshot)
     end
 
+    --- Paskutinis saugiklis: apkaba turi būti tokia pati kaip prieš vizualą
+    forceRestoreClip(PlayerPedId(), weaponHash, clipSnapshot, 6)
     endReloadPedState(ped)
+    stopActiveSound()
 
     local elapsed = GetGameTimer() - startedAt
     if elapsed < durationMs then
         Wait(durationMs - elapsed)
     end
+
+    forceRestoreClip(PlayerPedId(), weaponHash, clipSnapshot, 3)
 end
 
 function WeaponReload.cancel(ped)
     stopReloadAnimation(ped or PlayerPedId())
     endReloadPedState(ped or PlayerPedId())
+    stopActiveSound()
 end

@@ -4,6 +4,7 @@ local doorGroups = {}
 local doorLocked = {}
 local entitySnapshots = {}
 local doorTargetZoneIds = {}
+local autoRelockState = {}
 
 local LOCK_TX = 'mpsafecracking'
 local LOCK_ICON_W = 0.016
@@ -49,8 +50,11 @@ end
 
 local function drawDoorLock(worldX, worldY, worldZ, locked)
     if not HasStreamedTextureDictLoaded(LOCK_TX) then return end
+    local r, g, b = 78, 220, 118
+    if locked then r, g, b = 245, 72, 72 end
     SetDrawOrigin(worldX, worldY, worldZ, 0)
-    DrawSprite(LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, LOCK_ICON_W, LOCK_ICON_H, 0.0, 235, 232, 255, 230)
+    DrawSprite(LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, LOCK_ICON_W * 1.42, LOCK_ICON_H * 1.42, 0.0, r, g, b, 45)
+    DrawSprite(LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, LOCK_ICON_W, LOCK_ICON_H, 0.0, r, g, b, 245)
     ClearDrawOrigin()
 end
 
@@ -128,7 +132,7 @@ local function applyEntityGroupLocked(entities, locked)
             if locked then
                 snapEntityToSnapshot(ent)
                 FreezeEntityPosition(ent, true)
-                SetEntityCollision(ent, false, false)
+                SetEntityCollision(ent, true, true)
             else
                 FreezeEntityPosition(ent, false)
                 SetEntityCollision(ent, true, true)
@@ -186,6 +190,17 @@ end
 local function nearestDoorDist(pcoords)
     local best = 9999.0
     for _, g in ipairs(doorGroups) do
+        local count = 0
+        local sum = vector3(0.0, 0.0, 0.0)
+        for _, ent in ipairs(g.entities or {}) do
+            if ent and ent ~= 0 and DoesEntityExist(ent) then
+                sum = sum + GetEntityCoords(ent)
+                count = count + 1
+            end
+        end
+        if count > 0 then
+            best = math.min(best, #(pcoords - (sum / count)))
+        end
         if g.interact then
             local d = #(pcoords - g.interact)
             if d < best then best = d end
@@ -219,13 +234,35 @@ end
 
 local lastToggle = 0
 
+local function resolveDoorLockPos(group)
+    if not group then return nil end
+    local count = 0
+    local sum = vector3(0.0, 0.0, 0.0)
+    for _, ent in ipairs(group.entities or {}) do
+        if ent and ent ~= 0 and DoesEntityExist(ent) then
+            sum = sum + GetEntityCoords(ent)
+            count = count + 1
+        end
+    end
+    if count > 0 then
+        local center = sum / count
+        local zOff = group.doorType == 'garage_roll' and 0.55 or 0.45
+        return vector3(center.x, center.y, center.z + zOff)
+    end
+    if group.interact then
+        return vector3(group.interact.x, group.interact.y, group.interact.z + 0.45)
+    end
+    return nil
+end
+
 local function tryToggleNearestDoor(pcoords)
     if not isMechanicOnDuty() then return end
     local reach = doorInteractRadius()
     local closestHit = nil
     for _, g in ipairs(doorGroups) do
-        if g.interact then
-            local d = #(pcoords - g.interact)
+        local lockPos = resolveDoorLockPos(g) or g.interact
+        if lockPos then
+            local d = #(pcoords - lockPos)
             if d <= reach and (not closestHit or d < closestHit.d) then
                 closestHit = { gid = g.id, d = d }
             end
@@ -319,7 +356,10 @@ RegisterNetEvent('mrp_mechanic:client:syncDoors', function(state)
     if type(state) ~= 'table' then return end
     for k, v in pairs(state) do
         local parsed = parseDoorLocked(v)
-        if parsed ~= nil then doorLocked[k] = parsed end
+        if parsed ~= nil then
+            doorLocked[k] = parsed
+            autoRelockState[k] = parsed and nil or { opened = false, requestedAt = 0 }
+        end
     end
     for id, locked in pairs(doorLocked) do
         applyGroupLocked(id, locked)
@@ -331,6 +371,7 @@ RegisterNetEvent('mrp_mechanic:client:setDoorState', function(id, locked)
     local parsed = parseDoorLocked(locked)
     if parsed == nil then return end
     doorLocked[id] = parsed
+    autoRelockState[id] = parsed and nil or { opened = false, requestedAt = 0 }
     applyGroupLocked(id, doorLocked[id])
 end)
 
@@ -370,12 +411,26 @@ CreateThread(function()
         if isMechanicOnDuty() then
             local pcoords = GetEntityCoords(PlayerPedId())
             if nearestDoorDist(pcoords) < 28.0 then
-                waitMs = 200
+                local nearest, nearestDist = nil, 9999.0
                 for _, g in ipairs(doorGroups) do
-                    if g.interact and #(pcoords - g.interact) < (g.interactDist or 4.0) + 4.0 then
-                        local zOff = g.doorType == 'garage_roll' and 0.95 or 1.0
-                        drawDoorLock(g.interact.x, g.interact.y, g.interact.z + zOff, isGroupLocked(g.id))
+                    local lockPos = resolveDoorLockPos(g)
+                    if lockPos then
+                        local d = #(pcoords - lockPos)
+                        if d < nearestDist then
+                            nearest, nearestDist = { group = g, pos = lockPos }, d
+                        end
                     end
+                end
+                if nearest and nearestDist <= (Config.DoorToggleReach or 5.0) then
+                    -- Sprite turi būti piešiamas kiekvieną kadrą, kitaip mirga.
+                    waitMs = 0
+                    drawDoorLock(nearest.pos.x, nearest.pos.y, nearest.pos.z, isGroupLocked(nearest.group.id))
+                    EnableControlAction(0, 38, true)
+                    if IsControlJustPressed(0, 38) or IsDisabledControlJustPressed(0, 38) then
+                        tryToggleNearestDoor(pcoords)
+                    end
+                else
+                    waitMs = 120
                 end
             end
         end
@@ -383,21 +438,45 @@ CreateThread(function()
     end
 end)
 
+local function entityGroupPhysicalState(group)
+    if not group or group.doorType == 'garage_roll' then return false, true end
+    local anyOpen, allClosed, count = false, true, 0
+    for _, ent in ipairs(group.entities or {}) do
+        local snap = entitySnapshots[ent]
+        if snap and DoesEntityExist(ent) then
+            count = count + 1
+            local c = GetEntityCoords(ent)
+            local heading = GetEntityHeading(ent)
+            local headingDelta = math.abs(((heading - snap.heading + 180.0) % 360.0) - 180.0)
+            local moved = #(c - snap.coords)
+            if headingDelta > 7.0 or moved > 0.16 then anyOpen = true end
+            if headingDelta > 2.0 or moved > 0.045 then allClosed = false end
+        end
+    end
+    return count > 0 and anyOpen, count > 0 and allClosed
+end
+
+--- Mechanikų paprastos durys: po atidarymo ir sugrįžimo į uždarytą padėtį užrakinti.
 CreateThread(function()
     while true do
-        local pcoords = GetEntityCoords(PlayerPedId())
-        if nearestDoorDist(pcoords) > 140.0 then
-            Wait(2000)
-        else
-            local waitMs = 400
-            if isMechanicOnDuty() and nearestDoorDist(pcoords) < 35.0 then
-                waitMs = 100
-                if IsControlJustPressed(0, 38) then
-                    tryToggleNearestDoor(pcoords)
+        local waitMs = 700
+        if isMechanicOnDuty() then
+            local pc = GetEntityCoords(PlayerPedId())
+            for _, group in ipairs(doorGroups) do
+                local state = autoRelockState[group.id]
+                local lockPos = state and resolveDoorLockPos(group) or nil
+                if state and not isGroupLocked(group.id) and lockPos and #(pc - lockPos) < 18.0 then
+                    waitMs = 100
+                    local anyOpen, allClosed = entityGroupPhysicalState(group)
+                    if anyOpen then state.opened = true end
+                    if state.opened and allClosed and GetGameTimer() - (state.requestedAt or 0) > 1200 then
+                        state.requestedAt = GetGameTimer()
+                        TriggerServerEvent('mrp_mechanic:server:toggleDoorGroup', group.id, true)
+                    end
                 end
             end
-            Wait(waitMs)
         end
+        Wait(waitMs)
     end
 end)
 

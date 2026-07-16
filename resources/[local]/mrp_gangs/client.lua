@@ -31,11 +31,16 @@ local function playTabletAnim()
     AttachEntityToEntity(tabletProp, ped, GetPedBoneIndex(ped, 60309), 0.03, 0.002, 0.0, 10.0, 160.0, 0.0, true, true, false, true, 1, true)
 end
 
-local function closeTabletUi()
+--- keepSession = true kai pereinama į org meniu (sesija reikalinga read-only).
+local function closeTabletUi(opts)
+    opts = type(opts) == 'table' and opts or {}
     tabletOpen = false
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
     stopTabletAnim()
+    if not opts.keepSession then
+        TriggerServerEvent('mrp_gangs:server:clearTabletSession')
+    end
 end
 
 local function closeAdminUi()
@@ -78,10 +83,11 @@ local function refreshAdminSnapshot(cb)
     end)
 end
 
-RegisterNetEvent('mrp_gangs:client:openTablet', function()
+RegisterNetEvent('mrp_gangs:client:openTablet', function(plateInfo)
     if tabletOpen then
         closeTabletUi()
     end
+    plateInfo = type(plateInfo) == 'table' and plateInfo or {}
     QBCore.Functions.TriggerCallback('mrp_gangs:server:getTabletState', function(res)
         if not res or not res.ok then
             QBCore.Functions.Notify((res and res.msg) or 'Nepavyko atidaryti planšetės.', 'error')
@@ -95,6 +101,8 @@ RegisterNetEvent('mrp_gangs:client:openTablet', function()
             action = 'open',
             payload = {
                 hasGang = res.hasGang,
+                readOnly = res.readOnly == true,
+                plateGangId = res.plateGangId,
                 gang = res.gang or nil,
                 members = res.members or {},
                 gangTypes = res.gangTypes or {},
@@ -112,7 +120,7 @@ RegisterNetEvent('mrp_gangs:client:openTablet', function()
                 maxWarnings = res.maxWarnings or 5,
             },
         })
-    end)
+    end, { gangId = plateInfo.gangId })
 end)
 
 RegisterNetEvent('mrp_gangs:client:gangWarning', function(payload)
@@ -137,6 +145,8 @@ RegisterNetEvent('mrp_gangs:client:refreshTablet', function()
             payload = {
                 keepTab = true,
                 hasGang = res.hasGang,
+                readOnly = res.readOnly == true,
+                plateGangId = res.plateGangId,
                 gang = res.gang or nil,
                 members = res.members or {},
                 gangTypes = res.gangTypes or {},
@@ -296,7 +306,7 @@ RegisterNUICallback('gangs:adminClearWarnings', function(data, cb)
 end)
 
 RegisterNUICallback('gangs:openOrg', function(_, cb)
-    closeTabletUi()
+    closeTabletUi({ keepSession = true })
     TriggerServerEvent('mrp_gangs:server:org:requestOpen')
     cb({ ok = true })
 end)

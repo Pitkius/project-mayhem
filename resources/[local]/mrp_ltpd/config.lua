@@ -554,9 +554,8 @@ Config.MaxFineAmount = 50000
 Config.PdDoorToggleReach = 6.0
 --- Spynos ikonos Z poslinkis nuo durų slab koord. (standartinės durys)
 Config.PdDoorLockIconZOffset = 0.38
---- Spynos ikona: tik arti durų · ms tarp piešimų (≥50)
+--- Spynos ikona rodoma tik arti durų; arti piešiama kiekvieną kadrą, kad nemirgėtų.
 Config.PdDoorLockIconDrawDistance = 10.0
-Config.PdDoorLockIconTickMs = 50
 --- false = tik E mygtukas; true = papildomai qb-target (numatyta: tik E)
 Config.PdDoorUseQbTarget = false
 Config.PdDoorGroups = {

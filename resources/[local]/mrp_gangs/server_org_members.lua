@@ -44,7 +44,7 @@ end
 
 -- ── Keisti nario rangą (paaukštinti / pažeminti / perkelti) ────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:setMemberRank', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'setMemberRank', 0.5) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'setMemberRank', 0.5) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['members.promote'] or ctx.perms.set['members.demote'] or ctx.perms.set['members.move_rank']) then
@@ -84,7 +84,7 @@ end)
 
 -- ── Išmesti narį ───────────────────────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:kickMember', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'kickMember', 0.75) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'kickMember', 0.75) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['members.kick']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -110,7 +110,7 @@ end)
 
 -- ── Suspenduoti / grąžinti narį ────────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:setMemberStatus', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'memberStatus', 0.5) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'memberStatus', 0.5) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['members.suspend']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -138,7 +138,7 @@ end)
 
 -- ── Nario pastaba ──────────────────────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:setMemberNotes', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'memberNotes', 0.5) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'memberNotes', 0.5) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['members.edit_notes']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -158,7 +158,7 @@ end)
 
 -- ── Atsakomybės (žymos) ────────────────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:setMemberResponsibilities', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'memberResp', 0.5) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'memberResp', 0.5) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['members.assign_resp']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -193,7 +193,7 @@ end)
 
 -- ── Individualios teisių išimtys (grant/revoke) — tik owner/wildcard ─
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:setMemberOverrides', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'memberOverrides', 0.5) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'memberOverrides', 0.5) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     -- Individualias išimtis valdo tik owner arba turintis ranks.edit_permissions.
@@ -227,7 +227,7 @@ end)
 
 -- ── Nuosavybės perdavimas (reikia patvirtinimo) ────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:transferOwnership', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'transferOwner', 3.0) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'transferOwner', 3.0) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not ctx.isOwner then return cb({ ok = false, msg = 'Tik savininkas gali perduoti nuosavybę.' }) end

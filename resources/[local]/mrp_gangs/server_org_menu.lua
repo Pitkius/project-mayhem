@@ -28,15 +28,41 @@ local function permsToArray(perms)
     return out
 end
 
--- ── Pilna organizacijos būsena (tik nariams su gang.open_menu) ─────
+-- ── Pilna organizacijos būsena (nariams su teisėmis ARBA svetimos planšetės peržiūra)
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:getState', function(src, cb)
+    local sess = GangOrg.getTabletSession and GangOrg.getTabletSession(src) or nil
     local ctx = GangOrg.getContextBySource(src)
-    if not ctx then return cb({ ok = false, msg = 'Nepriklausai gaujai.' }) end
-    if not (ctx.perms.wildcard or ctx.perms.set['gang.open_menu']) then
-        return cb({ ok = false, msg = 'Neturi teisės atidaryti meniu.' })
+    local targetGangId = nil
+    local readOnly = false
+
+    if sess and sess.gangId then
+        targetGangId = tonumber(sess.gangId)
+        readOnly = sess.readOnly == true
+    elseif ctx then
+        targetGangId = tonumber(ctx.gangId)
+        if not (ctx.perms.wildcard or ctx.perms.set['gang.open_menu']) then
+            return cb({ ok = false, msg = 'Neturi teisės atidaryti meniu.' })
+        end
+    else
+        return cb({ ok = false, msg = 'Nepriklausai gaujai.' })
     end
 
-    local st = GangOrg.getStruct(ctx.gangId)
+    if not targetGangId then
+        return cb({ ok = false, msg = 'Gauja nerasta.' })
+    end
+
+    --- Svetima planšetė: peržiūra be narystės
+    if readOnly then
+        --- ok
+    elseif not ctx or tonumber(ctx.gangId) ~= targetGangId then
+        return cb({ ok = false, msg = 'Nepriklausai šiai gaujai.' })
+    end
+
+    local st = GangOrg.getStruct(targetGangId)
+    if not st or not st.gang then
+        return cb({ ok = false, msg = 'Gauja nerasta.' })
+    end
+
     local online = onlineMap()
     local settings = {}
     if st.gang.settings and st.gang.settings ~= '' then
@@ -44,17 +70,17 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:org:getState', function(src, c
         if okj and type(dec) == 'table' then settings = dec end
     end
 
-    -- Rangai + narių skaičius.
-    local memberRows = GangOrg.getGangMembers(ctx.gangId)
+    local memberRows = GangOrg.getGangMembers(targetGangId)
     local countByRank = {}
     local nameByCid = {}
     for _, m in ipairs(memberRows) do
-        countByRank[tonumber(m.rank_id) or 0] = (countByRank[tonumber(m.rank_id) or 0] or 0) + 1
+        local rid = tonumber(m.rank_id) or 0
+        countByRank[rid] = (countByRank[rid] or 0) + 1
         nameByCid[m.citizenid] = m.name
     end
 
     local ranks = {}
-    for _, r in ipairs(st.rankList) do
+    for _, r in ipairs(st.rankList or {}) do
         ranks[#ranks + 1] = {
             id = tonumber(r.id),
             name = r.name,
@@ -65,16 +91,16 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:org:getState', function(src, c
             icon = r.icon,
             isOwnerRank = r.is_owner_rank,
             canHaveChildren = r.can_have_children,
-            permissions = r._perms.wildcard and { '*' } or (function()
+            permissions = readOnly and {} or (r._perms.wildcard and { '*' } or (function()
                 local o = {} for k in pairs(r._perms.set) do o[#o + 1] = k end return o
-            end)(),
+            end)()),
             memberCount = countByRank[tonumber(r.id)] or 0,
         }
     end
 
-    -- Ar aktorius gali valdyti šį narį (skaičiuojama serveryje).
-    local myPriority = ctx.rank and ctx.rank.priority or -1
+    local myPriority = (not readOnly and ctx and ctx.rank and ctx.rank.priority) or -1
     local function canManage(m)
+        if readOnly then return false end
         if st.gang.owner_citizenid and tostring(m.citizenid) == tostring(st.gang.owner_citizenid) then return false end
         if ctx.isOwner or ctx.perms.wildcard then return true end
         local tr = m.rank_id and st.ranks[tonumber(m.rank_id)]
@@ -102,7 +128,7 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:org:getState', function(src, c
             priority = rank and rank.priority or 0,
             isOwner = st.gang.owner_citizenid and tostring(m.citizenid) == tostring(st.gang.owner_citizenid) or false,
             status = m.status or 'active',
-            notes = m.notes or '',
+            notes = readOnly and '' or (m.notes or ''),
             responsibilities = respRaw,
             invitedBy = m.invited_by or nil,
             invitedByName = m.invited_by and nameByCid[m.invited_by] or nil,
@@ -112,51 +138,83 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:org:getState', function(src, c
         }
     end
 
-    -- Asocijuoti.
     local associates = {}
-    for _, a in ipairs(GangOrg.getGangAssociates(ctx.gangId)) do
-        local access = {}
-        if a.permissions and a.permissions ~= '' then
-            local okj, dec = pcall(json.decode, a.permissions)
-            if okj and type(dec) == 'table' then access = dec end
+    if not readOnly then
+        for _, a in ipairs(GangOrg.getGangAssociates(targetGangId)) do
+            local access = {}
+            if a.permissions and a.permissions ~= '' then
+                local okj, dec = pcall(json.decode, a.permissions)
+                if okj and type(dec) == 'table' then access = dec end
+            end
+            associates[#associates + 1] = {
+                citizenid = a.citizenid,
+                name = a.name,
+                associateType = a.associate_type,
+                handlerCitizenid = a.handler_citizenid,
+                handlerName = a.handler_citizenid and nameByCid[a.handler_citizenid] or nil,
+                status = a.status,
+                notes = a.notes or '',
+                permissions = access,
+                online = online[a.citizenid] ~= nil,
+                serverId = online[a.citizenid] or nil,
+                joinedAt = a.joined_at,
+            }
         end
-        associates[#associates + 1] = {
-            citizenid = a.citizenid,
-            name = a.name,
-            associateType = a.associate_type,
-            handlerCitizenid = a.handler_citizenid,
-            handlerName = a.handler_citizenid and nameByCid[a.handler_citizenid] or nil,
-            status = a.status,
-            notes = a.notes or '',
-            permissions = access,
-            online = online[a.citizenid] ~= nil,
-            serverId = online[a.citizenid] or nil,
-            joinedAt = a.joined_at,
+    end
+
+    local diplomacy = { relations = {}, incomingOffers = {} }
+    if not readOnly and ctx and (ctx.perms.wildcard or ctx.perms.set['diplomacy.view']) then
+        diplomacy = GangOrg.getRelationsView(targetGangId)
+    end
+
+    local otherGangs = {}
+    if not readOnly then
+        otherGangs = MySQL.query.await('SELECT id, name, label, color_hex FROM fivempro_gangs WHERE id != ? ORDER BY name ASC', { targetGangId }) or {}
+    end
+
+    --- Užimti turfai (šios gaujos)
+    local turfRows = MySQL.query.await([[
+        SELECT turf_id, owner_name, influence, progress, heat, sales_count, total_profit
+        FROM fivempro_gang_turfs
+        WHERE owner_gang_id = ?
+        ORDER BY influence DESC, turf_id ASC
+    ]], { targetGangId }) or {}
+    local turfs = {}
+    local cellMap = Config.TurfCells or Config.Turfs or {}
+    for _, t in ipairs(turfRows) do
+        local cell = cellMap[t.turf_id]
+        turfs[#turfs + 1] = {
+            id = t.turf_id,
+            label = (cell and (cell.label or cell.name)) or t.turf_id,
+            influence = tonumber(t.influence) or 0,
+            progress = tonumber(t.progress) or 0,
+            heat = tonumber(t.heat) or 0,
+            salesCount = tonumber(t.sales_count) or 0,
+            profit = tonumber(t.total_profit) or 0,
         }
     end
 
-    -- Diplomatija (tik jei turi teisę matyti).
-    local diplomacy = { relations = {}, incomingOffers = {} }
-    if ctx.perms.wildcard or ctx.perms.set['diplomacy.view'] then
-        diplomacy = GangOrg.getRelationsView(ctx.gangId)
+    local mePerms = {}
+    local meWildcard = false
+    if not readOnly and ctx then
+        mePerms = permsToArray(ctx.perms)
+        meWildcard = ctx.perms.wildcard == true
     end
-
-    -- Kitos gaujos (santykiams siūlyti) — tik id/name/label/color.
-    local otherGangs = MySQL.query.await('SELECT id, name, label, color_hex FROM fivempro_gangs WHERE id != ? ORDER BY name ASC', { ctx.gangId }) or {}
 
     cb({
         ok = true,
         me = {
-            citizenid = ctx.member.citizenid,
-            isOwner = ctx.isOwner,
-            rankId = ctx.rank and tonumber(ctx.rank.id) or nil,
-            rankLabel = ctx.rank and ctx.rank.label or nil,
+            citizenid = (ctx and ctx.member and ctx.member.citizenid) or nil,
+            isOwner = (not readOnly) and ctx and ctx.isOwner or false,
+            rankId = (not readOnly and ctx and ctx.rank) and tonumber(ctx.rank.id) or nil,
+            rankLabel = (not readOnly and ctx and ctx.rank) and ctx.rank.label or (readOnly and 'Stebėtojas' or nil),
             priority = myPriority,
-            permissions = permsToArray(ctx.perms),
-            wildcard = ctx.perms.wildcard,
+            permissions = mePerms,
+            wildcard = meWildcard,
+            readOnly = readOnly,
         },
         gang = {
-            id = ctx.gangId,
+            id = targetGangId,
             name = st.gang.name,
             label = st.gang.label or st.gang.name,
             gangType = st.gang.gang_type,
@@ -166,13 +224,14 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:org:getState', function(src, c
             reputation = st.gang.reputation,
             createdAt = st.gang.created_at,
             ownerCitizenid = st.gang.owner_citizenid,
-            settings = settings,
+            settings = readOnly and {} or settings,
         },
         ranks = ranks,
         members = members,
         associates = associates,
         diplomacy = diplomacy,
         otherGangs = otherGangs,
+        turfs = turfs,
         catalog = {
             permissionGroups = Config.GangPermissionGroups,
             responsibilities = Config.GangResponsibilities,
@@ -188,6 +247,9 @@ end)
 
 -- ── Veiklos žurnalas (puslapiuotas + filtras) ──────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:getLogs', function(src, cb, data)
+    if GangOrg.isOrgWriteBlocked(src) then
+        return cb({ ok = false, msg = GangOrg.writeBlockedMsg() })
+    end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false }) end
     if not (ctx.perms.wildcard or ctx.perms.set['gang.view_logs']) then
@@ -228,7 +290,10 @@ end)
 
 -- ── Gaujos nustatymai (pavadinimas, spalva, emblema, settings) ─────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:saveSettings', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'saveSettings', 0.75) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if GangOrg.isOrgWriteBlocked(src) then
+        return cb({ ok = false, msg = GangOrg.writeBlockedMsg() })
+    end
+    if not GangOrg.rateLimit(src, 'saveSettings', 0.75) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['gang.edit_info']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -287,9 +352,17 @@ local function openFor(src)
 end
 
 RegisterNetEvent('mrp_gangs:server:org:requestOpen', function()
-    openFor(source)
+    local src = source
+    local sess = GangOrg.getTabletSession and GangOrg.getTabletSession(src) or nil
+    --- Svetimos / bet kurios aktyvios planšetės sesija — org meniu pagal planšetę
+    if sess and sess.gangId then
+        return TriggerClientEvent('mrp_gangs:client:org:open', src)
+    end
+    openFor(src)
 end)
 
 QBCore.Commands.Add('gangmenu', 'Atidaryti gaujos organizacijos meniu', {}, false, function(source)
+    --- /gangmenu — tik savo gauja (ne spy)
+    if GangOrg.clearTabletSession then GangOrg.clearTabletSession(source) end
     openFor(source)
 end)

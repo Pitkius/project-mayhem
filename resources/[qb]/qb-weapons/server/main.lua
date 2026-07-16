@@ -1,4 +1,9 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+local QuickReloadCooldown = {}
+
+AddEventHandler('playerDropped', function()
+    QuickReloadCooldown[source] = nil
+end)
 
 -- Functions
 
@@ -276,6 +281,14 @@ RegisterNetEvent('qb-weapons:server:requestQuickReload', function(ammoItemName, 
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
+
+    --- Debounce — apsauga nuo dvigubo R / packet race
+    local now = os.clock()
+    if QuickReloadCooldown[src] and (now - QuickReloadCooldown[src]) < 2.2 then
+        TriggerClientEvent('qb-weapons:client:QuickReloadDenied', src, '')
+        return
+    end
+    QuickReloadCooldown[src] = now
 
     ammoItemName = tostring(ammoItemName or ''):lower()
     if ammoItemName == '' or not Config.AmmoTypes[ammoItemName] then

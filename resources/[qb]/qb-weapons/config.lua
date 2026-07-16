@@ -2,7 +2,7 @@ Config = Config or {}
 
 Config.ReloadTime = 2400
 
---- true = stovint naudoti GTA native perkrovą (apkaba + garsas). Judant — custom anim + garsas.
+--- true = stovint naudoti GTA native perkrovą (tikri apkabos garsai). Judant — custom anim + trumpas native audio.
 Config.ReloadUseNativeFirst = true
 
 --- Inventoriaus perkrovos vizualinė animacija (kulkos kraunamos po animacijos).

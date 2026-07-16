@@ -212,7 +212,7 @@ function renderMissionsTab(state) {
   if (stats && state.gang) {
     stats.textContent = `Rep: ${state.gang.reputation || 0} · Tipas: ${state.gang.gang_type || "—"}`;
   }
-  if (tabMissions) tabMissions.style.display = state.hasGang ? "" : "none";
+  if (tabMissions) tabMissions.style.display = state.hasGang && !state.readOnly ? "" : "none";
   document.querySelectorAll('.tab-btn[data-tab="top"], .tab-btn[data-tab="wars"]').forEach((btn) => {
     btn.style.display = state.hasGang ? "" : "none";
   });
@@ -291,6 +291,7 @@ function activateTab(tab) {
   if (tab === "ganginfo" && !lastState?.hasGang) tab = "register";
   if (tab === "register" && lastState?.hasGang) tab = "ganginfo";
   if ((tab === "missions" || tab === "top" || tab === "wars") && !lastState?.hasGang) tab = "register";
+  if (tab === "missions" && lastState?.readOnly) tab = "ganginfo";
   activeTab = tab;
 
   document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -340,14 +341,41 @@ function buildWarnMeter(count, max) {
 
 function updatePrimaryTabs(state) {
   const hasGang = !!state.hasGang;
+  const readOnly = !!state.readOnly;
   if (tabBtnRegister) tabBtnRegister.classList.toggle("hidden", hasGang);
   if (tabBtnGangInfo) tabBtnGangInfo.classList.toggle("hidden", !hasGang);
   const btnOrg = document.getElementById("btnOpenOrg");
   const btnOrgInfo = document.getElementById("btnOpenOrgInfo");
-  if (btnOrg) btnOrg.classList.toggle("hidden", !hasGang);
-  if (btnOrgInfo) btnOrgInfo.classList.toggle("hidden", !hasGang);
+  if (btnOrg) {
+    btnOrg.classList.toggle("hidden", !hasGang);
+    btnOrg.textContent = readOnly ? "Peržiūra" : "Organizacija";
+    btnOrg.title = readOnly
+      ? "Nariai, hierarchija, turfai (tik peržiūra)"
+      : "Rangai, nariai, teisės";
+  }
+  if (btnOrgInfo) {
+    btnOrgInfo.classList.toggle("hidden", !hasGang);
+    btnOrgInfo.textContent = readOnly
+      ? "Žiūrėti hierarchiją · narius · turfus"
+      : "Gaujos valdymas · rangai ir nariai";
+  }
+  const banner = document.getElementById("tabletReadOnlyBanner");
+  if (banner) banner.classList.toggle("hidden", !readOnly);
+  const brand = document.getElementById("tabletBrandTitle");
+  if (brand) {
+    const gName = state.gang && (state.gang.label || state.gang.name);
+    brand.textContent = readOnly && gName ? `${gName} planšetė` : "Gaujų planšetė";
+  }
+  const manage = document.getElementById("gangManageActions");
+  const manageHint = document.getElementById("gangManageReadOnlyHint");
+  if (manage) manage.classList.toggle("hidden", readOnly);
+  if (manageHint) manageHint.classList.toggle("hidden", !readOnly);
+  const warnPanel = document.getElementById("gangInfoWarnPanel");
+  if (warnPanel) warnPanel.classList.toggle("hidden", readOnly);
+  if (tabMissions) tabMissions.style.display = hasGang && !readOnly ? "" : "none";
   if (activeTab === "register" && hasGang) activeTab = "ganginfo";
   if (activeTab === "ganginfo" && !hasGang) activeTab = "register";
+  if (activeTab === "missions" && readOnly) activeTab = "ganginfo";
 }
 
 function renderGangInfoTab(state) {
@@ -371,9 +399,11 @@ function renderGangInfoTab(state) {
   }
   if (swatch) swatch.style.cssText = gangSwatchStyle(gang.color_hex, gang.secondary_color_hex);
   if (stats) {
+    const ownedTurfs = (state.turfs || []).filter((t) => Number(t.owner_gang_id) === Number(gang.gang_id)).length;
     stats.innerHTML = `
       <div class="gang-info-stat"><span>Reputacija</span><strong>${gang.reputation ?? 0}</strong></div>
       <div class="gang-info-stat"><span>Nariai</span><strong>${members}</strong></div>
+      <div class="gang-info-stat"><span>Turfai</span><strong>${ownedTurfs}</strong></div>
       <div class="gang-info-stat"><span>Sukurta</span><strong class="small-strong">${safe(formatWhen(gang.created_at))}</strong></div>`;
   }
   if (warnCount) warnCount.textContent = `${wCount}/${maxW}`;
@@ -433,7 +463,7 @@ function render(state) {
   if (activeTab === "gang" && !state.hasGang) activeTab = "register";
   if (activeTab === "ganginfo" && !state.hasGang) activeTab = "register";
   if (activeTab === "register" && state.hasGang) activeTab = "ganginfo";
-  if (activeTab === "missions" && !state.hasGang) activeTab = "register";
+  if (activeTab === "missions" && (!state.hasGang || state.readOnly)) activeTab = state.hasGang ? "ganginfo" : "register";
 
   activateTab(activeTab);
 }
@@ -569,6 +599,7 @@ document.getElementById("btnRefresh").onclick = () =>
   });
 
 document.getElementById("btnCreate").onclick = () => {
+  if (lastState && lastState.readOnly) return;
   const payload = {
     name: gangName.value.trim(),
     gangType: gangType.value,
@@ -624,11 +655,13 @@ if (btnTurfRoute) {
 }
 
 document.getElementById("btnInviteMember").onclick = () => {
+  if (lastState && lastState.readOnly) return;
   post("gangs:inviteMember", { targetId: Number(document.getElementById("memberTargetId").value) || 0 }).then(() => {
     post("gangs:refresh", {}).then((res) => res && res.ok && render(mergeTabletMap(res)));
   });
 };
 document.getElementById("btnSetRank").onclick = () => {
+  if (lastState && lastState.readOnly) return;
   post("gangs:setMemberRank", {
     citizenid: document.getElementById("memberCitizenId").value.trim(),
     rank: Number(document.getElementById("memberRank").value) || 0,
@@ -637,6 +670,7 @@ document.getElementById("btnSetRank").onclick = () => {
   });
 };
 document.getElementById("btnKickMember").onclick = () => {
+  if (lastState && lastState.readOnly) return;
   post("gangs:kickMember", { citizenid: document.getElementById("memberCitizenId").value.trim() }).then(() => {
     post("gangs:refresh", {}).then((res) => res && res.ok && render(mergeTabletMap(res)));
   });
@@ -645,6 +679,7 @@ document.getElementById("btnKickMember").onclick = () => {
 const btnStartMission = document.getElementById("btnStartMission");
 if (btnStartMission) {
   btnStartMission.onclick = () => {
+    if (lastState && lastState.readOnly) return;
     const missionType = missionTypeSelect?.value;
     const turfId = missionTurfSelect?.value || "";
     if (!missionType) {

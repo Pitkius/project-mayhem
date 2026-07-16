@@ -48,7 +48,7 @@ end
 
 -- ── Sukurti rangą ──────────────────────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:createRank', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'rankCreate', 0.75) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'rankCreate', 0.75) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['ranks.create']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -91,7 +91,7 @@ end)
 
 -- ── Redaguoti rangą (pavadinimas, spalva, ikona, prioritetas) ──────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:editRank', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'rankEdit', 0.5) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'rankEdit', 0.5) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['ranks.edit']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -120,7 +120,7 @@ end)
 
 -- ── Keisti rango teises (su anti-escalation) ───────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:setRankPermissions', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'rankPerms', 0.5) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'rankPerms', 0.5) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['ranks.edit_permissions']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -145,7 +145,7 @@ end)
 
 -- ── Perkelti rangą hierarchijoje (parent) ──────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:setRankParent', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'rankParent', 0.5) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'rankParent', 0.5) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['ranks.reorder']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -179,7 +179,7 @@ end)
 
 -- ── Ištrinti rangą (tuščią; vaikai perkeliami parent'ui) ───────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:deleteRank', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'rankDelete', 0.75) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'rankDelete', 0.75) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['ranks.delete']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -210,7 +210,7 @@ end)
 
 -- ── Perkelti visus rango narius į kitą rangą ───────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:moveRankMembers', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'moveMembers', 1.0) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'moveMembers', 1.0) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['ranks.reorder'] or ctx.perms.set['members.move_rank']) then

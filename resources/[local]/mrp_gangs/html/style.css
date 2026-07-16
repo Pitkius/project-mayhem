@@ -88,6 +88,20 @@ body {
   border-bottom: 1px solid rgba(167, 139, 250, 0.12);
 }
 
+.tablet-readonly-banner {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #fde68a;
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.22), rgba(245, 158, 11, 0.08));
+  border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.tablet-readonly-banner.hidden {
+  display: none;
+}
+
 .tab-btn {
   flex: 1;
   min-width: 0;

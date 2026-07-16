@@ -30,7 +30,7 @@ end
 
 -- ── Pridėti asocijuotą civilį ──────────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:addAssociate', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'assocAdd', 0.75) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'assocAdd', 0.75) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['associates.add']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -79,7 +79,7 @@ end)
 
 -- ── Redaguoti asocijuotą (tipas, statusas, handler, pastaba, prieigos) ─
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:editAssociate', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'assocEdit', 0.5) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'assocEdit', 0.5) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['associates.edit_status']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -132,7 +132,7 @@ end)
 
 -- ── Pašalinti asocijuotą ───────────────────────────────────────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:removeAssociate', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'assocRemove', 0.5) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'assocRemove', 0.5) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['associates.remove']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end
@@ -151,7 +151,7 @@ end)
 
 -- ── Paaukštinti asocijuotą į pilną narį (per pakvietimą) ───────────
 QBCore.Functions.CreateCallback('mrp_gangs:server:org:promoteAssociate', function(src, cb, data)
-    if not GangOrg.rateLimit(src, 'assocPromote', 1.0) then return cb({ ok = false, msg = 'Per greitai.' }) end
+    if not GangOrg.rateLimit(src, 'assocPromote', 1.0) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
     local ctx = GangOrg.getContextBySource(src)
     if not ctx then return cb({ ok = false, msg = 'Ne gaujoje.' }) end
     if not (ctx.perms.wildcard or ctx.perms.set['associates.promote']) then return cb({ ok = false, msg = 'Nėra teisės.' }) end

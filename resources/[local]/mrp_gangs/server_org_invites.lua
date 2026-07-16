@@ -90,6 +90,9 @@ end
 
 RegisterNetEvent('mrp_gangs:server:org:invitePlayer', function(targetServerId, rankId)
     local src = source
+    if GangOrg.isOrgWriteBlocked(src) then
+        return TriggerClientEvent('QBCore:Notify', src, GangOrg.writeBlockedMsg(), 'error')
+    end
     if lastInviteAt[src] and (now() - lastInviteAt[src]) < 1.5 then return end
     lastInviteAt[src] = now()
     local ok, msg = GangOrg.sendInvite(src, targetServerId, rankId)
