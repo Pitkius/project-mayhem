@@ -43,7 +43,7 @@ resources/[local]/server_logs/   # FiveM webhook logai
    - Bot Permissions: `Administrator` (arba: Manage Channels, Manage Roles, Ban/Kick, Moderate, View Audit Log, Manage Messages)
 6. Atidaryk sugeneruotą URL ir pridėk botą į serverį
 
-### Instaliacija
+### Instaliacija (lokalus testas)
 
 ```bash
 cd discord-system/guardian-bot
@@ -56,6 +56,29 @@ npm start
 ```
 
 `npm run branding` nustato boto vardą **MRP** ir profilinę iš `assets/avatar.png` (MAYHEM RP logo).
+
+### 24/7 ant VPS (systemd)
+
+Botas **nėra** FiveM resource — jam reikia atskiro Node proceso. Ant VPS:
+
+1. Įsitikink, kad `discord-system/guardian-bot/.env` egzistuoja ant VPS (token ir pan.), **arba** bus nukopijuotas į `/home/fivem/.config/mrp-discord.env`.
+2. Vieną kartą:
+
+```bash
+sudo bash /home/fivem/FIVEMPROJEKTAS/scripts/setup-discord-bot.sh
+```
+
+3. Po to botas:
+   - startuoja su serveriu (`Restart=always`)
+   - automatiškai restartinamas kiekvieno `main` deploy metu
+
+Naudingos komandos:
+
+```bash
+sudo systemctl status mrp-discord
+sudo journalctl -u mrp-discord -f
+sudo systemctl restart mrp-discord
+```
 
 ### Pirmas paleidimas Discord serveryje
 

@@ -107,3 +107,10 @@ jobs:
             exit 1
           fi
           echo "[deploy] done — fivem-txadmin active"
+
+          echo "[deploy] Discord bot restart..."
+          if bash "$REPO_DIR/scripts/restart-discord-bot.sh"; then
+            echo "[deploy] mrp-discord active"
+          else
+            echo "[deploy] WARNING: Discord bot restart nepavyko (jei dar neįdiegtas: sudo bash $REPO_DIR/scripts/setup-discord-bot.sh)"
+          fi

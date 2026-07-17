@@ -9,7 +9,7 @@
 - [ ] Link scanner su VirusTotal API
 - [ ] Temp mute escalation (3 warns = timeout)
 - [ ] MongoDB adapter (alternatyva SQLite)
-- [ ] PM2 / systemd startup script
+- [x] systemd startup script (`scripts/setup-discord-bot.sh` + `mrp-discord.service`)
 - [ ] Docker compose
 
 ## server_logs (FiveM)
