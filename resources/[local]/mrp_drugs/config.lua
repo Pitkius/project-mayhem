@@ -617,8 +617,8 @@ Config.MaterialShop = {
         { name = 'pill_press', amount = 100, price = 320, slot = 10 },
         { name = 'bagging_table', amount = 80, price = 220, slot = 11 },
         -- 3D spausdinimas (atskira ginklų sistema — ne narkotikai)
+        -- printer_3d perkamas PrinterShopNPC lokacijoje
         { name = 'weapon_prototype', amount = 200, price = 380, slot = 12 },
-        { name = 'printer_3d', amount = 25, price = 7500, slot = 13 },
         { name = 'plastic', amount = 500, price = 22, slot = 14 },
         -- Žaliavos detalėms (pačios detalės — tik per 3D spausdintuvą → XP)
         { name = 'metal_scrap', amount = 500, price = 55, slot = 15 },
@@ -1016,6 +1016,36 @@ Config.WeedSupplyShopNPC = {
         color = 25,
         scale = 0.78,
         label = 'Kanapių reikmenys',
+    },
+}
+
+--- 3D spausdintuvas + spausdinimo žaliavos
+Config.PrinterShop = {
+    name = 'fivempro-printer-shop',
+    label = '3D spausdintuvas',
+    items = {
+        { name = 'printer_3d', amount = 25, price = 7500, slot = 1 },
+        { name = 'weapon_prototype', amount = 200, price = 380, slot = 2 },
+        { name = 'plastic', amount = 500, price = 22, slot = 3 },
+        { name = 'metal_scrap', amount = 500, price = 55, slot = 4 },
+    },
+}
+
+Config.PrinterShopNPC = {
+    enabled = true,
+    model = 's_m_y_construct_01',
+    coords = vector4(-95.2495, -1607.3068, 32.2838, 148.1970),
+    scenario = 'WORLD_HUMAN_CLIPBOARD',
+    label = 'Pirkti 3D spausdintuvą',
+    maxDistance = 3.5,
+    targetIcon = 'fas fa-print',
+    blip = {
+        enabled = true,
+        sprite = 566,
+        color = 5,
+        scale = 0.78,
+        shortRange = true,
+        label = '3D spausdintuvas',
     },
 }
 

@@ -6,8 +6,10 @@ local testPed = 0
 local testSupplyShopPed = 0
 local supplyShopPed = 0
 local weedSupplyShopPed = 0
+local printerShopPed = 0
 local freeDrugShopPed = 0
 local supplyShopBlip = nil
+local printerShopBlip = nil
 local productBuyerPeds = {}
 local drugNpcsSpawning = false
 local drugNpcsSpawned = false
@@ -21,7 +23,7 @@ local npcModelLoading = {}
 local npcSpawnRetryAt = {}
 local closeActiveMinigame
 
-local openMaterialShop, openWeaponPartsMenu, openWeedSupplyShop, openFreeDrugShop, openLsQuickBuyMenu, openTestMenu
+local openMaterialShop, openWeaponPartsMenu, openWeedSupplyShop, openPrinterShop, openFreeDrugShop, openLsQuickBuyMenu, openTestMenu
 
 local function nui(msg, data)
     if msg == 'open' or msg == 'darknetOpen' or msg == 'ampQuizShow' or msg == 'minigameSchedule' then
@@ -770,6 +772,16 @@ local function setupStationBlips()
         )
     end
 
+    -- 3D spausdintuvo parduotuvė
+    local printerShop = Config.PrinterShopNPC
+    if printerShop and printerShop.enabled ~= false and printerShop.coords then
+        addCfgBlip(
+            (printerShop.blip and printerShop.blip.coords) or vector3(printerShop.coords.x, printerShop.coords.y, printerShop.coords.z),
+            printerShop.blip or { enabled = true, label = printerShop.label },
+            printerShop.label
+        )
+    end
+
     -- Grybų rinkimas
     for _, field in ipairs(Config.MushroomFields or {}) do
         if field.center then
@@ -1308,6 +1320,11 @@ local function setupNpcTargetZones()
     local weedShop = Config.WeedSupplyShopNPC
     if weedShop and weedShop.enabled ~= false then
         addNpcCircleZone('mrp_drugs_weed_supply', weedShop, openWeedSupplyShop, weedShop.label)
+    end
+
+    local printerShop = Config.PrinterShopNPC
+    if printerShop and printerShop.enabled ~= false then
+        addNpcCircleZone('mrp_drugs_printer_shop', printerShop, openPrinterShop, printerShop.label)
     end
 
     local freeShop = Config.FreeDrugShopNPC

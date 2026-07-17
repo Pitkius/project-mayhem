@@ -2037,6 +2037,72 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:openWeedSupplyShop', function(
     cb({ ok = ok, reason = reason })
 end)
 
+local function registerPrinterShop()
+    if GetResourceState('qb-inventory') ~= 'started' then return false end
+    local cfg = Config.PrinterShop
+    if not cfg or not cfg.name or not cfg.items then return false end
+    local validItems = {}
+    for _, row in ipairs(cfg.items) do
+        if resolveSharedItem(row.name) then
+            validItems[#validItems + 1] = row
+        else
+            logAdmin(('PrinterShop praleidžia nežinomą item: %s'):format(tostring(row.name)))
+        end
+    end
+    if #validItems == 0 then return false end
+    local maxSlot = 0
+    for _, row in ipairs(validItems) do
+        maxSlot = math.max(maxSlot, tonumber(row.slot) or 0)
+    end
+    exports['qb-inventory']:CreateShop({
+        name = cfg.name,
+        label = cfg.label or '3D spausdintuvas',
+        slots = math.max(maxSlot, #validItems),
+        items = validItems,
+    })
+    return true
+end
+
+local function playerNearPrinterShop(src)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local p = GetEntityCoords(ped)
+    local cfg = Config.PrinterShopNPC
+    if not cfg or cfg.enabled == false or not cfg.coords then return false end
+    local c = cfg.coords
+    return #(p - vector3(c.x, c.y, c.z)) <= (cfg.maxDistance or (Config.InteractDistance or 2.5) + 3.0)
+end
+
+local function tryOpenPrinterShop(src)
+    if not playerNearPrinterShop(src) then
+        return false, 'Per toli nuo parduotuvės.'
+    end
+    if GetResourceState('qb-inventory') ~= 'started' then
+        return false, 'Inventoriaus sistema nepasiekiama.'
+    end
+    if not registerPrinterShop() then
+        return false, 'Parduotuvė nepasiekiama (prekės neįkeltos).'
+    end
+    local opened = exports['qb-inventory']:OpenShop(src, Config.PrinterShop.name)
+    if not opened then
+        return false, 'Nepavyko atidaryti parduotuvės.'
+    end
+    return true
+end
+
+RegisterNetEvent('mrp_drugs:server:openPrinterShop', function()
+    local src = source
+    local ok, reason = tryOpenPrinterShop(src)
+    if not ok then
+        TriggerClientEvent('QBCore:Notify', src, reason or 'Parduotuvė neprieinama.', 'error')
+    end
+end)
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:openPrinterShop', function(src, cb)
+    local ok, reason = tryOpenPrinterShop(src)
+    cb({ ok = ok, reason = reason })
+end)
+
 local function registerFreeDrugShop()
     if GetResourceState('qb-inventory') ~= 'started' then return false end
     local cfg = Config.FreeDrugShop
@@ -2117,6 +2183,7 @@ CreateThread(function()
     Wait(1700)
     registerWeedSupplyShop()
     registerFreeDrugShop()
+    registerPrinterShop()
 end)
 
 AddEventHandler('onResourceStart', function(res)
@@ -2125,6 +2192,7 @@ AddEventHandler('onResourceStart', function(res)
         Wait(900)
         registerWeedSupplyShop()
         registerFreeDrugShop()
+        registerPrinterShop()
     end)
 end)
 
