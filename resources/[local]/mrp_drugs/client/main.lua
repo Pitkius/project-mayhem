@@ -1055,6 +1055,16 @@ openWeedSupplyShop = function()
     end)
 end
 
+openPrinterShop = function()
+    QBCore.Functions.TriggerCallback('mrp_drugs:server:openPrinterShop', function(res)
+        if res and res.ok then
+            QBCore.Functions.Notify('Pirk 3D spausdintuvą ir žaliavas spausdinimui.', 'primary', 4500)
+            return
+        end
+        QBCore.Functions.Notify((res and res.reason) or 'Parduotuvė neprieinama.', 'error')
+    end)
+end
+
 openFreeDrugShop = function()
     QBCore.Functions.TriggerCallback('mrp_drugs:server:openFreeDrugShop', function(res)
         if res and res.ok then
@@ -1651,6 +1661,8 @@ local function spawnAllDrugNpcs()
     Wait(200)
     spawnWeedSupplyShopNpc()
     Wait(200)
+    spawnPrinterShopNpc()
+    Wait(200)
     spawnFreeDrugShopNpc()
     Wait(200)
     spawnTestSupplyShopNpc()
@@ -1671,6 +1683,11 @@ local function ensureDrugNpcsAlive()
     local weedShop = Config.WeedSupplyShopNPC
     if weedShop and weedShop.enabled ~= false and (weedSupplyShopPed == 0 or not DoesEntityExist(weedSupplyShopPed)) then
         spawnWeedSupplyShopNpc()
+    end
+
+    local printerShop = Config.PrinterShopNPC
+    if printerShop and printerShop.enabled ~= false and (printerShopPed == 0 or not DoesEntityExist(printerShopPed)) then
+        spawnPrinterShopNpc()
     end
 
     local freeShop = Config.FreeDrugShopNPC
@@ -1771,9 +1788,17 @@ AddEventHandler('onResourceStop', function(res)
         safeDeleteHubPed(weedSupplyShopPed)
         weedSupplyShopPed = 0
     end
+    if printerShopPed ~= 0 and DoesEntityExist(printerShopPed) then
+        safeDeleteHubPed(printerShopPed)
+        printerShopPed = 0
+    end
     if supplyShopBlip and DoesBlipExist(supplyShopBlip) then
         RemoveBlip(supplyShopBlip)
         supplyShopBlip = nil
+    end
+    if printerShopBlip and DoesBlipExist(printerShopBlip) then
+        RemoveBlip(printerShopBlip)
+        printerShopBlip = nil
     end
     for _, ped in pairs(productBuyerPeds) do
         if ped ~= 0 and DoesEntityExist(ped) then
