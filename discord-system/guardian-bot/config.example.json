@@ -38,7 +38,7 @@
   },
   "server": {
     "serverName": "MAYHEM RP",
-    "serverConnectAddress": "",
+    "serverConnectAddress": "76.13.249.15:30120",
     "embedColor": 5793266,
     "civilRoleId": null,
     "adminRoleIds": [],
