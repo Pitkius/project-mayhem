@@ -42,7 +42,7 @@ Config.BlipScale = 0.75
 Config.BlipLabel = 'Degalinė'
 
 Config.PricePerLiter = 7
-Config.MaxDistanceToPump = 4.5
+Config.MaxDistanceToPump = 8.0
 Config.FuelTickMs = 450
 Config.LitersPerTick = 1.2
 

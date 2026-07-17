@@ -4,6 +4,7 @@ import { appConfig } from '../config.js';
 import { trackAction } from '../antinuke/tracker.js';
 import { isWhitelisted } from '../database/sqlite.js';
 import { sendSecurityLog } from '../logs/dispatcher.js';
+import { handleGifMessage } from '../moderation/gifFilter.js';
 
 const inviteRegex = /(discord\.gg|discord\.com\/invite|discordapp\.com\/invite)/i;
 const urlRegex = /https?:\/\/[^\s]+/gi;
@@ -12,6 +13,8 @@ export default {
   name: Events.MessageCreate,
   async execute(message) {
     if (!message.guild || message.author.bot) return;
+
+    if (await handleGifMessage(message)) return;
 
     const content = message.content || '';
     const spamCfg = appConfig.spam || {};

@@ -19,7 +19,6 @@ files {
     'html/app.js',
     'html/assets/*.jpg',
     'html/assets/*.png',
-    'html/assets/*.mp3',
 }
 
 client_script 'client/main.lua'

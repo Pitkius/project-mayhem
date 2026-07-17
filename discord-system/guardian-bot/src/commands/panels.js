@@ -88,8 +88,12 @@ export default {
         content: [
           `Civilis gate pritaikytas. Rolė: ${civil}`,
           'Be Civilis mato tik **Sveiki atvykę** + **pasirink-roles**.',
+          'Civiliai **be GIF** (Embed Links išjungta).',
           `Atnaujinta kanalų: **${result.updated.length}**`,
-        ].join('\n'),
+          result.gifDeny?.roles?.length
+            ? `GIF deny rolės: ${result.gifDeny.roles.join(', ')}`
+            : null,
+        ].filter(Boolean).join('\n'),
       });
     }
   },

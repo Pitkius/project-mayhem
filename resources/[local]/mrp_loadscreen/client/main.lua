@@ -6,16 +6,9 @@ local function musicCfg()
     return Config.LoadscreenMusic or {}
 end
 
-local function sessionReady()
-    if NetworkIsSessionStarted() then return true end
-    if NetworkIsPlayerConnected(PlayerId()) then return true end
-    return false
-end
-
 local function startLoadingMusic()
     local cfg = musicCfg()
     if musicStarted or cfg.enabled == false then return end
-    if not sessionReady() then return end
 
     musicStarted = true
 
@@ -66,22 +59,27 @@ end)
 
 RegisterNUICallback('setLoadscreenMusic', function(data, cb)
     if data and data.enabled then
-        startLoadingMusic()
+        --- Mute off — leisti paleisti iš naujo
+        if not musicStarted then
+            startLoadingMusic()
+        else
+            local cfg = musicCfg()
+            local startEv = cfg.startEvent or 'FM_INTRO_START'
+            PrepareMusicEvent(startEv)
+            TriggerMusicEvent(startEv)
+        end
     else
         stopLoadingMusic()
     end
     cb('ok')
 end)
 
---- Bandome paleisti kai sesija pasiruošusi; Wait(0) kai jau ready — kuo greičiau.
+--- Paleisti vos prisijungus / loadscreen atidarius
 CreateThread(function()
     local deadline = GetGameTimer() + 120000
-    while not closed and GetGameTimer() < deadline do
-        if not musicStarted then
-            startLoadingMusic()
-        end
-        if musicStarted then return end
-        Wait(sessionReady() and 0 or 50)
+    while not closed and not musicStarted and GetGameTimer() < deadline do
+        startLoadingMusic()
+        Wait(150)
     end
 end)
 

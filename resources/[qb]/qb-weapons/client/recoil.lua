@@ -147,20 +147,26 @@ local function applyVerticalRecoil(ped, weap)
 
     applyNoBloom(weap)
 
+    --- Mažas ekrano shake (ne bloom — kulka vis tiek į taikiklį)
+    local camShake = tonumber(Config.RecoilCamShake) or 0.0
+    if camShake > 0.0 then
+        ShakeGameplayCam('SMALL_EXPLOSION_SHAKE', camShake)
+    end
+
     local tv = 0.0
     if GetFollowPedCamViewMode() ~= 4 then
         repeat
             Wait(0)
             local p = GetGameplayCamRelativePitch()
-            SetGameplayCamRelativePitch(p + 0.16, 0.28)
-            tv = tv + 0.16
+            SetGameplayCamRelativePitch(p + 0.18, 0.32)
+            tv = tv + 0.18
         until tv >= amount
     else
         repeat
             Wait(0)
             local p = GetGameplayCamRelativePitch()
-            SetGameplayCamRelativePitch(p + 0.85, 1.45)
-            tv = tv + 0.85
+            SetGameplayCamRelativePitch(p + 0.95, 1.55)
+            tv = tv + 0.95
         until tv >= amount
     end
 

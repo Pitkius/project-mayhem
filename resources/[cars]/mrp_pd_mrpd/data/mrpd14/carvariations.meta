@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <CVehicleModelInfoVariation>
 
   <variationData>
@@ -30,7 +30,7 @@
         </Probabilities>
       </plateProbabilities>
       <lightSettings value="1"/>
-      <sirenSettings value="445069"/>
+      <sirenSettings value="9714"/>
     </Item>
   </variationData>
 </CVehicleModelInfoVariation>

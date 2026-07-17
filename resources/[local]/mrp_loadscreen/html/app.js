@@ -64,8 +64,6 @@ const TIPS = [
 
 const MUSIC = {
   enabled: true,
-  volume: 0.28,
-  track: 'assets/gta_theme.mp3',
   label: 'Mayhem Roleplay',
 };
 
@@ -79,108 +77,40 @@ function nuiPost(name, data = {}) {
 }
 
 function initLoadscreenMusic() {
-  const audio = document.getElementById('themeAudio');
   const toggle = document.getElementById('musicToggle');
-  const volume = document.getElementById('musicVolume');
   const label = document.getElementById('musicLabel');
-  if (!audio || !toggle || !volume) return;
+  if (!toggle) return;
 
   let muted = false;
-  let hasFile = false;
-  let nativeStarted = false;
-  let nuiStarted = false;
 
-  if (label) label.textContent = MUSIC.label || 'GTA V — Los Santos';
-  volume.value = String(Math.round((MUSIC.volume || 0.28) * 100));
-  audio.volume = MUSIC.volume || 0.28;
-  if (MUSIC.track && !audio.getAttribute('src')) {
-    audio.src = MUSIC.track;
-    audio.load();
-  }
+  if (label) label.textContent = MUSIC.label || 'Mayhem Roleplay';
 
   const syncUi = () => {
     toggle.classList.toggle('is-muted', muted);
     toggle.textContent = muted ? '🔇' : '♪';
-    audio.muted = muted;
-  };
-
-  const startNativeMusic = () => {
-    if (nativeStarted) return;
-    nativeStarted = true;
-    nuiPost('loadscreenReady');
-    const retry = setInterval(() => {
-      nuiPost('loadscreenReady');
-    }, 200);
-    setTimeout(() => clearInterval(retry), 60000);
   };
 
   const setNativeMusic = (enabled) => {
-    if (enabled) {
-      startNativeMusic();
-      nuiPost('setLoadscreenMusic', { enabled: true });
-      return;
-    }
-    nuiPost('setLoadscreenMusic', { enabled: false });
-  };
-
-  const playNuiAudio = () => {
-    if (muted || !MUSIC.enabled) return;
-    const src = MUSIC.track || audio.getAttribute('src') || 'assets/gta_theme.mp3';
-    if (!audio.getAttribute('src') || audio.getAttribute('src') !== src) {
-      audio.src = src;
-      audio.load();
-    }
-    audio.volume = Number(volume.value) / 100 || MUSIC.volume || 0.28;
-    audio.play().then(() => {
-      hasFile = true;
-      nuiStarted = true;
-    }).catch(() => {
-      hasFile = false;
-      nuiStarted = false;
-    });
-  };
-
-  const startAllMusic = () => {
-    if (muted) return;
-    setNativeMusic(true);
-    playNuiAudio();
+    nuiPost('setLoadscreenMusic', { enabled: !!enabled });
+    if (enabled) nuiPost('loadscreenReady');
   };
 
   toggle.addEventListener('click', () => {
     muted = !muted;
     syncUi();
-    if (muted) {
-      audio.pause();
-      setNativeMusic(false);
-      nuiStarted = false;
-      return;
-    }
-    startAllMusic();
-  });
-
-  volume.addEventListener('input', () => {
-    audio.volume = Number(volume.value) / 100;
-    if (audio.volume <= 0) {
-      muted = true;
-      syncUi();
-      audio.pause();
-      setNativeMusic(false);
-      nuiStarted = false;
-      return;
-    }
-    if (muted) {
-      muted = false;
-      syncUi();
-    }
-    startAllMusic();
-    if (nuiStarted && hasFile) audio.play().catch(() => {});
+    setNativeMusic(!muted);
   });
 
   syncUi();
-  startAllMusic();
-  setInterval(() => {
-    if (!muted) startAllMusic();
-  }, 400);
+  // Paleisti seną GTA intro vos atsiradus loadscreen
+  setNativeMusic(true);
+  let pings = 0;
+  const keepAlive = setInterval(() => {
+    if (muted) return;
+    nuiPost('loadscreenReady');
+    pings += 1;
+    if (pings >= 40) clearInterval(keepAlive);
+  }, 250);
 }
 
 const slidesEl = document.getElementById('slides');

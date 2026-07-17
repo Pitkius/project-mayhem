@@ -5,7 +5,7 @@ lua54 'yes'
 name 'mrp_pd_mrpd'
 author 'MRP'
 description 'Mission Row PD vehicle pack (MRPD 1-16)'
-version '1.0.2'
+version '1.1.0'
 
 files {
     'data/mrpd1/carcols.meta',

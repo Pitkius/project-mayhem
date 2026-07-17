@@ -10,7 +10,7 @@ Config = {}
     · mrp_dealership   — policijos salonas (per garage marker meniu)
     · mrp_duty_locker  — uniformos (lockers / locker2)
     · mrp_bossmenu     — vadovybės meniu (boss laptop, jei įjungta)
-    · mrp_npcshops     — supply (darbo reikmenys)
+    · mrp_npcshops     — supply (darbo reikmenys) + PD maistas
     · qb-inventory     — armory + stashes (stashId unikalus DB)
     · mrp_siren_controller — F6 sirenos (Config.FleetVehicles)
 
@@ -19,9 +19,11 @@ Config = {}
     · garage    — [E] garažas + transporto pirkimas
     · locker    — [E] tarnybinė apranga (mrp_duty_locker)
     · armory    — [E] ARAS / ginklinė (divisions + minGrade)
-    · stash     — [F2] sandėlis (divisions + minGrade)
-    · supply    — [E] inventorius (mrp_npcshops)
-    · craft     — ginklų gamyba (config_pd_craft.lua)
+    · stash     — [F2] sandėlis (mėlynas trikampis)
+    · supply    — [E] inventorius (žalias trikampis)
+    · food      — [E] maisto pirkimas (žalias trikampis)
+    · armory    — [E] ARAS ginklų pirkimas (žalias trikampis)
+    · craft     — ginklų gamyba (oranžinis trikampis)
 
   Koordinates: /coords arba txAdmin — atnaujink čia, tada restart mrp_ltpd.
 ]]
@@ -86,6 +88,8 @@ Config.Permissions = {
 }
 
 --- Šviesų ir sirenos valdymas (masinoje): režimas per entity statebag (sinchr. visiems žaidėjams)
+--- Fleet mašinos su carcols Sirens → native SetVehicleSiren (ne prop lightbar).
+--- Prop / script flash → tik civilinė TP su pd_emergency_kit, arba FleetVehicles.emergencyLights='script'.
 Config.EmergencyVehicle = {
     --- qb-menu komandos (tik adminams – žaidėjai naudoja itemą)
     sirenMenuCommand = 'pdsirenai',
@@ -225,35 +229,42 @@ Config.ShowHelipadBlip = false
 Config.HelipadBlipSprite = 43
 Config.HelipadBlipScale = 0.9
 
---- 3D markeriai ant žemės (MRPD / Sandy) — ne blipai; žr. client/pd_markers.lua
+--- 3D markeriai ant žemės (MRPD / Sandy) — trikampiai inventory taškams
 Config.ShowPd3DMarkers = true
-Config.PdMarkerDrawDistance = 32.0
+Config.PdMarkerDrawDistance = 14.0
+--- Kai markeris matomas, bet ne interact: ~20 FPS (mažina CPU vs Wait(0))
 Config.PdMarkerNearTickMs = 50
+--- Max DrawMarker per kadrą (arti lieka interact; tolimesni praleidžiami)
+Config.PdMarkerMaxDraw = 4
 Config.PdMarkerZOffset = 0.02
---- Sandėliai: mažas trikampis (DrawMarker tipas 2)
+--- Trikampis (DrawMarker tipas 2): žalia=parduotuvė, mėlyna=sandėlis, oranžinė=craft
+Config.PdTriangleMarkerType = 2
+Config.PdTriangleMarkerScale = { x = 0.38, y = 0.38, z = 0.38 }
 Config.PdStashMarkerType = 2
-Config.PdStashMarkerScale = { x = 0.34, y = 0.34, z = 0.34 }
-Config.PdStashMarkerDrawDistance = 32.0
+Config.PdStashMarkerScale = { x = 0.38, y = 0.38, z = 0.38 }
+Config.PdStashMarkerDrawDistance = 12.0
+Config.PdInventoryMarkerDrawDistance = 12.0
 Config.PdMarkerTextDistance = 2.2
 
---- Tarnybinis transportas (MRPD pack — žr. server spawnFleet)
+--- Tarnybinis transportas (perkurta iš Animuotu + undercover + MPRPD RAR)
+--- emergencyLights: 'native' = mašinos carcols/extras šviesos | 'script' = prop lightbar (tik be savų lempų)
 Config.FleetVehicles = {
-  { model = 'mrpd1', label = 'MRPD 1 (undercover)' },
-  { model = 'mrpd2', label = 'MRPD 2 (undercover)' },
-  { model = 'mrpd3', label = 'MRPD 3 (undercover)' },
-  { model = 'mrpd4', label = 'MRPD 4 (undercover)' },
-  { model = 'mrpd5', label = 'MRPD 5 (animuotas)' },
-  { model = 'mrpd6', label = 'MRPD 6 (animuotas)' },
-  { model = 'mrpd7', label = 'MRPD 7 (animuotas)' },
-  { model = 'mrpd8', label = 'MRPD 8 (animuotas)' },
-  { model = 'mrpd9', label = 'MRPD 9 (animuotas)' },
-  { model = 'mrpd10', label = 'MRPD 10 (animuotas)' },
-  { model = 'mrpd11', label = 'MRPD 11 (animuotas)' },
-  { model = 'mrpd12', label = 'MRPD 12 (animuotas)' },
-  { model = 'mrpd13', label = 'MRPD 13 — Audi RS6 Avant' },
-  { model = 'mrpd14', label = 'MRPD 14 — Kia Stinger' },
-  { model = 'mrpd15', label = 'MRPD 15 — Hyundai' },
-  { model = 'mrpd16', label = 'MRPD 16 — Alfa Romeo' },
+  { model = 'mrpd1', label = 'MRPD 1 (undercover)', emergencyLights = 'native' },
+  { model = 'mrpd2', label = 'MRPD 2 (undercover)', emergencyLights = 'native' },
+  { model = 'mrpd3', label = 'MRPD 3 (undercover)', emergencyLights = 'native' },
+  { model = 'mrpd4', label = 'MRPD 4 (undercover)', emergencyLights = 'native' },
+  { model = 'mrpd5', label = 'MRPD 5 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd6', label = 'MRPD 6 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd7', label = 'MRPD 7 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd8', label = 'MRPD 8 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd9', label = 'MRPD 9 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd10', label = 'MRPD 10 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd11', label = 'MRPD 11 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd12', label = 'MRPD 12 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd13', label = 'MRPD 13 — Audi RS6 Avant', emergencyLights = 'native' },
+  { model = 'mrpd14', label = 'MRPD 14 — Kia Stinger', emergencyLights = 'native' },
+  { model = 'mrpd15', label = 'MRPD 15 — Hyundai', emergencyLights = 'native' },
+  { model = 'mrpd16', label = 'MRPD 16 — Alfa Romeo', emergencyLights = 'native' },
 }
 
 --- Sraigtasparniai (stogas / helipadas) – spawn ant `heliGarage.spawn`
@@ -320,6 +331,12 @@ Config.Stations = {
         supply = {
             coords = vector3(462.23, -981.12, 30.68),
             label = 'PD ginklinė / inventorius',
+        },
+        --- Maisto pirkimas (pigiau nei 24/7) — stogas Z≈42
+        foodSupply = {
+            coords = vector3(459.1157, -980.6447, 42.2494),
+            heading = 84.6649,
+            label = 'PD maisto parduotuvė',
         },
         --- ARAS ginklų pirkimas (ARAS padalinys + vadas/pavaduotojas)
         armory = {
@@ -449,6 +466,17 @@ Config.Stations = {
                 maxweight = 5000000,
                 slots = 120,
             },
+            --- Maisto sandėlis (stogas Z≈42)
+            {
+                coords = vector3(462.9796, -975.2534, 42.2494),
+                heading = 272.3348,
+                stashId = 'ltpd_stash_food_ls',
+                label = 'PD maisto sandėlis',
+                minGrade = 0,
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
+                maxweight = 1500000,
+                slots = 50,
+            },
         },
         --- Stogo helipadas — Config.FleetHelicopters spawn
         heliGarage = {
@@ -555,7 +583,7 @@ Config.PdDoorToggleReach = 6.0
 --- Spynos ikonos Z poslinkis nuo durų slab koord. (standartinės durys)
 Config.PdDoorLockIconZOffset = 0.38
 --- Spynos ikona rodoma tik arti durų; arti piešiama kiekvieną kadrą, kad nemirgėtų.
-Config.PdDoorLockIconDrawDistance = 10.0
+Config.PdDoorLockIconDrawDistance = 5.5
 --- false = tik E mygtukas; true = papildomai qb-target (numatyta: tik E)
 Config.PdDoorUseQbTarget = false
 Config.PdDoorGroups = {

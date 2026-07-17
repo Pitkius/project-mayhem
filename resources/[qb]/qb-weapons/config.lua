@@ -43,19 +43,21 @@ Config.DefaultClipCapacityByAmmoType = {
   kulka visada skrenda į taikiklį; recoil tik pakelia ginklą/kamerą po šūvio.
   RecoilMultiplier – bendras vertikalus stiprinimas.
   RecoilBaseScale – papildomas daugiklis bazinėms reikšmėms (recoils lentelė).
-  RecoilShakeAmplitude – GTA native drebulė (0 = be bloom/drebėjimo; kilimą daro skriptas).
+  RecoilShakeAmplitude – GTA native ginklo drebulė (maža reikšmė = švelnus shake).
+  RecoilCamShake – ShakeGameplayCam intensyvumas po šūvio (0 = išjungta).
   RecoilHorizontalSpread – šoninis atsitiktinis kick (0 = nėra nukrypimo).
   RecoilPitchVariance – vertikalus jitter (0 = tik švarus kilimas).
   ZeroWeaponBloom – SetWeaponAccuracySpread(0) kiekvienam ginklui.
 ]]
-Config.RecoilMultiplier = 8.4
-Config.RecoilBaseScale = 1.08
-Config.RecoilShakeAmplitude = 0.0
+Config.RecoilMultiplier = 11.2
+Config.RecoilBaseScale = 1.22
+Config.RecoilShakeAmplitude = 0.22
+Config.RecoilCamShake = 0.055
 Config.RecoilHorizontalSpread = 0.0
 Config.RecoilPitchVariance = 0.0
 Config.ZeroWeaponBloom = true
 --- Jei ginklas recoils lentelėje turi 0 arba beveik 0 – vis tiek šiek tiek spyris (ne „lazeris“).
-Config.RecoilMinimumBase = 0.22
+Config.RecoilMinimumBase = 0.26
 
 --[[
   Ginklo žalos daugiklis (client/damage.lua → SetWeaponDamageModifier).

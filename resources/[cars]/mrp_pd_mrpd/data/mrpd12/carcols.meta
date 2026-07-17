@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <CVehicleModelInfoVarGlobal>
   <Lights>
     <Item>
@@ -142,8 +142,8 @@
     </Lights>
   <Sirens>
 	<Item>
-      <id value="9412"/>
-      <name>mrpd4</name>
+      <id value="9712"/>
+      <name>gcpd23</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="100.00000000"/>
       <lightFalloffExponent value="100.00000000"/>

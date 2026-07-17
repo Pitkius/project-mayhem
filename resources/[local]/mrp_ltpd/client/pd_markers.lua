@@ -1,5 +1,6 @@
 --- PD 3D markeriai ant žemės — registruojami iš Config.Stations (mrp_ltpd/config.lua).
---- Interakcijos: duty/garage/locker [E] · stash [F2] · supply [E]
+--- Inventory: supply/food/armory = žalias trikampis · stash = mėlynas · craft = oranžinis
+--- Interakcijos: duty/garage/locker [E] · stash [F2] · supply/food [E]
 --- Komanda debug: /pdmarkers
 local QBCore = exports['qb-core']:GetCoreObject()
 
@@ -8,33 +9,45 @@ local lastInteractMs = 0
 local markersReady = false
 local forceAccessRefresh = false
 
+--- Parduotuvės žalia · sandėliai mėlyna · craft oranžinė
 local COLORS = {
     garage = { 72, 160, 220, 200 },
-    stash = { 255, 180, 72, 200 },
+    stash = { 56, 140, 255, 220 },
     locker = { 167, 139, 250, 210 },
-    armory = { 239, 68, 68, 210 },
-    supply = { 34, 197, 94, 200 },
-    craft = { 251, 191, 36, 210 },
+    armory = { 46, 204, 90, 220 },
+    supply = { 46, 204, 90, 220 },
+    food = { 46, 204, 90, 220 },
+    craft = { 255, 140, 20, 220 },
     duty = { 250, 204, 21, 200 },
+}
+
+local INVENTORY_TRIANGLE = {
+    stash = true,
+    supply = true,
+    food = true,
+    armory = true,
+    craft = true,
 }
 
 local SCALES = {
     garage = { x = 2.6, y = 2.6, z = 0.28 },
-    stash = nil, -- naudoja Config.PdStashMarkerScale
+    stash = nil,
     locker = { x = 1.5, y = 1.5, z = 0.24 },
-    armory = { x = 1.5, y = 1.5, z = 0.24 },
-    supply = { x = 1.35, y = 1.35, z = 0.22 },
-    craft = { x = 1.55, y = 1.55, z = 0.24 },
+    armory = nil,
+    supply = nil,
+    food = nil,
+    craft = nil,
     duty = { x = 1.5, y = 1.5, z = 0.24 },
 }
 
 local MARKER_TYPES = {
     garage = 36,
-    stash = nil, -- naudoja Config.PdStashMarkerType
+    stash = nil,
     locker = 27,
-    armory = 27,
-    supply = 27,
-    craft = 27,
+    armory = nil,
+    supply = nil,
+    food = nil,
+    craft = nil,
     duty = 27,
 }
 
@@ -44,6 +57,7 @@ local USE_RADIUS = {
     locker = 2.0,
     armory = 2.0,
     supply = 2.5,
+    food = 2.5,
     craft = 2.0,
     duty = 2.0,
 }
@@ -92,25 +106,29 @@ local function markerVisible(zone, accessCache, zoneIndex)
     return true
 end
 
+local function isInventoryTriangle(kind)
+    return INVENTORY_TRIANGLE[kind] == true
+end
+
 local function markerTypeFor(kind)
-    if kind == 'stash' then
-        return Config.PdStashMarkerType or 2
+    if isInventoryTriangle(kind) then
+        return Config.PdTriangleMarkerType or Config.PdStashMarkerType or 2
     end
     return MARKER_TYPES[kind] or 27
 end
 
 local function markerScaleFor(kind)
-    if kind == 'stash' then
-        return Config.PdStashMarkerScale or { x = 0.34, y = 0.34, z = 0.34 }
+    if isInventoryTriangle(kind) then
+        return Config.PdTriangleMarkerScale or Config.PdStashMarkerScale or { x = 0.38, y = 0.38, z = 0.38 }
     end
     return SCALES[kind] or { x = 1.35, y = 1.35, z = 0.22 }
 end
 
 local function drawDistanceFor(kind)
-    if kind == 'stash' then
-        return Config.PdStashMarkerDrawDistance or 22.0
+    if isInventoryTriangle(kind) then
+        return Config.PdInventoryMarkerDrawDistance or Config.PdStashMarkerDrawDistance or 12.0
     end
-    return Config.PdMarkerDrawDistance or 32.0
+    return Config.PdMarkerDrawDistance or 14.0
 end
 
 local function textDistanceFor(kind)
@@ -166,6 +184,17 @@ local function registerAllPdMarkers()
                 label = st.supply.label or 'PD inventorius',
                 onPress = function()
                     TriggerServerEvent('mrp_npcshops:server:openJobSupply', jobName(), stationId)
+                end,
+            })
+        end
+
+        if st.foodSupply and st.foodSupply.coords then
+            RegisterPdGroundMarker({
+                coords = st.foodSupply.coords,
+                kind = 'food',
+                label = st.foodSupply.label or 'PD maisto parduotuvė',
+                onPress = function()
+                    TriggerServerEvent('mrp_npcshops:server:openPoliceFoodShop', stationId)
                 end,
             })
         end
@@ -363,16 +392,21 @@ local function drawMarkerAt(pos, kind)
     if mType == 36 then
         zOff = 0.35
     elseif mType == 2 then
-        zOff = 0.06
+        zOff = 0.08
+    end
+    --- Tipas 2 (trikampis): šiek tiek pasuktas į viršų, kad matytųsi kaip 3D blipas
+    local rx, ry, rz = 0.0, 0.0, 0.0
+    if mType == 2 then
+        rx, ry = 180.0, 0.0
     end
     DrawMarker(
         mType,
         pos.x, pos.y, pos.z + zOff,
         0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0,
+        rx, ry, rz,
         sc.x, sc.y, sc.z,
         col[1], col[2], col[3], col[4],
-        false, false, 2, false, nil, nil, false
+        false, true, 2, false, nil, nil, false
     )
 end
 
@@ -411,9 +445,11 @@ CreateThread(function()
         local pcoords = GetEntityCoords(ped)
         local nearInteract = false
         local anyDrawn = false
-        local maxDrawDist = Config.PdMarkerDrawDistance or 32.0
+        local maxDrawDist = Config.PdMarkerDrawDistance or 14.0
+        local maxDraw = math.max(1, tonumber(Config.PdMarkerMaxDraw) or 4)
         local closestInteract = nil
         local closestInteractDist = nil
+        local drawCandidates = {}
 
         if IsNuiFocused() then
             Wait(400)
@@ -426,13 +462,14 @@ CreateThread(function()
             end
 
             local dist = #(pcoords - zone.coords)
-            local drawDist = zone.kind == 'stash' and (Config.PdStashMarkerDrawDistance or 22.0) or maxDrawDist
+            local drawDist = isInventoryTriangle(zone.kind)
+                and (Config.PdInventoryMarkerDrawDistance or Config.PdStashMarkerDrawDistance or 12.0)
+                or maxDrawDist
             if dist >= drawDist then
                 goto continue_zone
             end
 
-            anyDrawn = true
-            drawMarkerAt(zone.coords, zone.kind)
+            drawCandidates[#drawCandidates + 1] = { zone = zone, dist = dist }
 
             local useR = USE_RADIUS[zone.kind] or 2.0
             local textR = textDistanceFor(zone.kind)
@@ -454,39 +491,58 @@ CreateThread(function()
             ::continue_zone::
         end
 
+        if #drawCandidates > 1 then
+            table.sort(drawCandidates, function(a, b) return a.dist < b.dist end)
+        end
+        for di = 1, math.min(maxDraw, #drawCandidates) do
+            local c = drawCandidates[di]
+            drawMarkerAt(c.zone.coords, c.zone.kind)
+            anyDrawn = true
+        end
+
         if closestInteract and closestInteract.onPress then
             nearInteract = true
             local zone = closestInteract
             if zone.requireDutyBlock then
-                QBCore.Functions.DrawText3D(
-                    zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
-                    'Tik tarnyboje (policija)'
-                )
+                if zone.kind ~= 'stash' then
+                    QBCore.Functions.DrawText3D(
+                        zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
+                        'Tik tarnyboje (policija)'
+                    )
+                end
             else
-                local hint
                 local pressed
                 if zone.kind == 'stash' then
-                    hint = stashHint(zone.label)
+                    --- Be 3D teksto — mėlynas trikampis; atidarymas [F2]
                     enableStashOpenControl()
                     pressed = isStashOpenPressed()
                 else
                     EnableControlAction(0, 38, true)
-                    hint = ('[E] %s'):format(zone.label)
+                    QBCore.Functions.DrawText3D(
+                        zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
+                        ('[E] %s'):format(zone.label)
+                    )
                     pressed = IsControlJustPressed(0, 38)
                 end
-                QBCore.Functions.DrawText3D(
-                    zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
-                    hint
-                )
                 if pressed and (GetGameTimer() - lastInteractMs) > 450 then
                     lastInteractMs = GetGameTimer()
                     if zone.onPress then zone.onPress() end
                 end
             end
+        elseif closestInteract and closestInteract.requireDutyBlock and closestInteract.kind ~= 'stash' then
+            nearInteract = true
+            QBCore.Functions.DrawText3D(
+                closestInteract.coords.x, closestInteract.coords.y, closestInteract.coords.z + 0.55,
+                'Tik tarnyboje (policija)'
+            )
+        elseif closestInteract and closestInteract.requireDutyBlock and closestInteract.kind == 'stash' then
+            nearInteract = true
         end
 
-        if nearInteract or anyDrawn then
+        if nearInteract then
             sleep = 0
+        elseif anyDrawn then
+            sleep = math.max(25, tonumber(Config.PdMarkerNearTickMs) or 50)
         else
             sleep = 800
         end

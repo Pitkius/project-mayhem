@@ -1,8 +1,8 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>  
+<?xml version="1.0" encoding="UTF-8"?>  
 <CVehicleModelInfoVarGlobal>
 	<Sirens> <!-- Template made by McGinlay -->
 	<Item>
-      <id value="134"/>
+      <id value="9713"/>
       <name>mrpd13</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="100.00000000"/>

@@ -101,12 +101,35 @@ local function modelIsFleetCar(hash)
     return FLEET_CAR_HASHES[hash] == true
 end
 
+--- Fleet entry: emergencyLights = 'native' | 'script' | nil (auto)
+local FLEET_LIGHT_MODE = {}
+local function rebuildFleetLightModes()
+    FLEET_LIGHT_MODE = {}
+    for _, v in ipairs(Config.FleetVehicles or {}) do
+        if v and v.model then
+            local mode = tostring(v.emergencyLights or v.lights or 'native'):lower()
+            if mode ~= 'script' and mode ~= 'kit' then mode = 'native' end
+            if mode == 'kit' then mode = 'script' end
+            FLEET_LIGHT_MODE[joaat(v.model)] = mode
+        end
+    end
+end
+rebuildFleetLightModes()
+
+local function fleetLightMode(hash)
+    return FLEET_LIGHT_MODE[hash] or 'native'
+end
+
+--- Ar mašina turi savas PD šviesas (carcols sirens / extras) — naudoti jas, ne prop lightbar.
 local function vehicleSupportsNativeEmergency(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     local hash = GetEntityModel(vehicle)
-    -- MRPD addon automobiliai turi carcols, bet SetVehicleSiren dažnai neveikia — šviesas piešia scriptas.
-    if modelIsFleetCar(hash) then return false end
-    -- Kai kuriuose artefaktuose native neeksportuotas – nekrentam į nil call.
+
+    -- Fleet: default native (mrpd* turi carcols Sirens). Tik explicit 'script' = prop lempos.
+    if modelIsFleetCar(hash) then
+        return fleetLightMode(hash) ~= 'script'
+    end
+
     for _, name in ipairs({ 'IsThisModelEmergencyVehicle', 'IsThisModelAnEmergencyVehicle' }) do
         local fn = rawget(_G, name)
         if type(fn) == 'function' then
@@ -117,8 +140,14 @@ local function vehicleSupportsNativeEmergency(vehicle)
     if Ec.trustVehicleClassEmergency == true and GetVehicleClass(vehicle) == 18 then
         return true
     end
-    return modelIsFleet(hash) and not modelIsFleetCar(hash)
+    -- Helikopteriai / kiti fleet be car
+    if modelIsFleet(hash) then return true end
+    return false
 end
+
+--- Script lightbar / DrawLight TIK civilinei TP su kit, arba fleet su emergencyLights='script'.
+--- (apibrėžiama po readVehicleStateBag)
+local vehicleUsesScriptFlash
 
 local function getDriverVehicleLocal()
     local ped = PlayerPedId()
@@ -196,11 +225,17 @@ local function vehicleCanUseSirenMenu(vehicle)
     return kit == true
 end
 
-local function vehicleUsesScriptFlash(vehicle)
+vehicleUsesScriptFlash = function(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
-    if modelIsFleetCar(GetEntityModel(vehicle)) then return true end
+    local hash = GetEntityModel(vehicle)
+    if modelIsFleetCar(hash) and fleetLightMode(hash) == 'script' then
+        return true
+    end
     local _, kit = readVehicleStateBag(vehicle)
-    return kit == true and not vehicleSupportsNativeEmergency(vehicle)
+    if kit == true and not vehicleSupportsNativeEmergency(vehicle) then
+        return true
+    end
+    return false
 end
 
 local function loadModel(hash)
@@ -242,8 +277,15 @@ end
 
 local function ensureLightbar(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    --- Prop lightbar tik kai script flash (civilinis kit / explicit script fleet)
+    if not vehicleUsesScriptFlash(vehicle) then
+        removeLightbar(vehicle)
+        return
+    end
     local _, kit = readVehicleStateBag(vehicle)
-    if vehicleSupportsNativeEmergency(vehicle) or kit ~= true then
+    local hash = GetEntityModel(vehicle)
+    local forceScript = modelIsFleetCar(hash) and fleetLightMode(hash) == 'script'
+    if not forceScript and kit ~= true then
         removeLightbar(vehicle)
         return
     end
@@ -401,10 +443,14 @@ end
 
 local function syncKitVisuals(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    local _, kit = readVehicleStateBag(vehicle)
-    if kit and not vehicleSupportsNativeEmergency(vehicle) then
+    if vehicleUsesScriptFlash(vehicle) then
         ensureLightbar(vehicle)
-        syncKitPerformance(vehicle)
+        local _, kit = readVehicleStateBag(vehicle)
+        if kit then
+            syncKitPerformance(vehicle)
+        else
+            removeKitPerformance(vehicle)
+        end
     else
         removeLightbar(vehicle)
         removeKitPerformance(vehicle)
@@ -730,17 +776,23 @@ CreateThread(function()
     end
 end)
 
---- Grąžina lightbar extras ant visų netoliese esančių PD fleet mašinų (net jei jos jau buvo išleistos su blogais mods).
+--- Grąžina lightbar extras ant netoliese esančių PD fleet mašinų (tik tarnyboje / kai TRACKED).
 CreateThread(function()
     while true do
-        Wait(2800)
-        local ped = PlayerPedId()
-        local pCoords = GetEntityCoords(ped)
-        local pool = GetGamePool('CVehicle')
-        for i = 1, #pool do
-            local veh = pool[i]
-            if DoesEntityExist(veh) and #(GetEntityCoords(veh) - pCoords) <= 140.0 then
-                enableFleetLightbarExtras(veh)
+        local onDuty = emergencyOnDuty()
+        local tracking = next(TRACKED) ~= nil
+        if not onDuty and not tracking then
+            Wait(8000)
+        else
+            Wait(onDuty and 9000 or 12000)
+            local ped = PlayerPedId()
+            local pCoords = GetEntityCoords(ped)
+            local pool = GetGamePool('CVehicle')
+            for i = 1, #pool do
+                local veh = pool[i]
+                if DoesEntityExist(veh) and #(GetEntityCoords(veh) - pCoords) <= 90.0 then
+                    enableFleetLightbarExtras(veh)
+                end
             end
         end
     end

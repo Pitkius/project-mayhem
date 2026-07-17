@@ -96,8 +96,6 @@ local function drawPdDoorLock(worldX, worldY, worldZ, locked)
     local r, g, b = 78, 220, 118
     if locked then r, g, b = 245, 72, 72 end
     SetDrawOrigin(worldX, worldY, worldZ, 0)
-    -- Švelnus glow + aiški būsenos spalva: raudona užrakinta, žalia atrakinta.
-    DrawSprite(PD_LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, LOCK_ICON_W * 1.42, LOCK_ICON_H * 1.42, 0.0, r, g, b, 45)
     DrawSprite(PD_LOCK_TX, locked and 'lock_closed' or 'lock_open', 0.0, 0.0, LOCK_ICON_W, LOCK_ICON_H, 0.0, r, g, b, 245)
     ClearDrawOrigin()
 end

@@ -2,7 +2,13 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local function registerJobShops()
     if GetResourceState('qb-inventory') ~= 'started' then return end
-    for _, cfg in ipairs({ Config.PoliceSupplyShop, Config.EmsSupplyShop, Config.RangerSupplyShop, Config.AroWeaponSupplyShop }) do
+    for _, cfg in ipairs({
+        Config.PoliceSupplyShop,
+        Config.PoliceFoodShop,
+        Config.EmsSupplyShop,
+        Config.RangerSupplyShop,
+        Config.AroWeaponSupplyShop,
+    }) do
         if cfg and cfg.name and cfg.items then
             exports['qb-inventory']:CreateShop({
                 name = cfg.name,
@@ -56,6 +62,16 @@ local function nearSupplyPoint(src, jobName, stationId)
     return false
 end
 
+local function nearFoodSupplyPoint(src, jobName, stationId)
+    local reach = tonumber(Config.JobFoodSupplyReach) or 5.5
+    for _, pt in ipairs(Config.JobFoodSupplyPoints or {}) do
+        if pt.job == jobName and pt.stationId == stationId and nearCoords(src, pt.coords, reach) then
+            return true
+        end
+    end
+    return false
+end
+
 local function playerJobOk(src, jobName)
     local P = QBCore.Functions.GetPlayer(src)
     if not P then return false end
@@ -82,6 +98,21 @@ RegisterNetEvent('mrp_npcshops:server:openJobSupply', function(jobName, stationI
         shop = Config.RangerSupplyShop
     end
     if not shop then return end
+    registerJobShops()
+    exports['qb-inventory']:OpenShop(src, shop.name)
+end)
+
+RegisterNetEvent('mrp_npcshops:server:openPoliceFoodShop', function(stationId)
+    local src = source
+    stationId = tostring(stationId or 'ls_main')
+    if not playerJobOk(src, 'police') then
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik tarnyboje.', 'error')
+    end
+    if not nearFoodSupplyPoint(src, 'police', stationId) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo PD maisto parduotuvės.', 'error')
+    end
+    local shop = Config.PoliceFoodShop
+    if not shop or not shop.name then return end
     registerJobShops()
     exports['qb-inventory']:OpenShop(src, shop.name)
 end)

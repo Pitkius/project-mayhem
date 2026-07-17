@@ -22,6 +22,20 @@ Config.PoliceSupplyShop = {
     },
 }
 
+--- PD maistas (~25% pigiau nei Config.FoodShop / 24/7) — tik police on duty
+Config.PoliceFoodShop = {
+    name = 'mrp_pd_food',
+    label = 'PD maisto parduotuvė',
+    items = {
+        { name = 'burger',       amount = 500, price = 14, slot = 1 },
+        { name = 'chips',        amount = 500, price = 4,  slot = 2 },
+        { name = 'twerks_candy', amount = 500, price = 4,  slot = 3 },
+        { name = 'water_bottle', amount = 500, price = 7,  slot = 4 },
+        { name = 'kurkakola',    amount = 500, price = 6,  slot = 5 },
+        { name = 'coffee',       amount = 500, price = 7,  slot = 6 },
+    },
+}
+
 --- ARAS ginklų pirkimas (atskirai nuo bendro PD inventoriaus — tik ARAS padalinys)
 Config.AroWeaponSupplyShop = {
     name = 'mrp_aro_weapon_supply',
@@ -47,6 +61,12 @@ Config.JobSupplyPoints = {
     { job = 'police', stationId = 'sandy', coords = vector3(1849.12, 3690.04, 34.27) },
 }
 Config.JobSupplyReach = 5.5
+
+--- PD maisto pirkimas (stogas MRPD)
+Config.JobFoodSupplyPoints = {
+    { job = 'police', stationId = 'ls_main', coords = vector3(459.1157, -980.6447, 42.2494) },
+}
+Config.JobFoodSupplyReach = 5.5
 
 Config.EmsSupplyShop = {
     name = 'mrp_ems_supply',

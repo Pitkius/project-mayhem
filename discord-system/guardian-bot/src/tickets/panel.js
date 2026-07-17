@@ -138,6 +138,7 @@ export async function handleTicketSelect(interaction) {
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.AttachFiles,
       ],
+      deny: [PermissionFlagsBits.EmbedLinks],
     },
     {
       id: interaction.client.user.id,
@@ -146,6 +147,7 @@ export async function handleTicketSelect(interaction) {
         PermissionFlagsBits.SendMessages,
         PermissionFlagsBits.ManageChannels,
         PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.EmbedLinks,
       ],
     },
     ...adminRoleIds.map((id) => ({
@@ -155,6 +157,8 @@ export async function handleTicketSelect(interaction) {
         PermissionFlagsBits.SendMessages,
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.ManageMessages,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AttachFiles,
       ],
     })),
   ];

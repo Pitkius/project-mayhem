@@ -60,6 +60,7 @@ function publicGateOverwrites(guild) {
         PermissionFlagsBits.CreatePublicThreads,
         PermissionFlagsBits.CreatePrivateThreads,
         PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.EmbedLinks,
       ],
     },
   ];
@@ -78,6 +79,7 @@ function civilReadOnlyOverwrites(guild, civilRoleId) {
         PermissionFlagsBits.CreatePublicThreads,
         PermissionFlagsBits.CreatePrivateThreads,
         PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.EmbedLinks,
       ],
     });
   }
@@ -94,11 +96,12 @@ function communityOverwrites(guild, civilRoleId) {
         PermissionFlagsBits.SendMessages,
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.AttachFiles,
-        PermissionFlagsBits.EmbedLinks,
         PermissionFlagsBits.Connect,
         PermissionFlagsBits.Speak,
         PermissionFlagsBits.AddReactions,
       ],
+      // GIF picker (Tenor) reikalauja Embed Links — civiliams draudžiama
+      deny: [PermissionFlagsBits.EmbedLinks],
     });
   }
   return overs;
@@ -109,7 +112,13 @@ function adminViewOverwrites(guild, adminRoleIds) {
     ...everyoneDenyView(guild),
     ...adminRoleIds.map((id) => ({
       id,
-      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.SendMessages],
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AttachFiles,
+      ],
     })),
   ];
 }
@@ -124,6 +133,7 @@ function ticketPanelOverwrites(guild, civilRoleId, adminRoleIds = []) {
         PermissionFlagsBits.SendMessages,
         PermissionFlagsBits.CreatePublicThreads,
         PermissionFlagsBits.CreatePrivateThreads,
+        PermissionFlagsBits.EmbedLinks,
       ],
     });
   }
@@ -135,6 +145,7 @@ function ticketPanelOverwrites(guild, civilRoleId, adminRoleIds = []) {
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.SendMessages,
         PermissionFlagsBits.ManageMessages,
+        PermissionFlagsBits.EmbedLinks,
       ],
     });
   }
@@ -152,6 +163,7 @@ function factionOverwrites(guild, factionRole, adminRoleIds) {
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.AttachFiles,
       ],
+      deny: [PermissionFlagsBits.EmbedLinks],
     });
   }
   for (const id of adminRoleIds) {
@@ -162,10 +174,47 @@ function factionOverwrites(guild, factionRole, adminRoleIds) {
         PermissionFlagsBits.SendMessages,
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.ManageMessages,
+        PermissionFlagsBits.EmbedLinks,
       ],
     });
   }
   return overs;
+}
+
+/** Nuima GIF (Embed Links) nuo @everyone ir Civilis rolių — galioja visame serverį. */
+export async function denyCivilianGifPermissions(guild, civilRoleId) {
+  const report = { roles: [], errors: [] };
+
+  try {
+    const everyone = guild.roles.everyone;
+    if (everyone.permissions.has(PermissionFlagsBits.EmbedLinks)) {
+      await everyone.setPermissions(
+        everyone.permissions.remove(PermissionFlagsBits.EmbedLinks),
+        'MRP: civiliai be GIF',
+      );
+      report.roles.push('@everyone');
+    }
+  } catch (err) {
+    report.errors.push(`@everyone: ${err.message}`);
+  }
+
+  if (civilRoleId) {
+    try {
+      const civil = guild.roles.cache.get(civilRoleId)
+        || await guild.roles.fetch(civilRoleId).catch(() => null);
+      if (civil && civil.permissions.has(PermissionFlagsBits.EmbedLinks)) {
+        await civil.setPermissions(
+          civil.permissions.remove(PermissionFlagsBits.EmbedLinks),
+          'MRP: civiliai be GIF',
+        );
+        report.roles.push(civil.name);
+      }
+    } catch (err) {
+      report.errors.push(`Civilis: ${err.message}`);
+    }
+  }
+
+  return report;
 }
 
 /** @deprecated — naudok civilReadOnly / publicGate */
@@ -178,11 +227,14 @@ function startReadOnlyOvers(guild) {
  */
 export async function applyCivilGatePermissions(guild, options = {}) {
   await guild.channels.fetch().catch(() => null);
+  await guild.roles.fetch().catch(() => null);
   const setup = getServerSetup(guild.id) || {};
   const civilRoleId = options.civilRoleId || setup.civilRoleId || serverConfig.civilRoleId;
   const channelMap = setup.channelMap || {};
   const categoryMap = setup.categoryMap || {};
   const adminRoleIds = options.adminRoleIds || setup.adminRoleIds || serverConfig.adminRoleIds || [];
+
+  const gifDeny = await denyCivilianGifPermissions(guild, civilRoleId);
 
   const find = (key, match) => {
     if (channelMap[key]) {
@@ -249,7 +301,7 @@ export async function applyCivilGatePermissions(guild, options = {}) {
   await setOvers(ticketsCat, ticketPanelOvers, ticketsCat?.name);
   await setOvers(find('ticket_chat', /ticket.?chat/i), ticketPanelOvers, 'ticket_chat');
 
-  return { updated, civilRoleId, adminRoleIds };
+  return { updated, civilRoleId, adminRoleIds, gifDeny };
 }
 
 async function findOrCreateMemberRole(guild, preferredId, name, match, report) {
