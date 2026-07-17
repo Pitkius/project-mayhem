@@ -200,6 +200,7 @@ local AmmoUseItems = {
     smg_ammo = true,
     smgammo = true,
     shotgun_ammo = true,
+    hunting_ammo = true,
     mg_ammo = true,
     snp_ammo = true,
     emp_ammo = true,

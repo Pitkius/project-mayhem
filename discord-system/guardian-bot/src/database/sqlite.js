@@ -8,6 +8,11 @@ const defaultData = () => ({
   fivem_webhooks: {},
   whitelist: [],
   warnings: [],
+  server_setup: {},
+  tickets: {},
+  ticket_counters: {},
+  role_pickers: {},
+  setup_sessions: {},
   _nextId: 1,
 });
 
@@ -31,6 +36,11 @@ function migrateStore(parsed) {
     fivem_webhooks: { ...base.fivem_webhooks, ...(parsed.fivem_webhooks || {}) },
     whitelist: Array.isArray(parsed.whitelist) ? parsed.whitelist : base.whitelist,
     warnings: Array.isArray(parsed.warnings) ? parsed.warnings : base.warnings,
+    server_setup: { ...base.server_setup, ...(parsed.server_setup || {}) },
+    tickets: { ...base.tickets, ...(parsed.tickets || {}) },
+    ticket_counters: { ...base.ticket_counters, ...(parsed.ticket_counters || {}) },
+    role_pickers: { ...base.role_pickers, ...(parsed.role_pickers || {}) },
+    setup_sessions: { ...base.setup_sessions, ...(parsed.setup_sessions || {}) },
     _nextId: parsed._nextId || base._nextId,
   };
 }
@@ -204,4 +214,89 @@ export function clearWarnings(guildId, userId) {
   store.warnings = store.warnings.filter((w) => !(w.guild_id === guildId && w.user_id === userId));
   save();
   return before - store.warnings.length;
+}
+
+export function getServerSetup(guildId) {
+  return load().server_setup[guildId] || null;
+}
+
+export function setServerSetup(guildId, setup) {
+  const store = load();
+  store.server_setup[guildId] = {
+    ...(store.server_setup[guildId] || {}),
+    ...setup,
+    updatedAt: new Date().toISOString(),
+  };
+  save();
+  return store.server_setup[guildId];
+}
+
+export function setSetupSession(guildId, userId, session) {
+  const store = load();
+  const key = `${guildId}:${userId}`;
+  store.setup_sessions[key] = {
+    ...session,
+    guildId,
+    userId,
+    createdAt: new Date().toISOString(),
+  };
+  save();
+  return store.setup_sessions[key];
+}
+
+export function getSetupSession(guildId, userId) {
+  return load().setup_sessions[`${guildId}:${userId}`] || null;
+}
+
+export function clearSetupSession(guildId, userId) {
+  const store = load();
+  delete store.setup_sessions[`${guildId}:${userId}`];
+  save();
+}
+
+export function setRolePicker(guildId, data) {
+  const store = load();
+  store.role_pickers[guildId] = { ...data, updatedAt: new Date().toISOString() };
+  save();
+}
+
+export function getRolePicker(guildId) {
+  return load().role_pickers[guildId] || null;
+}
+
+export function nextTicketNumber(guildId) {
+  const store = load();
+  const current = Number(store.ticket_counters[guildId] || 0) + 1;
+  store.ticket_counters[guildId] = current;
+  save();
+  return current;
+}
+
+export function listTickets(guildId) {
+  const all = load().tickets[guildId] || {};
+  return Object.values(all);
+}
+
+export function getTicket(guildId, ticketId) {
+  return load().tickets[guildId]?.[ticketId] || null;
+}
+
+export function upsertTicket(guildId, ticket) {
+  const store = load();
+  if (!store.tickets[guildId]) store.tickets[guildId] = {};
+  store.tickets[guildId][ticket.id] = ticket;
+  save();
+  return ticket;
+}
+
+export function deleteTicket(guildId, ticketId) {
+  const store = load();
+  if (store.tickets[guildId]) {
+    delete store.tickets[guildId][ticketId];
+    save();
+  }
+}
+
+export function countOpenTicketsForUser(guildId, userId) {
+  return listTickets(guildId).filter((t) => t.userId === userId && t.status === 'open').length;
 }

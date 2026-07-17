@@ -1,18 +1,42 @@
 Config = Config or {}
 
-Config.ReloadTime = 2400
+--- Tik native GTA reload sesijos apsaugos; jos nekeičia animacijos trukmės ar judėjimo.
+Config.NativeReloadStartTimeout = 900
+Config.NativeReloadTimeout = 6500
 
---- true = stovint naudoti GTA native perkrovą (tikri apkabos garsai). Judant — custom anim + trumpas native audio.
-Config.ReloadUseNativeFirst = true
+--- Vienodas clip limitas klientui ir serveriui. Attachment talpos pritaikomos žemiau.
+Config.StandardClipCapacity = {
+    weapon_minismg = 12,
+    weapon_machinepistol = 12,
+    weapon_microsmg = 16,
+    weapon_smg = 30,
+    weapon_smg_mk2 = 30,
+    weapon_assaultsmg = 30,
+    weapon_combatpdw = 30,
+    weapon_pistol = 12,
+    weapon_combatpistol = 12,
+    weapon_fgc9 = 12,
+    weapon_appistol = 18,
+    weapon_assaultrifle = 30,
+    weapon_carbinerifle = 30,
+    weapon_advancedrifle = 30,
+    weapon_specialcarbine = 30,
+    weapon_bullpuprifle = 30,
+    weapon_compactrifle = 30,
+    weapon_militaryrifle = 30,
+    weapon_heavyrifle = 30,
+}
 
---- Inventoriaus perkrovos vizualinė animacija (kulkos kraunamos po animacijos).
-Config.ReloadVisualTime = 0
-
---- true = galima bėgti/judėti perkraunant (viršutinė kūno animacija).
-Config.ReloadAllowMovement = true
-
---- Judėjimo greitis perkrovos metu (1.0 = normalu, mažesnis = šiek tiek lėčiau, bet ne freeze).
-Config.ReloadMoveRate = 0.72
+Config.DefaultClipCapacityByAmmoType = {
+    AMMO_PISTOL = 12,
+    AMMO_SMG = 30,
+    AMMO_RIFLE = 30,
+    AMMO_SHOTGUN = 8,
+    AMMO_MUSKET = 1,
+    AMMO_MG = 50,
+    AMMO_SNIPER = 10,
+    AMMO_EMPLAUNCHER = 10,
+}
 
 --[[
   Recoil: client/recoil.lua kelia kamerą (tik aukštyn). Bloom / išsisklaidymas išjungtas —
