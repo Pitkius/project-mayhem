@@ -215,6 +215,7 @@ function hideCraftProgress() {
 
 function canCraftProduct(p) {
   if (!p || !p.ingredients) return false;
+  if (p.locked) return false;
   return p.ingredients.every((i) => i.missing <= 0);
 }
 
@@ -223,9 +224,10 @@ function renderList() {
   state.products.forEach((p) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "prod-item" + (state.selectedId === p.id ? " active" : "");
+    btn.className = "prod-item" + (state.selectedId === p.id ? " active" : "") + (p.locked ? " locked" : "");
     const stage = p.stageLabel ? `${p.stageLabel} · ` : "";
-    btn.innerHTML = `<strong>${p.label}</strong><small>${stage}${p.levelLabel || ""} · ${p.risk || ""}</small>`;
+    const lock = p.locked ? `🔒 ${p.lockReason || "Užrakinta"}` : `${stage}${p.levelLabel || ""} · ${p.risk || ""}`;
+    btn.innerHTML = `<strong>${p.label}</strong><small>${lock}</small>`;
     btn.onclick = () => {
       state.selectedId = p.id;
       renderList();
@@ -244,8 +246,10 @@ function renderDetail(p) {
   emptyPick.classList.add("hidden");
   detailPanel.classList.remove("hidden");
   document.getElementById("prodTitle").textContent = p.label;
-  document.getElementById("prodLevel").textContent = (p.stageLabel ? `${p.stageLabel} · ` : "") + (p.levelLabel || `Lygis ${p.level}`);
-  document.getElementById("prodRisk").textContent = `Rizika: ${p.risk || "—"}`;
+  document.getElementById("prodLevel").textContent = p.locked
+    ? (p.lockReason || "Užrakinta")
+    : ((p.stageLabel ? `${p.stageLabel} · ` : "") + (p.levelLabel || `Lygis ${p.level}`));
+  document.getElementById("prodRisk").textContent = p.locked ? "Atrakink per 3D spausdinimą" : `Rizika: ${p.risk || "—"}`;
   const sec = p.craftTimeSec || 0;
   let timeText = sec >= 90 ? `~${Math.ceil(sec / 60)} min (${sec} sek.)` : `${sec} sek.`;
   if (state.isWeaponMode) {
@@ -280,7 +284,7 @@ window.addEventListener("message", (e) => {
     state.isWeaponMode = !!(d.station && d.station.mode === "weapon");
     if (headTitle) {
       headTitle.innerHTML = state.isWeaponMode
-        ? 'GINKLŲ <span>DIRBTUVĖ</span>'
+        ? 'GINKLŲ <span>GAMYKLA</span>'
         : 'NELEGALI <span>GAMYBA</span>';
     }
     if (btnBuyParts) {
@@ -288,9 +292,18 @@ window.addEventListener("message", (e) => {
     }
     const rewardSection = document.getElementById("rewardSection");
     if (rewardSection) rewardSection.classList.toggle("hidden", state.isWeaponMode);
-    document.getElementById("stationLabel").textContent = d.station
+    let stationText = d.station
       ? `${d.station.label} · ${d.station.level} lygis`
       : "Stotis";
+    if (state.isWeaponMode && d.station) {
+      const prints = d.station.weaponPrints || 0;
+      const tier = d.station.weaponTier || 0;
+      const next = tier >= 2 ? null : (tier >= 1 ? d.station.unlockL2At : d.station.unlockL1At);
+      stationText = next
+        ? `${d.station.label} · XP ${prints}/${next}`
+        : `${d.station.label} · XP ${prints} (max)`;
+    }
+    document.getElementById("stationLabel").textContent = stationText;
     app.classList.remove("hidden");
     renderList();
     if (state.selectedId) {

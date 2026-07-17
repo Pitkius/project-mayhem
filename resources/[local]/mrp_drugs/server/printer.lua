@@ -137,6 +137,7 @@ local function refundIngredients(src, product)
 end
 
 local function buildProductRows(Player)
+    local src = Player and Player.PlayerData and Player.PlayerData.source
     local rows = {}
     for id, prod in pairs(cfg().products or {}) do
         local ing = {}
@@ -162,7 +163,17 @@ local function buildProductRows(Player)
         }
     end
     table.sort(rows, function(a, b) return a.label < b.label end)
-    return rows
+
+    local prints = (src and DrugPlayer and DrugPlayer.getWeaponPrints and DrugPlayer.getWeaponPrints(src)) or 0
+    local tier = (src and DrugPlayer and DrugPlayer.getWeaponCraftTier and DrugPlayer.getWeaponCraftTier(src)) or 0
+    local prog = Config.WeaponPrintProgression or {}
+    return {
+        products = rows,
+        weaponPrints = prints,
+        weaponTier = tier,
+        unlockL1At = tonumber(prog.unlockL1At) or 10,
+        unlockL2At = tonumber(prog.unlockL2At) or 15,
+    }
 end
 
 RegisterNetEvent('mrp_drugs:server:placePrinter', function(x, y, z, heading)
@@ -323,7 +334,24 @@ RegisterNetEvent('mrp_drugs:server:finishPrinterCraft', function(printerId, prod
     if shared then
         TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', count)
     end
-    TriggerClientEvent('QBCore:Notify', src, ('Atspausdinta: %s'):format(shared and shared.label or item), 'success')
+
+    local xpInfo = nil
+    if (cfg().countTowardWeaponXp ~= false) and DrugPlayer and DrugPlayer.addWeaponPrint then
+        xpInfo = DrugPlayer.addWeaponPrint(src, 1)
+    end
+
+    local msg = ('Atspausdinta: %s'):format(shared and shared.label or item)
+    if xpInfo and xpInfo.prints then
+        local prog = Config.WeaponPrintProgression or {}
+        local nextNeed = (xpInfo.unlockedTier or 0) >= 2 and nil
+            or ((xpInfo.unlockedTier or 0) >= 1 and (tonumber(prog.unlockL2At) or 15) or (tonumber(prog.unlockL1At) or 10))
+        if nextNeed then
+            msg = ('%s · XP %d/%d'):format(msg, xpInfo.prints, nextNeed)
+        else
+            msg = ('%s · XP %d'):format(msg, xpInfo.prints)
+        end
+    end
+    TriggerClientEvent('QBCore:Notify', src, msg, 'success')
 end)
 
 AddEventHandler('playerDropped', function()

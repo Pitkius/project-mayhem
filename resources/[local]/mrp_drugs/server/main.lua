@@ -294,10 +294,20 @@ local function createWeedStageState(productId, now)
 end
 
 local function levelUnlocked(src, prod, st)
-    if st and st.mode == 'weapon' then return true end
+    if st and st.mode == 'weapon' then
+        if not DrugPlayer or not DrugPlayer.weaponProductUnlocked then return true end
+        return DrugPlayer.weaponProductUnlocked(src, prod and prod.level or 1)
+    end
     if not Config.DrugProgression or Config.DrugProgression.enabled == false then return true end
     if not DrugPlayer or not DrugPlayer.levelUnlocked then return true end
     return DrugPlayer.levelUnlocked(src, prod and prod.level or 1)
+end
+
+local function weaponUnlockHint(src, prodLevel)
+    local cfg = Config.WeaponPrintProgression or {}
+    local prints = DrugPlayer and DrugPlayer.getWeaponPrints and DrugPlayer.getWeaponPrints(src) or 0
+    local need = prodLevel >= 2 and (tonumber(cfg.unlockL2At) or 15) or (tonumber(cfg.unlockL1At) or 10)
+    return ('Reikia %d/%d 3D spausdinimų'):format(prints, need)
 end
 
 local function buildRecipeStatus(Player, productId, st, src)
@@ -397,10 +407,19 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getStationUi', function(src, c
 
     local products = {}
     local pool = getStationProductPool(st)
+    local weaponTier = (st.mode == 'weapon' and DrugPlayer and DrugPlayer.getWeaponCraftTier)
+        and DrugPlayer.getWeaponCraftTier(src)
+        or nil
+    local weaponPrints = (st.mode == 'weapon' and DrugPlayer and DrugPlayer.getWeaponPrints)
+        and DrugPlayer.getWeaponPrints(src)
+        or 0
+
     for pid, prod in pairs(pool) do
-        if prod.level == st.level and stationProductAllowed(st, pid) then
+        local levelOk = (st.mode == 'weapon') or (prod.level == st.level)
+        if levelOk and stationProductAllowed(st, pid) then
             local exclusive = Config.AmpExclusiveProducts and Config.AmpExclusiveProducts[pid]
             if not exclusive or (st.products and #st.products > 0) then
+                local unlocked = levelUnlocked(src, prod, st)
                 products[#products + 1] = {
                     id = pid,
                     label = prod.label,
@@ -415,6 +434,8 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getStationUi', function(src, c
                     usesPrinter = productUsesPrinter(pid, st),
                     ingredients = buildRecipeStatus(Player, pid, st, src),
                     mode = st.mode or 'drugs',
+                    locked = not unlocked,
+                    lockReason = (not unlocked and st.mode == 'weapon') and weaponUnlockHint(src, prod.level) or nil,
                 }
             end
         end
@@ -424,12 +445,23 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getStationUi', function(src, c
         local orderA = pool[a.id] and pool[a.id].lineOrder or 99
         local orderB = pool[b.id] and pool[b.id].lineOrder or 99
         if orderA ~= orderB then return orderA < orderB end
+        if (a.locked and not b.locked) then return false end
+        if (b.locked and not a.locked) then return true end
         return a.label < b.label
     end)
 
+    local stationPayload = { id = st.id, label = st.label, level = st.level, mode = st.mode or 'drugs' }
+    if st.mode == 'weapon' then
+        local cfg = Config.WeaponPrintProgression or {}
+        stationPayload.weaponPrints = weaponPrints
+        stationPayload.weaponTier = weaponTier or 0
+        stationPayload.unlockL1At = tonumber(cfg.unlockL1At) or 10
+        stationPayload.unlockL2At = tonumber(cfg.unlockL2At) or 15
+    end
+
     cb({
         ok = true,
-        station = { id = st.id, label = st.label, level = st.level, mode = st.mode or 'drugs' },
+        station = stationPayload,
         products = products,
     })
 end)
@@ -438,14 +470,18 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraft', function(src, cb,
     local st = getStation(stationId)
     local prod = getProduct(productId)
     if not st or not prod then return cb({ ok = false, reason = 'Netinkami duomenys.' }) end
-    if prod.level ~= st.level then
+    if st.mode ~= 'weapon' and prod.level ~= st.level then
         return cb({ ok = false, reason = 'Ši stotis netinka šiam produktui.' })
     end
     if not stationProductAllowed(st, productId) then
         return cb({ ok = false, reason = 'Šiame punkte negalima gaminti šio produkto.' })
     end
     if not levelUnlocked(src, prod, st) then
-        return cb({ ok = false, reason = 'Šis gamybos lygis dar neatrakintas.' })
+        local reason = 'Šis gamybos lygis dar neatrakintas.'
+        if st.mode == 'weapon' then
+            reason = weaponUnlockHint(src, prod.level) .. '.'
+        end
+        return cb({ ok = false, reason = reason })
     end
     if not playerNearStation(src, stationId) then
         return cb({ ok = false, reason = 'Per toli nuo stoties.' })

@@ -283,6 +283,8 @@ Config.Printer3d = {
     maxPerPlayer = 2,
     pickupDist = 2.8,
     interactDist = 2.4,
+    --- Kiekvienas sėkmingas spausdinimas +1 XP (žr. WeaponPrintProgression)
+    countTowardWeaponXp = true,
     products = {
         print_gun_frame = {
             label = 'Ginklo korpusas',
@@ -344,6 +346,15 @@ Config.Printer3d = {
             timeMs = 22000,
         },
     },
+}
+
+--- 3D spausdinimo XP → ginklų dirbtuvės atrakinimas (nepriklauso nuo narkotikų L1–L3)
+Config.WeaponPrintProgression = {
+    enabled = true,
+    --- Po N atspausdintų detalių atrakina L1 ginklų craftą gamykloje
+    unlockL1At = 10,
+    --- Po N atspausdintų detalių (viso) atrakina išplėstinį L1 rinkinį toje pačioje lokacijoje
+    unlockL2At = 15,
 }
 
 --- Ginklų dirbtuvė (client). 3D spausdintuvas — tik šaunamiesiems (recepte gun_frame / gun_barrel).
@@ -419,29 +430,37 @@ local function wp(label, level, output, ammoItem, ammoCount, craftTimeMs, miniga
 end
 
 Config.WeaponProducts = {
-    --- L1 — žemas nelegalus (pistoletai + FGC-9 + šalti ginklai)
+    --- L1 (po 10 spausdinimų) — silpni šarvai, pistoletai, šalti ginklai, pistoletų kulkos
+    craft_armor_light = wp('Lengvi šarvai', 1, 'armor_light', nil, 0, 42000, 'progress', 8, 4, 1, 25, 'low'),
     craft_pistol = wp('Pistoletas', 1, 'weapon_pistol', 'pistol_ammo', 60, 90000, 'progress', 12, 10, 3, 45, 'medium'),
     craft_combat_pistol = wp('Combat pistoletas', 1, 'weapon_combatpistol', 'pistol_ammo', 72, 98000, 'skill', 14, 12, 4, 50, 'medium'),
-    craft_fgc9 = wp('FGC-9', 1, 'weapon_fgc9', 'pistol_ammo', 90, 128000, 'skill', 17, 15, 5, 54, 'high'),
     craft_bat = wp('Beisbolo lazda', 1, 'weapon_bat', nil, 0, 82000, 'progress', 6, 4, 1, 30, 'low'),
+    craft_knife = wp('Peilis', 1, 'weapon_knife', nil, 0, 78000, 'progress', 6, 4, 1, 28, 'low'),
     craft_switchblade = wp('Switchblade', 1, 'weapon_switchblade', nil, 0, 85000, 'progress', 8, 5, 2, 35, 'low'),
-    --- L2 — vidutinis gang (SMG / .50 / shotgun)
+    craft_pistol_ammo = wp('Pistoletų kulkos', 1, 'pistol_ammo', nil, 0, 28000, 'progress', 5, 3, 1, 15, 'low'),
+    --- L2 (po 15 spausdinimų, ta pati gamykla) — Tec-9, nupjautvamzdis, .50, shotgun kulkos
     craft_tec9 = wp('Tec-9', 2, 'weapon_machinepistol', 'pistol_ammo', 90, 115000, 'skill', 16, 14, 5, 52, 'high'),
-    craft_mini_uzi = wp('Mini Uzi', 2, 'weapon_minismg', 'smg_ammo', 90, 120000, 'skill', 17, 15, 5, 54, 'high'),
-    craft_micro_smg = wp('Micro SMG', 2, 'weapon_microsmg', 'smg_ammo', 90, 122000, 'skill', 17, 15, 5, 54, 'high'),
-    craft_fgc9_l2 = wp('FGC-9 (patobulintas)', 2, 'weapon_fgc9', 'pistol_ammo', 90, 128000, 'skill', 17, 15, 5, 54, 'high'),
+    craft_sawnoff = wp('Mažas pump shotgun', 2, 'weapon_sawnoffshotgun', 'shotgun_ammo', 24, 125000, 'skill', 17, 15, 5, 55, 'high'),
     craft_pistol50 = wp('Pistoletas .50', 2, 'weapon_pistol50', 'pistol_ammo', 48, 118000, 'skill', 15, 14, 5, 50, 'high'),
-    craft_pumpshotgun = wp('Pump shotgun', 2, 'weapon_pumpshotgun', 'shotgun_ammo', 32, 135000, 'advanced', 19, 17, 6, 58, 'high'),
-    --- L3 — aukštas nelegalus (karabinai)
+    craft_shotgun_ammo = wp('Šratinio kulkos', 2, 'shotgun_ammo', nil, 0, 32000, 'progress', 6, 4, 1, 18, 'low'),
+    --- L3 — vėlesniam unlock'ui (kol kas ne gamyklos L1 sąraše)
+    craft_mini_uzi = wp('Mini Uzi', 3, 'weapon_minismg', 'smg_ammo', 90, 120000, 'skill', 17, 15, 5, 54, 'high'),
+    craft_micro_smg = wp('Micro SMG', 3, 'weapon_microsmg', 'smg_ammo', 90, 122000, 'skill', 17, 15, 5, 54, 'high'),
+    craft_pumpshotgun = wp('Pump shotgun', 3, 'weapon_pumpshotgun', 'shotgun_ammo', 32, 135000, 'advanced', 19, 17, 6, 58, 'high'),
     craft_micro_draco = wp('Micro Draco', 3, 'weapon_compactrifle', 'rifle_ammo', 90, 150000, 'advanced', 20, 18, 7, 60, 'extreme'),
     craft_ak47 = wp('AK-47', 3, 'weapon_assaultrifle', 'rifle_ammo', 120, 156000, 'advanced', 21, 19, 8, 62, 'extreme'),
 }
 
---- Nelegalių ginklų dirbtuvių produktai pagal lygį (naudojama stotyse su `products = ...`)
+--- Gamyklos produktai: L1 + L2 (filtruojama pagal print XP)
 Config.WeaponBenchProducts = {
-    [1] = { 'craft_pistol', 'craft_combat_pistol', 'craft_fgc9', 'craft_bat', 'craft_switchblade' },
-    [2] = { 'craft_tec9', 'craft_mini_uzi', 'craft_micro_smg', 'craft_fgc9_l2', 'craft_pistol50', 'craft_pumpshotgun' },
-    [3] = { 'craft_micro_draco', 'craft_ak47' },
+    [1] = {
+        'craft_armor_light', 'craft_pistol', 'craft_combat_pistol',
+        'craft_bat', 'craft_knife', 'craft_switchblade', 'craft_pistol_ammo',
+    },
+    [2] = {
+        'craft_tec9', 'craft_sawnoff', 'craft_pistol50', 'craft_shotgun_ammo',
+    },
+    [3] = { 'craft_mini_uzi', 'craft_micro_smg', 'craft_pumpshotgun', 'craft_micro_draco', 'craft_ak47' },
 }
 
 for _, st in ipairs(Config.Stations or {}) do
@@ -451,6 +470,11 @@ for _, st in ipairs(Config.Stations or {}) do
 end
 
 Config.WeaponRecipes = {
+    craft_armor_light = {
+        { item = 'metal_scrap', count = 7 },
+        { item = 'plastic', count = 4 },
+        { item = 'weapon_parts', count = 2 },
+    },
     craft_pistol = {
         { item = 'gun_frame', count = 2 },
         { item = 'gun_barrel', count = 2 },
@@ -467,24 +491,23 @@ Config.WeaponRecipes = {
         { item = 'weapon_parts', count = 2 },
         { item = 'metal_scrap', count = 8 },
     },
-    craft_fgc9 = {
-        { item = 'gun_frame', count = 3 },
-        { item = 'gun_barrel', count = 2 },
-        { item = 'gun_spring', count = 5 },
-        { item = 'gun_trigger', count = 2 },
-        { item = 'weapon_parts', count = 4 },
-        { item = 'weapon_prototype', count = 1 },
-        { item = 'plastic', count = 10 },
-        { item = 'metal_scrap', count = 8 },
-    },
     craft_bat = {
         { item = 'metal_scrap', count = 6 },
         { item = 'weapon_parts', count = 2 },
+    },
+    craft_knife = {
+        { item = 'metal_scrap', count = 4 },
+        { item = 'weapon_parts', count = 1 },
     },
     craft_switchblade = {
         { item = 'metal_scrap', count = 4 },
         { item = 'gun_spring', count = 2 },
         { item = 'weapon_parts', count = 2 },
+    },
+    craft_pistol_ammo = {
+        { item = 'metal_scrap', count = 3 },
+        { item = 'gun_spring', count = 1 },
+        { item = 'plastic', count = 2 },
     },
     craft_tec9 = {
         { item = 'gun_frame', count = 2 },
@@ -493,6 +516,28 @@ Config.WeaponRecipes = {
         { item = 'gun_trigger', count = 2 },
         { item = 'weapon_parts', count = 3 },
         { item = 'metal_scrap', count = 9 },
+    },
+    craft_sawnoff = {
+        { item = 'gun_frame', count = 2 },
+        { item = 'gun_barrel', count = 2 },
+        { item = 'gun_spring', count = 3 },
+        { item = 'gun_trigger', count = 2 },
+        { item = 'weapon_parts', count = 4 },
+        { item = 'metal_scrap', count = 10 },
+    },
+    craft_pistol50 = {
+        { item = 'gun_frame', count = 2 },
+        { item = 'gun_barrel', count = 2 },
+        { item = 'gun_spring', count = 3 },
+        { item = 'gun_trigger', count = 2 },
+        { item = 'weapon_parts', count = 3 },
+        { item = 'metal_scrap', count = 9 },
+    },
+    craft_shotgun_ammo = {
+        { item = 'metal_scrap', count = 4 },
+        { item = 'gun_spring', count = 1 },
+        { item = 'plastic', count = 3 },
+        { item = 'weapon_parts', count = 1 },
     },
     craft_mini_uzi = {
         { item = 'gun_frame', count = 2 },
@@ -509,24 +554,6 @@ Config.WeaponRecipes = {
         { item = 'gun_trigger', count = 2 },
         { item = 'weapon_parts', count = 3 },
         { item = 'metal_scrap', count = 10 },
-    },
-    craft_fgc9_l2 = {
-        { item = 'gun_frame', count = 3 },
-        { item = 'gun_barrel', count = 2 },
-        { item = 'gun_spring', count = 5 },
-        { item = 'gun_trigger', count = 2 },
-        { item = 'weapon_parts', count = 4 },
-        { item = 'weapon_prototype', count = 1 },
-        { item = 'plastic', count = 10 },
-        { item = 'metal_scrap', count = 8 },
-    },
-    craft_pistol50 = {
-        { item = 'gun_frame', count = 2 },
-        { item = 'gun_barrel', count = 2 },
-        { item = 'gun_spring', count = 3 },
-        { item = 'gun_trigger', count = 2 },
-        { item = 'weapon_parts', count = 3 },
-        { item = 'metal_scrap', count = 9 },
     },
     craft_pumpshotgun = {
         { item = 'gun_frame', count = 3 },
@@ -553,6 +580,14 @@ Config.WeaponRecipes = {
         { item = 'metal_scrap', count = 18 },
     },
 }
+
+--- Pistoletų/šaltųjų ammo output kiekis
+if Config.WeaponProducts.craft_pistol_ammo then
+    Config.WeaponProducts.craft_pistol_ammo.outputAmount = 24
+end
+if Config.WeaponProducts.craft_shotgun_ammo then
+    Config.WeaponProducts.craft_shotgun_ammo.outputAmount = 16
+end
 
 --- Parduotuvė: visi mrp_drugs itemai (žaliava, apdorota, supakuota, reikmenys, ginklų dalys)
 Config.MaterialShop = {
@@ -585,13 +620,8 @@ Config.MaterialShop = {
         { name = 'weapon_prototype', amount = 200, price = 380, slot = 12 },
         { name = 'printer_3d', amount = 25, price = 7500, slot = 13 },
         { name = 'plastic', amount = 500, price = 22, slot = 14 },
-        -- Ginklų dalys (atskira ginklų sistema — ne narkotikai)
+        -- Žaliavos detalėms (pačios detalės — tik per 3D spausdintuvą → XP)
         { name = 'metal_scrap', amount = 500, price = 55, slot = 15 },
-        { name = 'gun_frame', amount = 200, price = 220, slot = 16 },
-        { name = 'gun_barrel', amount = 200, price = 260, slot = 17 },
-        { name = 'gun_spring', amount = 500, price = 45, slot = 18 },
-        { name = 'gun_trigger', amount = 300, price = 85, slot = 19 },
-        { name = 'weapon_parts', amount = 300, price = 150, slot = 20 },
         { name = 'pistol_ammo', amount = 500, price = 18, slot = 21 },
         { name = 'smg_ammo', amount = 500, price = 28, slot = 22 },
         { name = 'rifle_ammo', amount = 500, price = 35, slot = 23 },
@@ -1096,29 +1126,37 @@ Config.ThcLab = {
     },
 }
 
---- Ginklų dirbtuvė · L1 — šarvai ir pistoletai (Mount Chiliad)
+--- Ginklų / detalių gamykla · L1 (print XP atrakina L1→L2 produktus)
 Config.WeaponBenchL1 = {
     blip = {
         enabled = true,
-        coords = vector3(-1142.7271, 4941.6255, 222.3038),
+        coords = vector3(-2949.3467, 438.6393, 15.2658),
         sprite = 110,
         color = 1,
         scale = 0.78,
         shortRange = true,
-        label = 'Ginklų dirbtuvė · L1',
+        label = 'Ginklų gamykla · L1',
     },
     stations = {
         {
-            id = 'weapon_bench_l1_chiliad',
-            label = 'Ginklų dirbtuvė · L1',
+            id = 'weapon_bench_l1_factory',
+            label = 'Ginklų gamykla · L1',
+            --- Stotis laiko L1+L2 produktus; atrakinimas pagal 3D print XP
             level = 1,
             mode = 'weapon',
-            coords = vector3(-1142.7271, 4941.6255, 222.3038),
-            heading = 162.4606,
-            radius = 2.0,
-            products = Config.WeaponBenchProducts and Config.WeaponBenchProducts[1] or {
-                'craft_pistol', 'craft_combat_pistol', 'craft_fgc9', 'craft_bat', 'craft_switchblade',
-            },
+            coords = vector3(-2949.3467, 438.6393, 15.2658),
+            heading = 72.7165,
+            radius = 2.2,
+            products = (function()
+                local list = {}
+                for _, pid in ipairs((Config.WeaponBenchProducts and Config.WeaponBenchProducts[1]) or {}) do
+                    list[#list + 1] = pid
+                end
+                for _, pid in ipairs((Config.WeaponBenchProducts and Config.WeaponBenchProducts[2]) or {}) do
+                    list[#list + 1] = pid
+                end
+                return list
+            end)(),
         },
     },
 }

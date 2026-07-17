@@ -81,6 +81,8 @@ body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; 
 }
 .prod-item strong { display: block; font-size: 14px; }
 .prod-item small { color: #c4b5fd; }
+.prod-item.locked { opacity: 0.55; }
+.prod-item.locked small { color: #fbbf24; }
 
 .detail { flex: 1; padding: 18px 20px; overflow-y: auto; }
 .empty { color: var(--primary); margin-top: 40px; text-align: center; }

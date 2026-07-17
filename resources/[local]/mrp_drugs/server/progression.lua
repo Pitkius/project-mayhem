@@ -45,9 +45,14 @@ function DrugPlayer.ensureTable()
         `l1_sold` int(11) NOT NULL DEFAULT 0,
         `l2_sold` int(11) NOT NULL DEFAULT 0,
         `l3_sold` int(11) NOT NULL DEFAULT 0,
+        `weapon_prints` int(11) NOT NULL DEFAULT 0,
         `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
         PRIMARY KEY (`citizenid`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
+    -- Senesnės DB be stulpelio
+    pcall(function()
+        MySQL.query.await('ALTER TABLE `fivempro_drugs_player` ADD COLUMN `weapon_prints` int(11) NOT NULL DEFAULT 0')
+    end)
 end
 
 local function defaultRow(citizenid)
@@ -59,6 +64,7 @@ local function defaultRow(citizenid)
         l1_sold = 0,
         l2_sold = 0,
         l3_sold = 0,
+        weapon_prints = 0,
     }
 end
 
@@ -78,6 +84,7 @@ function DrugPlayer.load(citizenid)
     row.l1_sold = tonumber(row.l1_sold) or 0
     row.l2_sold = tonumber(row.l2_sold) or 0
     row.l3_sold = tonumber(row.l3_sold) or 0
+    row.weapon_prints = tonumber(row.weapon_prints) or 0
     cache[citizenid] = row
     return row
 end
@@ -104,11 +111,11 @@ local function persist(citizenid)
     if not row then return end
     MySQL.update.await([[
         UPDATE fivempro_drugs_player
-        SET darknet_unlocked = ?, intro_state = ?, level_unlocked = ?, l1_sold = ?, l2_sold = ?, l3_sold = ?
+        SET darknet_unlocked = ?, intro_state = ?, level_unlocked = ?, l1_sold = ?, l2_sold = ?, l3_sold = ?, weapon_prints = ?
         WHERE citizenid = ?
     ]], {
         row.darknet_unlocked, row.intro_state, row.level_unlocked,
-        row.l1_sold, row.l2_sold, row.l3_sold, citizenid,
+        row.l1_sold, row.l2_sold, row.l3_sold, row.weapon_prints or 0, citizenid,
     })
 end
 DrugPlayer.persist = persist
@@ -267,6 +274,64 @@ function DrugPlayer.levelUnlocked(src, level)
     local row = DrugPlayer.get(src)
     if not row then return false end
     return (row.level_unlocked or 1) >= level
+end
+
+--- 3D spausdinimo XP (ginklų craft atrakinimui)
+function DrugPlayer.getWeaponPrints(src)
+    local row = DrugPlayer.get(src)
+    return row and (tonumber(row.weapon_prints) or 0) or 0
+end
+
+--- Grąžina 0 (tik spausdintuvas), 1 (L1 ginklai), 2 (išplėstas L1 rinkinys)
+function DrugPlayer.getWeaponCraftTier(src)
+    local cfg = Config.WeaponPrintProgression or {}
+    if cfg.enabled == false then return 2 end
+    local prints = DrugPlayer.getWeaponPrints(src)
+    local l2 = tonumber(cfg.unlockL2At) or 15
+    local l1 = tonumber(cfg.unlockL1At) or 10
+    if prints >= l2 then return 2 end
+    if prints >= l1 then return 1 end
+    return 0
+end
+
+function DrugPlayer.weaponProductUnlocked(src, productLevel)
+    productLevel = tonumber(productLevel) or 1
+    local tier = DrugPlayer.getWeaponCraftTier(src)
+    return tier >= productLevel
+end
+
+--- +1 po sėkmingo 3D print. Grąžina { prints, unlockedTier, justUnlocked }
+function DrugPlayer.addWeaponPrint(src, amount)
+    amount = math.max(1, math.floor(tonumber(amount) or 1))
+    local citizenid = citizenOf(src)
+    if not citizenid then return nil end
+    local row = DrugPlayer.getByCitizen(citizenid)
+    if not row then return nil end
+
+    local cfg = Config.WeaponPrintProgression or {}
+    local before = DrugPlayer.getWeaponCraftTier(src)
+    row.weapon_prints = (tonumber(row.weapon_prints) or 0) + amount
+    persist(citizenid)
+    local after = DrugPlayer.getWeaponCraftTier(src)
+    local justUnlocked = after > before and after or nil
+
+    if justUnlocked == 1 then
+        TriggerClientEvent('QBCore:Notify', src,
+            ('Atrakinta L1 ginklų gamykla! (%d/%d spausdinimų)'):format(
+                row.weapon_prints, tonumber(cfg.unlockL1At) or 10
+            ), 'success')
+    elseif justUnlocked == 2 then
+        TriggerClientEvent('QBCore:Notify', src,
+            ('Atrakintas išplėstas L1 rinkinys (Tec-9 / shotgun / .50)! (%d/%d)'):format(
+                row.weapon_prints, tonumber(cfg.unlockL2At) or 15
+            ), 'success')
+    end
+
+    return {
+        prints = row.weapon_prints,
+        unlockedTier = after,
+        justUnlocked = justUnlocked,
+    }
 end
 
 --- Test QA: atrakina L1–L3 gamybos lygius (naudojama nemokamos parduotuvės NPC).
