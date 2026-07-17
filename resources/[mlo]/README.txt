@@ -45,6 +45,7 @@ KUR DĖTI NAUJUS MLO (atsisiųstus)
    - [mlo_pack_3]/dt_19_mrpd (Mission Row PD — pakeitė cfx-gabz-mrpd)
    - [mlo_pack_3]/weapon_warehouse (Ginklų sandėlis — Grapeseed/Paleto kelias ~-1143, 4944)
    - [mlo_pack_3]/diamond-casino-exterior + diamond-casino-interior (Diamond Casino MLO)
+   - [mlo_pack_3]/jrbLa_Fuente_Blanca (La Fuente Blanca ranch interior — jrbMods)
    - Restart serveris arba: ensure [mlo]
    - Parašyk Cursor / dev'ui MLO aplankų pavadinimus (pvz. cfx-gabz-prison)
    - Tada bus pridėti blip'ai (mrp_gabz_blips) ir NPC koordinatės (jobs, outdoors).
