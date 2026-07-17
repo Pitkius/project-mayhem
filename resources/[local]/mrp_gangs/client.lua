@@ -333,6 +333,17 @@ RegisterNUICallback('gangs:adminDeleteGang', function(data, cb)
     end)
 end)
 
+RegisterNUICallback('gangs:adminSetAffiliate', function(data, cb)
+    if not data or not data.childGangId then
+        cb({ ok = false, message = 'Trūksta gaujos.' })
+        return
+    end
+    TriggerServerEvent('mrp_gangs:server:adminSetAffiliate', data.childGangId, tonumber(data.parentGangId) or 0)
+    SetTimeout(150, function()
+        refreshAdminSnapshot(cb)
+    end)
+end)
+
 RegisterNUICallback('gangs:adminSaveTurf', function(data, cb)
     if not data or not data.turfId then
         cb({ ok = false })

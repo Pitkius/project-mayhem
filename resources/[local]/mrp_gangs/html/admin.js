@@ -129,12 +129,14 @@
         .map((g) => {
           const active = Number(selectedGangId) === Number(g.id);
           const hex = g.color_hex || "#888";
+          const unoff = g.is_unofficial || g.gang_type === "unofficial";
+          const parent = g.parent_name ? ` · Org: ${g.parent_name}` : "";
           return `<button type="button" class="ga-list-item${active ? " active" : ""}" data-gang-id="${g.id}">
             <div class="ga-list-item-title">
               <span class="ga-swatch" style="background:${safe(hex)}"></span>
-              ${safe(g.name)}
+              ${safe(g.name)}${unoff ? ' <span class="ga-type-pill" style="font-size:10px">Neoficiali</span>' : ""}
             </div>
-            <div class="ga-list-item-sub">#${g.id} · ${safe(g.gang_type)} · Rep ${g.reputation ?? 0} · ⚠ ${g.warnings ?? 0}/${maxWarnings()} · ${g.member_count ?? 0} nariai</div>
+            <div class="ga-list-item-sub">#${g.id} · ${safe(g.gang_type)} · Rep ${g.reputation ?? 0} · ⚠ ${g.warnings ?? 0}/${maxWarnings()} · ${g.member_count ?? 0} nariai · 📱 ${g.tablet_count ?? 0}${parent}</div>
           </button>`;
         })
         .join("");
@@ -171,14 +173,58 @@
     const wCount = Number(g.warnings) || 0;
     const wMax = maxWarnings();
     const wStatClass = wCount >= wMax ? " is-danger" : wCount > 0 ? " is-warn" : "";
+    const unoff = g.is_unofficial || g.gang_type === "unofficial";
+    const officialGangs = (state.gangs || []).filter((x) => !(x.is_unofficial || x.gang_type === "unofficial"));
+    const unofficialGangs = (state.gangs || []).filter((x) => x.is_unofficial || x.gang_type === "unofficial");
+    const parentOpts = ['<option value="0">— Be organizacijos —</option>']
+      .concat(
+        officialGangs.map(
+          (o) =>
+            `<option value="${o.id}"${Number(g.parent_gang_id) === Number(o.id) ? " selected" : ""}>#${o.id} ${safe(o.name)}</option>`,
+        ),
+      )
+      .join("");
+    const childAttachOpts = ['<option value="0">— Pasirink neoficialią —</option>']
+      .concat(
+        unofficialGangs
+          .filter((u) => Number(u.id) !== Number(g.id))
+          .map(
+            (u) =>
+              `<option value="${u.id}">#${u.id} ${safe(u.name)}${u.parent_name ? ` (→ ${safe(u.parent_name)})` : ""}</option>`,
+          ),
+      )
+      .join("");
+
     els.detail.innerHTML = `
       <div class="ga-detail-card">
         <h2><span class="ga-swatch" style="width:14px;height:14px;background:${safe(g.color_hex || "#888")}"></span> ${safe(g.name)} <span class="ga-id">#${g.id}</span></h2>
-        <span class="ga-type-pill">${safe(g.gang_type)}</span>
+        <span class="ga-type-pill">${safe(g.gang_type)}${unoff ? " · neoficiali" : ""}</span>
         <div class="ga-stat-row">
           <div class="ga-stat"><span>Reputacija</span><strong id="gaStatRep">${g.reputation ?? 0}</strong></div>
           <div class="ga-stat"><span>Nariai</span><strong>${g.member_count ?? 0}</strong></div>
+          <div class="ga-stat"><span>Planšetės</span><strong>${g.tablet_count ?? 0}</strong></div>
           <div class="ga-stat${wStatClass}"><span>Įspėjimai</span><strong>${wCount}/${wMax}</strong></div>
+        </div>
+        <div class="ga-warn-box">
+          <h3>Organizacijos afiliacija</h3>
+          <p style="font-size:12px;opacity:.85;margin:0 0 8px">${
+            unoff
+              ? "Neoficiali gauja gali būti integruota į oficialią organizaciją. Turfai / teritorijų karai užblokuoti."
+              : "Oficiali gauja gali turėti neoficialias gaujas savo organizacijoje."
+          }</p>
+          ${
+            unoff
+              ? `<div class="ga-form-grid"><label>Tėvinė oficiali gauja<select id="gaParentGang">${parentOpts}</select></label></div>
+                 <div class="ga-actions"><button type="button" class="ga-btn ga-btn-primary" id="gaSaveAff">Išsaugoti afiliaciją</button></div>`
+              : `<p style="font-size:12px;margin:0 0 8px">Dabar prijungta: <strong>${
+                  unofficialGangs.filter((u) => Number(u.parent_gang_id) === Number(g.id)).map((u) => u.name).join(", ") || "—"
+                }</strong></p>
+                 <div class="ga-form-grid"><label>Prijungti / perkelti neoficialią<select id="gaChildGang">${childAttachOpts}</select></label></div>
+                 <div class="ga-actions">
+                   <button type="button" class="ga-btn ga-btn-primary" id="gaAttachAff">Prijungti prie šios org</button>
+                   <button type="button" class="ga-btn ga-btn-ghost" id="gaDetachAff">Atjungti pasirinktą</button>
+                 </div>`
+          }
         </div>
         <div class="ga-warn-box">
           <h3>⚠ Įspėjimų sistema (${wCount}/${wMax})</h3>
@@ -212,6 +258,46 @@
           <button type="button" class="ga-btn ga-btn-danger" id="gaDeleteGang">Ištrinti gaują</button>
         </div>
       </div>`;
+
+    document.getElementById("gaSaveAff")?.addEventListener("click", () => {
+      post("gangs:adminSetAffiliate", {
+        childGangId: g.id,
+        parentGangId: Number(document.getElementById("gaParentGang")?.value) || 0,
+      }).then((res) => {
+        if (res && res.ok) {
+          toast("Afiliacija atnaujinta.", "ok");
+          mergeState(res);
+          selectedGangId = g.id;
+          renderAll();
+        } else toast((res && res.message) || "Nepavyko.", "err");
+      });
+    });
+
+    document.getElementById("gaAttachAff")?.addEventListener("click", () => {
+      const childId = Number(document.getElementById("gaChildGang")?.value) || 0;
+      if (!childId) return toast("Pasirink neoficialią gaują.", "err");
+      post("gangs:adminSetAffiliate", { childGangId: childId, parentGangId: g.id }).then((res) => {
+        if (res && res.ok) {
+          toast("Prijungta.", "ok");
+          mergeState(res);
+          selectedGangId = g.id;
+          renderAll();
+        } else toast((res && res.message) || "Nepavyko.", "err");
+      });
+    });
+
+    document.getElementById("gaDetachAff")?.addEventListener("click", () => {
+      const childId = Number(document.getElementById("gaChildGang")?.value) || 0;
+      if (!childId) return toast("Pasirink neoficialią gaują.", "err");
+      post("gangs:adminSetAffiliate", { childGangId: childId, parentGangId: 0 }).then((res) => {
+        if (res && res.ok) {
+          toast("Atjungta.", "ok");
+          mergeState(res);
+          selectedGangId = g.id;
+          renderAll();
+        } else toast((res && res.message) || "Nepavyko.", "err");
+      });
+    });
 
     document.getElementById("gaIssueWarn")?.addEventListener("click", () => {
       const reason = (document.getElementById("gaWarnReason")?.value || "").trim();
@@ -267,10 +353,12 @@
   function renderTurfDetail(t) {
     const gangOpts = ['<option value="0">— Laisva —</option>']
       .concat(
-        (state.gangs || []).map(
-          (g) =>
-            `<option value="${g.id}"${Number(t.owner_gang_id) === Number(g.id) ? " selected" : ""}>#${g.id} ${safe(g.name)}</option>`,
-        ),
+        (state.gangs || [])
+          .filter((g) => !(g.is_unofficial || g.gang_type === "unofficial"))
+          .map(
+            (g) =>
+              `<option value="${g.id}"${Number(t.owner_gang_id) === Number(g.id) ? " selected" : ""}>#${g.id} ${safe(g.name)}</option>`,
+          ),
       )
       .join("");
     const prog = Math.max(0, Math.min(100, Number(t.progress) || 0));

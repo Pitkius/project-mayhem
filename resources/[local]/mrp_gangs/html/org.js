@@ -52,6 +52,7 @@
     member_responsibilities_changed: 'Pakeistos atsakomybės', member_overrides_changed: 'Pakeistos individualios teisės',
     rank_created: 'Sukurtas rangas', rank_edited: 'Redaguotas rangas', rank_deleted: 'Ištrintas rangas',
     rank_moved: 'Perkeltas rangas', rank_permissions_changed: 'Pakeistos rango teisės', rank_members_moved: 'Perkelti nariai',
+    affiliate_changed: 'Pakeista organizacijos afiliacija',
     associate_added: 'Pridėtas asocijuotas', associate_edited: 'Redaguotas asocijuotas', associate_removed: 'Pašalintas asocijuotas',
     associate_promotion_offered: 'Pasiūlyta narystė', relation_offer_sent: 'Išsiųstas pasiūlymas', relation_set: 'Nustatytas santykis',
     relation_accepted: 'Priimtas santykis', relation_declined: 'Atmestas pasiūlymas', relation_broken: 'Nutrauktas santykis',
@@ -112,7 +113,7 @@
     em.textContent = initials(g.label || g.name);
     const brandSub = ro
       ? `Tik peržiūra · ${S.members.length} narių`
-      : `${esc(g.gangType || '')} · ${S.members.length} narių`;
+      : `${esc(g.gangType || '')}${g.isUnofficial ? ' · neoficiali' : ''} · ${S.members.length} narių`;
     const bt = el('div', 'org-brand-text', `<h3>${esc(g.label || g.name)}</h3><span>${brandSub}</span>`);
     elBrand.append(em, bt);
 
@@ -125,11 +126,12 @@
       if (n.id === 'logs' && !hasPerm('gang.view_logs')) return;
       if (n.id === 'relations' && !hasPerm('diplomacy.view')) return;
       const item = el('div', 'org-nav-item' + (view === n.id ? ' active' : ''));
-      item.innerHTML = `<span class="ico">${n.ico}</span><span>${n.label}</span>`;
+      const turfLocked = n.id === 'turfs' && (S.turfBlocked || (S.gang && S.gang.isUnofficial));
+      item.innerHTML = `<span class="ico">${n.ico}</span><span>${n.label}${turfLocked ? ' 🔒' : ''}</span>`;
       const cnt = n.id === 'members' ? S.members.length
         : n.id === 'associates' ? S.associates.length
         : n.id === 'ranks' ? S.ranks.length
-        : n.id === 'turfs' ? (S.turfs || []).length
+        : n.id === 'turfs' ? (turfLocked ? null : (S.turfs || []).length)
         : null;
       if (cnt != null) item.append(el('span', 'badge', String(cnt)));
       item.onclick = () => { view = n.id; renderShell(); renderView(); };
@@ -365,6 +367,14 @@
 
   // ═══ TURFS ═══
   function viewTurfs() {
+    if (S.turfBlocked || (S.gang && S.gang.isUnofficial)) {
+      elSub.textContent = S.turfBlockedTitle || 'Teritorijos užblokuotos';
+      const box = el('div', 'org-empty');
+      box.textContent = S.turfBlockedMessage
+        || 'Jūs esate neoficiali gauja — negalite turėti teritorijos ir dalyvauti teritorijų karuose.';
+      elContent.append(box);
+      return;
+    }
     const list = S.turfs || [];
     elSub.textContent = list.length ? `${list.length} užimtų teritorijų` : 'Nėra užimtų teritorijų';
     if (!list.length) {
@@ -679,6 +689,64 @@
     const save = el('button', 'obtn obtn-primary', 'Išsaugoti'); save.disabled = !hasPerm('gang.edit_info');
     save.onclick = async () => { const res = await call('saveSettings', { label: fLabel.input.value, emblem: fEmblem.input.value, color: c1, secondaryColor: c2 }); after(res); };
     wrap.append(save);
+
+    // Afiliacija: neoficiali ↔ oficiali
+    if (!isReadOnly() && S.affiliation) {
+      wrap.append(el('div', 'org-section-title', 'Organizacijos afiliacija'));
+      const aff = S.affiliation;
+      const canAff = hasPerm('gang.manage_affiliates') || hasPerm('gang.edit_info');
+      if (aff.isUnofficial || g.isUnofficial) {
+        const cur = aff.parent ? `${aff.parent.name} (#${aff.parent.id})` : 'Neprisijungta';
+        wrap.append(el('p', 'org-empty', `Dabar: ${cur}. Galite integruotis į oficialią gaują.`));
+        const opts = [{ v: '0', t: '— Be organizacijos —' }].concat(
+          (aff.officialCandidates || []).map(o => ({ v: String(o.id), t: `${o.name} (#${o.id})` }))
+        );
+        const sel = selectEl(opts, aff.parent ? String(aff.parent.id) : '0');
+        wrap.append(field('Oficiali organizacija', sel).wrap);
+        const btn = el('button', 'obtn obtn-primary', 'Išsaugoti afiliaciją');
+        btn.disabled = !canAff;
+        btn.onclick = async () => {
+          const res = await call('setAffiliate', { parentGangId: Number(sel.value) || 0 });
+          after(res, true);
+        };
+        wrap.append(btn);
+      } else {
+        const kids = aff.children || [];
+        wrap.append(el('p', 'org-empty', kids.length
+          ? `Neoficialios gaujos jūsų organizacijoje: ${kids.map(c => c.name).join(', ')}`
+          : 'Kol kas nėra prijungtų neoficialių gaujų. Galite integruoti neoficialią gaują į savo organizaciją.'));
+        if (kids.length) {
+          const ul = el('ul');
+          kids.forEach(c => {
+            const li = el('li');
+            li.textContent = `${c.name} (#${c.id}) `;
+            const det = el('button', 'obtn obtn-ghost sm', 'Atjungti');
+            det.disabled = !canAff;
+            det.onclick = async () => {
+              const res = await call('setAffiliate', { childGangId: c.id, clear: true });
+              after(res, true);
+            };
+            li.append(det);
+            ul.append(li);
+          });
+          wrap.append(ul);
+        }
+        const free = (aff.unofficialCandidates || []).filter(c => !c.parent_gang_id || Number(c.parent_gang_id) === 0);
+        if (free.length) {
+          const opts = free.map(o => ({ v: String(o.id), t: `${o.name} (#${o.id})` }));
+          const sel = selectEl(opts, opts[0] && opts[0].v);
+          wrap.append(field('Prijungti neoficialią gaują', sel).wrap);
+          const btn = el('button', 'obtn obtn-primary', 'Prijungti');
+          btn.disabled = !canAff;
+          btn.onclick = async () => {
+            const res = await call('setAffiliate', { childGangId: Number(sel.value) });
+            after(res, true);
+          };
+          wrap.append(btn);
+        }
+      }
+    }
+
     if (S.me.isOwner) {
       wrap.append(el('div', 'org-section-title', 'Pavojinga zona'));
       const f = field('Perduoti nuosavybę nariui', selectEl(S.members.filter(m=>!m.isOwner).map(m=>({v:m.citizenid,t:m.name}))));

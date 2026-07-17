@@ -92,8 +92,20 @@ function GangOrg.giveRegisteredTablet(src, gangId)
     if not gang then return false, 'Gauja nerasta.' end
 
     local info = buildTabletInfo(gang)
+    local tabletRowId = MySQL.insert.await(
+        'INSERT INTO fivempro_gang_tablets (gang_id, registered_by) VALUES (?, ?)',
+        { gangId, Player.PlayerData.citizenid }
+    )
+    if tabletRowId then
+        info.tablet_id = tonumber(tabletRowId)
+    end
     local ok = Player.Functions.AddItem(Config.TabletItem, 1, false, info)
-    if not ok then return false, 'Inventorius pilnas.' end
+    if not ok then
+        if tabletRowId then
+            MySQL.update.await('DELETE FROM fivempro_gang_tablets WHERE id = ?', { tabletRowId })
+        end
+        return false, 'Inventorius pilnas.'
+    end
 
     relabelTabletSlots(Player, gangId, gangDisplayName(gang))
     TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[Config.TabletItem], 'add', 1)
@@ -107,6 +119,22 @@ function GangOrg.ensureTabletBound(src, item)
     local info = item.info
     if type(info) ~= 'table' then info = {} end
     if tonumber(info.gang_id) then
+        --- Senesnės planšetės be DB įrašo — užregistruoti vieną kartą
+        if not tonumber(info.tablet_id) then
+            local tabletRowId = MySQL.insert.await(
+                'INSERT INTO fivempro_gang_tablets (gang_id, registered_by) VALUES (?, ?)',
+                { tonumber(info.gang_id), Player.PlayerData.citizenid }
+            )
+            if tabletRowId then
+                info.tablet_id = tonumber(tabletRowId)
+                item.info = info
+                local slot = tonumber(item.slot)
+                if slot and Player.PlayerData.items and Player.PlayerData.items[slot] then
+                    Player.PlayerData.items[slot].info = info
+                    Player.Functions.SetPlayerData('items', Player.PlayerData.items)
+                end
+            end
+        end
         relabelTabletSlots(Player, info.gang_id, info.gang_label or info.gang_name or 'Gauja')
         return item
     end
@@ -121,6 +149,11 @@ function GangOrg.ensureTabletBound(src, item)
     if not row then return item end
 
     info = buildTabletInfo(row)
+    local tabletRowId = MySQL.insert.await(
+        'INSERT INTO fivempro_gang_tablets (gang_id, registered_by) VALUES (?, ?)',
+        { tonumber(row.id), Player.PlayerData.citizenid }
+    )
+    if tabletRowId then info.tablet_id = tonumber(tabletRowId) end
     item.info = info
     local slot = tonumber(item.slot)
     if slot and Player.PlayerData.items and Player.PlayerData.items[slot] then

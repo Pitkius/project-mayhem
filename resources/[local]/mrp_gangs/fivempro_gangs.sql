@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `fivempro_gangs` (
   `color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF',
   `secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF',
   `owner_citizenid` VARCHAR(64) NULL,
+  `parent_gang_id` INT NULL DEFAULT NULL,
   `reputation` INT NOT NULL DEFAULT 0,
   `heat` INT NOT NULL DEFAULT 0,
   `warnings` INT NOT NULL DEFAULT 0,
@@ -56,6 +57,16 @@ CREATE TABLE IF NOT EXISTS `fivempro_gang_warnings` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_fivempro_gang_warnings_gang` (`gang_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--- Kiekviena planšetė registruojama konkrečiai gaujai
+CREATE TABLE IF NOT EXISTS `fivempro_gang_tablets` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `gang_id` INT NOT NULL,
+  `registered_by` VARCHAR(64) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_fivempro_gang_tablets_gang` (`gang_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO `fivempro_gang_turfs` (`turf_id`) VALUES

@@ -8,12 +8,97 @@ local function getPlayerGang(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return nil end
     return MySQL.single.await([[
-        SELECT gm.gang_id, gm.rank, g.name, g.gang_type, g.color_hex, g.secondary_color_hex, g.reputation, g.heat, g.warnings, g.created_at
+        SELECT gm.gang_id, gm.rank, g.name, g.gang_type, g.color_hex, g.secondary_color_hex, g.reputation, g.heat, g.warnings, g.created_at, g.parent_gang_id
         FROM fivempro_gang_members gm
         JOIN fivempro_gangs g ON g.id = gm.gang_id
         WHERE gm.citizenid = ?
         LIMIT 1
     ]], { Player.PlayerData.citizenid })
+end
+
+local function getGangById(gangId)
+    return MySQL.single.await('SELECT * FROM fivempro_gangs WHERE id = ? LIMIT 1', { tonumber(gangId) })
+end
+
+local function isUnofficialGangRow(gang)
+    return gang and Config.IsUnofficialGangType and Config.IsUnofficialGangType(gang.gang_type)
+end
+
+--- parentId = oficiali gauja, childId = neoficiali. parentId nil = atjungti.
+local function setGangParent(childId, parentId)
+    childId = tonumber(childId)
+    if not childId then return false, 'Neteisinga gauja.' end
+    local child = getGangById(childId)
+    if not child then return false, 'Gauja nerasta.' end
+    if not isUnofficialGangRow(child) then
+        return false, 'Tik neoficialią gaują galima prijungti prie organizacijos.'
+    end
+    if parentId == nil or tonumber(parentId) == 0 then
+        MySQL.update.await('UPDATE fivempro_gangs SET parent_gang_id = NULL WHERE id = ?', { childId })
+        return true, 'Afiliacija atjungta.'
+    end
+    parentId = tonumber(parentId)
+    if parentId == childId then return false, 'Negalima prijungti prie savęs.' end
+    local parent = getGangById(parentId)
+    if not parent then return false, 'Organizacija nerasta.' end
+    if isUnofficialGangRow(parent) then
+        return false, 'Tėvinė organizacija turi būti oficiali gauja.'
+    end
+    MySQL.update.await('UPDATE fivempro_gangs SET parent_gang_id = ? WHERE id = ?', { parentId, childId })
+    return true, 'Afiliacija nustatyta.'
+end
+
+local function getGangAffiliation(gangId)
+    gangId = tonumber(gangId)
+    if not gangId then return nil end
+    local gang = getGangById(gangId)
+    if not gang then return nil end
+    local unofficial = isUnofficialGangRow(gang)
+    local parent = nil
+    if gang.parent_gang_id then
+        local p = getGangById(gang.parent_gang_id)
+        if p then
+            parent = { id = tonumber(p.id), name = p.name, label = p.label or p.name, gang_type = p.gang_type, color_hex = p.color_hex }
+        end
+    end
+    local children = {}
+    if not unofficial then
+        children = MySQL.query.await([[
+            SELECT id, name, label, gang_type, color_hex
+            FROM fivempro_gangs
+            WHERE parent_gang_id = ?
+            ORDER BY name ASC
+        ]], { gangId }) or {}
+        for _, c in ipairs(children) do
+            c.id = tonumber(c.id)
+            c.label = c.label or c.name
+        end
+    end
+    local officialCandidates = {}
+    local unofficialCandidates = {}
+    if unofficial then
+        officialCandidates = MySQL.query.await([[
+            SELECT id, name, label, gang_type, color_hex
+            FROM fivempro_gangs
+            WHERE gang_type != ? AND id != ?
+            ORDER BY name ASC
+        ]], { Config.UnofficialGang and Config.UnofficialGang.typeKey or 'unofficial', gangId }) or {}
+    else
+        unofficialCandidates = MySQL.query.await([[
+            SELECT id, name, label, gang_type, color_hex, parent_gang_id
+            FROM fivempro_gangs
+            WHERE gang_type = ?
+            ORDER BY name ASC
+        ]], { Config.UnofficialGang and Config.UnofficialGang.typeKey or 'unofficial' }) or {}
+    end
+    return {
+        isUnofficial = unofficial == true,
+        parent = parent,
+        children = children,
+        officialCandidates = officialCandidates,
+        unofficialCandidates = unofficialCandidates,
+        turfBlockedMessage = Config.GetUnofficialTurfBlockMessage and Config.GetUnofficialTurfBlockMessage() or nil,
+    }
 end
 
 local function isGangBoss(src)
@@ -25,10 +110,6 @@ local function canManageMembers(src)
     local g = getPlayerGang(src)
     local rank = g and (tonumber(g.rank) or 0) or -1
     return rank >= 3, g
-end
-
-local function getGangById(gangId)
-    return MySQL.single.await('SELECT * FROM fivempro_gangs WHERE id = ? LIMIT 1', { tonumber(gangId) })
 end
 
 local function getGangMembers(gangId)
@@ -58,12 +139,21 @@ local function notifyGangMembersOnline(gangId, message, ntype, payload)
 end
 
 local function fetchAdminGangs()
-    return MySQL.query.await([[
-        SELECT g.id, g.name, g.gang_type, g.color_hex, g.reputation, g.heat, g.warnings, g.created_at,
-            (SELECT COUNT(*) FROM fivempro_gang_members m WHERE m.gang_id = g.id) AS member_count
+    local rows = MySQL.query.await([[
+        SELECT g.id, g.name, g.gang_type, g.color_hex, g.reputation, g.heat, g.warnings, g.created_at, g.parent_gang_id,
+            (SELECT COUNT(*) FROM fivempro_gang_members m WHERE m.gang_id = g.id) AS member_count,
+            (SELECT COUNT(*) FROM fivempro_gang_tablets t WHERE t.gang_id = g.id) AS tablet_count,
+            p.name AS parent_name
         FROM fivempro_gangs g
+        LEFT JOIN fivempro_gangs p ON p.id = g.parent_gang_id
         ORDER BY g.id ASC
     ]]) or {}
+    for _, g in ipairs(rows) do
+        g.is_unofficial = isUnofficialGangRow(g)
+        g.parent_gang_id = tonumber(g.parent_gang_id)
+        g.tablet_count = tonumber(g.tablet_count) or 0
+    end
+    return rows
 end
 
 local function getGangColorLegend()
@@ -354,6 +444,8 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:getTabletState', function(src,
         end
 
         --- Tablet UI naudoja gang.gang_id / name laukus
+        local isUnofficial = isUnofficialGangRow(viewGang)
+        local affiliation = getGangAffiliation(viewGang.id)
         local gangPayload = {
             gang_id = tonumber(viewGang.id),
             name = viewGang.name,
@@ -366,6 +458,8 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:getTabletState', function(src,
             warnings = viewGang.warnings,
             created_at = viewGang.created_at,
             rank = (not readOnly and playerGang and playerGang.rank) or 0,
+            parent_gang_id = tonumber(viewGang.parent_gang_id),
+            is_unofficial = isUnofficial,
         }
 
         cb({
@@ -373,6 +467,11 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:getTabletState', function(src,
             hasGang = true,
             readOnly = readOnly,
             plateGangId = tonumber(viewGang.id),
+            isUnofficial = isUnofficial,
+            turfBlocked = isUnofficial,
+            turfBlockedTitle = (Config.UnofficialGang and Config.UnofficialGang.turfBlockedTitle) or 'Teritorijos užblokuotos',
+            turfBlockedMessage = Config.GetUnofficialTurfBlockMessage and Config.GetUnofficialTurfBlockMessage() or nil,
+            affiliation = affiliation,
             gang = gangPayload,
             members = getGangMembers(viewGang.id),
             warnings = readOnly and {} or getGangWarnings(viewGang.id, 8),
@@ -384,7 +483,7 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:getTabletState', function(src,
             tabletMap = Config.TabletMap or {},
             gangColors = getGangColorLegend(),
             topGangs = getTopGangs(5),
-            activeWars = getActiveTurfWars(),
+            activeWars = isUnofficial and {} or getActiveTurfWars(),
             recentActivities = getRecentGangActivities(6),
             claimThreshold = claimThreshold,
             missions = readOnly and {} or getMissionCatalog(viewGang.gang_type),
@@ -645,12 +744,21 @@ RegisterNetEvent('mrp_gangs:server:adminDeleteGang', function(gangId)
     if not HasGangAdminPermission(src) then return end
     gangId = tonumber(gangId)
     if not gangId then return end
+    MySQL.update.await('UPDATE fivempro_gangs SET parent_gang_id = NULL WHERE parent_gang_id = ?', { gangId })
+    MySQL.update.await('DELETE FROM fivempro_gang_tablets WHERE gang_id = ?', { gangId })
     MySQL.update.await('DELETE FROM fivempro_gang_members WHERE gang_id = ?', { gangId })
     MySQL.update.await('DELETE FROM fivempro_gang_warnings WHERE gang_id = ?', { gangId })
     MySQL.update.await('UPDATE fivempro_gang_turfs SET owner_gang_id = NULL, owner_name = NULL, progress = 0 WHERE owner_gang_id = ?', { gangId })
     MySQL.update.await('DELETE FROM fivempro_gang_sales_logs WHERE gang_id = ?', { gangId })
     MySQL.update.await('DELETE FROM fivempro_gangs WHERE id = ?', { gangId })
     TriggerClientEvent('QBCore:Notify', src, 'Gauja ištrinta.', 'success')
+end)
+
+RegisterNetEvent('mrp_gangs:server:adminSetAffiliate', function(childGangId, parentGangId)
+    local src = source
+    if not HasGangAdminPermission(src) then return end
+    local ok, msg = setGangParent(childGangId, parentGangId)
+    TriggerClientEvent('QBCore:Notify', src, tostring(msg), ok and 'success' or 'error')
 end)
 
 MySQL.ready(function()
@@ -662,6 +770,7 @@ MySQL.ready(function()
             `color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF',
             `secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF',
             `owner_citizenid` VARCHAR(64) NULL,
+            `parent_gang_id` INT NULL DEFAULT NULL,
             `reputation` INT NOT NULL DEFAULT 0,
             `heat` INT NOT NULL DEFAULT 0,
             `warnings` INT NOT NULL DEFAULT 0,
@@ -691,6 +800,25 @@ MySQL.ready(function()
     if (tonumber(hasWarnings) or 0) == 0 then
         MySQL.query.await([[ALTER TABLE `fivempro_gangs` ADD COLUMN `warnings` INT NOT NULL DEFAULT 0 AFTER `heat`]])
     end
+    local hasParent = MySQL.scalar.await([[
+        SELECT COUNT(*) FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'fivempro_gangs'
+          AND column_name = 'parent_gang_id'
+    ]])
+    if (tonumber(hasParent) or 0) == 0 then
+        MySQL.query.await([[ALTER TABLE `fivempro_gangs` ADD COLUMN `parent_gang_id` INT NULL DEFAULT NULL AFTER `owner_citizenid`]])
+    end
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS `fivempro_gang_tablets` (
+            `id` INT NOT NULL AUTO_INCREMENT,
+            `gang_id` INT NOT NULL,
+            `registered_by` VARCHAR(64) NULL,
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_fivempro_gang_tablets_gang` (`gang_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ]])
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_gang_warnings` (
             `id` INT NOT NULL AUTO_INCREMENT,
@@ -757,9 +885,14 @@ MySQL.ready(function()
     QBCore.Functions.CreateUseableItem(Config.TabletItem, function(source, item)
         item = GangOrg.ensureTabletBound(source, item) or item
         local info = item and item.info or {}
+        local gangId = tonumber(info.gang_id)
+        if not gangId then
+            return TriggerClientEvent('QBCore:Notify', source, 'Ši planšetė neužregistruota jokiai gaujai. Pirk naują arba užregistruok per gaują.', 'error')
+        end
         TriggerClientEvent('mrp_gangs:client:openTablet', source, {
-            gangId = tonumber(info.gang_id),
+            gangId = gangId,
             gangLabel = info.gang_label or info.gang_name,
+            tabletId = tonumber(info.tablet_id),
         })
     end)
 
@@ -778,6 +911,12 @@ end)
 
 --- Lengvas gaujos narystės patikrinimas kitiems resursams (pvz. mrp_drugs Dark Net).
 --- Grąžina: isInGang(boolean), gangName(string|nil), gangRank(number|nil), gangId(number|nil)
+--- Afiliacija (neoficiali ↔ oficiali) — naudoja org meniu / admin.
+GangAffiliate = GangAffiliate or {}
+GangAffiliate.setParent = setGangParent
+GangAffiliate.get = getGangAffiliation
+GangAffiliate.isUnofficial = isUnofficialGangRow
+
 exports('IsInGang', function(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return false end

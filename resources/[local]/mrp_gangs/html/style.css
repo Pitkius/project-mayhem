@@ -102,6 +102,23 @@ body {
   display: none;
 }
 
+.tablet-unofficial-banner {
+  color: #fecaca;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.06));
+  border-bottom-color: rgba(239, 68, 68, 0.35);
+}
+
+.map-turf-blocked {
+  margin: 8px 12px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
 .tab-btn {
   flex: 1;
   min-width: 0;

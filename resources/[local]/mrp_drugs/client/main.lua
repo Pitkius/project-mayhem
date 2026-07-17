@@ -1444,6 +1444,24 @@ local function spawnWeedSupplyShopNpc()
     end)
 end
 
+local function spawnPrinterShopNpc()
+    local cfg = Config.PrinterShopNPC
+    if not cfg or cfg.enabled == false or not cfg.coords then return end
+    if printerShopPed ~= 0 then safeDeleteHubPed(printerShopPed) end
+    printerShopPed = spawnHubPed(cfg, function(ped)
+        exports['qb-target']:AddTargetEntity(ped, {
+            options = {
+                {
+                    icon = cfg.targetIcon or 'fas fa-print',
+                    label = cfg.label or 'Pirkti 3D spausdintuvą',
+                    action = openPrinterShop,
+                },
+            },
+            distance = (cfg.maxDistance or Config.InteractDistance or 2.5) + 1.0,
+        })
+    end)
+end
+
 local function spawnSupplyShopNpc()
     local cfg = Config.SupplyShopNPC
     if not cfg or cfg.enabled == false or not cfg.coords then return end

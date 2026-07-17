@@ -94,3 +94,16 @@ CREATE TABLE IF NOT EXISTS `fivempro_gang_logs` (
   KEY `idx_gang_logs_action` (`action`),
   KEY `idx_gang_logs_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── Neoficialios gaujos: afiliacija + planšečių registracija ───────
+ALTER TABLE `fivempro_gangs`
+  ADD COLUMN IF NOT EXISTS `parent_gang_id` INT NULL DEFAULT NULL AFTER `owner_citizenid`;
+
+CREATE TABLE IF NOT EXISTS `fivempro_gang_tablets` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `gang_id` INT NOT NULL,
+  `registered_by` VARCHAR(64) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_fivempro_gang_tablets_gang` (`gang_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

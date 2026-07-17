@@ -23,6 +23,7 @@ Config.GangPermissionGroups = {
             { key = 'gang.edit_emblem',    label = 'Keisti emblemą' },
             { key = 'gang.edit_color',     label = 'Keisti spalvą' },
             { key = 'gang.edit_name',      label = 'Keisti pavadinimą' },
+            { key = 'gang.manage_affiliates', label = 'Valdyti neoficialias / oficialias afiliacijas' },
             { key = 'gang.view_logs',      label = 'Matyti veiklos žurnalą' },
         },
     },
@@ -202,7 +203,7 @@ Config.GangInviteExpirySec = 60   -- pakvietimo galiojimas
 Config.GangDefaultRanks = {
     { name = 'boss',      label = 'Bosas',      priority = 100, color = '#EF4444', icon = 'crown',      isOwner = true,  canHaveChildren = true,  permissions = '*' },
     { name = 'underboss', label = 'Underboss',  priority = 80,  color = '#F59E0B', icon = 'star',       isOwner = false, canHaveChildren = true,  permissions = {
-        'gang.open_menu','gang.view_structure','gang.edit_info','gang.view_logs',
+        'gang.open_menu','gang.view_structure','gang.edit_info','gang.manage_affiliates','gang.view_logs',
         'members.invite','members.approve','members.kick','members.promote','members.demote','members.move_rank','members.edit_notes','members.suspend','members.assign_resp','members.view_lastseen',
         'ranks.create','ranks.edit','ranks.reorder','ranks.edit_permissions','ranks.assign_leaders',
         'associates.add','associates.remove','associates.edit_status','associates.assign_tasks','associates.view_info','associates.promote',

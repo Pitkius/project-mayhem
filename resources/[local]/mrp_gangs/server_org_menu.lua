@@ -173,25 +173,33 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:org:getState', function(src, c
     end
 
     --- Užimti turfai (šios gaujos)
-    local turfRows = MySQL.query.await([[
-        SELECT turf_id, owner_name, influence, progress, heat, sales_count, total_profit
-        FROM fivempro_gang_turfs
-        WHERE owner_gang_id = ?
-        ORDER BY influence DESC, turf_id ASC
-    ]], { targetGangId }) or {}
+    local isUnofficial = Config.IsUnofficialGangType and Config.IsUnofficialGangType(st.gang.gang_type)
     local turfs = {}
-    local cellMap = Config.TurfCells or Config.Turfs or {}
-    for _, t in ipairs(turfRows) do
-        local cell = cellMap[t.turf_id]
-        turfs[#turfs + 1] = {
-            id = t.turf_id,
-            label = (cell and (cell.label or cell.name)) or t.turf_id,
-            influence = tonumber(t.influence) or 0,
-            progress = tonumber(t.progress) or 0,
-            heat = tonumber(t.heat) or 0,
-            salesCount = tonumber(t.sales_count) or 0,
-            profit = tonumber(t.total_profit) or 0,
-        }
+    if not isUnofficial then
+        local turfRows = MySQL.query.await([[
+            SELECT turf_id, owner_name, influence, progress, heat, sales_count, total_profit
+            FROM fivempro_gang_turfs
+            WHERE owner_gang_id = ?
+            ORDER BY influence DESC, turf_id ASC
+        ]], { targetGangId }) or {}
+        local cellMap = Config.TurfCells or Config.Turfs or {}
+        for _, t in ipairs(turfRows) do
+            local cell = cellMap[t.turf_id]
+            turfs[#turfs + 1] = {
+                id = t.turf_id,
+                label = (cell and (cell.label or cell.name)) or t.turf_id,
+                influence = tonumber(t.influence) or 0,
+                progress = tonumber(t.progress) or 0,
+                heat = tonumber(t.heat) or 0,
+                salesCount = tonumber(t.sales_count) or 0,
+                profit = tonumber(t.total_profit) or 0,
+            }
+        end
+    end
+
+    local affiliation = nil
+    if GangAffiliate and GangAffiliate.get then
+        affiliation = GangAffiliate.get(targetGangId)
     end
 
     local mePerms = {}
@@ -224,6 +232,8 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:org:getState', function(src, c
             reputation = st.gang.reputation,
             createdAt = st.gang.created_at,
             ownerCitizenid = st.gang.owner_citizenid,
+            parentGangId = tonumber(st.gang.parent_gang_id),
+            isUnofficial = isUnofficial == true,
             settings = readOnly and {} or settings,
         },
         ranks = ranks,
@@ -232,6 +242,10 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:org:getState', function(src, c
         diplomacy = diplomacy,
         otherGangs = otherGangs,
         turfs = turfs,
+        affiliation = affiliation,
+        turfBlocked = isUnofficial == true,
+        turfBlockedTitle = (Config.UnofficialGang and Config.UnofficialGang.turfBlockedTitle) or 'Teritorijos užblokuotos',
+        turfBlockedMessage = Config.GetUnofficialTurfBlockMessage and Config.GetUnofficialTurfBlockMessage() or nil,
         catalog = {
             permissionGroups = Config.GangPermissionGroups,
             responsibilities = Config.GangResponsibilities,
@@ -329,6 +343,55 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:org:saveSettings', function(sr
     })
     TriggerEvent('mrp_gangs:internal:orgChanged', ctx.gangId)
     cb({ ok = true, msg = 'Nustatymai išsaugoti.' })
+end)
+
+--- Neoficiali ↔ oficiali organizacijos afiliacija
+QBCore.Functions.CreateCallback('mrp_gangs:server:org:setAffiliate', function(src, cb, data)
+    if GangOrg.isOrgWriteBlocked(src) then
+        return cb({ ok = false, msg = GangOrg.writeBlockedMsg() })
+    end
+    if not GangOrg.rateLimit(src, 'affiliate', 1.0) then return cb({ ok = false, msg = GangOrg.rateLimitFailMsg(src) }) end
+    local ctx = GangOrg.getContextBySource(src)
+    if not ctx then return cb({ ok = false, msg = 'Nepriklausai gaujai.' }) end
+    if not (ctx.perms.wildcard or ctx.perms.set['gang.manage_affiliates'] or ctx.perms.set['gang.edit_info']) then
+        return cb({ ok = false, msg = 'Nėra teisės valdyti afiliacijas.' })
+    end
+    if not GangAffiliate or not GangAffiliate.setParent then
+        return cb({ ok = false, msg = 'Afiliacijos sistema neparuošta.' })
+    end
+
+    data = data or {}
+    local st = GangOrg.getStruct(ctx.gangId)
+    if not st or not st.gang then return cb({ ok = false, msg = 'Gauja nerasta.' }) end
+    local myUnofficial = Config.IsUnofficialGangType and Config.IsUnofficialGangType(st.gang.gang_type)
+    local childId, parentId
+
+    if myUnofficial then
+        --- Neoficiali renkasi oficialią tėvinę org
+        childId = ctx.gangId
+        parentId = tonumber(data.parentGangId) or 0
+    else
+        --- Oficialinė prijungia / atjungia neoficialią
+        childId = tonumber(data.childGangId)
+        parentId = (data.clear == true or data.parentGangId == 0) and 0 or ctx.gangId
+        if data.clear == true then parentId = 0 end
+        if not childId then return cb({ ok = false, msg = 'Pasirink neoficialią gaują.' }) end
+    end
+
+    local ok, msg = GangAffiliate.setParent(childId, parentId)
+    if ok then
+        GangOrg.log(ctx.gangId, GangOrg.actor(ctx, src), 'affiliate_changed', {
+            targetType = 'gang',
+            targetId = childId,
+            newValue = { parentGangId = parentId },
+        })
+        TriggerEvent('mrp_gangs:internal:orgChanged', ctx.gangId)
+        if childId ~= ctx.gangId then TriggerEvent('mrp_gangs:internal:orgChanged', childId) end
+        if parentId and parentId > 0 and parentId ~= ctx.gangId then
+            TriggerEvent('mrp_gangs:internal:orgChanged', parentId)
+        end
+    end
+    cb({ ok = ok, msg = msg })
 end)
 
 -- ── Gyvas atnaujinimas online nariams ──────────────────────────────

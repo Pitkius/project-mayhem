@@ -432,8 +432,8 @@ end
 Config.WeaponProducts = {
     --- L1 (po 10 spausdinimų) — silpni šarvai, pistoletai, šalti ginklai, pistoletų kulkos
     craft_armor_light = wp('Lengvi šarvai', 1, 'armor_light', nil, 0, 42000, 'progress', 8, 4, 1, 25, 'low'),
-    craft_pistol = wp('Pistoletas', 1, 'weapon_pistol', 'pistol_ammo', 60, 90000, 'progress', 12, 10, 3, 45, 'medium'),
-    craft_combat_pistol = wp('Combat pistoletas', 1, 'weapon_combatpistol', 'pistol_ammo', 72, 98000, 'skill', 14, 12, 4, 50, 'medium'),
+    craft_pistol = wp('Pistoletas XM3', 1, 'weapon_pistolxm3', 'pistol_ammo', 60, 90000, 'progress', 12, 10, 3, 45, 'medium'),
+    craft_combat_pistol = wp('Keraminis pistoletas', 1, 'weapon_ceramicpistol', 'pistol_ammo', 72, 98000, 'skill', 14, 12, 4, 50, 'medium'),
     craft_bat = wp('Beisbolo lazda', 1, 'weapon_bat', nil, 0, 82000, 'progress', 6, 4, 1, 30, 'low'),
     craft_knife = wp('Peilis', 1, 'weapon_knife', nil, 0, 78000, 'progress', 6, 4, 1, 28, 'low'),
     craft_switchblade = wp('Switchblade', 1, 'weapon_switchblade', nil, 0, 85000, 'progress', 8, 5, 2, 35, 'low'),

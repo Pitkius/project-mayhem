@@ -201,6 +201,10 @@ function AddTurfInfluence(src, turfId, taskType, opts)
     opts = opts or {}
     local gang = getPlayerGang(src)
     if not gang then return false, 'Nepriklausai gaujai.' end
+    if Config.IsUnofficialGangType and Config.IsUnofficialGangType(gang.gang_type) then
+        return false, Config.GetUnofficialTurfBlockMessage and Config.GetUnofficialTurfBlockMessage()
+            or 'Neoficiali gauja negali turėti teritorijos ir dalyvauti teritorijų karuose.'
+    end
     if not playerInTurfServer(src, turfId) and not opts.skipTurfCheck then
         return false, 'Turi būti turf zonoje.'
     end
@@ -691,8 +695,11 @@ RegisterNetEvent('mrp_gangs:server:adminSetTurfOwner', function(turfId, gangId)
     local ownerName = nil
     local ownerId = nil
     if gangId and gangId > 0 then
-        local g = MySQL.single.await('SELECT name FROM fivempro_gangs WHERE id = ? LIMIT 1', { gangId })
+        local g = MySQL.single.await('SELECT name, gang_type FROM fivempro_gangs WHERE id = ? LIMIT 1', { gangId })
         if g then
+            if Config.IsUnofficialGangType and Config.IsUnofficialGangType(g.gang_type) then
+                return TriggerClientEvent('QBCore:Notify', src, 'Neoficiali gauja negali turėti teritorijos.', 'error')
+            end
             ownerName = g.name
             ownerId = gangId
         end

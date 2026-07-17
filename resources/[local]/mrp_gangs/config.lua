@@ -10,7 +10,25 @@ Config.GangTypes = {
     cartel = 'Cartel',
     mafia = 'Mafia',
     racing = 'Racing Crew',
+    unofficial = 'Neoficiali gauja',
 }
+
+--- Neoficialios gaujos: tas pats valdymas, be teritorijų / turf karų
+Config.UnofficialGang = {
+    typeKey = 'unofficial',
+    turfBlockedTitle = 'Teritorijos užblokuotos',
+    turfBlockedMessage = 'Jūs esate neoficiali gauja — kol kas negalite turėti teritorijos ir dalyvauti teritorijų karuose. Visas kitas gaujos valdymas veikia kaip įprasta.',
+}
+
+function Config.IsUnofficialGangType(gangType)
+    return tostring(gangType or '') == (Config.UnofficialGang and Config.UnofficialGang.typeKey or 'unofficial')
+end
+
+function Config.GetUnofficialTurfBlockMessage()
+    local cfg = Config.UnofficialGang or {}
+    return cfg.turfBlockedMessage
+        or 'Jūs esate neoficiali gauja — negalite turėti teritorijos ir dalyvauti teritorijų karuose.'
+end
 
 --- Gaujų spalvos: hex + lietuviškas pavadinimas (planšetėje rodoma žodžiais)
 Config.GangColors = {

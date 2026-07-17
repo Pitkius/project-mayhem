@@ -218,13 +218,34 @@ window.GangMap = (function () {
     const rep = Number(gang.reputation || 0);
 
     if (statsEl) {
+      const unofficial = !!(state.isUnofficial || state.turfBlocked || (gang && gang.is_unofficial));
       statsEl.innerHTML = state.hasGang
         ? `
         <div class="stat-card"><span class="stat-k">Nariai</span><strong class="stat-v">${members}</strong></div>
-        <div class="stat-card"><span class="stat-k">Turfai</span><strong class="stat-v">${owned}</strong></div>
+        <div class="stat-card"><span class="stat-k">Turfai</span><strong class="stat-v">${unofficial ? "—" : owned}</strong></div>
         <div class="stat-card stat-card-accent"><span class="stat-k">Reputacija</span><strong class="stat-v">${rep.toLocaleString()}</strong></div>
       `
         : `<p class="muted small">Sukurk gaują skiltyje Registracija</p>`;
+    }
+
+    let blockedNote = document.getElementById("mapTurfBlockedNote");
+    const mapTop = document.querySelector("#tabPanelMap .map-top-bar");
+    const unofficial = !!(state.isUnofficial || state.turfBlocked || (gang && gang.is_unofficial));
+    if (unofficial) {
+      if (!blockedNote && mapTop) {
+        blockedNote = document.createElement("div");
+        blockedNote.id = "mapTurfBlockedNote";
+        blockedNote.className = "map-turf-blocked";
+        mapTop.insertAdjacentElement("afterend", blockedNote);
+      }
+      if (blockedNote) {
+        blockedNote.textContent =
+          state.turfBlockedMessage ||
+          "Jūs esate neoficiali gauja — negalite turėti teritorijos ir dalyvauti teritorijų karuose.";
+        blockedNote.classList.remove("hidden");
+      }
+    } else if (blockedNote) {
+      blockedNote.classList.add("hidden");
     }
 
     const legend = document.getElementById("gangLegend");
@@ -250,9 +271,14 @@ window.GangMap = (function () {
 
     const warsCount = (state.activeWars || []).length;
     const bannerText = document.getElementById("warsBannerText");
-    if (bannerText) bannerText.textContent = `Aktyvūs turf karai: ${warsCount}`;
     const banner = document.getElementById("warsBanner");
-    if (banner) banner.classList.toggle("has-wars", warsCount > 0);
+    if (unofficial) {
+      if (bannerText) bannerText.textContent = "Teritorijos užblokuotos";
+      if (banner) banner.classList.remove("has-wars");
+    } else {
+      if (bannerText) bannerText.textContent = `Aktyvūs turf karai: ${warsCount}`;
+      if (banner) banner.classList.toggle("has-wars", warsCount > 0);
+    }
   }
 
   function renderWarsPopover(state) {

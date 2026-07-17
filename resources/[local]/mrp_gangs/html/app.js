@@ -239,17 +239,21 @@ function renderTopAndWarsTabs(state) {
 
   const warsFull = document.getElementById("activeWarsListFull");
   if (warsFull) {
-    warsFull.innerHTML = (state.activeWars || [])
-      .map(
-        (w) =>
-          `<li class="war-row">
-            <span class="war-dot" style="background:${w.color_hex || "#f87171"}"></span>
-            <strong>Turf #${safe(w.turfId || w.cell_num || "—")}</strong>
-            <span>${safe(w.label)} · ${safe(w.influence)}%</span>
-            <em>${safe(w.timeLabel || "Aktyvus")}</em>
-          </li>`,
-      )
-      .join("") || "<li class='muted'>Šiuo metu ramu</li>";
+    if (state.isUnofficial || state.turfBlocked || (state.gang && state.gang.is_unofficial)) {
+      warsFull.innerHTML = `<li class="muted">${safe(state.turfBlockedMessage || "Jūs esate neoficiali gauja — negalite turėti teritorijos ir dalyvauti teritorijų karuose.")}</li>`;
+    } else {
+      warsFull.innerHTML = (state.activeWars || [])
+        .map(
+          (w) =>
+            `<li class="war-row">
+              <span class="war-dot" style="background:${w.color_hex || "#f87171"}"></span>
+              <strong>Turf #${safe(w.turfId || w.cell_num || "—")}</strong>
+              <span>${safe(w.label)} · ${safe(w.influence)}%</span>
+              <em>${safe(w.timeLabel || "Aktyvus")}</em>
+            </li>`,
+        )
+        .join("") || "<li class='muted'>Šiuo metu ramu</li>";
+    }
   }
 
   const actsFull = document.getElementById("recentActsListFull");
@@ -361,6 +365,14 @@ function updatePrimaryTabs(state) {
   }
   const banner = document.getElementById("tabletReadOnlyBanner");
   if (banner) banner.classList.toggle("hidden", !readOnly);
+  const unoffBanner = document.getElementById("tabletUnofficialBanner");
+  if (unoffBanner) {
+    const showUnoff = !!(state.isUnofficial || state.turfBlocked || (state.gang && state.gang.is_unofficial));
+    unoffBanner.classList.toggle("hidden", !showUnoff);
+    if (showUnoff && state.turfBlockedMessage) {
+      unoffBanner.textContent = state.turfBlockedMessage;
+    }
+  }
   const brand = document.getElementById("tabletBrandTitle");
   if (brand) {
     const gName = state.gang && (state.gang.label || state.gang.name);
@@ -395,7 +407,10 @@ function renderGangInfoTab(state) {
   const warnPanel = document.getElementById("gangInfoWarnPanel");
   if (title) title.textContent = gang.name || "Gauja";
   if (meta) {
-    meta.textContent = `${gang.gang_type || "—"} · ID #${gang.gang_id || "—"} · Spalvos: ${formatColorPair(gang.color_hex, gang.secondary_color_hex)}`;
+    const aff = state.affiliation && state.affiliation.parent;
+    const affTxt = aff ? ` · Org: ${aff.name}` : "";
+    const unoff = state.isUnofficial || (gang && gang.is_unofficial) ? " · Neoficiali" : "";
+    meta.textContent = `${gang.gang_type || "—"}${unoff} · ID #${gang.gang_id || "—"}${affTxt} · Spalvos: ${formatColorPair(gang.color_hex, gang.secondary_color_hex)}`;
   }
   if (swatch) swatch.style.cssText = gangSwatchStyle(gang.color_hex, gang.secondary_color_hex);
   if (stats) {
