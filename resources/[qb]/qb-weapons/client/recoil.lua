@@ -158,15 +158,15 @@ local function applyVerticalRecoil(ped, weap)
         repeat
             Wait(0)
             local p = GetGameplayCamRelativePitch()
-            SetGameplayCamRelativePitch(p + 0.18, 0.32)
-            tv = tv + 0.18
+            SetGameplayCamRelativePitch(p + 0.22, 0.38)
+            tv = tv + 0.22
         until tv >= amount
     else
         repeat
             Wait(0)
             local p = GetGameplayCamRelativePitch()
-            SetGameplayCamRelativePitch(p + 0.95, 1.55)
-            tv = tv + 0.95
+            SetGameplayCamRelativePitch(p + 1.05, 1.65)
+            tv = tv + 1.05
         until tv >= amount
     end
 
