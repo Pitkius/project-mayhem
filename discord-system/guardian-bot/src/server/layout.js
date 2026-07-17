@@ -8,6 +8,7 @@ export const SERVER_LAYOUT = {
       channels: [
         { key: 'welcome', name: '👋・sveiki-atvykę', type: 'text', readOnly: true, match: /sveiki|welcome/i },
         { key: 'news', name: '📢・naujienos', type: 'text', readOnly: true, match: /naujien/i },
+        { key: 'sneakpeek', name: '👀・sneak-peek', type: 'text', readOnly: true, match: /sneak.?peek|sneakpeek/i },
         { key: 'howto', name: '🧭・kaip-pradėti', type: 'text', readOnly: true, match: /kaip.?prad/i },
         { key: 'faq', name: '❓・dažniausi-klausimai', type: 'text', readOnly: true, match: /dazniaus|faq|klausim/i },
         { key: 'roles', name: '🎭・pasirink-roles', type: 'text', readOnly: true, match: /pasirink.?rol|roles?/i },
@@ -43,14 +44,21 @@ export const SERVER_LAYOUT = {
         { key: 'chill', name: '🌙・Chill', type: 'voice', match: /chill/i },
       ],
     },
+    applications: {
+      name: '📝・ANKETOS',
+      match: /anket|application/i,
+      channels: [
+        { key: 'applications', name: '📋・anketos', type: 'text', readOnly: true, match: /^📋?・?anketos$|anketos$/i },
+      ],
+    },
     factions: {
       name: '🏢・FRAKCIJOS',
       match: /frakcij|factions?/i,
       channels: [
-        { key: 'faction_police', name: '🚓・policija', type: 'text', faction: 'police', match: /policij/i },
-        { key: 'faction_ems', name: '🚑・medikai', type: 'text', faction: 'ems', match: /medik/i },
-        { key: 'faction_mechanic', name: '🔧・mechanikai', type: 'text', faction: 'mechanic', match: /mechanik/i },
-        { key: 'faction_taxi', name: '🚕・taxi', type: 'text', faction: 'taxi', match: /taxi/i },
+        { key: 'faction_police', name: '🚓・policija', type: 'text', faction: 'police', readOnly: true, match: /policij/i },
+        { key: 'faction_ems', name: '🚑・medikai', type: 'text', faction: 'ems', readOnly: true, match: /medik/i },
+        { key: 'faction_mechanic', name: '🔧・mechanikai', type: 'text', faction: 'mechanic', readOnly: true, match: /mechanik/i },
+        { key: 'faction_taxi', name: '🚕・taxi', type: 'text', faction: 'taxi', readOnly: true, match: /taxi/i },
       ],
     },
     tickets: {
@@ -69,6 +77,55 @@ export const SERVER_LAYOUT = {
     },
   },
 };
+
+export const APPLICATION_TYPES = [
+  {
+    id: 'admin',
+    label: 'Administracijos anketa',
+    emoji: '🛡️',
+    buttonLabel: 'Admin anketa',
+    description: 'Prašymas tapti serverio administratoriumi.',
+  },
+  {
+    id: 'faction_leader',
+    label: 'Frakcijų vadovo anketa',
+    emoji: '👑',
+    buttonLabel: 'Frakcijų vadovas',
+    description: 'Prašymas tapti valstybines frakcijos vadovu.',
+  },
+  {
+    id: 'police',
+    label: 'Policijos anketa',
+    emoji: '🚓',
+    buttonLabel: 'Pildyti anketą',
+    description: 'Prašymas prisijungti prie Policijos.',
+    faction: 'police',
+  },
+  {
+    id: 'ems',
+    label: 'Medikų anketa',
+    emoji: '🚑',
+    buttonLabel: 'Pildyti anketą',
+    description: 'Prašymas prisijungti prie Medikų.',
+    faction: 'ems',
+  },
+  {
+    id: 'mechanic',
+    label: 'Mechanikų anketa',
+    emoji: '🔧',
+    buttonLabel: 'Pildyti anketą',
+    description: 'Prašymas prisijungti prie Mechanikų.',
+    faction: 'mechanic',
+  },
+  {
+    id: 'taxi',
+    label: 'Taxi anketa',
+    emoji: '🚕',
+    buttonLabel: 'Pildyti anketą',
+    description: 'Prašymas prisijungti prie Taxi.',
+    faction: 'taxi',
+  },
+];
 
 export const TICKET_CATEGORIES = [
   { id: 'help', label: 'Žaidėjo pagalba', emoji: '🆘' },

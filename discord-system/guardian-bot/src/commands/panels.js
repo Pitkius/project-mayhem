@@ -6,6 +6,7 @@ import {
 import { isAdmin } from '../utils/permissions.js';
 import { postRolePicker } from '../roles/picker.js';
 import { postTicketPanel } from '../tickets/panel.js';
+import { postApplicationsPanel, postFactionApplicationPanel } from '../applications/panel.js';
 import { getServerSetup, setServerSetup } from '../database/sqlite.js';
 import { serverConfig } from '../server/config.js';
 import { applyCivilGatePermissions } from '../server/apply.js';
@@ -13,7 +14,7 @@ import { applyCivilGatePermissions } from '../server/apply.js';
 export default {
   data: new SlashCommandBuilder()
     .setName('panels')
-    .setDescription('Paskelbia modernias paneles (roles / ticket / gate)')
+    .setDescription('Paskelbia modernias paneles (roles / ticket / anketos / gate)')
     .setDMPermission(false)
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addSubcommand((sc) => sc
@@ -33,6 +34,32 @@ export default {
       .addChannelOption((o) => o
         .setName('channel')
         .setDescription('Kanalas paneliui')
+        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)))
+    .addSubcommand((sc) => sc
+      .setName('anketos')
+      .setDescription('Admin + Frakcijų vadovo anketų panelė')
+      .addChannelOption((o) => o
+        .setName('channel')
+        .setDescription('Kanalas paneliui (pvz. 📋・anketos)')
+        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)))
+    .addSubcommand((sc) => sc
+      .setName('frakcijos')
+      .setDescription('Frakcijų pranešimų + anketų panelės (policija/medikai/mechanikai/taxi)')
+      .addChannelOption((o) => o
+        .setName('policija')
+        .setDescription('🚓・policija')
+        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
+      .addChannelOption((o) => o
+        .setName('medikai')
+        .setDescription('🚑・medikai')
+        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
+      .addChannelOption((o) => o
+        .setName('mechanikai')
+        .setDescription('🔧・mechanikai')
+        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
+      .addChannelOption((o) => o
+        .setName('taxi')
+        .setDescription('🚕・taxi')
         .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)))
     .addSubcommand((sc) => sc
       .setName('gate')
@@ -72,6 +99,42 @@ export default {
       return interaction.reply({
         content: `Ticket panelė paskelbta ${channel}.`,
         ephemeral: true,
+      });
+    }
+
+    if (sub === 'anketos') {
+      const setup = getServerSetup(interaction.guildId) || {};
+      await postApplicationsPanel(channel, {
+        categoryId: setup.categoryMap?.applications,
+        adminRoleIds: setup.adminRoleIds || serverConfig.adminRoleIds,
+      });
+      return interaction.reply({
+        content: `Anketų panelė paskelbta ${channel} (Admin + Frakcijų vadovas).`,
+        ephemeral: true,
+      });
+    }
+
+    if (sub === 'frakcijos') {
+      await interaction.deferReply({ ephemeral: true });
+      const setup = getServerSetup(interaction.guildId) || {};
+      const mapping = [
+        ['police', interaction.options.getChannel('policija')],
+        ['ems', interaction.options.getChannel('medikai')],
+        ['mechanic', interaction.options.getChannel('mechanikai')],
+        ['taxi', interaction.options.getChannel('taxi')],
+      ];
+      const done = [];
+      for (const [key, ch] of mapping) {
+        if (!ch) continue;
+        await postFactionApplicationPanel(ch, key, {
+          categoryId: setup.categoryMap?.applications,
+        });
+        done.push(`${key}:${ch}`);
+      }
+      return interaction.editReply({
+        content: done.length
+          ? `Frakcijų panelės:\n${done.join('\n')}`
+          : 'Nepasirinkai nė vieno kanalo.',
       });
     }
 

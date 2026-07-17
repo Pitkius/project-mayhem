@@ -1,6 +1,10 @@
 import { Events } from 'discord.js';
 import { handleRolePickerSelect } from '../roles/picker.js';
 import { handleTicketSelect, handleTicketButton } from '../tickets/panel.js';
+import {
+  handleApplicationButton,
+  handleApplicationModal,
+} from '../applications/panel.js';
 import { handleSetupInteraction } from '../commands/setup-server.js';
 
 export default {
@@ -23,6 +27,11 @@ export default {
         return;
       }
 
+      if (interaction.isModalSubmit()) {
+        if (await handleApplicationModal(interaction)) return;
+        return;
+      }
+
       if (interaction.isStringSelectMenu()) {
         if (await handleSetupInteraction(interaction)) return;
         if (await handleRolePickerSelect(interaction)) return;
@@ -32,6 +41,7 @@ export default {
 
       if (interaction.isButton()) {
         if (await handleSetupInteraction(interaction)) return;
+        if (await handleApplicationButton(interaction)) return;
         if (await handleTicketButton(interaction)) return;
       }
     } catch (err) {

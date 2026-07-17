@@ -84,16 +84,53 @@ export function factionInfoEmbed(label, url) {
     ? `[Atidaryti frakcijos Discord](${url})`
     : '_Frakcijos Discord nuoroda dar nenustatyta (konfigūracija)._';
   return modernEmbed(
-    `${label}`,
+    `${label} · Pranešimai ir anketos`,
     [
-      `Privatus **${label}** kanalas tarnybos nariams.`,
+      `Čia **${label}** oficialūs pranešimai ir stojimo anketa.`,
       '',
       '**Kas čia:**',
-      '• Trumpa informacija',
-      '• Nedidelis vidinis pokalbis',
-      '• Nuoroda į atskirą frakcijos Discord',
+      '• Frakcijos pranešimai',
+      '• Stojimo anketa (mygtukas apačioje)',
+      '• Nuoroda į atskirą frakcijos Discord (jei yra)',
+      '',
+      'Norėdamas stoti — spausk **Pildyti anketą**.',
       '',
       link,
+    ].join('\n'),
+  );
+}
+
+export function applicationsPanelEmbed() {
+  return modernEmbed(
+    'Anketos',
+    [
+      'Čia gali pateikti **Administracijos** arba **Frakcijų vadovo** anketą.',
+      '',
+      '**🛡️ Admin anketa** — norintys tapti serverio administratoriais.',
+      '**👑 Frakcijų vadovas** — norintys vadovauti valstybinei frakcijai.',
+      '',
+      'Frakcijų nario anketos (Policija / Medikai / Mechanikai / Taxi) yra atitinkamuose **🏢・FRAKCIJOS** kanaluose.',
+      '',
+      'Užpildžius formą sukursime privatų anketos kanalą su tavimi ir administracija.',
+    ].join('\n'),
+  );
+}
+
+export function applicationSubmittedEmbed(type, user, answers) {
+  return modernEmbed(
+    `${type.emoji || '📝'} ${type.label}`,
+    [
+      `**Pateikė:** ${user} (\`${user.id}\`)`,
+      `**Tipas:** ${type.description || type.label}`,
+      '',
+      `**IC vardas:** ${answers.icName}`,
+      `**Amžius:** ${answers.age}`,
+      '',
+      `**Patirtis:**\n${answers.experience}`,
+      '',
+      `**Kodėl:**\n${answers.why}`,
+      '',
+      `**Papildoma:**\n${answers.extra}`,
     ].join('\n'),
   );
 }

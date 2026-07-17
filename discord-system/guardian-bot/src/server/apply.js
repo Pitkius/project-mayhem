@@ -6,11 +6,12 @@ import { getAllLogChannels, setServerSetup, getServerSetup } from '../database/s
 import { normalizeChannelName } from '../verification/helpers.js';
 import { LOG_LAYOUT } from '../logs/channelLayout.js';
 import { SERVER_LAYOUT, RULE_PLACEHOLDERS } from './layout.js';
-import { serverConfig, factionRoleId, factionDiscordUrl } from './config.js';
+import { serverConfig, factionRoleId } from './config.js';
 import { createGuildBackup } from './backup.js';
-import { modernEmbed, rulesEmbed, factionInfoEmbed } from './embeds.js';
+import { modernEmbed, rulesEmbed } from './embeds.js';
 import { postRolePicker } from '../roles/picker.js';
 import { postTicketPanel } from '../tickets/panel.js';
+import { postApplicationsPanel, postFactionApplicationPanel } from '../applications/panel.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -152,8 +153,21 @@ function ticketPanelOverwrites(guild, civilRoleId, adminRoleIds = []) {
   return overs;
 }
 
-function factionOverwrites(guild, factionRole, adminRoleIds) {
+function factionOverwrites(guild, factionRole, adminRoleIds, civilRoleId) {
+  // Civiliai mato pranešimus/anketą (skaito), frakcija + adminai gali rašyti.
   const overs = [...everyoneDenyView(guild)];
+  if (civilRoleId) {
+    overs.push({
+      id: civilRoleId,
+      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
+      deny: [
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.CreatePublicThreads,
+        PermissionFlagsBits.CreatePrivateThreads,
+        PermissionFlagsBits.EmbedLinks,
+      ],
+    });
+  }
   if (factionRole) {
     overs.push({
       id: factionRole,
@@ -162,6 +176,7 @@ function factionOverwrites(guild, factionRole, adminRoleIds) {
         PermissionFlagsBits.SendMessages,
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.MentionEveryone,
       ],
       deny: [PermissionFlagsBits.EmbedLinks],
     });
@@ -175,6 +190,7 @@ function factionOverwrites(guild, factionRole, adminRoleIds) {
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.ManageMessages,
         PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.MentionEveryone,
       ],
     });
   }
@@ -264,6 +280,7 @@ export async function applyCivilGatePermissions(guild, options = {}) {
   // Likę PRADŽIA — tik Civilis
   for (const [key, re] of [
     ['news', /naujien/i],
+    ['sneakpeek', /sneak.?peek|sneakpeek/i],
     ['howto', /kaip.?prad/i],
     ['faq', /dazniaus|faq|klausim/i],
   ]) {
@@ -290,6 +307,31 @@ export async function applyCivilGatePermissions(guild, options = {}) {
   if (communityCat) {
     for (const ch of guild.channels.cache.filter((c) => c.parentId === communityCat.id).values()) {
       await setOvers(ch, communityOvers, ch.name);
+    }
+  }
+
+  // ANKETOS — Civilis skaito panelę
+  const appsCat = categoryMap.applications
+    ? guild.channels.cache.get(categoryMap.applications)
+    : guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && /anket|application/i.test(c.name));
+  const appsPanelOvers = ticketPanelOverwrites(guild, civilRoleId, adminRoleIds);
+  await setOvers(appsCat, appsPanelOvers, appsCat?.name);
+  await setOvers(find('applications', /^📋?・?anketos$|anketos$/i), appsPanelOvers, 'applications');
+
+  // FRAKCIJOS — civiliai skaito, frakcija/admin rašo
+  const factionsCat = categoryMap.factions
+    ? guild.channels.cache.get(categoryMap.factions)
+    : guild.channels.cache.find((c) => c.type === ChannelType.GuildCategory && /frakcij|factions?/i.test(c.name));
+  if (factionsCat) {
+    await setOvers(factionsCat, appsPanelOvers, factionsCat.name);
+    for (const ch of guild.channels.cache.filter((c) => c.parentId === factionsCat.id).values()) {
+      const factionKey = /policij/i.test(ch.name) ? 'police'
+        : /medik/i.test(ch.name) ? 'ems'
+          : /mechanik/i.test(ch.name) ? 'mechanic'
+            : /taxi/i.test(ch.name) ? 'taxi'
+              : null;
+      const roleId = factionKey ? factionRoleId(factionKey) : null;
+      await setOvers(ch, factionOverwrites(guild, roleId, adminRoleIds, civilRoleId), ch.name);
     }
   }
 
@@ -556,10 +598,25 @@ export async function applyServerSetup(guild, options = {}) {
       }
     }
 
-    // FRAKCIJOS
+    // ANKETOS (admin + frakcijų vadovas)
+    {
+      const def = SERVER_LAYOUT.categories.applications;
+      const panelOvers = ticketPanelOverwrites(guild, civilRoleId, adminRoleIds);
+      const cat = await createCategory(guild, def.name, panelOvers);
+      categoryMap.applications = cat.id;
+      report.categoriesCreated.push(cat.name);
+
+      for (const chDef of def.channels || []) {
+        const ch = await createChannel(guild, chDef, cat, panelOvers);
+        channelMap[chDef.key] = ch.id;
+        report.channelsCreated.push(ch.name);
+      }
+    }
+
+    // FRAKCIJOS — pranešimai + anketos (civiliai skaito)
     {
       const def = SERVER_LAYOUT.categories.factions;
-      const cat = await createCategory(guild, def.name, everyoneDenyView(guild));
+      const cat = await createCategory(guild, def.name, ticketPanelOverwrites(guild, civilRoleId, adminRoleIds));
       categoryMap.factions = cat.id;
       report.categoriesCreated.push(cat.name);
 
@@ -568,22 +625,10 @@ export async function applyServerSetup(guild, options = {}) {
           || factionRoleId(chDef.faction)
           || null;
         report.factionRoles[chDef.faction] = roleId;
-        const overs = factionOverwrites(guild, roleId, adminRoleIds);
+        const overs = factionOverwrites(guild, roleId, adminRoleIds, civilRoleId);
         const ch = await createChannel(guild, chDef, cat, overs);
         channelMap[chDef.key] = ch.id;
         report.channelsCreated.push(ch.name);
-
-        const labels = {
-          police: 'Policija',
-          ems: 'Medikai',
-          mechanic: 'Mechanikai',
-          taxi: 'Taxi',
-        };
-        await postOnce(
-          ch,
-          `faction:${chDef.faction}`,
-          factionInfoEmbed(labels[chDef.faction] || chDef.name, factionDiscordUrl(chDef.faction)),
-        );
       }
     }
 
@@ -602,11 +647,12 @@ export async function applyServerSetup(guild, options = {}) {
       }
     }
 
-    // Pozicijos: PRADŽIA → TAISYKLĖS → BENDRUOMENĖ → FRAKCIJOS → TICKETAI → (logai lieka) → ARCHYVAS apačioje
+    // Pozicijos: PRADŽIA → TAISYKLĖS → BENDRUOMENĖ → ANKETOS → FRAKCIJOS → TICKETAI → ARCHYVAS
     const ordered = [
       categoryMap.start,
       categoryMap.rules,
       categoryMap.community,
+      categoryMap.applications,
       categoryMap.factions,
       categoryMap.tickets,
     ].filter(Boolean);
@@ -661,6 +707,19 @@ export async function applyServerSetup(guild, options = {}) {
           '**Kur IP?** Naudok `/ip` off-topic kanale.',
           '**Kaip gauti Civilis?** Pasirink rolę 🎭・pasirink-roles.',
           '**Kaip reportuoti?** Nueik į 🎫・ticket-chat.',
+          '**Kur anketos?** 📋・anketos + 🏢・FRAKCIJOS kanalai.',
+        ].join('\n'),
+      ));
+    }
+
+    const sneak = guild.channels.cache.get(channelMap.sneakpeek);
+    if (sneak) {
+      await postOnce(sneak, 'sneakpeek', modernEmbed(
+        'Sneak peek',
+        [
+          'Čia skelbsime būsimų atnaujinimų ir turinio preview.',
+          '',
+          '_Administratorius gali čia dėti screenshot’us, video ir teaser’ius._',
         ].join('\n'),
       ));
     }
@@ -674,6 +733,24 @@ export async function applyServerSetup(guild, options = {}) {
         eventsPingRoleId,
       });
       if (posted) report.panels.push('Role picker');
+    }
+
+    const appsCh = guild.channels.cache.get(channelMap.applications);
+    if (appsCh) {
+      const posted = await postApplicationsPanel(appsCh, {
+        categoryId: categoryMap.applications,
+        adminRoleIds,
+      });
+      if (posted) report.panels.push('Anketos (admin + vadovas)');
+    }
+
+    for (const faction of ['police', 'ems', 'mechanic', 'taxi']) {
+      const ch = guild.channels.cache.get(channelMap[`faction_${faction}`]);
+      if (!ch) continue;
+      const posted = await postFactionApplicationPanel(ch, faction, {
+        categoryId: categoryMap.applications,
+      });
+      if (posted) report.panels.push(`Frakcija:${faction}`);
     }
 
     const ticketChat = guild.channels.cache.get(channelMap.ticket_chat);

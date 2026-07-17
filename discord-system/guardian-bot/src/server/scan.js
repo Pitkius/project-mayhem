@@ -124,8 +124,8 @@ export function buildPreviewText(scan, adminRoleIds = []) {
     '**Kas bus padaryta:**',
     '1. Backup į `data/backups/`',
     '2. Visa sena struktūra → **📦・SENAS SERVERIO ARCHYVAS**',
-    '3. Nauja moderni struktūra iš naujo (PRADŽIA / TAISYKLĖS / BENDRUOMENĖ / FRAKCIJOS / TICKETAI)',
-    '4. Civilis + ping role picker + ticket panelė',
+    '3. Nauja moderni struktūra iš naujo (PRADŽIA / TAISYKLĖS / BENDRUOMENĖ / ANKETOS / FRAKCIJOS / TICKETAI)',
+    '4. Civilis + ping role picker + ticket + anketų panelės',
     '',
     `**Logai NELIEČIAMI:** ${plan.skipLogs.length} kanalų/kat.`,
     plan.uncertain.length
