@@ -9,8 +9,26 @@ BOT_DIR="${REPO_DIR}/discord-system/guardian-bot"
 SERVICE_NAME="mrp-discord"
 SERVICE_SRC="${REPO_DIR}/scripts/mrp-discord.service"
 SERVICE_DST="/etc/systemd/system/${SERVICE_NAME}.service"
-ENV_DST="/home/fivem/.config/mrp-discord.env"
-RUN_USER="${RUN_USER:-fivem}"
+
+detect_run_user() {
+  if [[ -n "${RUN_USER:-}" ]] && id -u "$RUN_USER" >/dev/null 2>&1; then
+    echo "$RUN_USER"
+    return
+  fi
+  local owner
+  owner="$(stat -c '%U' "$REPO_DIR" 2>/dev/null || true)"
+  if [[ -n "$owner" ]] && id -u "$owner" >/dev/null 2>&1; then
+    echo "$owner"
+    return
+  fi
+  for cand in fivem ubuntu debian root; do
+    if id -u "$cand" >/dev/null 2>&1; then
+      echo "$cand"
+      return
+    fi
+  done
+  echo "root"
+}
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "Paleisk su sudo: sudo bash $0"
@@ -21,6 +39,16 @@ if [[ ! -d "$BOT_DIR" ]]; then
   echo "Nerastas bot katalogas: $BOT_DIR"
   exit 1
 fi
+
+RUN_USER="$(detect_run_user)"
+RUN_GROUP="$(id -gn "$RUN_USER")"
+RUN_HOME="$(getent passwd "$RUN_USER" | cut -d: -f6)"
+if [[ -z "$RUN_HOME" || ! -d "$RUN_HOME" ]]; then
+  RUN_HOME="$(dirname "$REPO_DIR")"
+fi
+ENV_DST="${RUN_HOME}/.config/mrp-discord.env"
+
+echo "[setup] RUN_USER=$RUN_USER group=$RUN_GROUP home=$RUN_HOME"
 
 if ! command -v node >/dev/null 2>&1; then
   echo "Node.js nerastas. Diegiu Node 20..."
@@ -36,8 +64,8 @@ if [[ "$NODE_MAJOR" -lt 18 ]]; then
 fi
 echo "[setup] Node: $("$NODE_BIN" -v) ($NODE_BIN)"
 
-mkdir -p /home/fivem/.config
-chown -R "$RUN_USER:$RUN_USER" /home/fivem/.config
+mkdir -p "${RUN_HOME}/.config"
+chown -R "$RUN_USER:$RUN_GROUP" "${RUN_HOME}/.config"
 
 if [[ ! -f "$ENV_DST" ]]; then
   if [[ -f "$BOT_DIR/.env" ]]; then
@@ -59,15 +87,25 @@ if ! grep -qE '^DISCORD_TOKEN=.+' "$ENV_DST" || grep -q 'your_discord_bot_token'
   exit 1
 fi
 
-chown "$RUN_USER:$RUN_USER" "$ENV_DST"
+chown "$RUN_USER:$RUN_GROUP" "$ENV_DST"
 chmod 600 "$ENV_DST"
 
 echo "[setup] npm install..."
-sudo -u "$RUN_USER" bash -lc "cd '$BOT_DIR' && npm install --omit=dev"
+if [[ "$RUN_USER" == "root" ]]; then
+  bash -lc "cd '$BOT_DIR' && npm install --omit=dev"
+else
+  sudo -u "$RUN_USER" bash -lc "cd '$BOT_DIR' && npm install --omit=dev"
+fi
 
-# Pataisom ExecStart jei node ne /usr/bin/node
 TMP_UNIT="$(mktemp)"
-sed "s|^ExecStart=.*|ExecStart=${NODE_BIN} src/index.js|" "$SERVICE_SRC" > "$TMP_UNIT"
+sed \
+  -e "s|^User=.*|User=${RUN_USER}|" \
+  -e "s|^Group=.*|Group=${RUN_GROUP}|" \
+  -e "s|^WorkingDirectory=.*|WorkingDirectory=${BOT_DIR}|" \
+  -e "s|^EnvironmentFile=.*|EnvironmentFile=-${ENV_DST}|" \
+  -e "s|^ExecStart=.*|ExecStart=${NODE_BIN} src/index.js|" \
+  -e "s|^Documentation=.*|Documentation=file://${REPO_DIR}/discord-system/README.md|" \
+  "$SERVICE_SRC" > "$TMP_UNIT"
 install -m 644 "$TMP_UNIT" "$SERVICE_DST"
 rm -f "$TMP_UNIT"
 
