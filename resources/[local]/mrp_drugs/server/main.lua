@@ -3,6 +3,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local activeCrafts = {}
 local activeStations = {}
 local lastCraftAt = {}
+local craftTokenSequence = 0
 local weedPackCooldownUntil = {}
 local lastSellAt = {}
 local zoneHeat = {}
@@ -205,7 +206,7 @@ local function recipeRowSatisfied(Player, row, st)
     if st and st.equipmentId and Equipment and Equipment.rowSatisfiedByNearby(st.equipmentId, row.item) then
         return true
     end
-    return countItem(Player, row.item, row.count)
+    return countItemAmount(Player, row.item) >= (tonumber(row.count) or 0)
 end
 
 local function skipRecipeConsumable(row, st)
@@ -230,11 +231,36 @@ local function removeItems(Player, list, st)
         if skipRecipeConsumable(row, st) then
             goto continue
         end
-        if not Player.Functions.RemoveItem(row.item, row.count) then
+        local remaining = math.max(0, math.floor(tonumber(row.count) or 0))
+        local removedForRow = 0
+        local stacks = {}
+        for slot, item in pairs(Player.PlayerData.items or {}) do
+            if item and item.name == row.item and (tonumber(item.amount) or 0) > 0 then
+                stacks[#stacks + 1] = {
+                    slot = tonumber(item.slot) or tonumber(slot),
+                    amount = math.floor(tonumber(item.amount) or 0),
+                }
+            end
+        end
+        table.sort(stacks, function(a, b) return (a.slot or 0) < (b.slot or 0) end)
+        for _, stack in ipairs(stacks) do
+            if remaining <= 0 then break end
+            local take = math.min(remaining, stack.amount)
+            if take > 0 and Player.Functions.RemoveItem(row.item, take, stack.slot) then
+                remaining = remaining - take
+                removedForRow = removedForRow + take
+            else
+                break
+            end
+        end
+        if remaining > 0 then
+            if removedForRow > 0 then
+                Player.Functions.AddItem(row.item, removedForRow)
+            end
             addItems(Player, consumed)
             return false, {}
         end
-        consumed[#consumed + 1] = { item = row.item, count = row.count }
+        consumed[#consumed + 1] = { item = row.item, count = removedForRow }
         ::continue::
     end
     return true, consumed
@@ -256,12 +282,41 @@ local function craftLockKey(stationId, equipmentId)
     return ('station:%s'):format(stationId)
 end
 
+local function newCraftToken()
+    craftTokenSequence = craftTokenSequence + 1
+    local parts = {}
+    for i = 1, 32 do
+        parts[i] = ('%02x'):format(math.random(0, 255))
+    end
+    parts[#parts + 1] = ('%08x'):format((GetGameTimer() + craftTokenSequence) % 0x100000000)
+    return table.concat(parts)
+end
+
 local function releaseCraft(src)
     local active = activeCrafts[src]
     if active and active.lockKey and activeStations[active.lockKey] == src then
         activeStations[active.lockKey] = nil
     end
     activeCrafts[src] = nil
+    return active
+end
+
+local function craftFailureRefundPercent(active)
+    local prod = active and getProduct(active.productId)
+    return 100 - math.max(0, math.min(100, tonumber(prod and prod.failLosePercent) or 50))
+end
+
+local function abortCraft(src, reason, refundPercent, notifyClient)
+    local active = releaseCraft(src)
+    if not active then return nil end
+    local Player = QBCore.Functions.GetPlayer(src)
+    if Player then
+        refundPartial(Player, active.recipe, refundPercent == nil and craftFailureRefundPercent(active) or refundPercent)
+    end
+    if notifyClient then
+        TriggerClientEvent('mrp_drugs:client:abortProduction', src, tostring(reason or 'aborted'), active.token)
+    end
+    logAdmin(('ABORT craft %s reason=%s src=%s'):format(active.productId, tostring(reason or 'aborted'), src))
     return active
 end
 
@@ -293,6 +348,120 @@ local function createWeedStageState(productId, now)
     }
 end
 
+local hasAllIngredients
+
+local function buildStageSequence(configured)
+    if type(configured) ~= 'table' or #configured == 0 then return nil end
+    local sequence = {}
+    for _, stage in ipairs(configured) do
+        local name
+        local minMs
+        if type(stage) == 'string' then
+            name = stage
+            minMs = 0
+        elseif type(stage) == 'table' then
+            name = stage.name or stage.stage or stage.id or stage[1]
+            minMs = stage.minMs or stage.minDurationMs or stage.durationMs or stage[2]
+        end
+        if name then
+            sequence[#sequence + 1] = {
+                name = tostring(name),
+                minMs = math.max(0, math.floor(tonumber(minMs) or 0)),
+            }
+        end
+    end
+    if #sequence == 0 then return nil end
+    return sequence
+end
+
+--- Shared ordered stage state for L1 liquid crafts (vape + alcohol).
+local function createLiquidStageState(productId, now)
+    local configured = (Config.VapeStageSequences and Config.VapeStageSequences[productId])
+        or (Config.AlcoholStageSequences and Config.AlcoholStageSequences[productId])
+    local sequence = buildStageSequence(configured)
+    if not sequence then return nil end
+    return {
+        sequence = sequence,
+        index = 0,
+        lastStageAt = now,
+        completed = {},
+    }
+end
+
+local function createVapeStageState(productId, now)
+    return createLiquidStageState(productId, now)
+end
+
+local function beginCraftSession(src, productId, st, opts)
+    opts = opts or {}
+    local prod = getProduct(productId)
+    if not prod then return nil, 'Netinkamas produktas.' end
+
+    local now = GetGameTimer()
+    if productId == 'weed_pack' and (weedPackCooldownUntil[src] or 0) > now then
+        local seconds = math.ceil(((weedPackCooldownUntil[src] or 0) - now) / 1000)
+        return nil, ('Palauk %d sek. prieš kitą 5 vnt. pakavimą.'):format(seconds)
+    end
+    if (lastCraftAt[src] or 0) + (Config.CraftCooldownMs or 4500) > now then
+        return nil, 'Palauk prieš kitą gamybą.'
+    end
+    if activeCrafts[src] then
+        return nil, 'Jau vyksta gamyba.'
+    end
+
+    local lockKey = opts.lockKey or craftLockKey(opts.stationId or (st and st.id), opts.equipmentId)
+    if activeStations[lockKey] then
+        return nil, opts.lockedReason or 'Šia stotimi jau naudojasi kitas žaidėjas.'
+    end
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return nil, 'Žaidėjas nerastas.' end
+    if not hasAllIngredients(Player, productId, st, src) then
+        return nil, 'Trūksta ingredientų.'
+    end
+
+    local recipe = getEffectiveRecipe(productId, st, src)
+    local removed, consumed = removeItems(Player, recipe, st)
+    if not removed then
+        return nil, 'Nepavyko paimti ingredientų.'
+    end
+
+    local token = newCraftToken()
+    activeStations[lockKey] = src
+    activeCrafts[src] = {
+        token = token,
+        lockKey = lockKey,
+        stationId = opts.stationId or (st and st.id),
+        productId = productId,
+        startedAt = now,
+        minDurationMs = minimumCraftDuration(prod),
+        recipe = consumed,
+        weedStages = createWeedStageState(productId, now),
+        vapeStages = createLiquidStageState(productId, now),
+        liquidStages = nil, -- alias set below for shared liquid crafts
+        isWeapon = opts.isWeapon == true,
+        equipmentId = opts.equipmentId,
+        virtualStation = opts.virtualStation,
+        namedStation = opts.namedStation,
+    }
+    activeCrafts[src].liquidStages = activeCrafts[src].vapeStages
+    lastCraftAt[src] = now
+
+    return {
+        ok = true,
+        token = token,
+        craftTimeMs = prod.craftTimeMs,
+        minigame = prod.minigame,
+        label = prod.label,
+        failChance = prod.failChance,
+        level = prod.level,
+        isWeapon = opts.isWeapon == true,
+        usesPrinter = opts.usesPrinter == true,
+        equipmentCraft = opts.equipmentId ~= nil,
+        namedVapeCraft = opts.namedStation ~= nil,
+    }
+end
+
 local function levelUnlocked(src, prod, st)
     if st and st.mode == 'weapon' then
         if not DrugPlayer or not DrugPlayer.weaponProductUnlocked then return true end
@@ -318,8 +487,7 @@ local function buildRecipeStatus(Player, productId, st, src)
         if skipRecipeConsumable(row, st) then
             have = row.count
         else
-            local it = Player.Functions.GetItemByName(row.item)
-            have = it and it.amount or 0
+            have = countItemAmount(Player, row.item)
         end
         rows[#rows + 1] = {
             item = row.item,
@@ -332,7 +500,28 @@ local function buildRecipeStatus(Player, productId, st, src)
     return rows
 end
 
-local function hasAllIngredients(Player, productId, st, src)
+--- L1 liquid quality (vape/alcohol) from accepted stages + pace + clamped mistakes.
+local function computeLiquidQualityScore(active, extra)
+    local stages = active and (active.liquidStages or active.vapeStages)
+    if not stages or type(stages.sequence) ~= 'table' or #stages.sequence == 0 then
+        return nil
+    end
+    local total = #stages.sequence
+    local completed = math.max(0, math.min(total, tonumber(stages.index) or 0))
+    local base = math.floor((completed / total) * 72)
+    local elapsed = GetGameTimer() - (active.startedAt or GetGameTimer())
+    local paceBonus = elapsed >= (active.minDurationMs or 0) and 12 or 0
+    local mistakes = math.max(0, math.min(12, math.floor(tonumber(extra and extra.mistakes) or 0)))
+    local hint = math.max(0, math.min(100, tonumber(extra and extra.score) or 0))
+    local score = base + paceBonus + math.floor(hint * 0.16) - (mistakes * 5)
+    return math.max(0, math.min(100, score))
+end
+
+local function computeVapeQualityScore(active, extra)
+    return computeLiquidQualityScore(active, extra)
+end
+
+hasAllIngredients = function(Player, productId, st, src)
     for _, row in ipairs(getEffectiveRecipe(productId, st, src)) do
         if not recipeRowSatisfied(Player, row, st) then
             return false
@@ -487,60 +676,12 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraft', function(src, cb,
         return cb({ ok = false, reason = 'Per toli nuo stoties.' })
     end
 
-    local now = GetGameTimer()
-    if productId == 'weed_pack' and (weedPackCooldownUntil[src] or 0) > now then
-        local seconds = math.ceil(((weedPackCooldownUntil[src] or 0) - now) / 1000)
-        return cb({ ok = false, reason = ('Palauk %d sek. prieš kitą 5 vnt. pakavimą.'):format(seconds) })
-    end
-    if (lastCraftAt[src] or 0) + (Config.CraftCooldownMs or 4500) > now then
-        return cb({ ok = false, reason = 'Palauk prieš kitą gamybą.' })
-    end
-    if activeCrafts[src] then
-        return cb({ ok = false, reason = 'Jau vyksta gamyba.' })
-    end
-    local lockKey = craftLockKey(stationId)
-    if activeStations[lockKey] then
-        return cb({ ok = false, reason = 'Šia stotimi jau naudojasi kitas žaidėjas.' })
-    end
-
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return cb({ ok = false }) end
-    if not hasAllIngredients(Player, productId, st, src) then
-        return cb({ ok = false, reason = 'Trūksta ingredientų.' })
-    end
-
-    local recipe = getEffectiveRecipe(productId, st, src)
-    local removed, consumed = removeItems(Player, recipe, st)
-    if not removed then
-        return cb({ ok = false, reason = 'Nepavyko paimti ingredientų.' })
-    end
-
-    local token = ('%s-%s-%s'):format(src, productId, now)
-    activeStations[lockKey] = src
-    activeCrafts[src] = {
-        token = token,
-        lockKey = lockKey,
+    local response, reason = beginCraftSession(src, productId, st, {
         stationId = stationId,
-        productId = productId,
-        startedAt = now,
-        minDurationMs = minimumCraftDuration(prod),
-        recipe = consumed,
-        weedStages = createWeedStageState(productId, now),
-        isWeapon = st.mode == 'weapon',
-    }
-    lastCraftAt[src] = now
-
-    cb({
-        ok = true,
-        token = token,
-        craftTimeMs = prod.craftTimeMs,
-        minigame = prod.minigame,
-        label = prod.label,
-        failChance = prod.failChance,
-        level = prod.level,
         isWeapon = st.mode == 'weapon',
         usesPrinter = productUsesPrinter(productId, st),
     })
+    cb(response or { ok = false, reason = reason })
 end)
 
 local function equipmentVirtualStation(e, prod)
@@ -581,63 +722,143 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
         return cb({ ok = false, reason = 'Šis gamybos lygis dar neatrakintas.' })
     end
 
-    local now = GetGameTimer()
-    if productId == 'weed_pack' and (weedPackCooldownUntil[src] or 0) > now then
-        local seconds = math.ceil(((weedPackCooldownUntil[src] or 0) - now) / 1000)
-        return cb({ ok = false, reason = ('Palauk %d sek. prieš kitą 5 vnt. pakavimą.'):format(seconds) })
-    end
-    if (lastCraftAt[src] or 0) + (Config.CraftCooldownMs or 4500) > now then
-        return cb({ ok = false, reason = 'Palauk prieš kitą gamybą.' })
-    end
-    if activeCrafts[src] then
-        return cb({ ok = false, reason = 'Jau vyksta gamyba.' })
-    end
-    local lockKey = craftLockKey(nil, equipmentId)
-    if activeStations[lockKey] then
-        return cb({ ok = false, reason = 'Šia įranga jau naudojasi kitas žaidėjas.' })
-    end
-
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return cb({ ok = false }) end
-    if not hasAllIngredients(Player, productId, st, src) then
-        return cb({ ok = false, reason = 'Trūksta ingredientų.' })
-    end
-
-    local recipe = getEffectiveRecipe(productId, st, src)
-    local removed, consumed = removeItems(Player, recipe, st)
-    if not removed then
-        return cb({ ok = false, reason = 'Nepavyko paimti ingredientų.' })
-    end
-
-    local token = ('%s-eq-%s-%s'):format(src, equipmentId, now)
-    activeStations[lockKey] = src
-    activeCrafts[src] = {
-        token = token,
-        lockKey = lockKey,
+    local response, reason = beginCraftSession(src, productId, st, {
         stationId = st.id,
-        productId = productId,
-        startedAt = now,
-        minDurationMs = minimumCraftDuration(prod),
-        recipe = consumed,
-        weedStages = createWeedStageState(productId, now),
-        isWeapon = false,
         equipmentId = equipmentId,
         virtualStation = st,
-    }
-    lastCraftAt[src] = now
-
-    cb({
-        ok = true,
-        token = token,
-        craftTimeMs = prod.craftTimeMs,
-        minigame = prod.minigame,
-        label = prod.label,
-        failChance = prod.failChance,
-        level = prod.level,
-        isWeapon = false,
-        usesPrinter = false,
-        equipmentCraft = true,
+        lockedReason = 'Šia įranga jau naudojasi kitas žaidėjas.',
     })
+    cb(response or { ok = false, reason = reason })
+end)
+
+local NAMED_VAPE_PRODUCTS = {
+    vape_simple = true,
+    vape_apple_concentrate = true,
+    vape_strawberry_concentrate = true,
+    vape_apple_pack = true,
+    vape_strawberry_pack = true,
+}
+
+local function namedVapeStationAllows(st, productId)
+    if st.productId or st.product then
+        return tostring(st.productId or st.product) == productId
+    end
+    local products = st.products or st.productIds
+    if type(products) ~= 'table' or next(products) == nil then return true end
+    if products[productId] == true then return true end
+    for _, allowed in pairs(products) do
+        if tostring(allowed) == productId then return true end
+    end
+    return false
+end
+
+local function getNamedVapeStation(stationId, productId)
+    local stations = Config.VapeNamedStations
+    if type(stations) ~= 'table' then return nil end
+    stationId = stationId and tostring(stationId) or nil
+
+    local productStation = stations[productId]
+    if type(productStation) == 'table' then
+        local resolvedId = tostring(productStation.id or productId)
+        if not stationId or stationId == productId or stationId == resolvedId then
+            return productStation, resolvedId
+        end
+        return nil
+    end
+    local direct = stationId and stations[stationId]
+    if type(direct) == 'table' then
+        if namedVapeStationAllows(direct, productId) then
+            return direct, tostring(direct.id or stationId)
+        end
+    end
+    for key, st in pairs(stations) do
+        if type(st) == 'table' then
+            local id = tostring(st.id or st.name or key)
+            if (not stationId or id == stationId) and namedVapeStationAllows(st, productId) then
+                if stationId or tostring(key) == productId or st.productId or st.product or st.products or st.productIds then
+                    return st, id
+                end
+            end
+        end
+    end
+end
+
+local function namedVapeCoords(st)
+    local c = st and (st.coords or st.workspace or st.position)
+    if not c or tonumber(c.x) == nil or tonumber(c.y) == nil or tonumber(c.z) == nil then return nil end
+    return vector3(tonumber(c.x), tonumber(c.y), tonumber(c.z))
+end
+
+local function playerNearNamedVapeStation(src, st)
+    local coords = namedVapeCoords(st)
+    local ped = GetPlayerPed(src)
+    if not coords or not ped or ped == 0 then return false end
+    return #(GetEntityCoords(ped) - coords) <= (tonumber(st.radius or st.interactDistance) or 3.0) + 1.5
+end
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:startNamedVapeCraft', function(src, cb, productId, stationId)
+    productId = tostring(productId or '')
+    stationId = stationId and tostring(stationId) or nil
+    if not NAMED_VAPE_PRODUCTS[productId] and NAMED_VAPE_PRODUCTS[stationId or ''] then
+        productId, stationId = stationId, productId
+    end
+    if not NAMED_VAPE_PRODUCTS[productId] then
+        return cb({ ok = false, reason = 'Netinkamas vape produktas.' })
+    end
+
+    local prod = Config.Products and Config.Products[productId]
+    local recipe = Config.Recipes and Config.Recipes[productId]
+    if not prod or tonumber(prod.level) ~= 1 or type(recipe) ~= 'table' or #recipe == 0 then
+        return cb({ ok = false, reason = 'Vape produktas arba receptas nesukonfigūruotas.' })
+    end
+
+    local named, resolvedId = getNamedVapeStation(stationId, productId)
+    local coords = namedVapeCoords(named)
+    if not named or not coords then
+        return cb({ ok = false, reason = 'Vape stotis nerasta.' })
+    end
+    if not playerNearNamedVapeStation(src, named) then
+        return cb({ ok = false, reason = 'Per toli nuo vape stoties.' })
+    end
+
+    resolvedId = tostring(resolvedId or stationId or productId)
+    local st = {
+        id = ('vape_named_%s'):format(resolvedId),
+        label = named.label or 'Vape gamyba',
+        level = 1,
+        coords = coords,
+        radius = tonumber(named.radius or named.interactDistance) or 3.0,
+        mode = 'drugs',
+        products = { productId },
+    }
+    local response, reason = beginCraftSession(src, productId, st, {
+        stationId = st.id,
+        lockKey = ('vape:%s'):format(resolvedId),
+        lockedReason = 'Šia vape stotimi jau naudojasi kitas žaidėjas.',
+        namedStation = named,
+    })
+    if response then
+        response.stationId = resolvedId
+        local rawCoords = named.coords or named.workspace or named.position
+        response.workspace = {
+            x = coords.x,
+            y = coords.y,
+            z = coords.z,
+            w = tonumber(rawCoords and (rawCoords.w or rawCoords.heading)) or tonumber(named.heading) or 0.0,
+        }
+        response.timeoutMs = tonumber((Config.Vape3D or {}).sessionTimeoutMs) or 180000
+        response.product = {
+            id = productId,
+            label = prod.label,
+            output = prod.output,
+            outputAmount = prod.outputAmount or 1,
+            level = prod.level,
+        }
+        response.profile = Config.GetScheduleMinigame and Config.GetScheduleMinigame(productId) or nil
+        response.minigameProfile = response.profile
+        response.scheduleProfile = response.profile
+    end
+    cb(response or { ok = false, reason = reason })
 end)
 
 -- ── Kokybės sistema ──────────────────────────────────────────────────────
@@ -653,7 +874,7 @@ local QUALITY_TIERS = {
 }
 
 local function qualityFromScore(score)
-    if type(score) ~= 'number' then return nil end
+    if type(score) ~= 'number' or score ~= score then return nil end
     local s = math.max(0, math.min(100, math.floor(score)))
     local chosen = QUALITY_TIERS[1]
     for _, t in ipairs(QUALITY_TIERS) do
@@ -761,14 +982,52 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:weedProductionStage', function
     cb({ ok = true, index = state.index, total = #state.sequence })
 end)
 
+local function acceptLiquidProductionStage(src, cb, token, stageName, label)
+    local active = activeCrafts[src]
+    local state = active and (active.liquidStages or active.vapeStages)
+    if not active or active.token ~= token or not state then
+        return cb({ ok = false, reason = (label or 'Skysčio') .. ' gamybos sesija neaktyvi.' })
+    end
+    stageName = tostring(stageName or '')
+    if state.completed[stageName] then
+        return cb({ ok = true, index = state.index, total = #state.sequence, idempotent = true })
+    end
+
+    local expected = state.sequence[state.index + 1]
+    if not expected or expected.name ~= stageName then
+        logAdmin(('REJECT %s stage=%s product=%s src=%s'):format(label or 'liquid', stageName, active.productId, src))
+        return cb({ ok = false, reason = ('Netinkama %s gamybos etapų seka.'):format(string.lower(label or 'skysčio')) })
+    end
+    local now = GetGameTimer()
+    local elapsed = now - (state.lastStageAt or active.startedAt or now)
+    if elapsed < expected.minMs then
+        logAdmin(('REJECT fast %s stage=%s elapsed=%d src=%s'):format(label or 'liquid', expected.name, elapsed, src))
+        return cb({ ok = false, reason = (label or 'Skysčio') .. ' gamybos etapas atliktas per greitai.' })
+    end
+
+    state.index = state.index + 1
+    state.lastStageAt = now
+    state.completed[stageName] = true
+    cb({ ok = true, index = state.index, total = #state.sequence })
+end
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:vapeProductionStage', function(src, cb, token, stageName)
+    acceptLiquidProductionStage(src, cb, token, stageName, 'Vape')
+end)
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:alcoholProductionStage', function(src, cb, token, stageName)
+    acceptLiquidProductionStage(src, cb, token, stageName, 'Alkoholio')
+end)
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:liquidProductionStage', function(src, cb, token, stageName)
+    acceptLiquidProductionStage(src, cb, token, stageName, 'Skysčio')
+end)
+
 RegisterNetEvent('mrp_drugs:server:cancelCraft', function(token, reason)
     local src = source
     local active = activeCrafts[src]
     if not active or active.token ~= token then return end
-    releaseCraft(src)
-    local Player = QBCore.Functions.GetPlayer(src)
-    if Player then refundPartial(Player, active.recipe, 50) end
-    logAdmin(('CANCEL craft %s reason=%s src=%s'):format(active.productId, tostring(reason or 'client_cleanup'), src))
+    abortCraft(src, reason or 'client_cleanup', nil, false)
 end)
 
 QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb, token, minigameSuccess, extra)
@@ -776,48 +1035,57 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
     if not active or active.token ~= token then
         return cb({ ok = false, reason = 'Gamyba neaktyvi.' })
     end
-    if active.equipmentId then
+    if active.namedStation then
+        if not playerNearNamedVapeStation(src, active.namedStation) then
+            abortCraft(src, 'too_far', 100, true)
+            return cb({ ok = false, reason = 'Per toli nuo vape stoties.' })
+        end
+    elseif active.equipmentId then
         if not Equipment or not Equipment.playerNear(src, active.equipmentId) then
-            releaseCraft(src)
-            local Player = QBCore.Functions.GetPlayer(src)
-            if Player then refundPartial(Player, active.recipe, 100) end
+            abortCraft(src, 'too_far', 100, true)
             return cb({ ok = false, reason = 'Per toli nuo įrangos.' })
         end
     elseif not playerNearStation(src, active.stationId) then
-        releaseCraft(src)
-        local Player = QBCore.Functions.GetPlayer(src)
-        if Player then refundPartial(Player, active.recipe, 100) end
+        abortCraft(src, 'too_far', 100, true)
         return cb({ ok = false, reason = 'Per toli nuo stoties.' })
     end
 
     local prod = getProduct(active.productId)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player or not prod then
-        releaseCraft(src)
+        abortCraft(src, 'invalid_session_product', 100, true)
         return cb({ ok = false })
     end
 
     local elapsed = GetGameTimer() - active.startedAt
     if minigameSuccess == true and elapsed < (active.minDurationMs or 1000) then
-        releaseCraft(src)
-        refundPartial(Player, active.recipe, 100)
+        abortCraft(src, 'completed_too_fast', 100, true)
         logAdmin(('REJECT fast craft %s elapsed=%d cid=%s'):format(active.productId, elapsed, Player.PlayerData.citizenid))
         return cb({ ok = false, reason = 'Gamyba užbaigta per greitai.', failed = true })
     end
     if minigameSuccess == true and active.weedStages
         and active.weedStages.index < #active.weedStages.sequence then
-        releaseCraft(src)
-        refundPartial(Player, active.recipe, 50)
+        abortCraft(src, 'incomplete_weed_stages', nil, true)
         logAdmin(('REJECT incomplete weed stages %s cid=%s'):format(active.productId, Player.PlayerData.citizenid))
         return cb({ ok = false, reason = 'Neužbaigti visi žolės gamybos etapai.', failed = true })
     end
-
-    releaseCraft(src)
+    if minigameSuccess == true and active.vapeStages
+        and active.vapeStages.index < #active.vapeStages.sequence then
+        local kind = active.productId:sub(1, 8) == 'alcohol_' and 'alcohol' or 'vape'
+        abortCraft(src, ('incomplete_%s_stages'):format(kind), nil, true)
+        logAdmin(('REJECT incomplete %s stages %s cid=%s'):format(kind, active.productId, Player.PlayerData.citizenid))
+        return cb({
+            ok = false,
+            reason = kind == 'alcohol' and 'Neužbaigti visi alkoholio gamybos etapai.'
+                or 'Neužbaigti visi vape gamybos etapai.',
+            failed = true,
+        })
+    end
 
     local failed = minigameSuccess ~= true
 
     if failed then
-        refundPartial(Player, active.recipe, 100 - (prod.failLosePercent or 50))
+        abortCraft(src, 'minigame_failed', nil, false)
         local turfId = findTurfAtPlayer(src)
         if turfId then addTurfHeat(turfId, prod.heatGain or 3) end
         if not active.isWeapon then
@@ -827,21 +1095,27 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
         return cb({ ok = false, reason = 'Gamyba nepavyko — dalis medžiagų prarasta.', failed = true })
     end
 
+    releaseCraft(src)
+
     local outItem = prod.output
     local outAmt = prod.outputAmount or 1
 
-    -- Kokybė iš minigame score (serverio autoritetas, apkarpyta 0..100).
-    local qTier, qScore = qualityFromScore(extra and extra.score)
+    -- Kokybė: L1 liquid (vape/alcohol) skaičiuojama serverio etapais.
+    local forceLiquidQuality = active.productId:sub(1, 5) == 'vape_'
+        or active.productId:sub(1, 8) == 'alcohol_'
+    local rawScore = forceLiquidQuality and computeLiquidQualityScore(active, extra)
+        or (type(extra) == 'table' and extra.score or nil)
+    local qTier, qScore = qualityFromScore(rawScore)
     local addInfo = false
     local qualityLabel = nil
-    if qTier and Config.UseQuality ~= false then
+    if qTier and (Config.UseQuality ~= false or forceLiquidQuality) then
         addInfo = { quality = qTier.key, quality_score = qScore }
         qualityLabel = qTier.label
         logAdmin(('QUALITY %s=%s score=%d cid=%s'):format(outItem, qTier.key, qScore or 0, Player.PlayerData.citizenid))
     end
 
     if not Player.Functions.AddItem(outItem, outAmt, false, addInfo) then
-        refundPartial(Player, active.recipe, 80)
+        refundPartial(Player, active.recipe, 100)
         return cb({ ok = false, reason = 'Inventorius pilnas.' })
     end
 
@@ -2214,11 +2488,7 @@ end)
 
 AddEventHandler('playerDropped', function()
     local src = source
-    local active = releaseCraft(src)
-    local Player = QBCore.Functions.GetPlayer(src)
-    if active and Player then
-        refundPartial(Player, active.recipe, 100)
-    end
+    abortCraft(src, 'disconnect', nil, false)
     lastCraftAt[src] = nil
     weedPackCooldownUntil[src] = nil
     lastSellAt[src] = nil
@@ -2237,13 +2507,22 @@ CreateThread(function()
             end
         end
         for _, src in ipairs(expired) do
-            local active = releaseCraft(src)
-            local Player = QBCore.Functions.GetPlayer(src)
-            if active and Player then
-                refundPartial(Player, active.recipe, 100)
+            local active = abortCraft(src, 'expired', 100, true)
+            if active then
                 TriggerClientEvent('mrp_drugs:client:forceCloseUi', src)
                 TriggerClientEvent('QBCore:Notify', src, 'Gamybos sesija baigėsi — ingredientai grąžinti.', 'error')
             end
         end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+    local crafting = {}
+    for src in pairs(activeCrafts) do
+        crafting[#crafting + 1] = src
+    end
+    for _, src in ipairs(crafting) do
+        abortCraft(src, 'resource_stop', 100, true)
     end
 end)

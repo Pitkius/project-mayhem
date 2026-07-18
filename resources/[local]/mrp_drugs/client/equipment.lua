@@ -6,6 +6,14 @@ local EquipmentMeta = {}
 local placing = false
 local crafting = false
 
+AddEventHandler('mrp_drugs:client:productionReset', function()
+    crafting = false
+end)
+
+RegisterNetEvent('mrp_drugs:client:abortProduction', function()
+    crafting = false
+end)
+
 local function notify(msg, typ)
     QBCore.Functions.Notify(msg, typ or 'primary')
 end

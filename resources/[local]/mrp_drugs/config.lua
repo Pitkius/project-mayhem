@@ -121,6 +121,13 @@ Config.Products = {
     alcohol_pack = drugPack('Nelegalus alkoholis · supakavimas', 1, 'illegal_alcohol', 75, 11000, 'low', 'schedule', 5, 3, 2, 30, 4),
     vape_process = drugProcess('Vape · paruošimas', 1, 'vape_mix', 12000, 'low', 'schedule', 4, 2, 1, 28, 5),
     vape_pack = drugPack('Vape skystis · supakavimas', 1, 'vape_liquid', 65, 10000, 'low', 'schedule', 5, 3, 1, 28, 6, 2),
+    -- Vardiniai vape receptai, kuriuos naudoja vaisių ūkio stotelės.
+    -- Gamybos sesiją ir 3D minigame visais atvejais valdo mrp_drugs.
+    vape_simple = drugPack('Paprastas vape skystis', 1, 'vape_liquid', 0, 7000, 'low', 'schedule', 4, 2, 1, 28, 6.1),
+    vape_apple_concentrate = drugProcess('Obuolių koncentratas', 1, 'apple_concentrate', 10000, 'low', 'schedule', 4, 1, 1, 25, 6.2),
+    vape_strawberry_concentrate = drugProcess('Braškių koncentratas', 1, 'strawberry_concentrate', 12000, 'low', 'schedule', 4, 1, 1, 25, 6.3),
+    vape_apple_pack = drugPack('Obuolių vape skystis', 1, 'apple_vape_liquid', 0, 12000, 'low', 'schedule', 5, 2, 1, 28, 6.4),
+    vape_strawberry_pack = drugPack('Braškių vape skystis', 1, 'strawberry_vape_liquid', 0, 15000, 'low', 'schedule', 5, 2, 1, 28, 6.5),
     --- L2
     weed_process = drugProcess('Žolė · džiovinimas', 2, 'weed_buds', 18000, 'medium', 'schedule', 10, 6, 3, 45, 7),
     -- PAKAVIMAS: paskutinis skaičius (5) = outputAmount — kiek weed_bag gauna po sėkmės. Turi sutapti su packTarget.
@@ -169,6 +176,26 @@ Config.Recipes = {
         { item = 'vape_mix', count = 1 },
         { item = 'empty_bottle', count = 1 },
         { item = 'empty_bag', count = 1 },
+    },
+    vape_simple = {
+        { item = 'vape_liquid_base', count = 1 },
+        { item = 'empty_bottle', count = 1 },
+    },
+    vape_apple_concentrate = {
+        { item = 'apple', count = 5 },
+    },
+    vape_strawberry_concentrate = {
+        { item = 'strawberry', count = 8 },
+    },
+    vape_apple_pack = {
+        { item = 'apple_concentrate', count = 1 },
+        { item = 'vape_liquid_base', count = 1 },
+        { item = 'empty_bottle', count = 1 },
+    },
+    vape_strawberry_pack = {
+        { item = 'strawberry_concentrate', count = 1 },
+        { item = 'vape_liquid_base', count = 1 },
+        { item = 'empty_bottle', count = 1 },
     },
     --- L2
     weed_process = {
@@ -1477,6 +1504,128 @@ Config.VapeLab = {
             radius = 1.6,
             products = { 'vape_pack' },
         },
+    },
+}
+
+--- Bendras L1 vape 3D prototipas.
+--- legacyFallback paliktas greitam rollback, kol nauja 3D sąveika patvirtinta gyvame serveryje.
+Config.Vape3D = {
+    enabled = true,
+    legacyFallback = false,
+    sessionTimeoutMs = 180000,
+}
+
+--- Vardinės vaisių ūkio stotelės. Šios koordinatės yra serverio autoriteto dalis:
+--- mrp_jobs tik atidaro meniu, o receptą, locką ir atstumą tikrina mrp_drugs.
+Config.VapeNamedStations = {
+    vape_simple = {
+        id = 'fruit_vape_mix',
+        coords = vector4(2423.6, 4959.0, 46.8, 130.0),
+        radius = 3.0,
+    },
+    vape_apple_concentrate = {
+        id = 'fruit_vape_wash',
+        coords = vector4(2429.2, 4965.0, 46.8, 130.0),
+        radius = 3.0,
+    },
+    vape_strawberry_concentrate = {
+        id = 'fruit_vape_wash',
+        coords = vector4(2429.2, 4965.0, 46.8, 130.0),
+        radius = 3.0,
+    },
+    vape_apple_pack = {
+        id = 'fruit_vape_mix',
+        coords = vector4(2423.6, 4959.0, 46.8, 130.0),
+        radius = 3.0,
+    },
+    vape_strawberry_pack = {
+        id = 'fruit_vape_mix',
+        coords = vector4(2423.6, 4959.0, 46.8, 130.0),
+        radius = 3.0,
+    },
+}
+
+--- Serverio priimama vape etapų seka. Klientas negali praleisti ar sukeisti etapų.
+--- minMs matuojamas nuo ankstesnio priimto etapo; pirmas etapas – nuo sesijos pradžios.
+Config.VapeStageSequences = {
+    vape_process = {
+        { name = 'prepare', minMs = 350 },
+        { name = 'select', minMs = 350 },
+        { name = 'move', minMs = 550 },
+        { name = 'pour', minMs = 1600 },
+        { name = 'mix', minMs = 700 },
+        { name = 'stabilize', minMs = 500 },
+    },
+    vape_simple = {
+        { name = 'prepare', minMs = 350 },
+        { name = 'select', minMs = 350 },
+        { name = 'move', minMs = 550 },
+        { name = 'pour', minMs = 1600 },
+        { name = 'mix', minMs = 700 },
+        { name = 'stabilize', minMs = 500 },
+    },
+    vape_apple_concentrate = {
+        { name = 'prepare', minMs = 350 },
+        { name = 'select', minMs = 350 },
+        { name = 'move', minMs = 550 },
+        { name = 'pour', minMs = 1600 },
+        { name = 'mix', minMs = 700 },
+        { name = 'stabilize', minMs = 500 },
+    },
+    vape_strawberry_concentrate = {
+        { name = 'prepare', minMs = 350 },
+        { name = 'select', minMs = 350 },
+        { name = 'move', minMs = 550 },
+        { name = 'pour', minMs = 1600 },
+        { name = 'mix', minMs = 700 },
+        { name = 'stabilize', minMs = 500 },
+    },
+    vape_pack = {
+        { name = 'bottle', minMs = 350 },
+        { name = 'dose', minMs = 1600 },
+        { name = 'cap', minMs = 350 },
+        { name = 'seal', minMs = 500 },
+        { name = 'finalize', minMs = 350 },
+    },
+    vape_apple_pack = {
+        { name = 'bottle', minMs = 350 },
+        { name = 'dose', minMs = 1600 },
+        { name = 'cap', minMs = 350 },
+        { name = 'seal', minMs = 500 },
+        { name = 'finalize', minMs = 350 },
+    },
+    vape_strawberry_pack = {
+        { name = 'bottle', minMs = 350 },
+        { name = 'dose', minMs = 1600 },
+        { name = 'cap', minMs = 350 },
+        { name = 'seal', minMs = 500 },
+        { name = 'finalize', minMs = 350 },
+    },
+}
+
+--- L1 alkoholio 3D prototipas (ta pati schema kaip Vape3D).
+Config.Alcohol3D = {
+    enabled = true,
+    legacyFallback = false,
+    sessionTimeoutMs = 180000,
+}
+
+--- Serverio priimama alkoholio etapų seka.
+Config.AlcoholStageSequences = {
+    alcohol_process = {
+        { name = 'prepare', minMs = 350 },
+        { name = 'heat', minMs = 800 },
+        { name = 'hold', minMs = 1200 },
+        { name = 'distill', minMs = 1600 },
+        { name = 'collect', minMs = 700 },
+        { name = 'cool', minMs = 500 },
+    },
+    alcohol_pack = {
+        { name = 'bottle', minMs = 350 },
+        { name = 'pour', minMs = 1600 },
+        { name = 'cork', minMs = 350 },
+        { name = 'seal', minMs = 500 },
+        { name = 'finalize', minMs = 350 },
     },
 }
 

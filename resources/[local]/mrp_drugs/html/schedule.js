@@ -8,6 +8,7 @@ const schHint = document.getElementById("schHint");
 
 let scheduleActive = false;
 let scheduleTimer = null;
+let scheduleSessionId = null;
 
 function diIcon(name) {
   return window.DrugIcons && typeof DrugIcons[name] === "function" ? DrugIcons[name]() : "";
@@ -42,10 +43,15 @@ function postSchedule(success, extra = {}) {
   const dots = document.getElementById("schStepDots");
   if (dots) dots.innerHTML = "";
   setScheduleBadge(null, null, null);
+  const payload = { success: !!success, ...extra };
+  if (payload.sessionId == null && scheduleSessionId != null) {
+    payload.sessionId = scheduleSessionId;
+  }
+  scheduleSessionId = null;
   fetch(`https://${GetParentResourceName()}/scheduleResult`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ success: !!success, ...extra }),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -1448,6 +1454,7 @@ function runWeedPackGame(data) {
 
 function runScheduleGame(data) {
   if (!mgSchedule) return;
+  scheduleSessionId = data && data.sessionId != null ? String(data.sessionId) : null;
   // Perkelti narkotikai paleidžiami naujoje React/Pixi darbo stotyje (iframe).
   if (window.MrpWebStation && data.drug && MrpWebStation.isMigrated(data.drug)) {
     if (window.MgAudio && MgAudio.stopAmbient) MgAudio.stopAmbient();
@@ -1455,6 +1462,7 @@ function runScheduleGame(data) {
       drug: data.drug,
       mode: data.mode,
       productId: data.productId,
+      sessionId: data.sessionId || scheduleSessionId,
       label: data.label || data.title,
       level: data.level || data.difficulty || 1,
       quantity: data.quantity || 1,

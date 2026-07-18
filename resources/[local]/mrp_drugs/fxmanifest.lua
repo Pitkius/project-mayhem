@@ -67,7 +67,11 @@ client_scripts {
     'client/progress.lua',
     'client/drug_sell_anim.lua',
     'client/schedule_anim.lua',
+    'client/minigame_manager.lua',
+    'client/interaction3d.lua',
     'client/weed_production.lua',
+    'client/vape_production.lua',
+    'client/alcohol_production.lua',
     'client/main.lua',
     'client/planned.lua',
     'client/printer.lua',
@@ -97,6 +101,14 @@ client_exports {
     'PlayDrugSellAnim',
     'IsDrugSellAnimBusy',
     'RunScheduleMinigame',
+    'RunVapeProduction',
+    'CloseActiveMinigame',
+    'IsMinigameActive',
+    'StartVapeProduction',
+    'CloseVapeProduction',
+    'RunAlcoholProduction',
+    'StartAlcoholProduction',
+    'CloseAlcoholProduction',
 }
 
 server_exports {

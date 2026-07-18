@@ -11,6 +11,33 @@ const craftProgressPhase = document.getElementById("craftProgressPhase");
 const craftProgressLabel = document.getElementById("craftProgressLabel");
 const craftProgressBar = document.getElementById("craftProgressBar");
 const craftProgressTime = document.getElementById("craftProgressTime");
+const vape3dHud = document.getElementById("vape3dHud");
+const vape3dTitle = document.getElementById("vape3dTitle");
+const vape3dStage = document.getElementById("vape3dStage");
+const vape3dStageName = document.getElementById("vape3dStageName");
+const vape3dHint = document.getElementById("vape3dHint");
+const vape3dGauge = document.getElementById("vape3dGauge");
+const vape3dGaugeFill = document.getElementById("vape3dGaugeFill");
+const vape3dScore = document.getElementById("vape3dScore");
+const vape3dMistakes = document.getElementById("vape3dMistakes");
+
+// schedule.js intentionally sends a small React payload. Preserve the Lua
+// correlation id when that fallback path is used, so stale results are ignored.
+let latestScheduleSessionId = null;
+window.addEventListener("message", (event) => {
+  const message = event.data || {};
+  if (message.action === "minigameSchedule" && message.data?.sessionId != null) {
+    latestScheduleSessionId = String(message.data.sessionId);
+  }
+}, true);
+if (window.MrpWebStation?.run) {
+  const runWebStation = window.MrpWebStation.run.bind(window.MrpWebStation);
+  window.MrpWebStation.run = (payload = {}) => {
+    const sessionId = payload.sessionId ?? latestScheduleSessionId;
+    latestScheduleSessionId = null;
+    return runWebStation({ ...payload, sessionId });
+  };
+}
 
 // PAKAVIMAS: 3D informacinis HUD (kairėje). Tekstas rodomas, bet neima paspaudimų.
 const weed3dHud = document.createElement("section");
@@ -146,6 +173,24 @@ function updateWeed3dHud(data, reset = false) {
       row.appendChild(strong);
       return row;
     }));
+  }
+}
+
+function updateVape3dHud(data = {}) {
+  if (data.kicker !== undefined) {
+    const kicker = document.querySelector(".vape3d-kicker");
+    if (kicker) kicker.textContent = data.kicker;
+  }
+  if (data.title !== undefined) vape3dTitle.textContent = data.title;
+  if (data.stage !== undefined) vape3dStage.textContent = data.stage;
+  if (data.stageName !== undefined) vape3dStageName.textContent = data.stageName;
+  if (data.hint !== undefined) vape3dHint.textContent = data.hint;
+  if (data.score !== undefined) vape3dScore.textContent = `Kokybė: ${Math.round(Number(data.score) || 0)}`;
+  if (data.mistakes !== undefined) vape3dMistakes.textContent = `Klaidos: ${Number(data.mistakes) || 0}`;
+  const value = data.gauge ?? data.progress;
+  vape3dGauge.classList.toggle("hidden", typeof value !== "number");
+  if (typeof value === "number") {
+    vape3dGaugeFill.style.width = `${Math.max(0, Math.min(100, value * 100))}%`;
   }
 }
 
@@ -316,12 +361,25 @@ window.addEventListener("message", (e) => {
     weed3dHud.classList.add("hidden");
     weedPackActive = false;
     weedPackCursor.classList.add("hidden");
+    vape3dHud.classList.add("hidden");
     app.classList.add("hidden");
     mgSkill.classList.add("hidden");
     mgAdvanced.classList.add("hidden");
     const mgSchedule = document.getElementById("mgSchedule");
     if (mgSchedule) mgSchedule.classList.add("hidden");
     if (window.MrpWebStation) MrpWebStation.close();
+  }
+  if (msg.action === "vape3dOpen") {
+    updateVape3dHud(msg.data || {});
+    vape3dHud.classList.remove("hidden");
+  }
+  if (msg.action === "vape3dUpdate") {
+    updateVape3dHud(msg.data || {});
+  }
+  if (msg.action === "vape3dClose") {
+    vape3dHud.classList.add("hidden");
+    vape3dGauge.classList.add("hidden");
+    vape3dGaugeFill.style.width = "0%";
   }
   if (msg.action === "weed3dOpen") {
     updateWeed3dHud(msg.data, true);
@@ -369,10 +427,10 @@ window.addEventListener("message", (e) => {
     hideCraftProgress();
   }
   if (msg.action === "minigameSkill") {
-    runSkillGame();
+    runSkillGame(msg.data || {});
   }
   if (msg.action === "minigameAdvanced") {
-    runAdvancedGame(msg.data && msg.data.rounds ? msg.data.rounds : 3);
+    runAdvancedGame(msg.data && msg.data.rounds ? msg.data.rounds : 3, msg.data || {});
   }
   if (msg.action === "minigameSchedule") {
     /* schedule.js */
@@ -397,7 +455,7 @@ btnCraft.onclick = () => {
 let cancelSkillGame = null;
 let cancelAdvancedGame = null;
 
-function runSkillGame() {
+function runSkillGame(data = {}) {
   if (cancelSkillGame) cancelSkillGame(false);
   mgSkill.classList.remove("hidden");
   const zone = document.getElementById("mgZone");
@@ -420,7 +478,7 @@ function runSkillGame() {
     window.removeEventListener("keydown", onKey);
     mgSkill.classList.add("hidden");
     cancelSkillGame = null;
-    post("skillResult", { success: !!success });
+    post("skillResult", { success: !!success, sessionId: data.sessionId });
   };
   const onKey = (ev) => {
     if (done || ev.code !== "Space") return;
@@ -432,7 +490,7 @@ function runSkillGame() {
   window.addEventListener("keydown", onKey);
 }
 
-function runAdvancedGame(rounds) {
+function runAdvancedGame(rounds, data = {}) {
   if (cancelAdvancedGame) cancelAdvancedGame(false);
   mgAdvanced.classList.remove("hidden");
   const seqEl = document.getElementById("mgSeq");
@@ -451,7 +509,7 @@ function runAdvancedGame(rounds) {
     buttons.forEach((button) => { button.onclick = null; });
     mgAdvanced.classList.add("hidden");
     cancelAdvancedGame = null;
-    post("advancedResult", { success: !!success });
+    post("advancedResult", { success: !!success, sessionId: data.sessionId });
   };
   cancelAdvancedGame = finish;
   buttons.forEach((b) => {

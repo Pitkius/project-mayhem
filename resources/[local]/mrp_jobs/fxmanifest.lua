@@ -63,5 +63,6 @@ dependencies {
     'qb-target',
     'qb-inventory',
     'qb-menu',
+    'mrp_drugs',
     'oxmysql',
 }

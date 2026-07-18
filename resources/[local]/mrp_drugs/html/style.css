@@ -1474,3 +1474,86 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .weed-pack-target span {
   display: none;
 }
+
+/* Lightweight HUD for the GTA-world vape workstation. */
+.vape3d-hud {
+  position: fixed;
+  top: clamp(24px, 4vh, 58px);
+  left: clamp(24px, 3vw, 64px);
+  width: min(390px, calc(100vw - 48px));
+  padding: 18px;
+  color: #ecfeff;
+  background: rgba(7, 18, 24, 0.94);
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  border-left: 4px solid #22d3ee;
+  border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 9997;
+}
+.vape3d-head,
+.vape3d-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.vape3d-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: #22d3ee;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+.vape3d-head h2 { margin: 0; font-size: 20px; }
+.vape3d-stage {
+  padding: 5px 9px;
+  color: #cffafe;
+  background: rgba(34, 211, 238, 0.13);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.vape3d-stage-name {
+  margin: 14px 0 4px;
+  color: #a5f3fc;
+  font-size: 14px;
+  font-weight: 700;
+}
+.vape3d-hint {
+  min-height: 38px;
+  margin: 4px 0 12px;
+  color: rgba(236, 254, 255, 0.72);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.vape3d-gauge {
+  position: relative;
+  height: 10px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+.vape3d-zone {
+  position: absolute;
+  inset: 0 auto 0 62%;
+  width: 22%;
+  background: rgba(74, 222, 128, 0.35);
+}
+.vape3d-gauge-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #0891b2, #67e8f9);
+  transition: width 0.08s linear;
+}
+.vape3d-footer {
+  padding-top: 11px;
+  color: #67e8f9;
+  border-top: 1px solid rgba(34, 211, 238, 0.18);
+  font-size: 12px;
+  font-weight: 700;
+}

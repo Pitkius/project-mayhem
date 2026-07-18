@@ -94,8 +94,12 @@ Config.Weather = {
         HALLOWEEN = 'cloud',
     },
 
-    --- Perėjimas tarp orų tipų (sek.).
-    TransitionSeconds = 12.0,
+    --- Perėjimas tarp orų tipų (sek.). Ilgesnis = mažiau „šuolių“.
+    TransitionSeconds = 45.0,
+    --- Kiek žaidimo valandų laikyti tą patį orą (3 ≈ ~6 realios min. su qb-weathersync tempu).
+    WeatherBlockHours = 3,
+    --- Kiek sekundžių „prilipti“ prie regiono pasienyje (mažiau mirgėjimo LS↔Sandy).
+    RegionStickSeconds = 12.0,
     --- Išjungti qb-weathersync atsitiktinį orų keitimą — prognozė valdo realybę.
     DisableDynamicWeather = true,
 }
