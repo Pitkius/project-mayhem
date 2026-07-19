@@ -1258,7 +1258,7 @@ function WeedProduction.Start(payload, onDone)
                 mistakes = 1,
                 reason = 'existing_table_not_found',
             })
-            QBCore.Functions.Notify('Nerastas jūsų padėtas džiovinimo stalas.', 'error')
+            QBCore.Functions.Notify('Nerastas jūsų padėtas žolės pakavimo stalas.', 'error')
             return false
         end
         session.tableOrigin = GetEntityCoords(existingTable)

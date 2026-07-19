@@ -41,7 +41,7 @@ Config.DrugEquipment.minPlaceDist = 2.0
 --- Keli įrankiai vienoje lab zonoje (pvz. lab_kit + burner) — atstumas metrais
 Config.DrugEquipment.labAssistRadius = 5.0
 
---- Cayo Perico ribos portable žolės džiovinimo stalui.
+--- Cayo Perico ribos portable žolės pakavimo stalui.
 --- center = salos centras; radius = 1800 m spindulys, toks pats kaip mrp_cayoperico MapRadius.
 --- Pakeitus radius į mažesnį skaičių, stalo padėjimo zona saloje sumažės.
 Config.DrugEquipment.cayoPlacement = {
@@ -78,13 +78,13 @@ Config.DrugEquipment.types = {
         products = {},
     },
     bagging_table = {
-        label = 'Žolės džiovinimo ir pakavimo stalas',
+        label = 'Žolės pakavimo stalas',
         prop = 'bkr_prop_weed_table_01a',
         icon = 'bag',
         packOnly = true,
-        -- weed_process = džiovinimas; weed_pack = naujas fiksuotos kameros pakavimas po vieną maišelį.
-        products = { 'weed_process', 'weed_pack' },
-        -- Tik stalo savininkas matys ir galės paleisti džiovinimo arba pakavimo veiksmą.
+        -- Portable stalas paleidžia tik naują fiksuotos kameros pakavimą po vieną maišelį.
+        products = { 'weed_pack' },
+        -- Tik stalo savininkas matys ir galės paleisti pakavimo veiksmą.
         ownerOnly = true,
         -- Vienas žaidėjas vienu metu gali turėti tik vieną padėtą tokio tipo stalą.
         maxPerPlayer = 1,

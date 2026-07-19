@@ -84,10 +84,10 @@ local function createOwnerTableBlip(e)
     SetBlipScale(blip, 0.78)
     SetBlipAsShortRange(blip, false)
     BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString('Jūsų žolės džiovinimo stalas')
+    AddTextComponentString('Jūsų žolės pakavimo stalas')
     EndTextCommandSetBlipName(blip)
     if GetResourceState('mrp_fonts') == 'started' then
-        exports['mrp_fonts']:SetBlipName(blip, 'Jūsų žolės džiovinimo stalas')
+        exports['mrp_fonts']:SetBlipName(blip, 'Jūsų žolės pakavimo stalas')
     end
     EquipmentBlips[e.id] = blip
 end
@@ -228,14 +228,6 @@ local function refreshTargets()
             local options = {}
             if canUse then
                 if meta.itemType == 'bagging_table' and not meta.fixed then
-                    -- Atskiri pasirinkimai neleidžia automatiniam recepto parinkimui paleisti seno režimo.
-                    options[#options + 1] = {
-                        icon = 'fas fa-seedling',
-                        label = 'Džiovinti žolę',
-                        action = function()
-                            runEquipmentCraftFlow('weed_process', id)
-                        end,
-                    }
                     options[#options + 1] = {
                         icon = 'fas fa-bag-shopping',
                         label = 'Pakuoti žolę',
@@ -303,7 +295,7 @@ RegisterNetEvent('mrp_drugs:client:startPlaceEquipment', function(itemType)
     local t = typeCfg(itemType)
     if not t then return notify('Nežinoma įranga.', 'error') end
     if not isInsidePlacementZone(t, GetEntityCoords(PlayerPedId())) then
-        return notify('Žolės džiovinimo stalą galima padėti tik Cayo Perico saloje.', 'error')
+        return notify('Žolės pakavimo stalą galima padėti tik Cayo Perico saloje.', 'error')
     end
     local model = t.prop or 'prop_tool_bench02'
     if not loadModel(model) then return notify('Prop modelis nerastas: ' .. model, 'error') end
