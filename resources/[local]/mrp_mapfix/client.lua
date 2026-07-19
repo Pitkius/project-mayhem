@@ -69,10 +69,9 @@ local VAPE_SKYSCRAPER_INTERIOR_TYPES = {
     'sc1_29_shop_shell_milo_',
 }
 
---- hid_weed_lab (Davis) — dekoratyvūs MLO vazonai prie džiovinimo stoties
-local WEED_LAB_POT_CENTER = vec3(1144.5345, -1659.7990, 36.6147)
-local WEED_LAB_POT_RADIUS = 10.0
-local WEED_LAB_POT_MODELS = {
+--- Atšaukia ankstesnį dekoratyvių Davis vazonų slėpimą.
+local WEED_LAB_DECOR_CENTER = vec3(1144.5345, -1659.7990, 36.6147)
+local WEED_LAB_DECOR_MODELS = {
     `bkr_prop_weed_bucket_01a`,
     `bkr_prop_weed_med_01a`,
     `bkr_prop_weed_lrg_01a`,
@@ -94,6 +93,13 @@ end
 
 local function requestCollision(coords)
     RequestCollisionAtCoord(coords.x, coords.y, coords.z)
+end
+
+local function restoreWeedLabDecorPots()
+    local c = WEED_LAB_DECOR_CENTER
+    for _, model in ipairs(WEED_LAB_DECOR_MODELS) do
+        RemoveModelHide(c.x, c.y, c.z, 10.0, model, false)
+    end
 end
 
 local function waitInteriorAt(coords, interiorType, attempts)
@@ -179,48 +185,6 @@ local function vapeSkyscraperProbes()
         vec3(e.x - math.sin(h) * 7.0, e.y + math.cos(h) * 7.0, e.z),
         vec3(356.20, -1800.96, 28.85),
     }
-end
-
-local function hideWeedLabDecorPots()
-    local c = WEED_LAB_POT_CENTER
-    for _, model in ipairs(WEED_LAB_POT_MODELS) do
-        pcall(function()
-            CreateModelHide(c.x, c.y, c.z, WEED_LAB_POT_RADIUS, model, true)
-        end)
-    end
-end
-
-local function purgeWeedLabDecorPots()
-    local c = WEED_LAB_POT_CENTER
-    local radiusSq = WEED_LAB_POT_RADIUS * WEED_LAB_POT_RADIUS
-    for _, entity in ipairs(GetGamePool('CObject')) do
-        if entity and entity ~= 0 and DoesEntityExist(entity) then
-            local model = GetEntityModel(entity)
-            local isPotModel = false
-            for _, potModel in ipairs(WEED_LAB_POT_MODELS) do
-                if model == potModel then
-                    isPotModel = true
-                    break
-                end
-            end
-            if isPotModel then
-                local coords = GetEntityCoords(entity)
-                local dx = coords.x - c.x
-                local dy = coords.y - c.y
-                local dz = coords.z - c.z
-                if (dx * dx + dy * dy + dz * dz) <= radiusSq then
-                    SetEntityAsMissionEntity(entity, true, true)
-                    DeleteEntity(entity)
-                end
-            end
-        end
-    end
-end
-
-local function loadWeedLabInterior()
-    requestCollision(WEED_LAB_POT_CENTER)
-    hideWeedLabDecorPots()
-    purgeWeedLabDecorPots()
 end
 
 local function loadVapeSkyscraper()
@@ -380,7 +344,7 @@ local function applyMapFixes()
     loadSimeonShowroom()
     loadOneilFarmhouse()
     loadVapeSkyscraper()
-    loadWeedLabInterior()
+    restoreWeedLabDecorPots()
 end
 
 exports('ReloadSimeonShowroom', function()
@@ -390,7 +354,6 @@ exports('EnsureSimeonShowroom', ensureSimeonShowroom)
 exports('IsSimeonShowroomReady', isSimeonInteriorReady)
 exports('ReloadOneilFarmhouse', loadOneilFarmhouse)
 exports('ReloadVapeSkyscraper', loadVapeSkyscraper)
-exports('ReloadWeedLabInterior', loadWeedLabInterior)
 exports('ReloadLostMc', function()
     if GetResourceState('cfx-gabz-lost') == 'started' then
         pcall(function()
@@ -414,7 +377,6 @@ CreateThread(function()
         local nearOneil = #(p - ONEIL_CENTER) < 100.0 or #(p - ONEIL_DOOR_PROBE) < 55.0
         local nearSimeon = #(p - SIMEON_CENTER) < 120.0
         local nearVapeSkyscraper = #(p - VAPE_SKYSCRAPER_CENTER) < 120.0
-        local nearWeedLab = #(p - WEED_LAB_POT_CENTER) < 80.0
 
         if nearOneil then
             removeIpls(ONEIL_DRUGLAB_IPLS)
@@ -431,9 +393,6 @@ CreateThread(function()
         elseif nearVapeSkyscraper then
             loadVapeSkyscraper()
             Wait(2000)
-        elseif nearWeedLab then
-            loadWeedLabInterior()
-            Wait(2500)
         else
             Wait(3500)
         end
@@ -446,8 +405,7 @@ AddEventHandler('onResourceStart', function(resourceName)
         or resourceName == 'mrp_dealership'
         or resourceName == 'sc1_29_motel'
         or resourceName == 'cfx-gabz-lost'
-        or resourceName == 'cfx-gabz-mapdata'
-        or resourceName == 'hid_weed_lab' then
+        or resourceName == 'cfx-gabz-mapdata' then
         Wait(1000)
         applyMapFixes()
     end

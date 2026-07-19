@@ -54,6 +54,12 @@ local function loadModel(model)
     return HasModelLoaded(hash) and hash or nil
 end
 
+local function setEntityScale(entity, scale)
+    if not entity or not DoesEntityExist(entity) then return end
+    local forward, right, up, position = GetEntityMatrix(entity)
+    SetEntityMatrix(entity, forward * scale, right * scale, up * scale, position)
+end
+
 local function offsetPoint(origin, heading, side, forward, up)
     local angle = math.rad(heading)
     local right = vector3(math.cos(angle), math.sin(angle), 0.0)
@@ -63,12 +69,13 @@ end
 
 local function spawnPlants()
     if not session or #plantEntities > 0 then return end
-    local model = loadModel('bkr_prop_weed_med_01a') or loadModel('prop_weed_02')
-    if not model then
-        return QBCore.Functions.Notify('Nepavyko užkrauti džiūstančių augalų modelio.', 'error')
+    local potModel = loadModel('bkr_prop_weed_bucket_01a')
+    local plantModel = loadModel('bkr_prop_weed_med_01a') or loadModel('prop_weed_02')
+    if not potModel or not plantModel then
+        return QBCore.Functions.Notify('Nepavyko užkrauti džiūstančių augalų vazonų.', 'error')
     end
 
-    -- Augalai rodomi tik aktyvios sesijos savininkui, šioje atskiroje džiovinimo vietoje.
+    -- Vazonai ir augalai yra lokalūs: juos mato tik aktyvios sesijos savininkas.
     local c = cfg().visualCoords or vector4(1144.2369, -1660.1793, 36.8147, 207.3685)
     local origin = vector3(c.x, c.y, c.z)
     local heading = tonumber(c.w) or 203.0073
@@ -76,21 +83,33 @@ local function spawnPlants()
     for i = 1, count do
         local row = math.floor((i - 1) / 5)
         local column = (i - 1) % 5
-        -- 5 x 2 tinklelis centruojamas aplink pateiktą visualCoords tašką.
-        local pos = offsetPoint(origin, heading, -1.0 + column * 0.5, -0.34 + row * 0.68, 0.08)
-        local entity = CreateObjectNoOffset(model, pos.x, pos.y, pos.z, false, false, false)
-        if entity and entity ~= 0 then
-            SetEntityAsMissionEntity(entity, true, true)
-            SetEntityCollision(entity, false, false)
-            SetEntityRotation(entity, 90.0, 0.0, heading + ((column - 2) * 6.0), 2, true)
-            SetEntityVisible(entity, true, false)
-            SetEntityAlpha(entity, 255, false)
-            SetEntityLodDist(entity, 250)
-            FreezeEntityPosition(entity, true)
-            plantEntities[#plantEntities + 1] = entity
+        local itemHeading = heading + ((column - 2) * 4.0)
+        local pos = offsetPoint(origin, heading, -1.12 + column * 0.56, -0.38 + row * 0.76, 0.0)
+
+        local pot = CreateObjectNoOffset(potModel, pos.x, pos.y, pos.z, false, false, false)
+        if pot and pot ~= 0 then
+            SetEntityAsMissionEntity(pot, true, true)
+            SetEntityHeading(pot, itemHeading)
+            setEntityScale(pot, 0.92)
+            SetEntityCollision(pot, false, false)
+            SetEntityVisible(pot, true, false)
+            FreezeEntityPosition(pot, true)
+            plantEntities[#plantEntities + 1] = pot
+        end
+
+        local plant = CreateObjectNoOffset(plantModel, pos.x, pos.y, pos.z + 0.24, false, false, false)
+        if plant and plant ~= 0 then
+            SetEntityAsMissionEntity(plant, true, true)
+            SetEntityHeading(plant, itemHeading)
+            setEntityScale(plant, 0.48)
+            SetEntityCollision(plant, false, false)
+            SetEntityVisible(plant, true, false)
+            FreezeEntityPosition(plant, true)
+            plantEntities[#plantEntities + 1] = plant
         end
     end
-    SetModelAsNoLongerNeeded(model)
+    SetModelAsNoLongerNeeded(potModel)
+    SetModelAsNoLongerNeeded(plantModel)
 end
 
 local function setSession(data)

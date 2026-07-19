@@ -17,6 +17,5 @@ exports {
     'ReloadOneilFarmhouse',
     'ReloadLostMc',
     'ReloadVapeSkyscraper',
-    'ReloadWeedLabInterior',
     'ApplyMapFixes',
 }
