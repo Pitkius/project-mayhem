@@ -80,7 +80,7 @@ Config.Density = {
 }
 
 Config.Disable = {
-    hudComponents = { 1, 2, 3, 4, 7, 9, 13, 14, 19, 20, 21, 22 }, -- Hud Components: https://docs.fivem.net/natives/?_0x6806C51AD12B83B8
+    hudComponents = { 1, 2, 3, 4, 7, 9, 13, 19, 20, 21, 22 }, -- 14 = RETICLE (GTA taikinukas) — paliktas
     controls = { 37 },                                            -- Controls: https://docs.fivem.net/docs/game-references/controls/
     displayAmmo = false,                                          -- false disables ammo display
     ambience = false,                                             -- disables distance sirens, distance car alarms, flight music, etc
@@ -90,6 +90,9 @@ Config.Disable = {
     driveby = true,                                              -- disables driveby
     carRadio = false                                              -- When set to true car radio will default to off when entering a vehicle.
 }
+
+--- GTA taikinukas visada baltas (nekeičia į raudoną/pilką, kai taikaisi į žmogų).
+Config.AlwaysWhiteReticle = true
 
 Config.RelieveWeedStress = math.random(15, 20) -- stress relief amount (100 max)
 

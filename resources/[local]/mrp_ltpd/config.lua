@@ -137,9 +137,9 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- Visoms Config.FleetVehicles mašinoms: native SetVehicleSiren + script mirksėjimas ant stogo.
-    --- (Ne tik kelioms — jei carcols neveikia, vis tiek matosi šviesos.)
-    nativeFlashAssist = true,
+    --- PD fleet NIEKADA nenaudoja script flash / prop — tik mašinos carcols lempos (SetVehicleSiren).
+    --- Script lightbar lieka tik civilinei TP su pd_emergency_kit.
+    nativeFlashAssist = false,
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
     allowPassengerControl = true,
     performanceTune = {
@@ -250,26 +250,24 @@ Config.PdInventoryMarkerDrawDistance = 12.0
 Config.PdMarkerTextDistance = 2.2
 
 --- Tarnybinis transportas (perkurta iš Animuotu + undercover + MPRPD RAR)
---- emergencyLights:
----   'native' / 'hybrid' = SetVehicleSiren + visoms automatiškai script flash (nativeFlashAssist)
----   'script' = prop lightbar (tik be savų lempų)
+--- emergencyLights: 'native' = mašinos pačios lempos (carcols/extras) | 'script' = tik jei modelis be lempų
 Config.FleetVehicles = {
-  { model = 'mrpd1', label = 'MRPD 1 (undercover)', emergencyLights = 'hybrid' },
-  { model = 'mrpd2', label = 'MRPD 2 (undercover)', emergencyLights = 'hybrid' },
-  { model = 'mrpd3', label = 'MRPD 3 (undercover)', emergencyLights = 'hybrid' },
-  { model = 'mrpd4', label = 'MRPD 4 (undercover)', emergencyLights = 'hybrid' },
-  { model = 'mrpd5', label = 'MRPD 5 (animuotas)', emergencyLights = 'hybrid' },
-  { model = 'mrpd6', label = 'MRPD 6 (animuotas)', emergencyLights = 'hybrid' },
-  { model = 'mrpd7', label = 'MRPD 7 (animuotas)', emergencyLights = 'hybrid' },
-  { model = 'mrpd8', label = 'MRPD 8 (animuotas)', emergencyLights = 'hybrid' },
-  { model = 'mrpd9', label = 'MRPD 9 (animuotas)', emergencyLights = 'hybrid' },
-  { model = 'mrpd10', label = 'MRPD 10 (animuotas)', emergencyLights = 'hybrid' },
-  { model = 'mrpd11', label = 'MRPD 11 (animuotas)', emergencyLights = 'hybrid' },
-  { model = 'mrpd12', label = 'MRPD 12 (animuotas)', emergencyLights = 'hybrid' },
-  { model = 'mrpd13', label = 'MRPD 13 — Audi RS6 Avant', emergencyLights = 'hybrid' },
-  { model = 'mrpd14', label = 'MRPD 14 — Kia Stinger', emergencyLights = 'hybrid' },
-  { model = 'mrpd15', label = 'MRPD 15 — Hyundai', emergencyLights = 'hybrid' },
-  { model = 'mrpd16', label = 'MRPD 16 — Alfa Romeo', emergencyLights = 'hybrid' },
+  { model = 'mrpd1', label = 'MRPD 1 (undercover)', emergencyLights = 'native' },
+  { model = 'mrpd2', label = 'MRPD 2 (undercover)', emergencyLights = 'native' },
+  { model = 'mrpd3', label = 'MRPD 3 (undercover)', emergencyLights = 'native' },
+  { model = 'mrpd4', label = 'MRPD 4 (undercover)', emergencyLights = 'native' },
+  { model = 'mrpd5', label = 'MRPD 5 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd6', label = 'MRPD 6 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd7', label = 'MRPD 7 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd8', label = 'MRPD 8 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd9', label = 'MRPD 9 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd10', label = 'MRPD 10 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd11', label = 'MRPD 11 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd12', label = 'MRPD 12 (animuotas)', emergencyLights = 'native' },
+  { model = 'mrpd13', label = 'MRPD 13 — Audi RS6 Avant', emergencyLights = 'native' },
+  { model = 'mrpd14', label = 'MRPD 14 — Kia Stinger', emergencyLights = 'native' },
+  { model = 'mrpd15', label = 'MRPD 15 — Hyundai', emergencyLights = 'native' },
+  { model = 'mrpd16', label = 'MRPD 16 — Alfa Romeo', emergencyLights = 'native' },
 }
 
 --- Sraigtasparniai (stogas / helipadas) – spawn ant `heliGarage.spawn`
