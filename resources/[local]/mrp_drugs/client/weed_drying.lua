@@ -19,7 +19,7 @@ local function stationCoords()
 end
 
 local function visualCoords()
-    local c = cfg().visualCoords or vector4(1144.2369, -1660.1793, 36.8147, 207.3685)
+    local c = cfg().visualCoords or vector4(1144.5168, -1660.4908, 36.5114, 44.1525)
     return vector3(c.x, c.y, c.z)
 end
 
@@ -76,15 +76,15 @@ local function spawnPlants()
     end
 
     -- Vazonai ir augalai yra lokalūs: juos mato tik aktyvios sesijos savininkas.
-    local c = cfg().visualCoords or vector4(1144.2369, -1660.1793, 36.8147, 207.3685)
+    local c = cfg().visualCoords or vector4(1144.5168, -1660.4908, 36.5114, 44.1525)
     local origin = vector3(c.x, c.y, c.z)
-    local heading = tonumber(c.w) or 203.0073
-    local count = math.max(1, tonumber(cfg().visualPlantCount) or 10)
+    local heading = tonumber(c.w) or 44.1525
+    local count = math.max(1, tonumber(cfg().visualPlantCount) or 9)
     for i = 1, count do
-        local row = math.floor((i - 1) / 5)
-        local column = (i - 1) % 5
-        local itemHeading = heading + ((column - 2) * 4.0)
-        local pos = offsetPoint(origin, heading, -1.12 + column * 0.56, -0.38 + row * 0.76, 0.0)
+        local row = math.floor((i - 1) / 3)
+        local column = (i - 1) % 3
+        local itemHeading = heading + ((column - 1) * 3.0)
+        local pos = offsetPoint(origin, heading, -0.5 + column * 0.5, -0.5 + row * 0.5, 0.0)
 
         local pot = CreateObjectNoOffset(potModel, pos.x, pos.y, pos.z, false, false, false)
         if pot and pot ~= 0 then

@@ -1249,7 +1249,7 @@ Config.WeedCayoLab = {
 Config.WeedDrying = {
     stationId = 'weed_dry_davis',
     coords = vector4(1144.5762, -1661.0204, 36.6147, 203.0073),
-    visualCoords = vector4(1144.2369, -1660.1793, 36.8147, 207.3685),
+    visualCoords = vector4(1144.5168, -1660.4908, 36.5114, 44.1525),
     inputItem = 'weed_leaf',
     outputItem = 'weed_buds',
     minimumAmount = 10,
@@ -1258,7 +1258,7 @@ Config.WeedDrying = {
     discountEvery = 25,
     discountPercent = 2,
     earlyReturnPercent = 80,
-    visualPlantCount = 10,
+    visualPlantCount = 9,
     interactDistance = 4.0,
     hologramDistance = 22.0,
 }
