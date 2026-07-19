@@ -171,7 +171,7 @@ local function setupTarget()
             },
             {
                 icon = 'fas fa-exclamation-triangle',
-                label = 'Nutraukti džiovinimą (grįš tik 20%)',
+                label = 'Nutraukti džiovinimą (grįš 80%)',
                 action = collect,
                 canInteract = function()
                     return session ~= nil and not isReady() and not collecting

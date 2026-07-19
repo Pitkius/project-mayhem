@@ -635,7 +635,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getStationUi', function(src, c
                         secondsPerPlant = tonumber(dryCfg.secondsPerPlant) or 10,
                         discountEvery = tonumber(dryCfg.discountEvery) or 25,
                         discountPercent = tonumber(dryCfg.discountPercent) or 2,
-                        earlyReturnPercent = tonumber(dryCfg.earlyReturnPercent) or 20,
+                        earlyReturnPercent = tonumber(dryCfg.earlyReturnPercent) or 80,
                     }
                 end
                 products[#products + 1] = productPayload

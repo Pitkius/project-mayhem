@@ -44,6 +44,12 @@ local function durationFor(quantity)
     return math.max(1, math.floor(quantity * secondsPerPlant * multiplier))
 end
 
+local function earlyReturnFor(quantity)
+    local enteredQuantity = math.max(0, math.floor(tonumber(quantity) or 0))
+    local refundPercent = math.min(100, math.max(0, tonumber(cfg().earlyReturnPercent) or 80))
+    return math.floor(enteredQuantity * refundPercent / 100), refundPercent
+end
+
 local function sessionPayload(row)
     if not row then return nil end
     local startedAt = tonumber(row.started_at) or os.time()
@@ -210,13 +216,13 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:collectWeedDrying', function(s
     local ready = session.ready == true
     local itemName
     local amount
+    local refundPercent
     if ready then
         itemName = cfg().outputItem or 'weed_buds'
         amount = session.quantity
     else
         itemName = cfg().inputItem or 'weed_leaf'
-        local refundPercent = math.max(0, tonumber(cfg().earlyReturnPercent) or 20)
-        amount = math.floor(session.quantity * refundPercent / 100)
+        amount, refundPercent = earlyReturnFor(session.quantity)
     end
 
     if amount > 0 and GetResourceState('qb-inventory') == 'started' then
@@ -255,7 +261,11 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:collectWeedDrying', function(s
         amount = amount,
         reason = ready
             and ('Pasiėmėte išdžiovintą žolę x%d.'):format(amount)
-            or ('Džiovinimas nutrauktas. Grąžinta 20%%: x%d.'):format(amount),
+            or ('Džiovinimas nutrauktas. Grąžinta %d%% nuo įrašyto x%d kiekio: x%d.'):format(
+                refundPercent,
+                session.quantity,
+                amount
+            ),
     })
 end)
 
