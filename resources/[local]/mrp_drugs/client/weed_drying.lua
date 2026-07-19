@@ -80,6 +80,7 @@ local function spawnPlants()
     local origin = vector3(c.x, c.y, c.z)
     local heading = tonumber(c.w) or 44.1525
     local count = math.max(1, tonumber(cfg().visualPlantCount) or 9)
+    -- Devyni džiūstantys vazonai glaudžiai išdėstomi trimis eilėmis po tris.
     for i = 1, count do
         local row = math.floor((i - 1) / 3)
         local column = (i - 1) % 3
