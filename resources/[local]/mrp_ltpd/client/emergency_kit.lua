@@ -102,16 +102,21 @@ local function modelIsFleetCar(hash)
     return FLEET_CAR_HASHES[hash] == true
 end
 
---- Fleet entry: emergencyLights = 'native' | 'script' | nil
---- native = mašinos carcols lempos (SetVehicleSiren). script = prop lightbar (NENAUDOTI fleet PD).
+--- Fleet entry: emergencyLights = 'native' | 'hybrid' | 'script' | nil
+--- native/hybrid → SetVehicleSiren; script → prop lightbar.
+--- Hybrid/native + nativeFlashAssist → raudona/mėlyna flash ant stogo (be prop).
 local FLEET_LIGHT_MODE = {}
 local function rebuildFleetLightModes()
     FLEET_LIGHT_MODE = {}
     for _, v in ipairs(Config.FleetVehicles or {}) do
         if v and v.model then
-            local mode = tostring(v.emergencyLights or v.lights or 'native'):lower()
+            local mode = tostring(v.emergencyLights or v.lights or 'hybrid'):lower()
             if mode == 'kit' then mode = 'script' end
-            if mode ~= 'script' then mode = 'native' end
+            if mode == 'hybrid' or mode == 'native' or mode == '' then
+                mode = 'native' --- SetVehicleSiren kelias; flash assist atskirai
+            elseif mode ~= 'script' then
+                mode = 'native'
+            end
             FLEET_LIGHT_MODE[joaat(v.model)] = mode
         end
     end
@@ -127,7 +132,7 @@ local function vehicleSupportsNativeEmergency(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     local hash = GetEntityModel(vehicle)
 
-    -- Fleet PD: VISADA native lempos (nebent explicit 'script').
+    -- Fleet: default native/hybrid. Tik explicit 'script' = prop lempos.
     if modelIsFleetCar(hash) then
         return fleetLightMode(hash) ~= 'script'
     end
@@ -243,12 +248,8 @@ end
 vehicleUsesScriptFlash = function(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     local hash = GetEntityModel(vehicle)
-    --- Tarnybinės PD mašinos — NIEKADA script/prop (turi savas lempas)
-    if modelIsFleetCar(hash) then
-        return false
-    end
-    if modelIsFleet(hash) then
-        return false
+    if modelIsFleetCar(hash) and fleetLightMode(hash) == 'script' then
+        return true
     end
     local _, kit = readVehicleStateBag(vehicle)
     if kit == true and not vehicleSupportsNativeEmergency(vehicle) then
@@ -659,9 +660,15 @@ local function applyNativeForEveryone(vehicle, mode)
     SetVehicleHasMutedSirens(vehicle, true)
 end
 
---- Script prop flash — IŠJUNGTA fleet PD (tik civilinis kit).
-local function vehicleUsesNativeFlashAssist(_vehicle)
-    return false
+--- Visoms fleet PD mašinoms: script flash ant stogo (be prop), nepriklausomai nuo carcols.
+local function vehicleUsesNativeFlashAssist(vehicle)
+    if Ec.nativeFlashAssist == false then return false end
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    if vehicleUsesScriptFlash(vehicle) then return false end
+    local hash = GetEntityModel(vehicle)
+    --- Visas Config.FleetVehicles parkas (mrpd1–16)
+    if modelIsFleetCar(hash) then return true end
+    return vehicleSupportsNativeEmergency(vehicle)
 end
 
 --- Fleet: šviesa iš mašinos siren kaulų (jų uždėtos lempos), ne iš prop.
@@ -742,16 +749,18 @@ local function ingestFromEntity(vehicle)
     local mode, kit = readVehicleStateBag(vehicle)
     local supportsNative = vehicleSupportsNativeEmergency(vehicle)
     local scriptFlash = vehicleUsesScriptFlash(vehicle)
-    local isFleet = modelIsFleet(GetEntityModel(vehicle))
-    if isFleet then
+    local assistFlash = vehicleUsesNativeFlashAssist(vehicle)
+    --- Prop lightbar tik script režimui; hybrid naudoja stogo DrawLight be prop
+    if supportsNative and not scriptFlash then
         removeLightbar(vehicle)
-        scriptFlash = false
     end
     TRACKED[vehicle] = TRACKED[vehicle] or {}
     TRACKED[vehicle].supportsNative = supportsNative
     TRACKED[vehicle].scriptFlash = scriptFlash
-    TRACKED[vehicle].assistFlash = false
-    TRACKED[vehicle].fleetBoneLights = isFleet and (Ec.fleetSirenBoneLights ~= false)
+    TRACKED[vehicle].assistFlash = assistFlash
+    TRACKED[vehicle].fleetBoneLights = (not assistFlash)
+        and modelIsFleet(GetEntityModel(vehicle))
+        and (Ec.fleetSirenBoneLights ~= false)
     TRACKED[vehicle].mode = mode
     syncKitVisuals(vehicle)
 
@@ -769,6 +778,7 @@ local function ingestFromEntity(vehicle)
     elseif mode == 'sound' then
         stopNativeSirenVisual(vehicle)
     elseif mode == 'full' then
+        --- Visada bandyti native šviesas; flash assist piešiamas TRACKED.assistFlash
         applyNativeForEveryone(vehicle, 'full')
     end
 end
@@ -843,7 +853,8 @@ CreateThread(function()
                         local vehCoords = GetEntityCoords(veh)
                         local dist = #(pCoords - vehCoords)
                         if dist <= drawDistance then
-                            if meta.scriptFlash == true then
+                            local wantFlash = meta.scriptFlash == true or meta.assistFlash == true
+                            if wantFlash then
                                 drawScriptFlash(veh, dist)
                                 drew = true
                             elseif meta.fleetBoneLights then
