@@ -6,6 +6,8 @@ local session = nil
 local plantEntities = {}
 local targetCreated = false
 local collecting = false
+local requestSession
+local collectRequestId = 0
 
 local function cfg()
     return Config.WeedDrying or {}
@@ -13,6 +15,11 @@ end
 
 local function stationCoords()
     local c = cfg().coords or vector4(1144.5762, -1661.0204, 36.6147, 203.0073)
+    return vector3(c.x, c.y, c.z)
+end
+
+local function visualCoords()
+    local c = cfg().visualCoords or vector4(1144.2369, -1660.1793, 36.8147, 207.3685)
     return vector3(c.x, c.y, c.z)
 end
 
@@ -61,7 +68,8 @@ local function spawnPlants()
         return QBCore.Functions.Notify('Nepavyko užkrauti džiūstančių augalų modelio.', 'error')
     end
 
-    local c = cfg().coords or vector4(1144.5762, -1661.0204, 36.6147, 203.0073)
+    -- Augalai rodomi tik aktyvios sesijos savininkui, šioje atskiroje džiovinimo vietoje.
+    local c = cfg().visualCoords or vector4(1144.2369, -1660.1793, 36.8147, 207.3685)
     local origin = vector3(c.x, c.y, c.z)
     local heading = tonumber(c.w) or 203.0073
     local count = math.max(1, tonumber(cfg().visualPlantCount) or 10)
@@ -96,20 +104,34 @@ RegisterNetEvent('mrp_drugs:client:setWeedDryingSession', setSession)
 local function collect()
     if collecting or not session then return end
     collecting = true
+    collectRequestId = collectRequestId + 1
+    local requestId = collectRequestId
     QBCore.Functions.TriggerCallback('mrp_drugs:server:collectWeedDrying', function(response)
+        if requestId ~= collectRequestId then return end
         collecting = false
         if not response or not response.ok then
+            requestSession()
             return QBCore.Functions.Notify((response and response.reason) or 'Nepavyko surinkti žolės.', 'error')
         end
         setSession(nil)
         QBCore.Functions.Notify(response.reason or 'Žolė surinkta.', response.ready and 'success' or 'error', 6500)
+    end)
+    CreateThread(function()
+        Wait(10000)
+        if collecting and requestId == collectRequestId then
+            collecting = false
+            collectRequestId = collectRequestId + 1
+            requestSession()
+            QBCore.Functions.Notify('Serveris neatsakė. Džiovinimo būsena atnaujinta.', 'error')
+        end
     end)
 end
 
 local function setupTarget()
     if targetCreated or GetResourceState('qb-target') ~= 'started' then return end
     targetCreated = true
-    exports['qb-target']:AddCircleZone('mrp_weed_drying_collect', stationCoords(), 2.2, {
+    -- Surinkimo zona yra ant pačių gulinčių augalų, o ne ant UI paleidimo taško.
+    exports['qb-target']:AddCircleZone('mrp_weed_drying_collect', visualCoords(), 2.4, {
         name = 'mrp_weed_drying_collect',
         debugPoly = false,
         useZ = true,
@@ -124,7 +146,7 @@ local function setupTarget()
                 end,
             },
             {
-                icon = 'fas fa-triangle-exclamation',
+                icon = 'fas fa-exclamation-triangle',
                 label = 'Nutraukti džiovinimą (grįš tik 20%)',
                 action = collect,
                 canInteract = function()
@@ -154,7 +176,7 @@ local function drawHologram(coords, text)
     ClearDrawOrigin()
 end
 
-local function requestSession()
+requestSession = function()
     QBCore.Functions.TriggerCallback('mrp_drugs:server:getWeedDryingSession', function(response)
         if response and response.ok then setSession(response.session) end
     end)
@@ -170,7 +192,7 @@ CreateThread(function()
         local sleep = 1000
         if session then
             local coords = GetEntityCoords(PlayerPedId())
-            local distance = #(coords - stationCoords())
+            local distance = #(coords - visualCoords())
             if distance <= 100.0 and #plantEntities == 0 then spawnPlants() end
             if distance > 120.0 and #plantEntities > 0 then clearPlants() end
             if distance <= (tonumber(cfg().hologramDistance) or 22.0) then
@@ -181,7 +203,7 @@ CreateThread(function()
                 else
                     text = ('ŽOLĖ DŽIŪSTA · LIKO %s · x%d'):format(formatTime(remainingSeconds()), session.quantity)
                 end
-                local c = stationCoords()
+                local c = visualCoords()
                 drawHologram(vector3(c.x, c.y, c.z + 1.15), text)
             end
         end

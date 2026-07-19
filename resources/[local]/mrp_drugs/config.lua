@@ -1249,6 +1249,7 @@ Config.WeedCayoLab = {
 Config.WeedDrying = {
     stationId = 'weed_dry_davis',
     coords = vector4(1144.5762, -1661.0204, 36.6147, 203.0073),
+    visualCoords = vector4(1144.2369, -1660.1793, 36.8147, 207.3685),
     inputItem = 'weed_leaf',
     outputItem = 'weed_buds',
     minimumAmount = 10,
