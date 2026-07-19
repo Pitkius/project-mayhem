@@ -76,11 +76,16 @@ local function spawnPlants()
     for i = 1, count do
         local row = math.floor((i - 1) / 5)
         local column = (i - 1) % 5
-        local pos = offsetPoint(origin, heading, -1.15 + column * 0.55, 0.65 + row * 0.75, 0.04)
-        local entity = CreateObject(model, pos.x, pos.y, pos.z, false, false, false)
+        -- 5 x 2 tinklelis centruojamas aplink pateiktą visualCoords tašką.
+        local pos = offsetPoint(origin, heading, -1.0 + column * 0.5, -0.34 + row * 0.68, 0.08)
+        local entity = CreateObjectNoOffset(model, pos.x, pos.y, pos.z, false, false, false)
         if entity and entity ~= 0 then
+            SetEntityAsMissionEntity(entity, true, true)
             SetEntityCollision(entity, false, false)
-            SetEntityRotation(entity, 88.0, 0.0, heading + column * 7.0, 2, true)
+            SetEntityRotation(entity, 90.0, 0.0, heading + ((column - 2) * 6.0), 2, true)
+            SetEntityVisible(entity, true, false)
+            SetEntityAlpha(entity, 255, false)
+            SetEntityLodDist(entity, 250)
             FreezeEntityPosition(entity, true)
             plantEntities[#plantEntities + 1] = entity
         end
