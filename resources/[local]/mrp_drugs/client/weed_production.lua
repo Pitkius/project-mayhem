@@ -1228,23 +1228,30 @@ function WeedProduction.Start(payload, onDone)
         -- DŽIOVINIMAS / PAKAVIMAS: naudojamas jau pasaulyje esantis portable stalas.
         -- 5.0 m = paieškos spindulys aplink serverio perduotą workspace vietą.
         local existingTable, existingTableHash
+        local tableHash = joaat(MODELS.table[1])
         local findDeadline = GetGameTimer() + 8000
+        local workspaceEntity = tonumber(workspace.entity)
+        if workspaceEntity and workspaceEntity ~= 0 and DoesEntityExist(workspaceEntity)
+            and GetEntityModel(workspaceEntity) == tableHash then
+            -- Equipment sistema perduoda tikslų lokalų entity — tai patikimiausias kelias.
+            existingTable = workspaceEntity
+            existingTableHash = tableHash
+        end
         if GetResourceState('mrp_cayoperico') == 'started' then
             -- Cayo objektui prieš paiešką paprašoma salos collision, kad stalas būtų patikimai užkrautas.
             pcall(function()
                 exports['mrp_cayoperico']:RequestIslandCollision(origin.x, origin.y, origin.z)
             end)
         end
-        repeat
+        while not existingTable and GetGameTimer() < findDeadline do
             RequestCollisionAtCoord(origin.x, origin.y, origin.z)
-            local hash = joaat(MODELS.table[1])
-            local entity = GetClosestObjectOfType(origin.x, origin.y, origin.z, 5.0, hash, false, false, false)
+            local entity = GetClosestObjectOfType(origin.x, origin.y, origin.z, 5.0, tableHash, false, false, false)
             if entity and entity ~= 0 and DoesEntityExist(entity) then
                 existingTable = entity
-                existingTableHash = hash
+                existingTableHash = tableHash
             end
             if not existingTable then Wait(100) end
-        until existingTable or GetGameTimer() >= findDeadline
+        end
         if not existingTable then
             finishSession(false, {
                 score = 0,

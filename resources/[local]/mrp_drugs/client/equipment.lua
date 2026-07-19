@@ -3,6 +3,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local EquipmentProps = {}
 local EquipmentMeta = {}
+local EquipmentBlips = {}
 local placing = false
 local crafting = false
 
@@ -56,6 +57,12 @@ local function loadModel(model)
 end
 
 local function deleteProp(id)
+    local blip = EquipmentBlips[id]
+    if blip and DoesBlipExist(blip) then
+        RemoveBlip(blip)
+    end
+    EquipmentBlips[id] = nil
+
     local ent = EquipmentProps[id]
     if ent and DoesEntityExist(ent) then
         exports['qb-target']:RemoveTargetEntity(ent)
@@ -63,6 +70,26 @@ local function deleteProp(id)
     end
     EquipmentProps[id] = nil
     EquipmentMeta[id] = nil
+end
+
+local function createOwnerTableBlip(e)
+    if not e or e.fixed or e.itemType ~= 'bagging_table' then return end
+    local playerData = QBCore.Functions.GetPlayerData()
+    if not playerData or playerData.citizenid ~= e.citizenid then return end
+
+    -- 469 = kanapės simbolis; blipas kuriamas tik šio portable stalo savininko klientui.
+    local blip = AddBlipForCoord(e.x, e.y, e.z)
+    SetBlipSprite(blip, 469)
+    SetBlipColour(blip, 2)
+    SetBlipScale(blip, 0.78)
+    SetBlipAsShortRange(blip, false)
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentString('Jūsų žolės džiovinimo stalas')
+    EndTextCommandSetBlipName(blip)
+    if GetResourceState('mrp_fonts') == 'started' then
+        exports['mrp_fonts']:SetBlipName(blip, 'Jūsų žolės džiovinimo stalas')
+    end
+    EquipmentBlips[e.id] = blip
 end
 
 local function spawnEquipment(e)
@@ -86,6 +113,7 @@ local function spawnEquipment(e)
         e.expiresAt = GetGameTimer() + math.max(0, tonumber(e.remainingMs) or 0)
     end
     EquipmentMeta[e.id] = e
+    createOwnerTableBlip(e)
     SetModelAsNoLongerNeeded(joaat(model))
 end
 
@@ -126,14 +154,16 @@ local function runEquipmentCraftFlow(productId, equipmentId)
                 disableMovement = true,
                 disableCarMovement = true,
                 disableCombat = true,
-            }, nil, function(ok)
-                if not ok then return afterMinigame(false) end
+            }, nil, function()
+                -- Progressbar onFinish argumentų neperduoda; pats callback iškvietimas reiškia sėkmę.
                 local equipment = EquipmentMeta[equipmentId]
                 local workspace = equipment and {
                     x = equipment.x,
                     y = equipment.y,
                     z = equipment.z,
                     w = equipment.heading or 0.0,
+                    -- Tikslus lokalus entity handle išvengia nepatikimos stalo paieškos pagal modelį.
+                    entity = EquipmentProps[equipmentId],
                 } or nil
                 runSchedule(productId, profile, prod, afterMinigame, res.token, workspace)
             end, function()
