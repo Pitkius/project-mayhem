@@ -556,18 +556,18 @@ local function setPackBagTransform(session, entity, scale, isPackedPreview)
 
     if isPackedPreview then
         -- SUPAKUOTAS MAIŠELIS (bkr_prop_weed_smallbag_01a):
-        -- Šio modelio lokali X ašis turi būti nukreipta į pasaulio viršų,
-        -- todėl pirmasis vektorius yra (0, 0, entityScale).
+        -- Maišelis pasuktas 90° savo plokštumoje, todėl lokali Y ašis
+        -- nukreipta į pasaulio viršų antruoju vektoriumi (0, 0, entityScale).
         --
         -- SetEntityMatrix vektoriai:
-        --   1) 0, 0, scale       = modelio X ašis vertikaliai aukštyn;
-        --   2) sideX, sideY, 0  = horizontalus maišelio šonas;
+        --   1) sideX, sideY, 0  = horizontalus maišelio šonas;
+        --   2) 0, 0, scale       = modelio Y ašis vertikaliai aukštyn;
         --   3) faceX, faceY, 0  = plokščias priekis tiesiai į kamerą;
         --   4) coords            = maišelio vieta, jos pasukimas nekeičia.
         SetEntityMatrix(
             entity,
-            0.0, 0.0, entityScale,
             sideX * entityScale, sideY * entityScale, 0.0,
+            0.0, 0.0, entityScale,
             faceX * entityScale, faceY * entityScale, 0.0,
             coords.x, coords.y, coords.z
         )
