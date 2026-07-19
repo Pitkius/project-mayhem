@@ -101,15 +101,20 @@ local function modelIsFleetCar(hash)
     return FLEET_CAR_HASHES[hash] == true
 end
 
---- Fleet entry: emergencyLights = 'native' | 'script' | nil (auto)
+--- Fleet entry: emergencyLights = 'native' | 'hybrid' | 'script' | nil
+--- native/hybrid → SetVehicleSiren; script → prop lightbar. Hybrid/native + nativeFlashAssist → stogo flash VISOMS.
 local FLEET_LIGHT_MODE = {}
 local function rebuildFleetLightModes()
     FLEET_LIGHT_MODE = {}
     for _, v in ipairs(Config.FleetVehicles or {}) do
         if v and v.model then
-            local mode = tostring(v.emergencyLights or v.lights or 'native'):lower()
-            if mode ~= 'script' and mode ~= 'kit' then mode = 'native' end
+            local mode = tostring(v.emergencyLights or v.lights or 'hybrid'):lower()
             if mode == 'kit' then mode = 'script' end
+            if mode == 'hybrid' or mode == 'native' or mode == '' then
+                mode = 'native' --- SetVehicleSiren kelias; flash assist atskirai
+            elseif mode ~= 'script' then
+                mode = 'native'
+            end
             FLEET_LIGHT_MODE[joaat(v.model)] = mode
         end
     end
@@ -125,7 +130,7 @@ local function vehicleSupportsNativeEmergency(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     local hash = GetEntityModel(vehicle)
 
-    -- Fleet: default native (mrpd* turi carcols Sirens). Tik explicit 'script' = prop lempos.
+    -- Fleet: default native/hybrid (mrpd*). Tik explicit 'script' = prop lempos.
     if modelIsFleetCar(hash) then
         return fleetLightMode(hash) ~= 'script'
     end
@@ -161,6 +166,19 @@ local function stopNativeSirenVisual(vehicle)
     if not DoesEntityExist(vehicle) then return end
     SetVehicleSiren(vehicle, false)
     SetVehicleHasMutedSirens(vehicle, false)
+end
+
+--- Užtikrina network control prieš SetVehicleSiren (kitaip šviesos kartais neįsijungia).
+local function ensureVehicleControl(vehicle, tries)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    if NetworkHasControlOfEntity(vehicle) then return true end
+    tries = tonumber(tries) or 25
+    for _ = 1, tries do
+        NetworkRequestControlOfEntity(vehicle)
+        if NetworkHasControlOfEntity(vehicle) then return true end
+        Wait(0)
+    end
+    return NetworkHasControlOfEntity(vehicle)
 end
 
 local soundIds = {}
@@ -609,6 +627,17 @@ local function safeVehicleNetId(vehicle)
     return NetworkGetNetworkIdFromEntity(vehicle)
 end
 
+--- MRPD pack lightbar = vehicle extras (ne prop). Garažas anksčiau išsaugodavo extras=false.
+local function enableFleetLightbarExtras(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    if not modelIsFleet(GetEntityModel(vehicle)) then return end
+    for i = 0, 20 do
+        if DoesExtraExist(vehicle, i) then
+            SetVehicleExtra(vehicle, i, 0) --- 0 = įjungta
+        end
+    end
+end
+
 local function applyNativeForEveryone(vehicle, mode)
     if not DoesEntityExist(vehicle) then return end
     if not vehicleSupportsNativeEmergency(vehicle) then return end
@@ -621,25 +650,26 @@ local function applyNativeForEveryone(vehicle, mode)
         stopNativeSirenVisual(vehicle)
         return
     end
-    --- lights ir full naudoja GTA sirenos šviesas
+    --- lights / full — GTA carcols šviesos + lightbar extras
+    enableFleetLightbarExtras(vehicle)
+    ensureVehicleControl(vehicle, 20)
+    SetVehicleEngineOn(vehicle, true, true, false)
+    --- Kickstart: kartais reikia off→on, kad carcols sequencers paleistų
+    SetVehicleSiren(vehicle, false)
     SetVehicleSiren(vehicle, true)
-    if mode == 'lights' then
-        SetVehicleHasMutedSirens(vehicle, true)
-    elseif mode == 'full' then
-        --- Garsą valdo mrp_siren_controller (tonai) — natyvus garso takelis nutildytas.
-        SetVehicleHasMutedSirens(vehicle, true)
-    end
+    --- Garsą valdo mrp_siren_controller — natyvų takelį nutildom
+    SetVehicleHasMutedSirens(vehicle, true)
 end
 
---- MRPD pack lightbar = vehicle extras (ne prop). Garažas anksčiau išsaugodavo extras=false.
-local function enableFleetLightbarExtras(vehicle)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    if not modelIsFleet(GetEntityModel(vehicle)) then return end
-    for i = 0, 20 do
-        if DoesExtraExist(vehicle, i) then
-            SetVehicleExtra(vehicle, i, 0) --- 0 = įjungta
-        end
-    end
+--- Visoms fleet PD mašinoms: script flash ant stogo (be prop), nepriklausomai nuo carcols.
+local function vehicleUsesNativeFlashAssist(vehicle)
+    if Ec.nativeFlashAssist == false then return false end
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    if vehicleUsesScriptFlash(vehicle) then return false end
+    local hash = GetEntityModel(vehicle)
+    --- Visas Config.FleetVehicles parkas (mrpd1–16), ne tik keli modeliai
+    if modelIsFleetCar(hash) then return true end
+    return vehicleSupportsNativeEmergency(vehicle)
 end
 
 local function ingestFromEntity(vehicle)
@@ -648,9 +678,11 @@ local function ingestFromEntity(vehicle)
     local mode, kit = readVehicleStateBag(vehicle)
     local supportsNative = vehicleSupportsNativeEmergency(vehicle)
     local scriptFlash = vehicleUsesScriptFlash(vehicle)
+    local assistFlash = vehicleUsesNativeFlashAssist(vehicle)
     TRACKED[vehicle] = TRACKED[vehicle] or {}
     TRACKED[vehicle].supportsNative = supportsNative
     TRACKED[vehicle].scriptFlash = scriptFlash
+    TRACKED[vehicle].assistFlash = assistFlash
     TRACKED[vehicle].mode = mode
     syncKitVisuals(vehicle)
 
@@ -667,9 +699,8 @@ local function ingestFromEntity(vehicle)
     elseif mode == 'sound' then
         stopNativeSirenVisual(vehicle)
     elseif mode == 'full' then
-        if supportsNative then
-            applyNativeForEveryone(vehicle, 'full')
-        end
+        --- Visada bandyti native šviesas; flash assist piešiamas TRACKED.assistFlash
+        applyNativeForEveryone(vehicle, 'full')
     end
 end
 
@@ -739,7 +770,9 @@ CreateThread(function()
                 else
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     meta.mode = mode
-                    if (mode == 'lights' or mode == 'full') and meta.scriptFlash == true then
+                    local wantFlash = (mode == 'lights' or mode == 'full')
+                        and (meta.scriptFlash == true or meta.assistFlash == true)
+                    if wantFlash then
                         local vehCoords = GetEntityCoords(veh)
                         local dist = #(pCoords - vehCoords)
                         if dist <= drawDistance then
@@ -754,18 +787,24 @@ CreateThread(function()
     end
 end)
 
---- Retas natyvių sirenos šviesų palaikymas (GTA kartais resetina).
+--- Natyvių sirenos šviesų palaikymas (GTA kartais resetina).
 CreateThread(function()
     while true do
         if next(TRACKED) == nil then
             Wait(1800)
         else
-            Wait(1100)
+            Wait(350)
             for veh, meta in pairs(TRACKED) do
                 if DoesEntityExist(veh) and meta.supportsNative then
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     if mode == 'lights' or mode == 'full' then
-                        SetVehicleSiren(veh, true)
+                        enableFleetLightbarExtras(veh)
+                        if not NetworkHasControlOfEntity(veh) then
+                            NetworkRequestControlOfEntity(veh)
+                        end
+                        if not IsVehicleSirenOn(veh) then
+                            SetVehicleSiren(veh, true)
+                        end
                         SetVehicleHasMutedSirens(veh, true)
                     elseif mode == 'sound' then
                         stopNativeSirenVisual(veh)

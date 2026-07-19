@@ -1,5 +1,24 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+--- Try ADD COLUMN without information_schema (avoids Errcode 28 temp-table writes when disk is full).
+--- Duplicate column / already-exists errors are ignored.
+local function safeAddColumn(tableName, definition)
+    local sql = ('ALTER TABLE `%s` ADD COLUMN %s'):format(tableName, definition)
+    local ok, err = pcall(function()
+        MySQL.query.await(sql)
+    end)
+    if ok then
+        print(('[mrp_gangs] Added column on %s: %s'):format(tableName, definition:match('^`?([%w_]+)') or '?'))
+        return true
+    end
+    local msg = tostring(err or '')
+    if msg:find('Duplicate column', 1, true) or msg:find('already exists', 1, true) then
+        return false
+    end
+    print(('[mrp_gangs] WARN safeAddColumn %s failed: %s'):format(tableName, msg))
+    return false
+end
+
 local function playerInTurfServer(src, turfId)
     return Config.PlayerInTurfCell and Config.PlayerInTurfCell(src, turfId) or false
 end
@@ -7,13 +26,36 @@ end
 local function getPlayerGang(src)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return nil end
-    return MySQL.single.await([[
-        SELECT gm.gang_id, gm.rank, g.name, g.gang_type, g.color_hex, g.secondary_color_hex, g.reputation, g.heat, g.warnings, g.created_at, g.parent_gang_id
-        FROM fivempro_gang_members gm
-        JOIN fivempro_gangs g ON g.id = gm.gang_id
-        WHERE gm.citizenid = ?
-        LIMIT 1
-    ]], { Player.PlayerData.citizenid })
+    local citizenid = Player.PlayerData.citizenid
+    local ok, row = pcall(function()
+        return MySQL.single.await([[
+            SELECT gm.gang_id, gm.rank, g.name, g.gang_type, g.color_hex, g.secondary_color_hex,
+                   g.reputation, g.heat, g.warnings, g.created_at, g.parent_gang_id
+            FROM fivempro_gang_members gm
+            JOIN fivempro_gangs g ON g.id = gm.gang_id
+            WHERE gm.citizenid = ?
+            LIMIT 1
+        ]], { citizenid })
+    end)
+    if ok and row then return row end
+
+    -- Fallback when migrations did not apply (e.g. disk full) — older schema without parent/secondary.
+    ok, row = pcall(function()
+        return MySQL.single.await([[
+            SELECT gm.gang_id, gm.rank, g.name, g.gang_type, g.color_hex,
+                   g.reputation, g.heat, g.warnings, g.created_at
+            FROM fivempro_gang_members gm
+            JOIN fivempro_gangs g ON g.id = gm.gang_id
+            WHERE gm.citizenid = ?
+            LIMIT 1
+        ]], { citizenid })
+    end)
+    if ok and row then
+        row.secondary_color_hex = row.secondary_color_hex or row.color_hex or '#FFFFFF'
+        row.parent_gang_id = nil
+        return row
+    end
+    return nil
 end
 
 local function getGangById(gangId)
@@ -779,36 +821,12 @@ MySQL.ready(function()
             UNIQUE KEY `ux_fivempro_gangs_name` (`name`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    -- MySQL 8 nepalaiko ADD COLUMN IF NOT EXISTS; naujiems DB kolumną jau sukuria CREATE TABLE aukščiau.
-    local hasSecondary = MySQL.scalar.await([[
-        SELECT COUNT(*) FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-          AND table_name = 'fivempro_gangs'
-          AND column_name = 'secondary_color_hex'
-    ]])
-    if (tonumber(hasSecondary) or 0) == 0 then
-        MySQL.query.await(
-            [[ALTER TABLE `fivempro_gangs` ADD COLUMN `secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF' AFTER `color_hex`]]
-        )
-    end
-    local hasWarnings = MySQL.scalar.await([[
-        SELECT COUNT(*) FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-          AND table_name = 'fivempro_gangs'
-          AND column_name = 'warnings'
-    ]])
-    if (tonumber(hasWarnings) or 0) == 0 then
-        MySQL.query.await([[ALTER TABLE `fivempro_gangs` ADD COLUMN `warnings` INT NOT NULL DEFAULT 0 AFTER `heat`]])
-    end
-    local hasParent = MySQL.scalar.await([[
-        SELECT COUNT(*) FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-          AND table_name = 'fivempro_gangs'
-          AND column_name = 'parent_gang_id'
-    ]])
-    if (tonumber(hasParent) or 0) == 0 then
-        MySQL.query.await([[ALTER TABLE `fivempro_gangs` ADD COLUMN `parent_gang_id` INT NULL DEFAULT NULL AFTER `owner_citizenid`]])
-    end
+    -- Avoid information_schema checks (they create temp tables and fail hard when disk is full).
+    -- No AFTER clauses — safer when older columns are also missing.
+    safeAddColumn('fivempro_gangs', "`secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF'")
+    safeAddColumn('fivempro_gangs', '`owner_citizenid` VARCHAR(64) NULL')
+    safeAddColumn('fivempro_gangs', '`parent_gang_id` INT NULL DEFAULT NULL')
+    safeAddColumn('fivempro_gangs', '`warnings` INT NOT NULL DEFAULT 0')
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_gang_tablets` (
             `id` INT NOT NULL AUTO_INCREMENT,
@@ -854,15 +872,11 @@ MySQL.ready(function()
             PRIMARY KEY (`turf_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    local hasInfluence = MySQL.scalar.await([[
-        SELECT COUNT(*) FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-          AND table_name = 'fivempro_gang_turfs'
-          AND column_name = 'influence'
-    ]])
-    if (tonumber(hasInfluence) or 0) == 0 then
-        MySQL.query.await([[ALTER TABLE `fivempro_gang_turfs` ADD COLUMN `influence` INT NOT NULL DEFAULT 0 AFTER `progress`]])
-        MySQL.query.await([[UPDATE `fivempro_gang_turfs` SET `influence` = `progress`]])
+    local addedInfluence = safeAddColumn('fivempro_gang_turfs', '`influence` INT NOT NULL DEFAULT 0')
+    if addedInfluence then
+        pcall(function()
+            MySQL.query.await([[UPDATE `fivempro_gang_turfs` SET `influence` = `progress`]])
+        end)
     end
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_gang_sales_logs` (

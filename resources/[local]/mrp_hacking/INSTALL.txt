@@ -22,7 +22,7 @@ mrp_hacking – OS / tablet / visi apiplėšimai
 
 4) TEST pardavėjas: ~ -328, -134 (DebugHeistVendor — $1 itemai; production: enabled = false)
 
-5) Black market: 707, -967 (normalios kainos + OS payload ant USB)
+5) Lesteris (L1): 706.85, -966.99 (grynieji — basic_tablet + BasicOS USB)
 
 6) Tipinis startas:
    a) basic_tablet + flashdrive SU PAYLOAD (test NPC → „Flashdrive OS / exploit“, ne tuščias iš shop)

@@ -239,26 +239,40 @@ CreateThread(function()
 
     local bm = Config.BlackMarket
     if not bm or not bm.coords then return end
-    local hash = joaat(bm.pedModel or 's_m_y_dealer_01')
+    local hash = joaat(bm.pedModel or 'ig_lestercrest')
     RequestModel(hash)
-    while not HasModelLoaded(hash) do Wait(10) end
+    local deadline = GetGameTimer() + 8000
+    while not HasModelLoaded(hash) and GetGameTimer() < deadline do Wait(10) end
+    if not HasModelLoaded(hash) then
+        print('[mrp_hacking] WARN: Lester ped model failed to load, fallback dealer')
+        hash = joaat('s_m_y_dealer_01')
+        RequestModel(hash)
+        while not HasModelLoaded(hash) do Wait(10) end
+    end
+
     local ped = CreatePed(0, hash, bm.coords.x, bm.coords.y, bm.coords.z - 1.0, bm.heading or 0.0, false, false)
     SetEntityInvincible(ped, true)
     FreezeEntityPosition(ped, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
+    if bm.scenario then
+        TaskStartScenarioInPlace(ped, bm.scenario, 0, true)
+    end
+    SetModelAsNoLongerNeeded(hash)
 
-    local darkNetLabel = bm.label or 'Dark Net'
+    local shopLabel = bm.label or 'Lesteris'
+    local currency = bm.currency or 'cash'
 
-    local function openDarkNetShop()
-        local rows = { { header = darkNetLabel .. ' (tik crypto)', isMenuHeader = true } }
+    local function openLesterShop()
+        local rows = { { header = shopLabel .. ' — 1 lygio įrankiai', isMenuHeader = true } }
         for i, e in ipairs(bm.items or {}) do
             local label = QBCore.Shared.Items[e.item] and QBCore.Shared.Items[e.item].label or e.item
             local extra = ''
             if e.payload and e.payload.payload_id then
                 extra = ' [' .. tostring(e.payload.payload_id) .. ']'
             end
+            local priceTxt = currency == 'crypto' and (('%s₿'):format(e.price)) or (('$%s'):format(e.price))
             rows[#rows + 1] = {
-                header = ('%s — %s₿%s'):format(label, e.price, extra),
+                header = ('%s — %s%s'):format(label, priceTxt, extra),
                 params = {
                     isAction = true,
                     event = function()
@@ -270,40 +284,43 @@ CreateThread(function()
         TriggerEvent('qb-menu:client:openMenu', rows, false, true)
     end
 
-    local function openCryptoExchange()
-        local cfg = Config.CryptoExchange or {}
-        if GetResourceState('qb-input') ~= 'started' then
-            return QBCore.Functions.Notify('qb-input neaktyvus.', 'error')
-        end
-        local input = exports['qb-input']:ShowInput({
-            header = 'Bankas → Crypto',
-            submitText = 'Keisti',
-            inputs = {
-                {
-                    type = 'number',
-                    name = 'amount',
-                    text = ('Suma banke ($%s–$%s)'):format(cfg.minAmount or 500, cfg.maxAmount or 500000),
-                    isRequired = true,
-                },
-            },
-        })
-        if not input or not input.amount then return end
-        TriggerServerEvent('mrp_hacking:server:exchangeBankToCrypto', tonumber(input.amount))
+    local options = {
+        {
+            icon = 'fas fa-tablet-alt',
+            label = shopLabel .. ' — pirkti L1 planšetę',
+            action = openLesterShop,
+        },
+    }
+
+    local cryptoCfg = Config.CryptoExchange or {}
+    if cryptoCfg.enabled == true then
+        options[#options + 1] = {
+            icon = 'fas fa-bitcoin-sign',
+            label = 'Keisti banką į crypto',
+            action = function()
+                if GetResourceState('qb-input') ~= 'started' then
+                    return QBCore.Functions.Notify('qb-input neaktyvus.', 'error')
+                end
+                local input = exports['qb-input']:ShowInput({
+                    header = 'Bankas → Crypto',
+                    submitText = 'Keisti',
+                    inputs = {
+                        {
+                            type = 'number',
+                            name = 'amount',
+                            text = ('Suma banke ($%s–$%s)'):format(cryptoCfg.minAmount or 500, cryptoCfg.maxAmount or 500000),
+                            isRequired = true,
+                        },
+                    },
+                })
+                if not input or not input.amount then return end
+                TriggerServerEvent('mrp_hacking:server:exchangeBankToCrypto', tonumber(input.amount))
+            end,
+        }
     end
 
     exports['qb-target']:AddTargetEntity(ped, {
-        options = {
-            {
-                icon = 'fas fa-skull',
-                label = darkNetLabel .. ' — pirkti (crypto)',
-                action = openDarkNetShop,
-            },
-            {
-                icon = 'fas fa-bitcoin-sign',
-                label = 'Keisti banką į crypto',
-                action = openCryptoExchange,
-            },
-        },
+        options = options,
         distance = 2.5,
     })
 end)

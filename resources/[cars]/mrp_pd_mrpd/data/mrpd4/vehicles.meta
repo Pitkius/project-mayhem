@@ -91,7 +91,7 @@
       <frequency value="80" />
       <swankness>SWANKNESS_3</swankness>
       <maxNum value="20" />
-      <flags>FLAG_PARKING_SENSORS FLAG_RICH_CAR FLAG_HAS_BULLET_RESISTANT_GLASS</flags>
+      <flags>FLAG_PARKING_SENSORS FLAG_RICH_CAR FLAG_HAS_BULLET_RESISTANT_GLASS FLAG_LAW_ENFORCEMENT FLAG_EMERGENCY_SERVICE</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_FRONT_AND_BACK_PLATES</plateType>
 	    <dashboardType>VDT_RACE</dashboardType>

@@ -322,9 +322,10 @@ QBCore.Functions.CreateCallback('mrp_hacking:server:getTabletData', function(src
         tabletFiles = Config.TabletFiles or {},
         tabletContracts = Config.TabletContracts or {},
         marketItems = Config.BlackMarket and Config.BlackMarket.items or {},
-        marketCurrency = (Config.BlackMarket and Config.BlackMarket.currency) or 'crypto',
-        marketCurrencyLabel = (Config.CryptoExchange and Config.CryptoExchange.currencyLabel) or 'Crypto',
+        marketCurrency = (Config.BlackMarket and Config.BlackMarket.currency) or 'cash',
+        marketCurrencyLabel = (Config.BlackMarket and Config.BlackMarket.label) or 'Lesteris',
         playerMoney = {
+            cash = Player.PlayerData.money.cash or 0,
             bank = Player.PlayerData.money.bank or 0,
             crypto = Player.PlayerData.money.crypto or 0,
         },
@@ -497,26 +498,30 @@ RegisterNetEvent('mrp_hacking:server:buyBlackMarket', function(index)
     local entry = Config.BlackMarket.items[tonumber(index)]
     if not entry then return end
     local price = tonumber(entry.price) or 0
-    local currency = (Config.BlackMarket and Config.BlackMarket.currency) or 'crypto'
+    local currency = (Config.BlackMarket and Config.BlackMarket.currency) or 'cash'
     local balance = Player.PlayerData.money[currency] or 0
     if balance < price then
         local hint = currency == 'crypto'
-            and 'Nepakanka crypto. Keisk švarius banko pinigus pas Dark Net pardavėją.'
-            or 'Nepakanka pinigų.'
+            and 'Nepakanka crypto.'
+            or 'Nepakanka grynųjų.'
         return TriggerClientEvent('QBCore:Notify', src, hint, 'error')
     end
     local info = buildFlashInfo(entry.payload)
-    if not Player.Functions.RemoveMoney(currency, price, 'darknet-hack') then return end
+    if not Player.Functions.RemoveMoney(currency, price, 'lester-hack-shop') then return end
     Player.Functions.AddItem(entry.item, 1, false, info)
-    TriggerClientEvent('QBCore:Notify', src, 'Nupirkta už crypto.', 'success')
+    local paid = currency == 'crypto' and (('%s crypto'):format(price)) or (('$%s'):format(price))
+    TriggerClientEvent('QBCore:Notify', src, ('Nupirkta už %s.'):format(paid), 'success')
 end)
 
 RegisterNetEvent('mrp_hacking:server:exchangeBankToCrypto', function(amount)
     local src = source
+    local cfg = Config.CryptoExchange or {}
+    if cfg.enabled == false then
+        return TriggerClientEvent('QBCore:Notify', src, 'Crypto keitykla šiuo metu neprieinama.', 'error')
+    end
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
 
-    local cfg = Config.CryptoExchange or {}
     amount = math.floor(tonumber(amount) or 0)
     local minAmount = tonumber(cfg.minAmount) or 500
     local maxAmount = tonumber(cfg.maxAmount) or 500000

@@ -331,6 +331,7 @@ RegisterNetEvent('mrp_chopshop:server:beginScrap', function(payload)
     local locationId = payload.locationId
     local plate = normalizePlate(payload.plate)
     local scrapMs = tonumber(payload.scrapMs) or 45000
+    local netId = tonumber(payload.netId)
 
     if not getChopLocationById(locationId) or plate == '' then return end
     if not playerNearChopLocation(src, locationId, 4.0) then return end
@@ -340,16 +341,37 @@ RegisterNetEvent('mrp_chopshop:server:beginScrap', function(payload)
         locationId = locationId,
         scrapMs = scrapMs,
         startedAt = os.time(),
+        netId = netId,
     }
 end)
 
-RegisterNetEvent('mrp_chopshop:server:cancelScrap', function()
-    activeScraps[source] = nil
+RegisterNetEvent('mrp_chopshop:server:lockVehicle', function(netId, plate)
+    local src = source
+    netId = tonumber(netId)
+    plate = normalizePlate(plate)
+    if not netId and plate == '' then return end
+    TriggerClientEvent('mrp_chopshop:client:applyScrapLock', -1, netId, plate, true)
+end)
+
+RegisterNetEvent('mrp_chopshop:server:cancelScrap', function(netId, plate)
+    local src = source
+    local token = activeScraps[src]
+    activeScraps[src] = nil
+    netId = tonumber(netId) or (token and token.netId)
+    plate = normalizePlate(plate ~= nil and plate or (token and token.plate))
+    if netId or plate ~= '' then
+        TriggerClientEvent('mrp_chopshop:client:applyScrapLock', -1, netId, plate, false)
+    end
 end)
 
 AddEventHandler('playerDropped', function()
-    activeScraps[source] = nil
-    playerCooldownUntil[source] = nil
+    local src = source
+    local token = activeScraps[src]
+    if token and (token.netId or token.plate) then
+        TriggerClientEvent('mrp_chopshop:client:applyScrapLock', -1, token.netId, token.plate, false)
+    end
+    activeScraps[src] = nil
+    playerCooldownUntil[src] = nil
 end)
 
 -- Dalių supirkėjas

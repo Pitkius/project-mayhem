@@ -162,8 +162,10 @@ Config.HackProfiles = {
     federal_core = { mode = 'code', steps = 7, timeMs = 10000, grid = 5, flashMs = 320 },
 }
 
---- Dark Net (qb-target) — mokama tik crypto valiuta
+--- Lesteris — 1 lygio hacking įrankių kontaktas (grynieji, ne crypto).
+--- Senasis Dark Net crypto dealer šioje vietoje pašalintas.
 Config.CryptoExchange = {
+    enabled = false, --- crypto keitykla pas Lesterį išjungta
     bankToCryptoRate = 1.0,
     feePercent = 5,
     minAmount = 500,
@@ -172,28 +174,17 @@ Config.CryptoExchange = {
 }
 
 Config.BlackMarket = {
-    coords = vector3(707.35, -966.98, 30.41),
-    heading = 180.0,
-    pedModel = 's_m_y_dealer_01',
-    currency = 'crypto',
-    label = 'Dark Net',
+    coords = vector3(706.8483, -966.9983, 30.4129),
+    heading = 22.0825,
+    pedModel = 'ig_lestercrest',
+    currency = 'cash',
+    label = 'Lesteris',
+    scenario = 'WORLD_HUMAN_AA_SMOKE',
+    --- Tik 1 lygio planšetė + BasicOS USB (pradžia).
     items = {
-        { item = 'basic_tablet', price = 2500, payload = nil },
-        { item = 'advanced_tablet', price = 8500, payload = nil },
-        { item = 'military_tablet', price = 22000, payload = nil },
-        { item = 'basic_flashdrive', price = 400, payload = { payload_type = 'os', payload_id = 'basicos' } },
-        { item = 'encrypted_flashdrive', price = 1200, payload = { payload_type = 'os', payload_id = 'blackos' } },
-        { item = 'encrypted_flashdrive', price = 3500, payload = { payload_type = 'os', payload_id = 'ghostos' } },
-        { item = 'military_flashdrive', price = 8000, payload = { payload_type = 'os', payload_id = 'cipheros' } },
-        { item = 'basic_flashdrive', price = 900, payload = { payload_type = 'exploit', payload_id = 'signal_jammer' } },
-        { item = 'basic_flashdrive', price = 750, payload = { payload_type = 'exploit', payload_id = 'atm_bypass' } },
-        { item = 'encrypted_flashdrive', price = 1100, payload = { payload_type = 'exploit', payload_id = 'dye_sniffer' } },
-        { item = 'encrypted_flashdrive', price = 1400, payload = { payload_type = 'exploit', payload_id = 'cam_spoof' } },
-        { item = 'tow_chain', price = 350, payload = nil },
-        { item = 'drill', price = 500, payload = nil },
-        { item = 'thermite', price = 2200, payload = nil },
-        { item = 'security_card_01', price = 4500, payload = nil },
-        { item = 'security_card_02', price = 6500, payload = nil },
+        { item = 'basic_tablet', price = 3500, payload = nil },
+        { item = 'basic_flashdrive', price = 650, payload = { payload_type = 'os', payload_id = 'basicos' } },
+        { item = 'basic_flashdrive', price = 900, payload = { payload_type = 'exploit', payload_id = 'atm_bypass' } },
     },
 }
 

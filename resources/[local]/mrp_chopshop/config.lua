@@ -31,43 +31,57 @@ Config.ChopShop = {
         { id = 'luxury',  minPrice = 400000,  maxPrice = 99999999, scrapMs = 90000, label = 'Prabangi' },
     },
 
-    --- Dalių kiekiai pagal tier (brangesnė mašina = daugiau / geresnių dalių)
+    --- Dalių kiekiai pagal tier (padidintas loot + daugiau tipų)
     tierParts = {
         budget = {
-            { item = 'metalscrap', min = 3, max = 6 },
-            { item = 'plastic',    min = 1, max = 3 },
-            { item = 'rubber',     min = 1, max = 2 },
+            { item = 'metalscrap', min = 5,  max = 9 },
+            { item = 'plastic',    min = 2,  max = 5 },
+            { item = 'rubber',     min = 2,  max = 4 },
+            { item = 'glass',      min = 1,  max = 3 },
+            { item = 'iron',       min = 1,  max = 3 },
         },
         mid = {
-            { item = 'metalscrap', min = 5, max = 9 },
-            { item = 'aluminum',   min = 2, max = 4 },
-            { item = 'plastic',    min = 2, max = 4 },
-            { item = 'rubber',     min = 2, max = 3 },
+            { item = 'metalscrap', min = 8,  max = 13 },
+            { item = 'aluminum',   min = 3,  max = 6 },
+            { item = 'plastic',    min = 3,  max = 6 },
+            { item = 'rubber',     min = 3,  max = 5 },
+            { item = 'glass',      min = 2,  max = 4 },
+            { item = 'copper',     min = 1,  max = 3 },
+            { item = 'iron',       min = 2,  max = 4 },
         },
         premium = {
-            { item = 'metalscrap', min = 7, max = 12 },
-            { item = 'aluminum',   min = 4, max = 7 },
-            { item = 'steel',      min = 2, max = 4 },
-            { item = 'rubber',     min = 3, max = 5 },
+            { item = 'metalscrap', min = 11, max = 17 },
+            { item = 'aluminum',   min = 6,  max = 10 },
+            { item = 'steel',      min = 3,  max = 6 },
+            { item = 'rubber',     min = 4,  max = 7 },
+            { item = 'glass',      min = 3,  max = 5 },
+            { item = 'copper',     min = 2,  max = 5 },
+            { item = 'iron',       min = 3,  max = 6 },
         },
         luxury = {
-            { item = 'metalscrap', min = 10, max = 16 },
-            { item = 'aluminum',   min = 6, max = 10 },
-            { item = 'steel',      min = 4, max = 8 },
-            { item = 'rubber',     min = 4, max = 6 },
+            { item = 'metalscrap', min = 14, max = 22 },
+            { item = 'aluminum',   min = 8,  max = 14 },
+            { item = 'steel',      min = 6,  max = 11 },
+            { item = 'rubber',     min = 5,  max = 9 },
+            { item = 'glass',      min = 4,  max = 7 },
+            { item = 'copper',     min = 4,  max = 7 },
+            { item = 'iron',       min = 4,  max = 8 },
         },
     },
 
     --- NPC mašinos gauna mažiau dalių (multiplier)
-    npcPartsMultiplier = 0.55,
+    npcPartsMultiplier = 0.65,
 
-    --- Dalių supirkėjas — kainos už vnt. (nešvarūs pinigai per markedbills)
+    --- Dalių supirkėjas — kainos už vnt. (~+20% nuo ankstesnių)
     buyerPrices = {
-        metalscrap = 85,
-        aluminum   = 140,
-        steel      = 220,
-        plastic    = 60,
-        rubber     = 75,
+        metalscrap = 105,
+        aluminum   = 170,
+        steel      = 265,
+        plastic    = 75,
+        rubber     = 90,
+        glass      = 80,
+        copper     = 195,
+        iron       = 125,
     },
 
     --- Dvi ardymo vietos
@@ -79,6 +93,14 @@ Config.ChopShop = {
             heading = 180.0,
             zoneRadius = 18.0,
             scrapCoords = vector3(2340.84, 3053.54, 48.15),
+            --- NPC, kuris priima / išardo mašiną detalėms
+            scrapNpc = {
+                coords = vector4(2343.55, 3058.20, 48.15, 200.0),
+                model = 's_m_y_xmech_02',
+                label = 'Atiduoti mašiną detalėms',
+                scenario = 'WORLD_HUMAN_CLIPBOARD',
+            },
+            --- NPC, kuris perka jau išardytas dalis
             buyer = {
                 coords = vector4(2334.12, 3047.88, 48.15, 270.0),
                 model = 's_m_y_construct_01',
@@ -92,6 +114,12 @@ Config.ChopShop = {
             heading = 177.8636,
             zoneRadius = 20.0,
             scrapCoords = vector3(1204.1821, -3117.7207, 5.2528),
+            scrapNpc = {
+                coords = vector4(1200.45, -3114.10, 5.54, 270.0),
+                model = 's_m_y_xmech_01',
+                label = 'Atiduoti mašiną detalėms',
+                scenario = 'WORLD_HUMAN_CLIPBOARD',
+            },
             buyer = {
                 coords = vector4(1211.0321, -3119.2507, 5.2528, 90.0),
                 model = 's_m_y_construct_02',

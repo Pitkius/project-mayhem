@@ -192,7 +192,7 @@ window.TabletUI = (function () {
   }
 
   function marketPriceLabel(price) {
-    const cur = data.marketCurrency || "crypto";
+    const cur = data.marketCurrency || "cash";
     if (cur === "crypto") return `${price || 0}₿`;
     return `$${price || 0}`;
   }
@@ -283,11 +283,17 @@ window.TabletUI = (function () {
     if (!grid) return;
     grid.innerHTML = "";
     const items = data.marketItems || [];
+    const cur = data.marketCurrency || "cash";
+    const cashBal = data.playerMoney && data.playerMoney.cash != null ? data.playerMoney.cash : 0;
     const cryptoBal = data.playerMoney && data.playerMoney.crypto != null ? data.playerMoney.crypto : 0;
-    const curLabel = data.marketCurrencyLabel || "Crypto";
+    const shopLabel = data.marketCurrencyLabel || "Lesteris";
     const head = document.createElement("p");
     head.className = "muted small";
-    head.textContent = `Dark Net — balansas: ${cryptoBal}₿ ${curLabel} (keisk banke pas pardavėją)`;
+    if (cur === "crypto") {
+      head.textContent = `${shopLabel} — balansas: ${cryptoBal}₿ crypto`;
+    } else {
+      head.textContent = `${shopLabel} — grynieji: $${cashBal} (L1 planšetė / BasicOS)`;
+    }
     grid.appendChild(head);
     items.forEach((e, i) => {
       const card = document.createElement("article");
@@ -307,7 +313,7 @@ window.TabletUI = (function () {
       card.appendChild(btn);
       grid.appendChild(card);
     });
-    if (!items.length) grid.innerHTML = '<p class="muted">Dark Net tuščias config.</p>';
+    if (!items.length) grid.innerHTML = '<p class="muted">Parduotuvė tuščia.</p>';
   }
 
   function renderContracts() {

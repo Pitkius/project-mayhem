@@ -5,12 +5,21 @@ local function cfg()
 end
 
 local function ensureCraftColumns()
-    local row = MySQL.single.await(
-        "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ltpd_profiles' AND COLUMN_NAME = 'craft_level'"
-    )
-    if row and tonumber(row.c) and tonumber(row.c) > 0 then return end
-    MySQL.query.await('ALTER TABLE ltpd_profiles ADD COLUMN craft_level tinyint NOT NULL DEFAULT 1')
-    MySQL.query.await('ALTER TABLE ltpd_profiles ADD COLUMN crafts_at_level int NOT NULL DEFAULT 0')
+    -- Direct ALTER (no information_schema) — duplicate column errors are ignored.
+    local function tryAdd(sql)
+        local ok, err = pcall(function()
+            MySQL.query.await(sql)
+        end)
+        if ok then return true end
+        local msg = tostring(err or '')
+        if msg:find('Duplicate column', 1, true) or msg:find('already exists', 1, true) then
+            return false
+        end
+        print(('[mrp_ltpd] WARN craft column migrate: %s'):format(msg))
+        return false
+    end
+    tryAdd('ALTER TABLE ltpd_profiles ADD COLUMN craft_level tinyint NOT NULL DEFAULT 1')
+    tryAdd('ALTER TABLE ltpd_profiles ADD COLUMN crafts_at_level int NOT NULL DEFAULT 0')
 end
 
 local function getDivisionForCitizenid(citizenid)

@@ -321,29 +321,34 @@ function GangOrg.areAllied(gangA, gangB)
 end
 
 -- ═══════════════════════════════════════════════════════════════════
---  DDL AUTO-MIGRACIJA (kaip esamas server.lua stilius)
+--  DDL AUTO-MIGRACIJA (be information_schema — saugiau kai diskas beveik pilnas)
 -- ═══════════════════════════════════════════════════════════════════
-local function columnExists(tableName, columnName)
-    local n = MySQL.scalar.await([[
-        SELECT COUNT(*) FROM information_schema.columns
-        WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
-    ]], { tableName, columnName })
-    return (tonumber(n) or 0) > 0
-end
-
 local function ensureColumn(tableName, columnName, definition)
-    if not columnExists(tableName, columnName) then
-        MySQL.query.await(('ALTER TABLE `%s` ADD COLUMN %s'):format(tableName, definition))
+    local sql = ('ALTER TABLE `%s` ADD COLUMN %s'):format(tableName, definition)
+    local ok, err = pcall(function()
+        MySQL.query.await(sql)
+    end)
+    if ok then
+        print(('[mrp_gangs/org] Added %s.%s'):format(tableName, columnName))
+        return true
     end
+    local msg = tostring(err or '')
+    if msg:find('Duplicate column', 1, true) or msg:find('already exists', 1, true) then
+        return false
+    end
+    print(('[mrp_gangs/org] WARN ensureColumn %s.%s: %s'):format(tableName, columnName, msg))
+    return false
 end
 
 CreateThread(function()
     -- Palaukiam kol server.lua MySQL.ready sukurs bazines lenteles.
     Wait(2500)
 
-    ensureColumn('fivempro_gangs', 'label', "`label` VARCHAR(64) NULL AFTER `name`")
-    ensureColumn('fivempro_gangs', 'emblem', "`emblem` VARCHAR(255) NULL AFTER `secondary_color_hex`")
-    ensureColumn('fivempro_gangs', 'settings', "`settings` LONGTEXT NULL AFTER `emblem`")
+    ensureColumn('fivempro_gangs', 'label', "`label` VARCHAR(64) NULL")
+    ensureColumn('fivempro_gangs', 'emblem', "`emblem` VARCHAR(255) NULL")
+    ensureColumn('fivempro_gangs', 'settings', "`settings` LONGTEXT NULL")
+    ensureColumn('fivempro_gangs', 'parent_gang_id', '`parent_gang_id` INT NULL DEFAULT NULL')
+    ensureColumn('fivempro_gangs', 'secondary_color_hex', "`secondary_color_hex` VARCHAR(16) NOT NULL DEFAULT '#FFFFFF'")
 
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_gang_ranks` (
