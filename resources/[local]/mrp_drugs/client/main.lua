@@ -293,8 +293,8 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
         vape_apple_pack = true,
         vape_strawberry_pack = true,
     }
-    local weed3dMode = profile.drug == 'weed'
-        and (profile.mode == 'weed_dry' or profile.mode == 'weed_pack')
+    -- Senas weed_dry minigame išjungtas; ši 3D scena palikta tik veikiančiam Cayo pakavimui.
+    local weed3dMode = profile.drug == 'weed' and profile.mode == 'weed_pack'
     local vapeCfg = Config.Vape3D or {}
     local vape3dMode = (vapeCfg.enabled ~= false and vapeCfg.legacyFallback ~= true)
         and (vapeProducts[tostring(productId or '')] == true
@@ -522,8 +522,31 @@ local function runWeaponCraftSequence(res, afterMinigame)
     nextPhase()
 end
 
-local function startCraftFlow(productId)
+local function startCraftFlow(productId, amount)
     if not currentStationId then return end
+    if productId == 'weed_process' then
+        local dryCfg = Config.WeedDrying or {}
+        if currentStationId ~= (dryCfg.stationId or 'weed_dry_davis') then
+            return QBCore.Functions.Notify('Žolė džiovinama tik Davis džiovinimo vietoje.', 'error')
+        end
+        if not WeedDrying or not WeedDrying.Start then
+            return QBCore.Functions.Notify('Džiovinimo sistema nepasiekiama.', 'error')
+        end
+        return WeedDrying.Start(amount, function(response)
+            if not response or not response.ok then
+                return QBCore.Functions.Notify((response and response.reason) or 'Džiovinimo pradėti nepavyko.', 'error')
+            end
+            closeUi()
+            QBCore.Functions.Notify(
+                ('Pradėta džiovinti x%d. Trukmė: %d sek.'):format(
+                    response.session.quantity,
+                    response.session.durationSeconds
+                ),
+                'success',
+                6500
+            )
+        end)
+    end
     local craftStationId = currentStationId
     QBCore.Functions.TriggerCallback('mrp_drugs:server:startCraft', function(res)
         if not res or not res.ok then
@@ -714,7 +737,7 @@ end)
 
 RegisterNUICallback('craft', function(data, cb)
     if data and data.productId then
-        startCraftFlow(data.productId)
+        startCraftFlow(data.productId, data.amount)
     end
     cb('ok')
 end)

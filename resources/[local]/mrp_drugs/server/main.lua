@@ -331,10 +331,6 @@ local function minimumCraftDuration(prod)
 end
 
 local WEED_STAGE_SEQUENCES = {
-    weed_process = {
-        { name = 'sorted', minMs = 3000 },
-        { name = 'dried', minMs = 8500 },
-    },
     weed_pack = {
         -- PAKAVIMAS: serverio etapų seka. bag_ready po pirmo maišelio (min 300 ms), packed_five po 5 vnt. (min 2500 ms).
         { name = 'bag_ready', minMs = 300 },
@@ -613,7 +609,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getStationUi', function(src, c
             local exclusive = Config.AmpExclusiveProducts and Config.AmpExclusiveProducts[pid]
             if not exclusive or (st.products and #st.products > 0) then
                 local unlocked = levelUnlocked(src, prod, st)
-                products[#products + 1] = {
+                local productPayload = {
                     id = pid,
                     label = prod.label,
                     level = prod.level,
@@ -630,6 +626,19 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getStationUi', function(src, c
                     locked = not unlocked,
                     lockReason = (not unlocked and st.mode == 'weapon') and weaponUnlockHint(src, prod.level) or nil,
                 }
+                if pid == 'weed_process' then
+                    local dryCfg = Config.WeedDrying or {}
+                    productPayload.drying = {
+                        minimumAmount = tonumber(dryCfg.minimumAmount) or 10,
+                        maximumAmount = tonumber(dryCfg.maximumAmount) or 500,
+                        availableAmount = countItemAmount(Player, dryCfg.inputItem or 'weed_leaf'),
+                        secondsPerPlant = tonumber(dryCfg.secondsPerPlant) or 10,
+                        discountEvery = tonumber(dryCfg.discountEvery) or 25,
+                        discountPercent = tonumber(dryCfg.discountPercent) or 2,
+                        earlyReturnPercent = tonumber(dryCfg.earlyReturnPercent) or 20,
+                    }
+                end
+                products[#products + 1] = productPayload
             end
         end
     end
@@ -663,6 +672,9 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraft', function(src, cb,
     local st = getStation(stationId)
     local prod = getProduct(productId)
     if not st or not prod then return cb({ ok = false, reason = 'Netinkami duomenys.' }) end
+    if productId == 'weed_process' then
+        return cb({ ok = false, reason = 'Naudok džiovinimo kiekio lauką.' })
+    end
     if st.mode ~= 'weapon' and prod.level ~= st.level then
         return cb({ ok = false, reason = 'Ši stotis netinka šiam produktui.' })
     end
@@ -708,6 +720,9 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
     local e = Equipment.get(equipmentId)
     local prod = getProduct(productId)
     if not e or not prod then return cb({ ok = false, reason = 'Netinkami duomenys.' }) end
+    if productId == 'weed_process' then
+        return cb({ ok = false, reason = 'Žolė džiovinama tik Davis džiovinimo vietoje.' })
+    end
     if productId == 'amp_process' then
         return cb({ ok = false, reason = 'Amfetamino sintezė vykdoma tik mobilioje Journey laboratorijoje.' })
     end
@@ -720,7 +735,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
     if Equipment.isBusy(equipmentId) then
         return cb({ ok = false, reason = 'Šis stalas šiuo metu naudojamas.' })
     end
-    local isWeedTableProduct = productId == 'weed_process' or productId == 'weed_pack'
+    local isWeedTableProduct = productId == 'weed_pack'
     if isWeedTableProduct then
         if e.fixed or e.itemType ~= 'bagging_table' then
             return cb({ ok = false, reason = 'Žolę galima apdoroti tik prie savo padėto stalo.' })

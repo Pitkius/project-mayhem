@@ -112,6 +112,60 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 #ingredientList li.ok { border-left: 3px solid #22c55e; }
 #ingredientList li.bad { border-left: 3px solid #ef4444; }
 
+.weed-dry-quantity {
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 9px;
+  background: rgba(22, 101, 52, 0.11);
+}
+.weed-dry-quantity label {
+  display: block;
+  margin-bottom: 8px;
+  color: #dcfce7;
+  font-size: 13px;
+  font-weight: 650;
+}
+.weed-dry-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.weed-dry-input-row input {
+  width: 150px;
+  padding: 10px 12px;
+  border: 1px solid rgba(74, 222, 128, 0.45);
+  border-radius: 7px;
+  outline: none;
+  background: rgba(0, 0, 0, 0.35);
+  color: #f0fdf4;
+  font: inherit;
+}
+.weed-dry-input-row input:focus {
+  border-color: #4ade80;
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.12);
+}
+.weed-dry-input-row span {
+  color: #bbf7d0;
+  font-size: 12px;
+}
+.weed-dry-time {
+  margin-top: 9px;
+  color: #86efac;
+  font-size: 13px;
+  font-weight: 600;
+}
+.weed-dry-warning {
+  margin-top: 8px;
+  padding: 9px 10px;
+  border-left: 3px solid #f59e0b;
+  border-radius: 5px;
+  background: rgba(245, 158, 11, 0.1);
+  color: #fde68a;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .reward {
   margin: 16px 0;
   padding: 12px;

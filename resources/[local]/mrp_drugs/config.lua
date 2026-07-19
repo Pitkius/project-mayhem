@@ -199,7 +199,8 @@ Config.Recipes = {
     },
     --- L2
     weed_process = {
-        { item = 'weed_leaf', count = 2 },
+        -- Džiovinimo UI leidžia pasirinkti tikslų kiekį; 10 yra minimali partija.
+        { item = 'weed_leaf', count = 10 },
     },
     weed_pack = {
         -- PAKAVIMAS: sunaudojama per vieną sesiją. count turi sutapti su session.packTarget (5).
@@ -1222,7 +1223,7 @@ Config.WeaponBenchL1 = {
 Config.WeedCayoLab = {
     blip = {
         enabled = true,
-        coords = vector3(1144.82, -1659.86, 36.61),
+        coords = vector3(1144.5762, -1661.0204, 36.6147),
         sprite = 140,
         color = 25,
         scale = 0.78,
@@ -1231,26 +1232,34 @@ Config.WeedCayoLab = {
     },
     stations = {
         {
-            id = 'weed_dry_1',
+            id = 'weed_dry_davis',
             label = 'Žolė · džiovinimas',
             level = 2,
-            coords = vector3(1144.3669, -1658.9980, 36.6147),
-            heading = 292.0355,
-            radius = 1.5,
-            products = { 'weed_process' },
-        },
-        {
-            id = 'weed_dry_2',
-            label = 'Žolė · džiovinimas',
-            level = 2,
-            coords = vector3(1145.2770, -1660.7167, 36.6147),
-            heading = 291.2983,
+            coords = vector3(1144.5762, -1661.0204, 36.6147),
+            heading = 203.0073,
             radius = 1.5,
             products = { 'weed_process' },
         },
     },
     -- Senos Cayo pakavimo stotys negrąžinamos; pakavimas lieka tik prie asmeninio stalo.
     packStations = {},
+}
+
+--- Ilgalaikė Davis džiovinimo partija. Laiką ir atlygį galutinai skaičiuoja serveris.
+Config.WeedDrying = {
+    stationId = 'weed_dry_davis',
+    coords = vector4(1144.5762, -1661.0204, 36.6147, 203.0073),
+    inputItem = 'weed_leaf',
+    outputItem = 'weed_buds',
+    minimumAmount = 10,
+    maximumAmount = 500,
+    secondsPerPlant = 10,
+    discountEvery = 25,
+    discountPercent = 2,
+    earlyReturnPercent = 20,
+    visualPlantCount = 10,
+    interactDistance = 4.0,
+    hologramDistance = 22.0,
 }
 
 --- Heroino laboratorija (production) — Paleto / Grapeseed zona
@@ -1796,7 +1805,7 @@ Config.WorldSiteIndex = {
     { id = 'alcohol_lab',        category = 'lab',     label = 'Samagono distiliatorius',       coords = '2434.18, 4968.52, 46.82',   desc = 'Alkoholio distiliacija ir supakavimas' },
     { id = 'vape_lab',           category = 'lab',     label = 'Vape laboratorija',             coords = '1175.52, -3113.84, 6.03',   desc = 'Vape skysčio paruošimas ir supakavimas' },
     -- L2 laboratorijos
-    { id = 'weed_dry',           category = 'lab',     label = 'Žolės džiovinimas',             coords = '1144.82, -1659.86, 36.61',   desc = 'Weed process — Davis' },
+    { id = 'weed_dry',           category = 'lab',     label = 'Žolės džiovinimas',             coords = '1144.58, -1661.02, 36.61',   desc = 'Ilgalaikis žolės džiovinimas — Davis' },
     { id = 'heroin_lab',         category = 'lab',     label = 'Heroino laboratorija',          coords = '1953.00, 5180.00, 47.98',   desc = 'Heroin process + pack' },
     { id = 'meth_lab',           category = 'lab',     label = 'Metamfetamino laboratorija',    coords = '2709.10, 5235.05, 49.36',   desc = 'Kristalizacija + supakavimas' },
     { id = 'pills_lab',          category = 'lab',     label = 'Tablečių gamyba',               coords = '348.50, -2062.00, 21.24',   desc = 'Pills process + pack — Davis' },

@@ -4,6 +4,10 @@ const emptyPick = document.getElementById("emptyPick");
 const detailPanel = document.getElementById("detailPanel");
 const btnCraft = document.getElementById("btnCraft");
 const btnBuyParts = document.getElementById("btnBuyParts");
+const weedDryQuantity = document.getElementById("weedDryQuantity");
+const weedDryAmount = document.getElementById("weedDryAmount");
+const weedDryAvailable = document.getElementById("weedDryAvailable");
+const weedDryTimePreview = document.getElementById("weedDryTimePreview");
 const mgSkill = document.getElementById("mgSkill");
 const mgAdvanced = document.getElementById("mgAdvanced");
 const craftProgress = document.getElementById("craftProgress");
@@ -145,6 +149,62 @@ weedPackBud.addEventListener("pointerdown", handleWeedPackButton);
 
 let state = { products: [], selectedId: null, isWeaponMode: false };
 
+function weedDryDurationSeconds(amount, drying) {
+  amount = Math.max(0, Math.floor(Number(amount) || 0));
+  const secondsPerPlant = Math.max(1, Number(drying?.secondsPerPlant) || 10);
+  const every = Math.max(1, Number(drying?.discountEvery) || 25);
+  const discountPercent = Math.max(0, Number(drying?.discountPercent) || 2);
+  const discount = Math.floor(amount / every) * discountPercent;
+  return Math.max(1, Math.floor(amount * secondsPerPlant * Math.max(0.1, 1 - discount / 100)));
+}
+
+function selectedProduct() {
+  return state.products.find((product) => product.id === state.selectedId);
+}
+
+function selectedDryAmount(product = selectedProduct()) {
+  if (!product?.drying) return null;
+  return Math.floor(Number(weedDryAmount?.value) || 0);
+}
+
+function updateWeedDryDetail(product = selectedProduct()) {
+  const drying = product?.drying;
+  if (!weedDryQuantity) return;
+  weedDryQuantity.classList.toggle("hidden", !drying);
+  if (!drying) return;
+
+  const minimum = Number(drying.minimumAmount) || 10;
+  const maximum = Number(drying.maximumAmount) || 500;
+  const available = Math.max(0, Number(drying.availableAmount) || 0);
+  weedDryAmount.min = String(minimum);
+  weedDryAmount.max = String(Math.min(maximum, Math.max(minimum, available)));
+  if (!weedDryAmount.value || Number(weedDryAmount.value) < minimum) {
+    weedDryAmount.value = String(minimum);
+  }
+
+  const amount = selectedDryAmount(product);
+  const valid = amount >= minimum && amount <= maximum && amount <= available;
+  weedDryAvailable.textContent = `Turite: ${available} · Min.: ${minimum}`;
+  const durationText = valid
+    ? formatCraftTime(weedDryDurationSeconds(amount, drying) * 1000)
+    : null;
+  weedDryTimePreview.textContent = durationText
+    ? `Džiovinimo laikas: ${durationText}`
+    : (available < minimum
+      ? `Trūksta lapų: minimali partija yra ${minimum}.`
+      : `Įveskite kiekį nuo ${minimum} iki ${Math.min(maximum, available)}.`);
+  document.getElementById("prodTime").textContent = durationText || "Pasirinkite kiekį";
+
+  const ingredient = product.ingredients?.[0];
+  const row = document.querySelector("#ingredientList li");
+  if (ingredient && row) {
+    row.className = valid ? "ok" : "bad";
+    const value = row.querySelector("span:last-child");
+    if (value) value.textContent = `${available}/${Math.max(minimum, amount || minimum)}`;
+  }
+  btnCraft.disabled = product.locked || !valid;
+}
+
 function updateWeed3dHud(data, reset = false) {
   const d = data || {};
   if (reset && weed3dMetrics) weed3dMetrics.innerHTML = "";
@@ -261,6 +321,12 @@ function hideCraftProgress() {
 function canCraftProduct(p) {
   if (!p || !p.ingredients) return false;
   if (p.locked) return false;
+  if (p.drying) {
+    const amount = selectedDryAmount(p);
+    return amount >= (Number(p.drying.minimumAmount) || 10)
+      && amount <= (Number(p.drying.maximumAmount) || 500)
+      && amount <= (Number(p.drying.availableAmount) || 0);
+  }
   return p.ingredients.every((i) => i.missing <= 0);
 }
 
@@ -301,6 +367,7 @@ function renderDetail(p) {
     timeText += p.usesPrinter ? " · 3D spausdintuvas" : " · rankinis surinkimas";
   }
   document.getElementById("prodTime").textContent = timeText;
+  btnCraft.textContent = p.drying ? "PRADĖTI DŽIOVINIMĄ" : "GAMINTI";
   const rewardSection = document.getElementById("rewardSection");
   if (rewardSection) {
     rewardSection.classList.toggle("hidden", state.isWeaponMode || !(p.sellBase > 0));
@@ -316,7 +383,12 @@ function renderDetail(p) {
     li.innerHTML = `<span>${i.label}</span><span>${i.have}/${i.need}</span>`;
     ul.appendChild(li);
   });
+  updateWeedDryDetail(p);
   btnCraft.disabled = !canCraftProduct(p);
+}
+
+if (weedDryAmount) {
+  weedDryAmount.addEventListener("input", () => updateWeedDryDetail());
 }
 
 window.addEventListener("message", (e) => {
@@ -449,7 +521,11 @@ if (btnBuyParts) {
 }
 btnCraft.onclick = () => {
   if (!state.selectedId) return;
-  post("craft", { productId: state.selectedId });
+  const product = selectedProduct();
+  post("craft", {
+    productId: state.selectedId,
+    amount: product?.drying ? selectedDryAmount(product) : undefined,
+  });
 };
 
 let cancelSkillGame = null;
