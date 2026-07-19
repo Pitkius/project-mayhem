@@ -5,6 +5,7 @@ local TRACKED = {} --- [vehicle] = { supportsNative, mode }
 local LIGHTBARS = {} --- [vehicle] = { bar, leftLens, rightLens }
 local KIT_PERF = {} --- [vehicle] = { sig, orig }
 local INGEST_SCHEDULED = {} --- [vehicle] = true
+local fleetBoneCache = {} --- [veh] = { bones, checkedAt }
 
 local FLEET_HASHES = {}
 local FLEET_CAR_HASHES = {}
@@ -481,6 +482,7 @@ local function cleanupVehicleEmergency(vehicle)
     removeLightbar(vehicle)
     removeKitPerformance(vehicle)
     INGEST_SCHEDULED[vehicle] = nil
+    fleetBoneCache[vehicle] = nil
     TRACKED[vehicle] = nil
 end
 
@@ -642,28 +644,96 @@ local function applyNativeForEveryone(vehicle, mode)
     if not DoesEntityExist(vehicle) then return end
     if not vehicleSupportsNativeEmergency(vehicle) then return end
     mode = mode or 'off'
-    if mode == 'off' then
+    if mode == 'off' or mode == 'sound' then
         stopNativeSirenVisual(vehicle)
         return
     end
-    if mode == 'sound' then
-        stopNativeSirenVisual(vehicle)
-        return
-    end
-    --- lights / full — GTA carcols šviesos + lightbar extras
+    --- lights / full — mašinos carcols + extras (be prop)
     enableFleetLightbarExtras(vehicle)
-    ensureVehicleControl(vehicle, 20)
+    if not NetworkHasControlOfEntity(vehicle) then
+        NetworkRequestControlOfEntity(vehicle)
+    end
     SetVehicleEngineOn(vehicle, true, true, false)
-    --- Kickstart: kartais reikia off→on, kad carcols sequencers paleistų
-    SetVehicleSiren(vehicle, false)
     SetVehicleSiren(vehicle, true)
-    --- Garsą valdo mrp_siren_controller — natyvų takelį nutildom
+    --- Garsą valdo mrp_siren_controller
     SetVehicleHasMutedSirens(vehicle, true)
 end
 
---- Script flash / prop — IŠJUNGTA fleet PD (tik civilinis kit).
+--- Script prop flash — IŠJUNGTA fleet PD (tik civilinis kit).
 local function vehicleUsesNativeFlashAssist(_vehicle)
     return false
+end
+
+--- Fleet: šviesa iš mašinos siren kaulų (jų uždėtos lempos), ne iš prop.
+local SIREN_BONE_NAMES = {
+    'siren', 'siren1', 'siren2', 'siren3', 'siren4', 'siren5', 'siren6',
+    'siren7', 'siren8', 'siren9', 'siren10', 'siren11', 'siren12',
+    'siren13', 'siren14', 'siren15', 'siren16', 'siren17', 'siren18',
+    'siren19', 'siren20',
+}
+
+local function getFleetSirenBones(vehicle)
+    local cached = fleetBoneCache[vehicle]
+    local now = GetGameTimer()
+    if cached and (now - (cached.checkedAt or 0)) < 5000 then
+        return cached.bones
+    end
+    local bones = {}
+    for i = 1, #SIREN_BONE_NAMES do
+        local idx = GetEntityBoneIndexByName(vehicle, SIREN_BONE_NAMES[i])
+        if idx and idx ~= -1 then
+            bones[#bones + 1] = idx
+        end
+    end
+    fleetBoneCache[vehicle] = { bones = bones, checkedAt = now }
+    return bones
+end
+
+local function drawFleetSirenBoneLights(vehicle)
+    if Ec.fleetSirenBoneLights == false then return end
+    local bones = getFleetSirenBones(vehicle)
+    local interval = tonumber(Ec.fleetSirenBoneIntervalMs) or 380
+    local phase = math.floor(GetGameTimer() / interval) % 2 == 0
+    local range = tonumber(Ec.fleetSirenBoneRange) or 9.0
+    local power = tonumber(Ec.fleetSirenBoneIntensity) or 6.5
+    local rr, rg, rb = 255, 48, 52
+    local br, bg, bb = 58, 128, 255
+    local fc = Ec.flashColors or {}
+    if fc.red then
+        rr = tonumber(fc.red.r) or rr
+        rg = tonumber(fc.red.g) or rg
+        rb = tonumber(fc.red.b) or rb
+    end
+    if fc.blue then
+        br = tonumber(fc.blue.r) or br
+        bg = tonumber(fc.blue.g) or bg
+        bb = tonumber(fc.blue.b) or bb
+    end
+
+    if #bones == 0 then
+        --- Atsarginis: stogas / lightbar zona (vis dar be prop)
+        local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
+        local left = GetOffsetFromEntityInWorldCoords(vehicle, -0.35, 0.0, mx.z - 0.05)
+        local right = GetOffsetFromEntityInWorldCoords(vehicle, 0.35, 0.0, mx.z - 0.05)
+        if phase then
+            DrawLightWithRange(left.x, left.y, left.z, rr, rg, rb, range, power)
+        else
+            DrawLightWithRange(right.x, right.y, right.z, br, bg, bb, range, power)
+        end
+        return
+    end
+
+    for i = 1, #bones do
+        local pos = GetWorldPositionOfEntityBone(vehicle, bones[i])
+        if pos then
+            local useRed = ((i % 2 == 1) and phase) or ((i % 2 == 0) and not phase)
+            if useRed then
+                DrawLightWithRange(pos.x, pos.y, pos.z, rr, rg, rb, range, power)
+            else
+                DrawLightWithRange(pos.x, pos.y, pos.z, br, bg, bb, range, power)
+            end
+        end
+    end
 end
 
 local function ingestFromEntity(vehicle)
@@ -672,8 +742,8 @@ local function ingestFromEntity(vehicle)
     local mode, kit = readVehicleStateBag(vehicle)
     local supportsNative = vehicleSupportsNativeEmergency(vehicle)
     local scriptFlash = vehicleUsesScriptFlash(vehicle)
-    --- Fleet: priverstinai nuimti bet kokį custom prop lightbar
-    if modelIsFleet(GetEntityModel(vehicle)) then
+    local isFleet = modelIsFleet(GetEntityModel(vehicle))
+    if isFleet then
         removeLightbar(vehicle)
         scriptFlash = false
     end
@@ -681,12 +751,14 @@ local function ingestFromEntity(vehicle)
     TRACKED[vehicle].supportsNative = supportsNative
     TRACKED[vehicle].scriptFlash = scriptFlash
     TRACKED[vehicle].assistFlash = false
+    TRACKED[vehicle].fleetBoneLights = isFleet and (Ec.fleetSirenBoneLights ~= false)
     TRACKED[vehicle].mode = mode
     syncKitVisuals(vehicle)
 
     if mode == 'off' then
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
+        fleetBoneCache[vehicle] = nil
         if not kit then
             cleanupVehicleEmergency(vehicle)
         end
@@ -767,14 +839,17 @@ CreateThread(function()
                 else
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     meta.mode = mode
-                    --- Tik civilinis kit (scriptFlash) — fleet PD piešia savo carcols lempas
-                    local wantFlash = (mode == 'lights' or mode == 'full') and meta.scriptFlash == true
-                    if wantFlash then
+                    if mode == 'lights' or mode == 'full' then
                         local vehCoords = GetEntityCoords(veh)
                         local dist = #(pCoords - vehCoords)
                         if dist <= drawDistance then
-                            drawScriptFlash(veh, dist)
-                            drew = true
+                            if meta.scriptFlash == true then
+                                drawScriptFlash(veh, dist)
+                                drew = true
+                            elseif meta.fleetBoneLights then
+                                drawFleetSirenBoneLights(veh)
+                                drew = true
+                            end
                         end
                     end
                 end
@@ -784,31 +859,33 @@ CreateThread(function()
     end
 end)
 
---- Natyvių sirenos šviesų palaikymas (GTA kartais resetina).
+--- Natyvių sirenos šviesų palaikymas kiekvieną kadrą (GTA dažnai numuša SetVehicleSiren).
 CreateThread(function()
     while true do
-        if next(TRACKED) == nil then
-            Wait(1800)
-        else
-            Wait(350)
+        local anyLights = false
+        if next(TRACKED) ~= nil then
             for veh, meta in pairs(TRACKED) do
                 if DoesEntityExist(veh) and meta.supportsNative then
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
+                    meta.mode = mode
                     if mode == 'lights' or mode == 'full' then
-                        enableFleetLightbarExtras(veh)
+                        anyLights = true
                         if not NetworkHasControlOfEntity(veh) then
                             NetworkRequestControlOfEntity(veh)
                         end
-                        if not IsVehicleSirenOn(veh) then
-                            SetVehicleSiren(veh, true)
-                        end
+                        SetVehicleSiren(veh, true)
                         SetVehicleHasMutedSirens(veh, true)
                     elseif mode == 'sound' then
-                        stopNativeSirenVisual(veh)
+                        if IsVehicleSirenOn(veh) then
+                            stopNativeSirenVisual(veh)
+                        end
                     end
+                elseif not DoesEntityExist(veh) then
+                    cleanupVehicleEmergency(veh)
                 end
             end
         end
+        Wait(anyLights and 0 or 500)
     end
 end)
 
@@ -1012,6 +1089,21 @@ RegisterNetEvent('mrp_ltpd:client:vehicleEmergencyRestored', function(netId)
     if ent ~= 0 and IsEntityAVehicle(ent) then
         scheduleIngest(ent)
     end
+end)
+
+--- Server priverstinai sinchronizuoja šviesas visiems klientams (ne tik statebag).
+RegisterNetEvent('mrp_ltpd:client:forceEmergencyVisual', function(netId, mode)
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return end
+    if type(NetworkDoesNetworkIdExist) == 'function' and not NetworkDoesNetworkIdExist(netId) then return end
+    local ent = NetworkGetEntityFromNetworkId(netId)
+    if ent == 0 or not DoesEntityExist(ent) or not IsEntityAVehicle(ent) then return end
+    if type(mode) == 'string' then
+        --- Greitas kelias — nespėti laukti statebag
+        TRACKED[ent] = TRACKED[ent] or {}
+        TRACKED[ent].mode = mode:lower()
+    end
+    ingestFromEntity(ent)
 end)
 
 AddEventHandler('onResourceStop', function(res)

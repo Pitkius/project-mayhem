@@ -137,9 +137,15 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- PD fleet NIEKADA nenaudoja script flash / prop — tik mašinos carcols lempos (SetVehicleSiren).
+    --- PD fleet NIEKADA nenaudoja prop lightbar.
     --- Script lightbar lieka tik civilinei TP su pd_emergency_kit.
     nativeFlashAssist = false,
+    --- Papildomai apšviečia mašinos savas siren1..N lempų kaulus (ne prop) —
+    --- jei carcols emissives neveikia, vis tiek mirksi nuo jūsų lightbar.
+    fleetSirenBoneLights = true,
+    fleetSirenBoneRange = 9.0,
+    fleetSirenBoneIntensity = 6.5,
+    fleetSirenBoneIntervalMs = 380,
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
     allowPassengerControl = true,
     performanceTune = {

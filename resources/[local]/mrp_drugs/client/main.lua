@@ -23,6 +23,36 @@ local npcModelLoading = {}
 local npcSpawnRetryAt = {}
 local openMaterialShop, openWeaponPartsMenu, openWeedSupplyShop, openPrinterShop, openFreeDrugShop, openLsQuickBuyMenu, openTestMenu
 
+--- Saugus netId — nekviečia NetworkGetNetworkIdFromEntity jei entity nėra networked (išvengia F8 warning).
+local function safeEntityNetId(entity)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return 0 end
+    if type(NetworkGetEntityIsNetworked) == 'function' and not NetworkGetEntityIsNetworked(entity) then
+        return 0
+    end
+    local ok, netId = pcall(NetworkGetNetworkIdFromEntity, entity)
+    if not ok then return 0 end
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return 0 end
+    return netId
+end
+
+--- Bando užregistruoti lokalų entity tinkle (pvz. street NPC pardavimui).
+local function ensureEntityNetworked(entity, timeoutMs)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return 0 end
+    local existing = safeEntityNetId(entity)
+    if existing > 0 then return existing end
+    if type(NetworkRegisterEntityAsNetworked) == 'function' then
+        pcall(NetworkRegisterEntityAsNetworked, entity)
+    end
+    local deadline = GetGameTimer() + (tonumber(timeoutMs) or 400)
+    while GetGameTimer() < deadline do
+        local netId = safeEntityNetId(entity)
+        if netId > 0 then return netId end
+        Wait(0)
+    end
+    return safeEntityNetId(entity)
+end
+
 local function nui(msg, data)
     if msg == 'open' or msg == 'darknetOpen' or msg == 'ampQuizShow' or msg == 'minigameSchedule' then
         if PushPlayerThemeToNui then PushPlayerThemeToNui() end
@@ -557,8 +587,8 @@ end
 local function isStreetNpcAlreadySold(entity)
     if not entity or entity == 0 then return true end
     if streetSellExcludedPeds[entity] then return true end
-    local netId = NetworkGetNetworkIdFromEntity(entity)
-    if netId and streetSellSoldNetIds[netId] then return true end
+    local netId = safeEntityNetId(entity)
+    if netId > 0 and streetSellSoldNetIds[netId] then return true end
     local ok, sold = pcall(function()
         return Entity(entity).state.mrpDrugSold == true
     end)
@@ -573,7 +603,7 @@ local function markStreetNpcSoldLocal(entity, netId)
     if entity and entity ~= 0 and DoesEntityExist(entity) then
         streetSellExcludedPeds[entity] = true
         if netId <= 0 then
-            netId = NetworkGetNetworkIdFromEntity(entity) or 0
+            netId = safeEntityNetId(entity)
             if netId > 0 then streetSellSoldNetIds[netId] = true end
         end
     end
@@ -629,7 +659,12 @@ local function trySellToNpcEntity(entity)
             return QBCore.Functions.Notify('NPC per toli.', 'error')
         end
 
-        local netId = NetworkGetNetworkIdFromEntity(entity)
+        local netId = ensureEntityNetworked(entity, 500)
+        if netId <= 0 then
+            --- Lokalus pedas — vis tiek pažymim lokaliai, kad target nebekartotų
+            markStreetNpcSoldLocal(entity, 0)
+            return QBCore.Functions.Notify('NPC nėra sinchronizuotas — pabandyk kitą.', 'error')
+        end
         QBCore.Functions.TriggerCallback('mrp_drugs:server:tryNpcSell', function(res)
             if res and (res.ok or res.refused or res.panic or res.alreadySold) then
                 markStreetNpcSoldLocal(entity, netId)

@@ -133,7 +133,22 @@ local function startAmpSynthesis()
         return QBCore.Functions.Notify('Reikia Zirconium Journey šalia laboratorijos.', 'error')
     end
 
-    local vehNetId = NetworkGetNetworkIdFromEntity(veh)
+    if type(NetworkGetEntityIsNetworked) == 'function' and not NetworkGetEntityIsNetworked(veh) then
+        pcall(NetworkRegisterEntityAsNetworked, veh)
+        local deadline = GetGameTimer() + 500
+        while not NetworkGetEntityIsNetworked(veh) and GetGameTimer() < deadline do
+            Wait(0)
+        end
+    end
+    local vehNetId = 0
+    if type(NetworkGetEntityIsNetworked) ~= 'function' or NetworkGetEntityIsNetworked(veh) then
+        local ok, nid = pcall(NetworkGetNetworkIdFromEntity, veh)
+        if ok then vehNetId = tonumber(nid) or 0 end
+    end
+    if vehNetId <= 0 then
+        return QBCore.Functions.Notify('Mašina nėra sinchronizuota (išimk iš garažo / respawn).', 'error')
+    end
+
     QBCore.Functions.TriggerCallback('mrp_drugs:server:startAmpSynthesis', function(res)
         if not res or not res.ok then
             return QBCore.Functions.Notify((res and res.reason) or 'Nepavyko pradėti.', 'error')

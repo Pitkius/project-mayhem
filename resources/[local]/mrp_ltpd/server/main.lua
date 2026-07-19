@@ -1524,6 +1524,10 @@ RegisterNetEvent('mrp_ltpd:server:setPdEmergencyMode', function(mode)
         end
     end
     Entity(veh).state:set('ltPdSirenMode', mode, true)
+    local netId = safeVehicleNetId(veh)
+    if netId ~= 0 then
+        TriggerClientEvent('mrp_ltpd:client:forceEmergencyVisual', -1, netId, mode)
+    end
     TriggerClientEvent('QBCore:Notify', src, ('Šviesos / sirena: %s'):format(mode), 'primary')
     TriggerClientEvent('mrp_siren:client:syncUi', src)
 end)

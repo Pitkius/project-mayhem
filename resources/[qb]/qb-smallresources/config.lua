@@ -91,7 +91,7 @@ Config.Disable = {
     carRadio = false                                              -- When set to true car radio will default to off when entering a vehicle.
 }
 
---- GTA taikinukas visada baltas (nekeičia į raudoną/pilką, kai taikaisi į žmogų).
+--- Tikras GTA 5 taikinukas (simple/complex pagal nustatymus). true = lieka baltas ant žmogaus.
 Config.AlwaysWhiteReticle = true
 
 Config.RelieveWeedStress = math.random(15, 20) -- stress relief amount (100 max)
