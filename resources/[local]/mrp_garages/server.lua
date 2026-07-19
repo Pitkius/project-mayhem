@@ -231,6 +231,15 @@ QBCore.Functions.CreateCallback('mrp_garages:server:spawnVehicle', function(sour
         if not isPoliceVehicleModel(row.vehicle) then
             return cb({ ok = false, message = 'Tai ne policijos transportas.' })
         end
+        if GetResourceState('mrp_bossmenu') == 'started' then
+            local allowed, reason
+            local ok = pcall(function()
+                allowed, reason = exports['mrp_bossmenu']:CanAccessPoliceFleetDetailed(source, row.vehicle, { forShop = false })
+            end)
+            if ok and allowed == false then
+                return cb({ ok = false, message = reason or 'Neturi rango / divizijos teisių šiai mašinai.' })
+            end
+        end
         --- PD mašinas galima imti iš bet kurio PD garažo (perkeliam į šį)
     elseif isMechanicGarageId(garageId) then
         if not isMechanicVehicleModel(row.vehicle) then

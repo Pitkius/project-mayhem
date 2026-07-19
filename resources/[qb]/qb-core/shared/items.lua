@@ -324,6 +324,23 @@ QBShared.Items = {
     jerry_can                    = { name = 'jerry_can', label = 'Kanistras 20 l', weight = 20000, type = 'item', image = 'jerry_can.png', unique = false, useable = true, shouldClose = true, description = 'Kanistras su degalais.' },
     tirerepairkit                = { name = 'tirerepairkit', label = 'Padangų remonto rinkinys', weight = 1000, type = 'item', image = 'tirerepairkit.png', unique = false, useable = true, shouldClose = true, description = 'Įrankiai padangoms taisyti.' },
 
+    -- Chop shop / ardomos detalės (naudotos — ne tiuningo dalys)
+    scrap_tire                   = { name = 'scrap_tire', label = 'Naudota padanga', weight = 800, type = 'item', image = 'tirerepairkit.png', unique = false, useable = false, shouldClose = false, description = 'Išardytos mašinos padanga.' },
+    scrap_rim                    = { name = 'scrap_rim', label = 'Ratlankis', weight = 900, type = 'item', image = 'veh_wheels.png', unique = false, useable = false, shouldClose = false, description = 'Naudotas ratlankis.' },
+    scrap_seat                   = { name = 'scrap_seat', label = 'Sėdynė', weight = 1200, type = 'item', image = 'veh_interior.png', unique = false, useable = false, shouldClose = false, description = 'Išimta automobilio sėdynė.' },
+    scrap_door                   = { name = 'scrap_door', label = 'Durelės', weight = 1500, type = 'item', image = 'veh_exterior.png', unique = false, useable = false, shouldClose = false, description = 'Automobilio durelės.' },
+    scrap_hood                   = { name = 'scrap_hood', label = 'Kapotas', weight = 1400, type = 'item', image = 'veh_exterior.png', unique = false, useable = false, shouldClose = false, description = 'Automobilio kapotas.' },
+    scrap_bumper                 = { name = 'scrap_bumper', label = 'Bamperis', weight = 1100, type = 'item', image = 'veh_exterior.png', unique = false, useable = false, shouldClose = false, description = 'Naudotas bamperis.' },
+    scrap_headlight              = { name = 'scrap_headlight', label = 'Žibintas', weight = 400, type = 'item', image = 'veh_xenons.png', unique = false, useable = false, shouldClose = false, description = 'Automobilio žibintas.' },
+    scrap_mirror                 = { name = 'scrap_mirror', label = 'Veidrodėlis', weight = 250, type = 'item', image = 'veh_exterior.png', unique = false, useable = false, shouldClose = false, description = 'Šoninis veidrodėlis.' },
+    scrap_battery                = { name = 'scrap_battery', label = 'Akumuliatorius', weight = 1000, type = 'item', image = 'veh_toolbox.png', unique = false, useable = false, shouldClose = false, description = 'Naudotas akumuliatorius.' },
+    scrap_radiator               = { name = 'scrap_radiator', label = 'Radiatorius', weight = 900, type = 'item', image = 'veh_suspension.png', unique = false, useable = false, shouldClose = false, description = 'Aušinimo radiatorius.' },
+    scrap_brakes                 = { name = 'scrap_brakes', label = 'Stabdžių diskas', weight = 700, type = 'item', image = 'veh_brakes.png', unique = false, useable = false, shouldClose = false, description = 'Naudotas stabdžių diskas.' },
+    scrap_exhaust                = { name = 'scrap_exhaust', label = 'Išmetimo sistema', weight = 1000, type = 'item', image = 'veh_turbo.png', unique = false, useable = false, shouldClose = false, description = 'Išmontuota išmetimo sistema.' },
+    scrap_transmission           = { name = 'scrap_transmission', label = 'Pavarų dėžė', weight = 2500, type = 'item', image = 'veh_transmission.png', unique = false, useable = false, shouldClose = false, description = 'Naudota pavarų dėžė.' },
+    scrap_engine                 = { name = 'scrap_engine', label = 'Variklis', weight = 4000, type = 'item', image = 'veh_engine.png', unique = false, useable = false, shouldClose = false, description = 'Išimtas naudotas variklis.' },
+    scrap_catalytic              = { name = 'scrap_catalytic', label = 'Katalizatorius', weight = 600, type = 'item', image = 'metalscrap.png', unique = false, useable = false, shouldClose = false, description = 'Brangi išmetimo dalis — katalizatorius.' },
+
     -- Mechanic Parts
     veh_toolbox                  = { name = 'veh_toolbox', label = 'Įrankių dėžė', weight = 1000, type = 'item', image = 'veh_toolbox.png', unique = false, useable = true, shouldClose = true, description = 'Transporto būklės tikrinimui.' },
     veh_armor                    = { name = 'veh_armor', label = 'Šarvai', weight = 1000, type = 'item', image = 'veh_armor.png', unique = false, useable = true, shouldClose = true, description = 'Transporto šarvinimas.' },

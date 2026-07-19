@@ -110,12 +110,20 @@ Config.CryptoExchange = {
 }
 
 Config.BlackMarket = {
-    coords = vector3(706.8483, -966.9983, 30.4129),
-    heading = 22.0825,
+    enabled = true,
+    coords = vector3(705.12, -963.88, 30.40),
+    heading = 178.5,
     pedModel = 'ig_lestercrest',
     currency = 'cash',
     label = 'Lesteris',
     scenario = 'WORLD_HUMAN_AA_SMOKE',
+    blip = {
+        enabled = true,
+        sprite = 521,
+        colour = 1,
+        scale = 0.75,
+        label = 'Apiplėšimo reikmenys',
+    },
     --- Tik dabartinei heist sistemai reikalingi daiktai (be OS / USB)
     items = {
         { item = 'basic_tablet', price = 3500, desc = 'L1 — ATM / parduotuvės stealth' },

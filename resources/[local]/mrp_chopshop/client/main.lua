@@ -45,8 +45,77 @@ local function drawScrapProgressBar(coords, ratio, label, remainSec)
     SetTextCentre(true)
     SetTextOutline()
     BeginTextCommandDisplayText('STRING')
-    AddTextComponentSubstringPlayerName(('%s · %ds'):format(label or 'Ardoma', remainSec or 0))
+    AddTextComponentSubstringPlayerName(('%s · %ds'):format(label or 'Mašina ardoma', remainSec or 0))
     EndTextCommandDisplayText(x, y - 0.028)
+end
+
+--- Po truputį „nuima“ detales (durys, langai, ratai…) pagal ardymo pažangą
+local function applyScrapVisualStage(veh, stage)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    stage = math.floor(tonumber(stage) or 0)
+    if stage < 1 then return end
+
+    local tries = 0
+    while not NetworkHasControlOfEntity(veh) and tries < 20 do
+        NetworkRequestControlOfEntity(veh)
+        Wait(0)
+        tries = tries + 1
+    end
+
+    if stage >= 1 then
+        for i = 0, 7 do
+            SmashVehicleWindow(veh, i)
+        end
+    end
+    if stage >= 2 then
+        SetVehicleDoorBroken(veh, 0, true) -- FL
+        SetVehicleDoorBroken(veh, 1, true) -- FR
+    end
+    if stage >= 3 then
+        SetVehicleDoorBroken(veh, 2, true) -- RL
+        SetVehicleDoorBroken(veh, 3, true) -- RR
+    end
+    if stage >= 4 then
+        SetVehicleDoorBroken(veh, 4, true) -- hood
+        SetVehicleDoorBroken(veh, 5, true) -- trunk
+    end
+    if stage >= 5 then
+        for t = 0, 5 do
+            SetVehicleTyreBurst(veh, t, true, 1000.0)
+        end
+    end
+    if stage >= 6 then
+        for w = 0, 3 do
+            pcall(function()
+                BreakOffVehicleWheel(veh, w, true, false, true, false)
+            end)
+        end
+    end    if stage >= 7 then
+        SetVehicleEngineHealth(veh, 50.0)
+        SetVehicleBodyHealth(veh, 120.0)
+        SetVehiclePetrolTankHealth(veh, 200.0)
+        SetVehicleDamage(veh, 0.5, 0.0, 0.2, 300.0, 150.0, true)
+        SetVehicleDamage(veh, -0.5, 0.0, 0.2, 300.0, 150.0, true)
+        SetVehicleDamage(veh, 0.0, 0.8, 0.1, 250.0, 120.0, true)
+        SetVehicleDamage(veh, 0.0, -0.8, 0.1, 250.0, 120.0, true)
+    end    if stage >= 8 then
+        SetVehicleEngineHealth(veh, 0.0)
+        SetVehicleBodyHealth(veh, 40.0)
+        SetVehicleUndriveable(veh, true)
+    end
+end
+
+local function scrapStageFromRatio(ratio)
+    ratio = math.max(0.0, math.min(1.0, ratio or 0.0))
+    if ratio < 0.08 then return 0 end
+    if ratio < 0.18 then return 1 end
+    if ratio < 0.30 then return 2 end
+    if ratio < 0.42 then return 3 end
+    if ratio < 0.54 then return 4 end
+    if ratio < 0.66 then return 5 end
+    if ratio < 0.78 then return 6 end
+    if ratio < 0.90 then return 7 end
+    return 8
 end
 
 local function getVehicleInZone(location)
@@ -159,12 +228,14 @@ end
 
 local function runScrapProgress(ms, label, veh)
     ms = math.max(1000, tonumber(ms) or 45000)
-    label = label or 'Ardoma transporto priemonė…'
+    label = label or 'Mašina ardoma'
     scrapProgress = {
         startedAt = GetGameTimer(),
         durationMs = ms,
         label = label,
         veh = veh,
+        lastStage = 0,
+        netId = (veh and NetworkGetEntityIsNetworked(veh)) and NetworkGetNetworkIdFromEntity(veh) or 0,
     }
 
     CreateThread(function()
@@ -172,7 +243,6 @@ local function runScrapProgress(ms, label, veh)
             local prog = scrapProgress
             local vehRef = prog.veh
             if vehRef and DoesEntityExist(vehRef) then
-                -- Blokuoti bandymus įlipti / vairuoti
                 SetVehicleDoorsLocked(vehRef, 2)
                 SetVehicleDoorsLockedForAllPlayers(vehRef, true)
                 SetVehicleUndriveable(vehRef, true)
@@ -185,6 +255,15 @@ local function runScrapProgress(ms, label, veh)
                 local ratio = math.min(1.0, elapsed / prog.durationMs)
                 local remain = math.max(0, math.ceil((prog.durationMs - elapsed) / 1000))
                 drawScrapProgressBar(GetEntityCoords(vehRef), ratio, prog.label, remain)
+
+                local stage = scrapStageFromRatio(ratio)
+                if stage > (prog.lastStage or 0) then
+                    prog.lastStage = stage
+                    applyScrapVisualStage(vehRef, stage)
+                    if prog.netId and prog.netId ~= 0 then
+                        TriggerServerEvent('mrp_chopshop:server:scrapVisual', prog.netId, stage)
+                    end
+                end
             end
             Wait(0)
         end
@@ -276,7 +355,7 @@ local function startScrapAtLocation(location)
 
         local ok = runScrapProgress(
             res.scrapMs,
-            ('Ardoma (%s)…'):format(res.tierLabel or 'Paprasta'),
+            'Mašina ardoma',
             veh
         )
         if not ok then
@@ -343,6 +422,15 @@ RegisterNetEvent('mrp_chopshop:client:applyScrapLock', function(netId, plate, lo
     end
 end)
 
+RegisterNetEvent('mrp_chopshop:client:applyScrapVisual', function(netId, stage)
+    if not netId then return end
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if veh == 0 or not DoesEntityExist(veh) then return end
+    --- Nebekartoti ant to paties kliento, kuris jau taiko lokaliai
+    if scrapProgress and scrapProgress.veh == veh then return end
+    applyScrapVisualStage(veh, stage)
+end)
+
 local function openBuyerMenu(locationId)
     QBCore.Functions.TriggerCallback('mrp_chopshop:server:getSellInventory', function(res)
         if not res or not res.ok then
@@ -353,7 +441,7 @@ local function openBuyerMenu(locationId)
         end
 
         local menu = {
-            { header = 'Laužo supirkėjas', isMenuHeader = true },
+            { header = 'Dalių supirkėjas', isMenuHeader = true },
         }
         for _, row in ipairs(res.items) do
             menu[#menu + 1] = {

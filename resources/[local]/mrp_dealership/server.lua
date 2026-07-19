@@ -318,28 +318,66 @@ CreateThread(function()
     end
 end)
 
-local function buildPoliceCatalog()
+local function playerCanAccessPdFleet(src, model, forShop)
+    if GetResourceState('mrp_bossmenu') ~= 'started' then
+        --- Fallback į config jei bossmenu dar neup
+        local pd = Config.PoliceDealership
+        model = string.lower(tostring(model or ''))
+        for _, v in ipairs((pd and pd.vehicles) or {}) do
+            if v.model and string.lower(tostring(v.model)) == model then
+                if forShop and v.shopEnabled == false then
+                    return false, 'Šis modelis tik importui.'
+                end
+                local Player = QBCore.Functions.GetPlayer(src)
+                if not Player then return false, 'Žaidėjas nerastas.' end
+                local grade = tonumber(Player.PlayerData.job.grade and Player.PlayerData.job.grade.level) or 0
+                local minG = tonumber(v.minGrade) or 0
+                if v.arasOrGrade then
+                    --- be bossmenu ARO check — tik rangas
+                    if grade >= minG then return true end
+                    return false, ('Reikia rango ≥ %d (arba ARO).'):format(minG)
+                end
+                if grade < minG then
+                    return false, ('Reikia rango ≥ %d.'):format(minG)
+                end
+                return true
+            end
+        end
+        return false, 'Modelis nerastas.'
+    end
+    return exports['mrp_bossmenu']:CanAccessPoliceFleetDetailed(src, model, { forShop = forShop ~= false })
+end
+
+local function buildPoliceCatalog(src)
     local pd = Config.PoliceDealership
     if not pd or not pd.vehicles then
         return { dealership = { label = 'PD' }, categories = {}, vehicles = {} }
     end
     local categories = {}
     local labels = pd.PoliceCategoryLabels or {}
+    local vehicles = {}
     for _, v in ipairs(pd.vehicles) do
-        local cat = v.category or 'patrol'
-        if not categories[cat] then
-            categories[cat] = labels[cat] or cat
+        local model = v.model and string.lower(tostring(v.model)) or ''
+        if model ~= '' then
+            local ok = playerCanAccessPdFleet(src, model, true)
+            if ok then
+                local cat = v.category or 'patrol'
+                if not categories[cat] then
+                    categories[cat] = labels[cat] or cat
+                end
+                vehicles[#vehicles + 1] = v
+            end
         end
     end
     return {
         dealership = { label = pd.label or 'Policija' },
         categories = categories,
-        vehicles = pd.vehicles,
+        vehicles = vehicles,
     }
 end
 
-QBCore.Functions.CreateCallback('mrp_dealership:server:getPoliceCatalog', function(_, cb)
-    cb(buildPoliceCatalog())
+QBCore.Functions.CreateCallback('mrp_dealership:server:getPoliceCatalog', function(source, cb)
+    cb(buildPoliceCatalog(source))
 end)
 
 local function buildMechanicCatalog()
@@ -600,6 +638,11 @@ QBCore.Functions.CreateCallback('mrp_dealership:server:buyPoliceVehicle', functi
     end
     if not selectedVehicle then
         return cb({ ok = false, message = 'Modelis nerastas kataloge.' })
+    end
+
+    local allowed, denyReason = playerCanAccessPdFleet(src, model, true)
+    if not allowed then
+        return cb({ ok = false, message = denyReason or 'Neturi teisės į šią mašiną.' })
     end
 
     local price = tonumber(selectedVehicle.price) or 0

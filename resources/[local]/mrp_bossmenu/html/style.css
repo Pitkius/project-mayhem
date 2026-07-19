@@ -451,6 +451,15 @@ label input, label select {
 
 .bm-toggle { display: flex !important; align-items: center; gap: 8px; color: var(--bm-text) !important; }
 .bm-toggle input { width: auto; margin: 0; }
+.bm-fleet-lock {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--primary-soft);
+    border-radius: 10px;
+    background: rgba(20, 16, 36, 0.7);
+    font-size: 12px;
+    line-height: 1.35;
+}
 
 .bm-note { margin-bottom: 10px; }
 

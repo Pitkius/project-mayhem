@@ -80,7 +80,7 @@ Config.Burglary = {
     --- Pavogtų daiktų pardavimas
     fence = {
         enabled = true,
-        coords = vector4(707.15, -966.55, 30.41, 200.0), --- šalia Lesterio
+        coords = vector4(708.85, -966.20, 30.41, 270.0), --- šalia Lesterio (apiplėšimo reikmenys)
         pedModel = 'g_m_y_mexgoon_02',
         scenario = 'WORLD_HUMAN_SMOKING',
         label = 'Parduoti vogtus daiktus',

@@ -37,4 +37,5 @@ dependencies {
     'qb-core',
     'mrp_vehicle_perf',
     'mrp_plates',
+    'mrp_bossmenu',
 }

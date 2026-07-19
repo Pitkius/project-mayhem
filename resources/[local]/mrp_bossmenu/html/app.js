@@ -2,7 +2,9 @@ const root = document.getElementById('root');
 let state = null;
 let editingRank = null;
 let editingDivision = null;
+let editingFleet = null;
 let memberFilter = '';
+let fleetLockSyncing = false;
 
 function post(name, data = {}) {
     return fetch(`https://${GetParentResourceName()}/${name}`, {
@@ -238,6 +240,48 @@ function openDivisionEditor(div) {
     }
 }
 
+function openFleetEditor(v) {
+    editingFleet = v;
+    document.getElementById('fleetEditor').classList.remove('hidden');
+    document.getElementById('fleetEditorHint').classList.add('hidden');
+    document.getElementById('fleetEditorTitle').textContent = v.label || v.model;
+    document.getElementById('fleetModelMeta').textContent = `Modelis: ${v.model}`;
+    document.getElementById('fleetMinGrade').value = Number(v.minGrade) || 0;
+    document.getElementById('fleetArasOrGrade').checked = !!v.arasOrGrade;
+    document.getElementById('fleetShopEnabled').checked = v.shopEnabled !== false && v.model !== 'mrpd11';
+    document.getElementById('fleetShopWrap').classList.toggle('hidden', v.model === 'mrpd11');
+    document.getElementById('fleetImportNote').classList.toggle('hidden', v.model !== 'mrpd11');
+    if (v.model === 'mrpd11') {
+        document.getElementById('fleetShopEnabled').checked = false;
+        document.getElementById('fleetShopEnabled').disabled = true;
+    } else {
+        document.getElementById('fleetShopEnabled').disabled = !state?.canManageRanks;
+    }
+    const canEdit = !!state?.canManageRanks;
+    document.getElementById('fleetMinGrade').disabled = !canEdit;
+    document.getElementById('fleetArasOrGrade').disabled = !canEdit;
+    document.getElementById('btnSaveFleet').disabled = !canEdit;
+}
+
+function renderFleet() {
+    const list = document.getElementById('fleetList');
+    list.innerHTML = '';
+    if (!state?.fleetEnabled) return;
+    (state.fleetVehicles || []).forEach((v) => {
+        const row = document.createElement('div');
+        row.className = 'bm-row' + (state.canManageRanks ? ' bm-row-editable' : '');
+        const access = v.arasOrGrade
+            ? `ARO arba ≥${v.minGrade}`
+            : `≥${v.minGrade}`;
+        const shop = v.shopEnabled === false ? ' · importas' : '';
+        row.innerHTML = `<div><strong>${escapeHtml(v.label || v.model)}</strong><span class="bm-muted">${escapeHtml(access)}${shop}</span></div>`;
+        if (state.canManageRanks) {
+            row.addEventListener('click', () => openFleetEditor(v));
+        }
+        list.appendChild(row);
+    });
+}
+
 function applyState(data) {
     state = data;
     const total = data.memberCount != null ? data.memberCount : (data.members || []).length;
@@ -264,6 +308,13 @@ function applyState(data) {
     document.getElementById('memberDivisionWrap').classList.toggle('hidden', !data.divisionsEnabled);
     document.getElementById('btnSetDivision').classList.toggle('hidden', !data.divisionsEnabled);
 
+    const fleetTab = document.getElementById('tabFleet');
+    fleetTab.classList.toggle('hidden', !data.fleetEnabled);
+    fleetLockSyncing = true;
+    document.getElementById('fleetDivisionLock').checked = !!data.fleetDivisionLock;
+    document.getElementById('fleetDivisionLock').disabled = !data.canManageRanks;
+    fleetLockSyncing = false;
+
     fillGradeSelect(document.getElementById('memberGrade'), data.grades);
     fillDivisionSelect(document.getElementById('memberDivision'), data.divisions);
 
@@ -287,12 +338,16 @@ function applyState(data) {
     document.getElementById('rankEditorHint').classList.remove('hidden');
     document.getElementById('divisionEditor').classList.add('hidden');
     document.getElementById('divisionEditorHint').classList.remove('hidden');
+    document.getElementById('fleetEditor').classList.add('hidden');
+    document.getElementById('fleetEditorHint').classList.remove('hidden');
     editingRank = null;
     editingDivision = null;
+    editingFleet = null;
 
     renderMembers();
     renderRanks();
     if (data.divisionsEnabled) renderDivisions();
+    if (data.fleetEnabled) renderFleet();
 }
 
 function memberPayloadExtras() {
@@ -410,6 +465,30 @@ document.getElementById('btnCancelDivision').addEventListener('click', () => {
     document.getElementById('divisionEditor').classList.add('hidden');
     document.getElementById('divisionEditorHint').classList.remove('hidden');
     editingDivision = null;
+});
+
+document.getElementById('fleetDivisionLock').addEventListener('change', (e) => {
+    if (fleetLockSyncing || !state?.fleetEnabled) return;
+    post('setFleetDivisionLock', { enabled: e.target.checked });
+});
+
+document.getElementById('btnSaveFleet').addEventListener('click', () => {
+    if (!editingFleet) return;
+    post('saveFleetVehicle', {
+        model: editingFleet.model,
+        minGrade: document.getElementById('fleetMinGrade').value,
+        arasOrGrade: document.getElementById('fleetArasOrGrade').checked,
+        shopEnabled: editingFleet.model === 'mrpd11' ? false : document.getElementById('fleetShopEnabled').checked,
+    });
+    document.getElementById('fleetEditor').classList.add('hidden');
+    document.getElementById('fleetEditorHint').classList.remove('hidden');
+    editingFleet = null;
+});
+
+document.getElementById('btnCancelFleet').addEventListener('click', () => {
+    document.getElementById('fleetEditor').classList.add('hidden');
+    document.getElementById('fleetEditorHint').classList.remove('hidden');
+    editingFleet = null;
 });
 
 window.addEventListener('keydown', (e) => {

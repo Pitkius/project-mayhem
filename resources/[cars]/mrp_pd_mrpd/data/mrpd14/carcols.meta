@@ -6,8 +6,8 @@
       <id value="113"/> 
       <name>mrpd14</name>
       <timeMultiplier value="1.00000000"/>
-      <lightFalloffMax value="125.00000000"/>
-      <lightFalloffExponent value="125.00000000"/>
+      <lightFalloffMax value="10.0"/>
+      <lightFalloffExponent value="10.0"/>
       <lightInnerConeAngle value="2.29061000"/>
       <lightOuterConeAngle value="70.00000000"/>
       <lightOffset value="0.00000000"/>
@@ -51,13 +51,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-			<size value="0.00010000"/>
-			<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+			<size value="0.50000000"/>
+			<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFFFF0000"/>
-          <intensity value="0.50000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="0"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -87,13 +87,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-			<size value="0.00010000"/>
-			<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+			<size value="0.50000000"/>
+			<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFF0000FF"/>
-          <intensity value="0.50000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="0"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -123,13 +123,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-			<size value="0.00010000"/>
-			<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+			<size value="0.50000000"/>
+			<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFFFF0000"/>
-          <intensity value="0.50000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="0"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -159,13 +159,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-			<size value="0.00010000"/>
-			<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+			<size value="0.50000000"/>
+			<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFF0000FF"/>
-          <intensity value="1.00000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -195,13 +195,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-			<size value="0.00010000"/>
-			<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+			<size value="0.50000000"/>
+			<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFFFF0000"/>
-          <intensity value="1.00000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -231,13 +231,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-			<size value="0.00010000"/>
-			<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+			<size value="0.50000000"/>
+			<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFF0000FF"/>
-          <intensity value="1.00000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -267,13 +267,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-			<size value="0.00010000"/>
-			<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+			<size value="0.50000000"/>
+			<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFFFF0000"/>
-          <intensity value="0.50000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="0"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -303,13 +303,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-			<size value="0.00010000"/>
-			<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+			<size value="0.50000000"/>
+			<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFF0000FF"/>
-          <intensity value="1.00000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -339,13 +339,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-			<size value="0.00010000"/>
-			<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+			<size value="0.50000000"/>
+			<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFFFF0000"/>
-          <intensity value="0.50000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="0"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -375,13 +375,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-			<size value="0.00010000"/>
-			<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+			<size value="0.50000000"/>
+			<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFF0000FF"/>
-          <intensity value="1.00000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -411,13 +411,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-		      	<size value="0.00010000"/>
-		      	<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+		      	<size value="0.50000000"/>
+		      	<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFFFF0000"/>
-          <intensity value="0.50000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="0"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -447,13 +447,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-		        <size value="0.00010000"/>
-			      <pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+		        <size value="0.50000000"/>
+			      <pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFF0000FF"/>
-          <intensity value="0.50000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="0"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -483,13 +483,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-		      	<size value="0.00010000"/>
-	       		<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+		      	<size value="0.50000000"/>
+	       		<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFFFF0000"/>
-          <intensity value="0.50000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -519,13 +519,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-	       		<size value="0.00010000"/>
-		      	<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+	       		<size value="0.50000000"/>
+		      	<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFF0000FF"/>
-          <intensity value="0.50000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -555,13 +555,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-            <size value="0.00010000"/>
-            <pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+            <size value="0.50000000"/>
+            <pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFF0000FF"/>
-          <intensity value="1.00000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -591,13 +591,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-		      	<size value="0.00010000"/>
-		      	<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+		      	<size value="0.50000000"/>
+		      	<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFFFF0000"/>
-          <intensity value="1.00000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -627,13 +627,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-		      	<size value="0.00010000"/>
-		      	<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+		      	<size value="0.50000000"/>
+		      	<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFFFF0000"/>
-          <intensity value="0.50000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="0"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -663,13 +663,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-		      	<size value="0.00010000"/>
-	       		<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+		      	<size value="0.50000000"/>
+	       		<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFF0000FF"/>
-          <intensity value="1.00000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>
@@ -699,20 +699,20 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="50.00000000"/>
-		      	<size value="0.00010000"/>
-	       		<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+		      	<size value="0.50000000"/>
+	       		<pull value="0.15000000"/>
             <faceCamera value="false"/>
           </corona>
           <color value="0xFFFF0000"/>
-          <intensity value="1.00000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="0"/>
           <rotate value="false"/>
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
           <light value="true"/>
-          <spotLight value="false"/>
+          <spotLight value="true"/>
           <castShadows value="true"/>
         </Item>
         <Item> <!--Siren 20-->
@@ -735,13 +735,13 @@
             <syncToBpm value="true"/>
           </flashiness>
           <corona>
-            <intensity value="30.00000000"/>
-		      	<size value="0.00010000"/>
-		      	<pull value="0.20000000"/>
+            <intensity value="25.00000000"/>
+		      	<size value="0.50000000"/>
+		      	<pull value="0.15000000"/>
            <faceCamera value="false"/>
           </corona>
           <color value="0xFFFFFFFF"/>
-          <intensity value="20.0000000"/>
+          <intensity value="3.5"/>
           <lightGroup value="1"/>
           <rotate value="false"/>
           <scale value="true"/>

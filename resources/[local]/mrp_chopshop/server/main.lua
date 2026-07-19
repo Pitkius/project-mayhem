@@ -100,16 +100,38 @@ end
 
 local function rollParts(tierId, multiplier)
     multiplier = tonumber(multiplier) or 1.0
-    local tableDef = (Config.ChopShop and Config.ChopShop.tierParts and Config.ChopShop.tierParts[tierId]) or {}
-    local parts = {}
-    for _, row in ipairs(tableDef) do
-        local minC = math.floor((tonumber(row.min) or 1) * multiplier)
-        local maxC = math.floor((tonumber(row.max) or minC) * multiplier)
-        if maxC < minC then maxC = minC end
-        local count = math.random(minC, maxC)
-        if count > 0 then
-            parts[#parts + 1] = { item = row.item, count = count }
+    local cfg = Config.ChopShop or {}
+    local partsDef = cfg.scrapParts or {}
+    local chanceBonus = 0.0
+    for _, tier in ipairs(cfg.priceTiers or {}) do
+        if tier.id == tierId then
+            chanceBonus = tonumber(tier.chanceBonus) or 0.0
+            break
         end
+    end
+
+    local parts = {}
+    for _, row in ipairs(partsDef) do
+        local item = tostring(row.item or '')
+        if item ~= '' then
+            local chance = (tonumber(row.chance) or 0.5) * multiplier + chanceBonus
+            if chance > 1.0 then chance = 1.0 end
+            if chance < 0.0 then chance = 0.0 end
+            if math.random() <= chance then
+                local minC = math.max(1, math.floor((tonumber(row.min) or 1) * math.min(1.0, multiplier + 0.15)))
+                local maxC = math.max(minC, math.floor((tonumber(row.max) or minC) * math.min(1.0, multiplier + 0.15)))
+                local count = math.random(minC, maxC)
+                if count > 0 then
+                    parts[#parts + 1] = { item = item, count = count }
+                end
+            end
+        end
+    end
+
+    --- Bent viena pigesnė detalė, jei niekas nekrito
+    if #parts == 0 then
+        parts[1] = { item = 'scrap_tire', count = 1 }
+        parts[2] = { item = 'scrap_mirror', count = 1 }
     end
     return parts
 end
@@ -118,6 +140,10 @@ local function grantParts(src, Player, parts)
     for _, p in ipairs(parts or {}) do
         if not addItem(src, Player, p.item, p.count) then
             return false, ('Nepavyko duoti: %s'):format(p.item)
+        end
+        local shared = QBCore.Shared.Items[p.item]
+        if shared then
+            TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', p.count)
         end
     end
     return true
@@ -302,13 +328,14 @@ RegisterNetEvent('mrp_chopshop:server:completeScrap', function(payload)
 
     local partSummary = {}
     for _, p in ipairs(parts) do
-        partSummary[#partSummary + 1] = ('%sx %s'):format(p.count, p.item)
+        local shared = QBCore.Shared.Items[p.item]
+        local label = shared and shared.label or p.item
+        partSummary[#partSummary + 1] = ('%sx %s'):format(p.count, label)
     end
 
     TriggerClientEvent('QBCore:Notify', src,
-        isOwned and ('Mašina %s ardyta. Savininkas negali atgauti 48 val.'):format(plate)
-            or ('NPC transportas ardytas: %s'):format(table.concat(partSummary, ', ')),
-        'success')
+        ('Mašina ardyta · %s'):format(table.concat(partSummary, ', ')),
+        'success', 10000)
 
     if isOwned and row.citizenid then
         local owner = QBCore.Functions.GetPlayerByCitizenId(row.citizenid)
@@ -351,6 +378,16 @@ RegisterNetEvent('mrp_chopshop:server:lockVehicle', function(netId, plate)
     plate = normalizePlate(plate)
     if not netId and plate == '' then return end
     TriggerClientEvent('mrp_chopshop:client:applyScrapLock', -1, netId, plate, true)
+end)
+
+RegisterNetEvent('mrp_chopshop:server:scrapVisual', function(netId, stage)
+    local src = source
+    netId = tonumber(netId)
+    stage = math.floor(tonumber(stage) or 0)
+    if not netId or stage < 1 then return end
+    local token = activeScraps[src]
+    if not token or tonumber(token.netId) ~= netId then return end
+    TriggerClientEvent('mrp_chopshop:client:applyScrapVisual', -1, netId, stage)
 end)
 
 RegisterNetEvent('mrp_chopshop:server:cancelScrap', function(netId, plate)
@@ -433,7 +470,10 @@ RegisterNetEvent('mrp_chopshop:server:sellPart', function(itemName, locationId)
         return TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas', 'error')
     end
 
-    TriggerClientEvent('QBCore:Notify', src, ('Parduota 1x %s už nešvarius pinigus ($%s)'):format(itemName, unitPrice), 'success')
+    TriggerClientEvent('QBCore:Notify', src, ('Parduota 1x %s už nešvarius pinigus ($%s)'):format(
+        (QBCore.Shared.Items[itemName] and QBCore.Shared.Items[itemName].label) or itemName,
+        unitPrice
+    ), 'success')
 end)
 
 RegisterNetEvent('mrp_chopshop:server:sellAllParts', function(locationId)

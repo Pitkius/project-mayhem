@@ -227,66 +227,118 @@ CreateThread(function()
     end
 end)
 
+local lesterPed = nil
+local lesterBlip = nil
+
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     stopTabletAnim()
+    if lesterPed and DoesEntityExist(lesterPed) then
+        DeleteEntity(lesterPed)
+        lesterPed = nil
+    end
+    if lesterBlip and DoesBlipExist(lesterBlip) then
+        RemoveBlip(lesterBlip)
+        lesterBlip = nil
+    end
+    pcall(function()
+        exports['qb-target']:RemoveZone('mrp_hacking_lester_shop')
+    end)
 end)
+
+local function openLesterShopFromConfig()
+    local bm = Config.BlackMarket
+    if not bm then return end
+    local shopLabel = bm.label or 'Lesteris'
+    local currency = bm.currency or 'cash'
+    local rows = { { header = shopLabel .. ' — heist reikmenys', isMenuHeader = true } }
+    for i, e in ipairs(bm.items or {}) do
+        local idx = i
+        local label = QBCore.Shared.Items[e.item] and QBCore.Shared.Items[e.item].label or e.item
+        local priceTxt = currency == 'crypto' and (('%s₿'):format(e.price)) or (('$%s'):format(e.price))
+        local txt = e.desc or ''
+        rows[#rows + 1] = {
+            header = ('%s — %s'):format(label, priceTxt),
+            txt = txt ~= '' and txt or nil,
+            params = {
+                isAction = true,
+                event = function()
+                    TriggerServerEvent('mrp_hacking:server:buyBlackMarket', idx)
+                end,
+            },
+        }
+    end
+    if GetResourceState('qb-menu') == 'started' then
+        exports['qb-menu']:openMenu(rows)
+    else
+        TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+    end
+end
 
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do
         Wait(500)
     end
+    --- Palaukti, kol žaidėjas įsikraus (collision / ground Z)
+    while not NetworkIsPlayerActive(PlayerId()) do Wait(200) end
+    Wait(1500)
 
     local bm = Config.BlackMarket
-    if not bm or not bm.coords then return end
+    if not bm or bm.enabled == false or not bm.coords then return end
+
     local hash = joaat(bm.pedModel or 'ig_lestercrest')
     RequestModel(hash)
-    local deadline = GetGameTimer() + 8000
+    local deadline = GetGameTimer() + 10000
     while not HasModelLoaded(hash) and GetGameTimer() < deadline do Wait(10) end
     if not HasModelLoaded(hash) then
         print('[mrp_hacking] WARN: Lester ped model failed to load, fallback dealer')
         hash = joaat('s_m_y_dealer_01')
         RequestModel(hash)
-        while not HasModelLoaded(hash) do Wait(10) end
+        deadline = GetGameTimer() + 8000
+        while not HasModelLoaded(hash) and GetGameTimer() < deadline do Wait(10) end
     end
 
-    local ped = CreatePed(0, hash, bm.coords.x, bm.coords.y, bm.coords.z - 1.0, bm.heading or 0.0, false, false)
-    SetEntityInvincible(ped, true)
-    FreezeEntityPosition(ped, true)
-    SetBlockingOfNonTemporaryEvents(ped, true)
-    if bm.scenario then
-        TaskStartScenarioInPlace(ped, bm.scenario, 0, true)
+    local x, y, z = bm.coords.x + 0.0, bm.coords.y + 0.0, bm.coords.z + 0.0
+    if HasModelLoaded(hash) then
+        RequestCollisionAtCoord(x, y, z)
+        local colDeadline = GetGameTimer() + 4000
+        while GetGameTimer() < colDeadline do
+            RequestCollisionAtCoord(x, y, z)
+            local ok, gz = GetGroundZFor_3dCoord(x, y, z + 50.0, false)
+            if ok and gz and gz > 0.0 then
+                z = gz
+                break
+            end
+            Wait(50)
+        end
+
+        lesterPed = CreatePed(0, hash, x, y, z, bm.heading or 0.0, false, true)
+        if lesterPed and lesterPed ~= 0 and DoesEntityExist(lesterPed) then
+            SetEntityAsMissionEntity(lesterPed, true, true)
+            SetEntityInvincible(lesterPed, true)
+            SetBlockingOfNonTemporaryEvents(lesterPed, true)
+            SetPedCanRagdoll(lesterPed, false)
+            FreezeEntityPosition(lesterPed, true)
+            SetPedDiesWhenInjured(lesterPed, false)
+            SetEntityCoordsNoOffset(lesterPed, x, y, z, false, false, false)
+            if bm.scenario then
+                TaskStartScenarioInPlace(lesterPed, bm.scenario, 0, true)
+            end
+        else
+            print('[mrp_hacking] ERROR: CreatePed failed for Lester')
+            lesterPed = nil
+        end
+        SetModelAsNoLongerNeeded(hash)
+    else
+        print('[mrp_hacking] ERROR: could not load Lester/dealer ped — zone-only shop')
     end
-    SetModelAsNoLongerNeeded(hash)
 
     local shopLabel = bm.label or 'Lesteris'
-    local currency = bm.currency or 'cash'
-
-    local function openLesterShop()
-        local rows = { { header = shopLabel .. ' — heist reikmenys', isMenuHeader = true } }
-        for i, e in ipairs(bm.items or {}) do
-            local label = QBCore.Shared.Items[e.item] and QBCore.Shared.Items[e.item].label or e.item
-            local priceTxt = currency == 'crypto' and (('%s₿'):format(e.price)) or (('$%s'):format(e.price))
-            local txt = e.desc or ''
-            rows[#rows + 1] = {
-                header = ('%s — %s'):format(label, priceTxt),
-                txt = txt ~= '' and txt or nil,
-                params = {
-                    isAction = true,
-                    event = function()
-                        TriggerServerEvent('mrp_hacking:server:buyBlackMarket', i)
-                    end,
-                },
-            }
-        end
-        TriggerEvent('qb-menu:client:openMenu', rows, false, true)
-    end
-
     local options = {
         {
             icon = 'fas fa-toolbox',
             label = shopLabel .. ' — heist reikmenys',
-            action = openLesterShop,
+            action = openLesterShopFromConfig,
         },
     }
 
@@ -317,8 +369,33 @@ CreateThread(function()
         }
     end
 
-    exports['qb-target']:AddTargetEntity(ped, {
+    if lesterPed and DoesEntityExist(lesterPed) then
+        exports['qb-target']:AddTargetEntity(lesterPed, {
+            options = options,
+            distance = 2.5,
+        })
+    end
+
+    --- Atsarginė zona (jei ped nerodomas)
+    exports['qb-target']:AddCircleZone('mrp_hacking_lester_shop', vector3(x, y, z), 2.2, {
+        name = 'mrp_hacking_lester_shop',
+        useZ = true,
+        debugPoly = false,
+    }, {
         options = options,
         distance = 2.5,
     })
+
+    local blipCfg = bm.blip
+    if blipCfg and blipCfg.enabled ~= false then
+        lesterBlip = AddBlipForCoord(x, y, z)
+        SetBlipSprite(lesterBlip, blipCfg.sprite or 521)
+        SetBlipDisplay(lesterBlip, 4)
+        SetBlipScale(lesterBlip, blipCfg.scale or 0.75)
+        SetBlipColour(lesterBlip, blipCfg.colour or 1)
+        SetBlipAsShortRange(lesterBlip, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentSubstringPlayerName(blipCfg.label or 'Apiplėšimo reikmenys')
+        EndTextCommandSetBlipName(lesterBlip)
+    end
 end)

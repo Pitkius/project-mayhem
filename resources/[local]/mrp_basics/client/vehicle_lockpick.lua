@@ -91,12 +91,50 @@ local function applyUnlockLocal(veh)
     end
 end
 
-local function triggerAlarmLocal(veh)
+local function triggerAlarmLocal(veh, durationMs)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    durationMs = math.max(5000, tonumber(durationMs) or 45000)
+
+    local tries = 0
+    while not NetworkHasControlOfEntity(veh) and tries < 25 do
+        NetworkRequestControlOfEntity(veh)
+        Wait(0)
+        tries = tries + 1
+    end
+
     SetVehicleAlarm(veh, true)
+    SetVehicleAlarmTimeLeft(veh, durationMs)
     StartVehicleAlarm(veh)
-    SetVehicleAlarmTimeLeft(veh, 45000)
+    SetVehicleLights(veh, 2)
+    StartVehicleHorn(veh, 800, joaat('HELDDOWN'), false)
+
+    --- Palaikyti signalizaciją (native kartais nutrūksta)
+    CreateThread(function()
+        local ent = veh
+        local untilAt = GetGameTimer() + durationMs
+        while GetGameTimer() < untilAt do
+            if not DoesEntityExist(ent) then return end
+            if not IsVehicleAlarmActivated(ent) then
+                SetVehicleAlarm(ent, true)
+                StartVehicleAlarm(ent)
+                SetVehicleAlarmTimeLeft(ent, math.max(1000, untilAt - GetGameTimer()))
+            end
+            SetVehicleLights(ent, 2)
+            Wait(1200)
+        end
+        if DoesEntityExist(ent) then
+            SetVehicleLights(ent, 0)
+        end
+    end)
 end
+
+RegisterNetEvent('mrp_basics:client:vehicleAlarm', function(netId, durationMs)
+    netId = tonumber(netId) or 0
+    if netId <= 0 then return end
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if veh == 0 or not DoesEntityExist(veh) then return end
+    triggerAlarmLocal(veh, durationMs)
+end)
 
 local function getTargetVehicle()
     local ped = PlayerPedId()
@@ -233,7 +271,7 @@ end
 local function runLockpickMinigame(advanced)
     --- Visada progress bar + animacija pirma (ne instant)
     if not runLockpickProgress(advanced) then
-        return false
+        return false, 'cancel'
     end
 
     local itemKey = advanced and 'advancedlockpick' or 'lockpick'
@@ -249,11 +287,14 @@ local function runLockpickMinigame(advanced)
             })
         end)
         if ok then
-            return result == true
+            if result == true then
+                return true, 'ok'
+            end
+            return false, 'fail'
         end
     end
 
-    return true
+    return true, 'ok'
 end
 
 RegisterNetEvent('mrp_basics:client:vehicleLockpickResult', function(data)
@@ -270,7 +311,7 @@ RegisterNetEvent('mrp_basics:client:vehicleLockpickResult', function(data)
         return
     end
 
-    triggerAlarmLocal(veh)
+    triggerAlarmLocal(veh, 45000)
     notify(data.msg or 'Nepavyko — įjungta signalizacija!', 'error')
 end)
 
@@ -313,12 +354,21 @@ RegisterNetEvent('lockpicks:UseLockpick', function(advanced)
         return notify('Nepavyko nustatyti transporto.', 'error')
     end
 
+    local plate = normalizePlate(QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh))
+    local label = vehicleLabel(veh)
+
     busy = true
-    local completed = runLockpickMinigame(advanced == true)
+    local completed, reason = runLockpickMinigame(advanced == true)
     busy = false
 
     if not completed then
-        return notify('Nepavyko atrakinti spynos.', 'error')
+        if reason == 'cancel' then
+            return notify('Įsilaužimas nutrauktas.', 'primary')
+        end
+        --- Sufailintas įsilaužimas: signalizacija + PD
+        triggerAlarmLocal(veh, 45000)
+        TriggerServerEvent('mrp_basics:server:vehicleLockpickFail', netId, plate, label, advanced == true)
+        return notify('Nepavyko atrakinti — signalizacija!', 'error')
     end
 
     if not DoesEntityExist(veh) or not entityReach(PlayerPedId(), veh, CFG.reach + 0.5) then
@@ -328,8 +378,8 @@ RegisterNetEvent('lockpicks:UseLockpick', function(advanced)
     TriggerServerEvent(
         'mrp_basics:server:vehicleLockpick',
         netId,
-        normalizePlate(QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh)),
-        vehicleLabel(veh),
+        plate,
+        label,
         advanced == true
     )
 end)

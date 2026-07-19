@@ -547,7 +547,7 @@ QBCore.Functions.CreateCallback('mrp_bossmenu:server:getDashboard', function(src
     for _, m in ipairs(members) do
         if m.online then onlineCount = onlineCount + 1 end
     end
-    cb({
+    local data = {
         jobName = jobName,
         jobLabel = cfg.label,
         balance = Funds[jobName] or 0,
@@ -563,7 +563,19 @@ QBCore.Functions.CreateCallback('mrp_bossmenu:server:getDashboard', function(src
         permissionKeys = cfg.permissionKeys or {},
         playerGrade = getGradeLevel(src),
         isBoss = isBossOrDeputy(src, jobName),
-    })
+        fleetEnabled = false,
+        fleetDivisionLock = false,
+        fleetVehicles = nil,
+    }
+    if jobName == 'police' and type(BossMenuGetFleetPayload) == 'function' then
+        local fleet = BossMenuGetFleetPayload()
+        if fleet then
+            data.fleetEnabled = true
+            data.fleetDivisionLock = fleet.fleetDivisionLock == true
+            data.fleetVehicles = fleet.fleetVehicles or {}
+        end
+    end
+    cb(data)
 end)
 
 RegisterNetEvent('mrp_bossmenu:server:fundDeposit', function(jobName, amount)

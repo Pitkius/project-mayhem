@@ -381,6 +381,8 @@ end)
 local LOCKPICK_SUCCESS_CHANCE = { lockpick = 68, advancedlockpick = 88 }
 local LOCKPICK_BREAK_CHANCE = { lockpick = 45, advancedlockpick = 20 }
 local LOCKPICK_REACH = 6.5
+local LOCKPICK_ALARM_MS = 45000
+local LOCKPICK_FAIL_COOLDOWN = {}
 
 local function resolveVehicleNetId(netId)
     netId = tonumber(netId) or 0
@@ -407,12 +409,59 @@ local function broadcastVehicleUnlock(netId)
     TriggerClientEvent('mrp_basics:client:markNpcVehicleUnlocked', -1, netId)
 end
 
+local function handleLockpickFailure(src, Player, netId, plate, vehicleLabel, itemName)
+    plate = tostring(plate or '???'):upper():gsub('%s+', '')
+    vehicleLabel = tostring(vehicleLabel or 'Transportas')
+    itemName = tostring(itemName or 'lockpick')
+
+    if Player and math.random(1, 100) <= (LOCKPICK_BREAK_CHANCE[itemName] or 40) then
+        if Player.Functions.RemoveItem(itemName, 1) then
+            triggerClient(src, 'inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove', 1)
+        end
+    end
+
+    local coords = GetEntityCoords(GetPlayerPed(src))
+    local alertText = ('Signalizacija: %s, numeriai %s'):format(vehicleLabel, plate)
+    if GetResourceState('mrp_dispatch') == 'started' then
+        exports['mrp_dispatch']:CreateDispatchCall('police', 'vehicle_alarm', coords, alertText, src)
+    end
+
+    TriggerClientEvent('mrp_basics:client:vehicleAlarm', -1, netId, LOCKPICK_ALARM_MS)
+end
+
 RegisterNetEvent('mrp_basics:server:syncVehicleUnlock', function(netId)
     local src = source
     local resolvedNetId, ent = resolveVehicleNetId(netId)
     if resolvedNetId <= 0 then return end
     if ent ~= 0 and not playerNearEntity(src, ent, LOCKPICK_REACH) then return end
     broadcastVehicleUnlock(resolvedNetId)
+end)
+
+--- Minigame / progress fail — signalizacija + PD
+RegisterNetEvent('mrp_basics:server:vehicleLockpickFail', function(netId, plate, vehicleLabel, advanced)
+    local src = source
+    if not isValidPlayerSource(src) then return end
+
+    local now = os.time()
+    if (LOCKPICK_FAIL_COOLDOWN[src] or 0) > now then return end
+    LOCKPICK_FAIL_COOLDOWN[src] = now + 8
+
+    local resolvedNetId, ent = resolveVehicleNetId(netId)
+    if resolvedNetId <= 0 then return end
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    local itemName = advanced and 'advancedlockpick' or 'lockpick'
+    if not Player.Functions.GetItemByName(itemName) then return end
+
+    if ent ~= 0 and not playerNearEntity(src, ent, LOCKPICK_REACH) then return end
+
+    handleLockpickFailure(src, Player, resolvedNetId, plate, vehicleLabel, itemName)
+end)
+
+AddEventHandler('playerDropped', function()
+    LOCKPICK_FAIL_COOLDOWN[source] = nil
 end)
 
 RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, vehicleLabel, advanced)
@@ -440,7 +489,6 @@ RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, veh
 
     plate = tostring(plate or (ent ~= 0 and GetVehicleNumberPlateText(ent) or '') or '???'):upper():gsub('%s+', '')
     vehicleLabel = tostring(vehicleLabel or 'Transportas')
-    local coords = GetEntityCoords(GetPlayerPed(src))
 
     local chance = LOCKPICK_SUCCESS_CHANCE[itemName] or 60
     local success = math.random(1, 100) <= chance
@@ -455,16 +503,7 @@ RegisterNetEvent('mrp_basics:server:vehicleLockpick', function(netId, plate, veh
         return
     end
 
-    if math.random(1, 100) <= (LOCKPICK_BREAK_CHANCE[itemName] or 40) then
-        Player.Functions.RemoveItem(itemName, 1)
-        triggerClient(src, 'inventory:client:ItemBox', QBCore.Shared.Items[itemName], 'remove', 1)
-    end
-
-    local alertText = ('Signalizacija: %s, numeriai %s'):format(vehicleLabel, plate)
-    if GetResourceState('mrp_dispatch') == 'started' then
-        exports['mrp_dispatch']:CreateDispatchCall('police', 'vehicle_alarm', coords, alertText, src)
-    end
-
+    handleLockpickFailure(src, Player, resolvedNetId, plate, vehicleLabel, itemName)
     triggerClient(src, 'mrp_basics:client:vehicleLockpickResult', {
         success = false,
         netId = resolvedNetId,

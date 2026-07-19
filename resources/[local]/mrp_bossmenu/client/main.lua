@@ -126,6 +126,22 @@ RegisterNUICallback('toggleDuty', function(_, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('setFleetDivisionLock', function(data, cb)
+    if activeJob then
+        TriggerServerEvent('mrp_bossmenu:server:setFleetDivisionLock', activeJob, data.enabled == true)
+    end
+    SetTimeout(300, refreshUi)
+    cb('ok')
+end)
+
+RegisterNUICallback('saveFleetVehicle', function(data, cb)
+    if activeJob then
+        TriggerServerEvent('mrp_bossmenu:server:saveFleetVehicle', activeJob, data)
+    end
+    SetTimeout(350, refreshUi)
+    cb('ok')
+end)
+
 exports('OpenBossMenu', openUi)
 exports('CloseBossMenu', closeUi)
 exports('IsBossMenuOpen', function() return uiOpen end)

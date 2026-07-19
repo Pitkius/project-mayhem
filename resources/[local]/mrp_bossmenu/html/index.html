@@ -33,6 +33,7 @@
                 <button type="button" class="bm-tab" data-tab="members">Darbuotojai</button>
                 <button type="button" class="bm-tab" data-tab="ranks">Rangai</button>
                 <button type="button" class="bm-tab hidden" data-tab="divisions" id="tabDivisions">Divizijos</button>
+                <button type="button" class="bm-tab hidden" data-tab="fleet" id="tabFleet">Parkas</button>
                 <button type="button" class="bm-tab" data-tab="fund">Fondas &amp; algos</button>
             </nav>
 
@@ -147,6 +148,37 @@
                                 </div>
                             </div>
                             <p class="bm-muted bm-editor-hint" id="divisionEditorHint">Pasirink diviziją kairėje, kad redaguotum.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bm-panel" data-panel="fleet">
+                    <div class="bm-split bm-split-editor">
+                        <div class="bm-list-wrap bm-scroll">
+                            <div class="bm-toolbar">
+                                <h3>Tarnybinis parkas</h3>
+                            </div>
+                            <label class="bm-toggle bm-fleet-lock">
+                                <input type="checkbox" id="fleetDivisionLock" />
+                                Divizijos režimas — visos mašinos prieinamos bet kurios divizijos nariams (be rango limito)
+                            </label>
+                            <p class="bm-muted bm-list-hint">Spausk mašiną, kad nustatytum min. rangą arba ARO+rangą.</p>
+                            <div class="bm-list" id="fleetList"></div>
+                        </div>
+                        <div class="bm-form-wrap bm-scroll">
+                            <div class="bm-editor hidden" id="fleetEditor">
+                                <h4 id="fleetEditorTitle">Redaguoti mašiną</h4>
+                                <p class="bm-muted" id="fleetModelMeta"></p>
+                                <label>Min. rangas<input type="number" id="fleetMinGrade" min="0" max="15" /></label>
+                                <label class="bm-toggle"><input type="checkbox" id="fleetArasOrGrade" /> ARO divizija <strong>arba</strong> min. rangas</label>
+                                <label class="bm-toggle" id="fleetShopWrap"><input type="checkbox" id="fleetShopEnabled" /> Matoma parduotuvėje</label>
+                                <p class="bm-muted bm-note hidden" id="fleetImportNote">Šis modelis tik importui — parduotuvėje nerodomas.</p>
+                                <div class="bm-actions-row">
+                                    <button type="button" class="bm-btn" id="btnSaveFleet">Išsaugoti</button>
+                                    <button type="button" class="bm-btn secondary" id="btnCancelFleet">Atšaukti</button>
+                                </div>
+                            </div>
+                            <p class="bm-muted bm-editor-hint" id="fleetEditorHint">Pasirink mašiną kairėje.</p>
                         </div>
                     </div>
                 </section>

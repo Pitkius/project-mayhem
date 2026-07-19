@@ -1328,6 +1328,10 @@ end
 
 exports('GetDivisionLabelForPlayer', divisionLabelForPlayer)
 
+exports('GetDivisionForCitizenid', function(citizenid)
+    return getDivisionForCitizenid(citizenid)
+end)
+
 --- PD sirenos įranga: entity statebags (networked vehicles) + išsaugojimas player_vehicles.mods
 local EMERGENCY_MOD_KEYS = { mrpPdKit = true, mrpEmsKit = true }
 

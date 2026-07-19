@@ -34,4 +34,5 @@ server_scripts {
 dependencies {
     'qb-core',
     'mrp_dealership',
+    'mrp_bossmenu',
 }
