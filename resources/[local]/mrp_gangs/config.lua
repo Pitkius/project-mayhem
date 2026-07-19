@@ -166,4 +166,6 @@ Config.TabletVendor = {
         label = 'Gang Tablet NPC',
     },
     tabletPrice = 5000,
+    --- Neoficialios gaujos planšetė (atskira parduotuvės prekė)
+    unofficialTabletPrice = 5000,
 }

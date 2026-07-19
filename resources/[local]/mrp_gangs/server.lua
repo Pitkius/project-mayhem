@@ -546,19 +546,32 @@ RegisterNetEvent('mrp_gangs:server:createGang', function(data)
     TriggerClientEvent('QBCore:Notify', src, 'Gauja užregistruota.', 'success')
 end)
 
-RegisterNetEvent('mrp_gangs:server:buyTablet', function()
-    local src = source
+--- mode: 'official' | 'unofficial'
+local function buyGangTablet(src, mode)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
     local gang = getPlayerGang(src)
     if not gang then
         return TriggerClientEvent('QBCore:Notify', src, 'Planšetę gali pirkti tik gaujos narys — ji registruojama tavo gaujai.', 'error')
     end
-    local price = tonumber(Config.TabletVendor and Config.TabletVendor.tabletPrice) or 5000
+    local unofficial = isUnofficialGangRow(gang)
+    if mode == 'unofficial' then
+        if not unofficial then
+            return TriggerClientEvent('QBCore:Notify', src, 'Neoficialios gaujos planšetę gali pirkti tik neoficialios gaujos narys.', 'error')
+        end
+    else
+        if unofficial then
+            return TriggerClientEvent('QBCore:Notify', src, 'Tu esi neoficialioje gaujoje — rinkis neoficialios gaujos planšetę.', 'error')
+        end
+    end
+    local vendor = Config.TabletVendor or {}
+    local price = mode == 'unofficial'
+        and (tonumber(vendor.unofficialTabletPrice) or tonumber(vendor.tabletPrice) or 5000)
+        or (tonumber(vendor.tabletPrice) or 5000)
     local hasCash = (Player.PlayerData.money and Player.PlayerData.money.cash or 0) >= price
     local hasBank = (Player.PlayerData.money and Player.PlayerData.money.bank or 0) >= price
     if not hasCash and not hasBank then
-        return TriggerClientEvent('QBCore:Notify', src, ('Reikia $%s gang planšetei.'):format(price), 'error')
+        return TriggerClientEvent('QBCore:Notify', src, ('Reikia $%s planšetei.'):format(price), 'error')
     end
     if hasCash then
         Player.Functions.RemoveMoney('cash', price, 'gang-tablet-purchase')
@@ -567,7 +580,6 @@ RegisterNetEvent('mrp_gangs:server:buyTablet', function()
     end
     local ok, nameOrErr = GangOrg.giveRegisteredTablet(src, gang.gang_id)
     if not ok then
-        --- Grąžinti pinigus jei nepavyko
         if hasCash then
             Player.Functions.AddMoney('cash', price, 'gang-tablet-refund')
         else
@@ -575,7 +587,57 @@ RegisterNetEvent('mrp_gangs:server:buyTablet', function()
         end
         return TriggerClientEvent('QBCore:Notify', src, tostring(nameOrErr or 'Nepavyko duoti planšetės.'), 'error')
     end
-    TriggerClientEvent('QBCore:Notify', src, ('Nupirkta „%s“ planšetė už $%s.'):format(nameOrErr, price), 'success')
+    local kind = mode == 'unofficial' and 'neoficialios gaujos' or 'gaujos'
+    TriggerClientEvent('QBCore:Notify', src, ('Nupirkta „%s“ %s planšetė už $%s.'):format(nameOrErr, kind, price), 'success')
+end
+
+RegisterNetEvent('mrp_gangs:server:buyTablet', function()
+    buyGangTablet(source, 'official')
+end)
+
+RegisterNetEvent('mrp_gangs:server:buyUnofficialTablet', function()
+    buyGangTablet(source, 'unofficial')
+end)
+
+--- Išsitraukti neoficialios gaujos planšetę (nemokamai): narys → savo gauja; admin → /neoficialitablet [gangId]
+local function giveUnofficialTabletCommand(src, gangIdArg)
+    local targetGangId = tonumber(gangIdArg)
+    if targetGangId then
+        if not HasGangAdminPermission(src) then
+            return TriggerClientEvent('QBCore:Notify', src, 'Gaujos ID argumentas — tik adminams.', 'error')
+        end
+        local gang = getGangById(targetGangId)
+        if not gang then
+            return TriggerClientEvent('QBCore:Notify', src, 'Gauja nerasta.', 'error')
+        end
+        if not isUnofficialGangRow(gang) then
+            return TriggerClientEvent('QBCore:Notify', src, 'Ši gauja nėra neoficiali.', 'error')
+        end
+        local ok, nameOrErr = GangOrg.giveRegisteredTablet(src, targetGangId)
+        if not ok then
+            return TriggerClientEvent('QBCore:Notify', src, tostring(nameOrErr or 'Nepavyko.'), 'error')
+        end
+        return TriggerClientEvent('QBCore:Notify', src, ('Ištraukta neoficialios gaujos planšetė: %s.'):format(nameOrErr), 'success')
+    end
+
+    local gang = getPlayerGang(src)
+    if not gang then
+        return TriggerClientEvent('QBCore:Notify', src, 'Nepriklausai gaujai. Admin: /neoficialitablet [gangId]', 'error')
+    end
+    if not isUnofficialGangRow(gang) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Komanda skirta tik neoficialios gaujos nariams.', 'error')
+    end
+    local ok, nameOrErr = GangOrg.giveRegisteredTablet(src, gang.gang_id)
+    if not ok then
+        return TriggerClientEvent('QBCore:Notify', src, tostring(nameOrErr or 'Nepavyko.'), 'error')
+    end
+    TriggerClientEvent('QBCore:Notify', src, ('Ištraukta „%s“ neoficialios gaujos planšetė.'):format(nameOrErr), 'success')
+end
+
+QBCore.Commands.Add('neoficialitablet', 'Išsitraukti neoficialios gaujos planšetę', {
+    { name = 'gangid', help = 'Gaujos ID (nebūtina; tik admin)' },
+}, false, function(source, args)
+    giveUnofficialTabletCommand(source, args and args[1])
 end)
 
 RegisterNetEvent('mrp_gangs:server:inviteMember', function(targetId)

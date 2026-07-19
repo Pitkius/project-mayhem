@@ -457,16 +457,28 @@ RegisterNUICallback('gangs:kickMember', function(data, cb)
 end)
 
 local function openVendorMenu()
-    local price = tonumber(Config.TabletVendor and Config.TabletVendor.tabletPrice) or 5000
+    local vendor = Config.TabletVendor or {}
+    local price = tonumber(vendor.tabletPrice) or 5000
+    local unoffPrice = tonumber(vendor.unofficialTabletPrice) or price
     local menu = {
         { header = 'Gaujų ryšininkas', txt = 'Planšetės ir kontaktai', isMenuHeader = true },
         {
-            header = ('Pirkti gang planšetę ($%s)'):format(price),
-            txt = 'Reikalinga gaujos registravimui ir valdymui',
+            header = ('Pirkti gaujos planšetę ($%s)'):format(price),
+            txt = 'Oficialiai gaujai — registruojama tavo gaujai',
             params = {
                 isAction = true,
                 event = function()
                     TriggerServerEvent('mrp_gangs:server:buyTablet')
+                end,
+            },
+        },
+        {
+            header = ('Pirkti neoficialios gaujos planšetę ($%s)'):format(unoffPrice),
+            txt = 'Tik neoficialios gaujos nariams · arba /neoficialitablet',
+            params = {
+                isAction = true,
+                event = function()
+                    TriggerServerEvent('mrp_gangs:server:buyUnofficialTablet')
                 end,
             },
         },

@@ -92,7 +92,11 @@ body {
     margin-left: -46px;
     padding: 0.55rem 0.4rem;
     border-radius: 12px;
-    background: var(--surface);
+    background: linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--primary) 42%, transparent),
+        color-mix(in srgb, var(--primary-active) 38%, rgba(30, 16, 52, 0.28))
+    );
     border: 1px solid var(--primary-border);
     backdrop-filter: blur(10px);
     display: flex;
@@ -117,20 +121,17 @@ body {
     word-wrap: break-word;
 }
 
-.radial-seg__sub {
-    font-size: 0.52rem;
-    color: var(--muted-text);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-
 #radial-root.interactive .radial-seg {
     cursor: pointer;
 }
 
 #radial-root.interactive .radial-seg:hover .radial-seg__inner,
 #radial-root.interactive .radial-seg.active .radial-seg__inner {
-    background: var(--surface-active);
+    background: linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--primary-hover) 72%, white 8%),
+        color-mix(in srgb, var(--primary-active) 78%, transparent)
+    );
     border-color: var(--primary-hover);
     box-shadow: 0 0 18px var(--primary-glow), 0 0 4px var(--primary-glow);
     transform: scale(1.08);

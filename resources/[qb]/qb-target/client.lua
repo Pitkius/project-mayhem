@@ -62,7 +62,8 @@ local function inferZoneTitle(zoneName)
 	if l:find('mech') or l:find('tuning') or l:find('repair') then return 'Mechaniko įranga', 'fas fa-wrench' end
 	if l:find('police') or l:find('ltpd') or l:find('pd_') then return 'Policijos įranga', 'fas fa-shield-halved' end
 	if l:find('ambulance') or l:find('ems') or l:find('medic') then return 'Medicinos įranga', 'fas fa-kit-medical' end
-	return zoneName, 'fas fa-map-marker-alt'
+	--- Ne rodyti zonos / resurso pavadinimo — tik bendras kontekstas
+	return 'Sąveika', 'fas fa-hand-pointer'
 end
 
 local function safeIsPedAPlayer(entity)
