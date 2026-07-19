@@ -3,6 +3,8 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 Equipment = Equipment or { byId = {}, nextFixedId = -1 }
+-- Apsaugo vieno žaidėjo lygiagrečius placement eventus nuo vieno stalo limito apėjimo.
+local placementLocks = {}
 
 local function cfg()
     return Config.DrugEquipment or {}
@@ -27,6 +29,14 @@ local function ensureTable()
         KEY `citizenid` (`citizenid`),
         KEY `item_type` (`item_type`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
+
+    -- Vienkartinių duomenų migracijų žymės neleidžia destruktyvaus valymo kartoti per kiekvieną restartą.
+    MySQL.query.await([[CREATE TABLE IF NOT EXISTS `fivempro_drugs_equipment_migrations` (
+        `migration_key` varchar(100) NOT NULL,
+        `applied_at` datetime NOT NULL DEFAULT current_timestamp(),
+        PRIMARY KEY (`migration_key`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
+
 end
 
 local function rowToEquip(r)
@@ -39,6 +49,9 @@ local function rowToEquip(r)
         z = r.z + 0.0,
         heading = r.heading + 0.0,
         fixed = false,
+        -- Runtime laikmatis sąmoningai nesaugomas DB: po restarto prasideda naujos 10 min.
+        lastActivityAt = GetGameTimer(),
+        busy = false,
     }
 end
 
@@ -49,13 +62,44 @@ end
 function Equipment.list()
     local out = {}
     for _, e in pairs(Equipment.byId) do
-        out[#out + 1] = e
+        local row = {
+            id = e.id,
+            citizenid = e.citizenid,
+            itemType = e.itemType,
+            x = e.x,
+            y = e.y,
+            z = e.z,
+            heading = e.heading,
+            fixed = e.fixed == true,
+            label = e.label,
+            products = e.products,
+            busy = e.busy == true,
+        }
+        local t = typeCfg(e.itemType)
+        local idleTimeoutMs = tonumber(t and t.idleTimeoutMs)
+        if not e.fixed and idleTimeoutMs and idleTimeoutMs > 0 then
+            -- Klientas gauna serverio apskaičiuotą likutį, o ne pasirenka laiką pats.
+            row.remainingMs = math.max(0, idleTimeoutMs - (GetGameTimer() - (e.lastActivityAt or GetGameTimer())))
+        end
+        out[#out + 1] = row
     end
     return out
 end
 
 function Equipment.syncAll(target)
     TriggerClientEvent('mrp_drugs:client:syncEquipment', target or -1, Equipment.list())
+end
+
+function Equipment.syncState(equipmentId, target)
+    local e = Equipment.get(equipmentId)
+    if not e then return end
+    local t = typeCfg(e.itemType)
+    local idleTimeoutMs = tonumber(t and t.idleTimeoutMs) or 0
+    TriggerClientEvent('mrp_drugs:client:updateEquipmentState', target or -1, {
+        id = e.id,
+        busy = e.busy == true,
+        remainingMs = math.max(0, idleTimeoutMs - (GetGameTimer() - (e.lastActivityAt or GetGameTimer()))),
+    })
 end
 
 function Equipment.playerNear(src, id)
@@ -75,6 +119,42 @@ function Equipment.labelFor(e)
     return (t and t.label) or e.itemType or 'Įranga'
 end
 
+local function runMigrations()
+    -- Ši migracija vieną kartą panaikina visus iki naujos Cayo sistemos žaidėjų padėtus stalus.
+    -- migration_key užtikrina, kad po kitų restartų naujai padėti stalai nebebus trinami.
+    local migrationKey = 'remove_legacy_portable_bagging_tables_v1'
+    local applied = MySQL.scalar.await(
+        'SELECT 1 FROM fivempro_drugs_equipment_migrations WHERE migration_key = ? LIMIT 1',
+        { migrationKey }
+    )
+    if applied then return end
+
+    -- DELETE ir žymė vykdomi vienoje transakcijoje: jei valymas nepavyksta, migracija nelieka pažymėta.
+    local migrated = MySQL.transaction.await({
+        {
+            query = 'DELETE FROM fivempro_drugs_equipment WHERE item_type = ?',
+            values = { 'bagging_table' },
+        },
+        {
+            query = 'INSERT INTO fivempro_drugs_equipment_migrations (migration_key) VALUES (?)',
+            values = { migrationKey },
+        },
+    })
+    if not migrated then
+        error('[mrp_drugs] Nepavyko vienkartinai išvalyti senų portable bagging_table.')
+    end
+end
+
+local function countPlayerByType(citizenid, itemType)
+    local n = 0
+    for _, e in pairs(Equipment.byId) do
+        if not e.fixed and e.citizenid == citizenid and e.itemType == itemType then
+            n = n + 1
+        end
+    end
+    return n
+end
+
 local function countPlayer(citizenid)
     local n = 0
     for _, e in pairs(Equipment.byId) do
@@ -83,6 +163,60 @@ local function countPlayer(citizenid)
         end
     end
     return n
+end
+
+local function isInsideCayo(x, y, z)
+    local placement = cfg().cayoPlacement or {}
+    local center = placement.center or vector3(4840.57, -5174.42, 2.0)
+    -- 1800 m sutampa su mrp_cayoperico MapRadius; mažesnis skaičius sumažintų leidžiamą zoną.
+    local radius = tonumber(placement.radius) or 1800.0
+    return #(vector3(x + 0.0, y + 0.0, z + 0.0) - center) <= radius
+end
+
+function Equipment.isPlacementAllowed(eOrType, x, y, z)
+    local e = type(eOrType) == 'table' and eOrType or nil
+    local itemType = e and e.itemType or eOrType
+    local t = typeCfg(itemType)
+    if not t then return false end
+    if t.cayoOnly and not isInsideCayo(x, y, z) then return false end
+    return true
+end
+
+function Equipment.playerOwns(src, eOrId)
+    local e = type(eOrId) == 'table' and eOrId or Equipment.get(eOrId)
+    if not e or e.fixed then return false end
+    local P = QBCore.Functions.GetPlayer(src)
+    return P and P.PlayerData.citizenid == e.citizenid or false
+end
+
+function Equipment.canUse(src, eOrId)
+    local e = type(eOrId) == 'table' and eOrId or Equipment.get(eOrId)
+    if not e then return false end
+    -- Fiksuotos kitų narkotikų laboratorijų vietos lieka viešos ir nepaveldėja portable savininko taisyklių.
+    if e.fixed then return true end
+    local t = typeCfg(e.itemType)
+    if t and t.ownerOnly then
+        return Equipment.playerOwns(src, e)
+    end
+    return true
+end
+
+function Equipment.setBusy(equipmentId, busy)
+    local e = Equipment.get(equipmentId)
+    if not e or e.fixed then return false end
+    local t = typeCfg(e.itemType)
+    if not t or not tonumber(t.idleTimeoutMs) then return false end
+
+    -- Kiekviena naudojimo pradžia ir pabaiga iš naujo paleidžia pilną neveiklumo laiką.
+    e.lastActivityAt = GetGameTimer()
+    e.busy = busy == true
+    Equipment.syncState(e.id)
+    return true
+end
+
+function Equipment.isBusy(equipmentId)
+    local e = Equipment.get(equipmentId)
+    return e and e.busy == true or false
 end
 
 local function countGlobal()
@@ -129,6 +263,7 @@ end
 
 function Equipment.loadAll()
     ensureTable()
+    runMigrations()
     Equipment.byId = {}
     Equipment.nextFixedId = -1
     local rows = MySQL.query.await('SELECT id, citizenid, item_type, x, y, z, heading FROM fivempro_drugs_equipment') or {}
@@ -261,12 +396,25 @@ RegisterNetEvent('mrp_drugs:server:placeEquipment', function(itemType, x, y, z, 
     x, y, z, heading = tonumber(x), tonumber(y), tonumber(z), tonumber(heading) or 0.0
     if not x or not y or not z or x ~= x or y ~= y or z ~= z then return end
     if math.abs(x) > 10000 or math.abs(y) > 10000 or math.abs(z) > 2000 then return end
+    -- Heading taip pat turi būti baigtinis; % 360 normalizuoja bet kokį teisėtą kampą į 0–359.99°.
+    if heading ~= heading or math.abs(heading) == math.huge then return end
+    heading = heading % 360.0
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return end
     local playerPos = GetEntityCoords(ped)
     local maxPlaceDistance = (tonumber(cfg().placeForwardM) or 1.35) + 2.0
     if #(playerPos - vector3(x, y, z)) > maxPlaceDistance then
         return TriggerClientEvent('QBCore:Notify', src, 'Įrangos vieta per toli.', 'error')
+    end
+
+    if not Equipment.isPlacementAllowed(itemType, x, y, z) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Šį stalą galima padėti tik Cayo Perico saloje.', 'error')
+    end
+
+    local typeLimit = tonumber(t.maxPerPlayer)
+    if typeLimit and typeLimit > 0
+        and countPlayerByType(P.PlayerData.citizenid, itemType) >= typeLimit then
+        return TriggerClientEvent('QBCore:Notify', src, 'Jau turi pastatytą žolės džiovinimo stalą.', 'error')
     end
 
     local maxP = cfg().maxPerPlayer or 3
@@ -280,16 +428,46 @@ RegisterNetEvent('mrp_drugs:server:placeEquipment', function(itemType, x, y, z, 
         return TriggerClientEvent('QBCore:Notify', src, 'Per arti kitos įrangos.', 'error')
     end
 
+    local placementLockKey
+    if typeLimit and typeLimit > 0 then
+        placementLockKey = ('%s:%s'):format(P.PlayerData.citizenid, itemType)
+        if placementLocks[placementLockKey] then
+            return TriggerClientEvent('QBCore:Notify', src, 'Šis stalas jau statomas.', 'error')
+        end
+        placementLocks[placementLockKey] = true
+    end
+
     if not exports['qb-inventory']:RemoveItem(src, itemType, 1, false, 'mrp_drugs:placeEquipment') then
+        if placementLockKey then placementLocks[placementLockKey] = nil end
         return TriggerClientEvent('QBCore:Notify', src, 'Neturi įrangos.', 'error')
     end
 
-    local id = MySQL.insert.await(
-        'INSERT INTO fivempro_drugs_equipment (citizenid, item_type, x, y, z, heading) VALUES (?, ?, ?, ?, ?, ?)',
-        { P.PlayerData.citizenid, itemType, x, y, z, heading or 0.0 }
-    )
-    if not id then
-        exports['qb-inventory']:AddItem(src, itemType, 1, false, false, 'mrp_drugs:placeEquipment-rollback')
+    -- pcall užtikrina, kad DB išimtis nepaliktų sunaudoto itemo ir užrakinto placement.
+    local insertOk, id = pcall(function()
+        return MySQL.insert.await(
+            'INSERT INTO fivempro_drugs_equipment (citizenid, item_type, x, y, z, heading) VALUES (?, ?, ?, ?, ?, ?)',
+            { P.PlayerData.citizenid, itemType, x, y, z, heading }
+        )
+    end)
+    if not insertOk or not id then
+        -- Užraktas nuimamas prieš inventoriaus rollback, kad net jo klaida neužblokuotų kitų bandymų.
+        if placementLockKey then placementLocks[placementLockKey] = nil end
+        local refundOk, refunded = pcall(function()
+            return exports['qb-inventory']:AddItem(
+                src, itemType, 1, false, false, 'mrp_drugs:placeEquipment-rollback'
+            )
+        end)
+        if not refundOk or not refunded then
+            -- Po RemoveItem inventoriuje paprastai jau yra vietos; klaida aiškiai registruojama administracijai.
+            print(('[mrp_drugs] KRITINĖ KLAIDA: nepavyko grąžinti %s žaidėjui %s po placement DB klaidos.')
+                :format(itemType, P.PlayerData.citizenid))
+            TriggerClientEvent(
+                'QBCore:Notify',
+                src,
+                'Nepavyko grąžinti stalo po DB klaidos — kreipkitės į administraciją.',
+                'error'
+            )
+        end
         return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko išsaugoti.', 'error')
     end
 
@@ -302,8 +480,12 @@ RegisterNetEvent('mrp_drugs:server:placeEquipment', function(itemType, x, y, z, 
         z = z + 0.0,
         heading = heading or 0.0,
         fixed = false,
+        -- Naujas stalas pradeda pilną 10 minučių serverio veikimo laikmatį.
+        lastActivityAt = GetGameTimer(),
+        busy = false,
     }
     Equipment.byId[e.id] = e
+    if placementLockKey then placementLocks[placementLockKey] = nil end
     Equipment.syncAll()
     TriggerClientEvent('QBCore:Notify', src, ('Pastatyta: %s'):format(t.label or itemType), 'success')
 end)
@@ -314,6 +496,9 @@ RegisterNetEvent('mrp_drugs:server:pickupEquipment', function(equipmentId)
     if not e or e.fixed then return end
     if not Equipment.playerNear(src, equipmentId) then return end
     if not canPickup(src, e) then return end
+    if e.busy then
+        return TriggerClientEvent('QBCore:Notify', src, 'Negalima surinkti šiuo metu naudojamo stalo.', 'error')
+    end
 
     local P = QBCore.Functions.GetPlayer(src)
     if not P then return end
@@ -347,6 +532,15 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getEquipmentMenu', function(sr
     if not e then return cb({ ok = false, reason = 'Įranga nerasta.' }) end
     if not Equipment.playerNear(src, equipmentId) then
         return cb({ ok = false, reason = 'Per toli nuo įrangos.' })
+    end
+    if not Equipment.canUse(src, e) then
+        return cb({ ok = false, reason = 'Šis stalas priklauso kitam žaidėjui.' })
+    end
+    if e.busy then
+        return cb({ ok = false, reason = 'Šis stalas šiuo metu naudojamas.' })
+    end
+    if not e.fixed and not Equipment.isPlacementAllowed(e, e.x, e.y, e.z) then
+        return cb({ ok = false, reason = 'Stalas nėra Cayo Perico saloje.' })
     end
     local P = QBCore.Functions.GetPlayer(src)
     if not P then return cb({ ok = false }) end
@@ -385,15 +579,6 @@ CreateThread(function()
     Equipment.syncAll()
 end)
 
-AddEventHandler('onResourceStart', function(res)
-    if res ~= GetCurrentResourceName() then return end
-    CreateThread(function()
-        Wait(800)
-        Equipment.loadAll()
-        Equipment.syncAll()
-    end)
-end)
-
 AddEventHandler('playerJoining', function()
     local src = source
     CreateThread(function()
@@ -404,6 +589,56 @@ end)
 
 RegisterNetEvent('mrp_drugs:server:requestEquipmentSync', function()
     Equipment.syncAll(source)
+end)
+
+local function notifyEquipmentOwner(e, message)
+    if not e or not e.citizenid then return end
+    for _, playerSource in ipairs(GetPlayers()) do
+        local P = QBCore.Functions.GetPlayer(tonumber(playerSource))
+        if P and P.PlayerData.citizenid == e.citizenid then
+            TriggerClientEvent('QBCore:Notify', tonumber(playerSource), message, 'error')
+            return
+        end
+    end
+end
+
+CreateThread(function()
+    while true do
+        -- 1 sek. tikrinimas leidžia MM:SS hologramai ir subyrėjimui neatsilikti pastebimai.
+        Wait(1000)
+        local now = GetGameTimer()
+        local expired = {}
+        for id, e in pairs(Equipment.byId) do
+            local t = not e.fixed and typeCfg(e.itemType) or nil
+            local timeoutMs = tonumber(t and t.idleTimeoutMs)
+            if timeoutMs and timeoutMs > 0 and not e.busy
+                and now - (e.lastActivityAt or now) >= timeoutMs then
+                -- Užrakiname prieš DB await, kad tuo pačiu metu nebeprasidėtų gamyba.
+                e.busy = true
+                e.expiring = true
+                expired[#expired + 1] = { id = id, equipment = e }
+            end
+        end
+
+        for _, entry in ipairs(expired) do
+            local e = entry.equipment
+            local affected = MySQL.update.await(
+                'DELETE FROM fivempro_drugs_equipment WHERE id = ? AND item_type = ?',
+                { e.id, e.itemType }
+            )
+            if affected and affected > 0 and Equipment.byId[entry.id] == e then
+                Equipment.byId[entry.id] = nil
+                TriggerClientEvent('mrp_drugs:client:removeEquipment', -1, entry.id)
+                -- Subyrėjęs stalas itemo negrąžina; prisijungęs savininkas gauna pranešimą.
+                notifyEquipmentOwner(e, 'Jūsų stalas subyrėjo.')
+            elseif Equipment.byId[entry.id] == e then
+                e.busy = false
+                e.expiring = nil
+                e.lastActivityAt = GetGameTimer()
+                Equipment.syncState(e.id)
+            end
+        end
+    end
 end)
 
 CreateThread(function()

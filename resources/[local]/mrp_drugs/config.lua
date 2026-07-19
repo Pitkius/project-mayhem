@@ -1218,69 +1218,11 @@ Config.WeaponBenchL1 = {
     },
 }
 
---- Žolės džiovinimas (Davis) + supakavimas (Cayo Perico)
+--- Žolės džiovinimas vyksta tik prie žaidėjo nuosavo portable stalo Cayo Perico saloje.
+--- Tušti sąrašai palikti suderinamumui su Config.GetAllCraftStations; fiksuotų targetų ir blipų nebėra.
 Config.WeedCayoLab = {
-    blip = {
-        enabled = true,
-        coords = vector3(1144.82, -1659.86, 36.61),
-        sprite = 140,
-        color = 25,
-        scale = 0.78,
-        shortRange = true,
-        label = 'Žolės džiovinimas',
-    },
-    packBlip = {
-        enabled = true,
-        requireIsland = true,
-        coords = vector3(5195.83, -5134.91, 3.35),
-        sprite = 140,
-        color = 2,
-        scale = 0.78,
-        shortRange = true,
-        label = 'Žolės supakavimas',
-    },
-    stations = {
-        {
-            id = 'weed_dry_1',
-            label = 'Žolė · džiovinimas',
-            level = 2,
-            coords = vector3(1144.3669, -1658.9980, 36.6147),
-            heading = 292.0355,
-            radius = 1.5,
-            products = { 'weed_process' },
-        },
-        {
-            id = 'weed_dry_2',
-            label = 'Žolė · džiovinimas',
-            level = 2,
-            coords = vector3(1145.2770, -1660.7167, 36.6147),
-            heading = 291.2983,
-            radius = 1.5,
-            products = { 'weed_process' },
-        },
-    },
-    packStations = {
-        {
-            id = 'weed_pack_cayo_1',
-            label = 'Žolė · supakavimas',
-            level = 2,
-            coords = vector3(5196.0693, -5133.6929, 3.3579),
-            heading = 255.6201,
-            workspace = vector4(5196.40, -5133.20, 3.35, 180.0),
-            radius = 1.5,
-            products = { 'weed_pack' },
-        },
-        {
-            id = 'weed_pack_cayo_2',
-            label = 'Žolė · supakavimas',
-            level = 2,
-            coords = vector3(5195.5938, -5136.1323, 3.3498),
-            heading = 269.6169,
-            workspace = vector4(5196.40, -5133.20, 3.35, 180.0),
-            radius = 1.5,
-            products = { 'weed_pack' },
-        },
-    },
+    stations = {},
+    packStations = {},
 }
 
 --- Heroino laboratorija (production) — Paleto / Grapeseed zona
@@ -1826,8 +1768,6 @@ Config.WorldSiteIndex = {
     { id = 'alcohol_lab',        category = 'lab',     label = 'Samagono distiliatorius',       coords = '2434.18, 4968.52, 46.82',   desc = 'Alkoholio distiliacija ir supakavimas' },
     { id = 'vape_lab',           category = 'lab',     label = 'Vape laboratorija',             coords = '1175.52, -3113.84, 6.03',   desc = 'Vape skysčio paruošimas ir supakavimas' },
     -- L2 laboratorijos
-    { id = 'weed_dry',           category = 'lab',     label = 'Žolės džiovinimas',             coords = '1144.82, -1659.86, 36.61',   desc = 'Weed process — Davis' },
-    { id = 'weed_pack_cayo',     category = 'lab',     label = 'Žolės supakavimas (Cayo)',      coords = '5195.83, -5134.91, 3.35',    desc = 'Weed pack — Cayo Perico' },
     { id = 'heroin_lab',         category = 'lab',     label = 'Heroino laboratorija',          coords = '1953.00, 5180.00, 47.98',   desc = 'Heroin process + pack' },
     { id = 'meth_lab',           category = 'lab',     label = 'Metamfetamino laboratorija',    coords = '2709.10, 5235.05, 49.36',   desc = 'Kristalizacija + supakavimas' },
     { id = 'pills_lab',          category = 'lab',     label = 'Tablečių gamyba',               coords = '348.50, -2062.00, 21.24',   desc = 'Pills process + pack — Davis' },

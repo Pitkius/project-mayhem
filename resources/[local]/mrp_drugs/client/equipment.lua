@@ -26,6 +26,15 @@ local function typeCfg(itemType)
     return (cfg().types or {})[itemType]
 end
 
+local function isInsidePlacementZone(typeConfig, coords)
+    if not typeConfig or not typeConfig.cayoOnly then return true end
+    local placement = cfg().cayoPlacement or {}
+    local center = placement.center or vector3(4840.57, -5174.42, 2.0)
+    -- 1800 m sutampa su mrp_cayoperico salos žaidimo riba; serveris tai patikrina pakartotinai.
+    local radius = tonumber(placement.radius) or 1800.0
+    return #(coords - center) <= radius
+end
+
 local TARGET_ICONS = {
     flask = 'fas fa-flask',
     flame = 'fas fa-fire',
@@ -72,6 +81,10 @@ local function spawnEquipment(e)
     end
     FreezeEntityPosition(obj, true)
     EquipmentProps[e.id] = obj
+    -- remainingMs yra serverio apskaičiuotas likutis; expiresAt leidžia sklandžiai rodyti MM:SS.
+    if e.remainingMs ~= nil then
+        e.expiresAt = GetGameTimer() + math.max(0, tonumber(e.remainingMs) or 0)
+    end
     EquipmentMeta[e.id] = e
     SetModelAsNoLongerNeeded(joaat(model))
 end
@@ -174,19 +187,25 @@ local function targetIconFor(id)
 end
 
 local function refreshTargets()
+    local playerData = QBCore.Functions.GetPlayerData()
+    local citizenid = playerData and playerData.citizenid
     for id, obj in pairs(EquipmentProps) do
         if obj and DoesEntityExist(obj) then
             local meta = EquipmentMeta[id]
-            local options = {
-                {
+            local t = meta and typeCfg(meta.itemType)
+            local isOwner = meta and not meta.fixed and citizenid and meta.citizenid == citizenid
+            local canUse = meta and (meta.fixed or not (t and t.ownerOnly) or isOwner)
+            local options = {}
+            if canUse then
+                options[#options + 1] = {
                     icon = targetIconFor(id),
                     label = (meta and meta.label) or 'Gaminti',
                     action = function()
                         useEquipmentDirect(id)
                     end,
-                },
-            }
-            if meta and not meta.fixed then
+                }
+            end
+            if isOwner then
                 options[#options + 1] = {
                     icon = 'fas fa-box',
                     label = 'Surinkti įrangą',
@@ -196,10 +215,12 @@ local function refreshTargets()
                 }
             end
             exports['qb-target']:RemoveTargetEntity(obj)
-            exports['qb-target']:AddTargetEntity(obj, {
-                options = options,
-                distance = cfg().interactDist or 2.5,
-            })
+            if #options > 0 then
+                exports['qb-target']:AddTargetEntity(obj, {
+                    options = options,
+                    distance = cfg().interactDist or 2.5,
+                })
+            end
         end
     end
 end
@@ -215,10 +236,26 @@ RegisterNetEvent('mrp_drugs:client:syncEquipment', function(list)
     refreshTargets()
 end)
 
+RegisterNetEvent('mrp_drugs:client:updateEquipmentState', function(state)
+    local id = state and tonumber(state.id)
+    local meta = id and EquipmentMeta[id]
+    if not meta then return end
+    meta.busy = state.busy == true
+    meta.remainingMs = math.max(0, tonumber(state.remainingMs) or 0)
+    meta.expiresAt = GetGameTimer() + meta.remainingMs
+end)
+
+RegisterNetEvent('mrp_drugs:client:removeEquipment', function(equipmentId)
+    deleteProp(tonumber(equipmentId))
+end)
+
 RegisterNetEvent('mrp_drugs:client:startPlaceEquipment', function(itemType)
     if placing or crafting or not cfg().enabled then return end
     local t = typeCfg(itemType)
     if not t then return notify('Nežinoma įranga.', 'error') end
+    if not isInsidePlacementZone(t, GetEntityCoords(PlayerPedId())) then
+        return notify('Žolės džiovinimo stalą galima padėti tik Cayo Perico saloje.', 'error')
+    end
     local model = t.prop or 'prop_tool_bench02'
     if not loadModel(model) then return notify('Prop modelis nerastas: ' .. model, 'error') end
 
@@ -248,13 +285,65 @@ RegisterNetEvent('mrp_drugs:client:startPlaceEquipment', function(itemType)
             elseif IsControlJustPressed(0, 38) then
                 local fc = GetEntityCoords(preview)
                 local fh = GetEntityHeading(preview)
-                placing = false
-                TriggerServerEvent('mrp_drugs:server:placeEquipment', itemType, fc.x, fc.y, fc.z, fh)
+                if not isInsidePlacementZone(t, fc) then
+                    notify('Žolės džiovinimo stalą galima padėti tik Cayo Perico saloje.', 'error')
+                else
+                    placing = false
+                    TriggerServerEvent('mrp_drugs:server:placeEquipment', itemType, fc.x, fc.y, fc.z, fh)
+                end
             end
         end
         if DoesEntityExist(preview) then DeleteEntity(preview) end
         SetModelAsNoLongerNeeded(joaat(model))
     end)
+end)
+
+local function formatRemainingTime(milliseconds)
+    local totalSeconds = math.max(0, math.ceil((tonumber(milliseconds) or 0) / 1000))
+    local minutes = math.floor(totalSeconds / 60)
+    local seconds = totalSeconds % 60
+    return ('%02d:%02d'):format(minutes, seconds)
+end
+
+local function drawTableHologram(coords, text)
+    SetDrawOrigin(coords.x, coords.y, coords.z, 0)
+    SetTextScale(0.0, 0.32)
+    SetTextFont(4)
+    SetTextProportional(true)
+    SetTextColour(110, 255, 145, 230)
+    SetTextCentre(true)
+    SetTextOutline()
+    BeginTextCommandDisplayText('STRING')
+    AddTextComponentSubstringPlayerName(text)
+    EndTextCommandDisplayText(0.0, 0.0)
+    ClearDrawOrigin()
+end
+
+CreateThread(function()
+    while true do
+        local sleep = 750
+        local playerCoords = GetEntityCoords(PlayerPedId())
+        for id, meta in pairs(EquipmentMeta) do
+            local t = meta and typeCfg(meta.itemType)
+            local entity = EquipmentProps[id]
+            if t and tonumber(t.idleTimeoutMs) and not meta.fixed and not meta.busy
+                and meta.expiresAt and entity and DoesEntityExist(entity) then
+                local entityCoords = GetEntityCoords(entity)
+                local drawDistance = tonumber(t.hologramDistance) or 20.0
+                if #(playerCoords - entityCoords) <= drawDistance then
+                    sleep = 0
+                    -- hologramHeight 1.25 = tekstas virš stalo; didesnis skaičius pakelia hologramą.
+                    local height = tonumber(t.hologramHeight) or 1.25
+                    local remainingMs = math.max(0, meta.expiresAt - GetGameTimer())
+                    drawTableHologram(
+                        vector3(entityCoords.x, entityCoords.y, entityCoords.z + height),
+                        ('STALAS SUBYRĖS PO %s'):format(formatRemainingTime(remainingMs))
+                    )
+                end
+            end
+        end
+        Wait(sleep)
+    end
 end)
 
 AddEventHandler('onResourceStop', function(res)

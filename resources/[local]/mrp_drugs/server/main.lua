@@ -298,6 +298,10 @@ local function releaseCraft(src)
         activeStations[active.lockKey] = nil
     end
     activeCrafts[src] = nil
+    if active and active.equipmentId and Equipment and Equipment.setBusy then
+        -- Užbaigus, atšaukus ar nutraukus gamybą stalo holograma grįžta nuo pilnų 10 min.
+        Equipment.setBusy(active.equipmentId, false)
+    end
     return active
 end
 
@@ -605,7 +609,8 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getStationUi', function(src, c
 
     for pid, prod in pairs(pool) do
         local levelOk = (st.mode == 'weapon') or (prod.level == st.level)
-        if levelOk and stationProductAllowed(st, pid) then
+        -- weed_process rodomas tik nuosavo Cayo stalo meniu, ne bendrose/fiksuotose stotyse.
+        if pid ~= 'weed_process' and levelOk and stationProductAllowed(st, pid) then
             local exclusive = Config.AmpExclusiveProducts and Config.AmpExclusiveProducts[pid]
             if not exclusive or (st.products and #st.products > 0) then
                 local unlocked = levelUnlocked(src, prod, st)
@@ -659,6 +664,9 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraft', function(src, cb,
     local st = getStation(stationId)
     local prod = getProduct(productId)
     if not st or not prod then return cb({ ok = false, reason = 'Netinkami duomenys.' }) end
+    if productId == 'weed_process' then
+        return cb({ ok = false, reason = 'Žolę galima džiovinti tik prie savo stalo Cayo Perico saloje.' })
+    end
     if st.mode ~= 'weapon' and prod.level ~= st.level then
         return cb({ ok = false, reason = 'Ši stotis netinka šiam produktui.' })
     end
@@ -710,6 +718,20 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
     if not Equipment.playerNear(src, equipmentId) then
         return cb({ ok = false, reason = 'Per toli nuo įrangos.' })
     end
+    if not Equipment.canUse(src, e) then
+        return cb({ ok = false, reason = 'Šis stalas priklauso kitam žaidėjui.' })
+    end
+    if Equipment.isBusy(equipmentId) then
+        return cb({ ok = false, reason = 'Šis stalas šiuo metu naudojamas.' })
+    end
+    if productId == 'weed_process' then
+        if e.fixed or e.itemType ~= 'bagging_table' then
+            return cb({ ok = false, reason = 'Žolę galima džiovinti tik prie savo padėto stalo.' })
+        end
+        if not Equipment.isPlacementAllowed(e, e.x, e.y, e.z) then
+            return cb({ ok = false, reason = 'Žolę galima džiovinti tik Cayo Perico saloje.' })
+        end
+    end
     if not Equipment.productAllowedAt(e, productId) then
         return cb({ ok = false, reason = 'Ši įranga netinka šiam receptui.' })
     end
@@ -728,6 +750,13 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
         virtualStation = st,
         lockedReason = 'Šia įranga jau naudojasi kitas žaidėjas.',
     })
+    if response and response.ok and productId == 'weed_process' then
+        -- Naudojimo metu laikmatis paslepiamas ir stalas negali subyrėti.
+        if not Equipment.setBusy(equipmentId, true) then
+            abortCraft(src, 'equipment_unavailable', 100, true)
+            return cb({ ok = false, reason = 'Džiovinimo stalas tapo nepasiekiamas.' })
+        end
+    end
     cb(response or { ok = false, reason = reason })
 end)
 
@@ -1044,6 +1073,16 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
         if not Equipment or not Equipment.playerNear(src, active.equipmentId) then
             abortCraft(src, 'too_far', 100, true)
             return cb({ ok = false, reason = 'Per toli nuo įrangos.' })
+        end
+        local e = Equipment.get(active.equipmentId)
+        if not e or not Equipment.canUse(src, e) then
+            abortCraft(src, 'equipment_owner_changed', 100, true)
+            return cb({ ok = false, reason = 'Šis stalas jums nepriklauso.' })
+        end
+        if active.productId == 'weed_process'
+            and not Equipment.isPlacementAllowed(e, e.x, e.y, e.z) then
+            abortCraft(src, 'equipment_outside_cayo', 100, true)
+            return cb({ ok = false, reason = 'Stalas nėra Cayo Perico saloje.' })
         end
     elseif not playerNearStation(src, active.stationId) then
         abortCraft(src, 'too_far', 100, true)

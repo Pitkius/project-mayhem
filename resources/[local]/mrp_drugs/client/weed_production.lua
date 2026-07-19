@@ -1200,8 +1200,10 @@ function WeedProduction.Start(payload, onDone)
     local heading = GetEntityHeading(ped)
     local origin = pedCoords + directionFromHeading(heading) * 1.35
     local workspace = payload.workspace
-    if mode == 'pack' and workspace and workspace.x and workspace.y and workspace.z then
-        -- PAKAVIMAS: stalo koordinatės iš config_equipment. workspace.w = stalo pasukimas.
+    local usesExistingTable = workspace and workspace.x and workspace.y and workspace.z
+    if usesExistingTable then
+        -- DŽIOVINIMAS / PAKAVIMAS: workspace yra realiai žaidėjo padėto stalo koordinatės.
+        -- workspace.w = stalo pasukimas; visi 3D objektai ir kamera skaičiuojami nuo šio stalo.
         origin = vector3(workspace.x + 0.0, workspace.y + 0.0, workspace.z + 0.0)
         heading = tonumber(workspace.w) or heading
     end
@@ -1222,10 +1224,17 @@ function WeedProduction.Start(payload, onDone)
     }
     active = session
 
-    if mode == 'pack' then
-        -- PAKAVIMAS: ieško esamo stalo žemėlapyje (5.0 m spindulys). Neradus — klaida.
+    if usesExistingTable then
+        -- DŽIOVINIMAS / PAKAVIMAS: naudojamas jau pasaulyje esantis portable stalas.
+        -- 5.0 m = paieškos spindulys aplink serverio perduotą workspace vietą.
         local existingTable, existingTableHash
         local findDeadline = GetGameTimer() + 8000
+        if GetResourceState('mrp_cayoperico') == 'started' then
+            -- Cayo objektui prieš paiešką paprašoma salos collision, kad stalas būtų patikimai užkrautas.
+            pcall(function()
+                exports['mrp_cayoperico']:RequestIslandCollision(origin.x, origin.y, origin.z)
+            end)
+        end
         repeat
             RequestCollisionAtCoord(origin.x, origin.y, origin.z)
             local hash = joaat(MODELS.table[1])
@@ -1242,14 +1251,14 @@ function WeedProduction.Start(payload, onDone)
                 mistakes = 1,
                 reason = 'existing_table_not_found',
             })
-            QBCore.Functions.Notify('Nerastas esamas pakavimo stalas.', 'error')
+            QBCore.Functions.Notify('Nerastas jūsų padėtas džiovinimo stalas.', 'error')
             return false
         end
         session.tableOrigin = GetEntityCoords(existingTable)
         session.heading = GetEntityHeading(existingTable)
         local _, maxDim = GetModelDimensions(existingTableHash)
         session.tableTop = session.tableOrigin.z + math.max(0.65, maxDim.z) + 0.03
-        -- PAKAVIMAS: 0.65 / 0.03 = stalo aukščio korekcija. Keisk — objektai pakils/nukris.
+        -- 0.65 / 0.03 = stalo aukščio korekcija. Keisk — 3D objektai pakils arba nusileis.
     else
         local tableHash = loadFirstModel(MODELS.table)
         if not tableHash then
@@ -1275,7 +1284,8 @@ function WeedProduction.Start(payload, onDone)
         return false
     end
 
-    if mode == 'pack' then
+    if usesExistingTable then
+        -- Prieš užšaldant žaidėją jis atsukamas į savo realų stalą.
         TaskTurnPedToFaceCoord(ped, session.tableOrigin.x, session.tableOrigin.y, session.tableTop, 600)
         Wait(600)
     end
