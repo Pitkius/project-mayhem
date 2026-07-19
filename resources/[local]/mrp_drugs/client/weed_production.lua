@@ -529,48 +529,63 @@ local function setPackBagTransform(session, entity, scale, isPackedPreview)
     if not entity or not DoesEntityExist(entity) or not session.cam or not DoesCamExist(session.cam) then return end
     local coords = GetEntityCoords(entity)
     local camera = GetCamCoord(session.cam)
-
-    -- ═══ MAIŠELIO PASUKIMAS (orientacija) ═══
-    -- heading = automatinis pasukimas link kameros + papildomas kampas žemiau.
-    -- Keisk tik paskutinį skaičių (+90):
-    --   + 0   → be papildomo posūkio (žiūri tiesiai į kamerą)
-    --   + 90  → pasuktas šonu 90° (dabartinis)
-    --   + 180 → apverstas 180° (kita pusė į kamerą)
-    --   + 45  → pasuktas įstrižai 45°
-    --   - 90  → pasuktas kita kryptimi 90°
-    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 0
-    local radians = math.rad(heading)
+    -- PAKAVIMAS: scale valdo maišelio dydį.
+    -- 1.0 = įprastas dydis, 0.5 = perpus mažesnis, 2.0 = dvigubai didesnis.
     local entityScale = scale or 1.0
 
-    -- SetEntityMatrix stulpeliai = objekto lokalių ašių kryptys pasaulyje:
-    --   1–3 eilutė  = RIGHT  (X ašis) — kur „dešinė“ pusė
-    --   4–6 eilutė  = FORWARD (Y ašis) — kur „priekis“
-    --   7–9 eilutė  = UP     (Z ašis) — kur „viršus“
-    -- Jei eilutės gale yra (0, 0, entityScale) — ta ašis rodo į viršų (maišelis STOVI).
-    -- Jei (0, 0, entityScale) yra viduryje — kita ašis rodo į viršų.
+    -- PAKAVIMAS: apskaičiuojama horizontali kryptis nuo maišelio iki kameros.
+    -- cameraX / cameraY keisti nereikia — reikšmės automatiškai priklauso nuo kameros vietos.
+    local cameraX = camera.x - coords.x
+    local cameraY = camera.y - coords.y
+    local cameraDistance = math.sqrt(cameraX * cameraX + cameraY * cameraY)
+    -- Apsauga nuo dalybos iš nulio, jeigu kamera būtų tiksliai maišelio vietoje.
+    if cameraDistance < 0.001 then return end
+
+    -- PAKAVIMAS: faceX / faceY = normalizuota kryptis tiesiai į žaidėjo kamerą.
+    -- Ši kryptis naudojama kaip maišelio plokščio priekio kryptis.
+    -- Jei kada nors reikėtų, kad maišelis rodytų nugarą į kamerą, prie abiejų
+    -- face reikšmių žemiau pridėk minusą: -cameraX ir -cameraY.
+    local faceX = cameraX / cameraDistance
+    local faceY = cameraY / cameraDistance
+
+    -- PAKAVIMAS: sideX / sideY = 90° kampu nuo kameros krypties esanti šoninė ašis.
+    -- Sukeitus ženklus (-faceY, faceX) į (faceY, -faceX), maišelis apsiverstų
+    -- 180° aplink savo vertikalią ašį, bet vis tiek liktų atsuktas į kamerą.
+    local sideX = -faceY
+    local sideY = faceX
 
     if isPackedPreview then
-        -- SUPAKUOTAS PREVIEW (bkr_prop_weed_smallbag_01a):
-        -- 1–3 eilutė (0, 0, scale) = X ašis rodo į viršų → maišelis stovi stačiai.
-        -- Keisk: jei guli plokščiai, perkelk (0,0,scale) į 4–6 eilutę (kaip tuščiam žemiau).
-        -- Keisk: jei stovi ant šono, perkelk (0,0,scale) į 7–9 eilutę.
+        -- SUPAKUOTAS MAIŠELIS (bkr_prop_weed_smallbag_01a):
+        -- Šio modelio lokali X ašis turi būti nukreipta į pasaulio viršų,
+        -- todėl pirmasis vektorius yra (0, 0, entityScale).
+        --
+        -- SetEntityMatrix vektoriai:
+        --   1) 0, 0, scale       = modelio X ašis vertikaliai aukštyn;
+        --   2) sideX, sideY, 0  = horizontalus maišelio šonas;
+        --   3) faceX, faceY, 0  = plokščias priekis tiesiai į kamerą;
+        --   4) coords            = maišelio vieta, jos pasukimas nekeičia.
         SetEntityMatrix(
             entity,
             0.0, 0.0, entityScale,
-            -math.sin(radians) * entityScale, math.cos(radians) * entityScale, 0.0,
-            math.cos(radians) * entityScale, math.sin(radians) * entityScale, 0.0,
+            sideX * entityScale, sideY * entityScale, 0.0,
+            faceX * entityScale, faceY * entityScale, 0.0,
             coords.x, coords.y, coords.z
         )
     else
         -- TUŠČIAS MAIŠELIS (bkr_prop_weed_bag_01a):
-        -- 4–6 eilutė (0, 0, scale) = Y ašis rodo į viršų → maišelis stovi stačiai.
-        -- Keisk: jei guli plokščiai, perkelk (0,0,scale) į 1–3 eilutę (kaip supakuotam aukščiau).
-        -- Keisk: jei stovi ant šono, perkelk (0,0,scale) į 7–9 eilutę.
+        -- Šio modelio lokali Y ašis turi būti nukreipta į pasaulio viršų,
+        -- todėl antrasis vektorius yra (0, 0, entityScale).
+        --
+        -- SetEntityMatrix vektoriai:
+        --   1) sideX, sideY, 0  = horizontalus maišelio šonas;
+        --   2) 0, 0, scale       = modelio Y ašis vertikaliai aukštyn;
+        --   3) faceX, faceY, 0  = plokščias priekis tiesiai į kamerą;
+        --   4) coords            = maišelio vieta, jos pasukimas nekeičia.
         SetEntityMatrix(
             entity,
-            -math.sin(radians) * entityScale, math.cos(radians) * entityScale, 0.0,
+            sideX * entityScale, sideY * entityScale, 0.0,
             0.0, 0.0, entityScale,
-            math.cos(radians) * entityScale, math.sin(radians) * entityScale, 0.0,
+            faceX * entityScale, faceY * entityScale, 0.0,
             coords.x, coords.y, coords.z
         )
     end
