@@ -1218,10 +1218,38 @@ Config.WeaponBenchL1 = {
     },
 }
 
---- Žolės džiovinimas vyksta tik prie žaidėjo nuosavo portable stalo Cayo Perico saloje.
---- Tušti sąrašai palikti suderinamumui su Config.GetAllCraftStations; fiksuotų targetų ir blipų nebėra.
+--- Žolės džiovinimas (Davis). Cayo portable stalas paliekamas tik žolės pakavimui.
 Config.WeedCayoLab = {
-    stations = {},
+    blip = {
+        enabled = true,
+        coords = vector3(1144.82, -1659.86, 36.61),
+        sprite = 140,
+        color = 25,
+        scale = 0.78,
+        shortRange = true,
+        label = 'Žolės džiovinimas',
+    },
+    stations = {
+        {
+            id = 'weed_dry_1',
+            label = 'Žolė · džiovinimas',
+            level = 2,
+            coords = vector3(1144.3669, -1658.9980, 36.6147),
+            heading = 292.0355,
+            radius = 1.5,
+            products = { 'weed_process' },
+        },
+        {
+            id = 'weed_dry_2',
+            label = 'Žolė · džiovinimas',
+            level = 2,
+            coords = vector3(1145.2770, -1660.7167, 36.6147),
+            heading = 291.2983,
+            radius = 1.5,
+            products = { 'weed_process' },
+        },
+    },
+    -- Senos Cayo pakavimo stotys negrąžinamos; pakavimas lieka tik prie asmeninio stalo.
     packStations = {},
 }
 
@@ -1768,6 +1796,7 @@ Config.WorldSiteIndex = {
     { id = 'alcohol_lab',        category = 'lab',     label = 'Samagono distiliatorius',       coords = '2434.18, 4968.52, 46.82',   desc = 'Alkoholio distiliacija ir supakavimas' },
     { id = 'vape_lab',           category = 'lab',     label = 'Vape laboratorija',             coords = '1175.52, -3113.84, 6.03',   desc = 'Vape skysčio paruošimas ir supakavimas' },
     -- L2 laboratorijos
+    { id = 'weed_dry',           category = 'lab',     label = 'Žolės džiovinimas',             coords = '1144.82, -1659.86, 36.61',   desc = 'Weed process — Davis' },
     { id = 'heroin_lab',         category = 'lab',     label = 'Heroino laboratorija',          coords = '1953.00, 5180.00, 47.98',   desc = 'Heroin process + pack' },
     { id = 'meth_lab',           category = 'lab',     label = 'Metamfetamino laboratorija',    coords = '2709.10, 5235.05, 49.36',   desc = 'Kristalizacija + supakavimas' },
     { id = 'pills_lab',          category = 'lab',     label = 'Tablečių gamyba',               coords = '348.50, -2062.00, 21.24',   desc = 'Pills process + pack — Davis' },

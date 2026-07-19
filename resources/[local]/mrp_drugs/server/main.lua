@@ -609,8 +609,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getStationUi', function(src, c
 
     for pid, prod in pairs(pool) do
         local levelOk = (st.mode == 'weapon') or (prod.level == st.level)
-        -- weed_process rodomas tik nuosavo Cayo stalo meniu, ne bendrose/fiksuotose stotyse.
-        if pid ~= 'weed_process' and levelOk and stationProductAllowed(st, pid) then
+        if levelOk and stationProductAllowed(st, pid) then
             local exclusive = Config.AmpExclusiveProducts and Config.AmpExclusiveProducts[pid]
             if not exclusive or (st.products and #st.products > 0) then
                 local unlocked = levelUnlocked(src, prod, st)
@@ -664,9 +663,6 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraft', function(src, cb,
     local st = getStation(stationId)
     local prod = getProduct(productId)
     if not st or not prod then return cb({ ok = false, reason = 'Netinkami duomenys.' }) end
-    if productId == 'weed_process' then
-        return cb({ ok = false, reason = 'Žolę galima džiovinti tik prie savo stalo Cayo Perico saloje.' })
-    end
     if st.mode ~= 'weapon' and prod.level ~= st.level then
         return cb({ ok = false, reason = 'Ši stotis netinka šiam produktui.' })
     end

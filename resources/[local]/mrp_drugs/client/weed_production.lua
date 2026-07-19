@@ -1200,7 +1200,9 @@ function WeedProduction.Start(payload, onDone)
     local heading = GetEntityHeading(ped)
     local origin = pedCoords + directionFromHeading(heading) * 1.35
     local workspace = payload.workspace
-    local usesExistingTable = workspace and workspace.x and workspace.y and workspace.z
+    -- Tik pakavimas naudoja pasaulyje padėtą asmeninį stalą.
+    -- Senos Davis džiovinimo stotys savo darbo stalą susikuria lokaliai prie žaidėjo.
+    local usesExistingTable = mode == 'pack' and workspace and workspace.x and workspace.y and workspace.z
     if usesExistingTable then
         -- DŽIOVINIMAS / PAKAVIMAS: workspace yra realiai žaidėjo padėto stalo koordinatės.
         -- workspace.w = stalo pasukimas; visi 3D objektai ir kamera skaičiuojami nuo šio stalo.
