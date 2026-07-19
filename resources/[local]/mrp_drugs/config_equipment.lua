@@ -78,13 +78,13 @@ Config.DrugEquipment.types = {
         products = {},
     },
     bagging_table = {
-        label = 'Žolės džiovinimo stalas',
+        label = 'Žolės džiovinimo ir pakavimo stalas',
         prop = 'bkr_prop_weed_table_01a',
         icon = 'bag',
         packOnly = true,
-        -- Portable stalas skirtas tik žolės džiovinimui; weed_pack čia sąmoningai neleidžiamas.
-        products = { 'weed_process' },
-        -- Tik stalo savininkas matys ir galės paleisti džiovinimo veiksmą.
+        -- weed_process = džiovinimas; weed_pack = naujas fiksuotos kameros pakavimas po vieną maišelį.
+        products = { 'weed_process', 'weed_pack' },
+        -- Tik stalo savininkas matys ir galės paleisti džiovinimo arba pakavimo veiksmą.
         ownerOnly = true,
         -- Vienas žaidėjas vienu metu gali turėti tik vieną padėtą tokio tipo stalą.
         maxPerPlayer = 1,

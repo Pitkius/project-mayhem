@@ -227,13 +227,32 @@ local function refreshTargets()
             local canUse = meta and (meta.fixed or not (t and t.ownerOnly) or isOwner)
             local options = {}
             if canUse then
-                options[#options + 1] = {
-                    icon = targetIconFor(id),
-                    label = (meta and meta.label) or 'Gaminti',
-                    action = function()
-                        useEquipmentDirect(id)
-                    end,
-                }
+                if meta.itemType == 'bagging_table' and not meta.fixed then
+                    -- Atskiri pasirinkimai neleidžia automatiniam recepto parinkimui paleisti seno režimo.
+                    options[#options + 1] = {
+                        icon = 'fas fa-seedling',
+                        label = 'Džiovinti žolę',
+                        action = function()
+                            runEquipmentCraftFlow('weed_process', id)
+                        end,
+                    }
+                    options[#options + 1] = {
+                        icon = 'fas fa-bag-shopping',
+                        label = 'Pakuoti žolę',
+                        action = function()
+                            -- weed_pack paleidžia naujausią fiksuotos kameros 3D režimą po vieną maišelį.
+                            runEquipmentCraftFlow('weed_pack', id)
+                        end,
+                    }
+                else
+                    options[#options + 1] = {
+                        icon = targetIconFor(id),
+                        label = (meta and meta.label) or 'Gaminti',
+                        action = function()
+                            useEquipmentDirect(id)
+                        end,
+                    }
+                end
             end
             if isOwner then
                 options[#options + 1] = {

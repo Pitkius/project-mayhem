@@ -724,12 +724,13 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
     if Equipment.isBusy(equipmentId) then
         return cb({ ok = false, reason = 'Šis stalas šiuo metu naudojamas.' })
     end
-    if productId == 'weed_process' then
+    local isWeedTableProduct = productId == 'weed_process' or productId == 'weed_pack'
+    if isWeedTableProduct then
         if e.fixed or e.itemType ~= 'bagging_table' then
-            return cb({ ok = false, reason = 'Žolę galima džiovinti tik prie savo padėto stalo.' })
+            return cb({ ok = false, reason = 'Žolę galima apdoroti tik prie savo padėto stalo.' })
         end
         if not Equipment.isPlacementAllowed(e, e.x, e.y, e.z) then
-            return cb({ ok = false, reason = 'Žolę galima džiovinti tik Cayo Perico saloje.' })
+            return cb({ ok = false, reason = 'Žolę galima apdoroti tik Cayo Perico saloje.' })
         end
     end
     if not Equipment.productAllowedAt(e, productId) then
@@ -750,11 +751,11 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
         virtualStation = st,
         lockedReason = 'Šia įranga jau naudojasi kitas žaidėjas.',
     })
-    if response and response.ok and productId == 'weed_process' then
-        -- Naudojimo metu laikmatis paslepiamas ir stalas negali subyrėti.
+    if response and response.ok and isWeedTableProduct then
+        -- Džiovinimo ir pakavimo metu laikmatis paslepiamas, todėl stalas negali subyrėti.
         if not Equipment.setBusy(equipmentId, true) then
             abortCraft(src, 'equipment_unavailable', 100, true)
-            return cb({ ok = false, reason = 'Džiovinimo stalas tapo nepasiekiamas.' })
+            return cb({ ok = false, reason = 'Žolės stalas tapo nepasiekiamas.' })
         end
     end
     cb(response or { ok = false, reason = reason })
