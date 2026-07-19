@@ -263,16 +263,14 @@ CreateThread(function()
     local currency = bm.currency or 'cash'
 
     local function openLesterShop()
-        local rows = { { header = shopLabel .. ' — 1 lygio įrankiai', isMenuHeader = true } }
+        local rows = { { header = shopLabel .. ' — heist reikmenys', isMenuHeader = true } }
         for i, e in ipairs(bm.items or {}) do
             local label = QBCore.Shared.Items[e.item] and QBCore.Shared.Items[e.item].label or e.item
-            local extra = ''
-            if e.payload and e.payload.payload_id then
-                extra = ' [' .. tostring(e.payload.payload_id) .. ']'
-            end
             local priceTxt = currency == 'crypto' and (('%s₿'):format(e.price)) or (('$%s'):format(e.price))
+            local txt = e.desc or ''
             rows[#rows + 1] = {
-                header = ('%s — %s%s'):format(label, priceTxt, extra),
+                header = ('%s — %s'):format(label, priceTxt),
+                txt = txt ~= '' and txt or nil,
                 params = {
                     isAction = true,
                     event = function()
@@ -286,8 +284,8 @@ CreateThread(function()
 
     local options = {
         {
-            icon = 'fas fa-tablet-alt',
-            label = shopLabel .. ' — pirkti L1 planšetę',
+            icon = 'fas fa-toolbox',
+            label = shopLabel .. ' — heist reikmenys',
             action = openLesterShop,
         },
     }

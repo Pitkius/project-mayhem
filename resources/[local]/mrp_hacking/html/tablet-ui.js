@@ -28,26 +28,22 @@ window.TabletUI = (function () {
 
   function renderTopbar() {
     if (!data) return;
-    const os = data.installed_os;
-    const osName = os ? osLabel(os) : "—";
     $("tabletSubtitle").textContent = data.tabletLabel || "Planšetė";
-    $("statOs").textContent = osName;
-    const used = (data.exploits || []).length + (os ? 1 : 0);
-    $("statStorage").textContent = `${used} / ${data.storage || 12}`;
-    $("statExploits").textContent = `${(data.exploits || []).length} / ${data.exploitSlots || 3}`;
+    const lvl = data.tabletLevel || 1;
+    $("statOs").textContent = `L${lvl}`;
+    $("statStorage").textContent = "—";
+    $("statExploits").textContent = "—";
   }
 
   function renderSystem() {
     const card = $("systemCard");
     if (!card || !data) return;
-    const os = data.installed_os;
+    const lvl = data.tabletLevel || 1;
     card.innerHTML = `
       <h3>${data.tabletLabel || "Planšetė"}</h3>
-      <div class="sys-row"><span class="muted">Įdiegtas OS</span><strong>${osLabel(os)}</strong></div>
+      <div class="sys-row"><span class="muted">Lygis</span><strong>L${lvl}</strong></div>
       <div class="sys-row"><span class="muted">Tablet tipas</span><strong>${data.tablet || "—"}</strong></div>
-      <div class="sys-row"><span class="muted">Saugykla</span><strong>${(data.exploits || []).length + (os ? 1 : 0)} / ${data.storage}</strong></div>
-      <div class="sys-row"><span class="muted">Exploit slotai</span><strong>${(data.exploits || []).length} / ${data.exploitSlots}</strong></div>
-      <p class="muted small" style="margin-top:12px">Nusipirk flashdrive su payload → System → Install.</p>
+      <p class="muted small" style="margin-top:12px">L1 = ATM/parduotuvės stealth · L2 = Fleeca seifas · L3 = Pacific/Casino. Soft apiplėšimai veikia ir be planšetės.</p>
     `;
     renderDriveList();
   }
@@ -184,10 +180,6 @@ window.TabletUI = (function () {
 
   function tierSecurityLevel(tierId, tierCfg) {
     if (tierCfg && tierCfg.level) return tierCfg.level;
-    const os = tierCfg && tierCfg.minOs;
-    if (os && data.osCatalog && data.osCatalog[os] && data.osCatalog[os].level) {
-      return data.osCatalog[os].level;
-    }
     return 1;
   }
 
@@ -246,7 +238,7 @@ window.TabletUI = (function () {
     grid.innerHTML = "";
     const ex = data.exploits || [];
     if (!ex.length) {
-      grid.innerHTML = '<p class="muted">Exploit slotai tušti. Market / flashdrive.</p>';
+      grid.innerHTML = '<p class="muted">Exploit sistema išjungta — naudojamos L1–L3 planšetės.</p>';
       return;
     }
     ex.forEach((id, i) => {
@@ -292,18 +284,18 @@ window.TabletUI = (function () {
     if (cur === "crypto") {
       head.textContent = `${shopLabel} — balansas: ${cryptoBal}₿ crypto`;
     } else {
-      head.textContent = `${shopLabel} — grynieji: $${cashBal} (L1 planšetė / BasicOS)`;
+      head.textContent = `${shopLabel} — grynieji: $${cashBal} (planšetės + heist įrankiai)`;
     }
     grid.appendChild(head);
     items.forEach((e, i) => {
       const card = document.createElement("article");
       card.className = "market-card";
-      let extra = "";
-      if (e.payload && e.payload.payload_id) extra = ` [${e.payload.payload_id}]`;
-      const label = e.item || "item";
+      const label = e.label || e.item || "item";
+      const desc = e.desc ? `<span class="muted small">${e.desc}</span>` : "";
       card.innerHTML = `
         <strong>${label}</strong>
-        <span class="muted small">${marketPriceLabel(e.price)}${extra}</span>
+        ${desc}
+        <span class="muted small">${marketPriceLabel(e.price)}</span>
       `;
       const btn = document.createElement("button");
       btn.type = "button";

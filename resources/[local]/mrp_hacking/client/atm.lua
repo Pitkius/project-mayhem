@@ -109,12 +109,14 @@ end
 RegisterNetEvent('mrp_hacking:client:hackSuccess', function(tierId, coords, ctx)
     if tierId ~= 'atm' or not session then return end
     session.phase = 'hacked'
-    QBCore.Functions.Notify('ATM apsauga apeita. Gali gręžti.', 'success')
+    session.silent = true
+    QBCore.Functions.Notify('ATM apsauga apeita (stealth). Gali gręžti — PD nebus iškviesta.', 'success')
 end)
 
 RegisterNetEvent('mrp_hacking:client:hackFailed', function(tierId)
     if tierId ~= 'atm' then return end
     resetSession()
+    QBCore.Functions.Notify('Hack nepavyko — policija gavo pranešimą.', 'error')
 end)
 
 RegisterNetEvent('mrp_hacking:client:atmDrillOk', function(coords)
@@ -218,18 +220,44 @@ local function tryAttachChain()
     TriggerServerEvent('mrp_hacking:server:atmChainDone', session.coords)
 end
 
-local function startAtmSession(entity)
+local function startAtmSoft(entity)
     local coords = GetEntityCoords(entity)
     QBCore.Functions.TriggerCallback('mrp_hacking:server:atmCanStart', function(res)
         if not res or not res.ok then
             return QBCore.Functions.Notify((res and res.msg) or 'Negalima.', 'error')
         end
-        session = { entity = entity, coords = { x = coords.x, y = coords.y, z = coords.z }, phase = 'idle' }
-        TriggerServerEvent('mrp_hacking:server:atmClaim', session.coords)
+        session = {
+            entity = entity,
+            coords = { x = coords.x, y = coords.y, z = coords.z },
+            phase = 'hacked', --- praleidžiam hack — einam tiesiai į gręžimą
+            silent = false,
+        }
+        TriggerServerEvent('mrp_hacking:server:atmClaim', session.coords, false)
+        QBCore.Functions.Notify('Pradėtas ATM apiplėšimas (be stealth) — gręžk. Baigus PD bus iškviesta.', 'primary')
+    end, { x = coords.x, y = coords.y, z = coords.z }, 'soft')
+end
+
+local function startAtmStealth(entity)
+    local coords = GetEntityCoords(entity)
+    QBCore.Functions.TriggerCallback('mrp_hacking:server:atmCanStart', function(res)
+        if not res or not res.ok then
+            return QBCore.Functions.Notify((res and res.msg) or 'Negalima.', 'error')
+        end
+        session = {
+            entity = entity,
+            coords = { x = coords.x, y = coords.y, z = coords.z },
+            phase = 'idle',
+            silent = true,
+        }
+        TriggerServerEvent('mrp_hacking:server:atmClaim', session.coords, true)
         exports['mrp_hacking']:StartHack('atm', coords, function(ok)
             if not ok then resetSession() end
         end)
-    end, { x = coords.x, y = coords.y, z = coords.z })
+    end, { x = coords.x, y = coords.y, z = coords.z }, 'stealth')
+end
+
+local function startAtmSession(entity)
+    startAtmStealth(entity)
 end
 
 local function doDrill()
@@ -262,6 +290,24 @@ local function tryPullComplete()
 end
 
 local function startCrackHack()
+    --- Soft crack: progress bar vietoj planšetės hack jei silent=false ir nėra planšetės
+    if session and not session.silent and not hasHackTablet() then
+        QBCore.Functions.Progressbar('atm_crack_soft', 'Laužiamas bankomatas…', 12000, false, true, {
+            disableMovement = true,
+            disableCarMovement = true,
+            disableMouse = false,
+            disableCombat = true,
+        }, {
+            animDict = 'anim@heists@fleeca_bank@drilling',
+            anim = 'drill_straight_idle',
+            flags = 49,
+        }, {}, {}, function()
+            TriggerServerEvent('mrp_hacking:server:atmCrackResult', true, false, session.dropIndex)
+        end, function()
+            TriggerServerEvent('mrp_hacking:server:atmCrackResult', false, true, session.dropIndex)
+        end)
+        return
+    end
     exports['mrp_hacking']:StartHack('atm', GetEntityCoords(PlayerPedId()), function(ok)
         TriggerServerEvent('mrp_hacking:server:atmCrackResult', ok, not ok, session.dropIndex)
     end)
@@ -351,13 +397,22 @@ CreateThread(function()
     exports['qb-target']:AddTargetModel(Config.Atm.Models, {
         options = {
             {
+                icon = 'fas fa-screwdriver',
+                label = 'Apiplėšti ATM (be stealth)',
+                canInteract = function()
+                    if session then return false end
+                    return QBCore.Functions.HasItem(Config.DrillItem or 'drill', 1)
+                end,
+                action = function(entity) startAtmSoft(entity) end,
+            },
+            {
                 icon = 'fas fa-laptop-code',
-                label = 'ATM hack',
+                label = 'ATM stealth hack (L1)',
                 canInteract = function()
                     if session then return false end
                     return hasHackTablet()
                 end,
-                action = function(entity) startAtmSession(entity) end,
+                action = function(entity) startAtmStealth(entity) end,
             },
             {
                 icon = 'fas fa-screwdriver',

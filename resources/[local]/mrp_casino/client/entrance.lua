@@ -1,9 +1,19 @@
+--[[
+  Kazino įėjimas / išėjimas.
+  Su stream MLO (Config.Casino.walkIn = false) teleportai IŠJUNGTTI —
+  žaidėjas eina pro MLO duris pats.
+]]
+
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local transitioning = false
 
 local function notify(msg, ntype)
     QBCore.Functions.Notify(msg, ntype or 'primary')
+end
+
+local function teleportsEnabled()
+    return Config.Casino and Config.Casino.walkIn == true
 end
 
 local function pointInBox(point, center, length, width, heading)
@@ -19,7 +29,7 @@ local function seamlessMove(dest, heading)
     if transitioning then return end
     transitioning = true
 
-    Casino.loadIpl(true)
+    if Casino.loadIpl then Casino.loadIpl(true) end
 
     local ped = PlayerPedId()
     for _ = 1, 20 do
@@ -29,7 +39,9 @@ local function seamlessMove(dest, heading)
 
     SetEntityCoordsNoOffset(ped, dest.x, dest.y, dest.z, false, false, false)
     if heading then SetEntityHeading(ped, heading) end
-    Casino.prepareInteriorAt(dest.x, dest.y, dest.z)
+    if Casino.prepareInteriorAt then
+        Casino.prepareInteriorAt(dest.x, dest.y, dest.z)
+    end
 
     Wait(100)
     transitioning = false
@@ -41,6 +53,7 @@ local function seamlessMove(dest, heading)
 end
 
 local function tryEnter(cfg)
+    if not teleportsEnabled() then return end
     if transitioning then return end
     if Casino.isBanned and Casino.isBanned() then
         notify('Jūs laikinai negalite įeiti į kazino.', 'error')
@@ -52,38 +65,36 @@ local function tryEnter(cfg)
 end
 
 local function tryExit(cfg)
+    if not teleportsEnabled() then return end
     if transitioning then return end
     local dest = cfg.exterior
     if not dest then return end
     seamlessMove(vector3(dest.x, dest.y, dest.z), dest.w)
 end
 
---- Durų zonos — įėjimas/išėjimas be juodo ekrano (IPL jau užkrautas)
 CreateThread(function()
+    if not teleportsEnabled() then return end
     Wait(1500)
     while true do
         local sleep = 500
         local ped = PlayerPedId()
         local p = GetEntityCoords(ped)
-        local casino = Config.Casino or {}
 
-        if casino.walkIn ~= false then
-            if p.z > 0.0 then
-                for _, cfg in ipairs(Config.CasinoEntrances or {}) do
-                    if cfg.coords and pointInBox(p, cfg.coords, cfg.length, cfg.width, cfg.heading) then
-                        sleep = 0
-                        if IsPedOnFoot(ped) and (IsControlPressed(0, 32) or #(p - cfg.coords) < 1.0) then
-                            tryEnter(cfg)
-                        end
+        if p.z > 0.0 then
+            for _, cfg in ipairs(Config.CasinoEntrances or {}) do
+                if cfg.coords and pointInBox(p, cfg.coords, cfg.length, cfg.width, cfg.heading) then
+                    sleep = 0
+                    if IsPedOnFoot(ped) and (IsControlPressed(0, 32) or #(p - cfg.coords) < 1.0) then
+                        tryEnter(cfg)
                     end
                 end
-            else
-                for _, cfg in ipairs(Config.CasinoExits or {}) do
-                    if cfg.coords and pointInBox(p, cfg.coords, cfg.length or 2.0, cfg.width or 2.0, 0.0) then
-                        sleep = 0
-                        if IsPedOnFoot(ped) and (IsControlPressed(0, 32) or #(p - cfg.coords) < 1.0) then
-                            tryExit(cfg)
-                        end
+            end
+        else
+            for _, cfg in ipairs(Config.CasinoExits or {}) do
+                if cfg.coords and pointInBox(p, cfg.coords, cfg.length or 2.0, cfg.width or 2.0, 0.0) then
+                    sleep = 0
+                    if IsPedOnFoot(ped) and (IsControlPressed(0, 32) or #(p - cfg.coords) < 1.0) then
+                        tryExit(cfg)
                     end
                 end
             end
@@ -93,9 +104,8 @@ CreateThread(function()
     end
 end)
 
---- Atsarginis qb-target (jei reikia rankinio įėjimo)
 CreateThread(function()
-    if not Config.Casino or Config.Casino.walkIn == false then return end
+    if not teleportsEnabled() then return end
     Wait(2000)
     while GetResourceState('qb-target') ~= 'started' do Wait(400) end
 

@@ -5,15 +5,15 @@ local busy = false
 local CFG = {
     reach = 3.6,
     serverReach = 6.0,
-    duration = { lockpick = 12000, advancedlockpick = 9000 },
+    duration = { lockpick = 16000, advancedlockpick = 11000 },
     minigame = {
-        lockpick = { mode = 'sequence', label = 'Atrakink spyną — rodyklės', length = 4 },
-        advancedlockpick = { mode = 'sequence', label = 'Pažangus atrakinimas — rodyklės', length = 3 },
+        lockpick = { mode = 'sequence', label = 'Paskutinis spynos žingsnis', length = 5 },
+        advancedlockpick = { mode = 'sequence', label = 'Paskutinis spynos žingsnis', length = 4 },
     },
     anim = {
         dict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@',
         clip = 'machinic_loop_mechandplayer',
-        flag = 16,
+        flag = 49,
     },
 }
 
@@ -180,35 +180,16 @@ local function applyDisableControls()
     end
 end
 
-local function runLockpickMinigame(advanced)
-    local itemKey = advanced and 'advancedlockpick' or 'lockpick'
-    local mg = CFG.minigame[itemKey] or CFG.minigame.lockpick
-    local anim = CFG.anim
-
-    if GetResourceState('mrp_hacking') == 'started' then
-        local ok, result = pcall(function()
-            return exports['mrp_hacking']:RunPhysicalMinigame(mg.mode, {
-                label = mg.label,
-                anim = { dict = anim.dict, name = anim.clip, flags = anim.flag },
-                data = { length = mg.length },
-            })
-        end)
-        if ok then
-            return result == true
-        end
-    end
-
-    return runLockpickProgress(advanced)
-end
-
 local function runLockpickProgress(advanced)
     local itemKey = advanced and 'advancedlockpick' or 'lockpick'
-    local duration = CFG.duration[itemKey] or 12000
+    local duration = CFG.duration[itemKey] or 16000
     local label = advanced and 'Laužiate spyną (pažangus)…' or 'Laužiate spyną…'
     local anim = CFG.anim
 
-    if GetResourceState('progressbar') == 'started' then
-        local finished, cancelled = false, false
+    local finished, cancelled = false, false
+    local usedPb = false
+    if QBCore.Functions.Progressbar then
+        usedPb = true
         QBCore.Functions.Progressbar('mrp_vehicle_lockpick', label, duration, false, true, DISABLE, {
             animDict = anim.dict,
             anim = anim.clip,
@@ -218,7 +199,7 @@ local function runLockpickProgress(advanced)
         end, function()
             cancelled = true
         end)
-        local deadline = GetGameTimer() + duration + 1200
+        local deadline = GetGameTimer() + duration + 1500
         while GetGameTimer() < deadline do
             if cancelled then return false end
             if finished then return true end
@@ -246,6 +227,32 @@ local function runLockpickProgress(advanced)
         Wait(0)
     end
     ClearPedTasks(ped)
+    return true
+end
+
+local function runLockpickMinigame(advanced)
+    --- Visada progress bar + animacija pirma (ne instant)
+    if not runLockpickProgress(advanced) then
+        return false
+    end
+
+    local itemKey = advanced and 'advancedlockpick' or 'lockpick'
+    local mg = CFG.minigame[itemKey] or CFG.minigame.lockpick
+    local anim = CFG.anim
+
+    if GetResourceState('mrp_hacking') == 'started' then
+        local ok, result = pcall(function()
+            return exports['mrp_hacking']:RunPhysicalMinigame(mg.mode, {
+                label = mg.label,
+                anim = { dict = anim.dict, name = anim.clip, flags = anim.flag },
+                data = { length = mg.length },
+            })
+        end)
+        if ok then
+            return result == true
+        end
+    end
+
     return true
 end
 

@@ -82,14 +82,8 @@ end
 Casino.canUseCasino = canUseCasino
 
 local function ejectFromCasino()
-    local exterior
-    local exits = Config.CasinoExits or {}
-    if exits[1] and exits[1].exterior then
-        exterior = exits[1].exterior
-    else
-        local blip = Config.Casino and Config.Casino.blip and Config.Casino.blip.coords
-        exterior = blip and vector4(blip.x, blip.y, blip.z, 328.0) or vector4(924.78, 46.85, 81.11, 328.0)
-    end
+    local blip = Config.Casino and Config.Casino.blip and Config.Casino.blip.coords
+    local exterior = blip and vector4(blip.x, blip.y, blip.z, 328.0) or vector4(924.78, 46.85, 81.11, 328.0)
     local ped = PlayerPedId()
     SetEntityCoords(ped, exterior.x, exterior.y, exterior.z, false, false, false, false)
     SetEntityHeading(ped, exterior.w or 0.0)

@@ -4,7 +4,7 @@ lua54 'yes'
 
 name 'mrp_hacking'
 author 'MRP'
-description 'Hacking tablets, OS, flashdrives, progressive robberies (ATM + stores + banks + casino + vault)'
+description 'Hacking tablets L1–L3 and progressive robberies (ATM, stores, Fleeca, Pacific, casino)'
 version '1.2.0'
 
 ui_page 'html/index.html'
@@ -24,6 +24,9 @@ client_scripts {
     'client/casino_heist.lua',
     'client/atm.lua',
     'client/robberies.lua',
+    'client/teller.lua',
+    'client/deposit.lua',
+    'client/store_side.lua',
     'client/vendor_debug.lua',
 }
 
@@ -32,6 +35,9 @@ server_scripts {
     'server/main.lua',
     'server/atm.lua',
     'server/robberies.lua',
+    'server/teller.lua',
+    'server/deposit.lua',
+    'server/store_side.lua',
     'server/debug_vendor.lua',
 }
 

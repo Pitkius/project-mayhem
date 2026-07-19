@@ -1,9 +1,6 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local function osLevel(osId)
-    local o = Config.OperatingSystems[osId]
-    return o and o.level or 0
-end
+local SilentHack = {} --- [src] = true — sėkmingas stealth hack (be PD iki soft pabaigos)
 
 local function tabletCfg(itemName)
     return Config.Tablets[itemName]
@@ -17,39 +14,23 @@ local function metaInfo(item)
     return info
 end
 
-local function getTabletItem(Player, tierId)
-    local tabOrder = { basic_tablet = 1, advanced_tablet = 2, military_tablet = 3 }
-    local minRank = 0
-    if tierId and Config.RobberyTiers[tierId] then
-        minRank = tabOrder[Config.RobberyTiers[tierId].minTablet] or 0
-    end
-    local candidates = {}
-    for name in pairs(Config.Tablets) do
+local function playerBestTablet(Player)
+    local bestLvl, bestItem, bestName = 0, nil, nil
+    for name in pairs(Config.Tablets or {}) do
         local it = Player.Functions.GetItemByName(name)
         if it then
-            local rank = tabOrder[name] or 0
-            if rank >= minRank then
-                candidates[#candidates + 1] = {
-                    item = it,
-                    name = name,
-                    rank = rank,
-                    hasOs = metaInfo(it).installed_os and true or false,
-                }
+            local lvl = Config.GetTabletLevel and Config.GetTabletLevel(name) or 0
+            if lvl > bestLvl then
+                bestLvl, bestItem, bestName = lvl, it, name
             end
         end
     end
-    table.sort(candidates, function(a, b)
-        if a.hasOs ~= b.hasOs then return a.hasOs end
-        return a.rank > b.rank
-    end)
-    if candidates[1] then
-        return candidates[1].item, candidates[1].name
-    end
-    for name in pairs(Config.Tablets) do
-        local it = Player.Functions.GetItemByName(name)
-        if it then return it, name end
-    end
-    return nil, nil
+    return bestLvl, bestItem, bestName
+end
+
+local function getTabletItem(Player, _tierId)
+    local _, item, name = playerBestTablet(Player)
+    return item, name
 end
 
 local function saveTabletMeta(src, item, info)
@@ -112,39 +93,43 @@ local function listFlashDrives(Player)
     return drives
 end
 
-local function canAccessRobbery(src, tierId)
+--- mode: 'soft' (be planšetės) | 'stealth'/'full' (reikia planšetės lygio)
+local function canAccessRobbery(src, tierId, mode)
+    mode = mode or 'full'
     local tier = Config.RobberyTiers[tierId]
     if not tier then return false, 'Nežinomas robbery tipas.' end
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return false, 'Žaidėjas nerastas.' end
-    local item, tName = getTabletItem(Player, tierId)
-    if not item then return false, 'Reikia hacking tablet.' end
-    local tCfg = tabletCfg(tName)
-    if not tCfg then return false, 'Netinkamas tablet.' end
+
+    local need = 0
+    if mode == 'soft' then
+        need = tonumber(tier.minTabletLevel) or 0
+    elseif mode == 'stealth' then
+        need = tonumber(tier.stealthTabletLevel) or tonumber(tier.minTabletLevel) or 1
+    else
+        need = tonumber(tier.minTabletLevel) or 0
+        --- full vault Fleeca / L3 — reikia stealth lygio
+        if tierId == 'bank_fleeca' or tierId == 'bank_main' or tierId == 'casino' then
+            need = tonumber(tier.stealthTabletLevel) or need
+        end
+    end
+
+    if need <= 0 then
+        return true, nil, { tabletLevel = 0, silent = false, hackSpeed = 1.0, exploits = {} }
+    end
+
+    local lvl, item, tName = playerBestTablet(Player)
+    if lvl < need then
+        return false, ('Reikia L%d įsilaužimo planšetės.'):format(need)
+    end
+    local tCfg = tabletCfg(tName) or {}
     local info = metaInfo(item)
-    if not info.installed_os then return false, 'Įdiek OS per flashdrive (tablet meniu).' end
-    if osLevel(info.installed_os) < osLevel(tier.minOs) then
-        return false, ('Reikia OS: %s'):format(Config.OperatingSystems[tier.minOs].label)
-    end
-  local minTab = tier.minTablet
-    local tabOrder = { basic_tablet = 1, advanced_tablet = 2, military_tablet = 3 }
-    if (tabOrder[tName] or 0) < (tabOrder[minTab] or 99) then
-        return false, ('Reikia %s (turi %s). Įdiek CipherOS į tinkamą tablet.'):format(
-            Config.Tablets[minTab].label,
-            Config.Tablets[tName].label
-        )
-    end
-    local osDef = Config.OperatingSystems[info.installed_os]
-    local allowed = false
-    for _, r in ipairs(osDef.robberies or {}) do
-        if r == tierId then allowed = true break end
-    end
-    if not allowed then return false, 'OS nepalaiko šio robbery lygio.' end
     return true, nil, {
         tablet = tName,
-        os = info.installed_os,
-        exploits = info.exploits,
-        hackSpeed = (tCfg.hackSpeed or 1) * (osDef.hackSpeed or 1),
+        tabletLevel = lvl,
+        silent = mode ~= 'soft',
+        exploits = info.exploits or {},
+        hackSpeed = tCfg.hackSpeed or 1.0,
     }
 end
 
@@ -298,20 +283,21 @@ QBCore.Functions.CreateCallback('mrp_hacking:server:getTabletData', function(src
     cb({
         ok = true,
         tablet = tName,
-        tabletLabel = tCfg.label,
-        installed_os = info.installed_os,
-        exploits = info.exploits,
-        storage = tCfg.storage,
-        exploitSlots = tCfg.exploitSlots,
-        osCatalog = Config.OperatingSystems,
-        exploitCatalog = Config.Exploits,
+        tabletLabel = tCfg and tCfg.label or tName,
+        tabletLevel = (tCfg and tCfg.level) or (Config.GetTabletLevel and Config.GetTabletLevel(tName)) or 1,
+        installed_os = nil,
+        exploits = info.exploits or {},
+        storage = 0,
+        exploitSlots = 0,
+        osCatalog = {},
+        exploitCatalog = {},
         robberyTiers = Config.RobberyTiers,
         robberyFlows = Config.Robberies and Config.Robberies.Flow or {},
         robberyLocCounts = (function()
             local out = {}
             if Config.Robberies and Config.Robberies.Locations then
-                for tierId, list in pairs(Config.Robberies.Locations) do
-                    out[tierId] = #list
+                for tid, list in pairs(Config.Robberies.Locations) do
+                    out[tid] = #list
                 end
             end
             return out
@@ -321,7 +307,19 @@ QBCore.Functions.CreateCallback('mrp_hacking:server:getTabletData', function(src
         targetMeta = Config.TabletTargetMeta or {},
         tabletFiles = Config.TabletFiles or {},
         tabletContracts = Config.TabletContracts or {},
-        marketItems = Config.BlackMarket and Config.BlackMarket.items or {},
+        marketItems = (function()
+            local out = {}
+            for _, e in ipairs((Config.BlackMarket and Config.BlackMarket.items) or {}) do
+                local it = QBCore.Shared.Items[e.item]
+                out[#out + 1] = {
+                    item = e.item,
+                    label = (it and it.label) or e.item,
+                    price = e.price,
+                    desc = e.desc,
+                }
+            end
+            return out
+        end)(),
         marketCurrency = (Config.BlackMarket and Config.BlackMarket.currency) or 'cash',
         marketCurrencyLabel = (Config.BlackMarket and Config.BlackMarket.label) or 'Lesteris',
         playerMoney = {
@@ -332,7 +330,7 @@ QBCore.Functions.CreateCallback('mrp_hacking:server:getTabletData', function(src
         cryptoExchange = Config.CryptoExchange or {},
         robberyMapSites = buildRobberyMapSites(getDiscoveredLocs(Player)),
         discoveredRobberyLocs = getDiscoveredLocs(Player),
-        atmMapNote = 'Galima apiplėšti bet kurį bankomatą mieste (LVL 1).',
+        atmMapNote = 'L1: bankomatai / parduotuvės. Soft be planšetės (PD alert); hack = stealth.',
     })
 end)
 
@@ -369,59 +367,13 @@ QBCore.Functions.CreateCallback('mrp_hacking:server:discoverNearbyRobbery', func
     cb({ ok = true, new = false, discovered = getDiscoveredLocs(Player) })
 end)
 
-QBCore.Functions.CreateCallback('mrp_hacking:server:installFromDrive', function(src, cb, slot)
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return cb({ ok = false }) end
-    local item, tName = getTabletItem(Player, tierId)
-    if not item then return cb({ ok = false, msg = 'Reikia tablet.' }) end
-    local drive = Player.Functions.GetItemBySlot(tonumber(slot))
-    if not drive or not Config.Flashdrives[drive.name] then
-        return cb({ ok = false, msg = 'Flashdrive nerastas.' })
-    end
-    local dInfo = metaInfo(drive)
-    if not dInfo.payload_type or not dInfo.payload_id then
-        return cb({
-            ok = false,
-            msg = 'Flashdrive tuščias — nusipirk su OS/exploit (meniu „Flashdrive OS / exploit“, ne tuščią iš shop).',
-        })
-    end
-    local tCfg = tabletCfg(tName)
-    local tabInfo = metaInfo(item)
-    local used = (tabInfo.installed_os and 1 or 0) + #(tabInfo.exploits or {})
-    if used >= (tCfg.storage or 4) then
-        return cb({ ok = false, msg = 'Tablet storage pilnas.' })
-    end
-    if dInfo.payload_type == 'os' then
-        if not Config.OperatingSystems[dInfo.payload_id] then
-            return cb({ ok = false, msg = 'Nežinoma OS.' })
-        end
-        tabInfo.installed_os = dInfo.payload_id
-    elseif dInfo.payload_type == 'exploit' then
-        if not Config.Exploits[dInfo.payload_id] then
-            return cb({ ok = false, msg = 'Nežinomas exploit.' })
-        end
-        if #tabInfo.exploits >= (tCfg.exploitSlots or 1) then
-            return cb({ ok = false, msg = 'Exploit slotai pilni.' })
-        end
-        if hasExploit(tabInfo, dInfo.payload_id) then
-            return cb({ ok = false, msg = 'Exploit jau įdiegtas.' })
-        end
-        tabInfo.exploits[#tabInfo.exploits + 1] = dInfo.payload_id
-    else
-        return cb({ ok = false, msg = 'Netinkamas payload.' })
-    end
-    saveTabletMeta(src, item, tabInfo)
-    Player.Functions.RemoveItem(drive.name, 1, drive.slot)
-    cb({
-        ok = true,
-        installed_os = tabInfo.installed_os,
-        exploits = tabInfo.exploits,
-        flashDrives = listFlashDrives(Player),
-    })
+QBCore.Functions.CreateCallback('mrp_hacking:server:installFromDrive', function(src, cb)
+    cb({ ok = false, msg = 'OS sistema išjungta — planšetės lygis (L1/L2/L3) pakanka apiplėšimams.' })
 end)
 
 QBCore.Functions.CreateCallback('mrp_hacking:server:prepareHack', function(src, cb, tierId, locId)
-    local ok, reason, ctx = canAccessRobbery(src, tierId)
+    --- Hack visada reikalauja stealth lygio planšetės
+    local ok, reason, ctx = canAccessRobbery(src, tierId, 'stealth')
     if not ok then return cb({ ok = false, msg = reason }) end
     local profile = buildHackProfile(tierId, ctx, locId)
     cb({ ok = true, profile = profile, ctx = ctx })
@@ -429,46 +381,52 @@ end)
 
 RegisterNetEvent('mrp_hacking:server:hackFinished', function(tierId, success, coords)
     local src = source
-    local ok, reason, ctx = canAccessRobbery(src, tierId)
+    local ok, _, ctx = canAccessRobbery(src, tierId, 'stealth')
     if not ok then return end
     local c = type(coords) == 'table' and vector3(coords.x or 0, coords.y or 0, coords.z or 0) or GetEntityCoords(GetPlayerPed(src))
-    local alertText = {
-        atm = 'Bankomato / ATM įtartina veikla',
-        store = '24/7 kasos įsilaužimas',
-        bank_fleeca = 'Fleeca banko signalizacija',
-        bank_main = 'Pacific banko signalizacija',
-        casino = 'Kazino serverio įsilaužimas',
-        vault = 'Federal vault signalizacija',
+    local failText = {
+        atm = 'Kažkas bando įsilaužti į bankomatą',
+        store = 'Kažkas bando įsilaužti į parduotuvės kasą',
+        bank_fleeca = 'Kažkas bando įsilaužti į Fleeca banką',
+        bank_main = 'Kažkas bando įsilaužti į Pacific banką',
+        casino = 'Kažkas bando įsilaužti į kazino tinklą',
     }
     if success then
-        local delay = 0
-        if ctx and hasExploit(ctx, 'signal_jammer') then
-            delay = (Config.Exploits.signal_jammer.delayDispatchSec or 60)
-        end
+        --- Sėkmingas hack = stealth (PD NEGAUNA pranešimo)
+        SilentHack[src] = true
         applyCctvTamper(src, c, ctx)
-        if tierId == 'atm' then
-            policeAlert(c, 'atm', alertText.atm, delay)
-            if GetResourceState('mrp_gangs') == 'started' then
-                pcall(function()
-                    exports['mrp_gangs']:OnHackSuccess(src, tierId, { x = c.x, y = c.y, z = c.z })
-                end)
-            end
-            TriggerClientEvent('mrp_hacking:client:hackSuccess', src, tierId, c, ctx)
+        if GetResourceState('mrp_gangs') == 'started' then
+            pcall(function()
+                exports['mrp_gangs']:OnHackSuccess(src, tierId, { x = c.x, y = c.y, z = c.z })
+            end)
         end
+        TriggerClientEvent('mrp_hacking:client:hackSuccess', src, tierId, c, ctx)
     else
-        policeAlert(c, tierId == 'atm' and 'atm' or 'robbery', alertText[tierId] or 'Apiplėšimas', 0)
-        if GetResourceState('mrp_ltpd') == 'started' then
-            exports['mrp_ltpd']:TamperCctvRadius(c, 25.0, 30)
+        SilentHack[src] = nil
+        policeAlert(c, tierId == 'atm' and 'atm' or 'robbery', failText[tierId] or 'Bandymas įsilaužti', 0)
+        if GetResourceState('mrp_gangs') == 'started' then
+            pcall(function()
+                exports['mrp_gangs']:OnHackFailed(src, tierId, { x = c.x, y = c.y, z = c.z })
+            end)
         end
-        if tierId == 'atm' then
-            if GetResourceState('mrp_gangs') == 'started' then
-                pcall(function()
-                    exports['mrp_gangs']:OnHackFailed(src, tierId, { x = c.x, y = c.y, z = c.z })
-                end)
-            end
-            TriggerClientEvent('mrp_hacking:client:hackFailed', src, tierId)
-        end
+        TriggerClientEvent('mrp_hacking:client:hackFailed', src, tierId)
     end
+end)
+
+exports('IsSilentHack', function(src)
+    return SilentHack[tonumber(src)] == true
+end)
+
+exports('ClearSilentHack', function(src)
+    SilentHack[tonumber(src)] = nil
+end)
+
+exports('SetSilentHack', function(src, value)
+    SilentHack[tonumber(src)] = value and true or nil
+end)
+
+AddEventHandler('playerDropped', function()
+    SilentHack[source] = nil
 end)
 
 for name in pairs(Config.Tablets) do
@@ -497,6 +455,9 @@ RegisterNetEvent('mrp_hacking:server:buyBlackMarket', function(index)
     if not Player then return end
     local entry = Config.BlackMarket.items[tonumber(index)]
     if not entry then return end
+    if not QBCore.Shared.Items[entry.item] then
+        return TriggerClientEvent('QBCore:Notify', src, 'Itemas neegzistuoja.', 'error')
+    end
     local price = tonumber(entry.price) or 0
     local currency = (Config.BlackMarket and Config.BlackMarket.currency) or 'cash'
     local balance = Player.PlayerData.money[currency] or 0
@@ -506,11 +467,12 @@ RegisterNetEvent('mrp_hacking:server:buyBlackMarket', function(index)
             or 'Nepakanka grynųjų.'
         return TriggerClientEvent('QBCore:Notify', src, hint, 'error')
     end
-    local info = buildFlashInfo(entry.payload)
     if not Player.Functions.RemoveMoney(currency, price, 'lester-hack-shop') then return end
-    Player.Functions.AddItem(entry.item, 1, false, info)
+    Player.Functions.AddItem(entry.item, 1, false, nil)
+    TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[entry.item], 'add', 1)
     local paid = currency == 'crypto' and (('%s crypto'):format(price)) or (('$%s'):format(price))
-    TriggerClientEvent('QBCore:Notify', src, ('Nupirkta už %s.'):format(paid), 'success')
+    TriggerClientEvent('QBCore:Notify', src, ('Nupirkta: %s už %s.'):format(
+        QBCore.Shared.Items[entry.item].label or entry.item, paid), 'success')
 end)
 
 RegisterNetEvent('mrp_hacking:server:exchangeBankToCrypto', function(amount)
@@ -559,14 +521,14 @@ exports('IsRobberyLocDiscovered', function(src, tierId, locId)
     return isRobberyLocDiscovered(Player, tierId, locId)
 end)
 
-exports('CanAccessRobbery', function(src, tierId)
-    return canAccessRobbery(src, tierId)
+exports('CanAccessRobbery', function(src, tierId, mode)
+    return canAccessRobbery(src, tierId, mode)
 end)
 
 exports('PoliceAlert', policeAlert)
 
 exports('BuildHackProfile', function(src, tierId)
-    local ok, _, ctx = canAccessRobbery(src, tierId)
+    local ok, _, ctx = canAccessRobbery(src, tierId, 'stealth')
     if not ok then return nil end
     return buildHackProfile(tierId, ctx)
 end)

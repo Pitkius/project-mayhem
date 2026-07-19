@@ -2,7 +2,7 @@ Config = Config or {}
 
 Config.InteractKeyLabel = 'E'
 
---- Diamond Casino (GTA Online vanilla MLO)
+--- Diamond Casino (stream MLO — įėjimas pėsčiomis pro duris, be teleportų)
 Config.Casino = {
     center = vector3(1110.0, 220.0, -49.0),
     radius = 90.0,
@@ -13,50 +13,18 @@ Config.Casino = {
         scale = 0.9,
         label = 'Diamond Casino',
     },
-    interiorSpawn = vector4(1089.1294, 207.2294, -48.9997, 320.0139),
+    interiorSpawn = vector4(1089.1294, 207.2294, -48.9997, 320.0139), --- tik eject / fallback
     loadVanillaIpl = true,
     --- Stream MLO: resources/[mlo]/[mlo_pack_3]/diamond-casino-{exterior,interior}
     useStreamMlo = true,
-    --- Įėjimas be juodo ekrano — žingsnis pro duris (IPL turi būti užkrautas)
-    walkIn = true,
+    --- false = jokių script teleportų; eik pro MLO duris
+    walkIn = false,
 }
 
---- Durų zonos (automatinis įėjimas/išėjimas be qb-target)
-Config.CasinoEntrances = {
-    {
-        id = 'glass_doors',
-        coords = vector3(935.6165, 47.4366, 81.0958),
-        heading = 278.2361,
-        length = 2.4,
-        width = 3.0,
-        interior = vector4(1089.1294, 207.2294, -48.9997, 320.0139),
-    },
-    {
-        id = 'main_entrance',
-        coords = vector3(924.7840, 46.8540, 81.1060),
-        heading = 328.0,
-        length = 2.6,
-        width = 2.6,
-        interior = vector4(1085.98, 214.52, -49.20, 180.0),
-    },
-}
+--- Senieji teleportų taškai išjungti (MLO). Palikta tuščia / atsarginė konfigūracija.
+Config.CasinoEntrances = {}
+Config.CasinoExits = {}
 
-Config.CasinoExits = {
-    {
-        id = 'lobby_exit',
-        coords = vector3(1089.1294, 207.2294, -48.9997),
-        exterior = vector4(935.6165, 47.4366, 81.0958, 278.2361),
-        length = 2.2,
-        width = 2.2,
-    },
-    {
-        id = 'side_exit',
-        coords = vector3(1085.98, 214.52, -49.20),
-        exterior = vector4(924.7840, 46.8540, 81.1060, 328.0),
-        length = 2.2,
-        width = 2.2,
-    },
-}
 
 --- Kazino kasa — žetonų keitimas 1:1, limitas matomas tik čia
 Config.Cashier = {

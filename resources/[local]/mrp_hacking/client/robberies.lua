@@ -25,11 +25,10 @@ local function setDiscoveredMap(map)
 end
 
 local TIER_META = {
-    store = { level = 2, action = 'Pradėti apiplėšimą' },
-    bank_fleeca = { level = 3, action = 'Fleeca vault hack' },
-    bank_main = { level = 4, action = 'Pacific vault hack' },
-    casino = { level = 4, action = 'Casino heist' },
-    vault = { level = 5, action = 'Federal vault hack' },
+    store = { level = 1, action = 'Stealth hack (L1) — kasa/Perlas/seifas' },
+    bank_fleeca = { level = 2, action = 'Seifo hack (L2)' },
+    bank_main = { level = 3, action = 'Pacific heist (L3)' },
+    casino = { level = 3, action = 'Casino heist (L3)' },
 }
 
 local function resetSession()
@@ -197,7 +196,7 @@ end
 RegisterNetEvent('mrp_hacking:client:robberyNextPhase', function(tierId, locId, completedPhase)
     if not session or session.tierId ~= tierId or session.locId ~= locId then return end
     exports['mrp_hacking']:UnlockHeistDoorsForPhase(locId, completedPhase)
-    local bankTiers = { bank_fleeca = true, bank_main = true, vault = true }
+    local bankTiers = { bank_fleeca = true, bank_main = true }
     if completedPhase == 'hack' and bankTiers[tierId] then
         playBankDoorOpen(session.coords)
     elseif completedPhase == 'drill' and bankTiers[tierId] then

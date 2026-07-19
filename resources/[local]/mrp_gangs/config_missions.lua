@@ -461,6 +461,8 @@ Config.MissionTypes = {
 
 Config.HackGangRep = {
     atm = 3,
-    fleeca = 8,
     store = 2,
+    bank_fleeca = 8,
+    bank_main = 12,
+    casino = 14,
 }
