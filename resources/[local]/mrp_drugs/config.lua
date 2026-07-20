@@ -1255,7 +1255,8 @@ Config.WeedCayoLab = {
 Config.WeedDrying = {
     stationId = 'weed_dry_davis',
     coords = vector4(1144.5762, -1661.0204, 36.6147, 203.0073),
-    visualCoords = vector4(1144.5168, -1660.4908, 36.5114, 44.1525),
+    -- 23.0073° yra lygiagreti kambario ašis; 203.0073° yra ta pati ašis priešinga kryptimi.
+    visualCoords = vector4(1144.5168, -1660.4908, 36.5114, 23.0073),
     inputItem = 'weed_leaf',
     outputItem = 'weed_buds',
     minimumAmount = 10,
@@ -1265,6 +1266,9 @@ Config.WeedDrying = {
     discountPercent = 2,
     earlyReturnPercent = 80,
     visualPlantCount = 9,
+    visualPlantSpacing = 0.46,
+    visualPlantAttachZ = 0.26,
+    visualGroundProbeHeight = 1.0,
     interactDistance = 4.0,
     hologramDistance = 22.0,
 }

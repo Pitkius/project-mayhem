@@ -176,11 +176,8 @@ function updateWeedDryDetail(product = selectedProduct()) {
   const minimum = Number(drying.minimumAmount) || 10;
   const maximum = Number(drying.maximumAmount) || 500;
   const available = Math.max(0, Number(drying.availableAmount) || 0);
-  weedDryAmount.min = String(minimum);
-  weedDryAmount.max = String(Math.min(maximum, Math.max(minimum, available)));
-  if (!weedDryAmount.value || Number(weedDryAmount.value) < minimum) {
-    weedDryAmount.value = String(minimum);
-  }
+  weedDryAmount.min = "1";
+  weedDryAmount.max = String(maximum);
 
   const amount = selectedDryAmount(product);
   const valid = amount >= minimum && amount <= maximum && amount <= available;
@@ -192,7 +189,13 @@ function updateWeedDryDetail(product = selectedProduct()) {
     ? `Džiovinimo laikas: ${durationText}`
     : (available < minimum
       ? `Trūksta lapų: minimali partija yra ${minimum}.`
-      : `Įveskite kiekį nuo ${minimum} iki ${Math.min(maximum, available)}.`);
+      : amount < minimum
+        ? `Minimalus džiovinimo kiekis yra ${minimum}.`
+        : amount > maximum
+          ? `Didžiausias džiovinimo kiekis yra ${maximum}.`
+          : amount > available
+            ? `Trūksta lapų: turite ${available}.`
+            : `Įveskite kiekį nuo ${minimum} iki ${Math.min(maximum, available)}.`);
   document.getElementById("prodTime").textContent = durationText || "Pasirinkite kiekį";
 
   const ingredient = product.ingredients?.[0];
@@ -200,7 +203,7 @@ function updateWeedDryDetail(product = selectedProduct()) {
   if (ingredient && row) {
     row.className = valid ? "ok" : "bad";
     const value = row.querySelector("span:last-child");
-    if (value) value.textContent = `${available}/${Math.max(minimum, amount || minimum)}`;
+    if (value) value.textContent = `${available}/${amount > 0 ? amount : minimum}`;
   }
   btnCraft.disabled = product.locked || !valid;
 }

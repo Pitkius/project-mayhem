@@ -19,7 +19,7 @@ local function stationCoords()
 end
 
 local function visualCoords()
-    local c = cfg().visualCoords or vector4(1144.5168, -1660.4908, 36.5114, 44.1525)
+    local c = cfg().visualCoords or vector4(1144.5168, -1660.4908, 36.5114, 23.0073)
     return vector3(c.x, c.y, c.z)
 end
 
@@ -76,37 +76,72 @@ local function spawnPlants()
     end
 
     -- Vazonai ir augalai yra lokalūs: juos mato tik aktyvios sesijos savininkas.
-    local c = cfg().visualCoords or vector4(1144.5168, -1660.4908, 36.5114, 44.1525)
+    local c = cfg().visualCoords or vector4(1144.5168, -1660.4908, 36.5114, 23.0073)
     local origin = vector3(c.x, c.y, c.z)
-    local heading = tonumber(c.w) or 44.1525
+    local heading = tonumber(c.w) or 23.0073
     local count = math.max(1, tonumber(cfg().visualPlantCount) or 9)
+    local spacing = math.max(0.1, tonumber(cfg().visualPlantSpacing) or 0.46)
+    local plantAttachZ = tonumber(cfg().visualPlantAttachZ) or 0.26
+    local groundProbeHeight = math.max(0.25, tonumber(cfg().visualGroundProbeHeight) or 1.0)
+
+    RequestCollisionAtCoord(origin.x, origin.y, origin.z)
+    local collisionDeadline = GetGameTimer() + 2000
+    while not HasCollisionLoadedAroundEntity(PlayerPedId()) and GetGameTimer() < collisionDeadline do
+        Wait(25)
+    end
+
     -- Devyni džiūstantys vazonai glaudžiai išdėstomi trimis eilėmis po tris.
     for i = 1, count do
         local row = math.floor((i - 1) / 3)
         local column = (i - 1) % 3
-        local itemHeading = heading + ((column - 1) * 3.0)
-        local pos = offsetPoint(origin, heading, -0.5 + column * 0.5, -0.5 + row * 0.5, 0.0)
+        local pos = offsetPoint(origin, heading, (column - 1) * spacing, (row - 1) * spacing, 0.0)
 
-        local pot = CreateObjectNoOffset(potModel, pos.x, pos.y, pos.z, false, false, false)
+        local pot = CreateObjectNoOffset(
+            potModel,
+            pos.x,
+            pos.y,
+            pos.z + groundProbeHeight,
+            false,
+            false,
+            false
+        )
         if pot and pot ~= 0 then
             SetEntityAsMissionEntity(pot, true, true)
-            SetEntityHeading(pot, itemHeading)
+            SetEntityHeading(pot, heading)
             setEntityScale(pot, 0.92)
-            SetEntityCollision(pot, false, false)
+            SetEntityCollision(pot, true, true)
+            PlaceObjectOnGroundProperly(pot)
             SetEntityVisible(pot, true, false)
             FreezeEntityPosition(pot, true)
             plantEntities[#plantEntities + 1] = pot
-        end
 
-        local plant = CreateObjectNoOffset(plantModel, pos.x, pos.y, pos.z + 0.24, false, false, false)
-        if plant and plant ~= 0 then
-            SetEntityAsMissionEntity(plant, true, true)
-            SetEntityHeading(plant, itemHeading)
-            setEntityScale(plant, 0.48)
-            SetEntityCollision(plant, false, false)
-            SetEntityVisible(plant, true, false)
-            FreezeEntityPosition(plant, true)
-            plantEntities[#plantEntities + 1] = plant
+            local potCoords = GetEntityCoords(pot)
+            local plant = CreateObjectNoOffset(plantModel, potCoords.x, potCoords.y, potCoords.z, false, false, false)
+            if plant and plant ~= 0 then
+                SetEntityAsMissionEntity(plant, true, true)
+                setEntityScale(plant, 0.48)
+                SetEntityCollision(plant, false, false)
+                AttachEntityToEntity(
+                    plant,
+                    pot,
+                    0,
+                    0.0,
+                    0.0,
+                    plantAttachZ,
+                    0.0,
+                    0.0,
+                    0.0,
+                    false,
+                    false,
+                    false,
+                    false,
+                    2,
+                    true
+                )
+                SetEntityVisible(plant, true, false)
+                FreezeEntityPosition(plant, true)
+                plantEntities[#plantEntities + 1] = plant
+            end
         end
     end
     SetModelAsNoLongerNeeded(potModel)
