@@ -1,24 +1,25 @@
---- L1 alcohol production: GTA world interaction with shared 3D HUD.
-AlcoholProduction = AlcoholProduction or {}
+--- L1 THC production: GTA world 3D interaction (trim → distill → cart pack).
+ThcProduction = ThcProduction or {}
 
 local QBCore = exports['qb-core']:GetCoreObject()
 local active
 
-local PROCESS_STEPS = { 'prepare', 'heat', 'hold', 'distill', 'collect', 'cool' }
-local PACK_STEPS = { 'bottle', 'pour', 'cork', 'seal', 'finalize' }
+local PROCESS_STEPS = { 'prepare', 'trim', 'heat', 'collect', 'stabilize' }
+local PACK_STEPS = { 'cartridge', 'fill', 'coil', 'seal', 'finalize' }
 local LABELS = {
     prepare = 'Paruošk distiliatorių',
-    heat = 'Įkaitink katilą',
-    hold = 'Laikyk temperatūrą',
-    distill = 'Distiliuok samagoną',
-    collect = 'Surink distiliatą',
-    cool = 'Atvėsink ir užbaik',
-    bottle = 'Pasirink stiklainį',
-    pour = 'Supilk samagoną',
-    cork = 'Užkimšk stiklainį',
-    seal = 'Užsandarink',
+    trim = 'Apkirpk trim medžiagą',
+    heat = 'Įkaitink distiliatorių',
+    collect = 'Surink THC distiliatą',
+    stabilize = 'Stabilizuok temperatūrą',
+    cartridge = 'Pasirink tuščią kasetę',
+    fill = 'Užpildyk kasetę',
+    coil = 'Įkaitink ritę',
+    seal = 'Užsandarink antgalį',
     finalize = 'Patikrink ir užbaik',
 }
+local TRIM_NEED = 4
+local COIL_SEQ = { 2, 1, 3 }
 
 local function clamp(value, low, high)
     return Interaction3D.Clamp(value, low, high)
@@ -37,13 +38,13 @@ end
 
 local function updateHud(session, hint, extra)
     local data = extra or {}
-    data.title = session.mode == 'pack' and 'Samagonas · pakavimas' or 'Samagonas · distiliacija'
+    data.title = session.mode == 'pack' and 'THC · kasetės pildymas' or 'THC · distiliacija'
     data.stage = ('%d/%d'):format(stageIndex(session), #session.steps)
     data.stageName = LABELS[session.stage] or session.stage
     data.hint = hint or ''
     data.score = math.floor(session.score or 0)
     data.mistakes = session.mistakes or 0
-    data.kicker = '3D ALCOHOL WORKSTATION'
+    data.kicker = '3D THC WORKSTATION'
     hud('vape3dUpdate', data)
 end
 
@@ -80,7 +81,7 @@ local function reportStage(session, stageName, accepted)
     session.requestId = (session.requestId or 0) + 1
     local requestId = session.requestId
     updateHud(session, 'Tikrinamas etapas…')
-    QBCore.Functions.TriggerCallback('mrp_drugs:server:alcoholProductionStage', function(response)
+    QBCore.Functions.TriggerCallback('mrp_drugs:server:thcProductionStage', function(response)
         if active ~= session or session.finished or session.requestId ~= requestId then return end
         session.pending = false
         if not response or not response.ok then
@@ -113,10 +114,10 @@ local function spawnScene(session)
     local origin, heading = session.origin, session.heading
     local workspace = session.workspace
 
-    --- Fiksuota įranga (alcohol_still / bagging_table) — NEspawninti antrojo stalo/katilo.
+    --- Fiksuota įranga (thc_still / bagging_table) — NEspawninti antrojo stalo.
     local anchorModels = session.mode == 'pack'
         and { 'bkr_prop_weed_table_01a', 'prop_tool_bench02', 'bkr_prop_meth_table01a' }
-        or { 'prop_cooker_03', 'bkr_prop_meth_table01a', 'prop_tool_bench02', 'bkr_prop_weed_table_01a' }
+        or { 'bkr_prop_weed_table_01a', 'prop_cooker_03', 'bkr_prop_meth_table01a', 'prop_tool_bench02' }
 
     local existing = Interaction3D.ResolveExisting(workspace, anchorModels, origin, 5.0)
     if existing and DoesEntityExist(existing) then
@@ -125,18 +126,10 @@ local function spawnScene(session)
         session.heading = GetEntityHeading(existing)
         heading = session.heading
         origin = session.origin
-        if session.mode == 'process' then
-            --- alcohol_still prop = cooker; nenaudojam atskiro stalo
-            session.cooker = existing
-            session.table = nil
-        else
-            session.table = existing
-        end
+        session.table = existing
     else
-        --- Fallback: laikinas stalas tik jei nėra pasaulio įrangos (test / legacy)
         local table = Interaction3D.Spawn(world,
-            session.mode == 'pack' and { 'prop_tool_bench02', 'bkr_prop_weed_table_01a' }
-                or { 'bkr_prop_meth_table01a', 'prop_tool_bench02', 'bkr_prop_weed_table_01a' },
+            { 'bkr_prop_weed_table_01a', 'prop_tool_bench02', 'bkr_prop_weed_table_01a' },
             origin, heading, { ground = true })
         if not table then return false, 'table_spawn_failed' end
         session.table = table
@@ -146,7 +139,7 @@ local function spawnScene(session)
         origin = session.origin
     end
 
-    session.top = Interaction3D.SurfaceTop(session.cooker or session.table or session.anchor, origin.z)
+    session.top = Interaction3D.SurfaceTop(session.table or session.anchor, origin.z)
     session.lookAt = vector3(origin.x, origin.y, session.top + 0.05)
 
     local back = Interaction3D.Offset(origin, heading, 0.0, -2.30, 1.55)
@@ -156,25 +149,45 @@ local function spawnScene(session)
     world.lookAt = session.lookAt
     world.camDistance = 2.85
 
-    local bottlePos = Interaction3D.Offset(origin, heading, 0.52, -0.15, session.top - origin.z + 0.12)
-    session.bottle = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, bottlePos, heading, { collision = false })
-    if not session.bottle then return false, 'bottle_spawn_failed' end
+    local vialPos = Interaction3D.Offset(origin, heading, 0.52, -0.15, session.top - origin.z + 0.12)
+    session.vial = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, vialPos, heading, { collision = false })
+    if not session.vial then return false, 'vial_spawn_failed' end
+
+    local scalePos = Interaction3D.Offset(origin, heading, -0.48, 0.05, session.top - origin.z + 0.03)
+    session.scale = Interaction3D.Spawn(world, { 'bkr_prop_coke_scale_01' }, scalePos, heading, { collision = false })
 
     if session.mode == 'process' then
-        if not session.cooker then
-            local cookerPos = Interaction3D.Offset(origin, heading, 0.0, 0.22, session.top - origin.z + 0.04)
-            session.cooker = Interaction3D.Spawn(world, { 'prop_cooker_03' }, cookerPos, heading, { collision = false })
-            if not session.cooker then return false, 'cooker_spawn_failed' end
-        end
+        local stillPos = Interaction3D.Offset(origin, heading, 0.0, 0.22, session.top - origin.z + 0.04)
+        session.still = Interaction3D.Spawn(world, { 'prop_cooker_03' }, stillPos, heading, { collision = false })
+        if not session.still then return false, 'still_spawn_failed' end
+
+        local trimPos = Interaction3D.Offset(origin, heading, -0.35, -0.20, session.top - origin.z + 0.05)
+        session.trim = Interaction3D.Spawn(world, { 'bkr_prop_weed_bud_02b', 'bkr_prop_weed_leaf_01a', 'prop_meth_bag_01' },
+            trimPos, heading, { collision = false })
+        if not session.trim then return false, 'trim_spawn_failed' end
+
+        local scissorsPos = Interaction3D.Offset(origin, heading, 0.38, 0.28, session.top - origin.z + 0.06)
+        session.scissors = Interaction3D.Spawn(world, { 'prop_cs_scissors' }, scissorsPos, heading + 90.0, { collision = false })
+        if not session.scissors then return false, 'scissors_spawn_failed' end
+
         session.collectPoint = Interaction3D.Offset(origin, heading, 0.0, 0.05, session.top - origin.z + 0.30)
-        local scalePos = Interaction3D.Offset(origin, heading, -0.48, 0.05, session.top - origin.z + 0.03)
-        session.scale = Interaction3D.Spawn(world, { 'bkr_prop_coke_scale_01' }, scalePos, heading, { collision = false })
     else
         local corkPos = Interaction3D.Offset(origin, heading, 0.45, 0.25, session.top - origin.z + 0.12)
-        session.cork = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, corkPos, heading + 180.0, { collision = false })
-        if not session.cork then return false, 'cork_spawn_failed' end
-        local scalePos = Interaction3D.Offset(origin, heading, -0.45, 0.05, session.top - origin.z + 0.03)
-        session.scale = Interaction3D.Spawn(world, { 'bkr_prop_coke_scale_01' }, scalePos, heading, { collision = false })
+        session.cap = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, corkPos, heading + 180.0, { collision = false })
+        if not session.cap then return false, 'cap_spawn_failed' end
+
+        session.coilPads = {}
+        local padOffsets = {
+            { -0.28, 0.18 },
+            { 0.0, 0.28 },
+            { 0.28, 0.18 },
+        }
+        for i, off in ipairs(padOffsets) do
+            local pos = Interaction3D.Offset(origin, heading, off[1], off[2], session.top - origin.z + 0.04)
+            local pad = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, pos, heading + (i * 40.0), { collision = false })
+            if not pad then return false, 'coil_pad_spawn_failed' end
+            session.coilPads[i] = pad
+        end
     end
     return true
 end
@@ -190,24 +203,72 @@ local function selectEntity(session, target, hint, onSelected)
 end
 
 local function updateProcess(session)
-    if session.stage == 'heat' then
+    if session.stage == 'trim' then
+        if not session.trimReady then
+            selectEntity(session, session.scissors, 'paimti žirkles', function()
+                session.trimReady = true
+                session.cuts = 0
+                session.score = session.score + 8
+                updateHud(session, ('E · kirpti trim (%d/%d)'):format(0, TRIM_NEED))
+            end)
+        else
+            selectEntity(session, session.trim, ('kirpti (%d/%d)'):format(session.cuts or 0, TRIM_NEED), function()
+                session.cuts = (session.cuts or 0) + 1
+                session.score = session.score + 4
+                if session.cuts >= TRIM_NEED then
+                    nextStage(session, 'trim', function()
+                        session.hold = 0
+                        updateHud(session, 'Laikyk E ir kaitink distiliatorių.')
+                    end)
+                else
+                    updateHud(session, ('E · kirpti trim (%d/%d)'):format(session.cuts, TRIM_NEED))
+                end
+            end)
+        end
+    elseif session.stage == 'heat' then
         local dt = GetFrameTime()
         if IsDisabledControlPressed(0, 38) then
             session.hold = clamp((session.hold or 0) + dt / 2.0, 0.0, 1.0)
         else
             session.hold = clamp((session.hold or 0) - dt * 0.28, 0.0, 1.0)
         end
-        Interaction3D.Select(session.world, session.cooker)
-        updateHud(session, 'Laikyk E ir kaitink katilą.', { progress = session.hold })
+        Interaction3D.Select(session.world, session.still)
+        updateHud(session, 'Laikyk E ir kaitink distiliatorių.', { progress = session.hold })
         if session.hold >= 1.0 then
             session.score = session.score + 15
             nextStage(session, 'heat', function()
-                session.hold = 0.55
-                session.gaugeStarted = GetGameTimer()
-                updateHud(session, 'Laikyk temperatūrą A/D pagal rodyklę.')
+                updateHud(session, 'Nukreipk kamerą į indą ir spausk E.')
             end)
         end
-    elseif session.stage == 'hold' then
+    elseif session.stage == 'collect' then
+        if not session.collecting then
+            selectEntity(session, session.vial, 'paimti indą', function()
+                session.collecting = true
+                session.score = session.score + 10
+                updateHud(session, 'E · perkelti indą prie distiliatoriaus.')
+            end)
+        else
+            Interaction3D.DrawSnaps({ { coords = session.collectPoint, radius = 0.25 } })
+            Interaction3D.Select(session.world, session.vial)
+            updateHud(session, 'E · sklandžiai perkelti prie snap taško.')
+            if IsDisabledControlJustPressed(0, 38) then
+                Interaction3D.Select(session.world, nil)
+                session.pending = true
+                Interaction3D.MoveSmooth(session.vial, session.collectPoint, 650, function()
+                    return active == session
+                end, function()
+                    session.pending = false
+                    session.score = session.score + 15
+                    nextStage(session, 'collect', function()
+                        session.hold = 0.55
+                        session.holdGood = 0
+                        session.gaugeStarted = GetGameTimer()
+                        updateHud(session, 'Laikyk temperatūrą A/D pagal rodyklę.')
+                    end)
+                end)
+            end
+        end
+    elseif session.stage == 'stabilize' then
         local dt = GetFrameTime()
         local target = 0.5 + 0.22 * math.sin((GetGameTimer() - session.gaugeStarted) / 900.0)
         if IsDisabledControlPressed(0, 34) then
@@ -228,69 +289,8 @@ local function updateProcess(session)
             gauge = session.hold,
         })
         if session.holdGood >= 2.4 then
-            session.score = session.score + 20
-            nextStage(session, 'hold', function()
-                session.mixCount, session.lastMix = 0, nil
-                updateHud(session, 'Distiliuok ritmiškai: A ↔ D.')
-            end)
-        end
-    elseif session.stage == 'distill' then
-        local pressed
-        if IsDisabledControlJustPressed(0, 34) then pressed = 'left' end
-        if IsDisabledControlJustPressed(0, 35) then pressed = 'right' end
-        if pressed then
-            if session.lastMix and session.lastMix == pressed then
-                session.mistakes = session.mistakes + 1
-                session.score = math.max(0, session.score - 3)
-            else
-                session.mixCount = (session.mixCount or 0) + 1
-                session.score = session.score + 3
-                session.lastMix = pressed
-            end
-        end
-        updateHud(session, 'Distiliacija: A ↔ D.', { progress = (session.mixCount or 0) / 8 })
-        if (session.mixCount or 0) >= 8 then
-            nextStage(session, 'distill', function()
-                updateHud(session, 'Nukreipk kamerą į buteliuką ir spausk E.')
-            end)
-        end
-    elseif session.stage == 'collect' then
-        if not session.collecting then
-            selectEntity(session, session.bottle, 'paimti indą', function()
-                session.collecting = true
-                session.score = session.score + 10
-                updateHud(session, 'E · perkelti indą prie distiliatoriaus.')
-            end)
-        else
-            Interaction3D.DrawSnaps({ { coords = session.collectPoint, radius = 0.25 } })
-            Interaction3D.Select(session.world, session.bottle)
-            updateHud(session, 'E · sklandžiai perkelti prie snap taško.')
-            if IsDisabledControlJustPressed(0, 38) then
-                Interaction3D.Select(session.world, nil)
-                session.pending = true
-                Interaction3D.MoveSmooth(session.bottle, session.collectPoint, 650, function()
-                    return active == session
-                end, function()
-                    session.pending = false
-                    session.score = session.score + 15
-                    nextStage(session, 'collect', function()
-                        session.gaugeStarted = GetGameTimer()
-                        updateHud(session, 'Spausk E, kai aušinimas žalioje zonoje.')
-                    end)
-                end)
-            end
-        end
-    elseif session.stage == 'cool' then
-        local gauge = (math.sin((GetGameTimer() - session.gaugeStarted) / 340.0) + 1.0) * 0.5
-        updateHud(session, 'E · atvėsinti ties 60–76%.', { gauge = gauge })
-        if IsDisabledControlJustPressed(0, 38) then
-            if gauge >= 0.60 and gauge <= 0.76 then
-                session.score = session.score + 30
-            else
-                session.score = session.score + 8
-                session.mistakes = session.mistakes + 1
-            end
-            reportStage(session, 'cool', function()
+            session.score = session.score + 25
+            reportStage(session, 'stabilize', function()
                 finish(session, true, 'completed')
             end)
         end
@@ -298,49 +298,65 @@ local function updateProcess(session)
 end
 
 local function updatePack(session)
-    if session.stage == 'bottle' then
-        selectEntity(session, session.bottle, 'pasirinkti stiklainį', function()
-            session.score = session.score + 15
-            nextStage(session, 'bottle', function()
+    if session.stage == 'cartridge' then
+        selectEntity(session, session.vial, 'pasirinkti kasetę', function()
+            session.score = session.score + 12
+            nextStage(session, 'cartridge', function()
                 session.hold = 0
-                updateHud(session, 'Laikyk E ir pilk samagoną.')
+                session.gaugeStarted = GetGameTimer()
+                updateHud(session, 'Laikyk E žalioje slėgio zonoje.')
             end)
         end)
-    elseif session.stage == 'pour' then
+    elseif session.stage == 'fill' then
         local dt = GetFrameTime()
+        local gauge = (math.sin((GetGameTimer() - session.gaugeStarted) / 280.0) + 1.0) * 0.5
+        local inZone = gauge >= 0.42 and gauge <= 0.72
         if IsDisabledControlPressed(0, 38) then
-            session.hold = clamp((session.hold or 0) + dt / 2.5, 0.0, 1.15)
-        end
-        updateHud(session, 'Atleisk E ties 95–100%.', { progress = math.min(session.hold, 1.0) })
-        if session.hold >= 0.95 and not IsDisabledControlPressed(0, 38) then
-            if session.hold <= 1.02 then
-                session.score = session.score + 25
+            if inZone then
+                session.hold = clamp((session.hold or 0) + dt / 2.2, 0.0, 1.0)
             else
-                session.score = session.score + 8
-                session.mistakes = session.mistakes + 1
+                session.hold = clamp((session.hold or 0) - dt * 0.35, 0.0, 1.0)
+                session.score = math.max(0, session.score - dt * 6)
             end
-            nextStage(session, 'pour', function()
-                updateHud(session, 'Nukreipk kamerą į kamštį ir spausk E.')
-            end)
-        elseif session.hold >= 1.15 then
-            session.score = session.score + 4
-            session.mistakes = session.mistakes + 1
-            nextStage(session, 'pour')
         end
-    elseif session.stage == 'cork' then
-        selectEntity(session, session.cork, 'užkimšti stiklainį', function()
+        Interaction3D.Select(session.world, session.vial)
+        updateHud(session, inZone and 'Laikyk E · slėgis geras.' or 'Palauk žalios zonos, tada laikyk E.', {
+            progress = session.hold or 0,
+            gauge = gauge,
+        })
+        if (session.hold or 0) >= 1.0 then
             session.score = session.score + 20
-            nextStage(session, 'cork', function()
-                session.gaugeStarted = GetGameTimer()
-                updateHud(session, 'Spausk E žalioje sandarinimo zonoje.')
+            nextStage(session, 'fill', function()
+                session.coilStep = 1
+                updateHud(session, ('E · įkaitink ritę (%d/%d)'):format(1, #COIL_SEQ))
             end)
+        end
+    elseif session.stage == 'coil' then
+        local step = session.coilStep or 1
+        local padIndex = COIL_SEQ[step]
+        local target = session.coilPads and session.coilPads[padIndex]
+        if not target then
+            finish(session, false, 'coil_pad_missing')
+            return
+        end
+        selectEntity(session, target, ('įkaitinti ritę %d/%d'):format(step, #COIL_SEQ), function()
+            session.score = session.score + 8
+            if step >= #COIL_SEQ then
+                nextStage(session, 'coil', function()
+                    session.gaugeStarted = GetGameTimer()
+                    updateHud(session, 'Spausk E žalioje sandarinimo zonoje.')
+                end)
+            else
+                session.coilStep = step + 1
+                updateHud(session, ('E · įkaitink ritę (%d/%d)'):format(session.coilStep, #COIL_SEQ))
+            end
         end)
     elseif session.stage == 'seal' then
         local gauge = (math.sin((GetGameTimer() - session.gaugeStarted) / 300.0) + 1.0) * 0.5
         updateHud(session, 'E · sandarinti ties 68–84%.', { gauge = gauge })
         if IsDisabledControlJustPressed(0, 38) then
             if gauge >= 0.68 and gauge <= 0.84 then
-                session.score = session.score + 25
+                session.score = session.score + 22
             else
                 session.score = session.score + 6
                 session.mistakes = session.mistakes + 1
@@ -350,8 +366,8 @@ local function updatePack(session)
             end)
         end
     elseif session.stage == 'finalize' then
-        Interaction3D.Select(session.world, session.bottle)
-        updateHud(session, 'E · patvirtinti paruoštą stiklainį.')
+        Interaction3D.Select(session.world, session.vial)
+        updateHud(session, 'E · patvirtinti paruoštą kasetę.')
         if IsDisabledControlJustPressed(0, 38) then
             Interaction3D.Select(session.world, nil)
             session.score = session.score + 15
@@ -387,7 +403,7 @@ local function run(session)
     end)
 end
 
-function AlcoholProduction.Start(payload, onDone)
+function ThcProduction.Start(payload, onDone)
     if active then
         if onDone then onDone(false, { score = 0, mistakes = 1, reason = 'busy' }) end
         return false
@@ -399,7 +415,7 @@ function AlcoholProduction.Start(payload, onDone)
     end
 
     local mode = 'process'
-    if payload.mode == 'alcohol_pack' or tostring(payload.productId or ''):find('_pack$') then
+    if payload.mode == 'thc_pack' or tostring(payload.productId or ''):find('_pack$') then
         mode = 'pack'
     end
     local ped = PlayerPedId()
@@ -417,7 +433,7 @@ function AlcoholProduction.Start(payload, onDone)
         mode = mode,
         steps = mode == 'pack' and PACK_STEPS or PROCESS_STEPS,
         step = 1,
-        stage = mode == 'pack' and 'bottle' or 'prepare',
+        stage = mode == 'pack' and 'cartridge' or 'prepare',
         origin = origin,
         heading = heading,
         workspace = payload.workspace,
@@ -437,28 +453,27 @@ function AlcoholProduction.Start(payload, onDone)
     Wait(500)
     FreezeEntityPosition(ped, true)
     hud('vape3dOpen', {
-        title = mode == 'pack' and 'Samagonas · pakavimas' or 'Samagonas · distiliacija',
+        title = mode == 'pack' and 'THC · kasetės pildymas' or 'THC · distiliacija',
         stage = ('1/%d'):format(#session.steps),
         stageName = LABELS[session.stage],
         hint = 'Pelė · kamera · E · veiksmas · ESC · atšaukti',
-        kicker = '3D ALCOHOL WORKSTATION',
+        kicker = '3D THC WORKSTATION',
     })
 
     if mode == 'process' then
         reportStage(session, 'prepare', function()
             session.score = session.score + 10
-            session.step, session.stage = 2, 'heat'
-            session.hold = 0
-            updateHud(session, 'Laikyk E ir kaitink katilą.')
+            session.step, session.stage = 2, 'trim'
+            updateHud(session, 'Nukreipk kamerą į žirkles ir spausk E.')
         end)
     else
-        updateHud(session, 'Nukreipk kamerą į stiklainį ir spausk E.')
+        updateHud(session, 'Nukreipk kamerą į kasetę ir spausk E.')
     end
     run(session)
     return true
 end
 
-function AlcoholProduction.Close(reason)
+function ThcProduction.Close(reason)
     local session = active
     if not session then return false end
     session.finished = true
@@ -468,20 +483,20 @@ function AlcoholProduction.Close(reason)
     return true
 end
 
-function AlcoholProduction.IsActive()
+function ThcProduction.IsActive()
     return active ~= nil
 end
 
-exports('StartAlcoholProduction', function(payload, onDone)
-    return AlcoholProduction.Start(payload, onDone)
+exports('StartThcProduction', function(payload, onDone)
+    return ThcProduction.Start(payload, onDone)
 end)
 
-exports('CloseAlcoholProduction', function(reason)
-    return AlcoholProduction.Close(reason)
+exports('CloseThcProduction', function(reason)
+    return ThcProduction.Close(reason)
 end)
 
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() and active then
-        AlcoholProduction.Close('resource_stop')
+        ThcProduction.Close('resource_stop')
     end
 end)

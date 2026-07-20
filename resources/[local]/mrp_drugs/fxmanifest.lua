@@ -72,6 +72,7 @@ client_scripts {
     'client/weed_production.lua',
     'client/vape_production.lua',
     'client/alcohol_production.lua',
+    'client/thc_production.lua',
     'client/main.lua',
     'client/planned.lua',
     'client/printer.lua',
@@ -111,6 +112,9 @@ client_exports {
     'RunAlcoholProduction',
     'StartAlcoholProduction',
     'CloseAlcoholProduction',
+    'RunThcProduction',
+    'StartThcProduction',
+    'CloseThcProduction',
 }
 
 server_exports {

@@ -161,6 +161,8 @@ function Interaction3D.MoveSmooth(entity, target, durationMs, isValid, onDone)
     if not entity or not DoesEntityExist(entity) then return false end
     local start = GetEntityCoords(entity)
     local startedAt = GetGameTimer()
+    FreezeEntityPosition(entity, false)
+    SetEntityCollision(entity, false, false)
     CreateThread(function()
         while DoesEntityExist(entity) and (not isValid or isValid()) do
             local t = Interaction3D.Clamp((GetGameTimer() - startedAt) / (durationMs or 500), 0.0, 1.0)
@@ -168,10 +170,14 @@ function Interaction3D.MoveSmooth(entity, target, durationMs, isValid, onDone)
             local point = start + (target - start) * eased
             SetEntityCoordsNoOffset(entity, point.x, point.y, point.z, false, false, false)
             if t >= 1.0 then
+                FreezeEntityPosition(entity, true)
                 if onDone then onDone() end
                 return
             end
             Wait(0)
+        end
+        if DoesEntityExist(entity) then
+            FreezeEntityPosition(entity, true)
         end
     end)
     return true
@@ -214,4 +220,47 @@ function Interaction3D.Cleanup(registry)
     end
     for hash in pairs(registry.models or {}) do SetModelAsNoLongerNeeded(hash) end
     registry.entities, registry.models, registry.cam = {}, {}, nil
+end
+
+--- Ieško jau pasaulyje esančio prop (įranga) — NEkuria naujo, NEtrinti cleanup metu.
+function Interaction3D.FindNearby(candidates, origin, radius)
+    radius = tonumber(radius) or 4.0
+    if not origin then return nil end
+    for _, name in ipairs(candidates or {}) do
+        local hash = type(name) == 'number' and name or joaat(name)
+        local entity = GetClosestObjectOfType(origin.x, origin.y, origin.z, radius, hash, false, false, false)
+        if entity and entity ~= 0 and DoesEntityExist(entity) then
+            return entity, hash, name
+        end
+    end
+    return nil
+end
+
+--- workspace.entity arba artimiausias modelis; neįtraukiamas į registry.entities.
+function Interaction3D.ResolveExisting(workspace, candidates, origin, radius)
+    local entity = workspace and tonumber(workspace.entity)
+    if entity and entity ~= 0 and DoesEntityExist(entity) then
+        local model = GetEntityModel(entity)
+        local ok = false
+        for _, name in ipairs(candidates or {}) do
+            if joaat(name) == model then
+                ok = true
+                break
+            end
+        end
+        if ok or not candidates or #candidates == 0 then
+            return entity, model
+        end
+    end
+    return Interaction3D.FindNearby(candidates, origin, radius)
+end
+
+--- Aukštis virš objekto paviršiaus (stalas / katilas).
+function Interaction3D.SurfaceTop(entity, fallbackZ)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then
+        return (fallbackZ or 0.0) + 0.85
+    end
+    local coords = GetEntityCoords(entity)
+    local _, maxDim = GetModelDimensions(GetEntityModel(entity))
+    return coords.z + math.max(0.55, maxDim and maxDim.z or 0.7) + 0.03
 end

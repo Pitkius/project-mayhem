@@ -307,10 +307,19 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
     local alcohol3dMode = (alcoholCfg.enabled ~= false and alcoholCfg.legacyFallback ~= true)
         and (alcoholProducts[tostring(productId or '')] == true
             or (profile.drug == 'alcohol' and (profile.action == 'process' or profile.action == 'pack')))
-    local world3dMode = weed3dMode or vape3dMode or alcohol3dMode
+    local thcCfg = Config.Thc3D or {}
+    local thcProducts = {
+        thc_process = true,
+        thc_pack = true,
+    }
+    local thc3dMode = (thcCfg.enabled ~= false and thcCfg.legacyFallback ~= true)
+        and (thcProducts[tostring(productId or '')] == true
+            or (profile.drug == 'thc' and (profile.action == 'process' or profile.action == 'pack')))
+    local world3dMode = weed3dMode or vape3dMode or alcohol3dMode or thc3dMode
     local timeoutMs = nil
     if vape3dMode then timeoutMs = tonumber(vapeCfg.sessionTimeoutMs) end
     if alcohol3dMode then timeoutMs = tonumber(alcoholCfg.sessionTimeoutMs) or timeoutMs end
+    if thc3dMode then timeoutMs = tonumber(thcCfg.sessionTimeoutMs) or timeoutMs end
     local sessionId = MinigameManager.Begin({
         productId = productId,
         craftToken = craftToken,
@@ -383,6 +392,27 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
         local mode = (profile.action == 'pack' or tostring(productId):find('_pack$', 1, false))
             and 'alcohol_pack' or 'alcohol_process'
         local started = AlcoholProduction.Start({
+            sessionId = sessionId,
+            craftToken = craftToken,
+            productId = productId,
+            mode = mode,
+            quantity = (prod and prod.outputAmount) or 1,
+            workspace = workspace,
+        }, function(success, extra)
+            extra = extra or {}
+            extra.success = success == true
+            MinigameManager.Close(success and 'completed' or (extra.reason or 'failed'), extra, sessionId, true)
+        end)
+        if not started and MinigameManager.IsActive(sessionId) then
+            MinigameManager.Close('backend_start_failed', { success = false }, sessionId, true)
+        end
+        return
+    end
+    if thc3dMode and ThcProduction and ThcProduction.Start then
+        MinigameManager.AttachBackend(sessionId, ThcProduction)
+        local mode = (profile.action == 'pack' or tostring(productId):find('_pack$', 1, false))
+            and 'thc_pack' or 'thc_process'
+        local started = ThcProduction.Start({
             sessionId = sessionId,
             craftToken = craftToken,
             productId = productId,
@@ -2006,6 +2036,27 @@ exports('RunAlcoholProduction', function(productId, payload, onDone)
     local profile = payload.profile or payload.minigameProfile or payload.scheduleProfile
         or (Config.GetScheduleMinigame and Config.GetScheduleMinigame(productId))
         or { drug = 'alcohol', action = 'process', mode = 'moonshine_still', title = 'Samagonas', steps = 4, icon = '🥃', difficulty = 1 }
+    local prod = payload.product or payload.prod or {
+        label = payload.label or profile.title or productId,
+        outputAmount = payload.outputAmount or payload.amount or 1,
+        level = payload.level or profile.difficulty or 1,
+    }
+    runScheduleMinigame(productId, profile, prod, onDone, craftToken, payload.workspace)
+    return true
+end)
+
+exports('RunThcProduction', function(productId, payload, onDone)
+    payload = type(payload) == 'table' and payload or {}
+    productId = tostring(productId or payload.productId or '')
+    local craftToken = payload.token or payload.craftToken
+    if productId == '' or type(craftToken) ~= 'string' or craftToken == '' then
+        if onDone then onDone(false, { success = false, reason = 'invalid_thc_payload' }) end
+        return false
+    end
+
+    local profile = payload.profile or payload.minigameProfile or payload.scheduleProfile
+        or (Config.GetScheduleMinigame and Config.GetScheduleMinigame(productId))
+        or { drug = 'thc', action = 'process', mode = 'thc_scrape', title = 'THC', steps = 4, icon = '🧪', difficulty = 1 }
     local prod = payload.product or payload.prod or {
         label = payload.label or profile.title or productId,
         outputAmount = payload.outputAmount or payload.amount or 1,

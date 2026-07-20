@@ -110,37 +110,59 @@ end
 local function spawnScene(session)
     local world = session.world
     local origin, heading = session.origin, session.heading
-    local table = Interaction3D.Spawn(world,
-        session.mode == 'pack' and { 'prop_tool_bench02', 'bkr_prop_weed_table_01a' }
-            or { 'bkr_prop_meth_table01a', 'bkr_prop_weed_table_01a', 'prop_tool_bench02' },
-        origin, heading, { ground = true })
-    if not table then return false, 'table_spawn_failed' end
-    session.origin = GetEntityCoords(table)
-    local _, tableMax = GetModelDimensions(GetEntityModel(table))
-    session.top = session.origin.z + math.max(0.70, tableMax.z) + 0.03
-    session.lookAt = vector3(session.origin.x, session.origin.y, session.top + 0.05)
+    local workspace = session.workspace
 
-    local back = Interaction3D.Offset(session.origin, heading, 0.0, -2.30, 1.55)
+    --- Fiksuotas vape_still / bagging_table — nespawninti antrojo stalo ant esamo.
+    local anchorModels = session.mode == 'pack'
+        and { 'bkr_prop_weed_table_01a', 'prop_tool_bench02', 'bkr_prop_meth_table01a' }
+        or { 'bkr_prop_weed_table_01a', 'bkr_prop_meth_table01a', 'prop_tool_bench02' }
+
+    local existing = Interaction3D.ResolveExisting(workspace, anchorModels, origin, 5.0)
+    if existing and DoesEntityExist(existing) then
+        session.anchor = existing
+        session.table = existing
+        session.origin = GetEntityCoords(existing)
+        session.heading = GetEntityHeading(existing)
+        heading = session.heading
+        origin = session.origin
+    else
+        local table = Interaction3D.Spawn(world,
+            session.mode == 'pack' and { 'prop_tool_bench02', 'bkr_prop_weed_table_01a' }
+                or { 'bkr_prop_meth_table01a', 'bkr_prop_weed_table_01a', 'prop_tool_bench02' },
+            origin, heading, { ground = true })
+        if not table then return false, 'table_spawn_failed' end
+        session.table = table
+        session.origin = GetEntityCoords(table)
+        session.heading = GetEntityHeading(table)
+        heading = session.heading
+        origin = session.origin
+    end
+
+    session.top = Interaction3D.SurfaceTop(session.table or session.anchor, origin.z)
+    session.lookAt = vector3(origin.x, origin.y, session.top + 0.05)
+
+    local back = Interaction3D.Offset(origin, heading, 0.0, -2.30, 1.55)
     if not Interaction3D.CreateCamera(world, back, session.lookAt, 43.0) then
         return false, 'camera_failed'
     end
     world.lookAt = session.lookAt
     world.camDistance = 2.85
 
-    local scalePos = Interaction3D.Offset(session.origin, heading, -0.45, 0.05, session.top - session.origin.z + 0.03)
-    session.scale = Interaction3D.Spawn(world, { 'bkr_prop_coke_scale_01' }, scalePos, heading, {})
-    local bottlePos = Interaction3D.Offset(session.origin, heading, 0.52, -0.15, session.top - session.origin.z + 0.12)
-    session.bottle = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, bottlePos, heading, {})
+    local scalePos = Interaction3D.Offset(origin, heading, -0.45, 0.05, session.top - origin.z + 0.03)
+    session.scale = Interaction3D.Spawn(world, { 'bkr_prop_coke_scale_01' }, scalePos, heading, { collision = false })
+    local bottlePos = Interaction3D.Offset(origin, heading, 0.52, -0.15, session.top - origin.z + 0.12)
+    session.bottle = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, bottlePos, heading, { collision = false })
     if not session.scale or not session.bottle then return false, 'tool_spawn_failed' end
 
     if session.mode == 'process' then
-        local cookerPos = Interaction3D.Offset(session.origin, heading, 0.0, 0.25, session.top - session.origin.z + 0.04)
-        session.cooker = Interaction3D.Spawn(world, { 'prop_cooker_03' }, cookerPos, heading, {})
+        --- Mažas degiklis ant stalo (ne antras stalas)
+        local cookerPos = Interaction3D.Offset(origin, heading, 0.0, 0.25, session.top - origin.z + 0.04)
+        session.cooker = Interaction3D.Spawn(world, { 'prop_cooker_03' }, cookerPos, heading, { collision = false })
         if not session.cooker then return false, 'cooker_spawn_failed' end
-        session.pourPoint = Interaction3D.Offset(session.origin, heading, 0.0, 0.12, session.top - session.origin.z + 0.28)
+        session.pourPoint = Interaction3D.Offset(origin, heading, 0.0, 0.12, session.top - origin.z + 0.28)
     else
-        local capPos = Interaction3D.Offset(session.origin, heading, 0.45, 0.25, session.top - session.origin.z + 0.12)
-        session.cap = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, capPos, heading + 180.0, {})
+        local capPos = Interaction3D.Offset(origin, heading, 0.45, 0.25, session.top - origin.z + 0.12)
+        session.cap = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, capPos, heading + 180.0, { collision = false })
         if not session.cap then return false, 'cap_spawn_failed' end
     end
     return true
@@ -350,6 +372,7 @@ function VapeProduction.Start(payload, onDone)
         stage = mode == 'pack' and 'bottle' or 'prepare',
         origin = origin,
         heading = heading,
+        workspace = payload.workspace,
         world = Interaction3D.NewRegistry(),
         score = 0,
         mistakes = 0,
@@ -369,7 +392,7 @@ function VapeProduction.Start(payload, onDone)
         title = mode == 'pack' and 'Vape · pakavimas' or 'Vape · skysčio gamyba',
         stage = ('1/%d'):format(#session.steps),
         stageName = LABELS[session.stage],
-        hint = 'ESC · atšaukti',
+        hint = 'Pelė · kamera · E · veiksmas · ESC · atšaukti',
     })
 
     if mode == 'process' then

@@ -137,13 +137,14 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- false = šviečia mašinos lightbar (carcols). true = papildomas stogo DrawLight (atrodo blogai).
+    --- false = nenaudoti stogo DrawLight „assist“ (atrodo plūduriuojančiai).
+    --- Tikri lightbar flash: SetVehicleSiren (carcols) + kaulų glow žemiau.
     nativeFlashAssist = false,
-    --- Atsarginis kaulų glow tik jei native visai neveikia
-    fleetSirenBoneLights = false,
-    fleetSirenBoneRange = 9.0,
-    fleetSirenBoneIntensity = 6.5,
-    fleetSirenBoneIntervalMs = 380,
+    --- Raudona/mėlyna ant mašinos siren kaulų (lightbar mesh) — veikia kai carcols silpnas.
+    fleetSirenBoneLights = true,
+    fleetSirenBoneRange = 11.0,
+    fleetSirenBoneIntensity = 8.5,
+    fleetSirenBoneIntervalMs = 320,
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
     allowPassengerControl = true,
     performanceTune = {

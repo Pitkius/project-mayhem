@@ -374,10 +374,11 @@ local function buildStageSequence(configured)
     return sequence
 end
 
---- Shared ordered stage state for L1 liquid crafts (vape + alcohol).
+--- Shared ordered stage state for L1 liquid crafts (vape + alcohol + THC).
 local function createLiquidStageState(productId, now)
     local configured = (Config.VapeStageSequences and Config.VapeStageSequences[productId])
         or (Config.AlcoholStageSequences and Config.AlcoholStageSequences[productId])
+        or (Config.ThcStageSequences and Config.ThcStageSequences[productId])
     local sequence = buildStageSequence(configured)
     if not sequence then return nil end
     return {
@@ -1060,6 +1061,10 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:alcoholProductionStage', funct
     acceptLiquidProductionStage(src, cb, token, stageName, 'Alkoholio')
 end)
 
+QBCore.Functions.CreateCallback('mrp_drugs:server:thcProductionStage', function(src, cb, token, stageName)
+    acceptLiquidProductionStage(src, cb, token, stageName, 'THC')
+end)
+
 QBCore.Functions.CreateCallback('mrp_drugs:server:liquidProductionStage', function(src, cb, token, stageName)
     acceptLiquidProductionStage(src, cb, token, stageName, 'Skysčio')
 end)
@@ -1122,13 +1127,19 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
     end
     if minigameSuccess == true and active.vapeStages
         and active.vapeStages.index < #active.vapeStages.sequence then
-        local kind = active.productId:sub(1, 8) == 'alcohol_' and 'alcohol' or 'vape'
+        local pid = active.productId or ''
+        local kind = pid:sub(1, 8) == 'alcohol_' and 'alcohol'
+            or (pid:sub(1, 4) == 'thc_' and 'thc' or 'vape')
+        local reasonText = ({
+            alcohol = 'Neužbaigti visi alkoholio gamybos etapai.',
+            thc = 'Neužbaigti visi THC gamybos etapai.',
+            vape = 'Neužbaigti visi vape gamybos etapai.',
+        })[kind] or 'Neužbaigti visi gamybos etapai.'
         abortCraft(src, ('incomplete_%s_stages'):format(kind), nil, true)
         logAdmin(('REJECT incomplete %s stages %s cid=%s'):format(kind, active.productId, Player.PlayerData.citizenid))
         return cb({
             ok = false,
-            reason = kind == 'alcohol' and 'Neužbaigti visi alkoholio gamybos etapai.'
-                or 'Neužbaigti visi vape gamybos etapai.',
+            reason = reasonText,
             failed = true,
         })
     end

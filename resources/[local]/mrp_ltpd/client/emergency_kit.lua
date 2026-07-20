@@ -651,13 +651,21 @@ local function applyNativeForEveryone(vehicle, mode)
     end
     --- lights / full — mašinos carcols + extras (be prop)
     enableFleetLightbarExtras(vehicle)
-    if not NetworkHasControlOfEntity(vehicle) then
-        NetworkRequestControlOfEntity(vehicle)
-    end
+    ensureVehicleControl(vehicle, 20)
     SetVehicleEngineOn(vehicle, true, true, false)
+    --- Kai kurie addonai reikalauja abu: siren ON + ne muted vizualui
     SetVehicleSiren(vehicle, true)
-    --- Garsą valdo mrp_siren_controller
+    --- Garsą valdo mrp_siren_controller — mute tik native sirenos garsą, ne šviesas
     SetVehicleHasMutedSirens(vehicle, true)
+    --- Pakartotinai (GTA kartais išjungia pirmą frame)
+    CreateThread(function()
+        Wait(50)
+        if not DoesEntityExist(vehicle) then return end
+        if IsVehicleSirenOn(vehicle) then return end
+        ensureVehicleControl(vehicle, 10)
+        SetVehicleSiren(vehicle, true)
+        SetVehicleHasMutedSirens(vehicle, true)
+    end)
 end
 
 --- Visoms fleet PD mašinoms: script flash ant stogo (be prop), nepriklausomai nuo carcols.

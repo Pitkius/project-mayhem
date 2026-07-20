@@ -1609,6 +1609,31 @@ Config.AlcoholStageSequences = {
     },
 }
 
+--- L1 THC 3D (ta pati schema kaip Alcohol3D / Vape3D).
+Config.Thc3D = {
+    enabled = true,
+    legacyFallback = false,
+    sessionTimeoutMs = 180000,
+}
+
+--- Serverio priimama THC etapų seka.
+Config.ThcStageSequences = {
+    thc_process = {
+        { name = 'prepare', minMs = 350 },
+        { name = 'trim', minMs = 1200 },
+        { name = 'heat', minMs = 800 },
+        { name = 'collect', minMs = 700 },
+        { name = 'stabilize', minMs = 1200 },
+    },
+    thc_pack = {
+        { name = 'cartridge', minMs = 350 },
+        { name = 'fill', minMs = 1600 },
+        { name = 'coil', minMs = 900 },
+        { name = 'seal', minMs = 500 },
+        { name = 'finalize', minMs = 350 },
+    },
+}
+
 --- Grybų perdirbimas — šalia rinkimo lauko (Mount Chiliad)
 Config.MushroomLab = {
     blip = {
