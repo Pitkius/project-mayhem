@@ -8,6 +8,8 @@ Config.BurgerKitchen = Config.BurgerKitchen or {}
 
 Config.BurgerKitchen.enabled = true
 Config.BurgerKitchen.sessionTimeoutMs = 120000
+--- true = nenaudoti spawn'inamų grilio/fryer/fontano propų (MLO baldai jau yra)
+Config.BurgerKitchen.useMloFurniture = true
 
 --- Stoties tipai (locations.kitchen[].type)
 Config.BurgerKitchen.stationTypes = {

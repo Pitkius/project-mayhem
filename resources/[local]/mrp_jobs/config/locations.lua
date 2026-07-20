@@ -46,62 +46,67 @@ Config.Locations.oil = {
 }
 
 -- ── BURGER JOINT (2 vietos) ───────────────────────────────────────
--- burgershot_1 = uniqx_burgershot (Vespucci), burgershot_2 = antras Burger Shot.
+-- burgershot_1 = uniqx_burgershot (Vespucci)
+-- burgershot_2 = giant_burger (Little Seoul — Lucky Clucker)
 Config.Locations.burger = {
     joints = {
         burgershot_1 = {
             label = 'Burger Shot · Vespucci',
+            mlo = 'uniqx_burgershot',
             registerNpc = { model = 'a_m_m_hillbilly_01', coords = vector4(-1194.5, -890.9, 13.98, 130.0), scenario = 'WORLD_HUMAN_STAND_IMPATIENT' },
-            -- Kasos (kasininkas + NPC pirkimas)
+            -- Kasos / tray (y_burgershot Uniqx coords)
             registers = {
-                { id = 'reg_1', coords = vector4(-1196.9, -892.6, 13.98, 34.0) },
+                { id = 'reg_1', coords = vector4(-1194.93, -893.3, 13.98, 34.0) },
             },
-            -- Virtuvės stotys (3D gaminimas)
+            -- Virtuvė ant MLO baldų (Uniqx cook / fry / burgers / drinks)
             kitchen = {
-                { id = 'grill_1', type = 'grill', coords = vector4(-1200.3, -896.6, 13.98, 34.0) },
-                { id = 'fryer_1', type = 'fryer', coords = vector4(-1199.4, -897.8, 13.98, 34.0) },
-                { id = 'assembly_1', type = 'assembly', coords = vector4(-1201.2, -895.4, 13.98, 34.0) },
-                { id = 'drinks_1', type = 'drinks', coords = vector4(-1198.2, -895.0, 13.98, 304.0) },
+                { id = 'grill_1', type = 'grill', coords = vector4(-1195.02, -897.35, 13.98, 74.0) },
+                { id = 'fryer_1', type = 'fryer', coords = vector4(-1196.08, -900.08, 13.50, 74.0) },
+                { id = 'assembly_1', type = 'assembly', coords = vector4(-1195.29, -897.55, 13.80, 74.0) },
+                { id = 'drinks_1', type = 'drinks', coords = vector4(-1191.0, -898.75, 13.89, 125.0) },
             },
-            -- NPC klientų eilės kelias (uniqx_burgershot — palei sieną, ne per stalus)
+            -- NPC eilė palei counter (ne per stalus)
             queue = {
-                register = vector4(-1195.2, -892.9, 13.98, 214.0),  -- prie kasos (klientas)
-                anchor = vector4(-1195.9, -892.1, 13.98, 214.0),   -- 2-as eilėje
-                step = vector3(-0.55, 0.65, 0.0),                    -- atgal link įėjimo
-                spawn = vector4(-1199.0, -882.5, 13.98, 125.0),     -- prie įėjimo durų
+                register = vector4(-1195.2, -892.9, 13.98, 214.0),
+                anchor = vector4(-1195.9, -892.1, 13.98, 214.0),
+                step = vector3(-0.55, 0.65, 0.0),
+                spawn = vector4(-1199.0, -882.5, 13.98, 125.0),
                 exit = vector4(-1201.0, -879.5, 13.98, 125.0),
                 waypoints = {
-                    vector3(-1199.0, -882.5, 13.98),  -- durys
-                    vector3(-1198.8, -887.5, 13.98),  -- vakarinė siena (apeina stalus)
-                    vector3(-1197.2, -890.2, 13.98),  -- prie kasos kampo
-                    vector3(-1196.2, -891.8, 13.98),  -- prie counter
+                    vector3(-1199.0, -882.5, 13.98),
+                    vector3(-1198.8, -887.5, 13.98),
+                    vector3(-1197.2, -890.2, 13.98),
+                    vector3(-1196.2, -891.8, 13.98),
                 },
             },
             blip = { sprite = 106, color = 47, scale = 0.7, name = 'Burger Shot' },
         },
         burgershot_2 = {
-            label = 'Burger Shot · Del Perro',
-            registerNpc = { model = 'a_m_m_hillbilly_01', coords = vector4(-1476.9, -650.8, 29.5, 320.0), scenario = 'WORLD_HUMAN_STAND_IMPATIENT' },
+            label = 'Burger Shot · Little Seoul',
+            mlo = 'giant_burger',
+            -- Įėjimas (forum / Lucky Clucker)
+            registerNpc = { model = 'a_m_m_hillbilly_01', coords = vector4(-595.71, -861.46, 25.89, 270.0), scenario = 'WORLD_HUMAN_STAND_IMPATIENT' },
             registers = {
-                { id = 'reg_1', coords = vector4(-1478.9, -652.9, 29.5, 140.0) },
+                -- Counter viduryje (dining šiaurėje y≈-871, virtuvė pietuose y≈-882)
+                { id = 'reg_1', coords = vector4(-584.96, -874.0, 29.0, 0.0) },
             },
             kitchen = {
-                { id = 'grill_1', type = 'grill', coords = vector4(-1482.4, -648.6, 29.5, 140.0) },
-                { id = 'fryer_1', type = 'fryer', coords = vector4(-1481.2, -647.4, 29.5, 140.0) },
-                { id = 'assembly_1', type = 'assembly', coords = vector4(-1483.5, -649.5, 29.5, 140.0) },
-                { id = 'drinks_1', type = 'drinks', coords = vector4(-1480.0, -650.2, 29.5, 50.0) },
+                { id = 'grill_1', type = 'grill', coords = vector4(-588.2, -882.0, 29.0, 180.0) },
+                { id = 'fryer_1', type = 'fryer', coords = vector4(-590.6, -882.0, 29.0, 180.0) },
+                { id = 'assembly_1', type = 'assembly', coords = vector4(-586.0, -881.6, 29.0, 180.0) },
+                { id = 'drinks_1', type = 'drinks', coords = vector4(-580.2, -876.5, 29.0, 90.0) },
             },
             queue = {
-                register = vector4(-1478.4, -652.4, 29.5, 320.0),
-                anchor = vector4(-1477.6, -651.6, 29.5, 320.0),
-                step = vector3(0.55, 0.55, 0.0),
-                spawn = vector4(-1472.5, -646.0, 29.5, 320.0),
-                exit = vector4(-1468.5, -642.0, 29.5, 320.0),
+                register = vector4(-585.0, -873.0, 29.0, 180.0),
+                anchor = vector4(-585.0, -871.8, 29.0, 180.0),
+                step = vector3(0.0, 0.75, 0.0),
+                spawn = vector4(-595.71, -861.46, 25.89, 180.0),
+                exit = vector4(-595.71, -855.0, 25.2, 0.0),
                 waypoints = {
-                    vector3(-1472.5, -646.0, 29.5),
-                    vector3(-1474.8, -648.2, 29.5),
-                    vector3(-1476.8, -650.2, 29.5),
-                    vector3(-1478.0, -651.8, 29.5),
+                    vector3(-595.71, -861.46, 25.89),
+                    vector3(-590.0, -865.5, 26.2),
+                    vector3(-585.5, -870.5, 28.9),
+                    vector3(-585.0, -872.5, 29.0),
                 },
             },
             blip = { sprite = 106, color = 47, scale = 0.7, name = 'Burger Shot' },

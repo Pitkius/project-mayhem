@@ -206,7 +206,10 @@ function produceItem(orderId, itemName)
                 end
                 if not origin and joint.kitchen[1] then origin = joint.kitchen[1].coords end
             end
-            local result = BurgerKitchen3D.Start(itemName, { origin = origin })
+            local result = BurgerKitchen3D.Start(itemName, {
+                origin = origin,
+                stations = joint and joint.kitchen or nil,
+            })
             success = result and result.success == true
             quality = (result and result.quality) or 'poor'
             score = (result and result.score) or 0

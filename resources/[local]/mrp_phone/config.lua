@@ -28,6 +28,8 @@ Config.Phone = {
     maxNoteTitleLength = 64,
     --- Užrašai, kurių `updated_at` senesnis nei tiek dienų, laikomi „senais“ (valymui)
     notesOldDays = 30,
+    --- App Store siuntimo trukmė (ms) — programėlės neįsidiegia iškart
+    appDownloadMs = { min = 7000, max = 14000 },
     --- CarPlay: max nuorodos ilgis
     maxCarPlayUrlLength = 2048,
     --- Automatiniai tarnybų kontaktai (įrašomi kiekvienam žaidėjui, abėcėlės tvarka)
@@ -49,22 +51,22 @@ Config.Phone = {
         { id = 'other', label = 'Įvairūs' },
     },
     --- default = įdiegiama su paskyra ir rodoma pagrindiniame ekrane
-    --- default = false → tik per App Store
+    --- default = false → tik per App Store (reikia atsisiųsti)
+    --- Apps su requiresAccount: LifeGram / Skelbimai — atskira app paskyra (ne auto)
     AppStoreApps = {
         { id = 'calls', label = 'Skambučiai', icon = 'calls', default = true },
         { id = 'messages', label = 'Žinutės', icon = 'messages', default = true },
         { id = 'contacts', label = 'Kontaktai', icon = 'contacts', default = true },
         { id = 'settings', label = 'Nustatymai', icon = 'settings', default = true },
-        { id = 'camera', label = 'Kamera', icon = 'camera', default = true, description = 'Fotografuok ir saugok nuotraukas telefone' },
-        { id = 'gallery', label = 'Galerija', icon = 'gallery', default = true, description = 'Tavo nuotraukų albumas' },
-        { id = 'carplay', label = 'CarPlay', icon = 'carplay', default = false, description = 'Muzika automobilyje (Spotify / YouTube)' },
-        { id = 'notes', label = 'Užrašai', icon = 'notes', default = true },
         { id = 'appstore', label = 'Programėlės', icon = 'appstore', default = true },
-        { id = 'ads', label = 'Skelbimai', icon = 'ads', default = true, description = 'Skelbimų portalas su profiliais' },
-        { id = 'insta', label = 'LifeGram', icon = 'insta', default = false, description = 'Socialinis tinklas su nuotraukomis' },
-        { id = 'bank', label = 'BANKAS', icon = 'bank', default = true, description = 'Mobilus bankas — pervedimai, balansas, istorija' },
+        { id = 'camera', label = 'Kamera', icon = 'camera', default = false, description = 'Fotografuok ir saugok nuotraukas telefone' },
+        { id = 'gallery', label = 'Galerija', icon = 'gallery', default = false, description = 'Tavo nuotraukų albumas' },
+        { id = 'notes', label = 'Užrašai', icon = 'notes', default = false, description = 'Asmeniniai užrašai' },
+        { id = 'bank', label = 'BANKAS', icon = 'bank', default = false, description = 'Mobilus bankas — pervedimai, balansas, istorija' },
+        { id = 'ads', label = 'Skelbimai', icon = 'ads', default = false, description = 'Skelbimų portalas — reikalinga atskira paskyra', requiresAccount = true },
+        { id = 'insta', label = 'LifeGram', icon = 'insta', default = false, description = 'Socialinis tinklas — susikurk savo LifeGram paskyrą', requiresAccount = true },
+        { id = 'carplay', label = 'CarPlay', icon = 'carplay', default = false, description = 'Muzika automobilyje (Spotify / YouTube)' },
         { id = 'weather', label = 'Orai', icon = 'weather', default = false, description = 'Orų prognozė: Los Santos, Sandy Shores, Paleto Bay' },
-        { id = 'cargonet', label = 'CargoNet', icon = 'cargonet', default = false, description = 'Krovinių birža ir logistikos kontraktai' },
     }
 }
 

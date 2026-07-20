@@ -14,7 +14,6 @@ const APP_TEMPLATE = {
   camera: "renderCameraApp",
   notes: "renderNotesApp",
   weather: "renderWeatherApp",
-  cargonet: "renderCargoNetApp",
 };
 const DOCK_APPS = ["calls", "messages", "contacts", "settings"];
 const APPS_PER_PAGE = 16;
@@ -33,7 +32,7 @@ const state = {
   notes: [],
   notesOldDays: 30,
   posts: [],
-  cargoNet: { registered: false, level: 1, deliveries: 0 },
+  socialProfile: null,
   money: { cash: 0, bank: 0 },
   activeCallId: null,
   activeConvNumber: "",
@@ -390,12 +389,12 @@ function hydrate(payload = {}) {
   state.ads = payload.ads || [];
   state.adCategories = payload.adCategories || [];
   state.adProfile = payload.adProfile || null;
+  state.socialProfile = payload.socialProfile || null;
   state.photos = payload.photos || [];
   state.notes = Array.isArray(payload.notes) ? payload.notes : (Array.isArray(state.notes) ? state.notes : []);
   state.notesOldDays = Number(payload.notesOldDays) > 0 ? Number(payload.notesOldDays) : 30;
   state.posts = payload.posts || [];
   state.money = payload.money || state.money;
-  state.cargoNet = payload.cargoNet || state.cargoNet || { registered: false, level: 1, deliveries: 0 };
   const name = state.account.username || state.me.name || "Žaidėjas";
   const pn = document.getElementById("profileName");
   if (pn) pn.textContent = `Sveiki, ${name}`;
@@ -407,6 +406,55 @@ function hydrate(payload = {}) {
 
 window.PhoneHydrate = hydrate;
 
+/** Aktyvūs App Store siuntimai: appId -> { started, duration, timer } */
+const storeDownloads = {};
+
+function storeDownloadPct(appId) {
+  const d = storeDownloads[appId];
+  if (!d) return 0;
+  return Math.min(100, Math.floor(((Date.now() - d.started) / d.duration) * 100));
+}
+
+function clearStoreDownload(appId) {
+  const d = storeDownloads[appId];
+  if (d?.timer) clearInterval(d.timer);
+  delete storeDownloads[appId];
+}
+
+async function finishStoreDownload(appId) {
+  clearStoreDownload(appId);
+  const res = await nui("installApp", { appId });
+  hydrate(await nui("refresh"));
+  showScreen("appStoreScreen");
+  renderAppStore();
+  if (res && res.ok === false && res.message) {
+    /* silent — refresh already shows state */
+  }
+}
+
+function startStoreDownloadTick(appId) {
+  const d = storeDownloads[appId];
+  if (!d) return;
+  if (d.timer) clearInterval(d.timer);
+  d.timer = setInterval(() => {
+    if (!storeDownloads[appId]) return;
+    const pct = storeDownloadPct(appId);
+    const btn = document.querySelector(`[data-install-app="${String(appId).replace(/"/g, "")}"]`);
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add("is-downloading");
+      btn.innerHTML = `<span class="store-dl-ring" style="--p:${pct}"></span><span class="store-dl-label">${pct}%</span>`;
+      const bar = btn.closest(".store-row")?.querySelector(".store-dl-bar > i");
+      if (bar) bar.style.width = `${pct}%`;
+    }
+    if (pct >= 100) {
+      clearInterval(storeDownloads[appId].timer);
+      storeDownloads[appId].timer = null;
+      finishStoreDownload(appId);
+    }
+  }, 120);
+}
+
 function renderAppStore() {
   const list = document.getElementById("storeList");
   const rows = storeApps();
@@ -415,24 +463,53 @@ function renderAppStore() {
         .map((app) => {
           const done = app.installed || app.default;
           const desc = app.description || "Papildoma programėlė";
-          return `<div class="card store-row">
+          const dl = storeDownloads[app.id];
+          const pct = dl ? storeDownloadPct(app.id) : 0;
+          let action;
+          if (done) {
+            action = `<button type="button" disabled>Įdiegta</button>`;
+          } else if (dl) {
+            action = `<button type="button" class="is-downloading" data-install-app="${esc(app.id)}" disabled>
+              <span class="store-dl-ring" style="--p:${pct}"></span>
+              <span class="store-dl-label">${pct}%</span>
+            </button>`;
+          } else {
+            action = `<button type="button" data-install-app="${esc(app.id)}">Gauti</button>`;
+          }
+          return `<div class="card store-row${dl ? " is-downloading" : ""}">
           ${iconHtml(app.icon, "store-app-icon")}
           <div class="store-row-info">
             <b>${esc(app.label)}</b>
             <div class="small muted">${esc(desc)}</div>
+            ${dl ? `<div class="store-dl-bar"><i style="width:${pct}%"></i></div>` : ""}
           </div>
-          <button type="button" data-install-app="${esc(app.id)}" ${done ? "disabled" : ""}>${done ? "Įdiegta" : "Gauti"}</button>
+          ${action}
         </div>`;
         })
         .join("")
     : `<div class="card muted">Visos papildomos programėlės jau įdiegtos.</div>`;
+
   list.querySelectorAll("[data-install-app]:not([disabled])").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      await nui("installApp", { appId: btn.dataset.installApp });
-      hydrate(await nui("refresh"));
-      showScreen("appStoreScreen");
+      const appId = btn.dataset.installApp;
+      if (!appId || storeDownloads[appId]) return;
+      btn.disabled = true;
+      btn.textContent = "…";
+      const res = await nui("beginAppDownload", { appId });
+      if (!res || !res.ok) {
+        btn.disabled = false;
+        btn.textContent = "Gauti";
+        return;
+      }
+      const duration = Math.max(3000, Number(res.durationMs) || 8000);
+      storeDownloads[appId] = { started: Date.now(), duration, timer: null };
       renderAppStore();
+      startStoreDownloadTick(appId);
     });
+  });
+
+  Object.keys(storeDownloads).forEach((appId) => {
+    if (!storeDownloads[appId].timer) startStoreDownloadTick(appId);
   });
 }
 
@@ -511,11 +588,55 @@ function lgInitials(name) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
+function hasSocialProfile() {
+  return !!(state.socialProfile && state.socialProfile.username);
+}
+
+function renderSocialSetup(content) {
+  content.className = "scroll-body insta-body";
+  const prof = state.socialProfile;
+  content.innerHTML = `
+    <div class="lg-app">
+      <div class="lg-header-bar"><span class="lg-brand">LifeGram</span></div>
+      <section class="lg-compose neon-card" style="margin:12px 14px">
+        <h3 class="lg-compose-title">${prof?.username ? "Redaguoti paskyrą" : "Sukurti LifeGram paskyrą"}</h3>
+        <p class="muted small">Telefono paskyra neatstoja — reikia atskiros LifeGram paskyros.</p>
+        <label class="small muted">Vartotojo vardas</label>
+        <input id="lgUsername" placeholder="Pvz. Mantas123" maxlength="24" value="${esc(prof?.username || "")}" />
+        <label class="small muted" style="display:block;margin-top:10px">Bio</label>
+        <textarea id="lgBio" placeholder="Trumpas aprašymas…" rows="3" maxlength="200" style="width:100%;resize:vertical">${esc(prof?.bio || "")}</textarea>
+        <button type="button" id="btnSaveSocial" class="neon-btn primary">Išsaugoti</button>
+        <div class="muted small" id="lgSetupMsg" style="margin-top:8px"></div>
+      </section>
+    </div>`;
+
+  content.querySelector("#btnSaveSocial")?.addEventListener("click", async () => {
+    const msg = content.querySelector("#lgSetupMsg");
+    const res = await nui("saveSocialProfile", {
+      username: content.querySelector("#lgUsername")?.value,
+      bio: content.querySelector("#lgBio")?.value,
+    });
+    if (!res?.ok) {
+      if (msg) msg.textContent = res?.message || "Klaida";
+      return;
+    }
+    hydrate(await nui("refresh"));
+    lgUi.tab = "feed";
+    openApp("insta");
+  });
+}
+
 window.renderSocialApp = async (content) => {
+  if (!hasSocialProfile()) {
+    renderSocialSetup(content);
+    return;
+  }
+
   content.className = "scroll-body insta-body";
   const tab = lgUi.tab || "feed";
-  const accountName = state.account.username || state.me.name || "Tu";
-  const myPosts = (state.posts || []).filter((p) => p.author_name === state.me.name);
+  const handle = state.socialProfile.username;
+  const bio = state.socialProfile.bio || "";
+  const myPosts = (state.posts || []).filter((p) => p.author_name === handle);
 
   const renderFeed = async () => {
     const posts = state.posts || [];
@@ -529,7 +650,7 @@ window.renderSocialApp = async (content) => {
         return `<article class="lg-post-card">
           <header class="lg-post-head">
             <div class="core-avatar sm">${esc(lgInitials(p.author_name))}</div>
-            <strong>${esc(p.author_name)}</strong>
+            <strong>@${esc(p.author_name)}</strong>
           </header>
           ${img}
           <p class="lg-post-caption">${esc(p.caption || "")}</p>
@@ -566,11 +687,20 @@ window.renderSocialApp = async (content) => {
 
   const renderProfile = () => {
     return `<div class="lg-profile-hero">
-      <div class="core-avatar">${esc(lgInitials(accountName))}</div>
-      <b>${esc(accountName)}</b>
-      <div class="muted small">@${esc(state.account.username || "vartotojas")}</div>
+      <div class="core-avatar">${esc(lgInitials(handle))}</div>
+      <b>@${esc(handle)}</b>
+      <div class="muted small">${esc(bio || "Nėra bio")}</div>
       <div class="lg-post-stats"><span><b>${myPosts.length}</b> įrašai</span><span><b>${myPosts.reduce((s, p) => s + Number(p.likes || 0), 0)}</b> patinka</span></div>
     </div>
+    <section class="lg-compose neon-card" style="margin:12px 14px">
+      <h3 class="lg-compose-title">Redaguoti profilį</h3>
+      <label class="small muted">Vartotojo vardas</label>
+      <input id="lgEditUsername" maxlength="24" value="${esc(handle)}" />
+      <label class="small muted" style="display:block;margin-top:10px">Bio</label>
+      <textarea id="lgEditBio" rows="3" maxlength="200" style="width:100%;resize:vertical">${esc(bio)}</textarea>
+      <button type="button" id="btnEditSocial" class="neon-btn primary">Išsaugoti</button>
+      <div class="muted small" id="lgEditMsg" style="margin-top:8px"></div>
+    </section>
     <div class="core-section-label" style="padding:0 14px">Mano įrašai</div>
     <div id="lgProfileFeed" class="lg-feed"><div class="muted small" style="padding:16px">${window.t ? window.t("common.loading") : "Kraunama…"}</div></div>`;
   };
@@ -623,6 +753,19 @@ window.renderSocialApp = async (content) => {
     });
   } else if (tab === "profile") {
     panel.innerHTML = renderProfile();
+    content.querySelector("#btnEditSocial")?.addEventListener("click", async () => {
+      const msg = content.querySelector("#lgEditMsg");
+      const res = await nui("saveSocialProfile", {
+        username: content.querySelector("#lgEditUsername")?.value,
+        bio: content.querySelector("#lgEditBio")?.value,
+      });
+      if (!res?.ok) {
+        if (msg) msg.textContent = res?.message || "Klaida";
+        return;
+      }
+      hydrate(await nui("refresh"));
+      openApp("insta");
+    });
     const feedEl = content.querySelector("#lgProfileFeed");
     if (feedEl) {
       if (!myPosts.length) {
@@ -657,7 +800,7 @@ window.renderSocialApp = async (content) => {
         .map(
           (name) => `<div class="core-list-item">
             <div class="core-avatar sm">${esc(lgInitials(name))}</div>
-            <div class="core-list-body"><b>${esc(name)}</b><div class="sub">${(state.posts || []).filter((p) => p.author_name === name).length} įrašai</div></div>
+            <div class="core-list-body"><b>@${esc(name)}</b><div class="sub">${(state.posts || []).filter((p) => p.author_name === name).length} įrašai</div></div>
           </div>`,
         )
         .join("");
@@ -746,38 +889,6 @@ window.renderSettingsApp = (content) => {
   };
   bindToggle("#toggleSounds", "mrp_phone_sounds");
   bindToggle("#toggleNotifs", "mrp_phone_notifs");
-};
-
-window.renderCargoNetApp = (content) => {
-  const cn = state.cargoNet || {};
-  const registered = cn.registered === true;
-  if (registered) {
-    content.innerHTML = `
-      <div class="card">
-        <b>CargoNet</b>
-        <p class="muted small">Krovinių birža ir logistikos kontraktai.</p>
-        <p class="small">${esc(cn.level || 1)} lygis · ${Number(cn.deliveries || 0).toLocaleString("lt-LT")} pristatymai</p>
-        <button id="btnOpenCargoNet" class="ios-btn primary">Atidaryti CargoNet</button>
-      </div>`;
-  } else {
-    content.innerHTML = `
-      <div class="card">
-        <b>CargoNet</b>
-        <p class="muted small">Tapkite nepriklausomu sunkvežimio vairuotoju ir gaukite prieigą prie krovinių biržos.</p>
-        <button id="btnOpenCargoNet" class="ios-btn primary">Registruotis vairuotoju</button>
-      </div>`;
-  }
-  document.getElementById("btnOpenCargoNet").addEventListener("click", async () => {
-    const btn = document.getElementById("btnOpenCargoNet");
-    if (btn) btn.disabled = true;
-    try {
-      await nui("openCargoNet", {});
-    } catch (_) {
-      /* fetch klaida – dažniausiai resursas perkraunamas */
-    } finally {
-      if (btn) btn.disabled = false;
-    }
-  });
 };
 
 window.addEventListener("message", async (e) => {

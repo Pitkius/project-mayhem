@@ -254,17 +254,37 @@ local function setupCam(session, look)
     session.cam = cam
 end
 
+local function useMloFurniture()
+    return cfg().useMloFurniture ~= false
+end
+
+local function applyStation(session, stationType)
+    for _, stn in ipairs(session.stations or {}) do
+        if stn.type == stationType and stn.coords then
+            local c = stn.coords
+            session.origin = vector3(c.x, c.y, c.z)
+            if c.w then session.heading = c.w end
+            return true
+        end
+    end
+    return false
+end
+
 local function runBurgerLine(session, def)
+    applyStation(session, 'grill')
     local origin, h = session.origin, session.heading
-    local grillPos = offset(origin, h, -0.55, 0.35, 0.0)
-    local boardPos = offset(origin, h, 0.45, 0.25, 0.0)
-    session.grill = spawnProp(session, 'grill', grillPos, h)
+    local mlo = useMloFurniture()
+    local grillPos = mlo and origin or offset(origin, h, -0.55, 0.35, 0.0)
+    local boardPos = mlo and offset(origin, h, 0.55, 0.15, 0.05) or offset(origin, h, 0.45, 0.25, 0.0)
+    if not mlo then
+        session.grill = spawnProp(session, 'grill', grillPos, h)
+    end
     session.board = spawnProp(session, 'board', boardPos, h)
-    setupCam(session, offset(origin, h, 0.0, 0.3, 0.35))
+    setupCam(session, offset(origin, h, 0.0, 0.25, mlo and 0.2 or 0.35))
 
     --- 1) Padėti žalią mėsą
     local rawKey = def.patty == 'chicken' and 'chicken' or 'patty_raw'
-    local grillTop = offset(grillPos, h, 0.0, 0.0, 0.55)
+    local grillTop = offset(grillPos, h, 0.0, 0.0, mlo and 0.18 or 0.55)
     if not waitE(session, grillTop, 'Padėk mėsą ant grilio') then return false end
     playAnim('grab', 900)
     local patty = spawnProp(session, rawKey, grillTop, h)
@@ -352,11 +372,15 @@ local function runBurgerLine(session, def)
 end
 
 local function runFriesLine(session)
+    applyStation(session, 'fryer')
     local origin, h = session.origin, session.heading
-    local fryPos = offset(origin, h, 0.0, 0.3, 0.0)
-    session.fryer = spawnProp(session, 'fryer', fryPos, h)
-    setupCam(session, offset(origin, h, 0.0, 0.25, 0.4))
-    local basket = offset(fryPos, h, 0.0, 0.0, 0.55)
+    local mlo = useMloFurniture()
+    local fryPos = mlo and origin or offset(origin, h, 0.0, 0.3, 0.0)
+    if not mlo then
+        session.fryer = spawnProp(session, 'fryer', fryPos, h)
+    end
+    setupCam(session, offset(origin, h, 0.0, 0.25, mlo and 0.25 or 0.4))
+    local basket = offset(fryPos, h, 0.0, 0.0, mlo and 0.2 or 0.55)
     if not waitE(session, basket, 'Įmesk šaldytas bulvytes') then return false end
     playAnim('fry', 1000)
     local fries = spawnProp(session, 'fries_raw', basket, h)
@@ -376,11 +400,15 @@ local function runFriesLine(session)
 end
 
 local function runDrinkLine(session, def)
+    applyStation(session, 'drinks')
     local origin, h = session.origin, session.heading
-    local fPos = offset(origin, h, 0.0, 0.25, 0.0)
-    session.fountain = spawnProp(session, 'fountain', fPos, h)
-    setupCam(session, offset(origin, h, 0.0, 0.2, 0.45))
-    local cupPos = offset(fPos, h, 0.0, 0.15, 0.5)
+    local mlo = useMloFurniture()
+    local fPos = mlo and origin or offset(origin, h, 0.0, 0.25, 0.0)
+    if not mlo then
+        session.fountain = spawnProp(session, 'fountain', fPos, h)
+    end
+    setupCam(session, offset(origin, h, 0.0, 0.2, mlo and 0.3 or 0.45))
+    local cupPos = offset(fPos, h, 0.0, 0.12, mlo and 0.25 or 0.5)
     if not waitE(session, cupPos, 'Padėk tuščią puodelį') then return false end
     local cup = spawnProp(session, 'cup_empty', cupPos, h)
     playAnim('pour', 500)
@@ -411,7 +439,8 @@ local function runMealLine(session)
     Wait(300)
     session.title = 'Meniu · gėrimas'
     if not runDrinkLine(session, { flavor = 'cola' }) then return false end
-    local boxPos = offset(session.origin, session.heading, 0.0, 0.2, 0.2)
+    applyStation(session, 'assembly')
+    local boxPos = offset(session.origin, session.heading, 0.0, 0.15, 0.15)
     spawnProp(session, 'meal_box', boxPos, session.heading)
     session.score = (session.score or 0) + 15
     return true
@@ -451,6 +480,7 @@ function BurgerKitchen3D.Start(productId, opts)
         def = def,
         origin = origin,
         heading = heading,
+        stations = opts.stations,
         ents = {},
         models = {},
         score = 0,

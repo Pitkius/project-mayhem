@@ -309,6 +309,53 @@ body {
   min-width: 0;
 }
 
+.store-dl-bar {
+  margin-top: 6px;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.store-dl-bar > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5ac8fa, #0a84ff);
+  transition: width 0.12s linear;
+}
+
+.store-row button.is-downloading {
+  min-width: 52px;
+  height: 32px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: rgba(10, 132, 255, 0.18);
+  color: #7ec8ff;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.store-dl-ring {
+  --p: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: conic-gradient(#0a84ff calc(var(--p) * 1%), rgba(255, 255, 255, 0.15) 0);
+  mask: radial-gradient(circle at center, transparent 55%, #000 56%);
+  -webkit-mask: radial-gradient(circle at center, transparent 55%, #000 56%);
+  flex-shrink: 0;
+}
+
+.store-dl-label {
+  font-variant-numeric: tabular-nums;
+}
+
 .app-label {
   font-size: 0.68rem;
   color: rgba(245, 245, 247, 0.92);

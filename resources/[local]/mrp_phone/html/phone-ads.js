@@ -785,8 +785,8 @@
     const prof = window.PhoneState?.adProfile;
     host.innerHTML = `
       <div class="ads-setup-card">
-        <h3>${prof?.username ? "Redaguoti profilį" : "Sukurti profilį"}</h3>
-        <p class="ads-empty" style="padding:0 0 12px">Prieš keliant skelbimus susikurk profilį.</p>
+        <h3>${prof?.username ? "Redaguoti profilį" : "Sukurti Skelbimų paskyrą"}</h3>
+        <p class="ads-empty" style="padding:0 0 12px">Telefono paskyra neatstoja — reikia atskiros Skelbimų paskyros.</p>
         <div class="ads-profile-avatar" id="adSetupAvatar" style="margin-bottom:14px"></div>
         <button type="button" class="ads-btn-secondary" id="adPickAvatarGal">Pasirinkti iš galerijos</button>
         <button type="button" class="ads-btn-secondary" id="adPickAvatarCam">Nufotografuoti</button>
@@ -849,7 +849,7 @@
     renderHost = content;
     content.className = "scroll-body ads-portal-body";
 
-    if (!hasProfile() && !["setup", "feed"].includes(adsUi.tab)) {
+    if (!hasProfile()) {
       adsUi.tab = "setup";
     }
 

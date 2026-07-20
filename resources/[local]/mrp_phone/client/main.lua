@@ -434,6 +434,12 @@ RegisterNUICallback('installApp', function(data, cb)
     end, data or {})
 end)
 
+RegisterNUICallback('beginAppDownload', function(data, cb)
+    QBCore.Functions.TriggerCallback('mrp_phone:server:beginAppDownload', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
 RegisterNUICallback('openCamera', function(_, cb)
     cb({ ok = true })
 end)
@@ -469,6 +475,12 @@ end)
 
 RegisterNUICallback('saveAdProfile', function(data, cb)
     QBCore.Functions.TriggerCallback('mrp_phone:server:saveAdProfile', function(res)
+        cb(res or { ok = false })
+    end, data or {})
+end)
+
+RegisterNUICallback('saveSocialProfile', function(data, cb)
+    QBCore.Functions.TriggerCallback('mrp_phone:server:saveSocialProfile', function(res)
         cb(res or { ok = false })
     end, data or {})
 end)
@@ -520,29 +532,6 @@ RegisterNUICallback('getWeather', function(_, cb)
     if GetRainLevel then rain = GetRainLevel() end
     local label = rain > 0.15 and 'Lietinga, ~18°C' or 'Giedra, ~24°C'
     cb({ ok = true, label = label })
-end)
-
-RegisterNUICallback('openCargoNet', function(_, cb)
-    cb({ ok = true })
-    CreateThread(function()
-        if GetResourceState('mrp_trucking') ~= 'started' then
-            QBCore.Functions.Notify('CargoNet šiuo metu nepasiekiama.', 'error')
-            return
-        end
-        closePhone()
-        local deadline = GetGameTimer() + 2500
-        while phonePhase ~= 'idle' and GetGameTimer() < deadline do
-            Wait(50)
-        end
-        Wait(100)
-        local ok, err = pcall(function()
-            TriggerEvent('mrp_trucking:client:openUI', { mode = 'phone' })
-        end)
-        if not ok then
-            print(('[mrp_phone] CargoNet open error: %s'):format(tostring(err)))
-            QBCore.Functions.Notify('Nepavyko atidaryti CargoNet.', 'error')
-        end
-    end)
 end)
 
 AddEventHandler('onResourceStop', function(res)
