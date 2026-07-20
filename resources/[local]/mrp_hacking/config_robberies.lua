@@ -101,7 +101,7 @@ Config.Robberies.StoreSide = {
     perlasProgressMs = 9000,
     perlasMinigame = { mode = 'sequence', label = 'Perlas terminalas — įsilaužimas', data = { length = 4 } },
     --- GTA Online Fleeca-style drill
-    safeMinigame = { mode = 'gtao_drill', label = 'Parduotuvės seifas — GTA Online gręžimas', data = { depthTarget = 100, stages = 5, timeMs = 55000 } },
+    safeMinigame = { mode = 'native_drill', label = 'Parduotuvės seifas — GTA Online gręžimas', data = {} },
     safeDrillMs = 0, --- visas gręžimas minigame'e; papildomas progressbar nebereikalingas
     safeItem = 'drill',
     safeRequiresUnlock = false,

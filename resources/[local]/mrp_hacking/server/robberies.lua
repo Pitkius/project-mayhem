@@ -111,7 +111,6 @@ end
 
 local function dispatchAlert(src, tierId, loc)
     if exports['mrp_hacking']:IsSilentHack(src) then return end
-    if GetResourceState('mrp_dispatch') ~= 'started' then return end
     local ped = GetPlayerPed(src)
     local c = loc and loc.coords or GetEntityCoords(ped)
     local labels = {
@@ -120,7 +119,7 @@ local function dispatchAlert(src, tierId, loc)
         bank_main = 'Pacific banko apiplėšimas',
         casino = 'Diamond Casino Heist',
     }
-    exports['mrp_dispatch']:CreateDispatchCall('police', 'robbery', c, labels[tierId] or 'Apiplėšimas', src)
+    MRP_DispatchAlert('police', 'robbery', c, labels[tierId] or 'Apiplėšimas', src)
 end
 
 QBCore.Functions.CreateCallback('mrp_hacking:server:robberyCanStart', function(src, cb, tierId, locId)
@@ -197,10 +196,8 @@ RegisterNetEvent('mrp_hacking:server:robberyPhaseDone', function(tierId, locId, 
     if tierId == 'casino' and phase == 'thermite' then
         --- Kazino: termitas visada kelia triukšmą (net jei hack buvo silent)
         local loc = findLocation(tierId, locId)
-        if GetResourceState('mrp_dispatch') == 'started' then
-            local c = loc and loc.coords or GetEntityCoords(GetPlayerPed(src))
-            exports['mrp_dispatch']:CreateDispatchCall('police', 'robbery', c, 'Diamond Casino — termitas', src)
-        end
+        local c = loc and loc.coords or GetEntityCoords(GetPlayerPed(src))
+        MRP_DispatchAlert('police', 'robbery', c, 'Diamond Casino — termitas', src)
     end
 
     if phase == 'hack' and (tierId == 'bank_fleeca' or tierId == 'bank_main') then

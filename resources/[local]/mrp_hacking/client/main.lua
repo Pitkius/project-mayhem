@@ -167,8 +167,31 @@ function StartHackMinigame(tierId, coords, onDone, locId)
         hackCb = onDone
         exports['mrp_hacking']:PlayRobberyAnim((Config.RobberyAnims or {}).hack)
         PlaySoundFrontend(-1, 'Background', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS', true)
+
+        local profile = res.profile or {}
+        local mode = profile.mode or ''
+
+        --- Tikras GTA Data Crack (ne NUI)
+        if mode == 'native_datacrack' or mode == 'gtao_datacrack' or mode == 'datacrack' then
+            local diff = tonumber(profile.difficulty) or 3.0
+            CreateThread(function()
+                local success = exports['mrp_hacking']:RunNativeDatacrack(diff)
+                local pedCoords = GetEntityCoords(PlayerPedId())
+                exports['mrp_hacking']:StopRobberyAnim()
+                TriggerServerEvent('mrp_hacking:server:hackFinished', tierId, success == true, {
+                    x = pedCoords.x, y = pedCoords.y, z = pedCoords.z
+                })
+                if hackCb then
+                    local fn = hackCb
+                    hackCb = nil
+                    fn(success == true)
+                end
+            end)
+            return
+        end
+
         SetNuiFocus(true, true)
-        SendNUIMessage({ action = 'hackOpen', profile = res.profile, tierId = tierId })
+        SendNUIMessage({ action = 'hackOpen', profile = profile, tierId = tierId })
     end, tierId, locId)
 end
 

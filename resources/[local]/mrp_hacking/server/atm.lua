@@ -111,11 +111,8 @@ RegisterNetEvent('mrp_hacking:server:atmCrackResult', function(success, wrongSte
             TriggerClientEvent('QBCore:Notify', src, 'Dye pack sudegino dalį pinigų!', 'error')
         else
             TriggerClientEvent('QBCore:Notify', src, 'Nepavyko – ATM pažeistas.', 'error')
-            --- Nesėkmė — visada PD
-            if GetResourceState('mrp_dispatch') == 'started' then
-                local c = GetEntityCoords(GetPlayerPed(src))
-                exports['mrp_dispatch']:CreateDispatchCall('police', 'atm', c, 'Nepavykęs bankomato apiplėšimas', src)
-            end
+            local c = GetEntityCoords(GetPlayerPed(src))
+            MRP_DispatchAlert('police', 'atm', c, 'Nepavykęs bankomato apiplėšimas', src)
             return
         end
     end
@@ -148,9 +145,9 @@ RegisterNetEvent('mrp_hacking:server:atmCrackResult', function(success, wrongSte
     end
 
     --- Soft (be stealth) — PD gauna; stealth hack — ne
-    if not silent and GetResourceState('mrp_dispatch') == 'started' then
+    if not silent then
         local c = GetEntityCoords(GetPlayerPed(src))
-        exports['mrp_dispatch']:CreateDispatchCall('police', 'atm', c, 'Pranešta apie išlaužtą bankomatą', src)
+        MRP_DispatchAlert('police', 'atm', c, 'Pranešta apie išlaužtą bankomatą', src)
     end
 end)
 

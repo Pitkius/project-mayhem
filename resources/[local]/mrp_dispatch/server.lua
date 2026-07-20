@@ -252,9 +252,34 @@ local function createCall(service, callType, coords, text, createdBy)
     return c
 end
 
+local function normalizeCoords(coords)
+    if not coords then return nil end
+    local x = coords.x or coords[1]
+    local y = coords.y or coords[2]
+    local z = coords.z or coords[3]
+    if x == nil or y == nil or z == nil then return nil end
+    return { x = x + 0.0, y = y + 0.0, z = z + 0.0 }
+end
+
+local function createCallSafe(service, callType, coords, text, createdBy)
+    if not service then return nil end
+    local c = normalizeCoords(coords)
+    if not c then return nil end
+    return createCall(service, callType, c, text, createdBy)
+end
+
 exports('CreateDispatchCall', function(service, callType, coords, text, createdBy)
-    if not service or not coords then return nil end
-    return createCall(service, callType, coords, text, createdBy)
+    return createCallSafe(service, callType, coords, text, createdBy)
+end)
+
+--- Server-event fallback (kai export dar nepasiekiamas / senas klientas)
+AddEventHandler('mrp_dispatch:internal:createCall', function(service, callType, coords, text, createdBy)
+    createCallSafe(service, callType, coords, text, createdBy)
+end)
+
+CreateThread(function()
+    Wait(500)
+    print('^2[mrp_dispatch]^7 CreateDispatchCall export ready')
 end)
 
 QBCore.Functions.CreateCallback('mrp_dispatch:server:getSnapshot', function(src, cb, service)

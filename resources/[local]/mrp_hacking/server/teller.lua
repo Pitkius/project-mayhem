@@ -27,9 +27,8 @@ local function giveLootKey(src, lootKey)
 end
 
 local function policeAlert(src, text)
-    if GetResourceState('mrp_dispatch') ~= 'started' then return end
     local c = GetEntityCoords(GetPlayerPed(src))
-    exports['mrp_dispatch']:CreateDispatchCall('police', 'robbery', c, text, src)
+    MRP_DispatchAlert('police', 'robbery', c, text, src)
 end
 
 local function sessionKey(kind, locId)

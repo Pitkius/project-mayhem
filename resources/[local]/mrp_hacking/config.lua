@@ -82,22 +82,22 @@ Config.RobberyTiers = {
 }
 
 Config.HackProfiles = {
-    atm_security = { mode = 'gtao_datacrack', steps = 5, timeMs = 18000, grid = 6 },
-    store_register = { mode = 'gtao_datacrack', steps = 4, timeMs = 16000, grid = 5 },
-    store_mirror = { mode = 'gtao_datacrack', steps = 5, timeMs = 16000, grid = 5 },
-    store_vinewood = { mode = 'gtao_datacrack', steps = 5, timeMs = 15000, grid = 6 },
-    store_sandy = { mode = 'gtao_datacrack', steps = 5, timeMs = 15000, grid = 5 },
-    store_paleto = { mode = 'gtao_datacrack', steps = 4, timeMs = 16000, grid = 5 },
-    store_route68 = { mode = 'gtao_datacrack', steps = 5, timeMs = 15000, grid = 5 },
-    --- GTA Online Data Crack (Fleeca / Pacific vault hack)
-    fleeca_vault = { mode = 'gtao_datacrack', steps = 5, timeMs = 20000, grid = 6 },
-    fleeca_legion = { mode = 'gtao_datacrack', steps = 5, timeMs = 19000, grid = 6 },
-    fleeca_greatocean = { mode = 'gtao_datacrack', steps = 5, timeMs = 19000, grid = 6 },
-    fleeca_hawick = { mode = 'gtao_datacrack', steps = 5, timeMs = 18000, grid = 6 },
-    fleeca_delperro = { mode = 'gtao_datacrack', steps = 5, timeMs = 18000, grid = 6 },
-    fleeca_route68 = { mode = 'gtao_datacrack', steps = 6, timeMs = 17000, grid = 7 },
-    pacific_vault = { mode = 'gtao_datacrack', steps = 7, timeMs = 16000, grid = 7 },
-    casino_network = { mode = 'gtao_datacrack', steps = 6, timeMs = 15000, grid = 6 },
+    atm_security = { mode = 'native_datacrack', difficulty = 2.5 },
+    store_register = { mode = 'native_datacrack', difficulty = 2.5 },
+    store_mirror = { mode = 'native_datacrack', difficulty = 3.0 },
+    store_vinewood = { mode = 'native_datacrack', difficulty = 3.0 },
+    store_sandy = { mode = 'native_datacrack', difficulty = 2.5 },
+    store_paleto = { mode = 'native_datacrack', difficulty = 2.5 },
+    store_route68 = { mode = 'native_datacrack', difficulty = 3.0 },
+    --- Tikras GTA Data Crack (hackingNG sprites)
+    fleeca_vault = { mode = 'native_datacrack', difficulty = 3.0 },
+    fleeca_legion = { mode = 'native_datacrack', difficulty = 3.0 },
+    fleeca_greatocean = { mode = 'native_datacrack', difficulty = 3.0 },
+    fleeca_hawick = { mode = 'native_datacrack', difficulty = 3.0 },
+    fleeca_delperro = { mode = 'native_datacrack', difficulty = 3.0 },
+    fleeca_route68 = { mode = 'native_datacrack', difficulty = 3.5 },
+    pacific_vault = { mode = 'native_datacrack', difficulty = 4.0 },
+    casino_network = { mode = 'native_datacrack', difficulty = 3.5 },
     casino_fingerprint = { mode = 'trace', steps = 5, timeMs = 18000, traceSpeed = 0.0042, traceWidth = 0.09 },
 }
 

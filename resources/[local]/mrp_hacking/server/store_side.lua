@@ -74,9 +74,8 @@ local function maybeClearSilent(src)
 end
 
 local function policeAlert(src, text, coords)
-    if GetResourceState('mrp_dispatch') ~= 'started' then return end
     local c = coords or GetEntityCoords(GetPlayerPed(src))
-    exports['mrp_dispatch']:CreateDispatchCall('police', 'robbery', c, text, src)
+    MRP_DispatchAlert('police', 'robbery', c, text, src)
 end
 
 exports('UnlockStoreFor', function(src, locId, silent, opts)

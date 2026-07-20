@@ -61,7 +61,6 @@ local function requestPedControl(ped)
     return NetworkHasControlOfEntity(ped)
 end
 
---- Išlaiko kasininką išgąsdintą (rankos aukštyn), net jei ped buvo freeze'intas.
 local function intimidatePed(ped, force)
     if not ped or ped == 0 or not DoesEntityExist(ped) then return end
     local now = GetGameTimer()
@@ -83,40 +82,12 @@ end
 local function restorePedIdle(ped)
     if not ped or ped == 0 or not DoesEntityExist(ped) then return end
     requestPedControl(ped)
-    --- Po apiplėšimo lieka išsigandęs (rankos aukštyn)
     if loadAnimDict(HANDSUP_DICT) then
         ClearPedTasksImmediately(ped)
         TaskPlayAnim(ped, HANDSUP_DICT, HANDSUP_CLIP, 8.0, -8.0, -1, 1, 0.0, false, false, false)
     end
     FreezeEntityPosition(ped, true)
     SetBlockingOfNonTemporaryEvents(ped, true)
-end
-
-local function spawnBankTellers()
-    for locId, def in pairs(Config.Robberies.BankTellers or {}) do
-        if bankTellerPeds[locId] and DoesEntityExist(bankTellerPeds[locId]) then goto continue end
-        local hash = loadModel(def.model or 'ig_bankman')
-        if not hash then goto continue end
-        local c = def.coords
-        local ped = CreatePed(4, hash, c.x, c.y, c.z, c.w or 0.0, true, true)
-        if not ped or ped == 0 then goto continue end
-        SetEntityAsMissionEntity(ped, true, true)
-        SetPedCanRagdoll(ped, false)
-        SetEntityInvincible(ped, true)
-        SetBlockingOfNonTemporaryEvents(ped, true)
-        SetPedFleeAttributes(ped, 0, false)
-        local okZ, gz = GetGroundZFor_3dCoord(c.x + 0.0, c.y + 0.0, c.z + 1.5, false)
-        if okZ then
-            SetEntityCoordsNoOffset(ped, c.x, c.y, gz, false, false, false)
-        else
-            SetEntityCoordsNoOffset(ped, c.x, c.y, c.z, false, false, false)
-        end
-        SetEntityHeading(ped, c.w or 0.0)
-        FreezeEntityPosition(ped, true)
-        TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_CLIPBOARD', 0, true)
-        bankTellerPeds[locId] = ped
-        ::continue::
-    end
 end
 
 local function unlockBoothDoor(locId)
@@ -148,11 +119,27 @@ local function findBankLocByPed(entity)
         if ped == entity then
             for _, tier in ipairs({ 'bank_fleeca', 'bank_main' }) do
                 for _, loc in ipairs((Config.Robberies.Locations and Config.Robberies.Locations[tier]) or {}) do
-                    if loc.id == locId then return loc, 'bank_fleeca' end
+                    if loc.id == locId then return loc, tier end
                 end
             end
-            --- Teller cfg yra, bet Locations neturi — vis tiek soft Fleeca tipas
-            return { id = locId, label = locId }, 'bank_fleeca'
+            return { id = locId, label = locId }, (locId == 'pacific_main' and 'bank_main' or 'bank_fleeca')
+        end
+    end
+    if entity and DoesEntityExist(entity) then
+        local ec = GetEntityCoords(entity)
+        local bestId, bestD = nil, 2.8
+        for locId, def in pairs(Config.Robberies.BankTellers or {}) do
+            local c = def.coords
+            local d = #(ec - vector3(c.x, c.y, c.z))
+            if d < bestD then bestD = d; bestId = locId end
+        end
+        if bestId then
+            for _, tier in ipairs({ 'bank_fleeca', 'bank_main' }) do
+                for _, loc in ipairs((Config.Robberies.Locations and Config.Robberies.Locations[tier]) or {}) do
+                    if loc.id == bestId then return loc, tier end
+                end
+            end
+            return { id = bestId, label = bestId }, (bestId == 'pacific_main' and 'bank_main' or 'bank_fleeca')
         end
     end
     return nil
@@ -164,13 +151,12 @@ local function isWeaponAimed()
     local weapon = GetSelectedPedWeapon(ped)
     if not weapon or weapon == `WEAPON_UNARMED` or weapon == 0 then return false end
     if IsPlayerFreeAiming(PlayerId()) then return true end
-    if IsControlPressed(0, 25) then return true end -- RMB aim
+    if IsControlPressed(0, 25) then return true end
     return false
 end
 
 local function freeAimEntity()
     local a, b = GetEntityPlayerIsFreeAimingAt(PlayerId())
-    --- FiveM native wrapper kartais grąžina (bool, ent), kartais tik ent.
     if type(a) == 'boolean' then
         if a and b and b ~= 0 and DoesEntityExist(b) then return b end
         return nil
@@ -191,7 +177,7 @@ local function isAimingAt(entity)
     local p = GetEntityCoords(ped)
     local t = GetEntityCoords(entity)
     local dist = #(p - t)
-    if dist > 8.0 then return false end
+    if dist > 9.0 then return false end
 
     local cam = GetGameplayCamCoord()
     local dir = camForward()
@@ -200,9 +186,8 @@ local function isAimingAt(entity)
     if len < 0.15 then return true end
     to = to / len
     local dot = dir.x * to.x + dir.y * to.y + dir.z * to.z
-    --- ~35° kūgis + artimas atstumas
-    if dist < 4.5 and dot > 0.72 then return true end
-    if dist < 7.0 and dot > 0.85 then return true end
+    if dist < 5.0 and dot > 0.62 then return true end
+    if dist < 8.0 and dot > 0.78 then return true end
     return false
 end
 
@@ -218,9 +203,9 @@ end
 local function resolveAimTarget()
     local aimed = freeAimEntity()
     if aimed and IsEntityAPed(aimed) and not IsPedAPlayer(aimed) then
-        local bankLoc = findBankLocByPed(aimed)
+        local bankLoc, kind = findBankLocByPed(aimed)
         if bankLoc then
-            return 'bank_fleeca', bankLoc, aimed
+            return kind or 'bank_fleeca', bankLoc, aimed
         end
         if isStoreCashierModel(aimed) then
             local loc = findNearestStoreLoc(GetEntityCoords(aimed))
@@ -228,16 +213,15 @@ local function resolveAimTarget()
         end
     end
 
-    --- Fallback: artimiausias kasininkas kameros kryptimi
     local ped = PlayerPedId()
     local p = GetEntityCoords(ped)
     local cam = GetGameplayCamCoord()
     local dir = camForward()
 
-    for locId, teller in pairs(bankTellerPeds) do
+    for _, teller in pairs(bankTellerPeds) do
         if DoesEntityExist(teller) and isAimingAt(teller) then
-            local loc = findBankLocByPed(teller)
-            if loc then return 'bank_fleeca', loc, teller end
+            local loc, kind = findBankLocByPed(teller)
+            if loc then return kind or 'bank_fleeca', loc, teller end
         end
     end
 
@@ -255,7 +239,7 @@ local function resolveAimTarget()
                 if len > 0.1 then
                     to = to / len
                     local dot = dir.x * to.x + dir.y * to.y + dir.z * to.z
-                    if dot > 0.75 then
+                    if dot > 0.70 then
                         local loc = findNearestStoreLoc(t)
                         if loc then
                             local score = dot * (8.0 - dist)
@@ -303,7 +287,88 @@ local function placeBagOnCounter(fromPed)
     end
 end
 
-local function runTellerSession(kind, loc, entity)
+local runTellerSession
+
+local function addTellerTarget(ped)
+    if not ped or not DoesEntityExist(ped) then return end
+    if GetResourceState('qb-target') ~= 'started' then return end
+    pcall(function()
+        exports['qb-target']:AddTargetEntity(ped, {
+            options = {
+                {
+                    icon = 'fas fa-gun',
+                    label = 'Apiplėšti kasininką (be seifo)',
+                    canInteract = function()
+                        if session or starting then return false end
+                        local weapon = GetSelectedPedWeapon(PlayerPedId())
+                        return weapon and weapon ~= `WEAPON_UNARMED`
+                    end,
+                    action = function(entity)
+                        local loc, kind = findBankLocByPed(entity)
+                        if loc then runTellerSession(kind or 'bank_fleeca', loc, entity) end
+                    end,
+                },
+            },
+            distance = 2.6,
+        })
+    end)
+end
+
+local function deleteTeller(locId)
+    local ped = bankTellerPeds[locId]
+    if ped and DoesEntityExist(ped) then DeleteEntity(ped) end
+    bankTellerPeds[locId] = nil
+end
+
+local function spawnOneTeller(locId, def)
+    if bankTellerPeds[locId] and DoesEntityExist(bankTellerPeds[locId]) then
+        return bankTellerPeds[locId]
+    end
+    local hash = loadModel(def.model or 'ig_bankman')
+    if not hash then hash = loadModel('a_m_m_business_01') end
+    if not hash then return nil end
+
+    local c = def.coords
+    --- Lokalus ped — networked CreatePed interjere dažnai dingsta
+    local ped = CreatePed(4, hash, c.x, c.y, c.z, c.w or 0.0, false, true)
+    if not ped or ped == 0 then
+        SetModelAsNoLongerNeeded(hash)
+        return nil
+    end
+
+    SetEntityAsMissionEntity(ped, true, true)
+    SetPedCanRagdoll(ped, false)
+    SetEntityInvincible(ped, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    SetPedFleeAttributes(ped, 0, false)
+    SetPedDiesWhenInjured(ped, false)
+    SetPedCanBeTargetted(ped, true)
+    --- NENAUDOJAM GetGroundZ — banko interjere nukiša po grindimis
+    SetEntityCoordsNoOffset(ped, c.x, c.y, c.z, false, false, false)
+    SetEntityHeading(ped, c.w or 0.0)
+    FreezeEntityPosition(ped, true)
+    TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_CLIPBOARD', 0, true)
+    SetModelAsNoLongerNeeded(hash)
+
+    bankTellerPeds[locId] = ped
+    addTellerTarget(ped)
+    return ped
+end
+
+local function spawnBankTellersNear(playerCoords, radius)
+    radius = radius or 90.0
+    for locId, def in pairs(Config.Robberies.BankTellers or {}) do
+        local c = def.coords
+        local d = #(playerCoords - vector3(c.x, c.y, c.z))
+        if d <= radius then
+            spawnOneTeller(locId, def)
+        elseif d > radius + 50.0 then
+            deleteTeller(locId)
+        end
+    end
+end
+
+runTellerSession = function(kind, loc, entity)
     if session or starting then return end
     if not entity or not DoesEntityExist(entity) then return end
     if exports['mrp_hacking']:IsRobberySessionActive and exports['mrp_hacking']:IsRobberySessionActive() then
@@ -311,7 +376,6 @@ local function runTellerSession(kind, loc, entity)
     end
 
     starting = true
-    --- Iš karto sureaguoja — dar prieš serverio callback
     intimidatePed(entity, true)
 
     QBCore.Functions.TriggerCallback('mrp_hacking:server:tellerStart', function(res)
@@ -381,7 +445,6 @@ local function runTellerSession(kind, loc, entity)
                         session.phase = 'bag'
                         intimidatePed(entity, true)
                         placeBagOnCounter(entity)
-                        --- Bankas: iškart atrakina būdelę
                         if kind ~= 'store' and session.locId then
                             unlockBoothDoor(session.locId)
                         end
@@ -398,7 +461,6 @@ local function runTellerSession(kind, loc, entity)
                             clearBag()
                             if not session then return end
                             session.bagTaken = true
-                            --- Store ir bankas: PD kai nustoja taikytis
                             TriggerServerEvent('mrp_hacking:server:tellerComplete', kind, session.locId, true, false)
                             session.phase = 'wait_release'
                             if kind == 'store' then
@@ -415,7 +477,7 @@ local function runTellerSession(kind, loc, entity)
                     end
                 else
                     if session.filled then
-                        --- progress vyksta
+                        --- progress
                     elseif aimedMs > 1500 then
                         TriggerServerEvent('mrp_hacking:server:tellerAbort', kind, session.locId)
                         QBCore.Functions.Notify('Nustojai taikytis — policija iškviesta.', 'error')
@@ -430,7 +492,6 @@ local function runTellerSession(kind, loc, entity)
     end, kind, loc and loc.id)
 end
 
---- Automatiškai pradeda apiplėšimą, kai žaidėjas taikosi ginklu į kasininką.
 CreateThread(function()
     while true do
         local sleep = 400
@@ -439,7 +500,6 @@ CreateThread(function()
             local kind, loc, entity = resolveAimTarget()
             if kind and loc and entity then
                 sleep = 0
-                --- Trumpas „išgąstis“ net prieš startą
                 intimidatePed(entity, false)
                 if isAimingAt(entity) then
                     runTellerSession(kind, loc, entity)
@@ -455,19 +515,17 @@ RegisterNetEvent('mrp_hacking:client:tellerUnlockBooth', function(locId)
     unlockBoothDoor(locId)
 end)
 
+--- Spawn kai priartėji prie banko
+CreateThread(function()
+    while true do
+        spawnBankTellersNear(GetEntityCoords(PlayerPedId()), 100.0)
+        Wait(2500)
+    end
+end)
+
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do Wait(400) end
-    Wait(1500)
-    spawnBankTellers()
-    --- Periodinis respawn jei ped dingo
-    CreateThread(function()
-        while true do
-            Wait(45000)
-            spawnBankTellers()
-        end
-    end)
-
-    --- Alternatyva: qb-target (jei nori pradėti be automatinio aim)
+    Wait(1000)
     exports['qb-target']:AddTargetModel(STORE_MODELS, {
         options = {
             {
@@ -477,8 +535,7 @@ CreateThread(function()
                     if session or starting then return false end
                     local weapon = GetSelectedPedWeapon(PlayerPedId())
                     if not weapon or weapon == `WEAPON_UNARMED` then return false end
-                    local c = GetEntityCoords(entity)
-                    return findNearestStoreLoc(c) ~= nil
+                    return findNearestStoreLoc(GetEntityCoords(entity)) ~= nil
                 end,
                 action = function(entity)
                     local loc = findNearestStoreLoc(GetEntityCoords(entity))
@@ -488,29 +545,6 @@ CreateThread(function()
         },
         distance = 2.2,
     })
-
-    for _, ped in pairs(bankTellerPeds) do
-        if DoesEntityExist(ped) then
-            exports['qb-target']:AddTargetEntity(ped, {
-                options = {
-                    {
-                        icon = 'fas fa-gun',
-                        label = 'Apiplėšti kasininką (be seifo)',
-                        canInteract = function()
-                            if session or starting then return false end
-                            local weapon = GetSelectedPedWeapon(PlayerPedId())
-                            return weapon and weapon ~= `WEAPON_UNARMED`
-                        end,
-                        action = function(entity)
-                            local loc = findBankLocByPed(entity)
-                            if loc then runTellerSession('bank_fleeca', loc, entity) end
-                        end,
-                    },
-                },
-                distance = 2.4,
-            })
-        end
-    end
 end)
 
 AddEventHandler('onResourceStop', function(res)

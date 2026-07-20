@@ -17,6 +17,7 @@ shared_scripts {
 
 client_scripts {
     '@mrp_hud/client/theme_nui_consumer.lua',
+    'client/native_minigames.lua',
     'client/main.lua',
     'client/minigames.lua',
     'client/bank_doors.lua',
@@ -32,6 +33,7 @@ client_scripts {
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'server/dispatch_bridge.lua',
     'server/main.lua',
     'server/atm.lua',
     'server/robberies.lua',

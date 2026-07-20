@@ -151,6 +151,7 @@ local function buildHackProfile(tierId, ctx, locId)
         timeMs = base.timeMs,
         grid = base.grid,
         flashMs = base.flashMs or 380,
+        difficulty = base.difficulty,
         profileId = profileKey,
     }
     if ctx and ctx.exploits then
@@ -171,9 +172,7 @@ end
 local function policeAlert(coords, callType, text, delaySec)
     CreateThread(function()
         if delaySec and delaySec > 0 then Wait(delaySec * 1000) end
-        if GetResourceState('mrp_dispatch') == 'started' then
-            exports['mrp_dispatch']:CreateDispatchCall('police', callType or 'robbery', coords, text or 'Apiplėšimas', nil)
-        end
+        MRP_DispatchAlert('police', callType or 'robbery', coords, text or 'Apiplėšimas', nil)
     end)
 end
 
