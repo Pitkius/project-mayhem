@@ -19,7 +19,7 @@ local function stationCoords()
 end
 
 local function visualCoords()
-    local c = cfg().visualCoords or vector4(1144.5168, -1660.4908, 36.5114, 23.0073)
+    local c = cfg().visualCoords or vector4(1144.1144, -1660.0133, 36.8211, 205.8993)
     return vector3(c.x, c.y, c.z)
 end
 
@@ -76,9 +76,9 @@ local function spawnPlants()
     end
 
     -- Vazonai ir augalai yra lokalūs: juos mato tik aktyvios sesijos savininkas.
-    local c = cfg().visualCoords or vector4(1144.5168, -1660.4908, 36.5114, 23.0073)
+    local c = cfg().visualCoords or vector4(1144.1144, -1660.0133, 36.8211, 205.8993)
     local origin = vector3(c.x, c.y, c.z)
-    local heading = tonumber(c.w) or 23.0073
+    local heading = tonumber(c.w) or 205.8993
     local count = math.max(1, tonumber(cfg().visualPlantCount) or 9)
     local spacing = math.max(0.1, tonumber(cfg().visualPlantSpacing) or 0.46)
     local plantAttachZ = tonumber(cfg().visualPlantAttachZ) or 0.26
