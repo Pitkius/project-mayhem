@@ -649,116 +649,25 @@ local function applyNativeForEveryone(vehicle, mode)
         stopNativeSirenVisual(vehicle)
         return
     end
-    --- lights / full — mašinos carcols + extras (be prop)
+    --- Kaip vanilla GTA PD: extras + SetVehicleSiren(true). Be DrawLight, be off→on refresh.
     enableFleetLightbarExtras(vehicle)
     ensureVehicleControl(vehicle, 20)
     SetVehicleEngineOn(vehicle, true, true, false)
-    --- Kai kurie addonai reikalauja abu: siren ON + ne muted vizualui
-    SetVehicleSiren(vehicle, true)
-    --- Garsą valdo mrp_siren_controller — mute tik native sirenos garsą, ne šviesas
-    SetVehicleHasMutedSirens(vehicle, true)
-    --- Pakartotinai (GTA kartais išjungia pirmą frame)
-    CreateThread(function()
-        Wait(50)
-        if not DoesEntityExist(vehicle) then return end
-        if IsVehicleSirenOn(vehicle) then return end
-        ensureVehicleControl(vehicle, 10)
+    if not IsVehicleSirenOn(vehicle) then
         SetVehicleSiren(vehicle, true)
-        SetVehicleHasMutedSirens(vehicle, true)
-    end)
+    end
+    --- Garsą valdo mrp_siren_controller — mute tik native sirenos garsą
+    SetVehicleHasMutedSirens(vehicle, true)
 end
 
---- Visoms fleet PD mašinoms: script flash ant stogo (be prop), nepriklausomai nuo carcols.
-local function vehicleUsesNativeFlashAssist(vehicle)
-    if Ec.nativeFlashAssist == false then return false end
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
-    if vehicleUsesScriptFlash(vehicle) then return false end
-    local hash = GetEntityModel(vehicle)
-    --- Visas Config.FleetVehicles parkas (mrpd1–16)
-    if modelIsFleetCar(hash) then return true end
-    return vehicleSupportsNativeEmergency(vehicle)
+--- Visoms fleet PD mašinoms: script flash ant stogo — IŠJUNGTA (griauna native carcols).
+local function vehicleUsesNativeFlashAssist(_vehicle)
+    return false
 end
 
---- Fleet: šviesa iš mašinos siren kaulų (lightbar lempos), ne stogo „orbos“.
-local SIREN_BONE_NAMES = {
-    'siren', 'siren1', 'siren2', 'siren3', 'siren4', 'siren5', 'siren6',
-    'siren7', 'siren8', 'siren9', 'siren10', 'siren11', 'siren12',
-    'siren13', 'siren14', 'siren15', 'siren16', 'siren17', 'siren18',
-    'siren19', 'siren20',
-    'siren_glass', 'siren_glass1', 'siren_glass2', 'siren_glass3', 'siren_glass4',
-    'lightbar', 'light_bar', 'emergency',
-}
-
-local function getFleetSirenBones(vehicle)
-    local cached = fleetBoneCache[vehicle]
-    local now = GetGameTimer()
-    if cached and (now - (cached.checkedAt or 0)) < 5000 then
-        return cached.bones
-    end
-    local bones = {}
-    local seen = {}
-    for i = 1, #SIREN_BONE_NAMES do
-        local idx = GetEntityBoneIndexByName(vehicle, SIREN_BONE_NAMES[i])
-        if idx and idx ~= -1 and not seen[idx] then
-            seen[idx] = true
-            bones[#bones + 1] = idx
-        end
-    end
-    fleetBoneCache[vehicle] = { bones = bones, checkedAt = now }
-    return bones
-end
-
-local function drawFleetSirenBoneLights(vehicle)
-    if Ec.fleetSirenBoneLights == false then return end
-    local bones = getFleetSirenBones(vehicle)
-    local interval = tonumber(Ec.fleetSirenBoneIntervalMs) or 320
-    local phase = math.floor(GetGameTimer() / interval) % 2 == 0
-    --- Mažas spindulys = šviesa prie lempos stiklo, ne floating orb virš stogo
-    local range = tonumber(Ec.fleetSirenBoneRange) or 3.4
-    local power = tonumber(Ec.fleetSirenBoneIntensity) or 3.6
-    local zBias = tonumber(Ec.fleetSirenBoneZBias) or -0.04
-    local rr, rg, rb = 255, 48, 52
-    local br, bg, bb = 58, 128, 255
-    local fc = Ec.flashColors or {}
-    if fc.red then
-        rr = tonumber(fc.red.r) or rr
-        rg = tonumber(fc.red.g) or rg
-        rb = tonumber(fc.red.b) or rb
-    end
-    if fc.blue then
-        br = tonumber(fc.blue.r) or br
-        bg = tonumber(fc.blue.g) or bg
-        bb = tonumber(fc.blue.b) or bb
-    end
-
-    if #bones == 0 then
-        --- Be stogo fallback — floating. Tik native carcols (SetVehicleSiren).
-        if Ec.fleetSirenBoneAllowRoofFallback == true then
-            local mn, mx = GetModelDimensions(GetEntityModel(vehicle))
-            local left = GetOffsetFromEntityInWorldCoords(vehicle, -0.28, 0.05, (mx.z - 0.12))
-            local right = GetOffsetFromEntityInWorldCoords(vehicle, 0.28, 0.05, (mx.z - 0.12))
-            if phase then
-                DrawLightWithRange(left.x, left.y, left.z, rr, rg, rb, range * 0.85, power * 0.85)
-            else
-                DrawLightWithRange(right.x, right.y, right.z, br, bg, bb, range * 0.85, power * 0.85)
-            end
-        end
-        return
-    end
-
-    local fwd = GetEntityForwardVector(vehicle)
-    for i = 1, #bones do
-        local pos = GetWorldPositionOfEntityBone(vehicle, bones[i])
-        if pos then
-            local x, y, z = pos.x, pos.y, pos.z + zBias
-            local useRed = ((i % 2 == 1) and phase) or ((i % 2 == 0) and not phase)
-            local cr, cg, cb = rr, rg, rb
-            if not useRed then cr, cg, cb = br, bg, bb end
-            --- Trumpas spot iš lempos į priekį + lokalus glow — atrodo kaip iš lightbar
-            DrawLightWithRange(x, y, z, cr, cg, cb, range, power)
-            DrawSpotLight(x, y, z, fwd.x, fwd.y, fwd.z * 0.15 - 0.05, cr, cg, cb, range * 2.2, power * 0.55, 0.0, 18.0, 8.0)
-        end
-    end
+--- Fleet bone DrawLight — IŠJUNGTA. Paliekam stub kad senas kodas nesulūžtų.
+local function drawFleetSirenBoneLights(_vehicle)
+    return
 end
 
 local function ingestFromEntity(vehicle)
@@ -767,18 +676,15 @@ local function ingestFromEntity(vehicle)
     local mode, kit = readVehicleStateBag(vehicle)
     local supportsNative = vehicleSupportsNativeEmergency(vehicle)
     local scriptFlash = vehicleUsesScriptFlash(vehicle)
-    local assistFlash = vehicleUsesNativeFlashAssist(vehicle)
-    --- Prop lightbar tik script režimui; hybrid naudoja stogo DrawLight be prop
+    --- Prop lightbar tik script režimui (civilinis kit)
     if supportsNative and not scriptFlash then
         removeLightbar(vehicle)
     end
     TRACKED[vehicle] = TRACKED[vehicle] or {}
     TRACKED[vehicle].supportsNative = supportsNative
     TRACKED[vehicle].scriptFlash = scriptFlash
-    TRACKED[vehicle].assistFlash = assistFlash
-    TRACKED[vehicle].fleetBoneLights = (not assistFlash)
-        and modelIsFleet(GetEntityModel(vehicle))
-        and (Ec.fleetSirenBoneLights ~= false)
+    TRACKED[vehicle].assistFlash = false
+    TRACKED[vehicle].fleetBoneLights = false
     TRACKED[vehicle].mode = mode
     syncKitVisuals(vehicle)
 
@@ -796,7 +702,6 @@ local function ingestFromEntity(vehicle)
     elseif mode == 'sound' then
         stopNativeSirenVisual(vehicle)
     elseif mode == 'full' then
-        --- Visada bandyti native šviesas; flash assist piešiamas TRACKED.assistFlash
         applyNativeForEveryone(vehicle, 'full')
     end
 end
@@ -867,18 +772,12 @@ CreateThread(function()
                 else
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     meta.mode = mode
-                    if mode == 'lights' or mode == 'full' then
+                    --- Script flash TIK civiliniam kit (prop lightbar). Fleet = grynas GTA carcols.
+                    if (mode == 'lights' or mode == 'full') and meta.scriptFlash == true then
                         local vehCoords = GetEntityCoords(veh)
-                        local dist = #(pCoords - vehCoords)
-                        if dist <= drawDistance then
-                            local wantFlash = meta.scriptFlash == true or meta.assistFlash == true
-                            if wantFlash then
-                                drawScriptFlash(veh, dist)
-                                drew = true
-                            elseif meta.fleetBoneLights then
-                                drawFleetSirenBoneLights(veh)
-                                drew = true
-                            end
+                        if #(pCoords - vehCoords) <= drawDistance then
+                            drawScriptFlash(veh, #(pCoords - vehCoords))
+                            drew = true
                         end
                     end
                 end
@@ -888,15 +787,10 @@ CreateThread(function()
     end
 end)
 
---- Natyvių sirenos šviesų palaikymas.
---- Kiekvieną kadrą SetVehicleSiren(true) griauna sequencerį (balta).
---- Bet jei tik tikrinti IsVehicleSirenOn — GTA gali laikyti „ON“ be matomo flash.
---- Todėl: įjungti jei OFF; kas ~1.2s švelnus refresh (off→on), ne kiekvieną kadrą.
+--- Natyvios sirenos: tik įjungti jei išjungtos. NIEKADA off→on (sugadina R/B sequencerį → balta).
 CreateThread(function()
-    local lastRefreshAt = {}
     while true do
         local anyLights = false
-        local now = GetGameTimer()
         if next(TRACKED) ~= nil then
             for veh, meta in pairs(TRACKED) do
                 if DoesEntityExist(veh) and meta.supportsNative then
@@ -910,31 +804,18 @@ CreateThread(function()
                         if not IsVehicleSirenOn(veh) then
                             SetVehicleSiren(veh, true)
                             SetVehicleHasMutedSirens(veh, true)
-                            lastRefreshAt[veh] = now
-                        else
-                            local last = lastRefreshAt[veh] or 0
-                            if (now - last) >= 1200 then
-                                lastRefreshAt[veh] = now
-                                SetVehicleSiren(veh, false)
-                                SetVehicleSiren(veh, true)
-                                SetVehicleHasMutedSirens(veh, true)
-                            end
                         end
                     elseif mode == 'sound' then
-                        lastRefreshAt[veh] = nil
                         if IsVehicleSirenOn(veh) then
                             stopNativeSirenVisual(veh)
                         end
-                    else
-                        lastRefreshAt[veh] = nil
                     end
                 elseif not DoesEntityExist(veh) then
-                    lastRefreshAt[veh] = nil
                     cleanupVehicleEmergency(veh)
                 end
             end
         end
-        Wait(anyLights and 200 or 500)
+        Wait(anyLights and 400 or 800)
     end
 end)
 

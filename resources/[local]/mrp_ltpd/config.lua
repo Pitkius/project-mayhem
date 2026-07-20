@@ -88,8 +88,8 @@ Config.Permissions = {
 }
 
 --- Šviesų ir sirenos valdymas (masinoje): režimas per entity statebag (sinchr. visiems žaidėjams)
---- Fleet mašinos: native SetVehicleSiren → mašinos carcols lightbar (ne script stogo flash).
---- Prop lightbar → tik civilinė TP su pd_emergency_kit, arba emergencyLights='script'.
+--- Fleet / MRPD: tik native SetVehicleSiren (kaip GTA police) — jokių custom DrawLight.
+--- Prop lightbar + script flash → tik civilinė TP su pd_emergency_kit, arba emergencyLights='script'.
 Config.EmergencyVehicle = {
     --- qb-menu komandos (tik adminams – žaidėjai naudoja itemą)
     sirenMenuCommand = 'pdsirenai',
@@ -137,18 +137,12 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- false = nenaudoti stogo DrawLight „assist“ (plūduriuojančios orbos be prop).
+    --- FLEET / MRPD: jokių custom DrawLight — tik GTA SetVehicleSiren + carcols (kaip police / police2).
+    --- Custom DrawLight / bone flash = baltos lempos arba floating orbos.
     nativeFlashAssist = false,
-    --- true = R/B iš siren1..N kaulų (lightbar lempos), NE iš stogo centro.
-    --- MRPD carcols dažnai neduoda spalvoto emissive — be šito lieka tamsa arba tik balta.
-    --- Spindulys/intensyvumas MAŽI, kad šviesa „sėdėtų“ ant lempų, ne plūduriuotų virš auto.
-    fleetSirenBoneLights = true,
-    fleetSirenBoneRange = 3.4,
-    fleetSirenBoneIntensity = 3.6,
-    fleetSirenBoneIntervalMs = 320,
-    fleetSirenBoneZBias = -0.04,
-    --- Jei nėra siren kaulų — nepiešti stogo fallback (floating). Tik native SetVehicleSiren.
+    fleetSirenBoneLights = false,
     fleetSirenBoneAllowRoofFallback = false,
+    --- Script flash (prop + DrawLight) TIK civilinei TP su pd_emergency_kit
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
     allowPassengerControl = true,
     performanceTune = {
