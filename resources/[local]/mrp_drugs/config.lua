@@ -143,7 +143,7 @@ Config.Products = {
     mushroom_pack = drugPack('Grybai · supakavimas', 2, 'mushroom_pack', 150, 13000, 'medium', 'schedule', 10, 6, 3, 40, 16),
     --- L3 — kokainas: lapai → nesupakuotas → supakuotas
     cocaine_process = drugProcess('Kokainas · virimas', 3, 'cartel_blend', 35000, 'high', 'schedule', 20, 15, 7, 65, 17),
-    cocaine_pack = drugPack('Kokainas · supakavimas', 3, 'cartel_pack', 520, 24000, 'high', 'schedule', 25, 20, 10, 70, 18),
+    cocaine_pack = drugPack('Kokainas · supakavimas', 3, 'cocaine_bag', 520, 24000, 'high', 'schedule', 25, 20, 10, 70, 18),
     amp_process = drugProcess('Amfetaminas · sintezė', 3, 'amp_paste', 30000, 'high', 'schedule', 17, 11, 6, 60, 19),
     amp_pack = drugPack('Amfetaminas · supakavimas', 3, 'amphetamine_bag', 380, 20000, 'high', 'schedule', 20, 14, 7, 65, 20),
 }
@@ -259,9 +259,10 @@ Config.Recipes = {
         { item = 'empty_bag', count = 3 },
     },
     amp_process = {
-        { item = 'amp_precursor', count = 4 },
-        { item = 'chemical_mix', count = 2 },
-        { item = 'lab_kit', count = 1 },
+        { item = 'amp_cold_meds', count = 3 },
+        { item = 'amp_solvent', count = 2 },
+        { item = 'chemical_mix', count = 1 },
+        { item = 'gloves', count = 1 },
     },
     amp_pack = {
         { item = 'amp_paste', count = 1 },
@@ -794,10 +795,14 @@ Config.FreeDrugShop = {
         -- L3 žaliava / tarpiniai / galutiniai
         { name = 'cartel_raw', amount = 999, price = 0, slot = 25 },
         { name = 'chemical_mix', amount = 999, price = 0, slot = 26 },
-        { name = 'amp_precursor', amount = 999, price = 0, slot = 27 },
+        { name = 'amp_cold_meds', amount = 999, price = 0, slot = 27 },
+        { name = 'amp_solvent', amount = 999, price = 0, slot = 32 },
+        { name = 'amp_reactor', amount = 5, price = 0, slot = 33 },
+        { name = 'amp_cooler', amount = 5, price = 0, slot = 34 },
+        { name = 'amp_vent', amount = 5, price = 0, slot = 35 },
         { name = 'cartel_blend', amount = 999, price = 0, slot = 28 },
         { name = 'amp_paste', amount = 999, price = 0, slot = 29 },
-        { name = 'cartel_pack', amount = 999, price = 0, slot = 30 },
+        { name = 'cocaine_bag', amount = 999, price = 0, slot = 30 },
         { name = 'amphetamine_bag', amount = 999, price = 0, slot = 31 },
         -- Bendri gamybos reikmenys
         { name = 'empty_bag', amount = 999, price = 0, slot = 32 },
@@ -888,7 +893,7 @@ Config.ProductBuyerNPCs = {
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 501, color = 0, scale = 0.75, label = 'Kokaino supirkėjas' },
         prices = {
-            cartel_pack = 620,
+            cocaine_bag = 620,
         },
     },
     heroin = {
@@ -1702,12 +1707,26 @@ Config.CocaineLab = {
 }
 
 --- Amfetamino mobilioji laboratorija — Zirconium Journey + dykuma prie Grapeseed
+---
+--- Srautas:
+---   1) Dark Net / laužynas → 3 įrangos moduliai (reaktorius, aušintuvas, ventiliacija)
+---   2) Montuoji modulius į Journey (use item prie furgono)
+---   3) Ingredientai: šaltųjų vaistai + tirpiklis + chemical_mix + pirštinės
+---   4) Pastatai Journey į Grapeseed zoną → quiz sintezė → amp_paste → pack
 Config.AmpExclusiveProducts = { amp_process = true, amp_pack = true }
 
 Config.AmpMobileLab = {
     enabled = true,
     vehicleModels = { journey = true, journey2 = true },
     vehicleMaxDistance = 9.0,
+    installDistance = 4.0,
+    installMs = 8500,
+    --- Visi 3 moduliai privalomi Journey statebag'e (mrpAmpLab)
+    requiredParts = {
+        { id = 'reactor', item = 'amp_reactor', label = 'Reaktoriaus modulis' },
+        { id = 'cooler', item = 'amp_cooler', label = 'Aušinimo blokas' },
+        { id = 'vent', item = 'amp_vent', label = 'Ventiliacijos rinkinys' },
+    },
     lab = {
         coords = vector3(1903.48, 4922.55, 48.86),
         radius = 14.0,
@@ -1736,9 +1755,10 @@ Config.AmpMobileLab = {
         products = { 'amp_pack' },
     },
     recipe = {
-        { item = 'amp_precursor', count = 4 },
-        { item = 'chemical_mix', count = 2 },
-        { item = 'lab_kit', count = 1 },
+        { item = 'amp_cold_meds', count = 3 },
+        { item = 'amp_solvent', count = 2 },
+        { item = 'chemical_mix', count = 1 },
+        { item = 'gloves', count = 1 },
     },
     questions = {
         { q = 'Koks pH tinkamiausias precursoriaus neutralizavimui?', options = { '3–4 (rūgštus)', '7–8 (neutralus)', '11–12 (šarmus)' }, answer = 2 },
@@ -1749,6 +1769,20 @@ Config.AmpMobileLab = {
         { q = 'Kada sustabdyti sintezę?', options = { 'Kai kvepuoja balta migla', 'Kai pasiekiamas stabilus kristalizacijos etapas', 'Kai išgaruoja visas vanduo' }, answer = 2 },
         { q = 'Koks ventiliacijos tikslas laboratorijoje?', options = { 'Sumažinti drėgmę', 'Pašalinti garus ir apsaugoti nuo sprogimo', 'Padidinti slėgį' }, answer = 2 },
         { q = 'Ką reiškia drumstumas mišinyje po neutralizacijos?', options = { 'Sėkmė', 'Per daug vandens', 'Netinkamas pH ar nešvarumai' }, answer = 3 },
+    },
+}
+
+--- Laužyno dėžė — pigesnis amp_solvent / kartais cooler dalys
+Config.AmpScrapYard = {
+    enabled = true,
+    coords = vector3(2341.05, 3127.90, 48.21),
+    radius = 1.4,
+    label = 'Pramonės atliekų dėžė',
+    cooldownMs = 180000,
+    loot = {
+        { item = 'amp_solvent', min = 1, max = 2, chance = 0.70 },
+        { item = 'chemical_mix', min = 1, max = 1, chance = 0.25 },
+        { item = 'amp_cooler', min = 1, max = 1, chance = 0.08 },
     },
 }
 
@@ -1774,7 +1808,11 @@ Config.LsTestQuickBuy = {
     { item = 'pill_powder', amount = 20 },
     { item = 'mushroom_raw', amount = 20 },
     { item = 'cartel_raw', amount = 20 },
-    { item = 'amp_precursor', amount = 20 },
+    { item = 'amp_cold_meds', amount = 20 },
+    { item = 'amp_solvent', amount = 15 },
+    { item = 'amp_reactor', amount = 1 },
+    { item = 'amp_cooler', amount = 1 },
+    { item = 'amp_vent', amount = 1 },
     { item = 'alcohol_base', amount = 15 },
     { item = 'vape_liquid_base', amount = 15 },
 }
@@ -1793,7 +1831,8 @@ Config.TestKits = {
     },
     level3 = {
         cartel_raw = 25, chemical_mix = 20, meth_ingredient = 10, pill_powder = 15,
-        amp_precursor = 20,
+        amp_cold_meds = 20, amp_solvent = 15,
+        amp_reactor = 1, amp_cooler = 1, amp_vent = 1,
         lab_kit = 5, empty_bag = 35, scale = 5, burner = 3,
         trimming_scissors = 2, pill_press = 1, gloves = 5,
     },
@@ -1839,15 +1878,16 @@ Config.WorldSiteIndex = {
     { id = 'mushroom_lab',       category = 'lab',     label = 'Grybų perdirbimas',             coords = '2138.52, 6405.18, 153.07',  desc = 'Džiovinimas + supakavimas' },
     -- L3
     { id = 'cocaine_lab',        category = 'lab',     label = 'Kokaino laboratorija (Cayo)',   coords = '4987.12, -5128.44, 2.52',   desc = 'Virimas + supakavimas — Cayo' },
-    { id = 'amp_lab',            category = 'lab',     label = 'Amfetamino laboratorija',       coords = '1903.48, 4922.55, 48.86',   desc = 'Journey autobusas + quiz sintezė' },
+    { id = 'amp_lab',            category = 'lab',     label = 'Amfetamino laboratorija',       coords = '1903.48, 4922.55, 48.86',   desc = 'Journey su 3 moduliais + quiz' },
     { id = 'amp_pack',           category = 'lab',     label = 'Amfetamino supakavimas',      coords = '1908.20, 4926.80, 48.86',   desc = 'Amp pack stotelė' },
+    { id = 'amp_scrap',          category = 'lab',     label = 'Amp laužyno dėžė',             coords = '2341.05, 3127.90, 48.21',   desc = 'Tirpiklis / kartais aušintuvas' },
     { id = 'weapon_bench',       category = 'weapon',  label = 'Ginklų dirbtuvė L1',            coords = '-1142.73, 4941.63, 222.30', desc = 'Ginklų crafting — Chiliad' },
     -- Supirkėjai
     { id = 'buyer_alcohol',      category = 'buyer',   label = 'Alkoholio supirkėjas',          coords = '186.47, -1273.15, 29.20',    desc = 'Perka illegal_alcohol' },
     { id = 'buyer_thc',          category = 'buyer',   label = 'THC supirkėjas',                coords = '-1164.44, -1567.76, 4.45',   desc = 'Perka thc_cart' },
     { id = 'buyer_vape',         category = 'buyer',   label = 'Vape supirkėjas',               coords = '-1724.61, 234.15, 58.47',    desc = 'Perka vape_liquid' },
     { id = 'buyer_weed',         category = 'buyer',   label = 'Žolės supirkėjas',              coords = '-3.45, -1820.93, 29.54',     desc = 'Perka weed_bag' },
-    { id = 'buyer_cocaine',      category = 'buyer',   label = 'Kokaino supirkėjas',            coords = '5587.65, -5220.64, 14.62',   desc = 'Perka cartel_pack — Cayo' },
+    { id = 'buyer_cocaine',      category = 'buyer',   label = 'Kokaino supirkėjas',            coords = '5587.65, -5220.64, 14.62',   desc = 'Perka cocaine_bag — Cayo' },
     { id = 'buyer_heroin',       category = 'buyer',   label = 'Heroino supirkėjas',            coords = '357.24, -2055.82, 22.09',    desc = 'Perka heroin_bag' },
     { id = 'buyer_meth',         category = 'buyer',   label = 'Metamfetamino supirkėjas',      coords = '1981.52, 5177.18, 47.98',   desc = 'Perka meth_bag' },
     { id = 'buyer_pills',        category = 'buyer',   label = 'Tablečių supirkėjas',           coords = '-661.18, -857.82, 24.48',    desc = 'Perka pills_pack' },

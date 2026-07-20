@@ -22,6 +22,11 @@
     chemical_mix: "⚗️",
     meth_ingredient: "🧪",
     amp_precursor: "💊",
+    amp_cold_meds: "💊",
+    amp_solvent: "🧴",
+    amp_reactor: "⚙️",
+    amp_cooler: "❄️",
+    amp_vent: "💨",
     default: "📦",
   };
 
