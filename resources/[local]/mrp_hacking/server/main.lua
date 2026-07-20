@@ -144,27 +144,37 @@ local function buildHackProfile(tierId, ctx, locId)
             end
         end
     end
-    local base = Config.HackProfiles[profileKey] or { steps = 5, timeMs = 12000, grid = 4 }
+    local base = Config.HackProfiles[profileKey] or { mode = 'sequence', steps = 5, timeMs = 12000, grid = 4 }
     local profile = {
         mode = base.mode or 'sequence',
-        steps = base.steps,
-        timeMs = base.timeMs,
-        grid = base.grid,
+        steps = base.steps or 5,
+        timeMs = base.timeMs or 12000,
+        grid = base.grid or 4,
         flashMs = base.flashMs or 380,
-        difficulty = base.difficulty,
+        difficulty = base.difficulty or 3.0,
         profileId = profileKey,
+        traceSpeed = base.traceSpeed,
+        traceWidth = base.traceWidth,
     }
     if ctx and ctx.exploits then
         for _, exId in ipairs(ctx.exploits) do
             local ex = Config.Exploits[exId]
             if ex and ex.hackBonus then
-                profile.timeMs = profile.timeMs + (ex.hackBonus.timeMs or 0)
-                profile.steps = math.max(3, profile.steps + (ex.hackBonus.steps or 0))
+                profile.timeMs = (profile.timeMs or 12000) + (ex.hackBonus.timeMs or 0)
+                profile.steps = math.max(3, (profile.steps or 5) + (ex.hackBonus.steps or 0))
+                if ex.hackBonus.difficulty then
+                    profile.difficulty = math.max(2.0, (profile.difficulty or 3.0) + ex.hackBonus.difficulty)
+                end
             end
         end
     end
     if ctx and ctx.hackSpeed then
-        profile.timeMs = math.floor(profile.timeMs * (1.0 / math.max(0.5, ctx.hackSpeed)))
+        local speed = math.max(0.5, tonumber(ctx.hackSpeed) or 1.0)
+        profile.timeMs = math.floor((profile.timeMs or 12000) * (1.0 / speed))
+        --- Greitesnė planšetė = lengvesnis native datacrack
+        if profile.mode == 'native_datacrack' or profile.mode == 'gtao_datacrack' or profile.mode == 'datacrack' then
+            profile.difficulty = math.max(2.0, (profile.difficulty or 3.0) / speed)
+        end
     end
     return profile
 end
