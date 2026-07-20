@@ -66,9 +66,31 @@ Config.Robberies.Loot = {
         goldbar = { chance = 0.4, min = 1, max = 2 },
     },
     deposit_box = {
-        cash = { min = 800, max = 2200 },
-        markedbills = { min = 0, max = 2, worth = 450 },
+        dirty = { min = 800, max = 2200 },
         goldbar = { chance = 0.08, min = 1, max = 1 },
+    },
+}
+
+--- Deposit dėžutės po seifo atrakimo
+Config.Robberies.Deposit = {
+    vaultOpenMinutes = 25,
+    pileProp = 'bkr_prop_bkr_cashpile_01',
+    pileOffset = vector3(0.0, 0.35, 0.0), --- priešais dėžutę
+    grabMs = 4500,
+    --- Markeris ant gręžiamų dėžučių (kol neatidarytos)
+    marker = {
+        type = 20, --- rodyklė žemyn
+        zOffset = 0.55,
+        scale = 0.28,
+        color = { r = 50, g = 220, b = 90, a = 200 },
+        bob = true,
+    },
+    --- Atidaryta / pinigų kalnas — geltonas
+    pileMarker = {
+        type = 2,
+        zOffset = 0.85,
+        scale = 0.22,
+        color = { r = 255, g = 200, b = 40, a = 220 },
     },
 }
 
