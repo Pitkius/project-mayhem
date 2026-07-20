@@ -29,11 +29,18 @@ local function finalizeFleetVehicle(veh, plate)
     SetVehicleOnGroundProperly(veh)
     SetVehicleEngineOn(veh, true, true, false)
     SetVehicleDirtLevel(veh, 0.0)
-    --- Policijos lightbar / extras (mrpd* pack)
-    for i = 0, 20 do
-        if DoesExtraExist(veh, i) then
-            SetVehicleExtra(veh, i, 0)
+    --- Lightbar: įjunk tik jei preferred extras visi off (ne enable-all — exclusive extras bug)
+    local preferred = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }
+    local anyOn, first = false, nil
+    for i = 1, #preferred do
+        local id = preferred[i]
+        if DoesExtraExist(veh, id) then
+            if not first then first = id end
+            if IsVehicleExtraTurnedOn(veh, id) then anyOn = true; break end
         end
+    end
+    if first and not anyOn then
+        SetVehicleExtra(veh, first, 0)
     end
     if plate and plate ~= '' then
         SetVehicleNumberPlateText(veh, plate)

@@ -2,9 +2,25 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local function enableAllVehicleExtras(veh)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
+    --- PD: ne enable-all (exclusive extras išjungia lightbar). Tik preferred jei visi off.
+    if isPoliceVehicleEntity(veh) then
+        local preferred = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }
+        local anyOn, first = false, nil
+        for i = 1, #preferred do
+            local id = preferred[i]
+            if DoesExtraExist(veh, id) then
+                if not first then first = id end
+                if IsVehicleExtraTurnedOn(veh, id) then anyOn = true; break end
+            end
+        end
+        if first and not anyOn then
+            SetVehicleExtra(veh, first, 0)
+        end
+        return
+    end
     for i = 0, 20 do
         if DoesExtraExist(veh, i) then
-            SetVehicleExtra(veh, i, 0) --- 0 = įjungta (lightbar ir pan.)
+            SetVehicleExtra(veh, i, 0)
         end
     end
 end

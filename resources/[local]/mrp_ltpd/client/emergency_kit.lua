@@ -484,6 +484,7 @@ local function cleanupVehicleEmergency(vehicle)
     removeKitPerformance(vehicle)
     INGEST_SCHEDULED[vehicle] = nil
     fleetBoneCache[vehicle] = nil
+    lastSirenApplyMode[vehicle] = nil
     TRACKED[vehicle] = nil
 end
 
@@ -630,34 +631,75 @@ local function safeVehicleNetId(vehicle)
     return NetworkGetNetworkIdFromEntity(vehicle)
 end
 
---- MRPD pack lightbar = vehicle extras (ne prop). Garažas anksčiau išsaugodavo extras=false.
-local function enableFleetLightbarExtras(vehicle)
+--- Lightbar extras: NENAUDOJAM enable-all (be FLAG_EXTRAS_ALL exclusive extras
+--- palieka tik paskutinį extra → lightbar mesh dažnai dingsta, sirena „ON“ bet niekas nesviečia).
+local LIGHTBAR_EXTRA_CANDIDATES = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }
+
+local function ensureFleetLightbarExtras(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     if not modelIsFleet(GetEntityModel(vehicle)) then return end
-    for i = 0, 20 do
-        if DoesExtraExist(vehicle, i) then
-            SetVehicleExtra(vehicle, i, 0) --- 0 = įjungta
+
+    local anyPreferredOn = false
+    local firstPreferred = nil
+    for i = 1, #LIGHTBAR_EXTRA_CANDIDATES do
+        local id = LIGHTBAR_EXTRA_CANDIDATES[i]
+        if DoesExtraExist(vehicle, id) then
+            if not firstPreferred then firstPreferred = id end
+            if IsVehicleExtraTurnedOn(vehicle, id) then
+                anyPreferredOn = true
+                break
+            end
         end
     end
+    --- Jei lightbar extra egzistuoja bet visi išjungti (garažas/senas enable-all) — įjunk pirmą.
+    if firstPreferred and not anyPreferredOn then
+        SetVehicleExtra(vehicle, firstPreferred, 0)
+    end
 end
+
+--- Soft off→on TIK kai keičiasi režimas (ne kiekvieną tick) — atgaivina carcols be balto spam.
+local lastSirenApplyMode = {} --- [veh] = mode
 
 local function applyNativeForEveryone(vehicle, mode)
     if not DoesEntityExist(vehicle) then return end
     if not vehicleSupportsNativeEmergency(vehicle) then return end
-    mode = mode or 'off'
+    mode = tostring(mode or 'off'):lower()
     if mode == 'off' or mode == 'sound' then
         stopNativeSirenVisual(vehicle)
+        lastSirenApplyMode[vehicle] = mode
         return
     end
-    --- Kaip vanilla GTA PD: extras + SetVehicleSiren(true). Be DrawLight, be off→on refresh.
-    enableFleetLightbarExtras(vehicle)
-    ensureVehicleControl(vehicle, 20)
+
+    ensureFleetLightbarExtras(vehicle)
+    ensureVehicleControl(vehicle, 25)
     SetVehicleEngineOn(vehicle, true, true, false)
-    if not IsVehicleSirenOn(vehicle) then
-        SetVehicleSiren(vehicle, true)
+
+    local prev = lastSirenApplyMode[vehicle]
+    local needSoftRestart = prev ~= mode
+    lastSirenApplyMode[vehicle] = mode
+
+    if needSoftRestart then
+        SetVehicleSiren(vehicle, false)
+        SetVehicleHasMutedSirens(vehicle, false)
+        Wait(0)
     end
+    SetVehicleSiren(vehicle, true)
     --- Garsą valdo mrp_siren_controller — mute tik native sirenos garsą
     SetVehicleHasMutedSirens(vehicle, true)
+
+    --- Antras frame — kai kurie addonai „praryja“ pirmą SetVehicleSiren
+    CreateThread(function()
+        Wait(80)
+        if not DoesEntityExist(vehicle) then return end
+        local m = lastSirenApplyMode[vehicle]
+        if m ~= 'lights' and m ~= 'full' then return end
+        if NetworkHasControlOfEntity(vehicle) or ensureVehicleControl(vehicle, 10) then
+            if not IsVehicleSirenOn(vehicle) then
+                SetVehicleSiren(vehicle, true)
+            end
+            SetVehicleHasMutedSirens(vehicle, true)
+        end
+    end)
 end
 
 --- Visoms fleet PD mašinoms: script flash ant stogo — IŠJUNGTA (griauna native carcols).
@@ -670,10 +712,12 @@ local function drawFleetSirenBoneLights(_vehicle)
     return
 end
 
-local function ingestFromEntity(vehicle)
+local function ingestFromEntity(vehicle, forcedMode)
     if not vehicle or vehicle == 0 or not IsEntityAVehicle(vehicle) or not DoesEntityExist(vehicle) then return end
-    enableFleetLightbarExtras(vehicle)
     local mode, kit = readVehicleStateBag(vehicle)
+    if type(forcedMode) == 'string' and forcedMode ~= '' then
+        mode = forcedMode:lower()
+    end
     local supportsNative = vehicleSupportsNativeEmergency(vehicle)
     local scriptFlash = vehicleUsesScriptFlash(vehicle)
     --- Prop lightbar tik script režimui (civilinis kit)
@@ -692,6 +736,7 @@ local function ingestFromEntity(vehicle)
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
         fleetBoneCache[vehicle] = nil
+        lastSirenApplyMode[vehicle] = 'off'
         if not kit then
             cleanupVehicleEmergency(vehicle)
         end
@@ -701,6 +746,7 @@ local function ingestFromEntity(vehicle)
         applyNativeForEveryone(vehicle, mode)
     elseif mode == 'sound' then
         stopNativeSirenVisual(vehicle)
+        lastSirenApplyMode[vehicle] = 'sound'
     elseif mode == 'full' then
         applyNativeForEveryone(vehicle, 'full')
     end
@@ -819,7 +865,7 @@ CreateThread(function()
     end
 end)
 
---- Grąžina lightbar extras ant netoliese esančių PD fleet mašinų (tik tarnyboje / kai TRACKED).
+--- Periodiškai tik lightbar candidate extras (ne enable-all).
 CreateThread(function()
     while true do
         local onDuty = emergencyOnDuty()
@@ -834,7 +880,7 @@ CreateThread(function()
             for i = 1, #pool do
                 local veh = pool[i]
                 if DoesEntityExist(veh) and #(GetEntityCoords(veh) - pCoords) <= 90.0 then
-                    enableFleetLightbarExtras(veh)
+                    ensureFleetLightbarExtras(veh)
                 end
             end
         end
@@ -1028,12 +1074,16 @@ RegisterNetEvent('mrp_ltpd:client:forceEmergencyVisual', function(netId, mode)
     if type(NetworkDoesNetworkIdExist) == 'function' and not NetworkDoesNetworkIdExist(netId) then return end
     local ent = NetworkGetEntityFromNetworkId(netId)
     if ent == 0 or not DoesEntityExist(ent) or not IsEntityAVehicle(ent) then return end
-    if type(mode) == 'string' then
-        --- Greitas kelias — nespėti laukti statebag
+    mode = type(mode) == 'string' and mode:lower() or nil
+    if mode then
         TRACKED[ent] = TRACKED[ent] or {}
-        TRACKED[ent].mode = mode:lower()
+        TRACKED[ent].mode = mode
+        --- forcedMode — nenaudoti senos statebag reikšmės (race)
+        lastSirenApplyMode[ent] = nil
+        ingestFromEntity(ent, mode)
+    else
+        ingestFromEntity(ent)
     end
-    ingestFromEntity(ent)
 end)
 
 AddEventHandler('onResourceStop', function(res)
