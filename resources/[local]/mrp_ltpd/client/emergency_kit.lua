@@ -878,7 +878,9 @@ CreateThread(function()
     end
 end)
 
---- Natyvių sirenos šviesų palaikymas kiekvieną kadrą (GTA dažnai numuša SetVehicleSiren).
+--- Natyvių sirenos šviesų palaikymas — TIK kai GTA numušė SetVehicleSiren.
+--- Kiekvieną kadrą kartoti SetVehicleSiren(true) RESETINA carcols sequencerį
+--- → dažnai lieka tik balti headlight flash, o lightbar R/B „miršta“.
 CreateThread(function()
     while true do
         local anyLights = false
@@ -889,11 +891,13 @@ CreateThread(function()
                     meta.mode = mode
                     if mode == 'lights' or mode == 'full' then
                         anyLights = true
-                        if not NetworkHasControlOfEntity(veh) then
-                            NetworkRequestControlOfEntity(veh)
+                        if not IsVehicleSirenOn(veh) then
+                            if not NetworkHasControlOfEntity(veh) then
+                                NetworkRequestControlOfEntity(veh)
+                            end
+                            SetVehicleSiren(veh, true)
+                            SetVehicleHasMutedSirens(veh, true)
                         end
-                        SetVehicleSiren(veh, true)
-                        SetVehicleHasMutedSirens(veh, true)
                     elseif mode == 'sound' then
                         if IsVehicleSirenOn(veh) then
                             stopNativeSirenVisual(veh)
@@ -904,7 +908,8 @@ CreateThread(function()
                 end
             end
         end
-        Wait(anyLights and 0 or 500)
+        --- 250ms užtenka atstatyti; 0ms spam griauna sequencer
+        Wait(anyLights and 250 or 500)
     end
 end)
 

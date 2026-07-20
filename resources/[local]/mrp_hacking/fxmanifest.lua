@@ -48,6 +48,8 @@ files {
     'html/hackos.css',
     'html/tablet-ui.js',
     'html/app.js',
+    'html/gtao-minigames.js',
+    'html/gtao-minigames.css',
     'html/asset/gtav_satellite_2048.png',
 }
 

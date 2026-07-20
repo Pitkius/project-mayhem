@@ -82,21 +82,22 @@ Config.RobberyTiers = {
 }
 
 Config.HackProfiles = {
-    atm_security = { mode = 'sequence', steps = 5, timeMs = 14000, grid = 4, flashMs = 400 },
-    store_register = { mode = 'reverse', steps = 4, timeMs = 13000, grid = 4, flashMs = 380 },
-    store_mirror = { mode = 'sequence', steps = 5, timeMs = 12500, grid = 4, flashMs = 360 },
-    store_vinewood = { mode = 'pairs', steps = 4, timeMs = 12000, grid = 4, flashMs = 350 },
-    store_sandy = { mode = 'reverse', steps = 5, timeMs = 11500, grid = 4, flashMs = 340 },
-    store_paleto = { mode = 'code', steps = 4, timeMs = 13000, grid = 4, flashMs = 370 },
-    store_route68 = { mode = 'sequence', steps = 5, timeMs = 12000, grid = 4, flashMs = 360 },
-    fleeca_vault = { mode = 'wire', steps = 5, timeMs = 16000, flashMs = 500 },
-    fleeca_legion = { mode = 'wire', steps = 4, timeMs = 15000, flashMs = 480 },
-    fleeca_greatocean = { mode = 'wire', steps = 5, timeMs = 15500, flashMs = 460 },
-    fleeca_hawick = { mode = 'wire', steps = 5, timeMs = 14500, flashMs = 440 },
-    fleeca_delperro = { mode = 'wire', steps = 5, timeMs = 14000, flashMs = 420 },
-    fleeca_route68 = { mode = 'wire', steps = 6, timeMs = 13500, flashMs = 400 },
-    pacific_vault = { mode = 'wire', steps = 7, timeMs = 13000, flashMs = 380 },
-    casino_network = { mode = 'sequence', steps = 6, timeMs = 11000, grid = 5, flashMs = 340 },
+    atm_security = { mode = 'gtao_datacrack', steps = 5, timeMs = 18000, grid = 6 },
+    store_register = { mode = 'gtao_datacrack', steps = 4, timeMs = 16000, grid = 5 },
+    store_mirror = { mode = 'gtao_datacrack', steps = 5, timeMs = 16000, grid = 5 },
+    store_vinewood = { mode = 'gtao_datacrack', steps = 5, timeMs = 15000, grid = 6 },
+    store_sandy = { mode = 'gtao_datacrack', steps = 5, timeMs = 15000, grid = 5 },
+    store_paleto = { mode = 'gtao_datacrack', steps = 4, timeMs = 16000, grid = 5 },
+    store_route68 = { mode = 'gtao_datacrack', steps = 5, timeMs = 15000, grid = 5 },
+    --- GTA Online Data Crack (Fleeca / Pacific vault hack)
+    fleeca_vault = { mode = 'gtao_datacrack', steps = 5, timeMs = 20000, grid = 6 },
+    fleeca_legion = { mode = 'gtao_datacrack', steps = 5, timeMs = 19000, grid = 6 },
+    fleeca_greatocean = { mode = 'gtao_datacrack', steps = 5, timeMs = 19000, grid = 6 },
+    fleeca_hawick = { mode = 'gtao_datacrack', steps = 5, timeMs = 18000, grid = 6 },
+    fleeca_delperro = { mode = 'gtao_datacrack', steps = 5, timeMs = 18000, grid = 6 },
+    fleeca_route68 = { mode = 'gtao_datacrack', steps = 6, timeMs = 17000, grid = 7 },
+    pacific_vault = { mode = 'gtao_datacrack', steps = 7, timeMs = 16000, grid = 7 },
+    casino_network = { mode = 'gtao_datacrack', steps = 6, timeMs = 15000, grid = 6 },
     casino_fingerprint = { mode = 'trace', steps = 5, timeMs = 18000, traceSpeed = 0.0042, traceWidth = 0.09 },
 }
 

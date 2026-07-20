@@ -89,16 +89,17 @@ local function runSafe(loc)
         if not res or not res.ok then
             return QBCore.Functions.Notify((res and res.msg) or 'Negalima.', 'error')
         end
+        --- PD iškart kai pradedama (ne silent)
         if res.needAlert then
-            QBCore.Functions.Notify('Be stealth hack seifo gręžimas iškviečia policiją.', 'error', 7000)
             TriggerServerEvent('mrp_hacking:server:storeSideAlert', loc.id, 'safe')
+            QBCore.Functions.Notify('Policija iškviesta — seifo apiplėšimas prasidėjo.', 'error', 6000)
         end
         busy = true
         local mg = sideCfg().safeMinigame or (Config.RobberyMinigames or {}).drill
         local anim = (Config.RobberyAnims or {}).drill
         local ok = true
         if mg then
-            ok = exports['mrp_hacking']:RunPhysicalMinigame(mg.mode or 'drill', {
+            ok = exports['mrp_hacking']:RunPhysicalMinigame(mg.mode or 'gtao_drill', {
                 label = mg.label or 'Parduotuvės seifas',
                 anim = anim,
                 data = mg.data or {},
@@ -108,30 +109,33 @@ local function runSafe(loc)
             busy = false
             return QBCore.Functions.Notify('Seifo gręžimas atšauktas.', 'error')
         end
-        local ms = sideCfg().safeDrillMs
-            or (Config.Robberies.Timings and Config.Robberies.Timings.storeSafe)
-            or 120000
-        QBCore.Functions.Progressbar('store_safe_drill', 'Gręžiamas seifas (apie 2 min)…', ms, false, true, {
-            disableMovement = true,
-            disableCarMovement = true,
-            disableMouse = false,
-            disableCombat = true,
-        }, {
-            animDict = 'anim@heists@fleeca_bank@drilling',
-            anim = 'drill_straight_idle',
-            flags = 49,
-        }, {
-            model = 'prop_tool_drill',
-            bone = 57005,
-            coords = { x = 0.14, y = 0.0, z = -0.01 },
-            rotation = { x = 90.0, y = -90.0, z = 180.0 },
-        }, {}, function()
+        local ms = tonumber(sideCfg().safeDrillMs) or 0
+        if ms > 0 then
+            QBCore.Functions.Progressbar('store_safe_drill', 'Baigiamas seifo gręžimas…', ms, false, true, {
+                disableMovement = true,
+                disableCarMovement = true,
+                disableMouse = false,
+                disableCombat = true,
+            }, {
+                animDict = 'anim@heists@fleeca_bank@drilling',
+                anim = 'drill_straight_idle',
+                flags = 49,
+            }, {
+                model = 'prop_tool_drill',
+                bone = 57005,
+                coords = { x = 0.14, y = 0.0, z = -0.01 },
+                rotation = { x = 90.0, y = -90.0, z = 180.0 },
+            }, {}, function()
+                busy = false
+                TriggerServerEvent('mrp_hacking:server:storeSideLoot', loc.id, 'safe')
+            end, function()
+                busy = false
+                QBCore.Functions.Notify('Atšaukta.', 'error')
+            end)
+        else
             busy = false
             TriggerServerEvent('mrp_hacking:server:storeSideLoot', loc.id, 'safe')
-        end, function()
-            busy = false
-            QBCore.Functions.Notify('Atšaukta.', 'error')
-        end)
+        end
     end, loc.id, 'safe')
 end
 
@@ -199,7 +203,7 @@ local function registerStoreSideZones()
                 options = {
                     {
                         icon = 'fas fa-vault',
-                        label = 'Gręžti seifą (2 min)',
+                        label = 'Gręžti seifą (GTA Online)',
                         canInteract = function()
                             return not busy and QBCore.Functions.HasItem(drillItem, 1)
                         end,

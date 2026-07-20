@@ -138,10 +138,11 @@ Config.EmergencyVehicle = {
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
     --- false = nenaudoti stogo DrawLight „assist“ (atrodo plūduriuojančiai).
-    --- Tikri lightbar flash: SetVehicleSiren (carcols) + kaulų glow žemiau.
+    --- Tikri lightbar flash: tik SetVehicleSiren → carcols emissives ant lempų.
     nativeFlashAssist = false,
-    --- Raudona/mėlyna ant mašinos siren kaulų (lightbar mesh) — veikia kai carcols silpnas.
-    fleetSirenBoneLights = true,
+    --- false: NEPIEŠTI DrawLight ant siren kaulų / stogo.
+    --- true sukuria „floating“ raudona/mėlyna virš mašinos, o lightbar mesh lieka baltas/miręs.
+    fleetSirenBoneLights = false,
     fleetSirenBoneRange = 11.0,
     fleetSirenBoneIntensity = 8.5,
     fleetSirenBoneIntervalMs = 320,

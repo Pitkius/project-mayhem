@@ -353,6 +353,14 @@ async function startHack(profile, tierId) {
   const flashMs = profile.flashMs || 380;
   const hintEl = document.getElementById("hackHint");
 
+  if (mode === "gtao_datacrack" || mode === "datacrack") {
+    hackGrid?.classList.add("hidden");
+    hackWire?.classList.add("hidden");
+    hackTrace?.classList.add("hidden");
+    if (typeof window.startGtaoDatacrack === "function") {
+      return window.startGtaoDatacrack(profile, tierId);
+    }
+  }
   if (mode === "wire") {
     hackGrid?.classList.add("hidden");
     hackWire?.classList.remove("hidden");
@@ -832,7 +840,7 @@ function openPhysical(d) {
   tablet.classList.add("hidden");
   hackPanel.classList.add("hidden");
   physicalPanel.classList.remove("hidden");
-  if (d.mode === "drill") {
+  if (d.mode === "drill" || d.mode === "gtao_drill") {
     startDrill(d.data || {});
     return;
   }

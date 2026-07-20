@@ -62,7 +62,7 @@ function RunPhysicalMinigame(mode, opts)
     opts = opts or {}
     if physicalPromise then return false end
     startAnim(opts.anim)
-    if mode == 'drill' then
+    if mode == 'drill' or mode == 'gtao_drill' then
         PlaySoundFrontend(-1, 'Drill', 'DLC_HEIST_FLEECA_BANK_DRILLING_SOUNDS', true)
     end
     SetNuiFocus(true, true)
@@ -125,10 +125,11 @@ Config.RobberyAnims = Config.RobberyAnims or {
 Config.RobberyMinigames = Config.RobberyMinigames or {
     card = { mode = 'sequence', label = 'Perbrauk kortelę — rodyklės', data = { length = 4 } },
     thermite = { mode = 'hold', label = 'Laikyk SPACE termito zonoje', data = { holdMs = 2800 } },
-    drill = { mode = 'drill', label = 'Seifo gręžimas — W/S galia, A/D kryptis', data = { depthTarget = 100, stages = 5, timeMs = 55000 } },
-    loot = { mode = 'mash', label = 'Grabink pinigus — spam SPACE (GTA Online)', data = { target = 22, timeMs = 9000 } },
+    --- GTA Online Fleeca drill (W/S galia, A/D zona, temp/slėgis)
+    drill = { mode = 'gtao_drill', label = 'Seifo gręžimas (GTA Online)', data = { depthTarget = 100, stages = 5, timeMs = 55000 } },
+    loot = { mode = 'mash', label = 'Grabink pinigus — spam SPACE', data = { target = 22, timeMs = 9000 } },
     chain = { mode = 'sequence', label = 'Pritvirtink grandinę — rodyklės', data = { length = 5 } },
-    atm_drill = { mode = 'drill', label = 'ATM gręžimas', data = { depthTarget = 100, stages = 4, timeMs = 45000 } },
+    atm_drill = { mode = 'gtao_drill', label = 'ATM gręžimas (GTA Online)', data = { depthTarget = 100, stages = 4, timeMs = 45000 } },
 }
 
 exports('RunPhysicalMinigame', RunPhysicalMinigame)

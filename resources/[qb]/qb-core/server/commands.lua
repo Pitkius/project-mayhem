@@ -127,21 +127,25 @@ end, 'admin')
 
 -- Permissions
 
-QBCore.Commands.Add('addpermission', Lang:t('command.addpermission.help'), { { name = Lang:t('command.addpermission.params.id.name'), help = Lang:t('command.addpermission.params.id.help') }, { name = Lang:t('command.addpermission.params.permission.name'), help = Lang:t('command.addpermission.params.permission.help') } }, true, function(source, args)
+QBCore.Commands.Add('addpermission', Lang:t('command.addpermission.help') .. ' (išsaugo license į cfg)', { { name = Lang:t('command.addpermission.params.id.name'), help = Lang:t('command.addpermission.params.id.help') }, { name = Lang:t('command.addpermission.params.permission.name'), help = Lang:t('command.addpermission.params.permission.help') } }, true, function(source, args)
     local Player = QBCore.Functions.GetPlayer(tonumber(args[1]))
     local permission = tostring(args[2]):lower()
     if Player then
         QBCore.Functions.AddPermission(Player.PlayerData.source, permission)
+        local lic = QBCore.Functions.GetIdentifier(Player.PlayerData.source, 'license') or '?'
+        TriggerClientEvent('QBCore:Notify', source, ('Permission %s duota + išsaugota (%s)'):format(permission, lic), 'success')
+        TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, ('Gavai %s (nuolatinės teisės)'):format(permission), 'success')
     else
         TriggerClientEvent('QBCore:Notify', source, Lang:t('error.not_online'), 'error')
     end
 end, 'god')
 
-QBCore.Commands.Add('removepermission', Lang:t('command.removepermission.help'), { { name = Lang:t('command.removepermission.params.id.name'), help = Lang:t('command.removepermission.params.id.help') }, { name = Lang:t('command.removepermission.params.permission.name'), help = Lang:t('command.removepermission.params.permission.help') } }, true, function(source, args)
+QBCore.Commands.Add('removepermission', Lang:t('command.removepermission.help') .. ' (ištrina iš cfg)', { { name = Lang:t('command.removepermission.params.id.name'), help = Lang:t('command.removepermission.params.id.help') }, { name = Lang:t('command.removepermission.params.permission.name'), help = Lang:t('command.removepermission.params.permission.help') } }, true, function(source, args)
     local Player = QBCore.Functions.GetPlayer(tonumber(args[1]))
     local permission = tostring(args[2]):lower()
     if Player then
         QBCore.Functions.RemovePermission(Player.PlayerData.source, permission)
+        TriggerClientEvent('QBCore:Notify', source, ('Permission %s nuimta + pašalinta iš cfg'):format(permission), 'primary')
     else
         TriggerClientEvent('QBCore:Notify', source, Lang:t('error.not_online'), 'error')
     end

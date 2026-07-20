@@ -323,7 +323,7 @@ QBCore.Commands.Add('fixadmin', 'Sinchronizuoti admin teises -> QBCore (F8)', {}
     TriggerClientEvent('QBCore:Notify', source, msg, (hasGod or hasAdmin) and 'success' or 'error')
 end)
 
-QBCore.Commands.Add('grantadmin', 'Duoti žaidėjui god/admin (online ID)', {
+QBCore.Commands.Add('grantadmin', 'Duoti žaidėjui god/admin (online ID) — išsaugo license į cfg', {
     { name = 'id', help = 'Server ID (skaičius šalia vardo)' },
     { name = 'lygis', help = 'god / admin / mod (default: god)' },
 }, true, function(source, args)
@@ -337,8 +337,27 @@ QBCore.Commands.Add('grantadmin', 'Duoti žaidėjui god/admin (online ID)', {
     end
     local level = args[2] or 'god'
     grantPlayerAdmin(Player.PlayerData.source, level)
-    TriggerClientEvent('QBCore:Notify', source, ('Duotos %s teisės ID %s'):format(level, targetId), 'success')
-    TriggerClientEvent('QBCore:Notify', Player.PlayerData.source, ('Gautos %s teisės. Jei komandos neveikia — /fixadmin'):format(level), 'success')
+    local lic = QBCore.Functions.GetIdentifier(Player.PlayerData.source, 'license') or '?'
+    TriggerClientEvent('QBCore:Notify', source,
+        ('Duotos %s teisės ID %s — išsaugota (%s). Po RR liks.'):format(level, targetId, lic), 'success')
+    TriggerClientEvent('QBCore:Notify', Player.PlayerData.source,
+        ('Gautos %s teisės (nuolatinės). Jei komandos neveikia — /fixadmin'):format(level), 'success')
+end, 'god')
+
+QBCore.Commands.Add('listadmins', 'Rodyti nuolatinius adminus (license cfg)', {}, false, function(source)
+    local ok, data = pcall(function()
+        return LoadResourceFile(GetCurrentResourceName(), 'admins.json')
+    end)
+    if not ok or not data or data == '' then
+        return TriggerClientEvent('QBCore:Notify', source, 'Adminų sąrašas tuščias / nerastas.', 'error')
+    end
+    local decoded = json.decode(data) or {}
+    local n = 0
+    for license, row in pairs(decoded) do
+        n = n + 1
+        print(('[admin] %s | %s | license:%s'):format(tostring(row.name), tostring(row.level), license))
+    end
+    TriggerClientEvent('QBCore:Notify', source, ('Nuolatinių adminų: %d (detalės serverio konsolėje)'):format(n), 'primary')
 end, 'god')
 
 QBCore.Commands.Add('logout', 'Atsijungti nuo personažo (admin)', {}, false, function(source)

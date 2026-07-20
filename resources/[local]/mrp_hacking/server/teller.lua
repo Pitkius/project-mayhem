@@ -78,7 +78,7 @@ RegisterNetEvent('mrp_hacking:server:tellerComplete', function(kind, locId, gotB
         elseif kind == 'store' and locId then
             exports['mrp_hacking']:UnlockStoreFor(src, locId, false, { cashTaken = true })
             TriggerClientEvent('QBCore:Notify', src,
-                'Kasa ištuštinta. Perlas (jei yra) ir seifas gale — laužk pats. Be L1 hack seifas kvies PD.',
+                'Kasa ištuštinta. Seifą gale gali gręžti bet kada (PD kai pradedi).',
                 'primary', 9000)
         end
         Busy[key] = nil

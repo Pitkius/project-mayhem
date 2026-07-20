@@ -84,34 +84,39 @@ Config.Robberies.Flow = {
 
 --- Soft Fleeca / store teller
 Config.Robberies.Teller = {
-    aimSeconds = 12, --- kiek laikyti taikiklį kol krauna
+    aimSeconds = 12,
     bagProp = 'prop_money_bag_01',
-    bagThrowForce = 2.5,
+    bagThrowForce = 0.0, --- 0 = padėti ant prekystalio, ne mesti
+    counterForward = 0.55,
+    counterUp = 0.95,
     lootKey = 'bank_fleeca_soft',
     storeLootKey = 'store',
-    --- Kai nustoja taikytis po pinigų — PD alert
     alertOnStopAim = true,
 }
 
---- Parduotuvės šoninis grobis (Perlas + seifas). Atrakinama po soft maišo arba L1 hack.
+--- Parduotuvės šoninis grobis.
+--- Seifas: NEREIKIA kasininko / L1 hack — gręžimas iškart + PD alert.
 Config.Robberies.StoreSide = {
     unlockMinutes = 12,
     perlasProgressMs = 9000,
     perlasMinigame = { mode = 'sequence', label = 'Perlas terminalas — įsilaužimas', data = { length = 4 } },
-    safeMinigame = { mode = 'drill', label = 'Parduotuvės seifas — W/S galia, A/D kryptis', data = { depthTarget = 100, stages = 5, timeMs = 45000 } },
-    safeDrillMs = 120000, --- 2 minutės gręžimo
+    --- GTA Online Fleeca-style drill
+    safeMinigame = { mode = 'gtao_drill', label = 'Parduotuvės seifas — GTA Online gręžimas', data = { depthTarget = 100, stages = 5, timeMs = 55000 } },
+    safeDrillMs = 0, --- visas gręžimas minigame'e; papildomas progressbar nebereikalingas
     safeItem = 'drill',
+    safeRequiresUnlock = false,
     alertSafeNoHack = '24/7 — kas nors gręžia seifą',
     alertPerlasNoHack = '24/7 — Perlas terminalo apiplėšimas',
 }
 
---- Kasininkai Fleeca (spawn jei nėra)
+--- Kasininkai Fleeca + Pacific
 Config.Robberies.BankTellers = {
     fleeca_legion = { model = 'ig_bankman', coords = vector4(149.41, -1042.15, 29.37, 340.0) },
     fleeca_greatocean = { model = 'ig_bankman', coords = vector4(-2961.12, 482.95, 15.70, 88.0) },
     fleeca_hawick = { model = 'ig_bankman', coords = vector4(-351.25, -51.35, 49.04, 340.0) },
     fleeca_delperro = { model = 'ig_bankman', coords = vector4(-1211.95, -331.95, 37.78, 27.0) },
     fleeca_route68 = { model = 'ig_bankman', coords = vector4(1174.85, 2708.35, 38.09, 180.0) },
+    pacific_main = { model = 'ig_bankman', coords = vector4(253.85, 221.15, 106.29, 160.0) },
 }
 
 --- Booth durys (atrakinamos po soft pinigų)
