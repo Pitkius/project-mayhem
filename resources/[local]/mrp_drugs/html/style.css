@@ -1577,32 +1577,35 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   font-weight: 700;
 }
 .vape3d-hint {
-  min-height: 38px;
+  min-height: 44px;
   margin: 4px 0 12px;
-  color: rgba(236, 254, 255, 0.72);
-  font-size: 13px;
+  color: #ecfeff;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.45;
 }
 .vape3d-gauge {
   position: relative;
-  height: 10px;
+  height: 14px;
   margin-bottom: 14px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.35);
   border-radius: 999px;
 }
 .vape3d-zone {
   position: absolute;
-  inset: 0 auto 0 62%;
-  width: 22%;
-  background: rgba(74, 222, 128, 0.35);
+  inset: 0 auto 0 60%;
+  width: 24%;
+  background: rgba(74, 222, 128, 0.45);
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.35);
 }
 .vape3d-gauge-fill {
   display: block;
   width: 0;
   height: 100%;
-  background: linear-gradient(90deg, #0891b2, #67e8f9);
-  transition: width 0.08s linear;
+  background: linear-gradient(90deg, #ea580c, #fbbf24, #67e8f9);
+  transition: width 0.06s linear;
 }
 .vape3d-footer {
   padding-top: 11px;

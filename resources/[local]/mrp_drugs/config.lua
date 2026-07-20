@@ -74,8 +74,9 @@ Config.RiskLabels = {
 --[[
   Kiekvienas narkotikas: 1) žaliava (parduotuvė) → 2) apdorotas (gamybos stotis) → 3) supakuotas (pardavimas).
   stage = 'process' | 'pack' · sellBase > 0 tik supakuotiems.
+  Nėra random craft fail — jei minigame baigtas, produktas visada gaunamas.
 ]]
-local function drugProcess(label, level, output, craftTimeMs, risk, minigame, fail, police, heat, failPct, lineOrder, outAmt)
+local function drugProcess(label, level, output, craftTimeMs, risk, minigame, _fail, police, heat, _failPct, lineOrder, outAmt)
     return {
         label = label,
         level = level,
@@ -86,15 +87,15 @@ local function drugProcess(label, level, output, craftTimeMs, risk, minigame, fa
         craftTimeMs = craftTimeMs,
         risk = risk,
         minigame = minigame,
-        failChance = fail,
+        failChance = 0,
         policeChance = police,
         heatGain = heat,
-        failLosePercent = failPct,
+        failLosePercent = 0,
         sellBase = 0,
     }
 end
 
-local function drugPack(label, level, output, sellBase, craftTimeMs, risk, minigame, fail, police, heat, failPct, lineOrder, outAmt)
+local function drugPack(label, level, output, sellBase, craftTimeMs, risk, minigame, _fail, police, heat, _failPct, lineOrder, outAmt)
     return {
         label = label,
         level = level,
@@ -105,10 +106,10 @@ local function drugPack(label, level, output, sellBase, craftTimeMs, risk, minig
         craftTimeMs = craftTimeMs,
         risk = risk,
         minigame = minigame,
-        failChance = fail,
+        failChance = 0,
         policeChance = police,
         heatGain = heat,
-        failLosePercent = failPct,
+        failLosePercent = 0,
         sellBase = sellBase,
     }
 end

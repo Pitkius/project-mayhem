@@ -108,7 +108,7 @@ Config.DrugEquipment.types = {
         label = 'Samagono distiliatorius',
         prop = 'prop_cooker_03',
         icon = 'flame',
-        packOnly = true,
+        packOnly = true, --- recepte itemo nereikia; produktas alkoholio process
         products = { 'alcohol_process' },
     },
     vape_still = {

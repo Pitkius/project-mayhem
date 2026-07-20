@@ -1,4 +1,4 @@
---- L1 alcohol production: GTA world interaction with shared 3D HUD.
+--- L1 alcohol production: aiškūs veiksmai + vizualus feedback (ugnis, judantys propai).
 AlcoholProduction = AlcoholProduction or {}
 
 local QBCore = exports['qb-core']:GetCoreObject()
@@ -47,9 +47,66 @@ local function updateHud(session, hint, extra)
     hud('vape3dUpdate', data)
 end
 
+local function stopFire(session)
+    if session.fireFx then
+        StopParticleFxLooped(session.fireFx, false)
+        session.fireFx = nil
+    end
+    if session.steamFx then
+        StopParticleFxLooped(session.steamFx, false)
+        session.steamFx = nil
+    end
+end
+
+local function ensurePtfx()
+    if not HasNamedPtfxAssetLoaded('core') then
+        RequestNamedPtfxAsset('core')
+        local t = GetGameTimer() + 3000
+        while not HasNamedPtfxAssetLoaded('core') and GetGameTimer() < t do Wait(10) end
+    end
+    return HasNamedPtfxAssetLoaded('core')
+end
+
+local function updateFire(session, intensity)
+    intensity = clamp(intensity or 0.0, 0.0, 1.5)
+    local cooker = session.cooker
+    if not cooker or not DoesEntityExist(cooker) then return end
+    if intensity < 0.05 then
+        stopFire(session)
+        return
+    end
+    if not ensurePtfx() then return end
+    if not session.fireFx then
+        UseParticleFxAssetNextCall('core')
+        session.fireFx = StartParticleFxLoopedOnEntity(
+            'ent_amb_torch_fire', cooker,
+            0.0, 0.0, 0.22,
+            0.0, 0.0, 0.0,
+            0.35, false, false, false
+        )
+    end
+    if session.fireFx then
+        SetParticleFxLoopedScale(session.fireFx, 0.25 + intensity * 0.9)
+        SetParticleFxLoopedAlpha(session.fireFx, clamp(0.4 + intensity * 0.6, 0.0, 1.0))
+    end
+    if intensity > 0.55 and not session.steamFx then
+        UseParticleFxAssetNextCall('core')
+        session.steamFx = StartParticleFxLoopedOnEntity(
+            'ent_amb_steam', cooker,
+            0.0, 0.05, 0.55,
+            0.0, 0.0, 0.0,
+            0.8, false, false, false
+        )
+    elseif intensity <= 0.45 and session.steamFx then
+        StopParticleFxLooped(session.steamFx, false)
+        session.steamFx = nil
+    end
+end
+
 local function cleanup(session)
     if not session or session.cleaned then return end
     session.cleaned = true
+    stopFire(session)
     Interaction3D.Cleanup(session.world)
     local ped = PlayerPedId()
     FreezeEntityPosition(ped, false)
@@ -113,7 +170,6 @@ local function spawnScene(session)
     local origin, heading = session.origin, session.heading
     local workspace = session.workspace
 
-    --- Fiksuota įranga (alcohol_still / bagging_table) — NEspawninti antrojo stalo/katilo.
     local anchorModels = session.mode == 'pack'
         and { 'bkr_prop_weed_table_01a', 'prop_tool_bench02', 'bkr_prop_meth_table01a' }
         or { 'prop_cooker_03', 'bkr_prop_meth_table01a', 'prop_tool_bench02', 'bkr_prop_weed_table_01a' }
@@ -126,14 +182,12 @@ local function spawnScene(session)
         heading = session.heading
         origin = session.origin
         if session.mode == 'process' then
-            --- alcohol_still prop = cooker; nenaudojam atskiro stalo
             session.cooker = existing
             session.table = nil
         else
             session.table = existing
         end
     else
-        --- Fallback: laikinas stalas tik jei nėra pasaulio įrangos (test / legacy)
         local table = Interaction3D.Spawn(world,
             session.mode == 'pack' and { 'prop_tool_bench02', 'bkr_prop_weed_table_01a' }
                 or { 'bkr_prop_meth_table01a', 'prop_tool_bench02', 'bkr_prop_weed_table_01a' },
@@ -157,8 +211,12 @@ local function spawnScene(session)
     world.camDistance = 2.85
 
     local bottlePos = Interaction3D.Offset(origin, heading, 0.52, -0.15, session.top - origin.z + 0.12)
-    session.bottle = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, bottlePos, heading, { collision = false })
+    --- collision=true kad marker/outline būtų matomi; judėjimas vistiek be fizikos
+    session.bottle = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, bottlePos, heading, { collision = true })
     if not session.bottle then return false, 'bottle_spawn_failed' end
+    SetEntityCollision(session.bottle, false, false)
+    session.bottleBaseHeading = heading
+    session.bottleHome = bottlePos
 
     if session.mode == 'process' then
         if not session.cooker then
@@ -166,72 +224,91 @@ local function spawnScene(session)
             session.cooker = Interaction3D.Spawn(world, { 'prop_cooker_03' }, cookerPos, heading, { collision = false })
             if not session.cooker then return false, 'cooker_spawn_failed' end
         end
-        session.collectPoint = Interaction3D.Offset(origin, heading, 0.0, 0.05, session.top - origin.z + 0.30)
+        session.collectPoint = Interaction3D.Offset(origin, heading, 0.0, 0.05, session.top - origin.z + 0.35)
         local scalePos = Interaction3D.Offset(origin, heading, -0.48, 0.05, session.top - origin.z + 0.03)
         session.scale = Interaction3D.Spawn(world, { 'bkr_prop_coke_scale_01' }, scalePos, heading, { collision = false })
     else
         local corkPos = Interaction3D.Offset(origin, heading, 0.45, 0.25, session.top - origin.z + 0.12)
-        session.cork = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, corkPos, heading + 180.0, { collision = false })
+        session.cork = Interaction3D.Spawn(world, { 'prop_cs_script_bottle' }, corkPos, heading + 180.0, { collision = true })
         if not session.cork then return false, 'cork_spawn_failed' end
+        SetEntityCollision(session.cork, false, false)
+        session.corkHome = corkPos
         local scalePos = Interaction3D.Offset(origin, heading, -0.45, 0.05, session.top - origin.z + 0.03)
         session.scale = Interaction3D.Spawn(world, { 'bkr_prop_coke_scale_01' }, scalePos, heading, { collision = false })
     end
     return true
 end
 
-local function selectEntity(session, target, hint, onSelected)
-    local entity = Interaction3D.RaycastCamera(session.world, 8.0, PlayerPedId())
-    Interaction3D.Select(session.world, entity == target and target or nil)
-    updateHud(session, entity == target and ('E · %s'):format(hint) or 'Nukreipk kamerą į pažymėtą objektą.')
-    if entity == target and IsDisabledControlJustPressed(0, 38) then
-        Interaction3D.Select(session.world, nil)
-        onSelected()
+--- Pažymėtas objektas + E (be fragile raycast — propai dažnai be collision).
+local function promptTarget(session, target, hintReady, onSelected)
+    if not target or not DoesEntityExist(target) then return end
+    Interaction3D.Select(session.world, target)
+    Interaction3D.DrawTargetMarker(target, 34, 211, 238)
+    local looking = Interaction3D.IsLookingAt(session.world, target, 0.55)
+    --- Net jei nežiūri tiksliai — po 1.2s leidžiam E (kad neužstrigtų)
+    session._targetSince = session._targetSince or GetGameTimer()
+    local allow = looking or (GetGameTimer() - session._targetSince) > 1200
+    if allow then
+        updateHud(session, ('[E] %s'):format(hintReady))
+        if IsDisabledControlJustPressed(0, 38) then
+            session._targetSince = nil
+            Interaction3D.Select(session.world, nil)
+            onSelected()
+        end
+    else
+        updateHud(session, 'Pelė · nukreipk kamerą į žalią objektą su rodykle ↑')
     end
+end
+
+local function setBottleTilt(session, amount)
+    local bottle = session.bottle
+    if not bottle or not DoesEntityExist(bottle) then return end
+    local h = session.bottleBaseHeading or GetEntityHeading(bottle)
+    SetEntityRotation(bottle, -55.0 * clamp(amount, 0.0, 1.0), 0.0, h, 2, true)
 end
 
 local function updateProcess(session)
     if session.stage == 'heat' then
         local dt = GetFrameTime()
         if IsDisabledControlPressed(0, 38) then
-            session.hold = clamp((session.hold or 0) + dt / 2.0, 0.0, 1.0)
+            session.hold = clamp((session.hold or 0) + dt / 1.8, 0.0, 1.0)
         else
-            session.hold = clamp((session.hold or 0) - dt * 0.28, 0.0, 1.0)
+            session.hold = clamp((session.hold or 0) - dt * 0.22, 0.0, 1.0)
         end
         Interaction3D.Select(session.world, session.cooker)
-        updateHud(session, 'Laikyk E ir kaitink katilą.', { progress = session.hold })
-        if session.hold >= 1.0 then
+        Interaction3D.DrawTargetMarker(session.cooker, 255, 120, 40)
+        updateFire(session, session.hold)
+        updateHud(session, 'Laikyk [E] — ugnis auga, kol užpildysi juostą.', { progress = session.hold or 0 })
+        if (session.hold or 0) >= 1.0 then
             session.score = session.score + 15
             nextStage(session, 'heat', function()
                 session.hold = 0.55
                 session.gaugeStarted = GetGameTimer()
-                updateHud(session, 'Laikyk temperatūrą A/D pagal rodyklę.')
+                session.holdGood = 0
+                updateHud(session, 'A / D · laikyk temperatūrą žalioje zonoje.')
             end)
         end
     elseif session.stage == 'hold' then
         local dt = GetFrameTime()
-        local target = 0.5 + 0.22 * math.sin((GetGameTimer() - session.gaugeStarted) / 900.0)
+        local target = 0.5 + 0.22 * math.sin((GetGameTimer() - (session.gaugeStarted or GetGameTimer())) / 900.0)
         if IsDisabledControlPressed(0, 34) then
-            session.hold = clamp((session.hold or 0.5) - dt * 0.35, 0.0, 1.0)
+            session.hold = clamp((session.hold or 0.5) - dt * 0.4, 0.0, 1.0)
         elseif IsDisabledControlPressed(0, 35) then
-            session.hold = clamp((session.hold or 0.5) + dt * 0.35, 0.0, 1.0)
-        else
-            session.hold = clamp((session.hold or 0.5) + (target - (session.hold or 0.5)) * dt * 0.15, 0.0, 1.0)
+            session.hold = clamp((session.hold or 0.5) + dt * 0.4, 0.0, 1.0)
         end
         local error = math.abs((session.hold or 0.5) - target)
-        session.holdGood = (session.holdGood or 0) + (error <= 0.12 and dt or -dt * 0.35)
-        session.holdGood = clamp(session.holdGood, 0.0, 2.4)
-        if error > 0.28 then
-            session.score = math.max(0, session.score - dt * 4)
-        end
-        updateHud(session, 'A/D · laikyk temperatūrą žalioje zonoje.', {
-            progress = session.holdGood / 2.4,
+        session.holdGood = clamp((session.holdGood or 0) + (error <= 0.14 and dt or -dt * 0.4), 0.0, 2.0)
+        updateFire(session, 0.55 + (session.hold or 0.5) * 0.5)
+        Interaction3D.Select(session.world, session.cooker)
+        updateHud(session, 'A = mažiau · D = daugiau · laikyk juostą žalioje.', {
+            progress = session.holdGood / 2.0,
             gauge = session.hold,
         })
-        if session.holdGood >= 2.4 then
+        if session.holdGood >= 2.0 then
             session.score = session.score + 20
             nextStage(session, 'hold', function()
                 session.mixCount, session.lastMix = 0, nil
-                updateHud(session, 'Distiliuok ritmiškai: A ↔ D.')
+                updateHud(session, 'Pakaitomis spausk A ir D (8 kartus).')
             end)
         end
     elseif session.stage == 'distill' then
@@ -246,43 +323,57 @@ local function updateProcess(session)
                 session.mixCount = (session.mixCount or 0) + 1
                 session.score = session.score + 3
                 session.lastMix = pressed
+                --- Trumpas „burbuliavimas“ — butelis suvirpa
+                if session.bottle and DoesEntityExist(session.bottle) then
+                    local c = GetEntityCoords(session.bottle)
+                    SetEntityCoordsNoOffset(session.bottle, c.x, c.y, c.z + 0.02, false, false, false)
+                end
             end
         end
-        updateHud(session, 'Distiliacija: A ↔ D.', { progress = (session.mixCount or 0) / 8 })
+        updateFire(session, 0.85 + ((session.mixCount or 0) / 8) * 0.4)
+        Interaction3D.Select(session.world, session.cooker)
+        updateHud(session, ('Distiliacija: A ↔ D  ·  %d/8'):format(session.mixCount or 0), {
+            progress = (session.mixCount or 0) / 8,
+        })
         if (session.mixCount or 0) >= 8 then
             nextStage(session, 'distill', function()
-                updateHud(session, 'Nukreipk kamerą į buteliuką ir spausk E.')
+                session._targetSince = GetGameTimer()
+                session.collecting = false
+                updateHud(session, 'Pasirink buteliuką — [E].')
             end)
         end
     elseif session.stage == 'collect' then
+        updateFire(session, 0.7)
         if not session.collecting then
-            selectEntity(session, session.bottle, 'paimti indą', function()
+            promptTarget(session, session.bottle, 'paimti indą', function()
                 session.collecting = true
                 session.score = session.score + 10
-                updateHud(session, 'E · perkelti indą prie distiliatoriaus.')
+                updateHud(session, '[E] perkelti indą prie distiliatoriaus (žalias taškas).')
             end)
         else
-            Interaction3D.DrawSnaps({ { coords = session.collectPoint, radius = 0.25 } })
+            Interaction3D.DrawSnaps({ { coords = session.collectPoint, radius = 0.28 } })
             Interaction3D.Select(session.world, session.bottle)
-            updateHud(session, 'E · sklandžiai perkelti prie snap taško.')
+            Interaction3D.DrawTargetMarker(session.bottle, 34, 211, 238)
+            updateHud(session, '[E] perkelti buteliuką į žalią tašką')
             if IsDisabledControlJustPressed(0, 38) then
                 Interaction3D.Select(session.world, nil)
                 session.pending = true
-                Interaction3D.MoveSmooth(session.bottle, session.collectPoint, 650, function()
+                Interaction3D.MoveSmooth(session.bottle, session.collectPoint, 700, function()
                     return active == session
                 end, function()
                     session.pending = false
                     session.score = session.score + 15
                     nextStage(session, 'collect', function()
                         session.gaugeStarted = GetGameTimer()
-                        updateHud(session, 'Spausk E, kai aušinimas žalioje zonoje.')
+                        updateHud(session, '[E] kai rodyklė žalioje zonoje (60–76%).')
                     end)
                 end)
             end
         end
     elseif session.stage == 'cool' then
-        local gauge = (math.sin((GetGameTimer() - session.gaugeStarted) / 340.0) + 1.0) * 0.5
-        updateHud(session, 'E · atvėsinti ties 60–76%.', { gauge = gauge })
+        local gauge = (math.sin((GetGameTimer() - (session.gaugeStarted or GetGameTimer())) / 340.0) + 1.0) * 0.5
+        updateFire(session, 0.25 + (1.0 - gauge) * 0.3)
+        updateHud(session, '[E] atvėsinti kai juosta žalioje zonoje (60–76%).', { gauge = gauge })
         if IsDisabledControlJustPressed(0, 38) then
             if gauge >= 0.60 and gauge <= 0.76 then
                 session.score = session.score + 30
@@ -290,6 +381,7 @@ local function updateProcess(session)
                 session.score = session.score + 8
                 session.mistakes = session.mistakes + 1
             end
+            stopFire(session)
             reportStage(session, 'cool', function()
                 finish(session, true, 'completed')
             end)
@@ -299,45 +391,63 @@ end
 
 local function updatePack(session)
     if session.stage == 'bottle' then
-        selectEntity(session, session.bottle, 'pasirinkti stiklainį', function()
+        promptTarget(session, session.bottle, 'pasirinkti stiklainį', function()
             session.score = session.score + 15
             nextStage(session, 'bottle', function()
                 session.hold = 0
-                updateHud(session, 'Laikyk E ir pilk samagoną.')
+                updateHud(session, 'Laikyk [E] — butelis pasvirs, juosta augs. Atleisk ties 95–100%.')
             end)
         end)
     elseif session.stage == 'pour' then
         local dt = GetFrameTime()
+        Interaction3D.Select(session.world, session.bottle)
+        Interaction3D.DrawTargetMarker(session.bottle, 34, 211, 238)
         if IsDisabledControlPressed(0, 38) then
-            session.hold = clamp((session.hold or 0) + dt / 2.5, 0.0, 1.15)
+            session.hold = clamp((session.hold or 0) + dt / 2.2, 0.0, 1.15)
         end
-        updateHud(session, 'Atleisk E ties 95–100%.', { progress = math.min(session.hold, 1.0) })
-        if session.hold >= 0.95 and not IsDisabledControlPressed(0, 38) then
+        setBottleTilt(session, math.min(session.hold or 0, 1.0))
+        updateHud(session, 'Laikyk [E] pildymui · atleisk ties 95–100%.', {
+            progress = math.min(session.hold or 0, 1.0),
+        })
+        if (session.hold or 0) >= 0.95 and not IsDisabledControlPressed(0, 38) then
             if session.hold <= 1.02 then
                 session.score = session.score + 25
             else
                 session.score = session.score + 8
                 session.mistakes = session.mistakes + 1
             end
+            setBottleTilt(session, 0)
+            session._targetSince = GetGameTimer()
             nextStage(session, 'pour', function()
-                updateHud(session, 'Nukreipk kamerą į kamštį ir spausk E.')
+                updateHud(session, 'Pasirink kamštį (antras butelis) — [E].')
             end)
-        elseif session.hold >= 1.15 then
+        elseif (session.hold or 0) >= 1.15 then
             session.score = session.score + 4
             session.mistakes = session.mistakes + 1
+            setBottleTilt(session, 0)
+            session._targetSince = GetGameTimer()
             nextStage(session, 'pour')
         end
     elseif session.stage == 'cork' then
-        selectEntity(session, session.cork, 'užkimšti stiklainį', function()
+        promptTarget(session, session.cork, 'užkimšti stiklainį', function()
             session.score = session.score + 20
-            nextStage(session, 'cork', function()
-                session.gaugeStarted = GetGameTimer()
-                updateHud(session, 'Spausk E žalioje sandarinimo zonoje.')
+            session.pending = true
+            local target = GetEntityCoords(session.bottle)
+            target = vector3(target.x, target.y, target.z + 0.12)
+            Interaction3D.MoveSmooth(session.cork, target, 550, function()
+                return active == session
+            end, function()
+                session.pending = false
+                nextStage(session, 'cork', function()
+                    session.gaugeStarted = GetGameTimer()
+                    updateHud(session, '[E] sandarinti kai juosta žalioje (68–84%).')
+                end)
             end)
         end)
     elseif session.stage == 'seal' then
-        local gauge = (math.sin((GetGameTimer() - session.gaugeStarted) / 300.0) + 1.0) * 0.5
-        updateHud(session, 'E · sandarinti ties 68–84%.', { gauge = gauge })
+        local gauge = (math.sin((GetGameTimer() - (session.gaugeStarted or GetGameTimer())) / 300.0) + 1.0) * 0.5
+        Interaction3D.Select(session.world, session.bottle)
+        updateHud(session, '[E] sandarinti žalioje zonoje (68–84%).', { gauge = gauge })
         if IsDisabledControlJustPressed(0, 38) then
             if gauge >= 0.68 and gauge <= 0.84 then
                 session.score = session.score + 25
@@ -346,12 +456,13 @@ local function updatePack(session)
                 session.mistakes = session.mistakes + 1
             end
             nextStage(session, 'seal', function()
-                updateHud(session, 'E · galutinė kokybės patikra.')
+                updateHud(session, '[E] patvirtinti paruoštą stiklainį.')
             end)
         end
     elseif session.stage == 'finalize' then
         Interaction3D.Select(session.world, session.bottle)
-        updateHud(session, 'E · patvirtinti paruoštą stiklainį.')
+        Interaction3D.DrawTargetMarker(session.bottle, 74, 222, 128)
+        updateHud(session, '[E] baigti pakavimą')
         if IsDisabledControlJustPressed(0, 38) then
             Interaction3D.Select(session.world, nil)
             session.score = session.score + 15
@@ -440,7 +551,7 @@ function AlcoholProduction.Start(payload, onDone)
         title = mode == 'pack' and 'Samagonas · pakavimas' or 'Samagonas · distiliacija',
         stage = ('1/%d'):format(#session.steps),
         stageName = LABELS[session.stage],
-        hint = 'Pelė · kamera · E · veiksmas · ESC · atšaukti',
+        hint = 'Pelė = kamera · E = veiksmas · A/D = temperatūra · ESC = atšaukti',
         kicker = '3D ALCOHOL WORKSTATION',
     })
 
@@ -449,10 +560,11 @@ function AlcoholProduction.Start(payload, onDone)
             session.score = session.score + 10
             session.step, session.stage = 2, 'heat'
             session.hold = 0
-            updateHud(session, 'Laikyk E ir kaitink katilą.')
+            updateHud(session, 'Laikyk [E] ant katilo — ugnis turi augti.')
         end)
     else
-        updateHud(session, 'Nukreipk kamerą į stiklainį ir spausk E.')
+        session._targetSince = GetGameTimer()
+        updateHud(session, 'Žalias objektas = stiklainis. Spausk [E].')
     end
     run(session)
     return true

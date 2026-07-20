@@ -306,7 +306,11 @@ local function releaseCraft(src)
 end
 
 local function craftFailureRefundPercent(active)
+    --- Narkotikams failLosePercent = 0 → visada 100% refund nutraukus.
     local prod = active and getProduct(active.productId)
+    if not active or not active.isWeapon then
+        return 100
+    end
     return 100 - math.max(0, math.min(100, tonumber(prod and prod.failLosePercent) or 50))
 end
 
@@ -454,7 +458,7 @@ local function beginCraftSession(src, productId, st, opts)
         craftTimeMs = prod.craftTimeMs,
         minigame = prod.minigame,
         label = prod.label,
-        failChance = prod.failChance,
+        failChance = 0, --- narkotikams random fail išjungtas
         level = prod.level,
         isWeapon = opts.isWeapon == true,
         usesPrinter = opts.usesPrinter == true,
@@ -1146,6 +1150,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
 
     local failed = minigameSuccess ~= true
 
+    --- Narkotikams NĖRA random fail po sėkmingo minigame (failChance ignoruojamas).
     if failed then
         abortCraft(src, 'minigame_failed', nil, false)
         local turfId = findTurfAtPlayer(src)
@@ -1154,7 +1159,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
             rollPolice((prod.policeChance or 8) + 6, src, 'craft_fail')
         end
         logAdmin(('FAIL craft %s cid=%s'):format(active.productId, Player.PlayerData.citizenid))
-        return cb({ ok = false, reason = 'Gamyba nepavyko — dalis medžiagų prarasta.', failed = true })
+        return cb({ ok = false, reason = 'Gamyba nutraukta — ingredientai grąžinti.', failed = true })
     end
 
     releaseCraft(src)

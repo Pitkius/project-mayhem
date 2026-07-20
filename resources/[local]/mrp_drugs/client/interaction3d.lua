@@ -145,6 +145,31 @@ function Interaction3D.RaycastCamera(registry, distance, ignore)
     return nil
 end
 
+--- Ar kamera žiūri į entity (veikia ir be collision — prop_cs_script_bottle dažnai be kolizijos).
+function Interaction3D.IsLookingAt(registry, entity, minDot)
+    if not registry or not registry.cam or not DoesCamExist(registry.cam) then return false end
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
+    local from = GetCamCoord(registry.cam)
+    local dir = rotationDirection(GetCamRot(registry.cam, 2))
+    local target = GetEntityCoords(entity)
+    local to = target - from
+    local len = #to
+    if len < 0.05 then return true end
+    to = to / len
+    local dot = dir.x * to.x + dir.y * to.y + dir.z * to.z
+    return dot >= (minDot or 0.72)
+end
+
+function Interaction3D.DrawTargetMarker(entity, r, g, b)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return end
+    local c = GetEntityCoords(entity)
+    local mn, mx = GetModelDimensions(GetEntityModel(entity))
+    local top = c.z + (mx and mx.z or 0.25) + 0.12
+    DrawMarker(2, c.x, c.y, top, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0,
+        0.18, 0.18, 0.18, r or 34, g or 211, b or 238, 200,
+        false, false, 2, true, nil, nil, false)
+end
+
 function Interaction3D.Select(registry, entity, color)
     if registry.selected and DoesEntityExist(registry.selected) then
         SetEntityDrawOutline(registry.selected, false)
