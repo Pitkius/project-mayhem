@@ -536,6 +536,69 @@ end)
 
 exports('PoliceAlert', policeAlert)
 
+--- Robbery loot: dirty (markedbills 1=$1) = inventoriaus suma; cash = HUD piniginė.
+--- Notify visada rodo tą pačią sumą, kurią gauni.
+function GiveRobberyLoot(src, lootKey, opts)
+    opts = opts or {}
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return 0, 0 end
+    local loot = (Config.Robberies.Loot or {})[lootKey]
+    if not loot then return 0, 0 end
+
+    local cashGiven, dirtyGiven = 0, 0
+
+    if loot.dirty then
+        dirtyGiven = math.random(loot.dirty.min or 0, loot.dirty.max or 0)
+    elseif loot.markedbills then
+        local count = math.random(loot.markedbills.min or 0, loot.markedbills.max or 0)
+        local worth = loot.markedbills.worth or 350
+        dirtyGiven = math.max(0, count * worth)
+    end
+
+    if loot.cash then
+        cashGiven = math.random(loot.cash.min or 0, loot.cash.max or 0)
+    end
+
+    if cashGiven > 0 then
+        Player.Functions.AddMoney('cash', cashGiven, opts.reason or 'robbery-loot')
+    end
+    if dirtyGiven > 0 then
+        Player.Functions.AddItem('markedbills', dirtyGiven, false, {})
+        if QBCore.Shared.Items['markedbills'] then
+            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items['markedbills'], 'add', dirtyGiven)
+        end
+    end
+
+    if loot.goldbar and math.random() < (loot.goldbar.chance or 0) then
+        local n = math.random(loot.goldbar.min or 1, loot.goldbar.max or 1)
+        if n > 0 then Player.Functions.AddItem('goldbar', n) end
+    end
+    if loot.casinochips then
+        local n = math.random(loot.casinochips.min or 0, loot.casinochips.max or 0)
+        if n > 0 then Player.Functions.AddItem('casinochips', n) end
+    end
+
+    local parts = {}
+    if cashGiven > 0 then parts[#parts + 1] = ('$%s švarių'):format(cashGiven) end
+    if dirtyGiven > 0 then parts[#parts + 1] = ('$%s nešvarių'):format(dirtyGiven) end
+    if #parts > 0 then
+        local total = cashGiven + dirtyGiven
+        local msg
+        if opts.notifyText then
+            msg = opts.notifyText:format(total)
+            if cashGiven > 0 and dirtyGiven > 0 then
+                msg = msg .. (' (švarių $%s + nešvarių $%s)'):format(cashGiven, dirtyGiven)
+            end
+        else
+            msg = (opts.prefix or 'Gavai ') .. table.concat(parts, ' + ')
+        end
+        TriggerClientEvent('QBCore:Notify', src, msg, 'success')
+    end
+    return cashGiven, dirtyGiven
+end
+
+exports('GiveRobberyLoot', GiveRobberyLoot)
+
 exports('BuildHackProfile', function(src, tierId)
     local ok, _, ctx = canAccessRobbery(src, tierId, 'stealth')
     if not ok then return nil end

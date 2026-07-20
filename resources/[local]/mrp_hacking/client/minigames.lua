@@ -61,6 +61,11 @@ end
 function RunPhysicalMinigame(mode, opts)
     opts = opts or {}
     if physicalPromise then return false end
+
+    --- Ginklas trukdo animacijai / inputui — padėti prieš minigame
+    local ped = PlayerPedId()
+    SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
+
     startAnim(opts.anim)
 
     --- Tikras GTA Online DRILLING scaleform

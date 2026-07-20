@@ -16,26 +16,11 @@ local function findStore(locId)
 end
 
 local function giveLootKey(src, lootKey, notifyText)
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
-    local loot = (Config.Robberies.Loot or {})[lootKey]
-    if not loot then return end
-    if loot.cash then
-        local amount = math.random(loot.cash.min or 0, loot.cash.max or 0)
-        if amount > 0 then
-            Player.Functions.AddMoney('cash', amount, 'store-' .. lootKey)
-            TriggerClientEvent('QBCore:Notify', src, (notifyText or 'Gavai $%s.'):format(amount), 'success')
-        end
-    end
-    if loot.markedbills then
-        local count = math.random(loot.markedbills.min or 0, loot.markedbills.max or 0)
-        local worth = loot.markedbills.worth or 350
-        local dirty = count * worth
-        if dirty > 0 then
-            Player.Functions.AddItem('markedbills', dirty, false, {})
-            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items['markedbills'], 'add', dirty)
-        end
-    end
+    exports['mrp_hacking']:GiveRobberyLoot(src, lootKey, {
+        reason = 'store-' .. tostring(lootKey),
+        notifyText = notifyText,
+        prefix = (notifyText and notifyText:gsub('%%s', '') or 'Gavai '),
+    })
 end
 
 local function getEntry(src, locId)

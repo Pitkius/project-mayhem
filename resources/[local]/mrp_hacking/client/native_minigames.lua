@@ -18,7 +18,45 @@ local function sfFloat(sf, method, value)
     EndScaleformMovieMethod()
 end
 
---- GTA Online Fleeca DRILLING scaleform (rodyklės: aukštyn/žemyn pozicija, kairėn/dešinėn greitis)
+local function help(msg)
+    BeginTextCommandDisplayHelp('STRING')
+    AddTextComponentSubstringPlayerName(msg)
+    EndTextCommandDisplayHelp(0, false, true, -1)
+end
+
+local function pressedUp()
+    return IsControlPressed(0, 172) or IsControlPressed(0, 32) or IsDisabledControlPressed(0, 172) or IsDisabledControlPressed(0, 32)
+end
+
+local function pressedDown()
+    return IsControlPressed(0, 173) or IsControlPressed(0, 33) or IsDisabledControlPressed(0, 173) or IsDisabledControlPressed(0, 33)
+end
+
+local function pressedLeft()
+    return IsControlPressed(0, 174) or IsControlPressed(0, 34) or IsDisabledControlPressed(0, 174) or IsDisabledControlPressed(0, 34)
+end
+
+local function pressedRight()
+    return IsControlPressed(0, 175) or IsControlPressed(0, 35) or IsDisabledControlPressed(0, 175) or IsDisabledControlPressed(0, 35)
+end
+
+local function justUp()
+    return IsControlJustPressed(0, 172) or IsControlJustPressed(0, 32) or IsDisabledControlJustPressed(0, 172) or IsDisabledControlJustPressed(0, 32)
+end
+
+local function justDown()
+    return IsControlJustPressed(0, 173) or IsControlJustPressed(0, 33) or IsDisabledControlJustPressed(0, 173) or IsDisabledControlJustPressed(0, 33)
+end
+
+local function justLeft()
+    return IsControlJustPressed(0, 174) or IsControlJustPressed(0, 34) or IsDisabledControlJustPressed(0, 174) or IsDisabledControlJustPressed(0, 34)
+end
+
+local function justRight()
+    return IsControlJustPressed(0, 175) or IsControlJustPressed(0, 35) or IsDisabledControlJustPressed(0, 175) or IsDisabledControlJustPressed(0, 35)
+end
+
+--- GTA Online Fleeca DRILLING — W/S gylis, A/D greitis (ir rodyklės)
 function RunNativeDrill(cb)
     if active then
         if cb then cb(false) end
@@ -42,7 +80,9 @@ function RunNativeDrill(cb)
     local running = true
     while running do
         DrawScaleformMovieFullscreen(sf, 255, 255, 255, 255, 0)
+        help('W/S — gylis  |  A/D — greitis  |  BACKSPACE — atšaukti')
 
+        --- Blokuojam judėjimą, bet skaitom disabled controls (W/A/S/D)
         DisableControlAction(0, 30, true)
         DisableControlAction(0, 31, true)
         DisableControlAction(0, 32, true)
@@ -51,33 +91,34 @@ function RunNativeDrill(cb)
         DisableControlAction(0, 35, true)
         DisableControlAction(0, 24, true)
         DisableControlAction(0, 25, true)
+        DisableControlAction(0, 21, true)
+        DisableControlAction(0, 22, true)
 
         local lastPos, lastSpeed, lastTemp = pos, speed, temp
         local dt = GetFrameTime()
 
-        --- UP / DOWN — grąžto gylis
-        if IsControlJustPressed(0, 172) then
+        if justUp() then
             pos = math.min(1.0, pos + 0.01)
-        elseif IsControlPressed(0, 172) then
+        elseif pressedUp() then
             pos = math.min(1.0, pos + (0.1 * dt / (math.max(0.1, temp) * 10)))
-        elseif IsControlJustPressed(0, 173) then
+        elseif justDown() then
             pos = math.max(0.0, pos - 0.01)
-        elseif IsControlPressed(0, 173) then
+        elseif pressedDown() then
             pos = math.max(0.0, pos - (0.1 * dt))
         end
 
-        --- LEFT / RIGHT — greitis
-        if IsControlJustPressed(0, 175) then
+        if justRight() then
             speed = math.min(1.0, speed + 0.05)
-        elseif IsControlPressed(0, 175) then
+        elseif pressedRight() then
             speed = math.min(1.0, speed + (0.5 * dt))
-        elseif IsControlJustPressed(0, 174) then
+        elseif justLeft() then
             speed = math.max(0.0, speed - 0.05)
-        elseif IsControlPressed(0, 174) then
+        elseif pressedLeft() then
             speed = math.max(0.0, speed - (0.5 * dt))
         end
 
-        if IsControlJustPressed(0, 200) or IsControlJustPressed(0, 177) then
+        if IsControlJustPressed(0, 200) or IsControlJustPressed(0, 177)
+            or IsDisabledControlJustPressed(0, 200) or IsDisabledControlJustPressed(0, 177) then
             result = false
             running = false
             break
@@ -128,7 +169,7 @@ function RunNativeDatacrack(difficulty, cb)
     local speedMul = difficulty * 10.0
 
     local pinY = {}
-    local state = {} --- locked=1 idle, 0=active moving, done=val4 false means done in original
+    local state = {}
     for i = 1, 7 do
         pinY[i] = 0.4
         state[i] = {
@@ -162,12 +203,6 @@ function RunNativeDatacrack(difficulty, cb)
         BeginScaleformMovieMethod(scaleform, 'SET_BACKGROUND')
         ScaleformMovieMethodAddParamInt(1)
         EndScaleformMovieMethod()
-    end
-
-    local function help(msg)
-        BeginTextCommandDisplayHelp('STRING')
-        AddTextComponentSubstringPlayerName(msg)
-        EndTextCommandDisplayHelp(0, false, true, -1)
     end
 
     local function inGreen(i)
@@ -217,7 +252,7 @@ function RunNativeDatacrack(difficulty, cb)
             DrawSprite('hackingNG', sprite, xs[i], pinY[i], 0.4, 0.4, 0.0, 255, 255, 255, 255)
         end
 
-        if IsControlJustReleased(2, 237) then
+        if IsControlJustReleased(2, 237) or IsDisabledControlJustReleased(2, 237) or IsControlJustReleased(0, 24) then
             if inGreen(current) then
                 PlaySoundFrontend(-1, 'Pin_Good', 'DLC_HEIST_BIOLAB_PREP_HACKING_SOUNDS', true)
                 state[current].done = true

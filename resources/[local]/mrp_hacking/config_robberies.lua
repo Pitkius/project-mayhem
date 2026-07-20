@@ -33,19 +33,17 @@ Config.Robberies.ItemNeeds = {
 
 Config.Robberies.Loot = {
     --- Soft / stealth: tikra kasa (kasininkas arba grab po L1 hack)
+    --- dirty = markedbills (1 = $1) — inventoriaus suma = notify suma
     store = {
-        cash = { min = 450, max = 1400 },
-        markedbills = { min = 0, max = 2, worth = 350 },
+        dirty = { min = 700, max = 1400 },
     },
     --- Perlas terminalas — žaidėjas laužia pats
     store_perlas = {
-        cash = { min = 180, max = 520 },
-        markedbills = { min = 0, max = 1, worth = 250 },
+        dirty = { min = 200, max = 550 },
     },
-    --- Galinis seifas (drill + 2 min)
+    --- Galinis seifas
     store_safe = {
-        cash = { min = 2200, max = 4800 },
-        markedbills = { min = 1, max = 4, worth = 400 },
+        dirty = { min = 2200, max = 4800 },
     },
     bank_fleeca = {
         cash = { min = 8500, max = 16500 },
@@ -100,9 +98,13 @@ Config.Robberies.StoreSide = {
     unlockMinutes = 12,
     perlasProgressMs = 9000,
     perlasMinigame = { mode = 'sequence', label = 'Perlas terminalas — įsilaužimas', data = { length = 4 } },
-    --- GTA Online Fleeca-style drill
-    safeMinigame = { mode = 'native_drill', label = 'Parduotuvės seifas — GTA Online gręžimas', data = {} },
-    safeDrillMs = 0, --- visas gręžimas minigame'e; papildomas progressbar nebereikalingas
+    --- Seifas: NUI sequence (native drill dažnai „miręs“ su pele / be rodyklių)
+    safeMinigame = {
+        mode = 'sequence',
+        label = 'Seifo užraktas — spausk rodykles eilės tvarka',
+        data = { length = 5 },
+    },
+    safeDrillMs = 8000, --- po minigame — animacija su grąžtu
     safeItem = 'drill',
     safeRequiresUnlock = false,
     alertSafeNoHack = '24/7 — kas nors gręžia seifą',

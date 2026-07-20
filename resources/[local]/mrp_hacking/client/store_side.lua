@@ -203,7 +203,7 @@ local function registerStoreSideZones()
                 options = {
                     {
                         icon = 'fas fa-vault',
-                        label = 'Gręžti seifą (GTA Online)',
+                        label = 'Atidaryti seifą (užraktas)',
                         canInteract = function()
                             return not busy and QBCore.Functions.HasItem(drillItem, 1)
                         end,

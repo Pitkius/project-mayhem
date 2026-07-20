@@ -3,6 +3,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local session = nil
 local starting = false
 local bankTellerPeds = {}
+local storeCashierPeds = {} --- [locId] = ped
 local bagProp = nil
 local intimidateUntil = 0
 
@@ -61,6 +62,17 @@ local function requestPedControl(ped)
     return NetworkHasControlOfEntity(ped)
 end
 
+local function placePedOnFloor(ped, x, y, z, heading)
+    if not ped or ped == 0 then return end
+    local found, gz = GetGroundZFor_3dCoord(x + 0.0, y + 0.0, z + 2.0, false)
+    local finalZ = z
+    if found and gz and math.abs(gz - z) < 1.8 then
+        finalZ = gz
+    end
+    SetEntityCoordsNoOffset(ped, x, y, finalZ, false, false, false)
+    SetEntityHeading(ped, heading or 0.0)
+end
+
 local function intimidatePed(ped, force)
     if not ped or ped == 0 or not DoesEntityExist(ped) then return end
     local now = GetGameTimer()
@@ -103,11 +115,13 @@ local function unlockBoothDoor(locId)
 end
 
 local function findNearestStoreLoc(coords)
-    local best, bestD = nil, 4.0
+    local best, bestD = nil, 6.0
     for _, loc in ipairs((Config.Robberies.Locations and Config.Robberies.Locations.store) or {}) do
         local tc = loc.tellerCoords
         if tc then
-            local d = #(coords - vector3(tc.x, tc.y, tc.z))
+            local dx = coords.x - tc.x
+            local dy = coords.y - tc.y
+            local d = math.sqrt(dx * dx + dy * dy)
             if d < bestD then bestD = d; best = loc end
         end
     end
@@ -176,18 +190,21 @@ local function isAimingAt(entity)
     local ped = PlayerPedId()
     local p = GetEntityCoords(ped)
     local t = GetEntityCoords(entity)
-    local dist = #(p - t)
-    if dist > 9.0 then return false end
+    --- XY — kad veiktų net jei ped ore
+    local dx, dy = p.x - t.x, p.y - t.y
+    local distXY = math.sqrt(dx * dx + dy * dy)
+    if distXY > 9.0 then return false end
 
     local cam = GetGameplayCamCoord()
     local dir = camForward()
-    local to = t - cam
+    local aimPoint = vector3(t.x, t.y, math.min(t.z, p.z + 0.6))
+    local to = aimPoint - cam
     local len = #to
     if len < 0.15 then return true end
     to = to / len
     local dot = dir.x * to.x + dir.y * to.y + dir.z * to.z
-    if dist < 5.0 and dot > 0.62 then return true end
-    if dist < 8.0 and dot > 0.78 then return true end
+    if distXY < 5.0 and dot > 0.55 then return true end
+    if distXY < 8.0 and dot > 0.72 then return true end
     return false
 end
 
@@ -200,6 +217,18 @@ local function isStoreCashierModel(entity)
     return false
 end
 
+local function findStoreLocByPed(entity)
+    for locId, ped in pairs(storeCashierPeds) do
+        if ped == entity then
+            for _, loc in ipairs((Config.Robberies.Locations and Config.Robberies.Locations.store) or {}) do
+                if loc.id == locId then return loc end
+            end
+            return { id = locId }
+        end
+    end
+    return findNearestStoreLoc(GetEntityCoords(entity))
+end
+
 local function resolveAimTarget()
     local aimed = freeAimEntity()
     if aimed and IsEntityAPed(aimed) and not IsPedAPlayer(aimed) then
@@ -207,9 +236,9 @@ local function resolveAimTarget()
         if bankLoc then
             return kind or 'bank_fleeca', bankLoc, aimed
         end
-        if isStoreCashierModel(aimed) then
-            local loc = findNearestStoreLoc(GetEntityCoords(aimed))
-            if loc then return 'store', loc, aimed end
+        local storeLoc = findStoreLocByPed(aimed)
+        if storeLoc and (isStoreCashierModel(aimed) or storeCashierPeds[storeLoc.id] == aimed) then
+            return 'store', storeLoc, aimed
         end
     end
 
@@ -225,6 +254,13 @@ local function resolveAimTarget()
         end
     end
 
+    for _, cashier in pairs(storeCashierPeds) do
+        if DoesEntityExist(cashier) and isAimingAt(cashier) then
+            local loc = findStoreLocByPed(cashier)
+            if loc then return 'store', loc, cashier end
+        end
+    end
+
     local handle, ent = FindFirstPed()
     local success = true
     local best, bestScore, bestLoc = nil, 0.0, nil
@@ -232,14 +268,16 @@ local function resolveAimTarget()
         if DoesEntityExist(ent) and not IsPedAPlayer(ent) and not IsPedDeadOrDying(ent, true)
             and isStoreCashierModel(ent) then
             local t = GetEntityCoords(ent)
-            local dist = #(p - t)
+            local dx, dy = p.x - t.x, p.y - t.y
+            local dist = math.sqrt(dx * dx + dy * dy)
             if dist < 7.5 then
-                local to = t - cam
+                local aimPoint = vector3(t.x, t.y, math.min(t.z, p.z + 0.6))
+                local to = aimPoint - cam
                 local len = #to
                 if len > 0.1 then
                     to = to / len
                     local dot = dir.x * to.x + dir.y * to.y + dir.z * to.z
-                    if dot > 0.70 then
+                    if dot > 0.65 then
                         local loc = findNearestStoreLoc(t)
                         if loc then
                             local score = dot * (8.0 - dist)
@@ -274,10 +312,13 @@ local function placeBagOnCounter(fromPed)
     local px = fc.x + fwd.x * forward
     local py = fc.y + fwd.y * forward
     local pz = fc.z + up
+    local pc = GetEntityCoords(PlayerPedId())
+    if math.abs(fc.z - pc.z) > 1.2 then
+        pz = pc.z + 0.35
+    end
     bagProp = CreateObject(model, px, py, pz, true, true, false)
     SetEntityCoordsNoOffset(bagProp, px, py, pz, false, false, false)
     if force > 0.1 then
-        local pc = GetEntityCoords(PlayerPedId())
         local dx, dy = pc.x - px, pc.y - py
         local len = math.sqrt(dx * dx + dy * dy)
         if len < 0.1 then len = 1.0 end
@@ -314,10 +355,40 @@ local function addTellerTarget(ped)
     end)
 end
 
+local function addStoreCashierTarget(ped, loc)
+    if not ped or not DoesEntityExist(ped) or not loc then return end
+    if GetResourceState('qb-target') ~= 'started' then return end
+    pcall(function()
+        exports['qb-target']:AddTargetEntity(ped, {
+            options = {
+                {
+                    icon = 'fas fa-gun',
+                    label = 'Apiplėšti kasininką (tikra kasa)',
+                    canInteract = function()
+                        if session or starting then return false end
+                        local weapon = GetSelectedPedWeapon(PlayerPedId())
+                        return weapon and weapon ~= `WEAPON_UNARMED`
+                    end,
+                    action = function(entity)
+                        runTellerSession('store', loc, entity)
+                    end,
+                },
+            },
+            distance = 2.4,
+        })
+    end)
+end
+
 local function deleteTeller(locId)
     local ped = bankTellerPeds[locId]
     if ped and DoesEntityExist(ped) then DeleteEntity(ped) end
     bankTellerPeds[locId] = nil
+end
+
+local function deleteStoreCashier(locId)
+    local ped = storeCashierPeds[locId]
+    if ped and DoesEntityExist(ped) then DeleteEntity(ped) end
+    storeCashierPeds[locId] = nil
 end
 
 local function spawnOneTeller(locId, def)
@@ -355,6 +426,48 @@ local function spawnOneTeller(locId, def)
     return ped
 end
 
+local function spawnOneStoreCashier(loc)
+    if not loc or not loc.id or not loc.tellerCoords then return nil end
+    local locId = loc.id
+    if storeCashierPeds[locId] and DoesEntityExist(storeCashierPeds[locId]) then
+        local ped = storeCashierPeds[locId]
+        local c = GetEntityCoords(ped)
+        local tc = loc.tellerCoords
+        if math.abs(c.z - tc.z) > 1.0 then
+            placePedOnFloor(ped, tc.x, tc.y, tc.z, tc.w)
+            FreezeEntityPosition(ped, true)
+        end
+        return ped
+    end
+
+    local hash = loadModel('mp_m_shopkeep_01')
+    if not hash then hash = loadModel('s_m_y_shop_mask') end
+    if not hash then return nil end
+
+    local tc = loc.tellerCoords
+    local ped = CreatePed(4, hash, tc.x, tc.y, tc.z, tc.w or 0.0, false, true)
+    if not ped or ped == 0 then
+        SetModelAsNoLongerNeeded(hash)
+        return nil
+    end
+
+    SetEntityAsMissionEntity(ped, true, true)
+    SetPedCanRagdoll(ped, false)
+    SetEntityInvincible(ped, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    SetPedFleeAttributes(ped, 0, false)
+    SetPedDiesWhenInjured(ped, false)
+    SetPedCanBeTargetted(ped, true)
+    placePedOnFloor(ped, tc.x, tc.y, tc.z, tc.w)
+    FreezeEntityPosition(ped, true)
+    TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_STAND_IMPATIENT', 0, true)
+    SetModelAsNoLongerNeeded(hash)
+
+    storeCashierPeds[locId] = ped
+    addStoreCashierTarget(ped, loc)
+    return ped
+end
+
 local function spawnBankTellersNear(playerCoords, radius)
     radius = radius or 90.0
     for locId, def in pairs(Config.Robberies.BankTellers or {}) do
@@ -364,6 +477,21 @@ local function spawnBankTellersNear(playerCoords, radius)
             spawnOneTeller(locId, def)
         elseif d > radius + 50.0 then
             deleteTeller(locId)
+        end
+    end
+end
+
+local function spawnStoreCashiersNear(playerCoords, radius)
+    radius = radius or 80.0
+    for _, loc in ipairs((Config.Robberies.Locations and Config.Robberies.Locations.store) or {}) do
+        local tc = loc.tellerCoords
+        if tc then
+            local d = #(playerCoords - vector3(tc.x, tc.y, tc.z))
+            if d <= radius then
+                spawnOneStoreCashier(loc)
+            elseif d > radius + 40.0 then
+                deleteStoreCashier(loc.id)
+            end
         end
     end
 end
@@ -515,10 +643,12 @@ RegisterNetEvent('mrp_hacking:client:tellerUnlockBooth', function(locId)
     unlockBoothDoor(locId)
 end)
 
---- Spawn kai priartėji prie banko
+--- Spawn kai priartėji
 CreateThread(function()
     while true do
-        spawnBankTellersNear(GetEntityCoords(PlayerPedId()), 100.0)
+        local coords = GetEntityCoords(PlayerPedId())
+        spawnBankTellersNear(coords, 100.0)
+        spawnStoreCashiersNear(coords, 80.0)
         Wait(2500)
     end
 end)
@@ -553,6 +683,10 @@ AddEventHandler('onResourceStop', function(res)
     for _, ped in pairs(bankTellerPeds) do
         if DoesEntityExist(ped) then DeleteEntity(ped) end
     end
+    for _, ped in pairs(storeCashierPeds) do
+        if DoesEntityExist(ped) then DeleteEntity(ped) end
+    end
     bankTellerPeds = {}
+    storeCashierPeds = {}
     session = nil
 end)

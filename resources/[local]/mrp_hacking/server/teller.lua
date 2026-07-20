@@ -6,24 +6,10 @@ local TellerCd = {}
 local PaidPendingAlert = {}
 
 local function giveLootKey(src, lootKey)
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
-    local loot = (Config.Robberies.Loot or {})[lootKey]
-    if not loot then return end
-    if loot.cash then
-        local amount = math.random(loot.cash.min or 0, loot.cash.max or 0)
-        Player.Functions.AddMoney('cash', amount, 'teller-robbery')
-        TriggerClientEvent('QBCore:Notify', src, ('Gavai $%s iš maišo.'):format(amount), 'success')
-    end
-    if loot.markedbills then
-        local count = math.random(loot.markedbills.min or 0, loot.markedbills.max or 0)
-        local worth = loot.markedbills.worth or 400
-        local dirty = count * worth
-        if dirty > 0 then
-            Player.Functions.AddItem('markedbills', dirty, false, {})
-            TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items['markedbills'], 'add', dirty)
-        end
-    end
+    exports['mrp_hacking']:GiveRobberyLoot(src, lootKey, {
+        reason = 'teller-robbery',
+        prefix = 'Maišas: ',
+    })
 end
 
 local function policeAlert(src, text)
