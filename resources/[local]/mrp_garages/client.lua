@@ -1,5 +1,20 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local function isPoliceVehicleModelName(modelName)
+    modelName = tostring(modelName or ''):lower()
+    local t = Config.PoliceVehicleModels or {}
+    return t[modelName] == true
+end
+
+local function isPoliceVehicleEntity(veh)
+    if not veh or veh == 0 then return false end
+    local hash = GetEntityModel(veh)
+    for name in pairs(Config.PoliceVehicleModels or {}) do
+        if joaat(name) == hash then return true end
+    end
+    return false
+end
+
 local function enableAllVehicleExtras(veh)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
     --- PD: ne enable-all (exclusive extras išjungia lightbar). Tik preferred jei visi off.
@@ -23,21 +38,6 @@ local function enableAllVehicleExtras(veh)
             SetVehicleExtra(veh, i, 0)
         end
     end
-end
-
-local function isPoliceVehicleModelName(modelName)
-    modelName = tostring(modelName or ''):lower()
-    local t = Config.PoliceVehicleModels or {}
-    return t[modelName] == true
-end
-
-local function isPoliceVehicleEntity(veh)
-    if not veh or veh == 0 then return false end
-    local hash = GetEntityModel(veh)
-    for name in pairs(Config.PoliceVehicleModels or {}) do
-        if joaat(name) == hash then return true end
-    end
-    return false
 end
 
 local function isPoliceOfficerOnDuty()

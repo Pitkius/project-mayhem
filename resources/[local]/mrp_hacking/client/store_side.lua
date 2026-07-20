@@ -95,11 +95,12 @@ local function runSafe(loc)
             QBCore.Functions.Notify('Policija iškviesta — seifo apiplėšimas prasidėjo.', 'error', 6000)
         end
         busy = true
+        SetCurrentPedWeapon(PlayerPedId(), `WEAPON_UNARMED`, true)
         local mg = sideCfg().safeMinigame or (Config.RobberyMinigames or {}).drill
         local anim = (Config.RobberyAnims or {}).drill
         local ok = true
         if mg then
-            ok = exports['mrp_hacking']:RunPhysicalMinigame(mg.mode or 'gtao_drill', {
+            ok = exports['mrp_hacking']:RunPhysicalMinigame(mg.mode or 'sequence', {
                 label = mg.label or 'Parduotuvės seifas',
                 anim = anim,
                 data = mg.data or {},

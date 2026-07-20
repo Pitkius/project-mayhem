@@ -465,6 +465,26 @@ local function spawnOneStoreCashier(loc)
 
     storeCashierPeds[locId] = ped
     addStoreCashierTarget(ped, loc)
+
+    --- Paslėpti vanilla shopkeep jei ore / dubliuojasi
+    CreateThread(function()
+        Wait(200)
+        local handle, ent = FindFirstPed()
+        local ok = true
+        while ok do
+            if DoesEntityExist(ent) and ent ~= ped and not IsPedAPlayer(ent) and isStoreCashierModel(ent) then
+                local ec = GetEntityCoords(ent)
+                local dx, dy = ec.x - tc.x, ec.y - tc.y
+                if (dx * dx + dy * dy) < (3.5 * 3.5) then
+                    SetEntityAsMissionEntity(ent, true, true)
+                    DeleteEntity(ent)
+                end
+            end
+            ok, ent = FindNextPed(handle)
+        end
+        EndFindPed(handle)
+    end)
+
     return ped
 end
 

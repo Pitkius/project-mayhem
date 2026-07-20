@@ -126,9 +126,10 @@ RegisterNetEvent('mrp_hacking:server:depositDrilled', function(locId, index)
     local rad = math.rad(heading)
     local fx = -math.sin(rad)
     local fy = math.cos(rad)
+    local forward = off.y or 0.35
     local coords = vector3(
-        box.coords.x + fx * (off.x or 0.0) + fy * (off.y or 0.0),
-        box.coords.y + fy * (off.x or 0.0) - fx * (off.y or 0.0),
+        box.coords.x + fx * forward,
+        box.coords.y + fy * forward,
         box.coords.z + (off.z or 0.0)
     )
 
