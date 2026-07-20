@@ -602,11 +602,17 @@ QBShared.Items = {
     crude_oil_barrel             = { name = 'crude_oil_barrel', label = 'Naftos statinė', weight = 6000, type = 'item', image = 'crude_oil_barrel.png', unique = false, useable = false, shouldClose = false, description = 'Neapdorotos naftos statinė. Pristatoma į elektrinę.' },
     -- Burger Joint produktai (useable — valgomi; apdorojama mrp_jobs serveryje)
     burger_basic                 = { name = 'burger_basic', label = 'Paprastas burgeris', weight = 250, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · paprastas burgeris.' },
-    burger_double                = { name = 'burger_double', label = 'Dvigubas burgeris', weight = 350, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · dvigubas burgeris.' },
-    burger_chicken               = { name = 'burger_chicken', label = 'Vištienos burgeris', weight = 280, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · vištienos burgeris.' },
-    burger_fries                 = { name = 'burger_fries', label = 'Bulvytės', weight = 150, type = 'item', image = 'fries.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · bulvytės.' },
-    burger_softdrink             = { name = 'burger_softdrink', label = 'Gėrimas', weight = 120, type = 'item', image = 'softdrink.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · gaivusis gėrimas.' },
-    burger_meal                  = { name = 'burger_meal', label = 'Burgerio meniu', weight = 500, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · burgeris + bulvytės + gėrimas.' },
+    burger_double                = { name = 'burger_double', label = 'Dvigubas burgeris', weight = 320, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · dvigubas.' },
+    burger_chicken               = { name = 'burger_chicken', label = 'Vištienos burgeris', weight = 260, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · vištiena.' },
+    burger_cheese                = { name = 'burger_cheese', label = 'Sūrio burgeris', weight = 270, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · su sūriu.' },
+    burger_bacon                 = { name = 'burger_bacon', label = 'Šoninės burgeris', weight = 300, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · su šonine.' },
+    burger_bbq                   = { name = 'burger_bbq', label = 'BBQ burgeris', weight = 290, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · BBQ padažas.' },
+    burger_salad                 = { name = 'burger_salad', label = 'Salotų burgeris', weight = 250, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · daugiau daržovių.' },
+    burger_fries                 = { name = 'burger_fries', label = 'Bulvytės fri', weight = 180, type = 'item', image = 'fries.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · fri bulvytės.' },
+    burger_softdrink             = { name = 'burger_softdrink', label = 'Gėrimas', weight = 200, type = 'item', image = 'cola.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · gazuotas gėrimas.' },
+    burger_meal                  = { name = 'burger_meal', label = 'Burgerio meniu', weight = 550, type = 'item', image = 'burger.png', unique = false, useable = true, shouldClose = true, description = 'Burger Joint · burgeris + fri + gėrimas.' },
+
+    -- ── mrp_jobs — legalūs darbai (nafta tęsinys žemiau) ────────────
     -- Vaisiai
     apple                        = { name = 'apple', label = 'Obuolys', weight = 120, type = 'item', image = 'apple.png', unique = false, useable = true, shouldClose = true, description = 'Šviežias obuolys.' },
     strawberry                   = { name = 'strawberry', label = 'Braškė', weight = 60, type = 'item', image = 'strawberry.png', unique = false, useable = true, shouldClose = true, description = 'Šviežia braškė.' },

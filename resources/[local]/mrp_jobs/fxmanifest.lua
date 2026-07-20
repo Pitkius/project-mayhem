@@ -16,6 +16,7 @@ shared_scripts {
     'config/locations.lua',
     'config/rewards.lua',
     'config/npc.lua',
+    'config/burger_kitchen.lua',
     'config/vape.lua',
 }
 
@@ -27,6 +28,7 @@ client_scripts {
     'client/props.lua',
     'client/oil.lua',
     'client/npc.lua',
+    'client/burger_kitchen3d.lua',
     'client/burger.lua',
     'client/cleaner.lua',
     'client/fruit.lua',

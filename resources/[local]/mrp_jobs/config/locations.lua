@@ -56,9 +56,12 @@ Config.Locations.burger = {
             registers = {
                 { id = 'reg_1', coords = vector4(-1196.9, -892.6, 13.98, 34.0) },
             },
-            -- Virtuvės gaminimo taškai (kepėjas)
+            -- Virtuvės stotys (3D gaminimas)
             kitchen = {
-                { id = 'grill_1', coords = vector4(-1200.3, -896.6, 13.98, 34.0) },
+                { id = 'grill_1', type = 'grill', coords = vector4(-1200.3, -896.6, 13.98, 34.0) },
+                { id = 'fryer_1', type = 'fryer', coords = vector4(-1199.4, -897.8, 13.98, 34.0) },
+                { id = 'assembly_1', type = 'assembly', coords = vector4(-1201.2, -895.4, 13.98, 34.0) },
+                { id = 'drinks_1', type = 'drinks', coords = vector4(-1198.2, -895.0, 13.98, 304.0) },
             },
             -- NPC klientų eilės kelias (uniqx_burgershot — palei sieną, ne per stalus)
             queue = {
@@ -83,7 +86,10 @@ Config.Locations.burger = {
                 { id = 'reg_1', coords = vector4(-1478.9, -652.9, 29.5, 140.0) },
             },
             kitchen = {
-                { id = 'grill_1', coords = vector4(-1482.4, -648.6, 29.5, 140.0) },
+                { id = 'grill_1', type = 'grill', coords = vector4(-1482.4, -648.6, 29.5, 140.0) },
+                { id = 'fryer_1', type = 'fryer', coords = vector4(-1481.2, -647.4, 29.5, 140.0) },
+                { id = 'assembly_1', type = 'assembly', coords = vector4(-1483.5, -649.5, 29.5, 140.0) },
+                { id = 'drinks_1', type = 'drinks', coords = vector4(-1480.0, -650.2, 29.5, 50.0) },
             },
             queue = {
                 register = vector4(-1478.4, -652.4, 29.5, 320.0),
