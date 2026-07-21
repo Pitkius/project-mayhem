@@ -753,77 +753,46 @@ local function setMutedForMode(vehicle, mode)
     end
 end
 
---- Native modelio carcols (addon lightbar). Jokio script DrawLight.
+--- Įjungia modelio policijos lempas (carcols ant mesh) — be jokių script lempų.
 local function applyBuiltInFleetLights(vehicle, mode)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     mode = tostring(mode or 'off'):lower()
     if mode ~= 'lights' and mode ~= 'full' then return end
-
-    requestVehicleControl(vehicle)
-    if not canApplyNativeSiren(vehicle) then
-        NetworkRequestControlOfEntity(vehicle)
+    if lastSirenApplyMode[vehicle] == mode and IsVehicleSirenOn(vehicle) then
+        setMutedForMode(vehicle, mode)
         return
     end
 
-    SetEntityAsMissionEntity(vehicle, true, true)
-    SetVehicleModKit(vehicle, 0)
+    NetworkRequestControlOfEntity(vehicle)
     SetVehicleEngineOn(vehicle, true, true, false)
-    --- Kai kuriems addon pack'ams carcols reikia įjungtų žibintų.
-    SetVehicleLights(vehicle, 2)
-    ensureFleetLightbarExtras(vehicle)
     lastSirenApplyMode[vehicle] = mode
 
-    SetVehicleHasMutedSirens(vehicle, false)
+    --- Tik GTA native: įjungia lempas, kurios jau yra ant modelio.
     SetVehicleSiren(vehicle, true)
-
-    --- Mute tik po to, kai sirena tikrai ON (kitaip kai kuriuose build'uose lieka off).
-    SetTimeout(100, function()
-        if not DoesEntityExist(vehicle) then return end
-        if lastSirenApplyMode[vehicle] ~= mode then return end
-        if IsVehicleSirenOn(vehicle) then
-            setMutedForMode(vehicle, mode)
-        else
-            --- Antras bandymas be mute.
-            requestVehicleControl(vehicle)
-            SetVehicleSiren(vehicle, true)
-        end
-    end)
-
-    local delays = { 250, 600, 1200 }
-    for d = 1, #delays do
-        SetTimeout(delays[d], function()
-            if not DoesEntityExist(vehicle) then return end
-            if lastSirenApplyMode[vehicle] ~= mode then return end
-            requestVehicleControl(vehicle)
-            if not canApplyNativeSiren(vehicle) then return end
-            if not IsVehicleSirenOn(vehicle) then
-                SetVehicleHasMutedSirens(vehicle, false)
-                SetVehicleSiren(vehicle, true)
-            end
-            if IsVehicleSirenOn(vehicle) then
-                setMutedForMode(vehicle, mode)
-            end
-        end)
+    if mode == 'lights' then
+        --- Tylios lempos (garsą duoda F6 / mrp_siren_controller).
+        SetVehicleHasMutedSirens(vehicle, true)
+    else
+        SetVehicleHasMutedSirens(vehicle, Entity(vehicle).state.fpSirenMuted == true)
     end
 end
 
 local function ingestBuiltInFleet(vehicle, mode)
     removeLightbar(vehicle)
     removeKitPerformance(vehicle)
-    FLEET_BUILTIN[vehicle] = { mode = mode }
-    --- Jokio script overlay — tik native carcols.
     TRACKED[vehicle] = nil
+    FLEET_BUILTIN[vehicle] = { mode = mode }
 
     if mode == 'off' then
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
-        fleetBoneCache[vehicle] = nil
         lastSirenApplyMode[vehicle] = 'off'
         FLEET_BUILTIN[vehicle] = nil
         return
     end
 
     if mode == 'sound' then
+        --- Tik garsas — modelio lempos OFF.
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
         lastSirenApplyMode[vehicle] = 'sound'
@@ -1036,10 +1005,10 @@ CreateThread(function()
     end
 end)
 
---- Built-in MRPD fleet: keep-alive SetVehicleSiren (tik modelio carcols).
+--- Fleet: palaikyti modelio lempas ON (ne kiekvieną frame — gadina carcols).
 CreateThread(function()
     while true do
-        local sleep = 800
+        local any = false
         if next(FLEET_BUILTIN) ~= nil then
             for veh, meta in pairs(FLEET_BUILTIN) do
                 if not DoesEntityExist(veh) then
@@ -1048,26 +1017,24 @@ CreateThread(function()
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     meta.mode = mode
                     if mode == 'lights' or mode == 'full' then
-                        sleep = 0
-                        NetworkRequestControlOfEntity(veh)
-                        if canApplyNativeSiren(veh) then
+                        any = true
+                        if NetworkHasControlOfEntity(veh) or GetPedInVehicleSeat(veh, -1) == PlayerPedId() then
                             if not IsVehicleSirenOn(veh) then
-                                SetVehicleHasMutedSirens(veh, false)
                                 SetVehicleSiren(veh, true)
-                                SetVehicleLights(veh, 2)
-                            else
-                                setMutedForMode(veh, mode)
                             end
+                            setMutedForMode(veh, mode)
+                        else
+                            NetworkRequestControlOfEntity(veh)
                         end
-                    elseif mode == 'sound' or mode == 'off' then
-                        if canApplyNativeSiren(veh) and IsVehicleSirenOn(veh) then
+                    elseif (mode == 'sound' or mode == 'off') and IsVehicleSirenOn(veh) then
+                        if NetworkHasControlOfEntity(veh) or GetPedInVehicleSeat(veh, -1) == PlayerPedId() then
                             stopNativeSirenVisual(veh)
                         end
                     end
                 end
             end
         end
-        Wait(sleep)
+        Wait(any and 500 or 1000)
     end
 end)
 
@@ -1142,8 +1109,17 @@ CreateThread(function()
             lastVehAsDriver = veh
             exitMissTicks = 0
             if emergencyOnDuty() then
-                requestEmergencyRestoreIfNeeded(veh)
-                scheduleIngest(veh)
+                --- Fleet: ne spam'inti ingest kiekvieną tick (gadina native lempas).
+                if usesBuiltInFleetLights(veh) then
+                    local cur = FLEET_BUILTIN[veh]
+                    local mode = select(1, readVehicleStateBag(veh))
+                    if not cur or cur.mode ~= mode then
+                        scheduleIngest(veh)
+                    end
+                else
+                    requestEmergencyRestoreIfNeeded(veh)
+                    scheduleIngest(veh)
+                end
             end
         elseif lastVehAsDriver ~= 0 then
             exitMissTicks = exitMissTicks + 1
