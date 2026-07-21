@@ -8,6 +8,7 @@ local KIT_PERF = {} --- [vehicle] = { sig, orig }
 local INGEST_SCHEDULED = {} --- [vehicle] = true
 local fleetBoneCache = {} --- [veh] = { bones, checkedAt }
 local lastSirenApplyMode = {} --- [veh] = mode — soft off→on tik keičiant režimą
+local SIREN_TEST_LOCK = {} --- [vehicle] = true; izoliuoja /pdtestsiren nuo runtime loop'ų
 
 local FLEET_HASHES = {}
 local FLEET_CAR_HASHES = {}
@@ -885,6 +886,7 @@ end
 
 local function ingestFromEntity(vehicle, forcedMode)
     if not vehicle or vehicle == 0 or not IsEntityAVehicle(vehicle) or not DoesEntityExist(vehicle) then return end
+    if SIREN_TEST_LOCK[vehicle] then return end
     local mode
     if type(forcedMode) == 'string' and forcedMode ~= '' then
         mode = forcedMode:lower()
@@ -911,11 +913,12 @@ end
 
 local function scheduleIngest(vehicle)
     if not vehicle or vehicle == 0 then return end
+    if SIREN_TEST_LOCK[vehicle] then return end
     if INGEST_SCHEDULED[vehicle] then return end
     INGEST_SCHEDULED[vehicle] = true
     SetTimeout(60, function()
         INGEST_SCHEDULED[vehicle] = nil
-        if DoesEntityExist(vehicle) then
+        if DoesEntityExist(vehicle) and not SIREN_TEST_LOCK[vehicle] then
             ingestFromEntity(vehicle)
         end
     end)
@@ -1094,7 +1097,7 @@ CreateThread(function()
         if isDriver then
             lastVehAsDriver = veh
             exitMissTicks = 0
-            if emergencyOnDuty() then
+            if emergencyOnDuty() and not SIREN_TEST_LOCK[veh] then
                 --- Fleet: ne spam'inti ingest kiekvieną tick (gadina native lempas).
                 if usesBuiltInFleetLights(veh) then
                     local cur = FLEET_BUILTIN[veh]
@@ -1302,38 +1305,44 @@ RegisterCommand('pdlightsdebug', function()
     end)
 end, false)
 
---- Izoliacinis testas: 2s spaudžia SetVehicleSiren BE mute / BE F6 keep-alive.
+--- Tikrai izoliuotas native testas: blokuoja statebag, driver restore ir keep-alive.
 RegisterCommand('pdtestsiren', function()
     local veh = GetVehiclePedIsIn(PlayerPedId(), false)
     if not veh or veh == 0 then
         return QBCore.Functions.Notify('Nesi transporte.', 'error')
     end
     CreateThread(function()
-        ensureVehicleControl(veh, 40)
-        --- Laikinai išjunk keep-alive, kad mute loop nesugadintų testo.
+        SIREN_TEST_LOCK[veh] = true
+        local hasControl = ensureVehicleControl(veh, 40)
         local prevTracked = TRACKED[veh]
         local prevFleet = FLEET_BUILTIN[veh]
         TRACKED[veh] = nil
         FLEET_BUILTIN[veh] = nil
+        INGEST_SCHEDULED[veh] = nil
 
         local okFrames = 0
         local total = 40
         SetVehicleHasMutedSirens(veh, false)
-        for i = 1, total do
+        for _ = 1, total do
             SetVehicleHasMutedSirens(veh, false)
             SetVehicleSiren(veh, true)
-            if IsVehicleSirenOn(veh) then okFrames = okFrames + 1 end
             Wait(50)
+            if IsVehicleSirenOn(veh) then okFrames = okFrames + 1 end
         end
+        local lastState = IsVehicleSirenOn(veh)
 
-        --- Atstatyk tracking (jei buvo)
+        SIREN_TEST_LOCK[veh] = nil
         if prevTracked then TRACKED[veh] = prevTracked end
         if prevFleet then FLEET_BUILTIN[veh] = prevFleet end
+        SetTimeout(100, function()
+            if DoesEntityExist(veh) then ingestFromEntity(veh) end
+        end)
 
-        local msg = ('pdtestsiren: sirenOn frames %d/%d | last=%s | model=%s | class=%s'):format(
+        local msg = ('pdtestsiren: sirenOn frames %d/%d | last=%s | ctrl=%s | model=%s | class=%s'):format(
             okFrames,
             total,
-            tostring(IsVehicleSirenOn(veh)),
+            tostring(lastState),
+            tostring(hasControl),
             tostring(GetDisplayNameFromVehicleModel(GetEntityModel(veh))),
             tostring(GetVehicleClass(veh))
         )

@@ -2,61 +2,63 @@ $ErrorActionPreference = 'Stop'
 $root = [System.IO.Path]::GetFullPath(
     (Join-Path $PSScriptRoot '..\resources\[cars]\mrp_pd_mrpd\data')
 )
-$sharedPath = Join-Path $root '_shared\carcols.meta'
 $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 
 if (-not (Test-Path -LiteralPath $root)) {
     throw "Data folder not found: $root"
 }
 
-$lightBlocks = [System.Collections.Generic.List[string]]::new()
-$sirenBlocks = [System.Collections.Generic.List[string]]::new()
+$sirenIds = @{
+    1 = 9431; 2 = 9432; 3 = 9435; 4 = 9412
+    5 = 9436; 6 = 9783; 7 = 9437; 8 = 9438
+    9 = 9439; 10 = 9440; 11 = 9441; 12 = 9413
+    13 = 134; 14 = 445069; 15 = 1229; 16 = 4924
+}
+$lightIds = @{
+    1 = 1; 2 = 1; 3 = 1; 4 = 2021
+    5 = 2027; 6 = 2028; 7 = 2029; 8 = 2030
+    9 = 2031; 10 = 2032; 11 = 2033; 12 = 2026
+    13 = 1; 14 = 1; 15 = 1; 16 = 1
+}
 
 1..16 | ForEach-Object {
     $n = $_
-    $sirenId = 59 + $n # 60..75: free and below the vanilla 255-slot limit
+    $sirenId = $sirenIds[$n]
+    $lightId = $lightIds[$n]
     $dir = Join-Path $root "mrpd$n"
     $sourcePath = Join-Path $dir 'carcols.meta'
     $variationsPath = Join-Path $dir 'carvariations.meta'
     $vehiclesPath = Join-Path $dir 'vehicles.meta'
 
     $source = [System.IO.File]::ReadAllText($sourcePath)
-    $lightsMatch = [regex]::Match($source, '(?s)<Lights>\s*(.*?)\s*</Lights>')
-    $sourceLightCount = 0
-    if ($lightsMatch.Success -and $lightsMatch.Groups[1].Value -match '<Item>') {
-        $lightBlock = $lightsMatch.Groups[1].Value.Trim()
-        $sourceLightCount = 1
-        if ($n -eq 4) {
-            # Original mrpd4 reused 203 for both Lights and Sirens.
-            $lightBlock = [regex]::Replace(
-                $lightBlock,
-                '<id value="\d+"\s*/>',
-                '<id value="232"/>',
-                1
-            )
-        }
-        $lightBlocks.Add($lightBlock)
-    }
-
-    $sirensMatch = [regex]::Match($source, '(?s)<Sirens>\s*(.*?)\s*</Sirens>')
-    if (-not $sirensMatch.Success) {
-        throw "mrpd$n has no Sirens block."
-    }
-    $sirenBlock = $sirensMatch.Groups[1].Value.Trim()
-    $sirenBlock = [regex]::Replace(
-        $sirenBlock,
-        '<id value="\d+"\s*/>',
-        "<id value=`"$sirenId`"/>",
+    $source = [regex]::Replace(
+        $source,
+        '(?s)(<Sirens>.*?<id value=")\d+(")',
+        [System.Text.RegularExpressions.MatchEvaluator]{
+            param($match)
+            $match.Groups[1].Value + $sirenId + $match.Groups[2].Value
+        },
         1
     )
-    $sirenBlock = [regex]::Replace(
-        $sirenBlock,
+    $source = [regex]::Replace(
+        $source,
         '<name>[^<]*</name>',
         "<name>mrpd$n</name>",
         1
     )
-    $sirenBlock = $sirenBlock -replace '<sequencer value=""\s*/>', '<sequencer value="0"/>'
-    $sirenBlocks.Add($sirenBlock)
+    if ($lightId -ne 1) {
+        $source = [regex]::Replace(
+            $source,
+            '(?s)(<Lights>.*?<id value=")\d+(")',
+            [System.Text.RegularExpressions.MatchEvaluator]{
+                param($match)
+                $match.Groups[1].Value + $lightId + $match.Groups[2].Value
+            },
+            1
+        )
+    }
+    $source = $source -replace '<sequencer value=""\s*/>', '<sequencer value="0"/>'
+    [System.IO.File]::WriteAllText($sourcePath, $source, $utf8NoBom)
 
     $variations = [System.IO.File]::ReadAllText($variationsPath)
     $variations = [regex]::Replace(
@@ -64,13 +66,11 @@ $sirenBlocks = [System.Collections.Generic.List[string]]::new()
         'sirenSettings value="\d+"',
         "sirenSettings value=`"$sirenId`""
     )
-    if ($n -eq 4) {
-        $variations = [regex]::Replace(
-            $variations,
-            'lightSettings value="\d+"',
-            'lightSettings value="232"'
-        )
-    }
+    $variations = [regex]::Replace(
+        $variations,
+        'lightSettings value="\d+"',
+        "lightSettings value=`"$lightId`""
+    )
     [System.IO.File]::WriteAllText($variationsPath, $variations, $utf8NoBom)
 
     # Emergency audio profile is required for native siren state. The original
@@ -83,31 +83,16 @@ $sirenBlocks = [System.Collections.Generic.List[string]]::new()
     )
     [System.IO.File]::WriteAllText($vehiclesPath, $vehicles, $utf8NoBom)
 
-    Write-Host "mrpd${n}: siren=$sirenId, lights=$sourceLightCount, audio=FBI"
-}
+    [xml]$carcolsCheck = [System.IO.File]::ReadAllText($sourcePath)
+    [xml]$variationsCheck = [System.IO.File]::ReadAllText($variationsPath)
+    $actualSiren = [int]$carcolsCheck.SelectSingleNode('//Sirens/Item/id').value
+    $actualVariationSiren = [int]$variationsCheck.SelectSingleNode(
+        "//variationData/Item[modelName='mrpd$n']/sirenSettings"
+    ).value
+    if ($actualSiren -ne $sirenId -or $actualVariationSiren -ne $sirenId) {
+        throw "mrpd$n siren linkage validation failed."
+    }
 
-$builder = [System.Text.StringBuilder]::new()
-[void]$builder.AppendLine('<?xml version="1.0" encoding="UTF-8"?>')
-[void]$builder.AppendLine('<CVehicleModelInfoVarGlobal>')
-[void]$builder.AppendLine('  <Lights>')
-foreach ($block in $lightBlocks) {
-    [void]$builder.AppendLine($block)
+    Write-Host "mrpd${n}: siren=$sirenId, light=$lightId, audio=FBI"
 }
-[void]$builder.AppendLine('  </Lights>')
-[void]$builder.AppendLine('  <Sirens>')
-foreach ($block in $sirenBlocks) {
-    [void]$builder.AppendLine($block)
-}
-[void]$builder.AppendLine('  </Sirens>')
-[void]$builder.AppendLine('</CVehicleModelInfoVarGlobal>')
-[System.IO.File]::WriteAllText($sharedPath, $builder.ToString(), $utf8NoBom)
-
-[xml]$check = [System.IO.File]::ReadAllText($sharedPath)
-if ($check.SelectNodes('//Sirens/Item').Count -ne 16) {
-    throw 'Generated shared carcols does not contain 16 siren definitions.'
-}
-if ($check.SelectNodes('//Lights/Item').Count -ne 9) {
-    throw 'Generated shared carcols does not contain 9 light definitions.'
-}
-
-Write-Host "Generated: $sharedPath"
+Write-Host 'All 16 per-model carcols files repaired and validated.'

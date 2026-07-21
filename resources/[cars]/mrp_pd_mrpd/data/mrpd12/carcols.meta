@@ -2,7 +2,7 @@
 <CVehicleModelInfoVarGlobal>
   <Lights>
     <Item>
-      <id value="231"/>
+      <id value="2026"/>
       <indicator>
         <intensity value="0.37500000"/>
         <falloffMax value="2.50000000"/>
@@ -137,13 +137,13 @@
         <zBias value="0.25000000"/>
         <pullCoronaIn value="false"/>
       </reversingLightCorona>
-      <name>gcf12</name>
+      <name>mrpd12</name>
     </Item>
     </Lights>
   <Sirens>
 	<Item>
-      <id value="211"/>
-      <name>gcpd23</name>
+      <id value="9413"/>
+      <name>mrpd12</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
       <lightFalloffExponent value="10.0"/>

@@ -2,7 +2,7 @@
 <CVehicleModelInfoVarGlobal>
 	<Sirens> <!-- Template made by McGinlay -->
 	<Item>
-      <id value="212"/>
+      <id value="134"/>
       <name>mrpd13</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -13,16 +13,16 @@
       <textureName>VehicleLight_sirenlight</textureName>
       <sequencerBpm value="900"/>
       <leftHeadLight>
-        <sequencer value=""/>
+        <sequencer value="0"/>
       </leftHeadLight>
       <rightHeadLight>
-        <sequencer value=""/>
+        <sequencer value="0"/>
       </rightHeadLight>
       <leftTailLight>
-        <sequencer value=""/>
+        <sequencer value="0"/>
       </leftTailLight>
       <rightTailLight>
-        <sequencer value=""/>
+        <sequencer value="0"/>
       </rightTailLight>
       <leftHeadLightMultiples value="1"/>
       <rightHeadLightMultiples value="1"/>

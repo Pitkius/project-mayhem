@@ -4,8 +4,8 @@
   </Lights>
   <Sirens>
 	<Item>
-      <id value="202"/>
-      <name>ozp22</name>
+      <id value="9435"/>
+      <name>mrpd3</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
       <lightFalloffExponent value="10.0"/>

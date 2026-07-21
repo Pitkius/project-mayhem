@@ -224,6 +224,19 @@ local function setCode(mode)
     local curMode = select(1, readVehicleState(veh, activeJobType))
     if curMode == mode then mode = 'off' end
     local cfg = getJobCfg(activeJobType)
+
+    --- Vairuotojui native šviesas įjungiame iškart. Statebag lieka
+    --- autoritetingas sinchronizavimui, o mrp_ltpd keep-alive jas palaiko.
+    if activeJobType == 'police' and vehicleIsFleet(veh, activeJobType) then
+        if mode == 'lights' or mode == 'full' then
+            SetVehicleHasMutedSirens(veh, false)
+            SetVehicleSiren(veh, true)
+        else
+            SetVehicleSiren(veh, false)
+            SetVehicleHasMutedSirens(veh, false)
+        end
+    end
+
     TriggerServerEvent(cfg.serverEvent, mode)
     SetTimeout(220, pushUiSync)
 end

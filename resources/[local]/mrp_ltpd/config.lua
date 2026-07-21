@@ -137,7 +137,7 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- Fleet MRPD: tik modelio carcols emissives (siren IDs 60-75).
+    --- Fleet MRPD: tik modelio per-vehicle carcols emissives.
     --- Jokių prop, bone DrawLight ar papildomų script lempų.
     nativeFlashAssist = false,
     fleetRoofFlashAssist = false,
