@@ -1,11 +1,11 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local REQUIRED_BUILD = 3095
+local REQUIRED_BUILD = 3717
 
 CreateThread(function()
     Wait(2000)
     local enforced = GetConvar('sv_enforceGameBuild', '0')
-    print(('^2[mrp_buildcheck]^0 sv_enforceGameBuild = %s (reikia %s — Bottom Dollar / PD šviesos)'):format(enforced, REQUIRED_BUILD))
+    print(('^2[mrp_buildcheck]^0 sv_enforceGameBuild = %s (reikia %s — Safehouse mansion)'):format(enforced, REQUIRED_BUILD))
     if tonumber(enforced) ~= REQUIRED_BUILD then
         print(('^1[mrp_buildcheck]^0 DĖMESIO: serveris neprivers build %s — patikrink server.cfg / txAdmin.'):format(REQUIRED_BUILD))
     end

@@ -137,9 +137,10 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- FLEET / MRPD: jokių custom DrawLight — tik GTA SetVehicleSiren + carcols (kaip police / police2).
-    --- Custom DrawLight / bone flash = baltos lempos arba floating orbos.
+    --- FLEET / MRPD: native carcols + stogo R/B script flash jei carcols nepasirodo.
+    --- Custom bone flash = baltos lempos arba floating orbos.
     nativeFlashAssist = false,
+    fleetRoofFlashAssist = true,
     fleetSirenBoneLights = false,
     fleetSirenBoneAllowRoofFallback = false,
     --- Script flash (prop + DrawLight) TIK civilinei TP su pd_emergency_kit

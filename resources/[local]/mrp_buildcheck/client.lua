@@ -1,12 +1,12 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
---- Bottom Dollar Bounties — senesnis build (PD carcols). 3717/3788 laikinai nenaudojami.
-local REQUIRED_BUILD = 3095
+--- A Safehouse in the Hills (mansion DLC) — be Kortz Center (3788).
+local REQUIRED_BUILD = 3717
 
 local TEST_MODELS = {
     { 'adder', 'Vanilla (adder)' },
-    { 'suzume', 'Money Fronts (3570) — gali nebūti ant 3095' },
-    { 'astrale', 'Safehouse (3717+) — tikėtina NE ant 3095' },
+    { 'suzume', 'Money Fronts (3570)' },
+    { 'astrale', 'Safehouse (3717+)' },
 }
 
 local function notify(msg, ntype)
@@ -21,7 +21,7 @@ end
 RegisterCommand('checkbuild', function()
     QBCore.Functions.TriggerCallback('mrp_buildcheck:server:getEnforcedBuild', function(enforced)
         local build = GetGameBuildNumber()
-        local msg = ('Tavo build: %s | Serveris: %s (reikia %s — Bottom Dollar / PD šviesos)'):format(
+        local msg = ('Tavo build: %s | Serveris: %s (reikia %s — Safehouse mansion)'):format(
             build, enforced or '?', REQUIRED_BUILD
         )
         local ntype = 'primary'

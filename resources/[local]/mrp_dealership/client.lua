@@ -577,13 +577,11 @@ local function spawnPurchasedVehicle(result, colorIdx, successMsg, spawnFailMsg)
             exports['mrp_plates']:ApplyPlateStyle(veh)
         end
         applyPurchasedVehicleColor(veh, colorIdx)
-        --- PD lightbar extras (mrpd*)
+        --- PD lightbar extras (mrpd*) — ne enable-all (exclusive extras bug)
         local modelName = tostring(result.model or ''):lower()
         if modelName:match('^mrpd%d+$') or modelName == 'polmav' or modelName == 'buzzard2' then
-            for i = 0, 20 do
-                if DoesExtraExist(veh, i) then
-                    SetVehicleExtra(veh, i, 0)
-                end
+            if GetResourceState('mrp_ltpd') == 'started' then
+                pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
             end
         end
         SetVehicleEngineOn(veh, true, true, false)

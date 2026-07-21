@@ -640,22 +640,33 @@ local function ensureFleetLightbarExtras(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     if not modelIsFleet(GetEntityModel(vehicle)) then return end
 
-    local anyPreferredOn = false
     local firstPreferred = nil
+    local activePreferred = nil
+    local activeCount = 0
     for i = 1, #LIGHTBAR_EXTRA_CANDIDATES do
         local id = LIGHTBAR_EXTRA_CANDIDATES[i]
         if DoesExtraExist(vehicle, id) then
             if not firstPreferred then firstPreferred = id end
             if IsVehicleExtraTurnedOn(vehicle, id) then
-                anyPreferredOn = true
-                break
+                activePreferred = id
+                activeCount = activeCount + 1
             end
         end
     end
-    --- Jei lightbar extra egzistuoja bet visi išjungti (garažas/senas enable-all) — įjunk pirmą.
-    if firstPreferred and not anyPreferredOn then
-        SetVehicleExtra(vehicle, firstPreferred, 0)
+    if not firstPreferred then return end
+
+    local target = firstPreferred
+    if activePreferred == target and activeCount == 1 then
+        return
     end
+
+    for i = 1, #LIGHTBAR_EXTRA_CANDIDATES do
+        local id = LIGHTBAR_EXTRA_CANDIDATES[i]
+        if DoesExtraExist(vehicle, id) then
+            SetVehicleExtra(vehicle, id, 1)
+        end
+    end
+    SetVehicleExtra(vehicle, target, 0)
 end
 
 --- Soft off→on TIK kai keičiasi režimas (ne kiekvieną tick) — atgaivina carcols be balto spam.
@@ -702,6 +713,14 @@ local function applyNativeForEveryone(vehicle, mode)
     end)
 end
 
+--- Fleet MRPD: stogo R/B mirksėjimas be prop (veikia net jei carcols extras sugedę).
+local function vehicleUsesFleetRoofFlash(vehicle)
+    if Ec.fleetRoofFlashAssist == false then return false end
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    local hash = GetEntityModel(vehicle)
+    return modelIsFleetCar(hash) and fleetLightMode(hash) ~= 'script'
+end
+
 --- Visoms fleet PD mašinoms: script flash ant stogo — IŠJUNGTA (griauna native carcols).
 local function vehicleUsesNativeFlashAssist(_vehicle)
     return false
@@ -727,6 +746,7 @@ local function ingestFromEntity(vehicle, forcedMode)
     TRACKED[vehicle] = TRACKED[vehicle] or {}
     TRACKED[vehicle].supportsNative = supportsNative
     TRACKED[vehicle].scriptFlash = scriptFlash
+    TRACKED[vehicle].roofFlash = vehicleUsesFleetRoofFlash(vehicle)
     TRACKED[vehicle].assistFlash = false
     TRACKED[vehicle].fleetBoneLights = false
     TRACKED[vehicle].mode = mode
@@ -818,8 +838,8 @@ CreateThread(function()
                 else
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     meta.mode = mode
-                    --- Script flash TIK civiliniam kit (prop lightbar). Fleet = grynas GTA carcols.
-                    if (mode == 'lights' or mode == 'full') and meta.scriptFlash == true then
+                    --- Script flash: civilinis kit (prop) arba fleet stogo R/B assist
+                    if (mode == 'lights' or mode == 'full') and (meta.scriptFlash == true or meta.roofFlash == true) then
                         local vehCoords = GetEntityCoords(veh)
                         if #(pCoords - vehCoords) <= drawDistance then
                             drawScriptFlash(veh, #(pCoords - vehCoords))
@@ -1099,3 +1119,5 @@ AddEventHandler('onResourceStop', function(res)
         end
     end
 end)
+
+exports('EnsureFleetLightbarExtras', ensureFleetLightbarExtras)

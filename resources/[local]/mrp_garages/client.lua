@@ -497,15 +497,21 @@ local function captureEmergencyProps(veh, props)
     return props
 end
 
---- PD lightbar extras visada true DB — senas qb-core bug'as įrašydavo visus false.
+--- PD lightbar extras — tik teisingas extra ON (ne visi true DB).
 local function forcePoliceExtrasInProps(veh, props)
     props = props or {}
     if not isPoliceVehicleEntity(veh) then return props end
-    enableAllVehicleExtras(veh)
+    if GetResourceState('mrp_ltpd') == 'started' then
+        pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
+    else
+        enableAllVehicleExtras(veh)
+    end
     props.extras = props.extras or {}
     for i = 0, 20 do
         if DoesExtraExist(veh, i) then
-            props.extras[tostring(i)] = true
+            props.extras[tostring(i)] = IsVehicleExtraTurnedOn(veh, i)
+        else
+            props.extras[tostring(i)] = nil
         end
     end
     return props
@@ -560,9 +566,13 @@ local function doGarageVehicleSpawn(data)
         if decodedMods then
             restoreEmergencyProps(veh, decodedMods)
         end
-        --- Seniau išsaugoti mods extras buvo visi false (qb-core bug) — grąžinam PD lempas
+        --- Seniau išsaugoti mods extras buvo visi false arba visi true — normalizuojam PD lempas
         if isPoliceVehicleModelName(result.model) then
-            enableAllVehicleExtras(veh)
+            if GetResourceState('mrp_ltpd') == 'started' then
+                pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
+            else
+                enableAllVehicleExtras(veh)
+            end
         end
         if GetResourceState('mrp_plates') == 'started' then
             exports['mrp_plates']:ApplyPlateStyle(veh)
