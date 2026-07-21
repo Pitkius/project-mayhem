@@ -1380,23 +1380,49 @@ exports('PersistVehicleEmergencyMods', function(plate, citizenid, fields)
     mergeVehicleEmergencyMods(plate, citizenid, fields)
 end)
 
+local function isEmergencyFleetModel(entity)
+    if not entity or entity == 0 then return false end
+    local hash = GetEntityModel(entity)
+    if Config.FleetVehicles then
+        for _, v in ipairs(Config.FleetVehicles) do
+            if v and v.model and joaat(v.model) == hash then
+                return true
+            end
+        end
+    end
+    if Config.FleetHelicopters then
+        for _, v in ipairs(Config.FleetHelicopters) do
+            if v and v.model and joaat(v.model) == hash then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 exports('ApplyVehicleEmergencyFromMods', function(veh, mods)
     if type(mods) == 'string' and mods ~= '' then
         local ok, decoded = pcall(json.decode, mods)
         mods = ok and decoded or nil
     end
     if type(mods) ~= 'table' then return end
+    local fleet = isEmergencyFleetModel(veh)
     if mods.mrpPdKit == true then
         Entity(veh).state:set('ltPdKit', true, true)
     else
         Entity(veh).state:set('ltPdKit', false, true)
-        Entity(veh).state:set('ltPdSirenMode', 'off', true)
+        --- Fleet naudoja F6 be kit — NEnulinam sirenos režimo.
+        if not fleet then
+            Entity(veh).state:set('ltPdSirenMode', 'off', true)
+        end
     end
     if mods.mrpEmsKit == true then
         Entity(veh).state:set('ltEmsKit', true, true)
     else
         Entity(veh).state:set('ltEmsKit', false, true)
-        Entity(veh).state:set('ltEmsSirenMode', 'off', true)
+        if not fleet then
+            Entity(veh).state:set('ltEmsSirenMode', 'off', true)
+        end
     end
 end)
 
@@ -1476,26 +1502,6 @@ end
 local function safeVehicleNetId(veh)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return 0 end
     return NetworkGetNetworkIdFromEntity(veh)
-end
-
-local function isEmergencyFleetModel(entity)
-    if not entity or entity == 0 then return false end
-    local hash = GetEntityModel(entity)
-    if Config.FleetVehicles then
-        for _, v in ipairs(Config.FleetVehicles) do
-            if v and v.model and joaat(v.model) == hash then
-                return true
-            end
-        end
-    end
-    if Config.FleetHelicopters then
-        for _, v in ipairs(Config.FleetHelicopters) do
-            if v and v.model and joaat(v.model) == hash then
-                return true
-            end
-        end
-    end
-    return false
 end
 
 local LtPdEmergencyModes = { off = true, lights = true, sound = true, full = true }

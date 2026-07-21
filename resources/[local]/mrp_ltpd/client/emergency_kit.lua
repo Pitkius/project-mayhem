@@ -839,6 +839,9 @@ end
 
 local function requestEmergencyRestoreIfNeeded(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    --- Fleet MRPD: F6 režimas be pd_emergency_kit — restore iš DB išjungdavo ltPdSirenMode.
+    if usesBuiltInFleetLights(vehicle) then return end
+    if modelIsFleet(GetEntityModel(vehicle)) then return end
     local _, kit = readVehicleStateBag(vehicle)
     if kit then return end
     local netId = safeVehicleNetId(vehicle)
@@ -951,7 +954,7 @@ CreateThread(function()
     end
 end)
 
---- Built-in MRPD fleet: keep-alive kiekvieną frame (kaip LVC) — kitaip sirenOn lieka false.
+--- Built-in MRPD fleet: keep-alive — force SetVehicleSiren kiekvieną frame.
 CreateThread(function()
     while true do
         local sleep = 800
@@ -964,13 +967,19 @@ CreateThread(function()
                     meta.mode = mode
                     if mode == 'lights' or mode == 'full' then
                         sleep = 0
+                        if GetVehiclePedIsIn(PlayerPedId(), false) == veh then
+                            --- Neleisti GTA Q/siren toggle išjungti mūsų režimo.
+                            DisableControlAction(0, 85, true)
+                            DisableControlAction(0, 86, true)
+                        end
+                        NetworkRequestControlOfEntity(veh)
                         if canApplyNativeSiren(veh) then
-                            if not IsVehicleSirenOn(veh) then
-                                SetVehicleSiren(veh, true)
+                            SetEntityAsMissionEntity(veh, true, true)
+                            SetVehicleSiren(veh, true)
+                            --- Mute tik kai sirena tikrai ON (anksčiau mute kartais palikdavo off).
+                            if IsVehicleSirenOn(veh) then
+                                setMutedForMode(veh, mode)
                             end
-                            setMutedForMode(veh, mode)
-                        else
-                            NetworkRequestControlOfEntity(veh)
                         end
                     elseif mode == 'sound' or mode == 'off' then
                         if canApplyNativeSiren(veh) and IsVehicleSirenOn(veh) then
