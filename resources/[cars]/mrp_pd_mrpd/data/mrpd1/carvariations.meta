@@ -102,7 +102,7 @@
           </Item>
         </Probabilities>
       </plateProbabilities>
-      <lightSettings value="999" />        
+      <lightSettings value="1" />        
 	      <sirenSettings value="200" />
     </Item>       
 

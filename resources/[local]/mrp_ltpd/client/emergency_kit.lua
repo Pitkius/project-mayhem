@@ -684,6 +684,54 @@ local function ensureFleetLightbarExtras(vehicle)
     end
 end
 
+local SIREN_BONE_NAMES = {
+    'siren', 'siren1', 'siren2', 'siren3', 'siren4', 'siren5', 'siren6',
+    'siren7', 'siren8', 'siren9', 'siren10', 'siren11', 'siren12',
+    'siren13', 'siren14', 'siren15', 'siren16', 'siren17', 'siren18',
+    'siren19', 'siren20',
+}
+
+local function getFleetSirenBones(vehicle)
+    local cached = fleetBoneCache[vehicle]
+    local now = GetGameTimer()
+    if cached and (now - (cached.checkedAt or 0)) < 5000 then
+        return cached.bones
+    end
+    local bones = {}
+    for i = 1, #SIREN_BONE_NAMES do
+        local idx = GetEntityBoneIndexByName(vehicle, SIREN_BONE_NAMES[i])
+        if idx and idx ~= -1 then
+            bones[#bones + 1] = idx
+        end
+    end
+    fleetBoneCache[vehicle] = { bones = bones, checkedAt = now }
+    return bones
+end
+
+--- R/B tik ant modelio siren kaulų — jokio white, jokio prop.
+local function drawFleetSirenBoneLights(vehicle)
+    if Ec.fleetSirenBoneLights == false then return end
+    local bones = getFleetSirenBones(vehicle)
+    if #bones == 0 then return end
+    local interval = tonumber(Ec.fleetSirenBoneIntervalMs) or 380
+    local phase = math.floor(GetGameTimer() / interval) % 2 == 0
+    local range = tonumber(Ec.fleetSirenBoneRange) or 8.5
+    local power = tonumber(Ec.fleetSirenBoneIntensity) or 5.5
+    local rr, rg, rb = flashColor('red')
+    local br, bg, bb = flashColor('blue')
+    for i = 1, #bones do
+        local pos = GetWorldPositionOfEntityBone(vehicle, bones[i])
+        if pos then
+            local useRed = ((i % 2 == 1) and phase) or ((i % 2 == 0) and not phase)
+            if useRed then
+                DrawLightWithRange(pos.x, pos.y, pos.z, rr, rg, rb, range, power)
+            else
+                DrawLightWithRange(pos.x, pos.y, pos.z, br, bg, bb, range, power)
+            end
+        end
+    end
+end
+
 local function setMutedForMode(vehicle, mode)
     if mode == 'lights' then
         SetVehicleHasMutedSirens(vehicle, true)
@@ -735,8 +783,18 @@ local function ingestBuiltInFleet(vehicle, mode)
     removeLightbar(vehicle)
     removeKitPerformance(vehicle)
     FLEET_BUILTIN[vehicle] = { mode = mode }
-    --- Jokio script flash — tik modelio lempos.
-    TRACKED[vehicle] = nil
+
+    local isCar = modelIsFleetCar(GetEntityModel(vehicle))
+    local lightsOn = (mode == 'lights' or mode == 'full')
+    --- Bone R/B: modelio lightbar pozicijos, kol/jei native SetVehicleSiren neveikia.
+    local useBones = isCar and lightsOn and (Ec.fleetSirenBoneLights ~= false)
+
+    TRACKED[vehicle] = TRACKED[vehicle] or {}
+    TRACKED[vehicle].supportsNative = true
+    TRACKED[vehicle].scriptFlash = false
+    TRACKED[vehicle].roofFlash = false
+    TRACKED[vehicle].fleetBoneLights = useBones
+    TRACKED[vehicle].mode = mode
 
     if mode == 'off' then
         stopNativeSirenVisual(vehicle)
@@ -744,6 +802,7 @@ local function ingestBuiltInFleet(vehicle, mode)
         fleetBoneCache[vehicle] = nil
         lastSirenApplyMode[vehicle] = 'off'
         FLEET_BUILTIN[vehicle] = nil
+        TRACKED[vehicle] = nil
         return
     end
 
@@ -751,10 +810,11 @@ local function ingestBuiltInFleet(vehicle, mode)
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
         lastSirenApplyMode[vehicle] = 'sound'
+        TRACKED[vehicle].fleetBoneLights = false
         return
     end
 
-    if mode == 'lights' or mode == 'full' then
+    if lightsOn then
         stopScriptSound(vehicle)
         applyBuiltInFleetLights(vehicle, mode)
     end
@@ -911,6 +971,12 @@ CreateThread(function()
                         local vehCoords = GetEntityCoords(veh)
                         if #(pCoords - vehCoords) <= drawDistance then
                             drawScriptFlash(veh, #(pCoords - vehCoords))
+                            drew = true
+                        end
+                    elseif (mode == 'lights' or mode == 'full') and meta.fleetBoneLights then
+                        local vehCoords = GetEntityCoords(veh)
+                        if #(pCoords - vehCoords) <= drawDistance then
+                            drawFleetSirenBoneLights(veh)
                             drew = true
                         end
                     end
@@ -1248,18 +1314,14 @@ RegisterCommand('pdlightsdebug', function()
     end
     SetTimeout(150, function()
         if not DoesEntityExist(veh) then return end
-        local extras = {}
-        for i = 0, 20 do
-            if DoesExtraExist(veh, i) then
-                extras[#extras + 1] = ('%d=%s'):format(i, IsVehicleExtraTurnedOn(veh, i) and 'ON' or 'off')
-            end
-        end
-        local msg = ('mode=%s | sirenOn=%s | builtIn=%s | scriptFlash=false | class=%s | extras [%s]'):format(
+        local bones = getFleetSirenBones(veh)
+        local meta = TRACKED[veh]
+        local msg = ('mode=%s | sirenOn=%s | bones=%d | boneFlash=%s | class=%s'):format(
             tostring(mode),
             tostring(IsVehicleSirenOn(veh)),
-            tostring(builtIn),
-            tostring(GetVehicleClass(veh)),
-            table.concat(extras, ', ')
+            #bones,
+            tostring(meta and meta.fleetBoneLights == true),
+            tostring(GetVehicleClass(veh))
         )
         QBCore.Functions.Notify(msg, 'primary', 12000)
         print('[mrp_ltpd/pdlightsdebug] ' .. msg)
