@@ -137,13 +137,13 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- Fleet MRPD: GTA SetVehicleSiren ant šio pack'o neįsijungia (pdtestsiren 0/40).
-    --- Todėl šviesos = R/B ant modelio siren kaulų (lightbar pozicijos ant mesh).
-    --- Tai NE prop lightbar — naudojamos pačios mašinos kaulų vietos.
-    --- Jei native kada įsijungs (sirenOn=true), bone flash automatiškai išsijungia.
+    --- Fleet MRPD: carvariations naudoja sirenSettings=1 (vanilla police) —
+    --- pdtestsiren ant custom ID buvo 0/40, ant police 40/40.
+    --- Bone flash lieka atsarginis, jei mesh emissives silpni.
     nativeFlashAssist = false,
     fleetRoofFlashAssist = false,
     fleetSirenBoneLights = true,
+    fleetSirenBoneLightsWithNative = true,
     fleetSirenBoneIntervalMs = 400,
     fleetSirenBoneRange = 4.8,
     fleetSirenBoneIntensity = 2.8,

@@ -711,8 +711,8 @@ end
 --- R/B ant modelio siren kaulų (lightbar vietos). Viena spalva per fazę — be balto wash.
 local function drawFleetSirenBoneLights(vehicle)
     if Ec.fleetSirenBoneLights == false then return end
-    --- Jei native carcols įsijungė — script glow nereikalingas.
-    if IsVehicleSirenOn(vehicle) then return end
+    --- Pagal nutylėjimą piešiam ir kai native ON (custom lightbar dažnai silpnas su ID=1).
+    if IsVehicleSirenOn(vehicle) and Ec.fleetSirenBoneLightsWithNative == false then return end
 
     local bones = getFleetSirenBones(vehicle)
     if #bones == 0 then return end
