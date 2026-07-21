@@ -137,9 +137,10 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- Fleet MRPD: tik built-in carcols (žr. Config.BuiltInFleetModels). Jokio script glow.
+    --- Fleet MRPD: native carcols dažnai neįsijungia — naudojam tą patį R/B script flash
+    --- kaip PD įranga (be prop lightbar, taškai ant stogo).
     nativeFlashAssist = false,
-    fleetRoofFlashAssist = false,
+    fleetRoofFlashAssist = true,
     fleetSirenBoneLights = false,
     --- Script flash (prop + DrawLight) TIK civilinei TP su pd_emergency_kit
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
@@ -274,8 +275,9 @@ Config.FleetVehicles = {
   { model = 'mrpd16', label = 'MRPD 16 — Alfa Romeo', emergencyLights = 'native' },
 }
 
---- Built-in ELS whitelist: šie modeliai naudoja TIK savo carcols/SetVehicleSiren.
---- PD įranga (prop lightbar, DrawLight, bone glow, performance tune) ant jų NIEKADA.
+--- Built-in fleet: vis dar bandom SetVehicleSiren, bet vizualas = script R/B flash
+--- (tas pats kelias kaip PD įranga — nes native ant šių modelių neįsijungia).
+--- Prop lightbar NEdedamas (mašinos jau turi lightbar mesh).
 Config.BuiltInFleetModels = {
     'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
     'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16',

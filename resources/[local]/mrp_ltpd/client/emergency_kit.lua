@@ -750,6 +750,18 @@ local function ingestBuiltInFleet(vehicle, mode)
     removeKitPerformance(vehicle)
     FLEET_BUILTIN[vehicle] = { mode = mode }
 
+    local isCar = modelIsFleetCar(GetEntityModel(vehicle))
+    local useRoofFlash = isCar and (Ec.fleetRoofFlashAssist ~= false)
+        and (mode == 'lights' or mode == 'full')
+
+    TRACKED[vehicle] = TRACKED[vehicle] or {}
+    TRACKED[vehicle].supportsNative = true
+    TRACKED[vehicle].scriptFlash = useRoofFlash --- tas pats drawScriptFlash kaip PD kit
+    TRACKED[vehicle].roofFlash = useRoofFlash
+    TRACKED[vehicle].assistFlash = false
+    TRACKED[vehicle].fleetBoneLights = false
+    TRACKED[vehicle].mode = mode
+
     if mode == 'off' then
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
@@ -764,11 +776,14 @@ local function ingestBuiltInFleet(vehicle, mode)
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
         lastSirenApplyMode[vehicle] = 'sound'
+        TRACKED[vehicle].scriptFlash = false
+        TRACKED[vehicle].roofFlash = false
         return
     end
 
     if mode == 'lights' or mode == 'full' then
         stopScriptSound(vehicle)
+        --- Vis dar bandome native (jei carcols kada nors įsijungs).
         applyBuiltInFleetLights(vehicle, mode)
     end
 end
@@ -1245,27 +1260,22 @@ RegisterCommand('pdlightsdebug', function()
     end
     local mode = select(1, readVehicleStateBag(veh))
     local builtIn = usesBuiltInFleetLights(veh)
-    local scriptFlash = vehicleUsesScriptFlash(veh)
+    local meta = TRACKED[veh]
+    local scriptFlash = meta and meta.scriptFlash == true
     requestVehicleControl(veh)
     if builtIn and (mode == 'lights' or mode == 'full') then
         lastSirenApplyMode[veh] = nil
-        applyBuiltInFleetLights(veh, mode)
+        ingestBuiltInFleet(veh, mode)
     end
     SetTimeout(120, function()
         if not DoesEntityExist(veh) then return end
-        local extras = {}
-        for i = 0, 20 do
-            if DoesExtraExist(veh, i) then
-                extras[#extras + 1] = ('%d=%s'):format(i, IsVehicleExtraTurnedOn(veh, i) and 'ON' or 'off')
-            end
-        end
-        local msg = ('mode=%s | sirenOn=%s | builtIn=%s | ctrl=%s | class=%s | extras [%s]'):format(
+        meta = TRACKED[veh]
+        local msg = ('mode=%s | sirenOn=%s | builtIn=%s | scriptFlash=%s | class=%s'):format(
             tostring(mode),
             tostring(IsVehicleSirenOn(veh)),
             tostring(builtIn),
-            tostring(NetworkHasControlOfEntity(veh)),
-            tostring(GetVehicleClass(veh)),
-            table.concat(extras, ', ')
+            tostring(meta and meta.scriptFlash == true),
+            tostring(GetVehicleClass(veh))
         )
         QBCore.Functions.Notify(msg, 'primary', 12000)
         print('[mrp_ltpd/pdlightsdebug] ' .. msg)
