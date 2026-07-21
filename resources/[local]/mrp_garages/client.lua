@@ -18,8 +18,12 @@ end
 local function normalizeFleetLightbarExtras(veh)
     if GetResourceState('mrp_ltpd') == 'started' then
         pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
-    else
-        enableAllVehicleExtras(veh)
+        return
+    end
+    for i = 0, 20 do
+        if DoesExtraExist(veh, i) then
+            SetVehicleExtra(veh, i, 0)
+        end
     end
 end
 
