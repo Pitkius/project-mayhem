@@ -101,19 +101,16 @@ local function runHackPhase()
 end
 
 local function playBankDoorOpen(coords)
-    QBCore.Functions.Notify('Banko durys atrakintos — gręžk seifo vartus.', 'success')
+    QBCore.Functions.Notify('Seifo durys atidarytos — grabink pinigus / gręžk deposit dėžutes.', 'success')
     PlaySoundFromCoord(-1, 'Vault_Unlock', coords.x, coords.y, coords.z, 'dlc_heist_fleeca_bank_door_sounds', false, 0, false)
     if session and session.locId then
-        exports['mrp_hacking']:OpenBankVaultAfterHack(session.locId, coords)
+        exports['mrp_hacking']:OpenBankVaultAfterDrill(session.locId, coords)
     end
 end
 
 local function playVaultGateOpen(coords)
-    QBCore.Functions.Notify('Seifo vartai atidaryti — grabink pinigus.', 'success')
-    PlaySoundFromCoord(-1, 'Drill_Pin_Break', coords.x, coords.y, coords.z, 'DLC_HEIST_FLEECA_BANK_DRILLING_SOUNDS', false, 0, false)
-    if session and session.locId then
-        exports['mrp_hacking']:OpenBankVaultAfterDrill(session.locId, coords)
-    end
+    --- Alias — durys atsidaro tik po sėkmingo gręžimo
+    playBankDoorOpen(coords)
 end
 
 local function runPhase(phase)
@@ -197,10 +194,11 @@ RegisterNetEvent('mrp_hacking:client:robberyNextPhase', function(tierId, locId, 
     if not session or session.tierId ~= tierId or session.locId ~= locId then return end
     exports['mrp_hacking']:UnlockHeistDoorsForPhase(locId, completedPhase)
     local bankTiers = { bank_fleeca = true, bank_main = true }
-    if completedPhase == 'hack' and bankTiers[tierId] then
+    --- Seifo durys + deposit — tik po sėkmingo gręžimo (ne po hack)
+    if completedPhase == 'drill' and bankTiers[tierId] then
         playBankDoorOpen(session.coords)
-    elseif completedPhase == 'drill' and bankTiers[tierId] then
-        playVaultGateOpen(session.coords)
+    elseif completedPhase == 'hack' and bankTiers[tierId] then
+        QBCore.Functions.Notify('Apsauga išjungta — dabar gręžk seifo duris.', 'primary')
     elseif exports['mrp_hacking']:IsCasinoHeist(tierId) then
         local lootIdx = (completedPhase == 'loot') and session.casinoLootIndex or nil
         exports['mrp_hacking']:OnCasinoPhaseComplete(completedPhase, lootIdx, session.coords)

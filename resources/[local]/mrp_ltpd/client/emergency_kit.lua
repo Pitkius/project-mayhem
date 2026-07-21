@@ -6,6 +6,7 @@ local LIGHTBARS = {} --- [vehicle] = { bar, leftLens, rightLens }
 local KIT_PERF = {} --- [vehicle] = { sig, orig }
 local INGEST_SCHEDULED = {} --- [vehicle] = true
 local fleetBoneCache = {} --- [veh] = { bones, checkedAt }
+local lastSirenApplyMode = {} --- [veh] = mode — soft off→on tik keičiant režimą
 
 local FLEET_HASHES = {}
 local FLEET_CAR_HASHES = {}
@@ -658,7 +659,6 @@ local function ensureFleetLightbarExtras(vehicle)
 end
 
 --- Soft off→on TIK kai keičiasi režimas (ne kiekvieną tick) — atgaivina carcols be balto spam.
-local lastSirenApplyMode = {} --- [veh] = mode
 
 local function applyNativeForEveryone(vehicle, mode)
     if not DoesEntityExist(vehicle) then return end

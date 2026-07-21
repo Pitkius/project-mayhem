@@ -200,7 +200,7 @@ RegisterNetEvent('mrp_hacking:server:robberyPhaseDone', function(tierId, locId, 
         MRP_DispatchAlert('police', 'robbery', c, 'Diamond Casino — termitas', src)
     end
 
-    if phase == 'hack' and (tierId == 'bank_fleeca' or tierId == 'bank_main') then
+    if phase == 'drill' and (tierId == 'bank_fleeca' or tierId == 'bank_main') then
         exports['mrp_hacking']:MarkVaultOpenFor(src, locId)
     end
 

@@ -71,26 +71,18 @@ Config.Robberies.Loot = {
     },
 }
 
---- Deposit dėžutės po seifo atrakimo
+--- Deposit dėžutės po seifo atrakimo (gręžimu)
 Config.Robberies.Deposit = {
     vaultOpenMinutes = 25,
-    pileProp = 'bkr_prop_bkr_cashpile_01',
-    pileOffset = vector3(0.0, 0.35, 0.0), --- priešais dėžutę
+    --- pinigų kalno prop'o NĖRA — loot iškart po GTAO gręžimo
+    spawnCashPile = false,
     grabMs = 4500,
-    --- Markeris ant gręžiamų dėžučių (kol neatidarytos)
     marker = {
-        type = 20, --- rodyklė žemyn
+        type = 20,
         zOffset = 0.55,
         scale = 0.28,
         color = { r = 50, g = 220, b = 90, a = 200 },
         bob = true,
-    },
-    --- Atidaryta / pinigų kalnas — geltonas
-    pileMarker = {
-        type = 2,
-        zOffset = 0.85,
-        scale = 0.22,
-        color = { r = 255, g = 200, b = 40, a = 220 },
     },
 }
 
@@ -133,9 +125,9 @@ Config.Robberies.StoreSide = {
     alertPerlasNoHack = '24/7 — Perlas terminalo apiplėšimas',
 }
 
---- Kasininkai Fleeca + Pacific
+--- Kasininkai Fleeca + Pacific (lobby counter)
 Config.Robberies.BankTellers = {
-    fleeca_legion = { model = 'ig_bankman', coords = vector4(149.41, -1042.15, 29.37, 340.0) },
+    fleeca_legion = { model = 'ig_bankman', coords = vector4(149.46, -1042.18, 29.37, 340.0) },
     fleeca_greatocean = { model = 'ig_bankman', coords = vector4(-2961.12, 482.95, 15.70, 88.0) },
     fleeca_hawick = { model = 'ig_bankman', coords = vector4(-351.25, -51.35, 49.04, 340.0) },
     fleeca_delperro = { model = 'ig_bankman', coords = vector4(-1211.95, -331.95, 37.78, 27.0) },
@@ -152,34 +144,35 @@ Config.Robberies.BoothDoors = {
     fleeca_route68 = { model = 'v_ilev_gb_teldr', coords = vector3(1172.25, 2713.15, 38.20), radius = 2.0 },
 }
 
---- Deposit dėžutės (po vault hack / atidaryto seifo)
+--- Deposit dėžutės (po seifo DURŲ atidarymo gręžimu — ne po hack)
+--- Legion #1 = išmatuota in-game; kiti Fleeca/Pacific = tas pats lokalus offset nuo vault durų
 Config.Robberies.DepositBoxes = {
     fleeca_legion = {
-        { coords = vector3(148.55, -1049.85, 29.35), heading = 160.0 },
-        { coords = vector3(146.95, -1049.25, 29.35), heading = 160.0 },
-        { coords = vector3(145.35, -1048.65, 29.35), heading = 160.0 },
+        { coords = vector3(148.7283, -1049.1444, 30.1932), heading = 159.8464 },
+        { coords = vector3(147.1303, -1048.5627, 30.1932), heading = 159.8464 },
+        { coords = vector3(145.5328, -1047.9813, 30.1932), heading = 159.8464 },
     },
     fleeca_greatocean = {
-        { coords = vector3(-2954.25, 484.55, 15.68), heading = 267.0 },
-        { coords = vector3(-2954.45, 482.85, 15.68), heading = 267.0 },
+        { coords = vector3(-2954.1689, 484.1261, 16.5230), heading = 267.0 },
+        { coords = vector3(-2954.2579, 482.4284, 16.5230), heading = 267.0 },
     },
     fleeca_hawick = {
-        { coords = vector3(-350.15, -58.85, 49.02), heading = 161.0 },
-        { coords = vector3(-351.55, -59.35, 49.02), heading = 161.0 },
+        { coords = vector3(-351.9548, -58.3433, 49.8630), heading = 161.0 },
+        { coords = vector3(-353.5622, -57.7898, 49.8630), heading = 161.0 },
     },
     fleeca_delperro = {
-        { coords = vector3(-1208.55, -338.25, 37.76), heading = 207.0 },
-        { coords = vector3(-1209.85, -339.15, 37.76), heading = 207.0 },
+        { coords = vector3(-1206.8752, -339.4325, 38.6630), heading = 207.0 },
+        { coords = vector3(-1208.3899, -340.2043, 38.6630), heading = 207.0 },
     },
     fleeca_route68 = {
-        { coords = vector3(1171.55, 2715.85, 38.07), heading = 0.0 },
-        { coords = vector3(1173.15, 2715.85, 38.07), heading = 0.0 },
+        { coords = vector3(1172.1880, 2716.9770, 38.8730), heading = 0.0 },
+        { coords = vector3(1173.8880, 2716.9770, 38.8730), heading = 0.0 },
     },
     pacific_main = {
-        { coords = vector3(259.85, 217.55, 101.68), heading = 160.0 },
-        { coords = vector3(261.25, 218.15, 101.68), heading = 160.0 },
-        { coords = vector3(258.45, 216.95, 101.68), heading = 160.0 },
-        { coords = vector3(257.05, 216.35, 101.68), heading = 160.0 },
+        { coords = vector3(255.9278, 219.1958, 103.0730), heading = 160.0 },
+        { coords = vector3(254.3303, 219.7773, 103.0730), heading = 160.0 },
+        { coords = vector3(252.7328, 220.3587, 103.0730), heading = 160.0 },
+        { coords = vector3(251.1354, 220.9401, 103.0730), heading = 160.0 },
     },
 }
 
@@ -194,27 +187,27 @@ Config.Robberies.BankVaultDoors = {
 
 Config.Robberies.HeistDoors = {
     fleeca_legion = {
-        { unlockAfter = 'hack', doors = {
+        { unlockAfter = 'drill', doors = {
             { model = 'v_ilev_gb_vaubar', coords = vector3(148.03, -1044.36, 29.51), heading = 160.0, radius = 2.5 },
         }},
     },
     fleeca_greatocean = {
-        { unlockAfter = 'hack', doors = {
+        { unlockAfter = 'drill', doors = {
             { model = 'v_ilev_gb_vaubar', coords = vector3(-2958.54, 482.06, 15.84), heading = 267.0, radius = 2.5 },
         }},
     },
     fleeca_hawick = {
-        { unlockAfter = 'hack', doors = {
+        { unlockAfter = 'drill', doors = {
             { model = 'v_ilev_gb_vaubar', coords = vector3(-352.736, -53.572, 49.18), heading = 161.0, radius = 2.5 },
         }},
     },
     fleeca_delperro = {
-        { unlockAfter = 'hack', doors = {
+        { unlockAfter = 'drill', doors = {
             { model = 'v_ilev_gb_vaubar', coords = vector3(-1210.85, -336.68, 37.98), heading = 207.0, radius = 2.5 },
         }},
     },
     fleeca_route68 = {
-        { unlockAfter = 'hack', doors = {
+        { unlockAfter = 'drill', doors = {
             { model = 'v_ilev_gb_vaubar', coords = vector3(1174.48, 2712.72, 38.19), heading = 0.0, radius = 2.5 },
         }},
     },
@@ -224,7 +217,7 @@ Config.Robberies.HeistDoors = {
             { model = 'v_ilev_genbankdoor2', coords = vector3(231.62, 216.56, 106.28), heading = 340.0, radius = 2.5 },
             { model = 'v_ilev_bk_door', coords = vector3(256.88, 220.13, 106.28), heading = 160.0, radius = 2.5 },
         }},
-        { unlockAfter = 'thermite', doors = {
+        { unlockAfter = 'drill', doors = {
             { model = 'v_ilev_bk_vaultdoor', coords = vector3(255.23, 223.98, 102.39), heading = 160.0, radius = 4.0, openDelta = -90.0 },
         }},
     },

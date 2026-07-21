@@ -395,13 +395,18 @@ local function spawnOneTeller(locId, def)
     if bankTellerPeds[locId] and DoesEntityExist(bankTellerPeds[locId]) then
         return bankTellerPeds[locId]
     end
+    bankTellerPeds[locId] = nil
+
+    local c = def.coords
+    RequestCollisionAtCoord(c.x + 0.0, c.y + 0.0, c.z + 0.0)
+
     local hash = loadModel(def.model or 'ig_bankman')
+    if not hash then hash = loadModel('u_m_m_bankman') end
     if not hash then hash = loadModel('a_m_m_business_01') end
     if not hash then return nil end
 
-    local c = def.coords
     --- Lokalus ped — networked CreatePed interjere dažnai dingsta
-    local ped = CreatePed(4, hash, c.x, c.y, c.z, c.w or 0.0, false, true)
+    local ped = CreatePed(4, hash, c.x, c.y, c.z - 1.0, c.w or 0.0, false, true)
     if not ped or ped == 0 then
         SetModelAsNoLongerNeeded(hash)
         return nil
@@ -414,6 +419,8 @@ local function spawnOneTeller(locId, def)
     SetPedFleeAttributes(ped, 0, false)
     SetPedDiesWhenInjured(ped, false)
     SetPedCanBeTargetted(ped, true)
+    SetEntityVisible(ped, true, false)
+    SetEntityAlpha(ped, 255, false)
     --- NENAUDOJAM GetGroundZ — banko interjere nukiša po grindimis
     SetEntityCoordsNoOffset(ped, c.x, c.y, c.z, false, false, false)
     SetEntityHeading(ped, c.w or 0.0)
@@ -489,13 +496,22 @@ local function spawnOneStoreCashier(loc)
 end
 
 local function spawnBankTellersNear(playerCoords, radius)
-    radius = radius or 90.0
+    radius = radius or 120.0
     for locId, def in pairs(Config.Robberies.BankTellers or {}) do
         local c = def.coords
         local d = #(playerCoords - vector3(c.x, c.y, c.z))
-        if d <= radius then
+        local bankD = d
+        for _, tier in ipairs({ 'bank_fleeca', 'bank_main' }) do
+            for _, loc in ipairs((Config.Robberies.Locations and Config.Robberies.Locations[tier]) or {}) do
+                if loc.id == locId and loc.coords then
+                    local bd = #(playerCoords - loc.coords)
+                    if bd < bankD then bankD = bd end
+                end
+            end
+        end
+        if d <= radius or bankD <= radius then
             spawnOneTeller(locId, def)
-        elseif d > radius + 50.0 then
+        elseif d > radius + 80.0 and bankD > radius + 80.0 then
             deleteTeller(locId)
         end
     end
@@ -518,7 +534,14 @@ end
 
 runTellerSession = function(kind, loc, entity)
     if session or starting then return end
-    if not entity or not DoesEntityExist(entity) then return end
+    --- Jei ped dingęs — pabandyti spawninti iš config
+    if (not entity or not DoesEntityExist(entity)) and loc and loc.id then
+        local def = (Config.Robberies.BankTellers or {})[loc.id]
+        if def then entity = spawnOneTeller(loc.id, def) end
+    end
+    if not entity or not DoesEntityExist(entity) then
+        return QBCore.Functions.Notify('Bankininkas nerastas — ateik arčiau kasos.', 'error')
+    end
     if exports['mrp_hacking']:IsRobberySessionActive and exports['mrp_hacking']:IsRobberySessionActive() then
         return QBCore.Functions.Notify('Jau vyksta apiplėšimas.', 'error')
     end
@@ -663,13 +686,54 @@ RegisterNetEvent('mrp_hacking:client:tellerUnlockBooth', function(locId)
     unlockBoothDoor(locId)
 end)
 
---- Spawn kai priartėji
+--- Spawn kai priartėji + qb-target zonos prie kasos
+CreateThread(function()
+    while GetResourceState('qb-target') ~= 'started' do Wait(400) end
+    Wait(800)
+    for locId, def in pairs(Config.Robberies.BankTellers or {}) do
+        local c = def.coords
+        local zoneName = ('hack_bank_teller_%s'):format(locId)
+        pcall(function() exports['qb-target']:RemoveZone(zoneName) end)
+        exports['qb-target']:AddCircleZone(zoneName, vector3(c.x, c.y, c.z), 1.35, {
+            name = zoneName,
+            debugPoly = false,
+            useZ = true,
+        }, {
+            options = {
+                {
+                    icon = 'fas fa-gun',
+                    label = 'Apiplėšti bankininką (be seifo)',
+                    canInteract = function()
+                        if session or starting then return false end
+                        local weapon = GetSelectedPedWeapon(PlayerPedId())
+                        return weapon and weapon ~= `WEAPON_UNARMED`
+                    end,
+                    action = function()
+                        local tier = (locId == 'pacific_main') and 'bank_main' or 'bank_fleeca'
+                        local loc
+                        for _, L in ipairs((Config.Robberies.Locations and Config.Robberies.Locations[tier]) or {}) do
+                            if L.id == locId then loc = L break end
+                        end
+                        loc = loc or { id = locId, label = locId }
+                        local ped = bankTellerPeds[locId]
+                        if not ped or not DoesEntityExist(ped) then
+                            ped = spawnOneTeller(locId, def)
+                        end
+                        runTellerSession(tier, loc, ped)
+                    end,
+                },
+            },
+            distance = 2.5,
+        })
+    end
+end)
+
 CreateThread(function()
     while true do
         local coords = GetEntityCoords(PlayerPedId())
-        spawnBankTellersNear(coords, 100.0)
+        spawnBankTellersNear(coords, 120.0)
         spawnStoreCashiersNear(coords, 80.0)
-        Wait(2500)
+        Wait(1500)
     end
 end)
 
