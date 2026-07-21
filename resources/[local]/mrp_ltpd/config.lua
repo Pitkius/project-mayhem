@@ -137,11 +137,13 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- FLEET / MRPD: tik native SetVehicleSiren + carcols (kaip GTA police). Jokių script taškų ant stogo.
+    --- Fleet: native carcols + papildomas glow ant modelio siren kaulų (tikros ELS pozicijos).
     nativeFlashAssist = false,
     fleetRoofFlashAssist = false,
-    fleetSirenBoneLights = false,
-    fleetSirenBoneAllowRoofFallback = false,
+    fleetSirenBoneLights = true,
+    fleetSirenBoneRange = 10.0,
+    fleetSirenBoneIntensity = 7.0,
+    fleetSirenBoneIntervalMs = 380,
     --- Script flash (prop + DrawLight) TIK civilinei TP su pd_emergency_kit
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
     allowPassengerControl = true,

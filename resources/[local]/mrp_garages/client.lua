@@ -554,6 +554,10 @@ local function doGarageVehicleSpawn(data)
             local ok, mods = pcall(json.decode, result.mods)
             if ok and mods then
                 decodedMods = mods
+                --- PD: nebekrauti extras iš DB — seni įrašai išjungdavo lightbar mesh
+                if isPoliceVehicleModelName(result.model) then
+                    mods.extras = nil
+                end
                 if QBCore.Functions.SetVehicleProperties then
                     QBCore.Functions.SetVehicleProperties(veh, mods)
                 end
