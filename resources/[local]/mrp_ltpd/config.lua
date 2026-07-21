@@ -288,7 +288,8 @@ Config.FleetExclusiveExtras = {
 }
 
 --- Lightbar extra ID exclusive modeliams (per-model override jei reikia).
-Config.FleetLightbarExtraDefault = 1
+--- Be override: FLAG_EXTRAS_ALL naudoja PASKUTINĮ existing extra (kaip senas enable-all loop 0→20).
+Config.FleetLightbarExtraDefault = nil
 Config.FleetLightbarExtra = {
     --- pvz. mrpd7 = 2,
 }

@@ -571,6 +571,9 @@ local function doGarageVehicleSpawn(data)
             SetTimeout(600, function()
                 if DoesEntityExist(veh) then normalizeFleetLightbarExtras(veh) end
             end)
+            SetTimeout(1200, function()
+                if DoesEntityExist(veh) then normalizeFleetLightbarExtras(veh) end
+            end)
         end
         if GetResourceState('mrp_plates') == 'started' then
             exports['mrp_plates']:ApplyPlateStyle(veh)

@@ -655,16 +655,43 @@ local function fleetUsesExclusiveExtras(vehicle)
     return (Config.FleetExclusiveExtras or {})[model] == true
 end
 
+local function lastExistingExtra(vehicle)
+    local last = nil
+    for i = 0, 20 do
+        if DoesExtraExist(vehicle, i) then last = i end
+    end
+    return last
+end
+
 local function resolveFleetLightbarExtra(vehicle)
     local model = fleetModelName(vehicle)
     local mapped = model and (Config.FleetLightbarExtra or {})[model]
-    local target = tonumber(mapped) or tonumber(Config.FleetLightbarExtraDefault) or 1
-    if DoesExtraExist(vehicle, target) then return target end
+    if mapped ~= nil then
+        local id = tonumber(mapped)
+        if id and DoesExtraExist(vehicle, id) then return id end
+    end
+
+    if fleetUsesExclusiveExtras(vehicle) then
+        --- Senas enable-all (0→20): kiekvienas SetVehicleExtra(i,0) pakeičia ankstesnį — lieka PASKUTINIS.
+        return lastExistingExtra(vehicle)
+    end
+
+    local defaultId = tonumber(Config.FleetLightbarExtraDefault)
+    if defaultId and DoesExtraExist(vehicle, defaultId) then return defaultId end
     for i = 1, #LIGHTBAR_EXTRA_CANDIDATES do
         local id = LIGHTBAR_EXTRA_CANDIDATES[i]
         if DoesExtraExist(vehicle, id) then return id end
     end
-    return nil
+    return lastExistingExtra(vehicle)
+end
+
+local function applyExclusiveFleetExtra(vehicle, target)
+    if not target then return end
+    for i = 0, 20 do
+        if DoesExtraExist(vehicle, i) then
+            SetVehicleExtra(vehicle, i, i == target and 0 or 1)
+        end
+    end
 end
 
 local function ensureFleetLightbarExtras(vehicle)
@@ -672,18 +699,13 @@ local function ensureFleetLightbarExtras(vehicle)
     if not modelIsFleet(GetEntityModel(vehicle)) then return end
 
     if fleetUsesExclusiveExtras(vehicle) then
-        --- FLAG_EXTRAS_ALL: tik vienas extra (lightbar mesh) — ne enable-all.
         local target = resolveFleetLightbarExtra(vehicle)
         if not target then return end
-        for i = 0, 20 do
-            if DoesExtraExist(vehicle, i) then
-                SetVehicleExtra(vehicle, i, i == target and 0 or 1)
-            end
-        end
+        applyExclusiveFleetExtra(vehicle, target)
         return
     end
 
-    --- Paprasti MRPD (be EXTRAS_ALL): visi extras ON — taip veikė prieš exclusive bug fix.
+    --- Be FLAG_EXTRAS_ALL: visi extras ON (lightbar + livery kombinacijos).
     for i = 0, 20 do
         if DoesExtraExist(vehicle, i) then
             SetVehicleExtra(vehicle, i, 0)
@@ -707,17 +729,12 @@ local function applyNativeForEveryone(vehicle, mode)
     ensureVehicleControl(vehicle, 25)
     SetVehicleEngineOn(vehicle, true, true, false)
 
-    local prev = lastSirenApplyMode[vehicle]
-    --- Soft restart tik iš off/sound — lights→full neturi off→on (baltos lempos bug).
-    local needSoftRestart = prev == nil or prev == 'off' or prev == 'sound'
     lastSirenApplyMode[vehicle] = mode
 
-    if needSoftRestart then
-        SetVehicleSiren(vehicle, false)
-        SetVehicleHasMutedSirens(vehicle, false)
-        Wait(0)
+    --- NIEKADA off→on jei sirena jau ON (sugadina carcols R/B sequencer → baltos lempos).
+    if not IsVehicleSirenOn(vehicle) then
+        SetVehicleSiren(vehicle, true)
     end
-    SetVehicleSiren(vehicle, true)
     --- Garsą valdo mrp_siren_controller — mute tik native sirenos garsą
     SetVehicleHasMutedSirens(vehicle, true)
 

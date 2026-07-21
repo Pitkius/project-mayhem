@@ -582,6 +582,11 @@ local function spawnPurchasedVehicle(result, colorIdx, successMsg, spawnFailMsg)
         if modelName:match('^mrpd%d+$') or modelName == 'polmav' or modelName == 'buzzard2' then
             if GetResourceState('mrp_ltpd') == 'started' then
                 pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
+                SetTimeout(150, function()
+                    if DoesEntityExist(veh) then
+                        pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
+                    end
+                end)
             end
         end
         SetVehicleEngineOn(veh, true, true, false)
