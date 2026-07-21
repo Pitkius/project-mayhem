@@ -708,26 +708,39 @@ local function getFleetSirenBones(vehicle)
     return bones
 end
 
---- R/B tik ant modelio siren kaulų — jokio white, jokio prop.
+--- R/B tik ant modelio siren kaulų — viena spalva per fazę (R+B kartu = balta).
 local function drawFleetSirenBoneLights(vehicle)
     if Ec.fleetSirenBoneLights == false then return end
     local bones = getFleetSirenBones(vehicle)
     if #bones == 0 then return end
-    local interval = tonumber(Ec.fleetSirenBoneIntervalMs) or 380
+
+    --- Max 4 taškai — 20 DrawLight = baltas bloom.
+    local maxPts = math.max(2, math.min(4, tonumber(Ec.fleetSirenBoneMaxPoints) or 4))
+    local selected = {}
+    if #bones <= maxPts then
+        for i = 1, #bones do selected[i] = bones[i] end
+    else
+        for i = 1, maxPts do
+            local idx = math.floor((i - 1) * (#bones - 1) / (maxPts - 1)) + 1
+            selected[#selected + 1] = bones[idx]
+        end
+    end
+
+    local interval = tonumber(Ec.fleetSirenBoneIntervalMs) or 420
     local phase = math.floor(GetGameTimer() / interval) % 2 == 0
-    local range = tonumber(Ec.fleetSirenBoneRange) or 8.5
-    local power = tonumber(Ec.fleetSirenBoneIntensity) or 5.5
-    local rr, rg, rb = flashColor('red')
-    local br, bg, bb = flashColor('blue')
-    for i = 1, #bones do
-        local pos = GetWorldPositionOfEntityBone(vehicle, bones[i])
+    local range = tonumber(Ec.fleetSirenBoneRange) or 5.5
+    local power = tonumber(Ec.fleetSirenBoneIntensity) or 3.2
+    local r, g, b
+    if phase then
+        r, g, b = flashColor('red')
+    else
+        r, g, b = flashColor('blue')
+    end
+
+    for i = 1, #selected do
+        local pos = GetWorldPositionOfEntityBone(vehicle, selected[i])
         if pos then
-            local useRed = ((i % 2 == 1) and phase) or ((i % 2 == 0) and not phase)
-            if useRed then
-                DrawLightWithRange(pos.x, pos.y, pos.z, rr, rg, rb, range, power)
-            else
-                DrawLightWithRange(pos.x, pos.y, pos.z, br, bg, bb, range, power)
-            end
+            DrawLightWithRange(pos.x, pos.y, pos.z, r, g, b, range, power)
         end
     end
 end

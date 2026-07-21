@@ -142,9 +142,10 @@ Config.EmergencyVehicle = {
     nativeFlashAssist = false,
     fleetRoofFlashAssist = false,
     fleetSirenBoneLights = true,
-    fleetSirenBoneIntervalMs = 380,
-    fleetSirenBoneRange = 8.5,
-    fleetSirenBoneIntensity = 5.5,
+    fleetSirenBoneIntervalMs = 420,
+    fleetSirenBoneRange = 5.5,
+    fleetSirenBoneIntensity = 3.2,
+    fleetSirenBoneMaxPoints = 4,
     --- Script flash (prop + DrawLight) TIK civilinei TP su pd_emergency_kit
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
     allowPassengerControl = true,
