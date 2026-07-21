@@ -754,27 +754,27 @@ local function setMutedForMode(vehicle, mode)
 end
 
 --- Įjungia modelio policijos lempas (carcols ant mesh) — be jokių script lempų.
+--- SVARBU: NEmute'inam kol IsVehicleSirenOn != true (kai kuriuose build mute = sirenOn lieka false).
 local function applyBuiltInFleetLights(vehicle, mode)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     mode = tostring(mode or 'off'):lower()
     if mode ~= 'lights' and mode ~= 'full' then return end
-    if lastSirenApplyMode[vehicle] == mode and IsVehicleSirenOn(vehicle) then
-        setMutedForMode(vehicle, mode)
-        return
-    end
 
     NetworkRequestControlOfEntity(vehicle)
     SetVehicleEngineOn(vehicle, true, true, false)
     lastSirenApplyMode[vehicle] = mode
 
-    --- Tik GTA native: įjungia lempas, kurios jau yra ant modelio.
+    SetVehicleHasMutedSirens(vehicle, false)
     SetVehicleSiren(vehicle, true)
-    if mode == 'lights' then
-        --- Tylios lempos (garsą duoda F6 / mrp_siren_controller).
-        SetVehicleHasMutedSirens(vehicle, true)
-    else
-        SetVehicleHasMutedSirens(vehicle, Entity(vehicle).state.fpSirenMuted == true)
-    end
+
+    --- Mute tik kai lempos tikrai ON.
+    SetTimeout(300, function()
+        if not DoesEntityExist(vehicle) then return end
+        if lastSirenApplyMode[vehicle] ~= mode then return end
+        if IsVehicleSirenOn(vehicle) then
+            setMutedForMode(vehicle, mode)
+        end
+    end)
 end
 
 local function ingestBuiltInFleet(vehicle, mode)
@@ -792,7 +792,6 @@ local function ingestBuiltInFleet(vehicle, mode)
     end
 
     if mode == 'sound' then
-        --- Tik garsas — modelio lempos OFF.
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
         lastSirenApplyMode[vehicle] = 'sound'
@@ -1005,7 +1004,7 @@ CreateThread(function()
     end
 end)
 
---- Fleet: palaikyti modelio lempas ON (ne kiekvieną frame — gadina carcols).
+--- Fleet: palaikyti modelio lempas ON.
 CreateThread(function()
     while true do
         local any = false
@@ -1020,9 +1019,11 @@ CreateThread(function()
                         any = true
                         if NetworkHasControlOfEntity(veh) or GetPedInVehicleSeat(veh, -1) == PlayerPedId() then
                             if not IsVehicleSirenOn(veh) then
+                                SetVehicleHasMutedSirens(veh, false)
                                 SetVehicleSiren(veh, true)
+                            else
+                                setMutedForMode(veh, mode)
                             end
-                            setMutedForMode(veh, mode)
                         else
                             NetworkRequestControlOfEntity(veh)
                         end
@@ -1034,7 +1035,7 @@ CreateThread(function()
                 end
             end
         end
-        Wait(any and 500 or 1000)
+        Wait(any and 200 or 1000)
     end
 end)
 
@@ -1311,5 +1312,33 @@ RegisterCommand('pdlightsdebug', function()
         )
         QBCore.Functions.Notify(msg, 'primary', 12000)
         print('[mrp_ltpd/pdlightsdebug] ' .. msg)
+    end)
+end, false)
+
+--- Izoliacinis testas: 2s spaudžia SetVehicleSiren BE mute / BE F6 logikos.
+RegisterCommand('pdtestsiren', function()
+    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+    if not veh or veh == 0 then
+        return QBCore.Functions.Notify('Nesi transporte.', 'error')
+    end
+    CreateThread(function()
+        NetworkRequestControlOfEntity(veh)
+        local okFrames = 0
+        local total = 40
+        for i = 1, total do
+            SetVehicleHasMutedSirens(veh, false)
+            SetVehicleSiren(veh, true)
+            if IsVehicleSirenOn(veh) then okFrames = okFrames + 1 end
+            Wait(50)
+        end
+        local msg = ('pdtestsiren: sirenOn frames %d/%d | last=%s | model=%s | class=%s'):format(
+            okFrames,
+            total,
+            tostring(IsVehicleSirenOn(veh)),
+            tostring(GetDisplayNameFromVehicleModel(GetEntityModel(veh))),
+            tostring(GetVehicleClass(veh))
+        )
+        QBCore.Functions.Notify(msg, okFrames > 0 and 'success' or 'error', 15000)
+        print('[mrp_ltpd/pdtestsiren] ' .. msg)
     end)
 end, false)
