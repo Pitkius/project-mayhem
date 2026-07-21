@@ -137,15 +137,11 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- Fleet MRPD: native SetVehicleSiren + jei neveikia — R/B ant modelio siren kaulų
-    --- (tikros lightbar pozicijos, be prop / be baltų).
+    --- Fleet MRPD: TIK modelio carcols per SetVehicleSiren.
+    --- Jokio prop / DrawLight / bone flash — civilinėms lieka PD įranga.
     nativeFlashAssist = false,
     fleetRoofFlashAssist = false,
-    fleetSirenBoneLights = true,
-    fleetSirenBoneIntervalMs = 420,
-    fleetSirenBoneRange = 5.5,
-    fleetSirenBoneIntensity = 3.2,
-    fleetSirenBoneMaxPoints = 4,
+    fleetSirenBoneLights = false,
     --- Script flash (prop + DrawLight) TIK civilinei TP su pd_emergency_kit
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
     allowPassengerControl = true,
@@ -279,8 +275,8 @@ Config.FleetVehicles = {
   { model = 'mrpd16', label = 'MRPD 16 — Alfa Romeo', emergencyLights = 'native' },
 }
 
---- Built-in fleet: TIK modelio carcols/SetVehicleSiren + siren-bone R/B jei native neįsijungia.
---- PD įrangos prop lightbar ant jų NEDĖDAMAS.
+--- Built-in fleet: TIK modelio carcols + SetVehicleSiren (addon lempos).
+--- Jokio prop / DrawLight / bone flash.
 Config.BuiltInFleetModels = {
     'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
     'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16',
