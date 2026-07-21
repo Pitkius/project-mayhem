@@ -5,7 +5,7 @@ lua54 'yes'
 name 'mrp_pd_mrpd'
 author 'MRP'
 description 'Mission Row PD vehicle pack (MRPD 1-16)'
-version '1.2.0'
+version '1.3.0'
 
 --- Vienas CARCOLS_FILE — daug atskirų FiveM dažnai neįkrauna (sirenOn lieka false).
 files {
