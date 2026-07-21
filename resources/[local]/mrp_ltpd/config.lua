@@ -137,10 +137,9 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- FLEET / MRPD: native carcols + stogo R/B script flash jei carcols nepasirodo.
-    --- Custom bone flash = baltos lempos arba floating orbos.
+    --- FLEET / MRPD: tik native SetVehicleSiren + carcols (kaip GTA police). Jokių script taškų ant stogo.
     nativeFlashAssist = false,
-    fleetRoofFlashAssist = true,
+    fleetRoofFlashAssist = false,
     fleetSirenBoneLights = false,
     fleetSirenBoneAllowRoofFallback = false,
     --- Script flash (prop + DrawLight) TIK civilinei TP su pd_emergency_kit
@@ -274,6 +273,24 @@ Config.FleetVehicles = {
   { model = 'mrpd14', label = 'MRPD 14 — Kia Stinger', emergencyLights = 'native' },
   { model = 'mrpd15', label = 'MRPD 15 — Hyundai', emergencyLights = 'native' },
   { model = 'mrpd16', label = 'MRPD 16 — Alfa Romeo', emergencyLights = 'native' },
+}
+
+--- MRPD FLAG_EXTRAS_ALL modeliai — GTA leidžia tik vieną extra ON (lightbar mesh).
+--- Kiti modeliai (mrpd1/2/4/8–12/16) — visi extras ON (kaip veikė anksčiau).
+Config.FleetExclusiveExtras = {
+    mrpd3 = true,
+    mrpd5 = true,
+    mrpd6 = true,
+    mrpd7 = true,
+    mrpd13 = true,
+    mrpd14 = true,
+    mrpd15 = true,
+}
+
+--- Lightbar extra ID exclusive modeliams (per-model override jei reikia).
+Config.FleetLightbarExtraDefault = 1
+Config.FleetLightbarExtra = {
+    --- pvz. mrpd7 = 2,
 }
 
 --- Sraigtasparniai (stogas / helipadas) – spawn ant `heliGarage.spawn`

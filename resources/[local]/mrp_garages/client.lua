@@ -15,22 +15,18 @@ local function isPoliceVehicleEntity(veh)
     return false
 end
 
+local function normalizeFleetLightbarExtras(veh)
+    if GetResourceState('mrp_ltpd') == 'started' then
+        pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
+    else
+        enableAllVehicleExtras(veh)
+    end
+end
+
 local function enableAllVehicleExtras(veh)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
-    --- PD: ne enable-all (exclusive extras išjungia lightbar). Tik preferred jei visi off.
     if isPoliceVehicleEntity(veh) then
-        local preferred = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }
-        local anyOn, first = false, nil
-        for i = 1, #preferred do
-            local id = preferred[i]
-            if DoesExtraExist(veh, id) then
-                if not first then first = id end
-                if IsVehicleExtraTurnedOn(veh, id) then anyOn = true; break end
-            end
-        end
-        if first and not anyOn then
-            SetVehicleExtra(veh, first, 0)
-        end
+        normalizeFleetLightbarExtras(veh)
         return
     end
     for i = 0, 20 do
@@ -501,11 +497,7 @@ end
 local function forcePoliceExtrasInProps(veh, props)
     props = props or {}
     if not isPoliceVehicleEntity(veh) then return props end
-    if GetResourceState('mrp_ltpd') == 'started' then
-        pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
-    else
-        enableAllVehicleExtras(veh)
-    end
+    normalizeFleetLightbarExtras(veh)
     props.extras = props.extras or {}
     for i = 0, 20 do
         if DoesExtraExist(veh, i) then
@@ -566,13 +558,15 @@ local function doGarageVehicleSpawn(data)
         if decodedMods then
             restoreEmergencyProps(veh, decodedMods)
         end
-        --- Seniau išsaugoti mods extras buvo visi false arba visi true — normalizuojam PD lempas
+        --- Po SetVehicleProperties extras gali pritaikyti async — normalizuojam du kartus
         if isPoliceVehicleModelName(result.model) then
-            if GetResourceState('mrp_ltpd') == 'started' then
-                pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
-            else
-                enableAllVehicleExtras(veh)
-            end
+            normalizeFleetLightbarExtras(veh)
+            SetTimeout(150, function()
+                if DoesEntityExist(veh) then normalizeFleetLightbarExtras(veh) end
+            end)
+            SetTimeout(600, function()
+                if DoesEntityExist(veh) then normalizeFleetLightbarExtras(veh) end
+            end)
         end
         if GetResourceState('mrp_plates') == 'started' then
             exports['mrp_plates']:ApplyPlateStyle(veh)

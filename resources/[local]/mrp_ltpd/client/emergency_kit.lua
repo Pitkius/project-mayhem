@@ -10,18 +10,26 @@ local lastSirenApplyMode = {} --- [veh] = mode — soft off→on tik keičiant r
 
 local FLEET_HASHES = {}
 local FLEET_CAR_HASHES = {}
+local FLEET_MODEL_BY_HASH = {}
 local function rebuildFleetHashes()
     FLEET_HASHES = {}
     FLEET_CAR_HASHES = {}
+    FLEET_MODEL_BY_HASH = {}
     for _, v in ipairs(Config.FleetVehicles or {}) do
         if v and v.model then
             local h = joaat(v.model)
+            local name = tostring(v.model):lower()
             FLEET_HASHES[h] = true
             FLEET_CAR_HASHES[h] = true
+            FLEET_MODEL_BY_HASH[h] = name
         end
     end
     for _, v in ipairs(Config.FleetHelicopters or {}) do
-        if v and v.model then FLEET_HASHES[joaat(v.model)] = true end
+        if v and v.model then
+            local h = joaat(v.model)
+            FLEET_HASHES[h] = true
+            FLEET_MODEL_BY_HASH[h] = tostring(v.model):lower()
+        end
     end
 end
 rebuildFleetHashes()
@@ -636,37 +644,51 @@ end
 --- palieka tik paskutinį extra → lightbar mesh dažnai dingsta, sirena „ON“ bet niekas nesviečia).
 local LIGHTBAR_EXTRA_CANDIDATES = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }
 
+local function fleetModelName(vehicle)
+    if not vehicle or vehicle == 0 then return nil end
+    return FLEET_MODEL_BY_HASH[GetEntityModel(vehicle)]
+end
+
+local function fleetUsesExclusiveExtras(vehicle)
+    local model = fleetModelName(vehicle)
+    if not model then return false end
+    return (Config.FleetExclusiveExtras or {})[model] == true
+end
+
+local function resolveFleetLightbarExtra(vehicle)
+    local model = fleetModelName(vehicle)
+    local mapped = model and (Config.FleetLightbarExtra or {})[model]
+    local target = tonumber(mapped) or tonumber(Config.FleetLightbarExtraDefault) or 1
+    if DoesExtraExist(vehicle, target) then return target end
+    for i = 1, #LIGHTBAR_EXTRA_CANDIDATES do
+        local id = LIGHTBAR_EXTRA_CANDIDATES[i]
+        if DoesExtraExist(vehicle, id) then return id end
+    end
+    return nil
+end
+
 local function ensureFleetLightbarExtras(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     if not modelIsFleet(GetEntityModel(vehicle)) then return end
 
-    local firstPreferred = nil
-    local activePreferred = nil
-    local activeCount = 0
-    for i = 1, #LIGHTBAR_EXTRA_CANDIDATES do
-        local id = LIGHTBAR_EXTRA_CANDIDATES[i]
-        if DoesExtraExist(vehicle, id) then
-            if not firstPreferred then firstPreferred = id end
-            if IsVehicleExtraTurnedOn(vehicle, id) then
-                activePreferred = id
-                activeCount = activeCount + 1
+    if fleetUsesExclusiveExtras(vehicle) then
+        --- FLAG_EXTRAS_ALL: tik vienas extra (lightbar mesh) — ne enable-all.
+        local target = resolveFleetLightbarExtra(vehicle)
+        if not target then return end
+        for i = 0, 20 do
+            if DoesExtraExist(vehicle, i) then
+                SetVehicleExtra(vehicle, i, i == target and 0 or 1)
             end
         end
-    end
-    if not firstPreferred then return end
-
-    local target = firstPreferred
-    if activePreferred == target and activeCount == 1 then
         return
     end
 
-    for i = 1, #LIGHTBAR_EXTRA_CANDIDATES do
-        local id = LIGHTBAR_EXTRA_CANDIDATES[i]
-        if DoesExtraExist(vehicle, id) then
-            SetVehicleExtra(vehicle, id, 1)
+    --- Paprasti MRPD (be EXTRAS_ALL): visi extras ON — taip veikė prieš exclusive bug fix.
+    for i = 0, 20 do
+        if DoesExtraExist(vehicle, i) then
+            SetVehicleExtra(vehicle, i, 0)
         end
     end
-    SetVehicleExtra(vehicle, target, 0)
 end
 
 --- Soft off→on TIK kai keičiasi režimas (ne kiekvieną tick) — atgaivina carcols be balto spam.
@@ -686,7 +708,8 @@ local function applyNativeForEveryone(vehicle, mode)
     SetVehicleEngineOn(vehicle, true, true, false)
 
     local prev = lastSirenApplyMode[vehicle]
-    local needSoftRestart = prev ~= mode
+    --- Soft restart tik iš off/sound — lights→full neturi off→on (baltos lempos bug).
+    local needSoftRestart = prev == nil or prev == 'off' or prev == 'sound'
     lastSirenApplyMode[vehicle] = mode
 
     if needSoftRestart then
@@ -713,12 +736,9 @@ local function applyNativeForEveryone(vehicle, mode)
     end)
 end
 
---- Fleet MRPD: stogo R/B mirksėjimas be prop (veikia net jei carcols extras sugedę).
-local function vehicleUsesFleetRoofFlash(vehicle)
-    if Ec.fleetRoofFlashAssist == false then return false end
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
-    local hash = GetEntityModel(vehicle)
-    return modelIsFleetCar(hash) and fleetLightMode(hash) ~= 'script'
+--- Fleet MRPD: jokių script taškų — tik native carcols ant lightbar mesh.
+local function vehicleUsesFleetRoofFlash(_vehicle)
+    return false
 end
 
 --- Visoms fleet PD mašinoms: script flash ant stogo — IŠJUNGTA (griauna native carcols).
@@ -838,8 +858,8 @@ CreateThread(function()
                 else
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     meta.mode = mode
-                    --- Script flash: civilinis kit (prop) arba fleet stogo R/B assist
-                    if (mode == 'lights' or mode == 'full') and (meta.scriptFlash == true or meta.roofFlash == true) then
+                    --- Script flash tik civiliniam pd_emergency_kit (prop lightbar)
+                    if (mode == 'lights' or mode == 'full') and meta.scriptFlash == true then
                         local vehCoords = GetEntityCoords(veh)
                         if #(pCoords - vehCoords) <= drawDistance then
                             drawScriptFlash(veh, #(pCoords - vehCoords))
