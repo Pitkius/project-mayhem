@@ -2,7 +2,7 @@
 <CVehicleModelInfoVarGlobal>
 	<Sirens> <!-- Template made by McGinlay -->
 	<Item>
-      <id value="921013"/>
+      <id value="212"/>
       <name>mrpd13</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
