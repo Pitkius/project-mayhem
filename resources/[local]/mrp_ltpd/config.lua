@@ -137,13 +137,10 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- Fleet: native carcols + papildomas glow ant modelio siren kaulų (tikros ELS pozicijos).
+    --- Fleet MRPD: tik built-in carcols (žr. Config.BuiltInFleetModels). Jokio script glow.
     nativeFlashAssist = false,
     fleetRoofFlashAssist = false,
-    fleetSirenBoneLights = true,
-    fleetSirenBoneRange = 10.0,
-    fleetSirenBoneIntensity = 7.0,
-    fleetSirenBoneIntervalMs = 380,
+    fleetSirenBoneLights = false,
     --- Script flash (prop + DrawLight) TIK civilinei TP su pd_emergency_kit
     --- Lengvas „tuning“ civilinei TP su įranga (sirenos + švyturėliai)
     allowPassengerControl = true,
@@ -277,24 +274,18 @@ Config.FleetVehicles = {
   { model = 'mrpd16', label = 'MRPD 16 — Alfa Romeo', emergencyLights = 'native' },
 }
 
---- MRPD FLAG_EXTRAS_ALL modeliai — GTA leidžia tik vieną extra ON (lightbar mesh).
---- Kiti modeliai (mrpd1/2/4/8–12/16) — visi extras ON (kaip veikė anksčiau).
-Config.FleetExclusiveExtras = {
-    mrpd3 = true,
-    mrpd5 = true,
-    mrpd6 = true,
-    mrpd7 = true,
-    mrpd13 = true,
-    mrpd14 = true,
-    mrpd15 = true,
+--- Built-in ELS whitelist: šie modeliai naudoja TIK savo carcols/SetVehicleSiren.
+--- PD įranga (prop lightbar, DrawLight, bone glow, performance tune) ant jų NIEKADA.
+Config.BuiltInFleetModels = {
+    'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
+    'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16',
+    'polmav', 'buzzard2',
 }
 
---- Lightbar extra ID exclusive modeliams (per-model override jei reikia).
---- Be override: FLAG_EXTRAS_ALL naudoja PASKUTINĮ existing extra (kaip senas enable-all loop 0→20).
+--- Sena dokumentacija — nebenaudojama (extras valdomi tik jei egzistuoja ant modelio).
+Config.FleetExclusiveExtras = {}
 Config.FleetLightbarExtraDefault = nil
-Config.FleetLightbarExtra = {
-    --- pvz. mrpd7 = 2,
-}
+Config.FleetLightbarExtra = {}
 
 --- Sraigtasparniai (stogas / helipadas) – spawn ant `heliGarage.spawn`
 Config.FleetHelicopters = {
