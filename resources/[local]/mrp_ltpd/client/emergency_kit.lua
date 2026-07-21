@@ -708,13 +708,15 @@ local function getFleetSirenBones(vehicle)
     return bones
 end
 
---- R/B tik ant modelio siren kaulų — viena spalva per fazę (R+B kartu = balta).
+--- R/B ant modelio siren kaulų (lightbar vietos). Viena spalva per fazę — be balto wash.
 local function drawFleetSirenBoneLights(vehicle)
     if Ec.fleetSirenBoneLights == false then return end
+    --- Jei native carcols įsijungė — script glow nereikalingas.
+    if IsVehicleSirenOn(vehicle) then return end
+
     local bones = getFleetSirenBones(vehicle)
     if #bones == 0 then return end
 
-    --- Max 4 taškai — 20 DrawLight = baltas bloom.
     local maxPts = math.max(2, math.min(4, tonumber(Ec.fleetSirenBoneMaxPoints) or 4))
     local selected = {}
     if #bones <= maxPts then
@@ -726,10 +728,10 @@ local function drawFleetSirenBoneLights(vehicle)
         end
     end
 
-    local interval = tonumber(Ec.fleetSirenBoneIntervalMs) or 420
+    local interval = tonumber(Ec.fleetSirenBoneIntervalMs) or 400
     local phase = math.floor(GetGameTimer() / interval) % 2 == 0
-    local range = tonumber(Ec.fleetSirenBoneRange) or 5.5
-    local power = tonumber(Ec.fleetSirenBoneIntensity) or 3.2
+    local range = tonumber(Ec.fleetSirenBoneRange) or 4.8
+    local power = tonumber(Ec.fleetSirenBoneIntensity) or 2.8
     local r, g, b
     if phase then
         r, g, b = flashColor('red')
@@ -753,8 +755,9 @@ local function setMutedForMode(vehicle, mode)
     end
 end
 
---- Įjungia modelio policijos lempas (carcols ant mesh) — be jokių script lempų.
---- SVARBU: NEmute'inam kol IsVehicleSirenOn != true (kai kuriuose build mute = sirenOn lieka false).
+--- Įjungia modelio policijos lempas.
+--- 1) Bandom SetVehicleSiren (tikros carcols emissives).
+--- 2) Jei GTA atsisako (šis pack: pdtestsiren 0/40) — R/B ant modelio siren kaulų.
 local function applyBuiltInFleetLights(vehicle, mode)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     mode = tostring(mode or 'off'):lower()
@@ -767,8 +770,7 @@ local function applyBuiltInFleetLights(vehicle, mode)
     SetVehicleHasMutedSirens(vehicle, false)
     SetVehicleSiren(vehicle, true)
 
-    --- Mute tik kai lempos tikrai ON.
-    SetTimeout(300, function()
+    SetTimeout(250, function()
         if not DoesEntityExist(vehicle) then return end
         if lastSirenApplyMode[vehicle] ~= mode then return end
         if IsVehicleSirenOn(vehicle) then
@@ -780,14 +782,26 @@ end
 local function ingestBuiltInFleet(vehicle, mode)
     removeLightbar(vehicle)
     removeKitPerformance(vehicle)
-    TRACKED[vehicle] = nil
     FLEET_BUILTIN[vehicle] = { mode = mode }
+
+    local isCar = modelIsFleetCar(GetEntityModel(vehicle))
+    local lightsOn = (mode == 'lights' or mode == 'full')
+    --- Bone flash TIK kol native neveikia; kai sirenOn=true — piešimas sustoja.
+    local useBones = isCar and lightsOn and (Ec.fleetSirenBoneLights ~= false)
+
+    TRACKED[vehicle] = TRACKED[vehicle] or {}
+    TRACKED[vehicle].supportsNative = true
+    TRACKED[vehicle].scriptFlash = false
+    TRACKED[vehicle].roofFlash = false
+    TRACKED[vehicle].fleetBoneLights = useBones
+    TRACKED[vehicle].mode = mode
 
     if mode == 'off' then
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
         lastSirenApplyMode[vehicle] = 'off'
         FLEET_BUILTIN[vehicle] = nil
+        TRACKED[vehicle] = nil
         return
     end
 
@@ -795,10 +809,11 @@ local function ingestBuiltInFleet(vehicle, mode)
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
         lastSirenApplyMode[vehicle] = 'sound'
+        TRACKED[vehicle].fleetBoneLights = false
         return
     end
 
-    if mode == 'lights' or mode == 'full' then
+    if lightsOn then
         stopScriptSound(vehicle)
         applyBuiltInFleetLights(vehicle, mode)
     end
@@ -986,9 +1001,12 @@ CreateThread(function()
                             NetworkRequestControlOfEntity(veh)
                         end
                         ensureFleetLightbarExtras(veh)
+                        --- Mute TIK po to kai sirenOn=true — anksčiau mute → IsVehicleSirenOn lieka false.
                         if not IsVehicleSirenOn(veh) then
+                            SetVehicleHasMutedSirens(veh, false)
                             SetVehicleSiren(veh, true)
-                            SetVehicleHasMutedSirens(veh, true)
+                        else
+                            setMutedForMode(veh, mode)
                         end
                     elseif mode == 'sound' then
                         if IsVehicleSirenOn(veh) then
@@ -1303,11 +1321,13 @@ RegisterCommand('pdlightsdebug', function()
     end
     SetTimeout(200, function()
         if not DoesEntityExist(veh) then return end
-        local msg = ('mode=%s | sirenOn=%s | builtIn=%s | ctrl=%s | class=%s | boneFlash=off'):format(
+        local bones = getFleetSirenBones(veh)
+        local meta = TRACKED[veh]
+        local msg = ('mode=%s | sirenOn=%s | bones=%d | boneFlash=%s | class=%s'):format(
             tostring(mode),
             tostring(IsVehicleSirenOn(veh)),
-            tostring(builtIn),
-            tostring(NetworkHasControlOfEntity(veh)),
+            #bones,
+            tostring(meta and meta.fleetBoneLights == true and not IsVehicleSirenOn(veh)),
             tostring(GetVehicleClass(veh))
         )
         QBCore.Functions.Notify(msg, 'primary', 12000)
@@ -1315,22 +1335,34 @@ RegisterCommand('pdlightsdebug', function()
     end)
 end, false)
 
---- Izoliacinis testas: 2s spaudžia SetVehicleSiren BE mute / BE F6 logikos.
+--- Izoliacinis testas: 2s spaudžia SetVehicleSiren BE mute / BE F6 keep-alive.
 RegisterCommand('pdtestsiren', function()
     local veh = GetVehiclePedIsIn(PlayerPedId(), false)
     if not veh or veh == 0 then
         return QBCore.Functions.Notify('Nesi transporte.', 'error')
     end
     CreateThread(function()
-        NetworkRequestControlOfEntity(veh)
+        ensureVehicleControl(veh, 40)
+        --- Laikinai išjunk keep-alive, kad mute loop nesugadintų testo.
+        local prevTracked = TRACKED[veh]
+        local prevFleet = FLEET_BUILTIN[veh]
+        TRACKED[veh] = nil
+        FLEET_BUILTIN[veh] = nil
+
         local okFrames = 0
         local total = 40
+        SetVehicleHasMutedSirens(veh, false)
         for i = 1, total do
             SetVehicleHasMutedSirens(veh, false)
             SetVehicleSiren(veh, true)
             if IsVehicleSirenOn(veh) then okFrames = okFrames + 1 end
             Wait(50)
         end
+
+        --- Atstatyk tracking (jei buvo)
+        if prevTracked then TRACKED[veh] = prevTracked end
+        if prevFleet then FLEET_BUILTIN[veh] = prevFleet end
+
         local msg = ('pdtestsiren: sirenOn frames %d/%d | last=%s | model=%s | class=%s'):format(
             okFrames,
             total,

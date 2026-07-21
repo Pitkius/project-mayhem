@@ -2,7 +2,7 @@
 <CVehicleModelInfoVarGlobal>
   <Lights>
 <Item>
-      <id value="203"/>
+      <id value="232"/>
       <indicator>
         <intensity value="0.37500000"/>
         <falloffMax value="2.50000000"/>
@@ -1246,7 +1246,7 @@
   </Lights>
   <Sirens>
 <Item>
-      <id value="200"/>
+      <id value="60"/>
       <name>mrpd1</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -2017,7 +2017,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="201"/>
+      <id value="61"/>
       <name>mrpd2</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -2788,7 +2788,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="202"/>
+      <id value="62"/>
       <name>ozp22</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -3559,7 +3559,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="203"/>
+      <id value="63"/>
       <name>mrpd4</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -4330,7 +4330,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="204"/>
+      <id value="64"/>
       <name>mrpd5</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -5101,7 +5101,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="205"/>
+      <id value="65"/>
       <name>gcpd2</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -5872,7 +5872,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="206"/>
+      <id value="66"/>
       <name>mrpd7</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -6643,7 +6643,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="207"/>
+      <id value="67"/>
       <name>mrpd8</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -7414,7 +7414,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="208"/>
+      <id value="68"/>
       <name>mrpd9</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -8185,7 +8185,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="209"/>
+      <id value="69"/>
       <name>mrpd10</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -8956,7 +8956,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="210"/>
+      <id value="70"/>
       <name>mrpd11</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -9727,7 +9727,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="211"/>
+      <id value="71"/>
       <name>gcpd23</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -10499,7 +10499,7 @@
     </Item>
 <!-- Template made by McGinlay -->
 	<Item>
-      <id value="212"/>
+      <id value="72"/>
       <name>mrpd13</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -11233,7 +11233,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="213"/> 
+      <id value="73"/> 
       <name>mrpd14</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -11984,7 +11984,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="214"/>
+      <id value="74"/>
       <name>mrpd15</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -12735,7 +12735,7 @@
       </sirens>
     </Item>
 <Item>
-      <id value="215"/>
+      <id value="75"/>
       <name>mrpd16</name>
       <timeMultiplier value="1.0"/>
       <lightFalloffMax value="10.0"/>
