@@ -1159,3 +1159,27 @@ AddEventHandler('onResourceStop', function(res)
 end)
 
 exports('EnsureFleetLightbarExtras', ensureFleetLightbarExtras)
+
+RegisterCommand('pdlightsdebug', function()
+    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+    if not veh or veh == 0 then
+        return QBCore.Functions.Notify('Nesi transporte.', 'error')
+    end
+    local mode = select(1, readVehicleStateBag(veh))
+    local bones = getFleetSirenBones(veh)
+    local extras = {}
+    for i = 0, 20 do
+        if DoesExtraExist(veh, i) then
+            extras[#extras + 1] = ('%d=%s'):format(i, IsVehicleExtraTurnedOn(veh, i) and 'ON' or 'off')
+        end
+    end
+    local msg = ('mode=%s | sirenOn=%s | native=%s | bones=%d | extras [%s]'):format(
+        tostring(mode),
+        tostring(IsVehicleSirenOn(veh)),
+        tostring(vehicleSupportsNativeEmergency(veh)),
+        #bones,
+        table.concat(extras, ', ')
+    )
+    QBCore.Functions.Notify(msg, 'primary', 12000)
+    print('[mrp_ltpd/pdlightsdebug] ' .. msg)
+end, false)
