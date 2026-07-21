@@ -3,7 +3,7 @@
 <CVehicleModelInfoVarGlobal>     
   <Sirens>
 	<Item>
-      <id value="103"/>
+      <id value="921004"/>
       <name>mrpd4</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
@@ -776,7 +776,7 @@
   </Sirens>
   <Lights>
     <Item>
-      <id value="103"/>
+      <id value="921004"/>
       <indicator>
         <intensity value="0.37500000"/>
         <falloffMax value="2.50000000"/>

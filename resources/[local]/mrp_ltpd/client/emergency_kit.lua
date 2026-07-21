@@ -195,7 +195,21 @@ local function stopNativeSirenVisual(vehicle)
     SetVehicleHasMutedSirens(vehicle, false)
 end
 
---- Užtikrina network control prieš SetVehicleSiren (kitaip šviesos kartais neįsijungia).
+--- Be Wait() — saugoma kviesti iš statebag / net event (ne coroutine).
+local function requestVehicleControl(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    if NetworkHasControlOfEntity(vehicle) then return true end
+    NetworkRequestControlOfEntity(vehicle)
+    return NetworkHasControlOfEntity(vehicle)
+end
+
+local function canApplyNativeSiren(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    if NetworkHasControlOfEntity(vehicle) then return true end
+    return GetPedInVehicleSeat(vehicle, -1) == PlayerPedId()
+end
+
+--- Užtikrina network control su Wait — TIK CreateThread / SetTimeout kontekste.
 local function ensureVehicleControl(vehicle, tries)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     if NetworkHasControlOfEntity(vehicle) then return true end
@@ -670,39 +684,64 @@ local function ensureFleetLightbarExtras(vehicle)
     end
 end
 
-local function applyBuiltInFleetLights(vehicle, mode)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    mode = tostring(mode or 'off'):lower()
-    if mode ~= 'lights' and mode ~= 'full' then return end
-
-    ensureVehicleControl(vehicle, 50)
-    SetVehicleModKit(vehicle, 0)
-    SetVehicleEngineOn(vehicle, true, true, false)
-    ensureFleetLightbarExtras(vehicle)
-    lastSirenApplyMode[vehicle] = mode
-
-    --- Tik GTA native carcols — jokio script overlay.
-    SetVehicleHasMutedSirens(vehicle, false)
-    SetVehicleSiren(vehicle, true)
+local function setMutedForMode(vehicle, mode)
     if mode == 'lights' then
         SetVehicleHasMutedSirens(vehicle, true)
     elseif mode == 'full' then
         SetVehicleHasMutedSirens(vehicle, Entity(vehicle).state.fpSirenMuted == true)
     end
+end
 
-    local delays = { 100, 300, 700 }
-    for d = 1, #delays do
-        SetTimeout(delays[d], function()
+--- Native carcols. Soft off→on tik režimo keitime (ne kiekvieną tick).
+local function applyBuiltInFleetLights(vehicle, mode)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
+    mode = tostring(mode or 'off'):lower()
+    if mode ~= 'lights' and mode ~= 'full' then return end
+
+    requestVehicleControl(vehicle)
+    if not canApplyNativeSiren(vehicle) then
+        NetworkRequestControlOfEntity(vehicle)
+        return
+    end
+
+    SetVehicleModKit(vehicle, 0)
+    SetVehicleEngineOn(vehicle, true, true, false)
+    ensureFleetLightbarExtras(vehicle)
+
+    local prev = lastSirenApplyMode[vehicle]
+    local needKick = (prev ~= mode) or (not IsVehicleSirenOn(vehicle))
+    lastSirenApplyMode[vehicle] = mode
+
+    if needKick then
+        --- Soft kick: kai kurie addon modeliai neįsijungia be off→on.
+        SetVehicleHasMutedSirens(vehicle, false)
+        SetVehicleSiren(vehicle, false)
+        SetTimeout(0, function()
             if not DoesEntityExist(vehicle) then return end
-            if lastSirenApplyMode[vehicle] ~= 'lights' and lastSirenApplyMode[vehicle] ~= 'full' then return end
-            if not ensureVehicleControl(vehicle, 15) then return end
-            if not IsVehicleSirenOn(vehicle) then
-                SetVehicleSiren(vehicle, true)
-            end
-            if lastSirenApplyMode[vehicle] == 'lights' then
-                SetVehicleHasMutedSirens(vehicle, true)
-            end
+            if lastSirenApplyMode[vehicle] ~= mode then return end
+            requestVehicleControl(vehicle)
+            if not canApplyNativeSiren(vehicle) then return end
+            SetVehicleSiren(vehicle, true)
+            setMutedForMode(vehicle, mode)
         end)
+        local delays = { 80, 200, 450, 900 }
+        for d = 1, #delays do
+            SetTimeout(delays[d], function()
+                if not DoesEntityExist(vehicle) then return end
+                if lastSirenApplyMode[vehicle] ~= mode then return end
+                requestVehicleControl(vehicle)
+                if not canApplyNativeSiren(vehicle) then return end
+                if not IsVehicleSirenOn(vehicle) then
+                    SetVehicleSiren(vehicle, true)
+                end
+                setMutedForMode(vehicle, mode)
+            end)
+        end
+    else
+        if not IsVehicleSirenOn(vehicle) then
+            SetVehicleSiren(vehicle, true)
+        end
+        setMutedForMode(vehicle, mode)
     end
 end
 
@@ -746,33 +785,8 @@ local function applyNativeForEveryone(vehicle, mode)
         return
     end
 
-    ensureVehicleControl(vehicle, 25)
-    SetVehicleModKit(vehicle, 0)
-    SetVehicleEngineOn(vehicle, true, true, false)
-    lastSirenApplyMode[vehicle] = mode
-    SetVehicleHasMutedSirens(vehicle, false)
-    SetVehicleSiren(vehicle, true)
-    if mode == 'lights' then
-        SetVehicleHasMutedSirens(vehicle, true)
-    elseif mode == 'full' then
-        SetVehicleHasMutedSirens(vehicle, Entity(vehicle).state.fpSirenMuted == true)
-    end
-
-    local delays = { 80, 200, 450, 900 }
-    for d = 1, #delays do
-        SetTimeout(delays[d], function()
-            if not DoesEntityExist(vehicle) then return end
-            local m = lastSirenApplyMode[vehicle]
-            if m ~= 'lights' and m ~= 'full' then return end
-            if not ensureVehicleControl(vehicle, 8) then return end
-            if not IsVehicleSirenOn(vehicle) then
-                SetVehicleSiren(vehicle, true)
-            end
-            if m == 'lights' then
-                SetVehicleHasMutedSirens(vehicle, true)
-            end
-        end)
-    end
+    --- Civilinis native kelias — tas pats soft kick be Wait eventuose.
+    return applyBuiltInFleetLights(vehicle, mode)
 end
 
 local function ingestPdKitVehicle(vehicle, forcedMode)
@@ -950,10 +964,10 @@ CreateThread(function()
     end
 end)
 
---- Built-in MRPD fleet: tik SetVehicleSiren — be script overlay.
+--- Built-in MRPD fleet: keep-alive kiekvieną frame (kaip LVC) — kitaip sirenOn lieka false.
 CreateThread(function()
     while true do
-        local anyLights = false
+        local sleep = 800
         if next(FLEET_BUILTIN) ~= nil then
             for veh, meta in pairs(FLEET_BUILTIN) do
                 if not DoesEntityExist(veh) then
@@ -962,24 +976,24 @@ CreateThread(function()
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     meta.mode = mode
                     if mode == 'lights' or mode == 'full' then
-                        anyLights = true
-                        if not NetworkHasControlOfEntity(veh) then
+                        sleep = 0
+                        if canApplyNativeSiren(veh) then
+                            if not IsVehicleSirenOn(veh) then
+                                SetVehicleSiren(veh, true)
+                            end
+                            setMutedForMode(veh, mode)
+                        else
                             NetworkRequestControlOfEntity(veh)
                         end
-                        if not IsVehicleSirenOn(veh) then
-                            applyBuiltInFleetLights(veh, mode)
-                        elseif mode == 'lights' then
-                            SetVehicleHasMutedSirens(veh, true)
-                        end
                     elseif mode == 'sound' or mode == 'off' then
-                        if IsVehicleSirenOn(veh) then
+                        if canApplyNativeSiren(veh) and IsVehicleSirenOn(veh) then
                             stopNativeSirenVisual(veh)
                         end
                     end
                 end
             end
         end
-        Wait(anyLights and 400 or 800)
+        Wait(sleep)
     end
 end)
 
@@ -1193,16 +1207,19 @@ RegisterNetEvent('mrp_ltpd:client:forceEmergencyVisual', function(netId, mode)
     local ent = NetworkGetEntityFromNetworkId(netId)
     if ent == 0 or not DoesEntityExist(ent) or not IsEntityAVehicle(ent) then return end
     mode = type(mode) == 'string' and mode:lower() or nil
-    if mode then
-        if not usesBuiltInFleetLights(ent) then
-            TRACKED[ent] = TRACKED[ent] or {}
-            TRACKED[ent].mode = mode
+    --- Per CreateThread — saugus Wait / SetTimeout kontekstas.
+    CreateThread(function()
+        if mode then
+            if not usesBuiltInFleetLights(ent) then
+                TRACKED[ent] = TRACKED[ent] or {}
+                TRACKED[ent].mode = mode
+            end
+            lastSirenApplyMode[ent] = nil
+            ingestFromEntity(ent, mode)
+        else
+            ingestFromEntity(ent)
         end
-        lastSirenApplyMode[ent] = nil
-        ingestFromEntity(ent, mode)
-    else
-        ingestFromEntity(ent)
-    end
+    end)
 end)
 
 AddEventHandler('onResourceStop', function(res)
@@ -1229,19 +1246,28 @@ RegisterCommand('pdlightsdebug', function()
     local mode = select(1, readVehicleStateBag(veh))
     local builtIn = usesBuiltInFleetLights(veh)
     local scriptFlash = vehicleUsesScriptFlash(veh)
-    local extras = {}
-    for i = 0, 20 do
-        if DoesExtraExist(veh, i) then
-            extras[#extras + 1] = ('%d=%s'):format(i, IsVehicleExtraTurnedOn(veh, i) and 'ON' or 'off')
-        end
+    requestVehicleControl(veh)
+    if builtIn and (mode == 'lights' or mode == 'full') then
+        lastSirenApplyMode[veh] = nil
+        applyBuiltInFleetLights(veh, mode)
     end
-    local msg = ('mode=%s | sirenOn=%s | builtIn=%s | scriptFlash=%s | extras [%s]'):format(
-        tostring(mode),
-        tostring(IsVehicleSirenOn(veh)),
-        tostring(builtIn),
-        tostring(scriptFlash),
-        table.concat(extras, ', ')
-    )
-    QBCore.Functions.Notify(msg, 'primary', 12000)
-    print('[mrp_ltpd/pdlightsdebug] ' .. msg)
+    SetTimeout(120, function()
+        if not DoesEntityExist(veh) then return end
+        local extras = {}
+        for i = 0, 20 do
+            if DoesExtraExist(veh, i) then
+                extras[#extras + 1] = ('%d=%s'):format(i, IsVehicleExtraTurnedOn(veh, i) and 'ON' or 'off')
+            end
+        end
+        local msg = ('mode=%s | sirenOn=%s | builtIn=%s | ctrl=%s | class=%s | extras [%s]'):format(
+            tostring(mode),
+            tostring(IsVehicleSirenOn(veh)),
+            tostring(builtIn),
+            tostring(NetworkHasControlOfEntity(veh)),
+            tostring(GetVehicleClass(veh)),
+            table.concat(extras, ', ')
+        )
+        QBCore.Functions.Notify(msg, 'primary', 12000)
+        print('[mrp_ltpd/pdlightsdebug] ' .. msg)
+    end)
 end, false)
