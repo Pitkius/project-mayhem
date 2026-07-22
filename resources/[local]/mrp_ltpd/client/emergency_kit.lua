@@ -709,42 +709,50 @@ local function getFleetSirenBones(vehicle)
     return bones
 end
 
---- Diagnostinis fallback modelio kaulams. MRPD production režime išjungtas:
---- modelio emissives valdo tik carcols + SetVehicleSiren.
+--- MRPD YFT siren kaulų fallback. Naudoja tik modelyje esančių siren1..20
+--- koordinates; neprideda prop ir vienu metu piešia tik vieną spalvą.
 local function drawFleetSirenBoneLights(vehicle)
     if Ec.fleetSirenBoneLights == false then return end
-    --- Pagal nutylėjimą piešiam ir kai native ON (custom lightbar dažnai silpnas su ID=1).
+    --- Jei GTA priėmė native siren state, carcols emissives turi prioritetą.
     if IsVehicleSirenOn(vehicle) and Ec.fleetSirenBoneLightsWithNative == false then return end
 
     local bones = getFleetSirenBones(vehicle)
     if #bones == 0 then return end
 
-    local maxPts = math.max(2, math.min(4, tonumber(Ec.fleetSirenBoneMaxPoints) or 4))
-    local selected = {}
-    if #bones <= maxPts then
-        for i = 1, #bones do selected[i] = bones[i] end
+    local interval = math.max(70, tonumber(Ec.fleetSirenBoneIntervalMs) or 90)
+    local phase = math.floor(GetGameTimer() / interval) % 8
+    local activeColor
+    if phase == 0 or phase == 2 then
+        activeColor = 'red'
+    elseif phase == 4 or phase == 6 then
+        activeColor = 'blue'
     else
-        for i = 1, maxPts do
-            local idx = math.floor((i - 1) * (#bones - 1) / (maxPts - 1)) + 1
-            selected[#selected + 1] = bones[idx]
-        end
+        return
     end
 
-    local interval = tonumber(Ec.fleetSirenBoneIntervalMs) or 400
-    local phase = math.floor(GetGameTimer() / interval) % 2 == 0
-    local range = tonumber(Ec.fleetSirenBoneRange) or 4.8
-    local power = tonumber(Ec.fleetSirenBoneIntensity) or 2.8
-    local r, g, b
-    if phase then
-        r, g, b = flashColor('red')
-    else
-        r, g, b = flashColor('blue')
-    end
+    local r, g, b = flashColor(activeColor)
+    local range = tonumber(Ec.fleetSirenBoneRange) or 2.6
+    local power = tonumber(Ec.fleetSirenBoneIntensity) or 1.5
+    local maxPts = math.max(2, math.min(10, tonumber(Ec.fleetSirenBoneMaxPoints) or 8))
+    local drawn = 0
 
-    for i = 1, #selected do
-        local pos = GetWorldPositionOfEntityBone(vehicle, selected[i])
+    for i = 1, #bones do
+        local pos = GetWorldPositionOfEntityBone(vehicle, bones[i])
         if pos then
-            DrawLightWithRange(pos.x, pos.y, pos.z, r, g, b, range, power)
+            local localPos = GetOffsetFromEntityGivenWorldCoords(vehicle, pos.x, pos.y, pos.z)
+            local side
+            if localPos.x < -0.035 then
+                side = 'red'
+            elseif localPos.x > 0.035 then
+                side = 'blue'
+            else
+                side = (i % 2 == 0) and 'blue' or 'red'
+            end
+            if side == activeColor then
+                DrawLightWithRange(pos.x, pos.y, pos.z, r, g, b, range, power)
+                drawn = drawn + 1
+                if drawn >= maxPts then break end
+            end
         end
     end
 end
@@ -795,7 +803,8 @@ local function ingestBuiltInFleet(vehicle, mode)
     TRACKED[vehicle].supportsNative = true
     TRACKED[vehicle].scriptFlash = false
     TRACKED[vehicle].roofFlash = false
-    TRACKED[vehicle].fleetBoneLights = false
+    TRACKED[vehicle].fleetBoneLights = lightsOn and modelIsFleetCar(GetEntityModel(vehicle))
+        and Ec.fleetSirenBoneLights ~= false
     TRACKED[vehicle].mode = mode
 
     if mode == 'off' then
