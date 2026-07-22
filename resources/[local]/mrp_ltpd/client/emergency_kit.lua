@@ -808,8 +808,8 @@ local function ingestBuiltInFleet(vehicle, mode)
     TRACKED[vehicle].supportsNative = true
     TRACKED[vehicle].scriptFlash = false
     TRACKED[vehicle].roofFlash = false
-    --- Bone flash tik kai native carcols neveikia (IsVehicleSirenOn = false).
-    TRACKED[vehicle].fleetBoneLights = lightsOn and Ec.fleetSirenBoneLights ~= false
+    --- Bone flash išjungtas: DrawLight neaktyvuoja modelio lempų.
+    TRACKED[vehicle].fleetBoneLights = false
     TRACKED[vehicle].mode = mode
 
     if mode == 'off' then

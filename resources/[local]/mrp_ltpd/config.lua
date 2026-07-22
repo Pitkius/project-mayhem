@@ -137,11 +137,11 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- Fleet MRPD: bandome native carcols; jei SetVehicleSiren lieka 0,
-    --- piešiame R/B ant YFT siren kaulų (be prop lightbar).
+    --- Fleet MRPD: native carcols (sirenSettings=1 / modelio emissives).
+    --- Bone DrawLight fallback išjungtas — šviečia ne iš lempų.
     nativeFlashAssist = false,
     fleetRoofFlashAssist = false,
-    fleetSirenBoneLights = true,
+    fleetSirenBoneLights = false,
     fleetSirenBoneLightsWithNative = false,
     fleetSirenBoneIntervalMs = 90,
     fleetSirenBoneRange = 2.6,
