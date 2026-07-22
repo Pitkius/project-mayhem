@@ -137,10 +137,10 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- Fleet MRPD: native carcols bandoma; jei SetVehicleSiren=0,
-    --- stogo flash pagal vehicle offset (ne bone — jie buvo ne toje vietoje).
+    --- Originalūs gcpd/gcapd packai naudoja kūrėjo native carcols.
+    --- Jokių scriptinių stogo ar bone šviesų ant jų nepiešiame.
     nativeFlashAssist = false,
-    fleetRoofFlashAssist = true,
+    fleetRoofFlashAssist = false,
     fleetRoofFlashY = -0.15,
     fleetRoofFlashZ = 0.92,
     fleetRoofFlashXSpread = 0.42,
@@ -268,18 +268,18 @@ Config.PdMarkerTextDistance = 2.2
 ---   'native' / 'hybrid' = SetVehicleSiren + mašinos lightbar (carcols)
 ---   'script' = prop lightbar (tik modeliams be savų lempų)
 Config.FleetVehicles = {
-  { model = 'mrpd1', label = 'MRPD 1 (undercover)', emergencyLights = 'native' },
-  { model = 'mrpd2', label = 'MRPD 2 (undercover)', emergencyLights = 'native' },
-  { model = 'mrpd3', label = 'MRPD 3 (undercover)', emergencyLights = 'native' },
-  { model = 'mrpd4', label = 'MRPD 4 (undercover)', emergencyLights = 'native' },
-  { model = 'mrpd5', label = 'MRPD 5 (animuotas)', emergencyLights = 'native' },
-  { model = 'mrpd6', label = 'MRPD 6 (animuotas)', emergencyLights = 'native' },
-  { model = 'mrpd7', label = 'MRPD 7 (animuotas)', emergencyLights = 'native' },
-  { model = 'mrpd8', label = 'MRPD 8 (animuotas)', emergencyLights = 'native' },
-  { model = 'mrpd9', label = 'MRPD 9 (animuotas)', emergencyLights = 'native' },
-  { model = 'mrpd10', label = 'MRPD 10 (animuotas)', emergencyLights = 'native' },
-  { model = 'mrpd11', label = 'MRPD 11 (animuotas)', emergencyLights = 'native' },
-  { model = 'mrpd12', label = 'MRPD 12 (animuotas)', emergencyLights = 'native' },
+  { model = 'gcpd20', label = 'MRPD 1 (undercover)', emergencyLights = 'native' },
+  { model = 'gcpd21', label = 'MRPD 2 (undercover)', emergencyLights = 'native' },
+  { model = 'gcpd22', label = 'MRPD 3 (undercover)', emergencyLights = 'native' },
+  { model = 'gcpd23', label = 'MRPD 4 (undercover)', emergencyLights = 'native' },
+  { model = 'gcapd1', label = 'MRPD 5 (animuotas)', emergencyLights = 'native' },
+  { model = 'gcapd2', label = 'MRPD 6 (animuotas)', emergencyLights = 'native' },
+  { model = 'gcapd3', label = 'MRPD 7 (animuotas)', emergencyLights = 'native' },
+  { model = 'gcapd4', label = 'MRPD 8 (animuotas)', emergencyLights = 'native' },
+  { model = 'gcapd5', label = 'MRPD 9 (animuotas)', emergencyLights = 'native' },
+  { model = 'gcapd6', label = 'MRPD 10 (animuotas)', emergencyLights = 'native' },
+  { model = 'gcapd10', label = 'MRPD 11 (animuotas)', emergencyLights = 'native' },
+  { model = 'gcapd11', label = 'MRPD 12 (animuotas)', emergencyLights = 'native' },
   { model = 'mrpd13', label = 'MRPD 13 — Audi RS6 Avant', emergencyLights = 'native' },
   { model = 'mrpd14', label = 'MRPD 14 — Kia Stinger', emergencyLights = 'native' },
   { model = 'mrpd15', label = 'MRPD 15 — Hyundai', emergencyLights = 'native' },
@@ -289,8 +289,9 @@ Config.FleetVehicles = {
 --- Built-in fleet: tik modelio carcols šviesos per SetVehicleSiren.
 --- PD įrangos prop / DrawLight ant jų nededamas.
 Config.BuiltInFleetModels = {
-    'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
-    'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16',
+    'gcpd20', 'gcpd21', 'gcpd22', 'gcpd23',
+    'gcapd1', 'gcapd2', 'gcapd3', 'gcapd4', 'gcapd5', 'gcapd6', 'gcapd10', 'gcapd11',
+    'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16',
     'polmav', 'buzzard2',
 }
 

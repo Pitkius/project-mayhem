@@ -272,21 +272,21 @@ Config.PoliceDealership = {
         anim = 'Animuotos šviesos',
     },
     vehicles = {
-        -- MRPD pack (mrp_pd_mrpd) — undercover (ARO arba nuo 6)
-        { model = 'mrpd1', name = 'MRPD 1', brand = 'MRPD', category = 'undercover', price = 24000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'mrpd2', name = 'MRPD 2', brand = 'MRPD', category = 'undercover', price = 25000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'mrpd3', name = 'MRPD 3', brand = 'MRPD', category = 'undercover', price = 26000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'mrpd4', name = 'MRPD 4', brand = 'MRPD', category = 'undercover', price = 27000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        -- MRPD pack — animuotos šviesos
-        { model = 'mrpd5', name = 'MRPD 5', brand = 'MRPD', category = 'anim', price = 26000, minGrade = 3, shopEnabled = true },
-        { model = 'mrpd6', name = 'MRPD 6', brand = 'MRPD', category = 'anim', price = 27000, minGrade = 7, shopEnabled = true },
-        { model = 'mrpd7', name = 'MRPD 7', brand = 'MRPD', category = 'anim', price = 28000, minGrade = 6, shopEnabled = true },
-        { model = 'mrpd8', name = 'MRPD 8', brand = 'MRPD', category = 'anim', price = 28000, minGrade = 4, shopEnabled = true },
-        { model = 'mrpd9', name = 'MRPD 9', brand = 'MRPD', category = 'anim', price = 29000, minGrade = 4, shopEnabled = true },
-        { model = 'mrpd10', name = 'MRPD 10', brand = 'MRPD', category = 'anim', price = 30000, minGrade = 0, shopEnabled = true },
-        --- mrpd11 — tik importas (ne parduotuvėje)
-        { model = 'mrpd11', name = 'MRPD 11', brand = 'MRPD', category = 'anim', price = 31000, minGrade = 0, shopEnabled = false },
-        { model = 'mrpd12', name = 'MRPD 12', brand = 'MRPD', category = 'anim', price = 32000, minGrade = 5, shopEnabled = true },
+        -- Originalus undercover packas (ARO arba nuo 6)
+        { model = 'gcpd20', name = 'MRPD 1', brand = 'MRPD', category = 'undercover', price = 24000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
+        { model = 'gcpd21', name = 'MRPD 2', brand = 'MRPD', category = 'undercover', price = 25000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
+        { model = 'gcpd22', name = 'MRPD 3', brand = 'MRPD', category = 'undercover', price = 26000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
+        { model = 'gcpd23', name = 'MRPD 4', brand = 'MRPD', category = 'undercover', price = 27000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
+        -- Originalus animuotų šviesų packas
+        { model = 'gcapd1', name = 'MRPD 5', brand = 'MRPD', category = 'anim', price = 26000, minGrade = 3, shopEnabled = true },
+        { model = 'gcapd2', name = 'MRPD 6', brand = 'MRPD', category = 'anim', price = 27000, minGrade = 7, shopEnabled = true },
+        { model = 'gcapd3', name = 'MRPD 7', brand = 'MRPD', category = 'anim', price = 28000, minGrade = 6, shopEnabled = true },
+        { model = 'gcapd4', name = 'MRPD 8', brand = 'MRPD', category = 'anim', price = 28000, minGrade = 4, shopEnabled = true },
+        { model = 'gcapd5', name = 'MRPD 9', brand = 'MRPD', category = 'anim', price = 29000, minGrade = 4, shopEnabled = true },
+        { model = 'gcapd6', name = 'MRPD 10', brand = 'MRPD', category = 'anim', price = 30000, minGrade = 0, shopEnabled = true },
+        --- gcapd10 — tik importas (ne parduotuvėje)
+        { model = 'gcapd10', name = 'MRPD 11', brand = 'MRPD', category = 'anim', price = 31000, minGrade = 0, shopEnabled = false },
+        { model = 'gcapd11', name = 'MRPD 12', brand = 'MRPD', category = 'anim', price = 32000, minGrade = 5, shopEnabled = true },
         { model = 'mrpd13', name = 'MRPD 13 — Audi RS6', brand = 'Audi', category = 'anim', price = 34000, minGrade = 8, shopEnabled = true },
         { model = 'mrpd14', name = 'MRPD 14 — Kia Stinger', brand = 'Kia', category = 'anim', price = 33000, minGrade = 5, shopEnabled = true },
         { model = 'mrpd15', name = 'MRPD 15 — Hyundai', brand = 'Hyundai', category = 'anim', price = 30000, minGrade = 2, shopEnabled = true },

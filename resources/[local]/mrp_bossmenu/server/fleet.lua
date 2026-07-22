@@ -4,19 +4,25 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local FleetAccess = {} --- [model] = { minGrade, arasOrGrade, shopEnabled, label }
 local FleetDivisionLock = false
 
+local MODEL_MIGRATION = {
+    mrpd1 = 'gcpd20', mrpd2 = 'gcpd21', mrpd3 = 'gcpd22', mrpd4 = 'gcpd23',
+    mrpd5 = 'gcapd1', mrpd6 = 'gcapd2', mrpd7 = 'gcapd3', mrpd8 = 'gcapd4',
+    mrpd9 = 'gcapd5', mrpd10 = 'gcapd6', mrpd11 = 'gcapd10', mrpd12 = 'gcapd11',
+}
+
 local DEFAULTS = {
-    mrpd1  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 1' },
-    mrpd2  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 2' },
-    mrpd3  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 3' },
-    mrpd4  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 4' },
-    mrpd5  = { minGrade = 3, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 5' },
-    mrpd6  = { minGrade = 7, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 6' },
-    mrpd7  = { minGrade = 6, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 7' },
-    mrpd8  = { minGrade = 4, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 8' },
-    mrpd9  = { minGrade = 4, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 9' },
-    mrpd10 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 10' },
-    mrpd11 = { minGrade = 0, arasOrGrade = false, shopEnabled = false, label = 'MRPD 11 (importas)' },
-    mrpd12 = { minGrade = 5, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 12' },
+    gcpd20  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 1' },
+    gcpd21  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 2' },
+    gcpd22  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 3' },
+    gcpd23  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 4' },
+    gcapd1  = { minGrade = 3, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 5' },
+    gcapd2  = { minGrade = 7, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 6' },
+    gcapd3  = { minGrade = 6, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 7' },
+    gcapd4  = { minGrade = 4, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 8' },
+    gcapd5  = { minGrade = 4, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 9' },
+    gcapd6  = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 10' },
+    gcapd10 = { minGrade = 0, arasOrGrade = false, shopEnabled = false, label = 'MRPD 11 (importas)' },
+    gcapd11 = { minGrade = 5, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 12' },
     mrpd13 = { minGrade = 8, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 13 — Audi RS6' },
     mrpd14 = { minGrade = 5, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 14 — Kia Stinger' },
     mrpd15 = { minGrade = 2, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 15 — Hyundai' },
@@ -105,14 +111,41 @@ local function ensureTables()
         VALUES ('police', 0)
         ON DUPLICATE KEY UPDATE job_name = job_name
     ]])
+    for oldModel, newModel in pairs(MODEL_MIGRATION) do
+        local old = MySQL.single.await([[
+            SELECT min_grade, aras_or_grade, shop_enabled, label
+            FROM mrp_faction_fleet_access
+            WHERE job_name = 'police' AND model = ?
+            LIMIT 1
+        ]], { oldModel })
+        if old then
+            MySQL.insert.await([[
+                INSERT INTO mrp_faction_fleet_access
+                    (job_name, model, min_grade, aras_or_grade, shop_enabled, label)
+                VALUES ('police', ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    min_grade = VALUES(min_grade),
+                    aras_or_grade = VALUES(aras_or_grade),
+                    shop_enabled = VALUES(shop_enabled),
+                    label = VALUES(label)
+            ]], {
+                newModel, old.min_grade, old.aras_or_grade,
+                old.shop_enabled, old.label,
+            })
+            MySQL.query.await(
+                'DELETE FROM mrp_faction_fleet_access WHERE job_name = ? AND model = ?',
+                { 'police', oldModel }
+            )
+        end
+    end
     seedFromDefaults()
     loadFleetAccess()
-    --- mrpd11 visada import-only
-    if FleetAccess.mrpd11 then
-        FleetAccess.mrpd11.shopEnabled = false
+    --- gcapd10 (buvęs MRPD 11) visada import-only
+    if FleetAccess.gcapd10 then
+        FleetAccess.gcapd10.shopEnabled = false
         MySQL.update.await(
             'UPDATE mrp_faction_fleet_access SET shop_enabled = 0 WHERE job_name = ? AND model = ?',
-            { 'police', 'mrpd11' }
+            { 'police', 'gcapd10' }
         )
     end
 end
@@ -278,8 +311,8 @@ RegisterNetEvent('mrp_bossmenu:server:saveFleetVehicle', function(jobName, data)
     local minGrade = math.max(0, math.min(15, tonumber(data.minGrade) or 0))
     local arasOrGrade = data.arasOrGrade == true
     local shopEnabled = data.shopEnabled ~= false
-    --- mrpd11 visada import-only
-    if model == 'mrpd11' then
+    --- gcapd10 (buvęs MRPD 11) visada import-only
+    if model == 'gcapd10' then
         shopEnabled = false
     end
     FleetAccess[model].minGrade = minGrade

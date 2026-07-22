@@ -1,5 +1,74 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+--- Vienkartinė mrpd1-12 -> kūrėjo originalių modelių migracija.
+--- Prieš keitimą kiekviena eilutė išsaugoma backup lentelėje, todėl rollback
+--- galimas per sql/rollback_original_pd_models.sql.
+local ORIGINAL_PD_MODEL_MIGRATION = {
+    mrpd1 = 'gcpd20',
+    mrpd2 = 'gcpd21',
+    mrpd3 = 'gcpd22',
+    mrpd4 = 'gcpd23',
+    mrpd5 = 'gcapd1',
+    mrpd6 = 'gcapd2',
+    mrpd7 = 'gcapd3',
+    mrpd8 = 'gcapd4',
+    mrpd9 = 'gcapd5',
+    mrpd10 = 'gcapd6',
+    mrpd11 = 'gcapd10',
+    mrpd12 = 'gcapd11',
+}
+
+MySQL.ready(function()
+    MySQL.query.await([[
+        CREATE TABLE IF NOT EXISTS `mrp_vehicle_model_migration_backup` (
+            `plate` varchar(20) NOT NULL,
+            `old_vehicle` varchar(50) NOT NULL,
+            `old_hash` varchar(50) DEFAULT NULL,
+            `old_mods` longtext DEFAULT NULL,
+            `new_vehicle` varchar(50) NOT NULL,
+            `migrated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`plate`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ]])
+
+    local migrated = 0
+    for oldModel, newModel in pairs(ORIGINAL_PD_MODEL_MIGRATION) do
+        local rows = MySQL.query.await(
+            'SELECT plate, vehicle, `hash`, mods FROM player_vehicles WHERE LOWER(vehicle) = ?',
+            { oldModel }
+        ) or {}
+        local newHash = joaat(newModel)
+
+        for _, row in ipairs(rows) do
+            local newMods = row.mods
+            if type(row.mods) == 'string' and row.mods ~= '' then
+                local ok, props = pcall(json.decode, row.mods)
+                if ok and type(props) == 'table' then
+                    props.model = newHash
+                    newMods = json.encode(props)
+                end
+            end
+
+            MySQL.insert.await([[
+                INSERT IGNORE INTO mrp_vehicle_model_migration_backup
+                    (plate, old_vehicle, old_hash, old_mods, new_vehicle)
+                VALUES (?, ?, ?, ?, ?)
+            ]], { row.plate, row.vehicle, row.hash, row.mods, newModel })
+
+            local changed = MySQL.update.await([[
+                UPDATE player_vehicles
+                SET vehicle = ?, `hash` = ?, mods = ?
+                WHERE plate = ? AND LOWER(vehicle) = ?
+            ]], { newModel, tostring(newHash), newMods, row.plate, oldModel })
+            migrated = migrated + (tonumber(changed) or 0)
+        end
+    end
+
+    if migrated > 0 then
+        print(('[mrp_garages] Migrated %d saved MRPD vehicles to creator-original models.'):format(migrated))
+    end
+end)
+
 local function isPdGarageId(garageId)
     garageId = tostring(garageId or '')
     return garageId:sub(1, 3) == 'pd_'

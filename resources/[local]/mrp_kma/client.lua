@@ -227,7 +227,15 @@ local function spawnReleasedVehicle(result)
     SetEntityAsMissionEntity(veh, true, true)
     SetVehicleNumberPlateText(veh, result.plate or '')
     local modelName = tostring(result.model or ''):lower()
-    local isBuiltInPolice = modelName:match('^mrpd%d+$') or modelName == 'polmav' or modelName == 'buzzard2'
+    local originalPdModels = {
+        gcpd20 = true, gcpd21 = true, gcpd22 = true, gcpd23 = true,
+        gcapd1 = true, gcapd2 = true, gcapd3 = true, gcapd4 = true,
+        gcapd5 = true, gcapd6 = true, gcapd10 = true, gcapd11 = true,
+    }
+    local isBuiltInPolice = originalPdModels[modelName] == true
+        or modelName:match('^mrpd1[3-6]$') ~= nil
+        or modelName == 'polmav'
+        or modelName == 'buzzard2'
     if result.mods and result.mods ~= '' then
         local ok, mods = pcall(json.decode, result.mods)
         if ok and mods and QBCore.Functions.SetVehicleProperties then

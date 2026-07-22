@@ -577,9 +577,17 @@ local function spawnPurchasedVehicle(result, colorIdx, successMsg, spawnFailMsg)
             exports['mrp_plates']:ApplyPlateStyle(veh)
         end
         applyPurchasedVehicleColor(veh, colorIdx)
-        --- PD lightbar extras (mrpd*) — ne enable-all (exclusive extras bug)
+        --- Originalių PD packų extras paliekami modelio numatytoje būsenoje.
         local modelName = tostring(result.model or ''):lower()
-        if modelName:match('^mrpd%d+$') or modelName == 'polmav' or modelName == 'buzzard2' then
+        local originalPdModels = {
+            gcpd20 = true, gcpd21 = true, gcpd22 = true, gcpd23 = true,
+            gcapd1 = true, gcapd2 = true, gcapd3 = true, gcapd4 = true,
+            gcapd5 = true, gcapd6 = true, gcapd10 = true, gcapd11 = true,
+        }
+        if originalPdModels[modelName] == true
+            or modelName:match('^mrpd1[3-6]$')
+            or modelName == 'polmav'
+            or modelName == 'buzzard2' then
             if GetResourceState('mrp_ltpd') == 'started' then
                 pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
                 SetTimeout(150, function()

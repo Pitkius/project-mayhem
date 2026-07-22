@@ -65,9 +65,9 @@ Config.Garages = {
 --- Tik MRPD pack + sraigtasparniai (`pd_*` garažai).
 Config.PoliceVehicleModels = {
     polmav = true, buzzard2 = true,
-    mrpd1 = true, mrpd2 = true, mrpd3 = true, mrpd4 = true,
-    mrpd5 = true, mrpd6 = true, mrpd7 = true, mrpd8 = true,
-    mrpd9 = true, mrpd10 = true, mrpd11 = true, mrpd12 = true,
+    gcpd20 = true, gcpd21 = true, gcpd22 = true, gcpd23 = true,
+    gcapd1 = true, gcapd2 = true, gcapd3 = true, gcapd4 = true,
+    gcapd5 = true, gcapd6 = true, gcapd10 = true, gcapd11 = true,
     mrpd13 = true, mrpd14 = true, mrpd15 = true, mrpd16 = true,
 }
 
