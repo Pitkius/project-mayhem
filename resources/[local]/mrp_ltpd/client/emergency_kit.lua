@@ -178,6 +178,14 @@ local function vehicleSupportsNativeEmergency(vehicle)
     return false
 end
 
+--- Native emergency modelis, kurio nėra mūsų fleet sąraše, priklauso GTA.
+--- Jo sirenos būsenos neliečiame ir PD equipment ant jo nededame.
+local function leaveNativeEmergencyUnmanaged(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    if modelIsFleet(GetEntityModel(vehicle)) then return false end
+    return GetVehicleClass(vehicle) == 18 or vehicleSupportsNativeEmergency(vehicle)
+end
+
 --- Script lightbar / DrawLight TIK civilinei TP su kit, arba fleet su emergencyLights='script'.
 --- (apibrėžiama po readVehicleStateBag)
 local vehicleUsesScriptFlash
@@ -902,6 +910,12 @@ local function ingestFromEntity(vehicle, forcedMode)
     if usesBuiltInFleetLights(vehicle) then
         return ingestBuiltInFleet(vehicle, mode)
     end
+    --- Vanilla ir kitos nekonfigūruotos native emergency TP valdomos pačio GTA.
+    --- cleanup pašalina tik mūsų prop/sound tracking ir nekviečia SetVehicleSiren.
+    if leaveNativeEmergencyUnmanaged(vehicle) then
+        cleanupVehicleEmergency(vehicle)
+        return
+    end
     return ingestPdKitVehicle(vehicle, mode)
 end
 
@@ -1110,6 +1124,11 @@ CreateThread(function()
                     local mode = select(1, readVehicleStateBag(veh))
                     if not cur or cur.mode ~= mode then
                         scheduleIngest(veh)
+                    end
+                elseif leaveNativeEmergencyUnmanaged(veh) then
+                    --- Neperrašyti vanilla police native E būsenos į statebag `off`.
+                    if TRACKED[veh] or LIGHTBARS[veh] or KIT_PERF[veh] then
+                        cleanupVehicleEmergency(veh)
                     end
                 else
                     requestEmergencyRestoreIfNeeded(veh)
