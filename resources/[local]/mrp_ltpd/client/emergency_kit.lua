@@ -714,6 +714,37 @@ local function getFleetSirenBones(vehicle)
     return bones
 end
 
+--- Stogo flash: šviesa piešiama pagal transporto offset (lightbar vieta),
+--- ne pagal YFT siren kaulus (jie dažnai centre / blogoj vietoj).
+--- Neprideda prop. Native IsVehicleSirenOn turi prioritetą.
+local function drawFleetRoofLights(vehicle)
+    if Ec.fleetRoofFlashAssist == false then return end
+    if IsVehicleSirenOn(vehicle) then return end
+
+    local interval = math.max(70, tonumber(Ec.fleetRoofFlashIntervalMs) or 90)
+    local phase = math.floor(GetGameTimer() / interval) % 8
+    local activeColor
+    if phase == 0 or phase == 2 then
+        activeColor = 'red'
+    elseif phase == 4 or phase == 6 then
+        activeColor = 'blue'
+    else
+        return
+    end
+
+    local r, g, b = flashColor(activeColor)
+    local y = tonumber(Ec.fleetRoofFlashY) or -0.15
+    local z = tonumber(Ec.fleetRoofFlashZ) or 0.92
+    local spread = tonumber(Ec.fleetRoofFlashXSpread) or 0.42
+    local range = tonumber(Ec.fleetRoofFlashRange) or 4.5
+    local power = tonumber(Ec.fleetRoofFlashIntensity) or 2.8
+    local x = (activeColor == 'red') and -spread or spread
+    local pos = GetOffsetFromEntityInWorldCoords(vehicle, x, y, z)
+    if pos then
+        DrawLightWithRange(pos.x, pos.y, pos.z, r, g, b, range, power)
+    end
+end
+
 --- MRPD YFT siren kaulų fallback. Naudoja tik modelyje esančių siren1..20
 --- koordinates; neprideda prop ir vienu metu piešia tik vieną spalvą.
 local function drawFleetSirenBoneLights(vehicle)
@@ -785,7 +816,9 @@ local function applyBuiltInFleetLights(vehicle, mode)
     SetVehicleEngineOn(vehicle, true, true, false)
     lastSirenApplyMode[vehicle] = mode
 
+    --- Soft off→on: kai kurie addon modeliai priima sireną tik po reset.
     SetVehicleHasMutedSirens(vehicle, false)
+    SetVehicleSiren(vehicle, false)
     SetVehicleSiren(vehicle, true)
 
     SetTimeout(250, function()
@@ -807,8 +840,7 @@ local function ingestBuiltInFleet(vehicle, mode)
     TRACKED[vehicle] = TRACKED[vehicle] or {}
     TRACKED[vehicle].supportsNative = true
     TRACKED[vehicle].scriptFlash = false
-    TRACKED[vehicle].roofFlash = false
-    --- Bone flash išjungtas: DrawLight neaktyvuoja modelio lempų.
+    TRACKED[vehicle].roofFlash = lightsOn and Ec.fleetRoofFlashAssist ~= false
     TRACKED[vehicle].fleetBoneLights = false
     TRACKED[vehicle].mode = mode
 
@@ -825,6 +857,7 @@ local function ingestBuiltInFleet(vehicle, mode)
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
         lastSirenApplyMode[vehicle] = 'sound'
+        TRACKED[vehicle].roofFlash = false
         TRACKED[vehicle].fleetBoneLights = false
         return
     end
@@ -996,6 +1029,12 @@ CreateThread(function()
                             drawScriptFlash(veh, #(pCoords - vehCoords))
                             drew = true
                         end
+                    elseif (mode == 'lights' or mode == 'full') and meta.roofFlash then
+                        local vehCoords = GetEntityCoords(veh)
+                        if #(pCoords - vehCoords) <= drawDistance then
+                            drawFleetRoofLights(veh)
+                            drew = true
+                        end
                     elseif (mode == 'lights' or mode == 'full') and meta.fleetBoneLights then
                         local vehCoords = GetEntityCoords(veh)
                         if #(pCoords - vehCoords) <= drawDistance then
@@ -1026,6 +1065,7 @@ CreateThread(function()
                             --- Mute tik po to, kai native būsena tikrai įsijungė.
                             if not IsVehicleSirenOn(veh) then
                                 SetVehicleHasMutedSirens(veh, false)
+                                SetVehicleSiren(veh, false)
                                 SetVehicleSiren(veh, true)
                             else
                                 setMutedForMode(veh, mode)

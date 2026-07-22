@@ -137,10 +137,16 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- Fleet MRPD: native carcols (sirenSettings=1 / modelio emissives).
-    --- Bone DrawLight fallback išjungtas — šviečia ne iš lempų.
+    --- Fleet MRPD: native carcols bandoma; jei SetVehicleSiren=0,
+    --- stogo flash pagal vehicle offset (ne bone — jie buvo ne toje vietoje).
     nativeFlashAssist = false,
-    fleetRoofFlashAssist = false,
+    fleetRoofFlashAssist = true,
+    fleetRoofFlashY = -0.15,
+    fleetRoofFlashZ = 0.92,
+    fleetRoofFlashXSpread = 0.42,
+    fleetRoofFlashIntervalMs = 90,
+    fleetRoofFlashRange = 4.5,
+    fleetRoofFlashIntensity = 2.8,
     fleetSirenBoneLights = false,
     fleetSirenBoneLightsWithNative = false,
     fleetSirenBoneIntervalMs = 90,
