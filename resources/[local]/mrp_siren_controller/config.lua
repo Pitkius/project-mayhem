@@ -13,6 +13,10 @@ Config = {}
 
 Config.OpenKey = 'F6'
 Config.ValidateDistance = 28.0
+--- MRPD / fleet: E veikia kaip vanilla policijos mašinoje (full <-> off).
+Config.VanillaEToggle = true
+Config.VanillaEToggleControl = 86 -- INPUT_VEH_HORN (E)
+Config.VanillaEToggleDebounceMs = 450
 --- F6 meniu: vairuotojas gali vairuoti kol pultas atidarytas
 Config.KeepInputWhileOpen = true
 --- Bet kuri sėdynė (vairuotojas / keleivis / gale) gali jungti sirenas

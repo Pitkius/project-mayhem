@@ -217,17 +217,12 @@ local function closeController()
     SendNUIMessage({ action = 'close' })
 end
 
-local function setCode(mode)
-    if not activeJobType then return end
-    local veh = getSirenVehicle()
-    if not veh then return end
-    local curMode = select(1, readVehicleState(veh, activeJobType))
-    if curMode == mode then mode = 'off' end
-    local cfg = getJobCfg(activeJobType)
-
+local function requestMode(jobType, veh, mode)
+    local cfg = getJobCfg(jobType)
+    if not cfg or not veh or veh == 0 then return end
     --- Vairuotojui native šviesas įjungiame iškart. Statebag lieka
     --- autoritetingas sinchronizavimui, o mrp_ltpd keep-alive jas palaiko.
-    if activeJobType == 'police' and vehicleIsFleet(veh, activeJobType) then
+    if jobType == 'police' and vehicleIsFleet(veh, jobType) then
         if mode == 'lights' or mode == 'full' then
             SetVehicleHasMutedSirens(veh, false)
             SetVehicleSiren(veh, true)
@@ -239,6 +234,15 @@ local function setCode(mode)
 
     TriggerServerEvent(cfg.serverEvent, mode)
     SetTimeout(220, pushUiSync)
+end
+
+local function setCode(mode)
+    if not activeJobType then return end
+    local veh = getSirenVehicle()
+    if not veh then return end
+    local curMode = select(1, readVehicleState(veh, activeJobType))
+    if curMode == mode then mode = 'off' end
+    requestMode(activeJobType, veh, mode)
 end
 
 local function setTone(tone)
@@ -345,6 +349,39 @@ RegisterCommand('sirencontroller', function()
     end
     if uiOpen then closeController() else openController(jt) end
 end, false)
+
+--- MRPD valdymas kaip vanilla policijos TP: E įjungia/išjungia viską.
+CreateThread(function()
+    local control = tonumber(Config.VanillaEToggleControl) or 86 -- INPUT_VEH_HORN
+    local debounceMs = math.max(250, tonumber(Config.VanillaEToggleDebounceMs) or 450)
+    local policeFleet = fleetHashSet('police')
+    local lastToggleAt = 0
+
+    while true do
+        local ped = PlayerPedId()
+        local veh = GetVehiclePedIsIn(ped, false)
+        local eligible = Config.VanillaEToggle ~= false
+            and veh ~= 0
+            and GetPedInVehicleSeat(veh, -1) == ped
+            and policeFleet[GetEntityModel(veh)] == true
+            and isOnDutyJob(Config.Jobs.police.jobName)
+
+        if eligible then
+            DisableControlAction(0, control, true)
+            if IsDisabledControlJustPressed(0, control) then
+                local now = GetGameTimer()
+                if now - lastToggleAt >= debounceMs then
+                    lastToggleAt = now
+                    local mode = select(1, readVehicleState(veh, 'police'))
+                    requestMode('police', veh, mode == 'full' and 'off' or 'full')
+                end
+            end
+            Wait(0)
+        else
+            Wait(300)
+        end
+    end
+end)
 
 CreateThread(function()
     while true do
