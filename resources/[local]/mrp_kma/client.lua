@@ -226,20 +226,14 @@ local function spawnReleasedVehicle(result)
 
     SetEntityAsMissionEntity(veh, true, true)
     SetVehicleNumberPlateText(veh, result.plate or '')
+    local modelName = tostring(result.model or ''):lower()
+    local isBuiltInPolice = modelName:match('^mrpd%d+$') or modelName == 'polmav' or modelName == 'buzzard2'
     if result.mods and result.mods ~= '' then
         local ok, mods = pcall(json.decode, result.mods)
         if ok and mods and QBCore.Functions.SetVehicleProperties then
+            --- Seni DB extras neturi perrašyti built-in policijos modelio būsenos.
+            if isBuiltInPolice then mods.extras = nil end
             QBCore.Functions.SetVehicleProperties(veh, mods)
-        end
-    end
-
-    --- PD mrpd* lightbar extras — senas mods extras=false juos išjungdavo
-    local modelName = tostring(result.model or ''):lower()
-    if modelName:match('^mrpd%d+$') or modelName == 'polmav' or modelName == 'buzzard2' then
-        for i = 0, 20 do
-            if DoesExtraExist(veh, i) then
-                SetVehicleExtra(veh, i, 0)
-            end
         end
     end
 

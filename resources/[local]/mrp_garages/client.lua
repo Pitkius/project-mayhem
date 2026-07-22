@@ -16,15 +16,10 @@ local function isPoliceVehicleEntity(veh)
 end
 
 local function normalizeFleetLightbarExtras(veh)
-    if GetResourceState('mrp_ltpd') == 'started' then
-        pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
-        return
-    end
-    for i = 0, 20 do
-        if DoesExtraExist(veh, i) then
-            SetVehicleExtra(veh, i, 0)
-        end
-    end
+    --- MRPD extras paliekami modelio numatytoje būsenoje.
+    --- Negalima įjungti visų: kai kuriuose modeliuose tai aktyvuoja
+    --- alternatyvias ar neteisingoje vietoje esančias šviesas.
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
 end
 
 local function enableAllVehicleExtras(veh)

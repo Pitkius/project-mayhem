@@ -674,15 +674,12 @@ local function safeVehicleNetId(vehicle)
     return NetworkGetNetworkIdFromEntity(vehicle)
 end
 
---- Lightbar extras: enable-all tik jei modelis turi extras (daug MRPD neturi).
+--- Built-in fleet extras priklauso pačiam modeliui.
+--- Jų automatiškai nekeičiame, nes skirtinguose MRPD modeliuose tas pats
+--- extra ID gali reikšti alternatyvią juostą, centrinę lempą ar kitą detalę.
 local function ensureFleetLightbarExtras(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
     if not usesBuiltInFleetLights(vehicle) and not modelIsFleet(GetEntityModel(vehicle)) then return end
-    for i = 0, 20 do
-        if DoesExtraExist(vehicle, i) then
-            SetVehicleExtra(vehicle, i, 0)
-        end
-    end
 end
 
 local SIREN_BONE_NAMES = {
