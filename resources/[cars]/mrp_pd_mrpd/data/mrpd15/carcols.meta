@@ -2,7 +2,7 @@
 <CVehicleModelInfoVarGlobal>    
 	<Sirens>
     <Item>
-      <id value="1229"/>
+      <id value="74"/>
       <name>mrpd15</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>

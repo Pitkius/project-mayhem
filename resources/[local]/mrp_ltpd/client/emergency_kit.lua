@@ -803,8 +803,8 @@ local function ingestBuiltInFleet(vehicle, mode)
     TRACKED[vehicle].supportsNative = true
     TRACKED[vehicle].scriptFlash = false
     TRACKED[vehicle].roofFlash = false
-    TRACKED[vehicle].fleetBoneLights = lightsOn and modelIsFleetCar(GetEntityModel(vehicle))
-        and Ec.fleetSirenBoneLights ~= false
+    --- MRPD fleet niekada nepiešia script šviesų — tik modelio carcols.
+    TRACKED[vehicle].fleetBoneLights = false
     TRACKED[vehicle].mode = mode
 
     if mode == 'off' then

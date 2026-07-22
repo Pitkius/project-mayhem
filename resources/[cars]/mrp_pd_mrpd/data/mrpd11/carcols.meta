@@ -142,7 +142,7 @@
     </Lights>
   <Sirens>
 	<Item>
-      <id value="9441"/>
+      <id value="70"/>
       <name>mrpd11</name>
       <timeMultiplier value="1.00000000"/>
       <lightFalloffMax value="10.0"/>
