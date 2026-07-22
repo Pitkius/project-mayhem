@@ -220,18 +220,8 @@ end
 local function requestMode(jobType, veh, mode)
     local cfg = getJobCfg(jobType)
     if not cfg or not veh or veh == 0 then return end
-    --- Vairuotojui native šviesas įjungiame iškart. Statebag lieka
-    --- autoritetingas sinchronizavimui, o mrp_ltpd keep-alive jas palaiko.
-    if jobType == 'police' and vehicleIsFleet(veh, jobType) then
-        if mode == 'lights' or mode == 'full' then
-            SetVehicleHasMutedSirens(veh, false)
-            SetVehicleSiren(veh, true)
-        else
-            SetVehicleSiren(veh, false)
-            SetVehicleHasMutedSirens(veh, false)
-        end
-    end
-
+    --- Tik statebag / server event. Native SetVehicleSiren valdo vienintelis
+    --- mrp_ltpd — čia nebekviečiame, kad nebūtų on/off lenktynių.
     TriggerServerEvent(cfg.serverEvent, mode)
     SetTimeout(220, pushUiSync)
 end
