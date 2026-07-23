@@ -128,8 +128,8 @@ local function modelIsFleetCar(hash)
     return FLEET_CAR_HASHES[hash] == true
 end
 
---- Fleet entry: emergencyLights = 'native' | 'hybrid' | 'script' | nil
---- native/hybrid → SetVehicleSiren; script → prop lightbar.
+--- Fleet entry: emergencyLights = 'native' | 'hybrid' | 'script' | 'els' | nil
+--- native/hybrid → SetVehicleSiren; script → prop lightbar; els → ELS-FiveM (neliečiame).
 --- Hybrid/native + nativeFlashAssist → raudona/mėlyna flash ant stogo (be prop).
 local FLEET_LIGHT_MODE = {}
 local function rebuildFleetLightModes()
@@ -138,7 +138,9 @@ local function rebuildFleetLightModes()
         if v and v.model then
             local mode = tostring(v.emergencyLights or v.lights or 'hybrid'):lower()
             if mode == 'kit' then mode = 'script' end
-            if mode == 'hybrid' or mode == 'native' or mode == '' then
+            if mode == 'els' or mode == 'none' or mode == 'off' then
+                mode = 'els'
+            elseif mode == 'hybrid' or mode == 'native' or mode == '' then
                 mode = 'native' --- SetVehicleSiren kelias; flash assist atskirai
             elseif mode ~= 'script' then
                 mode = 'native'
@@ -158,9 +160,11 @@ local function vehicleSupportsNativeEmergency(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     local hash = GetEntityModel(vehicle)
 
-    -- Fleet: default native/hybrid. Tik explicit 'script' = prop lempos.
+    -- Fleet: default native/hybrid. 'script' = prop; 'els' = ELS (nei native, nei prop).
     if modelIsFleetCar(hash) then
-        return fleetLightMode(hash) ~= 'script'
+        local mode = fleetLightMode(hash)
+        if mode == 'els' then return false end
+        return mode ~= 'script'
     end
 
     for _, name in ipairs({ 'IsThisModelEmergencyVehicle', 'IsThisModelAnEmergencyVehicle' }) do

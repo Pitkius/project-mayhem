@@ -580,12 +580,14 @@ local function spawnPurchasedVehicle(result, colorIdx, successMsg, spawnFailMsg)
         --- Originalių PD packų extras paliekami modelio numatytoje būsenoje.
         local modelName = tostring(result.model or ''):lower()
         local originalPdModels = {
-            gcpd20 = true, gcpd21 = true, gcpd22 = true, gcpd23 = true,
-            gcapd1 = true, gcapd2 = true, gcapd3 = true, gcapd4 = true,
-            gcapd5 = true, gcapd6 = true, gcapd10 = true, gcapd11 = true,
+            mrpd1 = true, mrpd2 = true, mrpd3 = true, mrpd4 = true,
+            mrpd5 = true, mrpd6 = true, mrpd7 = true, mrpd8 = true,
+            mrpd9 = true, mrpd10 = true, mrpd11 = true, mrpd12 = true,
+            mrpd13 = true, mrpd14 = true, mrpd15 = true, mrpd16 = true,
+            mrpd17 = true, mrpd18 = true, mrpd19 = true, mrpd20 = true,
+            mrpd21 = true,
         }
         if originalPdModels[modelName] == true
-            or modelName:match('^mrpd1[3-6]$')
             or modelName == 'polmav'
             or modelName == 'buzzard2' then
             if GetResourceState('mrp_ltpd') == 'started' then

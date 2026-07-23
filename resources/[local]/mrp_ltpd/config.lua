@@ -137,7 +137,7 @@ Config.EmergencyVehicle = {
     flashDrawDistance = 80.0,
     --- Tik Config.FleetVehicles + native emergency — ne visi GetVehicleClass 18 (addon klaidos)
     trustVehicleClassEmergency = false,
-    --- Originalūs gcpd/gcapd packai naudoja kūrėjo native carcols.
+    --- Originalūs packai (dabar spawn mrpd*) naudoja kūrėjo native carcols.
     --- Jokių scriptinių stogo ar bone šviesų ant jų nepiešiame.
     nativeFlashAssist = false,
     fleetRoofFlashAssist = false,
@@ -268,30 +268,38 @@ Config.PdMarkerTextDistance = 2.2
 ---   'native' / 'hybrid' = SetVehicleSiren + mašinos lightbar (carcols)
 ---   'script' = prop lightbar (tik modeliams be savų lempų)
 Config.FleetVehicles = {
-  { model = 'gcpd20', label = 'MRPD 1 (undercover)', emergencyLights = 'native' },
-  { model = 'gcpd21', label = 'MRPD 2 (undercover)', emergencyLights = 'native' },
-  { model = 'gcpd22', label = 'MRPD 3 (undercover)', emergencyLights = 'native' },
-  { model = 'gcpd23', label = 'MRPD 4 (undercover)', emergencyLights = 'native' },
-  { model = 'gcapd1', label = 'MRPD 5 (animuotas)', emergencyLights = 'native' },
-  { model = 'gcapd2', label = 'MRPD 6 (animuotas)', emergencyLights = 'native' },
-  { model = 'gcapd3', label = 'MRPD 7 (animuotas)', emergencyLights = 'native' },
-  { model = 'gcapd4', label = 'MRPD 8 (animuotas)', emergencyLights = 'native' },
-  { model = 'gcapd5', label = 'MRPD 9 (animuotas)', emergencyLights = 'native' },
-  { model = 'gcapd6', label = 'MRPD 10 (animuotas)', emergencyLights = 'native' },
-  { model = 'gcapd10', label = 'MRPD 11 (animuotas)', emergencyLights = 'native' },
-  { model = 'gcapd11', label = 'MRPD 12 (animuotas)', emergencyLights = 'native' },
-  { model = 'mrpd13', label = 'MRPD 13 — Audi RS6 Avant', emergencyLights = 'native' },
-  { model = 'mrpd14', label = 'MRPD 14 — Kia Stinger', emergencyLights = 'native' },
-  { model = 'mrpd15', label = 'MRPD 15 — Hyundai', emergencyLights = 'native' },
-  { model = 'mrpd16', label = 'MRPD 16 — Alfa Romeo', emergencyLights = 'native' },
+  -- ŽYMĖTOS Non-ELS
+  { model = 'mrpd1', label = 'MRPD 1 (žymėta)', emergencyLights = 'native' },
+  { model = 'mrpd2', label = 'MRPD 2 (žymėta)', emergencyLights = 'native' },
+  { model = 'mrpd3', label = 'MRPD 3 (žymėta)', emergencyLights = 'native' },
+  { model = 'mrpd4', label = 'MRPD 4 (žymėta)', emergencyLights = 'native' },
+  { model = 'mrpd5', label = 'MRPD 5 (žymėta)', emergencyLights = 'native' },
+  { model = 'mrpd6', label = 'MRPD 6 (žymėta)', emergencyLights = 'native' },
+  { model = 'mrpd7', label = 'MRPD 7 (žymėta)', emergencyLights = 'native' },
+  { model = 'mrpd8', label = 'MRPD 8 (žymėta)', emergencyLights = 'native' },
+  { model = 'mrpd9', label = 'MRPD 9 — Audi RS6 Avant', emergencyLights = 'native' },
+  { model = 'mrpd10', label = 'MRPD 10 — Kia Stinger', emergencyLights = 'native' },
+  { model = 'mrpd11', label = 'MRPD 11 — Hyundai', emergencyLights = 'native' },
+  { model = 'mrpd12', label = 'MRPD 12 — Alfa Romeo', emergencyLights = 'native' },
+  -- ŽYMĖTOS LT ELS
+  { model = 'mrpd13', label = 'MRPD 13 — Audi S3 (LT ELS)', emergencyLights = 'els' },
+  { model = 'mrpd14', label = 'MRPD 14 — BMW 540i (LT ELS)', emergencyLights = 'els' },
+  { model = 'mrpd15', label = 'MRPD 15 — BMW X5 (LT ELS)', emergencyLights = 'els' },
+  { model = 'mrpd16', label = 'MRPD 16 — Skoda Octavia (LT ELS)', emergencyLights = 'els' },
+  -- NEŽYMĖTOS Non-ELS
+  { model = 'mrpd17', label = 'MRPD 17 (nežymėta)', emergencyLights = 'native' },
+  { model = 'mrpd18', label = 'MRPD 18 (nežymėta)', emergencyLights = 'native' },
+  { model = 'mrpd19', label = 'MRPD 19 (nežymėta)', emergencyLights = 'native' },
+  { model = 'mrpd20', label = 'MRPD 20 (nežymėta)', emergencyLights = 'native' },
+  -- NEŽYMĖTOS LT ELS
+  { model = 'mrpd21', label = 'MRPD 21 — BMW 540i VAD (LT ELS)', emergencyLights = 'els' },
 }
 
---- Built-in fleet: tik modelio carcols šviesos per SetVehicleSiren.
---- PD įrangos prop / DrawLight ant jų nededamas.
+--- Built-in fleet: tik Non-ELS carcols šviesos per SetVehicleSiren (ELS čia NEįtraukti).
 Config.BuiltInFleetModels = {
-    'gcpd20', 'gcpd21', 'gcpd22', 'gcpd23',
-    'gcapd1', 'gcapd2', 'gcapd3', 'gcapd4', 'gcapd5', 'gcapd6', 'gcapd10', 'gcapd11',
-    'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16',
+    'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
+    'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12',
+    'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
     'polmav', 'buzzard2',
 }
 

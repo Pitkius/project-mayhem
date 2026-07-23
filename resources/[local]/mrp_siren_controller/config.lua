@@ -64,11 +64,12 @@ Config.Jobs = {
     },
 }
 
+-- F6 Non-ELS tik šie. ELS: mrpd13-16 + mrpd21 (čia NEįtraukti).
 Config.FleetVehicles = {
     police = {
-        'gcpd20', 'gcpd21', 'gcpd22', 'gcpd23',
-        'gcapd1', 'gcapd2', 'gcapd3', 'gcapd4', 'gcapd5', 'gcapd6', 'gcapd10', 'gcapd11',
-        'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16',
+        'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
+        'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12',
+        'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
         'polmav', 'buzzard2',
     },
     ambulance = { 'ambulance', 'ambulance2', 'lguard' },

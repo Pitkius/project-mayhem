@@ -248,10 +248,10 @@ function openFleetEditor(v) {
     document.getElementById('fleetModelMeta').textContent = `Modelis: ${v.model}`;
     document.getElementById('fleetMinGrade').value = Number(v.minGrade) || 0;
     document.getElementById('fleetArasOrGrade').checked = !!v.arasOrGrade;
-    document.getElementById('fleetShopEnabled').checked = v.shopEnabled !== false && v.model !== 'gcapd10';
-    document.getElementById('fleetShopWrap').classList.toggle('hidden', v.model === 'gcapd10');
-    document.getElementById('fleetImportNote').classList.toggle('hidden', v.model !== 'gcapd10');
-    if (v.model === 'gcapd10') {
+    document.getElementById('fleetShopEnabled').checked = v.shopEnabled !== false && v.model !== 'mrpd7';
+    document.getElementById('fleetShopWrap').classList.toggle('hidden', v.model === 'mrpd7');
+    document.getElementById('fleetImportNote').classList.toggle('hidden', v.model !== 'mrpd7');
+    if (v.model === 'mrpd7') {
         document.getElementById('fleetShopEnabled').checked = false;
         document.getElementById('fleetShopEnabled').disabled = true;
     } else {
@@ -478,7 +478,7 @@ document.getElementById('btnSaveFleet').addEventListener('click', () => {
         model: editingFleet.model,
         minGrade: document.getElementById('fleetMinGrade').value,
         arasOrGrade: document.getElementById('fleetArasOrGrade').checked,
-        shopEnabled: editingFleet.model === 'gcapd10' ? false : document.getElementById('fleetShopEnabled').checked,
+        shopEnabled: editingFleet.model === 'mrpd7' ? false : document.getElementById('fleetShopEnabled').checked,
     });
     document.getElementById('fleetEditor').classList.add('hidden');
     document.getElementById('fleetEditorHint').classList.remove('hidden');

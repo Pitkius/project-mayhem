@@ -4,29 +4,48 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local FleetAccess = {} --- [model] = { minGrade, arasOrGrade, shopEnabled, label }
 local FleetDivisionLock = false
 
-local MODEL_MIGRATION = {
-    mrpd1 = 'gcpd20', mrpd2 = 'gcpd21', mrpd3 = 'gcpd22', mrpd4 = 'gcpd23',
-    mrpd5 = 'gcapd1', mrpd6 = 'gcapd2', mrpd7 = 'gcapd3', mrpd8 = 'gcapd4',
-    mrpd9 = 'gcapd5', mrpd10 = 'gcapd6', mrpd11 = 'gcapd10', mrpd12 = 'gcapd11',
+local MODEL_MIGRATION_STEPS = {
+    -- seni RS6/Stinger eilutės buvo mrpd13-16 → dabar mrpd9-12
+    { old = 'mrpd13', new = 'mrpd9' },
+    { old = 'mrpd14', new = 'mrpd10' },
+    { old = 'mrpd15', new = 'mrpd11' },
+    { old = 'mrpd16', new = 'mrpd12' },
+    -- anim / undercover originalūs vardai
+    { old = 'gcapd1', new = 'mrpd1' }, { old = 'gcapd2', new = 'mrpd2' },
+    { old = 'gcapd3', new = 'mrpd3' }, { old = 'gcapd4', new = 'mrpd4' },
+    { old = 'gcapd5', new = 'mrpd5' }, { old = 'gcapd6', new = 'mrpd6' },
+    { old = 'gcapd10', new = 'mrpd7' }, { old = 'gcapd11', new = 'mrpd8' },
+    { old = 'gcpd20', new = 'mrpd17' }, { old = 'gcpd21', new = 'mrpd18' },
+    { old = 'gcpd22', new = 'mrpd19' }, { old = 'gcpd23', new = 'mrpd20' },
 }
 
 local DEFAULTS = {
-    gcpd20  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 1' },
-    gcpd21  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 2' },
-    gcpd22  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 3' },
-    gcpd23  = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 4' },
-    gcapd1  = { minGrade = 3, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 5' },
-    gcapd2  = { minGrade = 7, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 6' },
-    gcapd3  = { minGrade = 6, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 7' },
-    gcapd4  = { minGrade = 4, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 8' },
-    gcapd5  = { minGrade = 4, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 9' },
-    gcapd6  = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 10' },
-    gcapd10 = { minGrade = 0, arasOrGrade = false, shopEnabled = false, label = 'MRPD 11 (importas)' },
-    gcapd11 = { minGrade = 5, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 12' },
-    mrpd13 = { minGrade = 8, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 13 — Audi RS6' },
-    mrpd14 = { minGrade = 5, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 14 — Kia Stinger' },
-    mrpd15 = { minGrade = 2, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 15 — Hyundai' },
-    mrpd16 = { minGrade = 4, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 16 — Alfa Romeo' },
+    -- ŽYMĖTOS Non-ELS (mrp_pd_animuotu)
+    mrpd1  = { minGrade = 3, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 1' },
+    mrpd2  = { minGrade = 7, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 2' },
+    mrpd3  = { minGrade = 6, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 3' },
+    mrpd4  = { minGrade = 4, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 4' },
+    mrpd5  = { minGrade = 4, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 5' },
+    mrpd6  = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 6' },
+    mrpd7  = { minGrade = 0, arasOrGrade = false, shopEnabled = false, label = 'MRPD 7 (importas)' },
+    mrpd8  = { minGrade = 5, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 8' },
+    -- ŽYMĖTOS Non-ELS (mrp_pd_mrpd)
+    mrpd9  = { minGrade = 8, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 9 — Audi RS6' },
+    mrpd10 = { minGrade = 5, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 10 — Kia Stinger' },
+    mrpd11 = { minGrade = 2, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 11 — Hyundai' },
+    mrpd12 = { minGrade = 4, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 12 — Alfa Romeo' },
+    -- ŽYMĖTOS LT ELS
+    mrpd13 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 13 — Audi S3 (ELS)' },
+    mrpd14 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 14 — BMW 540i (ELS)' },
+    mrpd15 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 15 — BMW X5 (ELS)' },
+    mrpd16 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 16 — Skoda (ELS)' },
+    -- NEŽYMĖTOS Non-ELS (mrp_pd_undercover)
+    mrpd17 = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 17 (nežymėta)' },
+    mrpd18 = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 18 (nežymėta)' },
+    mrpd19 = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 19 (nežymėta)' },
+    mrpd20 = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 20 (nežymėta)' },
+    -- NEŽYMĖTOS LT ELS
+    mrpd21 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 21 — BMW VAD (ELS)' },
 }
 
 local function normalizeModel(model)
@@ -111,7 +130,8 @@ local function ensureTables()
         VALUES ('police', 0)
         ON DUPLICATE KEY UPDATE job_name = job_name
     ]])
-    for oldModel, newModel in pairs(MODEL_MIGRATION) do
+    for _, step in ipairs(MODEL_MIGRATION_STEPS) do
+        local oldModel, newModel = step.old, step.new
         local old = MySQL.single.await([[
             SELECT min_grade, aras_or_grade, shop_enabled, label
             FROM mrp_faction_fleet_access
@@ -140,12 +160,12 @@ local function ensureTables()
     end
     seedFromDefaults()
     loadFleetAccess()
-    --- gcapd10 (buvęs MRPD 11) visada import-only
-    if FleetAccess.gcapd10 then
-        FleetAccess.gcapd10.shopEnabled = false
+    --- mrpd7 (importas) visada import-only
+    if FleetAccess.mrpd7 then
+        FleetAccess.mrpd7.shopEnabled = false
         MySQL.update.await(
             'UPDATE mrp_faction_fleet_access SET shop_enabled = 0 WHERE job_name = ? AND model = ?',
-            { 'police', 'gcapd10' }
+            { 'police', 'mrpd7' }
         )
     end
 end
@@ -311,8 +331,8 @@ RegisterNetEvent('mrp_bossmenu:server:saveFleetVehicle', function(jobName, data)
     local minGrade = math.max(0, math.min(15, tonumber(data.minGrade) or 0))
     local arasOrGrade = data.arasOrGrade == true
     local shopEnabled = data.shopEnabled ~= false
-    --- gcapd10 (buvęs MRPD 11) visada import-only
-    if model == 'gcapd10' then
+    --- mrpd7 (importas) visada import-only
+    if model == 'mrpd7' then
         shopEnabled = false
     end
     FleetAccess[model].minGrade = minGrade

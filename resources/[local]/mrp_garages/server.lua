@@ -1,21 +1,27 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
---- Vienkartinė mrpd1-12 -> kūrėjo originalių modelių migracija.
---- Prieš keitimą kiekviena eilutė išsaugoma backup lentelėje, todėl rollback
---- galimas per sql/rollback_original_pd_models.sql.
-local ORIGINAL_PD_MODEL_MIGRATION = {
-    mrpd1 = 'gcpd20',
-    mrpd2 = 'gcpd21',
-    mrpd3 = 'gcpd22',
-    mrpd4 = 'gcpd23',
-    mrpd5 = 'gcapd1',
-    mrpd6 = 'gcapd2',
-    mrpd7 = 'gcapd3',
-    mrpd8 = 'gcapd4',
-    mrpd9 = 'gcapd5',
-    mrpd10 = 'gcapd6',
-    mrpd11 = 'gcapd10',
-    mrpd12 = 'gcapd11',
+--- Migracija: seni gcpd/gcapd + seni mrpd13-16 (RS6…) → vieningi mrpd1-21 spawn.
+--- Tvarka svarbi: pirma atlaisvinam mrpd13-16 (→9-12), tada gcpd/gcapd.
+local PD_MODEL_MIGRATION_STEPS = {
+    -- seni mrp_pd_mrpd numeriai (Audi RS6…) → mrpd9-12
+    { old = 'mrpd13', new = 'mrpd9' },
+    { old = 'mrpd14', new = 'mrpd10' },
+    { old = 'mrpd15', new = 'mrpd11' },
+    { old = 'mrpd16', new = 'mrpd12' },
+    -- animuotu pack (gcapd) → mrpd1-8
+    { old = 'gcapd1', new = 'mrpd1' },
+    { old = 'gcapd2', new = 'mrpd2' },
+    { old = 'gcapd3', new = 'mrpd3' },
+    { old = 'gcapd4', new = 'mrpd4' },
+    { old = 'gcapd5', new = 'mrpd5' },
+    { old = 'gcapd6', new = 'mrpd6' },
+    { old = 'gcapd10', new = 'mrpd7' },
+    { old = 'gcapd11', new = 'mrpd8' },
+    -- nežymėtos (gcpd) → mrpd17-20
+    { old = 'gcpd20', new = 'mrpd17' },
+    { old = 'gcpd21', new = 'mrpd18' },
+    { old = 'gcpd22', new = 'mrpd19' },
+    { old = 'gcpd23', new = 'mrpd20' },
 }
 
 MySQL.ready(function()
@@ -32,7 +38,8 @@ MySQL.ready(function()
     ]])
 
     local migrated = 0
-    for oldModel, newModel in pairs(ORIGINAL_PD_MODEL_MIGRATION) do
+    for _, step in ipairs(PD_MODEL_MIGRATION_STEPS) do
+        local oldModel, newModel = step.old, step.new
         local rows = MySQL.query.await(
             'SELECT plate, vehicle, `hash`, mods FROM player_vehicles WHERE LOWER(vehicle) = ?',
             { oldModel }
@@ -65,7 +72,7 @@ MySQL.ready(function()
     end
 
     if migrated > 0 then
-        print(('[mrp_garages] Migrated %d saved MRPD vehicles to creator-original models.'):format(migrated))
+        print(('[mrp_garages] Migrated %d saved PD vehicles to mrpd1-21.'):format(migrated))
     end
 end)
 

@@ -62,13 +62,15 @@ Config.Garages = {
     { id = 'ranger_main', label = 'Gamtos apsaugos garažas', coords = vector3(371.33, 791.31, 187.47), heading = 261.0, spawn = vector4(371.33, 791.31, 187.47, 261.0), rangerOnly = true, hideBlip = true },
 }
 
---- Tik MRPD pack + sraigtasparniai (`pd_*` garažai).
+--- Tik MRPD pack'ai + sraigtasparniai (`pd_*` garažai). Spawn: mrpd1-21.
 Config.PoliceVehicleModels = {
     polmav = true, buzzard2 = true,
-    gcpd20 = true, gcpd21 = true, gcpd22 = true, gcpd23 = true,
-    gcapd1 = true, gcapd2 = true, gcapd3 = true, gcapd4 = true,
-    gcapd5 = true, gcapd6 = true, gcapd10 = true, gcapd11 = true,
+    mrpd1 = true, mrpd2 = true, mrpd3 = true, mrpd4 = true,
+    mrpd5 = true, mrpd6 = true, mrpd7 = true, mrpd8 = true,
+    mrpd9 = true, mrpd10 = true, mrpd11 = true, mrpd12 = true,
     mrpd13 = true, mrpd14 = true, mrpd15 = true, mrpd16 = true,
+    mrpd17 = true, mrpd18 = true, mrpd19 = true, mrpd20 = true,
+    mrpd21 = true,
 }
 
 Config.MechanicVehicleModels = {
@@ -77,6 +79,7 @@ Config.MechanicVehicleModels = {
 
 Config.EmsVehicleModels = {
     ambulance = true, granger = true,
+    ems1 = true, ems2 = true,
 }
 
 Config.TaxiVehicleModels = {

@@ -268,29 +268,37 @@ Config.PoliceDealership = {
         },
     },
     PoliceCategoryLabels = {
-        undercover = 'Undercover',
-        anim = 'Animuotos šviesos',
+        marked = 'Žymėtos',
+        unmarked = 'Nežymėtos',
+        els = 'LT ELS',
     },
     vehicles = {
-        -- Originalus undercover packas (ARO arba nuo 6)
-        { model = 'gcpd20', name = 'MRPD 1', brand = 'MRPD', category = 'undercover', price = 24000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'gcpd21', name = 'MRPD 2', brand = 'MRPD', category = 'undercover', price = 25000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'gcpd22', name = 'MRPD 3', brand = 'MRPD', category = 'undercover', price = 26000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'gcpd23', name = 'MRPD 4', brand = 'MRPD', category = 'undercover', price = 27000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        -- Originalus animuotų šviesų packas
-        { model = 'gcapd1', name = 'MRPD 5', brand = 'MRPD', category = 'anim', price = 26000, minGrade = 3, shopEnabled = true },
-        { model = 'gcapd2', name = 'MRPD 6', brand = 'MRPD', category = 'anim', price = 27000, minGrade = 7, shopEnabled = true },
-        { model = 'gcapd3', name = 'MRPD 7', brand = 'MRPD', category = 'anim', price = 28000, minGrade = 6, shopEnabled = true },
-        { model = 'gcapd4', name = 'MRPD 8', brand = 'MRPD', category = 'anim', price = 28000, minGrade = 4, shopEnabled = true },
-        { model = 'gcapd5', name = 'MRPD 9', brand = 'MRPD', category = 'anim', price = 29000, minGrade = 4, shopEnabled = true },
-        { model = 'gcapd6', name = 'MRPD 10', brand = 'MRPD', category = 'anim', price = 30000, minGrade = 0, shopEnabled = true },
-        --- gcapd10 — tik importas (ne parduotuvėje)
-        { model = 'gcapd10', name = 'MRPD 11', brand = 'MRPD', category = 'anim', price = 31000, minGrade = 0, shopEnabled = false },
-        { model = 'gcapd11', name = 'MRPD 12', brand = 'MRPD', category = 'anim', price = 32000, minGrade = 5, shopEnabled = true },
-        { model = 'mrpd13', name = 'MRPD 13 — Audi RS6', brand = 'Audi', category = 'anim', price = 34000, minGrade = 8, shopEnabled = true },
-        { model = 'mrpd14', name = 'MRPD 14 — Kia Stinger', brand = 'Kia', category = 'anim', price = 33000, minGrade = 5, shopEnabled = true },
-        { model = 'mrpd15', name = 'MRPD 15 — Hyundai', brand = 'Hyundai', category = 'anim', price = 30000, minGrade = 2, shopEnabled = true },
-        { model = 'mrpd16', name = 'MRPD 16 — Alfa Romeo', brand = 'Alfa Romeo', category = 'anim', price = 35000, minGrade = 4, shopEnabled = true },
+        -- ŽYMĖTOS Non-ELS (anim)
+        { model = 'mrpd1', name = 'MRPD 1', brand = 'MRPD', category = 'marked', price = 26000, minGrade = 3, shopEnabled = true },
+        { model = 'mrpd2', name = 'MRPD 2', brand = 'MRPD', category = 'marked', price = 27000, minGrade = 7, shopEnabled = true },
+        { model = 'mrpd3', name = 'MRPD 3', brand = 'MRPD', category = 'marked', price = 28000, minGrade = 6, shopEnabled = true },
+        { model = 'mrpd4', name = 'MRPD 4', brand = 'MRPD', category = 'marked', price = 28000, minGrade = 4, shopEnabled = true },
+        { model = 'mrpd5', name = 'MRPD 5', brand = 'MRPD', category = 'marked', price = 29000, minGrade = 4, shopEnabled = true },
+        { model = 'mrpd6', name = 'MRPD 6', brand = 'MRPD', category = 'marked', price = 30000, minGrade = 0, shopEnabled = true },
+        { model = 'mrpd7', name = 'MRPD 7', brand = 'MRPD', category = 'marked', price = 31000, minGrade = 0, shopEnabled = false },
+        { model = 'mrpd8', name = 'MRPD 8', brand = 'MRPD', category = 'marked', price = 32000, minGrade = 5, shopEnabled = true },
+        -- ŽYMĖTOS Non-ELS (buvę mrpd13-16)
+        { model = 'mrpd9', name = 'MRPD 9 — Audi RS6', brand = 'Audi', category = 'marked', price = 34000, minGrade = 8, shopEnabled = true },
+        { model = 'mrpd10', name = 'MRPD 10 — Kia Stinger', brand = 'Kia', category = 'marked', price = 33000, minGrade = 5, shopEnabled = true },
+        { model = 'mrpd11', name = 'MRPD 11 — Hyundai', brand = 'Hyundai', category = 'marked', price = 30000, minGrade = 2, shopEnabled = true },
+        { model = 'mrpd12', name = 'MRPD 12 — Alfa Romeo', brand = 'Alfa Romeo', category = 'marked', price = 35000, minGrade = 4, shopEnabled = true },
+        -- ŽYMĖTOS LT ELS
+        { model = 'mrpd13', name = 'MRPD 13 — Audi S3 (LT ELS)', brand = 'Audi', category = 'els', price = 36000, minGrade = 0, shopEnabled = true },
+        { model = 'mrpd14', name = 'MRPD 14 — BMW 540i (LT ELS)', brand = 'BMW', category = 'els', price = 38000, minGrade = 0, shopEnabled = true },
+        { model = 'mrpd15', name = 'MRPD 15 — BMW X5 (LT ELS)', brand = 'BMW', category = 'els', price = 40000, minGrade = 0, shopEnabled = true },
+        { model = 'mrpd16', name = 'MRPD 16 — Skoda Octavia (LT ELS)', brand = 'Skoda', category = 'els', price = 34000, minGrade = 0, shopEnabled = true },
+        -- NEŽYMĖTOS Non-ELS (undercover) — gale
+        { model = 'mrpd17', name = 'MRPD 17 (nežymėta)', brand = 'MRPD', category = 'unmarked', price = 24000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
+        { model = 'mrpd18', name = 'MRPD 18 (nežymėta)', brand = 'MRPD', category = 'unmarked', price = 25000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
+        { model = 'mrpd19', name = 'MRPD 19 (nežymėta)', brand = 'MRPD', category = 'unmarked', price = 26000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
+        { model = 'mrpd20', name = 'MRPD 20 (nežymėta)', brand = 'MRPD', category = 'unmarked', price = 27000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
+        -- NEŽYMĖTOS LT ELS — pačioje gale
+        { model = 'mrpd21', name = 'MRPD 21 — BMW 540i VAD (LT ELS)', brand = 'BMW', category = 'unmarked', price = 37000, minGrade = 0, shopEnabled = true },
     },
 }
 
@@ -351,6 +359,8 @@ Config.EmsDealership = {
     },
     vehicles = {
         { model = 'ambulance', name = 'Greitosios pagalbos auto', brand = 'Brute', category = 'ems', price = 18000 },
+        { model = 'ems1', name = 'EMS 1 — VW Amarok (LT)', brand = 'Volkswagen', category = 'ems', price = 32000 },
+        { model = 'ems2', name = 'EMS 2 — VW Crafter (LT)', brand = 'Volkswagen', category = 'ems', price = 35000 },
         { model = 'granger', name = 'Visureigis', brand = 'Declasse', category = 'support', price = 22000 },
     },
 }

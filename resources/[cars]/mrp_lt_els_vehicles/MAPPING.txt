@@ -1,0 +1,55 @@
+========================================================
+  VISOS POLICIJOS / EMS MASINOS — SPAWN SARASAS
+========================================================
+
+--- POLICIJA Non-ELS (mrp_pd_mrpd) — F6 sirenos ---
+Spawn     | Pavadinimas
+----------+------------------------------------------
+mrpd1     | MRPD 1 (undercover)
+mrpd2     | MRPD 2 (undercover)
+mrpd3     | MRPD 3 (undercover)
+mrpd4     | MRPD 4 (undercover)
+mrpd5     | MRPD 5 (animuotos sviesos)
+mrpd6     | MRPD 6 (animuotos sviesos)
+mrpd7     | MRPD 7 (animuotos sviesos)
+mrpd8     | MRPD 8 (animuotos sviesos)
+mrpd9     | MRPD 9 (animuotos sviesos)
+mrpd10    | MRPD 10 (animuotos sviesos)
+mrpd11    | MRPD 11 (animuotos sviesos)
+mrpd12    | MRPD 12 (animuotos sviesos)
+mrpd13    | MRPD 13 — Audi RS6
+mrpd14    | MRPD 14 — Kia Stinger
+mrpd15    | MRPD 15 — Hyundai
+mrpd16    | MRPD 16 — Alfa Romeo
+polmav    | Policijos Maverick (heli)
+buzzard2  | Buzzard (heli)
+
+--- POLICIJA LT ELS (mrp_lt_els_vehicles) — ELS Q ---
+Spawn     | Pavadinimas                        | Modelis
+----------+------------------------------------+----------------
+mrpd17    | MRPD 17 — Audi S3 (LT)             | Audi S3 marked
+mrpd18    | MRPD 18 — BMW 540i (LT)            | BMW 540i marked
+mrpd19    | MRPD 19 — BMW 540i VAD (LT)        | BMW 540i unmarked/VAD
+mrpd20    | MRPD 20 — BMW X5 (LT)              | BMW X5 ARV
+mrpd21    | MRPD 21 — Skoda Octavia (LT)       | Skoda Octavia hatchback
+
+--- GREITOJI LT ELS (mrp_lt_els_vehicles) ---
+Spawn     | Pavadinimas
+----------+------------------------------------
+ems1      | EMS 1 — VW Amarok (LT)
+ems2      | EMS 2 — VW Crafter (LT)
+
+--- KAIP VEIKIA ---
+• mrpd1–16  = Non-ELS + F6 (mrp_siren_controller)
+• mrpd17–21 = ELS (ELS-FiveM VCF), garage/dealership OK, F6 NE
+• ems1–2    = ELS, EMS dealership
+• Seni pack’ai (oldstyle/undercover/animuotu) = STOP cfg
+
+--- TEST SPAWN (F8) ---
+/car mrpd17
+/car mrpd18
+/car mrpd19
+/car mrpd20
+/car mrpd21
+/car ems1
+/car ems2

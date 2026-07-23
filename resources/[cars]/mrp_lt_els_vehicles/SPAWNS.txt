@@ -1,0 +1,45 @@
+============================================================
+ PD SPAWN SARASAS — VISI mrpd* (nels GCPD/GCAPD spawn)
+ Packai LIEKA atskiri, spawn vardai vienodi MRPD1-21
+============================================================
+
+--- ZYMETOS Non-ELS ---
+Spawn   | Pack                 | Kas
+--------+----------------------+------------------
+mrpd1   | mrp_pd_animuotu      | Animuotos sviesos
+mrpd2   | mrp_pd_animuotu      | Animuotos sviesos
+mrpd3   | mrp_pd_animuotu      | Animuotos sviesos
+mrpd4   | mrp_pd_animuotu      | Animuotos sviesos
+mrpd5   | mrp_pd_animuotu      | Animuotos sviesos
+mrpd6   | mrp_pd_animuotu      | Animuotos sviesos
+mrpd7   | mrp_pd_animuotu      | Animuotos (import)
+mrpd8   | mrp_pd_animuotu      | Animuotos sviesos
+mrpd9   | mrp_pd_mrpd          | Audi RS6
+mrpd10  | mrp_pd_mrpd          | Kia Stinger
+mrpd11  | mrp_pd_mrpd          | Hyundai
+mrpd12  | mrp_pd_mrpd          | Alfa Romeo
+
+--- ZYMETOS ELS (LT) ---
+mrpd13  | mrp_lt_els_vehicles  | Audi S3 LT
+mrpd14  | mrp_lt_els_vehicles  | BMW 540i LT
+mrpd15  | mrp_lt_els_vehicles  | BMW X5 LT
+mrpd16  | mrp_lt_els_vehicles  | Skoda Octavia LT
+
+--- NEZYMETOS Non-ELS (gale) ---
+mrpd17  | mrp_pd_undercover    | Undercover
+mrpd18  | mrp_pd_undercover    | Undercover
+mrpd19  | mrp_pd_undercover    | Undercover
+mrpd20  | mrp_pd_undercover    | Undercover
+
+--- NEZYMETOS ELS (paciam gale) ---
+mrpd21  | mrp_lt_els_vehicles  | BMW 540i VAD LT
+
+--- EMS ELS ---
+ems1    | mrp_lt_els_vehicles  | Amarok Greitoji LT
+ems2    | mrp_lt_els_vehicles  | Crafter Greitoji LT
+
+SVIESOS:
+- mrpd1-12, mrpd17-20 = Non-ELS F6
+- mrpd13-16, mrpd21, ems1-2 = ELS-FiveM
+
+mrpd22-100 = laisvi ateiciai
