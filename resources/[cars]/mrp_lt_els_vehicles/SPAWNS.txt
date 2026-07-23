@@ -19,8 +19,8 @@ mrpd10  | mrp_pd_mrpd          | Kia Stinger
 mrpd11  | mrp_pd_mrpd          | Hyundai
 mrpd12  | mrp_pd_mrpd          | Alfa Romeo
 
---- ZYMETOS ELS (LT) — texture packs ant vanilla modeliu ---
-mrpd13  | mrp_lt_els_vehicles  | Audi S3 LT (police2 + LT ytd)
+--- ZYMETOS ELS (LT) ---
+mrpd13  | mrp_lt_els_vehicles  | Audi S3 marked (pack mesh + LT ytd)
 mrpd14  | mrp_lt_els_vehicles  | BMW 540i LT (police2 + LT ytd)
 mrpd15  | mrp_lt_els_vehicles  | BMW X5 LT (sheriff2 + LT ytd)
 mrpd16  | mrp_lt_els_vehicles  | Skoda Octavia LT (police2 + LT ytd)
@@ -54,3 +54,7 @@ Po fix — client turi isvalyti FiveM cache: compcache mrp_lt_els_vehicles.
 NOTE (2026-07-23): mrpd22 added from re-downloaded
 b8650a-2017 Police Audi S3 (ELS Pack).rar — Unmarked Audi S3
 (custom police.yft/ytd + POLICE.xml). Marked stays mrpd13.
+NOTE (2026-07-23): mrpd13 FIXED — real Audi S3 mesh from
+b8650a-2017 Police Audi S3 (ELS Pack) Model's\Marked Audi S3 (police2.yft),
+with LT marked liveries from 3e84ec-lietuvos policija audi s3 (car_sign_1-5 + plates).
+NOT vanilla police2. mrpd22 = pack Unmarked Audi S3 (unchanged, verified).
