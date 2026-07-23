@@ -46,6 +46,7 @@ local DEFAULTS = {
     mrpd20 = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 20 (nežymėta)' },
     -- NEŽYMĖTOS LT ELS
     mrpd21 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 21 — BMW VAD (ELS)' },
+    mrpd22 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 22 — Audi S3 nežymėta (ELS)' },
 }
 
 local function normalizeModel(model)

@@ -1,6 +1,6 @@
 ============================================================
  PD SPAWN SARASAS — VISI mrpd* (nels GCPD/GCAPD spawn)
- Packai LIEKA atskiri, spawn vardai vienodi MRPD1-21
+ Packai LIEKA atskiri, spawn vardai vienodi MRPD1-22
 ============================================================
 
 --- ZYMETOS Non-ELS ---
@@ -33,9 +33,9 @@ mrpd20  | mrp_pd_undercover    | Undercover
 
 --- NEZYMETOS ELS (paciam gale) ---
 mrpd21  | mrp_lt_els_vehicles  | BMW 540i VAD LT (fbi + VAD ytd)
-          ^ VIENINTELIS unmarked LT ELS is source packu.
-            Audi S3 / X5 / Skoda / marked 540i NEturi atskiro
-            unmarked/VAD packo Downloads source'uose — klonu NERA.
+mrpd22  | mrp_lt_els_vehicles  | Audi S3 unmarked (police mesh+ytd is model pack)
+          ^ Unmarked is from BritishGamer88 "2017 Police Audi S3 (ELS Pack)"
+            Model's\Unmarked Audi S3 (not a separate LT VAD paintjob RAR).
 
 --- EMS ELS ---
 ems1    | mrp_lt_els_vehicles  | Amarok Greitoji LT (ambulance + LT ytd)
@@ -43,10 +43,14 @@ ems2    | mrp_lt_els_vehicles  | Crafter Greitoji LT (ambulance + LT ytd)
 
 SVIESOS:
 - mrpd1-12, mrpd17-20 = Non-ELS F6
-- mrpd13-16, mrpd21, ems1-2 = ELS-FiveM
+- mrpd13-16, mrpd21-22, ems1-2 = ELS-FiveM
 
-mrpd22-100 = laisvi ateiciai
+mrpd23-100 = laisvi ateiciai
 
 NOTE (2026-07-23): stream failai buvo UTF-8 sugadinti (inflate -3).
 Atstatyta is Downloads RAR ytd + vanilla yft is D:\GTAV.
 Po fix — client turi isvalyti FiveM cache: compcache mrp_lt_els_vehicles.
+
+NOTE (2026-07-23): mrpd22 added from re-downloaded
+b8650a-2017 Police Audi S3 (ELS Pack).rar — Unmarked Audi S3
+(custom police.yft/ytd + POLICE.xml). Marked stays mrpd13.

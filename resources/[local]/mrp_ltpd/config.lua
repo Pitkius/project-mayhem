@@ -293,6 +293,7 @@ Config.FleetVehicles = {
   { model = 'mrpd20', label = 'MRPD 20 (nežymėta)', emergencyLights = 'native' },
   -- NEŽYMĖTOS LT ELS
   { model = 'mrpd21', label = 'MRPD 21 — BMW 540i VAD (LT ELS)', emergencyLights = 'els' },
+  { model = 'mrpd22', label = 'MRPD 22 — Audi S3 nežymėta (ELS)', emergencyLights = 'els' },
 }
 
 --- Built-in fleet: tik Non-ELS carcols šviesos per SetVehicleSiren (ELS čia NEįtraukti).

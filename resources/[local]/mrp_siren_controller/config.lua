@@ -64,7 +64,7 @@ Config.Jobs = {
     },
 }
 
--- F6 Non-ELS tik šie. ELS: mrpd13-16 + mrpd21 (čia NEįtraukti).
+-- F6 Non-ELS tik šie. ELS: mrpd13-16 + mrpd21-22 (čia NEįtraukti).
 Config.FleetVehicles = {
     police = {
         'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
