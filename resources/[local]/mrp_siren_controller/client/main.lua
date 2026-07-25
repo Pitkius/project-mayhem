@@ -77,6 +77,33 @@ local function fleetHashSet(jobType)
     return set
 end
 
+local elsFleetHashes = nil
+local function getElsFleetHashes()
+    if elsFleetHashes then return elsFleetHashes end
+    elsFleetHashes = {}
+    for _, m in ipairs(Config.ElsFleetVehicles or {}) do
+        elsFleetHashes[joaat(m)] = true
+    end
+    return elsFleetHashes
+end
+
+local function vehicleIsElsFleet(veh)
+    if not veh or veh == 0 then return false end
+    return getElsFleetHashes()[GetEntityModel(veh)] == true
+end
+
+--- ELS mašinoms F6 režimą perduodam ELS-FiveM (be apatinio panelio).
+local function applyElsModeIfNeeded(veh, mode)
+    if not vehicleIsElsFleet(veh) then return end
+    if GetResourceState('ELS-FiveM') ~= 'started' then return end
+    local ped = PlayerPedId()
+    if GetVehiclePedIsIn(ped, false) ~= veh then return end
+    if GetPedInVehicleSeat(veh, -1) ~= ped and Config.AllowPassengerControl == false then return end
+    pcall(function()
+        exports['ELS-FiveM']:ApplyEmergencyMode(mode or 'off')
+    end)
+end
+
 local function vehicleIsFleet(veh, jobType)
     if not veh or veh == 0 then return false end
     local hash = GetEntityModel(veh)
@@ -222,6 +249,8 @@ local function requestMode(jobType, veh, mode)
     if not cfg or not veh or veh == 0 then return end
     --- Tik statebag / server event. Native SetVehicleSiren valdo vienintelis
     --- mrp_ltpd — čia nebekviečiame, kad nebūtų on/off lenktynių.
+    --- ELS fleet: iškart map'inam į ELS stage (F6 / E).
+    applyElsModeIfNeeded(veh, mode)
     TriggerServerEvent(cfg.serverEvent, mode)
     SetTimeout(220, pushUiSync)
 end
@@ -409,8 +438,16 @@ end)
 
 for _, cfg in pairs(Config.Jobs) do
     if cfg.modeStateKey then
-        AddStateBagChangeHandler(cfg.modeStateKey, '', function()
+        AddStateBagChangeHandler(cfg.modeStateKey, '', function(bagName, _key, value)
             if uiOpen then SetTimeout(50, pushUiSync) end
+            --- Jei statebag atėjo iš kito kliento / sync — vairuotojas taip pat užtikrina ELS.
+            local ent = GetEntityFromStateBagName and GetEntityFromStateBagName(bagName)
+            if ent and ent ~= 0 and DoesEntityExist(ent) and vehicleIsElsFleet(ent) then
+                local ped = PlayerPedId()
+                if GetVehiclePedIsIn(ped, false) == ent and GetPedInVehicleSeat(ent, -1) == ped then
+                    applyElsModeIfNeeded(ent, value or 'off')
+                end
+            end
         end)
     end
 end

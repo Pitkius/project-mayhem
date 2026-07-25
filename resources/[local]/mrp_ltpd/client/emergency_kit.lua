@@ -890,6 +890,13 @@ end
 
 local function ingestPdKitVehicle(vehicle, forcedMode)
     if not vehicle or vehicle == 0 or not IsEntityAVehicle(vehicle) or not DoesEntityExist(vehicle) then return end
+    --- ELS fleet: šviesas valdo ELS-FiveM (+ F6 bridge). Čia neliečiam SetVehicleSiren.
+    if fleetLightMode(GetEntityModel(vehicle)) == 'els' then
+        FLEET_BUILTIN[vehicle] = nil
+        removeLightbar(vehicle)
+        stopScriptSound(vehicle)
+        return
+    end
     FLEET_BUILTIN[vehicle] = nil
     local mode, kit = readVehicleStateBag(vehicle)
     if type(forcedMode) == 'string' and forcedMode ~= '' then

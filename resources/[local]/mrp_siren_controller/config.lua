@@ -64,15 +64,23 @@ Config.Jobs = {
     },
 }
 
--- F6 Non-ELS tik šie. ELS: mrpd13-16, mrpd21-23, ems1-2 (čia NEįtraukti).
+-- F6: Non-ELS + ELS (ELS šviesas jungia ApplyEmergencyMode bridge).
 Config.FleetVehicles = {
     police = {
         'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
         'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12',
+        'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16', 'mrpd23',
         'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
+        'mrpd21', 'mrpd22',
         'polmav', 'buzzard2',
     },
-    ambulance = { 'ambulance', 'ambulance2', 'lguard' },
+    ambulance = { 'ambulance', 'ambulance2', 'lguard', 'ems1', 'ems2', 'granger' },
+}
+
+--- Modeliai, kuriems F6 režimą map'inam į ELS-FiveM (ne SetVehicleSiren).
+Config.ElsFleetVehicles = {
+    'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16', 'mrpd21', 'mrpd22', 'mrpd23',
+    'ems1', 'ems2',
 }
 
 Config.ToneSounds = {

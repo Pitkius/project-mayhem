@@ -350,6 +350,60 @@ function changeLightStage(state, advisor, PatternPrim, PatternSec)
     TriggerServerEvent("els:changeLightStage_s", state, advisor, PatternPrim, PatternSec)
 end
 
+--- MRP F6 bridge: off | lights | sound | full
+--- stage 0=off, 1=sec, 2=prim+sec, 3=full patterns
+function ApplyEmergencyMode(mode)
+    mode = tostring(mode or 'off'):lower()
+    local ped = PlayerPedId()
+    local veh = GetVehiclePedIsUsing(ped)
+    if not veh or veh == 0 then
+        veh = GetVehiclePedIsIn(ped, false)
+    end
+    if not veh or veh == 0 then return false end
+
+    local advisor = advisorPatternSelectedIndex or 1
+    local prim = lightPatternsPrim or lightPatternPrim or 1
+    if prim < 1 then prim = 1 end
+    local sec = lightPatternSec or 1
+    if sec < 1 then sec = 1 end
+
+    local stage = 0
+    local sirenTone = 0
+    if mode == 'lights' then
+        stage = 3
+        sirenTone = 0
+    elseif mode == 'sound' then
+        stage = 3
+        sirenTone = 1
+    elseif mode == 'full' then
+        stage = 3
+        sirenTone = 1
+    else
+        stage = 0
+        sirenTone = 0
+    end
+
+    changeLightStage(stage, advisor, prim, sec)
+
+    if GetVehicleClass(veh) == 18 then
+        if stage > 0 then
+            toggleSirenMute(veh, true)
+            SetVehicleSiren(veh, true)
+        else
+            SetVehicleSiren(veh, false)
+        end
+    end
+
+    TriggerServerEvent('els:setSirenState_s', sirenTone)
+    if stage == 0 then
+        TriggerServerEvent('els:setDualSirenState_s', 0)
+        TriggerServerEvent('els:setDualSiren_s', false)
+    end
+    return true
+end
+
+exports('ApplyEmergencyMode', ApplyEmergencyMode)
+
 function changeAdvisorPattern(pat)
     TriggerServerEvent("els:changeAdvisorPattern_s", pat)
 end

@@ -34,7 +34,7 @@ local DEFAULTS = {
     mrpd14 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 14 — BMW 540i (ELS)' },
     mrpd15 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 15 — BMW X5 (ELS)' },
     mrpd16 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 16 — Skoda Hatch (ELS)' },
-    mrpd23 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 23 — Skoda Estate (ELS)' },
+    mrpd23 = { minGrade = 0, arasOrGrade = false, shopEnabled = true,  label = 'MRPD 23 — Skoda Estate (LT ELS)' },
     -- NEŽYMĖTOS Non-ELS (mrp_pd_undercover)
     mrpd17 = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 17 (nežymėta)' },
     mrpd18 = { minGrade = 6, arasOrGrade = true,  shopEnabled = true,  label = 'MRPD 18 (nežymėta)' },

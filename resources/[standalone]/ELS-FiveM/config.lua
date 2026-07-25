@@ -3,11 +3,13 @@ playButtonPressSounds = true
 printDebugInformation = false
 
 vehicleSyncDistance = 150
-environmentLightBrightness = 0.006
+--- Brightness of environmental ELS glow (was 0.006 — too dim for LT fleet)
+environmentLightBrightness = 0.035
 lightDelay = 10 -- Time in MS
 flashDelay = 15
 
-panelEnabled = true
+--- MRP: šviesas valdom F6 (mrp_siren_controller), ELS panelio apačioje nerodom
+panelEnabled = false
 panelType = "original"
 panelOffsetX = 0.0
 panelOffsetY = 0.0

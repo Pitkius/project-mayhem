@@ -1,30 +1,71 @@
 ============================================================
- PD/EMS SPAWN SARASAS
+  VISOS POLICIJOS MAŠINOS — SPAWN SARASAS (vienoje vietoje)
 ============================================================
 
---- ZYMETOS Non-ELS ---
-mrpd1-8   | mrp_pd_animuotu
-mrpd9-12  | mrp_pd_mrpd
+Šviesos:
+  Non-ELS (F6)  = mrpd1–12, mrpd17–20
+  ELS (ELS-FiveM) = mrpd13–16, mrpd21–23
 
---- ZYMETOS ELS ---
-mrpd13  | Audi S3 marked          | S3 pack + LT
-mrpd14  | BMW 540i marked         | 540i pack + LT
-mrpd15  | BMW X5 ARV marked       | X5 pack + LT
-mrpd16  | Skoda Hatch marked      | Skoda pack hatch + LT
-mrpd23  | Skoda Estate (universal)| Skoda pack estate + original UK police ytd
+Perkama: PD garažo shop (mrp_dealership PoliceDealership)
+Pack'ai lieka atskiri; spawn vardai vienodi mrpd*.
 
---- NEZYMETOS Non-ELS ---
-mrpd17-20 | undercover
+------------------------------------------------------------
+ ŽYMĖTOS — Non-ELS (F6)
+------------------------------------------------------------
+Spawn    | Mašina                         | Pack
+---------+--------------------------------+------------------
+mrpd1    | PD (animuotos šviesos)         | mrp_pd_animuotu
+mrpd2    | PD (animuotos šviesos)         | mrp_pd_animuotu
+mrpd3    | PD (animuotos šviesos)         | mrp_pd_animuotu
+mrpd4    | PD (animuotos šviesos)         | mrp_pd_animuotu
+mrpd5    | PD (animuotos šviesos)         | mrp_pd_animuotu
+mrpd6    | PD (animuotos šviesos)         | mrp_pd_animuotu
+mrpd7    | PD (animuotos / importas)      | mrp_pd_animuotu
+mrpd8    | PD (animuotos šviesos)         | mrp_pd_animuotu
+mrpd9    | Audi RS6                       | mrp_pd_mrpd
+mrpd10   | Kia Stinger                    | mrp_pd_mrpd
+mrpd11   | Hyundai                        | mrp_pd_mrpd
+mrpd12   | Alfa Romeo                     | mrp_pd_mrpd
 
---- NEZYMETOS ELS ---
-mrpd21  | BMW 540i unmarked/VAD
-mrpd22  | Audi S3 unmarked
+------------------------------------------------------------
+ ŽYMĖTOS — ELS (LT / UK liveriai)
+------------------------------------------------------------
+Spawn    | Mašina                         | Pack
+---------+--------------------------------+------------------
+mrpd13   | Audi S3 (LT ženklinta)         | mrp_lt_els_vehicles
+mrpd14   | BMW 540i (LT ženklinta)        | mrp_lt_els_vehicles
+mrpd15   | BMW X5 (LT ženklinta)          | mrp_lt_els_vehicles
+mrpd16   | Skoda Octavia Hatch (LT)       | mrp_lt_els_vehicles
+mrpd23   | Skoda Octavia Estate/universal | mrp_lt_els_vehicles (LT liveris)
 
---- EMS ELS ---
-ems1    | VW Amarok pick-up ambulance     | Amarok pack + LT
-ems2    | VW Crafter van ambulance        | Crafter Otaris ELS pack + LT
+------------------------------------------------------------
+ NEŽYMĖTOS — Non-ELS (F6)
+------------------------------------------------------------
+Spawn    | Mašina                         | Pack
+---------+--------------------------------+------------------
+mrpd17   | Undercover / nežymėta          | mrp_pd_undercover
+mrpd18   | Undercover / nežymėta          | mrp_pd_undercover
+mrpd19   | Undercover / nežymėta          | mrp_pd_undercover
+mrpd20   | Undercover / nežymėta          | mrp_pd_undercover
 
-Crafter = didelis VW furgonas (greitosios mikroautobusas).
-Amarok = pikapas.
+------------------------------------------------------------
+ NEŽYMĖTOS — ELS
+------------------------------------------------------------
+Spawn    | Mašina                         | Pack
+---------+--------------------------------+------------------
+mrpd21   | BMW 540i VAD / nežymėta        | mrp_lt_els_vehicles
+mrpd22   | Audi S3 nežymėta               | mrp_lt_els_vehicles
 
-Clear FiveM compcache mrp_lt_els_vehicles po update.
+------------------------------------------------------------
+ Greita kopija (visi spawn)
+------------------------------------------------------------
+mrpd1 mrpd2 mrpd3 mrpd4 mrpd5 mrpd6 mrpd7 mrpd8
+mrpd9 mrpd10 mrpd11 mrpd12
+mrpd13 mrpd14 mrpd15 mrpd16 mrpd23
+mrpd17 mrpd18 mrpd19 mrpd20
+mrpd21 mrpd22
+
+Laisvi ateičiai: mrpd24+
+
+Po stream update: clear FiveM compcache mrp_lt_els_vehicles
+(ir senų pack'ų jei keitei).
