@@ -22,10 +22,9 @@ mrpd22  | Audi S3 unmarked
 
 --- EMS ELS ---
 ems1    | VW Amarok pick-up ambulance     | Amarok pack + LT
-ems2    | VW Crafter van ambulance        | LAUKIA model pack (dabar vanilla + LT ytd)
+ems2    | VW Crafter van ambulance        | Crafter Otaris ELS pack + LT
 
-Crafter = didelis VW furgonas (kaip Sprinter), greitosios mikroautobusas.
-Amarok = pikapas. Abu is LT EMS paintjob RAR'u; Amarok jau turi tikra modeli,
-Crafter model pack dar neatsisiustas.
+Crafter = didelis VW furgonas (greitosios mikroautobusas).
+Amarok = pikapas.
 
 Clear FiveM compcache mrp_lt_els_vehicles po update.

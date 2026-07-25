@@ -12,6 +12,6 @@ mrpd23  | Skoda Estate (universal)   | Skoda Estate (police)                    
 mrpd21  | BMW 540i VAD               | 540i Unmarked                              | LT VAD
 mrpd22  | Audi S3 unmarked           | S3 Unmarked                                | pack unmarked
 ems1    | Amarok EMS                 | Amarok Tamlans Ambulance                   | LT amarok
-ems2    | Crafter EMS                | VANILLA — need Crafter model pack          | LT crafter
+ems2    | Crafter EMS                | df8311 Crafter Otaris Ambulance (ambulance)| LT crafter
 
-UNMARKED in original packs: S3 yes, 540i yes, X5 no, Skoda no, Amarok no.
+UNMARKED in original packs: S3 yes, 540i yes, X5 no, Skoda no, Amarok no, Crafter no.
