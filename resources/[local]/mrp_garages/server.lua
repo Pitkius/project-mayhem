@@ -1,14 +1,7 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
---- Migracija: seni gcpd/gcapd + seni mrpd13-16 (RS6…) → vieningi mrpd1-21 spawn.
---- Tvarka svarbi: pirma atlaisvinam mrpd13-16 (→9-12), tada gcpd/gcapd.
+--- Migracija TIK senų gcpd/gcapd. NELIESTI mrpd13-16 — dabar LT ELS.
 local PD_MODEL_MIGRATION_STEPS = {
-    -- seni mrp_pd_mrpd numeriai (Audi RS6…) → mrpd9-12
-    { old = 'mrpd13', new = 'mrpd9' },
-    { old = 'mrpd14', new = 'mrpd10' },
-    { old = 'mrpd15', new = 'mrpd11' },
-    { old = 'mrpd16', new = 'mrpd12' },
-    -- animuotu pack (gcapd) → mrpd1-8
     { old = 'gcapd1', new = 'mrpd1' },
     { old = 'gcapd2', new = 'mrpd2' },
     { old = 'gcapd3', new = 'mrpd3' },
@@ -17,7 +10,6 @@ local PD_MODEL_MIGRATION_STEPS = {
     { old = 'gcapd6', new = 'mrpd6' },
     { old = 'gcapd10', new = 'mrpd7' },
     { old = 'gcapd11', new = 'mrpd8' },
-    -- nežymėtos (gcpd) → mrpd17-20
     { old = 'gcpd20', new = 'mrpd17' },
     { old = 'gcpd21', new = 'mrpd18' },
     { old = 'gcpd22', new = 'mrpd19' },

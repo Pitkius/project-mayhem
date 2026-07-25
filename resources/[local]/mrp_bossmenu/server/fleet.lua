@@ -4,13 +4,8 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local FleetAccess = {} --- [model] = { minGrade, arasOrGrade, shopEnabled, label }
 local FleetDivisionLock = false
 
+--- TIK seni gcpd/gcapd. NELIESTI mrpd13-16/21-23 — dabar LT ELS spawn'ai.
 local MODEL_MIGRATION_STEPS = {
-    -- seni RS6/Stinger eilutės buvo mrpd13-16 → dabar mrpd9-12
-    { old = 'mrpd13', new = 'mrpd9' },
-    { old = 'mrpd14', new = 'mrpd10' },
-    { old = 'mrpd15', new = 'mrpd11' },
-    { old = 'mrpd16', new = 'mrpd12' },
-    -- anim / undercover originalūs vardai
     { old = 'gcapd1', new = 'mrpd1' }, { old = 'gcapd2', new = 'mrpd2' },
     { old = 'gcapd3', new = 'mrpd3' }, { old = 'gcapd4', new = 'mrpd4' },
     { old = 'gcapd5', new = 'mrpd5' }, { old = 'gcapd6', new = 'mrpd6' },
@@ -61,16 +56,21 @@ end
 
 local function seedFromDefaults()
     for model, def in pairs(DEFAULTS) do
+        local shopOn = def.shopEnabled == false and 0 or 1
         MySQL.insert.await([[
             INSERT INTO mrp_faction_fleet_access
                 (job_name, model, min_grade, aras_or_grade, shop_enabled, label)
             VALUES ('police', ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE label = IF(label IS NULL OR label = '', VALUES(label), label)
+            ON DUPLICATE KEY UPDATE
+                label = VALUES(label),
+                min_grade = VALUES(min_grade),
+                aras_or_grade = VALUES(aras_or_grade),
+                shop_enabled = IF(VALUES(shop_enabled) = 1, 1, shop_enabled)
         ]], {
             model,
             tonumber(def.minGrade) or 0,
             def.arasOrGrade and 1 or 0,
-            def.shopEnabled == false and 0 or 1,
+            shopOn,
             def.label or model,
         })
     end

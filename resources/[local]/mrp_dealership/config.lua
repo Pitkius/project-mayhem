@@ -360,10 +360,10 @@ Config.EmsDealership = {
         support = 'Pagalbinis',
     },
     vehicles = {
-        { model = 'ambulance', name = 'Greitosios pagalbos auto', brand = 'Brute', category = 'ems', price = 18000 },
-        { model = 'ems1', name = 'EMS 1 — VW Amarok (LT)', brand = 'Volkswagen', category = 'ems', price = 32000 },
-        { model = 'ems2', name = 'EMS 2 — VW Crafter (LT)', brand = 'Volkswagen', category = 'ems', price = 35000 },
-        { model = 'granger', name = 'Visureigis', brand = 'Declasse', category = 'support', price = 22000 },
+        { model = 'ambulance', name = 'Greitosios pagalbos auto', brand = 'Brute', category = 'ems', price = 18000, shopEnabled = true },
+        { model = 'ems1', name = 'EMS 1 — VW Amarok (LT ELS)', brand = 'Volkswagen', category = 'ems', price = 32000, shopEnabled = true },
+        { model = 'ems2', name = 'EMS 2 — VW Crafter (LT ELS)', brand = 'Volkswagen', category = 'ems', price = 35000, shopEnabled = true },
+        { model = 'granger', name = 'Visureigis', brand = 'Declasse', category = 'support', price = 22000, shopEnabled = true },
     },
 }
 
