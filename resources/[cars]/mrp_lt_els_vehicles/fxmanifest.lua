@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'mrp_lt_els_vehicles'
 author 'MRP'
-description 'Lietuvos PD/EMS ELS (mrpd13-16, mrpd21-22, ems1-2)'
-version '2.0.0'
+description 'Lietuvos PD/EMS ELS (mrpd13-16, mrpd21-23, ems1-2)'
+version '2.1.0'
 
 files {
     'data/**/vehicles.meta',

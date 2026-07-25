@@ -1,36 +1,31 @@
 ============================================================
- PD SPAWN SARASAS — VISI mrpd* (nels GCPD/GCAPD spawn)
+ PD/EMS SPAWN SARASAS
 ============================================================
 
 --- ZYMETOS Non-ELS ---
 mrpd1-8   | mrp_pd_animuotu
 mrpd9-12  | mrp_pd_mrpd
 
---- ZYMETOS ELS (LT) ---
-mrpd13  | Audi S3 marked          | S3 pack mesh + LT
-mrpd14  | BMW 540i marked         | 540i pack mesh + LT
-mrpd15  | BMW X5 ARV marked       | X5 pack mesh + LT
-mrpd16  | Skoda Hatch marked      | Skoda pack hatch mesh + LT
+--- ZYMETOS ELS ---
+mrpd13  | Audi S3 marked          | S3 pack + LT
+mrpd14  | BMW 540i marked         | 540i pack + LT
+mrpd15  | BMW X5 ARV marked       | X5 pack + LT
+mrpd16  | Skoda Hatch marked      | Skoda pack hatch + LT
+mrpd23  | Skoda Estate (universal)| Skoda pack estate + original UK police ytd
 
 --- NEZYMETOS Non-ELS ---
-mrpd17-20 | mrp_pd_undercover
+mrpd17-20 | undercover
 
 --- NEZYMETOS ELS ---
-mrpd21  | BMW 540i unmarked/VAD   | 540i pack unmarked mesh + LT VAD
-mrpd22  | Audi S3 unmarked        | S3 pack unmarked mesh+ytd
+mrpd21  | BMW 540i unmarked/VAD
+mrpd22  | Audi S3 unmarked
 
 --- EMS ELS ---
-ems1    | Amarok                  | Amarok pack mesh + LT
-ems2    | Crafter                 | LAUKIA model pack (vanilla + LT)
+ems1    | VW Amarok pick-up ambulance     | Amarok pack + LT
+ems2    | VW Crafter van ambulance        | LAUKIA model pack (dabar vanilla + LT ytd)
 
-UNMARKED IS ORIGINAL PACKU:
-- S3: YES (mrpd22) + Surrey light alt (neprideta)
-- 540i: YES (mrpd21)
-- X5: NE (ARV/Traffic = abi zymetos)
-- Skoda: NE (Estate/Hatch = abi zymetos)
-- Amarok: NE
-
-TRUKSTA: Crafter EMS model pack
-OPTIONAL: Skoda Estate kaip antras zymetas spawn
+Crafter = didelis VW furgonas (kaip Sprinter), greitosios mikroautobusas.
+Amarok = pikapas. Abu is LT EMS paintjob RAR'u; Amarok jau turi tikra modeli,
+Crafter model pack dar neatsisiustas.
 
 Clear FiveM compcache mrp_lt_els_vehicles po update.

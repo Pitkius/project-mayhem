@@ -2,27 +2,16 @@
   mrp_lt_els_vehicles — SPAWN / SOURCE MAPPING
 ========================================================
 
-Spawn   | Label                         | Mesh (ORIGINAL pack)                      | Livery
---------+-------------------------------+------------------------------------------+------------------
-mrpd13  | Audi S3 marked                | S3 pack → Marked (police2)                 | LT audi s3
-mrpd14  | BMW 540i marked               | 540i pack → Marked (police)                | LT bmw 540i
-mrpd15  | BMW X5 ARV marked             | X5 pack → ARV (sheriff2)                   | LT bmw x5
-mrpd16  | Skoda Octavia Hatch marked    | Skoda pack → Hatchback (police2)           | LT skoda
-mrpd21  | BMW 540i VAD / unmarked       | 540i pack → Unmarked (police2)             | LT VAD
-mrpd22  | Audi S3 unmarked              | S3 pack → Unmarked (police)                | pack unmarked
-ems1    | VW Amarok EMS                 | Amarok Tamlans Ambulance (ambulance)       | LT amarok
-ems2    | VW Crafter EMS                | VANILLA — NEED Crafter model pack          | LT crafter
+Spawn   | Label                      | Mesh                                      | Livery
+--------+----------------------------+-------------------------------------------+-------------
+mrpd13  | Audi S3 marked             | S3 Marked                                  | LT
+mrpd14  | BMW 540i marked            | 540i Marked                                | LT
+mrpd15  | BMW X5 ARV                 | X5 ARV                                     | LT
+mrpd16  | Skoda Hatch                | Skoda Hatchback (police2)                  | LT skoda
+mrpd23  | Skoda Estate (universal)   | Skoda Estate (police)                      | pack UK police (zenklinta)
+mrpd21  | BMW 540i VAD               | 540i Unmarked                              | LT VAD
+mrpd22  | Audi S3 unmarked           | S3 Unmarked                                | pack unmarked
+ems1    | Amarok EMS                 | Amarok Tamlans Ambulance                   | LT amarok
+ems2    | Crafter EMS                | VANILLA — need Crafter model pack          | LT crafter
 
-========== ORIGINAL PACK UNMARKED AUDIT ==========
-Pack                              | Variants found                         | Unmarked?
-----------------------------------+----------------------------------------+----------
-Audi S3 ELS                       | Marked / Unmarked / Unmarked Surrey    | YES → mrpd22 (Surrey = alt lights, not added)
-BMW 540i xDrive                   | Marked / Unmarked                      | YES → mrpd21
-BMW X5 Lancashire                 | ARV / Traffic (both marked liveries)   | NO
-Skoda Octavia VRS Updated         | Estate / Hatchback (both marked)       | NO
-Amarok Tamlans Ambulance          | Single ambulance model                 | NO
-Crafter                           | only LT paintjob RAR downloaded        | n/a
-
-LT-only paintjob RARs (no mesh): used as ytd on matching original meshes above.
-Skoda Estate body exists in pack but is NOT unmarked — second marked body style.
-Say if you want Estate as extra spawn (e.g. mrpd23).
+UNMARKED in original packs: S3 yes, 540i yes, X5 no, Skoda no, Amarok no.

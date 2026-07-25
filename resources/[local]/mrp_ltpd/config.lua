@@ -285,7 +285,8 @@ Config.FleetVehicles = {
   { model = 'mrpd13', label = 'MRPD 13 — Audi S3 (LT ELS)', emergencyLights = 'els' },
   { model = 'mrpd14', label = 'MRPD 14 — BMW 540i (LT ELS)', emergencyLights = 'els' },
   { model = 'mrpd15', label = 'MRPD 15 — BMW X5 (LT ELS)', emergencyLights = 'els' },
-  { model = 'mrpd16', label = 'MRPD 16 — Skoda Octavia (LT ELS)', emergencyLights = 'els' },
+  { model = 'mrpd16', label = 'MRPD 16 — Skoda Hatch (LT ELS)', emergencyLights = 'els' },
+  { model = 'mrpd23', label = 'MRPD 23 — Skoda Estate (ELS)', emergencyLights = 'els' },
   -- NEŽYMĖTOS Non-ELS
   { model = 'mrpd17', label = 'MRPD 17 (nežymėta)', emergencyLights = 'native' },
   { model = 'mrpd18', label = 'MRPD 18 (nežymėta)', emergencyLights = 'native' },

@@ -5,6 +5,7 @@ vcf_files = {
     "mrpd16.xml",
     "mrpd21.xml",
     "mrpd22.xml",
+    "mrpd23.xml",
     "ems1.xml",
     "ems2.xml",
 }
