@@ -1,53 +1,36 @@
 ============================================================
  PD SPAWN SARASAS — VISI mrpd* (nels GCPD/GCAPD spawn)
- Packai LIEKA atskiri, spawn vardai vienodi MRPD1-22
 ============================================================
 
 --- ZYMETOS Non-ELS ---
-Spawn   | Pack                 | Kas
---------+----------------------+------------------
-mrpd1   | mrp_pd_animuotu      | Animuotos sviesos
-mrpd2   | mrp_pd_animuotu      | Animuotos sviesos
-mrpd3   | mrp_pd_animuotu      | Animuotos sviesos
-mrpd4   | mrp_pd_animuotu      | Animuotos sviesos
-mrpd5   | mrp_pd_animuotu      | Animuotos sviesos
-mrpd6   | mrp_pd_animuotu      | Animuotos sviesos
-mrpd7   | mrp_pd_animuotu      | Animuotos (import)
-mrpd8   | mrp_pd_animuotu      | Animuotos sviesos
-mrpd9   | mrp_pd_mrpd          | Audi RS6
-mrpd10  | mrp_pd_mrpd          | Kia Stinger
-mrpd11  | mrp_pd_mrpd          | Hyundai
-mrpd12  | mrp_pd_mrpd          | Alfa Romeo
+mrpd1-8   | mrp_pd_animuotu
+mrpd9-12  | mrp_pd_mrpd
 
 --- ZYMETOS ELS (LT) ---
-mrpd13  | mrp_lt_els_vehicles  | Audi S3 — pack mesh + LT liveris
-mrpd14  | mrp_lt_els_vehicles  | BMW 540i — pack mesh + LT liveris
-mrpd15  | mrp_lt_els_vehicles  | BMW X5 ARV — pack mesh + LT liveris
-mrpd16  | mrp_lt_els_vehicles  | Skoda Octavia — LAUKIA model pack (dabar vanilla+LT ytd)
+mrpd13  | Audi S3 marked          | S3 pack mesh + LT
+mrpd14  | BMW 540i marked         | 540i pack mesh + LT
+mrpd15  | BMW X5 ARV marked       | X5 pack mesh + LT
+mrpd16  | Skoda Hatch marked      | Skoda pack hatch mesh + LT
 
---- NEZYMETOS Non-ELS (gale) ---
-mrpd17  | mrp_pd_undercover    | Undercover
-mrpd18  | mrp_pd_undercover    | Undercover
-mrpd19  | mrp_pd_undercover    | Undercover
-mrpd20  | mrp_pd_undercover    | Undercover
+--- NEZYMETOS Non-ELS ---
+mrpd17-20 | mrp_pd_undercover
 
---- NEZYMETOS ELS (paciam gale) ---
-mrpd21  | mrp_lt_els_vehicles  | BMW 540i VAD — pack unmarked mesh + LT VAD ytd
-mrpd22  | mrp_lt_els_vehicles  | Audi S3 unmarked — pack unmarked mesh+ytd
+--- NEZYMETOS ELS ---
+mrpd21  | BMW 540i unmarked/VAD   | 540i pack unmarked mesh + LT VAD
+mrpd22  | Audi S3 unmarked        | S3 pack unmarked mesh+ytd
 
 --- EMS ELS ---
-ems1    | mrp_lt_els_vehicles  | Amarok — LAUKIA model pack (dabar vanilla+LT ytd)
-ems2    | mrp_lt_els_vehicles  | Crafter — LAUKIA model pack (dabar vanilla+LT ytd)
+ems1    | Amarok                  | Amarok pack mesh + LT
+ems2    | Crafter                 | LAUKIA model pack (vanilla + LT)
 
-SVIESOS:
-- mrpd1-12, mrpd17-20 = Non-ELS F6
-- mrpd13-16, mrpd21-22, ems1-2 = ELS-FiveM
+UNMARKED IS ORIGINAL PACKU:
+- S3: YES (mrpd22) + Surrey light alt (neprideta)
+- 540i: YES (mrpd21)
+- X5: NE (ARV/Traffic = abi zymetos)
+- Skoda: NE (Estate/Hatch = abi zymetos)
+- Amarok: NE
 
-MODEL PACK STATUS (Downloads):
-OK  Audi S3 ELS Pack          → mrpd13 + mrpd22
-OK  BMW 540i xDrive Pack      → mrpd14 + mrpd21
-OK  Lancashire BMW X5 Pack    → mrpd15 (nėra unmarked)
-NEED Skoda Octavia police pack
-NEED Amarok / Crafter EMS packs
+TRUKSTA: Crafter EMS model pack
+OPTIONAL: Skoda Estate kaip antras zymetas spawn
 
-Po mesh keitimo — clear FiveM compcache mrp_lt_els_vehicles.
+Clear FiveM compcache mrp_lt_els_vehicles po update.

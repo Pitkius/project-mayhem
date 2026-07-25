@@ -2,29 +2,27 @@
   mrp_lt_els_vehicles — SPAWN / SOURCE MAPPING
 ========================================================
 
-Spawn   | Label                         | Mesh source                         | Livery source
---------+-------------------------------+-------------------------------------+---------------------------
-mrpd13  | Audi S3 marked                | b8650a S3 pack Marked (police2.yft) | 3e84ec LT audi s3 ytd
-mrpd14  | BMW 540i marked               | 8bdc8d 540i pack Marked (police)    | 7c8137 LT bmw 540i ytd
-mrpd15  | BMW X5 marked (ARV)           | 1fb357 X5 pack ARV (sheriff2)       | 62981e LT bmw x5 ytd
-mrpd16  | Skoda Octavia marked          | VANILLA police2 (NO MODEL PACK YET) | a477d2 LT skoda ytd
-mrpd21  | BMW 540i VAD / unmarked       | 8bdc8d 540i pack Unmarked (police2) | 2d3bd2 LT VAD ytd
-mrpd22  | Audi S3 unmarked              | b8650a S3 pack Unmarked (police)    | pack unmarked ytd
-ems1    | VW Amarok EMS                 | VANILLA ambulance (NO MODEL PACK)   | 93a53a LT amarok ytd
-ems2    | VW Crafter EMS                | VANILLA ambulance (NO MODEL PACK)   | 964157 LT crafter ytd
+Spawn   | Label                         | Mesh (ORIGINAL pack)                      | Livery
+--------+-------------------------------+------------------------------------------+------------------
+mrpd13  | Audi S3 marked                | S3 pack → Marked (police2)                 | LT audi s3
+mrpd14  | BMW 540i marked               | 540i pack → Marked (police)                | LT bmw 540i
+mrpd15  | BMW X5 ARV marked             | X5 pack → ARV (sheriff2)                   | LT bmw x5
+mrpd16  | Skoda Octavia Hatch marked    | Skoda pack → Hatchback (police2)           | LT skoda
+mrpd21  | BMW 540i VAD / unmarked       | 540i pack → Unmarked (police2)             | LT VAD
+mrpd22  | Audi S3 unmarked              | S3 pack → Unmarked (police)                | pack unmarked
+ems1    | VW Amarok EMS                 | Amarok Tamlans Ambulance (ambulance)       | LT amarok
+ems2    | VW Crafter EMS                | VANILLA — NEED Crafter model pack          | LT crafter
 
-DOWNLOADED MODEL PACKS (2026-07-25):
-- OK  b8650a-2017 Police Audi S3 (ELS Pack).rar     → mrpd13 + mrpd22
-- OK  8bdc8d-2018 Police BMW 540i xDrive (Pack).rar → mrpd14 + mrpd21
-- OK  1fb357-2017 Lancashire Police BMW X5.rar      → mrpd15 (ARV; no unmarked in pack)
-- MISSING Skoda Octavia police ELS/model pack
-- MISSING Amarok / Crafter EMS model packs
+========== ORIGINAL PACK UNMARKED AUDIT ==========
+Pack                              | Variants found                         | Unmarked?
+----------------------------------+----------------------------------------+----------
+Audi S3 ELS                       | Marked / Unmarked / Unmarked Surrey    | YES → mrpd22 (Surrey = alt lights, not added)
+BMW 540i xDrive                   | Marked / Unmarked                      | YES → mrpd21
+BMW X5 Lancashire                 | ARV / Traffic (both marked liveries)   | NO
+Skoda Octavia VRS Updated         | Estate / Hatchback (both marked)       | NO
+Amarok Tamlans Ambulance          | Single ambulance model                 | NO
+Crafter                           | only LT paintjob RAR downloaded        | n/a
 
-UNMARKED:
-- Audi S3: pack unmarked → mrpd22
-- BMW 540i: pack unmarked mesh + LT VAD ytd → mrpd21
-- BMW X5 / Skoda: no unmarked variant in downloaded packs
-
-NOTE: LT VAD ytd was originally painted for vanilla fbi. If mrpd21 shows
-pink/missing textures in-game, VAD liveries need remapping onto the BMW
-unmarked template in CodeWalker/OpenIV.
+LT-only paintjob RARs (no mesh): used as ytd on matching original meshes above.
+Skoda Estate body exists in pack but is NOT unmarked — second marked body style.
+Say if you want Estate as extra spawn (e.g. mrpd23).
