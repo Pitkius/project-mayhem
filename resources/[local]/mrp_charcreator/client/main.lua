@@ -176,7 +176,8 @@ local function openWizardUi(editMode, preloaded)
         if (editMode == true or pendingEditMode) and LocalPlayer.state.isLoggedIn then
             data.editMode = true
         end
-        data.clothingItems = Config.CreatorClothingItems or {}
+        -- Live drawable counts from streamed packs (fallback = config caps)
+        data.clothingItems = CharAppearance.getClothingLimits(nil, Config.CreatorClothingItems or {})
         pendingEditMode = false
         inCreator = true
         SetNuiFocus(true, true)
@@ -344,7 +345,13 @@ RegisterNUICallback('setClothing', function(data, cb)
 end)
 
 RegisterNUICallback('getClothingLimits', function(_, cb)
-    local items = Config.CreatorClothingItems or Config.ClothingShopItems or {}
+    -- Clothing shop uses a shorter category list; register/creator uses full list.
+    local items
+    if ShopSession and ShopSession.IsActive and ShopSession.IsActive() and ShopSession.kind == 'clothing' then
+        items = Config.ClothingShopItems or Config.CreatorClothingItems or {}
+    else
+        items = Config.CreatorClothingItems or Config.ClothingShopItems or {}
+    end
     cb(CharAppearance.getClothingLimits(nil, items))
 end)
 
