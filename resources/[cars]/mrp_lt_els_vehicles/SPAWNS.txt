@@ -20,10 +20,10 @@ mrpd11  | mrp_pd_mrpd          | Hyundai
 mrpd12  | mrp_pd_mrpd          | Alfa Romeo
 
 --- ZYMETOS ELS (LT) ---
-mrpd13  | mrp_lt_els_vehicles  | Audi S3 marked (pack mesh + LT ytd)
-mrpd14  | mrp_lt_els_vehicles  | BMW 540i LT (police2 + LT ytd)
-mrpd15  | mrp_lt_els_vehicles  | BMW X5 LT (sheriff2 + LT ytd)
-mrpd16  | mrp_lt_els_vehicles  | Skoda Octavia LT (police2 + LT ytd)
+mrpd13  | mrp_lt_els_vehicles  | Audi S3 — pack mesh + LT liveris
+mrpd14  | mrp_lt_els_vehicles  | BMW 540i — pack mesh + LT liveris
+mrpd15  | mrp_lt_els_vehicles  | BMW X5 ARV — pack mesh + LT liveris
+mrpd16  | mrp_lt_els_vehicles  | Skoda Octavia — LAUKIA model pack (dabar vanilla+LT ytd)
 
 --- NEZYMETOS Non-ELS (gale) ---
 mrpd17  | mrp_pd_undercover    | Undercover
@@ -32,29 +32,22 @@ mrpd19  | mrp_pd_undercover    | Undercover
 mrpd20  | mrp_pd_undercover    | Undercover
 
 --- NEZYMETOS ELS (paciam gale) ---
-mrpd21  | mrp_lt_els_vehicles  | BMW 540i VAD LT (fbi + VAD ytd)
-mrpd22  | mrp_lt_els_vehicles  | Audi S3 unmarked (police mesh+ytd is model pack)
-          ^ Unmarked is from BritishGamer88 "2017 Police Audi S3 (ELS Pack)"
-            Model's\Unmarked Audi S3 (not a separate LT VAD paintjob RAR).
+mrpd21  | mrp_lt_els_vehicles  | BMW 540i VAD — pack unmarked mesh + LT VAD ytd
+mrpd22  | mrp_lt_els_vehicles  | Audi S3 unmarked — pack unmarked mesh+ytd
 
 --- EMS ELS ---
-ems1    | mrp_lt_els_vehicles  | Amarok Greitoji LT (ambulance + LT ytd)
-ems2    | mrp_lt_els_vehicles  | Crafter Greitoji LT (ambulance + LT ytd)
+ems1    | mrp_lt_els_vehicles  | Amarok — LAUKIA model pack (dabar vanilla+LT ytd)
+ems2    | mrp_lt_els_vehicles  | Crafter — LAUKIA model pack (dabar vanilla+LT ytd)
 
 SVIESOS:
 - mrpd1-12, mrpd17-20 = Non-ELS F6
 - mrpd13-16, mrpd21-22, ems1-2 = ELS-FiveM
 
-mrpd23-100 = laisvi ateiciai
+MODEL PACK STATUS (Downloads):
+OK  Audi S3 ELS Pack          → mrpd13 + mrpd22
+OK  BMW 540i xDrive Pack      → mrpd14 + mrpd21
+OK  Lancashire BMW X5 Pack    → mrpd15 (nėra unmarked)
+NEED Skoda Octavia police pack
+NEED Amarok / Crafter EMS packs
 
-NOTE (2026-07-23): stream failai buvo UTF-8 sugadinti (inflate -3).
-Atstatyta is Downloads RAR ytd + vanilla yft is D:\GTAV.
-Po fix — client turi isvalyti FiveM cache: compcache mrp_lt_els_vehicles.
-
-NOTE (2026-07-23): mrpd22 added from re-downloaded
-b8650a-2017 Police Audi S3 (ELS Pack).rar — Unmarked Audi S3
-(custom police.yft/ytd + POLICE.xml). Marked stays mrpd13.
-NOTE (2026-07-23): mrpd13 FIXED — real Audi S3 mesh from
-b8650a-2017 Police Audi S3 (ELS Pack) Model's\Marked Audi S3 (police2.yft),
-with LT marked liveries from 3e84ec-lietuvos policija audi s3 (car_sign_1-5 + plates).
-NOT vanilla police2. mrpd22 = pack Unmarked Audi S3 (unchanged, verified).
+Po mesh keitimo — clear FiveM compcache mrp_lt_els_vehicles.
