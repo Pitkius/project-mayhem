@@ -12,6 +12,63 @@ Config.Blip = {
 
 Config.Permissions = {
     boss_menu = 4,
+    revive = 0,
+    heal = 0,
+}
+
+--- qb-target medicininės sąveikos (žaidėjai)
+Config.Medical = {
+    maxDistance = 2.8,
+    revive = {
+        progressMs = 8500,
+        label = 'Atgaivinama…',
+        anim = { dict = 'mini@cpr@char_a@cpr_str', clip = 'cpr_pumpchest', flag = 1 },
+        health = 200,
+    },
+    heal = {
+        progressMs = 5500,
+        label = 'Gydoma…',
+        anim = { dict = 'anim@heists@narcotics@funding@gang_idle', clip = 'gang_chatting_idle01', flag = 49 },
+        health = 200,
+        requireInjured = true, --- tik jei health < max
+    },
+    --- Naudojami daiktai (CreateUseableItem)
+    items = {
+        bandage = {
+            progressMs = 3500,
+            label = 'Tvarkoma žaizda…',
+            healAmount = 25, --- pridėti prie dabartinio health (max 200)
+            anim = { dict = 'anim@heists@narcotics@funding@gang_idle', clip = 'gang_chatting_idle01', flag = 49 },
+            canUseOnOthers = true,
+            emsOnlyOnOthers = false,
+        },
+        painkillers = {
+            progressMs = 2500,
+            label = 'Geriami nuskausminamieji…',
+            healAmount = 15,
+            anim = { dict = 'mp_suicide', clip = 'pill', flag = 49 },
+            canUseOnOthers = false,
+            emsOnlyOnOthers = false,
+        },
+        firstaid = {
+            progressMs = 7000,
+            label = 'Naudojamas pirmosios pagalbos rinkinys…',
+            healAmount = 80,
+            canRevive = true, --- gali atgaivinti negyvą (tik EMS tarnyboje ant kito)
+            anim = { dict = 'anim@heists@narcotics@funding@gang_idle', clip = 'gang_chatting_idle01', flag = 49 },
+            canUseOnOthers = true,
+            emsOnlyOnOthers = true,
+        },
+        ifaks = {
+            progressMs = 4500,
+            label = 'Naudojamas medicininis rinkinys…',
+            healAmount = 50,
+            armour = 25,
+            anim = { dict = 'anim@heists@narcotics@funding@gang_idle', clip = 'gang_chatting_idle01', flag = 49 },
+            canUseOnOthers = true,
+            emsOnlyOnOthers = false,
+        },
+    },
 }
 
 --- Medicininė / tarnybinė apranga – žr. config_duty_outfits.lua (addon kolekcijos mrp_gmp_uniforms)

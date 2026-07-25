@@ -288,4 +288,25 @@ CreateThread(function()
         },
         distance = Config.TargetDistance + 0.65,
     })
+
+    exports['qb-target']:AddGlobalVehicle({
+        options = {
+            {
+                icon = 'fas fa-taxi',
+                label = 'Taxometras',
+                canInteract = function(entity)
+                    if not isTaxiOnDuty() then return false end
+                    local ped = PlayerPedId()
+                    if GetVehiclePedIsIn(ped, false) ~= entity then return false end
+                    if GetPedInVehicleSeat(entity, -1) ~= ped then return false end
+                    local model = string.lower(tostring(GetDisplayNameFromVehicleModel(GetEntityModel(entity)) or ''))
+                    return Config.AllowedTaxiModels and Config.AllowedTaxiModels[model] == true
+                end,
+                action = function()
+                    TriggerEvent('mrp_taxi:client:openMeterMenu')
+                end,
+            },
+        },
+        distance = 2.0,
+    })
 end)

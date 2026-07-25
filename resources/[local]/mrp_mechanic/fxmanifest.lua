@@ -19,6 +19,7 @@ shared_scripts {
 client_scripts {
     '@mrp_hud/client/theme_nui_consumer.lua',
     'client/main.lua',
+    'client/field_repair.lua',
     'client/material_supply.lua',
     'client/craft_ui.lua',
     'client/doors.lua',

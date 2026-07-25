@@ -60,6 +60,21 @@ NEREIKIA SQL:
   [ ] Config.DebugHeistVendor.enabled = false (mrp_hacking/config.lua)
   [ ] Patikrinti ranger NPC koordinates MLO interjere (mrp_outdoors/config.lua)
   [ ] Live test: ATM, 24/7, Fleeca, outdoors licencija + žvejyba
+  [ ] MySQL backup cron (žr. žemiau)
+
+=== MYSQL BACKUP (VPS, kas 24h) ===
+
+  Skriptas: scripts/backup-mysql.sh
+  Env pavyzdys: scripts/backup-mysql.env.example
+  → nukopijuok į /home/fivem/.config/mrp-mysql-backup.env (chmod 600), įrašyk slaptažodį.
+
+  Cron (04:00 kasdien):
+    0 4 * * * /home/fivem/server/scripts/backup-mysql.sh
+
+  Retention: paskutiniai 7 daily + iki 4 weekly; max amžius 35d; max ~2GB.
+  Dump: /home/fivem/backups/mysql/<db>_YYYY-MM-DD_HHMMSS.sql.gz + backup.log greta.
+  Restore: gunzip -c FAILAS.sql.gz | mysql -u USER -p DATABASE
+  Optional Discord: BACKUP_DISCORD_WEBHOOK=... tame pačiame env faile.
 
 === ŽINOMOS RIBOS (ne bug'ai, bet svarbu žinoti) ===
 

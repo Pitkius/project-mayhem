@@ -260,17 +260,6 @@ RegisterNetEvent('mrp_ambulance:client:applyOutfit', function(data)
     applyEmsOutfitIndex(idx)
 end)
 
-RegisterNetEvent('mrp_ambulance:client:outdoorBay', function(data)
-    if not isEmsOnDuty() then
-        return QBCore.Functions.Notify('Tik EMS tarnyboje.', 'error')
-    end
-    local i = 1
-    if type(data) == 'table' and data.bayIndex ~= nil then
-        i = tonumber(data.bayIndex) or 1
-    end
-    QBCore.Functions.Notify(('Priėmimo zona #%s – prijunk su savo revive / hospital skriptu.'):format(i), 'primary', 6500)
-end)
-
 CreateThread(function()
     local bl = Config.Blip
     for _, st in ipairs(Config.Stations or {}) do
@@ -358,7 +347,7 @@ CreateThread(function()
                     type = 'client',
                     event = 'mrp_ambulance:client:outdoorBay',
                     icon = 'fas fa-user-injured',
-                    label = ('Priėmimo vieta #%s'):format(i),
+                    label = ('Priėmimas / gydymas #%s'):format(i),
                     bayIndex = i,
                     canInteract = function()
                         return isEmsOnDuty()

@@ -26,6 +26,7 @@ client_scripts {
     'client/divisions.lua',
     'client/fleet_spawn.lua',
     'client/main.lua',
+    'client/player_targets.lua',
     'client/pd_craft.lua',
     'client/cctv_props.lua',
     'client/cctv.lua',

@@ -3,6 +3,20 @@ Config = {}
 Config.JobName = 'mechanic'
 Config.TargetDistance = 3.2
 
+--- Lauko remontas per qb-target (ant transporto, ne tik bay)
+Config.FieldRepair = {
+    maxDistance = 4.0,
+    progressMs = 9000,
+    label = 'Remontuojama…',
+    anim = { dict = 'mini@repair', clip = 'fixing_a_player', flag = 49 },
+    requireItem = 'repairkit', --- nil = be item
+    consumeItem = true,
+    cleanProgressMs = 4500,
+    cleanLabel = 'Plaunama…',
+    flipProgressMs = 3500,
+    flipLabel = 'Apverčiama…',
+}
+
 --- LS dokai — mechanikų bazė
 Config.Base = vector4(153.8655, -3011.3054, 7.0409, 266.9864)
 

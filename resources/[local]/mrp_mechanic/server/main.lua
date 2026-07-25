@@ -604,3 +604,82 @@ RegisterNetEvent('mrp_mechanic:server:debugOpenPickaxeShop', function()
     local pickaxe = Config.DebugSandboxPickaxeShop or {}
     exports['qb-inventory']:OpenShop(src, pickaxe.name or 'mrp_mech_debug_pickaxes')
 end)
+
+local function isMechanicOnDuty(src)
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P then return false end
+    local j = P.PlayerData.job
+    return j and j.name == Config.JobName and j.onduty == true
+end
+
+local function nearVehicleNet(src, netId, maxDist)
+    netId = tonumber(netId)
+    if not netId then return false, nil end
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return false, nil end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false, nil end
+    local d = #(GetEntityCoords(ped) - GetEntityCoords(veh))
+    if d > (maxDist or 4.5) then return false, nil end
+    return true, veh
+end
+
+QBCore.Functions.CreateCallback('mrp_mechanic:server:canFieldRepair', function(src, cb, netId)
+    if not isMechanicOnDuty(src) then
+        return cb(false, 'Tik mechanikams tarnyboje.')
+    end
+    local ok = nearVehicleNet(src, netId, (Config.FieldRepair and Config.FieldRepair.maxDistance or 4.0) + 0.75)
+    if not ok then
+        return cb(false, 'Per toli nuo transporto.')
+    end
+    local cfg = Config.FieldRepair or {}
+    local need = cfg.requireItem
+    if need and need ~= '' then
+        local P = QBCore.Functions.GetPlayer(src)
+        if not P or not P.Functions.GetItemByName(need) then
+            local label = (QBCore.Shared.Items[need] and QBCore.Shared.Items[need].label) or need
+            return cb(false, ('Reikia: %s'):format(label))
+        end
+    end
+    cb(true)
+end)
+
+RegisterNetEvent('mrp_mechanic:server:fieldRepair', function(netId)
+    local src = source
+    if not isMechanicOnDuty(src) then return end
+    local maxDist = (Config.FieldRepair and Config.FieldRepair.maxDistance) or 4.0
+    local near = nearVehicleNet(src, netId, maxDist + 1.0)
+    if not near then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
+    end
+    local cfg = Config.FieldRepair or {}
+    local need = cfg.requireItem
+    if need and need ~= '' and cfg.consumeItem ~= false then
+        local P = QBCore.Functions.GetPlayer(src)
+        if not P or not P.Functions.RemoveItem(need, 1) then
+            return TriggerClientEvent('QBCore:Notify', src, 'Neturite remonto rinkinio.', 'error')
+        end
+        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[need], 'remove')
+    end
+    TriggerClientEvent('mrp_mechanic:client:doFieldRepair', src, netId)
+end)
+
+RegisterNetEvent('mrp_mechanic:server:fieldClean', function(netId)
+    local src = source
+    if not isMechanicOnDuty(src) then return end
+    local maxDist = (Config.FieldRepair and Config.FieldRepair.maxDistance) or 4.0
+    if not nearVehicleNet(src, netId, maxDist + 1.0) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
+    end
+    TriggerClientEvent('mrp_mechanic:client:doFieldClean', src, netId)
+end)
+
+RegisterNetEvent('mrp_mechanic:server:fieldFlip', function(netId)
+    local src = source
+    if not isMechanicOnDuty(src) then return end
+    local maxDist = (Config.FieldRepair and Config.FieldRepair.maxDistance) or 4.0
+    if not nearVehicleNet(src, netId, maxDist + 1.0) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
+    end
+    TriggerClientEvent('mrp_mechanic:client:doFieldFlip', src, netId)
+end)

@@ -15,6 +15,7 @@ shared_scripts {
 
 client_scripts {
     'client/main.lua',
+    'client/medical.lua',
     'client/boss.lua',
     --- 'client/elevator.lua' — perkelta į mrp_elevators
 }
@@ -24,3 +25,4 @@ server_scripts {
 }
 
 dependency 'qb-core'
+dependency 'qb-target'

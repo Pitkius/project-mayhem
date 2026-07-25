@@ -132,13 +132,39 @@ local function openFineMenu(targetId)
     TriggerEvent('qb-menu:client:openMenu', menu, false, true)
 end
 
+local function targetRestrained(ped)
+    local idx = NetworkGetPlayerIndexFromPed(ped)
+    if idx == -1 then return false end
+    return Player(idx).state.ltpdCuffed == true
+end
+
+local function targetHandsUp(ped)
+    if not ped or ped == 0 then return false end
+    if IsEntityPlayingAnim(ped, 'missminuteman_1ig_2', 'handsup_base', 3) then return true end
+    local idx = NetworkGetPlayerIndexFromPed(ped)
+    if idx == -1 then return false end
+    return Player(idx).state.handsUp == true
+end
+
+local function isEntityDown(ped)
+    if not ped or ped == 0 then return false end
+    if IsEntityDead(ped) or IsPedDeadOrDying(ped, true) then return true end
+    local idx = NetworkGetPlayerIndexFromPed(ped)
+    if idx == -1 then return false end
+    local st = Player(idx).state
+    return st and (st.isDead == true or st.dead == true)
+end
+
 CreateThread(function()
     Wait(2000)
+    while GetResourceState('qb-target') ~= 'started' do
+        Wait(300)
+    end
     exports['qb-target']:AddGlobalPlayer({
         options = {
             {
                 icon = 'fas fa-file-invoice-dollar',
-                label = 'Bauda',
+                label = 'Bauda (gamtosauga)',
                 canInteract = function()
                     return isRangerOnDuty() and hasGrade(Config.Permissions.fine or 0)
                 end,
@@ -148,8 +174,35 @@ CreateThread(function()
                     openFineMenu(GetPlayerServerId(idx))
                 end,
             },
+            {
+                icon = 'fas fa-handcuffs',
+                label = 'Uždėti / nuimti antrankius',
+                canInteract = function(entity)
+                    if not isRangerOnDuty() or not hasGrade(Config.Permissions.cuff or 0) then return false end
+                    if targetRestrained(entity) then return true end
+                    return targetHandsUp(entity) or isEntityDown(entity)
+                end,
+                action = function(entity)
+                    local idx = NetworkGetPlayerIndexFromPed(entity)
+                    if idx == -1 then return end
+                    TriggerServerEvent('mrp_ranger:server:cuffPlayer', GetPlayerServerId(idx))
+                end,
+            },
+            {
+                icon = 'fas fa-search',
+                label = 'Apieškoti (gamtosauga)',
+                canInteract = function(entity)
+                    if not isRangerOnDuty() then return false end
+                    return targetRestrained(entity) or targetHandsUp(entity) or isEntityDown(entity)
+                end,
+                action = function(entity)
+                    local idx = NetworkGetPlayerIndexFromPed(entity)
+                    if idx == -1 then return end
+                    TriggerServerEvent('mrp_ranger:server:searchPlayer', GetPlayerServerId(idx))
+                end,
+            },
         },
-        distance = 2.0,
+        distance = 2.5,
     })
 end)
 

@@ -42,6 +42,11 @@ _MRPD_BACKUP/
 # TypeScript build cache (mrp_drugs web)
 **/tsconfig.tsbuildinfo
 
+# MySQL backup secrets + local dump tree (never commit)
+scripts/backup-mysql.env
+backups/mysql/
+*.sql.gz
+
 # Nenaudojamas MRPD MLO (stop dt_19_mrpd) - pašalintas iš repo, backup lokaliai
 resources/[[]mlo]/[[]mlo_pack_3]/dt_19_mrpd/
 

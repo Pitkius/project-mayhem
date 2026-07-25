@@ -12,6 +12,8 @@ let state = {
   maxOwned: 2,
   selectedId: null,
   selectedInterior: null,
+  furnished: false,
+  furnishedMult: 1.32,
 };
 
 function post(action, data = {}) {
@@ -38,6 +40,17 @@ function interiorPerks(intr) {
   const parts = [`Sandėlis: ${intr.stashSlots || '?'} slot. / ${Math.round((intr.stashWeight || 0) / 1000)} kg`];
   parts.push(intr.hasWardrobe ? 'Drabužinė: taip' : 'Drabužinė: ne');
   return parts.join(' · ');
+}
+
+function interiorPrice(intr) {
+  if (state.furnished) return intr.priceFurnished || intr.price;
+  return intr.priceUnfurnished || intr.price;
+}
+
+function typeLabel(p) {
+  if (p.type === 'house') return 'Namas';
+  if (p.type === 'mansion') return 'Mansion';
+  return 'Butas';
 }
 
 function getSelectedProperty() {
@@ -86,13 +99,14 @@ function renderList() {
 
     card.innerHTML = `
       <div class="prop-title">${p.label} ${badge}</div>
-      <div class="prop-meta">${p.districtLabel} · ${p.type === 'house' ? 'Namas' : 'Butas'}</div>
+      <div class="prop-meta">${p.districtLabel} · ${typeLabel(p)} · ${p.classLabel || p.class || ''}</div>
       <div class="prop-price">nuo ${fmt(p.minPrice)}</div>
     `;
 
     card.onclick = () => {
       state.selectedId = p.id;
       state.selectedInterior = p.interiors && p.interiors[0] ? p.interiors[0].key : null;
+      state.furnished = false;
       renderList();
       renderDetail();
     };
@@ -112,12 +126,15 @@ function renderDetail() {
     const q = p.ownedQualityLabel
       ? `<span class="quality-pill ${qualityClass(ownedIntr && ownedIntr.tier)}">${p.ownedQualityLabel}</span>`
       : '';
+    const furn = p.ownedFurnished ? 'Su baldais (įrengta)' : 'Be baldų (galite įsirengti patys)';
     const insideNote = ownedIntr && ownedIntr.hasWardrobe ? 'įėjimas, sandėliukas, drabužinė' : 'įėjimas, sandėliukas (be drabužinės)';
     detailPanel.innerHTML = `
       <h2>${p.label}</h2>
-      <p class="sub">${p.districtLabel} — jūsų nuosavybė ${q}</p>
+      <p class="sub">${p.districtLabel} · ${p.classLabel || ''} — jūsų nuosavybė ${q}</p>
       <p class="sub">Interjeras: <strong>${p.ownedInteriorLabel || '—'}</strong></p>
+      <p class="sub">${furn}</p>
       <p class="price-total">Eikite prie durų žemėlapyje — ${insideNote}.</p>
+      <p class="sub">Prie durų: užraktas ir raktų dalijimas (įėjimas + sandėliukas).</p>
       <div class="actions">
         <button class="btn btn-ghost" id="wpBtn">GPS į objektą</button>
       </div>
@@ -149,21 +166,28 @@ function renderDetail() {
           <div class="desc">${intr.description || ''}</div>
           <div class="perks">${interiorPerks(intr)}</div>
         </div>
-        <div class="price">${fmt(intr.price)}</div>
+        <div class="price">${fmt(interiorPrice(intr))}</div>
       </div>
     `;
   });
   interiorHtml += '</div>';
 
   const selected = interiors.find((i) => i.key === state.selectedInterior);
-  const total = selected ? selected.price : p.minPrice;
+  const total = selected ? interiorPrice(selected) : p.minPrice;
+  const furnChecked = state.furnished ? 'checked' : '';
+  const unfurnChecked = !state.furnished ? 'checked' : '';
 
   detailPanel.innerHTML = `
     <h2>${p.label}</h2>
-    <p class="sub">${p.districtLabel} · Unikalus objektas</p>
-    <p class="buy-hint">Kuo prastesnis interjeras — tuo mažesnis butas ir mažiau patogumų. Kuo brangesnis — geresnis vidus ir sandėlis.</p>
-    <p>Pasirinkite interjero lygį:</p>
+    <p class="sub">${p.districtLabel} · Klasė: <strong>${p.classLabel || p.class}</strong></p>
+    <p class="buy-hint">Interjerai priklauso nuo būsto klasės — pigus būstas negali turėti prabangaus interjero.</p>
+    <p>Pasirinkite interjerą:</p>
     ${interiorHtml}
+    <p>Įrengimas:</p>
+    <div class="furn-options">
+      <label class="furn-opt"><input type="radio" name="furn" value="0" ${unfurnChecked}/> Be baldų (pigiau) — patys įsirengiate</label>
+      <label class="furn-opt"><input type="radio" name="furn" value="1" ${furnChecked}/> Su baldais (+${Math.round(((state.furnishedMult || 1.32) - 1) * 100)}%) — iškart įrengta</label>
+    </div>
     <div class="price-total">Suma: ${fmt(total)}</div>
     <div class="actions">
       <button class="btn btn-primary" id="buyBtn">Pirkti iš banko</button>
@@ -178,12 +202,23 @@ function renderDetail() {
     };
   });
 
+  detailPanel.querySelectorAll('input[name="furn"]').forEach((el) => {
+    el.onchange = () => {
+      state.furnished = el.value === '1';
+      renderDetail();
+    };
+  });
+
   document.getElementById('wpBtn2').onclick = () => post('setWaypoint', { propertyId: p.id });
   document.getElementById('buyBtn').onclick = () => {
     if (!state.selectedInterior) return;
     const btn = document.getElementById('buyBtn');
     btn.disabled = true;
-    post('purchase', { propertyId: p.id, interiorKey: state.selectedInterior });
+    post('purchase', {
+      propertyId: p.id,
+      interiorKey: state.selectedInterior,
+      furnished: state.furnished,
+    });
     setTimeout(() => { btn.disabled = false; }, 1200);
   };
 }
@@ -191,12 +226,15 @@ function renderDetail() {
 function openUI(data) {
   state.properties = data.properties || [];
   state.maxOwned = data.maxOwned || 2;
+  state.furnishedMult = data.furnishedMult || 1.32;
   agencyTitle.textContent = data.agencyLabel || 'Dynasty 8';
-  hintText.textContent = data.furnished
-    ? 'Įrengti objektai.'
-    : 'Pigus interjeras = prastesnis butas (mažas sandėlis, be spintos). Brangus = geresnis. Max ' + state.maxOwned + ' obj. / žaidėjas.';
+  hintText.textContent =
+    'Klasė nustato leidžiamus interjerus. Pasirinkite Su baldais arba Be baldų. Max ' +
+    state.maxOwned +
+    ' obj. / žaidėjas.';
   state.selectedId = null;
   state.selectedInterior = null;
+  state.furnished = false;
   renderDistrictFilter();
   renderList();
   renderDetail();

@@ -10,7 +10,36 @@ Config.RoutingBucketBase = 12000
 
 Config.MaxOwnedPerPlayer = 2
 Config.PaymentAccount = 'bank'
-Config.Furnished = false
+
+--- Su baldais / Be baldų kainos koeficientas
+Config.FurnishedMult = 1.32
+Config.UnfurnishedMult = 1.0
+
+--- Klasės multiplikatoriai (progresija pigus → prabangus)
+Config.ClassMult = {
+    economy = 0.88,
+    standard = 1.0,
+    premium = 1.28,
+    luxury = 1.58,
+    mansion = 2.65,
+}
+
+Config.ClassLabels = {
+    economy = 'Ekonominė',
+    standard = 'Standartinė',
+    premium = 'Premium',
+    luxury = 'Prabangi',
+    mansion = 'Mansion',
+}
+
+--- Žemėlapio žymekliai: savininko namai vs bendras raktas
+Config.PropertyBlips = {
+    owned = { sprite = 40, color = 2, scale = 0.75, labelPrefix = 'Mano' },
+    shared = { sprite = 40, color = 5, scale = 0.7, labelPrefix = 'Raktas' },
+}
+
+--- Raktų dalijimas (artumas metrų)
+Config.KeyShareDistance = 3.0
 
 --- Numatyta (jei interjeras neturi savo stashCapacity)
 Config.Stash = {
@@ -43,12 +72,13 @@ Config.Districts = {
     downtown = { label = 'Downtown / Legion', mult = 1.55 },
 }
 
---- Neįrengti interjerai — kuo brangesnis pasirinkimas, tuo geresnis vidus (erdvė, sandėlis, patogumai)
+--- Interjerai — `classes` nurodo, kurioms būsto klasėms leidžiama
 Config.Interiors = {
     economy = {
         label = 'Ekonominis',
         qualityLabel = 'Prastas',
         tier = 1,
+        classes = { 'economy' },
         description = 'Mažas butas, senas remontas. Mažas sandėliukas, be drabužinės.',
         priceMult = 1.0,
         hasWardrobe = false,
@@ -61,6 +91,7 @@ Config.Interiors = {
         label = 'Standartinis',
         qualityLabel = 'Vidutinis',
         tier = 2,
+        classes = { 'economy', 'standard' },
         description = 'Normalus butas. Vidutinis sandėlis ir drabužinė.',
         priceMult = 1.18,
         hasWardrobe = true,
@@ -74,6 +105,7 @@ Config.Interiors = {
         label = 'Premium',
         qualityLabel = 'Geras',
         tier = 3,
+        classes = { 'standard', 'premium' },
         description = 'Erdvesni apartamentai, didesnis sandėlis, atskira drabužinė.',
         priceMult = 1.42,
         hasWardrobe = true,
@@ -87,6 +119,7 @@ Config.Interiors = {
         label = 'Prabangus loftas',
         qualityLabel = 'Prabangus',
         tier = 4,
+        classes = { 'premium', 'luxury' },
         description = 'Didžiausias interjeras, didžiausias sandėlis, pilna drabužinė.',
         priceMult = 1.75,
         hasWardrobe = true,
@@ -96,11 +129,11 @@ Config.Interiors = {
         stash = vector3(-169.88, 491.82, 130.04),
         wardrobe = vector3(-167.47, 487.90, 133.84),
     },
-    --- DLC „A Safehouse in the Hills“ (build 3717+, bob74_ipl Mansion1/2)
     mansion_richman = {
         label = 'Richman Villa',
         qualityLabel = 'Mansion DLC',
         tier = 5,
+        classes = { 'mansion' },
         description = 'GTA Online Richman Villa — pilnas mansion interjeras su garažu ir rūsiu.',
         priceMult = 4.2,
         hasWardrobe = true,
@@ -114,6 +147,7 @@ Config.Interiors = {
         label = 'Vinewood Residence',
         qualityLabel = 'Mansion DLC',
         tier = 5,
+        classes = { 'mansion' },
         description = 'GTA Online Vinewood Residence — rytinis Vinewood Hills mansion.',
         priceMult = 4.0,
         hasWardrobe = true,
@@ -125,130 +159,126 @@ Config.Interiors = {
     },
 }
 
---- Unikalūs objektai (vienas savininkas visam serveriui)
+--- Unikalūs objektai — `class` užrakina interjerų pasirinkimą
 Config.Properties = {
-    -- Pigiausi rajonai (~200–350k + interjeras)
     {
         id = 'paleto_trailer',
         label = 'Paleto — namelis',
         type = 'house',
+        class = 'economy',
         district = 'paleto',
         door = vector4(-447.42, 6261.15, 30.05, 42.0),
-        allowedInteriors = { 'economy', 'standard' },
     },
     {
         id = 'sandy_trailer',
         label = 'Sandy — dykumos namelis',
         type = 'house',
+        class = 'economy',
         district = 'sandy',
         door = vector4(1898.82, 3781.87, 32.88, 210.0),
-        allowedInteriors = { 'economy', 'standard' },
     },
     {
         id = 'grapeseed_farm',
         label = 'Grapeseed — sodyba',
         type = 'house',
+        class = 'economy',
         district = 'grapeseed',
         door = vector4(1662.04, 4776.11, 42.01, 100.0),
-        allowedInteriors = { 'economy', 'standard' },
     },
     {
         id = 'davis_apt',
         label = 'Davis — butas',
         type = 'apartment',
+        class = 'economy',
         district = 'davis',
         door = vector4(329.42, -1845.80, 27.75, 230.0),
-        allowedInteriors = { 'economy', 'standard', 'premium' },
     },
     {
         id = 'rancho_apt',
         label = 'Rancho — butas',
         type = 'apartment',
+        class = 'economy',
         district = 'rancho',
         door = vector4(412.47, -1856.38, 27.32, 315.0),
-        allowedInteriors = { 'economy', 'standard', 'premium' },
     },
     {
         id = 'strawberry_apt',
         label = 'Strawberry — butas',
         type = 'apartment',
+        class = 'standard',
         district = 'strawberry',
         door = vector4(269.73, -640.75, 42.02, 249.0),
-        allowedInteriors = { 'economy', 'standard', 'premium' },
     },
-    -- Viduriniai
     {
         id = 'mirror_park_apt',
         label = 'Mirror Park — butas',
         type = 'apartment',
+        class = 'standard',
         district = 'mirror_park',
         door = vector4(1031.24, -464.13, 63.86, 40.0),
-        allowedInteriors = { 'standard', 'premium' },
     },
     {
         id = 'vespucci_apt',
         label = 'Vespucci — butas',
         type = 'apartment',
+        class = 'premium',
         district = 'vespucci',
         door = vector4(-667.02, -1105.24, 14.63, 242.0),
-        allowedInteriors = { 'standard', 'premium', 'luxury' },
     },
     {
         id = 'del_perro_apt',
         label = 'Del Perro — apartamentai',
         type = 'apartment',
+        class = 'premium',
         district = 'del_perro',
         door = vector4(-1288.52, -430.51, 35.15, 125.0),
-        allowedInteriors = { 'standard', 'premium', 'luxury' },
     },
-    -- Brangūs — arčiau centro
     {
         id = 'vinewood_apt',
         label = 'Vinewood — apartamentai',
         type = 'apartment',
+        class = 'luxury',
         district = 'vinewood',
         door = vector4(-619.29, 37.69, 43.59, 181.0),
-        allowedInteriors = { 'premium', 'luxury' },
     },
     {
         id = 'rockford_apt',
         label = 'Rockford Hills — apartamentai',
         type = 'apartment',
+        class = 'luxury',
         district = 'rockford',
         door = vector4(-771.06, 312.74, 85.70, 175.0),
-        allowedInteriors = { 'premium', 'luxury' },
     },
     {
         id = 'downtown_apt',
         label = 'Integrity Way — penthouse zona',
         type = 'apartment',
+        class = 'luxury',
         district = 'downtown',
         door = vector4(291.52, -1078.67, 29.41, 271.0),
-        allowedInteriors = { 'premium', 'luxury' },
     },
     {
         id = 'legion_loft',
         label = 'Legion — loftas',
         type = 'apartment',
+        class = 'luxury',
         district = 'downtown',
         door = vector4(-47.52, -585.86, 37.95, 70.0),
-        allowedInteriors = { 'luxury' },
     },
-    --- DLC mansions (reikia bob74_ipl + build 3717+)
     {
         id = 'richman_villa',
         label = 'Richman Villa — mansion',
         type = 'mansion',
+        class = 'mansion',
         district = 'vinewood',
         door = vector4(-1630.43, 470.85, 128.02, 185.0),
-        allowedInteriors = { 'mansion_richman' },
     },
     {
         id = 'vinewood_residence',
         label = 'Vinewood Residence — mansion',
         type = 'mansion',
+        class = 'mansion',
         district = 'vinewood',
         door = vector4(543.85, 712.75, 201.02, 180.0),
-        allowedInteriors = { 'mansion_vinewood' },
     },
 }

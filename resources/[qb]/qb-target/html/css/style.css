@@ -92,13 +92,8 @@ body {
     margin-left: -46px;
     padding: 0.55rem 0.4rem;
     border-radius: 12px;
-    background: linear-gradient(
-        145deg,
-        color-mix(in srgb, var(--primary) 42%, transparent),
-        color-mix(in srgb, var(--primary-active) 38%, rgba(30, 16, 52, 0.28))
-    );
+    background: transparent;
     border: 1px solid var(--primary-border);
-    backdrop-filter: blur(10px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -109,6 +104,7 @@ body {
 .radial-seg__icon {
     font-size: 1.15rem;
     color: var(--primary-hover);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 .radial-seg__label {
@@ -119,6 +115,7 @@ body {
     line-height: 1.2;
     max-width: 84px;
     word-wrap: break-word;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 
 #radial-root.interactive .radial-seg {
@@ -127,11 +124,7 @@ body {
 
 #radial-root.interactive .radial-seg:hover .radial-seg__inner,
 #radial-root.interactive .radial-seg.active .radial-seg__inner {
-    background: linear-gradient(
-        145deg,
-        color-mix(in srgb, var(--primary-hover) 72%, white 8%),
-        color-mix(in srgb, var(--primary-active) 78%, transparent)
-    );
+    background: var(--primary-soft);
     border-color: var(--primary-hover);
     box-shadow: 0 0 18px var(--primary-glow), 0 0 4px var(--primary-glow);
     transform: scale(1.08);
@@ -247,4 +240,4 @@ body {
     .radial-seg__inner { width: 84px; margin-left: -42px; }
     #radial-center { width: 84px; height: 84px; margin: -42px 0 0 -42px; }
 }
-
+
