@@ -248,9 +248,10 @@ function parseVehData(xml, fileName)
 
         if(xml.root.el[i].name == "EOVERRIDE") then
             for ex=1,#xml.root.el[i].kids do
-                if(string_upper(string.sub(xml.root.el[i].kids[ex].name, 1, -3)) == "EXTRA") then
-                    local elem = xml.root.el[i].kids[ex]
-                    local extra = tonumber(string.sub(elem.name, -2))
+                -- Match Extra01..Extra12 (old sub(-2) check failed for Extra10-12 → "EXTRA1" ~= "EXTRA")
+                local elem = xml.root.el[i].kids[ex]
+                local extra = tonumber(string.match(elem.name or "", "^[Ee]xtra(%d+)$") or "")
+                if extra ~= nil then
                     a.extras[extra] = {}
                     if elem.attr['IsElsControlled'] == "true" then
                         a.extras[extra].enabled = true

@@ -936,6 +936,10 @@ local ledSecondaryReady = {}
 function runLedPatternSecondary(k, pattern)
     Citizen.CreateThread(function()
         if (not IsEntityDead(k) and DoesEntityExist(k) and (ledSecondaryReady[k] or ledSecondaryReady[k] == nil)) then
+            if not led_SecondaryPatterns[pattern] or not led_SecondaryPatterns[pattern][7] then
+                ledSecondaryReady[k] = true
+                return
+            end
             if (GetGameTimer() - trafFR >= GetConvarInt("els_lightDelay", 10)) then
 
                 ledSecondaryReady[k] = false
@@ -1061,6 +1065,10 @@ local ledWarningReady = {}
 function runLedPatternWarning(k, pattern) 
     Citizen.CreateThread(function()
         if (not IsEntityDead(k) and DoesEntityExist(k) and (ledWarningReady[k] or ledWarningReady[k] == nil)) then
+            if not leds_WarningPatterns[pattern] or not leds_WarningPatterns[pattern][5] then
+                ledWarningReady[k] = true
+                return
+            end
             if (GetGameTimer() - warnFR >= GetConvarInt("els_lightDelay", 10)) then
 
                 ledWarningReady[k] = false
@@ -1145,6 +1153,10 @@ local ledPrimaryReady = {}
 function runLedPatternPrimary(k, pattern) 
     Citizen.CreateThread(function()
         if (not IsEntityDead(k) and DoesEntityExist(k) and (ledPrimaryReady[k] or ledPrimaryReady[k] == nil)) then
+            if not led_PrimaryPatterns[pattern] or not led_PrimaryPatterns[pattern][1] then
+                ledPrimaryReady[k] = true
+                return
+            end
             if (GetGameTimer() - primFR >= GetConvarInt("els_lightDelay", 10)) then
                 ledPrimaryReady[k] = false
 

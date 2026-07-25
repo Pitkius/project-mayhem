@@ -346,12 +346,48 @@ function RotAnglesToVec(rot) -- input vector3
     return vector3(-math.sin(z)*num, math.cos(z)*num, math.sin(x))
 end
 
+--- Apply stage flags locally so pattern threads start immediately (network sync still follows).
+local function applyLightStageLocal(veh, stage, advisor, prim, sec)
+    if not veh or veh == 0 then return end
+    elsVehs[veh] = elsVehs[veh] or {}
+    elsVehs[veh].stage = stage
+    if stage == 1 then
+        elsVehs[veh].warning = false
+        elsVehs[veh].secondary = true
+        elsVehs[veh].primary = false
+    elseif stage == 2 then
+        elsVehs[veh].warning = false
+        elsVehs[veh].secondary = true
+        elsVehs[veh].primary = true
+    elseif stage == 3 then
+        elsVehs[veh].warning = true
+        elsVehs[veh].secondary = true
+        elsVehs[veh].primary = true
+    else
+        elsVehs[veh].warning = false
+        elsVehs[veh].secondary = false
+        elsVehs[veh].primary = false
+    end
+    elsVehs[veh].primPattern = prim
+    elsVehs[veh].secPattern = sec
+    elsVehs[veh].advisorPattern = advisor
+end
+
 function changeLightStage(state, advisor, PatternPrim, PatternSec)
+    local ped = PlayerPedId()
+    local veh = GetVehiclePedIsUsing(ped)
+    if not veh or veh == 0 then
+        veh = GetVehiclePedIsIn(ped, false)
+    end
+    if veh and veh ~= 0 and checkCarHash(veh) ~= "CARNOTFOUND" then
+        applyLightStageLocal(veh, state, advisor or 1, PatternPrim or 1, PatternSec or 1)
+    end
     TriggerServerEvent("els:changeLightStage_s", state, advisor, PatternPrim, PatternSec)
 end
 
 --- MRP F6 bridge: off | lights | sound | full
 --- stage 0=off, 1=sec, 2=prim+sec, 3=full patterns
+--- Flashing is driven by SetVehicleExtra on VCF extras (not native siren lamps).
 function ApplyEmergencyMode(mode)
     mode = tostring(mode or 'off'):lower()
     local ped = PlayerPedId()
@@ -361,10 +397,15 @@ function ApplyEmergencyMode(mode)
     end
     if not veh or veh == 0 then return false end
 
-    local advisor = advisorPatternSelectedIndex or 1
-    local prim = lightPatternsPrim or lightPatternPrim or 1
+    if checkCarHash(veh) == "CARNOTFOUND" then
+        return false
+    end
+
+    local advisor = tonumber(advisorPatternSelectedIndex) or 1
+    local prim = tonumber(lightPatternPrim) or tonumber(lightPatternsPrim) or 1
+    local sec = tonumber(lightPatternSec) or 1
+    if advisor < 1 then advisor = 1 end
     if prim < 1 then prim = 1 end
-    local sec = lightPatternSec or 1
     if sec < 1 then sec = 1 end
 
     local stage = 0
@@ -383,8 +424,11 @@ function ApplyEmergencyMode(mode)
         sirenTone = 0
     end
 
+    -- changeLightStage applies local elsVehs flags + syncs to other clients
     changeLightStage(stage, advisor, prim, sec)
 
+    -- Mute native siren audio; keep siren "on" state for class 18 so ELS tone hooks work.
+    -- With carvariations sirenSettings=0 this does NOT draw native lightbars — extras do.
     if GetVehicleClass(veh) == 18 then
         if stage > 0 then
             toggleSirenMute(veh, true)
@@ -398,6 +442,9 @@ function ApplyEmergencyMode(mode)
     if stage == 0 then
         TriggerServerEvent('els:setDualSirenState_s', 0)
         TriggerServerEvent('els:setDualSiren_s', false)
+        for i = 1, 12 do
+            setExtraState(veh, i, 1)
+        end
     end
     return true
 end
@@ -448,14 +495,14 @@ function vehInTable (tab, val)
 end
 
 function setExtraState(veh, extra, state)
-    if (not IsEntityDead(veh) and DoesEntityExist(veh)) then
-        if els_Vehicles[checkCarHash(veh)].extras[extra] ~= nil then
-            if(els_Vehicles[checkCarHash(veh)].extras[extra].enabled) then
-                if DoesExtraExist(veh, extra) then
-                    SetVehicleExtra(veh, extra, state)
-                end
-            end
-        end
+    if IsEntityDead(veh) or not DoesEntityExist(veh) then return end
+    local name = checkCarHash(veh)
+    if name == "CARNOTFOUND" then return end
+    local info = els_Vehicles[name]
+    if not info or not info.extras or info.extras[extra] == nil then return end
+    if not info.extras[extra].enabled then return end
+    if DoesExtraExist(veh, extra) then
+        SetVehicleExtra(veh, extra, state)
     end
 end
 

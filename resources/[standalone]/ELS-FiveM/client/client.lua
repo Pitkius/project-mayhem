@@ -11,7 +11,7 @@ curtime = 0
 advisorPatternSelectedIndex = 1
 advisorPatternIndex = 1
 
-lightPatternPrim = 0
+lightPatternPrim = 1
 lightPatternsPrim = 1
 lightPatternSec = 1
 
@@ -813,40 +813,34 @@ end)
 Citizen.CreateThread(function()
     while true do
         for k,v in pairs(elsVehs) do
-            if(v ~= nil or DoesEntityExist(k)) then
-                if #(GetEntityCoords(k)-GetEntityCoords(GetPlayerPed(-1))) <= vehicleSyncDistance then
-                    if elsVehs[k].warning or elsVehs[k].secondary or elsVehs[k].primary then
-                        SetVehicleEngineOn(k, true, true, false)
-                    end
-                    
-                    local vehN = checkCarHash(k)
+            if v == nil or not DoesEntityExist(k) then
+                elsVehs[k] = nil
+            elseif #(GetEntityCoords(k)-GetEntityCoords(PlayerPedId())) <= vehicleSyncDistance then
+                if v.warning or v.secondary or v.primary then
+                    SetVehicleEngineOn(k, true, true, false)
+                end
 
+                local vehN = checkCarHash(k)
+                local vcf = els_Vehicles[vehN]
+                if vcf ~= nil and vcf.extras ~= nil then
                     for i=11,12 do
-                        if (not IsEntityDead(k) and DoesEntityExist(k)) then
-                            if (els_Vehicles[vehN] == nil or els_Vehicles[vehN].extras == nil) then
-                                debugPrint("Index for current vehicle (".. vehN .. ") was nil (invalid), returning.", true, true)
-                                return
-                            end
+                        local ex = vcf.extras[i]
+                        if ex ~= nil and not IsEntityDead(k) and IsVehicleExtraTurnedOn(k, i) then
+                            local boneIndex = GetEntityBoneIndexByName(k, "extra_" .. i)
+                            local coords = GetWorldPositionOfEntityBone(k, boneIndex)
+                            local rotX, rotY, rotZ = table.unpack(RotAnglesToVec(GetEntityRotation(k, 2)))
 
-                            if(IsVehicleExtraTurnedOn(k, i)) then
-                                local boneIndex = GetEntityBoneIndexByName(k, "extra_" .. i)
-                                local coords = GetWorldPositionOfEntityBone(k, boneIndex)
-                                local rotX, rotY, rotZ = table.unpack(RotAnglesToVec(GetEntityRotation(k, 2)))
-
-                                if els_Vehicles[vehN].extras[i].env_light then
-                                    if i == 11 then
-                                        DrawSpotLightWithShadow(coords.x + els_Vehicles[vehN].extras[11].env_pos.x, coords.y + els_Vehicles[vehN].extras[11].env_pos.y, coords.z + els_Vehicles[vehN].extras[11].env_pos.z, rotX, rotY, rotZ, 255, 255, 255, 75.0, 2.0, 10.0, 20.0, 0.0, true)
-                                    end
-                                    if i == 12 then
-                                        DrawLightWithRange(coords.x + els_Vehicles[vehN].extras[12].env_pos.x, coords.y + els_Vehicles[vehN].extras[12].env_pos.y, coords.z + els_Vehicles[vehN].extras[12].env_pos.z, 255, 255, 255, 50.0, environmentLightBrightness)
-                                    end
-                                else
-                                    if i == 11 then
-                                        DrawSpotLightWithShadow(coords.x, coords.y, coords.z + 0.2, rotX, rotY, rotZ, 255, 255, 255, 75.0, 2.0, 10.0, 20.0, 0.0, true)
-                                    end
-                                    if i == 12 then
-                                        DrawLightWithRange(coords.x, coords.y, coords.z, 255, 255, 255, 50.0, environmentLightBrightness)
-                                    end
+                            if ex.env_light then
+                                if i == 11 then
+                                    DrawSpotLightWithShadow(coords.x + ex.env_pos.x, coords.y + ex.env_pos.y, coords.z + ex.env_pos.z, rotX, rotY, rotZ, 255, 255, 255, 75.0, 2.0, 10.0, 20.0, 0.0, true)
+                                elseif i == 12 then
+                                    DrawLightWithRange(coords.x + ex.env_pos.x, coords.y + ex.env_pos.y, coords.z + ex.env_pos.z, 255, 255, 255, 50.0, environmentLightBrightness)
+                                end
+                            else
+                                if i == 11 then
+                                    DrawSpotLightWithShadow(coords.x, coords.y, coords.z + 0.2, rotX, rotY, rotZ, 255, 255, 255, 75.0, 2.0, 10.0, 20.0, 0.0, true)
+                                elseif i == 12 then
+                                    DrawLightWithRange(coords.x, coords.y, coords.z, 255, 255, 255, 50.0, environmentLightBrightness)
                                 end
                             end
                         end
@@ -863,68 +857,80 @@ end)
 Citizen.CreateThread(function()
     while true do
         for k,v in pairs(elsVehs) do
-            if v ~= nil and DoesEntityExist(k) and #(GetEntityCoords(k)-GetEntityCoords(GetPlayerPed(-1))) <= vehicleSyncDistance then
-                SetVehicleAutoRepairDisabled(k, true)
-
-                if getVehicleVCFInfo(k) == false then
-                    debugPrint("Insufficient VCF information obtained for " .. k .. ", returning.", true, true)
-                    return
-                end
-
-                if getVehicleVCFInfo(k).priml.type == "chp" and getVehicleVCFInfo(k).wrnl.type == "chp" and getVehicleVCFInfo(k).secl.type == "chp" then
-
-                    if v.stage == 0 then
-                        for i=1,10 do
-                            setExtraState(k, i, 1)
-                        end
-                    end
-
-                    if v.stage == 1 and v.advisorPattern <= 1 then
-                        runCHPPattern(k, v.advisorPattern, v.stage)
-                    end
-
-                    if v.stage == 2 and v.secPattern <= 3 then
-                        runCHPPattern(k, v.secPattern, v.stage)
-                    end
-
-                    if v.stage == 3 and v.primPattern <= 3 then
-                        runCHPPattern(k, v.primPattern, v.stage)
-                    end
-
+            if v == nil or not DoesEntityExist(k) then
+                -- Stale/recycled entity handles must not kill this thread (that stopped ALL flashing).
+                elsVehs[k] = nil
+            elseif #(GetEntityCoords(k)-GetEntityCoords(PlayerPedId())) <= vehicleSyncDistance then
+                local vcf = getVehicleVCFInfo(k)
+                if vcf == false then
+                    -- Non-ELS / unknown model left in elsVehs — skip, don't abort the loop.
+                    debugPrint("Insufficient VCF information obtained for " .. tostring(k) .. ", skipping.", true, true)
+                    elsVehs[k] = nil
                 else
+                    SetVehicleAutoRepairDisabled(k, true)
 
-                    if (v.warning) then
-                        if getVehicleVCFInfo(k).wrnl.type == "leds" and v.advisorPattern <= 53 then
-                            runLedPatternWarning(k, v.advisorPattern)
+                    local primPat = tonumber(v.primPattern) or 1
+                    local secPat = tonumber(v.secPattern) or 1
+                    local advPat = tonumber(v.advisorPattern) or 1
+                    if primPat < 1 then primPat = 1 end
+                    if secPat < 1 then secPat = 1 end
+                    if advPat < 1 then advPat = 1 end
+
+                    if vcf.priml.type == "chp" and vcf.wrnl.type == "chp" and vcf.secl.type == "chp" then
+
+                        if v.stage == 0 then
+                            for i=1,10 do
+                                setExtraState(k, i, 1)
+                            end
                         end
-                    else
-                        setExtraState(k, 5, 1)
-                        setExtraState(k, 6, 1)
-                    end
 
-                    if (v.secondary) then
-                        if getVehicleVCFInfo(k).secl.type == "leds" and v.secPattern <= 140 then
-                            runLedPatternSecondary(k, v.secPattern, function(cb) vehIsReadySecondary[k] = cb end)
-                        elseif getVehicleVCFInfo(k).secl.type == "traf" and v.secPattern <= 36 then
-                            runTrafPattern(k, v.secPattern)
+                        if v.stage == 1 and advPat <= 1 then
+                            runCHPPattern(k, advPat, v.stage)
                         end
-                    else
-                        setExtraState(k, 7, 1)
-                        setExtraState(k, 8, 1)
-                        setExtraState(k, 9, 1)
-                    end
 
-                    if (v.primary) then
-                        if getVehicleVCFInfo(k).priml.type == "leds" and v.primPattern <= 140 then
-                            runLedPatternPrimary(k, v.primPattern)
+                        if v.stage == 2 and secPat <= 3 then
+                            runCHPPattern(k, secPat, v.stage)
                         end
-                    else
-                        setExtraState(k, 1, 1)
-                        setExtraState(k, 2, 1)
-                        setExtraState(k, 3, 1)
-                        setExtraState(k, 4, 1)
-                    end
 
+                        if v.stage == 3 and primPat <= 3 then
+                            runCHPPattern(k, primPat, v.stage)
+                        end
+
+                    else
+
+                        if (v.warning) then
+                            if vcf.wrnl.type == "leds" and advPat <= 53 then
+                                runLedPatternWarning(k, advPat)
+                            end
+                        else
+                            setExtraState(k, 5, 1)
+                            setExtraState(k, 6, 1)
+                        end
+
+                        if (v.secondary) then
+                            if vcf.secl.type == "leds" and secPat <= 140 then
+                                runLedPatternSecondary(k, secPat, function(cb) vehIsReadySecondary[k] = cb end)
+                            elseif vcf.secl.type == "traf" and secPat <= 36 then
+                                runTrafPattern(k, secPat)
+                            end
+                        else
+                            setExtraState(k, 7, 1)
+                            setExtraState(k, 8, 1)
+                            setExtraState(k, 9, 1)
+                        end
+
+                        if (v.primary) then
+                            if vcf.priml.type == "leds" and primPat <= 140 then
+                                runLedPatternPrimary(k, primPat)
+                            end
+                        else
+                            setExtraState(k, 1, 1)
+                            setExtraState(k, 2, 1)
+                            setExtraState(k, 3, 1)
+                            setExtraState(k, 4, 1)
+                        end
+
+                    end
                 end
             end
         end

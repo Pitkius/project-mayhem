@@ -36,12 +36,13 @@ Config.ClothingShopSteps = { 'clothes' }
 Config.ClothingShopPrice = 250
 Config.ClothingShopItems = {
     { key = 'mask', label = 'Kaukė', maxItem = 200, maxTex = 15 },
-    { key = 't-shirt', label = 'Marškinėliai', maxItem = 200, maxTex = 15 },
+    -- gauju_rubai gang kevlar = smuggler accs_009 → component 8 (t-shirt), not vest
+    { key = 't-shirt', label = 'Marškinėliai / gaujų liemenės', maxItem = 200, maxTex = 25 },
     { key = 'torso2', label = 'Viršus / striukė', maxItem = 500, maxTex = 15 },
     { key = 'arms', label = 'Rankos', maxItem = 200, maxTex = 10 },
     { key = 'pants', label = 'Kelnės', maxItem = 250, maxTex = 15 },
     { key = 'shoes', label = 'Batai', maxItem = 150, maxTex = 15 },
-    { key = 'vest', label = 'Liemenė', maxItem = 100, maxTex = 10 },
+    { key = 'vest', label = 'Liemenė (šarvai)', maxItem = 100, maxTex = 10 },
     { key = 'bag', label = 'Krepšys', maxItem = 100, maxTex = 10 },
     { key = 'decals', label = 'Lipdukai', maxItem = 150, maxTex = 10 },
     { key = 'accessory', label = 'Aksesuaras (kaklo)', maxItem = 150, maxTex = 10 },
@@ -52,10 +53,11 @@ Config.ClothingShopItems = {
 --- Pilna apranga personažo kūrime (visi variantai per slankiklius)
 Config.CreatorClothingItems = {
     { key = 'mask', label = 'Kaukė', maxItem = 250, maxTex = 15 },
-    { key = 't-shirt', label = 'Marškinėliai', maxItem = 250, maxTex = 15 },
+    -- gauju_rubai gang kevlar = smuggler accs_009 → component 8 (t-shirt), not vest
+    { key = 't-shirt', label = 'Marškinėliai / gaujų liemenės', maxItem = 250, maxTex = 25 },
     { key = 'torso2', label = 'Viršus / striukė', maxItem = 500, maxTex = 15 },
     { key = 'arms', label = 'Rankos', maxItem = 200, maxTex = 10 },
-    { key = 'vest', label = 'Liemenė', maxItem = 100, maxTex = 10 },
+    { key = 'vest', label = 'Liemenė (šarvai)', maxItem = 100, maxTex = 10 },
     { key = 'decals', label = 'Lipdukai', maxItem = 150, maxTex = 10 },
     { key = 'pants', label = 'Kelnės', maxItem = 250, maxTex = 15 },
     { key = 'shoes', label = 'Batai', maxItem = 150, maxTex = 15 },
