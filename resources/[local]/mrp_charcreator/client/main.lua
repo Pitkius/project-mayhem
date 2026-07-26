@@ -176,8 +176,7 @@ local function openWizardUi(editMode, preloaded)
         if (editMode == true or pendingEditMode) and LocalPlayer.state.isLoggedIn then
             data.editMode = true
         end
-        -- Live drawable counts from streamed packs (fallback = config caps)
-        data.clothingItems = CharAppearance.getClothingLimits(nil, Config.CreatorClothingItems or {})
+        data.clothingItems = Config.CreatorClothingItems or {}
         pendingEditMode = false
         inCreator = true
         SetNuiFocus(true, true)
@@ -198,16 +197,20 @@ end
 RegisterNetEvent('mrp_charcreator:client:openWizard', function(editMode)
     if inCreator or (ShopSession and ShopSession.IsActive()) then return end
     pendingEditMode = editMode == true
-    closeLoadscreen()
 
     QBCore.Functions.TriggerCallback('mrp_charcreator:server:getSession', function(data)
-        if not data or not data.ok then return end
+        if not data or not data.ok then
+            DoScreenFadeIn(0)
+            return
+        end
         local isEdit = (editMode == true or pendingEditMode) and LocalPlayer.state.isLoggedIn
         if isEdit then
             setupInPlaceEdit(data)
         else
             setupScene()
         end
+        --- Loadscreen uždarom po scene setup, kad restore loop nenužudytų creator cam.
+        closeLoadscreen()
         openWizardUi(editMode, data)
     end)
 end)
@@ -236,28 +239,27 @@ RegisterNetEvent('mrp_charcreator:client:refreshList', function()
 end)
 
 RegisterNetEvent('mrp_charcreator:client:finishCreate', function(data)
+    --- Tik UI/scene teardown — tikrą spawn daro mrp_spawnfix (be antro fade race).
     teardownScene()
-
-    local model = data.model or CharAppearance.modelHash(0)
-    if type(model) == 'string' then model = joaat(model) end
-    loadModel(model)
-    SetPlayerModel(PlayerId(), model)
-    SetPedDefaultComponentVariation(PlayerPedId())
-
-    placePlayerAtSpawn(data.spawn)
-
-    if data.skin then
-        local ok, skinTbl = pcall(json.decode, data.skin)
-        if ok and type(skinTbl) == 'table' then
-            CharAppearance.applyToPed(PlayerPedId(), skinTbl)
-            TriggerServerEvent('qb-clothing:saveSkin', model, data.skin)
+    Wait(100)
+    DestroyAllCams(true)
+    RenderScriptCams(false, false, 0, true, true)
+    ClearFocus()
+    ClearTimecycleModifier()
+    if data and data.model then
+        local model = data.model
+        if type(model) == 'string' then model = joaat(model) end
+        loadModel(model)
+        SetPlayerModel(PlayerId(), model)
+        SetPedDefaultComponentVariation(PlayerPedId())
+        if data.skin then
+            local ok, skinTbl = pcall(json.decode, data.skin)
+            if ok and type(skinTbl) == 'table' then
+                CharAppearance.applyToPed(PlayerPedId(), skinTbl)
+            end
         end
     end
-
     revealAndUnfreezePlayerPed(PlayerPedId())
-    DoScreenFadeIn(600)
-    Wait(500)
-    TriggerEvent('QBCore:Client:OnPlayerLoaded')
 end)
 
 RegisterNUICallback('close', function(_, cb)
@@ -345,13 +347,7 @@ RegisterNUICallback('setClothing', function(data, cb)
 end)
 
 RegisterNUICallback('getClothingLimits', function(_, cb)
-    -- Clothing shop uses a shorter category list; register/creator uses full list.
-    local items
-    if ShopSession and ShopSession.IsActive and ShopSession.IsActive() and ShopSession.kind == 'clothing' then
-        items = Config.ClothingShopItems or Config.CreatorClothingItems or {}
-    else
-        items = Config.CreatorClothingItems or Config.ClothingShopItems or {}
-    end
+    local items = Config.CreatorClothingItems or Config.ClothingShopItems or {}
     cb(CharAppearance.getClothingLimits(nil, items))
 end)
 

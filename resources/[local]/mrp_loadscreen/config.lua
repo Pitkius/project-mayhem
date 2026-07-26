@@ -7,16 +7,17 @@ Config.Branding = {
     icon = 'assets/mrp_icon.png',
 }
 
---- Tik sena GTA V teminė muzika (in-game audio event) — be NUI mp3
+--- Native FM_INTRO is disabled: it often leaves a grey/black screen after spawn on FiveM.
+--- Put html/assets/gta_theme.mp3 if you want NUI music during loading.
 Config.LoadscreenMusic = {
-    enabled = true,
-    --- FM_INTRO_START = GTA Online intro / Los Santos tema
+    enabled = false,
     startEvent = 'FM_INTRO_START',
     stopEvent = 'FM_INTRO_STOP',
-    audioScene = 'MP_LEADERBOARD_SCENE',
+    audioScene = nil,
 }
 
---- NUI mp3 išjungta (nenaudojama)
 Config.LoadscreenNuiMusic = {
-    enabled = false,
+    enabled = true,
+    volume = 0.28,
+    track = 'assets/gta_theme.mp3',
 }

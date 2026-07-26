@@ -12,8 +12,7 @@ local function sessionReady()
     return false
 end
 
-local function restoreGameplayView()
-    --- FM_INTRO / audio scene kartais palieka juodą/pilką ekraną po spawn.
+local function restoreGameplayView(forceFadeIn)
     if IsCutsceneActive() then
         StopCutsceneImmediately()
     end
@@ -22,7 +21,9 @@ local function restoreGameplayView()
     ClearFocus()
     ClearTimecycleModifier()
     ClearExtraTimecycleModifier()
-    if IsScreenFadedOut() or IsScreenFadingOut() then
+    AnimpostfxStopAll()
+    StopAudioScenes()
+    if forceFadeIn and (IsScreenFadedOut() or IsScreenFadingOut()) then
         DoScreenFadeIn(0)
     end
     SetNuiFocus(false, false)
@@ -31,7 +32,6 @@ end
 local function startLoadingMusic()
     local cfg = musicCfg()
     if musicStarted or cfg.enabled == false then return end
-    --- Native intro muzika tik kai sesija gyva — per anksti paleidus būna pilkas/juodas vaizdas.
     if not sessionReady() then return end
 
     musicStarted = true
@@ -50,9 +50,6 @@ local function startLoadingMusic()
 end
 
 local function stopLoadingMusic()
-    if not musicStarted then return end
-    musicStarted = false
-
     local cfg = musicCfg()
     local startEv = cfg.startEvent or 'FM_INTRO_START'
     local stopEv = cfg.stopEvent or 'FM_INTRO_STOP'
@@ -65,22 +62,17 @@ local function stopLoadingMusic()
         StopAudioScene(cfg.audioScene)
     end
     StopAudioScenes()
+    musicStarted = false
 end
 
 local function closeLoadscreen()
     if closed then return end
     closed = true
     stopLoadingMusic()
-    restoreGameplayView()
+    --- Tik muzika + NUI shutdown. Cam/fade atstatymą daro spawn/charcreator,
+    --- kad čia nesunaikintume creator cam.
     ShutdownLoadingScreenNui()
     ShutdownLoadingScreen()
-    --- Dar kartą po trumpo delay — jei spawn dar fade'ina.
-    CreateThread(function()
-        for _ = 1, 10 do
-            Wait(250)
-            restoreGameplayView()
-        end
-    end)
 end
 
 RegisterNetEvent('mrp_loadscreen:client:close', closeLoadscreen)
@@ -99,7 +91,6 @@ RegisterNUICallback('setLoadscreenMusic', function(data, cb)
     cb('ok')
 end)
 
---- Bandome paleisti kai sesija pasiruošusi (kuo greičiau, bet saugiai).
 CreateThread(function()
     local deadline = GetGameTimer() + 120000
     while not closed and GetGameTimer() < deadline do
@@ -116,7 +107,7 @@ CreateThread(function()
     local deadline = GetGameTimer() + 120000
     while not closed and GetGameTimer() < deadline do
         if LocalPlayer.state.isLoggedIn then
-            Wait(3000)
+            Wait(1500)
             closeLoadscreen()
             return
         end
@@ -128,3 +119,6 @@ CreateThread(function()
 end)
 
 exports('CloseLoadscreen', closeLoadscreen)
+exports('RestoreGameplayView', function()
+    restoreGameplayView(true)
+end)

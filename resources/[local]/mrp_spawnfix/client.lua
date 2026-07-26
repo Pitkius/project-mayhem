@@ -133,11 +133,24 @@ RegisterNetEvent('mrp_spawnfix:client:spawn', function()
     local playerData = QBCore.Functions.GetPlayerData()
     local spawn = resolveSpawnCoords(playerData.position)
 
-    DoScreenFadeOut(500)
-    Wait(400)
+    --- Prieš fade: nuimti charcreator/loadscreen cam/focus, kad nebūtų void/pilko sky.
+    ClearFocus()
+    DestroyAllCams(true)
+    RenderScriptCams(false, false, 0, true, true)
+    ClearTimecycleModifier()
+    AnimpostfxStopAll()
+    StopAudioScenes()
+    if GetResourceState('mrp_loadscreen') == 'started' then
+        pcall(function() exports['mrp_loadscreen']:RestoreGameplayView() end)
+    end
+
+    DoScreenFadeOut(300)
+    Wait(350)
 
     local ped = safePlacePed(spawn)
     SetEntityVisible(ped, true, false)
+    ResetEntityAlpha(ped)
+    SetEntityCollision(ped, true, true)
 
     if GetResourceState('qb-houses') == 'started' then
         TriggerServerEvent('qb-houses:server:SetInsideMeta', 0, false)
@@ -148,19 +161,28 @@ RegisterNetEvent('mrp_spawnfix:client:spawn', function()
 
     TriggerEvent('QBCore:Client:OnPlayerLoaded')
 
-    Wait(600)
+    Wait(400)
     applySavedVitals()
     ensurePedUnstuck(PlayerPedId())
 
     TriggerEvent('qb-weathersync:client:EnableSync')
-    DoScreenFadeIn(500)
-    Wait(600)
-    shutdownLoadingScreens()
-    if IsScreenFadedOut() or IsScreenFadingOut() then
-        DoScreenFadeIn(0)
-    end
+    ClearFocus()
     DestroyAllCams(true)
     RenderScriptCams(false, false, 0, true, true)
+    DoScreenFadeIn(400)
+    Wait(450)
+    shutdownLoadingScreens()
+
+    CreateThread(function()
+        for _ = 1, 12 do
+            Wait(250)
+            if IsScreenFadedOut() or IsScreenFadingOut() then
+                DoScreenFadeIn(0)
+            end
+            ClearFocus()
+            RenderScriptCams(false, false, 0, true, true)
+        end
+    end)
 end)
 
 CreateThread(function()
@@ -219,7 +241,17 @@ RegisterCommand('fixstuck', function()
     local ped = PlayerPedId()
     local c = GetEntityCoords(ped)
     local h = GetEntityHeading(ped)
+    ClearFocus()
+    DestroyAllCams(true)
+    RenderScriptCams(false, false, 0, true, true)
+    ClearTimecycleModifier()
+    AnimpostfxStopAll()
+    StopAudioScenes()
+    if IsScreenFadedOut() or IsScreenFadingOut() then
+        DoScreenFadeIn(0)
+    end
     safePlacePed(vector4(c.x, c.y, c.z, h))
     applySavedVitals()
-    QBCore.Functions.Notify('Pozicija atstatyta.', 'success')
+    SetEntityVisible(PlayerPedId(), true, false)
+    QBCore.Functions.Notify('Pozicija / vaizdas atstatytas.', 'success')
 end, false)

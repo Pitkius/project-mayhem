@@ -389,7 +389,8 @@ RegisterNetEvent('mrp_charcreator:server:createCharacter', function(payload)
         skin = payload.skin,
         spawn = spawn,
     })
-    SetTimeout(1800, function()
+    --- Vienas spawn per mrp_spawnfix — be antro fade race.
+    SetTimeout(600, function()
         finishLoad(src)
     end)
 end)

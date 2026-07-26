@@ -86,15 +86,14 @@ local function pedBase()
     return vector3(p.x, p.y, p.z)
 end
 
---- Kamera priešais veidą (be +180 — anksčiau žiūrėjo į nugarą).
 local function pedHeadingDeg()
     if targetPed ~= 0 and DoesEntityExist(targetPed) then
-        return GetEntityHeading(targetPed) + orbitAngle
+        return GetEntityHeading(targetPed) + 180.0 + orbitAngle
     end
     if shopAnchor then
-        return (shopAnchor.w or 0.0) + orbitAngle
+        return (shopAnchor.w or 0.0) + 180.0 + orbitAngle
     end
-    return (Config.PedCoords.w or 0.0) + orbitAngle
+    return (Config.PedCoords.w or 0.0) + 180.0 + orbitAngle
 end
 
 local function applyCamera()
@@ -106,17 +105,10 @@ local function applyCamera()
     local dist = preset.distance or 2.5
     local camZ = preset.camHeight or 0.35
     local lookZ = preset.lookAt or 0.55
-    --- Teigiamas lateral = personažas ekrane dešiniau
-    local lateral = preset.lateral or 0.0
 
-    --- Kamera priešais ped (pagal heading / forward)
     local cx = base.x - dist * math.sin(heading)
     local cy = base.y + dist * math.cos(heading)
     local cz = base.z + camZ
-
-    --- Pastumti kamerą į kairę (žiūrint į ped), kad personažas būtų dešiniau kadre
-    cx = cx + lateral * math.cos(heading)
-    cy = cy + lateral * math.sin(heading)
 
     local tx = base.x
     local ty = base.y
@@ -212,11 +204,13 @@ function CharCamera.disable()
     ClearFocus()
     ClearTimecycleModifier()
     SetTimecycleModifierStrength(0.0)
+    --- Instant off — 500ms interp palikdavo pilką/void vaizdą spawn metu.
+    RenderScriptCams(false, false, 0, true, true)
     if cam and DoesCamExist(cam) then
-        RenderScriptCams(false, true, 500, true, true)
-        DestroyCam(cam, false)
+        DestroyCam(cam, true)
         cam = nil
     end
+    DestroyAllCams(true)
     TriggerEvent('qb-weathersync:client:EnableSync')
 end
 
