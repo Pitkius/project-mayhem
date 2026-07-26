@@ -65,18 +65,6 @@ const SLIDES = [
     title: 'TARNYBA GATVĖSE',
     desc: 'Patruliuok, reaguok į iškvietimus ir saugok miestą.',
   },
-  {
-    image: 'assets/slide_gangs.jpg',
-    tag: 'GAUJOS',
-    title: 'TERITORIJOS',
-    desc: 'Užimk turf, vykdyk misijas, augink reputaciją.',
-  },
-  {
-    image: 'assets/slide_heist.jpg',
-    tag: 'HEIST',
-    title: 'PLANUOK OPERACIJĄ',
-    desc: 'Planšetė, OS, įsilaužimai — bankai ir bankomatai laukia.',
-  },
 ];
 
 const MUSIC = {

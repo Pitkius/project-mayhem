@@ -6,9 +6,33 @@ local function musicCfg()
     return Config.LoadscreenMusic or {}
 end
 
+local function sessionReady()
+    if NetworkIsSessionStarted() then return true end
+    if NetworkIsPlayerConnected(PlayerId()) then return true end
+    return false
+end
+
+local function restoreGameplayView()
+    --- FM_INTRO / audio scene kartais palieka juodą/pilką ekraną po spawn.
+    if IsCutsceneActive() then
+        StopCutsceneImmediately()
+    end
+    DestroyAllCams(true)
+    RenderScriptCams(false, false, 0, true, true)
+    ClearFocus()
+    ClearTimecycleModifier()
+    ClearExtraTimecycleModifier()
+    if IsScreenFadedOut() or IsScreenFadingOut() then
+        DoScreenFadeIn(0)
+    end
+    SetNuiFocus(false, false)
+end
+
 local function startLoadingMusic()
     local cfg = musicCfg()
     if musicStarted or cfg.enabled == false then return end
+    --- Native intro muzika tik kai sesija gyva — per anksti paleidus būna pilkas/juodas vaizdas.
+    if not sessionReady() then return end
 
     musicStarted = true
 
@@ -40,14 +64,23 @@ local function stopLoadingMusic()
     if cfg.audioScene then
         StopAudioScene(cfg.audioScene)
     end
+    StopAudioScenes()
 end
 
 local function closeLoadscreen()
     if closed then return end
     closed = true
     stopLoadingMusic()
+    restoreGameplayView()
     ShutdownLoadingScreenNui()
     ShutdownLoadingScreen()
+    --- Dar kartą po trumpo delay — jei spawn dar fade'ina.
+    CreateThread(function()
+        for _ = 1, 10 do
+            Wait(250)
+            restoreGameplayView()
+        end
+    end)
 end
 
 RegisterNetEvent('mrp_loadscreen:client:close', closeLoadscreen)
@@ -66,7 +99,7 @@ RegisterNUICallback('setLoadscreenMusic', function(data, cb)
     cb('ok')
 end)
 
---- Paleisti muziką vos resursui startavus — nebelaukiam NetworkIsSessionStarted.
+--- Bandome paleisti kai sesija pasiruošusi (kuo greičiau, bet saugiai).
 CreateThread(function()
     local deadline = GetGameTimer() + 120000
     while not closed and GetGameTimer() < deadline do
@@ -75,7 +108,7 @@ CreateThread(function()
         else
             return
         end
-        Wait(50)
+        Wait(sessionReady() and 0 or 50)
     end
 end)
 

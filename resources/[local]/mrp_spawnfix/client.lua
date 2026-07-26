@@ -156,6 +156,11 @@ RegisterNetEvent('mrp_spawnfix:client:spawn', function()
     DoScreenFadeIn(500)
     Wait(600)
     shutdownLoadingScreens()
+    if IsScreenFadedOut() or IsScreenFadingOut() then
+        DoScreenFadeIn(0)
+    end
+    DestroyAllCams(true)
+    RenderScriptCams(false, false, 0, true, true)
 end)
 
 CreateThread(function()
