@@ -142,6 +142,59 @@ exports('GetPlayerGang', GangCore.GetPlayerGang)
 exports('IsGangMember', GangCore.IsGangMember)
 exports('GetGangById', GangCore.GetGangById)
 
+--- Shared create path for admin command + tablet registration.
+function GangCore.CreateGang(source, gangType, name, label, colorHex)
+    local player = GangCore.GetPlayer(source)
+    if not player then return false, 'player_not_found' end
+    if GangCore.GetPlayerGang(source) then return false, 'already_in_gang' end
+
+    gangType = tostring(gangType or ''):lower()
+    name = tostring(name or ''):lower():gsub('[^%w_%-]', '')
+    label = tostring(label or ''):gsub('^%s+', ''):gsub('%s+$', '')
+    colorHex = tostring(colorHex or '#ef4444')
+    if not colorHex:match('^#%x%x%x%x%x%x$') then colorHex = '#ef4444' end
+
+    if not Config.GangTypes[gangType] then return false, 'invalid_type' end
+    if name == '' or #name < 3 then return false, 'invalid_name' end
+    if label == '' or #label < 3 then return false, 'invalid_label' end
+    if #label > 96 then label = label:sub(1, 96) end
+
+    local exists = MySQL.scalar.await('SELECT id FROM mrp_gangs_v2 WHERE name = ? LIMIT 1', { name })
+    if exists then return false, 'name_taken' end
+
+    local ok = MySQL.transaction.await({
+        {
+            query = [[
+                INSERT INTO mrp_gangs_v2 (name, label, gang_type, owner_citizenid, color_hex)
+                VALUES (?, ?, ?, ?, ?)
+            ]],
+            values = { name, label, gangType, player.PlayerData.citizenid, colorHex },
+        },
+        {
+            query = [[
+                INSERT INTO mrp_gang_members_v2 (gang_id, citizenid, display_name, role_key)
+                VALUES (LAST_INSERT_ID(), ?, ?, 'boss')
+            ]],
+            values = { player.PlayerData.citizenid, fullName(player) },
+        },
+    })
+    if not ok then return false, 'create_failed' end
+
+    local gangId = MySQL.scalar.await('SELECT id FROM mrp_gangs_v2 WHERE name = ? LIMIT 1', { name })
+    if not gangId then return false, 'create_failed' end
+    GangRBAC.SeedDefaultRoles(gangId)
+    GangCore.Audit({
+        gangId = gangId,
+        actorCitizenId = player.PlayerData.citizenid,
+        actorSource = source,
+        action = 'gang_created',
+        targetType = 'gang',
+        targetId = gangId,
+        metadata = { name = name, label = label, gangType = gangType, colorHex = colorHex },
+    })
+    return true, { gangId = gangId, name = name, label = label }
+end
+
 QBCore.Commands.Add('gangcreatev2', 'Sukurti Gang System 2.0 gaują', {
     { name = 'type', help = 'street/cartel/mafia/biker/racing' },
     { name = 'name', help = 'Unikalus techninis pavadinimas' },
@@ -154,46 +207,11 @@ QBCore.Commands.Add('gangcreatev2', 'Sukurti Gang System 2.0 gaują', {
     if not Config.GangTypes[gangType] or name == '' or label == '' then
         return GangCore.Notify(source, 'Naudojimas: /gangcreatev2 [type] [name] [label]', 'error')
     end
-
-    local player = GangCore.GetPlayer(source)
-    if not player then return end
-    if GangCore.GetPlayerGang(source) then
-        return GangCore.Notify(source, 'Jau priklausai gaujai.', 'error')
-    end
-
-    local gangId
-    local ok = MySQL.transaction.await({
-        {
-            query = [[
-                INSERT INTO mrp_gangs_v2 (name, label, gang_type, owner_citizenid)
-                VALUES (?, ?, ?, ?)
-            ]],
-            values = { name, label:sub(1, 96), gangType, player.PlayerData.citizenid },
-        },
-        {
-            query = [[
-                INSERT INTO mrp_gang_members_v2 (gang_id, citizenid, display_name, role_key)
-                VALUES (LAST_INSERT_ID(), ?, ?, 'boss')
-            ]],
-            values = { player.PlayerData.citizenid, fullName(player) },
-        },
-    })
-
+    local ok, result = GangCore.CreateGang(source, gangType, name, label, '#ef4444')
     if not ok then
-        return GangCore.Notify(source, 'Gaujos sukurti nepavyko. Patikrink unikalų pavadinimą.', 'error')
+        return GangCore.Notify(source, ('Gaujos sukurti nepavyko (%s).'):format(tostring(result)), 'error')
     end
-    gangId = MySQL.scalar.await('SELECT id FROM mrp_gangs_v2 WHERE name = ? LIMIT 1', { name })
-    GangRBAC.SeedDefaultRoles(gangId)
-    GangCore.Audit({
-        gangId = gangId,
-        actorCitizenId = player.PlayerData.citizenid,
-        actorSource = source,
-        action = 'gang_created',
-        targetType = 'gang',
-        targetId = gangId,
-        metadata = { name = name, label = label, gangType = gangType },
-    })
-    GangCore.Notify(source, ('Gauja „%s“ sukurta (ID %s).'):format(label, gangId), 'success')
+    GangCore.Notify(source, ('Gauja „%s“ sukurta (ID %s).'):format(result.label, result.gangId), 'success')
 end, 'admin')
 
 QBCore.Commands.Add('gangaddv2', 'Pridėti žaidėją į V2 gaują', {

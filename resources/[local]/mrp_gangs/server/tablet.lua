@@ -4,10 +4,22 @@ GangTablet = GangTablet or {}
 
 local function publicGangList()
     return MySQL.query.await([[
-        SELECT id, name, label, gang_type, color_hex, reputation, level, status
+        SELECT id, name, label, gang_type, color_hex, reputation, level, heat, status
         FROM mrp_gangs_v2
         WHERE status = 'active'
         ORDER BY label
+    ]]) or {}
+end
+
+local function topGangs()
+    return MySQL.query.await([[
+        SELECT g.id, g.label, g.gang_type, g.color_hex, g.reputation, g.level, g.heat,
+               (SELECT COUNT(*) FROM mrp_gang_members_v2 m WHERE m.gang_id = g.id AND m.status = 'active') AS members,
+               (SELECT COUNT(*) FROM mrp_gang_territories t WHERE t.owner_gang_id = g.id) AS territories
+        FROM mrp_gangs_v2 g
+        WHERE g.status = 'active'
+        ORDER BY g.reputation DESC, g.level DESC
+        LIMIT 15
     ]]) or {}
 end
 
@@ -102,6 +114,9 @@ function GangTablet.GetBootstrap(source)
             ]], { player.PlayerData.citizenid }) or {}
         end
     end
+    local heat = gang and (tonumber(gang.heat) or 0) or 0
+    --- UI „įspėjimai“: heat 0–100 → 0–5 lygiai (kaip senoji plansetė).
+    local warningLevel = math.max(0, math.min(5, math.floor((heat / 100) * 5 + 0.0001)))
     return {
         organization = organization,
         invites = invites,
@@ -112,12 +127,44 @@ function GangTablet.GetBootstrap(source)
         wars = gang and GangWars.GetView(gang.gang_id) or {},
         activity = activityFor(context),
         gangs = publicGangList(),
+        topGangs = topGangs(),
         treatyTypes = Config.TreatyTypes,
         missionRoles = Config.MissionRoles,
         permissionGroups = Config.GangPermissionGroups,
+        gangTypes = Config.GangTypes,
+        allowCreate = Config.AllowPlayerGangCreate == true and not gang,
+        warnings = {
+            heat = heat,
+            level = warningLevel,
+            max = 5,
+            hint = warningLevel <= 0 and 'Gauja neturi aktyvaus heat / įspėjimų.'
+                or warningLevel <= 2 and 'Žemas heat — stebėkite PD dėmesį.'
+                or warningLevel <= 4 and 'Aukštas heat — venkite atvirų konfliktų.'
+                or 'Kritinis heat — gauja greitai trauks dėmesį.',
+        },
         admin = adminView(source),
     }
 end
+
+QBCore.Functions.CreateCallback('mrp_gangs:server:createGang', function(source, callback, payload)
+    if Config.AllowPlayerGangCreate ~= true and not GangCore.IsAdmin(source) then
+        return callback({ ok = false, reason = 'create_disabled' })
+    end
+    if not GangCore.RateLimit(source, 'tablet_create_gang', 5) then
+        return callback({ ok = false, reason = 'rate_limited' })
+    end
+    payload = type(payload) == 'table' and payload or {}
+    local ok, result = GangCore.CreateGang(
+        source,
+        payload.gangType,
+        payload.name,
+        payload.label,
+        payload.colorHex
+    )
+    if not ok then return callback({ ok = false, reason = result }) end
+    GangCore.Notify(source, ('Gauja „%s“ sukurta.'):format(result.label), 'success')
+    callback({ ok = true, result = result })
+end)
 
 local function saveSetting(key, value, source)
     local player = GangCore.GetPlayer(source)

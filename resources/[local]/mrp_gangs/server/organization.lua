@@ -30,6 +30,32 @@ function GangOrganization.GetView(source)
         WHERE gang_id = ?
         ORDER BY priority DESC
     ]], { gangId }) or {}
+    for _, role in ipairs(roles) do
+        local decoded = {}
+        local ok, parsed = pcall(json.decode, role.permissions_json or '[]')
+        if ok and type(parsed) == 'table' then
+            if parsed == '*' or parsed.wildcard == true then
+                role.permissions = { wildcard = true, set = {} }
+            else
+                local set = {}
+                if parsed[1] ~= nil then
+                    for _, perm in ipairs(parsed) do set[tostring(perm)] = true end
+                elseif type(parsed.set) == 'table' then
+                    for perm, enabled in pairs(parsed.set) do
+                        if enabled then set[tostring(perm)] = true end
+                    end
+                else
+                    for perm, enabled in pairs(parsed) do
+                        if enabled == true or enabled == 1 then set[tostring(perm)] = true end
+                    end
+                end
+                role.permissions = { wildcard = false, set = set }
+            end
+        else
+            role.permissions = { wildcard = false, set = {} }
+        end
+        role.permissions_json = nil
+    end
     local responsibilities = MySQL.query.await([[
         SELECT citizenid, responsibility_key, assigned_by, assigned_at
         FROM mrp_gang_member_responsibilities_v2
@@ -46,6 +72,7 @@ function GangOrganization.GetView(source)
         permissions = context.permissions.wildcard and '*' or permissionList,
         permissionGroups = Config.GangPermissionGroups,
         responsibilityCatalog = Config.GangResponsibilities,
+        gangTypes = Config.GangTypes,
     }
 end
 

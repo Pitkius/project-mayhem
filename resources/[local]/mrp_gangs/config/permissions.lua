@@ -133,3 +133,6 @@ Config.GangLimits = {
     inviteExpirySec = 300,
     memberNoteMax = 300,
 }
+
+--- Ar žaidėjai gali kurti gaują per tabletę (ne tik admin /gangcreatev2).
+Config.AllowPlayerGangCreate = true

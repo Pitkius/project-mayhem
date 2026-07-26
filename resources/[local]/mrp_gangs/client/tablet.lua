@@ -56,9 +56,23 @@ end, true)
 callbackAction('toggleMissionReady', 'mrp_gangs:server:toggleMissionReady', function(data)
     return { data.roleKey }
 end, false)
+callbackAction('createGang', 'mrp_gangs:server:createGang', function(data)
+    return { data }
+end, true)
 callbackAction('acceptInvite', 'mrp_gangs:server:acceptInvite', function(data)
     return { data.inviteId }
 end, true)
+
+RegisterNUICallback('setWaypoint', function(data, callback)
+    local x = tonumber(data and data.x)
+    local y = tonumber(data and data.y)
+    if not x or not y then
+        return callback({ ok = false, reason = 'invalid_coords' })
+    end
+    SetNewWaypoint(x + 0.0, y + 0.0)
+    GangClient.Notify('GPS nustatytas į teritoriją.', 'success')
+    callback({ ok = true })
+end)
 callbackAction('inviteMember', 'mrp_gangs:server:inviteMember', function(data)
     return { data.targetSource, data.roleKey }
 end, true)
