@@ -1,714 +1,448 @@
-const tablet = document.getElementById("tablet");
-const gangTitle = document.getElementById("gangTitle");
-const gangMeta = document.getElementById("gangMeta");
-const gangPanelEmpty = document.getElementById("gangPanelEmpty");
-const gangPanelContent = document.getElementById("gangPanelContent");
-const gangName = document.getElementById("gangName");
-const gangType = document.getElementById("gangType");
-const primaryColor = document.getElementById("primaryColor");
-const secondaryColor = document.getElementById("secondaryColor");
-const colorWarn = document.getElementById("colorWarn");
-const primarySwatches = document.getElementById("primarySwatches");
-const secondarySwatches = document.getElementById("secondarySwatches");
+const tablet = document.querySelector('#tablet');
+const nav = document.querySelector('#nav');
+const content = document.querySelector('#content');
+const title = document.querySelector('#page-title');
+const identity = document.querySelector('#identity');
+const modalRoot = document.querySelector('#modal-root');
+const toastRoot = document.querySelector('#toast-root');
 
-const tabPanels = {
-  register: document.getElementById("tabPanelRegister"),
-  ganginfo: document.getElementById("tabPanelGangInfo"),
-  gang: document.getElementById("tabPanelGang"),
-  map: document.getElementById("tabPanelMap"),
-  missions: document.getElementById("tabPanelMissions"),
-  top: document.getElementById("tabPanelTop"),
-  wars: document.getElementById("tabPanelWars"),
+const state = {
+  payload: null,
+  page: 'overview',
+  missionDifficulty: {},
+  map: null,
+  mapLayer: null,
 };
-const tabBtnRegister = document.getElementById("tabBtnRegister");
-const tabBtnGangInfo = document.getElementById("tabBtnGangInfo");
-const missionTurfSelect = document.getElementById("missionTurfSelect");
-const missionTypeSelect = document.getElementById("missionTypeSelect");
-const claimThresholdLbl = document.getElementById("claimThresholdLbl");
-const tabMissions = document.getElementById("tabMissions");
 
-let lastState = null;
-let tabletDocked = false;
-let tabletDragBound = false;
-const tabletBezel = document.querySelector(".tablet-bezel");
-/** @type {Record<string, string>} */
-let colorLabelMap = {};
-/** @type {'register' | 'ganginfo' | 'gang' | 'map' | 'missions' | 'top' | 'wars'} */
-let activeTab = "register";
+const pages = [
+  ['overview', '⌂', 'Overview'],
+  ['members', '♟', 'Nariai'],
+  ['progression', '↗', 'Progresija'],
+  ['territories', '◇', 'Teritorijos'],
+  ['missions', '◎', 'Misijos'],
+  ['diplomacy', '⇄', 'Diplomatija'],
+  ['wars', '⚔', 'Karai'],
+  ['activity', '≡', 'Veikla'],
+];
 
-function resourceName() {
-  try {
-    if (typeof GetParentResourceName === "function") return GetParentResourceName();
-  } catch (e) {}
-  return "mrp_gangs";
+const esc = (value) => String(value ?? '')
+  .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
+const money = (value) => `$${Number(value || 0).toLocaleString('en-US')}`;
+const date = (value) => value ? new Date(value).toLocaleString('lt-LT') : '—';
+const hasPermission = (permission) => {
+  const permissions = state.payload?.organization?.permissions;
+  return permissions === '*' || (Array.isArray(permissions) && permissions.includes(permission));
+};
+
+async function api(name, data = {}) {
+  const response = await fetch(`https://${GetParentResourceName()}/${name}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+    body: JSON.stringify(data),
+  });
+  return response.json();
 }
 
-function post(endpoint, data) {
-  return fetch(`https://${resourceName()}/${endpoint}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=UTF-8" },
-    body: JSON.stringify(data || {}),
-  })
-    .then((r) => r.json())
-    .catch(() => null);
+function toast(message, type = '') {
+  const node = document.createElement('div');
+  node.className = `toast ${type}`;
+  node.textContent = message;
+  toastRoot.append(node);
+  setTimeout(() => node.remove(), 4200);
 }
 
-window.GangMapPost = post;
-
-function safe(s) {
-  const d = document.createElement("div");
-  d.textContent = s == null ? "" : String(s);
-  return d.innerHTML;
+function pill(text, tone = '') {
+  return `<span class="pill ${tone}">${esc(text)}</span>`;
 }
 
-function destroyTurfMap() {
-  if (window.GangMap) GangMap.destroy();
+function empty(message) {
+  return `<div class="empty"><div><strong>Duomenų nėra</strong><p>${esc(message)}</p></div></div>`;
 }
 
-function scheduleRenderMap(state) {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (!lastState || activeTab !== "map") return;
-      const root = document.getElementById("gangsLeafletMap");
-      if (!root || root.clientHeight < 48) {
-        setTimeout(() => scheduleRenderMap(state), 100);
-        return;
-      }
-      if (window.GangMap) GangMap.open(state || lastState);
-    });
+function renderNav() {
+  const organization = state.payload?.organization;
+  const available = organization ? pages : [['overview', '⌂', 'Kvietimai']];
+  if (state.payload?.admin) available.push(['admin', '⚙', 'Administravimas']);
+  if (!available.some(([key]) => key === state.page)) state.page = available[0][0];
+  nav.innerHTML = available.map(([key, icon, label]) => `
+    <button class="nav-button ${state.page === key ? 'is-active' : ''}" data-page="${key}">
+      <span class="nav-icon">${icon}</span><span>${label}</span>
+      ${key === 'wars' && state.payload?.wars?.length ? `<span class="nav-badge">${state.payload.wars.length}</span>` : ''}
+    </button>
+  `).join('');
+  const gang = organization?.gang;
+  identity.innerHTML = gang
+    ? `<strong>${esc(gang.label)}</strong><span>${esc(gang.role_key)} · Lv. ${esc(gang.level)}</span>`
+    : `<strong>Neprisijungęs</strong><span>Peržiūrėk kvietimus</span>`;
+}
+
+function metric(label, value, tone = '') {
+  return `<article class="card ${tone}"><div class="metric">${esc(value)}</div><div class="metric-label">${esc(label)}</div></article>`;
+}
+
+function renderOverview() {
+  const org = state.payload.organization;
+  if (!org) {
+    const invites = state.payload.invites || [];
+    return `<div class="stack">
+      <div class="card is-accent"><h2>Gaujos tinklas</h2><p>Šiuo metu nepriklausai gaujai. Priimk galiojantį kvietimą.</p></div>
+      <div class="list">${invites.length ? invites.map(invite => `
+        <div class="list-item"><div class="list-item-main"><strong>${esc(invite.gang_label)}</strong>
+        <small>${esc(invite.gang_type)} · ${esc(invite.role_key)} · iki ${date(invite.expires_at)}</small></div>
+        <button class="button primary" data-action="accept-invite" data-id="${invite.id}">Priimti</button></div>
+      `).join('') : empty('Aktyvių kvietimų nėra.')}</div>
+    </div>`;
+  }
+  const gang = org.gang;
+  const controlled = (state.payload.territories || []).filter(t => Number(t.ownerGangId) === Number(gang.gang_id));
+  const activeWars = (state.payload.wars || []).filter(w => ['preparation','active','settlement'].includes(w.state));
+  const progression = state.payload.progression;
+  const progress = progression.nextRequired
+    ? Math.min(100, Math.round((progression.reputation / progression.nextRequired) * 100)) : 100;
+  return `<div class="stack">
+    <div class="grid grid-4">
+      ${metric('Reputacija', Number(gang.reputation || 0).toLocaleString())}
+      ${metric('Iždas', money(gang.treasury))}
+      ${metric('Teritorijos', controlled.length)}
+      ${metric('Aktyvūs karai', activeWars.length)}
+    </div>
+    <div class="grid grid-2">
+      <article class="card is-accent"><div class="card-header"><div><h2>${esc(gang.label)}</h2>
+        <p>${esc(gang.gang_type)} · Level ${esc(progression.level)}</p></div>${pill(gang.member_status, 'success')}</div>
+        <div class="progress"><span style="width:${progress}%"></span></div>
+        <p class="muted" style="margin:9px 0 0">${progression.nextRequired ? `${progression.reputation} / ${progression.nextRequired} REP` : 'Maksimalus dabartinis lygis'}</p>
+      </article>
+      <article class="card"><div class="card-header"><h2>Greiti veiksmai</h2></div>
+        <div class="button-row">
+          <button class="button primary" data-page="missions">Mission Board</button>
+          <button class="button" data-page="territories">Žemėlapis</button>
+          <button class="button" data-page="members">Struktūra</button>
+        </div>
+      </article>
+    </div>
+    <article class="card"><div class="card-header"><h2>Kontroliuojamos teritorijos</h2>${pill(`${controlled.length}`)}</div>
+      <div class="list">${controlled.length ? controlled.map(t => `
+        <div class="list-item"><div class="list-item-main"><strong>${esc(t.label)}</strong>
+        <small>${esc(t.type)} · stabilumas ${esc(t.stability)}%</small></div>${pill(t.state, t.state === 'controlled' ? 'success' : 'warning')}</div>
+      `).join('') : empty('Kol kas teritorijų nekontroliuojate.')}</div>
+    </article>
+  </div>`;
+}
+
+function renderMembers() {
+  const org = state.payload.organization;
+  const canInvite = hasPermission('members.invite');
+  const canManage = hasPermission('members.set_role');
+  return `<div class="stack">
+    <div class="card-header"><div><h2>Organizacijos struktūra</h2><p class="muted">${org.members.length} / 60 narių</p></div>
+      ${canInvite ? '<button class="button primary" data-action="invite-modal">Pakviesti narį</button>' : ''}</div>
+    <div class="table-wrap"><table><thead><tr><th>Narys</th><th>Rangas</th><th>Statusas</th><th>Indėlis</th><th>Prisijungė</th><th></th></tr></thead>
+      <tbody>${org.members.map(member => `<tr><td><strong>${esc(member.display_name)}</strong><br><span class="muted">${esc(member.citizenid)}</span></td>
+        <td>${esc(member.role_key)}</td><td>${pill(member.status, member.status === 'active' ? 'success' : 'warning')}</td>
+        <td>${Number(member.contribution || 0).toLocaleString()}</td><td>${date(member.joined_at)}</td>
+        <td><div class="button-row">${canManage ? `<button class="button" data-action="role-modal" data-citizen="${esc(member.citizenid)}">Rangas</button>` : ''}
+        ${hasPermission('members.kick') ? `<button class="button danger" data-action="kick-member" data-citizen="${esc(member.citizenid)}">Pašalinti</button>` : ''}</div></td></tr>`).join('')}</tbody>
+    </table></div>
+    ${hasPermission('finance.view') ? `<article class="card"><div class="card-header"><h2>Iždas</h2><span class="metric">${money(org.gang.treasury)}</span></div>
+      <div class="button-row">${hasPermission('finance.deposit') ? '<button class="button" data-action="treasury-modal" data-operation="deposit">Įnešti</button>' : ''}
+      ${hasPermission('finance.withdraw') ? '<button class="button" data-action="treasury-modal" data-operation="withdraw">Išimti</button>' : ''}</div></article>` : ''}
+    ${hasPermission('roles.manage') ? `<article class="card"><div class="card-header"><h2>Rangai ir teisės</h2><button class="button primary" data-action="role-config-modal">Naujas rangas</button></div>
+      <div class="grid grid-3">${org.roles.map(role => `<div class="list-item"><div class="list-item-main"><strong>${esc(role.label)}</strong>
+      <small>${esc(role.role_key)} · priority ${esc(role.priority)}</small></div><button class="button" data-action="role-config-modal" data-role-key="${esc(role.role_key)}">Redaguoti</button></div>`).join('')}</div></article>` : ''}
+  </div>`;
+}
+
+function renderProgression() {
+  const progression = state.payload.progression;
+  return `<div class="stack"><article class="card is-accent"><h2>Ilgalaikė progresija</h2>
+    <div class="metric">Level ${esc(progression.level)}</div><p>${Number(progression.reputation).toLocaleString()} reputacijos</p></article>
+    <div class="grid grid-3">${progression.levels.map(level => `<article class="card">
+      <div class="card-header"><h3>Level ${level.level}</h3>${pill(progression.reputation >= level.required ? 'Atrakinta' : `${level.required} REP`, progression.reputation >= level.required ? 'success' : '')}</div>
+      <p>${esc(level.unlock)}</p></article>`).join('')}</div></div>`;
+}
+
+function renderTerritories() {
+  setTimeout(initMap, 0);
+  return `<div class="stack"><div class="map-legend">
+    <span><i class="legend-dot" style="background:#22c55e"></i>Gang Turf</span>
+    <span><i class="legend-dot" style="background:#ef4444"></i>PvP Turf</span>
+    <span><i class="legend-dot" style="background:#f59e0b"></i>Reketo Turf</span></div>
+    <div id="territory-map"></div></div>`;
+}
+
+function initMap() {
+  const node = document.querySelector('#territory-map');
+  if (!node || typeof L === 'undefined') return;
+  if (state.map) { state.map.remove(); state.map = null; }
+  const bounds = [[-4000, -4000], [6625, 4500]];
+  state.map = L.map(node, { crs: L.CRS.Simple, minZoom: -3, maxZoom: 1, zoomControl: true, attributionControl: false });
+  L.imageOverlay('asset/gtav_satellite_2048.png', bounds).addTo(state.map);
+  state.map.fitBounds([[-2500, -2000], [5200, 3000]]);
+  (state.payload.territories || []).forEach(territory => {
+    const fallback = territory.type === 'gang' ? '#22c55e' : territory.type === 'pvp' ? '#ef4444' : '#f59e0b';
+    const color = territory.ownerColor || fallback;
+    const polygon = L.polygon(territory.vertices.map(v => [v.y, v.x]), {
+      color, fillColor: color, fillOpacity: territory.ownerGangId ? .27 : .10, weight: 2,
+    }).addTo(state.map);
+    polygon.bindPopup(`<strong>${esc(territory.label)}</strong><br>${esc(territory.type)}<br>
+      Savininkas: ${esc(territory.ownerLabel || 'Neutralu')}<br>Stabilumas: ${esc(territory.stability)}%`);
   });
 }
 
-function hexKey(hex) {
-  return String(hex || "").trim().toUpperCase();
+function renderMissions() {
+  const board = state.payload.missions || {};
+  return `<div class="stack"><div class="card-header"><div><h2>Mission Board</h2><p class="muted">Misijos nekeičia turf kontrolės.</p></div>
+    <button class="button" data-action="ready-modal">Party pasiruošimas</button></div>
+    <div class="grid grid-3">${(board.missions || []).map(mission => {
+      const selected = state.missionDifficulty[mission.id] || mission.difficulties[0];
+      return `<article class="card mission-card"><div class="card-header"><div><h3>${esc(mission.label)}</h3>
+        ${pill(mission.category, mission.category === 'universal' ? 'info' : '')}</div>${mission.hasInterior ? pill('Interior') : ''}</div>
+        <p>${esc(mission.description)}</p><div class="mission-meta">${pill(`Base ${money(mission.baseReward)}`)}${pill(`REP ${mission.baseReputation}`)}</div>
+        <select data-mission-difficulty="${esc(mission.id)}">${mission.difficulties.map(key =>
+          `<option value="${esc(key)}" ${key === selected ? 'selected' : ''}>${esc(board.difficulties[key]?.label || key)} ×${board.difficulties[key]?.rewardMultiplier || 1}</option>`
+        ).join('')}</select>
+        <button class="button primary" data-action="start-mission" data-mission="${esc(mission.id)}">Pradėti</button></article>`;
+    }).join('')}</div></div>`;
 }
 
-function normalizePaletteEntry(entry) {
-  if (typeof entry === "string") return { hex: entry, label: entry };
-  return { hex: entry.hex || entry.color || "#64748B", label: entry.label || entry.hex || "Spalva" };
+function renderDiplomacy() {
+  const rows = state.payload.diplomacy || [];
+  return `<div class="stack"><div class="card-header"><div><h2>Diplomatija</h2><p class="muted">Sutartys turi realų karo ir ekonominį poveikį.</p></div>
+    ${hasPermission('diplomacy.propose') ? '<button class="button primary" data-action="treaty-modal">Nauja sutartis</button>' : ''}</div>
+    <div class="list">${rows.length ? rows.map(row => {
+      const ownId = Number(state.payload.organization.gang.gang_id);
+      const other = Number(row.gang_a_id) === ownId ? row.gang_b_label : row.gang_a_label;
+      const incoming = row.status === 'pending' && Number(row.proposed_by_gang_id) !== ownId;
+      return `<div class="list-item"><div class="list-item-main"><strong>${esc(other)}</strong>
+        <small>${esc(row.treaty_type)} · ${esc(row.status)} · iki ${date(row.expires_at)}</small></div>
+        <div class="button-row">${incoming && hasPermission('diplomacy.accept') ? `<button class="button primary" data-action="resolve-treaty" data-id="${row.id}" data-accept="true">Priimti</button>
+        <button class="button" data-action="resolve-treaty" data-id="${row.id}" data-accept="false">Atmesti</button>` : ''}
+        ${row.status === 'active' && hasPermission('diplomacy.break') ? `<button class="button danger" data-action="break-treaty" data-id="${row.id}">Nutraukti</button>` : ''}</div></div>`;
+    }).join('') : empty('Aktyvių santykių nėra.')}</div></div>`;
 }
 
-function buildColorLabelMap(palette) {
-  colorLabelMap = {};
-  (palette || []).forEach((entry) => {
-    const { hex, label } = normalizePaletteEntry(entry);
-    colorLabelMap[hexKey(hex)] = label;
-  });
+function renderWars() {
+  const wars = state.payload.wars || [];
+  return `<div class="stack"><div class="card-header"><div><h2>Karo kampanijos</h2><p class="muted">Objective score, roster lock ir gynėjo pranašumas.</p></div>
+    ${hasPermission('wars.declare') ? '<button class="button primary" data-action="war-modal">Skelbti karą</button>' : ''}</div>
+    <div class="grid grid-2">${wars.length ? wars.map(war => `<article class="card ${war.state === 'active' ? 'is-accent' : ''}">
+      <div class="card-header"><div><h3>${esc(war.attacker_label)} vs ${esc(war.defender_label)}</h3><p>${esc(war.territory_id)}</p></div>${pill(war.state, war.state === 'active' ? 'danger' : 'warning')}</div>
+      <div class="grid grid-2">${metric('Puolėjai', war.attacker_score)}${metric('Gynėjai', war.defender_score)}</div>
+      <p class="muted">Aktyvus: ${date(war.active_starts_at)} — ${date(war.active_ends_at)}</p>
+      <button class="button" data-action="war-details" data-id="${war.id}">Detaliau</button></article>`).join('') : empty('Karo kampanijų nėra.')}</div></div>`;
 }
 
-function colorLabel(hex) {
-  return colorLabelMap[hexKey(hex)] || "Spalva";
+function renderActivity() {
+  const rows = state.payload.activity || [];
+  return `<div class="stack"><h2>Veiklos žurnalas</h2><div class="table-wrap"><table>
+    <thead><tr><th>Laikas</th><th>Veiksmas</th><th>Aktorius</th><th>Taikinys</th></tr></thead>
+    <tbody>${rows.map(row => `<tr><td>${date(row.created_at)}</td><td>${esc(row.action)}</td>
+      <td>${esc(row.actor_citizenid || 'Sistema')}</td><td>${esc(row.target_type || '')} ${esc(row.target_id || '')}</td></tr>`).join('')}</tbody>
+  </table></div></div>`;
 }
 
-function formatColorPair(primaryHex, secondaryHex) {
-  const primary = colorLabel(primaryHex);
-  const secondary = colorLabel(secondaryHex || primaryHex);
-  if (primary === secondary) return primary;
-  return `${primary} / ${secondary}`;
+function renderAdmin() {
+  const admin = state.payload.admin;
+  return `<div class="stack"><div class="grid grid-4">
+    ${metric('Gaujos', admin.gangs.length)}${metric('Aktyvūs karai', admin.activeWars.length)}
+    ${metric('Quota kategorijos', admin.quotas.length)}${metric('Audit įrašai', admin.recentAudit.length)}</div>
+    <article class="card"><h2>Gaujų valdymas</h2><div class="table-wrap"><table><thead><tr><th>ID</th><th>Gauja</th><th>Tipas</th><th>REP</th><th>Iždas</th><th>Statusas</th></tr></thead>
+      <tbody>${admin.gangs.map(g => `<tr><td>${g.id}</td><td>${esc(g.label)}</td><td>${esc(g.gang_type)}</td>
+      <td>${g.reputation}</td><td>${money(g.treasury)}</td><td><select data-admin-gang-status="${g.id}">
+      ${['active','suspended','archived'].map(s => `<option ${s === g.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div></article>
+    <article class="card"><h2>Supply quota</h2><div class="table-wrap"><table><thead><tr><th>Raktas</th><th>Išduota</th><th>Limitas</th><th>Langas</th></tr></thead>
+      <tbody>${admin.quotas.map(q => `<tr><td>${esc(q.quota_key)}</td><td>${q.issued_count}</td><td>${q.global_cap}</td><td>${q.window_days} d.</td></tr>`).join('')}</tbody></table></div></article>
+    <article class="card"><h2>Teritorijų kontrolė</h2><div class="table-wrap"><table><thead><tr><th>Teritorija</th><th>Tipas</th><th>Savininkas</th><th>Stabilumas</th></tr></thead>
+      <tbody>${(state.payload.territories || []).map(t => `<tr><td>${esc(t.label)}</td><td>${esc(t.type)}</td>
+      <td><select data-admin-territory-owner="${esc(t.id)}"><option value="">Neutralu</option>${admin.gangs.filter(g => g.status === 'active').map(g =>
+        `<option value="${g.id}" ${Number(g.id) === Number(t.ownerGangId) ? 'selected' : ''}>${esc(g.label)}</option>`).join('')}</select></td>
+      <td>${esc(t.stability)}%</td></tr>`).join('')}</tbody></table></div></article>
+    <article class="card"><h2>Aktyvūs karai</h2><div class="list">${admin.activeWars.map(w => `<div class="list-item"><div class="list-item-main">
+      <strong>#${w.id} · ${esc(w.territory_id)}</strong><small>${esc(w.state)} · ${w.attacker_score}:${w.defender_score}</small></div>
+      <button class="button danger" data-action="admin-cancel-war" data-id="${w.id}">Atšaukti</button></div>`).join('') || empty('Aktyvių karų nėra.')}</div></article>
+    <article class="card"><h2>Mission toggles</h2><div class="grid grid-3">${(admin.missions || []).map(m =>
+      `<label class="list-item"><span>${esc(m.label)}</span><input type="checkbox" data-admin-mission="${esc(m.id)}" ${m.enabled ? 'checked' : ''}></label>`).join('')}</div></article>
+  </div>`;
 }
 
-function gangSwatchStyle(primaryHex, secondaryHex) {
-  const top = primaryHex || "#64748B";
-  const bottom = secondaryHex || top;
-  return `background:linear-gradient(to bottom, ${top}, ${bottom})`;
+function render() {
+  if (!state.payload) return;
+  renderNav();
+  const pageTitle = pages.find(([key]) => key === state.page)?.[2] || (state.page === 'admin' ? 'Administravimas' : 'Overview');
+  title.textContent = pageTitle;
+  const renderers = {
+    overview: renderOverview, members: renderMembers, progression: renderProgression,
+    territories: renderTerritories, missions: renderMissions, diplomacy: renderDiplomacy,
+    wars: renderWars, activity: renderActivity, admin: renderAdmin,
+  };
+  content.innerHTML = (renderers[state.page] || renderOverview)();
 }
 
-window.GangColorLabel = colorLabel;
-window.GangFormatColorPair = formatColorPair;
-window.GangSwatchStyle = gangSwatchStyle;
+function modal(html) {
+  modalRoot.innerHTML = `<div class="modal-backdrop" data-action="dismiss-modal"><div class="modal" role="dialog">${html}</div></div>`;
+}
+function closeModal() { modalRoot.innerHTML = ''; }
 
-function syncSwatchSelection(selectEl, containerEl) {
-  if (!containerEl) return;
-  const cur = hexKey(selectEl.value);
-  containerEl.querySelectorAll(".color-swatch").forEach((b) => {
-    b.classList.toggle("active", hexKey(b.dataset.hex) === cur);
-  });
+function inviteModal() {
+  const roles = state.payload.organization.roles || [];
+  modal(`<div class="modal-header"><h2>Pakviesti narį</h2><button class="close-button" data-action="dismiss-modal">×</button></div>
+    <form id="invite-form" class="stack"><div class="field"><label>Server ID</label><input name="targetSource" type="number" min="1" required></div>
+    <div class="field"><label>Pradinis rangas</label><select name="roleKey">${roles.map(r => `<option value="${esc(r.role_key)}">${esc(r.label)}</option>`).join('')}</select></div>
+    <button class="button primary">Siųsti kvietimą</button></form>`);
+}
+function roleModal(citizenid) {
+  const roles = state.payload.organization.roles || [];
+  modal(`<div class="modal-header"><h2>Keisti rangą</h2><button class="close-button" data-action="dismiss-modal">×</button></div>
+    <form id="role-form" class="stack"><input type="hidden" name="citizenid" value="${esc(citizenid)}">
+    <div class="field"><label>Rangas</label><select name="roleKey">${roles.map(r => `<option value="${esc(r.role_key)}">${esc(r.label)}</option>`).join('')}</select></div>
+    <button class="button primary">Išsaugoti</button></form>`);
+}
+function roleConfigModal(roleKey = '') {
+  const role = (state.payload.organization.roles || []).find(entry => entry.role_key === roleKey);
+  const selected = role?.permissions?.wildcard ? new Set(['*']) : new Set(Object.keys(role?.permissions?.set || {}).filter(key => role.permissions.set[key]));
+  const groups = state.payload.permissionGroups || {};
+  modal(`<div class="modal-header"><h2>${role ? 'Redaguoti rangą' : 'Naujas rangas'}</h2><button class="close-button" data-action="dismiss-modal">×</button></div>
+    <form id="role-config-form" class="stack"><div class="grid grid-2">
+    <div class="field"><label>Raktas</label><input name="roleKey" value="${esc(role?.role_key || '')}" ${role ? 'readonly' : ''} required></div>
+    <div class="field"><label>Pavadinimas</label><input name="label" value="${esc(role?.label || '')}" required></div></div>
+    <div class="field"><label>Prioritetas</label><input name="priority" type="number" min="0" max="99" value="${esc(role?.priority || 10)}" required></div>
+    <div class="stack">${Object.entries(groups).map(([groupKey, group]) => `<div class="card"><h3>${esc(group.label || groupKey)}</h3>
+      <div class="grid grid-2">${(group.permissions || []).map(permission => `<label class="list-item"><span>${esc(permission)}</span>
+      <input type="checkbox" name="permission" value="${esc(permission)}" ${selected.has(permission) || selected.has('*') ? 'checked' : ''}></label>`).join('')}</div></div>`).join('')}</div>
+    <div class="button-row"><button class="button primary">Išsaugoti</button>
+    ${role && !['boss','underboss','lieutenant','member','prospect'].includes(role.role_key) ? `<button type="button" class="button danger" data-action="delete-role" data-role-key="${esc(role.role_key)}">Pašalinti</button>` : ''}</div></form>`);
+}
+function treasuryModal(operation) {
+  modal(`<div class="modal-header"><h2>${operation === 'deposit' ? 'Įnešti į iždą' : 'Išimti iš iždo'}</h2><button class="close-button" data-action="dismiss-modal">×</button></div>
+    <form id="treasury-form" class="stack"><input type="hidden" name="operation" value="${esc(operation)}">
+    <div class="field"><label>Suma</label><input name="amount" type="number" min="1" max="1000000" required></div>
+    <button class="button primary">Patvirtinti</button></form>`);
+}
+function readyModal() {
+  modal(`<div class="modal-header"><h2>Party rolė</h2><button class="close-button" data-action="dismiss-modal">×</button></div>
+    <div class="grid grid-2">${Object.entries(state.payload.missionRoles || {}).filter(([key]) => key !== 'leader').map(([key, role]) =>
+      `<button class="button" data-action="toggle-ready" data-role="${esc(key)}">${esc(role.label)}</button>`).join('')}</div>`);
+}
+function treatyModal() {
+  const ownId = Number(state.payload.organization.gang.gang_id);
+  modal(`<div class="modal-header"><h2>Nauja sutartis</h2><button class="close-button" data-action="dismiss-modal">×</button></div>
+    <form id="treaty-form" class="stack"><div class="field"><label>Kita gauja</label><select name="targetGangId">
+    ${state.payload.gangs.filter(g => Number(g.id) !== ownId).map(g => `<option value="${g.id}">${esc(g.label)}</option>`).join('')}</select></div>
+    <div class="field"><label>Tipas</label><select name="treatyType">${Object.entries(state.payload.treatyTypes || {}).map(([key, def]) =>
+      `<option value="${esc(key)}">${esc(def.label)}</option>`).join('')}</select></div>
+    <div class="field"><label>Trukmė valandomis</label><input name="durationHours" type="number" min="0" max="720" value="72"></div>
+    <button class="button primary">Siūlyti</button></form>`);
+}
+function warModal() {
+  const ownId = Number(state.payload.organization.gang.gang_id);
+  const territories = (state.payload.territories || []).filter(t => t.ownerGangId && Number(t.ownerGangId) !== ownId && t.type !== 'racket');
+  modal(`<div class="modal-header"><h2>Skelbti karą</h2><button class="close-button" data-action="dismiss-modal">×</button></div>
+    <form id="war-form" class="stack"><div class="field"><label>Teritorija ir gynėjas</label><select name="territory">
+    ${territories.map(t => `<option value="${esc(t.id)}" data-owner="${t.ownerGangId}">${esc(t.label)} · ${esc(t.ownerLabel)}</option>`).join('')}</select></div>
+    <p class="muted">Reikalingas aktyvus Enemy statusas. Roster užrakinamas pasibaigus pasiruošimui.</p>
+    <button class="button primary">Skelbti kampaniją</button></form>`);
 }
 
-function renderColorSwatches(selectEl, containerEl, palette, usage) {
-  if (!containerEl || !selectEl) return;
-  containerEl.innerHTML = "";
-  const opts = (palette || []).map(normalizePaletteEntry);
-  opts.forEach(({ hex, label }) => {
-    const used = Number((usage || {})[hexKey(hex)] || 0);
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "color-swatch";
-    if (used > 0) btn.classList.add("is-used");
-    if (hexKey(hex) === "#0A0A0A") btn.classList.add("is-black");
-    btn.style.backgroundColor = hex;
-    btn.dataset.hex = hex;
-    btn.title = used > 0 ? `${label} — jau naudojama` : label;
-    btn.setAttribute("aria-label", label);
-    btn.addEventListener("click", () => {
-      selectEl.value = hex;
-      syncSwatchSelection(selectEl, containerEl);
-      selectEl.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    containerEl.appendChild(btn);
-  });
-
-  const valid = opts.some(({ hex }) => hexKey(hex) === hexKey(selectEl.value));
-  if (!valid && opts.length) selectEl.value = opts[0].hex;
-  syncSwatchSelection(selectEl, containerEl);
-}
-
-function renderPalette(palette, usage) {
-  buildColorLabelMap(palette);
-  primaryColor.innerHTML = "";
-  secondaryColor.innerHTML = "";
-  (palette || []).map(normalizePaletteEntry).forEach(({ hex, label }) => {
-    const used = Number((usage || {})[hexKey(hex)] || 0);
-    const txt = used > 0 ? `${label} (užimta)` : label;
-    const o1 = document.createElement("option");
-    o1.value = hex;
-    o1.textContent = txt;
-    primaryColor.appendChild(o1);
-    const o2 = document.createElement("option");
-    o2.value = hex;
-    o2.textContent = txt;
-    secondaryColor.appendChild(o2);
-  });
-  renderColorSwatches(primaryColor, primarySwatches, palette, usage);
-  renderColorSwatches(secondaryColor, secondarySwatches, palette, usage);
-}
-
-function mergeTabletMap(res) {
-  if (!res || !res.ok) return res;
-  if (!res.tabletMap && lastState && lastState.tabletMap) res.tabletMap = lastState.tabletMap;
-  if (!res.gangColors && lastState && lastState.gangColors) res.gangColors = lastState.gangColors;
-  return res;
-}
-
-function renderMissionsTab(state) {
-  if (!missionTurfSelect || !missionTypeSelect) return;
-  missionTurfSelect.innerHTML = "";
-  const optAny = document.createElement("option");
-  optAny.value = "";
-  optAny.textContent = "— dabartinė zona / nereikia —";
-  missionTurfSelect.appendChild(optAny);
-  (state.turfs || []).forEach((t) => {
-    const o = document.createElement("option");
-    o.value = t.turf_id;
-    const inf = Number(t.influence ?? t.progress ?? 0);
-    o.textContent = `#${t.cell_num || t.turf_id} · ${t.district || t.turf_label || t.turf_id} (${inf}%)`;
-    missionTurfSelect.appendChild(o);
-  });
-  missionTypeSelect.innerHTML = "";
-  (state.missions || []).forEach((m) => {
-    const o = document.createElement("option");
-    o.value = m.id;
-    const rep = Number(m.reputationReward || m.progress || 0);
-    const inf = Number(m.influenceReward || 0);
-    const cash = Number(m.moneyReward || 0);
-    o.textContent = `${m.label} · Rep +${rep} · Įtaka +${inf} · $${cash}`;
-    missionTypeSelect.appendChild(o);
-  });
-  if (missionTypeSelect.options.length > 0) {
-    missionTypeSelect.selectedIndex = 0;
-  }
-  if (claimThresholdLbl) claimThresholdLbl.textContent = String(state.claimThreshold || 100);
-  const stats = document.getElementById("gangMissionStats");
-  if (stats && state.gang) {
-    stats.textContent = `Rep: ${state.gang.reputation || 0} · Tipas: ${state.gang.gang_type || "—"}`;
-  }
-  if (tabMissions) tabMissions.style.display = state.hasGang && !state.readOnly ? "" : "none";
-  document.querySelectorAll('.tab-btn[data-tab="top"], .tab-btn[data-tab="wars"]').forEach((btn) => {
-    btn.style.display = state.hasGang ? "" : "none";
-  });
-}
-
-function renderTopAndWarsTabs(state) {
-  const topFull = document.getElementById("topGangsListFull");
-  if (topFull) {
-    topFull.innerHTML = (state.topGangs || [])
-      .map(
-        (g, i) =>
-          `<li class="top-gang-row">
-            <span class="top-rank">#${i + 1}</span>
-            <span class="top-color-swatch" style="${gangSwatchStyle(g.color_hex, g.secondary_color_hex)}" title="${safe(formatColorPair(g.color_hex, g.secondary_color_hex))}"></span>
-            <div class="top-gang-copy">
-              <strong class="top-gang-name">${safe(g.name || "Gauja")}</strong>
-              <span class="top-color-label">${safe(formatColorPair(g.color_hex, g.secondary_color_hex))}</span>
-            </div>
-            <span class="top-meta">${g.turf_count || 0} turf · ${Number(g.reputation || 0).toLocaleString()} rep</span>
-          </li>`,
-      )
-      .join("") || "<li class='muted'>Duomenų nėra</li>";
-  }
-
-  const warsFull = document.getElementById("activeWarsListFull");
-  if (warsFull) {
-    if (state.isUnofficial || state.turfBlocked || (state.gang && state.gang.is_unofficial)) {
-      warsFull.innerHTML = `<li class="muted">${safe(state.turfBlockedMessage || "Jūs esate neoficiali gauja — negalite turėti teritorijos ir dalyvauti teritorijų karuose.")}</li>`;
-    } else {
-      warsFull.innerHTML = (state.activeWars || [])
-        .map(
-          (w) =>
-            `<li class="war-row">
-              <span class="war-dot" style="background:${w.color_hex || "#f87171"}"></span>
-              <strong>Turf #${safe(w.turfId || w.cell_num || "—")}</strong>
-              <span>${safe(w.label)} · ${safe(w.influence)}%</span>
-              <em>${safe(w.timeLabel || "Aktyvus")}</em>
-            </li>`,
-        )
-        .join("") || "<li class='muted'>Šiuo metu ramu</li>";
-    }
-  }
-
-  const actsFull = document.getElementById("recentActsListFull");
-  if (actsFull) {
-    actsFull.innerHTML = (state.recentActivities || [])
-      .map(
-        (a) =>
-          `<li><span class="act-dot" style="background:${a.colorHex || "#a78bfa"}"></span> ${safe(a.gangName || "—")} · ${safe(a.label || a.turfId)} <em>+$${a.profit}</em></li>`,
-      )
-      .join("") || "<li class='muted'>Veiklų nėra</li>";
-  }
-}
-
-function updateGangTabContent(state) {
-  const memberListEl = document.getElementById("gangMemberList");
-  if (state.hasGang) {
-    gangPanelEmpty.classList.add("hidden");
-    gangPanelContent.classList.remove("hidden");
-    gangTitle.textContent = `${state.gang.name} (${state.gang.gang_type})`;
-    gangMeta.textContent = `Rep: ${state.gang.reputation || 0} · Spalvos: ${formatColorPair(state.gang.color_hex, state.gang.secondary_color_hex)}`;
-    const rows = state.members || [];
-    memberListEl.innerHTML = rows.length
-      ? rows
-          .map(
-            (m) =>
-              `<div class="gang-member-row"><span>${safe(m.name || "Narys")}</span><span>${safe(m.citizenid || "-")}</span><strong>R${safe(m.rank || 0)}</strong></div>`,
-          )
-          .join("")
-      : `<div class="gang-member-row"><span>Narių nėra</span><span>-</span><strong>-</strong></div>`;
-  } else {
-    gangPanelContent.classList.add("hidden");
-    gangPanelEmpty.classList.remove("hidden");
-    memberListEl.innerHTML = "";
-  }
-}
-
-function activateTab(tab) {
-  if (tab === "gang" && !lastState?.hasGang) tab = "register";
-  if (tab === "ganginfo" && !lastState?.hasGang) tab = "register";
-  if (tab === "register" && lastState?.hasGang) tab = "ganginfo";
-  if ((tab === "missions" || tab === "top" || tab === "wars") && !lastState?.hasGang) tab = "register";
-  if (tab === "missions" && lastState?.readOnly) tab = "ganginfo";
-  activeTab = tab;
-
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.tab === tab);
-  });
-
-  Object.entries(tabPanels).forEach(([k, el]) => {
-    if (el) el.classList.toggle("hidden", k !== tab);
-  });
-
-  const warsPopover = document.getElementById("warsPopover");
-  if (warsPopover) warsPopover.classList.add("hidden");
-
-  if (tab === "map") {
-    scheduleRenderMap(lastState);
-  } else {
-    destroyTurfMap();
-  }
-}
-
-document.querySelectorAll(".tab-btn").forEach((btn) => {
-  btn.addEventListener("click", () => activateTab(btn.dataset.tab));
-});
-
-function formatWhen(iso) {
-  if (!iso) return "—";
-  try {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return String(iso);
-    return d.toLocaleString("lt-LT", { dateStyle: "medium", timeStyle: "short" });
-  } catch (e) {
-    return String(iso);
-  }
-}
-
-function buildWarnMeter(count, max) {
-  max = Number(max) || 5;
-  count = Math.max(0, Math.min(max, Number(count) || 0));
-  let html = "";
-  for (let i = 1; i <= max; i += 1) {
-    const filled = i <= count;
-    const danger = count >= max && filled;
-    html += `<span class="gang-warn-slot${filled ? " filled" : ""}${danger ? " danger" : ""}"></span>`;
-  }
-  return html;
-}
-
-function updatePrimaryTabs(state) {
-  const hasGang = !!state.hasGang;
-  const readOnly = !!state.readOnly;
-  if (tabBtnRegister) tabBtnRegister.classList.toggle("hidden", hasGang);
-  if (tabBtnGangInfo) tabBtnGangInfo.classList.toggle("hidden", !hasGang);
-  const btnOrg = document.getElementById("btnOpenOrg");
-  const btnOrgInfo = document.getElementById("btnOpenOrgInfo");
-  if (btnOrg) {
-    btnOrg.classList.toggle("hidden", !hasGang);
-    btnOrg.textContent = readOnly ? "Peržiūra" : "Organizacija";
-    btnOrg.title = readOnly
-      ? "Nariai, hierarchija, turfai (tik peržiūra)"
-      : "Rangai, nariai, teisės";
-  }
-  if (btnOrgInfo) {
-    btnOrgInfo.classList.toggle("hidden", !hasGang);
-    btnOrgInfo.textContent = readOnly
-      ? "Žiūrėti hierarchiją · narius · turfus"
-      : "Gaujos valdymas · rangai ir nariai";
-  }
-  const banner = document.getElementById("tabletReadOnlyBanner");
-  if (banner) banner.classList.toggle("hidden", !readOnly);
-  const unoffBanner = document.getElementById("tabletUnofficialBanner");
-  if (unoffBanner) {
-    const showUnoff = !!(state.isUnofficial || state.turfBlocked || (state.gang && state.gang.is_unofficial));
-    unoffBanner.classList.toggle("hidden", !showUnoff);
-    if (showUnoff && state.turfBlockedMessage) {
-      unoffBanner.textContent = state.turfBlockedMessage;
-    }
-  }
-  const brand = document.getElementById("tabletBrandTitle");
-  if (brand) {
-    const gName = state.gang && (state.gang.label || state.gang.name);
-    brand.textContent = readOnly && gName ? `${gName} planšetė` : "Gaujų planšetė";
-  }
-  const manage = document.getElementById("gangManageActions");
-  const manageHint = document.getElementById("gangManageReadOnlyHint");
-  if (manage) manage.classList.toggle("hidden", readOnly);
-  if (manageHint) manageHint.classList.toggle("hidden", !readOnly);
-  const warnPanel = document.getElementById("gangInfoWarnPanel");
-  if (warnPanel) warnPanel.classList.toggle("hidden", readOnly);
-  if (tabMissions) tabMissions.style.display = hasGang && !readOnly ? "" : "none";
-  if (activeTab === "register" && hasGang) activeTab = "ganginfo";
-  if (activeTab === "ganginfo" && !hasGang) activeTab = "register";
-  if (activeTab === "missions" && readOnly) activeTab = "ganginfo";
-}
-
-function renderGangInfoTab(state) {
-  const gang = state.gang;
-  if (!gang || !state.hasGang) return;
-  const maxW = Number(state.maxWarnings) || 5;
-  const wCount = Number(gang.warnings) || 0;
-  const members = (state.members || []).length;
-  const title = document.getElementById("gangInfoTitle");
-  const meta = document.getElementById("gangInfoMeta");
-  const swatch = document.getElementById("gangInfoSwatch");
-  const stats = document.getElementById("gangInfoStats");
-  const warnCount = document.getElementById("gangInfoWarnCount");
-  const warnMeter = document.getElementById("gangInfoWarnMeter");
-  const warnHint = document.getElementById("gangInfoWarnHint");
-  const warnList = document.getElementById("gangInfoWarnList");
-  const warnPanel = document.getElementById("gangInfoWarnPanel");
-  if (title) title.textContent = gang.name || "Gauja";
-  if (meta) {
-    const aff = state.affiliation && state.affiliation.parent;
-    const affTxt = aff ? ` · Org: ${aff.name}` : "";
-    const unoff = state.isUnofficial || (gang && gang.is_unofficial) ? " · Neoficiali" : "";
-    meta.textContent = `${gang.gang_type || "—"}${unoff} · ID #${gang.gang_id || "—"}${affTxt} · Spalvos: ${formatColorPair(gang.color_hex, gang.secondary_color_hex)}`;
-  }
-  if (swatch) swatch.style.cssText = gangSwatchStyle(gang.color_hex, gang.secondary_color_hex);
-  if (stats) {
-    const ownedTurfs = (state.turfs || []).filter((t) => Number(t.owner_gang_id) === Number(gang.gang_id)).length;
-    stats.innerHTML = `
-      <div class="gang-info-stat"><span>Reputacija</span><strong>${gang.reputation ?? 0}</strong></div>
-      <div class="gang-info-stat"><span>Nariai</span><strong>${members}</strong></div>
-      <div class="gang-info-stat"><span>Turfai</span><strong>${ownedTurfs}</strong></div>
-      <div class="gang-info-stat"><span>Sukurta</span><strong class="small-strong">${safe(formatWhen(gang.created_at))}</strong></div>`;
-  }
-  if (warnCount) warnCount.textContent = `${wCount}/${maxW}`;
-  if (warnMeter) warnMeter.innerHTML = buildWarnMeter(wCount, maxW);
-  if (warnPanel) {
-    warnPanel.classList.toggle("is-alert", wCount > 0);
-    warnPanel.classList.toggle("is-max", wCount >= maxW);
-  }
-  if (warnHint) {
-    if (wCount >= maxW) {
-      warnHint.textContent = "Gauja pasiekė maksimalų įspėjimų skaičių. Susisiek su administracija.";
-    } else if (wCount > 0) {
-      warnHint.textContent = `Gauja turi ${wCount} administracinį(-ius) įspėjimą(-us).`;
-    } else {
-      warnHint.textContent = "Gauja neturi aktyvių įspėjimų.";
-    }
-  }
-  if (warnList) {
-    const items = state.warnings || [];
-    warnList.innerHTML = items.length
-      ? items
-          .map(
-            (w) =>
-              `<li><strong>${safe(w.reason || "Įspėjimas")}</strong><span>${safe(w.admin_name || "Admin")} · ${safe(formatWhen(w.created_at))}</span></li>`,
-          )
-          .join("")
-      : "";
-  }
-}
-
-function render(state) {
-  lastState = state;
-  tablet.classList.remove("hidden");
-  if (!gangType || !primaryColor) {
-    console.error("[mrp_gangs] Trūksta UI elementų");
-    return;
-  }
-
-  gangType.innerHTML = "";
-  Object.entries(state.gangTypes || {}).forEach(([k, v]) => {
-    const o = document.createElement("option");
-    o.value = k;
-    o.textContent = `${v}`;
-    gangType.appendChild(o);
-  });
-  renderPalette(state.palette || [], state.colorUsage || {});
-  updatePrimaryTabs(state);
-  updateGangTabContent(state);
-  renderGangInfoTab(state);
-  renderMissionsTab(state);
-  renderTopAndWarsTabs(state);
-
-  if (window.GangMap && activeTab === "map") {
-    GangMap.renderPanels(state);
-  }
-
-  if (activeTab === "gang" && !state.hasGang) activeTab = "register";
-  if (activeTab === "ganginfo" && !state.hasGang) activeTab = "register";
-  if (activeTab === "register" && state.hasGang) activeTab = "ganginfo";
-  if (activeTab === "missions" && (!state.hasGang || state.readOnly)) activeTab = state.hasGang ? "ganginfo" : "register";
-
-  activateTab(activeTab);
-}
-
-function refreshWarn() {
-  if (!lastState) return;
-  const usage = lastState.colorUsage || {};
-  const used = Number(usage[String(primaryColor.value || "").toUpperCase()] || 0) > 0;
-  colorWarn.classList.toggle("hidden", !used);
-  colorWarn.textContent = used ? `Spalva „${colorLabel(primaryColor.value)}“ jau naudojama — vis tiek gali rinktis.` : "";
-}
-primaryColor.addEventListener("change", refreshWarn);
-
-window.addEventListener("message", (e) => {
-  const d = e.data;
-  if (!d || !d.action) return;
-  if (d.action === "open") {
-    const payload = d.payload || {};
-    if (payload.keepTab && activeTab) {
-      /* paliekame esamą skiltį */
-    } else if (payload.initialTab) {
-      activeTab = payload.initialTab;
-    } else {
-      activeTab = payload.hasGang ? "ganginfo" : "register";
-    }
-    setTabletDocked(false, true);
-    try {
-      render(payload);
-    } catch (err) {
-      console.error("[mrp_gangs] render klaida:", err);
-      tablet.classList.remove("hidden");
-      activateTab("register");
-    }
-  }
-  if (d.action === "dock") {
-    setTabletDocked(true, true);
-  }
-  if (d.action === "undock") {
-    setTabletDocked(false, true);
-  }
-  if (d.action === "gangWarning") {
-    const payload = mergeTabletMap(d.payload || {});
-    if (payload && payload.ok) {
-      render(payload);
-      const notice = d.notice || {};
-      if (notice.reason) {
-        const banner = document.getElementById("gangInfoWarnPanel");
-        if (banner) {
-          banner.classList.add("flash");
-          setTimeout(() => banner.classList.remove("flash"), 1200);
-        }
-      }
-    }
-  }
-  if (d.action === "close") {
-    destroyTurfMap();
-    setTabletDocked(false, true);
-    tablet.classList.add("hidden");
-    activeTab = "register";
+document.addEventListener('click', async (event) => {
+  const target = event.target.closest('[data-page],[data-action]');
+  if (!target) return;
+  if (target.dataset.page) { state.page = target.dataset.page; render(); return; }
+  const action = target.dataset.action;
+  if (action === 'close') return api('close');
+  if (action === 'refresh') return api('refresh');
+  if (action === 'dismiss-modal') { if (event.target === target || target.classList.contains('close-button')) closeModal(); return; }
+  if (action === 'invite-modal') return inviteModal();
+  if (action === 'role-modal') return roleModal(target.dataset.citizen);
+  if (action === 'role-config-modal') return roleConfigModal(target.dataset.roleKey || '');
+  if (action === 'treasury-modal') return treasuryModal(target.dataset.operation);
+  if (action === 'ready-modal') return readyModal();
+  if (action === 'treaty-modal') return treatyModal();
+  if (action === 'war-modal') return warModal();
+  if (action === 'accept-invite') {
+    const result = await api('acceptInvite', { inviteId: Number(target.dataset.id) }); toast(result.ok ? 'Kvietimas priimtas.' : result.reason, result.ok ? 'success' : 'error');
+  } else if (action === 'kick-member') {
+    const result = await api('kickMember', { citizenid: target.dataset.citizen }); toast(result.ok ? 'Narys pašalintas.' : result.reason, result.ok ? 'success' : 'error');
+  } else if (action === 'delete-role') {
+    const result = await api('deleteRole', { roleKey: target.dataset.roleKey }); toast(result.ok ? 'Rangas pašalintas.' : result.reason, result.ok ? 'success' : 'error');
+    if (result.ok) closeModal();
+  } else if (action === 'toggle-ready') {
+    const result = await api('toggleMissionReady', { roleKey: target.dataset.role }); toast(result.ready ? 'Party būsena aktyvi.' : 'Party būsena išjungta.', result.ok ? 'success' : 'error'); closeModal();
+  } else if (action === 'start-mission') {
+    const difficulty = state.missionDifficulty[target.dataset.mission] || document.querySelector(`[data-mission-difficulty="${CSS.escape(target.dataset.mission)}"]`)?.value || 'easy';
+    const result = await api('startMission', { missionKey: target.dataset.mission, difficulty }); toast(result.ok ? 'Operacija pradėta.' : (result.result || result.reason), result.ok ? 'success' : 'error');
+  } else if (action === 'resolve-treaty') {
+    const result = await api('resolveTreaty', { treatyId: Number(target.dataset.id), accept: target.dataset.accept === 'true' }); toast(result.ok ? 'Sutartis atnaujinta.' : result.reason, result.ok ? 'success' : 'error');
+  } else if (action === 'break-treaty') {
+    const result = await api('breakTreaty', { treatyId: Number(target.dataset.id) }); toast(result.ok ? 'Sutartis nutraukta.' : result.reason, result.ok ? 'success' : 'error');
+  } else if (action === 'admin-cancel-war') {
+    const result = await api('adminCancelWar', { warId: Number(target.dataset.id) }); toast(result.ok ? 'Karas atšauktas.' : result.reason, result.ok ? 'success' : 'error');
+  } else if (action === 'war-details') {
+    const result = await api('getWarDetails', { warId: Number(target.dataset.id) });
+    modal(`<div class="modal-header"><h2>Karo #${target.dataset.id}</h2><button class="close-button" data-action="dismiss-modal">×</button></div>
+      <pre class="muted">${esc(JSON.stringify(result, null, 2))}</pre>`);
   }
 });
 
-function setTabletDocked(docked, skipPost) {
-  tabletDocked = !!docked;
-  tablet.classList.toggle("is-docked", tabletDocked);
-  const btn = document.getElementById("btnDock");
-  if (btn) btn.textContent = tabletDocked ? "Visas" : "Kampas";
-  if (!skipPost) post("gangs:setDocked", { docked: tabletDocked });
-  if (!tabletDocked && tabletBezel) {
-    tabletBezel.style.left = "";
-    tabletBezel.style.top = "";
-    tabletBezel.style.right = "";
-    tabletBezel.style.bottom = "";
+document.addEventListener('change', async (event) => {
+  if (event.target.matches('[data-mission-difficulty]')) state.missionDifficulty[event.target.dataset.missionDifficulty] = event.target.value;
+  if (event.target.matches('[data-admin-gang-status]')) {
+    const result = await api('adminSetGangStatus', { gangId: Number(event.target.dataset.adminGangStatus), status: event.target.value });
+    toast(result.ok ? 'Statusas pakeistas.' : result.reason, result.ok ? 'success' : 'error');
   }
-  if (activeTab === "map" && window.GangMap) {
-    requestAnimationFrame(() => GangMap.invalidate());
+  if (event.target.matches('[data-admin-mission]')) {
+    const result = await api('adminSetMissionState', { missionKey: event.target.dataset.adminMission, enabled: event.target.checked });
+    toast(result.ok ? 'Misijos būsena pakeista.' : result.reason, result.ok ? 'success' : 'error');
   }
-}
-
-function bindTabletDrag() {
-  if (tabletDragBound) return;
-  tabletDragBound = true;
-  const head = document.querySelector(".tablet-head");
-  if (!head || !tabletBezel) return;
-  let drag = false;
-  let sx = 0;
-  let sy = 0;
-  let sl = 0;
-  let st = 0;
-  head.addEventListener("mousedown", (e) => {
-    if (!tabletDocked || e.target.closest("button")) return;
-    drag = true;
-    const r = tabletBezel.getBoundingClientRect();
-    sx = e.clientX;
-    sy = e.clientY;
-    sl = r.left;
-    st = r.top;
-    e.preventDefault();
-  });
-  window.addEventListener("mouseup", () => {
-    drag = false;
-  });
-  window.addEventListener("mousemove", (e) => {
-    if (!drag || !tabletDocked) return;
-    tabletBezel.style.left = `${sl + e.clientX - sx}px`;
-    tabletBezel.style.top = `${st + e.clientY - sy}px`;
-    tabletBezel.style.right = "auto";
-    tabletBezel.style.bottom = "auto";
-  });
-}
-
-const btnDockGang = document.getElementById("btnDock");
-if (btnDockGang) {
-  btnDockGang.onclick = () => setTabletDocked(!tabletDocked);
-}
-bindTabletDrag();
-
-document.getElementById("btnClose").onclick = () => post("gangs:close", {});
-
-function openOrgMenu() {
-  post("gangs:openOrg", {});
-}
-
-const btnOpenOrg = document.getElementById("btnOpenOrg");
-const btnOpenOrgInfo = document.getElementById("btnOpenOrgInfo");
-if (btnOpenOrg) btnOpenOrg.onclick = openOrgMenu;
-if (btnOpenOrgInfo) btnOpenOrgInfo.onclick = openOrgMenu;
-
-document.getElementById("btnRefresh").onclick = () =>
-  post("gangs:refresh", {}).then((res) => {
-    mergeTabletMap(res);
-    if (res && res.ok) render(res);
-  });
-
-document.getElementById("btnCreate").onclick = () => {
-  if (lastState && lastState.readOnly) return;
-  const payload = {
-    name: gangName.value.trim(),
-    gangType: gangType.value,
-    colorHex: primaryColor.value,
-    secondaryColorHex: secondaryColor.value,
-  };
-  post("gangs:createGang", payload).then(() =>
-    post("gangs:refresh", {}).then((res) => {
-      mergeTabletMap(res);
-      if (res && res.ok) {
-        activeTab = "ganginfo";
-        render(res);
-      }
-    }),
-  );
-};
-
-document.getElementById("zoomIn").onclick = () => window.GangMap && GangMap.zoomIn();
-document.getElementById("zoomOut").onclick = () => window.GangMap && GangMap.zoomOut();
-document.getElementById("tabletHomeBtn").onclick = () => window.GangMap && GangMap.resetView();
-document.getElementById("btnFitTurfs")?.addEventListener("click", () => window.GangMap && GangMap.fitAllTurfs());
-document.getElementById("btnMapReset")?.addEventListener("click", () => window.GangMap && GangMap.resetView());
-
-const warsBanner = document.getElementById("warsBanner");
-const warsPopover = document.getElementById("warsPopover");
-if (warsBanner && warsPopover) {
-  warsBanner.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const opening = warsPopover.classList.contains("hidden");
-    if (opening) {
-      warsPopover.classList.remove("hidden");
-      warsBanner.setAttribute("aria-expanded", "true");
-      if (lastState && window.GangMap) GangMap.renderWarsPopover(lastState);
-    } else {
-      warsPopover.classList.add("hidden");
-      warsBanner.setAttribute("aria-expanded", "false");
-    }
-  });
-  document.addEventListener("click", () => {
-    warsPopover.classList.add("hidden");
-    warsBanner.setAttribute("aria-expanded", "false");
-  });
-  warsPopover.addEventListener("click", (e) => e.stopPropagation());
-}
-
-const btnTurfRoute = document.getElementById("btnTurfRoute");
-if (btnTurfRoute) {
-  btnTurfRoute.onclick = () => {
-    const t = window.GangMap && GangMap.getSelectedTurf();
-    if (!t) return;
-    post("gangs:setWaypoint", { turfId: t.turf_id }).then(() => setTabletDocked(true));
-  };
-}
-
-document.getElementById("btnInviteMember").onclick = () => {
-  if (lastState && lastState.readOnly) return;
-  post("gangs:inviteMember", { targetId: Number(document.getElementById("memberTargetId").value) || 0 }).then(() => {
-    post("gangs:refresh", {}).then((res) => res && res.ok && render(mergeTabletMap(res)));
-  });
-};
-document.getElementById("btnSetRank").onclick = () => {
-  if (lastState && lastState.readOnly) return;
-  post("gangs:setMemberRank", {
-    citizenid: document.getElementById("memberCitizenId").value.trim(),
-    rank: Number(document.getElementById("memberRank").value) || 0,
-  }).then(() => {
-    post("gangs:refresh", {}).then((res) => res && res.ok && render(mergeTabletMap(res)));
-  });
-};
-document.getElementById("btnKickMember").onclick = () => {
-  if (lastState && lastState.readOnly) return;
-  post("gangs:kickMember", { citizenid: document.getElementById("memberCitizenId").value.trim() }).then(() => {
-    post("gangs:refresh", {}).then((res) => res && res.ok && render(mergeTabletMap(res)));
-  });
-};
-
-const btnStartMission = document.getElementById("btnStartMission");
-if (btnStartMission) {
-  btnStartMission.onclick = () => {
-    if (lastState && lastState.readOnly) return;
-    const missionType = missionTypeSelect?.value;
-    const turfId = missionTurfSelect?.value || "";
-    if (!missionType) {
-      const stats = document.getElementById("gangMissionStats");
-      if (stats) stats.textContent = "Pasirink misijos tipą.";
-      return;
-    }
-    post("gangs:startMission", { turfId, missionType });
-  };
-}
-
-window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !tablet.classList.contains("hidden")) {
-    e.preventDefault();
-    post("gangs:close", {});
+  if (event.target.matches('[data-admin-territory-owner]')) {
+    const result = await api('adminSetTerritoryOwner', {
+      territoryId: event.target.dataset.adminTerritoryOwner,
+      gangId: event.target.value === '' ? null : Number(event.target.value),
+    });
+    toast(result.ok ? 'Teritorijos kontrolė pakeista.' : result.reason, result.ok ? 'success' : 'error');
   }
+});
+
+document.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.target;
+  const data = Object.fromEntries(new FormData(form).entries());
+  let result;
+  if (form.id === 'invite-form') result = await api('inviteMember', { targetSource: Number(data.targetSource), roleKey: data.roleKey });
+  if (form.id === 'role-form') result = await api('setMemberRole', data);
+  if (form.id === 'role-config-form') result = await api('saveRole', {
+    roleKey: data.roleKey,
+    label: data.label,
+    priority: Number(data.priority),
+    permissions: new FormData(form).getAll('permission'),
+  });
+  if (form.id === 'treasury-form') result = await api('treasury', { operation: data.operation, amount: Number(data.amount) });
+  if (form.id === 'treaty-form') result = await api('proposeTreaty', { targetGangId: Number(data.targetGangId), treatyType: data.treatyType, durationHours: Number(data.durationHours), terms: {} });
+  if (form.id === 'war-form') {
+    const option = form.elements.territory.selectedOptions[0];
+    result = await api('declareWar', { territoryId: option.value, defenderGangId: Number(option.dataset.owner) });
+  }
+  if (result) toast(result.ok ? 'Veiksmas atliktas.' : (result.reason || result.result), result.ok ? 'success' : 'error');
+  if (result?.ok) closeModal();
+});
+
+window.addEventListener('message', (event) => {
+  const message = event.data || {};
+  if (message.action === 'open') {
+    state.payload = message.payload;
+    tablet.classList.remove('is-hidden');
+    tablet.setAttribute('aria-hidden', 'false');
+    render();
+  } else if (message.action === 'close') {
+    tablet.classList.add('is-hidden');
+    tablet.setAttribute('aria-hidden', 'true');
+    closeModal();
+  } else if (message.action === 'territoriesUpdated' && state.payload) {
+    state.payload.territories = message.territories;
+    if (state.page === 'territories') render();
+  }
+});
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') api('close');
 });

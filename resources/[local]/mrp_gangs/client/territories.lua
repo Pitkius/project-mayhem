@@ -1,0 +1,44 @@
+local QBCore = GangClient.QBCore
+
+GangTerritoryClient = GangTerritoryClient or {}
+GangTerritoryClient.Snapshot = {}
+GangTerritoryClient.CurrentId = nil
+
+function GangTerritoryClient.Refresh(callback)
+    QBCore.Functions.TriggerCallback('mrp_gangs:server:getTerritories', function(rows)
+        GangTerritoryClient.Snapshot = type(rows) == 'table' and rows or {}
+        if callback then callback(GangTerritoryClient.Snapshot) end
+        SendNUIMessage({ action = 'territoriesUpdated', territories = GangTerritoryClient.Snapshot })
+    end)
+end
+
+function GangTerritoryClient.GetCurrent()
+    if not GangTerritoryClient.CurrentId then return nil end
+    for _, territory in ipairs(GangTerritoryClient.Snapshot) do
+        if territory.id == GangTerritoryClient.CurrentId then return territory end
+    end
+    return nil
+end
+
+RegisterNetEvent('mrp_gangs:client:territoriesUpdated', function()
+    GangTerritoryClient.Refresh()
+end)
+
+CreateThread(function()
+    Wait(2500)
+    GangTerritoryClient.Refresh()
+    while true do
+        local coords = GetEntityCoords(PlayerPedId())
+        local territoryId = GangUtils.FindTerritoryAt(coords.x, coords.y)
+        if territoryId ~= GangTerritoryClient.CurrentId then
+            GangTerritoryClient.CurrentId = territoryId
+            TriggerEvent('mrp_gangs:client:territoryChanged', territoryId, GangTerritoryClient.GetCurrent())
+        end
+        Wait(1000)
+    end
+end)
+
+exports('GetCurrentTerritory', GangTerritoryClient.GetCurrent)
+exports('GetTerritorySnapshot', function()
+    return GangTerritoryClient.Snapshot
+end)
