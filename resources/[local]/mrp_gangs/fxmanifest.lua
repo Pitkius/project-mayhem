@@ -3,87 +3,61 @@ game 'gta5'
 lua54 'yes'
 
 name 'mrp_gangs'
-description 'Gang tablet, turf and drug selling system'
-version '1.0.0'
+author 'Project Mayhem'
+description 'Gang System 2.0 - server-authoritative cooperative operations'
+version '2.0.0-alpha.1'
 
 ui_page 'html/index.html'
 
 files {
+    'sql/schema_v2.sql',
+    'sql/reset_v2.sql',
     'html/index.html',
-    'html/style.css',
-    'html/admin.css',
-    'html/org.css',
+    'html/styles.css',
     'html/app.js',
-    'html/admin.js',
-    'html/org.js',
-    'html/gtav_map_core.js',
-    'html/map.js',
-    'html/asset/gtav_satellite.jpg',
-    'html/asset/gtav_satellite_2048.png',
     'html/vendor/leaflet.css',
     'html/vendor/leaflet.js',
-    'html/vendor/images/marker-icon.png',
-    'html/vendor/images/marker-icon-2x.png',
-    'html/vendor/images/marker-shadow.png',
+    'html/asset/gtav_satellite_2048.png',
 }
 
 shared_scripts {
-    'config.lua',
-    'shared/permissions.lua',
-    'config_turf_cells.lua',
-    'config_missions.lua',
+    'config/shared.lua',
+    'config/permissions.lua',
+    'config/territories.lua',
+    'config/diplomacy.lua',
+    'config/interiors.lua',
+    'config/missions.lua',
+    'shared/util.lua',
 }
 
 client_scripts {
-    '@mrp_hud/client/theme_nui_consumer.lua',
-    'client_progress.lua',
-    'client.lua',
-    'client_missions.lua',
-    'client_graffiti.lua',
-    'client_org.lua',
+    'client/main.lua',
+    'client/territories.lua',
+    'client/missions.lua',
+    'client/tablet.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server_admin.lua',
-    'server.lua',
-    'server_missions.lua',
-    'server_org.lua',
-    'server_tablet.lua',
-    'server_org_invites.lua',
-    'server_org_ranks.lua',
-    'server_org_members.lua',
-    'server_org_associates.lua',
-    'server_org_diplomacy.lua',
-    'server_org_menu.lua',
-}
-
-exports {
-    'ApplyGangTurfTask',
-    'AddTurfInfluence',
-    'CompleteGangMission',
-    'OnHackSuccess',
-    'OnHackFailed',
-    'FindTurfAt',
-    'IsInGang',
-    'IsCitizenInGang',
-    -- Organizacijos valdymas (server_org.lua)
-    'IsGangMember',
-    'IsGangAssociate',
-    'GetPlayerGang',
-    'GetGangRank',
-    'HasGangPermission',
-    'GetGangResponsibilities',
-    'GetGangOwner',
-    'GetGangMembersEx',
-    'GetGangAssociates',
-    'GetGangRelation',
-    'AreGangsAllied',
+    'server/validation.lua',
+    'server/bootstrap.lua',
+    'server/core.lua',
+    'server/rbac.lua',
+    'server/adapters.lua',
+    'server/organization.lua',
+    'server/territories.lua',
+    'server/drugs.lua',
+    'server/diplomacy.lua',
+    'server/wars.lua',
+    'server/economy.lua',
+    'server/missions/objectives.lua',
+    'server/missions/encounters.lua',
+    'server/missions/main.lua',
+    'server/tablet.lua',
 }
 
 dependencies {
     'qb-core',
-    'qb-target',
+    'oxmysql',
     'qb-menu',
-    'qb-input',
 }
