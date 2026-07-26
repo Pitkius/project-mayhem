@@ -6,6 +6,9 @@ GangMissions.RunByCitizen = {}
 GangMissions.RunBySource = {}
 GangMissions.RunByGang = {}
 GangMissions.ReadyMembers = {}
+GangMissions.Contests = {}
+--- source -> contest token (rivals who discovered a site by proximity)
+GangMissions.ContestWatchers = {}
 GangMissions.NextBucketOffset = 0
 
 local function missionAllowed(mission, gangType)
@@ -129,7 +132,119 @@ local function persistPhase(run)
     ]], { run.state, run.phaseIndex, run.dbId })
 end
 
+local function clearContestWatchers(token)
+    token = tostring(token or '')
+    for source, watched in pairs(GangMissions.ContestWatchers) do
+        if token == '' or tostring(watched) == token then
+            TriggerClientEvent('mrp_gangs:client:clearContestedObjective', source, watched)
+            GangMissions.ContestWatchers[source] = nil
+        end
+    end
+end
+
+local function clearContest(token)
+    token = tostring(token or '')
+    if token == '' or not GangMissions.Contests[token] then return end
+    GangMissions.Contests[token] = nil
+    clearContestWatchers(token)
+end
+
+local function isContestable(run, phase)
+    local cfg = Config.MissionContest
+    if not cfg or cfg.enabled ~= true or not phase then return false end
+    if phase.contested ~= true then return false end
+    if run.inInterior then return false end
+    if phase.objectiveIndex and run.interiorKey then return false end
+    local allowed = cfg.contestablePhaseTypes or {}
+    return allowed[phase.type] == true
+end
+
+local function contestClientPayload(contest)
+    return {
+        token = contest.token,
+        gangId = contest.gangId,
+        missionLabel = contest.missionLabel,
+        label = contest.label,
+        target = contest.target,
+        cargo = contest.cargo == true,
+        phaseIndex = contest.phaseIndex,
+        radius = (Config.MissionContest and Config.MissionContest.radius) or 55.0,
+    }
+end
+
+local function publishContest(run, phase)
+    clearContest(run.token)
+    local target = GangObjectives.GetTarget(run, phase)
+    if not target then return end
+    local mission = Config.Missions[run.missionKey] or {}
+    GangMissions.Contests[run.token] = {
+        token = run.token,
+        gangId = run.gangId,
+        missionKey = run.missionKey,
+        missionLabel = mission.label or run.missionKey,
+        phaseIndex = run.phaseIndex,
+        phaseType = phase.type,
+        cargo = phase.cargo == true,
+        label = phase.label or 'Contested loot',
+        target = target,
+        publishedAt = os.time(),
+    }
+    run.contestActive = true
+    --- No global notify/blip — rivals discover via proximity sync only.
+end
+
+local function syncContestDiscoveries()
+    local cfg = Config.MissionContest
+    if not cfg or cfg.enabled ~= true then
+        clearContestWatchers('')
+        return
+    end
+
+    local discoveryRadius = tonumber(cfg.discoveryRadius) or 70.0
+    local wanted = {}
+
+    for _, contest in pairs(GangMissions.Contests) do
+        local target = contest.target
+        if target then
+            local targetCoords = vector3(target.x + 0.0, target.y + 0.0, target.z + 0.0)
+            for _, playerId in ipairs(GetPlayers()) do
+                local source = tonumber(playerId)
+                if source and not wanted[source] then
+                    local ped = GetPlayerPed(source)
+                    if ped and ped ~= 0 then
+                        local coords = GetEntityCoords(ped)
+                        if #(coords - targetCoords) <= discoveryRadius then
+                            local gang = GangCore.GetPlayerGang(source)
+                            if gang and tonumber(gang.gang_id) ~= tonumber(contest.gangId) then
+                                if not GangMissions.GetBySource(source) then
+                                    wanted[source] = contest
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    for source, token in pairs(GangMissions.ContestWatchers) do
+        local contest = wanted[source]
+        if not contest or tostring(contest.token) ~= tostring(token) then
+            TriggerClientEvent('mrp_gangs:client:clearContestedObjective', source, token)
+            GangMissions.ContestWatchers[source] = nil
+        end
+    end
+
+    for source, contest in pairs(wanted) do
+        if GangMissions.ContestWatchers[source] ~= contest.token then
+            GangMissions.ContestWatchers[source] = contest.token
+            TriggerClientEvent('mrp_gangs:client:contestedObjective', source, contestClientPayload(contest))
+        end
+    end
+end
+
 local function clearRun(run)
+    clearContest(run.token)
     GangEncounters.Cleanup(run)
     if run.missionTargetEntity and DoesEntityExist(run.missionTargetEntity) then
         DeleteEntity(run.missionTargetEntity)
@@ -308,6 +423,12 @@ local function startCurrentPhase(run)
     end
 
     persistPhase(run)
+    if isContestable(run, phase) then
+        publishContest(run, phase)
+    else
+        clearContest(run.token)
+        run.contestActive = false
+    end
     broadcast(run, 'mrp_gangs:client:missionPhase', GangObjectives.BuildClientPhase(run, phase))
 end
 
@@ -340,6 +461,11 @@ local function advancePhase(run, source, payload)
     if phase.type == 'checkpoint_run' and phaseComplete == false then
         broadcast(run, 'mrp_gangs:client:missionPhase', GangObjectives.BuildClientPhase(run, phase))
         return true, 'checkpoint_advanced'
+    end
+
+    if run.contestActive then
+        clearContest(run.token)
+        run.contestActive = false
     end
 
     if phase.type == 'eliminate' or phase.type == 'defend' then
@@ -682,6 +808,117 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:completeObjective', function(s
     callback({ ok = ok, reason = reason })
 end)
 
+local function contestNear(source, contest)
+    local ped = GetPlayerPed(source)
+    if not ped or ped == 0 or not contest or not contest.target then return false end
+    local radius = (Config.MissionContest and Config.MissionContest.radius) or 55.0
+    return #(GetEntityCoords(ped) - vector3(contest.target.x, contest.target.y, contest.target.z)) <= radius
+end
+
+local function payContestSteal(source, run, thiefGang)
+    local mission = Config.Missions[run.missionKey] or {}
+    local difficulty = Config.Difficulties[run.difficulty] or {}
+    local multiplier = (Config.MissionContest and Config.MissionContest.stealCashMultiplier) or 0.65
+    local cash = GangUtils.Round((tonumber(mission.baseReward) or 0) * (difficulty.rewardMultiplier or 1.0) * multiplier)
+    if cash > 0 then
+        GangAdapters.Money.Add(source, 'cash', cash, 'gang-contest-steal')
+    end
+    local reputation = tonumber(Config.MissionContest and Config.MissionContest.stealReputation) or 10
+    if reputation ~= 0 then
+        GangCore.AddReputation(
+            thiefGang.gang_id,
+            reputation,
+            'mission_contest_steal',
+            'mission_run',
+            run.dbId,
+            thiefGang.citizenid
+        )
+    end
+    GangCore.Audit({
+        gangId = thiefGang.gang_id,
+        runId = run.dbId,
+        actorCitizenId = thiefGang.citizenid,
+        actorSource = source,
+        action = 'mission_contest_steal',
+        targetType = 'mission',
+        targetId = run.missionKey,
+        metadata = {
+            victimGangId = run.gangId,
+            cash = cash,
+            reputation = reputation,
+        },
+    })
+    return cash, reputation
+end
+
+QBCore.Functions.CreateCallback('mrp_gangs:server:beginContestLoot', function(source, callback, token)
+    if not GangCore.RateLimit(source, 'mission_contest_begin', 1) then
+        return callback({ ok = false, reason = 'rate_limited' })
+    end
+    token = tostring(token or '')
+    local contest = GangMissions.Contests[token]
+    local run = contest and GangMissions.Runs[token]
+    if not contest or not run then return callback({ ok = false, reason = 'contest_not_active' }) end
+    if tonumber(contest.phaseIndex) ~= tonumber(run.phaseIndex) then
+        return callback({ ok = false, reason = 'stale_phase' })
+    end
+    local gang = GangCore.GetPlayerGang(source)
+    if not gang then return callback({ ok = false, reason = 'not_in_gang' }) end
+    if tonumber(gang.gang_id) == tonumber(run.gangId) then
+        return callback({ ok = false, reason = 'own_mission_use_board' })
+    end
+    if GangMissions.GetBySource(source) then
+        return callback({ ok = false, reason = 'already_in_mission' })
+    end
+    if not contestNear(source, contest) then
+        return callback({ ok = false, reason = 'not_at_objective' })
+    end
+    local phase = run.phases[run.phaseIndex]
+    local ok, result = GangObjectives.Begin(run, phase, source)
+    if not ok then return callback({ ok = false, reason = result }) end
+    local bonus = tonumber(Config.MissionContest and Config.MissionContest.rivalDurationBonusMs) or 0
+    if bonus > 0 and type(result) == 'table' then
+        result.durationMs = (tonumber(result.durationMs) or 5000) + bonus
+        local player = GangCore.GetPlayer(source)
+        if player and run.actions and run.actions[player.PlayerData.citizenid] then
+            run.actions[player.PlayerData.citizenid].durationMs = result.durationMs
+        end
+    end
+    callback({ ok = true, result = result })
+end)
+
+QBCore.Functions.CreateCallback('mrp_gangs:server:completeContestLoot', function(source, callback, token, payload)
+    if not GangCore.RateLimit(source, 'mission_contest_complete', 1) then
+        return callback({ ok = false, reason = 'rate_limited' })
+    end
+    token = tostring(token or '')
+    local contest = GangMissions.Contests[token]
+    local run = contest and GangMissions.Runs[token]
+    if not contest or not run then return callback({ ok = false, reason = 'contest_not_active' }) end
+    if tonumber(contest.phaseIndex) ~= tonumber(run.phaseIndex) then
+        return callback({ ok = false, reason = 'stale_phase' })
+    end
+    local gang = GangCore.GetPlayerGang(source)
+    if not gang then return callback({ ok = false, reason = 'not_in_gang' }) end
+    if tonumber(gang.gang_id) == tonumber(run.gangId) then
+        return callback({ ok = false, reason = 'own_mission_use_board' })
+    end
+    if GangMissions.GetBySource(source) then
+        return callback({ ok = false, reason = 'already_in_mission' })
+    end
+    if not contestNear(source, contest) then
+        return callback({ ok = false, reason = 'not_at_objective' })
+    end
+    local phase = run.phases[run.phaseIndex]
+    local ok, reason = GangObjectives.Validate(run, phase, source, payload or {})
+    if not ok then return callback({ ok = false, reason = reason }) end
+
+    local cash = payContestSteal(source, run, gang)
+    GangCore.Notify(source, ('Pavogei operacijos krovinį (+$%s).'):format(cash), 'success')
+    failRun(run, 'cargo_contested_stolen')
+    callback({ ok = true, cash = cash })
+end)
+
 QBCore.Functions.CreateCallback('mrp_gangs:server:toggleMissionReady', function(source, callback, roleKey)
     if not GangCore.RateLimit(source, 'mission_ready', 1) then
         return callback({ ok = false, reason = 'rate_limited' })
@@ -760,6 +997,7 @@ exports('CancelGangMission', GangMissions.Cancel)
 
 AddEventHandler('playerDropped', function()
     local source = source
+    GangMissions.ContestWatchers[source] = nil
     local token = GangMissions.RunBySource[source]
     local run = token and GangMissions.Runs[token] or GangMissions.GetBySource(source)
     if not run then return end
@@ -848,6 +1086,20 @@ CreateThread(function()
                 end
             end
             end
+        end
+    end
+end)
+
+--- Rival gangs discover contested outdoor loot by walking near the site (no city-wide alert/blip).
+CreateThread(function()
+    while true do
+        local hasContests = next(GangMissions.Contests) ~= nil
+        local hasWatchers = next(GangMissions.ContestWatchers) ~= nil
+        if hasContests or hasWatchers then
+            syncContestDiscoveries()
+            Wait(1500)
+        else
+            Wait(4000)
         end
     end
 end)

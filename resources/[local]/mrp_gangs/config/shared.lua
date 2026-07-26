@@ -11,6 +11,21 @@ Config.MissionBucketBase = 31000
 Config.MaxConcurrentMissionRuns = 8
 Config.MaxConcurrentRunPerGang = 1
 
+-- Outdoor collect/search can be contested by rival gangs in the open world.
+-- No global alerts/blips — rivals must find the site themselves; UI unlocks only in discoveryRadius.
+Config.MissionContest = {
+    enabled = true,
+    radius = 55.0,
+    discoveryRadius = 70.0,
+    stealCashMultiplier = 0.65,
+    stealReputation = 10,
+    rivalDurationBonusMs = 2000,
+    contestablePhaseTypes = {
+        collect = true,
+        search = true,
+    },
+}
+
 Config.GangTypes = {
     street = { label = 'Street Gang' },
     cartel = { label = 'Cartel' },

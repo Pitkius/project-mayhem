@@ -1,27 +1,57 @@
 const SLIDES = [
   {
-    image: 'assets/slide_police.jpg',
-    tag: 'LTPD',
-    title: 'TARNYBA GATVĖSE',
-    desc: 'Patruliuok, reaguok į iškvietimus ir saugok miestą.',
+    image: 'assets/slide_taxi.jpg',
+    tag: 'TAKSI',
+    title: 'CIVILIO DIENA',
+    desc: 'Vežk keleivius po miestą ir užsidirbk legaliai.',
   },
   {
-    image: 'assets/slide_heist.jpg',
-    tag: 'HEIST',
-    title: 'PLANUOK OPERACIJĄ',
-    desc: 'Planšetė, OS, įsilaužimai — bankai, bankomatai ir kazino laukia.',
+    image: 'assets/slide_trucking.jpg',
+    tag: 'PERVEŽIMAI',
+    title: 'ILGAS REISAS',
+    desc: 'Kroviniai, terminai ir kelias per visą San Andreas.',
   },
   {
-    image: 'assets/slide_gangs.jpg',
-    tag: 'GAUJOS',
-    title: 'TERITORIJOS',
-    desc: 'Užimk turf, vykdyk misijas, augink reputaciją.',
+    image: 'assets/slide_mining.jpg',
+    tag: 'KASYKLA',
+    title: 'KARJERA MIESTE',
+    desc: 'Kasykla, sunkus darbas ir stabilūs pinigai.',
+  },
+  {
+    image: 'assets/slide_mechanic.jpg',
+    tag: 'MECHANIKAI',
+    title: 'PO RATAS',
+    desc: 'Remontas, tuningas ir patikimi meistrai.',
+  },
+  {
+    image: 'assets/slide_burger.jpg',
+    tag: 'MAISTAS',
+    title: 'VIRTUVĖS RITMAS',
+    desc: 'Restoranai ir greitas maistas — civilio ritmas.',
+  },
+  {
+    image: 'assets/slide_fishing.jpg',
+    tag: 'GAMTA',
+    title: 'TYLA PRIE VANDENS',
+    desc: 'Žvejyba ir lauko darbai — pailsėk nuo miesto triukšmo.',
+  },
+  {
+    image: 'assets/slide_housing.jpg',
+    tag: 'BŪSTAS',
+    title: 'SAVO VIETA',
+    desc: 'Butai, namai ir raktas nuo tavo erdvės.',
   },
   {
     image: 'assets/slide_racing.jpg',
     tag: 'TRANSPORTAS',
     title: 'GREITIS IR STILIUS',
-    desc: 'Salonai, garazai, KMA — tavo mašina, tavo kelias.',
+    desc: 'Salonai, garažai, KMA — tavo mašina, tavo kelias.',
+  },
+  {
+    image: 'assets/slide_casino.jpg',
+    tag: 'KAZINO',
+    title: 'AZARTAS',
+    desc: 'Diamond Casino — dideli laimėjimai ar didelė rizika.',
   },
   {
     image: 'assets/slide_ems.jpg',
@@ -30,40 +60,29 @@ const SLIDES = [
     desc: 'Greita medicinos pagalba visame Los Santos.',
   },
   {
-    image: 'assets/slide_mining.jpg',
-    tag: 'DARBAS',
-    title: 'KARJERA MIESTE',
-    desc: 'Kasykla, mechanikai, taksi — legalūs pinigai.',
+    image: 'assets/slide_police.jpg',
+    tag: 'LTPD',
+    title: 'TARNYBA GATVĖSE',
+    desc: 'Patruliuok, reaguok į iškvietimus ir saugok miestą.',
   },
   {
-    image: 'assets/slide_casino.jpg',
-    tag: 'KAZINO',
-    title: 'AZARTAS',
-    desc: 'Diamond Casino — dideli laimėjimai ar dideli rizika.',
+    image: 'assets/slide_gangs.jpg',
+    tag: 'GAUJOS',
+    title: 'TERITORIJOS',
+    desc: 'Užimk turf, vykdyk misijas, augink reputaciją.',
   },
   {
-    image: 'assets/slide_mechanic.jpg',
-    tag: 'MECHANIKAI',
-    title: 'PO RATAS',
-    desc: 'Remontas, tuningas ir patikimi meistrai.',
+    image: 'assets/slide_heist.jpg',
+    tag: 'HEIST',
+    title: 'PLANUOK OPERACIJĄ',
+    desc: 'Planšetė, OS, įsilaužimai — bankai ir bankomatai laukia.',
   },
-];
-
-const TIPS = [
-  'Laikykis taisyklių — geriau RP nei grindinimas.',
-  'Naudok /report problemoms, ne OOC šauksmus.',
-  'Policija: būk tarnyboje, kad gautum iškvietimus.',
-  'Plėšimas: įdiek OS į planšetę prieš bandant Pacific.',
-  'Bankomatas: reikia tempimo grandinės ir stiprios mašinos.',
-  'Gaujos: užimk turf per įtaką ir misijas.',
-  'Mechanikai ir EMS — legalūs keliai užsidirbti.',
-  'Naktį miestas pavojingesnis — planuok maršrutą.',
-  'Inventorius: planšetę ir USB laikyk atskirai.',
-  'Kazino — laimė kartais, bet bankas visada laimi.',
 ];
 
 const MUSIC = {
   enabled: true,
+  volume: 0.28,
+  track: 'assets/gta_theme.mp3',
   label: 'Mayhem Roleplay',
 };
 
@@ -77,40 +96,108 @@ function nuiPost(name, data = {}) {
 }
 
 function initLoadscreenMusic() {
+  const audio = document.getElementById('themeAudio');
   const toggle = document.getElementById('musicToggle');
+  const volume = document.getElementById('musicVolume');
   const label = document.getElementById('musicLabel');
-  if (!toggle) return;
+  if (!audio || !toggle || !volume) return;
 
   let muted = false;
+  let hasFile = false;
+  let nativeStarted = false;
+  let nuiStarted = false;
 
-  if (label) label.textContent = MUSIC.label || 'Mayhem Roleplay';
+  if (label) label.textContent = MUSIC.label || 'GTA V — Los Santos';
+  volume.value = String(Math.round((MUSIC.volume || 0.28) * 100));
+  audio.volume = MUSIC.volume || 0.28;
+  if (MUSIC.track && !audio.getAttribute('src')) {
+    audio.src = MUSIC.track;
+    audio.load();
+  }
 
   const syncUi = () => {
     toggle.classList.toggle('is-muted', muted);
     toggle.textContent = muted ? '🔇' : '♪';
+    audio.muted = muted;
+  };
+
+  const startNativeMusic = () => {
+    if (nativeStarted) return;
+    nativeStarted = true;
+    nuiPost('loadscreenReady');
+    const retry = setInterval(() => {
+      nuiPost('loadscreenReady');
+    }, 200);
+    setTimeout(() => clearInterval(retry), 60000);
   };
 
   const setNativeMusic = (enabled) => {
-    nuiPost('setLoadscreenMusic', { enabled: !!enabled });
-    if (enabled) nuiPost('loadscreenReady');
+    if (enabled) {
+      startNativeMusic();
+      nuiPost('setLoadscreenMusic', { enabled: true });
+      return;
+    }
+    nuiPost('setLoadscreenMusic', { enabled: false });
+  };
+
+  const playNuiAudio = () => {
+    if (nuiStarted || muted || !MUSIC.enabled) return;
+    const src = MUSIC.track || audio.getAttribute('src');
+    if (!src) return;
+    nuiStarted = true;
+    if (!audio.getAttribute('src')) {
+      audio.src = src;
+      audio.load();
+    }
+    audio.play().then(() => {
+      hasFile = true;
+    }).catch(() => {
+      hasFile = false;
+      nuiStarted = false;
+    });
+  };
+
+  const startAllMusic = () => {
+    if (muted) return;
+    setNativeMusic(true);
+    playNuiAudio();
   };
 
   toggle.addEventListener('click', () => {
     muted = !muted;
     syncUi();
-    setNativeMusic(!muted);
+    if (muted) {
+      audio.pause();
+      setNativeMusic(false);
+      nuiStarted = false;
+      return;
+    }
+    startAllMusic();
+  });
+
+  volume.addEventListener('input', () => {
+    audio.volume = Number(volume.value) / 100;
+    if (audio.volume <= 0) {
+      muted = true;
+      syncUi();
+      audio.pause();
+      setNativeMusic(false);
+      nuiStarted = false;
+      return;
+    }
+    if (muted) {
+      muted = false;
+      syncUi();
+    }
+    startAllMusic();
+    if (nuiStarted && hasFile) audio.play().catch(() => {});
   });
 
   syncUi();
-  // Paleisti seną GTA intro vos atsiradus loadscreen
-  setNativeMusic(true);
-  let pings = 0;
-  const keepAlive = setInterval(() => {
-    if (muted) return;
-    nuiPost('loadscreenReady');
-    pings += 1;
-    if (pings >= 40) clearInterval(keepAlive);
-  }, 250);
+  startAllMusic();
+  setInterval(() => {
+    if (!muted) startAllMusic();
+  }, 400);
 }
 
 const slidesEl = document.getElementById('slides');
@@ -118,7 +205,6 @@ const slideTag = document.getElementById('slideTag');
 const slideTitle = document.getElementById('slideTitle');
 const slideDesc = document.getElementById('slideDesc');
 const slideDots = document.getElementById('slideDots');
-const tipText = document.getElementById('tipText');
 const progressFill = document.getElementById('progressFill');
 const progressPct = document.getElementById('progressPct');
 const progressDetail = document.getElementById('progressDetail');
@@ -155,15 +241,6 @@ function setSlide(i) {
 function rotateSlides() {
   slideIndex = (slideIndex + 1) % SLIDES.length;
   setSlide(slideIndex);
-}
-
-function rotateTips() {
-  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
-  tipText.style.opacity = '0';
-  setTimeout(() => {
-    tipText.textContent = tip;
-    tipText.style.opacity = '1';
-  }, 280);
 }
 
 function setProgress(fraction, detail) {
@@ -215,8 +292,6 @@ buildSlides();
 setProgress(0, 'Inicializuojama...');
 initLoadscreenMusic();
 setInterval(rotateSlides, 6500);
-setInterval(rotateTips, 9000);
-rotateTips();
 
 // Fallback progress jei FiveM eventai vėluoja
 let fake = 0;

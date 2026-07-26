@@ -62,14 +62,14 @@ local indoorSabotage = {
 
 local outdoorDelivery = {
     { type = 'approach', label = 'Atvyk į paėmimo vietą', minSeconds = 5 },
-    { type = 'collect', label = 'Paimk krovinį', location = 'site', durationMs = 7000, cargo = true },
+    { type = 'collect', label = 'Paimk krovinį / konteinerį', location = 'site', durationMs = 7000, cargo = true, contested = true },
     { type = 'eliminate', label = 'Atremk pasalą', encounter = 'outdoor' },
     { type = 'extract', label = 'Pristatyk krovinį', minSeconds = 15 },
 }
 
 local outdoorEscort = {
     { type = 'approach', label = 'Susitik su kontaktu', minSeconds = 5 },
-    { type = 'collect', label = 'Paruošk transportą', location = 'site', durationMs = 6000 },
+    { type = 'collect', label = 'Paruošk transportą', location = 'site', durationMs = 6000, contested = true },
     { type = 'defend', label = 'Apsaugok pakrovimą', encounter = 'outdoor', durationSec = 75 },
     { type = 'extract', label = 'Užbaik pristatymą', minSeconds = 15 },
 }

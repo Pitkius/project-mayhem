@@ -173,7 +173,7 @@ body {
   bottom: 0;
   z-index: 10;
   width: min(520px, 42vw);
-  padding: 0 0 14vh 3vw;
+  padding: 0 0 10vh 3vw;
   display: flex;
   flex-direction: column;
   gap: 0.6vh;
@@ -225,37 +225,11 @@ body {
 
 .bottom-bar {
   position: fixed;
-  left: 0;
   right: 0;
   bottom: 0;
   z-index: 10;
-  display: grid;
-  grid-template-columns: 1fr min(520px, 42vw);
-  gap: 2vw;
-  align-items: end;
+  width: min(520px, 42vw);
   padding: 0 3vw 3vh;
-}
-
-.tips {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4vh;
-}
-
-.tips-label {
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--fp-primary-soft);
-}
-
-.tips p {
-  font-size: clamp(15px, 1.35vw, 20px);
-  font-weight: 500;
-  max-width: 52ch;
-  line-height: 1.35;
-  color: rgba(255, 255, 255, 0.9);
-  transition: opacity 0.35s ease;
 }
 
 .progress-wrap {
@@ -340,11 +314,13 @@ body {
 
 @media (max-width: 900px) {
   .bottom-bar {
-    grid-template-columns: 1fr;
+    width: calc(100% - 6vw);
+    left: 0;
+    right: 0;
   }
 
   .character-panel {
     width: 88vw;
-    padding-bottom: 22vh;
+    padding-bottom: 16vh;
   }
 }

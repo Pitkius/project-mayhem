@@ -1,4 +1,4 @@
---- Uždaryti loadscreen tik kai spawnfix / QBCore baigia krauti žaidėją
+--- Uždaryti loadscreen tik kai spawn.lua / QBCore baigia krauti žaidėją
 local closed = false
 local musicStarted = false
 
@@ -59,27 +59,23 @@ end)
 
 RegisterNUICallback('setLoadscreenMusic', function(data, cb)
     if data and data.enabled then
-        --- Mute off — leisti paleisti iš naujo
-        if not musicStarted then
-            startLoadingMusic()
-        else
-            local cfg = musicCfg()
-            local startEv = cfg.startEvent or 'FM_INTRO_START'
-            PrepareMusicEvent(startEv)
-            TriggerMusicEvent(startEv)
-        end
+        startLoadingMusic()
     else
         stopLoadingMusic()
     end
     cb('ok')
 end)
 
---- Paleisti vos prisijungus / loadscreen atidarius
+--- Paleisti muziką vos resursui startavus — nebelaukiam NetworkIsSessionStarted.
 CreateThread(function()
     local deadline = GetGameTimer() + 120000
-    while not closed and not musicStarted and GetGameTimer() < deadline do
-        startLoadingMusic()
-        Wait(150)
+    while not closed and GetGameTimer() < deadline do
+        if not musicStarted then
+            startLoadingMusic()
+        else
+            return
+        end
+        Wait(50)
     end
 end)
 
