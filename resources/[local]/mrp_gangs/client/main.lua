@@ -168,13 +168,8 @@ RegisterCommand('cancelgangmission', function()
     TriggerServerEvent('mrp_gangs:server:cancelMission')
 end, false)
 
-CreateThread(function()
-    Wait(3000)
-    TriggerServerEvent('mrp_gangs:server:requestMissionResume')
-end)
-
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    Wait(2000)
+    Wait(2500)
     TriggerServerEvent('mrp_gangs:server:requestMissionResume')
 end)
 

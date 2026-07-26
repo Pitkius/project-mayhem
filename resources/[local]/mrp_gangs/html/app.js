@@ -432,10 +432,14 @@ window.addEventListener('message', (event) => {
     state.payload = message.payload;
     tablet.classList.remove('is-hidden');
     tablet.setAttribute('aria-hidden', 'false');
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
     render();
   } else if (message.action === 'close') {
     tablet.classList.add('is-hidden');
     tablet.setAttribute('aria-hidden', 'true');
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
     closeModal();
   } else if (message.action === 'territoriesUpdated' && state.payload) {
     state.payload.territories = message.territories;
@@ -446,3 +450,10 @@ window.addEventListener('message', (event) => {
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') api('close');
 });
+
+// Boot: ui_page visada aktyvus — užtikrinam, kad niekas nedažo pilko fono.
+document.documentElement.style.background = 'transparent';
+document.body.style.background = 'transparent';
+tablet.classList.add('is-hidden');
+tablet.setAttribute('aria-hidden', 'true');
+closeModal();
