@@ -182,23 +182,11 @@ function QBCore.Functions.Notify(text, texttype, length, icon)
         message.text = text
     end
 
-    if not message.text or message.text == '' then return end
-    if type(message.text) == 'string' and #message.text > 320 then
-        message.text = message.text:sub(1, 317) .. '...'
-    end
-    if message.caption and type(message.caption) == 'string' and #message.caption > 320 then
-        message.caption = message.caption:sub(1, 317) .. '...'
-    end
-
     if icon then
         message.icon = icon
     end
 
     SendNUIMessage(message)
-end
-
-function QBCore.Functions.ClearNotify()
-    SendNUIMessage({ action = 'notifyClear' })
 end
 
 local function runProgressFallback(name, label, duration, useWhileDead, canCancel, disableControls, animation, onFinish, onCancel)
@@ -454,14 +442,7 @@ end
 function QBCore.Functions.SpawnVehicle(model, cb, coords, isnetworked, teleportInto)
     local ped = PlayerPedId()
     model = type(model) == 'string' and joaat(model) or model
-    if not IsModelInCdimage(model) then
-        QBCore.Functions.Notify(
-            ('Modelis neprieinamas (build %s, reikia 3717+).'):format(GetGameBuildNumber()),
-            'error',
-            8000
-        )
-        return
-    end
+    if not IsModelInCdimage(model) then return end
     if coords then
         coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords
     else
@@ -512,17 +493,25 @@ function QBCore.Functions.GetVehicleProperties(vehicle)
         end
 
         local extras = {}
-        for extraId = 0, 20 do
+        for extraId = 0, 12 do
             if DoesExtraExist(vehicle, extraId) then
-                --- FiveM Lua grąžina boolean; `== 1` visada false → garažas išjungdavo visas lempas
-                local on = IsVehicleExtraTurnedOn(vehicle, extraId)
-                extras[tostring(extraId)] = on == true or on == 1
+                local state = IsVehicleExtraTurnedOn(vehicle, extraId) == 1
+                extras[tostring(extraId)] = state
             end
         end
 
         local modLivery = GetVehicleMod(vehicle, 48)
-        if GetVehicleMod(vehicle, 48) == -1 and GetVehicleLivery(vehicle) ~= 0 then
-            modLivery = GetVehicleLivery(vehicle)
+        --- Livery 0 (pirmas liveris) yra validus. Senas check `~= 0` išsaugodavo -1 ir garaže nuimdavo žymes.
+        if GetVehicleLiveryCount(vehicle) > 0 then
+            local liv = GetVehicleLivery(vehicle)
+            if liv >= 0 then
+                modLivery = liv
+            end
+        elseif modLivery == -1 then
+            local liv = GetVehicleLivery(vehicle)
+            if liv >= 0 then
+                modLivery = liv
+            end
         end
 
         local tireHealth = {}
@@ -654,6 +643,16 @@ end
 
 function QBCore.Functions.SetVehicleProperties(vehicle, props)
     if DoesEntityExist(vehicle) then
+        if props.extras then
+            for id, enabled in pairs(props.extras) do
+                if enabled then
+                    SetVehicleExtra(vehicle, tonumber(id), 0)
+                else
+                    SetVehicleExtra(vehicle, tonumber(id), 1)
+                end
+            end
+        end
+
         local colorPrimary, colorSecondary = GetVehicleColours(vehicle)
         local pearlescentColor, wheelColor = GetVehicleExtraColours(vehicle)
         SetVehicleModKit(vehicle, 0)
@@ -924,7 +923,7 @@ function QBCore.Functions.SetVehicleProperties(vehicle, props)
         if props.modKit47 then
             SetVehicleMod(vehicle, 47, props.modKit47, false)
         end
-        if props.modLivery then
+        if props.modLivery ~= nil then
             SetVehicleMod(vehicle, 48, props.modLivery, false)
             SetVehicleLivery(vehicle, props.modLivery)
         end
@@ -933,19 +932,6 @@ function QBCore.Functions.SetVehicleProperties(vehicle, props)
         end
         if props.liveryRoof then
             SetVehicleRoofLivery(vehicle, props.liveryRoof)
-        end
-        --- Extras po SetVehicleModKit / modų — kitaip lightbar'ai vėl išsijungia
-        if props.extras then
-            for id, enabled in pairs(props.extras) do
-                local extraId = tonumber(id)
-                if extraId and DoesExtraExist(vehicle, extraId) then
-                    if enabled then
-                        SetVehicleExtra(vehicle, extraId, 0)
-                    else
-                        SetVehicleExtra(vehicle, extraId, 1)
-                    end
-                end
-            end
         end
     end
 end

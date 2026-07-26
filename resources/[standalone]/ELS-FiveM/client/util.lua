@@ -479,6 +479,15 @@ function checkCarHash(car)
                 return k
             end
         end
+        --- Fallback: archetype / display name (kartais hash mismatch po rename).
+        if GetEntityArchetypeName then
+            local arch = GetEntityArchetypeName(car)
+            if type(arch) == 'string' and arch ~= '' then
+                if els_Vehicles[arch] then return arch end
+                local lower = string.lower(arch)
+                if els_Vehicles[lower] then return lower end
+            end
+        end
     end
 
     return "CARNOTFOUND"

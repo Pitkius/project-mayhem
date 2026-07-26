@@ -1,40 +1,5 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local function isPoliceVehicleModelName(modelName)
-    modelName = tostring(modelName or ''):lower()
-    local t = Config.PoliceVehicleModels or {}
-    return t[modelName] == true
-end
-
-local function isPoliceVehicleEntity(veh)
-    if not veh or veh == 0 then return false end
-    local hash = GetEntityModel(veh)
-    for name in pairs(Config.PoliceVehicleModels or {}) do
-        if joaat(name) == hash then return true end
-    end
-    return false
-end
-
-local function normalizeFleetLightbarExtras(veh)
-    --- MRPD extras paliekami modelio numatytoje būsenoje.
-    --- Negalima įjungti visų: kai kuriuose modeliuose tai aktyvuoja
-    --- alternatyvias ar neteisingoje vietoje esančias šviesas.
-    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
-end
-
-local function enableAllVehicleExtras(veh)
-    if not veh or veh == 0 or not DoesEntityExist(veh) then return end
-    if isPoliceVehicleEntity(veh) then
-        normalizeFleetLightbarExtras(veh)
-        return
-    end
-    for i = 0, 20 do
-        if DoesExtraExist(veh, i) then
-            SetVehicleExtra(veh, i, 0)
-        end
-    end
-end
-
 local function isPoliceOfficerOnDuty()
     local P = QBCore.Functions.GetPlayerData()
     if not P or not P.job or not P.job.onduty then return false end
@@ -356,9 +321,6 @@ local function spawnGaragePreviewVehicle(model, plate)
                 QBCore.Functions.SetVehicleProperties(previewVehicle, mods)
             end
         end
-        if isPoliceVehicleModelName(model) then
-            enableAllVehicleExtras(previewVehicle)
-        end
 
         local fuel = plate and garagePreviewFuel[plate]
         if fuel ~= nil and SetVehicleFuelLevel then
@@ -395,15 +357,10 @@ end
 
 local function buildGarageRows(vehicles, garageId)
     local rows = {}
-    local pdGarage = tostring(garageId or ''):sub(1, 3) == 'pd_'
     for _, v in ipairs(vehicles or {}) do
         local state = tonumber(v.state) or 0
         local g = tostring(v.garage or '')
         local canTake = (state == 1) and (g == garageId)
-        --- PD garaže — visas PD parkas, net jei anksčiau buvo įrašytas viešame
-        if pdGarage and state == 1 and isPoliceVehicleModelName(v.model) then
-            canTake = true
-        end
         local statusLabel = 'Lauke'
         if state == 1 then
             statusLabel = canTake and 'Šiame garaže' or 'Kitame garaže'
@@ -492,22 +449,6 @@ local function captureEmergencyProps(veh, props)
     return props
 end
 
---- PD lightbar extras — tik teisingas extra ON (ne visi true DB).
-local function forcePoliceExtrasInProps(veh, props)
-    props = props or {}
-    if not isPoliceVehicleEntity(veh) then return props end
-    normalizeFleetLightbarExtras(veh)
-    props.extras = props.extras or {}
-    for i = 0, 20 do
-        if DoesExtraExist(veh, i) then
-            props.extras[tostring(i)] = IsVehicleExtraTurnedOn(veh, i)
-        else
-            props.extras[tostring(i)] = nil
-        end
-    end
-    return props
-end
-
 local function restoreEmergencyProps(veh, mods)
     if not veh or veh == 0 or not DoesEntityExist(veh) or type(mods) ~= 'table' then return end
     if mods.mrpPdKit ~= true and mods.mrpEmsKit ~= true then return end
@@ -549,30 +490,22 @@ local function doGarageVehicleSpawn(data)
             local ok, mods = pcall(json.decode, result.mods)
             if ok and mods then
                 decodedMods = mods
-                --- PD: nebekrauti extras iš DB — seni įrašai išjungdavo lightbar mesh
-                if isPoliceVehicleModelName(result.model) then
-                    mods.extras = nil
-                end
                 if QBCore.Functions.SetVehicleProperties then
                     QBCore.Functions.SetVehicleProperties(veh, mods)
                 end
             end
         end
+        --- PD/ELS: livery 0 dažnai dingsta po props restore (QBCore saugodavo -1).
+        SetVehicleModKit(veh, 0)
+        local livCount = GetVehicleLiveryCount(veh)
+        if livCount and livCount > 0 then
+            local liv = GetVehicleLivery(veh)
+            if not liv or liv < 0 then
+                SetVehicleLivery(veh, 0)
+            end
+        end
         if decodedMods then
             restoreEmergencyProps(veh, decodedMods)
-        end
-        --- Po SetVehicleProperties extras gali pritaikyti async — normalizuojam du kartus
-        if isPoliceVehicleModelName(result.model) then
-            normalizeFleetLightbarExtras(veh)
-            SetTimeout(150, function()
-                if DoesEntityExist(veh) then normalizeFleetLightbarExtras(veh) end
-            end)
-            SetTimeout(600, function()
-                if DoesEntityExist(veh) then normalizeFleetLightbarExtras(veh) end
-            end)
-            SetTimeout(1200, function()
-                if DoesEntityExist(veh) then normalizeFleetLightbarExtras(veh) end
-            end)
         end
         if GetResourceState('mrp_plates') == 'started' then
             exports['mrp_plates']:ApplyPlateStyle(veh)
@@ -632,19 +565,12 @@ RegisterNetEvent('mrp_garages:client:parkVehicle', function(data)
     if garageCfg and garageCfg.garageType and not vehicleMatchesGarageType(veh, garageCfg.garageType) then
         return garageTypeMismatchNotify(garageCfg.garageType)
     end
-    local isPdVeh = isPoliceVehicleEntity(veh)
-    if isPdVeh and (not garageCfg or not garageCfg.policeOnly) then
-        return QBCore.Functions.Notify('Policijos transportą statykite tik PD garaže.', 'error')
-    end
-    if garageCfg and garageCfg.policeOnly and not isPdVeh then
-        return QBCore.Functions.Notify('Į PD garažą galima tik policijos transportą.', 'error')
-    end
     if GetPedInVehicleSeat(veh, -1) ~= ped then
         return QBCore.Functions.Notify('Tu turi būti vairuotojas', 'error')
     end
 
     local plate = QBCore.Functions.GetPlate(veh)
-    local props = forcePoliceExtrasInProps(veh, captureEmergencyProps(veh, QBCore.Functions.GetVehicleProperties(veh)))
+    local props = captureEmergencyProps(veh, QBCore.Functions.GetVehicleProperties(veh))
     QBCore.Functions.TriggerCallback('mrp_garages:server:parkVehicle', function(result)
         if not result or not result.ok then
             return QBCore.Functions.Notify((result and result.message) or 'Nepavyko pastatyti mašinos', 'error')

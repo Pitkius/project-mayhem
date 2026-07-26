@@ -571,42 +571,18 @@ local function spawnPurchasedVehicle(result, colorIdx, successMsg, spawnFailMsg)
     SetModelAsNoLongerNeeded(modelHash)
     if veh and veh ~= 0 then
         SetVehicleNumberPlateText(veh, result.plate)
-        SetEntityAsMissionEntity(veh, true, true)
-        SetVehicleOnGroundProperly(veh)
         if GetResourceState('mrp_plates') == 'started' then
             exports['mrp_plates']:ApplyPlateStyle(veh)
         end
         applyPurchasedVehicleColor(veh, colorIdx)
-        --- Originalių PD packų extras paliekami modelio numatytoje būsenoje.
-        local modelName = tostring(result.model or ''):lower()
-        local originalPdModels = {
-            mrpd1 = true, mrpd2 = true, mrpd3 = true, mrpd4 = true,
-            mrpd5 = true, mrpd6 = true, mrpd7 = true, mrpd8 = true,
-            mrpd9 = true, mrpd10 = true, mrpd11 = true, mrpd12 = true,
-            mrpd13 = true, mrpd14 = true, mrpd15 = true, mrpd16 = true, mrpd23 = true,
-            mrpd17 = true, mrpd18 = true, mrpd19 = true, mrpd20 = true,
-            mrpd21 = true, mrpd22 = true,
-        }
-        if originalPdModels[modelName] == true
-            or modelName == 'polmav'
-            or modelName == 'buzzard2' then
-            if GetResourceState('mrp_ltpd') == 'started' then
-                pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
-                SetTimeout(150, function()
-                    if DoesEntityExist(veh) then
-                        pcall(function() exports['mrp_ltpd']:EnsureFleetLightbarExtras(veh) end)
-                    end
-                end)
-            end
+        SetVehicleModKit(veh, 0)
+        if GetVehicleLiveryCount(veh) > 0 then
+            SetVehicleLivery(veh, 0)
         end
         SetVehicleEngineOn(veh, true, true, false)
+        SetEntityAsMissionEntity(veh, true, true)
         TriggerEvent('vehiclekeys:client:SetOwner', result.plate)
-        local ped = PlayerPedId()
-        TaskWarpPedIntoVehicle(ped, veh, -1)
-        Wait(0)
-        if GetVehiclePedIsIn(ped, false) ~= veh then
-            SetPedIntoVehicle(ped, veh, -1)
-        end
+        TaskWarpPedIntoVehicle(PlayerPedId(), veh, -1)
         QBCore.Functions.Notify(successMsg:format(result.plate), 'success')
         return true
     end
