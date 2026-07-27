@@ -1,77 +1,88 @@
 els_patterns = {}
 
+--- Guard: pattern runners crash if pattern id is missing or elsVehs[k] is cleared mid-flash.
+local function resolvePatternId(pattern)
+    local id = tonumber(pattern) or 1
+    if id < 1 then id = 1 end
+    return id
+end
+
+local function elsState(k)
+    return elsVehs and elsVehs[k] or nil
+end
+
 function getNumberOfPrimaryPatterns(veh)
+    local info = getVehicleVCFInfo(veh)
+    if not info or info == false then return 0 end
     local count = 0
-    if getVehicleVCFInfo(veh).priml.type == "leds" then
-        for k,v in pairs(led_PrimaryPatterns) do
-            if (v ~= nil) then
-                count = count + 1
-            end
+    if info.priml and info.priml.type == "leds" then
+        for _, v in pairs(led_PrimaryPatterns) do
+            if v ~= nil then count = count + 1 end
         end
-    elseif getVehicleVCFInfo(veh).priml.type == "chp" then
+    elseif info.priml and info.priml.type == "chp" then
         count = 3
     end
-
     return count
 end
 
 function getNumberOfSecondaryPatterns(veh)
+    local info = getVehicleVCFInfo(veh)
+    if not info or info == false then return 0 end
     local count = 0
-    if getVehicleVCFInfo(veh).secl.type == "leds" then
-        for k,v in pairs(led_SecondaryPatterns) do
-            if (v ~= nil) then
-                count = count + 1
-            end
+    if info.secl and info.secl.type == "leds" then
+        for _, v in pairs(led_SecondaryPatterns) do
+            if v ~= nil then count = count + 1 end
         end
     end
-    if getVehicleVCFInfo(veh).secl.type == "traf" then
-        for k,v in pairs(traf_Patterns) do
-            if (v ~= nil) then
-                count = count + 1
-            end
+    if info.secl and info.secl.type == "traf" then
+        for _, v in pairs(traf_Patterns) do
+            if v ~= nil then count = count + 1 end
         end
     end
-    if getVehicleVCFInfo(veh).secl.type == "chp" then
+    if info.secl and info.secl.type == "chp" then
         count = 3
     end
-
     return count
 end
 
 function getNumberOfAdvisorPatterns(veh)
+    local info = getVehicleVCFInfo(veh)
+    if not info or info == false then return 0 end
     local count = 0
-    if getVehicleVCFInfo(veh).wrnl.type == "leds" then
-        for k,v in pairs(leds_WarningPatterns) do
-            if (v ~= nil) then
-                count = count + 1
-            end
+    if info.wrnl and info.wrnl.type == "leds" then
+        for _, v in pairs(leds_WarningPatterns) do
+            if v ~= nil then count = count + 1 end
         end
     end
-    if getVehicleVCFInfo(veh).secl.type == "chp" then
+    if info.secl and info.secl.type == "chp" then
         count = 1
     end
-    
     return count
 end
 
 function runEnvironmentLight(k, extra)
     Citizen.CreateThread(function()
-        if not IsEntityDead(k) and k ~= nil then
-            local vehN = checkCarHash(k)
+        if not k or IsEntityDead(k) then return end
+        local vehN = checkCarHash(k)
+        local vehCfg = els_Vehicles and els_Vehicles[vehN]
+        local extraCfg = vehCfg and vehCfg.extras and vehCfg.extras[extra]
+        if not extraCfg or not extraCfg.env_light then return end
 
-            if els_Vehicles[vehN].extras[extra] ~= nil then
-                if(els_Vehicles[vehN].extras[extra].env_light) then
-                    local boneIndex = GetEntityBoneIndexByName(k, "extra_" .. extra)
-                    local coords = GetWorldPositionOfEntityBone(k, boneIndex)
-                    
-                    for i=1,6 do
-                        if(IsVehicleExtraTurnedOn(k, extra) == false) then break end
-                        DrawLightWithRangeAndShadow(coords.x + els_Vehicles[vehN].extras[extra].env_pos.x, coords.y + els_Vehicles[vehN].extras[extra].env_pos.y, coords.z + els_Vehicles[vehN].extras[extra].env_pos.z, els_Vehicles[vehN].extras[extra].env_color.r, els_Vehicles[vehN].extras[extra].env_color.g, els_Vehicles[vehN].extras[extra].env_color.b, 50.0, environmentLightBrightness, 5.0)
-                        --DrawLightWithRange(coords.x + els_Vehicles[vehN].extras[extra].env_pos.x, coords.y + els_Vehicles[vehN].extras[extra].env_pos.y, coords.z + els_Vehicles[vehN].extras[extra].env_pos.z, els_Vehicles[vehN].extras[extra].env_color.r, els_Vehicles[vehN].extras[extra].env_color.g, els_Vehicles[vehN].extras[extra].env_color.b, 150 + 0.0, environmentLightBrightness)
-                        Wait(2)
-                    end
-                end
-            end
+        local boneIndex = GetEntityBoneIndexByName(k, "extra_" .. extra)
+        if not boneIndex or boneIndex == -1 then return end
+        local coords = GetWorldPositionOfEntityBone(k, boneIndex)
+        local pos = extraCfg.env_pos
+        local color = extraCfg.env_color
+        if not pos or not color then return end
+
+        for _ = 1, 6 do
+            if IsVehicleExtraTurnedOn(k, extra) == false then break end
+            DrawLightWithRangeAndShadow(
+                coords.x + pos.x, coords.y + pos.y, coords.z + pos.z,
+                color.r, color.g, color.b,
+                50.0, environmentLightBrightness, 5.0
+            )
+            Wait(2)
         end
     end)
 end
@@ -97,7 +108,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 1)
                             end
 
-                            if elsVehs[k].advisorPattern ~= pattern then
+                            if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                                 done[1] = true
                                 break
                             end
@@ -121,7 +132,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 2)
                             end
 
-                            if elsVehs[k].advisorPattern ~= pattern then
+                            if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                                 done[2] = true
                                 break
                             end
@@ -145,7 +156,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 3)
                             end
 
-                            if elsVehs[k].advisorPattern ~= pattern then
+                            if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                                 done[3] = true
                                 break
                             end
@@ -169,7 +180,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 4)
                             end
 
-                            if elsVehs[k].advisorPattern ~= pattern then
+                            if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                                 done[4] = true
                                 break
                             end
@@ -193,7 +204,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 5)
                             end
 
-                            if elsVehs[k].advisorPattern ~= pattern then
+                            if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                                 done[5] = true
                                 break
                             end
@@ -217,7 +228,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 6)
                             end
 
-                            if elsVehs[k].advisorPattern ~= pattern then
+                            if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                                 done[6] = true
                                 break
                             end
@@ -241,7 +252,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 7)
                             end
 
-                            if elsVehs[k].advisorPattern ~= pattern then
+                            if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                                 done[7] = true
                                 break
                             end
@@ -265,7 +276,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 8)
                             end
 
-                            if elsVehs[k].advisorPattern ~= pattern then
+                            if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                                 done[8] = true
                                 break
                             end
@@ -289,7 +300,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 9)
                             end
 
-                            if elsVehs[k].advisorPattern ~= pattern then
+                            if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                                 done[9] = true
                                 break
                             end
@@ -313,7 +324,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 10)
                             end
 
-                            if elsVehs[k].advisorPattern ~= pattern then
+                            if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                                 done[10] = true
                                 break
                             end
@@ -337,7 +348,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 1)
                             end
 
-                            if elsVehs[k].secPattern ~= pattern then
+                            if not elsState(k) or elsState(k).secPattern ~= pattern then
                                 done[1] = true
                                 break
                             end
@@ -361,7 +372,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 2)
                             end
 
-                            if elsVehs[k].secPattern ~= pattern then
+                            if not elsState(k) or elsState(k).secPattern ~= pattern then
                                 done[2] = true
                                 break
                             end
@@ -385,7 +396,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 3)
                             end
 
-                            if elsVehs[k].secPattern ~= pattern then
+                            if not elsState(k) or elsState(k).secPattern ~= pattern then
                                 done[3] = true
                                 break
                             end
@@ -409,7 +420,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 4)
                             end
 
-                            if elsVehs[k].secPattern ~= pattern then
+                            if not elsState(k) or elsState(k).secPattern ~= pattern then
                                 done[4] = true
                                 break
                             end
@@ -433,7 +444,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 5)
                             end
 
-                            if elsVehs[k].secPattern ~= pattern then
+                            if not elsState(k) or elsState(k).secPattern ~= pattern then
                                 done[5] = true
                                 break
                             end
@@ -457,7 +468,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 6)
                             end
 
-                            if elsVehs[k].secPattern ~= pattern then
+                            if not elsState(k) or elsState(k).secPattern ~= pattern then
                                 done[6] = true
                                 break
                             end
@@ -481,7 +492,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 7)
                             end
 
-                            if elsVehs[k].secPattern ~= pattern then
+                            if not elsState(k) or elsState(k).secPattern ~= pattern then
                                 done[7] = true
                                 break
                             end
@@ -505,7 +516,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 8)
                             end
 
-                            if elsVehs[k].secPattern ~= pattern then
+                            if not elsState(k) or elsState(k).secPattern ~= pattern then
                                 done[8] = true
                                 break
                             end
@@ -529,7 +540,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 9)
                             end
 
-                            if elsVehs[k].secPattern ~= pattern then
+                            if not elsState(k) or elsState(k).secPattern ~= pattern then
                                 done[9] = true
                                 break
                             end
@@ -553,7 +564,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 10)
                             end
 
-                            if elsVehs[k].secPattern ~= pattern then
+                            if not elsState(k) or elsState(k).secPattern ~= pattern then
                                 done[10] = true
                                 break
                             end
@@ -577,7 +588,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 1)
                             end
 
-                            if elsVehs[k].primPattern ~= pattern then
+                            if not elsState(k) or elsState(k).primPattern ~= pattern then
                                 done[1] = true
                                 break
                             end
@@ -601,7 +612,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 2)
                             end
 
-                            if elsVehs[k].primPattern ~= pattern then
+                            if not elsState(k) or elsState(k).primPattern ~= pattern then
                                 done[2] = true
                                 break
                             end
@@ -625,7 +636,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 3)
                             end
 
-                            if elsVehs[k].primPattern ~= pattern then
+                            if not elsState(k) or elsState(k).primPattern ~= pattern then
                                 done[3] = true
                                 break
                             end
@@ -649,7 +660,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 4)
                             end
 
-                            if elsVehs[k].primPattern ~= pattern then
+                            if not elsState(k) or elsState(k).primPattern ~= pattern then
                                 done[4] = true
                                 break
                             end
@@ -673,7 +684,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 5)
                             end
 
-                            if elsVehs[k].primPattern ~= pattern then
+                            if not elsState(k) or elsState(k).primPattern ~= pattern then
                                 done[5] = true
                                 break
                             end
@@ -697,7 +708,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 6)
                             end
 
-                            if elsVehs[k].primPattern ~= pattern then
+                            if not elsState(k) or elsState(k).primPattern ~= pattern then
                                 done[6] = true
                                 break
                             end
@@ -721,7 +732,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 7)
                             end
 
-                            if elsVehs[k].primPattern ~= pattern then
+                            if not elsState(k) or elsState(k).primPattern ~= pattern then
                                 done[7] = true
                                 break
                             end
@@ -745,7 +756,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 8)
                             end
 
-                            if elsVehs[k].primPattern ~= pattern then
+                            if not elsState(k) or elsState(k).primPattern ~= pattern then
                                 done[8] = true
                                 break
                             end
@@ -769,7 +780,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 9)
                             end
 
-                            if elsVehs[k].primPattern ~= pattern then
+                            if not elsState(k) or elsState(k).primPattern ~= pattern then
                                 done[9] = true
                                 break
                             end
@@ -793,7 +804,7 @@ function runCHPPattern(k, pattern, stage)
                                 runEnvironmentLight(k, 10)
                             end
 
-                            if elsVehs[k].primPattern ~= pattern then
+                            if not elsState(k) or elsState(k).primPattern ~= pattern then
                                 done[10] = true
                                 break
                             end
@@ -841,12 +852,12 @@ function runTrafPattern(k, pattern)
                             runEnvironmentLight(k, 7)
                         end
 
-                        if elsVehs[k].secPattern ~= pattern then
+                        if not elsState(k) or elsState(k).secPattern ~= pattern then
                             done[1] = true
                             break
                         end
 
-                        if not elsVehs[k].secondary then
+                        if not elsState(k) or not elsState(k).secondary then
                             done[1] = true
                             break
                         end
@@ -870,12 +881,12 @@ function runTrafPattern(k, pattern)
                             runEnvironmentLight(k, 8)
                         end
 
-                        if elsVehs[k].secPattern ~= pattern then
+                        if not elsState(k) or elsState(k).secPattern ~= pattern then
                             done[2] = true
                             break
                         end
 
-                        if not elsVehs[k].secondary then
+                        if not elsState(k) or not elsState(k).secondary then
                             done[2] = true
                             break
                         end
@@ -899,12 +910,12 @@ function runTrafPattern(k, pattern)
                             runEnvironmentLight(k, 9)
                         end
 
-                        if elsVehs[k].secPattern ~= pattern then
+                        if not elsState(k) or elsState(k).secPattern ~= pattern then
                             done[3] = true
                             break
                         end
 
-                        if not elsVehs[k].secondary then
+                        if not elsState(k) or not elsState(k).secondary then
                             done[3] = true
                             break
                         end
@@ -935,11 +946,12 @@ secdFR = 0
 local ledSecondaryReady = {}
 function runLedPatternSecondary(k, pattern)
     Citizen.CreateThread(function()
+        pattern = resolvePatternId(pattern)
+        if not led_SecondaryPatterns[pattern] or not led_SecondaryPatterns[pattern][7] or not led_SecondaryPatterns[pattern][8] or not led_SecondaryPatterns[pattern][9] then
+            ledSecondaryReady[k] = true
+            return
+        end
         if (not IsEntityDead(k) and DoesEntityExist(k) and (ledSecondaryReady[k] or ledSecondaryReady[k] == nil)) then
-            if not led_SecondaryPatterns[pattern] or not led_SecondaryPatterns[pattern][7] then
-                ledSecondaryReady[k] = true
-                return
-            end
             if (GetGameTimer() - trafFR >= GetConvarInt("els_lightDelay", 10)) then
 
                 ledSecondaryReady[k] = false
@@ -958,15 +970,15 @@ function runLedPatternSecondary(k, pattern)
                             runEnvironmentLight(k, 7)
                         end
 
-                        if elsVehs[k] ~= nil then
-                            if elsVehs[k].secPattern ~= pattern then
+                        if elsState(k) ~= nil then
+                            if elsState(k).secPattern ~= pattern then
                                 done[1] = true
                                 ledSecondary = 1
                                 break
                             end
                         end
 
-                        if not elsVehs[k].secondary then
+                        if not elsState(k) or not elsState(k).secondary then
                             done[1] = true
                             break
                         end
@@ -992,15 +1004,15 @@ function runLedPatternSecondary(k, pattern)
                             runEnvironmentLight(k, 8)
                         end
 
-                        if elsVehs[k] ~= nil then
-                            if elsVehs[k].secPattern ~= pattern then
+                        if elsState(k) ~= nil then
+                            if elsState(k).secPattern ~= pattern then
                                 done[2] = true
                                 ledSecondary = 1
                                 break
                             end
                         end
 
-                        if not elsVehs[k].secondary then
+                        if not elsState(k) or not elsState(k).secondary then
                             done[2] = true
                             break
                         end
@@ -1025,15 +1037,15 @@ function runLedPatternSecondary(k, pattern)
                             runEnvironmentLight(k, 9)
                         end
 
-                        if elsVehs[k] ~= nil then
-                            if elsVehs[k].secPattern ~= pattern then
+                        if elsState(k) ~= nil then
+                            if elsState(k).secPattern ~= pattern then
                                 done[3] = true
                                 ledSecondary = 1
                                 break
                             end
                         end
 
-                        if not elsVehs[k].secondary then
+                        if not elsState(k) or not elsState(k).secondary then
                             done[3] = true
                             break
                         end
@@ -1064,11 +1076,12 @@ warnFR = 0
 local ledWarningReady = {}
 function runLedPatternWarning(k, pattern) 
     Citizen.CreateThread(function()
+        pattern = resolvePatternId(pattern)
+        if not leds_WarningPatterns[pattern] or not leds_WarningPatterns[pattern][5] or not leds_WarningPatterns[pattern][6] then
+            ledWarningReady[k] = true
+            return
+        end
         if (not IsEntityDead(k) and DoesEntityExist(k) and (ledWarningReady[k] or ledWarningReady[k] == nil)) then
-            if not leds_WarningPatterns[pattern] or not leds_WarningPatterns[pattern][5] then
-                ledWarningReady[k] = true
-                return
-            end
             if (GetGameTimer() - warnFR >= GetConvarInt("els_lightDelay", 10)) then
 
                 ledWarningReady[k] = false
@@ -1086,12 +1099,12 @@ function runLedPatternWarning(k, pattern)
                             runEnvironmentLight(k, 5)
                         end
 
-                        if elsVehs[k].advisorPattern ~= pattern then
+                        if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                             done[1] = true
                             break
                         end
 
-                        if not elsVehs[k].warning then
+                        if not elsState(k) or not elsState(k).warning then
                             done[1] = true
                             break
                         end
@@ -1116,12 +1129,12 @@ function runLedPatternWarning(k, pattern)
                             runEnvironmentLight(k, 6)
                         end
 
-                        if elsVehs[k].advisorPattern ~= pattern then
+                        if not elsState(k) or elsState(k).advisorPattern ~= pattern then
                             done[2] = true
                             break
                         end
 
-                        if not elsVehs[k].warning then
+                        if not elsState(k) or not elsState(k).warning then
                             done[2] = true
                             break
                         end
@@ -1152,11 +1165,12 @@ primFR = 0
 local ledPrimaryReady = {}
 function runLedPatternPrimary(k, pattern) 
     Citizen.CreateThread(function()
+        pattern = resolvePatternId(pattern)
+        if not led_PrimaryPatterns[pattern] or not led_PrimaryPatterns[pattern][1] or not led_PrimaryPatterns[pattern][2] or not led_PrimaryPatterns[pattern][3] or not led_PrimaryPatterns[pattern][4] then
+            ledPrimaryReady[k] = true
+            return
+        end
         if (not IsEntityDead(k) and DoesEntityExist(k) and (ledPrimaryReady[k] or ledPrimaryReady[k] == nil)) then
-            if not led_PrimaryPatterns[pattern] or not led_PrimaryPatterns[pattern][1] then
-                ledPrimaryReady[k] = true
-                return
-            end
             if (GetGameTimer() - primFR >= GetConvarInt("els_lightDelay", 10)) then
                 ledPrimaryReady[k] = false
 
@@ -1173,12 +1187,12 @@ function runLedPatternPrimary(k, pattern)
                             runEnvironmentLight(k, 1)
                         end
 
-                        if elsVehs[k].primPattern ~= pattern then
+                        if not elsState(k) or elsState(k).primPattern ~= pattern then
                             done[1] = true
                             break
                         end
 
-                        if not elsVehs[k].primary then
+                        if not elsState(k) or not elsState(k).primary then
                             done[1] = true
                             break
                         end
@@ -1203,12 +1217,12 @@ function runLedPatternPrimary(k, pattern)
                             runEnvironmentLight(k, 2)
                         end
 
-                        if elsVehs[k].primPattern ~= pattern then
+                        if not elsState(k) or elsState(k).primPattern ~= pattern then
                             done[2] = true
                             break
                         end
 
-                        if not elsVehs[k].primary then
+                        if not elsState(k) or not elsState(k).primary then
                             done[2] = true
                             break
                         end
@@ -1232,12 +1246,12 @@ function runLedPatternPrimary(k, pattern)
                             runEnvironmentLight(k, 3)
                         end
 
-                        if elsVehs[k].primPattern ~= pattern then
+                        if not elsState(k) or elsState(k).primPattern ~= pattern then
                             done[3] = true
                             break
                         end
                         
-                        if not elsVehs[k].primary then
+                        if not elsState(k) or not elsState(k).primary then
                             done[3] = true
                             break
                         end
@@ -1261,12 +1275,12 @@ function runLedPatternPrimary(k, pattern)
                             runEnvironmentLight(k, 4)
                         end
 
-                        if elsVehs[k].primPattern ~= pattern then
+                        if not elsState(k) or elsState(k).primPattern ~= pattern then
                             done[4] = true
                             break
                         end
 
-                        if not elsVehs[k].primary then
+                        if not elsState(k) or not elsState(k).primary then
                             done[4] = true
                             break
                         end

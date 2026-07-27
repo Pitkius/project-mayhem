@@ -4,8 +4,10 @@ lua54 'yes'
 
 name 'mrp_lt_els_vehicles'
 author 'MRP'
-description 'Lietuvos PD/EMS ELS (mrpd13-16, mrpd21-23, ems1-2)'
-version '2.1.0'
+description 'Lietuvos PD/EMS ELS vehicles (mrpd13-16,21-23, ems1-2) - LT liveries'
+version '1.0.1'
+
+this_is_a_map 'yes'
 
 files {
     'data/**/vehicles.meta',
