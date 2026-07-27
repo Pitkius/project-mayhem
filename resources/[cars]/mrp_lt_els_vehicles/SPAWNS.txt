@@ -37,7 +37,7 @@ mrpd13   | Audi S3 (LT ženklinta)         | mrp_lt_els_vehicles
 mrpd14   | BMW 540i (LT ženklinta)        | mrp_lt_els_vehicles
 mrpd15   | BMW X5 (LT ženklinta)          | mrp_lt_els_vehicles
 mrpd16   | Skoda Octavia Hatch (LT)       | mrp_lt_els_vehicles
-mrpd23   | Skoda Octavia Estate/universal | mrp_lt_els_vehicles (UK estate ytd — hatch LT ytd breaks estate lights)
+mrpd23   | Skoda Octavia Estate/universal | mrp_lt_els_vehicles (LT livery from mrpd16 ytd)
 
 ------------------------------------------------------------
  NEŽYMĖTOS — Non-ELS (F6)
