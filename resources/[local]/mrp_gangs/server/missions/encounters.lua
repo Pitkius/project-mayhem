@@ -91,7 +91,7 @@ local function spawnWave(run)
         local ped = CreatePed(4, model, spawn.x, spawn.y, spawn.z, spawn.w or 0.0, true, true)
         if ped and ped ~= 0 then
             SetEntityRoutingBucket(ped, encounterBucket)
-            SetEntityOrphanMode(ped, 2)
+            GangUtils.SetEntityOrphanMode(ped, 2)
             local definition = Config.Encounter.archetypes[archetype]
             SetPedArmour(ped, tonumber(definition.armor) or 0)
             Entity(ped).state:set('mrpGangMissionRun', run.token, true)

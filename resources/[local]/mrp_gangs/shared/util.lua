@@ -1,5 +1,13 @@
 GangUtils = GangUtils or {}
 
+--- SetEntityOrphanMode is only on newer FXServer builds; skip if missing.
+function GangUtils.SetEntityOrphanMode(entity, mode)
+    if type(SetEntityOrphanMode) ~= 'function' then return false end
+    if not entity or entity == 0 then return false end
+    SetEntityOrphanMode(entity, mode)
+    return true
+end
+
 function GangUtils.Clamp(value, minimum, maximum)
     value = tonumber(value) or minimum
     if value < minimum then return minimum end

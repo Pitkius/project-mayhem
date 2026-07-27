@@ -274,7 +274,7 @@ local function spawnMissionTarget(run, phase)
     local ped = CreatePed(4, model, target.x, target.y, target.z, target.w or 0.0, true, true)
     if not ped or ped == 0 then return false end
     SetEntityRoutingBucket(ped, run.inInterior and run.bucketId or 0)
-    SetEntityOrphanMode(ped, 2)
+    GangUtils.SetEntityOrphanMode(ped, 2)
     SetEntityInvincible(ped, true)
     FreezeEntityPosition(ped, true)
     Entity(ped).state:set('mrpGangMissionRun', run.token, true)
@@ -393,7 +393,7 @@ local function startCurrentPhase(run)
         )
         if not vehicle or vehicle == 0 then return failRun(run, 'mission_vehicle_spawn_failed') end
         SetEntityRoutingBucket(vehicle, 0)
-        SetEntityOrphanMode(vehicle, 2)
+        GangUtils.SetEntityOrphanMode(vehicle, 2)
         SetVehicleNumberPlateText(vehicle, ('GANG%04d'):format(run.dbId % 10000))
         Entity(vehicle).state:set('mrpGangMissionRun', run.token, true)
         run.missionVehicleEntity = vehicle

@@ -63,6 +63,7 @@ local function drawText3D(x, y, z, text, opts)
     text = tostring(text or '')
     local o = opts or {}
     local scale = o.scale or 0.35
+    SetDrawOrigin(x + 0.0, y + 0.0, z + 0.0, 0)
     SetTextScale(scale, scale)
     if ensureFont() then
         SetTextFont(fontId)
@@ -71,14 +72,16 @@ local function drawText3D(x, y, z, text, opts)
     end
     SetTextProportional(1)
     SetTextColour(o.r or 255, o.g or 255, o.b or 255, o.a or 215)
-    BeginTextCommandDisplayText('STRING')
     SetTextCentre(o.center ~= false)
+    if o.outline ~= false then
+        SetTextOutline()
+    end
+    BeginTextCommandDisplayText('STRING')
     AddTextComponentSubstringPlayerName(text)
-    SetDrawOrigin(x + 0.0, y + 0.0, z + 0.0, 0)
     EndTextCommandDisplayText(0.0, 0.0)
     if o.background ~= false then
         local factor = textDisplayLen(text) / 370
-        DrawRect(0.0, 0.0 + 0.0125, 0.017 + factor, 0.03, 0, 0, 0, o.bgAlpha or 75)
+        DrawRect(0.0, 0.0125, 0.017 + factor, 0.03, 0, 0, 0, o.bgAlpha or 75)
     end
     ClearDrawOrigin()
 end

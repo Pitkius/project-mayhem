@@ -457,6 +457,11 @@ local function reviveLocalPlayer()
     ClearPedTasksImmediately(ped)
     SetEntityHealth(ped, 200)
     SetPedArmour(ped, 0)
+
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName('Atsigavai (test revive).')
+    EndTextCommandThefeedPostTicker(false, false)
+    print('[mrp_basics] Test revive ivykdytas.')
 end
 
 local function healLocalPlayer()
@@ -464,6 +469,12 @@ local function healLocalPlayer()
     SetEntityHealth(ped, 200)
     ClearPedBloodDamage(ped)
 end
+
+RegisterCommand('fprevive', function()
+    reviveLocalPlayer()
+end, false)
+
+RegisterKeyMapping('fprevive', 'Fivempro test revive', 'keyboard', 'F6')
 
 RegisterNetEvent('mrp_basics:client:adminRevive', function()
     reviveLocalPlayer()
@@ -491,16 +502,18 @@ RegisterNetEvent('mrp_basics:client:toggleCoords', function()
 end)
 
 local HEAD_BONE = 31086
-local HEAD_TEXT_Z = 0.58
+--- World-space lift above skull (bone-local Z would push text sideways).
+local HEAD_TEXT_Z = 0.42
 
 local function getHeadCoords(ped)
-    return GetPedBoneCoords(ped, HEAD_BONE, 0.0, 0.0, HEAD_TEXT_Z)
+    local bone = GetPedBoneCoords(ped, HEAD_BONE, 0.0, 0.0, 0.0)
+    return vector3(bone.x, bone.y, bone.z + HEAD_TEXT_Z)
 end
 
 local function drawHead3D(coords, text, opts)
     local o = opts or {}
     local r, g, b, a = o.r or 255, o.g or 255, o.b or 255, o.a or 255
-    local scale = (o.textScale or 0.5) * 0.72
+    local scale = o.textScale or 0.62
 
     if GetResourceState('mrp_fonts') == 'started' then
         exports['mrp_fonts']:DrawText3D(coords.x, coords.y, coords.z, text, {
@@ -511,6 +524,7 @@ local function drawHead3D(coords, text, opts)
             scale = scale,
             background = false,
             center = true,
+            outline = true,
         })
         return
     end
@@ -519,7 +533,7 @@ local function drawHead3D(coords, text, opts)
     SetTextScale(scale, scale)
     SetTextFont(4)
     SetTextColour(r, g, b, a)
-    SetTextEdge(2, 0, 0, 0, o.edgeAlpha or 180)
+    SetTextEdge(2, 0, 0, 0, o.edgeAlpha or 220)
     SetTextProportional(1)
     SetTextOutline()
     SetTextCentre(true)
@@ -530,7 +544,7 @@ local function drawHead3D(coords, text, opts)
 end
 
 local function drawShout3D(coords, text)
-    drawHead3D(coords, text, { r = 255, g = 210, b = 70, textScale = 0.58 })
+    drawHead3D(coords, text, { r = 255, g = 210, b = 70, textScale = 0.68 })
 end
 
 RegisterNetEvent('mrp_basics:client:showTad', function(senderId, msg)
@@ -597,7 +611,7 @@ CreateThread(function()
                             r = tonumber(c[1]) or 255,
                             g = tonumber(c[2]) or 255,
                             b = tonumber(c[3]) or 255,
-                            textScale = 0.52,
+                            textScale = 0.78,
                         })
                     end
                 end
