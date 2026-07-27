@@ -1,7 +1,27 @@
 
 
-RegisterNetEvent('tackle:server:TacklePlayer', function(playerId)
-    TriggerClientEvent('tackle:client:GetTackled', playerId)
+RegisterNetEvent('tackle:server:TacklePlayer', function(targetId)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    local job = Player.PlayerData.job
+    if not job or job.name ~= 'police' or not job.onduty then return end
+
+    targetId = tonumber(targetId)
+    if not targetId or targetId == src then return end
+
+    local Target = QBCore.Functions.GetPlayer(targetId)
+    if not Target then return end
+
+    local srcPed = GetPlayerPed(src)
+    local tgtPed = GetPlayerPed(targetId)
+    if srcPed == 0 or tgtPed == 0 then return end
+
+    local dist = #(GetEntityCoords(srcPed) - GetEntityCoords(tgtPed))
+    if dist > 3.0 then return end
+
+    TriggerClientEvent('tackle:client:GetTackled', targetId)
 end)
 
 QBCore.Commands.Add('id', 'Check Your ID #', {}, false, function(source)
