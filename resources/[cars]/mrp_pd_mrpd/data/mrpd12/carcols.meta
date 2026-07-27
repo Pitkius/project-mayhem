@@ -2,7 +2,7 @@
 <CVehicleModelInfoVarGlobal>
   <Sirens>
     <Item>
-      <id value="75"/>
+      <id value="4924"/>
       <name>mrpd12</name>
       <timeMultiplier value="1.0"/>
       <lightFalloffMax value="10.0"/>
@@ -63,8 +63,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -100,8 +100,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -137,8 +137,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -174,8 +174,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -211,8 +211,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -248,8 +248,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -285,8 +285,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -322,8 +322,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -470,8 +470,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -507,8 +507,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -692,8 +692,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>
@@ -729,8 +729,8 @@
           <scale value="true"/>
           <scaleFactor value="100"/>
           <flash value="true"/>
-          <light value="true"/>
-          <spotLight value="true"/>
+          <light value="false"/>
+          <spotLight value="false"/>
           <castShadows value="false"/>
         </Item>
         <Item>

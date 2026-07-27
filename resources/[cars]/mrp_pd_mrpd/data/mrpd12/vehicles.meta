@@ -16,7 +16,7 @@
       <animConvRoofName>null</animConvRoofName>
       <animConvRoofWindowsAffected />
       <ptfxAssetName>null</ptfxAssetName>
-      <audioNameHash>FBI</audioNameHash>
+      <audioNameHash>schlagen</audioNameHash>
       <layout>LAYOUT_LOW_INFERNUS</layout>
       <coverBoundOffsets>STREITER_COVER_OFFSET_INFO</coverBoundOffsets>
       <explosionInfo>EXPLOSION_INFO_DEFAULT</explosionInfo>
@@ -92,7 +92,7 @@
       <frequency value="30" />
       <swankness>SWANKNESS_1</swankness>
       <maxNum value="5" />
-      <flags>FLAG_SPORTS FLAG_RICH_CAR FLAG_HAS_LIVERY FLAG_LAW_ENFORCEMENT FLAG_EMERGENCY_SERVICE FLAG_INCREASE_CAMBER_WITH_SUSPENSION_MOD FLAG_NO_HEAVY_BRAKE_ANIMATION</flags>
+      <flags>FLAG_SPORTS FLAG_RICH_CAR FLAG_HAS_LIVERY FLAG_INCREASE_CAMBER_WITH_SUSPENSION_MOD FLAG_NO_HEAVY_BRAKE_ANIMATION</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_BACK_PLATES</plateType>
       <dashboardType>VDT_RACE</dashboardType>
