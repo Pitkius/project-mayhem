@@ -293,6 +293,7 @@ Config.FleetVehicles = {
   { model = 'mrpd18', label = 'MRPD 18 (nežymėta)', emergencyLights = 'native' },
   { model = 'mrpd19', label = 'MRPD 19 (nežymėta)', emergencyLights = 'native' },
   { model = 'mrpd20', label = 'MRPD 20 (nežymėta)', emergencyLights = 'native' },
+  { model = 'mrpd25', label = 'MRPD 25 — Alfa Romeo nežymėta', emergencyLights = 'native' },
   -- NEŽYMĖTOS LT ELS
   { model = 'mrpd21', label = 'MRPD 21 — BMW 540i VAD (LT ELS)', emergencyLights = 'els' },
   { model = 'mrpd22', label = 'MRPD 22 — Audi S3 nežymėta (ELS)', emergencyLights = 'els' },
@@ -301,7 +302,7 @@ Config.FleetVehicles = {
 --- Built-in fleet: tik Non-ELS carcols šviesos per SetVehicleSiren (ELS čia NEįtraukti).
 Config.BuiltInFleetModels = {
     'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
-    'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24',
+    'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24', 'mrpd25',
     'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
     'polmav', 'buzzard2',
 }

@@ -5,10 +5,10 @@
   <InitDatas>
   
   <Item>
-      <modelName>mrpd12</modelName>
-      <txdName>mrpd12</txdName>
-      <handlingId>mrpd12</handlingId>
-      <gameName>mrpd12</gameName>
+      <modelName>mrpd25</modelName>
+      <txdName>mrpd25</txdName>
+      <handlingId>mrpd25</handlingId>
+      <gameName>mrpd25</gameName>
       <vehicleMakeName>alfaromeo</vehicleMakeName>
      <expressionDictName>null</expressionDictName>
       <expressionName>null</expressionName>
@@ -92,7 +92,7 @@
       <frequency value="30" />
       <swankness>SWANKNESS_1</swankness>
       <maxNum value="5" />
-      <flags>FLAG_SPORTS FLAG_RICH_CAR FLAG_HAS_LIVERY FLAG_INCREASE_CAMBER_WITH_SUSPENSION_MOD FLAG_NO_HEAVY_BRAKE_ANIMATION</flags>
+      <flags>FLAG_SPORTS FLAG_RICH_CAR FLAG_INCREASE_CAMBER_WITH_SUSPENSION_MOD FLAG_NO_HEAVY_BRAKE_ANIMATION</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_BACK_PLATES</plateType>
       <dashboardType>VDT_RACE</dashboardType>
@@ -132,7 +132,7 @@
   <txdRelationships>
     <Item>
       <parent>vehicles_race_generic</parent>
-      <child>mrpd12</child>
+      <child>mrpd25</child>
     </Item>
   </txdRelationships>
 </CVehicleModelInfo__InitDataList>

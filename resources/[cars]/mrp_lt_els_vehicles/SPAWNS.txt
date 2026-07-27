@@ -48,6 +48,7 @@ mrpd17   | Undercover / nežymėta          | mrp_pd_undercover
 mrpd18   | Undercover / nežymėta          | mrp_pd_undercover
 mrpd19   | Undercover / nežymėta          | mrp_pd_undercover
 mrpd20   | Undercover / nežymėta          | mrp_pd_undercover
+mrpd25   | Alfa Romeo nežymėta (non-ELS)  | mrp_pd_mrpd
 
 ------------------------------------------------------------
  NEŽYMĖTOS — ELS
@@ -63,11 +64,11 @@ mrpd22   | Audi S3 nežymėta               | mrp_lt_els_vehicles
 mrpd1 mrpd2 mrpd3 mrpd4 mrpd5 mrpd6 mrpd7 mrpd8
 mrpd9 mrpd10 mrpd11 mrpd12
 mrpd13 mrpd14 mrpd15 mrpd16 mrpd23
-mrpd17 mrpd18 mrpd19 mrpd20
+mrpd17 mrpd18 mrpd19 mrpd20 mrpd25
 mrpd21 mrpd22
 mrpd24
 
-Laisvi ateičiai: mrpd25+
+Laisvi ateičiai: mrpd26+
 
 Po stream update: clear FiveM compcache mrp_lt_els_vehicles
 (ir senų pack'ų jei keitei).
