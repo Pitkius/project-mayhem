@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="only light">
-  <title>Gang System 2.0</title>
+  <title>Mayhem Syndicate</title>
   <link rel="stylesheet" href="vendor/leaflet.css">
   <link rel="stylesheet" href="styles.css">
   <style>
@@ -13,30 +13,41 @@
 </head>
 <body style="background:transparent!important;background-color:transparent!important">
   <main id="tablet" class="tablet is-hidden" aria-hidden="true">
+    <div class="tablet-glow" aria-hidden="true"></div>
+
     <aside class="sidebar">
       <div class="brand">
-        <span class="brand-mark">M</span>
-        <div>
+        <div class="brand-mark">
+          <span class="brand-mark-glyph">M</span>
+        </div>
+        <div class="brand-text">
           <strong>MAYHEM</strong>
-          <small>GANG NETWORK</small>
+          <small>SYNDICATE OS</small>
         </div>
       </div>
-      <nav id="nav" class="nav"></nav>
+
+      <nav id="nav" class="nav" aria-label="Pagrindinė navigacija"></nav>
+
       <div class="sidebar-footer">
         <div id="identity" class="identity"></div>
-        <button class="icon-button" data-action="refresh" title="Atnaujinti">↻</button>
+        <button class="icon-button" data-action="refresh" title="Atnaujinti duomenis" aria-label="Atnaujinti">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
       </div>
     </aside>
 
     <section class="workspace">
       <header class="topbar">
-        <div>
-          <p id="eyebrow" class="eyebrow">GANG SYSTEM 2.0</p>
-          <h1 id="page-title">Overview</h1>
+        <div class="topbar-title">
+          <p id="eyebrow" class="eyebrow">SYNDICATE INTERFACE</p>
+          <h1 id="page-title">Pagrindinis</h1>
         </div>
         <div class="topbar-actions">
-          <span id="connection" class="status-dot">LIVE</span>
-          <button class="close-button" data-action="close" aria-label="Uždaryti">×</button>
+          <span id="clock" class="topbar-clock"></span>
+          <span id="connection" class="status-dot"><i></i>LIVE</span>
+          <button class="close-button" data-action="close" aria-label="Uždaryti">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       </header>
       <section id="content" class="content"></section>

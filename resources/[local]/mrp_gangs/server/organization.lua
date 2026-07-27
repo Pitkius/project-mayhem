@@ -24,6 +24,9 @@ function GangOrganization.GetView(source)
         WHERE gang_id = ?
         ORDER BY FIELD(role_key, 'boss','underboss','lieutenant','member','prospect'), joined_at
     ]], { gangId }) or {}
+    for _, member in ipairs(members) do
+        member.online = GangCore.GetSourceByCitizenId(member.citizenid) ~= nil
+    end
     local roles = MySQL.query.await([[
         SELECT role_key, label, priority, is_owner, permissions_json
         FROM mrp_gang_roles_v2

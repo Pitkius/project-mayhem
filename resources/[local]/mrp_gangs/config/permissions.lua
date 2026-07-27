@@ -136,3 +136,7 @@ Config.GangLimits = {
 
 --- Ar žaidėjai gali kurti gaują per tabletę (ne tik admin /gangcreatev2).
 Config.AllowPlayerGangCreate = true
+
+--- Kaina žaidėjui kuriant gaują per tabletę (nuima iš cash, jei neužtenka - iš banko).
+--- Admin /gangcreatev2 komanda šio mokesčio nemoka.
+Config.GangCreationCost = 50000

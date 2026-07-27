@@ -35,6 +35,27 @@ local function activityFor(context)
     ]], { context.gang.gang_id }) or {}
 end
 
+--- Grąžina finansinius audito įrašus (treasury, racket, tribute, mission_settled).
+--- Reikalauja finance.view teisės (arba wildcard).
+local function financeHistoryFor(context)
+    if not context then return {} end
+    if not (context.permissions.wildcard or context.permissions.set['finance.view']) then return {} end
+    return MySQL.query.await([[
+        SELECT id, actor_citizenid, action, target_type, target_id, metadata_json, created_at
+        FROM mrp_gang_audit_log
+        WHERE gang_id = ?
+          AND (
+            action LIKE 'treasury_%'
+            OR action = 'racket_income'
+            OR action LIKE 'tribute_%'
+            OR action = 'mission_completed'
+            OR action = 'mission_settled'
+          )
+        ORDER BY id DESC
+        LIMIT 30
+    ]], { context.gang.gang_id }) or {}
+end
+
 local function progressionFor(gang)
     if not gang then return nil end
     local reputation = tonumber(gang.reputation) or 0
@@ -133,6 +154,8 @@ function GangTablet.GetBootstrap(source)
         permissionGroups = Config.GangPermissionGroups,
         gangTypes = Config.GangTypes,
         allowCreate = Config.AllowPlayerGangCreate == true and not gang,
+        creationCost = tonumber(Config.GangCreationCost) or 0,
+        financeHistory = financeHistoryFor(context),
         warnings = {
             heat = heat,
             level = warningLevel,
@@ -154,6 +177,25 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:createGang', function(source, 
         return callback({ ok = false, reason = 'rate_limited' })
     end
     payload = type(payload) == 'table' and payload or {}
+
+    --- Mokestį imame iš žaidėjo, ne iš admin komandos.
+    --- Admin gali kurti gaują be mokesčio per /gangcreatev2.
+    local cost = tonumber(Config.GangCreationCost) or 0
+    local charged = false
+    local chargedAccount = nil
+    if cost > 0 and not GangCore.IsAdmin(source) then
+        --- Bandome nuskaityti iš cash, jei ne — iš banko.
+        if GangAdapters.Money.Remove(source, 'cash', cost, 'gang-create-fee') then
+            charged = true
+            chargedAccount = 'cash'
+        elseif GangAdapters.Money.Remove(source, 'bank', cost, 'gang-create-fee') then
+            charged = true
+            chargedAccount = 'bank'
+        else
+            return callback({ ok = false, reason = 'not_enough_money' })
+        end
+    end
+
     local ok, result = GangCore.CreateGang(
         source,
         payload.gangType,
@@ -161,8 +203,16 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:createGang', function(source, 
         payload.label,
         payload.colorHex
     )
-    if not ok then return callback({ ok = false, reason = result }) end
+    if not ok then
+        if charged and chargedAccount then
+            GangAdapters.Money.Add(source, chargedAccount, cost, 'gang-create-fee-refund')
+        end
+        return callback({ ok = false, reason = result })
+    end
     GangCore.Notify(source, ('Gauja „%s“ sukurta.'):format(result.label), 'success')
+    if charged then
+        GangCore.Notify(source, ('Nuskaityta %s $ registracijos mokestis.'):format(cost), 'primary')
+    end
     callback({ ok = true, result = result })
 end)
 
