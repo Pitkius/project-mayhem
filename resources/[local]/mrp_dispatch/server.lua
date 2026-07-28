@@ -182,10 +182,8 @@ local function unitBlipsForService(service)
                     y = p.y,
                     z = p.z,
                     heading = heading,
-                    inVeh = (function()
-                        local ped = GetPlayerPed(src)
-                        return ped and ped ~= 0 and IsPedInAnyVehicle(ped, false)
-                    end)(),
+                    -- IsPedInAnyVehicle is client-only; GetVehiclePedIsIn works on server
+                    inVeh = ped and ped ~= 0 and GetVehiclePedIsIn(ped, false) ~= 0,
                     crewId = crewId,
                     isCrewLeader = crew and crew.leader == src or false,
                     speedKmh = speedKmh,

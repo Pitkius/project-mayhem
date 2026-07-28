@@ -1,39 +1,6 @@
 --- Apkaba, inventoriaus sinchronizacija — papildomos kulkos tik inventoriuje, ne ant ped.
 WeaponAmmo = WeaponAmmo or {}
 
-local DefaultClipByWeapon = {
-    [`weapon_minismg`] = 12,
-    [`weapon_machinepistol`] = 12,
-    [`weapon_microsmg`] = 16,
-    [`weapon_smg`] = 30,
-    [`weapon_smg_mk2`] = 30,
-    [`weapon_assaultsmg`] = 30,
-    [`weapon_combatpdw`] = 30,
-    [`weapon_pistol`] = 12,
-    [`weapon_combatpistol`] = 12,
-    [`weapon_fgc9`] = 12,
-    [`weapon_appistol`] = 18,
-    [`weapon_assaultrifle`] = 30,
-    [`weapon_carbinerifle`] = 30,
-    [`weapon_advancedrifle`] = 30,
-    [`weapon_specialcarbine`] = 30,
-    [`weapon_bullpuprifle`] = 30,
-    [`weapon_compactrifle`] = 30,
-    [`weapon_militaryrifle`] = 30,
-    [`weapon_heavyrifle`] = 30,
-}
-
-local DefaultClipByAmmoType = {
-    AMMO_PISTOL = 12,
-    AMMO_SMG = 30,
-    AMMO_RIFLE = 30,
-    AMMO_SHOTGUN = 8,
-    AMMO_MUSKET = 1,
-    AMMO_MG = 50,
-    AMMO_SNIPER = 10,
-    AMMO_EMPLAUNCHER = 10,
-}
-
 local function componentHash(comp)
     if type(comp) == 'number' then return comp end
     if comp then return joaat(tostring(comp)) end
@@ -42,7 +9,8 @@ end
 local function weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable)
     local weaponName = weaponData and weaponData.name
     if not weaponName or type(attachmentTable) ~= 'table' then return false end
-    local comp = attachmentTable[weaponName]
+    local nativeName = WeaponHash and WeaponHash.nativeName and WeaponHash.nativeName(weaponName)
+    local comp = attachmentTable[weaponName] or (nativeName and attachmentTable[nativeName])
     if not comp then return false end
     local compHash = componentHash(comp)
     if ped and weaponHash and compHash and HasPedGotWeaponComponent(ped, weaponHash, compHash) then
@@ -73,15 +41,12 @@ end
 
 local function defaultClipForWeapon(weaponHash, weaponData)
     local weaponName = weaponData and weaponData.name
-    if weaponName then
-        local h = WeaponHash and WeaponHash.resolve and WeaponHash.resolve(weaponName) or joaat(weaponName)
-        if DefaultClipByWeapon[h] then return DefaultClipByWeapon[h] end
-    end
-    if weaponHash and DefaultClipByWeapon[weaponHash] then
-        return DefaultClipByWeapon[weaponHash]
+    local byWeapon = Config.StandardClipCapacity or {}
+    if weaponName and byWeapon[weaponName] then
+        return tonumber(byWeapon[weaponName]) or 0
     end
     local ammoType = tostring(weaponData and weaponData.ammotype or ''):upper()
-    return DefaultClipByAmmoType[ammoType] or 30
+    return tonumber(Config.DefaultClipCapacityByAmmoType and Config.DefaultClipCapacityByAmmoType[ammoType]) or 30
 end
 
 function WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
@@ -159,55 +124,45 @@ function WeaponAmmo.applyWeaponAmmoState(ped, weaponHash, ammo, weaponData)
     return clip
 end
 
-function WeaponAmmo.loadBulletsIntoClip(ped, weaponHash, weaponData, bulletsToLoad)
-    bulletsToLoad = math.max(0, tonumber(bulletsToLoad) or 0)
-    if bulletsToLoad <= 0 or not ped or ped == 0 or not weaponHash or weaponHash == 0 then return 0 end
+--- GTA reload užduočiai laikinai duoda tik tiek reserve, kiek patvirtino serveris.
+--- Apkaba nekeičiama; SetPedAmmo kviečiamas prieš SetAmmoInClip, nes native gali
+--- automatiškai perkelti dalį total ammo į apkabą.
+function WeaponAmmo.stageNativeReserve(ped, weaponHash, weaponData, bullets)
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then
+        return 0
+    end
 
-    SetCurrentPedWeapon(ped, weaponHash, true)
+    local clip, maxClip, missing = WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData)
+    local staged = math.min(
+        math.max(0, math.floor(tonumber(bullets) or 0)),
+        math.max(0, missing)
+    )
+    if staged <= 0 then return 0 end
+
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+    SetPedAmmo(ped, weaponHash, clip + staged)
+    SetAmmoInClip(ped, weaponHash, clip)
+    return staged
+end
 
-    local maxClip = WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
-    local _, clipBefore = GetAmmoInClip(ped, weaponHash)
-    local curClip = math.min(maxClip, math.max(0, tonumber(clipBefore) or 0))
-    local toLoad = math.min(bulletsToLoad, math.max(0, maxClip - curClip))
-    if toLoad <= 0 then return 0 end
-
-    local function clipDelta()
-        local _, clipAfter = GetAmmoInClip(ped, weaponHash)
-        return math.max(0, (tonumber(clipAfter) or 0) - curClip)
+--- Užbaigus native animaciją pašalina laikiną GTA reserve ir palieka tik apkabą.
+--- Grąžina realiai į apkabą patekusių kulkų delta bei galutinę apkabą.
+function WeaponAmmo.finishNativeReload(ped, weaponHash, clipBefore, maxClip)
+    clipBefore = math.max(0, math.floor(tonumber(clipBefore) or 0))
+    maxClip = math.max(clipBefore, math.floor(tonumber(maxClip) or clipBefore))
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then
+        return 0, clipBefore
     end
 
-    local newClip = curClip + toLoad
-    SetPedAmmo(ped, weaponHash, newClip)
-    SetAmmoInClip(ped, weaponHash, newClip)
+    local hasClip, nativeClip = GetAmmoInClip(ped, weaponHash)
+    local clip = hasClip and math.floor(tonumber(nativeClip) or clipBefore) or clipBefore
+    clip = math.min(maxClip, math.max(0, clip))
+    local loaded = math.max(0, clip - clipBefore)
+
+    SetPedAmmo(ped, weaponHash, clip)
+    SetAmmoInClip(ped, weaponHash, clip)
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
-
-    local loaded = clipDelta()
-    if loaded <= 0 then
-        local totalBefore = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
-        AddAmmoToPed(ped, weaponHash, toLoad)
-        WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
-        loaded = math.max(clipDelta(), math.max(0, (tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0) - totalBefore))
-        if loaded > 0 then
-            local targetClip = math.min(maxClip, curClip + loaded)
-            SetPedAmmo(ped, weaponHash, targetClip)
-            SetAmmoInClip(ped, weaponHash, targetClip)
-        end
-    end
-
-    if loaded <= 0 then
-        SetPedAmmo(ped, weaponHash, newClip)
-        SetAmmoInClip(ped, weaponHash, newClip)
-        loaded = math.min(toLoad, clipDelta())
-        if loaded <= 0 then
-            loaded = toLoad
-        end
-    end
-
-    WeaponAmmo.normalizePedAmmo(ped, weaponHash, weaponData)
-    local _, clipFinal = GetAmmoInClip(ped, weaponHash)
-    loaded = math.max(loaded, math.max(0, (tonumber(clipFinal) or 0) - curClip))
-    return math.min(loaded, toLoad)
+    return loaded, clip
 end
 
 function WeaponAmmo.getSyncedAmmoAmount(ped, weaponHash, weaponData)

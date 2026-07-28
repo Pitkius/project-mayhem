@@ -481,6 +481,7 @@ function renderOverview() {
             ${pill('Featured', 'neon')}
           </div>
           ${featured ? `
+            ${featured.imageUrl ? `<div class="mission-featured-media" style="background-image:url('${esc(featured.imageUrl)}')"></div>` : ''}
             <div style="display:flex;align-items:flex-start;gap:14px">
               <div class="icon-tile" style="width:44px;height:44px;border-radius:12px">${ICONS.target}</div>
               <div style="flex:1;min-width:0">
@@ -491,7 +492,7 @@ function renderOverview() {
             <div class="tag-row">
               ${pill('Base ' + money(featured.baseReward), 'success')}
               ${pill('REP ' + featured.baseReputation, 'neon')}
-              ${featured.hasInterior ? pill('Interior', 'info') : ''}
+              ${featured.hasCompound ? pill('Laukas', 'info') : featured.hasInterior ? pill('Interior', 'info') : ''}
               ${pill(featured.category || 'universal')}
             </div>
             <div class="button-row">
@@ -646,12 +647,14 @@ function renderMissions() {
           const reward = Math.round((Number(mission.baseReward) || 0) * (Number(diffDef.rewardMultiplier) || 1));
           return `
             <article class="mission-card">
+              <div class="mission-card-media" style="background-image:url('${esc(mission.imageUrl || `images/missions/${mission.image || 'raid'}.png`)}')"></div>
+              <div class="mission-card-body">
               <div class="mission-card-head">
                 <div style="min-width:0">
                   <h3 style="font-size:14px">${esc(mission.label)}</h3>
                   <div class="tag-row" style="margin-top:6px">
                     ${pill(mission.category || 'universal', mission.category === 'universal' ? 'info' : 'neon')}
-                    ${mission.hasInterior ? pill('Interior') : ''}
+                    ${mission.hasCompound ? pill('Laukas') : mission.hasInterior ? pill('Interior') : ''}
                   </div>
                 </div>
                 ${iconTile(ICONS.target)}
@@ -669,6 +672,7 @@ function renderMissions() {
               <button class="button primary wide" data-action="start-mission" data-mission="${esc(mission.id)}" ${hasPermission('missions.start') ? '' : 'disabled'}>
                 ${ICONS.bolt}Pradėti operaciją
               </button>
+              </div>
             </article>`;
         }).join('') : empty('Misijų nėra', 'Šiuo metu visi kontraktai išjungti.')}
       </div>
@@ -2009,6 +2013,57 @@ function tickClock() {
 }
 
 /* ------------------------------------------------------------
+   MISSION PREP PROGRESS (bottom bar, jail-style)
+   ------------------------------------------------------------ */
+const missionProgressEl = document.getElementById('mission-progress');
+const missionProgressTitle = document.getElementById('mission-progress-title');
+const missionProgressTime = document.getElementById('mission-progress-time');
+const missionProgressFill = document.getElementById('mission-progress-fill');
+let missionProgressEndsAt = 0;
+let missionProgressDuration = 0;
+let missionProgressTimer = null;
+
+function renderMissionProgress() {
+  if (!missionProgressEndsAt || !missionProgressDuration) return;
+  const leftMs = Math.max(0, missionProgressEndsAt - Date.now());
+  const leftSec = Math.ceil(leftMs / 1000);
+  const done = 1 - leftMs / missionProgressDuration;
+  if (missionProgressTime) missionProgressTime.textContent = leftSec > 0 ? `${leftSec}s` : '0s';
+  if (missionProgressFill) missionProgressFill.style.width = `${Math.min(100, Math.max(0, done * 100))}%`;
+}
+
+function showMissionProgress(data) {
+  if (missionProgressTimer) {
+    clearInterval(missionProgressTimer);
+    missionProgressTimer = null;
+  }
+  missionProgressDuration = Math.max(1, Number(data.durationMs) || 5000);
+  missionProgressEndsAt = Date.now() + missionProgressDuration;
+  if (missionProgressTitle) missionProgressTitle.textContent = data.label || 'Ruošiama...';
+  if (missionProgressFill) missionProgressFill.style.width = '0%';
+  if (missionProgressEl) {
+    missionProgressEl.classList.remove('hidden');
+    missionProgressEl.setAttribute('aria-hidden', 'false');
+  }
+  renderMissionProgress();
+  missionProgressTimer = setInterval(renderMissionProgress, 100);
+}
+
+function hideMissionProgress() {
+  if (missionProgressTimer) {
+    clearInterval(missionProgressTimer);
+    missionProgressTimer = null;
+  }
+  missionProgressEndsAt = 0;
+  missionProgressDuration = 0;
+  if (missionProgressFill) missionProgressFill.style.width = '0%';
+  if (missionProgressEl) {
+    missionProgressEl.classList.add('hidden');
+    missionProgressEl.setAttribute('aria-hidden', 'true');
+  }
+}
+
+/* ------------------------------------------------------------
    NUI MESSAGE BRIDGE
    ------------------------------------------------------------ */
 window.addEventListener('message', (event) => {
@@ -2031,6 +2086,10 @@ window.addEventListener('message', (event) => {
     document.body.style.background = 'transparent';
     if (state.clockTimer) { clearInterval(state.clockTimer); state.clockTimer = null; }
     closeModal();
+  } else if (message.action === 'missionProgressShow') {
+    showMissionProgress(message);
+  } else if (message.action === 'missionProgressHide') {
+    hideMissionProgress();
   } else if (message.action === 'territoriesUpdated' && state.payload) {
     state.payload.territories = message.territories;
     if (state.page === 'territories') {

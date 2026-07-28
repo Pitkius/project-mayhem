@@ -1,7 +1,7 @@
 GangEncounters = GangEncounters or {}
 
 local archetypePools = {
-    easy = { 'lookout', 'patrol', 'patrol', 'guard' },
+    easy = { 'thug', 'cutter', 'brawler', 'thug' },
     medium = { 'patrol', 'guard', 'guard', 'rusher', 'suppressor' },
     hard = { 'guard', 'rusher', 'suppressor', 'marksman', 'armored' },
     extreme = { 'rusher', 'suppressor', 'marksman', 'armored', 'commander' },
@@ -14,8 +14,22 @@ local function partyThreatMultiplier(partySize)
     )
 end
 
+local function offsetSpawn(origin, offset)
+    if not origin or not offset then return nil end
+    local ox = offset.x or offset[1] or 0.0
+    local oy = offset.y or offset[2] or 0.0
+    local oz = offset.z or offset[3] or 0.0
+    local ow = offset.w or offset[4] or 0.0
+    return {
+        x = origin.x + ox,
+        y = origin.y + oy,
+        z = origin.z + oz,
+        w = ow,
+    }
+end
+
 local function outdoorSpawn(site, index, total)
-    local radius = 24.0 + ((index % 3) * 5.0)
+    local radius = 12.0 + ((index % 3) * 3.0)
     local angle = ((index - 1) / math.max(1, total)) * math.pi * 2.0
     return {
         x = site.x + math.cos(angle) * radius,
@@ -25,25 +39,57 @@ local function outdoorSpawn(site, index, total)
     }
 end
 
+local function pickGangPool(run)
+    local pools = Config.Encounter.gangModelPools or {}
+    local keys = {}
+    for key in pairs(pools) do
+        keys[#keys + 1] = key
+    end
+    table.sort(keys)
+    if #keys == 0 then
+        return Config.Encounter.defaultModels or { 'g_m_y_mexgoon_01' }, 'default'
+    end
+    local idx = (((tonumber(run.seed) or 1) + ((run.encounter and run.encounter.wave) or 1) * 17) % #keys) + 1
+    local key = keys[idx]
+    return pools[key], key
+end
+
 local function selectArchetypes(run, phase, budgetScale)
-    local difficulty = Config.Difficulties[run.difficulty]
+    local difficulty = Config.Difficulties[run.difficulty] or {}
     local budget = math.floor(
         (difficulty.threatBudget or 100)
         * partyThreatMultiplier(#run.participants)
         * (tonumber(budgetScale) or 1.0)
     )
     local cap = difficulty.maxActiveNpc or 6
-    if run.interiorKey then
+    if run.interiorKey and run.inInterior then
         local interior = Config.MissionInteriors[run.interiorKey]
         cap = math.min(cap, interior and interior.maxNpc or Config.Encounter.interiorActiveNpcCap or 12)
+    elseif run.compoundKey then
+        local compound = Config.MissionCompounds[run.compoundKey]
+        cap = math.min(cap, compound and compound.maxNpc or Config.Encounter.exteriorActiveNpcCap or 16)
     else
         cap = math.min(cap, Config.Encounter.exteriorActiveNpcCap or 16)
     end
+
+    if run.difficulty == 'easy' or difficulty.meleeOnly then
+        cap = math.min(cap, 2)
+    end
+
     if phase.encounter == 'search' then budget = math.floor(budget * 0.80) end
     if phase.encounter == 'defence' then budget = math.floor(budget * 1.15) end
 
     local pool = archetypePools[run.difficulty] or archetypePools.easy
     local selected = {}
+
+    if run.difficulty == 'easy' or difficulty.meleeOnly then
+        local count = math.random(difficulty.minNpc or 1, math.max(difficulty.minNpc or 1, math.min(2, cap)))
+        for _ = 1, count do
+            selected[#selected + 1] = pool[math.random(1, #pool)]
+        end
+        return selected
+    end
+
     local attempts = 0
     while budget >= 12 and #selected < cap and attempts < 100 do
         attempts = attempts + 1
@@ -54,7 +100,10 @@ local function selectArchetypes(run, phase, budgetScale)
             budget = budget - definition.cost
         end
     end
-    while #selected < math.min(3, cap) do selected[#selected + 1] = 'patrol' end
+    local minCount = math.min(difficulty.minNpc or 3, cap)
+    while #selected < minCount do
+        selected[#selected + 1] = pool[1] or 'patrol'
+    end
     return selected
 end
 
@@ -87,14 +136,19 @@ local function spawnWave(run)
     encounter.looted = encounter.looted or {}
     local waveScale = encounter.wave == 1 and 1.0 or 0.65
     local archetypes = selectArchetypes(run, encounter.phase, waveScale)
-    local interior = run.interiorKey and Config.MissionInteriors[run.interiorKey]
-    local models = Config.Encounter.defaultModels
+    local interior = run.inInterior and run.interiorKey and Config.MissionInteriors[run.interiorKey]
+    local compound = (not run.inInterior) and run.compoundKey and Config.MissionCompounds[run.compoundKey]
+    local models, gangKey = pickGangPool(run)
+    encounter.gangKey = gangKey
     local encounterBucket = run.inInterior and run.bucketId or 0
 
     for index, archetype in ipairs(archetypes) do
         local spawn
         if interior and interior.enemySpawns and #interior.enemySpawns > 0 then
             spawn = GangUtils.CoordsToTable(interior.enemySpawns[((index - 1) % #interior.enemySpawns) + 1])
+        elseif compound and compound.enemySpawns and #compound.enemySpawns > 0 then
+            local offset = compound.enemySpawns[((index - 1) % #compound.enemySpawns) + 1]
+            spawn = offsetSpawn(run.site, offset)
         else
             spawn = outdoorSpawn(run.site, index, #archetypes)
         end
@@ -103,20 +157,26 @@ local function spawnWave(run)
         if ped and ped ~= 0 then
             SetEntityRoutingBucket(ped, encounterBucket)
             GangUtils.SetEntityOrphanMode(ped, 2)
-            local definition = Config.Encounter.archetypes[archetype]
-            local weapon = definition.weapon or 'WEAPON_PISTOL'
+            local definition = Config.Encounter.archetypes[archetype] or {}
+            local weapon = definition.weapon or 'WEAPON_BAT'
+            if (run.difficulty == 'easy' or (Config.Difficulties[run.difficulty] or {}).meleeOnly) and not definition.melee then
+                weapon = 'WEAPON_BAT'
+            end
             SetPedArmour(ped, tonumber(definition.armor) or 0)
             Entity(ped).state:set('mrpGangMissionRun', run.token, true)
             Entity(ped).state:set('mrpGangArchetype', archetype, true)
             Entity(ped).state:set('mrpGangEncounterWave', encounter.wave, true)
             Entity(ped).state:set('mrpGangWeapon', weapon, true)
+            Entity(ped).state:set('mrpGangFaction', gangKey, true)
             encounter.entities[#encounter.entities + 1] = ped
             local netId = NetworkGetNetworkIdFromEntity(ped)
             local entry = {
                 networkId = netId,
                 archetype = archetype,
                 weapon = weapon,
-                accuracy = definition.accuracy,
+                accuracy = definition.accuracy or 20,
+                melee = definition.melee == true or run.difficulty == 'easy',
+                gangKey = gangKey,
             }
             encounter.networkIds[#encounter.networkIds + 1] = entry
             run.corpseRegistry = run.corpseRegistry or {}
@@ -241,7 +301,7 @@ function GangEncounters.TryLootCorpse(source, run, networkId)
 
     local weapon = meta.weapon
         or (Entity(entity).state and Entity(entity).state.mrpGangWeapon)
-        or 'WEAPON_PISTOL'
+        or 'WEAPON_BAT'
     local drops = GangEconomy.RollCorpseLoot(run.difficulty, weapon, meta.archetype)
     local ok, granted = GangEconomy.GrantCorpseLoot(source, run, drops)
     if not ok then

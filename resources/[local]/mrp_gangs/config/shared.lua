@@ -49,12 +49,15 @@ Config.Difficulties = {
         recommendedMin = 1,
         recommendedMax = 2,
         rewardMultiplier = 1.00,
-        threatBudget = 100,
-        maxActiveNpc = 6,
+        -- Easy: 1–2 melee thugs only (no gunfight army).
+        threatBudget = 36,
+        maxActiveNpc = 2,
+        minNpc = 1,
         lootRolls = 2,
         setupCost = 0,
         minDurationSec = 180,
-        dispatchChance = 15,
+        dispatchChance = 8,
+        meleeOnly = true,
     },
     medium = {
         label = 'Medium',
@@ -63,6 +66,7 @@ Config.Difficulties = {
         rewardMultiplier = 1.45,
         threatBudget = 170,
         maxActiveNpc = 9,
+        minNpc = 3,
         lootRolls = 3,
         setupCost = 500,
         minDurationSec = 360,
@@ -75,6 +79,7 @@ Config.Difficulties = {
         rewardMultiplier = 2.10,
         threatBudget = 260,
         maxActiveNpc = 12,
+        minNpc = 4,
         lootRolls = 4,
         setupCost = 1500,
         minDurationSec = 600,
@@ -87,6 +92,7 @@ Config.Difficulties = {
         rewardMultiplier = 3.00,
         threatBudget = 380,
         maxActiveNpc = 12,
+        minNpc = 5,
         lootRolls = 5,
         setupCost = 3500,
         minDurationSec = 900,
@@ -116,15 +122,36 @@ Config.Encounter = {
     interiorActiveNpcCap = 12,
     reinforcementDelaySec = 20,
     corpseCleanupSec = 45,
+    -- Fallback only; live spawns pick one gang pool per wave (never mixed).
     defaultModels = {
         'g_m_y_mexgoon_01',
         'g_m_y_mexgoon_02',
-        'g_m_y_lost_01',
-        'g_m_y_lost_02',
-        'g_m_y_ballaeast_01',
-        'g_m_y_famca_01',
+        'g_m_y_mexgoon_03',
+    },
+    -- One gang identity per encounter wave — all NPCs share the same pool.
+    gangModelPools = {
+        vagos = {
+            'g_m_y_mexgoon_01',
+            'g_m_y_mexgoon_02',
+            'g_m_y_mexgoon_03',
+        },
+        ballas = {
+            'g_m_y_ballaeast_01',
+            'g_m_y_ballaorig_01',
+            'g_m_y_ballasout_01',
+        },
+        families = {
+            'g_m_y_famca_01',
+            'g_m_y_famdnf_01',
+            'g_m_y_famfor_01',
+        },
     },
     archetypes = {
+        -- Easy melee thugs (cold weapons only).
+        thug = { cost = 14, armor = 0, weapon = 'WEAPON_BAT', accuracy = 18, melee = true },
+        cutter = { cost = 16, armor = 0, weapon = 'WEAPON_KNIFE', accuracy = 22, melee = true },
+        brawler = { cost = 18, armor = 0, weapon = 'WEAPON_BOTTLE', accuracy = 20, melee = true },
+        -- Armed archetypes (medium+).
         lookout = { cost = 12, armor = 0, weapon = 'WEAPON_PISTOL', accuracy = 22 },
         patrol = { cost = 16, armor = 0, weapon = 'WEAPON_COMBATPISTOL', accuracy = 28 },
         guard = { cost = 22, armor = 20, weapon = 'WEAPON_MICROSMG', accuracy = 34 },

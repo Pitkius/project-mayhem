@@ -25,6 +25,47 @@ local actionPhaseTypes = {
     capture = true,
 }
 
+-- Approach auto-confirms on marker; enter/exit/extract use E at checkpoint (no qb-target arrival).
+local autoCompletePhaseTypes = {
+    approach = true,
+}
+
+local promptPhaseTypes = {
+    enter = true,
+    exit = true,
+    extract = true,
+    vehicle = true,
+    checkpoint_run = true,
+}
+
+local showEnterPrompt = false
+local prepProgressActive = false
+
+local function nuiMission(payload)
+    SendNUIMessage(payload)
+end
+
+local function hidePrepProgress()
+    if not prepProgressActive then return end
+    prepProgressActive = false
+    nuiMission({ action = 'missionProgressHide' })
+end
+
+local function showPrepProgress(label, durationMs)
+    prepProgressActive = true
+    nuiMission({
+        action = 'missionProgressShow',
+        label = label or 'Ruošiama...',
+        durationMs = tonumber(durationMs) or 5000,
+    })
+end
+
+local function drawHelpText(text)
+    BeginTextCommandDisplayHelp('STRING')
+    AddTextComponentSubstringPlayerName(text)
+    EndTextCommandDisplayHelp(0, false, false, -1)
+end
+
 local function hasTarget()
     return GetResourceState('qb-target') == 'started'
 end
@@ -201,33 +242,48 @@ local function interactWithObjective()
     QBCore.Functions.TriggerCallback('mrp_gangs:server:beginObjective', function(response)
         if not response or not response.ok then
             objectiveBusy = false
+            hidePrepProgress()
             return GangClient.Notify(GangClient.Reason(response and response.reason), 'error')
         end
         local action = response.result
-        QBCore.Functions.Progressbar(
-            ('gang_mission_%s_%s'):format(activeMission.token, activePhase.phaseIndex),
-            phase.label or 'Vykdoma operacija...',
-            tonumber(action.durationMs) or tonumber(phase.durationMs) or 5000,
-            false,
-            true,
-            {
-                disableMovement = true,
-                disableCarMovement = true,
-                disableMouse = false,
-                disableCombat = true,
-            },
-            { animDict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@', anim = 'machinic_loop_mechandplayer', flags = 49 },
-            {},
-            {},
-            function()
-                objectiveBusy = false
-                completeObjective({ actionToken = action.actionToken })
-            end,
-            function()
-                objectiveBusy = false
-                GangClient.Notify('Veiksmas nutrauktas.', 'error')
+        local duration = tonumber(action.durationMs) or tonumber(phase.durationMs) or 5000
+        showPrepProgress(phase.label or 'Vykdoma operacija...', duration)
+
+        local ped = PlayerPedId()
+        local animDict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@'
+        local animName = 'machinic_loop_mechandplayer'
+        RequestAnimDict(animDict)
+        local animTimeout = GetGameTimer() + 2000
+        while not HasAnimDictLoaded(animDict) and GetGameTimer() < animTimeout do Wait(10) end
+        if HasAnimDictLoaded(animDict) then
+            TaskPlayAnim(ped, animDict, animName, 2.0, 2.0, duration, 49, 0.0, false, false, false)
+        end
+
+        local endsAt = GetGameTimer() + duration
+        CreateThread(function()
+            while objectiveBusy and GetGameTimer() < endsAt do
+                DisableControlAction(0, 30, true)
+                DisableControlAction(0, 31, true)
+                DisableControlAction(0, 21, true)
+                DisableControlAction(0, 22, true)
+                DisableControlAction(0, 24, true)
+                DisableControlAction(0, 25, true)
+                DisableControlAction(0, 37, true)
+                if IsControlJustReleased(0, 200) or IsControlJustReleased(0, 194) then
+                    ClearPedTasks(ped)
+                    hidePrepProgress()
+                    objectiveBusy = false
+                    GangClient.Notify('Veiksmas nutrauktas.', 'error')
+                    return
+                end
+                Wait(0)
             end
-        )
+            if not objectiveBusy then return end
+            ClearPedTasks(ped)
+            hidePrepProgress()
+            objectiveBusy = false
+            completeObjective({ actionToken = action.actionToken })
+        end)
     end, activeMission.token, activePhase.phaseIndex)
 end
 
@@ -260,10 +316,12 @@ end)
 
 RegisterNetEvent('mrp_gangs:client:missionPhase', function(data)
     if not activeMission or data.runToken ~= activeMission.token then return end
+    hidePrepProgress()
     activePhase = data
     activePhase.receivedAt = GetGameTimer()
     objectiveBusy = false
-    nextAutomaticCheck = GetGameTimer() + 3000
+    showEnterPrompt = false
+    nextAutomaticCheck = GetGameTimer() + 1500
     setObjectiveBlip(data.target, data.phase.label)
     refreshObjectiveTarget()
     GangClient.Notify(('[%s/%s] %s'):format(data.phaseIndex, data.phaseCount, data.phase.label), 'primary', 7000)
@@ -279,6 +337,15 @@ RegisterNetEvent('mrp_gangs:client:leaveMissionInterior', function(token, coords
     if not activeMission or token ~= activeMission.token then return end
     safeTeleport(coords)
     missionReturnCoords = nil
+end)
+
+RegisterNetEvent('mrp_gangs:client:enterMissionCompound', function(token, _compoundKey)
+    if not activeMission or token ~= activeMission.token then return end
+    GangClient.Notify('Zona aktyvi — dirbk objektų zonoje.', 'primary', 5000)
+end)
+
+RegisterNetEvent('mrp_gangs:client:leaveMissionCompound', function(token)
+    if not activeMission or token ~= activeMission.token then return end
 end)
 
 RegisterNetEvent('mrp_gangs:client:missionLeaderChanged', function(citizenid, displayName)
@@ -430,15 +497,21 @@ refreshObjectiveTarget = function()
     clearObjectiveTarget()
     if not hasTarget() or not activeMission or not activePhase or not activePhase.target then return end
     local phase = activePhase.phase
-    if not phase or phase.type == 'eliminate' or phase.type == 'defend' then return end
+    if not phase then return end
+    -- Arrival / enter / exit / extract / vehicle: marker checkpoints only (no qb-target confirm).
+    if autoCompletePhaseTypes[phase.type]
+        or promptPhaseTypes[phase.type]
+        or phase.type == 'eliminate'
+        or phase.type == 'defend' then
+        return
+    end
+    if not actionPhaseTypes[phase.type] then return end
 
     local target = activePhase.target
-    local radius = phase.type == 'checkpoint_run' and 4.0 or 1.85
-    local distance = phase.type == 'checkpoint_run' and 5.0 or 2.4
     exports['qb-target']:AddCircleZone(
         OBJECTIVE_ZONE,
         vector3(target.x + 0.0, target.y + 0.0, target.z + 0.0),
-        radius,
+        1.85,
         { name = OBJECTIVE_ZONE, useZ = true, debugPoly = false },
         {
             options = {
@@ -455,7 +528,7 @@ refreshObjectiveTarget = function()
                     end,
                 },
             },
-            distance = distance,
+            distance = 2.4,
         }
     )
 end
@@ -491,11 +564,13 @@ end
 
 RegisterNetEvent('mrp_gangs:client:missionFinished', function(result)
     if activeMission and result.summary and result.summary.token ~= activeMission.token then return end
+    hidePrepProgress()
     removeObjectiveBlip()
     clearMissionTargets()
     activePhase = nil
     activeMission = nil
     missionReturnCoords = nil
+    showEnterPrompt = false
     clearMissionCargo()
     objectiveBusy = false
     corpseBusy = false
@@ -552,7 +627,13 @@ RegisterNetEvent('mrp_gangs:client:configureEncounter', function(token, networkE
                     SetPedSeeingRange(ped, 80.0)
                     SetPedHearingRange(ped, 60.0)
                     SetPedAccuracy(ped, tonumber(data.accuracy) or 25)
-                    GiveWeaponToPed(ped, joaat(data.weapon or 'WEAPON_PISTOL'), 180, false, true)
+                    local weaponName = data.weapon or 'WEAPON_BAT'
+                    local ammo = data.melee and 1 or 180
+                    GiveWeaponToPed(ped, joaat(weaponName), ammo, false, true)
+                    if data.melee or activeMission.difficulty == 'easy' then
+                        SetPedCombatAttributes(ped, 46, true)
+                        SetPedCombatRange(ped, 0)
+                    end
                     TaskCombatHatedTargetsAroundPed(ped, 100.0, 0)
                 end
             end
@@ -586,8 +667,9 @@ CreateThread(function()
             if drawingMission then
                 local target = activePhase.target
                 local playerCoords = GetEntityCoords(PlayerPedId())
-                local distance = #(playerCoords - vector3(target.x, target.y, target.z))
-                local phaseType = activePhase.phase.type
+                local distance = #(playerCoords - vector3(target.x + 0.0, target.y + 0.0, target.z + 0.0))
+                local phase = activePhase.phase
+                local phaseType = phase.type
                 local markerZ = target.z
                 if phaseType == 'checkpoint_run' then
                     local dx = playerCoords.x - target.x
@@ -596,15 +678,60 @@ CreateThread(function()
                     markerZ = playerCoords.z
                 end
 
-                if distance < 80.0 and phaseType ~= 'eliminate' and phaseType ~= 'defend' then
-                    DrawMarker(2, target.x, target.y, markerZ + 0.35, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0,
-                        0.35, 0.35, 0.35, 220, 60, 60, 180, false, true, 2, false, nil, nil, false)
+                local showMarker = phaseType ~= 'eliminate' and phaseType ~= 'defend'
+                if showMarker and distance < 80.0 then
+                    -- Ground cylinder checkpoint for approach / enter
+                    if autoCompletePhaseTypes[phaseType] or phaseType == 'enter' then
+                        DrawMarker(
+                            1,
+                            target.x, target.y, markerZ - 0.95,
+                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                            2.2, 2.2, 0.55,
+                            220, 70, 70, 140,
+                            false, false, 2, false, nil, nil, false
+                        )
+                        DrawMarker(
+                            2,
+                            target.x, target.y, markerZ + 0.55,
+                            0.0, 0.0, 0.0, 0.0, 180.0, 0.0,
+                            0.35, 0.35, 0.35,
+                            220, 70, 70, 200,
+                            false, true, 2, false, nil, nil, false
+                        )
+                    else
+                        DrawMarker(2, target.x, target.y, markerZ + 0.35, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0,
+                            0.35, 0.35, 0.35, 220, 60, 60, 180, false, true, 2, false, nil, nil, false)
+                    end
                 end
 
-                if (phaseType == 'eliminate' or phaseType == 'defend')
-                    and GetGameTimer() >= nextAutomaticCheck and not objectiveBusy and not corpseBusy then
-                    nextAutomaticCheck = GetGameTimer() + 4000
-                    completeObjective({})
+                if not objectiveBusy and not corpseBusy and GetGameTimer() >= nextAutomaticCheck then
+                    if autoCompletePhaseTypes[phaseType] and distance <= 10.0 then
+                        nextAutomaticCheck = GetGameTimer() + 2500
+                        completeObjective({})
+                    elseif (phaseType == 'eliminate' or phaseType == 'defend') then
+                        nextAutomaticCheck = GetGameTimer() + 4000
+                        completeObjective({})
+                    elseif promptPhaseTypes[phaseType] then
+                        local radius = phaseType == 'checkpoint_run' and 16.0
+                            or (phaseType == 'extract' and 10.0)
+                            or 3.2
+                        if distance <= radius then
+                            local prompt = phaseType == 'enter'
+                                and (activePhase.entryPrompt or 'Eik į vidų')
+                                or (phase.label or 'Tęsti')
+                            drawHelpText(('~INPUT_CONTEXT~ %s'):format(prompt))
+                            if IsControlJustReleased(0, 38) then
+                                nextAutomaticCheck = GetGameTimer() + 2000
+                                interactWithObjective()
+                            end
+                        end
+                    elseif actionPhaseTypes[phaseType] and distance <= 2.6 then
+                        drawHelpText(('~INPUT_CONTEXT~ %s'):format(phase.label or 'Vykdyti'))
+                        if IsControlJustReleased(0, 38) then
+                            nextAutomaticCheck = GetGameTimer() + 1500
+                            interactWithObjective()
+                        end
+                    end
                 end
             end
             Wait(0)
@@ -614,6 +741,7 @@ end)
 
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
+    hidePrepProgress()
     removeObjectiveBlip()
     clearMissionCargo()
     clearMissionTargets()

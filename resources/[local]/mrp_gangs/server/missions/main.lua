@@ -153,10 +153,48 @@ local function isContestable(run, phase)
     local cfg = Config.MissionContest
     if not cfg or cfg.enabled ~= true or not phase then return false end
     if phase.contested ~= true then return false end
-    if run.inInterior then return false end
-    if phase.objectiveIndex and run.interiorKey then return false end
+    if run.inInterior or run.inCompound then return false end
+    if phase.objectiveIndex and (run.interiorKey or run.compoundKey) then return false end
     local allowed = cfg.contestablePhaseTypes or {}
     return allowed[phase.type] == true
+end
+
+local function clearCompoundProps(run)
+    if not run or not run.compoundProps then return end
+    for _, entity in ipairs(run.compoundProps) do
+        if entity and entity ~= 0 and DoesEntityExist(entity) then
+            DeleteEntity(entity)
+        end
+    end
+    run.compoundProps = nil
+end
+
+local function spawnCompoundProps(run)
+    clearCompoundProps(run)
+    local compound = run.compoundKey and Config.MissionCompounds[run.compoundKey]
+    if not compound or not compound.props or not run.site then return end
+    run.compoundProps = {}
+    for _, prop in ipairs(compound.props) do
+        local model = joaat(prop.model)
+        local ox = (prop.offset and prop.offset.x) or 0.0
+        local oy = (prop.offset and prop.offset.y) or 0.0
+        local oz = (prop.offset and prop.offset.z) or 0.0
+        local obj = CreateObject(
+            model,
+            run.site.x + ox,
+            run.site.y + oy,
+            run.site.z + oz,
+            true,
+            true,
+            false
+        )
+        if obj and obj ~= 0 then
+            SetEntityHeading(obj, prop.heading or (run.site.w or 0.0))
+            FreezeEntityPosition(obj, true)
+            GangUtils.SetEntityOrphanMode(obj, 2)
+            run.compoundProps[#run.compoundProps + 1] = obj
+        end
+    end
 end
 
 local function contestClientPayload(contest)
@@ -246,6 +284,7 @@ end
 local function clearRun(run)
     clearContest(run.token)
     GangEncounters.Cleanup(run)
+    clearCompoundProps(run)
     if run.missionTargetEntity and DoesEntityExist(run.missionTargetEntity) then
         DeleteEntity(run.missionTargetEntity)
     end
@@ -486,35 +525,48 @@ local function advancePhase(run, source, payload)
             source
         )
     elseif phase.type == 'enter' then
-        local interior = Config.MissionInteriors[run.interiorKey]
-        if not interior then return false, 'interior_missing' end
-        run.inInterior = true
-        setPartyBucket(run, run.bucketId)
-        broadcast(
-            run,
-            'mrp_gangs:client:enterMissionInterior',
-            run.token,
-            GangUtils.CoordsToTable(interior.entry),
-            run.site
-        )
-    elseif phase.type == 'exit' then
-        run.inInterior = false
-        GangEncounters.Cleanup(run)
-        setPartyBucket(run, 0)
-        if run.missionTargetEntity and DoesEntityExist(run.missionTargetEntity) then
-            SetEntityRoutingBucket(run.missionTargetEntity, 0)
-            SetEntityCoords(
-                run.missionTargetEntity,
-                run.site.x + 2.0,
-                run.site.y + 2.0,
-                run.site.z,
-                false,
-                false,
-                false,
-                false
+        if run.compoundKey and Config.MissionCompounds[run.compoundKey] then
+            run.inCompound = true
+            run.inInterior = false
+            spawnCompoundProps(run)
+            broadcast(run, 'mrp_gangs:client:enterMissionCompound', run.token, run.compoundKey)
+        else
+            local interior = Config.MissionInteriors[run.interiorKey]
+            if not interior then return false, 'interior_missing' end
+            run.inInterior = true
+            run.inCompound = false
+            setPartyBucket(run, run.bucketId)
+            broadcast(
+                run,
+                'mrp_gangs:client:enterMissionInterior',
+                run.token,
+                GangUtils.CoordsToTable(interior.entry),
+                run.site
             )
         end
-        broadcast(run, 'mrp_gangs:client:leaveMissionInterior', run.token, run.site)
+    elseif phase.type == 'exit' then
+        GangEncounters.Cleanup(run)
+        if run.inInterior then
+            run.inInterior = false
+            setPartyBucket(run, 0)
+            if run.missionTargetEntity and DoesEntityExist(run.missionTargetEntity) then
+                SetEntityRoutingBucket(run.missionTargetEntity, 0)
+                SetEntityCoords(
+                    run.missionTargetEntity,
+                    run.site.x + 2.0,
+                    run.site.y + 2.0,
+                    run.site.z,
+                    false,
+                    false,
+                    false,
+                    false
+                )
+            end
+            broadcast(run, 'mrp_gangs:client:leaveMissionInterior', run.token, run.site)
+        else
+            run.inCompound = false
+            broadcast(run, 'mrp_gangs:client:leaveMissionCompound', run.token)
+        end
         if run.missionTargetNetworkId then
             broadcast(
                 run,
@@ -621,7 +673,7 @@ function GangMissions.Start(source, missionKey, difficulty)
         bucketId,
         gang.citizenid,
         json.encode({ site = site, extraction = extraction }),
-        mission.interior,
+        (not mission.compound) and mission.interior or nil,
     })
 
     if not dbId then
@@ -646,7 +698,8 @@ function GangMissions.Start(source, missionKey, difficulty)
         leaderCitizenId = gang.citizenid,
         site = site,
         extraction = extraction,
-        interiorKey = mission.interior,
+        interiorKey = (not mission.compound) and mission.interior or nil,
+        compoundKey = mission.compound,
         vehicleModel = mission.vehicleModel,
         phases = GangUtils.Copy(mission.phases),
         phaseIndex = 1,
@@ -654,6 +707,7 @@ function GangMissions.Start(source, missionKey, difficulty)
         startedAt = os.time(),
         participants = {},
         inInterior = false,
+        inCompound = false,
         settled = false,
     }
 
@@ -742,6 +796,8 @@ local function boardFor(source)
     local missions = {}
     for key, mission in pairs(Config.Missions) do
         if missionAllowed(mission, gang.gang_type) then
+            local imageKey = mission.image or 'raid'
+            local imageFile = (Config.MissionImages and Config.MissionImages[imageKey]) or (imageKey .. '.png')
             missions[#missions + 1] = {
                 id = key,
                 label = mission.label,
@@ -751,6 +807,9 @@ local function boardFor(source)
                 baseReputation = mission.baseReputation,
                 difficulties = mission.allowedDifficulties,
                 hasInterior = mission.interior ~= nil,
+                hasCompound = mission.compound ~= nil,
+                image = imageKey,
+                imageUrl = ('nui://%s/html/images/missions/%s'):format(GetCurrentResourceName(), imageFile),
             }
         end
     end

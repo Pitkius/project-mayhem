@@ -32,6 +32,9 @@ local function validateContent()
         if mission.interior and not Config.MissionInteriors[mission.interior] then
             errors[#errors + 1] = key .. ': invalid interior'
         end
+        if mission.compound and not Config.MissionCompounds[mission.compound] then
+            errors[#errors + 1] = key .. ': invalid compound'
+        end
         if (tonumber(mission.baseReward) or 0) <= 0 then errors[#errors + 1] = key .. ': invalid reward' end
         if (tonumber(mission.baseReputation) or 0) <= 0 then errors[#errors + 1] = key .. ': invalid reputation' end
         if not mission.phases or #mission.phases < 3 then errors[#errors + 1] = key .. ': too few phases' end
@@ -39,8 +42,8 @@ local function validateContent()
             if not validPhaseTypes[phase.type] then
                 errors[#errors + 1] = ('%s: invalid phase %s at %s'):format(key, tostring(phase.type), index)
             end
-            if phase.objectiveIndex and not mission.interior then
-                errors[#errors + 1] = ('%s: interior objective without interior at %s'):format(key, index)
+            if phase.objectiveIndex and not mission.interior and not mission.compound then
+                errors[#errors + 1] = ('%s: objective without interior/compound at %s'):format(key, index)
             end
         end
         for _, difficulty in ipairs(mission.allowedDifficulties or {}) do

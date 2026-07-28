@@ -1,34 +1,63 @@
 Config = Config or {}
 
-Config.ReloadTime = 2400
+--- Tik native GTA reload sesijos apsaugos; jos nekeičia animacijos trukmės ar judėjimo.
+Config.NativeReloadStartTimeout = 900
+Config.NativeReloadTimeout = 6500
 
---- true = stovint naudoti GTA native perkrovą (apkaba + garsas). Judant — custom anim + garsas.
-Config.ReloadUseNativeFirst = true
+--- Vienodas clip limitas klientui ir serveriui. Attachment talpos pritaikomos žemiau.
+Config.StandardClipCapacity = {
+    weapon_minismg = 12,
+    weapon_machinepistol = 12,
+    weapon_microsmg = 16,
+    weapon_smg = 30,
+    weapon_smg_mk2 = 30,
+    weapon_assaultsmg = 30,
+    weapon_combatpdw = 30,
+    weapon_pistol = 12,
+    weapon_combatpistol = 12,
+    weapon_fgc9 = 12,
+    weapon_appistol = 18,
+    weapon_assaultrifle = 30,
+    weapon_carbinerifle = 30,
+    weapon_advancedrifle = 30,
+    weapon_specialcarbine = 30,
+    weapon_bullpuprifle = 30,
+    weapon_compactrifle = 30,
+    weapon_militaryrifle = 30,
+    weapon_heavyrifle = 30,
+}
 
---- Inventoriaus perkrovos vizualinė animacija (kulkos kraunamos po animacijos).
-Config.ReloadVisualTime = 0
-
---- true = galima bėgti/judėti perkraunant (viršutinė kūno animacija).
-Config.ReloadAllowMovement = true
-
---- Judėjimo greitis perkrovos metu (1.0 = normalu, mažesnis = šiek tiek lėčiau, bet ne freeze).
-Config.ReloadMoveRate = 0.72
+Config.DefaultClipCapacityByAmmoType = {
+    AMMO_PISTOL = 12,
+    AMMO_SMG = 30,
+    AMMO_RIFLE = 30,
+    AMMO_SHOTGUN = 8,
+    AMMO_MUSKET = 1,
+    AMMO_MG = 50,
+    AMMO_SNIPER = 10,
+    AMMO_EMPLAUNCHER = 10,
+}
 
 --[[
-  Recoil: client/recoil.lua kelia kamerą + šoninį išsisklaidymą.
+  Recoil: client/recoil.lua kelia kamerą (tik aukštyn). Bloom / išsisklaidymas išjungtas —
+  kulka visada skrenda į taikiklį; recoil tik pakelia ginklą/kamerą po šūvio.
   RecoilMultiplier – bendras vertikalus stiprinimas.
   RecoilBaseScale – papildomas daugiklis bazinėms reikšmėms (recoils lentelė).
-  RecoilShakeAmplitude – GTA ginklo drebulė (0 = be native drebulės; ~1.0+ aiškiai juntama).
-  RecoilHorizontalSpread – atsitiktinis krypties „išsisklaidymas“ (0–1, ~0.4–0.5 RP).
-  RecoilPitchVariance – papildomas vertikalus jitter kiekvienam šūviui.
+  RecoilShakeAmplitude – GTA native ginklo drebulė (maža reikšmė = švelnus shake).
+  RecoilCamShake – ShakeGameplayCam intensyvumas po šūvio (0 = išjungta).
+  RecoilHorizontalSpread – šoninis atsitiktinis kick (0 = nėra nukrypimo).
+  RecoilPitchVariance – vertikalus jitter (0 = tik švarus kilimas).
+  ZeroWeaponBloom – SetWeaponAccuracySpread(0) kiekvienam ginklui.
 ]]
-Config.RecoilMultiplier = 5.25
-Config.RecoilBaseScale = 1.02
-Config.RecoilShakeAmplitude = 0.98
-Config.RecoilHorizontalSpread = 0.40
-Config.RecoilPitchVariance = 0.078
+Config.RecoilMultiplier = 13.6
+Config.RecoilBaseScale = 1.38
+Config.RecoilShakeAmplitude = 0.14
+Config.RecoilCamShake = 0.032
+Config.RecoilHorizontalSpread = 0.0
+Config.RecoilPitchVariance = 0.0
+Config.ZeroWeaponBloom = true
 --- Jei ginklas recoils lentelėje turi 0 arba beveik 0 – vis tiek šiek tiek spyris (ne „lazeris“).
-Config.RecoilMinimumBase = 0.17
+Config.RecoilMinimumBase = 0.30
 
 --[[
   Ginklo žalos daugiklis (client/damage.lua → SetWeaponDamageModifier).
@@ -57,6 +86,8 @@ Config.DefaultBulletDamage = {}
 --- Inventoriaus ginklas → GTA native hash (replace/stream modai be atskiro WEAPON_ entry).
 Config.WeaponNativeHash = {
     weapon_fgc9 = 'weapon_combatpistol',
+    weapon_tacticalsmg = 'weapon_tecpistol',
+    weapon_servicecarbine = 'weapon_tacticalrifle',
 }
 
 Config.DurabilityBlockedWeapons = {

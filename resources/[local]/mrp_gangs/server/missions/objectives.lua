@@ -37,6 +37,24 @@ local function near2D(source, target, maxDistance)
     return GangUtils.Distance2D(current, target) <= (maxDistance or 5.0)
 end
 
+local function applyOffset(origin, offset)
+    if not origin or not offset then return origin end
+    local ox = offset.x or offset[1] or 0.0
+    local oy = offset.y or offset[2] or 0.0
+    local oz = offset.z or offset[3] or 0.0
+    local ow = offset.w or offset[4]
+    return {
+        x = origin.x + ox,
+        y = origin.y + oy,
+        z = origin.z + oz,
+        w = ow or origin.w or 0.0,
+    }
+end
+
+local function compoundData(run)
+    return run.compoundKey and Config.MissionCompounds[run.compoundKey] or nil
+end
+
 function GangObjectives.Begin(run, phase, source)
     if not actionPhaseTypes[phase.type] then return false, 'objective_does_not_require_begin' end
     local target = GangObjectives.GetTarget(run, phase)
@@ -93,19 +111,43 @@ local function makeCheckpoints(run, count)
 end
 
 function GangObjectives.GetTarget(run, phase)
-    if phase.type == 'approach' or phase.location == 'site' or phase.type == 'enter' or phase.type == 'vehicle' then
+    local compound = compoundData(run)
+    if phase.type == 'approach' or phase.location == 'site' or phase.type == 'vehicle' then
+        return run.site
+    end
+    if phase.type == 'enter' then
+        if compound and compound.entryOffset then
+            return applyOffset(run.site, compound.entryOffset)
+        end
         return run.site
     end
     if phase.type == 'extract' then return run.extraction end
 
     local interior = run.interiorKey and Config.MissionInteriors[run.interiorKey]
-    if phase.type == 'exit' and interior then return GangUtils.CoordsToTable(interior.exit) end
-    if phase.objectiveIndex and interior then
-        local coords = interior.objective[tonumber(phase.objectiveIndex)]
-        return GangUtils.CoordsToTable(coords)
+    if phase.type == 'exit' then
+        if run.inInterior and interior then
+            return GangUtils.CoordsToTable(interior.exit)
+        end
+        if compound and compound.exitOffset then
+            return applyOffset(run.site, compound.exitOffset)
+        end
+        return run.site
+    end
+    if phase.objectiveIndex then
+        if run.inInterior and interior then
+            local coords = interior.objective[tonumber(phase.objectiveIndex)]
+            return GangUtils.CoordsToTable(coords)
+        end
+        if compound and compound.objective then
+            local offset = compound.objective[tonumber(phase.objectiveIndex)]
+            return applyOffset(run.site, offset)
+        end
     end
     if phase.type == 'eliminate' or phase.type == 'defend' then
-        return interior and GangUtils.CoordsToTable(interior.entry) or run.site
+        if run.inInterior and interior then
+            return GangUtils.CoordsToTable(interior.entry)
+        end
+        return run.site
     end
     if phase.type == 'checkpoint_run' then
         run.checkpoints = run.checkpoints or makeCheckpoints(run, phase.checkpointCount)
@@ -116,6 +158,7 @@ function GangObjectives.GetTarget(run, phase)
 end
 
 function GangObjectives.BuildClientPhase(run, phase)
+    local compound = compoundData(run)
     return {
         runToken = run.token,
         missionKey = run.missionKey,
@@ -127,6 +170,9 @@ function GangObjectives.BuildClientPhase(run, phase)
         checkpointIndex = run.checkpointIndex,
         checkpointCount = run.checkpoints and #run.checkpoints or nil,
         interiorKey = run.interiorKey,
+        compoundKey = run.compoundKey,
+        inCompound = run.inCompound == true,
+        entryPrompt = compound and compound.entryPrompt or 'Eik į vidų',
         bucketId = run.bucketId,
     }
 end
@@ -150,11 +196,12 @@ function GangObjectives.Validate(run, phase, source, payload)
     end
 
     if phase.type == 'approach' then
-        return near(source, run.site, 10.0), 'not_at_approach'
+        return near(source, run.site, 12.0), 'not_at_approach'
     end
 
     if phase.type == 'enter' then
-        return near(source, run.site, 7.0), 'not_at_entry'
+        local target = GangObjectives.GetTarget(run, phase)
+        return near(source, target, 8.0), 'not_at_entry'
     end
 
     if actionPhaseTypes[phase.type] then
@@ -200,7 +247,7 @@ function GangObjectives.Validate(run, phase, source, payload)
 
     if phase.type == 'exit' then
         local target = GangObjectives.GetTarget(run, phase)
-        return near(source, target, 5.0), 'not_at_exit'
+        return near(source, target, 8.0), 'not_at_exit'
     end
 
     if phase.type == 'extract' then

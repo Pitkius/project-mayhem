@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'mrp_lt_els_vehicles'
 author 'MRP'
-description 'PD/EMS vehicles: ELS (mrpd13-15,21-22,ems) + Skoda non-ELS carcols (mrpd16/23)'
-version '1.0.2'
+description 'PD/EMS vehicles: ELS (mrpd13-16,21-23,ems)'
+version '1.0.3'
 
 this_is_a_map 'yes'
 

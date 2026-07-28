@@ -18,6 +18,7 @@ files {
     'html/vendor/leaflet.css',
     'html/vendor/leaflet.js',
     'html/asset/gtav_satellite_2048.png',
+    'html/images/missions/*.png',
 }
 
 shared_scripts {
