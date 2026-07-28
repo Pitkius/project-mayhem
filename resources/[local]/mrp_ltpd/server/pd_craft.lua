@@ -81,7 +81,7 @@ local function hasCraftPerm(src, st)
     if st and st.minGrade and grade < st.minGrade then return false end
     if st and st.divisions and #st.divisions > 0 then
         local stored = getDivisionForCitizenid(P.PlayerData.citizenid)
-        if not PdDivisions.canAccessPoint(grade, stored, st) then
+        if not PdDivisions.canAccessPoint(grade, stored, st, P.PlayerData.job and P.PlayerData.job.isboss) then
             return false
         end
     end
@@ -167,23 +167,16 @@ local function recipeUnlocked(profile, recipe)
 end
 
 local function buildProductRows(Player, profile)
-    local craftLevel = profile.craft_level
     local labels = cfg().levelLabels or {}
     local rows = {}
+    --- Tik atrakinti receptai — užrakintų (level / unlockOrder) NUI nerodo
     for id, recipe in pairs(cfg().recipes or {}) do
-        local needLv = tonumber(recipe.craftLevel) or 1
-        --- Rodom dabartinį lygį (su palaipsniu atrakimu) + jau praeitus lygius
-        if craftLevel >= needLv then
-            local unlocked = recipeUnlocked(profile, recipe)
+        if recipeUnlocked(profile, recipe) then
+            local needLv = tonumber(recipe.craftLevel) or 1
             local out = recipe.output
             local outLabel = QBCore.Shared.Items[out] and QBCore.Shared.Items[out].label or out
             local timeSec = math.ceil((tonumber(recipe.timeMs) or 10000) / 1000)
             local order = math.max(0, tonumber(recipe.unlockOrder) or 0)
-            local lockHint = nil
-            if not unlocked and craftLevel == needLv and order > 0 then
-                local have = tonumber(profile.crafts_at_level) or 0
-                lockHint = ('Reikia dar %d gamybų šiame lygyje'):format(math.max(0, order - have))
-            end
             rows[#rows + 1] = {
                 id = id,
                 label = recipe.label or id,
@@ -191,28 +184,10 @@ local function buildProductRows(Player, profile)
                 outputCount = recipe.count or 1,
                 craftLevel = needLv,
                 levelLabel = labels[needLv] or ('Lygis ' .. needLv),
-                locked = not unlocked,
-                lockHint = lockHint,
+                locked = false,
                 unlockOrder = order,
                 timeLabel = timeSec >= 60 and ('~%d min'):format(math.ceil(timeSec / 60)) or ('%d sek.'):format(timeSec),
-                ingredients = unlocked and buildIngredientStatus(Player, recipe) or {},
-            }
-        elseif craftLevel + 1 == needLv then
-            --- Kito lygio receptai — matomi, bet užrakinti (motyvacija kilti)
-            local out = recipe.output
-            local outLabel = QBCore.Shared.Items[out] and QBCore.Shared.Items[out].label or out
-            rows[#rows + 1] = {
-                id = id,
-                label = recipe.label or id,
-                outputLabel = outLabel,
-                outputCount = recipe.count or 1,
-                craftLevel = needLv,
-                levelLabel = labels[needLv] or ('Lygis ' .. needLv),
-                locked = true,
-                lockHint = ('Reikia %d gamybos lygio'):format(needLv),
-                unlockOrder = tonumber(recipe.unlockOrder) or 0,
-                timeLabel = '—',
-                ingredients = {},
+                ingredients = buildIngredientStatus(Player, recipe),
             }
         end
     end

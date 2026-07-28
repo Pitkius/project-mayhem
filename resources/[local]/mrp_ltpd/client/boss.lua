@@ -159,30 +159,32 @@ local function setupBossTargets()
     if GetResourceState('qb-target') ~= 'started' then return false end
 
     for _, st in ipairs(Config.Stations or {}) do
-        local bossCfg = st.boss
-        if not bossCfg or not bossCfg.coords then goto continue end
+        for _, bossKey in ipairs({ 'boss', 'bossAro' }) do
+            local bossCfg = st[bossKey]
+            if not bossCfg or not bossCfg.coords then goto continue_boss end
 
-        local ent, weSpawned = ensureBossLaptop(bossCfg)
-        if ent == 0 then goto continue end
-        if weSpawned then bossLaptops[#bossLaptops + 1] = ent end
+            local ent, weSpawned = ensureBossLaptop(bossCfg)
+            if ent == 0 then goto continue_boss end
+            if weSpawned then bossLaptops[#bossLaptops + 1] = ent end
 
-        exports['qb-target']:AddTargetEntity(ent, {
-            options = {
-                {
-                    type = 'client',
-                    event = 'mrp_ltpd:client:bossOpenMenu',
-                    icon = 'fas fa-user-shield',
-                    label = bossCfg.label or 'LTPD vadovybė',
-                    job = Config.JobName or 'police',
-                    canInteract = function()
-                        return canOpenBoss()
-                    end,
+            exports['qb-target']:AddTargetEntity(ent, {
+                options = {
+                    {
+                        type = 'client',
+                        event = 'mrp_ltpd:client:bossOpenMenu',
+                        icon = 'fas fa-user-shield',
+                        label = bossCfg.label or 'LTPD vadovybė',
+                        job = Config.JobName or 'police',
+                        canInteract = function()
+                            return canOpenBoss()
+                        end,
+                    },
                 },
-            },
-            distance = 2.2,
-        })
+                distance = 2.2,
+            })
 
-        ::continue::
+            ::continue_boss::
+        end
     end
     return true
 end

@@ -37,7 +37,9 @@ exports('GetPdEffectiveDivision', function()
 end)
 
 exports('CanAccessPdPoint', function(entry)
-    return PdDivisions.canAccessPoint(pdGrade, pdDivision, entry)
+    local P = QBCore.Functions.GetPlayerData()
+    local isBoss = P and P.job and P.job.isboss == true
+    return PdDivisions.canAccessPoint(pdGrade, pdDivision, entry, isBoss)
 end)
 
 RegisterNetEvent('mrp_ltpd:client:syncDivision', function(data)

@@ -3,7 +3,7 @@
 ============================================================
 
 Šviesos:
-  Non-ELS (F6)  = mrpd1–12, mrpd16, mrpd17–20, mrpd23–25
+  Non-ELS (F6)  = mrpd1–12, mrpd16, mrpd17–20, mrpd23–26
   ELS (ELS-FiveM) = mrpd13–15, mrpd21–22
 
 Perkama: PD garažo shop (mrp_dealership PoliceDealership)
@@ -27,6 +27,7 @@ mrpd10   | Kia Stinger                    | mrp_pd_mrpd
 mrpd11   | Hyundai                        | mrp_pd_mrpd
 mrpd12   | Alfa Romeo (EIMAS non-ELS)     | mrp_pd_mrpd
 mrpd24   | BMW M3 (EIMAS non-ELS)         | mrp_pd_mrpd
+mrpd26   | Ford (EFPD2 non-ELS carcols)   | mrp_pd_mrpd
 
 ------------------------------------------------------------
  ŽYMĖTOS — ELS (LT / UK liveriai)
@@ -72,9 +73,9 @@ mrpd9 mrpd10 mrpd11 mrpd12
 mrpd13 mrpd14 mrpd15 mrpd16 mrpd23
 mrpd17 mrpd18 mrpd19 mrpd20 mrpd25
 mrpd21 mrpd22
-mrpd24
+mrpd24 mrpd26
 
-Laisvi ateičiai: mrpd26+
+Laisvi ateičiai: mrpd27+
 
 Po stream update: clear FiveM compcache mrp_lt_els_vehicles
 (ir senų pack'ų jei keitei).

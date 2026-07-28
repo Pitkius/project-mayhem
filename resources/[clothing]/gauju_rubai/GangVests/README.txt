@@ -5,8 +5,9 @@ stream/ has the gang kevlar as smuggler **task_001** (component 9 / Liemene / Ve
   mp_m_freemode_01_mp_m_smuggler_01^task_001_u.ydd
   mp_m_freemode_01_mp_m_smuggler_01^task_diff_001_a..x_uni.ytd (24 textures)
 
-In-game: look under **Liemene** (vest), NOT Marsineliai/T-Shirt.
-Male only. Restart the server after changing stream files.
+In-game drawable: male **vest #31**, textures **0–23**. Female: none in this pack.
+Look under **Liemene** (vest), NOT Marsineliai/T-Shirt.
+Restart the server after changing stream files.
 gauju_rubai ensure order is after ef_eup_male (overrides EUP smuggler task_001).
 
 -Multiplayer-

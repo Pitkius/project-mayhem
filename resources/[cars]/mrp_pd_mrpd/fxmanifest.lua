@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'mrp_pd_mrpd'
 author 'MRP'
-description 'Mission Row PD vehicle pack (mrpd9-12, mrpd24-25) — non-ELS'
-version '1.1.3'
+description 'Mission Row PD vehicle pack (mrpd9-12, mrpd24-26) — non-ELS'
+version '1.1.4'
 
 this_is_a_map 'yes'
 

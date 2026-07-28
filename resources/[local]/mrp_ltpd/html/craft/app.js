@@ -38,6 +38,10 @@
     return m > 0 ? `${m}:${String(s).padStart(2, "0")}` : `${s} sek.`;
   }
 
+  function visibleProducts(list) {
+    return (list || []).filter((p) => p && !p.locked);
+  }
+
   function canCraft(p) {
     return p && !p.locked && p.ingredients && p.ingredients.every((i) => (i.missing || 0) <= 0);
   }
@@ -48,15 +52,9 @@
     state.products.forEach((p) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "pdc-item" + (state.selectedId === p.id ? " active" : "") + (p.locked ? " locked" : "");
-      btn.innerHTML = `<strong>${p.label}</strong><small>${p.levelLabel || ""}${p.locked ? " · užrakinta" : ""}</small>`;
+      btn.className = "pdc-item" + (state.selectedId === p.id ? " active" : "");
+      btn.innerHTML = `<strong>${p.label}</strong><small>${p.levelLabel || ""}</small>`;
       btn.onclick = () => {
-        if (p.locked) {
-          state.selectedId = p.id;
-          renderList();
-          renderDetail(p);
-          return;
-        }
         state.selectedId = p.id;
         renderList();
         renderDetail(p);
@@ -78,8 +76,8 @@
     document.getElementById("pdcProdTime").textContent = p.timeLabel || "—";
     const lockPill = document.getElementById("pdcProdLock");
     if (lockPill) {
-      lockPill.textContent = p.locked ? (p.lockHint || "Užrakinta") : "Prieinama";
-      lockPill.classList.toggle("warn", !!p.locked);
+      lockPill.textContent = "Prieinama";
+      lockPill.classList.remove("warn");
     }
     document.getElementById("pdcProdOut").textContent =
       p.outputCount > 1 ? `${p.outputLabel} x${p.outputCount}` : p.outputLabel || "—";
@@ -94,6 +92,13 @@
       });
     }
     if (btnCraft) btnCraft.disabled = !canCraft(p);
+  }
+
+  function applyProducts(list) {
+    state.products = visibleProducts(list);
+    if (!state.products.some((p) => p.id === state.selectedId)) {
+      state.selectedId = (state.products[0] && state.products[0].id) || null;
+    }
   }
 
   function showProgress(data) {
@@ -123,9 +128,8 @@
     const msg = e.data || {};
     if (msg.action === "pdCraftOpen") {
       const d = msg.data || {};
-      state.products = d.products || [];
       state.stationKey = d.stationKey;
-      state.selectedId = (state.products[0] && state.products[0].id) || null;
+      applyProducts(d.products || []);
       if (stationLabel) stationLabel.textContent = d.stationLabel || "Sandy PD ginklinė";
       if (levelBar) {
         let txt = `Gamybos lygis ${d.craftLevel || 1} / ${d.maxLevel || 3}`;
@@ -147,7 +151,7 @@
     if (msg.action === "pdCraftProgressHide") hideProgress();
     if (msg.action === "pdCraftRefresh") {
       const d = msg.data || {};
-      state.products = d.products || state.products;
+      applyProducts(d.products || state.products);
       if (levelBar && d.craftLevel != null) {
         let txt = `Gamybos lygis ${d.craftLevel || 1} / ${d.maxLevel || 3}`;
         if (d.craftsNeeded && (d.craftLevel || 1) < (d.maxLevel || 3)) {

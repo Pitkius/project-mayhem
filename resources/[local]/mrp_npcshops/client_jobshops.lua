@@ -60,21 +60,24 @@ local function openStashMenu(jobName, stationId)
                 params = { event = 'mrp_ltpd:client:tryOpenStash', args = { stationId = stationId, stashIndex = 2 } },
             },
             {
-                header = 'Sandėlis (vadovų)',
+                header = 'Sandėlis (bosas / pavaduotojas)',
                 params = { event = 'mrp_ltpd:client:tryOpenStash', args = { stationId = stationId, stashIndex = 3 } },
             },
             {
-                header = 'Sandėlis (bosas / pavaduotojas)',
+                header = 'ARAS daiktų sandėlis',
                 params = { event = 'mrp_ltpd:client:tryOpenStash', args = { stationId = stationId, stashIndex = 4 } },
             },
-            {
+        }
+        --- Craft tik LS (Sandy — be ginklų gamyklos)
+        if stationId ~= 'sandy' then
+            menu[#menu + 1] = {
                 header = 'ARAS ginklų gamykla',
                 params = {
                     event = 'mrp_ltpd:client:openPdWeaponCraft',
-                    args = { stationKey = stationId == 'sandy' and 'sandy_aras_craft' or 'ls_aras_craft' },
+                    args = { stationKey = 'ls_aras_craft' },
                 },
-            },
-        }
+            }
+        end
         TriggerEvent('qb-menu:client:openMenu', menu, false, true)
     elseif jobName == 'ambulance' then
         TriggerEvent('mrp_ambulance:client:openStash', { stationId = stationId })

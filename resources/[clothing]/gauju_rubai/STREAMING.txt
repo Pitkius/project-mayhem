@@ -7,24 +7,40 @@ Kas tai
 2) Gang kevlar liemenes — smuggler task_001 (TIK VYRAS)
 
 Sios liemenes yra component 9 (Liemene / Vest / body armor).
-Failai: task_001_u.ydd + task_diff_001_a..x_uni.ytd
+Failai: task_001_u.ydd + task_diff_001_a..x_uni.ytd  (24 teksturos)
 (DLC pack: mp_m_smuggler_01)
+
+TIKSLUS RUBO SKAICIUS (drawable)
+--------------------------------
+- Vyras (mp_m_freemode_01):  Liemene / vest  =  **31**
+  Teksturos (spalvos): 0–23  (a..x = 24 variantai)
+- Moteris:  SIOS LIEMENES NERA  (packe tik male mesh/textures)
+
+Kaukes (jei reikia):
+- Vyras:  Kaukė / mask  =  **50**  (heist berd_014)
+- Moteris: ta pati heist berd_014 slotas ant female ped
 
 Kur ieskoti in-game
 -------------------
-- qb-clothing / mrp_charcreator: **Liemene** (vest), NE "Marsineliai"
-- Rask modeli su ~24 teksturomis (Bloods/Crips/Vagos ir pan. spalvos)
-- Tik male ped — female ytd/mesh siame packe nera
+- mrp_charcreator rubu parduotuve / personažo kurimas:
+  kategorija **Liemene (gaujos #31)**  — NE "Marsineliai"
+- qb-clothing: **Vests** / Liemene (component 9)
+- Rask modeli **31**, tada suk suk teksturas 0–23 (Bloods/Crips/Vagos spalvos)
 
 Pastaba del EUP
 ---------------
 gauju_rubai startuoja PO ef_eup_male (cfg/20_qb.cfg), todel
-perraso EUP smuggler task_001 slotą i gang kevlar + 24 teksturos.
+perraso EUP/smuggler task_001 slotą i gang kevlar + 24 teksturos.
 Kiti EUP/ef_clothes task slotai nelieciami. Kaukes (berd) nelieciamos.
+
+Ensure
+------
+cfg/20_qb.cfg:  ensure gauju_rubai
+(po ef_eup_male)
 
 Kas buvo pakeista
 -----------------
-Anksčiau packas neteisingai streamino kaip accs_009 (comp 8 / Marsineliai).
-Dabar: task_001 (comp 9 / Liemene), kaip originalaus packo SP instrukcijos.
+Anksčiau packas neteisingai streamino kaip accs_009 (comp 8 / Marsineliai, drawable ~119).
+Dabar: task_001 (comp 9 / Liemene, drawable **31**), kaip originalaus packo SP instrukcijos.
 
 Reikia FULL server restart po pakeitimu.

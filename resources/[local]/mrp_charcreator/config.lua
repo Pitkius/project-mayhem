@@ -39,7 +39,8 @@ Config.ClothingShopItems = {
     { key = 'arms', label = 'Rankos', maxItem = 120, maxTex = 10 },
     { key = 'pants', label = 'Kelnės', maxItem = 200, maxTex = 15 },
     { key = 'shoes', label = 'Batai', maxItem = 120, maxTex = 15 },
-    { key = 'vest', label = 'Liemenė', maxItem = 80, maxTex = 10 },
+    -- gauju_rubai: male Liemenė drawable 31 (smuggler task_001), tekstūros 0–23
+    { key = 'vest', label = 'Liemenė (gaujos #31)', maxItem = 120, maxTex = 25 },
     { key = 'bag', label = 'Krepšys', maxItem = 80, maxTex = 10 },
     { key = 'decals', label = 'Lipdukai', maxItem = 120, maxTex = 10 },
     { key = 'accessory', label = 'Aksesuaras (kaklo)', maxItem = 120, maxTex = 10 },
@@ -51,7 +52,8 @@ Config.CreatorClothingItems = {
     { key = 't-shirt', label = 'Marškinėliai', maxItem = 200, maxTex = 15 },
     { key = 'torso2', label = 'Viršus / striukė', maxItem = 400, maxTex = 15 },
     { key = 'arms', label = 'Rankos', maxItem = 120, maxTex = 10 },
-    { key = 'vest', label = 'Liemenė', maxItem = 80, maxTex = 10 },
+    -- gauju_rubai: male Liemenė drawable 31 (smuggler task_001), tekstūros 0–23
+    { key = 'vest', label = 'Liemenė (gaujos #31)', maxItem = 120, maxTex = 25 },
     { key = 'decals', label = 'Lipdukai', maxItem = 120, maxTex = 10 },
     { key = 'pants', label = 'Kelnės', maxItem = 200, maxTex = 15 },
     { key = 'shoes', label = 'Batai', maxItem = 120, maxTex = 15 },

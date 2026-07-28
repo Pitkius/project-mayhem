@@ -42,7 +42,14 @@ function PdDivisions.isChoosable(divisionId)
     return cfg and cfg.choosable == true
 end
 
-function PdDivisions.canAccessPoint(grade, storedDivision, entry)
+--- Vadas (isboss) / pavaduotojas (≥ boss_menu) — apeina padalinio filtrą (pvz. ARAS taškai)
+function PdDivisions.isBossOrDeputy(grade, isBoss)
+    if isBoss == true then return true end
+    grade = tonumber(grade) or 0
+    return grade >= (tonumber(Config.Permissions and Config.Permissions.boss_menu) or 7)
+end
+
+function PdDivisions.canAccessPoint(grade, storedDivision, entry, isBoss)
     if not entry then return false end
     grade = tonumber(grade) or 0
     local div = PdDivisions.effectiveDivision(grade, storedDivision)
@@ -50,19 +57,22 @@ function PdDivisions.canAccessPoint(grade, storedDivision, entry)
     if grade < minG then
         return false
     end
+    local bossBypass = entry.allowBossBypass == true and PdDivisions.isBossOrDeputy(grade, isBoss)
     if entry.divisions and type(entry.divisions) == 'table' and #entry.divisions > 0 then
-        local ok = false
-        for _, d in ipairs(entry.divisions) do
-            if PdDivisions.normalize(d) == div then
-                ok = true
-                break
+        local ok = bossBypass
+        if not ok then
+            for _, d in ipairs(entry.divisions) do
+                if PdDivisions.normalize(d) == div then
+                    ok = true
+                    break
+                end
             end
         end
         if not ok then
             return false
         end
     end
-    if entry.excludeDivisions and type(entry.excludeDivisions) == 'table' then
+    if not bossBypass and entry.excludeDivisions and type(entry.excludeDivisions) == 'table' then
         for _, d in ipairs(entry.excludeDivisions) do
             if PdDivisions.normalize(d) == div then
                 return false
@@ -90,7 +100,7 @@ function PdDivisions.listChoosable(grade)
     return out
 end
 
-function PdDivisions.outfitAllowed(outfit, lockerMode, grade, storedDivision)
+function PdDivisions.outfitAllowed(outfit, lockerMode, grade, storedDivision, isBoss)
     if not outfit then return false end
     grade = tonumber(grade) or 0
     if grade < (tonumber(outfit.minGrade) or 0) then
@@ -98,33 +108,33 @@ function PdDivisions.outfitAllowed(outfit, lockerMode, grade, storedDivision)
     end
     local mode = tostring(lockerMode or 'standard'):lower()
     local divs = outfit.divisions
-    if mode == 'aro' or mode == 'sor' then
+    if mode == 'aro' or mode == 'aras' or mode == 'sor' then
         if Config.AroLockerShowsAllUniforms then
             local eff = PdDivisions.effectiveDivision(grade, storedDivision)
-            return eff == 'sor' or eff == 'aro'
+            if eff == 'aras' then return true end
+            --- Vadas/pavaduotojas gali matyti ARAS rūbinę (tie patys drabužiai)
+            return PdDivisions.isBossOrDeputy(grade, isBoss)
         end
         if not divs or #divs == 0 then
             return false
         end
         for _, d in ipairs(divs) do
-            local nd = PdDivisions.normalize(d)
-            if nd == 'sor' or nd == 'aro' then
+            if PdDivisions.normalize(d) == 'aras' then
                 return true
             end
         end
         return false
     end
-    -- Standartinė rūbinė – nerodyti tik SOR/ARO skirtų
+    -- Standartinė rūbinė – nerodyti tik ARAS skirtų
     if divs and #divs > 0 then
-        local onlyTactical = true
+        local onlyAras = true
         for _, d in ipairs(divs) do
-            local nd = PdDivisions.normalize(d)
-            if nd ~= 'sor' and nd ~= 'aro' then
-                onlyTactical = false
+            if PdDivisions.normalize(d) ~= 'aras' then
+                onlyAras = false
                 break
             end
         end
-        if onlyTactical then
+        if onlyAras then
             return false
         end
     end

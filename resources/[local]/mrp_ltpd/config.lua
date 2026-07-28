@@ -254,11 +254,16 @@ Config.PdMarkerNearTickMs = 50
 --- Max DrawMarker per kadrą (arti lieka interact; tolimesni praleidžiami)
 Config.PdMarkerMaxDraw = 4
 Config.PdMarkerZOffset = 0.02
---- Trikampis (DrawMarker tipas 2): žalia=parduotuvė, mėlyna=sandėlis, oranžinė=craft
+--- DrawMarker tipai: 2 = storas chevron/trikampis; 21 = plonas ChevronUp (rūbinė / ginklų shop)
 Config.PdTriangleMarkerType = 2
 Config.PdTriangleMarkerScale = { x = 0.38, y = 0.38, z = 0.38 }
 Config.PdStashMarkerType = 2
 Config.PdStashMarkerScale = { x = 0.38, y = 0.38, z = 0.38 }
+--- Rūbinė — mažas trikampis (tipas 21); ginklų pirkimas — mažas žalias trikampis
+Config.PdLockerMarkerType = 21
+Config.PdLockerMarkerScale = { x = 0.32, y = 0.32, z = 0.32 }
+Config.PdSupplyMarkerType = 21
+Config.PdSupplyMarkerScale = { x = 0.32, y = 0.32, z = 0.32 }
 Config.PdStashMarkerDrawDistance = 12.0
 Config.PdInventoryMarkerDrawDistance = 12.0
 Config.PdMarkerTextDistance = 2.2
@@ -283,6 +288,7 @@ Config.FleetVehicles = {
   { model = 'mrpd11', label = 'MRPD 11 — Hyundai', emergencyLights = 'native' },
   { model = 'mrpd12', label = 'MRPD 12 — Alfa Romeo', emergencyLights = 'native' },
   { model = 'mrpd24', label = 'MRPD 24 — BMW M3', emergencyLights = 'native' },
+  { model = 'mrpd26', label = 'MRPD 26 — Ford', emergencyLights = 'native' },
   -- ŽYMĖTOS LT ELS
   { model = 'mrpd13', label = 'MRPD 13 — Audi S3 (LT ELS)', emergencyLights = 'els' },
   { model = 'mrpd14', label = 'MRPD 14 — BMW 540i (LT ELS)', emergencyLights = 'els' },
@@ -304,7 +310,7 @@ Config.FleetVehicles = {
 --- Built-in fleet: tik Non-ELS carcols šviesos per SetVehicleSiren (ELS čia NEįtraukti).
 Config.BuiltInFleetModels = {
     'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
-    'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24', 'mrpd25',
+    'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24', 'mrpd25', 'mrpd26',
     'mrpd16', 'mrpd23',
     'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
     'polmav', 'buzzard2',
@@ -362,7 +368,7 @@ Config.Stations = {
         coords = vector3(441.84, -982.05, 30.69),
         blipCoords = vector3(427.120, -979.559, 30.716),
         heading = 90.0,
-        --- Pamaina — violetinis markeris
+        --- Pamaina — geltonas 3D markeris (tik police job; on/off duty)
         duty = {
             coords = vector3(440.085, -974.924, 30.689),
         },
@@ -388,11 +394,13 @@ Config.Stations = {
         },
         --- ARAS ginklų zona (gamykla šalia — Config.PdWeaponCraft)
         armory = {
-            coords = vector3(472.5475, -947.7100, 38.2497),
-            heading = 272.8297,
-            label = 'ARAS ginklų zona',
+            coords = vector3(472.5504, -947.7615, 38.2497),
+            heading = 273.1483,
+            label = 'ARAS ginklų pirkimas',
             minGrade = 2,
             divisions = { 'aras' },
+            allowBossBypass = true,
+            openSupply = true,
         },
         --- Nuoroda į mrp_garages — asmeninis PD transporto garažas DB
         pdGarageId = 'pd_ls_main',
@@ -415,7 +423,7 @@ Config.Stations = {
         },
         --- ARAS aukštas — atskiras vadovybės laptopas
         bossAro = {
-            coords = vector4(466.7161, -928.0859, 38.2496, 188.3563),
+            coords = vector4(466.9588, -928.1174, 38.2500, 173.5707),
             label = 'ARAS vadovybė',
             prop = 'prop_laptop_01a',
             spawnProp = true,
@@ -429,11 +437,12 @@ Config.Stations = {
         },
         --- ARAS specialioji rūbinė (atskirai nuo lockers[])
         locker2 = {
-            coords = vector3(455.65, -997.62, 30.6896),
-            heading = 90.0,
+            coords = vector3(472.5197, -950.1564, 38.2497),
+            heading = 267.4732,
             label = 'ARAS rūbinė',
             lockerMode = 'aro',
             divisions = { 'aras' },
+            allowBossBypass = true,
         },
         --- Sandėliai — [F2] prie markerio; stashId unikalus visam serveriui
         stashes = {
@@ -456,15 +465,6 @@ Config.Stations = {
                 slots = 70,
             },
             {
-                coords = vector3(455.1456, -985.462, 30.689),
-                stashId = 'ltpd_stash_grade8_ls',
-                label = 'PD sandėlis (vadovų)',
-                minGrade = 8,
-                divisions = { 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
-                maxweight = 3000000,
-                slots = 80,
-            },
-            {
                 coords = vector3(472.5426, -933.1423, 34.2504),
                 stashId = 'ltpd_stash_boss_ls',
                 label = 'PD sandėlis (bosas / pavaduotojas)',
@@ -475,11 +475,13 @@ Config.Stations = {
             },
             --- ARAS daiktų dėžė — ginklai / daiktai (tik ARAS; vadas/pavaduotojas apeina padalinį)
             {
-                coords = vector3(472.5499, -945.3289, 38.2497),
+                coords = vector3(472.6484, -945.3535, 38.2858),
+                heading = 275.4923,
                 stashId = 'ltpd_stash_aro_ls',
                 label = 'ARAS daiktų sandėlis',
                 minGrade = 2,
                 divisions = { 'aras' },
+                allowBossBypass = true,
                 maxweight = 4000000,
                 slots = 100,
             },
@@ -539,7 +541,10 @@ Config.Stations = {
         coords = vector3(1853.7436, 3688.6435, 29.8185),
         blipCoords = vector3(1853.7436, 3688.6435, 29.8185),
         heading = 206.0,
-        duty = true, --- pamaina ties coords
+        --- Pamaina — geltonas 3D markeris (senojo duty NPC vieta)
+        duty = {
+            coords = vector3(1853.2, 3686.5, 34.27),
+        },
         reception = {
             coords = vector3(1859.75, 3689.12, 33.99),
             heading = 210.0,
@@ -548,15 +553,19 @@ Config.Stations = {
             label = 'PD registratūra',
             blip = { sprite = 280, color = 3, scale = 0.72, label = 'PD registratūra (Sandy)' },
         },
+        --- Ginklų / inventoriaus pirkimas (supply shop) — [F2]
         supply = {
-            coords = vector3(1849.12, 3690.04, 34.27),
-            label = 'PD inventorius',
+            coords = vector3(1860.5525, 3692.1011, 34.2194),
+            heading = 205.3181,
+            label = 'PD ginklinė / inventorius',
         },
         armory = {
             coords = vector3(1847.0, 3691.5, 34.27),
             label = 'ARAS ginklinė (Sandy)',
             minGrade = 2,
             divisions = { 'aras' },
+            allowBossBypass = true,
+            openSupply = true,
         },
         pdGarageId = 'pd_sandy',
         policeDealership = {
@@ -567,18 +576,19 @@ Config.Stations = {
             coords = vector3(1869.5, 3695.2, 33.53),
             spawn = vector4(1869.5, 3695.2, 33.53, 210.0),
         },
+        --- qb-target ant laptopo (client/boss.lua)
         boss = {
-            coords = vector4(1852.0, 3688.5, 34.27, 210.0),
+            coords = vector4(1848.9095, 3694.7874, 39.0356, 210.0102),
             label = 'LTPD vadovybė',
             prop = 'prop_laptop_01a',
             spawnProp = true,
         },
-        --- Sandy rūbinės (2 vnt.) — tas pats mrp_duty_locker flow kaip MRPD
+        --- Sandy rūbinės (2 vnt.)
         lockers = {
             { coords = vector3(1854.1200, 3687.8689, 29.8185), heading = 206.7797, label = 'PD rūbinė 1' },
             { coords = vector3(1853.3671, 3689.4180, 29.8185), heading = 41.1066, label = 'PD rūbinė 2' },
         },
-        --- Sandy sandėliai — [F2]; tipai / slotai / svoris identiški LS (MRPD)
+        --- Sandy sandėliai — [F2]
         stashes = {
             {
                 coords = vector3(1861.8282, 3688.3879, 34.2194),
@@ -590,7 +600,8 @@ Config.Stations = {
                 slots = 60,
             },
             {
-                coords = vector3(1859.6638, 3688.9521, 34.2194),
+                coords = vector3(1862.6763, 3690.1565, 34.2194),
+                heading = 299.1227,
                 stashId = 'ltpd_stash_grade3_sandy',
                 label = 'PD sandėlis (≥3 rango)',
                 minGrade = 3,
@@ -599,16 +610,8 @@ Config.Stations = {
                 slots = 70,
             },
             {
-                coords = vector3(1860.7460, 3688.6700, 34.2194),
-                stashId = 'ltpd_stash_grade8_sandy',
-                label = 'PD sandėlis (vadovų)',
-                minGrade = 8,
-                divisions = { 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
-                maxweight = 3000000,
-                slots = 80,
-            },
-            {
-                coords = vector3(1849.2041, 3695.5696, 38.2205),
+                coords = vector3(1847.1759, 3694.3987, 38.2205),
+                heading = 121.4428,
                 stashId = 'ltpd_stash_boss_sandy',
                 label = 'PD sandėlis (bosas / pavaduotojas)',
                 minGrade = 7,
@@ -616,17 +619,18 @@ Config.Stations = {
                 maxweight = 3500000,
                 slots = 90,
             },
-            --- ARAS daiktų dėžė — šalia Sandy ARAS ginklinės
+            --- ARAS daiktų dėžė
             {
                 coords = vector3(1846.35, 3692.40, 34.27),
                 stashId = 'ltpd_stash_aro_sandy',
                 label = 'ARAS daiktų sandėlis',
                 minGrade = 2,
                 divisions = { 'aras' },
+                allowBossBypass = true,
                 maxweight = 4000000,
                 slots = 100,
             },
-            --- Konfiskuoti daiktai — 1 a. šalia rūbinių (Sandy neturi MRPD rūsio)
+            --- Konfiskuoti daiktai
             {
                 coords = vector3(1855.80, 3686.40, 29.8185),
                 heading = 210.0,
@@ -657,10 +661,10 @@ Config.Stations = {
                 maxweight = 5000000,
                 slots = 120,
             },
-            --- Maisto sandėlis — šalia inventoriaus aukšto
+            --- Maisto sandėlis
             {
-                coords = vector3(1850.85, 3688.90, 34.27),
-                heading = 210.0,
+                coords = vector3(1846.6445, 3690.9863, 38.2205),
+                heading = 303.9181,
                 stashId = 'ltpd_stash_food_sandy',
                 label = 'PD maisto sandėlis',
                 minGrade = 0,
@@ -671,7 +675,6 @@ Config.Stations = {
         },
     },
 }
-
 --- Tarnybinė PD apranga – žr. config_duty_outfits.lua (addon kolekcijos mrp_pd_uniforms)
 
 Config.TargetDistance = 2.5

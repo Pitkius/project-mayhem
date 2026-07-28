@@ -287,6 +287,7 @@ Config.PoliceDealership = {
         { model = 'mrpd11', name = 'MRPD 11 — Hyundai', brand = 'Hyundai', category = 'marked', price = 30000, minGrade = 2, shopEnabled = true },
         { model = 'mrpd12', name = 'MRPD 12 — Alfa Romeo', brand = 'Alfa Romeo', category = 'marked', price = 35000, minGrade = 4, shopEnabled = true },
         { model = 'mrpd24', name = 'MRPD 24 — BMW M3', brand = 'BMW', category = 'marked', price = 36000, minGrade = 5, shopEnabled = true },
+        { model = 'mrpd26', name = 'MRPD 26 — Ford', brand = 'Ford', category = 'marked', price = 33500, minGrade = 0, shopEnabled = true },
         -- ŽYMĖTOS LT ELS (į Žymėtos, ne atskira ELS kategorija)
         { model = 'mrpd13', name = 'MRPD 13 — Audi S3 (LT ELS)', brand = 'Audi', category = 'marked', price = 36000, minGrade = 0, shopEnabled = true },
         { model = 'mrpd14', name = 'MRPD 14 — BMW 540i (LT ELS)', brand = 'BMW', category = 'marked', price = 38000, minGrade = 0, shopEnabled = true },

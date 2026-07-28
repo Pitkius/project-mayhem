@@ -1,5 +1,5 @@
 --- ARAS + bendras PD ginklų gamyba (NUI · lygiai + palaipsnis atrakimas)
---- MRPD craft: Z≈30.25 šalia inventoriaus; Sandy — šalia armory / supply.
+--- MRPD craft: Z≈30.25 šalia inventoriaus. Sandy — be craft stočių.
 Config.PdWeaponCraft = {
     --- Kiek sėkmingų craft'ų reikia dabartiniame lygyje, kad kiltum į kitą
     craftsPerLevel = { [1] = 8, [2] = 12 },
@@ -33,25 +33,7 @@ Config.PdWeaponCraft = {
             label = 'PD ginklų gamykla',
             minGrade = 0,
         },
-        --- Sandy — ARAS only
-        {
-            id = 'sandy_aras_craft',
-            stationId = 'sandy',
-            coords = vector3(1847.55, 3692.10, 34.27),
-            heading = 210.0,
-            label = 'ARAS ginklų gamykla (Sandy)',
-            minGrade = 2,
-            divisions = { 'aras' },
-        },
-        --- Sandy — bendras PD craft
-        {
-            id = 'sandy_pd_craft',
-            stationId = 'sandy',
-            coords = vector3(1849.40, 3691.20, 34.27),
-            heading = 210.0,
-            label = 'PD ginklų gamykla (Sandy)',
-            minGrade = 0,
-        },
+        --- Sandy — be ginklų craft (tik LS)
     },
 
     --- unlockOrder: kiek craft'ų reikia ŠIAME lygyje, kad receptas atrakintų (0 = iškart)

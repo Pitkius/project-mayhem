@@ -12,7 +12,7 @@ local COLORS = {
     garage = { 72, 160, 220, 200 },
     stash = { 255, 180, 72, 200 },
     locker = { 167, 139, 250, 210 },
-    armory = { 239, 68, 68, 210 },
+    armory = { 34, 197, 94, 200 }, --- žalias — ARAS ginklų pirkimas
     supply = { 34, 197, 94, 200 },
     craft = { 251, 191, 36, 210 },
     duty = { 250, 204, 21, 200 },
@@ -21,9 +21,9 @@ local COLORS = {
 local SCALES = {
     garage = { x = 2.6, y = 2.6, z = 0.28 },
     stash = nil, -- naudoja Config.PdStashMarkerScale
-    locker = { x = 1.5, y = 1.5, z = 0.24 },
-    armory = { x = 1.5, y = 1.5, z = 0.24 },
-    supply = { x = 1.35, y = 1.35, z = 0.22 },
+    locker = nil, -- Config.PdLockerMarkerScale
+    armory = nil, -- Config.PdSupplyMarkerScale (žalias trikampis)
+    supply = nil, -- Config.PdSupplyMarkerScale
     craft = { x = 1.55, y = 1.55, z = 0.24 },
     duty = { x = 1.5, y = 1.5, z = 0.24 },
 }
@@ -31,9 +31,9 @@ local SCALES = {
 local MARKER_TYPES = {
     garage = 36,
     stash = nil, -- naudoja Config.PdStashMarkerType
-    locker = 27,
-    armory = 27,
-    supply = 27,
+    locker = nil, -- Config.PdLockerMarkerType
+    armory = nil, -- Config.PdSupplyMarkerType
+    supply = nil, -- Config.PdSupplyMarkerType
     craft = 27,
     duty = 27,
 }
@@ -94,14 +94,26 @@ end
 
 local function markerTypeFor(kind)
     if kind == 'stash' then
-        return Config.PdStashMarkerType or 2
+        return Config.PdStashMarkerType or Config.PdTriangleMarkerType or 2
+    end
+    if kind == 'locker' then
+        return Config.PdLockerMarkerType or Config.PdTriangleMarkerType or 21
+    end
+    if kind == 'supply' or kind == 'armory' then
+        return Config.PdSupplyMarkerType or Config.PdTriangleMarkerType or 21
     end
     return MARKER_TYPES[kind] or 27
 end
 
 local function markerScaleFor(kind)
     if kind == 'stash' then
-        return Config.PdStashMarkerScale or { x = 0.34, y = 0.34, z = 0.34 }
+        return Config.PdStashMarkerScale or Config.PdTriangleMarkerScale or { x = 0.34, y = 0.34, z = 0.34 }
+    end
+    if kind == 'locker' then
+        return Config.PdLockerMarkerScale or Config.PdTriangleMarkerScale or { x = 0.32, y = 0.32, z = 0.32 }
+    end
+    if kind == 'supply' or kind == 'armory' then
+        return Config.PdSupplyMarkerScale or Config.PdTriangleMarkerScale or { x = 0.32, y = 0.32, z = 0.32 }
     end
     return SCALES[kind] or { x = 1.35, y = 1.35, z = 0.22 }
 end
@@ -191,6 +203,7 @@ local function registerAllPdMarkers()
                     minGrade = lockerDef.minGrade or 0,
                     divisions = lockerDef.divisions,
                     excludeDivisions = lockerDef.excludeDivisions,
+                    allowBossBypass = lockerDef.allowBossBypass,
                 },
                 onPress = function()
                     TriggerEvent('mrp_ltpd:client:openDutyLockerMenu', {
@@ -216,23 +229,30 @@ local function registerAllPdMarkers()
                 minGrade = st.locker2.minGrade,
                 divisions = st.locker2.divisions or { 'aras' },
                 excludeDivisions = st.locker2.excludeDivisions,
+                allowBossBypass = st.locker2.allowBossBypass,
                 lockerMode = st.locker2.lockerMode or 'aro',
             })
         end
 
-        --- Armory stash (jei stashId) — F2; craft eina per Config.PdWeaponCraft.stations
-        if st.armory and st.armory.coords and st.armory.stashId then
+        --- Armory: ARAS ginklų pirkimas (openSupply) arba stash (jei stashId)
+        if st.armory and st.armory.coords then
+            local arm = st.armory
             RegisterPdGroundMarker({
-                coords = st.armory.coords,
+                coords = arm.coords,
                 kind = 'armory',
-                label = st.armory.label or 'Ginklinė',
+                label = arm.label or 'Ginklinė',
                 access = {
-                    minGrade = st.armory.minGrade or 0,
-                    divisions = st.armory.divisions,
-                    excludeDivisions = st.armory.excludeDivisions,
+                    minGrade = arm.minGrade or 0,
+                    divisions = arm.divisions,
+                    excludeDivisions = arm.excludeDivisions,
+                    allowBossBypass = arm.allowBossBypass,
                 },
                 onPress = function()
-                    TriggerEvent('mrp_ltpd:client:tryOpenArmory', { stationId = stationId })
+                    if arm.openSupply or not arm.stashId then
+                        TriggerServerEvent('mrp_npcshops:server:openJobSupply', jobName(), stationId)
+                    else
+                        TriggerEvent('mrp_ltpd:client:tryOpenArmory', { stationId = stationId })
+                    end
                 end,
             })
         end
@@ -248,6 +268,7 @@ local function registerAllPdMarkers()
                         minGrade = stash.minGrade or 0,
                         divisions = stash.divisions,
                         excludeDivisions = stash.excludeDivisions,
+                        allowBossBypass = stash.allowBossBypass,
                     },
                     onPress = function()
                         TriggerEvent('mrp_ltpd:client:tryOpenStash', { stationId = stationId, stashIndex = index })
@@ -360,7 +381,7 @@ local function drawMarkerAt(pos, kind)
     local zOff = 0.0
     if mType == 36 then
         zOff = 0.35
-    elseif mType == 2 then
+    elseif mType == 2 or mType == 21 then
         zOff = 0.06
     end
     DrawMarker(

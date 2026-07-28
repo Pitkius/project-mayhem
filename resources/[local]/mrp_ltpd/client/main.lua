@@ -602,10 +602,12 @@ end
 
 local function buildPdDutyLockerItems(grade, lockerMode, genderKey)
     local division = exports['mrp_ltpd']:GetPdDivision()
+    local P = QBCore.Functions.GetPlayerData()
+    local isBoss = P and P.job and P.job.isboss == true
     local items = {}
     for idx, outfit in ipairs(Config.DutyOutfits or {}) do
         if not outfit[genderKey] then goto continue_outfit end
-        if not PdDivisions.outfitAllowed(outfit, lockerMode, grade, division) then goto continue_outfit end
+        if not PdDivisions.outfitAllowed(outfit, lockerMode, grade, division, isBoss) then goto continue_outfit end
         local cat = inferOutfitCategory(outfit, genderKey)
         items[#items + 1] = {
             id = tostring(idx),

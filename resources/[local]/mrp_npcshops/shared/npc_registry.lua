@@ -53,7 +53,8 @@ function NpcRegistry.collect()
     })
 
     for i, row in ipairs(Config.JobStationNpcs or {}) do
-        if row.role ~= 'garage' and row.role ~= 'stash' and row.role ~= 'locker' and row.role ~= 'supply' and row.role ~= 'boss' then
+        if row.role ~= 'garage' and row.role ~= 'stash' and row.role ~= 'locker' and row.role ~= 'supply' and row.role ~= 'boss'
+            and not (row.job == 'police' and row.role == 'duty') then
             local blip = row.blip
             if blip == nil and row.coords then
                 blip = {

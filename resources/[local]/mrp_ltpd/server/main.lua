@@ -1051,7 +1051,7 @@ RegisterNetEvent('mrp_ltpd:server:openPoliceStash', function(stationId, stashInd
     if not entry or not entry.coords or not entry.stashId then return end
     local P = QBCore.Functions.GetPlayer(src)
     local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
-    if not PdDivisions.canAccessPoint(getGrade(src), div, entry) then
+    if not PdDivisions.canAccessPoint(getGrade(src), div, entry, P and P.PlayerData.job and P.PlayerData.job.isboss) then
         return TriggerClientEvent('QBCore:Notify', src, 'Neturi prieigos prie šio sandėlio (rangas / padalinys).', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
@@ -1081,7 +1081,7 @@ RegisterNetEvent('mrp_ltpd:server:openArmory', function(stationId)
     if not st or not st.armory or not st.armory.coords or not st.armory.stashId then return end
     local P = QBCore.Functions.GetPlayer(src)
     local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
-    if not PdDivisions.canAccessPoint(getGrade(src), div, st.armory) then
+    if not PdDivisions.canAccessPoint(getGrade(src), div, st.armory, P and P.PlayerData.job and P.PlayerData.job.isboss) then
         return TriggerClientEvent('QBCore:Notify', src, 'ARO sandėlis – tik ARO padaliniui.', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
@@ -1187,6 +1187,13 @@ local function nearAnyManagement(src)
         end
         if st.boss and st.boss.coords then
             local bc = st.boss.coords
+            local pos = vector3(bc.x, bc.y, bc.z)
+            if #(c - pos) <= r then
+                return true
+            end
+        end
+        if st.bossAro and st.bossAro.coords then
+            local bc = st.bossAro.coords
             local pos = vector3(bc.x, bc.y, bc.z)
             if #(c - pos) <= r then
                 return true
