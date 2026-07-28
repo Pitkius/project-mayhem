@@ -1,5 +1,5 @@
---- ARAS / ARO ginklų gamyba (NUI · lygiai + palaipsnis atrakimas)
---- Markeris šalia ARAS sandėlių (Z≈38 MRPD aukštas / Sandy armory).
+--- ARAS + bendras PD ginklų gamyba (NUI · lygiai + palaipsnis atrakimas)
+--- MRPD craft: Z≈30.25 šalia inventoriaus; Sandy — šalia armory / supply.
 Config.PdWeaponCraft = {
     --- Kiek sėkmingų craft'ų reikia dabartiniame lygyje, kad kiltum į kitą
     craftsPerLevel = { [1] = 8, [2] = 12 },
@@ -14,16 +14,26 @@ Config.PdWeaponCraft = {
     },
 
     stations = {
+        --- MRPD — ARAS only (šalia PD craft / inventoriaus)
         {
             id = 'ls_aras_craft',
             stationId = 'ls_main',
-            --- Šalia ARAS daiktų sandėlio / „ARAS ginklų pirkimas“ (Z≈38.25)
-            coords = vector3(470.85, -946.40, 38.25),
-            heading = 180.0,
+            coords = vector3(458.2090, -977.9290, 30.2503),
+            heading = 4.3676,
             label = 'ARAS ginklų gamykla',
             minGrade = 2,
             divisions = { 'aras' },
         },
+        --- MRPD — bendras PD craft (visas police job, be ARAS apribojimo)
+        {
+            id = 'ls_pd_craft',
+            stationId = 'ls_main',
+            coords = vector3(462.4065, -978.1403, 30.2503),
+            heading = 8.0996,
+            label = 'PD ginklų gamykla',
+            minGrade = 0,
+        },
+        --- Sandy — ARAS only
         {
             id = 'sandy_aras_craft',
             stationId = 'sandy',
@@ -32,6 +42,15 @@ Config.PdWeaponCraft = {
             label = 'ARAS ginklų gamykla (Sandy)',
             minGrade = 2,
             divisions = { 'aras' },
+        },
+        --- Sandy — bendras PD craft
+        {
+            id = 'sandy_pd_craft',
+            stationId = 'sandy',
+            coords = vector3(1849.40, 3691.20, 34.27),
+            heading = 210.0,
+            label = 'PD ginklų gamykla (Sandy)',
+            minGrade = 0,
         },
     },
 

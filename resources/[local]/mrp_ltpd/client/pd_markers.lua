@@ -1,5 +1,5 @@
 --- PD 3D markeriai ant žemės — registruojami iš Config.Stations (mrp_ltpd/config.lua).
---- Interakcijos: duty/garage/locker [E] · stash [F2] · supply [E]
+--- Interakcijos: duty/garage/locker/craft [E] · stash/supply [F2] (be pilko DrawText3D)
 --- Komanda debug: /pdmarkers
 local QBCore = exports['qb-core']:GetCoreObject()
 
@@ -214,13 +214,14 @@ local function registerAllPdMarkers()
                 coords = st.locker2.coords,
                 label = st.locker2.label or 'ARO rūbinė',
                 minGrade = st.locker2.minGrade,
-                divisions = st.locker2.divisions or { 'sor' },
+                divisions = st.locker2.divisions or { 'aras' },
                 excludeDivisions = st.locker2.excludeDivisions,
                 lockerMode = st.locker2.lockerMode or 'aro',
             })
         end
 
-        if st.armory and st.armory.coords then
+        --- Armory stash (jei stashId) — F2; craft eina per Config.PdWeaponCraft.stations
+        if st.armory and st.armory.coords and st.armory.stashId then
             RegisterPdGroundMarker({
                 coords = st.armory.coords,
                 kind = 'armory',
@@ -231,9 +232,7 @@ local function registerAllPdMarkers()
                     excludeDivisions = st.armory.excludeDivisions,
                 },
                 onPress = function()
-                    TriggerEvent('mrp_ltpd:client:openPdWeaponCraft', {
-                        stationKey = stationId == 'sandy' and 'sandy_aras_craft' or 'ls_aras_craft',
-                    })
+                    TriggerEvent('mrp_ltpd:client:tryOpenArmory', { stationId = stationId })
                 end,
             })
         end
@@ -333,11 +332,9 @@ RegisterCommand('pdmarkers', function()
     end
 end, false)
 
-local function stashHint(label)
-    if GetResourceState('mrp_npcshops') == 'started' then
-        return exports['mrp_npcshops']:StashInteractHint(label)
-    end
-    return ('[F2] %s'):format(label)
+--- Sandėliai + inventorius (supply/armory) — F2 = control 289 (mrp_npcshops)
+local function isF2InventoryKind(kind)
+    return kind == 'stash' or kind == 'supply' or kind == 'armory'
 end
 
 local function isStashOpenPressed()
@@ -464,21 +461,19 @@ CreateThread(function()
                     'Tik tarnyboje (policija)'
                 )
             else
-                local hint
                 local pressed
-                if zone.kind == 'stash' then
-                    hint = stashHint(zone.label)
+                if isF2InventoryKind(zone.kind) then
+                    --- Sandėliai / inventorius: F2, be pilko floating teksto
                     enableStashOpenControl()
                     pressed = isStashOpenPressed()
                 else
                     EnableControlAction(0, 38, true)
-                    hint = ('[E] %s'):format(zone.label)
+                    QBCore.Functions.DrawText3D(
+                        zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
+                        ('[E] %s'):format(zone.label)
+                    )
                     pressed = IsControlJustPressed(0, 38)
                 end
-                QBCore.Functions.DrawText3D(
-                    zone.coords.x, zone.coords.y, zone.coords.z + 0.55,
-                    hint
-                )
                 if pressed and (GetGameTimer() - lastInteractMs) > 450 then
                     lastInteractMs = GetGameTimer()
                     if zone.onPress then zone.onPress() end

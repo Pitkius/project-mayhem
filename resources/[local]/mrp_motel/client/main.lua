@@ -6,13 +6,6 @@ RegisterNetEvent('mrp_motel:client:openPublicStash', function()
     TriggerServerEvent('mrp_motel:server:openPublicStash')
 end)
 
-local function stashHint(label)
-    if GetResourceState('mrp_npcshops') == 'started' then
-        return exports['mrp_npcshops']:StashInteractHint(label)
-    end
-    return ('[F2] %s'):format(label or 'Sandėlis')
-end
-
 local function isStashOpenPressed()
     if GetResourceState('mrp_npcshops') == 'started' then
         return exports['mrp_npcshops']:IsStashOpenPressed()
@@ -36,7 +29,6 @@ CreateThread(function()
     local pos = st.coords
     local useR = st.maxDistance or 2.5
     local drawD = useR + 18.0
-    local label = st.label or 'Motelio sandėlis'
 
     while true do
         local sleep = 800
@@ -57,7 +49,7 @@ CreateThread(function()
                 )
                 if dist < useR then
                     enableStashOpenControl()
-                    QBCore.Functions.DrawText3D(pos.x, pos.y, pos.z + 0.55, stashHint(label))
+                    --- Be pilko floating teksto — atidarymas F2
                     if isStashOpenPressed() and (GetGameTimer() - lastInteractMs) > 450 then
                         lastInteractMs = GetGameTimer()
                         TriggerEvent('mrp_motel:client:openPublicStash')

@@ -193,24 +193,21 @@ CreateThread(function()
         end
 
         if interactZone then
-            local hint
-            if interactZone.kind == 'stash' then
-                hint = exports['mrp_npcshops']:StashInteractHint(interactZone.label)
+            local pressed
+            if interactZone.kind == 'stash' or interactZone.kind == 'supply' or interactZone.kind == 'armory' then
+                --- Sandėliai / inventorius: F2, be pilko floating teksto
                 exports['mrp_npcshops']:EnableStashOpenControl()
+                pressed = exports['mrp_npcshops']:IsStashOpenPressed()
             else
                 EnableControlAction(0, 38, true)
-                hint = ('[E] %s'):format(interactZone.label)
+                QBCore.Functions.DrawText3D(
+                    interactZone.coords.x,
+                    interactZone.coords.y,
+                    interactZone.coords.z + 0.75,
+                    ('[E] %s'):format(interactZone.label)
+                )
+                pressed = IsControlJustPressed(0, 38)
             end
-            local hintZ = interactZone.kind == 'stash' and 0.55 or 0.75
-            QBCore.Functions.DrawText3D(
-                interactZone.coords.x,
-                interactZone.coords.y,
-                interactZone.coords.z + hintZ,
-                hint
-            )
-            local pressed = interactZone.kind == 'stash'
-                and exports['mrp_npcshops']:IsStashOpenPressed()
-                or IsControlJustPressed(0, 38)
             if pressed and (GetGameTimer() - lastInteractMs) > 450 then
                 lastInteractMs = GetGameTimer()
                 if interactZone.onPress then interactZone.onPress() end

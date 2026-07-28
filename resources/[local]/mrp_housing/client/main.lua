@@ -268,14 +268,12 @@ CreateThread(function()
 
                 if insideProperty.isOwner and interior.stash then
                     if #(pCoords - interior.stash) < 1.5 then
-                        local stashLabel = '[F2] Sandėliukas'
                         if GetResourceState('mrp_npcshops') == 'started' then
-                            stashLabel = exports['mrp_npcshops']:StashInteractHint('Sandėliukas')
                             exports['mrp_npcshops']:EnableStashOpenControl()
                         else
                             EnableControlAction(0, 289, true)
                         end
-                        DrawText3D(interior.stash.x, interior.stash.y, interior.stash.z + 0.25, stashLabel)
+                        --- Be pilko floating teksto — atidarymas F2
                         local pressed = GetResourceState('mrp_npcshops') == 'started'
                             and exports['mrp_npcshops']:IsStashOpenPressed()
                             or (IsControlJustReleased(0, 289) or IsDisabledControlJustPressed(0, 289))

@@ -578,12 +578,12 @@ Config.Stations = {
             { coords = vector3(1854.1200, 3687.8689, 29.8185), heading = 206.7797, label = 'PD rūbinė 1' },
             { coords = vector3(1853.3671, 3689.4180, 29.8185), heading = 41.1066, label = 'PD rūbinė 2' },
         },
-        --- Sandy sandėliai — [F2]; sandėlis 3 koord. tikslinti jei reikia
+        --- Sandy sandėliai — [F2]; tipai / slotai / svoris identiški LS (MRPD)
         stashes = {
             {
                 coords = vector3(1861.8282, 3688.3879, 34.2194),
                 stashId = 'ltpd_stash_public_sandy',
-                label = 'PD sandėlis 1',
+                label = 'PD sandėlis (bendras)',
                 minGrade = 0,
                 divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 2000000,
@@ -592,7 +592,7 @@ Config.Stations = {
             {
                 coords = vector3(1859.6638, 3688.9521, 34.2194),
                 stashId = 'ltpd_stash_grade3_sandy',
-                label = 'PD sandėlis 2',
+                label = 'PD sandėlis (≥3 rango)',
                 minGrade = 3,
                 divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 2500000,
@@ -601,7 +601,7 @@ Config.Stations = {
             {
                 coords = vector3(1860.7460, 3688.6700, 34.2194),
                 stashId = 'ltpd_stash_grade8_sandy',
-                label = 'PD sandėlis 3',
+                label = 'PD sandėlis (vadovų)',
                 minGrade = 8,
                 divisions = { 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 3000000,
@@ -610,11 +610,63 @@ Config.Stations = {
             {
                 coords = vector3(1849.2041, 3695.5696, 38.2205),
                 stashId = 'ltpd_stash_boss_sandy',
-                label = 'PD boso sandėlis',
+                label = 'PD sandėlis (bosas / pavaduotojas)',
                 minGrade = 7,
                 divisions = { 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
                 maxweight = 3500000,
                 slots = 90,
+            },
+            --- ARAS daiktų dėžė — šalia Sandy ARAS ginklinės
+            {
+                coords = vector3(1846.35, 3692.40, 34.27),
+                stashId = 'ltpd_stash_aro_sandy',
+                label = 'ARAS daiktų sandėlis',
+                minGrade = 2,
+                divisions = { 'aras' },
+                maxweight = 4000000,
+                slots = 100,
+            },
+            --- Konfiskuoti daiktai — 1 a. šalia rūbinių (Sandy neturi MRPD rūsio)
+            {
+                coords = vector3(1855.80, 3686.40, 29.8185),
+                heading = 210.0,
+                stashId = 'ltpd_stash_confisc_pd_sandy',
+                label = 'Konfiskuotų policijos daiktų sandėlis',
+                minGrade = 0,
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
+                maxweight = 5000000,
+                slots = 120,
+            },
+            {
+                coords = vector3(1854.55, 3685.55, 29.8185),
+                heading = 210.0,
+                stashId = 'ltpd_stash_confisc_aro_sandy',
+                label = 'Konfiskuotų ARAS daiktų sandėlis',
+                minGrade = 0,
+                divisions = { 'aras' },
+                maxweight = 5000000,
+                slots = 120,
+            },
+            {
+                coords = vector3(1856.95, 3687.20, 29.8185),
+                heading = 210.0,
+                stashId = 'ltpd_stash_confisc_weapons_sandy',
+                label = 'Konfiskuotų ginklų sandėlis',
+                minGrade = 0,
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
+                maxweight = 5000000,
+                slots = 120,
+            },
+            --- Maisto sandėlis — šalia inventoriaus aukšto
+            {
+                coords = vector3(1850.85, 3688.90, 34.27),
+                heading = 210.0,
+                stashId = 'ltpd_stash_food_sandy',
+                label = 'PD maisto sandėlis',
+                minGrade = 0,
+                divisions = { 'lpm', 'mp', 'kpd', 'ktd', 'aras', 'opd', 'kd', 'vtd', 'admin' },
+                maxweight = 1500000,
+                slots = 50,
             },
         },
     },
