@@ -69,16 +69,6 @@ local VAPE_SKYSCRAPER_INTERIOR_TYPES = {
     'sc1_29_shop_shell_milo_',
 }
 
---- Atšaukia ankstesnį dekoratyvių Davis vazonų slėpimą.
-local WEED_LAB_DECOR_CENTER = vec3(1144.5345, -1659.7990, 36.6147)
-local WEED_LAB_DECOR_MODELS = {
-    `bkr_prop_weed_bucket_01a`,
-    `bkr_prop_weed_med_01a`,
-    `bkr_prop_weed_lrg_01a`,
-    `prop_weed_02`,
-    `prop_weed_01`,
-}
-
 local function removeIpls(list)
     for _, ipl in ipairs(list) do
         RemoveIpl(ipl)
@@ -93,13 +83,6 @@ end
 
 local function requestCollision(coords)
     RequestCollisionAtCoord(coords.x, coords.y, coords.z)
-end
-
-local function restoreWeedLabDecorPots()
-    local c = WEED_LAB_DECOR_CENTER
-    for _, model in ipairs(WEED_LAB_DECOR_MODELS) do
-        RemoveModelHide(c.x, c.y, c.z, 10.0, model, false)
-    end
 end
 
 local function waitInteriorAt(coords, interiorType, attempts)
@@ -344,7 +327,6 @@ local function applyMapFixes()
     loadSimeonShowroom()
     loadOneilFarmhouse()
     loadVapeSkyscraper()
-    restoreWeedLabDecorPots()
 end
 
 exports('ReloadSimeonShowroom', function()

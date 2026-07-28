@@ -74,9 +74,8 @@ Config.RiskLabels = {
 --[[
   Kiekvienas narkotikas: 1) žaliava (parduotuvė) → 2) apdorotas (gamybos stotis) → 3) supakuotas (pardavimas).
   stage = 'process' | 'pack' · sellBase > 0 tik supakuotiems.
-  Nėra random craft fail — jei minigame baigtas, produktas visada gaunamas.
 ]]
-local function drugProcess(label, level, output, craftTimeMs, risk, minigame, _fail, police, heat, _failPct, lineOrder, outAmt)
+local function drugProcess(label, level, output, craftTimeMs, risk, minigame, fail, police, heat, failPct, lineOrder, outAmt)
     return {
         label = label,
         level = level,
@@ -87,15 +86,15 @@ local function drugProcess(label, level, output, craftTimeMs, risk, minigame, _f
         craftTimeMs = craftTimeMs,
         risk = risk,
         minigame = minigame,
-        failChance = 0,
+        failChance = fail,
         policeChance = police,
         heatGain = heat,
-        failLosePercent = 0,
+        failLosePercent = failPct,
         sellBase = 0,
     }
 end
 
-local function drugPack(label, level, output, sellBase, craftTimeMs, risk, minigame, _fail, police, heat, _failPct, lineOrder, outAmt)
+local function drugPack(label, level, output, sellBase, craftTimeMs, risk, minigame, fail, police, heat, failPct, lineOrder, outAmt)
     return {
         label = label,
         level = level,
@@ -106,10 +105,10 @@ local function drugPack(label, level, output, sellBase, craftTimeMs, risk, minig
         craftTimeMs = craftTimeMs,
         risk = risk,
         minigame = minigame,
-        failChance = 0,
+        failChance = fail,
         policeChance = police,
         heatGain = heat,
-        failLosePercent = 0,
+        failLosePercent = failPct,
         sellBase = sellBase,
     }
 end
@@ -122,13 +121,6 @@ Config.Products = {
     alcohol_pack = drugPack('Nelegalus alkoholis · supakavimas', 1, 'illegal_alcohol', 75, 11000, 'low', 'schedule', 5, 3, 2, 30, 4),
     vape_process = drugProcess('Vape · paruošimas', 1, 'vape_mix', 12000, 'low', 'schedule', 4, 2, 1, 28, 5),
     vape_pack = drugPack('Vape skystis · supakavimas', 1, 'vape_liquid', 65, 10000, 'low', 'schedule', 5, 3, 1, 28, 6, 2),
-    -- Vardiniai vape receptai, kuriuos naudoja vaisių ūkio stotelės.
-    -- Gamybos sesiją ir 3D minigame visais atvejais valdo mrp_drugs.
-    vape_simple = drugPack('Paprastas vape skystis', 1, 'vape_liquid', 0, 7000, 'low', 'schedule', 4, 2, 1, 28, 6.1),
-    vape_apple_concentrate = drugProcess('Obuolių koncentratas', 1, 'apple_concentrate', 10000, 'low', 'schedule', 4, 1, 1, 25, 6.2),
-    vape_strawberry_concentrate = drugProcess('Braškių koncentratas', 1, 'strawberry_concentrate', 12000, 'low', 'schedule', 4, 1, 1, 25, 6.3),
-    vape_apple_pack = drugPack('Obuolių vape skystis', 1, 'apple_vape_liquid', 0, 12000, 'low', 'schedule', 5, 2, 1, 28, 6.4),
-    vape_strawberry_pack = drugPack('Braškių vape skystis', 1, 'strawberry_vape_liquid', 0, 15000, 'low', 'schedule', 5, 2, 1, 28, 6.5),
     --- L2
     weed_process = drugProcess('Žolė · džiovinimas', 2, 'weed_buds', 18000, 'medium', 'schedule', 10, 6, 3, 45, 7),
     -- PAKAVIMAS: paskutinis skaičius (5) = outputAmount — kiek weed_bag gauna po sėkmės. Turi sutapti su packTarget.
@@ -143,7 +135,7 @@ Config.Products = {
     mushroom_pack = drugPack('Grybai · supakavimas', 2, 'mushroom_pack', 150, 13000, 'medium', 'schedule', 10, 6, 3, 40, 16),
     --- L3 — kokainas: lapai → nesupakuotas → supakuotas
     cocaine_process = drugProcess('Kokainas · virimas', 3, 'cartel_blend', 35000, 'high', 'schedule', 20, 15, 7, 65, 17),
-    cocaine_pack = drugPack('Kokainas · supakavimas', 3, 'cocaine_bag', 520, 24000, 'high', 'schedule', 25, 20, 10, 70, 18),
+    cocaine_pack = drugPack('Kokainas · supakavimas', 3, 'cartel_pack', 520, 24000, 'high', 'schedule', 25, 20, 10, 70, 18),
     amp_process = drugProcess('Amfetaminas · sintezė', 3, 'amp_paste', 30000, 'high', 'schedule', 17, 11, 6, 60, 19),
     amp_pack = drugPack('Amfetaminas · supakavimas', 3, 'amphetamine_bag', 380, 20000, 'high', 'schedule', 20, 14, 7, 65, 20),
 }
@@ -178,30 +170,9 @@ Config.Recipes = {
         { item = 'empty_bottle', count = 1 },
         { item = 'empty_bag', count = 1 },
     },
-    vape_simple = {
-        { item = 'vape_liquid_base', count = 1 },
-        { item = 'empty_bottle', count = 1 },
-    },
-    vape_apple_concentrate = {
-        { item = 'apple', count = 5 },
-    },
-    vape_strawberry_concentrate = {
-        { item = 'strawberry', count = 8 },
-    },
-    vape_apple_pack = {
-        { item = 'apple_concentrate', count = 1 },
-        { item = 'vape_liquid_base', count = 1 },
-        { item = 'empty_bottle', count = 1 },
-    },
-    vape_strawberry_pack = {
-        { item = 'strawberry_concentrate', count = 1 },
-        { item = 'vape_liquid_base', count = 1 },
-        { item = 'empty_bottle', count = 1 },
-    },
     --- L2
     weed_process = {
-        -- Džiovinimo UI leidžia pasirinkti tikslų kiekį; 10 yra minimali partija.
-        { item = 'weed_leaf', count = 10 },
+        { item = 'weed_leaf', count = 2 },
     },
     weed_pack = {
         -- PAKAVIMAS: sunaudojama per vieną sesiją. count turi sutapti su session.packTarget (5).
@@ -259,10 +230,9 @@ Config.Recipes = {
         { item = 'empty_bag', count = 3 },
     },
     amp_process = {
-        { item = 'amp_cold_meds', count = 3 },
-        { item = 'amp_solvent', count = 2 },
-        { item = 'chemical_mix', count = 1 },
-        { item = 'gloves', count = 1 },
+        { item = 'amp_precursor', count = 4 },
+        { item = 'chemical_mix', count = 2 },
+        { item = 'lab_kit', count = 1 },
     },
     amp_pack = {
         { item = 'amp_paste', count = 1 },
@@ -313,8 +283,6 @@ Config.Printer3d = {
     maxPerPlayer = 2,
     pickupDist = 2.8,
     interactDist = 2.4,
-    --- Kiekvienas sėkmingas spausdinimas +1 XP (žr. WeaponPrintProgression)
-    countTowardWeaponXp = true,
     products = {
         print_gun_frame = {
             label = 'Ginklo korpusas',
@@ -376,15 +344,6 @@ Config.Printer3d = {
             timeMs = 22000,
         },
     },
-}
-
---- 3D spausdinimo XP → ginklų dirbtuvės atrakinimas (nepriklauso nuo narkotikų L1–L3)
-Config.WeaponPrintProgression = {
-    enabled = true,
-    --- Po N atspausdintų detalių atrakina L1 ginklų craftą gamykloje
-    unlockL1At = 10,
-    --- Po N atspausdintų detalių (viso) atrakina išplėstinį L1 rinkinį toje pačioje lokacijoje
-    unlockL2At = 15,
 }
 
 --- Ginklų dirbtuvė (client). 3D spausdintuvas — tik šaunamiesiems (recepte gun_frame / gun_barrel).
@@ -460,51 +419,26 @@ local function wp(label, level, output, ammoItem, ammoCount, craftTimeMs, miniga
 end
 
 Config.WeaponProducts = {
-    --- L1 (po 10 spausdinimų) — silpni šarvai, pistoletai, šalti ginklai, pistoletų kulkos
-    craft_armor_light = wp('Lengvi šarvai', 1, 'armor_light', nil, 0, 42000, 'progress', 8, 4, 1, 25, 'low'),
-    craft_pistol = wp('Pistoletas XM3', 1, 'weapon_pistolxm3', 'pistol_ammo', 60, 90000, 'progress', 12, 10, 3, 45, 'medium'),
-    craft_combat_pistol = wp('Keraminis pistoletas', 1, 'weapon_ceramicpistol', 'pistol_ammo', 72, 98000, 'skill', 14, 12, 4, 50, 'medium'),
+    --- L1 — pistoletai + šalti ginklai (bazinis laikas ~70–85 s + fazės)
+    craft_pistol = wp('Pistoletas', 1, 'weapon_pistol', 'pistol_ammo', 60, 90000, 'progress', 12, 10, 3, 45, 'medium'),
+    craft_combat_pistol = wp('Combat pistoletas', 1, 'weapon_combatpistol', 'pistol_ammo', 72, 98000, 'skill', 14, 12, 4, 50, 'medium'),
+    craft_armor_light = wp('Lengva šarvų liemenė', 1, 'armor_light', nil, 0, 72000, 'progress', 10, 6, 2, 40, 'medium'),
     craft_bat = wp('Beisbolo lazda', 1, 'weapon_bat', nil, 0, 82000, 'progress', 6, 4, 1, 30, 'low'),
-    craft_knife = wp('Peilis', 1, 'weapon_knife', nil, 0, 78000, 'progress', 6, 4, 1, 28, 'low'),
     craft_switchblade = wp('Switchblade', 1, 'weapon_switchblade', nil, 0, 85000, 'progress', 8, 5, 2, 35, 'low'),
-    craft_pistol_ammo = wp('Pistoletų kulkos', 1, 'pistol_ammo', nil, 0, 28000, 'progress', 5, 3, 1, 15, 'low'),
-    --- L2 (po 15 spausdinimų, ta pati gamykla) — Tec-9, nupjautvamzdis, .50, shotgun kulkos
+    --- L2 — SMG / .50 / shotgun (~95–120 s + minigame)
     craft_tec9 = wp('Tec-9', 2, 'weapon_machinepistol', 'pistol_ammo', 90, 115000, 'skill', 16, 14, 5, 52, 'high'),
-    craft_sawnoff = wp('Mažas pump shotgun', 2, 'weapon_sawnoffshotgun', 'shotgun_ammo', 24, 125000, 'skill', 17, 15, 5, 55, 'high'),
+    craft_mini_uzi = wp('Mini Uzi', 2, 'weapon_minismg', 'smg_ammo', 90, 120000, 'skill', 17, 15, 5, 54, 'high'),
+    craft_smg = wp('SMG', 2, 'weapon_smg', 'smg_ammo', 120, 125000, 'skill', 18, 16, 6, 56, 'high'),
+    craft_fgc9 = wp('FGC-9', 2, 'weapon_fgc9', 'pistol_ammo', 90, 128000, 'skill', 17, 15, 5, 54, 'high'),
     craft_pistol50 = wp('Pistoletas .50', 2, 'weapon_pistol50', 'pistol_ammo', 48, 118000, 'skill', 15, 14, 5, 50, 'high'),
-    craft_shotgun_ammo = wp('Šratinio kulkos', 2, 'shotgun_ammo', nil, 0, 32000, 'progress', 6, 4, 1, 18, 'low'),
-    --- L3 — vėlesniam unlock'ui (kol kas ne gamyklos L1 sąraše)
-    craft_mini_uzi = wp('Mini Uzi', 3, 'weapon_minismg', 'smg_ammo', 90, 120000, 'skill', 17, 15, 5, 54, 'high'),
-    craft_micro_smg = wp('Micro SMG', 3, 'weapon_microsmg', 'smg_ammo', 90, 122000, 'skill', 17, 15, 5, 54, 'high'),
-    craft_pumpshotgun = wp('Pump shotgun', 3, 'weapon_pumpshotgun', 'shotgun_ammo', 32, 135000, 'advanced', 19, 17, 6, 58, 'high'),
-    craft_micro_draco = wp('Micro Draco', 3, 'weapon_compactrifle', 'rifle_ammo', 90, 150000, 'advanced', 20, 18, 7, 60, 'extreme'),
+    craft_pumpshotgun = wp('Pump shotgun', 2, 'weapon_pumpshotgun', 'shotgun_ammo', 32, 135000, 'advanced', 19, 17, 6, 58, 'high'),
+    --- L3 — karabinai (~120–150 s + minigame)
+    craft_carbine = wp('Karabinas', 3, 'weapon_carbinerifle', 'rifle_ammo', 120, 148000, 'advanced', 20, 18, 7, 60, 'extreme'),
     craft_ak47 = wp('AK-47', 3, 'weapon_assaultrifle', 'rifle_ammo', 120, 156000, 'advanced', 21, 19, 8, 62, 'extreme'),
+    craft_micro_draco = wp('Micro Draco', 3, 'weapon_compactrifle', 'rifle_ammo', 90, 150000, 'advanced', 20, 18, 7, 60, 'extreme'),
 }
-
---- Gamyklos produktai: L1 + L2 (filtruojama pagal print XP)
-Config.WeaponBenchProducts = {
-    [1] = {
-        'craft_armor_light', 'craft_pistol', 'craft_combat_pistol',
-        'craft_bat', 'craft_knife', 'craft_switchblade', 'craft_pistol_ammo',
-    },
-    [2] = {
-        'craft_tec9', 'craft_sawnoff', 'craft_pistol50', 'craft_shotgun_ammo',
-    },
-    [3] = { 'craft_mini_uzi', 'craft_micro_smg', 'craft_pumpshotgun', 'craft_micro_draco', 'craft_ak47' },
-}
-
-for _, st in ipairs(Config.Stations or {}) do
-    if st.mode == 'weapon' and st.level and Config.WeaponBenchProducts[st.level] then
-        st.products = Config.WeaponBenchProducts[st.level]
-    end
-end
 
 Config.WeaponRecipes = {
-    craft_armor_light = {
-        { item = 'metal_scrap', count = 7 },
-        { item = 'plastic', count = 4 },
-        { item = 'weapon_parts', count = 2 },
-    },
     craft_pistol = {
         { item = 'gun_frame', count = 2 },
         { item = 'gun_barrel', count = 2 },
@@ -521,23 +455,19 @@ Config.WeaponRecipes = {
         { item = 'weapon_parts', count = 2 },
         { item = 'metal_scrap', count = 8 },
     },
+    craft_armor_light = {
+        { item = 'metal_scrap', count = 8 },
+        { item = 'plastic', count = 5 },
+        { item = 'weapon_parts', count = 2 },
+    },
     craft_bat = {
         { item = 'metal_scrap', count = 6 },
         { item = 'weapon_parts', count = 2 },
-    },
-    craft_knife = {
-        { item = 'metal_scrap', count = 4 },
-        { item = 'weapon_parts', count = 1 },
     },
     craft_switchblade = {
         { item = 'metal_scrap', count = 4 },
         { item = 'gun_spring', count = 2 },
         { item = 'weapon_parts', count = 2 },
-    },
-    craft_pistol_ammo = {
-        { item = 'metal_scrap', count = 3 },
-        { item = 'gun_spring', count = 1 },
-        { item = 'plastic', count = 2 },
     },
     craft_tec9 = {
         { item = 'gun_frame', count = 2 },
@@ -547,13 +477,31 @@ Config.WeaponRecipes = {
         { item = 'weapon_parts', count = 3 },
         { item = 'metal_scrap', count = 9 },
     },
-    craft_sawnoff = {
+    craft_mini_uzi = {
         { item = 'gun_frame', count = 2 },
+        { item = 'gun_barrel', count = 3 },
+        { item = 'gun_spring', count = 5 },
+        { item = 'gun_trigger', count = 2 },
+        { item = 'weapon_parts', count = 3 },
+        { item = 'metal_scrap', count = 11 },
+    },
+    craft_smg = {
+        { item = 'gun_frame', count = 3 },
+        { item = 'gun_barrel', count = 3 },
+        { item = 'gun_spring', count = 6 },
+        { item = 'gun_trigger', count = 3 },
+        { item = 'weapon_parts', count = 5 },
+        { item = 'metal_scrap', count = 12 },
+    },
+    craft_fgc9 = {
+        { item = 'gun_frame', count = 3 },
         { item = 'gun_barrel', count = 2 },
-        { item = 'gun_spring', count = 3 },
+        { item = 'gun_spring', count = 5 },
         { item = 'gun_trigger', count = 2 },
         { item = 'weapon_parts', count = 4 },
-        { item = 'metal_scrap', count = 10 },
+        { item = 'weapon_prototype', count = 1 },
+        { item = 'plastic', count = 10 },
+        { item = 'metal_scrap', count = 8 },
     },
     craft_pistol50 = {
         { item = 'gun_frame', count = 2 },
@@ -563,28 +511,6 @@ Config.WeaponRecipes = {
         { item = 'weapon_parts', count = 3 },
         { item = 'metal_scrap', count = 9 },
     },
-    craft_shotgun_ammo = {
-        { item = 'metal_scrap', count = 4 },
-        { item = 'gun_spring', count = 1 },
-        { item = 'plastic', count = 3 },
-        { item = 'weapon_parts', count = 1 },
-    },
-    craft_mini_uzi = {
-        { item = 'gun_frame', count = 2 },
-        { item = 'gun_barrel', count = 3 },
-        { item = 'gun_spring', count = 5 },
-        { item = 'gun_trigger', count = 2 },
-        { item = 'weapon_parts', count = 3 },
-        { item = 'metal_scrap', count = 11 },
-    },
-    craft_micro_smg = {
-        { item = 'gun_frame', count = 2 },
-        { item = 'gun_barrel', count = 3 },
-        { item = 'gun_spring', count = 5 },
-        { item = 'gun_trigger', count = 2 },
-        { item = 'weapon_parts', count = 3 },
-        { item = 'metal_scrap', count = 10 },
-    },
     craft_pumpshotgun = {
         { item = 'gun_frame', count = 3 },
         { item = 'gun_barrel', count = 3 },
@@ -593,13 +519,13 @@ Config.WeaponRecipes = {
         { item = 'weapon_parts', count = 5 },
         { item = 'metal_scrap', count = 12 },
     },
-    craft_micro_draco = {
+    craft_carbine = {
         { item = 'gun_frame', count = 3 },
         { item = 'gun_barrel', count = 3 },
         { item = 'gun_spring', count = 5 },
         { item = 'gun_trigger', count = 3 },
-        { item = 'weapon_parts', count = 6 },
-        { item = 'metal_scrap', count = 14 },
+        { item = 'weapon_parts', count = 8 },
+        { item = 'metal_scrap', count = 15 },
     },
     craft_ak47 = {
         { item = 'gun_frame', count = 3 },
@@ -609,15 +535,15 @@ Config.WeaponRecipes = {
         { item = 'weapon_parts', count = 9 },
         { item = 'metal_scrap', count = 18 },
     },
+    craft_micro_draco = {
+        { item = 'gun_frame', count = 3 },
+        { item = 'gun_barrel', count = 3 },
+        { item = 'gun_spring', count = 5 },
+        { item = 'gun_trigger', count = 3 },
+        { item = 'weapon_parts', count = 6 },
+        { item = 'metal_scrap', count = 14 },
+    },
 }
-
---- Pistoletų/šaltųjų ammo output kiekis
-if Config.WeaponProducts.craft_pistol_ammo then
-    Config.WeaponProducts.craft_pistol_ammo.outputAmount = 24
-end
-if Config.WeaponProducts.craft_shotgun_ammo then
-    Config.WeaponProducts.craft_shotgun_ammo.outputAmount = 16
-end
 
 --- Parduotuvė: visi mrp_drugs itemai (žaliava, apdorota, supakuota, reikmenys, ginklų dalys)
 Config.MaterialShop = {
@@ -647,11 +573,16 @@ Config.MaterialShop = {
         { name = 'pill_press', amount = 100, price = 320, slot = 10 },
         { name = 'bagging_table', amount = 80, price = 220, slot = 11 },
         -- 3D spausdinimas (atskira ginklų sistema — ne narkotikai)
-        -- printer_3d perkamas PrinterShopNPC lokacijoje
         { name = 'weapon_prototype', amount = 200, price = 380, slot = 12 },
+        { name = 'printer_3d', amount = 25, price = 7500, slot = 13 },
         { name = 'plastic', amount = 500, price = 22, slot = 14 },
-        -- Žaliavos detalėms (pačios detalės — tik per 3D spausdintuvą → XP)
+        -- Ginklų dalys (atskira ginklų sistema — ne narkotikai)
         { name = 'metal_scrap', amount = 500, price = 55, slot = 15 },
+        { name = 'gun_frame', amount = 200, price = 220, slot = 16 },
+        { name = 'gun_barrel', amount = 200, price = 260, slot = 17 },
+        { name = 'gun_spring', amount = 500, price = 45, slot = 18 },
+        { name = 'gun_trigger', amount = 300, price = 85, slot = 19 },
+        { name = 'weapon_parts', amount = 300, price = 150, slot = 20 },
         { name = 'pistol_ammo', amount = 500, price = 18, slot = 21 },
         { name = 'smg_ammo', amount = 500, price = 28, slot = 22 },
         { name = 'rifle_ammo', amount = 500, price = 35, slot = 23 },
@@ -670,13 +601,9 @@ Config.Sell = {
     requireGangForInfluence = true,
     allowSellWithoutGang = true,
     basePriceMultiplier = 1.0,
-    --- Gatvės NPC: kiek vienetas per sandorį (random tarp min–max, ne daugiau nei turi).
-    minUnitsPerNpc = 1,
-    maxUnitsPerNpc = 5,
     --- Pardavimo atlygis inventoriaus item (nešvarūs pinigai), ne grynieji cash.
-    --- 1 markedbills = $1 — inventorius rodo x suma.
     payoutItem = 'markedbills',
-    --- Senas nustatymas (nebenaudojamas): anksčiau skaidė į banknotus su info.worth.
+    --- 0 = vienas item su visa suma info.worth; >0 = skaidyti į kelis banknotus.
     payoutBillWorth = 0,
     --- Jei inventoriuje vietos nėra — ar leisti grynuosius kaip atsarginį variantą.
     payoutFallbackCash = true,
@@ -795,14 +722,10 @@ Config.FreeDrugShop = {
         -- L3 žaliava / tarpiniai / galutiniai
         { name = 'cartel_raw', amount = 999, price = 0, slot = 25 },
         { name = 'chemical_mix', amount = 999, price = 0, slot = 26 },
-        { name = 'amp_cold_meds', amount = 999, price = 0, slot = 27 },
-        { name = 'amp_solvent', amount = 999, price = 0, slot = 32 },
-        { name = 'amp_reactor', amount = 5, price = 0, slot = 33 },
-        { name = 'amp_cooler', amount = 5, price = 0, slot = 34 },
-        { name = 'amp_vent', amount = 5, price = 0, slot = 35 },
+        { name = 'amp_precursor', amount = 999, price = 0, slot = 27 },
         { name = 'cartel_blend', amount = 999, price = 0, slot = 28 },
         { name = 'amp_paste', amount = 999, price = 0, slot = 29 },
-        { name = 'cocaine_bag', amount = 999, price = 0, slot = 30 },
+        { name = 'cartel_pack', amount = 999, price = 0, slot = 30 },
         { name = 'amphetamine_bag', amount = 999, price = 0, slot = 31 },
         -- Bendri gamybos reikmenys
         { name = 'empty_bag', amount = 999, price = 0, slot = 32 },
@@ -893,7 +816,7 @@ Config.ProductBuyerNPCs = {
         maxDistance = 3.5,
         blip = { enabled = true, sprite = 501, color = 0, scale = 0.75, label = 'Kokaino supirkėjas' },
         prices = {
-            cocaine_bag = 620,
+            cartel_pack = 620,
         },
     },
     heroin = {
@@ -1053,36 +976,6 @@ Config.WeedSupplyShopNPC = {
     },
 }
 
---- 3D spausdintuvas + spausdinimo žaliavos
-Config.PrinterShop = {
-    name = 'fivempro-printer-shop',
-    label = '3D spausdintuvas',
-    items = {
-        { name = 'printer_3d', amount = 25, price = 7500, slot = 1 },
-        { name = 'weapon_prototype', amount = 200, price = 380, slot = 2 },
-        { name = 'plastic', amount = 500, price = 22, slot = 3 },
-        { name = 'metal_scrap', amount = 500, price = 55, slot = 4 },
-    },
-}
-
-Config.PrinterShopNPC = {
-    enabled = true,
-    model = 's_m_y_construct_01',
-    coords = vector4(-95.2495, -1607.3068, 32.2838, 148.1970),
-    scenario = 'WORLD_HUMAN_CLIPBOARD',
-    label = 'Pirkti 3D spausdintuvą',
-    maxDistance = 3.5,
-    targetIcon = 'fas fa-print',
-    blip = {
-        enabled = true,
-        sprite = 566,
-        color = 5,
-        scale = 0.78,
-        shortRange = true,
-        label = '3D spausdintuvas',
-    },
-}
-
 --- Kanapių auginimas — grow_pot + weed_nutrition (substratas) + sėklos + mini-game etapai
 Config.WeedGrow = {
     seedItem = 'weed_seed',
@@ -1190,86 +1083,98 @@ Config.ThcLab = {
     },
 }
 
---- Ginklų / detalių gamykla · L1 (print XP atrakina L1→L2 produktus)
+--- Ginklų dirbtuvė · L1 — šarvai ir pistoletai (Mount Chiliad)
 Config.WeaponBenchL1 = {
     blip = {
         enabled = true,
-        coords = vector3(-2949.3467, 438.6393, 15.2658),
+        coords = vector3(-1142.7271, 4941.6255, 222.3038),
         sprite = 110,
         color = 1,
         scale = 0.78,
         shortRange = true,
-        label = 'Ginklų gamykla · L1',
+        label = 'Ginklų dirbtuvė · L1',
     },
     stations = {
         {
-            id = 'weapon_bench_l1_factory',
-            label = 'Ginklų gamykla · L1',
-            --- Stotis laiko L1+L2 produktus; atrakinimas pagal 3D print XP
+            id = 'weapon_bench_l1_chiliad',
+            label = 'Ginklų dirbtuvė · L1',
             level = 1,
             mode = 'weapon',
-            coords = vector3(-2949.3467, 438.6393, 15.2658),
-            heading = 72.7165,
-            radius = 2.2,
-            products = (function()
-                local list = {}
-                for _, pid in ipairs((Config.WeaponBenchProducts and Config.WeaponBenchProducts[1]) or {}) do
-                    list[#list + 1] = pid
-                end
-                for _, pid in ipairs((Config.WeaponBenchProducts and Config.WeaponBenchProducts[2]) or {}) do
-                    list[#list + 1] = pid
-                end
-                return list
-            end)(),
+            coords = vector3(-1142.7271, 4941.6255, 222.3038),
+            heading = 162.4606,
+            radius = 2.0,
+            products = {
+                'craft_pistol',
+                'craft_combat_pistol',
+                'craft_armor_light',
+            },
         },
     },
 }
 
---- Žolės džiovinimas (Davis). Cayo portable stalas paliekamas tik žolės pakavimui.
+--- Žolės džiovinimas (Davis) + supakavimas (Cayo Perico)
 Config.WeedCayoLab = {
     blip = {
         enabled = true,
-        coords = vector3(1144.5762, -1661.0204, 36.6147),
+        coords = vector3(1144.82, -1659.86, 36.61),
         sprite = 140,
         color = 25,
         scale = 0.78,
         shortRange = true,
         label = 'Žolės džiovinimas',
     },
+    packBlip = {
+        enabled = true,
+        requireIsland = true,
+        coords = vector3(5195.83, -5134.91, 3.35),
+        sprite = 140,
+        color = 2,
+        scale = 0.78,
+        shortRange = true,
+        label = 'Žolės supakavimas',
+    },
     stations = {
         {
-            id = 'weed_dry_davis',
+            id = 'weed_dry_1',
             label = 'Žolė · džiovinimas',
             level = 2,
-            coords = vector3(1144.5762, -1661.0204, 36.6147),
-            heading = 203.0073,
+            coords = vector3(1144.3669, -1658.9980, 36.6147),
+            heading = 292.0355,
+            radius = 1.5,
+            products = { 'weed_process' },
+        },
+        {
+            id = 'weed_dry_2',
+            label = 'Žolė · džiovinimas',
+            level = 2,
+            coords = vector3(1145.2770, -1660.7167, 36.6147),
+            heading = 291.2983,
             radius = 1.5,
             products = { 'weed_process' },
         },
     },
-    -- Senos Cayo pakavimo stotys negrąžinamos; pakavimas lieka tik prie asmeninio stalo.
-    packStations = {},
-}
-
---- Ilgalaikė Davis džiovinimo partija. Laiką ir atlygį galutinai skaičiuoja serveris.
-Config.WeedDrying = {
-    stationId = 'weed_dry_davis',
-    coords = vector4(1144.5762, -1661.0204, 36.6147, 203.0073),
-    visualCoords = vector4(1144.1144, -1660.0133, 36.8211, 205.8993),
-    inputItem = 'weed_leaf',
-    outputItem = 'weed_buds',
-    minimumAmount = 10,
-    maximumAmount = 500,
-    secondsPerPlant = 10,
-    discountEvery = 25,
-    discountPercent = 2,
-    earlyReturnPercent = 80,
-    visualPlantCount = 9,
-    visualPlantSpacing = 0.46,
-    visualPlantAttachZ = 0.26,
-    visualGroundProbeHeight = 1.0,
-    interactDistance = 4.0,
-    hologramDistance = 22.0,
+    packStations = {
+        {
+            id = 'weed_pack_cayo_1',
+            label = 'Žolė · supakavimas',
+            level = 2,
+            coords = vector3(5196.0693, -5133.6929, 3.3579),
+            heading = 255.6201,
+            workspace = vector4(5196.40, -5133.20, 3.35, 180.0),
+            radius = 1.5,
+            products = { 'weed_pack' },
+        },
+        {
+            id = 'weed_pack_cayo_2',
+            label = 'Žolė · supakavimas',
+            level = 2,
+            coords = vector3(5195.5938, -5136.1323, 3.3498),
+            heading = 269.6169,
+            workspace = vector4(5196.40, -5133.20, 3.35, 180.0),
+            radius = 1.5,
+            products = { 'weed_pack' },
+        },
+    },
 }
 
 --- Heroino laboratorija (production) — Paleto / Grapeseed zona
@@ -1496,153 +1401,6 @@ Config.VapeLab = {
     },
 }
 
---- Bendras L1 vape 3D prototipas.
---- legacyFallback paliktas greitam rollback, kol nauja 3D sąveika patvirtinta gyvame serveryje.
-Config.Vape3D = {
-    enabled = true,
-    legacyFallback = false,
-    sessionTimeoutMs = 180000,
-}
-
---- Vardinės vaisių ūkio stotelės. Šios koordinatės yra serverio autoriteto dalis:
---- mrp_jobs tik atidaro meniu, o receptą, locką ir atstumą tikrina mrp_drugs.
-Config.VapeNamedStations = {
-    vape_simple = {
-        id = 'fruit_vape_mix',
-        coords = vector4(2423.6, 4959.0, 46.8, 130.0),
-        radius = 3.0,
-    },
-    vape_apple_concentrate = {
-        id = 'fruit_vape_wash',
-        coords = vector4(2429.2, 4965.0, 46.8, 130.0),
-        radius = 3.0,
-    },
-    vape_strawberry_concentrate = {
-        id = 'fruit_vape_wash',
-        coords = vector4(2429.2, 4965.0, 46.8, 130.0),
-        radius = 3.0,
-    },
-    vape_apple_pack = {
-        id = 'fruit_vape_mix',
-        coords = vector4(2423.6, 4959.0, 46.8, 130.0),
-        radius = 3.0,
-    },
-    vape_strawberry_pack = {
-        id = 'fruit_vape_mix',
-        coords = vector4(2423.6, 4959.0, 46.8, 130.0),
-        radius = 3.0,
-    },
-}
-
---- Serverio priimama vape etapų seka. Klientas negali praleisti ar sukeisti etapų.
---- minMs matuojamas nuo ankstesnio priimto etapo; pirmas etapas – nuo sesijos pradžios.
-Config.VapeStageSequences = {
-    vape_process = {
-        { name = 'prepare', minMs = 350 },
-        { name = 'select', minMs = 350 },
-        { name = 'move', minMs = 550 },
-        { name = 'pour', minMs = 1600 },
-        { name = 'mix', minMs = 700 },
-        { name = 'stabilize', minMs = 500 },
-    },
-    vape_simple = {
-        { name = 'prepare', minMs = 350 },
-        { name = 'select', minMs = 350 },
-        { name = 'move', minMs = 550 },
-        { name = 'pour', minMs = 1600 },
-        { name = 'mix', minMs = 700 },
-        { name = 'stabilize', minMs = 500 },
-    },
-    vape_apple_concentrate = {
-        { name = 'prepare', minMs = 350 },
-        { name = 'select', minMs = 350 },
-        { name = 'move', minMs = 550 },
-        { name = 'pour', minMs = 1600 },
-        { name = 'mix', minMs = 700 },
-        { name = 'stabilize', minMs = 500 },
-    },
-    vape_strawberry_concentrate = {
-        { name = 'prepare', minMs = 350 },
-        { name = 'select', minMs = 350 },
-        { name = 'move', minMs = 550 },
-        { name = 'pour', minMs = 1600 },
-        { name = 'mix', minMs = 700 },
-        { name = 'stabilize', minMs = 500 },
-    },
-    vape_pack = {
-        { name = 'bottle', minMs = 350 },
-        { name = 'dose', minMs = 1600 },
-        { name = 'cap', minMs = 350 },
-        { name = 'seal', minMs = 500 },
-        { name = 'finalize', minMs = 350 },
-    },
-    vape_apple_pack = {
-        { name = 'bottle', minMs = 350 },
-        { name = 'dose', minMs = 1600 },
-        { name = 'cap', minMs = 350 },
-        { name = 'seal', minMs = 500 },
-        { name = 'finalize', minMs = 350 },
-    },
-    vape_strawberry_pack = {
-        { name = 'bottle', minMs = 350 },
-        { name = 'dose', minMs = 1600 },
-        { name = 'cap', minMs = 350 },
-        { name = 'seal', minMs = 500 },
-        { name = 'finalize', minMs = 350 },
-    },
-}
-
---- L1 alkoholio 3D prototipas (ta pati schema kaip Vape3D).
-Config.Alcohol3D = {
-    enabled = true,
-    legacyFallback = false,
-    sessionTimeoutMs = 180000,
-}
-
---- Serverio priimama alkoholio etapų seka.
-Config.AlcoholStageSequences = {
-    alcohol_process = {
-        { name = 'prepare', minMs = 350 },
-        { name = 'heat', minMs = 800 },
-        { name = 'hold', minMs = 1200 },
-        { name = 'distill', minMs = 1600 },
-        { name = 'collect', minMs = 700 },
-        { name = 'cool', minMs = 500 },
-    },
-    alcohol_pack = {
-        { name = 'bottle', minMs = 350 },
-        { name = 'pour', minMs = 1600 },
-        { name = 'cork', minMs = 350 },
-        { name = 'seal', minMs = 500 },
-        { name = 'finalize', minMs = 350 },
-    },
-}
-
---- L1 THC 3D (ta pati schema kaip Alcohol3D / Vape3D).
-Config.Thc3D = {
-    enabled = true,
-    legacyFallback = false,
-    sessionTimeoutMs = 180000,
-}
-
---- Serverio priimama THC etapų seka.
-Config.ThcStageSequences = {
-    thc_process = {
-        { name = 'prepare', minMs = 350 },
-        { name = 'trim', minMs = 1200 },
-        { name = 'heat', minMs = 800 },
-        { name = 'collect', minMs = 700 },
-        { name = 'stabilize', minMs = 1200 },
-    },
-    thc_pack = {
-        { name = 'cartridge', minMs = 350 },
-        { name = 'fill', minMs = 1600 },
-        { name = 'coil', minMs = 900 },
-        { name = 'seal', minMs = 500 },
-        { name = 'finalize', minMs = 350 },
-    },
-}
-
 --- Grybų perdirbimas — šalia rinkimo lauko (Mount Chiliad)
 Config.MushroomLab = {
     blip = {
@@ -1710,26 +1468,12 @@ Config.CocaineLab = {
 }
 
 --- Amfetamino mobilioji laboratorija — Zirconium Journey + dykuma prie Grapeseed
----
---- Srautas:
----   1) Dark Net / laužynas → 3 įrangos moduliai (reaktorius, aušintuvas, ventiliacija)
----   2) Montuoji modulius į Journey (use item prie furgono)
----   3) Ingredientai: šaltųjų vaistai + tirpiklis + chemical_mix + pirštinės
----   4) Pastatai Journey į Grapeseed zoną → quiz sintezė → amp_paste → pack
 Config.AmpExclusiveProducts = { amp_process = true, amp_pack = true }
 
 Config.AmpMobileLab = {
     enabled = true,
     vehicleModels = { journey = true, journey2 = true },
     vehicleMaxDistance = 9.0,
-    installDistance = 4.0,
-    installMs = 8500,
-    --- Visi 3 moduliai privalomi Journey statebag'e (mrpAmpLab)
-    requiredParts = {
-        { id = 'reactor', item = 'amp_reactor', label = 'Reaktoriaus modulis' },
-        { id = 'cooler', item = 'amp_cooler', label = 'Aušinimo blokas' },
-        { id = 'vent', item = 'amp_vent', label = 'Ventiliacijos rinkinys' },
-    },
     lab = {
         coords = vector3(1903.48, 4922.55, 48.86),
         radius = 14.0,
@@ -1758,10 +1502,9 @@ Config.AmpMobileLab = {
         products = { 'amp_pack' },
     },
     recipe = {
-        { item = 'amp_cold_meds', count = 3 },
-        { item = 'amp_solvent', count = 2 },
-        { item = 'chemical_mix', count = 1 },
-        { item = 'gloves', count = 1 },
+        { item = 'amp_precursor', count = 4 },
+        { item = 'chemical_mix', count = 2 },
+        { item = 'lab_kit', count = 1 },
     },
     questions = {
         { q = 'Koks pH tinkamiausias precursoriaus neutralizavimui?', options = { '3–4 (rūgštus)', '7–8 (neutralus)', '11–12 (šarmus)' }, answer = 2 },
@@ -1772,20 +1515,6 @@ Config.AmpMobileLab = {
         { q = 'Kada sustabdyti sintezę?', options = { 'Kai kvepuoja balta migla', 'Kai pasiekiamas stabilus kristalizacijos etapas', 'Kai išgaruoja visas vanduo' }, answer = 2 },
         { q = 'Koks ventiliacijos tikslas laboratorijoje?', options = { 'Sumažinti drėgmę', 'Pašalinti garus ir apsaugoti nuo sprogimo', 'Padidinti slėgį' }, answer = 2 },
         { q = 'Ką reiškia drumstumas mišinyje po neutralizacijos?', options = { 'Sėkmė', 'Per daug vandens', 'Netinkamas pH ar nešvarumai' }, answer = 3 },
-    },
-}
-
---- Laužyno dėžė — pigesnis amp_solvent / kartais cooler dalys
-Config.AmpScrapYard = {
-    enabled = true,
-    coords = vector3(2341.05, 3127.90, 48.21),
-    radius = 1.4,
-    label = 'Pramonės atliekų dėžė',
-    cooldownMs = 180000,
-    loot = {
-        { item = 'amp_solvent', min = 1, max = 2, chance = 0.70 },
-        { item = 'chemical_mix', min = 1, max = 1, chance = 0.25 },
-        { item = 'amp_cooler', min = 1, max = 1, chance = 0.08 },
     },
 }
 
@@ -1811,11 +1540,7 @@ Config.LsTestQuickBuy = {
     { item = 'pill_powder', amount = 20 },
     { item = 'mushroom_raw', amount = 20 },
     { item = 'cartel_raw', amount = 20 },
-    { item = 'amp_cold_meds', amount = 20 },
-    { item = 'amp_solvent', amount = 15 },
-    { item = 'amp_reactor', amount = 1 },
-    { item = 'amp_cooler', amount = 1 },
-    { item = 'amp_vent', amount = 1 },
+    { item = 'amp_precursor', amount = 20 },
     { item = 'alcohol_base', amount = 15 },
     { item = 'vape_liquid_base', amount = 15 },
 }
@@ -1834,8 +1559,7 @@ Config.TestKits = {
     },
     level3 = {
         cartel_raw = 25, chemical_mix = 20, meth_ingredient = 10, pill_powder = 15,
-        amp_cold_meds = 20, amp_solvent = 15,
-        amp_reactor = 1, amp_cooler = 1, amp_vent = 1,
+        amp_precursor = 20,
         lab_kit = 5, empty_bag = 35, scale = 5, burner = 3,
         trimming_scissors = 2, pill_press = 1, gloves = 5,
     },
@@ -1874,23 +1598,23 @@ Config.WorldSiteIndex = {
     { id = 'alcohol_lab',        category = 'lab',     label = 'Samagono distiliatorius',       coords = '2434.18, 4968.52, 46.82',   desc = 'Alkoholio distiliacija ir supakavimas' },
     { id = 'vape_lab',           category = 'lab',     label = 'Vape laboratorija',             coords = '1175.52, -3113.84, 6.03',   desc = 'Vape skysčio paruošimas ir supakavimas' },
     -- L2 laboratorijos
-    { id = 'weed_dry',           category = 'lab',     label = 'Žolės džiovinimas',             coords = '1144.58, -1661.02, 36.61',   desc = 'Ilgalaikis žolės džiovinimas — Davis' },
+    { id = 'weed_dry',           category = 'lab',     label = 'Žolės džiovinimas',             coords = '1144.82, -1659.86, 36.61',   desc = 'Weed process — Davis' },
+    { id = 'weed_pack_cayo',     category = 'lab',     label = 'Žolės supakavimas (Cayo)',      coords = '5195.83, -5134.91, 3.35',    desc = 'Weed pack — Cayo Perico' },
     { id = 'heroin_lab',         category = 'lab',     label = 'Heroino laboratorija',          coords = '1953.00, 5180.00, 47.98',   desc = 'Heroin process + pack' },
     { id = 'meth_lab',           category = 'lab',     label = 'Metamfetamino laboratorija',    coords = '2709.10, 5235.05, 49.36',   desc = 'Kristalizacija + supakavimas' },
     { id = 'pills_lab',          category = 'lab',     label = 'Tablečių gamyba',               coords = '348.50, -2062.00, 21.24',   desc = 'Pills process + pack — Davis' },
     { id = 'mushroom_lab',       category = 'lab',     label = 'Grybų perdirbimas',             coords = '2138.52, 6405.18, 153.07',  desc = 'Džiovinimas + supakavimas' },
     -- L3
     { id = 'cocaine_lab',        category = 'lab',     label = 'Kokaino laboratorija (Cayo)',   coords = '4987.12, -5128.44, 2.52',   desc = 'Virimas + supakavimas — Cayo' },
-    { id = 'amp_lab',            category = 'lab',     label = 'Amfetamino laboratorija',       coords = '1903.48, 4922.55, 48.86',   desc = 'Journey su 3 moduliais + quiz' },
+    { id = 'amp_lab',            category = 'lab',     label = 'Amfetamino laboratorija',       coords = '1903.48, 4922.55, 48.86',   desc = 'Journey autobusas + quiz sintezė' },
     { id = 'amp_pack',           category = 'lab',     label = 'Amfetamino supakavimas',      coords = '1908.20, 4926.80, 48.86',   desc = 'Amp pack stotelė' },
-    { id = 'amp_scrap',          category = 'lab',     label = 'Amp laužyno dėžė',             coords = '2341.05, 3127.90, 48.21',   desc = 'Tirpiklis / kartais aušintuvas' },
     { id = 'weapon_bench',       category = 'weapon',  label = 'Ginklų dirbtuvė L1',            coords = '-1142.73, 4941.63, 222.30', desc = 'Ginklų crafting — Chiliad' },
     -- Supirkėjai
     { id = 'buyer_alcohol',      category = 'buyer',   label = 'Alkoholio supirkėjas',          coords = '186.47, -1273.15, 29.20',    desc = 'Perka illegal_alcohol' },
     { id = 'buyer_thc',          category = 'buyer',   label = 'THC supirkėjas',                coords = '-1164.44, -1567.76, 4.45',   desc = 'Perka thc_cart' },
     { id = 'buyer_vape',         category = 'buyer',   label = 'Vape supirkėjas',               coords = '-1724.61, 234.15, 58.47',    desc = 'Perka vape_liquid' },
     { id = 'buyer_weed',         category = 'buyer',   label = 'Žolės supirkėjas',              coords = '-3.45, -1820.93, 29.54',     desc = 'Perka weed_bag' },
-    { id = 'buyer_cocaine',      category = 'buyer',   label = 'Kokaino supirkėjas',            coords = '5587.65, -5220.64, 14.62',   desc = 'Perka cocaine_bag — Cayo' },
+    { id = 'buyer_cocaine',      category = 'buyer',   label = 'Kokaino supirkėjas',            coords = '5587.65, -5220.64, 14.62',   desc = 'Perka cartel_pack — Cayo' },
     { id = 'buyer_heroin',       category = 'buyer',   label = 'Heroino supirkėjas',            coords = '357.24, -2055.82, 22.09',    desc = 'Perka heroin_bag' },
     { id = 'buyer_meth',         category = 'buyer',   label = 'Metamfetamino supirkėjas',      coords = '1981.52, 5177.18, 47.98',   desc = 'Perka meth_bag' },
     { id = 'buyer_pills',        category = 'buyer',   label = 'Tablečių supirkėjas',           coords = '-661.18, -857.82, 24.48',    desc = 'Perka pills_pack' },

@@ -216,10 +216,6 @@
       camState.zoom = Number(payload.zoom) || camState.zoom;
       camState.flash = !!payload.flash;
     }
-    if (action === "cameraCaptureHide") {
-      const phone = document.getElementById("phone");
-      if (phone) phone.classList.toggle("camera-capture-hide", !!payload?.hide);
-    }
     if (action === "cameraFlash") {
       const el = ensureFlashOverlay();
       el.classList.add("on");

@@ -134,30 +134,3 @@ Config.FishingLoot = {
 
 Config.FishCooldown = 12
 Config.HuntGutCooldown = 8
-
---- Po vandeniu — retas Service Carbine loot (dauguma: pinigai / papuošalai / dalys)
-Config.UnderwaterSalvage = {
-    cooldownSec = 45,
-    searchTimeMs = 8500,
-    zones = {
-        { coords = vector3(-3426.5, 967.0, -20.0), radius = 55.0, label = 'Chumash nuskendęs laivas' },
-        { coords = vector3(3168.0, -280.0, -15.0), radius = 45.0, label = 'Paleto įlankos liekanos' },
-        { coords = vector3(4200.0, 3600.0, -25.0), radius = 60.0, label = 'Cayo Perico liekanos' },
-        { coords = vector3(-1612.0, 5260.0, -18.0), radius = 40.0, label = 'Paleto krantas (gili vandens dalis)' },
-    },
-    --- Svorinė suma = 100 (retas ginklas ~1%)
-    loot = {
-        { kind = 'money', min = 120, max = 850, weight = 34 },
-        { kind = 'item', item = 'rolex', count = 1, weight = 12 },
-        { kind = 'item', item = 'goldchain', count = 1, weight = 14 },
-        { kind = 'item', item = 'metal_scrap', count = 2, weight = 18 },
-        { kind = 'item', item = 'weapon_parts', count = 1, weight = 12 },
-        { kind = 'item', item = 'plastic', count = 3, weight = 9 },
-        { kind = 'weapon', item = 'weapon_servicecarbine', weight = 1 },
-    },
-    rustyWeapon = {
-        qualityMin = 20,
-        qualityMax = 45,
-        jamChance = 0.12,
-    },
-}

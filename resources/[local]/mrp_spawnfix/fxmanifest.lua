@@ -17,7 +17,6 @@ client_scripts {
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server_admin_persist.lua',
     'server.lua',
 }
 

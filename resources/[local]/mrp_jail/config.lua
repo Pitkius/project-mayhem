@@ -65,13 +65,14 @@ Config.Defaults = {
 }
 
 Config.Notify = {
-    jailed = 'Tu pasiųstas į viešuosius darbus lėktuvnešyje. Liko: %s min. Priežastis: %s',
+    jailed = 'Tu pasiųstas į lėktuvnešį. Liko: %s min. Priežastis: %s',
+    jailedAdmin = 'Admin bausmė: laikas nestovi savaime. Atlik %s valymo darbų (1 darbas = 1 min). Priežastis: %s',
     jailedOfficer = 'Žaidėjas #%s įkalintas %s min. (%s)',
     unjailed = 'Bausmė baigta. Inventorius atkurtas.',
     unjailedOfficer = 'Žaidėjas #%s paleistas iš kalėjimo.',
     stripped = 'Inventorius laikinai paimtas. Gausi maisto kalėjimo laikotarpiui.',
     restored = 'Tavo daiktai grąžinti.',
-    workDone = 'Darbas atliktas (−1 min). Liko: %s min.',
+    workDone = 'Darbas atliktas (−1). Liko: %s',
     escaped = 'Negali palikti lėktuvnešio kol bausmė nesibaigė.',
     notJailed = 'Žaidėjas nėra kalėjime.',
     alreadyJailed = 'Žaidėjas jau kalėjime.',

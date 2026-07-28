@@ -1,11 +1,11 @@
 @import url("nui://mrp_fonts/html/ui.css");
 
 :root {
-    --neon-purple: var(--primary-hover);
-    --neon-purple-soft: var(--primary-border);
-    --neon-purple-dim: var(--primary-active);
-    --glass-bg: var(--surface);
-    --glass-border: var(--primary-border);
+    --neon-purple: #bf5fff;
+    --neon-purple-soft: rgba(191, 95, 255, 0.35);
+    --neon-purple-dim: #7c3aed;
+    --glass-bg: rgba(18, 12, 28, 0.92);
+    --glass-border: rgba(191, 95, 255, 0.24);
     --text: #f4efff;
     --text-muted: rgba(244, 239, 255, 0.62);
     --success: #4ade80;
@@ -69,7 +69,7 @@ body {
     font-weight: 800;
     letter-spacing: 0.04em;
     color: #0f0a1e;
-    background: var(--btn-grad);
+    background: linear-gradient(135deg, #c4b5fd 0%, #7c3aed 55%, #5b21b6 100%);
     box-shadow: 0 0 20px var(--neon-purple-soft);
 }
 
@@ -98,7 +98,7 @@ body {
 #fuelBarFill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, var(--primary-active), var(--primary), var(--primary-hover));
+    background: linear-gradient(90deg, #5b21b6, #7c3aed, #bf5fff);
     transition: width .15s linear;
     box-shadow: 0 0 12px var(--neon-purple-soft);
 }
@@ -173,7 +173,7 @@ body {
 }
 
 .fuel-pay .card {
-    background: var(--accent-grad);
+    background: linear-gradient(135deg, #c4b5fd, #7c3aed);
     color: #0f0a1e;
 }
 

@@ -51,6 +51,10 @@ local function remainingMinutes(sec)
     return math.max(0, math.ceil(sec / 60))
 end
 
+local function isWorkSentence(state)
+    return state and (state.requireWork == true or state.byType == 'admin')
+end
+
 local function syncMeta(Player, state)
     if not Player then return end
     local sec = state and state.remainingSeconds or 0
@@ -58,6 +62,8 @@ local function syncMeta(Player, state)
     Player.Functions.SetMetaData('jail_reason', state and state.reason or '')
     Player.Functions.SetMetaData('jail_active', state ~= nil)
     Player.Functions.SetMetaData('jail_ends_at', state and state.endsAt or 0)
+    Player.Functions.SetMetaData('jail_require_work', state and isWorkSentence(state) or false)
+    Player.Functions.SetMetaData('jail_by_type', state and state.byType or '')
 end
 
 local function pushHud(src, state)
@@ -69,6 +75,8 @@ local function pushHud(src, state)
         remainingSeconds = math.max(0, state.remainingSeconds or 0),
         reason = state.reason or Config.Defaults.noReason,
         endsAt = state.endsAt,
+        requireWork = isWorkSentence(state),
+        byType = state.byType or 'police',
     })
 end
 
@@ -138,6 +146,8 @@ local function restoreInventory(src, Player)
     Player.Functions.SetMetaData('jail_reason', '')
     Player.Functions.SetMetaData('jail_active', false)
     Player.Functions.SetMetaData('jail_ends_at', 0)
+    Player.Functions.SetMetaData('jail_require_work', false)
+    Player.Functions.SetMetaData('jail_by_type', '')
 
     Restoring[citizenid] = nil
     notify(src, Config.Notify.restored, 'success')
@@ -198,8 +208,11 @@ local function applyJail(targetSrc, minutes, reason, actorSrc, byType)
         return false
     end
 
+    local jailType = byType or 'admin'
+    local requireWork = jailType == 'admin'
     local remainingSeconds = minutes * 60
-    local endsAt = os.time() + remainingSeconds
+    --- Admin: no passive countdown — only work reduces remainingSeconds.
+    local endsAt = requireWork and 0 or (os.time() + remainingSeconds)
 
     stripInventory(targetSrc, Target)
     giveStarterFood(targetSrc)
@@ -209,7 +222,8 @@ local function applyJail(targetSrc, minutes, reason, actorSrc, byType)
         remainingSeconds = remainingSeconds,
         endsAt = endsAt,
         reason = reason,
-        byType = byType or 'admin',
+        byType = jailType,
+        requireWork = requireWork,
         actor = actorSrc,
     }
     Active[targetSrc] = state
@@ -217,7 +231,11 @@ local function applyJail(targetSrc, minutes, reason, actorSrc, byType)
     teleportToCarrier(targetSrc)
     pushHud(targetSrc, state)
 
-    notify(targetSrc, Config.Notify.jailed:format(minutes, reason), 'error')
+    if requireWork then
+        notify(targetSrc, Config.Notify.jailedAdmin:format(minutes, reason), 'error')
+    else
+        notify(targetSrc, Config.Notify.jailed:format(minutes, reason), 'error')
+    end
     if actorSrc and actorSrc ~= targetSrc then
         notify(actorSrc, Config.Notify.jailedOfficer:format(targetSrc, minutes, reason), 'success')
     end
@@ -236,14 +254,20 @@ local function reduceSentence(src, seconds, fromWork)
     if seconds <= 0 then return false end
 
     state.remainingSeconds = math.max(0, (state.remainingSeconds or 0) - seconds)
-    state.endsAt = os.time() + state.remainingSeconds
+    if isWorkSentence(state) then
+        state.endsAt = 0
+    else
+        state.endsAt = os.time() + state.remainingSeconds
+    end
 
     local Player = QBCore.Functions.GetPlayer(src)
     if Player then syncMeta(Player, state) end
     pushHud(src, state)
 
     if fromWork then
-        notify(src, Config.Notify.workDone:format(remainingMinutes(state.remainingSeconds)), 'success')
+        local left = remainingMinutes(state.remainingSeconds)
+        local label = isWorkSentence(state) and (('%s darb.'):format(left)) or (('%s min.'):format(left))
+        notify(src, Config.Notify.workDone:format(label), 'success')
     end
 
     if state.remainingSeconds <= 0 then
@@ -277,7 +301,7 @@ CreateThread(function()
     registerCanteenShop()
 end)
 
---- Sentence ticker (1s)
+--- Sentence ticker (1s) — police time sentences only (admin = work-only)
 CreateThread(function()
     while true do
         Wait(1000)
@@ -285,6 +309,8 @@ CreateThread(function()
         for src, state in pairs(Active) do
             if not QBCore.Functions.GetPlayer(src) then
                 Active[src] = nil
+            elseif isWorkSentence(state) then
+                --- Admin / work sentence: no automatic time drain.
             else
                 local left = math.max(0, (state.endsAt or now) - now)
                 if left ~= state.remainingSeconds then
@@ -311,10 +337,20 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
     local meta = Player.PlayerData.metadata or {}
     if not meta.jail_active and (tonumber(meta.injail) or 0) <= 0 then return end
 
+    local byType = tostring(meta.jail_by_type or '')
+    if byType == '' then
+        byType = meta.jail_require_work and 'admin' or 'police'
+    end
+    local requireWork = meta.jail_require_work == true or byType == 'admin'
     local endsAt = tonumber(meta.jail_ends_at) or 0
     local now = os.time()
     local remaining = 0
-    if endsAt > now then
+
+    if requireWork then
+        --- Work sentences persist as remaining minutes (jobs), not wall-clock endsAt.
+        remaining = math.max(0, (tonumber(meta.injail) or 0) * 60)
+        endsAt = 0
+    elseif endsAt > now then
         remaining = endsAt - now
     else
         remaining = math.max(0, (tonumber(meta.injail) or 0) * 60)
@@ -339,14 +375,20 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
         remainingSeconds = remaining,
         endsAt = endsAt,
         reason = meta.jail_reason ~= '' and meta.jail_reason or Config.Defaults.noReason,
-        byType = 'restore',
+        byType = byType,
+        requireWork = requireWork,
     }
     syncMeta(Player, Active[src])
     SetTimeout(1500, function()
         if Active[src] then
             teleportToCarrier(src)
             pushHud(src, Active[src])
-            notify(src, Config.Notify.jailed:format(remainingMinutes(remaining), Active[src].reason), 'error')
+            local mins = remainingMinutes(remaining)
+            if requireWork then
+                notify(src, Config.Notify.jailedAdmin:format(mins, Active[src].reason), 'error')
+            else
+                notify(src, Config.Notify.jailed:format(mins, Active[src].reason), 'error')
+            end
         end
     end)
 end)

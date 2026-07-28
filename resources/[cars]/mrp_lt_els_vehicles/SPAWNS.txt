@@ -3,8 +3,8 @@
 ============================================================
 
 Šviesos:
-  Non-ELS (F6)  = mrpd1–12, mrpd17–20, mrpd24
-  ELS (ELS-FiveM) = mrpd13–16, mrpd21–23
+  Non-ELS (F6)  = mrpd1–12, mrpd16, mrpd17–20, mrpd23–25
+  ELS (ELS-FiveM) = mrpd13–15, mrpd21–22
 
 Perkama: PD garažo shop (mrp_dealership PoliceDealership)
 Pack'ai lieka atskiri; spawn vardai vienodi mrpd*.
@@ -36,8 +36,14 @@ Spawn    | Mašina                         | Pack
 mrpd13   | Audi S3 (LT ženklinta)         | mrp_lt_els_vehicles
 mrpd14   | BMW 540i (LT ženklinta)        | mrp_lt_els_vehicles
 mrpd15   | BMW X5 (LT ženklinta)          | mrp_lt_els_vehicles
-mrpd16   | Skoda Octavia Hatch (LT)       | mrp_lt_els_vehicles
-mrpd23   | Skoda Octavia Estate/universal | mrp_lt_els_vehicles (LT livery from mrpd16 ytd)
+
+------------------------------------------------------------
+ ŽYMĖTOS — Non-ELS carcols (Skoda; F6 = SetVehicleSiren)
+------------------------------------------------------------
+Spawn    | Mašina                         | Pack
+---------+--------------------------------+------------------
+mrpd16   | Skoda Octavia Hatch (LT)       | mrp_lt_els_vehicles (siren 4926)
+mrpd23   | Skoda Octavia Estate/universal | mrp_lt_els_vehicles (siren 4927; estate ytd)
 
 ------------------------------------------------------------
  NEŽYMĖTOS — Non-ELS (F6)

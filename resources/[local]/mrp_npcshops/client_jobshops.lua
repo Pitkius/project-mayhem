@@ -68,8 +68,11 @@ local function openStashMenu(jobName, stationId)
                 params = { event = 'mrp_ltpd:client:tryOpenStash', args = { stationId = stationId, stashIndex = 4 } },
             },
             {
-                header = 'ARAS ginklinė',
-                params = { event = 'mrp_ltpd:client:tryOpenArmory', args = { stationId = stationId } },
+                header = 'ARAS ginklų gamykla',
+                params = {
+                    event = 'mrp_ltpd:client:openPdWeaponCraft',
+                    args = { stationKey = stationId == 'sandy' and 'sandy_aras_craft' or 'ls_aras_craft' },
+                },
             },
         }
         TriggerEvent('qb-menu:client:openMenu', menu, false, true)

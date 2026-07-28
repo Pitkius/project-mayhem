@@ -252,34 +252,9 @@ local function createCall(service, callType, coords, text, createdBy)
     return c
 end
 
-local function normalizeCoords(coords)
-    if not coords then return nil end
-    local x = coords.x or coords[1]
-    local y = coords.y or coords[2]
-    local z = coords.z or coords[3]
-    if x == nil or y == nil or z == nil then return nil end
-    return { x = x + 0.0, y = y + 0.0, z = z + 0.0 }
-end
-
-local function createCallSafe(service, callType, coords, text, createdBy)
-    if not service then return nil end
-    local c = normalizeCoords(coords)
-    if not c then return nil end
-    return createCall(service, callType, c, text, createdBy)
-end
-
 exports('CreateDispatchCall', function(service, callType, coords, text, createdBy)
-    return createCallSafe(service, callType, coords, text, createdBy)
-end)
-
---- Server-event fallback (kai export dar nepasiekiamas / senas klientas)
-AddEventHandler('mrp_dispatch:internal:createCall', function(service, callType, coords, text, createdBy)
-    createCallSafe(service, callType, coords, text, createdBy)
-end)
-
-CreateThread(function()
-    Wait(500)
-    print('^2[mrp_dispatch]^7 CreateDispatchCall export ready')
+    if not service or not coords then return nil end
+    return createCall(service, callType, coords, text, createdBy)
 end)
 
 QBCore.Functions.CreateCallback('mrp_dispatch:server:getSnapshot', function(src, cb, service)
@@ -530,30 +505,6 @@ RegisterNetEvent('mrp_dispatch:server:panic', function(clientPos)
             TriggerClientEvent('QBCore:Notify', src, 'PANIC – tik policijos darbuotojams.', 'error')
         end
     end
-end)
-
-AddEventHandler('mrp_dispatch:server:chopshopAlert', function(src, locationId, plate)
-    src = tonumber(src) or 0
-    local ped = src > 0 and GetPlayerPed(src) or 0
-    local c
-    if ped and ped ~= 0 then
-        c = GetEntityCoords(ped)
-    end
-    if not c and GetResourceState('mrp_chopshop') == 'started' then
-        for _, loc in ipairs((exports['mrp_chopshop']:GetLocations and exports['mrp_chopshop']:GetLocations()) or {}) do
-            if loc.id == locationId then c = loc.coords break end
-        end
-    end
-    if not c then return end
-    createCall('police', 'theft', { x = c.x, y = c.y, z = c.z },
-        ('Galimas transporto ardymas (%s) — %s'):format(tostring(plate or '?'), tostring(locationId or '?')),
-        src > 0 and src or nil)
-end)
-
-AddEventHandler('mrp_dispatch:server:burglaryAlert', function(src, text, coords)
-    src = tonumber(src) or 0
-    if not coords or not coords.x then return end
-    createCall('police', 'robbery', coords, text or 'Galimas namų plėšimas', src > 0 and src or nil)
 end)
 
 RegisterNetEvent('mrp_dispatch:server:createServiceCall', function(service, callType, text, coords)

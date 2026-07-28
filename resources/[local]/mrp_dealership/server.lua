@@ -15,26 +15,11 @@ local function normalizeShopValue(shop)
 end
 
 local CIVILIAN_CORE_BLOCKED = {
-    rhino = true, khanjali = true, minitank = true, chernobog = true, barrage = true,
-    insurgent = true, insurgent2 = true, insurgent3 = true,
+    rhino = true, khanjali = true, insurgent = true, insurgent2 = true, insurgent3 = true,
     apc = true, scarab = true, scarab2 = true, scarab3 = true, halftrack = true,
-    nightshark = true, menacer = true, oppressor = true, oppressor2 = true,
+    nightshark = true, barrage = true, menacer = true, oppressor = true, oppressor2 = true,
     deluxo = true, ruiner2 = true, ruiner3 = true, tank = true, wastelander = true,
     technical = true, technical2 = true, technical3 = true,
-    vigilante = true, scramjet = true, toreador = true, stromberg = true,
-    voltic2 = true, thruster = true, rcbandito = true, kuruma2 = true,
-    tampa3 = true, caracara2 = true, dune3 = true, dune4 = true, dune5 = true,
-    jb7002 = true, boxville5 = true, stockade4 = true, caracara3 = true,
-    deathbike = true, deathbike2 = true, deathbike3 = true,
-    baller5 = true, baller6 = true,
-    issi4 = true, issi5 = true, issi6 = true,
-    dominator4 = true, impaler2 = true, impaler3 = true, impaler4 = true,
-    imperator = true, imperator2 = true, imperator3 = true,
-    zr380 = true, zr3802 = true, zr3803 = true,
-    bruiser = true, bruiser2 = true, bruiser3 = true,
-    brutus = true, brutus2 = true, brutus3 = true,
-    cerberus = true, cerberus2 = true, cerberus3 = true,
-    slamvan4 = true, slamvan5 = true, slamvan6 = true,
 }
 
 local function civilianCategoryAllowed(cat)
@@ -151,6 +136,9 @@ local function isModelBlockedForCivilianShop(model, baseCategory)
         return true
     end
     if lower:find('weapon', 1, true) or lower:find('gun', 1, true) then
+        return true
+    end
+    if lower:find('widebody', 1, true) then
         return true
     end
 
@@ -318,66 +306,28 @@ CreateThread(function()
     end
 end)
 
-local function playerCanAccessPdFleet(src, model, forShop)
-    if GetResourceState('mrp_bossmenu') ~= 'started' then
-        --- Fallback į config jei bossmenu dar neup
-        local pd = Config.PoliceDealership
-        model = string.lower(tostring(model or ''))
-        for _, v in ipairs((pd and pd.vehicles) or {}) do
-            if v.model and string.lower(tostring(v.model)) == model then
-                if forShop and v.shopEnabled == false then
-                    return false, 'Šis modelis tik importui.'
-                end
-                local Player = QBCore.Functions.GetPlayer(src)
-                if not Player then return false, 'Žaidėjas nerastas.' end
-                local grade = tonumber(Player.PlayerData.job.grade and Player.PlayerData.job.grade.level) or 0
-                local minG = tonumber(v.minGrade) or 0
-                if v.arasOrGrade then
-                    --- be bossmenu ARO check — tik rangas
-                    if grade >= minG then return true end
-                    return false, ('Reikia rango ≥ %d (arba ARO).'):format(minG)
-                end
-                if grade < minG then
-                    return false, ('Reikia rango ≥ %d.'):format(minG)
-                end
-                return true
-            end
-        end
-        return false, 'Modelis nerastas.'
-    end
-    return exports['mrp_bossmenu']:CanAccessPoliceFleetDetailed(src, model, { forShop = forShop ~= false })
-end
-
-local function buildPoliceCatalog(src)
+local function buildPoliceCatalog()
     local pd = Config.PoliceDealership
     if not pd or not pd.vehicles then
         return { dealership = { label = 'PD' }, categories = {}, vehicles = {} }
     end
     local categories = {}
     local labels = pd.PoliceCategoryLabels or {}
-    local vehicles = {}
     for _, v in ipairs(pd.vehicles) do
-        local model = v.model and string.lower(tostring(v.model)) or ''
-        if model ~= '' then
-            local ok = playerCanAccessPdFleet(src, model, true)
-            if ok then
-                local cat = v.category or 'patrol'
-                if not categories[cat] then
-                    categories[cat] = labels[cat] or cat
-                end
-                vehicles[#vehicles + 1] = v
-            end
+        local cat = v.category or 'patrol'
+        if not categories[cat] then
+            categories[cat] = labels[cat] or cat
         end
     end
     return {
         dealership = { label = pd.label or 'Policija' },
         categories = categories,
-        vehicles = vehicles,
+        vehicles = pd.vehicles,
     }
 end
 
-QBCore.Functions.CreateCallback('mrp_dealership:server:getPoliceCatalog', function(source, cb)
-    cb(buildPoliceCatalog(source))
+QBCore.Functions.CreateCallback('mrp_dealership:server:getPoliceCatalog', function(_, cb)
+    cb(buildPoliceCatalog())
 end)
 
 local function buildMechanicCatalog()
@@ -638,11 +588,6 @@ QBCore.Functions.CreateCallback('mrp_dealership:server:buyPoliceVehicle', functi
     end
     if not selectedVehicle then
         return cb({ ok = false, message = 'Modelis nerastas kataloge.' })
-    end
-
-    local allowed, denyReason = playerCanAccessPdFleet(src, model, true)
-    if not allowed then
-        return cb({ ok = false, message = denyReason or 'Neturi teisės į šią mašiną.' })
     end
 
     local price = tonumber(selectedVehicle.price) or 0

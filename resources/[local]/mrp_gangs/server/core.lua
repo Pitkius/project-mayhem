@@ -29,6 +29,7 @@ function GangCore.GetPlayerGang(source)
             g.gang_type,
             g.owner_citizenid,
             g.color_hex,
+            g.avatar_url,
             g.reputation,
             g.level,
             g.heat,
@@ -47,7 +48,7 @@ end
 
 function GangCore.GetGangById(gangId)
     return MySQL.single.await([[
-        SELECT id AS gang_id, name, label, gang_type, owner_citizenid, color_hex,
+        SELECT id AS gang_id, name, label, gang_type, owner_citizenid, color_hex, avatar_url,
                reputation, level, heat, treasury, status, created_at, updated_at
         FROM mrp_gangs_v2
         WHERE id = ?

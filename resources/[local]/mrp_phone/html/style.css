@@ -42,7 +42,7 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(120% 80% at 20% 0%, var(--phone-wall-glow), transparent 55%),
+    radial-gradient(120% 80% at 20% 0%, rgba(88, 86, 214, 0.45), transparent 55%),
     radial-gradient(90% 70% at 90% 20%, rgba(10, 132, 255, 0.35), transparent 50%),
     linear-gradient(165deg, #0c0c12 0%, #12121c 40%, #08080e 100%);
   transition: filter 0.35s ease;
@@ -136,7 +136,7 @@ body {
   overflow: auto;
   padding-right: 2px;
   scrollbar-width: thin;
-  scrollbar-color: var(--phone-scroll) transparent;
+  scrollbar-color: rgba(191, 95, 255, 0.5) transparent;
 }
 
 .lock-notifs::-webkit-scrollbar {
@@ -144,7 +144,7 @@ body {
 }
 
 .lock-notifs::-webkit-scrollbar-thumb {
-  background: var(--phone-scroll-thumb);
+  background: linear-gradient(180deg, rgba(191, 95, 255, 0.75), rgba(157, 80, 255, 0.55));
   border-radius: 999px;
 }
 
@@ -309,53 +309,6 @@ body {
   min-width: 0;
 }
 
-.store-dl-bar {
-  margin-top: 6px;
-  height: 3px;
-  border-radius: 99px;
-  background: rgba(255, 255, 255, 0.12);
-  overflow: hidden;
-}
-
-.store-dl-bar > i {
-  display: block;
-  height: 100%;
-  width: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #5ac8fa, #0a84ff);
-  transition: width 0.12s linear;
-}
-
-.store-row button.is-downloading {
-  min-width: 52px;
-  height: 32px;
-  padding: 0 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: 999px;
-  background: rgba(10, 132, 255, 0.18);
-  color: #7ec8ff;
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.store-dl-ring {
-  --p: 0;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: conic-gradient(#0a84ff calc(var(--p) * 1%), rgba(255, 255, 255, 0.15) 0);
-  mask: radial-gradient(circle at center, transparent 55%, #000 56%);
-  -webkit-mask: radial-gradient(circle at center, transparent 55%, #000 56%);
-  flex-shrink: 0;
-}
-
-.store-dl-label {
-  font-variant-numeric: tabular-nums;
-}
-
 .app-label {
   font-size: 0.68rem;
   color: rgba(245, 245, 247, 0.92);
@@ -428,7 +381,7 @@ body {
   padding: 48px 16px 10px;
   border-radius: 0;
   border: none;
-  border-bottom: 1px solid var(--phone-line);
+  border-bottom: 1px solid rgba(191, 95, 255, 0.14);
   background: rgba(8, 6, 14, 0.94);
   backdrop-filter: blur(22px) saturate(1.25);
   -webkit-backdrop-filter: blur(22px) saturate(1.25);
@@ -469,17 +422,13 @@ body {
 
 .scroll-body {
   flex: 1;
-  min-height: 0;
   overflow: auto;
-  -webkit-overflow-scrolling: touch;
   padding: 14px;
 }
 
 .app-screen-layer .scroll-body {
   flex: 1;
   min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
   padding: 0 0 22px;
   background: var(--app-bg, #0a0812);
 }
@@ -733,7 +682,7 @@ input, textarea {
   place-items: center;
   font-size: 0.82rem;
   font-weight: 700;
-  background: var(--phone-btn-grad);
+  background: linear-gradient(145deg, #5856d6, #0a84ff);
   color: #fff;
   flex-shrink: 0;
 }
@@ -838,7 +787,7 @@ input, textarea {
   padding: 4px 2px 12px;
   padding-right: 4px;
   scrollbar-width: thin;
-  scrollbar-color: var(--phone-scroll) transparent;
+  scrollbar-color: rgba(191, 95, 255, 0.5) transparent;
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -846,7 +795,7 @@ input, textarea {
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-  background: var(--phone-scroll-thumb);
+  background: linear-gradient(180deg, rgba(191, 95, 255, 0.75), rgba(157, 80, 255, 0.55));
   border-radius: 999px;
 }
 
@@ -1004,7 +953,7 @@ input, textarea {
   height: 100%;
   min-width: 36px;
   border-radius: 99px;
-  background: var(--phone-progress-grad);
+  background: linear-gradient(90deg, rgba(10, 132, 255, 0.95), rgba(88, 86, 214, 0.95));
   box-shadow: 0 0 10px rgba(10, 132, 255, 0.35);
   will-change: transform, width;
 }

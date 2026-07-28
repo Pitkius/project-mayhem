@@ -353,14 +353,6 @@ async function startHack(profile, tierId) {
   const flashMs = profile.flashMs || 380;
   const hintEl = document.getElementById("hackHint");
 
-  if (mode === "gtao_datacrack" || mode === "datacrack") {
-    hackGrid?.classList.add("hidden");
-    hackWire?.classList.add("hidden");
-    hackTrace?.classList.add("hidden");
-    if (typeof window.startGtaoDatacrack === "function") {
-      return window.startGtaoDatacrack(profile, tierId);
-    }
-  }
   if (mode === "wire") {
     hackGrid?.classList.add("hidden");
     hackWire?.classList.remove("hidden");
@@ -586,9 +578,7 @@ function onPhysicalKey(e) {
     return;
   }
 
-  const mode = physicalState.mode;
-
-  if (mode === "timing" && e.code === "Space") {
+  if (physicalState.mode === "timing" && e.code === "Space") {
     e.preventDefault();
     const n = physicalState.needlePos;
     const z0 = physicalState.zoneStart;
@@ -600,25 +590,22 @@ function onPhysicalKey(e) {
     physicalState.zoneStart = 0.08 + Math.random() * (0.84 - physicalState.zoneWidth);
     mgZone.style.left = physicalState.zoneStart * 100 + "%";
     physicalState.speed = 0.012 + Math.random() * 0.014;
-    return;
   }
 
-  if (mode === "sequence" && ARROWS.includes(e.code)) {
+  if (physicalState.mode === "sequence" && ARROWS.includes(e.code)) {
     e.preventDefault();
     if (e.code !== physicalState.sequence[physicalState.step]) return finishPhysical(false);
     physicalState.step += 1;
     mgSeq.textContent = physicalState.sequence.slice(physicalState.step).map((k) => ARROW_LABELS[k]).join(" ");
-    if (physicalState.step >= physicalState.sequence.length) return finishPhysical(true);
-    return;
+    if (physicalState.step >= physicalState.sequence.length) finishPhysical(true);
   }
 
-  if (mode === "hold" && e.code === "Space") {
+  if (physicalState.mode === "hold" && e.code === "Space") {
     e.preventDefault();
     physicalState.holding = true;
-    return;
   }
 
-  if (mode === "mash" && e.code === "Space") {
+  if (physicalState.mode === "mash" && e.code === "Space") {
     e.preventDefault();
     const now = Date.now();
     if (now - (physicalState.lastMash || 0) < 120) return;
@@ -626,14 +613,12 @@ function onPhysicalKey(e) {
     physicalState.count += 1;
     mgMashCount.textContent = String(physicalState.count);
     mgMashFill.style.width = Math.min(100, (physicalState.count / physicalState.target) * 100) + "%";
-    if (physicalState.count >= physicalState.target) return finishPhysical(true);
-    return;
+    if (physicalState.count >= physicalState.target) finishPhysical(true);
   }
 
-  if (mode === "drill") {
+  if (physicalState.mode === "drill") {
     if (e.code === "KeyW" || e.code === "KeyS" || e.code === "KeyA" || e.code === "KeyD") {
       e.preventDefault();
-      if (!physicalState.keys) return;
       if (e.code === "KeyW") physicalState.keys.w = true;
       if (e.code === "KeyS") physicalState.keys.s = true;
       if (e.code === "KeyA") physicalState.keys.a = true;
@@ -840,7 +825,7 @@ function openPhysical(d) {
   tablet.classList.add("hidden");
   hackPanel.classList.add("hidden");
   physicalPanel.classList.remove("hidden");
-  if (d.mode === "drill" || d.mode === "gtao_drill") {
+  if (d.mode === "drill") {
     startDrill(d.data || {});
     return;
   }

@@ -4,10 +4,6 @@ const emptyPick = document.getElementById("emptyPick");
 const detailPanel = document.getElementById("detailPanel");
 const btnCraft = document.getElementById("btnCraft");
 const btnBuyParts = document.getElementById("btnBuyParts");
-const weedDryQuantity = document.getElementById("weedDryQuantity");
-const weedDryAmount = document.getElementById("weedDryAmount");
-const weedDryAvailable = document.getElementById("weedDryAvailable");
-const weedDryTimePreview = document.getElementById("weedDryTimePreview");
 const mgSkill = document.getElementById("mgSkill");
 const mgAdvanced = document.getElementById("mgAdvanced");
 const craftProgress = document.getElementById("craftProgress");
@@ -15,33 +11,6 @@ const craftProgressPhase = document.getElementById("craftProgressPhase");
 const craftProgressLabel = document.getElementById("craftProgressLabel");
 const craftProgressBar = document.getElementById("craftProgressBar");
 const craftProgressTime = document.getElementById("craftProgressTime");
-const vape3dHud = document.getElementById("vape3dHud");
-const vape3dTitle = document.getElementById("vape3dTitle");
-const vape3dStage = document.getElementById("vape3dStage");
-const vape3dStageName = document.getElementById("vape3dStageName");
-const vape3dHint = document.getElementById("vape3dHint");
-const vape3dGauge = document.getElementById("vape3dGauge");
-const vape3dGaugeFill = document.getElementById("vape3dGaugeFill");
-const vape3dScore = document.getElementById("vape3dScore");
-const vape3dMistakes = document.getElementById("vape3dMistakes");
-
-// schedule.js intentionally sends a small React payload. Preserve the Lua
-// correlation id when that fallback path is used, so stale results are ignored.
-let latestScheduleSessionId = null;
-window.addEventListener("message", (event) => {
-  const message = event.data || {};
-  if (message.action === "minigameSchedule" && message.data?.sessionId != null) {
-    latestScheduleSessionId = String(message.data.sessionId);
-  }
-}, true);
-if (window.MrpWebStation?.run) {
-  const runWebStation = window.MrpWebStation.run.bind(window.MrpWebStation);
-  window.MrpWebStation.run = (payload = {}) => {
-    const sessionId = payload.sessionId ?? latestScheduleSessionId;
-    latestScheduleSessionId = null;
-    return runWebStation({ ...payload, sessionId });
-  };
-}
 
 // PAKAVIMAS: 3D informacinis HUD (kairėje). Tekstas rodomas, bet neima paspaudimų.
 const weed3dHud = document.createElement("section");
@@ -149,65 +118,6 @@ weedPackBud.addEventListener("pointerdown", handleWeedPackButton);
 
 let state = { products: [], selectedId: null, isWeaponMode: false };
 
-function weedDryDurationSeconds(amount, drying) {
-  amount = Math.max(0, Math.floor(Number(amount) || 0));
-  const secondsPerPlant = Math.max(1, Number(drying?.secondsPerPlant) || 10);
-  const every = Math.max(1, Number(drying?.discountEvery) || 25);
-  const discountPercent = Math.max(0, Number(drying?.discountPercent) || 2);
-  const discount = Math.floor(amount / every) * discountPercent;
-  return Math.max(1, Math.floor(amount * secondsPerPlant * Math.max(0.1, 1 - discount / 100)));
-}
-
-function selectedProduct() {
-  return state.products.find((product) => product.id === state.selectedId);
-}
-
-function selectedDryAmount(product = selectedProduct()) {
-  if (!product?.drying) return null;
-  return Math.floor(Number(weedDryAmount?.value) || 0);
-}
-
-function updateWeedDryDetail(product = selectedProduct()) {
-  const drying = product?.drying;
-  if (!weedDryQuantity) return;
-  weedDryQuantity.classList.toggle("hidden", !drying);
-  if (!drying) return;
-
-  const minimum = Number(drying.minimumAmount) || 10;
-  const maximum = Number(drying.maximumAmount) || 500;
-  const available = Math.max(0, Number(drying.availableAmount) || 0);
-  weedDryAmount.min = "1";
-  weedDryAmount.max = String(maximum);
-
-  const amount = selectedDryAmount(product);
-  const valid = amount >= minimum && amount <= maximum && amount <= available;
-  weedDryAvailable.textContent = `Turite: ${available} · Min.: ${minimum}`;
-  const durationText = valid
-    ? formatCraftTime(weedDryDurationSeconds(amount, drying) * 1000)
-    : null;
-  weedDryTimePreview.textContent = durationText
-    ? `Džiovinimo laikas: ${durationText}`
-    : (available < minimum
-      ? `Trūksta lapų: minimali partija yra ${minimum}.`
-      : amount < minimum
-        ? `Minimalus džiovinimo kiekis yra ${minimum}.`
-        : amount > maximum
-          ? `Didžiausias džiovinimo kiekis yra ${maximum}.`
-          : amount > available
-            ? `Trūksta lapų: turite ${available}.`
-            : `Įveskite kiekį nuo ${minimum} iki ${Math.min(maximum, available)}.`);
-  document.getElementById("prodTime").textContent = durationText || "Pasirinkite kiekį";
-
-  const ingredient = product.ingredients?.[0];
-  const row = document.querySelector("#ingredientList li");
-  if (ingredient && row) {
-    row.className = valid ? "ok" : "bad";
-    const value = row.querySelector("span:last-child");
-    if (value) value.textContent = `${available}/${amount > 0 ? amount : minimum}`;
-  }
-  btnCraft.disabled = product.locked || !valid;
-}
-
 function updateWeed3dHud(data, reset = false) {
   const d = data || {};
   if (reset && weed3dMetrics) weed3dMetrics.innerHTML = "";
@@ -236,24 +146,6 @@ function updateWeed3dHud(data, reset = false) {
       row.appendChild(strong);
       return row;
     }));
-  }
-}
-
-function updateVape3dHud(data = {}) {
-  if (data.kicker !== undefined) {
-    const kicker = document.querySelector(".vape3d-kicker");
-    if (kicker) kicker.textContent = data.kicker;
-  }
-  if (data.title !== undefined) vape3dTitle.textContent = data.title;
-  if (data.stage !== undefined) vape3dStage.textContent = data.stage;
-  if (data.stageName !== undefined) vape3dStageName.textContent = data.stageName;
-  if (data.hint !== undefined) vape3dHint.textContent = data.hint;
-  if (data.score !== undefined) vape3dScore.textContent = `Kokybė: ${Math.round(Number(data.score) || 0)}`;
-  if (data.mistakes !== undefined) vape3dMistakes.textContent = `Klaidos: ${Number(data.mistakes) || 0}`;
-  const value = data.gauge ?? data.progress;
-  vape3dGauge.classList.toggle("hidden", typeof value !== "number");
-  if (typeof value === "number") {
-    vape3dGaugeFill.style.width = `${Math.max(0, Math.min(100, value * 100))}%`;
   }
 }
 
@@ -323,13 +215,6 @@ function hideCraftProgress() {
 
 function canCraftProduct(p) {
   if (!p || !p.ingredients) return false;
-  if (p.locked) return false;
-  if (p.drying) {
-    const amount = selectedDryAmount(p);
-    return amount >= (Number(p.drying.minimumAmount) || 10)
-      && amount <= (Number(p.drying.maximumAmount) || 500)
-      && amount <= (Number(p.drying.availableAmount) || 0);
-  }
   return p.ingredients.every((i) => i.missing <= 0);
 }
 
@@ -338,10 +223,9 @@ function renderList() {
   state.products.forEach((p) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "prod-item" + (state.selectedId === p.id ? " active" : "") + (p.locked ? " locked" : "");
+    btn.className = "prod-item" + (state.selectedId === p.id ? " active" : "");
     const stage = p.stageLabel ? `${p.stageLabel} · ` : "";
-    const lock = p.locked ? `🔒 ${p.lockReason || "Užrakinta"}` : `${stage}${p.levelLabel || ""} · ${p.risk || ""}`;
-    btn.innerHTML = `<strong>${p.label}</strong><small>${lock}</small>`;
+    btn.innerHTML = `<strong>${p.label}</strong><small>${stage}${p.levelLabel || ""} · ${p.risk || ""}</small>`;
     btn.onclick = () => {
       state.selectedId = p.id;
       renderList();
@@ -360,17 +244,14 @@ function renderDetail(p) {
   emptyPick.classList.add("hidden");
   detailPanel.classList.remove("hidden");
   document.getElementById("prodTitle").textContent = p.label;
-  document.getElementById("prodLevel").textContent = p.locked
-    ? (p.lockReason || "Užrakinta")
-    : ((p.stageLabel ? `${p.stageLabel} · ` : "") + (p.levelLabel || `Lygis ${p.level}`));
-  document.getElementById("prodRisk").textContent = p.locked ? "Atrakink per 3D spausdinimą" : `Rizika: ${p.risk || "—"}`;
+  document.getElementById("prodLevel").textContent = (p.stageLabel ? `${p.stageLabel} · ` : "") + (p.levelLabel || `Lygis ${p.level}`);
+  document.getElementById("prodRisk").textContent = `Rizika: ${p.risk || "—"}`;
   const sec = p.craftTimeSec || 0;
   let timeText = sec >= 90 ? `~${Math.ceil(sec / 60)} min (${sec} sek.)` : `${sec} sek.`;
   if (state.isWeaponMode) {
     timeText += p.usesPrinter ? " · 3D spausdintuvas" : " · rankinis surinkimas";
   }
   document.getElementById("prodTime").textContent = timeText;
-  btnCraft.textContent = p.drying ? "PRADĖTI DŽIOVINIMĄ" : "GAMINTI";
   const rewardSection = document.getElementById("rewardSection");
   if (rewardSection) {
     rewardSection.classList.toggle("hidden", state.isWeaponMode || !(p.sellBase > 0));
@@ -386,12 +267,7 @@ function renderDetail(p) {
     li.innerHTML = `<span>${i.label}</span><span>${i.have}/${i.need}</span>`;
     ul.appendChild(li);
   });
-  updateWeedDryDetail(p);
   btnCraft.disabled = !canCraftProduct(p);
-}
-
-if (weedDryAmount) {
-  weedDryAmount.addEventListener("input", () => updateWeedDryDetail());
 }
 
 window.addEventListener("message", (e) => {
@@ -404,7 +280,7 @@ window.addEventListener("message", (e) => {
     state.isWeaponMode = !!(d.station && d.station.mode === "weapon");
     if (headTitle) {
       headTitle.innerHTML = state.isWeaponMode
-        ? 'GINKLŲ <span>GAMYKLA</span>'
+        ? 'GINKLŲ <span>DIRBTUVĖ</span>'
         : 'NELEGALI <span>GAMYBA</span>';
     }
     if (btnBuyParts) {
@@ -412,18 +288,9 @@ window.addEventListener("message", (e) => {
     }
     const rewardSection = document.getElementById("rewardSection");
     if (rewardSection) rewardSection.classList.toggle("hidden", state.isWeaponMode);
-    let stationText = d.station
+    document.getElementById("stationLabel").textContent = d.station
       ? `${d.station.label} · ${d.station.level} lygis`
       : "Stotis";
-    if (state.isWeaponMode && d.station) {
-      const prints = d.station.weaponPrints || 0;
-      const tier = d.station.weaponTier || 0;
-      const next = tier >= 2 ? null : (tier >= 1 ? d.station.unlockL2At : d.station.unlockL1At);
-      stationText = next
-        ? `${d.station.label} · XP ${prints}/${next}`
-        : `${d.station.label} · XP ${prints} (max)`;
-    }
-    document.getElementById("stationLabel").textContent = stationText;
     app.classList.remove("hidden");
     renderList();
     if (state.selectedId) {
@@ -436,25 +303,12 @@ window.addEventListener("message", (e) => {
     weed3dHud.classList.add("hidden");
     weedPackActive = false;
     weedPackCursor.classList.add("hidden");
-    vape3dHud.classList.add("hidden");
     app.classList.add("hidden");
     mgSkill.classList.add("hidden");
     mgAdvanced.classList.add("hidden");
     const mgSchedule = document.getElementById("mgSchedule");
     if (mgSchedule) mgSchedule.classList.add("hidden");
     if (window.MrpWebStation) MrpWebStation.close();
-  }
-  if (msg.action === "vape3dOpen") {
-    updateVape3dHud(msg.data || {});
-    vape3dHud.classList.remove("hidden");
-  }
-  if (msg.action === "vape3dUpdate") {
-    updateVape3dHud(msg.data || {});
-  }
-  if (msg.action === "vape3dClose") {
-    vape3dHud.classList.add("hidden");
-    vape3dGauge.classList.add("hidden");
-    vape3dGaugeFill.style.width = "0%";
   }
   if (msg.action === "weed3dOpen") {
     updateWeed3dHud(msg.data, true);
@@ -502,10 +356,10 @@ window.addEventListener("message", (e) => {
     hideCraftProgress();
   }
   if (msg.action === "minigameSkill") {
-    runSkillGame(msg.data || {});
+    runSkillGame();
   }
   if (msg.action === "minigameAdvanced") {
-    runAdvancedGame(msg.data && msg.data.rounds ? msg.data.rounds : 3, msg.data || {});
+    runAdvancedGame(msg.data && msg.data.rounds ? msg.data.rounds : 3);
   }
   if (msg.action === "minigameSchedule") {
     /* schedule.js */
@@ -524,17 +378,13 @@ if (btnBuyParts) {
 }
 btnCraft.onclick = () => {
   if (!state.selectedId) return;
-  const product = selectedProduct();
-  post("craft", {
-    productId: state.selectedId,
-    amount: product?.drying ? selectedDryAmount(product) : undefined,
-  });
+  post("craft", { productId: state.selectedId });
 };
 
 let cancelSkillGame = null;
 let cancelAdvancedGame = null;
 
-function runSkillGame(data = {}) {
+function runSkillGame() {
   if (cancelSkillGame) cancelSkillGame(false);
   mgSkill.classList.remove("hidden");
   const zone = document.getElementById("mgZone");
@@ -557,7 +407,7 @@ function runSkillGame(data = {}) {
     window.removeEventListener("keydown", onKey);
     mgSkill.classList.add("hidden");
     cancelSkillGame = null;
-    post("skillResult", { success: !!success, sessionId: data.sessionId });
+    post("skillResult", { success: !!success });
   };
   const onKey = (ev) => {
     if (done || ev.code !== "Space") return;
@@ -569,7 +419,7 @@ function runSkillGame(data = {}) {
   window.addEventListener("keydown", onKey);
 }
 
-function runAdvancedGame(rounds, data = {}) {
+function runAdvancedGame(rounds) {
   if (cancelAdvancedGame) cancelAdvancedGame(false);
   mgAdvanced.classList.remove("hidden");
   const seqEl = document.getElementById("mgSeq");
@@ -588,7 +438,7 @@ function runAdvancedGame(rounds, data = {}) {
     buttons.forEach((button) => { button.onclick = null; });
     mgAdvanced.classList.add("hidden");
     cancelAdvancedGame = null;
-    post("advancedResult", { success: !!success, sessionId: data.sessionId });
+    post("advancedResult", { success: !!success });
   };
   cancelAdvancedGame = finish;
   buttons.forEach((b) => {

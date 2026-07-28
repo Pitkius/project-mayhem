@@ -1,73 +1,5 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
---- Migracija TIK senų gcpd/gcapd. NELIESTI mrpd13-16 — dabar LT ELS.
-local PD_MODEL_MIGRATION_STEPS = {
-    { old = 'gcapd1', new = 'mrpd1' },
-    { old = 'gcapd2', new = 'mrpd2' },
-    { old = 'gcapd3', new = 'mrpd3' },
-    { old = 'gcapd4', new = 'mrpd4' },
-    { old = 'gcapd5', new = 'mrpd5' },
-    { old = 'gcapd6', new = 'mrpd6' },
-    { old = 'gcapd10', new = 'mrpd7' },
-    { old = 'gcapd11', new = 'mrpd8' },
-    { old = 'gcpd20', new = 'mrpd17' },
-    { old = 'gcpd21', new = 'mrpd18' },
-    { old = 'gcpd22', new = 'mrpd19' },
-    { old = 'gcpd23', new = 'mrpd20' },
-}
-
-MySQL.ready(function()
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `mrp_vehicle_model_migration_backup` (
-            `plate` varchar(20) NOT NULL,
-            `old_vehicle` varchar(50) NOT NULL,
-            `old_hash` varchar(50) DEFAULT NULL,
-            `old_mods` longtext DEFAULT NULL,
-            `new_vehicle` varchar(50) NOT NULL,
-            `migrated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (`plate`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ]])
-
-    local migrated = 0
-    for _, step in ipairs(PD_MODEL_MIGRATION_STEPS) do
-        local oldModel, newModel = step.old, step.new
-        local rows = MySQL.query.await(
-            'SELECT plate, vehicle, `hash`, mods FROM player_vehicles WHERE LOWER(vehicle) = ?',
-            { oldModel }
-        ) or {}
-        local newHash = joaat(newModel)
-
-        for _, row in ipairs(rows) do
-            local newMods = row.mods
-            if type(row.mods) == 'string' and row.mods ~= '' then
-                local ok, props = pcall(json.decode, row.mods)
-                if ok and type(props) == 'table' then
-                    props.model = newHash
-                    newMods = json.encode(props)
-                end
-            end
-
-            MySQL.insert.await([[
-                INSERT IGNORE INTO mrp_vehicle_model_migration_backup
-                    (plate, old_vehicle, old_hash, old_mods, new_vehicle)
-                VALUES (?, ?, ?, ?, ?)
-            ]], { row.plate, row.vehicle, row.hash, row.mods, newModel })
-
-            local changed = MySQL.update.await([[
-                UPDATE player_vehicles
-                SET vehicle = ?, `hash` = ?, mods = ?
-                WHERE plate = ? AND LOWER(vehicle) = ?
-            ]], { newModel, tostring(newHash), newMods, row.plate, oldModel })
-            migrated = migrated + (tonumber(changed) or 0)
-        end
-    end
-
-    if migrated > 0 then
-        print(('[mrp_garages] Migrated %d saved PD vehicles to mrpd1-21.'):format(migrated))
-    end
-end)
-
 local function isPdGarageId(garageId)
     garageId = tostring(garageId or '')
     return garageId:sub(1, 3) == 'pd_'
@@ -229,8 +161,7 @@ QBCore.Functions.CreateCallback('mrp_garages:server:getPlayerVehicles', function
         local modelLower = tostring(r.vehicle or ''):lower()
         local include = true
         if pdGarage then
-            --- Visos PD mašinos — tik PD garaže (net jei DB garage buvo viešas)
-            include = isPoliceVehicleModel(modelLower)
+            include = isPoliceVehicleModel(modelLower) and tostring(r.garage or '') == garageId
         elseif mechGarage then
             include = isMechanicVehicleModel(modelLower) and tostring(r.garage or '') == garageId
         elseif emsgGarage then
@@ -239,13 +170,8 @@ QBCore.Functions.CreateCallback('mrp_garages:server:getPlayerVehicles', function
             include = isTaxiVehicleModel(modelLower) and tostring(r.garage or '') == garageId
         elseif rangerGarage then
             include = isRangerVehicleModel(modelLower) and tostring(r.garage or '') == garageId
-        else
-            --- Viešas / tipinis garažas — be tarnybinių PD mašinų
-            if isPoliceVehicleModel(modelLower) then
-                include = false
-            elseif garageType then
-                include = matchesGarageType(garageType, getVehicleDbType(modelLower))
-            end
+        elseif garageType then
+            include = matchesGarageType(garageType, getVehicleDbType(modelLower))
         end
         if include then
             vehicles[#vehicles + 1] = {
@@ -299,16 +225,9 @@ QBCore.Functions.CreateCallback('mrp_garages:server:spawnVehicle', function(sour
         if not isPoliceVehicleModel(row.vehicle) then
             return cb({ ok = false, message = 'Tai ne policijos transportas.' })
         end
-        if GetResourceState('mrp_bossmenu') == 'started' then
-            local allowed, reason
-            local ok = pcall(function()
-                allowed, reason = exports['mrp_bossmenu']:CanAccessPoliceFleetDetailed(source, row.vehicle, { forShop = false })
-            end)
-            if ok and allowed == false then
-                return cb({ ok = false, message = reason or 'Neturi rango / divizijos teisių šiai mašinai.' })
-            end
+        if tostring(row.garage or '') ~= garageId then
+            return cb({ ok = false, message = 'Masina saugoma kitame garaže.' })
         end
-        --- PD mašinas galima imti iš bet kurio PD garažo (perkeliam į šį)
     elseif isMechanicGarageId(garageId) then
         if not isMechanicVehicleModel(row.vehicle) then
             return cb({ ok = false, message = 'Tai ne mechanikų tarnybinis transportas.' })
@@ -338,15 +257,9 @@ QBCore.Functions.CreateCallback('mrp_garages:server:spawnVehicle', function(sour
             return cb({ ok = false, message = 'Masina saugoma kitame garaže.' })
         end
     else
-        if isPoliceVehicleModel(row.vehicle) then
-            return cb({ ok = false, message = 'Policijos transportą imkite iš PD garažo.' })
-        end
         local garageType = getGarageTypeFilter(garageId)
         if garageType and not matchesGarageType(garageType, getVehicleDbType(row.vehicle)) then
             return cb({ ok = false, message = garageTypeMismatchMessage(garageType) })
-        end
-        if tostring(row.garage or '') ~= garageId then
-            return cb({ ok = false, message = 'Masina saugoma kitame garaže.' })
         end
     end
 
@@ -417,9 +330,6 @@ QBCore.Functions.CreateCallback('mrp_garages:server:parkVehicle', function(sourc
 
     if isPdGarageId(garageId) and not isPoliceVehicleModel(rowPark.vehicle) then
         return cb({ ok = false, message = 'Į PD garažą galima tik policijos transportą.' })
-    end
-    if not isPdGarageId(garageId) and isPoliceVehicleModel(rowPark.vehicle) then
-        return cb({ ok = false, message = 'Policijos transportą statykite tik PD garaže.' })
     end
     if isMechanicGarageId(garageId) and not isMechanicVehicleModel(rowPark.vehicle) then
         return cb({ ok = false, message = 'Į šį garažą tik mechanikų tarnybinis transportas.' })

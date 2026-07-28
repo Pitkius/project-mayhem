@@ -35,25 +35,5 @@
     "verificationChannelSlug": "pasitvirtinimas",
     "memberEmoji": "✅",
     "pingEmoji": "🔔"
-  },
-  "server": {
-    "serverName": "MAYHEM RP",
-    "serverConnectAddress": "76.13.249.15:30120",
-    "embedColor": 5793266,
-    "civilRoleId": null,
-    "adminRoleIds": [],
-    "policeRoleId": null,
-    "emsRoleId": null,
-    "mechanicRoleId": null,
-    "taxiRoleId": null,
-    "newsPingRoleId": null,
-    "updatesPingRoleId": null,
-    "eventsPingRoleId": null,
-    "policeDiscordUrl": "",
-    "emsDiscordUrl": "",
-    "mechanicDiscordUrl": "",
-    "taxiDiscordUrl": "",
-    "maxTicketsPerUser": 2,
-    "setupArchiveCategoryName": "📦・SENAS SERVERIO ARCHYVAS"
   }
 }

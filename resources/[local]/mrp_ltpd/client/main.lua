@@ -602,11 +602,10 @@ end
 
 local function buildPdDutyLockerItems(grade, lockerMode, genderKey)
     local division = exports['mrp_ltpd']:GetPdDivision()
-    local leadership = exports['mrp_ltpd']:IsPdLeadership()
     local items = {}
     for idx, outfit in ipairs(Config.DutyOutfits or {}) do
         if not outfit[genderKey] then goto continue_outfit end
-        if not PdDivisions.outfitAllowed(outfit, lockerMode, grade, division, leadership) then goto continue_outfit end
+        if not PdDivisions.outfitAllowed(outfit, lockerMode, grade, division) then goto continue_outfit end
         local cat = inferOutfitCategory(outfit, genderKey)
         items[#items + 1] = {
             id = tostring(idx),
@@ -668,13 +667,11 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
     end
     data = type(data) == 'table' and data or {}
     local lockerMode = data.lockerMode or 'standard'
-    local arasLocker = lockerMode == 'aro' or lockerMode == 'sor' or lockerMode == 'aras'
-    local title = arasLocker and 'ARAS rūbinė' or 'Tarnybinė apranga'
-    if arasLocker then
-        local leadership = exports['mrp_ltpd']:IsPdLeadership()
+    local title = (lockerMode == 'aro' or lockerMode == 'sor') and 'SOR rūbinė' or 'Tarnybinė apranga'
+    if lockerMode == 'aro' or lockerMode == 'sor' then
         local eff = exports['mrp_ltpd']:GetPdEffectiveDivision()
-        if not leadership and not PdDivisions.isAras(eff) then
-            return QBCore.Functions.Notify('ARAS rūbinė – tik ARAS padaliniui (/pddept).', 'error')
+        if eff ~= 'sor' and eff ~= 'aro' then
+            return QBCore.Functions.Notify('SOR rūbinė – tik SOR padaliniui (/pddept).', 'error')
         end
     end
     local P = QBCore.Functions.GetPlayerData()
@@ -683,15 +680,15 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
     local ped = PlayerPedId()
     local genderKey = getDutyOutfitGenderKey(ped)
     local actions = {}
-    if not arasLocker and grade >= chooseMin then
+    if lockerMode ~= 'aro' and lockerMode ~= 'sor' and grade >= chooseMin then
         actions[#actions + 1] = { id = 'division', label = 'Keisti padalinį' }
     end
-    if not arasLocker then
+    if lockerMode ~= 'aro' and lockerMode ~= 'sor' then
         actions[#actions + 1] = { id = 'civilian', label = 'Civilio apranga', danger = true }
     end
     exports['mrp_duty_locker']:Open({
         title = title,
-        subtitle = lockerMode == 'standard' and 'PD uniformos' or 'ARAS rinkinys',
+        subtitle = lockerMode == 'standard' and 'PD uniformos' or 'Specialiųjų operacijų rinkinys',
         anchor = data.anchor,
         radius = data.radius or 2.6,
         items = buildPdDutyLockerItems(grade, lockerMode, genderKey),

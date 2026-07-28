@@ -2,57 +2,24 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local TRACKED = {} --- [vehicle] = { supportsNative, mode }
-local FLEET_BUILTIN = {} --- [vehicle] = { mode } — tik built-in ELS, be PD kit
 local LIGHTBARS = {} --- [vehicle] = { bar, leftLens, rightLens }
 local KIT_PERF = {} --- [vehicle] = { sig, orig }
 local INGEST_SCHEDULED = {} --- [vehicle] = true
-local fleetBoneCache = {} --- [veh] = { bones, checkedAt }
-local lastSirenApplyMode = {} --- [veh] = mode — soft off→on tik keičiant režimą
-local SIREN_TEST_LOCK = {} --- [vehicle] = true; izoliuoja /pdtestsiren nuo runtime loop'ų
 
 local FLEET_HASHES = {}
-local FLEET_CAR_HASHES = {}
-local FLEET_MODEL_BY_HASH = {}
-local BUILT_IN_FLEET_HASHES = {}
 local function rebuildFleetHashes()
     FLEET_HASHES = {}
-    FLEET_CAR_HASHES = {}
-    FLEET_MODEL_BY_HASH = {}
-    BUILT_IN_FLEET_HASHES = {}
-    for _, name in ipairs(Config.BuiltInFleetModels or {}) do
-        if name and name ~= '' then
-            BUILT_IN_FLEET_HASHES[joaat(tostring(name):lower())] = true
-        end
-    end
     for _, v in ipairs(Config.FleetVehicles or {}) do
-        if v and v.model then
-            local h = joaat(v.model)
-            local name = tostring(v.model):lower()
-            FLEET_HASHES[h] = true
-            FLEET_CAR_HASHES[h] = true
-            FLEET_MODEL_BY_HASH[h] = name
-            BUILT_IN_FLEET_HASHES[h] = true
-        end
+        if v and v.model then FLEET_HASHES[joaat(v.model)] = true end
     end
     for _, v in ipairs(Config.FleetHelicopters or {}) do
-        if v and v.model then
-            local h = joaat(v.model)
-            FLEET_HASHES[h] = true
-            FLEET_MODEL_BY_HASH[h] = tostring(v.model):lower()
-            BUILT_IN_FLEET_HASHES[h] = true
-        end
+        if v and v.model then FLEET_HASHES[joaat(v.model)] = true end
     end
 end
 rebuildFleetHashes()
 
 local Ec = Config.EmergencyVehicle or {}
--- Teisingas raktas: resetModeWhenLeaveDriverSeat (alias: resetWhenLeaveDriverSeat)
-local RESET_ON_EXIT = true
-if Ec.resetModeWhenLeaveDriverSeat ~= nil then
-    RESET_ON_EXIT = Ec.resetModeWhenLeaveDriverSeat ~= false
-elseif Ec.resetWhenLeaveDriverSeat ~= nil then
-    RESET_ON_EXIT = Ec.resetWhenLeaveDriverSeat ~= false
-end
+local RESET_ON_EXIT = Ec.resetWhenLeaveDriverSeat ~= false
 
 local EMS_JOB = 'ambulance'
 
@@ -118,55 +85,10 @@ local function modelIsFleet(hash)
     return FLEET_HASHES[hash] == true
 end
 
---- MRPD / fleet su built-in ELS — PD įrangos scriptas (prop, DrawLight) neįsikiša.
-local function usesBuiltInFleetLights(vehicle)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
-    return BUILT_IN_FLEET_HASHES[GetEntityModel(vehicle)] == true
-end
-
-local function modelIsFleetCar(hash)
-    return FLEET_CAR_HASHES[hash] == true
-end
-
---- Fleet entry: emergencyLights = 'native' | 'hybrid' | 'script' | 'els' | nil
---- native/hybrid → SetVehicleSiren; script → prop lightbar; els → ELS-FiveM (neliečiame).
---- Hybrid/native + nativeFlashAssist → raudona/mėlyna flash ant stogo (be prop).
-local FLEET_LIGHT_MODE = {}
-local function rebuildFleetLightModes()
-    FLEET_LIGHT_MODE = {}
-    for _, v in ipairs(Config.FleetVehicles or {}) do
-        if v and v.model then
-            local mode = tostring(v.emergencyLights or v.lights or 'hybrid'):lower()
-            if mode == 'kit' then mode = 'script' end
-            if mode == 'els' or mode == 'none' or mode == 'off' then
-                mode = 'els'
-            elseif mode == 'hybrid' or mode == 'native' or mode == '' then
-                mode = 'native' --- SetVehicleSiren kelias; flash assist atskirai
-            elseif mode ~= 'script' then
-                mode = 'native'
-            end
-            FLEET_LIGHT_MODE[joaat(v.model)] = mode
-        end
-    end
-end
-rebuildFleetLightModes()
-
-local function fleetLightMode(hash)
-    return FLEET_LIGHT_MODE[hash] or 'native'
-end
-
---- Ar mašina turi savas PD šviesas (carcols sirens / extras) — naudoti jas, ne prop lightbar.
 local function vehicleSupportsNativeEmergency(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     local hash = GetEntityModel(vehicle)
-
-    -- Fleet: default native/hybrid. 'script' = prop; 'els' = ELS (nei native, nei prop).
-    if modelIsFleetCar(hash) then
-        local mode = fleetLightMode(hash)
-        if mode == 'els' then return false end
-        return mode ~= 'script'
-    end
-
+    -- Kai kuriuose artefaktuose native neeksportuotas – nekrentam į nil call.
     for _, name in ipairs({ 'IsThisModelEmergencyVehicle', 'IsThisModelAnEmergencyVehicle' }) do
         local fn = rawget(_G, name)
         if type(fn) == 'function' then
@@ -177,22 +99,8 @@ local function vehicleSupportsNativeEmergency(vehicle)
     if Ec.trustVehicleClassEmergency == true and GetVehicleClass(vehicle) == 18 then
         return true
     end
-    -- Helikopteriai / kiti fleet be car
-    if modelIsFleet(hash) then return true end
-    return false
+    return modelIsFleet(hash)
 end
-
---- Native emergency modelis, kurio nėra mūsų fleet sąraše, priklauso GTA.
---- Jo sirenos būsenos neliečiame ir PD equipment ant jo nededame.
-local function leaveNativeEmergencyUnmanaged(vehicle)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
-    if modelIsFleet(GetEntityModel(vehicle)) then return false end
-    return GetVehicleClass(vehicle) == 18 or vehicleSupportsNativeEmergency(vehicle)
-end
-
---- Script lightbar / DrawLight TIK civilinei TP su kit, arba fleet su emergencyLights='script'.
---- (apibrėžiama po readVehicleStateBag)
-local vehicleUsesScriptFlash
 
 local function getDriverVehicleLocal()
     local ped = PlayerPedId()
@@ -206,33 +114,6 @@ local function stopNativeSirenVisual(vehicle)
     if not DoesEntityExist(vehicle) then return end
     SetVehicleSiren(vehicle, false)
     SetVehicleHasMutedSirens(vehicle, false)
-end
-
---- Be Wait() — saugoma kviesti iš statebag / net event (ne coroutine).
-local function requestVehicleControl(vehicle)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
-    if NetworkHasControlOfEntity(vehicle) then return true end
-    NetworkRequestControlOfEntity(vehicle)
-    return NetworkHasControlOfEntity(vehicle)
-end
-
-local function canApplyNativeSiren(vehicle)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
-    if NetworkHasControlOfEntity(vehicle) then return true end
-    return GetPedInVehicleSeat(vehicle, -1) == PlayerPedId()
-end
-
---- Užtikrina network control su Wait — TIK CreateThread / SetTimeout kontekste.
-local function ensureVehicleControl(vehicle, tries)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
-    if NetworkHasControlOfEntity(vehicle) then return true end
-    tries = tonumber(tries) or 25
-    for _ = 1, tries do
-        NetworkRequestControlOfEntity(vehicle)
-        if NetworkHasControlOfEntity(vehicle) then return true end
-        Wait(0)
-    end
-    return NetworkHasControlOfEntity(vehicle)
 end
 
 local soundIds = {}
@@ -289,29 +170,6 @@ local function readVehicleStateBag(vehicle)
     return mode, kit
 end
 
-local function vehicleCanUseSirenMenu(vehicle)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
-    if modelIsFleet(GetEntityModel(vehicle)) then return true end
-    if vehicleSupportsNativeEmergency(vehicle) then return true end
-    local _, kit = readVehicleStateBag(vehicle)
-    return kit == true
-end
-
-vehicleUsesScriptFlash = function(vehicle)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
-    --- Built-in fleet: jokio prop/script — tik modelio carcols.
-    if usesBuiltInFleetLights(vehicle) then return false end
-    local hash = GetEntityModel(vehicle)
-    if modelIsFleetCar(hash) and fleetLightMode(hash) == 'script' then
-        return true
-    end
-    local _, kit = readVehicleStateBag(vehicle)
-    if kit == true and not vehicleSupportsNativeEmergency(vehicle) then
-        return true
-    end
-    return false
-end
-
 local function loadModel(hash)
     if not hash or hash == 0 or not IsModelInCdimage(hash) then return false end
     RequestModel(hash)
@@ -351,15 +209,8 @@ end
 
 local function ensureLightbar(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    --- Prop lightbar tik kai script flash (civilinis kit / explicit script fleet)
-    if not vehicleUsesScriptFlash(vehicle) then
-        removeLightbar(vehicle)
-        return
-    end
     local _, kit = readVehicleStateBag(vehicle)
-    local hash = GetEntityModel(vehicle)
-    local forceScript = modelIsFleetCar(hash) and fleetLightMode(hash) == 'script'
-    if not forceScript and kit ~= true then
+    if vehicleSupportsNativeEmergency(vehicle) or kit ~= true then
         removeLightbar(vehicle)
         return
     end
@@ -517,14 +368,10 @@ end
 
 local function syncKitVisuals(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    if vehicleUsesScriptFlash(vehicle) then
+    local _, kit = readVehicleStateBag(vehicle)
+    if kit and not vehicleSupportsNativeEmergency(vehicle) then
         ensureLightbar(vehicle)
-        local _, kit = readVehicleStateBag(vehicle)
-        if kit then
-            syncKitPerformance(vehicle)
-        else
-            removeKitPerformance(vehicle)
-        end
+        syncKitPerformance(vehicle)
     else
         removeLightbar(vehicle)
         removeKitPerformance(vehicle)
@@ -537,10 +384,7 @@ local function cleanupVehicleEmergency(vehicle)
     removeLightbar(vehicle)
     removeKitPerformance(vehicle)
     INGEST_SCHEDULED[vehicle] = nil
-    fleetBoneCache[vehicle] = nil
-    lastSirenApplyMode[vehicle] = nil
     TRACKED[vehicle] = nil
-    FLEET_BUILTIN[vehicle] = nil
 end
 
 local function lensWorldPos(lensEnt, barEnt, vehicle, side)
@@ -686,288 +530,58 @@ local function safeVehicleNetId(vehicle)
     return NetworkGetNetworkIdFromEntity(vehicle)
 end
 
---- Built-in fleet extras priklauso pačiam modeliui.
---- Jų automatiškai nekeičiame, nes skirtinguose MRPD modeliuose tas pats
---- extra ID gali reikšti alternatyvią juostą, centrinę lempą ar kitą detalę.
-local function ensureFleetLightbarExtras(vehicle)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    if not usesBuiltInFleetLights(vehicle) and not modelIsFleet(GetEntityModel(vehicle)) then return end
-end
-
-local SIREN_BONE_NAMES = {
-    'siren', 'siren1', 'siren2', 'siren3', 'siren4', 'siren5', 'siren6',
-    'siren7', 'siren8', 'siren9', 'siren10', 'siren11', 'siren12',
-    'siren13', 'siren14', 'siren15', 'siren16', 'siren17', 'siren18',
-    'siren19', 'siren20',
-}
-
-local function getFleetSirenBones(vehicle)
-    local cached = fleetBoneCache[vehicle]
-    local now = GetGameTimer()
-    if cached and (now - (cached.checkedAt or 0)) < 5000 then
-        return cached.bones
-    end
-    local bones = {}
-    for i = 1, #SIREN_BONE_NAMES do
-        local idx = GetEntityBoneIndexByName(vehicle, SIREN_BONE_NAMES[i])
-        if idx and idx ~= -1 then
-            bones[#bones + 1] = idx
-        end
-    end
-    fleetBoneCache[vehicle] = { bones = bones, checkedAt = now }
-    return bones
-end
-
---- Stogo flash: šviesa piešiama pagal transporto offset (lightbar vieta),
---- ne pagal YFT siren kaulus (jie dažnai centre / blogoj vietoj).
---- Neprideda prop. Native IsVehicleSirenOn turi prioritetą.
-local function drawFleetRoofLights(vehicle)
-    if Ec.fleetRoofFlashAssist == false then return end
-    if IsVehicleSirenOn(vehicle) then return end
-
-    local interval = math.max(70, tonumber(Ec.fleetRoofFlashIntervalMs) or 90)
-    local phase = math.floor(GetGameTimer() / interval) % 8
-    local activeColor
-    if phase == 0 or phase == 2 then
-        activeColor = 'red'
-    elseif phase == 4 or phase == 6 then
-        activeColor = 'blue'
-    else
-        return
-    end
-
-    local r, g, b = flashColor(activeColor)
-    local y = tonumber(Ec.fleetRoofFlashY) or -0.15
-    local z = tonumber(Ec.fleetRoofFlashZ) or 0.92
-    local spread = tonumber(Ec.fleetRoofFlashXSpread) or 0.42
-    local range = tonumber(Ec.fleetRoofFlashRange) or 4.5
-    local power = tonumber(Ec.fleetRoofFlashIntensity) or 2.8
-    local x = (activeColor == 'red') and -spread or spread
-    local pos = GetOffsetFromEntityInWorldCoords(vehicle, x, y, z)
-    if pos then
-        DrawLightWithRange(pos.x, pos.y, pos.z, r, g, b, range, power)
-    end
-end
-
---- MRPD YFT siren kaulų fallback. Naudoja tik modelyje esančių siren1..20
---- koordinates; neprideda prop ir vienu metu piešia tik vieną spalvą.
-local function drawFleetSirenBoneLights(vehicle)
-    if Ec.fleetSirenBoneLights == false then return end
-    --- Jei GTA priėmė native siren state, carcols emissives turi prioritetą.
-    if IsVehicleSirenOn(vehicle) and Ec.fleetSirenBoneLightsWithNative == false then return end
-
-    local bones = getFleetSirenBones(vehicle)
-    if #bones == 0 then return end
-
-    local interval = math.max(70, tonumber(Ec.fleetSirenBoneIntervalMs) or 90)
-    local phase = math.floor(GetGameTimer() / interval) % 8
-    local activeColor
-    if phase == 0 or phase == 2 then
-        activeColor = 'red'
-    elseif phase == 4 or phase == 6 then
-        activeColor = 'blue'
-    else
-        return
-    end
-
-    local r, g, b = flashColor(activeColor)
-    local range = tonumber(Ec.fleetSirenBoneRange) or 2.6
-    local power = tonumber(Ec.fleetSirenBoneIntensity) or 1.5
-    local maxPts = math.max(2, math.min(10, tonumber(Ec.fleetSirenBoneMaxPoints) or 8))
-    local drawn = 0
-
-    for i = 1, #bones do
-        local pos = GetWorldPositionOfEntityBone(vehicle, bones[i])
-        if pos then
-            local localPos = GetOffsetFromEntityGivenWorldCoords(vehicle, pos.x, pos.y, pos.z)
-            local side
-            if localPos.x < -0.035 then
-                side = 'red'
-            elseif localPos.x > 0.035 then
-                side = 'blue'
-            else
-                side = (i % 2 == 0) and 'blue' or 'red'
-            end
-            if side == activeColor then
-                DrawLightWithRange(pos.x, pos.y, pos.z, r, g, b, range, power)
-                drawn = drawn + 1
-                if drawn >= maxPts then break end
-            end
-        end
-    end
-end
-
-local function setMutedForMode(vehicle, mode)
-    if mode == 'lights' then
-        SetVehicleHasMutedSirens(vehicle, true)
-    elseif mode == 'full' then
-        SetVehicleHasMutedSirens(vehicle, Entity(vehicle).state.fpSirenMuted == true)
-    end
-end
-
---- Įjungia tikras modelio policijos lempas per carcols.
---- Native keičia tik transporto savininkas / vairuotojas, kad nuotoliniai
---- klientai nekovotų tarpusavyje dėl tos pačios network entity būsenos.
-local function applyBuiltInFleetLights(vehicle, mode)
-    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    mode = tostring(mode or 'off'):lower()
-    if mode ~= 'lights' and mode ~= 'full' then return end
-
-    if not canApplyNativeSiren(vehicle) then
-        NetworkRequestControlOfEntity(vehicle)
-        return
-    end
-    SetVehicleEngineOn(vehicle, true, true, false)
-    lastSirenApplyMode[vehicle] = mode
-
-    --- Soft off→on: kai kurie addon modeliai priima sireną tik po reset.
-    SetVehicleHasMutedSirens(vehicle, false)
-    SetVehicleSiren(vehicle, false)
-    SetVehicleSiren(vehicle, true)
-
-    SetTimeout(250, function()
-        if not DoesEntityExist(vehicle) then return end
-        if lastSirenApplyMode[vehicle] ~= mode then return end
-        if IsVehicleSirenOn(vehicle) then
-            setMutedForMode(vehicle, mode)
-        end
-    end)
-end
-
-local function ingestBuiltInFleet(vehicle, mode)
-    removeLightbar(vehicle)
-    removeKitPerformance(vehicle)
-    FLEET_BUILTIN[vehicle] = { mode = mode }
-
-    local lightsOn = (mode == 'lights' or mode == 'full')
-
-    TRACKED[vehicle] = TRACKED[vehicle] or {}
-    TRACKED[vehicle].supportsNative = true
-    TRACKED[vehicle].scriptFlash = false
-    TRACKED[vehicle].roofFlash = lightsOn and Ec.fleetRoofFlashAssist ~= false
-    TRACKED[vehicle].fleetBoneLights = false
-    TRACKED[vehicle].mode = mode
-
-    if mode == 'off' then
-        stopNativeSirenVisual(vehicle)
-        stopScriptSound(vehicle)
-        lastSirenApplyMode[vehicle] = 'off'
-        FLEET_BUILTIN[vehicle] = nil
-        TRACKED[vehicle] = nil
-        return
-    end
-
-    if mode == 'sound' then
-        stopNativeSirenVisual(vehicle)
-        stopScriptSound(vehicle)
-        lastSirenApplyMode[vehicle] = 'sound'
-        TRACKED[vehicle].roofFlash = false
-        TRACKED[vehicle].fleetBoneLights = false
-        return
-    end
-
-    if lightsOn then
-        stopScriptSound(vehicle)
-        applyBuiltInFleetLights(vehicle, mode)
-    end
-end
-
---- Soft off→on TIK kai keičiasi režimas (ne kiekvieną tick) — atgaivina carcols be balto spam.
-
 local function applyNativeForEveryone(vehicle, mode)
     if not DoesEntityExist(vehicle) then return end
     if not vehicleSupportsNativeEmergency(vehicle) then return end
-    mode = tostring(mode or 'off'):lower()
-    if mode == 'off' or mode == 'sound' then
+    mode = mode or 'off'
+    if mode == 'off' then
         stopNativeSirenVisual(vehicle)
-        lastSirenApplyMode[vehicle] = mode
         return
     end
-
-    --- Civilinis native kelias — tas pats soft kick be Wait eventuose.
-    return applyBuiltInFleetLights(vehicle, mode)
+    if mode == 'sound' then
+        stopNativeSirenVisual(vehicle)
+        return
+    end
+    --- lights ir full naudoja GTA sirenos šviesas
+    SetVehicleSiren(vehicle, true)
+    if mode == 'lights' then
+        SetVehicleHasMutedSirens(vehicle, true)
+    elseif mode == 'full' then
+        --- Garsą valdo mrp_siren_controller (tonai) — natyvus garso takelis nutildytas.
+        SetVehicleHasMutedSirens(vehicle, true)
+    end
 end
 
-local function ingestPdKitVehicle(vehicle, forcedMode)
+local function ingestFromEntity(vehicle)
     if not vehicle or vehicle == 0 or not IsEntityAVehicle(vehicle) or not DoesEntityExist(vehicle) then return end
-    --- ELS fleet: šviesas valdo ELS-FiveM (+ F6 bridge). Čia neliečiam SetVehicleSiren.
-    if fleetLightMode(GetEntityModel(vehicle)) == 'els' then
-        FLEET_BUILTIN[vehicle] = nil
-        removeLightbar(vehicle)
-        stopScriptSound(vehicle)
-        return
-    end
-    FLEET_BUILTIN[vehicle] = nil
     local mode, kit = readVehicleStateBag(vehicle)
-    if type(forcedMode) == 'string' and forcedMode ~= '' then
-        mode = forcedMode:lower()
-    end
     local supportsNative = vehicleSupportsNativeEmergency(vehicle)
-    local scriptFlash = vehicleUsesScriptFlash(vehicle)
-    if supportsNative and not scriptFlash then
-        removeLightbar(vehicle)
-    end
     TRACKED[vehicle] = TRACKED[vehicle] or {}
     TRACKED[vehicle].supportsNative = supportsNative
-    TRACKED[vehicle].scriptFlash = scriptFlash
-    TRACKED[vehicle].roofFlash = false
-    TRACKED[vehicle].assistFlash = false
-    TRACKED[vehicle].fleetBoneLights = false
     TRACKED[vehicle].mode = mode
     syncKitVisuals(vehicle)
 
     if mode == 'off' then
         stopNativeSirenVisual(vehicle)
         stopScriptSound(vehicle)
-        fleetBoneCache[vehicle] = nil
-        lastSirenApplyMode[vehicle] = 'off'
         if not kit then
             cleanupVehicleEmergency(vehicle)
         end
         return
     elseif mode == 'lights' then
         stopScriptSound(vehicle)
-        if scriptFlash then
-            stopNativeSirenVisual(vehicle)
-        else
-            applyNativeForEveryone(vehicle, mode)
-        end
+        applyNativeForEveryone(vehicle, mode)
     elseif mode == 'sound' then
         stopNativeSirenVisual(vehicle)
-        lastSirenApplyMode[vehicle] = 'sound'
     elseif mode == 'full' then
-        if not scriptFlash then
+        if supportsNative then
             applyNativeForEveryone(vehicle, 'full')
         end
     end
 end
 
-local function ingestFromEntity(vehicle, forcedMode)
-    if not vehicle or vehicle == 0 or not IsEntityAVehicle(vehicle) or not DoesEntityExist(vehicle) then return end
-    if SIREN_TEST_LOCK[vehicle] then return end
-    local mode
-    if type(forcedMode) == 'string' and forcedMode ~= '' then
-        mode = forcedMode:lower()
-    else
-        mode = select(1, readVehicleStateBag(vehicle))
-    end
-    if usesBuiltInFleetLights(vehicle) then
-        return ingestBuiltInFleet(vehicle, mode)
-    end
-    --- Vanilla ir kitos nekonfigūruotos native emergency TP valdomos pačio GTA.
-    --- cleanup pašalina tik mūsų prop/sound tracking ir nekviečia SetVehicleSiren.
-    if leaveNativeEmergencyUnmanaged(vehicle) then
-        cleanupVehicleEmergency(vehicle)
-        return
-    end
-    return ingestPdKitVehicle(vehicle, mode)
-end
-
 local function requestEmergencyRestoreIfNeeded(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return end
-    --- Fleet MRPD: F6 režimas be pd_emergency_kit — restore iš DB išjungdavo ltPdSirenMode.
-    if usesBuiltInFleetLights(vehicle) then return end
-    if modelIsFleet(GetEntityModel(vehicle)) then return end
     local _, kit = readVehicleStateBag(vehicle)
     if kit then return end
     local netId = safeVehicleNetId(vehicle)
@@ -977,12 +591,11 @@ end
 
 local function scheduleIngest(vehicle)
     if not vehicle or vehicle == 0 then return end
-    if SIREN_TEST_LOCK[vehicle] then return end
     if INGEST_SCHEDULED[vehicle] then return end
     INGEST_SCHEDULED[vehicle] = true
     SetTimeout(60, function()
         INGEST_SCHEDULED[vehicle] = nil
-        if DoesEntityExist(vehicle) and not SIREN_TEST_LOCK[vehicle] then
+        if DoesEntityExist(vehicle) then
             ingestFromEntity(vehicle)
         end
     end)
@@ -1033,23 +646,11 @@ CreateThread(function()
                 else
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
                     meta.mode = mode
-                    --- Script flash tik civiliniam pd_emergency_kit (prop lightbar)
-                    if (mode == 'lights' or mode == 'full') and meta.scriptFlash == true then
+                    if (mode == 'lights' or mode == 'full') and meta.supportsNative ~= true then
                         local vehCoords = GetEntityCoords(veh)
-                        if #(pCoords - vehCoords) <= drawDistance then
-                            drawScriptFlash(veh, #(pCoords - vehCoords))
-                            drew = true
-                        end
-                    elseif (mode == 'lights' or mode == 'full') and meta.roofFlash then
-                        local vehCoords = GetEntityCoords(veh)
-                        if #(pCoords - vehCoords) <= drawDistance then
-                            drawFleetRoofLights(veh)
-                            drew = true
-                        end
-                    elseif (mode == 'lights' or mode == 'full') and meta.fleetBoneLights then
-                        local vehCoords = GetEntityCoords(veh)
-                        if #(pCoords - vehCoords) <= drawDistance then
-                            drawFleetSirenBoneLights(veh)
+                        local dist = #(pCoords - vehCoords)
+                        if dist <= drawDistance then
+                            drawScriptFlash(veh, dist)
                             drew = true
                         end
                     end
@@ -1060,60 +661,22 @@ CreateThread(function()
     end
 end)
 
---- Vienintelis native siren keep-alive. Tik entity savininkas / vairuotojas.
+--- Retas natyvių sirenos šviesų palaikymas (GTA kartais resetina).
 CreateThread(function()
     while true do
-        local anyLights = false
-        if next(TRACKED) ~= nil then
+        if next(TRACKED) == nil then
+            Wait(1800)
+        else
+            Wait(1100)
             for veh, meta in pairs(TRACKED) do
                 if DoesEntityExist(veh) and meta.supportsNative then
                     local mode = meta.mode or select(1, readVehicleStateBag(veh))
-                    meta.mode = mode
                     if mode == 'lights' or mode == 'full' then
-                        anyLights = true
-                        ensureFleetLightbarExtras(veh)
-                        if canApplyNativeSiren(veh) then
-                            --- Mute tik po to, kai native būsena tikrai įsijungė.
-                            if not IsVehicleSirenOn(veh) then
-                                SetVehicleHasMutedSirens(veh, false)
-                                SetVehicleSiren(veh, false)
-                                SetVehicleSiren(veh, true)
-                            else
-                                setMutedForMode(veh, mode)
-                            end
-                        else
-                            NetworkRequestControlOfEntity(veh)
-                        end
+                        SetVehicleSiren(veh, true)
+                        SetVehicleHasMutedSirens(veh, true)
                     elseif mode == 'sound' then
-                        if IsVehicleSirenOn(veh) and canApplyNativeSiren(veh) then
-                            stopNativeSirenVisual(veh)
-                        end
+                        stopNativeSirenVisual(veh)
                     end
-                elseif not DoesEntityExist(veh) then
-                    cleanupVehicleEmergency(veh)
-                end
-            end
-        end
-        Wait(anyLights and 400 or 800)
-    end
-end)
-
---- Periodiškai tik lightbar candidate extras (ne enable-all).
-CreateThread(function()
-    while true do
-        local onDuty = emergencyOnDuty()
-        local tracking = next(TRACKED) ~= nil
-        if not onDuty and not tracking then
-            Wait(8000)
-        else
-            Wait(onDuty and 9000 or 12000)
-            local ped = PlayerPedId()
-            local pCoords = GetEntityCoords(ped)
-            local pool = GetGamePool('CVehicle')
-            for i = 1, #pool do
-                local veh = pool[i]
-                if DoesEntityExist(veh) and #(GetEntityCoords(veh) - pCoords) <= 90.0 then
-                    ensureFleetLightbarExtras(veh)
                 end
             end
         end
@@ -1151,59 +714,30 @@ end)
 
 CreateThread(function()
     local lastVehAsDriver = 0
-    local exitMissTicks = 0
-    -- ~1.1s patvirtinimas — GetVehiclePedIsIn kartais trumpam grąžina 0 ir anksčiau išjungdavo sirenas
-    local EXIT_CONFIRM_TICKS = 4
     while true do
         Wait(275)
         local ped = PlayerPedId()
         local veh = GetVehiclePedIsIn(ped, false)
-        local isDriver = veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped
-        -- Atsarginis check: jei GetVehiclePedIsIn „mirktelėjo“, bet ped vis dar vairuotojo sėdynėje
-        if not isDriver and lastVehAsDriver ~= 0 and DoesEntityExist(lastVehAsDriver)
-            and GetPedInVehicleSeat(lastVehAsDriver, -1) == ped then
-            isDriver = true
-            veh = lastVehAsDriver
-        end
-        if isDriver then
+        if veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
             lastVehAsDriver = veh
-            exitMissTicks = 0
-            if emergencyOnDuty() and not SIREN_TEST_LOCK[veh] then
-                --- Fleet: ne spam'inti ingest kiekvieną tick (gadina native lempas).
-                if usesBuiltInFleetLights(veh) then
-                    local cur = FLEET_BUILTIN[veh]
-                    local mode = select(1, readVehicleStateBag(veh))
-                    if not cur or cur.mode ~= mode then
-                        scheduleIngest(veh)
-                    end
-                elseif leaveNativeEmergencyUnmanaged(veh) then
-                    --- Neperrašyti vanilla police native E būsenos į statebag `off`.
-                    if TRACKED[veh] or LIGHTBARS[veh] or KIT_PERF[veh] then
-                        cleanupVehicleEmergency(veh)
-                    end
-                else
-                    requestEmergencyRestoreIfNeeded(veh)
-                    scheduleIngest(veh)
-                end
+            if emergencyOnDuty() then
+                requestEmergencyRestoreIfNeeded(veh)
+                scheduleIngest(veh)
             end
         elseif lastVehAsDriver ~= 0 then
-            exitMissTicks = exitMissTicks + 1
-            if exitMissTicks >= EXIT_CONFIRM_TICKS then
-                if RESET_ON_EXIT and DoesEntityExist(lastVehAsDriver) then
-                    local netId = safeVehicleNetId(lastVehAsDriver)
-                    if netId ~= 0 then
-                        if pdOnDuty() then
-                            TriggerServerEvent('mrp_ltpd:server:clearPdEmergencyOnExit', netId)
-                        end
-                        if emsOnDuty() then
-                            TriggerServerEvent('mrp_siren:server:clearEmsEmergencyOnExit', netId)
-                        end
+            if RESET_ON_EXIT and DoesEntityExist(lastVehAsDriver) then
+                local netId = safeVehicleNetId(lastVehAsDriver)
+                if netId ~= 0 then
+                    if pdOnDuty() then
+                        TriggerServerEvent('mrp_ltpd:server:clearPdEmergencyOnExit', netId)
+                    end
+                    if emsOnDuty() then
+                        TriggerServerEvent('mrp_siren:server:clearEmsEmergencyOnExit', netId)
                     end
                 end
-                if DoesEntityExist(lastVehAsDriver) then ingestFromEntity(lastVehAsDriver) end
-                lastVehAsDriver = 0
-                exitMissTicks = 0
             end
+            if DoesEntityExist(lastVehAsDriver) then ingestFromEntity(lastVehAsDriver) end
+            lastVehAsDriver = 0
         end
     end
 end)
@@ -1223,7 +757,8 @@ local function openSirenModesMenu()
     if not veh then
         return QBCore.Functions.Notify('Turi būti transporto salėje.', 'error')
     end
-    if not vehicleCanUseSirenMenu(veh) then
+    local _, kit = readVehicleStateBag(veh)
+    if (not vehicleSupportsNativeEmergency(veh)) and kit ~= true then
         local item = (Config.EmergencyVehicle or {}).kitItem or 'pd_emergency_kit'
         return QBCore.Functions.Notify(
             ('Ant įprastos TP pirmiau įdėk avarinę įrangą (itemas „%s“).'):format(item),
@@ -1254,7 +789,7 @@ local function openKitMenu()
     if not veh then
         return QBCore.Functions.Notify('Turi būti vairo vietoje.', 'error')
     end
-    if vehicleSupportsNativeEmergency(veh) or usesBuiltInFleetLights(veh) then
+    if vehicleSupportsNativeEmergency(veh) then
         return QBCore.Functions.Notify('Šiai mašinai nereikia – jau tarnybinė arba turi sirenas.', 'error')
     end
     if GetResourceState('qb-menu') ~= 'started' then
@@ -1314,29 +849,6 @@ RegisterNetEvent('mrp_ltpd:client:vehicleEmergencyRestored', function(netId)
     end
 end)
 
---- Server priverstinai sinchronizuoja šviesas visiems klientams (ne tik statebag).
-RegisterNetEvent('mrp_ltpd:client:forceEmergencyVisual', function(netId, mode)
-    netId = tonumber(netId) or 0
-    if netId <= 0 then return end
-    if type(NetworkDoesNetworkIdExist) == 'function' and not NetworkDoesNetworkIdExist(netId) then return end
-    local ent = NetworkGetEntityFromNetworkId(netId)
-    if ent == 0 or not DoesEntityExist(ent) or not IsEntityAVehicle(ent) then return end
-    mode = type(mode) == 'string' and mode:lower() or nil
-    --- Per CreateThread — saugus Wait / SetTimeout kontekstas.
-    CreateThread(function()
-        if mode then
-            if not usesBuiltInFleetLights(ent) then
-                TRACKED[ent] = TRACKED[ent] or {}
-                TRACKED[ent].mode = mode
-            end
-            lastSirenApplyMode[ent] = nil
-            ingestFromEntity(ent, mode)
-        else
-            ingestFromEntity(ent)
-        end
-    end)
-end)
-
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for veh in pairs(LIGHTBARS) do
@@ -1350,79 +862,3 @@ AddEventHandler('onResourceStop', function(res)
         end
     end
 end)
-
-exports('EnsureFleetLightbarExtras', ensureFleetLightbarExtras)
-
-RegisterCommand('pdlightsdebug', function()
-    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
-    if not veh or veh == 0 then
-        return QBCore.Functions.Notify('Nesi transporte.', 'error')
-    end
-    local mode = select(1, readVehicleStateBag(veh))
-    local builtIn = usesBuiltInFleetLights(veh)
-    requestVehicleControl(veh)
-    if builtIn and (mode == 'lights' or mode == 'full') then
-        lastSirenApplyMode[veh] = nil
-        ingestBuiltInFleet(veh, mode)
-    end
-    SetTimeout(200, function()
-        if not DoesEntityExist(veh) then return end
-        local bones = getFleetSirenBones(veh)
-        local meta = TRACKED[veh]
-        local msg = ('mode=%s | sirenOn=%s | bones=%d | boneFlash=%s | class=%s'):format(
-            tostring(mode),
-            tostring(IsVehicleSirenOn(veh)),
-            #bones,
-            tostring(meta and meta.fleetBoneLights == true and not IsVehicleSirenOn(veh)),
-            tostring(GetVehicleClass(veh))
-        )
-        QBCore.Functions.Notify(msg, 'primary', 12000)
-        print('[mrp_ltpd/pdlightsdebug] ' .. msg)
-    end)
-end, false)
-
---- Tikrai izoliuotas native testas: blokuoja statebag, driver restore ir keep-alive.
-RegisterCommand('pdtestsiren', function()
-    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
-    if not veh or veh == 0 then
-        return QBCore.Functions.Notify('Nesi transporte.', 'error')
-    end
-    CreateThread(function()
-        SIREN_TEST_LOCK[veh] = true
-        local hasControl = ensureVehicleControl(veh, 40)
-        local prevTracked = TRACKED[veh]
-        local prevFleet = FLEET_BUILTIN[veh]
-        TRACKED[veh] = nil
-        FLEET_BUILTIN[veh] = nil
-        INGEST_SCHEDULED[veh] = nil
-
-        local okFrames = 0
-        local total = 40
-        SetVehicleHasMutedSirens(veh, false)
-        for _ = 1, total do
-            SetVehicleHasMutedSirens(veh, false)
-            SetVehicleSiren(veh, true)
-            Wait(50)
-            if IsVehicleSirenOn(veh) then okFrames = okFrames + 1 end
-        end
-        local lastState = IsVehicleSirenOn(veh)
-
-        SIREN_TEST_LOCK[veh] = nil
-        if prevTracked then TRACKED[veh] = prevTracked end
-        if prevFleet then FLEET_BUILTIN[veh] = prevFleet end
-        SetTimeout(100, function()
-            if DoesEntityExist(veh) then ingestFromEntity(veh) end
-        end)
-
-        local msg = ('pdtestsiren: sirenOn frames %d/%d | last=%s | ctrl=%s | model=%s | class=%s'):format(
-            okFrames,
-            total,
-            tostring(lastState),
-            tostring(hasControl),
-            tostring(GetDisplayNameFromVehicleModel(GetEntityModel(veh))),
-            tostring(GetVehicleClass(veh))
-        )
-        QBCore.Functions.Notify(msg, okFrames > 0 and 'success' or 'error', 15000)
-        print('[mrp_ltpd/pdtestsiren] ' .. msg)
-    end)
-end, false)

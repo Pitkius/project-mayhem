@@ -84,11 +84,50 @@ function GangUtils.PointInPolygon(x, y, vertices)
     return inside
 end
 
+--- Shoelace polygon centroid (falls back to vertex average).
+function GangUtils.PolygonCentroid(vertices)
+    if type(vertices) ~= 'table' or #vertices == 0 then return nil end
+    if #vertices < 3 then
+        return { x = tonumber(vertices[1].x) or 0.0, y = tonumber(vertices[1].y) or 0.0 }
+    end
+    local area2, cx, cy = 0.0, 0.0, 0.0
+    local n = #vertices
+    for i = 1, n do
+        local a = vertices[i]
+        local b = vertices[(i % n) + 1]
+        local cross = (tonumber(a.x) or 0.0) * (tonumber(b.y) or 0.0)
+            - (tonumber(b.x) or 0.0) * (tonumber(a.y) or 0.0)
+        area2 = area2 + cross
+        cx = cx + ((tonumber(a.x) or 0.0) + (tonumber(b.x) or 0.0)) * cross
+        cy = cy + ((tonumber(a.y) or 0.0) + (tonumber(b.y) or 0.0)) * cross
+    end
+    if math.abs(area2) < 0.0001 then
+        local sx, sy = 0.0, 0.0
+        for i = 1, n do
+            sx = sx + (tonumber(vertices[i].x) or 0.0)
+            sy = sy + (tonumber(vertices[i].y) or 0.0)
+        end
+        return { x = sx / n, y = sy / n }
+    end
+    return { x = cx / (3.0 * area2), y = cy / (3.0 * area2) }
+end
+
 function GangUtils.FindTerritoryAt(x, y, territoryType)
+    -- Prefer smaller polygons first when overlaps exist (street borders).
+    local ordered = {}
     for territoryId, territory in pairs(Config.Territories or {}) do
-        if (not territoryType or territory.type == territoryType)
-            and GangUtils.PointInPolygon(x, y, territory.vertices) then
-            return territoryId, territory
+        if not territoryType or territory.type == territoryType then
+            ordered[#ordered + 1] = { id = territoryId, territory = territory }
+        end
+    end
+    table.sort(ordered, function(a, b)
+        local va, vb = a.territory.vertices or {}, b.territory.vertices or {}
+        return #va < #vb
+    end)
+    for i = 1, #ordered do
+        local entry = ordered[i]
+        if GangUtils.PointInPolygon(x, y, entry.territory.vertices) then
+            return entry.id, entry.territory
         end
     end
     return nil

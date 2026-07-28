@@ -808,6 +808,18 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:completeObjective', function(s
     callback({ ok = ok, reason = reason })
 end)
 
+QBCore.Functions.CreateCallback('mrp_gangs:server:lootCorpse', function(source, callback, token, networkId)
+    if not GangCore.RateLimit(source, 'mission_corpse_loot', 1) then
+        return callback({ ok = false, reason = 'rate_limited' })
+    end
+    local run = GangMissions.GetBySource(source)
+    if not run or run.token ~= tostring(token or '') then
+        return callback({ ok = false, reason = 'mission_not_active' })
+    end
+    local ok, result = GangEncounters.TryLootCorpse(source, run, networkId)
+    callback({ ok = ok, result = ok and result or nil, reason = ok and nil or result })
+end)
+
 local function contestNear(source, contest)
     local ped = GetPlayerPed(source)
     if not ped or ped == 0 or not contest or not contest.target then return false end

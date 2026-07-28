@@ -58,7 +58,6 @@ QBShared.Weapons = {
 	[`weapon_combatpdw`]             = { name = 'weapon_combatpdw', label = 'Combat PDW', weapontype = 'Submachine Gun', ammotype = 'AMMO_SMG', damagereason = 'Riddled / Drilled / Finished / Submachine Gunned' },
 	[`weapon_machinepistol`]         = { name = 'weapon_machinepistol', label = 'Tec-9', weapontype = 'Submachine Gun', ammotype = 'AMMO_PISTOL', damagereason = 'Riddled / Drilled / Finished / Submachine Gunned' },
 	[`weapon_minismg`]               = { name = 'weapon_minismg', label = 'Mini SMG', weapontype = 'Submachine Gun', ammotype = 'AMMO_SMG', damagereason = 'Riddled / Drilled / Finished / Submachine Gunned' },
-	[`weapon_tacticalsmg`]           = { name = 'weapon_tacticalsmg', label = 'Tactical SMG', weapontype = 'Submachine Gun', ammotype = 'AMMO_SMG', damagereason = 'Riddled / Drilled / Finished / Submachine Gunned' },
 	[`weapon_raycarbine`]            = { name = 'weapon_raycarbine', label = 'Raycarbine', weapontype = 'Submachine Gun', ammotype = 'AMMO_SMG', damagereason = 'Riddled / Drilled / Finished / Submachine Gunned' },
 	[`weapon_fgc9`]                  = { name = 'weapon_fgc9', label = 'FGC-9', weapontype = 'Submachine Gun', ammotype = 'AMMO_PISTOL', damagereason = 'Riddled / Drilled / Finished / Submachine Gunned' },
 
@@ -87,7 +86,6 @@ QBShared.Weapons = {
 	[`weapon_compactrifle`]          = { name = 'weapon_compactrifle', label = 'Compact Rifle', weapontype = 'Assault Rifle', ammotype = 'AMMO_RIFLE', damagereason = 'Ended / Rifled / Shot down / Floored' },
 	[`weapon_militaryrifle`]         = { name = 'weapon_militaryrifle', label = 'Military Rifle', weapontype = 'Assault Rifle', ammotype = 'AMMO_RIFLE', damagereason = 'Ended / Rifled / Shot down / Floored' },
 	[`weapon_heavyrifle`]            = { name = 'weapon_heavyrifle', label = 'Heavy Rifle', weapontype = 'Assault Rifle', ammotype = 'AMMO_RIFLE', damagereason = 'Ended / Rifled / Shot down / Floored' },
-	[`weapon_servicecarbine`]        = { name = 'weapon_servicecarbine', label = 'Service Carbine', weapontype = 'Assault Rifle', ammotype = 'AMMO_RIFLE', damagereason = 'Ended / Rifled / Shot down / Floored' },
 
 	-- Light Machine Guns
 	[`weapon_mg`]                    = { name = 'weapon_mg', label = 'Machinegun', weapontype = 'Light Machine Gun', ammotype = 'AMMO_MG', damagereason = 'Machine gunned / Sprayed / Ruined' },

@@ -19,6 +19,8 @@ local function setHud(state)
     nui('show', {
         remainingSeconds = state.remainingSeconds or 0,
         reason = state.reason or Config.Defaults.noReason,
+        requireWork = state.requireWork == true,
+        byType = state.byType or 'police',
     })
 end
 
@@ -27,6 +29,8 @@ local function updateHud(state)
     nui('update', {
         remainingSeconds = state.remainingSeconds or 0,
         reason = state.reason,
+        requireWork = state.requireWork == true,
+        byType = state.byType,
     })
 end
 
@@ -98,6 +102,10 @@ local function clearJail()
     jailState = nil
     workBusy = false
     setHud(nil)
+    nui('workHide')
+    local ped = PlayerPedId()
+    ClearPedTasks(ped)
+    FreezeEntityPosition(ped, false)
     deleteCanteenPed()
 end
 
@@ -125,61 +133,57 @@ end)
 local function tryWorkAtSpot(spot)
     if workBusy or not jailed then return end
     workBusy = true
-    local label = 'Atlieki viešuosius darbus…'
+
+    local ped = PlayerPedId()
     local duration = Config.WorkDurationMs or 60000
+    local label = (jailState and jailState.requireWork) and 'Valymo darbas' or 'Viešieji darbai'
+    local animDict = 'amb@world_human_janitor@male@idle_a'
+    local animName = 'idle_a'
 
-    local finished = false
-    local cancelled = false
+    --- Snap + freeze in place for the whole task
+    SetEntityCoords(ped, spot.x, spot.y, spot.z, false, false, false, false)
+    ClearPedTasksImmediately(ped)
+    FreezeEntityPosition(ped, true)
 
-    if GetResourceState('progressbar') == 'started' then
-        QBCore.Functions.Progressbar('mrp_jail_work', label, duration, false, true, {
-            disableMovement = true,
-            disableCarMovement = true,
-            disableCombat = true,
-        }, {
-            animDict = 'anim@gangops@facility@servers@bodysearch@',
-            anim = 'player_search',
-            flags = 49,
-        }, {}, {}, function()
-            finished = true
-        end, function()
-            cancelled = true
-        end)
-
-        local deadline = GetGameTimer() + duration + 1500
-        while GetGameTimer() < deadline do
-            if cancelled then
-                workBusy = false
-                return
-            end
-            if finished then break end
-            Wait(50)
-        end
-        if cancelled or not finished then
-            workBusy = false
-            return
-        end
+    RequestAnimDict(animDict)
+    local loadUntil = GetGameTimer() + 3000
+    while not HasAnimDictLoaded(animDict) and GetGameTimer() < loadUntil do
+        Wait(10)
+    end
+    if HasAnimDictLoaded(animDict) then
+        TaskPlayAnim(ped, animDict, animName, 2.0, 2.0, -1, 1, 0.0, false, false, false)
     else
-        local ped = PlayerPedId()
-        RequestAnimDict('anim@gangops@facility@servers@bodysearch@')
-        local loadUntil = GetGameTimer() + 3000
-        while not HasAnimDictLoaded('anim@gangops@facility@servers@bodysearch@') and GetGameTimer() < loadUntil do
-            Wait(10)
-        end
-        TaskPlayAnim(ped, 'anim@gangops@facility@servers@bodysearch@', 'player_search', 2.0, 2.0, duration, 49, 0.0, false, false, false)
-        local endAt = GetGameTimer() + duration
-        while GetGameTimer() < endAt do
-            if IsControlJustReleased(0, 73) or IsControlJustReleased(0, 200) then
-                ClearPedTasks(ped)
-                workBusy = false
-                return
-            end
-            Wait(50)
-        end
-        ClearPedTasks(ped)
+        TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_JANITOR', 0, true)
     end
 
-    TriggerServerEvent('mrp_jail:server:completeWork')
+    nui('workShow', { durationMs = duration, label = label })
+
+    local endAt = GetGameTimer() + duration
+    while GetGameTimer() < endAt do
+        if not jailed then
+            break
+        end
+        ped = PlayerPedId()
+        FreezeEntityPosition(ped, true)
+        DisableAllControlActions(0)
+        EnableControlAction(0, 1, true)   -- look
+        EnableControlAction(0, 2, true)
+        EnableControlAction(0, 249, true) -- push to talk
+
+        if HasAnimDictLoaded(animDict) and not IsEntityPlayingAnim(ped, animDict, animName, 3) then
+            TaskPlayAnim(ped, animDict, animName, 2.0, 2.0, -1, 1, 0.0, false, false, false)
+        end
+        Wait(0)
+    end
+
+    nui('workHide')
+    ped = PlayerPedId()
+    ClearPedTasks(ped)
+    FreezeEntityPosition(ped, false)
+
+    if jailed then
+        TriggerServerEvent('mrp_jail:server:completeWork')
+    end
     workBusy = false
 end
 
@@ -215,7 +219,12 @@ CreateThread(function()
                         false, false, 2, false, nil, nil, false
                     )
                     if dist <= (Config.WorkInteractDistance or 2.2) then
-                        QBCore.Functions.DrawText3D(spot.x, spot.y, spot.z + 0.45, '[E] Viešieji darbai (−1 min)')
+                        QBCore.Functions.DrawText3D(
+                            spot.x, spot.y, spot.z + 0.45,
+                            (jailState and jailState.requireWork)
+                                and '[E] Valymo darbas (−1)'
+                                or '[E] Viešieji darbai (−1 min)'
+                        )
                         if IsControlJustReleased(0, 38) and not workBusy then
                             tryWorkAtSpot(spot)
                         end

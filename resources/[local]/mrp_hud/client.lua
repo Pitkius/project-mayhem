@@ -273,17 +273,6 @@ local function loadPresetSettings()
                 for k, v in pairs(p.show) do
                     p.show[k] = decoded.show[k] == nil and v or (decoded.show[k] == true)
                 end
-                if decoded.customColors and type(decoded.customColors) == 'table' then
-                    local cc = decoded.customColors
-                    if cc.primary and cc.primary ~= '' then
-                        p.customColors = {
-                            primary = tostring(cc.primary),
-                            secondary = tostring(cc.secondary or cc.primary),
-                            accent = tostring(cc.accent or cc.primary),
-                            text = tostring(cc.text or '#f8fafc'),
-                        }
-                    end
-                end
                 presetSettings[i] = p
             else
                 presetSettings[i] = deepCopy(DEFAULT_PRESET)
@@ -358,8 +347,6 @@ local function sendHudTheme()
     local resolved = resolveHudColors(s)
     local colorKey = s.color or 'violet'
     local tiles = TILE_COLORS[colorKey == 'custom' and 'violet' or colorKey] or TILE_COLORS.violet
-    local playerTheme = BuildPlayerTheme(resolved, colorKey)
-    SetPlayerTheme(playerTheme)
     SendNUIMessage({
         action = 'theme',
         preset = hudPreset,
@@ -377,7 +364,6 @@ local function sendHudTheme()
         tileColors = tiles,
         vehicleUiAccent = (resolved.customColors and resolved.customColors.accent) or VEHICLE_PANEL_ACCENT,
     })
-    SendNUIMessage({ action = 'applyTheme', theme = playerTheme })
 end
 
 local function pushHud()
@@ -723,19 +709,6 @@ RegisterCommand('mrp_seatbelt', function()
     EndTextCommandThefeedPostTicker(false, false)
 end, false)
 
-local function resetHudPresets(scope)
-    if scope == 'all' then
-        for i = 1, HUD_PRESET_COUNT do
-            presetSettings[i] = deepCopy(DEFAULT_PRESET)
-            savePresetSettings(i)
-        end
-    else
-        presetSettings[hudPreset] = deepCopy(DEFAULT_PRESET)
-        savePresetSettings(hudPreset)
-    end
-    sendHudTheme()
-end
-
 RegisterCommand('hud', function(_, args)
     local arg = args and args[1] and tostring(args[1]) or ''
     if arg == '+' then
@@ -744,12 +717,6 @@ RegisterCommand('hud', function(_, args)
     end
     if arg == '-' then
         setHudPreset(hudPreset - 1)
-        return
-    end
-    if arg == 'reset' then
-        local scope = args and args[2] and tostring(args[2]) or ''
-        resetHudPresets(scope == 'all' and 'all' or nil)
-        QBCore.Functions.Notify('HUD atstatytas į numatytuosius.', 'primary')
         return
     end
     local asNum = tonumber(arg)
@@ -769,22 +736,6 @@ RegisterNUICallback('hud:applyPreset', function(data, cb)
     local idx = tonumber(data and data.preset) or 1
     setHudPreset(idx, data and data.silent == true)
     cb({ ok = true })
-end)
-
-RegisterNUICallback('hud:resetPreset', function(data, cb)
-    local idx = tonumber(data and data.preset) or hudPreset
-    idx = math.max(1, math.min(HUD_PRESET_COUNT, idx))
-    local resetAll = data and data.all == true
-    if resetAll then
-        resetHudPresets('all')
-    else
-        presetSettings[idx] = deepCopy(DEFAULT_PRESET)
-        savePresetSettings(idx)
-        if idx == hudPreset then
-            sendHudTheme()
-        end
-    end
-    cb({ ok = true, presets = presetsForNui(), activePreset = hudPreset })
 end)
 
 RegisterNUICallback('hud:savePreset', function(data, cb)

@@ -67,13 +67,24 @@ local function participantSources(run)
     return sources
 end
 
+local function scheduleEntityDelete(entity, delaySec)
+    if not entity or entity == 0 then return end
+    CreateThread(function()
+        Wait(math.max(5, tonumber(delaySec) or 45) * 1000)
+        if DoesEntityExist(entity) then DeleteEntity(entity) end
+    end)
+end
+
 local function spawnWave(run)
     local encounter = run.encounter
     for _, entity in ipairs(encounter.entities or {}) do
-        if DoesEntityExist(entity) then DeleteEntity(entity) end
+        if DoesEntityExist(entity) then
+            scheduleEntityDelete(entity, (Config.CorpseLoot and Config.CorpseLoot.cleanupSec) or Config.Encounter.corpseCleanupSec or 45)
+        end
     end
     encounter.entities = {}
     encounter.networkIds = {}
+    encounter.looted = encounter.looted or {}
     local waveScale = encounter.wave == 1 and 1.0 or 0.65
     local archetypes = selectArchetypes(run, encounter.phase, waveScale)
     local interior = run.interiorKey and Config.MissionInteriors[run.interiorKey]
@@ -93,16 +104,26 @@ local function spawnWave(run)
             SetEntityRoutingBucket(ped, encounterBucket)
             GangUtils.SetEntityOrphanMode(ped, 2)
             local definition = Config.Encounter.archetypes[archetype]
+            local weapon = definition.weapon or 'WEAPON_PISTOL'
             SetPedArmour(ped, tonumber(definition.armor) or 0)
             Entity(ped).state:set('mrpGangMissionRun', run.token, true)
             Entity(ped).state:set('mrpGangArchetype', archetype, true)
             Entity(ped).state:set('mrpGangEncounterWave', encounter.wave, true)
+            Entity(ped).state:set('mrpGangWeapon', weapon, true)
             encounter.entities[#encounter.entities + 1] = ped
-            encounter.networkIds[#encounter.networkIds + 1] = {
-                networkId = NetworkGetNetworkIdFromEntity(ped),
+            local netId = NetworkGetNetworkIdFromEntity(ped)
+            local entry = {
+                networkId = netId,
                 archetype = archetype,
-                weapon = definition.weapon,
+                weapon = weapon,
                 accuracy = definition.accuracy,
+            }
+            encounter.networkIds[#encounter.networkIds + 1] = entry
+            run.corpseRegistry = run.corpseRegistry or {}
+            run.corpseRegistry[netId] = {
+                archetype = archetype,
+                weapon = weapon,
+                looted = false,
             }
         end
     end
@@ -139,10 +160,12 @@ function GangEncounters.Start(run, phase)
         startedAt = os.time(),
         entities = {},
         networkIds = {},
+        looted = {},
         spawnFailed = false,
         phase = GangUtils.Copy(phase),
         wave = 1,
         maxWaves = maxWaves,
+        clearedAt = nil,
     }
     return spawnWave(run)
 end
@@ -154,8 +177,16 @@ function GangEncounters.IsCleared(run)
     end
     if run.encounter.wave < run.encounter.maxWaves then
         run.encounter.wave = run.encounter.wave + 1
+        run.encounter.clearedAt = nil
         local ok = spawnWave(run)
         if not ok then return false end
+        return false
+    end
+    if not run.encounter.clearedAt then
+        run.encounter.clearedAt = os.time()
+    end
+    local grace = tonumber(Config.CorpseLoot and Config.CorpseLoot.clearGraceSec) or 18
+    if (os.time() - run.encounter.clearedAt) < grace then
         return false
     end
     return true
@@ -163,8 +194,80 @@ end
 
 function GangEncounters.Cleanup(run)
     if not run or not run.encounter then return end
+    local delay = (Config.CorpseLoot and Config.CorpseLoot.cleanupSec)
+        or Config.Encounter.corpseCleanupSec
+        or 45
     for _, entity in ipairs(run.encounter.entities or {}) do
-        if DoesEntityExist(entity) then DeleteEntity(entity) end
+        if DoesEntityExist(entity) then
+            scheduleEntityDelete(entity, delay)
+        end
     end
     run.encounter = nil
+end
+
+function GangEncounters.TryLootCorpse(source, run, networkId)
+    if not run then return false, 'mission_not_active' end
+    networkId = tonumber(networkId)
+    if not networkId then return false, 'invalid_corpse' end
+
+    run.corpseRegistry = run.corpseRegistry or {}
+    local meta = run.corpseRegistry[networkId]
+    if not meta then return false, 'invalid_corpse' end
+    if meta.looted or (run.encounter and run.encounter.looted and run.encounter.looted[networkId]) then
+        return false, 'corpse_already_looted'
+    end
+
+    local entity = NetworkGetEntityFromNetworkId(networkId)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then
+        return false, 'corpse_gone'
+    end
+    if not IsEntityDead(entity) then return false, 'npc_still_alive' end
+
+    local ped = GetPlayerPed(source)
+    if not ped or ped == 0 then return false, 'player_missing' end
+    local playerCoords = GetEntityCoords(ped)
+    local corpseCoords = GetEntityCoords(entity)
+    local maxDist = tonumber(Config.CorpseLoot and Config.CorpseLoot.maxDistance) or 2.4
+    if #(playerCoords - corpseCoords) > (maxDist + 1.25) then
+        return false, 'corpse_too_far'
+    end
+
+    meta.looted = true
+    if run.encounter then
+        run.encounter.looted = run.encounter.looted or {}
+        run.encounter.looted[networkId] = true
+    end
+    Entity(entity).state:set('mrpGangLooted', true, true)
+
+    local weapon = meta.weapon
+        or (Entity(entity).state and Entity(entity).state.mrpGangWeapon)
+        or 'WEAPON_PISTOL'
+    local drops = GangEconomy.RollCorpseLoot(run.difficulty, weapon, meta.archetype)
+    local ok, granted = GangEconomy.GrantCorpseLoot(source, run, drops)
+    if not ok then
+        meta.looted = false
+        if run.encounter and run.encounter.looted then
+            run.encounter.looted[networkId] = nil
+        end
+        return false, granted or 'loot_failed'
+    end
+
+    local player = GangCore.GetPlayer(source)
+    GangCore.Audit({
+        gangId = run.gangId,
+        runId = run.dbId,
+        actorCitizenId = player and player.PlayerData.citizenid,
+        actorSource = source,
+        action = 'corpse_loot',
+        targetType = 'mission_run',
+        targetId = run.token,
+        metadata = {
+            networkId = networkId,
+            archetype = meta.archetype,
+            weapon = weapon,
+            granted = granted,
+        },
+    })
+
+    return true, granted
 end

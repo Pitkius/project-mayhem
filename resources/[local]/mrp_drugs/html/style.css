@@ -1,22 +1,12 @@
-@import url("nui://mrp_fonts/html/ui.css");
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root, .sch-box, .mg {
-  --mg-accent: var(--primary);
-  --mg-accent-2: var(--primary-active);
-  --mg-glow: var(--primary-glow);
-  --mg-level: var(--primary-hover);
-}
-
-body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; color: var(--text, #e9e4ff); }
+body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; }
 .hidden { display: none !important; }
 
 #app {
   position: fixed;
   inset: 5% 8%;
   background: linear-gradient(145deg, rgba(12, 8, 24, 0.97), rgba(20, 10, 35, 0.96));
-  border: 1px solid var(--primary-border);
+  border: 1px solid rgba(167, 139, 250, 0.45);
   border-radius: 14px;
   color: #e9e4ff;
   display: flex;
@@ -53,7 +43,7 @@ body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; 
 }
 .head h1 { font-size: 20px; letter-spacing: 0.14em; font-weight: 700; }
 .head h1 span { color: #c084fc; }
-.sub { color: var(--primary); font-size: 13px; margin-top: 4px; }
+.sub { color: #a78bfa; font-size: 13px; margin-top: 4px; }
 
 .layout { display: flex; flex: 1; min-height: 0; }
 .list {
@@ -62,7 +52,7 @@ body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; 
   padding: 12px;
   overflow-y: auto;
 }
-.list-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); margin-bottom: 10px; }
+.list-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #a78bfa; margin-bottom: 10px; }
 
 .prod-item {
   width: 100%;
@@ -76,16 +66,14 @@ body { background: transparent; font-family: "Segoe UI", system-ui, sans-serif; 
   cursor: pointer;
 }
 .prod-item:hover, .prod-item.active {
-  border-color: var(--primary-hover);
+  border-color: #a855f7;
   background: rgba(168, 85, 247, 0.15);
 }
 .prod-item strong { display: block; font-size: 14px; }
 .prod-item small { color: #c4b5fd; }
-.prod-item.locked { opacity: 0.55; }
-.prod-item.locked small { color: #fbbf24; }
 
 .detail { flex: 1; padding: 18px 20px; overflow-y: auto; }
-.empty { color: var(--primary); margin-top: 40px; text-align: center; }
+.empty { color: #a78bfa; margin-top: 40px; text-align: center; }
 .meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 16px; }
 .pill {
   font-size: 11px;
@@ -111,60 +99,6 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 }
 #ingredientList li.ok { border-left: 3px solid #22c55e; }
 #ingredientList li.bad { border-left: 3px solid #ef4444; }
-
-.weed-dry-quantity {
-  margin: 14px 0;
-  padding: 14px;
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  border-radius: 9px;
-  background: rgba(22, 101, 52, 0.11);
-}
-.weed-dry-quantity label {
-  display: block;
-  margin-bottom: 8px;
-  color: #dcfce7;
-  font-size: 13px;
-  font-weight: 650;
-}
-.weed-dry-input-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.weed-dry-input-row input {
-  width: 150px;
-  padding: 10px 12px;
-  border: 1px solid rgba(74, 222, 128, 0.45);
-  border-radius: 7px;
-  outline: none;
-  background: rgba(0, 0, 0, 0.35);
-  color: #f0fdf4;
-  font: inherit;
-}
-.weed-dry-input-row input:focus {
-  border-color: #4ade80;
-  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.12);
-}
-.weed-dry-input-row span {
-  color: #bbf7d0;
-  font-size: 12px;
-}
-.weed-dry-time {
-  margin-top: 9px;
-  color: #86efac;
-  font-size: 13px;
-  font-weight: 600;
-}
-.weed-dry-warning {
-  margin-top: 8px;
-  padding: 9px 10px;
-  border-left: 3px solid #f59e0b;
-  border-radius: 5px;
-  background: rgba(245, 158, 11, 0.1);
-  color: #fde68a;
-  font-size: 12px;
-  line-height: 1.4;
-}
 
 .reward {
   margin: 16px 0;
@@ -193,14 +127,14 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .action-row .btn { flex: 1; margin-top: 0; }
 .btn.primary {
   width: 100%;
-  background: var(--accent-grad);
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
   color: #fff;
   margin-top: 8px;
 }
 .btn.secondary {
   background: rgba(30, 27, 46, 0.95);
   color: #e9d5ff;
-  border: 1px solid var(--primary-border);
+  border: 1px solid rgba(167, 139, 250, 0.45);
 }
 .btn.primary:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn.ghost { background: transparent; color: #c4b5fd; border: 1px solid rgba(167, 139, 250, 0.35); }
@@ -299,7 +233,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .craft-bar {
   height: 100%;
   width: 0%;
-  background: var(--accent-grad);
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
   border-radius: 999px;
   transition: width 0.12s linear;
 }
@@ -372,10 +306,10 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
   backdrop-filter: blur(6px);
 }
 .sch-box {
-  --mg-accent: var(--primary);
-  --mg-accent-2: var(--primary-active);
-  --mg-glow: var(--primary-glow);
-  --mg-level: var(--primary-hover);
+  --mg-accent: #a78bfa;
+  --mg-accent-2: #7c3aed;
+  --mg-glow: rgba(167, 139, 250, 0.35);
+  --mg-level: #a78bfa;
   width: min(680px, 96vw);
   background: linear-gradient(155deg, rgba(18, 10, 32, 0.98) 0%, rgba(8, 4, 18, 0.99) 100%);
   border: 1px solid color-mix(in srgb, var(--mg-accent) 45%, transparent);
@@ -457,7 +391,7 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 .sch-bag.seal { cursor: pointer; width: 160px; height: 140px; }
 .sch-bag.pulse { animation: schPulse 0.2s ease; }
 .sch-bottle { position: relative; overflow: hidden; }
-.sch-fill { position: absolute; bottom: 0; left: 10%; width: 80%; height: 0; background: var(--accent-grad); border-radius: 6px 6px 0 0; transition: height 0.6s ease; }
+.sch-fill { position: absolute; bottom: 0; left: 10%; width: 80%; height: 0; background: linear-gradient(0deg, #a78bfa, #7c3aed); border-radius: 6px 6px 0 0; transition: height 0.6s ease; }
 .sch-gauge-track { position: relative; width: min(360px, 92vw); height: 32px; background: rgba(0,0,0,0.5); border-radius: 999px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--mg-accent) 40%, transparent); }
 .sch-gauge-zone { position: absolute; top: 0; height: 100%; width: 22%; background: color-mix(in srgb, var(--mg-accent) 55%, #22c55e 45%); opacity: 0.85; }
 .sch-gauge-needle { position: absolute; top: -4px; width: 4px; height: 40px; background: #fef08a; box-shadow: 0 0 10px #facc15; border-radius: 2px; }
@@ -1527,90 +1461,4 @@ h3 { font-size: 13px; color: #c4b5fd; margin: 14px 0 8px; text-transform: upperc
 
 .weed-pack-target span {
   display: none;
-}
-
-/* Lightweight HUD for the GTA-world vape workstation. */
-.vape3d-hud {
-  position: fixed;
-  top: clamp(24px, 4vh, 58px);
-  left: clamp(24px, 3vw, 64px);
-  width: min(390px, calc(100vw - 48px));
-  padding: 18px;
-  color: #ecfeff;
-  background: rgba(7, 18, 24, 0.94);
-  border: 1px solid rgba(34, 211, 238, 0.45);
-  border-left: 4px solid #22d3ee;
-  border-radius: 10px;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
-  pointer-events: none;
-  z-index: 9997;
-}
-.vape3d-head,
-.vape3d-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.vape3d-kicker {
-  display: block;
-  margin-bottom: 3px;
-  color: #22d3ee;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-}
-.vape3d-head h2 { margin: 0; font-size: 20px; }
-.vape3d-stage {
-  padding: 5px 9px;
-  color: #cffafe;
-  background: rgba(34, 211, 238, 0.13);
-  border: 1px solid rgba(34, 211, 238, 0.3);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
-}
-.vape3d-stage-name {
-  margin: 14px 0 4px;
-  color: #a5f3fc;
-  font-size: 14px;
-  font-weight: 700;
-}
-.vape3d-hint {
-  min-height: 44px;
-  margin: 4px 0 12px;
-  color: #ecfeff;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.45;
-}
-.vape3d-gauge {
-  position: relative;
-  height: 14px;
-  margin-bottom: 14px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(34, 211, 238, 0.35);
-  border-radius: 999px;
-}
-.vape3d-zone {
-  position: absolute;
-  inset: 0 auto 0 60%;
-  width: 24%;
-  background: rgba(74, 222, 128, 0.45);
-  box-shadow: 0 0 10px rgba(74, 222, 128, 0.35);
-}
-.vape3d-gauge-fill {
-  display: block;
-  width: 0;
-  height: 100%;
-  background: linear-gradient(90deg, #ea580c, #fbbf24, #67e8f9);
-  transition: width 0.06s linear;
-}
-.vape3d-footer {
-  padding-top: 11px;
-  color: #67e8f9;
-  border-top: 1px solid rgba(34, 211, 238, 0.18);
-  font-size: 12px;
-  font-weight: 700;
 }

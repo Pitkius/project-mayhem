@@ -1,31 +1,34 @@
-mrp_hacking – apiplėšimai (be OS sistemos)
+mrp_hacking – OS / tablet / visi apiplėšimai
 
-Planšetės:
-  L1 basic_tablet  — ATM + parduotuvės stealth
-  L2 advanced_tablet — Fleeca seifas + deposit
-  L3 military_tablet — Pacific + Casino
+1) ensure mrp_hacking (po qb-core, qb-inventory, qb-target, mrp_dispatch)
 
-L1 ATM:
-  Soft (be planšetės): gręžimas → grandinė → tempimas → crack → PD alert
-  Stealth (L1 hack): sėkmė = be PD; fail = PD „bandymas įsilaužti“
+2) Aplėšimų tier'ai (visi implementuoti):
+   • hack          — sekos minigame + animacija (laptop)
+   • card          — rodyklių minigame + kortelės animacija
+   • thermite      — hold SPACE minigame + termito animacija
+   • drill         — timing minigame + gręžtuvo animacija/prop
+   • loot          — mash SPACE minigame + grab animacija
+   • ATM drill     — timing (4 raundai) + gręžimas
+   • ATM chain     — rodyklių minigame + mechaniko animacija
+   • ATM crack     — hack minigame + animacija
+   • store        — 24/7 kasa (BlackOS + basic tablet)
+   • bank_fleeca  — Fleeca (GhostOS + advanced tablet + drill)
+   • bank_main    — Pacific (CipherOS + kortelė A + termite + drill)
+   • casino       — Kazino serverinė (CipherOS + military tablet)
+   • vault        — Federal vault (FederalOS + kortelė B + termite + drill)
 
-L1 Parduotuvė:
-  Soft: taikykis į kasininką → pinigai iš TIKROS kasos → maišas → PD kai nustoji taikytis
-  Perlas (kai kuriose): patys eikit išlaužti terminalą (minigame)
-  Seifas gale: drill + minigame + 2 min gręžimas (daugiau pinigų)
-    — be L1 hack → PD alert
-    — L1 hack fail → PD iškart „bandymas įsilaužti“
-  Stealth: L1 hack → atrakinamos kasa / Perlas / seifas be PD
+3) Vietos: qb-target zona prie koordinačių (config_robberies.lua).
+   Tablet Network skiltis rodo fazės ir vietų skaičių.
 
-L2 Fleeca:
-  Soft: taikykis į banko kasininką → maišas + būdelė (seifo NE)
-  Full: L2 hack → drill → loot + deposit (small_drill)
+4) TEST pardavėjas: ~ -328, -134 (DebugHeistVendor — $1 itemai; production: enabled = false)
 
-L3 Pacific: L3 hack → thermite → drill → loot + deposit
-L3 Casino: L3 hack → thermite → drill → 3× loot (termitas kelia PD)
+5) Black market: 707, -967 (normalios kainos + OS payload ant USB)
 
-Lesteris: L1–L3 tablet, small_drill, drill, tow_chain, thermite
-Debug vendor: Config.DebugHeistVendor.enabled = false (tie patys itemai po $1)
+6) Tipinis startas:
+   a) basic_tablet + flashdrive SU PAYLOAD (test NPC → „Flashdrive OS / exploit“, ne tuščias iš shop)
+   b) Naudok flashdrive arba planšetę → Storage → Install payload
+   c) Atlik hack minigame → fazės (drill/termite/kortelė pagal tier)
 
-ensure qb-core
-ensure mrp_hacking
+7) Restart po config pakeitimų:
+   ensure qb-core
+   ensure mrp_hacking

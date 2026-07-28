@@ -181,50 +181,15 @@ function produceItem(orderId, itemName)
             Notify(msg[res and res.reason] or 'Nepavyko pradėti gaminti.', 'error')
             return
         end
-
-        --- Uždaryti NUI kol vyksta 3D gamyba
-        if uiOpen then
-            uiOpen = false
-            SetNuiFocus(false, false)
-            SendNUIMessage({ action = 'burgerClose' })
-        end
-
-        local success, quality, score = false, 'normal', 0
-        local kitchenCfg = Config.BurgerKitchen
-        if kitchenCfg and kitchenCfg.enabled ~= false and BurgerKitchen3D and BurgerKitchen3D.Start then
-            local st = JobClient.get()
-            local joint = st and joints[st.locationId]
-            local def = kitchenCfg.products and kitchenCfg.products[itemName]
-            local hint = def and def.stationHint or 'grill'
-            local origin = nil
-            if joint and joint.kitchen then
-                for _, stn in ipairs(joint.kitchen) do
-                    if stn.type == hint or (not origin and stn.type == 'grill') then
-                        origin = stn.coords
-                        if stn.type == hint then break end
-                    end
-                end
-                if not origin and joint.kitchen[1] then origin = joint.kitchen[1].coords end
-            end
-            local result = BurgerKitchen3D.Start(itemName, {
-                origin = origin,
-                stations = joint and joint.kitchen or nil,
-            })
-            success = result and result.success == true
-            quality = (result and result.quality) or 'poor'
-            score = (result and result.score) or 0
-        else
-            --- Fallback: seni minigame
-            local ok1, x1 = Minigame.run(Config.GetMinigame('burger_grill'))
-            local ok2 = ok1 and Minigame.run(Config.GetMinigame('burger_order'))
-            success = ok1 and ok2
-            score = (x1 and x1.score) or 0
-            quality = Utils.scoreToQuality(success and score or 0, { normal = 0.4, good = 0.7, perfect = 0.95 })
-        end
-
+        -- Etapinis kepimas: keli minigame (fallback = progress).
+        local ok1, x1 = Minigame.run(Config.GetMinigame('burger_grill'))
+        local ok2, x2 = ok1 and Minigame.run(Config.GetMinigame('burger_order')) or false, nil
+        local success = ok1 and ok2
+        local score = math.max((x1 and x1.score) or 0, (x2 and x2.score) or 0)
+        local quality = Utils.scoreToQuality(success and score or 0, { normal = 0.4, good = 0.7, perfect = 0.95 })
         QBCore.Functions.TriggerCallback('mrp_jobs:server:burger:finishProduce', function(done)
             if done and done.ok then
-                Notify(done.ready and 'Užsakymas paruoštas!' or ('Pagaminta (%s).'):format(quality), 'success')
+                Notify(done.ready and 'Užsakymas paruoštas!' or 'Produktas pagamintas.', 'success')
             else
                 Notify('Gaminimas nepavyko.', 'error')
             end

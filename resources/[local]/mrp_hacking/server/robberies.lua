@@ -62,9 +62,8 @@ local function giveLootSlice(src, tierId, step, total, finalSlice)
     if loot.markedbills then
         local count = scaleAmount(loot.markedbills.min, loot.markedbills.max, step, total)
         local worth = loot.markedbills.worth or 400
-        local dirty = count * worth
-        if dirty > 0 then
-            Player.Functions.AddItem('markedbills', dirty, false, {})
+        if count > 0 then
+            Player.Functions.AddItem('markedbills', count, false, { worth = worth })
         end
     end
     if loot.casinochips then
@@ -110,7 +109,7 @@ local function consumeNeed(Player, tierId, phase)
 end
 
 local function dispatchAlert(src, tierId, loc)
-    if exports['mrp_hacking']:IsSilentHack(src) then return end
+    if GetResourceState('mrp_dispatch') ~= 'started' then return end
     local ped = GetPlayerPed(src)
     local c = loc and loc.coords or GetEntityCoords(ped)
     local labels = {
@@ -118,8 +117,9 @@ local function dispatchAlert(src, tierId, loc)
         bank_fleeca = 'Fleeca banko apiplėšimas',
         bank_main = 'Pacific banko apiplėšimas',
         casino = 'Diamond Casino Heist',
+        vault = 'Federal vault apiplėšimas',
     }
-    MRP_DispatchAlert('police', 'robbery', c, labels[tierId] or 'Apiplėšimas', src)
+    exports['mrp_dispatch']:CreateDispatchCall('police', 'robbery', c, labels[tierId] or 'Apiplėšimas', src)
 end
 
 QBCore.Functions.CreateCallback('mrp_hacking:server:robberyCanStart', function(src, cb, tierId, locId)
@@ -127,16 +127,11 @@ QBCore.Functions.CreateCallback('mrp_hacking:server:robberyCanStart', function(s
     if not loc then return cb({ ok = false, msg = 'Vieta nerasta.' }) end
     local cd, cdMsg = onCooldown(src, tierId, locId)
     if cd then return cb({ ok = false, msg = cdMsg }) end
-    local mode = 'full'
-    if tierId == 'store' then mode = 'stealth' end
-    local ok, msg = exports['mrp_hacking']:CanAccessRobbery(src, tierId, mode)
+    local ok, msg = exports['mrp_hacking']:CanAccessRobbery(src, tierId)
     if not ok then return cb({ ok = false, msg = msg }) end
     local Player = QBCore.Functions.GetPlayer(src)
     if Player and not exports['mrp_hacking']:IsRobberyLocDiscovered(src, tierId, locId) then
-        --- discovery optional — jei nėra reikalavimo, praleidžiam
-        if Config.RobberyDiscoveryTiers and Config.RobberyDiscoveryTiers[tierId] then
-            return cb({ ok = false, msg = 'Pirmiau nuskanuok šią vietą planšete.' })
-        end
+        return cb({ ok = false, msg = 'Pirmiau nuskanuok šią vietą planšete (būk parduotuvėje su atidaryta planšete).' })
     end
     local key = locKey(tierId, locId)
     if Busy[key] and Busy[key] ~= src then
@@ -160,7 +155,7 @@ end
 QBCore.Functions.CreateCallback('mrp_hacking:server:robberyCanInteract', function(src, cb, tierId)
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return cb(false) end
-    local ok = exports['mrp_hacking']:CanAccessRobbery(src, tierId, 'full')
+    local ok = exports['mrp_hacking']:CanAccessRobbery(src, tierId)
     if not ok then return cb(false) end
     cb(hasRobberyItems(Player, tierId))
 end)
@@ -194,33 +189,8 @@ RegisterNetEvent('mrp_hacking:server:robberyPhaseDone', function(tierId, locId, 
     end
 
     if tierId == 'casino' and phase == 'thermite' then
-        --- Kazino: termitas visada kelia triukšmą (net jei hack buvo silent)
         local loc = findLocation(tierId, locId)
-        local c = loc and loc.coords or GetEntityCoords(GetPlayerPed(src))
-        MRP_DispatchAlert('police', 'robbery', c, 'Diamond Casino — termitas', src)
-    end
-
-    if phase == 'drill' and (tierId == 'bank_fleeca' or tierId == 'bank_main') then
-        exports['mrp_hacking']:MarkVaultOpenFor(src, locId)
-    end
-
-    --- Store L1 stealth: tik hack — atrakinamos kasa / Perlas / seifas (be PD)
-    if tierId == 'store' and phase == 'hack' then
-        local loc = findLocation(tierId, locId)
-        exports['mrp_hacking']:UnlockStoreFor(src, locId, true, { cashTaken = false })
-        setCooldown(src, tierId, locId)
-        Busy[key] = nil
-        TriggerClientEvent('QBCore:Notify', src,
-            'L1 stealth OK — PD neįspėta. Ištuštink kasą, Perlas (jei yra) ir seifą gale.',
-            'success', 9000)
-        TriggerClientEvent('mrp_hacking:client:robberyFinished', src)
-        if GetResourceState('mrp_gangs') == 'started' then
-            pcall(function()
-                local c = loc and loc.coords or GetEntityCoords(GetPlayerPed(src))
-                exports['mrp_gangs']:OnHackSuccess(src, tierId, { x = c.x, y = c.y, z = c.z })
-            end)
-        end
-        return
+        dispatchAlert(src, tierId, loc)
     end
 
     if phase == 'loot' then
@@ -242,11 +212,7 @@ RegisterNetEvent('mrp_hacking:server:robberyPhaseDone', function(tierId, locId, 
             clearCasinoLoot(src)
             setCooldown(src, tierId, locId)
             Busy[key] = nil
-            --- final casino loot: already alerted on thermite; skip if silent for other tiers
-            if not exports['mrp_hacking']:IsSilentHack(src) then
-                dispatchAlert(src, tierId, loc)
-            end
-            exports['mrp_hacking']:ClearSilentHack(src)
+            dispatchAlert(src, tierId, loc)
             TriggerClientEvent('QBCore:Notify', src, 'Diamond Casino Heist baigtas sėkmingai.', 'success')
             TriggerClientEvent('mrp_hacking:client:robberyFinished', src)
             if GetResourceState('mrp_gangs') == 'started' then
@@ -263,7 +229,6 @@ RegisterNetEvent('mrp_hacking:server:robberyPhaseDone', function(tierId, locId, 
         setCooldown(src, tierId, locId)
         Busy[key] = nil
         dispatchAlert(src, tierId, loc)
-        exports['mrp_hacking']:ClearSilentHack(src)
         TriggerClientEvent('QBCore:Notify', src, 'Apiplėšimas sėkmingas.', 'success')
         TriggerClientEvent('mrp_hacking:client:robberyFinished', src)
         if GetResourceState('mrp_gangs') == 'started' then

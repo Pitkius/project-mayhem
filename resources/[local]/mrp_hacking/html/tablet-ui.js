@@ -28,22 +28,26 @@ window.TabletUI = (function () {
 
   function renderTopbar() {
     if (!data) return;
+    const os = data.installed_os;
+    const osName = os ? osLabel(os) : "—";
     $("tabletSubtitle").textContent = data.tabletLabel || "Planšetė";
-    const lvl = data.tabletLevel || 1;
-    $("statOs").textContent = `L${lvl}`;
-    $("statStorage").textContent = "—";
-    $("statExploits").textContent = "—";
+    $("statOs").textContent = osName;
+    const used = (data.exploits || []).length + (os ? 1 : 0);
+    $("statStorage").textContent = `${used} / ${data.storage || 12}`;
+    $("statExploits").textContent = `${(data.exploits || []).length} / ${data.exploitSlots || 3}`;
   }
 
   function renderSystem() {
     const card = $("systemCard");
     if (!card || !data) return;
-    const lvl = data.tabletLevel || 1;
+    const os = data.installed_os;
     card.innerHTML = `
       <h3>${data.tabletLabel || "Planšetė"}</h3>
-      <div class="sys-row"><span class="muted">Lygis</span><strong>L${lvl}</strong></div>
+      <div class="sys-row"><span class="muted">Įdiegtas OS</span><strong>${osLabel(os)}</strong></div>
       <div class="sys-row"><span class="muted">Tablet tipas</span><strong>${data.tablet || "—"}</strong></div>
-      <p class="muted small" style="margin-top:12px">L1 = ATM/parduotuvės stealth · L2 = Fleeca seifas · L3 = Pacific/Casino. Soft apiplėšimai veikia ir be planšetės.</p>
+      <div class="sys-row"><span class="muted">Saugykla</span><strong>${(data.exploits || []).length + (os ? 1 : 0)} / ${data.storage}</strong></div>
+      <div class="sys-row"><span class="muted">Exploit slotai</span><strong>${(data.exploits || []).length} / ${data.exploitSlots}</strong></div>
+      <p class="muted small" style="margin-top:12px">Nusipirk flashdrive su payload → System → Install.</p>
     `;
     renderDriveList();
   }
@@ -180,11 +184,15 @@ window.TabletUI = (function () {
 
   function tierSecurityLevel(tierId, tierCfg) {
     if (tierCfg && tierCfg.level) return tierCfg.level;
+    const os = tierCfg && tierCfg.minOs;
+    if (os && data.osCatalog && data.osCatalog[os] && data.osCatalog[os].level) {
+      return data.osCatalog[os].level;
+    }
     return 1;
   }
 
   function marketPriceLabel(price) {
-    const cur = data.marketCurrency || "cash";
+    const cur = data.marketCurrency || "crypto";
     if (cur === "crypto") return `${price || 0}₿`;
     return `$${price || 0}`;
   }
@@ -238,7 +246,7 @@ window.TabletUI = (function () {
     grid.innerHTML = "";
     const ex = data.exploits || [];
     if (!ex.length) {
-      grid.innerHTML = '<p class="muted">Exploit sistema išjungta — naudojamos L1–L3 planšetės.</p>';
+      grid.innerHTML = '<p class="muted">Exploit slotai tušti. Market / flashdrive.</p>';
       return;
     }
     ex.forEach((id, i) => {
@@ -275,27 +283,21 @@ window.TabletUI = (function () {
     if (!grid) return;
     grid.innerHTML = "";
     const items = data.marketItems || [];
-    const cur = data.marketCurrency || "cash";
-    const cashBal = data.playerMoney && data.playerMoney.cash != null ? data.playerMoney.cash : 0;
     const cryptoBal = data.playerMoney && data.playerMoney.crypto != null ? data.playerMoney.crypto : 0;
-    const shopLabel = data.marketCurrencyLabel || "Lesteris";
+    const curLabel = data.marketCurrencyLabel || "Crypto";
     const head = document.createElement("p");
     head.className = "muted small";
-    if (cur === "crypto") {
-      head.textContent = `${shopLabel} — balansas: ${cryptoBal}₿ crypto`;
-    } else {
-      head.textContent = `${shopLabel} — grynieji: $${cashBal} (planšetės + heist įrankiai)`;
-    }
+    head.textContent = `Dark Net — balansas: ${cryptoBal}₿ ${curLabel} (keisk banke pas pardavėją)`;
     grid.appendChild(head);
     items.forEach((e, i) => {
       const card = document.createElement("article");
       card.className = "market-card";
-      const label = e.label || e.item || "item";
-      const desc = e.desc ? `<span class="muted small">${e.desc}</span>` : "";
+      let extra = "";
+      if (e.payload && e.payload.payload_id) extra = ` [${e.payload.payload_id}]`;
+      const label = e.item || "item";
       card.innerHTML = `
         <strong>${label}</strong>
-        ${desc}
-        <span class="muted small">${marketPriceLabel(e.price)}</span>
+        <span class="muted small">${marketPriceLabel(e.price)}${extra}</span>
       `;
       const btn = document.createElement("button");
       btn.type = "button";
@@ -305,7 +307,7 @@ window.TabletUI = (function () {
       card.appendChild(btn);
       grid.appendChild(card);
     });
-    if (!items.length) grid.innerHTML = '<p class="muted">Parduotuvė tuščia.</p>';
+    if (!items.length) grid.innerHTML = '<p class="muted">Dark Net tuščias config.</p>';
   }
 
   function renderContracts() {

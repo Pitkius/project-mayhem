@@ -11,16 +11,11 @@ local function getPlayerNearStation(src)
     return false
 end
 
-RegisterNetEvent('mrp_fuel:server:payTick', function(method, reqId)
+RegisterNetEvent('mrp_fuel:server:payTick', function(method)
     local src = source
-    reqId = tonumber(reqId) or 0
     local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then
-        TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = false, id = reqId, reason = 'player' })
-        return
-    end
-    if not getPlayerNearStation(src) then
-        TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = false, id = reqId, reason = 'far' })
+    if not Player or not getPlayerNearStation(src) then
+        TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = false })
         return
     end
 
@@ -33,13 +28,13 @@ RegisterNetEvent('mrp_fuel:server:payTick', function(method, reqId)
     local balance = math.floor(tonumber(money[method]) or 0)
     if balance >= cost then
         if not Player.Functions.RemoveMoney(method, cost, 'fuel-pump') then
-            TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = false, id = reqId, reason = 'money' })
+            TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = false })
             return
         end
-        TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = true, id = reqId })
+        TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = true })
         return
     end
-    TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = false, id = reqId, reason = 'money' })
+    TriggerClientEvent('mrp_fuel:client:payResult', src, { ok = false })
 end)
 
 RegisterNetEvent('mrp_fuel:server:finish', function(data)

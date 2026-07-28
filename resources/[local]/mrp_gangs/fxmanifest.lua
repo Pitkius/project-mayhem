@@ -23,6 +23,7 @@ files {
 shared_scripts {
     'config/shared.lua',
     'config/permissions.lua',
+    'config/territory_polygons.lua',
     'config/territories.lua',
     'config/diplomacy.lua',
     'config/interiors.lua',
@@ -60,4 +61,5 @@ dependencies {
     'qb-core',
     'oxmysql',
     'qb-menu',
+    'qb-target',
 }

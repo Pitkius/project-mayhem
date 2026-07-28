@@ -119,8 +119,6 @@ local phoneInputTyping = false
 
 local PHONE_BLOCK_ATTACK = { 24, 25, 37, 44, 45, 47, 58, 140, 141, 142, 143, 257, 263, 264 }
 local PHONE_BLOCK_LOOK = { 1, 2, 3, 4, 5, 6 }
---- KeepInput + scroll: be šito ratukas eina į ginklų ratą, ne į NUI slinkimą
-local PHONE_BLOCK_SCROLL = { 14, 15, 16, 17, 99, 100, 115, 116, 261, 262, 241, 242 }
 local CHAT_OPEN_CONTROL = 245
 
 local function isPhoneInHand()
@@ -136,11 +134,6 @@ local function applyPhoneHandRestrictions()
 
     for i = 1, #PHONE_BLOCK_ATTACK do
         DisableControlAction(0, PHONE_BLOCK_ATTACK[i], true)
-    end
-
-    --- 241/242 lieka disabled — kamera skaito IsDisabledControlJustPressed zoom'ui
-    for i = 1, #PHONE_BLOCK_SCROLL do
-        DisableControlAction(0, PHONE_BLOCK_SCROLL[i], true)
     end
 
     if not isPhoneCameraLive() then
@@ -434,12 +427,6 @@ RegisterNUICallback('installApp', function(data, cb)
     end, data or {})
 end)
 
-RegisterNUICallback('beginAppDownload', function(data, cb)
-    QBCore.Functions.TriggerCallback('mrp_phone:server:beginAppDownload', function(res)
-        cb(res or { ok = false })
-    end, data or {})
-end)
-
 RegisterNUICallback('openCamera', function(_, cb)
     cb({ ok = true })
 end)
@@ -475,12 +462,6 @@ end)
 
 RegisterNUICallback('saveAdProfile', function(data, cb)
     QBCore.Functions.TriggerCallback('mrp_phone:server:saveAdProfile', function(res)
-        cb(res or { ok = false })
-    end, data or {})
-end)
-
-RegisterNUICallback('saveSocialProfile', function(data, cb)
-    QBCore.Functions.TriggerCallback('mrp_phone:server:saveSocialProfile', function(res)
         cb(res or { ok = false })
     end, data or {})
 end)
@@ -532,6 +513,29 @@ RegisterNUICallback('getWeather', function(_, cb)
     if GetRainLevel then rain = GetRainLevel() end
     local label = rain > 0.15 and 'Lietinga, ~18°C' or 'Giedra, ~24°C'
     cb({ ok = true, label = label })
+end)
+
+RegisterNUICallback('openCargoNet', function(_, cb)
+    cb({ ok = true })
+    CreateThread(function()
+        if GetResourceState('mrp_trucking') ~= 'started' then
+            QBCore.Functions.Notify('CargoNet šiuo metu nepasiekiama.', 'error')
+            return
+        end
+        closePhone()
+        local deadline = GetGameTimer() + 2500
+        while phonePhase ~= 'idle' and GetGameTimer() < deadline do
+            Wait(50)
+        end
+        Wait(100)
+        local ok, err = pcall(function()
+            TriggerEvent('mrp_trucking:client:openUI', { mode = 'phone' })
+        end)
+        if not ok then
+            print(('[mrp_phone] CargoNet open error: %s'):format(tostring(err)))
+            QBCore.Functions.Notify('Nepavyko atidaryti CargoNet.', 'error')
+        end
+    end)
 end)
 
 AddEventHandler('onResourceStop', function(res)

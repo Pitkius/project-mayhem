@@ -63,22 +63,15 @@ shared_scripts {
 }
 
 client_scripts {
-    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/progress.lua',
     'client/drug_sell_anim.lua',
     'client/schedule_anim.lua',
-    'client/minigame_manager.lua',
-    'client/interaction3d.lua',
     'client/weed_production.lua',
-    'client/vape_production.lua',
-    'client/alcohol_production.lua',
-    'client/thc_production.lua',
     'client/main.lua',
     'client/planned.lua',
     'client/printer.lua',
     'client/mushrooms.lua',
     'client/weed_grow.lua',
-    'client/weed_drying.lua',
     'client/water_refill.lua',
     'client/equipment.lua',
     'client/amp_lab.lua',
@@ -92,7 +85,6 @@ server_scripts {
     'server/progression.lua',
     'server/equipment.lua',
     'server/main.lua',
-    'server/weed_drying.lua',
     'server/printer.lua',
     'server/amp_lab.lua',
     'server/darknet.lua',
@@ -104,17 +96,6 @@ client_exports {
     'PlayDrugSellAnim',
     'IsDrugSellAnimBusy',
     'RunScheduleMinigame',
-    'RunVapeProduction',
-    'CloseActiveMinigame',
-    'IsMinigameActive',
-    'StartVapeProduction',
-    'CloseVapeProduction',
-    'RunAlcoholProduction',
-    'StartAlcoholProduction',
-    'CloseAlcoholProduction',
-    'RunThcProduction',
-    'StartThcProduction',
-    'CloseThcProduction',
 }
 
 server_exports {
@@ -129,5 +110,4 @@ dependencies {
     'oxmysql',
     'mrp_gangs',
     'mrp_dispatch',
-    'mrp_hud',
 }

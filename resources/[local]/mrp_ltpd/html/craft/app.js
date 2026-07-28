@@ -51,7 +51,12 @@
       btn.className = "pdc-item" + (state.selectedId === p.id ? " active" : "") + (p.locked ? " locked" : "");
       btn.innerHTML = `<strong>${p.label}</strong><small>${p.levelLabel || ""}${p.locked ? " · užrakinta" : ""}</small>`;
       btn.onclick = () => {
-        if (p.locked) return;
+        if (p.locked) {
+          state.selectedId = p.id;
+          renderList();
+          renderDetail(p);
+          return;
+        }
         state.selectedId = p.id;
         renderList();
         renderDetail(p);
@@ -73,7 +78,7 @@
     document.getElementById("pdcProdTime").textContent = p.timeLabel || "—";
     const lockPill = document.getElementById("pdcProdLock");
     if (lockPill) {
-      lockPill.textContent = p.locked ? "Užrakinta" : "Prieinama";
+      lockPill.textContent = p.locked ? (p.lockHint || "Užrakinta") : "Prieinama";
       lockPill.classList.toggle("warn", !!p.locked);
     }
     document.getElementById("pdcProdOut").textContent =

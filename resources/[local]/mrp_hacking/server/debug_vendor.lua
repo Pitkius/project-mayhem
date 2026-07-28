@@ -116,3 +116,44 @@ RegisterNetEvent('mrp_hacking:server:debugBuyHeistItem', function(itemName)
     end
     TriggerClientEvent('QBCore:Notify', src, 'Nupirkta (test).', 'success')
 end)
+
+RegisterNetEvent('mrp_hacking:server:debugBuyFlashOffer', function(index)
+    local src = source
+    local cfg = Config.DebugHeistVendor or {}
+    if cfg.enabled ~= true then return end
+    if not nearDebugVendor(src) then
+        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo test pardavėjo.', 'error')
+    end
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+    local entry = Config.DebugHeistFlashOffers and Config.DebugHeistFlashOffers[tonumber(index)]
+    if not entry or not entry.item then return end
+    if not QBCore.Shared.Items[entry.item] then
+        return TriggerClientEvent('QBCore:Notify', src, 'Itemas neegzistuoja.', 'error')
+    end
+    local price = math.max(1, tonumber(entry.price) or 1)
+    if (Player.PlayerData.money.cash or 0) < price then
+        return TriggerClientEvent('QBCore:Notify', src, 'Nepakanka grynais.', 'error')
+    end
+    if not Player.Functions.RemoveMoney('cash', price, 'debug-heist-flash') then return end
+
+    local info = nil
+    if entry.payload then
+        info = {
+            payload_type = entry.payload.payload_type,
+            payload_id = entry.payload.payload_id,
+        }
+        if entry.payload.payload_type == 'os' and Config.OperatingSystems[entry.payload.payload_id] then
+            info.payload_label = Config.OperatingSystems[entry.payload.payload_id].label
+        elseif entry.payload.payload_type == 'exploit' and Config.Exploits[entry.payload.payload_id] then
+            info.payload_label = Config.Exploits[entry.payload.payload_id].label
+        end
+    end
+
+    local ok, msg = tryGiveItem(src, entry.item, 1, info)
+    if not ok then
+        Player.Functions.AddMoney('cash', price, 'debug-heist-flash-refund')
+        return TriggerClientEvent('QBCore:Notify', src, msg or 'Nepavyko.', 'error')
+    end
+    TriggerClientEvent('QBCore:Notify', src, 'Nupirkta (test).', 'success')
+end)

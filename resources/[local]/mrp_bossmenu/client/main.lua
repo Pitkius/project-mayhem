@@ -98,47 +98,25 @@ RegisterNUICallback('hire', function(data, cb)
 end)
 
 RegisterNUICallback('fire', function(data, cb)
-    if activeJob then TriggerServerEvent('mrp_bossmenu:server:fire', activeJob, data.targetId, data.citizenid) end
+    if activeJob then TriggerServerEvent('mrp_bossmenu:server:fire', activeJob, data.targetId) end
     SetTimeout(400, refreshUi)
     cb('ok')
 end)
 
 RegisterNUICallback('setGrade', function(data, cb)
-    if activeJob then TriggerServerEvent('mrp_bossmenu:server:setGrade', activeJob, data.targetId, data.grade, data.citizenid) end
+    if activeJob then TriggerServerEvent('mrp_bossmenu:server:setGrade', activeJob, data.targetId, data.grade) end
     SetTimeout(400, refreshUi)
     cb('ok')
 end)
 
 RegisterNUICallback('setMemberDivision', function(data, cb)
-    if activeJob then TriggerServerEvent('mrp_bossmenu:server:setMemberDivision', activeJob, data.targetId, data.divisionId, data.citizenid) end
+    if activeJob then TriggerServerEvent('mrp_bossmenu:server:setMemberDivision', activeJob, data.targetId, data.divisionId) end
     SetTimeout(400, refreshUi)
-    cb('ok')
-end)
-
-RegisterNUICallback('deleteDivision', function(data, cb)
-    if activeJob then TriggerServerEvent('mrp_bossmenu:server:deleteDivision', activeJob, data.id) end
-    SetTimeout(350, refreshUi)
     cb('ok')
 end)
 
 RegisterNUICallback('toggleDuty', function(_, cb)
     TriggerServerEvent('QBCore:ToggleDuty')
-    cb('ok')
-end)
-
-RegisterNUICallback('setFleetDivisionLock', function(data, cb)
-    if activeJob then
-        TriggerServerEvent('mrp_bossmenu:server:setFleetDivisionLock', activeJob, data.enabled == true)
-    end
-    SetTimeout(300, refreshUi)
-    cb('ok')
-end)
-
-RegisterNUICallback('saveFleetVehicle', function(data, cb)
-    if activeJob then
-        TriggerServerEvent('mrp_bossmenu:server:saveFleetVehicle', activeJob, data)
-    end
-    SetTimeout(350, refreshUi)
     cb('ok')
 end)
 

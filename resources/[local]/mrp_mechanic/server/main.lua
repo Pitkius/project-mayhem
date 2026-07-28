@@ -214,49 +214,6 @@ QBCore.Functions.CreateCallback('mrp_mechanic:server:canInstallUpgrade', functio
     cb({ ok = true, requiredItem = item })
 end)
 
---- Performance UI: inventoriaus kiekiai montavimo panelėje
-QBCore.Functions.CreateCallback('mrp_mechanic:server:getPerformanceUiData', function(src, cb, bayIdx)
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return cb(nil) end
-    local j = Player.PlayerData.job
-    if j.name ~= Config.JobName or not j.onduty then
-        return cb(nil)
-    end
-    if not nearRepairBay(src, bayIdx) then
-        return cb(nil)
-    end
-
-    local inventory = {}
-    local function addCount(itemName)
-        if not itemName or itemName == '' then return end
-        local it = Player.Functions.GetItemByName(itemName)
-        inventory[itemName] = (it and it.amount) or 0
-    end
-
-    for modType, tiered in pairs(Config.TuningUpgradeItems or {}) do
-        if tiered.item then
-            addCount(tiered.item)
-        elseif tiered.prefix and tiered.maxLevel then
-            for lvl = 1, tiered.maxLevel do
-                addCount(('%s_%d'):format(tiered.prefix, lvl))
-            end
-        end
-        local legacy = PerfKitByModType[modType]
-        if legacy then addCount(legacy) end
-    end
-
-    local labels = {}
-    for itemName, count in pairs(inventory) do
-        local shared = QBCore.Shared.Items[itemName]
-        labels[itemName] = {
-            label = shared and shared.label or itemName,
-            image = shared and shared.image or 'box.png',
-        }
-    end
-
-    cb({ inventory = inventory, labels = labels })
-end)
-
 RegisterNetEvent('mrp_mechanic:server:consumeUpgradeItem', function(itemName)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
@@ -270,82 +227,22 @@ RegisterNetEvent('mrp_mechanic:server:consumeUpgradeItem', function(itemName)
     end
 end)
 
-local function recipeCategoryId(key)
-    key = tostring(key or '')
-    if key:find('^engine_') then return 'engine' end
-    if key:find('^brakes_') then return 'brakes' end
-    if key:find('^transmission_') then return 'transmission' end
-    if key:find('^suspension_') then return 'suspension' end
-    if key:find('^armor_') then return 'armor' end
-    if key == 'turbo_kit' then return 'turbo' end
-    if key == 'repairkit' or key == 'tirerepairkit' or key == 'advancedrepairkit' then return 'repair_kits' end
-    return 'other'
-end
-
-local function recipePoolForKind(craftKind)
-    local pool = {}
-    craftKind = tostring(craftKind or 'tuning')
-    if craftKind == 'repair' then
-        return Config.RepairKitRecipes or {}
-    end
-    for key, recipe in pairs(Config.TuningRecipes or {}) do
-        local isKit = key:sub(-4) == '_kit' or key == 'turbo_kit'
-        if craftKind == 'kits' and isKit then
-            pool[key] = recipe
-        elseif craftKind == 'tuning' and not isKit then
-            pool[key] = recipe
-        end
-    end
-    return pool
-end
-
-local function craftHeaderForKind(craftKind)
-    craftKind = tostring(craftKind or 'tuning')
-    if craftKind == 'kits' then return 'Montavimo rinkinių gamyba' end
-    if craftKind == 'repair' then return 'Taisymo rinkinių gamyba' end
-    return 'Performance dalių gamyba'
-end
-
-local function craftSubtitleForKind(craftKind)
-    craftKind = tostring(craftKind or 'tuning')
-    if craftKind == 'repair' then return 'Gaminami remonto ir padangų rinkiniai iš inventoriaus medžiagų.' end
-    if craftKind == 'kits' then return 'Gaminami montavimo rinkiniai transporto modifikacijoms.' end
-    return 'Tobulink transportą — gamink performance dalis iš turimų medžiagų.'
-end
-
-local function maxCraftAmount(Player, recipe)
-    local cap = tonumber(Config.CraftMaxBatch) or 10
-    local maxAmt = cap
-    for item, need in pairs(recipe.materials or {}) do
-        local per = tonumber(need) or 0
-        if per > 0 then
-            local it = Player.Functions.GetItemByName(item)
-            local have = (it and it.amount) or 0
-            local possible = math.floor(have / per)
-            if possible < maxAmt then maxAmt = possible end
-        end
-    end
-    return math.max(0, maxAmt)
-end
-
-local function performCraft(src, recipeKey, amount)
+RegisterNetEvent('mrp_mechanic:server:craftTuningPart', function(recipeKey, amount)
+    local src = source
     local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return false, 'Nerastas žaidėjas.' end
+    if not Player then return end
     local j = Player.PlayerData.job
     if j.name ~= Config.JobName or not j.onduty then
-        return false, 'Tik mechanikams tarnyboje.'
+        return TriggerClientEvent('QBCore:Notify', src, 'Tik mechanikams tarnyboje.', 'error')
     end
-    recipeKey = tostring(recipeKey or '')
-    local recipe = (Config.TuningRecipes and Config.TuningRecipes[recipeKey])
-        or (Config.RepairKitRecipes and Config.RepairKitRecipes[recipeKey])
-    if not recipe then return false, 'Receptas nerastas.' end
-    local cap = tonumber(Config.CraftMaxBatch) or 10
-    amount = math.max(1, math.min(cap, tonumber(amount) or 1))
+    local recipe = Config.TuningRecipes and Config.TuningRecipes[tostring(recipeKey or '')]
+    if not recipe then return end
+    amount = math.max(1, math.min(10, tonumber(amount) or 1))
 
     for item, need in pairs(recipe.materials or {}) do
         local totalNeed = (tonumber(need) or 0) * amount
         if totalNeed > 0 and not hasItemCount(Player, item, totalNeed) then
-            return false, ('Trūksta medžiagų: %s x%s'):format(item, totalNeed)
+            return TriggerClientEvent('QBCore:Notify', src, ('Trūksta medžiagų: %s x%s'):format(item, totalNeed), 'error')
         end
     end
 
@@ -360,135 +257,6 @@ local function performCraft(src, recipeKey, amount)
     Player.Functions.AddItem(recipe.output, outCount)
     TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[recipe.output], 'add', outCount)
     TriggerClientEvent('QBCore:Notify', src, ('Pagaminta: %s x%s'):format(recipe.label or recipe.output, outCount), 'success')
-    return true, nil, recipe.label or recipe.output, outCount
-end
-
-local function buildCraftInventory(Player, recipePool)
-    local inventory = {}
-    local labels = {}
-    local function track(itemName)
-        if not itemName or itemName == '' then return end
-        if inventory[itemName] ~= nil then return end
-        local it = Player.Functions.GetItemByName(itemName)
-        inventory[itemName] = (it and it.amount) or 0
-        local shared = QBCore.Shared.Items[itemName]
-        labels[itemName] = {
-            label = shared and shared.label or itemName,
-            image = shared and shared.image or 'box.png',
-            description = shared and shared.description or '',
-        }
-    end
-    for _, recipe in pairs(recipePool) do
-        track(recipe.output)
-        for item, _ in pairs(recipe.materials or {}) do
-            track(item)
-        end
-    end
-    return inventory, labels
-end
-
-QBCore.Functions.CreateCallback('mrp_mechanic:server:getCraftUiData', function(src, cb, craftKind)
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return cb({ ok = false }) end
-    local j = Player.PlayerData.job
-    if j.name ~= Config.JobName or not j.onduty then
-        return cb({ ok = false, message = 'Tik mechanikams tarnyboje.' })
-    end
-
-    craftKind = tostring(craftKind or 'tuning')
-    local recipePool = recipePoolForKind(craftKind)
-    if not next(recipePool) then
-        return cb({ ok = false, message = 'Nėra receptų šiam stalui.' })
-    end
-
-    local inventory, labels = buildCraftInventory(Player, recipePool)
-    local recipes = {}
-    local categorySet = {}
-
-    for key, recipe in pairs(recipePool) do
-        local catId = recipeCategoryId(key)
-        categorySet[catId] = true
-        local sharedOut = QBCore.Shared.Items[recipe.output]
-        local level = tonumber(key:match('_(%d+)$'))
-        local isKit = key:sub(-4) == '_kit' or (key == 'turbo_kit' and craftKind == 'kits')
-        local materials = {}
-        for item, need in pairs(recipe.materials or {}) do
-            local n = tonumber(need) or 0
-            if n > 0 then
-                materials[#materials + 1] = { item = item, need = n }
-            end
-        end
-        table.sort(materials, function(a, b) return a.item < b.item end)
-        recipes[#recipes + 1] = {
-            key = key,
-            label = recipe.label or key,
-            output = recipe.output,
-            categoryId = catId,
-            level = level,
-            isKit = isKit,
-            materials = materials,
-            maxAmount = maxCraftAmount(Player, recipe),
-            description = sharedOut and sharedOut.description or '',
-            image = sharedOut and sharedOut.image or 'box.png',
-        }
-    end
-
-    table.sort(recipes, function(a, b)
-        if a.categoryId ~= b.categoryId then return a.categoryId < b.categoryId end
-        if (a.level or 0) ~= (b.level or 0) then return (a.level or 0) < (b.level or 0) end
-        return a.label < b.label
-    end)
-
-    local categories = {}
-    local order = { 'engine', 'turbo', 'transmission', 'suspension', 'brakes', 'armor', 'repair_kits', 'other' }
-    for _, id in ipairs(order) do
-        if categorySet[id] then
-            local meta = (Config.CraftCategoryMeta and Config.CraftCategoryMeta[id]) or {}
-            categories[#categories + 1] = {
-                id = id,
-                label = meta.label or id,
-                desc = meta.desc or '',
-            }
-        end
-    end
-
-    cb({
-        ok = true,
-        craftKind = craftKind,
-        title = craftHeaderForKind(craftKind),
-        subtitle = craftSubtitleForKind(craftKind),
-        maxBatch = tonumber(Config.CraftMaxBatch) or 10,
-        categories = categories,
-        recipes = recipes,
-        inventory = inventory,
-        labels = labels,
-    })
-end)
-
-QBCore.Functions.CreateCallback('mrp_mechanic:server:craftPart', function(src, cb, recipeKey, amount)
-    local ok, err = performCraft(src, recipeKey, amount)
-    if not ok then
-        return cb({ ok = false, message = err or 'Nepavyko pagaminti.' })
-    end
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return cb({ ok = true }) end
-    local recipe = (Config.TuningRecipes and Config.TuningRecipes[recipeKey])
-        or (Config.RepairKitRecipes and Config.RepairKitRecipes[recipeKey])
-    local pool = {}
-    if recipe then pool[recipeKey] = recipe end
-    local inventory, labels = buildCraftInventory(Player, pool)
-    cb({
-        ok = true,
-        inventory = inventory,
-        labels = labels,
-        maxAmount = recipe and maxCraftAmount(Player, recipe) or 0,
-        recipeKey = recipeKey,
-    })
-end)
-
-RegisterNetEvent('mrp_mechanic:server:craftTuningPart', function(recipeKey, amount)
-    local src = source
-    performCraft(src, recipeKey, amount)
 end)
 
 RegisterNetEvent('mrp_mechanic:server:saveBayVehicleTune', function(bayIdx, props)
@@ -603,83 +371,4 @@ RegisterNetEvent('mrp_mechanic:server:debugOpenPickaxeShop', function()
     registerDebugShops()
     local pickaxe = Config.DebugSandboxPickaxeShop or {}
     exports['qb-inventory']:OpenShop(src, pickaxe.name or 'mrp_mech_debug_pickaxes')
-end)
-
-local function isMechanicOnDuty(src)
-    local P = QBCore.Functions.GetPlayer(src)
-    if not P then return false end
-    local j = P.PlayerData.job
-    return j and j.name == Config.JobName and j.onduty == true
-end
-
-local function nearVehicleNet(src, netId, maxDist)
-    netId = tonumber(netId)
-    if not netId then return false, nil end
-    local veh = NetworkGetEntityFromNetworkId(netId)
-    if not veh or veh == 0 or not DoesEntityExist(veh) then return false, nil end
-    local ped = GetPlayerPed(src)
-    if not ped or ped == 0 then return false, nil end
-    local d = #(GetEntityCoords(ped) - GetEntityCoords(veh))
-    if d > (maxDist or 4.5) then return false, nil end
-    return true, veh
-end
-
-QBCore.Functions.CreateCallback('mrp_mechanic:server:canFieldRepair', function(src, cb, netId)
-    if not isMechanicOnDuty(src) then
-        return cb(false, 'Tik mechanikams tarnyboje.')
-    end
-    local ok = nearVehicleNet(src, netId, (Config.FieldRepair and Config.FieldRepair.maxDistance or 4.0) + 0.75)
-    if not ok then
-        return cb(false, 'Per toli nuo transporto.')
-    end
-    local cfg = Config.FieldRepair or {}
-    local need = cfg.requireItem
-    if need and need ~= '' then
-        local P = QBCore.Functions.GetPlayer(src)
-        if not P or not P.Functions.GetItemByName(need) then
-            local label = (QBCore.Shared.Items[need] and QBCore.Shared.Items[need].label) or need
-            return cb(false, ('Reikia: %s'):format(label))
-        end
-    end
-    cb(true)
-end)
-
-RegisterNetEvent('mrp_mechanic:server:fieldRepair', function(netId)
-    local src = source
-    if not isMechanicOnDuty(src) then return end
-    local maxDist = (Config.FieldRepair and Config.FieldRepair.maxDistance) or 4.0
-    local near = nearVehicleNet(src, netId, maxDist + 1.0)
-    if not near then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
-    end
-    local cfg = Config.FieldRepair or {}
-    local need = cfg.requireItem
-    if need and need ~= '' and cfg.consumeItem ~= false then
-        local P = QBCore.Functions.GetPlayer(src)
-        if not P or not P.Functions.RemoveItem(need, 1) then
-            return TriggerClientEvent('QBCore:Notify', src, 'Neturite remonto rinkinio.', 'error')
-        end
-        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[need], 'remove')
-    end
-    TriggerClientEvent('mrp_mechanic:client:doFieldRepair', src, netId)
-end)
-
-RegisterNetEvent('mrp_mechanic:server:fieldClean', function(netId)
-    local src = source
-    if not isMechanicOnDuty(src) then return end
-    local maxDist = (Config.FieldRepair and Config.FieldRepair.maxDistance) or 4.0
-    if not nearVehicleNet(src, netId, maxDist + 1.0) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
-    end
-    TriggerClientEvent('mrp_mechanic:client:doFieldClean', src, netId)
-end)
-
-RegisterNetEvent('mrp_mechanic:server:fieldFlip', function(netId)
-    local src = source
-    if not isMechanicOnDuty(src) then return end
-    local maxDist = (Config.FieldRepair and Config.FieldRepair.maxDistance) or 4.0
-    if not nearVehicleNet(src, netId, maxDist + 1.0) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
-    end
-    TriggerClientEvent('mrp_mechanic:client:doFieldFlip', src, netId)
 end)

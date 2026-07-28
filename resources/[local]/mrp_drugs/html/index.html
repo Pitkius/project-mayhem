@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Drugs Craft</title>
-  <link rel="stylesheet" href="nui://mrp_fonts/html/ui.css" />
-  <script src="nui://mrp_fonts/html/theme.js"></script>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="minigames.css" />
   <link rel="stylesheet" href="minigame-screens.css" />
@@ -53,17 +51,6 @@
             <h3>Reikia</h3>
             <ul id="ingredientList"></ul>
           </section>
-          <section id="weedDryQuantity" class="weed-dry-quantity hidden">
-            <label for="weedDryAmount">Kiek žolės augalų džiovinti?</label>
-            <div class="weed-dry-input-row">
-              <input id="weedDryAmount" type="number" min="1" step="1" value="10" inputmode="numeric" />
-              <span id="weedDryAvailable">Turite: 0</span>
-            </div>
-            <p id="weedDryTimePreview" class="weed-dry-time">Džiovinimo laikas: —</p>
-            <p class="weed-dry-warning">
-              Įspėjimas: surinkus augalus prieš pilną džiovinimą, bus prarasta 20%, o grąžinta 80% įdėtų lapų.
-            </p>
-          </section>
           <section class="reward" id="rewardSection">
             <span>Galimas uždarbis (NPC):</span>
             <strong id="prodReward">$0</strong>
@@ -95,26 +82,6 @@
       <p class="craft-hint">[X] Atšaukti</p>
     </div>
   </div>
-
-  <section id="vape3dHud" class="vape3d-hud hidden" aria-live="polite">
-    <div class="vape3d-head">
-      <div>
-        <span class="vape3d-kicker">3D VAPE WORKSTATION</span>
-        <h2 id="vape3dTitle">Vape gamyba</h2>
-      </div>
-      <span id="vape3dStage" class="vape3d-stage">1/1</span>
-    </div>
-    <p id="vape3dStageName" class="vape3d-stage-name">Paruošimas</p>
-    <p id="vape3dHint" class="vape3d-hint"></p>
-    <div id="vape3dGauge" class="vape3d-gauge hidden">
-      <span class="vape3d-zone"></span>
-      <span id="vape3dGaugeFill" class="vape3d-gauge-fill"></span>
-    </div>
-    <div class="vape3d-footer">
-      <span id="vape3dScore">Kokybė: 0</span>
-      <span id="vape3dMistakes">Klaidos: 0</span>
-    </div>
-  </section>
 
   <div id="mgAdvanced" class="mg hidden">
     <div class="mg-box">

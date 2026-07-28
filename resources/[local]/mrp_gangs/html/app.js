@@ -26,6 +26,9 @@ const state = {
   missionDifficulty: {},
   map: null,
   selectedTerritoryId: null,
+  territoryFilters: { gang: true, pvp: true, racket: true },
+  mapLayers: {},
+  mapMarkers: {},
   createColor: '#A855F7',
   createType: null,
   createLabel: '',
@@ -80,7 +83,6 @@ const pagesInGang = [
   { key: 'missions',    icon: ICONS.missions,  label: 'Misijos' },
   { key: 'territories', icon: ICONS.territory, label: 'Teritorijos' },
   { key: 'members',     icon: ICONS.members,   label: 'Nariai' },
-  { key: 'stash',       icon: ICONS.stash,     label: 'Sandėlis' },
   { key: 'finance',     icon: ICONS.finance,   label: 'Finansai' },
   { key: 'wars',        icon: ICONS.wars,      label: 'Gaujų karai' },
   { key: 'top',         icon: ICONS.top,       label: 'Reitingai' },
@@ -107,7 +109,9 @@ const reasonLt = {
   empty_response: 'Tuščias atsakymas.',
   not_enough_money: 'Neužtenka pinigų registracijos mokesčiui.',
   not_enough_cash: 'Neužtenka grynųjų.',
+  not_enough_bank: 'Neužtenka pinigų banke.',
   not_enough_treasury: 'Neužtenka lėšų ižde.',
+  invalid_avatar: 'Netinkama profilinės nuoroda (reikia http/https URL).',
   invalid_amount: 'Neteisinga suma.',
   member_limit: 'Pasiektas narių limitas.',
   role_too_high: 'Rangas per aukštas.',
@@ -191,11 +195,109 @@ function slugify(label) {
 }
 
 function territoryCenter(territory) {
+  if (territory?.anchor?.x != null && territory?.anchor?.y != null) {
+    return { x: Number(territory.anchor.x), y: Number(territory.anchor.y) };
+  }
   const verts = territory?.vertices || [];
   if (!verts.length) return null;
   let sx = 0, sy = 0;
   verts.forEach((v) => { sx += Number(v.x) || 0; sy += Number(v.y) || 0; });
   return { x: sx / verts.length, y: sy / verts.length };
+}
+
+function turfTypeColor(type) {
+  if (type === 'pvp') return '#B91C1C';
+  if (type === 'racket') return '#B45309';
+  return '#15803D';
+}
+
+function turfDisplayColor(territory) {
+  return territory.ownerColor || turfTypeColor(territory.type);
+}
+
+function hexToRgb(hex) {
+  const h = String(hex || '#64748B').replace('#', '');
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h.padEnd(6, '0');
+  return {
+    r: parseInt(full.slice(0, 2), 16) || 0,
+    g: parseInt(full.slice(2, 4), 16) || 0,
+    b: parseInt(full.slice(4, 6), 16) || 0,
+  };
+}
+
+function rgbToHex({ r, g, b }) {
+  const to = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
+
+function lerpColor(fromHex, toHex, t) {
+  const a = hexToRgb(fromHex);
+  const b = hexToRgb(toHex);
+  return rgbToHex({
+    r: a.r + (b.r - a.r) * t,
+    g: a.g + (b.g - a.g) * t,
+    b: a.b + (b.b - a.b) * t,
+  });
+}
+
+function turfBaseStyle(territory, selected) {
+  const color = turfDisplayColor(territory);
+  const owned = Boolean(territory.ownerGangId);
+  return {
+    color,
+    fillColor: color,
+    fillOpacity: selected ? 0.48 : (owned ? 0.32 : 0.14),
+    weight: selected ? 2.5 : 1.6,
+    opacity: selected ? 0.95 : 0.82,
+    className: `turf-poly${territory.state === 'contested' ? ' turf-contested' : ''}${selected ? ' is-selected' : ''}`,
+  };
+}
+
+function animatePolygonStyle(polygon, toStyle, ms = 520) {
+  if (!polygon) return;
+  const fromColor = polygon.options.fillColor || toStyle.fillColor;
+  const fromFill = Number(polygon.options.fillOpacity ?? 0.2);
+  const fromWeight = Number(polygon.options.weight ?? 2);
+  const start = performance.now();
+  const tick = (now) => {
+    const t = Math.min(1, (now - start) / ms);
+    const eased = 1 - (1 - t) * (1 - t);
+    polygon.setStyle({
+      ...toStyle,
+      fillColor: lerpColor(fromColor, toStyle.fillColor, eased),
+      color: lerpColor(fromColor, toStyle.color, eased),
+      fillOpacity: fromFill + (toStyle.fillOpacity - fromFill) * eased,
+      weight: fromWeight + (toStyle.weight - fromWeight) * eased,
+    });
+    if (t < 1) requestAnimationFrame(tick);
+    else polygon.setStyle(toStyle);
+  };
+  requestAnimationFrame(tick);
+}
+
+function durationHeld(since) {
+  if (!since) return '—';
+  const d = new Date(String(since).replace(' ', 'T'));
+  const diff = Date.now() - d.getTime();
+  if (Number.isNaN(diff) || diff < 0) return '—';
+  const h = Math.floor(diff / 3600000);
+  if (h < 24) return `${h} h`;
+  return `${Math.floor(h / 24)} d`;
+}
+
+function lastWarLabel(territory) {
+  const war = (territory.recentWars || [])[0];
+  if (!war) return 'Nėra';
+  const when = war.settledAt || war.createdAt;
+  return `${war.attackerLabel || '?'} vs ${war.defenderLabel || '?'} · ${timeAgo(when)}`;
+}
+
+function upcomingAttackLabel(territory) {
+  if (!territory.lockedUntil) return 'Nėra lock';
+  const d = new Date(String(territory.lockedUntil).replace(' ', 'T'));
+  if (Number.isNaN(d.getTime())) return '—';
+  if (d.getTime() <= Date.now()) return 'Lock pasibaigė';
+  return `Iki ${date(territory.lockedUntil)}`;
 }
 
 async function api(name, data = {}) {
@@ -227,13 +329,19 @@ function iconTile(icon) {
   return `<div class="icon-tile">${icon}</div>`;
 }
 
-function emblemHtml(color, name, size = 'md') {
+function emblemHtml(color, name, size = 'md', avatarUrl = '') {
   const fg = contrastColor(color);
-  return `<div class="emblem ${size}" style="background:${esc(color)};color:${fg}"><span>${esc(initials(name))}</span></div>`;
+  const img = avatarUrl
+    ? `<img class="emblem-img" src="${esc(avatarUrl)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.classList.remove('has-img');this.remove()">`
+    : '';
+  return `<div class="emblem ${size}${avatarUrl ? ' has-img' : ''}" style="background:${esc(color)};color:${fg}">${img}<span>${esc(initials(name))}</span></div>`;
 }
 
-function avatarHtml(color, name, size = '') {
+function avatarHtml(color, name, size = '', avatarUrl = '') {
   const fg = contrastColor(color);
+  if (avatarUrl) {
+    return `<div class="avatar ${size} has-img" style="background:${esc(color)};color:${fg}"><img src="${esc(avatarUrl)}" alt="" referrerpolicy="no-referrer" onerror="this.parentElement.classList.remove('has-img');this.remove()">${esc(initials(name))}</div>`;
+  }
   return `<div class="avatar ${size}" style="background:${esc(color)};color:${fg}">${esc(initials(name))}</div>`;
 }
 
@@ -244,10 +352,9 @@ function warningMeter(warnings) {
     `<i class="warn-cell ${i < level ? (level >= 5 ? 'crit' : level >= 3 ? 'hot' : 'warm') : ''}"></i>`
   ).join('');
   return `<div class="warn-panel">
-    <div class="warn-head"><span>Įspėjimai / Heat</span><strong>${level}/${max}</strong></div>
+    <div class="warn-head"><span>Įspėjimai</span><strong>${level}/${max}</strong></div>
     <div class="warn-meter">${cells}</div>
     <p class="muted small">${esc(warnings?.hint || '')}</p>
-    <p class="muted small">Heat: ${Math.round(Number(warnings?.heat || 0))}%</p>
   </div>`;
 }
 
@@ -339,7 +446,7 @@ function renderOverview() {
     <div class="stack">
       <section class="hero-card">
         <div class="hero-head">
-          ${emblemHtml(color, gang.label, 'md')}
+          ${emblemHtml(color, gang.label, 'md', gang.avatar_url)}
           <div class="hero-body">
             <h1>${esc(gang.label)}</h1>
             <p>${esc(gangTypeLabel(gang.gang_type))} · Level ${esc(progression?.level ?? gang.level ?? 1)} · ${esc((gang.role_key || '').toUpperCase())}</p>
@@ -572,48 +679,82 @@ function renderMissions() {
    TERRITORIES (Teritorijos)
    ------------------------------------------------------------ */
 function renderTerritories() {
-  setTimeout(initMap, 0);
+  const mapAlreadyLive = Boolean(state.map);
+  if (!mapAlreadyLive) setTimeout(initMap, 0);
+  else setTimeout(() => {
+    syncMapVisibility();
+    (state.payload.territories || []).forEach((t) => {
+      const poly = state.mapLayers[t.id];
+      if (poly) animatePolygonStyle(poly, turfBaseStyle(t, t.id === state.selectedTerritoryId), 360);
+    });
+    state.map?.invalidateSize();
+  }, 0);
   const selected = (state.payload.territories || []).find((t) => t.id === state.selectedTerritoryId);
   const ownId = Number(state.payload?.organization?.gang?.gang_id || 0);
+  const ownColor = state.payload?.organization?.gang?.color_hex || '#A855F7';
   const owned = (state.payload.territories || []).filter((t) => Number(t.ownerGangId) === ownId).length;
+  const filters = state.territoryFilters;
+  const list = (state.payload.territories || []).filter((t) => filters[t.type] !== false);
 
   return `
     <div class="stack">
       <div class="map-legend">
-        <span><i class="legend-dot" style="background:#22c55e"></i>Gang Turf</span>
-        <span><i class="legend-dot" style="background:#f43f5e"></i>PvP Turf</span>
-        <span><i class="legend-dot" style="background:#f59e0b"></i>Reketo Turf</span>
-        ${ownId ? `<span class="muted">Tavo gauja: ${owned}</span>` : ''}
+        <button type="button" class="legend-toggle ${filters.gang ? 'is-on' : ''}" data-action="toggle-turf-filter" data-type="gang">
+          <i class="legend-dot" style="background:#15803D"></i>Gang
+        </button>
+        <button type="button" class="legend-toggle ${filters.pvp ? 'is-on' : ''}" data-action="toggle-turf-filter" data-type="pvp">
+          <i class="legend-dot" style="background:#B91C1C"></i>PvP
+        </button>
+        <button type="button" class="legend-toggle ${filters.racket ? 'is-on' : ''}" data-action="toggle-turf-filter" data-type="racket">
+          <i class="legend-dot" style="background:#B45309"></i>Reketas
+        </button>
+        ${ownId ? `<span class="legend-own"><i class="legend-dot" style="background:${esc(ownColor)}"></i>Tavo gauja · ${owned}</span>` : ''}
       </div>
       <div class="map-workspace">
         <div id="territory-map"></div>
         <aside class="map-side">
-          <article class="card">
+          <article class="card turf-detail-card">
             <div class="card-header">
-              <div class="title"><h3>${selected ? esc(selected.label) : 'Pasirink turf'}</h3></div>
-              ${selected ? pill(selected.state, selected.state === 'controlled' ? 'success' : 'warning') : ''}
+              <div class="title"><h3>${selected ? esc(selected.label) : 'Pasirink teritoriją'}</h3>
+                ${selected ? `<p class="muted small">${esc(selected.type)} · ${esc(selected.id)}</p>` : ''}
+              </div>
+              ${selected ? pill(selected.state, selected.state === 'controlled' ? 'success' : selected.state === 'contested' ? 'danger' : 'warning') : ''}
             </div>
             ${selected ? `
               <dl class="turf-dl">
-                <div><dt>Tipas</dt><dd>${esc(selected.type)}</dd></div>
                 <div><dt>Savininkas</dt><dd>${esc(selected.ownerLabel || 'Neutralu')}</dd></div>
+                <div><dt>Reputacija</dt><dd>${selected.ownerReputation != null ? esc(selected.ownerReputation) : '—'}</dd></div>
+                <div><dt>Valdoma</dt><dd>${esc(durationHeld(selected.controlledSince))}</dd></div>
+                <div><dt>Pajamos / h</dt><dd>${selected.hourlyIncome ? money(selected.hourlyIncome) : '—'}</dd></div>
+                <div><dt>Aktyvūs nariai</dt><dd>${esc(selected.activeMembersNearby ?? 0)}</dd></div>
                 <div><dt>Stabilumas</dt><dd>${esc(selected.stability)}%</dd></div>
-                <div><dt>Heat</dt><dd>${esc(selected.heat || 0)}</dd></div>
+                <div><dt>Heat / aktyvumas</dt><dd>${esc(selected.heat || 0)}</dd></div>
+                <div><dt>Kitas lock / puolimas</dt><dd>${esc(upcomingAttackLabel(selected))}</dd></div>
+                <div><dt>Paskutinis karas</dt><dd>${esc(lastWarLabel(selected))}</dd></div>
               </dl>
+              ${(selected.recentWars || []).length ? `
+                <div class="turf-wars-mini">
+                  <strong class="muted small">Paskutiniai karai</strong>
+                  ${(selected.recentWars || []).map((w) => `
+                    <div class="turf-war-row">
+                      <span>${esc(w.attackerLabel || '?')} → ${esc(w.defenderLabel || '?')}</span>
+                      <small>${esc(w.state)} · ${esc(timeAgo(w.settledAt || w.createdAt))}</small>
+                    </div>`).join('')}
+                </div>` : ''}
               <button class="button primary wide" data-action="set-waypoint" data-id="${esc(selected.id)}">Nustatyti GPS</button>`
-              : '<p class="muted small">Spustelėk teritoriją žemėlapyje. GPS nustatomas į turf centrą.</p>'}
+              : '<p class="muted small">Užvesk pelę ant rajono — hover tipas. Spustelėk detalioms kortelės.</p>'}
           </article>
           <article class="card">
-            <div class="card-header"><div class="title"><h3>Turf sąrašas</h3></div></div>
-            <div class="list compact">
-              ${(state.payload.territories || []).slice(0, 12).map((t) => `
+            <div class="card-header"><div class="title"><h3>Rajonai</h3></div>${pill(String(list.length), 'neon')}</div>
+            <div class="list compact turf-list">
+              ${list.length ? list.map((t) => `
                 <button class="list-item list-button ${state.selectedTerritoryId === t.id ? 'is-active' : ''}" data-action="select-territory" data-id="${esc(t.id)}">
                   <div class="list-item-main">
                     <strong>${esc(t.label)}</strong>
                     <small>${esc(t.ownerLabel || 'Neutralu')} · ${esc(t.stability)}%</small>
                   </div>
-                  <i class="legend-dot" style="background:${esc(t.ownerColor || (t.type === 'pvp' ? '#f43f5e' : t.type === 'racket' ? '#f59e0b' : '#22c55e'))}"></i>
-                </button>`).join('')}
+                  <i class="legend-dot" style="background:${esc(turfDisplayColor(t))}"></i>
+                </button>`).join('') : empty('Nėra', 'Įjunk filtrus legendoje.')}
             </div>
           </article>
         </aside>
@@ -621,32 +762,121 @@ function renderTerritories() {
     </div>`;
 }
 
+function syncMapVisibility() {
+  const filters = state.territoryFilters;
+  Object.entries(state.mapLayers || {}).forEach(([id, polygon]) => {
+    const territory = (state.payload.territories || []).find((t) => t.id === id);
+    if (!territory || !polygon) return;
+    const show = filters[territory.type] !== false;
+    if (show) {
+      if (!state.map.hasLayer(polygon)) polygon.addTo(state.map);
+      const marker = state.mapMarkers[id];
+      if (marker && !state.map.hasLayer(marker)) marker.addTo(state.map);
+    } else {
+      if (state.map.hasLayer(polygon)) state.map.removeLayer(polygon);
+      const marker = state.mapMarkers[id];
+      if (marker && state.map.hasLayer(marker)) state.map.removeLayer(marker);
+    }
+  });
+}
+
 function initMap() {
   const node = document.querySelector('#territory-map');
   if (!node || typeof L === 'undefined') return;
-  if (state.map) { state.map.remove(); state.map = null; }
+
   const bounds = [[-4000, -4000], [6625, 4500]];
-  state.map = L.map(node, {
-    crs: L.CRS.Simple, minZoom: -3, maxZoom: 1, zoomControl: true, attributionControl: false,
-  });
-  L.imageOverlay('asset/gtav_satellite_2048.png', bounds).addTo(state.map);
-  state.map.fitBounds([[-2500, -2000], [5200, 3000]]);
-  (state.payload.territories || []).forEach((territory) => {
-    const fallback = territory.type === 'gang' ? '#22c55e' : territory.type === 'pvp' ? '#f43f5e' : '#f59e0b';
-    const color = territory.ownerColor || fallback;
-    const selected = territory.id === state.selectedTerritoryId;
-    const polygon = L.polygon(territory.vertices.map((v) => [v.y, v.x]), {
-      color, fillColor: color,
-      fillOpacity: selected ? 0.42 : (territory.ownerGangId ? 0.30 : 0.12),
-      weight: selected ? 3 : 2,
-    }).addTo(state.map);
-    polygon.on('click', () => {
-      state.selectedTerritoryId = territory.id;
-      render();
+  const rebuild = !state.map || !node._leaflet_id;
+
+  if (rebuild) {
+    if (state.map) {
+      try { state.map.remove(); } catch (_) { /* ignore */ }
+      state.map = null;
+    }
+    state.mapLayers = {};
+    state.mapMarkers = {};
+    state.map = L.map(node, {
+      crs: L.CRS.Simple, minZoom: -3, maxZoom: 1.25, zoomControl: true, attributionControl: false,
     });
-    polygon.bindPopup(`<strong>${esc(territory.label)}</strong><br>${esc(territory.type)}<br>
-      Savininkas: ${esc(territory.ownerLabel || 'Neutralu')}<br>Stabilumas: ${esc(territory.stability)}%`);
+    L.imageOverlay('asset/gtav_satellite_2048.png', bounds).addTo(state.map);
+    state.map.fitBounds([[-2500, -2000], [5200, 3000]]);
+  }
+
+  const tip = document.querySelector('#turf-hover-tip') || (() => {
+    const el = document.createElement('div');
+    el.id = 'turf-hover-tip';
+    el.className = 'turf-hover-tip is-hidden';
+    document.body.appendChild(el);
+    return el;
+  })();
+
+  const showTip = (territory, event) => {
+    tip.innerHTML = `
+      <strong>${esc(territory.label)}</strong>
+      <span>${esc(territory.ownerLabel || 'Neutralu')}</span>
+      <span>Rep: ${territory.ownerReputation != null ? esc(territory.ownerReputation) : '—'} · Heat ${esc(territory.heat || 0)}</span>
+      <span>${esc(lastWarLabel(territory))}</span>`;
+    tip.classList.remove('is-hidden');
+    const rect = tip.getBoundingClientRect();
+    const x = Math.min(window.innerWidth - rect.width - 12, (event?.originalEvent?.clientX || 0) + 14);
+    const y = Math.min(window.innerHeight - rect.height - 12, (event?.originalEvent?.clientY || 0) + 14);
+    tip.style.left = `${Math.max(8, x)}px`;
+    tip.style.top = `${Math.max(8, y)}px`;
+  };
+  const hideTip = () => tip.classList.add('is-hidden');
+
+  (state.payload.territories || []).forEach((territory) => {
+    if (!territory.vertices?.length) return;
+    const selected = territory.id === state.selectedTerritoryId;
+    const style = turfBaseStyle(territory, selected);
+    const latlngs = territory.vertices.map((v) => [v.y, v.x]);
+
+    let polygon = state.mapLayers[territory.id];
+    if (!polygon) {
+      polygon = L.polygon(latlngs, style);
+      state.mapLayers[territory.id] = polygon;
+      polygon.on('click', () => {
+        state.selectedTerritoryId = territory.id;
+        hideTip();
+        render();
+      });
+      polygon.on('mouseover', (e) => {
+        polygon.setStyle({
+          ...turfBaseStyle(territory, territory.id === state.selectedTerritoryId),
+          fillOpacity: 0.55,
+          weight: 2.8,
+          className: `turf-poly is-hover${territory.state === 'contested' ? ' turf-contested' : ''}`,
+        });
+        if (polygon._path) polygon._path.classList.add('is-hover');
+        showTip(territory, e);
+      });
+      polygon.on('mousemove', (e) => showTip(territory, e));
+      polygon.on('mouseout', () => {
+        animatePolygonStyle(polygon, turfBaseStyle(territory, territory.id === state.selectedTerritoryId), 280);
+        if (polygon._path) polygon._path.classList.remove('is-hover');
+        hideTip();
+      });
+    } else {
+      polygon.setLatLngs(latlngs);
+      animatePolygonStyle(polygon, style, 520);
+    }
+
+    const center = territoryCenter(territory);
+    if (center) {
+      let marker = state.mapMarkers[territory.id];
+      const iconHtml = `<div class="turf-marker" style="--turf:${esc(turfDisplayColor(territory))}"><span></span></div>`;
+      const icon = L.divIcon({ className: 'turf-marker-wrap', html: iconHtml, iconSize: [14, 14], iconAnchor: [7, 7] });
+      if (!marker) {
+        marker = L.marker([center.y, center.x], { icon, interactive: false });
+        state.mapMarkers[territory.id] = marker;
+      } else {
+        marker.setLatLng([center.y, center.x]);
+        marker.setIcon(icon);
+      }
+    }
   });
+
+  syncMapVisibility();
+  setTimeout(() => state.map?.invalidateSize(), 40);
 }
 
 /* ------------------------------------------------------------
@@ -743,62 +973,6 @@ function renderMembers() {
 }
 
 /* ------------------------------------------------------------
-   STASH (Sandėlis) — placeholder / stub
-   ------------------------------------------------------------ */
-function renderStash() {
-  const org = state.payload.organization;
-  if (!org) return empty('Nėra prieigos', 'Sandėlis prieinamas tik gaujos nariams.');
-
-  return `
-    <div class="stack">
-      <article class="card is-accent">
-        <div class="card-header">
-          <div class="title">
-            <h2>Sandėlio talpykla</h2>
-            <p class="muted">Ateityje čia bus laikomi visi gaujos daiktai. Šiuo metu bendras sandėlio backend'as dar ruošiamas.</p>
-          </div>
-          ${pill('Beta · ruošiama', 'warning')}
-        </div>
-        <div class="progress-header">
-          <span>Talpa</span>
-          <strong>0 / 1000 vnt.</strong>
-        </div>
-        <div class="progress"><span style="width:0%"></span></div>
-      </article>
-
-      <div class="card-header">
-        <div class="title"><h2>Kategorijos</h2><p class="muted">Numatytos kategorijos gaujos daiktams</p></div>
-      </div>
-
-      <div class="stash-cats">
-        ${stashCategory(ICONS.drugs, 'Narkotikai', 'Produktai gatvei ir sandoriams.')}
-        ${stashCategory(ICONS.weapon, 'Ginklai', 'Rezervinė gaujos arsenala.')}
-        ${stashCategory(ICONS.ammo, 'Amunicija', 'Šoviniai ir sprogmenys.')}
-        ${stashCategory(ICONS.cash, 'Pinigai', 'Grynieji ir žymėti.')}
-        ${stashCategory(ICONS.box, 'Kita', 'Elektroniniai daiktai, dalys, dokumentai.')}
-        ${stashCategory(ICONS.lock, 'Restricted', 'Kontroliuojami rare/quota daiktai.')}
-      </div>
-
-      <div class="empty">
-        <div>
-          <strong>Sandėlis ruošiamas — greitai</strong>
-          <p>Kol nėra pilno backend'o, iš misijų gauti daiktai keliauja tiesiai į žaidėjų inventorius.</p>
-        </div>
-      </div>
-    </div>`;
-}
-
-function stashCategory(icon, label, hint) {
-  return `
-    <div class="stash-cat">
-      <div class="locked-tag">${ICONS.lock}<span style="margin-left:4px">Locked</span></div>
-      ${iconTile(icon)}
-      <strong>${esc(label)}</strong>
-      <small>${esc(hint)}</small>
-    </div>`;
-}
-
-/* ------------------------------------------------------------
    FINANCE (Finansai)
    ------------------------------------------------------------ */
 function renderFinance() {
@@ -816,11 +990,11 @@ function renderFinance() {
         <div class="amount">
           <small>Gaujos iždas</small>
           <strong>${money(org.gang.treasury)}</strong>
-          <p class="muted small" style="margin-top:8px">${canView ? 'Visos operacijos loginamos ir peržiūrimos apačioje.' : 'Reikia finance.view teisės norint matyti istoriją.'}</p>
+          <p class="muted small" style="margin-top:8px">${canView ? 'Įnašai nuskaičiuojami iš banko. Visos operacijos loginamos apačioje.' : 'Reikia finance.view teisės norint matyti istoriją.'}</p>
         </div>
         <div class="button-row" style="flex-direction:column;gap:8px;align-items:stretch;min-width:180px">
-          ${canDeposit ? `<button class="button primary" data-action="treasury-modal" data-operation="deposit">${ICONS.arrowUp}Įnešti</button>` : ''}
-          ${canWithdraw ? `<button class="button" data-action="treasury-modal" data-operation="withdraw">${ICONS.arrowDown}Išimti</button>` : ''}
+          ${canDeposit ? `<button class="button primary" data-action="treasury-modal" data-operation="deposit">${ICONS.arrowUp}Įnešti iš banko</button>` : ''}
+          ${canWithdraw ? `<button class="button" data-action="treasury-modal" data-operation="withdraw">${ICONS.arrowDown}Išimti į banką</button>` : ''}
         </div>
       </section>
 
@@ -981,7 +1155,7 @@ function renderTop() {
           ${rows.length ? rows.map((g, i) => `
             <li class="top-item ${i === 0 ? 'is-first' : ''}">
               <span class="top-rank">#${i + 1}</span>
-              ${emblemHtml(g.color_hex || '#A855F7', g.label, 'sm')}
+              ${emblemHtml(g.color_hex || '#A855F7', g.label, 'sm', g.avatar_url)}
               <div class="list-item-main">
                 <strong>${esc(g.label)}</strong>
                 <small>${esc(gangTypeLabel(g.gang_type))} · Lv.${esc(g.level)} · ${num(g.members || 0)} narių · ${num(g.territories || 0)} turf</small>
@@ -1037,12 +1211,12 @@ function renderSettings() {
 
       <article class="settings-section">
         <div class="card-header">
-          <div class="title"><h3>Bendra informacija</h3><p class="muted small">Pavadinimas ir spalva</p></div>
+          <div class="title"><h3>Bendra informacija</h3><p class="muted small">Pavadinimas, spalva ir profilinė</p></div>
           ${canEdit ? `<button class="button" data-action="gang-info-modal">${ICONS.edit}Redaguoti</button>` : ''}
         </div>
         <div class="settings-row">
           <div><strong>Pavadinimas</strong><small>${esc(gang.label)}</small></div>
-          ${emblemHtml(gang.color_hex || '#A855F7', gang.label, 'sm')}
+          ${emblemHtml(gang.color_hex || '#A855F7', gang.label, 'sm', gang.avatar_url)}
         </div>
         <div class="settings-row">
           <div><strong>Techninis vardas</strong><small>${esc(gang.name)}</small></div>
@@ -1053,6 +1227,9 @@ function renderSettings() {
         <div class="settings-row">
           <div><strong>Spalva</strong><small>${esc(gang.color_hex || '—')}</small></div>
           <span style="display:inline-block;width:22px;height:22px;border-radius:6px;background:${esc(gang.color_hex || '#A855F7')};box-shadow:0 0 12px ${esc(gang.color_hex || '#A855F7')}"></span>
+        </div>
+        <div class="settings-row">
+          <div><strong>Profilinė</strong><small>${gang.avatar_url ? 'Nustatyta' : 'Nenustatyta'}</small></div>
         </div>
       </article>
 
@@ -1285,7 +1462,6 @@ const renderers = {
   members: renderMembers,
   territories: renderTerritories,
   missions: renderMissions,
-  stash: renderStash,
   finance: renderFinance,
   wars: renderWars,
   top: renderTop,
@@ -1299,7 +1475,30 @@ function render() {
   const pageMeta = availablePages().find((p) => p.key === state.page);
   title.textContent = pageMeta?.label || 'Pagrindinis';
   eyebrow.textContent = state.payload.organization ? 'SYNDICATE INTERFACE' : 'GUEST MODE';
+
+  let preservedMap = null;
+  if (state.page === 'territories' && state.map) {
+    const live = document.querySelector('#territory-map');
+    if (live && live._leaflet_id) {
+      preservedMap = live;
+      preservedMap.remove();
+    }
+  } else if (state.page !== 'territories' && state.map) {
+    try { state.map.remove(); } catch (_) { /* ignore */ }
+    state.map = null;
+    state.mapLayers = {};
+    state.mapMarkers = {};
+  }
+
   content.innerHTML = (renderers[state.page] || renderOverview)();
+
+  if (preservedMap && state.page === 'territories') {
+    const host = document.querySelector('#territory-map');
+    if (host) {
+      host.replaceWith(preservedMap);
+      setTimeout(() => state.map?.invalidateSize(), 30);
+    }
+  }
 }
 
 /* ------------------------------------------------------------
@@ -1406,10 +1605,13 @@ function treasuryModal(operation) {
       <button class="close-button" data-action="dismiss-modal">×</button></div>
     <form id="treasury-form" class="stack">
       <input type="hidden" name="operation" value="${esc(operation)}">
+      <p class="muted small">${operation === 'deposit'
+        ? 'Suma bus nuskaičiuota iš tavo banko sąskaitos.'
+        : 'Suma bus pervesta į tavo banko sąskaitą.'}</p>
       <div class="field"><label>Suma</label>
         <input name="amount" type="number" min="1" max="1000000" required placeholder="Pvz. 5000">
       </div>
-      <button class="button primary wide">${operation === 'deposit' ? ICONS.arrowUp + 'Įnešti' : ICONS.arrowDown + 'Išimti'}</button>
+      <button class="button primary wide">${operation === 'deposit' ? ICONS.arrowUp + 'Įnešti iš banko' : ICONS.arrowDown + 'Išimti į banką'}</button>
     </form>`);
 }
 
@@ -1420,6 +1622,11 @@ function gangInfoModal() {
     <form id="gang-info-form" class="stack">
       <div class="field"><label>Pavadinimas</label>
         <input name="label" value="${esc(gang.label)}" maxlength="96" required></div>
+      <div class="field"><label>Profilinės nuoroda (URL)</label>
+        <input name="avatarUrl" type="url" value="${esc(gang.avatar_url || '')}" maxlength="512"
+          placeholder="https://i.imgur.com/...">
+        <p class="muted small" style="margin-top:6px">Palik tuščią, jei nori grįžti prie inicialų. Rekomenduojama Imgur / Discord CDN nuoroda.</p>
+      </div>
       <div class="field"><label>Spalva</label>
         <input type="hidden" name="colorHex" id="edit-color" value="${esc(gang.color_hex || '#A855F7')}">
         <div class="swatches">${PALETTE.map((hex) =>
@@ -1593,6 +1800,14 @@ document.addEventListener('click', async (event) => {
     render();
     return;
   }
+  if (action === 'toggle-turf-filter') {
+    const type = target.dataset.type;
+    if (type && state.territoryFilters[type] !== undefined) {
+      state.territoryFilters[type] = !state.territoryFilters[type];
+      render();
+    }
+    return;
+  }
   if (action === 'set-waypoint') {
     const territory = (state.payload.territories || []).find((t) => t.id === target.dataset.id);
     const center = territoryCenter(territory);
@@ -1738,7 +1953,11 @@ document.addEventListener('submit', async (event) => {
     result = await api('treasury', { operation: data.operation, amount: Number(data.amount) });
   }
   if (form.id === 'gang-info-form') {
-    result = await api('updateGangInfo', { label: data.label, colorHex: data.colorHex });
+    result = await api('updateGangInfo', {
+      label: data.label,
+      colorHex: data.colorHex,
+      avatarUrl: data.avatarUrl || '',
+    });
   }
   if (form.id === 'resp-form') {
     const selected = new Set(new FormData(form).getAll('resp'));
@@ -1814,7 +2033,24 @@ window.addEventListener('message', (event) => {
     closeModal();
   } else if (message.action === 'territoriesUpdated' && state.payload) {
     state.payload.territories = message.territories;
-    if (state.page === 'territories') render();
+    if (state.page === 'territories') {
+      if (state.map) {
+        (state.payload.territories || []).forEach((t) => {
+          const poly = state.mapLayers[t.id];
+          if (poly) animatePolygonStyle(poly, turfBaseStyle(t, t.id === state.selectedTerritoryId), 560);
+          const marker = state.mapMarkers[t.id];
+          if (marker) {
+            marker.setIcon(L.divIcon({
+              className: 'turf-marker-wrap',
+              html: `<div class="turf-marker" style="--turf:${esc(turfDisplayColor(t))}"><span></span></div>`,
+              iconSize: [14, 14],
+              iconAnchor: [7, 7],
+            }));
+          }
+        });
+      }
+      render();
+    }
   }
 });
 

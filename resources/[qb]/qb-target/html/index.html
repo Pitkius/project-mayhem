@@ -1,27 +1,17 @@
 <!DOCTYPE html>
 <html lang="lt">
-<head>
-    <meta charset="UTF-8" />
-    <link rel="stylesheet" href="nui://mrp_fonts/html/ui.css" />
-    <link href="css/style.css" rel="stylesheet" type="text/css" />
-    <script src="nui://mrp_fonts/html/theme.js" type="text/javascript"></script>
-    <script src="js/app.js" type="text/javascript" defer></script>
-</head>
-<body>
-    <div id="radial-root" class="hidden">
-        <div class="radial-backdrop" aria-hidden="true"></div>
-        <div id="radial-stage">
-            <div id="radial-wheel">
-                <div id="radial-segments"></div>
-                <button type="button" id="radial-center" aria-label="Centras">
-                    <span class="radial-center__ring" aria-hidden="true"></span>
-                    <i id="radial-center-icon" class="fas fa-eye"></i>
-                    <span id="radial-center-label">Sąveika</span>
-                    <i id="radial-center-action" class="fas fa-xmark"></i>
-                </button>
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="stylesheet" href="nui://mrp_fonts/html/ui.css" />
+        <link href="css/style.css" rel="stylesheet" type="text/css" />
+        <script src="js/app.js" type="text/javascript"></script>
+    </head>
+    <body>
+        <div id="target-wrapper">
+            <i id="target-eye"></i>
+            <div id="target-label-wrapper">
+                <div id="target-label"></div>
             </div>
-            <p id="radial-hint" class="radial-hint">Dešinis pelės — pasirinkti · ESC — uždaryti</p>
         </div>
-    </div>
-</body>
+    </body>
 </html>

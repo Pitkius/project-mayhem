@@ -5,15 +5,11 @@ local busy = false
 local CFG = {
     reach = 3.6,
     serverReach = 6.0,
-    duration = { lockpick = 16000, advancedlockpick = 11000 },
-    minigame = {
-        lockpick = { mode = 'sequence', label = 'Paskutinis spynos žingsnis', length = 5 },
-        advancedlockpick = { mode = 'sequence', label = 'Paskutinis spynos žingsnis', length = 4 },
-    },
+    duration = { lockpick = 12000, advancedlockpick = 9000 },
     anim = {
         dict = 'anim@amb@clubhouse@tutorial@bkr_tut_ig3@',
         clip = 'machinic_loop_mechandplayer',
-        flag = 49,
+        flag = 16,
     },
 }
 
@@ -91,50 +87,12 @@ local function applyUnlockLocal(veh)
     end
 end
 
-local function triggerAlarmLocal(veh, durationMs)
+local function triggerAlarmLocal(veh)
     if not veh or veh == 0 or not DoesEntityExist(veh) then return end
-    durationMs = math.max(5000, tonumber(durationMs) or 45000)
-
-    local tries = 0
-    while not NetworkHasControlOfEntity(veh) and tries < 25 do
-        NetworkRequestControlOfEntity(veh)
-        Wait(0)
-        tries = tries + 1
-    end
-
     SetVehicleAlarm(veh, true)
-    SetVehicleAlarmTimeLeft(veh, durationMs)
     StartVehicleAlarm(veh)
-    SetVehicleLights(veh, 2)
-    StartVehicleHorn(veh, 800, joaat('HELDDOWN'), false)
-
-    --- Palaikyti signalizaciją (native kartais nutrūksta)
-    CreateThread(function()
-        local ent = veh
-        local untilAt = GetGameTimer() + durationMs
-        while GetGameTimer() < untilAt do
-            if not DoesEntityExist(ent) then return end
-            if not IsVehicleAlarmActivated(ent) then
-                SetVehicleAlarm(ent, true)
-                StartVehicleAlarm(ent)
-                SetVehicleAlarmTimeLeft(ent, math.max(1000, untilAt - GetGameTimer()))
-            end
-            SetVehicleLights(ent, 2)
-            Wait(1200)
-        end
-        if DoesEntityExist(ent) then
-            SetVehicleLights(ent, 0)
-        end
-    end)
+    SetVehicleAlarmTimeLeft(veh, 45000)
 end
-
-RegisterNetEvent('mrp_basics:client:vehicleAlarm', function(netId, durationMs)
-    netId = tonumber(netId) or 0
-    if netId <= 0 then return end
-    local veh = NetworkGetEntityFromNetworkId(netId)
-    if veh == 0 or not DoesEntityExist(veh) then return end
-    triggerAlarmLocal(veh, durationMs)
-end)
 
 local function getTargetVehicle()
     local ped = PlayerPedId()
@@ -220,14 +178,12 @@ end
 
 local function runLockpickProgress(advanced)
     local itemKey = advanced and 'advancedlockpick' or 'lockpick'
-    local duration = CFG.duration[itemKey] or 16000
+    local duration = CFG.duration[itemKey] or 12000
     local label = advanced and 'Laužiate spyną (pažangus)…' or 'Laužiate spyną…'
     local anim = CFG.anim
 
-    local finished, cancelled = false, false
-    local usedPb = false
-    if QBCore.Functions.Progressbar then
-        usedPb = true
+    if GetResourceState('progressbar') == 'started' then
+        local finished, cancelled = false, false
         QBCore.Functions.Progressbar('mrp_vehicle_lockpick', label, duration, false, true, DISABLE, {
             animDict = anim.dict,
             anim = anim.clip,
@@ -237,7 +193,7 @@ local function runLockpickProgress(advanced)
         end, function()
             cancelled = true
         end)
-        local deadline = GetGameTimer() + duration + 1500
+        local deadline = GetGameTimer() + duration + 1200
         while GetGameTimer() < deadline do
             if cancelled then return false end
             if finished then return true end
@@ -268,35 +224,6 @@ local function runLockpickProgress(advanced)
     return true
 end
 
-local function runLockpickMinigame(advanced)
-    --- Visada progress bar + animacija pirma (ne instant)
-    if not runLockpickProgress(advanced) then
-        return false, 'cancel'
-    end
-
-    local itemKey = advanced and 'advancedlockpick' or 'lockpick'
-    local mg = CFG.minigame[itemKey] or CFG.minigame.lockpick
-    local anim = CFG.anim
-
-    if GetResourceState('mrp_hacking') == 'started' then
-        local ok, result = pcall(function()
-            return exports['mrp_hacking']:RunPhysicalMinigame(mg.mode, {
-                label = mg.label,
-                anim = { dict = anim.dict, name = anim.clip, flags = anim.flag },
-                data = { length = mg.length },
-            })
-        end)
-        if ok then
-            if result == true then
-                return true, 'ok'
-            end
-            return false, 'fail'
-        end
-    end
-
-    return true, 'ok'
-end
-
 RegisterNetEvent('mrp_basics:client:vehicleLockpickResult', function(data)
     data = data or {}
     local netId = tonumber(data.netId) or 0
@@ -311,7 +238,7 @@ RegisterNetEvent('mrp_basics:client:vehicleLockpickResult', function(data)
         return
     end
 
-    triggerAlarmLocal(veh, 45000)
+    triggerAlarmLocal(veh)
     notify(data.msg or 'Nepavyko — įjungta signalizacija!', 'error')
 end)
 
@@ -354,21 +281,12 @@ RegisterNetEvent('lockpicks:UseLockpick', function(advanced)
         return notify('Nepavyko nustatyti transporto.', 'error')
     end
 
-    local plate = normalizePlate(QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh))
-    local label = vehicleLabel(veh)
-
     busy = true
-    local completed, reason = runLockpickMinigame(advanced == true)
+    local completed = runLockpickProgress(advanced == true)
     busy = false
 
     if not completed then
-        if reason == 'cancel' then
-            return notify('Įsilaužimas nutrauktas.', 'primary')
-        end
-        --- Sufailintas įsilaužimas: signalizacija + PD
-        triggerAlarmLocal(veh, 45000)
-        TriggerServerEvent('mrp_basics:server:vehicleLockpickFail', netId, plate, label, advanced == true)
-        return notify('Nepavyko atrakinti — signalizacija!', 'error')
+        return notify('Atšaukta.', 'error')
     end
 
     if not DoesEntityExist(veh) or not entityReach(PlayerPedId(), veh, CFG.reach + 0.5) then
@@ -378,8 +296,8 @@ RegisterNetEvent('lockpicks:UseLockpick', function(advanced)
     TriggerServerEvent(
         'mrp_basics:server:vehicleLockpick',
         netId,
-        plate,
-        label,
+        normalizePlate(QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh)),
+        vehicleLabel(veh),
         advanced == true
     )
 end)

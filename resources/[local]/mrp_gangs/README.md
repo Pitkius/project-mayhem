@@ -63,10 +63,12 @@ Misijos nekeičia teritorijos savininko ir negeneruoja turf influence.
 
 ### Teritorijos
 
-- 18 rankomis suformuotų gatvių polygon: Gang, PvP ir Reketo.
+- ~24 street-following polygon rajonai (`config/territory_polygons.lua` + meta
+  `config/territories.lua`): Gang, PvP ir Reketas, skirtingų dydžių.
 - Optimistic `control_version`, ownership history, lock ir anti-snowball cap.
 - Reketo teritorijos periodiškai generuoja iždo pajamas.
 - Drug sale leidimas tikrinamas serverio koordinačių, savininko ir produkto pagrindu.
+- Tablet map: hover tip, detail kortelė, legend filtrai, ownership color tween.
 
 Drug resursas prieš pardavimą privalo kviesti:
 

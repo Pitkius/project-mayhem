@@ -59,6 +59,10 @@ local function validateContent()
 
     local territoryCount = 0
     local territoryTypes = { gang = 0, pvp = 0, racket = 0 }
+    local polygonIds = {}
+    for polyId in pairs(Config.TerritoryPolygons or {}) do
+        polygonIds[polyId] = true
+    end
     for territoryId, territory in pairs(Config.Territories or {}) do
         territoryCount = territoryCount + 1
         if territoryTypes[territory.type] == nil then
@@ -69,8 +73,17 @@ local function validateContent()
         if not territory.label or territory.label == '' then
             errors[#errors + 1] = territoryId .. ': territory label missing'
         end
+        if not polygonIds[territoryId] then
+            errors[#errors + 1] = territoryId .. ': missing TerritoryPolygons entry'
+        end
         if type(territory.vertices) ~= 'table' or #territory.vertices < 3 then
             errors[#errors + 1] = territoryId .. ': polygon needs at least 3 vertices'
+        elseif #territory.vertices < (Config.TerritoryRules.minVerticesRecommended or 12) then
+            print(('[mrp_gangs] WARN: %s has only %s vertices (recommended >= %s)'):format(
+                territoryId,
+                #territory.vertices,
+                Config.TerritoryRules.minVerticesRecommended or 12
+            ))
         end
         for index, vertex in ipairs(territory.vertices or {}) do
             if type(vertex.x) ~= 'number' or type(vertex.y) ~= 'number' then
@@ -81,17 +94,20 @@ local function validateContent()
             errors[#errors + 1] = territoryId .. ': invalid drug product'
         end
     end
-    if territoryCount ~= 18 then errors[#errors + 1] = ('expected 18 territories, got %s'):format(territoryCount) end
-    local expectedTerritoryTypes = { gang = 8, pvp = 4, racket = 6 }
-    for territoryType, expected in pairs(expectedTerritoryTypes) do
-        if territoryTypes[territoryType] ~= expected then
-            errors[#errors + 1] = ('territory type %s expected %s, got %s'):format(
-                territoryType,
-                expected,
-                territoryTypes[territoryType] or 0
-            )
+    for polyId in pairs(polygonIds) do
+        if not Config.Territories[polyId] then
+            errors[#errors + 1] = polyId .. ': TerritoryPolygons entry has no territory meta'
         end
     end
+    if territoryCount < 1 then
+        errors[#errors + 1] = 'no territories defined'
+    end
+    print(('[mrp_gangs] territory mix: gang=%s pvp=%s racket=%s (total=%s)'):format(
+        territoryTypes.gang or 0,
+        territoryTypes.pvp or 0,
+        territoryTypes.racket or 0,
+        territoryCount
+    ))
 
     local treatyCount = 0
     for treatyType, treaty in pairs(Config.TreatyTypes or {}) do

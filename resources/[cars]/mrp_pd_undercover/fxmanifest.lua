@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'mrp_pd_undercover'
 author 'MRP'
-description 'PD nežymėtos Non-ELS (mrpd17-20)'
-version '2.0.0'
+description 'PD undercover vehicle pack'
+version '1.0.0'
 
 files {
     'data/**/vehicles.meta',

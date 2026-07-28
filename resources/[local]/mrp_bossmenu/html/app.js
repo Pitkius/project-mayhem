@@ -2,9 +2,6 @@ const root = document.getElementById('root');
 let state = null;
 let editingRank = null;
 let editingDivision = null;
-let editingFleet = null;
-let memberFilter = '';
-let fleetLockSyncing = false;
 
 function post(name, data = {}) {
     return fetch(`https://${GetParentResourceName()}/${name}`, {
@@ -16,14 +13,6 @@ function post(name, data = {}) {
 
 function money(n) {
     return '$' + (Number(n) || 0).toLocaleString('lt-LT');
-}
-
-function escapeHtml(s) {
-    return String(s ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
 }
 
 function setTab(tab) {
@@ -43,90 +32,33 @@ function fillGradeSelect(sel, grades) {
 
 function fillDivisionSelect(sel, divisions) {
     sel.innerHTML = '';
-    const list = [...(divisions || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-    list.forEach((d) => {
+    (divisions || []).filter((d) => d.choosable).forEach((d) => {
         const o = document.createElement('option');
         o.value = d.id;
-        o.textContent = `${d.abbr || d.id} — ${d.label}${d.choosable ? '' : ' (ribojama)'}`;
+        o.textContent = `${d.abbr} — ${d.label}`;
         sel.appendChild(o);
-    });
-}
-
-function selectMember(m) {
-    document.getElementById('memberId').value = m.online && m.id != null ? m.id : '';
-    document.getElementById('memberCitizenId').value = m.citizenid || '';
-    if (m.grade != null) {
-        const gradeSel = document.getElementById('memberGrade');
-        if ([...gradeSel.options].some((o) => Number(o.value) === Number(m.grade))) {
-            gradeSel.value = String(m.grade);
-        }
-    }
-    if (m.divisionId) {
-        const divSel = document.getElementById('memberDivision');
-        if ([...divSel.options].some((o) => o.value === m.divisionId)) {
-            divSel.value = m.divisionId;
-        }
-    }
-}
-
-function filteredMembers() {
-    const q = memberFilter.trim().toLowerCase();
-    const list = state.members || [];
-    if (!q) return list;
-    return list.filter((m) => {
-        const hay = [
-            m.name,
-            m.citizenid,
-            m.id,
-            m.gradeName,
-            m.divisionLabel,
-            m.divisionId,
-        ]
-            .map((v) => String(v ?? '').toLowerCase())
-            .join(' ');
-        return hay.includes(q);
     });
 }
 
 function renderMembers() {
     const list = document.getElementById('membersList');
-    const meta = document.getElementById('membersListMeta');
     list.innerHTML = '';
-    const members = filteredMembers();
-    const total = (state.members || []).length;
-    const online = (state.members || []).filter((m) => m.online).length;
-    if (meta) {
-        meta.textContent = `${total} iš viso · ${online} online`;
-    }
-
-    members.forEach((m) => {
+    (state.members || []).forEach((m) => {
         const row = document.createElement('div');
-        row.className = 'bm-row bm-row-editable' + (m.online ? '' : ' bm-row-offline');
-        const status = m.online
-            ? m.onduty
-                ? 'Tarnyboje'
-                : 'Online'
-            : 'Offline';
-        const statusClass = m.online ? (m.onduty ? 'on' : 'off') : 'offline';
-        const idLine = m.online && m.id != null
-            ? `ID ${m.id}`
-            : 'Offline';
-        const divLine = m.divisionLabel ? ` · ${m.divisionLabel}` : '';
+        row.className = 'bm-row';
         row.innerHTML = `
             <div class="bm-row-main">
-                <div class="bm-row-title">${escapeHtml(m.name || 'Nežinomas')}</div>
-                <div class="bm-row-sub">${escapeHtml(idLine)} · [${m.grade}] ${escapeHtml(m.gradeName || '')}${escapeHtml(divLine)}</div>
-                <div class="bm-row-sub bm-cid">${escapeHtml(m.citizenid || '')}</div>
+                <div class="bm-row-title">${m.name.trim() || 'Nežinomas'}</div>
+                <div class="bm-row-sub">ID ${m.id} · [${m.grade}] ${m.gradeName}</div>
             </div>
-            <span class="bm-badge ${statusClass}">${status}</span>`;
-        row.addEventListener('click', () => selectMember(m));
+            <span class="bm-badge ${m.onduty ? 'on' : 'off'}">${m.onduty ? 'Tarnyboje' : 'Ne tarnyboje'}</span>`;
+        row.addEventListener('click', () => {
+            document.getElementById('memberId').value = m.id;
+        });
         list.appendChild(row);
     });
-
-    if (!total) {
-        list.innerHTML = '<p class="bm-muted">Nėra įdarbintų narių šioje frakcijoje.</p>';
-    } else if (!members.length) {
-        list.innerHTML = '<p class="bm-muted">Pagal paiešką nieko nerasta.</p>';
+    if (!state.members.length) {
+        list.innerHTML = '<p class="bm-muted">Nėra prisijungusių narių.</p>';
     }
 }
 
@@ -149,7 +81,7 @@ function renderRanks() {
         if (g.isdeputy) tags.push('Pavad.');
         row.innerHTML = `
             <div class="bm-row-main">
-                <div class="bm-row-title">[${g.level}] ${escapeHtml(g.name)}</div>
+                <div class="bm-row-title">[${g.level}] ${g.name}</div>
                 <div class="bm-row-sub">${money(g.payment)} ${tags.length ? '· ' + tags.join(', ') : ''}</div>
             </div>
             <span class="bm-badge">${g.level}</span>`;
@@ -171,17 +103,17 @@ function renderDivisions() {
         row.className = 'bm-row' + (state.canManageRanks ? ' bm-row-editable' : '');
         row.innerHTML = `
             <div class="bm-row-main">
-                <div class="bm-row-title">${escapeHtml(d.abbr)} — ${escapeHtml(d.label)}</div>
-                <div class="bm-row-sub">${escapeHtml(d.description || '')} · min. rangas ${d.minGrade}${d.builtin ? ' · standartinė' : ''}</div>
+                <div class="bm-row-title">${d.abbr} — ${d.label}</div>
+                <div class="bm-row-sub">${d.description || ''} · min. rangas ${d.minGrade}</div>
             </div>
-            <span class="bm-badge">${escapeHtml(d.id)}</span>`;
+            <span class="bm-badge">${d.id}</span>`;
         if (state.canManageRanks) {
             row.addEventListener('click', () => openDivisionEditor(d));
         }
         list.appendChild(row);
     });
     if (!(state.divisions || []).length) {
-        list.innerHTML = '<p class="bm-muted">Divizijų nėra. Spausk „+ Nauja divizija“.</p>';
+        list.innerHTML = '<p class="bm-muted">Divizijų nėra.</p>';
     }
 }
 
@@ -203,7 +135,7 @@ function openRankEditor(grade) {
         const val = grade.permissions && grade.permissions[p.key] != null ? grade.permissions[p.key] : '';
         const row = document.createElement('div');
         row.className = 'bm-perm-row';
-        row.innerHTML = `<span>${escapeHtml(p.label)}</span>`;
+        row.innerHTML = `<span>${p.label}</span>`;
         const inp = document.createElement('input');
         inp.type = 'number';
         inp.min = 0;
@@ -226,77 +158,16 @@ function openDivisionEditor(div) {
     document.getElementById('divDesc').value = div?.description || '';
     document.getElementById('divMinGrade').value = div?.minGrade ?? 4;
     document.getElementById('divChoosable').checked = div?.choosable !== false;
-    const note = document.getElementById('divBuiltinNote');
-    const delBtn = document.getElementById('btnDeleteDivision');
-    if (div?.builtin) {
-        note.textContent = 'Standartinė divizija — galima pervadinti, bet negalima ištrinti.';
-        delBtn.classList.add('hidden');
-    } else if (div?.id) {
-        note.textContent = 'Custom divizija — galima ištrinti (nariai keliami į MP).';
-        delBtn.classList.toggle('hidden', !state.canManageRanks);
-    } else {
-        note.textContent = 'Nauja divizija — pasirink trumpą ID (pvz. ct, csu).';
-        delBtn.classList.add('hidden');
-    }
-}
-
-function openFleetEditor(v) {
-    editingFleet = v;
-    document.getElementById('fleetEditor').classList.remove('hidden');
-    document.getElementById('fleetEditorHint').classList.add('hidden');
-    document.getElementById('fleetEditorTitle').textContent = v.label || v.model;
-    document.getElementById('fleetModelMeta').textContent = `Modelis: ${v.model}`;
-    document.getElementById('fleetMinGrade').value = Number(v.minGrade) || 0;
-    document.getElementById('fleetArasOrGrade').checked = !!v.arasOrGrade;
-    document.getElementById('fleetShopEnabled').checked = v.shopEnabled !== false && v.model !== 'mrpd7';
-    document.getElementById('fleetShopWrap').classList.toggle('hidden', v.model === 'mrpd7');
-    document.getElementById('fleetImportNote').classList.toggle('hidden', v.model !== 'mrpd7');
-    if (v.model === 'mrpd7') {
-        document.getElementById('fleetShopEnabled').checked = false;
-        document.getElementById('fleetShopEnabled').disabled = true;
-    } else {
-        document.getElementById('fleetShopEnabled').disabled = !state?.canManageRanks;
-    }
-    const canEdit = !!state?.canManageRanks;
-    document.getElementById('fleetMinGrade').disabled = !canEdit;
-    document.getElementById('fleetArasOrGrade').disabled = !canEdit;
-    document.getElementById('btnSaveFleet').disabled = !canEdit;
-}
-
-function renderFleet() {
-    const list = document.getElementById('fleetList');
-    list.innerHTML = '';
-    if (!state?.fleetEnabled) return;
-    (state.fleetVehicles || []).forEach((v) => {
-        const row = document.createElement('div');
-        row.className = 'bm-row' + (state.canManageRanks ? ' bm-row-editable' : '');
-        const access = v.arasOrGrade
-            ? `ARO arba ≥${v.minGrade}`
-            : `≥${v.minGrade}`;
-        const shop = v.shopEnabled === false ? ' · importas' : '';
-        row.innerHTML = `<div><strong>${escapeHtml(v.label || v.model)}</strong><span class="bm-muted">${escapeHtml(access)}${shop}</span></div>`;
-        if (state.canManageRanks) {
-            row.addEventListener('click', () => openFleetEditor(v));
-        }
-        list.appendChild(row);
-    });
 }
 
 function applyState(data) {
     state = data;
-    const total = data.memberCount != null ? data.memberCount : (data.members || []).length;
-    const online = data.onlineCount != null
-        ? data.onlineCount
-        : (data.members || []).filter((m) => m.online).length;
-
     document.getElementById('jobLabel').textContent = data.jobLabel || 'Frakcijos vadovybė';
     document.getElementById('jobSub').textContent = data.jobName || '';
     document.getElementById('fundBalance').textContent = money(data.balance);
     document.getElementById('overviewFund').textContent = money(data.balance);
-    document.getElementById('memberTotal').textContent = String(total);
-    document.getElementById('onlineCount').textContent = String(online);
-    document.getElementById('overviewMembers').textContent = String(total);
-    document.getElementById('overviewOnline').textContent = String(online);
+    document.getElementById('onlineCount').textContent = String((data.members || []).length);
+    document.getElementById('overviewOnline').textContent = String((data.members || []).length);
     document.getElementById('overviewSalary').textContent = data.salaryEnabled ? 'Aktyvios' : 'Išjungtos';
     document.getElementById('overviewSalaryNote').textContent = data.salaryEnabled
         ? 'Mokamos automatiškai iš fondo (pilna alga).'
@@ -307,13 +178,6 @@ function applyState(data) {
     divTab.classList.toggle('hidden', !data.divisionsEnabled);
     document.getElementById('memberDivisionWrap').classList.toggle('hidden', !data.divisionsEnabled);
     document.getElementById('btnSetDivision').classList.toggle('hidden', !data.divisionsEnabled);
-
-    const fleetTab = document.getElementById('tabFleet');
-    fleetTab.classList.toggle('hidden', !data.fleetEnabled);
-    fleetLockSyncing = true;
-    document.getElementById('fleetDivisionLock').checked = !!data.fleetDivisionLock;
-    document.getElementById('fleetDivisionLock').disabled = !data.canManageRanks;
-    fleetLockSyncing = false;
 
     fillGradeSelect(document.getElementById('memberGrade'), data.grades);
     fillDivisionSelect(document.getElementById('memberDivision'), data.divisions);
@@ -338,23 +202,12 @@ function applyState(data) {
     document.getElementById('rankEditorHint').classList.remove('hidden');
     document.getElementById('divisionEditor').classList.add('hidden');
     document.getElementById('divisionEditorHint').classList.remove('hidden');
-    document.getElementById('fleetEditor').classList.add('hidden');
-    document.getElementById('fleetEditorHint').classList.remove('hidden');
     editingRank = null;
     editingDivision = null;
-    editingFleet = null;
 
     renderMembers();
     renderRanks();
     if (data.divisionsEnabled) renderDivisions();
-    if (data.fleetEnabled) renderFleet();
-}
-
-function memberPayloadExtras() {
-    return {
-        targetId: document.getElementById('memberId').value || null,
-        citizenid: document.getElementById('memberCitizenId').value.trim() || null,
-    };
 }
 
 document.querySelectorAll('.bm-tab').forEach((btn) => {
@@ -364,11 +217,6 @@ document.querySelectorAll('.bm-tab').forEach((btn) => {
 document.getElementById('btnClose').addEventListener('click', () => post('close'));
 document.getElementById('btnRefresh').addEventListener('click', () => post('refresh'));
 document.getElementById('btnDuty').addEventListener('click', () => post('toggleDuty'));
-
-document.getElementById('memberSearch').addEventListener('input', (e) => {
-    memberFilter = e.target.value || '';
-    renderMembers();
-});
 
 document.getElementById('btnDeposit').addEventListener('click', () => {
     post('fundDeposit', { amount: document.getElementById('fundAmount').value });
@@ -390,17 +238,17 @@ document.getElementById('btnHire').addEventListener('click', () => {
     });
 });
 document.getElementById('btnFire').addEventListener('click', () => {
-    post('fire', memberPayloadExtras());
+    post('fire', { targetId: document.getElementById('memberId').value });
 });
 document.getElementById('btnSetGrade').addEventListener('click', () => {
     post('setGrade', {
-        ...memberPayloadExtras(),
+        targetId: document.getElementById('memberId').value,
         grade: document.getElementById('memberGrade').value,
     });
 });
 document.getElementById('btnSetDivision').addEventListener('click', () => {
     post('setMemberDivision', {
-        ...memberPayloadExtras(),
+        targetId: document.getElementById('memberId').value,
         divisionId: document.getElementById('memberDivision').value,
     });
 });
@@ -453,42 +301,10 @@ document.getElementById('btnSaveDivision').addEventListener('click', () => {
     document.getElementById('divisionEditorHint').classList.remove('hidden');
     editingDivision = null;
 });
-document.getElementById('btnDeleteDivision').addEventListener('click', () => {
-    const id = document.getElementById('divId').value;
-    if (!id || editingDivision?.builtin) return;
-    post('deleteDivision', { id });
-    document.getElementById('divisionEditor').classList.add('hidden');
-    document.getElementById('divisionEditorHint').classList.remove('hidden');
-    editingDivision = null;
-});
 document.getElementById('btnCancelDivision').addEventListener('click', () => {
     document.getElementById('divisionEditor').classList.add('hidden');
     document.getElementById('divisionEditorHint').classList.remove('hidden');
     editingDivision = null;
-});
-
-document.getElementById('fleetDivisionLock').addEventListener('change', (e) => {
-    if (fleetLockSyncing || !state?.fleetEnabled) return;
-    post('setFleetDivisionLock', { enabled: e.target.checked });
-});
-
-document.getElementById('btnSaveFleet').addEventListener('click', () => {
-    if (!editingFleet) return;
-    post('saveFleetVehicle', {
-        model: editingFleet.model,
-        minGrade: document.getElementById('fleetMinGrade').value,
-        arasOrGrade: document.getElementById('fleetArasOrGrade').checked,
-        shopEnabled: editingFleet.model === 'mrpd7' ? false : document.getElementById('fleetShopEnabled').checked,
-    });
-    document.getElementById('fleetEditor').classList.add('hidden');
-    document.getElementById('fleetEditorHint').classList.remove('hidden');
-    editingFleet = null;
-});
-
-document.getElementById('btnCancelFleet').addEventListener('click', () => {
-    document.getElementById('fleetEditor').classList.add('hidden');
-    document.getElementById('fleetEditorHint').classList.remove('hidden');
-    editingFleet = null;
 });
 
 window.addEventListener('keydown', (e) => {
@@ -499,9 +315,6 @@ window.addEventListener('message', (ev) => {
     const msg = ev.data;
     if (msg.action === 'open') {
         root.classList.remove('hidden');
-        memberFilter = '';
-        const search = document.getElementById('memberSearch');
-        if (search) search.value = '';
         applyState(msg.data);
         setTab('overview');
     } else if (msg.action === 'sync') {

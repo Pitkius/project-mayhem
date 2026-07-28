@@ -1,10 +1,6 @@
 .scroll-body.weather-body {
   padding: 0 !important;
   background: var(--app-bg, #0a0812);
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .wx-app {
@@ -28,7 +24,7 @@
 
 .wx-city {
   text-align: left;
-  border: 1px solid var(--glass-border, var(--phone-fill));
+  border: 1px solid var(--glass-border, rgba(191, 95, 255, 0.18));
   background: rgba(255, 255, 255, 0.03);
   border-radius: 14px;
   padding: 10px 12px;
@@ -49,9 +45,9 @@
 }
 
 .wx-city.active {
-  border-color: var(--phone-scroll);
-  background: var(--phone-line);
-  box-shadow: 0 0 0 1px var(--phone-line-soft);
+  border-color: rgba(191, 95, 255, 0.55);
+  background: rgba(191, 95, 255, 0.14);
+  box-shadow: 0 0 0 1px rgba(191, 95, 255, 0.12);
 }
 
 .wx-card {
@@ -93,7 +89,7 @@
 
 .wx-day-tab {
   flex: 0 0 auto;
-  border: 1px solid var(--glass-border, var(--phone-fill));
+  border: 1px solid var(--glass-border, rgba(191, 95, 255, 0.18));
   background: rgba(255, 255, 255, 0.04);
   color: #ddd2f2;
   border-radius: 999px;
@@ -103,7 +99,7 @@
 }
 
 .wx-day-tab.active {
-  background: var(--phone-btn-grad);
+  background: linear-gradient(135deg, #9d4edd, #bf5fff);
   border-color: transparent;
   color: #fff;
 }
@@ -129,8 +125,8 @@
 }
 
 .wx-hour.now {
-  border-color: var(--phone-ring-strong);
-  background: var(--phone-fill-soft);
+  border-color: rgba(191, 95, 255, 0.45);
+  background: rgba(191, 95, 255, 0.1);
 }
 
 .wx-hour-icon svg {

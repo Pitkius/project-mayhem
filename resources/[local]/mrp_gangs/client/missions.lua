@@ -10,6 +10,11 @@ local missionReturnCoords = nil
 local missionCargoProp = nil
 local contestedObjective = nil
 local contestedBusy = false
+local corpseBusy = false
+local corpseTargetRegistered = false
+local OBJECTIVE_ZONE = 'mrp_gangs_mission_objective'
+local CONTEST_ZONE = 'mrp_gangs_contest_loot'
+local CORPSE_TARGET_LABEL = 'Apiplėšti NPC'
 local actionPhaseTypes = {
     interact = true,
     breach = true,
@@ -19,6 +24,30 @@ local actionPhaseTypes = {
     rescue = true,
     capture = true,
 }
+
+local function hasTarget()
+    return GetResourceState('qb-target') == 'started'
+end
+
+local function removeTargetZone(name)
+    if not hasTarget() then return end
+    pcall(function()
+        exports['qb-target']:RemoveZone(name)
+    end)
+end
+
+local function clearObjectiveTarget()
+    removeTargetZone(OBJECTIVE_ZONE)
+end
+
+local function clearContestTarget()
+    removeTargetZone(CONTEST_ZONE)
+end
+
+local function clearMissionTargets()
+    clearObjectiveTarget()
+    clearContestTarget()
+end
 
 local function removeObjectiveBlip()
     if objectiveBlip and DoesBlipExist(objectiveBlip) then RemoveBlip(objectiveBlip) end
@@ -33,6 +62,99 @@ end
 local function clearContestedObjective()
     contestedObjective = nil
     contestedBusy = false
+    clearContestTarget()
+end
+
+local function lootCorpseEntity(entity)
+    if corpseBusy or objectiveBusy or not activeMission then return end
+    if not entity or entity == 0 or not DoesEntityExist(entity) or not IsEntityDead(entity) then return end
+    local state = Entity(entity).state
+    if not state or state.mrpGangMissionRun ~= activeMission.token or state.mrpGangLooted then return end
+    local networkId = NetworkGetNetworkIdFromEntity(entity)
+    if not networkId or networkId == 0 then return end
+
+    corpseBusy = true
+    local duration = tonumber(Config.CorpseLoot and Config.CorpseLoot.searchDurationMs) or 3500
+    QBCore.Functions.Progressbar(
+        ('gang_corpse_%s_%s'):format(activeMission.token, networkId),
+        'Apieškai NPC...',
+        duration,
+        false,
+        true,
+        {
+            disableMovement = true,
+            disableCarMovement = true,
+            disableMouse = false,
+            disableCombat = true,
+        },
+        { animDict = 'amb@medic@standing@kneel@base', anim = 'base', flags = 1 },
+        {},
+        {},
+        function()
+            QBCore.Functions.TriggerCallback('mrp_gangs:server:lootCorpse', function(response)
+                corpseBusy = false
+                if not response or not response.ok then
+                    return GangClient.Notify(GangClient.Reason(response and response.reason), 'error')
+                end
+                local granted = response.result or {}
+                if #granted == 0 then
+                    GangClient.Notify('Nieko vertingo neradai.', 'primary')
+                else
+                    local bits = {}
+                    for _, row in ipairs(granted) do
+                        if row.worth then
+                            bits[#bits + 1] = ('$%s nešvarių'):format(row.worth)
+                        elseif row.quality then
+                            bits[#bits + 1] = ('%s (būklė %d%%)'):format(row.item, math.floor(row.quality))
+                        else
+                            bits[#bits + 1] = ('%sx %s'):format(row.amount or 1, row.item)
+                        end
+                    end
+                    GangClient.Notify('Radiniai: ' .. table.concat(bits, ', '), 'success')
+                end
+            end, activeMission.token, networkId)
+        end,
+        function()
+            corpseBusy = false
+            GangClient.Notify('Kratosimas nutrauktas.', 'error')
+        end
+    )
+end
+
+local function registerCorpseTarget()
+    if corpseTargetRegistered or not hasTarget() then return end
+    exports['qb-target']:AddGlobalPed({
+        options = {
+            {
+                num = 1,
+                type = 'client',
+                icon = 'fas fa-search',
+                label = CORPSE_TARGET_LABEL,
+                canInteract = function(entity)
+                    if not activeMission or corpseBusy or objectiveBusy then return false end
+                    if not entity or entity == 0 or not DoesEntityExist(entity) or IsPedAPlayer(entity) then return false end
+                    if not IsEntityDead(entity) then return false end
+                    local state = Entity(entity).state
+                    return state
+                        and state.mrpGangMissionRun == activeMission.token
+                        and not state.mrpGangLooted
+                end,
+                action = function(entity)
+                    lootCorpseEntity(entity)
+                end,
+            },
+        },
+        distance = (Config.CorpseLoot and Config.CorpseLoot.maxDistance) or 2.4,
+    })
+    corpseTargetRegistered = true
+end
+
+local function unregisterCorpseTarget()
+    if not corpseTargetRegistered or not hasTarget() then return end
+    pcall(function()
+        exports['qb-target']:RemoveGlobalPed(CORPSE_TARGET_LABEL)
+    end)
+    corpseTargetRegistered = false
 end
 
 local function setObjectiveBlip(target, label)
@@ -49,19 +171,8 @@ local function setObjectiveBlip(target, label)
     EndTextCommandSetBlipName(objectiveBlip)
 end
 
-local function drawText3D(coords, text)
-    local visible, screenX, screenY = World3dToScreen2d(coords.x, coords.y, coords.z)
-    if not visible then return end
-    SetTextScale(0.32, 0.32)
-    SetTextFont(4)
-    SetTextProportional(1)
-    SetTextColour(255, 255, 255, 220)
-    SetTextCentre(true)
-    SetTextOutline()
-    BeginTextCommandDisplayText('STRING')
-    AddTextComponentSubstringPlayerName(text)
-    EndTextCommandDisplayText(screenX, screenY)
-end
+local refreshObjectiveTarget
+local refreshContestTarget
 
 local function completeObjective(payload)
     if not activeMission or not activePhase or objectiveBusy then return end
@@ -154,6 +265,7 @@ RegisterNetEvent('mrp_gangs:client:missionPhase', function(data)
     objectiveBusy = false
     nextAutomaticCheck = GetGameTimer() + 3000
     setObjectiveBlip(data.target, data.phase.label)
+    refreshObjectiveTarget()
     GangClient.Notify(('[%s/%s] %s'):format(data.phaseIndex, data.phaseCount, data.phase.label), 'primary', 7000)
 end)
 
@@ -264,6 +376,7 @@ RegisterNetEvent('mrp_gangs:client:contestedObjective', function(payload)
     end
     --- Silent discovery only — no notify / no map blip.
     contestedObjective = payload
+    refreshContestTarget()
 end)
 
 RegisterNetEvent('mrp_gangs:client:clearContestedObjective', function(token)
@@ -313,14 +426,79 @@ local function stealContestedLoot()
     end, contestedObjective.token)
 end
 
+refreshObjectiveTarget = function()
+    clearObjectiveTarget()
+    if not hasTarget() or not activeMission or not activePhase or not activePhase.target then return end
+    local phase = activePhase.phase
+    if not phase or phase.type == 'eliminate' or phase.type == 'defend' then return end
+
+    local target = activePhase.target
+    local radius = phase.type == 'checkpoint_run' and 4.0 or 1.85
+    local distance = phase.type == 'checkpoint_run' and 5.0 or 2.4
+    exports['qb-target']:AddCircleZone(
+        OBJECTIVE_ZONE,
+        vector3(target.x + 0.0, target.y + 0.0, target.z + 0.0),
+        radius,
+        { name = OBJECTIVE_ZONE, useZ = true, debugPoly = false },
+        {
+            options = {
+                {
+                    num = 1,
+                    type = 'client',
+                    icon = 'fas fa-hand',
+                    label = phase.label or 'Vykdyti',
+                    canInteract = function()
+                        return activeMission ~= nil and activePhase ~= nil and not objectiveBusy and not corpseBusy
+                    end,
+                    action = function()
+                        interactWithObjective()
+                    end,
+                },
+            },
+            distance = distance,
+        }
+    )
+end
+
+refreshContestTarget = function()
+    clearContestTarget()
+    if not hasTarget() or not contestedObjective or not contestedObjective.target or activeMission then return end
+    local target = contestedObjective.target
+    exports['qb-target']:AddCircleZone(
+        CONTEST_ZONE,
+        vector3(target.x + 0.0, target.y + 0.0, target.z + 0.0),
+        1.9,
+        { name = CONTEST_ZONE, useZ = true, debugPoly = false },
+        {
+            options = {
+                {
+                    num = 1,
+                    type = 'client',
+                    icon = 'fas fa-box-open',
+                    label = contestedObjective.label or 'Counter loot',
+                    canInteract = function()
+                        return contestedObjective ~= nil and not contestedBusy and not activeMission
+                    end,
+                    action = function()
+                        stealContestedLoot()
+                    end,
+                },
+            },
+            distance = 2.5,
+        }
+    )
+end
+
 RegisterNetEvent('mrp_gangs:client:missionFinished', function(result)
     if activeMission and result.summary and result.summary.token ~= activeMission.token then return end
     removeObjectiveBlip()
+    clearMissionTargets()
     activePhase = nil
     activeMission = nil
     missionReturnCoords = nil
     clearMissionCargo()
     objectiveBusy = false
+    corpseBusy = false
     if contestedObjective and result.summary and contestedObjective.token == result.summary.token then
         clearContestedObjective()
     end
@@ -387,32 +565,28 @@ CreateThread(function()
         if interior.ipl then RequestIpl(interior.ipl) end
     end
 
+    while GetResourceState('qb-target') ~= 'started' do Wait(400) end
+    registerCorpseTarget()
+
     while true do
         local drawingMission = activeMission and activePhase and activePhase.target
         local drawingContest = contestedObjective and contestedObjective.target and not activeMission
         if not drawingMission and not drawingContest then
             Wait(750)
         else
-            local playerCoords = GetEntityCoords(PlayerPedId())
             if drawingContest then
                 local target = contestedObjective.target
-                local targetCoords = vector3(target.x, target.y, target.z)
-                local distance = #(playerCoords - targetCoords)
+                local distance = #(GetEntityCoords(PlayerPedId()) - vector3(target.x, target.y, target.z))
                 if distance < 35.0 then
                     DrawMarker(2, target.x, target.y, target.z + 0.45, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0,
                         0.45, 0.45, 0.45, 255, 50, 50, 200, false, true, 2, false, nil, nil, false)
-                end
-                if distance < 3.0 then
-                    drawText3D(vector3(target.x, target.y, target.z + 0.75),
-                        '[E] Counter loot · ' .. (contestedObjective.label or 'Konteineris'))
-                    if IsControlJustReleased(0, 38) then stealContestedLoot() end
                 end
             end
 
             if drawingMission then
                 local target = activePhase.target
-                local targetCoords = vector3(target.x, target.y, target.z)
-                local distance = #(playerCoords - targetCoords)
+                local playerCoords = GetEntityCoords(PlayerPedId())
+                local distance = #(playerCoords - vector3(target.x, target.y, target.z))
                 local phaseType = activePhase.phase.type
                 local markerZ = target.z
                 if phaseType == 'checkpoint_run' then
@@ -426,13 +600,9 @@ CreateThread(function()
                     DrawMarker(2, target.x, target.y, markerZ + 0.35, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0,
                         0.35, 0.35, 0.35, 220, 60, 60, 180, false, true, 2, false, nil, nil, false)
                 end
-                if distance < 3.0 and phaseType ~= 'eliminate' and phaseType ~= 'defend' then
-                    drawText3D(vector3(target.x, target.y, markerZ + 0.65), '[E] ' .. (activePhase.phase.label or 'Vykdyti'))
-                    if IsControlJustReleased(0, 38) then interactWithObjective() end
-                end
 
                 if (phaseType == 'eliminate' or phaseType == 'defend')
-                    and GetGameTimer() >= nextAutomaticCheck and not objectiveBusy then
+                    and GetGameTimer() >= nextAutomaticCheck and not objectiveBusy and not corpseBusy then
                     nextAutomaticCheck = GetGameTimer() + 4000
                     completeObjective({})
                 end
@@ -446,6 +616,8 @@ AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
     removeObjectiveBlip()
     clearMissionCargo()
+    clearMissionTargets()
+    unregisterCorpseTarget()
     clearContestedObjective()
     if missionReturnCoords then
         local ped = PlayerPedId()

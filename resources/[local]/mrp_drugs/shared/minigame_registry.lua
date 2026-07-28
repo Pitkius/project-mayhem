@@ -24,11 +24,6 @@ MinigameRegistry.Profiles = {
     alcohol_pack = p('alcohol', 'pack', 'moonshine_jar', 'Stiklainio užkorkavimas', 3, '🍾', 1),
     vape_process = p('vape', 'process', 'vape_blend', 'Skysčio mišinio balansas', 2, '💨', 1),
     vape_pack = p('vape', 'pack', 'vape_dropper', 'Buteliuko lašinimas', 3, '🧴', 1),
-    vape_simple = p('vape', 'process', 'vape_blend', 'Paprasto vape mišinio paruošimas', 2, '💨', 1),
-    vape_apple_concentrate = p('vape', 'process', 'vape_blend', 'Obuolių koncentrato paruošimas', 2, '🍎', 1),
-    vape_strawberry_concentrate = p('vape', 'process', 'vape_blend', 'Braškių koncentrato paruošimas', 2, '🍓', 1),
-    vape_apple_pack = p('vape', 'pack', 'vape_dropper', 'Obuolių vape išpilstymas', 3, '🍎', 1),
-    vape_strawberry_pack = p('vape', 'pack', 'vape_dropper', 'Braškių vape išpilstymas', 3, '🍓', 1),
 
     -- Kanapės (grow + dry + pack)
     weed_soil = p('weed', 'prepare', 'weed_soil', 'Žemės pylimas', 2, nil, 1),

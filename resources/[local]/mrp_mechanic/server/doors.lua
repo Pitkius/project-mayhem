@@ -37,7 +37,7 @@ RegisterNetEvent('mrp_mechanic:server:requestDoorsSync', function()
     TriggerClientEvent('mrp_mechanic:client:syncDoors', source, MechDoorLocked)
 end)
 
-RegisterNetEvent('mrp_mechanic:server:toggleDoorGroup', function(groupId, wantLocked)
+RegisterNetEvent('mrp_mechanic:server:toggleDoorGroup', function(groupId)
     local src = source
     if type(groupId) ~= 'string' then return end
     if not isMechanicOnDuty(src) then
@@ -59,16 +59,7 @@ RegisterNetEvent('mrp_mechanic:server:toggleDoorGroup', function(groupId, wantLo
     if (MechDoorToggleCooldown[src] or 0) > now then return end
     MechDoorToggleCooldown[src] = now + 650
     local cur = MechDoorLocked[groupId] ~= false
-    if wantLocked == true or wantLocked == 1 then
-        MechDoorLocked[groupId] = true
-    elseif wantLocked == false or wantLocked == 0 then
-        MechDoorLocked[groupId] = false
-    else
-        MechDoorLocked[groupId] = not cur
-    end
-    if MechDoorLocked[groupId] == cur then
-        return TriggerClientEvent('mrp_mechanic:client:setDoorState', src, groupId, cur)
-    end
+    MechDoorLocked[groupId] = not cur
     TriggerClientEvent('mrp_mechanic:client:setDoorState', -1, groupId, MechDoorLocked[groupId])
     TriggerClientEvent(
         'QBCore:Notify',

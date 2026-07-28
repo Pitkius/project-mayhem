@@ -3,20 +3,6 @@ Config = {}
 Config.JobName = 'mechanic'
 Config.TargetDistance = 3.2
 
---- Lauko remontas per qb-target (ant transporto, ne tik bay)
-Config.FieldRepair = {
-    maxDistance = 4.0,
-    progressMs = 9000,
-    label = 'Remontuojama…',
-    anim = { dict = 'mini@repair', clip = 'fixing_a_player', flag = 49 },
-    requireItem = 'repairkit', --- nil = be item
-    consumeItem = true,
-    cleanProgressMs = 4500,
-    cleanLabel = 'Plaunama…',
-    flipProgressMs = 3500,
-    flipLabel = 'Apverčiama…',
-}
-
 --- LS dokai — mechanikų bazė
 Config.Base = vector4(153.8655, -3011.3054, 7.0409, 266.9864)
 
@@ -40,9 +26,7 @@ Config.MapBlips = {
     { coords = vector3(128.5848, -3013.5708, 7.0409), sprite = 478, colour = 47, scale = 0.72, label = 'Mechanikų sandėlis' },
     { coords = vector3(146.4569, -3007.8015, 7.0409), sprite = 587, colour = 46, scale = 0.72, label = 'Boso sandėlis' },
     { coords = vector3(138.9832, -3050.7783, 7.0409), sprite = 402, colour = 3, scale = 0.7, label = 'Tuningo dalių stalas' },
-    { coords = vector3(134.7361, -3050.6108, 7.0409), sprite = 402, colour = 2, scale = 0.7, label = 'Montavimo rinkinių stalas' },
-    { coords = vector3(141.4521, -3050.8920, 7.0409), sprite = 402, colour = 5, scale = 0.7, label = 'Taisymo rinkinių stalas' },
-    { coords = vector3(130.8420, -3053.2180, 7.0409), sprite = 478, colour = 46, scale = 0.68, label = 'Žaliavų priėmimas' },
+    { coords = vector3(134.7361, -3050.6108, 7.0409), sprite = 402, colour = 2, scale = 0.7, label = 'Remonto dalių stalas' },
     { coords = vector3(154.5346, -3024.6370, 7.0409), sprite = 285, colour = 47, scale = 0.65, label = 'Garažo vartai #1' },
     { coords = vector3(154.3884, -3034.6260, 7.0409), sprite = 285, colour = 47, scale = 0.65, label = 'Garažo vartai #2' },
     { coords = vector3(154.6730, -3017.9270, 7.0430), sprite = 521, colour = 47, scale = 0.65, label = 'Įėjimo durys' },
@@ -170,88 +154,9 @@ Config.CraftingStations = {
         heading = 183.3353,
         length = 1.9,
         width = 1.9,
-        label = 'Montavimo rinkinių stalas',
+        label = 'Remonto dalių stalas',
         craftKind = 'kits',
     },
-    {
-        coords = vector3(141.4521, -3050.8920, 7.0409),
-        heading = 178.0,
-        length = 1.9,
-        width = 1.9,
-        label = 'Taisymo rinkinių stalas',
-        craftKind = 'repair',
-    },
-}
-
---- Žaliavų priėmimas iš kasėjų / pardavimas mechanikams
-Config.MaterialSupply = {
-    coords = vector3(130.8420, -3053.2180, 7.0409),
-    heading = 88.0,
-    length = 2.2,
-    width = 2.4,
-    label = 'Žaliavų priėmimo punktas',
-    ped = {
-        model = `s_m_m_lathandy_01`,
-        coords = vector4(130.8420, -3053.2180, 7.0409, 88.0),
-        scenario = 'WORLD_HUMAN_CLIPBOARD',
-    },
-}
-
---- Itemai, kuriuos galima parduoti / pirkti žaliavų punkte
-Config.MechanicSupplyItems = {
-    'iron_ore', 'iron', 'copper_ore', 'copper', 'aluminum_ore', 'aluminum',
-    'steel', 'coal', 'rubber', 'glass', 'gravel', 'stone',
-    'silver_ore', 'gold_ore',
-}
-
---- Kainos, kai kasėjas parduoda mechanikų sandėliui ($ / vnt.)
-Config.MechanicMaterialBuyPrices = {
-    iron_ore = 22,
-    iron = 38,
-    copper_ore = 18,
-    copper = 30,
-    aluminum_ore = 20,
-    aluminum = 34,
-    steel = 68,
-    coal = 6,
-    rubber = 32,
-    glass = 20,
-    gravel = 4,
-    stone = 5,
-    silver_ore = 75,
-    gold_ore = 190,
-}
-
---- Mechanikų pirkimo kainos iš sandėlio ($ / vnt.)
-Config.MechanicMaterialShopPrices = {
-    iron_ore = 28,
-    iron = 46,
-    copper_ore = 24,
-    copper = 36,
-    aluminum_ore = 26,
-    aluminum = 40,
-    steel = 82,
-    coal = 9,
-    rubber = 38,
-    glass = 24,
-    gravel = 6,
-    stone = 7,
-    silver_ore = 90,
-    gold_ore = 220,
-}
-
---- Pradinis sandėlio likutis (kol kasėjai pradeda parduoti)
-Config.MaterialSupplySeedStock = {
-    iron = 12,
-    copper = 10,
-    aluminum = 8,
-    steel = 15,
-    rubber = 10,
-    glass = 8,
-    coal = 20,
-    iron_ore = 16,
-    copper_ore = 12,
-    aluminum_ore = 10,
 }
 
 --- GTA mod lygis (0-based) -> item engine_upgrade_1 .. engine_upgrade_4
@@ -319,40 +224,6 @@ Config.TuningRecipes = {
         output = 'turbo_kit',
         count = 1,
         materials = { iron = 15, steel = 16, aluminum = 14, copper = 16, rubber = 7, glass = 2 },
-    },
-}
-
---- Crafting UI kategorijų aprašymai (tik sąsajai — jokio level / XP)
-Config.CraftCategoryMeta = {
-    engine = { label = 'Variklis', desc = 'Padidina automobilio galią ir pagreitėjimą.' },
-    turbo = { label = 'Turbina', desc = 'Suteikia automobiliui turbo galią.' },
-    transmission = { label = 'Pavarų dėžė', desc = 'Pagerina pavarų perjungimą ir pagreitėjimą.' },
-    suspension = { label = 'Pakaba', desc = 'Pakeičia automobilio pakabos lygį.' },
-    brakes = { label = 'Stabdžiai', desc = 'Pagerina automobilio stabdymą.' },
-    armor = { label = 'Šarvai', desc = 'Padidina transporto priemonės atsparumą.' },
-    repair_kits = { label = 'Taisymo rinkiniai', desc = 'Remonto ir padangų taisymo rinkiniai.' },
-}
-
-Config.CraftMaxBatch = 10
-
-Config.RepairKitRecipes = {
-    repairkit = {
-        label = 'Remonto rinkinys',
-        output = 'repairkit',
-        count = 1,
-        materials = { iron = 4, steel = 2, rubber = 3, glass = 1 },
-    },
-    tirerepairkit = {
-        label = 'Padangų remonto rinkinys',
-        output = 'tirerepairkit',
-        count = 1,
-        materials = { rubber = 6, steel = 1, iron = 2 },
-    },
-    advancedrepairkit = {
-        label = 'Pažangus remonto rinkinys',
-        output = 'advancedrepairkit',
-        count = 1,
-        materials = { iron = 8, steel = 6, aluminum = 4, copper = 3, rubber = 5, glass = 2 },
     },
 }
 

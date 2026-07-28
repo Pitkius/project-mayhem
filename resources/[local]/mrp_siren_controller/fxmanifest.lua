@@ -14,7 +14,6 @@ shared_scripts {
 }
 
 client_scripts {
-    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/audio.lua',
     'client/main.lua',
 }
@@ -32,4 +31,5 @@ files {
 dependencies {
     'qb-core',
     'qb-menu',
+    'mrp_ltpd',
 }

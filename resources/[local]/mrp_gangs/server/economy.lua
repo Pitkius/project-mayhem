@@ -63,6 +63,23 @@ local function tierForRoll(difficulty)
     return 'common'
 end
 
+local function wornQualityFor(definition, difficulty)
+    local range = definition and definition.wornQuality
+    if not range then
+        range = (Config.CorpseLoot and Config.CorpseLoot.pistolQuality and Config.CorpseLoot.pistolQuality[difficulty])
+            or { min = 15, max = 45 }
+    end
+    local lo = math.floor(tonumber(range.min) or 15)
+    local hi = math.floor(tonumber(range.max) or 45)
+    if hi < lo then hi = lo end
+    return math.random(lo, hi) + 0.0
+end
+
+local function isWeaponItem(itemName)
+    itemName = tostring(itemName or '')
+    return itemName:find('^weapon_', 1) ~= nil
+end
+
 local function restrictedRoll(difficulty)
     if difficulty ~= 'hard' and difficulty ~= 'extreme' then return nil end
     for quotaKey, definition in pairs(Config.RestrictedSupply or {}) do
@@ -70,12 +87,16 @@ local function restrictedRoll(difficulty)
         local chance = tonumber(definition[chanceKey]) or 0
         if chance > 0 and math.random(1, 10000) <= chance then
             if reserveQuota(quotaKey) then
-                return {
+                local reward = {
                     item = definition.item,
                     amount = 1,
                     tier = 'restricted',
                     quotaKey = quotaKey,
                 }
+                if isWeaponItem(definition.item) then
+                    reward.quality = wornQualityFor(definition, difficulty)
+                end
+                return reward
             end
             local substitute = weightedPick(Config.Loot[definition.fallbackPool or 'rare'])
             if substitute then
@@ -178,12 +199,19 @@ local function grantLoot(run, participant, reward, index)
     local itemName = reward.item
     local settlementKey = ('run:%s:player:%s:loot:%s'):format(run.dbId, participant.citizenid, index)
     local player = QBCore.Functions.GetPlayerByCitizenId(participant.citizenid)
-    local itemInfo = nil
+    local itemInfo = reward.info and GangUtils.Copy(reward.info) or nil
 
     if reward.money == 'markedbills' and QBCore.Shared.Items.markedbills then
         itemName = 'markedbills'
         itemInfo = { worth = tonumber(reward.amount) or 0 }
         amount = 1
+    end
+
+    if itemName and isWeaponItem(itemName) then
+        itemInfo = itemInfo or {}
+        if itemInfo.quality == nil then
+            itemInfo.quality = tonumber(reward.quality) or wornQualityFor(nil, run.difficulty)
+        end
     end
 
     if itemName and QBCore.Shared.Items[itemName] then
@@ -207,6 +235,103 @@ local function grantLoot(run, participant, reward, index)
 
     local fallbackCash = tonumber(reward.fallbackCash) or math.max(150, amount * 100)
     return grantCash(run, participant, fallbackCash, ('loot-fallback-%s'):format(index))
+end
+
+local function chanceFor(tableOrNil, difficulty, defaultValue)
+    if type(tableOrNil) ~= 'table' then return tonumber(defaultValue) or 0 end
+    return tonumber(tableOrNil[difficulty] or tableOrNil.easy or defaultValue) or 0
+end
+
+function GangEconomy.RollCorpseLoot(difficulty, weaponName, archetype)
+    local cfg = Config.CorpseLoot or {}
+    difficulty = tostring(difficulty or 'easy')
+    local drops = {}
+
+    if math.random(1, 100) <= chanceFor(cfg.cashChance, difficulty, 70) then
+        local band = (cfg.cashWorth and cfg.cashWorth[difficulty]) or { min = 40, max = 100 }
+        local worth = math.random(tonumber(band.min) or 40, tonumber(band.max) or 100)
+        drops[#drops + 1] = {
+            money = 'markedbills',
+            amount = worth,
+            tier = 'corpse_cash',
+        }
+    end
+
+    if math.random(1, 100) <= chanceFor(cfg.ammoChance, difficulty, 35) then
+        local ammo = cfg.ammo or { item = 'pistol_ammo', min = 1, max = 2 }
+        drops[#drops + 1] = {
+            item = ammo.item or 'pistol_ammo',
+            amount = math.random(tonumber(ammo.min) or 1, tonumber(ammo.max) or 2),
+            tier = 'corpse_ammo',
+            fallbackCash = 120,
+        }
+    end
+
+    if math.random(1, 100) <= chanceFor(cfg.drugChance, difficulty, 2) then
+        local pool = cfg.drugs or { 'weed_bag', 'cokebaggy' }
+        local pick = pool[math.random(1, #pool)]
+        if pick then
+            drops[#drops + 1] = {
+                item = pick,
+                amount = 1,
+                tier = 'corpse_drug',
+                fallbackCash = 200,
+            }
+        end
+    end
+
+    local pistolMap = cfg.pistolWeapons or {}
+    local weaponKey = tostring(weaponName or ''):upper()
+    local pistolItem = pistolMap[weaponKey]
+    if pistolItem and math.random(1, 100) <= chanceFor(cfg.pistolChance, difficulty, 0) then
+        local q = (cfg.pistolQuality and cfg.pistolQuality[difficulty]) or { min = 15, max = 40 }
+        drops[#drops + 1] = {
+            item = pistolItem,
+            amount = 1,
+            tier = 'corpse_pistol',
+            quality = math.random(tonumber(q.min) or 15, tonumber(q.max) or 40) + 0.0,
+            fallbackCash = 400,
+            archetype = archetype,
+        }
+    end
+
+    if #drops == 0 then
+        drops[1] = {
+            money = 'markedbills',
+            amount = math.random(20, 55),
+            tier = 'corpse_empty',
+        }
+    end
+    return drops
+end
+
+function GangEconomy.GrantCorpseLoot(source, run, drops)
+    local player = QBCore.Functions.GetPlayer(source)
+    if not player then return false, 'player_missing' end
+    local granted = {}
+    for index, reward in ipairs(drops or {}) do
+        local amount = math.max(1, tonumber(reward.amount) or 1)
+        local itemName = reward.item
+        local itemInfo = reward.info and GangUtils.Copy(reward.info) or nil
+
+        if reward.money == 'markedbills' and QBCore.Shared.Items.markedbills then
+            itemName = 'markedbills'
+            itemInfo = { worth = tonumber(reward.amount) or 0 }
+            amount = 1
+        elseif itemName and isWeaponItem(itemName) then
+            itemInfo = itemInfo or {}
+            itemInfo.quality = tonumber(reward.quality) or wornQualityFor(nil, run.difficulty)
+        end
+
+        if itemName and QBCore.Shared.Items[itemName] then
+            local added = player.Functions.AddItem(itemName, amount, false, itemInfo, ('gang-corpse-%s'):format(run.token))
+            if added then
+                TriggerClientEvent('inventory:client:ItemBox', source, QBCore.Shared.Items[itemName], 'add', amount)
+                granted[#granted + 1] = { item = itemName, amount = amount, quality = itemInfo and itemInfo.quality, worth = itemInfo and itemInfo.worth }
+            end
+        end
+    end
+    return true, granted
 end
 
 function GangEconomy.SettleMission(run, mission, participants, performance)

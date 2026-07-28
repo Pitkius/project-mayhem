@@ -1,10 +1,4 @@
 local QBCore = exports['qb-core']:GetCoreObject()
-local ReloadSessions = {}
-local ReloadSequence = 0
-
-AddEventHandler('playerDropped', function()
-    ReloadSessions[source] = nil
-end)
 
 -- Functions
 
@@ -133,104 +127,30 @@ local function capStoredWeaponAmmo(weaponName, amount)
     return math.min(amount, 120)
 end
 
-local function normalizedAmmoType(value)
-    return tostring(value or ''):upper()
-end
-
-local function weaponAmmoType(item)
-    if not item or not item.name then return '' end
-    local shared = QBCore.Shared.Items[item.name]
-    if shared and shared.ammotype then
-        return normalizedAmmoType(shared.ammotype)
-    end
-    local weapon = QBCore.Shared.Weapons[joaat(item.name)]
-    return normalizedAmmoType(weapon and weapon.ammotype)
-end
-
-local function attachmentMatches(value, expected)
-    if value == nil or expected == nil then return false end
-    if value == expected then return true end
-    if type(value) == 'string' then return joaat(value) == expected end
-    if type(expected) == 'string' then return value == joaat(expected) end
-    return false
-end
-
-local function serverMaxClip(item)
-    local name = tostring(item and item.name or ''):lower()
-    local ammoType = weaponAmmoType(item)
-    local maxClip = tonumber(Config.StandardClipCapacity and Config.StandardClipCapacity[name])
-        or tonumber(Config.DefaultClipCapacityByAmmoType and Config.DefaultClipCapacityByAmmoType[ammoType])
-        or 30
-
-    local attachments = item and item.info and item.info.attachments
-    for _, attachment in pairs(type(attachments) == 'table' and attachments or {}) do
-        local component = type(attachment) == 'table' and (attachment.component or attachment.hash) or attachment
-        local nativeName = tostring(Config.WeaponNativeHash and Config.WeaponNativeHash[name] or ''):lower()
-        local drum = WeaponAttachments and WeaponAttachments.drum_attachment
-            and (WeaponAttachments.drum_attachment[name]
-                or (nativeName ~= '' and WeaponAttachments.drum_attachment[nativeName]))
-        local extended = WeaponAttachments and WeaponAttachments.clip_attachment
-            and (WeaponAttachments.clip_attachment[name]
-                or (nativeName ~= '' and WeaponAttachments.clip_attachment[nativeName]))
-        if attachmentMatches(component, drum) then
-            maxClip = math.max(maxClip, tonumber(Config.DrumClipCapacity and Config.DrumClipCapacity[name]) or 0)
-        elseif attachmentMatches(component, extended) then
-            maxClip = math.max(maxClip, tonumber(Config.ExtendedClipCapacity and Config.ExtendedClipCapacity[name]) or 0)
-        end
-    end
-
-    return math.min(120, math.max(1, math.floor(maxClip)))
-end
-
-local function ammoItemMatchesType(itemName, ammoType)
-    local cfg = Config.AmmoTypes[tostring(itemName or ''):lower()]
-    return cfg and normalizedAmmoType(cfg.ammoType) == normalizedAmmoType(ammoType)
-end
-
-local function countAmmoForType(Player, ammoType)
-    local total = 0
-    for _, item in pairs(Player.PlayerData.items or {}) do
-        if item and ammoItemMatchesType(item.name, ammoType) then
-            total = total + math.max(0, math.floor(tonumber(item.amount) or 0))
-        end
-    end
-    return total
-end
-
-local function nextReloadToken(src)
-    ReloadSequence = ReloadSequence + 1
-    return ('%d:%d:%d:%d'):format(src, os.time(), ReloadSequence, math.random(100000, 999999))
-end
-
 RegisterNetEvent('qb-weapons:server:UpdateWeaponAmmo', function(CurrentWeaponData, amount)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
-    local weaponName = tostring(CurrentWeaponData and CurrentWeaponData.name or ''):lower()
-    if weaponName == '' then return end
+    local weaponName = CurrentWeaponData and CurrentWeaponData.name
     amount = capStoredWeaponAmmo(weaponName, amount)
     if CurrentWeaponData then
         local slot = tonumber(CurrentWeaponData.slot)
         local updated = false
-        local specialAmmo = weaponName == 'weapon_petrolcan' or weaponName == 'weapon_fireextinguisher'
-        if slot and Player.PlayerData.items[slot]
-            and tostring(Player.PlayerData.items[slot].name or ''):lower() == weaponName then
+        if slot and Player.PlayerData.items[slot] then
             Player.PlayerData.items[slot].info = Player.PlayerData.items[slot].info or {}
-            local stored = capStoredWeaponAmmo(weaponName, Player.PlayerData.items[slot].info.ammo or 0)
-            Player.PlayerData.items[slot].info.ammo = specialAmmo and amount or math.min(stored, amount)
+            Player.PlayerData.items[slot].info.ammo = amount
             updated = true
         end
         if not updated then
             for k, item in pairs(Player.PlayerData.items) do
-                if item and tostring(item.name or ''):lower() == weaponName then
+                if item and item.name == CurrentWeaponData.name then
                     local isWeapon = item.type == 'weapon'
                     if not isWeapon and item.name:find('^weapon_', 1, false) then
                         isWeapon = true
                     end
                     if isWeapon then
                         Player.PlayerData.items[k].info = Player.PlayerData.items[k].info or {}
-                        local stored = capStoredWeaponAmmo(weaponName, Player.PlayerData.items[k].info.ammo or 0)
-                        Player.PlayerData.items[k].info.ammo = specialAmmo and amount or math.min(stored, amount)
+                        Player.PlayerData.items[k].info.ammo = amount
                         updated = true
                         break
                     end
@@ -302,203 +222,113 @@ RegisterNetEvent('qb-weapons:server:UpdateWeaponQuality', function(data, RepeatA
     Player.Functions.SetInventory(Player.PlayerData.items, true)
 end)
 
-local function removeAmmoForReload(src, Player, session, amount)
-    local candidates = {}
-    local seenSlots = {}
-    local preferredSlot = tonumber(session.preferredSlot)
-    local preferredItem = tostring(session.preferredItem or ''):lower()
+RegisterNetEvent('qb-weapons:server:removeWeaponAmmoItem', function(itemName, removeAmount, preferredSlot)
+    local src = source
+    itemName = type(itemName) == 'string' and itemName:lower() or ''
+    if itemName == '' then return end
+    removeAmount = tonumber(removeAmount) or 0
+    if removeAmount < 1 then return end
 
-    local function addCandidate(item)
-        if not item or not ammoItemMatchesType(item.name, session.ammoType) then return end
-        local slot = tonumber(item.slot)
-        local available = math.max(0, math.floor(tonumber(item.amount) or 0))
-        if not slot or available <= 0 or seenSlots[slot] then return end
-        seenSlots[slot] = true
-        candidates[#candidates + 1] = {
-            name = tostring(item.name):lower(),
-            slot = slot,
-            amount = available,
-        }
-    end
+    local remaining = removeAmount
+    preferredSlot = tonumber(preferredSlot)
 
-    if preferredSlot then
-        for _, item in pairs(Player.PlayerData.items or {}) do
-            if tonumber(item and item.slot) == preferredSlot
-                and (preferredItem == '' or tostring(item.name):lower() == preferredItem) then
-                addCandidate(item)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    -- qb-inventory: slotas saugomas ant item.slot, ne būtinai kaip lentelės indeksas – ieškome pagal slot lauką.
+    if preferredSlot and remaining > 0 then
+        for _, it in pairs(Player.PlayerData.items) do
+            if it and it.name == itemName and tonumber(it.slot) == preferredSlot and (tonumber(it.amount) or 0) > 0 then
+                local take = math.min(tonumber(it.amount) or 0, remaining)
+                if take > 0 then
+                    if exports['qb-inventory']:RemoveItem(src, itemName, take, preferredSlot, 'qb-weapons:ammo-pref') then
+                        remaining = remaining - take
+                    end
+                end
                 break
             end
         end
     end
-    for _, item in pairs(Player.PlayerData.items or {}) do
-        addCandidate(item)
-    end
-
-    local remaining = math.max(0, math.floor(tonumber(amount) or 0))
-    local removed = 0
-    local firstItemName = nil
-    for _, candidate in ipairs(candidates) do
-        if remaining <= 0 then break end
-        local take = math.min(candidate.amount, remaining)
-        if take > 0 and exports['qb-inventory']:RemoveItem(
-            src,
-            candidate.name,
-            take,
-            candidate.slot,
-            'qb-weapons:native-reload'
-        ) then
-            firstItemName = firstItemName or candidate.name
-            removed = removed + take
-            remaining = remaining - take
-        end
-    end
-    return removed, firstItemName
-end
-
-QBCore.Functions.CreateCallback('qb-weapons:server:beginReload', function(source, cb, request)
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    request = type(request) == 'table' and request or {}
-    if not Player then return cb({ ok = false }) end
-
-    local previous = ReloadSessions[src]
-    if previous and previous.expiresAt > os.time() then
-        return cb({ ok = false, message = '' })
-    end
-    ReloadSessions[src] = nil
-
-    local weaponSlot = tonumber(request.weaponSlot)
-    local weaponName = tostring(request.weaponName or ''):lower()
-    local weaponItem = weaponSlot and exports['qb-inventory']:GetItemBySlot(src, weaponSlot) or nil
-    local isWeaponItem = weaponItem and (
-        weaponItem.type == 'weapon'
-        or tostring(weaponItem.name or ''):lower():find('^weapon_') ~= nil
-    )
-    if not weaponItem or tostring(weaponItem.name or ''):lower() ~= weaponName
-        or not isWeaponItem then
-        return cb({ ok = false, message = Lang:t('error.no_weapon_in_hand') })
-    end
-
-    local ammoType = weaponAmmoType(weaponItem)
-    if ammoType == '' or ammoType ~= normalizedAmmoType(request.ammoType) then
-        return cb({ ok = false, message = Lang:t('error.wrong_ammo') })
-    end
-
-    local preferredItem = tostring(request.preferredItem or ''):lower()
-    if preferredItem ~= '' and not ammoItemMatchesType(preferredItem, ammoType) then
-        return cb({ ok = false, message = Lang:t('error.wrong_ammo') })
-    end
-
-    local maxClip = serverMaxClip(weaponItem)
-    local clientMax = math.max(1, math.floor(tonumber(request.maxClip) or maxClip))
-    maxClip = math.min(maxClip, clientMax)
-    local storedClip = capStoredWeaponAmmo(weaponName, weaponItem.info and weaponItem.info.ammo or 0)
-    local reportedClip = math.max(0, math.floor(tonumber(request.clipBefore) or 0))
-    local clipBefore = math.min(storedClip, reportedClip, maxClip)
-    local missing = math.max(0, maxClip - clipBefore)
-    if missing <= 0 then
-        return cb({ ok = false, message = Lang:t('error.max_ammo') or 'Apkaba pilna.' })
-    end
-
-    local available = countAmmoForType(Player, ammoType)
-    local grant = math.min(missing, available)
-    if grant <= 0 then
-        return cb({ ok = false, message = 'No ammo in inventory.' })
-    end
-
-    local token = nextReloadToken(src)
-    ReloadSessions[src] = {
-        token = token,
-        weaponName = weaponName,
-        weaponSlot = weaponSlot,
-        weaponSerial = tostring(weaponItem.info and weaponItem.info.serie or ''),
-        ammoType = ammoType,
-        clipBefore = clipBefore,
-        maxClip = maxClip,
-        grant = grant,
-        preferredItem = preferredItem,
-        preferredSlot = tonumber(request.preferredSlot),
-        issuedAt = GetGameTimer(),
-        expiresAt = os.time() + 12,
-    }
-
-    cb({
-        ok = true,
-        token = token,
-        clipBefore = clipBefore,
-        maxClip = maxClip,
-        grant = grant,
-    })
-end)
-
-QBCore.Functions.CreateCallback('qb-weapons:server:commitReload', function(source, cb, request)
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    request = type(request) == 'table' and request or {}
-    local session = ReloadSessions[src]
-    if not Player or not session or tostring(request.token or '') ~= session.token then
-        return cb({ ok = false, message = 'Reload sesija nebegalioja.' })
-    end
-
-    -- Tokenas vienkartinis: pašalinamas prieš bet kokį inventory veiksmą.
-    ReloadSessions[src] = nil
-    if session.expiresAt <= os.time() then
-        return cb({ ok = false, clip = session.clipBefore, message = 'Reload sesija baigėsi.' })
-    end
-
-    local weaponItem = exports['qb-inventory']:GetItemBySlot(src, session.weaponSlot)
-    if not weaponItem or tostring(weaponItem.name or ''):lower() ~= session.weaponName then
-        return cb({ ok = false, clip = session.clipBefore, message = Lang:t('error.no_weapon_in_hand') })
-    end
-    local currentSerial = tostring(weaponItem.info and weaponItem.info.serie or '')
-    if session.weaponSerial ~= '' and currentSerial ~= session.weaponSerial then
-        return cb({ ok = false, message = Lang:t('error.no_weapon_in_hand') })
-    end
-
-    local requestedLoaded = math.min(
-        session.grant,
-        math.max(0, math.floor(tonumber(request.loaded) or 0))
-    )
-    local currentStored = capStoredWeaponAmmo(
-        session.weaponName,
-        weaponItem.info and weaponItem.info.ammo or 0
-    )
-    if requestedLoaded > 0 and (GetGameTimer() - (tonumber(session.issuedAt) or 0)) < 350 then
-        return cb({
-            ok = false,
-            clip = currentStored,
-            message = 'Reload patvirtintas per anksti.',
-        })
-    end
-    local cancelClip = request.cancelClip ~= nil
-        and math.max(0, math.floor(tonumber(request.cancelClip) or 0))
-        or session.clipBefore
-    local baseClip = math.min(session.clipBefore, currentStored, cancelClip, session.maxClip)
-    local available = countAmmoForType(Player, session.ammoType)
-    local toRemove = math.min(requestedLoaded, available)
-    local removed, itemName = removeAmmoForReload(src, Player, session, toRemove)
-    local finalClip = math.min(session.maxClip, baseClip + removed)
 
     Player = QBCore.Functions.GetPlayer(src)
-    weaponItem = Player and exports['qb-inventory']:GetItemBySlot(src, session.weaponSlot) or nil
-    if not Player or not weaponItem or tostring(weaponItem.name or ''):lower() ~= session.weaponName then
-        return cb({ ok = false, clip = baseClip, message = Lang:t('error.no_weapon_in_hand') })
-    end
-    currentSerial = tostring(weaponItem.info and weaponItem.info.serie or '')
-    if session.weaponSerial ~= '' and currentSerial ~= session.weaponSerial then
-        return cb({ ok = false, clip = baseClip, message = Lang:t('error.no_weapon_in_hand') })
+    if not Player then return end
+
+    for _, it in pairs(Player.PlayerData.items) do
+        if remaining <= 0 then break end
+        if it and it.name == itemName and (tonumber(it.amount) or 0) > 0 then
+            local sn = tonumber(it.slot)
+            if preferredSlot and sn == preferredSlot then goto ammo_continue end
+            local take = math.min(tonumber(it.amount) or 0, remaining)
+            if take > 0 and exports['qb-inventory']:RemoveItem(src, itemName, take, sn, 'qb-weapons:ammo-scan') then
+                remaining = remaining - take
+            end
+        end
+        ::ammo_continue::
     end
 
-    weaponItem.info = weaponItem.info or {}
-    weaponItem.info.ammo = finalClip
-    Player.PlayerData.items[session.weaponSlot] = weaponItem
-    Player.Functions.SetPlayerData('items', Player.PlayerData.items)
+    Player = QBCore.Functions.GetPlayer(src)
+    if remaining > 0 and Player then
+        exports['qb-inventory']:RemoveItem(src, itemName, remaining, false, 'qb-weapons:ammo-fallback')
+    end
+end)
 
-    cb({
-        ok = true,
-        clip = finalClip,
-        removed = removed,
-        itemName = itemName,
+RegisterNetEvent('qb-weapons:server:requestQuickReload', function(ammoItemName, weaponAmmoType, preferredSlot)
+    local src = source
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return end
+
+    ammoItemName = tostring(ammoItemName or ''):lower()
+    if ammoItemName == '' or not Config.AmmoTypes[ammoItemName] then
+        TriggerClientEvent('qb-weapons:client:QuickReloadDenied', src, 'Netinkamas ammo tipas.')
+        return
+    end
+
+    local ammoConfig = Config.AmmoTypes[ammoItemName]
+    if string.upper(tostring(ammoConfig.ammoType or '')) ~= string.upper(tostring(weaponAmmoType or '')) then
+        TriggerClientEvent('qb-weapons:client:QuickReloadDenied', src, Lang:t('error.wrong_ammo'))
+        return
+    end
+
+    local selectedItem = nil
+    preferredSlot = tonumber(preferredSlot)
+    if preferredSlot then
+        selectedItem = exports['qb-inventory']:GetItemBySlot(src, preferredSlot)
+        if selectedItem and selectedItem.name ~= ammoItemName then
+            selectedItem = nil
+        end
+    end
+
+    if not selectedItem then
+        for _, item in pairs(Player.PlayerData.items) do
+            if item and item.name == ammoItemName and (tonumber(item.amount) or 0) > 0 then
+                selectedItem = item
+                selectedItem.slot = tonumber(selectedItem.slot) or tonumber(item.slot)
+                break
+            end
+        end
+    end
+
+    if not selectedItem or (tonumber(selectedItem.amount) or 0) <= 0 then
+        TriggerClientEvent('qb-weapons:client:QuickReloadDenied', src, 'No ammo in inventory.')
+        return
+    end
+
+    local totalAmmoItems = 0
+    for _, item in pairs(Player.PlayerData.items) do
+        if item and item.name == ammoItemName then
+            totalAmmoItems = totalAmmoItems + (tonumber(item.amount) or 0)
+        end
+    end
+    if totalAmmoItems <= 0 then
+        TriggerClientEvent('qb-weapons:client:QuickReloadDenied', src, 'No ammo in inventory.')
+        return
+    end
+
+    TriggerClientEvent('qb-weapons:client:AddAmmo', src, ammoConfig.ammoType, totalAmmoItems, {
+        name = selectedItem.name,
+        slot = tonumber(selectedItem.slot),
+        amount = selectedItem.amount,
+        quickReload = true
     })
 end)
 
@@ -513,7 +343,7 @@ end, 'god')
 -- AMMO
 for ammoItem, properties in pairs(Config.AmmoTypes) do
     QBCore.Functions.CreateUseableItem(ammoItem, function(source, item)
-        TriggerClientEvent('qb-weapons:client:UseAmmo', source, properties.ammoType, item)
+        TriggerClientEvent('qb-weapons:client:AddAmmo', source, properties.ammoType, properties.amount, item)
     end)
 end
 

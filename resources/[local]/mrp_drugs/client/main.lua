@@ -6,63 +6,31 @@ local testPed = 0
 local testSupplyShopPed = 0
 local supplyShopPed = 0
 local weedSupplyShopPed = 0
-local printerShopPed = 0
 local freeDrugShopPed = 0
 local supplyShopBlip = nil
-local printerShopBlip = nil
 local productBuyerPeds = {}
 local drugNpcsSpawning = false
 local drugNpcsSpawned = false
 local productBuyerBlips = {}
 local mapBlips = {}
 local streetSellExcludedPeds = {}
-local streetSellSoldNetIds = {}
 local failedNpcModels = {}
 local npcModelRefCount = {}
 local npcModelLoading = {}
 local npcSpawnRetryAt = {}
-local openMaterialShop, openWeaponPartsMenu, openWeedSupplyShop, openPrinterShop, openFreeDrugShop, openLsQuickBuyMenu, openTestMenu
+local closeActiveMinigame
 
---- Saugus netId — nekviečia NetworkGetNetworkIdFromEntity jei entity nėra networked (išvengia F8 warning).
-local function safeEntityNetId(entity)
-    if not entity or entity == 0 or not DoesEntityExist(entity) then return 0 end
-    if type(NetworkGetEntityIsNetworked) == 'function' and not NetworkGetEntityIsNetworked(entity) then
-        return 0
-    end
-    local ok, netId = pcall(NetworkGetNetworkIdFromEntity, entity)
-    if not ok then return 0 end
-    netId = tonumber(netId) or 0
-    if netId <= 0 then return 0 end
-    return netId
-end
-
---- Bando užregistruoti lokalų entity tinkle (pvz. street NPC pardavimui).
-local function ensureEntityNetworked(entity, timeoutMs)
-    if not entity or entity == 0 or not DoesEntityExist(entity) then return 0 end
-    local existing = safeEntityNetId(entity)
-    if existing > 0 then return existing end
-    if type(NetworkRegisterEntityAsNetworked) == 'function' then
-        pcall(NetworkRegisterEntityAsNetworked, entity)
-    end
-    local deadline = GetGameTimer() + (tonumber(timeoutMs) or 400)
-    while GetGameTimer() < deadline do
-        local netId = safeEntityNetId(entity)
-        if netId > 0 then return netId end
-        Wait(0)
-    end
-    return safeEntityNetId(entity)
-end
+local openMaterialShop, openWeaponPartsMenu, openWeedSupplyShop, openFreeDrugShop, openLsQuickBuyMenu, openTestMenu
 
 local function nui(msg, data)
-    if msg == 'open' or msg == 'darknetOpen' or msg == 'ampQuizShow' or msg == 'minigameSchedule' then
-        if PushPlayerThemeToNui then PushPlayerThemeToNui() end
-    end
     SendNUIMessage({ action = msg, data = data or {} })
 end
 
 local function closeUi()
-    if MinigameManager and MinigameManager.IsActive() then
-        MinigameManager.Close('ui_closed', { success = false })
+    if WeedProduction and WeedProduction.IsActive and WeedProduction.IsActive() then
+        WeedProduction.Close('ui_closed')
+    elseif closeActiveMinigame then
+        closeActiveMinigame(false, { reason = 'ui_closed' })
     end
     uiOpen = false
     currentStationId = nil
@@ -254,27 +222,63 @@ local function runProgress(label, durationMs, onDone, anim, propCfg, meta)
     end)
 end
 
+local pendingMinigame = nil
+local minigameSessionCounter = 0
+
+local function beginMinigame(onDone)
+    if pendingMinigame and closeActiveMinigame then
+        closeActiveMinigame(false, { reason = 'replaced' })
+    end
+    minigameSessionCounter = minigameSessionCounter + 1
+    local sessionId = ('%s-%s'):format(GetGameTimer(), minigameSessionCounter)
+    pendingMinigame = {
+        id = sessionId,
+        onDone = onDone,
+    }
+    CreateThread(function()
+        Wait(180000)
+        if pendingMinigame and pendingMinigame.id == sessionId and closeActiveMinigame then
+            if WeedProduction and WeedProduction.IsActive and WeedProduction.IsActive() then
+                WeedProduction.Close('timeout')
+            else
+                closeActiveMinigame(false, { reason = 'timeout' }, sessionId)
+            end
+            nui('close')
+            QBCore.Functions.Notify('Gamybos minigame laikas baigėsi.', 'error')
+        end
+    end)
+    return sessionId
+end
+
+closeActiveMinigame = function(success, extra, sessionId)
+    local pending = pendingMinigame
+    if not pending then return false end
+    if sessionId and pending.id ~= tostring(sessionId) then return false end
+    pendingMinigame = nil
+    SetNuiFocus(uiOpen, uiOpen)
+    if ScheduleAnimStop then ScheduleAnimStop() end
+    if pending.onDone then
+        pending.onDone(success == true, extra or {})
+    end
+    return true
+end
+
 local function runSkillMinigame(onDone)
-    local sessionId = MinigameManager.Begin({
-        focus = true,
-        cursor = true,
-        closeNui = false,
-    }, onDone)
+    local sessionId = beginMinigame(onDone)
     nui('minigameSkill', { durationMs = 4200, sessionId = sessionId })
+    SetNuiFocus(true, true)
 end
 
 local function runAdvancedMinigame(onDone)
-    local sessionId = MinigameManager.Begin({
-        focus = true,
-        cursor = true,
-        closeNui = false,
-    }, onDone)
+    local sessionId = beginMinigame(onDone)
     nui('minigameAdvanced', { rounds = 3, sessionId = sessionId })
+    SetNuiFocus(true, true)
 end
 
 local function runScheduleMinigame(productId, profile, prod, onDone, craftToken, workspace)
     closeUi()
     Wait(200)
+    local sessionId = beginMinigame(onDone)
     if not profile then
         profile = {
             mode = 'trim',
@@ -284,52 +288,8 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
             difficulty = (prod and prod.level) or 1,
         }
     end
-    local vapeProducts = {
-        vape_process = true,
-        vape_pack = true,
-        vape_simple = true,
-        vape_apple_concentrate = true,
-        vape_strawberry_concentrate = true,
-        vape_apple_pack = true,
-        vape_strawberry_pack = true,
-    }
-    -- Senas weed_dry minigame išjungtas; ši 3D scena palikta tik veikiančiam Cayo pakavimui.
-    local weed3dMode = profile.drug == 'weed' and profile.mode == 'weed_pack'
-    local vapeCfg = Config.Vape3D or {}
-    local vape3dMode = (vapeCfg.enabled ~= false and vapeCfg.legacyFallback ~= true)
-        and (vapeProducts[tostring(productId or '')] == true
-            or (profile.drug == 'vape' and (profile.action == 'process' or profile.action == 'pack')))
-    local alcoholCfg = Config.Alcohol3D or {}
-    local alcoholProducts = {
-        alcohol_process = true,
-        alcohol_pack = true,
-    }
-    local alcohol3dMode = (alcoholCfg.enabled ~= false and alcoholCfg.legacyFallback ~= true)
-        and (alcoholProducts[tostring(productId or '')] == true
-            or (profile.drug == 'alcohol' and (profile.action == 'process' or profile.action == 'pack')))
-    local thcCfg = Config.Thc3D or {}
-    local thcProducts = {
-        thc_process = true,
-        thc_pack = true,
-    }
-    local thc3dMode = (thcCfg.enabled ~= false and thcCfg.legacyFallback ~= true)
-        and (thcProducts[tostring(productId or '')] == true
-            or (profile.drug == 'thc' and (profile.action == 'process' or profile.action == 'pack')))
-    local world3dMode = weed3dMode or vape3dMode or alcohol3dMode or thc3dMode
-    local timeoutMs = nil
-    if vape3dMode then timeoutMs = tonumber(vapeCfg.sessionTimeoutMs) end
-    if alcohol3dMode then timeoutMs = tonumber(alcoholCfg.sessionTimeoutMs) or timeoutMs end
-    if thc3dMode then timeoutMs = tonumber(thcCfg.sessionTimeoutMs) or timeoutMs end
-    local sessionId = MinigameManager.Begin({
-        productId = productId,
-        craftToken = craftToken,
-        focus = not world3dMode,
-        cursor = not world3dMode,
-        disableControls = world3dMode,
-        closeNui = true,
-        timeoutMs = timeoutMs,
-    }, onDone)
-
+    local weed3dMode = profile.drug == 'weed'
+        and (profile.mode == 'weed_dry' or profile.mode == 'weed_pack')
     -- PAKAVIMAS: weed_pack paleidžia 3D WeedProduction sceną (ne schedule minigame).
     if weed3dMode and WeedProduction and WeedProduction.Start then
         if not workspace and currentStationId and Config.GetAllCraftStations then
@@ -348,8 +308,7 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
                 end
             end
         end
-        MinigameManager.AttachBackend(sessionId, WeedProduction)
-        local started = WeedProduction.Start({
+        WeedProduction.Start({
             sessionId = sessionId,
             craftToken = craftToken,
             productId = productId,
@@ -357,76 +316,8 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
             quantity = (prod and prod.outputAmount) or 1,
             workspace = workspace,
         }, function(success, extra)
-            extra = extra or {}
-            extra.success = success == true
-            MinigameManager.Close(success and 'completed' or (extra.reason or 'failed'), extra, sessionId, true)
+            closeActiveMinigame(success, extra or {}, sessionId)
         end)
-        if not started and MinigameManager.IsActive(sessionId) then
-            MinigameManager.Close('backend_start_failed', { success = false }, sessionId, true)
-        end
-        return
-    end
-    if vape3dMode and VapeProduction and VapeProduction.Start then
-        MinigameManager.AttachBackend(sessionId, VapeProduction)
-        local mode = (profile.action == 'pack' or tostring(productId):find('_pack$', 1, false))
-            and 'vape_pack' or 'vape_process'
-        local started = VapeProduction.Start({
-            sessionId = sessionId,
-            craftToken = craftToken,
-            productId = productId,
-            mode = mode,
-            quantity = (prod and prod.outputAmount) or 1,
-            workspace = workspace,
-        }, function(success, extra)
-            extra = extra or {}
-            extra.success = success == true
-            MinigameManager.Close(success and 'completed' or (extra.reason or 'failed'), extra, sessionId, true)
-        end)
-        if not started and MinigameManager.IsActive(sessionId) then
-            MinigameManager.Close('backend_start_failed', { success = false }, sessionId, true)
-        end
-        return
-    end
-    if alcohol3dMode and AlcoholProduction and AlcoholProduction.Start then
-        MinigameManager.AttachBackend(sessionId, AlcoholProduction)
-        local mode = (profile.action == 'pack' or tostring(productId):find('_pack$', 1, false))
-            and 'alcohol_pack' or 'alcohol_process'
-        local started = AlcoholProduction.Start({
-            sessionId = sessionId,
-            craftToken = craftToken,
-            productId = productId,
-            mode = mode,
-            quantity = (prod and prod.outputAmount) or 1,
-            workspace = workspace,
-        }, function(success, extra)
-            extra = extra or {}
-            extra.success = success == true
-            MinigameManager.Close(success and 'completed' or (extra.reason or 'failed'), extra, sessionId, true)
-        end)
-        if not started and MinigameManager.IsActive(sessionId) then
-            MinigameManager.Close('backend_start_failed', { success = false }, sessionId, true)
-        end
-        return
-    end
-    if thc3dMode and ThcProduction and ThcProduction.Start then
-        MinigameManager.AttachBackend(sessionId, ThcProduction)
-        local mode = (profile.action == 'pack' or tostring(productId):find('_pack$', 1, false))
-            and 'thc_pack' or 'thc_process'
-        local started = ThcProduction.Start({
-            sessionId = sessionId,
-            craftToken = craftToken,
-            productId = productId,
-            mode = mode,
-            quantity = (prod and prod.outputAmount) or 1,
-            workspace = workspace,
-        }, function(success, extra)
-            extra = extra or {}
-            extra.success = success == true
-            MinigameManager.Close(success and 'completed' or (extra.reason or 'failed'), extra, sessionId, true)
-        end)
-        if not started and MinigameManager.IsActive(sessionId) then
-            MinigameManager.Close('backend_start_failed', { success = false }, sessionId, true)
-        end
         return
     end
     if ScheduleAnimStart and profile.mode then
@@ -449,6 +340,7 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
         -- Ar procesą galima atšaukti (ESC patvirtinimas naujose stotyse)
         cancelable = true,
     })
+    SetNuiFocus(true, true)
 end
 
 local function getAllStations()
@@ -552,31 +444,8 @@ local function runWeaponCraftSequence(res, afterMinigame)
     nextPhase()
 end
 
-local function startCraftFlow(productId, amount)
+local function startCraftFlow(productId)
     if not currentStationId then return end
-    if productId == 'weed_process' then
-        local dryCfg = Config.WeedDrying or {}
-        if currentStationId ~= (dryCfg.stationId or 'weed_dry_davis') then
-            return QBCore.Functions.Notify('Žolė džiovinama tik Davis džiovinimo vietoje.', 'error')
-        end
-        if not WeedDrying or not WeedDrying.Start then
-            return QBCore.Functions.Notify('Džiovinimo sistema nepasiekiama.', 'error')
-        end
-        return WeedDrying.Start(amount, function(response)
-            if not response or not response.ok then
-                return QBCore.Functions.Notify((response and response.reason) or 'Džiovinimo pradėti nepavyko.', 'error')
-            end
-            closeUi()
-            QBCore.Functions.Notify(
-                ('Pradėta džiovinti x%d. Trukmė: %d sek.'):format(
-                    response.session.quantity,
-                    response.session.durationSeconds
-                ),
-                'success',
-                6500
-            )
-        end)
-    end
     local craftStationId = currentStationId
     QBCore.Functions.TriggerCallback('mrp_drugs:server:startCraft', function(res)
         if not res or not res.ok then
@@ -629,6 +498,44 @@ local function startCraftFlow(productId, amount)
     end, currentStationId, productId)
 end
 
+local function stationIngredientsReady(ingredients)
+    for _, ing in ipairs(ingredients or {}) do
+        if (ing.missing or 0) > 0 then return false end
+    end
+    return true
+end
+
+local function pickStationProduct(products)
+    if not products or #products == 0 then return nil end
+    for _, row in ipairs(products) do
+        if stationIngredientsReady(row.ingredients) then return row end
+    end
+    return products[1]
+end
+
+local function startStationCraftDirect(stationId)
+    local st = getStationById(stationId)
+    if st and st.mode == 'weapon' then
+        return openStationUi(stationId)
+    end
+
+    QBCore.Functions.TriggerCallback('mrp_drugs:server:getStationUi', function(res)
+        if not res or not res.ok then
+            return QBCore.Functions.Notify((res and res.reason) or 'Nepavyko pradėti gamybos.', 'error')
+        end
+        if #res.products == 0 then
+            return QBCore.Functions.Notify('Nėra receptų šioje stotyje.', 'error')
+        end
+        local row = pickStationProduct(res.products)
+        if not row then return end
+        if not stationIngredientsReady(row.ingredients) then
+            return QBCore.Functions.Notify('Trūksta ingredientų.', 'error')
+        end
+        currentStationId = stationId
+        startCraftFlow(row.id)
+    end, stationId)
+end
+
 local function getFirstSellableDrugItem()
     for _, prod in pairs(Config.Products or {}) do
         if (prod.sellBase or 0) > 0 and prod.output and QBCore.Functions.HasItem(prod.output, 1) then
@@ -637,45 +544,10 @@ local function getFirstSellableDrugItem()
     end
 end
 
-local function isStreetNpcAlreadySold(entity)
-    if not entity or entity == 0 then return true end
-    if streetSellExcludedPeds[entity] then return true end
-    local netId = safeEntityNetId(entity)
-    if netId > 0 and streetSellSoldNetIds[netId] then return true end
-    local ok, sold = pcall(function()
-        return Entity(entity).state.mrpDrugSold == true
-    end)
-    return ok and sold == true
-end
-
-local function markStreetNpcSoldLocal(entity, netId)
-    netId = tonumber(netId) or 0
-    if netId > 0 then
-        streetSellSoldNetIds[netId] = true
-    end
-    if entity and entity ~= 0 and DoesEntityExist(entity) then
-        streetSellExcludedPeds[entity] = true
-        if netId <= 0 then
-            netId = safeEntityNetId(entity)
-            if netId > 0 then streetSellSoldNetIds[netId] = true end
-        end
-    end
-end
-
-RegisterNetEvent('mrp_drugs:client:markNpcSold', function(netId)
-    netId = tonumber(netId) or 0
-    if netId <= 0 then return end
-    streetSellSoldNetIds[netId] = true
-    local ent = NetworkGetEntityFromNetworkId(netId)
-    if ent ~= 0 and DoesEntityExist(ent) then
-        streetSellExcludedPeds[ent] = true
-    end
-end)
-
 local function canStreetSellToPed(entity)
     if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
     if entity == PlayerPedId() or IsPedAPlayer(entity) or IsEntityDead(entity) then return false end
-    if isStreetNpcAlreadySold(entity) then return false end
+    if streetSellExcludedPeds[entity] then return false end
     if GetResourceState('mrp_npcshops') == 'started' then
         local ok, isShop = pcall(function()
             return exports['mrp_npcshops']:IsShopNpc(entity)
@@ -694,9 +566,6 @@ local function trySellToNpcEntity(entity)
     if not entity or entity == 0 or not DoesEntityExist(entity) then
         return QBCore.Functions.Notify('Netinkamas NPC.', 'error')
     end
-    if isStreetNpcAlreadySold(entity) then
-        return QBCore.Functions.Notify('Šis asmuo jau nusipirko — daugiau neparduos.', 'error')
-    end
     if DrugSellAnim.isBusy() then return end
     local maxDist = (Config.Sell and Config.Sell.maxDistanceToPed or 3.0) + 0.5
     if #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(entity)) > maxDist then
@@ -712,16 +581,7 @@ local function trySellToNpcEntity(entity)
             return QBCore.Functions.Notify('NPC per toli.', 'error')
         end
 
-        local netId = ensureEntityNetworked(entity, 500)
-        if netId <= 0 then
-            --- Lokalus pedas — vis tiek pažymim lokaliai, kad target nebekartotų
-            markStreetNpcSoldLocal(entity, 0)
-            return QBCore.Functions.Notify('NPC nėra sinchronizuotas — pabandyk kitą.', 'error')
-        end
         QBCore.Functions.TriggerCallback('mrp_drugs:server:tryNpcSell', function(res)
-            if res and (res.ok or res.refused or res.panic or res.alreadySold) then
-                markStreetNpcSoldLocal(entity, netId)
-            end
             if not res or not res.ok then
                 if res and res.panic then
                     return QBCore.Functions.Notify(res.reason or 'NPC panikuoja!', 'error')
@@ -731,15 +591,14 @@ local function trySellToNpcEntity(entity)
                 end
                 return QBCore.Functions.Notify((res and res.reason) or 'Pardavimas nepavyko.', 'error')
             end
-            local amt = tonumber(res.amount) or 1
             QBCore.Functions.Notify(
-                ('Parduota x%d už $%s (%s)'):format(amt, res.price or 0, res.payoutLabel or 'Nešvarūs pinigai'),
+                ('Parduota už $%s (%s)'):format(res.price or 0, res.payoutLabel or 'Nešvarūs pinigai'),
                 'success'
             )
             if res.alertPolice then
                 QBCore.Functions.Notify('Kažkas gali būti iškvietęs policiją…', 'error', 5500)
             end
-        end, itemName, netId)
+        end, itemName, NetworkGetNetworkIdFromEntity(entity))
     end)
 end
 
@@ -767,7 +626,7 @@ end)
 
 RegisterNUICallback('craft', function(data, cb)
     if data and data.productId then
-        startCraftFlow(data.productId, data.amount)
+        startCraftFlow(data.productId)
     end
     cb('ok')
 end)
@@ -788,9 +647,7 @@ end)
 
 local function finishMinigame(success, extra)
     local sessionId = extra and extra.sessionId
-    extra = extra or {}
-    extra.success = success == true
-    return MinigameManager.Close(success and 'completed' or (extra.reason or 'failed'), extra, sessionId, true)
+    return closeActiveMinigame(success, extra, sessionId)
 end
 
 RegisterNUICallback('scheduleResult', function(data, cb)
@@ -807,17 +664,13 @@ RegisterNUICallback('scheduleResult', function(data, cb)
 end)
 
 RegisterNUICallback('skillResult', function(data, cb)
-    local accepted = finishMinigame(data and data.success, {
-        sessionId = data and data.sessionId,
-    })
-    cb(accepted and 'ok' or 'stale')
+    finishMinigame(data and data.success)
+    cb('ok')
 end)
 
 RegisterNUICallback('advancedResult', function(data, cb)
-    local accepted = finishMinigame(data and data.success, {
-        sessionId = data and data.sessionId,
-    })
-    cb(accepted and 'ok' or 'stale')
+    finishMinigame(data and data.success)
+    cb('ok')
 end)
 
 local function setBlipLabel(blip, label)
@@ -905,16 +758,6 @@ local function setupStationBlips()
             (weedShop.blip and weedShop.blip.coords) or vector3(weedShop.coords.x, weedShop.coords.y, weedShop.coords.z),
             weedShop.blip or { enabled = true, label = weedShop.label },
             weedShop.label
-        )
-    end
-
-    -- 3D spausdintuvo parduotuvė
-    local printerShop = Config.PrinterShopNPC
-    if printerShop and printerShop.enabled ~= false and printerShop.coords then
-        addCfgBlip(
-            (printerShop.blip and printerShop.blip.coords) or vector3(printerShop.coords.x, printerShop.coords.y, printerShop.coords.z),
-            printerShop.blip or { enabled = true, label = printerShop.label },
-            printerShop.label
         )
     end
 
@@ -1079,7 +922,7 @@ local function setupStations()
                 icon = isWeapon and 'fas fa-tools' or 'fas fa-flask',
                 label = targetLabel,
                 action = function()
-                    openStationUi(st.id)
+                    startStationCraftDirect(st.id)
                 end,
             },
         }
@@ -1185,16 +1028,6 @@ openWeedSupplyShop = function()
     QBCore.Functions.TriggerCallback('mrp_drugs:server:openWeedSupplyShop', function(res)
         if res and res.ok then
             QBCore.Functions.Notify('Pirk sėklas ir vazonus — sodink kur nori.', 'primary', 4500)
-            return
-        end
-        QBCore.Functions.Notify((res and res.reason) or 'Parduotuvė neprieinama.', 'error')
-    end)
-end
-
-openPrinterShop = function()
-    QBCore.Functions.TriggerCallback('mrp_drugs:server:openPrinterShop', function(res)
-        if res and res.ok then
-            QBCore.Functions.Notify('Pirk 3D spausdintuvą ir žaliavas spausdinimui.', 'primary', 4500)
             return
         end
         QBCore.Functions.Notify((res and res.reason) or 'Parduotuvė neprieinama.', 'error')
@@ -1468,11 +1301,6 @@ local function setupNpcTargetZones()
         addNpcCircleZone('mrp_drugs_weed_supply', weedShop, openWeedSupplyShop, weedShop.label)
     end
 
-    local printerShop = Config.PrinterShopNPC
-    if printerShop and printerShop.enabled ~= false then
-        addNpcCircleZone('mrp_drugs_printer_shop', printerShop, openPrinterShop, printerShop.label)
-    end
-
     local freeShop = Config.FreeDrugShopNPC
     if freeShop and freeShop.enabled ~= false then
         addNpcCircleZone('mrp_drugs_free_drug_shop', freeShop, openFreeDrugShop, freeShop.label)
@@ -1573,24 +1401,6 @@ local function spawnWeedSupplyShopNpc()
                     icon = cfg.targetIcon or 'fas fa-seedling',
                     label = cfg.label or 'Kanapių auginimo reikmenys',
                     action = openWeedSupplyShop,
-                },
-            },
-            distance = (cfg.maxDistance or Config.InteractDistance or 2.5) + 1.0,
-        })
-    end)
-end
-
-local function spawnPrinterShopNpc()
-    local cfg = Config.PrinterShopNPC
-    if not cfg or cfg.enabled == false or not cfg.coords then return end
-    if printerShopPed ~= 0 then safeDeleteHubPed(printerShopPed) end
-    printerShopPed = spawnHubPed(cfg, function(ped)
-        exports['qb-target']:AddTargetEntity(ped, {
-            options = {
-                {
-                    icon = cfg.targetIcon or 'fas fa-print',
-                    label = cfg.label or 'Pirkti 3D spausdintuvą',
-                    action = openPrinterShop,
                 },
             },
             distance = (cfg.maxDistance or Config.InteractDistance or 2.5) + 1.0,
@@ -1815,8 +1625,6 @@ local function spawnAllDrugNpcs()
     Wait(200)
     spawnWeedSupplyShopNpc()
     Wait(200)
-    spawnPrinterShopNpc()
-    Wait(200)
     spawnFreeDrugShopNpc()
     Wait(200)
     spawnTestSupplyShopNpc()
@@ -1837,11 +1645,6 @@ local function ensureDrugNpcsAlive()
     local weedShop = Config.WeedSupplyShopNPC
     if weedShop and weedShop.enabled ~= false and (weedSupplyShopPed == 0 or not DoesEntityExist(weedSupplyShopPed)) then
         spawnWeedSupplyShopNpc()
-    end
-
-    local printerShop = Config.PrinterShopNPC
-    if printerShop and printerShop.enabled ~= false and (printerShopPed == 0 or not DoesEntityExist(printerShopPed)) then
-        spawnPrinterShopNpc()
     end
 
     local freeShop = Config.FreeDrugShopNPC
@@ -1942,17 +1745,9 @@ AddEventHandler('onResourceStop', function(res)
         safeDeleteHubPed(weedSupplyShopPed)
         weedSupplyShopPed = 0
     end
-    if printerShopPed ~= 0 and DoesEntityExist(printerShopPed) then
-        safeDeleteHubPed(printerShopPed)
-        printerShopPed = 0
-    end
     if supplyShopBlip and DoesBlipExist(supplyShopBlip) then
         RemoveBlip(supplyShopBlip)
         supplyShopBlip = nil
-    end
-    if printerShopBlip and DoesBlipExist(printerShopBlip) then
-        RemoveBlip(printerShopBlip)
-        printerShopBlip = nil
     end
     for _, ped in pairs(productBuyerPeds) do
         if ped ~= 0 and DoesEntityExist(ped) then
@@ -1966,8 +1761,8 @@ end)
 local function cancelPlayerProduction(reason)
     stopCraftAnim()
     if ScheduleAnimStop then ScheduleAnimStop() end
-    if MinigameManager and MinigameManager.IsActive() then
-        MinigameManager.Close(reason or 'player_unavailable', { success = false })
+    if pendingMinigame then
+        closeActiveMinigame(false, { reason = reason or 'player_unavailable' })
     end
     closeUi()
 end
@@ -1992,76 +1787,4 @@ exports('RunScheduleMinigame', function(productId, profile, prod, onDone, craftT
         prod = nil
     end
     runScheduleMinigame(productId, profile, prod, onDone, craftToken, workspace)
-    return true
-end)
-
---- Named / jobs vape entrypoint used by mrp_jobs fruit-farm stations.
-exports('RunVapeProduction', function(productId, payload, onDone)
-    payload = type(payload) == 'table' and payload or {}
-    productId = tostring(productId or payload.productId or '')
-    local craftToken = payload.token or payload.craftToken
-    if productId == '' or type(craftToken) ~= 'string' or craftToken == '' then
-        if onDone then onDone(false, { success = false, reason = 'invalid_vape_payload' }) end
-        return false
-    end
-
-    local profile = payload.profile or payload.minigameProfile or payload.scheduleProfile
-        or (Config.GetScheduleMinigame and Config.GetScheduleMinigame(productId))
-        or { drug = 'vape', action = 'process', mode = 'vape_blend', title = 'Vape gamyba', steps = 4, icon = '💨', difficulty = 1 }
-    local prod = payload.product or payload.prod or {
-        label = payload.label or profile.title or productId,
-        outputAmount = payload.outputAmount or payload.amount or 1,
-        level = payload.level or profile.difficulty or 1,
-    }
-    local workspace = payload.workspace
-    local vapeCfg = Config.Vape3D or {}
-    if vapeCfg.enabled == false or vapeCfg.legacyFallback == true then
-        runScheduleMinigame(productId, profile, prod, onDone, craftToken, workspace)
-        return true
-    end
-
-    runScheduleMinigame(productId, profile, prod, onDone, craftToken, workspace)
-    return true
-end)
-
-exports('RunAlcoholProduction', function(productId, payload, onDone)
-    payload = type(payload) == 'table' and payload or {}
-    productId = tostring(productId or payload.productId or '')
-    local craftToken = payload.token or payload.craftToken
-    if productId == '' or type(craftToken) ~= 'string' or craftToken == '' then
-        if onDone then onDone(false, { success = false, reason = 'invalid_alcohol_payload' }) end
-        return false
-    end
-
-    local profile = payload.profile or payload.minigameProfile or payload.scheduleProfile
-        or (Config.GetScheduleMinigame and Config.GetScheduleMinigame(productId))
-        or { drug = 'alcohol', action = 'process', mode = 'moonshine_still', title = 'Samagonas', steps = 4, icon = '🥃', difficulty = 1 }
-    local prod = payload.product or payload.prod or {
-        label = payload.label or profile.title or productId,
-        outputAmount = payload.outputAmount or payload.amount or 1,
-        level = payload.level or profile.difficulty or 1,
-    }
-    runScheduleMinigame(productId, profile, prod, onDone, craftToken, payload.workspace)
-    return true
-end)
-
-exports('RunThcProduction', function(productId, payload, onDone)
-    payload = type(payload) == 'table' and payload or {}
-    productId = tostring(productId or payload.productId or '')
-    local craftToken = payload.token or payload.craftToken
-    if productId == '' or type(craftToken) ~= 'string' or craftToken == '' then
-        if onDone then onDone(false, { success = false, reason = 'invalid_thc_payload' }) end
-        return false
-    end
-
-    local profile = payload.profile or payload.minigameProfile or payload.scheduleProfile
-        or (Config.GetScheduleMinigame and Config.GetScheduleMinigame(productId))
-        or { drug = 'thc', action = 'process', mode = 'thc_scrape', title = 'THC', steps = 4, icon = '🧪', difficulty = 1 }
-    local prod = payload.product or payload.prod or {
-        label = payload.label or profile.title or productId,
-        outputAmount = payload.outputAmount or payload.amount or 1,
-        level = payload.level or profile.difficulty or 1,
-    }
-    runScheduleMinigame(productId, profile, prod, onDone, craftToken, payload.workspace)
-    return true
 end)

@@ -4,16 +4,16 @@ GangTablet = GangTablet or {}
 
 local function publicGangList()
     return MySQL.query.await([[
-        SELECT id, name, label, gang_type, color_hex, reputation, level, heat, status
+        SELECT id, name, label, gang_type, color_hex, avatar_url, reputation, level, heat, status
         FROM mrp_gangs_v2
         WHERE status = 'active'
-        ORDER BY label
+    ORDER BY label
     ]]) or {}
 end
 
 local function topGangs()
     return MySQL.query.await([[
-        SELECT g.id, g.label, g.gang_type, g.color_hex, g.reputation, g.level, g.heat,
+        SELECT g.id, g.label, g.gang_type, g.color_hex, g.avatar_url, g.reputation, g.level, g.heat,
                (SELECT COUNT(*) FROM mrp_gang_members_v2 m WHERE m.gang_id = g.id AND m.status = 'active') AS members,
                (SELECT COUNT(*) FROM mrp_gang_territories t WHERE t.owner_gang_id = g.id) AS territories
         FROM mrp_gangs_v2 g
@@ -160,10 +160,10 @@ function GangTablet.GetBootstrap(source)
             heat = heat,
             level = warningLevel,
             max = 5,
-            hint = warningLevel <= 0 and 'Gauja neturi aktyvaus heat / įspėjimų.'
-                or warningLevel <= 2 and 'Žemas heat — stebėkite PD dėmesį.'
-                or warningLevel <= 4 and 'Aukštas heat — venkite atvirų konfliktų.'
-                or 'Kritinis heat — gauja greitai trauks dėmesį.',
+            hint = warningLevel <= 0 and 'Gauja neturi aktyvių įspėjimų.'
+                or warningLevel <= 2 and 'Žemas įspėjimų lygis — stebėkite PD dėmesį.'
+                or warningLevel <= 4 and 'Aukštas įspėjimų lygis — venkite atvirų konfliktų.'
+                or 'Kritinis įspėjimų lygis — gauja greitai trauks dėmesį.',
         },
         admin = adminView(source),
     }

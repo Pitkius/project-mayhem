@@ -45,19 +45,6 @@ RegisterNetEvent('mrp_ranger:server:cuffPlayer', function(targetId)
     TriggerEvent('mrp_restraints:internal:toggleRestraint', src, targetId, 'handcuffs')
 end)
 
-RegisterNetEvent('mrp_ranger:server:searchPlayer', function(targetId)
-    local src = source
-    if not isRanger(src) then return end
-    if not validTarget(src, targetId, 3.0) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per toli.', 'error')
-    end
-    if GetResourceState('mrp_restraints') ~= 'started' then
-        if GetResourceState('qb-inventory') ~= 'started' then return end
-        return exports['qb-inventory']:OpenInventoryById(src, targetId)
-    end
-    TriggerEvent('mrp_restraints:internal:searchPlayer', src, targetId)
-end)
-
 RegisterNetEvent('mrp_ranger:server:issueFine', function(targetId, code, label, amount, notes)
     local src = source
     if not isRanger(src) or not hasGrade(src, Config.Permissions.fine or 0) then return end

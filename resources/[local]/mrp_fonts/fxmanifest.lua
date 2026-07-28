@@ -13,8 +13,6 @@ files {
     'html/lietuva.css',
     'html/icons.css',
     'html/ui.css',
-    'html/theme.css',
-    'html/theme.js',
     'html/vendor/fontawesome/css/all.min.css',
     'html/vendor/fontawesome/webfonts/*.woff2',
 }

@@ -28,5 +28,3 @@ files {
     'html/vue.js',
     'html/reset.css'
 }
-
-client_script '@mrp_hud/client/theme_nui_consumer.lua'

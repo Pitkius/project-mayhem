@@ -49,29 +49,7 @@ export interface CloseMessage {
   action: 'close';
 }
 
-export interface PlayerTheme {
-  primary?: string;
-  primaryHover?: string;
-  primaryActive?: string;
-  primarySoft?: string;
-  primaryBorder?: string;
-  primaryGlow?: string;
-  primaryText?: string;
-  background?: string;
-  surface?: string;
-  surfaceActive?: string;
-  text?: string;
-  mutedText?: string;
-}
-
-/** Parent -> iframe: sync HUD player accent colors. */
-export interface ApplyThemeMessage {
-  source: typeof PARENT_SOURCE;
-  action: 'applyTheme';
-  theme: PlayerTheme;
-}
-
-export type ParentMessage = StartStationMessage | CloseMessage | ApplyThemeMessage;
+export type ParentMessage = StartStationMessage | CloseMessage;
 
 /** iframe -> parent: session finished (relayed to Lua scheduleResult). */
 export interface ResultMessage {

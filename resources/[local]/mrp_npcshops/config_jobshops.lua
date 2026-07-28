@@ -1,57 +1,27 @@
 Config = Config or {}
 
---- Tarnybinių daiktų parduotuvės (nemokamai / $0 — tik on duty)
+--- Tarnybinių daiktų parduotuvė — baziniai įrankiai nemokamai; ginklai/šarvai brangiai
 Config.PoliceSupplyShop = {
     name = 'mrp_pd_supply',
     label = 'PD ginklinė / inventorius',
     items = {
         { name = 'radio', amount = 999, price = 0, slot = 1 },
         { name = 'handcuffs', amount = 999, price = 0, slot = 2 },
-        { name = 'vehicle_key_copy', amount = 999, price = 0, slot = 3 },
-        { name = 'lockpick', amount = 50, price = 25, slot = 4 },
-        { name = 'pd_emergency_kit', amount = 50, price = 0, slot = 5 },
-        { name = 'weapon_pistol', amount = 25, price = 0, slot = 6 },
-        { name = 'weapon_stungun', amount = 50, price = 0, slot = 7 },
-        { name = 'weapon_nightstick', amount = 50, price = 0, slot = 8 },
-        { name = 'weapon_assaultsmg', amount = 15, price = 0, slot = 9 },
-        { name = 'pistol_ammo', amount = 999, price = 0, slot = 10 },
-        { name = 'smg_ammo', amount = 999, price = 0, slot = 11 },
-        { name = 'armor_police', amount = 50, price = 0, slot = 12 },
-        { name = 'armor_light', amount = 50, price = 0, slot = 13 },
-        { name = 'armor', amount = 999, price = 0, slot = 14 },
-    },
-}
-
---- PD maistas (~25% pigiau nei Config.FoodShop / 24/7) — tik police on duty
-Config.PoliceFoodShop = {
-    name = 'mrp_pd_food',
-    label = 'PD maisto parduotuvė',
-    items = {
-        { name = 'burger',       amount = 500, price = 14, slot = 1 },
-        { name = 'chips',        amount = 500, price = 4,  slot = 2 },
-        { name = 'twerks_candy', amount = 500, price = 4,  slot = 3 },
-        { name = 'water_bottle', amount = 500, price = 7,  slot = 4 },
-        { name = 'kurkakola',    amount = 500, price = 6,  slot = 5 },
-        { name = 'coffee',       amount = 500, price = 7,  slot = 6 },
-    },
-}
-
---- ARAS ginklų pirkimas (atskirai nuo bendro PD inventoriaus — tik ARAS padalinys)
-Config.AroWeaponSupplyShop = {
-    name = 'mrp_aro_weapon_supply',
-    label = 'ARAS ginklų pirkimas',
-    items = {
-        { name = 'weapon_heavypistol', amount = 15, price = 0, slot = 1 },
-        { name = 'weapon_specialcarbine', amount = 10, price = 0, slot = 2 },
-        { name = 'weapon_tacticalsmg', amount = 10, price = 0, slot = 3 },
-        { name = 'weapon_heavyrifle', amount = 10, price = 0, slot = 4 },
-        { name = 'weapon_pumpshotgun', amount = 10, price = 0, slot = 5 },
-        { name = 'weapon_sniperrifle', amount = 5, price = 0, slot = 6 },
-        { name = 'pistol_ammo', amount = 999, price = 0, slot = 7 },
-        { name = 'smg_ammo', amount = 999, price = 0, slot = 8 },
-        { name = 'rifle_ammo', amount = 999, price = 0, slot = 9 },
-        { name = 'shotgun_ammo', amount = 999, price = 0, slot = 10 },
-        { name = 'snp_ammo', amount = 200, price = 0, slot = 11 },
+        { name = 'ziptie', amount = 999, price = 0, slot = 3 },
+        { name = 'bandage', amount = 999, price = 0, slot = 4 },
+        { name = 'painkillers', amount = 999, price = 0, slot = 5 },
+        { name = 'vehicle_key_copy', amount = 999, price = 0, slot = 6 },
+        { name = 'lockpick', amount = 50, price = 85, slot = 7 },
+        { name = 'pd_emergency_kit', amount = 50, price = 0, slot = 8 },
+        --- Tarnybiniai ginklai / šarvai — realistiškai brangu (asmeninė / tarnybinė įranga)
+        { name = 'weapon_flashlight', amount = 50, price = 3500, slot = 9 },
+        { name = 'weapon_nightstick', amount = 50, price = 5200, slot = 10 },
+        { name = 'weapon_stungun', amount = 50, price = 22500, slot = 11 },
+        { name = 'weapon_combatpistol', amount = 25, price = 165000, slot = 12 },
+        { name = 'pistol_ammo', amount = 999, price = 485, slot = 13 },
+        { name = 'armor_light', amount = 50, price = 24500, slot = 14 },
+        { name = 'armor_police', amount = 50, price = 48500, slot = 15 },
+        { name = 'armor', amount = 50, price = 32000, slot = 16 },
     },
 }
 
@@ -61,12 +31,6 @@ Config.JobSupplyPoints = {
     { job = 'police', stationId = 'sandy', coords = vector3(1849.12, 3690.04, 34.27) },
 }
 Config.JobSupplyReach = 5.5
-
---- PD maisto pirkimas (stogas MRPD)
-Config.JobFoodSupplyPoints = {
-    { job = 'police', stationId = 'ls_main', coords = vector3(459.1157, -980.6447, 42.2494) },
-}
-Config.JobFoodSupplyReach = 5.5
 
 Config.EmsSupplyShop = {
     name = 'mrp_ems_supply',
@@ -93,8 +57,10 @@ Config.RangerSupplyShop = {
         { name = 'weapon_stungun', amount = 50, price = 0, slot = 5 },
         { name = 'weapon_nightstick', amount = 50, price = 0, slot = 6 },
         { name = 'weapon_flashlight', amount = 50, price = 0, slot = 7 },
-        { name = 'binoculars', amount = 999, price = 0, slot = 8 },
-        { name = 'vehicle_key_copy', amount = 999, price = 0, slot = 9 },
+        { name = 'weapon_pistol', amount = 25, price = 0, slot = 8 },
+        { name = 'pistol_ammo', amount = 999, price = 0, slot = 9 },
+        { name = 'binoculars', amount = 999, price = 0, slot = 10 },
+        { name = 'vehicle_key_copy', amount = 999, price = 0, slot = 11 },
     },
 }
 

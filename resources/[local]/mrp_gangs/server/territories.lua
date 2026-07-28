@@ -2,6 +2,14 @@ local QBCore = GangCore.QBCore
 
 GangTerritories = GangTerritories or {}
 
+local function configTerritoryIds()
+    local ids = {}
+    for territoryId in pairs(Config.Territories or {}) do
+        ids[#ids + 1] = territoryId
+    end
+    return ids
+end
+
 local function seedTerritories()
     for territoryId, definition in pairs(Config.Territories or {}) do
         MySQL.update.await([[
@@ -18,6 +26,83 @@ local function seedTerritories()
             json.encode(definition.bonuses or {}),
         })
     end
+
+    local ids = configTerritoryIds()
+    if #ids == 0 then return end
+    local placeholders = {}
+    for i = 1, #ids do placeholders[i] = '?' end
+    local inClause = table.concat(placeholders, ',')
+
+    local orphanWars = MySQL.query.await(([[
+        SELECT id FROM mrp_gang_wars WHERE territory_id NOT IN (%s)
+    ]]):format(inClause), ids) or {}
+    if #orphanWars > 0 then
+        local warIds = {}
+        for i = 1, #orphanWars do warIds[i] = orphanWars[i].id end
+        local warPlace = {}
+        for i = 1, #warIds do warPlace[i] = '?' end
+        MySQL.update.await(('DELETE FROM mrp_gang_wars WHERE id IN (%s)'):format(table.concat(warPlace, ',')), warIds)
+        print(('[mrp_gangs] removed %s orphan war(s) for retired territories'):format(#warIds))
+    end
+
+    local deleted = MySQL.update.await(([[
+        DELETE FROM mrp_gang_territories WHERE territory_id NOT IN (%s)
+    ]]):format(inClause), ids)
+    if (tonumber(deleted) or 0) > 0 then
+        print(('[mrp_gangs] purged %s orphan territory row(s)'):format(deleted))
+    end
+end
+
+local function countActiveMembersByTerritory()
+    local counts = {}
+    for _, playerId in ipairs(GetPlayers()) do
+        local src = tonumber(playerId)
+        if src and GangCore.GetPlayerGang(src) then
+            local ped = GetPlayerPed(src)
+            if ped and ped ~= 0 then
+                local coords = GetEntityCoords(ped)
+                local atId = GangUtils.FindTerritoryAt(coords.x, coords.y)
+                if atId then
+                    counts[atId] = (counts[atId] or 0) + 1
+                end
+            end
+        end
+    end
+    return counts
+end
+
+local function recentWarsByTerritory()
+    local rows = MySQL.query.await([[
+        SELECT w.id, w.territory_id, w.state, w.settled_at, w.created_at, w.active_ends_at,
+               w.attacker_gang_id, w.defender_gang_id, w.winner_gang_id,
+               ga.label AS attacker_label, gd.label AS defender_label
+        FROM mrp_gang_wars w
+        LEFT JOIN mrp_gangs_v2 ga ON ga.id = w.attacker_gang_id
+        LEFT JOIN mrp_gangs_v2 gd ON gd.id = w.defender_gang_id
+        ORDER BY COALESCE(w.settled_at, w.created_at) DESC
+        LIMIT 120
+    ]]) or {}
+    local byTerritory = {}
+    for _, row in ipairs(rows) do
+        local list = byTerritory[row.territory_id]
+        if not list then
+            list = {}
+            byTerritory[row.territory_id] = list
+        end
+        if #list < 3 then
+            list[#list + 1] = {
+                id = row.id,
+                state = row.state,
+                settledAt = row.settled_at,
+                createdAt = row.created_at,
+                activeEndsAt = row.active_ends_at,
+                attackerLabel = row.attacker_label,
+                defenderLabel = row.defender_label,
+                winnerGangId = row.winner_gang_id,
+            }
+        end
+    end
+    return byTerritory
 end
 
 function GangTerritories.GetSnapshot()
@@ -25,31 +110,40 @@ function GangTerritories.GetSnapshot()
         SELECT t.territory_id, t.territory_type, t.owner_gang_id, t.control_state,
                t.stability, t.heat, t.control_version, t.bonus_json,
                t.controlled_since, t.locked_until,
-               g.label AS owner_label, g.color_hex AS owner_color
+               g.label AS owner_label, g.color_hex AS owner_color, g.reputation AS owner_reputation
         FROM mrp_gang_territories t
         LEFT JOIN mrp_gangs_v2 g ON g.id = t.owner_gang_id
         ORDER BY t.territory_type, t.territory_id
     ]]) or {}
+    local warsByTerritory = recentWarsByTerritory()
+    local membersByTerritory = countActiveMembersByTerritory()
     local result = {}
     for _, row in ipairs(rows) do
         local definition = Config.Territories[row.territory_id]
         if definition then
+            local bonuses = definition.bonuses or {}
+            local centroid = definition.anchor or GangUtils.PolygonCentroid(definition.vertices)
             result[#result + 1] = {
                 id = row.territory_id,
                 label = definition.label,
                 type = row.territory_type,
                 vertices = definition.vertices,
+                anchor = centroid,
                 ownerGangId = row.owner_gang_id,
                 ownerLabel = row.owner_label,
                 ownerColor = row.owner_color,
+                ownerReputation = row.owner_reputation,
                 state = row.control_state,
                 stability = row.stability,
                 heat = row.heat,
                 version = row.control_version,
-                bonuses = definition.bonuses,
+                bonuses = bonuses,
+                hourlyIncome = tonumber(bonuses.hourlyIncome) or 0,
                 drugProduct = definition.drugProduct,
                 controlledSince = row.controlled_since,
                 lockedUntil = row.locked_until,
+                recentWars = warsByTerritory[row.territory_id] or {},
+                activeMembersNearby = membersByTerritory[row.territory_id] or 0,
             }
         end
     end

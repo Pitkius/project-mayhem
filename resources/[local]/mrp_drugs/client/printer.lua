@@ -35,42 +35,13 @@ end
 
 local function openPrintMenu(printerId)
     if printing then return end
-    QBCore.Functions.TriggerCallback('mrp_drugs:server:getPrinterMenu', function(payload)
-        local rows = payload
-        local meta = nil
-        if type(payload) == 'table' and payload.products then
-            rows = payload.products
-            meta = payload
-        end
+    QBCore.Functions.TriggerCallback('mrp_drugs:server:getPrinterMenu', function(rows)
         if not rows or #rows == 0 then
             return notify('Spausdintuvas nepasiekiamas.', 'error')
         end
-        local header = '3D spausdintuvas'
-        if meta and meta.weaponPrints ~= nil then
-            local nextNeed = (meta.weaponTier or 0) >= 2 and nil
-                or ((meta.weaponTier or 0) >= 1 and meta.unlockL2At or meta.unlockL1At)
-            if nextNeed then
-                header = ('3D spausdintuvas · XP %d/%d'):format(meta.weaponPrints or 0, nextNeed)
-            else
-                header = ('3D spausdintuvas · XP %d (max)'):format(meta.weaponPrints or 0)
-            end
-        end
         local menu = {
-            { header = header, isMenuHeader = true },
+            { header = '3D spausdintuvas', isMenuHeader = true },
         }
-        if meta and (meta.weaponTier or 0) < 1 then
-            menu[#menu + 1] = {
-                header = ('L1 ginklai po %d spausdinimų'):format(meta.unlockL1At or 10),
-                txt = 'Kol kas gamink tik detales čia. Gamykla atrakins vėliau.',
-                isMenuHeader = true,
-            }
-        elseif meta and (meta.weaponTier or 0) < 2 then
-            menu[#menu + 1] = {
-                header = ('Išplėstas rinkinys po %d spausdinimų'):format(meta.unlockL2At or 15),
-                txt = 'Tec-9 · mažas shotgun · .50 · shotgun kulkos',
-                isMenuHeader = true,
-            }
-        end
         for _, row in ipairs(rows) do
             local txt = table.concat(row.ingredients, ' · ')
             txt = txt .. (' · ~%ds'):format(row.timeSec)

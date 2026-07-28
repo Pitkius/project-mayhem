@@ -1,0 +1,118 @@
+# ----------------------------------------
+# Custom MRP resources (ensure order matters for MLO + blips)
+# ----------------------------------------
+
+# GTA V build 3717 (Safehouse mansion + Money Fronts 3570). Kortz Center 3788 — dar ne.
+# SVARBU: 00_base.cfg NĖRA rsync į VPS — ši eilutė turi būti čia, kitaip serveryje lieka senas build.
+# Reikia FXServer artifact palaikančio build 3717. Deploy atnaujina automatiškai.
+sv_enforceGameBuild 3717
+
+ensure mrp_fonts
+ensure mrp_basics
+ensure mrp_buildcheck
+ensure mrp_autorestart
+# Leisti mrp_autorestart vykdyti quit (00_base.cfg blokuoja quit adminams, bet resursui reikia leidimo)
+add_ace resource.mrp_autorestart command.quit allow
+ensure mrp_reports
+ensure mrp_devtools
+ensure mrp_carry
+ensure mrp_ikaitas
+ensure mrp_hud
+ensure mrp_weather
+ensure mrp_emotes
+ensure mrp_voice
+ensure mrp_radio
+ensure mrp_vehiclemenu
+ensure screenshot-basic
+ensure mrp_phone
+ensure mrp_dispatch
+ensure mrp_service_mdt
+ensure mrp_gangs
+ensure mrp_drugs
+ensure mrp_charcreator
+ensure mrp_spawnfix
+ensure mrp_weaponcontrol
+ensure mrp_antighostpeek
+ensure mrp_bank
+ensure mrp_npcshops
+ensure mrp_duty_locker
+# DLC interjerai (Safehouse mansions — reikia sv_enforceGameBuild 3717+)
+ensure bob74_ipl
+ensure mrp_housing
+ensure mrp_furniture
+ensure mrp_motel
+ensure [mlo]
+# Senas dt_19_mrpd MLO pašalintas iš repo — aktyvus: cfx-nteam-mrpd (cfg/15_mlo.cfg)
+# (nebėra stop dt_19_mrpd — resursas neegzistuoja, stop tik keldavo warning)
+stop cfx-gabz-davispd
+stop cfx-gabz-paletopd
+# druglabs: brown_amfsted3 (O'Neil) ištrintas iš stream — vis tiek stop, kad nekrautų build1/po1
+stop druglabs
+# mapdata + Lost MC PRIEŠ mapfix (kitu atveju tuščias interjeras / užrakintos durys)
+ensure cfx-gabz-mapdata
+ensure cfx-gabz-pdprops
+ensure cfx-gabz-lost
+ensure mrp_mapfix
+ensure mrp_gabz_blips
+ensure [weapons]
+ensure reh-rebadged-pack1
+ensure reh-rebadged-pack2
+ensure reh-rebadged-pack3
+stop mrp_pd_oldstyle
+ensure mrp_pd_undercover
+ensure mrp_pd_animuotu
+ensure mrp_vehicle_perf
+ensure mrp_plates
+ensure mrp_cayoperico
+ensure mrp_dealership
+ensure mrp_garages
+ensure mrp_kma
+ensure mrp_chopshop
+ensure mrp_burglary
+ensure mrp_playerlog
+# Po qb-inventory (20_qb.cfg) — sandėlių / inventoriaus logai
+ensure server_logs
+ensure mrp_bossmenu
+# PD pack'ai: animuotu (mrpd1-8) + mrpd non-ELS (mrpd9-12,24-25) + undercover (mrpd17-20) + LT ELS (mrpd13-16,21-23)
+ensure mrp_pd_mrpd
+ensure ELS-FiveM
+ensure mrp_lt_els_vehicles
+ensure mrp_ltpd
+ensure mrp_elevators
+ensure mrp_siren_controller
+ensure mrp_interrogation
+ensure mrp_hacking
+ensure mrp_mechanic
+ensure mrp_ambulance
+ensure mrp_taxi
+ensure mrp_bikerental
+ensure mrp_drivingschool
+ensure mrp_mining
+ensure mrp_outdoors
+ensure mrp_gunshop
+ensure mrp_restraints
+ensure mrp_licenses
+ensure mrp_ranger
+ensure mrp_fuel
+ensure mrp_stripclub
+ensure mrp_casino
+ensure mrp_trucking
+ensure mrp_jobs
+
+# Admin monitoring (deployed with this cfg — 00_base.cfg is NOT rsynced on VPS)
+# Dev režimas resmon/F10 — serverio pusė (klientas vis tiek reikia +set moo 31337)
+set moo 31337
+# Nuolatinės admin licencijos (VPS):
+# Rankiniai seed'ai žemiau + automatiniai per /addpermission → cfg/admins_persistent.cfg
+# (server.cfg daro exec cfg/admins_persistent.cfg)
+add_principal identifier.license:c10b91e28acd364c907fdc67ca31d6fea179a8ce qbcore.god
+add_principal identifier.license:c10b91e28acd364c907fdc67ca31d6fea179a8ce group.admin
+add_principal identifier.license:d52ecea740ab4ed31c76c4539e56eca5b8e6ea30 qbcore.god
+add_principal identifier.license:d52ecea740ab4ed31c76c4539e56eca5b8e6ea30 group.admin
+# Server console: profiler record 300  |  Client F8 resmon: tools/Start-FiveM-Dev.bat (+set moo 31337)
+add_ace group.admin command.profiler allow
+add_ace group.admin command.profiler_record allow
+add_ace group.admin command.resmon allow
+add_ace qbcore.god command.profiler allow
+add_ace qbcore.god command.profiler_record allow
+add_ace qbcore.god command.resmon allow

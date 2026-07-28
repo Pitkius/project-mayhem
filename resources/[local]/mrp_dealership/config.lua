@@ -291,8 +291,8 @@ Config.PoliceDealership = {
         { model = 'mrpd13', name = 'MRPD 13 — Audi S3 (LT ELS)', brand = 'Audi', category = 'marked', price = 36000, minGrade = 0, shopEnabled = true },
         { model = 'mrpd14', name = 'MRPD 14 — BMW 540i (LT ELS)', brand = 'BMW', category = 'marked', price = 38000, minGrade = 0, shopEnabled = true },
         { model = 'mrpd15', name = 'MRPD 15 — BMW X5 (LT ELS)', brand = 'BMW', category = 'marked', price = 40000, minGrade = 0, shopEnabled = true },
-        { model = 'mrpd16', name = 'MRPD 16 — Skoda Hatch (LT ELS)', brand = 'Skoda', category = 'marked', price = 34000, minGrade = 0, shopEnabled = true },
-        { model = 'mrpd23', name = 'MRPD 23 — Skoda Estate (ELS)', brand = 'Skoda', category = 'marked', price = 34500, minGrade = 0, shopEnabled = true },
+        { model = 'mrpd16', name = 'MRPD 16 — Skoda Hatch', brand = 'Skoda', category = 'marked', price = 34000, minGrade = 0, shopEnabled = true },
+        { model = 'mrpd23', name = 'MRPD 23 — Skoda Estate', brand = 'Skoda', category = 'marked', price = 34500, minGrade = 0, shopEnabled = true },
         -- NEŽYMĖTOS Non-ELS (undercover) — gale
         { model = 'mrpd17', name = 'MRPD 17 (nežymėta)', brand = 'MRPD', category = 'unmarked', price = 24000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
         { model = 'mrpd18', name = 'MRPD 18 (nežymėta)', brand = 'MRPD', category = 'unmarked', price = 25000, minGrade = 6, arasOrGrade = true, shopEnabled = true },

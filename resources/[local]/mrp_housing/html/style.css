@@ -155,23 +155,6 @@ h1 { font-size: 26px; font-weight: 700; margin-top: 4px; }
 .interior-opt .perks { font-size: 10px; color: #6b7280; margin-top: 4px; }
 .interior-opt .price { font-weight: 700; color: #a7f3d0; white-space: nowrap; }
 .buy-hint { font-size: 12px; color: #c4b5fd; margin-bottom: 8px; line-height: 1.4; }
-.furn-options { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 14px; }
-.furn-opt {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-size: 12px;
-  color: #d1d5db;
-  padding: 8px 10px;
-  border: 1px solid rgba(167, 139, 250, 0.2);
-  border-radius: 8px;
-  cursor: pointer;
-}
-.furn-opt:has(input:checked) {
-  border-color: #a78bfa;
-  background: rgba(167, 139, 250, 0.1);
-}
-.furn-opt input { margin-top: 2px; }
 .quality-pill {
   font-size: 10px;
   font-weight: 800;

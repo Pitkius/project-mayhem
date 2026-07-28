@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `mrp_gangs_v2` (
   `gang_type` ENUM('street','cartel','mafia','biker','racing') NOT NULL,
   `owner_citizenid` VARCHAR(64) NULL,
   `color_hex` CHAR(7) NOT NULL DEFAULT '#64748B',
+  `avatar_url` VARCHAR(512) NULL,
   `reputation` BIGINT NOT NULL DEFAULT 0,
   `level` INT UNSIGNED NOT NULL DEFAULT 1,
   `heat` INT UNSIGNED NOT NULL DEFAULT 0,

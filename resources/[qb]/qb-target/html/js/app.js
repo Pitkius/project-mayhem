@@ -1,310 +1,128 @@
-(function () {
-    "use strict";
-
-    const root = document.getElementById("radial-root");
-    const wheel = document.getElementById("radial-wheel");
-    const segmentsEl = document.getElementById("radial-segments");
-    const centerBtn = document.getElementById("radial-center");
-    const centerIcon = document.getElementById("radial-center-icon");
-    const centerLabel = document.getElementById("radial-center-label");
-    const centerAction = document.getElementById("radial-center-action");
-    const hint = document.getElementById("radial-hint");
-
-    let state = {
-        mode: "closed",
-        context: { title: "Sąveika", icon: "fas fa-eye" },
-        rawOptions: {},
-        menuStack: [],
-        currentItems: [],
-        hoveredIndex: -1,
-        segmentNodes: [],
+document.addEventListener("DOMContentLoaded", function () {
+    const config = {
+        StandardEyeIcon: "fas fa-eye",
+        StandardColor: "var(--md-on-surface, white)",
+        SuccessColor: "var(--md-success, #386a20)",
     };
 
-    function post(name, body) {
-        return fetch(`https://${GetParentResourceName()}/${name}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json; charset=UTF-8" },
-            body: body === undefined ? "" : JSON.stringify(body),
-        }).catch(() => {});
+    const targetEye = document.getElementById("target-eye");
+    const targetLabel = document.getElementById("target-label");
+    const TargetEyeStyleObject = targetEye.style;
+
+    function OpenTarget() {
+        targetLabel.textContent = "";
+        targetEye.style.display = "block";
+        targetEye.className = config.StandardEyeIcon;
+        TargetEyeStyleObject.color = config.StandardColor;
     }
 
-    function normalizeOptions(data) {
-        if (!data) return {};
-        if (Array.isArray(data)) {
-            const out = {};
-            data.forEach((item, i) => {
-                if (item) out[i + 1] = item;
-            });
-            return out;
-        }
-        return data;
+    function CloseTarget() {
+        targetLabel.textContent = "";
+        targetEye.style.display = "none";
     }
 
-    function actionItem(entry) {
-        return {
-            type: "action",
-            slot: entry.slot,
-            label: entry.label || "Veiksmas",
-            icon: entry.icon || "fas fa-hand-pointer",
-        };
-    }
-
-    /** Visada plokščias veiksmu sąrašas — be kategorijų / resurso pavadinimų. */
-    function buildMenuTree(options) {
-        const entries = [];
-        for (const [slot, opt] of Object.entries(options)) {
-            if (!opt) continue;
-            entries.push({ slot: Number(slot), ...opt });
-        }
-        entries.sort((a, b) => a.slot - b.slot);
-        return {
-            root: entries.map((e) => actionItem(e)),
-            needsSubmenu: false,
-        };
-    }
-
-    function setCenter(ctx, hoveredItem) {
-        const title = (hoveredItem && hoveredItem.label) || "Sąveika";
-        centerIcon.className =
-            (hoveredItem && hoveredItem.icon) || ctx.icon || "fas fa-hand-pointer";
-        centerLabel.textContent = title;
-        centerAction.className = "fas fa-xmark";
-        centerAction.style.display = state.mode === "interactive" ? "block" : "none";
-    }
-
-    function layoutSegments(items) {
-        segmentsEl.innerHTML = "";
-        state.segmentNodes = [];
-        const count = items.length;
-        if (!count) return;
-
-        const radius = Math.min(wheel.clientWidth, wheel.clientHeight) * 0.36;
-
-        items.forEach((item, index) => {
-            const angle = (2 * Math.PI * index) / count - Math.PI / 2;
-            const x = Math.cos(angle) * radius;
-            const y = Math.sin(angle) * radius;
-            const rot = (angle * 180) / Math.PI + 90;
-
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "radial-seg";
-            btn.dataset.index = String(index);
-            btn.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
-            btn.style.transitionDelay = `${index * 25}ms`;
-
-            const inner = document.createElement("div");
-            inner.className = "radial-seg__inner";
-            inner.style.transform = `rotate(${-rot}deg)`;
-
+    function createTargetOption(index, itemData) {
+        if (itemData !== null) {
+            index = Number(index) + 1;
+            const targetOption = document.createElement("div");
+            targetOption.id = `target-option-${index}`;
+            const targetIcon = document.createElement("span");
+            targetIcon.id = `target-icon-${index}`;
             const icon = document.createElement("i");
-            icon.className = `${item.icon || "fas fa-hand-pointer"} radial-seg__icon`;
-
-            const label = document.createElement("span");
-            label.className = "radial-seg__label";
-            label.textContent = item.label;
-
-            inner.appendChild(icon);
-            inner.appendChild(label);
-            btn.appendChild(inner);
-
-            btn.addEventListener("mouseenter", () => setHovered(index));
-            btn.addEventListener("mouseleave", () => {
-                if (state.hoveredIndex === index) setHovered(-1);
-            });
-            btn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                if (state.mode !== "interactive") return;
-                activateItem(index);
-            });
-
-            segmentsEl.appendChild(btn);
-            state.segmentNodes.push(btn);
-        });
-    }
-
-    function renderCurrentMenu(animate) {
-        layoutSegments(state.currentItems);
-        const hovered =
-            state.hoveredIndex >= 0 ? state.currentItems[state.hoveredIndex] : null;
-        setCenter(state.context, hovered);
-        if (animate) {
-            root.classList.remove("opening");
-            void root.offsetWidth;
-            root.classList.add("opening");
+            icon.className = itemData.icon;
+            targetIcon.appendChild(icon);
+            targetIcon.appendChild(document.createTextNode(" "));
+            targetOption.appendChild(targetIcon);
+            targetOption.appendChild(document.createTextNode(itemData.label));
+            targetLabel.appendChild(targetOption);
         }
     }
 
-    function setHovered(index) {
-        state.hoveredIndex = index;
-        state.segmentNodes.forEach((node, i) => {
-            node.classList.toggle("active", i === index);
-        });
-        const hovered = index >= 0 ? state.currentItems[index] : null;
-        setCenter(state.context, hovered);
-    }
-
-    function activateItem(index) {
-        const item = state.currentItems[index];
-        if (!item) return;
-
-        if (item.type === "action" && item.slot != null) {
-            const node = state.segmentNodes[index];
-            if (node) node.classList.add("active");
-            closeRadial(false);
-            post("selectTarget", item.slot);
+    function FoundTarget(item) {
+        if (item.data) {
+            targetEye.className = item.data;
+        }
+        TargetEyeStyleObject.color = config.SuccessColor;
+        targetEye.classList.add("target-success");
+        targetLabel.textContent = "";
+        for (let [index, itemData] of Object.entries(item.options)) {
+            createTargetOption(index, itemData);
         }
     }
 
-    function showRadial(mode) {
-        state.mode = mode;
-        root.classList.remove("hidden", "closing");
-        root.classList.add("visible");
-        root.classList.toggle("interactive", mode === "interactive");
-        centerAction.style.display = mode === "interactive" ? "block" : "none";
-        hint.textContent =
-            mode === "interactive"
-                ? "Pasirinkite veiksmą · ESC — uždaryti"
-                : "Dešinis pelės — atidaryti meniu";
-    }
-
-    function closeRadial(sendClose) {
-        root.classList.add("closing");
-        root.classList.remove("interactive", "opening");
-        state.hoveredIndex = -1;
-        state.menuStack = [];
-        state.currentItems = [];
-        state.rawOptions = {};
-        state.segmentNodes = [];
-        segmentsEl.innerHTML = "";
-
-        window.setTimeout(() => {
-            root.classList.add("hidden");
-            root.classList.remove("visible", "closing");
-            state.mode = "closed";
-        }, 180);
-
-        if (sendClose) post("closeTarget");
-    }
-
-    function openIdle() {
-        state.mode = "open";
-        state.menuStack = [];
-        state.currentItems = [];
-        state.rawOptions = {};
-        state.context = { title: "Sąveika", icon: "fas fa-eye" };
-        segmentsEl.innerHTML = "";
-        setCenter(state.context, null);
-        showRadial("open");
-    }
-
-    function foundTarget(payload) {
-        state.context = payload.context || { title: "Sąveika", icon: payload.data || "fas fa-eye" };
-        if (payload.data && typeof payload.data === "string" && payload.data.startsWith("fa")) {
-            state.context.icon = payload.data;
-        }
-        state.context.title = "Sąveika";
-        state.rawOptions = normalizeOptions(payload.options);
-        const tree = buildMenuTree(state.rawOptions);
-        state.menuStack = [];
-        state.currentItems = tree.root;
-        showRadial("preview");
-        renderCurrentMenu(true);
-    }
-
-    function validTarget(payload) {
-        state.context = payload.context || state.context;
-        state.context.title = "Sąveika";
-        state.rawOptions = normalizeOptions(payload.data);
-        const tree = buildMenuTree(state.rawOptions);
-        state.menuStack = [];
-        state.currentItems = tree.root;
-        showRadial("interactive");
-        renderCurrentMenu(true);
-    }
-
-    function leftTarget() {
-        state.menuStack = [];
-        state.hoveredIndex = -1;
-        if (state.mode === "interactive") {
-            state.mode = "preview";
-            root.classList.remove("interactive");
-            const tree = buildMenuTree(state.rawOptions);
-            state.currentItems = tree.root;
-            renderCurrentMenu(false);
-            hint.textContent = "Dešinis pelės — atidaryti meniu";
-            return;
-        }
-        openIdle();
-    }
-
-    function onCenterClick() {
-        if (state.mode !== "interactive") return;
-        post("closeTarget");
-        closeRadial(false);
-    }
-
-    function onMouseMove(e) {
-        if (state.mode !== "interactive" || !state.currentItems.length) return;
-        const rect = wheel.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = e.clientX - cx;
-        const dy = e.clientY - cy;
-        const dist = Math.hypot(dx, dy);
-        const minR = rect.width * 0.14;
-        const maxR = rect.width * 0.52;
-        if (dist < minR || dist > maxR) {
-            setHovered(-1);
-            return;
-        }
-        let angle = Math.atan2(dy, dx) + Math.PI / 2;
-        if (angle < 0) angle += 2 * Math.PI;
-        const count = state.currentItems.length;
-        const slice = (2 * Math.PI) / count;
-        const index = Math.floor((angle + slice / 2) / slice) % count;
-        setHovered(index);
-    }
-
-    function onMouseDown(e) {
-        if (e.button === 2) {
-            leftTarget();
-            post("leftTarget");
+    function ValidTarget(item) {
+        targetLabel.textContent = "";
+        for (let [index, itemData] of Object.entries(item.data)) {
+            createTargetOption(index, itemData);
         }
     }
 
-    function onKeyDown(e) {
-        if (e.key !== "Escape" && e.key !== "Backspace") return;
-        post("closeTarget");
-        closeRadial(false);
+    function LeftTarget() {
+        targetLabel.textContent = "";
+        TargetEyeStyleObject.color = config.StandardColor;
+        targetEye.className = config.StandardEyeIcon;
+        targetEye.classList.remove("target-success");
     }
 
-    centerBtn.addEventListener("click", onCenterClick);
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mousedown", onMouseDown);
-    window.addEventListener("keydown", onKeyDown);
+    function handleMouseDown(event) {
+        const element = event.target;
+        if (element.id) {
+            const split = element.id.split("-");
+            if (split[0] === "target" && split[1] !== "eye" && event.button === 0) {
+                fetch(`https://${GetParentResourceName()}/selectTarget`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json; charset=UTF-8" },
+                    body: JSON.stringify(split[2]),
+                }).catch((error) => console.error("Error:", error));
+                targetLabel.textContent = "";
+            }
+        }
+        if (event.button === 2) {
+            LeftTarget();
+            fetch(`https://${GetParentResourceName()}/leftTarget`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json; charset=UTF-8" },
+                body: "",
+            }).catch((error) => console.error("Error:", error));
+        }
+    }
 
-    window.addEventListener("message", (event) => {
-        const msg = event.data;
-        if (!msg || !msg.response) return;
-        switch (msg.response) {
+    function handleKeyDown(event) {
+        if (event.key === "Escape" || event.key === "Backspace") {
+            CloseTarget();
+            fetch(`https://${GetParentResourceName()}/closeTarget`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json; charset=UTF-8" },
+                body: "",
+            }).catch((error) => console.error("Error:", error));
+        }
+    }
+
+    window.addEventListener("message", function (event) {
+        switch (event.data.response) {
             case "openTarget":
-                openIdle();
+                OpenTarget();
                 break;
             case "closeTarget":
-                closeRadial(false);
+                CloseTarget();
                 break;
             case "foundTarget":
-                foundTarget(msg);
+                FoundTarget(event.data);
                 break;
             case "validTarget":
-                validTarget(msg);
+                ValidTarget(event.data);
                 break;
             case "leftTarget":
-                leftTarget();
-                break;
-            default:
+                LeftTarget();
                 break;
         }
     });
-})();
+
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("keydown", handleKeyDown);
+
+    window.addEventListener("unload", function () {
+        window.removeEventListener("mousedown", handleMouseDown);
+        window.removeEventListener("keydown", handleKeyDown);
+    });
+});

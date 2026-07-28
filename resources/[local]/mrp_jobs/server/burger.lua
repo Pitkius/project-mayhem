@@ -123,7 +123,7 @@ QBCore.Functions.CreateCallback('mrp_jobs:server:burger:finishProduce', function
     local p = pendingProduce[src]
     pendingProduce[src] = nil
     if not p or p.token ~= token then return cb({ ok = false, reason = 'bad_token' }) end
-    if GetGameTimer() - p.at > 180000 then return cb({ ok = false, reason = 'expired' }) end
+    if GetGameTimer() - p.at > 60000 then return cb({ ok = false, reason = 'expired' }) end
 
     local s = JobManager.getBySource(src)
     if not s or s.jobType ~= 'burger' then return cb({ ok = false, reason = 'no_job' }) end

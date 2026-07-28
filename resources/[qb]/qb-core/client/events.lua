@@ -14,7 +14,6 @@ end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     LocalPlayer.state:set('isLoggedIn', false, false)
-    SendNUIMessage({ action = 'notifyClear' })
 end)
 
 RegisterNetEvent('QBCore:Client:PvpHasToggled', function(pvp_state)
@@ -126,14 +125,7 @@ RegisterNetEvent('QBCore:Command:SpawnVehicle', function(vehName)
     local ped = PlayerPedId()
     local hash = joaat(vehName)
     local veh = GetVehiclePedIsUsing(ped)
-    if not IsModelInCdimage(hash) then
-        QBCore.Functions.Notify(
-            ('Modelis „%s“ neprieinamas. Tavo GTA build: %s (reikia 3717+ Safehouse mansion).'):format(vehName or '?', GetGameBuildNumber()),
-            'error',
-            9000
-        )
-        return
-    end
+    if not IsModelInCdimage(hash) then return end
     RequestModel(hash)
     while not HasModelLoaded(hash) do
         Wait(0)
@@ -210,13 +202,6 @@ end)
 RegisterNetEvent('QBCore:Notify', function(text, type, length, icon)
     QBCore.Functions.Notify(text, type, length, icon)
 end)
-
-local notifyDebugEnabled = false
-RegisterCommand('fpnotifydebug', function()
-    notifyDebugEnabled = not notifyDebugEnabled
-    SendNUIMessage({ action = 'notifyDebug', enabled = notifyDebugEnabled })
-    QBCore.Functions.Notify(notifyDebugEnabled and 'Notify diagnostika įjungta' or 'Notify diagnostika išjungta', 'primary', 2500)
-end, false)
 
 -- This event is exploitable and should not be used. It has been deprecated, and will be removed soon.
 RegisterNetEvent('QBCore:Client:UseItem', function(item)

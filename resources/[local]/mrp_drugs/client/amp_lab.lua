@@ -133,22 +133,7 @@ local function startAmpSynthesis()
         return QBCore.Functions.Notify('Reikia Zirconium Journey šalia laboratorijos.', 'error')
     end
 
-    if type(NetworkGetEntityIsNetworked) == 'function' and not NetworkGetEntityIsNetworked(veh) then
-        pcall(NetworkRegisterEntityAsNetworked, veh)
-        local deadline = GetGameTimer() + 500
-        while not NetworkGetEntityIsNetworked(veh) and GetGameTimer() < deadline do
-            Wait(0)
-        end
-    end
-    local vehNetId = 0
-    if type(NetworkGetEntityIsNetworked) ~= 'function' or NetworkGetEntityIsNetworked(veh) then
-        local ok, nid = pcall(NetworkGetNetworkIdFromEntity, veh)
-        if ok then vehNetId = tonumber(nid) or 0 end
-    end
-    if vehNetId <= 0 then
-        return QBCore.Functions.Notify('Mašina nėra sinchronizuota (išimk iš garažo / respawn).', 'error')
-    end
-
+    local vehNetId = NetworkGetNetworkIdFromEntity(veh)
     QBCore.Functions.TriggerCallback('mrp_drugs:server:startAmpSynthesis', function(res)
         if not res or not res.ok then
             return QBCore.Functions.Notify((res and res.reason) or 'Nepavyko pradėti.', 'error')
@@ -207,80 +192,6 @@ RegisterNetEvent('mrp_drugs:client:ampLabExplode', function(vehNetId)
     end
 end)
 
-local function ensureVehNetId(veh)
-    if not veh or veh == 0 then return 0 end
-    if type(NetworkGetEntityIsNetworked) == 'function' and not NetworkGetEntityIsNetworked(veh) then
-        pcall(NetworkRegisterEntityAsNetworked, veh)
-        local deadline = GetGameTimer() + 500
-        while not NetworkGetEntityIsNetworked(veh) and GetGameTimer() < deadline do
-            Wait(0)
-        end
-    end
-    local ok, nid = pcall(NetworkGetNetworkIdFromEntity, veh)
-    return (ok and tonumber(nid)) or 0
-end
-
-local function findClosestJourney(maxDist)
-    maxDist = maxDist or (ampCfg().installDistance or 4.0)
-    local p = GetEntityCoords(PlayerPedId())
-    local best, bestD = nil, maxDist + 0.01
-    for _, veh in ipairs(GetGamePool('CVehicle')) do
-        if DoesEntityExist(veh) and isAmpVehicle(veh) then
-            local d = #(GetEntityCoords(veh) - p)
-            if d < bestD then
-                best, bestD = veh, d
-            end
-        end
-    end
-    return best
-end
-
-local installing = false
-
-local function installAmpPart(itemName)
-    if installing or synthesizing then return end
-    local veh = findClosestJourney()
-    if not veh then
-        return QBCore.Functions.Notify('Atsistok prie Zirconium Journey ir naudok modulį.', 'error')
-    end
-    local vehNetId = ensureVehNetId(veh)
-    if vehNetId <= 0 then
-        return QBCore.Functions.Notify('Mašina nėra sinchronizuota.', 'error')
-    end
-
-    installing = true
-    local ms = tonumber(ampCfg().installMs) or 8500
-    local label = (QBCore.Shared.Items[itemName] and QBCore.Shared.Items[itemName].label) or itemName
-    QBCore.Functions.Progressbar('amp_install_part', ('Montuojama: %s…'):format(label), ms, false, true, {
-        disableMovement = true,
-        disableCarMovement = true,
-        disableCombat = true,
-    }, {
-        animDict = 'mini@repair',
-        anim = 'fixing_a_ped',
-        flags = 49,
-    }, {}, {}, function()
-        QBCore.Functions.TriggerCallback('mrp_drugs:server:installAmpPart', function(res)
-            installing = false
-            if not res or not res.ok then
-                return QBCore.Functions.Notify((res and res.reason) or 'Nepavyko sumontuoti.', 'error')
-            end
-            if res.complete then
-                QBCore.Functions.Notify(('Laboratorija paruošta (%d/%d) — važiuok į Grapeseed zoną sintezei.'):format(res.done, res.total), 'success', 9000)
-            else
-                QBCore.Functions.Notify(('Sumontuota: %s (%d/%d)'):format(res.label or label, res.done or 0, res.total or 3), 'primary', 6000)
-            end
-        end, vehNetId, itemName)
-    end, function()
-        installing = false
-        QBCore.Functions.Notify('Montavimas atšauktas.', 'error')
-    end)
-end
-
-RegisterNetEvent('mrp_drugs:client:tryInstallAmpPart', function(itemName)
-    installAmpPart(itemName)
-end)
-
 local function setupAmpLab()
     local cfg = ampCfg()
     if not cfg.enabled then return end
@@ -301,110 +212,9 @@ local function setupAmpLab()
                 end,
                 action = startAmpSynthesis,
             },
-            {
-                icon = 'fas fa-clipboard-list',
-                label = 'Patikrinti Journey lab statusą',
-                canInteract = function()
-                    return findNearbyJourney() ~= nil
-                end,
-                action = function()
-                    local veh = findNearbyJourney()
-                    local nid = ensureVehNetId(veh)
-                    QBCore.Functions.TriggerCallback('mrp_drugs:server:getAmpLabStatus', function(res)
-                        if not res or not res.ok then
-                            return QBCore.Functions.Notify('Nepavyko patikrinti.', 'error')
-                        end
-                        if res.complete then
-                            QBCore.Functions.Notify('Journey lab pilnai sumontuotas — galima sintezė.', 'success')
-                        else
-                            QBCore.Functions.Notify(('Trūksta modulių: %s'):format(table.concat(res.missing or {}, ', ')), 'error', 8000)
-                        end
-                    end, nid)
-                end,
-            },
         },
         distance = 2.5,
     })
-
-    --- Target ant Journey modelių — montavimas / statusas bet kur
-    local models = {}
-    for name in pairs(cfg.vehicleModels or { journey = true }) do
-        models[#models + 1] = name
-    end
-    if #models > 0 then
-        exports['qb-target']:AddTargetModel(models, {
-            options = {
-                {
-                    icon = 'fas fa-wrench',
-                    label = 'Montuoti lab modulį (iš inventoriaus)',
-                    canInteract = function(entity)
-                        if installing or synthesizing then return false end
-                        if not isAmpVehicle(entity) then return false end
-                        for _, row in ipairs(cfg.requiredParts or {}) do
-                            if QBCore.Functions.HasItem(row.item, 1) then return true end
-                        end
-                        return false
-                    end,
-                    action = function(entity)
-                        for _, row in ipairs(cfg.requiredParts or {}) do
-                            if QBCore.Functions.HasItem(row.item, 1) then
-                                --- Prioritetas: dar nesumontuotas
-                                local st = Entity(entity).state.mrpAmpLab
-                                if type(st) ~= 'table' or st[row.id] ~= true then
-                                    return installAmpPart(row.item)
-                                end
-                            end
-                        end
-                        for _, row in ipairs(cfg.requiredParts or {}) do
-                            if QBCore.Functions.HasItem(row.item, 1) then
-                                return installAmpPart(row.item)
-                            end
-                        end
-                    end,
-                },
-            },
-            distance = 2.8,
-        })
-    end
-
-    local scrap = Config.AmpScrapYard
-    if scrap and scrap.enabled and scrap.coords then
-        exports['qb-target']:AddCircleZone('mrp_amp_scrap', scrap.coords, scrap.radius or 1.4, {
-            name = 'mrp_amp_scrap',
-            debugPoly = false,
-            useZ = true,
-        }, {
-            options = {
-                {
-                    icon = 'fas fa-dumpster',
-                    label = scrap.label or 'Ravėti atliekų dėžę',
-                    action = function()
-                        QBCore.Functions.Progressbar('amp_scrap', 'Ieškoma chemikalų…', 4500, false, true, {
-                            disableMovement = true,
-                            disableCombat = true,
-                        }, {
-                            animDict = 'amb@prop_human_bum_bin@base',
-                            anim = 'base',
-                            flags = 49,
-                        }, {}, {}, function()
-                            QBCore.Functions.TriggerCallback('mrp_drugs:server:ampScrapLoot', function(res)
-                                if not res or not res.ok then
-                                    return QBCore.Functions.Notify((res and res.reason) or 'Tuščia.', 'error')
-                                end
-                                if res.empty then
-                                    return QBCore.Functions.Notify('Nieko naudingo nerasta.', 'primary')
-                                end
-                                QBCore.Functions.Notify('Radau naudingų chemikalų.', 'success')
-                            end)
-                        end, function()
-                            QBCore.Functions.Notify('Atšaukta.', 'error')
-                        end)
-                    end,
-                },
-            },
-            distance = 1.8,
-        })
-    end
 end
 
 CreateThread(function()

@@ -16,19 +16,16 @@ shared_scripts {
     'config/locations.lua',
     'config/rewards.lua',
     'config/npc.lua',
-    'config/burger_kitchen.lua',
     'config/vape.lua',
 }
 
 client_scripts {
-    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/main.lua',
     'client/job_manager.lua',
     'client/minigame.lua',
     'client/props.lua',
     'client/oil.lua',
     'client/npc.lua',
-    'client/burger_kitchen3d.lua',
     'client/burger.lua',
     'client/cleaner.lua',
     'client/fruit.lua',
@@ -58,6 +55,7 @@ files {
     'html/index.html',
     'html/app.js',
     'html/styles.css',
+    'html/audio/*.ogg',
 }
 
 dependencies {
@@ -65,6 +63,5 @@ dependencies {
     'qb-target',
     'qb-inventory',
     'qb-menu',
-    'mrp_drugs',
     'oxmysql',
 }

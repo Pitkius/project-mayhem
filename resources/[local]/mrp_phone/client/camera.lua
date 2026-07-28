@@ -11,10 +11,6 @@ local camFront = false
 local camZoom = 1.0
 local camFlash = false
 local camThread = nil
-local captureBusy = false
-
---- CellCamSetDistance (MOBILE) — zoom / FOV, ne SetEntityDistanceCullingRadius
-local NATIVE_CELL_CAM_SET_DISTANCE = 0x53F4892D18EC90A4
 
 local function sendUi(action, payload)
     SendNUIMessage({ action = action, payload = payload or {} })
@@ -29,13 +25,8 @@ local function setFrontCamera(front)
 end
 
 local function applyZoom()
-    --- UI zoom 0.55–2.5 → cell cam distance ~1.0 … -1.0 (didesnis zoom = arčiau)
-    local z = tonumber(camZoom) or 1.0
-    local t = (z - 0.55) / (2.5 - 0.55)
-    if t < 0.0 then t = 0.0 elseif t > 1.0 then t = 1.0 end
-    local distance = 1.0 - (t * 2.0)
     pcall(function()
-        Citizen.InvokeNative(NATIVE_CELL_CAM_SET_DISTANCE, distance + 0.0)
+        Citizen.InvokeNative(0x96C34EEFB3434381, camZoom + 0.0)
     end)
     sendUi('cameraState', { front = camFront, zoom = camZoom, flash = camFlash })
 end
@@ -46,7 +37,6 @@ function PhoneCamera.stop()
     pcall(function() CellCamActivate(false, false) end)
     pcall(function() DestroyMobilePhone() end)
     pcall(function() CellFrontCamActivate(false) end)
-    pcall(function() ScriptIsMovingMobilePhoneOffscreen(false) end)
     local ped = PlayerPedId()
     if ped and ped ~= 0 then
         FreezeEntityPosition(ped, false)
@@ -70,9 +60,7 @@ function PhoneCamera.start(opts)
     camZoom = tonumber(opts.zoom) or 1.0
     camFlash = opts.flash == true
 
-    CreateMobilePhone(0)
-    --- Paslėpti GTA telefoną — NUI rėmelis matomas, CellCam vaizdas pro viewfinder
-    pcall(function() ScriptIsMovingMobilePhoneOffscreen(true) end)
+    CreateMobilePhone(1)
     CellCamActivate(true, true)
     setFrontCamera(camFront)
     applyZoom()
@@ -90,9 +78,6 @@ function PhoneCamera.start(opts)
             DisableControlAction(0, 140, true)
             DisableControlAction(0, 141, true)
             DisableControlAction(0, 142, true)
-            --- Scroll zoom (disabled controls skaitomi per IsDisabledControlJustPressed)
-            DisableControlAction(0, 241, true)
-            DisableControlAction(0, 242, true)
 
             if IsDisabledControlJustPressed(0, 241) then
                 camZoom = math.min(2.5, camZoom + 0.08)
@@ -151,53 +136,32 @@ local function captureScreenshot(cb)
 end
 
 function PhoneCamera.capture()
-    if not camActive or captureBusy then return end
-    captureBusy = true
-    CreateThread(function()
-        if camFlash then
-            sendUi('cameraFlash', {})
-            Wait(90)
-        end
-        --- Trumpam paslėpti NUI, kad screenshot-basic nepaimtų UI overlay
-        sendUi('cameraCaptureHide', { hide = true })
-        Wait(50)
-
-        local finished = false
-        CreateThread(function()
-            Wait(10000)
-            if finished then return end
-            finished = true
-            captureBusy = false
-            sendUi('cameraCaptureHide', { hide = false })
-            QBCore.Functions.Notify('Nuotraukos timeout — bandyk dar kartą.', 'error', 5000)
-        end)
-
-        captureScreenshot(function(data, errState)
-            if finished then return end
-            finished = true
-            sendUi('cameraCaptureHide', { hide = false })
-            captureBusy = false
-            if not data or data == '' then
-                if errState and errState ~= 'started' then
-                    QBCore.Functions.Notify('screenshot-basic neįkeltas. Serverio konsolėje: ensure screenshot-basic', 'error', 7000)
-                else
-                    QBCore.Functions.Notify('Nepavyko padaryti nuotraukos. Bandyk dar kartą.', 'error', 5000)
-                end
-                return
+    if not camActive then return end
+    if camFlash then
+        sendUi('cameraFlash', {})
+        Wait(80)
+    end
+    captureScreenshot(function(data, errState)
+        if not data or data == '' then
+            if errState and errState ~= 'started' then
+                QBCore.Functions.Notify('screenshot-basic neįkeltas. Serverio konsolėje: ensure screenshot-basic', 'error', 7000)
+            else
+                QBCore.Functions.Notify('Nepavyko padaryti nuotraukos. Bandyk dar kartą.', 'error', 5000)
             end
-            QBCore.Functions.TriggerCallback('mrp_phone:server:savePhoto', function(res)
-                if res and res.ok then
-                    QBCore.Functions.Notify('Nuotrauka išsaugota galerijoje.', 'success')
-                    sendUi('photoSaved', { id = res.id, count = res.count })
-                else
-                    QBCore.Functions.Notify(res and res.message or 'Nepavyko išsaugoti nuotraukos.', 'error')
-                end
-            end, {
-                imageData = data,
-                front = camFront,
-                zoom = camZoom,
-            })
-        end)
+            return
+        end
+        QBCore.Functions.TriggerCallback('mrp_phone:server:savePhoto', function(res)
+            if res and res.ok then
+                QBCore.Functions.Notify('Nuotrauka išsaugota galerijoje.', 'success')
+                sendUi('photoSaved', { id = res.id, count = res.count })
+            else
+                QBCore.Functions.Notify(res and res.message or 'Nepavyko išsaugoti nuotraukos.', 'error')
+            end
+        end, {
+            imageData = data,
+            front = camFront,
+            zoom = camZoom,
+        })
     end)
 end
 
@@ -239,9 +203,6 @@ end)
 
 RegisterNUICallback('cameraCapture', function(_, cb)
     if not photosEnabled() then return cb({ ok = false, message = 'Nuotraukos išjungtos.' }) end
-    if not camActive then
-        return cb({ ok = false, message = 'Kamera neaktyvi.' })
-    end
     PhoneCamera.capture()
     cb({ ok = true })
 end)

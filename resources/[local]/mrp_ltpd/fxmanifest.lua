@@ -20,13 +20,10 @@ shared_scripts {
 }
 
 client_scripts {
-    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/pd_markers.lua',
     'client/reception.lua',
     'client/divisions.lua',
-    'client/fleet_spawn.lua',
     'client/main.lua',
-    'client/player_targets.lua',
     'client/pd_craft.lua',
     'client/cctv_props.lua',
     'client/cctv.lua',
@@ -66,6 +63,7 @@ dependencies {
     'qb-inventory',
     'qb-target',
     'mrp_dispatch',
+    'mrp_siren_controller',
 }
 
 server_exports {

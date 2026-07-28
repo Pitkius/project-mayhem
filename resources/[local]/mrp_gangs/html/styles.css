@@ -604,8 +604,30 @@ tbody tr:hover { background: rgba(168, 85, 247, 0.05); }
     linear-gradient(160deg, rgba(255, 255, 255, 0.14), transparent 45%);
 }
 .emblem span { position: relative; z-index: 1; }
+.emblem-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 2;
+}
+.emblem:has(.emblem-img) span,
+.emblem.has-img span { display: none; }
 .emblem.md { width: 56px; height: 56px; font-size: 22px; border-radius: 16px; }
 .emblem.sm { width: 40px; height: 40px; font-size: 16px; border-radius: 12px; }
+
+.avatar.has-img {
+  font-size: 0;
+  overflow: hidden;
+}
+.avatar.has-img img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .online-dot {
   display: inline-block;
@@ -786,9 +808,17 @@ tbody tr:hover { background: rgba(168, 85, 247, 0.05); }
 /* ============================================================
    TERRITORIES / MAP
    ============================================================ */
-.map-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 4px; color: var(--muted); font-size: 10.5px; align-items: center; }
-.legend-dot { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; }
-.map-workspace { display: grid; grid-template-columns: 1fr 300px; gap: 14px; min-height: 0; }
+.map-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; color: var(--muted); font-size: 10.5px; align-items: center; }
+.legend-dot { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; vertical-align: middle; }
+.legend-toggle {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(15, 12, 30, 0.55);
+  color: var(--muted); cursor: pointer; font: inherit; font-size: 10.5px;
+}
+.legend-toggle.is-on { color: #fff; border-color: var(--line-strong); background: rgba(168, 85, 247, 0.12); }
+.legend-own { margin-left: auto; display: inline-flex; align-items: center; color: #ddd; }
+.map-workspace { display: grid; grid-template-columns: 1fr 320px; gap: 14px; min-height: 0; }
 #territory-map {
   height: 58vh;
   min-height: 400px;
@@ -808,12 +838,59 @@ tbody tr:hover { background: rgba(168, 85, 247, 0.05); }
 .leaflet-control-zoom a:hover { background: rgba(168, 85, 247, 0.2) !important; }
 
 .map-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.map-side .list.compact { max-height: 30vh; overflow-y: auto; }
+.map-side .list.compact,
+.turf-list { max-height: 28vh; overflow-y: auto; }
 .turf-dl { display: grid; gap: 8px; margin: 0 0 14px; }
 .turf-dl div { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
 .turf-dl div:last-child { border-bottom: 0; }
 .turf-dl dt { color: var(--muted); }
-.turf-dl dd { margin: 0; text-align: right; color: #fff; font-weight: 600; }
+.turf-dl dd { margin: 0; text-align: right; color: #fff; font-weight: 600; max-width: 58%; }
+.turf-wars-mini { display: grid; gap: 6px; margin: 0 0 12px; }
+.turf-war-row {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--line); background: rgba(168, 85, 247, 0.06);
+  font-size: 11px;
+}
+.turf-war-row small { color: var(--muted); }
+
+.turf-poly {
+  transition: fill-opacity 0.35s ease, stroke-width 0.25s ease, stroke-opacity 0.25s ease;
+  filter: drop-shadow(0 0 0 transparent);
+}
+.turf-poly.is-hover,
+.turf-poly.is-selected {
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.35));
+}
+.turf-contested {
+  animation: turf-pulse 1.7s ease-in-out infinite;
+}
+@keyframes turf-pulse {
+  0%, 100% { stroke-opacity: 0.55; stroke-width: 1.5; }
+  50% { stroke-opacity: 1; stroke-width: 3; }
+}
+
+.turf-marker-wrap { background: transparent !important; border: 0 !important; }
+.turf-marker {
+  width: 12px; height: 12px; border-radius: 3px;
+  background: var(--turf, #64748B);
+  border: 1.5px solid rgba(255,255,255,0.85);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--turf) 70%, transparent);
+  transform: rotate(45deg);
+}
+.turf-marker span { display: none; }
+
+.turf-hover-tip {
+  position: fixed; z-index: 10000; pointer-events: none;
+  min-width: 160px; max-width: 240px;
+  padding: 10px 12px; border-radius: 10px;
+  background: rgba(10, 8, 22, 0.94);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45), 0 0 24px rgba(168, 85, 247, 0.15);
+  display: grid; gap: 3px; color: #eee; font-size: 11px;
+}
+.turf-hover-tip strong { color: #fff; font-size: 12px; }
+.turf-hover-tip.is-hidden { display: none; }
 
 /* ============================================================
    STASH (placeholder)

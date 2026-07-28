@@ -65,7 +65,7 @@ local function spawnDebugVendor()
                         if it then
                             rows[#rows + 1] = {
                                 header = ('%s — $%s'):format(it.label, e.price or 1),
-                                txt = e.desc or (('Svoris: %sg • %s'):format(it.weight or 0, e.item)),
+                                txt = ('Svoris: %sg • %s'):format(it.weight or 0, e.item),
                                 params = {
                                     isAction = true,
                                     event = function()
@@ -74,6 +74,37 @@ local function spawnDebugVendor()
                                 },
                             }
                         end
+                    end
+                    TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+                end,
+            },
+            {
+                icon = 'fas fa-usb-drive',
+                label = 'Flashdrive OS / exploit ($1)',
+                action = function()
+                    local offers = Config.DebugHeistFlashOffers or {}
+                    local rows = { { header = 'TEST flashdrive (su payload)', isMenuHeader = true } }
+                    for i, e in ipairs(offers) do
+                        local label = QBCore.Shared.Items[e.item] and QBCore.Shared.Items[e.item].label or e.item
+                        local extra = ''
+                        if e.payload then
+                            if e.payload.payload_type == 'os' and Config.OperatingSystems[e.payload.payload_id] then
+                                extra = ' — ' .. Config.OperatingSystems[e.payload.payload_id].label
+                            elseif e.payload.payload_type == 'exploit' and Config.Exploits[e.payload.payload_id] then
+                                extra = ' — ' .. Config.Exploits[e.payload.payload_id].label
+                            elseif e.payload.payload_id then
+                                extra = ' [' .. tostring(e.payload.payload_id) .. ']'
+                            end
+                        end
+                        rows[#rows + 1] = {
+                            header = ('%s — $%s%s'):format(label, e.price or 1, extra),
+                            params = {
+                                isAction = true,
+                                event = function()
+                                    TriggerServerEvent('mrp_hacking:server:debugBuyFlashOffer', i)
+                                end,
+                            },
+                        }
                     end
                     TriggerEvent('qb-menu:client:openMenu', rows, false, true)
                 end,

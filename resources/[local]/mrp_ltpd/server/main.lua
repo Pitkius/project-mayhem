@@ -407,7 +407,7 @@ end
 MySQL.ready(function()
     ensureTables()
     migrateLtpdJobToPolice()
-    MySQL.update.await("UPDATE ltpd_profiles SET division = 'aras' WHERE division IN ('sor', 'SOR', 'aro', 'ARO', 'ARAS')")
+    MySQL.update.await("UPDATE ltpd_profiles SET division = 'aras' WHERE division IN ('aro', 'sor', 'ARAS', 'ARO')")
     MySQL.update.await("UPDATE ltpd_profiles SET division = 'mp' WHERE division = 'patrol'")
     MySQL.update.await("UPDATE ltpd_profiles SET division = 'kpd' WHERE division = 'traffic'")
     MySQL.update.await("UPDATE ltpd_profiles SET division = 'ktd' WHERE division = 'criminal'")
@@ -421,19 +421,6 @@ end
 
 local function jobIsPd(j)
     return j and j.name == Config.JobName
-end
-
---- Vadas / pavaduotojas – ARAS sandėliai / rūbinė be padalinio
-local function isPdLeadership(src)
-    local P = QBCore.Functions.GetPlayer(src)
-    if not P or not jobIsPd(P.PlayerData.job) then return false end
-    if GetResourceState('mrp_bossmenu') == 'started' then
-        local ok, result = pcall(function()
-            return exports['mrp_bossmenu']:HasLeadershipGrade(src, Config.JobName or 'police')
-        end)
-        if ok and result then return true end
-    end
-    return PdDivisions.isLeadership(P.PlayerData.job)
 end
 
 local function isLtpdOnDuty(src)
@@ -482,26 +469,7 @@ end
 
 local function setDivisionForCitizenid(citizenid, division)
     division = PdDivisions.normalize(division)
-    if not Config.Divisions[division] then
-        --- Custom divizijos iš mrp_bossmenu DB — priimti ir įrašyti į Config
-        if GetResourceState('mrp_bossmenu') == 'started' then
-            local map = exports['mrp_bossmenu']:GetDivisionsMap('police')
-            local div = map and map[division]
-            if div then
-                Config.Divisions[division] = {
-                    label = div.label,
-                    abbr = div.abbr,
-                    minGrade = div.minGrade,
-                    choosable = div.choosable,
-                    description = div.description,
-                }
-            else
-                return false
-            end
-        else
-            return false
-        end
-    end
+    if not Config.Divisions[division] then return false end
     MySQL.query.await(
         'INSERT INTO ltpd_profiles (citizenid, division) VALUES (?, ?) ON DUPLICATE KEY UPDATE division = VALUES(division)',
         { citizenid, division }
@@ -548,7 +516,6 @@ local function syncDivisionClient(src)
         storedDivision = getDivisionForCitizenid(P.PlayerData.citizenid),
         grade = grade,
         effective = PdDivisions.effectiveDivision(grade, div),
-        isLeadership = isPdLeadership(src),
     })
 end
 
@@ -577,7 +544,6 @@ local function pdAccessPayload(src)
         division = stored,
         grade = grade,
         effective = PdDivisions.effectiveDivision(grade, stored),
-        isLeadership = isPdLeadership(src),
     }
 end
 
@@ -588,7 +554,7 @@ local function mdtFullAccess(src)
     if not Player then return false end
     local g = getGrade(src)
     local div = getDivisionForCitizenid(Player.PlayerData.citizenid)
-    if PdDivisions.isAras(div) and g < 5 then
+    if (div == 'sor' or div == 'aro') and g < 5 then
         return false
     end
     local divCfg = Config.Divisions[div]
@@ -1085,11 +1051,7 @@ RegisterNetEvent('mrp_ltpd:server:openPoliceStash', function(stationId, stashInd
     if not entry or not entry.coords or not entry.stashId then return end
     local P = QBCore.Functions.GetPlayer(src)
     local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
-    local leadership = isPdLeadership(src)
-    if entry.leadershipOnly and not leadership then
-        return TriggerClientEvent('QBCore:Notify', src, 'Prieinama tik vadui / pavaduotojui.', 'error')
-    end
-    if not PdDivisions.canAccessPoint(getGrade(src), div, entry, leadership) then
+    if not PdDivisions.canAccessPoint(getGrade(src), div, entry) then
         return TriggerClientEvent('QBCore:Notify', src, 'Neturi prieigos prie šio sandėlio (rangas / padalinys).', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
@@ -1116,20 +1078,21 @@ RegisterNetEvent('mrp_ltpd:server:openArmory', function(stationId)
     end
     stationId = tostring(stationId or '')
     local st = getStationById(stationId)
-    if not st or not st.armory or not st.armory.coords then return end
+    if not st or not st.armory or not st.armory.coords or not st.armory.stashId then return end
     local P = QBCore.Functions.GetPlayer(src)
     local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
-    if not PdDivisions.canAccessPoint(getGrade(src), div, st.armory, isPdLeadership(src)) then
-        return TriggerClientEvent('QBCore:Notify', src, 'ARAS ginklų pirkimas – tik ARAS padaliniui.', 'error')
+    if not PdDivisions.canAccessPoint(getGrade(src), div, st.armory) then
+        return TriggerClientEvent('QBCore:Notify', src, 'ARO sandėlis – tik ARO padaliniui.', 'error')
     end
     local maxD = tonumber(Config.ArmoryGarageDistance) or 22.0
     if not officerNearCoords(src, st.armory.coords, maxD) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo ginklinės (rūbinės). Priartėk arba patikrink koordinates.', 'error')
     end
-    if GetResourceState('mrp_npcshops') ~= 'started' then
-        return TriggerClientEvent('QBCore:Notify', src, 'ARAS ginklinė neprieinama.', 'error')
-    end
-    TriggerEvent('mrp_npcshops:server:openAroWeaponSupply', src, stationId)
+    exports['qb-inventory']:OpenInventory(src, st.armory.stashId, {
+        maxweight = st.armory.maxweight or 4000000,
+        slots = st.armory.slots or 80,
+        label = st.armory.label or 'Policijos ginklinė',
+    })
 end)
 
 RegisterNetEvent('mrp_ltpd:server:spawnFleet', function(stationId, modelName)
@@ -1147,10 +1110,19 @@ RegisterNetEvent('mrp_ltpd:server:spawnFleet', function(stationId, modelName)
         TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo PD transporto vietos.', 'error')
         return
     end
-    local plate = ('PD%s'):format(math.random(1000, 9999))
-    TriggerClientEvent('mrp_ltpd:client:spawnFleetVehicle', src, modelName, {
-        x = sp.x, y = sp.y, z = sp.z, w = sp.w or 0.0,
-    }, plate)
+    local hash = joaat(modelName)
+    local veh = QBCore.Functions.SpawnVehicle(src, hash, sp, true)
+    if not veh or veh == 0 then
+        TriggerClientEvent('QBCore:Notify', src, 'Nepavyko sukurti transporto.', 'error')
+        return
+    end
+    local plateRaw = ('PD%s'):format(math.random(1000, 9999))
+    SetVehicleNumberPlateText(veh, plateRaw)
+    local plate = QBCore.Shared.Trim(GetVehicleNumberPlateText(veh))
+    if plate == nil or plate == '' then plate = plateRaw end
+    SetVehicleEngineOn(veh, true, true, false)
+    TriggerClientEvent('mrp_ltpd:client:fleetVehicleReady', src, plate)
+    TriggerClientEvent('QBCore:Notify', src, 'Transportas paruoštas.', 'success')
 end)
 
 local function fleetHeliModelAllowed(modelName)
@@ -1177,10 +1149,21 @@ RegisterNetEvent('mrp_ltpd:server:spawnFleetHeli', function(stationId, modelName
     if not officerNearCoords(src, checkVec, maxD) then
         return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo helipado.', 'error')
     end
-    local plate = ('PD%s'):format(math.random(1000, 9999))
-    TriggerClientEvent('mrp_ltpd:client:spawnFleetHeli', src, modelName, {
-        x = sp.x, y = sp.y, z = sp.z, w = sp.w or 0.0,
-    }, plate)
+    local hash = joaat(modelName)
+    local veh = QBCore.Functions.SpawnVehicle(src, hash, sp, true)
+    if not veh or veh == 0 then
+        veh = QBCore.Functions.CreateVehicle(src, hash, 'heli', sp, true)
+    end
+    if not veh or veh == 0 then
+        return TriggerClientEvent('QBCore:Notify', src, 'Nepavyko sukurti sraigtasparnio.', 'error')
+    end
+    local plateRaw = ('PD%s'):format(math.random(1000, 9999))
+    SetVehicleNumberPlateText(veh, plateRaw)
+    local plate = QBCore.Shared.Trim(GetVehicleNumberPlateText(veh))
+    if plate == nil or plate == '' then plate = plateRaw end
+    SetVehicleEngineOn(veh, true, true, false)
+    TriggerClientEvent('mrp_ltpd:client:fleetVehicleReady', src, plate)
+    TriggerClientEvent('QBCore:Notify', src, 'Sraigtasparnis paruoštas.', 'success')
 end)
 
 local function canBossAction(src)
@@ -1328,10 +1311,6 @@ end
 
 exports('GetDivisionLabelForPlayer', divisionLabelForPlayer)
 
-exports('GetDivisionForCitizenid', function(citizenid)
-    return getDivisionForCitizenid(citizenid)
-end)
-
 --- PD sirenos įranga: entity statebags (networked vehicles) + išsaugojimas player_vehicles.mods
 local EMERGENCY_MOD_KEYS = { mrpPdKit = true, mrpEmsKit = true }
 
@@ -1380,49 +1359,23 @@ exports('PersistVehicleEmergencyMods', function(plate, citizenid, fields)
     mergeVehicleEmergencyMods(plate, citizenid, fields)
 end)
 
-local function isEmergencyFleetModel(entity)
-    if not entity or entity == 0 then return false end
-    local hash = GetEntityModel(entity)
-    if Config.FleetVehicles then
-        for _, v in ipairs(Config.FleetVehicles) do
-            if v and v.model and joaat(v.model) == hash then
-                return true
-            end
-        end
-    end
-    if Config.FleetHelicopters then
-        for _, v in ipairs(Config.FleetHelicopters) do
-            if v and v.model and joaat(v.model) == hash then
-                return true
-            end
-        end
-    end
-    return false
-end
-
 exports('ApplyVehicleEmergencyFromMods', function(veh, mods)
     if type(mods) == 'string' and mods ~= '' then
         local ok, decoded = pcall(json.decode, mods)
         mods = ok and decoded or nil
     end
     if type(mods) ~= 'table' then return end
-    local fleet = isEmergencyFleetModel(veh)
     if mods.mrpPdKit == true then
         Entity(veh).state:set('ltPdKit', true, true)
     else
         Entity(veh).state:set('ltPdKit', false, true)
-        --- Fleet naudoja F6 be kit — NEnulinam sirenos režimo.
-        if not fleet then
-            Entity(veh).state:set('ltPdSirenMode', 'off', true)
-        end
+        Entity(veh).state:set('ltPdSirenMode', 'off', true)
     end
     if mods.mrpEmsKit == true then
         Entity(veh).state:set('ltEmsKit', true, true)
     else
         Entity(veh).state:set('ltEmsKit', false, true)
-        if not fleet then
-            Entity(veh).state:set('ltEmsSirenMode', 'off', true)
-        end
+        Entity(veh).state:set('ltEmsSirenMode', 'off', true)
     end
 end)
 
@@ -1504,6 +1457,26 @@ local function safeVehicleNetId(veh)
     return NetworkGetNetworkIdFromEntity(veh)
 end
 
+local function isEmergencyFleetModel(entity)
+    if not entity or entity == 0 then return false end
+    local hash = GetEntityModel(entity)
+    if Config.FleetVehicles then
+        for _, v in ipairs(Config.FleetVehicles) do
+            if v and v.model and joaat(v.model) == hash then
+                return true
+            end
+        end
+    end
+    if Config.FleetHelicopters then
+        for _, v in ipairs(Config.FleetHelicopters) do
+            if v and v.model and joaat(v.model) == hash then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 local LtPdEmergencyModes = { off = true, lights = true, sound = true, full = true }
 
 RegisterNetEvent('mrp_ltpd:server:setPdEmergencyMode', function(mode)
@@ -1534,10 +1507,6 @@ RegisterNetEvent('mrp_ltpd:server:setPdEmergencyMode', function(mode)
         end
     end
     Entity(veh).state:set('ltPdSirenMode', mode, true)
-    local netId = safeVehicleNetId(veh)
-    if netId ~= 0 then
-        TriggerClientEvent('mrp_ltpd:client:forceEmergencyVisual', -1, netId, mode)
-    end
     TriggerClientEvent('QBCore:Notify', src, ('Šviesos / sirena: %s'):format(mode), 'primary')
     TriggerClientEvent('mrp_siren:client:syncUi', src)
 end)
@@ -1615,11 +1584,6 @@ RegisterNetEvent('mrp_ltpd:server:clearPdEmergencyOnExit', function(netId)
     if veh == 0 then return end
     if not isLtpdOnDuty(src) then return end
     if not vehicleNearPlayer(src, veh, (Config.EmergencyVehicle and Config.EmergencyVehicle.validateDistance or 28.0) + 10.0) then
-        return
-    end
-    -- Klientas kartais klaidingai praneša „išlipimą“ — neišjungti, kol vis dar vairuotojas
-    local ped = GetPlayerPed(src)
-    if ped and ped ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
         return
     end
     Entity(veh).state:set('ltPdSirenMode', 'off', true)
@@ -1940,21 +1904,10 @@ AddEventHandler('mrp_bossmenu:internal:setPdDivision', function(targetId, divisi
     if not targetId or targetId < 1 then return end
     local T = QBCore.Functions.GetPlayer(targetId)
     if not T or not jobIsPd(T.PlayerData.job) then return end
-    if not setDivisionForCitizenid(T.PlayerData.citizenid, divisionId) then return end
+    divisionId = PdDivisions.normalize(divisionId)
+    if not Config.Divisions[divisionId] then return end
+    setDivisionForCitizenid(T.PlayerData.citizenid, divisionId)
     syncDivisionClient(targetId)
-end)
-
-AddEventHandler('mrp_bossmenu:internal:setPdDivisionByCitizenId', function(citizenid, divisionId, grade)
-    citizenid = tostring(citizenid or '')
-    if citizenid == '' then return end
-    if grade ~= nil then
-        divisionId = defaultDivisionForGrade(grade)
-    end
-    if not setDivisionForCitizenid(citizenid, divisionId) then return end
-    local Online = QBCore.Functions.GetPlayerByCitizenId(citizenid)
-    if Online then
-        syncDivisionClient(Online.PlayerData.source)
-    end
 end)
 
 AddEventHandler('mrp_bossmenu:internal:setPdDivisionByGrade', function(targetId, grade)

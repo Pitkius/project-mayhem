@@ -1,11 +1,11 @@
 :root {
-  --neon-purple: var(--primary-hover);
-  --neon-purple-soft: var(--primary-border);
-  --neon-purple-glow: var(--primary-glow);
-  --app-bg: var(--surface);
-  --glass-bg: var(--surface);
-  --glass-border: var(--primary-border);
-  --phone-scroll-thumb: linear-gradient(180deg, var(--primary-hover) 0%, var(--primary-active) 100%);
+  --neon-purple: #bf5fff;
+  --neon-purple-soft: rgba(191, 95, 255, 0.35);
+  --neon-purple-glow: rgba(191, 95, 255, 0.55);
+  --app-bg: #0a0812;
+  --glass-bg: rgba(18, 12, 28, 0.72);
+  --glass-border: rgba(191, 95, 255, 0.18);
+  --phone-scroll-thumb: linear-gradient(180deg, rgba(192, 132, 252, 0.95) 0%, rgba(124, 58, 237, 0.85) 100%);
   --phone-scroll-track: rgba(255, 255, 255, 0.05);
 }
 
@@ -22,7 +22,7 @@
 .wx-days,
 .notes-editor textarea {
   scrollbar-width: thin;
-  scrollbar-color: var(--phone-scroll) var(--phone-scroll-track);
+  scrollbar-color: rgba(191, 95, 255, 0.6) var(--phone-scroll-track);
 }
 
 .phone-scroll::-webkit-scrollbar,
@@ -82,7 +82,7 @@
 .bank-scroll-x::-webkit-scrollbar-thumb:hover,
 .wx-hourly::-webkit-scrollbar-thumb:hover,
 .wx-days::-webkit-scrollbar-thumb:hover {
-  background: var(--phone-scroll-thumb);
+  background: linear-gradient(180deg, rgba(207, 160, 255, 1) 0%, rgba(157, 80, 255, 0.95) 100%);
 }
 
 .scroll-body.camera-body,
@@ -96,19 +96,11 @@
   background: var(--app-bg);
 }
 
-.scroll-body.insta-body,
-.scroll-body.carplay-body {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
 /* —— LifeGram —— */
 .lg-app {
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  min-height: 100%;
   padding-bottom: 28px;
 }
 
@@ -140,7 +132,7 @@
 
 .lg-post {
   padding: 14px;
-  border-bottom: 1px solid var(--phone-line-soft);
+  border-bottom: 1px solid rgba(191, 95, 255, 0.12);
   background: rgba(255, 255, 255, 0.02);
 }
 
@@ -175,26 +167,18 @@
 }
 
 .lg-like-btn {
-  border: 1px solid var(--phone-border);
-  background: var(--phone-fill-soft);
+  border: 1px solid rgba(191, 95, 255, 0.28);
+  background: rgba(191, 95, 255, 0.1);
   color: #f0e8ff;
   border-radius: 999px;
   padding: 8px 14px;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.lg-like-btn svg {
-  width: 16px;
-  height: 16px;
 }
 
 .lg-like-btn:hover {
-  background: var(--phone-fill);
+  background: rgba(191, 95, 255, 0.18);
 }
 
 .lg-empty {
@@ -212,7 +196,7 @@
 
 .neon-btn {
   border: 1px solid var(--glass-border);
-  background: var(--phone-line-soft);
+  background: rgba(191, 95, 255, 0.12);
   color: #f5f0ff;
   border-radius: 14px;
   padding: 10px 14px;
@@ -220,7 +204,7 @@
   cursor: pointer;
 }
 .neon-btn.primary {
-  background: var(--phone-btn-grad);
+  background: linear-gradient(135deg, #9d4edd, #bf5fff);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 24px var(--neon-purple-soft);
 }
@@ -240,7 +224,7 @@
 }
 #phone.camera-live-mode .device {
   background: transparent;
-  border-color: var(--phone-border);
+  border-color: rgba(191, 95, 255, 0.25);
   box-shadow: 0 0 40px var(--neon-purple-soft);
 }
 #phone.camera-live-mode #appScreen {
@@ -255,12 +239,6 @@
 }
 #phone.camera-live-mode .scroll-body.camera-body {
   background: transparent;
-}
-
-/* Trumpai slepia UI screenshot-basic metu */
-#phone.camera-capture-hide {
-  opacity: 0 !important;
-  pointer-events: none !important;
 }
 
 .cam-app {
@@ -337,7 +315,7 @@
   border-radius: 50%;
   border: 4px solid #fff;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 0 0 4px var(--phone-ring);
+  box-shadow: 0 0 0 4px rgba(191, 95, 255, 0.35);
   cursor: pointer;
   justify-self: center;
 }
@@ -566,7 +544,7 @@
   border-radius: 50%;
   background: #e9d5ff;
   border: 2px solid #fff;
-  box-shadow: 0 0 0 1px var(--phone-ring);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.35);
   cursor: pointer;
 }
 
@@ -579,7 +557,7 @@
 .carplay-range::-moz-range-progress {
   height: 6px;
   border-radius: 999px;
-  background: var(--phone-btn-grad);
+  background: linear-gradient(90deg, #9d4edd, #c084fc);
 }
 
 .carplay-range::-moz-range-thumb {
@@ -588,7 +566,7 @@
   border-radius: 50%;
   background: #e9d5ff;
   border: 2px solid #fff;
-  box-shadow: 0 0 0 1px var(--phone-ring);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.35);
   cursor: pointer;
 }
 
@@ -603,7 +581,7 @@
 .carplay-progress > span {
   display: block;
   height: 100%;
-  background: var(--phone-btn-grad);
+  background: linear-gradient(90deg, #9d4edd, #c084fc);
   border-radius: inherit;
   transition: width 0.35s ease;
 }
@@ -645,7 +623,7 @@
 .carplay-icon-btn.play-main {
   width: 64px;
   height: 64px;
-  background: var(--btn-grad);
+  background: linear-gradient(145deg, #8b5cf6, #a855f7);
   border: none;
   box-shadow: 0 10px 24px rgba(139, 92, 246, 0.35);
 }
@@ -738,8 +716,8 @@
 .carplay-url-box input:focus,
 .carplay-url-box textarea:focus {
   outline: none;
-  border-color: var(--phone-ring-strong);
-  box-shadow: 0 0 0 2px var(--phone-fill-soft);
+  border-color: rgba(168, 85, 247, 0.55);
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.15);
 }
 
 .carplay-chip-row {
@@ -760,7 +738,7 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  background: var(--phone-fill-soft);
+  background: rgba(191, 95, 255, 0.1);
   border: 1px solid rgba(196, 181, 253, 0.18);
   color: #f5f3ff;
   cursor: pointer;
@@ -933,7 +911,7 @@
   cursor: pointer;
 }
 .ads-sort-chips button.active {
-  background: var(--phone-fill-mid);
+  background: rgba(191, 95, 255, 0.2);
   color: var(--neon-purple);
   border-color: var(--neon-purple-soft);
 }
@@ -958,583 +936,3 @@
   opacity: 0;
   pointer-events: none;
 }
-
-/* —— Bendros pagrindinės programėlės (kontaktai, žinutės, skambučiai, nustatymai) —— */
-.scroll-body.core-app-body {
-  padding: 0 !important;
-  background: var(--app-bg);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.core-app-panel {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 10px 12px 72px;
-}
-
-.core-icon-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  border: 1px solid var(--phone-line);
-  background: var(--phone-fill-faint);
-  color: #e9d5ff;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.core-icon-btn svg {
-  width: 18px;
-  height: 18px;
-  display: block;
-}
-
-.core-icon-btn:hover {
-  background: var(--phone-fill);
-  border-color: var(--phone-border);
-}
-
-.core-icon-btn.danger {
-  color: #ffb4ab;
-  background: rgba(255, 69, 58, 0.12);
-  border-color: rgba(255, 69, 58, 0.22);
-}
-
-.core-icon-btn.primary {
-  color: #fff;
-  background: var(--accent-grad);
-  border-color: transparent;
-}
-
-.core-search-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--glass-border);
-}
-
-.core-search-bar svg {
-  width: 18px;
-  height: 18px;
-  color: rgba(196, 181, 253, 0.7);
-  flex-shrink: 0;
-}
-
-.core-search-bar input {
-  flex: 1;
-  margin: 0 !important;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: #fff;
-  font-size: 0.9rem;
-}
-
-.core-search-bar input:focus {
-  outline: none;
-  box-shadow: none;
-}
-
-.core-section-label {
-  margin: 14px 4px 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(196, 181, 253, 0.55);
-}
-
-.core-list-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--phone-fill-soft);
-  background: rgba(18, 12, 28, 0.65);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.core-list-item:hover,
-.core-list-item:active {
-  background: var(--phone-fill-soft);
-  border-color: var(--phone-border);
-}
-
-.core-list-item.system {
-  border-color: rgba(10, 132, 255, 0.2);
-  background: rgba(10, 132, 255, 0.06);
-}
-
-.core-list-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.core-list-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.core-list-body b {
-  display: block;
-  font-size: 0.92rem;
-  color: #f5f0ff;
-}
-
-.core-list-body .sub {
-  margin-top: 2px;
-  font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.5);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.core-list-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.core-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 0.82rem;
-  font-weight: 700;
-  background: var(--accent-grad);
-  color: #fff;
-  flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
-}
-
-.core-avatar.sm {
-  width: 36px;
-  height: 36px;
-  font-size: 0.72rem;
-}
-
-.core-avatar.icon {
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-  overflow: hidden;
-}
-
-.core-badge {
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--phone-btn-grad);
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 700;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
-.contacts-layout {
-  display: flex;
-  gap: 4px;
-  align-items: stretch;
-}
-
-.contacts-list-wrap {
-  flex: 1;
-  min-width: 0;
-}
-
-.contacts-az {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 4px 2px;
-  flex-shrink: 0;
-}
-
-.contacts-az button {
-  width: 22px;
-  height: 18px;
-  border: none;
-  background: transparent;
-  color: rgba(196, 181, 253, 0.55);
-  font-size: 0.62rem;
-  font-weight: 700;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.contacts-az button:hover,
-.contacts-az button.active {
-  color: var(--neon-purple);
-  background: var(--phone-line-soft);
-}
-
-.contacts-form-card {
-  margin-bottom: 12px;
-  padding: 14px;
-}
-
-.calls-tabbar,
-.lg-tabbar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2px;
-  padding: 8px 8px 12px;
-  background: rgba(8, 6, 14, 0.94);
-  border-top: 1px solid var(--glass-border);
-  backdrop-filter: blur(16px);
-  z-index: 4;
-}
-
-.lg-tabbar {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.calls-tabbar button,
-.lg-tabbar button {
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 10px;
-  font-weight: 600;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  padding: 4px 2px;
-}
-
-.calls-tabbar button.active,
-.lg-tabbar button.active {
-  color: var(--neon-purple);
-}
-
-.calls-tabbar button span.ico,
-.lg-tabbar button span.ico {
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-}
-
-.calls-tabbar button span.ico svg,
-.lg-tabbar button span.ico svg {
-  width: 20px;
-  height: 20px;
-}
-
-.calls-dial-display {
-  text-align: center;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  padding: 16px 12px 8px;
-  color: #f5f0ff;
-  min-height: 52px;
-}
-
-.calls-pad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 0 8px 12px;
-}
-
-.calls-pad button {
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 1px solid var(--phone-line);
-  background: rgba(255, 255, 255, 0.05);
-  color: #f5f0ff;
-  font-size: 1.25rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.calls-pad button:active {
-  background: var(--phone-fill);
-}
-
-.calls-action-row {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  padding: 12px 8px 8px;
-}
-
-.calls-call-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  color: #fff;
-}
-
-.calls-call-btn svg {
-  width: 24px;
-  height: 24px;
-}
-
-.calls-call-btn.green {
-  background: linear-gradient(145deg, #22c55e, #16a34a);
-  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.35);
-}
-
-.calls-call-btn.red {
-  background: linear-gradient(145deg, #ef4444, #dc2626);
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
-}
-
-.chat-app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-  padding: 8px 12px 12px;
-}
-
-.chat-app .chat-header {
-  border-bottom-color: var(--phone-line-soft);
-  margin-bottom: 8px;
-}
-
-.chat-app .bubble-row.out .bubble {
-  background: var(--accent-grad);
-  border-bottom-right-radius: 6px;
-}
-
-.chat-app .bubble-row.in .bubble {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--phone-fill-soft);
-  border-bottom-left-radius: 6px;
-}
-
-.chat-compose-modern {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  padding: 10px 0 4px;
-  border-top: 1px solid var(--phone-line-soft);
-}
-
-.chat-compose-modern input {
-  flex: 1;
-  margin: 0 !important;
-  border-radius: 20px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--phone-line);
-}
-
-.settings-app {
-  padding: 10px 12px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.settings-group {
-  padding: 14px;
-}
-
-.settings-group h3 {
-  margin: 0 0 12px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(196, 181, 253, 0.65);
-}
-
-.settings-row-modern {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--phone-fill-faint);
-}
-
-.settings-row-modern:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.settings-row-modern span:first-child {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.9rem;
-}
-
-.settings-row-modern span:last-child,
-.settings-row-modern .val {
-  color: rgba(196, 181, 253, 0.9);
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-.wp-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.wp-tile {
-  aspect-ratio: 1.4;
-  border-radius: 14px;
-  border: 2px solid transparent;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.wp-tile.active {
-  border-color: var(--neon-purple);
-  box-shadow: 0 0 0 2px var(--phone-border);
-}
-
-.wp-tile span {
-  position: absolute;
-  left: 8px;
-  bottom: 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-}
-
-.toggle-switch {
-  width: 46px;
-  height: 26px;
-  border-radius: 999px;
-  border: 1px solid var(--phone-fill-mid);
-  background: rgba(255, 255, 255, 0.08);
-  position: relative;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.toggle-switch::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform 0.2s ease;
-}
-
-.toggle-switch.on {
-  background: var(--phone-ring);
-  border-color: var(--neon-purple);
-}
-
-.toggle-switch.on::after {
-  transform: translateX(20px);
-  background: #e9d5ff;
-}
-
-.lg-header-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px 6px;
-}
-
-.lg-brand {
-  font-size: 1.15rem;
-  font-weight: 800;
-  background: var(--phone-btn-grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.lg-profile-hero {
-  text-align: center;
-  padding: 20px 16px 12px;
-}
-
-.lg-profile-hero .core-avatar {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 10px;
-  font-size: 1.1rem;
-}
-
-.lg-photo-pick {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.lg-photo-pick button {
-  aspect-ratio: 1;
-  border-radius: 10px;
-  border: 2px solid transparent;
-  background: #1a1028 center/cover no-repeat;
-  cursor: pointer;
-  padding: 0;
-}
-
-.lg-photo-pick button.selected {
-  border-color: var(--neon-purple);
-  box-shadow: 0 0 0 2px var(--phone-border-strong);
-}
-
-.lg-post-card {
-  margin-bottom: 2px;
-  border-bottom: 1px solid var(--phone-fill-soft);
-}
-
-.lg-post-card .lg-post-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px 8px;
-}
-
-.lg-post-stats {
-  display: flex;
-  gap: 16px;
-  padding: 0 14px 12px;
-  font-size: 0.82rem;
-  color: rgba(196, 181, 253, 0.75);
-}
-
-#appScreen.app-insta-full .app-nav .nav-link {
-  display: none;
-}
-

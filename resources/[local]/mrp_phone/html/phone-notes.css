@@ -1,10 +1,6 @@
 .scroll-body.notes-body {
   padding: 0 !important;
   background: var(--app-bg, #0a0812);
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .notes-app {
@@ -67,8 +63,8 @@
 }
 
 .notes-new-btn {
-  border: 1px solid var(--phone-ring);
-  background: var(--phone-line-soft);
+  border: 1px solid rgba(191, 95, 255, 0.35);
+  background: rgba(191, 95, 255, 0.12);
   color: #f0e8ff;
   border-radius: 999px;
   padding: 6px 12px;
@@ -85,7 +81,7 @@
 
 .notes-item {
   text-align: left;
-  border: 1px solid var(--glass-border, var(--phone-fill));
+  border: 1px solid var(--glass-border, rgba(191, 95, 255, 0.18));
   background: rgba(255, 255, 255, 0.03);
   border-radius: 14px;
   padding: 12px;
@@ -160,7 +156,7 @@
 .notes-editor input:focus,
 .notes-editor textarea:focus {
   outline: none;
-  border-color: var(--phone-ring-strong);
+  border-color: rgba(191, 95, 255, 0.45);
 }
 
 .notes-actions {

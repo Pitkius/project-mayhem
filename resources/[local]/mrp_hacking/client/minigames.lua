@@ -61,21 +61,10 @@ end
 function RunPhysicalMinigame(mode, opts)
     opts = opts or {}
     if physicalPromise then return false end
-
-    --- Ginklas trukdo animacijai / inputui — padėti prieš minigame
-    local ped = PlayerPedId()
-    SetCurrentPedWeapon(ped, `WEAPON_UNARMED`, true)
-
     startAnim(opts.anim)
-
-    --- Tikras GTA Online DRILLING scaleform
-    if mode == 'drill' or mode == 'gtao_drill' or mode == 'native_drill' then
+    if mode == 'drill' then
         PlaySoundFrontend(-1, 'Drill', 'DLC_HEIST_FLEECA_BANK_DRILLING_SOUNDS', true)
-        local ok = exports['mrp_hacking']:RunNativeDrill()
-        stopAnim()
-        return ok == true
     end
-
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'physicalOpen',
@@ -136,11 +125,10 @@ Config.RobberyAnims = Config.RobberyAnims or {
 Config.RobberyMinigames = Config.RobberyMinigames or {
     card = { mode = 'sequence', label = 'Perbrauk kortelę — rodyklės', data = { length = 4 } },
     thermite = { mode = 'hold', label = 'Laikyk SPACE termito zonoje', data = { holdMs = 2800 } },
-    --- Tikras GTA Online Fleeca DRILLING scaleform
-    drill = { mode = 'native_drill', label = 'Seifo gręžimas (GTA Online)', data = {} },
-    loot = { mode = 'mash', label = 'Grabink pinigus — spam SPACE', data = { target = 22, timeMs = 9000 } },
+    drill = { mode = 'drill', label = 'Seifo gręžimas — W/S galia, A/D kryptis', data = { depthTarget = 100, stages = 5, timeMs = 55000 } },
+    loot = { mode = 'mash', label = 'Grabink pinigus — spam SPACE (GTA Online)', data = { target = 22, timeMs = 9000 } },
     chain = { mode = 'sequence', label = 'Pritvirtink grandinę — rodyklės', data = { length = 5 } },
-    atm_drill = { mode = 'native_drill', label = 'ATM gręžimas (GTA Online)', data = {} },
+    atm_drill = { mode = 'drill', label = 'ATM gręžimas', data = { depthTarget = 100, stages = 4, timeMs = 45000 } },
 }
 
 exports('RunPhysicalMinigame', RunPhysicalMinigame)

@@ -2,8 +2,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 local pumping = false
 local fuelSession = nil
-local lastPayResult = { ok = false, id = 0 }
-local payRequestId = 0
+local lastPayResult = { ok = false }
 local lastEmptyNotify = 0
 local payMethod = 'cash'
 
@@ -147,15 +146,13 @@ end
 
 local function finishFuelSession()
     if not fuelSession then return end
-    local liters = fuelSession.liters or 0.0
-    local cost = math.floor(fuelSession.cost or 0)
     TriggerServerEvent('mrp_fuel:server:finish', {
-        cost = cost,
-        liters = liters,
+        cost = math.floor(fuelSession.cost),
+        liters = fuelSession.liters,
         method = payMethod,
     })
     closeFuelUi()
-    QBCore.Functions.Notify(('Pripilta %.1f L · $%s'):format(liters, cost), 'success')
+    QBCore.Functions.Notify(('Pripilta %.1f L · $%s'):format(fuelSession.liters, math.floor(fuelSession.cost)), 'success')
 end
 
 local function startFuelSession(veh)
@@ -227,25 +224,15 @@ RegisterNUICallback('fuelChoosePay', function(data, cb)
                 break
             end
             local paid = false
-            payRequestId = payRequestId + 1
-            local reqId = payRequestId
-            lastPayResult = { ok = false, id = 0 }
-            TriggerServerEvent('mrp_fuel:server:payTick', payMethod, reqId)
-            local deadline = GetGameTimer() + 2500
+            lastPayResult = { ok = false }
+            TriggerServerEvent('mrp_fuel:server:payTick', payMethod)
+            local deadline = GetGameTimer() + 1500
             while GetGameTimer() < deadline do
-                if lastPayResult and lastPayResult.id == reqId then
-                    paid = lastPayResult.ok == true
-                    break
-                end
+                if lastPayResult and lastPayResult.ok then paid = true break end
                 Wait(30)
             end
             if not paid then
-                local reason = (lastPayResult and lastPayResult.id == reqId and lastPayResult.reason) or 'money'
-                if reason == 'far' then
-                    QBCore.Functions.Notify('Per toli nuo degalinės.', 'error')
-                else
-                    QBCore.Functions.Notify('Nebepakanka pinigų.', 'error')
-                end
+                QBCore.Functions.Notify('Nebepakanka pinigų.', 'error')
                 break
             end
             fuelSession.currentFuel = math.min(100.0, fuelSession.currentFuel + (perTick * 0.9))
@@ -277,14 +264,7 @@ local function createFuelBlips()
         SetBlipColour(blip, Config.BlipColor or 2)
         SetBlipDisplay(blip, 4)
         SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(Config.BlipLabel or 'Degalinė')
-        EndTextCommandSetBlipName(blip)
-        if GetResourceState('mrp_fonts') == 'started' then
-            pcall(function()
-                exports['mrp_fonts']:SetBlipName(blip, Config.BlipLabel or 'Degalinė')
-            end)
-        end
+        exports['mrp_fonts']:SetBlipName(blip, Config.BlipLabel or 'Degalinė')
     end
 end
 

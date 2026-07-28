@@ -167,114 +167,6 @@ RegisterNetEvent('mrp_mining:server:processBatch', function()
     end
 end)
 
-local function runSteelRecipe(src, Player)
-    local R = Config.SteelRecipe
-    if not R then return false, 'Receptas nerastas.' end
-    local iron = getPlayerItem(src, R.iron)
-    local coal = getPlayerItem(src, R.coal)
-    local ic = itemAmount(iron)
-    local cc = itemAmount(coal)
-    local needI, needC = tonumber(R.ironCount) or 2, tonumber(R.coalCount) or 1
-    if ic < needI or cc < needC then
-        return false, ('Reikia %sx geležies rūdos ir %sx anglies.'):format(needI, needC)
-    end
-    Player.Functions.RemoveItem(R.iron, needI, false)
-    Player.Functions.RemoveItem(R.coal, needC, false)
-    if Player.Functions.AddItem(R.steel, 1, false) then
-        return true, 'Pagamintas plienas.'
-    end
-    Player.Functions.AddItem(R.iron, needI, false)
-    Player.Functions.AddItem(R.coal, needC, false)
-    return false, 'Inventorius pilnas.'
-end
-
-local function runSmeltRecipe(src, Player, key)
-    local R = Config.SmeltingRecipes and Config.SmeltingRecipes[key]
-    if not R then return false, 'Receptas nerastas.' end
-    local inputItem = getPlayerItem(src, R.input)
-    local need = tonumber(R.inputCount) or 1
-    local have = itemAmount(inputItem)
-    if have < need then
-        return false, ('Reikia %sx %s.'):format(need, R.input)
-    end
-    Player.Functions.RemoveItem(R.input, need, false)
-    local outCount = tonumber(R.outputCount) or 1
-    if Player.Functions.AddItem(R.output, outCount, false) then
-        return true, ('Pagaminta: %s x%s'):format(R.output, outCount)
-    end
-    Player.Functions.AddItem(R.input, need, false)
-    return false, 'Inventorius pilnas.'
-end
-
-local function runRubberRecipe(src, Player)
-    local R = Config.RubberRecipe
-    if not R then return false, 'Receptas nerastas.' end
-    local gravel = getPlayerItem(src, R.gravel)
-    local coal = getPlayerItem(src, R.coal)
-    local gc = itemAmount(gravel)
-    local cc = itemAmount(coal)
-    local needG, needC = tonumber(R.gravelCount) or 3, tonumber(R.coalCount) or 1
-    if gc < needG or cc < needC then
-        return false, ('Reikia %sx žvyro ir %sx anglies.'):format(needG, needC)
-    end
-    Player.Functions.RemoveItem(R.gravel, needG, false)
-    Player.Functions.RemoveItem(R.coal, needC, false)
-    if Player.Functions.AddItem(R.output, tonumber(R.outputCount) or 1, false) then
-        return true, 'Pagaminta guma.'
-    end
-    Player.Functions.AddItem(R.gravel, needG, false)
-    Player.Functions.AddItem(R.coal, needC, false)
-    return false, 'Inventorius pilnas.'
-end
-
-local function runGlassRecipe(src, Player)
-    local R = Config.GlassRecipe
-    if not R then return false, 'Receptas nerastas.' end
-    local stone = getPlayerItem(src, R.stone)
-    local gravel = getPlayerItem(src, R.gravel)
-    local sc = itemAmount(stone)
-    local gc = itemAmount(gravel)
-    local needS, needG = tonumber(R.stoneCount) or 2, tonumber(R.gravelCount) or 1
-    if sc < needS or gc < needG then
-        return false, ('Reikia %sx akmens ir %sx žvyro.'):format(needS, needG)
-    end
-    Player.Functions.RemoveItem(R.stone, needS, false)
-    Player.Functions.RemoveItem(R.gravel, needG, false)
-    if Player.Functions.AddItem(R.output, tonumber(R.outputCount) or 1, false) then
-        return true, 'Pagamintas stiklas.'
-    end
-    Player.Functions.AddItem(R.stone, needS, false)
-    Player.Functions.AddItem(R.gravel, needG, false)
-    return false, 'Inventorius pilnas.'
-end
-
-RegisterNetEvent('mrp_mining:server:processRecipe', function(recipeKey)
-    local src = source
-    if not nearProcess(src) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per toli nuo perdirbimo.', 'error')
-    end
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
-
-    local ok, msg = false, 'Nežinomas receptas.'
-    recipeKey = tostring(recipeKey or '')
-    if recipeKey == 'steel' then
-        ok, msg = runSteelRecipe(src, Player)
-    elseif Config.SmeltingRecipes and Config.SmeltingRecipes[recipeKey] then
-        ok, msg = runSmeltRecipe(src, Player, recipeKey)
-    elseif recipeKey == 'rubber' then
-        ok, msg = runRubberRecipe(src, Player)
-    elseif recipeKey == 'glass' then
-        ok, msg = runGlassRecipe(src, Player)
-    end
-
-    if ok then
-        TriggerClientEvent('QBCore:Notify', src, msg, 'success')
-    else
-        TriggerClientEvent('QBCore:Notify', src, msg or 'Nepavyko.', 'error')
-    end
-end)
-
 RegisterNetEvent('mrp_mining:server:makeSteel', function()
     local src = source
     if not nearProcess(src) then
@@ -282,8 +174,25 @@ RegisterNetEvent('mrp_mining:server:makeSteel', function()
     end
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
-    local ok, msg = runSteelRecipe(src, Player)
-    TriggerClientEvent('QBCore:Notify', src, msg, ok and 'success' or 'error')
+    local R = Config.SteelRecipe
+    if not R then return end
+    local iron = getPlayerItem(src, R.iron)
+    local coal = getPlayerItem(src, R.coal)
+    local ic = itemAmount(iron)
+    local cc = itemAmount(coal)
+    local needI, needC = tonumber(R.ironCount) or 2, tonumber(R.coalCount) or 1
+    if ic < needI or cc < needC then
+        return TriggerClientEvent('QBCore:Notify', src, ('Reikia %sx geležies rūdos ir %sx anglies.'):format(needI, needC), 'error')
+    end
+    Player.Functions.RemoveItem(R.iron, needI, false)
+    Player.Functions.RemoveItem(R.coal, needC, false)
+    if Player.Functions.AddItem(R.steel, 1, false) then
+        TriggerClientEvent('QBCore:Notify', src, 'Pagamintas plienas.', 'success')
+    else
+        Player.Functions.AddItem(R.iron, needI, false)
+        Player.Functions.AddItem(R.coal, needC, false)
+        TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
+    end
 end)
 
 QBCore.Functions.CreateCallback('mrp_mining:server:getSellInventory', function(source, cb)
@@ -366,6 +275,5 @@ RegisterNetEvent('mrp_mining:server:sellAll', function()
 end)
 
 QBCore.Functions.CreateUseableItem(PICKAXE_ITEM, function(source, _)
-    local hint = Config.MechanicSupplyHint or ''
-    TriggerClientEvent('QBCore:Notify', source, 'Eik į karjerą ir kasinėk. Perdirbk rūdas, tada gali parduoti mechanikams LS dokuose.', 'primary', 7500)
+    TriggerClientEvent('QBCore:Notify', source, 'Eik į karjerą (žemėlapyje „Karjeras — kasimas“) ir naudok qb-target.', 'primary', 6500)
 end)

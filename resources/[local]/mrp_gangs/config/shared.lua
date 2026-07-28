@@ -150,23 +150,43 @@ Config.Loot = {
         { item = 'radio', weight = 15, min = 1, max = 1, fallbackCash = 500 },
         { item = 'armor', weight = 18, min = 1, max = 1, fallbackCash = 650 },
         { item = 'gunpowder', weight = 22, min = 1, max = 2, fallbackCash = 300 },
-        { item = 'weapon_part', weight = 15, min = 1, max = 1, fallbackCash = 700 },
+        { item = 'weapon_parts', weight = 15, min = 1, max = 1, fallbackCash = 700 },
     },
     rare = {
         { item = 'blueprint_fragment', weight = 45, min = 1, max = 1, fallbackCash = 900 },
-        { item = 'weapon_part', weight = 35, min = 1, max = 2, fallbackCash = 1000 },
+        { item = 'weapon_parts', weight = 35, min = 1, max = 2, fallbackCash = 1000 },
         { item = 'crafting_recipe', weight = 20, min = 1, max = 1, fallbackCash = 1200 },
     },
 }
 
+-- Settlement / crate rewards: ONLY worn pistols or Tec-9 (never rifles/SMGs).
 Config.RestrictedSupply = {
     pistol = {
         item = 'weapon_pistol',
         rollingDays = 7,
-        globalCap = 2,
-        hardChancePerTenThousand = 20,
-        extremeChancePerTenThousand = 50,
+        globalCap = 3,
+        hardChancePerTenThousand = 35,
+        extremeChancePerTenThousand = 70,
         fallbackPool = 'rare',
+        wornQuality = { min = 18, max = 48 },
+    },
+    combat_pistol = {
+        item = 'weapon_combatpistol',
+        rollingDays = 7,
+        globalCap = 2,
+        hardChancePerTenThousand = 18,
+        extremeChancePerTenThousand = 40,
+        fallbackPool = 'rare',
+        wornQuality = { min = 15, max = 42 },
+    },
+    tec9 = {
+        item = 'weapon_machinepistol',
+        rollingDays = 10,
+        globalCap = 1,
+        hardChancePerTenThousand = 8,
+        extremeChancePerTenThousand = 22,
+        fallbackPool = 'rare',
+        wornQuality = { min = 12, max = 38 },
     },
     automatic_component = {
         item = 'blueprint_fragment',
@@ -175,6 +195,49 @@ Config.RestrictedSupply = {
         hardChancePerTenThousand = 35,
         extremeChancePerTenThousand = 100,
         fallbackPool = 'rare',
+    },
+}
+
+-- Search dead mission NPCs ([E]). Automatic weapons are never lootable.
+Config.CorpseLoot = {
+    searchDurationMs = 3500,
+    maxDistance = 2.4,
+    -- Keep bodies searchable after the wave/phase clears.
+    cleanupSec = 45,
+    -- Delay auto-complete a bit so last corpses can be searched.
+    clearGraceSec = 18,
+    cashChance = { easy = 68, medium = 74, hard = 80, extreme = 86 },
+    cashWorth = {
+        easy = { min = 35, max = 95 },
+        medium = { min = 55, max = 150 },
+        hard = { min = 90, max = 240 },
+        extreme = { min = 130, max = 360 },
+    },
+    ammoChance = { easy = 32, medium = 42, hard = 52, extreme = 62 },
+    ammo = { item = 'pistol_ammo', min = 1, max = 3 },
+    drugChance = { easy = 1, medium = 3, hard = 6, extreme = 9 },
+    drugs = { 'weed_bag', 'cokebaggy', 'meth_bag', 'pills_pack', 'heroin_bag' },
+    -- Only if the NPC's equipped weapon maps to a lootable pistol. ~5% on hard.
+    pistolChance = { easy = 0, medium = 2, hard = 5, extreme = 8 },
+    pistolQuality = {
+        medium = { min = 22, max = 55 },
+        hard = { min = 14, max = 42 },
+        extreme = { min = 10, max = 38 },
+    },
+    -- Native weapon hash name -> inventory item (pistols / Tec-9 only).
+    pistolWeapons = {
+        WEAPON_PISTOL = 'weapon_pistol',
+        WEAPON_COMBATPISTOL = 'weapon_combatpistol',
+        WEAPON_APPISTOL = 'weapon_appistol',
+        WEAPON_PISTOL50 = 'weapon_pistol50',
+        WEAPON_SNSPISTOL = 'weapon_snspistol',
+        WEAPON_HEAVYPISTOL = 'weapon_heavypistol',
+        WEAPON_VINTAGEPISTOL = 'weapon_vintagepistol',
+        WEAPON_CERAMICPISTOL = 'weapon_ceramicpistol',
+        WEAPON_PISTOL_MK2 = 'weapon_pistol_mk2',
+        WEAPON_SNSPISTOL_MK2 = 'weapon_snspistol_mk2',
+        WEAPON_PISTOLXM3 = 'weapon_pistolxm3',
+        WEAPON_MACHINEPISTOL = 'weapon_machinepistol', -- Tec-9
     },
 }
 

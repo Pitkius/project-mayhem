@@ -10,16 +10,26 @@
     <div class="panel">
       <div class="title">Bausmė</div>
       <div class="row">
-        <span class="label">Liko</span>
+        <span class="label" id="left-label">Liko</span>
         <span id="time" class="value">00:00</span>
       </div>
       <div class="row reason-row">
         <span class="label">Priežastis</span>
         <span id="reason" class="value reason">—</span>
       </div>
-      <div class="hint">Pasirenkami darbai lėktuvnešyje trumpina laiką (−1 min)</div>
+      <div class="hint" id="hint">Pasirenkami darbai lėktuvnešyje trumpina laiką (−1 min)</div>
     </div>
   </div>
+
+  <div id="work" class="hidden">
+    <div class="work-panel">
+      <div class="work-title" id="work-title">Valymo darbas</div>
+      <div class="work-time" id="work-time">60s</div>
+      <div class="work-bar"><span id="work-fill"></span></div>
+      <div class="work-hint">Stovi vietoje — lauk, kol baigsis</div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

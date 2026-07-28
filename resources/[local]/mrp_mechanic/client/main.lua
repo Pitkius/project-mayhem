@@ -115,6 +115,48 @@ RegisterCommand('mechcall', function(_, args)
     QBCore.Functions.Notify('Mechanikų iškvietimas sukurtas MDT sistemoje.', 'success')
 end, false)
 
+RegisterNetEvent('mrp_mechanic:client:openCraftMenu', function(data)
+    if not isMechanicOnDuty() then
+        return QBCore.Functions.Notify('Tik mechanikams tarnyboje.', 'error')
+    end
+    local craftKind = (data and data.craftKind) or 'tuning'
+    local menu = {
+        { header = craftKind == 'kits' and 'Remonto dalių gamyba' or 'Tuningo detalių gamyba', txt = 'Gamyba naudoja žaliavas iš inventoriaus', isMenuHeader = true },
+    }
+    for key, recipe in pairs(Config.TuningRecipes or {}) do
+        local isKit = key:sub(-4) == '_kit' or key == 'turbo_kit'
+        if craftKind == 'kits' and not isKit then goto continue end
+        if craftKind == 'tuning' and isKit then goto continue end
+        local req = {}
+        for item, cnt in pairs(recipe.materials or {}) do
+            req[#req + 1] = ('%s x%s'):format(item, cnt)
+        end
+        menu[#menu + 1] = {
+            header = recipe.label or key,
+            txt = table.concat(req, ' | '),
+            params = {
+                isAction = true,
+                event = function()
+                    local input = exports['qb-input']:ShowInput({
+                        header = recipe.label or key,
+                        submitText = 'Gaminti',
+                        inputs = {
+                            { text = 'Kiekis (1-10)', name = 'amount', type = 'number', isRequired = true },
+                        },
+                    })
+                    if not input or not input.amount then return end
+                    TriggerServerEvent('mrp_mechanic:server:craftTuningPart', key, tonumber(input.amount) or 1)
+                end,
+            },
+        }
+        ::continue::
+    end
+    if #menu < 2 then
+        return QBCore.Functions.Notify('Nėra receptų šiam stalui.', 'error')
+    end
+    TriggerEvent('qb-menu:client:openMenu', menu, false, true)
+end)
+
 local function applyOutfitTable(ped, tbl)
     if not ped or not tbl then return end
     for comp, val in pairs(tbl) do
@@ -378,7 +420,7 @@ CreateThread(function()
                     type = 'client',
                     event = 'mrp_mechanic:client:openBayWorkshop',
                     icon = 'fas fa-wrench',
-                    label = ('Dirbtuvės #%s (tuningas / kėbulas)'):format(i),
+                    label = ('Dirbtuvės #%s (remontas / tuningas)'):format(i),
                     bayIndex = i,
                     canInteract = function()
                         return isMechanicOnDuty()

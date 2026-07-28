@@ -3,10 +3,8 @@ PdDivisions = PdDivisions or {}
 
 local ALIASES = {
     sor = 'aras',
-    SOR = 'aras',
-    aro = 'aras',
-    ARO = 'aras',
     ARAS = 'aras',
+    aro = 'aras',
     patrol = 'mp',
     traffic = 'kpd',
     criminal = 'ktd',
@@ -18,7 +16,7 @@ end
 
 function PdDivisions.normalize(divisionId)
     local d = tostring(divisionId or 'mp'):lower()
-    return ALIASES[d] or ALIASES[divisionId] or d
+    return ALIASES[d] or d
 end
 
 --- Efektyvus padalinys pagal rangą (0–3 visada LPM)
@@ -44,58 +42,13 @@ function PdDivisions.isChoosable(divisionId)
     return cfg and cfg.choosable == true
 end
 
-function PdDivisions.isAras(divisionId)
-    return PdDivisions.normalize(divisionId) == 'aras'
-end
-
---- Policijos vadas (`isboss`) arba pavaduotojas (`isdeputy`).
---- Priima job lentelę arba boolean (jau apskaičiuota vėliava).
-function PdDivisions.isLeadership(jobOrFlag)
-    if type(jobOrFlag) == 'boolean' then
-        return jobOrFlag
-    end
-    if type(jobOrFlag) ~= 'table' then
-        return false
-    end
-    if jobOrFlag.isboss == true or jobOrFlag.isdeputy == true then
-        return true
-    end
-    local grade = jobOrFlag.grade
-    if type(grade) == 'table' and (grade.isboss == true or grade.isdeputy == true) then
-        return true
-    end
-    return false
-end
-
---- Taškas ribojamas tik ARAS padaliniui (ginklinė, ARAS rūbinė).
-function PdDivisions.entryIsSorRestricted(entry)
-    if not entry or type(entry.divisions) ~= 'table' or #entry.divisions == 0 then
-        return false
-    end
-    for _, d in ipairs(entry.divisions) do
-        if not PdDivisions.isAras(d) then
-            return false
-        end
-    end
-    return true
-end
-
---- @param leadershipOrJob boolean|table|nil  vadas/pavaduotojas – ARAS taškuose apeina padalinį (rangas lieka)
-function PdDivisions.canAccessPoint(grade, storedDivision, entry, leadershipOrJob)
+function PdDivisions.canAccessPoint(grade, storedDivision, entry)
     if not entry then return false end
     grade = tonumber(grade) or 0
-    local leadership = PdDivisions.isLeadership(leadershipOrJob)
-    --- Tik vadas / pavaduotojas
-    if entry.leadershipOnly then
-        return leadership
-    end
     local div = PdDivisions.effectiveDivision(grade, storedDivision)
     local minG = tonumber(entry.minGrade) or 0
     if grade < minG then
         return false
-    end
-    if leadership and PdDivisions.entryIsSorRestricted(entry) then
-        return true
     end
     if entry.divisions and type(entry.divisions) == 'table' and #entry.divisions > 0 then
         local ok = false
@@ -137,40 +90,36 @@ function PdDivisions.listChoosable(grade)
     return out
 end
 
-local function isArasLockerMode(lockerMode)
-    local mode = tostring(lockerMode or 'standard'):lower()
-    return mode == 'aro' or mode == 'sor' or mode == 'aras'
-end
-
-function PdDivisions.outfitAllowed(outfit, lockerMode, grade, storedDivision, leadershipOrJob)
+function PdDivisions.outfitAllowed(outfit, lockerMode, grade, storedDivision)
     if not outfit then return false end
     grade = tonumber(grade) or 0
     if grade < (tonumber(outfit.minGrade) or 0) then
         return false
     end
+    local mode = tostring(lockerMode or 'standard'):lower()
     local divs = outfit.divisions
-    if isArasLockerMode(lockerMode) then
-        if PdDivisions.isLeadership(leadershipOrJob) then
-            return true
-        end
+    if mode == 'aro' or mode == 'sor' then
         if Config.AroLockerShowsAllUniforms then
-            return PdDivisions.isAras(PdDivisions.effectiveDivision(grade, storedDivision))
+            local eff = PdDivisions.effectiveDivision(grade, storedDivision)
+            return eff == 'sor' or eff == 'aro'
         end
         if not divs or #divs == 0 then
             return false
         end
         for _, d in ipairs(divs) do
-            if PdDivisions.isAras(d) then
+            local nd = PdDivisions.normalize(d)
+            if nd == 'sor' or nd == 'aro' then
                 return true
             end
         end
         return false
     end
-    -- Standartinė rūbinė – nerodyti tik ARAS skirtų
+    -- Standartinė rūbinė – nerodyti tik SOR/ARO skirtų
     if divs and #divs > 0 then
         local onlyTactical = true
         for _, d in ipairs(divs) do
-            if not PdDivisions.isAras(d) then
+            local nd = PdDivisions.normalize(d)
+            if nd ~= 'sor' and nd ~= 'aro' then
                 onlyTactical = false
                 break
             end

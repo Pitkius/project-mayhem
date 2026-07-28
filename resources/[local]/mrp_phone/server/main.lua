@@ -6,8 +6,6 @@ local NextCallId = 1
 local DeathStartedAt = {}
 local LastEmergencyCall = {}
 local LastMedicRequest = {}
---- App Store siuntimai: [citizenid][appId] = { started, durationMs }
-local pendingAppDownloads = {}
 
 local function trim(s)
     return tostring(s or ''):gsub('^%s+', ''):gsub('%s+$', '')
@@ -464,6 +462,31 @@ local function getPendingIncomingCallFor(src)
     return nil
 end
 
+local function getCargoNetStatus(citizenid)
+    if not citizenid then
+        return { registered = false, level = 1, deliveries = 0 }
+    end
+    local row = MySQL.single.await([[
+        SELECT registered, level, total_deliveries
+        FROM fivempro_trucker_profiles
+        WHERE citizenid = ?
+        LIMIT 1
+    ]], { citizenid })
+    if not row then
+        return { registered = false, level = 1, deliveries = 0 }
+    end
+    local registered = row.registered == 1 or row.registered == true or row.registered == '1'
+    local deliveries = tonumber(row.total_deliveries) or 0
+    if deliveries > 0 then
+        registered = true
+    end
+    return {
+        registered = registered,
+        level = tonumber(row.level) or 1,
+        deliveries = deliveries,
+    }
+end
+
 local function getInitialDataFor(src)
     local citizenid, P = getCitizen(src)
     if not citizenid then return nil end
@@ -509,13 +532,6 @@ local function getInitialDataFor(src)
     local adProfile = MySQL.single.await([[
         SELECT username, bio, avatar_data, created_at
         FROM fivempro_phone_ad_profiles
-        WHERE citizenid = ?
-        LIMIT 1
-    ]], { citizenid })
-
-    local socialProfile = MySQL.single.await([[
-        SELECT username, bio, avatar_data, created_at
-        FROM fivempro_phone_social_profiles
         WHERE citizenid = ?
         LIMIT 1
     ]], { citizenid })
@@ -604,17 +620,12 @@ local function getInitialDataFor(src)
             hasAvatar = adProfile.avatar_data ~= nil and adProfile.avatar_data ~= '',
             created_at = adProfile.created_at,
         } or nil,
-        socialProfile = socialProfile and {
-            username = tostring(socialProfile.username or ''),
-            bio = tostring(socialProfile.bio or ''),
-            hasAvatar = socialProfile.avatar_data ~= nil and socialProfile.avatar_data ~= '',
-            created_at = socialProfile.created_at,
-        } or nil,
         photos = photos,
         notes = notes,
         notesOldDays = (Config.Phone and Config.Phone.notesOldDays) or 30,
         posts = posts,
         pendingIncomingCall = getPendingIncomingCallFor(src),
+        cargoNet = getCargoNetStatus(citizenid),
     }
 end
 
@@ -772,14 +783,6 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createAd', function(source, cb
     if not citizenid then return cb({ ok = false }) end
     local fullname = getFullName(P)
     local number = ensurePhoneUser(citizenid, fullname)
-    local adProf = MySQL.single.await(
-        'SELECT username FROM fivempro_phone_ad_profiles WHERE citizenid = ? LIMIT 1',
-        { citizenid }
-    )
-    if not adProf or tostring(adProf.username or '') == '' then
-        return cb({ ok = false, message = 'Pirmiausia susikurk Skelbimų paskyrą.' })
-    end
-    local authorName = tostring(adProf.username)
     local title = clampStr(data and data.title or '', (Config.Phone and Config.Phone.maxAdTitleLength) or 48)
     local category = clampStr(data and data.category or 'other', 24):lower()
     local price = math.max(0, math.floor(tonumber(data and data.price) or 0))
@@ -817,7 +820,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createAd', function(source, cb
     MySQL.insert.await([[
         INSERT INTO fivempro_phone_ads (citizenid, author_name, phone_number, category, title, price, body, image_urls)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ]], { citizenid, authorName, number, category, title, price, body, imageUrls })
+    ]], { citizenid, fullname, number, category, title, price, body, imageUrls })
     cb({ ok = true })
     local players = QBCore.Functions.GetQBPlayers()
     for sid in pairs(players) do
@@ -1079,16 +1082,6 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createPost', function(source, 
     if not citizenid then return cb({ ok = false }) end
     local fullname = getFullName(P)
     ensurePhoneUser(citizenid, fullname)
-
-    local social = MySQL.single.await(
-        'SELECT username FROM fivempro_phone_social_profiles WHERE citizenid = ? LIMIT 1',
-        { citizenid }
-    )
-    if not social or tostring(social.username or '') == '' then
-        return cb({ ok = false, message = 'Pirmiausia susikurk LifeGram paskyrą.' })
-    end
-    local authorName = tostring(social.username)
-
     local cap = clampStr(data and data.caption or '', (Config.Phone and Config.Phone.maxPostCaptionLength) or 260)
     local image = clampStr(data and data.imageUrl or '', (Config.Phone and Config.Phone.maxImageUrlLength) or 500)
     if cap == '' and image == '' then
@@ -1097,60 +1090,12 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createPost', function(source, 
     MySQL.insert.await([[
         INSERT INTO fivempro_phone_posts (citizenid, author_name, caption, image_url, likes)
         VALUES (?, ?, ?, ?, 0)
-    ]], { citizenid, authorName, cap, image })
+    ]], { citizenid, fullname, cap, image })
     cb({ ok = true })
     local players = QBCore.Functions.GetQBPlayers()
     for sid in pairs(players) do
         TriggerClientEvent('mrp_phone:client:refreshData', sid)
     end
-end)
-
-QBCore.Functions.CreateCallback('mrp_phone:server:saveSocialProfile', function(source, cb, data)
-    local citizenid = getCitizen(source)
-    if not citizenid then return cb({ ok = false }) end
-    local username = clampStr(data and data.username or '', 24):gsub('%s+', '')
-    local bio = clampStr(data and data.bio or '', 200)
-    if username == '' or #username < 3 then
-        return cb({ ok = false, message = 'Vartotojo vardas per trumpas (min. 3).' })
-    end
-    if not username:match('^[%w_]+$') then
-        return cb({ ok = false, message = 'Tik raidės, skaičiai ir _.' })
-    end
-    local taken = MySQL.single.await([[
-        SELECT citizenid FROM fivempro_phone_social_profiles
-        WHERE LOWER(username) = LOWER(?) AND citizenid <> ?
-        LIMIT 1
-    ]], { username, citizenid })
-    if taken then
-        return cb({ ok = false, message = 'Šis LifeGram vardas jau užimtas.' })
-    end
-    local avatarData = data and data.avatarData or nil
-    if type(avatarData) == 'string' and avatarData ~= '' then
-        if #avatarData > ((Config.Phone and Config.Phone.maxPhotoDataLength) or 1500000) then
-            avatarData = nil
-        end
-    else
-        avatarData = nil
-    end
-    local exists = MySQL.single.await('SELECT id FROM fivempro_phone_social_profiles WHERE citizenid = ? LIMIT 1', { citizenid })
-    if exists then
-        if avatarData then
-            MySQL.update.await([[
-                UPDATE fivempro_phone_social_profiles SET username = ?, bio = ?, avatar_data = ? WHERE citizenid = ?
-            ]], { username, bio, avatarData, citizenid })
-        else
-            MySQL.update.await([[
-                UPDATE fivempro_phone_social_profiles SET username = ?, bio = ? WHERE citizenid = ?
-            ]], { username, bio, citizenid })
-        end
-    else
-        MySQL.insert.await([[
-            INSERT INTO fivempro_phone_social_profiles (citizenid, username, bio, avatar_data)
-            VALUES (?, ?, ?, ?)
-        ]], { citizenid, username, bio, avatarData })
-    end
-    cb({ ok = true })
-    TriggerClientEvent('mrp_phone:client:refreshData', source)
 end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:likePost', function(source, cb, data)
@@ -1195,46 +1140,6 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createAccount', function(sourc
     TriggerClientEvent('mrp_phone:client:refreshData', source)
 end)
 
-QBCore.Functions.CreateCallback('mrp_phone:server:beginAppDownload', function(source, cb, data)
-    local citizenid = getCitizen(source)
-    if not citizenid then return cb({ ok = false }) end
-    local appId = tostring(data and data.appId or '')
-    if appId == '' then return cb({ ok = false, message = 'Blogas appId' }) end
-
-    local allowed = false
-    local isDefault = false
-    for _, app in ipairs((Config.Phone and Config.Phone.AppStoreApps) or {}) do
-        if tostring(app.id) == appId then
-            allowed = true
-            isDefault = app.default == true
-            break
-        end
-    end
-    if not allowed then return cb({ ok = false, message = 'Programėlė neegzistuoja.' }) end
-    if isDefault then return cb({ ok = false, message = 'Jau įdiegta.' }) end
-    if not photosEnabled() and (appId == 'camera' or appId == 'gallery') then
-        return cb({ ok = false, message = 'Nuotraukos išjungtos serveryje.' })
-    end
-
-    local installed = getInstalledApps(citizenid)
-    if installed[appId] then
-        return cb({ ok = false, message = 'Jau įdiegta.' })
-    end
-
-    local range = (Config.Phone and Config.Phone.appDownloadMs) or {}
-    local minMs = math.max(3000, tonumber(range.min) or 7000)
-    local maxMs = math.max(minMs, tonumber(range.max) or 14000)
-    local durationMs = math.random(minMs, maxMs)
-
-    pendingAppDownloads[citizenid] = pendingAppDownloads[citizenid] or {}
-    pendingAppDownloads[citizenid][appId] = {
-        started = GetGameTimer(),
-        durationMs = durationMs,
-    }
-
-    cb({ ok = true, durationMs = durationMs })
-end)
-
 QBCore.Functions.CreateCallback('mrp_phone:server:installApp', function(source, cb, data)
     local citizenid = getCitizen(source)
     if not citizenid then return cb({ ok = false }) end
@@ -1251,20 +1156,6 @@ QBCore.Functions.CreateCallback('mrp_phone:server:installApp', function(source, 
     if not photosEnabled() and (appId == 'camera' or appId == 'gallery') then
         return cb({ ok = false, message = 'Nuotraukos išjungtos serveryje.' })
     end
-
-    local pending = pendingAppDownloads[citizenid] and pendingAppDownloads[citizenid][appId]
-    if not pending then
-        return cb({ ok = false, message = 'Pirmiausia pradėk siuntimą.' })
-    end
-    local elapsed = GetGameTimer() - (pending.started or 0)
-    local need = tonumber(pending.durationMs) or 7000
-    if elapsed < (need - 400) then
-        return cb({ ok = false, message = 'Dar siunčiama...' })
-    end
-    if pendingAppDownloads[citizenid] then
-        pendingAppDownloads[citizenid][appId] = nil
-    end
-
     MySQL.insert.await('INSERT IGNORE INTO fivempro_phone_installed_apps (citizenid, app_id) VALUES (?, ?)', {
         citizenid, appId
     })
@@ -1380,10 +1271,6 @@ AddEventHandler('playerDropped', function()
     end
     for i = 1, #ending do
         endPhoneCall(ending[i], 'ended')
-    end
-    local citizenid = getCitizen(src)
-    if citizenid then
-        pendingAppDownloads[citizenid] = nil
     end
     DeathStartedAt[src] = nil
     LastEmergencyCall[src] = nil
@@ -1653,19 +1540,6 @@ CreateThread(function()
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
     MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_social_profiles` (
-          `id` int NOT NULL AUTO_INCREMENT,
-          `citizenid` varchar(60) NOT NULL,
-          `username` varchar(24) NOT NULL,
-          `bio` varchar(200) NOT NULL DEFAULT '',
-          `avatar_data` mediumtext NULL,
-          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `uniq_social_profile_cid` (`citizenid`),
-          UNIQUE KEY `uniq_social_profile_username` (`username`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_posts` (
           `id` int NOT NULL AUTO_INCREMENT,
           `citizenid` varchar(60) NOT NULL,
@@ -1698,7 +1572,7 @@ CreateThread(function()
           PRIMARY KEY (`citizenid`,`app_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('emergency', 'shop', 'cargonet')")
+    MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('emergency', 'shop')")
     if not photosEnabled() then
         MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('camera', 'gallery')")
         MySQL.update.await('DELETE FROM fivempro_phone_photos')

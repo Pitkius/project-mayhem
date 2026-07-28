@@ -61,6 +61,18 @@ local function applySafeMigrations()
             ADD KEY idx_mrp_gang_mission_rewards_pending (recipient_type, recipient_id, delivered_at)
         ]])
     end
+
+    local avatarColumn = MySQL.single.await([[
+        SELECT COLUMN_NAME
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'mrp_gangs_v2'
+          AND COLUMN_NAME = 'avatar_url'
+        LIMIT 1
+    ]])
+    if not avatarColumn then
+        MySQL.query.await('ALTER TABLE mrp_gangs_v2 ADD COLUMN avatar_url VARCHAR(512) NULL AFTER color_hex')
+    end
 end
 
 local function recoverInterruptedRuns()

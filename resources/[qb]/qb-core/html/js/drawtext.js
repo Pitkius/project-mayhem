@@ -1,24 +1,19 @@
 let direction = null;
-let textVisible = false;
-let hideTimer = null;
 
-function applyPosition(text, position) {
-    removeClass(text, "left");
-    removeClass(text, "right");
-    removeClass(text, "top");
-    removeClass(text, "bottom");
-
-    switch (position) {
+const drawText = async (textData) => {
+    const text = document.getElementById("text");
+    let { position } = textData;
+    switch (textData.position) {
         case "left":
-            addClass(text, "left");
+            addClass(text, position);
             direction = "left";
             break;
         case "top":
-            addClass(text, "top");
+            addClass(text, position);
             direction = "top";
             break;
         case "right":
-            addClass(text, "right");
+            addClass(text, position);
             direction = "right";
             break;
         default:
@@ -26,82 +21,71 @@ function applyPosition(text, position) {
             direction = "left";
             break;
     }
-}
 
-const drawText = async (textData) => {
-    const text = document.getElementById("text");
-    const container = document.getElementById("drawtext-container");
-    if (!text || !container) return;
-
-    if (hideTimer) {
-        clearTimeout(hideTimer);
-        hideTimer = null;
-    }
-
-    applyPosition(text, textData.position);
     text.innerHTML = textData.text;
-    container.style.display = "block";
-
-    if (!textVisible) {
-        removeClass(text, "hide");
-        removeClass(text, "pressed");
-        await sleep(50);
-        addClass(text, "show");
-    }
-    textVisible = true;
+    document.getElementById("drawtext-container").style.display = "block";
+    await sleep(100);
+    addClass(text, "show");
 };
 
 const changeText = async (textData) => {
     const text = document.getElementById("text");
-    const container = document.getElementById("drawtext-container");
-    if (!text || !container) return;
+    let { position } = textData;
 
-    if (hideTimer) {
-        clearTimeout(hideTimer);
-        hideTimer = null;
-    }
+    removeClass(text, "show");
+    addClass(text, "pressed");
+    addClass(text, "hide");
 
-    applyPosition(text, textData.position);
-    text.innerHTML = textData.text;
-    container.style.display = "block";
-
-    if (textVisible && text.classList.contains("show")) {
-        return;
-    }
-
+    await sleep(500);
+    removeClass(text, "left");
+    removeClass(text, "right");
+    removeClass(text, "top");
+    removeClass(text, "bottom");
     removeClass(text, "hide");
     removeClass(text, "pressed");
-    await sleep(50);
-    addClass(text, "show");
-    textVisible = true;
+
+    switch (textData.position) {
+        case "left":
+            addClass(text, position);
+            direction = "left";
+            break;
+        case "top":
+            addClass(text, position);
+            direction = "top";
+            break;
+        case "right":
+            addClass(text, position);
+            direction = "right";
+            break;
+        default:
+            addClass(text, "left");
+            direction = "left";
+            break;
+    }
+    text.innerHTML = textData.text;
+
+    await sleep(100);
+    text.classList.add("show");
 };
 
 const hideText = async () => {
     const text = document.getElementById("text");
-    const container = document.getElementById("drawtext-container");
-    if (!text || !container) return;
-
-    if (hideTimer) clearTimeout(hideTimer);
-
     removeClass(text, "show");
     addClass(text, "hide");
 
-    hideTimer = setTimeout(() => {
-        hideTimer = null;
+    setTimeout(() => {
         removeClass(text, "left");
         removeClass(text, "right");
         removeClass(text, "top");
         removeClass(text, "bottom");
         removeClass(text, "hide");
         removeClass(text, "pressed");
-        container.style.display = "none";
-        textVisible = false;
-    }, 280);
+        document.getElementById("drawtext-container").style.display = "none";
+    }, 1000);
 };
 
 const keyPressed = () => {
     const text = document.getElementById("text");
-    if (!text) return;
     addClass(text, "pressed");
 };
 
@@ -123,16 +107,18 @@ window.addEventListener("message", (event) => {
     }
 });
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms) => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+};
 
 const removeClass = (element, name) => {
-    if (element && element.classList.contains(name)) {
+    if (element.classList.contains(name)) {
         element.classList.remove(name);
     }
 };
 
 const addClass = (element, name) => {
-    if (element && !element.classList.contains(name)) {
+    if (!element.classList.contains(name)) {
         element.classList.add(name);
     }
 };

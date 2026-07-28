@@ -4,7 +4,7 @@
   background: #0a0812;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  min-height: 100%;
   overflow: hidden;
 }
 
@@ -23,11 +23,9 @@
 .ads-app {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
+  min-height: 100%;
   background:
-    radial-gradient(ellipse 120% 50% at 50% -8%, var(--phone-fill), transparent 55%),
+    radial-gradient(ellipse 120% 50% at 50% -8%, rgba(157, 80, 255, 0.18), transparent 55%),
     linear-gradient(180deg, #0a0812 0%, #0d0a14 100%);
   animation: adsFadeIn 0.3s ease;
 }
@@ -42,7 +40,6 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
   padding: 48px 14px 78px;
 }
 
@@ -70,14 +67,14 @@
 .ads-top-title svg {
   width: 22px;
   height: 22px;
-  color: var(--neon-purple);
+  color: #9d50ff;
 }
 .ads-bell {
   position: relative;
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  border: 1px solid var(--phone-border);
+  border: 1px solid rgba(157, 80, 255, 0.22);
   background: rgba(0, 0, 0, 0.3);
   display: grid;
   place-items: center;
@@ -92,7 +89,7 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: var(--neon-purple);
+  background: #9d50ff;
   color: #fff;
   font-size: 9px;
   font-weight: 800;
@@ -130,7 +127,7 @@
 .ads-header-action {
   border: none;
   background: transparent;
-  color: var(--neon-purple);
+  color: #9d50ff;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -151,7 +148,7 @@
   width: 100%;
   padding: 12px 42px 12px 40px;
   border-radius: 14px;
-  border: 1px solid var(--phone-fill);
+  border: 1px solid rgba(157, 80, 255, 0.18);
   background: rgba(0, 0, 0, 0.35);
   color: #fff;
   font-size: 14px;
@@ -176,8 +173,8 @@
   height: 30px;
   border: none;
   border-radius: 10px;
-  background: var(--phone-line-soft);
-  color: var(--neon-purple);
+  background: rgba(157, 80, 255, 0.12);
+  color: #9d50ff;
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -197,7 +194,7 @@
   flex-shrink: 0;
   padding: 8px 14px;
   border-radius: 999px;
-  border: 1px solid var(--phone-fill-mid);
+  border: 1px solid rgba(157, 80, 255, 0.2);
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.7);
   font-size: 12px;
@@ -206,10 +203,10 @@
   white-space: nowrap;
 }
 .ads-cat-chip.active {
-  background: var(--accent-grad);
+  background: linear-gradient(135deg, #7c3aed, #9d50ff);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 4px 16px var(--phone-ring);
+  box-shadow: 0 4px 16px rgba(157, 80, 255, 0.35);
 }
 
 /* Section head */
@@ -226,7 +223,7 @@
 .ads-link {
   border: none;
   background: transparent;
-  color: var(--neon-purple);
+  color: #9d50ff;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -245,7 +242,7 @@
   align-items: start;
   padding: 10px;
   border-radius: 16px;
-  border: 1px solid var(--phone-line);
+  border: 1px solid rgba(157, 80, 255, 0.14);
   background: rgba(18, 12, 28, 0.72);
   cursor: pointer;
   transition: transform 0.15s ease, border-color 0.15s ease;
@@ -258,7 +255,7 @@
   height: 88px;
   border-radius: 12px;
   background: #1a1028 center/cover no-repeat;
-  border: 1px solid var(--phone-line-soft);
+  border: 1px solid rgba(157, 80, 255, 0.12);
 }
 .ads-feed-body {
   min-width: 0;
@@ -275,7 +272,7 @@
 .ads-feed-price {
   font-size: 15px;
   font-weight: 800;
-  color: var(--neon-purple);
+  color: #9d50ff;
   margin-bottom: 4px;
 }
 .ads-feed-meta {
@@ -330,7 +327,7 @@
   background: rgba(255, 255, 255, 0.35);
 }
 .ads-detail-dot.active {
-  background: var(--neon-purple);
+  background: #9d50ff;
   width: 18px;
   border-radius: 999px;
 }
@@ -346,7 +343,7 @@
 .ads-detail-price {
   font-size: 24px;
   font-weight: 800;
-  color: var(--neon-purple);
+  color: #9d50ff;
   margin-bottom: 10px;
 }
 .ads-detail-stats {
@@ -378,7 +375,7 @@
 }
 .ads-info-table {
   border-radius: 14px;
-  border: 1px solid var(--phone-line);
+  border: 1px solid rgba(157, 80, 255, 0.14);
   background: rgba(0, 0, 0, 0.25);
   overflow: hidden;
   margin-bottom: 18px;
@@ -403,7 +400,7 @@
   gap: 10px;
   padding: 10px 14px 24px;
   background: rgba(8, 6, 14, 0.94);
-  border-top: 1px solid var(--phone-line);
+  border-top: 1px solid rgba(157, 80, 255, 0.14);
   backdrop-filter: blur(16px);
   z-index: 5;
 }
@@ -412,20 +409,20 @@
   padding: 14px;
   border: none;
   border-radius: 14px;
-  background: var(--accent-grad);
+  background: linear-gradient(135deg, #7c3aed, #9d50ff);
   color: #fff;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 24px var(--phone-ring);
+  box-shadow: 0 8px 24px rgba(157, 80, 255, 0.35);
 }
 .ads-btn-icon {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  border: 1px solid var(--phone-border);
-  background: var(--phone-line-soft);
-  color: var(--neon-purple);
+  border: 1px solid rgba(157, 80, 255, 0.25);
+  background: rgba(157, 80, 255, 0.12);
+  color: #9d50ff;
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -435,7 +432,7 @@
   width: 100%;
   padding: 12px;
   border-radius: 14px;
-  border: 1px solid var(--phone-fill-mid);
+  border: 1px solid rgba(157, 80, 255, 0.2);
   background: rgba(255, 255, 255, 0.04);
   color: #f5f0ff;
   font-size: 13px;
@@ -468,7 +465,7 @@
   width: 100%;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid var(--phone-fill);
+  border: 1px solid rgba(157, 80, 255, 0.18);
   background: rgba(0, 0, 0, 0.35);
   color: #fff;
   font-size: 14px;
@@ -496,14 +493,14 @@
   width: 72px;
   height: 72px;
   border-radius: 12px;
-  border: 1px dashed var(--phone-border-strong);
+  border: 1px dashed rgba(157, 80, 255, 0.3);
   background: rgba(0, 0, 0, 0.3) center/cover no-repeat;
   cursor: pointer;
 }
 .ads-photo-slot.add {
   display: grid;
   place-items: center;
-  color: var(--neon-purple);
+  color: #9d50ff;
   font-size: 24px;
 }
 .ads-photo-del {
@@ -536,7 +533,7 @@
   gap: 6px;
   padding: 12px 6px;
   border-radius: 14px;
-  border: 1px solid var(--phone-line);
+  border: 1px solid rgba(157, 80, 255, 0.14);
   background: rgba(255, 255, 255, 0.03);
   color: rgba(255, 255, 255, 0.75);
   font-size: 10px;
@@ -545,14 +542,14 @@
   text-align: center;
 }
 .ads-cat-tile.active {
-  border-color: var(--neon-purple);
-  background: var(--phone-fill);
+  border-color: #9d50ff;
+  background: rgba(157, 80, 255, 0.15);
   color: #fff;
 }
 .ads-cat-tile svg {
   width: 22px;
   height: 22px;
-  color: var(--neon-purple);
+  color: #9d50ff;
 }
 
 .ads-price-range {
@@ -567,14 +564,14 @@
 .ads-price-inputs input {
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid var(--phone-fill);
+  border: 1px solid rgba(157, 80, 255, 0.18);
   background: rgba(0, 0, 0, 0.35);
   color: #fff;
   font-size: 13px;
 }
 .ads-range-slider {
   width: 100%;
-  accent-color: var(--neon-purple);
+  accent-color: #9d50ff;
 }
 
 .ads-sort-row {
@@ -588,7 +585,7 @@
   min-width: 90px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid var(--phone-fill);
+  border: 1px solid rgba(157, 80, 255, 0.18);
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.65);
   font-size: 12px;
@@ -600,8 +597,8 @@
   gap: 6px;
 }
 .ads-sort-btn.active {
-  border-color: var(--neon-purple);
-  background: var(--phone-fill);
+  border-color: #9d50ff;
+  background: rgba(157, 80, 255, 0.15);
   color: #fff;
 }
 
@@ -626,19 +623,19 @@
   color: inherit;
 }
 .ads-msg-item:hover {
-  background: var(--phone-fill-faint);
+  background: rgba(157, 80, 255, 0.06);
 }
 .ads-msg-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-active), var(--primary));
+  background: linear-gradient(135deg, #3b1d6e, #7c3aed);
   display: grid;
   place-items: center;
   font-size: 14px;
   font-weight: 800;
   color: #fff;
-  border: 2px solid var(--phone-border-strong);
+  border: 2px solid rgba(157, 80, 255, 0.3);
 }
 .ads-msg-body {
   min-width: 0;
@@ -666,7 +663,7 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--neon-purple);
+  background: #9d50ff;
   color: #fff;
   font-size: 10px;
   font-weight: 800;
@@ -686,8 +683,8 @@
   border-radius: 50%;
   margin: 0 auto 12px;
   background: #1a1028 center/cover no-repeat;
-  border: 3px solid var(--neon-purple);
-  box-shadow: 0 0 24px var(--phone-ring-strong);
+  border: 3px solid #9d50ff;
+  box-shadow: 0 0 24px rgba(157, 80, 255, 0.45);
 }
 .ads-profile-name {
   font-size: 20px;
@@ -699,7 +696,7 @@
   gap: 6px;
 }
 .ads-profile-verified {
-  color: var(--neon-purple);
+  color: #9d50ff;
   font-size: 14px;
 }
 .ads-profile-since {
@@ -716,14 +713,14 @@
 .ads-stat-box {
   padding: 12px 8px;
   border-radius: 14px;
-  border: 1px solid var(--phone-line);
+  border: 1px solid rgba(157, 80, 255, 0.14);
   background: rgba(255, 255, 255, 0.03);
   text-align: center;
 }
 .ads-stat-num {
   font-size: 18px;
   font-weight: 800;
-  color: var(--neon-purple);
+  color: #9d50ff;
 }
 .ads-stat-label {
   font-size: 10px;
@@ -754,7 +751,7 @@
 .ads-menu-item svg {
   width: 18px;
   height: 18px;
-  color: var(--neon-purple);
+  color: #9d50ff;
   flex-shrink: 0;
 }
 .ads-menu-item span { flex: 1; }
@@ -774,7 +771,7 @@
   align-items: end;
   padding: 6px 8px 14px;
   background: rgba(8, 6, 14, 0.95);
-  border-top: 1px solid var(--phone-line);
+  border-top: 1px solid rgba(157, 80, 255, 0.14);
   backdrop-filter: blur(18px);
   z-index: 10;
 }
@@ -796,20 +793,20 @@
   height: 20px;
 }
 .ads-nav-btn.active {
-  color: var(--neon-purple);
+  color: #9d50ff;
 }
 .ads-nav-fab {
   width: 48px;
   height: 48px;
   border-radius: 50%;
   border: none;
-  background: var(--accent-grad);
+  background: linear-gradient(135deg, #7c3aed, #9d50ff);
   color: #fff;
   font-size: 26px;
   font-weight: 300;
   cursor: pointer;
   margin-top: -22px;
-  box-shadow: 0 8px 24px var(--phone-ring-strong);
+  box-shadow: 0 8px 24px rgba(157, 80, 255, 0.45);
   display: grid;
   place-items: center;
   line-height: 1;
@@ -830,7 +827,7 @@
 .ads-setup-card {
   padding: 20px 16px;
   border-radius: 18px;
-  border: 1px solid var(--phone-fill);
+  border: 1px solid rgba(157, 80, 255, 0.18);
   background: rgba(18, 12, 28, 0.72);
 }
 .ads-setup-card h3 {
@@ -876,8 +873,8 @@
   cursor: pointer;
 }
 .ads-picker-item.selected {
-  border-color: var(--neon-purple);
-  box-shadow: 0 0 12px var(--phone-scroll);
+  border-color: #9d50ff;
+  box-shadow: 0 0 12px rgba(157, 80, 255, 0.5);
 }
 
 .ads-empty {

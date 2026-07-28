@@ -8,7 +8,6 @@ Config.AutoLoginExistingCharacter = true
 --- Scena (tik pirmam personažo kūrimui prisijungus) — apšviestas bunkerio kambarys
 Config.Interior = vector3(404.9589, -957.7651, -99.0042)
 Config.HiddenCoords = vector4(397.0, -965.0, -99.0042, 0.0)
---- w = heading: veikėjas žiūri į kamerą (be papildomo rankinio sukimo)
 Config.PedCoords = vector4(404.9589, -957.7651, -99.0042, 180.0)
 Config.DefaultSpawn = vector4(-1037.9487, -2738.0669, 20.1693, 330.3262)
 
@@ -35,48 +34,42 @@ Config.TattooZones = {
 Config.ClothingShopSteps = { 'clothes' }
 Config.ClothingShopPrice = 250
 Config.ClothingShopItems = {
-    { key = 'mask', label = 'Kaukė', maxItem = 200, maxTex = 15 },
-    -- gauju_rubai gang kevlar = smuggler accs_009 → component 8 (t-shirt), not vest
-    { key = 't-shirt', label = 'Marškinėliai / gaujų liemenės', maxItem = 200, maxTex = 25 },
-    { key = 'torso2', label = 'Viršus / striukė', maxItem = 500, maxTex = 15 },
-    { key = 'arms', label = 'Rankos', maxItem = 200, maxTex = 10 },
-    { key = 'pants', label = 'Kelnės', maxItem = 250, maxTex = 15 },
-    { key = 'shoes', label = 'Batai', maxItem = 150, maxTex = 15 },
-    { key = 'vest', label = 'Liemenė (šarvai)', maxItem = 100, maxTex = 10 },
-    { key = 'bag', label = 'Krepšys', maxItem = 100, maxTex = 10 },
-    { key = 'decals', label = 'Lipdukai', maxItem = 150, maxTex = 10 },
-    { key = 'accessory', label = 'Aksesuaras (kaklo)', maxItem = 150, maxTex = 10 },
-    { key = 'hat', label = 'Skrybėlė', maxItem = 200, maxTex = 15, propMin = -1 },
-    { key = 'glass', label = 'Akiniai', maxItem = 80, maxTex = 15, propMin = -1 },
+    { key = 't-shirt', label = 'Marškinėliai', maxItem = 200, maxTex = 15 },
+    { key = 'torso2', label = 'Viršus / striukė', maxItem = 400, maxTex = 15 },
+    { key = 'arms', label = 'Rankos', maxItem = 120, maxTex = 10 },
+    { key = 'pants', label = 'Kelnės', maxItem = 200, maxTex = 15 },
+    { key = 'shoes', label = 'Batai', maxItem = 120, maxTex = 15 },
+    { key = 'vest', label = 'Liemenė', maxItem = 80, maxTex = 10 },
+    { key = 'bag', label = 'Krepšys', maxItem = 80, maxTex = 10 },
+    { key = 'decals', label = 'Lipdukai', maxItem = 120, maxTex = 10 },
+    { key = 'accessory', label = 'Aksesuaras (kaklo)', maxItem = 120, maxTex = 10 },
 }
 
 --- Pilna apranga personažo kūrime (visi variantai per slankiklius)
 Config.CreatorClothingItems = {
-    { key = 'mask', label = 'Kaukė', maxItem = 250, maxTex = 15 },
-    -- gauju_rubai gang kevlar = smuggler accs_009 → component 8 (t-shirt), not vest
-    { key = 't-shirt', label = 'Marškinėliai / gaujų liemenės', maxItem = 250, maxTex = 25 },
-    { key = 'torso2', label = 'Viršus / striukė', maxItem = 500, maxTex = 15 },
-    { key = 'arms', label = 'Rankos', maxItem = 200, maxTex = 10 },
-    { key = 'vest', label = 'Liemenė (šarvai)', maxItem = 100, maxTex = 10 },
-    { key = 'decals', label = 'Lipdukai', maxItem = 150, maxTex = 10 },
-    { key = 'pants', label = 'Kelnės', maxItem = 250, maxTex = 15 },
-    { key = 'shoes', label = 'Batai', maxItem = 150, maxTex = 15 },
-    { key = 'bag', label = 'Krepšys', maxItem = 100, maxTex = 10 },
-    { key = 'accessory', label = 'Aksesuaras (kaklo)', maxItem = 150, maxTex = 10 },
-    { key = 'hat', label = 'Skrybėlė', maxItem = 250, maxTex = 15, propMin = -1 },
-    { key = 'glass', label = 'Akiniai', maxItem = 100, maxTex = 15, propMin = -1 },
-    { key = 'ear', label = 'Ausų papuošalai', maxItem = 50, maxTex = 15, propMin = -1 },
-    { key = 'watch', label = 'Laikrodis', maxItem = 50, maxTex = 15, propMin = -1 },
-    { key = 'bracelet', label = 'Apyrankė', maxItem = 30, maxTex = 15, propMin = -1 },
+    { key = 'mask', label = 'Kaukė', maxItem = 200, maxTex = 15 },
+    { key = 't-shirt', label = 'Marškinėliai', maxItem = 200, maxTex = 15 },
+    { key = 'torso2', label = 'Viršus / striukė', maxItem = 400, maxTex = 15 },
+    { key = 'arms', label = 'Rankos', maxItem = 120, maxTex = 10 },
+    { key = 'vest', label = 'Liemenė', maxItem = 80, maxTex = 10 },
+    { key = 'decals', label = 'Lipdukai', maxItem = 120, maxTex = 10 },
+    { key = 'pants', label = 'Kelnės', maxItem = 200, maxTex = 15 },
+    { key = 'shoes', label = 'Batai', maxItem = 120, maxTex = 15 },
+    { key = 'bag', label = 'Krepšys', maxItem = 80, maxTex = 10 },
+    { key = 'accessory', label = 'Aksesuaras (kaklo)', maxItem = 120, maxTex = 10 },
+    { key = 'hat', label = 'Skrybėlė', maxItem = 200, maxTex = 15, propMin = -1 },
+    { key = 'glass', label = 'Akiniai', maxItem = 80, maxTex = 15, propMin = -1 },
+    { key = 'ear', label = 'Ausų papuošalai', maxItem = 40, maxTex = 15, propMin = -1 },
+    { key = 'watch', label = 'Laikrodis', maxItem = 40, maxTex = 15, propMin = -1 },
+    { key = 'bracelet', label = 'Apyrankė', maxItem = 20, maxTex = 15, propMin = -1 },
 }
 
---- distance = atstumas nuo ped (mažesnis = arčiau); camHeight / lookAt = Z offset; fov = lauko kampas
---- lateral = teigiamas = personažas ekrane dešiniau (kamera šiek tiek į kairę nuo centro)
+--- distance = atstumas nuo ped; camHeight / lookAt = Z offset nuo ped kojų; fov = lauko kampas
 Config.Cameras = {
-    default = { distance = 2.15, camHeight = 0.48, lookAt = 0.58, fov = 44.0, lateral = 0.42 },
-    face = { distance = 1.12, camHeight = 0.64, lookAt = 0.64, fov = 36.0, lateral = 0.28 },
-    hair = { distance = 1.22, camHeight = 0.74, lookAt = 0.70, fov = 36.0, lateral = 0.28 },
-    body = { distance = 3.15, camHeight = 0.18, lookAt = -0.02, fov = 52.0, lateral = 0.55 },
+    default = { distance = 2.85, camHeight = 0.45, lookAt = 0.55, fov = 46.0 },
+    face = { distance = 1.45, camHeight = 0.62, lookAt = 0.62, fov = 38.0 },
+    hair = { distance = 1.55, camHeight = 0.72, lookAt = 0.68, fov = 38.0 },
+    body = { distance = 4.0, camHeight = 0.15, lookAt = -0.08, fov = 56.0 },
 }
 
 --- Pilietybės — visas sąrašas iš shared/countries.lua

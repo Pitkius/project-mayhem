@@ -215,16 +215,16 @@ local function createCamera(session)
     if not session.cam or session.cam == 0 then return false end
     if session.mode == 'pack' then
         local height = session.tableTop - session.tableOrigin.z
-        -- PAKAVIMAS: fiksuotos kameros pozicija. -2.15 = atstumas atgal, 1.3 = aukštis virš stalo.
-        -- Mažesnis -2.15 = arčiau stalo. Didesnis 1.3 = aukščiau. Keičia visą 3D vaizdą.
-        local cameraPos = offsetPoint(session.tableOrigin, session.heading, 0.0, -2.15, height + 1.3)
+        -- PAKAVIMAS: fiksuotos kameros pozicija. -2.15 = atstumas atgal, 1.45 = aukštis virš stalo.
+        -- Mažesnis -2.15 = arčiau stalo. Didesnis 1.45 = aukščiau. Keičia visą 3D vaizdą.
+        local cameraPos = offsetPoint(session.tableOrigin, session.heading, 0.0, -2.15, height + 1.45)
         SetCamCoord(session.cam, cameraPos.x, cameraPos.y, cameraPos.z)
         PointCamAtCoord(session.cam, session.lookAt.x, session.lookAt.y, session.lookAt.z)
         -- PAKAVIMAS: FOV (lauko plotis). Mažesnis = zoom in, didesnis = zoom out, matosi daugiau stalo.
         SetCamFov(session.cam, 42.0)
     else
         session.camYaw = session.heading + 180.0
-        session.camPitch = -20.0
+        session.camPitch = -22.0
         session.camDistance = 3.5
         SetCamFov(session.cam, 45.0)
     end
@@ -525,70 +525,25 @@ local function movePackObject(session, entity, target, durationMs, onDone)
     end)
 end
 
-local function setPackBagTransform(session, entity, scale, isPackedPreview)
+local function setPackBagTransform(session, entity, scale)
     if not entity or not DoesEntityExist(entity) or not session.cam or not DoesCamExist(session.cam) then return end
     local coords = GetEntityCoords(entity)
     local camera = GetCamCoord(session.cam)
-    -- PAKAVIMAS: scale valdo maišelio dydį.
-    -- 1.0 = įprastas dydis, 0.5 = perpus mažesnis, 2.0 = dvigubai didesnis.
+    -- PAKAVIMAS: maišelio pasukimas link kameros. +90+90 = 180° papildomas posūkis.
+    -- Keisk šiuos skaičius — pasikeis kaip maišelis guli (šonu / priekiu / plokščiai).
+    local heading = GetHeadingFromVector_2d(camera.x - coords.x, camera.y - coords.y) + 90 + 90
+    local radians = math.rad(heading)
+    -- PAKAVIMAS: scale = dydis. 1.0 = pilnas tuščias maišelis. packedBagScale (pvz. 0.25) = mažesnis preview.
     local entityScale = scale or 1.0
 
-    -- PAKAVIMAS: apskaičiuojama horizontali kryptis nuo maišelio iki kameros.
-    -- cameraX / cameraY keisti nereikia — reikšmės automatiškai priklauso nuo kameros vietos.
-    local cameraX = camera.x - coords.x
-    local cameraY = camera.y - coords.y
-    local cameraDistance = math.sqrt(cameraX * cameraX + cameraY * cameraY)
-    -- Apsauga nuo dalybos iš nulio, jeigu kamera būtų tiksliai maišelio vietoje.
-    if cameraDistance < 0.001 then return end
-
-    -- PAKAVIMAS: faceX / faceY = normalizuota kryptis tiesiai į žaidėjo kamerą.
-    -- Ši kryptis naudojama kaip maišelio plokščio priekio kryptis.
-    -- Jei kada nors reikėtų, kad maišelis rodytų nugarą į kamerą, prie abiejų
-    -- face reikšmių žemiau pridėk minusą: -cameraX ir -cameraY.
-    local faceX = cameraX / cameraDistance
-    local faceY = cameraY / cameraDistance
-
-    -- PAKAVIMAS: sideX / sideY = 90° kampu nuo kameros krypties esanti šoninė ašis.
-    -- Sukeitus ženklus (-faceY, faceX) į (faceY, -faceX), maišelis apsiverstų
-    -- 180° aplink savo vertikalią ašį, bet vis tiek liktų atsuktas į kamerą.
-    local sideX = -faceY
-    local sideY = faceX
-
-    if isPackedPreview then
-        -- SUPAKUOTAS MAIŠELIS (bkr_prop_weed_smallbag_01a):
-        -- Maišelis pasuktas 90° savo plokštumoje, todėl lokali Y ašis
-        -- nukreipta į pasaulio viršų antruoju vektoriumi (0, 0, entityScale).
-        --
-        -- SetEntityMatrix vektoriai:
-        --   1) sideX, sideY, 0  = horizontalus maišelio šonas;
-        --   2) 0, 0, scale       = modelio Y ašis vertikaliai aukštyn;
-        --   3) faceX, faceY, 0  = plokščias priekis tiesiai į kamerą;
-        --   4) coords            = maišelio vieta, jos pasukimas nekeičia.
-        SetEntityMatrix(
-            entity,
-            sideX * entityScale, sideY * entityScale, 0.0,
-            0.0, 0.0, entityScale,
-            faceX * entityScale, faceY * entityScale, 0.0,
-            coords.x, coords.y, coords.z
-        )
-    else
-        -- TUŠČIAS MAIŠELIS (bkr_prop_weed_bag_01a):
-        -- Šio modelio lokali Y ašis turi būti nukreipta į pasaulio viršų,
-        -- todėl antrasis vektorius yra (0, 0, entityScale).
-        --
-        -- SetEntityMatrix vektoriai:
-        --   1) sideX, sideY, 0  = horizontalus maišelio šonas;
-        --   2) 0, 0, scale       = modelio Y ašis vertikaliai aukštyn;
-        --   3) faceX, faceY, 0  = plokščias priekis tiesiai į kamerą;
-        --   4) coords            = maišelio vieta, jos pasukimas nekeičia.
-        SetEntityMatrix(
-            entity,
-            sideX * entityScale, sideY * entityScale, 0.0,
-            0.0, 0.0, entityScale,
-            faceX * entityScale, faceY * entityScale, 0.0,
-            coords.x, coords.y, coords.z
-        )
-    end
+    -- SetEntityMatrix: pirmi 6 skaičiai = pasukimas, paskutinis stulpelis (0,0,entityScale) = mastelis.
+    SetEntityMatrix(
+        entity,
+        -math.sin(radians) * entityScale, math.cos(radians) * entityScale, 0.0,
+        math.cos(radians) * entityScale, math.sin(radians) * entityScale, 0.0,
+        0.0, 0.0, entityScale,
+        coords.x, coords.y, coords.z
+    )
 end
 
 -- Forward declaration: pack setup/spawn run before screen helpers are defined.
@@ -612,7 +567,7 @@ local function showPackedBagPreview(session, onDone)
             session.packedBagCenter.x, session.packedBagCenter.y, session.packedBagCenter.z,
             false, false, false
         )
-        setPackBagTransform(session, session.packedBagEntity, session.packedBagScale, true)
+        setPackBagTransform(session, session.packedBagEntity, session.packedBagScale)
         SetEntityVisible(session.packedBagEntity, true, false)
     end
 
@@ -801,7 +756,7 @@ local function setupPack(session)
     setPackBagTransform(session, bagEntity, 1.0)
     local packedBagEntity = registerEntity(session, createLocalObject(packedBagHash, session.packedBagCenter, session.heading))
     if not packedBagEntity then return false, 'Nepavyko sukurti supakuoto maišelio peržiūros.' end
-    setPackBagTransform(session, packedBagEntity, session.packedBagScale, true)
+    setPackBagTransform(session, packedBagEntity, session.packedBagScale)
     SetEntityVisible(packedBagEntity, false, false)
     SetEntityCollision(packedBagEntity, false, false)
     session.packedBagEntity = packedBagEntity
@@ -1200,12 +1155,8 @@ function WeedProduction.Start(payload, onDone)
     local heading = GetEntityHeading(ped)
     local origin = pedCoords + directionFromHeading(heading) * 1.35
     local workspace = payload.workspace
-    -- Tik pakavimas naudoja pasaulyje padėtą asmeninį stalą.
-    -- Senos Davis džiovinimo stotys savo darbo stalą susikuria lokaliai prie žaidėjo.
-    local usesExistingTable = mode == 'pack' and workspace and workspace.x and workspace.y and workspace.z
-    if usesExistingTable then
-        -- DŽIOVINIMAS / PAKAVIMAS: workspace yra realiai žaidėjo padėto stalo koordinatės.
-        -- workspace.w = stalo pasukimas; visi 3D objektai ir kamera skaičiuojami nuo šio stalo.
+    if mode == 'pack' and workspace and workspace.x and workspace.y and workspace.z then
+        -- PAKAVIMAS: stalo koordinatės iš config_equipment. workspace.w = stalo pasukimas.
         origin = vector3(workspace.x + 0.0, workspace.y + 0.0, workspace.z + 0.0)
         heading = tonumber(workspace.w) or heading
     end
@@ -1226,48 +1177,34 @@ function WeedProduction.Start(payload, onDone)
     }
     active = session
 
-    if usesExistingTable then
-        -- DŽIOVINIMAS / PAKAVIMAS: naudojamas jau pasaulyje esantis portable stalas.
-        -- 5.0 m = paieškos spindulys aplink serverio perduotą workspace vietą.
+    if mode == 'pack' then
+        -- PAKAVIMAS: ieško esamo stalo žemėlapyje (5.0 m spindulys). Neradus — klaida.
         local existingTable, existingTableHash
-        local tableHash = joaat(MODELS.table[1])
         local findDeadline = GetGameTimer() + 8000
-        local workspaceEntity = tonumber(workspace.entity)
-        if workspaceEntity and workspaceEntity ~= 0 and DoesEntityExist(workspaceEntity)
-            and GetEntityModel(workspaceEntity) == tableHash then
-            -- Equipment sistema perduoda tikslų lokalų entity — tai patikimiausias kelias.
-            existingTable = workspaceEntity
-            existingTableHash = tableHash
-        end
-        if GetResourceState('mrp_cayoperico') == 'started' then
-            -- Cayo objektui prieš paiešką paprašoma salos collision, kad stalas būtų patikimai užkrautas.
-            pcall(function()
-                exports['mrp_cayoperico']:RequestIslandCollision(origin.x, origin.y, origin.z)
-            end)
-        end
-        while not existingTable and GetGameTimer() < findDeadline do
+        repeat
             RequestCollisionAtCoord(origin.x, origin.y, origin.z)
-            local entity = GetClosestObjectOfType(origin.x, origin.y, origin.z, 5.0, tableHash, false, false, false)
+            local hash = joaat(MODELS.table[1])
+            local entity = GetClosestObjectOfType(origin.x, origin.y, origin.z, 5.0, hash, false, false, false)
             if entity and entity ~= 0 and DoesEntityExist(entity) then
                 existingTable = entity
-                existingTableHash = tableHash
+                existingTableHash = hash
             end
             if not existingTable then Wait(100) end
-        end
+        until existingTable or GetGameTimer() >= findDeadline
         if not existingTable then
             finishSession(false, {
                 score = 0,
                 mistakes = 1,
                 reason = 'existing_table_not_found',
             })
-            QBCore.Functions.Notify('Nerastas jūsų padėtas žolės pakavimo stalas.', 'error')
+            QBCore.Functions.Notify('Nerastas esamas pakavimo stalas.', 'error')
             return false
         end
         session.tableOrigin = GetEntityCoords(existingTable)
         session.heading = GetEntityHeading(existingTable)
         local _, maxDim = GetModelDimensions(existingTableHash)
         session.tableTop = session.tableOrigin.z + math.max(0.65, maxDim.z) + 0.03
-        -- 0.65 / 0.03 = stalo aukščio korekcija. Keisk — 3D objektai pakils arba nusileis.
+        -- PAKAVIMAS: 0.65 / 0.03 = stalo aukščio korekcija. Keisk — objektai pakils/nukris.
     else
         local tableHash = loadFirstModel(MODELS.table)
         if not tableHash then
@@ -1293,8 +1230,7 @@ function WeedProduction.Start(payload, onDone)
         return false
     end
 
-    if usesExistingTable then
-        -- Prieš užšaldant žaidėją jis atsukamas į savo realų stalą.
+    if mode == 'pack' then
         TaskTurnPedToFaceCoord(ped, session.tableOrigin.x, session.tableOrigin.y, session.tableTop, 600)
         Wait(600)
     end

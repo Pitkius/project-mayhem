@@ -226,23 +226,9 @@ local function spawnReleasedVehicle(result)
 
     SetEntityAsMissionEntity(veh, true, true)
     SetVehicleNumberPlateText(veh, result.plate or '')
-    local modelName = tostring(result.model or ''):lower()
-    local originalPdModels = {
-        mrpd1 = true, mrpd2 = true, mrpd3 = true, mrpd4 = true,
-        mrpd5 = true, mrpd6 = true, mrpd7 = true, mrpd8 = true,
-        mrpd9 = true, mrpd10 = true, mrpd11 = true, mrpd12 = true,
-        mrpd13 = true, mrpd14 = true, mrpd15 = true, mrpd16 = true,
-        mrpd17 = true, mrpd18 = true, mrpd19 = true, mrpd20 = true,
-        mrpd21 = true, mrpd22 = true,
-    }
-    local isBuiltInPolice = originalPdModels[modelName] == true
-        or modelName == 'polmav'
-        or modelName == 'buzzard2'
     if result.mods and result.mods ~= '' then
         local ok, mods = pcall(json.decode, result.mods)
         if ok and mods and QBCore.Functions.SetVehicleProperties then
-            --- Seni DB extras neturi perrašyti built-in policijos modelio būsenos.
-            if isBuiltInPolice then mods.extras = nil end
             QBCore.Functions.SetVehicleProperties(veh, mods)
         end
     end
@@ -256,31 +242,13 @@ local function buildKmaRows(vehicles)
     local rows = {}
     for _, v in ipairs(vehicles or {}) do
         local st = getVehicleStats(v.model)
-        local state = tonumber(v.state) or 0
-        local statusLabel = 'Lauke / konfiskuota'
-        local canReclaim = true
-        local feeOverride = nil
-
-        if state == 3 then
-            local info = v.scrapInfo
-            if info and not info.canRecover then
-                local hrs = math.ceil((info.lockRemaining or 0) / 3600)
-                statusLabel = ('Ardyta — liko ~%dh'):format(hrs)
-                canReclaim = false
-            else
-                statusLabel = 'Ardyta — galima atgauti'
-                feeOverride = info and info.recoveryFee or tonumber(v.depotprice)
-            end
-        end
-
         rows[#rows + 1] = {
             model = v.model,
             plate = v.plate,
             displayName = getVehicleDisplayName(v.model),
             fuel = math.floor(math.max(0, math.min(100, tonumber(v.fuel) or 0)) + 0.5),
-            statusLabel = statusLabel,
-            canReclaim = canReclaim,
-            recoveryFee = feeOverride,
+            statusLabel = 'Lauke / konfiskuota',
+            canReclaim = true,
             image = getImageUrl(v.model),
             stats = {
                 maxKmh = math.floor(st.maxKmh + 0.5),

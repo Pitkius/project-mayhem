@@ -21,7 +21,7 @@ Config.Shop = {
     label = 'Ginklų parduotuvė',
     license = 'weaponlicense',
     items = {
-        { name = 'weapon_snspistol', amount = 50, price = 42000, slot = 1 },
+        { name = 'weapon_pistol', amount = 50, price = 120000, slot = 1 },
         { name = 'pistol_ammo', amount = 500, price = 250, slot = 2 },
         { name = 'hunting_ammo', amount = 500, price = 55, slot = 3 },
         { name = 'weapon_knife', amount = 100, price = 1800, slot = 4 },

@@ -5,21 +5,12 @@ local function cfg()
 end
 
 local function ensureCraftColumns()
-    -- Direct ALTER (no information_schema) — duplicate column errors are ignored.
-    local function tryAdd(sql)
-        local ok, err = pcall(function()
-            MySQL.query.await(sql)
-        end)
-        if ok then return true end
-        local msg = tostring(err or '')
-        if msg:find('Duplicate column', 1, true) or msg:find('already exists', 1, true) then
-            return false
-        end
-        print(('[mrp_ltpd] WARN craft column migrate: %s'):format(msg))
-        return false
-    end
-    tryAdd('ALTER TABLE ltpd_profiles ADD COLUMN craft_level tinyint NOT NULL DEFAULT 1')
-    tryAdd('ALTER TABLE ltpd_profiles ADD COLUMN crafts_at_level int NOT NULL DEFAULT 0')
+    local row = MySQL.single.await(
+        "SELECT COUNT(*) AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ltpd_profiles' AND COLUMN_NAME = 'craft_level'"
+    )
+    if row and tonumber(row.c) and tonumber(row.c) > 0 then return end
+    MySQL.query.await('ALTER TABLE ltpd_profiles ADD COLUMN craft_level tinyint NOT NULL DEFAULT 1')
+    MySQL.query.await('ALTER TABLE ltpd_profiles ADD COLUMN crafts_at_level int NOT NULL DEFAULT 0')
 end
 
 local function getDivisionForCitizenid(citizenid)
@@ -83,17 +74,16 @@ local function hasCraftPerm(src, st)
     if not isPdOnDuty(src) then return false end
     local need = Config.Permissions and Config.Permissions.pd_craft
     if need == nil then need = 0 end
-    local grade = tonumber(QBCore.Functions.GetPlayer(src).PlayerData.job.grade.level) or 0
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P then return false end
+    local grade = tonumber(P.PlayerData.job.grade.level) or 0
     if grade < need then return false end
     if st and st.minGrade and grade < st.minGrade then return false end
     if st and st.divisions and #st.divisions > 0 then
-        local P = QBCore.Functions.GetPlayer(src)
-        local div = P and getDivisionForCitizenid(P.PlayerData.citizenid) or 'mp'
-        local ok = false
-        for _, d in ipairs(st.divisions) do
-            if d == div then ok = true break end
+        local stored = getDivisionForCitizenid(P.PlayerData.citizenid)
+        if not PdDivisions.canAccessPoint(grade, stored, st) then
+            return false
         end
-        if not ok then return false end
     end
     return true
 end
@@ -168,25 +158,32 @@ local function refundIngredients(Player, recipe)
     end
 end
 
-local function recipeAllowedForDivision(recipe, division)
-    if not recipe or not recipe.divisions or #recipe.divisions == 0 then return true end
-    division = PdDivisions.normalize(division or 'mp')
-    for _, d in ipairs(recipe.divisions) do
-        if PdDivisions.normalize(d) == division then return true end
-    end
-    return false
+local function recipeUnlocked(profile, recipe)
+    local needLv = tonumber(recipe.craftLevel) or 1
+    local order = math.max(0, tonumber(recipe.unlockOrder) or 0)
+    if profile.craft_level > needLv then return true end
+    if profile.craft_level < needLv then return false end
+    return (tonumber(profile.crafts_at_level) or 0) >= order
 end
 
-local function buildProductRows(Player, craftLevel)
+local function buildProductRows(Player, profile)
+    local craftLevel = profile.craft_level
     local labels = cfg().levelLabels or {}
-    local division = getDivisionForCitizenid(Player.PlayerData.citizenid)
     local rows = {}
     for id, recipe in pairs(cfg().recipes or {}) do
         local needLv = tonumber(recipe.craftLevel) or 1
-        if craftLevel >= needLv and recipeAllowedForDivision(recipe, division) then
+        --- Rodom dabartinį lygį (su palaipsniu atrakimu) + jau praeitus lygius
+        if craftLevel >= needLv then
+            local unlocked = recipeUnlocked(profile, recipe)
             local out = recipe.output
             local outLabel = QBCore.Shared.Items[out] and QBCore.Shared.Items[out].label or out
             local timeSec = math.ceil((tonumber(recipe.timeMs) or 10000) / 1000)
+            local order = math.max(0, tonumber(recipe.unlockOrder) or 0)
+            local lockHint = nil
+            if not unlocked and craftLevel == needLv and order > 0 then
+                local have = tonumber(profile.crafts_at_level) or 0
+                lockHint = ('Reikia dar %d gamybų šiame lygyje'):format(math.max(0, order - have))
+            end
             rows[#rows + 1] = {
                 id = id,
                 label = recipe.label or id,
@@ -194,14 +191,36 @@ local function buildProductRows(Player, craftLevel)
                 outputCount = recipe.count or 1,
                 craftLevel = needLv,
                 levelLabel = labels[needLv] or ('Lygis ' .. needLv),
-                locked = false,
+                locked = not unlocked,
+                lockHint = lockHint,
+                unlockOrder = order,
                 timeLabel = timeSec >= 60 and ('~%d min'):format(math.ceil(timeSec / 60)) or ('%d sek.'):format(timeSec),
-                ingredients = buildIngredientStatus(Player, recipe),
+                ingredients = unlocked and buildIngredientStatus(Player, recipe) or {},
+            }
+        elseif craftLevel + 1 == needLv then
+            --- Kito lygio receptai — matomi, bet užrakinti (motyvacija kilti)
+            local out = recipe.output
+            local outLabel = QBCore.Shared.Items[out] and QBCore.Shared.Items[out].label or out
+            rows[#rows + 1] = {
+                id = id,
+                label = recipe.label or id,
+                outputLabel = outLabel,
+                outputCount = recipe.count or 1,
+                craftLevel = needLv,
+                levelLabel = labels[needLv] or ('Lygis ' .. needLv),
+                locked = true,
+                lockHint = ('Reikia %d gamybos lygio'):format(needLv),
+                unlockOrder = tonumber(recipe.unlockOrder) or 0,
+                timeLabel = '—',
+                ingredients = {},
             }
         end
     end
     table.sort(rows, function(a, b)
         if a.craftLevel ~= b.craftLevel then return a.craftLevel < b.craftLevel end
+        if (a.unlockOrder or 0) ~= (b.unlockOrder or 0) then
+            return (a.unlockOrder or 0) < (b.unlockOrder or 0)
+        end
         return a.label < b.label
     end)
     return rows
@@ -235,7 +254,7 @@ local function craftUiPayload(src, stationKey)
         craftsAtLevel = profile.crafts_at_level,
         craftsNeeded = tonumber(per[profile.craft_level]),
         maxLevel = tonumber(cfg().maxLevel) or 3,
-        products = buildProductRows(P, profile.craft_level),
+        products = buildProductRows(P, profile),
     }
 end
 
@@ -276,8 +295,15 @@ RegisterNetEvent('mrp_ltpd:server:pdWeaponCraft', function(stationKey, recipeId)
     if profile.craft_level < needLv then
         return TriggerClientEvent('QBCore:Notify', src, ('Reikia gamybos %d lygio.'):format(needLv), 'error')
     end
-    if not recipeAllowedForDivision(recipe, getDivisionForCitizenid(P.PlayerData.citizenid)) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Šis receptas nepriklauso tavo padaliniui.', 'error')
+    if not recipeUnlocked(profile, recipe) then
+        local order = math.max(0, tonumber(recipe.unlockOrder) or 0)
+        local have = tonumber(profile.crafts_at_level) or 0
+        return TriggerClientEvent(
+            'QBCore:Notify',
+            src,
+            ('Receptas dar užrakintas — reikia dar %d gamybų šiame lygyje.'):format(math.max(0, order - have)),
+            'error'
+        )
     end
 
     if not hasAllIngredients(P, recipe) then

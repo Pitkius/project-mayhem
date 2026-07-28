@@ -333,13 +333,15 @@ local function treasury(source, operation, amount)
     local key = ('treasury:%s:%s:%s:%s'):format(context.gang.gang_id, operation, context.gang.citizenid, os.time())
     if not GangCore.AcquireIdempotency(key, 'gang_treasury', 3600) then return false, 'already_processed' end
     if operation == 'deposit' then
-        if not GangAdapters.Money.Remove(source, 'cash', amount, 'gang-treasury-deposit') then return false, 'not_enough_cash' end
+        if not GangAdapters.Money.Remove(source, 'bank', amount, 'gang-treasury-deposit') then
+            return false, 'not_enough_bank'
+        end
         local affected = MySQL.update.await('UPDATE mrp_gangs_v2 SET treasury = treasury + ? WHERE id = ?', {
             amount,
             context.gang.gang_id,
         })
         if (tonumber(affected) or 0) <= 0 then
-            GangAdapters.Money.Add(source, 'cash', amount, 'gang-treasury-deposit-refund')
+            GangAdapters.Money.Add(source, 'bank', amount, 'gang-treasury-deposit-refund')
             return false, 'treasury_update_failed'
         end
     else
@@ -348,7 +350,7 @@ local function treasury(source, operation, amount)
             WHERE id = ? AND treasury >= ?
         ]], { amount, context.gang.gang_id, amount })
         if (tonumber(affected) or 0) <= 0 then return false, 'not_enough_treasury' end
-        if not GangAdapters.Money.Add(source, 'cash', amount, 'gang-treasury-withdraw') then
+        if not GangAdapters.Money.Add(source, 'bank', amount, 'gang-treasury-withdraw') then
             MySQL.update.await('UPDATE mrp_gangs_v2 SET treasury = treasury + ? WHERE id = ?', {
                 amount,
                 context.gang.gang_id,
@@ -369,17 +371,32 @@ local function treasury(source, operation, amount)
     return true
 end
 
+local function normalizeAvatarUrl(raw)
+    raw = tostring(raw or ''):gsub('^%s+', ''):gsub('%s+$', '')
+    if raw == '' then return '' end
+    if #raw > 512 then return nil end
+    local lower = raw:lower()
+    if not (lower:sub(1, 8) == 'https://' or lower:sub(1, 7) == 'http://') then
+        return nil
+    end
+    if raw:find('%s') or raw:find('[\'"<>]') then return nil end
+    return raw
+end
+
 local function updateGangInfo(source, data)
     if not GangRBAC.Require(source, 'gang.edit') then return false, 'permission_denied' end
     local context = GangRBAC.Resolve(source)
     data = data or {}
     local label = tostring(data.label or context.gang.label):sub(1, 96)
     local color = tostring(data.colorHex or context.gang.color_hex):upper()
+    local avatarUrl = normalizeAvatarUrl(data.avatarUrl)
+    if avatarUrl == nil then return false, 'invalid_avatar' end
     if label:gsub('%s+', '') == '' then return false, 'invalid_label' end
     if not color:match('^#%x%x%x%x%x%x$') then return false, 'invalid_color' end
-    MySQL.update.await('UPDATE mrp_gangs_v2 SET label = ?, color_hex = ? WHERE id = ?', {
+    MySQL.update.await('UPDATE mrp_gangs_v2 SET label = ?, color_hex = ?, avatar_url = ? WHERE id = ?', {
         label,
         color,
+        avatarUrl ~= '' and avatarUrl or nil,
         context.gang.gang_id,
     })
     GangCore.Audit({
@@ -389,7 +406,7 @@ local function updateGangInfo(source, data)
         action = 'gang_info_updated',
         targetType = 'gang',
         targetId = context.gang.gang_id,
-        metadata = { label = label, colorHex = color },
+        metadata = { label = label, colorHex = color, avatarUrl = avatarUrl },
     })
     return true
 end

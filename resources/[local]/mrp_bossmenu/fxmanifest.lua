@@ -12,14 +12,12 @@ shared_scripts {
 }
 
 client_scripts {
-    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/main.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
-    'server/fleet.lua',
 }
 
 ui_page 'html/index.html'

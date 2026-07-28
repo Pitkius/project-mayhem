@@ -109,14 +109,12 @@ end
 RegisterNetEvent('mrp_hacking:client:hackSuccess', function(tierId, coords, ctx)
     if tierId ~= 'atm' or not session then return end
     session.phase = 'hacked'
-    session.silent = true
-    QBCore.Functions.Notify('ATM apsauga apeita (stealth). Gali gręžti — PD nebus iškviesta.', 'success')
+    QBCore.Functions.Notify('ATM apsauga apeita. Gali gręžti.', 'success')
 end)
 
 RegisterNetEvent('mrp_hacking:client:hackFailed', function(tierId)
     if tierId ~= 'atm' then return end
     resetSession()
-    QBCore.Functions.Notify('Hack nepavyko — policija gavo pranešimą.', 'error')
 end)
 
 RegisterNetEvent('mrp_hacking:client:atmDrillOk', function(coords)
@@ -220,44 +218,18 @@ local function tryAttachChain()
     TriggerServerEvent('mrp_hacking:server:atmChainDone', session.coords)
 end
 
-local function startAtmSoft(entity)
+local function startAtmSession(entity)
     local coords = GetEntityCoords(entity)
     QBCore.Functions.TriggerCallback('mrp_hacking:server:atmCanStart', function(res)
         if not res or not res.ok then
             return QBCore.Functions.Notify((res and res.msg) or 'Negalima.', 'error')
         end
-        session = {
-            entity = entity,
-            coords = { x = coords.x, y = coords.y, z = coords.z },
-            phase = 'hacked', --- praleidžiam hack — einam tiesiai į gręžimą
-            silent = false,
-        }
-        TriggerServerEvent('mrp_hacking:server:atmClaim', session.coords, false)
-        QBCore.Functions.Notify('Pradėtas ATM apiplėšimas (be stealth) — gręžk. Baigus PD bus iškviesta.', 'primary')
-    end, { x = coords.x, y = coords.y, z = coords.z }, 'soft')
-end
-
-local function startAtmStealth(entity)
-    local coords = GetEntityCoords(entity)
-    QBCore.Functions.TriggerCallback('mrp_hacking:server:atmCanStart', function(res)
-        if not res or not res.ok then
-            return QBCore.Functions.Notify((res and res.msg) or 'Negalima.', 'error')
-        end
-        session = {
-            entity = entity,
-            coords = { x = coords.x, y = coords.y, z = coords.z },
-            phase = 'idle',
-            silent = true,
-        }
-        TriggerServerEvent('mrp_hacking:server:atmClaim', session.coords, true)
+        session = { entity = entity, coords = { x = coords.x, y = coords.y, z = coords.z }, phase = 'idle' }
+        TriggerServerEvent('mrp_hacking:server:atmClaim', session.coords)
         exports['mrp_hacking']:StartHack('atm', coords, function(ok)
             if not ok then resetSession() end
         end)
-    end, { x = coords.x, y = coords.y, z = coords.z }, 'stealth')
-end
-
-local function startAtmSession(entity)
-    startAtmStealth(entity)
+    end, { x = coords.x, y = coords.y, z = coords.z })
 end
 
 local function doDrill()
@@ -290,24 +262,6 @@ local function tryPullComplete()
 end
 
 local function startCrackHack()
-    --- Soft crack: progress bar vietoj planšetės hack jei silent=false ir nėra planšetės
-    if session and not session.silent and not hasHackTablet() then
-        QBCore.Functions.Progressbar('atm_crack_soft', 'Laužiamas bankomatas…', 12000, false, true, {
-            disableMovement = true,
-            disableCarMovement = true,
-            disableMouse = false,
-            disableCombat = true,
-        }, {
-            animDict = 'anim@heists@fleeca_bank@drilling',
-            anim = 'drill_straight_idle',
-            flags = 49,
-        }, {}, {}, function()
-            TriggerServerEvent('mrp_hacking:server:atmCrackResult', true, false, session.dropIndex)
-        end, function()
-            TriggerServerEvent('mrp_hacking:server:atmCrackResult', false, true, session.dropIndex)
-        end)
-        return
-    end
     exports['mrp_hacking']:StartHack('atm', GetEntityCoords(PlayerPedId()), function(ok)
         TriggerServerEvent('mrp_hacking:server:atmCrackResult', ok, not ok, session.dropIndex)
     end)
@@ -394,37 +348,16 @@ CreateThread(function()
 end)
 
 CreateThread(function()
-    while GetResourceState('qb-target') ~= 'started' do Wait(400) end
-    Wait(800)
-
-    local models = Config.Atm and Config.Atm.Models or {
-        'prop_atm_01', 'prop_atm_02', 'prop_atm_03', 'prop_fleeca_atm',
-    }
-    local hashes = {}
-    for _, m in ipairs(models) do
-        hashes[#hashes + 1] = type(m) == 'number' and m or joaat(m)
-    end
-
-    --- ATM = atskiras flow (server/atm.lua), ne banko apiplėšimas
-    exports['qb-target']:AddTargetModel(hashes, {
+    exports['qb-target']:AddTargetModel(Config.Atm.Models, {
         options = {
             {
-                icon = 'fas fa-screwdriver',
-                label = 'Apiplėšti ATM (gręžimas)',
-                canInteract = function()
-                    if session then return false end
-                    return QBCore.Functions.HasItem(Config.DrillItem or 'drill', 1)
-                end,
-                action = function(entity) startAtmSoft(entity) end,
-            },
-            {
                 icon = 'fas fa-laptop-code',
-                label = 'ATM stealth hack (planšetė)',
+                label = 'ATM hack',
                 canInteract = function()
                     if session then return false end
                     return hasHackTablet()
                 end,
-                action = function(entity) startAtmStealth(entity) end,
+                action = function(entity) startAtmSession(entity) end,
             },
             {
                 icon = 'fas fa-screwdriver',
@@ -436,54 +369,8 @@ CreateThread(function()
                 action = function() doDrill() end,
             },
         },
-        distance = 2.0,
+        distance = 1.8,
     })
-end)
-
---- Fallback E/G tik jei turi reikiamą daiktą (be daikto — jokio hint)
-CreateThread(function()
-    local models = Config.Atm and Config.Atm.Models or {}
-    local hashes = {}
-    for _, m in ipairs(models) do
-        hashes[#hashes + 1] = type(m) == 'number' and m or joaat(m)
-    end
-    while true do
-        local sleep = 600
-        if not session then
-            local ped = PlayerPedId()
-            local p = GetEntityCoords(ped)
-            local hasDrill = QBCore.Functions.HasItem(Config.DrillItem or 'drill', 1)
-            local hasTablet = hasHackTablet()
-            if hasDrill or hasTablet then
-                for i = 1, #hashes do
-                    local obj = GetClosestObjectOfType(p.x, p.y, p.z, 1.6, hashes[i], false, false, false)
-                    if obj and obj ~= 0 then
-                        sleep = 0
-                        if hasDrill and hasTablet then
-                            BeginTextCommandDisplayHelp('STRING')
-                            AddTextComponentSubstringPlayerName('~INPUT_CONTEXT~ ATM gręžimas  |  ~INPUT_DETONATE~ ATM stealth')
-                            EndTextCommandDisplayHelp(0, false, true, -1)
-                        elseif hasDrill then
-                            BeginTextCommandDisplayHelp('STRING')
-                            AddTextComponentSubstringPlayerName('~INPUT_CONTEXT~ Apiplėšti ATM (gręžimas)')
-                            EndTextCommandDisplayHelp(0, false, true, -1)
-                        else
-                            BeginTextCommandDisplayHelp('STRING')
-                            AddTextComponentSubstringPlayerName('~INPUT_DETONATE~ ATM stealth hack')
-                            EndTextCommandDisplayHelp(0, false, true, -1)
-                        end
-                        if hasDrill and IsControlJustPressed(0, 38) then
-                            startAtmSoft(obj)
-                        elseif hasTablet and IsControlJustPressed(0, 47) then
-                            startAtmStealth(obj)
-                        end
-                        break
-                    end
-                end
-            end
-        end
-        Wait(sleep)
-    end
 end)
 
 AddEventHandler('onResourceStop', function(res)

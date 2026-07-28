@@ -15,7 +15,6 @@ shared_scripts {
 }
 
 client_scripts {
-    '@mrp_hud/client/theme_nui_consumer.lua',
     'client.lua'
 }
 
@@ -34,5 +33,4 @@ server_scripts {
 dependencies {
     'qb-core',
     'mrp_dealership',
-    'mrp_bossmenu',
 }

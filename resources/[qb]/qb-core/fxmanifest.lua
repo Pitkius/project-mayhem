@@ -25,8 +25,7 @@ client_scripts {
     'client/functions.lua',
     'client/loops.lua',
     'client/events.lua',
-    'client/drawtext.lua',
-    '@mrp_hud/client/theme_nui_consumer.lua',
+    'client/drawtext.lua'
 }
 
 server_scripts {

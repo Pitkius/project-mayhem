@@ -1,13 +1,6 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local CurrentWeather = Config.StartWeather
--- Avoid BaseTime=8 → unix/2 jump after first minute (felt like night→morning snaps).
-local function initialBaseTime()
-    if Config.RealTimeSync then
-        return os.time(os.date('!*t'))
-    end
-    return os.time(os.date('!*t')) / 2 + 360
-end
-local baseTime = initialBaseTime()
+local baseTime = Config.BaseTime
 local timeOffset = Config.TimeOffset
 local freezeTime = Config.FreezeTime
 local blackout = Config.Blackout
@@ -286,20 +279,24 @@ end, 'admin')
 
 -- THREAD LOOPS
 CreateThread(function()
+    local previous = 0
+    local realTimeFromApi = nil
+    local failedCount = 0
+
     while true do
-        Wait(60000)
+        Wait(60000) -- ⏱️ Sync server time every 1 minute with real time API. Falls back to OS time if failed.
+        local newBaseTime = os.time(os.date("!*t")) / 2 + 360 --Set the server time depending of OS time
         if Config.RealTimeSync then
             retrieveTimeFromApi(function(unixTime)
                 if unixTime then
                     baseTime = unixTime
                 else
-                    baseTime = os.time(os.date('!*t'))
+                    baseTime = os.time(os.date("!*t"))
                 end
             end)
         else
-            -- Smooth continuous clock (same formula as boot) — no reset to Config.BaseTime.
-            baseTime = os.time(os.date('!*t')) / 2 + 360
-        end
+            baseTime = os.time(os.date("!*t")) / 2 + 360
+        end        
     end
 end)
 

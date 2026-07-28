@@ -25,10 +25,11 @@ local function setDiscoveredMap(map)
 end
 
 local TIER_META = {
-    store = { level = 1, action = 'Stealth hack (L1) — kasa/Perlas/seifas' },
-    bank_fleeca = { level = 2, action = 'Seifo hack (L2)' },
-    bank_main = { level = 3, action = 'Pacific heist (L3)' },
-    casino = { level = 3, action = 'Casino heist (L3)' },
+    store = { level = 2, action = 'Pradėti apiplėšimą' },
+    bank_fleeca = { level = 3, action = 'Fleeca vault hack' },
+    bank_main = { level = 4, action = 'Pacific vault hack' },
+    casino = { level = 4, action = 'Casino heist' },
+    vault = { level = 5, action = 'Federal vault hack' },
 }
 
 local function resetSession()
@@ -101,16 +102,19 @@ local function runHackPhase()
 end
 
 local function playBankDoorOpen(coords)
-    QBCore.Functions.Notify('Seifo durys atidarytos — grabink pinigus / gręžk deposit dėžutes.', 'success')
+    QBCore.Functions.Notify('Banko durys atrakintos — gręžk seifo vartus.', 'success')
     PlaySoundFromCoord(-1, 'Vault_Unlock', coords.x, coords.y, coords.z, 'dlc_heist_fleeca_bank_door_sounds', false, 0, false)
     if session and session.locId then
-        exports['mrp_hacking']:OpenBankVaultAfterDrill(session.locId, coords)
+        exports['mrp_hacking']:OpenBankVaultAfterHack(session.locId, coords)
     end
 end
 
 local function playVaultGateOpen(coords)
-    --- Alias — durys atsidaro tik po sėkmingo gręžimo
-    playBankDoorOpen(coords)
+    QBCore.Functions.Notify('Seifo vartai atidaryti — grabink pinigus.', 'success')
+    PlaySoundFromCoord(-1, 'Drill_Pin_Break', coords.x, coords.y, coords.z, 'DLC_HEIST_FLEECA_BANK_DRILLING_SOUNDS', false, 0, false)
+    if session and session.locId then
+        exports['mrp_hacking']:OpenBankVaultAfterDrill(session.locId, coords)
+    end
 end
 
 local function runPhase(phase)
@@ -193,12 +197,11 @@ end
 RegisterNetEvent('mrp_hacking:client:robberyNextPhase', function(tierId, locId, completedPhase)
     if not session or session.tierId ~= tierId or session.locId ~= locId then return end
     exports['mrp_hacking']:UnlockHeistDoorsForPhase(locId, completedPhase)
-    local bankTiers = { bank_fleeca = true, bank_main = true }
-    --- Seifo durys + deposit — tik po sėkmingo gręžimo (ne po hack)
-    if completedPhase == 'drill' and bankTiers[tierId] then
+    local bankTiers = { bank_fleeca = true, bank_main = true, vault = true }
+    if completedPhase == 'hack' and bankTiers[tierId] then
         playBankDoorOpen(session.coords)
-    elseif completedPhase == 'hack' and bankTiers[tierId] then
-        QBCore.Functions.Notify('Apsauga išjungta — dabar gręžk seifo duris.', 'primary')
+    elseif completedPhase == 'drill' and bankTiers[tierId] then
+        playVaultGateOpen(session.coords)
     elseif exports['mrp_hacking']:IsCasinoHeist(tierId) then
         local lootIdx = (completedPhase == 'loot') and session.casinoLootIndex or nil
         exports['mrp_hacking']:OnCasinoPhaseComplete(completedPhase, lootIdx, session.coords)

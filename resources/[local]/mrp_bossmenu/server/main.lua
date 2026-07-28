@@ -63,7 +63,6 @@ local function refreshOnlineJobPlayers(jobName)
                 P.PlayerData.job.grade.name = meta.name
                 P.PlayerData.job.grade.payment = meta.payment
                 P.PlayerData.job.isboss = meta.isboss or false
-                P.PlayerData.job.isdeputy = meta.isdeputy or false
                 P.Functions.UpdatePlayerData()
             end
         end
@@ -130,12 +129,12 @@ local function loadGradeOverrides()
 end
 
 local function seedPoliceDivisions()
-    --- INSERT IGNORE — neperrašo custom pavadinimų po bosų redagavimo
     for _, div in ipairs(Config.DefaultPoliceDivisions or {}) do
         MySQL.insert.await([[
-            INSERT IGNORE INTO mrp_faction_divisions
-                (job_name, division_id, label, abbr, description, min_grade, choosable, sort_order, builtin)
+            INSERT INTO mrp_faction_divisions (job_name, division_id, label, abbr, description, min_grade, choosable, sort_order, builtin)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+            ON DUPLICATE KEY UPDATE label = VALUES(label), abbr = VALUES(abbr), description = VALUES(description),
+                min_grade = VALUES(min_grade), choosable = VALUES(choosable), sort_order = VALUES(sort_order)
         ]], {
             'police', div.id, div.label, div.abbr, div.description,
             div.min_grade or 4, div.choosable and 1 or 0, div.sort_order or 0,
@@ -166,34 +165,6 @@ end
 local function migrateDivisionIds()
     for oldId, newId in pairs(Config.DivisionAliases or {}) do
         MySQL.update.await('UPDATE ltpd_profiles SET division = ? WHERE division = ?', { newId, oldId })
-    end
-    --- SOR → ARAS faction divisions eilutė (PK: job_name + division_id)
-    local hasAras = MySQL.scalar.await(
-        "SELECT 1 FROM mrp_faction_divisions WHERE job_name = 'police' AND division_id = 'aras' LIMIT 1"
-    )
-    local hasSor = MySQL.scalar.await(
-        "SELECT 1 FROM mrp_faction_divisions WHERE job_name = 'police' AND division_id = 'sor' LIMIT 1"
-    )
-    if hasSor and not hasAras then
-        MySQL.update.await([[
-            UPDATE mrp_faction_divisions
-            SET division_id = 'aras',
-                label = 'Antiteroristinių operacijų rinktinė',
-                abbr = 'ARAS',
-                description = 'Elitinis taktinis padalinys'
-            WHERE job_name = 'police' AND division_id = 'sor'
-        ]])
-    elseif hasSor and hasAras then
-        MySQL.update.await("DELETE FROM mrp_faction_divisions WHERE job_name = 'police' AND division_id = 'sor'")
-    elseif hasAras then
-        MySQL.update.await([[
-            UPDATE mrp_faction_divisions
-            SET label = 'Antiteroristinių operacijų rinktinė',
-                abbr = 'ARAS',
-                description = 'Elitinis taktinis padalinys'
-            WHERE job_name = 'police' AND division_id = 'aras'
-              AND (abbr = 'SOR' OR abbr = 'ARO' OR label LIKE '%Specialiųjų operacijų%')
-        ]])
     end
 end
 
@@ -254,42 +225,19 @@ CreateThread(function()
         GradeOverrides.police = GradeOverrides.police or {}
         GradeOverrides.police['9'] = GradeOverrides.police['9'] or { isdeputy = true }
     end
-    for jobName in pairs(Config.Jobs or {}) do
-        applyGradesToShared(jobName)
-        refreshOnlineJobPlayers(jobName)
-    end
 end)
 
-AddEventHandler('QBCore:Server:PlayerLoaded', function(Player)
-    if not Player or not Player.PlayerData or not Player.PlayerData.job then return end
-    local jobName = Player.PlayerData.job.name
-    if not isManagedJob(jobName) then return end
-    local meta = gradeMeta(jobName, Player.PlayerData.job.grade and Player.PlayerData.job.grade.level)
-    if not meta then return end
-    Player.PlayerData.job.grade.name = meta.name
-    Player.PlayerData.job.grade.payment = meta.payment
-    Player.PlayerData.job.isboss = meta.isboss or false
-    Player.PlayerData.job.isdeputy = meta.isdeputy or false
-    Player.Functions.UpdatePlayerData()
-end)
-
-local function hasLeadershipGrade(src, jobName)
+local function isBossOrDeputy(src, jobName)
     local j = getPlayerJob(src)
-    if not j or j.name ~= jobName then return false end
-    if j.isboss == true or j.isdeputy == true then return true end
-    local meta = gradeMeta(jobName, j.grade and j.grade.level)
-    if meta and (meta.isboss or meta.isdeputy) then return true end
+    if not j or j.name ~= jobName or not j.onduty then return false end
+    if j.isboss then return true end
+    local meta = gradeMeta(jobName, j.grade.level)
+    if meta and meta.isdeputy then return true end
     local cfg = jobCfg(jobName)
     if cfg and cfg.defaultDeputyGrade and getGradeLevel(src) == cfg.defaultDeputyGrade then
         return true
     end
     return false
-end
-
-local function isBossOrDeputy(src, jobName)
-    local j = getPlayerJob(src)
-    if not j or j.name ~= jobName or not j.onduty then return false end
-    return hasLeadershipGrade(src, jobName)
 end
 
 local function canOpenBossMenu(src, jobName)
@@ -373,163 +321,23 @@ local function buildDivisionsList(jobName)
     return out
 end
 
-local function parseJsonField(raw)
-    if type(raw) == 'table' then return raw end
-    if type(raw) ~= 'string' or raw == '' then return {} end
-    local ok, decoded = pcall(json.decode, raw)
-    if ok and type(decoded) == 'table' then return decoded end
-    return {}
-end
-
-local function charFullName(charinfo)
-    charinfo = type(charinfo) == 'table' and charinfo or parseJsonField(charinfo)
-    local first = charinfo.firstname or charinfo.firstName or ''
-    local last = charinfo.lastname or charinfo.lastName or ''
-    local full = (('%s %s'):format(first, last)):gsub('^%s+', ''):gsub('%s+$', '')
-    return full ~= '' and full or 'Nežinomas'
-end
-
-local function divisionLabel(jobName, divisionId)
-    if not divisionId or divisionId == '' then return nil end
-    local map = Divisions[jobName] or {}
-    local div = map[divisionId]
-    if not div then return tostring(divisionId) end
-    if div.abbr and div.abbr ~= '' then
-        return ('[%s] %s'):format(div.abbr, div.label or divisionId)
-    end
-    return div.label or divisionId
-end
-
-local function loadDivisionByCitizenids(citizenids)
+local function onlineMembers(jobName)
     local out = {}
-    if not citizenids or #citizenids == 0 then return out end
-    local placeholders = {}
-    for i = 1, #citizenids do
-        placeholders[i] = '?'
-    end
-    local ok, rows = pcall(function()
-        return MySQL.query.await(
-            ('SELECT citizenid, division FROM ltpd_profiles WHERE citizenid IN (%s)'):format(table.concat(placeholders, ',')),
-            citizenids
-        )
-    end)
-    if not ok or not rows then return out end
-    for _, r in ipairs(rows) do
-        out[r.citizenid] = r.division
-    end
-    return out
-end
-
---- Visi įdarbinti (online + offline) iš `players` lentelės
-local function jobMembers(jobName)
-    local onlineByCid = {}
     for src, P in pairs(QBCore.Players) do
-        if P and P.PlayerData and P.PlayerData.job and P.PlayerData.job.name == jobName then
+        if P and P.PlayerData.job and P.PlayerData.job.name == jobName then
             local pd = P.PlayerData
-            onlineByCid[pd.citizenid] = {
-                id = tonumber(src) or src,
-                name = charFullName(pd.charinfo),
-                grade = tonumber(pd.job.grade and pd.job.grade.level) or 0,
-                gradeName = (pd.job.grade and pd.job.grade.name) or ('Rangas ' .. tostring(pd.job.grade and pd.job.grade.level or 0)),
-                onduty = pd.job.onduty == true,
-                online = true,
+            out[#out + 1] = {
+                id = src,
+                name = ('%s %s'):format(pd.charinfo.firstname or '', pd.charinfo.lastname or ''),
+                grade = pd.job.grade.level,
+                gradeName = pd.job.grade.name,
+                onduty = pd.job.onduty,
                 citizenid = pd.citizenid,
             }
         end
     end
-
-    local rows = MySQL.query.await([[
-        SELECT citizenid, charinfo, job
-        FROM players
-        WHERE JSON_UNQUOTE(JSON_EXTRACT(job, '$.name')) = ?
-    ]], { jobName }) or {}
-
-    --- Fallback, jei JSON_EXTRACT nepavyksta (senesnės DB)
-    if #rows == 0 then
-        rows = MySQL.query.await(
-            'SELECT citizenid, charinfo, job FROM players WHERE job LIKE ?',
-            { '%"name":"' .. jobName .. '"%' }
-        ) or {}
-    end
-
-    local citizenids = {}
-    local out = {}
-    local seen = {}
-
-    for _, row in ipairs(rows) do
-        local cid = row.citizenid
-        if cid and not seen[cid] then
-            seen[cid] = true
-            citizenids[#citizenids + 1] = cid
-            local online = onlineByCid[cid]
-            if online then
-                out[#out + 1] = online
-            else
-                local job = parseJsonField(row.job)
-                local grade = job.grade or {}
-                local level = tonumber(grade.level) or 0
-                local meta = gradeMeta(jobName, level)
-                out[#out + 1] = {
-                    id = nil,
-                    name = charFullName(row.charinfo),
-                    grade = level,
-                    gradeName = (meta and meta.name) or grade.name or ('Rangas ' .. level),
-                    onduty = false,
-                    online = false,
-                    citizenid = cid,
-                }
-            end
-        end
-    end
-
-    --- Online, bet dar nesave'inti DB (retas race) — vis tiek parodyti
-    for cid, member in pairs(onlineByCid) do
-        if not seen[cid] then
-            seen[cid] = true
-            citizenids[#citizenids + 1] = cid
-            out[#out + 1] = member
-        end
-    end
-
-    if jobName == 'police' then
-        local divMap = loadDivisionByCitizenids(citizenids)
-        local aliases = Config.DivisionAliases or {}
-        for _, m in ipairs(out) do
-            local divId = tostring(divMap[m.citizenid] or 'mp'):lower()
-            divId = aliases[divId] or divId
-            m.divisionId = divId
-            m.divisionLabel = divisionLabel(jobName, divId)
-        end
-    end
-
-    table.sort(out, function(a, b)
-        if a.online ~= b.online then return a.online end
-        if a.grade ~= b.grade then return a.grade > b.grade end
-        return (a.name or '') < (b.name or '')
-    end)
+    table.sort(out, function(a, b) return a.grade > b.grade end)
     return out
-end
-
-local function resolveJobPlayer(jobName, targetId, citizenid)
-    targetId = tonumber(targetId)
-    citizenid = citizenid and tostring(citizenid) or nil
-    if targetId and targetId > 0 then
-        local P = QBCore.Functions.GetPlayer(targetId)
-        if P and P.PlayerData.job and P.PlayerData.job.name == jobName then
-            return P, false
-        end
-    end
-    if citizenid and citizenid ~= '' then
-        local Online = QBCore.Functions.GetPlayerByCitizenId(citizenid)
-        if Online and Online.PlayerData.job and Online.PlayerData.job.name == jobName then
-            return Online, false
-        end
-        local Offline = QBCore.Functions.GetOfflinePlayerByCitizenId(citizenid)
-        if Offline and Offline.PlayerData.job and Offline.PlayerData.job.name == jobName then
-            return Offline, true
-        end
-    end
-    return nil, false
 end
 
 local function notify(src, msg, typ)
@@ -542,40 +350,21 @@ QBCore.Functions.CreateCallback('mrp_bossmenu:server:getDashboard', function(src
     end
     local cfg = jobCfg(jobName)
     local st = Settings[jobName] or { salary_enabled = true, salary_multiplier = 1.0 }
-    local members = jobMembers(jobName)
-    local onlineCount = 0
-    for _, m in ipairs(members) do
-        if m.online then onlineCount = onlineCount + 1 end
-    end
-    local data = {
+    cb({
         jobName = jobName,
         jobLabel = cfg.label,
         balance = Funds[jobName] or 0,
         salaryEnabled = st.salary_enabled,
         canManageFunds = canManageFunds(src, jobName),
-        canManageRanks = canManageFunds(src, jobName) or canOpenBossMenu(src, jobName),
+        canManageRanks = canManageFunds(src, jobName),
         divisionsEnabled = cfg.divisionsEnabled == true,
-        members = members,
-        memberCount = #members,
-        onlineCount = onlineCount,
+        members = onlineMembers(jobName),
         grades = buildGradesList(jobName),
         divisions = buildDivisionsList(jobName),
         permissionKeys = cfg.permissionKeys or {},
         playerGrade = getGradeLevel(src),
         isBoss = isBossOrDeputy(src, jobName),
-        fleetEnabled = false,
-        fleetDivisionLock = false,
-        fleetVehicles = nil,
-    }
-    if jobName == 'police' and type(BossMenuGetFleetPayload) == 'function' then
-        local fleet = BossMenuGetFleetPayload()
-        if fleet then
-            data.fleetEnabled = true
-            data.fleetDivisionLock = fleet.fleetDivisionLock == true
-            data.fleetVehicles = fleet.fleetVehicles or {}
-        end
-    end
-    cb(data)
+    })
 end)
 
 RegisterNetEvent('mrp_bossmenu:server:fundDeposit', function(jobName, amount)
@@ -776,57 +565,24 @@ end)
 
 RegisterNetEvent('mrp_bossmenu:server:saveDivision', function(jobName, data)
     local src = source
-    if not isManagedJob(jobName) or not canOpenBossMenu(src, jobName) then return end
+    if not isManagedJob(jobName) or not canManageFunds(src, jobName) then return end
     local cfg = jobCfg(jobName)
     if not cfg or not cfg.divisionsEnabled then return end
     if type(data) ~= 'table' then return end
-    local id = tostring(data.id or ''):lower():gsub('[^%w_%-]', ''):gsub('%s+', '_'):sub(1, 32)
+    local id = tostring(data.id or ''):lower():gsub('%s+', '_'):sub(1, 32)
     if id == '' then return notify(src, 'Divizijos ID privalomas.', 'error') end
-    local label = tostring(data.label or ''):gsub('^%s+', ''):gsub('%s+$', '')
-    if label == '' then label = id end
-    local abbr = tostring(data.abbr or ''):gsub('^%s+', ''):gsub('%s+$', '')
-    if abbr == '' then abbr = id:upper():sub(1, 8) end
-    local existing = Divisions[jobName] and Divisions[jobName][id]
-    local sortOrder = tonumber(data.sortOrder)
-    if not sortOrder then
-        sortOrder = existing and existing.sortOrder or 80
-    end
     MySQL.insert.await([[
         INSERT INTO mrp_faction_divisions (job_name, division_id, label, abbr, description, min_grade, choosable, sort_order, builtin)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
         ON DUPLICATE KEY UPDATE label = VALUES(label), abbr = VALUES(abbr), description = VALUES(description),
             min_grade = VALUES(min_grade), choosable = VALUES(choosable), sort_order = VALUES(sort_order)
     ]], {
-        jobName, id, label, abbr:sub(1, 8), tostring(data.description or ''),
-        tonumber(data.minGrade) or 4, data.choosable ~= false and 1 or 0, sortOrder,
-        (existing and existing.builtin) and 1 or 0,
+        jobName, id, data.label or id, data.abbr or id:upper(), data.description or '',
+        tonumber(data.minGrade) or 4, data.choosable ~= false and 1 or 0, tonumber(data.sortOrder) or 80,
     })
     loadDivisions()
     TriggerEvent('mrp_bossmenu:divisionsUpdated', jobName)
-    notify(src, existing and 'Divizija atnaujinta.' or 'Divizija sukurta.', 'success')
-end)
-
-RegisterNetEvent('mrp_bossmenu:server:deleteDivision', function(jobName, divisionId)
-    local src = source
-    if not isManagedJob(jobName) or not canOpenBossMenu(src, jobName) then return end
-    local cfg = jobCfg(jobName)
-    if not cfg or not cfg.divisionsEnabled then return end
-    divisionId = tostring(divisionId or ''):lower()
-    if divisionId == '' then return end
-    local existing = Divisions[jobName] and Divisions[jobName][divisionId]
-    if not existing then
-        return notify(src, 'Divizija nerasta.', 'error')
-    end
-    if existing.builtin then
-        return notify(src, 'Standartinės divizijos ištrinti negalima — gali tik pervadinti.', 'error')
-    end
-    MySQL.update.await('DELETE FROM mrp_faction_divisions WHERE job_name = ? AND division_id = ?', { jobName, divisionId })
-    if jobName == 'police' then
-        MySQL.update.await('UPDATE ltpd_profiles SET division = ? WHERE division = ?', { 'mp', divisionId })
-    end
-    loadDivisions()
-    TriggerEvent('mrp_bossmenu:divisionsUpdated', jobName)
-    notify(src, 'Divizija ištrinta. Pareigūnai perkelti į MP.', 'success')
+    notify(src, 'Divizija išsaugota.', 'success')
 end)
 
 RegisterNetEvent('mrp_bossmenu:server:hire', function(jobName, targetId, grade, divisionId)
@@ -839,7 +595,7 @@ RegisterNetEvent('mrp_bossmenu:server:hire', function(jobName, targetId, grade, 
         return notify(src, 'Negali skirti aukštesnio ar lygaus rango.', 'error')
     end
     local T = QBCore.Functions.GetPlayer(targetId)
-    if not T then return notify(src, 'Žaidėjas neprisijungęs (įdarbinimui reikia serverio ID).', 'error') end
+    if not T then return notify(src, 'Žaidėjas neprisijungęs.', 'error') end
     T.Functions.SetJob(jobName, grade)
     T.Functions.SetJobDuty(true)
     if jobName == 'police' and divisionId then
@@ -849,39 +605,32 @@ RegisterNetEvent('mrp_bossmenu:server:hire', function(jobName, targetId, grade, 
     notify(targetId, ('Priimta į %s. Rangas: %s'):format(jobCfg(jobName).label, grade), 'success')
 end)
 
-RegisterNetEvent('mrp_bossmenu:server:fire', function(jobName, targetId, citizenid)
+RegisterNetEvent('mrp_bossmenu:server:fire', function(jobName, targetId)
     local src = source
     if not isManagedJob(jobName) or not canOpenBossMenu(src, jobName) then return end
-    local T, offline = resolveJobPlayer(jobName, targetId, citizenid)
-    if not T then
+    targetId = tonumber(targetId)
+    if not targetId then return end
+    local T = QBCore.Functions.GetPlayer(targetId)
+    if not T or T.PlayerData.job.name ~= jobName then
         return notify(src, 'Žaidėjas ne šioje frakcijoje.', 'error')
     end
     local tg = tonumber(T.PlayerData.job.grade.level) or 0
     if not bossOutranks(src, jobName, tg) then
         return notify(src, 'Negali atleisti aukštesnio ar lygaus rango.', 'error')
     end
-    local cid = T.PlayerData.citizenid
-    local onlineSrc = not offline and T.PlayerData.source or nil
     T.Functions.SetJob('unemployed', 0)
-    if offline then
-        T.Functions.Save()
-    end
-    if jobName == 'police' and cid then
-        MySQL.update.await('UPDATE ltpd_profiles SET division = ? WHERE citizenid = ?', { 'mp', cid })
-    end
-    notify(src, ('Atleistas: %s'):format(cid or tostring(targetId)), 'success')
-    if onlineSrc then
-        notify(onlineSrc, 'Atleistas iš frakcijos.', 'error')
-    end
+    notify(src, ('Atleistas ID %s'):format(targetId), 'success')
+    notify(targetId, 'Atleistas iš frakcijos.', 'error')
 end)
 
-RegisterNetEvent('mrp_bossmenu:server:setGrade', function(jobName, targetId, grade, citizenid)
+RegisterNetEvent('mrp_bossmenu:server:setGrade', function(jobName, targetId, grade)
     local src = source
     if not isManagedJob(jobName) or not canOpenBossMenu(src, jobName) then return end
+    targetId = tonumber(targetId)
     grade = tonumber(grade)
-    if grade == nil then return end
-    local T, offline = resolveJobPlayer(jobName, targetId, citizenid)
-    if not T then
+    if not targetId or grade == nil then return end
+    local T = QBCore.Functions.GetPlayer(targetId)
+    if not T or T.PlayerData.job.name ~= jobName then
         return notify(src, 'Žaidėjas ne šioje frakcijoje.', 'error')
     end
     local tg = tonumber(T.PlayerData.job.grade.level) or 0
@@ -889,32 +638,19 @@ RegisterNetEvent('mrp_bossmenu:server:setGrade', function(jobName, targetId, gra
         return notify(src, 'Negali keisti į aukštesnį ar lygų rangą.', 'error')
     end
     T.Functions.SetJob(jobName, grade)
-    if offline then
-        T.Functions.Save()
-    else
-        if jobName == 'police' then
-            TriggerEvent('mrp_bossmenu:internal:setPdDivisionByGrade', T.PlayerData.source, grade)
-        end
-        notify(T.PlayerData.source, ('Naujas rangas: %s'):format(grade), 'primary')
+    if jobName == 'police' then
+        TriggerEvent('mrp_bossmenu:internal:setPdDivisionByGrade', targetId, grade)
     end
-    if jobName == 'police' and offline then
-        TriggerEvent('mrp_bossmenu:internal:setPdDivisionByCitizenId', T.PlayerData.citizenid, nil, grade)
-    end
-    notify(src, ('Rangas pakeistas → %s'):format(grade), 'success')
+    notify(src, ('Rangas pakeistas (ID %s → %s)'):format(targetId, grade), 'success')
+    notify(targetId, ('Naujas rangas: %s'):format(grade), 'primary')
 end)
 
-RegisterNetEvent('mrp_bossmenu:server:setMemberDivision', function(jobName, targetId, divisionId, citizenid)
+RegisterNetEvent('mrp_bossmenu:server:setMemberDivision', function(jobName, targetId, divisionId)
     local src = source
     if jobName ~= 'police' or not canOpenBossMenu(src, jobName) then return end
-    local T, offline = resolveJobPlayer(jobName, targetId, citizenid)
-    if not T then
-        return notify(src, 'Žaidėjas ne šioje frakcijoje.', 'error')
-    end
-    if offline then
-        TriggerEvent('mrp_bossmenu:internal:setPdDivisionByCitizenId', T.PlayerData.citizenid, divisionId, nil)
-    else
-        TriggerEvent('mrp_bossmenu:internal:setPdDivision', T.PlayerData.source, divisionId)
-    end
+    targetId = tonumber(targetId)
+    if not targetId then return end
+    TriggerEvent('mrp_bossmenu:internal:setPdDivision', targetId, divisionId)
     notify(src, 'Divizija pakeista.', 'success')
 end)
 
@@ -965,13 +701,4 @@ end)
 
 exports('CanOpenBossMenu', function(src, jobName)
     return canOpenBossMenu(src, jobName)
-end)
-
-exports('IsBossOrDeputy', function(src, jobName)
-    return isBossOrDeputy(src, jobName)
-end)
-
---- Vadas / pavaduotojas pagal rangą (be onduty reikalavimo) – pd_markers / sync
-exports('HasLeadershipGrade', function(src, jobName)
-    return hasLeadershipGrade(src, jobName)
 end)

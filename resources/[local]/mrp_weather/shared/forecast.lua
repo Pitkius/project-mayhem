@@ -34,12 +34,7 @@ function WeatherForecast.getRegionWeights(regionId)
 end
 
 function WeatherForecast.getWeatherType(regionId, gameDay, hour, seed)
-    -- Multi-hour blocks: same weather for WeatherBlockHours (default 3),
-    -- so sunny→rain no longer flips every game hour (~2 real minutes).
-    local blockHours = math.max(1, math.floor(tonumber(cfg().WeatherBlockHours) or 3))
-    local h = tonumber(hour) or 0
-    local block = math.floor(h / blockHours)
-    local key = ('%s:%d:b%d:%d'):format(regionId or 'los_santos', gameDay or 0, block, seed or 0)
+    local key = ('%s:%d:%d:%d'):format(regionId or 'los_santos', gameDay or 0, hour or 0, seed or 0)
     local roll = stableHash(key)
     return pickWeighted(WeatherForecast.getRegionWeights(regionId), roll)
 end

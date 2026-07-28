@@ -1,5 +1,7 @@
 Config                  = {}
-Config.DynamicWeather   = false -- mrp_weather owns regional weather; keep qb random weather OFF.
+Config.DynamicWeather   = true -- Set this to false if you don't want the weather to change automatically every 10 minutes.
+
+-- On server start
 Config.StartWeather     = 'EXTRASUNNY' -- Default weather                       default: 'EXTRASUNNY'
 Config.BaseTime         = 8 -- Time                                             default: 8
 Config.TimeOffset       = 0 -- Time offset                                      default: 0

@@ -10,15 +10,6 @@ local engineStartBlockedUntil = {}
 local STALL_AFTER_IMPACT_SPEED = 120.0
 --- Po avarijos: +1,5 s už kiekvienus 100 km/h (100 → 1,5 s, 200 → 3 s).
 local CRASH_RESTART_MS_PER_100KMH = 1500
---- REH/addon handling.meta dažnai turi labai žemą fEngineDamageMult — normalizuojame vairuotojui įlipus.
-local MIN_ENGINE_DAMAGE_MULT = 1.0
-local MIN_COLLISION_DAMAGE_MULT = 0.7
---- Jei kėbulas smarkiai pažeidžiamas, o variklis beveik ne — perkeliame dalį smūgio.
-local BODY_TO_ENGINE_TRANSFER_RATIO = 0.85
-local BODY_LOSS_TRANSFER_MIN = 5.0
-local ENGINE_LOSS_VS_BODY_FRACTION = 0.35
-
-local damageMultNormalizedByNet = {}
 
 local function crashRestartDelayMs(speedKmh)
     speedKmh = math.max(0.0, tonumber(speedKmh) or 0.0)
@@ -48,61 +39,6 @@ end
 
 local function plateOf(veh)
     return (QBCore.Functions.GetPlate(veh) or GetVehicleNumberPlateText(veh) or ''):gsub('%s+', '')
-end
-
-local function isNaturalNpcVehicle(veh)
-    if GetResourceState('mrp_basics') ~= 'started' then return false end
-    local ok, isNpc = pcall(function()
-        return exports['mrp_basics']:IsNaturalNpcVehicle(veh)
-    end)
-    return ok and isNpc == true
-end
-
-local function isRehVehicle(veh)
-    if GetResourceState('mrp_vehicle_perf') ~= 'started' then return false end
-    local hash = GetEntityModel(veh)
-    local spawnName = nil
-    local vehicles = QBCore.Shared and QBCore.Shared.Vehicles or {}
-    for name, row in pairs(vehicles) do
-        local model = (row.model or name):lower()
-        if joaat(model) == hash or joaat(name:lower()) == hash then
-            spawnName = model
-            break
-        end
-    end
-    if not spawnName then
-        local display = GetDisplayNameFromVehicleModel(hash)
-        if display and display ~= 'CARNOTFOUND' then
-            spawnName = display:lower()
-        end
-    end
-    if not spawnName then return false end
-    local ok, yes = pcall(function()
-        return exports['mrp_vehicle_perf']:IsRehModel(spawnName)
-    end)
-    return ok and yes == true
-end
-
-local function normalizeVehicleDamageHandling(veh, netId)
-    if damageMultNormalizedByNet[netId] then return end
-    damageMultNormalizedByNet[netId] = true
-    if isNaturalNpcVehicle(veh) then return end
-
-    local engMult = GetVehicleHandlingFloat(veh, 'CHandlingData', 'fEngineDamageMult')
-    local colMult = GetVehicleHandlingFloat(veh, 'CHandlingData', 'fCollisionDamageMult')
-    local changed = false
-
-    if engMult < MIN_ENGINE_DAMAGE_MULT then
-        SetVehicleHandlingFloat(veh, 'CHandlingData', 'fEngineDamageMult', MIN_ENGINE_DAMAGE_MULT)
-        changed = true
-    end
-    if colMult < MIN_COLLISION_DAMAGE_MULT then
-        SetVehicleHandlingFloat(veh, 'CHandlingData', 'fCollisionDamageMult', MIN_COLLISION_DAMAGE_MULT)
-        changed = true
-    end
-    if changed or isRehVehicle(veh) then
-        SetVehicleEngineCanDegrade(veh, true)
-    end
 end
 
 local function isLocked(veh)
@@ -292,8 +228,6 @@ CreateThread(function()
             local veh = GetVehiclePedIsIn(ped, false)
             if veh and veh ~= 0 and DoesEntityExist(veh) and GetPedInVehicleSeat(veh, -1) == ped then
                 local netId = VehToNet(veh)
-                normalizeVehicleDamageHandling(veh, netId)
-
                 local spdNow = GetEntitySpeed(veh) * 3.6
                 local peak = peakSpeedKmhByNet[netId] or 0.0
                 if spdNow >= STALL_AFTER_IMPACT_SPEED then
@@ -311,16 +245,8 @@ CreateThread(function()
                 local bodyNow = GetVehicleBodyHealth(veh)
                 local prevBody = lastBodyHealthByNet[netId] or bodyNow
 
-                local bodyLoss = prevBody - bodyNow
-                local engineLoss = prev - hp
-                if bodyLoss > BODY_LOSS_TRANSFER_MIN and engineLoss < (bodyLoss * ENGINE_LOSS_VS_BODY_FRACTION) then
-                    local engineDrop = bodyLoss * BODY_TO_ENGINE_TRANSFER_RATIO
-                    hp = math.max(80.0, hp - engineDrop)
-                    SetVehicleEngineHealth(veh, hp)
-                end
-
                 local engineHit = (prev - hp) > 35.0
-                local bodyHit = bodyLoss > 18.0
+                local bodyHit = (prevBody - bodyNow) > 18.0
 
                 --- Smūgis + ≥120 KM/H („pikas“ per važiavimą): variklis užgesta — be auto-užvedimo, su cooldown pagal greitį
                 local crashPeak = peakSpeedKmhByNet[netId] or 0.0

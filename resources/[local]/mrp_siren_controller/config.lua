@@ -78,8 +78,9 @@ Config.FleetVehicles = {
 }
 
 --- Modeliai, kuriems F6 režimą map'inam į ELS-FiveM (ne SetVehicleSiren).
+--- mrpd16/mrpd23 = native carcols (ne ELS extras).
 Config.ElsFleetVehicles = {
-    'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16', 'mrpd21', 'mrpd22', 'mrpd23',
+    'mrpd13', 'mrpd14', 'mrpd15', 'mrpd21', 'mrpd22',
     'ems1', 'ems2',
 }
 

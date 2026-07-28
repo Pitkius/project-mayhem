@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'mrp_housing'
 author 'MRP'
-description 'Dynasty 8 — būsto klasės, interjerų užraktas, Su baldais / Be baldų, raktai'
-version '1.1.0'
+description 'Dynasty 8 nekilnojamasis turtas — unikalūs namai/butai, interjero pasirinkimas'
+version '1.0.0'
 
 ui_page 'html/index.html'
 
@@ -15,7 +15,6 @@ shared_scripts {
 }
 
 client_scripts {
-    '@mrp_hud/client/theme_nui_consumer.lua',
     'client/main.lua',
 }
 
@@ -36,6 +35,3 @@ dependencies {
     'qb-target',
     'qb-inventory',
 }
-
---- Raktų meniu (duoti / atšaukti)
--- qb-menu, qb-input
