@@ -8,8 +8,12 @@ lua54 'yes'
 
 dependency 'cfx-gabz-mapdata'
 
+server_scripts {
+    'server.lua',
+}
+
 client_scripts {
-    'client.lua'
+    'client.lua',
 }
 
 exports {

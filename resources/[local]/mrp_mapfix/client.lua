@@ -1,10 +1,12 @@
 --- O'Neil sodyba + Simeon showroom. Lost MC valdo `cfx-gabz-lost` (vengti dvigubo IPL).
 
-local BURNT_FARM_IPLS = {
+-- Burnt story-mission shell + interior cap (blocks doors when left active).
+local BLOCKING_FARM_IPLS = {
     'farm_burnt',
     'farm_burnt_props',
     'farm_burnt_lod',
     'farm_burnt_props2',
+    'farmint_cap', -- MUST stay removed; requesting it seals the farmhouse
 }
 
 local VANILLA_FARM_EXTERIOR_IPLS = {
@@ -14,9 +16,9 @@ local VANILLA_FARM_EXTERIOR_IPLS = {
     'des_farmhouse',
 }
 
+-- Intact interior only (matches bob74_ipl). Do NOT request farmint_cap here.
 local VANILLA_FARM_INTERIOR_IPLS = {
     'farmint',
-    'farmint_cap',
 }
 
 local ONEIL_DOOR_PROBE = vec3(2452.2986, 4969.7222, 46.5716)
@@ -290,11 +292,13 @@ local function loadSimeonShowroom(force)
 end
 
 local function loadOneilFarmhouse()
-    removeIpls(BURNT_FARM_IPLS)
+    removeIpls(BLOCKING_FARM_IPLS)
     removeIpls(ONEIL_DRUGLAB_IPLS)
     hideOneilDruglabShells()
     requestIpls(VANILLA_FARM_EXTERIOR_IPLS)
     requestIpls(VANILLA_FARM_INTERIOR_IPLS)
+    -- Re-remove cap after requests (other IPL scripts may re-enable it).
+    RemoveIpl('farmint_cap')
 
     local probes = {
         ONEIL_CENTER,
@@ -362,7 +366,7 @@ CreateThread(function()
 
         if nearOneil then
             removeIpls(ONEIL_DRUGLAB_IPLS)
-            removeIpls(BURNT_FARM_IPLS)
+            removeIpls(BLOCKING_FARM_IPLS)
             loadOneilFarmhouse()
             Wait(2500)
         elseif nearSimeon then
@@ -384,6 +388,7 @@ end)
 AddEventHandler('onResourceStart', function(resourceName)
     if resourceName == GetCurrentResourceName()
         or resourceName == 'druglabs'
+        or resourceName == 'bob74_ipl'
         or resourceName == 'mrp_dealership'
         or resourceName == 'sc1_29_motel'
         or resourceName == 'cfx-gabz-lost'
