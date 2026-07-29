@@ -515,29 +515,6 @@ RegisterNUICallback('getWeather', function(_, cb)
     cb({ ok = true, label = label })
 end)
 
-RegisterNUICallback('openCargoNet', function(_, cb)
-    cb({ ok = true })
-    CreateThread(function()
-        if GetResourceState('mrp_trucking') ~= 'started' then
-            QBCore.Functions.Notify('CargoNet šiuo metu nepasiekiama.', 'error')
-            return
-        end
-        closePhone()
-        local deadline = GetGameTimer() + 2500
-        while phonePhase ~= 'idle' and GetGameTimer() < deadline do
-            Wait(50)
-        end
-        Wait(100)
-        local ok, err = pcall(function()
-            TriggerEvent('mrp_trucking:client:openUI', { mode = 'phone' })
-        end)
-        if not ok then
-            print(('[mrp_phone] CargoNet open error: %s'):format(tostring(err)))
-            QBCore.Functions.Notify('Nepavyko atidaryti CargoNet.', 'error')
-        end
-    end)
-end)
-
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     setPhoneVoiceCall(0)

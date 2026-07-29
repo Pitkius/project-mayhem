@@ -462,31 +462,6 @@ local function getPendingIncomingCallFor(src)
     return nil
 end
 
-local function getCargoNetStatus(citizenid)
-    if not citizenid then
-        return { registered = false, level = 1, deliveries = 0 }
-    end
-    local row = MySQL.single.await([[
-        SELECT registered, level, total_deliveries
-        FROM fivempro_trucker_profiles
-        WHERE citizenid = ?
-        LIMIT 1
-    ]], { citizenid })
-    if not row then
-        return { registered = false, level = 1, deliveries = 0 }
-    end
-    local registered = row.registered == 1 or row.registered == true or row.registered == '1'
-    local deliveries = tonumber(row.total_deliveries) or 0
-    if deliveries > 0 then
-        registered = true
-    end
-    return {
-        registered = registered,
-        level = tonumber(row.level) or 1,
-        deliveries = deliveries,
-    }
-end
-
 local function getInitialDataFor(src)
     local citizenid, P = getCitizen(src)
     if not citizenid then return nil end
@@ -617,7 +592,8 @@ local function getInitialDataFor(src)
         adProfile = adProfile and {
             username = tostring(adProfile.username or ''),
             bio = tostring(adProfile.bio or ''),
-            hasAvatar = adProfile.avatar_data ~= nil and adProfile.avatar_data ~= '',
+            hasAvatar = (PhotoStorage and PhotoStorage.hasAvatar(citizenid))
+                or (adProfile.avatar_data ~= nil and adProfile.avatar_data ~= ''),
             created_at = adProfile.created_at,
         } or nil,
         photos = photos,
@@ -625,7 +601,6 @@ local function getInitialDataFor(src)
         notesOldDays = (Config.Phone and Config.Phone.notesOldDays) or 30,
         posts = posts,
         pendingIncomingCall = getPendingIncomingCallFor(src),
-        cargoNet = getCargoNetStatus(citizenid),
     }
 end
 
@@ -860,30 +835,43 @@ QBCore.Functions.CreateCallback('mrp_phone:server:savePhoto', function(source, c
     local citizenid = getCitizen(source)
     if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
     local imageData = normalizePhotoImageData(data and data.imageData)
-    local maxLen = (Config.Phone and Config.Phone.maxPhotoDataLength) or 1500000
+    local maxLen = (Config.Phone and Config.Phone.maxPhotoDataLength) or 750000
     if imageData == '' or #imageData < 32 then
         return cb({ ok = false, message = 'Tuščia nuotrauka.' })
     end
     if #imageData > maxLen then
         return cb({ ok = false, message = 'Nuotrauka per didelė. Bandyk dar kartą.' })
     end
-    local maxPhotos = (Config.Phone and Config.Phone.maxPhotosPerUser) or 80
+    local maxPhotos = (Config.Phone and Config.Phone.maxPhotosPerUser) or 48
     local count = MySQL.scalar.await('SELECT COUNT(*) FROM fivempro_phone_photos WHERE citizenid = ?', { citizenid }) or 0
     if tonumber(count) >= maxPhotos then
-        local oldest = MySQL.scalar.await(
-            'SELECT id FROM fivempro_phone_photos WHERE citizenid = ? ORDER BY id ASC LIMIT 1',
+        local oldest = MySQL.single.await(
+            'SELECT id, file_key FROM fivempro_phone_photos WHERE citizenid = ? ORDER BY id ASC LIMIT 1',
             { citizenid }
         )
         if oldest then
-            MySQL.update.await('DELETE FROM fivempro_phone_photos WHERE id = ?', { oldest })
+            if PhotoStorage and oldest.file_key then
+                PhotoStorage.deletePhotoFile(oldest.file_key)
+            end
+            MySQL.update.await('DELETE FROM fivempro_phone_photos WHERE id = ?', { oldest.id })
         end
     end
     local isFront = (data and data.front == true) and 1 or 0
     local zoom = tonumber(data and data.zoom) or 1.0
+    --- Pirma eilutė be blob — tada failas ant disko
     local id = MySQL.insert.await([[
-        INSERT INTO fivempro_phone_photos (citizenid, image_data, is_front, zoom_level)
-        VALUES (?, ?, ?, ?)
-    ]], { citizenid, imageData, isFront, zoom })
+        INSERT INTO fivempro_phone_photos (citizenid, image_data, file_key, is_front, zoom_level)
+        VALUES (?, NULL, '', ?, ?)
+    ]], { citizenid, isFront, zoom })
+    if not id then
+        return cb({ ok = false, message = 'Nepavyko išsaugoti.' })
+    end
+    local fileKey = PhotoStorage and PhotoStorage.writePhoto(id, imageData)
+    if not fileKey then
+        MySQL.update.await('DELETE FROM fivempro_phone_photos WHERE id = ?', { id })
+        return cb({ ok = false, message = 'Nepavyko įrašyti nuotraukos į diską.' })
+    end
+    MySQL.update.await('UPDATE fivempro_phone_photos SET file_key = ? WHERE id = ?', { fileKey, id })
     local newCount = MySQL.scalar.await('SELECT COUNT(*) FROM fivempro_phone_photos WHERE citizenid = ?', { citizenid }) or 0
     cb({ ok = true, id = id, count = tonumber(newCount) or 0 })
     TriggerClientEvent('mrp_phone:client:refreshData', source)
@@ -898,13 +886,30 @@ QBCore.Functions.CreateCallback('mrp_phone:server:getPhoto', function(source, cb
     local photoId = tonumber(data and data.id)
     if not photoId then return cb({ ok = false }) end
     local row = MySQL.single.await([[
-        SELECT id, image_data, is_front, created_at
+        SELECT id, image_data, file_key, is_front, created_at
         FROM fivempro_phone_photos
         WHERE id = ? AND citizenid = ?
         LIMIT 1
     ]], { photoId, citizenid })
     if not row then return cb({ ok = false, message = 'Nuotrauka nerasta.' }) end
-    local imageData = normalizePhotoImageData(row.image_data)
+
+    local imageData = ''
+    if row.file_key and row.file_key ~= '' and PhotoStorage then
+        imageData = PhotoStorage.readPhotoDataUrl(row.id, row.file_key)
+    end
+    if imageData == '' or #imageData < 32 then
+        imageData = normalizePhotoImageData(row.image_data)
+        --- Lazy migrate jei dar MySQL blob
+        if imageData ~= '' and PhotoStorage then
+            local key = PhotoStorage.writePhoto(row.id, imageData)
+            if key then
+                MySQL.update.await(
+                    'UPDATE fivempro_phone_photos SET file_key = ?, image_data = NULL WHERE id = ?',
+                    { key, row.id }
+                )
+            end
+        end
+    end
     if imageData == '' or #imageData < 32 then
         return cb({ ok = false, message = 'Nuotraukos duomenys sugadinti.' })
     end
@@ -927,6 +932,13 @@ QBCore.Functions.CreateCallback('mrp_phone:server:deletePhoto', function(source,
     if not citizenid then return cb({ ok = false }) end
     local photoId = tonumber(data and data.id)
     if not photoId then return cb({ ok = false }) end
+    local row = MySQL.single.await(
+        'SELECT file_key FROM fivempro_phone_photos WHERE id = ? AND citizenid = ? LIMIT 1',
+        { photoId, citizenid }
+    )
+    if row and PhotoStorage and row.file_key then
+        PhotoStorage.deletePhotoFile(row.file_key)
+    end
     MySQL.update.await('DELETE FROM fivempro_phone_photos WHERE id = ? AND citizenid = ?', { photoId, citizenid })
     cb({ ok = true })
     TriggerClientEvent('mrp_phone:client:refreshData', source)
@@ -1024,27 +1036,30 @@ QBCore.Functions.CreateCallback('mrp_phone:server:saveAdProfile', function(sourc
     end
     local avatar = data and data.avatarData
     if avatar ~= nil and avatar ~= '' then
-        avatar = clampStr(avatar, (Config.Phone and Config.Phone.maxPhotoDataLength) or 220000)
+        avatar = normalizePhotoImageData(avatar)
+        local maxLen = (Config.Phone and Config.Phone.maxPhotoDataLength) or 750000
+        if #avatar > maxLen then
+            return cb({ ok = false, message = 'Avataras per didelis.' })
+        end
+        if PhotoStorage and not PhotoStorage.writeAvatar(citizenid, avatar) then
+            return cb({ ok = false, message = 'Nepavyko išsaugoti avataro.' })
+        end
+        avatar = nil --- nebe į MySQL
     else
-        avatar = nil
+        avatar = false --- nepaliesti
     end
     local exists = MySQL.single.await('SELECT id FROM fivempro_phone_ad_profiles WHERE citizenid = ? LIMIT 1', { citizenid })
     if exists then
-        if avatar then
-            MySQL.update.await([[
-                UPDATE fivempro_phone_ad_profiles SET username = ?, bio = ?, avatar_data = ? WHERE citizenid = ?
-            ]], { username, bio, avatar, citizenid })
-        else
-            MySQL.update.await([[
-                UPDATE fivempro_phone_ad_profiles SET username = ?, bio = ? WHERE citizenid = ?
-            ]], { username, bio, citizenid })
-        end
+        MySQL.update.await([[
+            UPDATE fivempro_phone_ad_profiles SET username = ?, bio = ?, avatar_data = NULL WHERE citizenid = ?
+        ]], { username, bio, citizenid })
     else
         MySQL.insert.await([[
             INSERT INTO fivempro_phone_ad_profiles (citizenid, username, bio, avatar_data)
-            VALUES (?, ?, ?, ?)
-        ]], { citizenid, username, bio, avatar or '' })
+            VALUES (?, ?, ?, NULL)
+        ]], { citizenid, username, bio })
     end
+    --- Jei avatar nebuvo atsiųstas — palikti esamą failą (avatar == false)
     cb({ ok = true })
     TriggerClientEvent('mrp_phone:client:refreshData', source)
 end)
@@ -1052,10 +1067,21 @@ end)
 QBCore.Functions.CreateCallback('mrp_phone:server:getAdProfileAvatar', function(source, cb, data)
     local targetCid = clampStr(data and data.citizenid or '', 60)
     if targetCid == '' then return cb({ ok = false }) end
-    local row = MySQL.single.await([[
-        SELECT avatar_data FROM fivempro_phone_ad_profiles WHERE citizenid = ? LIMIT 1
-    ]], { targetCid })
-    cb({ ok = true, avatar = row and row.avatar_data or '' })
+    local avatar = ''
+    if PhotoStorage then
+        avatar = PhotoStorage.readAvatarDataUrl(targetCid)
+    end
+    if avatar == '' then
+        local row = MySQL.single.await([[
+            SELECT avatar_data FROM fivempro_phone_ad_profiles WHERE citizenid = ? LIMIT 1
+        ]], { targetCid })
+        avatar = normalizePhotoImageData(row and row.avatar_data or '')
+        if avatar ~= '' and PhotoStorage then
+            PhotoStorage.writeAvatar(targetCid, avatar)
+            MySQL.update.await('UPDATE fivempro_phone_ad_profiles SET avatar_data = NULL WHERE citizenid = ?', { targetCid })
+        end
+    end
+    cb({ ok = true, avatar = avatar })
 end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:deleteAd', function(source, cb, data)
@@ -1084,6 +1110,21 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createPost', function(source, 
     ensurePhoneUser(citizenid, fullname)
     local cap = clampStr(data and data.caption or '', (Config.Phone and Config.Phone.maxPostCaptionLength) or 260)
     local image = clampStr(data and data.imageUrl or '', (Config.Phone and Config.Phone.maxImageUrlLength) or 500)
+    --- Galerijos nuotrauka: gallery:123 (tik savininko)
+    local galleryId = tostring(image):match('^gallery:(%d+)$')
+    if galleryId then
+        if not photosEnabled() then
+            return cb({ ok = false, message = 'Nuotraukos išjungtos.' })
+        end
+        local owned = MySQL.scalar.await(
+            'SELECT id FROM fivempro_phone_photos WHERE id = ? AND citizenid = ? LIMIT 1',
+            { tonumber(galleryId), citizenid }
+        )
+        if not owned then
+            return cb({ ok = false, message = 'Nuotrauka nerasta galerijoje.' })
+        end
+        image = ('gallery:%s'):format(galleryId)
+    end
     if cap == '' and image == '' then
         return cb({ ok = false, message = 'Įrašas tuščias.' })
     end
@@ -1517,7 +1558,8 @@ CreateThread(function()
         CREATE TABLE IF NOT EXISTS `fivempro_phone_photos` (
           `id` int NOT NULL AUTO_INCREMENT,
           `citizenid` varchar(60) NOT NULL,
-          `image_data` mediumtext NOT NULL,
+          `image_data` mediumtext NULL,
+          `file_key` varchar(64) NOT NULL DEFAULT '',
           `is_front` tinyint NOT NULL DEFAULT 0,
           `zoom_level` float NOT NULL DEFAULT 1,
           `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1526,6 +1568,12 @@ CreateThread(function()
           KEY `idx_photo_created` (`created_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
+    pcall(function()
+        MySQL.query.await('ALTER TABLE fivempro_phone_photos ADD COLUMN file_key varchar(64) NOT NULL DEFAULT \'\'')
+    end)
+    pcall(function()
+        MySQL.query.await('ALTER TABLE fivempro_phone_photos MODIFY COLUMN image_data mediumtext NULL')
+    end)
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_ad_profiles` (
           `id` int NOT NULL AUTO_INCREMENT,
@@ -1572,7 +1620,7 @@ CreateThread(function()
           PRIMARY KEY (`citizenid`,`app_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
-    MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('emergency', 'shop')")
+    MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('emergency', 'shop', 'cargonet')")
     if not photosEnabled() then
         MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('camera', 'gallery')")
         MySQL.update.await('DELETE FROM fivempro_phone_photos')
@@ -1588,6 +1636,30 @@ CreateThread(function()
                 end
             end
         end
+        --- Migracija: MySQL base64 → diskas (porcijomis, kad neuzblokuotu starto)
+        CreateThread(function()
+            if not PhotoStorage then return end
+            PhotoStorage.ensureFolders()
+            Wait(2500)
+            local mediaCfg = (Config.Phone and Config.Phone.Media) or {}
+            local batch = tonumber(mediaCfg.migrateBatch) or 40
+            local loops = tonumber(mediaCfg.migrateLoops) or 8
+            local total = 0
+            for _ = 1, loops do
+                local n = PhotoStorage.migrateFromDatabase(batch)
+                total = total + (n or 0)
+                if not n or n < 1 then break end
+                Wait(400)
+            end
+            for _ = 1, loops do
+                local n = PhotoStorage.migrateAvatars(batch)
+                if not n or n < 1 then break end
+                Wait(200)
+            end
+            if total > 0 then
+                print(('[mrp_phone] Migrated %s photos from MySQL blobs to disk.'):format(total))
+            end
+        end)
     end
 end)
 

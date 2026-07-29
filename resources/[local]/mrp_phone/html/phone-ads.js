@@ -215,47 +215,11 @@
   }
 
   function showPhotoPicker(onPick) {
-    const photos = window.PhoneState?.photos || [];
-    if (!photos.length) {
-      alert("Galerija tuščia. Nufotografuok telefono kamera.");
+    if (window.PhoneShowPhotoPicker) {
+      window.PhoneShowPhotoPicker(onPick);
       return;
     }
-    const overlay = document.createElement("div");
-    overlay.className = "ads-picker-overlay";
-    overlay.innerHTML = `
-      <div class="ads-picker-head">
-        <span>Pasirink nuotrauką</span>
-        <button type="button" class="ads-back-btn" id="adsPickerClose">✕</button>
-      </div>
-      <div class="ads-picker-grid" id="adsPickerGrid"></div>`;
-    document.body.appendChild(overlay);
-    const grid = overlay.querySelector("#adsPickerGrid");
-    photos.forEach((ph) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "ads-picker-item";
-      btn.dataset.id = ph.id;
-      grid.appendChild(btn);
-      window.PhoneNui("getPhoto", { id: ph.id }).then((res) => {
-        if (res?.ok && res.photo?.image) {
-          const u = window.PhoneNormalizeImageSrc
-            ? window.PhoneNormalizeImageSrc(res.photo.image)
-            : res.photo.image;
-          btn.style.backgroundImage = `url('${u}')`;
-        }
-      });
-      btn.addEventListener("click", async () => {
-        const res = await window.PhoneNui("getPhoto", { id: ph.id });
-        if (res?.ok && res.photo?.image) {
-          const img = window.PhoneNormalizeImageSrc
-            ? window.PhoneNormalizeImageSrc(res.photo.image)
-            : res.photo.image;
-          onPick(ph.id, img);
-        }
-        overlay.remove();
-      });
-    });
-    overlay.querySelector("#adsPickerClose").addEventListener("click", () => overlay.remove());
+    alert("Galerijos pasirinkimas nepasiekiamas.");
   }
 
   function bindFavButtons(host) {

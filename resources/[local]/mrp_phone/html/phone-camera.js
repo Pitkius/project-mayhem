@@ -167,7 +167,7 @@
       <div class="cam-app">
         <div class="cam-viewfinder" id="camViewfinder">
           <div class="cam-top-bar">
-            <button type="button" class="neon-btn icon-btn cam-flash" id="camFlashBtn" title="Blykstė">⚡</button>
+            <button type="button" class="neon-btn icon-btn cam-flash" id="camFlashBtn" title="Blykstė">${window.PhoneUiIcon ? window.PhoneUiIcon("flash") : "⚡"}</button>
             <span class="cam-zoom-pill" id="camZoomLbl">1.0×</span>
           </div>
           <div class="cam-viewfinder-hint" id="camHint">Gyvas vaizdas — fotografuok mygtuku apačioje</div>
@@ -181,7 +181,7 @@
           <div class="cam-counter" id="camCounter">0</div>
         </div>
         <div style="display:flex;justify-content:center;padding-bottom:12px">
-          <button type="button" class="neon-btn icon-btn" id="camFlipBtn" title="Keisti kamerą">⟳</button>
+          <button type="button" class="neon-btn icon-btn" id="camFlipBtn" title="Keisti kamerą">${window.PhoneUiIcon ? window.PhoneUiIcon("flip") : "⟳"}</button>
         </div>
       </div>`;
     bindCameraControls(content);

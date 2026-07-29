@@ -724,9 +724,22 @@ input, textarea {
   background: rgba(255, 255, 255, 0.08);
   cursor: pointer;
   font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(245, 245, 247, 0.92);
+  padding: 0;
 }
 
-.icon-btn.danger { background: rgba(255, 69, 58, 0.2); }
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.icon-btn.call { color: #34d058; }
+.icon-btn.msg { color: #0a84ff; }
+.icon-btn.danger { background: rgba(255, 69, 58, 0.2); color: #ff6b6b; }
 
 .mini-btn {
   padding: 8px 12px;

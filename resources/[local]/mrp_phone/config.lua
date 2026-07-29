@@ -21,8 +21,15 @@ Config.Phone = {
     maxImageUrlLength = 500,
     --- Telefono kamera / galerija
     enablePhotos = true,
-    maxPhotosPerUser = 80,
-    maxPhotoDataLength = 1500000,
+    maxPhotosPerUser = 48,
+    --- Raw data URL limito apsauga prieš rašant į diską (~0.5–0.7 MB JPEG)
+    maxPhotoDataLength = 750000,
+    --- Diskų saugykla (ne MySQL blob) — 100+ concurrent
+    Media = {
+        relativeDir = 'data/media',
+        migrateBatch = 40,
+        migrateLoops = 8,
+    },
     maxNotesLength = 8000,
     maxNotes = 50,
     maxNoteTitleLength = 64,
@@ -64,7 +71,6 @@ Config.Phone = {
         { id = 'insta', label = 'LifeGram', icon = 'insta', default = false, description = 'Socialinis tinklas su nuotraukomis' },
         { id = 'bank', label = 'BANKAS', icon = 'bank', default = true, description = 'Mobilus bankas — pervedimai, balansas, istorija' },
         { id = 'weather', label = 'Orai', icon = 'weather', default = false, description = 'Orų prognozė: Los Santos, Sandy Shores, Paleto Bay' },
-        { id = 'cargonet', label = 'CargoNet', icon = 'cargonet', default = false, description = 'Krovinių birža ir logistikos kontraktai' },
     }
 }
 

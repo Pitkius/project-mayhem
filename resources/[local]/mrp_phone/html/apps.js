@@ -166,10 +166,10 @@
                 }
               </div>
               <div class="list-item-actions">
-                <button type="button" class="icon-btn call" title="${window.t("contacts.call")}" data-call="${window.PhoneEsc(num)}">📞</button>
-                ${system ? "" : `<button type="button" class="icon-btn msg" title="${window.t("contacts.message")}" data-msg="${window.PhoneEsc(num)}">💬</button>
-                <button type="button" class="icon-btn edit" title="${window.t("contacts.edit")}" data-edit="${Number(c.id)}">✎</button>
-                <button type="button" class="icon-btn danger" title="${window.t("contacts.delete")}" data-del="${Number(c.id)}">✕</button>`}
+                <button type="button" class="icon-btn call" title="${window.t("contacts.call")}" data-call="${window.PhoneEsc(num)}">${window.PhoneUiIcon ? window.PhoneUiIcon("call") : "☎"}</button>
+                ${system ? "" : `<button type="button" class="icon-btn msg" title="${window.t("contacts.message")}" data-msg="${window.PhoneEsc(num)}">${window.PhoneUiIcon ? window.PhoneUiIcon("msg") : "✉"}</button>
+                <button type="button" class="icon-btn edit" title="${window.t("contacts.edit")}" data-edit="${Number(c.id)}">${window.PhoneUiIcon ? window.PhoneUiIcon("edit") : "✎"}</button>
+                <button type="button" class="icon-btn danger" title="${window.t("contacts.delete")}" data-del="${Number(c.id)}">${window.PhoneUiIcon ? window.PhoneUiIcon("del") : "✕"}</button>`}
               </div>
             </div>`;
           })
@@ -298,7 +298,7 @@
             <b>${window.PhoneEsc(contactName(active))}</b>
             <div class="muted small">${window.PhoneEsc(active)}</div>
           </div>
-          <button type="button" class="icon-btn call" id="btnChatCall" title="${window.t("contacts.call")}">📞</button>
+          <button type="button" class="icon-btn call" id="btnChatCall" title="${window.t("contacts.call")}">${window.PhoneUiIcon ? window.PhoneUiIcon("call") : "☎"}</button>
         </div>
         <div id="chatMessages" class="chat-messages"><div class="muted small">${window.t("common.loading")}</div></div>
         <div class="chat-compose">

@@ -125,7 +125,7 @@ local function captureScreenshot(cb)
     local ok, err = pcall(function()
         exports['screenshot-basic']:requestScreenshot({
             encoding = 'jpg',
-            quality = 0.58,
+            quality = 0.48,
         }, function(data)
             cb(normalizeImageData(data))
         end)

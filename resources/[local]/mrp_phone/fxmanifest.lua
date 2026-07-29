@@ -19,6 +19,7 @@ files {
     'html/phone-camera.js',
     'html/phone-carplay.js',
     'html/phone-ads.js',
+    'html/phone-image.js',
     'html/phone-bank-icons.js',
     'html/phone-bank.js',
     'html/phone-weather.js',
@@ -45,6 +46,7 @@ client_scripts {
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'server/media.lua',
     'server/main.lua',
     'server/bank.lua',
     'server/carplay.lua',

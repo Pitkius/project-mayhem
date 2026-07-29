@@ -14,7 +14,6 @@ const APP_TEMPLATE = {
   camera: "renderCameraApp",
   notes: "renderNotesApp",
   weather: "renderWeatherApp",
-  cargonet: "renderCargoNetApp",
 };
 const DOCK_APPS = ["calls", "messages", "contacts", "settings"];
 const APPS_PER_PAGE = 16;
@@ -33,7 +32,6 @@ const state = {
   notes: [],
   notesOldDays: 30,
   posts: [],
-  cargoNet: { registered: false, level: 1, deliveries: 0 },
   money: { cash: 0, bank: 0 },
   activeCallId: null,
   activeConvNumber: "",
@@ -381,7 +379,6 @@ function hydrate(payload = {}) {
   state.notesOldDays = Number(payload.notesOldDays) > 0 ? Number(payload.notesOldDays) : 30;
   state.posts = payload.posts || [];
   state.money = payload.money || state.money;
-  state.cargoNet = payload.cargoNet || state.cargoNet || { registered: false, level: 1, deliveries: 0 };
   const name = state.account.username || state.me.name || "Žaidėjas";
   const pn = document.getElementById("profileName");
   if (pn) pn.textContent = `Sveiki, ${name}`;
@@ -458,45 +455,102 @@ async function openApp(appId) {
 
 window.PhoneOpenApp = openApp;
 
-window.renderSocialApp = (content) => {
+window.renderSocialApp = async (content) => {
   content.className = "scroll-body insta-body";
-  const postsHtml = (state.posts || []).length
-    ? state.posts
-        .map((p) => {
-          const img = p.image_url
-            ? `<div class="lg-post-media"><img src="${esc(p.image_url)}" alt="" loading="lazy" /></div>`
-            : "";
-          return `<article class="lg-post">
-            <header class="lg-post-head"><strong>${esc(p.author_name)}</strong></header>
-            ${img}
-            <p class="lg-post-caption">${esc(p.caption || "")}</p>
-            <footer class="lg-post-actions">
-              <button type="button" class="lg-like-btn" data-like="${Number(p.id)}">♥ Patinka ${Number(p.likes || 0)}</button>
-            </footer>
-          </article>`;
-        })
-        .join("")
-    : `<div class="lg-empty muted">Dar nėra įrašų. Būk pirmas!</div>`;
+  const draft = window.PhoneState._lgDraft || { caption: "", photoId: null, preview: "" };
+  window.PhoneState._lgDraft = draft;
+
+  const posts = state.posts || [];
+  const postsHtmlParts = [];
+  if (!posts.length) {
+    postsHtmlParts.push(`<div class="lg-empty muted">Dar nėra įrašų. Būk pirmas!</div>`);
+  } else {
+    for (const p of posts) {
+      let media = "";
+      if (p.image_url) {
+        const src = window.PhoneResolveImageRef
+          ? await window.PhoneResolveImageRef(p.image_url)
+          : p.image_url;
+        if (src) {
+          media = `<div class="lg-post-media"><img src="${esc(src)}" alt="" loading="lazy" /></div>`;
+        }
+      }
+      postsHtmlParts.push(`<article class="lg-post neon-card">
+        <header class="lg-post-head"><strong>${esc(p.author_name)}</strong></header>
+        ${media}
+        <p class="lg-post-caption">${esc(p.caption || "")}</p>
+        <footer class="lg-post-actions">
+          <button type="button" class="lg-like-btn" data-like="${Number(p.id)}">♥ Patinka ${Number(p.likes || 0)}</button>
+        </footer>
+      </article>`);
+    }
+  }
+
+  const previewHtml = draft.preview
+    ? `<div class="lg-compose-preview" style="background-image:url('${esc(draft.preview)}')"></div>`
+    : `<div class="lg-compose-preview empty">Nuotrauka nepasirinkta</div>`;
 
   content.innerHTML = `
     <div class="lg-app">
       <section class="lg-compose neon-card">
         <h3 class="lg-compose-title">Naujas įrašas</h3>
-        <input id="postCaption" placeholder="Aprašymas" />
-        <input id="postImageUrl" placeholder="Nuotraukos nuoroda" />
+        <input id="postCaption" placeholder="Aprašymas" maxlength="260" value="${esc(draft.caption)}" />
+        <div class="lg-compose-media">
+          ${previewHtml}
+          <div class="lg-compose-actions">
+            <button type="button" class="neon-btn" id="btnLgPickPhoto">Iš galerijos</button>
+            <button type="button" class="neon-btn" id="btnLgOpenCam">Kamera</button>
+            ${draft.photoId ? `<button type="button" class="neon-btn danger" id="btnLgClearPhoto">Pašalinti</button>` : ""}
+          </div>
+        </div>
         <button type="button" id="btnPostInsta" class="neon-btn primary">Kelti</button>
+        <p class="muted small" id="lgPostStatus"></p>
       </section>
-      <div class="lg-feed">${postsHtml}</div>
+      <div class="lg-feed">${postsHtmlParts.join("")}</div>
     </div>`;
 
-  document.getElementById("btnPostInsta").addEventListener("click", async () => {
-    await nui("createPost", {
-      caption: document.getElementById("postCaption").value,
-      imageUrl: document.getElementById("postImageUrl").value,
+  const captionEl = content.querySelector("#postCaption");
+  captionEl?.addEventListener("input", () => {
+    draft.caption = captionEl.value || "";
+  });
+
+  content.querySelector("#btnLgPickPhoto")?.addEventListener("click", () => {
+    if (!window.PhoneShowPhotoPicker) return;
+    window.PhoneShowPhotoPicker((id, preview) => {
+      draft.photoId = id;
+      draft.preview = preview;
+      openApp("insta");
     });
+  });
+  content.querySelector("#btnLgOpenCam")?.addEventListener("click", () => openApp("camera"));
+  content.querySelector("#btnLgClearPhoto")?.addEventListener("click", () => {
+    draft.photoId = null;
+    draft.preview = "";
+    openApp("insta");
+  });
+
+  content.querySelector("#btnPostInsta")?.addEventListener("click", async () => {
+    const status = content.querySelector("#lgPostStatus");
+    const caption = captionEl?.value || "";
+    if (!caption.trim() && !draft.photoId) {
+      if (status) status.textContent = "Įrašyk aprašymą arba pasirink nuotrauką.";
+      return;
+    }
+    const res = await nui("createPost", {
+      caption,
+      imageUrl: draft.photoId ? `gallery:${draft.photoId}` : "",
+    });
+    if (!res?.ok) {
+      if (status) status.textContent = res?.message || "Nepavyko įkelti.";
+      return;
+    }
+    draft.caption = "";
+    draft.photoId = null;
+    draft.preview = "";
     hydrate(await nui("refresh"));
     openApp("insta");
   });
+
   content.querySelectorAll("[data-like]").forEach((b) =>
     b.addEventListener("click", async () => {
       await nui("likePost", { postId: Number(b.dataset.like) });
@@ -508,54 +562,38 @@ window.renderSocialApp = (content) => {
 
 window.renderSettingsApp = (content) => {
   const wp = localStorage.getItem("mrp_phone_wp") || "default";
+  content.className = "scroll-body";
   content.innerHTML = `
-    <div class="card">
-      <div class="settings-row"><span>Numeris</span><span>${esc(state.me.number)}</span></div>
-      <div class="settings-row"><span>Paskyra</span><span>${esc(state.account.username || "—")}</span></div>
-    </div>
-    <div class="card">
-      <label class="small muted">Fonas</label>
-      <select id="wpSelect">
-        <option value="default"${wp === "default" ? " selected" : ""}>Numatyta</option>
-        <option value="midnight"${wp === "midnight" ? " selected" : ""}>Vidurnaktis</option>
-        <option value="sunset"${wp === "sunset" ? " selected" : ""}>Saulėlydis</option>
-      </select>
+    <div class="settings-app">
+      <div class="neon-card settings-card">
+        <div class="settings-row"><span>Numeris</span><b>${esc(state.me.number)}</b></div>
+        <div class="settings-row"><span>Paskyra</span><b>${esc(state.account.username || "—")}</b></div>
+        <div class="settings-row"><span>Vardas</span><b>${esc(state.me.name || "—")}</b></div>
+      </div>
+      <div class="neon-card settings-card">
+        <label class="small muted">Fono tema</label>
+        <div class="settings-wp-grid">
+          ${["default", "midnight", "sunset"]
+            .map(
+              (id) =>
+                `<button type="button" class="settings-wp-btn${wp === id ? " active" : ""}" data-wp="${id}">
+                  <span class="settings-wp-swatch wp-${id}"></span>
+                  <span>${id === "default" ? "Numatyta" : id === "midnight" ? "Vidurnaktis" : "Saulėlydis"}</span>
+                </button>`,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="neon-card settings-card">
+        <p class="muted small">Nuotraukos: ${Number((state.photos || []).length)} · Užrašai: ${Number((state.notes || []).length)}</p>
+      </div>
     </div>`;
-  document.getElementById("wpSelect").addEventListener("change", (e) => {
-    localStorage.setItem("mrp_phone_wp", e.target.value);
-    applyWallpaper();
-  });
-};
-
-window.renderCargoNetApp = (content) => {
-  const cn = state.cargoNet || {};
-  const registered = cn.registered === true;
-  if (registered) {
-    content.innerHTML = `
-      <div class="card">
-        <b>CargoNet</b>
-        <p class="muted small">Krovinių birža ir logistikos kontraktai.</p>
-        <p class="small">${esc(cn.level || 1)} lygis · ${Number(cn.deliveries || 0).toLocaleString("lt-LT")} pristatymai</p>
-        <button id="btnOpenCargoNet" class="ios-btn primary">Atidaryti CargoNet</button>
-      </div>`;
-  } else {
-    content.innerHTML = `
-      <div class="card">
-        <b>CargoNet</b>
-        <p class="muted small">Tapkite nepriklausomu sunkvežimio vairuotoju ir gaukite prieigą prie krovinių biržos.</p>
-        <button id="btnOpenCargoNet" class="ios-btn primary">Registruotis vairuotoju</button>
-      </div>`;
-  }
-  document.getElementById("btnOpenCargoNet").addEventListener("click", async () => {
-    const btn = document.getElementById("btnOpenCargoNet");
-    if (btn) btn.disabled = true;
-    try {
-      await nui("openCargoNet", {});
-    } catch (_) {
-      /* fetch klaida – dažniausiai resursas perkraunamas */
-    } finally {
-      if (btn) btn.disabled = false;
-    }
+  content.querySelectorAll("[data-wp]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      localStorage.setItem("mrp_phone_wp", btn.dataset.wp);
+      applyWallpaper();
+      openApp("settings");
+    });
   });
 };
 
