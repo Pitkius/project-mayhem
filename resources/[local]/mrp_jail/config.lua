@@ -15,15 +15,29 @@ Config.Release = vector4(428.23, -981.03, 30.71, 90.0)
 Config.MaxMinutes = 10080 -- 7 days
 Config.MinMinutes = 1
 
---- Optional public-work spots on the carrier (each completes ~60s → -1 minute)
+--- Public-work spots on the carrier (each completes ~60s → -1 minute)
 Config.WorkDurationMs = 60000
+--- Full pool — only a subset is active at once; cleaned spots go on cooldown
 Config.WorkSpots = {
     vector3(3092.4, -4707.2, 15.26),
     vector3(3068.8, -4680.5, 15.26),
     vector3(3105.1, -4688.9, 15.26),
     vector3(3070.2, -4715.6, 15.26),
+    vector3(3088.6, -4693.1, 15.26),
+    vector3(3075.3, -4702.8, 15.26),
+    vector3(3099.7, -4695.4, 15.26),
+    vector3(3063.5, -4698.2, 15.26),
+    vector3(3110.8, -4705.5, 15.26),
+    vector3(3078.9, -4710.3, 15.26),
+    vector3(3085.2, -4682.7, 15.26),
+    vector3(3097.1, -4718.4, 15.26),
 }
+Config.WorkSpotMaxActive = 5
+Config.WorkSpotMinActive = 1
+Config.WorkSpotCooldownMs = 90000
 Config.WorkInteractDistance = 2.2
+--- Within this radius of an active work spot: no punch/melee (anti bypass of key rebinds).
+Config.WorkCombatDisableDistance = 3.5
 Config.WorkMarker = {
     type = 2,
     scale = vector3(0.35, 0.35, 0.35),
@@ -32,6 +46,7 @@ Config.WorkMarker = {
 
 --- Anti-escape check interval (ms)
 Config.EscapeCheckMs = 2500
+Config.EscapePenaltyWorks = 5
 
 --- Starter food given after inventory strip
 Config.StarterFood = {
@@ -73,7 +88,8 @@ Config.Notify = {
     stripped = 'Inventorius laikinai paimtas. Gausi maisto kalėjimo laikotarpiui.',
     restored = 'Tavo daiktai grąžinti.',
     workDone = 'Darbas atliktas (−1). Liko: %s',
-    escaped = 'Negali palikti lėktuvnešio kol bausmė nesibaigė.',
+    escapePenalty = 'Bandymas pabėgti! Pridėta +%s viešų darbų. Liko: %s',
+    escaped = 'Bandymas pabėgti! Grąžintas atgal (+5 viešieji darbai).',
     notJailed = 'Žaidėjas nėra kalėjime.',
     alreadyJailed = 'Žaidėjas jau kalėjime.',
     invalidTarget = 'Žaidėjas nerastas.',

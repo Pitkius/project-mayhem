@@ -346,9 +346,9 @@ Config.FleetVehicles = {
   { model = 'mrpd13', label = 'MRPD 13 — Audi S3 (LT ELS)', emergencyLights = 'els' },
   { model = 'mrpd14', label = 'MRPD 14 — BMW 540i (LT ELS)', emergencyLights = 'els' },
   { model = 'mrpd15', label = 'MRPD 15 — BMW X5 (LT ELS)', emergencyLights = 'els' },
-  -- Skoda hatch/estate: native carcols (model has siren meshes, not ELS extras)
-  { model = 'mrpd16', label = 'MRPD 16 — Skoda Hatch', emergencyLights = 'native' },
-  { model = 'mrpd23', label = 'MRPD 23 — Skoda Estate', emergencyLights = 'native' },
+  -- Skoda hatch/estate: LT ELS extras (sirenSettings=0)
+  { model = 'mrpd16', label = 'MRPD 16 — Skoda Hatch', emergencyLights = 'els' },
+  { model = 'mrpd23', label = 'MRPD 23 — Skoda Estate', emergencyLights = 'els' },
   -- NEŽYMĖTOS Non-ELS
   { model = 'mrpd17', label = 'MRPD 17 (nežymėta)', emergencyLights = 'native' },
   { model = 'mrpd18', label = 'MRPD 18 (nežymėta)', emergencyLights = 'native' },
@@ -364,7 +364,6 @@ Config.FleetVehicles = {
 Config.BuiltInFleetModels = {
     'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
     'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24', 'mrpd25', 'mrpd26',
-    'mrpd16', 'mrpd23',
     'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
     'polmav', 'buzzard2',
 }

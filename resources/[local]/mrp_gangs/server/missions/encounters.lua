@@ -14,17 +14,29 @@ local function partyThreatMultiplier(partySize)
     )
 end
 
+local function offsetXYZW(offset)
+    if not offset then return 0.0, 0.0, 0.0, nil end
+    -- vector3/vector4 support .x/.y/.z/.w but not numeric [1]/[4] indexing.
+    if type(offset) ~= 'table' then
+        return tonumber(offset.x) or 0.0,
+            tonumber(offset.y) or 0.0,
+            tonumber(offset.z) or 0.0,
+            tonumber(offset.w)
+    end
+    return tonumber(offset.x or offset[1]) or 0.0,
+        tonumber(offset.y or offset[2]) or 0.0,
+        tonumber(offset.z or offset[3]) or 0.0,
+        tonumber(offset.w or offset[4])
+end
+
 local function offsetSpawn(origin, offset)
     if not origin or not offset then return nil end
-    local ox = offset.x or offset[1] or 0.0
-    local oy = offset.y or offset[2] or 0.0
-    local oz = offset.z or offset[3] or 0.0
-    local ow = offset.w or offset[4] or 0.0
+    local ox, oy, oz, ow = offsetXYZW(offset)
     return {
-        x = origin.x + ox,
-        y = origin.y + oy,
-        z = origin.z + oz,
-        w = ow,
+        x = (tonumber(origin.x) or 0.0) + ox,
+        y = (tonumber(origin.y) or 0.0) + oy,
+        z = (tonumber(origin.z) or 0.0) + oz,
+        w = ow or 0.0,
     }
 end
 

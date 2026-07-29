@@ -7,10 +7,22 @@ local KIT_PERF = {} --- [vehicle] = { sig, orig }
 local INGEST_SCHEDULED = {} --- [vehicle] = true
 
 local FLEET_HASHES = {}
+local FLEET_NATIVE_HASHES = {}
+local FLEET_ELS_HASHES = {}
 local function rebuildFleetHashes()
     FLEET_HASHES = {}
+    FLEET_NATIVE_HASHES = {}
+    FLEET_ELS_HASHES = {}
     for _, v in ipairs(Config.FleetVehicles or {}) do
-        if v and v.model then FLEET_HASHES[joaat(v.model)] = true end
+        if v and v.model then
+            local h = joaat(v.model)
+            FLEET_HASHES[h] = true
+            if v.emergencyLights == 'els' then
+                FLEET_ELS_HASHES[h] = true
+            else
+                FLEET_NATIVE_HASHES[h] = true
+            end
+        end
     end
     for _, v in ipairs(Config.FleetHelicopters or {}) do
         if v and v.model then FLEET_HASHES[joaat(v.model)] = true end
@@ -88,6 +100,8 @@ end
 local function vehicleSupportsNativeEmergency(vehicle)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     local hash = GetEntityModel(vehicle)
+    if FLEET_ELS_HASHES[hash] then return false end
+    if FLEET_NATIVE_HASHES[hash] then return true end
     -- Kai kuriuose artefaktuose native neeksportuotas – nekrentam į nil call.
     for _, name in ipairs({ 'IsThisModelEmergencyVehicle', 'IsThisModelAnEmergencyVehicle' }) do
         local fn = rawget(_G, name)

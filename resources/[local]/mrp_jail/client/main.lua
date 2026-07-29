@@ -4,6 +4,154 @@ local jailed = false
 local jailState = nil
 local canteenPed = nil
 local workBusy = false
+local activeWorkSpots = {}
+local workSpotCooldowns = {}
+
+local function workSpotKey(spot)
+    return ('%.1f,%.1f,%.1f'):format(spot.x, spot.y, spot.z)
+end
+
+local function pickRandomWorkSpots(count)
+    local pool = Config.WorkSpots or {}
+    if #pool == 0 then return {} end
+    local now = GetGameTimer()
+    local candidates = {}
+    for _, spot in ipairs(pool) do
+        local key = workSpotKey(spot)
+        local untilMs = workSpotCooldowns[key]
+        if not untilMs or now >= untilMs then
+            candidates[#candidates + 1] = spot
+        end
+    end
+    if #candidates == 0 then
+        for _, spot in ipairs(pool) do
+            candidates[#candidates + 1] = spot
+        end
+    end
+    for i = #candidates, 2, -1 do
+        local j = math.random(i)
+        candidates[i], candidates[j] = candidates[j], candidates[i]
+    end
+    local out = {}
+    local n = math.min(count, #candidates)
+    for i = 1, n do
+        out[i] = candidates[i]
+    end
+    return out
+end
+
+local function refreshActiveWorkSpots(force)
+    local maxActive = Config.WorkSpotMaxActive or 5
+    local minActive = Config.WorkSpotMinActive or 1
+    if force or #activeWorkSpots == 0 then
+        activeWorkSpots = pickRandomWorkSpots(maxActive)
+        return
+    end
+    local now = GetGameTimer()
+    local kept = {}
+    for _, spot in ipairs(activeWorkSpots) do
+        local key = workSpotKey(spot)
+        local untilMs = workSpotCooldowns[key]
+        if not untilMs or now >= untilMs then
+            kept[#kept + 1] = spot
+        end
+    end
+    activeWorkSpots = kept
+    while #activeWorkSpots < minActive do
+        local added = false
+        for _, spot in ipairs(pickRandomWorkSpots(1)) do
+            local dup = false
+            for _, existing in ipairs(activeWorkSpots) do
+                if #(existing - spot) < 0.5 then
+                    dup = true
+                    break
+                end
+            end
+            if not dup then
+                activeWorkSpots[#activeWorkSpots + 1] = spot
+                added = true
+                break
+            end
+        end
+        if not added then break end
+    end
+    while #activeWorkSpots < maxActive do
+        local candidates = pickRandomWorkSpots(1)
+        if #candidates == 0 then break end
+        local spot = candidates[1]
+        local dup = false
+        for _, existing in ipairs(activeWorkSpots) do
+            if #(existing - spot) < 0.5 then
+                dup = true
+                break
+            end
+        end
+        if dup then break end
+        activeWorkSpots[#activeWorkSpots + 1] = spot
+    end
+end
+
+local function markWorkSpotUsed(spot)
+    workSpotCooldowns[workSpotKey(spot)] = GetGameTimer() + (Config.WorkSpotCooldownMs or 90000)
+    for i, s in ipairs(activeWorkSpots) do
+        if #(s - spot) < 0.5 then
+            table.remove(activeWorkSpots, i)
+            break
+        end
+    end
+    refreshActiveWorkSpots(false)
+end
+
+local function groundZAt(x, y, zHint)
+    local found, groundZ = GetGroundZFor_3dCoord(x, y, (zHint or 0.0) + 8.0, false)
+    if found then
+        return groundZ + 0.02
+    end
+    return zHint or 0.0
+end
+
+local function placePedOnSpot(ped, spot)
+    local z = groundZAt(spot.x, spot.y, spot.z)
+    SetEntityCoords(ped, spot.x, spot.y, z, false, false, false, false)
+    PlaceEntityOnGroundProperly(ped)
+end
+
+--- Block melee/attack inputs (not AIM — keeps native GTA targeting dot). Control indices, not key labels.
+local MELEE_BLOCK_CONTROLS = {
+    24, 47, 58,
+    140, 141, 142, 143, 257, 263, 264,
+}
+
+local function disableJailCombatControls()
+    local playerId = PlayerId()
+    DisablePlayerFiring(playerId, true)
+    for group = 0, 2 do
+        for _, ctrl in ipairs(MELEE_BLOCK_CONTROLS) do
+            DisableControlAction(group, ctrl, true)
+        end
+    end
+end
+
+local function suppressPedMelee(ped, restoreAnimDict, restoreAnimName)
+    if not ped or ped == 0 then return end
+    if IsPedInMeleeCombat(ped) or IsPedPerformingMeleeAction(ped) then
+        ClearPedTasksImmediately(ped)
+        if restoreAnimDict and restoreAnimName and HasAnimDictLoaded(restoreAnimDict) then
+            TaskPlayAnim(ped, restoreAnimDict, restoreAnimName, 2.0, 2.0, -1, 1, 0.0, false, false, false)
+        end
+    end
+end
+
+local function isNearActiveWorkSpot(coords)
+    local radius = Config.WorkCombatDisableDistance or ((Config.WorkInteractDistance or 2.2) + 1.0)
+    for _, spot in ipairs(activeWorkSpots) do
+        local spotZ = groundZAt(spot.x, spot.y, spot.z)
+        if #(coords - vector3(spot.x, spot.y, spotZ)) <= radius then
+            return true
+        end
+    end
+    return false
+end
 
 local function nui(action, data)
     data = data or {}
@@ -93,6 +241,8 @@ end
 local function startJail(state)
     jailed = true
     jailState = state
+    workSpotCooldowns = {}
+    refreshActiveWorkSpots(true)
     setHud(state)
     ensureCanteenPed()
 end
@@ -101,6 +251,8 @@ local function clearJail()
     jailed = false
     jailState = nil
     workBusy = false
+    activeWorkSpots = {}
+    workSpotCooldowns = {}
     setHud(nil)
     nui('workHide')
     local ped = PlayerPedId()
@@ -140,8 +292,8 @@ local function tryWorkAtSpot(spot)
     local animDict = 'amb@world_human_janitor@male@idle_a'
     local animName = 'idle_a'
 
-    --- Snap + freeze in place for the whole task
-    SetEntityCoords(ped, spot.x, spot.y, spot.z, false, false, false, false)
+    --- Snap + freeze in place for the whole task (ground level, no floating)
+    placePedOnSpot(ped, spot)
     ClearPedTasksImmediately(ped)
     FreezeEntityPosition(ped, true)
 
@@ -169,6 +321,8 @@ local function tryWorkAtSpot(spot)
         EnableControlAction(0, 1, true)   -- look
         EnableControlAction(0, 2, true)
         EnableControlAction(0, 249, true) -- push to talk
+        disableJailCombatControls()
+        suppressPedMelee(ped, animDict, animName)
 
         if HasAnimDictLoaded(animDict) and not IsEntityPlayingAnim(ped, animDict, animName, 3) then
             TaskPlayAnim(ped, animDict, animName, 2.0, 2.0, -1, 1, 0.0, false, false, false)
@@ -182,7 +336,8 @@ local function tryWorkAtSpot(spot)
     FreezeEntityPosition(ped, false)
 
     if jailed then
-        TriggerServerEvent('mrp_jail:server:completeWork')
+        TriggerServerEvent('mrp_jail:server:completeWork', spot.x, spot.y, spot.z)
+        markWorkSpotUsed(spot)
     end
     workBusy = false
 end
@@ -199,20 +354,27 @@ CreateThread(function()
             local maxDist = Config.Carrier.maxDistance or 95.0
 
             if #(coords - center) > maxDist then
-                local spawn = Config.Carrier.spawn
-                SetEntityCoords(ped, spawn.x, spawn.y, spawn.z, false, false, false, false)
-                SetEntityHeading(ped, spawn.w or 0.0)
-                QBCore.Functions.Notify(Config.Notify.escaped, 'error')
+                TriggerServerEvent('mrp_jail:server:escapeAttempt')
                 Wait(Config.EscapeCheckMs or 2500)
             end
 
-            for _, spot in ipairs(Config.WorkSpots or {}) do
-                local dist = #(coords - spot)
+            refreshActiveWorkSpots(false)
+
+            local atWorkZone = workBusy or isNearActiveWorkSpot(coords)
+            if atWorkZone then
+                disableJailCombatControls()
+                suppressPedMelee(ped)
+            end
+
+            for _, spot in ipairs(activeWorkSpots) do
+                local spotZ = groundZAt(spot.x, spot.y, spot.z)
+                local spotPos = vector3(spot.x, spot.y, spotZ)
+                local dist = #(coords - spotPos)
                 if dist < 25.0 then
                     local m = Config.WorkMarker
                     DrawMarker(
                         m.type or 2,
-                        spot.x, spot.y, spot.z + 0.15,
+                        spot.x, spot.y, spotZ + 0.05,
                         0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                         m.scale.x, m.scale.y, m.scale.z,
                         m.color.r, m.color.g, m.color.b, m.color.a,
@@ -220,7 +382,7 @@ CreateThread(function()
                     )
                     if dist <= (Config.WorkInteractDistance or 2.2) then
                         QBCore.Functions.DrawText3D(
-                            spot.x, spot.y, spot.z + 0.45,
+                            spot.x, spot.y, spotZ + 0.35,
                             (jailState and jailState.requireWork)
                                 and '[E] Valymo darbas (−1)'
                                 or '[E] Viešieji darbai (−1 min)'

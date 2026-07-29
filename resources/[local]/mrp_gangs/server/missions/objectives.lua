@@ -37,17 +37,30 @@ local function near2D(source, target, maxDistance)
     return GangUtils.Distance2D(current, target) <= (maxDistance or 5.0)
 end
 
+local function offsetXYZW(offset)
+    if not offset then return 0.0, 0.0, 0.0, nil end
+    -- vector3/vector4 support .x/.y/.z/.w but not numeric [1]/[4] indexing.
+    if type(offset) ~= 'table' then
+        return tonumber(offset.x) or 0.0,
+            tonumber(offset.y) or 0.0,
+            tonumber(offset.z) or 0.0,
+            tonumber(offset.w)
+    end
+    return tonumber(offset.x or offset[1]) or 0.0,
+        tonumber(offset.y or offset[2]) or 0.0,
+        tonumber(offset.z or offset[3]) or 0.0,
+        tonumber(offset.w or offset[4])
+end
+
 local function applyOffset(origin, offset)
     if not origin or not offset then return origin end
-    local ox = offset.x or offset[1] or 0.0
-    local oy = offset.y or offset[2] or 0.0
-    local oz = offset.z or offset[3] or 0.0
-    local ow = offset.w or offset[4]
+    local ox, oy, oz, ow = offsetXYZW(offset)
+    local bx, by, bz, bw = offsetXYZW(origin)
     return {
-        x = origin.x + ox,
-        y = origin.y + oy,
-        z = origin.z + oz,
-        w = ow or origin.w or 0.0,
+        x = bx + ox,
+        y = by + oy,
+        z = bz + oz,
+        w = ow or bw or 0.0,
     }
 end
 

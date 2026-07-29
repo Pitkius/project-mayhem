@@ -247,6 +247,25 @@ local function applyJail(targetSrc, minutes, reason, actorSrc, byType)
     return true
 end
 
+local function addSentence(src, seconds)
+    local state = Active[src]
+    if not state then return false end
+    seconds = math.floor(tonumber(seconds) or 0)
+    if seconds <= 0 then return false end
+
+    state.remainingSeconds = (state.remainingSeconds or 0) + seconds
+    if isWorkSentence(state) then
+        state.endsAt = 0
+    else
+        state.endsAt = os.time() + state.remainingSeconds
+    end
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if Player then syncMeta(Player, state) end
+    pushHud(src, state)
+    return true
+end
+
 local function reduceSentence(src, seconds, fromWork)
     local state = Active[src]
     if not state then return false end
@@ -504,21 +523,48 @@ RegisterNetEvent('mrp_jail:server:policeUnjail', function(targetId)
     notify(src, Config.Notify.unjailedOfficer:format(targetId), 'success')
 end)
 
-RegisterNetEvent('mrp_jail:server:completeWork', function()
+RegisterNetEvent('mrp_jail:server:completeWork', function(spotX, spotY, spotZ)
     local src = source
     if not Active[src] then return end
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 then return end
     local coords = GetEntityCoords(ped)
     local near = false
-    for _, spot in ipairs(Config.WorkSpots or {}) do
-        if #(coords - spot) <= (Config.WorkInteractDistance + 2.0) then
+    local sx, sy, sz = tonumber(spotX), tonumber(spotY), tonumber(spotZ)
+    if sx and sy and sz then
+        if #(coords - vector3(sx, sy, sz)) <= (Config.WorkInteractDistance + 3.0) then
             near = true
-            break
+        end
+    end
+    if not near then
+        for _, spot in ipairs(Config.WorkSpots or {}) do
+            if #(coords - spot) <= (Config.WorkInteractDistance + 3.0) then
+                near = true
+                break
+            end
         end
     end
     if not near then return end
     reduceSentence(src, 60, true)
+end)
+
+RegisterNetEvent('mrp_jail:server:escapeAttempt', function()
+    local src = source
+    if not Active[src] then return end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return end
+    local coords = GetEntityCoords(ped)
+    local center = Config.Carrier.center
+    local maxDist = Config.Carrier.maxDistance or 95.0
+    if #(coords - center) <= maxDist then return end
+
+    local extraWorks = Config.EscapePenaltyWorks or 5
+    addSentence(src, extraWorks * 60)
+    teleportToCarrier(src)
+    local state = Active[src]
+    local left = remainingMinutes(state and state.remainingSeconds or 0)
+    local label = isWorkSentence(state) and (('%s darb.'):format(left)) or (('%s min.'):format(left))
+    notify(src, Config.Notify.escapePenalty:format(extraWorks, label), 'error')
 end)
 
 RegisterNetEvent('mrp_jail:server:openCanteen', function()
