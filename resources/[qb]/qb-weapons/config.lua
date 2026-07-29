@@ -49,15 +49,15 @@ Config.DefaultClipCapacityByAmmoType = {
   RecoilPitchVariance – vertikalus jitter (0 = tik švarus kilimas).
   ZeroWeaponBloom – SetWeaponAccuracySpread(0) kiekvienam ginklui.
 ]]
-Config.RecoilMultiplier = 13.6
-Config.RecoilBaseScale = 1.38
+Config.RecoilMultiplier = 17.5
+Config.RecoilBaseScale = 1.55
 Config.RecoilShakeAmplitude = 0.14
 Config.RecoilCamShake = 0.032
 Config.RecoilHorizontalSpread = 0.0
 Config.RecoilPitchVariance = 0.0
 Config.ZeroWeaponBloom = true
 --- Jei ginklas recoils lentelėje turi 0 arba beveik 0 – vis tiek šiek tiek spyris (ne „lazeris“).
-Config.RecoilMinimumBase = 0.30
+Config.RecoilMinimumBase = 0.40
 
 --[[
   Ginklo žalos daugiklis (client/damage.lua → SetWeaponDamageModifier).

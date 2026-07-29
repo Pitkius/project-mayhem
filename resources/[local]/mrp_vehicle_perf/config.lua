@@ -1,5 +1,37 @@
 Config = Config or {}
 
+--- Lengvas ekrano drebėjimas po avarijų / didelių šuolių (vairuotojas + keleiviai).
+Config.ImpactShake = {
+    Enabled = true,
+    ShakeName = 'SMALL_EXPLOSION_SHAKE',
+    --- Bendras intensyvumo daugiklis (1.0 = numatyta „lengva“).
+    IntensityScale = 1.0,
+    --- Kai sėdi transporto priemonėje — tikrinimo intervalas (ms).
+    TickMs = 50,
+    IdleTickMs = 400,
+
+    Crash = {
+        MinBodyDamage = 22.0,
+        MinEngineDamage = 38.0,
+        MinSpeedKmh = 28.0,
+        --- Bazinis intensyvumas (ShakeGameplayCam amplitude).
+        Intensity = 0.11,
+        MaxIntensity = 0.18,
+        CooldownMs = 1100,
+    },
+
+    Jump = {
+        MinAirTimeMs = 420,
+        MinHeight = 3.2,
+        MinFallSpeed = 7.5,
+        Intensity = 0.09,
+        MaxIntensity = 0.15,
+        CooldownMs = 1400,
+        --- Minimalus aukštis virš žemės, kad skaičiuotų kaip orą (ne greitas posūkis).
+        MinHeightAboveGround = 1.35,
+    },
+}
+
 --- Max greičiai km/h + handling (pagreitis, stabdymas, vairavimas).
 Config.VehiclePerf = {
     Enabled = true,

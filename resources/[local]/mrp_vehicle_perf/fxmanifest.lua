@@ -15,6 +15,7 @@ shared_scripts {
 
 client_scripts {
     'client.lua',
+    'client/impact_shake.lua',
 }
 
 server_scripts {
