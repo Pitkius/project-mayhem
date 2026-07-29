@@ -319,8 +319,14 @@ local function doorLockZOffset(doorType)
 end
 
 --- Spynos ikona ant durų centro (ne virš jų, ne ant E taško).
-local function resolveDoorLockPos(group)
+--- Slabai nestovi judantys — cache'inam. Entity tik kai nėra slabų.
+local function resolveDoorLockPos(group, forceRefresh)
     if not group then return nil end
+    if not forceRefresh and group.lockPosCache then
+        return group.lockPosCache
+    end
+
+    local zOff = doorLockZOffset(group.doorType)
     local slabs = group.slabs or {}
     if #slabs > 0 then
         local sum = vector3(0.0, 0.0, 0.0)
@@ -328,10 +334,27 @@ local function resolveDoorLockPos(group)
             sum = sum + s.coords
         end
         local c = sum / #slabs
-        return vector3(c.x, c.y, c.z + doorLockZOffset(group.doorType))
+        group.lockPosCache = vector3(c.x, c.y, c.z + zOff)
+        return group.lockPosCache
     end
+
+    local count = 0
+    local sum = vector3(0.0, 0.0, 0.0)
+    for _, ent in ipairs(group.entities or {}) do
+        if ent and ent ~= 0 and DoesEntityExist(ent) then
+            sum = sum + GetEntityCoords(ent)
+            count = count + 1
+        end
+    end
+    if count > 0 then
+        local c = sum / count
+        group.lockPosCache = vector3(c.x, c.y, c.z + zOff)
+        return group.lockPosCache
+    end
+
     if group.interact then
-        return vector3(group.interact.x, group.interact.y, group.interact.z + doorLockZOffset(group.doorType))
+        group.lockPosCache = vector3(group.interact.x, group.interact.y, group.interact.z + zOff)
+        return group.lockPosCache
     end
     return nil
 end
@@ -376,12 +399,13 @@ local nearDoorDistCache = { dist = 999999.0, at = 0, x = 0.0, y = 0.0, z = 0.0 }
 local function nearestPdDoorDist(pcoords)
     local now = GetGameTimer()
     local c = nearDoorDistCache
-    if now - c.at < 400 then
+    if now - c.at < 500 then
         local dx, dy, dz = pcoords.x - c.x, pcoords.y - c.y, pcoords.z - c.z
-        if (dx * dx + dy * dy + dz * dz) < 2.25 then
+        if (dx * dx + dy * dy + dz * dz) < 4.0 then
             return c.dist
         end
     end
+    --- Tik interact taškai — greita. Spynos pozicija naudojama tik E/ikona thread'e.
     local minD = 999999.0
     for _, g in ipairs(doorGroups) do
         if g.interact then
@@ -546,20 +570,58 @@ local function snapSlabEntity(slab)
     SetEntityCoords(ent, slab.coords.x, slab.coords.y, slab.coords.z, false, false, false, false)
 end
 
-local function applyStandardSlabLocked(slab, locked)
-    local dh = slab.doorHash
-    local force = true
+local function doorSystemGetState(dh)
+    local ok, st = pcall(function()
+        return DoorSystemGetDoorState(dh)
+    end)
+    if not ok then return nil end
+    return tonumber(st)
+end
+
+local function doorSystemGetRatio(dh)
+    local ok, ratio = pcall(function()
+        return DoorSystemGetOpenRatio(dh)
+    end)
+    if not ok then return nil end
+    return math.abs(tonumber(ratio) or 0.0)
+end
+
+--- DoorSystem: 0 unlocked, 1 locked (2/4 = force-locked variants).
+local function doorSystemMatchesLocked(dh, locked)
+    local st = doorSystemGetState(dh)
+    if st == nil then return false end
     if locked then
-        DoorSystemSetDoorState(dh, 1, false, force)
-        pcall(function() DoorSystemSetOpenRatio(dh, 0.0, true, true) end)
+        return st == 1 or st == 2 or st == 4
+    end
+    return st == 0
+end
+
+local function applyStandardSlabLocked(slab, locked, hardForce)
+    local dh = slab.doorHash
+    hardForce = hardForce == true
+    if not hardForce and doorSystemMatchesLocked(dh, locked) then
+        if locked then
+            local ratio = doorSystemGetRatio(dh) or 0.0
+            if ratio > 0.06 then
+                DoorSystemSetDoorState(dh, 1, false, false)
+                pcall(function() DoorSystemSetOpenRatio(dh, 0.0, false, false) end)
+            end
+        end
+        return
+    end
+    if locked then
+        DoorSystemSetDoorState(dh, 1, false, hardForce)
+        pcall(function() DoorSystemSetOpenRatio(dh, 0.0, hardForce, hardForce) end)
         pcall(function() DoorSystemSetHoldOpen(dh, false) end)
         pcall(function() DoorSystemSetAutomaticDistance(dh, 0.0, false, false) end)
-        snapSlabEntity(slab)
+        if hardForce then
+            snapSlabEntity(slab)
+        end
     else
-        DoorSystemSetDoorState(dh, 0, false, force)
-        pcall(function() DoorSystemSetOpenRatio(dh, 0.0, false, false) end)
+        DoorSystemSetDoorState(dh, 0, false, hardForce)
         pcall(function() DoorSystemSetHoldOpen(dh, false) end)
-        pcall(function() DoorSystemSetAutomaticDistance(dh, 30.0, false, false) end)
+        -- Negrąžinti durų į 0 ratio per jėgą: jos atsirakina vienu E ir juda natūraliai.
+        pcall(function() DoorSystemSetAutomaticDistance(dh, 3.0, false, false) end)
     end
 end
 
@@ -625,13 +687,21 @@ local function rememberBollardSnapshot(ent, assumeRaised, raiseZ, groundZHint, s
     }
 end
 
-local function applyBollardEntity(ent, locked, raiseZ, slab)
+local applyBarrierEntity
+
+local function applyBollardEntity(ent, locked, raiseZ, slab, hardForce)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return end
     raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
     rememberBollardSnapshot(ent, locked, raiseZ, nil, slab)
     local snap = entitySnapshots[ent]
     if not snap or not snap.restZ then return end
     local targetZ = locked and (snap.restZ + raiseZ) or snap.restZ
+    if not hardForce then
+        local c = GetEntityCoords(ent)
+        if math.abs(c.z - targetZ) < 0.04 and IsEntityPositionFrozen(ent) then
+            return
+        end
+    end
     SetEntityCoords(ent, snap.coords.x, snap.coords.y, targetZ, false, false, false, false)
     SetEntityRotation(ent, snap.pitch or 0.0, snap.roll or 0.0, snap.heading or 0.0, 2, true)
     FreezeEntityPosition(ent, true)
@@ -641,15 +711,23 @@ local function applyBollardEntity(ent, locked, raiseZ, slab)
     SetEntityCollision(ent, true, true)
 end
 
-local function applyFacGateEntity(ent, locked, slab, openDelta)
+local function applyFacGateEntity(ent, locked, slab, openDelta, hardForce)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return end
     if not slab then
-        applyBarrierEntity(ent, locked, nil)
+        applyBarrierEntity(ent, locked, nil, hardForce)
         return
     end
     openDelta = openDelta or 82.0
     local closedHeading = (slab.heading or GetEntityHeading(ent)) + 0.0
     local heading = locked and closedHeading or ((closedHeading + openDelta) % 360.0)
+    if not hardForce then
+        local c = GetEntityCoords(ent)
+        local h = GetEntityHeading(ent)
+        local headingDiff = math.abs(((h - heading + 540.0) % 360.0) - 180.0)
+        if #(c - slab.coords) < 0.08 and headingDiff < 1.5 and IsEntityPositionFrozen(ent) then
+            return
+        end
+    end
     SetEntityCoords(ent, slab.coords.x, slab.coords.y, slab.coords.z, false, false, false, false)
     SetEntityHeading(ent, heading)
     FreezeEntityPosition(ent, true)
@@ -668,13 +746,20 @@ local function drawGroupLockIcons(g, pcoords, locked)
     drawPdDoorLock(lockPos.x, lockPos.y, lockPos.z, locked)
 end
 
-local function applyGarageSlabDoorSystem(slab, locked)
+local function applyGarageSlabDoorSystem(slab, locked, hardForce)
     local dh = slab.doorHash
-    local force = true
+    hardForce = hardForce == true
+    local wantRatio = locked and 0.0 or 1.0
+    if not hardForce and doorSystemMatchesLocked(dh, locked) then
+        local ratio = doorSystemGetRatio(dh)
+        if ratio ~= nil and math.abs(ratio - wantRatio) < 0.08 then
+            return
+        end
+    end
     if locked then
-        DoorSystemSetDoorState(dh, 1, false, force)
+        DoorSystemSetDoorState(dh, 1, false, hardForce)
         pcall(function()
-            DoorSystemSetOpenRatio(dh, 0.0, true, true)
+            DoorSystemSetOpenRatio(dh, 0.0, hardForce, hardForce)
         end)
         pcall(function()
             DoorSystemSetAutomaticDistance(dh, 0.0, false, false)
@@ -683,9 +768,9 @@ local function applyGarageSlabDoorSystem(slab, locked)
             DoorSystemSetHoldOpen(dh, false)
         end)
     else
-        DoorSystemSetDoorState(dh, 0, false, force)
+        DoorSystemSetDoorState(dh, 0, false, hardForce)
         pcall(function()
-            DoorSystemSetOpenRatio(dh, 1.0, true, true)
+            DoorSystemSetOpenRatio(dh, 1.0, hardForce, hardForce)
         end)
         pcall(function()
             DoorSystemSetAutomaticDistance(dh, 0.0, false, false)
@@ -700,27 +785,36 @@ local function entityDoorHash(ent)
     return joaat(('ltpd_gd_%s'):format(ent))
 end
 
-local function applyGarageEntityDoor(ent, locked, slab)
+local function applyGarageEntityDoor(ent, locked, slab, hardForce)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return end
+    hardForce = hardForce == true
+    local dh = entityDoorHash(ent)
+    local model = GetEntityModel(ent)
+    local c = GetEntityCoords(ent)
+    ensureDoorInSystem(dh, model, c.x, c.y, c.z)
+    local wantRatio = locked and 0.0 or 1.0
+    if not hardForce and doorSystemMatchesLocked(dh, locked) then
+        local ratio = doorSystemGetRatio(dh)
+        if ratio ~= nil and math.abs(ratio - wantRatio) < 0.08 then
+            if locked and IsEntityPositionFrozen(ent) then
+                return
+            end
+            if not locked then
+                return
+            end
+        end
+    end
     if locked then
-        local dh = entityDoorHash(ent)
-        local model = GetEntityModel(ent)
-        local c = GetEntityCoords(ent)
-        ensureDoorInSystem(dh, model, c.x, c.y, c.z)
-        DoorSystemSetDoorState(dh, 1, false, true)
-        pcall(function() DoorSystemSetOpenRatio(dh, 0.0, true, true) end)
+        DoorSystemSetDoorState(dh, 1, false, hardForce)
+        pcall(function() DoorSystemSetOpenRatio(dh, 0.0, hardForce, hardForce) end)
         pcall(function() DoorSystemSetAutomaticDistance(dh, 0.0, false, false) end)
         pcall(function() DoorSystemSetHoldOpen(dh, false) end)
         snapGarageEntityClosed(ent, slab)
         return
     end
     rememberEntitySnapshot(ent)
-    local dh = entityDoorHash(ent)
-    local model = GetEntityModel(ent)
-    local c = GetEntityCoords(ent)
-    ensureDoorInSystem(dh, model, c.x, c.y, c.z)
-    DoorSystemSetDoorState(dh, 0, false, true)
-    pcall(function() DoorSystemSetOpenRatio(dh, 1.0, true, true) end)
+    DoorSystemSetDoorState(dh, 0, false, hardForce)
+    pcall(function() DoorSystemSetOpenRatio(dh, 1.0, hardForce, hardForce) end)
     pcall(function() DoorSystemSetAutomaticDistance(dh, 0.0, false, false) end)
     FreezeEntityPosition(ent, false)
     SetEntityDynamic(ent, true)
@@ -729,21 +823,38 @@ local function applyGarageEntityDoor(ent, locked, slab)
 end
 
 
-local function applyBarrierEntity(ent, locked, slab)
+applyBarrierEntity = function(ent, locked, slab, hardForce)
     if not ent or ent == 0 or not DoesEntityExist(ent) then return end
     if not entitySnapshots[ent] then rememberEntitySnapshot(ent) end
     if locked then
+        local tx, ty, tz, th
         if slab and slab.heading then
-            SetEntityCoords(ent, slab.coords.x, slab.coords.y, slab.coords.z, false, false, false, false)
-            SetEntityHeading(ent, slab.heading + 0.0)
+            tx, ty, tz = slab.coords.x, slab.coords.y, slab.coords.z
+            th = slab.heading + 0.0
         else
-            snapEntityToSnapshot(ent)
+            local snap = entitySnapshots[ent]
+            if not snap then return end
+            tx, ty, tz = snap.coords.x, snap.coords.y, snap.coords.z
+            th = snap.heading
         end
+        if not hardForce then
+            local c = GetEntityCoords(ent)
+            local h = GetEntityHeading(ent)
+            local headingDiff = math.abs(((h - th + 540.0) % 360.0) - 180.0)
+            if #(c - vector3(tx, ty, tz)) < 0.08 and headingDiff < 1.5 and IsEntityPositionFrozen(ent) then
+                return
+            end
+        end
+        SetEntityCoords(ent, tx, ty, tz, false, false, false, false)
+        SetEntityHeading(ent, th)
         FreezeEntityPosition(ent, true)
         SetEntityDynamic(ent, false)
         SetEntityInvincible(ent, true)
         SetEntityCanBeDamaged(ent, false)
     else
+        if not hardForce and not IsEntityPositionFrozen(ent) then
+            return
+        end
         FreezeEntityPosition(ent, false)
         SetEntityDynamic(ent, true)
         SetEntityInvincible(ent, false)
@@ -751,22 +862,22 @@ local function applyBarrierEntity(ent, locked, slab)
     end
 end
 
-local function applyBarrierGroupLocked(slabs, entities, locked, raiseZ)
+local function applyBarrierGroupLocked(slabs, entities, locked, raiseZ, hardForce)
     raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
     for _, ent in ipairs(entities or {}) do
         if isBollardModel(GetEntityModel(ent)) then
-            applyBollardEntity(ent, locked, raiseZ, findSlabForEntity(slabs, ent))
+            applyBollardEntity(ent, locked, raiseZ, findSlabForEntity(slabs, ent), hardForce)
         else
-            applyBarrierEntity(ent, locked, findSlabForEntity(slabs, ent, 6.0))
+            applyBarrierEntity(ent, locked, findSlabForEntity(slabs, ent, 6.0), hardForce)
         end
     end
     for _, slab in ipairs(slabs or {}) do
         local ent = findClosestObject(slab.modelHash, slab.coords, 6.0)
         if ent ~= 0 then
             if isBollardModel(slab.modelHash) then
-                applyBollardEntity(ent, locked, raiseZ, slab)
+                applyBollardEntity(ent, locked, raiseZ, slab, hardForce)
             else
-                applyBarrierEntity(ent, locked, slab)
+                applyBarrierEntity(ent, locked, slab, hardForce)
             end
         end
     end
@@ -781,7 +892,7 @@ local function gateSlabForGroup(slabs)
     return slabs and slabs[1] or nil
 end
 
-local function applyYardGateGroupLocked(group, locked)
+local function applyYardGateGroupLocked(group, locked, hardForce)
     local slabs = group.slabs
     local entities = group.entities
     local gateSlab = gateSlabForGroup(slabs)
@@ -794,11 +905,11 @@ local function applyYardGateGroupLocked(group, locked)
             local model = GetEntityModel(ent)
             local slab = findSlabForEntity(slabs, ent)
             if isBollardModel(model) then
-                applyBollardEntity(ent, locked, raiseZ, slab)
+                applyBollardEntity(ent, locked, raiseZ, slab, hardForce)
             elseif isFacGateModel(model) then
-                applyFacGateEntity(ent, locked, slab or gateSlab, openDelta)
+                applyFacGateEntity(ent, locked, slab or gateSlab, openDelta, hardForce)
             else
-                applyBarrierEntity(ent, locked, slab or gateSlab)
+                applyBarrierEntity(ent, locked, slab or gateSlab, hardForce)
             end
         end
     end
@@ -806,44 +917,44 @@ local function applyYardGateGroupLocked(group, locked)
         local ent = findClosestObject(slab.modelHash, slab.coords, 8.0)
         if ent ~= 0 and not seen[ent] then
             if isFacGateModel(slab.modelHash) then
-                applyFacGateEntity(ent, locked, slab, openDelta)
+                applyFacGateEntity(ent, locked, slab, openDelta, hardForce)
             elseif isBollardModel(slab.modelHash) then
-                applyBollardEntity(ent, locked, raiseZ, slab)
+                applyBollardEntity(ent, locked, raiseZ, slab, hardForce)
             else
-                applyBarrierEntity(ent, locked, slab)
+                applyBarrierEntity(ent, locked, slab, hardForce)
             end
         end
     end
 end
 
-local function applyBollardGroupLocked(slabs, entities, locked, raiseZ)
+local function applyBollardGroupLocked(slabs, entities, locked, raiseZ, hardForce)
     raiseZ = raiseZ or DEFAULT_BOLLARD_RAISE_Z
     for _, ent in ipairs(entities or {}) do
-        applyBollardEntity(ent, locked, raiseZ, findSlabForEntity(slabs, ent))
+        applyBollardEntity(ent, locked, raiseZ, findSlabForEntity(slabs, ent), hardForce)
     end
     for _, slab in ipairs(slabs or {}) do
         local ent = findClosestObject(slab.modelHash, slab.coords, 8.0)
-        if ent ~= 0 then applyBollardEntity(ent, locked, raiseZ, slab) end
+        if ent ~= 0 then applyBollardEntity(ent, locked, raiseZ, slab, hardForce) end
     end
 end
 
-local function applyGarageRollLocked(slabs, entities, locked)
+local function applyGarageRollLocked(slabs, entities, locked, hardForce)
     local seen = {}
     for _, slab in ipairs(slabs or {}) do
-        applyGarageSlabDoorSystem(slab, locked)
+        applyGarageSlabDoorSystem(slab, locked, hardForce)
         local ent = findClosestObject(slab.modelHash, slab.coords, 8.0)
         if ent ~= 0 then
             seen[ent] = true
             if locked then
                 seedGarageEntitySnapshot(ent, slab)
             end
-            applyGarageEntityDoor(ent, locked, slab)
+            applyGarageEntityDoor(ent, locked, slab, hardForce)
         end
     end
     for _, ent in ipairs(entities or {}) do
         if ent and ent ~= 0 and DoesEntityExist(ent) and not seen[ent] then
             seen[ent] = true
-            applyGarageEntityDoor(ent, locked, nil)
+            applyGarageEntityDoor(ent, locked, nil, hardForce)
         end
     end
 end
@@ -861,7 +972,8 @@ local function applyEntityGroupLocked(entities, locked)
             if locked then
                 snapEntityToSnapshot(ent)
                 FreezeEntityPosition(ent, true)
-                SetEntityCollision(ent, not locked, not locked)
+                -- Užrakinta entity privalo likti su collision; kitaip galima praeiti kiaurai.
+                SetEntityCollision(ent, true, true)
             else
                 FreezeEntityPosition(ent, false)
                 SetEntityCollision(ent, true, true)
@@ -875,7 +987,8 @@ local function scanEntitiesForDef(entityScan, playerCoords)
     local center = entityScan.center
     local radius = entityScan.radius or 12.0
     if playerCoords and #(playerCoords - center) > radius + 28.0 then
-        return {}
+        -- nil reiškia „nuskenuoti praleista“, o ne „durų nebėra“.
+        return nil
     end
     local models = {}
     for _, name in ipairs(entityScan.models or {}) do
@@ -896,18 +1009,16 @@ local function scanEntitiesForDef(entityScan, playerCoords)
     return out
 end
 
+--- Identity-only signature: model/handle/doorHash — not live open-door world coords (anti-flash).
 local function doorGroupEntitySig(group)
     if not group then return 0 end
     local parts = { tostring(#(group.slabs or {})) }
     for _, slab in ipairs(group.slabs or {}) do
-        local qx, qy, qz = quantKey(slab.coords.x, slab.coords.y, slab.coords.z)
-        parts[#parts + 1] = ('s:%x:%d:%d:%d'):format(slab.modelHash, qx, qy, qz)
+        parts[#parts + 1] = ('s:%x:%x'):format(slab.doorHash or 0, slab.modelHash or 0)
     end
     for _, ent in ipairs(group.entities or {}) do
         if ent and ent ~= 0 and DoesEntityExist(ent) then
-            local c = GetEntityCoords(ent)
-            local qx, qy, qz = quantKey(c.x, c.y, c.z)
-            parts[#parts + 1] = ('e:%x:%d:%d:%d'):format(GetEntityModel(ent), qx, qy, qz)
+            parts[#parts + 1] = ('e:%x:%d'):format(GetEntityModel(ent), ent)
         end
     end
     table.sort(parts)
@@ -921,6 +1032,40 @@ local function entitiesScanMeaningfullyChanged(groupId, newSig)
     return prev ~= nil
 end
 
+--- Ar specialus (garažas/vartai) fiziškai neatitinka užrakintos būsenos — soft maintain trigger.
+local function specialGroupNeedsResync(group, locked)
+    if not group or not locked then return false end
+    local dtype = group.doorType
+    if dtype == 'garage_roll' then
+        for _, slab in ipairs(group.slabs or {}) do
+            if not doorSystemMatchesLocked(slab.doorHash, true) then return true end
+            local ratio = doorSystemGetRatio(slab.doorHash)
+            if ratio and ratio > 0.08 then return true end
+        end
+        for _, ent in ipairs(group.entities or {}) do
+            if ent and ent ~= 0 and DoesEntityExist(ent) and not IsEntityPositionFrozen(ent) then
+                return true
+            end
+        end
+        return false
+    end
+    if dtype == 'bollard' or dtype == 'barrier' or dtype == 'yard_gate' then
+        for _, ent in ipairs(group.entities or {}) do
+            if ent and ent ~= 0 and DoesEntityExist(ent) and not IsEntityPositionFrozen(ent) then
+                return true
+            end
+        end
+        for _, slab in ipairs(group.slabs or {}) do
+            local ent = findClosestObject(slab.modelHash, slab.coords, 6.0)
+            if ent ~= 0 and not IsEntityPositionFrozen(ent) then
+                return true
+            end
+        end
+        return false
+    end
+    return false
+end
+
 applyGroupLocked = function(id, locked, force)
     local group
     for _, g in ipairs(doorGroups) do
@@ -931,8 +1076,9 @@ applyGroupLocked = function(id, locked, force)
     end
     if not group then return end
 
+    local hardForce = force == true
     local sig = doorGroupEntitySig(group)
-    if not force and lastAppliedLockState[id] == locked and lastAppliedEntitySig[id] == sig then
+    if not hardForce and lastAppliedLockState[id] == locked and lastAppliedEntitySig[id] == sig then
         return
     end
     lastAppliedLockState[id] = locked
@@ -940,23 +1086,23 @@ applyGroupLocked = function(id, locked, force)
 
     local g = group
     if g.doorType == 'garage_roll' then
-        applyGarageRollLocked(g.slabs, g.entities, locked)
+        applyGarageRollLocked(g.slabs, g.entities, locked, hardForce)
         return
     end
     if g.doorType == 'bollard' then
-        applyBollardGroupLocked(g.slabs, g.entities, locked, bollardRaiseForGroup(g))
+        applyBollardGroupLocked(g.slabs, g.entities, locked, bollardRaiseForGroup(g), hardForce)
         return
     end
     if g.doorType == 'yard_gate' then
-        applyYardGateGroupLocked(g, locked)
+        applyYardGateGroupLocked(g, locked, hardForce)
         return
     end
     if g.doorType == 'barrier' then
-        applyBarrierGroupLocked(g.slabs, g.entities, locked, bollardRaiseForGroup(g))
+        applyBarrierGroupLocked(g.slabs, g.entities, locked, bollardRaiseForGroup(g), hardForce)
         return
     end
     for _, slab in ipairs(g.slabs) do
-        applyStandardSlabLocked(slab, locked)
+        applyStandardSlabLocked(slab, locked, hardForce)
     end
     applyEntityGroupLocked(g.entities, locked)
 end
@@ -1193,10 +1339,11 @@ CreateThread(function()
             if g.entityScanDef then
                 if isDoorTogglePending(g.id) then goto next_group end
                 local ents = scanEntitiesForDef(g.entityScanDef, pc)
-                if #ents == 0 and #(g.entities or {}) == 0 then goto next_group end
+                if not ents or #ents == 0 then goto next_group end
                 local newSig = doorGroupEntitySig({ slabs = g.slabs, entities = ents })
                 local entitiesChanged = entitiesScanMeaningfullyChanged(g.id, newSig)
                 g.entities = ents
+                g.lockPosCache = nil
                 if not entitiesChanged then goto next_group end
                 if g.doorType == 'garage_roll' then
                     for _, ent in ipairs(g.entities) do
@@ -1255,6 +1402,8 @@ CreateThread(function()
                     end
                 end
                 if aligned then
+                    g.lockPosCache = nil
+                    -- Soft re-sync only; identity sig skip avoids DoorSystem force flash.
                     applyGroupLocked(g.id, doorLocked[g.id] ~= false)
                 end
             end
@@ -1343,6 +1492,8 @@ local function findNearestToggleDoor(pcoords)
     if not canUseServiceDoorsClient() then return nil end
     local closestHit = nil
     local preScan = (tonumber(Config.PdDoorToggleReach) or 6.0) + 2.5
+
+    --- Pirma greiti interact zonų kandidatai (be entity scan).
     for _, z in ipairs(getPdDoorProximityZones()) do
         if not canUseDoorGroupClient(z.groupId) then goto continue_zone end
         local d = #(pcoords - z.pos)
@@ -1350,13 +1501,26 @@ local function findNearestToggleDoor(pcoords)
         local r = doorToggleReachFor(z.maxd)
         if d <= r and (not closestHit or d < closestHit.d) then
             local g = findDoorGroupById(z.groupId)
-            closestHit = {
-                gid = z.groupId,
-                d = d,
-                pos = z.pos,
-                lockPos = resolveDoorLockPos(g),
-                label = (g or {}).label,
-            }
+            local lockPos = resolveDoorLockPos(g)
+            local lockD = lockPos and #(pcoords - lockPos) or d
+            --- Jei spyna arčiau / tame pačiame reach — prioritetas spynai.
+            if lockPos and lockD <= r then
+                closestHit = {
+                    gid = z.groupId,
+                    d = lockD,
+                    pos = lockPos,
+                    lockPos = lockPos,
+                    label = (g or {}).label,
+                }
+            elseif not closestHit or d < closestHit.d then
+                closestHit = {
+                    gid = z.groupId,
+                    d = d,
+                    pos = z.pos,
+                    lockPos = lockPos,
+                    label = (g or {}).label,
+                }
+            end
         end
         ::continue_zone::
     end
@@ -1369,35 +1533,55 @@ local function tryToggleNearestDoor(pcoords)
     requestPdDoorToggle(hit.gid)
 end
 
---- Spynos ikona + E (be teksto – tik ikona ant durų centro; ne Wait(0)).
+--- Cache: sunki paieška retai, piešimas — tik iš cache (pigus DrawSprite).
+local doorIconTarget = {
+    hit = nil,
+    at = 0,
+    near = 999999.0,
+}
+
 CreateThread(function()
     local iconDrawDist = tonumber(Config.PdDoorLockIconDrawDistance) or 10.0
-    local iconTickMs = math.max(50, tonumber(Config.PdDoorLockIconTickMs) or 50)
     while true do
-        local waitMs = 1200
+        local waitMs = 900
         if canUseServiceDoorsClient() then
-            local ped = PlayerPedId()
-            local pcoords = GetEntityCoords(ped)
+            local pcoords = GetEntityCoords(PlayerPedId())
             local doorNear = nearestPdDoorDist(pcoords)
-            if doorNear < iconDrawDist then
-                waitMs = iconTickMs
-                local hit = findNearestToggleDoor(pcoords)
-                if hit then
-                    local locked = stableDoorIconLocked(hit.gid)
-                    local lockPos = hit.lockPos or resolveDoorLockPos(findDoorGroupById(hit.gid))
-                    if lockPos then
-                        drawPdDoorLock(lockPos.x, lockPos.y, lockPos.z, locked)
-                    end
-                    EnableControlAction(0, 38, true)
-                    if IsControlJustPressed(0, 38) or IsDisabledControlJustPressed(0, 38) then
-                        tryToggleNearestDoor(pcoords)
-                    end
-                end
-            elseif doorNear < 45.0 then
-                waitMs = 450
+            doorIconTarget.near = doorNear
+            if doorNear < iconDrawDist + 8.0 then
+                waitMs = 150
+                doorIconTarget.hit = findNearestToggleDoor(pcoords)
+                doorIconTarget.at = GetGameTimer()
+            else
+                doorIconTarget.hit = nil
+                if doorNear < 45.0 then waitMs = 400 end
             end
+        else
+            doorIconTarget.hit = nil
         end
         Wait(waitMs)
+    end
+end)
+
+--- Spynos ikona + E. DrawSprite kiekvieną kadrą TIK kai yra cache hit — be sunkių loop'ų.
+CreateThread(function()
+    local iconDrawDist = tonumber(Config.PdDoorLockIconDrawDistance) or 10.0
+    while true do
+        local hit = doorIconTarget.hit
+        if hit and canUseServiceDoorsClient() and doorIconTarget.near < iconDrawDist then
+            local locked = stableDoorIconLocked(hit.gid)
+            local lockPos = hit.lockPos
+            if lockPos then
+                drawPdDoorLock(lockPos.x, lockPos.y, lockPos.z, locked)
+            end
+            EnableControlAction(0, 38, true)
+            if IsControlJustPressed(0, 38) or IsDisabledControlJustPressed(0, 38) then
+                requestPdDoorToggle(hit.gid)
+            end
+            Wait(0)
+        else
+            Wait(doorIconTarget.near < 45.0 and 250 or 800)
+        end
     end
 end)
 
@@ -1416,29 +1600,55 @@ AddEventHandler('onResourceStop', function(res)
     end
 end)
 
---- Užrakinti garažo / kiemo vartai: retas patikrinimas (ne kas 5 s).
+--- Užrakinti garažo / kiemo vartai: retas patikrinimas.
+--- Soft maintain — hard DoorSystem force tik per E / setPdDoorState.
 CreateThread(function()
     while true do
         local ped = PlayerPedId()
         local pc = GetEntityCoords(ped)
         if nearestPdDoorDist(pc) > 130.0 then
-            Wait(6000)
+            Wait(8000)
         else
             local anyNear = false
             for _, g in ipairs(doorGroups) do
                 if isDoorTogglePending(g.id) then goto continue_maint end
                 if not isGroupLocked(g.id) then goto continue_maint end
                 local near = g.interact and #(pc - g.interact) < 55.0
+                local special = g.doorType == 'garage_roll' or g.doorType == 'barrier'
+                    or g.doorType == 'yard_gate' or g.doorType == 'bollard'
                 if g.doorType == 'garage_roll' then
                     near = g.interact and #(pc - g.interact) < 90.0
                 end
                 if near then
                     anyNear = true
-                    applyGroupLocked(g.id, true)
+                    if special then
+                        if specialGroupNeedsResync(g, true) then
+                            lastAppliedLockState[g.id] = nil
+                            lastAppliedEntitySig[g.id] = nil
+                            applyGroupLocked(g.id, true, false)
+                        end
+                    else
+                        local needs = false
+                        for _, slab in ipairs(g.slabs or {}) do
+                            if not doorSystemMatchesLocked(slab.doorHash, true) then
+                                needs = true
+                                break
+                            end
+                            local ratio = doorSystemGetRatio(slab.doorHash)
+                            if ratio and ratio > 0.08 then
+                                needs = true
+                                break
+                            end
+                        end
+                        if needs then
+                            lastAppliedLockState[g.id] = nil
+                            applyGroupLocked(g.id, true, false)
+                        end
+                    end
                 end
                 ::continue_maint::
             end
-            Wait(anyNear and 12000 or 15000)
+            Wait(anyNear and 14000 or 18000)
         end
     end
 end)
