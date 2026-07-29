@@ -269,3 +269,5 @@ Config.CorpseLoot = {
 }
 
 Config.AdminPermissions = { 'admin', 'god' }
+--- txAdmin / server.cfg ACE (add_ace group.admin command allow) — ne tik QBCore /addpermission
+Config.AdminAceFallbacks = { 'command', 'group.admin' }

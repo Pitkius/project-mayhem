@@ -140,10 +140,13 @@ function GangTerritories.GetSnapshot()
                 bonuses = bonuses,
                 hourlyIncome = tonumber(bonuses.hourlyIncome) or 0,
                 drugProduct = definition.drugProduct,
+                allowsDrugSales = definition.allowsDrugSales == true,
                 controlledSince = row.controlled_since,
                 lockedUntil = row.locked_until,
                 recentWars = warsByTerritory[row.territory_id] or {},
                 activeMembersNearby = membersByTerritory[row.territory_id] or 0,
+                runtime = definition.runtime == true,
+                stock = Config.StockTerritoryIds and Config.StockTerritoryIds[row.territory_id] == true,
             }
         end
     end
@@ -267,6 +270,263 @@ function GangTerritories.IsGangOwner(gangId, territoryId)
     return tonumber(owner) == tonumber(gangId)
 end
 
+local function sanitizeVertices(raw)
+    local vertices = {}
+    if type(raw) ~= 'table' then return nil end
+    for _, point in ipairs(raw) do
+        if type(point) == 'table' then
+            local x = tonumber(point.x)
+            local y = tonumber(point.y)
+            if x and y then
+                vertices[#vertices + 1] = { x = x + 0.0, y = y + 0.0 }
+            end
+        end
+    end
+    if #vertices < 3 then return nil end
+    if #vertices > 128 then
+        while #vertices > 128 do table.remove(vertices) end
+    end
+    return vertices
+end
+
+local function sanitizeTerritoryId(raw)
+    local id = tostring(raw or ''):lower():gsub('[^a-z0-9_]', '')
+    if #id < 3 or #id > 48 then return nil end
+    return id
+end
+
+local function territoryOverrideKey(territoryId)
+    return 'territory_override:' .. tostring(territoryId)
+end
+
+local function saveTerritoryOverride(territoryId, definition, source)
+    local player = GangCore.GetPlayer(source)
+    local payload = {
+        id = territoryId,
+        label = definition.label,
+        type = definition.type,
+        drugProduct = definition.drugProduct,
+        allowsDrugSales = definition.allowsDrugSales == true,
+        bonuses = definition.bonuses or {},
+        vertices = definition.vertices or {},
+        anchor = definition.anchor,
+        runtime = definition.runtime == true,
+    }
+    MySQL.update.await([[
+        INSERT INTO mrp_gang_admin_settings (setting_key, value_json, updated_by)
+        VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE value_json = VALUES(value_json), updated_by = VALUES(updated_by)
+    ]], {
+        territoryOverrideKey(territoryId),
+        json.encode(payload),
+        player and player.PlayerData.citizenid or nil,
+    })
+end
+
+local function deleteTerritoryOverride(territoryId)
+    MySQL.update.await('DELETE FROM mrp_gang_admin_settings WHERE setting_key = ?', {
+        territoryOverrideKey(territoryId),
+    })
+end
+
+local function applyDefinitionToConfig(territoryId, definition)
+    Config.TerritoryPolygons = Config.TerritoryPolygons or {}
+    Config.Territories = Config.Territories or {}
+    Config.TerritoryPolygons[territoryId] = definition.vertices
+    Config.Territories[territoryId] = definition
+end
+
+local function broadcastTerritoryDefs(removedIds)
+    local defs = {}
+    for territoryId, definition in pairs(Config.Territories or {}) do
+        defs[territoryId] = {
+            label = definition.label,
+            type = definition.type,
+            drugProduct = definition.drugProduct,
+            allowsDrugSales = definition.allowsDrugSales == true,
+            bonuses = definition.bonuses or {},
+            vertices = definition.vertices or {},
+            anchor = definition.anchor,
+            runtime = definition.runtime == true,
+        }
+    end
+    TriggerClientEvent('mrp_gangs:client:syncTerritoryDefs', -1, defs, removedIds or {})
+    TriggerClientEvent('mrp_gangs:client:territoriesUpdated', -1)
+end
+
+function GangTerritories.ApplyOverrideDefinition(payload)
+    if type(payload) ~= 'table' then return false end
+    local territoryId = sanitizeTerritoryId(payload.id)
+    local vertices = sanitizeVertices(payload.vertices)
+    if not territoryId or not vertices then return false end
+    local territoryType = tostring(payload.type or 'gang')
+    if territoryType ~= 'gang' and territoryType ~= 'pvp' and territoryType ~= 'racket' then
+        territoryType = 'gang'
+    end
+    local label = tostring(payload.label or territoryId):gsub('^%s+', ''):gsub('%s+$', '')
+    if label == '' then label = territoryId end
+    if #label > 64 then label = label:sub(1, 64) end
+    local isStock = Config.StockTerritoryIds and Config.StockTerritoryIds[territoryId] == true
+    local definition = {
+        label = label,
+        type = territoryType,
+        drugProduct = payload.drugProduct and tostring(payload.drugProduct):sub(1, 32) or nil,
+        allowsDrugSales = payload.allowsDrugSales == true,
+        bonuses = type(payload.bonuses) == 'table' and payload.bonuses or {},
+        vertices = vertices,
+        runtime = not isStock,
+    }
+    definition.anchor = GangUtils.PolygonCentroid(vertices)
+    applyDefinitionToConfig(territoryId, definition)
+    MySQL.update.await([[
+        INSERT INTO mrp_gang_territories
+            (territory_id, territory_type, control_state, stability, bonus_json)
+        VALUES (?, ?, 'neutral', ?, ?)
+        ON DUPLICATE KEY UPDATE
+            territory_type = VALUES(territory_type),
+            bonus_json = VALUES(bonus_json)
+    ]], {
+        territoryId,
+        territoryType,
+        Config.TerritoryRules.baseStability or 50,
+        json.encode(definition.bonuses or {}),
+    })
+    return true, definition
+end
+
+function GangTerritories.AdminUpsert(source, payload)
+    if not GangCore.IsAdmin(source) then return false, 'permission_denied' end
+    payload = type(payload) == 'table' and payload or {}
+    local territoryId = sanitizeTerritoryId(payload.id or payload.territoryId)
+    local vertices = sanitizeVertices(payload.vertices)
+    if not territoryId then return false, 'invalid_id' end
+    if not vertices then return false, 'invalid_vertices' end
+
+    local ok, definition = GangTerritories.ApplyOverrideDefinition({
+        id = territoryId,
+        label = payload.label,
+        type = payload.type,
+        drugProduct = payload.drugProduct,
+        allowsDrugSales = payload.allowsDrugSales,
+        bonuses = payload.bonuses,
+        vertices = vertices,
+    })
+    if not ok then return false, 'apply_failed' end
+
+    saveTerritoryOverride(territoryId, definition, source)
+    GangCore.Audit({
+        actorSource = source,
+        action = 'admin_upsert_territory',
+        targetType = 'territory',
+        targetId = territoryId,
+        metadata = {
+            label = definition.label,
+            type = definition.type,
+            vertexCount = #definition.vertices,
+            runtime = definition.runtime == true,
+        },
+    })
+
+    local ownerGangId = tonumber(payload.ownerGangId)
+    if payload.ownerGangId ~= nil then
+        if ownerGangId and ownerGangId > 0 then
+            local transferred, transferReason = GangTerritories.TransferControl(
+                territoryId,
+                ownerGangId,
+                'admin_override',
+                'admin',
+                nil,
+                { source = source }
+            )
+            if not transferred and transferReason ~= 'already_owner' then
+                -- Geometry saved; owner apply failed — still report success for geometry.
+                GangCore.Notify(source, ('Turf geometrija išsaugota, bet savininko priskirti nepavyko (%s).'):format(tostring(transferReason)), 'error')
+            end
+        else
+            GangTerritories.AdminReset(territoryId, source, true)
+        end
+    end
+
+    broadcastTerritoryDefs()
+    return true, definition
+end
+
+function GangTerritories.AdminDelete(source, territoryId)
+    if not GangCore.IsAdmin(source) then return false, 'permission_denied' end
+    territoryId = sanitizeTerritoryId(territoryId)
+    if not territoryId then return false, 'invalid_id' end
+    if Config.StockTerritoryIds and Config.StockTerritoryIds[territoryId] then
+        return false, 'stock_territory'
+    end
+    if not Config.Territories[territoryId] then return false, 'territory_not_found' end
+
+    MySQL.update.await('DELETE FROM mrp_gang_wars WHERE territory_id = ?', { territoryId })
+    MySQL.update.await('DELETE FROM mrp_gang_territory_history WHERE territory_id = ?', { territoryId })
+    MySQL.update.await('DELETE FROM mrp_gang_territories WHERE territory_id = ?', { territoryId })
+    deleteTerritoryOverride(territoryId)
+    Config.Territories[territoryId] = nil
+    if Config.TerritoryPolygons then Config.TerritoryPolygons[territoryId] = nil end
+
+    GangCore.Audit({
+        actorSource = source,
+        action = 'admin_delete_territory',
+        targetType = 'territory',
+        targetId = territoryId,
+    })
+    broadcastTerritoryDefs({ territoryId })
+    return true
+end
+
+function GangTerritories.AdminReset(territoryId, source, silent)
+    territoryId = tostring(territoryId or '')
+    local territory = GangTerritories.Get(territoryId)
+    if not territory then return false, 'territory_not_found' end
+    local previousOwner = tonumber(territory.state.owner_gang_id)
+    MySQL.update.await([[
+        UPDATE mrp_gang_territories
+        SET owner_gang_id = NULL,
+            control_state = 'neutral',
+            stability = ?,
+            heat = 0,
+            control_version = control_version + 1,
+            controlled_since = NULL,
+            locked_until = NULL
+        WHERE territory_id = ?
+    ]], { Config.TerritoryRules.baseStability or 50, territoryId })
+    MySQL.insert.await([[
+        INSERT INTO mrp_gang_territory_history
+            (territory_id, previous_owner_gang_id, new_owner_gang_id, reason, reference_type, reference_id, metadata_json)
+        VALUES (?, ?, NULL, 'admin_reset', 'admin', ?, ?)
+    ]], {
+        territoryId,
+        previousOwner,
+        source and tostring(source) or nil,
+        json.encode({ source = source }),
+    })
+    if not silent then
+        TriggerClientEvent('mrp_gangs:client:territoriesUpdated', -1)
+    end
+    return true
+end
+
+function GangTerritories.LoadAdminOverrides()
+    local settings = MySQL.query.await([[
+        SELECT setting_key, value_json FROM mrp_gang_admin_settings
+        WHERE setting_key LIKE 'territory_override:%'
+    ]]) or {}
+    local loaded = 0
+    for _, setting in ipairs(settings) do
+        local value = json.decode(setting.value_json or '{}')
+        if GangTerritories.ApplyOverrideDefinition(value) then
+            loaded = loaded + 1
+        end
+    end
+    if loaded > 0 then
+        print(('[mrp_gangs] applied %s admin territory override(s)'):format(loaded))
+        broadcastTerritoryDefs()
+    end
+end
+
 QBCore.Functions.CreateCallback('mrp_gangs:server:getTerritories', function(_, callback)
     callback(GangTerritories.GetSnapshot())
 end)
@@ -274,15 +534,44 @@ end)
 QBCore.Functions.CreateCallback('mrp_gangs:server:adminSetTerritoryOwner', function(source, callback, territoryId, gangId)
     if not GangCore.IsAdmin(source) then return callback({ ok = false, reason = 'permission_denied' }) end
     local player = GangCore.GetPlayer(source)
+    local ownerId = tonumber(gangId)
+    if not ownerId or ownerId <= 0 then
+        local ok, reason = GangTerritories.AdminReset(territoryId, source)
+        return callback({ ok = ok, reason = reason })
+    end
     local ok, reason = GangTerritories.TransferControl(
         territoryId,
-        tonumber(gangId),
+        ownerId,
         'admin_override',
         'admin',
         player and player.PlayerData.citizenid,
         { source = source }
     )
+    if not ok and reason == 'already_owner' then
+        return callback({ ok = true })
+    end
     callback({ ok = ok, reason = reason })
+end)
+
+QBCore.Functions.CreateCallback('mrp_gangs:server:adminResetTerritory', function(source, callback, territoryId)
+    if not GangCore.IsAdmin(source) then return callback({ ok = false, reason = 'permission_denied' }) end
+    local ok, reason = GangTerritories.AdminReset(territoryId, source)
+    callback({ ok = ok, reason = reason })
+end)
+
+QBCore.Functions.CreateCallback('mrp_gangs:server:adminUpsertTerritory', function(source, callback, payload)
+    local ok, result = GangTerritories.AdminUpsert(source, payload)
+    if not ok then return callback({ ok = false, reason = result }) end
+    callback({ ok = true, territory = result, territories = GangTerritories.GetSnapshot() })
+end)
+
+QBCore.Functions.CreateCallback('mrp_gangs:server:adminDeleteTerritory', function(source, callback, territoryId)
+    local ok, reason = GangTerritories.AdminDelete(source, territoryId)
+    callback({
+        ok = ok,
+        reason = reason,
+        territories = ok and GangTerritories.GetSnapshot() or nil,
+    })
 end)
 
 exports('FindTerritoryAt', GangUtils.FindTerritoryAt)
@@ -292,6 +581,7 @@ exports('CanSellDrug', GangTerritories.CanSellDrug)
 exports('IsGangTerritoryOwner', GangTerritories.IsGangOwner)
 
 AddEventHandler('mrp_gangs:server:ready', function()
+    GangTerritories.LoadAdminOverrides()
     seedTerritories()
 end)
 

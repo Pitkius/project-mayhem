@@ -24,6 +24,25 @@ RegisterNetEvent('mrp_gangs:client:territoriesUpdated', function()
     GangTerritoryClient.Refresh()
 end)
 
+--- Runtime / admin-edited territory polygons from server.
+RegisterNetEvent('mrp_gangs:client:syncTerritoryDefs', function(defs, removedIds)
+    Config.Territories = Config.Territories or {}
+    Config.TerritoryPolygons = Config.TerritoryPolygons or {}
+    for _, territoryId in ipairs(type(removedIds) == 'table' and removedIds or {}) do
+        Config.Territories[territoryId] = nil
+        Config.TerritoryPolygons[territoryId] = nil
+    end
+    if type(defs) ~= 'table' then return end
+    for territoryId, definition in pairs(defs) do
+        if type(definition) == 'table' then
+            definition.vertices = definition.vertices or {}
+            Config.TerritoryPolygons[territoryId] = definition.vertices
+            Config.Territories[territoryId] = definition
+        end
+    end
+    GangTerritoryClient.Refresh()
+end)
+
 CreateThread(function()
     Wait(2500)
     GangTerritoryClient.Refresh()

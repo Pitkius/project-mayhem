@@ -300,6 +300,39 @@ QBCore.Functions.CreateCallback('mrp_gangs:server:adminSetGangStatus', function(
     callback({ ok = true })
 end)
 
+QBCore.Functions.CreateCallback('mrp_gangs:server:adminDeleteGang', function(source, callback, gangId, confirm)
+    if not GangCore.IsAdmin(source) then return callback({ ok = false, reason = 'permission_denied' }) end
+    gangId = tonumber(gangId)
+    if not gangId then return callback({ ok = false, reason = 'invalid_gang' }) end
+    local expected = ('DELETE-%s'):format(gangId)
+    if tostring(confirm or '') ~= expected then
+        return callback({ ok = false, reason = 'confirm_required' })
+    end
+    local gang = MySQL.single.await('SELECT id, label FROM mrp_gangs_v2 WHERE id = ? LIMIT 1', { gangId })
+    if not gang then return callback({ ok = false, reason = 'gang_not_found' }) end
+
+    MySQL.update.await('UPDATE mrp_gang_territories SET owner_gang_id = NULL, control_state = \'neutral\', controlled_since = NULL, locked_until = NULL WHERE owner_gang_id = ?', { gangId })
+    MySQL.update.await('UPDATE mrp_gang_wars SET state = \'cancelled\', settled_at = CURRENT_TIMESTAMP WHERE state IN (\'preparation\',\'active\',\'settlement\') AND (attacker_gang_id = ? OR defender_gang_id = ?)', { gangId, gangId })
+    MySQL.update.await('DELETE FROM mrp_gang_invites_v2 WHERE gang_id = ?', { gangId })
+    MySQL.update.await('DELETE FROM mrp_gang_members_v2 WHERE gang_id = ?', { gangId })
+    MySQL.update.await('UPDATE mrp_gangs_v2 SET status = \'archived\' WHERE id = ?', { gangId })
+    GangCore.Audit({
+        gangId = gangId,
+        actorSource = source,
+        action = 'admin_delete_gang',
+        targetType = 'gang',
+        targetId = gangId,
+        metadata = { label = gang.label },
+    })
+    TriggerClientEvent('mrp_gangs:client:territoriesUpdated', -1)
+    TriggerClientEvent('mrp_gangs:client:warsUpdated', -1)
+    callback({ ok = true })
+end)
+
+QBCore.Functions.CreateCallback('mrp_gangs:server:canOpenGangAdmin', function(source, callback)
+    callback(GangCore.IsAdmin(source) == true)
+end)
+
 AddEventHandler('mrp_gangs:server:ready', function()
     local settings = MySQL.query.await('SELECT setting_key, value_json FROM mrp_gang_admin_settings') or {}
     for _, setting in ipairs(settings) do

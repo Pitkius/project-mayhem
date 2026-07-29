@@ -973,6 +973,50 @@ tbody tr:hover { background: rgba(168, 85, 247, 0.05); }
 .turf-hover-tip.is-hidden { display: none; }
 
 /* ============================================================
+   ADMIN TURF EDITOR
+   ============================================================ */
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-turf-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: 14px;
+  min-height: 0;
+}
+.admin-turf-list .list { max-height: 58vh; overflow-y: auto; }
+.admin-turf-list .list-item.is-active {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.admin-turf-form { margin-bottom: 10px; }
+.admin-turf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+.admin-turf-map {
+  height: min(46vh, 420px);
+  min-height: 260px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background: #0a0c12;
+}
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 4px 0 8px;
+}
+.button.small { padding: 6px 10px; font-size: 11px; }
+
+/* ============================================================
    STASH (placeholder)
    ============================================================ */
 .stash-cats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -1280,8 +1324,9 @@ tbody tr:hover { background: rgba(168, 85, 247, 0.05); }
   .type-grid { grid-template-columns: repeat(2, 1fr); }
   .quick-actions { grid-template-columns: repeat(2, 1fr); }
   .map-workspace { grid-template-columns: 1fr; }
+  .admin-turf-layout { grid-template-columns: 1fr; }
   .grid-hero { grid-template-columns: 1fr; }
-  #territory-map { height: 44vh; min-height: 280px; }
+  #territory-map, .admin-turf-map { height: 44vh; min-height: 280px; }
   .ladder { grid-template-columns: repeat(2, 1fr); }
   .member-grid { grid-template-columns: 1fr; }
 }

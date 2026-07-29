@@ -1,28 +1,53 @@
 local QBCore = GangClient.QBCore
 local tabletOpen = false
+local adminOnlySession = false
 
 local function setOpen(open)
     tabletOpen = open == true
     SetNuiFocus(tabletOpen, tabletOpen)
     SetNuiFocusKeepInput(false)
-    if not tabletOpen then SendNUIMessage({ action = 'close' }) end
+    if not tabletOpen then
+        adminOnlySession = false
+        SendNUIMessage({ action = 'close' })
+    end
 end
 
-local function loadBootstrap()
+local function loadBootstrap(options)
+    options = options or {}
     QBCore.Functions.TriggerCallback('mrp_gangs:server:getTabletBootstrap', function(payload)
         if not payload then
             return GangClient.Notify('Nepavyko užkrauti gaujų tabletės.', 'error')
         end
-        SendNUIMessage({ action = 'open', payload = payload })
+        SendNUIMessage({
+            action = 'open',
+            payload = payload,
+            startPage = options.startPage or (adminOnlySession and 'admin' or nil),
+            adminOnly = adminOnlySession,
+        })
     end)
 end
 
-local function openTablet()
+local function openTablet(options)
     if tabletOpen then return end
     QBCore.Functions.TriggerCallback('mrp_gangs:server:canOpenTablet', function(allowed)
         if not allowed then return GangClient.Notify(('Reikia %s.'):format(Config.TabletItem), 'error') end
+        adminOnlySession = false
         setOpen(true)
-        loadBootstrap()
+        loadBootstrap(options)
+    end)
+end
+
+local function openGangAdmin()
+    if tabletOpen then
+        setOpen(false)
+    end
+    QBCore.Functions.TriggerCallback('mrp_gangs:server:canOpenGangAdmin', function(allowed)
+        if not allowed then
+            return GangClient.Notify('Nėra teisių.', 'error')
+        end
+        adminOnlySession = true
+        setOpen(true)
+        loadBootstrap({ startPage = 'admin', adminOnly = true })
     end)
 end
 
@@ -31,14 +56,25 @@ local function callbackAction(nuiName, serverName, argsBuilder, refresh)
         local args = argsBuilder and argsBuilder(data or {}) or {}
         QBCore.Functions.TriggerCallback(serverName, function(response)
             callback(response or { ok = false, reason = 'empty_response' })
-            if refresh and response and response.ok then loadBootstrap() end
+            if refresh and response and response.ok then
+                loadBootstrap({ startPage = adminOnlySession and 'admin' or nil })
+            end
         end, table.unpack(args))
     end)
 end
 
-RegisterNetEvent('mrp_gangs:client:openTablet', openTablet)
+RegisterNetEvent('mrp_gangs:client:openTablet', function()
+    openTablet()
+end)
 
-RegisterCommand('gangtablet', openTablet, false)
+RegisterNetEvent('mrp_gangs:client:openGangAdmin', openGangAdmin)
+
+RegisterCommand('gangtablet', function()
+    openTablet()
+end, false)
+
+--- Legacy alias restored from pre–Gang System 2.0 (`/gangadmin`).
+RegisterCommand('gangadmin', openGangAdmin, false)
 
 RegisterNUICallback('close', function(_, callback)
     setOpen(false)
@@ -130,6 +166,23 @@ end, true)
 callbackAction('adminSetGangStatus', 'mrp_gangs:server:adminSetGangStatus', function(data)
     return { data.gangId, data.status }
 end, true)
+callbackAction('adminDeleteGang', 'mrp_gangs:server:adminDeleteGang', function(data)
+    return { data.gangId, data.confirm }
+end, true)
+callbackAction('adminResetTerritory', 'mrp_gangs:server:adminResetTerritory', function(data)
+    return { data.territoryId }
+end, true)
+callbackAction('adminUpsertTerritory', 'mrp_gangs:server:adminUpsertTerritory', function(data)
+    return { data }
+end, true)
+callbackAction('adminDeleteTerritory', 'mrp_gangs:server:adminDeleteTerritory', function(data)
+    return { data.territoryId }
+end, true)
+
+RegisterNUICallback('adminGetPlayerCoords', function(_, callback)
+    local coords = GetEntityCoords(PlayerPedId())
+    callback({ ok = true, x = coords.x + 0.0, y = coords.y + 0.0, z = coords.z + 0.0 })
+end)
 
 RegisterNetEvent('mrp_gangs:client:warsUpdated', function()
     if tabletOpen then loadBootstrap() end

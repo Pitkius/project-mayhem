@@ -199,6 +199,7 @@ Config.Territories = {
 for territoryId, definition in pairs(Config.Territories) do
     local poly = Config.TerritoryPolygons and Config.TerritoryPolygons[territoryId]
     definition.vertices = poly
+    definition.runtime = false
     if poly and #poly > 0 and not definition.anchor then
         local sx, sy = 0.0, 0.0
         for i = 1, #poly do
@@ -207,4 +208,10 @@ for territoryId, definition in pairs(Config.Territories) do
         end
         definition.anchor = { x = sx / #poly, y = sy / #poly }
     end
+end
+
+--- Stock territory IDs shipped in config (admin may override geometry, but not hard-delete).
+Config.StockTerritoryIds = {}
+for territoryId in pairs(Config.Territories) do
+    Config.StockTerritoryIds[territoryId] = true
 end

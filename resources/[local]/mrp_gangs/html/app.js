@@ -23,9 +23,25 @@ const PALETTE = [
 const state = {
   payload: null,
   page: 'overview',
+  adminOnly: false,
+  adminTab: 'gangs',
   missionDifficulty: {},
   map: null,
+  adminMap: null,
+  adminMapLayers: {},
+  adminDrawLayer: null,
   selectedTerritoryId: null,
+  turfEditor: {
+    id: '',
+    label: '',
+    type: 'gang',
+    ownerGangId: '',
+    vertices: [],
+    allowsDrugSales: false,
+    drugProduct: '',
+    hourlyIncome: '',
+    isNew: true,
+  },
   territoryFilters: { gang: true, pvp: true, racket: true },
   mapLayers: {},
   mapMarkers: {},
@@ -98,6 +114,18 @@ const pagesGuest = [
 
 const reasonLt = {
   already_in_gang: 'Jau priklausai gaujai.',
+  create_disabled: 'Gaujos kūrimas išjungtas.',
+  rate_limited: 'Per greitai — palauk.',
+  not_enough_money: 'Nepakanka pinigų.',
+  permission_denied: 'Nėra teisių.',
+  invalid_id: 'Neteisingas ID.',
+  invalid_vertices: 'Poligonui reikia bent 3 taškų.',
+  stock_territory: 'Stock turfų trinti negalima.',
+  territory_not_found: 'Teritorija nerasta.',
+  confirm_required: 'Reikia teisingo DELETE patvirtinimo.',
+  gang_not_found: 'Gauja nerasta.',
+  invalid_gang: 'Neteisingas gaujos ID.',
+  apply_failed: 'Nepavyko pritaikyti turf.',
   invalid_type: 'Neteisingas gaujos tipas.',
   invalid_name: 'Techninis pavadinimas per trumpas (min. 3).',
   invalid_label: 'Rodomas pavadinimas per trumpas (min. 3).',
@@ -362,6 +390,9 @@ function warningMeter(warnings) {
    NAV
    ------------------------------------------------------------ */
 function availablePages() {
+  if (state.adminOnly && state.payload?.admin) {
+    return [{ key: 'admin', icon: ICONS.admin, label: 'Administravimas' }];
+  }
   const organization = state.payload?.organization;
   const list = organization ? [...pagesInGang] : [...pagesGuest];
   if (!organization && state.payload?.allowCreate === false) {
@@ -1372,88 +1403,303 @@ function typeHint(key) {
 /* ------------------------------------------------------------
    ADMIN
    ------------------------------------------------------------ */
+function resetTurfEditor(territory) {
+  if (!territory) {
+    state.turfEditor = {
+      id: '',
+      label: '',
+      type: 'gang',
+      ownerGangId: '',
+      vertices: [],
+      allowsDrugSales: false,
+      drugProduct: '',
+      hourlyIncome: '',
+      isNew: true,
+    };
+    return;
+  }
+  state.turfEditor = {
+    id: territory.id || '',
+    label: territory.label || '',
+    type: territory.type || 'gang',
+    ownerGangId: territory.ownerGangId ? String(territory.ownerGangId) : '',
+    vertices: (territory.vertices || []).map((v) => ({ x: Number(v.x), y: Number(v.y) })),
+    allowsDrugSales: territory.allowsDrugSales === true || Boolean(territory.drugProduct),
+    drugProduct: territory.drugProduct || '',
+    hourlyIncome: territory.hourlyIncome ? String(territory.hourlyIncome) : '',
+    isNew: false,
+    stock: territory.stock === true,
+    runtime: territory.runtime === true,
+  };
+}
+
+function renderAdminGangs(admin) {
+  return `
+    <article class="card">
+      <div class="card-header"><div class="title"><h2>Gaujų valdymas</h2><p class="muted">Statusas ir ištrynimas</p></div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ID</th><th>Gauja</th><th>Tipas</th><th>REP</th><th>Heat</th><th>Iždas</th><th>Statusas</th><th></th></tr></thead>
+        <tbody>${admin.gangs.map((g) => `
+          <tr>
+            <td>${g.id}</td>
+            <td>${esc(g.label)}</td>
+            <td>${esc(g.gang_type)}</td>
+            <td>${num(g.reputation)}</td>
+            <td>${g.heat || 0}</td>
+            <td>${money(g.treasury)}</td>
+            <td><select data-admin-gang-status="${g.id}">
+              ${['active', 'suspended', 'archived'].map((s) => `<option ${s === g.status ? 'selected' : ''}>${s}</option>`).join('')}
+            </select></td>
+            <td><button class="button danger small" data-action="admin-delete-gang" data-id="${g.id}" data-label="${esc(g.label)}">Ištrinti</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </article>`;
+}
+
+function renderAdminTurfs(admin) {
+  const editor = state.turfEditor;
+  const list = state.payload.territories || [];
+  return `
+    <div class="admin-turf-layout">
+      <aside class="card admin-turf-list">
+        <div class="card-header">
+          <div class="title"><h2>Teritorijos</h2><p class="muted">${list.length} zonos</p></div>
+          <button class="button primary small" data-action="admin-turf-new">${ICONS.plus} Nauja</button>
+        </div>
+        <div class="list compact">
+          ${list.map((t) => `
+            <button type="button" class="list-item ${editor.id === t.id && !editor.isNew ? 'is-active' : ''}" data-action="admin-turf-edit" data-id="${esc(t.id)}">
+              <div class="list-item-main">
+                <strong>${esc(t.label)}</strong>
+                <small>${esc(t.type)} · ${esc(t.ownerLabel || 'Neutralu')}${t.runtime ? ' · custom' : ''}</small>
+              </div>
+              <i class="legend-dot" style="background:${esc(turfDisplayColor(t))}"></i>
+            </button>`).join('') || empty('Nėra teritorijų', 'Sukurk pirmąją zoną.')}
+        </div>
+      </aside>
+
+      <article class="card admin-turf-editor">
+        <div class="card-header">
+          <div class="title">
+            <h2>${editor.isNew ? 'Nauja turf zona' : 'Redaguoti turf'}</h2>
+            <p class="muted">Spausk žemėlapį — pridėti viršūnę · Apply išsaugo geometriją + savininką</p>
+          </div>
+        </div>
+        <div class="admin-turf-form grid grid-2">
+          <div class="field"><label>ID (techninis)</label>
+            <input id="admin-turf-id" maxlength="48" pattern="[a-z0-9_]{3,48}" ${editor.isNew ? '' : 'readonly'}
+              value="${esc(editor.id)}" placeholder="pvz. mirror_park_east">
+          </div>
+          <div class="field"><label>Pavadinimas</label>
+            <input id="admin-turf-label" maxlength="64" value="${esc(editor.label)}" placeholder="Mirror Park East">
+          </div>
+          <div class="field"><label>Tipas</label>
+            <select id="admin-turf-type">
+              ${['gang', 'pvp', 'racket'].map((t) => `<option value="${t}" ${editor.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Savininkas</label>
+            <select id="admin-turf-owner">
+              <option value="">Neutralu</option>
+              ${admin.gangs.filter((g) => g.status === 'active').map((g) =>
+                `<option value="${g.id}" ${String(g.id) === String(editor.ownerGangId) ? 'selected' : ''}>${esc(g.label)}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Drug produktas (optional)</label>
+            <input id="admin-turf-drug" maxlength="32" value="${esc(editor.drugProduct)}" placeholder="weed / cocaine / meth…">
+          </div>
+          <div class="field"><label>Reketo pajamos / h</label>
+            <input id="admin-turf-income" type="number" min="0" value="${esc(editor.hourlyIncome)}" placeholder="0">
+          </div>
+        </div>
+        <label class="checkbox-row"><input type="checkbox" id="admin-turf-drugs" ${editor.allowsDrugSales ? 'checked' : ''}> Leidžia narkotikų pardavimą</label>
+        <p class="muted small">Viršūnės: <strong>${editor.vertices.length}</strong> (min. 3). Stock zonas galima perpiešti; ištrinti galima tik custom.</p>
+        <div class="admin-turf-actions">
+          <button class="button" data-action="admin-turf-add-here">+ Mano pozicija</button>
+          <button class="button" data-action="admin-turf-undo" ${editor.vertices.length ? '' : 'disabled'}>Undo taškas</button>
+          <button class="button" data-action="admin-turf-clear" ${editor.vertices.length ? '' : 'disabled'}>Valyti poligoną</button>
+          <button class="button primary" data-action="admin-turf-apply">${ICONS.bolt} Apply / Išsaugoti</button>
+          <button class="button" data-action="admin-turf-reset-owner" ${editor.isNew ? 'disabled' : ''}>Reset savininką</button>
+          <button class="button danger" data-action="admin-turf-delete" ${editor.isNew || editor.stock ? 'disabled' : ''}>Ištrinti zoną</button>
+        </div>
+        <div id="admin-turf-map" class="admin-turf-map"></div>
+      </article>
+    </div>`;
+}
+
+function renderAdminOps(admin) {
+  return `
+    <article class="card">
+      <div class="card-header"><div class="title"><h2>Aktyvūs karai</h2></div></div>
+      <div class="list">
+        ${admin.activeWars.length ? admin.activeWars.map((w) => `
+          <div class="list-item">
+            <div class="list-item-main">
+              <strong>#${w.id} · ${esc(w.territory_id)}</strong>
+              <small>${esc(w.state)} · ${w.attacker_score}:${w.defender_score}</small>
+            </div>
+            <button class="button danger" data-action="admin-cancel-war" data-id="${w.id}">Atšaukti</button>
+          </div>`).join('') : empty('Aktyvių karų nėra', 'Nieko nedaryti.')}
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-header"><div class="title"><h2>Mission toggles</h2></div></div>
+      <div class="grid grid-3">${(admin.missions || []).map((m) =>
+        `<label class="list-item">
+          <span>${esc(m.label)}</span>
+          <input type="checkbox" data-admin-mission="${esc(m.id)}" ${m.enabled ? 'checked' : ''}>
+        </label>`
+      ).join('')}</div>
+    </article>
+    <article class="card">
+      <div class="card-header"><div class="title"><h2>Greitas turf savininkas</h2><p class="muted">Be geometrijos keitimo</p></div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Teritorija</th><th>Tipas</th><th>Savininkas</th><th>Stabilumas</th></tr></thead>
+        <tbody>${(state.payload.territories || []).map((t) => `
+          <tr>
+            <td>${esc(t.label)}</td>
+            <td>${esc(t.type)}</td>
+            <td>
+              <select data-admin-territory-owner="${esc(t.id)}">
+                <option value="">Neutralu</option>
+                ${admin.gangs.filter((g) => g.status === 'active').map((g) =>
+                  `<option value="${g.id}" ${Number(g.id) === Number(t.ownerGangId) ? 'selected' : ''}>${esc(g.label)}</option>`
+                ).join('')}
+              </select>
+            </td>
+            <td>${esc(t.stability)}%</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+    </article>`;
+}
+
+function destroyAdminMap() {
+  if (state.adminMap) {
+    try { state.adminMap.remove(); } catch (_) { /* ignore */ }
+  }
+  state.adminMap = null;
+  state.adminMapLayers = {};
+  state.adminDrawLayer = null;
+}
+
+function syncAdminDrawLayer() {
+  if (!state.adminMap) return;
+  if (state.adminDrawLayer) {
+    try { state.adminMap.removeLayer(state.adminDrawLayer); } catch (_) { /* ignore */ }
+    state.adminDrawLayer = null;
+  }
+  const verts = state.turfEditor.vertices || [];
+  if (verts.length < 2) return;
+  const latlngs = verts.map((v) => [v.y, v.x]);
+  state.adminDrawLayer = L.polygon(latlngs, {
+    color: '#A855F7',
+    weight: 2.5,
+    fillColor: '#A855F7',
+    fillOpacity: 0.35,
+    dashArray: '6 4',
+  }).addTo(state.adminMap);
+}
+
+function initAdminMap() {
+  const node = document.querySelector('#admin-turf-map');
+  if (!node || typeof L === 'undefined') return;
+  const bounds = [[-4000, -4000], [6625, 4500]];
+  const rebuild = !state.adminMap || !node._leaflet_id;
+  if (rebuild) {
+    destroyAdminMap();
+    state.adminMap = L.map(node, {
+      crs: L.CRS.Simple, minZoom: -3, maxZoom: 1.25, zoomControl: true, attributionControl: false,
+    });
+    L.imageOverlay('asset/gtav_satellite_2048.png', bounds).addTo(state.adminMap);
+    state.adminMap.fitBounds([[-2500, -2000], [5200, 3000]]);
+    state.adminMap.on('click', (e) => {
+      const x = Number(e.latlng.lng);
+      const y = Number(e.latlng.lat);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      state.turfEditor.vertices.push({ x, y });
+      syncAdminDrawLayer();
+      const count = document.querySelector('.admin-turf-editor .muted.small strong');
+      if (count) count.textContent = String(state.turfEditor.vertices.length);
+    });
+  }
+
+  Object.values(state.adminMapLayers).forEach((layer) => {
+    try { state.adminMap.removeLayer(layer); } catch (_) { /* ignore */ }
+  });
+  state.adminMapLayers = {};
+
+  (state.payload.territories || []).forEach((territory) => {
+    if (!territory.vertices?.length) return;
+    if (territory.id === state.turfEditor.id && !state.turfEditor.isNew) return;
+    const latlngs = territory.vertices.map((v) => [v.y, v.x]);
+    const layer = L.polygon(latlngs, {
+      ...turfBaseStyle(territory, false),
+      fillOpacity: 0.18,
+      weight: 1.2,
+    });
+    layer.on('click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      resetTurfEditor(territory);
+      render();
+    });
+    layer.addTo(state.adminMap);
+    state.adminMapLayers[territory.id] = layer;
+  });
+
+  syncAdminDrawLayer();
+  setTimeout(() => state.adminMap?.invalidateSize(), 40);
+}
+
+function readTurfEditorForm() {
+  const idEl = document.querySelector('#admin-turf-id');
+  const labelEl = document.querySelector('#admin-turf-label');
+  const typeEl = document.querySelector('#admin-turf-type');
+  const ownerEl = document.querySelector('#admin-turf-owner');
+  const drugEl = document.querySelector('#admin-turf-drug');
+  const incomeEl = document.querySelector('#admin-turf-income');
+  const drugsEl = document.querySelector('#admin-turf-drugs');
+  if (idEl && state.turfEditor.isNew) state.turfEditor.id = idEl.value.trim().toLowerCase();
+  if (labelEl) state.turfEditor.label = labelEl.value.trim();
+  if (typeEl) state.turfEditor.type = typeEl.value;
+  if (ownerEl) state.turfEditor.ownerGangId = ownerEl.value;
+  if (drugEl) state.turfEditor.drugProduct = drugEl.value.trim();
+  if (incomeEl) state.turfEditor.hourlyIncome = incomeEl.value;
+  if (drugsEl) state.turfEditor.allowsDrugSales = drugsEl.checked;
+}
+
 function renderAdmin() {
   const admin = state.payload.admin;
   if (!admin) return empty('Admin režimas išjungtas', 'Neturi admin teisių.');
+  const tab = state.adminTab || 'gangs';
+  if (tab === 'turfs') setTimeout(initAdminMap, 0);
+  else if (state.adminMap) destroyAdminMap();
+
   return `
     <div class="stack">
       <div class="card-header">
-        <div class="title"><h2>Administravimas</h2><p class="muted">Gaujos, karai, teritorijos, misijos</p></div>
+        <div class="title"><h2>Gang Admin</h2><p class="muted">Gaujos, turf apply/edit, karai, misijos · /gangadmin</p></div>
         ${pill('ADMIN', 'danger')}
       </div>
 
       <div class="grid grid-4">
         <div class="metric-card is-accent"><div class="metric-label">Gaujos</div><div class="metric">${admin.gangs.length}</div></div>
+        <div class="metric-card"><div class="metric-label">Turf zonos</div><div class="metric">${(state.payload.territories || []).length}</div></div>
         <div class="metric-card"><div class="metric-label">Aktyvūs karai</div><div class="metric">${admin.activeWars.length}</div></div>
-        <div class="metric-card"><div class="metric-label">Quota kategorijos</div><div class="metric">${admin.quotas.length}</div></div>
-        <div class="metric-card"><div class="metric-label">Audit įrašai</div><div class="metric">${admin.recentAudit.length}</div></div>
+        <div class="metric-card"><div class="metric-label">Audit</div><div class="metric">${admin.recentAudit.length}</div></div>
       </div>
 
-      <article class="card">
-        <div class="card-header"><div class="title"><h2>Gaujų valdymas</h2></div></div>
-        <div class="table-wrap"><table>
-          <thead><tr><th>ID</th><th>Gauja</th><th>Tipas</th><th>REP</th><th>Heat</th><th>Iždas</th><th>Statusas</th></tr></thead>
-          <tbody>${admin.gangs.map((g) => `
-            <tr>
-              <td>${g.id}</td>
-              <td>${esc(g.label)}</td>
-              <td>${esc(g.gang_type)}</td>
-              <td>${num(g.reputation)}</td>
-              <td>${g.heat || 0}</td>
-              <td>${money(g.treasury)}</td>
-              <td><select data-admin-gang-status="${g.id}">
-                ${['active', 'suspended', 'archived'].map((s) => `<option ${s === g.status ? 'selected' : ''}>${s}</option>`).join('')}
-              </select></td>
-            </tr>`).join('')}
-          </tbody>
-        </table></div>
-      </article>
+      <div class="admin-tabs">
+        <button type="button" class="button ${tab === 'gangs' ? 'primary' : ''}" data-action="admin-tab" data-tab="gangs">Gaujos</button>
+        <button type="button" class="button ${tab === 'turfs' ? 'primary' : ''}" data-action="admin-tab" data-tab="turfs">Turf apply / edit</button>
+        <button type="button" class="button ${tab === 'ops' ? 'primary' : ''}" data-action="admin-tab" data-tab="ops">Karai / Misijos</button>
+      </div>
 
-      <article class="card">
-        <div class="card-header"><div class="title"><h2>Teritorijos</h2></div></div>
-        <div class="table-wrap"><table>
-          <thead><tr><th>Teritorija</th><th>Tipas</th><th>Savininkas</th><th>Stabilumas</th></tr></thead>
-          <tbody>${(state.payload.territories || []).map((t) => `
-            <tr>
-              <td>${esc(t.label)}</td>
-              <td>${esc(t.type)}</td>
-              <td>
-                <select data-admin-territory-owner="${esc(t.id)}">
-                  <option value="">Neutralu</option>
-                  ${admin.gangs.filter((g) => g.status === 'active').map((g) =>
-                    `<option value="${g.id}" ${Number(g.id) === Number(t.ownerGangId) ? 'selected' : ''}>${esc(g.label)}</option>`
-                  ).join('')}
-                </select>
-              </td>
-              <td>${esc(t.stability)}%</td>
-            </tr>`).join('')}
-          </tbody>
-        </table></div>
-      </article>
-
-      <article class="card">
-        <div class="card-header"><div class="title"><h2>Aktyvūs karai</h2></div></div>
-        <div class="list">
-          ${admin.activeWars.length ? admin.activeWars.map((w) => `
-            <div class="list-item">
-              <div class="list-item-main">
-                <strong>#${w.id} · ${esc(w.territory_id)}</strong>
-                <small>${esc(w.state)} · ${w.attacker_score}:${w.defender_score}</small>
-              </div>
-              <button class="button danger" data-action="admin-cancel-war" data-id="${w.id}">Atšaukti</button>
-            </div>`).join('') : empty('Aktyvių karų nėra', 'Nieko nedaryti.')}
-        </div>
-      </article>
-
-      <article class="card">
-        <div class="card-header"><div class="title"><h2>Mission toggles</h2></div></div>
-        <div class="grid grid-3">${(admin.missions || []).map((m) =>
-          `<label class="list-item">
-            <span>${esc(m.label)}</span>
-            <input type="checkbox" data-admin-mission="${esc(m.id)}" ${m.enabled ? 'checked' : ''}>
-          </label>`
-        ).join('')}</div>
-      </article>
+      ${tab === 'gangs' ? renderAdminGangs(admin) : ''}
+      ${tab === 'turfs' ? renderAdminTurfs(admin) : ''}
+      ${tab === 'ops' ? renderAdminOps(admin) : ''}
     </div>`;
 }
 
@@ -1478,7 +1724,8 @@ function render() {
   renderNav();
   const pageMeta = availablePages().find((p) => p.key === state.page);
   title.textContent = pageMeta?.label || 'Pagrindinis';
-  eyebrow.textContent = state.payload.organization ? 'SYNDICATE INTERFACE' : 'GUEST MODE';
+  if (state.adminOnly) eyebrow.textContent = 'GANG ADMIN';
+  else eyebrow.textContent = state.payload.organization ? 'SYNDICATE INTERFACE' : 'GUEST MODE';
 
   let preservedMap = null;
   if (state.page === 'territories' && state.map) {
@@ -1492,6 +1739,10 @@ function render() {
     state.map = null;
     state.mapLayers = {};
     state.mapMarkers = {};
+  }
+
+  if (!(state.page === 'admin' && state.adminTab === 'turfs') && state.adminMap) {
+    destroyAdminMap();
   }
 
   content.innerHTML = (renderers[state.page] || renderOverview)();
@@ -1854,6 +2105,83 @@ document.addEventListener('click', async (event) => {
   } else if (action === 'admin-cancel-war') {
     const result = await api('adminCancelWar', { warId: Number(target.dataset.id) });
     toast(result.ok ? 'Karas atšauktas.' : fail(result), result.ok ? 'success' : 'error');
+  } else if (action === 'admin-tab') {
+    state.adminTab = target.dataset.tab || 'gangs';
+    render();
+  } else if (action === 'admin-turf-new') {
+    resetTurfEditor(null);
+    state.adminTab = 'turfs';
+    render();
+  } else if (action === 'admin-turf-edit') {
+    const territory = (state.payload.territories || []).find((t) => t.id === target.dataset.id);
+    if (!territory) return toast('Teritorija nerasta.', 'error');
+    resetTurfEditor(territory);
+    state.adminTab = 'turfs';
+    render();
+  } else if (action === 'admin-turf-undo') {
+    state.turfEditor.vertices.pop();
+    syncAdminDrawLayer();
+    render();
+  } else if (action === 'admin-turf-clear') {
+    state.turfEditor.vertices = [];
+    syncAdminDrawLayer();
+    render();
+  } else if (action === 'admin-turf-add-here') {
+    const coords = await api('adminGetPlayerCoords');
+    if (!coords?.ok) return toast('Nepavyko gauti pozicijos.', 'error');
+    state.turfEditor.vertices.push({ x: Number(coords.x), y: Number(coords.y) });
+    syncAdminDrawLayer();
+    render();
+  } else if (action === 'admin-turf-apply') {
+    readTurfEditorForm();
+    const editor = state.turfEditor;
+    if (!editor.id || editor.id.length < 3) return toast('Neteisingas turf ID.', 'error');
+    if (!editor.label || editor.label.length < 3) return toast('Įrašyk pavadinimą.', 'error');
+    if (!editor.vertices || editor.vertices.length < 3) return toast('Reikia bent 3 poligono taškų.', 'error');
+    const bonuses = {};
+    const income = Number(editor.hourlyIncome);
+    if (Number.isFinite(income) && income > 0) bonuses.hourlyIncome = income;
+    const result = await api('adminUpsertTerritory', {
+      id: editor.id,
+      label: editor.label,
+      type: editor.type,
+      vertices: editor.vertices,
+      ownerGangId: editor.ownerGangId === '' ? 0 : Number(editor.ownerGangId),
+      allowsDrugSales: editor.allowsDrugSales === true,
+      drugProduct: editor.drugProduct || null,
+      bonuses,
+    });
+    toast(result.ok ? 'Turf pritaikytas.' : fail(result), result.ok ? 'success' : 'error');
+    if (result.ok && result.territories) {
+      state.payload.territories = result.territories;
+      const updated = result.territories.find((t) => t.id === editor.id);
+      resetTurfEditor(updated || null);
+      render();
+    }
+  } else if (action === 'admin-turf-reset-owner') {
+    readTurfEditorForm();
+    if (!state.turfEditor.id || state.turfEditor.isNew) return;
+    const result = await api('adminResetTerritory', { territoryId: state.turfEditor.id });
+    toast(result.ok ? 'Savininkas nunulintas.' : fail(result), result.ok ? 'success' : 'error');
+  } else if (action === 'admin-turf-delete') {
+    readTurfEditorForm();
+    if (!state.turfEditor.id || state.turfEditor.isNew || state.turfEditor.stock) {
+      return toast('Stock zonų trinti negalima — tik custom.', 'error');
+    }
+    if (!window.confirm(`Ištrinti turf „${state.turfEditor.id}“?`)) return;
+    const result = await api('adminDeleteTerritory', { territoryId: state.turfEditor.id });
+    toast(result.ok ? 'Turf ištrintas.' : fail(result), result.ok ? 'success' : 'error');
+    if (result.ok) {
+      if (result.territories) state.payload.territories = result.territories;
+      resetTurfEditor(null);
+      render();
+    }
+  } else if (action === 'admin-delete-gang') {
+    const gangId = Number(target.dataset.id);
+    const confirmText = window.prompt(`Ištrinti gaują „${target.dataset.label || gangId}“?\nĮrašyk DELETE-${gangId}`);
+    if (!confirmText) return;
+    const result = await api('adminDeleteGang', { gangId, confirm: confirmText });
+    toast(result.ok ? 'Gauja archyvuota.' : fail(result), result.ok ? 'success' : 'error');
   } else if (action === 'war-details') {
     await openWarDetails(target.dataset.id);
   }
@@ -2070,7 +2398,11 @@ window.addEventListener('message', (event) => {
   const message = event.data || {};
   if (message.action === 'open') {
     state.payload = message.payload;
-    if (state.payload.organization && (state.page === 'register' || !state.page)) state.page = 'overview';
+    state.adminOnly = message.adminOnly === true;
+    if (message.startPage) state.page = message.startPage;
+    else if (state.adminOnly) state.page = 'admin';
+    else if (state.payload.organization && (state.page === 'register' || !state.page)) state.page = 'overview';
+    if (state.adminOnly) state.adminTab = state.adminTab || 'turfs';
     tablet.classList.remove('is-hidden');
     tablet.setAttribute('aria-hidden', 'false');
     document.documentElement.style.background = 'transparent';
@@ -2085,7 +2417,9 @@ window.addEventListener('message', (event) => {
     document.documentElement.style.background = 'transparent';
     document.body.style.background = 'transparent';
     if (state.clockTimer) { clearInterval(state.clockTimer); state.clockTimer = null; }
+    destroyAdminMap();
     closeModal();
+    state.adminOnly = false;
   } else if (message.action === 'missionProgressShow') {
     showMissionProgress(message);
   } else if (message.action === 'missionProgressHide') {
@@ -2108,6 +2442,8 @@ window.addEventListener('message', (event) => {
           }
         });
       }
+      render();
+    } else if (state.page === 'admin' && state.adminTab === 'turfs') {
       render();
     }
   }

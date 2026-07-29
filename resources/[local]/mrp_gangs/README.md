@@ -32,6 +32,8 @@ migracijas ir seed duomenis. Jis automatiškai nevykdo reset.
 ## Komandos
 
 - `/gangtablet` — atidaro naują NUI tabletę.
+- `/gangadmin` — admin-only gang panelė (gaujos + turf apply/edit). Taip pat
+  QBCore permission `admin`/`god` arba ACE `command` / `group.admin`.
 - `/gangmissions` — atsarginis qb-menu Mission Board.
 - `/gangready [scout|breacher|driver|muscle|support]` — 5 min. party rezervacija.
 - `/cancelgangmission` — atšaukia aktyvią operaciją.
@@ -94,8 +96,9 @@ kainos koeficientas. Kliento atsiųstos koordinatės nenaudojamos.
 - Role-aware Overview, Members, Progression, Territories, Missions, Diplomacy,
   Wars, Activity ir Admin skyriai.
 - Leaflet GTA V žemėlapis su tikrais polygon ir DB ownership būsena.
-- Admin: gaujų statusai, territory owner, mission toggles, active war cancel,
-  supply quota, mission telemetry ir audit peržiūra.
+- `/gangadmin` atidaro admin-only UI (atkurta legacy komanda).
+- Admin: gaujų statusai/ištrynimas, turf apply (owner) + polygon create/edit/delete,
+  mission toggles, active war cancel, supply quota, mission telemetry ir audit.
 
 ## Vieši serverio export
 

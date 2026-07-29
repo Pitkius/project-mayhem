@@ -126,10 +126,15 @@ function GangCore.GetSourceByCitizenId(citizenid)
 end
 
 function GangCore.IsAdmin(source)
+    if type(source) ~= 'number' or source < 1 then return false end
     for _, permission in ipairs(Config.AdminPermissions or {}) do
         if QBCore.Functions.HasPermission(source, permission) then return true end
+        if IsPlayerAceAllowed(source, 'qbcore.' .. tostring(permission)) then return true end
     end
-    return IsPlayerAceAllowed(source, 'command') or IsPlayerAceAllowed(source, 'group.admin')
+    for _, ace in ipairs(Config.AdminAceFallbacks or { 'command', 'group.admin' }) do
+        if IsPlayerAceAllowed(source, ace) then return true end
+    end
+    return false
 end
 
 function GangCore.RateLimit(source, key, seconds)
@@ -302,6 +307,13 @@ QBCore.Commands.Add('gangaddv2', 'Pridėti žaidėją į V2 gaują', {
     if (tonumber(inserted) or 0) <= 0 then return GangCore.Notify(source, 'Nario pridėti nepavyko.', 'error') end
     GangCore.Notify(targetSource, 'Buvai pridėtas prie Gang System 2.0 gaujos.', 'success')
     GangCore.Notify(source, 'Narys pridėtas.', 'success')
+end, 'admin')
+
+QBCore.Commands.Add('gangadmin', 'Atidaryti gaujų admin panelę (turf apply/edit)', {}, false, function(source)
+    if not GangCore.IsAdmin(source) then
+        return GangCore.Notify(source, 'Nėra teisių.', 'error')
+    end
+    TriggerClientEvent('mrp_gangs:client:openGangAdmin', source)
 end, 'admin')
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
