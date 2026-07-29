@@ -21,6 +21,16 @@ local function difficultyAllowed(mission, difficulty)
     return Config.Difficulties[difficulty] ~= nil and GangUtils.Contains(mission.allowedDifficulties, difficulty)
 end
 
+local function isEntityDeadSafe(entity)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return true end
+    local nativeIsEntityDead = rawget(_G, 'IsEntityDead')
+    if type(nativeIsEntityDead) == 'function' then
+        return nativeIsEntityDead(entity) == true
+    end
+    local health = GetEntityHealth(entity)
+    return type(health) == 'number' and health <= 0
+end
+
 local function allocateBucket()
     for _ = 1, 100 do
         GangMissions.NextBucketOffset = (GangMissions.NextBucketOffset % 900) + 1
@@ -1106,7 +1116,7 @@ CreateThread(function()
             local vehicleFailed = run.missionVehicleEntity
                 and (not DoesEntityExist(run.missionVehicleEntity) or GetEntityHealth(run.missionVehicleEntity) <= 0)
             local targetFailed = run.missionTargetFreed and run.missionTargetEntity
-                and (not DoesEntityExist(run.missionTargetEntity) or IsEntityDead(run.missionTargetEntity))
+                and (not DoesEntityExist(run.missionTargetEntity) or isEntityDeadSafe(run.missionTargetEntity))
             if vehicleFailed or targetFailed then
                 failRun(run, vehicleFailed and 'mission_vehicle_destroyed' or 'mission_target_lost')
             else

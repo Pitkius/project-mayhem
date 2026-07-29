@@ -40,6 +40,16 @@ local function offsetSpawn(origin, offset)
     }
 end
 
+local function isEntityDeadSafe(entity)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return true end
+    local nativeIsEntityDead = rawget(_G, 'IsEntityDead')
+    if type(nativeIsEntityDead) == 'function' then
+        return nativeIsEntityDead(entity) == true
+    end
+    local health = GetEntityHealth(entity)
+    return type(health) == 'number' and health <= 0
+end
+
 local function outdoorSpawn(site, index, total)
     local radius = 12.0 + ((index % 3) * 3.0)
     local angle = ((index - 1) / math.max(1, total)) * math.pi * 2.0
@@ -245,7 +255,7 @@ end
 function GangEncounters.IsCleared(run)
     if not run.encounter or run.encounter.spawnFailed then return false end
     for _, entity in ipairs(run.encounter.entities or {}) do
-        if DoesEntityExist(entity) and not IsEntityDead(entity) then return false end
+        if DoesEntityExist(entity) and not isEntityDeadSafe(entity) then return false end
     end
     if run.encounter.wave < run.encounter.maxWaves then
         run.encounter.wave = run.encounter.wave + 1
@@ -293,7 +303,7 @@ function GangEncounters.TryLootCorpse(source, run, networkId)
     if not entity or entity == 0 or not DoesEntityExist(entity) then
         return false, 'corpse_gone'
     end
-    if not IsEntityDead(entity) then return false, 'npc_still_alive' end
+    if not isEntityDeadSafe(entity) then return false, 'npc_still_alive' end
 
     local ped = GetPlayerPed(source)
     if not ped or ped == 0 then return false, 'player_missing' end

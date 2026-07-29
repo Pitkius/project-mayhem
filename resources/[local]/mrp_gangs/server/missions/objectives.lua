@@ -37,6 +37,16 @@ local function near2D(source, target, maxDistance)
     return GangUtils.Distance2D(current, target) <= (maxDistance or 5.0)
 end
 
+local function isEntityDeadSafe(entity)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return true end
+    local nativeIsEntityDead = rawget(_G, 'IsEntityDead')
+    if type(nativeIsEntityDead) == 'function' then
+        return nativeIsEntityDead(entity) == true
+    end
+    local health = GetEntityHealth(entity)
+    return type(health) == 'number' and health <= 0
+end
+
 local function offsetXYZW(offset)
     if not offset then return 0.0, 0.0, 0.0, nil end
     -- vector3/vector4 support .x/.y/.z/.w but not numeric [1]/[4] indexing.
@@ -274,7 +284,7 @@ function GangObjectives.Validate(run, phase, source, payload)
         end
         if run.missionTargetFreed then
             if not run.missionTargetEntity or not DoesEntityExist(run.missionTargetEntity)
-                or IsEntityDead(run.missionTargetEntity) then
+                or isEntityDeadSafe(run.missionTargetEntity) then
                 return false, 'mission_target_lost'
             end
             local targetCoords = GetEntityCoords(run.missionTargetEntity)
