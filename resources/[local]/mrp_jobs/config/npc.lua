@@ -36,14 +36,14 @@ Config.BurgerNpc.menu = {
     { id = 'drink',    label = 'Tik gėrimas',                        items = { burger_softdrink = 1 } },
 }
 
--- Voice-over: iš anksto įrašyti audio (leidžiami tik netoliese). Jei failo nėra —
--- rodomas tekstas virš NPC + kasos UI. FALLBACK TEKSTAS VEIKIA VISADA.
+-- Voice-over: optional pre-recorded .ogg. Tekstas (3D + chat/notify + kasos UI) VEIKIA VISADA.
 Config.BurgerNpc.voice = {
     enabled = true,
+    chatFallback = true,           -- visada rodyti chat/notify eilutę kai klientas užsako
     -- Audio failų šaknis resurse (html/audio/<orderId>_<n>.ogg). Jei nerasta — tekstas.
     audioPath = 'html/audio/',
     variationsPerOrder = 2,        -- kiek balso variacijų vienam užsakymui
-    maxDistance = 12.0,            -- girdimumo atstumas
+    maxDistance = 12.0,            -- girdimumo atstumas (NUI VO)
     -- Teksto frazės kiekvienam meniu punktui (fallback + kasos UI).
     lines = {
         single = 'Norėčiau paprasto burgerio.',

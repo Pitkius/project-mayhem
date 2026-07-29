@@ -21,6 +21,28 @@ CreateThread(function()
         SetBlipScale(b, OIL.blip.scale); SetBlipAsShortRange(b, true)
         BeginTextCommandSetBlipName('STRING'); AddTextComponentSubstringPlayerName(OIL.blip.name); EndTextCommandSetBlipName(b)
     end
+    if OIL.blipDelivery and OIL.delivery then
+        local c = OIL.delivery.coords
+        local b = AddBlipForCoord(c.x, c.y, c.z)
+        SetBlipSprite(b, OIL.blipDelivery.sprite or 436)
+        SetBlipColour(b, OIL.blipDelivery.color or 1)
+        SetBlipScale(b, OIL.blipDelivery.scale or 0.7)
+        SetBlipAsShortRange(b, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentSubstringPlayerName(OIL.blipDelivery.name or 'Naftos pristatymas')
+        EndTextCommandSetBlipName(b)
+    end
+    if OIL.blipRubber and OIL.rubberProcess then
+        local c = OIL.rubberProcess.coords
+        local b = AddBlipForCoord(c.x, c.y, c.z)
+        SetBlipSprite(b, OIL.blipRubber.sprite or 478)
+        SetBlipColour(b, OIL.blipRubber.color or 21)
+        SetBlipScale(b, OIL.blipRubber.scale or 0.7)
+        SetBlipAsShortRange(b, true)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentSubstringPlayerName(OIL.blipRubber.name or 'Sintetinės gumos gamyba')
+        EndTextCommandSetBlipName(b)
+    end
 end)
 
 -- ── Registracijos NPC ─────────────────────────────────────────────
@@ -100,6 +122,43 @@ local function setupZones()
         },
         distance = d.radius or 6.0,
     })
+
+    local rp = OIL.rubberProcess
+    if rp and rp.coords then
+        exports['qb-target']:AddCircleZone('mrp_jobs_oil_rubber', vector3(rp.coords.x, rp.coords.y, rp.coords.z), rp.radius or 2.4, {
+            name = 'mrp_jobs_oil_rubber', useZ = true, debugPoly = false,
+        }, {
+            options = {
+                {
+                    icon = 'fas fa-industry',
+                    label = rp.label or 'Gaminti sintetinę gumą',
+                    action = function() processRubber() end,
+                },
+            },
+            distance = 2.5,
+        })
+    end
+end
+
+function processRubber()
+    QBCore.Functions.Progressbar('mrp_jobs_oil_rubber', 'Gaminama sintetinė guma…', 3500, false, true, {
+        disableMovement = true,
+        disableCombat = true,
+    }, {}, {}, {}, function()
+        QBCore.Functions.TriggerCallback('mrp_jobs:server:oil:processRubber', function(res)
+            if res and res.ok then
+                Notify(('Pagaminta guma: %sx'):format(res.produced), 'success')
+            else
+                local msg = {
+                    no_residue = 'Trūksta naftos likučių.',
+                    too_far = 'Per toli nuo gamybos taško.',
+                    inv_full = 'Inventorius pilnas.',
+                    rate = 'Palauk akimirką.',
+                }
+                Notify(msg[res and res.reason] or 'Nepavyko pagaminti gumos.', 'error')
+            end
+        end)
+    end, function() end)
 end
 
 -- ── Veiksmai ──────────────────────────────────────────────────────
@@ -151,6 +210,9 @@ function deliver()
             end
             loadedProps = {}
             Notify(('Pristatyta %d statinių! +$%d'):format(res.barrels, res.pay), 'success')
+            if (res.residue or 0) > 0 then
+                Notify(('Gavai naftos likučių: %sx — gamink gumą šalia elektrinės.'):format(res.residue), 'primary', 7000)
+            end
         else
             local msg = { empty = 'Nėra ką pristatyti.', too_far = 'Privažiuok prie elektrinės.', no_job = 'Nėra darbo.' }
             Notify(msg[res and res.reason] or 'Nepavyko pristatyti.', 'error')

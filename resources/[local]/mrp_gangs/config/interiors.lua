@@ -1,6 +1,7 @@
 Config = Config or {}
 
 -- Optional GTA Online interiors (kept for hard/extreme or legacy). Prefer outdoor compounds.
+-- doorSpawns = absolute vector4 near entry (guards wait here idle before push).
 Config.MissionInteriors = {
     warehouse_large = {
         label = 'Didelis sandėlis',
@@ -11,6 +12,12 @@ Config.MissionInteriors = {
             vector3(1012.22, -3104.48, -39.00),
             vector3(1050.14, -3100.66, -39.00),
             vector3(1072.34, -3102.28, -39.00),
+        },
+        doorSpawns = {
+            vector4(1024.40, -3100.20, -39.00, 90.0),
+            vector4(1028.80, -3103.40, -39.00, 270.0),
+            vector4(1022.60, -3104.80, -39.00, 0.0),
+            vector4(1030.20, -3098.60, -39.00, 180.0),
         },
         enemySpawns = {
             vector4(1005.24, -3098.20, -39.00, 90.0),
@@ -30,6 +37,12 @@ Config.MissionInteriors = {
             vector3(1033.02, -3205.74, -38.18),
             vector3(1058.42, -3197.68, -39.14),
         },
+        doorSpawns = {
+            vector4(1064.20, -3182.40, -39.16, 90.0),
+            vector4(1067.80, -3184.60, -39.16, 270.0),
+            vector4(1063.40, -3185.20, -39.16, 0.0),
+            vector4(1068.60, -3181.80, -39.16, 180.0),
+        },
         enemySpawns = {
             vector4(1057.54, -3196.48, -39.14, 90.0),
             vector4(1041.66, -3199.50, -38.16, 0.0),
@@ -47,6 +60,12 @@ Config.MissionInteriors = {
             vector3(1005.76, -3200.36, -38.52),
             vector3(1014.58, -3195.94, -38.99),
             vector3(1012.08, -3205.18, -38.99),
+        },
+        doorSpawns = {
+            vector4(998.40, -3199.40, -36.39, 270.0),
+            vector4(995.20, -3201.80, -36.39, 90.0),
+            vector4(997.60, -3202.60, -36.39, 0.0),
+            vector4(996.00, -3198.40, -36.39, 180.0),
         },
         enemySpawns = {
             vector4(1001.86, -3200.12, -38.52, 270.0),
@@ -66,6 +85,12 @@ Config.MissionInteriors = {
             vector3(1102.48, -3158.18, -37.52),
             vector3(1110.34, -3164.24, -37.52),
         },
+        doorSpawns = {
+            vector4(1120.20, -3151.20, -37.06, 0.0),
+            vector4(1121.80, -3154.40, -37.06, 180.0),
+            vector4(1118.60, -3153.40, -37.06, 90.0),
+            vector4(1123.20, -3152.00, -37.06, 270.0),
+        },
         enemySpawns = {
             vector4(1114.64, -3150.62, -37.06, 90.0),
             vector4(1104.14, -3157.80, -37.52, 0.0),
@@ -76,8 +101,15 @@ Config.MissionInteriors = {
     },
 }
 
--- Outdoor compounds: props + objective/enemy offsets relative to MissionWorldSites entry.
--- Players stay in the open world — no casino/strip-club teleport.
+--[[
+  Outdoor compounds: props + objective/enemy offsets relative to MissionWorldSites entry.
+  Players stay in the open world — no casino/strip-club teleport.
+
+  Prop fields:
+    size = 'large' | 'small'  (large skipped when run.inInterior)
+    interact = true + action + objectiveIndex → qb-target advances that objective phase
+    offset for large props should be peripheral (away from entry)
+]]
 Config.MissionCompounds = {
     warehouse_yard = {
         label = 'Sandėlio kiemas',
@@ -90,6 +122,12 @@ Config.MissionCompounds = {
             vector3(-5.0, -6.5, 0.0),
             vector3(8.0, 2.5, 0.0),
         },
+        doorSpawns = {
+            vector4(1.5, 2.0, 0.0, 180.0),
+            vector4(-1.5, 2.5, 0.0, 200.0),
+            vector4(2.5, -1.0, 0.0, 0.0),
+            vector4(-2.0, -0.5, 0.0, 90.0),
+        },
         enemySpawns = {
             vector4(3.0, -8.0, 0.0, 0.0),
             vector4(-7.0, -2.0, 0.0, 90.0),
@@ -97,12 +135,14 @@ Config.MissionCompounds = {
             vector4(-2.0, 6.0, 0.0, 270.0),
         },
         props = {
-            { model = 'prop_boxpile_07d', offset = vector3(3.5, -2.0, -0.95) },
-            { model = 'prop_boxpile_02b', offset = vector3(5.2, -4.5, -0.95) },
-            { model = 'prop_container_ld_d', offset = vector3(-8.0, -4.0, -1.0), heading = 90.0 },
-            { model = 'prop_barrier_work05', offset = vector3(0.5, 6.0, -1.0), heading = 0.0 },
-            { model = 'prop_toolchest_05', offset = vector3(2.0, 1.5, -1.0) },
-            { model = 'prop_cs_cardbox_01', offset = vector3(4.0, -3.2, -0.4) },
+            { model = 'prop_container_ld_d', offset = vector3(-12.0, -8.0, -1.0), heading = 90.0, size = 'large' },
+            { model = 'prop_boxpile_07d', offset = vector3(10.0, -9.0, -0.95), size = 'large' },
+            { model = 'prop_boxpile_02b', offset = vector3(11.5, 6.0, -0.95), size = 'large' },
+            { model = 'prop_barrier_work05', offset = vector3(0.5, 6.0, -1.0), heading = 0.0, size = 'small' },
+            { model = 'prop_toolchest_05', offset = vector3(2.0, 1.5, -1.0), size = 'small', interact = true, action = 'search', objectiveIndex = 1 },
+            { model = 'prop_cs_cardbox_01', offset = vector3(4.0, -3.2, -0.4), size = 'small', interact = true, action = 'collect', objectiveIndex = 1 },
+            { model = 'prop_cs_cardbox_01', offset = vector3(-4.5, -6.0, -0.4), size = 'small', interact = true, action = 'search', objectiveIndex = 2 },
+            { model = 'prop_toolchest_05', offset = vector3(7.5, 2.0, -1.0), size = 'small', interact = true, action = 'sabotage', objectiveIndex = 3 },
         },
         maxNpc = 8,
     },
@@ -117,17 +157,22 @@ Config.MissionCompounds = {
             vector3(-3.0, -4.0, 0.0),
             vector3(1.0, 3.5, 0.0),
         },
+        doorSpawns = {
+            vector4(1.2, 1.8, 0.0, 180.0),
+            vector4(-1.2, 2.0, 0.0, 200.0),
+            vector4(2.0, -0.8, 0.0, 0.0),
+        },
         enemySpawns = {
             vector4(2.0, -5.0, 0.0, 20.0),
             vector4(-4.0, -1.5, 0.0, 110.0),
             vector4(3.5, 2.5, 0.0, 200.0),
         },
         props = {
-            { model = 'prop_box_wood02a_pu', offset = vector3(2.0, -1.5, -0.95) },
-            { model = 'prop_cs_duffel_01', offset = vector3(-2.5, -3.0, -0.95) },
-            { model = 'prop_drug_package', offset = vector3(1.2, 2.8, -0.95) },
-            { model = 'prop_barrel_02a', offset = vector3(-3.5, 1.0, -1.0) },
-            { model = 'prop_bench_01a', offset = vector3(0.0, 4.0, -1.0), heading = 180.0 },
+            { model = 'prop_bench_01a', offset = vector3(0.0, 5.5, -1.0), heading = 180.0, size = 'large' },
+            { model = 'prop_barrel_02a', offset = vector3(-5.5, 3.0, -1.0), size = 'large' },
+            { model = 'prop_box_wood02a_pu', offset = vector3(2.0, -1.5, -0.95), size = 'small', interact = true, action = 'search', objectiveIndex = 1 },
+            { model = 'prop_cs_duffel_01', offset = vector3(-2.5, -3.0, -0.95), size = 'small', interact = true, action = 'collect', objectiveIndex = 2 },
+            { model = 'prop_drug_package', offset = vector3(1.2, 2.8, -0.95), size = 'small', interact = true, action = 'search', objectiveIndex = 3 },
         },
         maxNpc = 6,
     },
@@ -142,6 +187,12 @@ Config.MissionCompounds = {
             vector3(-4.5, -2.0, 0.0),
             vector3(5.0, 3.0, 0.0),
         },
+        doorSpawns = {
+            vector4(1.5, 2.2, 0.0, 180.0),
+            vector4(-1.8, 2.0, 0.0, 200.0),
+            vector4(2.2, -1.0, 0.0, 0.0),
+            vector4(-2.2, -0.5, 0.0, 90.0),
+        },
         enemySpawns = {
             vector4(4.0, -6.0, 0.0, 0.0),
             vector4(-5.0, -3.0, 0.0, 90.0),
@@ -149,12 +200,12 @@ Config.MissionCompounds = {
             vector4(-3.0, 4.0, 0.0, 270.0),
         },
         props = {
-            { model = 'prop_barrel_exp_01a', offset = vector3(2.5, -3.0, -1.0) },
-            { model = 'prop_barrel_exp_01b', offset = vector3(3.8, -4.2, -1.0) },
-            { model = 'prop_generator_03b', offset = vector3(-4.0, -1.5, -1.0), heading = 45.0 },
-            { model = 'prop_tool_bench02', offset = vector3(4.5, 2.0, -1.0) },
-            { model = 'prop_gas_tank_01a', offset = vector3(-5.5, 2.5, -1.0) },
-            { model = 'prop_crate_11e', offset = vector3(1.0, 3.5, -0.95) },
+            { model = 'prop_gas_tank_01a', offset = vector3(-8.0, 5.0, -1.0), size = 'large' },
+            { model = 'prop_barrel_exp_01a', offset = vector3(9.0, -7.0, -1.0), size = 'large' },
+            { model = 'prop_barrel_exp_01b', offset = vector3(10.0, 5.0, -1.0), size = 'large' },
+            { model = 'prop_generator_03b', offset = vector3(-4.0, -1.5, -1.0), heading = 45.0, size = 'small', interact = true, action = 'sabotage', objectiveIndex = 2 },
+            { model = 'prop_tool_bench02', offset = vector3(4.5, 2.0, -1.0), size = 'small', interact = true, action = 'search', objectiveIndex = 3 },
+            { model = 'prop_crate_11e', offset = vector3(1.0, 3.5, -0.95), size = 'small', interact = true, action = 'collect', objectiveIndex = 1 },
         },
         maxNpc = 8,
     },
@@ -169,6 +220,12 @@ Config.MissionCompounds = {
             vector3(-6.0, -4.0, 0.0),
             vector3(2.0, 6.0, 0.0),
         },
+        doorSpawns = {
+            vector4(2.0, 2.5, 0.0, 180.0),
+            vector4(-2.0, 2.5, 0.0, 200.0),
+            vector4(3.0, -1.5, 0.0, 0.0),
+            vector4(-2.5, -1.0, 0.0, 90.0),
+        },
         enemySpawns = {
             vector4(5.0, -8.0, 0.0, 10.0),
             vector4(-7.0, -3.0, 0.0, 100.0),
@@ -176,12 +233,14 @@ Config.MissionCompounds = {
             vector4(-4.0, 7.0, 0.0, 280.0),
         },
         props = {
-            { model = 'prop_air_trailer_1a', offset = vector3(-10.0, 0.0, -1.0), heading = 90.0 },
-            { model = 'prop_boxpile_06a', offset = vector3(5.0, -4.0, -0.95) },
-            { model = 'prop_boxpile_06b', offset = vector3(7.0, -5.5, -0.95) },
-            { model = 'prop_toolchest_01', offset = vector3(3.0, 2.0, -1.0) },
-            { model = 'prop_mb_cargo_03a', offset = vector3(-4.0, 5.0, -1.0), heading = 0.0 },
-            { model = 'prop_barrier_work06a', offset = vector3(0.0, 9.0, -1.0) },
+            { model = 'prop_air_trailer_1a', offset = vector3(-14.0, 2.0, -1.0), heading = 90.0, size = 'large' },
+            { model = 'prop_mb_cargo_03a', offset = vector3(12.0, 8.0, -1.0), heading = 0.0, size = 'large' },
+            { model = 'prop_boxpile_06a', offset = vector3(11.0, -8.0, -0.95), size = 'large' },
+            { model = 'prop_boxpile_06b', offset = vector3(-11.0, -6.0, -0.95), size = 'large' },
+            { model = 'prop_barrier_work06a', offset = vector3(0.0, 9.0, -1.0), size = 'small' },
+            { model = 'prop_toolchest_01', offset = vector3(3.0, 2.0, -1.0), size = 'small', interact = true, action = 'search', objectiveIndex = 1 },
+            { model = 'prop_toolchest_01', offset = vector3(-5.5, -3.5, -1.0), size = 'small', interact = true, action = 'sabotage', objectiveIndex = 2 },
+            { model = 'prop_cs_cardbox_01', offset = vector3(2.0, 5.5, -0.4), size = 'small', interact = true, action = 'collect', objectiveIndex = 3 },
         },
         maxNpc = 8,
     },
@@ -196,17 +255,24 @@ Config.MissionCompounds = {
             vector3(-3.5, -2.5, 0.0),
             vector3(1.5, 4.0, 0.0),
         },
+        doorSpawns = {
+            vector4(1.2, 1.8, 0.0, 180.0),
+            vector4(-1.2, 2.0, 0.0, 200.0),
+            vector4(2.0, -0.8, 0.0, 0.0),
+        },
         enemySpawns = {
             vector4(3.0, -5.0, 0.0, 0.0),
             vector4(-4.0, -2.0, 0.0, 90.0),
             vector4(4.0, 3.0, 0.0, 210.0),
         },
         props = {
-            { model = 'prop_barrel_01a', offset = vector3(2.5, -2.0, -1.0) },
-            { model = 'prop_table_03', offset = vector3(-2.0, -3.0, -1.0) },
-            { model = 'prop_chair_01a', offset = vector3(-1.2, -2.2, -1.0) },
-            { model = 'prop_box_ammo03a', offset = vector3(1.5, 3.0, -0.95) },
-            { model = 'prop_roadcone02a', offset = vector3(0.0, 5.5, -1.0) },
+            { model = 'prop_table_03', offset = vector3(-5.0, 5.0, -1.0), size = 'large' },
+            { model = 'prop_barrel_01a', offset = vector3(6.0, -5.0, -1.0), size = 'large' },
+            { model = 'prop_chair_01a', offset = vector3(-1.2, -2.2, -1.0), size = 'small' },
+            { model = 'prop_box_ammo03a', offset = vector3(1.5, 3.0, -0.95), size = 'small', interact = true, action = 'search', objectiveIndex = 3 },
+            { model = 'prop_cs_duffel_01', offset = vector3(2.0, -2.5, -0.95), size = 'small', interact = true, action = 'collect', objectiveIndex = 1 },
+            { model = 'prop_roadcone02a', offset = vector3(0.0, 5.5, -1.0), size = 'small' },
+            { model = 'prop_cs_cardbox_01', offset = vector3(-3.0, -2.0, -0.4), size = 'small', interact = true, action = 'search', objectiveIndex = 2 },
         },
         maxNpc = 6,
     },
@@ -221,17 +287,22 @@ Config.MissionCompounds = {
             vector3(-3.0, -3.0, 0.0),
             vector3(2.0, 3.5, 0.0),
         },
+        doorSpawns = {
+            vector4(1.5, 1.8, 0.0, 180.0),
+            vector4(-1.5, 2.0, 0.0, 200.0),
+            vector4(2.2, -0.8, 0.0, 0.0),
+        },
         enemySpawns = {
             vector4(4.0, -5.0, 0.0, 15.0),
             vector4(-4.5, -1.0, 0.0, 100.0),
             vector4(3.0, 4.0, 0.0, 220.0),
         },
         props = {
-            { model = 'prop_car_engine_01', offset = vector3(2.5, -2.0, -0.9) },
-            { model = 'prop_tool_box_04', offset = vector3(-2.5, -2.5, -1.0) },
-            { model = 'prop_wheel_tyre', offset = vector3(3.5, 1.0, -1.0) },
-            { model = 'prop_compressor_01', offset = vector3(-3.5, 2.0, -1.0) },
-            { model = 'prop_oilcan_01a', offset = vector3(1.0, 3.0, -0.95) },
+            { model = 'prop_compressor_01', offset = vector3(-6.5, 4.0, -1.0), size = 'large' },
+            { model = 'prop_car_engine_01', offset = vector3(2.5, -2.0, -0.9), size = 'small', interact = true, action = 'sabotage', objectiveIndex = 1 },
+            { model = 'prop_tool_box_04', offset = vector3(-2.5, -2.5, -1.0), size = 'small', interact = true, action = 'search', objectiveIndex = 2 },
+            { model = 'prop_wheel_tyre', offset = vector3(3.5, 1.0, -1.0), size = 'small' },
+            { model = 'prop_oilcan_01a', offset = vector3(1.0, 3.0, -0.95), size = 'small', interact = true, action = 'collect', objectiveIndex = 3 },
         },
         maxNpc = 6,
     },

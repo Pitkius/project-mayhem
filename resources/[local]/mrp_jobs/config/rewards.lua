@@ -23,6 +23,13 @@ Config.Rewards.oil = {
     safeDeliveryBonus = 250,   -- premija jei transportas nesugadintas
     -- Transporto sugadinimo bauda: procentas nuo (perBarrel*kiekis) pagal engine health.
     damagePenaltyMax = 0.20,   -- iki 20% bauda esant labai sugadintam transportui
+    --- Petrocheminė žaliava gumai (inventorius)
+    residueItem = 'oil_residue',
+    residuePerBarrel = 1,      -- kiek oil_residue už pristatytą statinę
+    --- Gamyba: N× oil_residue → 1× rubber (be anglies)
+    rubberInput = 1,
+    rubberOutput = 1,
+    rubberOutputItem = 'rubber',
 }
 
 -- ── BURGER: KASININKAS + KEPĖJAS ──────────────────────────────────

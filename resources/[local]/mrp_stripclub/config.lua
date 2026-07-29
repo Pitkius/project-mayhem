@@ -18,7 +18,11 @@ Config.Blip = {
 Config.Prices = {
     lapDance = 120,
     throwCash = 40,
+    tipDancer = 25, -- tipas tiesiai šokėjai ant stulpo
 }
+
+--- Watch chair sit: scenario Z offset (GTA seat scenarios sit below marker)
+Config.WatchSitZOffset = -0.52
 
 --- Scenarijai ant baro / salės kėdžių (kaip GTA — žiūrėti į sceną)
 Config.WatchChairs = {
@@ -41,7 +45,7 @@ Config.LapSeats = {
         id = 1,
         label = 'VIP sofa 1',
         target = vector3(118.75, -1301.97, 28.42),
-        sit = vector4(119.06, -1302.66, 27.78, 40.0),
+        sit = vector4(119.06, -1302.66, 28.27, 40.0),
         camHeading = -10.0,
         exit = vector3(118.75, -1301.99, 28.42),
         exitWait = 5000,
@@ -56,7 +60,7 @@ Config.LapSeats = {
         id = 2,
         label = 'VIP sofa 2',
         target = vector3(116.59, -1303.01, 28.42),
-        sit = vector4(116.90, -1303.75, 27.78, 40.0),
+        sit = vector4(116.90, -1303.75, 28.27, 40.0),
         camHeading = -10.0,
         exit = vector3(116.59, -1303.01, 28.42),
         exitWait = 6200,
@@ -71,7 +75,7 @@ Config.LapSeats = {
         id = 3,
         label = 'VIP sofa 3',
         target = vector3(114.64, -1304.54, 29.27),
-        sit = vector4(114.86, -1305.0, 27.78, 40.0),
+        sit = vector4(114.86, -1305.0, 28.27, 40.0),
         camHeading = -10.0,
         exit = vector3(114.64, -1304.54, 29.27),
         exitWait = 6800,
@@ -86,7 +90,7 @@ Config.LapSeats = {
         id = 4,
         label = 'VIP sofa 4',
         target = vector3(112.66, -1305.52, 29.27),
-        sit = vector4(113.08, -1306.17, 27.78, 40.0),
+        sit = vector4(113.08, -1306.17, 28.27, 40.0),
         camHeading = -10.0,
         exit = vector3(112.66, -1305.52, 29.27),
         exitWait = 7500,
@@ -101,7 +105,7 @@ Config.LapSeats = {
         id = 5,
         label = 'VIP sofa 5',
         target = vector3(111.18, -1302.62, 29.27),
-        sit = vector4(110.57, -1301.82, 27.78, 216.6),
+        sit = vector4(110.57, -1301.82, 28.27, 216.6),
         camHeading = -10.0,
         exit = vector3(111.18, -1302.62, 29.27),
         exitWait = 7500,
@@ -116,7 +120,7 @@ Config.LapSeats = {
         id = 6,
         label = 'VIP sofa 6',
         target = vector3(112.64, -1301.27, 29.27),
-        sit = vector4(112.34, -1300.76, 27.78, 216.6),
+        sit = vector4(112.34, -1300.76, 28.27, 216.6),
         camHeading = -10.0,
         exit = vector3(112.64, -1301.27, 29.27),
         exitWait = 6800,
@@ -131,7 +135,7 @@ Config.LapSeats = {
         id = 7,
         label = 'VIP sofa 7',
         target = vector3(114.73, -1300.41, 29.27),
-        sit = vector4(114.27, -1299.66, 27.78, 216.6),
+        sit = vector4(114.27, -1299.66, 28.27, 216.6),
         camHeading = -10.0,
         exit = vector3(114.73, -1300.41, 29.27),
         exitWait = 6000,
@@ -151,7 +155,7 @@ Config.Poles = {
     { coords = vector3(102.24, -1289.97, 28.26), heading = 120.0 },
 }
 
---- Šokėjų modeliai (s_f_y_stripper_01 / 02)
+--- Šokėjų modeliai (vanilla stripper peds)
 Config.Strippers = {
     {
         name = 'Crystal',
@@ -193,10 +197,18 @@ Config.Strippers = {
     },
 }
 
+--- Vanilla GTA pole routines (visi 3)
 Config.PoleAnims = {
     { dict = 'mini@strip_club@pole_dance@pole_dance1', clip = 'pole_dance1' },
     { dict = 'mini@strip_club@pole_dance@pole_dance2', clip = 'pole_dance2' },
+    { dict = 'mini@strip_club@pole_dance@pole_dance3', clip = 'pole_dance3' },
 }
+
+Config.PoleAnimRotateMs = 45000
+
+--- Pinigų propas tipui / metimui (kaip GTA)
+Config.CashProp = 'prop_anim_cash_note'
+Config.CashPileProp = 'prop_cash_pile_01'
 
 --- Pritilti prie baro (mesti pinigus į sceną)
 Config.LeanSpots = {
@@ -206,3 +218,5 @@ Config.LeanSpots = {
 }
 
 Config.WatchScenario = 'PROP_HUMAN_SEAT_STRIP_WATCH'
+--- VIP sėdėjimas naudoja tą patį vanilla strip-watch scenario
+Config.VipSitScenario = 'PROP_HUMAN_SEAT_STRIP_WATCH'

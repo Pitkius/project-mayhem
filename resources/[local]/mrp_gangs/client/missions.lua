@@ -15,6 +15,12 @@ local corpseTargetRegistered = false
 local OBJECTIVE_ZONE = 'mrp_gangs_mission_objective'
 local CONTEST_ZONE = 'mrp_gangs_contest_loot'
 local CORPSE_TARGET_LABEL = 'Apiplėšti NPC'
+local compoundPropTargets = {} --- [networkId] = true
+local stagedEncounterPeds = {} --- [networkId] = ped
+local encounterAggroArmed = false
+local stagingCfg = function()
+    return (Config.Encounter and Config.Encounter.staging) or {}
+end
 local actionPhaseTypes = {
     interact = true,
     breach = true,
@@ -85,9 +91,26 @@ local function clearContestTarget()
     removeTargetZone(CONTEST_ZONE)
 end
 
+local function clearCompoundPropTargets()
+    if not hasTarget() then
+        compoundPropTargets = {}
+        return
+    end
+    for networkId in pairs(compoundPropTargets) do
+        pcall(function()
+            local ent = NetworkGetEntityFromNetworkId(networkId)
+            if ent and ent ~= 0 and DoesEntityExist(ent) then
+                exports['qb-target']:RemoveTargetEntity(ent)
+            end
+        end)
+    end
+    compoundPropTargets = {}
+end
+
 local function clearMissionTargets()
     clearObjectiveTarget()
     clearContestTarget()
+    clearCompoundPropTargets()
 end
 
 local function removeObjectiveBlip()
@@ -229,7 +252,7 @@ local function completeObjective(payload)
     end, activeMission.token, activePhase.phaseIndex, payload or {})
 end
 
-local function interactWithObjective()
+local function interactWithObjective(propNetworkId)
     local phase = activePhase and activePhase.phase
     if not phase or objectiveBusy then return end
     if not actionPhaseTypes[phase.type] then
@@ -282,7 +305,9 @@ local function interactWithObjective()
             ClearPedTasks(ped)
             hidePrepProgress()
             objectiveBusy = false
-            completeObjective({ actionToken = action.actionToken })
+            local payload = { actionToken = action.actionToken }
+            if propNetworkId then payload.propNetworkId = propNetworkId end
+            completeObjective(payload)
         end)
     end, activeMission.token, activePhase.phaseIndex)
 end
@@ -346,6 +371,71 @@ end)
 
 RegisterNetEvent('mrp_gangs:client:leaveMissionCompound', function(token)
     if not activeMission or token ~= activeMission.token then return end
+end)
+
+RegisterNetEvent('mrp_gangs:client:clearCompoundProps', function(token)
+    if activeMission and token ~= activeMission.token then return end
+    clearCompoundPropTargets()
+end)
+
+RegisterNetEvent('mrp_gangs:client:compoundPropUsed', function(token, networkId)
+    if not activeMission or token ~= activeMission.token then return end
+    networkId = tonumber(networkId)
+    if not networkId or not compoundPropTargets[networkId] then return end
+    if hasTarget() then
+        pcall(function()
+            local ent = NetworkGetEntityFromNetworkId(networkId)
+            if ent and ent ~= 0 and DoesEntityExist(ent) then
+                exports['qb-target']:RemoveTargetEntity(ent)
+            end
+        end)
+    end
+    compoundPropTargets[networkId] = nil
+end)
+
+RegisterNetEvent('mrp_gangs:client:registerCompoundProps', function(token, props)
+    if not activeMission or token ~= activeMission.token then return end
+    if not hasTarget() or type(props) ~= 'table' then return end
+    CreateThread(function()
+        for _, prop in ipairs(props) do
+            local networkId = tonumber(prop.networkId)
+            if networkId and not compoundPropTargets[networkId] then
+                local timeout = GetGameTimer() + 8000
+                while not NetworkDoesEntityExistWithNetworkId(networkId) and GetGameTimer() < timeout do Wait(50) end
+                if NetworkDoesEntityExistWithNetworkId(networkId) then
+                    local ent = NetworkGetEntityFromNetworkId(networkId)
+                    if ent and ent ~= 0 and DoesEntityExist(ent) then
+                        local label = prop.label or 'Naudoti'
+                        local actionName = prop.action
+                        local objIndex = tonumber(prop.objectiveIndex)
+                        exports['qb-target']:AddTargetEntity(ent, {
+                            options = {
+                                {
+                                    icon = 'fas fa-box-open',
+                                    label = label,
+                                    canInteract = function()
+                                        if not activeMission or not activePhase or objectiveBusy or corpseBusy then return false end
+                                        local phase = activePhase.phase
+                                        if not phase or not actionPhaseTypes[phase.type] then return false end
+                                        if actionName and actionName ~= phase.type then return false end
+                                        if objIndex and phase.objectiveIndex and tonumber(phase.objectiveIndex) ~= objIndex then
+                                            return false
+                                        end
+                                        return true
+                                    end,
+                                    action = function()
+                                        interactWithObjective(networkId)
+                                    end,
+                                },
+                            },
+                            distance = 2.4,
+                        })
+                        compoundPropTargets[networkId] = true
+                    end
+                end
+            end
+        end
+    end)
 end)
 
 RegisterNetEvent('mrp_gangs:client:missionLeaderChanged', function(citizenid, displayName)
@@ -572,6 +662,8 @@ RegisterNetEvent('mrp_gangs:client:missionFinished', function(result)
     missionReturnCoords = nil
     showEnterPrompt = false
     clearMissionCargo()
+    stagedEncounterPeds = {}
+    encounterAggroArmed = false
     objectiveBusy = false
     corpseBusy = false
     if contestedObjective and result.summary and contestedObjective.token == result.summary.token then
@@ -589,11 +681,8 @@ RegisterNetEvent('mrp_gangs:client:missionFinished', function(result)
     end
 end)
 
-RegisterNetEvent('mrp_gangs:client:configureEncounter', function(token, networkEntities, wave, maxWaves)
-    if not activeMission or token ~= activeMission.token then return end
-    if tonumber(maxWaves) and tonumber(maxWaves) > 1 then
-        GangClient.Notify(('Priešų banga %s/%s'):format(wave or 1, maxWaves), 'primary', 5000)
-    end
+local function armEncounterPed(ped, data)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
     if not enemyRelationshipGroup then
         AddRelationshipGroup('MRP_MISSION_ENEMY')
         enemyRelationshipGroup = joaat('MRP_MISSION_ENEMY')
@@ -602,42 +691,139 @@ RegisterNetEvent('mrp_gangs:client:configureEncounter', function(token, networkE
     SetRelationshipBetweenGroups(5, enemyRelationshipGroup, playerGroup)
     SetRelationshipBetweenGroups(5, playerGroup, enemyRelationshipGroup)
 
-    CreateThread(function()
-        for _, data in ipairs(networkEntities or {}) do
-            local timeout = GetGameTimer() + 8000
-            while not NetworkDoesEntityExistWithNetworkId(data.networkId) and GetGameTimer() < timeout do Wait(50) end
-            if NetworkDoesEntityExistWithNetworkId(data.networkId) then
-                local ped = NetToPed(data.networkId)
-                if ped and ped ~= 0 and DoesEntityExist(ped) then
-                    NetworkRequestControlOfEntity(ped)
-                    local controlTimeout = GetGameTimer() + 1000
-                    while not NetworkHasControlOfEntity(ped) and GetGameTimer() < controlTimeout do
-                        NetworkRequestControlOfEntity(ped)
-                        Wait(25)
-                    end
-                    SetEntityAsMissionEntity(ped, true, false)
-                    SetPedRelationshipGroupHash(ped, enemyRelationshipGroup)
-                    SetPedAsEnemy(ped, true)
-                    SetPedDropsWeaponsWhenDead(ped, false)
-                    SetPedCanEvasiveDive(ped, true)
-                    SetPedCombatAttributes(ped, 5, true)
-                    SetPedCombatAttributes(ped, 46, true)
-                    SetPedCombatAbility(ped, activeMission.difficulty == 'easy' and 1 or 2)
-                    SetPedCombatMovement(ped, activeMission.difficulty == 'extreme' and 3 or 2)
-                    SetPedSeeingRange(ped, 80.0)
-                    SetPedHearingRange(ped, 60.0)
-                    SetPedAccuracy(ped, tonumber(data.accuracy) or 25)
-                    local weaponName = data.weapon or 'WEAPON_BAT'
-                    local ammo = data.melee and 1 or 180
-                    GiveWeaponToPed(ped, joaat(weaponName), ammo, false, true)
-                    if data.melee or activeMission.difficulty == 'easy' then
-                        SetPedCombatAttributes(ped, 46, true)
-                        SetPedCombatRange(ped, 0)
-                    end
-                    TaskCombatHatedTargetsAroundPed(ped, 100.0, 0)
+    NetworkRequestControlOfEntity(ped)
+    local controlTimeout = GetGameTimer() + 1000
+    while not NetworkHasControlOfEntity(ped) and GetGameTimer() < controlTimeout do
+        NetworkRequestControlOfEntity(ped)
+        Wait(25)
+    end
+    SetEntityAsMissionEntity(ped, true, false)
+    SetPedRelationshipGroupHash(ped, enemyRelationshipGroup)
+    SetPedAsEnemy(ped, true)
+    SetPedDropsWeaponsWhenDead(ped, false)
+    SetPedCanEvasiveDive(ped, true)
+    SetPedCombatAttributes(ped, 5, true)
+    SetPedCombatAttributes(ped, 46, true)
+    SetPedCombatAbility(ped, activeMission and activeMission.difficulty == 'easy' and 1 or 2)
+    SetPedCombatMovement(ped, activeMission and activeMission.difficulty == 'extreme' and 3 or 2)
+    SetPedSeeingRange(ped, 80.0)
+    SetPedHearingRange(ped, 60.0)
+    SetPedAccuracy(ped, tonumber(data and data.accuracy) or 25)
+    local weaponName = (data and data.weapon) or 'WEAPON_BAT'
+    local ammo = (data and data.melee) and 1 or 180
+    GiveWeaponToPed(ped, joaat(weaponName), ammo, false, true)
+    if (data and data.melee) or (activeMission and activeMission.difficulty == 'easy') then
+        SetPedCombatAttributes(ped, 46, true)
+        SetPedCombatRange(ped, 0)
+    end
+    ClearPedTasks(ped)
+    TaskCombatHatedTargetsAroundPed(ped, 100.0, 0)
+end
+
+local function stageEncounterPed(ped, data)
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return end
+    local cfg = stagingCfg()
+    NetworkRequestControlOfEntity(ped)
+    local controlTimeout = GetGameTimer() + 1000
+    while not NetworkHasControlOfEntity(ped) and GetGameTimer() < controlTimeout do
+        NetworkRequestControlOfEntity(ped)
+        Wait(25)
+    end
+    SetEntityAsMissionEntity(ped, true, false)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    SetPedDropsWeaponsWhenDead(ped, false)
+    SetPedSeeingRange(ped, tonumber(cfg.idleSeeRange) or 12.0)
+    SetPedHearingRange(ped, tonumber(cfg.idleHearRange) or 8.0)
+    SetPedAsEnemy(ped, false)
+    local weaponName = (data and data.weapon) or 'WEAPON_BAT'
+    GiveWeaponToPed(ped, joaat(weaponName), 1, false, true)
+    ClearPedTasks(ped)
+    TaskStandStill(ped, -1)
+    TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_GUARD_STAND', 0, true)
+end
+
+local function resolveEncounterPeds(networkEntities, staging)
+    local resolved = {}
+    for _, data in ipairs(networkEntities or {}) do
+        local timeout = GetGameTimer() + 8000
+        while not NetworkDoesEntityExistWithNetworkId(data.networkId) and GetGameTimer() < timeout do Wait(50) end
+        if NetworkDoesEntityExistWithNetworkId(data.networkId) then
+            local ped = NetToPed(data.networkId)
+            if ped and ped ~= 0 and DoesEntityExist(ped) then
+                stagedEncounterPeds[data.networkId] = ped
+                if staging then
+                    stageEncounterPed(ped, data)
+                else
+                    armEncounterPed(ped, data)
                 end
+                resolved[#resolved + 1] = { ped = ped, data = data, networkId = data.networkId }
             end
         end
+    end
+    return resolved
+end
+
+RegisterNetEvent('mrp_gangs:client:configureEncounter', function(token, networkEntities, wave, maxWaves, staging)
+    if not activeMission or token ~= activeMission.token then return end
+    encounterAggroArmed = staging ~= true
+    if tonumber(maxWaves) and tonumber(maxWaves) > 1 and staging ~= true then
+        GangClient.Notify(('Priešų banga %s/%s'):format(wave or 1, maxWaves), 'primary', 5000)
+    elseif staging == true then
+        GangClient.Notify('Sargyba patruliuoja prie įėjimo…', 'primary', 4500)
+    end
+
+    CreateThread(function()
+        resolveEncounterPeds(networkEntities, staging == true)
+        if staging == true then
+            local armedAt = GetGameTimer() + (math.max(2, tonumber(stagingCfg().idleSec) or 10) * 1000)
+            local aggroRadius = tonumber(stagingCfg().aggroRadius) or 18.0
+            while activeMission and token == activeMission.token and not encounterAggroArmed do
+                local ped = PlayerPedId()
+                local pCoords = GetEntityCoords(ped)
+                local trigger = GetGameTimer() >= armedAt
+                if IsPedShooting(ped) then trigger = true end
+                for networkId, enemyPed in pairs(stagedEncounterPeds) do
+                    if DoesEntityExist(enemyPed) then
+                        if HasEntityBeenDamagedByEntity(enemyPed, ped, true) then
+                            trigger = true
+                        end
+                        if #(pCoords - GetEntityCoords(enemyPed)) <= aggroRadius then
+                            trigger = true
+                        end
+                    else
+                        stagedEncounterPeds[networkId] = nil
+                    end
+                end
+                if trigger then
+                    encounterAggroArmed = true
+                    GangClient.Notify('Sargyba sureagavo!', 'error', 5000)
+                    for networkId, enemyPed in pairs(stagedEncounterPeds) do
+                        if DoesEntityExist(enemyPed) then
+                            local data = nil
+                            for _, entry in ipairs(networkEntities or {}) do
+                                if entry.networkId == networkId then data = entry break end
+                            end
+                            armEncounterPed(enemyPed, data)
+                        end
+                    end
+                    break
+                end
+                Wait(250)
+            end
+        end
+    end)
+end)
+
+RegisterNetEvent('mrp_gangs:client:activateEncounterAggro', function(token, networkEntities, wave, maxWaves)
+    if not activeMission or token ~= activeMission.token then return end
+    encounterAggroArmed = true
+    if tonumber(maxWaves) and tonumber(maxWaves) > 1 then
+        GangClient.Notify(('Priešų banga %s/%s'):format(wave or 1, maxWaves), 'primary', 5000)
+    else
+        GangClient.Notify('Sargyba sureagavo!', 'error', 5000)
+    end
+    CreateThread(function()
+        resolveEncounterPeds(networkEntities, false)
     end)
 end)
 

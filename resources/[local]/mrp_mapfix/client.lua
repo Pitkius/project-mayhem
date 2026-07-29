@@ -1,4 +1,5 @@
---- O'Neil sodyba + Simeon showroom. Lost MC valdo `cfx-gabz-lost` (vengti dvigubo IPL).
+--- O'Neil sodyba + Simeon showroom + Madrazo (La Fuente Blanca) durys.
+--- Lost MC valdo `cfx-gabz-lost` (vengti dvigubo IPL).
 
 -- Burnt story-mission shell + interior cap (blocks doors when left active).
 local BLOCKING_FARM_IPLS = {
@@ -59,6 +60,29 @@ local SIMEON_DOORS = {
     { model = `prop_com_gar_door_01`, coords = vec3(-37.86, -1094.71, 27.26) },
 }
 
+--- Martin Madrazo / La Fuente Blanca ranch (vanilla — durys užrakintos default)
+local MADRAZO_CENTER = vec3(1395.0, 1142.0, 114.5)
+local MADRAZO_INTERIOR_PROBE = vec3(1399.5, 1148.5, 114.3)
+local MADRAZO_DOORS = {
+    -- Pagrindinis įėjimas (dvigubos)
+    { model = `v_ilev_ra_door4l`, coords = vec3(1395.920, 1142.904, 114.700) },
+    { model = `v_ilev_ra_door4r`, coords = vec3(1395.919, 1140.704, 114.790) },
+    -- Stiklinės šoninės
+    { model = `v_ilev_ra_door1_l`, coords = vec3(1399.85, 1128.18, 114.48) },
+    { model = `v_ilev_ra_door1_r`, coords = vec3(1401.05, 1128.18, 114.48) },
+    -- Stiklinės priekinės / kiemo
+    { model = `v_ilev_ra_door1_l`, coords = vec3(1390.20, 1131.55, 114.48) },
+    { model = `v_ilev_ra_door1_r`, coords = vec3(1390.20, 1132.85, 114.48) },
+    -- Extra dažni Madrazo/LFB propai (jei yra mapoje)
+    { model = `v_ilev_ra_door2`, coords = vec3(1408.15, 1144.10, 114.48) },
+    { model = `v_ilev_ra_door2`, coords = vec3(1408.15, 1165.50, 114.48) },
+    { model = `v_ilev_ra_doors2`, coords = vec3(1390.50, 1163.40, 114.48) },
+    { model = `prop_ld_garaged_01`, coords = vec3(1412.55, 1118.80, 114.80) },
+    { model = `prop_facgate_07`, coords = vec3(1356.80, 1147.20, 113.80) },
+    { model = `prop_gate_cult_01_l`, coords = vec3(1480.50, 1129.80, 114.50) },
+    { model = `prop_gate_cult_01_r`, coords = vec3(1487.50, 1129.80, 114.50) },
+}
+
 local simeonPinnedId = nil
 local lastSimeonFullReload = 0
 local SIMEON_FULL_RELOAD_COOLDOWN_MS = 15000
@@ -109,21 +133,40 @@ local function waitInteriorAt(coords, interiorType, attempts)
     return GetInteriorAtCoords(coords.x, coords.y, coords.z)
 end
 
+local madrazoDoorSysIds = {}
+
 local function unlockDoor(door)
     if not door or not door.model or not door.coords then return end
+    local c = door.coords
     pcall(function()
         SetStateOfClosestDoorOfType(
             door.model,
-            door.coords.x,
-            door.coords.y,
-            door.coords.z,
+            c.x, c.y, c.z,
             false,
             door.heading or 0.0,
             false
         )
     end)
+    -- Door system (MP-safe): unique id per model+coords
     pcall(function()
-        DoorSystemSetDoorState(door.model, 0, false, false)
+        local key = ('%s_%.2f_%.2f_%.2f'):format(door.model, c.x, c.y, c.z)
+        local sysId = madrazoDoorSysIds[key]
+        if not sysId then
+            sysId = joaat(key)
+            madrazoDoorSysIds[key] = sysId
+            if not IsDoorRegisteredWithSystem(sysId) then
+                AddDoorToSystem(sysId, door.model, c.x, c.y, c.z, false, false, false)
+            end
+        end
+        DoorSystemSetDoorState(sysId, 0, false, false) -- 0 = unlocked / free
+        DoorSystemSetOpenRatio(sysId, 0.0, false, false)
+    end)
+    -- Unfreeze physical door prop (vanilla Madrazo often frozen shut)
+    pcall(function()
+        local obj = GetClosestObjectOfType(c.x, c.y, c.z, 2.5, door.model, false, false, false)
+        if obj and obj ~= 0 and DoesEntityExist(obj) then
+            FreezeEntityPosition(obj, false)
+        end
     end)
 end
 
@@ -291,13 +334,104 @@ local function loadSimeonShowroom(force)
     return isSimeonInteriorReady()
 end
 
-local function loadOneilFarmhouse()
+local oneilPinnedId = nil
+local lastOneilFullReload = 0
+local ONEIL_FULL_RELOAD_COOLDOWN_MS = 45000
+
+local madrazoPinnedId = nil
+local lastMadrazoFullReload = 0
+local MADRAZO_FULL_RELOAD_COOLDOWN_MS = 45000
+
+local function requestIplIfNeeded(ipl)
+    if not IsIplActive(ipl) then
+        RequestIpl(ipl)
+    end
+end
+
+local function removeIplIfActive(ipl)
+    if IsIplActive(ipl) then
+        RemoveIpl(ipl)
+    end
+end
+
+local function isOneilInteriorReady()
+    local id = GetInteriorAtCoords(ONEIL_INTERIOR_PROBE.x, ONEIL_INTERIOR_PROBE.y, ONEIL_INTERIOR_PROBE.z)
+    if not id or id == 0 then
+        id = GetInteriorAtCoordsWithType(
+            ONEIL_INTERIOR_PROBE.x, ONEIL_INTERIOR_PROBE.y, ONEIL_INTERIOR_PROBE.z,
+            ONEIL_INTERIOR_TYPE
+        )
+    end
+    if not id or id == 0 then
+        id = GetInteriorAtCoords(ONEIL_DOOR_PROBE.x, ONEIL_DOOR_PROBE.y, ONEIL_DOOR_PROBE.z)
+    end
+    return id and id ~= 0 and IsValidInterior(id) and IsInteriorReady(id)
+end
+
+--- Soft keep-alive: no RefreshInterior (flashina jei kartojama)
+local function ensureOneilFarmhouse()
+    for _, ipl in ipairs(BLOCKING_FARM_IPLS) do removeIplIfActive(ipl) end
+    for _, ipl in ipairs(ONEIL_DRUGLAB_IPLS) do removeIplIfActive(ipl) end
+    hideOneilDruglabShells()
+    for _, ipl in ipairs(VANILLA_FARM_EXTERIOR_IPLS) do requestIplIfNeeded(ipl) end
+    for _, ipl in ipairs(VANILLA_FARM_INTERIOR_IPLS) do requestIplIfNeeded(ipl) end
+    removeIplIfActive('farmint_cap')
+
+    local id = GetInteriorAtCoords(ONEIL_INTERIOR_PROBE.x, ONEIL_INTERIOR_PROBE.y, ONEIL_INTERIOR_PROBE.z)
+    if not id or id == 0 then
+        id = GetInteriorAtCoordsWithType(
+            ONEIL_INTERIOR_PROBE.x, ONEIL_INTERIOR_PROBE.y, ONEIL_INTERIOR_PROBE.z,
+            ONEIL_INTERIOR_TYPE
+        )
+    end
+    if id and id ~= 0 and IsValidInterior(id) then
+        PinInteriorInMemory(id)
+        if not IsInteriorReady(id) then
+            LoadInterior(id)
+        end
+        oneilPinnedId = id
+    end
+
+    unlockDoorList(ONEIL_DOORS)
+    return isOneilInteriorReady()
+end
+
+local function isMadrazoInteriorReady()
+    local id = GetInteriorAtCoords(MADRAZO_INTERIOR_PROBE.x, MADRAZO_INTERIOR_PROBE.y, MADRAZO_INTERIOR_PROBE.z)
+    if not id or id == 0 then
+        id = GetInteriorAtCoords(MADRAZO_CENTER.x, MADRAZO_CENTER.y, MADRAZO_CENTER.z)
+    end
+    return id and id ~= 0 and IsValidInterior(id) and IsInteriorReady(id)
+end
+
+local function ensureMadrazoRanch()
+    local id = GetInteriorAtCoords(MADRAZO_INTERIOR_PROBE.x, MADRAZO_INTERIOR_PROBE.y, MADRAZO_INTERIOR_PROBE.z)
+    if not id or id == 0 then
+        id = GetInteriorAtCoords(MADRAZO_CENTER.x, MADRAZO_CENTER.y, MADRAZO_CENTER.z)
+    end
+    if id and id ~= 0 and IsValidInterior(id) then
+        PinInteriorInMemory(id)
+        if not IsInteriorReady(id) then
+            LoadInterior(id)
+        end
+        madrazoPinnedId = id
+    end
+    unlockDoorList(MADRAZO_DOORS)
+    return isMadrazoInteriorReady()
+end
+
+local function loadOneilFarmhouse(force)
+    local now = GetGameTimer()
+    if not force and isOneilInteriorReady() and (now - lastOneilFullReload) < ONEIL_FULL_RELOAD_COOLDOWN_MS then
+        return ensureOneilFarmhouse()
+    end
+
+    lastOneilFullReload = now
     removeIpls(BLOCKING_FARM_IPLS)
     removeIpls(ONEIL_DRUGLAB_IPLS)
     hideOneilDruglabShells()
     requestIpls(VANILLA_FARM_EXTERIOR_IPLS)
     requestIpls(VANILLA_FARM_INTERIOR_IPLS)
-    -- Re-remove cap after requests (other IPL scripts may re-enable it).
     RemoveIpl('farmint_cap')
 
     local probes = {
@@ -314,23 +448,55 @@ local function loadOneilFarmhouse()
         end
     end
 
-    local interiorId = waitInteriorAt(ONEIL_INTERIOR_PROBE, ONEIL_INTERIOR_TYPE, 300)
+    local interiorId = waitInteriorAt(ONEIL_INTERIOR_PROBE, ONEIL_INTERIOR_TYPE, 120)
     if (not interiorId or interiorId == 0) then
-        interiorId = waitInteriorAt(ONEIL_DOOR_PROBE, ONEIL_INTERIOR_TYPE, 120)
+        interiorId = waitInteriorAt(ONEIL_DOOR_PROBE, ONEIL_INTERIOR_TYPE, 60)
+    end
+    if interiorId and interiorId ~= 0 then
+        PinInteriorInMemory(interiorId)
+        LoadInterior(interiorId)
+        -- Refresh only on forced/full load (causes flicker if repeated)
+        RefreshInterior(interiorId)
+        oneilPinnedId = interiorId
+    end
+
+    unlockDoorList(ONEIL_DOORS)
+    return isOneilInteriorReady()
+end
+
+local function loadMadrazoRanch(force)
+    local now = GetGameTimer()
+    if not force and isMadrazoInteriorReady() and (now - lastMadrazoFullReload) < MADRAZO_FULL_RELOAD_COOLDOWN_MS then
+        return ensureMadrazoRanch()
+    end
+
+    lastMadrazoFullReload = now
+    requestCollision(MADRAZO_CENTER)
+    requestCollision(MADRAZO_INTERIOR_PROBE)
+    for _, door in ipairs(MADRAZO_DOORS) do
+        RequestCollisionAtCoord(door.coords.x, door.coords.y, door.coords.z)
+    end
+
+    local interiorId = waitInteriorAt(MADRAZO_INTERIOR_PROBE, nil, 40)
+    if (not interiorId or interiorId == 0) then
+        interiorId = waitInteriorAt(MADRAZO_CENTER, nil, 20)
     end
     if interiorId and interiorId ~= 0 then
         PinInteriorInMemory(interiorId)
         LoadInterior(interiorId)
         RefreshInterior(interiorId)
+        madrazoPinnedId = interiorId
     end
 
-    unlockDoorList(ONEIL_DOORS)
+    unlockDoorList(MADRAZO_DOORS)
+    return isMadrazoInteriorReady()
 end
 
 local function applyMapFixes()
-    loadSimeonShowroom()
-    loadOneilFarmhouse()
+    loadSimeonShowroom(true)
+    loadOneilFarmhouse(true)
     loadVapeSkyscraper()
+    loadMadrazoRanch(true)
 end
 
 exports('ReloadSimeonShowroom', function()
@@ -338,7 +504,14 @@ exports('ReloadSimeonShowroom', function()
 end)
 exports('EnsureSimeonShowroom', ensureSimeonShowroom)
 exports('IsSimeonShowroomReady', isSimeonInteriorReady)
-exports('ReloadOneilFarmhouse', loadOneilFarmhouse)
+exports('ReloadOneilFarmhouse', function()
+    return loadOneilFarmhouse(true)
+end)
+exports('EnsureOneilFarmhouse', ensureOneilFarmhouse)
+exports('ReloadMadrazoRanch', function()
+    return loadMadrazoRanch(true)
+end)
+exports('EnsureMadrazoRanch', ensureMadrazoRanch)
 exports('ReloadVapeSkyscraper', loadVapeSkyscraper)
 exports('ReloadLostMc', function()
     if GetResourceState('cfx-gabz-lost') == 'started' then
@@ -351,7 +524,7 @@ exports('ApplyMapFixes', applyMapFixes)
 
 CreateThread(function()
     if GetResourceState('druglabs') == 'started' then
-        print('^1[mrp_mapfix]^7 druglabs paleistas — O\'Neil gali turėti dvigubą koliziją. Naudok: stop druglabs')
+        print('^2[mrp_mapfix]^7 druglabs active (O\'Neil archived — La Mesa/Port OK)')
     end
     Wait(3000)
     applyMapFixes()
@@ -363,12 +536,23 @@ CreateThread(function()
         local nearOneil = #(p - ONEIL_CENTER) < 100.0 or #(p - ONEIL_DOOR_PROBE) < 55.0
         local nearSimeon = #(p - SIMEON_CENTER) < 120.0
         local nearVapeSkyscraper = #(p - VAPE_SKYSCRAPER_CENTER) < 120.0
+        local nearMadrazo = #(p - MADRAZO_CENTER) < 120.0
 
         if nearOneil then
-            removeIpls(ONEIL_DRUGLAB_IPLS)
-            removeIpls(BLOCKING_FARM_IPLS)
-            loadOneilFarmhouse()
-            Wait(2500)
+            -- Soft maintain only — full RefreshInterior caused interior flash every few seconds
+            if not isOneilInteriorReady() then
+                loadOneilFarmhouse(true)
+            else
+                ensureOneilFarmhouse()
+            end
+            Wait(4000)
+        elseif nearMadrazo then
+            if not isMadrazoInteriorReady() then
+                loadMadrazoRanch(true)
+            else
+                ensureMadrazoRanch()
+            end
+            Wait(3000)
         elseif nearSimeon then
             if not isSimeonInteriorReady() then
                 loadSimeonShowroom(false)

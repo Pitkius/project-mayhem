@@ -38,44 +38,64 @@ local function waitPedAtCoord(ped, coords, timeoutMs, dist)
     return false
 end
 
+--- Vanilla private booth dance sequence (GTA VU)
 local function stripperAnim(ped)
     if lapStop or not ped or not DoesEntityExist(ped) then return end
-    if not loadDict('mini@strip_club@private_dance@part1') then return end
-    TaskPlayAnim(ped, 'mini@strip_club@private_dance@part1', 'priv_dance_p1', 8.0, -8.0, -1, 1, 0, false, false, false)
-    Wait(22300)
+
+    -- Invite / approach flourish
+    if loadDict('mini@strip_club@private_dance@part1') then
+        TaskPlayAnim(ped, 'mini@strip_club@private_dance@part1', 'priv_dance_p1', 8.0, -8.0, -1, 1, 0, false, false, false)
+        Wait(22300)
+    end
     if lapStop then return end
-    if not loadDict('mini@strip_club@private_dance@part2') then return end
-    TaskPlayAnim(ped, 'mini@strip_club@private_dance@part2', 'priv_dance_p2', 8.0, -8.0, -1, 1, 0, false, false, false)
-    Wait(31200)
+
+    if loadDict('mini@strip_club@private_dance@part2') then
+        TaskPlayAnim(ped, 'mini@strip_club@private_dance@part2', 'priv_dance_p2', 8.0, -8.0, -1, 1, 0, false, false, false)
+        Wait(31200)
+    end
     if lapStop then return end
-    if not loadDict('mini@strip_club@private_dance@exit') then return end
-    TaskPlayAnim(ped, 'mini@strip_club@private_dance@exit', 'priv_dance_exit', 8.0, -8.0, -1, 0, 0, false, false, false)
-    Wait(8000)
+
+    -- Extra vanilla lap flourish before exit
+    if loadDict('mini@strip_club@lap_dance@ld_girl_a_song_a_p1') then
+        TaskPlayAnim(ped, 'mini@strip_club@lap_dance@ld_girl_a_song_a_p1', 'ld_girl_a_song_a_p1_f', 8.0, -8.0, -1, 1, 0, false, false, false)
+        Wait(20000)
+    end
+    if lapStop then return end
+
+    if loadDict('mini@strip_club@private_dance@exit') then
+        TaskPlayAnim(ped, 'mini@strip_club@private_dance@exit', 'priv_dance_exit', 8.0, -8.0, -1, 0, 0, false, false, false)
+        Wait(8000)
+    end
 end
 
+--- Player sits with vanilla strip-watch scenario (same as floor chairs)
 local function playerSitLoop(ped, seat)
-    if not loadDict('mini@strip_club@lap_dance_2g@ld_2g_reach') then return end
-    local anim = 'ld_2g_sit_idle'
+    local scenario = Config.VipSitScenario or Config.WatchScenario or 'PROP_HUMAN_SEAT_STRIP_WATCH'
+    local zOff = tonumber(Config.WatchSitZOffset) or -0.52
+    local sx, sy, sz = seat.sit.x, seat.sit.y, seat.sit.z + zOff
+
     playerSitted = true
     prevCamMode = GetFollowPedCamViewMode()
     SetFollowPedCamViewMode(4)
 
     ClearPedTasksImmediately(ped)
-    SetEntityCoordsNoOffset(ped, seat.sit.x, seat.sit.y, seat.sit.z, false, false, false)
+    RequestCollisionAtCoord(seat.sit.x, seat.sit.y, seat.sit.z)
+    Wait(50)
+    SetEntityCoordsNoOffset(ped, sx, sy, sz, false, false, false)
     SetEntityHeading(ped, seat.sit.w)
     FreezeEntityPosition(ped, true)
-    TaskPlayAnim(ped, 'mini@strip_club@lap_dance_2g@ld_2g_reach', anim, 8.0, -8.0, -1, 1, 0, false, false, false)
+    TaskStartScenarioAtPosition(ped, scenario, sx, sy, sz, seat.sit.w, 0, true, true)
     SetGameplayCamRelativeHeading(seat.camHeading or -10.0)
 
     while inLapDance and not lapStop do
-        if not IsEntityPlayingAnim(ped, 'mini@strip_club@lap_dance_2g@ld_2g_reach', anim, 3) then
-            TaskPlayAnim(ped, 'mini@strip_club@lap_dance_2g@ld_2g_reach', anim, 8.0, -8.0, -1, 1, 0, false, false, false)
+        if not IsPedUsingScenario(ped, scenario) and not IsPedActiveInScenario(ped) then
+            TaskStartScenarioAtPosition(ped, scenario, sx, sy, sz, seat.sit.w, 0, true, true)
         end
-        Wait(500)
+        Wait(400)
     end
 
     FreezeEntityPosition(ped, false)
-    ClearPedTasks(ped)
+    ClearPedTasksImmediately(ped)
     playerSitted = false
 
     if not lapStop and seat.exit then
@@ -249,7 +269,7 @@ function StartLapDance(seatId, stripperIndex)
 
             inLapDance = false
             FreezeEntityPosition(player, false)
-            ClearPedTasks(player)
+            ClearPedTasksImmediately(player)
             if prevCamMode then SetFollowPedCamViewMode(prevCamMode) end
             if lapStripper and DoesEntityExist(lapStripper) then
                 DeleteEntity(lapStripper)
@@ -262,17 +282,22 @@ function StartLapDance(seatId, stripperIndex)
     end, 'lap', seatId)
 end
 
-function StartLeanThrow(heading)
+function StartLeanThrow(heading, leanCoords)
     local player = PlayerPedId()
     local price = tonumber(Config.Prices.throwCash) or 40
+    local stageCenter = Config.Club and Config.Club.center or vector3(108.0, -1290.0, 28.3)
 
     QBCore.Functions.TriggerCallback('mrp_stripclub:server:tryPay', function(res)
         if not res or not res.ok then
             return QBCore.Functions.Notify(res and res.msg or 'Nepakanka grynųjų.', 'error')
         end
 
-        local p = GetEntityCoords(player)
-        SetEntityCoordsNoOffset(player, p.x, p.y, p.z, false, false, false)
+        if leanCoords then
+            SetEntityCoordsNoOffset(player, leanCoords.x, leanCoords.y, leanCoords.z, false, false, false)
+        else
+            local p = GetEntityCoords(player)
+            SetEntityCoordsNoOffset(player, p.x, p.y, p.z, false, false, false)
+        end
         FreezeEntityPosition(player, true)
         SetEntityHeading(player, heading)
 
@@ -290,6 +315,11 @@ function StartLeanThrow(heading)
         loadDict('mini@strip_club@leaning@base')
         TaskPlayAnim(player, 'mini@strip_club@leaning@base', 'base' .. suf, 8.0, -8.0, -1, 1, 0, false, false, false)
 
+        -- First tip lands on stage
+        if StripClubThrowCashProp then
+            StripClubThrowCashProp(player, stageCenter)
+        end
+
         QBCore.Functions.Notify(('Metei $%s į sceną. SPACE dar kartą · ESC atsistoti.'):format(price), 'success')
 
         CreateThread(function()
@@ -300,6 +330,9 @@ function StartLeanThrow(heading)
                         if r2 and r2.ok then
                             loadDict('mini@strip_club@leaning@toss')
                             TaskPlayAnim(player, 'mini@strip_club@leaning@toss', 'toss' .. suf, 8.0, -8.0, -1, 2, 0, false, false, false)
+                            if StripClubThrowCashProp then
+                                StripClubThrowCashProp(player, stageCenter)
+                            end
                             Wait(1200)
                             TaskPlayAnim(player, 'mini@strip_club@leaning@base', 'base' .. suf, 8.0, -8.0, -1, 1, 0, false, false, false)
                         else

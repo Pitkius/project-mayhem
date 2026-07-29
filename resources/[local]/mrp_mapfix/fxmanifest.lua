@@ -3,7 +3,7 @@ game 'gta5'
 
 name 'mrp_mapfix'
 author 'FIVEMPRO'
-description 'Forces key map interiors/IPLs to load'
+description 'Forces key map interiors/IPLs to load (Simeon, O\'Neil, Madrazo ranch doors, etc.)'
 lua54 'yes'
 
 dependency 'cfx-gabz-mapdata'
@@ -19,6 +19,9 @@ client_scripts {
 exports {
     'ReloadSimeonShowroom',
     'ReloadOneilFarmhouse',
+    'EnsureOneilFarmhouse',
+    'ReloadMadrazoRanch',
+    'EnsureMadrazoRanch',
     'ReloadLostMc',
     'ReloadVapeSkyscraper',
     'ApplyMapFixes',

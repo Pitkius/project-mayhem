@@ -120,8 +120,17 @@ Config.Encounter = {
     threatMultiplierMax = 2.10,
     exteriorActiveNpcCap = 16,
     interiorActiveNpcCap = 12,
-    reinforcementDelaySec = 20,
+    --- Seconds between wave 1 clear and wave 2+ spawn (not in player's face).
+    reinforcementDelaySec = 12,
     corpseCleanupSec = 45,
+    --- Pre-spawn on enter: idle near doors, then push after delay / proximity / shot.
+    staging = {
+        idleSec = 10,
+        aggroRadius = 18.0,
+        useDoorSpawnsFirst = true,
+        idleSeeRange = 12.0,
+        idleHearRange = 8.0,
+    },
     -- Fallback only; live spawns pick one gang pool per wave (never mixed).
     defaultModels = {
         'g_m_y_mexgoon_01',

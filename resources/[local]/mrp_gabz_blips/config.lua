@@ -55,13 +55,11 @@ Config.Blips = {
     -- ── Pack 3 ──
     { resource = 'c-hunting_shop', label = 'Medžioklės parduotuvė', coords = vec3(-675.342, 5836.141, 22.056), sprite = 141, color = 25 },
     { resource = 'dynasty8', label = 'Dynasty 8', coords = vec3(-694.03, 273.51, 82.90), sprite = 374, color = 2 },
-    -- druglabs MLO (MrBrown 4× pack) — exterior įėjimai; vienas blip po žeme žemėlapyje nematomas
-    { resource = 'druglabs', label = 'Narkotikų lab. (Grapeseed)', coords = vec3(1957.74, 5172.45, 47.91), sprite = 499, color = 1 },
+    -- druglabs MLO (O'Neil archived) — tik realūs stream įėjimai
     { resource = 'druglabs', label = 'Narkotikų lab. (La Mesa)', coords = vec3(892.26, -960.85, 38.18), sprite = 499, color = 6 },
     { resource = 'druglabs', label = 'Narkotikų lab. (Uostas)', coords = vec3(-341.86, -2444.32, 6.00), sprite = 499, color = 1 },
-    { resource = 'druglabs', label = 'Narkotikų lab. (LS)', coords = vec3(-1366.68, -316.94, 38.29), sprite = 499, color = 6 },
-    { resource = 'druglabs', label = 'Narkotikų sandėlis (LS uostas)', coords = vec3(1009.54, -3196.64, 14.00), sprite = 499, color = 1 },
     { resource = 'sc_secret_drug', label = 'Secret Meth Lab', coords = vec3(2719.0, 5204.7, 49.64), sprite = 499, color = 6 },
+    { resource = 'hid_weed_lab', label = 'Žolės laboratorija (MLO)', coords = vec3(1144.82, -1659.86, 36.61), sprite = 496, color = 2 },
     { resource = 'weapon_warehouse', label = 'Ginklų sandėlis', coords = vec3(-1143.28, 4944.29, 221.27), sprite = 473, color = 1 },
     { resource = 'sc1_29_motel', label = 'Davis Motel', coords = vec3(356.2, -1800.96, 28.85), sprite = 475, color = 48 },
     { resource = 'mrp_motel', label = 'Motelio sandėlis', coords = vec3(-1273.8059, 316.0920, 65.5118), sprite = 473, color = 48 },

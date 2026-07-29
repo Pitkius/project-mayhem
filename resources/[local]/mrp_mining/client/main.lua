@@ -3,6 +3,8 @@ local sellPed = nil
 local miningBusy = false
 local sellUiOpen = false
 local pendingWallIdx = nil
+local pendingSandIdx = nil
+local pendingTrashNet = nil
 
 local function playerHasMiningPickaxe()
     return QBCore.Functions.HasItem('mining_pickaxe', 1)
@@ -24,10 +26,22 @@ local function playMiningAnim(ms)
     TaskPlayAnim(ped, 'melee@large_wpn@streamed_core', 'ground_attack_on_spot', 8.0, -8.0, ms or 3000, 1, 0, false, false, false)
 end
 
+local function playDigAnim(ms)
+    local ped = PlayerPedId()
+    loadAnimDict('amb@world_human_gardener_plant@male@base')
+    TaskPlayAnim(ped, 'amb@world_human_gardener_plant@male@base', 'base', 8.0, -8.0, ms or 2800, 1, 0, false, false, false)
+end
+
 local function playSellAnim(ms)
     local ped = PlayerPedId()
     loadAnimDict('mp_common')
     TaskPlayAnim(ped, 'mp_common', 'givetake1_a', 8.0, -8.0, ms or 2500, 49, 0, false, false, false)
+end
+
+local function playSearchAnim(ms)
+    local ped = PlayerPedId()
+    loadAnimDict('amb@prop_human_bum_bin@base')
+    TaskPlayAnim(ped, 'amb@prop_human_bum_bin@base', 'base', 8.0, -8.0, ms or 3500, 1, 0, false, false, false)
 end
 
 local function setMiningUi(open)
@@ -72,31 +86,71 @@ local function openSellMenu()
     end)
 end
 
-local function openProcessMenu()
+local function openCleanMenu()
     local rows = {
-        { header = 'Rūdų perdirbimas', txt = 'Žalia → švari (pagal sąrašą)', isMenuHeader = true },
+        { header = 'Žaliavų nuvalymas', txt = 'Karjeras / smėlis / šiukšlės', isMenuHeader = true },
         {
-            header = 'Perdirbti visas žalias rūdas',
-            txt = 'Vienetuose pagal inventorių',
+            header = 'Nuvalyti visas žaliavas',
+            txt = 'Žalia → nuvalyta (rūdos, akmuo, anglis, skalda, smėlis)',
             params = {
                 isAction = true,
                 event = function()
-                    TriggerServerEvent('mrp_mining:server:processBatch')
+                    TriggerServerEvent('mrp_mining:server:cleanBatch')
                 end,
             },
         },
         {
-            header = 'Gaminti plieną',
-            txt = '2x geležies rūda + 1x anglis → 1 plienas',
+            header = 'Perdirbti šiukšles į medžiagas',
+            txt = 'Buteliai / skardinė / guma → plastikas, stiklas, aliuminis, guma',
             params = {
                 isAction = true,
                 event = function()
-                    TriggerServerEvent('mrp_mining:server:makeSteel')
+                    TriggerServerEvent('mrp_mining:server:cleanTrashMaterials')
+                end,
+            },
+        },
+        {
+            header = 'Nuvalyti butelius pakavimui',
+            txt = 'Nešvarūs buteliai → švarūs (alkoholiui / skysčiams)',
+            params = {
+                isAction = true,
+                event = function()
+                    TriggerServerEvent('mrp_mining:server:cleanTrashBottles')
                 end,
             },
         },
     }
     TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+end
+
+local function openSmeltMenu()
+    local rows = {
+        { header = 'Metalų / stiklo išlydymas', txt = 'Reikia nuvalytų koncentratų ir anglies', isMenuHeader = true },
+    }
+    for _, recipe in ipairs(Config.SmeltRecipes or {}) do
+        local r = recipe
+        rows[#rows + 1] = {
+            header = r.label or r.id,
+            txt = r.txt or '',
+            params = {
+                isAction = true,
+                event = function()
+                    TriggerServerEvent('mrp_mining:server:smelt', r.id)
+                end,
+            },
+        }
+    end
+    TriggerEvent('qb-menu:client:openMenu', rows, false, true)
+end
+
+local function addBlip(coords, cfg, fallbackLabel)
+    if not coords or not cfg then return end
+    local b = AddBlipForCoord(coords.x, coords.y, coords.z)
+    SetBlipSprite(b, cfg.sprite or 1)
+    SetBlipColour(b, cfg.colour or 0)
+    SetBlipScale(b, cfg.scale or 0.8)
+    SetBlipAsShortRange(b, true)
+    exports['mrp_fonts']:SetBlipName(b, cfg.label or fallbackLabel or 'Vieta')
 end
 
 RegisterNetEvent('mrp_mining:client:startMining', function(data)
@@ -108,8 +162,60 @@ RegisterNetEvent('mrp_mining:client:startMining', function(data)
     end
 
     pendingWallIdx = wallIdx
+    pendingSandIdx = nil
     miningBusy = true
     setMiningUi(true)
+end)
+
+RegisterNetEvent('mrp_mining:client:startSandDig', function(data)
+    if miningBusy then return end
+    local sandIdx = data and tonumber(data.sandIndex)
+    if not sandIdx then return end
+
+    miningBusy = true
+    pendingSandIdx = sandIdx
+    playDigAnim(Config.SandAnimDuration or 2800)
+    QBCore.Functions.Progressbar('mrp_mining_sand', 'Kasi smėlį…', Config.SandAnimDuration or 2800, false, true, {
+        disableMovement = true,
+        disableCarMovement = true,
+        disableMouse = false,
+        disableCombat = true,
+    }, {}, {}, {}, function()
+        TriggerServerEvent('mrp_mining:server:sandAttempt', sandIdx)
+        miningBusy = false
+        pendingSandIdx = nil
+        ClearPedTasks(PlayerPedId())
+    end, function()
+        miningBusy = false
+        pendingSandIdx = nil
+        ClearPedTasks(PlayerPedId())
+    end)
+end)
+
+RegisterNetEvent('mrp_mining:client:searchTrash', function(data)
+    if miningBusy then return end
+    local entity = data and data.entity
+    if not entity or entity == 0 or not DoesEntityExist(entity) then
+        return QBCore.Functions.Notify('Konteineris nerastas.', 'error')
+    end
+
+    miningBusy = true
+    local netId = NetworkGetNetworkIdFromEntity(entity)
+    pendingTrashNet = netId
+    playSearchAnim(Config.TrashSearchDuration or 3500)
+    QBCore.Functions.Progressbar('mrp_mining_trash', 'Ieškai šiukšlėse…', Config.TrashSearchDuration or 3500, false, true, {
+        disableMovement = true,
+        disableCombat = true,
+    }, {}, {}, {}, function()
+        TriggerServerEvent('mrp_mining:server:trashSearch', netId)
+        miningBusy = false
+        pendingTrashNet = nil
+        ClearPedTasks(PlayerPedId())
+    end, function()
+        miningBusy = false
+        pendingTrashNet = nil
+        ClearPedTasks(PlayerPedId())
+    end)
 end)
 
 RegisterNUICallback('miningResult', function(data, cb)
@@ -145,6 +251,8 @@ RegisterNUICallback('closeUi', function(_, cb)
     miningBusy = false
     sellUiOpen = false
     pendingWallIdx = nil
+    pendingSandIdx = nil
+    pendingTrashNet = nil
     SetNuiFocus(false, false)
 end)
 
@@ -184,37 +292,19 @@ RegisterNUICallback('sellAll', function(_, cb)
 end)
 
 CreateThread(function()
-    local mb = Config.Blips.mining
     local center = Config.MiningSites[1] and Config.MiningSites[1].coords
-    if center and mb then
-        local b = AddBlipForCoord(center.x, center.y, center.z)
-        SetBlipSprite(b, mb.sprite or 618)
-        SetBlipColour(b, mb.colour or 47)
-        SetBlipScale(b, mb.scale or 0.85)
-        SetBlipAsShortRange(b, true)
-        exports['mrp_fonts']:SetBlipName(b, mb.label or 'Karjeras')
-    end
+    addBlip(center, Config.Blips.mining, 'Karjeras — kasimas')
 
-    local pb = Config.Blips.process
-    local pc = Config.ProcessCoords
-    if pc and pb then
-        local b = AddBlipForCoord(pc.x, pc.y, pc.z)
-        SetBlipSprite(b, pb.sprite or 566)
-        SetBlipColour(b, pb.colour or 47)
-        SetBlipScale(b, pb.scale or 0.82)
-        SetBlipAsShortRange(b, true)
-        exports['mrp_fonts']:SetBlipName(b, pb.label or 'Perdirbimas')
-    end
+    local clean = Config.CleanCoords or Config.ProcessCoords
+    addBlip(clean, Config.Blips.clean or Config.Blips.process, 'Žaliavų nuvalymas')
 
-    local sb = Config.Blips.sell
-    local sc = Config.SellPed.coords
-    if sc and sb then
-        local b = AddBlipForCoord(sc.x, sc.y, sc.z)
-        SetBlipSprite(b, sb.sprite or 500)
-        SetBlipColour(b, sb.colour or 2)
-        SetBlipScale(b, sb.scale or 0.82)
-        SetBlipAsShortRange(b, true)
-        exports['mrp_fonts']:SetBlipName(b, sb.label or 'Supirkimas')
+    local smelt = Config.SmeltCoords
+    addBlip(smelt, Config.Blips.smelt, 'Metalų išlydymas')
+
+    addBlip(Config.SellPed and Config.SellPed.coords, Config.Blips.sell, 'Metalų supirkimas')
+
+    for _, site in ipairs(Config.SandDigSites or {}) do
+        addBlip(site.center, Config.Blips.sand, site.label or 'Smėlio kasimas')
     end
 end)
 
@@ -245,28 +335,102 @@ CreateThread(function()
         })
     end
 
-    local pc = Config.ProcessCoords
-    exports['qb-target']:AddBoxZone('mrp_mining_process', vector3(pc.x, pc.y, pc.z), 2.4, 2.4, {
-        name = 'mrp_mining_process',
-        heading = pc.w or 0,
-        debugPoly = false,
-        minZ = pc.z - 1.2,
-        maxZ = pc.z + 2.4,
-    }, {
-        options = {
-            {
-                type = 'client',
-                event = 'mrp_mining:client:openProcessMenu',
-                icon = 'fas fa-industry',
-                label = 'Perdirbti rūdas',
+    for i, site in ipairs(Config.SandDigSites or {}) do
+        exports['qb-target']:AddBoxZone(('mrp_sand_dig_%s'):format(i), site.center, site.length or 30.0, site.width or 20.0, {
+            name = ('mrp_sand_dig_%s'):format(i),
+            heading = site.heading or 0.0,
+            debugPoly = false,
+            minZ = site.minZ or (site.center.z - 2.0),
+            maxZ = site.maxZ or (site.center.z + 3.0),
+        }, {
+            options = {
+                {
+                    type = 'client',
+                    event = 'mrp_mining:client:startSandDig',
+                    icon = 'fas fa-mountain',
+                    label = site.label or 'Kasti smėlį',
+                    sandIndex = i,
+                    canInteract = function()
+                        return not miningBusy
+                    end,
+                },
             },
-        },
-        distance = 2.5,
-    })
+            distance = 2.5,
+        })
+    end
+
+    local clean = Config.CleanCoords or Config.ProcessCoords
+    if clean then
+        exports['qb-target']:AddBoxZone('mrp_mining_clean', vector3(clean.x, clean.y, clean.z), 2.4, 2.4, {
+            name = 'mrp_mining_clean',
+            heading = clean.w or 0,
+            debugPoly = false,
+            minZ = clean.z - 1.2,
+            maxZ = clean.z + 2.4,
+        }, {
+            options = {
+                {
+                    type = 'client',
+                    event = 'mrp_mining:client:openCleanMenu',
+                    icon = 'fas fa-soap',
+                    label = 'Nuvalyti žaliavas',
+                },
+            },
+            distance = 2.5,
+        })
+    end
+
+    local smelt = Config.SmeltCoords
+    if smelt then
+        exports['qb-target']:AddBoxZone('mrp_mining_smelt', vector3(smelt.x, smelt.y, smelt.z), 2.6, 2.6, {
+            name = 'mrp_mining_smelt',
+            heading = smelt.w or 0,
+            debugPoly = false,
+            minZ = smelt.z - 1.2,
+            maxZ = smelt.z + 2.6,
+        }, {
+            options = {
+                {
+                    type = 'client',
+                    event = 'mrp_mining:client:openSmeltMenu',
+                    icon = 'fas fa-fire',
+                    label = 'Lydyti metalus / stiklą',
+                },
+            },
+            distance = 2.5,
+        })
+    end
+
+    if Config.TrashModels and #Config.TrashModels > 0 then
+        exports['qb-target']:AddTargetModel(Config.TrashModels, {
+            options = {
+                {
+                    icon = 'fas fa-trash',
+                    label = 'Ieškoti šiukšlėse',
+                    canInteract = function()
+                        return not miningBusy
+                    end,
+                    action = function(entity)
+                        TriggerEvent('mrp_mining:client:searchTrash', { entity = entity })
+                    end,
+                },
+            },
+            distance = 2.0,
+        })
+    end
 end)
 
+RegisterNetEvent('mrp_mining:client:openCleanMenu', function()
+    openCleanMenu()
+end)
+
+RegisterNetEvent('mrp_mining:client:openSmeltMenu', function()
+    openSmeltMenu()
+end)
+
+--- Atgalinis suderinamumas
 RegisterNetEvent('mrp_mining:client:openProcessMenu', function()
-    openProcessMenu()
+    openCleanMenu()
 end)
 
 CreateThread(function()
@@ -289,7 +453,7 @@ CreateThread(function()
                 type = 'client',
                 event = 'mrp_mining:client:openSellMenu',
                 icon = 'fas fa-dollar-sign',
-                label = 'Rūdų supirkėjas',
+                label = 'Žaliavų / metalų supirkėjas',
             },
         },
         distance = 2.5,

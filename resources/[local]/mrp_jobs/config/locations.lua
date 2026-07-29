@@ -42,7 +42,15 @@ Config.Locations.oil = {
         requireVehicle = true,          -- ar pristatymui privalomas darbo transportas šalia
         vehicleRadius = 12.0,
     },
+    --- Sintetinės gumos gamyba iš naftos likučių (šalia elektrinės / refinery)
+    rubberProcess = {
+        coords = vector4(2735.8, 1534.2, 24.5, 180.0),
+        radius = 2.4,
+        label = 'Gumų gamyba iš naftos likučių',
+    },
     blip = { sprite = 436, color = 5, scale = 0.8, name = 'Naftos gavyba' },
+    blipDelivery = { sprite = 436, color = 1, scale = 0.7, name = 'Naftos pristatymas' },
+    blipRubber = { sprite = 478, color = 21, scale = 0.7, name = 'Sintetinės gumos gamyba' },
 }
 
 -- ── BURGER JOINT (2 vietos) ───────────────────────────────────────
@@ -60,12 +68,16 @@ Config.Locations.burger = {
             kitchen = {
                 { id = 'grill_1', coords = vector4(-1200.3, -896.6, 13.98, 34.0) },
             },
-            -- NPC klientų eilės kelias
+            -- NPC klientų eilės kelias (spawn/exit lauke — kasininkas ± nemato CreatePed)
             queue = {
                 anchor = vector4(-1193.3, -889.9, 13.98, 214.0),   -- pirmas eilės taškas (prie kasos)
                 step = vector3(0.0, 1.0, 0.0),                     -- kryptis tolyn nuo kasos
-                spawn = vector4(-1188.0, -885.0, 13.98, 214.0),    -- kur NPC pasirodo/išnyksta
-                exit = vector4(-1183.0, -880.0, 13.5, 30.0),
+                spawn = vector4(-1176.8, -872.4, 13.95, 214.0),    -- lauke už kampo
+                exit = vector4(-1172.2, -867.6, 13.90, 35.0),
+                waypoints = {
+                    vector3(-1182.5, -878.2, 13.95),
+                    vector3(-1188.6, -885.0, 13.98),
+                },
             },
             blip = { sprite = 106, color = 47, scale = 0.7, name = 'Burger Shot' },
         },
@@ -81,8 +93,12 @@ Config.Locations.burger = {
             queue = {
                 anchor = vector4(-1475.2, -648.0, 29.5, 45.0),
                 step = vector3(0.7, 0.7, 0.0),
-                spawn = vector4(-1470.0, -643.0, 29.5, 45.0),
-                exit = vector4(-1465.0, -639.0, 29.5, 45.0),
+                spawn = vector4(-1456.4, -632.8, 29.5, 45.0),     -- lauke už matomumo
+                exit = vector4(-1451.0, -628.5, 29.5, 45.0),
+                waypoints = {
+                    vector3(-1462.5, -638.0, 29.5),
+                    vector3(-1469.0, -643.5, 29.5),
+                },
             },
             blip = { sprite = 106, color = 47, scale = 0.7, name = 'Burger Shot' },
         },

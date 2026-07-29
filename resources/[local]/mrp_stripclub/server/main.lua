@@ -16,6 +16,8 @@ QBCore.Functions.CreateCallback('mrp_stripclub:server:tryPay', function(src, cb,
         end
     elseif payType == 'throw' then
         price = tonumber(Config.Prices.throwCash) or 40
+    elseif payType == 'tip' then
+        price = tonumber(Config.Prices.tipDancer) or 25
     else
         return cb({ ok = false, msg = 'Netinkamas mokėjimas.' })
     end

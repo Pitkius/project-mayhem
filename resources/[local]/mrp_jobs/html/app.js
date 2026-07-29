@@ -126,11 +126,18 @@
 
     function playVoice(data) {
         // Neprivaloma: jei yra iš anksto įrašytas audio failas — paleidžiam.
+        // Failas / play klaida → chat/teksto fallback (client).
         if (!data || !data.orderId) return;
         const el = $('voice');
+        if (!el) {
+            post('burger:voiceFailed', { line: data.line || '' });
+            return;
+        }
         const variation = 1 + Math.floor(Math.random() * 2);
         el.src = `audio/${data.orderId}_${variation}.ogg`;
-        el.play().catch(() => { /* nėra failo → tekstas jau rodomas 3D pasaulyje */ });
+        el.play().catch(() => {
+            post('burger:voiceFailed', { line: data.line || '' });
+        });
     }
 
     document.addEventListener('keydown', (e) => {

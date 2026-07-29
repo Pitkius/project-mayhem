@@ -206,12 +206,49 @@ local function countItem(Player, item, amount)
     return it.amount >= amount
 end
 
+local function countAnyOf(Player, items, amount)
+    local total = 0
+    for _, itemName in ipairs(items or {}) do
+        local it = Player.Functions.GetItemByName(itemName)
+        total = total + (it and it.amount or 0)
+    end
+    return total >= (tonumber(amount) or 0)
+end
+
+local function pickAnyOfItem(Player, items, amount)
+    amount = tonumber(amount) or 1
+    for _, itemName in ipairs(items or {}) do
+        local it = Player.Functions.GetItemByName(itemName)
+        if it and (it.amount or 0) >= amount then
+            return itemName
+        end
+    end
+    --- Dalimis iš kelių tipų — imam pirmą turimą tipą po vieną
+    local left = amount
+    local plan = {}
+    for _, itemName in ipairs(items or {}) do
+        if left <= 0 then break end
+        local it = Player.Functions.GetItemByName(itemName)
+        local have = it and it.amount or 0
+        if have > 0 then
+            local take = math.min(have, left)
+            plan[#plan + 1] = { item = itemName, count = take }
+            left = left - take
+        end
+    end
+    if left > 0 then return nil end
+    return plan
+end
+
 local function recipeRowSatisfied(Player, row, st)
     if st and st.equipmentType and row.item == st.equipmentType then
         return true
     end
     if st and st.equipmentId and Equipment and Equipment.rowSatisfiedByNearby(st.equipmentId, row.item) then
         return true
+    end
+    if row.anyOf then
+        return countAnyOf(Player, row.anyOf, row.count)
     end
     return countItem(Player, row.item, row.count)
 end
@@ -238,11 +275,34 @@ local function removeItems(Player, list, st)
         if skipRecipeConsumable(row, st) then
             goto continue
         end
-        if not Player.Functions.RemoveItem(row.item, row.count) then
-            addItems(Player, consumed)
-            return false, {}
+        if row.anyOf then
+            local pick = pickAnyOfItem(Player, row.anyOf, row.count)
+            if not pick then
+                addItems(Player, consumed)
+                return false, {}
+            end
+            if type(pick) == 'string' then
+                if not Player.Functions.RemoveItem(pick, row.count) then
+                    addItems(Player, consumed)
+                    return false, {}
+                end
+                consumed[#consumed + 1] = { item = pick, count = row.count }
+            else
+                for _, part in ipairs(pick) do
+                    if not Player.Functions.RemoveItem(part.item, part.count) then
+                        addItems(Player, consumed)
+                        return false, {}
+                    end
+                    consumed[#consumed + 1] = { item = part.item, count = part.count }
+                end
+            end
+        else
+            if not Player.Functions.RemoveItem(row.item, row.count) then
+                addItems(Player, consumed)
+                return false, {}
+            end
+            consumed[#consumed + 1] = { item = row.item, count = row.count }
         end
-        consumed[#consumed + 1] = { item = row.item, count = row.count }
         ::continue::
     end
     return true, consumed
@@ -313,15 +373,29 @@ local function buildRecipeStatus(Player, productId, st, src)
     local rows = {}
     for _, row in ipairs(recipe) do
         local have
+        local itemKey = row.item
+        local label
         if skipRecipeConsumable(row, st) then
             have = row.count
+            label = (resolveSharedItem(row.item) or {}).label or row.item
+        elseif row.anyOf then
+            have = 0
+            local labels = {}
+            for _, name in ipairs(row.anyOf) do
+                local it = Player.Functions.GetItemByName(name)
+                have = have + (it and it.amount or 0)
+                labels[#labels + 1] = (resolveSharedItem(name) or {}).label or name
+            end
+            itemKey = row.anyOf[1]
+            label = table.concat(labels, ' / ')
         else
             local it = Player.Functions.GetItemByName(row.item)
             have = it and it.amount or 0
+            label = (resolveSharedItem(row.item) or {}).label or row.item
         end
         rows[#rows + 1] = {
-            item = row.item,
-            label = (resolveSharedItem(row.item) or {}).label or row.item,
+            item = itemKey,
+            label = label,
             need = row.count,
             have = have,
             missing = math.max(0, row.count - have),

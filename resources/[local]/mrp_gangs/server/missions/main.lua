@@ -170,40 +170,79 @@ local function isContestable(run, phase)
 end
 
 local function clearCompoundProps(run)
-    if not run or not run.compoundProps then return end
-    for _, entity in ipairs(run.compoundProps) do
-        if entity and entity ~= 0 and DoesEntityExist(entity) then
-            DeleteEntity(entity)
+    if not run then return end
+    if run.compoundProps then
+        for _, entity in ipairs(run.compoundProps) do
+            if entity and entity ~= 0 and DoesEntityExist(entity) then
+                DeleteEntity(entity)
+            end
         end
     end
     run.compoundProps = nil
+    run.compoundPropMeta = nil
+    broadcast(run, 'mrp_gangs:client:clearCompoundProps', run.token)
 end
+
+local PROP_ACTION_LABELS = {
+    search = 'Apieškoti',
+    collect = 'Paimti',
+    sabotage = 'Sabotuoti',
+}
 
 local function spawnCompoundProps(run)
     clearCompoundProps(run)
     local compound = run.compoundKey and Config.MissionCompounds[run.compoundKey]
     if not compound or not compound.props or not run.site then return end
     run.compoundProps = {}
+    run.compoundPropMeta = {}
+    local interactivePayload = {}
+    local indoors = run.inInterior == true
+
     for _, prop in ipairs(compound.props) do
-        local model = joaat(prop.model)
-        local ox = (prop.offset and prop.offset.x) or 0.0
-        local oy = (prop.offset and prop.offset.y) or 0.0
-        local oz = (prop.offset and prop.offset.z) or 0.0
-        local obj = CreateObject(
-            model,
-            run.site.x + ox,
-            run.site.y + oy,
-            run.site.z + oz,
-            true,
-            true,
-            false
-        )
-        if obj and obj ~= 0 then
-            SetEntityHeading(obj, prop.heading or (run.site.w or 0.0))
-            FreezeEntityPosition(obj, true)
-            GangUtils.SetEntityOrphanMode(obj, 2)
-            run.compoundProps[#run.compoundProps + 1] = obj
+        local size = prop.size or 'small'
+        if not (indoors and size == 'large') then
+            local model = joaat(prop.model)
+            local ox = (prop.offset and prop.offset.x) or 0.0
+            local oy = (prop.offset and prop.offset.y) or 0.0
+            local oz = (prop.offset and prop.offset.z) or 0.0
+            local obj = CreateObject(
+                model,
+                run.site.x + ox,
+                run.site.y + oy,
+                run.site.z + oz,
+                true,
+                true,
+                false
+            )
+            if obj and obj ~= 0 then
+                SetEntityHeading(obj, prop.heading or (run.site.w or 0.0))
+                FreezeEntityPosition(obj, true)
+                GangUtils.SetEntityOrphanMode(obj, 2)
+                run.compoundProps[#run.compoundProps + 1] = obj
+                local netId = NetworkGetNetworkIdFromEntity(obj)
+                local meta = {
+                    networkId = netId,
+                    action = prop.action,
+                    objectiveIndex = tonumber(prop.objectiveIndex),
+                    interact = prop.interact == true,
+                    size = size,
+                    used = false,
+                }
+                run.compoundPropMeta[netId] = meta
+                if meta.interact and meta.action then
+                    interactivePayload[#interactivePayload + 1] = {
+                        networkId = netId,
+                        action = meta.action,
+                        objectiveIndex = meta.objectiveIndex,
+                        label = PROP_ACTION_LABELS[meta.action] or 'Naudoti',
+                    }
+                end
+            end
         end
+    end
+
+    if #interactivePayload > 0 then
+        broadcast(run, 'mrp_gangs:client:registerCompoundProps', run.token, interactivePayload)
     end
 end
 
@@ -539,6 +578,7 @@ local function advancePhase(run, source, payload)
             run.inCompound = true
             run.inInterior = false
             spawnCompoundProps(run)
+            GangEncounters.PreStage(run)
             broadcast(run, 'mrp_gangs:client:enterMissionCompound', run.token, run.compoundKey)
         else
             local interior = Config.MissionInteriors[run.interiorKey]
@@ -546,6 +586,7 @@ local function advancePhase(run, source, payload)
             run.inInterior = true
             run.inCompound = false
             setPartyBucket(run, run.bucketId)
+            GangEncounters.PreStage(run)
             broadcast(
                 run,
                 'mrp_gangs:client:enterMissionInterior',

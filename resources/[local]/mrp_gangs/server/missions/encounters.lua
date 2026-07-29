@@ -146,34 +146,67 @@ local function scheduleEntityDelete(entity, delaySec)
     end)
 end
 
-local function spawnWave(run)
-    local encounter = run.encounter
-    for _, entity in ipairs(encounter.entities or {}) do
-        if DoesEntityExist(entity) then
-            scheduleEntityDelete(entity, (Config.CorpseLoot and Config.CorpseLoot.cleanupSec) or Config.Encounter.corpseCleanupSec or 45)
-        end
+local function notifyEncounter(run, networkIds, wave, maxWaves, staging)
+    for _, source in ipairs(participantSources(run)) do
+        TriggerClientEvent(
+            'mrp_gangs:client:configureEncounter',
+            source,
+            run.token,
+            networkIds,
+            wave,
+            maxWaves,
+            staging == true
+        )
     end
-    encounter.entities = {}
-    encounter.networkIds = {}
-    encounter.looted = encounter.looted or {}
-    local waveScale = encounter.wave == 1 and 1.0 or 0.65
-    local archetypes = selectArchetypes(run, encounter.phase, waveScale)
+end
+
+local function pickSpawnCoords(run, index, total, preferDoors)
     local interior = run.inInterior and run.interiorKey and Config.MissionInteriors[run.interiorKey]
     local compound = (not run.inInterior) and run.compoundKey and Config.MissionCompounds[run.compoundKey]
+    local stagingCfg = Config.Encounter.staging or {}
+    local useDoors = preferDoors and stagingCfg.useDoorSpawnsFirst ~= false
+
+    if useDoors and interior and interior.doorSpawns and #interior.doorSpawns > 0 then
+        return GangUtils.CoordsToTable(interior.doorSpawns[((index - 1) % #interior.doorSpawns) + 1])
+    end
+    if useDoors and compound and compound.doorSpawns and #compound.doorSpawns > 0 then
+        return offsetSpawn(run.site, compound.doorSpawns[((index - 1) % #compound.doorSpawns) + 1])
+    end
+    if interior and interior.enemySpawns and #interior.enemySpawns > 0 then
+        return GangUtils.CoordsToTable(interior.enemySpawns[((index - 1) % #interior.enemySpawns) + 1])
+    end
+    if compound and compound.enemySpawns and #compound.enemySpawns > 0 then
+        return offsetSpawn(run.site, compound.enemySpawns[((index - 1) % #compound.enemySpawns) + 1])
+    end
+    return outdoorSpawn(run.site, index, total)
+end
+
+local function spawnWave(run, opts)
+    opts = opts or {}
+    local encounter = run.encounter
+    local staging = opts.staging == true
+    local preferDoors = opts.preferDoors == true or (staging and (Config.Encounter.staging or {}).useDoorSpawnsFirst ~= false)
+    local replaceAlive = opts.replaceAlive ~= false
+
+    if replaceAlive then
+        for _, entity in ipairs(encounter.entities or {}) do
+            if DoesEntityExist(entity) then
+                scheduleEntityDelete(entity, (Config.CorpseLoot and Config.CorpseLoot.cleanupSec) or Config.Encounter.corpseCleanupSec or 45)
+            end
+        end
+        encounter.entities = {}
+        encounter.networkIds = {}
+    end
+
+    encounter.looted = encounter.looted or {}
+    local waveScale = encounter.wave == 1 and 1.0 or 0.65
+    local archetypes = selectArchetypes(run, encounter.phase or { type = 'eliminate' }, waveScale)
     local models, gangKey = pickGangPool(run)
     encounter.gangKey = gangKey
     local encounterBucket = run.inInterior and run.bucketId or 0
 
     for index, archetype in ipairs(archetypes) do
-        local spawn
-        if interior and interior.enemySpawns and #interior.enemySpawns > 0 then
-            spawn = GangUtils.CoordsToTable(interior.enemySpawns[((index - 1) % #interior.enemySpawns) + 1])
-        elseif compound and compound.enemySpawns and #compound.enemySpawns > 0 then
-            local offset = compound.enemySpawns[((index - 1) % #compound.enemySpawns) + 1]
-            spawn = offsetSpawn(run.site, offset)
-        else
-            spawn = outdoorSpawn(run.site, index, #archetypes)
-        end
+        local spawn = pickSpawnCoords(run, index, #archetypes, preferDoors)
         local model = joaat(models[((index - 1) % #models) + 1])
         local ped = CreatePed(4, model, spawn.x, spawn.y, spawn.z, spawn.w or 0.0, true, true)
         if ped and ped ~= 0 then
@@ -190,6 +223,7 @@ local function spawnWave(run)
             Entity(ped).state:set('mrpGangEncounterWave', encounter.wave, true)
             Entity(ped).state:set('mrpGangWeapon', weapon, true)
             Entity(ped).state:set('mrpGangFaction', gangKey, true)
+            Entity(ped).state:set('mrpGangStaging', staging and 'idle' or 'armed', true)
             encounter.entities[#encounter.entities + 1] = ped
             local netId = NetworkGetNetworkIdFromEntity(ped)
             local entry = {
@@ -199,6 +233,7 @@ local function spawnWave(run)
                 accuracy = definition.accuracy or 20,
                 melee = definition.melee == true or run.difficulty == 'easy',
                 gangKey = gangKey,
+                staging = staging,
             }
             encounter.networkIds[#encounter.networkIds + 1] = entry
             run.corpseRegistry = run.corpseRegistry or {}
@@ -215,9 +250,38 @@ local function spawnWave(run)
         return false, 'encounter_spawn_failed'
     end
 
+    encounter.staged = staging
+    notifyEncounter(run, encounter.networkIds, encounter.wave, encounter.maxWaves, staging)
+    return true
+end
+
+local function computeMaxWaves(run, phase)
+    if phase.type == 'defend' then
+        return run.difficulty == 'extreme' and 3
+            or (run.difficulty == 'hard' or run.difficulty == 'medium') and 2
+            or 1
+    elseif phase.type == 'eliminate' and run.difficulty == 'extreme' then
+        return 2
+    end
+    return 1
+end
+
+local function activateStagedEncounter(run)
+    local encounter = run.encounter
+    if not encounter then return false end
+    encounter.staged = false
+    encounter.armedAt = os.time()
+    for _, ped in ipairs(encounter.entities or {}) do
+        if DoesEntityExist(ped) and not isEntityDeadSafe(ped) then
+            Entity(ped).state:set('mrpGangStaging', 'armed', true)
+        end
+    end
+    for _, entry in ipairs(encounter.networkIds or {}) do
+        entry.staging = false
+    end
     for _, source in ipairs(participantSources(run)) do
         TriggerClientEvent(
-            'mrp_gangs:client:configureEncounter',
+            'mrp_gangs:client:activateEncounterAggro',
             source,
             run.token,
             encounter.networkIds,
@@ -228,16 +292,38 @@ local function spawnWave(run)
     return true
 end
 
+--- Pre-spawn wave 1 near doors on enter (idle, no combat yet).
+function GangEncounters.PreStage(run)
+    if not run then return false end
+    if run.encounter and #(run.encounter.entities or {}) > 0 then return true end
+    run.encounter = {
+        startedAt = os.time(),
+        entities = {},
+        networkIds = {},
+        looted = {},
+        spawnFailed = false,
+        phase = { type = 'eliminate', encounter = 'assault' },
+        wave = 1,
+        maxWaves = 1,
+        clearedAt = nil,
+        staged = true,
+    }
+    return spawnWave(run, { staging = true, preferDoors = true, replaceAlive = true })
+end
+
 function GangEncounters.Start(run, phase)
-    GangEncounters.Cleanup(run)
-    local maxWaves = 1
-    if phase.type == 'defend' then
-        maxWaves = run.difficulty == 'extreme' and 3
-            or (run.difficulty == 'hard' or run.difficulty == 'medium') and 2
-            or 1
-    elseif phase.type == 'eliminate' and run.difficulty == 'extreme' then
-        maxWaves = 2
+    local maxWaves = computeMaxWaves(run, phase)
+    if run.encounter and run.encounter.staged and #(run.encounter.entities or {}) > 0 then
+        run.encounter.phase = GangUtils.Copy(phase)
+        run.encounter.maxWaves = maxWaves
+        run.encounter.wave = 1
+        run.encounter.clearedAt = nil
+        run.encounter.spawnFailed = false
+        run.encounter.pendingReinforceAt = nil
+        return activateStagedEncounter(run)
     end
+
+    GangEncounters.Cleanup(run)
     run.encounter = {
         startedAt = os.time(),
         entities = {},
@@ -248,22 +334,48 @@ function GangEncounters.Start(run, phase)
         wave = 1,
         maxWaves = maxWaves,
         clearedAt = nil,
+        staged = true,
     }
-    return spawnWave(run)
+    local ok, reason = spawnWave(run, { staging = true, preferDoors = true, replaceAlive = true })
+    if not ok then return false, reason end
+    --- Brief idle even when combat starts without a prior enter pre-stage.
+    CreateThread(function()
+        local token = run.token
+        Wait(math.max(2, tonumber((Config.Encounter.staging or {}).idleSec) or 10) * 1000)
+        if not run.encounter or run.token ~= token then return end
+        if run.encounter.staged then
+            activateStagedEncounter(run)
+        end
+    end)
+    return true
 end
 
 function GangEncounters.IsCleared(run)
     if not run.encounter or run.encounter.spawnFailed then return false end
+    if run.encounter.staged then return false end
+
     for _, entity in ipairs(run.encounter.entities or {}) do
         if DoesEntityExist(entity) and not isEntityDeadSafe(entity) then return false end
     end
+
     if run.encounter.wave < run.encounter.maxWaves then
+        local delay = tonumber(Config.Encounter.reinforcementDelaySec) or 12
+        if not run.encounter.pendingReinforceAt then
+            run.encounter.pendingReinforceAt = os.time() + delay
+            return false
+        end
+        if os.time() < run.encounter.pendingReinforceAt then
+            return false
+        end
         run.encounter.wave = run.encounter.wave + 1
         run.encounter.clearedAt = nil
-        local ok = spawnWave(run)
+        run.encounter.pendingReinforceAt = nil
+        --- Reinforcements use deeper enemySpawns (not doors in player's face).
+        local ok = spawnWave(run, { staging = false, preferDoors = false, replaceAlive = true })
         if not ok then return false end
         return false
     end
+
     if not run.encounter.clearedAt then
         run.encounter.clearedAt = os.time()
     end

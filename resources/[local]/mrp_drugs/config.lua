@@ -158,7 +158,7 @@ Config.Recipes = {
     },
     alcohol_pack = {
         { item = 'moonshine_spirit', count = 1 },
-        { item = 'empty_bottle', count = 1 },
+        { anyOf = { 'empty_bottle', 'empty_plastic_bottle', 'empty_glass_bottle' }, count = 1 },
         { item = 'empty_bag', count = 1 },
     },
     vape_process = {

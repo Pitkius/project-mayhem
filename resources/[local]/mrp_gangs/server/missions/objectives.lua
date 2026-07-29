@@ -78,10 +78,46 @@ local function compoundData(run)
     return run.compoundKey and Config.MissionCompounds[run.compoundKey] or nil
 end
 
+local function playerNearProp(run, source, networkId, maxDistance)
+    networkId = tonumber(networkId)
+    if not networkId or not run.compoundPropMeta then return false end
+    local meta = run.compoundPropMeta[networkId]
+    if not meta or meta.used then return false end
+    local entity = NetworkGetEntityFromNetworkId(networkId)
+    if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
+    local ped = GetPlayerPed(source)
+    if not ped or ped == 0 then return false end
+    return #(GetEntityCoords(ped) - GetEntityCoords(entity)) <= (maxDistance or 3.0)
+end
+
+local function propMatchesPhase(run, phase, networkId)
+    networkId = tonumber(networkId)
+    local meta = run.compoundPropMeta and run.compoundPropMeta[networkId]
+    if not meta or meta.interact ~= true then return false end
+    if meta.action and meta.action ~= phase.type then return false end
+    if meta.objectiveIndex and phase.objectiveIndex
+        and tonumber(meta.objectiveIndex) ~= tonumber(phase.objectiveIndex) then
+        return false
+    end
+    return true
+end
+
 function GangObjectives.Begin(run, phase, source)
     if not actionPhaseTypes[phase.type] then return false, 'objective_does_not_require_begin' end
     local target = GangObjectives.GetTarget(run, phase)
-    if not near(source, target, 5.0) then return false, 'not_at_objective' end
+    local atTarget = near(source, target, 5.0)
+    -- Allow starting from an interactive compound prop for this phase.
+    if not atTarget then
+        local nearAnyProp = false
+        for netId, meta in pairs(run.compoundPropMeta or {}) do
+            if meta.interact and not meta.used and propMatchesPhase(run, phase, netId)
+                and playerNearProp(run, source, netId, 3.0) then
+                nearAnyProp = true
+                break
+            end
+        end
+        if not nearAnyProp then return false, 'not_at_objective' end
+    end
     local ped = GetPlayerPed(source)
     if not ped or ped == 0 or GetEntityHealth(ped) <= 0 then return false, 'player_incapacitated' end
 
@@ -229,7 +265,9 @@ function GangObjectives.Validate(run, phase, source, payload)
 
     if actionPhaseTypes[phase.type] then
         local target = GangObjectives.GetTarget(run, phase)
-        if not near(source, target, 5.0) then return false, 'not_at_objective' end
+        local propNet = tonumber(payload.propNetworkId)
+        local atProp = propNet and propMatchesPhase(run, phase, propNet) and playerNearProp(run, source, propNet, 3.0)
+        if not atProp and not near(source, target, 5.0) then return false, 'not_at_objective' end
         local player = GangCore.GetPlayer(source)
         local action = player and run.actions and run.actions[player.PlayerData.citizenid]
         if not action
@@ -240,6 +278,15 @@ function GangObjectives.Validate(run, phase, source, payload)
         local requiredSeconds = math.ceil((tonumber(action.durationMs) or 5000) / 1000)
         if os.time() - action.startedAt < math.max(1, requiredSeconds - 1) then
             return false, 'objective_action_too_fast'
+        end
+        if atProp and run.compoundPropMeta and run.compoundPropMeta[propNet] then
+            run.compoundPropMeta[propNet].used = true
+            for _, src in ipairs(GetPlayers()) do
+                local sid = tonumber(src)
+                if sid then
+                    TriggerClientEvent('mrp_gangs:client:compoundPropUsed', sid, run.token, propNet)
+                end
+            end
         end
         run.actions[player.PlayerData.citizenid] = nil
         return true

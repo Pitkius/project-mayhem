@@ -124,6 +124,70 @@ QBCore.Functions.CreateCallback('mrp_jobs:server:oil:deliver', function(src, cb,
     s.data.loaded = 0
     s.data.delivered = (s.data.delivered or 0) + loaded
     Rewards.pay(src, pay, R.account or 'bank', 'oil-delivery', { barrels = loaded })
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    local residueItem = R.residueItem or 'oil_residue'
+    local residueEach = math.max(0, tonumber(R.residuePerBarrel) or 1)
+    local residueGive = residueEach * loaded
+    local residueGot = 0
+    if Player and residueGive > 0 then
+        if Player.Functions.AddItem(residueItem, residueGive, false) then
+            residueGot = residueGive
+            local shared = QBCore.Shared.Items[residueItem]
+            if shared then
+                TriggerClientEvent('qb-inventory:client:ItemBox', src, shared, 'add', residueGive)
+            end
+        end
+    end
+
     JobManager.pushState(s)
-    cb({ ok = true, pay = pay, barrels = loaded })
+    cb({ ok = true, pay = pay, barrels = loaded, residue = residueGot, residueItem = residueItem })
+end)
+
+-- ── Sintetinė guma iš naftos likučių (be anglies) ─────────────────
+QBCore.Functions.CreateCallback('mrp_jobs:server:oil:processRubber', function(src, cb)
+    if not Security.rateLimit(src, 'oil_rubber', 1200) then return cb({ ok = false, reason = 'rate' }) end
+
+    local process = OIL.rubberProcess
+    if not process or not process.coords then
+        return cb({ ok = false, reason = 'no_station' })
+    end
+    if not Security.isNear(src, process.coords, (process.radius or 2.4) + 2.0) then
+        return cb({ ok = false, reason = 'too_far' })
+    end
+
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return cb({ ok = false, reason = 'no_player' }) end
+
+    local residueItem = R.residueItem or 'oil_residue'
+    local need = math.max(1, tonumber(R.rubberInput) or 1)
+    local outPer = math.max(1, tonumber(R.rubberOutput) or 1)
+    local outItem = R.rubberOutputItem or 'rubber'
+
+    local haveData = Player.Functions.GetItemByName(residueItem)
+    local have = haveData and (haveData.amount or 0) or 0
+    if have < need then
+        return cb({ ok = false, reason = 'no_residue', need = need })
+    end
+
+    local crafts = math.floor(have / need)
+    local take = crafts * need
+    local give = crafts * outPer
+    if take < 1 or give < 1 then
+        return cb({ ok = false, reason = 'no_residue', need = need })
+    end
+
+    if not Player.Functions.RemoveItem(residueItem, take, false) then
+        return cb({ ok = false, reason = 'remove_fail' })
+    end
+    if not Player.Functions.AddItem(outItem, give, false) then
+        Player.Functions.AddItem(residueItem, take, false)
+        return cb({ ok = false, reason = 'inv_full' })
+    end
+
+    local sharedOut = QBCore.Shared.Items[outItem]
+    if sharedOut then
+        TriggerClientEvent('qb-inventory:client:ItemBox', src, sharedOut, 'add', give)
+    end
+    cb({ ok = true, used = take, produced = give, item = outItem })
 end)
