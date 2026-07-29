@@ -115,6 +115,24 @@ RegisterNUICallback('setMemberDivision', function(data, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('setMemberDivisionRank', function(data, cb)
+    if activeJob then TriggerServerEvent('mrp_bossmenu:server:setMemberDivisionRank', activeJob, data.targetId, data.rankId) end
+    SetTimeout(400, refreshUi)
+    cb('ok')
+end)
+
+RegisterNUICallback('createDivisionRank', function(data, cb)
+    if activeJob then TriggerServerEvent('mrp_bossmenu:server:createDivisionRank', activeJob, data.divisionId, data.label) end
+    SetTimeout(400, refreshUi)
+    cb('ok')
+end)
+
+RegisterNUICallback('deleteDivisionRank', function(data, cb)
+    if activeJob then TriggerServerEvent('mrp_bossmenu:server:deleteDivisionRank', activeJob, data.rankId) end
+    SetTimeout(400, refreshUi)
+    cb('ok')
+end)
+
 RegisterNUICallback('toggleDuty', function(_, cb)
     TriggerServerEvent('QBCore:ToggleDuty')
     cb('ok')

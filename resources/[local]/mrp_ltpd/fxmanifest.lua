@@ -36,6 +36,7 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
+    'server/division_ranks.lua',
     'server/reception.lua',
     'server/pd_craft.lua',
     'server/surveillance.lua',

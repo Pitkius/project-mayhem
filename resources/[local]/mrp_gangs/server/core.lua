@@ -20,8 +20,10 @@ end
 function GangCore.GetPlayerGang(source)
     local player = GangCore.GetPlayer(source)
     if not player then return nil end
+    local citizenid = tostring(player.PlayerData.citizenid or '')
+    if citizenid == '' then return nil end
 
-    return MySQL.single.await([[
+    local row = MySQL.single.await([[
         SELECT
             g.id AS gang_id,
             g.name,
@@ -43,7 +45,48 @@ function GangCore.GetPlayerGang(source)
         INNER JOIN mrp_gangs_v2 g ON g.id = m.gang_id
         WHERE m.citizenid = ? AND m.status = 'active' AND g.status = 'active'
         LIMIT 1
-    ]], { player.PlayerData.citizenid })
+    ]], { citizenid })
+    if row then return row end
+
+    --- Owner listed on the gang row but missing/inactive in members — heal and treat as boss.
+    local owned = MySQL.single.await([[
+        SELECT
+            g.id AS gang_id,
+            g.name,
+            g.label,
+            g.gang_type,
+            g.owner_citizenid,
+            g.color_hex,
+            g.avatar_url,
+            g.reputation,
+            g.level,
+            g.heat,
+            g.treasury
+        FROM mrp_gangs_v2 g
+        WHERE g.owner_citizenid = ? AND g.status = 'active'
+        LIMIT 1
+    ]], { citizenid })
+    if not owned then return nil end
+
+    MySQL.update.await([[
+        INSERT INTO mrp_gang_members_v2 (gang_id, citizenid, display_name, role_key, status)
+        VALUES (?, ?, ?, 'boss', 'active')
+        ON DUPLICATE KEY UPDATE
+            gang_id = VALUES(gang_id),
+            display_name = VALUES(display_name),
+            role_key = 'boss',
+            status = 'active'
+    ]], { owned.gang_id, citizenid, fullName(player) })
+    if GangRBAC and GangRBAC.SeedDefaultRoles then
+        GangRBAC.SeedDefaultRoles(owned.gang_id)
+    end
+
+    owned.citizenid = citizenid
+    owned.display_name = fullName(player)
+    owned.role_key = 'boss'
+    owned.member_status = 'active'
+    owned.contribution = 0
+    return owned
 end
 
 function GangCore.GetGangById(gangId)
@@ -58,6 +101,23 @@ end
 
 function GangCore.IsGangMember(source)
     return GangCore.GetPlayerGang(source) ~= nil
+end
+
+--- Alias used by other resources (e.g. mrp_drugs).
+function GangCore.IsInGang(source)
+    return GangCore.IsGangMember(source)
+end
+
+function GangCore.GetMemberRoleLabel(gang)
+    if not gang then return nil end
+    if GangRBAC and GangRBAC.GetRole then
+        local role = GangRBAC.GetRole(gang.gang_id, gang.role_key)
+        if role and role.label and role.label ~= '' then return role.label end
+    end
+    for _, role in ipairs(Config.DefaultGangRoles or {}) do
+        if role.key == gang.role_key then return role.label end
+    end
+    return gang.role_key or 'narys'
 end
 
 function GangCore.GetSourceByCitizenId(citizenid)
@@ -141,7 +201,9 @@ end
 
 exports('GetPlayerGang', GangCore.GetPlayerGang)
 exports('IsGangMember', GangCore.IsGangMember)
+exports('IsInGang', GangCore.IsInGang)
 exports('GetGangById', GangCore.GetGangById)
+exports('GetMemberRoleLabel', GangCore.GetMemberRoleLabel)
 
 --- Shared create path for admin command + tablet registration.
 function GangCore.CreateGang(source, gangType, name, label, colorHex)

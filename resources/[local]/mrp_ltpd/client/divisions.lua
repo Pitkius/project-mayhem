@@ -4,6 +4,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local pdGrade = 0
 local pdDivision = 'mp'
 local pdEffective = 'lpm'
+local pdDivisionRank = nil ---@type { id: number, label: string }|nil
 
 local function refreshFromPlayer()
     local P = QBCore.Functions.GetPlayerData()
@@ -16,6 +17,14 @@ local function applySync(data)
     pdGrade = tonumber(data.grade) or pdGrade
     pdDivision = PdDivisions.normalize(data.division or pdDivision)
     pdEffective = PdDivisions.effectiveDivision(pdGrade, pdDivision)
+    if data.divisionRank and data.divisionRank.label then
+        pdDivisionRank = {
+            id = tonumber(data.divisionRank.id),
+            label = data.divisionRank.label,
+        }
+    else
+        pdDivisionRank = nil
+    end
 end
 
 function SyncPdDivisionState()
@@ -34,6 +43,14 @@ end)
 
 exports('GetPdEffectiveDivision', function()
     return pdEffective
+end)
+
+exports('GetPdDivisionRank', function()
+    return pdDivisionRank
+end)
+
+exports('GetPdDivisionRankLabel', function()
+    return pdDivisionRank and pdDivisionRank.label or nil
 end)
 
 exports('CanAccessPdPoint', function(entry)
@@ -63,6 +80,14 @@ local function isPdOnDutyClient()
     return P and P.job and P.job.name == (Config.JobName or 'police') and P.job.onduty
 end
 
+local function currentDivisionTxt()
+    local divLabel = (Config.Divisions[pdEffective] and Config.Divisions[pdEffective].label) or pdEffective
+    if pdDivisionRank and pdDivisionRank.label then
+        return ('%s · %s'):format(divLabel, pdDivisionRank.label)
+    end
+    return divLabel
+end
+
 local function openChooseDivisionMenu()
     if not isPdOnDutyClient() then
         return QBCore.Functions.Notify('Tik tarnyboje.', 'error')
@@ -87,9 +112,7 @@ local function openChooseDivisionMenu()
     local menu = {
         {
             header = 'PD padalinys',
-            txt = ('Dabartinis: %s'):format(
-                (Config.Divisions[pdEffective] and Config.Divisions[pdEffective].label) or pdEffective
-            ),
+            txt = ('Dabartinis: %s'):format(currentDivisionTxt()),
             isMenuHeader = true,
         },
     }

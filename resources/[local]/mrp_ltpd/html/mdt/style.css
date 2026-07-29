@@ -37,6 +37,16 @@ html, body {
   padding: 3px;
 }
 .brand-text span { color: #c4b5fd; font-weight: 600; }
+.mdt-officer-id {
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 42vw;
+}
 .head-actions { gap: 8px; }
 .tabs {
   display: flex;

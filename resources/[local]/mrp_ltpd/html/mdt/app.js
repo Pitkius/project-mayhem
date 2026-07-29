@@ -133,6 +133,14 @@ window.addEventListener('message', (e) => {
     app.classList.remove('is-docked');
     const perms = (d.data && d.data.permissions) || {};
     mdtPermissions = perms;
+    const idEl = document.getElementById('mdtOfficerIdentity');
+    if (idEl) {
+      const bits = [];
+      if (d.data.gradeName) bits.push(d.data.gradeName);
+      if (d.data.divisionLabel) bits.push(d.data.divisionLabel);
+      else if (d.data.divisionRank && d.data.divisionRank.label) bits.push(d.data.divisionRank.label);
+      idEl.textContent = bits.length ? bits.join(' · ') : '';
+    }
     document.getElementById('tabFine').style.display = perms.fine ? '' : 'none';
     document.getElementById('tabWant').style.display = perms.wanted ? '' : 'none';
     const tabArrests = document.getElementById('tabArrests');

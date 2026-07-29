@@ -40,20 +40,58 @@ function fillDivisionSelect(sel, divisions) {
     });
 }
 
+function fillDivRankSelect(sel, divisionId, selectedId) {
+    sel.innerHTML = '';
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = '— Be rango —';
+    sel.appendChild(none);
+    const ranks = (state && state.ranksByDivision && state.ranksByDivision[divisionId]) || [];
+    ranks.forEach((r) => {
+        const o = document.createElement('option');
+        o.value = r.id;
+        o.textContent = r.label;
+        if (selectedId && Number(selectedId) === Number(r.id)) o.selected = true;
+        sel.appendChild(o);
+    });
+}
+
+function refreshMemberDivRankOptions() {
+    const divSel = document.getElementById('memberDivision');
+    const rankSel = document.getElementById('memberDivRank');
+    if (!divSel || !rankSel) return;
+    fillDivRankSelect(rankSel, divSel.value, null);
+}
+
 function renderMembers() {
     const list = document.getElementById('membersList');
     list.innerHTML = '';
     (state.members || []).forEach((m) => {
         const row = document.createElement('div');
         row.className = 'bm-row';
+        const divBits = [];
+        if (m.divisionLabel) divBits.push(m.divisionLabel);
+        else if (m.divisionRankLabel) divBits.push(m.divisionRankLabel);
+        const subExtra = divBits.length ? ` · ${divBits.join(' · ')}` : '';
         row.innerHTML = `
             <div class="bm-row-main">
                 <div class="bm-row-title">${m.name.trim() || 'Nežinomas'}</div>
-                <div class="bm-row-sub">ID ${m.id} · [${m.grade}] ${m.gradeName}</div>
+                <div class="bm-row-sub">ID ${m.id} · [${m.grade}] ${m.gradeName}${subExtra}</div>
             </div>
             <span class="bm-badge ${m.onduty ? 'on' : 'off'}">${m.onduty ? 'Tarnyboje' : 'Ne tarnyboje'}</span>`;
         row.addEventListener('click', () => {
             document.getElementById('memberId').value = m.id;
+            if (m.divisionId) {
+                const divSel = document.getElementById('memberDivision');
+                if (divSel) {
+                    divSel.value = m.divisionId;
+                    fillDivRankSelect(
+                        document.getElementById('memberDivRank'),
+                        m.divisionId,
+                        m.divisionRankId
+                    );
+                }
+            }
         });
         list.appendChild(row);
     });
@@ -158,6 +196,51 @@ function openDivisionEditor(div) {
     document.getElementById('divDesc').value = div?.description || '';
     document.getElementById('divMinGrade').value = div?.minGrade ?? 4;
     document.getElementById('divChoosable').checked = div?.choosable !== false;
+    renderDivisionRanksEditor(div?.id);
+}
+
+function renderDivisionRanksEditor(divisionId) {
+    const section = document.getElementById('divRanksSection');
+    const list = document.getElementById('divRanksList');
+    if (!section || !list) return;
+    if (!divisionId) {
+        section.classList.add('hidden');
+        list.innerHTML = '';
+        return;
+    }
+    section.classList.remove('hidden');
+    list.innerHTML = '';
+    const ranks = (state.ranksByDivision && state.ranksByDivision[divisionId]) || [];
+    ranks.forEach((r) => {
+        const row = document.createElement('div');
+        row.className = 'bm-row bm-rank-row';
+        row.innerHTML = `
+            <div class="bm-row-main">
+                <div class="bm-row-title">${r.label}</div>
+                <div class="bm-row-sub">${r.builtin ? 'Numatytasis' : 'Pasirinktinis'}</div>
+            </div>`;
+        if (!r.builtin && state.canManageRanks) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'bm-btn danger small';
+            btn.textContent = '×';
+            btn.title = 'Ištrinti';
+            btn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                post('deleteDivisionRank', { rankId: r.id });
+            });
+            row.appendChild(btn);
+        } else {
+            const badge = document.createElement('span');
+            badge.className = 'bm-badge';
+            badge.textContent = r.builtin ? 'seed' : '';
+            row.appendChild(badge);
+        }
+        list.appendChild(row);
+    });
+    if (!ranks.length) {
+        list.innerHTML = '<p class="bm-muted">Rangų nėra — pridėk žemiau.</p>';
+    }
 }
 
 function applyState(data) {
@@ -178,9 +261,12 @@ function applyState(data) {
     divTab.classList.toggle('hidden', !data.divisionsEnabled);
     document.getElementById('memberDivisionWrap').classList.toggle('hidden', !data.divisionsEnabled);
     document.getElementById('btnSetDivision').classList.toggle('hidden', !data.divisionsEnabled);
+    document.getElementById('memberDivRankWrap').classList.toggle('hidden', !data.divisionsEnabled);
+    document.getElementById('btnSetDivRank').classList.toggle('hidden', !data.divisionsEnabled);
 
     fillGradeSelect(document.getElementById('memberGrade'), data.grades);
     fillDivisionSelect(document.getElementById('memberDivision'), data.divisions);
+    refreshMemberDivRankOptions();
 
     document.getElementById('salaryEnabled').checked = !!data.salaryEnabled;
 
@@ -252,6 +338,13 @@ document.getElementById('btnSetDivision').addEventListener('click', () => {
         divisionId: document.getElementById('memberDivision').value,
     });
 });
+document.getElementById('btnSetDivRank').addEventListener('click', () => {
+    post('setMemberDivisionRank', {
+        targetId: document.getElementById('memberId').value,
+        rankId: document.getElementById('memberDivRank').value,
+    });
+});
+document.getElementById('memberDivision').addEventListener('change', refreshMemberDivRankOptions);
 
 document.getElementById('btnAddGrade').addEventListener('click', () => post('addGrade'));
 document.getElementById('btnSaveRank').addEventListener('click', () => {
@@ -305,6 +398,13 @@ document.getElementById('btnCancelDivision').addEventListener('click', () => {
     document.getElementById('divisionEditor').classList.add('hidden');
     document.getElementById('divisionEditorHint').classList.remove('hidden');
     editingDivision = null;
+});
+document.getElementById('btnAddDivRank').addEventListener('click', () => {
+    const divId = document.getElementById('divId').value;
+    const label = document.getElementById('divRankNewName').value;
+    if (!divId) return;
+    post('createDivisionRank', { divisionId: divId, label });
+    document.getElementById('divRankNewName').value = '';
 });
 
 window.addEventListener('keydown', (e) => {

@@ -4,10 +4,23 @@
 CREATE TABLE IF NOT EXISTS `ltpd_profiles` (
     `citizenid` varchar(50) NOT NULL,
     `division` varchar(32) NOT NULL DEFAULT 'patrol',
+    `division_rank_id` int(11) DEFAULT NULL,
     `badge` varchar(16) DEFAULT NULL,
     `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
     PRIMARY KEY (`citizenid`),
-    KEY `division` (`division`)
+    KEY `division` (`division`),
+    KEY `division_rank_id` (`division_rank_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--- Vizualūs divizijos rangai (ne laipsniai; be teisių)
+CREATE TABLE IF NOT EXISTS `ltpd_division_ranks` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `division_id` varchar(32) NOT NULL,
+    `label` varchar(128) NOT NULL,
+    `sort_order` int NOT NULL DEFAULT 0,
+    `builtin` tinyint(1) NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    KEY `division_id` (`division_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `ltpd_fines` (

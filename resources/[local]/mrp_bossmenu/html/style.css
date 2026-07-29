@@ -421,6 +421,27 @@ label input, label select {
 
 .bm-note { margin-bottom: 10px; }
 
+.bm-div-ranks {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(167, 139, 250, 0.15);
+}
+
+.bm-div-ranks h5 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.bm-div-ranks-list {
+    max-height: 180px;
+    margin-bottom: 10px;
+}
+
+.bm-rank-row {
+    padding: 8px 10px;
+}
+
 @media (max-width: 900px) {
     .bm-cards { grid-template-columns: 1fr; }
     .bm-split { grid-template-columns: 1fr; }

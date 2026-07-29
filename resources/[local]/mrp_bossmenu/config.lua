@@ -87,7 +87,7 @@ Config.DefaultPoliceDivisions = {
     { id = 'mp', label = 'Miesto patrulių divizija', abbr = 'MP', description = 'Kasdienis patruliavimas', min_grade = 4, choosable = true, sort_order = 10 },
     { id = 'kpd', label = 'Kelių policijos divizija', abbr = 'KPD', description = 'Eismo priežiūra', min_grade = 4, choosable = true, sort_order = 20 },
     { id = 'ktd', label = 'Kriminalinių tyrimų divizija', abbr = 'KTD', description = 'Sunkių nusikaltimų tyrimai', min_grade = 4, choosable = true, sort_order = 30 },
-    { id = 'sor', label = 'Specialiųjų operacijų rinktinė', abbr = 'SOR', description = 'Elitinis taktinis padalinys', min_grade = 4, choosable = true, sort_order = 40 },
+    { id = 'aras', label = 'Antiteroristinių operacijų rinktinė', abbr = 'ARAS', description = 'Elitinis taktinis padalinys', min_grade = 4, choosable = true, sort_order = 40 },
     { id = 'opd', label = 'Oro paramos divizija', abbr = 'OPD', description = 'Sraigtasparniai ir stebėjimas', min_grade = 4, choosable = true, sort_order = 50 },
     { id = 'kd', label = 'Kinologų divizija', abbr = 'KD', description = 'Tarnybiniai šunys', min_grade = 4, choosable = true, sort_order = 60 },
     { id = 'vtd', label = 'Vidaus tyrimų divizija', abbr = 'VTD', description = 'Policijos kontrolė', min_grade = 4, choosable = true, sort_order = 70 },
@@ -99,9 +99,10 @@ Config.DivisionAliases = {
     patrol = 'mp',
     traffic = 'kpd',
     criminal = 'ktd',
-    aro = 'sor',
-    aras = 'sor',
-    ARAS = 'sor',
+    aro = 'aras',
+    sor = 'aras',
+    ARAS = 'aras',
+    ARO = 'aras',
 }
 
 Config.ManagementRadius = 12.0

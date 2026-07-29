@@ -52,6 +52,59 @@ Config.Divisions = {
     admin = { label = 'Administracija', abbr = 'ADM', minGrade = 7, choosable = false },
 }
 
+--[[
+  Divizijos rangai – TIK vizualūs (pareigybės / vaidmuo divizijoje).
+  Ne laipsniai (qb grade) ir NESUTEIKIA teisių / prieigos.
+  Seed į DB `ltpd_division_ranks` paleidimo metu (jei divizijai dar nėra įrašų).
+  Vadas/pavaduotojas gali kurti papildomus per boss meniu.
+]]
+Config.DefaultDivisionRanks = {
+    aras = {
+        'ARO naujokas',
+        'Operatorius',
+        'Vyresnysis operatorius',
+        'Grupės vadas',
+    },
+    ktd = {
+        'Tyrėjo asistentas',
+        'Tyrėjas',
+        'Vyresnysis tyrėjas',
+        'Vyriausiasis tyrėjas',
+    },
+    mp = {
+        'Patrulis',
+        'Vyresnysis patrulis',
+        'Postinis',
+        'Vyriausiasis patrulis',
+    },
+    kpd = {
+        'Kelių patrulis',
+        'Vyresnysis kelių patrulis',
+        'Eismo tyrėjas',
+    },
+    lpm = {
+        'Kursantas',
+        'Jaunesnysis pareigūnas',
+    },
+    opd = {
+        'Oro stebėtojas',
+        'Oro operatorius',
+        'Vyresnysis oro operatorius',
+    },
+    kd = {
+        'Kinologas',
+        'Vyresnysis kinologas',
+    },
+    vtd = {
+        'Kontrolierius',
+        'Vyresnysis kontrolierius',
+    },
+    admin = {
+        'Administratorius',
+        'Vyresnysis administratorius',
+    },
+}
+
 --- Kol nėra atskirų ARAS aprangų įrašų su `divisions = {'aras'}`, ARAS rūbinė rodo tas pačias uniformas
 Config.AroLockerShowsAllUniforms = true
 

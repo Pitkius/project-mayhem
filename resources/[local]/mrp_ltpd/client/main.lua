@@ -669,11 +669,11 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
     end
     data = type(data) == 'table' and data or {}
     local lockerMode = data.lockerMode or 'standard'
-    local title = (lockerMode == 'aro' or lockerMode == 'sor') and 'SOR rūbinė' or 'Tarnybinė apranga'
-    if lockerMode == 'aro' or lockerMode == 'sor' then
+    local title = (lockerMode == 'aro' or lockerMode == 'sor' or lockerMode == 'aras') and 'ARAS rūbinė' or 'Tarnybinė apranga'
+    if lockerMode == 'aro' or lockerMode == 'sor' or lockerMode == 'aras' then
         local eff = exports['mrp_ltpd']:GetPdEffectiveDivision()
-        if eff ~= 'sor' and eff ~= 'aro' then
-            return QBCore.Functions.Notify('SOR rūbinė – tik SOR padaliniui (/pddept).', 'error')
+        if eff ~= 'aras' and eff ~= 'sor' and eff ~= 'aro' then
+            return QBCore.Functions.Notify('ARAS rūbinė – tik ARAS padaliniui (/pddept).', 'error')
         end
     end
     local P = QBCore.Functions.GetPlayerData()
@@ -682,15 +682,19 @@ RegisterNetEvent('mrp_ltpd:client:openDutyLockerMenu', function(data)
     local ped = PlayerPedId()
     local genderKey = getDutyOutfitGenderKey(ped)
     local actions = {}
-    if lockerMode ~= 'aro' and lockerMode ~= 'sor' and grade >= chooseMin then
-        actions[#actions + 1] = { id = 'division', label = 'Keisti padalinį' }
+    if lockerMode ~= 'aro' and lockerMode ~= 'sor' and lockerMode ~= 'aras' and grade >= chooseMin then
+        local rankLabel = exports['mrp_ltpd']:GetPdDivisionRankLabel()
+        actions[#actions + 1] = {
+            id = 'division',
+            label = rankLabel and ('Keisti padalinį (' .. rankLabel .. ')') or 'Keisti padalinį',
+        }
     end
-    if lockerMode ~= 'aro' and lockerMode ~= 'sor' then
+    if lockerMode ~= 'aro' and lockerMode ~= 'sor' and lockerMode ~= 'aras' then
         actions[#actions + 1] = { id = 'civilian', label = 'Civilio apranga', danger = true }
     end
     exports['mrp_duty_locker']:Open({
         title = title,
-        subtitle = lockerMode == 'standard' and 'PD uniformos' or 'Specialiųjų operacijų rinkinys',
+        subtitle = lockerMode == 'standard' and 'PD uniformos' or 'ARAS rinkinys',
         anchor = data.anchor,
         radius = data.radius or 2.6,
         items = buildPdDutyLockerItems(grade, lockerMode, genderKey),

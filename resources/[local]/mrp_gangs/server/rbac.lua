@@ -64,14 +64,34 @@ end
 function GangRBAC.Resolve(source)
     local gang = GangCore.GetPlayerGang(source)
     if not gang then return nil end
+
     local role = GangRBAC.GetRole(gang.gang_id, gang.role_key)
-    if not role then return nil end
+    if not role then
+        GangRBAC.SeedDefaultRoles(gang.gang_id)
+        role = GangRBAC.GetRole(gang.gang_id, gang.role_key)
+    end
+    --- Boss / owner must never drop out of membership just because roles weren't seeded.
+    if not role then
+        local isOwner = tostring(gang.owner_citizenid or '') == tostring(gang.citizenid or '')
+            or tostring(gang.role_key or '') == 'boss'
+        if isOwner then
+            role = {
+                role_key = 'boss',
+                label = 'Bosas',
+                priority = 100,
+                is_owner = 1,
+                permissions = { wildcard = true, set = {} },
+            }
+        else
+            return nil
+        end
+    end
 
     local permissions = {
         wildcard = role.permissions.wildcard,
         set = {},
     }
-    for key in pairs(role.permissions.set) do permissions.set[key] = true end
+    for key in pairs(role.permissions.set or {}) do permissions.set[key] = true end
 
     local responsibilities = MySQL.query.await([[
         SELECT responsibility_key

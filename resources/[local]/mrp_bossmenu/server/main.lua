@@ -166,6 +166,24 @@ local function migrateDivisionIds()
     for oldId, newId in pairs(Config.DivisionAliases or {}) do
         MySQL.update.await('UPDATE ltpd_profiles SET division = ? WHERE division = ?', { newId, oldId })
     end
+    --- sor → aras frakcijos divizijų lentelėje
+    local hasAras = MySQL.scalar.await(
+        "SELECT COUNT(*) FROM mrp_faction_divisions WHERE job_name = 'police' AND division_id = 'aras'"
+    )
+    local hasSor = MySQL.scalar.await(
+        "SELECT COUNT(*) FROM mrp_faction_divisions WHERE job_name = 'police' AND division_id = 'sor'"
+    )
+    if tonumber(hasSor) and tonumber(hasSor) > 0 then
+        if not hasAras or tonumber(hasAras) == 0 then
+            MySQL.update.await(
+                "UPDATE mrp_faction_divisions SET division_id = 'aras', label = 'Antiteroristinių operacijų rinktinė', abbr = 'ARAS' WHERE job_name = 'police' AND division_id = 'sor'"
+            )
+        else
+            MySQL.query.await(
+                "DELETE FROM mrp_faction_divisions WHERE job_name = 'police' AND division_id = 'sor'"
+            )
+        end
+    end
 end
 
 CreateThread(function()
@@ -326,6 +344,28 @@ local function onlineMembers(jobName)
     for src, P in pairs(QBCore.Players) do
         if P and P.PlayerData.job and P.PlayerData.job.name == jobName then
             local pd = P.PlayerData
+            local divisionId, divisionLabel, divisionRankId, divisionRankLabel = nil, nil, nil, nil
+            if jobName == 'police' and GetResourceState('mrp_ltpd') == 'started' then
+                local ok, divLabel = pcall(function()
+                    return exports['mrp_ltpd']:GetDivisionLabelForPlayer(src)
+                end)
+                if ok then divisionLabel = divLabel end
+                local ok2, rank = pcall(function()
+                    return exports['mrp_ltpd']:GetDivisionRankForCitizenid(pd.citizenid)
+                end)
+                if ok2 and rank then
+                    divisionRankId = rank.id
+                    divisionRankLabel = rank.label
+                    divisionId = rank.divisionId
+                end
+                if not divisionId then
+                    local row = MySQL.single.await(
+                        'SELECT division FROM ltpd_profiles WHERE citizenid = ?',
+                        { pd.citizenid }
+                    )
+                    divisionId = row and row.division or nil
+                end
+            end
             out[#out + 1] = {
                 id = src,
                 name = ('%s %s'):format(pd.charinfo.firstname or '', pd.charinfo.lastname or ''),
@@ -333,6 +373,10 @@ local function onlineMembers(jobName)
                 gradeName = pd.job.grade.name,
                 onduty = pd.job.onduty,
                 citizenid = pd.citizenid,
+                divisionId = divisionId,
+                divisionLabel = divisionLabel,
+                divisionRankId = divisionRankId,
+                divisionRankLabel = divisionRankLabel,
             }
         end
     end
@@ -350,6 +394,13 @@ QBCore.Functions.CreateCallback('mrp_bossmenu:server:getDashboard', function(src
     end
     local cfg = jobCfg(jobName)
     local st = Settings[jobName] or { salary_enabled = true, salary_multiplier = 1.0 }
+    local ranksByDivision = {}
+    if jobName == 'police' and GetResourceState('mrp_ltpd') == 'started' then
+        local ok, map = pcall(function()
+            return exports['mrp_ltpd']:GetAllDivisionRanks()
+        end)
+        if ok and type(map) == 'table' then ranksByDivision = map end
+    end
     cb({
         jobName = jobName,
         jobLabel = cfg.label,
@@ -361,6 +412,7 @@ QBCore.Functions.CreateCallback('mrp_bossmenu:server:getDashboard', function(src
         members = onlineMembers(jobName),
         grades = buildGradesList(jobName),
         divisions = buildDivisionsList(jobName),
+        ranksByDivision = ranksByDivision,
         permissionKeys = cfg.permissionKeys or {},
         playerGrade = getGradeLevel(src),
         isBoss = isBossOrDeputy(src, jobName),
@@ -652,6 +704,37 @@ RegisterNetEvent('mrp_bossmenu:server:setMemberDivision', function(jobName, targ
     if not targetId then return end
     TriggerEvent('mrp_bossmenu:internal:setPdDivision', targetId, divisionId)
     notify(src, 'Divizija pakeista.', 'success')
+end)
+
+RegisterNetEvent('mrp_bossmenu:server:setMemberDivisionRank', function(jobName, targetId, rankId)
+    local src = source
+    if jobName ~= 'police' or not canOpenBossMenu(src, jobName) then return end
+    targetId = tonumber(targetId)
+    if not targetId then return end
+    TriggerEvent('mrp_bossmenu:internal:setPdDivisionRank', targetId, rankId)
+    notify(src, 'Divizijos rangas pakeistas.', 'success')
+end)
+
+RegisterNetEvent('mrp_bossmenu:server:createDivisionRank', function(jobName, divisionId, label)
+    local src = source
+    if jobName ~= 'police' or not canManageFunds(src, jobName) then return end
+    if GetResourceState('mrp_ltpd') ~= 'started' then return end
+    local id, err = exports['mrp_ltpd']:CreateDivisionRank(divisionId, label)
+    if not id then
+        return notify(src, err or 'Nepavyko sukurti rango.', 'error')
+    end
+    notify(src, 'Divizijos rangas sukurtas.', 'success')
+end)
+
+RegisterNetEvent('mrp_bossmenu:server:deleteDivisionRank', function(jobName, rankId)
+    local src = source
+    if jobName ~= 'police' or not canManageFunds(src, jobName) then return end
+    if GetResourceState('mrp_ltpd') ~= 'started' then return end
+    local ok, err = exports['mrp_ltpd']:DeleteDivisionRank(rankId)
+    if not ok then
+        return notify(src, err or 'Nepavyko ištrinti.', 'error')
+    end
+    notify(src, 'Divizijos rangas ištrintas.', 'success')
 end)
 
 --- Paycheck iš frakcijos fondo (kviečiama iš qb-core)

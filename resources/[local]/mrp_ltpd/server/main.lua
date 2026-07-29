@@ -4,10 +4,12 @@ local function ensureTables()
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS `ltpd_profiles` (
         `citizenid` varchar(50) NOT NULL,
         `division` varchar(32) NOT NULL DEFAULT 'patrol',
+        `division_rank_id` int(11) DEFAULT NULL,
         `badge` varchar(16) DEFAULT NULL,
         `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
         PRIMARY KEY (`citizenid`),
-        KEY `division` (`division`)
+        KEY `division` (`division`),
+        KEY `division_rank_id` (`division_rank_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;]])
 
     MySQL.query.await([[CREATE TABLE IF NOT EXISTS `ltpd_fines` (
@@ -470,10 +472,19 @@ end
 local function setDivisionForCitizenid(citizenid, division)
     division = PdDivisions.normalize(division)
     if not Config.Divisions[division] then return false end
+    local prev = getDivisionForCitizenid(citizenid)
     MySQL.query.await(
         'INSERT INTO ltpd_profiles (citizenid, division) VALUES (?, ?) ON DUPLICATE KEY UPDATE division = VALUES(division)',
         { citizenid, division }
     )
+    --- Padalinio keitimas nuvalo divizijos rangą, jei jis nepriklauso naujai divizijai
+    if prev ~= division then
+        pcall(function()
+            if LtpdClearDivisionRankIfMismatch then
+                LtpdClearDivisionRankIfMismatch(citizenid, division)
+            end
+        end)
+    end
     return true
 end
 
@@ -516,6 +527,7 @@ local function syncDivisionClient(src)
         storedDivision = getDivisionForCitizenid(P.PlayerData.citizenid),
         grade = grade,
         effective = PdDivisions.effectiveDivision(grade, div),
+        divisionRank = LtpdGetDivisionRankPayload and LtpdGetDivisionRankPayload(P.PlayerData.citizenid) or nil,
     })
 end
 
@@ -544,6 +556,7 @@ local function pdAccessPayload(src)
         division = stored,
         grade = grade,
         effective = PdDivisions.effectiveDivision(grade, stored),
+        divisionRank = LtpdGetDivisionRankPayload and LtpdGetDivisionRankPayload(P.PlayerData.citizenid) or nil,
     }
 end
 
@@ -630,7 +643,14 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:mdtContext', function(src, cb)
         },
         division = PdDivisions.effectiveDivision(getGrade(src), getDivisionForCitizenid(P.PlayerData.citizenid)),
         divisionStored = getDivisionForCitizenid(P.PlayerData.citizenid),
+        divisionRank = LtpdGetDivisionRankPayload and LtpdGetDivisionRankPayload(P.PlayerData.citizenid) or nil,
+        divisionLabel = divisionLabelForPlayer(src),
         grade = getGrade(src),
+        gradeName = P.PlayerData.job.grade and P.PlayerData.job.grade.name or nil,
+        officerName = ('%s %s'):format(
+            P.PlayerData.charinfo and P.PlayerData.charinfo.firstname or '',
+            P.PlayerData.charinfo and P.PlayerData.charinfo.lastname or ''
+        ),
         permissions = {
             fullSearch = mdtFullAccess(src),
             fine = hasPerm(src, 'mdt_fine'),
@@ -1313,10 +1333,20 @@ local function divisionLabelForPlayer(src)
     local stored = getDivisionForCitizenid(P.PlayerData.citizenid)
     local effective = PdDivisions.effectiveDivision(grade, stored)
     local cfg = Config.Divisions and Config.Divisions[effective]
+    local divLabel = (cfg and (cfg.abbr or cfg.label)) or effective
+    local rankLabel = LtpdGetDivisionRankLabel and LtpdGetDivisionRankLabel(P.PlayerData.citizenid) or nil
+    if rankLabel and rankLabel ~= '' then
+        return ('%s · %s'):format(divLabel, rankLabel)
+    end
     return (cfg and cfg.label) or effective
 end
 
 exports('GetDivisionLabelForPlayer', divisionLabelForPlayer)
+exports('GetDivisionRankLabelForPlayer', function(src)
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P or not jobIsPd(P.PlayerData.job) then return nil end
+    return LtpdGetDivisionRankLabel and LtpdGetDivisionRankLabel(P.PlayerData.citizenid) or nil
+end)
 
 --- PD sirenos įranga: entity statebags (networked vehicles) + išsaugojimas player_vehicles.mods
 local EMERGENCY_MOD_KEYS = { mrpPdKit = true, mrpEmsKit = true }

@@ -69,12 +69,14 @@
                             <label>Serverio ID<input type="number" id="memberId" min="1" placeholder="ID" /></label>
                             <label>Rangas<select id="memberGrade"></select></label>
                             <label class="hidden" id="memberDivisionWrap">Divizija<select id="memberDivision"></select></label>
+                            <label class="hidden" id="memberDivRankWrap">Divizijos rangas<select id="memberDivRank"></select></label>
                             <div class="bm-actions-row">
                                 <button type="button" class="bm-btn" id="btnHire">Įdarbinti</button>
                                 <button type="button" class="bm-btn danger" id="btnFire">Atleisti</button>
                                 <button type="button" class="bm-btn secondary" id="btnSetGrade">Keisti rangą</button>
                             </div>
                             <button type="button" class="bm-btn secondary hidden" id="btnSetDivision">Keisti diviziją</button>
+                            <button type="button" class="bm-btn secondary hidden" id="btnSetDivRank">Keisti divizijos rangą</button>
                         </div>
                     </div>
                 </section>
@@ -130,6 +132,13 @@
                                 <label>Aprašymas<input type="text" id="divDesc" /></label>
                                 <label>Min. rangas<input type="number" id="divMinGrade" min="0" /></label>
                                 <label><input type="checkbox" id="divChoosable" checked /> Galima pasirinkti pareigūnui</label>
+                                <div class="bm-div-ranks" id="divRanksSection">
+                                    <h5>Divizijos rangai <span class="bm-muted">(tik vizualūs)</span></h5>
+                                    <p class="bm-muted bm-list-hint">Nepaveikia teisių — tik pavadinimas MDT / /job / sąraše.</p>
+                                    <div class="bm-list bm-div-ranks-list" id="divRanksList"></div>
+                                    <label>Naujas rangas<input type="text" id="divRankNewName" maxlength="128" placeholder="pvz. Operatorius" /></label>
+                                    <button type="button" class="bm-btn small" id="btnAddDivRank">+ Pridėti rangą</button>
+                                </div>
                                 <div class="bm-actions-row">
                                     <button type="button" class="bm-btn" id="btnSaveDivision">Išsaugoti</button>
                                     <button type="button" class="bm-btn secondary" id="btnCancelDivision">Atšaukti</button>

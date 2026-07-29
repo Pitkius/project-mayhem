@@ -32,3 +32,5 @@ dependencies {
     'qb-core',
     'oxmysql',
 }
+
+-- optional: mrp_ltpd (PD divizijos + divizijos rangai)

@@ -297,7 +297,34 @@ end, 'admin')
 -- Gang
 
 QBCore.Commands.Add('gang', Lang:t('command.gang.help'), {}, false, function(source)
-    local PlayerGang = QBCore.Functions.GetPlayer(source).PlayerData.gang
+    --- Real gangs live in mrp_gangs (mrp_gang_members_v2), not PlayerData.gang / QBShared.Gangs.
+    if GetResourceState('mrp_gangs') == 'started' then
+        local ok, gang = pcall(function()
+            return exports['mrp_gangs']:GetPlayerGang(source)
+        end)
+        if ok then
+            if not gang then
+                return TriggerClientEvent('QBCore:Notify', source, 'Nepriklausai gaujai.', 'error')
+            end
+            local roleLabel = gang.role_key or 'narys'
+            local labelOk, exportedLabel = pcall(function()
+                return exports['mrp_gangs']:GetMemberRoleLabel(gang)
+            end)
+            if labelOk and exportedLabel and exportedLabel ~= '' then
+                roleLabel = exportedLabel
+            end
+            return TriggerClientEvent('QBCore:Notify', source, Lang:t('info.gang_info', {
+                value = gang.label,
+                value2 = roleLabel,
+            }))
+        end
+    end
+
+    local Player = QBCore.Functions.GetPlayer(source)
+    local PlayerGang = Player and Player.PlayerData.gang
+    if not PlayerGang or not PlayerGang.name or PlayerGang.name == 'none' then
+        return TriggerClientEvent('QBCore:Notify', source, 'Nepriklausai gaujai.', 'error')
+    end
     TriggerClientEvent('QBCore:Notify', source, Lang:t('info.gang_info', { value = PlayerGang.label, value2 = PlayerGang.grade.name }))
 end, 'user')
 
