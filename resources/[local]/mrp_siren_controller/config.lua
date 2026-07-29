@@ -78,9 +78,9 @@ Config.FleetVehicles = {
 }
 
 --- Modeliai, kuriems F6 režimą map'inam į ELS-FiveM (ne SetVehicleSiren).
---- mrpd16/mrpd23 = native carcols (ne ELS extras).
+--- Skoda (mrpd16/23): physical extras on the model via ELS — never DrawLight orbs.
 Config.ElsFleetVehicles = {
-    'mrpd13', 'mrpd14', 'mrpd15', 'mrpd21', 'mrpd22',
+    'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16', 'mrpd21', 'mrpd22', 'mrpd23',
     'ems1', 'ems2',
 }
 

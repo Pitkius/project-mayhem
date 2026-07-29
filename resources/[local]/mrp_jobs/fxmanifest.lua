@@ -51,11 +51,11 @@ server_scripts {
 
 ui_page 'html/index.html'
 
+-- Optional NPC VO: add html/audio/<orderId>_<n>.ogg and list 'html/audio/*.ogg' in files when present.
 files {
     'html/index.html',
     'html/app.js',
     'html/styles.css',
-    'html/audio/*.ogg',
 }
 
 dependencies {

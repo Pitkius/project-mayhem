@@ -658,9 +658,15 @@ CreateThread(function()
                 if not DoesEntityExist(veh) then
                     cleanupVehicleEmergency(veh)
                 else
-                    local mode = meta.mode or select(1, readVehicleStateBag(veh))
+                    local mode, kit = readVehicleStateBag(veh)
                     meta.mode = mode
-                    if (mode == 'lights' or mode == 'full') and meta.supportsNative ~= true then
+                    --- Script orbs / DrawLight ONLY for civilian emergency-kit cars.
+                    --- Fleet PD (native carcols OR ELS model extras) never get floating lights.
+                    if kit == true
+                        and (mode == 'lights' or mode == 'full')
+                        and meta.supportsNative ~= true
+                        and not modelIsFleet(GetEntityModel(veh))
+                    then
                         local vehCoords = GetEntityCoords(veh)
                         local dist = #(pCoords - vehCoords)
                         if dist <= drawDistance then

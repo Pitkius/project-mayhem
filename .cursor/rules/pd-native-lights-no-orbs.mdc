@@ -1,0 +1,29 @@
+---
+description: PD fleet cars with model emergency lights must never get script/ELS floating orbs
+globs: resources/[local]/mrp_ltpd/**/*,resources/[local]/mrp_siren_controller/**/*,resources/[standalone]/ELS-FiveM/vcf/mrpd*.xml,resources/[cars]/mrp_*/**/*
+alwaysApply: true
+---
+
+# PD emergency lights — no floating orbs
+
+## Hard rule
+
+If a police fleet vehicle already has **native model lamps** (carcols / siren bones) **or** **ELS extras that are physical lamp meshes on the vehicle**, **never** add:
+
+- script `DrawLight` / `DrawMarker` / prop lightbar orbs
+- ELS `AllowEnvLight="true"` environmental glow orbs
+- copied foreign `carcols` that cast floating coronas away from the model
+
+## How lights must work
+
+| Vehicle type | Mechanism |
+|---|---|
+| Native Non-ELS (`emergencyLights = 'native'`, e.g. mrpd9–12, mrpd24–26, undercover) | `SetVehicleSiren` + that model's own `carcols` / siren bones only |
+| ELS extras (`emergencyLights = 'els'`, e.g. mrpd13–16, mrpd21–23) | ELS toggles **extras on the model**; VCF must use `AllowEnvLight="false"` |
+| Civilian + `pd_emergency_kit` only | Script lightbar / DrawLight allowed |
+
+## Do not
+
+- Put Skoda / ELS models on `SetVehicleSiren` with another car's carcols
+- Draw script flash for any `Config.FleetVehicles` / `BuiltInFleetModels` / `ElsFleetVehicles` entry
+- “Fix” missing lights by adding floating orbs
