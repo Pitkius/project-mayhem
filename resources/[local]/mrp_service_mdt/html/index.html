@@ -21,6 +21,7 @@
       <button type="button" data-tab="crews" class="tab">Ekipažai</button>
       <button type="button" data-tab="units" class="tab">Žemėlapis</button>
       <button type="button" data-tab="invoices" class="tab" id="tabInvoices">Sąskaitos</button>
+      <button type="button" data-tab="incidents" class="tab" id="tabIncidents">Bylos</button>
     </nav>
     <main>
       <section id="panel-calls" class="panel">
@@ -88,6 +89,50 @@
         <p id="invStatus" class="muted" role="status"></p>
         <div id="invResults" class="results"></div>
       </section>
+      <section id="panel-incidents" class="panel hidden">
+        <div id="emsIncPanel">
+        <div class="row inc-toolbar">
+          <input type="text" id="emsIncSearch" placeholder="Paieška (numeris, aprašymas)…" />
+          <button type="button" id="emsIncRefresh" class="btn">Atnaujinti</button>
+          <label class="inc-check"><input type="checkbox" id="emsIncOpenOnly" checked /> Tik atviros</label>
+          <label class="inc-check"><input type="checkbox" id="emsIncMine" /> Tik mano</label>
+          <button type="button" id="emsIncNewToggle" class="btn primary">Nauja byla</button>
+        </div>
+        <div id="emsIncCreateBox" class="card inc-create hidden">
+          <label>Trumpas aprašymas <input type="text" id="emsIncNewSummary" maxlength="512" placeholder="pvz. eismo įvykis — sužalotas vairuotojas" /></label>
+          <label>Skundas <input type="text" id="emsIncNewPresentation" maxlength="200" placeholder="Trauma / skausmas krūtinėje…" /></label>
+          <button type="button" id="emsIncCreate" class="btn primary">Sukurti</button>
+          <p id="emsIncCreateStatus" class="muted" role="status"></p>
+        </div>
+        <div class="inc-split">
+          <div id="emsIncList" class="inc-list results"><div class="muted">Kraunama…</div></div>
+          <div id="emsIncDetail" class="inc-detail">
+            <div class="muted">Pasirink bylą iš sąrašo arba sukurk naują.</div>
+          </div>
+        </div>
+        </div>
+        <div id="mechIncPanel" class="hidden">
+        <div class="row inc-toolbar">
+          <input type="text" id="mechIncSearch" placeholder="Paieška (numeris, aprašymas, numeriai)…" />
+          <button type="button" id="mechIncRefresh" class="btn">Atnaujinti</button>
+          <label class="inc-check"><input type="checkbox" id="mechIncOpenOnly" checked /> Tik atviros</label>
+          <label class="inc-check"><input type="checkbox" id="mechIncMine" /> Tik mano</label>
+          <button type="button" id="mechIncNewToggle" class="btn primary">Nauja byla</button>
+        </div>
+        <div id="mechIncCreateBox" class="card inc-create hidden">
+          <label>Trumpas aprašymas <input type="text" id="mechIncNewSummary" maxlength="512" placeholder="pvz. gedimas kelyje — variklis neužsiveda" /></label>
+          <label>Gedimas <input type="text" id="mechIncNewFault" maxlength="200" placeholder="Variklis / stabdžiai / nutempimas…" /></label>
+          <button type="button" id="mechIncCreate" class="btn primary">Sukurti</button>
+          <p id="mechIncCreateStatus" class="muted" role="status"></p>
+        </div>
+        <div class="inc-split">
+          <div id="mechIncList" class="inc-list results"><div class="muted">Kraunama…</div></div>
+          <div id="mechIncDetail" class="inc-detail">
+            <div class="muted">Pasirink bylą iš sąrašo arba sukurk naują.</div>
+          </div>
+        </div>
+        </div>
+      </section>
     </main>
     <footer class="hint" id="mdtFooter">Server-side tikrinimas • Fivempro Service MDT</footer>
   </div>
@@ -96,5 +141,7 @@
   <script src="gtav_map_core.js"></script>
   <script src="mdt_map.js"></script>
   <script src="app.js"></script>
+  <script src="incidents.js"></script>
+  <script src="mechanic_incidents.js"></script>
 </body>
 </html>

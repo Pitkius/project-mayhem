@@ -14,6 +14,9 @@ local function isPdOnDuty()
 end
 
 local function isSurvMaintenance()
+    if Config.Surveillance and type(Config.Surveillance.IsMaintenance) == 'function' then
+        return Config.Surveillance.IsMaintenance()
+    end
     return Config.Surveillance and Config.Surveillance.MaintenanceMode == true
 end
 
@@ -106,7 +109,7 @@ RegisterNUICallback('bodycamWatch', function(data, cb)
         SendNUIMessage({ action = 'bodycamOverlay', active = true, targetId = res.targetId })
         TriggerEvent('mrp_ltpd:client:mdtCctvFocus', false)
         cb(res)
-    end, data and data.targetId)
+    end, data and data.targetId, data and data.incidentId)
 end)
 
 RegisterNUICallback('bodycamStop', function(_, cb)

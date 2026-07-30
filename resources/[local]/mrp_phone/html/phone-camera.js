@@ -158,7 +158,7 @@
     });
 
     syncUi();
-    startLive();
+    startLive().catch(() => {});
   }
 
   window.renderCameraApp = function renderCameraApp(content) {
@@ -190,7 +190,7 @@
   window.renderGalleryApp = function renderGalleryApp(content) {
     content.className = "scroll-body camera-body";
     setCameraLiveMode(false);
-    window.PhoneNui("cameraStopLive", {});
+    window.PhoneNui("cameraStopLive", {}).catch(() => {});
     content.innerHTML = `
       <div style="padding:10px 12px 4px;display:flex;justify-content:space-between;align-items:center">
         <b>Galerija</b>

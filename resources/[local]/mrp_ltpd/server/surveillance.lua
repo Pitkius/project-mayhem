@@ -8,11 +8,54 @@ local function hasPerm(src, key)
     return exports['mrp_ltpd']:HasLtpdPermission(src, key)
 end
 
+--- Phase 2: legacy grade key OR mrp_mdt_core named permission (see server/main.lua).
+local function hasPermV2(src, legacyKey, corePerm)
+    return exports['mrp_ltpd']:HasLtpdPermissionV2(src, legacyKey, corePerm)
+end
+
+local function mdtAudit(action, opts)
+    return exports['mrp_ltpd']:MdtAudit(action, opts)
+end
+
+local CORE = 'mrp_mdt_core'
+
+local function coreReady()
+    return GetResourceState(CORE) == 'started'
+end
+
+--- Link CCTV / bodycam view to an incident (explicit id or officer's active case).
+local function linkSurveillanceToIncident(src, refType, refId, label, meta, incidentId)
+    if not coreReady() then return end
+    incidentId = tonumber(incidentId)
+    if not incidentId then
+        local ok, incident = pcall(function()
+            return exports[CORE]:ResolveOfficerIncident(src, { allowClosed = false })
+        end)
+        if ok and type(incident) == 'table' and incident.id then
+            incidentId = incident.id
+        end
+    end
+    if not incidentId then return end
+
+    pcall(function()
+        exports[CORE]:AddIncidentRef(incidentId, {
+            ref_type = refType,
+            ref_id = tostring(refId),
+            ref_table = refType == 'cctv' and 'ltpd_cctv_views' or 'ltpd_bodycam_sessions',
+            label = label,
+            meta = meta,
+        }, { source = src, resource = 'mrp_ltpd' })
+    end)
+end
+
 local function isOnDuty(src)
     return exports['mrp_ltpd']:IsLtpdOnDuty(src)
 end
 
 local function isSurvMaintenance()
+    if Config.Surveillance and type(Config.Surveillance.IsMaintenance) == 'function' then
+        return Config.Surveillance.IsMaintenance()
+    end
     return Config.Surveillance and Config.Surveillance.MaintenanceMode == true
 end
 
@@ -264,7 +307,7 @@ local function buildBodycamList()
 end
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:cctvList', function(src, cb)
-    if not hasPerm(src, 'mdt_cctv') then return cb({ ok = false }) end
+    if not hasPermV2(src, 'mdt_cctv', 'MDT_CCTV') then return cb({ ok = false }) end
     if isSurvMaintenance() then
         return cb({
             ok = true,
@@ -283,11 +326,11 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:cctvList', function(src, cb)
     })
 end)
 
-QBCore.Functions.CreateCallback('mrp_ltpd:server:cctvWatch', function(src, cb, camId)
+QBCore.Functions.CreateCallback('mrp_ltpd:server:cctvWatch', function(src, cb, camId, incidentId)
     if isSurvMaintenance() then
         return cb({ ok = false, msg = survMaintenanceMessage() })
     end
-    if not hasPerm(src, 'mdt_cctv') then return cb({ ok = false, msg = 'Neturite teisės.' }) end
+    if not hasPermV2(src, 'mdt_cctv', 'MDT_CCTV') then return cb({ ok = false, msg = 'Neturite teisės.' }) end
     if not nearCctvStation(src) then
         return cb({ ok = false, msg = 'CCTV per MDT – tik iš komisariato zonos.' })
     end
@@ -298,6 +341,20 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:cctvWatch', function(src, cb, c
     local coords = resolveCamCoords(cam)
     if not coords then return cb({ ok = false, msg = 'Kamera neteisingai sukonfigūruota.' }) end
     local lookAt = resolveCamLookAt(cam, coords)
+
+    mdtAudit('cctv.open', {
+        source = src,
+        target = cam.id,
+        meta = { label = cam.label, site = cam.siteId, zone = cam.zone, audio = cam.audio == true },
+        dedupeKey = cam.id,
+    })
+
+    linkSurveillanceToIncident(src, 'cctv', cam.id, cam.label, {
+        site = cam.siteId,
+        zone = cam.zone,
+        incident_context = incidentId ~= nil,
+    }, incidentId)
+
     cb({
         ok = true,
         camId = cam.id,
@@ -313,7 +370,7 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:cctvWatch', function(src, cb, c
 end)
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:bodycamList', function(src, cb)
-    if not hasPerm(src, 'mdt_bodycam') then return cb({ ok = false }) end
+    if not hasPermV2(src, 'mdt_bodycam', 'MDT_BODYCAM') then return cb({ ok = false }) end
     if isSurvMaintenance() then
         return cb({
             ok = true,
@@ -325,11 +382,11 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:bodycamList', function(src, cb)
     cb({ ok = true, feeds = buildBodycamList() })
 end)
 
-QBCore.Functions.CreateCallback('mrp_ltpd:server:bodycamWatch', function(src, cb, targetId)
+QBCore.Functions.CreateCallback('mrp_ltpd:server:bodycamWatch', function(src, cb, targetId, incidentId)
     if isSurvMaintenance() then
         return cb({ ok = false, msg = survMaintenanceMessage() })
     end
-    if not hasPerm(src, 'mdt_bodycam') then return cb({ ok = false }) end
+    if not hasPermV2(src, 'mdt_bodycam', 'MDT_BODYCAM') then return cb({ ok = false }) end
     targetId = tonumber(targetId)
     if not targetId or targetId < 1 then return cb({ ok = false, msg = 'Neteisingas ID.' }) end
     local tPed = GetPlayerPed(targetId)
@@ -338,6 +395,22 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:bodycamWatch', function(src, cb
     if not hasBodycamItem(targetId) then return cb({ ok = false, msg = 'Pareigūnas neturi bodycam.' }) end
     local st = Player(targetId).state.ltpdBodycam
     if not st or st == false then return cb({ ok = false, msg = 'Kūno kamera neprieinama.' }) end
+
+    mdtAudit('bodycam.open', {
+        source = src,
+        target = tostring(targetId),
+        meta = { officer_name = type(st) == 'table' and st.name or nil },
+        dedupeKey = tostring(targetId),
+    })
+
+    local sessionId = ('bc-%s-%s'):format(targetId, type(st) == 'table' and (st.startedAt or os.time()) or os.time())
+    local officerLabel = type(st) == 'table' and (st.callsign or st.name) or ('ID ' .. targetId)
+    linkSurveillanceToIncident(src, 'bodycam', sessionId, officerLabel, {
+        target_server_id = targetId,
+        callsign = type(st) == 'table' and st.callsign or nil,
+        incident_context = incidentId ~= nil,
+    }, incidentId)
+
     cb({ ok = true, targetId = targetId })
 end)
 
@@ -496,15 +569,41 @@ local function tamperCam(camId, seconds, reason)
     return true
 end
 
-RegisterNetEvent('mrp_ltpd:server:cctvTamper', function(camId, seconds)
+--- P0: net event removed — clients must not tamper CCTV directly.
+--- Robbery / heist scripts: exports['mrp_ltpd']:TamperCctv / TamperCctvRadius only.
+RegisterNetEvent('mrp_ltpd:server:cctvTamper', function(_camId, _seconds)
     local src = source
-  --- Tik ne-pd (nusikaltėliai) – serveris gali tikrinti job jei reikia; dabar leidžiame bet kam su event (naudok export iš robbery)
-    camId = tostring(camId or '')
-    if camById(camId) then tamperCam(camId, seconds, 'tamper') end
+    print(('[mrp_ltpd] blocked cctvTamper net event from src=%s (use TamperCctv export)'):format(tostring(src)))
+    if GetResourceState('mrp_mdt_core') == 'started' then
+        pcall(function()
+            exports['mrp_mdt_core']:AuditLog('cctv.tamper_blocked', {
+                source = src,
+                resource = 'mrp_ltpd',
+                target = tostring(_camId or ''),
+                meta = { reason = 'open_net_event_disabled' },
+            })
+        end)
+    end
 end)
 
+local function auditCctvTamper(kind, meta)
+    if GetResourceState('mrp_mdt_core') ~= 'started' then return end
+    pcall(function()
+        exports['mrp_mdt_core']:AuditLog('cctv.tamper', {
+            resource = GetInvokingResource() or 'mrp_ltpd',
+            target = kind,
+            meta = meta,
+        })
+    end)
+end
+
 exports('TamperCctv', function(camId, seconds)
-    return tamperCam(tostring(camId), seconds)
+    camId = tostring(camId or '')
+    local ok = camById(camId) and tamperCam(camId, seconds, 'tamper') or false
+    if ok then
+        auditCctvTamper(camId, { seconds = seconds, invoking = GetInvokingResource() })
+    end
+    return ok
 end)
 
 exports('TamperCctvRadius', function(coords, radius, seconds)
@@ -526,6 +625,15 @@ exports('TamperCctvRadius', function(coords, radius, seconds)
             n = n + 1
         end
         ::continue::
+    end
+    if n > 0 then
+        auditCctvTamper('radius', {
+            count = n,
+            radius = radius,
+            seconds = seconds,
+            invoking = GetInvokingResource(),
+            x = cx, y = cy, z = cz,
+        })
     end
     return n
 end)

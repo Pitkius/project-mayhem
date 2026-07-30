@@ -8,6 +8,19 @@ Config.Surveillance.MaintenanceMode = true
 Config.Surveillance.MaintenanceMessage =
     'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.'
 
+--- Phase 6 (MDT V2): when true, CCTV + bodycam MDT tabs work for on-duty PD with RBAC
+--- even while MaintenanceMode stays true for RP „finansavimo“ story elsewhere.
+--- Set false to force the legacy full-outage overlay (both flags must be considered).
+Config.Surveillance.MdtV2EnableSurveillance = true
+
+--- Single gate for server + client surveillance availability.
+function Config.Surveillance.IsMaintenance()
+    if Config.Surveillance.MdtV2EnableSurveillance == true then
+        return false
+    end
+    return Config.Surveillance.MaintenanceMode == true
+end
+
 Config.Surveillance.BodycamItem = 'police_bodycam'
 
 --- CCTV per MDT: leidžiama su mdt_cctv. Fizinis terminalas – tik prie stoties.
@@ -58,6 +71,7 @@ Config.Surveillance.CctvCategories = {
 --[[
   coords = kameros pozicija, lookAt = kur žiūri.
   Apiplėšimai: exports['mrp_ltpd']:TamperCctv(camId, seconds) arba TamperCctvRadius(coords, radius, seconds)
+  Net event mrp_ltpd:server:cctvTamper is DISABLED (Phase 1 P0).
 ]]
 Config.Surveillance.CctvCameras = {
     -- Bankai (Fleeca / Pacific) — pozicija iš CCTV prop

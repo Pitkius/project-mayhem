@@ -142,8 +142,9 @@ local function equipWeaponInHand(weaponData)
     if not HasPedGotWeapon(ped, weaponHash, false) then
         GiveWeaponToPed(ped, weaponHash, math.max(ammo, 0), false, false)
     end
-    WeaponAmmo.applyWeaponAmmoState(ped, weaponHash, ammo, weaponData)
+    -- Priedai prieš ammo — GetMaxAmmoInClip / CLIP_02 turi galioti prieš talpos skaičiavimą.
     applyWeaponAttachmentsAndTint(ped, weaponHash, weaponData.info)
+    WeaponAmmo.applyWeaponAmmoState(ped, weaponHash, ammo, weaponData)
     SetPedCurrentWeaponVisible(ped, true, false, false, false)
     SetCurrentPedWeapon(ped, weaponHash, true)
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
@@ -481,8 +482,8 @@ function applyHolsteredWeaponsFromInventory(force, skipHandEquip)
         end
 
         GiveWeaponToPed(ped, h, ammo, hidden, false)
-        WeaponAmmo.applyWeaponAmmoState(ped, h, ammo, item)
         applyWeaponAttachmentsAndTint(ped, h, item.info)
+        WeaponAmmo.applyWeaponAmmoState(ped, h, ammo, item)
         if hidden then
             SetPedWeaponTintIndex(ped, h, tonumber(item.info and item.info.tint) or 0)
         end
@@ -498,8 +499,8 @@ function applyHolsteredWeaponsFromInventory(force, skipHandEquip)
             if activeItem then
                 local ammo = tonumber(activeItem.info and activeItem.info.ammo) or 0
                 GiveWeaponToPed(ped, shownHash, math.max(ammo, 0), false, false)
-                WeaponAmmo.applyWeaponAmmoState(ped, shownHash, ammo, activeItem)
                 applyWeaponAttachmentsAndTint(ped, shownHash, activeItem.info)
+                WeaponAmmo.applyWeaponAmmoState(ped, shownHash, ammo, activeItem)
             end
         end
         local activeItem = currentWeapon and resolveCurrentWeaponDataByName(currentWeapon)
@@ -637,6 +638,27 @@ end)
 RegisterNetEvent('qb-weapons:client:EquipTint', function(weapon, tint)
     local player = PlayerPedId()
     SetPedWeaponTintIndex(player, weapon, tint)
+end)
+
+--- Serveris uždeda/nuima komponentą — klientas privalo pritaikyti, kad GetMaxAmmoInClip atsinaujintų.
+RegisterNetEvent('qb-weapons:client:SetWeaponComponent', function(weaponHash, component, enabled)
+    local ped = PlayerPedId()
+    if not ped or ped == 0 or not weaponHash or not component then return end
+    weaponHash = type(weaponHash) == 'number' and weaponHash or joaat(tostring(weaponHash))
+    component = type(component) == 'number' and component or joaat(tostring(component))
+    if enabled then
+        GiveWeaponComponentToPed(ped, weaponHash, component)
+    else
+        RemoveWeaponComponentFromPed(ped, weaponHash, component)
+    end
+    local selected = resolveSelectedWeaponData(weaponHash)
+    local weaponData = resolveCurrentWeaponDataForPed(weaponHash, selected)
+    if weaponData then
+        local ammo = tonumber(weaponData.info and weaponData.info.ammo) or 0
+        WeaponAmmo.applyWeaponAmmoState(ped, weaponHash, ammo, weaponData)
+    else
+        WeaponAmmo.normalizePedAmmo(ped, weaponHash, selected)
+    end
 end)
 
 RegisterNetEvent('qb-weapons:client:SetCurrentWeapon', function(data, bool)

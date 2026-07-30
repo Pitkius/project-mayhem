@@ -952,8 +952,36 @@ RegisterNetEvent('mrp_trucking:server:updateCondition', function(conditionPct)
     end
 end)
 
+--- Illegal cargo heat — must use CreateDispatchCall export (createServiceCall net is service-only).
+local lastSuspiciousAlertAt = {}
+RegisterNetEvent('mrp_trucking:server:suspiciousCargoAlert', function()
+    local src = source
+    local delivery = activeDeliveries[src]
+    if not delivery or not delivery.contract or delivery.contract.illegal ~= true then return end
+    if GetResourceState('mrp_dispatch') ~= 'started' then return end
+
+    local now = GetGameTimer()
+    local last = lastSuspiciousAlertAt[src] or 0
+    if now - last < 60000 then return end
+    lastSuspiciousAlertAt[src] = now
+
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return end
+    local c = GetEntityCoords(ped)
+    pcall(function()
+        exports['mrp_dispatch']:CreateDispatchCall(
+            'police',
+            'suspicious_vehicle',
+            { x = c.x, y = c.y, z = c.z },
+            'Įtartinas krovinys',
+            src
+        )
+    end)
+end)
+
 AddEventHandler('playerDropped', function()
     activeDeliveries[source] = nil
+    lastSuspiciousAlertAt[source] = nil
 end)
 
 exports('GetTruckerProfile', function(src)

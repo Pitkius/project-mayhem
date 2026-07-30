@@ -14,7 +14,7 @@ Config.Services = {
         panicSound = false,
     },
     mechanic = {
-        jobs = { 'mechanic' },
+        jobs = { 'mechanic', 'mechanic2', 'mechanic3', 'beeker', 'bennys' },
         label = 'Mechanikai',
         color = 47,
         panicSound = false,
@@ -43,7 +43,8 @@ Config.CallStatus = {
 }
 
 Config.MaxActiveCalls = 120
-Config.BlipRefreshMs = 300
+--- Server push interval for live unit/call blips (was 300ms — Phase 7 raised for less overlap with NUI).
+Config.BlipRefreshMs = 1500
 --- Civiliniai/teisėti iškvietimai iš telefono / skriptų: anti-spam (ms vienam žaidėjui)
 Config.CreateCallCooldownMs = 4000
 

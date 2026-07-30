@@ -212,6 +212,76 @@ local function pushServiceUpdate(service)
     end
 end
 
+local function mdtCoreReady()
+    return GetResourceState('mrp_mdt_core') == 'started'
+end
+
+--- Not console-worthy: core disabled, call was never mirrored, or an out-of-order UI click.
+local EXPECTED_SYNC_ERRORS = {
+    sync_disabled = true,
+    incident_not_found = true,
+    unmapped_action = true,
+    transition_denied = true,
+}
+
+--[[
+  Push an mrp_dispatch call status change onto its mirrored incident.
+  The dispatch action → incident state mapping lives in mrp_mdt_core
+  (shared/incident_states.lua), so this side stays a thin, non-blocking forwarder.
+
+  @param c table  call
+  @param action string  updateCallStatus action (accept/enroute/arrived/done/reject/panic_off/timeout/archive)
+  @param src number|nil  acting player
+]]
+local function syncIncidentStatus(c, action, src)
+    if not c or not mdtCoreReady() then return end
+    CreateThread(function()
+        --- The create-mirror runs in its own thread; a very fast accept can beat the INSERT.
+        for attempt = 1, 3 do
+            local ok, result, err = pcall(function()
+                return exports['mrp_mdt_core']:SyncDispatchCallStatus(c.id, action, {
+                    source = tonumber(src),
+                    incidentId = c.mdtIncidentId,
+                })
+            end)
+            if not ok then
+                print(('[mrp_dispatch] incident status sync failed: %s'):format(tostring(result)))
+                return
+            end
+            if type(result) == 'table' and result.id then
+                c.mdtIncidentId = result.id
+                c.mdtIncidentStatus = result.status
+                c.mdtPublicNumber = result.public_number
+                return
+            end
+            if err ~= 'incident_not_found' or attempt == 3 then
+                --- Expected outcomes: core off, call never mirrored, or out-of-order UI click.
+                if err and not EXPECTED_SYNC_ERRORS[err] then
+                    print(('[mrp_dispatch] incident status sync rejected (%s → %s): %s')
+                        :format(tostring(c.id), tostring(action), tostring(err)))
+                end
+                return
+            end
+            Wait(250)
+        end
+    end)
+end
+
+--- Mirror a dispatch crew onto the incident (also auto-moves Created → Assigned in core).
+local function syncIncidentCrew(c, crewId, src)
+    if not c or not c.mdtIncidentId or not mdtCoreReady() then return end
+    CreateThread(function()
+        local ok, err = pcall(function()
+            exports['mrp_mdt_core']:AssignIncidentCrew(c.mdtIncidentId, crewId, { source = tonumber(src) })
+        end)
+        if not ok then
+            print(('[mrp_dispatch] incident crew sync failed: %s'):format(tostring(err)))
+        end
+    end)
+end
+
+local CLOSED_CALL_STATUS = { done = true, rejected = true, cancelled = true }
+
 local function pruneCalls()
     local arr = {}
     for _, c in pairs(Calls) do arr[#arr + 1] = c end
@@ -219,10 +289,48 @@ local function pruneCalls()
     while #arr > (Config.MaxActiveCalls or 120) do
         local rem = table.remove(arr, 1)
         Calls[rem.id] = nil
+        --- Call is gone from live dispatch: archive closed ones, time out the rest.
+        syncIncidentStatus(rem, CLOSED_CALL_STATUS[rem.status] and 'archive' or 'timeout', nil)
     end
 end
 
-local function createCall(service, callType, coords, text, createdBy)
+--- Soft-link to MDT V2 Incident Engine (non-blocking; live dispatch unchanged if core down).
+local function mirrorIncidentFromCall(c, createdBy)
+    if GetResourceState('mrp_mdt_core') ~= 'started' then return end
+    CreateThread(function()
+        local enabled = true
+        pcall(function()
+            enabled = exports['mrp_mdt_core']:ShouldMirrorDispatchCalls()
+        end)
+        if enabled == false then return end
+
+        local ok, incidentOrErr = pcall(function()
+            local typeMap = { police = 'police', ems = 'ems', mechanic = 'mechanic' }
+            return exports['mrp_mdt_core']:CreateIncident({
+                type = typeMap[c.service] or 'other',
+                status = 'created',
+                service_job = c.service,
+                summary = (c.callTypeLabel or c.callType or 'Iškvietimas') .. (c.text ~= '' and (': ' .. c.text) or ''),
+                location_x = c.x,
+                location_y = c.y,
+                location_z = c.z,
+                location_label = c.callTypeLabel,
+                dispatch_call_id = c.id,
+                source = tonumber(createdBy),
+                priority = c.panic and 5 or 2,
+            })
+        end)
+        if ok and type(incidentOrErr) == 'table' and incidentOrErr.id then
+            c.mdtIncidentId = incidentOrErr.id
+            c.mdtPublicNumber = incidentOrErr.public_number
+        elseif not ok then
+            print(('[mrp_dispatch] CreateIncident mirror failed: %s'):format(tostring(incidentOrErr)))
+        end
+    end)
+end
+
+--- @param extra table|nil fields merged onto the call before logging / incident mirroring
+local function createCall(service, callType, coords, text, createdBy, extra)
     CallSeq = CallSeq + 1
     local id = ('C-%05d'):format(CallSeq)
     local c = {
@@ -243,8 +351,12 @@ local function createCall(service, callType, coords, text, createdBy)
         enrouteBy = {},
         arrivedBy = {},
     }
+    if type(extra) == 'table' then
+        for key, value in pairs(extra) do c[key] = value end
+    end
     Calls[id] = c
     logEvent(service, 'call_created', createdBy, c)
+    mirrorIncidentFromCall(c, createdBy)
     pruneCalls()
     pushServiceUpdate(service)
     return c
@@ -405,12 +517,23 @@ RegisterNetEvent('mrp_dispatch:server:setCallsign', function(callsign)
     pushServiceUpdate(service)
 end)
 
+local CALL_ACTIONS = {
+    accept = true,
+    enroute = true,
+    arrived = true,
+    reject = true,
+    done = true,
+    panic_off = true,
+}
+
 RegisterNetEvent('mrp_dispatch:server:updateCallStatus', function(callId, action)
     local src = source
     local service = playerService(src)
     local c = callId and Calls[callId]
     if not service or not c or c.service ~= service then return end
     action = tostring(action or '')
+    if not CALL_ACTIONS[action] then return end
+    local previousStatus = c.status
     if action == 'accept' then
         c.acceptedBy[tostring(src)] = true
         c.status = 'accepted'
@@ -440,9 +563,26 @@ RegisterNetEvent('mrp_dispatch:server:updateCallStatus', function(callId, action
     end
     local crewId = PlayerCrew[src]
     if crewId and Crews[crewId] then
-        Crews[crewId].assignedCallId = c.status == 'done' and nil or c.id
+        local stillOpen = c.status ~= 'done' and c.status ~= 'rejected'
+        Crews[crewId].assignedCallId = stillOpen and c.id or nil
+        if stillOpen then
+            syncIncidentCrew(c, crewId, src)
+        end
     end
     logEvent(service, 'call_status', src, { callId = c.id, action = action, status = c.status })
+    if mdtCoreReady() and (action == 'accept' or action == 'reject') then
+        pcall(function()
+            exports['mrp_mdt_core']:RecordTelemetry(action == 'accept' and 'dispatch_accept' or 'dispatch_reject', {
+                source = src,
+                service = service,
+                meta = { call_id = c.id, call_type = c.type },
+            })
+        end)
+    end
+    --- `panic_off` on a non-panic call is a no-op; only mirror real status changes.
+    if c.status ~= previousStatus then
+        syncIncidentStatus(c, action, src)
+    end
     pushServiceUpdate(service)
 end)
 
@@ -471,14 +611,17 @@ local function triggerOfficerPanic(src, clientPos)
     local crewId = PlayerCrew[src]
     local crew = crewId and Crews[crewId] or nil
     local callsign = Callsigns[src] or (crew and crew.callsign) or ''
-    local c = createCall('police', 'custom', p, 'PANIC BUTTON', src)
-    c.priority = true
-    c.panic = true
-    c.officerName = getName(src)
-    c.callsign = callsign
-    c.status = 'enroute'
-    c.statusLabel = 'PRIORITY ALERT'
+    local c = createCall('police', 'custom', p, 'PANIC BUTTON', src, {
+        priority = true,
+        panic = true,
+        officerName = getName(src),
+        callsign = callsign,
+        status = 'enroute',
+        statusLabel = 'PRIORITY ALERT',
+    })
     logEvent('police', 'panic_triggered', src, c)
+    --- Units respond immediately on a panic; mirror that onto the incident.
+    syncIncidentStatus(c, 'enroute', src)
     pushServiceUpdate('police')
     for _, id in ipairs(QBCore.Functions.GetPlayers() or {}) do
         if isServiceMember(id, 'police') then
@@ -505,10 +648,40 @@ RegisterNetEvent('mrp_dispatch:server:panic', function(clientPos)
     end
 end)
 
+--- P0: net event is for on-duty members of that service only.
+--- Phone / heists / trucking / scripts must use CreateDispatchCall export (server-side).
+local function canCreateServiceCallNet(src, service)
+    if isServiceMember(src, service) then return true end
+    if GetResourceState('mrp_mdt_core') == 'started' then
+        local ok, allowed = pcall(function()
+            return exports['mrp_mdt_core']:HasPermission(src, 'DISPATCH_CREATE_CALL')
+        end)
+        if ok and allowed and playerService(src) == service then
+            return true
+        end
+    end
+    return false
+end
+
 RegisterNetEvent('mrp_dispatch:server:createServiceCall', function(service, callType, text, coords)
     local src = source
     local cfg = Config or {}
     if not cfg.Services or not cfg.Services[service] then return end
+
+    if not canCreateServiceCallNet(src, service) then
+        TriggerClientEvent('QBCore:Notify', src, 'Iškvietimą gali kurti tik tarnybos darbuotojas.', 'error')
+        if GetResourceState('mrp_mdt_core') == 'started' then
+            pcall(function()
+                exports['mrp_mdt_core']:AuditLog('dispatch.create_call_denied', {
+                    source = src,
+                    resource = 'mrp_dispatch',
+                    target = tostring(service),
+                    meta = { callType = callType, reason = 'not_service_member' },
+                })
+            end)
+        end
+        return
+    end
 
     --- Panikai eina per `panic` įvykį, ne čia — antras nuo antro spam filtras
     local cd = tonumber(cfg.CreateCallCooldownMs) or 4000

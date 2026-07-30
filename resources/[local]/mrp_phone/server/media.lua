@@ -1,12 +1,12 @@
 --[[
   Nuotraukų / avatarų saugykla ant disko (ne MySQL MEDIUMTEXT).
   DB laiko tik metaduomenis + file_key. Tinka 100+ concurrent žaidėjams.
+  Naudoja SaveResourceFile / LoadResourceFile (FiveM) — be Lua package.*.
 ]]
 
 PhotoStorage = PhotoStorage or {}
 
 local RES = GetCurrentResourceName()
-local resPath = GetResourcePath(RES)
 
 local CACHE_MAX = 48
 local CACHE_TTL_MS = 90000
@@ -17,27 +17,16 @@ local function cfg()
     return (Config.Phone and Config.Phone.Media) or {}
 end
 
-local function mediaRoot()
-    local sub = tostring(cfg().relativeDir or 'data/media')
-    return ('%s/%s'):format(resPath:gsub('\\', '/'), sub:gsub('\\', '/'))
+local function mediaRelRoot()
+    return tostring(cfg().relativeDir or 'data/media'):gsub('\\', '/'):gsub('^/+', ''):gsub('/+$', '')
 end
 
-local function photosDir()
-    return mediaRoot() .. '/photos'
+local function photosRel()
+    return mediaRelRoot() .. '/photos'
 end
 
-local function avatarsDir()
-    return mediaRoot() .. '/avatars'
-end
-
-local function ensureDir(absPath)
-    absPath = absPath:gsub('\\', '/')
-    local sep = package.config:sub(1, 1)
-    if sep == '\\' then
-        os.execute(('if not exist "%s" mkdir "%s"'):format(absPath:gsub('/', '\\'), absPath:gsub('/', '\\')))
-    else
-        os.execute(('mkdir -p %q'):format(absPath))
-    end
+local function avatarsRel()
+    return mediaRelRoot() .. '/avatars'
 end
 
 local function cacheGet(id)
@@ -73,46 +62,64 @@ local function stripDataUrl(imageData)
     return imageData
 end
 
-function PhotoStorage.ensureFolders()
-    ensureDir(mediaRoot())
-    ensureDir(photosDir())
-    ensureDir(avatarsDir())
-end
-
-function PhotoStorage.photoPath(fileKey)
+--- Reliatyvus kelias resursui (SaveResourceFile / LoadResourceFile)
+function PhotoStorage.photoRel(fileKey)
     if not fileKey or fileKey == '' then return nil end
     local safe = tostring(fileKey):gsub('[^%w%._%-]', '')
     if safe == '' then return nil end
-    return photosDir() .. '/' .. safe
+    return photosRel() .. '/' .. safe
+end
+
+function PhotoStorage.avatarRel(citizenid)
+    local safe = tostring(citizenid or ''):gsub('[^%w%-_]', '')
+    if safe == '' then return nil end
+    return avatarsRel() .. '/' .. safe .. '.b64'
+end
+
+--- Absoliutus kelias (tik os.remove)
+local function absFromRel(rel)
+    if not rel then return nil end
+    local root = GetResourcePath(RES)
+    if not root or root == '' then return nil end
+    return (root:gsub('\\', '/') .. '/' .. rel:gsub('\\', '/'))
+end
+
+local function writeTextFile(rel, content)
+    if not rel or content == nil then return false end
+    content = tostring(content)
+    return SaveResourceFile(RES, rel, content, #content) and true or false
+end
+
+local function readTextFile(rel)
+    if not rel then return nil end
+    return LoadResourceFile(RES, rel)
+end
+
+local function deleteFile(rel)
+    local abs = absFromRel(rel)
+    if not abs then return end
+    os.remove(abs)
+end
+
+local function ensureMarker(relDir)
+    local marker = relDir .. '/.keep'
+    if LoadResourceFile(RES, marker) then return true end
+    return SaveResourceFile(RES, marker, '', 0) and true or false
+end
+
+function PhotoStorage.ensureFolders()
+    ensureMarker(mediaRelRoot())
+    ensureMarker(photosRel())
+    ensureMarker(avatarsRel())
+end
+
+--- Atgalinis suderinamumas su senesniais keliais
+function PhotoStorage.photoPath(fileKey)
+    return absFromRel(PhotoStorage.photoRel(fileKey))
 end
 
 function PhotoStorage.avatarPath(citizenid)
-    local safe = tostring(citizenid or ''):gsub('[^%w%-_]', '')
-    if safe == '' then return nil end
-    return avatarsDir() .. '/' .. safe .. '.b64'
-end
-
-local function writeTextFile(path, content)
-    if not path then return false end
-    local f = io.open(path, 'wb')
-    if not f then return false end
-    f:write(content)
-    f:close()
-    return true
-end
-
-local function readTextFile(path)
-    if not path then return nil end
-    local f = io.open(path, 'rb')
-    if not f then return nil end
-    local data = f:read('*a')
-    f:close()
-    return data
-end
-
-local function deleteFile(path)
-    if not path then return end
-    os.remove(path)
+    return absFromRel(PhotoStorage.avatarRel(citizenid))
 end
 
 --- Iš data URL / base64 → failas ant disko. Grąžina file_key (pvz. 123.b64)
@@ -123,8 +130,8 @@ function PhotoStorage.writePhoto(photoId, imageData)
     local b64 = stripDataUrl(imageData)
     if not b64 or #b64 < 32 then return nil end
     local key = ('%d.b64'):format(photoId)
-    local path = PhotoStorage.photoPath(key)
-    if not writeTextFile(path, b64) then return nil end
+    local rel = PhotoStorage.photoRel(key)
+    if not writeTextFile(rel, b64) then return nil end
     cacheForget(photoId)
     return key
 end
@@ -135,8 +142,8 @@ function PhotoStorage.readPhotoDataUrl(photoId, fileKey)
         local cached = cacheGet(photoId)
         if cached then return cached end
     end
-    local path = PhotoStorage.photoPath(fileKey)
-    local raw = readTextFile(path)
+    local rel = PhotoStorage.photoRel(fileKey)
+    local raw = readTextFile(rel)
     if not raw or #raw < 32 then return '' end
     local url = ('data:image/jpeg;base64,%s'):format(raw:gsub('%s', ''))
     if photoId then cacheSet(photoId, url) end
@@ -144,34 +151,32 @@ function PhotoStorage.readPhotoDataUrl(photoId, fileKey)
 end
 
 function PhotoStorage.deletePhotoFile(fileKey)
-    deleteFile(PhotoStorage.photoPath(fileKey))
+    deleteFile(PhotoStorage.photoRel(fileKey))
 end
 
 function PhotoStorage.writeAvatar(citizenid, imageData)
     PhotoStorage.ensureFolders()
     local b64 = stripDataUrl(imageData)
     if not b64 or #b64 < 32 then return false end
-    local path = PhotoStorage.avatarPath(citizenid)
-    return writeTextFile(path, b64)
+    local rel = PhotoStorage.avatarRel(citizenid)
+    return writeTextFile(rel, b64)
 end
 
 function PhotoStorage.readAvatarDataUrl(citizenid)
-    local raw = readTextFile(PhotoStorage.avatarPath(citizenid))
+    local raw = readTextFile(PhotoStorage.avatarRel(citizenid))
     if not raw or #raw < 32 then return '' end
     return ('data:image/jpeg;base64,%s'):format(raw:gsub('%s', ''))
 end
 
 function PhotoStorage.hasAvatar(citizenid)
-    local path = PhotoStorage.avatarPath(citizenid)
-    if not path then return false end
-    local f = io.open(path, 'rb')
-    if not f then return false end
-    f:close()
-    return true
+    local rel = PhotoStorage.avatarRel(citizenid)
+    if not rel then return false end
+    local raw = LoadResourceFile(RES, rel)
+    return raw ~= nil and #raw > 32
 end
 
 function PhotoStorage.deleteAvatar(citizenid)
-    deleteFile(PhotoStorage.avatarPath(citizenid))
+    deleteFile(PhotoStorage.avatarRel(citizenid))
 end
 
 --- Vienkartinė / paleidimo migracija: image_data → diskas

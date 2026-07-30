@@ -147,37 +147,56 @@ local function weaponAmmoType(item)
     return normalizedAmmoType(weapon and weapon.ammotype)
 end
 
-local function attachmentMatches(value, expected)
-    if value == nil or expected == nil then return false end
-    if value == expected then return true end
-    if type(value) == 'string' then return joaat(value) == expected end
-    if type(expected) == 'string' then return value == joaat(expected) end
-    return false
+local function weaponNativeName(weaponName)
+    weaponName = tostring(weaponName or ''):lower()
+    if WeaponHash and WeaponHash.nativeName then
+        return tostring(WeaponHash.nativeName(weaponName) or weaponName):lower()
+    end
+    local mapped = Config.WeaponNativeHash and Config.WeaponNativeHash[weaponName]
+    return tostring(mapped or weaponName):lower()
 end
 
-local function serverMaxClip(item)
+local function lookupWeaponComponent(attachmentTable, weaponName)
+    if type(attachmentTable) ~= 'table' then return nil end
+    weaponName = tostring(weaponName or ''):lower()
+    return attachmentTable[weaponName]
+        or attachmentTable[weaponNativeName(weaponName)]
+end
+
+local function pedHasWeaponComponent(src, weaponName, component)
+    if not component then return false end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local weaponHash = joaat(weaponNativeName(weaponName))
+    local compHash = type(component) == 'number' and component or joaat(tostring(component))
+    return HasPedGotWeaponComponent(ped, weaponHash, compHash)
+end
+
+--- Talpa tik kai CLIP_02/03 realiai ant ped — metadata viena neužtenka (neėda ammo).
+local function serverMaxClip(src, item)
     local name = tostring(item and item.name or ''):lower()
     local ammoType = weaponAmmoType(item)
     local maxClip = tonumber(Config.StandardClipCapacity and Config.StandardClipCapacity[name])
         or tonumber(Config.DefaultClipCapacityByAmmoType and Config.DefaultClipCapacityByAmmoType[ammoType])
         or 30
 
-    local attachments = item and item.info and item.info.attachments
-    for _, attachment in pairs(type(attachments) == 'table' and attachments or {}) do
-        local component = type(attachment) == 'table' and (attachment.component or attachment.hash) or attachment
-        local nativeName = tostring(Config.WeaponNativeHash and Config.WeaponNativeHash[name] or ''):lower()
-        local drum = WeaponAttachments and WeaponAttachments.drum_attachment
-            and (WeaponAttachments.drum_attachment[name]
-                or (nativeName ~= '' and WeaponAttachments.drum_attachment[nativeName]))
-        local extended = WeaponAttachments and WeaponAttachments.clip_attachment
-            and (WeaponAttachments.clip_attachment[name]
-                or (nativeName ~= '' and WeaponAttachments.clip_attachment[nativeName]))
-        if attachmentMatches(component, drum) then
-            maxClip = math.max(maxClip, tonumber(Config.DrumClipCapacity and Config.DrumClipCapacity[name]) or 0)
-        elseif attachmentMatches(component, extended) then
-            maxClip = math.max(maxClip, tonumber(Config.ExtendedClipCapacity and Config.ExtendedClipCapacity[name]) or 0)
+    local function bumpFromItems(itemKeys, capacityTable)
+        if type(itemKeys) ~= 'table' or type(capacityTable) ~= 'table' then return end
+        for _, itemKey in ipairs(itemKeys) do
+            local attachmentTable = WeaponAttachments and WeaponAttachments[itemKey]
+            local component = lookupWeaponComponent(attachmentTable, name)
+            if component and pedHasWeaponComponent(src, name, component) then
+                maxClip = math.max(
+                    maxClip,
+                    tonumber(capacityTable[name]) or 0,
+                    tonumber(capacityTable[weaponNativeName(name)]) or 0
+                )
+            end
         end
     end
+
+    bumpFromItems(Config.DrumClipAttachmentItems, Config.DrumClipCapacity)
+    bumpFromItems(Config.ExtendedClipAttachmentItems, Config.ExtendedClipCapacity)
 
     return math.min(120, math.max(1, math.floor(maxClip)))
 end
@@ -389,7 +408,7 @@ QBCore.Functions.CreateCallback('qb-weapons:server:beginReload', function(source
         return cb({ ok = false, message = Lang:t('error.wrong_ammo') })
     end
 
-    local maxClip = serverMaxClip(weaponItem)
+    local maxClip = serverMaxClip(src, weaponItem)
     local clientMax = math.max(1, math.floor(tonumber(request.maxClip) or maxClip))
     maxClip = math.min(maxClip, clientMax)
     local storedClip = capStoredWeaponAmmo(weaponName, weaponItem.info and weaponItem.info.ammo or 0)
@@ -520,11 +539,36 @@ end
 -- TINTS
 
 local function GetWeaponSlotByName(items, weaponName)
+    weaponName = tostring(weaponName or ''):lower()
     for index, item in pairs(items) do
-        if item.name == weaponName then
+        if item and tostring(item.name or ''):lower() == weaponName then
             return item, index
         end
     end
+
+    -- Addon ginklai naudoja native hash (pvz. fgc9 → combatpistol).
+    for invName, nativeName in pairs(Config.WeaponNativeHash or {}) do
+        if tostring(nativeName):lower() == weaponName then
+            local key = tostring(invName):lower()
+            for index, item in pairs(items) do
+                if item and tostring(item.name or ''):lower() == key then
+                    return item, index
+                end
+            end
+        end
+    end
+
+    if WeaponHash and WeaponHash.inventoryNameFromNative then
+        local invName = WeaponHash.inventoryNameFromNative(joaat(weaponName))
+        if invName then
+            for index, item in pairs(items) do
+                if item and tostring(item.name or ''):lower() == tostring(invName):lower() then
+                    return item, index
+                end
+            end
+        end
+    end
+
     return nil, nil
 end
 
@@ -593,10 +637,11 @@ local function HasAttachment(component, attachments)
 end
 
 local function DoesWeaponTakeWeaponComponent(item, weaponName)
-    if WeaponAttachments[item] and WeaponAttachments[item][weaponName] then
-        return WeaponAttachments[item][weaponName]
-    end
-    return false
+    weaponName = tostring(weaponName or ''):lower()
+    local map = WeaponAttachments and WeaponAttachments[item]
+    if not map then return false end
+    local component = lookupWeaponComponent(map, weaponName)
+    return component or false
 end
 
 local function EquipWeaponAttachment(src, item)
@@ -604,7 +649,8 @@ local function EquipWeaponAttachment(src, item)
     local ped = GetPlayerPed(src)
     local selectedWeaponHash = GetSelectedPedWeapon(ped)
     if selectedWeaponHash == `WEAPON_UNARMED` then return end
-    local weaponName = QBCore.Shared.Weapons[selectedWeaponHash].name
+    local sharedWeapon = QBCore.Shared.Weapons[selectedWeaponHash]
+    local weaponName = sharedWeapon and sharedWeapon.name
     if not weaponName then return end
     local attachmentComponent = DoesWeaponTakeWeaponComponent(item, weaponName)
     if not attachmentComponent then
@@ -620,11 +666,15 @@ local function EquipWeaponAttachment(src, item)
     if hasAttach then
         RemoveWeaponComponentFromPed(ped, selectedWeaponHash, attachmentComponent)
         table.remove(weaponSlot.info.attachments, attachIndex)
+        TriggerClientEvent('qb-weapons:client:SetWeaponComponent', src, selectedWeaponHash, attachmentComponent, false)
     else
+        -- Tik komponentas — jokio ammo „užkrovimo“ iš inventoriaus.
         weaponSlot.info.attachments[#weaponSlot.info.attachments + 1] = {
             component = attachmentComponent,
+            item = item,
         }
         GiveWeaponComponentToPed(ped, selectedWeaponHash, attachmentComponent)
+        TriggerClientEvent('qb-weapons:client:SetWeaponComponent', src, selectedWeaponHash, attachmentComponent, true)
         shouldRemove = true
     end
     Player.PlayerData.items[weaponSlotIndex] = weaponSlot
@@ -646,7 +696,12 @@ QBCore.Functions.CreateCallback('qb-weapons:server:RemoveAttachment', function(s
     local Player = QBCore.Functions.GetPlayer(src)
     local Inventory = Player.PlayerData.items
     local allAttachments = WeaponAttachments
-    local AttachmentComponent = allAttachments[AttachmentData.attachment][WeaponData.name]
+    local AttachmentComponent = allAttachments[AttachmentData.attachment]
+        and lookupWeaponComponent(allAttachments[AttachmentData.attachment], WeaponData.name)
+    if not AttachmentComponent then
+        cb(false)
+        return
+    end
     if Inventory[WeaponData.slot] then
         if Inventory[WeaponData.slot].info.attachments and next(Inventory[WeaponData.slot].info.attachments) then
             local HasAttach, key = HasAttachment(AttachmentComponent, Inventory[WeaponData.slot].info.attachments)
@@ -656,6 +711,10 @@ QBCore.Functions.CreateCallback('qb-weapons:server:RemoveAttachment', function(s
                 exports['qb-inventory']:AddItem(src, AttachmentData.attachment, 1, false, false, 'qb-weapons:server:RemoveAttachment')
                 TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[AttachmentData.attachment], 'add')
                 TriggerClientEvent('QBCore:Notify', src, Lang:t('info.removed_attachment', { value = QBCore.Shared.Items[AttachmentData.attachment].label }), 'error')
+                local ped = GetPlayerPed(src)
+                local weaponHash = joaat(weaponNativeName(WeaponData.name))
+                RemoveWeaponComponentFromPed(ped, weaponHash, AttachmentComponent)
+                TriggerClientEvent('qb-weapons:client:SetWeaponComponent', src, weaponHash, AttachmentComponent, false)
                 cb(Inventory[WeaponData.slot].info.attachments)
             else
                 cb(false)

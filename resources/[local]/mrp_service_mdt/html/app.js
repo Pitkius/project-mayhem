@@ -11,6 +11,14 @@ let activeService = null;
 let unitLabel = 'Vienetas';
 let canInvoice = false;
 let crewsEnabled = true;
+let mdtPerf = {
+  dispatchPollMs: 2500,
+  pushStaleMs: 3500,
+  dispatchPollPushMs: 8000,
+  disablePollWhenPushActive: true,
+};
+let lastDispatchPushAt = 0;
+let lastTabTelemetry = '';
 
 function resourceName() {
   try {
@@ -67,10 +75,44 @@ function stopDispatchPoll() {
   }
 }
 
+function applyMdtPerformance(cfg) {
+  if (!cfg || typeof cfg !== 'object') return;
+  mdtPerf = {
+    dispatchPollMs: Number(cfg.dispatchPollMs) || 2500,
+    pushStaleMs: Number(cfg.pushStaleMs) || 3500,
+    dispatchPollPushMs: Number(cfg.dispatchPollPushMs) || 8000,
+    disablePollWhenPushActive: cfg.disablePollWhenPushActive !== false,
+  };
+}
+
+function dispatchPollIntervalMs() {
+  if (!mdtPerf.disablePollWhenPushActive) return mdtPerf.dispatchPollMs;
+  const age = Date.now() - lastDispatchPushAt;
+  if (lastDispatchPushAt > 0 && age < mdtPerf.pushStaleMs) {
+    return mdtPerf.dispatchPollPushMs;
+  }
+  return mdtPerf.dispatchPollMs;
+}
+
+function shouldSkipDispatchPollTick() {
+  if (!mdtPerf.disablePollWhenPushActive || !lastDispatchPushAt) return false;
+  return (Date.now() - lastDispatchPushAt) < mdtPerf.pushStaleMs;
+}
+
+function telemetryTab(name) {
+  const tab = String(name || '').slice(0, 32);
+  if (!tab || tab === lastTabTelemetry) return;
+  lastTabTelemetry = tab;
+  nuiPost('mdtTelemetry', { event: 'tab_switch', tab, service: activeService });
+}
+
 function startDispatchPoll() {
   stopDispatchPoll();
   refreshDispatch();
-  dispatchPoll = setInterval(refreshDispatch, 350);
+  dispatchPoll = setInterval(() => {
+    if (!mdtSessionActive) return;
+    if (!shouldSkipDispatchPollTick()) refreshDispatch();
+  }, mdtPerf.dispatchPollMs);
 }
 
 function switchTab(name) {
@@ -80,6 +122,7 @@ function switchTab(name) {
   document.querySelectorAll('.panel').forEach((p) => {
     p.classList.toggle('hidden', p.id !== `panel-${name}`);
   });
+  telemetryTab(name);
   if (name === 'units' && window.MdtMap) {
     requestAnimationFrame(() => {
       MdtMap.invalidate();
@@ -107,6 +150,15 @@ window.addEventListener('message', (e) => {
     canInvoice = d.data?.canInvoice === true;
     crewsEnabled = d.data?.enableCrews !== false;
     dispatchReadOnly = d.data?.onDuty === false;
+
+    const tabIncidents = document.getElementById('tabIncidents');
+    const enableIncidents = d.data?.enableIncidents === true && (activeService === 'ems' || activeService === 'mechanic');
+    window.activeService = activeService;
+    if (tabIncidents) tabIncidents.style.display = enableIncidents ? '' : 'none';
+    const emsPanel = document.getElementById('emsIncPanel');
+    const mechPanel = document.getElementById('mechIncPanel');
+    if (emsPanel) emsPanel.classList.toggle('hidden', activeService !== 'ems');
+    if (mechPanel) mechPanel.classList.toggle('hidden', activeService !== 'mechanic');
 
     const tabCrews = document.querySelector('.tab[data-tab="crews"]');
     const panelCrews = document.getElementById('panel-crews');
@@ -149,6 +201,10 @@ window.addEventListener('message', (e) => {
     };
     if (sel.options.length) sel.onchange();
 
+    applyMdtPerformance(d.data?.performance);
+    lastDispatchPushAt = 0;
+    lastTabTelemetry = '';
+
     if (window.MdtMap) {
       MdtMap.ensureMap(d.data?.map);
       MdtMap.setOnSelect(onMapBlipSelect);
@@ -175,6 +231,7 @@ window.addEventListener('message', (e) => {
 
   if (d.action === 'dispatchLive') {
     if (!mdtSessionActive || !d.data) return;
+    lastDispatchPushAt = Date.now();
     const base = lastDispatchPayload && typeof lastDispatchPayload === 'object' ? lastDispatchPayload : { ok: true };
     renderDispatch({
       ...base,
@@ -462,3 +519,6 @@ window.addEventListener('resize', () => {
     MdtMap.invalidate();
   }
 });
+
+window.nuiPost = nuiPost;
+window.escapeHtml = escapeHtml;

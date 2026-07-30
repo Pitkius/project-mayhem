@@ -1,4 +1,6 @@
-const resourceName = typeof GetParentResourceName === "function" ? GetParentResourceName() : "mrp_phone";
+function getResourceName() {
+  return typeof GetParentResourceName === "function" ? GetParentResourceName() : "mrp_phone";
+}
 
 const SCREENS = ["lockScreen", "accountSetup", "homeScreen", "appStoreScreen", "appScreen"];
 const APP_TEMPLATE = {
@@ -73,11 +75,19 @@ function syncPhoneInputFocus() {
 let lockDragY = 0;
 
 function nui(event, data = {}) {
-  return fetch(`https://${resourceName}/${event}`, {
+  return fetch(`https://${getResourceName()}/${event}`, {
     method: "POST",
     headers: { "Content-Type": "application/json; charset=UTF-8" },
-    body: JSON.stringify(data),
-  }).then((r) => r.json());
+    body: JSON.stringify(data || {}),
+  }).then(async (r) => {
+    const text = await r.text();
+    if (!text) return {};
+    try {
+      return JSON.parse(text);
+    } catch (_) {
+      return { ok: false, raw: text };
+    }
+  });
 }
 
 function esc(str) {
@@ -662,7 +672,7 @@ window.addEventListener("keydown", (e) => {
   const phone = document.getElementById("phone");
   if (!phone || phone.classList.contains("hidden")) return;
   e.preventDefault();
-  nui("close");
+  nui("close").catch(() => {});
 });
 document.getElementById("openStore")?.addEventListener("click", openAppStore);
 document.querySelectorAll("[data-back-home]").forEach((b) => b.addEventListener("click", openHome));

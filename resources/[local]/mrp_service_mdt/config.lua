@@ -67,7 +67,8 @@ Config.Services = {
         label = 'Mechanikų MDT',
         brand = 'MECH',
         accent = '#fbbf24',
-        jobs = { 'mechanic' },
+        --- Visi qb-core mechanikų darbai (Shared.Jobs type = mechanic).
+        jobs = { 'mechanic', 'mechanic2', 'mechanic3', 'beeker', 'bennys' },
         invoiceMinGrade = 0,
         enableCrews = false,
         invoicePresets = {
@@ -79,4 +80,42 @@ Config.Services = {
         },
         unitLabel = 'Mechanikas',
     },
+}
+
+--- EMS medical incident wiring (mrp_mdt_core Phase 4).
+--- Mechanic repair incident wiring (mrp_mdt_core Phase 5).
+Config.MdtIncidents = {
+    autoCreateOnInvoice = true,
+    nearbyRadius = 20.0,
+    partyRoles = {
+        patient = true,
+        bystander = true,
+        witness = true,
+        driver = true,
+        passenger = true,
+        other = true,
+    },
+    mechanicPartyRoles = {
+        client = true,
+        owner = true,
+        driver = true,
+        witness = true,
+        other = true,
+    },
+    mechanicVehicleRoles = {
+        subject = true,
+        towed = true,
+        impounded = true,
+        other = true,
+    },
+}
+
+--- Phase 7 — same refresh knobs as PD MDT (live push primary, slower fallback poll).
+Config.MdtPerformance = {
+    DispatchPollMs = 2500,
+    PushStaleMs = 3500,
+    DispatchPollPushMs = 8000,
+    DisablePollWhenPushActive = true,
+    PlayerPosIntervalMs = 750,
+    PlayerPosMinMoveM = 2.5,
 }

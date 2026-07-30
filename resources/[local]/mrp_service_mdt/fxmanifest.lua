@@ -3,8 +3,8 @@ game 'gta5'
 lua54 'yes'
 
 name 'mrp_service_mdt'
-description 'EMS / Mechanic MDT — žemėlapis, dispatch, sąskaitos'
-version '1.0.0'
+description 'EMS / Mechanic MDT — žemėlapis, dispatch, sąskaitos, EMS + mechanic bylos'
+version '1.2.0-phase5'
 
 ui_page 'html/index.html'
 
@@ -19,12 +19,15 @@ client_scripts {
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'server/mdt_incidents.lua',
     'server/main.lua',
 }
 
 files {
     'html/index.html',
     'html/app.js',
+    'html/incidents.js',
+    'html/mechanic_incidents.js',
     'html/style.css',
     'html/gtav_map_core.js',
     'html/mdt_map.js',
@@ -36,4 +39,5 @@ dependencies {
     'qb-core',
     'mrp_dispatch',
     'mrp_ltpd',
+    'mrp_mdt_core',
 }

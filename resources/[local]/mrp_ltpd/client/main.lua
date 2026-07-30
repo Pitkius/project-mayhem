@@ -16,6 +16,7 @@ local function closeMdt()
     TriggerEvent('mrp_ltpd:client:surveillanceStopAll')
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
+    QBCore.Functions.TriggerCallback('mrp_ltpd:server:mdtSessionClose', function() end)
 end
 
 RegisterNetEvent('mrp_ltpd:client:forceCloseMdt', function()
@@ -98,6 +99,12 @@ end)
 RegisterNUICallback('close', function(_, cb)
     closeMdt()
     cb({ ok = true })
+end)
+
+RegisterNUICallback('mdtTelemetry', function(data, cb)
+    QBCore.Functions.TriggerCallback('mrp_ltpd:server:mdtTelemetry', function(result)
+        cb(result or { ok = true })
+    end, data)
 end)
 
 RegisterNUICallback('mdtSetDocked', function(data, cb)
@@ -224,6 +231,42 @@ RegisterNUICallback('getInterrogationHistory', function(data, cb)
     end, data and data.citizenid)
 end)
 
+--[[
+  Phase 3 „Bylos" skirtukas. Klientas nieko nesprendžia — kiekvieną užklausą
+  autorizuoja ir validuoja serveris (server/mdt_incidents.lua).
+]]
+local INCIDENT_ENDPOINTS = {
+    incidentMeta = 'mrp_ltpd:server:incidentMeta',
+    incidentList = 'mrp_ltpd:server:incidentList',
+    incidentGet = 'mrp_ltpd:server:incidentGet',
+    incidentCreate = 'mrp_ltpd:server:incidentCreate',
+    incidentTransition = 'mrp_ltpd:server:incidentTransition',
+    incidentUpdateCase = 'mrp_ltpd:server:incidentUpdateCase',
+    incidentSaveReport = 'mrp_ltpd:server:incidentSaveReport',
+    incidentNearby = 'mrp_ltpd:server:incidentNearby',
+    incidentAttachParty = 'mrp_ltpd:server:incidentAttachParty',
+    incidentDetachParty = 'mrp_ltpd:server:incidentDetachParty',
+    incidentAttachVehicle = 'mrp_ltpd:server:incidentAttachVehicle',
+    incidentDetachVehicle = 'mrp_ltpd:server:incidentDetachVehicle',
+    incidentAttachOfficer = 'mrp_ltpd:server:incidentAttachOfficer',
+    incidentAddForce = 'mrp_ltpd:server:incidentAddForce',
+    incidentAddTool = 'mrp_ltpd:server:incidentAddTool',
+    incidentAddSeized = 'mrp_ltpd:server:incidentAddSeized',
+    incidentAddEvidence = 'mrp_ltpd:server:incidentAddEvidence',
+    incidentSealEvidence = 'mrp_ltpd:server:incidentSealEvidence',
+    incidentAddRef = 'mrp_ltpd:server:incidentAddRef',
+    incidentIssueFine = 'mrp_ltpd:server:incidentIssueFine',
+    incidentAddArrest = 'mrp_ltpd:server:incidentAddArrest',
+}
+
+for endpoint, serverCallback in pairs(INCIDENT_ENDPOINTS) do
+    RegisterNUICallback(endpoint, function(data, cb)
+        QBCore.Functions.TriggerCallback(serverCallback, function(result)
+            cb(result or { ok = false, message = 'Nėra atsakymo iš serverio.' })
+        end, data)
+    end)
+end
+
 local function isDispatchWritable()
     local P = QBCore.Functions.GetPlayerData()
     return P and P.job and isPdJobName(P.job.name) and P.job.onduty == true
@@ -231,26 +274,45 @@ end
 
 --- Tiksli savo pozicija MDT žemėlapiui (kliento GetEntityCoords, ne serverio)
 CreateThread(function()
+    local lastPos = nil
     while true do
         if mdtOpen then
+            local perf = Config.MdtPerformance or {}
+            local interval = math.max(200, tonumber(perf.PlayerPosIntervalMs) or 750)
+            local minMove = tonumber(perf.PlayerPosMinMoveM) or 2.5
+            local minMoveSq = minMove * minMove
+
             local ped = PlayerPedId()
             local c = GetEntityCoords(ped)
-            SendNUIMessage({
-                action = 'mdtPlayerPos',
-                selfSource = GetPlayerServerId(PlayerId()),
-                x = c.x,
-                y = c.y,
-                z = c.z,
-                heading = GetEntityHeading(ped),
-            })
-            Wait(150)
+            local send = not lastPos
+            if lastPos then
+                local dx = c.x - lastPos.x
+                local dy = c.y - lastPos.y
+                local dz = c.z - lastPos.z
+                if (dx * dx + dy * dy + dz * dz) >= minMoveSq then
+                    send = true
+                end
+            end
+            if send then
+                lastPos = c
+                SendNUIMessage({
+                    action = 'mdtPlayerPos',
+                    selfSource = GetPlayerServerId(PlayerId()),
+                    x = c.x,
+                    y = c.y,
+                    z = c.z,
+                    heading = GetEntityHeading(ped),
+                })
+            end
+            Wait(interval)
         else
+            lastPos = nil
             Wait(500)
         end
     end
 end)
 
---- Gyvas GPS / dispatch atnaujinimas į MDT (iš mrp_dispatch push kas ~300ms)
+--- Gyvas GPS / dispatch atnaujinimas į MDT (mrp_dispatch push — fallback poll lėtesnis Phase 7)
 RegisterNetEvent('mrp_dispatch:client:update', function(payload)
     if not mdtOpen or not payload or payload.service ~= 'police' then return end
     SendNUIMessage({

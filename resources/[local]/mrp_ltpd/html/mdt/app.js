@@ -9,6 +9,14 @@ const MDT_FETCH_FAIL_MAX = 4;
 let lastDispatchPayload = null;
 let selectedMapTarget = null;
 let mdtPermissions = {};
+let mdtPerf = {
+  dispatchPollMs: 2500,
+  pushStaleMs: 3500,
+  dispatchPollPushMs: 8000,
+  disablePollWhenPushActive: true,
+};
+let lastDispatchPushAt = 0;
+let lastTabTelemetry = '';
 
 const mapMeta = {
   minX: -4000,
@@ -112,6 +120,37 @@ function nuiPost(endpoint, data, opts) {
     });
 }
 
+function applyMdtPerformance(cfg) {
+  if (!cfg || typeof cfg !== 'object') return;
+  mdtPerf = {
+    dispatchPollMs: Number(cfg.dispatchPollMs) || 2500,
+    pushStaleMs: Number(cfg.pushStaleMs) || 3500,
+    dispatchPollPushMs: Number(cfg.dispatchPollPushMs) || 8000,
+    disablePollWhenPushActive: cfg.disablePollWhenPushActive !== false,
+  };
+}
+
+function dispatchPollIntervalMs() {
+  if (!mdtPerf.disablePollWhenPushActive) return mdtPerf.dispatchPollMs;
+  const age = Date.now() - lastDispatchPushAt;
+  if (lastDispatchPushAt > 0 && age < mdtPerf.pushStaleMs) {
+    return mdtPerf.dispatchPollPushMs;
+  }
+  return mdtPerf.dispatchPollMs;
+}
+
+function shouldSkipDispatchPollTick() {
+  if (!mdtPerf.disablePollWhenPushActive || !lastDispatchPushAt) return false;
+  return (Date.now() - lastDispatchPushAt) < mdtPerf.pushStaleMs;
+}
+
+function telemetryTab(name) {
+  const tab = String(name || '').slice(0, 32);
+  if (!tab || tab === lastTabTelemetry) return;
+  lastTabTelemetry = tab;
+  nuiPost('mdtTelemetry', { event: 'tab_switch', tab });
+}
+
 function mdtEnsureConnected() {
   return nuiPost('mdtPing', {}).then((res) => {
     if (!res || res.ok !== true || res.mdtOpen !== true) {
@@ -168,6 +207,9 @@ window.addEventListener('message', (e) => {
     };
     if (sel.options.length) sel.onchange();
     applyMapConfig(d.data && d.data.map);
+    applyMdtPerformance(d.data && d.data.performance);
+    lastDispatchPushAt = 0;
+    lastTabTelemetry = '';
     if (window.MdtMap) {
       MdtMap.ensureMap(d.data && d.data.map);
       MdtMap.setOnSelect(onMapBlipSelect);
@@ -193,6 +235,7 @@ window.addEventListener('message', (e) => {
   }
   if (d.action === 'dispatchLive') {
     if (!mdtSessionActive || mdtSurveillanceLive || !d.data) return;
+    lastDispatchPushAt = Date.now();
     const base = lastDispatchPayload && typeof lastDispatchPayload === 'object' ? lastDispatchPayload : { ok: true };
     const res = {
       ...base,
@@ -261,6 +304,7 @@ document.querySelectorAll('.tab').forEach((t) => {
     const id = 'panel-' + t.dataset.tab;
     const pan = document.getElementById(id);
     if (pan) pan.classList.remove('hidden');
+    telemetryTab(t.dataset.tab);
     if (window.MdtMap && window.MdtMap.setAnimEnabled) {
       window.MdtMap.setAnimEnabled(false);
     }
@@ -560,8 +604,8 @@ function startDispatchPoll() {
   refreshDispatch();
   dispatchPoll = setInterval(() => {
     if (!mdtSessionActive || mdtSurveillanceLive) return;
-    refreshDispatch();
-  }, 350);
+    if (!shouldSkipDispatchPollTick()) refreshDispatch();
+  }, mdtPerf.dispatchPollMs);
 }
 
 function countObj(obj) {
@@ -1058,6 +1102,7 @@ function activateMdtTab(tabId) {
   const tab = document.querySelector(`.tab[data-tab="${tabId}"]`);
   if (tab) tab.click();
 }
+window.activateMdtTab = activateMdtTab;
 
 function setSurveillanceOverlay(active, label, meta, cctvData) {
   const ov = document.getElementById('survOverlay');
@@ -1199,11 +1244,15 @@ function cctvSelectCamera(camId) {
   renderCctvPanel();
 }
 
+function mdtActiveIncidentId() {
+  return window.mrpMdtActiveIncidentId || null;
+}
+
 function cctvWatchSelected() {
   if (cctvMaintenance) return Promise.resolve();
   if (!selectedCctvId) return;
   const audio = document.getElementById('cctvAudio').checked;
-  return nuiPost('cctvWatch', { camId: selectedCctvId }).then((res) => {
+  return nuiPost('cctvWatch', { camId: selectedCctvId, incidentId: mdtActiveIncidentId() }).then((res) => {
     if (!res || !res.ok) {
       document.getElementById('cctvStatus').textContent = (res && res.msg) || 'Nepavyko';
       stopSurveillanceUi();
@@ -1228,7 +1277,9 @@ function cctvSwitchByDelta(delta) {
   selectedCctvId = cams[idx].id;
   updateCctvBreadcrumb();
   renderCctvPanel();
-  const fn = cctvLiveActive ? nuiPost('cctvSwitch', { camId: selectedCctvId }) : cctvWatchSelected();
+  const fn = cctvLiveActive
+    ? nuiPost('cctvSwitch', { camId: selectedCctvId, incidentId: mdtActiveIncidentId() })
+    : cctvWatchSelected();
   return fn;
 }
 
@@ -1442,7 +1493,7 @@ document.getElementById('bodycamRefresh').onclick = () => refreshBodycamList();
 document.getElementById('bodycamWatchBtn').onclick = () => {
   if (bodycamMaintenance) return;
   if (!selectedBodycamId) return;
-  nuiPost('bodycamWatch', { targetId: selectedBodycamId }).then((res) => {
+  nuiPost('bodycamWatch', { targetId: selectedBodycamId, incidentId: mdtActiveIncidentId() }).then((res) => {
     if (!res || !res.ok) {
       document.getElementById('bodycamStatus').textContent = (res && res.msg) || 'Nepavyko';
       stopSurveillanceUi();

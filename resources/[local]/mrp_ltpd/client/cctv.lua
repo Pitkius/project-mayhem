@@ -14,6 +14,9 @@ local CFG = {
 }
 
 local function isSurvMaintenance()
+    if Config.Surveillance and type(Config.Surveillance.IsMaintenance) == 'function' then
+        return Config.Surveillance.IsMaintenance()
+    end
     return Config.Surveillance and Config.Surveillance.MaintenanceMode == true
 end
 
@@ -174,7 +177,7 @@ RegisterNUICallback('cctvWatch', function(data, cb)
             StopLtpdCctvView()
         end
         cb(res or { ok = false })
-    end, data and data.camId)
+    end, data and data.camId, data and data.incidentId)
 end)
 
 RegisterNUICallback('cctvStop', function(_, cb)
@@ -203,7 +206,7 @@ RegisterNUICallback('cctvSwitch', function(data, cb)
             StopLtpdCctvView()
         end
         cb(res or { ok = false })
-    end, camId)
+    end, camId, data and data.incidentId)
 end)
 
 RegisterNUICallback('cctvToggleAudio', function(data, cb)

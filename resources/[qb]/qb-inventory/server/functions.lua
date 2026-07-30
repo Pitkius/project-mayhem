@@ -862,10 +862,18 @@ function AddItem(identifier, item, amount, slot, info, reason)
     local desiredInfo = type(info) == 'table' and info or {}
 
     if not itemInfo.unique then
-        if slot then
-            local existing = inventory[tonumber(slot)]
-            if not existing or existing.name:lower() ~= item:lower() or not itemInfoEqual(existing.info, desiredInfo) then
-                slot = nil
+        local numericSlot = slot and tonumber(slot) or nil
+        if numericSlot then
+            local existing = inventory[numericSlot]
+            -- Empty target slots must stay (move-to-empty). Only drop incompatible occupied slots.
+            if existing then
+                if existing.name:lower() ~= item:lower() or not itemInfoEqual(existing.info, desiredInfo) then
+                    slot = nil
+                else
+                    slot = numericSlot
+                end
+            else
+                slot = numericSlot
             end
         else
             for existingSlot, existing in pairs(inventory) do

@@ -6,11 +6,16 @@ local function componentHash(comp)
     if comp then return joaat(tostring(comp)) end
 end
 
+local function lookupAttachmentComponent(attachmentTable, weaponName)
+    if type(attachmentTable) ~= 'table' or not weaponName then return nil end
+    local nativeName = WeaponHash and WeaponHash.nativeName and WeaponHash.nativeName(weaponName)
+    return attachmentTable[weaponName] or (nativeName and attachmentTable[nativeName]) or nil
+end
+
 local function weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable)
     local weaponName = weaponData and weaponData.name
     if not weaponName or type(attachmentTable) ~= 'table' then return false end
-    local nativeName = WeaponHash and WeaponHash.nativeName and WeaponHash.nativeName(weaponName)
-    local comp = attachmentTable[weaponName] or (nativeName and attachmentTable[nativeName])
+    local comp = lookupAttachmentComponent(attachmentTable, weaponName)
     if not comp then return false end
     local compHash = componentHash(comp)
     if ped and weaponHash and compHash and HasPedGotWeaponComponent(ped, weaponHash, compHash) then
@@ -27,16 +32,44 @@ local function weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable)
     return false
 end
 
-local function resolveAttachmentClipCapacity(weaponName, ped, weaponHash, weaponData)
-    if not weaponName then return 0 end
+--- Tik kai CLIP_02/03 realiai ant ped — kitaip config talpa nepripučiama (ammo bug).
+local function liveAttachmentCapacity(ped, weaponHash, weaponData, itemKeys, capacityTable)
+    if type(itemKeys) ~= 'table' or type(capacityTable) ~= 'table' then return 0 end
+    local weaponName = weaponData and weaponData.name
+    if not weaponName or not ped or not weaponHash then return 0 end
+
     local cap = 0
-    if weaponHasAttachment(ped, weaponHash, weaponData, WeaponAttachments.drum_attachment) then
-        cap = math.max(cap, tonumber(Config.DrumClipCapacity and Config.DrumClipCapacity[weaponName]) or 0)
-    end
-    if weaponHasAttachment(ped, weaponHash, weaponData, WeaponAttachments.clip_attachment) then
-        cap = math.max(cap, tonumber(Config.ExtendedClipCapacity and Config.ExtendedClipCapacity[weaponName]) or 0)
+    for _, itemKey in ipairs(itemKeys) do
+        local attachmentTable = WeaponAttachments and WeaponAttachments[itemKey]
+        local comp = lookupAttachmentComponent(attachmentTable, weaponName)
+        local compHash = componentHash(comp)
+        if compHash and HasPedGotWeaponComponent(ped, weaponHash, compHash) then
+            local byName = tonumber(capacityTable[weaponName]) or 0
+            local nativeName = WeaponHash and WeaponHash.nativeName and WeaponHash.nativeName(weaponName)
+            local byNative = nativeName and tonumber(capacityTable[nativeName]) or 0
+            cap = math.max(cap, byName, byNative)
+        end
     end
     return cap
+end
+
+local function resolveAttachmentClipCapacity(weaponName, ped, weaponHash, weaponData)
+    if not weaponName then return 0 end
+    local drumCap = liveAttachmentCapacity(
+        ped,
+        weaponHash,
+        weaponData,
+        Config.DrumClipAttachmentItems,
+        Config.DrumClipCapacity
+    )
+    local extCap = liveAttachmentCapacity(
+        ped,
+        weaponHash,
+        weaponData,
+        Config.ExtendedClipAttachmentItems,
+        Config.ExtendedClipCapacity
+    )
+    return math.max(drumCap, extCap)
 end
 
 local function defaultClipForWeapon(weaponHash, weaponData)
@@ -64,13 +97,20 @@ function WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
         end
     end
 
-    local weaponName = weaponData and weaponData.name
-    local attachmentCap = resolveAttachmentClipCapacity(weaponName, ped, weaponHash, weaponData)
+    local standardClip = defaultClipForWeapon(weaponHash, weaponData)
+    local attachmentCap = resolveAttachmentClipCapacity(
+        weaponData and weaponData.name,
+        ped,
+        weaponHash,
+        weaponData
+    )
+
+    -- CLIP_02/03 ant ped: native arba config (jei native vis dar grąžina standartą).
     if attachmentCap > 0 then
         return math.max(nativeMax, attachmentCap)
     end
 
-    local standardClip = defaultClipForWeapon(weaponHash, weaponData)
+    -- Be priedo — serverio standartinis limitas (nepripučiame).
     if nativeMax > 0 then
         return math.min(nativeMax, standardClip)
     end

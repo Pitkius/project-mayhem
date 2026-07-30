@@ -457,10 +457,7 @@ CreateThread(function()
         TriggerServerEvent('mrp_trucking:server:updateCondition', cond)
         if deliveryState.contract and deliveryState.contract.illegal then
             if math.random(100) <= 1 then
-                if GetResourceState('mrp_dispatch') == 'started' then
-                    local c = GetEntityCoords(ped)
-                    TriggerServerEvent('mrp_dispatch:server:createServiceCall', 'police', 'suspicious_vehicle', 'Įtartinas krovinys', { x = c.x, y = c.y, z = c.z })
-                end
+                TriggerServerEvent('mrp_trucking:server:suspiciousCargoAlert')
             end
         end
         ::continue::

@@ -293,6 +293,17 @@ Config.WeaponRepairCosts = {
     shotgun = 6000
 }
 
+--- Item keys used for extended / drum capacity resolution (must match WeaponAttachments).
+Config.ExtendedClipAttachmentItems = {
+    'pistol_extendedclip',
+    'smg_extendedclip',
+    'rifle_extendedclip',
+}
+Config.DrumClipAttachmentItems = {
+    'smg_drum_attachment',
+    'rifle_drum_attachment',
+}
+
 --- Extended / drum apkabų talpa (kai GetMaxAmmoInClip grąžina standartinį 30)
 Config.ExtendedClipCapacity = {
     weapon_pistol = 16,
@@ -348,10 +359,12 @@ Config.DrumClipCapacity = {
 }
 
 WeaponAttachments = {
-    clip_attachment = {
+    --- Pistoletų CLIP_02 (ne SMG / šautuvams)
+    pistol_extendedclip = {
         weapon_pistol = `COMPONENT_PISTOL_CLIP_02`,
         weapon_pistol_mk2 = `COMPONENT_PISTOL_MK2_CLIP_02`,
         weapon_combatpistol = `COMPONENT_COMBATPISTOL_CLIP_02`,
+        weapon_fgc9 = `COMPONENT_COMBATPISTOL_CLIP_02`,
         weapon_appistol = `COMPONENT_APPISTOL_CLIP_02`,
         weapon_pistol50 = `COMPONENT_PISTOL50_CLIP_02`,
         weapon_snspistol = `COMPONENT_SNSPISTOL_CLIP_02`,
@@ -359,6 +372,9 @@ WeaponAttachments = {
         weapon_heavypistol = `COMPONENT_HEAVYPISTOL_CLIP_02`,
         weapon_vintagepistol = `COMPONENT_VINTAGEPISTOL_CLIP_02`,
         weapon_ceramicpistol = `COMPONENT_CERAMICPISTOL_CLIP_02`,
+    },
+    --- SMG CLIP_02
+    smg_extendedclip = {
         weapon_microsmg = `COMPONENT_MICROSMG_CLIP_02`,
         weapon_smg = `COMPONENT_SMG_CLIP_02`,
         weapon_assaultsmg = `COMPONENT_ASSAULTSMG_CLIP_02`,
@@ -366,6 +382,9 @@ WeaponAttachments = {
         weapon_smg_mk2 = `COMPONENT_SMG_MK2_CLIP_02`,
         weapon_machinepistol = `COMPONENT_MACHINEPISTOL_CLIP_02`,
         weapon_combatpdw = `COMPONENT_COMBATPDW_CLIP_02`,
+    },
+    --- Šautuvų / MG / CLIP_02
+    rifle_extendedclip = {
         weapon_assaultshotgun = `COMPONENT_ASSAULTSHOTGUN_CLIP_02`,
         weapon_heavyshotgun = `COMPONENT_HEAVYSHOTGUN_CLIP_02`,
         weapon_assaultrifle = `COMPONENT_ASSAULTRIFLE_CLIP_02`,
@@ -388,10 +407,12 @@ WeaponAttachments = {
         weapon_marksmanrifle_mk2 = `COMPONENT_MARKSMANRIFLE_MK2_CLIP_02`,
         weapon_heavysniper_mk2 = `COMPONENT_HEAVYSNIPER_MK2_CLIP_02`,
     },
-    drum_attachment = {
+    smg_drum_attachment = {
         weapon_smg = `COMPONENT_SMG_CLIP_03`,
         weapon_machinepistol = `COMPONENT_MACHINEPISTOL_CLIP_03`,
         weapon_combatpdw = `COMPONENT_COMBATPDW_CLIP_03`,
+    },
+    rifle_drum_attachment = {
         weapon_heavyshotgun = `COMPONENT_HEAVYSHOTGUN_CLIP_03`,
         weapon_assaultrifle = `COMPONENT_ASSAULTRIFLE_CLIP_03`,
         weapon_carbinerifle = `COMPONENT_CARBINERIFLE_CLIP_03`,

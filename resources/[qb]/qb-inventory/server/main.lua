@@ -572,12 +572,14 @@ end
 
 RegisterNetEvent('qb-inventory:server:SetInventoryData', function(fromInventory, toInventory, fromSlot, toSlot, fromAmount, toAmount)
     if toInventory:find('shop%-') then return end
-    if not fromInventory or not toInventory or not fromSlot or not toSlot or not fromAmount or not toAmount or fromAmount < 0 or toAmount < 0 then return end
+    -- Explicit nil checks: Lua treats 0 as falsy, so `not fromAmount` wrongly blocked full moves.
+    if not fromInventory or not toInventory or fromSlot == nil or toSlot == nil or fromAmount == nil or toAmount == nil then return end
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
 
     fromSlot, toSlot, fromAmount, toAmount = tonumber(fromSlot), tonumber(toSlot), tonumber(fromAmount), tonumber(toAmount)
+    if not fromSlot or not toSlot or fromAmount == nil or toAmount == nil or fromAmount < 0 or toAmount <= 0 then return end
 
     local fromItem = getItem(fromInventory, src, fromSlot)
     local toItem = getItem(toInventory, src, toSlot)

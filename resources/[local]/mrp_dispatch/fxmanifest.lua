@@ -26,5 +26,6 @@ server_exports {
 
 dependencies {
     'qb-core',
+    --- Soft: mrp_mdt_core should start first (cfg/30_custom.cfg). Not hard-required so dispatch still boots alone.
 }
 

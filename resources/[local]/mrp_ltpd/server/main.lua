@@ -449,6 +449,169 @@ local function isAdmin(src)
     return QBCore.Functions.HasPermission(src, 'admin') or QBCore.Functions.HasPermission(src, 'god')
 end
 
+local function mdtCoreReady()
+    return GetResourceState('mrp_mdt_core') == 'started'
+end
+
+--[[
+  Append-only MDT V2 audit passthrough. Never blocks or fails the caller.
+  Pass `dedupeKey` for hot read paths (searches, profile/camera opens) so repeats
+  from the same officer collapse inside the core's dedupe window.
+]]
+local function mdtAudit(action, opts)
+    if not mdtCoreReady() then return end
+    opts = type(opts) == 'table' and opts or {}
+    opts.resource = opts.resource or 'mrp_ltpd'
+    pcall(function()
+        if opts.dedupeKey then
+            exports['mrp_mdt_core']:AuditLogAsync(action, opts)
+        else
+            exports['mrp_mdt_core']:AuditLog(action, opts)
+        end
+    end)
+end
+
+local function mdtTelemetry(event, opts)
+    if not mdtCoreReady() then return end
+    opts = type(opts) == 'table' and opts or {}
+    opts.service = opts.service or 'police'
+    pcall(function()
+        exports['mrp_mdt_core']:RecordTelemetry(event, opts)
+    end)
+end
+
+local function mdtPerformancePayload()
+    local perf = Config.MdtPerformance or {}
+    return {
+        dispatchPollMs = perf.DispatchPollMs or 2500,
+        pushStaleMs = perf.PushStaleMs or 3500,
+        dispatchPollPushMs = perf.DispatchPollPushMs or 8000,
+        disablePollWhenPushActive = perf.DisablePollWhenPushActive ~= false,
+    }
+end
+
+--- Phase 7: short-lived person search cache (identical query + full-access flag).
+local searchCache = {}
+
+local function searchCacheTtlSec()
+    return tonumber((Config.MdtPerformance or {}).SearchCacheTtlSec) or 20
+end
+
+local function searchCacheMaxEntries()
+    return tonumber((Config.MdtPerformance or {}).SearchCacheMaxEntries) or 128
+end
+
+local function searchCacheKey(query, full)
+    return (full and '1' or '0') .. ':' .. query:lower()
+end
+
+local function searchCacheGet(key)
+    local entry = searchCache[key]
+    if not entry then return nil end
+    if os.time() - entry.at > searchCacheTtlSec() then
+        searchCache[key] = nil
+        return nil
+    end
+    local ok, decoded = pcall(json.decode, entry.payload)
+    return ok and decoded or nil
+end
+
+local function searchCachePut(key, data)
+    local ok, encoded = pcall(json.encode, data)
+    if not ok or not encoded then return end
+    searchCache[key] = { at = os.time(), payload = encoded }
+    local max = searchCacheMaxEntries()
+    local n = 0
+    for _ in pairs(searchCache) do n = n + 1 end
+    if n <= max then return end
+    local oldestKey, oldestAt = nil, math.huge
+    for k, v in pairs(searchCache) do
+        if v.at < oldestAt then
+            oldestAt = v.at
+            oldestKey = k
+        end
+    end
+    if oldestKey then searchCache[oldestKey] = nil end
+end
+
+local function sqlInPlaceholders(n)
+    local t = {}
+    for i = 1, n do t[i] = '?' end
+    return table.concat(t, ',')
+end
+
+local function batchWantedMap(citizenids)
+    local map = {}
+    if #citizenids == 0 then return map end
+    local rows = MySQL.query.await(
+        ('SELECT citizenid, level, reason FROM ltpd_wanted WHERE citizenid IN (%s)'):format(sqlInPlaceholders(#citizenids)),
+        citizenids
+    ) or {}
+    for _, r in ipairs(rows) do map[r.citizenid] = r end
+    return map
+end
+
+local function batchFinesMap(citizenids)
+    local map = {}
+    if #citizenids == 0 then return map end
+    local rows = MySQL.query.await(
+        ('SELECT citizenid, amount, reason_label, created_at FROM ltpd_fines WHERE citizenid IN (%s) ORDER BY id DESC')
+            :format(sqlInPlaceholders(#citizenids)),
+        citizenids
+    ) or {}
+    for _, r in ipairs(rows) do
+        local list = map[r.citizenid]
+        if not list then
+            list = {}
+            map[r.citizenid] = list
+        end
+        if #list < 10 then list[#list + 1] = r end
+    end
+    return map
+end
+
+local function batchVehiclesMap(citizenids)
+    local map = {}
+    if #citizenids == 0 then return map end
+    local rows = MySQL.query.await(
+        ('SELECT citizenid, plate, vehicle, state FROM player_vehicles WHERE citizenid IN (%s) ORDER BY id DESC')
+            :format(sqlInPlaceholders(#citizenids)),
+        citizenids
+    ) or {}
+    for _, r in ipairs(rows) do
+        local list = map[r.citizenid]
+        if not list then
+            list = {}
+            map[r.citizenid] = list
+        end
+        if #list < 15 then list[#list + 1] = r end
+    end
+    return map
+end
+
+--[[
+  Phase 2 RBAC migration step. Dual-checked on purpose: a named mrp_mdt_core
+  permission OR the legacy grade key. Legacy stays authoritative until Phase 3, so a
+  missing/misconfigured rule in the core can never lock live PD out of the MDT.
+]]
+local function hasPermV2(src, legacyKey, corePerm)
+    if hasPerm(src, legacyKey) then return true end
+    if not corePerm or not mdtCoreReady() then return false end
+    local ok, allowed = pcall(function()
+        return exports['mrp_mdt_core']:HasPermission(src, corePerm)
+    end)
+    return ok and allowed == true
+end
+
+--- Shared with the other mrp_ltpd server files (surveillance, reception, …).
+exports('MdtAudit', function(action, opts)
+    return mdtAudit(action, opts)
+end)
+
+exports('HasLtpdPermissionV2', function(src, legacyKey, corePerm)
+    return hasPermV2(src, legacyKey, corePerm)
+end)
+
 QBCore.Functions.CreateCallback('mrp_ltpd:server:isAdmin', function(src, cb)
     cb(isAdmin(src))
 end)
@@ -629,6 +792,24 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:mdtContext', function(src, cb)
         defDiv,
     })
     enforceDivisionForPlayer(src)
+
+    --- mdtContext is fetched once per MDT open, so this is the "officer opened MDT" record.
+    mdtAudit('mdt.open', {
+        source = src,
+        actorCitizenid = P.PlayerData.citizenid,
+        target = P.PlayerData.citizenid,
+        meta = { grade = getGrade(src), division = getDivisionForCitizenid(P.PlayerData.citizenid) },
+        dedupeKey = 'open',
+    })
+    if mdtCoreReady() then
+        pcall(function()
+            exports['mrp_mdt_core']:BeginMdtSession(src, {
+                service = 'police',
+                citizenid = P.PlayerData.citizenid,
+            })
+        end)
+    end
+
     local ped = GetPlayerPed(src)
     local c = (ped and ped ~= 0) and GetEntityCoords(ped) or vector3(0.0, 0.0, 0.0)
     cb({
@@ -661,24 +842,75 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:mdtContext', function(src, cb)
             cctv = hasPerm(src, 'mdt_cctv'),
             bodycam = hasPerm(src, 'mdt_bodycam'),
             weaponLicense = hasPerm(src, 'mdt_weapon_license'),
+            --- Phase 3 incident (byla) tab
+            incidents = mdtCoreReady() and hasPermV2(src, 'mdt_open', 'INCIDENT_VIEW'),
+            incidentReport = hasPermV2(src, 'mdt_arrest_record', 'MDT_REPORT'),
+            incidentTransition = hasPermV2(src, 'mdt_arrest_record', 'INCIDENT_TRANSITION'),
         },
-        surveillanceMaintenance = Config.Surveillance and Config.Surveillance.MaintenanceMode == true,
+        surveillanceMaintenance = Config.Surveillance and (
+            type(Config.Surveillance.IsMaintenance) == 'function' and Config.Surveillance.IsMaintenance()
+            or Config.Surveillance.MaintenanceMode == true
+        ),
         surveillanceMaintenanceMessage = (Config.Surveillance and Config.Surveillance.MaintenanceMessage)
             or 'Sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.',
         mapMaintenance = Config.MdtMapMaintenance and Config.MdtMapMaintenance.enabled == true,
         mapMaintenanceMessage = (Config.MdtMapMaintenance and Config.MdtMapMaintenance.message)
             or 'GPS žemėlapio sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.',
+        performance = mdtPerformancePayload(),
     })
 end)
 
+QBCore.Functions.CreateCallback('mrp_ltpd:server:mdtSessionClose', function(src, cb)
+    if mdtCoreReady() then
+        pcall(function()
+            exports['mrp_mdt_core']:EndMdtSession(src, { service = 'police' })
+        end)
+    end
+    cb({ ok = true })
+end)
+
+QBCore.Functions.CreateCallback('mrp_ltpd:server:mdtTelemetry', function(src, cb, data)
+    data = type(data) == 'table' and data or {}
+    local event = tostring(data.event or ''):sub(1, 64)
+    if event == 'tab_switch' and data.tab then
+        mdtTelemetry('tab_switch', {
+            source = src,
+            service = 'police',
+            meta = { tab = tostring(data.tab):sub(1, 32) },
+        })
+    end
+    cb({ ok = true })
+end)
+
 QBCore.Functions.CreateCallback('mrp_ltpd:server:searchPerson', function(src, cb, query)
-    if not hasPerm(src, 'mdt_search_basic') then return cb({ ok = false, message = 'Nėra teisės' }) end
+    if not hasPermV2(src, 'mdt_search_basic', 'MDT_SEARCH') then return cb({ ok = false, message = 'Nėra teisės' }) end
     query = tostring(query or ''):gsub('%%', ''):gsub('%s+', ' '):match('^%s*(.-)%s*$') or ''
     if #query < 2 then return cb({ ok = true, rows = {} }) end
 
+    local full = mdtFullAccess(src)
+    local cacheKey = searchCacheKey(query, full)
+    local cached = searchCacheGet(cacheKey)
+    if cached then
+        return cb(cached)
+    end
+
     local ok, err = pcall(function()
         local rows = searchPersonDbRows(query)
-        local full = mdtFullAccess(src)
+
+        mdtAudit('mdt.search_person', {
+            source = src,
+            target = query:sub(1, 128),
+            meta = { results = #rows, full = full },
+            dedupeKey = query:lower(),
+        })
+
+        local citizenids = {}
+        for _, r in ipairs(rows) do
+            if r.citizenid then citizenids[#citizenids + 1] = r.citizenid end
+        end
+        local wantedMap = batchWantedMap(citizenids)
+        local finesMap = full and batchFinesMap(citizenids) or nil
+        local vehiclesMap = full and batchVehiclesMap(citizenids) or nil
 
         for _, r in ipairs(rows) do
             local charinfo = decodeCharinfo(r.charinfo)
@@ -693,7 +925,7 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:searchPerson', function(src, cb
                 r.cash = nil
                 r.bank = nil
             end
-            local wanted = MySQL.single.await('SELECT level, reason FROM ltpd_wanted WHERE citizenid = ?', { r.citizenid })
+            local wanted = wantedMap[r.citizenid]
             r.wanted_level = wanted and tonumber(wanted.level) or 0
             r.wanted_reason = wanted and wanted.reason or ''
             local meta = decodeMetadata(r.metadata)
@@ -703,14 +935,8 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:searchPerson', function(src, cb
             local inv = fetchPlayerInventory(r.citizenid, onlineP)
             r.licenses = buildPersonLicenses(r.citizenid, meta, inv, onlineP)
             if full then
-                r.vehicles = MySQL.query.await(
-                    'SELECT plate, vehicle, state FROM player_vehicles WHERE citizenid = ? LIMIT 15',
-                    { r.citizenid }
-                ) or {}
-                r.fines = MySQL.query.await(
-                    'SELECT amount, reason_label, created_at FROM ltpd_fines WHERE citizenid = ? ORDER BY id DESC LIMIT 10',
-                    { r.citizenid }
-                ) or {}
+                r.vehicles = vehiclesMap[r.citizenid] or {}
+                r.fines = finesMap[r.citizenid] or {}
             else
                 r.vehicles = nil
                 r.fines = nil
@@ -720,7 +946,9 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:searchPerson', function(src, cb
             r.metadata = nil
         end
 
-        cb({ ok = true, rows = rows, full = full })
+        local result = { ok = true, rows = rows, full = full }
+        searchCachePut(cacheKey, result)
+        cb(result)
     end)
 
     if not ok then
@@ -756,9 +984,15 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:revokeWeaponLicense', function(
 end)
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:searchVehicle', function(src, cb, plate)
-    if not hasPerm(src, 'mdt_search_basic') then return cb({ ok = false }) end
+    if not hasPermV2(src, 'mdt_search_basic', 'MDT_SEARCH') then return cb({ ok = false }) end
     plate = tostring(plate or ''):upper():gsub('%s+', ''):sub(1, 16)
     if #plate < 2 then return cb({ ok = true, row = nil }) end
+
+    mdtAudit('mdt.search_vehicle', {
+        source = src,
+        target = plate,
+        dedupeKey = plate,
+    })
 
     local row = MySQL.single.await([[
         SELECT pv.plate, pv.vehicle, pv.citizenid, pv.state,
@@ -778,34 +1012,84 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:searchVehicle', function(src, c
     cb({ ok = true, row = row })
 end)
 
-QBCore.Functions.CreateCallback('mrp_ltpd:server:issueFine', function(src, cb, data)
-    if not hasPerm(src, 'mdt_fine') then return cb({ ok = false, message = 'Nėra teisės' }) end
-    local tid = data and data.citizenid
-    local amount = tonumber(data and data.amount) or 0
-    local code = tostring(data and data.reason_code or ''):sub(1, 64)
-    local label = tostring(data and data.reason_label or ''):sub(1, 255)
-    if not tid or amount < 1 or amount > Config.MaxFineAmount then return cb({ ok = false }) end
+--[[
+  Single write path for fines: the MDT „Bauda" tab and the Phase 3 case UI both
+  land here, so money handling, the ltpd_fines row, the audit entry and the
+  incident link can never drift apart.
+
+  @param data table { citizenid, amount, reason_code?, reason_label?, incidentId? }
+  @return table { ok, message?, fineId?, incident? }
+]]
+local function issuePoliceFine(src, data)
+    if not hasPermV2(src, 'mdt_fine', 'MDT_FINE') then return { ok = false, message = 'Nėra teisės' } end
+    data = type(data) == 'table' and data or {}
+    local tid = data.citizenid and tostring(data.citizenid):gsub('%s+', '') or nil
+    local amount = math.floor(tonumber(data.amount) or 0)
+    local code = tostring(data.reason_code or ''):sub(1, 64)
+    local label = tostring(data.reason_label or ''):sub(1, 255)
+    if not tid or tid == '' or amount < 1 or amount > Config.MaxFineAmount then return { ok = false } end
 
     local Officer = QBCore.Functions.GetPlayer(src)
-    if not Officer then return cb({ ok = false }) end
+    if not Officer then return { ok = false } end
 
     local Target = QBCore.Functions.GetPlayerByCitizenId(tid)
     if Target then
         if not Target.Functions.RemoveMoney('bank', amount, 'ltpd-fine') then
             if not Target.Functions.RemoveMoney('cash', amount, 'ltpd-fine') then
-                return cb({ ok = false, message = 'Žaidėjas neturi pinigų (bankas/grynieji)' })
+                return { ok = false, message = 'Žaidėjas neturi pinigų (bankas/grynieji)' }
             end
         end
         TriggerClientEvent('QBCore:Notify', Target.PlayerData.source, ('Bauda %s €: %s'):format(amount, label), 'error')
     end
 
-    MySQL.insert.await(
+    local fineId = MySQL.insert.await(
         'INSERT INTO ltpd_fines (citizenid, officer_citizenid, amount, reason_code, reason_label) VALUES (?, ?, ?, ?, ?)',
         { tid, Officer.PlayerData.citizenid, amount, code, label }
     )
 
+    mdtAudit('mdt.fine_issued', {
+        source = src,
+        actorCitizenid = Officer.PlayerData.citizenid,
+        target = tostring(tid),
+        meta = { amount = amount, reason_code = code, reason_label = label, online = Target ~= nil },
+    })
+    mdtTelemetry('fine_issued', {
+        source = src,
+        service = 'police',
+        actorCitizenid = Officer.PlayerData.citizenid,
+        value_num = amount,
+        meta = { citizenid = tid, reason_code = code },
+    })
+
+    --- Phase 3: link the fine to the case the officer is working on (server/mdt_incidents.lua).
+    local incident
+    if LtpdMdtIncidents then
+        incident = LtpdMdtIncidents.OnFineIssued(src, {
+            citizenid = tid,
+            amount = amount,
+            reason_code = code,
+            reason_label = label,
+            fineId = fineId,
+            incidentId = data.incidentId,
+        })
+    end
+
     TriggerClientEvent('QBCore:Notify', src, 'Bauda išrašyta', 'success')
-    cb({ ok = true })
+    return {
+        ok = true,
+        fineId = fineId,
+        incident = incident,
+        message = incident and ('Bauda išrašyta ir prisegta prie bylos %s.'):format(incident.public_number)
+            or 'Bauda išrašyta.',
+    }
+end
+
+exports('IssuePoliceFine', function(src, data)
+    return issuePoliceFine(tonumber(src), data)
+end)
+
+QBCore.Functions.CreateCallback('mrp_ltpd:server:issueFine', function(src, cb, data)
+    cb(issuePoliceFine(src, data))
 end)
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:collectFingerprint', function(src, cb, citizenid)
@@ -832,7 +1116,23 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:collectFingerprint', function(s
         ON DUPLICATE KEY UPDATE subject_name = VALUES(subject_name), fingerprint = VALUES(fingerprint), created_at = CURRENT_TIMESTAMP
     ]], { Officer.PlayerData.citizenid, citizenid, name, fp })
 
-    cb({ ok = true, message = ('Atspaudai įrašyti: %s'):format(name), fingerprint = fp })
+    --- Phase 3: attach the scan to the case the officer is working on, if any.
+    local incident
+    if LtpdMdtIncidents then
+        incident = LtpdMdtIncidents.OnFingerprint(src, {
+            citizenid = citizenid,
+            name = name,
+            fingerprint = fp,
+        })
+    end
+
+    cb({
+        ok = true,
+        message = incident and ('Atspaudai įrašyti (%s) ir prisegti prie bylos %s.'):format(name, incident.public_number)
+            or ('Atspaudai įrašyti: %s'):format(name),
+        fingerprint = fp,
+        incident = incident,
+    })
 end)
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:getMyFingerprints', function(src, cb)
@@ -852,7 +1152,9 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:getMyFingerprints', function(sr
 end)
 
 QBCore.Functions.CreateCallback('mrp_ltpd:server:setWanted', function(src, cb, data)
-    if not hasPerm(src, 'mdt_wanted') then return cb({ ok = false, message = 'Nėra teisės nustatyti paieškomumo.' }) end
+    if not hasPermV2(src, 'mdt_wanted', 'MDT_WANTED') then
+        return cb({ ok = false, message = 'Nėra teisės nustatyti paieškomumo.' })
+    end
     local tid = data and data.citizenid
     tid = tid and tostring(tid):match('^%s*(.-)%s*$') or ''
     local level = math.floor(tonumber(data and data.level) or 0)
@@ -878,32 +1180,101 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:setWanted', function(src, cb, d
         { tid, level, Officer.PlayerData.citizenid, reason }
     )
 
+    mdtAudit('mdt.set_wanted', {
+        source = src,
+        actorCitizenid = Officer.PlayerData.citizenid,
+        target = tid,
+        meta = { level = level, reason = reason },
+    })
+
+    --- Phase 3: paieškomumo pokytis matomas bylos laiko juostoje.
+    local incident
+    if LtpdMdtIncidents then
+        incident = LtpdMdtIncidents.OnWantedChange(src, {
+            citizenid = tid,
+            level = level,
+            reason = reason,
+        })
+    end
+
     local T = QBCore.Functions.GetPlayerByCitizenId(tid)
     if T then
         TriggerClientEvent('QBCore:Notify', T.PlayerData.source, ('Paieškomumas: %s'):format(level), 'primary')
     end
 
     TriggerClientEvent('QBCore:Notify', src, ('Paieškomumas %s nustatytas (lygis %s).'):format(tid, level), 'success')
-    cb({ ok = true, message = 'Paieškomumas išsaugotas.' })
+    cb({
+        ok = true,
+        incident = incident,
+        message = incident and ('Paieškomumas išsaugotas ir įrašytas byloje %s.'):format(incident.public_number)
+            or 'Paieškomumas išsaugotas.',
+    })
 end)
 
-QBCore.Functions.CreateCallback('mrp_ltpd:server:addArrestNote', function(src, cb, citizenid, notes, reason, sentence)
-    if not hasPerm(src, 'mdt_arrest_record') then return cb({ ok = false }) end
+--[[
+  Single write path for arrest records: MDT „Areštai" tab and the case UI.
+
+  @param data table { citizenid, reason?, sentence?, notes?, incidentId? }
+  @return table { ok, message?, arrestId?, incident? }
+]]
+local function addPoliceArrestRecord(src, data)
+    if not hasPermV2(src, 'mdt_arrest_record', 'MDT_ARREST') then return { ok = false } end
+    data = type(data) == 'table' and data or {}
     local Officer = QBCore.Functions.GetPlayer(src)
-    if not Officer or not citizenid then return cb({ ok = false }) end
-    citizenid = tostring(citizenid):sub(1, 50)
+    local citizenid = data.citizenid and tostring(data.citizenid):gsub('%s+', ''):sub(1, 50) or nil
+    if not Officer or not citizenid or citizenid == '' then return { ok = false } end
+
     local payload = {
-        reason = tostring(reason or ''):sub(1, 256),
-        sentence = tostring(sentence or ''):sub(1, 256),
-        notes = tostring(notes or ''):sub(1, 1500),
+        reason = tostring(data.reason or ''):sub(1, 256),
+        sentence = tostring(data.sentence or ''):sub(1, 256),
+        notes = tostring(data.notes or ''):sub(1, 1500),
         officer_name = ((Officer.PlayerData.charinfo.firstname or '') .. ' ' .. (Officer.PlayerData.charinfo.lastname or '')):gsub('^%s+', ''):gsub('%s+$', ''),
         at = os.date('!%Y-%m-%dT%H:%M:%SZ'),
     }
-    MySQL.insert.await(
+    local arrestId = MySQL.insert.await(
         'INSERT INTO ltpd_arrests (citizenid, officer_citizenid, notes) VALUES (?, ?, ?)',
         { citizenid, Officer.PlayerData.citizenid, json.encode(payload) }
     )
-    cb({ ok = true })
+
+    mdtAudit('mdt.arrest_note', {
+        source = src,
+        actorCitizenid = Officer.PlayerData.citizenid,
+        target = citizenid,
+        meta = { reason = payload.reason, sentence = payload.sentence },
+    })
+
+    --- Phase 3: an arrest is a case event — suspect party + arrest link on the byla.
+    local incident
+    if LtpdMdtIncidents then
+        incident = LtpdMdtIncidents.OnArrest(src, {
+            citizenid = citizenid,
+            reason = payload.reason,
+            sentence = payload.sentence,
+            arrestId = arrestId,
+            incidentId = data.incidentId,
+        })
+    end
+
+    return {
+        ok = true,
+        arrestId = arrestId,
+        incident = incident,
+        message = incident and ('Arešto įrašas išsaugotas byloje %s.'):format(incident.public_number)
+            or 'Arešto įrašas išsaugotas.',
+    }
+end
+
+exports('AddPoliceArrestRecord', function(src, data)
+    return addPoliceArrestRecord(tonumber(src), data)
+end)
+
+QBCore.Functions.CreateCallback('mrp_ltpd:server:addArrestNote', function(src, cb, citizenid, notes, reason, sentence)
+    cb(addPoliceArrestRecord(src, {
+        citizenid = citizenid,
+        notes = notes,
+        reason = reason,
+        sentence = sentence,
+    }))
 end)
 
 local function saveInterrogationRecord(officerSrc, record)

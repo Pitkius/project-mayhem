@@ -30,6 +30,7 @@
       <button type="button" data-tab="calls" class="tab">Iškvietimai</button>
       <button type="button" data-tab="crews" class="tab">Ekipažai</button>
       <button type="button" data-tab="units" class="tab">Žemėlapis</button>
+      <button type="button" data-tab="incidents" class="tab" id="tabIncidents">Bylos</button>
       <button type="button" data-tab="arrests" class="tab" id="tabArrests">Areštai</button>
       <button type="button" data-tab="interrogations" class="tab" id="tabInterrogations">Apklausos</button>
       <button type="button" data-tab="cctv" class="tab" id="tabCctv">Vaizdo stebėjimas</button>
@@ -124,6 +125,31 @@
               <div class="gps-detail-empty muted">Pasirink blipą žemėlapyje arba užvesk pelę dėl informacijos.</div>
             </div>
           </aside>
+        </div>
+      </section>
+      <section id="panel-incidents" class="panel hidden">
+        <div class="row inc-toolbar">
+          <input type="text" id="incSearch" placeholder="Bylos nr., aprašymas, vieta…" maxlength="64" />
+          <button type="button" id="incRefresh" class="btn">Ieškoti</button>
+          <label class="inc-check"><input type="checkbox" id="incOpenOnly" checked /> Tik atviros</label>
+          <label class="inc-check"><input type="checkbox" id="incMine" /> Tik mano</label>
+          <button type="button" id="incNewToggle" class="btn primary">Nauja byla</button>
+        </div>
+        <div id="incCreateBox" class="card inc-create hidden">
+          <div class="grid2">
+            <label>Įvykio aprašymas <input type="text" id="incNewSummary" maxlength="200" placeholder="Pvz. Apiplėšimas Fleeca banke" /></label>
+            <label>Kvalifikacija <input type="text" id="incNewOffence" maxlength="120" placeholder="Pvz. Vagystė" /></label>
+          </div>
+          <div class="row">
+            <button type="button" id="incCreate" class="btn primary">Sukurti bylą</button>
+            <span id="incCreateStatus" class="muted" role="status"></span>
+          </div>
+        </div>
+        <div class="inc-split">
+          <div id="incList" class="inc-list results"><div class="muted">Kraunama…</div></div>
+          <div id="incDetail" class="inc-detail">
+            <div class="muted">Pasirink bylą iš sąrašo arba sukurk naują.</div>
+          </div>
         </div>
       </section>
       <section id="panel-arrests" class="panel hidden">
@@ -279,6 +305,7 @@
   <script src="gtav_map_core.js"></script>
   <script src="mdt_map.js"></script>
   <script src="app.js"></script>
+  <script src="incidents.js"></script>
   <script src="../craft/app.js"></script>
 </body>
 </html>

@@ -40,11 +40,13 @@ server_scripts {
     'server/reception.lua',
     'server/pd_craft.lua',
     'server/surveillance.lua',
+    'server/mdt_incidents.lua',
 }
 
 files {
     'html/mdt/index.html',
     'html/mdt/app.js',
+    'html/mdt/incidents.js',
     'html/mdt/gtav_map_core.js',
     'html/mdt/mdt_map.js',
     'html/mdt/style.css',
@@ -72,4 +74,6 @@ server_exports {
     'PersistVehicleEmergencyMods',
     'ApplyVehicleEmergencyFromMods',
 }
+--- IssuePoliceFine / AddPoliceArrestRecord / HasLtpdPermissionV2 / IsLtpdOnDuty
+--- registruojami runtime (`exports('...', fn)`) server/main.lua faile.
 -- qb-menu (garažo meniu), qb-inventory (ginklinė / stash), qb-target (zonos)

@@ -140,6 +140,40 @@ Config.Permissions = {
     bodycam_wear = 0,
 }
 
+--[[
+  MDT V2 bylos (mrp_mdt_core Phase 3) — kaip PD veiksmai prisikabina prie bylos.
+  Byla visada pirma ieškoma ta, kurioje pareigūnas jau yra (dispatch iškvietimas),
+  ir tik tada, jei leidžiama, sukuriama nauja.
+]]
+Config.MdtIncidents = {
+    --- Areštas – rimtas įvykis: jei bylos nėra, ji sukuriama.
+    autoCreateOnArrest = true,
+    --- Bauda – kasdienis veiksmas: prisegama tik prie jau esamos bylos.
+    autoCreateOnFine = false,
+    --- Kokiu atstumu (m) MDT rodo šalia esančius asmenis dalyvių pasirinkimui.
+    nearbyRadius = 20.0,
+    --- Kokius dalyvių / TP tipus PD gali naudoti byloje (core leidžia daugiau).
+    partyRoles = {
+        suspect = true,
+        victim = true,
+        witness = true,
+        complainant = true,
+        driver = true,
+        passenger = true,
+        owner = true,
+        other = true,
+    },
+    vehicleRoles = {
+        suspect_vehicle = true,
+        victim_vehicle = true,
+        involved = true,
+        towed = true,
+        impounded = true,
+        recovered = true,
+        evidence = true,
+    },
+}
+
 --- Šviesų ir sirenos valdymas (masinoje): režimas per entity statebag (sinchr. visiems žaidėjams)
 --- Fleet / MRPD: tik native SetVehicleSiren (kaip GTA police) — jokių custom DrawLight.
 --- Prop lightbar + script flash → tik civilinė TP su pd_emergency_kit, arba emergencyLights='script'.
@@ -282,6 +316,21 @@ Config.MdtMap = {
 Config.MdtMapMaintenance = {
     enabled = true,
     message = 'GPS žemėlapio sistema laikinai neveikia. Dėl finansavimo skyrimo ir įrengimo kreipkitės į miesto merą.',
+}
+
+--[[
+  Phase 7 — MDT performance knobs (NUI fallback poll + client player position).
+  Live dispatch still arrives via mrp_dispatch pushServiceUpdate → dispatchLive NUI message.
+]]
+Config.MdtPerformance = {
+    DispatchPollMs = 2500,
+    PushStaleMs = 3500,
+    DispatchPollPushMs = 8000,
+    DisablePollWhenPushActive = true,
+    PlayerPosIntervalMs = 750,
+    PlayerPosMinMoveM = 2.5,
+    SearchCacheTtlSec = 20,
+    SearchCacheMaxEntries = 128,
 }
 
 --- Maks. atstumas iki ginklinės / sandėlių / PD garažo (patikra serveryje)
