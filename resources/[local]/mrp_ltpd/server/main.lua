@@ -551,6 +551,39 @@ local function batchWantedMap(citizenids)
     return map
 end
 
+local FinePresetById
+local function getFinePresetById()
+    if FinePresetById then return FinePresetById end
+    FinePresetById = {}
+    for _, p in ipairs(Config.FinePresets or {}) do
+        if p.id then FinePresetById[p.id] = p end
+    end
+    return FinePresetById
+end
+
+local function finePresetAmount(p)
+    return tonumber(p.amount or p.defaultAmount) or 0
+end
+
+local function finePresetsForClient()
+    local out = {}
+    for _, p in ipairs(Config.FinePresets or {}) do
+        if p.id then
+            out[#out + 1] = {
+                id = p.id,
+                category = p.category,
+                label = p.label,
+                code = p.code,
+                description = p.description,
+                amount = finePresetAmount(p),
+                defaultAmount = finePresetAmount(p),
+                jailHint = p.jailHint,
+            }
+        end
+    end
+    return out
+end
+
 local function batchFinesMap(citizenids)
     local map = {}
     if #citizenids == 0 then return map end
@@ -813,7 +846,9 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:mdtContext', function(src, cb)
     local ped = GetPlayerPed(src)
     local c = (ped and ped ~= 0) and GetEntityCoords(ped) or vector3(0.0, 0.0, 0.0)
     cb({
-        presets = Config.FinePresets,
+        presets = finePresetsForClient(),
+        fineCategories = Config.FineCategories or {},
+        fineCategoryTips = Config.FineCategoryTips or {},
         map = Config.MdtMap,
         selfSource = src,
         playerPos = {
@@ -1025,9 +1060,34 @@ local function issuePoliceFine(src, data)
     data = type(data) == 'table' and data or {}
     local tid = data.citizenid and tostring(data.citizenid):gsub('%s+', '') or nil
     local amount = math.floor(tonumber(data.amount) or 0)
-    local code = tostring(data.reason_code or ''):sub(1, 64)
-    local label = tostring(data.reason_label or ''):sub(1, 255)
+    local presetId = tostring(data.reason_code or ''):sub(1, 64)
+    local note = tostring(data.reason_note or ''):sub(1, 120)
     if not tid or tid == '' or amount < 1 or amount > Config.MaxFineAmount then return { ok = false } end
+
+    local preset = getFinePresetById()[presetId]
+    local isIncidentFine = presetId == 'incident'
+
+    if not preset and not isIncidentFine then
+        return { ok = false, message = 'Pasirinkite pažeidimą iš katalogo' }
+    end
+
+    local code = presetId
+    local label
+    if preset then
+        label = preset.label or ''
+        if preset.code and preset.code ~= '' then
+            label = ('[%s] %s'):format(preset.code, preset.label or '')
+        end
+        if note ~= '' then
+            label = label .. ' — ' .. note
+        end
+    else
+        label = tostring(data.reason_label or ''):sub(1, 255)
+        if label == '' then
+            return { ok = false, message = 'Nenurodyta baudos priežastis' }
+        end
+    end
+    label = label:sub(1, 255)
 
     local Officer = QBCore.Functions.GetPlayer(src)
     if not Officer then return { ok = false } end

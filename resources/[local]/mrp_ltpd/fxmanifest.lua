@@ -10,6 +10,7 @@ version '1.0.0'
 ui_page 'html/mdt/index.html'
 
 shared_scripts {
+    'config_fine_presets.lua',
     'config.lua',
     'config_pd_craft.lua',
     'shared/pd_divisions.lua',

@@ -60,6 +60,21 @@ local function canEvidence(src) return hasPermV2(src, 'mdt_arrest_record', 'MDT_
 local function canBodycam(src) return hasPermV2(src, 'mdt_bodycam', 'MDT_BODYCAM') end
 local function canCctv(src) return hasPermV2(src, 'mdt_cctv', 'MDT_CCTV') end
 
+--- Aplinkosaugos kvalifikacijos pasiūlymai bylų formoje (iš baudų katalogo).
+local function aplinkosaugaOffenceSuggestions()
+    local out = {}
+    for _, p in ipairs(Config.FinePresets or {}) do
+        if p.category == 'aplinkosauga' and p.label then
+            out[#out + 1] = {
+                label = p.label,
+                code = p.code,
+                category = 'aplinkosauga',
+            }
+        end
+    end
+    return out
+end
+
 local function evidenceVocab()
     return coreCall('GetEvidenceVocabulary') or {}
 end
@@ -337,6 +352,7 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:incidentMeta', function(src, cb
         statusLabels = STATUS_LABELS,
         vocabulary = coreCall('GetPoliceCaseVocabulary') or {},
         evidenceVocabulary = evidenceVocab(),
+        offenceSuggestions = aplinkosaugaOffenceSuggestions(),
         nearbyRadius = nearbyRadius(),
         permissions = {
             report = canReport(src),

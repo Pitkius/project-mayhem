@@ -54,12 +54,17 @@
       <section id="panel-fine" class="panel hidden">
         <div class="grid2">
           <label>Piliečio ID <input type="text" id="fineCid" /></label>
-          <label>Suma € <input type="number" id="fineAmt" /></label>
+          <label>Suma € <input type="number" id="fineAmt" min="1" /></label>
         </div>
-        <label>Priežastis
-          <select id="finePreset"></select>
-        </label>
-        <label>Pastaba <input type="text" id="fineLabel" /></label>
+        <div class="fine-toolbar">
+          <input type="search" id="fineSearch" class="fine-search" placeholder="Ieškoti pagal pavadinimą, straipsnį ar aprašymą…" autocomplete="off" />
+          <div id="fineCategoryChips" class="fine-chips"></div>
+          <p id="fineCategoryTip" class="fine-category-tip muted hidden" role="note"></p>
+        </div>
+        <div id="finePresetList" class="fine-preset-list" role="listbox" aria-label="Baudų šablonai"></div>
+        <input type="hidden" id="finePresetId" value="" />
+        <label>Pastaba <input type="text" id="fineLabel" maxlength="120" placeholder="Papildoma pastaba (nebūtina)" /></label>
+        <p id="fineSelectedHint" class="fine-selected-hint muted" role="status"></p>
         <button type="button" id="goFine" class="btn primary">Išrašyti baudą</button>
       </section>
       <section id="panel-want" class="panel hidden">
@@ -138,7 +143,7 @@
         <div id="incCreateBox" class="card inc-create hidden">
           <div class="grid2">
             <label>Įvykio aprašymas <input type="text" id="incNewSummary" maxlength="200" placeholder="Pvz. Apiplėšimas Fleeca banke" /></label>
-            <label>Kvalifikacija <input type="text" id="incNewOffence" maxlength="120" placeholder="Pvz. Vagystė" /></label>
+            <label>Kvalifikacija <input type="text" id="incNewOffence" maxlength="120" placeholder="Pvz. Vagystė" list="incOffenceSuggestions" /></label>
           </div>
           <div class="row">
             <button type="button" id="incCreate" class="btn primary">Sukurti bylą</button>
@@ -301,6 +306,7 @@
     </div>
     <p class="cctv-hint">ESC — stabdyti • pelė — pasukti</p>
   </div>
+  <datalist id="incOffenceSuggestions"></datalist>
   <script src="vendor/leaflet.js"></script>
   <script src="gtav_map_core.js"></script>
   <script src="mdt_map.js"></script>

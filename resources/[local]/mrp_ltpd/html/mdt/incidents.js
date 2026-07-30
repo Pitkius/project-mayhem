@@ -558,7 +558,7 @@
           <button type="button" class="btn inc-transition-go"${state.perms.transition ? '' : ' disabled'}>Taikyti</button>
         </div>
         <div class="grid2">
-          <label>Kvalifikacija <input type="text" class="inc-offence-label" maxlength="200" /></label>
+          <label>Kvalifikacija <input type="text" class="inc-offence-label" maxlength="200" list="incOffenceSuggestions" /></label>
           <label>Kodas <input type="text" class="inc-offence-code" maxlength="64" /></label>
           <label>Sprendimas <select class="inc-disposition">${options(state.vocab.dispositions || {}, police.disposition || 'pending')}</select></label>
         </div>
@@ -821,6 +821,17 @@
     });
   }
 
+  function fillOffenceSuggestions() {
+    const list = el('incOffenceSuggestions');
+    if (!list) return;
+    const rows = state.offenceSuggestions || [];
+    list.innerHTML = rows.map((row) => {
+      const label = row && row.label ? String(row.label) : '';
+      if (!label) return '';
+      return `<option value="${esc(label)}">${row.code ? esc(row.code) : ''}</option>`;
+    }).join('');
+  }
+
   function fillNearbySelects() {
     const people = detailQuery('.inc-party-nearby');
     const officers = detailQuery('.inc-officer-nearby');
@@ -849,8 +860,10 @@
       state.perms = res.permissions || {};
       state.vocab = res.vocabulary || {};
       state.evidenceVocab = res.evidenceVocabulary || {};
+      state.offenceSuggestions = res.offenceSuggestions || [];
       state.statusLabels = res.statusLabels || {};
       state.ready = true;
+      fillOffenceSuggestions();
       return true;
     });
   }

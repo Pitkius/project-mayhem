@@ -255,14 +255,7 @@ Config.EmergencyVehicle = {
     },
 }
 
---- Baudų šablonai (kodas rodomas MDT)
-Config.FinePresets = {
-    { code = 'SPEED', label = 'Greičio viršijimas', defaultAmount = 150 },
-    { code = 'RED', label = 'Raudono šviesoforo pažeidimas', defaultAmount = 200 },
-    { code = 'PARK', label = 'Netinkamas parkavimas', defaultAmount = 80 },
-    { code = 'DOC', label = 'Dokumentų neturėjimas', defaultAmount = 120 },
-    { code = 'NOISE', label = 'Triukšmo pažeidimas', defaultAmount = 100 },
-}
+--- Baudų katalogas — config_fine_presets.lua (MDT „Bauda" skirtukas)
 
 --- MDT žemėlapis — Leaflet CRS.Simple + satelitinį PNG.
 --- projection = homography: projekcinė transformacija (stabiliausia su 20+ taškų).

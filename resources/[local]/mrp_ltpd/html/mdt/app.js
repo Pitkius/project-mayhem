@@ -18,6 +18,152 @@ let mdtPerf = {
 let lastDispatchPushAt = 0;
 let lastTabTelemetry = '';
 
+let finePresets = [];
+let fineCategories = [];
+let fineCategoryTips = {};
+let fineSelectedId = '';
+let fineFilterCategory = '';
+let fineFilterQuery = '';
+
+function presetAmount(p) {
+  return Number(p.amount ?? p.defaultAmount) || 0;
+}
+
+function initFinePanel(presets, categories, categoryTips) {
+  finePresets = presets || [];
+  fineCategories = categories || [];
+  fineCategoryTips = categoryTips || {};
+  fineSelectedId = '';
+  fineFilterCategory = '';
+  fineFilterQuery = '';
+
+  const searchEl = document.getElementById('fineSearch');
+  const chipsEl = document.getElementById('fineCategoryChips');
+  const presetIdEl = document.getElementById('finePresetId');
+  if (presetIdEl) presetIdEl.value = '';
+
+  if (searchEl) {
+    searchEl.value = '';
+    searchEl.oninput = () => {
+      fineFilterQuery = searchEl.value.trim().toLowerCase();
+      renderFinePresetList();
+    };
+  }
+
+  if (chipsEl) {
+    chipsEl.innerHTML = '';
+    const allChip = document.createElement('button');
+    allChip.type = 'button';
+    allChip.className = 'fine-chip active';
+    allChip.textContent = 'Visi';
+    allChip.dataset.category = '';
+    allChip.onclick = () => setFineCategory('');
+    chipsEl.appendChild(allChip);
+
+    fineCategories.forEach((c) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'fine-chip';
+      chip.textContent = c.label;
+      chip.dataset.category = c.id;
+      chip.onclick = () => setFineCategory(c.id);
+      chipsEl.appendChild(chip);
+    });
+  }
+
+  renderFinePresetList();
+  updateFineSelectedHint(null);
+  updateFineCategoryTip();
+}
+
+function updateFineCategoryTip() {
+  const tipEl = document.getElementById('fineCategoryTip');
+  if (!tipEl) return;
+  const tip = fineFilterCategory ? fineCategoryTips[fineFilterCategory] : '';
+  if (tip) {
+    tipEl.textContent = tip;
+    tipEl.classList.remove('hidden');
+  } else {
+    tipEl.textContent = '';
+    tipEl.classList.add('hidden');
+  }
+}
+
+function setFineCategory(catId) {
+  fineFilterCategory = catId || '';
+  document.querySelectorAll('#fineCategoryChips .fine-chip').forEach((el) => {
+    el.classList.toggle('active', (el.dataset.category || '') === fineFilterCategory);
+  });
+  renderFinePresetList();
+  updateFineCategoryTip();
+}
+
+function filteredFinePresets() {
+  const q = fineFilterQuery;
+  return finePresets.filter((p) => {
+    if (fineFilterCategory && p.category !== fineFilterCategory) return false;
+    if (!q) return true;
+    const hay = [p.label, p.code, p.description, p.id, p.category].filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+}
+
+function selectFinePreset(p) {
+  fineSelectedId = p.id;
+  const presetIdEl = document.getElementById('finePresetId');
+  if (presetIdEl) presetIdEl.value = p.id;
+  document.getElementById('fineAmt').value = presetAmount(p);
+  updateFineSelectedHint(p);
+  document.querySelectorAll('.fine-preset-item').forEach((el) => {
+    el.classList.toggle('selected', el.dataset.id === p.id);
+  });
+}
+
+function updateFineSelectedHint(p) {
+  const hint = document.getElementById('fineSelectedHint');
+  if (!hint) return;
+  if (!p) {
+    hint.textContent = finePresets.length
+      ? 'Pasirinkite pažeidimą iš sąrašo.'
+      : 'Baudų katalogas tuščias.';
+    return;
+  }
+  const bits = [];
+  if (p.code) bits.push(p.code);
+  bits.push(`${presetAmount(p)} €`);
+  if (p.jailHint) bits.push(p.jailHint);
+  hint.textContent = bits.join(' · ');
+}
+
+function renderFinePresetList() {
+  const list = document.getElementById('finePresetList');
+  if (!list) return;
+  const items = filteredFinePresets();
+  list.innerHTML = '';
+  if (!items.length) {
+    list.innerHTML = '<p class="fine-empty muted">Nėra atitinkančių pažeidimų.</p>';
+    return;
+  }
+  items.forEach((p) => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'fine-preset-item';
+    row.dataset.id = p.id;
+    row.setAttribute('role', 'option');
+    if (p.id === fineSelectedId) row.classList.add('selected');
+    row.innerHTML = `
+      <span class="fine-preset-main">
+        <strong>${escapeHtml(p.label)}</strong>
+        ${p.code ? `<span class="fine-preset-code">${escapeHtml(p.code)}</span>` : ''}
+      </span>
+      <span class="fine-preset-amt">${presetAmount(p)} €</span>
+      ${p.description ? `<span class="fine-preset-desc">${escapeHtml(p.description)}</span>` : ''}
+    `;
+    row.onclick = () => selectFinePreset(p);
+    list.appendChild(row);
+  });
+}
+
 const mapMeta = {
   minX: -4000,
   maxX: 4500,
@@ -190,22 +336,7 @@ window.addEventListener('message', (e) => {
     document.getElementById('tabBodycam').style.display = perms.bodycam ? '' : 'none';
     applySurveillanceMaintenanceFromOpen(d.data || {});
     applyMapMaintenanceFromOpen(d.data || {});
-    const sel = document.getElementById('finePreset');
-    sel.innerHTML = '';
-    (d.data.presets || []).forEach((p) => {
-      const o = document.createElement('option');
-      o.value = p.code;
-      o.textContent = `${p.label} (${p.defaultAmount} €)`;
-      o.dataset.amount = p.defaultAmount;
-      o.dataset.label = p.label;
-      sel.appendChild(o);
-    });
-    sel.onchange = () => {
-      const opt = sel.options[sel.selectedIndex];
-      document.getElementById('fineAmt').value = opt.dataset.amount || '';
-      document.getElementById('fineLabel').value = opt.dataset.label || '';
-    };
-    if (sel.options.length) sel.onchange();
+    initFinePanel(d.data.presets || [], d.data.fineCategories || [], d.data.fineCategoryTips || {});
     applyMapConfig(d.data && d.data.map);
     applyMdtPerformance(d.data && d.data.performance);
     lastDispatchPushAt = 0;
@@ -471,16 +602,25 @@ document.getElementById('goVeh').onclick = () => {
 };
 
 document.getElementById('goFine').onclick = () => {
-  const preset = document.getElementById('finePreset');
-  const opt = preset.options[preset.selectedIndex];
+  const presetId = (document.getElementById('finePresetId') || {}).value || '';
+  if (!presetId.trim()) {
+    updateFineSelectedHint(null);
+    const hint = document.getElementById('fineSelectedHint');
+    if (hint) hint.textContent = 'Pasirinkite pažeidimą iš katalogo.';
+    return;
+  }
   nuiPost('issueFine', {
     citizenid: document.getElementById('fineCid').value.trim(),
     amount: Number(document.getElementById('fineAmt').value),
-    reason_code: opt ? opt.value : '',
-    reason_label: document.getElementById('fineLabel').value.trim(),
+    reason_code: presetId.trim(),
+    reason_note: document.getElementById('fineLabel').value.trim(),
   }, { force: true }).then((res) => {
     if (res && res.ok) {
       document.getElementById('fineCid').value = '';
+      document.getElementById('fineLabel').value = '';
+    } else if (res && res.message) {
+      const hint = document.getElementById('fineSelectedHint');
+      if (hint) hint.textContent = res.message;
     }
   });
 };
