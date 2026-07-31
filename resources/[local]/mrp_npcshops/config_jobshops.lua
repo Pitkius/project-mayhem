@@ -16,6 +16,7 @@ Config.PoliceSupplyShop = {
         { name = 'weapon_combatpistol', amount = 25, price = 65000, slot = 8 },
         { name = 'pistol_ammo', amount = 999, price = 485, slot = 9 },
         { name = 'armor_light', amount = 50, price = 5000, slot = 10 },
+        { name = 'spike_strip', amount = 50, price = 5000, slot = 11 },
     },
 }
 

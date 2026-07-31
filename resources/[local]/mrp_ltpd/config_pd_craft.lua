@@ -8,6 +8,7 @@ Config.PdWeaponCraft = {
     interactDistance = 3.0,
 
     levelLabels = {
+        [0] = '0 lygis · Taktinė įranga',
         [1] = '1 lygis · Pistoletai / šarvai',
         [2] = '2 lygis · SMG / shotgun',
         [3] = '3 lygis · Stambūs ginklai',
@@ -40,6 +41,20 @@ Config.PdWeaponCraft = {
     --- Attachment itemai (qb-core) yra generic — tas pats item veikia keliems ginklams;
     --- receptai išdėstyti pagal ginklo lygį (pistoletai / SMG+shotgun / šautuvai).
     recipes = {
+        --- ========== LYGIA 0 — taktinė įranga (visiems pareigūnams) ==========
+        pd_craft_spike_strip = {
+            label = 'Spygluota juosta',
+            craftLevel = 0,
+            unlockOrder = 0,
+            output = 'spike_strip',
+            count = 1,
+            timeMs = 15000,
+            ingredients = {
+                { item = 'iron', count = 10 },
+                { item = 'steel', count = 5 },
+            },
+        },
+
         --- ========== LYGIA 1 — pistoletai, ammo, armor, pistoletų priedai ==========
         pd_craft_combat_pistol = {
             label = 'Combat pistoletas',

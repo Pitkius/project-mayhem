@@ -174,6 +174,19 @@ Config.MdtIncidents = {
     },
 }
 
+--- Spygluota juosta — PD gamyba / pirkimas; naudoja bet kas turintis itemą
+Config.SpikeStrip = {
+    item = 'spike_strip',
+    propModel = 'p_ld_stinger_s',
+    pickupLabel = 'Paimti spygluotą juostą',
+    placeDistance = 1.8,
+    pickupDistance = 2.5,
+    maxPlaceDistance = 4.0,
+    burstRadius = 2.2,
+    minBurstSpeed = 1.5,
+    hitCooldownMs = 8000,
+}
+
 --- Šviesų ir sirenos valdymas (masinoje): režimas per entity statebag (sinchr. visiems žaidėjams)
 --- Fleet / MRPD: tik native SetVehicleSiren (kaip GTA police) — jokių custom DrawLight.
 --- Prop lightbar + script flash → tik civilinė TP su pd_emergency_kit, arba emergencyLights='script'.

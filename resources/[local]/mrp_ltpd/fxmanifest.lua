@@ -31,6 +31,7 @@ client_scripts {
     'client/bodycam.lua',
     'client/boss.lua',
     'client/emergency_kit.lua',
+    'client/spike_strip.lua',
     'client/pd_doors.lua',
 }
 
@@ -41,6 +42,7 @@ server_scripts {
     'server/reception.lua',
     'server/pd_craft.lua',
     'server/surveillance.lua',
+    'server/spike_strip.lua',
     'server/mdt_incidents.lua',
 }
 
