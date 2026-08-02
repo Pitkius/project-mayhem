@@ -41,6 +41,14 @@ Config.DrugEquipment.minPlaceDist = 2.0
 --- Keli įrankiai vienoje lab zonoje (pvz. lab_kit + burner) — atstumas metrais
 Config.DrugEquipment.labAssistRadius = 5.0
 
+--- Cayo Perico ribos portable žolės pakavimo stalui.
+--- center = salos centras; radius = 1800 m spindulys, toks pats kaip mrp_cayoperico MapRadius.
+--- Pakeitus radius į mažesnį skaičių, stalo padėjimo zona saloje sumažės.
+Config.DrugEquipment.cayoPlacement = {
+    center = vector3(4840.57, -5174.42, 2.0),
+    radius = 1800.0,
+}
+
 --- itemName (qb-core) → pasaulio prop + meniu produktai
 --- products: portable tipui (dažniausiai tuščia — tik pagalbinis įrankis receptuose)
 --- fixedLocations.products: konkretūs receptai tik toje lokacijoje (vienas narkotikas = viena vieta)
@@ -70,11 +78,24 @@ Config.DrugEquipment.types = {
         products = {},
     },
     bagging_table = {
-        label = 'Pakavimo stalas',
+        label = 'Žolės pakavimo stalas',
         prop = 'bkr_prop_weed_table_01a',
         icon = 'bag',
         packOnly = true,
-        products = {},
+        -- Portable stalas paleidžia tik naują fiksuotos kameros pakavimą po vieną maišelį.
+        products = { 'weed_pack' },
+        -- Tik stalo savininkas matys ir galės paleisti pakavimo veiksmą.
+        ownerOnly = true,
+        -- Vienas žaidėjas vienu metu gali turėti tik vieną padėtą tokio tipo stalą.
+        maxPerPlayer = 1,
+        -- Stalą leidžiama padėti tik Config.DrugEquipment.cayoPlacement ribose.
+        cayoOnly = true,
+        -- 600000 ms = 10 min. nenaudojamas stalas po šio laiko subyra.
+        idleTimeoutMs = 600000,
+        -- Holograma piešiama tik esant ne toliau nei 20 m nuo stalo.
+        hologramDistance = 20.0,
+        -- 1.25 m = hologramos aukštis virš stalo objekto koordinatės.
+        hologramHeight = 1.25,
     },
     thc_still = {
         label = 'THC distiliatorius',
@@ -87,7 +108,7 @@ Config.DrugEquipment.types = {
         label = 'Samagono distiliatorius',
         prop = 'prop_cooker_03',
         icon = 'flame',
-        packOnly = true,
+        packOnly = true, --- recepte itemo nereikia; produktas alkoholio process
         products = { 'alcohol_process' },
     },
     vape_still = {
@@ -126,7 +147,4 @@ Config.DrugEquipment.fixedLocations = {
     -- L3 · Amfetaminas (Grapeseed dykuma)
     { itemType = 'lab_kit', coords = vector4(1903.48, 4922.55, 48.86, 225.0), label = 'Amfetamino lab stalas', products = { 'amp_process' } },
     { itemType = 'scale', coords = vector4(1908.20, 4926.80, 48.86, 225.0), label = 'Amfetamino svarstyklės', products = { 'amp_pack' } },
-    -- L2 · Žolė (Cayo pakavimas)
-    -- PAKAVIMAS: coords vector4(x, y, z, heading). w (180.0) = stalo pasukimas — keičia visų objektų orientaciją.
-    { itemType = 'bagging_table', coords = vector4(5196.40, -5133.20, 3.35, 180.0), label = 'Žolės pakavimo stalas', products = { 'weed_pack' } },
 }

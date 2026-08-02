@@ -288,8 +288,7 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
             difficulty = (prod and prod.level) or 1,
         }
     end
-    local weed3dMode = profile.drug == 'weed'
-        and (profile.mode == 'weed_dry' or profile.mode == 'weed_pack')
+    local weed3dMode = profile.drug == 'weed' and profile.mode == 'weed_pack'
     -- PAKAVIMAS: weed_pack paleidžia 3D WeedProduction sceną (ne schedule minigame).
     if weed3dMode and WeedProduction and WeedProduction.Start then
         if not workspace and currentStationId and Config.GetAllCraftStations then
@@ -444,8 +443,33 @@ local function runWeaponCraftSequence(res, afterMinigame)
     nextPhase()
 end
 
-local function startCraftFlow(productId)
+local function startCraftFlow(productId, amount)
     if not currentStationId then return end
+    if productId == 'weed_process' then
+        local dryCfg = Config.WeedDrying or {}
+        if currentStationId ~= (dryCfg.stationId or 'weed_dry_davis') then
+            return QBCore.Functions.Notify('Žolė džiovinama tik Davis džiovinimo vietoje.', 'error')
+        end
+        if not WeedDrying or not WeedDrying.Start then
+            return QBCore.Functions.Notify('Džiovinimo sistema nepasiekiama.', 'error')
+        end
+        return WeedDrying.Start(amount, function(response)
+            if not response or not response.ok then
+                return QBCore.Functions.Notify(
+                    (response and response.reason) or 'Džiovinimo pradėti nepavyko.',
+                    'error'
+                )
+            end
+            closeUi()
+            QBCore.Functions.Notify(
+                ('Pradėta džiovinti x%d. Trukmė: %d sek.'):format(
+                    response.session.quantity,
+                    response.session.durationSeconds
+                ),
+                'success'
+            )
+        end)
+    end
     local craftStationId = currentStationId
     QBCore.Functions.TriggerCallback('mrp_drugs:server:startCraft', function(res)
         if not res or not res.ok then
@@ -515,6 +539,10 @@ end
 
 local function startStationCraftDirect(stationId)
     local st = getStationById(stationId)
+    local dryCfg = Config.WeedDrying or {}
+    if stationId == (dryCfg.stationId or 'weed_dry_davis') then
+        return openStationUi(stationId)
+    end
     if st and st.mode == 'weapon' then
         return openStationUi(stationId)
     end
@@ -626,7 +654,7 @@ end)
 
 RegisterNUICallback('craft', function(data, cb)
     if data and data.productId then
-        startCraftFlow(data.productId)
+        startCraftFlow(data.productId, data.amount)
     end
     cb('ok')
 end)
@@ -827,10 +855,6 @@ local function setupStationBlips()
     if weedCayo and weedCayo.blip and (not weedCayo.requireIsland or isCayoIslandLoaded()) then
         addCfgBlip(weedCayo.blip.coords, weedCayo.blip, weedCayo.blip.label or 'Žolės džiovinimas')
     end
-    if weedCayo and weedCayo.packBlip and (not weedCayo.packBlip.requireIsland or isCayoIslandLoaded()) then
-        addCfgBlip(weedCayo.packBlip.coords, weedCayo.packBlip, weedCayo.packBlip.label or 'Žolės supakavimas')
-    end
-
     -- Metamfetamino supakavimas
     local methLab = Config.MethLab
     if methLab and methLab.blip then

@@ -206,6 +206,16 @@ local function countItem(Player, item, amount)
     return it.amount >= amount
 end
 
+local function countItemAmount(Player, itemName)
+    local total = 0
+    for _, item in pairs(Player.PlayerData.items or {}) do
+        if item and item.name == itemName then
+            total = total + (tonumber(item.amount) or 0)
+        end
+    end
+    return total
+end
+
 local function countAnyOf(Player, items, amount)
     local total = 0
     for _, itemName in ipairs(items or {}) do
@@ -328,6 +338,9 @@ local function releaseCraft(src)
     local active = activeCrafts[src]
     if active and active.lockKey and activeStations[active.lockKey] == src then
         activeStations[active.lockKey] = nil
+    end
+    if active and active.equipmentId and Equipment then
+        Equipment.setBusy(active.equipmentId, false)
     end
     activeCrafts[src] = nil
     return active
@@ -495,7 +508,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getStationUi', function(src, c
         if prod.level == st.level and stationProductAllowed(st, pid) then
             local exclusive = Config.AmpExclusiveProducts and Config.AmpExclusiveProducts[pid]
             if not exclusive or (st.products and #st.products > 0) then
-                products[#products + 1] = {
+                local productPayload = {
                     id = pid,
                     label = prod.label,
                     level = prod.level,
@@ -510,6 +523,19 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:getStationUi', function(src, c
                     ingredients = buildRecipeStatus(Player, pid, st, src),
                     mode = st.mode or 'drugs',
                 }
+                if pid == 'weed_process' then
+                    local dryCfg = Config.WeedDrying or {}
+                    productPayload.drying = {
+                        minimumAmount = tonumber(dryCfg.minimumAmount) or 10,
+                        maximumAmount = tonumber(dryCfg.maximumAmount) or 500,
+                        availableAmount = countItemAmount(Player, dryCfg.inputItem or 'weed_leaf'),
+                        secondsPerPlant = tonumber(dryCfg.secondsPerPlant) or 10,
+                        discountEvery = tonumber(dryCfg.discountEvery) or 25,
+                        discountPercent = tonumber(dryCfg.discountPercent) or 2,
+                        earlyReturnPercent = tonumber(dryCfg.earlyReturnPercent) or 80,
+                    }
+                end
+                products[#products + 1] = productPayload
             end
         end
     end
@@ -532,6 +558,9 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraft', function(src, cb,
     local st = getStation(stationId)
     local prod = getProduct(productId)
     if not st or not prod then return cb({ ok = false, reason = 'Netinkami duomenys.' }) end
+    if productId == 'weed_process' then
+        return cb({ ok = false, reason = 'Naudok džiovinimo kiekio lauką.' })
+    end
     if prod.level ~= st.level then
         return cb({ ok = false, reason = 'Ši stotis netinka šiam produktui.' })
     end
@@ -621,8 +650,25 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
     local e = Equipment.get(equipmentId)
     local prod = getProduct(productId)
     if not e or not prod then return cb({ ok = false, reason = 'Netinkami duomenys.' }) end
+    if not Equipment.canUse(src, e) then
+        return cb({ ok = false, reason = 'Šia įranga gali naudotis tik jos savininkas.' })
+    end
+    if Equipment.isBusy(equipmentId) then
+        return cb({ ok = false, reason = 'Šia įranga jau naudojamasi.' })
+    end
     if productId == 'amp_process' then
         return cb({ ok = false, reason = 'Amfetamino sintezė vykdoma tik mobilioje Journey laboratorijoje.' })
+    end
+    if productId == 'weed_process' then
+        return cb({ ok = false, reason = 'Žolė džiovinama tik Davis džiovinimo vietoje.' })
+    end
+    if productId == 'weed_pack' then
+        if e.fixed or e.itemType ~= 'bagging_table' then
+            return cb({ ok = false, reason = 'Žolę galima pakuoti tik prie savo Cayo pakavimo stalo.' })
+        end
+        if not Equipment.isPlacementAllowed(e) then
+            return cb({ ok = false, reason = 'Žolės pakavimo stalas turi būti Cayo Perico saloje.' })
+        end
     end
     if not Equipment.playerNear(src, equipmentId) then
         return cb({ ok = false, reason = 'Per toli nuo įrangos.' })
@@ -682,6 +728,7 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
         equipmentId = equipmentId,
         virtualStation = st,
     }
+    Equipment.setBusy(equipmentId, true)
     lastCraftAt[src] = now
 
     cb({
@@ -775,11 +822,24 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
         return cb({ ok = false, reason = 'Gamyba neaktyvi.' })
     end
     if active.equipmentId then
-        if not Equipment or not Equipment.playerNear(src, active.equipmentId) then
+        local equipment = Equipment and Equipment.get(active.equipmentId)
+        if not equipment or not Equipment.playerNear(src, active.equipmentId) then
             releaseCraft(src)
             local Player = QBCore.Functions.GetPlayer(src)
             if Player then refundPartial(Player, active.recipe, 100) end
             return cb({ ok = false, reason = 'Per toli nuo įrangos.' })
+        end
+        if not Equipment.canUse(src, equipment) then
+            releaseCraft(src)
+            local Player = QBCore.Functions.GetPlayer(src)
+            if Player then refundPartial(Player, active.recipe, 100) end
+            return cb({ ok = false, reason = 'Nebegalite naudotis šia įranga.' })
+        end
+        if active.productId == 'weed_pack' and not Equipment.isPlacementAllowed(equipment) then
+            releaseCraft(src)
+            local Player = QBCore.Functions.GetPlayer(src)
+            if Player then refundPartial(Player, active.recipe, 100) end
+            return cb({ ok = false, reason = 'Pakavimo stalas nebėra Cayo Perico saloje.' })
         end
     elseif not playerNearStation(src, active.stationId) then
         releaseCraft(src)
