@@ -1,5 +1,8 @@
 Config = {}
 
+--- Max distance from bank desk or ATM prop for deposit/withdraw/transfer (server-enforced).
+Config.TerminalMaxDistance = 2.5
+
 Config.BankLocations = {
     vec3(150.266, -1040.203, 29.374),
     vec3(-1212.980, -330.841, 37.787),

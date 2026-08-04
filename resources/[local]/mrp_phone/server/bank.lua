@@ -509,8 +509,24 @@ function Bank.Transfer(src, data)
     }
 end
 
+--- Cash deposit/withdraw only at bank desk / ATM (mrp_bank export). Phone transfers stay remote.
+local function requireNearBankTerminal(src)
+    if GetResourceState('mrp_bank') ~= 'started' then
+        return false, 'Banko terminalas nepasiekiamas.'
+    end
+    local ok, near = pcall(function()
+        return exports['mrp_bank']:IsNearBankOrAtm(src)
+    end)
+    if not ok or not near then
+        return false, 'Turite būti prie bankomato arba banko.'
+    end
+    return true
+end
+
 function Bank.Deposit(src, amount)
     if dwBusy(src, 'deposit') then return { ok = false, message = 'Palaukite akimirką.' } end
+    local nearOk, nearMsg = requireNearBankTerminal(src)
+    if not nearOk then return { ok = false, message = nearMsg } end
     local citizenid, P = citizenFromSrc(src)
     if not citizenid then return { ok = false, message = 'Žaidėjas nerastas.' } end
     amount = math.floor(tonumber(amount) or 0)
@@ -535,6 +551,8 @@ end
 
 function Bank.Withdraw(src, amount)
     if dwBusy(src, 'withdraw') then return { ok = false, message = 'Palaukite akimirką.' } end
+    local nearOk, nearMsg = requireNearBankTerminal(src)
+    if not nearOk then return { ok = false, message = nearMsg } end
     local citizenid, P = citizenFromSrc(src)
     if not citizenid then return { ok = false, message = 'Žaidėjas nerastas.' } end
     amount = math.floor(tonumber(amount) or 0)

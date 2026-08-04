@@ -132,5 +132,5 @@ Config.FishingLoot = {
     { item = 'fish_raw', weight = 5 },
 }
 
-Config.FishCooldown = 12
+Config.FishCooldown = 10
 Config.HuntGutCooldown = 8

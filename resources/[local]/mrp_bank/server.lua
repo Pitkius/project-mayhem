@@ -140,6 +140,38 @@ local function addHistory(citizenid, txType, amount, balanceAfter, targetCitizen
     })
 end
 
+--- Server-side: player must be at a bank desk or near an ATM prop.
+local function isNearBankOrAtm(src)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    local coords = GetEntityCoords(ped)
+    local maxDist = tonumber(Config.TerminalMaxDistance) or 2.5
+
+    for _, loc in ipairs(Config.BankLocations or {}) do
+        if #(coords - loc) <= maxDist then
+            return true
+        end
+    end
+
+    for _, model in ipairs(Config.ATMModels or {}) do
+        local hash = type(model) == 'string' and joaat(model) or model
+        local obj = GetClosestObjectOfType(coords.x, coords.y, coords.z, maxDist, hash, false, false, false)
+        if obj and obj ~= 0 then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function requireNearTerminal(src)
+    if isNearBankOrAtm(src) then return true end
+    TriggerClientEvent('QBCore:Notify', src, 'Turite būti prie bankomato arba banko.', 'error')
+    return false
+end
+
+exports('IsNearBankOrAtm', isNearBankOrAtm)
+
 QBCore.Functions.CreateCallback('fivempro:bank:server:getSnapshot', function(source, cb)
     local player = QBCore.Functions.GetPlayer(source)
     if not player then
@@ -164,6 +196,7 @@ end)
 
 RegisterNetEvent('fivempro:bank:server:deposit', function(amount)
     local src = source
+    if not requireNearTerminal(src) then return end
     local player = QBCore.Functions.GetPlayer(src)
     amount = math.floor(math.max(0, tonumber(amount) or 0))
     if not player or amount <= 0 then return end
@@ -180,6 +213,7 @@ end)
 
 RegisterNetEvent('fivempro:bank:server:withdraw', function(amount)
     local src = source
+    if not requireNearTerminal(src) then return end
     local player = QBCore.Functions.GetPlayer(src)
     amount = math.floor(math.max(0, tonumber(amount) or 0))
     if not player or amount <= 0 then return end
@@ -196,6 +230,7 @@ end)
 
 RegisterNetEvent('fivempro:bank:server:transfer', function(targetId, amount)
     local src = source
+    if not requireNearTerminal(src) then return end
     local player = QBCore.Functions.GetPlayer(src)
     local tid = tonumber(targetId)
     local target = tid and QBCore.Functions.GetPlayer(tid)

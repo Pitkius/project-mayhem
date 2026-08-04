@@ -1166,8 +1166,13 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createAccount', function(sourc
     if usernameTaken then
         return cb({ ok = false, message = 'Username jau užimtas.' })
     end
+    --- bcrypt via FiveM natives (never store plaintext)
+    local passhash = GetPasswordHash(pass)
+    if not passhash or passhash == '' then
+        return cb({ ok = false, message = 'Nepavyko užšifruoti slaptažodžio.' })
+    end
     MySQL.insert.await('INSERT INTO fivempro_phone_accounts (citizenid, username, passhash) VALUES (?, ?, ?)', {
-        citizenid, username, pass
+        citizenid, username, passhash
     })
     for _, app in ipairs((Config.Phone and Config.Phone.AppStoreApps) or {}) do
         if app.default == true then
@@ -1605,13 +1610,17 @@ CreateThread(function()
           `id` int NOT NULL AUTO_INCREMENT,
           `citizenid` varchar(60) NOT NULL,
           `username` varchar(32) NOT NULL,
-          `passhash` varchar(128) NOT NULL,
+          `passhash` varchar(255) NOT NULL,
           `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (`id`),
           UNIQUE KEY `uniq_phone_accounts_cid` (`citizenid`),
           UNIQUE KEY `uniq_phone_accounts_username` (`username`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
+    --- Widen passhash for bcrypt ($2a$… ~60 chars; leave headroom)
+    pcall(function()
+        MySQL.query.await('ALTER TABLE fivempro_phone_accounts MODIFY `passhash` varchar(255) NOT NULL')
+    end)
     MySQL.query.await([[
         CREATE TABLE IF NOT EXISTS `fivempro_phone_installed_apps` (
           `citizenid` varchar(60) NOT NULL,

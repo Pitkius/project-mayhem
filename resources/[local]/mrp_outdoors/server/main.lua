@@ -1,5 +1,8 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+--- Per-player fishing reward cooldown (seconds) — mirrors Config.FishCooldown.
+local fishRewardCooldown = {}
+
 local function getCitizenId(Player)
     return Player and Player.PlayerData and Player.PlayerData.citizenid or nil
 end
@@ -160,11 +163,18 @@ RegisterNetEvent('mrp_outdoors:server:fishReward', function()
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
+    local cooldownSec = math.max(1, math.floor(tonumber(Config.FishCooldown) or 10))
+    local now = os.time()
+    local last = fishRewardCooldown[src] or 0
+    if now - last < cooldownSec then
+        return
+    end
     if not hasLicense(Player, 'fishing_license') then return end
     if not Player.Functions.GetItemByName('fishingrod') then
         TriggerClientEvent('QBCore:Notify', src, 'Reikia meškerės.', 'error')
         return
     end
+    fishRewardCooldown[src] = now
     local roll = math.random(1, 100)
     local acc = 0
     local item = 'fish_raw'
@@ -260,4 +270,8 @@ end)
 exports('HasOutdoorsLicense', function(src, licenseItem)
     local Player = QBCore.Functions.GetPlayer(src)
     return hasLicense(Player, licenseItem)
+end)
+
+AddEventHandler('playerDropped', function()
+    fishRewardCooldown[source] = nil
 end)
