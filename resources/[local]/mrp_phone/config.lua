@@ -7,10 +7,20 @@ Config.KeybindDefault = 'F1'
 
 --- Inventoriaus itemo pavadinimas (qb-core `items.lua`) – naudojant itemą atidaromas telefonas
 Config.PhoneItem = 'phone'
+Config.DarknetPhoneItem = 'darknet_phone'
 --- Jei true, F1 veikia tik jei inventoriuje yra `Config.PhoneItem` (telefoną vis tiek galima atidaryti per itemą)
 Config.RequirePhoneItemForKeybind = true
 
 Config.Phone = {
+    --- FIRST BOOT: drop legacy fivempro_phone_* tables (full wipe). Set false after first successful migrate.
+    WipeLegacyTables = true,
+    SessionTtlSec = 900,
+    Pin = {
+        length = 4,
+        failsBeforeLockout = 3,
+        lockoutSeconds = 600,
+        failsBeforeLockedStatus = 10,
+    },
     numberMin = 100000,
     numberMax = 999999,
     maxContacts = 120,

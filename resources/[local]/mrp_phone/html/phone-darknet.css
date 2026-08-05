@@ -1,0 +1,54 @@
+/* DarkNet phone theme + app chrome */
+.phone-darknet .device-wallpaper {
+  filter: saturate(0.7) brightness(0.55);
+}
+.phone-darknet .statusbar {
+  color: #c4b5fd;
+}
+.pin-panel {
+  margin: 24px 16px 0;
+  padding: 16px;
+  border-radius: 16px;
+}
+.pin-title {
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.pin-dots {
+  text-align: center;
+  letter-spacing: 8px;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+.pin-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.pin-pad button {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 0;
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}
+.dn-app {
+  padding: 12px;
+}
+.dn-app h3 {
+  margin: 0 0 8px;
+}
+.dn-card {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+}

@@ -511,7 +511,7 @@ QBShared.Items = {
     coyote_pelt                  = { name = 'coyote_pelt', label = 'Kojoto kailis', weight = 420, type = 'item', image = 'coyote_pelt.png', unique = false, useable = false, shouldClose = false, description = 'Pilkas kojoto kailis.' },
 
     -- mrp_drugs — Dark Net nelegalus telefonas
-    darknet_phone                = { name = 'darknet_phone', label = 'Dark Net telefonas', weight = 400, type = 'item', image = 'phone.png', unique = false, useable = true, shouldClose = true, description = 'Šifruotas nelegalus įrenginys. Užsakymai tik naktį.' },
+    darknet_phone                = { name = 'darknet_phone', label = 'Dark Net telefonas', weight = 400, type = 'item', image = 'phone.png', unique = true, useable = true, shouldClose = true, description = 'Šifruotas nelegalus įrenginys. Užsakymai tik naktį.' },
 
     -- mrp_drugs — 1 etapas: žaliava (nuskinta / gryna)
     hemp_trim                    = { name = 'hemp_trim', label = 'Techninės kanapės trim', weight = 40, type = 'item', image = 'weed_leaf.png', unique = false, useable = false, shouldClose = false, description = 'L1 THC žaliava · 1/3 etapas. Ne aukštos kokybės žolė.' },

@@ -100,6 +100,24 @@ Nauji nariai mato tik **oro-uostas** ir **pasitvirtinimas**. Reakcijos duoda jau
 
 Jei reakcijos neveikia po senesnės formos: `/setupverify sync`
 
+### Permanent Discord invite (txAdmin allowlist)
+
+Permanent invite (`max_age=0`) + auto-atstatymas, jei kas ištrina. Žr. **`docs/TXADMIN_DISCORD.md`**.
+
+1. Botui **Create Instant Invite** teisė invite kanale (pvz. `#oro-uostas`)
+2. Discord’e:
+   ```
+   /invite setup channel:#oro-uostas
+   /invite status
+   ```
+3. URL įrašyk į:
+   - txAdmin → Allowlist instructions (Discord Server Roles + Member role ID)
+   - `resources/[qb]/qb-core/config.lua` → `QBConfig.Server.Discord`
+4. Health-check (default kas 15 min): `.env` → `DISCORD_INVITE_*`
+5. Priverstinis naujas: `/invite refresh` — po to atnaujink txAdmin + qb-core
+
+**txAdmin:** atskiras botas **MRP admin** (ne Guardian). Guardian = **MRP guardian**. Žr. `docs/TXADMIN_DISCORD.md`.
+
 ### Logų struktūra (auto-sukuriama)
 
 Po kategorijos **📋 Admin-logai**:
@@ -118,7 +136,7 @@ Po kategorijos **📋 Admin-logai**:
 | FiveM · Admin | admin, **tx_admin**, **admin_actions**, **reports**, security |
 
 ### Slash komandos
-`setup`, `setuplogs`, `setlogchannel`, `setupverify`, `whitelist`, `antinuke`, `ban`, `kick`, `timeout`, `warn`, `warnings`, `clearwarnings`, `purge`, `lock`, `unlock`, `slowmode`, `serverinfo`, `userinfo`
+`setup`, `setuplogs`, `setlogchannel`, `setupverify`, `invite`, `whitelist`, `antinuke`, `ban`, `kick`, `timeout`, `warn`, `warnings`, `clearwarnings`, `purge`, `lock`, `unlock`, `slowmode`, `serverinfo`, `userinfo`
 
 ---
 

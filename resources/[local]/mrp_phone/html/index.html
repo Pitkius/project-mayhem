@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="phone-bank.css" />
   <link rel="stylesheet" href="phone-weather.css" />
   <link rel="stylesheet" href="phone-notes.css" />
+  <link rel="stylesheet" href="phone-darknet.css" />
   <link rel="stylesheet" href="death-screen.css" />
 </head>
 <body>
@@ -46,19 +47,34 @@
         <div class="lock-time" id="lockTime">09:41</div>
         <div class="lock-date" id="lockDate">Antradienis, gegužės 19</div>
         <div class="lock-notifs" id="lockNotifs"></div>
-        <div class="lock-unlock-zone" id="lockUnlockZone" aria-label="Braukite aukštyn atrakinti">
-          <div class="lock-hint">Braukite aukštyn atrakinti</div>
-          <span class="lock-chevron" aria-hidden="true">^</span>
-          <div class="lock-bar" id="lockBar"></div>
+        <div class="pin-panel glass-panel" id="pinPanel">
+          <div class="pin-title" id="pinTitle">Įveskite PIN</div>
+          <div class="pin-dots" id="pinDots" aria-hidden="true">••••</div>
+          <input id="pinInput" class="pin-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" />
+          <div class="pin-pad" id="pinPad">
+            <button type="button" data-pin="1">1</button>
+            <button type="button" data-pin="2">2</button>
+            <button type="button" data-pin="3">3</button>
+            <button type="button" data-pin="4">4</button>
+            <button type="button" data-pin="5">5</button>
+            <button type="button" data-pin="6">6</button>
+            <button type="button" data-pin="7">7</button>
+            <button type="button" data-pin="8">8</button>
+            <button type="button" data-pin="9">9</button>
+            <button type="button" data-pin="clear">C</button>
+            <button type="button" data-pin="0">0</button>
+            <button type="button" data-pin="ok">OK</button>
+          </div>
+          <div id="pinState" class="muted small"></div>
         </div>
       </section>
 
       <section id="accountSetup" class="screen hidden setup-screen glass-panel">
-        <h2>Sveiki</h2>
-        <p class="muted">Pirmas paleidimas — susikurkite telefono paskyrą.</p>
-        <input id="setupUsername" placeholder="Vartotojo vardas" maxlength="24" />
-        <input id="setupPassword" type="password" placeholder="Slaptažodis" maxlength="32" />
-        <button id="btnCreateAccount" class="ios-btn primary">Sukurti paskyrą</button>
+        <h2>Naujas telefonas</h2>
+        <p class="muted">Susikurkite 4 skaitmenų PIN. Jis saugo šį įrenginį.</p>
+        <input id="setupPin" type="password" inputmode="numeric" placeholder="PIN (4 sk.)" maxlength="4" />
+        <input id="setupPin2" type="password" inputmode="numeric" placeholder="Pakartokite PIN" maxlength="4" />
+        <button id="btnCreateAccount" class="ios-btn primary">Aktyvuoti</button>
         <div id="setupState" class="muted small"></div>
       </section>
 
@@ -118,6 +134,7 @@
   <script src="phone-bank.js"></script>
   <script src="phone-weather.js"></script>
   <script src="phone-notes.js"></script>
+  <script src="phone-darknet.js"></script>
   <script src="death-screen.js"></script>
   <script src="app.js"></script>
 </body>

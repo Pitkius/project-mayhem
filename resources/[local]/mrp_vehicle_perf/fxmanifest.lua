@@ -9,12 +9,14 @@ version '1.5.0'
 
 shared_scripts {
     'config.lua',
+    'config_surface.lua',
     'shared/pricing.lua',
     'shared/vanilla_max_kmh.lua',
 }
 
 client_scripts {
     'client.lua',
+    'client/surface_handling.lua',
     'client/impact_shake.lua',
 }
 

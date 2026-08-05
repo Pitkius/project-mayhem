@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "deploy": "node deploy-commands.js",
     "setup:logs": "node run-setup-logs.js",
-    "branding": "node setup-branding.js"
+    "branding": "node setup-branding.js",
+    "verify:token": "node scripts/verify-discord-token.js"
   },
   "engines": {
     "node": ">=18.0.0"

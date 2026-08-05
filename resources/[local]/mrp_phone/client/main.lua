@@ -192,6 +192,7 @@ local function closePhone()
     SetNuiFocusKeepInput(false)
     SetNuiFocus(false, false)
     sendUi('close')
+    TriggerServerEvent('mrp_phone:server:closeSession')
 
     CreateThread(function()
         runPhonePutAwayAnim()
@@ -248,7 +249,7 @@ RegisterCommand(Config.KeybindCommand or 'fivempro_phone_toggle', function()
         QBCore.Functions.Notify('Jums reikia telefono inventoriuje.', 'error')
         return
     end
-    togglePhone()
+    TriggerEvent('mrp_phone:client:openPhoneDevice', { itemName = itemName })
 end, false)
 
 RegisterKeyMapping(
@@ -311,12 +312,56 @@ RegisterNetEvent('mrp_phone:client:closePhone', function()
 end)
 
 RegisterNetEvent('mrp_phone:client:openPhoneFromItem', function()
-    local itemName = Config.PhoneItem or 'phone'
-    if not QBCore.Functions.HasItem(itemName, 1) then
-        QBCore.Functions.Notify('Neturite telefono.', 'error')
+    TriggerEvent('mrp_phone:client:openPhoneDevice', { itemName = Config.PhoneItem or 'phone' })
+end)
+
+RegisterNetEvent('mrp_phone:client:internalShowPhone', function(opts)
+    opts = opts or {}
+    if IsPauseMenuActive() then return end
+    if phonePhase == 'closing' or phonePhase == 'opening' then return end
+
+    local function afterVisible()
+        sendUi('deviceBootstrap', opts.devicePayload or {})
+        if opts.needSetup then
+            sendUi('showPinSetup', opts.devicePayload or {})
+        else
+            local sess = opts.devicePayload and opts.devicePayload.session
+            if sess then
+                fetchPhoneData(function(data)
+                    sendUi('hydrate', data)
+                    sendUi('showHome', {})
+                end)
+            else
+                sendUi('showPinUnlock', opts.devicePayload or {})
+            end
+        end
+    end
+
+    if phonePhase == 'open' then
+        afterVisible()
         return
     end
-    showPhone({ refreshIfOpen = true })
+
+    phonePhase = 'opening'
+    CreateThread(function()
+        local ped = PlayerPedId()
+        ensurePhoneProp()
+        pedPlayAnim(ped, ANIM_DICT, ANIM_IN, 800, 49)
+        if not waitWhileOpening(700) then return end
+        if phonePhase ~= 'opening' then return end
+        pedPlayAnim(ped, ANIM_DICT, ANIM_LOOP, -1, 49)
+        phonePhase = 'open'
+        SetNuiFocus(true, true)
+        sendUi('open', {})
+        afterVisible()
+    end)
+end)
+
+AddEventHandler('mrp_phone:client:afterUnlock', function()
+    fetchPhoneData(function(data)
+        sendUi('hydrate', data)
+        sendUi('showHome', {})
+    end)
 end)
 
 RegisterNUICallback('close', function(_, cb)

@@ -1,4 +1,4 @@
-local QBCore = exports['qb-core']:GetCoreObject()
+﻿local QBCore = exports['qb-core']:GetCoreObject()
 
 local ActiveCalls = {}
 local NextCallId = 1
@@ -306,11 +306,11 @@ local function sourceByCitizen(citizenid)
     return nil, nil
 end
 
---- Sistemos / „nežinomo numerio" SMS iš kito resurso (pvz. mrp_drugs Dark Net).
---- Įrašo žinutę į veikėjo pokalbių istoriją ir notifikuoja, jei žaidėjas online.
---- @param toCitizenid string   Gavėjo citizenid
---- @param fromNumber  string   Rodyti kaip siuntėjo numerį (pvz. '000000')
---- @param body        string   Žinutės tekstas
+--- Sistemos / â€žneÅ¾inomo numerio" SMS iÅ¡ kito resurso (pvz. mrp_drugs Dark Net).
+--- Ä®raÅ¡o Å¾inutÄ™ Ä¯ veikÄ—jo pokalbiÅ³ istorijÄ… ir notifikuoja, jei Å¾aidÄ—jas online.
+--- @param toCitizenid string   GavÄ—jo citizenid
+--- @param fromNumber  string   Rodyti kaip siuntÄ—jo numerÄ¯ (pvz. '000000')
+--- @param body        string   Å½inutÄ—s tekstas
 --- @return boolean ok
 exports('SendSystemSMS', function(toCitizenid, fromNumber, body)
     toCitizenid = tostring(toCitizenid or '')
@@ -371,7 +371,7 @@ local function dispatchEmergency(src, service, clientCoords)
     LastEmergencyCall[src] = LastEmergencyCall[src] or {}
     local last = tonumber(LastEmergencyCall[src][service]) or 0
     if now - last < (tonumber(cfg.callCooldownSec) or 45) then
-        return TriggerClientEvent('QBCore:Notify', src, 'Palaukite prieš kitą skambutį.', 'error')
+        return TriggerClientEvent('QBCore:Notify', src, 'Palaukite prieÅ¡ kitÄ… skambutÄ¯.', 'error')
     end
     LastEmergencyCall[src][service] = now
 
@@ -392,7 +392,7 @@ local function dispatchEmergency(src, service, clientCoords)
         police = ('Policija: %s skambina (%s)'):format(callerName, phone),
         ems = ('Greitoji: %s skambina (%s)'):format(callerName, phone),
         taxi = ('Taksi: %s skambina (%s)'):format(callerName, phone),
-        mechanic = ('Mechanikas: %s prašo pagalbos (%s)'):format(callerName, phone),
+        mechanic = ('Mechanikas: %s praÅ¡o pagalbos (%s)'):format(callerName, phone),
     }
     local title = labels[service] or 'Skubus skambutis'
 
@@ -437,9 +437,9 @@ local function dispatchEmergency(src, service, clientCoords)
     end
 
     if count == 0 then
-        TriggerClientEvent('QBCore:Notify', src, 'Šiuo metu niekas neatsiliepia (tarnyba ne duty).', 'error')
+        TriggerClientEvent('QBCore:Notify', src, 'Å iuo metu niekas neatsiliepia (tarnyba ne duty).', 'error')
     else
-        TriggerClientEvent('QBCore:Notify', src, ('Skambutis perduotas (%s pareigūnų).'):format(count), 'success')
+        TriggerClientEvent('QBCore:Notify', src, ('Skambutis perduotas (%s pareigÅ«nÅ³).'):format(count), 'success')
     end
 end
 
@@ -611,14 +611,14 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:saveContact', function(source, cb, data)
     local citizenid, P = getCitizen(source)
-    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    if not citizenid then return cb({ ok = false, message = 'Å½aidÄ—jas nerastas' }) end
     local fullname = getFullName(P)
     ensurePhoneUser(citizenid, fullname)
 
     local maxContacts = (Config.Phone and Config.Phone.maxContacts) or 120
     local count = MySQL.scalar.await('SELECT COUNT(*) FROM fivempro_phone_contacts WHERE owner_citizenid = ?', { citizenid }) or 0
     if tonumber(count) >= maxContacts then
-        return cb({ ok = false, message = 'Kontaktų limitas pasiektas.' })
+        return cb({ ok = false, message = 'KontaktÅ³ limitas pasiektas.' })
     end
 
     local name = clampStr(data and data.name or '', 60)
@@ -638,7 +638,7 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:updateContact', function(source, cb, data)
     local citizenid = getCitizen(source)
-    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    if not citizenid then return cb({ ok = false, message = 'Å½aidÄ—jas nerastas' }) end
 
     local contactId = tonumber(data and data.id)
     local name = clampStr(data and data.name or '', 60)
@@ -670,7 +670,7 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:deleteContact', function(source, cb, data)
     local citizenid = getCitizen(source)
-    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    if not citizenid then return cb({ ok = false, message = 'Å½aidÄ—jas nerastas' }) end
 
     local contactId = tonumber(data and data.id)
     if not contactId then return cb({ ok = false, message = 'Blogi duomenys.' }) end
@@ -683,7 +683,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:deleteContact', function(sourc
         return cb({ ok = false, message = 'Kontaktas nerastas.' })
     end
     if isSystemContactNumber(row.contact_number) then
-        return cb({ ok = false, message = 'Tarnybos kontakto pašalinti negalima.' })
+        return cb({ ok = false, message = 'Tarnybos kontakto paÅ¡alinti negalima.' })
     end
 
     MySQL.update.await('DELETE FROM fivempro_phone_contacts WHERE id = ? AND owner_citizenid = ?', {
@@ -702,13 +702,13 @@ QBCore.Functions.CreateCallback('mrp_phone:server:sendMessage', function(source,
     local body = clampStr(data and data.body or '', (Config.Phone and Config.Phone.maxMessageLength) or 320)
 
     if toNumber == '' or body == '' then
-        return cb({ ok = false, message = 'Įvesk numerį ir žinutę.' })
+        return cb({ ok = false, message = 'Ä®vesk numerÄ¯ ir Å¾inutÄ™.' })
     end
     if toNumber == fromNumber then
-        return cb({ ok = false, message = 'Negali rašyti sau.' })
+        return cb({ ok = false, message = 'Negali raÅ¡yti sau.' })
     end
     if isSystemContactNumber(toNumber) then
-        return cb({ ok = false, message = 'Šis numeris skirtas skambučiams, ne žinutėms.' })
+        return cb({ ok = false, message = 'Å is numeris skirtas skambuÄiams, ne Å¾inutÄ—ms.' })
     end
 
     local target = getUserByNumber(toNumber)
@@ -763,7 +763,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createAd', function(source, cb
     local price = math.max(0, math.floor(tonumber(data and data.price) or 0))
     local body = clampStr(data and data.body or '', (Config.Phone and Config.Phone.maxAdLength) or 260)
     if body == '' then
-        return cb({ ok = false, message = 'Skelbimas tuščias.' })
+        return cb({ ok = false, message = 'Skelbimas tuÅ¡Äias.' })
     end
     if title == '' then
         title = body:sub(1, math.min(48, #body))
@@ -830,17 +830,17 @@ end
 
 QBCore.Functions.CreateCallback('mrp_phone:server:savePhoto', function(source, cb, data)
     if not photosEnabled() then
-        return cb({ ok = false, message = 'Telefono nuotraukos išjungtos serveryje.' })
+        return cb({ ok = false, message = 'Telefono nuotraukos iÅ¡jungtos serveryje.' })
     end
     local citizenid = getCitizen(source)
-    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    if not citizenid then return cb({ ok = false, message = 'Å½aidÄ—jas nerastas' }) end
     local imageData = normalizePhotoImageData(data and data.imageData)
     local maxLen = (Config.Phone and Config.Phone.maxPhotoDataLength) or 750000
     if imageData == '' or #imageData < 32 then
-        return cb({ ok = false, message = 'Tuščia nuotrauka.' })
+        return cb({ ok = false, message = 'TuÅ¡Äia nuotrauka.' })
     end
     if #imageData > maxLen then
-        return cb({ ok = false, message = 'Nuotrauka per didelė. Bandyk dar kartą.' })
+        return cb({ ok = false, message = 'Nuotrauka per didelÄ—. Bandyk dar kartÄ….' })
     end
     local maxPhotos = (Config.Phone and Config.Phone.maxPhotosPerUser) or 48
     local count = MySQL.scalar.await('SELECT COUNT(*) FROM fivempro_phone_photos WHERE citizenid = ?', { citizenid }) or 0
@@ -858,18 +858,18 @@ QBCore.Functions.CreateCallback('mrp_phone:server:savePhoto', function(source, c
     end
     local isFront = (data and data.front == true) and 1 or 0
     local zoom = tonumber(data and data.zoom) or 1.0
-    --- Pirma eilutė be blob — tada failas ant disko
+    --- Pirma eilutÄ— be blob â€” tada failas ant disko
     local id = MySQL.insert.await([[
         INSERT INTO fivempro_phone_photos (citizenid, image_data, file_key, is_front, zoom_level)
         VALUES (?, NULL, '', ?, ?)
     ]], { citizenid, isFront, zoom })
     if not id then
-        return cb({ ok = false, message = 'Nepavyko išsaugoti.' })
+        return cb({ ok = false, message = 'Nepavyko iÅ¡saugoti.' })
     end
     local fileKey = PhotoStorage and PhotoStorage.writePhoto(id, imageData)
     if not fileKey then
         MySQL.update.await('DELETE FROM fivempro_phone_photos WHERE id = ?', { id })
-        return cb({ ok = false, message = 'Nepavyko įrašyti nuotraukos į diską.' })
+        return cb({ ok = false, message = 'Nepavyko Ä¯raÅ¡yti nuotraukos Ä¯ diskÄ….' })
     end
     MySQL.update.await('UPDATE fivempro_phone_photos SET file_key = ? WHERE id = ?', { fileKey, id })
     local newCount = MySQL.scalar.await('SELECT COUNT(*) FROM fivempro_phone_photos WHERE citizenid = ?', { citizenid }) or 0
@@ -879,7 +879,7 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:getPhoto', function(source, cb, data)
     if not photosEnabled() then
-        return cb({ ok = false, message = 'Telefono nuotraukos išjungtos serveryje.' })
+        return cb({ ok = false, message = 'Telefono nuotraukos iÅ¡jungtos serveryje.' })
     end
     local citizenid = getCitizen(source)
     if not citizenid then return cb({ ok = false }) end
@@ -926,7 +926,7 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:deletePhoto', function(source, cb, data)
     if not photosEnabled() then
-        return cb({ ok = false, message = 'Telefono nuotraukos išjungtos serveryje.' })
+        return cb({ ok = false, message = 'Telefono nuotraukos iÅ¡jungtos serveryje.' })
     end
     local citizenid = getCitizen(source)
     if not citizenid then return cb({ ok = false }) end
@@ -946,7 +946,7 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:saveNotes', function(source, cb, data)
     local citizenid = getCitizen(source)
-    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    if not citizenid then return cb({ ok = false, message = 'Å½aidÄ—jas nerastas' }) end
 
     local noteId = tonumber(data and data.id)
     local title = clampStr(data and data.title or '', (Config.Phone and Config.Phone.maxNoteTitleLength) or 64)
@@ -955,10 +955,10 @@ QBCore.Functions.CreateCallback('mrp_phone:server:saveNotes', function(source, c
     local maxNotes = (Config.Phone and Config.Phone.maxNotes) or 50
 
     if title == '' then
-        return cb({ ok = false, message = 'Įveskite užrašo pavadinimą.' })
+        return cb({ ok = false, message = 'Ä®veskite uÅ¾raÅ¡o pavadinimÄ….' })
     end
     if body == '' then
-        return cb({ ok = false, message = 'Užrašas negali būti tuščias.' })
+        return cb({ ok = false, message = 'UÅ¾raÅ¡as negali bÅ«ti tuÅ¡Äias.' })
     end
     if #body > maxLen then
         body = body:sub(1, maxLen)
@@ -970,7 +970,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:saveNotes', function(source, c
             { noteId, citizenid }
         )
         if not owned then
-            return cb({ ok = false, message = 'Užrašas nerastas.' })
+            return cb({ ok = false, message = 'UÅ¾raÅ¡as nerastas.' })
         end
         MySQL.update.await(
             'UPDATE fivempro_phone_notes SET title = ?, body = ? WHERE id = ? AND citizenid = ?',
@@ -984,7 +984,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:saveNotes', function(source, c
         { citizenid }
     ) or 0
     if tonumber(count) >= maxNotes then
-        return cb({ ok = false, message = ('Galima išsaugoti ne daugiau kaip %d užrašų.'):format(maxNotes) })
+        return cb({ ok = false, message = ('Galima iÅ¡saugoti ne daugiau kaip %d uÅ¾raÅ¡Å³.'):format(maxNotes) })
     end
 
     local newId = MySQL.insert.await(
@@ -996,16 +996,16 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:deleteNote', function(source, cb, data)
     local citizenid = getCitizen(source)
-    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    if not citizenid then return cb({ ok = false, message = 'Å½aidÄ—jas nerastas' }) end
     local noteId = tonumber(data and data.id)
-    if not noteId then return cb({ ok = false, message = 'Užrašas nerastas.' }) end
+    if not noteId then return cb({ ok = false, message = 'UÅ¾raÅ¡as nerastas.' }) end
     MySQL.update.await('DELETE FROM fivempro_phone_notes WHERE id = ? AND citizenid = ?', { noteId, citizenid })
     cb({ ok = true })
 end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:deleteOldNotes', function(source, cb, data)
     local citizenid = getCitizen(source)
-    if not citizenid then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    if not citizenid then return cb({ ok = false, message = 'Å½aidÄ—jas nerastas' }) end
 
     local cfgDays = (Config.Phone and Config.Phone.notesOldDays) or 30
     local days = tonumber(data and data.olderThanDays) or cfgDays
@@ -1025,14 +1025,14 @@ QBCore.Functions.CreateCallback('mrp_phone:server:saveAdProfile', function(sourc
     local username = clampStr(data and data.username or '', 24)
     local bio = clampStr(data and data.bio or '', 200)
     if username == '' then
-        return cb({ ok = false, message = 'Įveskite vartotojo vardą.' })
+        return cb({ ok = false, message = 'Ä®veskite vartotojo vardÄ….' })
     end
     local taken = MySQL.single.await([[
         SELECT citizenid FROM fivempro_phone_ad_profiles
         WHERE username = ? AND citizenid <> ? LIMIT 1
     ]], { username, citizenid })
     if taken then
-        return cb({ ok = false, message = 'Vartotojo vardas užimtas.' })
+        return cb({ ok = false, message = 'Vartotojo vardas uÅ¾imtas.' })
     end
     local avatar = data and data.avatarData
     if avatar ~= nil and avatar ~= '' then
@@ -1042,9 +1042,9 @@ QBCore.Functions.CreateCallback('mrp_phone:server:saveAdProfile', function(sourc
             return cb({ ok = false, message = 'Avataras per didelis.' })
         end
         if PhotoStorage and not PhotoStorage.writeAvatar(citizenid, avatar) then
-            return cb({ ok = false, message = 'Nepavyko išsaugoti avataro.' })
+            return cb({ ok = false, message = 'Nepavyko iÅ¡saugoti avataro.' })
         end
-        avatar = nil --- nebe į MySQL
+        avatar = nil --- nebe Ä¯ MySQL
     else
         avatar = false --- nepaliesti
     end
@@ -1059,7 +1059,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:saveAdProfile', function(sourc
             VALUES (?, ?, ?, NULL)
         ]], { citizenid, username, bio })
     end
-    --- Jei avatar nebuvo atsiųstas — palikti esamą failą (avatar == false)
+    --- Jei avatar nebuvo atsiÅ³stas â€” palikti esamÄ… failÄ… (avatar == false)
     cb({ ok = true })
     TriggerClientEvent('mrp_phone:client:refreshData', source)
 end)
@@ -1093,7 +1093,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:deleteAd', function(source, cb
         adId, citizenid
     })
     if not row then
-        return cb({ ok = false, message = 'Skelbimas nerastas arba ne jūsų.' })
+        return cb({ ok = false, message = 'Skelbimas nerastas arba ne jÅ«sÅ³.' })
     end
     MySQL.update.await('DELETE FROM fivempro_phone_ads WHERE id = ? AND citizenid = ?', { adId, citizenid })
     cb({ ok = true })
@@ -1114,7 +1114,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createPost', function(source, 
     local galleryId = tostring(image):match('^gallery:(%d+)$')
     if galleryId then
         if not photosEnabled() then
-            return cb({ ok = false, message = 'Nuotraukos išjungtos.' })
+            return cb({ ok = false, message = 'Nuotraukos iÅ¡jungtos.' })
         end
         local owned = MySQL.scalar.await(
             'SELECT id FROM fivempro_phone_photos WHERE id = ? AND citizenid = ? LIMIT 1',
@@ -1126,7 +1126,7 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createPost', function(source, 
         image = ('gallery:%s'):format(galleryId)
     end
     if cap == '' and image == '' then
-        return cb({ ok = false, message = 'Įrašas tuščias.' })
+        return cb({ ok = false, message = 'Ä®raÅ¡as tuÅ¡Äias.' })
     end
     MySQL.insert.await([[
         INSERT INTO fivempro_phone_posts (citizenid, author_name, caption, image_url, likes)
@@ -1149,14 +1149,14 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_phone:server:createAccount', function(source, cb, data)
     local citizenid, P = getCitizen(source)
-    if not citizenid or not P then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
+    if not citizenid or not P then return cb({ ok = false, message = 'Å½aidÄ—jas nerastas' }) end
     local fullname = getFullName(P)
     ensurePhoneUser(citizenid, fullname)
 
     local username = clampStr(data and data.username or '', 24)
     local pass = clampStr(data and data.password or '', 64)
     if username == '' or pass == '' then
-        return cb({ ok = false, message = 'Užpildyk username ir slaptažodį.' })
+        return cb({ ok = false, message = 'UÅ¾pildyk username ir slaptaÅ¾odÄ¯.' })
     end
     local exists = MySQL.single.await('SELECT id FROM fivempro_phone_accounts WHERE citizenid = ? LIMIT 1', { citizenid })
     if exists then
@@ -1164,12 +1164,12 @@ QBCore.Functions.CreateCallback('mrp_phone:server:createAccount', function(sourc
     end
     local usernameTaken = MySQL.single.await('SELECT id FROM fivempro_phone_accounts WHERE username = ? LIMIT 1', { username })
     if usernameTaken then
-        return cb({ ok = false, message = 'Username jau užimtas.' })
+        return cb({ ok = false, message = 'Username jau uÅ¾imtas.' })
     end
     --- bcrypt via FiveM natives (never store plaintext)
     local passhash = GetPasswordHash(pass)
     if not passhash or passhash == '' then
-        return cb({ ok = false, message = 'Nepavyko užšifruoti slaptažodžio.' })
+        return cb({ ok = false, message = 'Nepavyko uÅ¾Å¡ifruoti slaptaÅ¾odÅ¾io.' })
     end
     MySQL.insert.await('INSERT INTO fivempro_phone_accounts (citizenid, username, passhash) VALUES (?, ?, ?)', {
         citizenid, username, passhash
@@ -1198,9 +1198,9 @@ QBCore.Functions.CreateCallback('mrp_phone:server:installApp', function(source, 
             break
         end
     end
-    if not allowed then return cb({ ok = false, message = 'Programėlė neegzistuoja.' }) end
+    if not allowed then return cb({ ok = false, message = 'ProgramÄ—lÄ— neegzistuoja.' }) end
     if not photosEnabled() and (appId == 'camera' or appId == 'gallery') then
-        return cb({ ok = false, message = 'Nuotraukos išjungtos serveryje.' })
+        return cb({ ok = false, message = 'Nuotraukos iÅ¡jungtos serveryje.' })
     end
     MySQL.insert.await('INSERT IGNORE INTO fivempro_phone_installed_apps (citizenid, app_id) VALUES (?, ?)', {
         citizenid, appId
@@ -1359,7 +1359,7 @@ RegisterNetEvent('mrp_phone:server:hospitalWake', function()
     local pos = ped and ped ~= 0 and GetEntityCoords(ped) or vector3(0.0, 0.0, 0.0)
     local hosp = pickNearestHospital(pos)
     TriggerClientEvent('mrp_phone:client:hospitalWake', src, { x = hosp.x, y = hosp.y, z = hosp.z, w = hosp.w })
-    TriggerClientEvent('QBCore:Notify', src, 'Atsikėlei artimiausioje ligoninėje.', 'success')
+    TriggerClientEvent('QBCore:Notify', src, 'AtsikÄ—lei artimiausioje ligoninÄ—je.', 'success')
 end)
 
 RegisterNetEvent('mrp_phone:server:medicRequestFromDead', function()
@@ -1371,7 +1371,7 @@ RegisterNetEvent('mrp_phone:server:medicRequestFromDead', function()
     local last = tonumber(LastMedicRequest[src]) or 0
     local cd = (Config.Emergency and Config.Emergency.medicRequestCooldownSec) or 90
     if now - last < cd then
-        return TriggerClientEvent('QBCore:Notify', src, 'Per dažnai – palauk.', 'error')
+        return TriggerClientEvent('QBCore:Notify', src, 'Per daÅ¾nai â€“ palauk.', 'error')
     end
     LastMedicRequest[src] = now
 
@@ -1379,7 +1379,7 @@ RegisterNetEvent('mrp_phone:server:medicRequestFromDead', function()
     if not ped or ped == 0 then return end
     local c = GetEntityCoords(ped)
     local Player = getPlayer(src)
-    local callerName = Player and getFullName(Player) or 'Nežinomas'
+    local callerName = Player and getFullName(Player) or 'NeÅ¾inomas'
     local phone = ''
     if Player then
         phone = ensurePhoneUser(Player.PlayerData.citizenid, callerName)
@@ -1395,13 +1395,13 @@ RegisterNetEvent('mrp_phone:server:medicRequestFromDead', function()
         if isPd and GetResourceState('mrp_dispatch') == 'started' then
             local ok = exports['mrp_dispatch']:TriggerOfficerPanic(src)
             if ok then
-                TriggerClientEvent('QBCore:Notify', src, 'PANIC signalas išsiųstas policijai.', 'error')
+                TriggerClientEvent('QBCore:Notify', src, 'PANIC signalas iÅ¡siÅ³stas policijai.', 'error')
             end
         end
     end
 
     local cfg = Config.Emergency or {}
-    local title = ('MEDIC: %s prašo pagalbos (%s)'):format(callerName, phone)
+    local title = ('MEDIC: %s praÅ¡o pagalbos (%s)'):format(callerName, phone)
 
     if GetResourceState('mrp_dispatch') == 'started' then
         exports['mrp_dispatch']:CreateDispatchCall(
@@ -1428,252 +1428,23 @@ RegisterNetEvent('mrp_phone:server:medicRequestFromDead', function()
                     sprite = 153,
                     scale = 1.1,
                 })
-                TriggerClientEvent('QBCore:Notify', P.PlayerData.source, ('🚑 %s prašo pagalbos – žemėlapyje taškas.'):format(callerName), 'error', 10000)
+                TriggerClientEvent('QBCore:Notify', P.PlayerData.source, ('ðŸš‘ %s praÅ¡o pagalbos â€“ Å¾emÄ—lapyje taÅ¡kas.'):format(callerName), 'error', 10000)
             end
         end
     end
     if count == 0 then
-        TriggerClientEvent('QBCore:Notify', src, 'Medikai ne duty arba nėra prisijungusių.', 'error')
+        TriggerClientEvent('QBCore:Notify', src, 'Medikai ne duty arba nÄ—ra prisijungusiÅ³.', 'error')
     else
-        TriggerClientEvent('QBCore:Notify', src, 'Medikai iškviesti – EMS pamatys tavo vietą žemėlapyje ir gali atvykti.', 'success')
+        TriggerClientEvent('QBCore:Notify', src, 'Medikai iÅ¡kviesti â€“ EMS pamatys tavo vietÄ… Å¾emÄ—lapyje ir gali atvykti.', 'success')
     end
 end)
 
 CreateThread(function()
     math.randomseed(os.time())
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_users` (
-          `id` int NOT NULL AUTO_INCREMENT,
-          `citizenid` varchar(60) NOT NULL,
-          `phone_number` varchar(20) NOT NULL,
-          `profile_name` varchar(64) NOT NULL DEFAULT 'Player',
-          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `uniq_citizen` (`citizenid`),
-          UNIQUE KEY `uniq_phone` (`phone_number`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_contacts` (
-          `id` int NOT NULL AUTO_INCREMENT,
-          `owner_citizenid` varchar(60) NOT NULL,
-          `display_name` varchar(60) NOT NULL,
-          `contact_number` varchar(20) NOT NULL,
-          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          KEY `idx_owner` (`owner_citizenid`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_messages` (
-          `id` int NOT NULL AUTO_INCREMENT,
-          `from_citizenid` varchar(60) NOT NULL,
-          `to_citizenid` varchar(60) NOT NULL,
-          `from_number` varchar(20) NOT NULL,
-          `to_number` varchar(20) NOT NULL,
-          `body` varchar(320) NOT NULL,
-          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          KEY `idx_to` (`to_citizenid`),
-          KEY `idx_from` (`from_citizenid`),
-          KEY `idx_pair` (`from_number`,`to_number`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_ads` (
-          `id` int NOT NULL AUTO_INCREMENT,
-          `citizenid` varchar(60) NOT NULL,
-          `author_name` varchar(64) NOT NULL,
-          `phone_number` varchar(20) NOT NULL,
-          `category` varchar(24) NOT NULL DEFAULT 'other',
-          `title` varchar(48) NOT NULL DEFAULT '',
-          `price` int NOT NULL DEFAULT 0,
-          `body` varchar(260) NOT NULL,
-          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          KEY `idx_created` (`created_at`),
-          KEY `idx_category` (`category`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    pcall(function()
-        MySQL.query.await('ALTER TABLE fivempro_phone_ads ADD COLUMN category varchar(24) NOT NULL DEFAULT \'other\'')
-    end)
-    pcall(function()
-        MySQL.query.await('ALTER TABLE fivempro_phone_ads ADD COLUMN title varchar(48) NOT NULL DEFAULT \'\'')
-    end)
-    pcall(function()
-        MySQL.query.await('ALTER TABLE fivempro_phone_ads ADD COLUMN price int NOT NULL DEFAULT 0')
-    end)
-    pcall(function()
-        MySQL.query.await('ALTER TABLE fivempro_phone_ads ADD COLUMN image_urls text NULL')
-    end)
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_notes` (
-          `id` int NOT NULL AUTO_INCREMENT,
-          `citizenid` varchar(60) NOT NULL,
-          `title` varchar(64) NOT NULL DEFAULT '',
-          `body` mediumtext NOT NULL,
-          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          KEY `idx_notes_owner` (`citizenid`),
-          KEY `idx_notes_updated` (`updated_at`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    pcall(function()
-        local hasId = MySQL.scalar.await([[
-            SELECT COUNT(*) FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = 'fivempro_phone_notes'
-              AND COLUMN_NAME = 'id'
-        ]])
-        if tonumber(hasId or 0) == 0 then
-            MySQL.query.await([[
-                CREATE TABLE IF NOT EXISTS `fivempro_phone_notes_v2` (
-                  `id` int NOT NULL AUTO_INCREMENT,
-                  `citizenid` varchar(60) NOT NULL,
-                  `title` varchar(64) NOT NULL DEFAULT '',
-                  `body` mediumtext NOT NULL,
-                  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                  PRIMARY KEY (`id`),
-                  KEY `idx_notes_owner` (`citizenid`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            ]])
-            local legacy = MySQL.query.await('SELECT citizenid, body FROM fivempro_phone_notes') or {}
-            for _, row in ipairs(legacy) do
-                local body = tostring(row.body or '')
-                if body ~= '' then
-                    local title = 'Užrašas'
-                    local firstLine = body:match('^([^\r\n]+)')
-                    if firstLine and #firstLine <= 64 then
-                        title = firstLine
-                    end
-                    MySQL.insert.await(
-                        'INSERT INTO fivempro_phone_notes_v2 (citizenid, title, body) VALUES (?, ?, ?)',
-                        { row.citizenid, title, body }
-                    )
-                end
-            end
-            MySQL.query.await('DROP TABLE fivempro_phone_notes')
-            MySQL.query.await('RENAME TABLE fivempro_phone_notes_v2 TO fivempro_phone_notes')
-        end
-    end)
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_photos` (
-          `id` int NOT NULL AUTO_INCREMENT,
-          `citizenid` varchar(60) NOT NULL,
-          `image_data` mediumtext NULL,
-          `file_key` varchar(64) NOT NULL DEFAULT '',
-          `is_front` tinyint NOT NULL DEFAULT 0,
-          `zoom_level` float NOT NULL DEFAULT 1,
-          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          KEY `idx_photo_owner` (`citizenid`),
-          KEY `idx_photo_created` (`created_at`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    pcall(function()
-        MySQL.query.await('ALTER TABLE fivempro_phone_photos ADD COLUMN file_key varchar(64) NOT NULL DEFAULT \'\'')
-    end)
-    pcall(function()
-        MySQL.query.await('ALTER TABLE fivempro_phone_photos MODIFY COLUMN image_data mediumtext NULL')
-    end)
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_ad_profiles` (
-          `id` int NOT NULL AUTO_INCREMENT,
-          `citizenid` varchar(60) NOT NULL,
-          `username` varchar(24) NOT NULL,
-          `bio` varchar(200) NOT NULL DEFAULT '',
-          `avatar_data` mediumtext NULL,
-          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `uniq_ad_profile_cid` (`citizenid`),
-          UNIQUE KEY `uniq_ad_profile_username` (`username`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_posts` (
-          `id` int NOT NULL AUTO_INCREMENT,
-          `citizenid` varchar(60) NOT NULL,
-          `author_name` varchar(64) NOT NULL,
-          `caption` varchar(260) NOT NULL,
-          `image_url` varchar(500) NOT NULL DEFAULT '',
-          `likes` int NOT NULL DEFAULT 0,
-          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          KEY `idx_created` (`created_at`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_accounts` (
-          `id` int NOT NULL AUTO_INCREMENT,
-          `citizenid` varchar(60) NOT NULL,
-          `username` varchar(32) NOT NULL,
-          `passhash` varchar(255) NOT NULL,
-          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `uniq_phone_accounts_cid` (`citizenid`),
-          UNIQUE KEY `uniq_phone_accounts_username` (`username`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    --- Widen passhash for bcrypt ($2a$… ~60 chars; leave headroom)
-    pcall(function()
-        MySQL.query.await('ALTER TABLE fivempro_phone_accounts MODIFY `passhash` varchar(255) NOT NULL')
-    end)
-    MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_installed_apps` (
-          `citizenid` varchar(60) NOT NULL,
-          `app_id` varchar(40) NOT NULL,
-          `installed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (`citizenid`,`app_id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-    MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('emergency', 'shop', 'cargonet')")
-    if not photosEnabled() then
-        MySQL.update.await("DELETE FROM fivempro_phone_installed_apps WHERE app_id IN ('camera', 'gallery')")
-        MySQL.update.await('DELETE FROM fivempro_phone_photos')
-    else
-        for _, app in ipairs((Config.Phone and Config.Phone.AppStoreApps) or {}) do
-            if app.default == true then
-                local appId = tostring(app.id or '')
-                if appId == 'camera' or appId == 'gallery' then
-                    MySQL.update.await([[
-                        INSERT IGNORE INTO fivempro_phone_installed_apps (citizenid, app_id)
-                        SELECT citizenid, ? FROM fivempro_phone_accounts
-                    ]], { appId })
-                end
-            end
-        end
-        --- Migracija: MySQL base64 → diskas (porcijomis, kad neuzblokuotu starto)
-        CreateThread(function()
-            if not PhotoStorage then return end
-            PhotoStorage.ensureFolders()
-            Wait(2500)
-            local mediaCfg = (Config.Phone and Config.Phone.Media) or {}
-            local batch = tonumber(mediaCfg.migrateBatch) or 40
-            local loops = tonumber(mediaCfg.migrateLoops) or 8
-            local total = 0
-            for _ = 1, loops do
-                local n = PhotoStorage.migrateFromDatabase(batch)
-                total = total + (n or 0)
-                if not n or n < 1 then break end
-                Wait(400)
-            end
-            for _ = 1, loops do
-                local n = PhotoStorage.migrateAvatars(batch)
-                if not n or n < 1 then break end
-                Wait(200)
-            end
-            if total > 0 then
-                print(('[mrp_phone] Migrated %s photos from MySQL blobs to disk.'):format(total))
-            end
-        end)
-    end
+    --- Schema lives in server/core/db.lua (PhoneID tables). Legacy fivempro_phone_* wiped when Config.Phone.WipeLegacyTables.
+    print('[mrp_phone] Skipping legacy table bootstrap (PhoneID core owns schema).')
 end)
 
-local phoneItemName = (Config.PhoneItem or 'phone')
-QBCore.Functions.CreateUseableItem(phoneItemName, function(src, _item)
-    if not exports['qb-inventory']:HasItem(src, phoneItemName, 1) then return end
-    TriggerClientEvent('mrp_phone:client:openPhoneFromItem', src)
-end)
+
+-- Legacy schema + duplicate useable item removed (PhoneID core).
+

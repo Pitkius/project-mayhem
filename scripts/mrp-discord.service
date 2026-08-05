@@ -6,18 +6,17 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=fivem
-Group=fivem
+# VPS dažnai neturi userio "fivem" — default root (pakeisk setup skriptu jei reikia)
+User=root
+Group=root
 WorkingDirectory=/home/fivem/FIVEMPROJEKTAS/discord-system/guardian-bot
-# Token ir nustatymai (sukuriami setup-discord-bot.sh)
-EnvironmentFile=-/home/fivem/.config/mrp-discord.env
-ExecStart=/usr/bin/node src/index.js
+Environment=MRP_DISCORD_ENV_FILE=/home/fivem/.config/mrp-discord.env
+ExecStart=/bin/bash /home/fivem/FIVEMPROJEKTAS/discord-system/guardian-bot/scripts/run-bot.sh
 Restart=always
 RestartSec=5
 TimeoutStopSec=20
 KillMode=mixed
 
-# Saugesni default'ai
 NoNewPrivileges=true
 PrivateTmp=true
 

@@ -16,6 +16,10 @@ const APP_TEMPLATE = {
   camera: "renderCameraApp",
   notes: "renderNotesApp",
   weather: "renderWeatherApp",
+  darknet_market: "renderDarknetMarketApp",
+  encrypted_messages: "renderEncryptedMessagesApp",
+  dead_drops: "renderDeadDropsApp",
+  maps: "renderMapsApp",
 };
 const DOCK_APPS = ["calls", "messages", "contacts", "settings"];
 const APPS_PER_PAGE = 16;
@@ -677,13 +681,97 @@ window.addEventListener("keydown", (e) => {
 document.getElementById("openStore")?.addEventListener("click", openAppStore);
 document.querySelectorAll("[data-back-home]").forEach((b) => b.addEventListener("click", openHome));
 document.getElementById("btnCreateAccount").addEventListener("click", async () => {
-  const res = await nui("createAccount", {
-    username: document.getElementById("setupUsername").value,
-    password: document.getElementById("setupPassword").value,
-  });
-  document.getElementById("setupState").textContent = res?.ok ? "Paskyra sukurta." : res?.message || "Klaida";
-  hydrate(await nui("refresh"));
+  const pin = document.getElementById("setupPin")?.value || "";
+  const pin2 = document.getElementById("setupPin2")?.value || "";
+  const st = document.getElementById("setupState");
+  if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+    if (st) st.textContent = "PIN turi būti 4 skaitmenys.";
+    return;
+  }
+  if (pin !== pin2) {
+    if (st) st.textContent = "PIN nesutampa.";
+    return;
+  }
+  const res = await nui("phoneSetupPin", { pin });
+  if (st) st.textContent = res?.ok ? "Aktyvuota." : res?.message || "Klaida";
+  if (res?.ok) {
+    state.unlocked = true;
+    setLockUiState(false);
+    showScreen("homeScreen");
+  }
 });
+
+let pinBuffer = "";
+function renderPinDots() {
+  const el = document.getElementById("pinDots");
+  if (el) el.textContent = "•".repeat(pinBuffer.length).padEnd(4, "·");
+  const inp = document.getElementById("pinInput");
+  if (inp) inp.value = pinBuffer;
+}
+async function submitPinUnlock() {
+  const st = document.getElementById("pinState");
+  const res = await nui("phoneUnlockPin", { pin: pinBuffer });
+  if (!res?.ok) {
+    if (st) st.textContent = res?.message || "Neteisingas PIN";
+    pinBuffer = "";
+    renderPinDots();
+    return;
+  }
+  pinBuffer = "";
+  renderPinDots();
+  state.unlocked = true;
+  setLockUiState(false);
+  showScreen("homeScreen");
+}
+document.getElementById("pinPad")?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-pin]");
+  if (!btn) return;
+  const v = btn.getAttribute("data-pin");
+  if (v === "clear") {
+    pinBuffer = "";
+  } else if (v === "ok") {
+    submitPinUnlock();
+    return;
+  } else if (pinBuffer.length < 4) {
+    pinBuffer += v;
+  }
+  renderPinDots();
+  if (pinBuffer.length === 4) submitPinUnlock();
+});
+
+window.addEventListener("message", async (e) => {
+  const { action, payload } = e.data || {};
+  if (action === "showPinSetup") {
+    document.getElementById("phone").classList.remove("hidden");
+    showScreen("accountSetup");
+    return;
+  }
+  if (action === "showPinUnlock") {
+    document.getElementById("phone").classList.remove("hidden");
+    pinBuffer = "";
+    renderPinDots();
+    const title = document.getElementById("pinTitle");
+    if (title) title.textContent = "Įveskite PIN";
+    showScreen("lockScreen");
+    return;
+  }
+  if (action === "showHome" || action === "deviceReady") {
+    state.unlocked = true;
+    setLockUiState(false);
+    if (payload?.phone) {
+      state.phoneType = payload.phone.phoneType;
+      state.phoneId = payload.phone.phoneId;
+    }
+    document.getElementById("phone")?.classList.toggle("phone-darknet", state.phoneType === "darknet");
+    showScreen("homeScreen");
+    return;
+  }
+  if (action === "deviceBootstrap") {
+    state.phoneType = payload?.phone?.phoneType || "legal";
+    state.phoneId = payload?.phone?.phoneId || null;
+    document.getElementById("phone")?.classList.toggle("phone-darknet", state.phoneType === "darknet");
+  }
+}, true);
 
 setInterval(tickClock, 15000);
 tickClock();

@@ -69,22 +69,35 @@ local function accountDigits(citizenid)
 end
 
 function Bank.EnsureAccount(citizenid)
+    --- PhoneID session preferred; citizenid kept as fallback seed for account digits.
+    local phoneId = nil
+    -- caller may pass phone_id via PhoneSession when available from callbacks
+    if type(citizenid) == 'table' and citizenid.phoneId then
+        phoneId = citizenid.phoneId
+        citizenid = citizenid.citizenid or phoneId
+    end
     citizenid = tostring(citizenid or '')
-    if citizenid == '' then return nil end
+    if citizenid == '' and not phoneId then return nil end
+
+    if not phoneId then
+        -- try resolve from any active session is done in GetState; here create by citizen hash
+        phoneId = citizenid
+    end
+
     local row = MySQL.single.await([[
-        SELECT citizenid, account_number, card_last4
-        FROM fivempro_phone_bank_accounts WHERE citizenid = ? LIMIT 1
-    ]], { citizenid })
+        SELECT phone_id AS citizenid, account_number, card_last4
+        FROM mrp_phone_bank_accounts WHERE phone_id = ? LIMIT 1
+    ]], { phoneId })
     if row then return row end
-    local a, b = accountDigits(citizenid)
+    local a, b = accountDigits(tostring(citizenid ~= '' and citizenid or phoneId))
     local accountNumber = ('LT-%04d-%04d'):format(a, b)
     local cardLast4 = ('%04d'):format((a + b) % 10000)
     MySQL.insert.await([[
-        INSERT INTO fivempro_phone_bank_accounts (citizenid, account_number, card_last4)
+        INSERT INTO mrp_phone_bank_accounts (phone_id, account_number, card_last4)
         VALUES (?, ?, ?)
-    ]], { citizenid, accountNumber, cardLast4 })
+    ]], { phoneId, accountNumber, cardLast4 })
     return {
-        citizenid = citizenid,
+        citizenid = phoneId,
         account_number = accountNumber,
         card_last4 = cardLast4,
     }
@@ -295,7 +308,7 @@ function Bank.LogTransaction(citizenid, txType, amount, title, opts)
     citizenid = tostring(citizenid or '')
     if citizenid == '' then return end
     MySQL.insert.await([[
-        INSERT INTO fivempro_phone_bank_transactions
+        INSERT INTO mrp_phone_bank_transactions
         (citizenid, tx_type, amount, title, counterparty, counterparty_citizenid, purpose, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ]], {
@@ -329,7 +342,7 @@ local function resolveRecipient(query)
     if norm:find('^LT%-') then
         local row = MySQL.single.await([[
             SELECT ba.citizenid, ba.account_number, p.charinfo
-            FROM fivempro_phone_bank_accounts ba
+            FROM mrp_phone_bank_accounts ba
             LEFT JOIN players p ON p.citizenid = ba.citizenid
             WHERE ba.account_number = ?
             LIMIT 1
@@ -360,7 +373,7 @@ local function resolveRecipient(query)
     if row then
         local charinfo = row.charinfo and json.decode(row.charinfo) or {}
         Bank.EnsureAccount(row.citizenid)
-        local acc = MySQL.single.await('SELECT account_number FROM fivempro_phone_bank_accounts WHERE citizenid = ? LIMIT 1', { row.citizenid })
+        local acc = MySQL.single.await('SELECT account_number FROM mrp_phone_bank_accounts WHERE citizenid = ? LIMIT 1', { row.citizenid })
         return {
             citizenid = row.citizenid,
             accountNumber = acc and acc.account_number or '',
@@ -408,7 +421,7 @@ function Bank.GetState(src)
     local limit = (cfg().recentTransactionLimit) or 8
     local txs = MySQL.query.await([[
         SELECT id, tx_type, amount, title, counterparty, purpose, status, created_at
-        FROM fivempro_phone_bank_transactions
+        FROM mrp_phone_bank_transactions
         WHERE citizenid = ?
         ORDER BY id DESC
         LIMIT ?
@@ -584,14 +597,14 @@ function Bank.GetHistory(src, filter)
     if filter == 'all' then
         rows = MySQL.query.await([[
             SELECT id, tx_type, amount, title, counterparty, purpose, status, created_at
-            FROM fivempro_phone_bank_transactions
+            FROM mrp_phone_bank_transactions
             WHERE citizenid = ?
             ORDER BY id DESC LIMIT ?
         ]], { citizenid, limit }) or {}
     else
         rows = MySQL.query.await([[
             SELECT id, tx_type, amount, title, counterparty, purpose, status, created_at
-            FROM fivempro_phone_bank_transactions
+            FROM mrp_phone_bank_transactions
             WHERE citizenid = ? AND tx_type = ?
             ORDER BY id DESC LIMIT ?
         ]], { citizenid, filter, limit }) or {}
@@ -662,7 +675,7 @@ end)
 
 CreateThread(function()
     MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_bank_accounts` (
+        CREATE TABLE IF NOT EXISTS `mrp_phone_bank_accounts` (
           `citizenid` varchar(60) NOT NULL,
           `account_number` varchar(24) NOT NULL,
           `card_last4` varchar(4) NOT NULL,
@@ -672,7 +685,7 @@ CreateThread(function()
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
     MySQL.query.await([[
-        CREATE TABLE IF NOT EXISTS `fivempro_phone_bank_transactions` (
+        CREATE TABLE IF NOT EXISTS `mrp_phone_bank_transactions` (
           `id` int NOT NULL AUTO_INCREMENT,
           `citizenid` varchar(60) NOT NULL,
           `tx_type` varchar(24) NOT NULL DEFAULT 'other',

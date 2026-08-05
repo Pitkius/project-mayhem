@@ -366,11 +366,22 @@ local function applyVehiclePerf(veh)
     if not handlingCfg.Enabled or not veh or veh == 0 then return end
     local hash = GetEntityModel(veh)
     local row = modelIndex[hash]
-    if row and row.isReh then return end
+    if row and row.isReh then
+        if SurfaceHandling and SurfaceHandling.Invalidate then
+            SurfaceHandling.Invalidate(veh)
+        end
+        return
+    end
     applyHandlingTune(veh)
+    if SurfaceHandling and SurfaceHandling.Invalidate then
+        SurfaceHandling.Invalidate(veh)
+    end
 end
 
 local function clearVehicleState(veh)
+    if SurfaceHandling and SurfaceHandling.Clear then
+        SurfaceHandling.Clear(veh)
+    end
     if veh and veh ~= 0 then
         appliedSigByVeh[veh] = nil
     end
@@ -382,6 +393,27 @@ local function clearVehicleState(veh)
         activeMaxMs = 0.0
     end
 end
+
+-- Let surface module resolve QB category for ANY model (vanilla / PD / custom)
+CreateThread(function()
+    Wait(0)
+    if SurfaceHandling then
+        SurfaceHandling._resolveCategory = function(veh)
+            if not veh or veh == 0 then return nil end
+            local hash = GetEntityModel(veh)
+            local row = modelIndex[hash]
+            if row and row.category then return row.category end
+            return nil
+        end
+        SurfaceHandling._resolveModel = function(veh)
+            if not veh or veh == 0 then return nil end
+            local hash = GetEntityModel(veh)
+            local row = modelIndex[hash]
+            if row and row.name then return row.name end
+            return nil
+        end
+    end
+end)
 
 local function buildModelIndex()
     modelIndex = {}
@@ -411,6 +443,16 @@ local function buildModelIndex()
             modelIndex[model] = modelIndex[hash]
         else
             modelIndex[hash].isReh = true
+        end
+    end
+
+    -- Ensure PD fleet spawn names resolve even if missing from Shared.Vehicles
+    for i = 1, 40 do
+        local model = ('mrpd%d'):format(i)
+        local hash = joaat(model)
+        if not modelIndex[hash] then
+            modelIndex[hash] = { name = model, category = 'emergency', isReh = false }
+            modelIndex[model] = modelIndex[hash]
         end
     end
 end

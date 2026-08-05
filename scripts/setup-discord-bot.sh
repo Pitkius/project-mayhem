@@ -98,14 +98,24 @@ else
 fi
 
 TMP_UNIT="$(mktemp)"
+# Jei katalogo owneris nėra validus passwd user — root
+EFFECTIVE_USER="$RUN_USER"
+EFFECTIVE_GROUP="$RUN_GROUP"
+if ! id -u "$RUN_USER" >/dev/null 2>&1; then
+  echo "[setup] WARNING: user '$RUN_USER' neegzistuoja — servisas veiks kaip root"
+  EFFECTIVE_USER=root
+  EFFECTIVE_GROUP=root
+fi
+
 sed \
-  -e "s|^User=.*|User=${RUN_USER}|" \
-  -e "s|^Group=.*|Group=${RUN_GROUP}|" \
+  -e "s|^User=.*|User=${EFFECTIVE_USER}|" \
+  -e "s|^Group=.*|Group=${EFFECTIVE_GROUP}|" \
   -e "s|^WorkingDirectory=.*|WorkingDirectory=${BOT_DIR}|" \
-  -e "s|^EnvironmentFile=.*|EnvironmentFile=-${ENV_DST}|" \
-  -e "s|^ExecStart=.*|ExecStart=${NODE_BIN} src/index.js|" \
+  -e "s|^Environment=MRP_DISCORD_ENV_FILE=.*|Environment=MRP_DISCORD_ENV_FILE=${ENV_DST}|" \
+  -e "s|^ExecStart=.*|ExecStart=/bin/bash ${BOT_DIR}/scripts/run-bot.sh|" \
   -e "s|^Documentation=.*|Documentation=file://${REPO_DIR}/discord-system/README.md|" \
   "$SERVICE_SRC" > "$TMP_UNIT"
+chmod +x "${BOT_DIR}/scripts/run-bot.sh" || true
 install -m 644 "$TMP_UNIT" "$SERVICE_DST"
 rm -f "$TMP_UNIT"
 

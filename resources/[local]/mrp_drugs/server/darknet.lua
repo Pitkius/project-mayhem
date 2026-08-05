@@ -542,12 +542,18 @@ end
 CreateThread(function()
     Wait(1200)
     if not (Config.DarkNet and Config.DarkNet.enabled) then return end
-    local phoneItem = Config.DarkNet.phoneItem or 'darknet_phone'
-    QBCore.Functions.CreateUseableItem(phoneItem, function(source)
-        local src = source
-        if not DrugPlayer.hasDarknetAccess(src) then
-            return TriggerClientEvent('QBCore:Notify', src, 'Įrenginys neaktyvuotas.', 'error')
-        end
-        TriggerClientEvent('mrp_drugs:client:openDarknet', src, buildDarknetOpenPayload(src))
-    end)
+    --- darknet_phone open handled by mrp_phone (PhoneID shell). Market data via exports.
+    print('[mrp_drugs] DarkNet phone item opens via mrp_phone.')
+end)
+
+exports('DarkNetHasAccess', function(src)
+    return DrugPlayer.hasDarknetAccess(src) == true
+end)
+
+exports('DarkNetBuildMarketPayload', function(src)
+    return buildDarknetOpenPayload(src)
+end)
+
+exports('DarkNetIsNight', function()
+    return isNightNow()
 end)

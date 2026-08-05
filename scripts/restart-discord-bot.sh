@@ -57,7 +57,12 @@ if [[ "$(id -u)" -eq 0 ]]; then
   systemctl restart "$SERVICE_NAME"
 else
   bash -lc "cd '$BOT_DIR' && npm install --omit=dev"
-  sudo -n systemctl restart "$SERVICE_NAME"
+  # Prefer wrapper if present (fixes EnvironmentFile token mangling)
+  if [[ -x "$BOT_DIR/scripts/run-bot.sh" ]]; then
+    sudo -n systemctl restart "$SERVICE_NAME" 2>/dev/null || sudo systemctl restart "$SERVICE_NAME"
+  else
+    sudo -n systemctl restart "$SERVICE_NAME"
+  fi
 fi
 
 sleep 2

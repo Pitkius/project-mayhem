@@ -4,6 +4,7 @@ import { hasLogChannels } from '../database/sqlite.js';
 import { provisionLogChannels } from '../logs/provision.js';
 import { registerSlashCommands } from '../registerSlashCommands.js';
 import { startMemberChannelTracker } from '../discord/memberChannel.js';
+import { startInviteHealthChecker } from '../invite/manager.js';
 
 export default {
   name: Events.ClientReady,
@@ -28,6 +29,7 @@ export default {
     });
 
     startMemberChannelTracker(client);
+    startInviteHealthChecker(client);
 
     console.log(`[MRP] Prisijungta kaip ${client.user.tag}`);
     console.log(`[MRP] Serveriu: ${client.guilds.cache.size}`);

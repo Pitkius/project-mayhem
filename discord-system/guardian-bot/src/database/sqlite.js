@@ -65,7 +65,30 @@ export function getGuildSettings(guildId) {
     antinuke_enabled: !!row.antinuke_enabled,
     antinuke: row.antinuke || null,
     verification: row.verification || null,
+    invite: row.invite || null,
   };
+}
+
+export function getInviteSettings(guildId) {
+  return load().guild_settings[guildId]?.invite || null;
+}
+
+export function setInviteSettings(guildId, invite) {
+  const store = load();
+  const existing = store.guild_settings[guildId] || {};
+  store.guild_settings[guildId] = {
+    ...existing,
+    invite,
+    created_at: existing.created_at || new Date().toISOString(),
+  };
+  save();
+}
+
+export function listGuildsWithInvite() {
+  const store = load();
+  return Object.entries(store.guild_settings)
+    .filter(([, row]) => row?.invite?.code)
+    .map(([guildId, row]) => ({ guildId, invite: row.invite }));
 }
 
 export function getVerificationSettings(guildId) {
@@ -92,6 +115,7 @@ export function upsertGuildSettings(guildId, settings = {}) {
       : (existing.antinuke_enabled ?? true),
     antinuke: settings.antinuke !== undefined ? settings.antinuke : (existing.antinuke || null),
     verification: settings.verification !== undefined ? settings.verification : (existing.verification || null),
+    invite: settings.invite !== undefined ? settings.invite : (existing.invite || null),
     created_at: existing.created_at || new Date().toISOString(),
   };
   save();
