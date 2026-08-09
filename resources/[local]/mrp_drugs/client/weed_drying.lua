@@ -190,8 +190,8 @@ end
 local function setupTarget()
     if targetCreated or GetResourceState('qb-target') ~= 'started' then return end
     targetCreated = true
-    -- Surinkimo zona yra ant pačių gulinčių augalų, o ne ant UI paleidimo taško.
-    exports['qb-target']:AddCircleZone('mrp_weed_drying_collect', visualCoords(), 2.4, {
+    -- Nutraukimas ir surinkimas pasirenkami žiūrint į tą pačią vietą, kur pradedamas džiovinimas.
+    exports['qb-target']:AddCircleZone('mrp_weed_drying_collect', stationCoords(), 1.5, {
         name = 'mrp_weed_drying_collect',
         debugPoly = false,
         useZ = true,
