@@ -35,7 +35,7 @@ jobs:
           find .git/refs -name '*.lock' -type f -delete 2>/dev/null || true
 
           git fetch --prune origin main
-          git checkout -B main origin/main
+          git checkout --detach origin/main
           git reset --hard origin/main
           git clean -fd
           git submodule sync --recursive
