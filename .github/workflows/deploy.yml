@@ -18,6 +18,7 @@ jobs:
       - name: Deploy on VPS self-hosted runner
         run: |
           set -euxo pipefail
+          trap 'exit_code=$?; echo "::error file=.github/workflows/deploy.yml,line=${LINENO}::VPS deploy nepavyko vykdant: ${BASH_COMMAND} (exit ${exit_code})"' ERR
           REPO_DIR="/home/fivem/FIVEMPROJEKTAS"
           SERVER_DIR="/home/fivem/server"
 
