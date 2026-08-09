@@ -376,6 +376,7 @@ QBShared.Items = {
 
     -- Communication
     phone                        = { name = 'phone', label = 'Telefonas', weight = 700, type = 'item', image = 'iphone.png', unique = true, useable = true, shouldClose = true, description = 'Išmanusis telefonas.' },
+    dienos_deze                  = { name = 'dienos_deze', label = 'Dienos dėžė', weight = 500, type = 'item', image = 'document_binder.png', unique = true, useable = true, shouldClose = true, description = 'Kasdienė loot dėžė. Atidaryk inventoriuje — random itemas (be ginklų).' },
     radio                        = { name = 'radio', label = 'Radijas', weight = 2000, type = 'item', image = 'radio.png', unique = true, useable = true, shouldClose = true, description = 'Ryšio radijo stotelė.' },
     iphone                       = { name = 'iphone', label = 'iPhone', weight = 1000, type = 'item', image = 'iphone.png', unique = false, useable = false, shouldClose = true, description = 'Brangus išmanusis telefonas.' },
     samsungphone                 = { name = 'samsungphone', label = 'Samsung S10', weight = 1000, type = 'item', image = 'samsungphone.png', unique = false, useable = false, shouldClose = true, description = 'Brangus išmanusis telefonas.' },
