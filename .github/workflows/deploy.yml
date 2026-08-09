@@ -30,9 +30,13 @@ jobs:
 
           # Stale lock from cancelled/crashed previous deploy (HEAD.lock / index.lock).
           echo "[deploy] Clearing stale git locks (if any)..."
-          rm -f .git/HEAD.lock .git/index.lock .git/refs/heads/main.lock \
-            .git/config.lock .git/shallow.lock 2>/dev/null || true
-          find .git/refs -name '*.lock' -type f -delete 2>/dev/null || true
+          GIT_DIR="$(git rev-parse --git-dir)"
+          GIT_COMMON_DIR="$(git rev-parse --git-common-dir)"
+          rm -f "$GIT_DIR/HEAD.lock" "$GIT_DIR/index.lock" \
+            "$GIT_COMMON_DIR/index.lock" "$GIT_COMMON_DIR/refs/heads/main.lock" \
+            "$GIT_COMMON_DIR/config.lock" "$GIT_COMMON_DIR/shallow.lock" \
+            "$GIT_COMMON_DIR/packed-refs.lock" 2>/dev/null || true
+          find "$GIT_COMMON_DIR/refs" -name '*.lock' -type f -delete 2>/dev/null || true
 
           git fetch --prune origin main
           git reset --hard origin/main
