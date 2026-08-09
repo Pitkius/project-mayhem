@@ -4,7 +4,6 @@ WeedDrying = WeedDrying or {}
 
 local session = nil
 local plantEntities = {}
-local targetCreated = false
 local collecting = false
 local requestSession
 local collectRequestId = 0
@@ -187,35 +186,20 @@ local function collect()
     end)
 end
 
-local function setupTarget()
-    if targetCreated or GetResourceState('qb-target') ~= 'started' then return end
-    targetCreated = true
-    -- Surinkimo zona yra ant pačių gulinčių augalų, o ne ant UI paleidimo taško.
-    exports['qb-target']:AddCircleZone('mrp_weed_drying_collect', visualCoords(), 2.4, {
-        name = 'mrp_weed_drying_collect',
-        debugPoly = false,
-        useZ = true,
-    }, {
-        options = {
-            {
-                icon = 'fas fa-box-open',
-                label = 'Pasiimti išdžiovintą žolę',
-                action = collect,
-                canInteract = function()
-                    return session ~= nil and isReady() and not collecting
-                end,
-            },
-            {
-                icon = 'fas fa-exclamation-triangle',
-                label = 'Nutraukti džiovinimą (grįš 80%)',
-                action = collect,
-                canInteract = function()
-                    return session ~= nil and not isReady() and not collecting
-                end,
-            },
-        },
-        distance = tonumber(cfg().interactDistance) or 4.0,
-    })
+function WeedDrying.HasSession()
+    return session ~= nil
+end
+
+function WeedDrying.IsReady()
+    return isReady()
+end
+
+function WeedDrying.IsCollecting()
+    return collecting
+end
+
+function WeedDrying.Collect()
+    collect()
 end
 
 local function drawHologram(coords, text)
@@ -244,7 +228,6 @@ end
 
 CreateThread(function()
     while GetResourceState('qb-target') ~= 'started' do Wait(250) end
-    setupTarget()
     Wait(1500)
     requestSession()
 
@@ -283,9 +266,6 @@ end)
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
     clearPlants()
-    if targetCreated and GetResourceState('qb-target') == 'started' then
-        exports['qb-target']:RemoveZone('mrp_weed_drying_collect')
-    end
 end)
 
 function WeedDrying.Start(amount, onDone)

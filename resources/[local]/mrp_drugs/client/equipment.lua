@@ -6,12 +6,15 @@ local EquipmentMeta = {}
 local EquipmentBlips = {}
 local placing = false
 local crafting = false
+local craftRequestId = 0
 
 AddEventHandler('mrp_drugs:client:productionReset', function()
+    craftRequestId = craftRequestId + 1
     crafting = false
 end)
 
 RegisterNetEvent('mrp_drugs:client:abortProduction', function()
+    craftRequestId = craftRequestId + 1
     crafting = false
 end)
 
@@ -124,7 +127,12 @@ end
 local function runEquipmentCraftFlow(productId, equipmentId)
     if crafting then return end
     crafting = true
+    craftRequestId = craftRequestId + 1
+    local requestId = craftRequestId
+    local awaitingStart = true
     QBCore.Functions.TriggerCallback('mrp_drugs:server:startCraftAtEquipment', function(res)
+        if requestId ~= craftRequestId then return end
+        awaitingStart = false
         if not res or not res.ok then
             crafting = false
             return notify((res and res.reason) or 'Gamyba negalima.', 'error')
@@ -181,6 +189,14 @@ local function runEquipmentCraftFlow(productId, equipmentId)
             end)
         end
     end, equipmentId, productId)
+    CreateThread(function()
+        Wait(10000)
+        if awaitingStart and requestId == craftRequestId then
+            craftRequestId = craftRequestId + 1
+            crafting = false
+            notify('Serveris neatsakė į pakavimo užklausą. Bandyk dar kartą.', 'error')
+        end
+    end)
 end
 
 local function pickEquipmentProduct(products)

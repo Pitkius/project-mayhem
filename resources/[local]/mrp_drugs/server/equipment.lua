@@ -170,7 +170,9 @@ local function isInsideCayo(x, y, z)
     local center = placement.center or vector3(4840.57, -5174.42, 2.0)
     -- 1800 m sutampa su mrp_cayoperico MapRadius; mažesnis skaičius sumažintų leidžiamą zoną.
     local radius = tonumber(placement.radius) or 1800.0
-    return #(vector3(x + 0.0, y + 0.0, z + 0.0) - center) <= radius
+    x, y, z = tonumber(x), tonumber(y), tonumber(z)
+    if not x or not y or not z then return false end
+    return #(vector3(x, y, z) - center) <= radius
 end
 
 function Equipment.isPlacementAllowed(eOrType, x, y, z)
@@ -178,7 +180,10 @@ function Equipment.isPlacementAllowed(eOrType, x, y, z)
     local itemType = e and e.itemType or eOrType
     local t = typeCfg(itemType)
     if not t then return false end
-    if t.cayoOnly and not isInsideCayo(x, y, z) then return false end
+    local checkX = e and e.x or x
+    local checkY = e and e.y or y
+    local checkZ = e and e.z or z
+    if t.cayoOnly and not isInsideCayo(checkX, checkY, checkZ) then return false end
     return true
 end
 

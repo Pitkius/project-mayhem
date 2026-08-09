@@ -935,8 +935,11 @@ end)
 
 local function setupStations()
     if GetResourceState('qb-target') ~= 'started' then return end
+    local dryCfg = Config.WeedDrying or {}
+    local dryStationId = dryCfg.stationId or 'weed_dry_davis'
     for _, st in ipairs(getAllStations()) do
         local isWeapon = st.mode == 'weapon'
+        local isWeedDrying = st.id == dryStationId
         local targetLabel = st.label
         if not targetLabel then
             targetLabel = isWeapon and ('Ginklų dirbtuvė: %s'):format(st.id) or ('Gamybos stotis: %s'):format(st.id)
@@ -948,8 +951,48 @@ local function setupStations()
                 action = function()
                     startStationCraftDirect(st.id)
                 end,
+                canInteract = function()
+                    return not isWeedDrying
+                        or not WeedDrying
+                        or not WeedDrying.HasSession
+                        or not WeedDrying.HasSession()
+                end,
             },
         }
+        if isWeedDrying then
+            options[#options + 1] = {
+                icon = 'fas fa-box-open',
+                label = 'Pasiimti išdžiovintą žolę',
+                action = function()
+                    if WeedDrying and WeedDrying.Collect then WeedDrying.Collect() end
+                end,
+                canInteract = function()
+                    return WeedDrying
+                        and WeedDrying.HasSession
+                        and WeedDrying.IsReady
+                        and WeedDrying.IsCollecting
+                        and WeedDrying.HasSession()
+                        and WeedDrying.IsReady()
+                        and not WeedDrying.IsCollecting()
+                end,
+            }
+            options[#options + 1] = {
+                icon = 'fas fa-exclamation-triangle',
+                label = 'Nutraukti džiovinimą (grįš 80%)',
+                action = function()
+                    if WeedDrying and WeedDrying.Collect then WeedDrying.Collect() end
+                end,
+                canInteract = function()
+                    return WeedDrying
+                        and WeedDrying.HasSession
+                        and WeedDrying.IsReady
+                        and WeedDrying.IsCollecting
+                        and WeedDrying.HasSession()
+                        and not WeedDrying.IsReady()
+                        and not WeedDrying.IsCollecting()
+                end,
+            }
+        end
         if isWeapon then
             options[#options + 1] = {
                 icon = 'fas fa-shopping-bag',

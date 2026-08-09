@@ -18,6 +18,7 @@ jobs:
       - name: Deploy on VPS self-hosted runner
         run: |
           set -euxo pipefail
+          trap 'exit_code=$?; echo "::error file=.github/workflows/deploy.yml,line=${LINENO}::VPS deploy nepavyko vykdant: ${BASH_COMMAND} (exit ${exit_code})"' ERR
           REPO_DIR="/home/fivem/FIVEMPROJEKTAS"
           SERVER_DIR="/home/fivem/server"
 
@@ -27,15 +28,31 @@ jobs:
 
           cd "$REPO_DIR"
 
+          # Bot setup scripts may leave root-owned files that block the runner's git reset.
+          if [ -d "$REPO_DIR/discord-system/guardian-bot" ]; then
+            sudo -n chown -R "$(id -u):$(id -g)" "$REPO_DIR/discord-system/guardian-bot"
+          fi
+
           # Stale lock from cancelled/crashed previous deploy (HEAD.lock / index.lock).
           echo "[deploy] Clearing stale git locks (if any)..."
-          rm -f .git/HEAD.lock .git/index.lock .git/refs/heads/main.lock \
-            .git/config.lock .git/shallow.lock 2>/dev/null || true
-          find .git/refs -name '*.lock' -type f -delete 2>/dev/null || true
+          GIT_DIR="$(git rev-parse --git-dir)"
+          GIT_COMMON_DIR="$(git rev-parse --git-common-dir)"
+          rm -f "$GIT_DIR/HEAD.lock" "$GIT_DIR/index.lock" \
+            "$GIT_COMMON_DIR/index.lock" "$GIT_COMMON_DIR/refs/heads/main.lock" \
+            "$GIT_COMMON_DIR/config.lock" "$GIT_COMMON_DIR/shallow.lock" \
+            "$GIT_COMMON_DIR/packed-refs.lock" 2>/dev/null || true
+          find "$GIT_COMMON_DIR/refs" -name '*.lock' -type f -delete 2>/dev/null || true
 
           git fetch --prune origin main
-          git checkout -B main origin/main
-          git reset --hard origin/main
+          if RESET_OUTPUT="$(git reset --hard origin/main 2>&1)"; then
+            echo "$RESET_OUTPUT"
+          else
+            RESET_EXIT=$?
+            echo "$RESET_OUTPUT"
+            RESET_MESSAGE="$(printf '%s' "$RESET_OUTPUT" | tr '\n' ' ')"
+            echo "::error file=.github/workflows/deploy.yml,line=${LINENO}::git reset nepavyko: ${RESET_MESSAGE}"
+            exit "$RESET_EXIT"
+          fi
           git clean -fd
           git submodule sync --recursive
           git submodule update --init --recursive
