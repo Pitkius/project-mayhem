@@ -39,7 +39,15 @@ jobs:
           find "$GIT_COMMON_DIR/refs" -name '*.lock' -type f -delete 2>/dev/null || true
 
           git fetch --prune origin main
-          git reset --hard origin/main
+          if RESET_OUTPUT="$(git reset --hard origin/main 2>&1)"; then
+            echo "$RESET_OUTPUT"
+          else
+            RESET_EXIT=$?
+            echo "$RESET_OUTPUT"
+            RESET_MESSAGE="$(printf '%s' "$RESET_OUTPUT" | tr '\n' ' ')"
+            echo "::error file=.github/workflows/deploy.yml,line=${LINENO}::git reset nepavyko: ${RESET_MESSAGE}"
+            exit "$RESET_EXIT"
+          fi
           git clean -fd
           git submodule sync --recursive
           git submodule update --init --recursive
