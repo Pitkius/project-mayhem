@@ -28,6 +28,11 @@ jobs:
 
           cd "$REPO_DIR"
 
+          # Bot setup scripts may leave root-owned files that block the runner's git reset.
+          if [ -d "$REPO_DIR/discord-system/guardian-bot" ]; then
+            sudo -n chown -R "$(id -u):$(id -g)" "$REPO_DIR/discord-system/guardian-bot"
+          fi
+
           # Stale lock from cancelled/crashed previous deploy (HEAD.lock / index.lock).
           echo "[deploy] Clearing stale git locks (if any)..."
           GIT_DIR="$(git rev-parse --git-dir)"
