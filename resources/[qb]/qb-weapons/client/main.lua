@@ -566,11 +566,28 @@ RegisterNetEvent('QBCore:Player:UpdatePlayerDataField', function(field, _)
     if field == 'items' then
         if isReloadBusy() then
             holsterApplyPending = true
+            if GetResourceState('mrp_basics') == 'started' then
+                TriggerEvent('mrp_basics:client:refreshSlungWeapons')
+            end
             return
         end
-        if isWeaponDrawBusy() then return end
+        if isWeaponDrawBusy() then
+            -- Don't drop the update — still refresh back props / retry holster after draw
+            if GetResourceState('mrp_basics') == 'started' then
+                TriggerEvent('mrp_basics:client:refreshSlungWeapons')
+            end
+            holsterApplyPending = true
+            SetTimeout(450, function()
+                if not isWeaponDrawBusy() and not isReloadBusy() then
+                    scheduleHolsteredWeaponVisuals()
+                end
+            end)
+            return
+        end
         if not (currentWeapon and isThrowableInventoryWeaponName(currentWeapon)) then
             scheduleHolsteredWeaponVisuals()
+        elseif GetResourceState('mrp_basics') == 'started' then
+            TriggerEvent('mrp_basics:client:refreshSlungWeapons')
         end
     end
 end)

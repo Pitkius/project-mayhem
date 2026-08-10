@@ -2,6 +2,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local coordsHudEnabled = false
 local slungProps = {}
 local lastSlungSignature = nil
+local slungRefreshPending = false
 
 local function isLongBackWeapon(weaponName)
     return WeaponCarry.isBackCarried(weaponName)
@@ -36,6 +37,7 @@ end
 
 local function isInventoryWeaponItem(item)
     if not item or not item.name then return false end
+    if (tonumber(item.amount) or 0) <= 0 then return false end
     if item.type == 'weapon' then return true end
     local name = tostring(item.name):lower()
     return name:find('^weapon_', 1, false) ~= nil
@@ -58,7 +60,7 @@ local function buildSlungSignature(items, equippedName, hasBackpack)
     if hasBackpack then return 'backpack' end
     local parts = {}
     for _, item in pairs(items or {}) do
-        if item and isInventoryWeaponItem(item) and (tonumber(item.amount) or 0) > 0 then
+        if item and isInventoryWeaponItem(item) then
             local name = WeaponCarry.normalizeName(item.name)
             if name ~= equippedName and isLongBackWeapon(name) then
                 local att = ''
@@ -90,13 +92,35 @@ local function hasBackpackOnPed(ped)
     return drawable and drawable > 0
 end
 
+local function deleteSlungEntity(ent)
+    if not ent or ent == 0 or not DoesEntityExist(ent) then return end
+    DetachEntity(ent, true, true)
+    SetEntityAsMissionEntity(ent, true, true)
+    SetEntityCollision(ent, false, false)
+    SetEntityVisible(ent, false, false)
+    if NetworkGetEntityIsNetworked(ent) then
+        local netId = NetworkGetNetworkIdFromEntity(ent)
+        if netId and netId ~= 0 then
+            SetNetworkIdCanMigrate(netId, true)
+            local deadline = GetGameTimer() + 500
+            NetworkRequestControlOfEntity(ent)
+            while not NetworkHasControlOfEntity(ent) and GetGameTimer() < deadline do
+                NetworkRequestControlOfEntity(ent)
+                Wait(0)
+            end
+        end
+    end
+    DeleteObject(ent)
+    if DoesEntityExist(ent) then
+        DeleteEntity(ent)
+    end
+end
+
 local function clearSlungProps()
     for _, data in pairs(slungProps) do
         local ent = type(data) == 'table' and data.entity or data
         local weaponHash = type(data) == 'table' and data.weaponHash or nil
-        if ent and DoesEntityExist(ent) then
-            DeleteEntity(ent)
-        end
+        deleteSlungEntity(ent)
         if weaponHash and HasWeaponAssetLoaded(weaponHash) then
             RemoveWeaponAsset(weaponHash)
         end
@@ -134,7 +158,13 @@ local function attachFallbackPropToBack(slotIndex, modelName)
         Wait(0)
     end
     if not HasModelLoaded(model) then return end
-    local obj = CreateObject(model, 0.0, 0.0, 0.0, true, true, false)
+    -- Local-only prop so delete is reliable when inventory drops the weapon
+    local obj = CreateObject(model, 0.0, 0.0, 0.0, false, false, false)
+    if not obj or obj == 0 then
+        SetModelAsNoLongerNeeded(model)
+        return
+    end
+    SetEntityAsMissionEntity(obj, true, true)
     attachEntityToBackSlot(ped, slotIndex, obj)
     slungProps[slotIndex] = { entity = obj }
     SetModelAsNoLongerNeeded(model)
@@ -158,6 +188,7 @@ local function attachWeaponItemToBack(slotIndex, weaponItem)
     local ped = PlayerPedId()
     local weaponName = weaponItem and weaponItem.name
     if not isLongBackWeapon(weaponName) then return end
+    if (tonumber(weaponItem.amount) or 0) <= 0 then return end
 
     local weaponHash = resolveObjectHash(weaponName)
     local fallbackModel = WeaponCarry.fallbackModel(weaponName)
@@ -171,7 +202,8 @@ local function attachWeaponItemToBack(slotIndex, weaponItem)
     end
 
     local coords = GetEntityCoords(ped)
-    local obj = CreateWeaponObject(weaponHash, 0, coords.x, coords.y, coords.z, true, 1.0, 0.0)
+    -- Local weapon object (not networked) — avoids ghost props after inventory remove
+    local obj = CreateWeaponObject(weaponHash, 0, coords.x, coords.y, coords.z, false, 1.0, 0.0)
     if not obj or obj == 0 then
         if fallbackModel then
             attachFallbackPropToBack(slotIndex, fallbackModel)
@@ -179,13 +211,18 @@ local function attachWeaponItemToBack(slotIndex, weaponItem)
         return
     end
 
+    SetEntityAsMissionEntity(obj, true, true)
     applyAttachmentsToWeaponObject(obj, weaponInfo)
     attachEntityToBackSlot(ped, slotIndex, obj)
     slungProps[slotIndex] = { entity = obj, weaponHash = weaponHash }
 end
 
 local function refreshSlungWeapons(force)
-    if not force and weaponDrawOrReloadBusy() then return end
+    if not force and weaponDrawOrReloadBusy() then
+        slungRefreshPending = true
+        return
+    end
+    slungRefreshPending = false
 
     local ped = PlayerPedId()
     if hasBackpackOnPed(ped) then
@@ -231,10 +268,17 @@ local function refreshSlungWeapons(force)
     end
 end
 
-RegisterNetEvent('mrp_basics:client:refreshSlungWeapons', function()
-    SetTimeout(80, function()
-        refreshSlungWeapons(true)
+local function requestSlungRefresh(force)
+    if force then
+        lastSlungSignature = nil
+    end
+    SetTimeout(force and 50 or 120, function()
+        refreshSlungWeapons(force == true)
     end)
+end
+
+RegisterNetEvent('mrp_basics:client:refreshSlungWeapons', function()
+    requestSlungRefresh(true)
 end)
 
 CreateThread(function()
@@ -255,11 +299,16 @@ end)
 CreateThread(function()
     while true do
         if LocalPlayer.state.isLoggedIn then
-            refreshSlungWeapons(false)
-            Wait(1800)
+            if slungRefreshPending and not weaponDrawOrReloadBusy() then
+                refreshSlungWeapons(true)
+            else
+                refreshSlungWeapons(false)
+            end
+            Wait(1000)
         else
             clearSlungProps()
             lastSlungSignature = nil
+            slungRefreshPending = false
             Wait(2000)
         end
     end
@@ -272,9 +321,13 @@ AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
 end)
 
 RegisterNetEvent('QBCore:Player:SetPlayerData', function()
-    SetTimeout(200, function()
-        refreshSlungWeapons(false)
-    end)
+    requestSlungRefresh(true)
+end)
+
+-- Inventory RemoveItem / AddItem usually updates via field patch, not full SetPlayerData
+RegisterNetEvent('QBCore:Player:UpdatePlayerDataField', function(field, _)
+    if field ~= 'items' then return end
+    requestSlungRefresh(true)
 end)
 
 AddEventHandler('onResourceStop', function(resName)
