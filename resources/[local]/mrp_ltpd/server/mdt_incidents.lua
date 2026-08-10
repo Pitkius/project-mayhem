@@ -388,10 +388,15 @@ QBCore.Functions.CreateCallback('mrp_ltpd:server:incidentList', function(src, cb
     cb({ ok = true, rows = rows })
 end)
 
-QBCore.Functions.CreateCallback('mrp_ltpd:server:incidentGet', function(src, cb, ref)
+QBCore.Functions.CreateCallback('mrp_ltpd:server:incidentGet', function(src, cb, payload)
     if not canView(src) then return deny(cb) end
+    --- NUI sends `{ ref = id|public_number }`; older callers may pass a scalar.
+    local ref = payload
+    if type(payload) == 'table' then
+        ref = payload.ref or payload.id or payload.incidentId or payload.public_number
+    end
     local incident = coreCall('GetIncident', tonumber(ref))
-    if not incident and ref ~= nil then
+    if not incident and ref ~= nil and tostring(ref) ~= '' then
         incident = coreCall('GetIncidentByPublicNumber', tostring(ref))
     end
     if type(incident) ~= 'table' then return cb({ ok = false, message = 'Byla nerasta.' }) end

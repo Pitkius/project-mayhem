@@ -95,8 +95,8 @@
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_FRONT_AND_BACK_PLATES</plateType>
 	    <dashboardType>VDT_RACE</dashboardType>
-      <vehicleClass>VC_EMERGENCY</vehicleClass>
-      <wheelType>VWT_SPORT</wheelType>
+      <vehicleClass>VC_OFF_ROAD</vehicleClass>
+      <wheelType>VWT_OFFROAD</wheelType>
       <trailers />
       <additionalTrailers />
       <drivers />

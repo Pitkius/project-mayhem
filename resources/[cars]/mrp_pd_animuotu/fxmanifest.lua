@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'mrp_pd_animuotu'
 author 'MRP'
-description 'PD animuotu (animated lights) vehicle pack'
-version '1.0.0'
+description 'PD animuotos šviesos Non-ELS (mrpd1-8)'
+version '2.0.0'
 
 files {
     'data/**/vehicles.meta',

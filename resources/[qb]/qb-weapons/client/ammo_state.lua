@@ -32,22 +32,25 @@ local function weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable)
     return false
 end
 
---- Tik kai CLIP_02/03 realiai ant ped — kitaip config talpa nepripučiama (ammo bug).
+local function capacityFromTable(capacityTable, weaponName)
+    if type(capacityTable) ~= 'table' or not weaponName then return 0 end
+    local byName = tonumber(capacityTable[weaponName]) or 0
+    local nativeName = WeaponHash and WeaponHash.nativeName and WeaponHash.nativeName(weaponName)
+    local byNative = nativeName and tonumber(capacityTable[nativeName]) or 0
+    return math.max(byName, byNative)
+end
+
+--- Ped komponentas ARBA ginklo metadata attachments (kad reload metu flicker'is nenuimtų talpos).
 local function liveAttachmentCapacity(ped, weaponHash, weaponData, itemKeys, capacityTable)
     if type(itemKeys) ~= 'table' or type(capacityTable) ~= 'table' then return 0 end
     local weaponName = weaponData and weaponData.name
-    if not weaponName or not ped or not weaponHash then return 0 end
+    if not weaponName then return 0 end
 
     local cap = 0
     for _, itemKey in ipairs(itemKeys) do
         local attachmentTable = WeaponAttachments and WeaponAttachments[itemKey]
-        local comp = lookupAttachmentComponent(attachmentTable, weaponName)
-        local compHash = componentHash(comp)
-        if compHash and HasPedGotWeaponComponent(ped, weaponHash, compHash) then
-            local byName = tonumber(capacityTable[weaponName]) or 0
-            local nativeName = WeaponHash and WeaponHash.nativeName and WeaponHash.nativeName(weaponName)
-            local byNative = nativeName and tonumber(capacityTable[nativeName]) or 0
-            cap = math.max(cap, byName, byNative)
+        if weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable) then
+            cap = math.max(cap, capacityFromTable(capacityTable, weaponName))
         end
     end
     return cap
@@ -82,6 +85,42 @@ local function defaultClipForWeapon(weaponHash, weaponData)
     return tonumber(Config.DefaultClipCapacityByAmmoType and Config.DefaultClipCapacityByAmmoType[ammoType]) or 30
 end
 
+function WeaponAmmo.getNativeMaxClip(ped, weaponHash)
+    local nativeMax = 0
+    if not ped or ped == 0 or not weaponHash or weaponHash == 0 then return 0 end
+    for _, p2 in ipairs({ true, false }) do
+        local hasMaxClip, maxClipAmmo = GetMaxAmmoInClip(ped, weaponHash, p2)
+        if hasMaxClip and maxClipAmmo then
+            nativeMax = math.max(nativeMax, tonumber(maxClipAmmo) or 0)
+        end
+    end
+    return nativeMax
+end
+
+--- Užtikrina, kad CLIP_02/03 iš metadata būtų ant ped prieš talpos/native reload.
+function WeaponAmmo.ensureClipComponents(ped, weaponHash, weaponData)
+    if not ped or ped == 0 or not weaponHash or not weaponData then return end
+    local groups = {
+        Config.DrumClipAttachmentItems,
+        Config.ExtendedClipAttachmentItems,
+    }
+    for i = 1, #groups do
+        local itemKeys = groups[i]
+        if type(itemKeys) == 'table' then
+            for _, itemKey in ipairs(itemKeys) do
+                local attachmentTable = WeaponAttachments and WeaponAttachments[itemKey]
+                if weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable) then
+                    local comp = lookupAttachmentComponent(attachmentTable, weaponData.name)
+                    local compHash = componentHash(comp)
+                    if compHash and not HasPedGotWeaponComponent(ped, weaponHash, compHash) then
+                        GiveWeaponComponentToPed(ped, weaponHash, compHash)
+                    end
+                end
+            end
+        end
+    end
+end
+
 function WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then return end
     SetPedInfiniteAmmoClip(ped, false)
@@ -89,14 +128,11 @@ function WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
 end
 
 function WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
-    local nativeMax = 0
-    for _, p2 in ipairs({ true, false }) do
-        local hasMaxClip, maxClipAmmo = GetMaxAmmoInClip(ped, weaponHash, p2)
-        if hasMaxClip and maxClipAmmo then
-            nativeMax = math.max(nativeMax, tonumber(maxClipAmmo) or 0)
-        end
+    if ped and weaponHash and weaponData then
+        WeaponAmmo.ensureClipComponents(ped, weaponHash, weaponData)
     end
 
+    local nativeMax = WeaponAmmo.getNativeMaxClip(ped, weaponHash)
     local standardClip = defaultClipForWeapon(weaponHash, weaponData)
     local attachmentCap = resolveAttachmentClipCapacity(
         weaponData and weaponData.name,
@@ -105,7 +141,7 @@ function WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
         weaponData
     )
 
-    -- CLIP_02/03 ant ped: native arba config (jei native vis dar grąžina standartą).
+    -- CLIP_02/03: native arba config (jei native vis dar grąžina standartą).
     if attachmentCap > 0 then
         return math.max(nativeMax, attachmentCap)
     end
@@ -117,12 +153,24 @@ function WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
     return standardClip
 end
 
-function WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData)
-    local maxClip = WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
+local function readClipAmmoClamped(ped, weaponHash, maxClip)
     local hasClip, currentClipAmmo = GetAmmoInClip(ped, weaponHash)
     local curInClip = hasClip and (tonumber(currentClipAmmo) or 0) or 0
-    curInClip = math.min(math.max(0, curInClip), maxClip)
+    local nativeMax = WeaponAmmo.getNativeMaxClip(ped, weaponHash)
     local totalAmmo = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
+
+    -- Po SetPedAmmo(reserve) GetAmmoInClip kartais grąžina visą total — tai ne apkaba.
+    if nativeMax > 0 and curInClip > nativeMax and totalAmmo > nativeMax and curInClip >= totalAmmo then
+        curInClip = nativeMax
+    end
+
+    curInClip = math.min(math.max(0, curInClip), maxClip)
+    return curInClip, nativeMax, totalAmmo
+end
+
+function WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData)
+    local maxClip = WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
+    local curInClip, _, totalAmmo = readClipAmmoClamped(ped, weaponHash, maxClip)
     local clipMissing = math.max(0, maxClip - curInClip)
     return curInClip, maxClip, clipMissing, totalAmmo
 end
@@ -135,8 +183,7 @@ function WeaponAmmo.normalizePedAmmo(ped, weaponHash, weaponData)
 
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
     local maxClip = WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
-    local _, clipNow = GetAmmoInClip(ped, weaponHash)
-    local clip = math.min(maxClip, math.max(0, tonumber(clipNow) or 0))
+    local clip = select(1, readClipAmmoClamped(ped, weaponHash, maxClip))
     local total = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
 
     if total > maxClip then
@@ -185,24 +232,54 @@ function WeaponAmmo.stageNativeReserve(ped, weaponHash, weaponData, bullets)
     return staged
 end
 
---- Užbaigus native animaciją pašalina laikiną GTA reserve ir palieka tik apkabą.
---- Grąžina realiai į apkabą patekusių kulkų delta bei galutinę apkabą.
-function WeaponAmmo.finishNativeReload(ped, weaponHash, clipBefore, maxClip)
+--- Užbaigus native animaciją: užpildo intended, inventoriui nuskaito tik verified.
+--- Svarbu: NIEKADA nekrauti pagal GetAmmoInClip==total (stage reserve bug → −100 / +30).
+--- @return number loadedDelta, number finalClip
+function WeaponAmmo.finishNativeReload(ped, weaponHash, clipBefore, maxClip, staged, weaponData)
     clipBefore = math.max(0, math.floor(tonumber(clipBefore) or 0))
     maxClip = math.max(clipBefore, math.floor(tonumber(maxClip) or clipBefore))
+    staged = math.max(0, math.floor(tonumber(staged) or 0))
+
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then
         return 0, clipBefore
     end
 
-    local hasClip, nativeClip = GetAmmoInClip(ped, weaponHash)
-    local clip = hasClip and math.floor(tonumber(nativeClip) or clipBefore) or clipBefore
-    clip = math.min(maxClip, math.max(0, clip))
-    local loaded = math.max(0, clip - clipBefore)
+    if weaponData then
+        WeaponAmmo.ensureClipComponents(ped, weaponHash, weaponData)
+        maxClip = math.max(maxClip, WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData))
+    end
 
-    SetPedAmmo(ped, weaponHash, clip)
-    SetAmmoInClip(ped, weaponHash, clip)
+    local intended = math.min(maxClip, clipBefore + staged)
+    local nativeMax = WeaponAmmo.getNativeMaxClip(ped, weaponHash)
+
+    SetPedAmmo(ped, weaponHash, intended)
+    SetAmmoInClip(ped, weaponHash, intended)
     WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
-    return loaded, clip
+
+    local hasClip, rawAfter = GetAmmoInClip(ped, weaponHash)
+    local after = hasClip and math.floor(tonumber(rawAfter) or 0) or 0
+    local total = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
+
+    -- GetAmmoInClip kartais grąžina visą reserve — neapkaba.
+    if nativeMax > 0 and after > nativeMax and total > nativeMax and after >= total then
+        after = math.min(nativeMax, intended)
+    end
+
+    local verified = intended
+    if after > 0 then
+        verified = math.min(intended, math.max(clipBefore, after))
+    end
+    -- Jei CLIP_02/03 nepakėlė native max, GTA laiko tik nativeMax — nekrauti daugiau.
+    if nativeMax > 0 and intended > nativeMax and verified > nativeMax and after <= nativeMax then
+        verified = math.max(clipBefore, math.min(intended, nativeMax, after > 0 and after or nativeMax))
+    end
+
+    verified = math.min(intended, math.max(clipBefore, verified))
+    SetPedAmmo(ped, weaponHash, verified)
+    SetAmmoInClip(ped, weaponHash, verified)
+    WeaponAmmo.clearPedWeaponInfiniteAmmo(ped, weaponHash)
+
+    return math.max(0, verified - clipBefore), verified
 end
 
 function WeaponAmmo.getSyncedAmmoAmount(ped, weaponHash, weaponData)

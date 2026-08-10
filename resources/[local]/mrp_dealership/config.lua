@@ -279,7 +279,7 @@ Config.PoliceDealership = {
         { model = 'mrpd4', name = 'MRPD 4', brand = 'MRPD', category = 'marked', price = 28000, minGrade = 4, shopEnabled = true },
         { model = 'mrpd5', name = 'MRPD 5', brand = 'MRPD', category = 'marked', price = 29000, minGrade = 4, shopEnabled = true },
         { model = 'mrpd6', name = 'MRPD 6', brand = 'MRPD', category = 'marked', price = 30000, minGrade = 0, shopEnabled = true },
-        { model = 'mrpd7', name = 'MRPD 7', brand = 'MRPD', category = 'marked', price = 31000, minGrade = 0, shopEnabled = false },
+        { model = 'mrpd7', name = 'MRPD 7', brand = 'MRPD', category = 'marked', price = 31000, minGrade = 0, shopEnabled = true },
         { model = 'mrpd8', name = 'MRPD 8', brand = 'MRPD', category = 'marked', price = 32000, minGrade = 5, shopEnabled = true },
         -- ŽYMĖTOS Non-ELS (buvę mrpd13-16)
         { model = 'mrpd9', name = 'MRPD 9 — Audi RS6', brand = 'Audi', category = 'marked', price = 34000, minGrade = 8, shopEnabled = true },

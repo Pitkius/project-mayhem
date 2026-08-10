@@ -204,7 +204,7 @@ Config.SurfaceHandling = {
         mrpd5 = 'Emergency', mrpd6 = 'Emergency', mrpd7 = 'Emergency', mrpd8 = 'Emergency',
         mrpd9 = 'Emergency', mrpd10 = 'Emergency', mrpd11 = 'Emergency', mrpd12 = 'Emergency',
         mrpd13 = 'Emergency', mrpd14 = 'Emergency', mrpd15 = 'Emergency', mrpd16 = 'Emergency',
-        mrpd17 = 'Emergency', mrpd18 = 'Emergency', mrpd19 = 'Emergency', mrpd20 = 'Emergency',
+        mrpd17 = 'Emergency', mrpd18 = 'Emergency', mrpd19 = 'Emergency', mrpd20 = 'Offroad',
         mrpd21 = 'Emergency', mrpd22 = 'Emergency', mrpd23 = 'Emergency', mrpd24 = 'Emergency',
         mrpd25 = 'Emergency', mrpd26 = 'Emergency',
     },

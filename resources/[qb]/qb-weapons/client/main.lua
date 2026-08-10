@@ -349,7 +349,8 @@ local function requestNativeReload(preferredItemName, preferredSlot, expectedAmm
                     tonumber(result.clipBefore) or clipBefore,
                     loaded
                 )
-            end
+            end,
+            tonumber(result.maxClip) or maxClip
         )
         if not started then
             closeUnusedReloadToken(result.token, currentClip, function()

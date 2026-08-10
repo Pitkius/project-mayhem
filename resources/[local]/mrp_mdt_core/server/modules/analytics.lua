@@ -127,15 +127,28 @@ function MdtAnalytics.Flush()
     local batch = pending
     pending = {}
 
+    --- Lua table holes: assigning nil does not occupy a slot, so batching
+    --- `(?, ?, ?, ?, ?)` with nil value_num/meta shifts later strings into INT columns.
+    --- Inline SQL NULL for missing nullable fields; bind only real values.
+    local function pushNullable(sqlParts, params, value)
+        if value == nil then
+            sqlParts[#sqlParts + 1] = 'NULL'
+        else
+            sqlParts[#sqlParts + 1] = '?'
+            params[#params + 1] = value
+        end
+    end
+
     local values = {}
     local params = {}
     for _, row in ipairs(batch) do
-        values[#values + 1] = '(?, ?, ?, ?, ?)'
+        local parts = { '?' }
         params[#params + 1] = row.event_type
-        params[#params + 1] = row.service
-        params[#params + 1] = row.actor_citizenid
-        params[#params + 1] = row.value_num
-        params[#params + 1] = row.meta
+        pushNullable(parts, params, row.service)
+        pushNullable(parts, params, row.actor_citizenid)
+        pushNullable(parts, params, row.value_num)
+        pushNullable(parts, params, row.meta)
+        values[#values + 1] = '(' .. table.concat(parts, ', ') .. ')'
     end
 
     local ok, err = pcall(function()

@@ -24,7 +24,9 @@ local function finishSession(session, reason)
             ped,
             session.weaponHash,
             session.clipBefore,
-            session.maxClip
+            session.maxClip,
+            session.staged,
+            session.weaponData
         )
     end
 
@@ -37,11 +39,17 @@ function WeaponReload.isActive()
     return activeSession ~= nil and activeSession.finished ~= true
 end
 
-function WeaponReload.start(ped, weaponHash, bullets, weaponData, onFinished)
+function WeaponReload.start(ped, weaponHash, bullets, weaponData, onFinished, maxClipOverride)
     if WeaponReload.isActive() then return false, 'reload_busy' end
     if not selectedWeaponIs(ped, weaponHash) then return false, 'weapon_changed' end
 
+    WeaponAmmo.ensureClipComponents(ped, weaponHash, weaponData)
     local clipBefore, maxClip, missing = WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData)
+    maxClipOverride = math.floor(tonumber(maxClipOverride) or 0)
+    if maxClipOverride > 0 then
+        maxClip = math.max(maxClip, maxClipOverride)
+        missing = math.max(0, maxClip - clipBefore)
+    end
     local staged = math.min(
         math.max(0, math.floor(tonumber(bullets) or 0)),
         math.max(0, missing)
@@ -124,7 +132,9 @@ AddEventHandler('onResourceStop', function(resource)
             session.ped,
             session.weaponHash,
             session.clipBefore,
-            session.maxClip
+            session.maxClip,
+            session.staged,
+            session.weaponData
         )
         activeSession = nil
     end

@@ -510,11 +510,6 @@ local function reviveLocalPlayer()
     ClearPedTasksImmediately(ped)
     SetEntityHealth(ped, 200)
     SetPedArmour(ped, 0)
-
-    BeginTextCommandThefeedPost('STRING')
-    AddTextComponentSubstringPlayerName('Atsigavai (test revive).')
-    EndTextCommandThefeedPostTicker(false, false)
-    print('[mrp_basics] Test revive ivykdytas.')
 end
 
 local function healLocalPlayer()
@@ -522,12 +517,6 @@ local function healLocalPlayer()
     SetEntityHealth(ped, 200)
     ClearPedBloodDamage(ped)
 end
-
-RegisterCommand('fprevive', function()
-    reviveLocalPlayer()
-end, false)
-
-RegisterKeyMapping('fprevive', 'Fivempro test revive', 'keyboard', 'F6')
 
 RegisterNetEvent('mrp_basics:client:adminRevive', function()
     reviveLocalPlayer()

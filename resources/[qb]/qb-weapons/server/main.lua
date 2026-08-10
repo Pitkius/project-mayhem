@@ -419,9 +419,7 @@ QBCore.Functions.CreateCallback('qb-weapons:server:beginReload', function(source
     end
 
     local maxClip = serverMaxClip(src, weaponItem)
-    local clientMax = math.max(1, math.floor(tonumber(request.maxClip) or maxClip))
-    maxClip = math.min(maxClip, clientMax)
-    local storedClip = capStoredWeaponAmmo(weaponName, weaponItem.info and weaponItem.info.ammo or 0)
+    -- Talpa tik iš ginklo metadata (CLIP_02/03). Commit nuskaito tik verified `loaded`.    local storedClip = capStoredWeaponAmmo(weaponName, weaponItem.info and weaponItem.info.ammo or 0)
     local reportedClip = math.max(0, math.floor(tonumber(request.clipBefore) or 0))
     local clipBefore = math.min(storedClip, reportedClip, maxClip)
     local missing = math.max(0, maxClip - clipBefore)
