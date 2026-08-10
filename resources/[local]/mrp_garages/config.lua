@@ -71,6 +71,7 @@ Config.PoliceVehicleModels = {
     mrpd13 = true, mrpd14 = true, mrpd15 = true, mrpd16 = true, mrpd23 = true,
     mrpd17 = true, mrpd18 = true, mrpd19 = true, mrpd20 = true,
     mrpd22 = true,
+    mrpd27 = true, mrpd28 = true, mrpd29 = true, mrpd30 = true, mrpd31 = true, mrpd32 = true,
 }
 
 Config.MechanicVehicleModels = {

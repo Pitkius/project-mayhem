@@ -72,6 +72,7 @@ Config.FleetVehicles = {
         'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16', 'mrpd23',
         'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
         'mrpd22',
+        'mrpd27', 'mrpd28', 'mrpd29', 'mrpd30', 'mrpd31', 'mrpd32',
         'polmav', 'buzzard2',
     },
     ambulance = { 'ambulance', 'ambulance2', 'lguard', 'ems1', 'ems2', 'granger' },

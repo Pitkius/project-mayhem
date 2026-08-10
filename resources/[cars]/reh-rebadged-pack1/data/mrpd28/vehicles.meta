@@ -4,9 +4,9 @@
   <residentAnims />
   <InitDatas>
 	    <Item>
-     <modelName>bravadocharger08</modelName>
-      <txdName>bravadocharger08</txdName>
-      <handlingId>bravadocharger08</handlingId>
+     <modelName>mrpd28</modelName>
+      <txdName>mrpd28</txdName>
+      <handlingId>mrpd28</handlingId>
       <gameName>Bravado Buffalo 08</gameName>
       <vehicleMakeName>Bravado</vehicleMakeName>
       <expressionDictName>null</expressionDictName>
@@ -91,11 +91,11 @@
       <frequency value="50" />
       <swankness>SWANKNESS_1</swankness>
       <maxNum value="50" />
-      <flags>FLAG_HAS_LIVERY FLAG_EXTRAS_STRONG FLAG_EXTRAS_REQUIRE FLAG_HAS_INTERIOR_EXTRAS FLAG_DONT_SPAWN_AS_AMBIENT FLAG_DONT_SPAWN_IN_CARGEN FLAG_NO_RESPRAY</flags>
+      <flags>FLAG_HAS_LIVERY FLAG_EXTRAS_STRONG FLAG_EXTRAS_REQUIRE FLAG_HAS_INTERIOR_EXTRAS FLAG_DONT_SPAWN_AS_AMBIENT FLAG_DONT_SPAWN_IN_CARGEN FLAG_NO_RESPRAY FLAG_LAW_ENFORCEMENT FLAG_EMERGENCY_SERVICE</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_FRONT_AND_BACK_PLATES</plateType>
 	  <dashboardType>VDT_CAVALCADE</dashboardType>
-      <vehicleClass>VC_SEDAN</vehicleClass>
+      <vehicleClass>VC_EMERGENCY</vehicleClass>
       <wheelType>VWT_MUSCLE</wheelType>
       <trailers />
       <additionalTrailers />
@@ -128,7 +128,7 @@
   <txdRelationships>
 	    <Item>
       <parent>vehicles_bob_brown_interior</parent>
-      <child>bravadocharger08</child>
+      <child>mrpd28</child>
     </Item>
   </txdRelationships>
 </CVehicleModelInfo__InitDataList>

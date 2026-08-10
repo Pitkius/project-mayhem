@@ -13,7 +13,7 @@
 
 
     <Item>
-      <modelName>bravadocharger08</modelName>
+      <modelName>mrpd28</modelName>
       <colors>
         <Item>
           <indices content="char_array">
@@ -167,7 +167,7 @@
         <Probabilities />
       </plateProbabilities>
       <lightSettings value="1" />
-      <sirenSettings value="0" />
+      <sirenSettings value="52890" />
     </Item>
 
 

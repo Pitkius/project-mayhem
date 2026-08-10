@@ -2,7 +2,7 @@
 <CVehicleModelInfoVariation>
 	<variationData>
     <Item>
-      <modelName>benefactors87</modelName>
+      <modelName>mrpd30</modelName>
       <colors>
         <Item>
           <indices content="char_array">
@@ -270,7 +270,7 @@
         </Probabilities>
       </plateProbabilities>
       <lightSettings value="1"/>
-      <sirenSettings value="0" />
+      <sirenSettings value="247" />
     </Item>
 	</variationData>
 </CVehicleModelInfoVariation>

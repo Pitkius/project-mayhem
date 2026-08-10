@@ -2,7 +2,7 @@
 <CVehicleModelInfoVariation>
   <variationData>
 		<Item>
-      <modelName>vapidtrxc</modelName>
+      <modelName>mrpd31</modelName>
       <colors>
         <Item>
           <indices content="char_array"> <!-- Black / Black -->
@@ -78,7 +78,7 @@
         </Probabilities>
       </plateProbabilities>
       <lightSettings value="2" />
-      <sirenSettings value="0" />
+      <sirenSettings value="1" />
     </Item>
   </variationData>
 </CVehicleModelInfoVariation>
