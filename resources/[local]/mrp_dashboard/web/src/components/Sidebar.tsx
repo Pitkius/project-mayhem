@@ -14,9 +14,9 @@ import {
 } from 'lucide-react';
 import mayhemMark from '@/assets/brand/mayhem_mark.png';
 
-const ITEMS: { id: NavId; label: string; icon: typeof Home; native?: boolean }[] = [
+const ITEMS: { id: NavId; label: string; icon: typeof Home }[] = [
   { id: 'home', label: 'PAGRINDINIS', icon: Home },
-  { id: 'map', label: 'ŽEMĖLAPIS', icon: Map, native: true },
+  { id: 'map', label: 'ŽEMĖLAPIS', icon: Map },
   { id: 'rppass', label: 'RP PASS', icon: Ticket },
   { id: 'missions', label: 'MISIJOS', icon: Target },
   { id: 'daily', label: 'DIENINIS', icon: CalendarDays },
@@ -25,7 +25,7 @@ const ITEMS: { id: NavId; label: string; icon: typeof Home; native?: boolean }[]
   { id: 'events', label: 'RENGINIAI', icon: PartyPopper },
   { id: 'ranking', label: 'REITINGAS', icon: Trophy },
   { id: 'profile', label: 'PROFILIS', icon: User },
-  { id: 'settings', label: 'NUSTATYMAI', icon: Settings, native: true },
+  { id: 'settings', label: 'NUSTATYMAI', icon: Settings },
 ];
 
 export function Sidebar({
@@ -51,16 +51,13 @@ export function Sidebar({
       <nav className="nav-list">
         {ITEMS.map((item) => {
           const Icon = item.icon;
-          const isActive =
-            !item.native &&
-            (item.id === 'premium' ? premiumActive : active === item.id);
+          const isActive = item.id === 'premium' ? premiumActive : active === item.id;
           return (
             <button
               key={item.id}
               type="button"
               className={`nav-item${isActive ? ' active' : ''}`}
               onClick={() => onNavigate(item.id)}
-              title={item.native ? 'Atidaro GTA native meniu' : undefined}
             >
               <Icon />
               <span>{item.label}</span>

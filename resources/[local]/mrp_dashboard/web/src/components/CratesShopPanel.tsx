@@ -20,7 +20,7 @@ export function CratesShopPanel({
   onDevSpin?: (payload: CrateSpinPayload) => void;
 }) {
   const crates = data.daily.crates ?? [];
-  const shopCrates = crates.filter((c) => c.kind !== 'daily');
+  const shopCrates = crates.filter((c) => c.kind !== 'daily' && c.kind !== 'weekly');
   const [selectedId, setSelectedId] = useState(shopCrates[0]?.id || crates[0]?.id || '');
   const selected = useMemo(
     () => crates.find((c) => c.id === selectedId) || shopCrates[0] || crates[0],
@@ -70,7 +70,7 @@ export function CratesShopPanel({
   return (
     <div className="premium-panel">
       <div className="crate-catalog">
-        {crates.map((c) => (
+        {shopCrates.map((c) => (
           <button
             key={c.id}
             type="button"
@@ -84,7 +84,7 @@ export function CratesShopPanel({
             {c.priceCredits ? (
               <span className="crate-price">{formatNumber(c.priceCredits)} CR</span>
             ) : (
-              <span className="crate-price free">FREE · DIENINIS</span>
+              <span className="crate-price free">FREE</span>
             )}
           </button>
         ))}

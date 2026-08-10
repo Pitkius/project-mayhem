@@ -37,7 +37,6 @@ RehVehicleEntries = {
     { model = 'coilraiden', name = 'Coil Raiden', brand = 'Coil', price = 69500, category = 'offroad', type = 'automobile', shop = 'pdm' },
     { model = 'coquettec6', name = 'Invetero Coquette C6', brand = 'Invetero', price = 520000, category = 'sports', type = 'automobile', shop = 'pdm' },
     { model = 'coquettec8', name = 'Coquette C8', brand = 'Invetero', price = 848000, category = 'sports', type = 'automobile', shop = 'pdm' },
-    { model = 'coquettec8a', name = 'Invetero Coquette C8', brand = 'Invetero', price = 848000, category = 'sports', type = 'automobile', shop = 'pdm' },
     { model = 'coquettezl1', name = 'Invetero Coquette LZ1', brand = 'Invetero', price = 520000, category = 'sports', type = 'automobile', shop = 'pdm' },
     { model = 'coquettezr1', name = 'CORVETZR1', brand = 'CHEVROLET', price = 880000, category = 'sports', type = 'automobile', shop = 'pdm' },
     { model = 'declasseimpala', name = 'Chevrolet Impala', brand = 'Chevrolet', price = 202000, category = 'muscle', type = 'automobile', shop = 'pdm' },

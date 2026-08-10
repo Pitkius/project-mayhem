@@ -14,7 +14,6 @@ local CRATE_PRICES = {
     deze_legali = 350,
     deze_exp = 400,
     deze_nelegali = 550,
-    savaites_deze = 1200,
 }
 
 local function spend(src, amount, reason)

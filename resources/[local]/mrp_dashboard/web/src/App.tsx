@@ -43,27 +43,9 @@ export default function App() {
 
   const handleNavigate = useCallback(
     async (id: NavId) => {
-      if (id === 'map') {
-        if (isDevPreview()) {
-          notify('ŽEMĖLAPIS', 'Žaidime atsidarys native GTA map.', '🗺️');
-          return;
-        }
-        await nuiCallback('openNativeMap');
-        setOpen(false);
-        return;
-      }
-      if (id === 'settings') {
-        if (isDevPreview()) {
-          notify('NUSTATYMAI', 'Žaidime atsidarys native GTA settings.', '⚙️');
-          return;
-        }
-        await nuiCallback('openNativeSettings');
-        setOpen(false);
-        return;
-      }
       setPage(id);
     },
-    [notify],
+    [],
   );
 
   useEffect(() => {
@@ -88,8 +70,25 @@ export default function App() {
             ? { ...prev.player, ...incoming.player }
             : prev.player,
           daily: incoming.daily
-            ? { ...prev.daily, ...incoming.daily }
+            ? {
+                ...prev.daily,
+                ...incoming.daily,
+                weekly: incoming.daily.weekly
+                  ? { ...prev.daily.weekly, ...incoming.daily.weekly } as typeof prev.daily.weekly
+                  : prev.daily.weekly,
+                requirements: incoming.daily.requirements ?? prev.daily.requirements,
+              }
             : prev.daily,
+          missions: incoming.missions ?? prev.missions,
+          rankings: incoming.rankings
+            ? { ...prev.rankings, ...incoming.rankings }
+            : prev.rankings,
+          server: incoming.server
+            ? { ...prev.server, ...incoming.server }
+            : prev.server,
+          settings: incoming.settings
+            ? { ...prev.settings, ...incoming.settings }
+            : prev.settings,
         }));
       }
       if (msg.action === 'notify' && msg.payload) {

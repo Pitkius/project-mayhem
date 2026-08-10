@@ -398,8 +398,32 @@ select {
 
 .content {
   overflow: auto;
-  padding: 22px 24px 28px;
+  padding: 20px 28px 32px;
   animation: pageIn 200ms ease;
+  min-height: 0;
+  height: 100%;
+}
+
+.page-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+}
+
+.page-body-fill {
+  flex: 1;
+  display: grid;
+  gap: 18px;
+  align-content: stretch;
 }
 
 @keyframes pageIn {
@@ -418,28 +442,137 @@ select {
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 0;
 }
 
 .page-title h1 {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 
 .page-title p {
   color: var(--text-muted);
-  font-size: 13px;
-  margin-top: 4px;
+  font-size: 14px;
+  margin-top: 6px;
+  max-width: 52ch;
+}
+
+/* —— Page hero with character art (fills empty side space) —— */
+.page-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(200px, 0.75fr);
+  gap: 20px;
+  align-items: stretch;
+  min-height: 168px;
+  padding: 18px 22px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(120deg, rgba(20, 22, 37, 0.95), rgba(14, 16, 28, 0.75)),
+    radial-gradient(ellipse at 85% 40%, rgba(167, 139, 250, 0.16), transparent 55%);
+  overflow: hidden;
+  position: relative;
+}
+
+.page-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 55%, rgba(255, 255, 255, 0.02));
+  pointer-events: none;
+}
+
+.page-hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  z-index: 1;
+  min-width: 0;
+}
+
+.page-hero-text h1 {
+  font-size: clamp(24px, 2.4vw, 34px);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+}
+
+.page-hero-text p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-top: 8px;
+  max-width: 48ch;
+  line-height: 1.45;
+}
+
+.page-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.page-hero-art {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 140px;
+  z-index: 1;
+}
+
+.page-hero-avatar {
+  width: 72px;
+  height: 72px;
+  align-self: center;
+  margin-right: -8px;
+  z-index: 2;
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+
+.char-figure {
+  width: min(100%, 200px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  animation: charFloat 4.5s ease-in-out infinite;
+}
+
+.char-figure-svg {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.35));
+}
+
+.char-figure-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+@keyframes charFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 .grid {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .grid-home {
-  grid-template-columns: 1.1fr 1fr 0.9fr;
+  grid-template-columns: 1.15fr 1.1fr 0.95fr;
 }
 
 .grid-2 {
@@ -454,12 +587,22 @@ select {
   grid-template-columns: repeat(4, 1fr);
 }
 
+.grid-rank {
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.75fr);
+  align-items: start;
+}
+
+.grid-spread {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 18px;
   transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+  height: 100%;
 }
 
 .card:hover {
@@ -472,13 +615,127 @@ select {
   font-size: 12px;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   font-weight: 600;
 }
 
 .card .value {
   font-size: 24px;
   font-weight: 700;
+}
+
+.home-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.home-stat-chip {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+}
+
+.home-stat-chip span {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.home-stat-chip strong {
+  font-size: 15px;
+}
+
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.quick-links .btn {
+  width: 100%;
+  min-height: 52px;
+}
+
+.rank-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+}
+
+.rank-side .char-figure {
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+.rank-self-card {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border-strong);
+  background: linear-gradient(145deg, rgba(167, 139, 250, 0.16), rgba(20, 22, 37, 0.9));
+}
+
+.rank-self-card .rank-num {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-soft);
+}
+
+.event-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.reward-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.mission-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .page-hero {
+    grid-template-columns: 1fr;
+  }
+  .page-hero-art {
+    justify-content: flex-start;
+    max-height: 140px;
+  }
+  .char-figure {
+    width: 140px;
+  }
+  .grid-home,
+  .grid-rank {
+    grid-template-columns: 1fr;
+  }
+  .quick-links {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1600px) {
+  .content {
+    padding: 24px 36px 40px;
+  }
+  .page-hero {
+    min-height: 200px;
+  }
+  .char-figure {
+    width: min(100%, 240px);
+  }
 }
 
 .muted {
@@ -868,6 +1125,19 @@ select {
 
 .toggle.on::after {
   transform: translateX(18px);
+}
+
+.settings-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row .muted {
+  margin-top: 4px;
 }
 
 .field {

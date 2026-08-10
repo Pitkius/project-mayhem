@@ -6,7 +6,7 @@ Config.RehModels = {
     'benefactors87', 'benefactorspur', 'bfpologti', 'bravadobuffalo', 'bravadocharger08',
     'bravadocharger23', 'bravadodaytona', 'bravadodemon', 'bravadodemonsc', 'bravadodemonsc2',
     'bravadomagnum', 'bravadosrt392', 'bravadosuburban', 'bravadoz28', 'burgerfahrzeupassat',
-    'canissrt8', 'caniswrangler', 'coilraiden', 'coquettec6', 'coquettec8', 'coquettec8a',
+    'canissrt8', 'caniswrangler', 'coilraiden', 'coquettec6', 'coquettec8',
     'coquettezl1', 'coquettezr1', 'declasseimpala', 'dinkablista', 'dinkabooga', 'dinkacivic',
     'dinkansx', 'dinkawhip', 'grottibrioso', 'inveteroc7', 'inveterozr1', 'karimaxima',
     'karinaltima', 'karinascent', 'karincamry', 'karincorolla', 'karineclipse', 'karinelantra',

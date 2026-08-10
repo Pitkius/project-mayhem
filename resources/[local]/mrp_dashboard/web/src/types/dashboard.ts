@@ -1,5 +1,6 @@
 export type PageId =
   | 'home'
+  | 'map'
   | 'rppass'
   | 'missions'
   | 'daily'
@@ -9,12 +10,10 @@ export type PageId =
   | 'rewards'
   | 'events'
   | 'ranking'
-  | 'profile';
+  | 'profile'
+  | 'settings';
 
-/** Sidebar entries that open native GTA UI instead of a dashboard page */
-export type NativeNavId = 'map' | 'settings';
-
-export type NavId = PageId | NativeNavId;
+export type NavId = PageId;
 
 export type VipTier = 'NONE' | 'SILVER' | 'GOLD' | 'DIAMOND';
 
@@ -119,6 +118,16 @@ export interface CrateDef {
   lootPool: LootItem[];
 }
 
+export interface WeeklyCrateProgress {
+  requiredMinutes: number;
+  playedMinutes: number;
+  missionDone: boolean;
+  canClaim: boolean;
+  claimed: boolean;
+  crateItem: string;
+  crateLabel: string;
+}
+
 export interface DailyData {
   day: number;
   maxDays: number;
@@ -135,6 +144,13 @@ export interface DailyData {
   lootPool: LootItem[];
   /** All crate variants catalog */
   crates: CrateDef[];
+  weekly?: WeeklyCrateProgress;
+  requirements?: {
+    dailyPlay: boolean;
+    dailyMission: boolean;
+    weeklyPlay: boolean;
+    weeklyMission: boolean;
+  };
   days: {
     day: number;
     label: string;

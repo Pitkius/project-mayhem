@@ -91,11 +91,11 @@
       <frequency value="30" />
       <swankness>SWANKNESS_5</swankness>
       <maxNum value="4" />
-      <flags>FLAG_SPORTS FLAG_RICH_CAR FLAG_AVERAGE_CAR FLAG_NO_BROKEN_DOWN_SCENARIO FLAG_COUNT_AS_FACEBOOK_DRIVEN FLAG_HAS_INTERIOR_EXTRAS FLAG_HAS_LIVERY FLAG_DROP_SUSPENSION_WHEN_STOPPED FLAG_LAW_ENFOREMENT FLAG_EMERGENCY_SERVICE FLAG_HAS_NITROUS_MOD</flags>
+      <flags>FLAG_SPORTS FLAG_RICH_CAR FLAG_AVERAGE_CAR FLAG_NO_BROKEN_DOWN_SCENARIO FLAG_COUNT_AS_FACEBOOK_DRIVEN FLAG_HAS_INTERIOR_EXTRAS FLAG_HAS_LIVERY FLAG_DROP_SUSPENSION_WHEN_STOPPED FLAG_HAS_NITROUS_MOD</flags>
       <type>VEHICLE_TYPE_CAR</type>
       <plateType>VPT_BACK_PLATES</plateType>
 	  <dashboardType>VDT_RACE</dashboardType>
-      <vehicleClass>VC_EMERGENCY</vehicleClass>
+      <vehicleClass>VC_SPORT</vehicleClass>
       <wheelType>VWT_SPORT</wheelType>
       <trailers>
         <Item>boattrailer</Item>

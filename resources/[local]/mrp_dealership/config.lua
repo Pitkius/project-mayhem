@@ -301,7 +301,7 @@ Config.PoliceDealership = {
         { model = 'mrpd20', name = 'MRPD 20 (nežymėta)', brand = 'MRPD', category = 'unmarked', price = 27000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
         { model = 'mrpd25', name = 'MRPD 25 — Alfa Romeo nežymėta', brand = 'Alfa Romeo', category = 'unmarked', price = 35500, minGrade = 6, arasOrGrade = true, shopEnabled = true },
         -- NEŽYMĖTOS LT ELS — pačioje gale
-        { model = 'mrpd21', name = 'MRPD 21 — BMW 540i VAD (LT ELS)', brand = 'BMW', category = 'unmarked', price = 37000, minGrade = 0, shopEnabled = true },
+        { model = 'mrpd21', name = 'MRPD 21 — BMW 540i VAD (LT ELS)', brand = 'BMW', category = 'unmarked', price = 37000, minGrade = 0, shopEnabled = false },
         { model = 'mrpd22', name = 'MRPD 22 — Audi S3 nežymėta (ELS)', brand = 'Audi', category = 'unmarked', price = 36000, minGrade = 0, shopEnabled = true },
     },
 }

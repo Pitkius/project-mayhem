@@ -23,7 +23,9 @@ client_scripts {
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
+    'server/progress.lua',
     'server/crates.lua',
     'server/shop.lua',
 }

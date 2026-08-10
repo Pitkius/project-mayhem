@@ -10,6 +10,9 @@ local allowNativeFrontend = false
 local mugshotHandle = nil
 --- CSGO crate spin overlay (inventory use) — blocks ESC dashboard toggle
 local crateSpinOpen = false
+local crateSpinTicks = false
+
+local QBCore = exports['qb-core']:GetCoreObject()
 
 local function clearMugshot()
     if mugshotHandle and mugshotHandle ~= 0 then
@@ -52,43 +55,23 @@ local function captureMugshotUrl()
     return ('https://nui-img/%s/%s?t=%d'):format(txd, txd, GetGameTimer())
 end
 
-local function buildPlayerPatch()
-    local patch = {
-        player = {},
-    }
+local function deepMergePlayer(patch)
     local avatarUrl = captureMugshotUrl()
     if avatarUrl then
+        patch.player = patch.player or {}
         patch.player.avatarUrl = avatarUrl
     end
-
-    local QBCore = exports['qb-core'] and exports['qb-core']:GetCoreObject() or nil
-    local pdata = QBCore and QBCore.Functions.GetPlayerData() or nil
-    if pdata and pdata.charinfo then
-        local ci = pdata.charinfo
-        local first = ci.firstname or ''
-        local last = ci.lastname or ''
-        local name = (first .. ' ' .. last):gsub('^%s+', ''):gsub('%s+$', '')
-        if name ~= '' then
-            patch.player.characterName = name
-        end
-        if ci.cid or pdata.citizenid then
-            -- keep display id as server id; citizenid is longer
-        end
-    end
-    if pdata and pdata.job and pdata.job.label then
-        patch.player.job = pdata.job.label
-    end
-    patch.player.id = GetPlayerServerId(PlayerId())
-    if pdata and pdata.money then
-        if pdata.money.cash ~= nil then patch.player.cash = pdata.money.cash end
-        if pdata.money.bank ~= nil then patch.player.bank = pdata.money.bank end
-        if pdata.money.credits ~= nil then patch.player.credits = pdata.money.credits end
-    end
-    if GetResourceState('mrp_credits') == 'started' then
-        -- balance already on money.credits after resource sync; keep fallback
-    end
-
     return patch
+end
+
+local function requestDashboardData()
+    QBCore.Functions.TriggerCallback('mrp_dashboard:server:getData', function(payload)
+        if type(payload) ~= 'table' or not isOpen then return end
+        SendNUIMessage({
+            action = 'setData',
+            payload = deepMergePlayer(payload),
+        })
+    end)
 end
 
 local function openDashboard()
@@ -102,13 +85,7 @@ local function openDashboard()
     SetNuiFocus(true, true)
     SetNuiFocusKeepInput(false)
     SendNUIMessage({ action = 'open', payload = {} })
-
-    CreateThread(function()
-        local patch = buildPlayerPatch()
-        if isOpen then
-            SendNUIMessage({ action = 'setData', payload = patch })
-        end
-    end)
+    requestDashboardData()
 end
 
 local function closeDashboard()
@@ -128,7 +105,6 @@ local function openNativeFrontend(menuHash)
         SetFrontendActive(false)
         Wait(50)
         ActivateFrontendMenu(menuHash, false, -1)
-        -- Keep allow flag until frontend closes
         local deadline = GetGameTimer() + 15000
         while GetGameTimer() < deadline do
             if IsPauseMenuActive() then
@@ -171,12 +147,44 @@ RegisterNUICallback('openNativeSettings', function(_, cb)
     cb({ ok = true })
 end)
 
+RegisterNUICallback('updateSettings', function(data, cb)
+    -- Stub: vėliau sinchronizuoti su mrp_hud / KVP
+    if type(data) == 'table' then
+        -- optional: TriggerEvent('mrp_hud:client:applySettings', data)
+    end
+    cb({ ok = true })
+end)
+
 RegisterNUICallback('crateSpinDone', function(data, cb)
     local token = data and data.token
+    crateSpinTicks = false
     TriggerServerEvent('mrp_dashboard:server:crateSpinDone', token)
     crateSpinOpen = false
     if not isOpen then
         SetNuiFocus(false, false)
+    end
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('crateSpinSound', function(data, cb)
+    local kind = data and data.kind
+    if kind == 'start' then
+        PlaySoundFrontend(-1, 'SELECT', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+        crateSpinTicks = true
+        CreateThread(function()
+            local delay = 85
+            while crateSpinTicks do
+                PlaySoundFrontend(-1, 'NAV_UP_DOWN', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+                Wait(delay)
+                delay = math.min(180, delay + 4)
+            end
+        end)
+    elseif kind == 'win' then
+        crateSpinTicks = false
+        PlaySoundFrontend(-1, 'PROPERTY_PURCHASE', 'HUD_AWARDS', true)
+        PlaySoundFrontend(-1, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', true)
+    elseif kind == 'stop' then
+        crateSpinTicks = false
     end
     cb({ ok = true })
 end)
@@ -187,6 +195,14 @@ RegisterNetEvent('mrp_dashboard:client:openCrateSpin', function(payload)
     SetNuiFocus(true, true)
     SetNuiFocusKeepInput(false)
     SendNUIMessage({ action = 'openCrateSpin', payload = payload })
+end)
+
+RegisterNetEvent('mrp_dashboard:client:setData', function(payload)
+    if type(payload) ~= 'table' then return end
+    if payload.player then
+        payload = deepMergePlayer(payload)
+    end
+    SendNUIMessage({ action = 'setData', payload = payload })
 end)
 
 RegisterNetEvent('mrp_dashboard:client:setCredits', function(bal)
@@ -228,18 +244,30 @@ RegisterNUICallback('purchaseImport', function(data, cb)
     cb({ ok = true })
 end)
 
+RegisterNUICallback('claimDailyCrate', function(_, cb)
+    TriggerServerEvent('mrp_dashboard:server:claimDailyCrate')
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('claimWeeklyCrate', function(_, cb)
+    TriggerServerEvent('mrp_dashboard:server:claimWeeklyCrate')
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('claimMission', function(data, cb)
+    TriggerServerEvent('mrp_dashboard:server:claimMission', data and data.id)
+    cb({ ok = true })
+end)
+
 local STUBS = {
     'claimRpPass', 'claimAllRpPass',
-    'claimMission', 'claimDailyCrate', 'claimReward', 'claimAllRewards',
+    'claimReward', 'claimAllRewards',
     'joinEvent',
 }
 
 for _, name in ipairs(STUBS) do
     RegisterNUICallback(name, function(payload, cb)
-        if name == 'claimDailyCrate' then
-            TriggerServerEvent('mrp_dashboard:server:claimDailyCrate')
-        end
-        cb({ ok = true, stub = name ~= 'claimDailyCrate', data = payload })
+        cb({ ok = true, stub = true, data = payload })
     end)
 end
 
@@ -261,7 +289,6 @@ CreateThread(function()
             end
 
             if crateSpinOpen then
-                -- Block closing mid-spin; ESC ignored until spin finishes
                 DisableControlAction(0, 322, true)
                 Wait(0)
             elseif isOpen then
@@ -296,6 +323,7 @@ RegisterKeyMapping('dashboard', 'Atidaryti Mayhem Dashboard', 'keyboard', 'F10')
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
+    crateSpinTicks = false
     clearMugshot()
 end)
 

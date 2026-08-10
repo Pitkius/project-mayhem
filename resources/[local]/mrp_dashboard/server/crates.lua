@@ -164,19 +164,6 @@ CreateThread(function()
     end
 end)
 
-RegisterNetEvent('mrp_dashboard:server:claimDailyCrate', function()
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
-    local ok = Player.Functions.AddItem('dienos_deze', 1)
-    if ok then
-        TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items['dienos_deze'], 'add')
-        TriggerClientEvent('QBCore:Notify', src, 'Gavai Dienos dėžę. Atidaryk inventoriuje.', 'success')
-    else
-        TriggerClientEvent('QBCore:Notify', src, 'Inventorius pilnas.', 'error')
-    end
-end)
-
 for crateId in pairs(MrpCrates.Defs) do
     QBCore.Functions.CreateUseableItem(crateId, function(source, item)
         startCrateOpen(source, crateId, item and item.slot)

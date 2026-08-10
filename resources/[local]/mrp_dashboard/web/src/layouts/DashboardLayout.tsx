@@ -2,6 +2,7 @@ import type { DashboardData, NavId, PageId } from '@/types/dashboard';
 import { Sidebar } from '@/components/Sidebar';
 import { TopBar } from '@/components/TopBar';
 import { HomePage } from '@/pages/HomePage';
+import { MapPage } from '@/pages/MapPage';
 import { RpPassPage } from '@/pages/RpPassPage';
 import { MissionsPage } from '@/pages/MissionsPage';
 import { DailyPage } from '@/pages/DailyPage';
@@ -10,6 +11,7 @@ import { RewardsPage } from '@/pages/RewardsPage';
 import { EventsPage } from '@/pages/EventsPage';
 import { RankingPage } from '@/pages/RankingPage';
 import { ProfilePage } from '@/pages/ProfilePage';
+import { SettingsPage } from '@/pages/SettingsPage';
 import type { CrateSpinPayload } from '@/components/LootSpinOverlay';
 
 export function DashboardLayout({
@@ -38,6 +40,7 @@ export function DashboardLayout({
       <TopBar player={data.player} onClose={onClose} />
       <main className="content" key={page}>
         {page === 'home' && <HomePage data={data} onNavigate={onNavigate} />}
+        {page === 'map' && <MapPage data={data} notify={notify} />}
         {page === 'rppass' && <RpPassPage data={data} onPatch={onPatch} notify={notify} />}
         {page === 'missions' && <MissionsPage data={data} onPatch={onPatch} notify={notify} />}
         {page === 'daily' && (
@@ -56,6 +59,9 @@ export function DashboardLayout({
         {page === 'events' && <EventsPage data={data} notify={notify} />}
         {page === 'ranking' && <RankingPage data={data} />}
         {page === 'profile' && <ProfilePage data={data} />}
+        {page === 'settings' && (
+          <SettingsPage data={data} onPatch={onPatch} notify={notify} />
+        )}
       </main>
     </div>
   );

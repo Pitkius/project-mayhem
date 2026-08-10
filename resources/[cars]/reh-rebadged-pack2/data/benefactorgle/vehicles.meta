@@ -11,8 +11,8 @@
       <vehicleMakeName>benefactorgle</vehicleMakeName>
       <expressionDictName>null</expressionDictName>
       <expressionName>null</expressionName>
-      <animConvRoofDictName>va_benefactorgle</animConvRoofDictName>
-      <animConvRoofName>benefactorgle</animConvRoofName>
+      <animConvRoofDictName>null</animConvRoofDictName>
+      <animConvRoofName>null</animConvRoofName>
       <animConvRoofWindowsAffected />
       <ptfxAssetName>null</ptfxAssetName>
       <audioNameHash>adder</audioNameHash>

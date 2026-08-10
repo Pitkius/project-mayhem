@@ -68,13 +68,21 @@ export function LootSpinOverlay({
     const target = -(payload.winnerIndex * STEP + CELL_W / 2 - wrapW / 2);
     reel.style.setProperty('--reel-offset', `${target}px`);
 
+    void nuiCallback('crateSpinSound', { kind: 'start' });
+
     const start = window.setTimeout(() => setSpinning(true), 60);
     const doneTimer = window.setTimeout(() => setPhase('result'), 3600);
     return () => {
       window.clearTimeout(start);
       window.clearTimeout(doneTimer);
+      void nuiCallback('crateSpinSound', { kind: 'stop' });
     };
   }, [payload.winnerIndex]);
+
+  useEffect(() => {
+    if (phase !== 'result') return;
+    void nuiCallback('crateSpinSound', { kind: 'win' });
+  }, [phase]);
 
   const finish = async () => {
     if (finished.current) return;

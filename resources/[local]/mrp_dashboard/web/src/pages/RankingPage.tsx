@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import type { DashboardData, RankingCategory } from '@/types/dashboard';
+import { useMemo, useState } from 'react';
+import type { DashboardData, LeaderboardEntry, RankingCategory } from '@/types/dashboard';
 import { Card } from '@/components/ui';
+import { CharacterFigure, PageHero } from '@/components/PageHero';
 
 const TABS: { id: RankingCategory; label: string }[] = [
   { id: 'playtime', label: 'PLAYTIME' },
@@ -10,18 +11,36 @@ const TABS: { id: RankingCategory; label: string }[] = [
   { id: 'events', label: 'EVENTS' },
 ];
 
+function displayName(name: string) {
+  return name.replace(/\s*\(tu\)\s*$/i, '').trim();
+}
+
 export function RankingPage({ data }: { data: DashboardData }) {
   const [tab, setTab] = useState<RankingCategory>('playtime');
   const rows = data.rankings[tab] || [];
 
+  const { top, self } = useMemo(() => {
+    const top10 = rows.filter((r) => r.rank <= 10).slice(0, 10);
+    const me = rows.find((r) => r.isSelf) || null;
+    return { top: top10, self: me as LeaderboardEntry | null };
+  }, [rows]);
+
   return (
-    <div>
-      <div className="page-title">
-        <div>
-          <h1>Reitingas</h1>
-          <p>Leaderboard pagal kategorijas.</p>
-        </div>
-      </div>
+    <div className="page-shell">
+      <PageHero
+        theme="ranking"
+        title="Reitingas"
+        subtitle="Top 10 iš serverio DB. Dešinėje — tavo pozicija ir crew veikėjas."
+        figureLabel="RANK"
+        avatarUrl={data.player.avatarUrl}
+        avatarFallback={data.player.characterName
+          .split(' ')
+          .map((p) => p[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase()}
+      />
+
       <div className="chips">
         {TABS.map((t) => (
           <button
@@ -34,26 +53,63 @@ export function RankingPage({ data }: { data: DashboardData }) {
           </button>
         ))}
       </div>
-      <Card>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>ŽAIDĖJAS</th>
-              <th>REIKŠMĖ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={`${r.rank}-${r.name}`} className={r.isSelf ? 'self' : ''}>
-                <td>{r.rank}</td>
-                <td>{r.name}{r.isSelf ? ' (tu)' : ''}</td>
-                <td>{r.value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+
+      <div className="page-body page-body-fill">
+        <div className="grid grid-rank">
+          <Card title="TOP 10">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>ŽAIDĖJAS</th>
+                  <th>REZULTATAS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {top.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="muted">
+                      Kol kas nėra duomenų.
+                    </td>
+                  </tr>
+                ) : (
+                  top.map((r) => (
+                    <tr key={`${r.rank}-${r.name}`} className={r.isSelf ? 'self' : ''}>
+                      <td>{r.rank}</td>
+                      <td>
+                        {displayName(r.name)}
+                        {r.isSelf ? ' (tu)' : ''}
+                      </td>
+                      <td>{r.value}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </Card>
+
+          <aside className="rank-side">
+            <Card title="TAVO POZICIJA">
+              {self ? (
+                <div className="rank-self-card">
+                  <div className="rank-num">#{self.rank}</div>
+                  <div style={{ marginTop: 10 }}>
+                    <strong>{displayName(self.name)}</strong>
+                    <p className="muted" style={{ marginTop: 4 }}>
+                      {self.value}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="muted">Tavo pozicija bus matoma prisijungus žaidime.</p>
+              )}
+            </Card>
+            <Card title="CREW">
+              <CharacterFigure theme="ranking" label={data.player.characterName} />
+            </Card>
+          </aside>
+        </div>
+      </div>
     </div>
   );
 }

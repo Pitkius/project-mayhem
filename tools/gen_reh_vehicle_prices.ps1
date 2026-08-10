@@ -9,7 +9,7 @@ $rehMax = @{
     benefactors87=278; benefactorspur=268; bfpologti=268; bravadobuffalo=275; bravadocharger08=255
     bravadocharger23=282; bravadodaytona=268; bravadodemon=270; bravadodemonsc=285; bravadodemonsc2=280
     bravadomagnum=258; bravadosrt392=240; bravadosuburban=198; bravadoz28=258; burgerfahrzeupassat=228
-    canissrt8=205; caniswrangler=168; coilraiden=195; coquettec6=280; coquettec8=290; coquettec8a=290
+    canissrt8=205; caniswrangler=168; coilraiden=195; coquettec6=280; coquettec8=290
     coquettezl1=285; coquettezr1=292; declasseimpala=198; dinkablista=188; dinkabooga=200; dinkacivic=192
     dinkansx=308; dinkawhip=268; grottibrioso=225; inveteroc7=288; inveterozr1=310; karimaxima=215
     karinaltima=205; karinascent=225; karincamry=210; karincorolla=198; karineclipse=210; karinelantra=215
@@ -31,7 +31,7 @@ $catMult = @{
 }
 $zOverrides = @{
     bravadodemon=4.2; bravadodemonsc=3.9; bravadodemonsc2=4.0; bravadocharger23=4.8; ubermachtm5=3.8
-    ubermachtm3cs=3.6; ubermachtm4=3.9; benefactorc63m=3.7; coquettec8=3.2; coquettec8a=3.2; coquettezr1=3.1
+    ubermachtm3cs=3.6; ubermachtm4=3.9; benefactorc63m=3.7; coquettec8=3.2; coquettezr1=3.1
     inveteroc7=3.4; inveterozr1=3.0; progen600=2.9; progenartura=2.8; overflodjesko2=2.7; dinkansx=3.0
     dinkacivic=7.5; karincorolla=10.2; vapidstanier=11.0; caniswrangler=12.0
 }
