@@ -5,18 +5,22 @@ import { nuiCallback } from '@/services/nui';
 export function VipPage({
   data,
   notify,
+  embedded = false,
 }: {
   data: DashboardData;
   notify: (title: string, description: string, icon?: string) => void;
+  embedded?: boolean;
 }) {
   return (
     <div>
-      <div className="page-title">
-        <div>
-          <h1>VIP</h1>
-          <p>Premium narystės planai.</p>
+      {!embedded ? (
+        <div className="page-title">
+          <div>
+            <h1>VIP</h1>
+            <p>Premium narystės planai.</p>
+          </div>
         </div>
-      </div>
+      ) : null}
       <Card title="TAVO VIP">
         <div className="value">{data.player.vip}</div>
         <p className="muted" style={{ marginTop: 6 }}>
@@ -42,10 +46,10 @@ export function VipPage({
             <Button
               onClick={async () => {
                 await nuiCallback('buyPremium', { plan: plan.id });
-                notify('VIP', `${plan.name} planas (stub).`, '💎');
+                notify('VIP', `${plan.name} · −${formatNumber(plan.price)} CR`, '💎');
               }}
             >
-              PIRKTI
+              PIRKTI · {formatNumber(plan.price)} CR
             </Button>
           </Card>
         ))}

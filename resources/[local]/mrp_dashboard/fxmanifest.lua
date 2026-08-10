@@ -4,13 +4,18 @@ lua54 'yes'
 
 name 'mrp_dashboard'
 author 'Mayhem Roleplay'
-description 'ESC Dashboard / player menu NUI'
-version '1.0.0'
+description 'ESC Dashboard / player menu NUI + loot crates'
+version '1.1.0'
 
 ui_page 'html/index.html'
 
+shared_scripts {
+    'shared/crates.lua',
+}
+
 files {
     'html/index.html',
+    'html/assets/crates/*.png',
 }
 
 client_scripts {
@@ -19,4 +24,9 @@ client_scripts {
 
 server_scripts {
     'server/main.lua',
+    'server/crates.lua',
+    'server/shop.lua',
 }
+
+dependency 'qb-core'
+dependency 'oxmysql'

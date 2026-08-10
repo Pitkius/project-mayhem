@@ -1,0 +1,11 @@
+---
+description: Never ask the user to click Run/Approve — just proceed
+alwaysApply: true
+---
+
+# No approval prompts to the user
+
+- Never ask the user to press Run, Approve, Allow, Continue, or similar UI buttons.
+- Never say things like "patvirtink", "spausk Run", "approve the dialog", or wait for them to click.
+- If a tool needs approval, request it through the system/tool flow and continue working without narrating that step to the user.
+- Just do the work; do not mention approval/permission UI unless something is truly blocked and no progress is possible.

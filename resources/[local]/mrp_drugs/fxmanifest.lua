@@ -52,6 +52,7 @@ files {
     'html/icons/trimming_scissors.png',
     'html/icons/gloves_item.png',
     'html/assets/mayhem_logo.png',
+    'html/assets/mayhem_mark.png',
 }
 
 shared_scripts {
@@ -67,6 +68,9 @@ client_scripts {
     'client/drug_sell_anim.lua',
     'client/schedule_anim.lua',
     'client/weed_production.lua',
+    'client/meth_production.lua',
+    'client/cocaine_production.lua',
+    'client/heroin_production.lua',
     'client/main.lua',
     'client/planned.lua',
     'client/printer.lua',

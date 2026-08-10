@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { NotificationStack } from '@/components/NotificationStack';
+import { LootSpinOverlay, type CrateSpinPayload } from '@/components/LootSpinOverlay';
 import { mockDashboard } from '@/mock/data';
 import { closeDashboard, isDevPreview, nuiCallback, onNuiMessage } from '@/services/nui';
 import type { DashboardData, NavId, NotificationItem, PageId } from '@/types/dashboard';
@@ -11,6 +12,7 @@ export default function App() {
   const [page, setPage] = useState<PageId>('home');
   const [data, setData] = useState<DashboardData>(mockDashboard);
   const [toasts, setToasts] = useState<NotificationItem[]>([]);
+  const [crateSpin, setCrateSpin] = useState<CrateSpinPayload | null>(null);
 
   const notify = useCallback((title: string, description: string, icon = 'ℹ️') => {
     if (!data.settings.notifications && title !== 'NUSTATYMAI') return;
@@ -33,10 +35,11 @@ export default function App() {
   }, [data.settings.notifications]);
 
   const handleClose = useCallback(async () => {
+    if (crateSpin) return;
     setOpen(false);
     setPage('home');
     await closeDashboard();
-  }, []);
+  }, [crateSpin]);
 
   const handleNavigate = useCallback(
     async (id: NavId) => {
@@ -73,8 +76,21 @@ export default function App() {
       if (msg.action === 'close') {
         setOpen(false);
       }
+      if (msg.action === 'openCrateSpin' && msg.payload) {
+        setCrateSpin(msg.payload as CrateSpinPayload);
+      }
       if (msg.action === 'setData' && msg.payload) {
-        setData((prev) => ({ ...prev, ...(msg.payload as Partial<DashboardData>) }));
+        const incoming = msg.payload as Partial<DashboardData>;
+        setData((prev) => ({
+          ...prev,
+          ...incoming,
+          player: incoming.player
+            ? { ...prev.player, ...incoming.player }
+            : prev.player,
+          daily: incoming.daily
+            ? { ...prev.daily, ...incoming.daily }
+            : prev.daily,
+        }));
       }
       if (msg.action === 'notify' && msg.payload) {
         notify(msg.payload.title, msg.payload.description, msg.payload.icon);
@@ -84,36 +100,35 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open) {
+      if (e.key === 'Escape' && open && !crateSpin) {
         e.preventDefault();
         void handleClose();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, handleClose]);
-
-  if (!open) {
-    return (
-      <div className={`app-root${isDevPreview() ? ' dev-preview is-open' : ''}`}>
-        <NotificationStack
-          items={toasts}
-          onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
-        />
-      </div>
-    );
-  }
+  }, [open, handleClose, crateSpin]);
 
   return (
-    <div className={`app-root is-open${isDevPreview() ? ' dev-preview' : ''}`}>
-      <DashboardLayout
-        page={page}
-        data={data}
-        onNavigate={(id) => void handleNavigate(id)}
-        onClose={() => void handleClose()}
-        onPatch={(patch) => setData((prev) => ({ ...prev, ...patch }))}
-        notify={notify}
-      />
+    <div
+      className={`app-root${open || crateSpin || isDevPreview() ? ' is-open' : ''}${
+        isDevPreview() ? ' dev-preview' : ''
+      }`}
+    >
+      {open ? (
+        <DashboardLayout
+          page={page}
+          data={data}
+          onNavigate={(id) => void handleNavigate(id)}
+          onClose={() => void handleClose()}
+          onPatch={(patch) => setData((prev) => ({ ...prev, ...patch }))}
+          notify={notify}
+          onDevSpin={setCrateSpin}
+        />
+      ) : null}
+      {crateSpin ? (
+        <LootSpinOverlay payload={crateSpin} onDone={() => setCrateSpin(null)} />
+      ) : null}
       <NotificationStack
         items={toasts}
         onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}

@@ -33,6 +33,9 @@ files {
     'html/mdt_map.js',
     'html/vendor/leaflet.js',
     'html/vendor/leaflet.css',
+    'html/assets/logo_ems.png',
+    'html/assets/logo_mechanic.png',
+    'html/assets/mayhem_mark.png',
 }
 
 dependencies {

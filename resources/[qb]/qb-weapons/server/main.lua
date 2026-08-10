@@ -163,17 +163,27 @@ local function lookupWeaponComponent(attachmentTable, weaponName)
         or attachmentTable[weaponNativeName(weaponName)]
 end
 
-local function pedHasWeaponComponent(src, weaponName, component)
-    if not component then return false end
-    local ped = GetPlayerPed(src)
-    if not ped or ped == 0 then return false end
-    local weaponHash = joaat(weaponNativeName(weaponName))
+--- Server negali kviesti client native `HasPedGotWeaponComponent`.
+--- CLIP_02/03 talpa skaičiuojama iš ginklo metadata attachments.
+local function weaponHasInstalledComponent(item, component)
+    if not item or not component then return false end
     local compHash = type(component) == 'number' and component or joaat(tostring(component))
-    return HasPedGotWeaponComponent(ped, weaponHash, compHash)
+    local attachments = item.info and item.info.attachments
+    if type(attachments) ~= 'table' then return false end
+    for _, entry in pairs(attachments) do
+        local attached = entry and (entry.component or entry)
+        if attached == component or attached == compHash then
+            return true
+        end
+        if type(attached) == 'string' and joaat(attached) == compHash then
+            return true
+        end
+    end
+    return false
 end
 
---- Talpa tik kai CLIP_02/03 realiai ant ped — metadata viena neužtenka (neėda ammo).
-local function serverMaxClip(src, item)
+--- Talpa pagal standard + įdiegtus CLIP_02/03 attachmentus (metadata).
+local function serverMaxClip(_src, item)
     local name = tostring(item and item.name or ''):lower()
     local ammoType = weaponAmmoType(item)
     local maxClip = tonumber(Config.StandardClipCapacity and Config.StandardClipCapacity[name])
@@ -185,7 +195,7 @@ local function serverMaxClip(src, item)
         for _, itemKey in ipairs(itemKeys) do
             local attachmentTable = WeaponAttachments and WeaponAttachments[itemKey]
             local component = lookupWeaponComponent(attachmentTable, name)
-            if component and pedHasWeaponComponent(src, name, component) then
+            if component and weaponHasInstalledComponent(item, component) then
                 maxClip = math.max(
                     maxClip,
                     tonumber(capacityTable[name]) or 0,
@@ -664,7 +674,7 @@ local function EquipWeaponAttachment(src, item)
     weaponSlot.info.attachments = weaponSlot.info.attachments or {}
     local hasAttach, attachIndex = HasAttachment(attachmentComponent, weaponSlot.info.attachments)
     if hasAttach then
-        RemoveWeaponComponentFromPed(ped, selectedWeaponHash, attachmentComponent)
+        pcall(RemoveWeaponComponentFromPed, ped, selectedWeaponHash, attachmentComponent)
         table.remove(weaponSlot.info.attachments, attachIndex)
         TriggerClientEvent('qb-weapons:client:SetWeaponComponent', src, selectedWeaponHash, attachmentComponent, false)
     else
@@ -673,7 +683,7 @@ local function EquipWeaponAttachment(src, item)
             component = attachmentComponent,
             item = item,
         }
-        GiveWeaponComponentToPed(ped, selectedWeaponHash, attachmentComponent)
+        pcall(GiveWeaponComponentToPed, ped, selectedWeaponHash, attachmentComponent)
         TriggerClientEvent('qb-weapons:client:SetWeaponComponent', src, selectedWeaponHash, attachmentComponent, true)
         shouldRemove = true
     end
@@ -713,7 +723,7 @@ QBCore.Functions.CreateCallback('qb-weapons:server:RemoveAttachment', function(s
                 TriggerClientEvent('QBCore:Notify', src, Lang:t('info.removed_attachment', { value = QBCore.Shared.Items[AttachmentData.attachment].label }), 'error')
                 local ped = GetPlayerPed(src)
                 local weaponHash = joaat(weaponNativeName(WeaponData.name))
-                RemoveWeaponComponentFromPed(ped, weaponHash, AttachmentComponent)
+                pcall(RemoveWeaponComponentFromPed, ped, weaponHash, AttachmentComponent)
                 TriggerClientEvent('qb-weapons:client:SetWeaponComponent', src, weaponHash, AttachmentComponent, false)
                 cb(Inventory[WeaponData.slot].info.attachments)
             else

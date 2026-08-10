@@ -133,21 +133,29 @@ h1, h2, h3, h4, p { margin-top: 0; }
   place-items: center;
   width: 42px; height: 42px;
   border-radius: 12px;
-  background: linear-gradient(140deg, #b96af7 0%, #7c3aed 55%, #4c1d95 100%);
-  color: #fff;
-  font-weight: 900;
+  overflow: hidden;
+  background: #12091c;
   box-shadow:
     0 8px 26px rgba(168, 85, 247, 0.45),
     inset 0 0 20px rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+}
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  position: relative;
+  z-index: 1;
 }
 .brand-mark::after {
   content: "";
   position: absolute; inset: -2px;
   border-radius: inherit;
-  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.35), transparent 55%);
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.2), transparent 55%);
   pointer-events: none;
+  z-index: 2;
 }
-.brand-mark-glyph { position: relative; z-index: 1; font-size: 18px; letter-spacing: .02em; }
 .brand-text strong, .brand-text small { display: block; letter-spacing: .16em; }
 .brand-text strong { font-size: 13px; color: #fff; }
 .brand-text small { margin-top: 3px; color: var(--muted); font-size: 8.5px; }

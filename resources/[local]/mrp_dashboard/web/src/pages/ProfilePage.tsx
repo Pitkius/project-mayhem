@@ -14,8 +14,22 @@ export function ProfilePage({ data }: { data: DashboardData }) {
       <div className="grid grid-2">
         <Card title="INFORMACIJA">
           <div className="stack">
-            <div>
-              <strong>{p.characterName}</strong>
+            <div className="profile-identity">
+              <div className={`avatar profile-avatar${p.avatarUrl ? ' has-photo' : ''}`}>
+                {p.avatarUrl ? (
+                  <img src={p.avatarUrl} alt="" draggable={false} />
+                ) : (
+                  p.characterName
+                    .split(' ')
+                    .map((part) => part[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()
+                )}
+              </div>
+              <div>
+                <strong>{p.characterName}</strong>
+              </div>
             </div>
             <div className="muted">Steam: {p.steamName}</div>
             <div className="muted">ID: #{p.id}</div>

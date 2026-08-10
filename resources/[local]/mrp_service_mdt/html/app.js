@@ -169,8 +169,23 @@ window.addEventListener('message', (e) => {
     if (window.MdtMap?.setCrewsVisible) MdtMap.setCrewsVisible(crewsEnabled);
 
     const brand = document.getElementById('mdtBrand');
+    const brandLogo = document.getElementById('mdtBrandLogo');
+    const brandLabel = escapeHtml(d.data?.brand || 'SERVICE');
     if (brand) {
-      brand.innerHTML = `${escapeHtml(d.data?.brand || 'SERVICE')} <span>MDT</span>`;
+      const textEl = brand.querySelector('.brand-text');
+      if (textEl) {
+        textEl.innerHTML = `${brandLabel} <span>MDT</span>`;
+      } else {
+        brand.innerHTML = `${brandLabel} <span>MDT</span>`;
+      }
+    }
+    if (brandLogo) {
+      const logoByService = {
+        ems: 'assets/logo_ems.png',
+        mechanic: 'assets/logo_mechanic.png',
+      };
+      brandLogo.src = logoByService[activeService] || 'assets/mayhem_mark.png';
+      brandLogo.alt = brandLabel;
     }
     const footer = document.getElementById('mdtFooter');
     if (footer) footer.textContent = `${d.data?.label || 'Service MDT'} • Fivempro`;

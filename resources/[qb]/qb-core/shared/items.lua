@@ -376,7 +376,11 @@ QBShared.Items = {
 
     -- Communication
     phone                        = { name = 'phone', label = 'Telefonas', weight = 700, type = 'item', image = 'iphone.png', unique = true, useable = true, shouldClose = true, description = 'Išmanusis telefonas.' },
-    dienos_deze                  = { name = 'dienos_deze', label = 'Dienos dėžė', weight = 500, type = 'item', image = 'document_binder.png', unique = true, useable = true, shouldClose = true, description = 'Kasdienė loot dėžė. Atidaryk inventoriuje — random itemas (be ginklų).' },
+    dienos_deze                  = { name = 'dienos_deze', label = 'Dienos dėžė', weight = 500, type = 'item', image = 'dienos_deze.png', unique = true, useable = true, shouldClose = true, description = 'Kasdienė Mayhem loot dėžė — atidaryk ir suk CSGO stiliaus ratą.' },
+    savaites_deze                = { name = 'savaites_deze', label = 'Savaitės dėžė', weight = 800, type = 'item', image = 'savaites_deze.png', unique = true, useable = true, shouldClose = true, description = 'Savaitinė mega dėžė su geresniais dropais.' },
+    deze_legali                  = { name = 'deze_legali', label = 'Legalių daiktų dėžė', weight = 600, type = 'item', image = 'deze_legali.png', unique = true, useable = true, shouldClose = true, description = 'Legalūs rinkos daiktai — repair, medic, įrankiai.' },
+    deze_exp                     = { name = 'deze_exp', label = 'EXP dėžė', weight = 400, type = 'item', image = 'deze_exp.png', unique = true, useable = true, shouldClose = true, description = 'RP Pass XP paketų dėžė.' },
+    deze_nelegali                = { name = 'deze_nelegali', label = 'Nelegalių daiktų dėžė', weight = 650, type = 'item', image = 'deze_nelegali.png', unique = true, useable = true, shouldClose = true, description = 'Kontrabanda ir gatvės įrankiai (be ginklų).' },
     radio                        = { name = 'radio', label = 'Radijas', weight = 2000, type = 'item', image = 'radio.png', unique = true, useable = true, shouldClose = true, description = 'Ryšio radijo stotelė.' },
     iphone                       = { name = 'iphone', label = 'iPhone', weight = 1000, type = 'item', image = 'iphone.png', unique = false, useable = false, shouldClose = true, description = 'Brangus išmanusis telefonas.' },
     samsungphone                 = { name = 'samsungphone', label = 'Samsung S10', weight = 1000, type = 'item', image = 'samsungphone.png', unique = false, useable = false, shouldClose = true, description = 'Brangus išmanusis telefonas.' },

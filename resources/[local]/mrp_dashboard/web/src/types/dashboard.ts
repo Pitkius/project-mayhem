@@ -3,6 +3,7 @@ export type PageId =
   | 'rppass'
   | 'missions'
   | 'daily'
+  | 'premium'
   | 'imports'
   | 'vip'
   | 'rewards'
@@ -57,6 +58,11 @@ export interface RpPassReward {
   level: number;
   track: 'free' | 'premium';
   label: string;
+  /** QBCore item spawn name */
+  itemName: string;
+  amount: number;
+  /** Emoji / short icon for NUI */
+  icon: string;
   rarity: ItemRarity;
   claimed: boolean;
   locked: boolean;
@@ -94,6 +100,23 @@ export interface LootItem {
   itemName: string;
   amount: number;
   icon?: string;
+  iconUrl?: string;
+}
+
+export type CrateKind = 'legal' | 'xp' | 'illegal' | 'daily' | 'weekly';
+
+export interface CrateDef {
+  id: string;
+  kind: CrateKind;
+  label: string;
+  description: string;
+  icon: string;
+  /** Local / inventory image */
+  image: string;
+  accent: string;
+  /** Premium shop price in credits (optional) */
+  priceCredits?: number;
+  lootPool: LootItem[];
 }
 
 export interface DailyData {
@@ -108,8 +131,10 @@ export interface DailyData {
   /** QBCore item name given to inventory */
   crateItem: string;
   crateLabel: string;
-  /** Possible contents (opened via inventory, not dashboard) */
+  /** Possible contents (opened via inventory spin) */
   lootPool: LootItem[];
+  /** All crate variants catalog */
+  crates: CrateDef[];
   days: {
     day: number;
     label: string;

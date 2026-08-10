@@ -29,6 +29,12 @@ end
 local function closeUi()
     if WeedProduction and WeedProduction.IsActive and WeedProduction.IsActive() then
         WeedProduction.Close('ui_closed')
+    elseif MethProduction and MethProduction.IsActive and MethProduction.IsActive() then
+        MethProduction.Close('ui_closed')
+    elseif CocaineProduction and CocaineProduction.IsActive and CocaineProduction.IsActive() then
+        CocaineProduction.Close('ui_closed')
+    elseif HeroinProduction and HeroinProduction.IsActive and HeroinProduction.IsActive() then
+        HeroinProduction.Close('ui_closed')
     elseif closeActiveMinigame then
         closeActiveMinigame(false, { reason = 'ui_closed' })
     end
@@ -289,14 +295,18 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
         }
     end
     local weed3dMode = profile.drug == 'weed' and profile.mode == 'weed_pack'
-    -- PAKAVIMAS: weed_pack paleidžia 3D WeedProduction sceną (ne schedule minigame).
-    if weed3dMode and WeedProduction and WeedProduction.Start then
-        if not workspace and currentStationId and Config.GetAllCraftStations then
+    local meth3d = profile.drug == 'meth' and (profile.mode == 'meth_crystal' or profile.mode == 'meth_crush_pack')
+    local coke3d = profile.drug == 'cocaine' and (profile.mode == 'cocaine_wash' or profile.mode == 'cocaine_brick')
+    local heroin3d = profile.drug == 'heroin' and (profile.mode == 'heroin_cook' or profile.mode == 'heroin_fold')
+
+    local function resolveWorkspace()
+        if workspace then return workspace end
+        if currentStationId and Config.GetAllCraftStations then
             for _, station in ipairs(Config.GetAllCraftStations()) do
                 if station.id == currentStationId then
                     local point = station.workspace or station.coords
                     if point then
-                        workspace = {
+                        return {
                             x = point.x,
                             y = point.y,
                             z = point.z,
@@ -307,6 +317,12 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
                 end
             end
         end
+        return nil
+    end
+
+    -- PAKAVIMAS: weed_pack paleidžia 3D WeedProduction sceną (ne schedule minigame).
+    if weed3dMode and WeedProduction and WeedProduction.Start then
+        workspace = resolveWorkspace()
         WeedProduction.Start({
             sessionId = sessionId,
             craftToken = craftToken,
@@ -319,6 +335,49 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
         end)
         return
     end
+
+    if meth3d and MethProduction and MethProduction.Start then
+        workspace = resolveWorkspace()
+        MethProduction.Start({
+            sessionId = sessionId,
+            craftToken = craftToken,
+            productId = productId,
+            mode = profile.mode,
+            workspace = workspace,
+        }, function(success, extra)
+            closeActiveMinigame(success, extra or {}, sessionId)
+        end)
+        return
+    end
+
+    if coke3d and CocaineProduction and CocaineProduction.Start then
+        workspace = resolveWorkspace()
+        CocaineProduction.Start({
+            sessionId = sessionId,
+            craftToken = craftToken,
+            productId = productId,
+            mode = profile.mode,
+            workspace = workspace,
+        }, function(success, extra)
+            closeActiveMinigame(success, extra or {}, sessionId)
+        end)
+        return
+    end
+
+    if heroin3d and HeroinProduction and HeroinProduction.Start then
+        workspace = resolveWorkspace()
+        HeroinProduction.Start({
+            sessionId = sessionId,
+            craftToken = craftToken,
+            productId = productId,
+            mode = profile.mode,
+            workspace = workspace,
+        }, function(success, extra)
+            closeActiveMinigame(success, extra or {}, sessionId)
+        end)
+        return
+    end
+
     if ScheduleAnimStart and profile.mode then
         ScheduleAnimStart(profile.mode)
     end
@@ -334,9 +393,7 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
         icon = profile and profile.icon or '🌿',
         difficulty = profile and profile.difficulty or (prod and prod.level) or 1,
         level = (prod and prod.level) or (profile and profile.difficulty) or 1,
-        -- Kiek vienetų šioje partijoje (naudojama dinaminiam pakavimui naujose React stotyse)
         quantity = (prod and prod.outputAmount) or 1,
-        -- Ar procesą galima atšaukti (ESC patvirtinimas naujose stotyse)
         cancelable = true,
     })
     SetNuiFocus(true, true)
@@ -1828,6 +1885,18 @@ end)
 local function cancelPlayerProduction(reason)
     stopCraftAnim()
     if ScheduleAnimStop then ScheduleAnimStop() end
+    if MethProduction and MethProduction.IsActive and MethProduction.IsActive() then
+        MethProduction.Close(reason or 'player_unavailable')
+    end
+    if CocaineProduction and CocaineProduction.IsActive and CocaineProduction.IsActive() then
+        CocaineProduction.Close(reason or 'player_unavailable')
+    end
+    if HeroinProduction and HeroinProduction.IsActive and HeroinProduction.IsActive() then
+        HeroinProduction.Close(reason or 'player_unavailable')
+    end
+    if WeedProduction and WeedProduction.IsActive and WeedProduction.IsActive() then
+        WeedProduction.Close(reason or 'player_unavailable')
+    end
     if pendingMinigame then
         closeActiveMinigame(false, { reason = reason or 'player_unavailable' })
     end

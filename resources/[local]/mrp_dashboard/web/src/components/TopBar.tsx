@@ -1,4 +1,4 @@
-import { X, Coins } from 'lucide-react';
+import { X, CircleDollarSign } from 'lucide-react';
 import type { PlayerData } from '@/types/dashboard';
 import { formatNumber } from '@/components/ui';
 
@@ -13,7 +13,13 @@ export function TopBar({ player, onClose }: { player: PlayerData; onClose: () =>
   return (
     <header className="topbar">
       <div className="topbar-player">
-        <div className="avatar">{initials}</div>
+        <div className={`avatar${player.avatarUrl ? ' has-photo' : ''}`}>
+          {player.avatarUrl ? (
+            <img src={player.avatarUrl} alt="" draggable={false} />
+          ) : (
+            initials
+          )}
+        </div>
         <div className="topbar-meta">
           <strong>
             {player.characterName}
@@ -26,7 +32,9 @@ export function TopBar({ player, onClose }: { player: PlayerData; onClose: () =>
       </div>
       <div className="topbar-actions">
         <div className="credits-pill">
-          <Coins size={16} color="#c4b5fd" />
+          <span className="credits-pill-icon" aria-hidden>
+            <CircleDollarSign size={18} strokeWidth={2.35} />
+          </span>
           {formatNumber(player.credits)} CR
         </div>
         <button type="button" className="icon-btn" onClick={onClose} title="Uždaryti">

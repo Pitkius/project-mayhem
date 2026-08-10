@@ -26,6 +26,10 @@ files {
     'html/index.html',
     'html/style.css',
     'html/app.js',
+    'html/assets/mayhem_mark.png',
+    'html/assets/logo_pd.png',
+    'html/assets/logo_ems.png',
+    'html/assets/logo_mechanic.png',
 }
 
 dependencies {

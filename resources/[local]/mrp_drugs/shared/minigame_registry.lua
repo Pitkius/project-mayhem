@@ -53,10 +53,11 @@ MinigameRegistry.Profiles = {
     amp_pack = p('amp', 'pack', 'amp_stamp', 'Maišelio antspaudas', 3, '⚡', 3),
 }
 
---- Lauko derliaus profiliai (mushroom / coca)
+--- Lauko derliaus profiliai (mushroom / coca / poppy)
 MinigameRegistry.Harvest = {
     mushroom = p('mushroom', 'harvest', 'mushroom_harvest', 'Grybų rinkimas', 5, '🍄', 1),
     coca = p('cocaine', 'harvest', 'coca_harvest', 'Kokainmedžio lapų nuėmimas', 5, '🍃', 2),
+    poppy = p('heroin', 'harvest', 'poppy_harvest', 'Aguonų skynimas', 4, '🌺', 2),
 }
 
 function MinigameRegistry.Apply()
@@ -75,6 +76,9 @@ function MinigameRegistry.Apply()
         if not field then return nil end
         if field.item == 'cartel_raw' or (field.id and tostring(field.id):find('coca')) then
             return Config.GetHarvestMinigame('coca')
+        end
+        if field.item == 'poppy_flower' or (field.id and tostring(field.id):find('poppy')) then
+            return Config.GetHarvestMinigame('poppy')
         end
         return Config.GetHarvestMinigame('mushroom')
     end

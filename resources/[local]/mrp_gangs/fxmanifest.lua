@@ -19,6 +19,7 @@ files {
     'html/vendor/leaflet.js',
     'html/asset/gtav_satellite_2048.png',
     'html/images/missions/*.png',
+    'html/assets/mayhem_mark.png',
 }
 
 shared_scripts {

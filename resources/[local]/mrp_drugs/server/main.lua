@@ -352,26 +352,65 @@ local function minimumCraftDuration(prod)
     return math.max(1000, math.floor(duration * minRatio))
 end
 
-local WEED_STAGE_SEQUENCES = {
+--- 3D / pasaulio gamybos etapų seka (serverio autoritetas). Kiekvienas narkotikas — unikali seka.
+local WORLD_STAGE_SEQUENCES = {
     weed_process = {
         { name = 'sorted', minMs = 3000 },
         { name = 'dried', minMs = 8500 },
     },
     weed_pack = {
-        -- PAKAVIMAS: serverio etapų seka. bag_ready po pirmo maišelio (min 300 ms), packed_five po 5 vnt. (min 2500 ms).
+        -- PAKAVIMAS: bag_ready po pirmo maišelio, packed_five po 5 vnt.
         { name = 'bag_ready', minMs = 300 },
         { name = 'packed_five', minMs = 2500 },
     },
+    meth_process = {
+        { name = 'poured', minMs = 4500 },
+        { name = 'heated', minMs = 5500 },
+        { name = 'crystallized', minMs = 6500 },
+        { name = 'collected', minMs = 3500 },
+    },
+    meth_pack = {
+        { name = 'smashed', minMs = 4000 },
+        { name = 'weighed', minMs = 3500 },
+        { name = 'bagged', minMs = 4500 },
+    },
+    cocaine_process = {
+        { name = 'soaked', minMs = 4500 },
+        { name = 'stomped', minMs = 5500 },
+        { name = 'drained', minMs = 4500 },
+        { name = 'scraped', minMs = 4000 },
+    },
+    cocaine_pack = {
+        { name = 'pressed', minMs = 4500 },
+        { name = 'wrapped', minMs = 4000 },
+        { name = 'stamped', minMs = 3500 },
+    },
+    heroin_process = {
+        { name = 'ground', minMs = 4000 },
+        { name = 'cooked', minMs = 6500 },
+        { name = 'filtered', minMs = 4500 },
+        { name = 'cooled', minMs = 3500 },
+    },
+    heroin_pack = {
+        { name = 'portioned', minMs = 3500 },
+        { name = 'folded', minMs = 4500 },
+        { name = 'sealed', minMs = 3500 },
+    },
 }
 
-local function createWeedStageState(productId, now)
-    local sequence = WEED_STAGE_SEQUENCES[productId]
+local function createWorldStageState(productId, now)
+    local sequence = WORLD_STAGE_SEQUENCES[productId]
     if not sequence then return nil end
     return {
         sequence = sequence,
         index = 0,
         lastStageAt = now,
     }
+end
+
+--- @deprecated alias — weed naudoja tą pačią struktūrą
+local function createWeedStageState(productId, now)
+    return createWorldStageState(productId, now)
 end
 
 local function levelUnlocked(src, prod, st)
@@ -612,9 +651,14 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraft', function(src, cb,
         startedAt = now,
         minDurationMs = minimumCraftDuration(prod),
         recipe = consumed,
-        weedStages = createWeedStageState(productId, now),
+        worldStages = createWorldStageState(productId, now),
+        weedStages = createWeedStageState(productId, now), -- alias į worldStages (žolė)
         isWeapon = st.mode == 'weapon',
     }
+    -- Viena seka abiem laukams (ne kopija) — weed callback skaito weedStages.
+    if activeCrafts[src].worldStages then
+        activeCrafts[src].weedStages = activeCrafts[src].worldStages
+    end
     lastCraftAt[src] = now
 
     cb({
@@ -723,11 +767,15 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:startCraftAtEquipment', functi
         startedAt = now,
         minDurationMs = minimumCraftDuration(prod),
         recipe = consumed,
-        weedStages = createWeedStageState(productId, now),
+        worldStages = createWorldStageState(productId, now),
+        weedStages = nil,
         isWeapon = false,
         equipmentId = equipmentId,
         virtualStation = st,
     }
+    if activeCrafts[src].worldStages then
+        activeCrafts[src].weedStages = activeCrafts[src].worldStages
+    end
     Equipment.setBusy(equipmentId, true)
     lastCraftAt[src] = now
 
@@ -784,26 +832,37 @@ local function findItemSlot(Player, itemName)
     return nil
 end
 
-QBCore.Functions.CreateCallback('mrp_drugs:server:weedProductionStage', function(src, cb, token, stageName)
+local function acceptWorldProductionStage(src, cb, token, stageName, labelLt)
     local active = activeCrafts[src]
-    if not active or active.token ~= token or not active.weedStages then
-        return cb({ ok = false, reason = 'Žolės gamybos sesija neaktyvi.' })
+    local state = active and (active.worldStages or active.weedStages)
+    if not active or active.token ~= token or not state then
+        return cb({ ok = false, reason = (labelLt or 'Gamybos') .. ' sesija neaktyvi.' })
     end
-    local state = active.weedStages
     local expected = state.sequence[state.index + 1]
     if not expected or expected.name ~= tostring(stageName) then
-        logAdmin(('REJECT weed stage=%s product=%s src=%s'):format(tostring(stageName), active.productId, src))
-        return cb({ ok = false, reason = 'Netinkama žolės gamybos etapų seka.' })
+        logAdmin(('REJECT world stage=%s product=%s src=%s'):format(tostring(stageName), active.productId, src))
+        return cb({ ok = false, reason = 'Netinkama gamybos etapų seka.' })
     end
     local now = GetGameTimer()
     local elapsed = now - (state.lastStageAt or active.startedAt or now)
     if elapsed < expected.minMs then
-        logAdmin(('REJECT fast weed stage=%s elapsed=%d src=%s'):format(expected.name, elapsed, src))
-        return cb({ ok = false, reason = 'Žolės gamybos etapas atliktas per greitai.' })
+        logAdmin(('REJECT fast world stage=%s elapsed=%d src=%s'):format(expected.name, elapsed, src))
+        return cb({ ok = false, reason = 'Gamybos etapas atliktas per greitai.' })
+    end
+    if not playerNearStation(src, active.stationId) and not (active.equipmentId and Equipment and Equipment.playerNear(src, active.equipmentId)) then
+        return cb({ ok = false, reason = 'Per toli nuo darbo vietos.' })
     end
     state.index = state.index + 1
     state.lastStageAt = now
     cb({ ok = true, index = state.index, total = #state.sequence })
+end
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:weedProductionStage', function(src, cb, token, stageName)
+    acceptWorldProductionStage(src, cb, token, stageName, 'Žolės gamybos')
+end)
+
+QBCore.Functions.CreateCallback('mrp_drugs:server:worldProductionStage', function(src, cb, token, stageName)
+    acceptWorldProductionStage(src, cb, token, stageName, 'Gamybos')
 end)
 
 RegisterNetEvent('mrp_drugs:server:cancelCraft', function(token, reason)
@@ -862,12 +921,13 @@ QBCore.Functions.CreateCallback('mrp_drugs:server:finishCraft', function(src, cb
         logAdmin(('REJECT fast craft %s elapsed=%d cid=%s'):format(active.productId, elapsed, Player.PlayerData.citizenid))
         return cb({ ok = false, reason = 'Gamyba užbaigta per greitai.', failed = true })
     end
-    if minigameSuccess == true and active.weedStages
-        and active.weedStages.index < #active.weedStages.sequence then
+    local stageState = active.worldStages or active.weedStages
+    if minigameSuccess == true and stageState
+        and stageState.index < #stageState.sequence then
         releaseCraft(src)
         refundPartial(Player, active.recipe, 50)
-        logAdmin(('REJECT incomplete weed stages %s cid=%s'):format(active.productId, Player.PlayerData.citizenid))
-        return cb({ ok = false, reason = 'Neužbaigti visi žolės gamybos etapai.', failed = true })
+        logAdmin(('REJECT incomplete world stages %s cid=%s'):format(active.productId, Player.PlayerData.citizenid))
+        return cb({ ok = false, reason = 'Neužbaigti visi gamybos etapai.', failed = true })
     end
 
     releaseCraft(src)

@@ -10,10 +10,12 @@ ui_page 'web/dist/index.html'
 
 files {
     'web/dist/index.html',
+    'web/dist/assets/logo_mechanic.png',
     'html/index.html',
     'html/style.css',
     'html/app.js',
     'html/shell.js',
+    'html/assets/logo_mechanic.png',
 }
 
 shared_scripts {

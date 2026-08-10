@@ -136,6 +136,11 @@ Config.DrugEquipment.fixedLocations = {
     { itemType = 'lab_kit', coords = vector4(2712.45, 5238.18, 49.36, 286.5), label = 'Meto lab stalas', products = { 'meth_process' } },
     { itemType = 'burner', coords = vector4(2710.80, 5237.00, 49.36, 286.5), label = 'Meto degiklis' },
     { itemType = 'scale', coords = vector4(2709.10, 5235.05, 49.36, 286.5), label = 'Meto svarstyklės', products = { 'meth_pack' } },
+    -- L2 · Heroinas (Grapeseed šiaurė — fiksuoti propai prie HeroinLab)
+    { itemType = 'burner', coords = vector4(1951.35, 5179.17, 47.98, 357.7), label = 'Heroino kaitinimo vieta', products = { 'heroin_process' } },
+    { itemType = 'lab_kit', coords = vector4(1953.28, 5179.22, 47.98, 9.3), label = 'Heroino darbo stalas', products = { 'heroin_process' } },
+    { itemType = 'scale', coords = vector4(1951.40, 5183.55, 47.98, 0.0), label = 'Heroino pakavimo svarstyklės', products = { 'heroin_pack' } },
+    { itemType = 'bagging_table', coords = vector4(1953.35, 5183.70, 47.98, 0.0), label = 'Heroino pakavimo stalas', products = { 'heroin_pack' } },
     -- L2 · Tabletės (Davis — atskirai nuo heroino)
     { itemType = 'lab_kit', coords = vector4(345.00, -2064.50, 21.24, 140.0), label = 'Tablečių lab stalas' },
     { itemType = 'pill_press', coords = vector4(348.50, -2062.00, 21.24, 140.0), label = 'Tablečių presas', products = { 'pills_process' } },
@@ -144,7 +149,6 @@ Config.DrugEquipment.fixedLocations = {
     { itemType = 'lab_kit', coords = vector4(4987.12, -5128.44, 2.52, 57.0), label = 'Kokaino lab stalas', products = { 'cocaine_process' } },
     { itemType = 'burner', coords = vector4(4989.20, -5126.80, 2.52, 57.0), label = 'Kokaino degiklis' },
     { itemType = 'bagging_table', coords = vector4(4989.80, -5130.20, 2.52, 57.0), label = 'Kokaino pakavimo stalas', products = { 'cocaine_pack' } },
-    -- L3 · Amfetaminas (Grapeseed dykuma)
-    { itemType = 'lab_kit', coords = vector4(1903.48, 4922.55, 48.86, 225.0), label = 'Amfetamino lab stalas', products = { 'amp_process' } },
+    -- L3 · Amfetaminas (Grapeseed dykuma) — process tik Journey; čia tik pack
     { itemType = 'scale', coords = vector4(1908.20, 4926.80, 48.86, 225.0), label = 'Amfetamino svarstyklės', products = { 'amp_pack' } },
 }

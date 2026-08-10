@@ -105,6 +105,26 @@ local function tryPickHarvest(fieldId, spawnIndex)
     end
 
     local profile = Config.GetHarvestMinigameForField and Config.GetHarvestMinigameForField(state.field)
+    -- Aguonos: unikalus 3D skynimas (ne grybų/kokos schedule UI)
+    if state.field.item == 'poppy_flower' or (state.field.id and tostring(state.field.id):find('poppy')) then
+        picking = true
+        DrugProgress.run('mrp_poppy_harvest', state.field.pickLabel or 'Skinti aguonas', state.field.pickDurationMs or 5200, false, true, {
+            disableMovement = true,
+            disableCarMovement = true,
+            disableCombat = true,
+        }, {
+            animDict = 'amb@world_human_gardener_plant@female@base',
+            anim = 'base_female',
+            flags = 1,
+        }, function()
+            picking = false
+            TriggerServerEvent('mrp_drugs:server:pickMushroom', fieldId, spawnIndex, pcoords.x, pcoords.y, pcoords.z)
+        end, function()
+            picking = false
+            QBCore.Functions.Notify('Atšaukta.', 'error')
+        end)
+        return
+    end
     if profile and GetResourceState(GetCurrentResourceName()) == 'started' then
         picking = true
         exports[GetCurrentResourceName()]:RunScheduleMinigame(profile, function(success)

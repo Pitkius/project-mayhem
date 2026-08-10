@@ -1,40 +1,114 @@
-import type { DashboardData, ItemRarity, LootItem } from '@/types/dashboard';
+import type { DashboardData, ItemRarity, LootItem, RpPassReward, CrateDef } from '@/types/dashboard';
 
-function rarityForLevel(level: number, track: 'free' | 'premium'): ItemRarity {
-  if (track === 'premium') {
-    if (level >= 90) return 'legendary';
-    if (level >= 70) return 'epic';
-    if (level >= 40) return 'rare';
-    if (level >= 20) return 'uncommon';
-    return 'common';
-  }
-  if (level >= 80) return 'epic';
-  if (level >= 50) return 'rare';
-  if (level >= 25) return 'uncommon';
-  return 'common';
+type PassItemDef = {
+  itemName: string;
+  label: string;
+  icon: string;
+  amount: number;
+  rarity: ItemRarity;
+};
+
+/** Legal / useful market-style rewards (no weapons, no drugs) */
+const FREE_POOL: PassItemDef[] = [
+  { itemName: 'water_bottle', label: 'Vanduo', icon: '💧', amount: 5, rarity: 'common' },
+  { itemName: 'coffee', label: 'Kava', icon: '☕', amount: 3, rarity: 'common' },
+  { itemName: 'bandage', label: 'Tvarstis', icon: '🩹', amount: 5, rarity: 'common' },
+  { itemName: 'painkillers', label: 'Nuskausminamieji', icon: '💊', amount: 3, rarity: 'common' },
+  { itemName: 'cleaningkit', label: 'Valymo rinkinys', icon: '🧽', amount: 2, rarity: 'common' },
+  { itemName: 'lighter', label: 'Žiebtuvėlis', icon: '🔥', amount: 1, rarity: 'common' },
+  { itemName: 'repairkit', label: 'Remonto rinkinys', icon: '🔧', amount: 1, rarity: 'uncommon' },
+  { itemName: 'tirerepairkit', label: 'Padangų rinkinys', icon: '🛞', amount: 1, rarity: 'uncommon' },
+  { itemName: 'firstaid', label: 'Pirmosios pagalbos', icon: '⛑️', amount: 2, rarity: 'uncommon' },
+  { itemName: 'ifaks', label: 'IFAK', icon: '🩺', amount: 2, rarity: 'uncommon' },
+  { itemName: 'binoculars', label: 'Žiūronai', icon: '🔭', amount: 1, rarity: 'uncommon' },
+  { itemName: 'jerry_can', label: 'Kanistras 20 l', icon: '⛽', amount: 1, rarity: 'rare' },
+  { itemName: 'advancedrepairkit', label: 'Pažangus remontas', icon: '🛠️', amount: 1, rarity: 'rare' },
+  { itemName: 'armor_light', label: 'Lengva liemenė', icon: '🦺', amount: 1, rarity: 'rare' },
+  { itemName: 'radio', label: 'Radijas', icon: '📻', amount: 1, rarity: 'rare' },
+  { itemName: 'fitbit', label: 'Fitbit', icon: '⌚', amount: 1, rarity: 'epic' },
+  { itemName: 'armor_standard', label: 'Standartinė liemenė', icon: '🛡️', amount: 1, rarity: 'epic' },
+  { itemName: 'parachute', label: 'Parašiutas', icon: '🪂', amount: 1, rarity: 'epic' },
+  { itemName: 'diving_gear', label: 'Nardymo įranga', icon: '🤿', amount: 1, rarity: 'legendary' },
+  { itemName: 'phone', label: 'Telefonas', icon: '📱', amount: 1, rarity: 'legendary' },
+];
+
+const PREMIUM_POOL: PassItemDef[] = [
+  { itemName: 'water_bottle', label: 'Vanduo', icon: '💧', amount: 8, rarity: 'common' },
+  { itemName: 'coffee', label: 'Kava', icon: '☕', amount: 5, rarity: 'common' },
+  { itemName: 'bandage', label: 'Tvarstis', icon: '🩹', amount: 8, rarity: 'common' },
+  { itemName: 'painkillers', label: 'Nuskausminamieji', icon: '💊', amount: 5, rarity: 'common' },
+  { itemName: 'cleaningkit', label: 'Valymo rinkinys', icon: '🧽', amount: 3, rarity: 'common' },
+  { itemName: 'repairkit', label: 'Remonto rinkinys', icon: '🔧', amount: 2, rarity: 'uncommon' },
+  { itemName: 'tirerepairkit', label: 'Padangų rinkinys', icon: '🛞', amount: 2, rarity: 'uncommon' },
+  { itemName: 'firstaid', label: 'Pirmosios pagalbos', icon: '⛑️', amount: 3, rarity: 'uncommon' },
+  { itemName: 'ifaks', label: 'IFAK', icon: '🩺', amount: 3, rarity: 'uncommon' },
+  { itemName: 'binoculars', label: 'Žiūronai', icon: '🔭', amount: 1, rarity: 'uncommon' },
+  { itemName: 'jerry_can', label: 'Kanistras 20 l', icon: '⛽', amount: 1, rarity: 'rare' },
+  { itemName: 'advancedrepairkit', label: 'Pažangus remontas', icon: '🛠️', amount: 1, rarity: 'rare' },
+  { itemName: 'armor_light', label: 'Lengva liemenė', icon: '🦺', amount: 1, rarity: 'rare' },
+  { itemName: 'armor_standard', label: 'Standartinė liemenė', icon: '🛡️', amount: 1, rarity: 'rare' },
+  { itemName: 'radio', label: 'Radijas', icon: '📻', amount: 1, rarity: 'rare' },
+  { itemName: 'fitbit', label: 'Fitbit', icon: '⌚', amount: 1, rarity: 'epic' },
+  { itemName: 'armor', label: 'Sunki liemenė', icon: '🛡️', amount: 1, rarity: 'epic' },
+  { itemName: 'parachute', label: 'Parašiutas', icon: '🪂', amount: 1, rarity: 'epic' },
+  { itemName: 'diving_fill', label: 'Nardymo balionas', icon: '🫧', amount: 1, rarity: 'epic' },
+  { itemName: 'heavyarmor', label: 'Super sunki liemenė', icon: '🛡️', amount: 1, rarity: 'legendary' },
+  { itemName: 'diving_gear', label: 'Nardymo įranga', icon: '🤿', amount: 1, rarity: 'legendary' },
+  { itemName: 'phone', label: 'Telefonas', icon: '📱', amount: 1, rarity: 'legendary' },
+  { itemName: 'cash', label: 'Pinigai', icon: '💵', amount: 2500, rarity: 'legendary' },
+];
+
+function pickPassItem(pool: PassItemDef[], level: number, salt: number): PassItemDef {
+  const idx = (level * 17 + salt * 31) % pool.length;
+  const base = pool[idx];
+  // Scale amount a bit with level for consumables
+  const scale =
+    base.amount > 1
+      ? Math.min(base.amount + Math.floor(level / 25), base.amount + 5)
+      : base.amount;
+  return { ...base, amount: scale };
 }
 
-function rpRewards() {
-  const rewards = [];
+function rarityBump(base: ItemRarity, level: number): ItemRarity {
+  if (level >= 90) return 'legendary';
+  if (level >= 70) return base === 'common' ? 'rare' : base === 'uncommon' ? 'epic' : base;
+  if (level >= 40) return base === 'common' ? 'uncommon' : base;
+  return base;
+}
+
+/** Free: 1, 5, 10, 15 … 100. Premium: every level. */
+function rpRewards(playerLevel = 37): RpPassReward[] {
+  const rewards: RpPassReward[] = [];
   for (let level = 1; level <= 100; level++) {
-    const locked = level > 37;
-    const claimed = level < 35;
-    if (level % 5 === 0) {
+    const locked = level > playerLevel;
+    const claimed = level < playerLevel - 2;
+    const isFreeTier = level === 1 || level % 5 === 0;
+
+    if (isFreeTier) {
+      const item = pickPassItem(FREE_POOL, level, 1);
       rewards.push({
         level,
-        track: 'free' as const,
-        label: level % 10 === 0 ? `${level * 50} CR` : `${level * 100} $`,
-        rarity: rarityForLevel(level, 'free'),
-        claimed: claimed && level % 5 === 0,
+        track: 'free',
+        label: item.label,
+        itemName: item.itemName,
+        amount: item.amount,
+        icon: item.icon,
+        rarity: rarityBump(item.rarity, level),
+        claimed: claimed && isFreeTier,
         locked,
       });
     }
+
+    const prem = pickPassItem(PREMIUM_POOL, level, 7);
     rewards.push({
       level,
-      track: 'premium' as const,
-      label: level % 10 === 0 ? 'VIP 1d' : `${100 + level * 10} CR`,
-      rarity: rarityForLevel(level, 'premium'),
-      claimed: claimed,
+      track: 'premium',
+      label: prem.label,
+      itemName: prem.itemName,
+      amount: prem.amount + (level % 10 === 0 ? 1 : 0),
+      icon: prem.icon,
+      rarity: rarityBump(prem.rarity, level),
+      claimed,
       locked,
     });
   }
@@ -47,16 +121,96 @@ export const mockLootPool: LootItem[] = [
   { id: 'l2', name: 'Pirmos pagalbos', rarity: 'common', itemName: 'firstaid', amount: 2, icon: '🩹' },
   { id: 'l3', name: 'Vanduo', rarity: 'common', itemName: 'water_bottle', amount: 5, icon: '💧' },
   { id: 'l4', name: 'Kava', rarity: 'common', itemName: 'coffee', amount: 3, icon: '☕' },
-  { id: 'l5', name: 'Lockpick', rarity: 'uncommon', itemName: 'lockpick', amount: 2, icon: '🔓' },
+  { id: 'l5', name: 'Valymo rinkinys', rarity: 'uncommon', itemName: 'cleaningkit', amount: 2, icon: '🧽' },
   { id: 'l6', name: 'Radio', rarity: 'uncommon', itemName: 'radio', amount: 1, icon: '📻' },
-  { id: 'l7', name: '250 Credits', rarity: 'uncommon', itemName: 'credits', amount: 250, icon: '💎' },
-  { id: 'l8', name: 'Kuro bakelis', rarity: 'rare', itemName: 'jerrycan', amount: 1, icon: '⛽' },
-  { id: 'l9', name: 'Telefonų case', rarity: 'rare', itemName: 'phone_case', amount: 1, icon: '📱' },
-  { id: 'l10', name: '500 Credits', rarity: 'rare', itemName: 'credits', amount: 500, icon: '💎' },
-  { id: 'l11', name: 'VIP 1 diena', rarity: 'epic', itemName: 'vip_day', amount: 1, icon: '👑' },
-  { id: 'l12', name: 'Importų kuponas A', rarity: 'epic', itemName: 'import_coupon_a', amount: 1, icon: '🎟️' },
-  { id: 'l13', name: 'Exclusive plate', rarity: 'legendary', itemName: 'plate_exclusive', amount: 1, icon: '🔤' },
-  { id: 'l14', name: '1,500 Credits', rarity: 'legendary', itemName: 'credits', amount: 1500, icon: '💎' },
+  { id: 'l7', name: 'Tvarstis', rarity: 'uncommon', itemName: 'bandage', amount: 5, icon: '🩹' },
+  { id: 'l8', name: 'Kanistras', rarity: 'rare', itemName: 'jerry_can', amount: 1, icon: '⛽' },
+  { id: 'l9', name: 'Lengva liemenė', rarity: 'rare', itemName: 'armor_light', amount: 1, icon: '🦺' },
+  { id: 'l10', name: 'Pažangus remontas', rarity: 'rare', itemName: 'advancedrepairkit', amount: 1, icon: '🛠️' },
+  { id: 'l11', name: 'Parašiutas', rarity: 'epic', itemName: 'parachute', amount: 1, icon: '🪂' },
+  { id: 'l12', name: 'Standartinė liemenė', rarity: 'epic', itemName: 'armor_standard', amount: 1, icon: '🛡️' },
+  { id: 'l13', name: 'Nardymo įranga', rarity: 'legendary', itemName: 'diving_gear', amount: 1, icon: '🤿' },
+  { id: 'l14', name: 'Sunki liemenė', rarity: 'legendary', itemName: 'armor', amount: 1, icon: '🛡️' },
+];
+
+export const mockCrates: CrateDef[] = [
+  {
+    id: 'deze_legali',
+    kind: 'legal',
+    label: 'Legalių daiktų dėžė',
+    description: 'Repair, medic, rinkos įrankiai.',
+    icon: '🧰',
+    image: 'deze_legali.png',
+    accent: '#38bdf8',
+    priceCredits: 350,
+    lootPool: [
+      { id: 'lg1', name: 'Vanduo', rarity: 'common', itemName: 'water_bottle', amount: 8, icon: '💧' },
+      { id: 'lg2', name: 'Remonto rinkinys', rarity: 'uncommon', itemName: 'repairkit', amount: 1, icon: '🔧' },
+      { id: 'lg3', name: 'Kanistras', rarity: 'rare', itemName: 'jerry_can', amount: 1, icon: '⛽' },
+      { id: 'lg4', name: 'Pažangus remontas', rarity: 'epic', itemName: 'advancedrepairkit', amount: 1, icon: '🛠️' },
+      { id: 'lg5', name: 'Telefonas', rarity: 'legendary', itemName: 'phone', amount: 1, icon: '📱' },
+    ],
+  },
+  {
+    id: 'deze_exp',
+    kind: 'xp',
+    label: 'EXP dėžė',
+    description: 'RP Pass XP paketai.',
+    icon: '✨',
+    image: 'deze_exp.png',
+    accent: '#a78bfa',
+    priceCredits: 400,
+    lootPool: [
+      { id: 'xp1', name: '100 XP', rarity: 'common', itemName: 'xp', amount: 100, icon: '✨' },
+      { id: 'xp2', name: '350 XP', rarity: 'uncommon', itemName: 'xp', amount: 350, icon: '⭐' },
+      { id: 'xp3', name: '750 XP', rarity: 'epic', itemName: 'xp', amount: 750, icon: '💫' },
+      { id: 'xp4', name: '1200 XP', rarity: 'legendary', itemName: 'xp', amount: 1200, icon: '👑' },
+    ],
+  },
+  {
+    id: 'deze_nelegali',
+    kind: 'illegal',
+    label: 'Nelegalių daiktų dėžė',
+    description: 'Kontrabanda (be ginklų).',
+    icon: '☠️',
+    image: 'deze_nelegali.png',
+    accent: '#f87171',
+    priceCredits: 550,
+    lootPool: [
+      { id: 'il1', name: 'Visraktis', rarity: 'common', itemName: 'lockpick', amount: 3, icon: '🔓' },
+      { id: 'il2', name: 'Suktinė', rarity: 'common', itemName: 'joint', amount: 4, icon: '🚬' },
+      { id: 'il3', name: 'Kokaino maišelis', rarity: 'rare', itemName: 'cokebaggy', amount: 1, icon: '❄️' },
+      { id: 'il4', name: 'Trojos USB', rarity: 'epic', itemName: 'trojan_usb', amount: 1, icon: '💾' },
+      { id: 'il5', name: 'Rolex', rarity: 'legendary', itemName: 'rolex', amount: 1, icon: '⌚' },
+    ],
+  },
+  {
+    id: 'dienos_deze',
+    kind: 'daily',
+    label: 'Dienos dėžė',
+    description: 'Kasdienė free dėžė (playtime).',
+    icon: '📦',
+    image: 'dienos_deze.png',
+    accent: '#fbbf24',
+    lootPool: mockLootPool.slice(0, 8),
+  },
+  {
+    id: 'savaites_deze',
+    kind: 'weekly',
+    label: 'Savaitės dėžė',
+    description: 'Mega savaitiniai dropai.',
+    icon: '🏆',
+    image: 'savaites_deze.png',
+    accent: '#67e8f9',
+    priceCredits: 1200,
+    lootPool: [
+      { id: 'w1', name: 'Pažangus remontas', rarity: 'uncommon', itemName: 'advancedrepairkit', amount: 1, icon: '🛠️' },
+      { id: 'w2', name: '500 XP', rarity: 'rare', itemName: 'xp', amount: 500, icon: '🌟' },
+      { id: 'w3', name: 'Parašiutas', rarity: 'epic', itemName: 'parachute', amount: 1, icon: '🪂' },
+      { id: 'w4', name: 'Nardymo įranga', rarity: 'legendary', itemName: 'diving_gear', amount: 1, icon: '🤿' },
+      { id: 'w5', name: 'Pinigai', rarity: 'legendary', itemName: 'cash', amount: 3500, icon: '💵' },
+    ],
+  },
 ];
 
 function carImg(label: string, bg = '141625') {
@@ -115,7 +269,7 @@ export const mockDashboard: DashboardData = {
     xpRequired: 1000,
     maxLevel: 100,
     premium: true,
-    rewards: rpRewards(),
+    rewards: rpRewards(37),
   },
   missions: [
     {
@@ -196,6 +350,7 @@ export const mockDashboard: DashboardData = {
     crateItem: 'dienos_deze',
     crateLabel: 'Dienos dėžė',
     lootPool: mockLootPool,
+    crates: mockCrates,
     days: [
       { day: 1, label: 'DĖŽĖ', claimed: true, current: false, rarityHint: 'common' },
       { day: 2, label: 'DĖŽĖ', claimed: true, current: false, rarityHint: 'uncommon' },

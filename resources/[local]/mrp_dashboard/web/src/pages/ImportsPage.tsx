@@ -34,9 +34,11 @@ const CATS: { id: ImportClass | 'all'; label: string }[] = [
 export function ImportsPage({
   data,
   notify,
+  embedded = false,
 }: {
   data: DashboardData;
   notify: (title: string, description: string, icon?: string) => void;
+  embedded?: boolean;
 }) {
   const [cat, setCat] = useState<ImportClass | 'all'>('all');
   const [q, setQ] = useState('');
@@ -61,12 +63,14 @@ export function ImportsPage({
 
   return (
     <div>
-      <div className="page-title">
-        <div>
-          <h1>Importų salonas</h1>
-          <p>Trys klasės: A (prieinama) · S (stipri) · X (top / brangiausia).</p>
+      {!embedded ? (
+        <div className="page-title">
+          <div>
+            <h1>Importų salonas</h1>
+            <p>Trys klasės: A (prieinama) · S (stipri) · X (top / brangiausia).</p>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="grid grid-3" style={{ marginBottom: 14 }}>
         {(['A', 'S', 'X'] as ImportClass[]).map((cls) => (

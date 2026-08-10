@@ -28,13 +28,13 @@ html, body {
 .top .brand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
 .brand { font-weight: 800; letter-spacing: 0.06em; }
 .brand-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  object-fit: contain;
-  background: rgba(124, 58, 237, 0.25);
-  border: 1px solid rgba(167, 139, 250, 0.35);
-  padding: 3px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  object-fit: cover;
+  background: rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(96, 165, 250, 0.45);
+  padding: 0;
 }
 .brand-text span { color: #c4b5fd; font-weight: 600; }
 .mdt-officer-id {

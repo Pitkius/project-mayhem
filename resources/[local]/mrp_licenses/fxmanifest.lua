@@ -25,6 +25,7 @@ files {
     'html/style.css',
     'html/app.js',
     'html/assets/mayhem_logo.png',
+    'html/assets/mayhem_mark.png',
 }
 
 dependencies {

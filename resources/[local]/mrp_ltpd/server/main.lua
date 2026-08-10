@@ -756,6 +756,22 @@ local function pdAccessPayload(src)
     }
 end
 
+--- Must be above MDT bootstrap (uses this for officer identity line).
+local function divisionLabelForPlayer(src)
+    local P = QBCore.Functions.GetPlayer(src)
+    if not P or not jobIsPd(P.PlayerData.job) then return nil end
+    local grade = getGrade(src)
+    local stored = getDivisionForCitizenid(P.PlayerData.citizenid)
+    local effective = PdDivisions.effectiveDivision(grade, stored)
+    local cfg = Config.Divisions and Config.Divisions[effective]
+    local divLabel = (cfg and (cfg.abbr or cfg.label)) or effective
+    local rankLabel = LtpdGetDivisionRankLabel and LtpdGetDivisionRankLabel(P.PlayerData.citizenid) or nil
+    if rankLabel and rankLabel ~= '' then
+        return ('%s · %s'):format(divLabel, rankLabel)
+    end
+    return (cfg and cfg.label) or effective
+end
+
 -- Išplėstinė MDT informacija (transportas, baudų istorija, pinigai)
 local function mdtFullAccess(src)
     if not hasPerm(src, 'mdt_search_full') then return false end
@@ -1756,21 +1772,6 @@ end)
 exports('HasLtpdPermission', function(src, key)
     return hasPerm(src, key)
 end)
-
-local function divisionLabelForPlayer(src)
-    local P = QBCore.Functions.GetPlayer(src)
-    if not P or not jobIsPd(P.PlayerData.job) then return nil end
-    local grade = getGrade(src)
-    local stored = getDivisionForCitizenid(P.PlayerData.citizenid)
-    local effective = PdDivisions.effectiveDivision(grade, stored)
-    local cfg = Config.Divisions and Config.Divisions[effective]
-    local divLabel = (cfg and (cfg.abbr or cfg.label)) or effective
-    local rankLabel = LtpdGetDivisionRankLabel and LtpdGetDivisionRankLabel(P.PlayerData.citizenid) or nil
-    if rankLabel and rankLabel ~= '' then
-        return ('%s · %s'):format(divLabel, rankLabel)
-    end
-    return (cfg and cfg.label) or effective
-end
 
 exports('GetDivisionLabelForPlayer', divisionLabelForPlayer)
 exports('GetDivisionRankLabelForPlayer', function(src)

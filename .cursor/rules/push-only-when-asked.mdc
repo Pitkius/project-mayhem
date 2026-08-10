@@ -1,0 +1,11 @@
+---
+description: Only git push when the user explicitly asks
+alwaysApply: true
+---
+
+# Git push only on request
+
+- Do **not** push to remote unless the user explicitly says to push (e.g. "push", "nupushink", "push i repo").
+- Commit is also only when the user asks to commit — but push is stricter: never combine commit+push automatically after fixes unless they asked for push in that message.
+- After finishing work, leave changes local if they did not ask to push; a short note that files are ready is enough.
+- Pull/rebase only when needed for an explicit push request, or when the user asks to sync/pull.

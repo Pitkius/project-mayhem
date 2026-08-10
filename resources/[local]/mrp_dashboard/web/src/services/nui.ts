@@ -42,6 +42,7 @@ export type NuiMessage =
   | { action: 'open'; payload?: unknown }
   | { action: 'close' }
   | { action: 'setData'; payload: unknown }
+  | { action: 'openCrateSpin'; payload: unknown }
   | { action: 'notify'; payload: { icon?: string; title: string; description: string } };
 
 export function onNuiMessage(handler: (msg: NuiMessage) => void): () => void {

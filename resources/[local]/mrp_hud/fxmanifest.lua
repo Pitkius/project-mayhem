@@ -19,6 +19,7 @@ files {
     'html/assets/vehicles/*.png',
     'html/assets/mayhem_logo.png',
     'html/assets/mayhem_icon.png',
+    'html/assets/mayhem_mark.png',
 }
 
 client_scripts {

@@ -1,7 +1,43 @@
 import { useMemo } from 'react';
-import type { DashboardData } from '@/types/dashboard';
+import type { DashboardData, RpPassReward } from '@/types/dashboard';
 import { Button, Card, ProgressBar } from '@/components/ui';
 import { nuiCallback } from '@/services/nui';
+
+function RewardCard({
+  reward,
+  currentLevel,
+  premiumLocked,
+  onClaim,
+}: {
+  reward: RpPassReward;
+  currentLevel: number;
+  premiumLocked?: boolean;
+  onClaim: () => void;
+}) {
+  const locked = reward.locked || !!premiumLocked || reward.level > currentLevel;
+  return (
+    <div
+      className={`track-node${reward.level === currentLevel ? ' current' : ''}${
+        reward.claimed ? ' claimed' : ''
+      }${locked ? ' locked' : ''}`}
+    >
+      <strong>LVL {reward.level}</strong>
+      <div className="pass-reward-icon" aria-hidden>
+        {reward.icon}
+      </div>
+      <span className="pass-reward-name">{reward.label}</span>
+      <span className="pass-reward-qty">×{reward.amount}</span>
+      <span className={`rarity-pill rarity-${reward.rarity}`}>{reward.rarity}</span>
+      <Button
+        variant="primary"
+        disabled={locked || reward.claimed}
+        onClick={onClaim}
+      >
+        {premiumLocked ? 'LOCKED' : reward.claimed ? 'TAKEN' : 'CLAIM'}
+      </Button>
+    </div>
+  );
+}
 
 export function RpPassPage({
   data,
@@ -22,12 +58,22 @@ export function RpPassPage({
   }, [pass.level, pass.maxLevel]);
 
   const claim = async (level: number, track: 'free' | 'premium') => {
-    await nuiCallback('claimRpPass', { level, track });
+    const reward = pass.rewards.find((r) => r.level === level && r.track === track);
+    await nuiCallback('claimRpPass', {
+      level,
+      track,
+      itemName: reward?.itemName,
+      amount: reward?.amount,
+    });
     const rewards = pass.rewards.map((r) =>
       r.level === level && r.track === track ? { ...r, claimed: true } : r,
     );
     onPatch({ rpPass: { ...pass, rewards } });
-    notify('APDOVANOJIMAS', `RP Pass ${track} LVL ${level} pasiimtas.`, '🎁');
+    notify(
+      'APDOVANOJIMAS',
+      `${reward?.icon ?? '🎁'} ${reward?.label ?? 'Item'} ×${reward?.amount ?? 1}`,
+      reward?.icon ?? '🎁',
+    );
   };
 
   const claimAll = async () => {
@@ -39,8 +85,10 @@ export function RpPassPage({
       return { ...r, claimed: true };
     });
     onPatch({ rpPass: { ...pass, rewards } });
-    notify('CLAIM ALL', 'Visi galimi RP Pass rewardai pasiimti.', '✨');
+    notify('CLAIM ALL', 'Visi galimi RP Pass itemai pasiimti.', '✨');
   };
+
+  const freeVisible = visibleLevels.filter((lvl) => lvl === 1 || lvl % 5 === 0);
 
   return (
     <div>
@@ -48,7 +96,7 @@ export function RpPassPage({
         <div>
           <h1>RP Pass</h1>
           <p>
-            Level {pass.level} / {pass.maxLevel} · {pass.xp} / {pass.xpRequired} XP
+            Level {pass.level} / {pass.maxLevel} · Free: 1 / 5 / 10… · Premium: kiekvienas lygis
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -80,69 +128,39 @@ export function RpPassPage({
       </Card>
 
       <div style={{ marginTop: 14 }} className="stack">
-        <Card title="FREE TRACK">
+        <Card title="FREE TRACK · itemai kas 5 lygius (+ LVL 1)">
           <div className="track-wrap">
             <div className="track">
-              {visibleLevels
-                .filter((lvl) => lvl % 5 === 0)
-                .map((lvl) => {
-                  const r = pass.rewards.find((x) => x.level === lvl && x.track === 'free');
-                  if (!r) return null;
-                  return (
-                    <div
-                      key={`f-${lvl}`}
-                      className={`track-node${lvl === pass.level ? ' current' : ''}${
-                        r.claimed ? ' claimed' : ''
-                      }${r.locked ? ' locked' : ''}`}
-                    >
-                      <strong>LVL {lvl}</strong>
-                      <span className="muted">{r.label}</span>
-                      <span className={`rarity-pill rarity-${r.rarity}`}>
-                        {r.rarity}
-                      </span>
-                      <Button
-                        variant="primary"
-                        disabled={r.locked || r.claimed || lvl > pass.level}
-                        onClick={() => claim(lvl, 'free')}
-                      >
-                        {r.claimed ? 'TAKEN' : 'CLAIM'}
-                      </Button>
-                    </div>
-                  );
-                })}
+              {freeVisible.map((lvl) => {
+                const r = pass.rewards.find((x) => x.level === lvl && x.track === 'free');
+                if (!r) return null;
+                return (
+                  <RewardCard
+                    key={`f-${lvl}`}
+                    reward={r}
+                    currentLevel={pass.level}
+                    onClaim={() => void claim(lvl, 'free')}
+                  />
+                );
+              })}
             </div>
           </div>
         </Card>
 
-        <Card title="PREMIUM TRACK">
+        <Card title="PREMIUM TRACK · itemas kiekviename lygyje">
           <div className="track-wrap">
             <div className="track">
               {visibleLevels.map((lvl) => {
                 const r = pass.rewards.find((x) => x.level === lvl && x.track === 'premium');
                 if (!r) return null;
-                const premiumLocked = !pass.premium;
                 return (
-                  <div
+                  <RewardCard
                     key={`p-${lvl}`}
-                    className={`track-node${lvl === pass.level ? ' current' : ''}${
-                      r.claimed ? ' claimed' : ''
-                    }${r.locked || premiumLocked ? ' locked' : ''}`}
-                  >
-                    <strong>LVL {lvl}</strong>
-                    <span className="muted">{r.label}</span>
-                    <span className={`rarity-pill rarity-${r.rarity}`}>
-                      {r.rarity}
-                    </span>
-                    <Button
-                      variant="primary"
-                      disabled={
-                        premiumLocked || r.locked || r.claimed || lvl > pass.level
-                      }
-                      onClick={() => claim(lvl, 'premium')}
-                    >
-                      {premiumLocked ? 'LOCKED' : r.claimed ? 'TAKEN' : 'CLAIM'}
-                    </Button>
-                  </div>
+                    reward={r}
+                    currentLevel={pass.level}
+                    premiumLocked={!pass.premium}
+                    onClaim={() => void claim(lvl, 'premium')}
+                  />
                 );
               })}
             </div>

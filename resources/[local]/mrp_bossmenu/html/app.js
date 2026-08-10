@@ -247,6 +247,19 @@ function applyState(data) {
     state = data;
     document.getElementById('jobLabel').textContent = data.jobLabel || 'Frakcijos vadovybė';
     document.getElementById('jobSub').textContent = data.jobName || '';
+    const logo = document.getElementById('bmLogoImg');
+    if (logo) {
+        const job = String(data.jobName || '').toLowerCase();
+        const jobType = String(data.jobType || '').toLowerCase();
+        let src = 'assets/mayhem_mark.png';
+        if (job === 'police' || job === 'sheriff' || jobType === 'leo') src = 'assets/logo_pd.png';
+        else if (job === 'ambulance' || jobType === 'ems' || jobType === 'ambulance') src = 'assets/logo_ems.png';
+        else if (job.includes('mechanic') || job === 'beeker' || job === 'bennys' || jobType === 'mechanic') {
+            src = 'assets/logo_mechanic.png';
+        }
+        logo.src = src;
+        logo.alt = data.jobLabel || 'Mayhem';
+    }
     document.getElementById('fundBalance').textContent = money(data.balance);
     document.getElementById('overviewFund').textContent = money(data.balance);
     document.getElementById('onlineCount').textContent = String((data.members || []).length);

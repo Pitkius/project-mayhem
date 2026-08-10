@@ -1,3 +1,4 @@
+import { Banknote, Coins, Landmark } from 'lucide-react';
 import type { DashboardData, PageId } from '@/types/dashboard';
 import { Card, ProgressBar, Button, formatNumber } from '@/components/ui';
 
@@ -39,15 +40,30 @@ export function HomePage({
         <Card title="VALIUTA">
           <div className="currency-grid">
             <div className="card currency-tile credits" style={{ padding: 12 }}>
-              <h3>CREDITS</h3>
+              <div className="currency-tile-head">
+                <span className="currency-icon" aria-hidden>
+                  <Coins size={18} strokeWidth={2.25} />
+                </span>
+                <h3>CREDITS</h3>
+              </div>
               <div className="value">{formatNumber(player.credits)} CR</div>
             </div>
             <div className="card currency-tile cash" style={{ padding: 12 }}>
-              <h3>CASH</h3>
+              <div className="currency-tile-head">
+                <span className="currency-icon" aria-hidden>
+                  <Banknote size={18} strokeWidth={2.25} />
+                </span>
+                <h3>CASH</h3>
+              </div>
               <div className="value">${formatNumber(player.cash)}</div>
             </div>
             <div className="card currency-tile bank" style={{ padding: 12 }}>
-              <h3>BANK</h3>
+              <div className="currency-tile-head">
+                <span className="currency-icon" aria-hidden>
+                  <Landmark size={18} strokeWidth={2.25} />
+                </span>
+                <h3>BANK</h3>
+              </div>
               <div className="value">${formatNumber(player.bank)}</div>
             </div>
           </div>
@@ -85,7 +101,7 @@ export function HomePage({
                   <strong style={{ display: 'block' }}>{n.title}</strong>
                   <p className="muted">{n.body}</p>
                 </div>
-                <Button variant="ghost" onClick={() => onNavigate('imports')}>
+                <Button variant="ghost" onClick={() => onNavigate('premium')}>
                   ŽIŪRĖTI
                 </Button>
               </div>
@@ -100,11 +116,8 @@ export function HomePage({
             <Button variant="ghost" onClick={() => onNavigate('daily')}>
               Dieninis · Day {data.daily.day}/{data.daily.maxDays}
             </Button>
-            <Button variant="ghost" onClick={() => onNavigate('imports')}>
-              Importai
-            </Button>
-            <Button variant="ghost" onClick={() => onNavigate('vip')}>
-              VIP Shop
+            <Button variant="ghost" onClick={() => onNavigate('premium')}>
+              Premium parduotuvė
             </Button>
           </div>
         </Card>

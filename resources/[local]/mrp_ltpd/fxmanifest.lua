@@ -58,6 +58,8 @@ files {
     'html/mdt/asset/gtav_satellite.jpg',
     'html/mdt/asset/gtav_satellite_2048.png',
     'html/mdt/assets/mayhem_logo.png',
+    'html/mdt/assets/mayhem_mark.png',
+    'html/mdt/assets/logo_pd.png',
     'html/craft/style.css',
     'html/craft/app.js',
 }
