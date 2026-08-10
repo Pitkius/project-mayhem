@@ -411,7 +411,7 @@ Config.FleetVehicles = {
   { model = 'mrpd20', label = 'MRPD 20 (nežymėta)', emergencyLights = 'native' },
   { model = 'mrpd25', label = 'MRPD 25 — Alfa Romeo nežymėta', emergencyLights = 'native' },
   -- NEŽYMĖTOS LT ELS
-  { model = 'mrpd21', label = 'MRPD 21 — BMW 540i VAD (LT ELS)', emergencyLights = 'els' },
+  -- mrpd21 disabled: corrupt YFT (client crash GTA5_b3751 / ERR_STR_FAILURE_3)
   { model = 'mrpd22', label = 'MRPD 22 — Audi S3 nežymėta (ELS)', emergencyLights = 'els' },
 }
 

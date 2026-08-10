@@ -512,7 +512,7 @@ function renderOverview() {
             ${pill('Featured', 'neon')}
           </div>
           ${featured ? `
-            ${featured.imageUrl ? `<div class="mission-featured-media" style="background-image:url('${esc(featured.imageUrl)}')"></div>` : ''}
+            <div class="mission-featured-media" style="background-image:url('${esc(featured.imageUrl || `images/missions/${featured.image || 'raid'}.png`)}')"></div>
             <div style="display:flex;align-items:flex-start;gap:14px">
               <div class="icon-tile" style="width:44px;height:44px;border-radius:12px">${ICONS.target}</div>
               <div style="flex:1;min-width:0">

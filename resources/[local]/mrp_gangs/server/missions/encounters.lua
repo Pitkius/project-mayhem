@@ -41,13 +41,7 @@ local function offsetSpawn(origin, offset)
 end
 
 local function isEntityDeadSafe(entity)
-    if not entity or entity == 0 or not DoesEntityExist(entity) then return true end
-    local nativeIsEntityDead = rawget(_G, 'IsEntityDead')
-    if type(nativeIsEntityDead) == 'function' then
-        return nativeIsEntityDead(entity) == true
-    end
-    local health = GetEntityHealth(entity)
-    return type(health) == 'number' and health <= 0
+    return GangUtils.IsEntityDeadSafe(entity)
 end
 
 local function outdoorSpawn(site, index, total)
@@ -224,24 +218,28 @@ local function spawnWave(run, opts)
             Entity(ped).state:set('mrpGangWeapon', weapon, true)
             Entity(ped).state:set('mrpGangFaction', gangKey, true)
             Entity(ped).state:set('mrpGangStaging', staging and 'idle' or 'armed', true)
-            encounter.entities[#encounter.entities + 1] = ped
-            local netId = NetworkGetNetworkIdFromEntity(ped)
-            local entry = {
-                networkId = netId,
-                archetype = archetype,
-                weapon = weapon,
-                accuracy = definition.accuracy or 20,
-                melee = definition.melee == true or run.difficulty == 'easy',
-                gangKey = gangKey,
-                staging = staging,
-            }
-            encounter.networkIds[#encounter.networkIds + 1] = entry
-            run.corpseRegistry = run.corpseRegistry or {}
-            run.corpseRegistry[netId] = {
-                archetype = archetype,
-                weapon = weapon,
-                looted = false,
-            }
+            local netId = GangUtils.GetNetworkIdSafe(ped, 2500)
+            if not netId then
+                DeleteEntity(ped)
+            else
+                encounter.entities[#encounter.entities + 1] = ped
+                local entry = {
+                    networkId = netId,
+                    archetype = archetype,
+                    weapon = weapon,
+                    accuracy = definition.accuracy or 20,
+                    melee = definition.melee == true or run.difficulty == 'easy',
+                    gangKey = gangKey,
+                    staging = staging,
+                }
+                encounter.networkIds[#encounter.networkIds + 1] = entry
+                run.corpseRegistry = run.corpseRegistry or {}
+                run.corpseRegistry[netId] = {
+                    archetype = archetype,
+                    weapon = weapon,
+                    looted = false,
+                }
+            end
         end
     end
 

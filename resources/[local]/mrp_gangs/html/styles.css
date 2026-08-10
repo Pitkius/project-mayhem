@@ -764,15 +764,17 @@ tbody tr:hover { background: rgba(168, 85, 247, 0.05); }
 }
 .mission-card-media {
   position: relative;
-  height: 110px;
-  background: #0b0f18 center/cover no-repeat;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  background: #0b0f18 center / contain no-repeat;
   border-bottom: 1px solid var(--line);
 }
 .mission-card-media::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 35%, rgba(8, 10, 16, 0.88) 100%);
+  background: linear-gradient(180deg, transparent 55%, rgba(8, 10, 16, 0.72) 100%);
   pointer-events: none;
 }
 .mission-card-body { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 16px; }
@@ -786,9 +788,11 @@ tbody tr:hover { background: rgba(168, 85, 247, 0.05); }
 .mission-reward small { color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .06em; }
 
 .mission-featured-media {
-  height: 120px;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  height: auto;
   border-radius: 12px;
-  background: #0b0f18 center/cover no-repeat;
+  background: #0b0f18 center / contain no-repeat;
   border: 1px solid var(--line);
   margin-bottom: 4px;
 }

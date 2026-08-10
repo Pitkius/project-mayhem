@@ -38,13 +38,7 @@ local function near2D(source, target, maxDistance)
 end
 
 local function isEntityDeadSafe(entity)
-    if not entity or entity == 0 or not DoesEntityExist(entity) then return true end
-    local nativeIsEntityDead = rawget(_G, 'IsEntityDead')
-    if type(nativeIsEntityDead) == 'function' then
-        return nativeIsEntityDead(entity) == true
-    end
-    local health = GetEntityHealth(entity)
-    return type(health) == 'number' and health <= 0
+    return GangUtils.IsEntityDeadSafe(entity)
 end
 
 local function offsetXYZW(offset)

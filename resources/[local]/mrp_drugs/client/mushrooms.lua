@@ -104,51 +104,31 @@ local function tryPickHarvest(fieldId, spawnIndex)
         return QBCore.Functions.Notify('Per toli.', 'error')
     end
 
-    local profile = Config.GetHarvestMinigameForField and Config.GetHarvestMinigameForField(state.field)
-    -- Aguonos: unikalus 3D skynimas (ne grybų/kokos schedule UI)
-    if state.field.item == 'poppy_flower' or (state.field.id and tostring(state.field.id):find('poppy')) then
-        picking = true
-        DrugProgress.run('mrp_poppy_harvest', state.field.pickLabel or 'Skinti aguonas', state.field.pickDurationMs or 5200, false, true, {
-            disableMovement = true,
-            disableCarMovement = true,
-            disableCombat = true,
-        }, {
-            animDict = 'amb@world_human_gardener_plant@female@base',
-            anim = 'base_female',
-            flags = 1,
-        }, function()
-            picking = false
-            TriggerServerEvent('mrp_drugs:server:pickMushroom', fieldId, spawnIndex, pcoords.x, pcoords.y, pcoords.z)
-        end, function()
-            picking = false
-            QBCore.Functions.Notify('Atšaukta.', 'error')
-        end)
-        return
-    end
-    if profile and GetResourceState(GetCurrentResourceName()) == 'started' then
-        picking = true
-        exports[GetCurrentResourceName()]:RunScheduleMinigame(profile, function(success)
-            picking = false
-            if success then
-                TriggerServerEvent('mrp_drugs:server:pickMushroom', fieldId, spawnIndex, pcoords.x, pcoords.y, pcoords.z)
-            else
-                QBCore.Functions.Notify('Derliaus rinkimas nepavyko.', 'error')
-            end
-        end)
-        return
-    end
+    -- Visas harvest laukas: 3D progress (kaip aguonos) — be schedule/CSS NUI
+    local item = tostring(state.field.item or '')
+    local fieldIdStr = state.field.id and tostring(state.field.id) or ''
+    local isPoppy = item == 'poppy_flower' or fieldIdStr:find('poppy')
+    local isCoca = item == 'coca_leaf' or item == 'cartel_raw' or fieldIdStr:find('coca')
+    local label = state.field.pickLabel
+        or (isPoppy and 'Skinti aguonas')
+        or (isCoca and 'Rinkti kokos lapus')
+        or 'Rinkti grybus'
+    local progressId = isPoppy and 'mrp_poppy_harvest'
+        or (isCoca and 'mrp_coca_harvest')
+        or 'mrp_mushroom_harvest'
+    local animDict = isPoppy and 'amb@world_human_gardener_plant@female@base' or 'amb@world_human_gardener_plant@male@base'
+    local anim = isPoppy and 'base_female' or 'base'
+    local flags = isPoppy and 1 or 49
 
     picking = true
-    local label = state.field.pickLabel or 'Renki…'
-    DrugProgress.run('mrp_drugs_harvest', label, state.field.pickDurationMs or 5200, false, true, {
+    DrugProgress.run(progressId, label, state.field.pickDurationMs or 5200, false, true, {
         disableMovement = true,
         disableCarMovement = true,
-        disableMouse = false,
         disableCombat = true,
     }, {
-        animDict = 'amb@world_human_gardener_plant@male@base',
-        anim = 'base',
-        flags = 49,
+        animDict = animDict,
+        anim = anim,
+        flags = flags,
     }, function()
         picking = false
         TriggerServerEvent('mrp_drugs:server:pickMushroom', fieldId, spawnIndex, pcoords.x, pcoords.y, pcoords.z)

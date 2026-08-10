@@ -378,6 +378,46 @@ local function runScheduleMinigame(productId, profile, prod, onDone, craftToken,
         return
     end
 
+    local l1Drug = profile.drug == 'thc' or profile.drug == 'alcohol' or profile.drug == 'vape'
+    local l1Action = profile.action == 'process' or profile.action == 'pack'
+        or tostring(productId or ''):find('_process')
+        or tostring(productId or ''):find('_pack')
+    if l1Drug and l1Action and L1Production and L1Production.Start then
+        workspace = resolveWorkspace()
+        L1Production.Start({
+            sessionId = sessionId,
+            craftToken = craftToken,
+            productId = productId,
+            drug = profile.drug,
+            action = profile.action,
+            mode = profile.mode,
+            workspace = workspace,
+        }, function(success, extra)
+            closeActiveMinigame(success, extra or {}, sessionId)
+        end)
+        return
+    end
+
+    local mushroom3d = profile.drug == 'mushroom' and (
+        profile.action == 'process' or profile.action == 'pack'
+        or profile.mode == 'mushroom_brush' or profile.mode == 'mushroom_jar'
+        or productId == 'mushroom_process' or productId == 'mushroom_pack'
+    )
+    if mushroom3d and MushroomProduction and MushroomProduction.Start then
+        workspace = resolveWorkspace()
+        MushroomProduction.Start({
+            sessionId = sessionId,
+            craftToken = craftToken,
+            productId = productId,
+            action = profile.action,
+            mode = profile.mode,
+            workspace = workspace,
+        }, function(success, extra)
+            closeActiveMinigame(success, extra or {}, sessionId)
+        end)
+        return
+    end
+
     if ScheduleAnimStart and profile.mode then
         ScheduleAnimStart(profile.mode)
     end

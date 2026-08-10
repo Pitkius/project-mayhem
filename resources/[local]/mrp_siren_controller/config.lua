@@ -71,7 +71,7 @@ Config.FleetVehicles = {
         'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24', 'mrpd25', 'mrpd26',
         'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16', 'mrpd23',
         'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
-        'mrpd21', 'mrpd22',
+        'mrpd22',
         'polmav', 'buzzard2',
     },
     ambulance = { 'ambulance', 'ambulance2', 'lguard', 'ems1', 'ems2', 'granger' },
@@ -80,7 +80,7 @@ Config.FleetVehicles = {
 --- Modeliai, kuriems F6 režimą map'inam į ELS-FiveM (ne SetVehicleSiren).
 --- Skoda (mrpd16/23): physical extras on the model via ELS — never DrawLight orbs.
 Config.ElsFleetVehicles = {
-    'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16', 'mrpd21', 'mrpd22', 'mrpd23',
+    'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16', 'mrpd22', 'mrpd23',
     'ems1', 'ems2',
 }
 

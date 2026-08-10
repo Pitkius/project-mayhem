@@ -22,13 +22,7 @@ local function difficultyAllowed(mission, difficulty)
 end
 
 local function isEntityDeadSafe(entity)
-    if not entity or entity == 0 or not DoesEntityExist(entity) then return true end
-    local nativeIsEntityDead = rawget(_G, 'IsEntityDead')
-    if type(nativeIsEntityDead) == 'function' then
-        return nativeIsEntityDead(entity) == true
-    end
-    local health = GetEntityHealth(entity)
-    return type(health) == 'number' and health <= 0
+    return GangUtils.IsEntityDeadSafe(entity)
 end
 
 local function allocateBucket()
@@ -218,24 +212,28 @@ local function spawnCompoundProps(run)
                 SetEntityHeading(obj, prop.heading or (run.site.w or 0.0))
                 FreezeEntityPosition(obj, true)
                 GangUtils.SetEntityOrphanMode(obj, 2)
-                run.compoundProps[#run.compoundProps + 1] = obj
-                local netId = NetworkGetNetworkIdFromEntity(obj)
-                local meta = {
-                    networkId = netId,
-                    action = prop.action,
-                    objectiveIndex = tonumber(prop.objectiveIndex),
-                    interact = prop.interact == true,
-                    size = size,
-                    used = false,
-                }
-                run.compoundPropMeta[netId] = meta
-                if meta.interact and meta.action then
-                    interactivePayload[#interactivePayload + 1] = {
+                local netId = GangUtils.GetNetworkIdSafe(obj, 2500)
+                if not netId then
+                    DeleteEntity(obj)
+                else
+                    run.compoundProps[#run.compoundProps + 1] = obj
+                    local meta = {
                         networkId = netId,
-                        action = meta.action,
-                        objectiveIndex = meta.objectiveIndex,
-                        label = PROP_ACTION_LABELS[meta.action] or 'Naudoti',
+                        action = prop.action,
+                        objectiveIndex = tonumber(prop.objectiveIndex),
+                        interact = prop.interact == true,
+                        size = size,
+                        used = false,
                     }
+                    run.compoundPropMeta[netId] = meta
+                    if meta.interact and meta.action then
+                        interactivePayload[#interactivePayload + 1] = {
+                            networkId = netId,
+                            action = meta.action,
+                            objectiveIndex = meta.objectiveIndex,
+                            label = PROP_ACTION_LABELS[meta.action] or 'Naudoti',
+                        }
+                    end
                 end
             end
         end
@@ -367,8 +365,13 @@ local function spawnMissionTarget(run, phase)
     FreezeEntityPosition(ped, true)
     Entity(ped).state:set('mrpGangMissionRun', run.token, true)
     Entity(ped).state:set('mrpGangMissionTarget', phase.type, true)
+    local netId = GangUtils.GetNetworkIdSafe(ped, 2500)
+    if not netId then
+        DeleteEntity(ped)
+        return false
+    end
     run.missionTargetEntity = ped
-    run.missionTargetNetworkId = NetworkGetNetworkIdFromEntity(ped)
+    run.missionTargetNetworkId = netId
     run.missionTargetMode = phase.type
     broadcast(
         run,
@@ -484,8 +487,13 @@ local function startCurrentPhase(run)
         GangUtils.SetEntityOrphanMode(vehicle, 2)
         SetVehicleNumberPlateText(vehicle, ('GANG%04d'):format(run.dbId % 10000))
         Entity(vehicle).state:set('mrpGangMissionRun', run.token, true)
+        local netId = GangUtils.GetNetworkIdSafe(vehicle, 2500)
+        if not netId then
+            DeleteEntity(vehicle)
+            return failRun(run, 'mission_vehicle_spawn_failed')
+        end
         run.missionVehicleEntity = vehicle
-        run.missionVehicleNetworkId = NetworkGetNetworkIdFromEntity(vehicle)
+        run.missionVehicleNetworkId = netId
         broadcast(run, 'mrp_gangs:client:configureMissionVehicle', run.token, run.missionVehicleNetworkId)
     elseif (phase.type == 'rescue' or phase.type == 'capture') and not spawnMissionTarget(run, phase) then
         return failRun(run, 'mission_target_spawn_failed')
@@ -1155,9 +1163,9 @@ CreateThread(function()
         local now = os.time()
         for _, run in pairs(GangMissions.Runs) do
             local vehicleFailed = run.missionVehicleEntity
-                and (not DoesEntityExist(run.missionVehicleEntity) or GetEntityHealth(run.missionVehicleEntity) <= 0)
+                and GangUtils.IsEntityDeadSafe(run.missionVehicleEntity)
             local targetFailed = run.missionTargetFreed and run.missionTargetEntity
-                and (not DoesEntityExist(run.missionTargetEntity) or isEntityDeadSafe(run.missionTargetEntity))
+                and GangUtils.IsEntityDeadSafe(run.missionTargetEntity)
             if vehicleFailed or targetFailed then
                 failRun(run, vehicleFailed and 'mission_vehicle_destroyed' or 'mission_target_lost')
             else

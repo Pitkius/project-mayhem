@@ -42,11 +42,6 @@ RegisterNetEvent('mrp_phone:client:openPhoneDevice', function(data)
     openDeviceShell(data or {})
 end)
 
--- Local TriggerEvent from F1 / other client scripts
-AddEventHandler('mrp_phone:client:openPhoneDevice', function(data)
-    openDeviceShell(data or {})
-end)
-
 RegisterNetEvent('mrp_phone:client:forceClose', function(info)
     currentPhoneId = nil
     TriggerEvent('mrp_phone:client:closePhone')
@@ -136,4 +131,8 @@ end)
 
 exports('GetCurrentPhoneType', function()
     return currentPhoneType
+end)
+
+exports('OpenPhoneDevice', function(data)
+    openDeviceShell(data or {})
 end)

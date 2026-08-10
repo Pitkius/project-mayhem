@@ -173,6 +173,9 @@ QBCore.Functions.CreateCallback('mrp_garages:server:getPlayerVehicles', function
         elseif garageType then
             include = matchesGarageType(garageType, getVehicleDbType(modelLower))
         end
+        if include and (tonumber(r.state) == 3 or tostring(r.garage or '') == 'usedcarlot') then
+            include = false
+        end
         if include then
             vehicles[#vehicles + 1] = {
                 model = r.vehicle,
@@ -219,6 +222,10 @@ QBCore.Functions.CreateCallback('mrp_garages:server:spawnVehicle', function(sour
 
     if not row then
         return cb({ ok = false, message = 'Masina nerasta' })
+    end
+
+    if tonumber(row.state) == 3 or tostring(row.garage or '') == 'usedcarlot' then
+        return cb({ ok = false, message = 'Masina pastatyta naudotų auto aikštelėje.' })
     end
 
     if isPdGarageId(garageId) then

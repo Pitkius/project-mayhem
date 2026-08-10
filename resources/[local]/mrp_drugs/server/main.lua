@@ -396,6 +396,47 @@ local WORLD_STAGE_SEQUENCES = {
         { name = 'folded', minMs = 4500 },
         { name = 'sealed', minMs = 3500 },
     },
+    -- L1 (THC / alkoholis / vape) — 3D world production
+    thc_process = {
+        { name = 'loaded', minMs = 3500 },
+        { name = 'heated', minMs = 5500 },
+        { name = 'scraped', minMs = 4500 },
+        { name = 'collected', minMs = 3000 },
+    },
+    thc_pack = {
+        { name = 'portioned', minMs = 3000 },
+        { name = 'filled', minMs = 4000 },
+        { name = 'sealed', minMs = 3000 },
+    },
+    alcohol_process = {
+        { name = 'charged', minMs = 4000 },
+        { name = 'distilled', minMs = 6500 },
+    },
+    alcohol_pack = {
+        { name = 'poured', minMs = 3500 },
+        { name = 'corked', minMs = 4000 },
+        { name = 'labeled', minMs = 3000 },
+    },
+    vape_process = {
+        { name = 'measured', minMs = 3500 },
+        { name = 'blended', minMs = 4500 },
+    },
+    vape_pack = {
+        { name = 'dropped', minMs = 3500 },
+        { name = 'capped', minMs = 3000 },
+        { name = 'bagged', minMs = 3000 },
+    },
+    mushroom_process = {
+        { name = 'cleaned', minMs = 4000 },
+        { name = 'sorted', minMs = 3500 },
+        { name = 'dried', minMs = 5500 },
+        { name = 'trayed', minMs = 3000 },
+    },
+    mushroom_pack = {
+        { name = 'filled', minMs = 3500 },
+        { name = 'sealed', minMs = 3500 },
+        { name = 'labeled', minMs = 3000 },
+    },
 }
 
 local function createWorldStageState(productId, now)

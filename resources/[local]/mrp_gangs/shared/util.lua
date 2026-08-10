@@ -8,6 +8,40 @@ function GangUtils.SetEntityOrphanMode(entity, mode)
     return true
 end
 
+--- NetworkGetNetworkIdFromEntity can throw on fresh/invalid entities (native 0x9E35DAB6).
+--- Wait until the entity exists, then pcall + retry for a network id.
+function GangUtils.GetNetworkIdSafe(entity, timeoutMs)
+    if not entity or entity == 0 then return nil end
+    timeoutMs = tonumber(timeoutMs) or 2000
+    local deadline = (GetGameTimer and GetGameTimer() or 0) + timeoutMs
+    while not DoesEntityExist(entity) do
+        if (GetGameTimer and GetGameTimer() or 0) >= deadline then return nil end
+        Wait(0)
+    end
+    while true do
+        local ok, netId = pcall(NetworkGetNetworkIdFromEntity, entity)
+        if ok and type(netId) == 'number' and netId ~= 0 then
+            return netId
+        end
+        if (GetGameTimer and GetGameTimer() or 0) >= deadline then return nil end
+        Wait(0)
+    end
+end
+
+--- Safe death/health check — entity natives can throw on stale handles.
+function GangUtils.IsEntityDeadSafe(entity)
+    if not entity or entity == 0 then return true end
+    local existsOk, exists = pcall(DoesEntityExist, entity)
+    if not existsOk or not exists then return true end
+    local nativeIsEntityDead = rawget(_G, 'IsEntityDead')
+    if type(nativeIsEntityDead) == 'function' then
+        local deadOk, dead = pcall(nativeIsEntityDead, entity)
+        if deadOk then return dead == true end
+    end
+    local healthOk, health = pcall(GetEntityHealth, entity)
+    return healthOk and type(health) == 'number' and health <= 0
+end
+
 function GangUtils.Clamp(value, minimum, maximum)
     value = tonumber(value) or minimum
     if value < minimum then return minimum end

@@ -71,6 +71,8 @@ client_scripts {
     'client/meth_production.lua',
     'client/cocaine_production.lua',
     'client/heroin_production.lua',
+    'client/l1_production.lua',
+    'client/mushroom_production.lua',
     'client/main.lua',
     'client/planned.lua',
     'client/printer.lua',

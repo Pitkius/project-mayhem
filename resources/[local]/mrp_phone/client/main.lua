@@ -39,8 +39,16 @@ local function ensurePhoneProp()
     if not HasModelLoaded(model) then return end
     clearPhoneProp()
     local coords = GetEntityCoords(ped)
-    phoneProp = CreateObject(model, coords.x, coords.y, coords.z + 0.2, true, true, false)
-    AttachEntityToEntity(phoneProp, ped, GetPedBoneIndex(ped, 57005), 0.12, 0.02, -0.02, 90.0, 120.0, 0.0, true, true, false, true, 1, true)
+    -- Local prop only — networked CreateObject can fail/hang on newer builds and leave phone stuck opening.
+    local ok, obj = pcall(CreateObject, model, coords.x, coords.y, coords.z + 0.2, false, false, false)
+    if not ok or not obj or obj == 0 then
+        SetModelAsNoLongerNeeded(model)
+        return
+    end
+    phoneProp = obj
+    pcall(function()
+        AttachEntityToEntity(phoneProp, ped, GetPedBoneIndex(ped, 57005), 0.12, 0.02, -0.02, 90.0, 120.0, 0.0, true, true, false, true, 1, true)
+    end)
     SetModelAsNoLongerNeeded(model)
 end
 
@@ -244,12 +252,37 @@ local function togglePhone()
 end
 
 RegisterCommand(Config.KeybindCommand or 'fivempro_phone_toggle', function()
-    local itemName = Config.PhoneItem or 'phone'
-    if Config.RequirePhoneItemForKeybind and not QBCore.Functions.HasItem(itemName, 1) then
-        QBCore.Functions.Notify('Jums reikia telefono inventoriuje.', 'error')
+    if phonePhase == 'closing' then return end
+    if phonePhase == 'open' or phonePhase == 'opening' then
+        closePhone()
         return
     end
-    TriggerEvent('mrp_phone:client:openPhoneDevice', { itemName = itemName })
+
+    local itemName = Config.PhoneItem or 'phone'
+    local hasPhone = true
+    if Config.RequirePhoneItemForKeybind then
+        local okHas, result = pcall(function()
+            return QBCore.Functions.HasItem(itemName, 1)
+        end)
+        hasPhone = okHas and result == true
+        if not hasPhone then
+            -- DarkNet phone also opens via same shell
+            local okDark, dark = pcall(function()
+                return QBCore.Functions.HasItem(Config.DarknetPhoneItem or 'darknet_phone', 1)
+            end)
+            if okDark and dark then
+                itemName = Config.DarknetPhoneItem or 'darknet_phone'
+                hasPhone = true
+            end
+        end
+        if not hasPhone then
+            QBCore.Functions.Notify('Jums reikia telefono inventoriuje.', 'error')
+            return
+        end
+    end
+
+    -- Direct export — no event double-fire / stuck opening
+    exports['mrp_phone']:OpenPhoneDevice({ itemName = itemName })
 end, false)
 
 RegisterKeyMapping(
@@ -312,13 +345,15 @@ RegisterNetEvent('mrp_phone:client:closePhone', function()
 end)
 
 RegisterNetEvent('mrp_phone:client:openPhoneFromItem', function()
-    TriggerEvent('mrp_phone:client:openPhoneDevice', { itemName = Config.PhoneItem or 'phone' })
+    exports['mrp_phone']:OpenPhoneDevice({ itemName = Config.PhoneItem or 'phone' })
 end)
 
 RegisterNetEvent('mrp_phone:client:internalShowPhone', function(opts)
     opts = opts or {}
     if IsPauseMenuActive() then return end
-    if phonePhase == 'closing' or phonePhase == 'opening' then return end
+    if phonePhase == 'closing' then return end
+    -- Already opening: ignore duplicate prepareOpen callbacks
+    if phonePhase == 'opening' then return end
 
     local function afterVisible()
         sendUi('deviceBootstrap', opts.devicePayload or {})
@@ -344,16 +379,40 @@ RegisterNetEvent('mrp_phone:client:internalShowPhone', function(opts)
 
     phonePhase = 'opening'
     CreateThread(function()
-        local ped = PlayerPedId()
-        ensurePhoneProp()
-        pedPlayAnim(ped, ANIM_DICT, ANIM_IN, 800, 49)
-        if not waitWhileOpening(700) then return end
-        if phonePhase ~= 'opening' then return end
-        pedPlayAnim(ped, ANIM_DICT, ANIM_LOOP, -1, 49)
-        phonePhase = 'open'
-        SetNuiFocus(true, true)
-        sendUi('open', {})
-        afterVisible()
+        local function abortOpen()
+            if phonePhase == 'opening' then
+                phonePhase = 'idle'
+                clearPhoneProp()
+                stopPhoneAnims(PlayerPedId())
+                SetNuiFocus(false, false)
+                sendUi('close')
+            end
+        end
+
+        local ok, err = pcall(function()
+            local ped = PlayerPedId()
+            ensurePhoneProp()
+            pedPlayAnim(ped, ANIM_DICT, ANIM_IN, 800, 49)
+            if not waitWhileOpening(700) then return end
+            if phonePhase ~= 'opening' then return end
+            pedPlayAnim(ped, ANIM_DICT, ANIM_LOOP, -1, 49)
+            phonePhase = 'open'
+            SetNuiFocus(true, true)
+            sendUi('open', {})
+            afterVisible()
+        end)
+
+        if not ok then
+            print(('[mrp_phone] open failed: %s'):format(tostring(err)))
+            abortOpen()
+            QBCore.Functions.Notify('Nepavyko atidaryti telefono.', 'error')
+            return
+        end
+
+        -- If we never reached open (early return while still opening), reset.
+        if phonePhase == 'opening' then
+            abortOpen()
+        end
     end)
 end)
 

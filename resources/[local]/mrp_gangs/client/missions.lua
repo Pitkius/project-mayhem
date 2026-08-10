@@ -134,8 +134,8 @@ local function lootCorpseEntity(entity)
     if not entity or entity == 0 or not DoesEntityExist(entity) or not IsEntityDead(entity) then return end
     local state = Entity(entity).state
     if not state or state.mrpGangMissionRun ~= activeMission.token or state.mrpGangLooted then return end
-    local networkId = NetworkGetNetworkIdFromEntity(entity)
-    if not networkId or networkId == 0 then return end
+    local okNet, networkId = pcall(NetworkGetNetworkIdFromEntity, entity)
+    if not okNet or not networkId or networkId == 0 then return end
 
     corpseBusy = true
     local duration = tonumber(Config.CorpseLoot and Config.CorpseLoot.searchDurationMs) or 3500
