@@ -95,7 +95,7 @@ export default function App() {
 
   if (!open) {
     return (
-      <div className={`app-root${isDevPreview() ? ' dev-preview' : ''}`}>
+      <div className={`app-root${isDevPreview() ? ' dev-preview is-open' : ''}`}>
         <NotificationStack
           items={toasts}
           onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
@@ -105,7 +105,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app-root${isDevPreview() ? ' dev-preview' : ''}`}>
+    <div className={`app-root is-open${isDevPreview() ? ' dev-preview' : ''}`}>
       <DashboardLayout
         page={page}
         data={data}

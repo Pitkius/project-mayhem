@@ -35,6 +35,8 @@ body,
 #root {
   width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
   font-family: var(--font);
   color: var(--text);
@@ -56,30 +58,42 @@ select {
 }
 
 .app-root {
-  width: 100%;
-  height: 100%;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
   background: transparent;
+  pointer-events: none;
+}
+
+.app-root.is-open {
+  pointer-events: auto;
+  background: #07080e;
 }
 
 .app-root.dev-preview {
   background: radial-gradient(ellipse at top, #15182a 0%, #07080e 55%);
+  pointer-events: auto;
 }
 
 .dashboard-shell {
-  width: min(1680px, 96vw);
-  height: min(920px, 92vh);
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
   grid-template-rows: var(--topbar-h) 1fr;
-  background: linear-gradient(160deg, rgba(12, 14, 24, 0.97), rgba(7, 8, 14, 0.98));
-  border: 1px solid var(--border);
-  border-radius: 18px;
+  background: linear-gradient(160deg, #0c0e18 0%, #07080e 100%);
+  border: none;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(167, 139, 250, 0.08);
-  animation: shellIn 220ms ease;
+  box-shadow: none;
+  animation: shellIn 200ms ease;
 }
 
 @keyframes shellIn {
@@ -1013,6 +1027,10 @@ code {
 }
 
 @media (max-width: 1200px) {
+  :root {
+    --sidebar-w: 200px;
+    --topbar-h: 64px;
+  }
   .grid-home,
   .grid-3,
   .grid-4 {
@@ -1024,11 +1042,12 @@ code {
 }
 
 @media (max-width: 900px) {
+  :root {
+    --sidebar-w: 72px;
+    --topbar-h: 56px;
+  }
   .dashboard-shell {
-    grid-template-columns: 72px 1fr;
-    width: 100vw;
-    height: 100vh;
-    border-radius: 0;
+    grid-template-columns: var(--sidebar-w) 1fr;
   }
   .brand-text,
   .nav-item span,
@@ -1044,5 +1063,42 @@ code {
   .grid-4,
   .currency-grid {
     grid-template-columns: 1fr;
+  }
+  .content {
+    padding: 14px 12px 20px;
+  }
+  .topbar {
+    padding: 0 12px;
+  }
+}
+
+@media (max-height: 800px) {
+  :root {
+    --topbar-h: 56px;
+  }
+  .content {
+    padding-top: 14px;
+  }
+  .page-title h1 {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .content {
+    padding: 28px 36px 36px;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --sidebar-w: 280px;
+    --topbar-h: 80px;
+  }
+  .content {
+    padding: 32px 48px 48px;
+  }
+  .page-title h1 {
+    font-size: 26px;
   }
 }
