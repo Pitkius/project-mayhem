@@ -1,3 +1,4 @@
-/* Vieningas Fivempro NUI: lietuviškas tekstas + Font Awesome ikonos */
+/* Vieningas Fivempro NUI: lietuviškas tekstas + Font Awesome ikonos + theme */
 @import url("nui://mrp_fonts/html/lietuva.css");
 @import url("nui://mrp_fonts/html/icons.css");
+@import url("nui://mrp_fonts/html/theme.css");

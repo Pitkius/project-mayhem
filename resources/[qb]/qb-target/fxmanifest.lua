@@ -14,6 +14,7 @@ client_scripts {
 	'@PolyZone/EntityZone.lua',
 	'@PolyZone/CircleZone.lua',
 	'@PolyZone/ComboZone.lua',
+	'@mrp_hud/client/theme_nui_consumer.lua',
 	'init.lua',
 	'client.lua',
 }
@@ -26,3 +27,4 @@ files {
 }
 
 dependency 'PolyZone'
+dependency 'mrp_hud'

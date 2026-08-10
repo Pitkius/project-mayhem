@@ -59,8 +59,8 @@ body {
 }
 
 .fp-toast {
-    --fp-accent: #a78bfa;
-    --fp-accent-soft: rgba(167, 139, 250, 0.18);
+    --fp-accent: var(--primary, #a78bfa);
+    --fp-accent-soft: var(--primary-soft, rgba(167, 139, 250, 0.18));
     pointer-events: auto;
     position: relative;
     display: grid;
@@ -163,6 +163,37 @@ body {
     line-height: 1.4;
     color: #e2e8f0;
     word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.fp-toast__count {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--fp-accent);
+    background: var(--fp-accent-soft);
+    border: 1px solid color-mix(in srgb, var(--fp-accent) 35%, transparent);
+}
+
+.fp-notify-debug {
+    position: fixed;
+    left: 8px;
+    bottom: 8px;
+    z-index: 100000;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font: 11px/1.35 ui-monospace, monospace;
+    color: #e2e8f0;
+    background: rgba(15, 10, 28, 0.88);
+    border: 1px solid rgba(167, 139, 250, 0.35);
+    pointer-events: none;
 }
 
 .fp-toast__close {

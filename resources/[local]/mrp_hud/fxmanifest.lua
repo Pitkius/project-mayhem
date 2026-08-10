@@ -4,7 +4,7 @@ game 'gta5'
 name 'mrp_hud'
 author 'MRP'
 description 'Minimal QBCore HUD (core survival + vehicle essentials)'
-version '1.0.0'
+version '1.0.1'
 
 ui_page 'html/index.html'
 
@@ -22,7 +22,9 @@ files {
 }
 
 client_scripts {
+    'client/ui_theme.lua',
     'client.lua',
+    'client/theme_nui_consumer.lua',
 }
 
 server_scripts {
@@ -32,5 +34,6 @@ server_scripts {
 exports {
     'OpenVehicleQuickMenu',
     'ToggleVehicleControlPanel',
+    'GetPlayerTheme',
+    'BuildPlayerTheme',
 }
-

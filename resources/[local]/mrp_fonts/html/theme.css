@@ -1,0 +1,91 @@
+/* Numatytoji žaidėjo UI tema (violetinė) — perrašoma per applyPlayerTheme() */
+:root {
+    --primary: #a78bfa;
+    --primary-hover: #c4b5fd;
+    --primary-active: #7c3aed;
+    --primary-soft: rgba(167, 139, 250, 0.18);
+    --primary-border: rgba(192, 132, 252, 0.35);
+    --primary-glow: rgba(167, 139, 250, 0.52);
+    --primary-text: #ffffff;
+    --background: rgba(124, 58, 237, 0.14);
+    --surface: rgba(18, 10, 32, 0.72);
+    --surface-active: rgba(88, 28, 135, 0.82);
+    --text: #f8f4ff;
+    --muted-text: #c4b5fd;
+
+    /* Bendri gradientai ir panelės */
+    --accent-grad: linear-gradient(135deg, var(--primary-active), var(--primary));
+    --btn-grad: linear-gradient(145deg, var(--primary-hover), var(--primary));
+    --card-grad: linear-gradient(135deg, var(--primary-active) 0%, var(--primary) 45%, var(--primary-hover) 100%);
+
+    /* Suderinamumas su mrp_hud kintamaisiais */
+    --accent-fill: var(--primary);
+    --accent-soft: var(--muted-text);
+    --accent-glow: var(--primary-glow);
+    --accent-highlight: var(--primary-active);
+
+    /* Dažni serverio UI alias (perrašomi per applyPlayerTheme) */
+    --fp-accent: var(--primary);
+    --fp-accent-soft: var(--primary-hover);
+    --fp-accent-dim: var(--primary-soft);
+    --fp-accent-glow: var(--primary-glow);
+    --fp-accent-deep: var(--primary-active);
+    --fp-primary: var(--primary);
+    --fp-primary-soft: var(--primary-hover);
+    --fp-primary-deep: var(--primary-active);
+    --fp-primary-glow: var(--primary-glow);
+    --fp-primary-dim: var(--primary-soft);
+    --neon-purple: var(--primary-hover);
+    --neon-purple-soft: var(--primary-border);
+    --neon-purple-glow: var(--primary-glow);
+    --neon-purple-dim: var(--primary-active);
+    --bm-accent: var(--primary);
+    --bm-accent-deep: var(--primary-active);
+    --sc-purple: var(--primary);
+    --sc-purple-soft: var(--primary-hover);
+    --sc-purple-deep: var(--primary-active);
+    --sc-purple-glow: var(--primary-glow);
+    --purple-dim: var(--primary-active);
+    --mg-accent: var(--primary);
+    --mg-accent-2: var(--primary-active);
+    --mg-glow: var(--primary-glow);
+    --vehicle-accent: var(--primary-active);
+    --glass-bg: var(--surface);
+    --glass-border: var(--primary-border);
+    --glass-hover: var(--primary-soft);
+    --app-bg: var(--surface);
+    --cc-violet: var(--primary);
+    --cc-violet-lit: var(--primary-hover);
+    --cc-violet-dim: var(--primary-soft);
+    --cc-border: var(--primary-border);
+    --cc-glass: var(--surface);
+    --ho-violet-bright: var(--primary-hover);
+    --drug-accent: var(--primary);
+    --ws-violet: var(--primary-active);
+    --ws-violet-soft: var(--primary-soft);
+    --ws-violet-border: var(--primary-border);
+    --ws-panel-bg: var(--background);
+    --ws-panel-bg-strong: var(--surface-active);
+    --panel-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 60px var(--primary-soft);
+
+    /* Telefonas ir kiti mobilūs UI sluoksniai */
+    --phone-line-soft: rgba(167, 139, 250, 0.12);
+    --phone-line: rgba(167, 139, 250, 0.14);
+    --phone-fill-faint: rgba(167, 139, 250, 0.08);
+    --phone-fill-soft: rgba(167, 139, 250, 0.1);
+    --phone-fill: rgba(167, 139, 250, 0.18);
+    --phone-fill-mid: rgba(167, 139, 250, 0.2);
+    --phone-border: rgba(167, 139, 250, 0.22);
+    --phone-border-strong: rgba(167, 139, 250, 0.3);
+    --phone-ring: rgba(167, 139, 250, 0.35);
+    --phone-ring-strong: rgba(167, 139, 250, 0.45);
+    --phone-scroll: rgba(167, 139, 250, 0.5);
+    --phone-btn-grad: linear-gradient(135deg, var(--primary-active), var(--primary-hover));
+    --phone-card-grad: linear-gradient(135deg, var(--primary-active) 0%, var(--primary-active) 45%, var(--primary-hover) 100%);
+    --phone-card-grad-soft: linear-gradient(135deg, var(--primary-soft), var(--primary-border));
+    --phone-wall-glow: rgba(124, 58, 237, 0.45);
+    --phone-wall-accent: rgba(124, 58, 237, 0.95);
+    --phone-progress-grad: linear-gradient(90deg, var(--primary-hover), var(--primary-active));
+    --phone-scroll-thumb: linear-gradient(180deg, var(--primary-hover), var(--primary-active));
+    --phone-scroll-track: rgba(255, 255, 255, 0.04);
+}
