@@ -145,14 +145,15 @@ local function isModelBlockedForCivilianShop(model, baseCategory)
     return false
 end
 
-local function buildCatalog()
+--- Civilinis katalogas pagal shop ('pdm' = Simion, 'luxury' = Importų salonas).
+local function buildShopCatalog(requiredShop, dealershipCfg)
     refreshCivilianBlocked()
     local categories = {}
     local vehicles = {}
     for _, veh in pairs(QBCore.Shared.Vehicles) do
         if veh.model and veh.shop then
             local shops = normalizeShopValue(veh.shop)
-            if shops.pdm or shops.luxury then
+            if shops[requiredShop] then
                 local model = string.lower(veh.model)
                 local category = resolveCategory(model, veh.category)
                 if not isModelBlockedForCivilianShop(model, veh.category) then
@@ -184,10 +185,18 @@ local function buildCatalog()
     end)
 
     return {
-        dealership = Config.Dealership,
+        dealership = dealershipCfg,
         categories = categories,
         vehicles = vehicles
     }
+end
+
+local function buildCatalog()
+    return buildShopCatalog('pdm', Config.Dealership)
+end
+
+local function buildLuxuryCatalog()
+    return buildShopCatalog('luxury', Config.ImportDealership or Config.Dealership)
 end
 
 local function randomLetters(n)
@@ -277,6 +286,10 @@ QBCore.Functions.CreateCallback('mrp_dealership:server:getCatalog', function(_, 
     cb(buildCatalog())
 end)
 
+QBCore.Functions.CreateCallback('mrp_dealership:server:getLuxuryCatalog', function(_, cb)
+    cb(buildLuxuryCatalog())
+end)
+
 CreateThread(function()
     Wait(3000)
     local rehExpected = Config.RehModels and #Config.RehModels or 0
@@ -288,15 +301,21 @@ CreateThread(function()
     end
 
     local catalog = buildCatalog()
+    local luxuryCatalog = buildLuxuryCatalog()
     local rehInCatalog = 0
     for _, veh in ipairs(catalog.vehicles) do
         if rehSet[veh.model] then
             rehInCatalog = rehInCatalog + 1
         end
     end
+    for _, veh in ipairs(luxuryCatalog.vehicles or {}) do
+        if rehSet[veh.model] then
+            rehInCatalog = rehInCatalog + 1
+        end
+    end
 
-    print(('[mrp_dealership] Simion catalog: %d vehicles, REH addon: %d / %d expected'):format(
-        #catalog.vehicles, rehInCatalog, rehExpected
+    print(('[mrp_dealership] Simion catalog: %d vehicles; Import catalog: %d; REH addon: %d / %d expected'):format(
+        #catalog.vehicles, #(luxuryCatalog.vehicles or {}), rehInCatalog, rehExpected
     ))
 
     if rehInCatalog == 0 then
@@ -737,14 +756,12 @@ QBCore.Functions.CreateCallback('mrp_dealership:server:buyHeliVehicle', function
     buyCivilianSpecialVehicle(Player, cb, model, stationId or 'ls', Config.HeliDealership, colorIdx, 'mrp-heli-dealership-buy')
 end)
 
-QBCore.Functions.CreateCallback('mrp_dealership:server:buyVehicle', function(source, cb, model, colorIdx)
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
+local function buyCivilianShopVehicle(Player, cb, model, colorIdx, catalogFn, dealershipCfg, moneyReason)
     if not Player then return cb({ ok = false, message = 'Žaidėjas nerastas' }) end
 
     model = string.lower(tostring(model or ''))
     local selectedVehicle = nil
-    for _, v in pairs(buildCatalog().vehicles) do
+    for _, v in pairs(catalogFn().vehicles) do
         if v.model == model then
             selectedVehicle = v
             break
@@ -756,10 +773,11 @@ QBCore.Functions.CreateCallback('mrp_dealership:server:buyVehicle', function(sou
 
     local price = selectedVehicle.price
     local paid = false
+    local reason = moneyReason or 'fivempro-dealership-buy'
     if Player.PlayerData.money.bank >= price then
-        paid = Player.Functions.RemoveMoney('bank', price, 'fivempro-dealership-buy')
+        paid = Player.Functions.RemoveMoney('bank', price, reason)
     elseif Player.PlayerData.money.cash >= price then
-        paid = Player.Functions.RemoveMoney('cash', price, 'fivempro-dealership-buy')
+        paid = Player.Functions.RemoveMoney('cash', price, reason)
     end
 
     if not paid then
@@ -769,6 +787,8 @@ QBCore.Functions.CreateCallback('mrp_dealership:server:buyVehicle', function(sou
     local plate = getUniquePlate()
     local hash = joaat(model)
     local props = buildPurchaseProps(hash, plate, colorIdx)
+    local garage = (dealershipCfg and dealershipCfg.garage) or Config.Dealership.garage
+    local spawn = (dealershipCfg and dealershipCfg.spawn) or Config.Dealership.spawn
 
     MySQL.insert.await([[
         INSERT INTO player_vehicles
@@ -781,7 +801,7 @@ QBCore.Functions.CreateCallback('mrp_dealership:server:buyVehicle', function(sou
         tostring(hash),
         json.encode(props),
         plate,
-        Config.Dealership.garage,
+        garage,
         0,
         100,
         1000,
@@ -793,7 +813,25 @@ QBCore.Functions.CreateCallback('mrp_dealership:server:buyVehicle', function(sou
         ok = true,
         plate = plate,
         model = model,
-        spawn = Config.Dealership.spawn
+        spawn = spawn
     })
+end
+
+QBCore.Functions.CreateCallback('mrp_dealership:server:buyVehicle', function(source, cb, model, colorIdx)
+    local Player = QBCore.Functions.GetPlayer(source)
+    buyCivilianShopVehicle(Player, cb, model, colorIdx, buildCatalog, Config.Dealership, 'fivempro-dealership-buy')
+end)
+
+QBCore.Functions.CreateCallback('mrp_dealership:server:buyLuxuryVehicle', function(source, cb, model, colorIdx)
+    local Player = QBCore.Functions.GetPlayer(source)
+    buyCivilianShopVehicle(
+        Player,
+        cb,
+        model,
+        colorIdx,
+        buildLuxuryCatalog,
+        Config.ImportDealership or Config.Dealership,
+        'mrp-import-dealership-buy'
+    )
 end)
 

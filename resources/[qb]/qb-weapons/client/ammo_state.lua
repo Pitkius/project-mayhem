@@ -3,7 +3,20 @@ WeaponAmmo = WeaponAmmo or {}
 
 local function componentHash(comp)
     if type(comp) == 'number' then return comp end
-    if comp then return joaat(tostring(comp)) end
+    if type(comp) == 'string' then
+        local asNum = tonumber(comp)
+        if asNum then return asNum end
+        return joaat(comp)
+    end
+end
+
+local function componentsMatch(a, b)
+    if a == nil or b == nil then return false end
+    if a == b then return true end
+    local na, nb = tonumber(a), tonumber(b)
+    if na and nb and na == nb then return true end
+    local ha, hb = componentHash(a), componentHash(b)
+    return ha ~= nil and hb ~= nil and ha == hb
 end
 
 local function lookupAttachmentComponent(attachmentTable, weaponName)
@@ -12,7 +25,7 @@ local function lookupAttachmentComponent(attachmentTable, weaponName)
     return attachmentTable[weaponName] or (nativeName and attachmentTable[nativeName]) or nil
 end
 
-local function weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable)
+local function weaponHasClipItem(ped, weaponHash, weaponData, itemKey, attachmentTable)
     local weaponName = weaponData and weaponData.name
     if not weaponName or type(attachmentTable) ~= 'table' then return false end
     local comp = lookupAttachmentComponent(attachmentTable, weaponName)
@@ -22,11 +35,14 @@ local function weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable)
         return true
     end
     local info = weaponData.info or weaponData
-    if type(info) == 'table' and type(info.attachments) == 'table' then
-        for _, attachment in pairs(info.attachments) do
-            local attached = attachment and (attachment.component or attachment)
-            if attached == comp or attached == compHash then return true end
-            if type(attached) == 'string' and compHash and joaat(attached) == compHash then return true end
+    if type(info) ~= 'table' or type(info.attachments) ~= 'table' then return false end
+    for _, attachment in pairs(info.attachments) do
+        local attached = attachment and (attachment.component or attachment)
+        if componentsMatch(attached, comp) or componentsMatch(attached, compHash) then
+            return true
+        end
+        if type(attachment) == 'table' and tostring(attachment.item or '') == tostring(itemKey) then
+            return true
         end
     end
     return false
@@ -49,7 +65,7 @@ local function liveAttachmentCapacity(ped, weaponHash, weaponData, itemKeys, cap
     local cap = 0
     for _, itemKey in ipairs(itemKeys) do
         local attachmentTable = WeaponAttachments and WeaponAttachments[itemKey]
-        if weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable) then
+        if weaponHasClipItem(ped, weaponHash, weaponData, itemKey, attachmentTable) then
             cap = math.max(cap, capacityFromTable(capacityTable, weaponName))
         end
     end
@@ -104,20 +120,44 @@ function WeaponAmmo.ensureClipComponents(ped, weaponHash, weaponData)
         Config.DrumClipAttachmentItems,
         Config.ExtendedClipAttachmentItems,
     }
+    local applied = false
     for i = 1, #groups do
         local itemKeys = groups[i]
         if type(itemKeys) == 'table' then
             for _, itemKey in ipairs(itemKeys) do
                 local attachmentTable = WeaponAttachments and WeaponAttachments[itemKey]
-                if weaponHasAttachment(ped, weaponHash, weaponData, attachmentTable) then
-                    local comp = lookupAttachmentComponent(attachmentTable, weaponData.name)
-                    local compHash = componentHash(comp)
-                    if compHash and not HasPedGotWeaponComponent(ped, weaponHash, compHash) then
+                local weaponName = weaponData.name
+                local comp = lookupAttachmentComponent(attachmentTable, weaponName)
+                local compHash = componentHash(comp)
+                if compHash then
+                    local already = HasPedGotWeaponComponent(ped, weaponHash, compHash)
+                    local shouldApply = false
+                    if not already then
+                        local info = weaponData.info or weaponData
+                        if type(info) == 'table' and type(info.attachments) == 'table' then
+                            for _, attachment in pairs(info.attachments) do
+                                local attached = attachment and (attachment.component or attachment)
+                                if componentsMatch(attached, comp) or componentsMatch(attached, compHash) then
+                                    shouldApply = true
+                                    break
+                                end
+                                if type(attachment) == 'table' and tostring(attachment.item or '') == tostring(itemKey) then
+                                    shouldApply = true
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    if shouldApply then
                         GiveWeaponComponentToPed(ped, weaponHash, compHash)
+                        applied = true
                     end
                 end
             end
         end
+    end
+    if applied then
+        Wait(0)
     end
 end
 
@@ -143,29 +183,30 @@ function WeaponAmmo.resolveMaxClip(ped, weaponHash, weaponData)
 
     -- CLIP_02/03: native arba config (jei native vis dar grąžina standartą).
     if attachmentCap > 0 then
-        return math.max(nativeMax, attachmentCap)
+        return math.max(nativeMax, attachmentCap, 1)
     end
 
     -- Be priedo — serverio standartinis limitas (nepripučiame).
     if nativeMax > 0 then
         return math.min(nativeMax, standardClip)
     end
-    return standardClip
+    return math.max(1, standardClip)
 end
 
 local function readClipAmmoClamped(ped, weaponHash, maxClip)
     local hasClip, currentClipAmmo = GetAmmoInClip(ped, weaponHash)
     local curInClip = hasClip and (tonumber(currentClipAmmo) or 0) or 0
-    local nativeMax = WeaponAmmo.getNativeMaxClip(ped, weaponHash)
     local totalAmmo = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
+    maxClip = math.max(1, math.floor(tonumber(maxClip) or 1))
 
-    -- Po SetPedAmmo(reserve) GetAmmoInClip kartais grąžina visą total — tai ne apkaba.
-    if nativeMax > 0 and curInClip > nativeMax and totalAmmo > nativeMax and curInClip >= totalAmmo then
-        curInClip = nativeMax
+    -- GetAmmoInClip kartais grąžina visą reserve — limituojam pagal resolved maxClip
+    -- (NE pagal stale nativeMax, nes tai „−100 / +30“ bug'as su extended/drum).
+    if curInClip > maxClip and totalAmmo >= curInClip then
+        curInClip = maxClip
     end
 
     curInClip = math.min(math.max(0, curInClip), maxClip)
-    return curInClip, nativeMax, totalAmmo
+    return curInClip, WeaponAmmo.getNativeMaxClip(ped, weaponHash), totalAmmo
 end
 
 function WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData)
@@ -212,8 +253,6 @@ function WeaponAmmo.applyWeaponAmmoState(ped, weaponHash, ammo, weaponData)
 end
 
 --- GTA reload užduočiai laikinai duoda tik tiek reserve, kiek patvirtino serveris.
---- Apkaba nekeičiama; SetPedAmmo kviečiamas prieš SetAmmoInClip, nes native gali
---- automatiškai perkelti dalį total ammo į apkabą.
 function WeaponAmmo.stageNativeReserve(ped, weaponHash, weaponData, bullets)
     if not ped or ped == 0 or not weaponHash or weaponHash == 0 or weaponHash == `WEAPON_UNARMED` then
         return 0
@@ -233,7 +272,7 @@ function WeaponAmmo.stageNativeReserve(ped, weaponHash, weaponData, bullets)
 end
 
 --- Užbaigus native animaciją: užpildo intended, inventoriui nuskaito tik verified.
---- Svarbu: NIEKADA nekrauti pagal GetAmmoInClip==total (stage reserve bug → −100 / +30).
+--- Extended/drum: krauti pagal resolved maxClip (po CLIP_02/03), ne pagal stale native 30.
 --- @return number loadedDelta, number finalClip
 function WeaponAmmo.finishNativeReload(ped, weaponHash, clipBefore, maxClip, staged, weaponData)
     clipBefore = math.max(0, math.floor(tonumber(clipBefore) or 0))
@@ -250,7 +289,6 @@ function WeaponAmmo.finishNativeReload(ped, weaponHash, clipBefore, maxClip, sta
     end
 
     local intended = math.min(maxClip, clipBefore + staged)
-    local nativeMax = WeaponAmmo.getNativeMaxClip(ped, weaponHash)
 
     SetPedAmmo(ped, weaponHash, intended)
     SetAmmoInClip(ped, weaponHash, intended)
@@ -260,18 +298,29 @@ function WeaponAmmo.finishNativeReload(ped, weaponHash, clipBefore, maxClip, sta
     local after = hasClip and math.floor(tonumber(rawAfter) or 0) or 0
     local total = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
 
-    -- GetAmmoInClip kartais grąžina visą reserve — neapkaba.
-    if nativeMax > 0 and after > nativeMax and total > nativeMax and after >= total then
-        after = math.min(nativeMax, intended)
+    if after > maxClip and total >= after then
+        after = maxClip
+    end
+
+    if after < intended then
+        WeaponAmmo.ensureClipComponents(ped, weaponHash, weaponData)
+        SetPedAmmo(ped, weaponHash, intended)
+        SetAmmoInClip(ped, weaponHash, intended)
+        hasClip, rawAfter = GetAmmoInClip(ped, weaponHash)
+        after = hasClip and math.floor(tonumber(rawAfter) or 0) or after
+        total = math.max(0, tonumber(GetAmmoInPedWeapon(ped, weaponHash)) or 0)
+        if after > maxClip and total >= after then
+            after = maxClip
+        end
     end
 
     local verified = intended
     if after > 0 then
-        verified = math.min(intended, math.max(clipBefore, after))
-    end
-    -- Jei CLIP_02/03 nepakėlė native max, GTA laiko tik nativeMax — nekrauti daugiau.
-    if nativeMax > 0 and intended > nativeMax and verified > nativeMax and after <= nativeMax then
-        verified = math.max(clipBefore, math.min(intended, nativeMax, after > 0 and after or nativeMax))
+        if after >= intended then
+            verified = intended
+        else
+            verified = math.max(clipBefore, math.min(intended, after))
+        end
     end
 
     verified = math.min(intended, math.max(clipBefore, verified))

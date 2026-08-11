@@ -57,6 +57,7 @@ QBShared.Items = {
     weapon_combatpdw             = { name = 'weapon_combatpdw', label = 'Kovinis PDW', weight = 1000, type = 'weapon', ammotype = 'AMMO_SMG', image = 'weapon_combatpdw.png', unique = true, useable = false, description = 'Asmeninis gynybos ginklas.' },
     weapon_machinepistol         = { name = 'weapon_machinepistol', label = 'Tec-9', weight = 1000, type = 'weapon', ammotype = 'AMMO_PISTOL', image = 'weapon_machinepistol.png', unique = true, useable = false, description = 'Automatinis pistoletas.' },
     weapon_minismg               = { name = 'weapon_minismg', label = 'Mini SMG', weight = 1000, type = 'weapon', ammotype = 'AMMO_SMG', image = 'weapon_minismg.png', unique = true, useable = false, description = 'Labai kompaktiškas SMG.' },
+    weapon_tecpistol             = { name = 'weapon_tecpistol', label = 'Taktinis SMG', weight = 1000, type = 'weapon', ammotype = 'AMMO_SMG', image = 'weapon_tecpistol.png', unique = true, useable = false, description = 'Kompaktiškas taktinis SMG.' },
     weapon_raycarbine            = { name = 'weapon_raycarbine', label = 'Unholy Hellbringer', weight = 1000, type = 'weapon', ammotype = 'AMMO_SMG', image = 'weapon_raycarbine.png', unique = true, useable = true, description = 'Eksperimentinis energijos karabinas.' },
     weapon_fgc9                  = { name = 'weapon_fgc9', label = 'FGC-9', weight = 3200, type = 'weapon', ammotype = 'AMMO_PISTOL', image = 'weapon_fgc9.png', unique = true, useable = true, description = '3D spausdintas 9 mm pistoletinio kalibro karabinas.' },
 

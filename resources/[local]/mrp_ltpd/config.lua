@@ -393,10 +393,10 @@ Config.FleetVehicles = {
   { model = 'mrpd8', label = 'MRPD 8 (žymėta)', emergencyLights = 'native' },
   { model = 'mrpd9', label = 'MRPD 9 — Audi RS6 Avant', emergencyLights = 'native' },
   { model = 'mrpd10', label = 'MRPD 10 — Kia Stinger', emergencyLights = 'native' },
-  { model = 'mrpd11', label = 'MRPD 11 — Hyundai', emergencyLights = 'native' },
+  { model = 'mrpd11', label = 'MRPD 11 — Ford', emergencyLights = 'native' },
   { model = 'mrpd12', label = 'MRPD 12 — Alfa Romeo', emergencyLights = 'native' },
   { model = 'mrpd24', label = 'MRPD 24 — BMW M3', emergencyLights = 'native' },
-  { model = 'mrpd26', label = 'MRPD 26 — Ford', emergencyLights = 'native' },
+  -- mrpd26 archived: identical mesh to mrpd11; floating-light carcols replaced with 26 kit on mrpd11
   -- ŽYMĖTOS LT ELS
   { model = 'mrpd13', label = 'MRPD 13 — Audi S3 (LT ELS)', emergencyLights = 'els' },
   { model = 'mrpd14', label = 'MRPD 14 — BMW 540i (LT ELS)', emergencyLights = 'els' },
@@ -420,7 +420,7 @@ Config.FleetVehicles = {
 --- Built-in fleet: tik Non-ELS carcols šviesos per SetVehicleSiren (ELS čia NEįtraukti).
 Config.BuiltInFleetModels = {
     'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
-    'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24', 'mrpd25', 'mrpd26',
+    'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24', 'mrpd25',
     'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
     'mrpd27',
     'polmav', 'buzzard2',

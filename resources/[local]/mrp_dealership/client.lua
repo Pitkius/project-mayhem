@@ -106,6 +106,10 @@ local function getFleetStationPreviewCfg()
 end
 
 local function getPreviewSpawnPos()
+    if uiFleetMode == 'import' then
+        local d = Config.ImportDealership
+        if d and d.preview then return d.preview end
+    end
     if uiFleetMode then
         local sc = getFleetStationPreviewCfg()
         if sc and sc.preview then return sc.preview end
@@ -114,6 +118,10 @@ local function getPreviewSpawnPos()
 end
 
 local function getPreviewCamPos()
+    if uiFleetMode == 'import' then
+        local d = Config.ImportDealership
+        if d and d.camera then return d.camera end
+    end
     if uiFleetMode then
         local sc = getFleetStationPreviewCfg()
         if sc and sc.camera then return sc.camera end
@@ -512,6 +520,7 @@ local function openFleetDealershipUi(mode, stationId, catalogCbName)
             elseif mode == 'ems' then msg = 'EMS katalogas tuščias.'
             elseif mode == 'boat' then msg = 'Laivų katalogas tuščias.'
             elseif mode == 'heli' then msg = 'Malūnsparnių katalogas tuščias.'
+            elseif mode == 'import' then msg = 'Importų katalogas tuščias.'
             end
             return QBCore.Functions.Notify(msg, 'error')
         end
@@ -553,6 +562,14 @@ end
 local function openHeliDealershipUi(stationId)
     openFleetDealershipUi('heli', stationId or 'ls', 'mrp_dealership:server:getHeliCatalog')
 end
+
+local function openImportDealershipUi()
+    openFleetDealershipUi('import', 'ls', 'mrp_dealership:server:getLuxuryCatalog')
+end
+
+RegisterNetEvent('mrp_dealership:client:openImportDealership', function()
+    openImportDealershipUi()
+end)
 
 local function applyPurchasedVehicleColor(veh, colorIdx)
     local idx = tonumber(colorIdx)
@@ -641,6 +658,12 @@ local function buySelectedVehicle(model)
         QBCore.Functions.TriggerCallback('mrp_dealership:server:buyHeliVehicle', function(result)
             onPurchaseResult(result, colorIdx, 'Malūnsparnis nupirktas! Numeriai: %s', 'Nupirkta, bet nepavyko spawninti. Įrašyta į garažą.')
         end, model, activeFleetStationId, colorIdx)
+        return
+    end
+    if uiFleetMode == 'import' then
+        QBCore.Functions.TriggerCallback('mrp_dealership:server:buyLuxuryVehicle', function(result)
+            onPurchaseResult(result, colorIdx, 'Importas nupirktas! Numeriai: %s', 'Nupirkta, bet nepavyko spawninti auto. Ji irasyta i DB.')
+        end, model, colorIdx)
         return
     end
     QBCore.Functions.TriggerCallback('mrp_dealership:server:buyVehicle', function(result)
@@ -796,6 +819,47 @@ CreateThread(function()
 
     registerSpecialDealership(Config.BoatDealership, 'boat', openBoatDealershipUi, 'fas fa-ship', 'Atidaryti laivų saloną')
     registerSpecialDealership(Config.HeliDealership, 'heli', openHeliDealershipUi, 'fas fa-helicopter', 'Atidaryti malūnsparnių saloną')
+
+    local importCfg = Config.ImportDealership
+    if importCfg and importCfg.office then
+        local importPos = importCfg.office
+        local importSize = importCfg.targetSize or vec3(1.2, 1.2, 1.8)
+        exports['qb-target']:AddBoxZone('mrp_dealership_import', importPos, importSize.x, importSize.y, {
+            name = 'mrp_dealership_import',
+            heading = importCfg.officeHeading or 0.0,
+            debugPoly = false,
+            minZ = importPos.z - 0.8,
+            maxZ = importPos.z + 1.2,
+        }, {
+            options = {
+                {
+                    type = 'client',
+                    action = function()
+                        openImportDealershipUi()
+                    end,
+                    icon = 'fas fa-gem',
+                    label = 'Atidaryti importų saloną',
+                },
+            },
+            distance = importCfg.targetDistance or 2.0,
+        })
+
+        local blipCfg = importCfg.blip or {}
+        local importBlip = AddBlipForCoord(importPos.x, importPos.y, importPos.z)
+        SetBlipSprite(importBlip, blipCfg.sprite or 523)
+        SetBlipDisplay(importBlip, 4)
+        SetBlipScale(importBlip, blipCfg.scale or 0.88)
+        SetBlipColour(importBlip, blipCfg.color or 46)
+        SetBlipAsShortRange(importBlip, blipCfg.shortRange ~= false)
+        local importLabel = blipCfg.label or importCfg.label or 'Importų salonas'
+        if GetResourceState('mrp_fonts') == 'started' then
+            exports['mrp_fonts']:SetBlipName(importBlip, importLabel)
+        else
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentString(importLabel)
+            EndTextCommandSetBlipName(importBlip)
+        end
+    end
 end)
 
 AddEventHandler('onResourceStop', function(resourceName)

@@ -750,9 +750,26 @@ RegisterNetEvent('qb-weapons:client:UseWeapon', function(weaponData, shootbool)
         queueDrawWeapon(weaponName)
     else
         cancelActiveReload()
+        local previousWeapon = currentWeapon
+        local previousHash = previousWeapon and nativeWeaponHash(previousWeapon) or nil
+        local swapFromArmed = previousHash
+            and previousHash ~= 0
+            and previousHash ~= `WEAPON_UNARMED`
+            and previousWeapon ~= weaponName
+            and GetSelectedPedWeapon(ped) == previousHash
+
+        -- Stabdom seną draw monitorių prieš UNARMED/inventory sync (holster+draw race).
+        TriggerEvent('qb-weapons:client:InvalidateDraw')
         TriggerEvent('qb-weapons:client:SetCurrentWeapon', weaponData, shootbool)
         currentWeapon = weaponName
         applyHolsteredWeaponsFromInventory(true, true)
+
+        -- Swap: grąžinam seną ginklą į ranką, kad weapdraw pirmiausia padėtų jį.
+        if swapFromArmed and previousHash and HasPedGotWeapon(ped, previousHash, false) then
+            SetPedCurrentWeaponVisible(ped, true, false, false, false)
+            SetCurrentPedWeapon(ped, previousHash, true)
+        end
+
         TriggerServerEvent('qb-weapons:server:UpdateWeaponAmmo', weaponData, tonumber(weaponData.info and weaponData.info.ammo) or 0)
         queueDrawWeapon(weaponName)
     end

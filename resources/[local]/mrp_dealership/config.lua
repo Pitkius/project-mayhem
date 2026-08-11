@@ -12,6 +12,27 @@ Config.Dealership = {
     garage = 'pillboxgarage',
 }
 
+--- Importų / luxury salonas (shop = 'luxury') — Luxury Autos, Rockford Hills.
+--- Simion kataloge lieka tik shop = 'pdm'.
+Config.ImportDealership = {
+    label = 'Importų salonas',
+    office = vector3(-795.45, -220.18, 37.08),
+    officeHeading = 120.0,
+    spawn = vector4(-768.55, -233.85, 37.15, 209.0),
+    preview = vector4(-783.28, -212.45, 36.95, 120.0),
+    camera = vector4(-777.65, -206.85, 38.55, 145.0),
+    targetSize = vec3(1.2, 1.2, 1.8),
+    targetDistance = 2.0,
+    garage = 'pillboxgarage',
+    blip = {
+        sprite = 523,
+        color = 46,
+        scale = 0.88,
+        shortRange = true,
+        label = 'Importų salonas',
+    },
+}
+
 Config.PreviewColors = {
     { label = 'Balta', idx = 111 },
     { label = 'Juoda', idx = 0 },
@@ -284,10 +305,10 @@ Config.PoliceDealership = {
         -- ŽYMĖTOS Non-ELS (buvę mrpd13-16)
         { model = 'mrpd9', name = 'MRPD 9 — Audi RS6', brand = 'Audi', category = 'marked', price = 34000, minGrade = 8, shopEnabled = true },
         { model = 'mrpd10', name = 'MRPD 10 — Kia Stinger', brand = 'Kia', category = 'marked', price = 33000, minGrade = 5, shopEnabled = true },
-        { model = 'mrpd11', name = 'MRPD 11 — Hyundai', brand = 'Hyundai', category = 'marked', price = 30000, minGrade = 2, shopEnabled = true },
+        { model = 'mrpd11', name = 'MRPD 11 — Ford', brand = 'Ford', category = 'marked', price = 30000, minGrade = 2, shopEnabled = true },
         { model = 'mrpd12', name = 'MRPD 12 — Alfa Romeo', brand = 'Alfa Romeo', category = 'marked', price = 35000, minGrade = 4, shopEnabled = true },
         { model = 'mrpd24', name = 'MRPD 24 — BMW M3', brand = 'BMW', category = 'marked', price = 36000, minGrade = 5, shopEnabled = true },
-        { model = 'mrpd26', name = 'MRPD 26 — Ford', brand = 'Ford', category = 'marked', price = 33500, minGrade = 0, shopEnabled = true },
+        -- mrpd26 removed (duplicate of mrpd11)
         -- ŽYMĖTOS LT ELS (į Žymėtos, ne atskira ELS kategorija)
         { model = 'mrpd13', name = 'MRPD 13 — Audi S3 (LT ELS)', brand = 'Audi', category = 'marked', price = 36000, minGrade = 0, shopEnabled = true },
         { model = 'mrpd14', name = 'MRPD 14 — BMW 540i (LT ELS)', brand = 'BMW', category = 'marked', price = 38000, minGrade = 0, shopEnabled = true },

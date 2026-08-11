@@ -165,18 +165,34 @@ end
 
 --- Server negali kviesti client native `HasPedGotWeaponComponent`.
 --- CLIP_02/03 talpa skaičiuojama iš ginklo metadata attachments.
+local function normalizeComponentHash(value)
+    if value == nil then return nil end
+    if type(value) == 'number' then return math.floor(value) end
+    local asNum = tonumber(value)
+    if asNum then return math.floor(asNum) end
+    return joaat(tostring(value))
+end
+
 local function weaponHasInstalledComponent(item, component)
     if not item or not component then return false end
-    local compHash = type(component) == 'number' and component or joaat(tostring(component))
+    local compHash = normalizeComponentHash(component)
     local attachments = item.info and item.info.attachments
     if type(attachments) ~= 'table' then return false end
     for _, entry in pairs(attachments) do
         local attached = entry and (entry.component or entry)
+        local attachedHash = normalizeComponentHash(attached)
         if attached == component or attached == compHash then
             return true
         end
-        if type(attached) == 'string' and joaat(attached) == compHash then
+        if attachedHash and compHash and attachedHash == compHash then
             return true
+        end
+        if type(entry) == 'table' and entry.item then
+            local map = WeaponAttachments and WeaponAttachments[tostring(entry.item)]
+            local mapped = map and lookupWeaponComponent(map, item.name)
+            if mapped and normalizeComponentHash(mapped) == compHash then
+                return true
+            end
         end
     end
     return false

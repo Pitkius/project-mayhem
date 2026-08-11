@@ -68,7 +68,7 @@ Config.Jobs = {
 Config.FleetVehicles = {
     police = {
         'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
-        'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24', 'mrpd25', 'mrpd26',
+        'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24', 'mrpd25',
         'mrpd13', 'mrpd14', 'mrpd15', 'mrpd16', 'mrpd23',
         'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
         'mrpd22', 'mrpd21',

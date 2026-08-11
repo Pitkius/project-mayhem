@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- ELS VEHICLE CONFIGURATION FILE -->
 <vcfroot Description="Sample VCF" Author="Luxart" >
 	<!-- INTERFACE -->
@@ -19,18 +19,18 @@
 		<Extra07 IsElsControlled="true" AllowEnvLight="false" Color="red" OffsetX="-0.40" OffsetY="-0.80" OffsetZ="0.40" />
 		<Extra08 IsElsControlled="true" AllowEnvLight="false" Color="red" OffsetX="0.00" OffsetY="-0.80" OffsetZ="0.40" />
 		<Extra09 IsElsControlled="true" AllowEnvLight="false" Color="red" OffsetX="0.40" OffsetY="-0.80" OffsetZ="0.40" />
-		<Extra10 IsElsControlled="true" />
-		<Extra11 IsElsControlled="true" />
-		<Extra12 IsElsControlled="true" />
+		<Extra10 IsElsControlled="false" />
+		<Extra11 IsElsControlled="false" />
+		<Extra12 IsElsControlled="false" />
 	</EOVERRIDE>
 	<!-- MISC -->
 	<MISC>
 		<VehicleIsSlicktop>false</VehicleIsSlicktop>
 		<ArrowboardType>off</ArrowboardType>
-		<UseSteadyBurnLights>true</UseSteadyBurnLights>
+		<UseSteadyBurnLights>false</UseSteadyBurnLights>
 		<DfltSirenLtsActivateAtLstg>3</DfltSirenLtsActivateAtLstg>
-		<Takedowns AllowUse="true" Mirrored="true" />
-		<SceneLights AllowUse="true" IlluminateSidesOnly="true" />	
+		<Takedowns AllowUse="false" Mirrored="false" />
+		<SceneLights AllowUse="false" IlluminateSidesOnly="true" />	
 	</MISC>
 	<!-- CRUISE -->
 	<CRUISE>
@@ -80,8 +80,8 @@
 	<!-- PRML -->
 	<PRML LightingFormat="leds" ExtrasActiveAtLstg2="1and4" >
 		<PresetPatterns>
-			<Lstg2 Enabled="true" Pattern="0" />
-			<Lstg3 Enabled="true" Pattern="0" />
+			<Lstg2 Enabled="true" Pattern="002" />
+			<Lstg3 Enabled="true" Pattern="002" />
 		</PresetPatterns>
 		<ForcedPatterns>
 			<MainHorn Enabled="false" Pattern="0" />
@@ -99,11 +99,11 @@
 		</ScanPatternCustomPool>
 	</PRML>
 	<!-- SECL -->
-	<SECL LightingFormat="leds" DisableAtLstg3="true" >
+	<SECL LightingFormat="leds" DisableAtLstg3="false" >
 		<PresetPatterns>
-			<Lstg1 Enabled="true" Pattern="0" />
-			<Lstg2 Enabled="true" Pattern="0" />
-			<Lstg3 Enabled="true" Pattern="0" />
+			<Lstg1 Enabled="true" Pattern="006" />
+			<Lstg2 Enabled="true" Pattern="006" />
+			<Lstg3 Enabled="true" Pattern="006" />
 		</PresetPatterns>
 		<ForcedPatterns>
 			<MainHorn Enabled="false" Pattern="0" />
@@ -121,3 +121,5 @@
 		</ScanPatternCustomPool>
 	</SECL>
 </vcfroot>
+
+
