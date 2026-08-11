@@ -134,16 +134,18 @@ export function PageHero({
         {actions ? <div className="page-hero-actions">{actions}</div> : null}
       </div>
       <div className="page-hero-art">
-        {avatarUrl || avatarFallback ? (
-          <div className={`avatar page-hero-avatar${avatarUrl ? ' has-photo' : ''}`}>
-            {avatarUrl ? (
+        {avatarUrl ? (
+          <div className={`page-hero-character theme-${theme}`}>
+            <div className="page-hero-character-frame">
               <img src={avatarUrl} alt="" draggable={false} />
-            ) : (
-              avatarFallback
-            )}
+            </div>
+            {figureLabel ? <span className="char-figure-label">{figureLabel}</span> : null}
           </div>
-        ) : null}
-        <CharacterFigure theme={theme} label={figureLabel} />
+        ) : avatarFallback ? (
+          <div className="avatar page-hero-avatar">{avatarFallback}</div>
+        ) : (
+          <CharacterFigure theme={theme} label={figureLabel} />
+        )}
       </div>
     </header>
   );

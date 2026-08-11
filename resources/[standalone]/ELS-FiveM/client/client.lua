@@ -813,45 +813,40 @@ end)
 Citizen.CreateThread(function()
     while true do
         for k,v in pairs(elsVehs) do
-            if(v ~= nil or DoesEntityExist(k)) then
-                if #(GetEntityCoords(k)-GetEntityCoords(GetPlayerPed(-1))) <= vehicleSyncDistance then
-                    if elsVehs[k].warning or elsVehs[k].secondary or elsVehs[k].primary then
+            if v ~= nil and DoesEntityExist(k) then
+                if #(GetEntityCoords(k)-GetEntityCoords(PlayerPedId())) <= vehicleSyncDistance then
+                    if v.warning or v.secondary or v.primary then
                         SetVehicleEngineOn(k, true, true, false)
                     end
-                    
+
                     local vehN = checkCarHash(k)
-
-                    for i=11,12 do
-                        if (not IsEntityDead(k) and DoesEntityExist(k)) then
-                            if (els_Vehicles[vehN] == nil or els_Vehicles[vehN].extras == nil) then
-                                debugPrint("Index for current vehicle (".. vehN .. ") was nil (invalid), returning.", true, true)
-                                return
-                            end
-
-                            if(IsVehicleExtraTurnedOn(k, i)) then
+                    local vehCfg = els_Vehicles[vehN]
+                    if vehCfg ~= nil and vehCfg.extras ~= nil then
+                        --- Takedown/scene (11/12): never cast white DrawLight unless VCF AllowEnvLight=true.
+                        --- Fleet VCFs keep those extras disabled — force them off so white floods don't wash R/B mesh lamps.
+                        for i = 11, 12 do
+                            local ex = vehCfg.extras[i]
+                            if not ex or not ex.enabled or not ex.env_light then
+                                if DoesExtraExist(k, i) and IsVehicleExtraTurnedOn(k, i) then
+                                    SetVehicleExtra(k, i, true)
+                                end
+                            elseif IsVehicleExtraTurnedOn(k, i) then
                                 local boneIndex = GetEntityBoneIndexByName(k, "extra_" .. i)
-                                local coords = GetWorldPositionOfEntityBone(k, boneIndex)
-                                local rotX, rotY, rotZ = table.unpack(RotAnglesToVec(GetEntityRotation(k, 2)))
-
-                                if els_Vehicles[vehN].extras[i].env_light then
+                                if boneIndex and boneIndex ~= -1 then
+                                    local coords = GetWorldPositionOfEntityBone(k, boneIndex)
+                                    local rotX, rotY, rotZ = table.unpack(RotAnglesToVec(GetEntityRotation(k, 2)))
                                     if i == 11 then
-                                        DrawSpotLightWithShadow(coords.x + els_Vehicles[vehN].extras[11].env_pos.x, coords.y + els_Vehicles[vehN].extras[11].env_pos.y, coords.z + els_Vehicles[vehN].extras[11].env_pos.z, rotX, rotY, rotZ, 255, 255, 255, 75.0, 2.0, 10.0, 20.0, 0.0, true)
-                                    end
-                                    if i == 12 then
-                                        DrawLightWithRange(coords.x + els_Vehicles[vehN].extras[12].env_pos.x, coords.y + els_Vehicles[vehN].extras[12].env_pos.y, coords.z + els_Vehicles[vehN].extras[12].env_pos.z, 255, 255, 255, 50.0, environmentLightBrightness)
-                                    end
-                                else
-                                    if i == 11 then
-                                        DrawSpotLightWithShadow(coords.x, coords.y, coords.z + 0.2, rotX, rotY, rotZ, 255, 255, 255, 75.0, 2.0, 10.0, 20.0, 0.0, true)
-                                    end
-                                    if i == 12 then
-                                        DrawLightWithRange(coords.x, coords.y, coords.z, 255, 255, 255, 50.0, environmentLightBrightness)
+                                        DrawSpotLightWithShadow(coords.x + ex.env_pos.x, coords.y + ex.env_pos.y, coords.z + ex.env_pos.z, rotX, rotY, rotZ, 255, 255, 255, 75.0, 2.0, 10.0, 20.0, 0.0, true)
+                                    else
+                                        DrawLightWithRange(coords.x + ex.env_pos.x, coords.y + ex.env_pos.y, coords.z + ex.env_pos.z, 255, 255, 255, 50.0, environmentLightBrightness)
                                     end
                                 end
                             end
                         end
                     end
                 end
+            elseif v ~= nil and not DoesEntityExist(k) then
+                elsVehs[k] = nil
             end
         end
         Wait(4)
@@ -867,11 +862,10 @@ Citizen.CreateThread(function()
                 SetVehicleAutoRepairDisabled(k, true)
 
                 if getVehicleVCFInfo(k) == false then
-                    debugPrint("Insufficient VCF information obtained for " .. k .. ", returning.", true, true)
-                    return
-                end
-
-                if getVehicleVCFInfo(k).priml.type == "chp" and getVehicleVCFInfo(k).wrnl.type == "chp" and getVehicleVCFInfo(k).secl.type == "chp" then
+                    -- Stale/non-ELS handle in elsVehs must not abort the whole flash loop.
+                    debugPrint("Insufficient VCF information obtained for " .. tostring(k) .. ", skipping.", true, true)
+                    elsVehs[k] = nil
+                elseif getVehicleVCFInfo(k).priml.type == "chp" and getVehicleVCFInfo(k).wrnl.type == "chp" and getVehicleVCFInfo(k).secl.type == "chp" then
 
                     if v.stage == 0 then
                         for i=1,10 do

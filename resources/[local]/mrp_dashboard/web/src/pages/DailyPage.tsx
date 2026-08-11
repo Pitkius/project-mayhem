@@ -32,7 +32,11 @@ export function DailyPage({
   const d = data.daily;
   const weekly = d.weekly;
   const req = d.requirements;
-  const crates = d.crates ?? [];
+  // DIENINIS: only free daily + weekly crates (shop crates stay under Premium)
+  const crates = useMemo(
+    () => (d.crates ?? []).filter((c) => c.kind === 'daily' || c.kind === 'weekly'),
+    [d.crates],
+  );
   const [selectedId, setSelectedId] = useState(d.crateItem || crates[0]?.id || 'dienos_deze');
   const selected = useMemo(
     () => crates.find((c) => c.id === selectedId) || crates[0],
@@ -40,11 +44,15 @@ export function DailyPage({
   );
 
   const dailyPlayOk = req?.dailyPlay ?? d.playedMinutes >= d.requiredMinutes;
-  const dailyMissionOk = req?.dailyMission ?? false;
+  const dailyMissionOk =
+    req?.dailyMission ?? (d.missionsCompleted ?? 0) >= (d.requiredMissions ?? 0);
   const canClaimDaily = d.canClaim && !d.claimedToday;
 
   const weeklyPlayOk = req?.weeklyPlay ?? (weekly ? weekly.playedMinutes >= weekly.requiredMinutes : false);
-  const weeklyMissionOk = req?.weeklyMission ?? weekly?.missionDone ?? false;
+  const weeklyMissionOk =
+    req?.weeklyMission ??
+    weekly?.missionDone ??
+    (weekly ? (weekly.missionsCompleted ?? 0) >= (weekly.requiredMissions ?? 0) : false);
   const canClaimWeekly = Boolean(weekly?.canClaim && !weekly?.claimed);
 
   const claimDaily = async () => {
@@ -108,13 +116,19 @@ export function DailyPage({
   const isWeekly = selected?.id === weekly?.crateItem;
   const isShopCrate = selected && !isDaily && !isWeekly;
 
+  const dailyReqM = d.requiredMissions ?? 3;
+  const dailyDoneM = d.missionsCompleted ?? 0;
+  const weeklyReqM = weekly?.requiredMissions ?? 12;
+  const weeklyDoneM = weekly?.missionsCompleted ?? 0;
+
   return (
     <div className="page-shell">
       <PageHero
         theme="crates"
         title="Dėžės"
-        subtitle={`DAY ${d.day}/${d.maxDays} · Streak ${d.streak} · Dieninė = playtime + misija · Savaitinė = playtime + misija`}
-        figureLabel="LOOT"
+        subtitle={`DAY ${d.day}/${d.maxDays} · Streak ${d.streak} · Dieninė = playtime + ${dailyReqM} mis. · Savaitinė = playtime + ${weeklyReqM} mis.`}
+        figureLabel={data.player.characterName}
+        avatarUrl={data.player.avatarUrl}
       />
 
       <div className="page-body">
@@ -146,9 +160,9 @@ export function DailyPage({
                 />
                 <p className="muted" style={{ textAlign: 'center' }}>
                   {isDaily
-                    ? 'Nemokama dienos dėžė: surink playtime ir užbaik dienos misiją, tada pasiimk.'
+                    ? `Nemokama dienos dėžė: surink ${fmtMin(d.requiredMinutes)} playtime ir užbaik ${dailyReqM} misijas šiandien.`
                     : isWeekly
-                      ? 'Nemokama savaitės dėžė: surink savaitės playtime ir užbaik savaitės misiją.'
+                      ? `Nemokama savaitės dėžė: surink ${fmtMin(weekly?.requiredMinutes ?? 0)} playtime ir užbaik ${weeklyReqM} misijas šią savaitę.`
                       : 'Perkama Premium parduotuvėje už kreditus. Atidaryk inventoriuje — CSGO spin.'}
                 </p>
 
@@ -163,9 +177,21 @@ export function DailyPage({
                       </div>
                       <ProgressBar value={d.playedMinutes} max={d.requiredMinutes} />
                       <div className="stat-line" style={{ marginTop: 8 }}>
-                        <span>{dailyMissionOk ? '✓' : '○'} Dienos misija</span>
-                        <span>{dailyMissionOk ? 'Atlikta' : 'Dar ne'}</span>
+                        <span>{dailyMissionOk ? '✓' : '○'} Misijos šiandien</span>
+                        <span>
+                          {dailyDoneM} / {dailyReqM}
+                        </span>
                       </div>
+                      <ProgressBar value={dailyDoneM} max={dailyReqM} />
+                      {!dailyPlayOk || !dailyMissionOk ? (
+                        <p className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+                          {!dailyPlayOk && !dailyMissionOk
+                            ? 'Užrakinta: trūksta playtime ir misijų.'
+                            : !dailyPlayOk
+                              ? 'Užrakinta: trūksta playtime.'
+                              : 'Užrakinta: trūksta misijų (trucking / gaujos / darbai).'}
+                        </p>
+                      ) : null}
                     </div>
                     <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 8 }}>
                       <Button disabled={!canClaimDaily} onClick={() => void claimDaily()}>
@@ -174,7 +200,7 @@ export function DailyPage({
                           : !dailyPlayOk
                             ? 'REIKIA PLAYTIME'
                             : !dailyMissionOk
-                              ? 'REIKIA MISIJOS'
+                              ? `REIKIA MISIJŲ (${dailyDoneM}/${dailyReqM})`
                               : 'PASIIMTI DIENOS DĖŽĘ'}
                       </Button>
                     </div>
@@ -192,9 +218,21 @@ export function DailyPage({
                       </div>
                       <ProgressBar value={weekly.playedMinutes} max={weekly.requiredMinutes} />
                       <div className="stat-line" style={{ marginTop: 8 }}>
-                        <span>{weeklyMissionOk ? '✓' : '○'} Savaitės misija</span>
-                        <span>{weeklyMissionOk ? 'Atlikta' : 'Dar ne'}</span>
+                        <span>{weeklyMissionOk ? '✓' : '○'} Misijos šią savaitę</span>
+                        <span>
+                          {weeklyDoneM} / {weeklyReqM}
+                        </span>
                       </div>
+                      <ProgressBar value={weeklyDoneM} max={weeklyReqM} />
+                      {!weeklyPlayOk || !weeklyMissionOk ? (
+                        <p className="muted" style={{ marginTop: 8, fontSize: 12 }}>
+                          {!weeklyPlayOk && !weeklyMissionOk
+                            ? 'Užrakinta: trūksta savaitės playtime ir misijų.'
+                            : !weeklyPlayOk
+                              ? 'Užrakinta: trūksta savaitės playtime.'
+                              : 'Užrakinta: trūksta misijų (trucking / gaujos / darbai).'}
+                        </p>
+                      ) : null}
                     </div>
                     <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 8 }}>
                       <Button disabled={!canClaimWeekly} onClick={() => void claimWeekly()}>
@@ -203,7 +241,7 @@ export function DailyPage({
                           : !weeklyPlayOk
                             ? 'REIKIA PLAYTIME'
                             : !weeklyMissionOk
-                              ? 'REIKIA MISIJOS'
+                              ? `REIKIA MISIJŲ (${weeklyDoneM}/${weeklyReqM})`
                               : 'PASIIMTI SAVAITĖS DĖŽĘ'}
                       </Button>
                     </div>

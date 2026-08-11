@@ -532,6 +532,47 @@ select {
   box-shadow: 0 0 24px var(--accent-glow);
 }
 
+/* Ped mugshot replaces CSS silhouette when RegisterPedheadshot URL is available */
+.page-hero-character {
+  width: min(100%, 168px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: charFloat 4.5s ease-in-out infinite;
+}
+
+.page-hero-character-frame {
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border-strong);
+  background: #0b0d14;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 12px 32px rgba(0, 0, 0, 0.45),
+    0 0 28px var(--accent-glow);
+}
+
+.page-hero-character-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  transform: scale(1.08);
+}
+
+.page-hero.theme-rewards .page-hero-character-frame,
+.page-hero.theme-crates .page-hero-character-frame {
+  border-color: rgba(74, 222, 128, 0.45);
+}
+
+.page-hero.theme-crates .page-hero-character-frame {
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
 .char-figure {
   width: min(100%, 200px);
   display: flex;
@@ -1005,6 +1046,30 @@ select {
 
 .track-node.locked {
   opacity: 0.4;
+}
+
+.track-node.empty {
+  opacity: 0.55;
+  border-style: dashed;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.track-node.empty .pass-reward-icon {
+  background: rgba(148, 163, 184, 0.08);
+  border-style: dashed;
+  color: var(--text-dim);
+  font-size: 22px;
+  box-shadow: none;
+}
+
+.track-node.empty .pass-reward-name,
+.track-node.empty .pass-reward-qty--empty {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.track-node.empty.current {
+  opacity: 0.85;
 }
 
 .map-canvas {

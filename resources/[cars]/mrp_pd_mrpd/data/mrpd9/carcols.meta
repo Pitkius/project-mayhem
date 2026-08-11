@@ -51,20 +51,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFF0000FF"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 	    <!-- siren2 -->
@@ -88,20 +88,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFFFF0000"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 		<!-- siren3 -->
@@ -125,20 +125,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000001"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFF0000FF"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 		<!-- siren4 -->
@@ -162,20 +162,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFFFF0000"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren5 -->
@@ -199,20 +199,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFF0000FF"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren6 -->
@@ -236,20 +236,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFF0000FF"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren7 -->
@@ -273,20 +273,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFFFF0000"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren8 -->
@@ -310,20 +310,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFF0000FF"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren9 -->
@@ -347,20 +347,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFF0000FF"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren10 -->
@@ -384,20 +384,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFFFF0000"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren11 -->
@@ -421,20 +421,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFF0000FF"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren12 -->
@@ -458,20 +458,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFFFF0000"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren13 -->
@@ -495,20 +495,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFFFF0000"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren14 -->
@@ -532,20 +532,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFFFF0000"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren15 -->
@@ -569,20 +569,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFFFF0000"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren16 -->
@@ -606,20 +606,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFF0000FF"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren17 -->
@@ -643,20 +643,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFF0000FF"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren18 -->
@@ -680,20 +680,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFF0000FF"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
 <!-- siren19 -->
@@ -717,20 +717,20 @@
             <syncToBpm value="true"/>
           </flashiness>
 			<corona>
-			  <intensity value="50.00000000"/>
-			  <size value="0.00000000"/>
-			  <pull value="0.00000001"/>
+			  <intensity value="25.00000000"/>
+			  <size value="0.40000000"/>
+			  <pull value="0.05000000"/>
 			  <faceCamera value="false"/>
 			</corona>
 			<color value="0xFFFF0000"/>
-			<intensity value="0.50000000"/>
+			<intensity value="2.50000000"/>
 			<lightGroup value="1"/>
 			<rotate value="false"/>
 			<scale value="true"/>
 			<scaleFactor value="10"/>
 			<flash value="true"/>
-			<light value="true"/>
-			<spotLight value="true"/>
+			<light value="false"/>
+			<spotLight value="false"/>
 			<castShadows value="false"/>
 		  </Item>
       </sirens>

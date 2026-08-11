@@ -1,5 +1,5 @@
-﻿-- REH Rebadged Car Pack
--- shop='pdm' = Simion; shop='luxury' = Importu salonas (Config.ImportDealership)
+-- REH Rebadged Car Pack
+-- shop='pdm' = Simion; shop='luxury' = Importu salonas (ESC Premium → mrp_dealership)
 -- Kainos: mrp_vehicle_perf kai UsePerformancePricing=true (cia fallback).
 RehVehicleEntries = {
     { model = '08srt8', name = 'Jeep 08RT', brand = 'Jeep', price = 94000, category = 'suvs', type = 'automobile', shop = 'pdm' },

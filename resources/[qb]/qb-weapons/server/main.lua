@@ -198,6 +198,21 @@ local function weaponHasInstalledComponent(item, component)
     return false
 end
 
+local function weaponHasClipAttachmentItem(item, itemKey)
+    if not item or not itemKey then return false end
+    local attachments = item.info and item.info.attachments
+    if type(attachments) ~= 'table' then return false end
+    local key = tostring(itemKey)
+    for _, entry in pairs(attachments) do
+        if type(entry) == 'table' and tostring(entry.item or '') == key then
+            return true
+        end
+    end
+    local attachmentTable = WeaponAttachments and WeaponAttachments[itemKey]
+    local component = lookupWeaponComponent(attachmentTable, item.name)
+    return component and weaponHasInstalledComponent(item, component) or false
+end
+
 --- Talpa pagal standard + įdiegtus CLIP_02/03 attachmentus (metadata).
 local function serverMaxClip(_src, item)
     local name = tostring(item and item.name or ''):lower()
@@ -209,9 +224,7 @@ local function serverMaxClip(_src, item)
     local function bumpFromItems(itemKeys, capacityTable)
         if type(itemKeys) ~= 'table' or type(capacityTable) ~= 'table' then return end
         for _, itemKey in ipairs(itemKeys) do
-            local attachmentTable = WeaponAttachments and WeaponAttachments[itemKey]
-            local component = lookupWeaponComponent(attachmentTable, name)
-            if component and weaponHasInstalledComponent(item, component) then
+            if weaponHasClipAttachmentItem(item, itemKey) then
                 maxClip = math.max(
                     maxClip,
                     tonumber(capacityTable[name]) or 0,
@@ -435,10 +448,16 @@ QBCore.Functions.CreateCallback('qb-weapons:server:beginReload', function(source
     end
 
     local maxClip = serverMaxClip(src, weaponItem)
-    -- Talpa tik iš ginklo metadata (CLIP_02/03). Commit nuskaito tik verified `loaded`.
+    -- Kliento maxClip (po CLIP_02 ant ped) — negrantinam daugiau nei GTA realiai laiko.
+    local reportedMax = math.max(0, math.floor(tonumber(request.maxClip) or 0))
+    if reportedMax > 0 then
+        maxClip = math.min(maxClip, reportedMax)
+    end
+    -- Talpa iš metadata + klientas. Commit nuskaito tik verified `loaded`.
     local storedClip = capStoredWeaponAmmo(weaponName, weaponItem.info and weaponItem.info.ammo or 0)
     local reportedClip = math.max(0, math.floor(tonumber(request.clipBefore) or 0))
-    local clipBefore = math.min(storedClip, reportedClip, maxClip)
+    -- Live clip ant ped; stored neleidžia reportuoti daugiau nei DB.
+    local clipBefore = math.min(maxClip, reportedClip, storedClip)
     local missing = math.max(0, maxClip - clipBefore)
     if missing <= 0 then
         return cb({ ok = false, message = Lang:t('error.max_ammo') or 'Apkaba pilna.' })
@@ -653,8 +672,10 @@ end
 -- Attachments
 
 local function HasAttachment(component, attachments)
+    local want = normalizeComponentHash(component)
     for k, v in pairs(attachments) do
-        if v.component == component then
+        local have = normalizeComponentHash(v and v.component)
+        if v and (v.component == component or (want and have and want == have)) then
             return true, k
         end
     end

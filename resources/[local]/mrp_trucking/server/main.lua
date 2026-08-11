@@ -874,6 +874,11 @@ QBCore.Functions.CreateCallback('mrp_trucking:server:completeDelivery', function
     })
     activeDeliveries[src] = nil
     TriggerClientEvent('mrp_trucking:client:clearDelivery', src)
+    if GetResourceState('mrp_dashboard') == 'started' then
+        pcall(function()
+            exports['mrp_dashboard']:RecordMissionComplete(src, 'trucking')
+        end)
+    end
     cb({
         ok = true,
         pay = pay,

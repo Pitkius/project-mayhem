@@ -11,7 +11,7 @@ import { PageHero } from '@/components/PageHero';
 type PremiumTab = 'imports' | 'crates' | 'vip';
 
 const TABS: { id: PremiumTab; label: string }[] = [
-  { id: 'imports', label: 'IMPORTAI' },
+  { id: 'imports', label: 'IMPORTŲ SALONAS' },
   { id: 'crates', label: 'DĖŽĖS' },
   { id: 'vip', label: 'VIP' },
 ];
@@ -34,7 +34,7 @@ export function PremiumShopPage({
       <PageHero
         theme="premium"
         title="Premium parduotuvė"
-        subtitle={`Importai · Dėžės · VIP — 1€ = 1 CR · balansas ${formatNumber(data.player.credits)} CR`}
+        subtitle={`Importų salonas · Dėžės · VIP — 1€ = 1 CR · balansas ${formatNumber(data.player.credits)} CR`}
         figureLabel="SHOP"
         actions={
           <Button

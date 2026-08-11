@@ -1,40 +1,81 @@
-import { useMemo } from 'react';
-import type { DashboardData, RpPassReward } from '@/types/dashboard';
+import { useEffect, useMemo, useRef } from 'react';
+import type { DashboardData, ItemRarity, RpPassReward } from '@/types/dashboard';
 import { Button, Card, ProgressBar } from '@/components/ui';
 import { nuiCallback } from '@/services/nui';
 import { PageHero } from '@/components/PageHero';
+
+function emptySlot(
+  level: number,
+  track: 'free' | 'premium',
+  currentLevel: number,
+): RpPassReward {
+  return {
+    level,
+    track,
+    label: '—',
+    itemName: '',
+    amount: 0,
+    icon: '',
+    rarity: 'common' as ItemRarity,
+    claimed: false,
+    locked: level > currentLevel,
+    empty: true,
+  };
+}
+
+/** Resolve reward for a level; missing entries become empty placeholders so the grid stays 1–max. */
+function resolveReward(
+  rewards: RpPassReward[],
+  level: number,
+  track: 'free' | 'premium',
+  currentLevel: number,
+): RpPassReward {
+  const found = rewards.find((r) => r.level === level && r.track === track);
+  if (found) return found;
+  return emptySlot(level, track, currentLevel);
+}
 
 function RewardCard({
   reward,
   currentLevel,
   premiumLocked,
+  nodeRef,
   onClaim,
 }: {
   reward: RpPassReward;
   currentLevel: number;
   premiumLocked?: boolean;
+  nodeRef?: (el: HTMLDivElement | null) => void;
   onClaim: () => void;
 }) {
-  const locked = reward.locked || !!premiumLocked || reward.level > currentLevel;
+  const isEmpty = !!reward.empty || !reward.itemName;
+  const locked = isEmpty || reward.locked || !!premiumLocked || reward.level > currentLevel;
   return (
     <div
+      ref={nodeRef}
       className={`track-node${reward.level === currentLevel ? ' current' : ''}${
         reward.claimed ? ' claimed' : ''
-      }${locked ? ' locked' : ''}`}
+      }${locked ? ' locked' : ''}${isEmpty ? ' empty' : ''}`}
     >
       <strong>LVL {reward.level}</strong>
       <div className="pass-reward-icon" aria-hidden>
-        {reward.icon}
+        {isEmpty ? '·' : reward.icon}
       </div>
-      <span className="pass-reward-name">{reward.label}</span>
-      <span className="pass-reward-qty">×{reward.amount}</span>
-      <span className={`rarity-pill rarity-${reward.rarity}`}>{reward.rarity}</span>
+      <span className="pass-reward-name">{isEmpty ? 'Tuščia' : reward.label}</span>
+      {!isEmpty ? <span className="pass-reward-qty">×{reward.amount}</span> : (
+        <span className="pass-reward-qty pass-reward-qty--empty">—</span>
+      )}
+      {!isEmpty ? (
+        <span className={`rarity-pill rarity-${reward.rarity}`}>{reward.rarity}</span>
+      ) : (
+        <span className="rarity-pill rarity-common">empty</span>
+      )}
       <Button
         variant="primary"
-        disabled={locked || reward.claimed}
+        disabled={isEmpty || locked || reward.claimed}
         onClick={onClaim}
       >
-        {premiumLocked ? 'LOCKED' : reward.claimed ? 'TAKEN' : 'CLAIM'}
+        {isEmpty ? '—' : premiumLocked ? 'LOCKED' : reward.claimed ? 'TAKEN' : 'CLAIM'}
       </Button>
     </div>
   );
@@ -50,21 +91,32 @@ export function RpPassPage({
   notify: (title: string, description: string, icon?: string) => void;
 }) {
   const pass = data.rpPass;
-  const visibleLevels = useMemo(() => {
-    const start = Math.max(1, pass.level - 5);
-    const end = Math.min(pass.maxLevel, start + 14);
+  const maxLevel = Math.max(1, pass.maxLevel || 100);
+  const allLevels = useMemo(() => {
     const levels: number[] = [];
-    for (let i = start; i <= end; i++) levels.push(i);
+    for (let i = 1; i <= maxLevel; i++) levels.push(i);
     return levels;
-  }, [pass.level, pass.maxLevel]);
+  }, [maxLevel]);
+
+  const currentNodeRef = useRef<HTMLDivElement | null>(null);
+  const freeWrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const node = currentNodeRef.current;
+    const wrap = freeWrapRef.current;
+    if (!node || !wrap) return;
+    const left = node.offsetLeft - wrap.clientWidth / 2 + node.clientWidth / 2;
+    wrap.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+  }, [pass.level, maxLevel]);
 
   const claim = async (level: number, track: 'free' | 'premium') => {
-    const reward = pass.rewards.find((r) => r.level === level && r.track === track);
+    const reward = resolveReward(pass.rewards, level, track, pass.level);
+    if (reward.empty || !reward.itemName) return;
     await nuiCallback('claimRpPass', {
       level,
       track,
-      itemName: reward?.itemName,
-      amount: reward?.amount,
+      itemName: reward.itemName,
+      amount: reward.amount,
     });
     const rewards = pass.rewards.map((r) =>
       r.level === level && r.track === track ? { ...r, claimed: true } : r,
@@ -72,14 +124,15 @@ export function RpPassPage({
     onPatch({ rpPass: { ...pass, rewards } });
     notify(
       'APDOVANOJIMAS',
-      `${reward?.icon ?? '🎁'} ${reward?.label ?? 'Item'} ×${reward?.amount ?? 1}`,
-      reward?.icon ?? '🎁',
+      `${reward.icon} ${reward.label} ×${reward.amount}`,
+      reward.icon,
     );
   };
 
   const claimAll = async () => {
     await nuiCallback('claimAllRpPass');
     const rewards = pass.rewards.map((r) => {
+      if (r.empty || !r.itemName) return r;
       if (r.locked) return r;
       if (r.track === 'premium' && !pass.premium) return r;
       if (r.level > pass.level) return r;
@@ -89,14 +142,12 @@ export function RpPassPage({
     notify('CLAIM ALL', 'Visi galimi RP Pass itemai pasiimti.', '✨');
   };
 
-  const freeVisible = visibleLevels.filter((lvl) => lvl === 1 || lvl % 5 === 0);
-
   return (
     <div className="page-shell">
       <PageHero
         theme="pass"
         title="RP Pass"
-        subtitle={`Level ${pass.level} / ${pass.maxLevel} · Free kas 5 lygius · Premium kiekviename`}
+        subtitle={`Level ${pass.level} / ${maxLevel} · Free + Premium · 1–${maxLevel}`}
         figureLabel="PASS"
         actions={
           <>
@@ -130,17 +181,17 @@ export function RpPassPage({
         </Card>
 
         <div className="stack">
-          <Card title="FREE TRACK · itemai kas 5 lygius (+ LVL 1)">
-            <div className="track-wrap">
+          <Card title={`FREE TRACK · lygiai 1–${maxLevel}`}>
+            <div className="track-wrap" ref={freeWrapRef}>
               <div className="track">
-                {freeVisible.map((lvl) => {
-                  const r = pass.rewards.find((x) => x.level === lvl && x.track === 'free');
-                  if (!r) return null;
+                {allLevels.map((lvl) => {
+                  const r = resolveReward(pass.rewards, lvl, 'free', pass.level);
                   return (
                     <RewardCard
                       key={`f-${lvl}`}
                       reward={r}
                       currentLevel={pass.level}
+                      nodeRef={lvl === pass.level ? (el) => { currentNodeRef.current = el; } : undefined}
                       onClaim={() => void claim(lvl, 'free')}
                     />
                   );
@@ -149,12 +200,11 @@ export function RpPassPage({
             </div>
           </Card>
 
-          <Card title="PREMIUM TRACK · itemas kiekviename lygyje">
+          <Card title={`PREMIUM TRACK · lygiai 1–${maxLevel}`}>
             <div className="track-wrap">
               <div className="track">
-                {visibleLevels.map((lvl) => {
-                  const r = pass.rewards.find((x) => x.level === lvl && x.track === 'premium');
-                  if (!r) return null;
+                {allLevels.map((lvl) => {
+                  const r = resolveReward(pass.rewards, lvl, 'premium', pass.level);
                   return (
                     <RewardCard
                       key={`p-${lvl}`}

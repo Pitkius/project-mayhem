@@ -824,13 +824,19 @@ end)
 
 QBCore.Functions.CreateCallback('mrp_dealership:server:buyLuxuryVehicle', function(source, cb, model, colorIdx)
     local Player = QBCore.Functions.GetPlayer(source)
+    --- Spawn prie Simion (ImportDealership.spawn nukreiptas į Dealership).
+    local importCfg = Config.ImportDealership or {}
+    local buyCfg = {
+        spawn = importCfg.spawn or Config.Dealership.spawn,
+        garage = importCfg.garage or Config.Dealership.garage,
+    }
     buyCivilianShopVehicle(
         Player,
         cb,
         model,
         colorIdx,
         buildLuxuryCatalog,
-        Config.ImportDealership or Config.Dealership,
+        buyCfg,
         'mrp-import-dealership-buy'
     )
 end)

@@ -24,7 +24,7 @@ export function HomePage({
         theme="home"
         title="Pagrindinis"
         subtitle={`Sveikas, ${player.characterName}. Čia tavo Mayhem apžvalga — statusas, valiuta ir greitos nuorodos.`}
-        figureLabel="CREW"
+        figureLabel={player.characterName}
         avatarUrl={player.avatarUrl}
         avatarFallback={initials}
         actions={

@@ -1,16 +1,24 @@
 --[[
   Dashboard progress: playtime, daily/weekly crate gates, missions, leaderboards.
+
+  Crate unlock = playtime + completed mission count (see shared/config.lua).
+  Mission count sources: trucking, gang missions, mrp_jobs complete, export.
 ]]
 
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local CratesCfg = (Config and Config.Crates) or {}
+local MissionsCfg = (Config and Config.Missions) or {}
+
 local CFG = {
-    dailyPlayMinutes = 120,
-    weeklyPlayMinutes = 600,
-    dailyMissionMoney = 3000,
-    weeklyMissionMoney = 25000,
-    dailyMissionTitle = 'Uždirbk $3,000 šiandien',
-    weeklyMissionTitle = 'Uždirbk $25,000 šią savaitę',
+    dailyPlayMinutes = tonumber(CratesCfg.dailyPlayMinutes) or 120,
+    weeklyPlayMinutes = tonumber(CratesCfg.weeklyPlayMinutes) or 600,
+    dailyMissionsRequired = tonumber(CratesCfg.dailyMissionsRequired) or 3,
+    weeklyMissionsRequired = tonumber(CratesCfg.weeklyMissionsRequired) or 12,
+    dailyMissionMoney = tonumber(MissionsCfg.dailyMoney) or 3000,
+    weeklyMissionMoney = tonumber(MissionsCfg.weeklyMoney) or 25000,
+    dailyMissionTitle = MissionsCfg.dailyTitle or 'Uždirbk $3,000 šiandien',
+    weeklyMissionTitle = MissionsCfg.weeklyTitle or 'Uždirbk $25,000 šią savaitę',
 }
 
 local function todayKey()
@@ -53,16 +61,30 @@ local function refreshPeriods(Player)
     meta.dashboard_events_won = tonumber(meta.dashboard_events_won) or 0
     meta.dashboard_xp = tonumber(meta.dashboard_xp) or 0
 
+    local rawDaily = meta.dashboard_daily
+    local legacyDailyMoneyClaim =
+        type(rawDaily) == 'table'
+        and rawDaily.missionClaimed == true
+        and rawDaily.moneyMissionClaimed == nil
+        and rawDaily.missionsCompleted == nil
+
     local daily = ensureBucket(meta, 'dashboard_daily', {
         date = todayKey(),
         minutes = 0,
         moneyEarned = 0,
+        missionsCompleted = 0,
         missionDone = false,
         missionClaimed = false,
+        moneyMissionDone = false,
+        moneyMissionClaimed = false,
         claimedCrate = false,
         streak = 0,
         day = 1,
     })
+    daily.missionsCompleted = tonumber(daily.missionsCompleted) or 0
+    if legacyDailyMoneyClaim then
+        daily.moneyMissionClaimed = true
+    end
     if daily.date ~= todayKey() then
         local yesterday = os.date('!%Y-%m-%d', os.time() - 86400)
         local streak = tonumber(daily.streak) or 0
@@ -75,8 +97,11 @@ local function refreshPeriods(Player)
             date = todayKey(),
             minutes = 0,
             moneyEarned = 0,
+            missionsCompleted = 0,
             missionDone = false,
             missionClaimed = false,
+            moneyMissionDone = false,
+            moneyMissionClaimed = false,
             claimedCrate = false,
             streak = streak,
             day = math.min(7, (tonumber(daily.day) or 1) % 7 + 1),
@@ -84,21 +109,38 @@ local function refreshPeriods(Player)
         meta.dashboard_daily = daily
     end
 
+    local rawWeekly = meta.dashboard_weekly
+    local legacyWeeklyMoneyClaim =
+        type(rawWeekly) == 'table'
+        and rawWeekly.missionClaimed == true
+        and rawWeekly.moneyMissionClaimed == nil
+        and rawWeekly.missionsCompleted == nil
+
     local weekly = ensureBucket(meta, 'dashboard_weekly', {
         week = weekKey(),
         minutes = 0,
         moneyEarned = 0,
+        missionsCompleted = 0,
         missionDone = false,
         missionClaimed = false,
+        moneyMissionDone = false,
+        moneyMissionClaimed = false,
         claimedCrate = false,
     })
+    weekly.missionsCompleted = tonumber(weekly.missionsCompleted) or 0
+    if legacyWeeklyMoneyClaim then
+        weekly.moneyMissionClaimed = true
+    end
     if weekly.week ~= weekKey() then
         weekly = {
             week = weekKey(),
             minutes = 0,
             moneyEarned = 0,
+            missionsCompleted = 0,
             missionDone = false,
             missionClaimed = false,
+            moneyMissionDone = false,
+            moneyMissionClaimed = false,
             claimedCrate = false,
         }
         meta.dashboard_weekly = weekly
@@ -108,15 +150,51 @@ local function refreshPeriods(Player)
 end
 
 local function tickMissionFlags(meta, daily, weekly)
-    if (tonumber(daily.moneyEarned) or 0) >= CFG.dailyMissionMoney then
-        daily.missionDone = true
-    end
-    if (tonumber(weekly.moneyEarned) or 0) >= CFG.weeklyMissionMoney then
-        weekly.missionDone = true
-    end
+    daily.missionsCompleted = tonumber(daily.missionsCompleted) or 0
+    weekly.missionsCompleted = tonumber(weekly.missionsCompleted) or 0
+    daily.missionDone = daily.missionsCompleted >= CFG.dailyMissionsRequired
+    weekly.missionDone = weekly.missionsCompleted >= CFG.weeklyMissionsRequired
+    daily.moneyMissionDone = (tonumber(daily.moneyEarned) or 0) >= CFG.dailyMissionMoney
+    weekly.moneyMissionDone = (tonumber(weekly.moneyEarned) or 0) >= CFG.weeklyMissionMoney
     meta.dashboard_daily = daily
     meta.dashboard_weekly = weekly
 end
+
+--- Increment daily/weekly mission counters (activity missions for crate gates).
+local function recordMissionComplete(src, sourceTag)
+    src = tonumber(src)
+    if not src then return false end
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not Player then return false end
+    local meta, daily, weekly = refreshPeriods(Player)
+    local wasDaily = daily.missionDone
+    local wasWeekly = weekly.missionDone
+    daily.missionsCompleted = (tonumber(daily.missionsCompleted) or 0) + 1
+    weekly.missionsCompleted = (tonumber(weekly.missionsCompleted) or 0) + 1
+    tickMissionFlags(meta, daily, weekly)
+    meta.dashboard_missions_done = (tonumber(meta.dashboard_missions_done) or 0) + 1
+    saveMeta(Player, meta)
+    if daily.missionDone and not wasDaily then
+        TriggerClientEvent('QBCore:Notify', src, 'Dienos misijų reikalavimas dėžei atliktas.', 'success')
+    elseif weekly.missionDone and not wasWeekly then
+        TriggerClientEvent('QBCore:Notify', src, 'Savaitės misijų reikalavimas dėžei atliktas.', 'success')
+    end
+    if GetResourceState('mrp_dashboard') == 'started' then
+        -- refresh open dashboards quietly when payload builder exists
+        pcall(function()
+            local payload = BuildDashboardPayload(src)
+            if payload then
+                TriggerClientEvent('mrp_dashboard:client:setData', src, payload)
+            end
+        end)
+    end
+    return true, sourceTag
+end
+
+exports('RecordMissionComplete', recordMissionComplete)
+AddEventHandler('mrp_dashboard:server:missionComplete', function(src, sourceTag)
+    recordMissionComplete(src, sourceTag)
+end)
 
 local function addPlayMinute(Player)
     local meta, daily, weekly = refreshPeriods(Player)
@@ -133,15 +211,7 @@ local function addEarnedMoney(Player, amount)
     local meta, daily, weekly = refreshPeriods(Player)
     daily.moneyEarned = (tonumber(daily.moneyEarned) or 0) + amount
     weekly.moneyEarned = (tonumber(weekly.moneyEarned) or 0) + amount
-    local wasDaily = daily.missionDone
-    local wasWeekly = weekly.missionDone
     tickMissionFlags(meta, daily, weekly)
-    if daily.missionDone and not wasDaily then
-        meta.dashboard_missions_done = (tonumber(meta.dashboard_missions_done) or 0) + 1
-    end
-    if weekly.missionDone and not wasWeekly then
-        meta.dashboard_missions_done = (tonumber(meta.dashboard_missions_done) or 0) + 1
-    end
     saveMeta(Player, meta)
 end
 
@@ -174,9 +244,13 @@ local function crateCatalog()
             end
             local desc = def.description
             if id == 'dienos_deze' then
-                desc = ('Nemokama: %d min playtime + dienos misija.'):format(CFG.dailyPlayMinutes)
+                desc = ('Nemokama: %d min playtime + %d misijos šiandien.'):format(
+                    CFG.dailyPlayMinutes, CFG.dailyMissionsRequired
+                )
             elseif id == 'savaites_deze' then
-                desc = ('Nemokama: %d min playtime + savaitės misija.'):format(CFG.weeklyPlayMinutes)
+                desc = ('Nemokama: %d min playtime + %d misijos šią savaitę.'):format(
+                    CFG.weeklyPlayMinutes, CFG.weeklyMissionsRequired
+                )
             end
             out[#out + 1] = {
                 id = id,
@@ -197,13 +271,32 @@ end
 local function buildMissions(daily, weekly)
     local dProg = math.min(CFG.dailyMissionMoney, tonumber(daily.moneyEarned) or 0)
     local wProg = math.min(CFG.weeklyMissionMoney, tonumber(weekly.moneyEarned) or 0)
-    local dStatus = daily.missionClaimed and 'claimed'
-        or (daily.missionDone and 'completed')
+    local dMoneyDone = daily.moneyMissionDone == true
+        or (tonumber(daily.moneyEarned) or 0) >= CFG.dailyMissionMoney
+    local wMoneyDone = weekly.moneyMissionDone == true
+        or (tonumber(weekly.moneyEarned) or 0) >= CFG.weeklyMissionMoney
+    local dStatus = daily.moneyMissionClaimed and 'claimed'
+        or (dMoneyDone and 'completed')
         or 'active'
-    local wStatus = weekly.missionClaimed and 'claimed'
-        or (weekly.missionDone and 'completed')
+    local wStatus = weekly.moneyMissionClaimed and 'claimed'
+        or (wMoneyDone and 'completed')
         or 'active'
+    local dMissions = tonumber(daily.missionsCompleted) or 0
+    local wMissions = tonumber(weekly.missionsCompleted) or 0
+    local dCrateStatus = daily.missionDone and 'completed' or 'active'
+    local wCrateStatus = weekly.missionDone and 'completed' or 'active'
     return {
+        {
+            id = 'daily_missions',
+            period = 'daily',
+            title = ('Užbaik %d misijas šiandien'):format(CFG.dailyMissionsRequired),
+            progress = math.min(CFG.dailyMissionsRequired, dMissions),
+            goal = CFG.dailyMissionsRequired,
+            unit = 'mis.',
+            rewardXp = 0,
+            rewardMoney = 0,
+            status = dCrateStatus,
+        },
         {
             id = 'daily_earn',
             period = 'daily',
@@ -214,6 +307,17 @@ local function buildMissions(daily, weekly)
             rewardXp = 150,
             rewardMoney = 500,
             status = dStatus,
+        },
+        {
+            id = 'weekly_missions',
+            period = 'weekly',
+            title = ('Užbaik %d misijas šią savaitę'):format(CFG.weeklyMissionsRequired),
+            progress = math.min(CFG.weeklyMissionsRequired, wMissions),
+            goal = CFG.weeklyMissionsRequired,
+            unit = 'mis.',
+            rewardXp = 0,
+            rewardMoney = 0,
+            status = wCrateStatus,
         },
         {
             id = 'weekly_earn',
@@ -247,6 +351,10 @@ local function buildDailyPayload(Player)
 
     local dailyPlayOk = (tonumber(daily.minutes) or 0) >= CFG.dailyPlayMinutes
     local weeklyPlayOk = (tonumber(weekly.minutes) or 0) >= CFG.weeklyPlayMinutes
+    local dailyMissions = tonumber(daily.missionsCompleted) or 0
+    local weeklyMissions = tonumber(weekly.missionsCompleted) or 0
+    local dailyMissionOk = dailyMissions >= CFG.dailyMissionsRequired
+    local weeklyMissionOk = weeklyMissions >= CFG.weeklyMissionsRequired
 
     return {
         day = day,
@@ -254,7 +362,9 @@ local function buildDailyPayload(Player)
         streak = tonumber(daily.streak) or 0,
         requiredMinutes = CFG.dailyPlayMinutes,
         playedMinutes = tonumber(daily.minutes) or 0,
-        canClaim = dailyPlayOk and daily.missionDone and not daily.claimedCrate,
+        requiredMissions = CFG.dailyMissionsRequired,
+        missionsCompleted = dailyMissions,
+        canClaim = dailyPlayOk and dailyMissionOk and not daily.claimedCrate,
         claimedToday = daily.claimedCrate == true,
         crateItem = 'dienos_deze',
         crateLabel = 'Dienos dėžė',
@@ -264,17 +374,19 @@ local function buildDailyPayload(Player)
         weekly = {
             requiredMinutes = CFG.weeklyPlayMinutes,
             playedMinutes = tonumber(weekly.minutes) or 0,
-            missionDone = weekly.missionDone == true,
-            canClaim = weeklyPlayOk and weekly.missionDone and not weekly.claimedCrate,
+            requiredMissions = CFG.weeklyMissionsRequired,
+            missionsCompleted = weeklyMissions,
+            missionDone = weeklyMissionOk,
+            canClaim = weeklyPlayOk and weeklyMissionOk and not weekly.claimedCrate,
             claimed = weekly.claimedCrate == true,
             crateItem = 'savaites_deze',
             crateLabel = 'Savaitės dėžė',
         },
         requirements = {
             dailyPlay = dailyPlayOk,
-            dailyMission = daily.missionDone == true,
+            dailyMission = dailyMissionOk,
             weeklyPlay = weeklyPlayOk,
-            weeklyMission = weekly.missionDone == true,
+            weeklyMission = weeklyMissionOk,
         },
     }
 end
@@ -295,21 +407,34 @@ local function formatHours(minutes)
     return ('%d H'):format(math.floor(minutes / 60))
 end
 
-local function charNameFromRow(row)
-    local ok, info = pcall(json.decode, row.charinfo or '{}')
-    if ok and type(info) == 'table' then
-        local name = ((info.firstname or '') .. ' ' .. (info.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
-        if name ~= '' then return name end
+--- Steam / FiveM display name (QB stores GetPlayerName in players.name). Never RP charinfo / citizenid.
+local function steamNameFromRow(row, onlineByCid)
+    local cid = row.citizenid
+    local sid = cid and onlineByCid and onlineByCid[cid]
+    if sid then
+        local live = GetPlayerName(sid)
+        if live and live ~= '' then return live end
     end
-    return row.name or row.citizenid or 'Žaidėjas'
+    local name = type(row.name) == 'string' and row.name:gsub('^%s+', ''):gsub('%s+$', '') or ''
+    if name ~= '' then return name end
+    return 'Žaidėjas'
 end
 
 local function buildRankings(src)
     local Player = QBCore.Functions.GetPlayer(src)
     local selfCid = Player and Player.PlayerData.citizenid or ''
 
+    local onlineByCid = {}
+    for _, pid in ipairs(GetPlayers()) do
+        local sid = tonumber(pid)
+        local P = sid and QBCore.Functions.GetPlayer(sid)
+        if P and P.PlayerData and P.PlayerData.citizenid then
+            onlineByCid[P.PlayerData.citizenid] = sid
+        end
+    end
+
     local rows = MySQL.query.await([[
-        SELECT citizenid, name, charinfo, money, metadata
+        SELECT citizenid, name, money, metadata
         FROM players
         LIMIT 500
     ]]) or {}
@@ -321,7 +446,7 @@ local function buildRankings(src)
         local okD, meta = pcall(json.decode, row.metadata or '{}')
         moneyT = okM and moneyT or {}
         meta = okD and meta or {}
-        local name = charNameFromRow(row)
+        local name = steamNameFromRow(row, onlineByCid)
         local cid = row.citizenid
         local cash = tonumber(moneyT.cash) or 0
         local bank = tonumber(moneyT.bank) or 0
@@ -364,7 +489,7 @@ local function buildRankings(src)
             local e = list[i]
             top[i] = {
                 rank = e.rank,
-                name = ('%s · %s'):format(e.name, e.cid),
+                name = e.name,
                 value = e.value,
                 isSelf = e.isSelf,
             }
@@ -372,7 +497,7 @@ local function buildRankings(src)
         if selfEntry and selfRank and selfRank > 10 then
             top[#top + 1] = {
                 rank = selfEntry.rank,
-                name = ('%s · %s'):format(selfEntry.name, selfCid),
+                name = selfEntry.name,
                 value = selfEntry.value,
                 isSelf = true,
             }
@@ -386,9 +511,7 @@ local function buildRankings(src)
             if e.isSelf then return end
         end
         local meta = getMeta(Player)
-        local ci = Player.PlayerData.charinfo or {}
-        local name = ((ci.firstname or '') .. ' ' .. (ci.lastname or '')):gsub('^%s+', ''):gsub('%s+$', '')
-        if name == '' then name = GetPlayerName(src) or 'Žaidėjas' end
+        local name = GetPlayerName(src) or 'Žaidėjas'
         local sort = sortFn(meta, Player)
         list[#list + 1] = {
             cid = selfCid,
@@ -496,8 +619,14 @@ RegisterNetEvent('mrp_dashboard:server:claimDailyCrate', function()
         TriggerClientEvent('QBCore:Notify', src, ('Reikia %d min playtime.'):format(CFG.dailyPlayMinutes), 'error')
         return
     end
-    if not daily.missionDone then
-        TriggerClientEvent('QBCore:Notify', src, 'Pirmiau užbaik dienos misiją.', 'error')
+    local dailyMissions = tonumber(daily.missionsCompleted) or 0
+    if dailyMissions < CFG.dailyMissionsRequired then
+        TriggerClientEvent(
+            'QBCore:Notify',
+            src,
+            ('Reikia %d/%d misijų šiandien.'):format(dailyMissions, CFG.dailyMissionsRequired),
+            'error'
+        )
         return
     end
     if not Player.Functions.AddItem('dienos_deze', 1) then
@@ -526,8 +655,14 @@ RegisterNetEvent('mrp_dashboard:server:claimWeeklyCrate', function()
         TriggerClientEvent('QBCore:Notify', src, ('Reikia %d min savaitės playtime.'):format(CFG.weeklyPlayMinutes), 'error')
         return
     end
-    if not weekly.missionDone then
-        TriggerClientEvent('QBCore:Notify', src, 'Pirmiau užbaik savaitės misiją.', 'error')
+    local weeklyMissions = tonumber(weekly.missionsCompleted) or 0
+    if weeklyMissions < CFG.weeklyMissionsRequired then
+        TriggerClientEvent(
+            'QBCore:Notify',
+            src,
+            ('Reikia %d/%d misijų šią savaitę.'):format(weeklyMissions, CFG.weeklyMissionsRequired),
+            'error'
+        )
         return
     end
     if not Player.Functions.AddItem('savaites_deze', 1) then
@@ -552,21 +687,30 @@ RegisterNetEvent('mrp_dashboard:server:claimMission', function(missionId)
 
     local rewardXp, rewardMoney = 0, 0
     if missionId == 'daily_earn' then
-        if not daily.missionDone or daily.missionClaimed then
+        local done = daily.moneyMissionDone == true
+            or (tonumber(daily.moneyEarned) or 0) >= CFG.dailyMissionMoney
+        if not done or daily.moneyMissionClaimed then
             TriggerClientEvent('QBCore:Notify', src, 'Misija dar nebaigta arba jau atsiimta.', 'error')
             return
         end
+        daily.moneyMissionClaimed = true
         daily.missionClaimed = true
         rewardXp, rewardMoney = 150, 500
         meta.dashboard_daily = daily
     elseif missionId == 'weekly_earn' then
-        if not weekly.missionDone or weekly.missionClaimed then
+        local done = weekly.moneyMissionDone == true
+            or (tonumber(weekly.moneyEarned) or 0) >= CFG.weeklyMissionMoney
+        if not done or weekly.moneyMissionClaimed then
             TriggerClientEvent('QBCore:Notify', src, 'Misija dar nebaigta arba jau atsiimta.', 'error')
             return
         end
+        weekly.moneyMissionClaimed = true
         weekly.missionClaimed = true
         rewardXp, rewardMoney = 500, 2500
         meta.dashboard_weekly = weekly
+    elseif missionId == 'daily_missions' or missionId == 'weekly_missions' then
+        TriggerClientEvent('QBCore:Notify', src, 'Ši misija atrakiną dėžę — claim nereikalingas.', 'primary')
+        return
     else
         return
     end

@@ -17,7 +17,7 @@ export function ProfilePage({ data }: { data: DashboardData }) {
         theme="profile"
         title="Profilis"
         subtitle="Charakterio informacija, playtime ir achievements."
-        figureLabel="YOU"
+        figureLabel={p.characterName}
         avatarUrl={p.avatarUrl}
         avatarFallback={initials}
       />

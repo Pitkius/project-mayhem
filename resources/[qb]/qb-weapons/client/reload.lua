@@ -20,14 +20,30 @@ local function finishSession(session, reason)
     local ped = session.ped
     local loaded = 0
     if ped and ped ~= 0 and DoesEntityExist(ped) then
-        loaded = WeaponAmmo.finishNativeReload(
-            ped,
-            session.weaponHash,
-            session.clipBefore,
-            session.maxClip,
-            session.staged,
-            session.weaponData
-        )
+        local abortReasons = {
+            cancelled = true,
+            weapon_changed = true,
+            ped_unavailable = true,
+        }
+        if abortReasons[reason or ''] then
+            loaded = WeaponAmmo.abortNativeReload(
+                ped,
+                session.weaponHash,
+                session.clipBefore,
+                session.weaponData
+            )
+        else
+            -- finished / timeout / not_started: GTA kartais neleidžia animacijos kai
+            -- native max dar 30, bet CLIP_02 jau ant ped — vis tiek užpildom verified.
+            loaded = WeaponAmmo.finishNativeReload(
+                ped,
+                session.weaponHash,
+                session.clipBefore,
+                session.maxClip,
+                session.staged,
+                session.weaponData
+            )
+        end
     end
 
     if session.onFinished then
@@ -43,11 +59,12 @@ function WeaponReload.start(ped, weaponHash, bullets, weaponData, onFinished, ma
     if WeaponReload.isActive() then return false, 'reload_busy' end
     if not selectedWeaponIs(ped, weaponHash) then return false, 'weapon_changed' end
 
-    WeaponAmmo.ensureClipComponents(ped, weaponHash, weaponData)
+    WeaponAmmo.ensureClipComponents(ped, weaponHash, weaponData, true)
     local clipBefore, maxClip, missing = WeaponAmmo.getClipAmmoState(ped, weaponHash, weaponData)
     maxClipOverride = math.floor(tonumber(maxClipOverride) or 0)
     if maxClipOverride > 0 then
-        maxClip = math.max(maxClip, maxClipOverride)
+        -- Server grant lubos — nekeliam virš to, ką beginReload patvirtino.
+        maxClip = math.min(maxClip, maxClipOverride)
         missing = math.max(0, maxClip - clipBefore)
     end
     local staged = math.min(
@@ -72,7 +89,6 @@ function WeaponReload.start(ped, weaponHash, bullets, weaponData, onFinished, ma
     }
     activeSession = session
 
-    -- MakePedReload / TaskReloadWeapon naudoja pačios GTA animaciją ir garsą.
     MakePedReload(ped)
 
     CreateThread(function()
@@ -128,12 +144,10 @@ AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
     local session = activeSession
     if session and not session.finished then
-        WeaponAmmo.finishNativeReload(
+        WeaponAmmo.abortNativeReload(
             session.ped,
             session.weaponHash,
             session.clipBefore,
-            session.maxClip,
-            session.staged,
             session.weaponData
         )
         activeSession = nil

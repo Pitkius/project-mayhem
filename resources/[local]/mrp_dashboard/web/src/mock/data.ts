@@ -76,7 +76,7 @@ function rarityBump(base: ItemRarity, level: number): ItemRarity {
   return base;
 }
 
-/** Free: 1, 5, 10, 15 … 100. Premium: every level. */
+/** Free: real rewards on 1, 5, 10…100; empty placeholders on other levels. Premium: every level. */
 function rpRewards(playerLevel = 37): RpPassReward[] {
   const rewards: RpPassReward[] = [];
   for (let level = 1; level <= 100; level++) {
@@ -96,6 +96,19 @@ function rpRewards(playerLevel = 37): RpPassReward[] {
         rarity: rarityBump(item.rarity, level),
         claimed: claimed && isFreeTier,
         locked,
+      });
+    } else {
+      rewards.push({
+        level,
+        track: 'free',
+        label: '—',
+        itemName: '',
+        amount: 0,
+        icon: '',
+        rarity: 'common',
+        claimed: false,
+        locked,
+        empty: true,
       });
     }
 
@@ -188,7 +201,7 @@ export const mockCrates: CrateDef[] = [
     id: 'dienos_deze',
     kind: 'daily',
     label: 'Dienos dėžė',
-    description: 'Nemokama: 2h playtime + dienos misija.',
+    description: 'Nemokama: 2h playtime + 3 misijos.',
     icon: '📦',
     image: 'dienos_deze.png',
     accent: '#fbbf24',
@@ -198,7 +211,7 @@ export const mockCrates: CrateDef[] = [
     id: 'savaites_deze',
     kind: 'weekly',
     label: 'Savaitės dėžė',
-    description: 'Nemokama: 10h playtime + savaitės misija.',
+    description: 'Nemokama: 10h playtime + 12 misijų.',
     icon: '🏆',
     image: 'savaites_deze.png',
     accent: '#67e8f9',
@@ -345,6 +358,8 @@ export const mockDashboard: DashboardData = {
     streak: 4,
     requiredMinutes: 120,
     playedMinutes: 120,
+    requiredMissions: 3,
+    missionsCompleted: 3,
     canClaim: true,
     claimedToday: false,
     crateItem: 'dienos_deze',
@@ -354,6 +369,8 @@ export const mockDashboard: DashboardData = {
     weekly: {
       requiredMinutes: 600,
       playedMinutes: 420,
+      requiredMissions: 12,
+      missionsCompleted: 7,
       missionDone: false,
       canClaim: false,
       claimed: false,

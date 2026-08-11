@@ -454,6 +454,16 @@ local function completeRun(run)
         targetId = run.missionKey,
         metadata = settlement,
     })
+    if GetResourceState('mrp_dashboard') == 'started' then
+        for _, participant in ipairs(participants) do
+            local src = GangCore.GetSourceByCitizenId(participant.citizenid) or participant.source
+            if src then
+                pcall(function()
+                    exports['mrp_dashboard']:RecordMissionComplete(src, 'gang_mission')
+                end)
+            end
+        end
+    end
     broadcast(run, 'mrp_gangs:client:missionFinished', {
         success = true,
         settlement = settlement,

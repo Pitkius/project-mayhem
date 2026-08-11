@@ -65,6 +65,8 @@ export interface RpPassReward {
   rarity: ItemRarity;
   claimed: boolean;
   locked: boolean;
+  /** Placeholder slot — shown in the track grid, not claimable */
+  empty?: boolean;
 }
 
 export interface RpPassData {
@@ -121,6 +123,8 @@ export interface CrateDef {
 export interface WeeklyCrateProgress {
   requiredMinutes: number;
   playedMinutes: number;
+  requiredMissions: number;
+  missionsCompleted: number;
   missionDone: boolean;
   canClaim: boolean;
   claimed: boolean;
@@ -134,6 +138,8 @@ export interface DailyData {
   streak: number;
   requiredMinutes: number;
   playedMinutes: number;
+  requiredMissions: number;
+  missionsCompleted: number;
   /** Can claim the physical crate item into inventory */
   canClaim: boolean;
   claimedToday: boolean;

@@ -172,12 +172,18 @@ function JobManager.stop(ref, reason)
 
     if Persistence then Persistence.log(session.citizenid, session.jobType, session.role, Constants.LogCat.STOP, 0, { reason = reason }) end
 
+    local endedSrc = session.source
     srcToCid[session.source] = nil
     sessions[cid] = nil
 
     -- Praneša klientui, kad darbas baigtas.
-    if session.source then
-        TriggerClientEvent('mrp_jobs:client:jobEnded', session.source, reason or 'quit')
+    if endedSrc then
+        TriggerClientEvent('mrp_jobs:client:jobEnded', endedSrc, reason or 'quit')
+        if reason == 'complete' and GetResourceState('mrp_dashboard') == 'started' then
+            pcall(function()
+                exports['mrp_dashboard']:RecordMissionComplete(endedSrc, 'job:' .. tostring(session.jobType or 'unknown'))
+            end)
+        end
     end
     return true
 end

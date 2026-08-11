@@ -26,7 +26,8 @@ export function RewardsPage({
         theme="rewards"
         title="Apdovanojimai"
         subtitle="Inbox iš RP Pass, daily, misijų ir eventų."
-        figureLabel="LOOT"
+        figureLabel={data.player.characterName}
+        avatarUrl={data.player.avatarUrl}
         actions={
           <Button
             onClick={async () => {

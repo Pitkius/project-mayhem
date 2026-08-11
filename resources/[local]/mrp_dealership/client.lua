@@ -42,7 +42,8 @@ end
 
 local function startSimeonKeepAlive()
     CreateThread(function()
-        while uiOpen and not uiFleetMode do
+        --- Importų salonas taip pat naudoja Simion preview (ESC Premium).
+        while uiOpen and (not uiFleetMode or uiFleetMode == 'import') do
             mapfixEnsureSimeon()
             local spawn = Config.Dealership and Config.Dealership.preview
             if spawn then
@@ -106,9 +107,11 @@ local function getFleetStationPreviewCfg()
 end
 
 local function getPreviewSpawnPos()
+    --- Import = Simion showroom (be fizinės ImportDealership lokacijos).
     if uiFleetMode == 'import' then
         local d = Config.ImportDealership
         if d and d.preview then return d.preview end
+        return Config.Dealership.preview
     end
     if uiFleetMode then
         local sc = getFleetStationPreviewCfg()
@@ -121,6 +124,7 @@ local function getPreviewCamPos()
     if uiFleetMode == 'import' then
         local d = Config.ImportDealership
         if d and d.camera then return d.camera end
+        return Config.Dealership.camera
     end
     if uiFleetMode then
         local sc = getFleetStationPreviewCfg()
@@ -564,7 +568,24 @@ local function openHeliDealershipUi(stationId)
 end
 
 local function openImportDealershipUi()
-    openFleetDealershipUi('import', 'ls', 'mrp_dealership:server:getLuxuryCatalog')
+    --- Atidaro luxury katalogą; preview/spawn = Simion (žr. Config.ImportDealership).
+    QBCore.Functions.TriggerCallback('mrp_dealership:server:getLuxuryCatalog', function(data)
+        safeDeletePreviewVehicle()
+        destroyPreviewCam()
+        fleetCatalog = data
+        activeFleetStationId = 'ls'
+        uiFleetMode = 'import'
+        local payload = buildUiPayload()
+        if not payload or not payload.vehicles or #payload.vehicles == 0 then
+            uiFleetMode = false
+            return QBCore.Functions.Notify('Importų katalogas tuščias.', 'error')
+        end
+        uiOpen = true
+        previewBeginShowroom()
+        startSimeonKeepAlive()
+        SetNuiFocus(true, true)
+        SendNUIMessage({ action = 'open', payload = payload })
+    end)
 end
 
 RegisterNetEvent('mrp_dealership:client:openImportDealership', function()
@@ -820,46 +841,7 @@ CreateThread(function()
     registerSpecialDealership(Config.BoatDealership, 'boat', openBoatDealershipUi, 'fas fa-ship', 'Atidaryti laivų saloną')
     registerSpecialDealership(Config.HeliDealership, 'heli', openHeliDealershipUi, 'fas fa-helicopter', 'Atidaryti malūnsparnių saloną')
 
-    local importCfg = Config.ImportDealership
-    if importCfg and importCfg.office then
-        local importPos = importCfg.office
-        local importSize = importCfg.targetSize or vec3(1.2, 1.2, 1.8)
-        exports['qb-target']:AddBoxZone('mrp_dealership_import', importPos, importSize.x, importSize.y, {
-            name = 'mrp_dealership_import',
-            heading = importCfg.officeHeading or 0.0,
-            debugPoly = false,
-            minZ = importPos.z - 0.8,
-            maxZ = importPos.z + 1.2,
-        }, {
-            options = {
-                {
-                    type = 'client',
-                    action = function()
-                        openImportDealershipUi()
-                    end,
-                    icon = 'fas fa-gem',
-                    label = 'Atidaryti importų saloną',
-                },
-            },
-            distance = importCfg.targetDistance or 2.0,
-        })
-
-        local blipCfg = importCfg.blip or {}
-        local importBlip = AddBlipForCoord(importPos.x, importPos.y, importPos.z)
-        SetBlipSprite(importBlip, blipCfg.sprite or 523)
-        SetBlipDisplay(importBlip, 4)
-        SetBlipScale(importBlip, blipCfg.scale or 0.88)
-        SetBlipColour(importBlip, blipCfg.color or 46)
-        SetBlipAsShortRange(importBlip, blipCfg.shortRange ~= false)
-        local importLabel = blipCfg.label or importCfg.label or 'Importų salonas'
-        if GetResourceState('mrp_fonts') == 'started' then
-            exports['mrp_fonts']:SetBlipName(importBlip, importLabel)
-        else
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentString(importLabel)
-            EndTextCommandSetBlipName(importBlip)
-        end
-    end
+    --- Importų salonas: be blipo / qb-target — tik ESC → Premium.
 end)
 
 AddEventHandler('onResourceStop', function(resourceName)

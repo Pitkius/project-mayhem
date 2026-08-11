@@ -71,8 +71,12 @@ export function MissionsPage({
                     REWARD · {m.rewardXp} XP · ${formatNumber(m.rewardMoney)}
                   </div>
                   <Button
-                    disabled={m.status !== 'completed'}
+                    disabled={m.status !== 'completed' || m.rewardXp <= 0}
                     onClick={async () => {
+                      if (m.rewardXp <= 0) {
+                        notify('MISIJA', 'Ši misija atrakiną dėžę — claim nereikalingas.', '🎯');
+                        return;
+                      }
                       await nuiCallback('claimMission', { id: m.id });
                       onPatch({
                         missions: data.missions.map((x) =>
@@ -82,7 +86,7 @@ export function MissionsPage({
                       notify('MISIJA', `Gavai ${m.rewardXp} XP.`, '🎯');
                     }}
                   >
-                    CLAIM
+                    {m.rewardXp <= 0 ? (m.status === 'completed' ? 'ATLIKTA' : 'PROGRESAS') : 'CLAIM'}
                   </Button>
                 </div>
               </Card>

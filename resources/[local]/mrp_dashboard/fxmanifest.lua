@@ -10,6 +10,7 @@ version '1.1.0'
 ui_page 'html/index.html'
 
 shared_scripts {
+    'shared/config.lua',
     'shared/crates.lua',
 }
 

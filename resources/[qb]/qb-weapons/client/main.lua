@@ -107,15 +107,23 @@ local function cancelActiveReload()
     reloadCancelRequested = true
 end
 
+local function resolveAttachmentComponentHash(comp)
+    if type(comp) == 'number' then return comp end
+    if type(comp) == 'string' then
+        local asNum = tonumber(comp)
+        if asNum then return asNum end
+        return joaat(comp)
+    end
+end
+
 local function applyWeaponAttachmentsAndTint(ped, weaponHash, weaponInfo)
     weaponInfo = weaponInfo or {}
     if weaponInfo.attachments then
         for _, attachment in pairs(weaponInfo.attachments) do
-            local comp = attachment.component
-            if type(comp) == 'number' then
-                GiveWeaponComponentToPed(ped, weaponHash, comp)
-            elseif comp then
-                GiveWeaponComponentToPed(ped, weaponHash, joaat(tostring(comp)))
+            local comp = attachment and attachment.component
+            local compHash = resolveAttachmentComponentHash(comp)
+            if compHash then
+                GiveWeaponComponentToPed(ped, weaponHash, compHash)
             end
         end
     end
@@ -663,9 +671,16 @@ RegisterNetEvent('qb-weapons:client:SetWeaponComponent', function(weaponHash, co
     local ped = PlayerPedId()
     if not ped or ped == 0 or not weaponHash or not component then return end
     weaponHash = type(weaponHash) == 'number' and weaponHash or joaat(tostring(weaponHash))
-    component = type(component) == 'number' and component or joaat(tostring(component))
+    component = resolveAttachmentComponentHash(component)
+        or (type(component) == 'number' and component)
+        or joaat(tostring(component))
+    if not component then return end
     if enabled then
         GiveWeaponComponentToPed(ped, weaponHash, component)
+        -- Naujas CLIP — leisti vėl bandyti extended fill.
+        if WeaponAmmo and WeaponAmmo.clearOverNativeFillFail then
+            WeaponAmmo.clearOverNativeFillFail(weaponHash)
+        end
     else
         RemoveWeaponComponentFromPed(ped, weaponHash, component)
     end

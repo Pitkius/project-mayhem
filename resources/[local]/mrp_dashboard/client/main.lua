@@ -121,7 +121,31 @@ local function openNativeFrontend(menuHash)
 end
 
 local function openNativeMap()
-    openNativeFrontend(`FE_MENU_VERSION_MP_PAUSE`)
+    -- Fullscreen Rockstar pause map (not custom NUI / not pause home)
+    allowNativeFrontend = true
+    closeDashboard()
+    CreateThread(function()
+        Wait(80)
+        SetPauseMenuActive(false)
+        SetFrontendActive(false)
+        Wait(50)
+        ActivateFrontendMenu(`FE_MENU_VERSION_MP_PAUSE`, false, -1)
+        local deadline = GetGameTimer() + 15000
+        while GetGameTimer() < deadline do
+            if IsPauseMenuActive() and not IsPauseMenuRestarting() then
+                break
+            end
+            Wait(0)
+        end
+        if IsPauseMenuActive() then
+            PauseMenuceptionGoDeeper(0)
+        end
+        while IsPauseMenuActive() do
+            Wait(200)
+        end
+        Wait(100)
+        allowNativeFrontend = false
+    end)
 end
 
 local function openNativeSettings()
@@ -241,6 +265,16 @@ end)
 
 RegisterNUICallback('purchaseImport', function(data, cb)
     TriggerServerEvent('mrp_dashboard:server:purchaseImport', data and data.id)
+    cb({ ok = true })
+end)
+
+--- ESC Premium → Importų salonas (mrp_dealership luxury katalogas).
+RegisterNUICallback('openImportDealership', function(_, cb)
+    closeDashboard()
+    CreateThread(function()
+        Wait(120)
+        TriggerEvent('mrp_dealership:client:openImportDealership')
+    end)
     cb({ ok = true })
 end)
 

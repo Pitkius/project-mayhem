@@ -1,4 +1,4 @@
-﻿local QBCore = exports['qb-core']:GetCoreObject()
+local QBCore = exports['qb-core']:GetCoreObject()
 
 local ActiveCalls = {}
 local NextCallId = 1

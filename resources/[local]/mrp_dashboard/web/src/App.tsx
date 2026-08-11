@@ -43,9 +43,18 @@ export default function App() {
 
   const handleNavigate = useCallback(
     async (id: NavId) => {
+      // ESC sidebar Map → native GTA pause map (not custom MapPage NUI)
+      if (id === 'map') {
+        if (isDevPreview()) {
+          notify('ŽEMĖLAPIS', 'Žaidime atsidarys native GTA map.', '🗺️');
+          return;
+        }
+        await nuiCallback('openNativeMap');
+        return;
+      }
       setPage(id);
     },
-    [],
+    [notify],
   );
 
   useEffect(() => {

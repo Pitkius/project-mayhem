@@ -31,7 +31,7 @@ export function RankingPage({ data }: { data: DashboardData }) {
         theme="ranking"
         title="Reitingas"
         subtitle="Top 10 iš serverio DB. Dešinėje — tavo pozicija ir crew veikėjas."
-        figureLabel="RANK"
+        figureLabel={data.player.characterName}
         avatarUrl={data.player.avatarUrl}
         avatarFallback={data.player.characterName
           .split(' ')
@@ -105,7 +105,16 @@ export function RankingPage({ data }: { data: DashboardData }) {
               )}
             </Card>
             <Card title="CREW">
-              <CharacterFigure theme="ranking" label={data.player.characterName} />
+              {data.player.avatarUrl ? (
+                <div className="page-hero-character theme-ranking" style={{ width: '100%' }}>
+                  <div className="page-hero-character-frame">
+                    <img src={data.player.avatarUrl} alt="" draggable={false} />
+                  </div>
+                  <span className="char-figure-label">{data.player.characterName}</span>
+                </div>
+              ) : (
+                <CharacterFigure theme="ranking" label={data.player.characterName} />
+              )}
             </Card>
           </aside>
         </div>
