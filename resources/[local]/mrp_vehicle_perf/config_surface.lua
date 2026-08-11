@@ -207,8 +207,6 @@ Config.SurfaceHandling = {
         mrpd17 = 'Emergency', mrpd18 = 'Emergency', mrpd19 = 'Emergency', mrpd20 = 'Offroad',
         mrpd21 = 'Emergency', mrpd22 = 'Emergency', mrpd23 = 'Emergency', mrpd24 = 'Emergency',
         mrpd25 = 'Emergency', mrpd26 = 'Emergency', mrpd27 = 'Emergency',
-        mrpd28 = 'Emergency', mrpd29 = 'Emergency', mrpd30 = 'Emergency',
-        mrpd31 = 'Emergency', mrpd32 = 'Emergency',
     },
 
     --- High-ride bonus models (extra off-road forgiveness)

@@ -301,13 +301,8 @@ Config.PoliceDealership = {
         { model = 'mrpd20', name = 'MRPD 20 (nežymėta)', brand = 'MRPD', category = 'unmarked', price = 27000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
         { model = 'mrpd25', name = 'MRPD 25 — Alfa Romeo nežymėta', brand = 'Alfa Romeo', category = 'unmarked', price = 35500, minGrade = 6, arasOrGrade = true, shopEnabled = true },
         { model = 'mrpd27', name = 'MRPD 27 — Benefactor C63S nežymėta', brand = 'Benefactor', category = 'unmarked', price = 42000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'mrpd28', name = 'MRPD 28 — Bravado Charger 08 nežymėta', brand = 'Bravado', category = 'unmarked', price = 38000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'mrpd29', name = 'MRPD 29 — Bravado Suburban nežymėta', brand = 'Bravado', category = 'unmarked', price = 32000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'mrpd30', name = 'MRPD 30 — Benefactor S87 nežymėta', brand = 'Benefactor', category = 'unmarked', price = 45000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'mrpd31', name = 'MRPD 31 — Vapid TRX C nežymėta', brand = 'Vapid', category = 'unmarked', price = 40000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
-        { model = 'mrpd32', name = 'MRPD 32 — Benefactor GLS nežymėta', brand = 'Benefactor', category = 'unmarked', price = 35000, minGrade = 6, arasOrGrade = true, shopEnabled = true },
         -- NEŽYMĖTOS LT ELS — pačioje gale
-        { model = 'mrpd21', name = 'MRPD 21 — BMW 540i VAD (LT ELS)', brand = 'BMW', category = 'unmarked', price = 37000, minGrade = 0, shopEnabled = false },
+        { model = 'mrpd21', name = 'MRPD 21 — BMW 540i VAD (LT ELS)', brand = 'BMW', category = 'unmarked', price = 37000, minGrade = 0, shopEnabled = true },
         { model = 'mrpd22', name = 'MRPD 22 — Audi S3 nežymėta (ELS)', brand = 'Audi', category = 'unmarked', price = 36000, minGrade = 0, shopEnabled = true },
     },
 }

@@ -411,13 +411,9 @@ Config.FleetVehicles = {
   { model = 'mrpd20', label = 'MRPD 20 (nežymėta)', emergencyLights = 'native' },
   { model = 'mrpd25', label = 'MRPD 25 — Alfa Romeo nežymėta', emergencyLights = 'native' },
   { model = 'mrpd27', label = 'MRPD 27 — Benefactor C63S nežymėta', emergencyLights = 'native' },
-  { model = 'mrpd28', label = 'MRPD 28 — Bravado Charger 08 nežymėta', emergencyLights = 'native' },
-  { model = 'mrpd29', label = 'MRPD 29 — Bravado Suburban nežymėta', emergencyLights = 'native' },
-  { model = 'mrpd30', label = 'MRPD 30 — Benefactor S87 nežymėta', emergencyLights = 'native' },
-  { model = 'mrpd31', label = 'MRPD 31 — Vapid TRX C nežymėta', emergencyLights = 'native' },
-  { model = 'mrpd32', label = 'MRPD 32 — Benefactor GLS nežymėta', emergencyLights = 'native' },
   -- NEŽYMĖTOS LT ELS
-  -- mrpd21 disabled: corrupt YFT (client crash GTA5_b3751 / ERR_STR_FAILURE_3)
+  { model = 'mrpd21', label = 'MRPD 21 — BMW 540i VAD (LT ELS)', emergencyLights = 'els' },
+  -- mrpd28–32 removed: civilian REH clones without siren/lightbar bones (no native lamps without floating orbs)
   { model = 'mrpd22', label = 'MRPD 22 — Audi S3 nežymėta (ELS)', emergencyLights = 'els' },
 }
 
@@ -426,7 +422,7 @@ Config.BuiltInFleetModels = {
     'mrpd1', 'mrpd2', 'mrpd3', 'mrpd4', 'mrpd5', 'mrpd6', 'mrpd7', 'mrpd8',
     'mrpd9', 'mrpd10', 'mrpd11', 'mrpd12', 'mrpd24', 'mrpd25', 'mrpd26',
     'mrpd17', 'mrpd18', 'mrpd19', 'mrpd20',
-    'mrpd27', 'mrpd28', 'mrpd29', 'mrpd30', 'mrpd31', 'mrpd32',
+    'mrpd27',
     'polmav', 'buzzard2',
 }
 
